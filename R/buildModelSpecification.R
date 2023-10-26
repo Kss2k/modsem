@@ -90,6 +90,7 @@ createModelSpecification <- function(modelSyntax, data, method = "rca", returnLa
 
   # combining the product indicators into a single dataframe (i.e., not a list of dataframes)
     # Using unname() avoids getting names like df1.var1, ... df2.var1 etc.. but assumes unique names
+
   combinedProductIndicators <- purrr::list_cbind(unname(modelSpecification$productIndicators))
 
   # combining the product indicators with the dataset, into one coherent one

@@ -1,0 +1,8 @@
+"0","library(lavaan)"
+"0","library(modsem)"
+"0",""
+"0","setwd(""C:/Users/slupp/OneDrive/Skrivebord/MasterOppgaveMehmet/data"")"
+"2","Warning: The working directory was changed to C:/Users/slupp/OneDrive/Skrivebord/MasterOppgaveMehmet/data inside a notebook chunk. The working directory will be reset when the chunk is finished running. Use the knitr root.dir option in the setup chunk to change the working directory for notebook chunks."
+"0","df1 <- readRDS(""exampleData1.rds"")"
+"0","df2 <- readRDS(""exampleData4.rds"")"
+"0","df3 <- readRDS(""exampleData3.rds"")"

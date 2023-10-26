@@ -13,6 +13,21 @@ modsem <- function(modelSyntax,
   modelSpecification
 }
 
+
+readModsem <- function(modelSyntax, method = "rca", generateSyntax = TRUE) {
+  modelSpecification <- list(
+    originalSyntax = modelSyntax,
+    indicatorNames = getIndividualIndicators(modelSyntax),
+    relationDf = createRelationDf(modelSyntax)
+  )
+  class(modelSpecification) <- method
+  if (generateSyntax == FALSE) {
+    return(modelSpecification)
+  }
+  modelSpecification$modifiedSyntax <- generateSyntax(modelSpecification)
+  modelSpecification
+}
+
 # ProductIndicators ####
 
 
@@ -29,7 +44,8 @@ multiplyIndicators <- function(df) {
   product <- df[[1]] * df[[2]]
   y <- cbind(product, df[,-(1:2),drop = FALSE])
 
-  multiplyIndicators(y)$product
+  # old solution: multiplyIndicators(y)$product
+  unlist(multiplyIndicators(y))
 }
 
 

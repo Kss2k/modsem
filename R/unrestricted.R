@@ -1,6 +1,6 @@
 
 
-createProductIndicators.unrestricted <- function(modelSpecification) {
+createProductIndicators.unconstrained <- function(modelSpecification) {
   purrr::map2(.x = modelSpecification$relationDf,
               .y = modelSpecification$indicatorNames,
               .f = createIndicatorProducts,
@@ -10,7 +10,7 @@ createProductIndicators.unrestricted <- function(modelSpecification) {
 }
 
 
-generateSyntax.unrestricted <- function(modelSpecification, ...) {
+generateSyntax.unconstrained <- function(modelSpecification, ...) {
   modelSyntax <- modelSpecification$originalSyntax
   relationDf <- modelSpecification$relationDf
   # syntax for outer model and covariances

@@ -1,0 +1,120 @@
+"0","s1 <- '"
+"0","  # outer Model"
+"0","  Attitude =~ ATTD1 + ATTD2 + ATTD4 + ATTD4"
+"0","  PBC =~ PBC1 + PBC2 + PBC3 + PBC4"
+"0","  Behaviour =~ PB1 + PB2 + PB3 + PB4"
+"0","  SN =~ SN1 + SN2 + SN3 + SN4"
+"0","  pestY =~ ty1 + ty2"
+"0","  TestX =~ tx1 + tx2"
+"0",""
+"0","  # Higher order"
+"0","  Intention =~ PBC + SN + Attitude"
+"0",""
+"0","  # Inner model"
+"0","  Behaviour ~ Intention + PBC + Intention:PBC + pestY :TestX"
+"0","  Behaviour ~ Intention + PBC + pestY :TestX"
+"0","'"
+"0","readS1 <- readModsem(s1) "
+"0","cat(readS1$modifiedSyntax)"
+"1","
+  # outer Model
+  Attitude =~ ATTD1 + ATTD2 + ATTD4 + ATTD4
+  PBC =~ PBC1 + PBC2 + PBC3 + PBC4
+  Behaviour =~ PB1 + PB2 + PB3 + PB4
+  SN =~ SN1 + SN2 + SN3 + SN4
+  pestY =~ ty1 + ty2
+  TestX =~ tx1 + tx2
+
+  # Higher order
+  Intention =~ PBC + SN + Attitude
+
+  # Inner model
+  Behaviour ~ Intention + PBC + IntentionPBC + pestY TestX
+  Behaviour ~ Intention + PBC + pestY TestX
+
+  # ModSEM: Measurement Model IntentionPBC
+  IntentionPBC =~ 1*PBCPBC1 + SNPBC1 + AttitudePBC1 + PBCPBC2 + SNPBC2 + AttitudePBC2 + PBCPBC3 + SNPBC3 + AttitudePBC3 + PBCPBC4 + SNPBC4 + AttitudePBC4
+  
+  
+  # ModSEM: Residual (Co)Variances IntentionPBC
+  SNPBC1 ~~ PBCPBC1
+  AttitudePBC1 ~~ PBCPBC1
+  PBCPBC2 ~~ PBCPBC1
+  SNPBC2 ~~ 0*PBCPBC1
+  AttitudePBC2 ~~ 0*PBCPBC1
+  PBCPBC3 ~~ PBCPBC1
+  SNPBC3 ~~ 0*PBCPBC1
+  AttitudePBC3 ~~ 0*PBCPBC1
+  PBCPBC4 ~~ PBCPBC1
+  SNPBC4 ~~ 0*PBCPBC1
+  AttitudePBC4 ~~ 0*PBCPBC1
+  AttitudePBC1 ~~ SNPBC1
+  PBCPBC2 ~~ 0*SNPBC1
+  SNPBC2 ~~ SNPBC1
+  AttitudePBC2 ~~ 0*SNPBC1
+  PBCPBC3 ~~ 0*SNPBC1
+  SNPBC3 ~~ SNPBC1
+  AttitudePBC3 ~~ 0*SNPBC1
+  PBCPBC4 ~~ 0*SNPBC1
+  SNPBC4 ~~ SNPBC1
+  AttitudePBC4 ~~ 0*SNPBC1
+  PBCPBC2 ~~ 0*AttitudePBC1
+  SNPBC2 ~~ 0*AttitudePBC1
+  AttitudePBC2 ~~ AttitudePBC1
+  PBCPBC3 ~~ 0*AttitudePBC1
+  SNPBC3 ~~ 0*AttitudePBC1
+  AttitudePBC3 ~~ AttitudePBC1
+  PBCPBC4 ~~ 0*AttitudePBC1
+  SNPBC4 ~~ 0*AttitudePBC1
+  AttitudePBC4 ~~ AttitudePBC1
+  SNPBC2 ~~ PBCPBC2
+  AttitudePBC2 ~~ PBCPBC2
+  PBCPBC3 ~~ PBCPBC2
+  SNPBC3 ~~ 0*PBCPBC2
+  AttitudePBC3 ~~ 0*PBCPBC2
+  PBCPBC4 ~~ PBCPBC2
+  SNPBC4 ~~ 0*PBCPBC2
+  AttitudePBC4 ~~ 0*PBCPBC2
+  AttitudePBC2 ~~ SNPBC2
+  PBCPBC3 ~~ 0*SNPBC2
+  SNPBC3 ~~ SNPBC2
+  AttitudePBC3 ~~ 0*SNPBC2
+  PBCPBC4 ~~ 0*SNPBC2
+  SNPBC4 ~~ SNPBC2
+  AttitudePBC4 ~~ 0*SNPBC2
+  PBCPBC3 ~~ 0*AttitudePBC2
+  SNPBC3 ~~ 0*AttitudePBC2
+  AttitudePBC3 ~~ AttitudePBC2
+  PBCPBC4 ~~ 0*AttitudePBC2
+  SNPBC4 ~~ 0*AttitudePBC2
+  AttitudePBC4 ~~ AttitudePBC2
+  SNPBC3 ~~ PBCPBC3
+  AttitudePBC3 ~~ PBCPBC3
+  PBCPBC4 ~~ PBCPBC3
+  SNPBC4 ~~ 0*PBCPBC3
+  AttitudePBC4 ~~ 0*PBCPBC3
+  AttitudePBC3 ~~ SNPBC3
+  PBCPBC4 ~~ 0*SNPBC3
+  SNPBC4 ~~ SNPBC3
+  AttitudePBC4 ~~ 0*SNPBC3
+  PBCPBC4 ~~ 0*AttitudePBC3
+  SNPBC4 ~~ 0*AttitudePBC3
+  AttitudePBC4 ~~ AttitudePBC3
+  SNPBC4 ~~ PBCPBC4
+  AttitudePBC4 ~~ PBCPBC4
+  AttitudePBC4 ~~ SNPBC4
+  
+
+  # ModSEM: Measurement Model pestYTestX
+  pestYTestX =~ 1*ty1tx1 + ty2tx1 + ty1tx2 + ty2tx2
+  
+  
+  # ModSEM: Residual (Co)Variances pestYTestX
+  ty2tx1 ~~ ty1tx1
+  ty1tx2 ~~ ty1tx1
+  ty2tx2 ~~ 0*ty1tx1
+  ty1tx2 ~~ 0*ty2tx1
+  ty2tx2 ~~ ty2tx1
+  ty2tx2 ~~ ty1tx2
+  
+"

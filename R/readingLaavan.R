@@ -130,7 +130,8 @@ getIndicatorsSingle <- function(latentVariable, modelSyntax) {
     # getIndicatorsSingle("PBC", example1)
   structuralExpression <- getSingleOuterExpression(latentVariable, modelSyntax)
   # Extract names to left and right of =~ in interaction expression
-  rightAndLeft <- stringr::str_split_1(structuralExpression, "=~")
+  rightAndLeft <- stringr::str_split(structuralExpression, "=~") |>
+    unlist()
   # Names to the left of =~
   expressionIndicators <- rightAndLeft[[2]]
 
