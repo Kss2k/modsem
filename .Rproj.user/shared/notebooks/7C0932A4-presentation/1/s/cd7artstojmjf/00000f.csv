@@ -1,0 +1,3 @@
+"0","latentModelUncent <- modsem(m3, df3, method = ""unconstrained"")"
+"2","Error: object 'm3' not found
+"

@@ -1,0 +1,64 @@
+
+createProductIndicators.rca <- function(modelSpecification, ...) {
+  # Compute indicatorProducts (wihtout centering the variables)
+  print(modelSpecification$namesIndicatorProducts)
+  print(modelSpecification$relationalDfs)
+  indicatorProducts <- purrr::map2(.x = modelSpecification$relationalDfs,
+                                   .y = modelSpecification$namesIndicatorProducts,
+                                   .f = createIndicatorProducts,
+                                   data = modelSpecification$data,
+                                   centered = FALSE) |>
+    purrr::list_cbind()
+
+  purrr::map2(.x = indicatorProducts,
+              .y = modelSpecification$namesIndicatorProducts,
+              .f = calculateResidualsDf,
+              data = modelSpecification$data)
+}
+
+
+
+# fucntion for calculating residuals for a dataframe of productindicators
+calculateResidualsDf <- function(dependentDf, independentNames, data) {
+
+  # Do i want to explicitly coerce this?? cbind() should return a df, it
+  # it's inputs are df's
+  combinedData <- cbind(dependentDf, data)
+
+  # Getting the names of the dependent variables
+  dependentNames <- colnames(dependentDf)
+
+  # calculating the residuals for each product, using the same predictors.
+  residuals <- lapplyNamed(dependentNames,
+                           FUN = calculateResidualsSingle2,
+                           independentNames = independentNames,
+                           data = combinedData)
+
+
+  as.data.frame(residuals)
+}
+
+
+calculateResidualsSingle2 <- function(dependentName, independentNames, data) {
+  # generating a formula
+  formula <- generateFormula(dependentName, independentNames, operator = "~")
+
+  residuals(lm(formula, data))
+}
+
+# function for calculating residuals of a single productIndicator
+calculateResidualsSingle <- function(dependentName, independentNames, data) {
+  # generating a formula
+  formula <- generateFormula(dependentName, independentNames, operator = "~")
+
+  # This doesnt look pretty, but allows me to keep the names when passing back to
+  # model specification
+  out <- lm(formula, data) |>
+    residuals() |>
+    as.data.frame()
+  # Naming the variable
+  colnames(out) <- dependentName
+
+  # returning
+  out
+}

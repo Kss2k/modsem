@@ -12,7 +12,6 @@ createProductCombos <- function(modelSyntax) {
 
 
 
-
 # function for getting all individual indicators used in each latent product
 getIndividualIndicators <- function(modelSyntax) {
   # List with vectors
@@ -26,14 +25,14 @@ getIndividualIndicators <- function(modelSyntax) {
 
 
 
-
 createIndicatorNames <- function(modelSyntax) {
   # Create names for indicatorproducts for the respective latent products
     # Example:
       # indicatorProductNames(createPairLists(example3))
 
   productCombo <- createProductCombos(modelSyntax)
-  lapply(productCombo, function(df) apply(df, 1, stringr::str_c, collapse = ""))
+  lapply(productCombo, 
+         FUN = function(df) apply(df, 1, stringr::str_c, collapse = ""))
 }
 
 

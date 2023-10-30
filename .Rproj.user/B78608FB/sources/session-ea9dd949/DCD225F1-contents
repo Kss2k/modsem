@@ -1,0 +1,326 @@
+# Function for parsing lavaan syntax, and creating a modelSpecification --------
+  # Note: I want to convert my code to only work with the parTable output from
+      #   from the output of lavaanify. The rest of my code is based on adding
+      #   strings to the modelSyntax
+
+parseLavaan <- function(
+    modelSyntax   = NULL,
+    specifyMeasurement = FALSE) {
+
+  # Checking prerequisites -----------------------------------------------------
+    # Check if a modelSyntax is provided, if not we should return an error
+  if (is.null(modelSyntax)) {
+    stop2("No modelSyntax provided")
+
+    # Check if .model is string
+  } else if (!is.character(modelSyntax)) {
+    stop2("The provided model syntax is not a string!")
+  }
+
+  # Convert to lavaan partable -------------------------------------------------
+
+  # The lavaanify() function will return an error if one of the latent variables
+    # have a : in their names
+  replacementPattern <- "__COLON__"
+  modelSyntax <- stringr::str_replace_all(modelSyntax, ":", replacementPattern)
+
+    # so I dont have to parse the syntax my self
+  lavModel <- lavaan::lavaanify(model = modelSyntax, fixed.x = FALSE)
+
+
+  # Extracting General Information: -------------------------------------------
+
+  ## structural expressions -----------------------------------------------
+
+      # Get all structural expression
+  structuralExpressions <- lavModel[lavModel$op == "~",]
+
+  ## Interaction expressions -------------------------------------------------
+  interactionExpressions <- lavModel[
+    grepl(replacementPattern, lavModel$rhs) & lavModel$op == "~",
+    ]
+    # Get names for productTerms
+  productNames <- unique(interactionExpressions$rhs)
+
+    # Get names for productTerms without :
+  productNamesCleaned <- stringr::str_remove_all(productNames,
+                                                  replacementPattern)
+
+  ## Measurement expressions ---------------------------------------------------
+
+    # Getting all measurement expressions
+  measurementExpressions <- lavModel[lavModel$op %in% c("=~", "<~"), ]
+
+  if (specifyMeasurement == FALSE) {
+    # I should Remove already specified measurementExpressions
+
+      # Logical vector indicating whether a row is a measurementExpression
+    isMeasurement <- lavModel$op %in% c("=~", "<~")
+
+      # Logical vector indicating whether a row is a interaction
+    isProductExpression <- lavModel$lhs %in% productNamesCleaned
+
+      # We want to remove latent measurement expressions
+    lavModel <- lavModel[!(isMeasurement & isProductExpression),]
+
+      # We should also go through our previous measurement
+      # expression and remove latentExpressions
+    measurementExpressions <- measurementExpressions[
+        !(measurementExpressions$lhs %in% productNamesCleaned),
+    ]
+    }
+
+  # Getting names in measurement expressions
+      # Get indicator names
+  indicators <- unique(measurementExpressions$rhs)
+      # Get latent variable names (assumes first order)
+  latentVariables <- unique(measurementExpressions$lhs)
+  print(latentVariables)
+
+
+  # Structuring the information ------------------------------------------------
+
+  ## Are products latent?
+
+  elementsProducts <- lapplyNamed(productNames,
+                                  FUN = function(x)
+                                    unlist(
+                                      stringr::str_split(
+                                        x,
+                                        pattern = replacementPattern)),
+
+                                  names = productNamesCleaned)
+  areElementsObserved <- lapply(elementsProducts,
+                              FUN = function(x, indicators) x %in% indicators,
+                              indicators)
+
+
+  numberObservedElements <- lapply(areElementsObserved,
+                                   FUN = sum)
+  # A product is considered observed it all its elements are observed
+  isProductObserved <- lapply(numberObservedElements,
+                            FUN = as.logical)
+
+  print(numberObservedElements)
+  print(isProductObserved)
+  # Indicators of latent variables
+  indicatorsLatents <- structureLavExpressions(measurementExpressions)
+
+  # If a measurement model for the latent products arent specified we should
+     # create our own
+  if (specifyMeasurement == FALSE) {
+    # Get a list with the latent variables used in each interaction term
+    latentVarsInInteraction <-
+      lapplyNamed(productNames,
+                  FUN = function(x) unlist(stringr::str_split(x, replacementPattern)),
+                  names = productNamesCleaned)
+
+    # Get indicators belonging to latent variables, or if observed, just get the
+    # observed variable in product terms
+    indicatorsProductTerms <- lapplyNamed(latentVarsInInteraction,
+                                          FUN = getIndicatorsMultipleVariables,
+                                          indicatorsLatents = indicatorsLatents,
+                                          names = productNamesCleaned)
+
+    # Creating a relationalDF for productTerms
+    relationalDfs <- lapply(indicatorsProductTerms, FUN = createRelationalDf)
+
+    # Get a list with all the indicators in each interactionterm
+    indicatorsInProductTerms <- lapplyNamed(indicatorsProductTerms,
+                                       FUN = function(x) unname(unlist(x)),
+                                       names = productNamesCleaned)
+
+    indicatorNamesProductTerms <- lapplyNamed(relationalDfs,
+                                              FUN = colnames,
+                                              names = names(relationalDfs))
+    indicatorNamesLatents <- c(indicatorsLatents, indicatorNamesProductTerms)
+
+  # Else gather user-specified information
+  } else if (specifyMeasurement == TRUE) {
+
+    measurementProductTerms <-
+      measurementExpressions[grepl(replacementPattern, measurementExpressions$lhs), ]
+
+    # get the names of latent products to structure the output
+    latentProductNames <- unique(measurementProductTerms[["lhs"]])
+
+    # Split the expressions based on what productterm they belong to
+    expressionsProductTerms <-
+      lapplyNamed(latentProductNames,
+                  FUN = function(name, df) df[df$lhs == name, ],
+                  df = measurementProductTerms)
+
+    # create a list with indicator names in latent product, and fix names
+    indicatorProductNames <- lapplyNamed(expressionsProductTerms,
+                                         FUN = function(x) x[["rhs"]],
+                                         names = stringr::str_remove_all(
+                                         names(expressionsProductTerms),
+                                         replacementPattern))
+
+
+    # Create relational Dfs
+    relationalDfs <- lapplyNamed(
+      indicatorProductNames,
+      FUN = function(x) stringr::str_split_fixed(x, replacementPattern, 2) |>
+        t() |>
+        as.data.frame(),
+      names = names(indicatorProductNames)
+    )
+
+
+    # fix names in relationalDFs
+    relationalDfs <- lapply(relationalDfs, FUN = fixNamesRelationalDf)
+
+    indicatorsInProductTerms <-
+      lapply(indicatorProductNames,
+             FUN = function(x) unlist(
+               stringr::str_split(x,pattern = replacementPattern)))
+
+    indicatorNamesProductTerms <- lapplyNamed(relationalDfs,
+                                              FUN = colnames,
+                                              names = names(relationalDfs))
+
+
+
+  } else {
+    stop2("specifyMeasurement should be either TRUE or FALSE")
+  }
+
+  # Removing __COLON__ since information no longer needed ----------------------
+
+  # form indicatorsLatents
+  indicatorNamesLatents <-
+      lapplyNamed(indicatorsLatents,
+                  FUN = stringr::str_remove_all,
+                  pattern = replacementPattern,
+                  names = stringr::str_remove_all(
+                    names(indicatorsLatents),
+                    replacementPattern))
+
+  # The same for the lavaanModel
+  lavModelClean <- lapplyDf(lavModel,
+                          FUN = stringr::str_remove_all,
+                          pattern = replacementPattern)
+
+  # Creating a list with the names of the indicatorproducts --------------------
+
+  modelSpecification <- list(
+    lavaanSyntax = fixLatentNamesSyntax(modelSyntax),
+    lavaanModel = lavModelClean,
+    relationalDfs = relationalDfs,
+    indicatorsInProductTerms = indicatorsInProductTerms,
+    indicatorNames = indicatorNamesLatents,
+    productNames = productNamesCleaned,
+    indicatorNamesproductNames = indicatorNamesProductTerms)
+
+  modelSpecification
+}
+
+
+
+# Function for structuring expressions in a parTable ---------------------------
+structureLavExpressions <- function(parTable = NULL) {
+  # If empty return NULL
+  if (is.null(parTable)) return(NULL)
+  # Same if nrow <= 0
+  else if (nrow(parTable) <= 0) return(NULL)
+
+  ### Get Dependents
+  names <- unique(parTable$lhs)
+
+  # see utils for definition of selectValuesByCol() and lapplyNamed()
+  lapplyNamed(names, selectValuesByCol, parTable, "rhs" ,"lhs")
+}
+
+
+
+# Function for getting indicators of a variable --------------------------------
+  # If supplied a latent variable it should return all its indicators
+  # If supplied with an observed variable it should return the observed var
+    # varName idicates what variables indicators we are looking for
+    # indicatorsLatents serves two purposes:
+        # 1. It works as a dictionary for finding what indicators
+        #    belong to a construct
+        # 2. Its names() indicates whether a variable is a latent construct,
+        #    or an observed variable
+
+getIndicatorsVariable <- function(varName = NULL,  indicatorsLatents = NULL) {
+
+  if (is.null(varName) | is.null(indicatorsLatents)) {
+    return(
+      stop2("Error in getIndicatorsVariable(), varName is NULL")
+      )
+  }
+
+  # Get the names of the latent variables in the model
+  latentVariables <- names(indicatorsLatents)
+
+  # Check if our varName is a latent- or an observed variable
+  if (!(varName %in% latentVariables)) {
+    # If it is not a latent variable, we should just return the observed variable
+    return(varName)
+  } else if (varName %in% latentVariables) {
+    # If it is a latent variable, we should return its indicators
+    return(indicatorsLatents[[varName]])
+  }
+
+  # Error if it is neither a latent- nor an observerd variable
+  stop2(
+    "Something went wrong in getIndicatorsVariable(), varName neither observed not latent"
+    )
+}
+
+
+# Function for getting indicators for mutliple variables -----------------------
+
+getIndicatorsMultipleVariables <- function(varNames = NULL,
+                                           indicatorsLatents = NULL) {
+  # varNames = vector with variableNames
+  # output should be a list
+
+  # Check that arguements are supplied/not NULL
+  if (is.null(varNames) | is.null(indicatorsLatents)) {
+    return(
+      stop2("Error in getIndicatorsMultipleVariables(), varNames is NULL")
+      )
+  }
+
+  # use getIndicatorsVariable for each element in varNames, and return a named list
+  lapplyNamed(varNames,
+              FUN = getIndicatorsVariable,
+              indicatorsLatents = indicatorsLatents)
+}
+
+
+
+# functions for creating a relational Df ---------------------------------------
+  # colnames are the names of the latent productterms
+  # rownames are the names of the latent variable
+  # values are the variables used in the construction of the product term
+
+createRelationalDf <- function(indicatorsProductTerm) {
+
+  relationalDf <- t(expand.grid(indicatorsProductTerm))
+  names <- apply(relationalDf, MARGIN = 2, FUN = stringr::str_c, collapse = "")
+
+  structure(as.data.frame(relationalDf),
+            names = names)
+}
+
+
+
+fixNamesRelationalDf <- function(relationalDf) {
+  names <- apply(relationalDf,
+                 MARGIN = 2,
+                 FUN = stringr::str_c,
+                 collapse = "")
+  structure(relationalDf,
+            names = unname(names))
+}
+
+
+
+fixLatentNamesSyntax <- function(modelSyntax) {
+  stringr::str_replace_all(modelSyntax, ":|__COLON__", "")
+}
+

@@ -27,7 +27,8 @@ seperateExpressions <- function(modelSyntax) {
 # Extract interation expressions from seperate vector of expressions
 # from running seperateExpressions first.
 findInteractionExpressions <- function(expressions) {
-  expressions[grepl(":", expressions)]
+  interactions <- expressions[grepl(":", expressions)]
+  if (is.null(interactions)) return(errorCondition("No interactions detected"))
 }
 
 

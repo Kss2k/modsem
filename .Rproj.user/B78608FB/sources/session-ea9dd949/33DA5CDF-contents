@@ -1,0 +1,73 @@
+
+### RCA ####
+
+createProductIndicators.rca <- function(modelSpecification, ...) {
+  # Compute indicatorProducts (wihtout centering the variables)
+
+
+  indicatorProducts <- purrr::map2(.x = modelSpecification$relationDf,
+                                   .y = modelSpecification$indicatorNames,
+                                   .f = createIndicatorProducts,
+                                   data = modelSpecification$data,
+                                   centered = FALSE) |>
+    purrr::list_cbind()
+
+  purrr::map2(.x = indicatorProducts,
+              .y = modelSpecification$indicatorNames,
+              .f = calculateResidualsDf,
+              data = modelSpecification$data)
+}
+
+
+
+
+# fucntion for calculating residuals for a dataframe of productindicators
+calculateResidualsDf <- function(dependentDf, independentNames, data) {
+
+  # Do i want to explicitly coerce this?? cbind() should return a df, it
+    # it's inputs are df's
+  combinedData <- as.data.frame(cbind(dependentDf, data))
+
+  # Getting the names of the dependent variables
+  dependentNames <- colnames(dependentDf)
+
+  # calculating the residuals for each product, using the same predictors.
+  residuals <- lapply(dependentNames, calculateResidualsSingle, independentNames, combinedData)
+
+  # The output from lapply() is a list of dataframes, with one column, and the same number of rows.
+  purrr::list_cbind(residuals)
+}
+
+
+
+# function for calculating residuals of a single productIndicator
+calculateResidualsSingle <- function(dependentName, independentNames, data) {
+  formula <- generateFormula(dependentName, independentNames, operator = "~")
+
+  # This doesnt look pretty, but allows me to keep the names when passing back to
+  # model specification
+  out <- lm(formula, data) |>
+    residuals() |>
+    as.data.frame()
+  # Naming the variable
+  colnames(out) <- dependentName
+
+  # returning
+  out
+}
+
+generateSyntax.rca <- function(modelSpecification, ...) {
+  modelSyntax <- modelSpecification$lavaanSyntax
+  relatioaDf <- modelSpecification$relationalDfs
+  addedSyntax <- purrr::map2(.x = names(relationDf),
+                             .y = relationDf,
+                             .f = generateSyntax.outer.covs,
+                             modelSyntax = modelSyntax, ...) |>
+    unlist()
+  syntaxElements <- c(fixLatentNames(modelSyntax),addedSyntax)
+  stringr::str_c(syntaxElements, collapse = "\n")
+}
+
+
+
+
