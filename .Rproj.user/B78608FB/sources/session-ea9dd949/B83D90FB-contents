@@ -1,0 +1,79 @@
+modifyLavaanSyntax <- function(lavaan_syntax) {
+  lines <- strsplit(lavaan_syntax, "\n")[[1]]
+  modified_lines <- character(0)
+  
+  for (line in lines) {
+    if (grepl("~", line)) {
+      # Handle the inner model
+      modified_lines <- c(modified_lines, line)
+    } else if (grepl("=~", line)) {
+      # Handle the outer model
+      line <- sub("=~", "=~ label", line)
+      line <- sub("\\+", "+ label", line)
+      modified_lines <- c(modified_lines, line)
+    } else {
+      # Keep other lines as they are
+      modified_lines <- c(modified_lines, line)
+    }
+  }
+  
+  modified_lavaan_syntax <- paste(modified_lines, collapse = "\n")
+  return(modified_lavaan_syntax)
+}
+
+lavaan_syntax <- '
+  # Outer Model
+  X =~ x1 + x2 + x3
+  Y =~ y1 + y2 + y3
+  Z =~ z1 + z2 + z3
+
+  # Inner model
+  Y ~ labelX*X + labelZ*Z 
+'
+
+modified_syntax <- modifyLavaanSyntax(lavaan_syntax)
+cat(modified_syntax)
+
+
+modifyLavaanSyntax2 <- function(lavaan_syntax) {
+  lines <- strsplit(lavaan_syntax, '\n')[[1]]
+  modified_syntax <- character(0)
+  label <- ""
+  
+  for (line in lines) {
+    if (grepl('#', line)) {
+      # Handle comments
+      modified_syntax <- c(modified_syntax, line)
+    } else if (grepl('~', line)) {
+      # Handle measurement model
+      if (grepl('#', line)) {
+        label <- sub('.*#\\s*(.*)', '\\1', line)
+        modified_syntax <- c(modified_syntax, line)
+      } else {
+        modified_syntax <- c(modified_syntax, sub('(.*)\\s*~\\s*(.*)', '\\1 ~ ', paste(label, '\\2', sep = '*'), line))
+      }
+    } else {
+      # Keep other lines as they are
+      modified_syntax <- c(modified_syntax, line)
+    }
+  }
+  
+  return(paste(modified_syntax, collapse = '\n'))
+}
+
+
+lavaan_syntax <- paste(lavaan_syntax, '
+  # Outer Model
+  X =~ x1 + x2 + x3
+  Y =~ y1 + y2 + y3
+  Z =~ z1 + z2 + z3
+  ')
+
+lavaan_syntax <- paste(lavaan_syntax, '
+  # Inner model
+  Y ~ labelX*X + labelZ*Z 
+', sep = '')
+
+modified_syntax <- modifyLavaanSyntax2(lavaan_syntax)
+cat(modified_syntax)
+
