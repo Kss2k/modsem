@@ -1,15 +1,6 @@
 
 
 
-#' Parse lavaan model
-#'
-#' @param modelSyntax lavaan syntax
-#' @param isMeasurementSpecified have you specified the measurement model for the latent product
-#'
-#' @return
-#' @export
-#'
-#' @examples
 parseLavaan <- function(
     modelSyntax   = NULL,
     isMeasurementSpecified = FALSE) {

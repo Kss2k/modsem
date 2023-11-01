@@ -1,6 +1,15 @@
 
 
 
+#' Parse lavaan model
+#'
+#' @param modelSyntax
+#' @param isMeasurementSpecified
+#'
+#' @return
+#' @export
+#'
+#' @examples
 parseLavaan <- function(
     modelSyntax   = NULL,
     isMeasurementSpecified = FALSE) {
@@ -65,9 +74,7 @@ parseLavaan <- function(
                                     FUN = splitProductName,
                                     pattern = replacementPattern,
                                     names = productNamesCleaned)
-  # areElementsLatent <- lapply(elementsInProducts,
-  #                             FUN = function(x, indicators) !(x %in% indicators),
-  #                             indicators)
+
 
   areElementsLatent <-
     lapply(elementsInProducts,

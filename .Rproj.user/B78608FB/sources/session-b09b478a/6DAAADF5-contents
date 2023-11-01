@@ -1,0 +1,262 @@
+---
+title: "Presentasjon av ModSEM"
+output:
+  html_document:
+    df_print: paged
+---
+
+# Residual Centering Approach (simplified) 
+
+## Step 1:
+Create products of the indicators belonging to the latent interactionterm, and compute their residuals.
+
+## Step 2:
+Use these residuals as the indicators of your analysis 
+
+## Step 3 (optional): specify the residual covariances
+Note:
+The centering term is a bit misleading, as it implies centering your variables before or after calculating the products/residuals. But it likeley refers to the fact that residuals are supposed to be centered around zero anyways 
+
+# unconstrained approach
+
+## Step 1:
+Center the indicators belong to the latent interaction terms, and create products based on them.
+
+## Step 2: 
+Use these as indicators for your latent interaction term 
+
+## Step 3: 
+Specify constraints: 1. Specify residual covariances, 2. Specify that the mean of XZ = cov(X, Z)
+
+# Example 1: Showing some random syntaxes
+
+There is an exponential increase in indicators, and specified covariances with increases in indicators for the latent variables included in the interaction term
+
+```{r}
+library(lavaan)
+library(modsem)
+
+setwd("C:/Users/slupp/OneDrive/Skrivebord/MasterOppgaveMehmet/data")
+df1 <- readRDS("exampleData1.rds")
+df2 <- readRDS("exampleData4.rds")
+df3 <- readRDS("exampleData3.rds")
+```
+
+
+
+# Example 1: One interaction 
+
+```{r}
+m1 <- '
+  # Outer Model
+  X =~ x1 + x2 +x3
+  Y =~ y1 + y2 + y3
+  Z =~ z1 + z2 + z3
+
+  # Inner model
+  Y ~ X + Z + X:Z
+'
+
+
+realModel <- lm(realY ~ realX*realZ, df1)
+summary(realModel)
+```
+
+## Residual Centering Approach
+```{r}
+latentModelRca <- modsem(m1, df1, method = "rca")
+#lavaan::summary(latentModelRca$lavaan)
+summary(latentModelRca)
+
+#summary.modsem(latentModelRca)
+```
+
+  # Using lavaanify
+  
+```{r}
+unfinished <- '
+  # Outer Model
+  X =~ x1 + x2 + x3
+  Y =~ y1 + y2 + y3
+
+  # Inner model
+  Y ~ X + Z 
+'
+finished <-'
+  # Outer Model
+  X =~ x1 + x2 + x3
+  Y =~ y1 + y2 + y3
+  Z =~ z1 + z2 + z3
+
+  # Inner model
+  Y ~ X + Z 
+'
+lavaanify(stringr::str_remove_all(unfinished, ":")) -> unfinishedLavan
+lavaanify(stringr::str_remove_all(finished, ":")) -> finishedLavan
+```
+
+## unconstrained Approach
+
+```{r}
+latentModelUncent <- modsem(m1, df1, method = "unconstrained")
+lavaan::summary(latentModelUncent$lavaan)
+```
+## Constrained Approach 
+
+```{r}
+constrainedM1 <- '
+  # Outer Model
+  X =~ X1*x1 + X2*x2
+  Y =~ y1 + y2
+  Z =~ Z1*z1 + Z2*z2
+
+  # Inner model
+  Y ~ X + Z + X:Z
+  
+  X:Z =~ XZ1*x1:z1 + XZ2*x1:z2 + XZ3*x2:z1 + XZ4*x2:z2
+  XZ1 == X1*Z1
+  XZ2 == X1*Z2
+  XZ3 == X2*Z1
+  XZ4 == X2*Z2
+  VarXZ == VarX + VarZ + CovXZ^2
+  CovX_XZ == CovZ_XZ == 0
+  # Variance of latent
+  Z ~~ VarZ*Z 
+  X ~~ VarX*X 
+  XZ ~~ VarXZ*XZ 
+  X ~~ CovXZ*Z
+  X ~~ CovX_XZ*XZ
+  Z ~~ CovZ_XZ*XZ
+'
+
+constrainedM2 <- '
+  # Outer Model
+  X =~ x1 + x2
+  Y =~ y1 + y2
+  Z =~ z1 + z2
+
+  # Inner model
+  Y ~ X + Z + X:Z
+  
+  X:Z =~ x1:z1 + x1:z2 + x2:z1 + x2:z2
+  
+  "XZ~~XZ" == "X~~X" + "Z~~X" + "X~~Y"^2
+'
+
+lavaanify(stringr::str_remove_all(constrainedM1, ":"))
+parseLavaan(constrainedM1) -> A
+parseLavaan(constrainedM2) -> B
+modsem(constrainedM1, df1, method = "unconstrained", isMeasurementSpecified = TRUE) -> A
+modsem(constrainedM2, df1, method = "unconstrained", isMeasurementSpecified = TRUE) -> B
+
+summary.modsem(A)
+```
+
+# Example 2: Two interactions
+
+## Model
+
+
+```{r}
+m2 <- '
+  # Outer Model
+  X =~ x1 + x2 +x3
+  Y =~ y1 + y2 + y3
+  Z =~ z1 + z2 + z3
+  G =~ g1 + g2 + g3
+  H =~ h1 + h2 + h3
+  # Inner model
+  Y ~ X + Z + G + H + X:Z + G:H
+'
+
+
+realModel2 <- lm(realY ~ realX*realZ + realG*realH, df2)
+summary(realModel2)
+```
+
+## Residual Centering Approach
+```{r}
+m2 <- '
+  # Outer Model
+  X =~ x1 + x2 +x3
+  Y =~ y1 + y2 + y3
+  Z =~ z1 + z2 + z3
+  G =~ g1 + g2 + g3
+  H =~ h1 + h2 + h3
+
+  # Inner model
+  Y ~ X + Z + G + H + X:Z + G:H
+'
+
+latentModelRca2 <- modsem(m2, df2, method = "rca")
+lavaan::summary(latentModelRca2$lavaan)
+summary.modsem(latentModelRca2)
+```
+
+## unconstrained Approach
+
+```{r}
+latentModelUncent2 <- modsem(m2, df2, method = "unconstrained")
+lavaan::summary(latentModelUncent2$lavaan)
+```
+
+# Example 3: Only main effect
+
+```{r}
+m3 <- '
+  # Outer Model
+  X =~ x1 + x2 +x3
+  Y =~ y1 + y2 + y3
+  Z =~ z1 + z2 + z3
+
+  # Inner model
+  Y ~ X + Z + X:Z
+'
+
+
+realModel <- lm(realY ~ realX*realZ, df3)
+summary(realModel)
+```
+
+## Residual Centering Approach
+- Note: The results here are closer to the actual relationship when modelling the data. as i added some random variance to the realY, to make the relationship between the variables weaker
+```{r}
+latentModelRca3 <- modsem(m3, df3, method = "rca")
+lavaan::summary(latentModelRca3$lavaan)
+```
+
+## unconstrained Approach
+
+```{r}
+latentModelUncent <- modsem(m3, df3, method = "unconstrained")
+lavaan::summary(latentModelUncent$lavaan)
+```
+
+
+
+## Example 4: Regression -------------------------------------------------------
+
+```{r}
+regModel <- '
+y1 ~ x1 + z1 + x1z1
+'
+df1Mod <- df1
+df1Mod$x1z1 <- df1$x1*df1$z1
+#df1Mod$x1z1 <- scale(df1$x1, scale = FALSE) * scale(df1$z1, scale = FALSE)
+sem(regModel, df1Mod) -> simple
+summary(simple)
+```
+
+### Modsem 
+```{r}
+regModelModsem <- '
+y1 ~ x1 + z1 + x1:z1
+'
+
+parseLavaan(regModelModsem)
+m4 <- modsem(regModelModsem, df1, method = "regression",  isMeasurementSpecified = TRUE)
+summary.modsem(m4)
+
+
+```
+

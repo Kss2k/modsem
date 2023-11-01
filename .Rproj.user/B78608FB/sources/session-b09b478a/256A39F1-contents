@@ -1,4 +1,21 @@
 
+#' Interaction between latent variables
+#'
+#' @param modelSyntax lavaan syntax
+#' @param data dataframe
+#' @param method method to use
+#' @param standardizeData should data be scaled before fitting model
+#' @param isMeasurementSpecified have you specified the measurement model for the latent product
+#' @param centeredProducts should indicators in products be centered (overwritten by method, if method != NULL)
+#' @param residualsProducts should indicator products be centered using residuals (overwritten by method, if method != NULL)
+#' @param residualCovSyntax should syntax for residual covariances be produced (overwritten by method, if method != NULL)
+#' @param constrainedProductMean should syntax product mean be produced (overwritten by method, if method != NULL)
+#' @param ... arguments passed to other functions, e.g,. lavaan
+#'
+#' @return
+#' @export
+#'
+#' @examples
 modsem <- function(modelSyntax = NULL,
                    data = NULL,
                    method = "rca",
@@ -42,6 +59,7 @@ modsem <- function(modelSyntax = NULL,
     stop2("Unkown method in modsem, have you made a typo?")
   }
 
+  # Standardizing data
   if (standardizeData == TRUE) {
     data <- lapplyDf(data,
                     FUN = scaleIfNumeric,
@@ -60,8 +78,9 @@ modsem <- function(modelSyntax = NULL,
                             residualsProducts = residualsProducts)
 
   # Merging productIndicators into a single dataset ----------------------------
-  # (NB i should add a warning if they contain the same names), and delete copies...
-  mergedProductIndicators <- purrr::list_cbind(unname(productIndicators))
+    # Old solution (does not handle/warn about duplicates)
+      # mergedProductIndicators <- purrr::list_cbind(unname(productIndicators))
+  mergedProductIndicators <- combineListDf(productIndicators)
   # Creating a new dataset with the productindicators
   newData <- cbind.data.frame(data, mergedProductIndicators)
 
@@ -73,7 +92,7 @@ modsem <- function(modelSyntax = NULL,
                               constrainedProductMean = constrainedProductMean)
 
   # Estimating the model via lavaan::sem()
-  lavaanEstimation <- lavaan::sem(newSyntax, newData)
+  lavaanEstimation <- lavaan::sem(newSyntax, newData, ...)
 
   # Adding a bunch of stuff to the model, befur i return it
   modelSpecification$productIndicators <- productIndicators
@@ -81,8 +100,10 @@ modsem <- function(modelSyntax = NULL,
   modelSpecification$newData <- newData
   modelSpecification$lavaan <- lavaanEstimation
   # this is not pretty either
-  class(modelSpecification) <- "modsem"
-  modelSpecification
+  structure(modelSpecification,
+            class = "modsem",
+            method = method)
+
 }
 
 
@@ -144,6 +165,7 @@ createIndicatorProducts <- function(relationDf,
 
   products
 }
+
 
 
 # function for calculating residuals for a dataframe of productindicators
@@ -364,6 +386,19 @@ generateFormula.measurement <- function(dependentName,
 }
 
 
+#' summary.modsem
+#'
+#' @param object modsem object
+#' @rdname summary
+#' @export
 summary.modsem <- function(object, ...) {
+  cat("ModSEM: \nMethod =", attributes(object)$method, "\n")
   lavaan::summary(object$lavaan)
 }
+
+#' summary.modsem
+#'
+#' @param modelSyntax
+#' @rdname summary modsem object
+#' @export
+setMethod("summary", "modsem", summary.modsem)
