@@ -1,5 +1,0 @@
-"0","modsem(constrainedM2, df1, method = ""unconstrained"", isMeasurementSpecified = TRUE) -> B
-"
-"2","Error in lav_partable_constraints_ceq(partable, con = LIST, debug = debug) : 
-  lavaan ERROR: unknown label(s) in equality constraint(s): XZ1 XZ2 XZ3 XZ4 XZ X1 Z1 Z2 X2 X Z Y
-"
