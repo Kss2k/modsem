@@ -64,92 +64,34 @@ summary(realModel)
 
 ## Residual Centering Approach
 ```{r}
-latentModelRca <- modsem(m1, df1, method = "rca")
-#lavaan::summary(latentModelRca$lavaan)
-summary(latentModelRca)
-
-#summary.modsem(latentModelRca)
-```
-
-  # Using lavaanify
-  
-```{r}
-unfinished <- '
+m1 <- '
   # Outer Model
-  X =~ x1 + x2 + x3
-  Y =~ y1 + y2 + y3
-
-  # Inner model
-  Y ~ X + Z 
-'
-finished <-'
-  # Outer Model
-  X =~ x1 + x2 + x3
+  X =~ x1 + x2 +x3
   Y =~ y1 + y2 + y3
   Z =~ z1 + z2 + z3
-
+  X:Z =~ x1:z1 + x2:z2 
   # Inner model
-  Y ~ X + Z 
+  Y ~ X + Z + X:Z
 '
-lavaanify(stringr::str_remove_all(unfinished, ":")) -> unfinishedLavan
-lavaanify(stringr::str_remove_all(finished, ":")) -> finishedLavan
+
+latentModelRca <- modsem(m1, df1, method = "rca", isMeasurementSpecified = TRUE)
+summary(latentModelRca)
+
 ```
 
 ## unconstrained Approach
 
 ```{r}
-latentModelUncent <- modsem(m1, df1, method = "unconstrained")
-lavaan::summary(latentModelUncent$lavaan)
+latentModelUnc <- modsem(m1, df1, method = "unconstrained")
+summary(latentModelUnc)
 ```
-## Constrained Approach 
+
+
+## Product Indicator/ regression approach 
 
 ```{r}
-constrainedM1 <- '
-  # Outer Model
-  X =~ X1*x1 + X2*x2
-  Y =~ y1 + y2
-  Z =~ Z1*z1 + Z2*z2
-
-  # Inner model
-  Y ~ X + Z + X:Z
-  
-  X:Z =~ XZ1*x1:z1 + XZ2*x1:z2 + XZ3*x2:z1 + XZ4*x2:z2
-  XZ1 == X1*Z1
-  XZ2 == X1*Z2
-  XZ3 == X2*Z1
-  XZ4 == X2*Z2
-  VarXZ == VarX + VarZ + CovXZ^2
-  CovX_XZ == CovZ_XZ == 0
-  # Variance of latent
-  Z ~~ VarZ*Z 
-  X ~~ VarX*X 
-  XZ ~~ VarXZ*XZ 
-  X ~~ CovXZ*Z
-  X ~~ CovX_XZ*XZ
-  Z ~~ CovZ_XZ*XZ
-'
-
-constrainedM2 <- '
-  # Outer Model
-  X =~ x1 + x2
-  Y =~ y1 + y2
-  Z =~ z1 + z2
-
-  # Inner model
-  Y ~ X + Z + X:Z
-  
-  X:Z =~ x1:z1 + x1:z2 + x2:z1 + x2:z2
-  
-  "XZ~~XZ" == "X~~X" + "Z~~X" + "X~~Y"^2
-'
-
-lavaanify(stringr::str_remove_all(constrainedM1, ":"))
-parseLavaan(constrainedM1) -> A
-parseLavaan(constrainedM2) -> B
-modsem(constrainedM1, df1, method = "unconstrained", isMeasurementSpecified = TRUE) -> A
-modsem(constrainedM2, df1, method = "unconstrained", isMeasurementSpecified = TRUE) -> B
-
-summary.modsem(A)
+latentModelRegApp <- modsem(m1, df1, method = "regression")
+summary(latentModelRegApp)
 ```
 
 # Example 2: Two interactions
@@ -183,14 +125,14 @@ m2 <- '
   Z =~ z1 + z2 + z3
   G =~ g1 + g2 + g3
   H =~ h1 + h2 + h3
-
+  G:H =~ g1:h1
+  X:Z =~ x1:z1
   # Inner model
   Y ~ X + Z + G + H + X:Z + G:H
 '
 
-latentModelRca2 <- modsem(m2, df2, method = "rca")
-lavaan::summary(latentModelRca2$lavaan)
-summary.modsem(latentModelRca2)
+latentModelRca2 <- modsem(m2, df2, method = "rca", isMeasurementSpecified = TRUE)
+summary(latentModelRca2)
 ```
 
 ## unconstrained Approach
@@ -236,15 +178,9 @@ lavaan::summary(latentModelUncent$lavaan)
 
 ## Example 4: Regression -------------------------------------------------------
 
+<!-- ### Using lm -->
 ```{r}
-regModel <- '
-y1 ~ x1 + z1 + x1z1
-'
-df1Mod <- df1
-df1Mod$x1z1 <- df1$x1*df1$z1
-#df1Mod$x1z1 <- scale(df1$x1, scale = FALSE) * scale(df1$z1, scale = FALSE)
-sem(regModel, df1Mod) -> simple
-summary(simple)
+regEstimate <- lm(y1 ~ x1*z1, df1)
 ```
 
 ### Modsem 
@@ -253,9 +189,8 @@ regModelModsem <- '
 y1 ~ x1 + z1 + x1:z1
 '
 
-parseLavaan(regModelModsem)
-m4 <- modsem(regModelModsem, df1, method = "regression",  isMeasurementSpecified = TRUE)
-summary.modsem(m4)
+m4 <- modsem(regModelModsem, df1, method = "regression")
+summary(m4)
 
 
 ```

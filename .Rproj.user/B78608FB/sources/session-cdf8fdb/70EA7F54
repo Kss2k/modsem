@@ -3,7 +3,7 @@
     "path": "C:/Users/slupp/OneDrive/Skrivebord/MasterOppgaveMehmet/presentation.Rmd",
     "project_path": null,
     "type": "r_markdown",
-    "hash": "2396492839",
+    "hash": "1135705081",
     "contents": "",
     "dirty": false,
     "created": 1698852160861.0,
@@ -14,8 +14,8 @@
         "chunk_output_type": "inline",
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "169,17",
-        "scrollLine": "169",
+        "cursorPosition": "133,80",
+        "scrollLine": "115",
         "rmdVisualMode": "false",
         "rmdVisualCollapsedChunks": "",
         "rmdVisualModeLocation": "2856:0",
@@ -24,11 +24,11 @@
         "docOutlineSize": "564"
     },
     "folds": "",
-    "lastKnownWriteTime": 1698852884,
+    "lastKnownWriteTime": 1698949047,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1698852884870,
+    "last_content_update": 1698949047025,
     "read_only": false,
     "read_only_alternatives": []
 }

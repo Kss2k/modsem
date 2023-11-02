@@ -125,6 +125,13 @@ parseLavaan <- function(
     # Latents
     latentProductExpressions <-
       measurementExpressions[grepl(replacementPattern, measurementExpressions$lhs), ]
+
+    if (nrow(latentProductExpressions) <= 0) {
+      stop2("Error relating to isMeasurementSpecified = TRUE \n",
+            "parseLavaan found no mesurement expressions for latent products, ",
+            'have you remembered to use ":" when specifying the name of the latent product')
+    }
+
     # fix names in lhs-column
     latentProductExpressions[["lhs"]] <-
       fixProductNames(latentProductExpressions[["lhs"]],
@@ -302,6 +309,7 @@ fixLatentNamesSyntax <- function(modelSyntax, pattern) {
 createRelationalDf <- function(indicatorsProductTerm,
                                isMeasurementSpecified,
                                pattern = NULL) {
+
   if (isMeasurementSpecified == FALSE) {
     relationalDf <- t(expand.grid(indicatorsProductTerm))
 

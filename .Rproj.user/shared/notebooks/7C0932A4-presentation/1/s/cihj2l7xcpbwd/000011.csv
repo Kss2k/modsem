@@ -1,4 +1,7 @@
 "0","library(lavaan)"
+"2","This is lavaan 0.6-17.1907
+lavaan is FREE software! Please report any bugs.
+"
 "0","library(modsem)"
 "0",""
 "0","setwd(""C:/Users/slupp/OneDrive/Skrivebord/MasterOppgaveMehmet/data"")"
