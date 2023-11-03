@@ -6,6 +6,8 @@
 #' @param method method to use
 #' @param standardizeData should data be scaled before fitting model
 #' @param isMeasurementSpecified have you specified the measurement model for the latent product
+#' @param firstLoadingFixed Sould the first factorloading in the latent product be fixed to one?
+#' @param doubleCentering should indicatorproducts be centered after they have been computed?
 #' @param centeredProducts should indicators in products be centered (overwritten by method, if method != NULL)
 #' @param residualsProducts should indicator products be centered using residuals (overwritten by method, if method != NULL)
 #' @param residualCovSyntax should syntax for residual covariances be produced (overwritten by method, if method != NULL)
@@ -21,6 +23,8 @@ modsem <- function(modelSyntax = NULL,
                    method = "rca",
                    standardizeData = FALSE,
                    isMeasurementSpecified = FALSE,
+                   firstLoadingFixed = TRUE,
+                   doubleCentering = FALSE,
                    centeredProducts = FALSE,
                    residualsProducts = FALSE,
                    residualCovSyntax = FALSE,
@@ -75,6 +79,7 @@ modsem <- function(modelSyntax = NULL,
     createProductIndicators(modelSpecification,
                             data = data,
                             centeredProducts = centeredProducts,
+                            doubleCentering = doubleCentering,
                             residualsProducts = residualsProducts)
 
   # Merging productIndicators into a single dataset ----------------------------
@@ -89,7 +94,8 @@ modsem <- function(modelSyntax = NULL,
   newSyntax <- generateSyntax(modelSpecification,
                               isMeasurementSpecified = isMeasurementSpecified,
                               residualCovSyntax = residualCovSyntax,
-                              constrainedProductMean = constrainedProductMean)
+                              constrainedProductMean = constrainedProductMean,
+                              firstFixed = firstLoadingFixed)
 
   # Estimating the model via lavaan::sem()
   lavaanEstimation <- lavaan::sem(newSyntax, newData, ...)
@@ -112,6 +118,7 @@ modsem <- function(modelSyntax = NULL,
 createProductIndicators <- function(modelSpecification,
                                     data,
                                     centeredProducts = FALSE,
+                                    doubleCentering = FALSE,
                                     residualsProducts = FALSE) {
 
   indicatorProducts <- purrr::map2(.x = modelSpecification$relationalDfs,
@@ -120,16 +127,27 @@ createProductIndicators <- function(modelSpecification,
                                    data = data,
                                    centered = centeredProducts)
   if (residualsProducts == TRUE) {
-    purrr::map2(.x = indicatorProducts,
-                .y = modelSpecification$indicatorsInProductTerms,
-                .f = calculateResidualsDf,
-                data = data)
-  } else if (residualsProducts == FALSE) {
-    indicatorProducts
-  } else {
+    indicatorProducts <-
+      purrr::map2(.x = indicatorProducts,
+                  .y = modelSpecification$indicatorsInProductTerms,
+                  .f = calculateResidualsDf,
+                  data = data)
+
+  } else if (!is.logical(residualsProducts)) {
     stop2("residualProducts was neither FALSE nor TRUE in createProductIndicators")
   }
+  # new additon
+  if (doubleCentering == TRUE) {
+    indicatorProducts <-
+      lapply(indicatorProducts,
+             FUN = function(df)
+               lapplyDf(df,
+                        FUN = scale,
+                        center = TRUE,
+                        scale = FALSE))
 
+  }
+  indicatorProducts
 }
 
 
@@ -143,27 +161,36 @@ createIndicatorProducts <- function(relationDf,
 
   # Selecting the indicators from the dataset
   indicators <- data[indicatorNames]
+  # Check if indicators are numeric
+  isNumeric <- sapply(indicators, is.numeric)
+
+  if (sum(as.integer(!isNumeric)) > 0) {
+    stop2("Expected indicators to be numeric when creating products")
+  }
 
   # Centering them, if center == TRUE
   if (centered == TRUE) {
-    indicators <- apply(indicators, 2, scale, scale = FALSE) |>
-      as.data.frame()
+    indicators <- lapplyDf(indicators, scale, scale = FALSE)
   }
-  # Creating a dataframe to hold the computed indicatorproducts
-  products <- data.frame(matrix(ncol = length(varnames), nrow = nrow(data)))
+  # Creating a list to hold the computed indicatorproducts
+  products <- vector("list", length = ncol(relationDf))
+  names(products) <- varnames
 
   # Setting the productames (e.g., var1var2 = var1*var2) and indicator names
-  products <- structure(products,
-                        indicatorNames = indicatorNames)
-  colnames(products) <- varnames
+  # products <- structure(products,
+  #                       indicatorNames = indicatorNames)
 
-  # Loop to create the indicatorProducts
+  # Loop to create the indicatorProducts (it is way more efficient to do this in
+    # a list, compared to a df, since we make shallow copies)
   for (i in seq_along(varnames)) {
     varname <- varnames[[i]]
     products[[varname]] <- multiplyIndicators(indicators[relationDf[[varname]]])
   }
 
-  products
+  # return as data.frame()
+  structure(products,
+            row.names = 1:nrow(data),
+            class = "data.frame")
 }
 
 
@@ -219,7 +246,8 @@ generateFormula.lm <- function(dependentName,
 generateSyntax <- function(modelSpecification,
                            isMeasurementSpecified = FALSE,
                            residualCovSyntax = FALSE,
-                           constrainedProductMean = FALSE) {
+                           constrainedProductMean = FALSE,
+                           firstFixed = TRUE) {
 
   modelSyntax <- modelSpecification$lavaanSyntax
   relationalDfs <- modelSpecification$relationalDfs
@@ -235,7 +263,7 @@ generateSyntax <- function(modelSpecification,
                       .y = modelSpecification$indicatorProductNamesLatents,
                       .f = generateFormula.measurement,
                       operator = "=~",
-                      firstFixed = TRUE)
+                      firstFixed = firstFixed)
     addedSyntax <- c(measurementSyntax, addedSyntax)
   }
 
@@ -293,13 +321,14 @@ multiplyIndicators <- function(df) {
     return(NULL)
   }
   if (ncol(df) <= 1){
-    return(df)
+    return(df[[1]])
   }
-  product <- df[[1]] * df[[2]]
-  y <- cbind(product, df[,-(1:2),drop = FALSE])
+
+  y <- cbind.data.frame(df[[1]] * df[[2]],
+                        df[,-(1:2),drop = FALSE])
 
 
-  unlist(multiplyIndicators(y))
+  multiplyIndicators(y)
 }
 
 

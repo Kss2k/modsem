@@ -10,6 +10,8 @@ modsem(
   method = "rca",
   standardizeData = FALSE,
   isMeasurementSpecified = FALSE,
+  firstLoadingFixed = TRUE,
+  doubleCentering = FALSE,
   centeredProducts = FALSE,
   residualsProducts = FALSE,
   residualCovSyntax = FALSE,
@@ -27,6 +29,10 @@ modsem(
 \item{standardizeData}{should data be scaled before fitting model}
 
 \item{isMeasurementSpecified}{have you specified the measurement model for the latent product}
+
+\item{firstLoadingFixed}{Sould the first factorloading in the latent product be fixed to one?}
+
+\item{doubleCentering}{should indicatorproducts be centered after they have been computed?}
 
 \item{centeredProducts}{should indicators in products be centered (overwritten by method, if method != NULL)}
 

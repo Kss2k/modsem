@@ -5,7 +5,7 @@ output:
     df_print: paged
 ---
 
-# Residual Centering Approach (simplified) 
+# Residual Centering Approach (simplified) method 1 (rca)
 
 ## Step 1:
 Create products of the indicators belonging to the latent interactionterm, and compute their residuals.
@@ -17,7 +17,7 @@ Use these residuals as the indicators of your analysis
 Note:
 The centering term is a bit misleading, as it implies centering your variables before or after calculating the products/residuals. But it likeley refers to the fact that residuals are supposed to be centered around zero anyways 
 
-# unconstrained approach
+# unconstrained approach method 2 ("uca")
 
 ## Step 1:
 Center the indicators belong to the latent interaction terms, and create products based on them.
@@ -28,7 +28,24 @@ Use these as indicators for your latent interaction term
 ## Step 3: 
 Specify constraints: 1. Specify residual covariances, 2. Specify that the mean of XZ = cov(X, Z)
 
-# Example 1: Showing some random syntaxes
+# Method 3: Product Indicator 
+
+## Create products of the indicators belonging to the latent interaction term
+
+## Use these to estimate the latent interaction term
+
+# Method 4: double centering (dblcent)
+
+# Method 5: Latent Moderated structural equations (LMS)
+
+https://cran.r-project.org/web/packages/nlsem/nlsem.pdf
+
+# Method 6: Two stage
+Option 1: sum score 
+Option 2: factor score (check for factor indeterminency )
+
+# Method 7: Parceling approach 
+
 
 There is an exponential increase in indicators, and specified covariances with increases in indicators for the latent variables included in the interaction term
 
@@ -57,8 +74,8 @@ m1 <- '
   Y ~ X + Z + X:Z
 '
 
-
-realModel <- lm(realY ~ realX*realZ, df1)
+scaledDf1 <- lapplyDf(df1, scale)
+realModel <- lm(realY ~ realX*realZ,scaledDf1)
 summary(realModel)
 ```
 
@@ -69,20 +86,59 @@ m1 <- '
   X =~ x1 + x2 +x3
   Y =~ y1 + y2 + y3
   Z =~ z1 + z2 + z3
-  X:Z =~ x1:z1 + x2:z2 
+  
   # Inner model
   Y ~ X + Z + X:Z
 '
 
-latentModelRca <- modsem(m1, df1, method = "rca", isMeasurementSpecified = TRUE)
+latentModelRca <- modsem(m1, df1, method = "rca", 
+                         standardizeData = FALSE)
 summary(latentModelRca)
 
 ```
 
+  # using semtools
+  
+```{r}
+library(semTools)
+newDta <- indProd(df1, 
+        var1 = c("x1", "x2", "x3"),
+        var2 = c("z1", "z2", "z3"),
+        match = FALSE, 
+        residualC = TRUE)
+View(newDta)
+
+m1 <- '
+  # Outer Model
+  X =~ x1 + x2 +x3
+  Y =~ y1 + y2 + y3
+  Z =~ z1 + z2 + z3
+  X.Z = x1.z1 x1.z2 x1.z3 x2.z1 x2.z2 x2.z3 x3.z1 x3.z2 x3.z3
+  # Inner model
+  Y ~ X + Z + X:Z
+'
+
+latentModelRca <- modsem(m1, df1, method = "rca", 
+                         standardizeData = FALSE)
+summary(latentModelRca)
+```
+
+
 ## unconstrained Approach
 
 ```{r}
-latentModelUnc <- modsem(m1, df1, method = "unconstrained")
+
+m1 <- '
+  # Outer Model
+  X =~ x1 + x2 +x3
+  Y =~ y1 + y2 + y3
+  Z =~ z1 + z2 + z3
+  
+  # Inner model
+  Y ~ X + Z + X:Z
+'
+latentModelUnc <- modsem(m1, df1, method = "unconstrained", 
+                         standardizeData = TRUE, doubleCentering = TRUE)
 summary(latentModelUnc)
 ```
 
@@ -90,7 +146,7 @@ summary(latentModelUnc)
 ## Product Indicator/ regression approach 
 
 ```{r}
-latentModelRegApp <- modsem(m1, df1, method = "regression")
+latentModelRegApp <- modsem(m1, df1, method = "regression", standardizeData = TRUE)
 summary(latentModelRegApp)
 ```
 
@@ -181,6 +237,7 @@ lavaan::summary(latentModelUncent$lavaan)
 <!-- ### Using lm -->
 ```{r}
 regEstimate <- lm(y1 ~ x1*z1, df1)
+summary(regEstimate)
 ```
 
 ### Modsem 
@@ -189,9 +246,10 @@ regModelModsem <- '
 y1 ~ x1 + z1 + x1:z1
 '
 
-m4 <- modsem(regModelModsem, df1, method = "regression")
+m4 <- modsem(regModelModsem, df1, method = "rca")
 summary(m4)
 
+lm(x1z1 ~ x1 + z1 )
 
 ```
 
