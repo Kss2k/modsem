@@ -3,12 +3,17 @@
 #'
 #' @param modelSyntax lavaan syntax
 #' @param data dataframe
-#' @param method method to use
+#' @param method method to use:
+#' "rca" = residual centering approach,
+#' "uca" = unconstrained approach,
+#' "dblcent" = double centering approach
+#' "pind" = product indicator approach
+#' NULL = use parameters specified in the function call
 #' @param standardizeData should data be scaled before fitting model
 #' @param isMeasurementSpecified have you specified the measurement model for the latent product
 #' @param firstLoadingFixed Sould the first factorloading in the latent product be fixed to one?
-#' @param doubleCentering should indicatorproducts be centered after they have been computed?
-#' @param centeredProducts should indicators in products be centered (overwritten by method, if method != NULL)
+#' @param centerBefore should indicators in products be centered before computing products (overwritten by method, if method != NULL)
+#' @param centerAfter should indicator products be centered after they have been computed?
 #' @param residualsProducts should indicator products be centered using residuals (overwritten by method, if method != NULL)
 #' @param residualCovSyntax should syntax for residual covariances be produced (overwritten by method, if method != NULL)
 #' @param constrainedProductMean should syntax product mean be produced (overwritten by method, if method != NULL)
@@ -24,8 +29,8 @@ modsem <- function(modelSyntax = NULL,
                    standardizeData = FALSE,
                    isMeasurementSpecified = FALSE,
                    firstLoadingFixed = TRUE,
-                   doubleCentering = FALSE,
-                   centeredProducts = FALSE,
+                   centerBefore = FALSE,
+                   centerAfter = FALSE,
                    residualsProducts = FALSE,
                    residualCovSyntax = FALSE,
                    constrainedProductMean = FALSE,
@@ -42,22 +47,28 @@ modsem <- function(modelSyntax = NULL,
     warning2("Method was NULL, using specifications set indside the function call")
 
   } else if (method == "rca") {
-    centeredProducts <- FALSE
+    centerBefore <- FALSE
     residualsProducts <- TRUE
     residualCovSyntax <- TRUE
     constrainedProductMean <- FALSE
 
-  } else if (method == "unconstrained") {
-    centeredProducts <- TRUE
+  } else if (method == "uca") {
+    centerBefore <- TRUE
     residualsProducts <- FALSE
     residualCovSyntax <- TRUE
     constrainedProductMean <- TRUE
 
-  } else if (method == "regression") {
-    centeredProducts <- FALSE
+  } else if (method == "pind") {
+    centerBefore <- FALSE
     residualsProducts <- FALSE
     residualCovSyntax <- FALSE
     constrainedProductMean <- FALSE
+
+  }  else if (method == "dblcent") {
+    centerBefore <- TRUE
+    centerAfter <- TRUE
+    residualsProducts <- FALSE
+    residualCovSyntax <- TRUE
 
   } else {
     stop2("Unkown method in modsem, have you made a typo?")
@@ -78,8 +89,8 @@ modsem <- function(modelSyntax = NULL,
   productIndicators <-
     createProductIndicators(modelSpecification,
                             data = data,
-                            centeredProducts = centeredProducts,
-                            doubleCentering = doubleCentering,
+                            centerBefore = centerBefore,
+                            centerAfter = centerAfter,
                             residualsProducts = residualsProducts)
 
   # Merging productIndicators into a single dataset ----------------------------
@@ -117,15 +128,15 @@ modsem <- function(modelSyntax = NULL,
 
 createProductIndicators <- function(modelSpecification,
                                     data,
-                                    centeredProducts = FALSE,
-                                    doubleCentering = FALSE,
+                                    centerBefore = FALSE,
+                                    centerAfter = FALSE,
                                     residualsProducts = FALSE) {
 
   indicatorProducts <- purrr::map2(.x = modelSpecification$relationalDfs,
                                    .y = modelSpecification$indicatorsInProductTerms,
                                    .f = createIndicatorProducts,
                                    data = data,
-                                   centered = centeredProducts)
+                                   centered = centerBefore)
   if (residualsProducts == TRUE) {
     indicatorProducts <-
       purrr::map2(.x = indicatorProducts,
@@ -137,14 +148,12 @@ createProductIndicators <- function(modelSpecification,
     stop2("residualProducts was neither FALSE nor TRUE in createProductIndicators")
   }
   # new additon
-  if (doubleCentering == TRUE) {
+  if (centerAfter == TRUE) {
     indicatorProducts <-
       lapply(indicatorProducts,
              FUN = function(df)
                lapplyDf(df,
-                        FUN = scale,
-                        center = TRUE,
-                        scale = FALSE))
+                        FUN = function(x) x - mean(x)))
 
   }
   indicatorProducts
@@ -170,22 +179,18 @@ createIndicatorProducts <- function(relationDf,
 
   # Centering them, if center == TRUE
   if (centered == TRUE) {
-    indicators <- lapplyDf(indicators, scale, scale = FALSE)
-  }
-  # Creating a list to hold the computed indicatorproducts
-  products <- vector("list", length = ncol(relationDf))
-  names(products) <- varnames
+    indicators <- lapplyDf(indicators,
+                           FUN = function(x) x - mean(x))
 
-  # Setting the productames (e.g., var1var2 = var1*var2) and indicator names
-  # products <- structure(products,
-  #                       indicatorNames = indicatorNames)
-
-  # Loop to create the indicatorProducts (it is way more efficient to do this in
-    # a list, compared to a df, since we make shallow copies)
-  for (i in seq_along(varnames)) {
-    varname <- varnames[[i]]
-    products[[varname]] <- multiplyIndicators(indicators[relationDf[[varname]]])
   }
+
+  products <-
+    lapplyNamed(varnames,
+                FUN = function(varname, data, relationDf)
+                  multiplyIndicatorsCpp(data[relationDf[[varname]]]),
+                data = indicators,
+                relationDf = relationDf,
+                names = varnames)
 
   # return as data.frame()
   structure(products,
@@ -195,50 +200,26 @@ createIndicatorProducts <- function(relationDf,
 
 
 
-# function for calculating residuals for a dataframe of productindicators
 calculateResidualsDf <- function(dependentDf, independentNames, data) {
-
-  # Do i want to explicitly coerce this?? cbind() should return a df, it
-  # it's inputs are df's
-  combinedData <- cbind(dependentDf, data)
-
+  # Using purrr::list_cbind() is more efficient than cbind()
+  combinedData <- purrr::list_cbind(list(dependentDf, data))
   # Getting the names of the dependent variables
   dependentNames <- colnames(dependentDf)
+  # Getting formula
+  formula <- getResidualsFormula(dependentNames, independentNames)
 
-  # calculating the residuals for each product, using the same predictors.
-  residuals <- lapplyNamed(dependentNames,
-                           FUN = calculateResidualsSingle,
-                           independentNames = independentNames,
-                           data = combinedData)
-
-
-  as.data.frame(residuals)
+  residuals(lm(formula = formula, combinedData))
 }
 
 
 
-calculateResidualsSingle <- function(dependentName, independentNames, data) {
-  # generating a formula
-  formula <- generateFormula.lm(dependentName, independentNames, operator = "~")
-
-  residuals(lm(formula, data))
-}
-
-
-
-
-generateFormula.lm <- function(dependentName,
-                               predictorNames,
-                               operator = "~",
-                               firstFixed = FALSE) {
-
-  predictors <- stringr::str_c(predictorNames, collapse = " + ")
-
-  if (firstFixed == TRUE) {
-    predictors <- paste0("1*", predictors)
-  }
-  paste(dependentName, operator, predictors)
-
+getResidualsFormula <- function(dependendtNames, indepNames) {
+  formulaDep <- paste0("cbind(",
+                       stringr::str_c(dependendtNames,
+                                      collapse = ", "),
+                       ")")
+  formulaIndep <- stringr::str_c(indepNames, collapse = " + ")
+  paste0(formulaDep, " ~ ", formulaIndep)
 }
 
 

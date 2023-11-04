@@ -1,0 +1,28 @@
+{
+    "id": "4600B268",
+    "path": null,
+    "project_path": null,
+    "type": "object_explorer",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1699089875077.0,
+    "source_on_save": false,
+    "relative_order": 7,
+    "properties": {
+        "id": "2d703d0c92044c929d192ccd309c6541",
+        "name": "latentModelRca",
+        "title": "latentModelRca",
+        "language": "R",
+        "source_window_id": "",
+        "Source": "Source"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 2019024208759109943,
+    "encoding": "",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1699089875077,
+    "read_only": false,
+    "read_only_alternatives": []
+}

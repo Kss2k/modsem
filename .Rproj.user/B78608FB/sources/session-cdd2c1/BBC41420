@@ -1,9 +1,9 @@
 {
     "id": "BBC41420",
-    "path": "C:/Users/slupp/OneDrive/Skrivebord/MasterOppgaveMehmet/modsem/R/modsem2.1.R",
-    "project_path": "R/modsem2.1.R",
+    "path": "C:/Users/slupp/OneDrive/Skrivebord/MasterOppgaveMehmet/modsem/R/modsem2.2.R",
+    "project_path": "R/modsem2.2.R",
     "type": "r_source",
-    "hash": "1385052629",
+    "hash": "0",
     "contents": "",
     "dirty": false,
     "created": 1699000440830.0,
@@ -13,15 +13,15 @@
         "tempName": "Untitled1",
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "185,28",
-        "scrollLine": "175"
+        "cursorPosition": "79,38",
+        "scrollLine": "68"
     },
     "folds": "",
-    "lastKnownWriteTime": 1699019165,
+    "lastKnownWriteTime": 1699092882,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1699019165066,
+    "last_content_update": 1699092882791,
     "read_only": false,
     "read_only_alternatives": []
 }

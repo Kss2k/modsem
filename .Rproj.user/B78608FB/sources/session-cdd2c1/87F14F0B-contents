@@ -1,0 +1,178 @@
+
+createIndicatorProductsOld <- function(relationDf,
+                                    indicatorNames,
+                                    data,
+                                    centered = FALSE) {
+  # Getting the indicatorProduct names
+  varnames <- unname(colnames(relationDf))
+  
+  # Selecting the indicators from the dataset
+  indicators <- data[indicatorNames]
+  # Check if indicators are numeric
+  isNumeric <- sapply(indicators, is.numeric)
+  
+  if (sum(as.integer(!isNumeric)) > 0) {
+    stop2("Expected indicators to be numeric when creating products")
+  }
+  
+  # Centering them, if center == TRUE
+  if (centered == TRUE) {
+    indicators <- lapplyDf(indicators, scale, scale = FALSE)
+  }
+  # Creating a list to hold the computed indicatorproducts
+  products <- vector("list", length = ncol(relationDf))
+  names(products) <- varnames
+  
+  # Setting the productames (e.g., var1var2 = var1*var2) and indicator names
+  # products <- structure(products,
+  #                       indicatorNames = indicatorNames)
+  
+  # Loop to create the indicatorProducts (it is way more efficient to do this in
+  # a list, compared to a df, since we make shallow copies)
+  for (i in seq_along(varnames)) {
+    varname <- varnames[[i]]
+    products[[varname]] <- multiplyIndicators(indicators[relationDf[[varname]]])
+  }
+
+  
+  # return as data.frame()
+  structure(products,
+            row.names = 1:nrow(data),
+            class = "data.frame")
+}
+
+createIndicatorProductsNew <- function(relationDf,
+                                    indicatorNames,
+                                    data,
+                                    centered = FALSE) {
+  # Getting the indicatorProduct names
+  varnames <- unname(colnames(relationDf))
+  
+  # Selecting the indicators from the dataset
+  indicators <- data[indicatorNames]
+  # Check if indicators are numeric
+  isNumeric <- sapply(indicators, is.numeric)
+  
+  if (sum(as.integer(!isNumeric)) > 0) {
+    stop2("Expected indicators to be numeric when creating products")
+  }
+  
+  # Centering them, if center == TRUE
+  if (centered == TRUE) {
+    indicators <- lapplyDf(indicators, scale, scale = FALSE)
+  }
+  
+  
+  products <-
+    lapplyNamed(varnames,
+                FUN = function(varname, data, relationDf)
+                  multiplyIndicatorsCpp(data[relationDf[[varname]]]),
+                data = indicators,
+                relationDf = relationDf,
+                names = varnames)
+  
+  # return as data.frame()
+  structure(products,
+            row.names = 1:nrow(data),
+            class = "data.frame")
+}
+
+
+
+
+latentModelRca[["relationalDfs"]][["XZ"]] -> relDf
+latentModelRca[["indicatorsInProductTerms"]][["XZ"]] -> ind
+dataNormal <- df1
+
+nRow <- 1e7
+dataBig <- lapplyNamed(df1, 
+                       FUN = sample,
+                       size = nRow,
+                       replace = TRUE, 
+                       names = colnames(df1)) |>
+  structure(class = "data.frame", row.names = 1:nRow)
+
+createIndicatorProductsOld(relDf, ind, dataBig) -> a
+createIndicatorProductsNew(relDf, ind, dataBig) -> b
+
+
+
+
+### Calculating residuals::
+
+calculateResidualsDfOld <- function(dependentDf, independentNames, data) {
+  
+  # Do i want to explicitly coerce this?? cbind() should return a df, it
+  # it's inputs are df's
+  combinedData <- cbind(dependentDf, data)
+  
+  # Getting the names of the dependent variables
+  dependentNames <- colnames(dependentDf)
+  
+  # calculating the residuals for each product, using the same predictors.
+  residuals <- lapplyNamed(dependentNames,
+                           FUN = calculateResidualsSingle,
+                           independentNames = independentNames,
+                           data = combinedData)
+  
+  
+  as.data.frame(residuals)
+}
+
+
+calculateResidualsDf <- function(dependentDf, independentNames, data) {
+  # Using purrr::list_cbind() is more efficient than cbind()
+  combinedData <- purrr::list_cbind(list(dependentDf, data))
+  # Getting the names of the dependent variables
+  dependentNames <- colnames(dependentDf)
+  # Getting formula
+  formula <- getResidualsFormulaNew(dependentNames, independentNames) 
+  
+  residuals(lm(formula = formula, combinedData))
+}
+
+getResidualsFormula <- function(dependendtNames, indepNames) {
+  formulaDep <- paste0("cbind(", 
+                       stringr::str_c(dependendtNames, 
+                                      collapse = ", "),
+                       ")")
+  formulaIndep <- stringr::str_c(indepNames, collapse = " + ")
+  paste0(formulaDep, " ~ ", formulaIndep)
+}
+
+
+
+combineListDf <- function(listDf) {
+  # This function should work recursively
+  if (is.null(listDf)) {
+    return(NULL)
+    
+  } else if (length(listDf) <= 1)  {
+    return(listDf[[1]])
+    
+    # This shouldnt really be necessary, but in the case that the function
+    # recieves a dataframe, we should just return it
+  } else if (is.data.frame(listDf))  {
+    return(listDf)
+  }
+  
+  # Basecase combine the first two columns of the df
+  # check if there are matching colnames (the first df has priority)
+  matchingColnames <- colnames(listDf[[2]]) %in% colnames(listDf[[1]])
+  
+  if (sum(as.integer(matchingColnames)) > 0) {
+    duplicates <- stringr::str_c(colnames(listDf[[2]])[matchingColnames],
+                                 collapse = ", ")
+    warning2(
+      "There were some duplicate product indicators, was this intended?\n",
+      "The duplicates of these product indicators were removed: \n",
+      duplicates, "\n")
+  }
+  
+  combinedDf <- cbind.data.frame(listDf[[1]], listDf[[2]][!matchingColnames])
+  
+  combineListDf(c(list(combinedDf), listDf[-(1:2)]))
+  
+}
+
+bigList <- list(dataBig[1:6], dataBig[2:7], dataBig[4:9], dataBig[7:12])
