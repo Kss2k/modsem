@@ -423,7 +423,7 @@ lavaan::summary(latentModelRca3$lavaan)
 ## unconstrained Approach
 
 ```{r}
-latentModelUncent <- modsem(m3, df3, method = "unconstrained")
+latentModelUncent <- modsem(m3, df3, method = "uca")
 lavaan::summary(latentModelUncent$lavaan)
 ```
 

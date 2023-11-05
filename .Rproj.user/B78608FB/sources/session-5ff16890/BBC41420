@@ -3,7 +3,7 @@
     "path": "C:/Users/slupp/OneDrive/Skrivebord/MasterOppgaveMehmet/modsem/R/modsem2.2.R",
     "project_path": "R/modsem2.2.R",
     "type": "r_source",
-    "hash": "3551262185",
+    "hash": "0",
     "contents": "",
     "dirty": false,
     "created": 1699000440830.0,
@@ -13,15 +13,15 @@
         "tempName": "Untitled1",
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "224,77",
-        "scrollLine": "212"
+        "cursorPosition": "227,2",
+        "scrollLine": "209"
     },
     "folds": "",
-    "lastKnownWriteTime": 1699211798,
+    "lastKnownWriteTime": 1699212609,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1699211798231,
+    "last_content_update": 1699212609180,
     "read_only": false,
     "read_only_alternatives": []
 }

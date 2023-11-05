@@ -108,7 +108,7 @@ modsem <- function(modelSyntax = NULL,
 
   # Creating a new dataset with the productindicators
   newData <- cbind.data.frame(data, mergedProductIndicators)
-  print(head(newData))
+
   # Genereating a new syntax with constraints and measurmentmodel --------------
 
   newSyntax <- generateSyntax(modelSpecification,
@@ -221,12 +221,10 @@ calculateResidualsDf <- function(dependentDf, independentNames, data) {
   formula <- getResidualsFormula(dependentNames, independentNames)
 
   if (length(dependentNames <= 1)) {
-    return({
-      structure(as.data.frame(residuals(lm(formula = formula, combinedData))),
-                names = dependentNames,
-                class = "data.frame",
-                row.names = row.names(data))
-    })
+
+      res <- as.data.frame(residuals(lm(formula = formula, combinedData)))
+      colnames(res) <- dependentNames
+      return(res)
   }
   residuals(lm(formula = formula, combinedData))
 
