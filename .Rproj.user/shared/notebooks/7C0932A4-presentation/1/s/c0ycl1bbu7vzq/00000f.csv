@@ -1,8 +1,6 @@
 "0","library(lavaan)"
-"2","This is lavaan 0.6-17.1907
-lavaan is FREE software! Please report any bugs.
-"
 "0","library(modsem)"
+"0","library(semTools)"
 "0",""
 "0","setwd(""C:/Users/slupp/OneDrive/Skrivebord/MasterOppgaveMehmet/data"")"
 "2","Warning: The working directory was changed to C:/Users/slupp/OneDrive/Skrivebord/MasterOppgaveMehmet/data inside a notebook chunk. The working directory will be reset when the chunk is finished running. Use the knitr root.dir option in the setup chunk to change the working directory for notebook chunks."

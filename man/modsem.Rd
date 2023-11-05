@@ -16,6 +16,7 @@ modsem(
   residualsProducts = FALSE,
   residualCovSyntax = FALSE,
   constrainedProductMean = FALSE,
+  qml = FALSE,
   ...
 )
 }
@@ -25,11 +26,12 @@ modsem(
 \item{data}{dataframe}
 
 \item{method}{method to use:
-"rca" = residual centering approach,
-"uca" = unconstrained approach,
-"dblcent" = double centering approach
-"pind" = product indicator approach
-NULL = use parameters specified in the function call}
+"rca" = residual centering approach (passed to lavaan),
+"uca" = unconstrained approach (passed to lavaan),
+"dblcent" = double centering approach (passed to lavaan),
+"pind" = product indicator approach (passed to lavaan),
+"lms" = laten model structural equations (passed to nlsem),
+NULL = use parameters specified in the function call (passed to lavaan)}
 
 \item{standardizeData}{should data be scaled before fitting model}
 

@@ -1,0 +1,5 @@
+"0","regModelModsem <- '"
+"0","y1 ~ x1 + z1 + x1:z1"
+"0","'"
+"0",""
+"0","m4 <- modsem(regModelModsem, df1, method = ""rca"")"

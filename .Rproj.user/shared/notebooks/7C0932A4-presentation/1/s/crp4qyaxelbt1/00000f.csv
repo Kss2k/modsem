@@ -54,7 +54,7 @@
 "0",""
 "0","m1RcaST <- sem(m1semTools, df1ST)"
 "0","summary(m1RcaST )"
-"1","lavaan 0.6.17.1907 "
+"1","lavaan 0.6.17.1913 "
 "1","ended normally after 751 iterations
 "
 "1","

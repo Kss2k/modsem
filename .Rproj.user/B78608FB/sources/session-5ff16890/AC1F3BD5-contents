@@ -1,0 +1,55 @@
+
+
+getParametersForLMS <- function(modelSpecification, data) {
+
+}
+
+
+
+### sketches
+library(lavaan)
+library(modsem)
+library(semTools)
+
+setwd("C:/Users/slupp/OneDrive/Skrivebord/MasterOppgaveMehmet/data")
+
+### Using LMS
+df1 <- readRDS("exampleData1.rds")
+
+lms1 <- '
+eta =~ y1 + y2 + y3
+xi1 =~ x1 + x2 + x3
+xi2 =~ x4 + x5 + x6
+eta ~ xi1 + xi2 + xi1:xi2
+
+'
+
+lmsModel <- nlsem::lav2nlsem(lms1, class = "mixture")
+
+lmsModel2 <- nlsem::specify_sem(num.x = 6, num.y = 3, num.xi = 2, num.eta = 1,
+                         xi = "x1-x3,x4-x6", eta = "y1-y3", interaction = "eta1~xi1:xi2")
+
+
+# indicators X and Z
+X <- df1[grepl("x", colnames(df1))]
+Z <- df1[grepl("z", colnames(df1))]
+indicators <- cbind.data.frame(X, Z)
+xNames <- paste0("x", seq_along(colnames(indicators)))
+colnames(indicators) <- xNames
+
+indMatrix <- as.matrix(indicators)
+
+# Eta
+Y <- df1[grepl("y", colnames(df1))]
+yNames <- paste0("y", seq_along(colnames(Y)))
+colnames(Y) <- yNames
+
+# matrix
+set.seed(911)
+lmsDta <- cbind(indicators, Y)
+lmsDta <- lapplyDf(lmsDta, scale)
+randomStart <- runif(nlsem::count_free_parameters(lmsModel2))
+m <- nlsem::em(lmsModel2, lmsDta, randomStart, m = 16,
+                     convergence = 1, verbose = TRUE,
+               neg.hessian = TRUE)
+summary(m)
