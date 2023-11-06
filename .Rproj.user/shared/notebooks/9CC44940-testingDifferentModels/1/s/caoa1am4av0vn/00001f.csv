@@ -1,0 +1,719 @@
+"0","m1LMS <- modsem(m1, df1, method = ""lms"" , standardizeData = TRUE)"
+"1","$etaNames
+"
+"1","[1]"
+"1"," ""Y"""
+"1","
+"
+"1","
+"
+"1","$indicatorsEta
+"
+"1","$indicatorsEta$Y
+"
+"1","[1]"
+"1"," ""y1"""
+"1"," ""y2"""
+"1"," ""y3"""
+"1","
+"
+"1","
+"
+"1","
+"
+"1","$xiNames
+"
+"1","[1]"
+"1"," ""X"""
+"1"," ""Z"""
+"1","
+"
+"1","
+"
+"1","$indicatorsXi
+"
+"1","$indicatorsXi$X
+"
+"1","[1]"
+"1"," ""x1"""
+"1"," ""x2"""
+"1"," ""x3"""
+"1","
+"
+"1","
+"
+"1","$indicatorsXi$Z
+"
+"1","[1]"
+"1"," ""z1"""
+"1"," ""z2"""
+"1"," ""z3"""
+"1","
+"
+"1","
+"
+"1","
+"
+"1","$modelSyntax
+"
+"1","[1]"
+"1"," ""\n  # Outer Model\n  X =~ x1 + x2 +x3\n  Y =~ y1 + y2 + y3\n  Z =~ z1 + z2 + z3\n  \n  # Inner model\n  Y ~ X + Z + X:Z\n  \n"""
+"1","
+"
+"1","
+"
+"1","-----------------------------------
+"
+"1","Starting EM-algorithm for"
+"1"," "
+"1","singleClass"
+"1"," "
+"1","
+"
+"1","Convergence:  0.01 
+"
+"1","-----------------------------------
+"
+"1","-----------------------------------
+"
+"1","Iteration 1 
+"
+"1","Doing expectation-step 
+"
+"1","Doing maximization-step 
+"
+"1","Results of maximization 
+"
+"1","Loglikelihood: -11516.945
+"
+"1","Convergence message: 1
+"
+"1","Number of iterations: 1
+"
+"1","----------------------------------- 
+"
+"1","Iteration 2 
+"
+"1","Doing expectation-step 
+"
+"1","Doing maximization-step 
+"
+"1","Results of maximization 
+"
+"1","Loglikelihood: -10388.635
+"
+"1","Convergence message: 1
+"
+"1","Number of iterations: 1
+"
+"1","----------------------------------- 
+"
+"1","Iteration 3 
+"
+"1","Doing expectation-step 
+"
+"1","Doing maximization-step 
+"
+"1","Results of maximization 
+"
+"1","Loglikelihood: -9535.658
+"
+"1","Convergence message: 1
+"
+"1","Number of iterations: 1
+"
+"1","----------------------------------- 
+"
+"1","Iteration 4 
+"
+"1","Doing expectation-step 
+"
+"1","Doing maximization-step 
+"
+"1","Results of maximization 
+"
+"1","Loglikelihood: -8836.623
+"
+"1","Convergence message: 1
+"
+"1","Number of iterations: 1
+"
+"1","----------------------------------- 
+"
+"1","Iteration 5 
+"
+"1","Doing expectation-step 
+"
+"1","Doing maximization-step 
+"
+"1","Results of maximization 
+"
+"1","Loglikelihood: -8747.909
+"
+"1","Convergence message: 1
+"
+"1","Number of iterations: 1
+"
+"1","----------------------------------- 
+"
+"1","Iteration 6 
+"
+"1","Doing expectation-step 
+"
+"1","Doing maximization-step 
+"
+"1","Results of maximization 
+"
+"1","Loglikelihood: -8652.638
+"
+"1","Convergence message: 1
+"
+"1","Number of iterations: 1
+"
+"1","----------------------------------- 
+"
+"1","Iteration 7 
+"
+"1","Doing expectation-step 
+"
+"1","Doing maximization-step 
+"
+"1","Results of maximization 
+"
+"1","Loglikelihood: -8569.473
+"
+"1","Convergence message: 1
+"
+"1","Number of iterations: 1
+"
+"1","----------------------------------- 
+"
+"1","Iteration 8 
+"
+"1","Doing expectation-step 
+"
+"1","Doing maximization-step 
+"
+"1","Results of maximization 
+"
+"1","Loglikelihood: -8494.922
+"
+"1","Convergence message: 1
+"
+"1","Number of iterations: 1
+"
+"1","----------------------------------- 
+"
+"1","Iteration 9 
+"
+"1","Doing expectation-step 
+"
+"1","Doing maximization-step 
+"
+"1","Results of maximization 
+"
+"1","Loglikelihood: -8434.889
+"
+"1","Convergence message: 1
+"
+"1","Number of iterations: 1
+"
+"1","----------------------------------- 
+"
+"1","Iteration 10 
+"
+"1","Doing expectation-step 
+"
+"1","Doing maximization-step 
+"
+"1","Results of maximization 
+"
+"1","Loglikelihood: -8391.126
+"
+"1","Convergence message: 1
+"
+"1","Number of iterations: 1
+"
+"1","----------------------------------- 
+"
+"1","Iteration 11 
+"
+"1","Doing expectation-step 
+"
+"1","Doing maximization-step 
+"
+"1","Results of maximization 
+"
+"1","Loglikelihood: -8353.855
+"
+"1","Convergence message: 1
+"
+"1","Number of iterations: 1
+"
+"1","----------------------------------- 
+"
+"1","Iteration 12 
+"
+"1","Doing expectation-step 
+"
+"1","Doing maximization-step 
+"
+"1","Results of maximization 
+"
+"1","Loglikelihood: -8315.494
+"
+"1","Convergence message: 1
+"
+"1","Number of iterations: 1
+"
+"1","----------------------------------- 
+"
+"1","Iteration 13 
+"
+"1","Doing expectation-step 
+"
+"1","Doing maximization-step 
+"
+"1","Results of maximization 
+"
+"1","Loglikelihood: -8270.877
+"
+"1","Convergence message: 1
+"
+"1","Number of iterations: 1
+"
+"1","----------------------------------- 
+"
+"1","Iteration 14 
+"
+"1","Doing expectation-step 
+"
+"1","Doing maximization-step 
+"
+"1","Results of maximization 
+"
+"1","Loglikelihood: -8237.876
+"
+"1","Convergence message: 1
+"
+"1","Number of iterations: 1
+"
+"1","----------------------------------- 
+"
+"1","Iteration 15 
+"
+"1","Doing expectation-step 
+"
+"1","Doing maximization-step 
+"
+"1","Results of maximization 
+"
+"1","Loglikelihood: -8199.357
+"
+"1","Convergence message: 1
+"
+"1","Number of iterations: 1
+"
+"1","----------------------------------- 
+"
+"1","Iteration 16 
+"
+"1","Doing expectation-step 
+"
+"1","Doing maximization-step 
+"
+"1","Results of maximization 
+"
+"1","Loglikelihood: -8196.961
+"
+"1","Convergence message: 1
+"
+"1","Number of iterations: 1
+"
+"1","----------------------------------- 
+"
+"1","Iteration 17 
+"
+"1","Doing expectation-step 
+"
+"1","Doing maximization-step 
+"
+"1","Results of maximization 
+"
+"1","Loglikelihood: -8189.888
+"
+"1","Convergence message: 1
+"
+"1","Number of iterations: 1
+"
+"1","----------------------------------- 
+"
+"1","Iteration 18 
+"
+"1","Doing expectation-step 
+"
+"1","Doing maximization-step 
+"
+"1","Results of maximization 
+"
+"1","Loglikelihood: -8185.86
+"
+"1","Convergence message: 1
+"
+"1","Number of iterations: 1
+"
+"1","----------------------------------- 
+"
+"1","Iteration 19 
+"
+"1","Doing expectation-step 
+"
+"1","Doing maximization-step 
+"
+"1","Results of maximization 
+"
+"1","Loglikelihood: -8183.058
+"
+"1","Convergence message: 1
+"
+"1","Number of iterations: 1
+"
+"1","----------------------------------- 
+"
+"1","Iteration 20 
+"
+"1","Doing expectation-step 
+"
+"1","Doing maximization-step 
+"
+"1","Results of maximization 
+"
+"1","Loglikelihood: -8164.949
+"
+"1","Convergence message: 1
+"
+"1","Number of iterations: 1
+"
+"1","----------------------------------- 
+"
+"1","Iteration 21 
+"
+"1","Doing expectation-step 
+"
+"1","Doing maximization-step 
+"
+"1","Results of maximization 
+"
+"1","Loglikelihood: -8164.885
+"
+"1","Convergence message: 1
+"
+"1","Number of iterations: 1
+"
+"1","----------------------------------- 
+"
+"1","Iteration 22 
+"
+"1","Doing expectation-step 
+"
+"1","Doing maximization-step 
+"
+"1","Results of maximization 
+"
+"1","Loglikelihood: -8165.426
+"
+"1","Convergence message: 1
+"
+"1","Number of iterations: 1
+"
+"1","----------------------------------- 
+"
+"2","Warning: Loglikelihood should be increasing."
+"1","Iteration 23 
+"
+"1","Doing expectation-step 
+"
+"1","Doing maximization-step 
+"
+"1","Results of maximization 
+"
+"1","Loglikelihood: -8163.766
+"
+"1","Convergence message: 1
+"
+"1","Number of iterations: 1
+"
+"1","----------------------------------- 
+"
+"1","Iteration 24 
+"
+"1","Doing expectation-step 
+"
+"1","Doing maximization-step 
+"
+"1","Results of maximization 
+"
+"1","Loglikelihood: -8164.808
+"
+"1","Convergence message: 1
+"
+"1","Number of iterations: 1
+"
+"1","----------------------------------- 
+"
+"2","Warning: Loglikelihood should be increasing."
+"1","Iteration 25 
+"
+"1","Doing expectation-step 
+"
+"1","Doing maximization-step 
+"
+"1","Results of maximization 
+"
+"1","Loglikelihood: -8163.21
+"
+"1","Convergence message: 1
+"
+"1","Number of iterations: 1
+"
+"1","----------------------------------- 
+"
+"1","Iteration 26 
+"
+"1","Doing expectation-step 
+"
+"1","Doing maximization-step 
+"
+"1","Results of maximization 
+"
+"1","Loglikelihood: -8164.286
+"
+"1","Convergence message: 1
+"
+"1","Number of iterations: 1
+"
+"1","----------------------------------- 
+"
+"2","Warning: Loglikelihood should be increasing."
+"1","Iteration 27 
+"
+"1","Doing expectation-step 
+"
+"1","Doing maximization-step 
+"
+"1","Results of maximization 
+"
+"1","Loglikelihood: -8162.573
+"
+"1","Convergence message: 1
+"
+"1","Number of iterations: 1
+"
+"1","----------------------------------- 
+"
+"1","Iteration 28 
+"
+"1","Doing expectation-step 
+"
+"1","Doing maximization-step 
+"
+"1","Results of maximization 
+"
+"1","Loglikelihood: -8163.092
+"
+"1","Convergence message: 1
+"
+"1","Number of iterations: 1
+"
+"1","----------------------------------- 
+"
+"2","Warning: Loglikelihood should be increasing."
+"1","Iteration 29 
+"
+"1","Doing expectation-step 
+"
+"1","Doing maximization-step 
+"
+"1","Results of maximization 
+"
+"1","Loglikelihood: -8161.938
+"
+"1","Convergence message: 1
+"
+"1","Number of iterations: 1
+"
+"1","----------------------------------- 
+"
+"1","Iteration 30 
+"
+"1","Doing expectation-step 
+"
+"1","Doing maximization-step 
+"
+"1","Results of maximization 
+"
+"1","Loglikelihood: -8162.036
+"
+"1","Convergence message: 1
+"
+"1","Number of iterations: 1
+"
+"1","----------------------------------- 
+"
+"2","Warning: Loglikelihood should be increasing."
+"1","Iteration 31 
+"
+"1","Doing expectation-step 
+"
+"1","Doing maximization-step 
+"
+"1","Results of maximization 
+"
+"1","Loglikelihood: -8161.643
+"
+"1","Convergence message: 1
+"
+"1","Number of iterations: 1
+"
+"1","----------------------------------- 
+"
+"1","Iteration 32 
+"
+"1","Doing expectation-step 
+"
+"1","Doing maximization-step 
+"
+"1","Results of maximization 
+"
+"1","Loglikelihood: -8161.63
+"
+"1","Convergence message: 1
+"
+"1","Number of iterations: 1
+"
+"1","----------------------------------- 
+"
+"1","Iteration 33 
+"
+"1","Doing expectation-step 
+"
+"1","Doing maximization-step 
+"
+"1","Results of maximization 
+"
+"1","Loglikelihood: -8161.499
+"
+"1","Convergence message: 1
+"
+"1","Number of iterations: 1
+"
+"1","----------------------------------- 
+"
+"1","Iteration 34 
+"
+"1","Doing expectation-step 
+"
+"1","Doing maximization-step 
+"
+"1","Results of maximization 
+"
+"1","Loglikelihood: -8161.39
+"
+"1","Convergence message: 1
+"
+"1","Number of iterations: 1
+"
+"1","----------------------------------- 
+"
+"1","Iteration 35 
+"
+"1","Doing expectation-step 
+"
+"1","Doing maximization-step 
+"
+"1","Results of maximization 
+"
+"1","Loglikelihood: -8161.325
+"
+"1","Convergence message: 1
+"
+"1","Number of iterations: 1
+"
+"1","----------------------------------- 
+"
+"1","Iteration 36 
+"
+"1","Doing expectation-step 
+"
+"1","Doing maximization-step 
+"
+"1","Results of maximization 
+"
+"1","Loglikelihood: -8161.208
+"
+"1","Convergence message: 1
+"
+"1","Number of iterations: 1
+"
+"1","----------------------------------- 
+"
+"1","Iteration 37 
+"
+"1","Doing expectation-step 
+"
+"1","Doing maximization-step 
+"
+"1","Results of maximization 
+"
+"1","Loglikelihood: -8161.194
+"
+"1","Convergence message: 1
+"
+"1","Number of iterations: 1
+"
+"1","----------------------------------- 
+"
+"1","Iteration 38 
+"
+"1","Doing expectation-step 
+"
+"1","Doing maximization-step 
+"
+"1","Results of maximization 
+"
+"1","Loglikelihood: -8161.082
+"
+"1","Convergence message: 1
+"
+"1","Number of iterations: 1
+"
+"1","----------------------------------- 
+"
+"1","Iteration 39 
+"
+"1","Doing expectation-step 
+"
+"1","Doing maximization-step 
+"
+"1","Results of maximization 
+"
+"1","Loglikelihood: -8161.079
+"
+"1","Convergence message: 1
+"
+"1","Number of iterations: 1
+"
+"1","----------------------------------- 
+"
+"1","-----------------------------------
+"
+"1","EM completed 
+"
+"1","-----------------------------------
+"
+"1","-----------------------------------
+"
+"1","Computing negative Hessian 
+"
+"1","-----------------------------------
+"
