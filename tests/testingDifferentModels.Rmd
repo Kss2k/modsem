@@ -51,7 +51,7 @@ There is an exponential increase in indicators, and specified covariances with i
 
 ```{r}
 library(lavaan)
-library(modsem)
+#library(modsem)
 library(semTools)
 
 setwd("C:/Users/slupp/OneDrive/Skrivebord/MasterOppgaveMehmet/data")
@@ -75,7 +75,7 @@ m1 <- '
   Y ~ X + Z + X:Z
 '
 
-scaledDf1 <- lapplyDf(df1, scale)
+scaledDf1 <- lapplyDf(df1, scale, scale = FALSE)
 realModel <- lm(realY ~ realX*realZ,scaledDf1)
 summary(realModel)
 ```
@@ -87,13 +87,13 @@ m1 <- '
   X =~ x1 + x2 +x3
   Y =~ y1 + y2 + y3
   Z =~ z1 + z2 + z3
-  X:Z =~ mean(x1, x2, x3):mean(z1, z2, z3)
+ 
   # Inner model
   Y ~ X + Z + X:Z 
 '
 
-m1Rca <- modsem(m1, df1, method = "rca", 
-                standardizeData = FALSE, isMeasurementSpecified = TRUE)
+m1Rca <- modsem(m1, scaledDf1, method = "rca", 
+                standardizeData = FALSE)
 summary(m1Rca)
 
 ```

@@ -6,7 +6,6 @@ modsem.LMS <- function(modelSpecification,
                        standardizeData = TRUE,
                        verbose = TRUE) {
   info <- modelSpecification$nlsem
-  print(info)
   nlsemModel <- nlsem::lav2nlsem(info$modelSyntax)
 
   # Sorted colnames for xi variables

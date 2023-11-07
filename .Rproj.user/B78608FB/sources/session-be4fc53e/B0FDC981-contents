@@ -28,6 +28,7 @@ modsem <- function(modelSyntax = NULL,
                    data = NULL,
                    method = "rca",
                    standardizeData = FALSE,
+                   centerData = FALSE,
                    isMeasurementSpecified = FALSE,
                    firstLoadingFixed = TRUE,
                    centerBefore = FALSE,
@@ -59,44 +60,52 @@ modsem <- function(modelSyntax = NULL,
   modelSpecification <-
     parseLavaan(modelSyntax, isMeasurementSpecified = isMeasurementSpecified)
 
-  # Setting parameters according to method -------------------------------------
-  if (is.null(method)) {
-    warning2("Method was NULL, using specifications set indside the function call")
-
-  } else if (method == "rca") {
-    centerBefore <- FALSE
-    residualsProducts <- TRUE
-    residualCovSyntax <- TRUE
-    constrainedProductMean <- FALSE
-
-  } else if (method == "uca") {
-    centerBefore <- TRUE
-    residualsProducts <- FALSE
-    residualCovSyntax <- TRUE
-    constrainedProductMean <- TRUE
-
-  } else if (method == "pind") {
-    centerBefore <- FALSE
-    residualsProducts <- FALSE
-    residualCovSyntax <- FALSE
-    constrainedProductMean <- FALSE
-
-  }  else if (method == "dblcent") {
-    centerBefore <- TRUE
-    centerAfter <- TRUE
-    residualsProducts <- FALSE
-    residualCovSyntax <- TRUE
-
-  } else if (method == "lms") {
-    return(modsem.LMS(modelSpecification,
-                      data = data,
-                      qml = qml,
-                      standardizeData = standardizeData))
-
-  } else {
+  # Setting parameters according to method -----------------------------------
+  switch(method,
+    "rca" = {
+      centerBefore <- FALSE
+      residualsProducts <- TRUE
+      residualCovSyntax <- TRUE
+      constrainedProductMean <- FALSE
+    },
+    "uca" = {
+      centerBefore <- TRUE
+      residualsProducts <- FALSE
+      residualCovSyntax <- TRUE
+      constrainedProductMean <- TRUE
+    },
+    "pind" = {
+      centerBefore <- FALSE
+      residualsProducts <- FALSE
+      residualCovSyntax <- FALSE
+      constrainedProductMean <- FALSE
+    },
+    "dblcent" = {
+      centerBefore <- TRUE
+      centerAfter <- TRUE
+      residualsProducts <- FALSE
+      residualCovSyntax <- TRUE
+    },
+    "lms" = {
+      # If method is LMS we pass it own to its own version of modsem()
+      if (isMeasurementSpecified == TRUE) {
+        stop2("Measurement for products should not be specified when using LMS")
+      }
+      LMS <- modsem.LMS(modelSpecification,
+                        data = data,
+                        qml = qml,
+                        standardizeData = standardizeData)
+      return(LMS)
+    },
+    "custom" = {
+      warning2(
+        'Method was "custom", using specifications set indside the function call'
+        )
+    },
     stop2("Unkown method in modsem, have you made a typo?")
-  }
+    )
 
+  # ModSEM-algorithm for product indicator based approaches --------------------
   # Standardizing data
   if (standardizeData == TRUE) {
     data <- lapplyDf(data,
@@ -104,6 +113,11 @@ modsem <- function(modelSyntax = NULL,
                     scaleFactor = FALSE)
   }
 
+  # Centering Data (should not be paired with standardize data)
+  if (centerData == TRUE) {
+    data <- lapplyDf(data,
+                     FUN = function(x) x - mean(x))
+  }
   # Calculating productinidicators based on method specifications --------------
   productIndicators <-
     createProductIndicators(modelSpecification,
@@ -138,7 +152,7 @@ modsem <- function(modelSyntax = NULL,
   modelSpecification$lavaan <- lavaanEstimation
   # this is not pretty either
   structure(modelSpecification,
-            class = "modsem",
+            class = "ModSEM",
             method = method)
 
 }
@@ -426,19 +440,28 @@ generateFormula.measurement <- function(dependentName,
 }
 
 
-#' summary.modsem
+
+ModSEM <- setClass("ModSEM")
+
+
+
+#' summary.ModSEM
 #'
 #' @param object modsem object
 #' @rdname summary
 #' @export
-summary.modsem <- function(object, ...) {
+summary.ModSEM <- function(object, ...) {
   cat("ModSEM: \nMethod =", attributes(object)$method, "\n")
   lavaan::summary(object$lavaan)
 }
 
-#' summary.modsem
+
+#' summary.ModSEM
 #'
 #' @param modelSyntax
 #' @rdname summary modsem object
 #' @export
-setMethod("summary", "modsem", summary.modsem)
+setMethod("summary", "ModSEM", summary.ModSEM)
+
+
+

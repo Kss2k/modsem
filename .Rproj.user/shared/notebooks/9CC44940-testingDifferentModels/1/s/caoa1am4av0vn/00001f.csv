@@ -76,6 +76,7 @@
 "
 "1","-----------------------------------
 "
+"2","Warning: Starting parameters for Phi are not positive definite. Identity matrix was used instead."
 "1","Iteration 1 
 "
 "1","Doing expectation-step 
@@ -84,7 +85,7 @@
 "
 "1","Results of maximization 
 "
-"1","Loglikelihood: -11516.945
+"1","Loglikelihood: -11443.261
 "
 "1","Convergence message: 1
 "
@@ -100,7 +101,7 @@
 "
 "1","Results of maximization 
 "
-"1","Loglikelihood: -10388.635
+"1","Loglikelihood: -10351.265
 "
 "1","Convergence message: 1
 "
@@ -116,7 +117,7 @@
 "
 "1","Results of maximization 
 "
-"1","Loglikelihood: -9535.658
+"1","Loglikelihood: -9821.414
 "
 "1","Convergence message: 1
 "
@@ -132,7 +133,7 @@
 "
 "1","Results of maximization 
 "
-"1","Loglikelihood: -8836.623
+"1","Loglikelihood: -8856.888
 "
 "1","Convergence message: 1
 "
@@ -148,7 +149,7 @@
 "
 "1","Results of maximization 
 "
-"1","Loglikelihood: -8747.909
+"1","Loglikelihood: -8811.784
 "
 "1","Convergence message: 1
 "
@@ -164,7 +165,7 @@
 "
 "1","Results of maximization 
 "
-"1","Loglikelihood: -8652.638
+"1","Loglikelihood: -8791.919
 "
 "1","Convergence message: 1
 "
@@ -180,7 +181,7 @@
 "
 "1","Results of maximization 
 "
-"1","Loglikelihood: -8569.473
+"1","Loglikelihood: -8710.189
 "
 "1","Convergence message: 1
 "
@@ -196,7 +197,7 @@
 "
 "1","Results of maximization 
 "
-"1","Loglikelihood: -8494.922
+"1","Loglikelihood: -8636.34
 "
 "1","Convergence message: 1
 "
@@ -212,7 +213,7 @@
 "
 "1","Results of maximization 
 "
-"1","Loglikelihood: -8434.889
+"1","Loglikelihood: -8571.548
 "
 "1","Convergence message: 1
 "
@@ -228,7 +229,7 @@
 "
 "1","Results of maximization 
 "
-"1","Loglikelihood: -8391.126
+"1","Loglikelihood: -8509.644
 "
 "1","Convergence message: 1
 "
@@ -244,7 +245,7 @@
 "
 "1","Results of maximization 
 "
-"1","Loglikelihood: -8353.855
+"1","Loglikelihood: -8450.852
 "
 "1","Convergence message: 1
 "
@@ -260,7 +261,7 @@
 "
 "1","Results of maximization 
 "
-"1","Loglikelihood: -8315.494
+"1","Loglikelihood: -8395.227
 "
 "1","Convergence message: 1
 "
@@ -276,7 +277,7 @@
 "
 "1","Results of maximization 
 "
-"1","Loglikelihood: -8270.877
+"1","Loglikelihood: -8341.968
 "
 "1","Convergence message: 1
 "
@@ -292,7 +293,7 @@
 "
 "1","Results of maximization 
 "
-"1","Loglikelihood: -8237.876
+"1","Loglikelihood: -8291.16
 "
 "1","Convergence message: 1
 "
@@ -308,7 +309,7 @@
 "
 "1","Results of maximization 
 "
-"1","Loglikelihood: -8199.357
+"1","Loglikelihood: -8248.84
 "
 "1","Convergence message: 1
 "
@@ -324,7 +325,7 @@
 "
 "1","Results of maximization 
 "
-"1","Loglikelihood: -8196.961
+"1","Loglikelihood: -8216.484
 "
 "1","Convergence message: 1
 "
@@ -340,7 +341,7 @@
 "
 "1","Results of maximization 
 "
-"1","Loglikelihood: -8189.888
+"1","Loglikelihood: -8189.328
 "
 "1","Convergence message: 1
 "
@@ -356,7 +357,7 @@
 "
 "1","Results of maximization 
 "
-"1","Loglikelihood: -8185.86
+"1","Loglikelihood: -8186.673
 "
 "1","Convergence message: 1
 "
@@ -372,7 +373,7 @@
 "
 "1","Results of maximization 
 "
-"1","Loglikelihood: -8183.058
+"1","Loglikelihood: -8182.844
 "
 "1","Convergence message: 1
 "
@@ -388,7 +389,7 @@
 "
 "1","Results of maximization 
 "
-"1","Loglikelihood: -8164.949
+"1","Loglikelihood: -8180.483
 "
 "1","Convergence message: 1
 "
@@ -404,7 +405,7 @@
 "
 "1","Results of maximization 
 "
-"1","Loglikelihood: -8164.885
+"1","Loglikelihood: -8175.623
 "
 "1","Convergence message: 1
 "
@@ -420,7 +421,7 @@
 "
 "1","Results of maximization 
 "
-"1","Loglikelihood: -8165.426
+"1","Loglikelihood: -8174.985
 "
 "1","Convergence message: 1
 "
@@ -428,7 +429,6 @@
 "
 "1","----------------------------------- 
 "
-"2","Warning: Loglikelihood should be increasing."
 "1","Iteration 23 
 "
 "1","Doing expectation-step 
@@ -437,7 +437,7 @@
 "
 "1","Results of maximization 
 "
-"1","Loglikelihood: -8163.766
+"1","Loglikelihood: -8173.582
 "
 "1","Convergence message: 1
 "
@@ -453,7 +453,7 @@
 "
 "1","Results of maximization 
 "
-"1","Loglikelihood: -8164.808
+"1","Loglikelihood: -8172.109
 "
 "1","Convergence message: 1
 "
@@ -461,7 +461,6 @@
 "
 "1","----------------------------------- 
 "
-"2","Warning: Loglikelihood should be increasing."
 "1","Iteration 25 
 "
 "1","Doing expectation-step 
@@ -470,7 +469,7 @@
 "
 "1","Results of maximization 
 "
-"1","Loglikelihood: -8163.21
+"1","Loglikelihood: -8170.875
 "
 "1","Convergence message: 1
 "
@@ -486,7 +485,7 @@
 "
 "1","Results of maximization 
 "
-"1","Loglikelihood: -8164.286
+"1","Loglikelihood: -8170.21
 "
 "1","Convergence message: 1
 "
@@ -494,7 +493,6 @@
 "
 "1","----------------------------------- 
 "
-"2","Warning: Loglikelihood should be increasing."
 "1","Iteration 27 
 "
 "1","Doing expectation-step 
@@ -503,7 +501,7 @@
 "
 "1","Results of maximization 
 "
-"1","Loglikelihood: -8162.573
+"1","Loglikelihood: -8168.973
 "
 "1","Convergence message: 1
 "
@@ -519,7 +517,7 @@
 "
 "1","Results of maximization 
 "
-"1","Loglikelihood: -8163.092
+"1","Loglikelihood: -8168.704
 "
 "1","Convergence message: 1
 "
@@ -527,7 +525,6 @@
 "
 "1","----------------------------------- 
 "
-"2","Warning: Loglikelihood should be increasing."
 "1","Iteration 29 
 "
 "1","Doing expectation-step 
@@ -536,7 +533,7 @@
 "
 "1","Results of maximization 
 "
-"1","Loglikelihood: -8161.938
+"1","Loglikelihood: -8167.624
 "
 "1","Convergence message: 1
 "
@@ -552,7 +549,7 @@
 "
 "1","Results of maximization 
 "
-"1","Loglikelihood: -8162.036
+"1","Loglikelihood: -8167.463
 "
 "1","Convergence message: 1
 "
@@ -560,7 +557,6 @@
 "
 "1","----------------------------------- 
 "
-"2","Warning: Loglikelihood should be increasing."
 "1","Iteration 31 
 "
 "1","Doing expectation-step 
@@ -569,7 +565,7 @@
 "
 "1","Results of maximization 
 "
-"1","Loglikelihood: -8161.643
+"1","Loglikelihood: -8166.399
 "
 "1","Convergence message: 1
 "
@@ -585,7 +581,7 @@
 "
 "1","Results of maximization 
 "
-"1","Loglikelihood: -8161.63
+"1","Loglikelihood: -8166.343
 "
 "1","Convergence message: 1
 "
@@ -601,7 +597,7 @@
 "
 "1","Results of maximization 
 "
-"1","Loglikelihood: -8161.499
+"1","Loglikelihood: -8164.837
 "
 "1","Convergence message: 1
 "
@@ -617,87 +613,7 @@
 "
 "1","Results of maximization 
 "
-"1","Loglikelihood: -8161.39
-"
-"1","Convergence message: 1
-"
-"1","Number of iterations: 1
-"
-"1","----------------------------------- 
-"
-"1","Iteration 35 
-"
-"1","Doing expectation-step 
-"
-"1","Doing maximization-step 
-"
-"1","Results of maximization 
-"
-"1","Loglikelihood: -8161.325
-"
-"1","Convergence message: 1
-"
-"1","Number of iterations: 1
-"
-"1","----------------------------------- 
-"
-"1","Iteration 36 
-"
-"1","Doing expectation-step 
-"
-"1","Doing maximization-step 
-"
-"1","Results of maximization 
-"
-"1","Loglikelihood: -8161.208
-"
-"1","Convergence message: 1
-"
-"1","Number of iterations: 1
-"
-"1","----------------------------------- 
-"
-"1","Iteration 37 
-"
-"1","Doing expectation-step 
-"
-"1","Doing maximization-step 
-"
-"1","Results of maximization 
-"
-"1","Loglikelihood: -8161.194
-"
-"1","Convergence message: 1
-"
-"1","Number of iterations: 1
-"
-"1","----------------------------------- 
-"
-"1","Iteration 38 
-"
-"1","Doing expectation-step 
-"
-"1","Doing maximization-step 
-"
-"1","Results of maximization 
-"
-"1","Loglikelihood: -8161.082
-"
-"1","Convergence message: 1
-"
-"1","Number of iterations: 1
-"
-"1","----------------------------------- 
-"
-"1","Iteration 39 
-"
-"1","Doing expectation-step 
-"
-"1","Doing maximization-step 
-"
-"1","Results of maximization 
-"
-"1","Loglikelihood: -8161.079
+"1","Loglikelihood: -8164.832
 "
 "1","Convergence message: 1
 "
