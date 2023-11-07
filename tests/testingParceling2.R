@@ -32,17 +32,28 @@ m1 <- '
   Y ~ X + Z + X:Z
 '
 
-m1Rca <- modsem(m1, df1, method = "rca",
-                standardizeData = FALSE, isMeasurementSpecified = TRUE)
-summary(m1Rca)
 
 
-m1Uca <- modsem(m1, df1, method = "uca", standardizeData = TRUE)
-summary(m1Uca)
-
+# Manual
 
 df1$meanX <- rowMeans(df1[grepl("^x", colnames(df1))])
 df1$meanY <- rowMeans(df1[grepl("^y", colnames(df1))])
 df1$meanZ <- rowMeans(df1[grepl("^z", colnames(df1))])
 
-mean
+  # Real result using lm()
+realModel <- lm(meanY ~ meanX*meanZ,df1)
+summary(realModel)
+  # Using modsem
+observedModel <- '
+meanY ~ meanX + meanZ + meanX:meanZ
+'
+observed <- modsem(observedModel, df1, method = "pind")
+summary(observed)
+
+
+# Using parceling in modsem
+parcelingModel <- '
+mean(y1, y2, y3) ~ mean(x1, x2, x3) + mean(z1, z2, z3) + mean(x1, x2, x3):mean(z1, z2, z3)
+'
+parcM <- modsem(parcelingModel, df1, method = "pind")
+summary(parcM)

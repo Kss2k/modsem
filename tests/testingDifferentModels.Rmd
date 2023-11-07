@@ -51,7 +51,7 @@ There is an exponential increase in indicators, and specified covariances with i
 
 ```{r}
 library(lavaan)
-#library(modsem)
+library(modsem)
 library(semTools)
 
 setwd("C:/Users/slupp/OneDrive/Skrivebord/MasterOppgaveMehmet/data")
@@ -443,7 +443,7 @@ regModelModsem <- '
 y1 ~ x1 + z1 + x1:z1
 '
 
-m4 <- modsem(regModelModsem, df1, method = "rca")
+m4 <- modsem(regModelModsem, df1, method = "uca")
 summary(m4)
 
 ```

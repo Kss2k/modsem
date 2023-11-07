@@ -45,22 +45,36 @@ modsem <- function(modelSyntax = NULL,
     stop2("No data provided in modsem")
   }
 
-  # Look for parceling in modelSyntax ------------------------------------------
+  # PreSteps -------------------------------------------------------------------
+    ## Standardizing data
+  if (standardizeData == TRUE) {
+    data <- lapplyDf(data,
+                     FUN = scaleIfNumeric,
+                     scaleFactor = FALSE)
+  }
+
+    ## Centering Data (should not be paired with standardize data)
+  if (centerData == TRUE) {
+    data <- lapplyDf(data,
+                     FUN = function(x) x - mean(x))
+  }
+
+    ## Look for parceling in modelSyntax ---------------------------------------
   parcelInfo <- getParcelInfo(modelSyntax)
 
   if (!is.null(parcelInfo)) {
     if (isMeasurementSpecified != TRUE) {
-      stop2("isMeasurementSpecified should be TRUE, when using parceling")
+      warning2("isMeasurementSpecified should be TRUE, when using parceling")
     }
     modelSyntax <- fixParcelSyntax(modelSyntax, parcelInfo = parcelInfo)
     data <- computeParcels(parcelInfo, data = data)
   }
 
-  # Get the specifications of the model ----------------------------------------
+    # Get the specifications of the model --------------------------------------
   modelSpecification <-
     parseLavaan(modelSyntax, isMeasurementSpecified = isMeasurementSpecified)
 
-  # Setting parameters according to method -----------------------------------
+    # Setting parameters according to method -----------------------------------
   switch(method,
     "rca" = {
       centerBefore <- FALSE
@@ -106,18 +120,7 @@ modsem <- function(modelSyntax = NULL,
     )
 
   # ModSEM-algorithm for product indicator based approaches --------------------
-  # Standardizing data
-  if (standardizeData == TRUE) {
-    data <- lapplyDf(data,
-                    FUN = scaleIfNumeric,
-                    scaleFactor = FALSE)
-  }
 
-  # Centering Data (should not be paired with standardize data)
-  if (centerData == TRUE) {
-    data <- lapplyDf(data,
-                     FUN = function(x) x - mean(x))
-  }
   # Calculating productinidicators based on method specifications --------------
   productIndicators <-
     createProductIndicators(modelSpecification,

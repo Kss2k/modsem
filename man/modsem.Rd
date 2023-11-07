@@ -9,6 +9,7 @@ modsem(
   data = NULL,
   method = "rca",
   standardizeData = FALSE,
+  centerData = FALSE,
   isMeasurementSpecified = FALSE,
   firstLoadingFixed = TRUE,
   centerBefore = FALSE,

@@ -34,5 +34,5 @@ pind <- modsem(model, df1, method = "pind", centerData = TRUE)
 summary(pind)
 
 # LMS
-lms <- modsem(model, df1, method = "lms")
+lms <- modsem(model, centeredDf, method = "lms")
 summary(lms)
