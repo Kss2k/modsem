@@ -2,8 +2,10 @@
 latent variable interaction in CB-SEM. See https://bookdown.org/slupphaugkjell/an_introduction_to_latent_interaction_using_modsem/ for a tutorial.
 
 # To Install 
+```
 install.packages("devtools")
 devtools::install_github("kss2k/modsem")
+```
 
 # Examples 
 
