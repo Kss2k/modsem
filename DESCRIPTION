@@ -12,3 +12,5 @@ LazyData: true
 RoxygenNote: 7.2.3
 LinkingTo: Rcpp
 Imports: Rcpp, purrr, stringr, lavaan
+Depends: 
+    R (>= 2.10)
