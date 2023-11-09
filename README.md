@@ -1,4 +1,4 @@
-# modsem
+# ModSEM
 latent variable interaction in CB-SEM. See https://bookdown.org/slupphaugkjell/an_introduction_to_latent_interaction_using_modsem/ for a tutorial.
 
 # To Install 
