@@ -6,7 +6,9 @@ install.packages("devtools")
 devtools::install_github("kss2k/modsem")
 
 # Examples 
+
 ## One interaction
+```
 library(modsem)
 m1 <- '
   # Outer Model
@@ -20,8 +22,10 @@ m1 <- '
 
 est1 <- modsem(m1, oneInt)
 summary(est1)
+```
 
 ## Interactions between two observed variables
+```
 est2 <- modsem('y1 ~ x1 + z1 + x1:z1', data = oneInt, method = "pind")
 summary(est2)
 
@@ -37,8 +41,10 @@ m3 <- '
 
 est3 <- modsem(m3, oneInt, method = "pind")
 summary(est3)
+```
 
 ## Multiple interaction terms
+```
 m4 <- '
   # Outer Model
   X =~ x1 + x2 +x3
@@ -53,8 +59,10 @@ m4 <- '
 
 est4 <- modsem(m4, twoInt)
 summary(est4)
+```
 
 ## Interactionterms with more than two varaibles
+```
 m5 <- '
   # Outer Model
   X =~ x1 + x2 +x3
@@ -68,3 +76,4 @@ m5 <- '
 
 est5 <- modsem(m5, tripleInt, standardizeData = TRUE)
 summary(est5)
+```
