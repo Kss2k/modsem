@@ -61,7 +61,7 @@ est4 <- modsem(m4, twoInt)
 summary(est4)
 ```
 
-## Interactionterms with more than two varaibles
+## Interactionterms with more than two variables
 ```
 m5 <- '
   # Outer Model
