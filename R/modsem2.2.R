@@ -9,7 +9,7 @@
 #' "dblcent" = double centering approach (passed to lavaan),
 #' "pind" = product indicator approach (passed to lavaan),
 #' "lms" = laten model structural equations (passed to nlsem),
-#' NULL = use parameters specified in the function call (passed to lavaan)
+#' "custom" = use parameters specified in the function call (passed to lavaan)
 #' @param standardizeData should data be scaled before fitting model
 #' @param isMeasurementSpecified have you specified the measurement model for the latent product
 #' @param firstLoadingFixed Sould the first factorloading in the latent product be fixed to one?
@@ -24,6 +24,19 @@
 #' @export
 #'
 #' @examples
+#' library(modsem)
+#' m1 <- '
+#'   # Outer Model
+#'   X =~ x1 + x2 +x3
+#'   Y =~ y1 + y2 + y3
+#'   Z =~ z1 + z2 + z3
+#'
+#'   # Inner model
+#'   Y ~ X + Z + X:Z
+#''
+#' est1 <- modsem(m1, oneInt)
+#' summary(est1)
+
 modsem <- function(modelSyntax = NULL,
                    data = NULL,
                    method = "rca",
@@ -64,7 +77,7 @@ modsem <- function(modelSyntax = NULL,
 
   if (!is.null(parcelInfo)) {
     if (isMeasurementSpecified != TRUE) {
-      warning2("isMeasurementSpecified should be TRUE, when using parceling")
+      warning2("isMeasurementSpecified should be TRUE, when using parceling \n")
     }
     modelSyntax <- fixParcelSyntax(modelSyntax, parcelInfo = parcelInfo)
     data <- computeParcels(parcelInfo, data = data)
@@ -335,6 +348,11 @@ generateRestrictedMeanSyntax <- function(productNames, elementsInProductNames) {
 
 # this function assumes a product of only two latent variables no more
 restrictedMeanSyntaxSingle <- function(productName, elementsInProductName) {
+  if (length(elementsInProductName) > 2) {
+    warning2("The mean of a latent product should not be constrained when there",
+             " are more than two variables in the product term. Please use a",
+             " different method \n")
+  }
   covarianceLabel <- paste0(" ~~ cov", productName, "*")
   covariance <- stringr::str_c(elementsInProductName[1:2], collapse = covarianceLabel)
   meanStructure <- paste0(productName, " ~ cov", productName, "*1")

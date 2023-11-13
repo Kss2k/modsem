@@ -87,10 +87,10 @@ extractParcels <- function(type = "mean", syntax) {
 
 computeRowMeans <- function(varNames, data) {
   if (length(varNames) <= 1) {
-    stop2("Attempted to make a parcel out of a single variable!")
+    stop2("Attempted to make a parcel out of a single variable!\n")
   }
   if (!is.data.frame(data)) {
-    stop2("Data for parceling should be a dataframe")
+    stop2("Data for parceling should be a dataframe\n")
   }
 
   rowMeans(data[varNames])
@@ -100,10 +100,10 @@ computeRowMeans <- function(varNames, data) {
 
 computeRowSums <- function(varNames, data) {
   if (length(varNames) <= 1) {
-    stop2("Attempted to make a parcel out of a single variable!")
+    stop2("Attempted to make a parcel out of a single variable!\n")
   }
   if (!is.data.frame(data)) {
-    stop2("Data for parceling should be a dataframe")
+    stop2("Data for parceling should be a dataframe\n")
   }
 
   rowSums(data[varNames])
