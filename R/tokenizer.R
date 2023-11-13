@@ -358,9 +358,9 @@ evalOp.LavAdd <- function(op, lhs, rhs) {
 
 
 evalOp.LavModify <- function(op, lhs, rhs) {
-  attr(rhs[[1]], "LavMod") <- lhs
-
-  evalTokens(rhs[-1], lhs = rhs[[1]])
+  rest <- evalTokens(rhs)
+  attr(rest[[1]], "LavMod") <- lhs
+  rest
 }
 
 

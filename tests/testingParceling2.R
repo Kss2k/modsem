@@ -53,7 +53,7 @@ summary(observed)
 
 # Using parceling in modsem
 parcelingModel <- '
-mean(y1, y2, y3) ~ mean(x1, x2, x3) + mean(z1, z2, z3) + mean(x1, x2, x3):mean(z1, z2, z3)
+mean(y1, y2, y3) ~ mean(x1, x2, x3) + a*mean(z1, z2, z3) + mean(x1, x2, x3):mean(z1, z2, z3)
 '
 parcM <- modsem(parcelingModel, df1, method = "pind")
 summary(parcM)
