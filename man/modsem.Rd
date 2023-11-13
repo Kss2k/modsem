@@ -32,7 +32,7 @@ modsem(
 "dblcent" = double centering approach (passed to lavaan),
 "pind" = product indicator approach (passed to lavaan),
 "lms" = laten model structural equations (passed to nlsem),
-NULL = use parameters specified in the function call (passed to lavaan)}
+"custom" = use parameters specified in the function call (passed to lavaan)}
 
 \item{standardizeData}{should data be scaled before fitting model}
 
@@ -54,4 +54,18 @@ NULL = use parameters specified in the function call (passed to lavaan)}
 }
 \description{
 Interaction between latent variables
+}
+\examples{
+library(modsem)
+m1 <- '
+  # Outer Model
+  X =~ x1 + x2 +x3
+  Y =~ y1 + y2 + y3
+  Z =~ z1 + z2 + z3
+
+  # Inner model
+  Y ~ X + Z + X:Z
+'
+est1 <- modsem(m1, oneInt)
+summary(est1)
 }

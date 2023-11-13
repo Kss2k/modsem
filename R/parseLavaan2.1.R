@@ -25,13 +25,12 @@ parseLavaan <- function(
   }
 
   # Convert to lavaan partable -------------------------------------------------
-  replacementPattern <- "__COLON__"
+  replacementPattern <- ":"
 
   originalSyntax <- modelSyntax
-  modelSyntax <- stringr::str_replace_all(modelSyntax, ":", replacementPattern)
   cleanedModelSyntax <- stringr::str_remove_all(modelSyntax, replacementPattern)
   # so I dont have to parse the syntax my self
-  parTable <- lavaan::lavaanify(model = modelSyntax, fixed.x = FALSE)
+  parTable <- modsemify(originalSyntax)
 
   # Extracting some general information ----------------------------------------
     # Structural

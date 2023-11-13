@@ -32,7 +32,7 @@ m1 <- '
   Y ~ X + Z + X:Z
 '
 
-
+avDataToBeModified <- df1
 
 # Manual
 

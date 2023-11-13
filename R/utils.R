@@ -126,3 +126,25 @@ combineListDf <- function(listDf) {
   combineListDf(c(list(combinedDf), listDf[-(1:2)]))
 
 }
+
+
+
+maxDepth <- function(list, max = 2, depth = 1) {
+
+  if (is.null(list) | !is.list(list)) {
+    return(depth)
+  }
+
+  if (depth > max) {
+    stop("Incorrectly nested syntax")
+  }
+  deepest <- 1
+  for (i in seq_along(list)) {
+    branchDepth <- maxDepth(list[[i]], max = max, depth + 1)
+    if (branchDepth > deepest) {
+      deepest <- branchDepth
+    }
+  }
+  deepest
+
+}

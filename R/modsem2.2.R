@@ -59,29 +59,31 @@ modsem <- function(modelSyntax = NULL,
   }
 
   # PreSteps -------------------------------------------------------------------
-    ## Standardizing data
+
+  LavDataToBeModified <<- data
+  ## Standardizing data
   if (standardizeData == TRUE) {
-    data <- lapplyDf(data,
+    LavDataToBeModified <- lapplyDf(LavDataToBeModified,
                      FUN = scaleIfNumeric,
                      scaleFactor = FALSE)
   }
 
     ## Centering Data (should not be paired with standardize data)
   if (centerData == TRUE) {
-    data <- lapplyDf(data,
+    LavDataToBeModified <- lapplyDf(LavDataToBeModified,
                      FUN = function(x) x - mean(x))
   }
 
-    ## Look for parceling in modelSyntax ---------------------------------------
-  parcelInfo <- getParcelInfo(modelSyntax)
 
-  if (!is.null(parcelInfo)) {
-    if (isMeasurementSpecified != TRUE) {
-      warning2("isMeasurementSpecified should be TRUE, when using parceling \n")
-    }
-    modelSyntax <- fixParcelSyntax(modelSyntax, parcelInfo = parcelInfo)
-    data <- computeParcels(parcelInfo, data = data)
-  }
+  # parcelInfo <- getParcelInfo(modelSyntax)
+  #
+  # if (!is.null(parcelInfo)) {
+  #   if (isMeasurementSpecified != TRUE) {
+  #     warning2("isMeasurementSpecified should be TRUE, when using parceling \n")
+  #   }
+  #   modelSyntax <- fixParcelSyntax(modelSyntax, parcelInfo = parcelInfo)
+  #   data <- computeParcels(parcelInfo, data = data)
+  # }
 
     # Get the specifications of the model --------------------------------------
   modelSpecification <-
@@ -137,7 +139,7 @@ modsem <- function(modelSyntax = NULL,
   # Calculating productinidicators based on method specifications --------------
   productIndicators <-
     createProductIndicators(modelSpecification,
-                            data = data,
+                            data = LavDataToBeModified,
                             centerBefore = centerBefore,
                             centerAfter = centerAfter,
                             residualsProducts = residualsProducts)
@@ -148,7 +150,7 @@ modsem <- function(modelSyntax = NULL,
   mergedProductIndicators <- combineListDf(productIndicators)
 
   # Creating a new dataset with the productindicators
-  newData <- cbind.data.frame(data, mergedProductIndicators)
+  newData <- cbind.data.frame(LavDataToBeModified, mergedProductIndicators)
 
   # Genereating a new syntax with constraints and measurmentmodel --------------
 
@@ -292,20 +294,22 @@ generateSyntax <- function(modelSpecification,
 
   modelSyntax <- modelSpecification$lavaanSyntax
   relationalDfs <- modelSpecification$relationalDfs
+  parTable <- modelSpecification$parTable
   productNames <- names(relationalDfs)
-  addedSyntax <- c()
+
   # Measurement model latent products ------------------------------------------
   if (!is.logical(residualCovSyntax)) {
     stop2("residualCovSyntax is not FALSE or TRUE in generateSyntax")
 
   } else if (isMeasurementSpecified == FALSE) {
-    measurementSyntax <-
-      purrr::map2_chr(.x = modelSpecification$productNamesLatents,
+    measurementParTable <-
+      purrr::map2(.x = modelSpecification$productNamesLatents,
                       .y = modelSpecification$indicatorProductNamesLatents,
-                      .f = generateFormula.measurement,
+                      .f = getParTableMeasurement,
                       operator = "=~",
-                      firstFixed = firstFixed)
-    addedSyntax <- c(measurementSyntax, addedSyntax)
+                      firstFixed = firstFixed) |>
+      purrr::list_rbind()
+    parTable <- rbind(parTable, measurementParTable)
   }
 
   # Residual covariances -------------------------------------------------------
@@ -315,48 +319,41 @@ generateSyntax <- function(modelSpecification,
   } else if (residualCovSyntax == TRUE) {
     residualCovariances <- purrr::map2(.x = relationalDfs,
                                .y = productNames,
-                               .f = getSyntaxResidualCovariances) |>
-      unlist()
-    addedSyntax <- c(addedSyntax, residualCovariances)
+                               .f = getParTableResCov) |>
+      purrr::list_rbind()
+    parTable <- rbind(parTable, residualCovariances)
   }
 
   # Constrained product mean syntax --------------------------------------------
   if (constrainedProductMean == TRUE) {
-    meanSyntax <-
-      generateRestrictedMeanSyntax(modelSpecification$productNames,
-                                   modelSpecification$elementsInProductNames)
-    addedSyntax <- c(addedSyntax, meanSyntax)
+    restrictedMeans <- purrr::map2(modelSpecification$productNames,
+                modelSpecification$elementsInProductNames,
+                getParTableRestrictedMean) |>
+      purrr::list_rbind()
+
+    parTable <- rbind(parTable, restrictedMeans)
   }
 
-  syntaxElements <- c(modelSyntax, addedSyntax)
-  stringr::str_c(syntaxElements, collapse = "\n")
-}
-
-
-
-
-# plural
-generateRestrictedMeanSyntax <- function(productNames, elementsInProductNames) {
-
-  purrr::map2(productNames, elementsInProductNames, restrictedMeanSyntaxSingle) |>
-    unlist() |>
-    stringr::str_c(collapse = "\n  ")
-
+  parTableToSyntax(parTable, removeColon = TRUE)
 }
 
 
 
 # this function assumes a product of only two latent variables no more
-restrictedMeanSyntaxSingle <- function(productName, elementsInProductName) {
+getParTableRestrictedMean <- function(productName, elementsInProductName) {
   if (length(elementsInProductName) > 2) {
     warning2("The mean of a latent product should not be constrained when there",
              " are more than two variables in the product term. Please use a",
              " different method \n")
   }
-  covarianceLabel <- paste0(" ~~ cov", productName, "*")
-  covariance <- stringr::str_c(elementsInProductName[1:2], collapse = covarianceLabel)
-  meanStructure <- paste0(productName, " ~ cov", productName, "*1")
-  paste(covariance, meanStructure, sep = "\n  ")
+  label <- paste0("COV_", productName)
+  covariance <- createParTableRow(vecLhsRhs = elementsInProductName[1:2],
+                                  op = "~~",
+                                  mod = paste0("COV_", productName))
+  meanStructure <- createParTableRow(vecLhsRhs = c(productName, "1"),
+                                     op = "~",
+                                     mod = label)
+  rbind(covariance, meanStructure)
 }
 
 
@@ -381,7 +378,7 @@ multiplyIndicators <- function(df) {
 
 
 # specify residual covariance in lavaanify parTable-format
-getSyntaxResidualCovariances <- function(relationalDf, productName) {
+getParTableResCov <- function(relationalDf, productName) {
   if (ncol(relationalDf) <= 1) {
     return(NULL)
   }
@@ -408,24 +405,19 @@ getSyntaxResidualCovariances <- function(relationalDf, productName) {
   # Syntax for oblique covariances
   syntaxOblique <- apply(uniqueCombinations[isShared, c("V1", "V2")],
                          MARGIN = 1,
-                         FUN = stringr::str_c,
-                         collapse = " ~~ ",
-                         simplify = TRUE) |>
-    stringr::str_c(collapse = "\n")
+                          FUN = createParTableRow,
+                          op = "~~") |>
+    purrr::list_rbind()
 
 
   syntaxOrthogonal <- apply(uniqueCombinations[!isShared, c("V1", "V2")],
                             MARGIN = 1,
-                            FUN = stringr::str_c,
-                            collapse = " ~~ 0*",
-                            simplify = TRUE) |>
-    stringr::str_c(collapse = "\n")
+                            FUN = createParTableRow,
+                            op = "~~",
+                            mod = "0") |>
+    purrr::list_rbind()
 
-  title <- paste0("# Residual (Co)Variances: ", productName)
-  paste(title,
-        syntaxOblique,
-        syntaxOrthogonal,
-        sep = "\n")
+  rbind(syntaxOrthogonal, syntaxOblique)
 }
 
 
@@ -445,21 +437,28 @@ getUniqueCombinations <- function(x) {
 
 
 
-generateFormula.measurement <- function(dependentName,
+getParTableMeasurement <- function(dependentName,
                                         predictorNames,
                                         operator = "=~",
                                         firstFixed = FALSE) {
 
-  predictors <- stringr::str_c(predictorNames, collapse = " + ")
-
+  nRows <- length(predictorNames)
+  parTable <- data.frame(lhs = rep(dependentName, nRows),
+                         op = rep(operator, nRows),
+                         rhs = predictorNames,
+                         mod = vector("character", nRows))
   if (firstFixed == TRUE) {
-    predictors <- paste0("1*", predictors)
+    parTable[["mod"]][[1]] <- "1"
   }
-  title <- paste("# Measurement Model:", dependentName)
-  formula <- paste(dependentName, operator, predictors)
-  paste(title, formula, sep = "\n")
+
+  parTable
 }
 
+
+
+createParTableRow <- function(vecLhsRhs, op, mod = "") {
+  data.frame(lhs = vecLhsRhs[[1]], op = op, rhs = vecLhsRhs[[2]], mod = mod)
+}
 
 
 ModSEM <- setClass("ModSEM")
