@@ -1,7 +1,7 @@
 
 getLines <- function(syntax) {
   # split syntax into individual lines and return as vector
-  unlist(strsplit(syntax, "\n"))
+  unlist(strsplit(syntax, "\n|;"))
 }
 
 
@@ -54,7 +54,7 @@ getTokensLine <- function(line, i = 1,
     if (grepl("[[:alpha:]_.]", token)) {
       class(token) <- "LavName"
 
-    } else if (grepl("[\\=\\~\\*\\+\\(\\)\\<\\>\\-\\,\\:]", token)) {
+    } else if (grepl("[\\=\\~\\*\\+\\(\\)\\<\\>\\-\\,\\:\\^]", token)) {
       class(token) <- "LavOperator"
 
     } else if (grepl("[[:alnum:]]", token)) {
@@ -275,7 +275,7 @@ evalTokens <- function(listTokens,
       return(evalOp(op, lhs = lhs, rhs = restExpression))
 
     } else {
-      stop("Expected operator after object name:")
+      stop("Expected operator after object name: ", listTokens[[1]])
     }
   }
 }
@@ -359,7 +359,9 @@ evalOp.LavAdd <- function(op, lhs, rhs) {
 
 evalOp.LavModify <- function(op, lhs, rhs) {
   rest <- evalTokens(rhs)
+
   attr(rest[[1]], "LavMod") <- lhs
+
   rest
 }
 
@@ -369,13 +371,14 @@ evalOp.LavInteraction <- function(op, lhs, rhs) {
   rest <- evalTokens(listTokens = rhs)
 
 
-
   # combine lhs and rest into one, inheriting attributes from lhs
-  combinedLhsRhs <- structure(paste0(lhs, ":", rest[[1]]),
-                              class = class(lhs),
-                              LavMod = attr(lhs, "LavMod"))
+  combinedLhsRhs <- paste0(lhs, ":", rest[[1]])
+
+  attributes(combinedLhsRhs) <- NULL #list(class = "LavName")
+
+
   if (length(rest) <= 1) {
-    return(c(combinedLhsRhs))
+    return(list(combinedLhsRhs))
   }
 
   c(combinedLhsRhs, rest[-1])

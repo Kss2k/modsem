@@ -1,0 +1,14 @@
+
+
+f01 <- function(y) {
+  x <- y
+  f02 <- function() {
+    f03 <- function() {
+      do.call("sqrt", list(x))
+    }
+    f03()
+  }
+  
+  f02()
+}
+x <- 15
