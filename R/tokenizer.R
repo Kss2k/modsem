@@ -173,7 +173,7 @@ fitsToken.LavNumeric <- function(token, nextChar) {
 
 getClassLavOp <- function(op) {
   if (length(op) != 1 || !is.character(op)) {
-    stop("incorrect input in getClassLavOp()")
+    stop("incorrect input in getClassLavOp(): ")
   }
   # does not support all types of operators yet
   switch (op,
@@ -186,9 +186,47 @@ getClassLavOp <- function(op) {
     ">"  = "LavLessRight",
     "==" = "LavEquals",
     ":"  = "LavInteraction",
-    ")"  = stop("Unmatched bracket for )"),
+    "("  = "LeftBracket",
+    ")"  = "RightBracket",
     stop("Unrecognized operator")
   )
+}
+
+
+
+isSpecificationOperator <- function(op) {
+  grepl("LavMeasure|LavPredict|LavCovar", getClassLavOp(op))
+}
+
+
+
+isEqualityOperator <- function(op) {
+  grepl("LavLessLeft|LavLessRight|LavEquals", getClassLavOp(op))
+}
+
+
+
+isModificationOperator <- function(op) {
+  grepl("LavModify|LavAdd|LeftBracket|RightBracket", getClassLavOp(op))
+}
+
+
+isInteractionOperator <- function(op) {
+    grepl("LavInteraction", getClassLavOp(op))
+}
+
+
+
+getExpressionType <- function(op) {
+  if (isSpecificationOperator(op)) {
+    "specification"
+  } else if (isEqualityOperator(op)) {
+    "equality"
+  } else if (isInteractionOperator(op)) {
+    "empty"
+  } else {
+    stop("Unrecognized expression type based on first operator in line, operator: ", op)
+  }
 }
 
 
@@ -206,15 +244,30 @@ getClassLavName <- function(name) {
 
 
 
+doesOperatorFitExprType <- function(op, expressionType) {
+  if (is.null(expressionType)) {
+    expressionType <- "empty"
+  }
+  switch (expressionType,
+    "empty" = isSpecificationOperator(op) |
+              isEqualityOperator(op) |
+              isInteractionOperator(op),
+    "specification" = isModificationOperator(op) |
+                      isInteractionOperator(op),
+    "equality" = !isSpecificationOperator(op),
+    stop("unrecognizxed expression type"))
+}
+
+
 evalTokens <- function(listTokens,
-                       # i = 1,
                        lhs = NULL,
                        op = NULL,
                        rhs = NULL,
-                       modifier = NULL) {
+                       expressionType = "empty") {
 
   if (1 > length(listTokens)) {
     return(NULL)
+
   } else if (length(listTokens) == 1) {
     return(listTokens[[1]])
   }
@@ -230,7 +283,7 @@ evalTokens <- function(listTokens,
                                  lhs = lhs,
                                  op = op,
                                  rhs = rhs,
-                                 modifier = modifier)
+                                 expressionType = expressionType)
         return(restParsed)
       } else if (className == "LavFunction") {
 
@@ -243,7 +296,7 @@ evalTokens <- function(listTokens,
                                    lhs = outputName,
                                    op = op,
                                    rhs = rhs,
-                                   modifier = modifier)
+                                   expressionType = expressionType)
           return(restParsed)
         }
         return(outputName)
@@ -256,23 +309,30 @@ evalTokens <- function(listTokens,
                                lhs = lhs,
                                op = op,
                                rhs = rhs,
-                               modifier = modifier)
+                               expressionType = expressionType)
       return(restParsed)
 
     } else {
-      stop("Expected line to start with an object name or number: ",
-           listTokens[[1]])
+      stop("Expected name at the start of: ",listTokens)
     }
-  } else if (is.null(op)) {
-    if (length(listTokens) == 1) {
-      return(listTokens[[1]])
 
-    } else if (class(listTokens[[1]]) == "LavOperator") {
+  } else if (is.null(op)) {
+    if (class(listTokens[[1]]) == "LavOperator") {
       op <- listTokens[[1]]
       class(op) <- getClassLavOp(op)
       restExpression <- listTokens[-1]
 
-      return(evalOp(op, lhs = lhs, rhs = restExpression))
+      if (!doesOperatorFitExprType(op, expressionType)) {
+        stop("Unexpected operator at: ", paste(lhs, listTokens))
+
+      } else if (length(listTokens) == 1) {
+        return(listTokens[[1]])
+      }
+      if (expressionType == "empty") {
+        expressionType <- getExpressionType(op)
+      }
+
+      return(evalOp(op, lhs = lhs, rhs = restExpression, expressionType = expressionType))
 
     } else {
       stop("Expected operator after object name: ", listTokens[[1]])
@@ -282,67 +342,67 @@ evalTokens <- function(listTokens,
 
 
 
-evalOp <- function(op, lhs, rhs) {
+evalOp <- function(op, lhs, rhs, expressionType) {
   UseMethod("evalOp")
 }
 
 
 
-evalOp.LavMeasure <- function(op, lhs, rhs) {
+evalOp.LavMeasure <- function(op, lhs, rhs, expressionType = "specification") {
   # op is just here to fetch the method
-  rest <- evalTokens(listTokens = rhs)
+  rest <- evalTokens(listTokens = rhs, expressionType = expressionType)
 
-  list(lhs = lhs, op = op, rhs = rest )
+  list(lhs = lhs, op = op, rhs = rest, expressionType = expressionType)
 }
 
 
 
-evalOp.LavPredict <- function(op, lhs, rhs) {
+evalOp.LavPredict <- function(op, lhs, rhs, expressionType = "specification") {
   # op is just here to fetch the method
-  rest <- evalTokens(listTokens = rhs)
+  rest <- evalTokens(listTokens = rhs, expressionType = expressionType)
 
-  list(lhs = lhs, op = op, rhs = rest )
+  list(lhs = lhs, op = op, rhs = rest, expressionType = expressionType )
 }
 
 
 
-evalOp.LavCovar <- function(op, lhs, rhs) {
+evalOp.LavCovar <- function(op, lhs, rhs, expressionType = "specification") {
   # op is just here to fetch the method
-  rest <- evalTokens(listTokens = rhs)
+  rest <- evalTokens(listTokens = rhs, expressionType = expressionType)
 
-  list(lhs = lhs, op = op, rhs = rest )
+  list(lhs = lhs, op = op, rhs = rest, expressionType = expressionType)
 }
 
 
 
-evalOp.LavEquals <- function(op, lhs, rhs) {
-  # op is just here to fetch the method
-  rest <- stringr::str_c(unlist(rhs), collapse = "")
-
-  list(lhs = lhs, op = op, rhs = rest)
-}
-
-
-
-evalOp.LavLessRight <- function(op, lhs, rhs) {
+evalOp.LavEquals <- function(op, lhs, rhs, expressionType = "equality") {
   # op is just here to fetch the method
   rest <- stringr::str_c(unlist(rhs), collapse = "")
 
-  list(lhs = lhs, op = op, rhs = rest)
+  list(lhs = lhs, op = op, rhs = rest, expressionType = expressionType)
 }
 
 
 
-evalOp.LavLessLeft <- function(op, lhs, rhs) {
+evalOp.LavLessRight <- function(op, lhs, rhs, expressionType = "equality") {
   # op is just here to fetch the method
   rest <- stringr::str_c(unlist(rhs), collapse = "")
 
-  list(lhs = lhs, op = op, rhs = rest)
+  list(lhs = lhs, op = op, rhs = rest, expressionType = expressionType)
 }
 
 
 
-evalOp.LavAdd <- function(op, lhs, rhs) {
+evalOp.LavLessLeft <- function(op, lhs, rhs, expressionType = "equality") {
+  # op is just here to fetch the method
+  rest <- stringr::str_c(unlist(rhs), collapse = "")
+
+  list(lhs = lhs, op = op, rhs = rest, expressionType = expressionType)
+}
+
+
+
+evalOp.LavAdd <- function(op, lhs, rhs, expressionType = "Specification") {
 
   # op is just here to fetch method
   if (length(rhs) == 1) {
@@ -351,14 +411,14 @@ evalOp.LavAdd <- function(op, lhs, rhs) {
              !(class(rhs[[1]]) %in% c("LavName", "LavNumeric"))) {
     stop("expected name after +")
   }
-  rest <- evalTokens(listTokens = rhs)
+  rest <- evalTokens(listTokens = rhs, expressionType = expressionType)
 
   c(list(lhs), rest)
 }
 
 
-evalOp.LavModify <- function(op, lhs, rhs) {
-  rest <- evalTokens(rhs)
+evalOp.LavModify <- function(op, lhs, rhs, expressionType = NULL) {
+  rest <- evalTokens(rhs, expressionType = expressionType)
 
   attr(rest[[1]], "LavMod") <- lhs
 
@@ -366,9 +426,9 @@ evalOp.LavModify <- function(op, lhs, rhs) {
 }
 
 
-evalOp.LavInteraction <- function(op, lhs, rhs) {
+evalOp.LavInteraction <- function(op, lhs, rhs, expressionType = NULL) {
 
-  rest <- evalTokens(listTokens = rhs)
+  rest <- evalTokens(listTokens = rhs, expressionType = expressionType)
 
 
   # combine lhs and rest into one, inheriting attributes from lhs
@@ -397,7 +457,7 @@ createSyntaxTree <- function(syntax) {
 createParTableBranch <- function(syntaxBranch) {
 
   # Run a function to check wheter there is nesting in Rhs, which throws an error
-  maxDepth(syntaxBranch[["rhs"]])
+  #maxDepth(syntaxBranch[["rhs"]])
   rhs <- vector("character", length(syntaxBranch[["rhs"]]))
   mod <- rhs
 

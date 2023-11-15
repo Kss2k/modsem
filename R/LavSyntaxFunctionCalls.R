@@ -1,5 +1,4 @@
 
-
 # function for finding index for matching ) to a function call
 findFunctionEnd <- function(listTokens, i = 1) {
   if (i > length(listTokens)) {
@@ -14,53 +13,65 @@ findFunctionEnd <- function(listTokens, i = 1) {
 }
 
 
+
 evalLavFunction <- function(listTokens) {
-
-  do.call(listTokens[[1]], listTokens[-c(1, length(listTokens))])
+  functionCall <- stringr::str_c(unlist(listTokens), collapse = "")
+  functionCall
+  eval(rlang::parse_expr(functionCall), envir = modsemEnvironment)
 }
 
 
 
-`mean(` <- function(...) {
-  varNames <- c(...)[c(...) != ","]
+LavMean <- function(...) {
+  data <- data.frame(...)
 
-  if (length(varNames) <= 1) {
+  if (ncol(data) <= 1) {
     stop2("Attempted to make a parcel out of a single variable!\n")
   }
-  if (!is.data.frame(LavDataToBeModified)) {
+  if (!is.data.frame(data)) {
     stop2("Data for parceling should be a dataframe\n")
   }
-  parcelName <- stringr::str_c(c("MEAN", varNames), collapse = "_")
+  parcelName <- stringr::str_c(c("MEAN", colnames(data)), collapse = "_")
   # Modify dataset outside the scope of the function
-  LavDataToBeModified[[parcelName]] <<- rowMeans(LavDataToBeModified[varNames])
+  modsemEnvironment$data[[parcelName]] <- rowMeans(data)
   parcelName
 }
 
 
 
-`sum(` <- function(...) {
-  varNames <- c(...)[c(...) != ","]
+LavSum <- function(...) {
+  data <- data.frame(...)
 
-  if (length(varNames) <= 1) {
+  if (ncol(data) <= 1) {
     stop2("Attempted to make a parcel out of a single variable!\n")
   }
-  if (!is.data.frame(LavDataToBeModified)) {
+  if (!is.data.frame(data)) {
     stop2("Data for parceling should be a dataframe\n")
   }
-  parcelName <- stringr::str_c(c("SUM", varNames), collapse = "_")
+  parcelName <- stringr::str_c(c("SUM", colnames(data)), collapse = "_")
   # Modify dataset outside the scope of the function
-  LavDataToBeModified[[parcelName]] <<- rowSums(LavDataToBeModified[varNames])
+  modsemEnvironment$data[[parcelName]] <- rowSums(data)
   parcelName
 }
 
 
 
-`equal(` <- function(...) {
-  paste0("equal(", ..., ")")
+LavEqual <- function(string) {
+  paste0("equal(\"", string, "\")")
 }
 
 
 
-`start(` <- function(...) {
-  paste0("start(", ..., ")")
+LavStart <- function(number) {
+  paste0("start(", number, ")")
 }
+
+
+
+modsemEnvironment <- rlang::env(
+  LavDataToBeModified = NULL,
+  mean = LavMean,
+  sum = LavSum,
+  equal = LavEqual,
+  start = LavStart
+)

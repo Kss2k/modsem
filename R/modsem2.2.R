@@ -60,17 +60,18 @@ modsem <- function(modelSyntax = NULL,
 
   # PreSteps -------------------------------------------------------------------
 
-  LavDataToBeModified <<- data
+  modsemEnvironment$data <- data
+  rlang::env_coalesce(modsemEnvironment, as.environment(data))
   ## Standardizing data
   if (standardizeData == TRUE) {
-    LavDataToBeModified <- lapplyDf(LavDataToBeModified,
+    modsemEnvironment$data <- lapplyDf(modsemEnvironment$data,
                      FUN = scaleIfNumeric,
                      scaleFactor = FALSE)
   }
 
     ## Centering Data (should not be paired with standardize data)
   if (centerData == TRUE) {
-    LavDataToBeModified <- lapplyDf(LavDataToBeModified,
+    modsemEnvironment$data <- lapplyDf(modsemEnvironment$data,
                      FUN = function(x) x - mean(x))
   }
 
@@ -139,7 +140,7 @@ modsem <- function(modelSyntax = NULL,
   # Calculating productinidicators based on method specifications --------------
   productIndicators <-
     createProductIndicators(modelSpecification,
-                            data = LavDataToBeModified,
+                            data = modsemEnvironment$data,
                             centerBefore = centerBefore,
                             centerAfter = centerAfter,
                             residualsProducts = residualsProducts)
@@ -150,7 +151,7 @@ modsem <- function(modelSyntax = NULL,
   mergedProductIndicators <- combineListDf(productIndicators)
 
   # Creating a new dataset with the productindicators
-  newData <- cbind.data.frame(LavDataToBeModified, mergedProductIndicators)
+  newData <- cbind.data.frame(modsemEnvironment$data, mergedProductIndicators)
 
   # Genereating a new syntax with constraints and measurmentmodel --------------
 
