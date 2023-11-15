@@ -426,7 +426,7 @@ evalOp.LavModify <- function(op, lhs, rhs, expressionType = NULL) {
 }
 
 
-evalOp.LavInteraction <- function(op, lhs, rhs, expressionType = NULL) {
+evalOp.LavInteraction <- function(op, lhs, rhs, expressionType = "empty") {
 
   rest <- evalTokens(listTokens = rhs, expressionType = expressionType)
 
@@ -434,8 +434,11 @@ evalOp.LavInteraction <- function(op, lhs, rhs, expressionType = NULL) {
   # combine lhs and rest into one, inheriting attributes from lhs
   combinedLhsRhs <- paste0(lhs, ":", rest[[1]])
 
-  attributes(combinedLhsRhs) <- NULL #list(class = "LavName")
+  attributes(combinedLhsRhs) <- list(class = "LavName")
 
+  if (expressionType == "empty") {
+    return(c(lhs = combinedLhsRhs, rest[-1]))
+  }
 
   if (length(rest) <= 1) {
     return(list(combinedLhsRhs))
