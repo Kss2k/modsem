@@ -17,7 +17,7 @@ findFunctionEnd <- function(listTokens, i = 1) {
 evalLavFunction <- function(listTokens) {
   functionCall <- stringr::str_c(unlist(listTokens), collapse = "")
   functionCall
-  eval(rlang::parse_expr(functionCall), envir = modsemEnvironment)
+  eval(rlang::parse_expr(functionCall), envir = modEnv)
 }
 
 
@@ -33,7 +33,7 @@ LavMean <- function(...) {
   }
   parcelName <- stringr::str_c(c("MEAN", colnames(data)), collapse = "_")
   # Modify dataset outside the scope of the function
-  modsemEnvironment$data[[parcelName]] <- rowMeans(data)
+  modEnv$data[[parcelName]] <- rowMeans(data)
   parcelName
 }
 
@@ -50,25 +50,35 @@ LavSum <- function(...) {
   }
   parcelName <- stringr::str_c(c("SUM", colnames(data)), collapse = "_")
   # Modify dataset outside the scope of the function
-  modsemEnvironment$data[[parcelName]] <- rowSums(data)
+  modEnv$data[[parcelName]] <- rowSums(data)
   parcelName
 }
 
 
 
 LavEqual <- function(string) {
+  if (!is.character(string)) {
+    stop("Expected argument in equal() to be string, got: ", string)
+  } else if (length(string) > 1) {
+    stop("Expected a single string in equal(), got: ", string)
+  }
   paste0("equal(\"", string, "\")")
 }
 
 
 
 LavStart <- function(number) {
+  if (!is.numeric(number)) {
+    stop("Expected argument in start() to be string, got: ", number)
+  } else if (length(number) > 1) {
+    stop("Expected a single number in start(), got: ", number)
+  }
   paste0("start(", number, ")")
 }
 
 
 
-modsemEnvironment <- rlang::env(
+modEnv <- rlang::env(
   LavDataToBeModified = NULL,
   mean = LavMean,
   sum = LavSum,

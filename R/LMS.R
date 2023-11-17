@@ -1,19 +1,20 @@
 
 
-modsem.LMS <- function(modelSpecification,
+modsem.LMS <- function(modelSpec,
                        data,
                        qml = FALSE,
                        standardizeData = TRUE,
                        verbose = TRUE) {
-  info <- modelSpecification$nlsem
+  info <- modelSpec$nlsem
   nlsemModel <- nlsem::lav2nlsem(info$modelSyntax)
 
   # Sorted colnames for xi variables
-  sortedIndicatorsXi <- unlist(info$indicatorsXi)
+  sortedIndsXi <- unlist(info$indsXi)
   # Sorted colnames for etas
-  sortedIndicatorsEta <- unlist(info$indicatorsEta)
+  sortedIndsEta <- unlist(info$indsEta)
+
   # Sort/subset data in sorted format (needed for nlsem::em() to work)
-  nlsemData <- data[c(sortedIndicatorsXi, sortedIndicatorsEta)]
+  nlsemData <- data[c(sortedIndsXi, sortedIndsEta)]
 
   if (standardizeData == TRUE) {
     nlsemData <- lapplyDf(nlsemData,

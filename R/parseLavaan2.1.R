@@ -4,15 +4,14 @@
 #' Parse lavaan model
 #'
 #' @param modelSyntax lavaan syntax
-#' @param isMeasurementSpecified have you specified the measurement model for the latent product
+#' @param isMeasureSpecified have you specified the measure model for the latent prod
 #'
 #' @return
 #' @export
 #'
 #' @examples
 parseLavaan <- function(
-    modelSyntax   = NULL,
-    isMeasurementSpecified = FALSE) {
+    modelSyntax   = NULL) {
 
   # Checking prerequisites -----------------------------------------------------
     # Check if a modelSyntax is provided, if not we should return an error
@@ -25,202 +24,183 @@ parseLavaan <- function(
   }
 
   # Convert to lavaan partable -------------------------------------------------
-  replacementPattern <- ":"
-
-  originalSyntax <- modelSyntax
-  cleanedModelSyntax <- stringr::str_remove_all(modelSyntax, replacementPattern)
-  # so I dont have to parse the syntax my self
-  parTable <- modsemify(originalSyntax)
+  parTable <- modsemify(modelSyntax)
 
   # Extracting some general information ----------------------------------------
     # Structural
-  structuralExpressions <- parTable[parTable$op == "~",]
+  structuralExprs <- parTable[parTable$op == "~",]
 
-    # Interactions/Product expressions
-  interactionExpressions <-
-    parTable[grepl(replacementPattern, parTable$rhs) & parTable$op == "~", ]
-  productNames <- unique(interactionExpressions$rhs)
-        # Get names for productTerms without __COLON__
-  productNamesCleaned <- stringr::str_remove_all(productNames,
-                                                 replacementPattern)
-    # Measurement
-  measurementExpressions <- parTable[parTable$op %in% c("=~", "<~"), ]
+    # Interactions/Prod exprs
+  interactionExprs <-
+    parTable[grepl(":", parTable$rhs) & parTable$op == "~", ]
+  prodNames <- unique(interactionExprs$rhs)
+        # Get names for prodTerms without __COLON__
+  prodNamesCleaned <- stringr::str_remove_all(prodNames,
+                                                 ":")
 
-  if (isMeasurementSpecified == FALSE) {
-    # I should Remove already specified measurementExpressions
+  # Logical vector indicating whether a row is a measureExpr
+  isMeasure <- parTable$op %in% c("=~", "<~")
+  measureExprs <- parTable[isMeasure, ]
 
-    # Logical vector indicating whether a row is a measurementExpression
-    isMeasurement <- parTable$op %in% c("=~", "<~")
+  prodMeasureExprs <-
+    parTable[isMeasure & grepl(":", parTable$lhs), ]
+  specifiedProds <-
+    stringr::str_remove_all(prodMeasureExprs$lhs,":")
+  unspecifiedProds <-
+    prodNamesCleaned[!(prodNamesCleaned %in% specifiedProds)]
 
-    # Logical vector indicating whether a row is a interaction
-    isProductExpression <- parTable$lhs %in% productNamesCleaned
-
-    # We want to remove latent measurement expressions
-    parTable <- parTable[!(isMeasurement & isProductExpression),]
-
-    # We should also go through our previous measurement
-    # expression and remove latentExpressions
-    measurementExpressions <- measurementExpressions[
-      !(measurementExpressions$lhs %in% productNamesCleaned),
-    ]
-  }
-  # Get all the indicators in the model
-  indicators <- unique(measurementExpressions$rhs)
+  # Get all the inds in the model
+  inds <- unique(measureExprs$rhs)
   # Get latent variable names (assumes first order)
-  latentVariables <- unique(measurementExpressions$lhs)
+  latentVariables <- unique(measureExprs$lhs)
 
   # Structuring the information ------------------------------------------------
-    # Are products latent?
-  elementsInProducts <- lapplyNamed(productNames,
-                                    FUN = splitProductName,
-                                    pattern = replacementPattern,
-                                    names = productNamesCleaned)
+    # Are prods latent?
+  elementsInProds <- lapplyNamed(prodNames,
+                                    FUN = splitProdName,
+                                    pattern = ":",
+                                    names = prodNamesCleaned)
 
 
   areElementsLatent <-
-    lapply(elementsInProducts,
-           FUN = function(x, indicators)  (x %in% latentVariables),
-           indicators)
+    lapply(elementsInProds,
+           FUN = function(x, inds)  (x %in% latentVariables),
+           inds)
 
   numberLatentElements <- lapply(areElementsLatent,
                                  FUN = sum)
 
-  # A product is considered latent if it has at least one latent variable
-  isProductLatent <- lapply(numberLatentElements,
+  # A prod is considered latent if it has at least one latent variable
+  isProdLatent <- lapply(numberLatentElements,
                             FUN = as.logical)
-  latentProducts <- unlist(productNamesCleaned)[unlist(isProductLatent)]
+  latentProds <- unlist(prodNamesCleaned)[unlist(isProdLatent)]
 
-    # Indicators belonging to latent variables which are specified in the syntax
-  indicatorsLatents <- structureLavExpressions(measurementExpressions)
+    # Inds belonging to latent variables which are specified in the syntax
+  indsLatents <- structureLavExprs(measureExprs)
 
-  # If a measurement model for the latent products arent specified we should
-  # create our own
-  if (isMeasurementSpecified == FALSE) {
-    # Get indicators belonging to latent variables, or if observed, just get the
-    # observed variable in product terms
-    indicatorsInProductTerms <- lapplyNamed(elementsInProducts,
-                                          FUN = getIndicatorsMultipleVariables,
-                                          indicatorsLatents = indicatorsLatents,
-                                          names = productNamesCleaned)
-    # Creating a relationalDF for productTerms
-    relationalDfs <- lapply(indicatorsInProductTerms,
-                            FUN = createRelationalDf,
-                            isMeasurementSpecified = FALSE,
+
+  relDfs <- list()
+  indsInProdTerms <- list()
+  indsInUnspecifedLatentProds <- list()
+  indProdNamesUnspecifiedLatents <- list()
+  # Computation for non-specified latent prods -----------------------------
+  if (length(unspecifiedProds) > 0) {
+    # nSpec = unspecied
+    # Get inds belonging to latent variables, or if observed, just get the
+    # observed variable in prod terms
+    nSpecIndsInProdTerms <-
+      lapplyNamed(elementsInProds[unspecifiedProds],
+                  FUN = getIndsMultipleVariables,
+                  indsLatents = indsLatents,
+                  names = unspecifiedProds)
+
+    # Creating a relDF for prodTerms
+    nSpecRelDfs <- lapply(nSpecIndsInProdTerms,
+                            FUN = createRelDf,
+                            isMeasureSpecified = FALSE,
                             pattern = NULL)
-    # Get a list with all the indicators in each interactionterm
-    indicatorsInProductTerms <- lapplyNamed(indicatorsInProductTerms,
+
+    # Get a list with all the inds in each interactionterm
+    nSpecIndsInProdTerms <- lapplyNamed(nSpecIndsInProdTerms,
                                             FUN = function(x) unname(unlist(x)),
-                                            names = productNamesCleaned)
-    # create the names for the indicatorProducts
-    indicatorNamesProductTerms <- lapplyNamed(relationalDfs,
+                                            names = unspecifiedProds)
+    # create the names for the indProds
+    nSpecIndNamesProdTerms <- lapplyNamed(nSpecRelDfs,
                                               FUN = colnames,
-                                              names = names(relationalDfs))
-    indicatorNamesLatents <- c(indicatorsLatents, indicatorNamesProductTerms)
+                                              names = names(nSpecRelDfs))
+    relDfs <- c(relDfs, nSpecRelDfs)
 
-    indicatorProductNamesLatents <-
-      indicatorNamesProductTerms[unlist(isProductLatent)]
-    inidicatorsInLatentProducts <-
-      indicatorsInProductTerms[unlist(isProductLatent)]
+    indProdNamesUnspecifiedLatents <-
+        nSpecIndNamesProdTerms[unlist(isProdLatent[unspecifiedProds])]
+    indsInProdTerms <- c(indsInProdTerms,
+                                  nSpecIndsInProdTerms)
+    indsInUnspecifedLatentProds <-
+      nSpecIndsInProdTerms[unlist(isProdLatent[unspecifiedProds])]
+  }
 
-  } else if (isMeasurementSpecified == TRUE) {
-    # Latents
-    latentProductExpressions <-
-      measurementExpressions[grepl(replacementPattern, measurementExpressions$lhs), ]
+  # Specified latent prods --------------------------------------------------
+  if (length(specifiedProds) > 0) {
 
-    if (nrow(latentProductExpressions) <= 0) {
-      stop2("Error relating to isMeasurementSpecified = TRUE \n",
-            "parseLavaan found no mesurement expressions for latent products, ",
-            'have you remembered to use ":" when specifying the name of the latent product')
-    }
+    #fix names in lhs-column
+    prodMeasureExprs[["lhs"]] <-
+      fixProdNames(prodMeasureExprs[["lhs"]],
+                      pattern = ":")
 
-    # fix names in lhs-column
-    latentProductExpressions[["lhs"]] <-
-      fixProductNames(latentProductExpressions[["lhs"]],
-                      pattern = replacementPattern)
-    # get the names of latent products to structure the output
-    latentProductNames <- fixProductNames(
-      unique(latentProductExpressions[["lhs"]]),
-      pattern = replacementPattern)
-    # Split the expressions based on what product term they belong to
-    expressionsLatentProducts <-
-      lapplyNamed(latentProductNames,
+    # Split the exprs based on what prod term they belong to
+    exprsLatentProds <-
+      lapplyNamed(specifiedProds,
                   FUN = function(name, df) df[df$lhs == name, ],
-                  df = latentProductExpressions)
-    # create a list with indicator names in latent product, and fix names
-    indicatorProductNamesLatents <-
-      lapply(expressionsLatentProducts,
+                  df = prodMeasureExprs)
+    # create a list with ind names in latent prod, and fix names
+    specIndProdNamesLatents <-
+      lapply(exprsLatentProds,
              FUN = function(df) df[["rhs"]])
 
-    # Observed
-    elementsInObservedProduct <- elementsInProducts[!(unlist(isProductLatent))]
-    indicatorProductNamesObserved <-
-      lapply(elementsInObservedProduct,
-             FUN = stringr::str_c,
-             collapse = replacementPattern)
+    # Get all inds in the prodTerms
+    specIndsInProdTerms <-
+      lapply(specIndProdNamesLatents,
+             FUN = function(x, pattern) unique(splitProdNamesVec(x, pattern)),
+             pattern = ":")
 
-    # Combining productNames for both, and creating relationalDfs
-    indicatorProductNames <- c(indicatorProductNamesLatents,
-                               indicatorProductNamesObserved)
+    # Create rel Dfs
+    # This has to be done differently from when measure is not specified,
+    # since we no longer want all prodInds combinations
+    specRelDfs <- lapplyNamed(
+      specIndProdNamesLatents,
+      FUN = createRelDf,
+      isMeasureSpecified = TRUE,
+      pattern = ":",
+      names = names(specIndProdNamesLatents))
 
-    # Get all indicators in the productTerms
-    indicatorsInProductTerms <-
-      lapply(indicatorProductNames,
-             FUN = function(x, pattern) unique(splitProductNamesVec(x, pattern)),
-             pattern = replacementPattern)
+    specIndProdNamesLatents <-
+      lapplyNamed(specIndProdNamesLatents,
+                  FUN = fixProdNames,
+                  pattern = ":",
+                  names = names(specIndProdNamesLatents))
 
-    # Create relational Dfs
-      # This has to be done differently from when measurement is not specified,
-        # since we no longer want all productIndicators combinations
-    relationalDfs <- lapplyNamed(
-      indicatorProductNames,
-      FUN = createRelationalDf,
-      isMeasurementSpecified = TRUE,
-      pattern = replacementPattern,
-      names = names(indicatorProductNames))
-
-    indicatorProductNamesLatents <-
-      lapplyNamed(indicatorProductNamesLatents,
-                  FUN = fixProductNames,
-                  pattern = replacementPattern,
-                  names = names(indicatorProductNamesLatents))
+    relDfs  <- c(relDfs, specRelDfs)
+    indsInProdTerms <- c(indsInProdTerms,
+                                  specIndsInProdTerms)
   }
 
   # Info nlsem -----------------------------------------------------------------
-  etaNames <- unique(structuralExpressions$lhs)
-  allPredictors <- unique(structuralExpressions$rhs)
-  simplePredictors <- allPredictors[!grepl(replacementPattern, allPredictors)]
+  etaNames <- unique(structuralExprs$lhs)
+  allPredictors <- unique(structuralExprs$rhs)
+  simplePredictors <- allPredictors[!grepl(":", allPredictors)]
   # I do this in the counter intuitive way, to keep the same order as the
-  # measurement expressions in the model, which is the way the nlsem model reads
+  # measure exprs in the model, which is the way the nlsem model reads
   # the syntax
   latentSimplePredictors <-
     latentVariables[latentVariables %in% simplePredictors]
 
   nlsemInfo <- list(etaNames = etaNames,
-                    indicatorsEta = indicatorsLatents[etaNames],
-                   xiNames = latentSimplePredictors,
-                   indicatorsXi = indicatorsLatents[latentSimplePredictors],
-                   modelSyntax = originalSyntax)
+                    indsEta = indsLatents[etaNames],
+                    xiNames = latentSimplePredictors,
+                    indsXi = indsLatents[latentSimplePredictors],
+                    modelSyntax = modelSyntax)
 
-  # Return modelSpecification --------------------------------------------------
-  modelSpecification <- list(
-    lavaanSyntax = cleanedModelSyntax,
+  # Return modelSpec --------------------------------------------------
+  modelSpec <- list(
     nlsem = nlsemInfo,
     parTable = parTable,
-    productNames = productNamesCleaned,
-    elementsInProductNames = elementsInProducts,
-    relationalDfs = relationalDfs,
-    indicatorsInProductTerms = indicatorsInProductTerms,
-    productNamesLatents = names(indicatorProductNamesLatents), # This is not very pretty... but it makes sure they are sorted the same
-    indicatorProductNamesLatents = indicatorProductNamesLatents
+    prodNames = prodNamesCleaned,
+    elementsInProdNames = elementsInProds,
+    relDfs = relDfs,
+    indsInProdTerms = indsInProdTerms,
+
+    #unpecifiedLatentProds = latentProds[!(latentProds %in% specifiedProds)],
+    indsInUnspecifedLatentProds = indsInUnspecifedLatentProds,
+    unspecifiedLatentProds = names(indsInUnspecifedLatentProds),
+    indProdNamesUnspecifiedLatents = indProdNamesUnspecifiedLatents
     )
 
-  modelSpecification
+  modelSpec
 }
 
 
 
-# Function for structuring expressions in a parTable ---------------------------
-structureLavExpressions <- function(parTable = NULL) {
+# Function for structuring exprs in a parTable ---------------------------
+structureLavExprs <- function(parTable = NULL) {
   # If empty return NULL
   if (is.null(parTable)) return(NULL)
   # Same if nrow <= 0
@@ -235,85 +215,85 @@ structureLavExpressions <- function(parTable = NULL) {
 
 
 
-getIndicatorsVariable <- function(varName = NULL,  indicatorsLatents = NULL) {
+getIndsVariable <- function(varName = NULL,  indsLatents = NULL) {
 
   if (is.null(varName)) {
     return(
-      stop2("Error in getIndicatorsVariable(), varName is NULL")
+      stop2("Error in getIndsVariable(), varName is NULL")
     )
   }
 
   # Get the names of the latent variables in the model
-  latentVariables <- names(indicatorsLatents)
+  latentVariables <- names(indsLatents)
 
   # Check if our varName is a latent- or an observed variable
   if (!(varName %in% latentVariables)) {
     # If it is not a latent variable, we should just return the observed variable
     return(varName)
   } else if (varName %in% latentVariables) {
-    # If it is a latent variable, we should return its indicators
-    return(indicatorsLatents[[varName]])
+    # If it is a latent variable, we should return its inds
+    return(indsLatents[[varName]])
   }
 
   # Error if it is neither a latent- nor an observerd variable
   stop2(
-    "Something went wrong in getIndicatorsVariable(), varName neither observed not latent"
+    "Something went wrong in getIndsVariable(), varName neither observed not latent"
   )
 }
 
 
 
-# Function for getting indicators for mutliple variables -----------------------
+# Function for getting inds for mutliple variables -----------------------
 
-getIndicatorsMultipleVariables <- function(varNames = NULL,
-                                           indicatorsLatents = NULL) {
+getIndsMultipleVariables <- function(varNames = NULL,
+                                           indsLatents = NULL) {
   # varNames = vector with variableNames
   # output should be a list
 
   # Check that arguements are supplied/not NULL
   if (is.null(varNames)) {
     return(
-      stop2("Error in getIndicatorsMultipleVariables(), varNames is NULL")
+      stop2("Error in getIndsMultipleVariables(), varNames is NULL")
     )
   }
 
-  # use getIndicatorsVariable for each element in varNames, and return a named list
+  # use getIndsVariable for each element in varNames, and return a named list
   lapplyNamed(varNames,
-              FUN = getIndicatorsVariable,
-              indicatorsLatents = indicatorsLatents)
+              FUN = getIndsVariable,
+              indsLatents = indsLatents)
 }
 
 
 
-splitProductName <- function(productName, pattern) {
-  if (is.null(productName)) {
-    stop2("productNames in splitProductName was NULL")
+splitProdName <- function(prodName, pattern) {
+  if (is.null(prodName)) {
+    stop2("prodNames in splitProdName was NULL")
   }
   if (is.null(pattern)) {
-    stop2("pattern not supplied in splitProductName")
+    stop2("pattern not supplied in splitProdName")
   }
-  stringr::str_split_1(productName, pattern)
+  stringr::str_split_1(prodName, pattern)
 }
 
 
 
-splitProductNamesVec <- function(productNames, pattern) {
-  if (is.null(productNames)) {
-    stop2("productNames in splitProductNamesVec was NULL")
+splitProdNamesVec <- function(prodNames, pattern) {
+  if (is.null(prodNames)) {
+    stop2("prodNames in splitProdNamesVec was NULL")
   }
   if (is.null(pattern)) {
-    stop2("pattern not supplied in splitProductName")
+    stop2("pattern not supplied in splitProdName")
   }
-  unlist(stringr::str_split(productNames, pattern))
+  unlist(stringr::str_split(prodNames, pattern))
 }
 
 
 
-fixProductNames <- function(productName, pattern = NULL) {
+fixProdNames <- function(prodName, pattern = NULL) {
   if (is.null(pattern)) {
-    stop2("pattern not supplied in fixProductNames")
+    stop2("pattern not supplied in fixProdNames")
   }
-  stringr::str_remove_all(productName, pattern)
+  stringr::str_remove_all(prodName, pattern)
 }
 
 
@@ -324,26 +304,26 @@ fixLatentNamesSyntax <- function(modelSyntax, pattern) {
 
 
 
-createRelationalDf <- function(indicatorsProductTerm,
-                               isMeasurementSpecified,
+createRelDf <- function(indsProdTerm,
+                               isMeasureSpecified,
                                pattern = NULL) {
 
-  if (isMeasurementSpecified == FALSE) {
-    relationalDf <- t(expand.grid(indicatorsProductTerm))
+  if (isMeasureSpecified == FALSE) {
+    relDf <- t(expand.grid(indsProdTerm))
 
-  } else if (isMeasurementSpecified == TRUE) {
+  } else if (isMeasureSpecified == TRUE) {
     if (is.null(pattern)) {
-      stop2("pattern not supplied in createRelationalDf isMeasurementSpecified = TRUE")
+      stop2("pattern not supplied in createRelDf isMeasureSpecified = TRUE")
     }
-    relationalDf <- stringr::str_split_fixed(indicatorsProductTerm,
+    relDf <- stringr::str_split_fixed(indsProdTerm,
                                              pattern,
                                              2) |>
                     t() |> as.data.frame()
 
   }
-  names <- apply(relationalDf, MARGIN = 2, FUN = stringr::str_c, collapse = "")
+  names <- apply(relDf, MARGIN = 2, FUN = stringr::str_c, collapse = "")
 
-  structure(as.data.frame(relationalDf),
+  structure(as.data.frame(relDf),
             names = names)
 
 }

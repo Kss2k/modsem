@@ -417,7 +417,8 @@ evalOp.LavAdd <- function(op, lhs, rhs, expressionType = "Specification") {
 }
 
 
-evalOp.LavModify <- function(op, lhs, rhs, expressionType = NULL) {
+
+evalOp.LavModify <- function(op, lhs, rhs, expressionType = "empty") {
   rest <- evalTokens(rhs, expressionType = expressionType)
 
   attr(rest[[1]], "LavMod") <- lhs
@@ -426,15 +427,11 @@ evalOp.LavModify <- function(op, lhs, rhs, expressionType = NULL) {
 }
 
 
+
 evalOp.LavInteraction <- function(op, lhs, rhs, expressionType = "empty") {
-
   rest <- evalTokens(listTokens = rhs, expressionType = expressionType)
-
-
   # combine lhs and rest into one, inheriting attributes from lhs
   combinedLhsRhs <- paste0(lhs, ":", rest[[1]])
-
-  attributes(combinedLhsRhs) <- list(class = "LavName")
 
   if (expressionType == "empty") {
     return(c(lhs = combinedLhsRhs, rest[-1]))
@@ -458,7 +455,6 @@ createSyntaxTree <- function(syntax) {
 
 
 createParTableBranch <- function(syntaxBranch) {
-
   # Run a function to check wheter there is nesting in Rhs, which throws an error
   #maxDepth(syntaxBranch[["rhs"]])
   rhs <- vector("character", length(syntaxBranch[["rhs"]]))

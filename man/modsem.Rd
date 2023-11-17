@@ -10,13 +10,13 @@ modsem(
   method = "rca",
   standardizeData = FALSE,
   centerData = FALSE,
-  isMeasurementSpecified = FALSE,
+  isMeasureSpecified = FALSE,
   firstLoadingFixed = TRUE,
   centerBefore = FALSE,
   centerAfter = FALSE,
-  residualsProducts = FALSE,
+  residualsProds = FALSE,
   residualCovSyntax = FALSE,
-  constrainedProductMean = FALSE,
+  constrainedProdMean = FALSE,
   qml = FALSE,
   ...
 )
@@ -30,25 +30,25 @@ modsem(
 "rca" = residual centering approach (passed to lavaan),
 "uca" = unconstrained approach (passed to lavaan),
 "dblcent" = double centering approach (passed to lavaan),
-"pind" = product indicator approach (passed to lavaan),
+"pind" = prod ind approach (passed to lavaan),
 "lms" = laten model structural equations (passed to nlsem),
 "custom" = use parameters specified in the function call (passed to lavaan)}
 
 \item{standardizeData}{should data be scaled before fitting model}
 
-\item{isMeasurementSpecified}{have you specified the measurement model for the latent product}
+\item{isMeasureSpecified}{have you specified the measure model for the latent prod}
 
-\item{firstLoadingFixed}{Sould the first factorloading in the latent product be fixed to one?}
+\item{firstLoadingFixed}{Sould the first factorloading in the latent prod be fixed to one?}
 
-\item{centerBefore}{should indicators in products be centered before computing products (overwritten by method, if method != NULL)}
+\item{centerBefore}{should inds in prods be centered before computing prods (overwritten by method, if method != NULL)}
 
-\item{centerAfter}{should indicator products be centered after they have been computed?}
+\item{centerAfter}{should ind prods be centered after they have been computed?}
 
-\item{residualsProducts}{should indicator products be centered using residuals (overwritten by method, if method != NULL)}
+\item{residualsProds}{should ind prods be centered using residuals (overwritten by method, if method != NULL)}
 
 \item{residualCovSyntax}{should syntax for residual covariances be produced (overwritten by method, if method != NULL)}
 
-\item{constrainedProductMean}{should syntax product mean be produced (overwritten by method, if method != NULL)}
+\item{constrainedProdMean}{should syntax prod mean be produced (overwritten by method, if method != NULL)}
 
 \item{...}{arguments passed to other functions, e.g,. lavaan}
 }
