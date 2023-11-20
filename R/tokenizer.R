@@ -3,7 +3,7 @@ getLines <- function(syntax) {
   # split syntax into individual lines and return as vector
   unlist(strsplit(syntax, "\n|;"))
 }
-
+get
 
 
 getCharsLine <- function(line, i = 1) {
@@ -26,9 +26,10 @@ tokenizeSyntax <- function(syntax) {
 
   tokensLines <- lapply(lines[!isNull],
          getTokensLine)
-  # remove lines which are list(0) since they only represent comments
+  # remove lines which are list(0) since they only
   isListZeroLen <- vapply(tokensLines,
-                          FUN = function(list) length(list) <= 0,
+                          FUN = function(list) length(list) <= 0 ||
+                            areAllLavBlank(list),
                           FUN.VALUE = vector("logical", length = 1L))
   tokensLines[!isListZeroLen]
 
@@ -501,4 +502,13 @@ parTableToSyntax <- function(parTable, removeColon = FALSE) {
     out <- stringr::str_remove_all(out, ":")
   }
   out
+}
+
+
+
+
+areAllLavBlank <- function(list) {
+  isLavBlank <- vapply(list, FUN = function(x) class(x) != "LavBlank",
+         FUN.VALUE = vector("logical", length = 1L))
+  !as.logical(sum(isLavBlank))
 }
