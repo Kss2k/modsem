@@ -22,7 +22,7 @@ scaledDf1 <- lapplyDf(df1, scale)
 
 realModel <- lm(realY ~ realX*realZ,scaledDf1)
 summary(realModel)
-m1 <- '
+m1 <-'
   # Outer Model
   X =~ x1 + x2 +x3
   Y =~ y1 + y2 + y3
@@ -30,9 +30,21 @@ m1 <- '
   X:Z =~ mean(x1, x2, x3):mean(z1, z2, z3)
   # Inner model
   Y ~ X + Z + X:Z
+
 '
 
-avDataToBeModified <- df1
+
+test <- '
+# Outer Model
+  X =~ x1 + x2 +x3
+  Y =~ y1 + y2 + y3
+  Z =~ z1 + start(0.1)*z2 + z3
+
+  # Inner model
+  Y ~ X + Z
+'
+
+
 
 # Manual
 
@@ -45,7 +57,7 @@ realModel <- lm(meanY ~ meanX*meanZ,df1)
 summary(realModel)
   # Using modsem
 observedModel <- '
-meanY ~ meanX + meanZ + meanX:meanZ
+meanY ~ meanX + equal("meanY~meanZ")*meanZ + meanX:meanZ
 '
 observed <- modsem(observedModel, df1, method = "pind")
 summary(observed)
@@ -53,7 +65,8 @@ summary(observed)
 
 # Using parceling in modsem
 parcelingModel <- '
-mean(y1, y2, y3) ~ mean(x1, x2, x3) + a*mean(z1, z2, z3) + mean(x1, x2, x3):mean(z1, z2, z3)
+mean(y1, y2, y3) ~ start(0.1)*mean(x1, x2, x3) + equal("MEAN_x1_x2_x3")*mean(z1, z2, z3) + mean(x1, x2, x3):mean(z1, z2, z3)
+
 '
 parcM <- modsem(parcelingModel, df1, method = "pind")
 summary(parcM)

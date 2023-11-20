@@ -45,7 +45,7 @@ parseLavaan <- function(
   prodMeasureExprs <-
     parTable[isMeasure & grepl(":", parTable$lhs), ]
   specifiedProds <-
-    stringr::str_remove_all(prodMeasureExprs$lhs,":")
+    unique(stringr::str_remove_all(prodMeasureExprs$lhs,":"))
   unspecifiedProds <-
     prodNamesCleaned[!(prodNamesCleaned %in% specifiedProds)]
 
@@ -137,6 +137,7 @@ parseLavaan <- function(
              FUN = function(df) df[["rhs"]])
 
     # Get all inds in the prodTerms
+
     specIndsInProdTerms <-
       lapply(specIndProdNamesLatents,
              FUN = function(x, pattern) unique(splitProdNamesVec(x, pattern)),

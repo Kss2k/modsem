@@ -75,7 +75,7 @@ m1 <- '
   Y ~ X + Z + X:Z
 '
 
-scaledDf1 <- lapplyDf(df1, scale, scale = FALSE)
+scaledDf1 <- lapplyDf(df1, scale)
 realModel <- lm(realY ~ realX*realZ,scaledDf1)
 summary(realModel)
 ```
@@ -92,7 +92,7 @@ m1 <- '
   Y ~ X:Z + X + Z  
 '
 
-m1Rca <- modsem(m1, scaledDf1, method = "rca", 
+m1Rca <- modsem(m1, df1, method = "rca", 
                 standardizeData = FALSE)
 summary(m1Rca)
 
@@ -101,7 +101,7 @@ summary(m1Rca)
   # using semtools
   
 ```{r}
-df1ST <- indProd(df1, 
+df1ST <- indProd(scaledDf1, 
         var1 = c("x1", "x2", "x3"),
         var2 = c("z1", "z2", "z3"),
         match = FALSE, 
@@ -359,14 +359,13 @@ m2 <- '
   Z =~ z1 + z2 + z3
   G =~ g1 + g2 + g3
   H =~ h1 + h2 + h3
-  G:H =~ g1:h1
   X:Z =~ x1:z1
   # Inner model
-  Y ~ X + Z + G + H + X:Z + G:H
+  Y ~ X + Z + G + H + X:Z + G:H + g1:x1
 '
 
-latentModelRca2 <- modsem(m2, df2, method = "rca", isMeasurementSpecified = FALSE,
-                          standardizeData = TRUE)
+latentModelRca2 <- modsem(m2, df2, method = "rca")
+                          
 summary(latentModelRca2)
 ```
 
@@ -443,7 +442,7 @@ regModelModsem <- '
 y1 ~ x1 + z1 + x1:z1
 '
 
-m4 <- modsem(regModelModsem, df1, method = "uca")
+m4 <- modsem(regModelModsem, df1, method = "rca")
 summary(m4)
 
 ```

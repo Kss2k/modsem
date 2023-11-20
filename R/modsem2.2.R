@@ -133,7 +133,6 @@ modsem <- function(modelSyntax = NULL,
                             centerBefore = centerBefore,
                             centerAfter = centerAfter,
                             residualsProds = residualsProds)
-
   # Merging prodInds into a single dataset ----------------------------
     # Old solution (does not handle/warn about duplicates)
       # mergedProdInds <- purrr::list_cbind(unname(prodInds))
@@ -297,21 +296,20 @@ generateSyntax <- function(modelSpec,
 
   measureParTable <-
     purrr::map2(.x = unspecifiedLatentProds,
-                    .y = indProdNamesNonSpec,
-                    .f = getParTableMeasure,
+                .y = indProdNamesNonSpec,
+                .f = getParTableMeasure,
                     operator = "=~",
                     firstFixed = firstFixed) |>
     purrr::list_rbind()
+
   parTable <- rbind(parTable, measureParTable)
-
-
   # Residual covariances -------------------------------------------------------
   if (!is.logical(residualCovSyntax)) {
     stop2("residualCovSyntax is not FALSE or TRUE in generateSyntax")
 
   } else if (residualCovSyntax == TRUE) {
     residualCovariances <- purrr::map2(.x = relDfs,
-                               .y = prodNames,
+                                      .y = prodNames,
                                .f = getParTableResCov) |>
       purrr::list_rbind()
     parTable <- rbind(parTable, residualCovariances)
@@ -375,7 +373,9 @@ getParTableResCov <- function(relDf, prodName) {
   if (ncol(relDf) <= 1) {
     return(NULL)
   }
+
   prodNames <- colnames(relDf)
+
   uniqueCombinations <- getUniqueCombinations(prodNames)
   # Now we want to specify the covariance based on shared inds
   isShared <- vector("logical", length = nrow(uniqueCombinations))
@@ -396,20 +396,29 @@ getParTableResCov <- function(relDf, prodName) {
   }
 
   # Syntax for oblique covariances
-  syntaxOblique <- apply(uniqueCombinations[isShared, c("V1", "V2")],
-                         MARGIN = 1,
-                          FUN = createParTableRow,
-                          op = "~~") |>
-    purrr::list_rbind()
+  prodsSharingInds <- uniqueCombinations[isShared, c("V1", "V2")]
 
+  if (nrow(prodsSharingInds) > 0) {
+    syntaxOblique <- apply(prodsSharingInds,
+                           MARGIN = 1,
+                           FUN = createParTableRow,
+                           op = "~~") |>
+      purrr::list_rbind()
+  } else {
+    syntaxOblique <- NULL
+  }
+  prodsNotSharingInds <- uniqueCombinations[!isShared, c("V1", "V2")]
 
-  syntaxOrthogonal <- apply(uniqueCombinations[!isShared, c("V1", "V2")],
-                            MARGIN = 1,
-                            FUN = createParTableRow,
-                            op = "~~",
-                            mod = "0") |>
-    purrr::list_rbind()
-
+  if (nrow(prodsNotSharingInds) > 0) {
+    syntaxOrthogonal <- apply(prodsNotSharingInds,
+                              MARGIN = 1,
+                              FUN = createParTableRow,
+                              op = "~~",
+                              mod = "0") |>
+      purrr::list_rbind()
+  } else {
+    syntaxOrthogonal <- NULL
+  }
   rbind(syntaxOrthogonal, syntaxOblique)
 }
 

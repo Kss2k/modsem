@@ -4,12 +4,12 @@
 \alias{parseLavaan}
 \title{Parse lavaan model}
 \usage{
-parseLavaan(modelSyntax = NULL, isMeasurementSpecified = FALSE)
+parseLavaan(modelSyntax = NULL)
 }
 \arguments{
 \item{modelSyntax}{lavaan syntax}
 
-\item{isMeasurementSpecified}{have you specified the measurement model for the latent product}
+\item{isMeasureSpecified}{have you specified the measure model for the latent prod}
 }
 \description{
 Parse lavaan model
