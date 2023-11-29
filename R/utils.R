@@ -94,10 +94,10 @@ scaleIfNumeric <- function(x, scaleFactor = TRUE) {
     # version of it
 combineListDf <- function(listDf) {
   # This function should work recursively
-  if (is.null(listDf)) {
+  if (is.null(listDf) || length(listDf) < 1) {
     return(NULL)
 
-  } else if (length(listDf) <= 1)  {
+  } else if (length(listDf) == 1)  {
     return(listDf[[1]])
 
     # This shouldnt really be necessary, but in the case that the function
@@ -147,4 +147,37 @@ maxDepth <- function(list, max = 2, depth = 1) {
   }
   deepest
 
+}
+
+
+
+capturePrint <- function(x) {
+  paste(capture.output(print(x)), collapse = "\n")
+}
+
+
+
+rbindParTable <- function(parTable, newRows) {
+  # Merges rows of two partables, and replaces duplicates in the lhs partable
+  # check for duplicates in lhs, op & rhs
+  if (is.null(newRows) || NROW(newRows) == 0 || NCOL(newRows) == 0) {
+    return(parTable)
+  }
+  newParTableRows <- apply(newRows[c("lhs", "op", "rhs")],
+                        MARGIN = 1,
+                        FUN = function(row)
+                          list(row)) |>
+    purrr::list_flatten()
+
+  duplicateRows <- apply(parTable[c("lhs", "op", "rhs")],
+        MARGIN = 1,
+        FUN = function(row, parTableRows)
+          list(row) %in% parTableRows,
+        parTableRows = newParTableRows)
+  if (sum(as.integer(duplicateRows)) > 0) {
+    warning("Some duplicates in the parTable was removed, have you accidentally ",
+            "specified some of these in your syntax? \n",
+            capturePrint(parTable[duplicateRows, ]))
+  }
+  rbind(parTable[!duplicateRows, ], newRows)
 }

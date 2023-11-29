@@ -96,14 +96,12 @@ parseLavaan <- function(
 
     # Creating a relDF for prodTerms
     nSpecRelDfs <- lapply(nSpecIndsInProdTerms,
-                            FUN = createRelDf,
-                            isMeasureSpecified = FALSE,
-                            pattern = NULL)
+                            FUN = createRelDf)
 
     # Get a list with all the inds in each interactionterm
     nSpecIndsInProdTerms <- lapplyNamed(nSpecIndsInProdTerms,
-                                            FUN = function(x) unname(unlist(x)),
-                                            names = unspecifiedProds)
+                                        FUN = function(x) unname(unlist(x)),
+                                        names = unspecifiedProds)
     # create the names for the indProds
     nSpecIndNamesProdTerms <- lapplyNamed(nSpecRelDfs,
                                               FUN = colnames,
@@ -138,21 +136,25 @@ parseLavaan <- function(
 
     # Get all inds in the prodTerms
 
-    specIndsInProdTerms <-
-      lapply(specIndProdNamesLatents,
-             FUN = function(x, pattern) unique(splitProdNamesVec(x, pattern)),
-             pattern = ":")
+    specIndsInProdTerms <- lapply(elementsInProds[specifiedProds],
+                                  FUN = getIndsLatents,
+                                  latents = indsLatents)
 
-    # Create rel Dfs
-    # This has to be done differently from when measure is not specified,
-    # since we no longer want all prodInds combinations
-    specRelDfs <- lapplyNamed(
-      specIndProdNamesLatents,
-      FUN = createRelDf,
-      isMeasureSpecified = TRUE,
-      pattern = ":",
-      names = names(specIndProdNamesLatents))
+    # Create relational df with all the possible combos
+    allCombosRelDfs <- lapplyNamed(
+      specIndsInProdTerms,
+      FUN = createRelDf)
 
+    # then prune these combos
+    specRelDfs <- purrr::map2(
+      .x = specIndProdNamesLatents,
+      .y = allCombosRelDfs,
+      .f = function(name, df) df[stringr::str_remove_all(name, pattern = ":")])
+
+    # Flatten the list, so that it collectively referst to XY, not XY$X and XY$Y
+    specIndsInProdTerms <- lapplyNamed(specIndsInProdTerms,
+                                       FUN = function(x) unname(unlist(x)),
+                                       names = specifiedProds)
     specIndProdNamesLatents <-
       lapplyNamed(specIndProdNamesLatents,
                   FUN = fixProdNames,
@@ -305,28 +307,29 @@ fixLatentNamesSyntax <- function(modelSyntax, pattern) {
 
 
 
-createRelDf <- function(indsProdTerm,
-                               isMeasureSpecified,
-                               pattern = NULL) {
-
-  if (isMeasureSpecified == FALSE) {
-    relDf <- t(expand.grid(indsProdTerm))
-
-  } else if (isMeasureSpecified == TRUE) {
-    if (is.null(pattern)) {
-      stop2("pattern not supplied in createRelDf isMeasureSpecified = TRUE")
-    }
-    relDf <- stringr::str_split_fixed(indsProdTerm,
-                                             pattern,
-                                             2) |>
-                    t() |> as.data.frame()
-
-  }
+createRelDf <- function(indsProdTerm) {
+  relDf <- t(expand.grid(indsProdTerm))
   names <- apply(relDf, MARGIN = 2, FUN = stringr::str_c, collapse = "")
 
   structure(as.data.frame(relDf),
             names = names)
 
+}
+
+
+
+# This should return just an observed variable, if it does not belong in a latent one
+getIndsLatents <- function(names, latents) {
+  lapplyNamed(names,
+         FUN = function(name, latents) {
+           if (name %in% names(latents)) {
+             latents[[name]]
+           } else {
+             name
+           }
+         },
+         latents = latents,
+         names = names)
 }
 
 

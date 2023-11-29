@@ -43,25 +43,28 @@ modsem <- function(modelSyntax = NULL,
                    standardizeData = FALSE,
                    centerData = FALSE,
                    isMeasureSpecified = FALSE,
-                   firstLoadingFixed = TRUE,
+                   firstLoadingFixed = FALSE,
                    centerBefore = FALSE,
                    centerAfter = FALSE,
                    residualsProds = FALSE,
                    residualCovSyntax = FALSE,
                    constrainedProdMean = FALSE,
+                   constrainedLoadings = FALSE,
+                   constrainedVar = FALSE,
+                   constrainedResCovMethod = "equality",
+                   scaleBefore = FALSE,
                    qml = FALSE,
                    ...) {
   if (is.null(modelSyntax)) {
-    stop2("No model syntax provided in modsem")
+    stop("No model syntax provided in modsem")
   }
   if (is.null(data)) {
-    stop2("No data provided in modsem")
+    stop("No data provided in modsem")
   }
 
   # PreSteps -------------------------------------------------------------------
 
   modEnv$data <- data
-  rlang::env_coalesce(modEnv, as.environment(data))
   ## Standardizing data
   if (standardizeData == TRUE) {
     modEnv$data <- lapplyDf(modEnv$data,
@@ -86,29 +89,54 @@ modsem <- function(modelSyntax = NULL,
       residualsProds <- TRUE
       residualCovSyntax <- TRUE
       constrainedProdMean <- FALSE
+      constrainedLoadings <- FALSE
+      constrainedVar <- FALSE
+      scaleBefore <- FALSE
     },
     "uca" = {
       centerBefore <- TRUE
       residualsProds <- FALSE
       residualCovSyntax <- TRUE
       constrainedProdMean <- TRUE
+      constrainedLoadings <- FALSE
+      constrainedVar <- FALSE
+      scaleBefore <- FALSE
     },
     "pind" = {
       centerBefore <- FALSE
       residualsProds <- FALSE
       residualCovSyntax <- FALSE
       constrainedProdMean <- FALSE
+      constrainedLoadings <- FALSE
+      constrainedVar <- FALSE
+      scaleBefore <- FALSE
     },
     "dblcent" = {
       centerBefore <- TRUE
       centerAfter <- TRUE
       residualsProds <- FALSE
       residualCovSyntax <- TRUE
+      constrainedProdMean <- FALSE
+      constrainedLoadings <- FALSE
+      constrainedVar <- FALSE
+      scaleBefore <- FALSE
+    },
+    "ca" = {
+      centerBefore <- TRUE
+      centerAfter <- FALSE
+      residualsProds <- FALSE
+      residualCovSyntax <- TRUE
+      constrainedProdMean <- TRUE
+      constrainedLoadings <- TRUE
+      constrainedVar <- TRUE
+      scaleBefore <- TRUE
+      constrainedResCovMethod <- "ca"
+
     },
     "lms" = {
       # If method is LMS we pass it own to its own version of modsem()
       if (isMeasureSpecified == TRUE) {
-        stop2("Measure for prods should not be specified when using LMS")
+        stop("Measure for prods should not be specified when using LMS")
       }
       LMS <- modsem.LMS(modelSpec,
                         data = modEnv$data,
@@ -117,11 +145,11 @@ modsem <- function(modelSyntax = NULL,
       return(LMS)
     },
     "custom" = {
-      warning2(
+      warning(
         'Method was "custom", using specifications set indside the function call'
         )
     },
-    stop2("Unkown method in modsem, have you made a typo?")
+    stop("Unkown method in modsem, have you made a typo?")
     )
 
   # ModSEM-algorithm for prod ind based approaches --------------------
@@ -139,23 +167,28 @@ modsem <- function(modelSyntax = NULL,
   mergedProdInds <- combineListDf(prodInds)
 
   # Creating a new dataset with the prodinds
-  newData <- cbind.data.frame(modEnv$data, mergedProdInds)
+    # using list_cbind so that mergedProdInds can be NULL
+  newData <- purrr::list_cbind(list(modEnv$data, mergedProdInds))
   # Genereating a new syntax with constraints and measurmentmodel --------------
 
-  newSyntax <- generateSyntax(modelSpec,
+  parTable <- addSpecsParTable(modelSpec,
                               residualCovSyntax = residualCovSyntax,
+                              constrainedResCovMethod = constrainedResCovMethod,
                               constrainedProdMean = constrainedProdMean,
+                              constrainedLoadings = constrainedLoadings,
+                              constrainedVar = constrainedVar,
                               firstFixed = firstLoadingFixed)
-
+  newSyntax <- parTableToSyntax(parTable, removeColon = TRUE)
 
   # Estimating the model via lavaan::sem()
   lavaanEstimation <- lavaan::sem(newSyntax, newData, ...)
 
-  # Adding a bunch of stuff to the model, befur i return it
+  # Adding a bunch of stuff to the model, before i return it
   modelSpec$prodInds <- prodInds
   modelSpec$newSyntax <- newSyntax
   modelSpec$newData <- newData
   modelSpec$lavaan <- lavaanEstimation
+  modelSpec$parTable <- parTable
   # this is not pretty either
   structure(modelSpec,
             class = "ModSEM",
@@ -185,7 +218,7 @@ createProdInds <- function(modelSpec,
                   data = data)
 
   } else if (!is.logical(residualsProds)) {
-    stop2("residualProds was neither FALSE nor TRUE in createProdInds")
+    stop("residualProds was neither FALSE nor TRUE in createProdInds")
   }
   # new additon
   if (centerAfter == TRUE) {
@@ -216,7 +249,7 @@ createIndProds <- function(relationDf,
   isNumeric <- sapply(inds, is.numeric)
 
   if (sum(as.integer(!isNumeric)) > 0) {
-    stop2("Expected inds to be numeric when creating prods")
+    stop("Expected inds to be numeric when creating prods")
   }
 
   # Centering them, if center == TRUE
@@ -250,7 +283,6 @@ calculateResidualsDf <- function(dependentDf, independentNames, data) {
   dependentNames <- colnames(dependentDf)
   # Getting formula
   formula <- getResidualsFormula(dependentNames, independentNames)
-
   if (length(dependentNames <= 1)) {
 
       res <- as.data.frame(residuals(lm(formula = formula, combinedData)))
@@ -274,26 +306,25 @@ getResidualsFormula <- function(dependendtNames, indepNames) {
 
 
 
-generateSyntax <- function(modelSpec,
+addSpecsParTable <- function(modelSpec,
                            residualCovSyntax = FALSE,
+                           constrainedResCovMethod = "equality",
                            constrainedProdMean = FALSE,
+                           constrainedLoadings = FALSE,
+                           constrainedVar = FALSE,
                            firstFixed = TRUE) {
-
-
   relDfs <- modelSpec$relDfs
   unspecifiedLatentProds <- modelSpec$unspecifiedLatentProds
-  indProdNamesNonSpec <-
-    modelSpec$indProdNamesUnspecifiedLatents
-  indsInUnspecifedLatentProds <-
-    modelSpec$indsInUnspecifedLatentProds
+  indProdNamesNonSpec <- modelSpec$indProdNamesUnspecifiedLatents
+  indsInUnspecifedLatentProds <- modelSpec$indsInUnspecifedLatentProds
   parTable <- modelSpec$parTable
   prodNames <- names(relDfs)
 
-  # Measure model latent prods ------------------------------------------
-  if (!is.logical(residualCovSyntax)) {
-    stop2("residualCovSyntax is not FALSE or TRUE in generateSyntax")
+  if (is.null(relDfs) || length(relDfs) < 1) {
+    return(parTable)
   }
 
+  # Measure model latent prods ------------------------------------------
   measureParTable <-
     purrr::map2(.x = unspecifiedLatentProds,
                 .y = indProdNamesNonSpec,
@@ -302,45 +333,63 @@ generateSyntax <- function(modelSpec,
                     firstFixed = firstFixed) |>
     purrr::list_rbind()
 
-  parTable <- rbind(parTable, measureParTable)
+  parTable <- rbindParTable(parTable, measureParTable)
   # Residual covariances -------------------------------------------------------
   if (!is.logical(residualCovSyntax)) {
-    stop2("residualCovSyntax is not FALSE or TRUE in generateSyntax")
+    stop("residualCovSyntax is not FALSE or TRUE in generateSyntax")
 
   } else if (residualCovSyntax == TRUE) {
-    residualCovariances <- purrr::map2(.x = relDfs,
-                                      .y = prodNames,
-                               .f = getParTableResCov) |>
+    residualCovariances <- purrr::map(.x = relDfs,
+                                      .f = getParTableResCov,
+                                      method = constrainedResCovMethod)  |>
       purrr::list_rbind()
-    parTable <- rbind(parTable, residualCovariances)
+    parTable <- rbindParTable(parTable, residualCovariances)
+  }
+
+  # Constrained Vars and Covs --------------------------------------------------
+  if (constrainedVar == TRUE) {
+    parTable <- labelVarCov(parTable, relDfs)
+    parTable <- specifyVarCov(parTable, relDfs)
+  }
+
+  # Constrained Factor loadings ------------------------------------------------
+  if (constrainedLoadings == TRUE) {
+    parTable <- labelFactorLoadings(parTable)
+    parTable <- specifyFactorLoadings(parTable, relDfs)
   }
 
   # Constrained prod mean syntax --------------------------------------------
   if (constrainedProdMean == TRUE) {
     restrictedMeans <- purrr::map2(modelSpec$prodNames,
                 modelSpec$elementsInProdNames,
-                getParTableRestrictedMean) |>
+                getParTableRestrictedMean,
+                createLabels = !constrainedVar) |>
       purrr::list_rbind()
-
-    parTable <- rbind(parTable, restrictedMeans)
+    parTable <- rbindParTable(parTable, restrictedMeans)
   }
 
-  parTableToSyntax(parTable, removeColon = TRUE)
+  modEnv$parTable <- parTable
+  parTable
 }
 
 
 
 # this function assumes a prod of only two latent variables no more
-getParTableRestrictedMean <- function(prodName, elementsInProdName) {
+getParTableRestrictedMean <- function(prodName, elementsInProdName, createLabels = TRUE) {
   if (length(elementsInProdName) > 2) {
-    warning2("The mean of a latent prod should not be constrained when there",
+    stop("The mean of a latent prod should not be constrained when there",
              " are more than two variables in the prod term. Please use a",
              " different method \n")
   }
-  label <- paste0("COV_", prodName)
-  covariance <- createParTableRow(vecLhsRhs = elementsInProdName[1:2],
-                                  op = "~~",
-                                  mod = paste0("COV_", prodName))
+  label <- createLabelCov(elementsInProdName[[1]], elementsInProdName[[2]])
+
+  if (createLabels == TRUE) {
+    covariance <- createParTableRow(vecLhsRhs = elementsInProdName[1:2],
+                                    op = "~~",
+                                    mod = label)
+  } else if (createLabels == FALSE) {
+    covariance <- NULL
+  }
   meanStructure <- createParTableRow(vecLhsRhs = c(prodName, "1"),
                                      op = "~",
                                      mod = label)
@@ -361,65 +410,7 @@ multiplyInds <- function(df) {
   y <- cbind.data.frame(df[[1]] * df[[2]],
                         df[,-(1:2),drop = FALSE])
 
-
   multiplyInds(y)
-}
-
-
-
-
-# specify residual covariance in lavaanify parTable-format
-getParTableResCov <- function(relDf, prodName) {
-  if (ncol(relDf) <= 1) {
-    return(NULL)
-  }
-
-  prodNames <- colnames(relDf)
-
-  uniqueCombinations <- getUniqueCombinations(prodNames)
-  # Now we want to specify the covariance based on shared inds
-  isShared <- vector("logical", length = nrow(uniqueCombinations))
-
-  for (i in 1:nrow(uniqueCombinations)) {
-    indsProd1 <- unlist(relDf[uniqueCombinations[i, "V1"]])
-    indsProd2 <- unlist(relDf[uniqueCombinations[i, "V2"]])
-    # Compare the Inds in prod1 and prod2, and convert to integer
-    sharedValues <- as.integer(indsProd1 %in% indsProd2)
-    # Sum the values
-    numberShared <- sum(sharedValues)
-
-    if (numberShared >= 1) {
-      isShared[[i]] <- TRUE
-    } else if (numberShared == 0) {
-      isShared[[i]] <- FALSE
-    }
-  }
-
-  # Syntax for oblique covariances
-  prodsSharingInds <- uniqueCombinations[isShared, c("V1", "V2")]
-
-  if (nrow(prodsSharingInds) > 0) {
-    syntaxOblique <- apply(prodsSharingInds,
-                           MARGIN = 1,
-                           FUN = createParTableRow,
-                           op = "~~") |>
-      purrr::list_rbind()
-  } else {
-    syntaxOblique <- NULL
-  }
-  prodsNotSharingInds <- uniqueCombinations[!isShared, c("V1", "V2")]
-
-  if (nrow(prodsNotSharingInds) > 0) {
-    syntaxOrthogonal <- apply(prodsNotSharingInds,
-                              MARGIN = 1,
-                              FUN = createParTableRow,
-                              op = "~~",
-                              mod = "0") |>
-      purrr::list_rbind()
-  } else {
-    syntaxOrthogonal <- NULL
-  }
-  rbind(syntaxOrthogonal, syntaxOblique)
 }
 
 
@@ -456,15 +447,12 @@ getParTableMeasure <- function(dependentName,
   parTable
 }
 
+ModSEM <- setClass("ModSEM")
 
 
 createParTableRow <- function(vecLhsRhs, op, mod = "") {
   data.frame(lhs = vecLhsRhs[[1]], op = op, rhs = vecLhsRhs[[2]], mod = mod)
 }
-
-
-ModSEM <- setClass("ModSEM")
-
 
 
 #' summary.ModSEM

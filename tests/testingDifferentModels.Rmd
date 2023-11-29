@@ -325,7 +325,7 @@ head(df1STdbl[13:21])
 
 ```{r}
 m1LMS <- modsem(m1, df1, method = "lms" , standardizeData = TRUE)
-
+summary(m1LMS)
 ```
 
 # Example 2: Two interactions
@@ -445,5 +445,18 @@ y1 ~ x1 + z1 + x1:z1
 m4 <- modsem(regModelModsem, df1, method = "rca")
 summary(m4)
 
+```
+
+## Parceling 
+
+```{r}
+parcelM <- '
+Y =~ y1 + y2 + y3
+X =~ mean(x1, x2, x3)
+Z =~ mean(z1, z2, z3)
+Y ~ X + Z #+ X:Z
+'
+pM <- modsem(parcelM, df1, method = "ca")
+summary(pM)
 ```
 
