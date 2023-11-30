@@ -5,17 +5,31 @@ library(semTools)
 # One Interaction --------------------------------------------------------------
   # Real Model
 m1 <- '
+# Outer Model
+X =~ x1
+X =~x2 +x3
+Z =~ z1 + z2 + z3
+Y =~ y1 + y2 + y3
+
+
+# Inner model
+Y ~ X + Z
+Y ~ X:Z
+'
+
+m2 <- '
   # Outer Model
   X =~ x1 + x2 +x3
-  Y =~ y1 + y2 + y3
   Z =~ z1 + z2 + z3
+  Y =~ y1 + y2 + y3
+  X:Z =~ x1:z1 + x2:z2 + x3:z3 + x2:z3
 
   # Inner model
   Y ~ X + Z + X:Z
 '
 
 scaledoneInt <- lapplyDf(oneInt, scale)
-realModel <- lm(realY ~ realX*realZ,scaledoneInt)
+realModel <- lm(realY ~ realX*realZ, scaledoneInt)
 summary(realModel)
 
   # RCA ------------------------------------------------------------------------
@@ -77,6 +91,9 @@ m1semTools <- '
   x2.z2 ~~ 0*x3.z3
   x3.z2 ~~ 0*x1.z3
   x3.z2 ~~ 0*x2.z3
+
+
+
 '
 
 m1RcaST <- sem(m1semTools, oneIntST)
@@ -147,10 +164,70 @@ m1semTools <- '
   X.Z ~ Cov_X_Z*1
 '
 
-m1UcaST <- sem(m1semTools, oneIntSTuca)
+
+m1semTools2 <- '
+  # Outer Model
+  X =~ x1 + x2 +x3
+  Y =~ y1 + y2 + y3
+  Z =~ z1 + z2 + z3
+  X.Z =~ x1.z1 + x1.z2 + x1.z3 + x2.z1 + x2.z2 + x2.z3 + x3.z1 + x3.z2 + x3.z3
+  # Inner model
+  Y ~ X + Z + X.Z
+  # Residual (Co)Variances: XZ
+
+  x1.z1 ~~ share_x1*x1.z2 + share_x1*x1.z3
+  x1.z2 ~~ share_x1*x1.z3
+
+  x2.z1 ~~ share_x2*x2.z2 + share_x2*x2.z3
+  x2.z2 ~~ share_x2*x2.z3
+
+  x3.z1 ~~ share_x3*x3.z2 + share_x3*x3.z3
+  x3.z2 ~~ share_x3*x3.z3
+
+  x1.z1 ~~ share_z1*x2.z1 + share_z1*x3.z1
+  x2.z1 ~~ share_z1*x3.z1
+
+  x1.z2 ~~ share_z2*x2.z2 + share_z2*x3.z2
+  x2.z2 ~~ share_z2*x3.z2
+
+  x1.z3 ~~ share_z3*x2.z3 + share_z3*x3.z3
+  x2.z3 ~~ share_z3*x3.z3
+
+  x1.z1 ~~ 0*x2.z2
+  x1.z1 ~~ 0*x3.z2
+  x1.z1 ~~ 0*x2.z3
+  x1.z1 ~~ 0*x3.z3
+
+  x2.z1 ~~ 0*x1.z2
+  x2.z1 ~~ 0*x3.z2
+  x2.z1 ~~ 0*x1.z3
+  x2.z1 ~~ 0*x3.z3
+
+  x3.z1 ~~ 0*x1.z2
+  x3.z1 ~~ 0*x2.z2
+  x3.z1 ~~ 0*x1.z3
+  x3.z1 ~~ 0*x2.z3
+
+  x1.z2 ~~ 0*x2.z3
+  x1.z2 ~~ 0*x3.z3
+
+  x2.z2 ~~ 0*x1.z3
+  x2.z2 ~~ 0*x3.z3
+
+  x3.z2 ~~ 0*x1.z3
+  x3.z2 ~~ 0*x2.z3
+
+  # Mean constraint
+  X ~~ Cov_X_Z*Z
+  X.Z ~ Cov_X_Z*1
+'
+
+m1UcaST <- sem(m1semTools2, oneIntSTuca)
 summary(m1UcaST)
 
-
+  # CA
+m1Ca <- modsem(m1, oneInt, method = "ca", standardizeData = TRUE)
+summary(m1Ca)
   # Product Indicator/ regression approach --------------------------------------
 m1Reg <- modsem(m1, oneInt, method = "pind", standardizeData = TRUE)
 summary(m1Reg)
@@ -239,17 +316,17 @@ realModel2 <- lm(realY ~ realX*realZ + realG*realH, scaledtwoInt)
 summary(realModel2)
 
   # RCA ------------------------------------------------------------------------
-m2 <- '
-  # Outer Model
-  X =~ x1 + x2 +x3
-  Y =~ y1 + y2 + y3
-  Z =~ z1 + z2 + z3
-  G =~ g1 + g2 + g3
-  H =~ h1 + h2 + h3
-  X:Z =~ x1:z1
-  # Inner model
-  Y ~ X + Z + G + H + X:Z + G:H + g1:x1
-'
+# m2 <- '
+#   # Outer Model
+#   X =~ x1 + x2 +x3
+#   Y =~ y1 + y2 + y3
+#   Z =~ z1 + z2 + z3
+#   G =~ g1 + g2 + g3
+#   H =~ h1 + h2 + h3
+#   X:Z =~ x1:z1
+#   # Inner model
+#   Y ~ X + Z + G + H + X:Z + G:H + g1:x1
+# '
 
 latentModelRca2 <- modsem(m2, twoInt, method = "rca")
 summary(latentModelRca2)
@@ -258,6 +335,8 @@ summary(latentModelRca2)
 latentModelUncent2 <- modsem(m2, twoInt, method = "uca", standardizeData = TRUE)
 summary(latentModelUncent2$lavaan)
 
+  # Constrained Approach
+latentModelCA <- modsem(m2, twoInt, method = "ca", standardizeData = TRUE)
 
 # Parceling -----------------------------------------------------------
 
@@ -269,16 +348,22 @@ m3 <- '
   X =~ x1 + x2 +x3
   Y =~ y1 + y2 + y3
   Z =~ z1 + z2 + z3
-  G =~ g1 + g2 + g3
-  H =~ h1 + h2 + h3
-  X:Z =~ x1:z1
+  X:Z =~ x1:z1 + x2:z2 + x3:z3
+  H =~ mean(h1, h2, h3)
+  G =~ mean(g1, g2, g3)
   # Inner model
-  Y ~ X + Z + G + H + mean(x1, x2, x3):mean(z1, z2, z3) + mean(g1, g2, g3):mean(h1, h2, h3)
+  Y ~ X + Z + X:Z + G + H + G:H
 '
+
+
+latentModelRcaParceling <- modsem(m3, twoInt, method = "pind")
+summary(latentModelRcaParceling)
+
+latentModelRcaParceling2 <- modsem(m3, twoInt, method = "rca")
+summary(latentModelRcaParceling2)
 
 latentModelRcaParceling <- modsem(m3, twoInt, method = "rca")
 summary(latentModelRcaParceling)
-
 # UCA
-latentModelUncentParceling <- modsem(m3, twoInt, method = "uca", standardizeData = TRUE)
+latentModelUncentParceling <- modsem(m3, twoInt, method = "uca")
 summary(latentModelUncentParceling)

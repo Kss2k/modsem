@@ -189,6 +189,7 @@ getClassLavOp <- function(op) {
     ":"  = "LavInteraction",
     "("  = "LeftBracket",
     ")"  = "RightBracket",
+    "="  = "LavAssign",
     stop("Unrecognized operator")
   )
 }
@@ -196,7 +197,7 @@ getClassLavOp <- function(op) {
 
 
 isSpecificationOperator <- function(op) {
-  grepl("LavMeasure|LavPredict|LavCovar", getClassLavOp(op))
+  grepl("LavMeasure|LavPredict|LavCovar|LavAssign", getClassLavOp(op))
 }
 
 
@@ -216,6 +217,10 @@ isInteractionOperator <- function(op) {
     grepl("LavInteraction", getClassLavOp(op))
 }
 
+
+isAssignmentOperator <- function(op) {
+  grepl("LavAssign", getClassLavOp(op))
+}
 
 
 getExpressionType <- function(op) {
@@ -270,7 +275,7 @@ evalTokens <- function(listTokens,
     return(NULL)
 
   } else if (length(listTokens) == 1) {
-    return(listTokens[[1]])
+    return(listTokens)
   }
 
   if (is.null(lhs)) {
@@ -280,7 +285,7 @@ evalTokens <- function(listTokens,
 
       if (className == "LavObject") {
         lhs <- listTokens[[1]]
-        restParsed <- evalTokens(listTokens[-1], #i + 1,
+        restParsed <- evalTokens(listTokens[-1, drop = FALSE], #i + 1,
                                  lhs = lhs,
                                  op = op,
                                  rhs = rhs,
@@ -306,7 +311,7 @@ evalTokens <- function(listTokens,
 
     } else if (class(listTokens[[1]]) == "LavNumeric") {
       lhs <- listTokens[[1]]
-      restParsed <- evalTokens(listTokens[-1],
+      restParsed <- evalTokens(listTokens[-1, drop = FALSE],
                                lhs = lhs,
                                op = op,
                                rhs = rhs,
@@ -321,13 +326,13 @@ evalTokens <- function(listTokens,
     if (class(listTokens[[1]]) == "LavOperator") {
       op <- listTokens[[1]]
       class(op) <- getClassLavOp(op)
-      restExpression <- listTokens[-1]
+      restExpression <- listTokens[-1, drop = FALSE]
 
       if (!doesOperatorFitExprType(op, expressionType)) {
         stop("Unexpected operator at: ", paste(lhs, listTokens))
 
       } else if (length(listTokens) == 1) {
-        return(listTokens[[1]])
+        return(listTokens)
       }
       if (expressionType == "empty") {
         expressionType <- getExpressionType(op)
@@ -404,7 +409,6 @@ evalOp.LavLessLeft <- function(op, lhs, rhs, expressionType = "equality") {
 
 
 evalOp.LavAdd <- function(op, lhs, rhs, expressionType = "Specification") {
-
   # op is just here to fetch method
   if (length(rhs) == 1) {
     return(list(lhs, rhs[[1]]))
@@ -421,9 +425,7 @@ evalOp.LavAdd <- function(op, lhs, rhs, expressionType = "Specification") {
 
 evalOp.LavModify <- function(op, lhs, rhs, expressionType = "empty") {
   rest <- evalTokens(rhs, expressionType = expressionType)
-
   attr(rest[[1]], "LavMod") <- lhs
-
   rest
 }
 
@@ -435,14 +437,14 @@ evalOp.LavInteraction <- function(op, lhs, rhs, expressionType = "empty") {
   combinedLhsRhs <- paste0(lhs, ":", rest[[1]])
 
   if (expressionType == "empty") {
-    return(c(lhs = combinedLhsRhs, rest[-1]))
+    return(c(lhs = combinedLhsRhs, rest[-1, drop = FALSE]))
   }
 
   if (length(rest) <= 1) {
     return(list(combinedLhsRhs))
   }
 
-  c(combinedLhsRhs, rest[-1])
+  c(combinedLhsRhs, rest[-1, drop = FALSE])
 }
 
 

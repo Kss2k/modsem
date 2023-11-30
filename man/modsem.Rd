@@ -11,12 +11,16 @@ modsem(
   standardizeData = FALSE,
   centerData = FALSE,
   isMeasureSpecified = FALSE,
-  firstLoadingFixed = TRUE,
+  firstLoadingFixed = FALSE,
   centerBefore = FALSE,
   centerAfter = FALSE,
   residualsProds = FALSE,
   residualCovSyntax = FALSE,
   constrainedProdMean = FALSE,
+  constrainedLoadings = FALSE,
+  constrainedVar = FALSE,
+  constrainedResCovMethod = "equality",
+  scaleBefore = FALSE,
   qml = FALSE,
   ...
 )

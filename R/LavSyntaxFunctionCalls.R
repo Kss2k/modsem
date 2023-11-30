@@ -15,6 +15,7 @@ findFunctionEnd <- function(listTokens, i = 1) {
 
 
 evalLavFunction <- function(listTokens) {
+  updateVariablesEnvir()
   functionCall <- stringr::str_c(unlist(listTokens), collapse = "")
   functionCall
   eval(rlang::parse_expr(functionCall), envir = modEnv)
@@ -85,3 +86,8 @@ modEnv <- rlang::env(
   equal = LavEqual,
   start = LavStart
 )
+
+
+updateVariablesEnvir <- function() {
+  rlang::env_coalesce(modEnv, as.environment(modEnv$data))
+}
