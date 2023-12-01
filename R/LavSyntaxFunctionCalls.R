@@ -18,7 +18,7 @@ evalLavFunction <- function(listTokens) {
   updateVariablesEnvir()
   functionCall <- stringr::str_c(unlist(listTokens), collapse = "")
   functionCall
-  eval(rlang::parse_expr(functionCall), envir = modEnv)
+  eval(rlang::parse_expr(functionCall), envir = modVarsEnv)
 }
 
 
@@ -79,15 +79,41 @@ LavStart <- function(number) {
 
 
 
+# Functions for simulation purposes
+LavRvar <- function(sigma) {
+  errorNames <- colnames(modEnv$data)
+  errorNames[grepl("^error", errorNames)] |>
+    length() -> nErrorNames
+  N <- getNrowEnvData()
+  varName <- paste0("error_", nErrorNames + 1)
+
+
+  modEnv$data[[varName]] <- rnorm(N, sd = sigma)
+  updateVariablesEnvir()
+  varName
+}
+
+
+getNrowEnvData <- function() {
+  nrow(modEnv$data)
+}
+
 modEnv <- rlang::env(
   LavDataToBeModified = NULL,
   mean = LavMean,
   sum = LavSum,
   equal = LavEqual,
-  start = LavStart
+  start = LavStart,
+  rvar = LavRvar
 )
 
 
+
+
+modVarsEnv <- rlang::env(modEnv)
+
 updateVariablesEnvir <- function() {
-  rlang::env_coalesce(modEnv, as.environment(modEnv$data))
+  rlang::env_unbind(modVarsEnv, nms = names(modVarsEnv))
+  rlang::env_coalesce(modVarsEnv, as.environment(modEnv$data))
+  parent.env(modVariables) <- modEnv
 }
