@@ -15,3 +15,10 @@ createLabelVar <- function(x) {
 createLabelLambda <- function(ind, latent) {
   paste("lambda", ind, latent, sep = "_")
 }
+
+
+createLabelLambdaSquared <- function(ind, latent) {
+  paste0("(",
+    createLabelLambda(ind, latent),
+    "^2)")
+}

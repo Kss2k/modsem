@@ -150,7 +150,7 @@ specifyVarCovSingle <- function(parTable, relDf) {
     labelsVarInds  <- vector("character", length = nrow(relDf))
 
     for (latent in 1:nrow(relDf)) {
-      labelsFactorLoadings[[latent]] <- createLabelLambda(relDf[latent, indProd],
+      labelsFactorLoadings[[latent]] <- createLabelLambdaSquared(relDf[latent, indProd],
                                                           rownames(relDf)[[latent]])
       labelsVarLatents[[latent]] <- createLabelVar(rownames(relDf)[[latent]])
       labelsVarInds[[latent]] <- createLabelVar(relDf[latent, indProd])

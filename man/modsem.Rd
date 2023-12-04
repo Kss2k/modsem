@@ -22,6 +22,8 @@ modsem(
   constrainedResCovMethod = "equality",
   scaleBefore = FALSE,
   qml = FALSE,
+  auto.scale = "none",
+  auto.center = "none",
   ...
 )
 }

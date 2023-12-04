@@ -135,20 +135,27 @@ getParTableResCov.ca <- function(relDf) {
     }
 
   }
-  #apply eq constraints to those which are not set to zero
-  eqConstraints <- apply(parTable[parTable$mod != "0", c("lhs", "rhs")],
-                         MARGIN = 1,
-                         FUN = function(vars, relDf)
-                           getFormulaResCovProdInd(vars[["lhs"]], vars[["rhs"]], relDf),
-                         relDf = relDf) |>
-    purrr::list_rbind()
 
+  #apply eq constraints to those which are not set to zero
+  if (length(parTable$mod[parTable$mod != "0"]) > 0) {
+    eqConstraints <- apply(parTable[parTable$mod != "0", c("lhs", "rhs")],
+                           MARGIN = 1,
+                           FUN = function(vars, relDf)
+                             getFormulaResCovProdInd(vars[["lhs"]], vars[["rhs"]], relDf),
+                           relDf = relDf) |>
+      purrr::list_rbind()
+  } else {
+    eqConstraints <- NULL
+  }
   rbind(parTable, eqConstraints)
 }
 
 
 
 getFormulaResCovProdInd <- function(indProd1, indProd2, relDf) {
+  if (is.null(indProd1) | is.null(indProd2)) {
+    return(NULL)
+  }
   cols <- c(indProd1, indProd2)
   rowShared <- relDf[relDf[[indProd1]] %in% relDf[[indProd2]], cols]
   rowNotShared <- relDf[!(relDf[[indProd1]] %in% relDf[[indProd2]]), cols]
