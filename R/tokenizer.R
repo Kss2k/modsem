@@ -479,6 +479,9 @@ createParTableBranch <- function(syntaxBranch) {
 
 
 modsemify <- function(syntax) {
+  if (!is.character(syntax) && length(syntax) > 1) {
+    stop("Syntax is not a string og length 1")
+  }
   syntaxTree <- createSyntaxTree(syntax)
   purrr::list_rbind(lapply(syntaxTree,
          FUN = createParTableBranch))
