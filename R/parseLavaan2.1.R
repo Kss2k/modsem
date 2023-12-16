@@ -1,6 +1,3 @@
-
-
-
 #' Parse lavaan model
 #'
 #' @param modelSyntax lavaan syntax
@@ -12,7 +9,6 @@
 #' @examples
 parseLavaan <- function(
     modelSyntax   = NULL) {
-
   # Checking prerequisites -----------------------------------------------------
     # Check if a modelSyntax is provided, if not we should return an error
   if (is.null(modelSyntax)) {
@@ -22,8 +18,7 @@ parseLavaan <- function(
   } else if (!is.character(modelSyntax)) {
     stop2("The provided model syntax is not a string!")
   }
-
-  # Convert to lavaan partable -------------------------------------------------
+  # Convert to partable -------------------------------------------------
   parTable <- modsemify(modelSyntax)
 
   # Extracting some general information ----------------------------------------
@@ -61,7 +56,6 @@ parseLavaan <- function(
                                     pattern = ":",
                                     names = prodNamesCleaned)
 
-
   areElementsLatent <-
     lapply(elementsInProds,
            FUN = function(x, inds)  (x %in% latentVariables),
@@ -77,7 +71,6 @@ parseLavaan <- function(
 
     # Inds belonging to latent variables which are specified in the syntax
   indsLatents <- structureLavExprs(measureExprs)
-
 
   relDfs <- list()
   indsInProdTerms <- list()
@@ -118,7 +111,6 @@ parseLavaan <- function(
 
   # Specified latent prods --------------------------------------------------
   if (length(specifiedProds) > 0) {
-
     #fix names in lhs-column
     prodMeasureExprs[["lhs"]] <-
       fixProdNames(prodMeasureExprs[["lhs"]],
@@ -135,7 +127,6 @@ parseLavaan <- function(
              FUN = function(df) df[["rhs"]])
 
     # Get all inds in the prodTerms
-
     specIndsInProdTerms <- lapply(elementsInProds[specifiedProds],
                                   FUN = getIndsLatents,
                                   latents = indsLatents)
@@ -165,7 +156,6 @@ parseLavaan <- function(
     indsInProdTerms <- c(indsInProdTerms,
                                   specIndsInProdTerms)
   }
-
   # Info nlsem -----------------------------------------------------------------
   etaNames <- unique(structuralExprs$lhs)
   allPredictors <- unique(structuralExprs$rhs)
@@ -190,12 +180,10 @@ parseLavaan <- function(
     elementsInProdNames = elementsInProds,
     relDfs = relDfs,
     indsInProdTerms = indsInProdTerms,
-
-    #unpecifiedLatentProds = latentProds[!(latentProds %in% specifiedProds)],
     indsInUnspecifedLatentProds = indsInUnspecifedLatentProds,
     unspecifiedLatentProds = names(indsInUnspecifedLatentProds),
     indProdNamesUnspecifiedLatents = indProdNamesUnspecifiedLatents
-    )
+  )
 
   modelSpec
 }
@@ -219,13 +207,11 @@ structureLavExprs <- function(parTable = NULL) {
 
 
 getIndsVariable <- function(varName = NULL,  indsLatents = NULL) {
-
   if (is.null(varName)) {
     return(
       stop2("Error in getIndsVariable(), varName is NULL")
     )
   }
-
   # Get the names of the latent variables in the model
   latentVariables <- names(indsLatents)
 
@@ -247,19 +233,16 @@ getIndsVariable <- function(varName = NULL,  indsLatents = NULL) {
 
 
 # Function for getting inds for mutliple variables -----------------------
-
 getIndsMultipleVariables <- function(varNames = NULL,
-                                           indsLatents = NULL) {
+                                     indsLatents = NULL) {
   # varNames = vector with variableNames
   # output should be a list
-
   # Check that arguements are supplied/not NULL
   if (is.null(varNames)) {
     return(
       stop2("Error in getIndsMultipleVariables(), varNames is NULL")
     )
   }
-
   # use getIndsVariable for each element in varNames, and return a named list
   lapplyNamed(varNames,
               FUN = getIndsVariable,
@@ -331,7 +314,3 @@ getIndsLatents <- function(names, latents) {
          latents = latents,
          names = names)
 }
-
-
-
-

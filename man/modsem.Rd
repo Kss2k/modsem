@@ -10,17 +10,15 @@ modsem(
   method = "rca",
   standardizeData = FALSE,
   centerData = FALSE,
-  isMeasureSpecified = FALSE,
-  firstLoadingFixed = FALSE,
-  centerBefore = FALSE,
-  centerAfter = FALSE,
-  residualsProds = FALSE,
-  residualCovSyntax = FALSE,
-  constrainedProdMean = FALSE,
-  constrainedLoadings = FALSE,
-  constrainedVar = FALSE,
-  constrainedResCovMethod = "equality",
-  scaleBefore = FALSE,
+  firstLoadingFixed = TRUE,
+  centerBefore = NULL,
+  centerAfter = NULL,
+  residualsProds = NULL,
+  residualCovSyntax = NULL,
+  constrainedProdMean = NULL,
+  constrainedLoadings = NULL,
+  constrainedVar = NULL,
+  constrainedResCovMethod = NULL,
   qml = FALSE,
   auto.scale = "none",
   auto.center = "none",
@@ -42,8 +40,6 @@ modsem(
 
 \item{standardizeData}{should data be scaled before fitting model}
 
-\item{isMeasureSpecified}{have you specified the measure model for the latent prod}
-
 \item{firstLoadingFixed}{Sould the first factorloading in the latent prod be fixed to one?}
 
 \item{centerBefore}{should inds in prods be centered before computing prods (overwritten by method, if method != NULL)}
@@ -57,6 +53,8 @@ modsem(
 \item{constrainedProdMean}{should syntax prod mean be produced (overwritten by method, if method != NULL)}
 
 \item{...}{arguments passed to other functions, e.g,. lavaan}
+
+\item{isMeasureSpecified}{have you specified the measure model for the latent prod}
 }
 \description{
 Interaction between latent variables

@@ -42,17 +42,15 @@ modsem <- function(modelSyntax = NULL,
                    method = "rca",
                    standardizeData = FALSE,
                    centerData = FALSE,
-                   isMeasureSpecified = FALSE,
-                   firstLoadingFixed = FALSE,
-                   centerBefore = FALSE,
-                   centerAfter = FALSE,
-                   residualsProds = FALSE,
-                   residualCovSyntax = FALSE,
-                   constrainedProdMean = FALSE,
-                   constrainedLoadings = FALSE,
-                   constrainedVar = FALSE,
-                   constrainedResCovMethod = "equality",
-                   scaleBefore = FALSE,
+                   firstLoadingFixed = TRUE,
+                   centerBefore = NULL,
+                   centerAfter = NULL,
+                   residualsProds = NULL,
+                   residualCovSyntax = NULL,
+                   constrainedProdMean = NULL,
+                   constrainedLoadings = NULL,
+                   constrainedVar = NULL,
+                   constrainedResCovMethod = NULL,
                    qml = FALSE,
                    auto.scale = "none",
                    auto.center = "none",
@@ -84,75 +82,27 @@ modsem <- function(modelSyntax = NULL,
     parseLavaan(modelSyntax)
 
     # Setting parameters according to method -----------------------------------
+  if (method == "lms") {
+    # If method is LMS we pass it own to its own version of modsem()
+    LMS <- modsem.LMS(modelSpec,
+                      data = modEnv$data,
+                      qml = qml,
+                      standardizeData = standardizeData)
+    return(LMS)
+  }
 
-  switch(method,
-    "rca" = {
-      centerBefore <- FALSE
-      residualsProds <- TRUE
-      residualCovSyntax <- TRUE
-      constrainedProdMean <- FALSE
-      constrainedLoadings <- FALSE
-      constrainedVar <- FALSE
-      scaleBefore <- FALSE
-    },
-    "uca" = {
-      centerBefore <- TRUE
-      residualsProds <- FALSE
-      residualCovSyntax <- TRUE
-      constrainedProdMean <- TRUE
-      constrainedLoadings <- FALSE
-      constrainedVar <- FALSE
-      scaleBefore <- FALSE
-    },
-    "pind" = {
-      centerBefore <- FALSE
-      residualsProds <- FALSE
-      residualCovSyntax <- FALSE
-      constrainedProdMean <- FALSE
-      constrainedLoadings <- FALSE
-      constrainedVar <- FALSE
-      scaleBefore <- FALSE
-    },
-    "dblcent" = {
-      centerBefore <- TRUE
-      centerAfter <- TRUE
-      residualsProds <- FALSE
-      residualCovSyntax <- TRUE
-      constrainedProdMean <- FALSE
-      constrainedLoadings <- FALSE
-      constrainedVar <- FALSE
-      scaleBefore <- FALSE
-    },
-    "ca" = {
-      centerBefore <- TRUE
-      centerAfter <- FALSE
-      residualsProds <- FALSE
-      residualCovSyntax <- TRUE
-      constrainedProdMean <- TRUE
-      constrainedLoadings <- TRUE
-      constrainedVar <- TRUE
-      scaleBefore <- TRUE
-      constrainedResCovMethod <- "ca"
+  methodSettings <- getMethodSettings(method, args = list(centerBefore = centerBefore,
+                                     centerAfter = centerAfter,
+                                     residualsProds = residualsProds,
+                                     residualCovSyntax = residualCovSyntax,
+                                     constrainedProdMean = constrainedProdMean,
+                                     constrainedLoadings = constrainedLoadings,
+                                     constrainedVar = constrainedVar,
+                                     constrainedResCovMethod = constrainedResCovMethod,
+                                     firstLoadingFixed = firstLoadingFixed))
 
-    },
-    "lms" = {
-      # If method is LMS we pass it own to its own version of modsem()
-      if (isMeasureSpecified == TRUE) {
-        stop("Measure for prods should not be specified when using LMS")
-      }
-      LMS <- modsem.LMS(modelSpec,
-                        data = modEnv$data,
-                        qml = qml,
-                        standardizeData = standardizeData)
-      return(LMS)
-    },
-    "custom" = {
-      warning(
-        'Method was "custom", using specifications set indside the function call'
-        )
-    },
-    stop("Unkown method in modsem, have you made a typo?")
-    )
+
+
 
   # ModSEM-algorithm for prod ind based approaches --------------------
 
@@ -160,9 +110,9 @@ modsem <- function(modelSyntax = NULL,
   prodInds <-
     createProdInds(modelSpec,
                             data = modEnv$data,
-                            centerBefore = centerBefore,
-                            centerAfter = centerAfter,
-                            residualsProds = residualsProds)
+                            centerBefore = methodSettings$centerBefore,
+                            centerAfter = methodSettings$centerAfter,
+                            residualsProds = methodSettings$residualsProds)
   # Merging prodInds into a single dataset ----------------------------
     # Old solution (does not handle/warn about duplicates)
       # mergedProdInds <- purrr::list_cbind(unname(prodInds))
@@ -174,11 +124,11 @@ modsem <- function(modelSyntax = NULL,
   # Genereating a new syntax with constraints and measurmentmodel --------------
 
   parTable <- addSpecsParTable(modelSpec,
-                              residualCovSyntax = residualCovSyntax,
-                              constrainedResCovMethod = constrainedResCovMethod,
-                              constrainedProdMean = constrainedProdMean,
-                              constrainedLoadings = constrainedLoadings,
-                              constrainedVar = constrainedVar,
+                              residualCovSyntax = methodSettings$residualCovSyntax,
+                              constrainedResCovMethod = methodSettings$constrainedResCovMethod,
+                              constrainedProdMean = methodSettings$constrainedProdMean,
+                              constrainedLoadings = methodSettings$constrainedLoadings,
+                              constrainedVar = methodSettings$constrainedVar,
                               firstFixed = firstLoadingFixed)
   newSyntax <- parTableToSyntax(parTable, removeColon = TRUE)
 
@@ -356,6 +306,9 @@ addSpecsParTable <- function(modelSpec,
 
   # Constrained Factor loadings ------------------------------------------------
   if (constrainedLoadings == TRUE) {
+    if (constrainedVar == FALSE) {
+      parTable <- labelVarCov(parTable, relDfs)
+    }
     parTable <- labelFactorLoadings(parTable)
     parTable <- specifyFactorLoadings(parTable, relDfs)
   }
