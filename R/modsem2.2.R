@@ -89,6 +89,11 @@ modsem <- function(modelSyntax = NULL,
                       qml = qml,
                       standardizeData = standardizeData)
     return(LMS)
+
+  } else if (method == "mplus") {
+    mplus <- modsem.mplus(modelSyntax,
+                          data = modEnv$data)
+    return(mplus)
   }
 
   methodSettings <- getMethodSettings(method, args = list(centerBefore = centerBefore,
@@ -100,9 +105,6 @@ modsem <- function(modelSyntax = NULL,
                                      constrainedVar = constrainedVar,
                                      constrainedResCovMethod = constrainedResCovMethod,
                                      firstLoadingFixed = firstLoadingFixed))
-
-
-
 
   # ModSEM-algorithm for prod ind based approaches --------------------
 
@@ -134,13 +136,14 @@ modsem <- function(modelSyntax = NULL,
 
   # Estimating the model via lavaan::sem()
   lavaanEstimation <- lavaan::sem(newSyntax, newData, ...)
-
+  coefParTable <- lavaan::parameterEstimates(lavaanEstimation)
   # Adding a bunch of stuff to the model, before i return it
   modelSpec$prodInds <- prodInds
   modelSpec$newSyntax <- newSyntax
   modelSpec$newData <- newData
   modelSpec$lavaan <- lavaanEstimation
   modelSpec$parTable <- parTable
+  modelSpec$coefParTable <- coefParTable
   # this is not pretty either
   structure(modelSpec,
             class = "ModSEM",
@@ -417,7 +420,10 @@ createParTableRow <- function(vecLhsRhs, op, mod = "") {
 #' @export
 summary.ModSEM <- function(object, ...) {
   cat("ModSEM: \nMethod =", attributes(object)$method, "\n")
-  lavaan::summary(object$lavaan)
+  if (attributes(object)$method == "Mplus") {
+    object$coefParTable
+
+  } else lavaan::summary(object$lavaan)
 }
 
 
