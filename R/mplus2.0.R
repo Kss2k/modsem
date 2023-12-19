@@ -44,7 +44,7 @@ modsem.mplus <- function(modelSyntax, data) {
                                   "<-", i = 1)
   structRhs <- stringr::str_split_i(measrRemoved$lhsOpRhs[structCoefNames],
                                   "<-", i = 2)
-  structModel <- data.frame(lhs = structLhs, op = "=~", rhs = structRhs) |>
+  structModel <- data.frame(lhs = structLhs, op = "~", rhs = structRhs) |>
     cbind(measrRemoved[structCoefNames, c("est", "se", "pvalue")])
 
   # Variances and Covariances
