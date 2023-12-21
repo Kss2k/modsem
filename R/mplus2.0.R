@@ -12,7 +12,7 @@ modsem.mplus <- function(modelSyntax, data) {
       algorithm = integration;
       process = 8;",
     MODEL = parTableToMplusModel(parTable),
-    rdata = data,
+    rdata = data[indicators],
   )
   results <- MplusAutomation::mplusModeler(model, modelout = "mplus/mplusResults.inp", run = 1L)
   coefs <- MplusAutomation::extract.mplus.model(results)

@@ -228,6 +228,10 @@ summary(m1UcaST)
   # CA
 m1Ca <- modsem(m1, oneInt, method = "ca", standardizeData = TRUE)
 summary(m1Ca)
+
+  #Mplus
+m1Mplus <- modsem(m1, oneInt, method = "mplus", standardizeData = TRUE)
+  # UCA
   # Product Indicator/ regression approach --------------------------------------
 m1Reg <- modsem(m1, oneInt, method = "pind", standardizeData = TRUE)
 summary(m1Reg)

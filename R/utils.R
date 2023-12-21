@@ -79,8 +79,7 @@ scaleIfNumeric <- function(x, scaleFactor = TRUE) {
     x <- as.numeric(x)
   }
   if (is.numeric(x)) {
-    scale(x)
-
+    (x - mean(x, na.rm = TRUE))/sd(x, na.rm = TRUE)
   } else x
 }
 
@@ -181,3 +180,19 @@ rbindParTable <- function(parTable, newRows) {
   }
   rbind(parTable[!duplicateRows, ], newRows)
 }
+
+
+
+silentStop <- function() {
+  opt <- options(show.error.messages = FALSE)
+  on.exit(options(opt))
+  stop()
+}
+
+
+
+
+
+
+
+
