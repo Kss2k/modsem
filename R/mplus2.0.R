@@ -140,3 +140,4 @@ switchLavOpToMplus <- function(op) {
          stop("Operator not supported for use in Mplus: ", op, "\n"))
 }
 
+

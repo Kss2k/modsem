@@ -23,16 +23,22 @@ tokenizeSyntax <- function(syntax) {
   isNull <- vapply(lines,
                    FUN = is.null,
                    FUN.VALUE = vector("logical", length = 1L))
-
-  tokensLines <- lapply(lines[!isNull],
-         getTokensLine)
+  modsemParseEnv$lines <- lines[!isNull]
+    tokensLines <- lapply(
+      lines[!isNull],
+      function(line) {
+        modsemParseEnv$currentLine <- modsemParseEnv$currentLine + 1
+        out <- getTokensLine(line)
+        modsemParseEnv$tokensInLine <- list()
+        out
+        })
   # remove lines which are list(0) since they only
   isListZeroLen <- vapply(tokensLines,
                           FUN = function(list) length(list) <= 0 ||
                             areAllLavBlank(list),
                           FUN.VALUE = vector("logical", length = 1L))
+  modsemParseEnv$lines <- tokensLines[!isListZeroLen]
   tokensLines[!isListZeroLen]
-
 }
 
 
@@ -42,6 +48,7 @@ tokenizeSyntax <- function(syntax) {
 getTokensLine <- function(line, i = 1,
                           token = structure("", class = "LavBlank"),
                           vecTokens = list()) {
+  modsemParseEnv$tokensInLine <- c(modsemParseEnv$tokensInLine, token)
 
   if (!is.character(line)) {
     stop("Expected string in parseLine()")
@@ -50,7 +57,6 @@ getTokensLine <- function(line, i = 1,
     token <- structure("",
                        class = "LavBlank")
   }
-
   if (nchar(token) == 1) {
     if (grepl("[[:alpha:]_.]", token)) {
       class(token) <- "LavName"
@@ -64,25 +70,21 @@ getTokensLine <- function(line, i = 1,
     } else if (grepl('\\"' , token)) {
       class(token) <- "LavString"
 
-    }else {
-      stop("Unrecognized class of token", token)
+    } else {
+      parseError("Unrecognized class of token: ")
     }
-
   }
-
   # Break and return if you reach the end of the line, or a comment
   if (i > length(line) || line[[i]] == "#") {
     vecTokens[[length(vecTokens) + 1]] <- token
     return(vecTokens)
   }
-
   # Whatever case, token should be finished if you encounter \\s+
   if (grepl("\\s+", line[[i]])) {
     vecTokens[[length(vecTokens) + 1]] <- token
     out <- getTokensLine(line, i + 1, token = line[[i]], vecTokens)
 
   } else if (!grepl("\\s+", line[[i]])) {
-
     if (fitsToken(token, nextChar = line[[i]])) {
 
       updatedToken <- structure(paste0(token, line[[i]]),
@@ -95,7 +97,6 @@ getTokensLine <- function(line, i = 1,
       vecTokens[[length(vecTokens) + 1]] <- token
       out <- getTokensLine(line, i + 1, token = line[[i]], vecTokens)
     }
-
   }
   # remove LavBlank from tokens before returning
   isNotLavBlank <- vapply(out,
@@ -153,7 +154,6 @@ fitsToken.LavOperator <- function(token, nextChar) {
          "==" = TRUE,
          "!=" = TRUE,
          FALSE)
-  #grepl("[\\=\\~\\*\\+\\(\\)\\<\\>\\-]", nextChar)[[1]]
 }
 
 
@@ -190,7 +190,7 @@ getClassLavOp <- function(op) {
     "("  = "LeftBracket",
     ")"  = "RightBracket",
     "="  = "LavAssign",
-    stop("Unrecognized operator")
+    parseError("Unrecognized operator: ")
   )
 }
 
@@ -231,6 +231,7 @@ getExpressionType <- function(op) {
   } else if (isInteractionOperator(op)) {
     "empty"
   } else {
+    parseError("Unrecognized expression type based on first operator in line")
     stop("Unrecognized expression type based on first operator in line, operator: ", op)
   }
 }
@@ -261,7 +262,7 @@ doesOperatorFitExprType <- function(op, expressionType) {
     "specification" = isModificationOperator(op) |
                       isInteractionOperator(op),
     "equality" = !isSpecificationOperator(op),
-    stop("unrecognizxed expression type"))
+    parseError("Unrecognized expression type"))
 }
 
 
@@ -270,12 +271,20 @@ evalTokens <- function(listTokens,
                        op = NULL,
                        rhs = NULL,
                        expressionType = "empty") {
+  modsemParseEnv$tokensInLine <- c(modsemParseEnv$tokensInLine, listTokens[[1]])
 
   if (1 > length(listTokens)) {
     return(NULL)
 
   } else if (length(listTokens) == 1) {
-    return(listTokens)
+    if (class(listTokens[[1]]) %in% c("LavName", "LavNumeric", "LavString")) {
+      if (is.null(op)) {
+        parseError("Expected operator")
+      }
+      return(listTokens)
+    } else {
+      parseError("Line should not end in operator")
+    }
   }
 
   if (is.null(lhs)) {
@@ -287,7 +296,7 @@ evalTokens <- function(listTokens,
         lhs <- listTokens[[1]]
         restParsed <- evalTokens(listTokens[-1, drop = FALSE], #i + 1,
                                  lhs = lhs,
-                                 op = op,
+                                 op = NULL,
                                  rhs = rhs,
                                  expressionType = expressionType)
         return(restParsed)
@@ -300,7 +309,7 @@ evalTokens <- function(listTokens,
         if (length(seqWithFunctionCall) < length(listTokens)) {
           restParsed <- evalTokens(listTokens[-seqWithFunctionCall],
                                    lhs = outputName,
-                                   op = op,
+                                   op = NULL,
                                    rhs = rhs,
                                    expressionType = expressionType)
           return(restParsed)
@@ -319,7 +328,7 @@ evalTokens <- function(listTokens,
       return(restParsed)
 
     } else {
-      stop("Expected name at the start of: ",listTokens)
+      parseError("Expected name at the start of line ")
     }
 
   } else if (is.null(op)) {
@@ -329,7 +338,8 @@ evalTokens <- function(listTokens,
       restExpression <- listTokens[-1, drop = FALSE]
 
       if (!doesOperatorFitExprType(op, expressionType)) {
-        stop("Unexpected operator at: ", paste(lhs, listTokens))
+        # stop("Unexpected operator at: ", paste(lhs, listTokens))
+        parseError("Unexpected operator at")
 
       } else if (length(listTokens) == 1) {
         return(listTokens)
@@ -337,11 +347,22 @@ evalTokens <- function(listTokens,
       if (expressionType == "empty") {
         expressionType <- getExpressionType(op)
       }
-
-      return(evalOp(op, lhs = lhs, rhs = restExpression, expressionType = expressionType))
+      return(evalOp(op, lhs = lhs, rhs = restExpression,
+                    expressionType = expressionType))
+      # return(
+      #   tryCatch(evalOp(op, lhs = lhs, rhs = restExpression,
+      #                   expressionType = expressionType),
+      #            error = function(e) {
+      #               parseError("Error in evaluating operator")
+      #            }))
 
     } else {
-      stop("Expected operator after object name: ", listTokens[[1]])
+      parseError("Invalid modifier symbol (should be '*' or '?') at line ")
+      stop("ModSEM ERROR: \n",
+           "invalid modifier symbol (should be '*' or '?') at line ",
+           getLineNumber(), " pos ", getTokenPosition(), " token ",
+           listTokens[[1]], "\n",
+           highlightError())
     }
   }
 }
@@ -356,7 +377,7 @@ evalOp <- function(op, lhs, rhs, expressionType) {
 
 evalOp.LavMeasure <- function(op, lhs, rhs, expressionType = "specification") {
   # op is just here to fetch the method
-  rest <- evalTokens(listTokens = rhs, expressionType = expressionType)
+  rest <- evalTokens(listTokens = rhs, op = "=~", expressionType = expressionType)
 
   list(lhs = lhs, op = op, rhs = rest, expressionType = expressionType)
 }
@@ -365,7 +386,7 @@ evalOp.LavMeasure <- function(op, lhs, rhs, expressionType = "specification") {
 
 evalOp.LavPredict <- function(op, lhs, rhs, expressionType = "specification") {
   # op is just here to fetch the method
-  rest <- evalTokens(listTokens = rhs, expressionType = expressionType)
+  rest <- evalTokens(listTokens = rhs, op = "~", expressionType = expressionType)
 
   list(lhs = lhs, op = op, rhs = rest, expressionType = expressionType )
 }
@@ -374,7 +395,7 @@ evalOp.LavPredict <- function(op, lhs, rhs, expressionType = "specification") {
 
 evalOp.LavCovar <- function(op, lhs, rhs, expressionType = "specification") {
   # op is just here to fetch the method
-  rest <- evalTokens(listTokens = rhs, expressionType = expressionType)
+  rest <- evalTokens(listTokens = rhs, op = "~~", expressionType = expressionType)
 
   list(lhs = lhs, op = op, rhs = rest, expressionType = expressionType)
 }
@@ -410,13 +431,14 @@ evalOp.LavLessLeft <- function(op, lhs, rhs, expressionType = "equality") {
 
 evalOp.LavAdd <- function(op, lhs, rhs, expressionType = "Specification") {
   # op is just here to fetch method
-  if (length(rhs) == 1) {
+  if (length(rhs) <= 0 || !(class(rhs[[1]]) %in% c("LavName", "LavNumeric"))) {
+    modsemParseEnv$tokensInLine <- c(modsemParseEnv$tokensInLine, rhs[[1]])
+    parseError("Expected name or number after '+'")
+
+  } else if (length(rhs) == 1) {
     return(list(lhs, rhs[[1]]))
-  } else if (length(rhs) <= 0 ||
-             !(class(rhs[[1]]) %in% c("LavName", "LavNumeric"))) {
-    stop("expected name after +")
   }
-  rest <- evalTokens(listTokens = rhs, expressionType = expressionType)
+  rest <- evalTokens(listTokens = rhs,op = "+", expressionType = expressionType)
 
   c(list(lhs), rest)
 }
@@ -424,7 +446,7 @@ evalOp.LavAdd <- function(op, lhs, rhs, expressionType = "Specification") {
 
 
 evalOp.LavModify <- function(op, lhs, rhs, expressionType = "empty") {
-  rest <- evalTokens(rhs, expressionType = expressionType)
+  rest <- evalTokens(rhs, op = "*", expressionType = expressionType)
   attr(rest[[1]], "LavMod") <- lhs
   rest
 }
@@ -432,7 +454,7 @@ evalOp.LavModify <- function(op, lhs, rhs, expressionType = "empty") {
 
 
 evalOp.LavInteraction <- function(op, lhs, rhs, expressionType = "empty") {
-  rest <- evalTokens(listTokens = rhs, expressionType = expressionType)
+  rest <- evalTokens(listTokens = rhs, op = ":", expressionType = expressionType)
   # combine lhs and rest into one, inheriting attributes from lhs
   combinedLhsRhs <- paste0(lhs, ":", rest[[1]])
 
@@ -449,10 +471,21 @@ evalOp.LavInteraction <- function(op, lhs, rhs, expressionType = "empty") {
 
 
 
+evalOp.character <- function(op, lhs, rhs, expressionType) {
+  parsError("Unexpected operator at line")
+}
+
+
+
 createSyntaxTree <- function(syntax) {
   tokensLines <- tokenizeSyntax(syntax)
+  modsemParseEnv$currentLine <- 0
   lapply(tokensLines,
-         FUN = evalTokens)
+         function(tokensLine) {
+           modsemParseEnv$currentLine <- modsemParseEnv$currentLine + 1
+           modsemParseEnv$tokensInLine <- list()
+           evalTokens(tokensLine)
+         })
 }
 
 
@@ -479,6 +512,7 @@ createParTableBranch <- function(syntaxBranch) {
 
 
 modsemify <- function(syntax) {
+  resetModsemParseEnv()
   if (!is.character(syntax) && length(syntax) > 1) {
     stop("Syntax is not a string og length 1")
   }
@@ -511,9 +545,84 @@ parTableToSyntax <- function(parTable, removeColon = FALSE) {
 
 
 
-
 areAllLavBlank <- function(list) {
   isLavBlank <- vapply(list, FUN = function(x) class(x) != "LavBlank",
          FUN.VALUE = vector("logical", length = 1L))
   !as.logical(sum(isLavBlank))
+}
+
+
+
+getTokenPosition <- function() {
+  modsemParseEnv$currentLine
+}
+
+
+
+getLineNumber <- function() {
+  modsemParseEnv$currentLine
+}
+
+
+getCurrentToken <- function() {
+  modsemParseEnv$tokensInLine[[length(modsemParseEnv$tokensInLine)]]
+}
+
+
+
+modsemParseEnv <- rlang::env(
+  lines = NULL,
+  currentLine = 0,
+  tokensInLine = list()
+)
+
+
+
+resetModsemParseEnv <- function() {
+  modsemParseEnv$lines <- NULL
+  modsemParseEnv$currentLine <- 0
+  modsemParseEnv$tokensInLine <- list()
+}
+
+
+highlightError <- function() {
+  tokensInLine <- modsemParseEnv$tokensInLine
+  tokensRegex <- vapply(tokensInLine,
+                        FUN.VALUE = character(1L),
+                        FUN = getRegexToken)
+  lastElem <- length(tokensRegex)
+  errorPattern <-
+    paste0("(",stringr::str_c(tokensRegex[-lastElem],collapse = "\\s*"),
+           "\\s*)(", tokensRegex[[lastElem]], ")")
+  line <- modsemParseEnv$lines[[getLineNumber()]] |>
+    stringr::str_c(collapse = "")
+  regexMatch <- regexpr(errorPattern, line, perl = TRUE)
+  location <- attr(regexMatch, "capture.start")[[2]]
+  indent <- "      "
+  message <- paste0(indent, line, "\n",
+                    indent, stringr::str_c(rep(" ", location - 1),
+                                           collapse = ""), "^")
+  message
+}
+
+
+
+parseError <- function(message) {
+  message <- paste0("ModSEM \n    ", message, " line ", getLineNumber(),
+                    " token: '", getCurrentToken(), "'\n", highlightError())
+  stop(message, call. = FALSE)
+}
+
+
+
+getRegexToken <- function(token) {
+  out <- ""
+  for (i in 1:nchar(token)) {
+    if (grepl("[[:punct:]]", substr(token, i, i))) {
+      out <- paste0(out, "\\", substr(token, i, i))
+    } else {
+      out <- paste0(out, substr(token, i, i))
+    }
+  }
+  return(out)
 }
