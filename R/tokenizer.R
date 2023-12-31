@@ -3,7 +3,7 @@ getLines <- function(syntax) {
   # split syntax into individual lines and return as vector
   unlist(strsplit(syntax, "\n|;"))
 }
-get
+
 
 
 getCharsLine <- function(line, i = 1) {
@@ -159,7 +159,10 @@ fitsToken.LavOperator <- function(token, nextChar) {
 
 
 fitsToken.LavBlank <- function(token, nextChar) {
-  TRUE
+  if (length(nextChar) != 1) {
+    stop("Wrong length of nextChar", nextChar)
+  }
+  grepl("\\s+", nextChar)
 }
 
 

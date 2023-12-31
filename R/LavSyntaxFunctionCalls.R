@@ -99,6 +99,7 @@ getNrowEnvData <- function() {
 }
 
 modEnv <- rlang::env(
+  data = NULL,
   LavDataToBeModified = NULL,
   mean = LavMean,
   sum = LavSum,
@@ -115,5 +116,5 @@ modVarsEnv <- rlang::env(modEnv)
 updateVariablesEnvir <- function() {
   rlang::env_unbind(modVarsEnv, nms = names(modVarsEnv))
   rlang::env_coalesce(modVarsEnv, as.environment(modEnv$data))
-  parent.env(modVariables) <- modEnv
+  parent.env(modVarsEnv) <- modEnv
 }
