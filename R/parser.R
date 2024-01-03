@@ -58,13 +58,27 @@ evalToken.LavBlank <- function(token, lhs, rhs) {
   NULL
 }
 
+
+
+
 evalToken.LavInteraction <- function(token, lhs, rhs) {
-  mergeTokens(lhs, rhs)
+  if (!"LavName" %in% class(lhs) || !"LavName" %in% class(rhs)) {
+    stop("Interactions are reserved for objects ", highlightErrorToken(x))
+  }
+  out <- paste0(lhs, token, rhs)
+  attributes(out) <- attributes(lhs)
+  out
 }
+
+
+
 
 evalToken.LavComment <- function(token, lhs, rhs) {
   NULL
 }
+
+
+
 
 evalToken.LavFunction <- function(token, lhs, rhs) {
   browser()
@@ -73,6 +87,9 @@ evalToken.LavFunction <- function(token, lhs, rhs) {
   functionCall
   eval(rlang::parse_expr(functionCall), envir = modVarsEnv)
 }
+
+
+
 
 evalToken.LeftBracket <- function(token, lhs, rhs) {
   # if (!is.null(rhs$rightBracket) || !rhs$rightBracket) {
@@ -99,6 +116,7 @@ evalToken.LavSeperator <- function(token, lhs, rhs) {
   }
   c(lhs, rhs)
 }
+
 
 
 
@@ -187,10 +205,11 @@ mergeTokens <- function(x, y) {
   if (!"LavName" %in% class(x) || !"LavName" %in% class(x)) {
     stop("Interactions are reserved for objects ", highlightErrorToken(x))
   }
-
-
   out <- paste0(x, y)
-  attributes(out) <- attributes(token)
+  attributes(out) <- attributes(x)
   out
 
 }
+
+
+

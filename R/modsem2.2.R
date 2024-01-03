@@ -54,6 +54,7 @@ modsem <- function(modelSyntax = NULL,
                    qml = FALSE,
                    auto.scale = "none",
                    auto.center = "none",
+                   estimator = "MLM", # We shold correct for non-normal Y
                    ...) {
   if (is.null(modelSyntax)) {
     stop("No model syntax provided in modsem")
@@ -135,7 +136,7 @@ modsem <- function(modelSyntax = NULL,
   newSyntax <- parTableToSyntax(parTable, removeColon = TRUE)
 
   # Estimating the model via lavaan::sem()
-  lavaanEstimation <- lavaan::sem(newSyntax, newData, ...)
+  lavaanEstimation <- lavaan::sem(newSyntax, newData, estimator = estimator, ...)
   coefParTable <- lavaan::parameterEstimates(lavaanEstimation)
   # Adding a bunch of stuff to the model, before i return it
   modelSpec$prodInds <- prodInds

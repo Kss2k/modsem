@@ -40,26 +40,26 @@ createTokensLine <- function(line, i = 1,
     return(appendToList(listTokens, token))
   }
 
-  # if (length(listTokens) > 0 && is.EqualityOperator(last(listTokens))) {
-  #   token <- buildMathExprToken(line[-(1:i)], start = i)
-  #   return(appendToList(listTokens, token))
-  # }
+  if (length(listTokens) > 0 && is.EqualityOperator(last(listTokens))) {
+    token <- buildMathExprToken(line[-(1:i)], pos = i)
+    return(appendToList(listTokens, token))
+  }
 
 
   if (is.null(token)) {
     token <- initializeToken(line[[i]], pos = i, line)
   } else {
     if (fitsToken(token, nextChar = line[[i]])) {
-      token <- addCharToken(token, nextChar = line[[i]], pos = i)
+      token <- addCharToken(token, nextChar = line[[i]])
 
     } else {
       listTokens <- appendToList(listTokens, token)
       token <- initializeToken(line[[i]], pos = i, line)
     }
   }
-  # if ("LavComment" %in% class(token)) {
-  #     return(listTokens)
-  #   }
+  if ("LavComment" %in% class(token)) {
+      return(listTokens)
+    }
   return(createTokensLine(line, i + 1, token, listTokens = listTokens))
 }
 
@@ -90,18 +90,19 @@ initializeToken <- function(char, pos, line) {
          " pos ", pos, "\n",
          highlightError(line, pos = pos))
   }
-  structure(data.frame(char = char, pos = pos),
+  structure(char,
+            pos = pos,
             lineNumber = attr(line, "lineNumber"),
             priority = priority,
-            class = c(type, "LavToken", "data.frame"))
+            class = c(type, "LavToken"))
 }
 
 
 
-buildMathExprToken <- function(restLine, start = 1) {
-  token <- data.frame(char = restLine,
-                      pos  = 1:length(restLine) + start)
+buildMathExprToken <- function(restLine, pos) {
+  token <- stringr::str_c(restLine, collapse = "")
   structure(token,
+            pos = pos,
             lineNumber = attr(restLine, "lineNumber"),
             priority = 10,
             class = c("LavMathExpr", "LavToken", "data.frame"))
@@ -122,7 +123,7 @@ fitsToken.LavName <- function(token, nextChar) {
   }
   # if object name ends with ( it is a function,
   # and next char belongs to a new object
-  if (grepl("\\($", nextChar)) {
+  if (grepl("\\($", token)) {
     return(FALSE)
   }
   grepl("[[:alpha:][:digit:]_.\\(]", nextChar)[[1]]
@@ -148,8 +149,7 @@ fitsToken.LavOperator <- function(token, nextChar) {
   if (length(nextChar) != 1) {
     stop("Wrong length of nextChar", nextChar)
   }
-  completeToken <- stringr::str_c(c(token$char, nextChar),
-                                  collapse ="")
+  completeToken <- paste0(token, nextChar)
   switch(completeToken,
          "=~" = TRUE,
          "~~" = TRUE,
@@ -169,6 +169,8 @@ fitsToken.LavBlank <- function(token, nextChar) {
   grepl("\\s+", nextChar)
 }
 
+
+
 is.EqualityOperator <- function(token) {
   switch(getTokenString(token),
          "==" = TRUE,
@@ -176,6 +178,8 @@ is.EqualityOperator <- function(token) {
          ">" = TRUE,
          FALSE)
   }
+
+
 
 fitsToken.LavClosure <- function(token, nextChar) {
   FALSE
@@ -192,12 +196,14 @@ fitsToken.LavNumeric <- function(token, nextChar) {
 
 
 
-addCharToken <- function(token, nextChar, pos) {
+addCharToken <- function(token, nextChar) {
   if (length(nextChar) != 1) {
     stop("Wrong length of nextChar ", nextChar)
   }
-  newRow <- data.frame(char = nextChar, pos = pos)
-  rbind(token, newRow)
+
+  out <- paste0(token, nextChar)
+  attributes(out) <- attributes(token)
+  out
 }
 
 
@@ -225,6 +231,7 @@ assignSubClass.LavOperator <- function(token) {
           ">"  = {subClass <- "LavLessRight";   priority <- 0},
           "==" = {subClass <- "LavEquals";      priority <- 0},
           ":"  = {subClass <- "LavInteraction"; priority <- 2},
+          "," =  {subClass <- "LavSeperator"; priority <- 0},
           stop("Unrecognized operator: ", highlightErrorToken(token))
   )
   structure(token,
@@ -240,6 +247,7 @@ mergeTokensToString <- function(listTokens) {
          FUN = getTokenString) |>
     stringr::str_c(collapse = "")
 }
+
 
 
 assignSubClass.LavClosure <- function(token) {
@@ -278,32 +286,35 @@ assignSubClass.LavToken <- function(token) {
 
 appendToList <- function(list, elem) {
   list[[length(list) + 1]] <- elem
-
   list
 }
 
 
 
-prioritizeTokens <- function(listTokens, i = 1, insideBrackets = 0,
-                             leftClosureTokens = list()) {
+prioritizeTokens <- function(listTokens, i = 1, brackets = list(),
+                             nLeftBrackets = 0) {
   if (is.null(listTokens) || i > length(listTokens)) {
-    if (insideBrackets != 0) {
-      stop("Unbalanced brackets")
+    if (nLeftBrackets != 0) {
+        stop("Unmatched left bracket", highlightErrorToken(brackets[[1]]))
     }
     return(listTokens)
   }
-  else if ("RightBracket" %in% class(listTokens[[i]])) {
-    insideBrackets <- insideBrackets - 1
-    leftClosureTokens <- leftClosureTokens[-length(leftClosureTokens)]
+  else if (is.RightClosure(listTokens[[i]])) {
+    brackets <- brackets[-length(brackets)]
+    nLeftBrackets <- nLeftBrackets - 1
+    if (nLeftBrackets < 0) {
+      stop("Unmatched right bracket ", highlightErrorToken(listTokens[[i]]))
+    }
   }
   getTokenPriority(listTokens[[i]]) <-
-    getTokenPriority(listTokens[[i]]) + insideBrackets*10
+    getTokenPriority(listTokens[[i]]) + nLeftBrackets*10
 
-  if ("LeftBracket" %in% class(listTokens[[i]])) {
-    insideBrackets <- insideBrackets + 1
-    leftClosureTokens <- appendToList(leftClosureTokens, listTokens[[i]])
+  if (is.LeftClosure(listTokens[[i]])) {
+    brackets <- appendToList(brackets, listTokens[[i]])
+    nLeftBrackets <- nLeftBrackets + 1
   }
-  prioritizeTokens(listTokens, i + 1, insideBrackets = insideBrackets)
+  prioritizeTokens(listTokens, i + 1, brackets = brackets,
+                   nLeftBrackets = nLeftBrackets)
 }
 
 
@@ -318,6 +329,8 @@ removeLavBlankLine <- function(line, removeComments = TRUE) {
   line[!isBlankOrComment]
 }
 
+
+
 tokenizeSyntax <- function(syntax, optimize = TRUE) {
   resetModsemParseEnv()
   if (!is.character(syntax)) {
@@ -328,11 +341,11 @@ tokenizeSyntax <- function(syntax, optimize = TRUE) {
 
   tokenizedLines <- lines |>
     lapply(createTokensLine) |>
+    lapply(removeLavBlankLine) |>
     lapply(FUN = function(tokens)
                    lapply(tokens, assignSubClass))
   modsemParseEnv$syntaxLines <- tokenizedLines
   tokenizedLines <- tokenizedLines |>
-    lapply(removeLavBlankLine) |>
     lapply(prioritizeTokens)
 
   isEmpty <- vapply(tokenizedLines,
@@ -374,8 +387,9 @@ highlightErrorToken <- function(token) {
 
 
 getTokenString <- function(token) {
-  stringr::str_c(token$char, collapse = "")
+  token
 }
+
 
 
 
@@ -391,7 +405,7 @@ getTokenPriority <- function(token) {
 
 
 getTokenPosition <- function(token) {
-  token$pos[[1]]
+  attr(token, "pos")
 }
 
 
@@ -424,9 +438,12 @@ is.LavClosure <- function(token) {
 }
 
 
+
 is.LavOperator <- function(token) {
   "LavOperator" %in% class(token)
 }
+
+
 
 is.firstClassOperator <- function(token) {
   switch(getTokenString(token),
@@ -440,5 +457,31 @@ is.firstClassOperator <- function(token) {
 }
 
 
+# LavToken        <- setClass("LavToken")
+# setMethod("assignSubClass", "LavToken", assignSubClass.LavToken)
+# LavName         <- setClass("LavName")
+# setMethod("assignSubClass", "LavName", assignSubClass.LavName)
+# LavObject       <- setClass("LavObject")
+# LavFunciton     <- setClass("LavFunction")
+# LavOperator     <- setClass("LavOperator")
+# setMethod("assignSubClass", "LavOperator", assignSubClass.LavOperator)
+# LavClosure      <- setClass("LavClosure")
+# setMethod("assignSubClass", "LavClosure", assignSubClass.LavClosure)
+# LeftBracket     <- setClass("LeftBracket")
+# RightBracket    <- setClass("RightBracket")
+# LavComment      <- setClass("LavComment")
+# LavBlank        <- setClass("LavBlank")
+# LavNumeric      <- setClass("LavNumeric")
+# LavString       <- setClass("LavString")
+# LavMeasure      <- setClass("LavMeasure")
+# LavPredict      <- setClass("LavPredict")
+# LavCovar        <- setClass("LavCovar")
+# LavAdd          <- setClass("LavAdd")
+# LavModify       <- setClass("LavModify")
+# LavLessLeft     <- setClass("LavLessLeft")
+# LavLessRight    <- setClass("LavLessRight")
+# LavEquals       <- setClass("LavEquals")
+# LavInteraction  <- setClass("LavInteraction")
+# LavSeperator    <- setClass("LavSeperator")
 
 
