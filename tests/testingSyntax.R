@@ -1,31 +1,98 @@
-library(modsem)
-
-m1 <- '
-X =~ x1 + x2 + x3
-Z =~ z1 + z2 + z3
-Y =~ y1 + y2 + y3
-
-'
-
-m2 <- '
-X =~ x1 + x2 + + x3
-Z =~ z1 + 1 z2 + z3
-Y =~ y1 + y2 + y3
-
-'
-
-m3 <-'
-X =~ x1
-X =~ x2 + x3
-Y ~ X+Z
-Y ~ X:Z + x1
-Z =~ z1 + z2 + z3:v1
-Y =~ y1 + y2 + y3
-Y ~~ Y
-Y >-= Y + 2 +3
-'
+#library(modsem)
+devtools::load_all("..")
 
 
-tokenizeSyntax(m2)
-tokenizeSyntax(m3)
-modsemify(m3)
+models <- list(m1 = ' 
+               # latent variables 
+               ind60 =~ x1 + x2 + x3 
+               dem60 =~ y1 + y2 + y3 + y4 
+               dem65 =~ y5 + y6 + y7 + y8 
+               # regressions
+               dem60 ~ ind60 
+               dem65 ~ ind60 + dem60 
+               # residual covariances 
+               y1 ~~ y5
+               y2 ~~ y4 + y6 
+               y3 ~~ y7 
+               y4 ~~ y8
+               y6 ~~ y8
+               ',
+               m2 = myModel <- ' # regressions
+               y1 + y2 ~ f1 + f2 + x1 + x2
+               f1 ~ f2 + f3
+               f2 ~ f3 + x1 + x2
+
+               # latent variable definitions 
+               f1 =~ y1 + y2 + y3 
+               f2 =~ y4 + y5 + y6 
+               f3 =~ y7 + y8 + y9 + y10
+
+               # variances and covariances 
+               y1 ~~ y1 
+               y1 ~~ y2 
+               f1 ~~ f2
+
+               # intercepts 
+               y1 ~ 1 
+               f1 ~ 1
+               ',
+               m3 = ' visual  =~ x1 + x2 + x3 
+               textual =~ x4 + x5 + x6
+               speed   =~ x7 + x8 + x9 ',
+               m4 = 'visual  =~ x1 + start(0.8)*x2 + start(1.2)*x3
+               textual =~ x4 + start(0.5)*x5 + start(1.0)*x6
+               speed   =~ x7 + start(0.7)*x8 + start(1.8)*x9',
+               m5 = '# three-factor model
+               visual  =~ x1 + x2 + x3
+               textual =~ x4 + x5 + x6
+               speed   =~ x7 + x8 + x9
+               # intercepts with fixed values
+               x1 + x2 + x3 + x4 ~ 0.5*1',
+               m6 = '# three-factor model
+               visual  =~ x1 + x2 + x3
+               textual =~ x4 + x5 + x6
+               speed   =~ x7 + x8 + x9
+               # intercepts
+               x1 ~ 1
+               x2 ~ 1
+               x3 ~ 1
+               x4 ~ 1
+               x5 ~ 1
+               x6 ~ 1
+               x7 ~ 1
+               x8 ~ 1
+               x9 ~ 1', 
+               m7 = ' # direct effect
+               Y ~ c*X
+               # mediator
+               M ~ a*X
+               Y ~ b*M
+               # indirect effect (a*b)
+               ab := a*b
+               # total effect
+               total := c + (a*b)
+               '
+)
+
+
+MyData <- vector("list", 12L) 
+varNames <- names(MyData) <- c("x1", "x2", paste0("y", 1:10))
+for (i in varNames) {
+  MyData[[i]] <- rnorm(500)
+}
+MyData <- as.data.frame(MyData)
+
+
+data <- list(d1 = lavaan::PoliticalDemocracy,
+             d2 = MyData
+) 
+for (i in seq_along(models)) {
+  print(lavaan::summary(lavaan::sem(models[[i]], data = data[[i]])))
+  print(summary(modsem(models[[i]], data[[i]])))
+}
+
+
+
+
+
+

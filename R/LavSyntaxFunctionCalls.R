@@ -94,12 +94,15 @@ LavRvar <- function(sigma) {
 }
 
 
+
 getNrowEnvData <- function() {
   nrow(modEnv$data)
 }
 
+
+
 modEnv <- rlang::env(
-  data = NULL,
+  data = data.frame(),
   LavDataToBeModified = NULL,
   mean = LavMean,
   sum = LavSum,
@@ -107,7 +110,6 @@ modEnv <- rlang::env(
   start = LavStart,
   rvar = LavRvar
 )
-
 
 
 

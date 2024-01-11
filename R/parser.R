@@ -8,14 +8,13 @@ evalToken <- function(token, lhs, rhs) {
 
 
 evalToken.LavOperator <- function(token, lhs, rhs) {
-
-  if ("LavToken" %in% class(rhs)) {
+  if (is.LavToken(rhs)) {
     rhs <- list(rhs)
+  } 
+  if (is.LavToken(lhs)) {
+    lhs <- list(lhs)
   }
-  if (length(lhs) > 0 && !"LavToken" %in% class(lhs)) {
-    stop("Incorrect number of elements on the lhs of operator",
-         highlightErrorToken(token))
-  } else if (!is.atomic(lhs)) {
+  if (!is.atomic(lhs)) {
     if (is.LavOperator(lhs$op)) {
       stop("Unexpected operator ", highlightErrorToken(lhs$op))
     }
@@ -63,7 +62,7 @@ evalToken.LavBlank <- function(token, lhs, rhs) {
 
 evalToken.LavInteraction <- function(token, lhs, rhs) {
   if (!"LavName" %in% class(lhs) || !"LavName" %in% class(rhs)) {
-    stop("Interactions are reserved for objects ", highlightErrorToken(x))
+    stop("Interactions are reserved for objects ", highlightErrorToken(token))
   }
   out <- paste0(lhs, token, rhs)
   attributes(out) <- attributes(lhs)
@@ -81,7 +80,6 @@ evalToken.LavComment <- function(token, lhs, rhs) {
 
 
 evalToken.LavFunction <- function(token, lhs, rhs) {
-  browser()
   updateVariablesEnvir()
   functionCall <- paste0(token, stringr::str_c(unlist(rhs), collapse = ","), ")")
   functionCall
@@ -145,8 +143,6 @@ createParTableBranch <- function(syntaxTree) {
   if (is.null(syntaxTree)) {
     return(NULL)
   }
-  # Run a function to check wheter there is nesting in Rhs, which throws an error
-  #maxDepth(syntaxTree[["rhs"]])
   rhs <- vector("character", length(syntaxTree[["rhs"]]))
   mod <- rhs
 
@@ -157,8 +153,9 @@ createParTableBranch <- function(syntaxTree) {
       mod[[i]] <- modifier
     }
   }
-
-  lhs <- rep(getTokenString(syntaxTree$lhs), length(rhs))
+  lhs <- vapply(syntaxTree[["lhs"]], FUN.VALUE = character(1L),
+                FUN = getTokenString)
+  lhs <- rep(lhs, length(rhs) * length(lhs))
   op <- rep(getTokenString(syntaxTree$op), length(rhs))
   data.frame(lhs = lhs, op = op, rhs = rhs, mod = mod)
 }

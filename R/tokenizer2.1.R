@@ -33,6 +33,8 @@ getLines <- function(syntax) {
   lines
 }
 
+
+
 createTokensLine <- function(line, i = 1,
                              token = NULL, listTokens = list()) {
   # if (i == length(line)) browser()
@@ -62,6 +64,8 @@ createTokensLine <- function(line, i = 1,
     }
   return(createTokensLine(line, i + 1, token, listTokens = listTokens))
 }
+
+
 
 initializeToken <- function(char, pos, line) {
   if (grepl("#", char)) {
@@ -157,6 +161,7 @@ fitsToken.LavOperator <- function(token, nextChar) {
          "->" = TRUE,
          "==" = TRUE,
          "!=" = TRUE,
+         ":=" = TRUE, 
          FALSE)
 }
 
@@ -168,16 +173,6 @@ fitsToken.LavBlank <- function(token, nextChar) {
   }
   grepl("\\s+", nextChar)
 }
-
-
-
-is.EqualityOperator <- function(token) {
-  switch(getTokenString(token),
-         "==" = TRUE,
-         "<" = TRUE,
-         ">" = TRUE,
-         FALSE)
-  }
 
 
 
@@ -194,17 +189,6 @@ fitsToken.LavNumeric <- function(token, nextChar) {
   grepl("[[:digit:].]", nextChar)
 }
 
-
-
-addCharToken <- function(token, nextChar) {
-  if (length(nextChar) != 1) {
-    stop("Wrong length of nextChar ", nextChar)
-  }
-
-  out <- paste0(token, nextChar)
-  attributes(out) <- attributes(token)
-  out
-}
 
 
 
@@ -231,7 +215,8 @@ assignSubClass.LavOperator <- function(token) {
           ">"  = {subClass <- "LavLessRight";   priority <- 0},
           "==" = {subClass <- "LavEquals";      priority <- 0},
           ":"  = {subClass <- "LavInteraction"; priority <- 2},
-          "," =  {subClass <- "LavSeperator"; priority <- 0},
+          ":=" = {subClass <- "LavMediation";   priority <- 0},
+          ","  = {subClass <- "LavSeperator";   priority <- 0},
           stop("Unrecognized operator: ", highlightErrorToken(token))
   )
   structure(token,
@@ -241,17 +226,8 @@ assignSubClass.LavOperator <- function(token) {
 
 
 
-mergeTokensToString <- function(listTokens) {
-  vapply(listTokens,
-         FUN.VALUE = character(1L),
-         FUN = getTokenString) |>
-    stringr::str_c(collapse = "")
-}
-
-
-
 assignSubClass.LavClosure <- function(token) {
-  switch (getTokenString(token),
+  switch(getTokenString(token),
           "("  = {subClass <- "LeftBracket";    priority <- 3},
           ")"  = {subClass <- "RightBracket";   priority <- 3},
           stop("Unrecognized operator: ", token)
@@ -278,6 +254,12 @@ assignSubClass.LavName <- function(token) {
 
 
 
+assignSubClass.LavNumeric <- function(token) {
+  token
+}
+
+
+
 assignSubClass.LavToken <- function(token) {
   token
 }
@@ -298,8 +280,7 @@ prioritizeTokens <- function(listTokens, i = 1, brackets = list(),
         stop("Unmatched left bracket", highlightErrorToken(brackets[[1]]))
     }
     return(listTokens)
-  }
-  else if (is.RightClosure(listTokens[[i]])) {
+  } else if (is.RightClosure(listTokens[[i]])) {
     brackets <- brackets[-length(brackets)]
     nLeftBrackets <- nLeftBrackets - 1
     if (nLeftBrackets < 0) {
@@ -357,6 +338,27 @@ tokenizeSyntax <- function(syntax, optimize = TRUE) {
 
 
 
+mergeTokensToString <- function(listTokens) {
+  vapply(listTokens,
+         FUN.VALUE = character(1L),
+         FUN = getTokenString) |>
+    stringr::str_c(collapse = "")
+}
+
+
+
+addCharToken <- function(token, nextChar) {
+  if (length(nextChar) != 1) {
+    stop("Wrong length of nextChar ", nextChar)
+  }
+
+  out <- paste0(token, nextChar)
+  attributes(out) <- attributes(token)
+  out
+}
+
+
+
 highlightError <- function(line, pos) {
   line <- stringr::str_c(line, collapse = "")
   indent <- "      "
@@ -387,7 +389,7 @@ highlightErrorToken <- function(token) {
 
 
 getTokenString <- function(token) {
-  token
+  token[[1]]
 }
 
 
@@ -409,8 +411,25 @@ getTokenPosition <- function(token) {
 }
 
 
+
+is.LavToken <- function(token) {
+  "LavToken" %in% class(token)
+}
+
+
+
 is.LavOperator <- function(token) {
   "LavOperator" %in% class(token)
+}
+
+
+
+is.EqualityOperator <- function(token) {
+  switch(getTokenString(token),
+         "==" = TRUE,
+         "<" = TRUE,
+         ">" = TRUE,
+         FALSE)
 }
 
 
