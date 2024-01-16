@@ -82,8 +82,9 @@ evalToken.LavComment <- function(token, lhs, rhs) {
 evalToken.LavFunction <- function(token, lhs, rhs) {
   updateVariablesEnvir()
   functionCall <- paste0(token, stringr::str_c(unlist(rhs), collapse = ","), ")")
-  functionCall
-  eval(rlang::parse_expr(functionCall), envir = modVarsEnv)
+  out <- eval(rlang::parse_expr(functionCall), envir = modVarsEnv)
+  attributes(out) <- attributes(token) 
+  out
 }
 
 
@@ -155,7 +156,10 @@ createParTableBranch <- function(syntaxTree) {
   }
   lhs <- vapply(syntaxTree[["lhs"]], FUN.VALUE = character(1L),
                 FUN = getTokenString)
-  lhs <- rep(lhs, length(rhs) * length(lhs))
+  lhs <- vapply(lhs, FUN.VALUE = character(length(rhs)),
+                FUN = function(x, len) 
+                  rep(x, len),
+                len = length(rhs)) |> as.vector()
   op <- rep(getTokenString(syntaxTree$op), length(rhs))
   data.frame(lhs = lhs, op = op, rhs = rhs, mod = mod)
 }
@@ -177,6 +181,10 @@ modsemify <- function(syntax) {
 
 parTableToSyntax <- function(parTable, removeColon = FALSE) {
   out <- ''
+  if (removeColon == TRUE) {
+    parTable$lhs <- stringr::str_remove_all(parTable$lhs, ":")
+    parTable$rhs <- stringr::str_remove_all(parTable$rhs, ":")
+  }
   for (i in 1:nrow(parTable)) {
     if (parTable[["mod"]][i] != "") {
       modifier <- paste0(parTable[["mod"]][[i]], "*")
@@ -189,9 +197,7 @@ parTableToSyntax <- function(parTable, removeColon = FALSE) {
                    parTable[["rhs"]][[i]], "\n")
     out <- paste0(out, line)
   }
-  if (removeColon == TRUE) {
-    out <- stringr::str_remove_all(out, ":")
-  }
+
   out
 }
 

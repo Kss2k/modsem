@@ -62,7 +62,6 @@ modsem <- function(modelSyntax = NULL,
   if (is.null(data)) {
     stop("No data provided in modsem")
   }
-
   # PreSteps -------------------------------------------------------------------
   modEnv$data <- data
   ## Standardizing data
@@ -79,9 +78,8 @@ modsem <- function(modelSyntax = NULL,
   }
 
     # Get the specifications of the model --------------------------------------
-  modelSpec <-
-    parseLavaan(modelSyntax)
-
+  modelSpec <- parseLavaan(modelSyntax, colnames(data))
+  
     # Setting parameters according to method -----------------------------------
   if (method == "lms") {
     # If method is LMS we pass it own to its own version of modsem()

@@ -7,10 +7,9 @@
 #' @export
 #'
 #' @examples
-parseLavaan <- function(
-    modelSyntax   = NULL) {
+parseLavaan <- function(modelSyntax = NULL, variableNames = NULL) {
   # Checking prerequisites -----------------------------------------------------
-    # Check if a modelSyntax is provided, if not we should return an error
+  # Check if a modelSyntax is provided, if not we should return an error
   if (is.null(modelSyntax)) {
     stop2("No modelSyntax provided")
 
@@ -18,44 +17,41 @@ parseLavaan <- function(
   } else if (!is.character(modelSyntax)) {
     stop2("The provided model syntax is not a string!")
   }
-  # Convert to partable -------------------------------------------------
+  # Convert to partable --------------------------------------------------------
   parTable <- modsemify(modelSyntax)
 
   # Extracting some general information ----------------------------------------
-    # Structural
+  # Structural
   structuralExprs <- parTable[parTable$op == "~",]
 
-    # Interactions/Prod exprs
-  interactionExprs <-
-    parTable[grepl(":", parTable$rhs) & parTable$op == "~", ]
+  # Interactions/Prod exprs
+  interactionExprs <- parTable[grepl(":", parTable$rhs) & parTable$op == "~", ]
   prodNames <- unique(interactionExprs$rhs)
-        # Get names for prodTerms without __COLON__
-  prodNamesCleaned <- stringr::str_remove_all(prodNames,
-                                                 ":")
+  prodNamesCleaned <- stringr::str_remove_all(prodNames, ":")
 
   # Logical vector indicating whether a row is a measureExpr
   isMeasure <- parTable$op %in% c("=~", "<~")
   measureExprs <- parTable[isMeasure, ]
 
-  prodMeasureExprs <-
-    parTable[isMeasure & grepl(":", parTable$lhs), ]
-  specifiedProds <-
-    unique(stringr::str_remove_all(prodMeasureExprs$lhs,":"))
-  unspecifiedProds <-
-    prodNamesCleaned[!(prodNamesCleaned %in% specifiedProds)]
+  prodMeasureExprs <- parTable[isMeasure & grepl(":", parTable$lhs), ]
+  specifiedProds <- unique(stringr::str_remove_all(prodMeasureExprs$lhs,":"))
+  unspecifiedProds <- prodNamesCleaned[!(prodNamesCleaned %in% specifiedProds)]
 
   # Get all the inds in the model
-  inds <- unique(measureExprs$rhs)
+  inds <- unique(measureExprs$rhs[!grepl(":", measureExprs$rhs)])
+  if (!all(inds %in% variableNames)) {
+    stop("Unable to find observed variables in data: ",
+         capturePrint(inds[!inds %in% variableNames]))
+  }
   # Get latent variable names (assumes first order)
   latentVariables <- unique(measureExprs$lhs)
 
   # Structuring the information ------------------------------------------------
-    # Are prods latent?
+  # Are prods latent?
   elementsInProds <- lapplyNamed(prodNames,
-                                    FUN = splitProdName,
-                                    pattern = ":",
-                                    names = prodNamesCleaned)
-
+                                 FUN = splitProdName,
+                                 pattern = ":",
+                                 names = prodNamesCleaned)
   areElementsLatent <-
     lapply(elementsInProds,
            FUN = function(x, inds)  (x %in% latentVariables),
@@ -65,18 +61,17 @@ parseLavaan <- function(
                                  FUN = sum)
 
   # A prod is considered latent if it has at least one latent variable
-  isProdLatent <- lapply(numberLatentElements,
-                            FUN = as.logical)
+  isProdLatent <- lapply(numberLatentElements, FUN = as.logical)
   latentProds <- unlist(prodNamesCleaned)[unlist(isProdLatent)]
 
-    # Inds belonging to latent variables which are specified in the syntax
+  # Inds belonging to latent variables which are specified in the syntax
   indsLatents <- structureLavExprs(measureExprs)
 
   relDfs <- list()
   indsInProdTerms <- list()
   indsInUnspecifedLatentProds <- list()
   indProdNamesUnspecifiedLatents <- list()
-  # Computation for non-specified latent prods -----------------------------
+  # Computation for non-specified latent prods ---------------------------------
   if (length(unspecifiedProds) > 0) {
     # nSpec = unspecied
     # Get inds belonging to latent variables, or if observed, just get the
@@ -89,7 +84,7 @@ parseLavaan <- function(
 
     # Creating a relDF for prodTerms
     nSpecRelDfs <- lapply(nSpecIndsInProdTerms,
-                            FUN = createRelDf)
+                          FUN = createRelDf)
 
     # Get a list with all the inds in each interactionterm
     nSpecIndsInProdTerms <- lapplyNamed(nSpecIndsInProdTerms,
@@ -97,24 +92,24 @@ parseLavaan <- function(
                                         names = unspecifiedProds)
     # create the names for the indProds
     nSpecIndNamesProdTerms <- lapplyNamed(nSpecRelDfs,
-                                              FUN = colnames,
-                                              names = names(nSpecRelDfs))
+                                          FUN = colnames,
+                                          names = names(nSpecRelDfs))
     relDfs <- c(relDfs, nSpecRelDfs)
 
     indProdNamesUnspecifiedLatents <-
-        nSpecIndNamesProdTerms[unlist(isProdLatent[unspecifiedProds])]
+      nSpecIndNamesProdTerms[unlist(isProdLatent[unspecifiedProds])]
     indsInProdTerms <- c(indsInProdTerms,
-                                  nSpecIndsInProdTerms)
+                         nSpecIndsInProdTerms)
     indsInUnspecifedLatentProds <-
       nSpecIndsInProdTerms[unlist(isProdLatent[unspecifiedProds])]
   }
 
-  # Specified latent prods --------------------------------------------------
+  # Specified latent prods -----------------------------------------------------
   if (length(specifiedProds) > 0) {
     #fix names in lhs-column
     prodMeasureExprs[["lhs"]] <-
       fixProdNames(prodMeasureExprs[["lhs"]],
-                      pattern = ":")
+                   pattern = ":")
 
     # Split the exprs based on what prod term they belong to
     exprsLatentProds <-
@@ -123,38 +118,34 @@ parseLavaan <- function(
                   df = prodMeasureExprs)
     # create a list with ind names in latent prod, and fix names
     specIndProdNamesLatents <-
-      lapply(exprsLatentProds,
-             FUN = function(df) df[["rhs"]])
+      lapply(exprsLatentProds, FUN = function(df) df[["rhs"]])
 
     # Get all inds in the prodTerms
-    specIndsInProdTerms <- lapply(elementsInProds[specifiedProds],
-                                  FUN = getIndsLatents,
-                                  latents = indsLatents)
-
-    # Create relational df with all the possible combos
-    allCombosRelDfs <- lapplyNamed(
-      specIndsInProdTerms,
-      FUN = createRelDf)
-
-    # then prune these combos
-    specRelDfs <- purrr::map2(
-      .x = specIndProdNamesLatents,
-      .y = allCombosRelDfs,
-      .f = function(name, df) df[stringr::str_remove_all(name, pattern = ":")])
-
-    # Flatten the list, so that it collectively referst to XY, not XY$X and XY$Y
-    specIndsInProdTerms <- lapplyNamed(specIndsInProdTerms,
-                                       FUN = function(x) unname(unlist(x)),
-                                       names = specifiedProds)
+    
+    specRelDfs <- createRelDfSpecifiedProds(specIndProdNamesLatents,
+                                            elementsInProds[specifiedProds]) 
+    specIndsInProdTerms <-
+      lapplyNamed(specRelDfs,
+                  FUN = function(df) {
+                    out <- vector("list", nrow(df))
+                    names(out) <- rownames(df)
+                    for(i in names(out)) {
+                      out[[i]] <- as.vector(unlist(df[i, ]))
+                    }
+                    out
+                  }, names = names(specRelDfs))
     specIndProdNamesLatents <-
       lapplyNamed(specIndProdNamesLatents,
                   FUN = fixProdNames,
                   pattern = ":",
                   names = names(specIndProdNamesLatents))
-
-    relDfs  <- c(relDfs, specRelDfs)
+    specIndsInProdTerms <- lapplyNamed(specIndsInProdTerms,
+                                        FUN = function(x) unname(unlist(x)),
+                                        names = unspecifiedProds)
+    # Create relational df with all the possible combos    relDfs  <- c(relDfs, specRelDfs)
     indsInProdTerms <- c(indsInProdTerms,
-                                  specIndsInProdTerms)
+                         specIndsInProdTerms)
+    relDfs <- c(relDfs, specRelDfs) 
   }
   # Info nlsem -----------------------------------------------------------------
   etaNames <- unique(structuralExprs$lhs)
@@ -172,17 +163,16 @@ parseLavaan <- function(
                     indsXi = indsLatents[latentSimplePredictors],
                     modelSyntax = modelSyntax)
 
-  # Return modelSpec --------------------------------------------------
-  modelSpec <- list(
-    nlsem = nlsemInfo,
-    parTable = parTable,
-    prodNames = prodNamesCleaned,
-    elementsInProdNames = elementsInProds,
-    relDfs = relDfs,
-    indsInProdTerms = indsInProdTerms,
-    indsInUnspecifedLatentProds = indsInUnspecifedLatentProds,
-    unspecifiedLatentProds = names(indsInUnspecifedLatentProds),
-    indProdNamesUnspecifiedLatents = indProdNamesUnspecifiedLatents
+  # Return modelSpec -----------------------------------------------------------
+  modelSpec <- list(nlsem = nlsemInfo,
+                    parTable = parTable,
+                    prodNames = prodNamesCleaned,
+                    elementsInProdNames = elementsInProds,
+                    relDfs = relDfs,
+                    indsInProdTerms = indsInProdTerms,
+                    indsInUnspecifedLatentProds = indsInUnspecifedLatentProds,
+                    unspecifiedLatentProds = names(indsInUnspecifedLatentProds),
+                    indProdNamesUnspecifiedLatents = indProdNamesUnspecifiedLatents
   )
 
   modelSpec
@@ -209,7 +199,7 @@ structureLavExprs <- function(parTable = NULL) {
 getIndsVariable <- function(varName = NULL,  indsLatents = NULL) {
   if (is.null(varName)) {
     return(
-      stop2("Error in getIndsVariable(), varName is NULL")
+           stop2("Error in getIndsVariable(), varName is NULL")
     )
   }
   # Get the names of the latent variables in the model
@@ -226,7 +216,7 @@ getIndsVariable <- function(varName = NULL,  indsLatents = NULL) {
 
   # Error if it is neither a latent- nor an observerd variable
   stop2(
-    "Something went wrong in getIndsVariable(), varName neither observed not latent"
+        "Something went wrong in getIndsVariable(), varName neither observed not latent"
   )
 }
 
@@ -240,7 +230,7 @@ getIndsMultipleVariables <- function(varNames = NULL,
   # Check that arguements are supplied/not NULL
   if (is.null(varNames)) {
     return(
-      stop2("Error in getIndsMultipleVariables(), varNames is NULL")
+           stop2("Error in getIndsMultipleVariables(), varNames is NULL")
     )
   }
   # use getIndsVariable for each element in varNames, and return a named list
@@ -301,16 +291,40 @@ createRelDf <- function(indsProdTerm) {
 
 
 
+createRelDfSpecifiedProds <- function(indsProdTerms, latents) {
+    specRelDfs <- lapply(indsProdTerms, 
+                         FUN = stringr::str_split,
+                         pattern = ":") |>
+                    lapply(FUN = function(latent)
+                           lapply(latent, 
+                                  FUN = function(ind)
+                                    as.data.frame(matrix(ind, nrow = 1))
+                           ) |> purrr::list_rbind()
+                    )
+    specRelDfs <- purrr::map2(.x = specRelDfs, .y = latents,
+                .f = function(.x, .y) {
+                      colnames(.x) <- .y
+                      rownames(.x) <- apply(.x, MARGIN = 1, 
+                                            stringr::str_c,
+                                            collapse = "", 
+                                            simplify = TRUE)
+                      .x
+                    })
+    lapply(specRelDfs, FUN = function(df) as.data.frame(t(df))) 
+}
+
+
+
 # This should return just an observed variable, if it does not belong in a latent one
 getIndsLatents <- function(names, latents) {
   lapplyNamed(names,
-         FUN = function(name, latents) {
-           if (name %in% names(latents)) {
-             latents[[name]]
-           } else {
-             name
-           }
-         },
-         latents = latents,
-         names = names)
+              FUN = function(name, latents) {
+                if (name %in% names(latents)) {
+                  latents[[name]]
+                } else {
+                  name
+                }
+              },
+              latents = latents,
+              names = names)
 }

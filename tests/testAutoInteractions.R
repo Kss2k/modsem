@@ -7,6 +7,7 @@ models <- list(m1 = '
                # regressions
                dem60 ~ ind60 
                dem65 ~ ind60 + dem60 
+               dem65 ~ ind60:dem60
                # residual covariances 
                y1 ~~ y5
                y2 ~~ y4 + y6 
@@ -16,7 +17,7 @@ models <- list(m1 = '
                ',
                m2 = myModel <- ' # regressions
                y1 + y2 ~ f1 + f2 + x1 + x2
-               f1 ~ f2 + f3
+               f1 ~ f2 + f3 + f2:f3
                f2 ~ f3 + x1 + x2
 
                # latent variable definitions 
@@ -35,20 +36,24 @@ models <- list(m1 = '
                ',
                m3 = ' visual  =~ x1 + x2 + x3 
                textual =~ x4 + x5 + x6
-               speed   =~ x7 + x8 + x9 ',
+               speed   =~ x7 + x8 + x9
+               visual ~ speed + textual + speed:textual',
                m4 = 'visual  =~ x1 + start(0.8)*x2 + start(1.2)*x3
                textual =~ x4 + start(0.5)*x5 + start(1.0)*x6
-               speed   =~ x7 + start(0.7)*x8 + start(1.8)*x9',
+               speed   =~ x7 + start(0.7)*x8 + start(1.8)*x9
+               visual ~ speed + textual + speed:textual',
                m5 = '# three-factor model
                visual  =~ x1 + x2 + x3
                textual =~ x4 + x5 + x6
                speed   =~ x7 + x8 + x9
+               visual ~ speed + textual + 0.1*speed:textual
                # intercepts with fixed values
                x1 + x2 + x3 + x4 ~ 0.5*1',
                m6 = '# three-factor model
                visual  =~ x1 + x2 + x3
                textual =~ x4 + x5 + x6
                speed   =~ x7 + x8 + x9
+               visual ~ speed + textual + speed:textual
                # intercepts
                x1 ~ 1
                x2 ~ 1
@@ -63,7 +68,7 @@ models <- list(m1 = '
                Y ~ c*X
                # mediator
                M ~ a*X
-               Y ~ b*M
+               Y ~ b*M + M:X
                # indirect effect (a*b)
                ab := a*b
                # total effect
@@ -96,20 +101,6 @@ data <- list(d1 = lavaan::PoliticalDemocracy,
 
 estimates <- vector("list", length(models))
 for (i in seq_along(estimates)) {
-  estimates[[i]]$lav <- tryCatch({
-    est <- lavaan::sem(models[[i]], data = data[[i]])
-    est
-  },
-  warning = function(e) {
-    warning("Warning in lav model ", i)
-  },
-  error = function(e) {
-    est <- NA
-    warning("Error in lav model ", i)
-  },
-  finally = {
-    est
-  })
   estimates[[i]]$modsem <- tryCatch({
     est <- modsem(models[[i]], data = data[[i]], estimator = "ML")
     est
@@ -128,3 +119,4 @@ for (i in seq_along(estimates)) {
 
 }
 
+modsem(models[[3]], data[[3]], estimator = "ML")

@@ -325,7 +325,7 @@ tokenizeSyntax <- function(syntax, optimize = TRUE) {
     lapply(removeLavBlankLine) |>
     lapply(FUN = function(tokens)
                    lapply(tokens, assignSubClass))
-  modsemParseEnv$syntaxLines <- tokenizedLines
+  # modsemParseEnv$syntaxLines <- tokenizedLines
   tokenizedLines <- tokenizedLines |>
     lapply(prioritizeTokens)
 
