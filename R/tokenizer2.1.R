@@ -43,7 +43,7 @@ createTokensLine <- function(line, i = 1,
   }
 
   if (length(listTokens) > 0 && is.EqualityOperator(last(listTokens))) {
-    token <- buildMathExprToken(line[-(1:i)], pos = i)
+    token <- buildMathExprToken(line[i:length(line)], pos = i)
     return(appendToList(listTokens, token))
   }
 
@@ -109,7 +109,7 @@ buildMathExprToken <- function(restLine, pos) {
             pos = pos,
             lineNumber = attr(restLine, "lineNumber"),
             priority = 10,
-            class = c("LavMathExpr", "LavToken", "data.frame"))
+            class = c("LavMathExpr", "LavToken"))
 
 }
 
@@ -261,6 +261,12 @@ assignSubClass.LavNumeric <- function(token) {
 
 
 assignSubClass.LavToken <- function(token) {
+  token
+}
+
+
+
+assignSubClass.LavMathExpr <- function(token) {
   token
 }
 

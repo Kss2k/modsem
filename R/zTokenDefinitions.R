@@ -44,3 +44,6 @@ setMethod("evalToken", "LavToken", evalToken.LavToken)
   LavNumeric      <- setClass("LavNumeric")
   setMethod("assignSubClass", "LavNumeric", assignSubClass.LavNumeric)
   LavString       <- setClass("LavString")
+
+  LavMathExpr       <- setClass("LavMathExpr")
+  setMethod("assignSubClass", "LavMathExpr", assignSubClass.LavMathExpr)
