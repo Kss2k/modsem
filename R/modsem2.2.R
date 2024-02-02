@@ -130,7 +130,8 @@ modsem <- function(modelSyntax = NULL,
                               constrainedProdMean = methodSettings$constrainedProdMean,
                               constrainedLoadings = methodSettings$constrainedLoadings,
                               constrainedVar = methodSettings$constrainedVar,
-                              firstFixed = firstLoadingFixed)
+                              firstFixed = firstLoadingFixed,
+                              ...)
   newSyntax <- parTableToSyntax(parTable, removeColon = TRUE)
 
   # Estimating the model via lavaan::sem()
@@ -266,13 +267,12 @@ addSpecsParTable <- function(modelSpec,
                            constrainedProdMean = FALSE,
                            constrainedLoadings = FALSE,
                            constrainedVar = FALSE,
-                           firstFixed = TRUE) {
+                           firstFixed = TRUE, 
+                           ...) {
   relDfs <- modelSpec$relDfs
   unspecifiedLatentProds <- modelSpec$unspecifiedLatentProds
   indProdNamesNonSpec <- modelSpec$indProdNamesUnspecifiedLatents
-  indsInUnspecifedLatentProds <- modelSpec$indsInUnspecifedLatentProds
   parTable <- modelSpec$parTable
-  prodNames <- names(relDfs)
 
   if (is.null(relDfs) || length(relDfs) < 1) {
     return(parTable)
@@ -283,8 +283,8 @@ addSpecsParTable <- function(modelSpec,
     purrr::map2(.x = unspecifiedLatentProds,
                 .y = indProdNamesNonSpec,
                 .f = getParTableMeasure,
-                    operator = "=~",
-                    firstFixed = firstFixed) |>
+                operator = "=~",
+                firstFixed = firstFixed) |>
     purrr::list_rbind()
 
   parTable <- rbindParTable(parTable, measureParTable)
@@ -292,10 +292,11 @@ addSpecsParTable <- function(modelSpec,
   if (!is.logical(residualCovSyntax)) {
     stop("residualCovSyntax is not FALSE or TRUE in generateSyntax")
 
-  } else if (residualCovSyntax == TRUE) {
+  } else if (residualCovSyntax) {
     residualCovariances <- purrr::map(.x = relDfs,
                                       .f = getParTableResCov,
-                                      method = constrainedResCovMethod)  |>
+                                      method = constrainedResCovMethod, 
+                                      ...)  |>
       purrr::list_rbind()
     parTable <- rbindParTable(parTable, residualCovariances)
   }
@@ -307,8 +308,8 @@ addSpecsParTable <- function(modelSpec,
   }
 
   # Constrained Factor loadings ------------------------------------------------
-  if (constrainedLoadings == TRUE) {
-    if (constrainedVar == FALSE) {
+  if (constrainedLoadings) {
+    if (!constrainedVar) {
       parTable <- labelVarCov(parTable, relDfs)
     }
     parTable <- labelFactorLoadings(parTable)
@@ -316,7 +317,7 @@ addSpecsParTable <- function(modelSpec,
   }
 
   # Constrained prod mean syntax --------------------------------------------
-  if (constrainedProdMean == TRUE) {
+  if (constrainedProdMean) {
     restrictedMeans <- purrr::map2(modelSpec$prodNames,
                 modelSpec$elementsInProdNames,
                 getParTableRestrictedMean,
@@ -340,11 +341,11 @@ getParTableRestrictedMean <- function(prodName, elementsInProdName, createLabels
   }
   label <- createLabelCov(elementsInProdName[[1]], elementsInProdName[[2]])
 
-  if (createLabels == TRUE) {
+  if (createLabels) {
     covariance <- createParTableRow(vecLhsRhs = elementsInProdName[1:2],
                                     op = "~~",
                                     mod = label)
-  } else if (createLabels == FALSE) {
+  } else if (!createLabels) {
     covariance <- NULL
   }
   meanStructure <- createParTableRow(vecLhsRhs = c(prodName, "1"),
@@ -397,7 +398,7 @@ getParTableMeasure <- function(dependentName,
                          op = rep(operator, nRows),
                          rhs = predictorNames,
                          mod = vector("character", nRows))
-  if (firstFixed == TRUE) {
+  if (firstFixed) {
     parTable[["mod"]][[1]] <- "1"
   }
 

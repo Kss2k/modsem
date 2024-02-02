@@ -1,4 +1,4 @@
-getParTableResCov <- function(relDf, method) {
+getParTableResCov <- function(relDf, method, ...) {
   do.call(paste0("getParTableResCov.", method), list(relDf))
 }
 
@@ -9,33 +9,26 @@ getParTableResCov.simple <- function(relDf, prodName) {
   if (ncol(relDf) <= 1) {
     return(NULL)
   }
-
-  prodNames <- colnames(relDf)
-
+  prodNames <- sort(colnames(relDf))
   uniqueCombinations <- getUniqueCombinations(prodNames)
   # Now we want to specify the covariance based on shared inds
   isShared <- vector("logical", length = nrow(uniqueCombinations))
 
-  for (i in 1:nrow(uniqueCombinations)) {
+  for (i in seq_len(nrow(uniqueCombinations))) {
     indsProd1 <- unlist(relDf[uniqueCombinations[i, "V1"]])
     indsProd2 <- unlist(relDf[uniqueCombinations[i, "V2"]])
-
     # Compare the Inds in prod1 and prod2, and convert to integer
     sharedValues <- as.integer(indsProd1 %in% indsProd2)
-
     # Sum the values
     numberShared <- sum(sharedValues)
-
     if (numberShared >= 1) {
       isShared[[i]] <- TRUE
     } else if (numberShared == 0) {
       isShared[[i]] <- FALSE
     }
   }
-
   # Syntax for oblique covariances
   prodsSharingInds <- uniqueCombinations[isShared, c("V1", "V2")]
-
   if (nrow(prodsSharingInds) > 0) {
     syntaxOblique <- apply(prodsSharingInds,
                            MARGIN = 1,
@@ -46,7 +39,6 @@ getParTableResCov.simple <- function(relDf, prodName) {
     syntaxOblique <- NULL
   }
   prodsNotSharingInds <- uniqueCombinations[!isShared, c("V1", "V2")]
-
   if (nrow(prodsNotSharingInds) > 0) {
     syntaxOrthogonal <- apply(prodsNotSharingInds,
                               MARGIN = 1,
@@ -63,16 +55,13 @@ getParTableResCov.simple <- function(relDf, prodName) {
 
 
 # Rescovs with same indicator constrained to equality --------------------------
-getParTableResCov.equality <- function(relDf) {
+getParTableResCov.equality <- function(relDf, setToZero = FALSE) {
   if (ncol(relDf) <= 1) {
     return(NULL)
   }
-
-  prodNames <- colnames(relDf)
-
+  prodNames <- sort(colnames(relDf))
   sharedMatrix <- matrix("", nrow = length(prodNames), ncol = length(prodNames),
                          dimnames = list(prodNames, prodNames))
-
   # Now we want to specify the covariance based on shared inds
   for (i in prodNames) {
     for (j in prodNames) {
@@ -87,15 +76,18 @@ getParTableResCov.equality <- function(relDf) {
 
   uniqueCombos <- getUniqueCombinations(prodNames)
   uniqueCombos[["labels"]] <- vector("character", length = nrow(uniqueCombos))
-  for (i in 1:nrow(uniqueCombos)) {
+  for (i in seq_len(nrow(uniqueCombos))) {
     uniqueCombos[["labels"]][[i]] <- labelMatrix[uniqueCombos[i, "V2"],
                                                  uniqueCombos[i, "V1"]]
   }
 
-  apply(uniqueCombos, MARGIN = 1,
-        FUN = function(x)
-          createParTableRow(x[c("V1", "V2")], op = "~~", mod = x[["labels"]])) |>
+  parTable <- apply(uniqueCombos, MARGIN = 1,
+                    FUN = function(x)
+                      createParTableRow(x[c("V1", "V2")], op = "~~", mod = x[["labels"]])
+                    ) |>
     purrr::list_rbind()
+  if (!setToZero) parTable <- parTable[parTable$mod != 0, ]
+  parTable
 }
 
 
@@ -153,7 +145,7 @@ getParTableResCov.ca <- function(relDf) {
 
 
 getFormulaResCovProdInd <- function(indProd1, indProd2, relDf) {
-  if (is.null(indProd1) | is.null(indProd2)) {
+  if (is.null(indProd1) || is.null(indProd2)) {
     return(NULL)
   }
   cols <- c(indProd1, indProd2)
@@ -164,11 +156,11 @@ getFormulaResCovProdInd <- function(indProd1, indProd2, relDf) {
   indsNotShared <- unlist(rowNotShared[1, 1:2])
 
   lambdaShared <- createLabelLambda(indsNotShared, latentNotShared)
-  VarLatentNotShared <- createLabelVar(latentNotShared)
-  VarIndShared <- createLabelVar(indShared)
+  varLatentNotShared <- createLabelVar(latentNotShared)
+  varIndShared <- createLabelVar(indShared)
 
   rhs <- paste(lambdaShared[[1]], lambdaShared[[2]],
-               VarLatentNotShared, VarIndShared, sep = "*")
+               varLatentNotShared, varIndShared, sep = "*")
   lhs <- createLabelCov(indProd1, indProd2)
   createParTableRow(c(lhs, rhs), op = "==")
 }

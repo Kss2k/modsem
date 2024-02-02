@@ -7,7 +7,8 @@ getMethodSettings <- function(method, args) {
     args <- args[settingNames]
     isMissing <- vapply(args, FUN.VALUE = logical(1L), FUN = is.null)
     missingArgs <- settingNames[isMissing]
-
+    defaultResCov <- "simple" # could be defaultResCov both there is not really 
+                              # support for it in the literature
     settings <- list(
         rca = list(
             centerBefore = FALSE,
@@ -17,7 +18,7 @@ getMethodSettings <- function(method, args) {
             constrainedProdMean = FALSE,
             constrainedLoadings = FALSE,
             constrainedVar = FALSE,
-            constrainedResCovMethod =  "equality"),
+            constrainedResCovMethod =  defaultResCov),
         uca  = list(
             centerBefore = TRUE,
             centerAfter = FALSE,
@@ -26,7 +27,7 @@ getMethodSettings <- function(method, args) {
             constrainedProdMean = TRUE,
             constrainedLoadings = FALSE,
             constrainedVar = FALSE,
-            constrainedResCovMethod =  "equality"),
+            constrainedResCovMethod =  defaultResCov),
         pind  = list(
             centerBefore = FALSE,
             centerAfter = FALSE,
@@ -35,7 +36,7 @@ getMethodSettings <- function(method, args) {
             constrainedProdMean = FALSE,
             constrainedLoadings = FALSE,
             constrainedVar = FALSE,
-            constrainedResCovMethod =  "equality"),
+            constrainedResCovMethod =  defaultResCov),
         dblcent  = list(
             centerBefore = TRUE,
             centerAfter = TRUE,
@@ -44,7 +45,7 @@ getMethodSettings <- function(method, args) {
             constrainedProdMean = FALSE,
             constrainedLoadings = FALSE,
             constrainedVar = FALSE,
-            constrainedResCovMethod =  "equality"),
+            constrainedResCovMethod =  defaultResCov),
         ca = list(
             centerBefore = TRUE,
             centerAfter = FALSE,
