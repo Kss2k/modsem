@@ -181,9 +181,10 @@ modsemify <- function(syntax) {
 
 parTableToSyntax <- function(parTable, removeColon = FALSE) {
   out <- ''
-  if (removeColon == TRUE) {
+  if (removeColon) {
     parTable$lhs <- stringr::str_remove_all(parTable$lhs, ":")
     parTable$rhs <- stringr::str_remove_all(parTable$rhs, ":")
+    parTable$mod <- stringr::str_remove_all(parTable$mod, ":")
   }
   for (i in 1:nrow(parTable)) {
     if (parTable[["mod"]][i] != "") {

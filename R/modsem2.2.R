@@ -65,14 +65,13 @@ modsem <- function(modelSyntax = NULL,
   # PreSteps -------------------------------------------------------------------
   modEnv$data <- data
   ## Standardizing data
-  if (standardizeData == TRUE | method %in% auto.scale) {
+  if (standardizeData == TRUE || method %in% auto.scale) {
     modEnv$data <- lapplyDf(modEnv$data,
                      FUN = scaleIfNumeric,
                      scaleFactor = FALSE)
   }
-
     ## Centering Data (should not be paired with standardize data)
-  if (centerData == TRUE | method %in% auto.center) {
+  if (centerData == TRUE || method %in% auto.center) {
     modEnv$data <- lapplyDf(modEnv$data,
                      FUN = function(x) x - mean(x))
   }
