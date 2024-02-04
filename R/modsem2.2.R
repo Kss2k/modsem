@@ -122,7 +122,6 @@ modsem <- function(modelSyntax = NULL,
     # using list_cbind so that mergedProdInds can be NULL
   newData <- purrr::list_cbind(list(modEnv$data, mergedProdInds))
   # Genereating a new syntax with constraints and measurmentmodel --------------
-
   parTable <- addSpecsParTable(modelSpec,
                               residualCovSyntax = methodSettings$residualCovSyntax,
                               constrainedResCovMethod = methodSettings$constrainedResCovMethod,
@@ -276,7 +275,6 @@ addSpecsParTable <- function(modelSpec,
   if (is.null(relDfs) || length(relDfs) < 1) {
     return(parTable)
   }
-
   # Measure model latent prods ------------------------------------------
   measureParTable <-
     purrr::map2(.x = unspecifiedLatentProds,

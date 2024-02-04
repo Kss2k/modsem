@@ -19,7 +19,8 @@ models <- list(m1 = '
                m3 = ' visual  =~ x1 + x2 + x3 
                textual =~ x4 + x5 + x6
                speed   =~ x7 + x8 + x9
-               visual ~ speed + textual + speed:textual',
+               textual:speed =~ x4:x7 + x5:x8 + x6:x9
+               visual ~ speed + textual + textual:speed',
                m4 = 'visual  =~ x1 + start(0.8)*x2 + start(1.2)*x3
                textual =~ x4 + start(0.5)*x5 + start(1.0)*x6
                speed   =~ x7 + start(0.7)*x8 + start(1.8)*x9
@@ -79,26 +80,31 @@ data <- list(d1 = lavaan::PoliticalDemocracy,
              d6 = lavaan::HolzingerSwineford1939, 
              d7 = d7)
 
+nativeMethods <- allNativeMethods[allNativeMethods != "pind"]
+methods <- list(m1 = nativeMethods[nativeMethods != "ca"],
+                m2 = nativeMethods,
+                m3 = nativeMethods,
+                m4 = nativeMethods,
+                m5 = nativeMethods,
+                m6 = nativeMethods[nativeMethods != "ca"])
+
 
 estimates <- vector("list", length(models))
 for (i in seq_along(estimates)) {
   estimates[[i]]$modsem <- tryCatch({
-    est <- modsem(models[[i]], data = data[[i]], estimator = "ML")
+    est <- runMultipleMethods(models[[i]], data = data[[i]], 
+                              methods = methods[[i]],
+                              estimator = "ML")
     est
   },
   warning = function(e) {
-    warning("Warning in modsem model ", i, "\n",
-            capturePrint(e))
-  
+    warning("Warning in modsem model ", i, "\n")
+    warning(capturePrint(e))
   },
   error = function(e) {
-    warning("Error in modsem model ", i, "\n",
-            capturePrint(e)) 
-    NA
+    warning("Error in modsem model ", i, "\n") 
+    warning(capturePrint(e))
   })
 }
 
-m <- modsem(models[[1]], data[[1]], estimator = "ML")
-
-
-
+m <- modsem(models[[2]], data[[2]], "ca")

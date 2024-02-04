@@ -14,7 +14,9 @@ modsem.mplus <- function(modelSyntax, data) {
     MODEL = parTableToMplusModel(parTable),
     rdata = data[indicators],
   )
-  results <- MplusAutomation::mplusModeler(model, modelout = "mplus/mplusResults.inp", run = 1L)
+  results <- MplusAutomation::mplusModeler(model, 
+                                           modelout = "../mplus/mplusResults.inp", 
+                                           run = 1L)
   coefs <- MplusAutomation::extract.mplus.model(results)
   coefsTable <- data.frame(lhsOpRhs = coefs@coef.names,
                            est = coefs@coef,

@@ -70,19 +70,29 @@ data <- list(d1 = lavaan::PoliticalDemocracy,
              d6 = lavaan::HolzingerSwineford1939, 
              d7 = d7)
 
+nativeMethods <- allNativeMethods[allNativeMethods != "pind"]
+methods <- list(m1 = nativeMethods,
+                m2 = nativeMethods,
+                m3 = nativeMethods,
+                m4 = nativeMethods,
+                m5 = nativeMethods,
+                m6 = nativeMethods[nativeMethods != "ca"])
+
 
 estimates <- vector("list", length(models))
 for (i in seq_along(estimates)) {
   estimates[[i]]$modsem <- tryCatch({
-    est <- modsem(models[[i]], data = data[[i]], estimator = "ML")
+    est <- runMultipleMethods(models[[i]], data = data[[i]], 
+                              methods = methods[[i]],
+                              estimator = "ML")
     est
   },
   warning = function(e) {
-    warning("Warning in modsem model ", i)
+    warning("Warning in modsem model ", i, "\n")
     warning(capturePrint(e))
   },
   error = function(e) {
-    warning("Error in modsem model ", i) 
+    warning("Error in modsem model ", i, "\n") 
     warning(capturePrint(e))
   },
   finally = {
@@ -91,4 +101,4 @@ for (i in seq_along(estimates)) {
 
 }
 
-modsem(models[[3]], data[[3]], estimator = "ML")
+# modsem(models[[3]], data[[3]], "pind", estimator = "ML")

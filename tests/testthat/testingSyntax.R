@@ -47,8 +47,6 @@ models <- list(m1 = '
                Y ~ b*M
                # indirect effect (a*b)
                ab := a*b
-               # total effect
-               total := c + (a*b)
                '
 )
 
@@ -99,6 +97,12 @@ for (i in seq_along(estimates)) {
   finally = {
     est
   })
-
 }
 
+for (est in estimates) {
+  lavaanEst <- lavaan::parameterEstimates(est$lav)
+  lavaanEst[is.na(lavaanEst)] <- -999
+  modsemEst <- lavaan::parameterEstimates(est$modsem$lavaan)
+  modsemEst[is.na(modsemEst)] <- -999
+  stopifnot(all(lavaanEst == modsemEst))
+}
