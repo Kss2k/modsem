@@ -55,6 +55,8 @@ modsem <- function(modelSyntax = NULL,
                    auto.scale = "none",
                    auto.center = "none",
                    estimator = "MLM", # We shold correct for non-normal Y
+                   removeFromParTable = NULL, 
+                   addToParTable = NULL, 
                    ...) {
   if (is.null(modelSyntax)) {
     stop("No model syntax provided in modsem")
@@ -130,6 +132,22 @@ modsem <- function(modelSyntax = NULL,
                               constrainedVar = methodSettings$constrainedVar,
                               firstFixed = firstLoadingFixed,
                               ...)
+  if (!is.null(removeFromParTable)) {
+    rowsToRemove <- modsemify(removeFromParTable)
+    matches <- apply(parTable[1:3],
+                     MARGIN = 1, 
+                     FUN = function(rowPt, rowsRem) 
+                       any(apply(rowsRem, 
+                                 MARGIN = 1,
+                                 FUN = function(x, y) all(x == y), 
+                                 y = rowPt)),
+                     rowsRem = rowsToRemove[1:3])
+    parTable <- parTable[!matches, ]
+  }
+  if (!is.null(addToParTable)) {
+    rowsToAdd <- modsemify(addToParTable)
+    parTable <- rbind(parTable, rowsToAdd) 
+  }
   newSyntax <- parTableToSyntax(parTable, removeColon = TRUE)
 
   # Estimating the model via lavaan::sem()
