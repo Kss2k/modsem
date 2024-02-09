@@ -21,8 +21,13 @@ getCharsLine <- function(line, i = 1) {
 }
 
 
+
 getLines <- function(syntax) {
-  # split syntax into individual lines and return as vector
+  operators <- c("==", ":=", "~~", "~", "+", "*", "<-", "->", "<", ">") 
+  for (op in operators) {
+    pattern <- paste0("\\", op, "\\s*[\n|;]")
+    syntax <- stringr::str_replace_all(syntax, pattern, op)
+  }
   lines <- strsplit(syntax, "\n|;") |>
     unlist() |>
     as.list() |>
@@ -32,7 +37,6 @@ getLines <- function(syntax) {
                     structure(x, lineNumber = lNum))
   lines
 }
-
 
 
 createTokensLine <- function(line, i = 1,

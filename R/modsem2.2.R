@@ -134,14 +134,15 @@ modsem <- function(modelSyntax = NULL,
                               ...)
   if (!is.null(removeFromParTable)) {
     rowsToRemove <- modsemify(removeFromParTable)
-    matches <- apply(parTable[1:3],
+    matches <- apply(parTable[c("lhs", "op", "rhs")],
                      MARGIN = 1, 
-                     FUN = function(rowPt, rowsRem) 
-                       any(apply(rowsRem, 
+                     FUN = function(rowParTable, rowsToRemove) 
+                       any(apply(rowsToRemove, 
                                  MARGIN = 1,
-                                 FUN = function(x, y) all(x == y), 
-                                 y = rowPt)),
-                     rowsRem = rowsToRemove[1:3])
+                                 FUN = function(rowToRemove, rowParTable) 
+                                   all(rowToRemove == rowParTable), 
+                                 rowParTable = rowParTable)),
+                     rowsToRemove = rowsToRemove[c("lhs", "op", "rhs")])
     parTable <- parTable[!matches, ]
   }
   if (!is.null(addToParTable)) {
