@@ -7,7 +7,7 @@
 #' @export
 #'
 #' @examples
-parseLavaan <- function(modelSyntax = NULL, variableNames = NULL) {
+parseLavaan <- function(modelSyntax = NULL, variableNames = NULL, match = FALSE) {
   # Checking prerequisites -----------------------------------------------------
   # Check if a modelSyntax is provided, if not we should return an error
   if (is.null(modelSyntax)) {
@@ -84,7 +84,8 @@ parseLavaan <- function(modelSyntax = NULL, variableNames = NULL) {
 
     # Creating a relDF for prodTerms
     nSpecRelDfs <- lapply(nSpecIndsInProdTerms,
-                          FUN = createRelDf)
+                          FUN = createRelDf,
+                          match = match)
 
     # Get a list with all the inds in each interactionterm
     nSpecIndsInProdTerms <- lapplyNamed(nSpecIndsInProdTerms,
@@ -140,8 +141,8 @@ parseLavaan <- function(modelSyntax = NULL, variableNames = NULL) {
                   pattern = ":",
                   names = names(specIndProdNamesLatents))
     specIndsInProdTerms <- lapplyNamed(specIndsInProdTerms,
-                                        FUN = function(x) unname(unlist(x)),
-                                        names = unspecifiedProds)
+                                       FUN = function(x) unname(unlist(x)),
+                                       names = unspecifiedProds)
     # Create relational df with all the possible combos    relDfs  <- c(relDfs, specRelDfs)
     indsInProdTerms <- c(indsInProdTerms,
                          specIndsInProdTerms)
@@ -280,37 +281,37 @@ fixLatentNamesSyntax <- function(modelSyntax, pattern) {
 
 
 
-createRelDf <- function(indsProdTerm) {
-  relDf <- t(expand.grid(indsProdTerm))
+createRelDf <- function(indsProdTerm, match = FALSE) {
+  if (match) relDf <- t(as.data.frame(indsProdTerm))
+  else if (!match) relDf <- t(expand.grid(indsProdTerm))
   names <- apply(relDf, MARGIN = 2, FUN = stringr::str_c, collapse = "")
-
   structure(as.data.frame(relDf),
             names = names)
-
 }
 
 
 
 createRelDfSpecifiedProds <- function(indsProdTerms, latents) {
-    specRelDfs <- lapply(indsProdTerms, 
-                         FUN = stringr::str_split,
-                         pattern = ":") |>
-                    lapply(FUN = function(latent)
-                           lapply(latent, 
-                                  FUN = function(ind)
-                                    as.data.frame(matrix(ind, nrow = 1))
-                           ) |> purrr::list_rbind()
-                    )
-    specRelDfs <- purrr::map2(.x = specRelDfs, .y = latents,
-                .f = function(.x, .y) {
-                      colnames(.x) <- .y
-                      rownames(.x) <- apply(.x, MARGIN = 1, 
-                                            stringr::str_c,
-                                            collapse = "", 
-                                            simplify = TRUE)
-                      .x
-                    })
-    lapply(specRelDfs, FUN = function(df) as.data.frame(t(df))) 
+  specRelDfs <- lapply(indsProdTerms, 
+                       FUN = stringr::str_split,
+                       pattern = ":") |>
+lapply(FUN = function(latent)
+       lapply(latent, 
+              FUN = function(ind)
+                as.data.frame(matrix(ind, nrow = 1))
+              ) |> 
+       purrr::list_rbind()
+)
+specRelDfs <- purrr::map2(.x = specRelDfs, .y = latents,
+                          .f = function(.x, .y) {
+                            colnames(.x) <- .y
+                            rownames(.x) <- apply(.x, MARGIN = 1, 
+                                                  stringr::str_c,
+                                                  collapse = "", 
+                                                  simplify = TRUE)
+                            .x
+                          })
+lapply(specRelDfs, FUN = function(df) as.data.frame(t(df))) 
 }
 
 

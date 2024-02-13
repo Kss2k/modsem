@@ -57,6 +57,7 @@ modsem <- function(modelSyntax = NULL,
                    estimator = "MLM", # We shold correct for non-normal Y
                    removeFromParTable = NULL, 
                    addToParTable = NULL, 
+                   match = FALSE,
                    ...) {
   if (is.null(modelSyntax)) {
     stop("No model syntax provided in modsem")
@@ -67,27 +68,28 @@ modsem <- function(modelSyntax = NULL,
   # PreSteps -------------------------------------------------------------------
   modEnv$data <- data
   ## Standardizing data
-  if (standardizeData == TRUE || method %in% auto.scale) {
+  if (standardizeData || method %in% auto.scale) {
     modEnv$data <- lapplyDf(modEnv$data,
-                     FUN = scaleIfNumeric,
-                     scaleFactor = FALSE)
+                            FUN = scaleIfNumeric,
+                            scaleFactor = FALSE)
   }
-    ## Centering Data (should not be paired with standardize data)
-  if (centerData == TRUE || method %in% auto.center) {
+  ## Centering Data (should not be paired with standardize data)
+  if (centerData || method %in% auto.center) {
     modEnv$data <- lapplyDf(modEnv$data,
-                     FUN = function(x) x - mean(x))
+                            FUN = function(x) x - mean(x))
   }
 
-    # Get the specifications of the model --------------------------------------
-  modelSpec <- parseLavaan(modelSyntax, colnames(data))
-  
-    # Setting parameters according to method -----------------------------------
+  # Get the specifications of the model --------------------------------------
+  modelSpec <- parseLavaan(modelSyntax, colnames(data), match = match)
+
+  # Setting parameters according to method -----------------------------------
   if (method == "lms") {
     # If method is LMS we pass it own to its own version of modsem()
     LMS <- modsem.LMS(modelSpec,
                       data = modEnv$data,
                       qml = qml,
-                      standardizeData = standardizeData)
+                      standardizeData = standardizeData,
+                      ...)
     return(LMS)
 
   } else if (method == "mplus") {
@@ -96,42 +98,42 @@ modsem <- function(modelSyntax = NULL,
     return(mplus)
   }
 
-  methodSettings <- getMethodSettings(method, args = list(centerBefore = centerBefore,
-                                     centerAfter = centerAfter,
-                                     residualsProds = residualsProds,
-                                     residualCovSyntax = residualCovSyntax,
-                                     constrainedProdMean = constrainedProdMean,
-                                     constrainedLoadings = constrainedLoadings,
-                                     constrainedVar = constrainedVar,
-                                     constrainedResCovMethod = constrainedResCovMethod,
-                                     firstLoadingFixed = firstLoadingFixed))
+  methodSettings <- 
+    getMethodSettings(method, 
+                      args = 
+                        list(centerBefore = centerBefore,
+                             centerAfter = centerAfter,
+                             residualsProds = residualsProds,
+                             residualCovSyntax = residualCovSyntax,
+                             constrainedProdMean = constrainedProdMean,
+                             constrainedLoadings = constrainedLoadings,
+                             constrainedVar = constrainedVar,
+                             constrainedResCovMethod = constrainedResCovMethod,
+                             firstLoadingFixed = firstLoadingFixed))
 
   # ModSEM-algorithm for prod ind based approaches --------------------
 
   # Calculating prodinidicators based on method specifications --------------
   prodInds <-
     createProdInds(modelSpec,
-                            data = modEnv$data,
-                            centerBefore = methodSettings$centerBefore,
-                            centerAfter = methodSettings$centerAfter,
-                            residualsProds = methodSettings$residualsProds)
-  # Merging prodInds into a single dataset ----------------------------
-    # Old solution (does not handle/warn about duplicates)
-      # mergedProdInds <- purrr::list_cbind(unname(prodInds))
+                   data = modEnv$data,
+                   centerBefore = methodSettings$centerBefore,
+                   centerAfter = methodSettings$centerAfter,
+                   residualsProds = methodSettings$residualsProds)
   mergedProdInds <- combineListDf(prodInds)
 
   # Creating a new dataset with the prodinds
-    # using list_cbind so that mergedProdInds can be NULL
+  # using list_cbind so that mergedProdInds can be NULL
   newData <- purrr::list_cbind(list(modEnv$data, mergedProdInds))
   # Genereating a new syntax with constraints and measurmentmodel --------------
   parTable <- addSpecsParTable(modelSpec,
-                              residualCovSyntax = methodSettings$residualCovSyntax,
-                              constrainedResCovMethod = methodSettings$constrainedResCovMethod,
-                              constrainedProdMean = methodSettings$constrainedProdMean,
-                              constrainedLoadings = methodSettings$constrainedLoadings,
-                              constrainedVar = methodSettings$constrainedVar,
-                              firstFixed = firstLoadingFixed,
-                              ...)
+                               residualCovSyntax = methodSettings$residualCovSyntax,
+                               constrainedResCovMethod = methodSettings$constrainedResCovMethod,
+                               constrainedProdMean = methodSettings$constrainedProdMean,
+                               constrainedLoadings = methodSettings$constrainedLoadings,
+                               constrainedVar = methodSettings$constrainedVar,
+                               firstFixed = firstLoadingFixed,
+                               ...)
   if (!is.null(removeFromParTable)) {
     rowsToRemove <- modsemify(removeFromParTable)
     matches <- apply(parTable[c("lhs", "op", "rhs")],
@@ -152,37 +154,40 @@ modsem <- function(modelSyntax = NULL,
   newSyntax <- parTableToSyntax(parTable, removeColon = TRUE)
 
   # Estimating the model via lavaan::sem()
-  lavaanEstimation <- lavaan::sem(newSyntax, newData, estimator = estimator, ...)
-  coefParTable <- lavaan::parameterEstimates(lavaanEstimation)
-  # Adding a bunch of stuff to the model, before i return it
+  lavaanEstimation <- tryCatch(
+                               lavaan::sem(newSyntax, newData, estimator = estimator, ...),
+                               error = function(cnd) {
+                                 warning("Error in Lavaan: \n")
+                                 warning(capturePrint(cnd))
+                                 NULL
+                               })
+  coefParTable <- tryCatch(lavaan::parameterEstimates(lavaanEstimation),
+                           error = function(cnd) NULL) 
   modelSpec$prodInds <- prodInds
   modelSpec$newSyntax <- newSyntax
   modelSpec$newData <- newData
   modelSpec$lavaan <- lavaanEstimation
   modelSpec$parTable <- parTable
   modelSpec$coefParTable <- coefParTable
-  # this is not pretty either
   structure(modelSpec,
             class = "ModSEM",
             method = method)
-
 }
 
 
 
-
 createProdInds <- function(modelSpec,
-                                    data,
-                                    centerBefore = FALSE,
-                                    centerAfter = FALSE,
-                                    residualsProds = FALSE) {
+                           data,
+                           centerBefore = FALSE,
+                           centerAfter = FALSE,
+                           residualsProds = FALSE) {
 
   indProds <- purrr::map2(.x = modelSpec$relDfs,
-                                   .y = modelSpec$indsInProdTerms,
-                                   .f = createIndProds,
-                                   data = data,
-                                   centered = centerBefore)
-  if (residualsProds == TRUE) {
+                          .y = modelSpec$indsInProdTerms,
+                          .f = createIndProds,
+                          data = data,
+                          centered = centerBefore)
+  if (residualsProds) {
     indProds <-
       purrr::map2(.x = indProds,
                   .y = modelSpec$indsInProdTerms,
@@ -192,13 +197,9 @@ createProdInds <- function(modelSpec,
   } else if (!is.logical(residualsProds)) {
     stop("residualProds was neither FALSE nor TRUE in createProdInds")
   }
-  # new additon
-  if (centerAfter == TRUE) {
-    indProds <-
-      lapply(indProds,
-             FUN = function(df)
-               lapplyDf(df,
-                        FUN = function(x) x - mean(x)))
+  if (centerAfter) {
+    indProds <- lapply(indProds, FUN = function(df)
+                       lapplyDf(df, FUN = function(x) x - mean(x)))
 
   }
 
@@ -208,9 +209,9 @@ createProdInds <- function(modelSpec,
 
 
 createIndProds <- function(relationDf,
-                                    indNames,
-                                    data,
-                                    centered = FALSE) {
+                           indNames,
+                           data,
+                           centered = FALSE) {
 
   # Getting the indProd names
   varnames <- unname(colnames(relationDf))
@@ -227,7 +228,7 @@ createIndProds <- function(relationDf,
   # Centering them, if center == TRUE
   if (centered == TRUE) {
     inds <- lapplyDf(inds,
-                           FUN = function(x) x - mean(x))
+                     FUN = function(x) x - mean(x))
 
   }
 
@@ -257,9 +258,9 @@ calculateResidualsDf <- function(dependentDf, independentNames, data) {
   formula <- getResidualsFormula(dependentNames, independentNames)
   if (length(dependentNames <= 1)) {
 
-      res <- as.data.frame(residuals(lm(formula = formula, combinedData)))
-      colnames(res) <- dependentNames
-      return(res)
+    res <- as.data.frame(residuals(lm(formula = formula, combinedData)))
+    colnames(res) <- dependentNames
+    return(res)
   }
   residuals(lm(formula = formula, combinedData))
 
@@ -279,13 +280,13 @@ getResidualsFormula <- function(dependendtNames, indepNames) {
 
 
 addSpecsParTable <- function(modelSpec,
-                           residualCovSyntax = FALSE,
-                           constrainedResCovMethod = "equality",
-                           constrainedProdMean = FALSE,
-                           constrainedLoadings = FALSE,
-                           constrainedVar = FALSE,
-                           firstFixed = TRUE, 
-                           ...) {
+                             residualCovSyntax = FALSE,
+                             constrainedResCovMethod = "equality",
+                             constrainedProdMean = FALSE,
+                             constrainedLoadings = FALSE,
+                             constrainedVar = FALSE,
+                             firstFixed = TRUE, 
+                             ...) {
   relDfs <- modelSpec$relDfs
   unspecifiedLatentProds <- modelSpec$unspecifiedLatentProds
   indProdNamesNonSpec <- modelSpec$indProdNamesUnspecifiedLatents
@@ -301,49 +302,49 @@ addSpecsParTable <- function(modelSpec,
                 .f = getParTableMeasure,
                 operator = "=~",
                 firstFixed = firstFixed) |>
-    purrr::list_rbind()
+purrr::list_rbind()
 
   parTable <- rbindParTable(parTable, measureParTable)
-  # Residual covariances -------------------------------------------------------
-  if (!is.logical(residualCovSyntax)) {
-    stop("residualCovSyntax is not FALSE or TRUE in generateSyntax")
+# Residual covariances -------------------------------------------------------
+if (!is.logical(residualCovSyntax)) {
+  stop("residualCovSyntax is not FALSE or TRUE in generateSyntax")
 
-  } else if (residualCovSyntax) {
-    residualCovariances <- purrr::map(.x = relDfs,
-                                      .f = getParTableResCov,
-                                      method = constrainedResCovMethod, 
-                                      ...)  |>
-      purrr::list_rbind()
+} else if (residualCovSyntax) {
+  residualCovariances <- purrr::map(.x = relDfs,
+                                    .f = getParTableResCov,
+                                    method = constrainedResCovMethod, 
+                                    ...)  |>
+purrr::list_rbind()
     parTable <- rbindParTable(parTable, residualCovariances)
-  }
+}
 
-  # Constrained Vars and Covs --------------------------------------------------
-  if (constrainedVar == TRUE) {
+# Constrained Vars and Covs --------------------------------------------------
+if (constrainedVar == TRUE) {
+  parTable <- labelVarCov(parTable, relDfs)
+  parTable <- specifyVarCov(parTable, relDfs)
+}
+
+# Constrained Factor loadings ------------------------------------------------
+if (constrainedLoadings) {
+  if (!constrainedVar) {
     parTable <- labelVarCov(parTable, relDfs)
-    parTable <- specifyVarCov(parTable, relDfs)
   }
+  parTable <- labelFactorLoadings(parTable)
+  parTable <- specifyFactorLoadings(parTable, relDfs)
+}
 
-  # Constrained Factor loadings ------------------------------------------------
-  if (constrainedLoadings) {
-    if (!constrainedVar) {
-      parTable <- labelVarCov(parTable, relDfs)
-    }
-    parTable <- labelFactorLoadings(parTable)
-    parTable <- specifyFactorLoadings(parTable, relDfs)
-  }
-
-  # Constrained prod mean syntax --------------------------------------------
-  if (constrainedProdMean) {
-    restrictedMeans <- purrr::map2(modelSpec$prodNames,
-                modelSpec$elementsInProdNames,
-                getParTableRestrictedMean,
-                createLabels = !constrainedVar) |>
-      purrr::list_rbind()
+# Constrained prod mean syntax --------------------------------------------
+if (constrainedProdMean) {
+  restrictedMeans <- purrr::map2(modelSpec$prodNames,
+                                 modelSpec$elementsInProdNames,
+                                 getParTableRestrictedMean,
+                                 createLabels = !constrainedVar) |>
+purrr::list_rbind()
     parTable <- rbindParTable(parTable, restrictedMeans)
-  }
+}
 
-  modEnv$parTable <- parTable
-  parTable
+modEnv$parTable <- parTable
+parTable
 }
 
 
@@ -352,8 +353,8 @@ addSpecsParTable <- function(modelSpec,
 getParTableRestrictedMean <- function(prodName, elementsInProdName, createLabels = TRUE) {
   if (length(elementsInProdName) > 2) {
     stop("The mean of a latent prod should not be constrained when there",
-             " are more than two variables in the prod term. Please use a",
-             " different method \n")
+         " are more than two variables in the prod term. Please use a",
+         " different method \n")
   }
   label <- createLabelCov(elementsInProdName[[1]], elementsInProdName[[2]])
 
@@ -405,9 +406,9 @@ getUniqueCombinations <- function(x) {
 
 
 getParTableMeasure <- function(dependentName,
-                                        predictorNames,
-                                        operator = "=~",
-                                        firstFixed = FALSE) {
+                               predictorNames,
+                               operator = "=~",
+                               firstFixed = FALSE) {
 
   nRows <- length(predictorNames)
   parTable <- data.frame(lhs = rep(dependentName, nRows),
