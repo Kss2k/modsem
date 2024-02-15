@@ -282,8 +282,21 @@ fixLatentNamesSyntax <- function(modelSyntax, pattern) {
 
 
 createRelDf <- function(indsProdTerm, match = FALSE) {
-  if (match) relDf <- t(as.data.frame(indsProdTerm))
-  else if (!match) relDf <- t(expand.grid(indsProdTerm))
+  if (match) {
+    lengths <- vapply(indsProdTerm, 
+                      FUN.VALUE = integer(1L), 
+                      FUN = length) 
+    if ((shortest <- min(lengths)) != (longest <- max(lengths))) {
+      warning("Unequal number of indicators for latent variables ",
+              "in product term, not all indicators will be used")
+      indsProdTerm <- lapply(indsProdTerm,
+                             FUN = function(x, shortest) x[seq_len(shortest)],
+                             shortest = shortest)
+    }
+    relDf <- t(as.data.frame(indsProdTerm))
+  }
+  else if (!match) 
+    relDf <- t(expand.grid(indsProdTerm))
   names <- apply(relDf, MARGIN = 2, FUN = stringr::str_c, collapse = "")
   structure(as.data.frame(relDf),
             names = names)

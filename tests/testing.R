@@ -1,7 +1,7 @@
 library(lavaan)
-#library(modsem)
 library(semTools)
-
+library(tidyverse)
+devtools::load_all()
 # One Interaction --------------------------------------------------------------
   # Real Model
 m1 <- '
@@ -15,6 +15,10 @@ Y =~ y1 + y2 + y3
 # Inner model
 Y ~ X + Z
 Y ~ X:Z
+X ~~ Z
+X ~~ X
+Z ~~ Z
+Y ~~ Y
 '
 
 m2 <- '
@@ -27,6 +31,43 @@ m2 <- '
   # Inner model
   Y ~ X + Z + X:Z
 '
+startVals <- c(
+Lambda.x2  = 0.778,
+Lambda.x3  = 0.888,
+Lambda.x11 = 0.813,
+Lambda.x12 = 0.891,
+Lambda.y2  = 0.801,
+Lambda.y3  = 0.905,
+Gamma1 = 0.741,
+Gamma2 = 0.473,
+Theta.d1  = 0.157,
+Theta.d8  = 0.158,
+Theta.d15 = 0.170,
+Theta.d22 = 0.174,
+Theta.d29 = 0.159,
+Theta.d36 = 0.154,
+Theta.e1  = 0.178,
+Theta.e5  = 0.159,
+Theta.e9  = 0.156,
+Psi = 3.302 ,
+Phi1 = 1.057,
+Phi2 = 0.238 ,
+Phi4 = 1.013 ,
+nu.x2 = 0,
+nu.x3 = 0,
+nu.x5 = 0, 
+nu.x6 = 0,
+nu.y2 = 0,
+nu.y3 = 0, 
+alpha = 0,
+tau1 = 0.0,
+tau2 = 0,
+Omega3 = 0.633
+)
+
+eLms <- modsem(m1, oneInt, "lms", qml = TRUE, max.iter = 100, convergence = 0.5,
+               centerData = TRUE,, startingValues = startVals)
+
 
 scaledoneInt <- lapplyDf(oneInt, scale)
 realModel <- lm(realY ~ realX*realZ, scaledoneInt)
@@ -34,10 +75,13 @@ summary(realModel)
 
   # RCA ------------------------------------------------------------------------
     # Using modsem()
-m1Rca <- modsem(m1, oneInt, method = "rca",
-                standardizeData = TRUE)
+m1Rca <- modsem(m1, oneInt, method = "rca", centerData = TRUE)
 summary(m1Rca)
+coefs <- m1Rca$coefParTable
+coefs |>
+  filter(!lhs %in% coefs$rhs[coefs$lhs == "XZ"] & !rhs %in% coefs$rhs[coefs$lhs == "XZ"] )
 
+startVals2 <- 
     # Using semtools
 oneIntST <- indProd(scaledoneInt,
                  var1 = c("x1", "x2", "x3"),
@@ -77,7 +121,7 @@ m1semTools <- '
   x1.z1 ~~ 0*x3.z2
   x1.z1 ~~ 0*x2.z3
   x1.z1 ~~ 0*x3.z3
-  x2.z1 ~~ 0*x1.z2
+s x2.z1 ~~ 0*x1.z2
   x2.z1 ~~ 0*x3.z2
   x2.z1 ~~ 0*x1.z3
   x2.z1 ~~ 0*x3.z3
