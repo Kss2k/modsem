@@ -151,6 +151,7 @@ parseLavaan <- function(modelSyntax = NULL, variableNames = NULL, match = FALSE)
   # Info nlsem -----------------------------------------------------------------
   etaNames <- unique(structuralExprs$lhs)
   allPredictors <- unique(structuralExprs$rhs)
+  allPredictors <- allPredictors[!allPredictors %in% etaNames]
   simplePredictors <- allPredictors[!grepl(":", allPredictors)]
   # I do this in the counter intuitive way, to keep the same order as the
   # measure exprs in the model, which is the way the nlsem model reads
@@ -162,6 +163,7 @@ parseLavaan <- function(modelSyntax = NULL, variableNames = NULL, match = FALSE)
                     indsEta = indsLatents[etaNames],
                     xiNames = latentSimplePredictors,
                     indsXi = indsLatents[latentSimplePredictors],
+                    prodTerms = prodNamesCleaned, 
                     modelSyntax = modelSyntax)
 
   # Return modelSpec -----------------------------------------------------------

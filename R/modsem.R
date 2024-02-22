@@ -58,6 +58,7 @@ modsem <- function(modelSyntax = NULL,
                    removeFromParTable = NULL, 
                    addToParTable = NULL, 
                    match = FALSE,
+                   nodesLms = 16,
                    ...) {
   if (is.null(modelSyntax)) {
     stop("No model syntax provided in modsem")
@@ -88,7 +89,8 @@ modsem <- function(modelSyntax = NULL,
     LMS <- modsem.LMS(modelSpec,
                       data = modEnv$data,
                       qml = qml,
-                      standardizeData = standardizeData,
+                      centerData = centerData, 
+                      m = nodesLms,
                       ...)
     return(LMS)
 
