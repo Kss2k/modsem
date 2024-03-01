@@ -1,5 +1,5 @@
 
-modsem.mplus <- function(modelSyntax, data) {
+modsem.mplus <- function(modelSyntax, data, ...) {
   parTable <- modsemify(modelSyntax)
   indicators <- parTable[parTable$op == "=~", "rhs", drop = TRUE] |>
     unique()
@@ -11,7 +11,7 @@ modsem.mplus <- function(modelSyntax, data) {
       type = random;
       algorithm = integration;
       process = 8;",
-    MODEL = parTableToMplusModel(parTable),
+    MODEL = parTableToMplusModel(parTable, ...),
     rdata = data[indicators],
   )
   results <- MplusAutomation::mplusModeler(model, 
@@ -89,7 +89,7 @@ modsem.mplus <- function(modelSyntax, data) {
 }
 
 
-parTableToMplusModel <- function(parTable) {
+parTableToMplusModel <- function(parTable, ignoreLabels = TRUE) {
   # INTERACTIONEXPRESSIOns
   interactions <- parTable[grepl(":", parTable$rhs), "rhs"]
   elemsInInts <- stringr::str_split(interactions, ":")
@@ -107,6 +107,7 @@ parTableToMplusModel <- function(parTable) {
 
   parTable$op <- replaceLavOpWithMplus(parTable$op)
   out <- ""
+  if (ignoreLabels) parTable[["mod"]] <- ""
   for (i in 1:nrow(parTable)) {
     if (parTable[["mod"]][i] != "") {
       warning("Using labels in Mplus, was this intended?")

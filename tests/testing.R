@@ -65,8 +65,8 @@ tau2 = 0,
 Omega3 = 0.633
 )
 
-eLms <- modsem(m1, oneInt, "lms", qml = TRUE, max.iter = 100, convergence = 0.5,
-               centerData = TRUE,, startingValues = startVals)
+eLms <- modsem(m1, oneInt, "lms", qml = FALSE, max.iter = 0, convergence = 0.5,
+               optimize = TRUE)
 
 
 scaledoneInt <- lapplyDf(oneInt, scale)

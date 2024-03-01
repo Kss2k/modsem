@@ -11,7 +11,6 @@
 #' "lms" = laten model structural equations (passed to nlsem),
 #' "custom" = use parameters specified in the function call (passed to lavaan)
 #' @param standardizeData should data be scaled before fitting model
-#' @param isMeasureSpecified have you specified the measure model for the latent prod
 #' @param firstLoadingFixed Sould the first factorloading in the latent prod be fixed to one?
 #' @param centerBefore should inds in prods be centered before computing prods (overwritten by method, if method != NULL)
 #' @param centerAfter should ind prods be centered after they have been computed?
@@ -19,6 +18,18 @@
 #' @param residualCovSyntax should syntax for residual covariances be produced (overwritten by method, if method != NULL)
 #' @param constrainedProdMean should syntax prod mean be produced (overwritten by method, if method != NULL)
 #' @param ... arguments passed to other functions, e.g,. lavaan
+#' @param centerData should data be centered before fitting model
+#' @param constrainedLoadings should syntax for constrained loadings be produced (overwritten by method, if method != NULL)
+#' @param constrainedVar should syntax for constrained variances be produced (overwritten by method, if method != NULL)
+#' @param constrainedResCovMethod method for constraining residual covariances
+#' @param qml should QML be used in LMS
+#' @param auto.scale methods which should be scaled automatically (usually not useful)
+#' @param auto.center methods which should be centered automatically (usually not useful)
+#' @param estimator estimator to use in lavaan
+#' @param removeFromParTable rows to remove from partable before sending to lavaan (for advanced users)
+#' @param addToParTable rows to add to partable before sending to lavaan (for advanced users)
+#' @param match should the product indicators be created by using the match-strategy
+#' @param nodesLms number of nodes used in nlsem
 #'
 #' @return
 #' @export
@@ -55,8 +66,8 @@ modsem <- function(modelSyntax = NULL,
                    auto.scale = "none",
                    auto.center = "none",
                    estimator = "MLM", # We shold correct for non-normal Y
-                   removeFromParTable = NULL, 
-                   addToParTable = NULL, 
+                   removeFromParTable = NULL,
+                   addToParTable = NULL,
                    match = FALSE,
                    nodesLms = 16,
                    ...) {
@@ -89,20 +100,21 @@ modsem <- function(modelSyntax = NULL,
     LMS <- modsem.LMS(modelSpec,
                       data = modEnv$data,
                       qml = qml,
-                      centerData = centerData, 
+                      centerData = centerData,
                       m = nodesLms,
                       ...)
     return(LMS)
 
   } else if (method == "mplus") {
     mplus <- modsem.mplus(modelSyntax,
-                          data = modEnv$data)
+                          data = modEnv$data,
+                          ...)
     return(mplus)
   }
 
-  methodSettings <- 
-    getMethodSettings(method, 
-                      args = 
+  methodSettings <-
+    getMethodSettings(method,
+                      args =
                         list(centerBefore = centerBefore,
                              centerAfter = centerAfter,
                              residualsProds = residualsProds,
@@ -139,19 +151,19 @@ modsem <- function(modelSyntax = NULL,
   if (!is.null(removeFromParTable)) {
     rowsToRemove <- modsemify(removeFromParTable)
     matches <- apply(parTable[c("lhs", "op", "rhs")],
-                     MARGIN = 1, 
-                     FUN = function(rowParTable, rowsToRemove) 
-                       any(apply(rowsToRemove, 
+                     MARGIN = 1,
+                     FUN = function(rowParTable, rowsToRemove)
+                       any(apply(rowsToRemove,
                                  MARGIN = 1,
-                                 FUN = function(rowToRemove, rowParTable) 
-                                   all(rowToRemove == rowParTable), 
+                                 FUN = function(rowToRemove, rowParTable)
+                                   all(rowToRemove == rowParTable),
                                  rowParTable = rowParTable)),
                      rowsToRemove = rowsToRemove[c("lhs", "op", "rhs")])
     parTable <- parTable[!matches, ]
   }
   if (!is.null(addToParTable)) {
     rowsToAdd <- modsemify(addToParTable)
-    parTable <- rbind(parTable, rowsToAdd) 
+    parTable <- rbind(parTable, rowsToAdd)
   }
   newSyntax <- parTableToSyntax(parTable, removeColon = TRUE)
 
@@ -164,7 +176,7 @@ modsem <- function(modelSyntax = NULL,
                                  NULL
                                })
   coefParTable <- tryCatch(lavaan::parameterEstimates(lavaanEstimation),
-                           error = function(cnd) NULL) 
+                           error = function(cnd) NULL)
   modelSpec$prodInds <- prodInds
   modelSpec$newSyntax <- newSyntax
   modelSpec$newData <- newData
@@ -287,7 +299,7 @@ addSpecsParTable <- function(modelSpec,
                              constrainedProdMean = FALSE,
                              constrainedLoadings = FALSE,
                              constrainedVar = FALSE,
-                             firstFixed = TRUE, 
+                             firstFixed = TRUE,
                              ...) {
   relDfs <- modelSpec$relDfs
   unspecifiedLatentProds <- modelSpec$unspecifiedLatentProds
@@ -314,7 +326,7 @@ if (!is.logical(residualCovSyntax)) {
 } else if (residualCovSyntax) {
   residualCovariances <- purrr::map(.x = relDfs,
                                     .f = getParTableResCov,
-                                    method = constrainedResCovMethod, 
+                                    method = constrainedResCovMethod,
                                     ...)  |>
 purrr::list_rbind()
     parTable <- rbindParTable(parTable, residualCovariances)
