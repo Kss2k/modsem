@@ -7,6 +7,15 @@ install.packages("devtools")
 devtools::install_github("kss2k/modsem")
 ```
 
+# Methods/Approaches
+
+There are a number of approaches for estimating interaction effects in SEM. In `modsem()`, the `method = "method"` argument allows you to choose which to use.
+
+"ca" = constrained approach (Algina & Moulder, 2001)
+"uca" = unconstrained approach (Marsh, 2004)
+"rca" = residual centering approach (Little et al., 2006)
+"dblcent" = double centering approach (Marsh., 2013)
+
 # Examples 
 
 ## One interaction
