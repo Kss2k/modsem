@@ -1,5 +1,5 @@
 # ModSEM
-This is a package which allows you to perform interactions between latent variables in CB-SEM. See https://bookdown.org/slupphaugkjell/quartomodsem/ for a tutorial.
+This is a package which allows you to perform interactions between latent variables in CB-SEM. See https://bookdown.org/slupphaugkjell/quartomodsem/ for a tutorial. Note: Examples using oneInt won't give the same output for you, as the dataset has been replaced in the package 
 
 # To Install 
 ```
