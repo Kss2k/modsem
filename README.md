@@ -13,8 +13,12 @@ There are a number of approaches for estimating interaction effects in SEM. In `
 
 - "ca" = constrained approach (Algina & Moulder, 2001)
   - not recommended for cases where there is a main effect between variables in the interaction term, unless you know what you are doing.
+  - e.g., 
+  - use `removeFromParTable = "X ~~ Z"
+  - and `addToParTable = "new formula for covariance, with label Cov_X_Z"
 - "uca" = unconstrained approach (Marsh, 2004)
   - not recommended for cases where there is a main effect between variables in the interaction term, unless you know what you are doing.
+  
 - "rca" = residual centering approach (Little et al., 2006)
   - default
 - "dblcent" = double centering approach (Marsh., 2013)
