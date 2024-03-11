@@ -1,5 +1,7 @@
 exportPattern("modsem")
 exportPattern("modsemify")
 exportPattern("lapplyDf")
+exportPattern("ModSEM")
+exportPattern("summary")
 useDynLib(modsem)
 importFrom(Rcpp, sourceCpp)
