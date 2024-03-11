@@ -1,11 +1,35 @@
 # ModSEM
-This is a package which allows you to perform interactions between latent variables in CB-SEM. See https://bookdown.org/slupphaugkjell/quartomodsem/ for a tutorial.
+This is a package which allows you to perform interactions between latent variables in CB-SEM. See https://bookdown.org/slupphaugkjell/quartomodsem/ for a tutorial. Note: Examples using `data = oneInt` won't give the same output for you, as the dataset has been replaced in the package 
 
 # To Install 
 ```
 install.packages("devtools")
 devtools::install_github("kss2k/modsem")
 ```
+
+# Methods/Approaches
+
+There are a number of approaches for estimating interaction effects in SEM. In `modsem()`, the `method = "method"` argument allows you to choose which to use.
+
+- "ca" = constrained approach (Algina & Moulder, 2001)
+  - not recommended for cases where there is a main effect between variables in the interaction term, unless you know what you are doing.
+  - e.g., 
+  - use `removeFromParTable = "X ~~ Z"`
+  - and `addToParTable = "new formula for covariance, with label Cov_X_Z"`
+- "uca" = unconstrained approach (Marsh, 2004)
+  - not recommended for cases where there is a main effect between variables in the interaction term, unless you know what you are doing.
+  
+- "rca" = residual centering approach (Little et al., 2006)
+  - default
+- "dblcent" = double centering approach (Marsh., 2013)
+- "pind" = basic product indicator approach (not recommended)
+- "lms" = The latent moderated structural equations approach through the nlsem package
+  - do `qml = TRUE` for the quasi maximum likelihood version
+  - do `optimize = TRUE` for faster convergence (experimental feature)
+  - note: can only be done if you have a single endogenous (dependent) variable. 
+- "mplus" 
+  - estimates model through Mplus, if it is installed
+
 
 # Examples 
 

@@ -454,7 +454,7 @@ summary.ModSEM <- function(object, ...) {
   if (attributes(object)$method == "Mplus") {
     object$coefParTable
 
-  } else lavaan::summary(object$lavaan)
+  } else lavaan::summary(object$lavaan, ...)
 }
 
 
