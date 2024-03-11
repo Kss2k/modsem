@@ -9,7 +9,6 @@ modsem.LMS <- function(modelSpec,
                        optimize = TRUE,
                        m = 16, 
                        ...) {
-  browser()
   info <- modelSpec$nlsem
   nlsemModel <- nlsem::lav2nlsem(info$modelSyntax)
   parameters <- as.data.frame(nlsemModel)

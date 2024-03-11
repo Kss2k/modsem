@@ -1,4 +1,3 @@
-devtools::load_all("..")
 models <- list(m1 = ' 
                # latent variables 
                ind60 =~ x1 + x2 + x3 
@@ -91,20 +90,8 @@ methods <- list(m1 = nativeMethods[nativeMethods != "ca"],
 
 estimates <- vector("list", length(models))
 for (i in seq_along(estimates)) {
-  estimates[[i]]$modsem <- tryCatch({
-    est <- runMultipleMethods(models[[i]], data = data[[i]], 
+    runMultipleMethods(models[[i]], data = data[[i]], 
                               methods = methods[[i]],
-                              estimator = "ML")
-    est
-  },
-  warning = function(e) {
-    warning("Warning in modsem model ", i, "\n")
-    warning(capturePrint(e))
-  },
-  error = function(e) {
-    warning("Error in modsem model ", i, "\n") 
-    warning(capturePrint(e))
-  })
+                              estimator = "ML",
+    removeFromParTable = "")
 }
-
-m <- modsem(models[[2]], data[[2]], "ca")

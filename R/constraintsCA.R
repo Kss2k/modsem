@@ -39,7 +39,7 @@ specifyFactorLoadings <- function(parTable, relDfs) {
 
 
 
-labelVarCovSingle <- function(parTable, relDf) {
+labelVarCovSingle <- function(parTable, relDf, isCovConflictCorrected = FALSE) {
   # Some general Information
   elemsInProdTerm <- rownames(relDf)
   latentProd <- stringr::str_c(rownames(relDf), collapse = "")
@@ -65,14 +65,20 @@ labelVarCovSingle <- function(parTable, relDf) {
                           )
 
   # Covariances latents --------------------------------------------------------
-    # Covariance between elems in prod
+  if (NROW(parTable[parTable$lhs %in% elemsInProdTerm &
+                    parTable$op == "~" & 
+                    parTable$rhs %in% elemsInProdTerm, ]) > 0 &&
+      !isCovConflictCorrected) {
+    warning("Warning adding a covariance between elements in a product that ",
+            "already has a main effect. Use another method, or alter the parTable ",
+            "using removeFromParTable = ... and add to parTable = ...")
+  }
   covsElemsInProd <- apply(getUniqueCombinations(elemsInProdTerm),
         MARGIN = 1,
         FUN = createParTableRow,
         op = "~~") |>
     purrr::list_rbind()
 
-    # Covariances between elems and prod
   covsElemToProd <-
     lapply(elemsInProdTerm,
            FUN = function(elem, latentProd)
@@ -81,25 +87,24 @@ labelVarCovSingle <- function(parTable, relDf) {
     purrr::list_rbind()
 
   covs <- rbind(covsElemsInProd, covsElemToProd)
-    # Label the covs
+  # Label the covs
   covs[["mod"]] <- apply(covs[c("lhs", "rhs")],
                        MARGIN = 1,
                        FUN = function(x)
                          stringr::str_c(c("Cov", x), collapse = "_"))
   newRows <- rbind(newRows, covs)
-
   rbindParTable(parTable, newRows)
 }
 
 
 
-labelVarCov <- function(parTable, relDfs) {
-  parTable <- labelVarCovSingle(parTable, relDfs[[1]])
+labelVarCov <- function(parTable, relDfs, isCovConflictCorrected = FALSE) {
+  parTable <- labelVarCovSingle(parTable, relDfs[[1]], isCovConflictCorrected)
 
   if (length(relDfs) <= 1) {
     return(parTable)
   } else {
-    return(labelVarCov(parTable, relDfs[-1]))
+    return(labelVarCov(parTable, relDfs[-1], isCovConflictCorrected))
   }
 }
 

@@ -1,4 +1,3 @@
-
 #' Interaction between latent variables
 #'
 #' @param modelSyntax lavaan syntax
@@ -50,7 +49,7 @@
 
 modsem <- function(modelSyntax = NULL,
                    data = NULL,
-                   method = "rca",
+                   method = "dblcent",
                    standardizeData = FALSE,
                    centerData = FALSE,
                    firstLoadingFixed = TRUE,
@@ -65,7 +64,7 @@ modsem <- function(modelSyntax = NULL,
                    qml = FALSE,
                    auto.scale = "none",
                    auto.center = "none",
-                   estimator = "MLM", # We shold correct for non-normal Y
+                   estimator = "ML", 
                    removeFromParTable = NULL,
                    addToParTable = NULL,
                    match = FALSE,
@@ -147,8 +146,10 @@ modsem <- function(modelSyntax = NULL,
                                constrainedLoadings = methodSettings$constrainedLoadings,
                                constrainedVar = methodSettings$constrainedVar,
                                firstFixed = firstLoadingFixed,
+                               isCovConflictCorrected = !is.null(removeFromParTable) ||
+                                 !is.null(addToParTable),
                                ...)
-  if (!is.null(removeFromParTable)) {
+  if (!is.null(removeFromParTable) && removeFromParTable != "") {
     rowsToRemove <- modsemify(removeFromParTable)
     matches <- apply(parTable[c("lhs", "op", "rhs")],
                      MARGIN = 1,
@@ -161,15 +162,14 @@ modsem <- function(modelSyntax = NULL,
                      rowsToRemove = rowsToRemove[c("lhs", "op", "rhs")])
     parTable <- parTable[!matches, ]
   }
-  if (!is.null(addToParTable)) {
+  if (!is.null(addToParTable) && addToParTable != "") {
     rowsToAdd <- modsemify(addToParTable)
     parTable <- rbind(parTable, rowsToAdd)
   }
   newSyntax <- parTableToSyntax(parTable, removeColon = TRUE)
 
   # Estimating the model via lavaan::sem()
-  lavaanEstimation <- tryCatch(
-                               lavaan::sem(newSyntax, newData, estimator = estimator, ...),
+  lavaanEstimation <- tryCatch(lavaan::sem(newSyntax, newData, estimator = estimator, ...),
                                error = function(cnd) {
                                  warning("Error in Lavaan: \n")
                                  warning(capturePrint(cnd))
@@ -300,6 +300,7 @@ addSpecsParTable <- function(modelSpec,
                              constrainedLoadings = FALSE,
                              constrainedVar = FALSE,
                              firstFixed = TRUE,
+                             isCovConflictCorrected = FALSE,
                              ...) {
   relDfs <- modelSpec$relDfs
   unspecifiedLatentProds <- modelSpec$unspecifiedLatentProds
@@ -334,7 +335,7 @@ purrr::list_rbind()
 
 # Constrained Vars and Covs --------------------------------------------------
 if (constrainedVar == TRUE) {
-  parTable <- labelVarCov(parTable, relDfs)
+  parTable <- labelVarCov(parTable, relDfs, isCovConflictCorrected)
   parTable <- specifyVarCov(parTable, relDfs)
 }
 
@@ -384,7 +385,6 @@ getParTableRestrictedMean <- function(prodName, elementsInProdName, createLabels
                                      mod = label)
   rbind(covariance, meanStructure)
 }
-
 
 
 

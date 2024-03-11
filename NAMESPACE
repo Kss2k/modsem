@@ -1,3 +1,5 @@
-exportPattern("^[[:alpha:]]+")
+exportPattern("modsem")
+exportPattern("modsemify")
+exportPattern("lapplyDf")
 useDynLib(modsem)
 importFrom(Rcpp, sourceCpp)
