@@ -20,8 +20,8 @@ There are a number of approaches for estimating interaction effects in SEM. In `
   - not recommended for cases where there is a main effect between variables in the interaction term, unless you know what you are doing.
   
 - "rca" = residual centering approach (Little et al., 2006)
-  - default
 - "dblcent" = double centering approach (Marsh., 2013)
+  - default
 - "pind" = basic product indicator approach (not recommended)
 - "lms" = The latent moderated structural equations approach through the nlsem package
   - do `qml = TRUE` for the quasi maximum likelihood version
