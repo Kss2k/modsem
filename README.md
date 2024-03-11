@@ -1,5 +1,5 @@
 # ModSEM
-This is a package which allows you to perform interactions between latent variables in CB-SEM. See https://bookdown.org/slupphaugkjell/quartomodsem/ for a tutorial. Note: Examples using `data = oneInt` won't give the same output for you, as the dataset has been replaced in the package 
+This is a package which allows you to perform interactions between latent variables in CB-SEM. See https://bookdown.org/slupphaugkjell/quartomodsem/ for a tutorial.
 
 # To Install 
 ```
@@ -17,8 +17,7 @@ There are a number of approaches for estimating interaction effects in SEM. In `
   - use `removeFromParTable = "X ~~ Z"`
   - and `addToParTable = "new formula for covariance, with label Cov_X_Z"`
 - "uca" = unconstrained approach (Marsh, 2004)
-  - not recommended for cases where there is a main effect between variables in the interaction term, unless you know what you are doing.
-  
+  - not recommended for cases where there is a main effect between variables in the interaction term, unless you know what you are doing. 
 - "rca" = residual centering approach (Little et al., 2006)
 - "dblcent" = double centering approach (Marsh., 2013)
   - default
