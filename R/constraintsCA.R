@@ -47,6 +47,16 @@ labelVarCovSingle <- function(parTable, relDf, isCovConflictCorrected = FALSE) {
   indsInProds <- unique(unlist(relDf))
 
   # Adding variances to parTable -----------------------------------------------
+  if (!isCovConflictCorrected &&
+      NROW(parTable[parTable$lhs %in% elemsInProdTerm &
+                    parTable$op == "~", ]) > 0) {
+    warning("Warning adding a variance label to an endogenous variable \n",
+            "This will likely be a mistake since ̈́'eta ~~ eta' gives the ",
+            "variance of the disturbace term of the eta variable, ",
+            "not its variance. \n",
+            "Use another method, or alter the parTable ",
+            "using \nremoveFromParTable = ... \naddToParTable = ...\n")
+  }
   variancesToBeSpecified <- c(latentProd,
                               elemsInProdTerm,
                               prodInds,
@@ -65,13 +75,14 @@ labelVarCovSingle <- function(parTable, relDf, isCovConflictCorrected = FALSE) {
                           )
 
   # Covariances latents --------------------------------------------------------
-  if (NROW(parTable[parTable$lhs %in% elemsInProdTerm &
+  if (!isCovConflictCorrected &&
+      NROW(parTable[parTable$lhs %in% elemsInProdTerm &
                     parTable$op == "~" & 
-                    parTable$rhs %in% elemsInProdTerm, ]) > 0 &&
-      !isCovConflictCorrected) {
+                    parTable$rhs %in% elemsInProdTerm, ]) > 0) {
     warning("Warning adding a covariance between elements in a product that ",
-            "already has a main effect. Use another method, or alter the parTable ",
-            "using removeFromParTable = ... and add to parTable = ...")
+            "already has a main effect.",
+            "\nUse another method, or alter the parTable ",
+            "using \nremoveFromParTable = ... and \naddToParTable = ...\n")
   }
   covsElemsInProd <- apply(getUniqueCombinations(elemsInProdTerm),
         MARGIN = 1,
