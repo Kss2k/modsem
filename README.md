@@ -1,4 +1,4 @@
-# ModSEM
+‚# ModSEM
 This is a package which allows you to perform interactions between latent variables in CB-SEM. See https://bookdown.org/slupphaugkjell/quartomodsem/ for a tutorial.
 
 # To Install 
@@ -23,9 +23,9 @@ There are a number of approaches for estimating interaction effects in SEM. In `
   - default
 - "pind" = basic product indicator approach (not recommended)
 - "lms" = The latent moderated structural equations approach through the nlsem package
+  - note: can only be done if you have a single endogenous (dependent) variable. 
   - do `qml = TRUE` for the quasi maximum likelihood version
   - do `optimize = TRUE` for faster convergence (experimental feature)
-  - note: can only be done if you have a single endogenous (dependent) variable. 
 - "mplus" 
   - estimates model through Mplus, if it is installed
 
