@@ -160,7 +160,7 @@ getFormulaResCovProdInd <- function(indProd1, indProd2, relDf) {
   varIndShared <- createLabelVar(indShared)
 
   rhs <- paste(lambdaShared[[1]], lambdaShared[[2]],
-               varLatentNotShared, varIndShared, sep = "*")
+               varLatentNotShared, varIndShared, sep = " * ")
   lhs <- createLabelCov(indProd1, indProd2)
   createParTableRow(c(lhs, rhs), op = "==")
 }

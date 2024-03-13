@@ -67,15 +67,14 @@ modsem <- function(modelSyntax = NULL,
                    estimator = "ML", 
                    removeFromParTable = NULL,
                    addToParTable = NULL,
+                   macros = NULL,
                    match = FALSE,
                    nodesLms = 16,
+                   run = TRUE, 
                    ...) {
-  if (is.null(modelSyntax)) {
-    stop("No model syntax provided in modsem")
-  }
-  if (is.null(data)) {
-    stop("No data provided in modsem")
-  }
+  if (is.null(modelSyntax)) stop("No model syntax provided in modsem")
+  if (is.null(data)) stop("No data provided in modsem")
+
   # PreSteps -------------------------------------------------------------------
   modEnv$data <- data
   ## Standardizing data
@@ -90,10 +89,10 @@ modsem <- function(modelSyntax = NULL,
                             FUN = function(x) x - mean(x))
   }
 
-  # Get the specifications of the model --------------------------------------
+  # Get the specifications of the model 
   modelSpec <- parseLavaan(modelSyntax, colnames(data), match = match)
 
-  # Setting parameters according to method -----------------------------------
+  # Setting parameters according to method 
   if (method == "lms") {
     # If method is LMS we pass it own to its own version of modsem()
     LMS <- modsem.LMS(modelSpec,
@@ -124,9 +123,7 @@ modsem <- function(modelSyntax = NULL,
                              constrainedResCovMethod = constrainedResCovMethod,
                              firstLoadingFixed = firstLoadingFixed))
 
-  # ModSEM-algorithm for prod ind based approaches --------------------
-
-  # Calculating prodinidicators based on method specifications --------------
+  # ModSEM-algorithm for prod ind based approaches -----------------------------
   prodInds <-
     createProdInds(modelSpec,
                    data = modEnv$data,
@@ -135,7 +132,6 @@ modsem <- function(modelSyntax = NULL,
                    residualsProds = methodSettings$residualsProds)
   mergedProdInds <- combineListDf(prodInds)
 
-  # Creating a new dataset with the prodinds
   # using list_cbind so that mergedProdInds can be NULL
   newData <- purrr::list_cbind(list(modEnv$data, mergedProdInds))
   # Genereating a new syntax with constraints and measurmentmodel --------------
@@ -166,26 +162,28 @@ modsem <- function(modelSyntax = NULL,
     rowsToAdd <- modsemify(addToParTable)
     parTable <- rbind(parTable, rowsToAdd)
   }
-  newSyntax <- parTableToSyntax(parTable, removeColon = TRUE)
 
-  # Estimating the model via lavaan::sem()
-  lavaanEstimation <- tryCatch(lavaan::sem(newSyntax, newData, estimator = estimator, ...),
-                               error = function(cnd) {
-                                 warning("Error in Lavaan: \n")
-                                 warning(capturePrint(cnd))
-                                 NULL
-                               })
-  coefParTable <- tryCatch(lavaan::parameterEstimates(lavaanEstimation),
-                           error = function(cnd) NULL)
+  newSyntax <- parTableToSyntax(parTable, removeColon = TRUE)
+  if (!is.null(macros)) newSyntax <- stringr::str_replace_all(newSyntax, macros)
   modelSpec$prodInds <- prodInds
   modelSpec$newSyntax <- newSyntax
   modelSpec$newData <- newData
-  modelSpec$lavaan <- lavaanEstimation
   modelSpec$parTable <- parTable
-  modelSpec$coefParTable <- coefParTable
-  structure(modelSpec,
-            class = "ModSEM",
-            method = method)
+
+  # Estimating the model via lavaan::sem() 
+  if (run) {
+    lavEst <- tryCatch(lavaan::sem(newSyntax, newData, estimator = estimator, ...),
+                                 error = function(cnd) {
+                                   warning("Error in Lavaan: \n")
+                                   warning(capturePrint(cnd))
+                                   NULL
+                                 })
+    coefParTable <- tryCatch(lavaan::parameterEstimates(lavEst),
+                             error = function(cnd) NULL)
+    modelSpec$lavaan <- lavEst
+    modelSpec$coefParTable <- coefParTable
+  }
+  structure(modelSpec, class = "ModSEM", method = method)
 }
 
 

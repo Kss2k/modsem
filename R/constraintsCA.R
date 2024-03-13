@@ -18,7 +18,8 @@ specifyFactorLoadingsSingle <- function(parTable, relDf) {
     indProdLabel <- createLabelLambda(indProd, latentProdName)
     indsInProdLabels <- createLabelLambda(relDf[[indProd]],
                                           rownames(relDf))
-    vecLhsRhs <- c(indProdLabel, stringr::str_c(indsInProdLabels, collapse = "*"))
+    vecLhsRhs <- c(indProdLabel, stringr::str_c(indsInProdLabels, 
+                                                collapse = " * "))
     newRow <- createParTableRow(vecLhsRhs, op = "==")
     parTable <- rbind(parTable, newRow)
   }
@@ -137,9 +138,9 @@ specifyVarCovSingle <- function(parTable, relDf) {
   labelsElemsInProd <- createLabelVar(elemsInProdTerm)
   labelCovElems <- createLabelCov(elemsInProdTerm[[1]],
                                   elemsInProdTerm[[2]]) |>
-    paste0("^2")
+    paste0(" ^ 2")
   lhs <- labelLatentProd
-  rhs <- paste(stringr::str_c(labelsElemsInProd, collapse = "*"),
+  rhs <- paste(stringr::str_c(labelsElemsInProd, collapse = " * "),
                labelCovElems, sep = " + ")
   varLatentProd <- createParTableRow(c(lhs, rhs), op = "==")
 
@@ -174,11 +175,11 @@ specifyVarCovSingle <- function(parTable, relDf) {
     lhs <- labelVarIndProd
     rhs1 <- paste(labelsFactorLoadings[[1]],
                   labelsVarLatents[[1]],
-                  labelsVarInds[[2]], sep = "*")
+                  labelsVarInds[[2]], sep = " * ")
     rhs2 <- paste(labelsFactorLoadings[[2]],
                   labelsVarLatents[[2]],
-                  labelsVarInds[[1]], sep = "*")
-    rhs3 <- paste(labelsVarInds[[1]], labelsVarInds[[2]], sep = "*")
+                  labelsVarInds[[1]], sep = " * ")
+    rhs3 <- paste(labelsVarInds[[1]], labelsVarInds[[2]], sep = " * ")
 
     rhs <- paste(rhs1, rhs2, rhs3, sep = " + ")
 
