@@ -7,7 +7,8 @@
 modsem(
   modelSyntax = NULL,
   data = NULL,
-  method = "rca",
+  method = "dblcent",
+  match = FALSE,
   standardizeData = FALSE,
   centerData = FALSE,
   firstLoadingFixed = TRUE,
@@ -22,11 +23,11 @@ modsem(
   qml = FALSE,
   auto.scale = "none",
   auto.center = "none",
-  estimator = "MLM",
+  estimator = "ML",
   removeFromParTable = NULL,
   addToParTable = NULL,
-  match = FALSE,
-  nodesLms = 16,
+  macros = NULL,
+  run = TRUE,
   ...
 )
 }
@@ -42,6 +43,8 @@ modsem(
 "pind" = prod ind approach (passed to lavaan),
 "lms" = laten model structural equations (passed to nlsem),
 "custom" = use parameters specified in the function call (passed to lavaan)}
+
+\item{match}{should the product indicators be created by using the match-strategy}
 
 \item{standardizeData}{should data be scaled before fitting model}
 
@@ -65,7 +68,7 @@ modsem(
 
 \item{constrainedResCovMethod}{method for constraining residual covariances}
 
-\item{qml}{should QML be used in LMS}
+\item{qml}{should QML be used in LMS (via nlsem)}
 
 \item{auto.scale}{methods which should be scaled automatically (usually not useful)}
 
@@ -77,14 +80,15 @@ modsem(
 
 \item{addToParTable}{rows to add to partable before sending to lavaan (for advanced users)}
 
-\item{match}{should the product indicators be created by using the match-strategy}
-
-\item{nodesLms}{number of nodes used in nlsem}
-
 \item{...}{arguments passed to other functions, e.g,. lavaan}
 }
+\value{
+ModSEM object
+}
 \description{
-Interaction between latent variables
+modsem is a function for estimating structural equation models with latent product indicators.
+It is essentially a facny wrapper for lavaan::sem() (and nlsem::nlsem()) which generates the 
+necessary syntax, and variables for the estimation of models with latent product indicators.
 }
 \examples{
 library(modsem)

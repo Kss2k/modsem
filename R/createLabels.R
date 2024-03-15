@@ -16,7 +16,7 @@ createLabelLambda <- function(ind, latent) {
 
 
 createLabelLambdaSquared <- function(ind, latent) {
-  paste0("(", createLabelLambda(ind, latent), " ^ 2)")
+  paste0(createLabelLambda(ind, latent), " ^ 2")
 }
 
 

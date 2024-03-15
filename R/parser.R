@@ -71,11 +71,9 @@ evalToken.LavInteraction <- function(token, lhs, rhs) {
 
 
 
-
 evalToken.LavComment <- function(token, lhs, rhs) {
   NULL
 }
-
 
 
 
@@ -86,7 +84,6 @@ evalToken.LavFunction <- function(token, lhs, rhs) {
   attributes(out) <- attributes(token) 
   out
 }
-
 
 
 
@@ -166,7 +163,14 @@ createParTableBranch <- function(syntaxTree) {
 
 
 
-
+#' Generate parameter table for lavaan syntax 
+#'
+#' @param syntax 
+#'
+#' @return data.frame with columns lhs, op, rhs, mod
+#' @export modsemify
+#'
+#' @examples 
 modsemify <- function(syntax) {
   if (!is.character(syntax) && length(syntax) > 1) {
     stop("Syntax is not a string og length 1")

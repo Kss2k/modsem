@@ -9,6 +9,7 @@
 #' "pind" = prod ind approach (passed to lavaan),
 #' "lms" = laten model structural equations (passed to nlsem),
 #' "custom" = use parameters specified in the function call (passed to lavaan)
+#' @param match should the product indicators be created by using the match-strategy
 #' @param standardizeData should data be scaled before fitting model
 #' @param firstLoadingFixed Sould the first factorloading in the latent prod be fixed to one?
 #' @param centerBefore should inds in prods be centered before computing prods (overwritten by method, if method != NULL)
@@ -21,18 +22,19 @@
 #' @param constrainedLoadings should syntax for constrained loadings be produced (overwritten by method, if method != NULL)
 #' @param constrainedVar should syntax for constrained variances be produced (overwritten by method, if method != NULL)
 #' @param constrainedResCovMethod method for constraining residual covariances
-#' @param qml should QML be used in LMS
+#' @param qml should QML be used in LMS (via nlsem)
 #' @param auto.scale methods which should be scaled automatically (usually not useful)
 #' @param auto.center methods which should be centered automatically (usually not useful)
 #' @param estimator estimator to use in lavaan
 #' @param removeFromParTable rows to remove from partable before sending to lavaan (for advanced users)
 #' @param addToParTable rows to add to partable before sending to lavaan (for advanced users)
-#' @param match should the product indicators be created by using the match-strategy
-#' @param nodesLms number of nodes used in nlsem
-#'
-#' @return
-#' @export
-#'
+#' 
+#' @return ModSEM object
+#' @export modsem
+#' @description
+#' modsem is a function for estimating structural equation models with latent product indicators.
+#' It is essentially a facny wrapper for lavaan::sem() (and nlsem::nlsem()) which generates the 
+#' necessary syntax, and variables for the estimation of models with latent product indicators.
 #' @examples
 #' library(modsem)
 #' m1 <- '
@@ -50,6 +52,7 @@
 modsem <- function(modelSyntax = NULL,
                    data = NULL,
                    method = "dblcent",
+                   match = FALSE,
                    standardizeData = FALSE,
                    centerData = FALSE,
                    firstLoadingFixed = TRUE,
@@ -68,8 +71,6 @@ modsem <- function(modelSyntax = NULL,
                    removeFromParTable = NULL,
                    addToParTable = NULL,
                    macros = NULL,
-                   match = FALSE,
-                   nodesLms = 16,
                    run = TRUE, 
                    ...) {
   if (is.null(modelSyntax)) stop("No model syntax provided in modsem")
@@ -434,6 +435,14 @@ getParTableMeasure <- function(dependentName,
   parTable
 }
 
+
+
+#' ModSEM object
+#'
+#' @return 
+#' @export ModSEM
+#'
+#' @examples
 ModSEM <- setClass("ModSEM")
 
 
@@ -446,7 +455,7 @@ createParTableRow <- function(vecLhsRhs, op, mod = "") {
 #'
 #' @param object modsem object
 #' @rdname summary
-#' @export
+#' @export summary.ModSEM
 summary.ModSEM <- function(object, ...) {
   cat("ModSEM: \nMethod =", attributes(object)$method, "\n")
   if (attributes(object)$method == "Mplus") {
@@ -459,8 +468,8 @@ summary.ModSEM <- function(object, ...) {
 #' summary.ModSEM
 #'
 #' @param modelSyntax
-#' @rdname summary modsem object
-#' @export
+#' @rdname summaryModsemObject
+#' @export summary.ModSEM
 setMethod("summary", "ModSEM", summary.ModSEM)
 
 

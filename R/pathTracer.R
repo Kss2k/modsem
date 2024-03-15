@@ -109,6 +109,21 @@ PathTracer <- R6::R6Class("PathTracer", public = list(
 ))
 
 
+#' Estimate formulas for (co-)variance paths using Wright's path tracing rules
+#'
+#' @param pt A data frame with columns lhs, op, rhs, and mod, from modsemify(syntax)
+#' @param x source variable
+#' @param y destination variable
+#' @param ... additional arguments passed to tracePath
+#'
+#' @return A string with the estimated path (simplified if possible)
+#' @export 
+#' @description
+#' This function estimates the path from x to y using the path tracing rules, 
+#' note that it only works with structural parameters, so "=~" are ignored. If you
+#' you want to use the measurement model, it should work if you replace it "=~" with
+#' "~" in the mod column of pt.
+#' @examples
 tracePath <- function(pt, x, y, ...) {
   pathTracer <- PathTracer$new(pt, x, y)
   out <- pathTracer$generateSyntax(...)

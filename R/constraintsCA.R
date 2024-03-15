@@ -155,10 +155,10 @@ specifyVarCovSingle <- function(parTable, relDf) {
                                FUN.VALUE = vector("character", length = 1L),
                                FUN = function(x) tracePath(parTable, x, x))
 
-  labelCovElems <- paste0("(", tracePath(parTable,
+  labelCovElems <- tracePath(parTable,
                              elemsInProdTerm[[1]],
-                             elemsInProdTerm[[2]])) |>
-    paste0(" ^ 2)")
+                             elemsInProdTerm[[2]]) |>
+    paste0(" ^ 2")
 
   lhs <- labelLatentProd
   rhs <- paste(stringr::str_c(labelsElemsInProd, collapse = " * "),
