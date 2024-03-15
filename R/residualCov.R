@@ -1,11 +1,14 @@
 getParTableResCov <- function(relDf, method, ...) {
-  do.call(paste0("getParTableResCov.", method), list(relDf))
+  switch(method, 
+         "simple" = getParTableResCov.simple(relDf),
+         "ca" = getParTableResCov.ca(relDf, ...),
+         "equality" = getParTableResCov.equality(relDf, ...))
 }
 
 
 
 # Simple -----------------------------------------------------------------------
-getParTableResCov.simple <- function(relDf, prodName) {
+getParTableResCov.simple <- function(relDf) {
   if (ncol(relDf) <= 1) {
     return(NULL)
   }
@@ -93,7 +96,7 @@ getParTableResCov.equality <- function(relDf, setToZero = FALSE) {
 
 
 # Constrained Approach ---------------------------------------------------------
-getParTableResCov.ca <- function(relDf) {
+getParTableResCov.ca <- function(relDf, pt) {
   if (nrow(relDf) > 2) {
     stop("Constrained approach for constraining residual covariances should ",
          "not be used with latent products with more than two components")
@@ -133,7 +136,9 @@ getParTableResCov.ca <- function(relDf) {
     eqConstraints <- apply(parTable[parTable$mod != "0", c("lhs", "rhs")],
                            MARGIN = 1,
                            FUN = function(vars, relDf)
-                             getFormulaResCovProdInd(vars[["lhs"]], vars[["rhs"]], relDf),
+                             getFormulaResCovProdInd(vars[["lhs"]], 
+                                                     vars[["rhs"]], 
+                                                     relDf, pt),
                            relDf = relDf) |>
       purrr::list_rbind()
   } else {
@@ -144,7 +149,7 @@ getParTableResCov.ca <- function(relDf) {
 
 
 
-getFormulaResCovProdInd <- function(indProd1, indProd2, relDf) {
+getFormulaResCovProdInd <- function(indProd1, indProd2, relDf, pt) {
   if (is.null(indProd1) || is.null(indProd2)) {
     return(NULL)
   }
@@ -156,7 +161,7 @@ getFormulaResCovProdInd <- function(indProd1, indProd2, relDf) {
   indsNotShared <- unlist(rowNotShared[1, 1:2])
 
   lambdaShared <- createLabelLambda(indsNotShared, latentNotShared)
-  varLatentNotShared <- createLabelVar(latentNotShared)
+  varLatentNotShared <- tracePath(pt, latentNotShared, latentNotShared)
   varIndShared <- createLabelVar(indShared)
 
   rhs <- paste(lambdaShared[[1]], lambdaShared[[2]],

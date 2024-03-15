@@ -86,7 +86,7 @@ modsem.LMS <- function(modelSpec,
                              nlsemData,
                              start = start, 
                              qml = qml,
-                             verbose = TRUE,
+                             verbose = verbose,
                              ...)
   nlsemEstimate
 }

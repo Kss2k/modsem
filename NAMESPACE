@@ -1,6 +1,7 @@
 exportPattern("modsem")
 exportPattern("modsemify")
 exportPattern("lapplyDf")
+exprotPattern("pathTracer")
 exportPattern("ModSEM")
 exportPattern("summary")
 useDynLib(modsem)

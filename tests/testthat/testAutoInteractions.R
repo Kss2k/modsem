@@ -43,47 +43,31 @@ models <- list(m1 = '
                x6 ~ 1
                x7 ~ 1
                x8 ~ 1
-               x9 ~ 1', 
-               m7 = ' # direct effect
-               Y ~ c*X
-               # mediator
-               M ~ a*X
-               Y ~ b*M + M:X
-               # indirect effect (a*b)
-               ab := a*b
-               # total effect
-               total := c + (a*b)
-               '
+               x9 ~ 1'
+               
 )
 
-set.seed(1234)
-X <- rnorm(100)
-M <- 0.5*X + rnorm(100)
-Y <- 0.7*M + rnorm(100)
-d7 <- data.frame(X = X, Y = Y, M = M)
+
 
 data <- list(d1 = lavaan::PoliticalDemocracy,
              d3 = lavaan::HolzingerSwineford1939, 
              d4 = lavaan::HolzingerSwineford1939, 
              d5 = lavaan::HolzingerSwineford1939, 
-             d6 = lavaan::HolzingerSwineford1939, 
-             d7 = d7)
+             d6 = lavaan::HolzingerSwineford1939)
 
 nativeMethods <- allNativeMethods[allNativeMethods != "pind"]
 methods <- list(m1 = nativeMethods,
-                m2 = nativeMethods,
                 m3 = nativeMethods,
                 m4 = nativeMethods,
                 m5 = nativeMethods,
-                m6 = nativeMethods[nativeMethods != "ca"])
+                m6 = nativeMethods[nativeMethods != c("uca", "ca")])
 
 
 estimates <- vector("list", length(models))
 for (i in seq_along(estimates)) {
     runMultipleMethods(models[[i]], data = data[[i]], 
                               methods = methods[[i]],
-                              estimator = "ML",
-                       removeFromParTable = "")
+                              estimator = "ML")
+
 }
 
-# modsem(models[[3]], data[[3]], "pind", estimator = "ML")

@@ -315,73 +315,73 @@ addSpecsParTable <- function(modelSpec,
                 .f = getParTableMeasure,
                 operator = "=~",
                 firstFixed = firstFixed) |>
-purrr::list_rbind()
-
+    purrr::list_rbind()
   parTable <- rbindParTable(parTable, measureParTable)
-# Residual covariances -------------------------------------------------------
-if (!is.logical(residualCovSyntax)) {
-  stop("residualCovSyntax is not FALSE or TRUE in generateSyntax")
+  # label parameters and add if necessary --------------------------------------
+  if (constrainedVar || constrainedLoadings || constrainedProdMean) {
+    parTable <- addVariances(parTable) |> 
+      addCovariances() |>
+      labelParameters() |>
+      labelFactorLoadings() 
+  }
+  # Residual covariances -------------------------------------------------------
+  if (!is.logical(residualCovSyntax)) {
+    stop("residualCovSyntax is not FALSE or TRUE in generateSyntax")
 
-} else if (residualCovSyntax) {
-  residualCovariances <- purrr::map(.x = relDfs,
-                                    .f = getParTableResCov,
-                                    method = constrainedResCovMethod,
-                                    ...)  |>
-purrr::list_rbind()
+  } else if (residualCovSyntax) {
+    residualCovariances <- purrr::map(.x = relDfs,
+                                      .f = getParTableResCov,
+                                      method = constrainedResCovMethod,
+                                      pt = parTable, # for caluclating formulas using path tracer
+                                      ...)  |>
+      purrr::list_rbind()
     parTable <- rbindParTable(parTable, residualCovariances)
-}
+  }
 
 # Constrained Vars and Covs --------------------------------------------------
-if (constrainedVar == TRUE) {
-  parTable <- labelVarCov(parTable, relDfs, isCovConflictCorrected)
-  parTable <- specifyVarCov(parTable, relDfs)
-}
+  if (constrainedVar) {
+    parTable <- specifyVarCov(parTable, relDfs)
+  }
 
 # Constrained Factor loadings ------------------------------------------------
-if (constrainedLoadings) {
-  if (!constrainedVar) {
-    parTable <- labelVarCov(parTable, relDfs)
+  if (constrainedLoadings) {
+    parTable <- specifyFactorLoadings(parTable, relDfs)
   }
-  parTable <- labelFactorLoadings(parTable)
-  parTable <- specifyFactorLoadings(parTable, relDfs)
-}
 
 # Constrained prod mean syntax --------------------------------------------
-if (constrainedProdMean) {
-  restrictedMeans <- purrr::map2(modelSpec$prodNames,
-                                 modelSpec$elementsInProdNames,
-                                 getParTableRestrictedMean,
-                                 createLabels = !constrainedVar) |>
-purrr::list_rbind()
-    parTable <- rbindParTable(parTable, restrictedMeans)
-}
+  if (constrainedProdMean) {
+    restrictedMeans <- purrr::map2(modelSpec$prodNames,
+                                   modelSpec$elementsInProdNames,
+                                   getParTableRestrictedMean,
+                                   createLabels = !constrainedVar,
+                                   pt = parTable) |>
+  purrr::list_rbind()
+      parTable <- rbindParTable(parTable, restrictedMeans)
+  }
 
-modEnv$parTable <- parTable
-parTable
+  modEnv$parTable <- parTable
+  parTable
 }
 
 
 
 # this function assumes a prod of only two latent variables no more
-getParTableRestrictedMean <- function(prodName, elementsInProdName, createLabels = TRUE) {
+getParTableRestrictedMean <- function(prodName, elementsInProdName, 
+                                      createLabels = TRUE, pt) {
   if (length(elementsInProdName) > 2) {
     stop("The mean of a latent prod should not be constrained when there",
          " are more than two variables in the prod term. Please use a",
          " different method \n")
   }
-  label <- createLabelCov(elementsInProdName[[1]], elementsInProdName[[2]])
+  #label <- createLabelCov(elementsInProdName[[1]], elementsInProdName[[2]])
+  meanLabel <- createLabelMean(prodName)
 
-  if (createLabels) {
-    covariance <- createParTableRow(vecLhsRhs = elementsInProdName[1:2],
-                                    op = "~~",
-                                    mod = label)
-  } else if (!createLabels) {
-    covariance <- NULL
-  }
   meanStructure <- createParTableRow(vecLhsRhs = c(prodName, "1"),
-                                     op = "~",
-                                     mod = label)
-  rbind(covariance, meanStructure)
+                                     op = "~", mod = meanLabel)
+  covEquation <- tracePath(pt, elementsInProdName[[1]], elementsInProdName[[2]])
+  meanFormula <- createParTableRow(vecLhsRhs = c(meanLabel, covEquation), 
+                                   op = "==") 
+  rbind(meanStructure, meanFormula)
 }
 
 

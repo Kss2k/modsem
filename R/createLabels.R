@@ -5,11 +5,9 @@ createLabelCov <- function(x, y) {
 }
 
 
-
 createLabelVar <- function(x) {
   paste("Var", x, sep = "_")
 }
-
 
 
 createLabelLambda <- function(ind, latent) {
@@ -18,5 +16,10 @@ createLabelLambda <- function(ind, latent) {
 
 
 createLabelLambdaSquared <- function(ind, latent) {
-  paste0(createLabelLambda(ind, latent), " ^ 2")
+  paste0("(", createLabelLambda(ind, latent), " ^ 2)")
+}
+
+
+createLabelMean <- function(x) {
+  paste("Mean", x, sep = "_")
 }

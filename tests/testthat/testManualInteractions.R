@@ -79,13 +79,15 @@ data <- list(d1 = lavaan::PoliticalDemocracy,
              d6 = lavaan::HolzingerSwineford1939, 
              d7 = d7)
 
-nativeMethods <- allNativeMethods[allNativeMethods != "pind"]
-methods <- list(m1 = nativeMethods[nativeMethods != "ca"],
+nativeMethods <- allNativeMethods[!allNativeMethods %in%  c("pind",
+                                                           "ca",
+                                                           "uca")]
+methods <- list(m1 = nativeMethods,
                 m2 = nativeMethods,
                 m3 = nativeMethods,
                 m4 = nativeMethods,
                 m5 = nativeMethods,
-                m6 = nativeMethods[nativeMethods != "ca"])
+                m6 = nativeMethods)
 
 
 estimates <- vector("list", length(models))

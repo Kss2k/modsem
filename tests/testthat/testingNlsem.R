@@ -10,4 +10,4 @@ m1 <- '
   Y ~ X:Z
 '
 
-est1 <- modsem(m1, oneInt, method = "lms", optimize = TRUE)
+est1 <- modsem(m1, oneInt, method = "lms", optimize = TRUE, verbose = FALSE)

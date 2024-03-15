@@ -1,5 +1,5 @@
 library(mvtnorm)
-
+set.seed(1234)
 tpbSyntax <- ' 
 # Outer Model (Based on Hagger et al., 2007)
   Attitude =~ att1 + att2 + att3 + att4 + att5
@@ -167,6 +167,6 @@ createDataParams <- function(prow) {
              b1, b2)
 }
 
-theoryOfPlannedBehaviour <- createDataParams(combosParams[1, ])
-save(theoryOfPlannedBehaviour, file = "../data/theoryOfPlannedBehaviour.rda")
+TPB <- createDataParams(combosParams[1, ])
+save(TPB, file = "../data/theoryOfPlannedBehaviour.rda")
 
