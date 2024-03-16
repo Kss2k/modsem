@@ -8,7 +8,9 @@ modsem.LMS <- function(modelSpec,
                        start = NULL,
                        optimize = TRUE,
                        m = 16, 
+                       suppressWarnings = FALSE,
                        ...) {
+  quiet <- function(x) if (suppressWarnings) suppressWarnings(x) else x
   info <- modelSpec$nlsem
   nlsemModel <- nlsem::lav2nlsem(info$modelSyntax)
   parameters <- as.data.frame(nlsemModel)
@@ -87,6 +89,7 @@ modsem.LMS <- function(modelSpec,
                              start = start, 
                              qml = qml,
                              verbose = verbose,
-                             ...)
+                             ...) |> 
+    quiet()
   nlsemEstimate
 }

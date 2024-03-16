@@ -9,5 +9,9 @@ m1 <- '
   Y ~ X + Z
   Y ~ X:Z
 '
-
-est1 <- modsem(m1, oneInt, method = "lms", optimize = TRUE, verbose = FALSE)
+# funnily enough, the starting parameters from the double centering approach
+# give better loglikelihoods than the ones arrived at by the EM algorithm
+# i.e., the loglikelyhodd decreases from the starting parameters
+est1 <- modsem(m1, oneInt, method = "lms", 
+               optimize = TRUE, verbose = FALSE,
+               suppressWarnings = TRUE)

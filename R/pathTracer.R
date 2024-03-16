@@ -2,12 +2,12 @@ getFromBack <- function(x, i = 0) {
   x[(length(x) - i):length(x)]
 }
 
+
 PathTracer <- R6::R6Class("PathTracer", public = list(
-  pt = NULL,
+  pt = NULL, 
   paths = NULL,
   x = NULL,
   y = NULL,
-  nParams = NULL,
   initialize = function(pt, x, y, addCovPt = TRUE) {
     # Remove any potential ':' from the model
     pt <- lapplyDf(pt, stringr::str_remove_all, pattern = ":")
@@ -29,52 +29,32 @@ PathTracer <- R6::R6Class("PathTracer", public = list(
     self$x <- x 
     self$y <- y
     self$paths <- list()
-    self$nParams <- 0
-    
   },
-  
-
   trace = function(var = self$x, currentPath = c(), covCount = 0, 
-                   lastDirection = "lhs->rhs") {
-    if (!is.null(currentPath) && covCount > 1) return(FALSE)
-    if (var == self$y && lastDirection == "rhs->lhs") {
-      self$nParams <- self$nParams + length(currentPath)
+                   from = "lhs") {
+    if (covCount > 1) return(FALSE)
+    if (var == self$y && from == "rhs") {
       self$paths <- c(self$paths, character(1))
       self$paths[[length(self$paths)]] <- currentPath
       return(TRUE)
     }
-    branches <- self$pt[self$pt$lhs == var | self$pt$rhs == var, ]
-    
-    if (lastDirection == "lhs->rhs") {
-      branches <- branches[branches$lhs == var, ]#& 
-                           #branches$lhs != branches$lhs, ]
-      nextDirection <- "lhs->rhs"
-    } else if (lastDirection == "rhs->lhs") {
-      branches <- branches[branches$rhs == var, ]
-      nextDirection <- "rhs->lhs"
-    }
+    branches <- self$pt[self$pt[[from]] == var, ]
     if (NROW(branches) == 0) return(FALSE)
+    
     rest <- logical(length(nrow(branches)))
     for (i in seq_len(nrow(branches))) {
       branch <- branches[i, ]
-      if (nextDirection == "lhs->rhs") nextVar <- branch$rhs
-      else nextVar <- branch$lhs
+      nextFrom <- from
+      nextCovCount <- covCount
+      if (from == "lhs") nextVar <- branch$rhs else nextVar <- branch$lhs
       # reverse direction of travel if covariance (but not before selecting next variable)
       if (branch$op == "~~") {
-        covCount <- covCount + 1
-        if (lastDirection == "lhs->rhs") nextDirection <- "rhs->lhs"
-        else nextDirection <- "lhs->rhs"
+        nextCovCount <- covCount + 1
+        switch(from, lhs = nextFrom <- "rhs", rhs = nextFrom <- "lhs")
       }
-      rest <- c(rest, self$trace(nextVar, 
-                                 currentPath = c(currentPath, branch$mod),
-                                 covCount = covCount,
-                                 lastDirection = nextDirection))
-      if (branch$op == "~~") {
-        # undo reversal and count (not pretty, but it works)
-        covCount <- covCount - 1
-        if (lastDirection == "lhs->rhs") nextDirection <- "lhs->rhs"
-        else nextDirection <- "rhs->lhs"
-      }
+      rest <- c(rest, self$trace(nextVar, currentPath = c(currentPath, branch$mod),
+                                 covCount = nextCovCount, from = nextFrom))
+      
     } 
     any(rest)
   },
@@ -96,15 +76,12 @@ PathTracer <- R6::R6Class("PathTracer", public = list(
             false = reps[[1]]) |>
       stringr::str_c(collapse = " + ")
   },
-  generateSyntax = function(enclose = TRUE, ...) {
+  generateSyntax = function(...) {
     self$paths <- list()
-    self$nParams <- 0
     solvedSelf <- self$trace(...) 
     
     if (!solvedSelf) return(NA)
-    out <- self$clean()
-    if (enclose) out <- paste("(", out, ")", sep = "")
-    out
+    self$clean()
   }
 ))
 
