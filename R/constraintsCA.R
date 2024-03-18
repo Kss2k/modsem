@@ -93,26 +93,22 @@ labelParameters <- function(pt) {
   pt[pt$op == "~" & pt$rhs != "1", "mod"] <-
     apply(pt[pt$op == "~" & pt$rhs != "1", c("rhs", "lhs")],
       MARGIN = 1,
-      FUN = function(x) {
-        stringr::str_c(c("Gamma", x), collapse = "_")
-      }
-    )
+      FUN = function(x) createLabelGamma(x[[1]], x[[2]]))
+
   # Variances of exogenous
   pt[pt$op == "~~" & pt$lhs == pt$rhs &
     pt$lhs %in% exogenous, "mod"] <-
     vapply(pt[pt$op == "~~" & pt$lhs == pt$rhs &
           pt$lhs %in% exogenous, "lhs"],
           FUN.VALUE = vector("character", length = 1L),
-          FUN = function(x) paste("Var", x, sep = "_")
-    )
+          FUN = createLabelVar)
   # Variances of endogenous
   pt[pt$op == "~~" & pt$lhs == pt$rhs &
     pt$lhs %in% endogenous, "mod"] <-
     vapply(pt[pt$op == "~~" & pt$lhs == pt$rhs &
           pt$lhs %in% endogenous, "lhs"],
           FUN.VALUE = vector("character", length = 1L),
-          FUN = function(x) paste("Zeta", x, sep = "_")
-    )
+          FUN = createLabelZeta)
 
   # Variance of Observed Variables  
   pt[pt$op == "~~" & pt$rhs %in% observed &
@@ -120,16 +116,14 @@ labelParameters <- function(pt) {
     vapply(pt[pt$op == "~~" & pt$rhs %in% observed &
            pt$lhs == pt$rhs, "rhs"],
           FUN.VALUE = vector("character", length = 1L),
-          FUN = function(x) paste("Var", x, sep = "_"))
+          FUN = createLabelVar)
 
   # Covariances
   pt[pt$op == "~~" & pt$lhs != pt$rhs, "mod"] <-
     apply(pt[pt$op == "~~" & pt$lhs != pt$rhs, c("lhs", "rhs")],
       MARGIN = 1,
-      FUN = function(x) {
-        stringr::str_c(c("Cov", x), collapse = "_")
-      }
-    )
+      FUN = function(x) createLabelCov(x[[1]], x[[2]]))
+
   pt
 }
 
@@ -171,16 +165,9 @@ specifyVarCovSingle <- function(parTable, relDf) {
   labelsCovElemProd <-
     vapply(elemsInProdTerm,
       FUN.VALUE = vector("character", length = 1L),
-      FUN = function(elem, latentProd) {
-        createLabelCov(elem, latentProd)
-      },
-      latentProd = latentProd
-    )
+      FUN = function(elem) createLabelCov(elem, latentProd)) # wrap in anonymous function to scope latentProd
   covsElemsProd <- lapply(labelsCovElemProd,
-    FUN = function(x) {
-      createParTableRow(c(x, "0"), op = "==")
-    }
-  ) |>
+    FUN = function(x) createParTableRow(c(x, "0"), op = "==")) |>
     purrr::list_rbind()
 
   # Variances of product indicators
