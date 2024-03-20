@@ -1,16 +1,13 @@
-
 # wrapper around stop
 stop2 <- function(...) {
   stop(..., call. = FALSE)
 }
 
 
-
 # Wrapper around warning() with .call = FALSE and .immediate = TRUE
 warning2 <- function(...) {
   warning(..., call.= FALSE, immediate. = TRUE)
 }
-
 
 
 # function for selecting rows in a dataframe matching values on a specified column (type chr_vec)
@@ -21,7 +18,6 @@ selectRowsByCol <- function(value, df, column) {
   if (nrow(out) <= 0) return(NULL)
   else return(out)
 }
-
 
 
 # function for selecting values in the column of a dataframe matching values on a specified column (type chr_vec)
@@ -38,7 +34,6 @@ selectValuesByCol <- function(value, df, column.value, column.match) {
 }
 
 
-
 # Wrapper of lapply where elements are names based on names argument, by default names
 # are based on X
 lapplyNamed <- function(X, FUN, ..., names = X) {
@@ -49,24 +44,12 @@ lapplyNamed <- function(X, FUN, ..., names = X) {
 
 
 
-
-#' Wrapper of lapply for dataframes
-#'
-#' @param df a dataframe
-#' @param FUN a function to apply to variables in df
-#' @param ...
-#'
-#' @return
-#' @export
-#'
-#' @examples lapplyDf(iris[1:4], FUN = sqrt)
 lapplyDf <- function(df, FUN, ...) {
   structure(lapply(df, FUN, ...),
             names = names(df),
             row.names = 1:nrow(df),
             class = "data.frame")
 }
-
 
 
 # scale numeric vector is numeric
@@ -82,7 +65,6 @@ scaleIfNumeric <- function(x, scaleFactor = TRUE) {
     (x - mean(x, na.rm = TRUE))/sd(x, na.rm = TRUE)
   } else x
 }
-
 
 
 # A fancy version of purrr::list_cbind()
@@ -127,7 +109,6 @@ combineListDf <- function(listDf) {
 }
 
 
-
 maxDepth <- function(list, max = 2, depth = 1) {
 
   if (is.null(list) | !is.list(list)) {
@@ -149,11 +130,9 @@ maxDepth <- function(list, max = 2, depth = 1) {
 }
 
 
-
 capturePrint <- function(x) {
   paste(capture.output(print(x)), collapse = "\n")
 }
-
 
 
 rbindParTable <- function(parTable, newRows) {
@@ -182,17 +161,8 @@ rbindParTable <- function(parTable, newRows) {
 }
 
 
-
 silentStop <- function() {
   opt <- options(show.error.messages = FALSE)
   on.exit(options(opt))
   stop()
 }
-
-
-
-
-
-
-
-

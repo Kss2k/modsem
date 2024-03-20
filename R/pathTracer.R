@@ -76,11 +76,12 @@ PathTracer <- R6::R6Class("PathTracer", public = list(
             false = reps[[1]]) |>
       stringr::str_c(collapse = " + ")
   },
-  generateSyntax = function(...) {
+  generateSyntax = function(parenthesis = TRUE, ...) {
     self$paths <- list()
     solvedSelf <- self$trace(...) 
     
     if (!solvedSelf) return(NA)
+    if (parenthesis) return(paste0("(", self$clean(), ")"))
     self$clean()
   }
 ))
@@ -101,9 +102,21 @@ PathTracer <- R6::R6Class("PathTracer", public = list(
 #' you want to use the measurement model, it should work if you replace it "=~" with
 #' "~" in the mod column of pt.
 #' @examples
-tracePath <- function(pt, x, y, ...) {
+#' library(modsem)
+#' m1 <- '
+#'   # Outer Model
+#'   X =~ x1 + x2 +x3
+#'   Y =~ y1 + y2 + y3
+#'   Z =~ z1 + z2 + z3
+#'
+#'   # Inner model
+#'   Y ~ X + Z + X:Z
+#''
+#' pt <- modsemify(m1)
+#' tracePath(pt, "Y", "Y") # variance of Y
+tracePath <- function(pt, x, y, parenthesis = TRUE, ...) {
   pathTracer <- PathTracer$new(pt, x, y)
-  out <- pathTracer$generateSyntax(...)
+  out <- pathTracer$generateSyntax(parenthesis = parenthesis, ...)
   rm(pathTracer)
   out
 }

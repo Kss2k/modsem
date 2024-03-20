@@ -28,9 +28,10 @@
 #' @param estimator estimator to use in lavaan
 #' @param removeFromParTable rows to remove from partable before sending to lavaan (for advanced users)
 #' @param addToParTable rows to add to partable before sending to lavaan (for advanced users)
-#' 
+#' @param macros macros to replace in the syntax before sending to lavaan 
+#' @param run should the model be estimated
 #' @return ModSEM object
-#' @export modsem
+#' @export 
 #' @description
 #' modsem is a function for estimating structural equation models with latent product indicators.
 #' It is essentially a facny wrapper for lavaan::sem() (and nlsem::nlsem()) which generates the 
@@ -418,6 +419,7 @@ getUniqueCombinations <- function(x) {
 
 
 
+
 getParTableMeasure <- function(dependentName,
                                predictorNames,
                                operator = "=~",
@@ -439,10 +441,9 @@ getParTableMeasure <- function(dependentName,
 
 #' ModSEM object
 #'
-#' @return 
-#' @export ModSEM
+#' @return NULL
+#' @export
 #'
-#' @examples
 ModSEM <- setClass("ModSEM")
 
 
@@ -453,9 +454,10 @@ createParTableRow <- function(vecLhsRhs, op, mod = "") {
 
 #' summary.ModSEM
 #'
-#' @param object modsem object
+#' @param object modsem object to summarized
+#' @param ... arguments passed to lavaan::summary(), and nlsem::summary()
 #' @rdname summary
-#' @export summary.ModSEM
+#' @export 
 summary.ModSEM <- function(object, ...) {
   cat("ModSEM: \nMethod =", attributes(object)$method, "\n")
   if (attributes(object)$method == "Mplus") {
@@ -467,9 +469,10 @@ summary.ModSEM <- function(object, ...) {
 
 #' summary.ModSEM
 #'
-#' @param modelSyntax
+#' @param object modsem object to summarized
+#' @param ... arguments passed to lavaan::summary(), and nlsem::summary()
 #' @rdname summaryModsemObject
-#' @export summary.ModSEM
+#' @export 
 setMethod("summary", "ModSEM", summary.ModSEM)
 
 

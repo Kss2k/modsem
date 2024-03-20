@@ -4,7 +4,10 @@
 using namespace std;
 using namespace Rcpp;
 
-
+//' Multiply indicators 
+//' @param df A data DataFrame
+//' @return A NumericVector
+//' @export
 // [[Rcpp::export]]
 NumericVector multiplyIndicatorsCpp(DataFrame df) {
   if (df.size() <= 1) {

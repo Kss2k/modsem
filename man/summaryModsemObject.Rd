@@ -6,6 +6,9 @@
 \usage{
 \S4method{summary}{ModSEM}(object, ...)
 }
+\arguments{
+\item{object}{modsem object to summarized}
+}
 \description{
 summary.ModSEM
 }

@@ -7,11 +7,24 @@
 modsemify(syntax)
 }
 \arguments{
-\item{syntax}{}
+\item{syntax}{model syntax}
 }
 \value{
 data.frame with columns lhs, op, rhs, mod
 }
 \description{
 Generate parameter table for lavaan syntax
+}
+\examples{
+library(modsem)
+m1 <- '
+  # Outer Model
+  X =~ x1 + x2 +x3
+  Y =~ y1 + y2 + y3
+  Z =~ z1 + z2 + z3
+
+  # Inner model
+  Y ~ X + Z + X:Z
+'
+modsemify(m1)
 }

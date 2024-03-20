@@ -1,12 +1,3 @@
-#' Parse lavaan model
-#'
-#' @param modelSyntax lavaan syntax
-#' @param isMeasureSpecified have you specified the measure model for the latent prod
-#'
-#' @return
-#' @export
-#'
-#' @examples
 parseLavaan <- function(modelSyntax = NULL, variableNames = NULL, match = FALSE) {
   # Checking prerequisites -----------------------------------------------------
   # Check if a modelSyntax is provided, if not we should return an error

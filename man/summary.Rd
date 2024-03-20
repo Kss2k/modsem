@@ -7,7 +7,9 @@
 summary.ModSEM(object, ...)
 }
 \arguments{
-\item{object}{modsem object}
+\item{object}{modsem object to summarized}
+
+\item{...}{arguments passed to lavaan::summary(), and nlsem::summary()}
 }
 \description{
 summary.ModSEM

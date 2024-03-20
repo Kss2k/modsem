@@ -24,3 +24,17 @@ note that it only works with structural parameters, so "=~" are ignored. If you
 you want to use the measurement model, it should work if you replace it "=~" with
 "~" in the mod column of pt.
 }
+\examples{
+library(modsem)
+m1 <- '
+  # Outer Model
+  X =~ x1 + x2 +x3
+  Y =~ y1 + y2 + y3
+  Z =~ z1 + z2 + z3
+
+  # Inner model
+  Y ~ X + Z + X:Z
+'
+pt <- modsemify(m1)
+tracePath(pt, "Y", "Y") # variance of Y
+}

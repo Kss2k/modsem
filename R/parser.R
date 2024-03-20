@@ -165,12 +165,23 @@ createParTableBranch <- function(syntaxTree) {
 
 #' Generate parameter table for lavaan syntax 
 #'
-#' @param syntax 
+#' @param syntax model syntax
 #'
 #' @return data.frame with columns lhs, op, rhs, mod
 #' @export modsemify
 #'
 #' @examples 
+#' library(modsem)
+#' m1 <- '
+#'   # Outer Model
+#'   X =~ x1 + x2 +x3
+#'   Y =~ y1 + y2 + y3
+#'   Z =~ z1 + z2 + z3
+#'
+#'   # Inner model
+#'   Y ~ X + Z + X:Z
+#''
+#' modsemify(m1)
 modsemify <- function(syntax) {
   if (!is.character(syntax) && length(syntax) > 1) {
     stop("Syntax is not a string og length 1")

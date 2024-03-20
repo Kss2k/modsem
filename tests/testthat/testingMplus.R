@@ -1,5 +1,3 @@
-
-devtools::load_all()
 m1 <- '
 # Outer Model
 X =~ x1
