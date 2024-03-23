@@ -10,5 +10,10 @@ Y =~ y1 + y2
 Y ~ X + Z
 Y ~ X:Z
 '
-
-mplus <- modsem(m1, oneInt, method = "mplus")
+run <- tryCatch({
+    MplusAutomation::detectMplus()
+    TRUE
+  },
+  error = function(e) FALSE
+)
+if (run) mplus <- modsem(m1, oneInt, method = "mplus")

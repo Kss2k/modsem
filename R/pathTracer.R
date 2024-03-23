@@ -2,7 +2,8 @@ getFromBack <- function(x, i = 0) {
   x[(length(x) - i):length(x)]
 }
 
-
+#' @importFrom R6 R6Class
+#' @importFrom dplyr if_else
 PathTracer <- R6::R6Class("PathTracer", public = list(
   pt = NULL, 
   paths = NULL,
@@ -92,6 +93,7 @@ PathTracer <- R6::R6Class("PathTracer", public = list(
 #' @param pt A data frame with columns lhs, op, rhs, and mod, from modsemify(syntax)
 #' @param x source variable
 #' @param y destination variable
+#' @param parenthesis if TRUE, the output will be enclosed in parenthesis
 #' @param ... additional arguments passed to tracePath
 #'
 #' @return A string with the estimated path (simplified if possible)

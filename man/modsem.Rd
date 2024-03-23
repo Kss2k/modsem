@@ -41,7 +41,7 @@ modsem(
 "rca" = residual centering approach (passed to lavaan),
 "uca" = unconstrained approach (passed to lavaan),
 "dblcent" = double centering approach (passed to lavaan),
-"pind" = prod ind approach (passed to lavaan),
+"pind" = prod ind approach, with no constraints or centering (passed to lavaan),
 "lms" = laten model structural equations (passed to nlsem),
 "custom" = use parameters specified in the function call (passed to lavaan)}
 

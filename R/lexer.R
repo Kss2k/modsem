@@ -103,41 +103,10 @@ createSyntaxTreeLine <- function(listTokens, i = 1) {
 }
 
 
-
-#
-# createSyntaxTreeLine2 <- function(listTokens, i = 0) {
-#   if (i > length(listTokens) ||
-#       length(listTokens) == 1 &
-#       getTokenPriority(listTokens[[1]]) < 0) {
-#     return(NULL)
-#   }
-#
-#
-#
-#   if (is.LeftClosure(listTokens[[i]])) {
-#     leftClosure <- list(listTokens[[i]])
-#   } else leftClosure <- list()
-#   i <- chooseToken(listTokens, leftClosures = leftClosures)
-#   if (i != 1) {
-#     lhs <- createSyntaxTreeLine2(listTokens[1:(i-1)], i = 0)
-#   } else lhs <- NULL
-#
-#   if (i != length(listTokens)) {
-#     rhs <- createSyntaxTreeLine2(listTokens[(i + 1):length(listTokens)], i = 0)
-#   } else rhs <- NULL
-#
-#   return(
-#     createExprNode(listTokens[[i]], lhs = lhs, rhs = rhs,
-#                    priority = getTokenPriority(listTokens[[i]]))
-#   )
-#
-# }
-
 createSyntaxTreesSyntax <- function(syntax) {
   tokensLines <- tokenizeSyntax(syntax)
   lapply(tokensLines, createSyntaxTreeLine)
 }
-
 
 
 last <- function(x) {

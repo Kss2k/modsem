@@ -62,7 +62,7 @@ models <- list(m1 = '
 d2 <- vector("list", 12L) 
 varNames <- names(d2) <- c("x1", "x2", paste0("y", 1:10))
 for (i in varNames) {
-  d2[[i]] <- rnorm(500)
+  d2[[i]] <- stats::rnorm(500)
 }
 d2 <- as.data.frame(d2)
 

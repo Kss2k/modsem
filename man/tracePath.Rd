@@ -4,7 +4,7 @@
 \alias{tracePath}
 \title{Estimate formulas for (co-)variance paths using Wright's path tracing rules}
 \usage{
-tracePath(pt, x, y, ...)
+tracePath(pt, x, y, parenthesis = TRUE, ...)
 }
 \arguments{
 \item{pt}{A data frame with columns lhs, op, rhs, and mod, from modsemify(syntax)}
@@ -12,6 +12,8 @@ tracePath(pt, x, y, ...)
 \item{x}{source variable}
 
 \item{y}{destination variable}
+
+\item{parenthesis}{if TRUE, the output will be enclosed in parenthesis}
 
 \item{...}{additional arguments passed to tracePath}
 }

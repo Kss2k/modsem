@@ -78,27 +78,9 @@ LavStart <- function(number) {
 }
 
 
-
-# Functions for simulation purposes
-LavRvar <- function(sigma) {
-  errorNames <- colnames(modEnv$data)
-  errorNames[grepl("^error", errorNames)] |>
-    length() -> nErrorNames
-  N <- getNrowEnvData()
-  varName <- paste0("error_", nErrorNames + 1)
-
-
-  modEnv$data[[varName]] <- rnorm(N, sd = sigma)
-  updateVariablesEnvir()
-  varName
-}
-
-
-
 getNrowEnvData <- function() {
   nrow(modEnv$data)
 }
-
 
 
 modEnv <- rlang::env(
@@ -108,9 +90,7 @@ modEnv <- rlang::env(
   sum = LavSum,
   equal = LavEqual,
   start = LavStart,
-  rvar = LavRvar
 )
-
 
 
 modVarsEnv <- rlang::env(modEnv)

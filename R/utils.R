@@ -62,7 +62,7 @@ scaleIfNumeric <- function(x, scaleFactor = TRUE) {
     x <- as.numeric(x)
   }
   if (is.numeric(x)) {
-    (x - mean(x, na.rm = TRUE))/sd(x, na.rm = TRUE)
+    (x - mean(x, na.rm = TRUE))/stats::sd(x, na.rm = TRUE)
   } else x
 }
 
@@ -131,7 +131,7 @@ maxDepth <- function(list, max = 2, depth = 1) {
 
 
 capturePrint <- function(x) {
-  paste(capture.output(print(x)), collapse = "\n")
+  paste(utils::capture.output(print(x)), collapse = "\n")
 }
 
 

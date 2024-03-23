@@ -114,8 +114,7 @@ buildMathExprToken <- function(restLine, pos) {
             lineNumber = attr(restLine, "lineNumber"),
             priority = 10,
             class = c("LavMathExpr", "LavToken"))
-
-}
+ }
 
 
 
@@ -124,7 +123,7 @@ fitsToken <- function(token, nextChar) {
 }
 
 
-
+#' @export
 fitsToken.LavName <- function(token, nextChar) {
   if (length(nextChar) != 1) {
     stop("Wrong length of nextChar", nextChar)
@@ -138,7 +137,7 @@ fitsToken.LavName <- function(token, nextChar) {
 }
 
 
-
+#' @export
 fitsToken.LavString <- function(token, nextChar) {
   if (length(nextChar) != 1) {
     stop("Wrong length of nextChar", nextChar)
@@ -152,7 +151,7 @@ fitsToken.LavString <- function(token, nextChar) {
 }
 
 
-
+#' @export
 fitsToken.LavOperator <- function(token, nextChar) {
   if (length(nextChar) != 1) {
     stop("Wrong length of nextChar", nextChar)
@@ -170,7 +169,7 @@ fitsToken.LavOperator <- function(token, nextChar) {
 }
 
 
-
+#' @export
 fitsToken.LavBlank <- function(token, nextChar) {
   if (length(nextChar) != 1) {
     stop("Wrong length of nextChar", nextChar)
@@ -179,13 +178,13 @@ fitsToken.LavBlank <- function(token, nextChar) {
 }
 
 
-
+#' @export
 fitsToken.LavClosure <- function(token, nextChar) {
   FALSE
 }
 
 
-
+#' @export
 fitsToken.LavNumeric <- function(token, nextChar) {
   if (length(nextChar) != 1) {
     stop("Wrong length of nextChar", nextChar)
@@ -194,12 +193,10 @@ fitsToken.LavNumeric <- function(token, nextChar) {
 }
 
 
-
-
-fitsToken.LavComment <- function(token, nextChar, pos) {
+#' @export
+fitsToken.LavComment <- function(token, nextChar) {
   TRUE
 }
-
 
 
 assignSubClass <- function(token) {
@@ -207,7 +204,7 @@ assignSubClass <- function(token) {
 }
 
 
-
+#' @export
 assignSubClass.LavOperator <- function(token) {
   switch (getTokenString(token),
           "=~" = {subClass <- "LavMeasure";     priority <- 0},
@@ -229,7 +226,7 @@ assignSubClass.LavOperator <- function(token) {
 }
 
 
-
+#' @export
 assignSubClass.LavClosure <- function(token) {
   switch(getTokenString(token),
           "("  = {subClass <- "LeftBracket";    priority <- 3},
@@ -242,7 +239,7 @@ assignSubClass.LavClosure <- function(token) {
 }
 
 
-
+#' @export
 assignSubClass.LavName <- function(token) {
   if (grepl("\\($", getTokenString(token))) {
     subClass <- "LavFunction"
@@ -257,19 +254,19 @@ assignSubClass.LavName <- function(token) {
 }
 
 
-
+#' @export
 assignSubClass.LavNumeric <- function(token) {
   token
 }
 
 
-
+#' @export
 assignSubClass.LavToken <- function(token) {
   token
 }
 
 
-
+#' @export
 assignSubClass.LavMathExpr <- function(token) {
   token
 }
@@ -484,33 +481,3 @@ is.firstClassOperator <- function(token) {
          "==" = TRUE,
          FALSE)
 }
-
-
-# LavToken        <- setClass("LavToken")
-# setMethod("assignSubClass", "LavToken", assignSubClass.LavToken)
-# LavName         <- setClass("LavName")
-# setMethod("assignSubClass", "LavName", assignSubClass.LavName)
-# LavObject       <- setClass("LavObject")
-# LavFunciton     <- setClass("LavFunction")
-# LavOperator     <- setClass("LavOperator")
-# setMethod("assignSubClass", "LavOperator", assignSubClass.LavOperator)
-# LavClosure      <- setClass("LavClosure")
-# setMethod("assignSubClass", "LavClosure", assignSubClass.LavClosure)
-# LeftBracket     <- setClass("LeftBracket")
-# RightBracket    <- setClass("RightBracket")
-# LavComment      <- setClass("LavComment")
-# LavBlank        <- setClass("LavBlank")
-# LavNumeric      <- setClass("LavNumeric")
-# LavString       <- setClass("LavString")
-# LavMeasure      <- setClass("LavMeasure")
-# LavPredict      <- setClass("LavPredict")
-# LavCovar        <- setClass("LavCovar")
-# LavAdd          <- setClass("LavAdd")
-# LavModify       <- setClass("LavModify")
-# LavLessLeft     <- setClass("LavLessLeft")
-# LavLessRight    <- setClass("LavLessRight")
-# LavEquals       <- setClass("LavEquals")
-# LavInteraction  <- setClass("LavInteraction")
-# LavSeperator    <- setClass("LavSeperator")
-
-

@@ -6,7 +6,7 @@
 #' "rca" = residual centering approach (passed to lavaan),
 #' "uca" = unconstrained approach (passed to lavaan),
 #' "dblcent" = double centering approach (passed to lavaan),
-#' "pind" = prod ind approach (passed to lavaan),
+#' "pind" = prod ind approach, with no constraints or centering (passed to lavaan),
 #' "lms" = laten model structural equations (passed to nlsem),
 #' "custom" = use parameters specified in the function call (passed to lavaan)
 #' @param match should the product indicators be created by using the match-strategy
@@ -49,7 +49,6 @@
 #''
 #' est1 <- modsem(m1, oneInt)
 #' summary(est1)
-
 modsem <- function(modelSyntax = NULL,
                    data = NULL,
                    method = "dblcent",
@@ -101,7 +100,6 @@ modsem <- function(modelSyntax = NULL,
                       data = modEnv$data,
                       qml = qml,
                       centerData = centerData,
-                      m = nodesLms,
                       ...)
     return(LMS)
 
@@ -189,7 +187,6 @@ modsem <- function(modelSyntax = NULL,
 }
 
 
-
 createProdInds <- function(modelSpec,
                            data,
                            centerBefore = FALSE,
@@ -219,7 +216,6 @@ createProdInds <- function(modelSpec,
 
   indProds
 }
-
 
 
 createIndProds <- function(relationDf,
@@ -261,7 +257,6 @@ createIndProds <- function(relationDf,
 }
 
 
-
 calculateResidualsDf <- function(dependentDf, independentNames, data) {
   # Using purrr::list_cbind() is more efficient than cbind()
   combinedData <- purrr::list_cbind(list(dependentDf, data))
@@ -272,14 +267,14 @@ calculateResidualsDf <- function(dependentDf, independentNames, data) {
   formula <- getResidualsFormula(dependentNames, independentNames)
   if (length(dependentNames <= 1)) {
 
-    res <- as.data.frame(residuals(lm(formula = formula, combinedData)))
+    res <- as.data.frame(stats::residuals(stats::lm(formula = formula, 
+                                                    combinedData)))
     colnames(res) <- dependentNames
     return(res)
   }
-  residuals(lm(formula = formula, combinedData))
+  stats::residuals(stats::lm(formula = formula, combinedData))
 
 }
-
 
 
 getResidualsFormula <- function(dependendtNames, indepNames) {
@@ -290,7 +285,6 @@ getResidualsFormula <- function(dependendtNames, indepNames) {
   formulaIndep <- stringr::str_c(indepNames, collapse = " + ")
   paste0(formulaDep, " ~ ", formulaIndep)
 }
-
 
 
 addSpecsParTable <- function(modelSpec,
@@ -366,7 +360,6 @@ addSpecsParTable <- function(modelSpec,
 }
 
 
-
 # this function assumes a prod of only two latent variables no more
 getParTableRestrictedMean <- function(prodName, elementsInProdName, 
                                       createLabels = TRUE, pt) {
@@ -387,7 +380,6 @@ getParTableRestrictedMean <- function(prodName, elementsInProdName,
 }
 
 
-
 multiplyInds <- function(df) {
   if (is.null(df)) {
     return(NULL)
@@ -403,7 +395,6 @@ multiplyInds <- function(df) {
 }
 
 
-
 #  function for getting unique combinations of two values in x
 getUniqueCombinations <- function(x) {
   # Base case, x is 1 length long and there are no unique combos
@@ -413,11 +404,8 @@ getUniqueCombinations <- function(x) {
   rest <- getUniqueCombinations(x[-1])
   combos <- data.frame(V1 = rep(x[[1]], length(x) - 1),
                        V2 = x[-1])
-
   rbind(combos, rest)
 }
-
-
 
 
 getParTableMeasure <- function(dependentName,
@@ -430,21 +418,9 @@ getParTableMeasure <- function(dependentName,
                          op = rep(operator, nRows),
                          rhs = predictorNames,
                          mod = vector("character", nRows))
-  if (firstFixed) {
-    parTable[["mod"]][[1]] <- "1"
-  }
-
+  if (firstFixed) parTable[["mod"]][[1]] <- "1"
   parTable
 }
-
-
-
-#' ModSEM object
-#'
-#' @return NULL
-#' @export
-#'
-ModSEM <- setClass("ModSEM")
 
 
 createParTableRow <- function(vecLhsRhs, op, mod = "") {
@@ -465,15 +441,3 @@ summary.ModSEM <- function(object, ...) {
 
   } else lavaan::summary(object$lavaan, ...)
 }
-
-
-#' summary.ModSEM
-#'
-#' @param object modsem object to summarized
-#' @param ... arguments passed to lavaan::summary(), and nlsem::summary()
-#' @rdname summaryModsemObject
-#' @export 
-setMethod("summary", "ModSEM", summary.ModSEM)
-
-
-

@@ -1,5 +1,3 @@
-
-
 modsem.LMS <- function(modelSpec,
                        data,
                        qml = TRUE,
@@ -79,10 +77,10 @@ modsem.LMS <- function(modelSpec,
                     modsemEst$rhs != modsemEst$lhs]
 
     start <- startDf$class1
-    start[is.na(start)] <- runif(sum(is.na(start)))
+    start[is.na(start)] <- stats::runif(sum(is.na(start)))
   }
   if (is.null(start)) {
-    start <- runif(nlsem::count_free_parameters(nlsemModel))
+    start <- stats::runif(nlsem::count_free_parameters(nlsemModel))
   }
   nlsemEstimate <- nlsem::em(nlsemModel,
                              nlsemData,

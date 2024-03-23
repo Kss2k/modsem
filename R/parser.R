@@ -1,12 +1,9 @@
-
-
-
 evalToken <- function(token, lhs, rhs) {
   UseMethod("evalToken")
 }
 
 
-
+#' @export
 evalToken.LavOperator <- function(token, lhs, rhs) {
   if (is.LavToken(rhs)) {
     rhs <- list(rhs)
@@ -27,13 +24,13 @@ evalToken.LavOperator <- function(token, lhs, rhs) {
 }
 
 
-
+#' @export
 evalToken.LavToken <- function(token, lhs, rhs) {
   token
 }
 
 
-
+#' @export
 evalToken.LavAdd <- function(token, lhs, rhs) {
   if ("LavToken" %in% class(rhs)) {
     rhs <- list(rhs)
@@ -45,21 +42,20 @@ evalToken.LavAdd <- function(token, lhs, rhs) {
 }
 
 
-
+#' @export
 evalToken.LavModify <- function(token, lhs, rhs) {
   structure(rhs,
             modifier = lhs)
 }
 
 
-
+#' @export
 evalToken.LavBlank <- function(token, lhs, rhs) {
   NULL
 }
 
 
-
-
+#' @export
 evalToken.LavInteraction <- function(token, lhs, rhs) {
   if (!"LavName" %in% class(lhs) || !"LavName" %in% class(rhs)) {
     stop("Interactions are reserved for objects ", highlightErrorToken(token))
@@ -70,13 +66,13 @@ evalToken.LavInteraction <- function(token, lhs, rhs) {
 }
 
 
-
+#' @export
 evalToken.LavComment <- function(token, lhs, rhs) {
   NULL
 }
 
 
-
+#' @export
 evalToken.LavFunction <- function(token, lhs, rhs) {
   updateVariablesEnvir()
   functionCall <- paste0(token, stringr::str_c(unlist(rhs), collapse = ","), ")")
@@ -86,7 +82,7 @@ evalToken.LavFunction <- function(token, lhs, rhs) {
 }
 
 
-
+#' @export
 evalToken.LeftBracket <- function(token, lhs, rhs) {
   # if (!is.null(rhs$rightBracket) || !rhs$rightBracket) {
   #   stop("Unmatched bracket ", highlightErrorToken(token))
@@ -95,14 +91,14 @@ evalToken.LeftBracket <- function(token, lhs, rhs) {
 }
 
 
-
+#' @export
 evalToken.RightBracket <- function(token, lhs, rhs) {
   #list(body = lhs, rightBracket = TRUE)
   lhs
 }
 
 
-
+#' @export
 evalToken.LavSeperator <- function(token, lhs, rhs) {
   if ("LavToken" %in% class(rhs)) {
     rhs <- list(rhs)
@@ -112,8 +108,6 @@ evalToken.LavSeperator <- function(token, lhs, rhs) {
   }
   c(lhs, rhs)
 }
-
-
 
 
 evalTokens <- function(syntaxTree) {
@@ -129,12 +123,10 @@ evalTokens <- function(syntaxTree) {
 }
 
 
-
 parseSyntaxTrees <- function(syntaxTrees) {
   lapply(syntaxTrees,
          evalTokens)
 }
-
 
 
 createParTableBranch <- function(syntaxTree) {
@@ -160,7 +152,6 @@ createParTableBranch <- function(syntaxTree) {
   op <- rep(getTokenString(syntaxTree$op), length(rhs))
   data.frame(lhs = lhs, op = op, rhs = rhs, mod = mod)
 }
-
 
 
 #' Generate parameter table for lavaan syntax 
@@ -193,7 +184,6 @@ modsemify <- function(syntax) {
 }
 
 
-
 parTableToSyntax <- function(parTable, removeColon = FALSE) {
   out <- ''
   if (removeColon) {
@@ -218,8 +208,6 @@ parTableToSyntax <- function(parTable, removeColon = FALSE) {
 }
 
 
-
-
 mergeTokens <- function(x, y) {
   if (!"LavName" %in% class(x) || !"LavName" %in% class(x)) {
     stop("Interactions are reserved for objects ", highlightErrorToken(x))
@@ -229,6 +217,3 @@ mergeTokens <- function(x, y) {
   out
 
 }
-
-
-

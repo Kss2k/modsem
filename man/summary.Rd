@@ -4,7 +4,7 @@
 \alias{summary.ModSEM}
 \title{summary.ModSEM}
 \usage{
-summary.ModSEM(object, ...)
+\method{summary}{ModSEM}(object, ...)
 }
 \arguments{
 \item{object}{modsem object to summarized}
