@@ -3,6 +3,10 @@ This is a package which allows you to perform interactions between latent variab
 
 # To Install 
 ```
+# From CRAN 
+install.packages("modsem")
+
+# Latest version from Github
 install.packages("devtools")
 devtools::install_github("kss2k/modsem")
 ```
@@ -47,6 +51,35 @@ est1 <- modsem(m1, oneInt)
 summary(est1)
 ```
 
+## Theory Of Planned Behavior
+```
+tpb <- ' 
+# Outer Model (Based on Hagger et al., 2007)
+  LATT =~ att1 + att2 + att3 + att4 + att5
+  LSN =~ sn1 + sn2
+  LPBC =~ pbc1 + pbc2 + pbc3
+  LINT =~ int1 + int2 + int3
+  LBEH =~ b1 + b2
+
+# Inner Model (Based on Steinmetz et al., 2011)
+  # Covariances
+  LATT ~~ cAsn * LSN + cApbc * LPBC
+  LPBC ~~ cPbcSn * LSN 
+  # Causal Relationsships
+  LINT ~ gIa * LATT + gIsn * LSN + gIpbc * LPBC
+  LBEH ~ LINT + LPBC 
+  LBEH ~ LINT:LPBC  
+'
+
+# double centering approach
+estTpbDblCent <- modsem(tpb, data = TPB, method = "dblcent")
+summary(estTpbDblCent)
+
+# Constrained approach using Wrigths path tracing rules for generating
+# the appropriate constraints
+estTpbCa <- modsem(tpb, data = TPB, method = "ca") 
+summary(estTpbCa)
+```
 ## Interactions between two observed variables
 ```
 est2 <- modsem('y1 ~ x1 + z1 + x1:z1', data = oneInt, method = "pind")
