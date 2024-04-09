@@ -14,6 +14,7 @@ modsem.LMS <- function(modelSpec,
   parameters <- as.data.frame(nlsemModel)
   parameters$class1[grepl("^nu", parameters$label)] <- NA
   parameters$class1[grepl("^tau", parameters$label)] <- 0
+  parameters$class1[grepl("^alpha", parameters$label)] <- 0
   # Sorted colnames for xi variables
   sortedIndsXi <- unlist(info$indsXi)
   # Sorted colnames for etas
