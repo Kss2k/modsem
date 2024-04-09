@@ -63,10 +63,10 @@ tpb <- '
 
 # Inner Model (Based on Steinmetz et al., 2011)
   # Covariances
-  LATT ~~ cAsn * LSN + cApbc * LPBC
-  LPBC ~~ cPbcSn * LSN 
+  LATT ~~ LSN + LPBC
+  LPBC ~~ LSN 
   # Causal Relationsships
-  LINT ~ gIa * LATT + gIsn * LSN + gIpbc * LPBC
+  LINT ~ LATT + LSN + LPBC
   LBEH ~ LINT + LPBC 
   LBEH ~ LINT:LPBC  
 '
