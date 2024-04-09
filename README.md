@@ -1,4 +1,4 @@
-‚# ModSEM
+# ModSEM
 This is a package which allows you to perform interactions between latent variables (i.e., moderation) in CB-SEM. See https://bookdown.org/slupphaugkjell/quartomodsem/ for a tutorial.
 
 # To Install 
