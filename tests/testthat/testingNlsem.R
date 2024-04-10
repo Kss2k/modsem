@@ -1,3 +1,4 @@
+devtools::load_all()
 m1 <- '
 # Outer Model
   X =~ x1
@@ -15,3 +16,25 @@ m1 <- '
 est1 <- modsem(m1, oneInt, method = "lms", 
                optimize = TRUE, verbose = FALSE,
                suppressWarnings = TRUE)
+
+
+tpb <- ' 
+# Outer Model (Based on Hagger et al., 2007)
+  LATT =~ att1 + att2 + att3 + att4 + att5
+  LSN =~ sn1 + sn2
+  LPBC =~ pbc1 + pbc2 + pbc3
+  LINT =~ int1 + int2 + int3
+  LBEH =~ b1 + b2
+
+# Inner Model (Based on Steinmetz et al., 2011)
+  # Covariances
+  LATT ~~ cAsn * LSN + cApbc * LPBC
+  LPBC ~~ cPbcSn * LSN 
+  # Causal Relationsships
+  LINT ~ gIa * LATT + gIsn * LSN + gIpbc * LPBC
+  LBEH ~ LINT + LPBC 
+  LBEH ~ LINT:LPBC  
+'
+
+est2 <- modsem(tpb, TPB, method = "lms", optimize = TRUE, 
+               verbose = FALSE)

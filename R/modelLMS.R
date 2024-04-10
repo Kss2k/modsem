@@ -1,0 +1,428 @@
+
+
+#' Specify SEM model LMS
+#'
+#' @param syntax
+#' @param m
+#'
+#' @return
+#' @export
+#'
+#' @examples
+specifyLmsModel <- function(syntax, data, m = 16) {
+  # The goal here is to create the model with its matrices
+  parTable <- modsem::modsemify(syntax)
+  # Some general information:
+  structExprs <- parTable[parTable$op == "~", ]
+  measrExprs <- parTable[parTable$op == "=~", ]
+  # Etas ------------------------------------------------------------------------
+  etas <- structExprs$lhs |>
+    unique()
+  numEtas <- length(etas)
+  if (numEtas == 0) stop("No etas in model")
+  indsEtas <- lapplyNamed(etas,
+                    FUN = function(eta, measrExprs)
+                      measrExprs[measrExprs$lhs == eta, "rhs"],
+                    measrExprs = measrExprs,
+                    names = etas)
+  numIndsEtas <- vapply(indsEtas,
+                       FUN.VALUE = vector("integer", 1L),
+                       FUN = length)
+  allIndsEtas <- unlist(indsEtas)
+  numAllIndsEtas <- length(allIndsEtas)
+  
+  # Xis and Interaction Terms --------------------------------------------------
+  intTerms <- structExprs[grepl(":", structExprs$rhs), ] 
+  
+  # Xis in interaction terms
+  intsXis <- lapplyNamed(intTerms$rhs,
+                         FUN = stringr::str_split_1,
+                         pattern = ":",
+                         names = stringr::str_remove_all(intTerms$rhs,
+                                                         ":"))
+  allXisInInts <- unique(unlist(intsXis))
+  
+  # now etas are included as xis, but their loadings are in lambdaX is 0
+  xis <- parTable[parTable$op == "=~" &
+                  !parTable$lhs %in% etas, "lhs"] |> unique()
+  if (length(xis) == 0) stop("No xis in model")
+
+  # Sorting Xis so that it is ordered with the xis in interactions first
+  omegaAndSortedXis <- sortXisAndOmega(xis, intsXis, etas, intTerms)
+  xis <- omegaAndSortedXis$sortedXis
+  numXis <- length(xis)
+
+  indsXis <- lapplyNamed(xis[!xis %in% etas],
+                    FUN = function(xi, measrExprs)
+                      measrExprs[measrExprs$lhs == xi, "rhs"],
+                    measrExprs = measrExprs,
+                    names = xis[!xis %in% etas])
+  numIndsXis <- vapply(indsXis,
+                       FUN.VALUE = vector("integer", 1L),
+                       FUN = length)
+  allIndsXis <- unlist(indsXis)
+  numAllIndsXis <- length(allIndsXis)
+  # matrices for the general model ---------------------------------------------
+  lambdaX <- matrix(0, nrow = numAllIndsXis, ncol = numXis,
+                     dimnames = list(allIndsXis, xis))
+  lastRowPreviousXi <- 0
+  for (i in seq_along(xis)) {
+    if (xis[[i]] %in% etas) next # if var is an eta, we should just skip
+    rowIndices <- 1:numIndsXis[[xis[[i]]]] + lastRowPreviousXi
+    lambdaX[rowIndices, i] <-
+      c(1, rep(NA, numIndsXis[[xis[[i]]]] - 1))
+    lastRowPreviousXi <- lastRowPreviousXi + numIndsXis[[xis[[i]]]]
+  }
+  # same as in univariate equations
+  lambdaY <- matrix(0, nrow = numAllIndsEtas, ncol = numEtas,
+                     dimnames = list(allIndsEtas, etas))
+  lastRowPreviousEta <- 0
+  for (i in seq_along(etas)) {
+    rowIndices <- 1:numIndsEtas[[i]] + lastRowPreviousEta
+    lambdaY[rowIndices, i] <-
+      c(1, rep(NA, numIndsEtas[[i]] - 1))
+    lastRowPreviousEta <- lastRowPreviousEta + numIndsEtas[[i]]
+  }
+  
+  gammaXi <- matrix(0, nrow = numEtas, ncol = numXis,
+                  dimnames = list(etas, xis))
+  exprsGammaXi <- structExprs[structExprs$lhs %in% etas & 
+                    !grepl(":", structExprs$rhs) & 
+                    structExprs$rhs %in% xis, ] 
+  if (nrow(exprsGammaXi) > 0) apply(exprsGammaXi, 
+        MARGIN = 1,  
+        FUN = function(row) gammaXi[row[["lhs"]], row[["rhs"]]] <<- NA)
+
+  gammaEta <- matrix(0, nrow = numEtas, ncol = numEtas,
+                  dimnames = list(etas, etas))
+  exprsGammaEta <- structExprs[structExprs$lhs %in% etas & 
+                    !grepl(":", structExprs$rhs) & 
+                    structExprs$rhs %in% etas, ]
+  if (nrow(exprsGammaEta) > 0) apply(exprsGammaEta, MARGIN = 1, 
+          FUN = function(row) gammaEta[row[["lhs"]], row[["rhs"]]] <<- NA)
+  thetaDelta <- matrix(0, nrow = numAllIndsXis, ncol = numAllIndsXis,
+                        dimnames = list(allIndsXis, allIndsXis))
+  diag(thetaDelta) <- NA
+
+  thetaEpsilon <- matrix(0, nrow = numAllIndsEtas, ncol = numAllIndsEtas,
+                          dimnames = list(allIndsEtas, allIndsEtas))
+  diag(thetaEpsilon) <- NA
+  psi <- matrix(0, nrow = numEtas, ncol = numEtas,
+                dimnames = list(etas, etas))
+  diag(psi) <- NA
+
+  phi <- diag(numXis * numEtas)
+  colnames(phi) <- rownames(phi) <- rep(xis, numEtas)
+  subPhi <- diag(numXis)
+  colnames(subPhi) <- rownames(subPhi) <- xis
+  subA <- subPhi
+  subA[lower.tri(subA, diag = TRUE)] <- NA
+  A <- matrix(0, nrow = numXis * numEtas, ncol = numXis * numEtas,
+              dimnames = list(rep(xis, numEtas), 
+                              rep(xis, numEtas)))
+  A[seq_len(numXis), seq_len(numXis)] <- subA 
+
+  tauX <- matrix(NA, nrow = numAllIndsXis, ncol=1,
+                 dimnames = list(allIndsXis, NULL))
+  tauY <- matrix(NA, nrow = numAllIndsEtas, ncol = 1,
+                 dimnames = list(allIndsEtas, NULL))
+
+  alpha <- matrix(0, nrow=numEtas, ncol=1, dimnames = list(etas, "alpha"))
+  # Omega 
+  omegaEtaXi <- omegaAndSortedXis$omegaEtaXi
+  omegaXiXi <- omegaAndSortedXis$omegaXiXi
+
+  selectionMatrixOmega <- rep(diag(numXis), numEtas) |> 
+    matrix(ncol = numXis, byrow = TRUE)
+  selectionMatrixOmegaEtaXi <- rep(diag(numEtas), numEtas) |> 
+    matrix(ncol = numEtas, byrow = TRUE)
+  collapseOmegaXiXi <- matrix(0, nrow = numXis * numEtas, ncol = numEtas,
+                             dimnames = list(rep(xis, numEtas), etas))
+  subsetRows <- seq_len(numXis)
+
+  for (i in seq_len(numEtas)) {
+    collapseOmegaXiXi[subsetRows + (i - 1) * numXis, i] <- rep(1, numXis)
+  }
+  collapseOmegaEtaXi <- matrix(0, nrow = numEtas * numEtas, ncol = numEtas,
+                             dimnames = list(rep(etas, numEtas), etas))
+  subsetRows <- seq_len(numEtas)
+  for (i in seq_len(numEtas)) {
+    collapseOmegaEtaXi[subsetRows + (i - 1) * numEtas, i] <- rep(1, numEtas)
+  }
+  
+  # B = (Ieta - gammaEta - gammaXi %*% A)
+  # B ^ -1 = (cholB %*% t(cholB)) ^ -1
+  # B ^ -1 = t(cholB) ^ -1 %*% cholB ^ -1
+  Ieta <- diag(numEtas)
+
+  matrices <- list(
+    lambdaX = lambdaX,
+    lambdaY = lambdaY,
+    gammaXi = gammaXi,
+    gammaEta = gammaEta,
+    thetaDelta = thetaDelta,
+    thetaEpsilon = thetaEpsilon,
+    phi = phi,
+    A = A,
+    Ieta = Ieta,
+    psi = psi,
+    tauX = tauX,
+    tauY = tauY,
+    alpha = alpha,
+    omegaEtaXi = omegaEtaXi,
+    omegaXiXi = omegaXiXi,
+    selectionMatrixOmega = selectionMatrixOmega,
+    selectionMatrixOmegaEtaXi = selectionMatrixOmegaEtaXi,
+    collapseOmegaXiXi = collapseOmegaXiXi,
+    collapseOmegaEtaXi = collapseOmegaEtaXi)
+  k <- omegaAndSortedXis$k
+  quad <- quadrature(m, k)
+
+  model <- list(info =
+                list(etas = etas,
+                     numEtas = numEtas,
+                     indsEtas = indsEtas,
+                     allIndsEtas = allIndsEtas,
+                     xis = xis,
+                     intXis = intsXis,
+                     numXis = numXis,
+                     indsXis = indsXis,
+                     allIndsXis = allIndsXis),
+                quad = quad,
+                matrices = matrices,
+                syntax = syntax,
+                parTable = parTable)
+  # sort Data before optimizing starting params
+  sortedData <- sortData(data, allIndsXis,  allIndsEtas)
+  model$data <- sortedData
+  model$theta <- createParamVector(model)
+  model$info$bounds <- getParamBounds(model)
+  # Adding Expression for evaluating variances for etas in Phi
+  model
+}
+
+
+isInList <- function(elems, list) {
+  matches <- vapply(list,
+    FUN.VALUE = vector("logical", 1L),
+    FUN = function(node, elems) {
+      all(elems %in% node)
+    },
+    elems = elems
+  )
+  any(matches)
+}
+
+
+createParamVector <- function(model, start = NULL) {
+  set.seed(123)
+  matrices <- model$matrices
+  lambdaX <- as.vector(matrices$lambdaX)
+  lambdaY <- as.vector(matrices$lambdaY)
+  thetaDelta <- as.vector(matrices$thetaDelta)
+  thetaEpsilon <- as.vector(matrices$thetaEpsilon)
+  phi <- as.vector(matrices$phi)
+  A <- as.vector(matrices$A)
+  psi <- as.vector(matrices$psi)
+  tauX <- as.vector(matrices$tauX)
+  tauY <- as.vector(matrices$tauY)
+  alpha <- as.vector(matrices$alpha)
+  gammaXi <- as.vector(matrices$gammaXi)
+  gammaEta <- as.vector(matrices$gammaEta)
+  omgeaXiXi <- as.vector(matrices$omegaXiXi)
+  omegaEtaXi <- as.vector(matrices$omegaEtaXi)
+  theta <- c("lambdaX" = lambdaX,
+             "lambdaY" = lambdaY,
+             "tauX" = tauX,
+             "tauY" = tauY,
+             "thetaDelta" = thetaDelta,
+             "thetaEpsilon" = thetaEpsilon,
+             "phi" = phi,
+             "A" = A,
+             "psi" = psi,
+             "alpha" = alpha,
+             "gammaXi" = gammaXi,
+             "gammaEta" = gammaEta,
+             "omegaXiXi" = omgeaXiXi,
+             "omegaEtaXi" = omegaEtaXi)
+  theta <- theta[is.na(theta)]
+  if (is.null(start)) {
+   theta <- vapply(theta,
+      FUN.VALUE = vector("numeric", 1L),
+      FUN = function(x) runif(1)
+    )
+  }
+  theta
+}
+
+
+fetch <- function(x, pattern = ".*") {
+  x[grepl(pattern, names(x))]
+}
+
+fillModel <- function(model, theta, fillPhi = FALSE) {
+  numXis <- model$info$numXis
+  numEtas <- model$info$numEtas
+  if (is.null(names(theta))) names(theta) <- names(model$theta)
+  matrices <- model$matrices
+  matrices$lambdaX[is.na(matrices$lambdaX)] <-
+    fetch(theta, "lambdaX[0-9]*$")
+  matrices$lambdaY[is.na(matrices$lambdaY)] <-
+    fetch(theta, "lambdaY[0-9]*$")
+  matrices$thetaDelta[is.na(matrices$thetaDelta)] <-
+    fetch(theta, "thetaDelta[0-9]*")
+  matrices$thetaEpsilon[is.na(matrices$thetaEpsilon)] <-
+    fetch(theta, "thetaEpsilon[0-9]*")
+  matrices$A <- fillMatrixA(theta, matrices, model)
+  matrices$psi[is.na(matrices$psi)] <-
+    fetch(theta, "^psi[0-9]*$")
+  matrices$tauX[is.na(matrices$tauX)] <-
+    fetch(theta, "tauX[0-9]*$")
+  matrices$tauY[is.na(matrices$tauY)] <-
+    fetch(theta, "tauY[0-9]*$")
+  matrices$alpha[is.na(matrices$alpha)] <-
+    fetch(theta, "alpha[0-9]*$")
+  matrices$gammaEta[is.na(matrices$gammaEta)] <-
+    fetch(theta, "gammaEta[0-9]*$")
+  matrices$gammaXi[is.na(matrices$gammaXi)] <-
+    fetch(theta, "gammaXi[0-9]*$")
+  matrices$omegaXiXi[is.na(matrices$omegaXiXi)] <-
+    fetch(theta, "omegaXiXi[0-9]*$")
+  matrices$omegaEtaXi[is.na(matrices$omegaEtaXi)] <-
+    fetch(theta, "omegaEtaXi[0-9]*$")
+  if (fillPhi) matrices$phi <- matrices$A %*% t(matrices$A)
+  model$matrices <- matrices
+  model
+}
+
+
+fillMatrixA <- function(theta, matrices, model) {
+  numXis <- model$info$numXis
+  numEtas <- model$info$numEtas
+  etas <- model$info$etas
+  xis <- model$info$xis
+  matrices$A[is.na(matrices$A)] <- fetch(theta, "^A[0-9]*")
+  # converting back to Phi
+  subA <- matrices$A[seq_len(numXis), seq_len(numXis)]
+  for (i in seq_len(numEtas)) {
+    matrices$A[(i - 1) * numXis + seq_len(numXis), 
+               (i - 1) * numXis + seq_len(numXis)] <- subA
+  }
+  matrices$A
+}
+
+fillSymmetric <- function(mat, values) {
+  mat[is.na(mat)] <- values
+  mat[upper.tri(mat)] <- t(mat)[upper.tri(mat)]
+  mat
+}
+
+convertPhi <- function(phi) {
+  A <- tryCatch(t(chol(phi)),
+                error=function(e)
+                  diag(1, nrow(phi)))
+  A
+}
+
+convertPhiTheta <- function(model, theta) {
+  matrices <- model$matrices
+  phi <- matrices$phi
+  A <- tryCatch(t(chol(phi)),
+                error=function(e)
+                  diag(1, nrow(phi)))
+  theta[grep("phi", names(theta))] <- A[lower.tri(A, diag=TRUE)
+                                        & is.na(model$matrices$phi)]
+  theta
+}
+
+
+varsInIntCombos <- function(xis, intXis) {
+  any(vapply(intXis, FUN.VALUE = logical(1L),
+             FUN = function(combo) all(xis %in% combo) &&
+               length(unique(xis)) == length(xis)))
+}
+
+sortXisAndOmega <- function(xis, intXis, etas, intTerms) {
+  # i <= k, i < j, i = row, j = col
+  allXisInInts <- unique(unlist(intXis))
+  sortedXis <- c(allXisInInts, xis[!xis %in% allXisInInts])
+
+  nonLinearXis <- character(0L)
+  for (interaction in intXis) {
+    if (!any(interaction %in% nonLinearXis)) {
+      if (all(interaction %in% etas)) 
+        stop("Interactions between two endogenous variables are not allowed")
+      choice <- which(!interaction %in% etas)[[1]]
+      nonLinearXis <- c(nonLinearXis, interaction[[choice]])
+    }
+  }
+  linearXis <- xis[!xis %in% nonLinearXis]
+  sortedXis <- c(nonLinearXis, linearXis)
+  # submatrices for omegas
+  subOmegaXiXi <- matrix(0, nrow = length(xis), ncol = length(xis),
+                        dimnames = list(sortedXis, sortedXis))
+  omegaXiXi <- NULL
+  for (eta in etas) {
+    lapply(intXis[intTerms$lhs == eta],
+            FUN = function(row)
+              if (all(row %in% sortedXis)) subOmegaXiXi[row[[1]], row[[2]]] <<- NA)
+    if (is.null(omegaXiXi)) {
+      omegaXiXi <- subOmegaXiXi
+      next
+    }
+    bottomLeft <- matrix(0, nrow = nrow(subOmegaXiXi), ncol = ncol(omegaXiXi),
+                         dimnames = list(rownames(subOmegaXiXi), colnames(omegaXiXi)))
+    topRight <- matrix(0, nrow = nrow(omegaXiXi), ncol = ncol(subOmegaXiXi),
+                       dimnames = list(rownames(omegaXiXi), colnames(subOmegaXiXi)))
+    omegaXiXi <- rbind(cbind(omegaXiXi, topRight),
+                   cbind(bottomLeft, subOmegaXiXi))
+  }
+  subOmegaEtaXi <- matrix(0, nrow = length(xis), ncol = length(etas),
+                         dimnames = list(sortedXis, etas))
+  omegaEtaXi <- NULL
+  for (eta in etas) {
+    lapply(intXis[intTerms$lhs == eta],
+            FUN = function(row) 
+              if (any(row %in% etas)) subOmegaEtaXi[row[[2]], row[[1]]] <<- NA)
+    if (is.null(omegaEtaXi)) {
+      omegaEtaXi <- subOmegaEtaXi
+      next
+    }
+    bottomLeft <- matrix(0, nrow = nrow(subOmegaEtaXi), ncol = ncol(omegaEtaXi),
+                         dimnames = list(rownames(subOmegaEtaXi), colnames(omegaEtaXi)))
+    topRight <- matrix(0, nrow = nrow(omegaEtaXi), ncol = ncol(subOmegaEtaXi),
+                       dimnames = list(rownames(omegaEtaXi), colnames(subOmegaEtaXi)))
+    omegaEtaXi <- rbind(cbind(omegaEtaXi, topRight),
+                   cbind(bottomLeft, subOmegaEtaXi))
+  }
+  list(sortedXis = sortedXis, omegaXiXi = omegaXiXi, omegaEtaXi = omegaEtaXi,
+       k = length(nonLinearXis))
+}
+
+
+# Calculate weights and node points for mixture functions via Gauss-Hermite
+# quadrature as defined in Klein & Moosbrugger (2000)
+quadrature <- function(m, k) {
+  if (k == 0) return(list(n = data.frame(0), w = 1, k = 0, m = m))
+  singleDimGauss <- gaussquad::hermite.h.quadrature.rules(m)[[m]]
+  nodes <- lapply(seq_len(k), function(k) singleDimGauss$x) |>
+    expand.grid()
+  weights <- lapply(seq_len(k), function(k) singleDimGauss$w) |>
+    expand.grid() |> apply(MARGIN = 1, prod)
+  list(n = nodes * sqrt(2), w = weights * pi ^ (-k/2), k = k, m = m)
+}
+
+# Vector for diagonal indices
+diag_ind <- function(num) diag(matrix(seq_len(num^2), num))
+
+# Set bounds for parameters to (0, Inf)
+getParamBounds <- function(model) {
+  namePattern <- paste0("lambdaX[0-9]*$|lambdaY[0-9]*$|",
+                        "thetaDelta[0-9]*$|thetaEpsilon[0-9]*$|",
+                        "phi[0-9]*$|psi[0-9]*$")
+  lower <- rep(-Inf, countFreeParams(model))
+  upper <- rep(Inf, countFreeParams(model))
+  names(lower) <- names(upper) <- names(model$theta)
+  lower[grepl(namePattern, names(lower))] <- 0
+  list(lower = lower, upper = upper)
+}

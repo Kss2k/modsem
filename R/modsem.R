@@ -7,7 +7,7 @@
 #' "uca" = unconstrained approach (passed to lavaan),
 #' "dblcent" = double centering approach (passed to lavaan),
 #' "pind" = prod ind approach, with no constraints or centering (passed to lavaan),
-#' "lms" = laten model structural equations (passed to nlsem),
+#' "lms" = laten model structural equations (not passed to lavaan).
 #' "custom" = use parameters specified in the function call (passed to lavaan)
 #' @param match should the product indicators be created by using the match-strategy
 #' @param standardizeData should data be scaled before fitting model
@@ -22,7 +22,6 @@
 #' @param constrainedLoadings should syntax for constrained loadings be produced (overwritten by method, if method != NULL)
 #' @param constrainedVar should syntax for constrained variances be produced (overwritten by method, if method != NULL)
 #' @param constrainedResCovMethod method for constraining residual covariances
-#' @param qml should QML be used in LMS (via nlsem)
 #' @param auto.scale methods which should be scaled automatically (usually not useful)
 #' @param auto.center methods which should be centered automatically (usually not useful)
 #' @param estimator estimator to use in lavaan
@@ -64,7 +63,6 @@ modsem <- function(modelSyntax = NULL,
                    constrainedLoadings = NULL,
                    constrainedVar = NULL,
                    constrainedResCovMethod = NULL,
-                   qml = FALSE,
                    auto.scale = "none",
                    auto.center = "none",
                    estimator = "ML", 
@@ -77,7 +75,7 @@ modsem <- function(modelSyntax = NULL,
   if (is.null(data)) stop("No data provided in modsem")
 
   # PreSteps -------------------------------------------------------------------
-  modEnv$data <- data
+  modEnv$data <- data <- as.data.frame(data)
   ## Standardizing data
   if (standardizeData || method %in% auto.scale) {
     modEnv$data <- lapplyDf(modEnv$data,

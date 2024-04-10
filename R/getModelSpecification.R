@@ -132,26 +132,8 @@ parseLavaan <- function(modelSyntax = NULL, variableNames = NULL, match = FALSE)
                          specIndsInProdTerms)
     relDfs <- c(relDfs, specRelDfs) 
   }
-  # Info nlsem -----------------------------------------------------------------
-  etaNames <- unique(structuralExprs$lhs)
-  allPredictors <- unique(structuralExprs$rhs)
-  allPredictors <- allPredictors[!allPredictors %in% etaNames]
-  simplePredictors <- allPredictors[!grepl(":", allPredictors)]
-  # I do this in the counter intuitive way, to keep the same order as the
-  # measure exprs in the model, which is the way the nlsem model reads
-  # the syntax
-  latentSimplePredictors <-
-    latentVariables[latentVariables %in% simplePredictors]
-
-  nlsemInfo <- list(etaNames = etaNames,
-                    indsEta = indsLatents[etaNames],
-                    xiNames = latentSimplePredictors,
-                    indsXi = indsLatents[latentSimplePredictors],
-                    prodTerms = prodNamesCleaned, 
-                    modelSyntax = modelSyntax)
-
   # Return modelSpec -----------------------------------------------------------
-  modelSpec <- list(nlsem = nlsemInfo,
+  modelSpec <- list(modelSyntax = modelSyntax,
                     parTable = parTable,
                     prodNames = prodNamesCleaned,
                     elementsInProdNames = elementsInProds,
@@ -179,7 +161,6 @@ structureLavExprs <- function(parTable = NULL) {
 }
 
 
-
 getIndsVariable <- function(varName = NULL,  indsLatents = NULL) {
   if (is.null(varName)) {
     return(
@@ -202,7 +183,6 @@ getIndsVariable <- function(varName = NULL,  indsLatents = NULL) {
   stop("Something went wrong in getIndsVariable(), ",
         "varName neither observed not latent")
 }
-
 
 
 # Function for getting inds for mutliple variables -----------------------

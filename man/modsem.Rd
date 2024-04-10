@@ -21,7 +21,6 @@ modsem(
   constrainedLoadings = NULL,
   constrainedVar = NULL,
   constrainedResCovMethod = NULL,
-  qml = FALSE,
   auto.scale = "none",
   auto.center = "none",
   estimator = "ML",
@@ -42,7 +41,7 @@ modsem(
 "uca" = unconstrained approach (passed to lavaan),
 "dblcent" = double centering approach (passed to lavaan),
 "pind" = prod ind approach, with no constraints or centering (passed to lavaan),
-"lms" = laten model structural equations (passed to nlsem),
+"lms" = laten model structural equations (not passed to lavaan).
 "custom" = use parameters specified in the function call (passed to lavaan)}
 
 \item{match}{should the product indicators be created by using the match-strategy}
@@ -68,8 +67,6 @@ modsem(
 \item{constrainedVar}{should syntax for constrained variances be produced (overwritten by method, if method != NULL)}
 
 \item{constrainedResCovMethod}{method for constraining residual covariances}
-
-\item{qml}{should QML be used in LMS (via nlsem)}
 
 \item{auto.scale}{methods which should be scaled automatically (usually not useful)}
 

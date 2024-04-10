@@ -24,9 +24,11 @@ There are a number of approaches for estimating interaction effects in SEM. In `
 - "dblcent" = double centering approach (Marsh., 2013)
   - default
 - "pind" = basic product indicator approach (not recommended)
-- "lms" = The latent moderated structural equations approach through the nlsem package
-  - note: can only be done if you have a single endogenous (dependent) variable. 
-  - do `qml = TRUE` for the quasi maximum likelihood version
+- "lms" = The latent moderated structural equations approach
+  - note: now implemented with multiple endogenous variables
+    however it does not allow interactions between two enodgenous
+    variables, it does however allow interactions between exogenous:endogenous
+    and exogenous:exogenous
   - do `optimize = TRUE` for faster convergence (experimental feature)
 - "mplus" 
   - estimates model through Mplus, if it is installed
