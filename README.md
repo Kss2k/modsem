@@ -22,7 +22,7 @@ There are a number of approaches for estimating interaction effects in SEM. In `
 - "uca" = unconstrained approach (Marsh, 2004)
 - "rca" = residual centering approach (Little et al., 2006)
 - "dblcent" = double centering approach (Marsh., 2013)
-  - default
+  - default 
 - "pind" = basic product indicator approach (not recommended)
 - "lms" = The latent moderated structural equations approach
   - note: now implemented with multiple endogenous variables
@@ -33,6 +33,8 @@ There are a number of approaches for estimating interaction effects in SEM. In `
 - "mplus" 
   - estimates model through Mplus, if it is installed
 
+# New Feature (10.04.24)
+- Implemented a new estimator for the LMS approach, which now works with more complicated models
 
 # Examples 
 
