@@ -83,6 +83,10 @@ summary(estTpbDblCent)
 # the appropriate constraints
 estTpbCa <- modsem(tpb, data = TPB, method = "ca") 
 summary(estTpbCa)
+
+# LMS approach 
+estTpbLms <- modsem(tpb, data = TPB, method = "lms")
+summary(estTpbLms)
 ```
 ## Interactions between two observed variables
 ```
