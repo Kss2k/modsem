@@ -86,8 +86,8 @@ estepLms <- function(model, theta, dat, ..., precision = FALSE) {
   # of observing the given nodes (i.e., w)
   P <- matrix(0, nrow = nrow(dat), ncol = length(w))
   sapply(seq_along(w), FUN = function(i) {
-      P[,i] <<- w[[i]] * dMvn(dat, mean = muLms(model = modFilled, z1 = V[i,]),
-                              sigma = sigmaLms(model = modFilled, z1 = V[i,]),
+      P[,i] <<- w[[i]] * dMvn(dat, mean = muLmsCpp(model = modFilled, z = V[i,]),
+                              sigma = sigmaLmsCpp(model = modFilled, z = V[i,]),
                               precision = precision)
   })
   P / rowSums(P)   # divide each rho_j*phi(x_i, y_i) by whole density (row)
@@ -118,8 +118,8 @@ logLikLms <- function(theta, model, dat, P, precision = FALSE,
   # summed log probability of observing the data given the parameters
   # weighted my the posterior probability calculated in the E-step
   r <- vapply(seq_len(nrow(V)), FUN.VALUE = numeric(1L), FUN = function(i){
-    lls <- sum(dMvn(dat, mean = muLms(model = modFilled, z1 = V[i,]),
-                    sigma = sigmaLms(model = modFilled, z1 = V[i,]),
+    lls <- sum(dMvn(dat, mean = muLmsCpp(model = modFilled, z = V[i,]),
+                    sigma = sigmaLmsCpp(model = modFilled, z = V[i,]),
                     log = TRUE, precision = precision) * P[,i])
     lls
   }) |> sum()
