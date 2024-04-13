@@ -8,6 +8,7 @@
 #' "dblcent" = double centering approach (passed to lavaan),
 #' "pind" = prod ind approach, with no constraints or centering (passed to lavaan),
 #' "lms" = laten model structural equations (not passed to lavaan).
+#' "qml" = quasi maximum likelihood estimation of laten model structural equations (not passed to lavaan).
 #' "custom" = use parameters specified in the function call (passed to lavaan)
 #' @param match should the product indicators be created by using the match-strategy
 #' @param standardizeData should data be scaled before fitting model
@@ -92,12 +93,11 @@ modsem <- function(modelSyntax = NULL,
   modelSpec <- parseLavaan(modelSyntax, colnames(data), match = match)
 
   # Setting parameters according to method 
-  if (method == "lms") {
+  if (method %in% c("lms", "qml")) {
     # If method is LMS we pass it own to its own version of modsem()
     LMS <- modsem.LMS(modelSpec,
+                      method = method,
                       data = modEnv$data,
-                      qml = qml,
-                      centerData = centerData,
                       ...)
     return(LMS)
 

@@ -7,10 +7,23 @@ sortData <- function(data, allIndsXis, allIndsEtas) {
 
 
 countFreeParams <- function(model) {
-  vapply(model$matrices,
-    FUN.VALUE = vector("integer", 1L),
-    FUN = function(x) sum(is.na(x))
-  ) |>
+  matrices <- model$matrices[c("lambdaY", 
+                               "lambdaX",
+                               "tauY",
+                               "tauX",
+                               "thetaEpsilon",
+                               "thetaDelta",
+                               "gammaXi",
+                               "gammaEta",
+                               "omegaXiXi",
+                               "omegaEtaXi",
+                               "psi",
+                               "A",
+                               "phi",
+                               "alpha")]
+  vapply(matrices,
+         FUN.VALUE = vector("integer", 1L),
+         FUN = function(x) sum(is.na(x))) |>
     sum()
 }
 

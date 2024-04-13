@@ -1,15 +1,4 @@
-
-
-#' Specify SEM model LMS
-#'
-#' @param syntax
-#' @param m
-#'
-#' @return
-#' @export
-#'
-#' @examples
-specifyLmsModel <- function(syntax, data, m = 16) {
+specifyLmsModel <- function(syntax, data, method = "lms", m = 16) {
   # The goal here is to create the model with its matrices
   parTable <- modsem::modsemify(syntax)
   # Some general information:
@@ -62,7 +51,8 @@ specifyLmsModel <- function(syntax, data, m = 16) {
                        FUN = length)
   allIndsXis <- unlist(indsXis)
   numAllIndsXis <- length(allIndsXis)
-  # matrices for the general model ---------------------------------------------
+
+  # Measurement model ----------------------------------------------------------
   lambdaX <- matrix(0, nrow = numAllIndsXis, ncol = numXis,
                      dimnames = list(allIndsXis, xis))
   lastRowPreviousXi <- 0
@@ -84,6 +74,7 @@ specifyLmsModel <- function(syntax, data, m = 16) {
     lastRowPreviousEta <- lastRowPreviousEta + numIndsEtas[[i]]
   }
   
+  # Structural (linear) coefficients -------------------------------------------
   gammaXi <- matrix(0, nrow = numEtas, ncol = numXis,
                   dimnames = list(etas, xis))
   exprsGammaXi <- structExprs[structExprs$lhs %in% etas & 
@@ -100,6 +91,8 @@ specifyLmsModel <- function(syntax, data, m = 16) {
                     structExprs$rhs %in% etas, ]
   if (nrow(exprsGammaEta) > 0) apply(exprsGammaEta, MARGIN = 1, 
           FUN = function(row) gammaEta[row[["lhs"]], row[["rhs"]]] <<- NA)
+
+  # Covariance Structure residuals observed variables --------------------------
   thetaDelta <- matrix(0, nrow = numAllIndsXis, ncol = numAllIndsXis,
                         dimnames = list(allIndsXis, allIndsXis))
   diag(thetaDelta) <- NA
@@ -107,6 +100,8 @@ specifyLmsModel <- function(syntax, data, m = 16) {
   thetaEpsilon <- matrix(0, nrow = numAllIndsEtas, ncol = numAllIndsEtas,
                           dimnames = list(allIndsEtas, allIndsEtas))
   diag(thetaEpsilon) <- NA
+
+  # Covariance Structure latents -----------------------------------------------
   psi <- matrix(0, nrow = numEtas, ncol = numEtas,
                 dimnames = list(etas, etas))
   diag(psi) <- NA
@@ -121,14 +116,25 @@ specifyLmsModel <- function(syntax, data, m = 16) {
               dimnames = list(rep(xis, numEtas), 
                               rep(xis, numEtas)))
   A[seq_len(numXis), seq_len(numXis)] <- subA 
-
+  if (method == "qml") {
+    phi <- A 
+    A[TRUE] <- 0
+  }
+  
+  # Mean Structure -------------------------------------------------------------
   tauX <- matrix(NA, nrow = numAllIndsXis, ncol=1,
                  dimnames = list(allIndsXis, NULL))
   tauY <- matrix(NA, nrow = numAllIndsEtas, ncol = 1,
                  dimnames = list(allIndsEtas, NULL))
 
   alpha <- matrix(0, nrow=numEtas, ncol=1, dimnames = list(etas, "alpha"))
-  # Omega 
+  # if (method == "qml") {
+  #    alpha[TRUE] <- NA
+  #    tauX[TRUE] <- 0 
+  #    tauY[TRUE] <- 0
+  # }
+
+  # Quadratic Terms ------------------------------------------------------------
   omegaEtaXi <- omegaAndSortedXis$omegaEtaXi
   omegaXiXi <- omegaAndSortedXis$omegaXiXi
 
@@ -150,6 +156,40 @@ specifyLmsModel <- function(syntax, data, m = 16) {
     collapseOmegaEtaXi[subsetRows + (i - 1) * numEtas, i] <- rep(1, numEtas)
   }
   
+  # Select scaling variables for qml 
+  selectScalingY <- !is.na(lambdaY)
+  selectBetaRows <- apply(lambdaY, MARGIN = 1, 
+                            FUN = function(row) any(is.na(row)))
+  emptyR <- matrix(0, nrow = length(allIndsEtas) - numEtas, 
+                      ncol = length(allIndsEtas))
+  rownames(emptyR) <- 
+    rownames(lambdaY)[selectBetaRows]
+  colnames(emptyR) <- allIndsEtas
+  # NA  1  0  0  0
+  # NA  0  1  0  0
+  # 0   0  0  NA 1  
+  lastRow <- 0
+  lastCol <- 0
+  for (i in seq_len(numEtas)) {
+    nInds <- numIndsEtas[[etas[[i]]]] - 1
+    # free params 
+    emptyR[seq_len(nInds) + lastRow, lastCol + 1] <- NA
+    emptyR[seq_len(nInds) + lastRow, 
+              seq_len(nInds) + lastCol + 1] <- diag(nInds)
+    lastRow <- lastRow + nInds
+    lastCol <- lastCol + nInds + 1
+  }
+  
+  # theta epsilon
+  scalingInds <- allIndsEtas[!allIndsEtas %in% rownames(emptyR)]  
+  selectThetaEpsilon <- thetaEpsilon
+  selectThetaEpsilon[TRUE] <- FALSE
+  diag(selectThetaEpsilon)[scalingInds] <- TRUE
+  subThetaEpsilon <- matrix(0, nrow = length(scalingInds), 
+                            ncol = length(scalingInds), 
+                            dimnames = list(scalingInds, 
+                                            scalingInds))
+  diag(subThetaEpsilon) <- NA
   # B = (Ieta - gammaEta - gammaXi %*% A)
   # B ^ -1 = (cholB %*% t(cholB)) ^ -1
   # B ^ -1 = t(cholB) ^ -1 %*% cholB ^ -1
@@ -174,7 +214,12 @@ specifyLmsModel <- function(syntax, data, m = 16) {
     selectionMatrixOmega = selectionMatrixOmega,
     selectionMatrixOmegaEtaXi = selectionMatrixOmegaEtaXi,
     collapseOmegaXiXi = collapseOmegaXiXi,
-    collapseOmegaEtaXi = collapseOmegaEtaXi)
+    collapseOmegaEtaXi = collapseOmegaEtaXi,
+    selectScalingY = selectScalingY,
+    selectThetaEpsilon = selectThetaEpsilon,
+    selectBetaRows = selectBetaRows,
+    emptyR = emptyR,
+    subThetaEpsilon = subThetaEpsilon)
   k <- omegaAndSortedXis$k
   quad <- quadrature(m, k)
 
@@ -187,7 +232,9 @@ specifyLmsModel <- function(syntax, data, m = 16) {
                      intXis = intsXis,
                      numXis = numXis,
                      indsXis = indsXis,
-                     allIndsXis = allIndsXis),
+                     allIndsXis = allIndsXis,
+                     scalingInds = scalingInds,
+                     N = nrow(data)),
                 quad = quad,
                 matrices = matrices,
                 syntax = syntax,
@@ -249,7 +296,7 @@ createParamVector <- function(model, start = NULL) {
   if (is.null(start)) {
    theta <- vapply(theta,
       FUN.VALUE = vector("numeric", 1L),
-      FUN = function(x) runif(1)
+      FUN = function(x) stats::runif(1)
     )
   }
   theta
@@ -259,6 +306,16 @@ createParamVector <- function(model, start = NULL) {
 fetch <- function(x, pattern = ".*") {
   x[grepl(pattern, names(x))]
 }
+
+
+stripModel <- function(model, fill = -1) {
+  model$matrices <- lapply(model$matrices, function(mat) {
+    mat[!is.na(mat)] <- fill
+    mat
+  })
+  model
+}
+
 
 fillModel <- function(model, theta, fillPhi = FALSE) {
   numXis <- model$info$numXis
@@ -274,6 +331,7 @@ fillModel <- function(model, theta, fillPhi = FALSE) {
   matrices$thetaEpsilon[is.na(matrices$thetaEpsilon)] <-
     fetch(theta, "thetaEpsilon[0-9]*")
   matrices$A <- fillMatrixA(theta, matrices, model)
+  matrices$phi <- fillMatrixPhi(theta, matrices, model)
   matrices$psi[is.na(matrices$psi)] <-
     fetch(theta, "^psi[0-9]*$")
   matrices$tauX[is.na(matrices$tauX)] <-
@@ -296,7 +354,26 @@ fillModel <- function(model, theta, fillPhi = FALSE) {
 }
 
 
+fillMatrixPhi <- function(theta, matrices, model) {
+  if (!any(is.na(matrices$phi))) return(matrices$phi)
+  numXis <- model$info$numXis
+  numEtas <- model$info$numEtas
+  etas <- model$info$etas
+  xis <- model$info$xis
+  matrices$phi[is.na(matrices$phi)] <- fetch(theta, "^phi[0-9]*")
+  # converting back to Phi
+  subPhi <- matrices$phi[seq_len(numXis), seq_len(numXis)]
+  subPhi[upper.tri(subPhi)] <- t(subPhi[lower.tri(subPhi)])
+  for (i in seq_len(numEtas)) {
+    matrices$phi[(i - 1) * numXis + seq_len(numXis), 
+               (i - 1) * numXis + seq_len(numXis)] <- subPhi
+  }
+  matrices$phi
+}
+
+
 fillMatrixA <- function(theta, matrices, model) {
+  if (!any(is.na(matrices$A))) return(matrices$A)
   numXis <- model$info$numXis
   numEtas <- model$info$numEtas
   etas <- model$info$etas
@@ -311,11 +388,13 @@ fillMatrixA <- function(theta, matrices, model) {
   matrices$A
 }
 
+
 fillSymmetric <- function(mat, values) {
   mat[is.na(mat)] <- values
   mat[upper.tri(mat)] <- t(mat)[upper.tri(mat)]
   mat
 }
+
 
 convertPhi <- function(phi) {
   A <- tryCatch(t(chol(phi)),
@@ -323,6 +402,7 @@ convertPhi <- function(phi) {
                   diag(1, nrow(phi)))
   A
 }
+
 
 convertPhiTheta <- function(model, theta) {
   matrices <- model$matrices
@@ -341,6 +421,7 @@ varsInIntCombos <- function(xis, intXis) {
              FUN = function(combo) all(xis %in% combo) &&
                length(unique(xis)) == length(xis)))
 }
+
 
 sortXisAndOmega <- function(xis, intXis, etas, intTerms) {
   # i <= k, i < j, i = row, j = col
@@ -414,6 +495,7 @@ quadrature <- function(m, k) {
 
 # Vector for diagonal indices
 diag_ind <- function(num) diag(matrix(seq_len(num^2), num))
+
 
 # Set bounds for parameters to (0, Inf)
 getParamBounds <- function(model) {

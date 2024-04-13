@@ -53,8 +53,9 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.2.3
-LinkingTo: Rcpp
-Imports: Rcpp, purrr, stringr, lavaan, rlang, MplusAutomation, nlme, R6, dplyr
+LinkingTo: Rcpp, RcppArmadillo
+Imports: Rcpp, purrr, stringr, lavaan, rlang, MplusAutomation, nlme, R6, dplyr, 
+  matlib, mvnfast, stats, gaussquad, mvtnorm
 Depends: 
     R (>= 3.50)
 URL: https://github.com/Kss2k/modsem

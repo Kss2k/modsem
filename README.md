@@ -30,6 +30,8 @@ There are a number of approaches for estimating interaction effects in SEM. In `
     variables, it does however allow interactions between exogenous:endogenous
     and exogenous:exogenous
   - do `optimize = TRUE` for faster convergence (experimental feature)
+- "qml" = The Quasi Maximum Likelihood estimation of latent moderated structural equations. 
+  - note: only works with a single endogenous variable.
 - "mplus" 
   - estimates model through Mplus, if it is installed
 

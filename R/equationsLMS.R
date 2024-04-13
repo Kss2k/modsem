@@ -70,6 +70,7 @@ sigmaLms <- function(model, z1) {
       cbind(t(Sxy), Syy))
 }
 
+
 estepLms <- function(model, theta, dat, ..., precision = FALSE) {
   if (countFreeParams(model) != length(theta))
     stop("length paramaters does not match free parameters in model")
@@ -93,7 +94,24 @@ estepLms <- function(model, theta, dat, ..., precision = FALSE) {
 }
 
 
-logLikLms <- function(theta, model, dat, P, precision = FALSE, ...) {
+stochasticGradient <- function(theta, model, dat, P, precision = FALSE, 
+                               sampleGrad = NULL, ...) {
+  
+  baseline <- logLikLms(theta, model, dat, P, precision = precision)
+  grad <- rep(0, length(theta))
+  if (!is.null(sampleGrad)) params <- sample(seq_along(theta), sampleGrad)
+  else params <- seq_along(theta)
+  for (i in params) {
+    theta[i] <- theta[i] + 1e-12
+    newLik <- logLikLms(theta, model, dat, P, precision = precision)
+    grad[i] <- (newLik - baseline) / 1e-12
+  }
+  grad
+} 
+
+
+logLikLms <- function(theta, model, dat, P, precision = FALSE, 
+                      sampleGrad = NULL, ...) {
   modFilled <- fillModel(model = model, theta = theta)
   k <- model$quad$k 
   V <- modFilled$quad$n
@@ -112,9 +130,11 @@ logLikLms <- function(theta, model, dat, P, precision = FALSE, ...) {
 # Maximization step of EM-algorithm (see Klein & Moosbrugger, 2000)
 mstepLms <- function(theta, model, dat, P, negHessian = FALSE,
                       maxstep, precision = FALSE,
-                      control=list(), ...) {
+                      control=list(), sampleGrad,...) {
+  if (is.null(sampleGrad)) stochasticGradient <- NULL
   if (is.null(control$iter.max)) control$iter.max <- maxstep
-  est <- nlminb(start = theta, objective = logLikLms, dat = dat,
+  est <- stats::nlminb(start = theta, objective = logLikLms, dat = dat,
+                gradient = stochasticGradient, sampleGrad = sampleGrad,
                 model = model, P = P, precision = precision, 
                 upper = model$info$bounds$upper,
                 lower = model$info$bounds$lower, control = control,

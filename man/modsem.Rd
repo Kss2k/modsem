@@ -42,6 +42,7 @@ modsem(
 "dblcent" = double centering approach (passed to lavaan),
 "pind" = prod ind approach, with no constraints or centering (passed to lavaan),
 "lms" = laten model structural equations (not passed to lavaan).
+"qml" = quasi maximum likelihood estimation of laten model structural equations (not passed to lavaan).
 "custom" = use parameters specified in the function call (passed to lavaan)}
 
 \item{match}{should the product indicators be created by using the match-strategy}

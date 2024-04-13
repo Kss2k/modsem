@@ -2,6 +2,7 @@ optimizeStartingParamsLms <- function(model) {
   etas <- model$info$etas
   indsEtas <- model$info$allIndsEtas
   xis <- model$info$xis
+  numXis <- model$info$numXis
   indsXis <- model$info$allIndsXis
   data <- model$data
   pt <- modsem(model$syntax, data, method = "dblcent")$coefParTable
@@ -14,9 +15,12 @@ optimizeStartingParamsLms <- function(model) {
   ThetaDelta <- findEstimatesParTable(matrices$thetaDelta, pt, op = "~~")
   Psi <- findEstimatesParTable(matrices$psi, pt, op = "~~")
   Phi <- findEstimatesParTable(matrices$phi, pt, op = "~~")
+  subPhi <- Phi[seq_len(numXis), seq_len(numXis)]
   A <- findEstimatesParTable(matrices$A, pt, op = "~~")
-  A[upper.tri(A)] <- t(A[lower.tri(A)])
-  A <- t(tryCatch(chol(A), error = function(x) diag(ncol(A))))
+  subA <- A[seq_len(numXis), seq_len(numXis)]
+  subA[upper.tri(subA)] <- t(subA[lower.tri(subA)])
+  subA <- t(tryCatch(chol(subA), error = function(x) diag(ncol(subA))))
+  A[seq_len(numXis), seq_len(numXis)] <- subA
   alpha <- matrices$alpha
   alpha[is.na(alpha)] <- 0
   GammaEta <- findEstimatesParTable(matrices$gammaEta, pt, op = "~")
@@ -49,46 +53,6 @@ optimizeStartingParamsLms <- function(model) {
 }
 
 
-createParamVector <- function(model, start = NULL) {
-  set.seed(123)
-  matrices <- model$matrices
-  lambdaX <- as.vector(matrices$lambdaX)
-  lambdaY <- as.vector(matrices$lambdaY)
-  thetaDelta <- as.vector(matrices$thetaDelta)
-  thetaEpsilon <- as.vector(matrices$thetaEpsilon)
-  phi <- as.vector(matrices$phi)
-  A <- as.vector(matrices$A)
-  psi <- as.vector(matrices$psi)
-  tauX <- as.vector(matrices$tauX)
-  tauY <- as.vector(matrices$tauY)
-  alpha <- as.vector(matrices$alpha)
-  gammaXi <- as.vector(matrices$gammaXi)
-  gammaEta <- as.vector(matrices$gammaEta)
-  omgeaXiXi <- as.vector(matrices$omegaXiXi)
-  omegaEtaXi <- as.vector(matrices$omegaEtaXi)
-  theta <- c("lambdaX" = lambdaX,
-             "lambdaY" = lambdaY,
-             "tauX" = tauX,
-             "tauY" = tauY,
-             "thetaDelta" = thetaDelta,
-             "thetaEpsilon" = thetaEpsilon,
-             "phi" = phi,
-             "A" = A,
-             "psi" = psi,
-             "alpha" = alpha,
-             "gammaXi" = gammaXi,
-             "gammaEta" = gammaEta,
-             "omegaXiXi" = omgeaXiXi,
-             "omegaEtaXi" = omegaEtaXi)
-  theta <- theta[is.na(theta)]
-  if (is.null(start)) {
-   theta <- vapply(theta,
-      FUN.VALUE = vector("numeric", 1L),
-      FUN = function(x) runif(1)
-    )
-  }
-  theta
-}
 findEstimatesParTable <- function(mat, pt, op = NULL, rows_lhs = TRUE) {
   if (is.null(op)) stop("Missing operator")
   for (row in rownames(mat)) {

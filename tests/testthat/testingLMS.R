@@ -14,9 +14,8 @@ m1 <- '
 # give better loglikelihoods than the ones arrived at by the EM algorithm
 # i.e., the loglikelyhodd decreases from the starting parameters
 est1 <- modsem(m1, oneInt, method = "lms", 
-               optimize = TRUE, verbose = FALSE,
-               suppressWarnings = TRUE)
-
+               optimize = TRUE, verbose = TRUE,
+               convergence = 1e-2, sampleGrad = NULL, maxstep = 1)
 
 tpb <- ' 
 # Outer Model (Based on Hagger et al., 2007)
@@ -37,4 +36,5 @@ tpb <- '
 '
 
 est2 <- modsem(tpb, TPB, method = "lms", optimize = TRUE, 
-               verbose = FALSE)
+               verbose = TRUE, convergence = 1e-2, sampleGrad = NULL,
+                maxstep = 1)

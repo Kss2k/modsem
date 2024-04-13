@@ -1,24 +1,9 @@
-
-#' Em Lms
-#'
-#' @param model model object
-#' @param verbose
-#' @param convergence
-#' @param maxiter
-#' @param maxstep
-#' @param max.singleClass
-#' @param negHessian
-#' @param breakOnLogLikIncrease
-#' @param ...
-#'
-#' @return
-#' @export
-#'
-#' @examples
 emLms <- function(model, verbose = FALSE,
                convergence = 1e-02, maxiter = 500,
                maxstep = 1, negHessian = TRUE,
                breakOnLogLikIncrease = FALSE,
+               changeToPrecision = 10,
+               sampleGrad = NULL,
                ...) {
   data <- model$data
   if (anyNA(data)) stop("Remove or replace missing values from data")
@@ -40,7 +25,7 @@ emLms <- function(model, verbose = FALSE,
         break
       }
       nLogIncreased <- nLogIncreased + 1
-      if (nLogIncreased > 5) {
+      if (nLogIncreased > changeToPrecision) {
         precision <- TRUE 
         maxstep <- 1
       }
@@ -57,6 +42,7 @@ emLms <- function(model, verbose = FALSE,
     # M-step
     mstep <- mstepLms(model = model, P = P, dat = data,
                       theta = thetaOld, maxstep = maxstep, ...,
+                      sampleGrad = sampleGrad,
                       precision = precision)
 
     logLikNew   <- mstep$objective
@@ -77,7 +63,7 @@ emLms <- function(model, verbose = FALSE,
   }
   final <- mstepLms(model = model, P = P, dat = data,
                     theta = thetaNew, negHessian = negHessian,
-                    maxstep = maxstep, ...)
+                    maxstep = maxstep, sampleGrad = NULL, ...)
   coefficients <- final$par
   finalModel <- fillModel(model, coefficients, fillPhi = TRUE)
 
@@ -89,7 +75,8 @@ emLms <- function(model, verbose = FALSE,
   info <- model$info
   info$iterations <- iterations
 
-  out <- list(model = finalModel, coefficients=coefficients,
+  out <- list(model = finalModel, emptyModel = model,
+              coefficients=coefficients,
               objective=-final$objective, em.convergence=em_convergence,
               negHessian=final$hessian, loglikelihoods=-logLikRet, info=info)
 
