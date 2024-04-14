@@ -2,7 +2,8 @@ specifyLmsModel <- function(syntax, data, method = "lms", m = 16) {
   # The goal here is to create the model with its matrices
   parTable <- modsem::modsemify(syntax)
   # Some general information:
-  structExprs <- parTable[parTable$op == "~", ]
+  structExprs <- parTable[parTable$op == "~" & 
+                          parTable$rhs != "1", ]
   measrExprs <- parTable[parTable$op == "=~", ]
   # Etas ------------------------------------------------------------------------
   etas <- structExprs$lhs |>
@@ -481,6 +482,13 @@ sortXisAndOmega <- function(xis, intXis, etas, intTerms) {
 }
 
 
+removeInteractions <- function(model) {
+  model$matrices$OmegaEtaXi[TRUE] <- 0 
+  model$matrices$OmegaXiXi[TRUE] <- 0
+  model
+}
+
+
 # Calculate weights and node points for mixture functions via Gauss-Hermite
 # quadrature as defined in Klein & Moosbrugger (2000)
 quadrature <- function(m, k) {
@@ -492,6 +500,7 @@ quadrature <- function(m, k) {
     expand.grid() |> apply(MARGIN = 1, prod)
   list(n = nodes * sqrt(2), w = weights * pi ^ (-k/2), k = k, m = m)
 }
+
 
 # Vector for diagonal indices
 diag_ind <- function(num) diag(matrix(seq_len(num^2), num))
@@ -507,4 +516,173 @@ getParamBounds <- function(model) {
   names(lower) <- names(upper) <- names(model$theta)
   lower[grepl(namePattern, names(lower))] <- 0
   list(lower = lower, upper = upper)
+}
+
+
+matrixToParTable <- function(matrixNA, matrixEst, matrixSE, 
+                             op = "=~", rowsLhs = TRUE) {
+  parTable <- NULL
+  if (!rowsLhs) {
+    matrixNA <- t(matrixNA)
+    matrixEst <- t(matrixEst)
+    matrixSE <- t(matrixSE)
+  }
+  for (lhs in rownames(matrixNA)) {
+    for (rhs in colnames(matrixNA)) {
+      if (is.na(matrixNA[lhs, rhs])) {
+        newRow <- data.frame(lhs = lhs, op = op, 
+                             rhs = rhs,
+                             est = matrixEst[lhs, rhs],
+                             se = matrixSE[lhs, rhs])
+        parTable <- rbind(parTable, newRow)
+      }
+    }
+  }
+  parTable 
+}
+
+
+omegaToParTable <- function(omegaNA, omegaEst, omegaSE, etas) {
+  numEtas <- length(etas) 
+  subNcol <- ncol(omegaNA) %/% numEtas
+  subNrow <- nrow(omegaNA) %/% numEtas
+  subSeqCols <- seq_len(subNcol)
+  subSeqRows <- seq_len(subNrow) 
+  lastRow <- 0 
+  lastCol <- 0
+  rowNames <- rownames(omegaNA)
+  colNames <- colnames(omegaNA)
+  parTable <- NULL
+  for (eta_i in seq_len(numEtas)) {
+    for (i in subSeqRows + (eta_i - 1) * subNrow) {
+      for (j in subSeqCols + (eta_i - 1) * subNcol) {
+        if (!is.na(omegaNA[i, j])) next
+        intTerm <- paste0(rowNames[[i]], ":", colNames[[j]])
+        newRow <- data.frame(lhs = etas[[eta_i]], 
+                             op = "~", rhs = intTerm,
+                             est = omegaEst[i, j],
+                             se = omegaSE[i, j]) 
+        parTable <- rbind(parTable, newRow)
+      }
+    }
+  }
+  parTable
+}
+
+
+finalModelToParTable <- function(finalModel, method = "lms") {
+  matricesEst <- finalModel$matrices
+  matricesSE <- finalModel$matricesSE
+  matricesNA <- finalModel$matricesNA
+  etas <- finalModel$info$etas
+  numXis <- finalModel$info$numXis
+  parTable <- NULL
+  # Coefficients Measurement Model 
+  newRows <- matrixToParTable(matricesNA$lambdaX,
+                              matricesEst$lambdaX,
+                              matricesSE$lambdaX, 
+                              op = "=~",
+                              rowsLhs = FALSE)
+  parTable <- rbind(parTable, newRows)
+  newRows <- matrixToParTable(matricesNA$lambdaY,
+                              matricesEst$lambdaY,
+                              matricesSE$lambdaY, 
+                              op = "=~",
+                              rowsLhs = FALSE)
+
+  parTable <- rbind(parTable, newRows)
+
+  # coefficients Structural Model 
+  newRows <- matrixToParTable(matricesNA$gammaXi,
+                              matricesEst$gammaXi,
+                              matricesSE$gammaXi, 
+                              op = "~",
+                              rowsLhs = TRUE)
+  parTable <- rbind(parTable, newRows)
+
+  newRows <- matrixToParTable(matricesNA$gammaEta,
+                              matricesEst$gammaEta,
+                              matricesSE$gammaEta, 
+                              op = "~",
+                              rowsLhs = TRUE)
+  parTable <- rbind(parTable, newRows)
+  
+  # interaction effects
+  newRows <- omegaToParTable(matricesNA$omegaXiXi,
+                             matricesEst$omegaXiXi, 
+                             matricesSE$omegaXiXi,
+                             etas = etas)
+  parTable <- rbind(parTable, newRows)
+
+  newRows <- omegaToParTable(matricesNA$omegaEtaXi,
+                             matricesEst$omegaEtaXi, 
+                             matricesSE$omegaEtaXi,
+                             etas = etas)
+  parTable <- rbind(parTable, newRows)
+
+  # Means Measurement Model 
+  tauXNA <- matricesNA$tauX
+  tauXEst <- matricesEst$tauX
+  tauXSE <- matricesSE$tauX
+  colnames(tauXNA) <- colnames(tauXEst) <- colnames(tauXSE) <- "1"
+  newRows <- matrixToParTable(tauXNA,
+                              tauXEst,
+                              tauXSE,
+                              op = "~",
+                              rowsLhs = TRUE)
+  parTable <- rbind(parTable, newRows)
+
+  tauYNA <- matricesNA$tauY
+  tauYEst <- matricesEst$tauY
+  tauYSE <- matricesSE$tauY
+  colnames(tauYNA) <- colnames(tauYEst) <- colnames(tauYSE) <- "1"
+  newRows <- matrixToParTable(tauYNA,
+                              tauYEst,
+                              tauYSE,
+                              op = "~",
+                              rowsLhs = TRUE)
+  parTable <- rbind(parTable, newRows)
+
+  # Residual (co) variances Measurement Model 
+  newRows <- matrixToParTable(matricesNA$thetaDelta,
+                              matricesEst$thetaDelta,
+                              matricesSE$thetaDelta, 
+                              op = "~~",
+                              rowsLhs = TRUE)
+  parTable <- rbind(parTable, newRows)
+
+  newRows <- matrixToParTable(matricesNA$thetaEpsilon,
+                              matricesEst$thetaEpsilon,
+                              matricesSE$thetaEpsilon, 
+                              op = "~~",
+                              rowsLhs = TRUE)
+  parTable <- rbind(parTable, newRows)
+
+  # (Co) variances Structural Model 
+  selectPhi <- seq_len(numXis)
+  if (method == "lms") {
+    phiNA <- matricesNA$A[selectPhi, selectPhi]
+    phiEst <- matricesEst$phi[selectPhi, selectPhi]
+    phiSE <- matricesSE$A[selectPhi, selectPhi]
+  } else {
+    phiNA <- matricesNA$phi[selectPhi, selectPhi]
+    phiEst <- matricesEst$phi[selectPhi, selectPhi]
+    phiSE <- matricesSE$phi[selectPhi, selectPhi]
+  }
+  newRows <- matrixToParTable(phiNA,
+                              phiEst,
+                              phiSE,
+                              op = "~~",
+                              rowsLhs = FALSE)
+  parTable <- rbind(parTable, newRows)
+
+  newRows <- matrixToParTable(matricesNA$psi,
+                              matricesEst$psi,
+                              matricesSE$psi, 
+                              op = "~~",
+                              rowsLhs = FALSE)
+  parTable <- rbind(parTable, newRows)
+
+  # return
+  parTable
 }

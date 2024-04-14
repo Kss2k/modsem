@@ -10,30 +10,32 @@ summary.modsemQML <- function(object, ...) {
 }
 
 
-summaryLmsAndQml <- function(object, ...) {
-  # estimates
-  est <- object$coefficients
 
-  # standard errors
-  stdError <- calcStandardError(object)
-  names(stdError) <- names(est)
+summaryLmsAndQml <- function(object, H0 = TRUE, verbose = TRUE, 
+                              r.squared = TRUE, ...) {
+  if (inherits(object, "modsemQML")) method <- "qml" 
+  else if (inherits(object, "modsemLMS")) method <- "lms" 
 
+  parTable <- object$parTable
+  parTable$pvalue <- format.pval(parTable$pvalue)
+  names(parTable) <- c("lhs", "op", "rhs", 
+                       "est", "std.error", 
+                       "t.value", "p.value", #"P(>|z|)", 
+                       "ci.lower", "ci.upper")
 
-  tvalue <- est / stdError
-  pvalue <- 2 * stats::pnorm(-abs(tvalue))
-
-  coefTable <- data.frame(Parameter = names(est),
-                          Estimate = est, `Std. Error` = stdError,
-                          `z value` = tvalue, 
-                          `Pr(>|z|)` = format.pval(pvalue))
-  ans <- list(matricesTheta = fillModel(object$emptyModel, est),
-              matricesSE = fillModel(stripModel(object$emptyModel), 
-                                     stdError),
-              estimates = coefTable,
+  out <- list(parTable = parTable,
+              data = object$model$data,
               iterations = object$iterations,
-              finallogLik = object$objective)
-  class(ans) <- "summaryModsemLMSQML"
-  ans
+              logLik = object$logLik, 
+              D = NULL)
+  if (H0) {
+    estH0 <- estimateNullModel(object$originalParTable, data = out$data, 
+                               method = method, verbose = verbose, ...)
+    out$D <- calcD(estH0, object)
+  } 
+
+  class(out) <- "summaryModsemLMSQML"
+  out
 }
 
 
@@ -41,50 +43,34 @@ summaryLmsAndQml <- function(object, ...) {
 print.summaryModsemLMSQML <- function(x, digits = 3, ...) {
   cat("\nSummary for model of class", x$model, "\n")
   cat("\nEstimates:\n")
-  est <- lapply(x$estimates, function(col)
+  est <- lapply(x$parTable, function(col)
     if (is.numeric(col)) round(col, digits) else col) |>
     as.data.frame()
-  rownames(est) <- NULL
   print(est)
   cat("\nNumber of iterations:", x$iterations, "\nFinal loglikelihood:",
-    round(x$finallogLik, 3), "\n") 
+    round(x$logLik, 3), "\n") 
+
+  if (!is.null(x$D)) {
+    cat("Comparative fit to H0 (no interaction effect)\n",
+        paste0("D(", x$D$df, ") = ", format(x$D$D, digits = 2), 
+               ", p = ", format.pval(x$D$p), "\n"))
+  }
 }
 
 
-calcStandardError <- function(object, ...) {
-  UseMethod("calcStandardError")
+estimateNullModel <- function(parTable, data, method = "lms", verbose = 
+                              FALSE, ...) {
+  strippedParTable <- parTable[!grepl(":", parTable$rhs), ]
+  syntax <- parTableToSyntax(strippedParTable)
+  if (verbose) cat("Estimating null model\n")
+  modsem(syntax, data, method, verbose = verbose, ...)
 }
 
 
-#' @export
-calcStandardError.modsemLMS <- function(object, ...) {
-  negHessian <- object$negHessian
-  stdError <- tryCatch({
-      sqrt(diag(solve(negHessian)))
-    }, error=function(e) {
-      NA
-    }, warning=function(w) {
-       if (grepl("NaN", conditionMessage(w))) {
-         suppressWarnings(sqrt(diag(solve(negHessian))))
-      } else{
-         sqrt(diag(solve(negHessian)))
-      }
-    })
-    if (all(is.na(stdError))) warning("Standard errors could not be computed, because negative Hessian was either not available or singular.")
-    if (any(is.nan(stdError))) warning("Standard errors for some coefficients could not be computed.") 
-  stdError
-}
+calcD <- function(estH0, estH1) {
+  df <- length(estH1$theta) - length(estH0$theta) 
+  D <- - 2 * (estH1$logLik - estH0$logLik)
 
-
-#' @export
-calcStandardError.modsemQML <- function(object, ...) {
-  # not correct yet
-  return(calcStandardError.modsemLMS(object, ...))
-  H <- object$negHessian 
-  invH <- solve(H)
-  N <- object$object$info$N
-  gradient <- gradientLogLikQml(object$emptyModel, object$coefficients)
-  J <- outer(gradient, gradient)
-  Jstar <- (1 / N) * (invH %*% J %*% invH)
-  sqrt(diag(Jstar))
+  p <- stats::qchisq(p = D, df = df, log = TRUE)
+  list(D = D, df = df, p = p) 
 }

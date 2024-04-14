@@ -1,8 +1,8 @@
 emLms <- function(model, verbose = FALSE,
                convergence = 1e-02, maxiter = 500,
-               maxstep = 1, negHessian = TRUE,
+               maxstep = 1, 
                breakOnLogLikIncrease = FALSE,
-               changeToPrecision = 10,
+               changeToPrecision = 30,
                sampleGrad = NULL,
                ...) {
   data <- model$data
@@ -17,7 +17,7 @@ emLms <- function(model, verbose = FALSE,
   precision <- FALSE
   run <- TRUE
   while(run) { # as long as no convergence is reached
-    if (logLikNew - logLikOld > 0) {
+    if (logLikNew - logLikOld > 0 && iterations > 3) {
       if (breakOnLogLikIncrease) {
         warning("Loglikelihood is increasing. EM algorithm will be stopped.")
         logLikNew <- logLikOld
@@ -25,12 +25,11 @@ emLms <- function(model, verbose = FALSE,
         break
       }
       nLogIncreased <- nLogIncreased + 1
-      if (nLogIncreased > changeToPrecision) {
+      if (!precision && nLogIncreased > changeToPrecision) {
         precision <- TRUE 
         maxstep <- 1
       }
     }
-
 
     # Update loglikelihood
     logLikOld <- logLikNew
@@ -62,23 +61,31 @@ emLms <- function(model, verbose = FALSE,
     if (abs(logLikOld - logLikNew) < convergence) run <- FALSE
   }
   final <- mstepLms(model = model, P = P, dat = data,
-                    theta = thetaNew, negHessian = negHessian,
-                    maxstep = maxstep, sampleGrad = NULL, ...)
+                    theta = thetaNew, negHessian = TRUE,
+                    maxstep = maxstep, sampleGrad = NULL, 
+                    verbose = verbose, ...)
+
   coefficients <- final$par
   finalModel <- fillModel(model, coefficients, fillPhi = TRUE)
-
+  finalModel$matricesNA <- model$matrices 
+  finalModel$matricesSE <- fillModel(model, calcSE(final$hessian))$matrices 
+  parTable <- finalModelToParTable(finalModel, method = "lms")
+  parTable$tvalue <- parTable$est / parTable$se
+  parTable$pvalue <- 2 * stats::pnorm(-abs(parTable$tvalue))
+  parTable$ciLower <- parTable$est - 1.96 * parTable$se
+  parTable$ciUpper <- parTable$est + 1.96 * parTable$se
 
   # convergence of em
-  if (iterations == maxiter) em_convergence <- FALSE else em_convergence <- TRUE
+  if (iterations == maxiter) convergence <- FALSE else convergence <- TRUE
 
-
-  info <- model$info
-  info$iterations <- iterations
-
-  out <- list(model = finalModel, emptyModel = model,
-              coefficients=coefficients,
-              objective=-final$objective, em.convergence=em_convergence,
-              negHessian=final$hessian, loglikelihoods=-logLikRet, info=info)
+  out <- list(model = finalModel, 
+              theta = coefficients,
+              parTable = parTable,
+              originalParTable = model$parTable,
+              logLik = -final$objective, 
+              iterations = iterations,
+              convergence = convergence,
+              negHessian = final$hessian)
 
   class(out) <- "modsemLMS"
   out

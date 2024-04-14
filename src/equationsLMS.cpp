@@ -26,8 +26,12 @@ arma::vec muLmsCpp(Rcpp::List model, arma::vec z) {
   
   arma::vec collapseEta = arma::ones<arma::vec>(numEtas);
   arma::mat cOex = Rcpp::as<arma::mat>(matrices["selectionMatrixOmegaEtaXi"]);
-  arma::vec zVec = arma::join_cols(z, arma::zeros<arma::vec>(numXis - k));
+
+  arma::vec zVec;
+  if (k > 0) zVec = arma::join_cols(z, arma::zeros<arma::vec>(numXis - k));
+  else zVec = arma::zeros<arma::vec>(numXis);
   arma::mat zMat = zToMatrix(zVec, numEtas);
+
   arma::mat Binv;
   if (Ie.n_cols == 1) {
     Binv = arma::mat(Ie);
@@ -70,8 +74,12 @@ arma::mat sigmaLmsCpp(Rcpp::List model, arma::vec z) {
   arma::vec collapseEta = arma::ones<arma::vec>(numEtas);
   arma::mat cOex = Rcpp::as<arma::mat>(matrices["selectionMatrixOmegaEtaXi"]);
   arma::mat cOxx = Rcpp::as<arma::mat>(matrices["selectionMatrixOmega"]);
-  arma::vec zVec = arma::join_cols(z, arma::zeros<arma::vec>(numXis - k));
+
+  arma::vec zVec;
+  if (k > 0) zVec = arma::join_cols(z, arma::zeros<arma::vec>(numXis - k));
+  else zVec = arma::zeros<arma::vec>(numXis);
   arma::mat zMat = zToMatrix(zVec, numEtas);
+
   arma::mat Binv;
   if (Ie.n_cols == 1) {
     Binv = arma::mat(Ie);

@@ -8,20 +8,32 @@ estQml <- function(model,
     stop("Only one eta allowed in QML estimation")
   }
   startTheta <- model$theta
-  mstep <- mstepQml(model = model, theta = startTheta, maxIter = maxIter, 
+  final <- mstepQml(model = model, theta = startTheta, maxIter = maxIter, 
                     negHessian = negHessian, verbose = verbose, ...)
-  coefficients <- mstep$par
-  finalModel <- fillModel(model, coefficients, fillPhi = TRUE)
-
+  coefficients <- final$par
+  finalModel <- fillModel(model, coefficients)
 
   info <- model$info
 
-  out <- list(model = finalModel, emptyModel = model,
-              coefficients=coefficients, startTheta = startTheta,
-              objective=-mstep$objective,
-              negHessian=mstep$hessian, mstep = mstep, info = info)
-  out$finalLogLik <- mstep$objective
-  out$iterations <- mstep$iterations
+  coefficients <- final$par
+  finalModel <- fillModel(model, coefficients)
+  finalModel$matricesNA <- model$matrices 
+  finalModel$matricesSE <- fillModel(model, calcSE(final$hessian))$matrices 
+  parTable <- finalModelToParTable(finalModel, method = "qml")
+
+  parTable$tvalue <- parTable$est / parTable$se
+  parTable$pvalue <- 2 * stats::pnorm(-abs(parTable$tvalue))
+  parTable$ciLower <- parTable$est - 1.96 * parTable$se
+  parTable$ciUpper <- parTable$est + 1.96 * parTable$se
+
+  out <- list(model = finalModel, 
+              theta = coefficients,
+              parTable = parTable,
+              originalParTable = model$parTable,
+              logLik = -final$objective, 
+              iterations = final$iterations,
+              convergence = final$convergence,
+              negHessian = final$hessian)
 
   class(out) <- "modsemQML"
   out

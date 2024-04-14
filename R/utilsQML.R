@@ -46,3 +46,16 @@ repPartitionedCols <- function(matrix, length = 1) {
   }
   out
 }
+
+
+# not finished yet
+calcStandardError.modsemQML <- function(object, ...) {
+  # not correct yet
+  H <- object$negHessian 
+  invH <- solve(H)
+  N <- object$object$info$N
+  gradient <- gradientLogLikQml(object$emptyModel, object$coefficients)
+  J <- outer(gradient, gradient)
+  Jstar <- (1 / N) * (invH %*% J %*% invH)
+  sqrt(diag(Jstar))
+}

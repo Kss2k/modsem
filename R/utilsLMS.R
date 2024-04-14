@@ -97,3 +97,25 @@ dMvn <- function(X, mean, sigma, log = FALSE, precision = FALSE) {
   return(tryCatch(mvnfast::dmvn(X, mean, sigma, log, ncores = 2),
             error = function(e) mvtnorm::dmvnorm(X, mean, sigma, log)))
 }
+
+
+calcSE <- function(negHessian, names = NULL) {
+  stdError <- tryCatch({
+      sqrt(diag(solve(negHessian)))
+    }, error=function(e) {
+      NA
+    }, warning=function(w) {
+       if (grepl("NaN", conditionMessage(w))) {
+         suppressWarnings(sqrt(diag(solve(negHessian))))
+      } else{
+         sqrt(diag(solve(negHessian)))
+      }
+    })
+  if (all(is.na(stdError))) 
+    warning("SE's could not be computed, negative Hessian is singular.")
+  if (any(is.nan(stdError))) 
+    warning("SE's for some coefficients could not be computed.") 
+  
+  if (!is.null(names)) names(stdError) <- names
+  stdError
+}

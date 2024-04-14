@@ -12,10 +12,12 @@ m1 <- '
 '
 # funnily enough, the starting parameters from the double centering approach
 # give better loglikelihoods than the ones arrived at by the EM algorithm
-# i.e., the loglikelyhodd decreases from the starting parameters
+# i.e., the loglikelihood decreases from the starting parameters
+startTime1 <- Sys.time()
 est1 <- modsem(m1, oneInt, method = "lms", 
                optimize = TRUE, verbose = TRUE,
                convergence = 1e-2, sampleGrad = NULL, maxstep = 1)
+duration1 <- Sys.time() - startTime1
 
 tpb <- ' 
 # Outer Model (Based on Hagger et al., 2007)
@@ -35,6 +37,9 @@ tpb <- '
   LBEH ~ LINT:LPBC  
 '
 
+startTime2 <- Sys.time()
 est2 <- modsem(tpb, TPB, method = "lms", optimize = TRUE, 
                verbose = TRUE, convergence = 1e-2, sampleGrad = NULL,
                 maxstep = 1)
+duration2 <- Sys.time() - startTime2
+
