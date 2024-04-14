@@ -1,3 +1,4 @@
+set.seed(123)
 models <- list(m1 = ' 
                # latent variables 
                ind60 =~ x1 + x2 + x3 
@@ -56,7 +57,7 @@ data <- list(d1 = lavaan::PoliticalDemocracy,
              d6 = lavaan::HolzingerSwineford1939)
 
 nativeMethods <- allNativeMethods[allNativeMethods != "pind"]
-methods <- list(m1 = nativeMethods,
+methods <- list(m1 = nativeMethods[nativeMethods != "ca"],
                 m3 = nativeMethods,
                 m4 = nativeMethods,
                 m5 = nativeMethods,

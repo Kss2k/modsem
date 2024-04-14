@@ -52,7 +52,7 @@ Description:
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.1
 LinkingTo: Rcpp, RcppArmadillo
 Imports: Rcpp, purrr, stringr, lavaan, rlang, MplusAutomation, nlme, R6, dplyr, 
   matlib, mvnfast, stats, gaussquad, mvtnorm

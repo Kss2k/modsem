@@ -15,7 +15,7 @@ m1 <- '
 # i.e., the loglikelihood decreases from the starting parameters
 startTime1 <- Sys.time()
 est1 <- modsem(m1, oneInt, method = "lms", 
-               optimize = TRUE, verbose = TRUE,
+               optimize = TRUE,
                convergence = 1e-2, sampleGrad = NULL, maxstep = 1)
 duration1 <- Sys.time() - startTime1
 
@@ -39,8 +39,8 @@ tpb <- '
 
 startTime2 <- Sys.time()
 est2 <- modsem(tpb, TPB, method = "lms", optimize = TRUE, 
-               verbose = TRUE, convergence = 1e-2, sampleGrad = NULL,
-                maxstep = 1)
+               convergence = 1e-2, sampleGrad = NULL,
+               maxstep = 1)
 duration2 <- Sys.time() - startTime2
 
 

@@ -25,9 +25,9 @@ logLikQml <- function(theta, model) {
 
   m$subPhi <- m$phi[seq_len(model$info$numXis), seq_len(model$info$numXis)]
   m$RER <- m$R %*% m$thetaEpsilon %*% t(m$R)
-  invRER <- matlib::inv(m$RER)
+  invRER <- solve(m$RER)
   m$LXPLX <- m$lambdaX %*% m$subPhi %*% t(m$lambdaX) + m$thetaDelta
-  invLXPLX <- matlib::inv(m$LXPLX)
+  invLXPLX <- solve(m$LXPLX)
 
   m$L1 <- m$subPhi %*% t(m$lambdaX) %*% invLXPLX
   #m$L1 <- diagPartitioned(m$subL1, numEta) 

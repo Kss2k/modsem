@@ -1,3 +1,4 @@
+set.seed(123)
 devtools::load_all()
 m1 <- '
 X =~ x1 + x2 + x3
@@ -7,4 +8,4 @@ Y ~ X + Z + X:Z
 '
 
 est1 <- modsem(m1, data = oneInt, convergence = 1e-2,
-               method = "qml", maxIter = 10000, verbose = TRUE)
+               method = "qml")
