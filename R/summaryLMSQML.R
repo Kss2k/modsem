@@ -35,6 +35,11 @@ summaryLmsAndQml <- function(object, H0 = TRUE, verbose = TRUE,
     out$D <- calcD(estH0, object)
   } 
 
+  if (r.squared) {
+    out$r.squared <- calcRsquared(parTable)
+    if (H0) out$r.squared$H0 <- calcRsquared(estH0$parTable)
+  }
+
   class(out) <- "summaryModsemLMS_QML"
   out
 }
@@ -42,7 +47,7 @@ summaryLmsAndQml <- function(object, H0 = TRUE, verbose = TRUE,
 
 #' @export
 print.summaryModsemLMS_QML <- function(x, digits = 3, ...) {
-  cat("\nModel summary:\n")
+  cat("\n----Model summary------------------------------------------------------\n")
   cat("\nNumber of iterations:", x$iterations, "\nFinal loglikelihood:",
     round(x$logLik, 3), "\n") 
   maxWidth <- max(vapply(x$parTable$rhs[x$parTable$rhs != "1"], 
@@ -55,14 +60,34 @@ print.summaryModsemLMS_QML <- function(x, digits = 3, ...) {
     cat("\nComparative fit to H0 (no interaction effect)\n",
         paste0("D(", x$D$df, ") = ", format(x$D$D, digits = 2), 
                ", p = ", format.pval(x$D$p), "\n"))
+  } 
+
+  if (!is.null(x$r.squared)) {
+    cat("\nR-squared:\n")
+    for (i in seq_along(x$r.squared$eta)) {
+      cat("  ", x$r.squared$eta[[i]], "=", 
+          format(x$r.squared$Rsqr[[i]], digits = 2), "\n")
+    }
+    if (!is.null(x$r.squared$H0)) {
+      cat("\nR-squared Null-Model (H0):\n")
+      for (i in seq_along(x$r.squared$H0$eta)) {
+        cat("  ", x$r.squared$H0$eta[[i]], "=", 
+            format(x$r.squared$H0$Rsqr[[i]], digits = 2), "\n")
+      }
+      cat("\nR-squared Change:\n")
+      for (i in seq_along(x$r.squared$H0$eta)) {
+        cat("  ", x$r.squared$H0$eta[[i]], "=", 
+            format(x$r.squared$Rsqr[[i]] - x$r.squared$H0$Rsqr[[i]], 
+                   digits = 2), "\n")
+      }
+    }
   }
 
-  cat("\nEstimates:\n")
+  cat("\n----Estimates----------------------------------------------------------\n")
   printLambda(x$parTable)
   printGamma(x$parTable)
   printIntercepts(x$parTable)
   printVariances(x$parTable)
-
 }
 
 
@@ -97,7 +122,7 @@ print.modsemQML <- function(x, digits = 3, ...) {
 
 
 strippedColnames <- c("variable", "est", "std.error", 
-                        "t.value", "p.value", "ci.lower", "ci.upper")
+                      "t.value", "p.value", "ci.lower", "ci.upper")
 
 
 printLambda <- function(parTable, digits = 3) {
@@ -175,4 +200,26 @@ calcD <- function(estH0, estH1) {
 
   p <- stats::qchisq(p = D, df = df, log = TRUE)
   list(D = D, df = df, p = p) 
+}
+
+
+calcRsquared <- function(parTable) {
+  parTable$mod <- as.character(parTable$est)
+  parTable <- parTable[c("lhs", "op", "rhs", "mod")]
+
+  etas <- parTable$lhs[parTable$op == "~" & 
+                       parTable$rhs != "1"] |>
+    unique()
+  variances <- residuals <- Rsqr <- vector("numeric", length(etas))
+  for (i in seq_along(etas)) {
+    variances[[i]] <- parse(text = tracePath(parTable, etas[[i]], etas[[i]])) |>
+      eval()
+    residuals[[i]] <- parTable$mod[parTable$lhs == etas[[i]] & 
+                                   parTable$op == "~~" &
+                                   parTable$rhs == etas[[i]]] |>
+      as.numeric()
+    Rsqr[[i]] <- 1 - residuals[[i]] / variances[[i]]
+  }
+  data.frame(eta = etas, variance = variances, 
+             residual = residuals, Rsqr = Rsqr) 
 }

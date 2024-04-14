@@ -94,7 +94,7 @@ lapplyNamed <- function(X, FUN, ..., names = X) {
 dMvn <- function(X, mean, sigma, log = FALSE, precision = FALSE) {
   if (precision) return(mvtnorm::dmvnorm(X, mean, sigma, log))
   sigma <- round(sigma, 12)
-  return(tryCatch(mvnfast::dmvn(X, mean, sigma, log, ncores = 2),
+  return(tryCatch(mvnfast::dmvn(X, mean, sigma, log),
             error = function(e) mvtnorm::dmvnorm(X, mean, sigma, log)))
 }
 
