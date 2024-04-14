@@ -130,8 +130,8 @@ maxDepth <- function(list, max = 2, depth = 1) {
 }
 
 
-capturePrint <- function(x) {
-  paste(utils::capture.output(print(x)), collapse = "\n")
+capturePrint <- function(x, ...) {
+  paste(utils::capture.output(print(x, ...)), collapse = "\n")
 }
 
 

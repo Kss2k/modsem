@@ -58,8 +58,8 @@ logLikQml <- function(theta, model) {
 }
 
 
-gradientLogLikQml <- function(model, theta, dt = 1e-10) {
-  baseline <- logLikQml(theta, model)
+gradientLogLikQml <- function(model, theta, baseline = NULL, dt = 1e-10) {
+  if (is.null(baseline)) baseline <- logLikQml(theta, model)
   vapply(seq_along(theta), FUN.VALUE = numeric(1L), FUN = function(i) {
     itheta <- theta
     itheta[[i]] <- itheta[[i]] + dt
@@ -68,11 +68,20 @@ gradientLogLikQml <- function(model, theta, dt = 1e-10) {
 }
 
 
+newtonRaphson <- function(model, theta, baseline = NULL, ...) {
+  if (is.null(baseline)) baseline <- logLikQml(theta, model)
+  theta - baseline / gradientLogLikQml(model, theta)
+  theta 
+}
+
+
 mstepQml <- function(model, theta, negHessian = TRUE,
                      maxIter = 150, verbose = FALSE,
+                     convergence = 1e-2,
                      control = list(), ...) {
   control$iter.max <- maxIter
   control$eval.max <- maxIter * 2
+  control$rel.tol <- convergence
   if (verbose) cat("Starting M-step\n")
   est <- stats::nlminb(start = theta, objective = logLikQml,
                 model = model,
@@ -82,7 +91,8 @@ mstepQml <- function(model, theta, negHessian = TRUE,
   if (negHessian){
     if (verbose) cat("Calculating Hessian\n") 
     est$hessian <- nlme::fdHess(pars=est$par, fun = logLikQml,
-                          model=model)$Hessian
+                                model = model, 
+                                .relStep = .Machine$double.eps^(1/5))$Hessian
   }
   est
 }

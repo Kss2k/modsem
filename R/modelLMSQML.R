@@ -309,12 +309,11 @@ fetch <- function(x, pattern = ".*") {
 }
 
 
-stripModel <- function(model, fill = -1) {
-  model$matrices <- lapply(model$matrices, function(mat) {
+stripMatrices <- function(matrices, fill = -1) {
+  lapply(matrices, function(mat) {
     mat[!is.na(mat)] <- fill
     mat
   })
-  model
 }
 
 
@@ -577,13 +576,19 @@ finalModelToParTable <- function(finalModel, method = "lms") {
   etas <- finalModel$info$etas
   numXis <- finalModel$info$numXis
   parTable <- NULL
+
   # Coefficients Measurement Model 
+  matricesNA$lambdaX[matricesEst$lambdaX == 1] <- NA
+  matricesSE$lambdaX[matricesEst$lambdaX == 1] <- NA
   newRows <- matrixToParTable(matricesNA$lambdaX,
                               matricesEst$lambdaX,
                               matricesSE$lambdaX, 
                               op = "=~",
                               rowsLhs = FALSE)
   parTable <- rbind(parTable, newRows)
+
+  matricesNA$lambdaY[matricesEst$lambdaX == 1] <- NA
+  matricesSE$lambdaY[matricesEst$lambdaX == 1] <- NA
   newRows <- matrixToParTable(matricesNA$lambdaY,
                               matricesEst$lambdaY,
                               matricesSE$lambdaY, 

@@ -9,6 +9,7 @@ estQml <- function(model,
   }
   startTheta <- model$theta
   final <- mstepQml(model = model, theta = startTheta, maxIter = maxIter, 
+                    convergence = convergence,
                     negHessian = negHessian, verbose = verbose, ...)
   coefficients <- final$par
   finalModel <- fillModel(model, coefficients)
