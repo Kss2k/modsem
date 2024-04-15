@@ -47,13 +47,16 @@ summaryLmsAndQml <- function(object, H0 = TRUE, verbose = TRUE,
 
 #' @export
 print.summaryModsemLMS_QML <- function(x, digits = 3, ...) {
-  cat("\n----Model summary------------------------------------------------------\n")
+  cat("\n----Model Summary------------------------------------------------------\n")
   cat("\nNumber of iterations:", x$iterations, "\nFinal loglikelihood:",
     round(x$logLik, 3), "\n") 
   maxWidth <- max(vapply(x$parTable$rhs[x$parTable$rhs != "1"], 
                          FUN.VALUE = numeric(1), FUN = nchar))
   x$parTable$rhs[x$parTable$rhs != "1"] <- 
     stringr::str_pad(x$parTable$rhs[x$parTable$rhs != "1"], 
+                     width = maxWidth, side = "left")
+  x$parTable$lhs[x$parTable$rhs == "1"] <- 
+    stringr::str_pad(x$parTable$lhs[x$parTable$rhs == "1"], 
                      width = maxWidth, side = "left")
   colnames(x$parTable)[[3]] <- "variable"
   if (!is.null(x$D)) {
@@ -63,22 +66,34 @@ print.summaryModsemLMS_QML <- function(x, digits = 3, ...) {
   } 
 
   if (!is.null(x$r.squared)) {
+    r.squared <- x$r.squared
+    r.squared$Rsqr <- format(r.squared$Rsqr, digits = 3)
+    maxWidth <- max(vapply(r.squared$Rsqr, 
+                           FUN.VALUE = numeric(1), FUN = nchar))
+    r.squared$Rsqr <- stringr::str_pad(r.squared$Rsqr, 
+                                        width = maxWidth, side = "left")
     cat("\nR-squared:\n")
-    for (i in seq_along(x$r.squared$eta)) {
-      cat("  ", x$r.squared$eta[[i]], "=", 
-          format(x$r.squared$Rsqr[[i]], digits = 2), "\n")
+    for (i in seq_along(r.squared$eta)) {
+      cat("  ", r.squared$eta[[i]], "=", r.squared$Rsqr[[i]], "\n")
     }
-    if (!is.null(x$r.squared$H0)) {
-      cat("\nR-squared Null-Model (H0):\n")
-      for (i in seq_along(x$r.squared$H0$eta)) {
-        cat("  ", x$r.squared$H0$eta[[i]], "=", 
-            format(x$r.squared$H0$Rsqr[[i]], digits = 2), "\n")
+    if (!is.null(r.squared$H0)) {
+      r.squared$H0$Rsqr <- format(r.squared$H0$Rsqr, digits = 3)
+      maxWidth <- max(vapply(r.squared$H0$Rsqr, 
+                             FUN.VALUE = numeric(1), FUN = nchar))
+      r.squared$H0$Rsqr <- stringr::str_pad(r.squared$H0$Rsqr, 
+                                             width = maxWidth, side = "left")
+      cat("R-squared Null-Model (H0):\n")
+      for (i in seq_along(r.squared$H0$eta)) {
+        cat("  ", r.squared$H0$eta[[i]], "=", 
+            format(r.squared$H0$Rsqr[[i]], digits = 2), "\n")
       }
-      cat("\nR-squared Change:\n")
-      for (i in seq_along(x$r.squared$H0$eta)) {
-        cat("  ", x$r.squared$H0$eta[[i]], "=", 
-            format(x$r.squared$Rsqr[[i]] - x$r.squared$H0$Rsqr[[i]], 
-                   digits = 2), "\n")
+
+      # Calculate Change (using unformatted Rsquared) 
+      r.squared$H0$diff <- format(x$r.squared$Rsqr - x$r.squared$H0$Rsqr, 
+                                  digits = 3)
+      cat("R-squared Change:\n")
+      for (i in seq_along(r.squared$H0$eta)) {
+        cat("  ", x$r.squared$H0$eta[[i]], "=", r.squared$H0$diff[[i]], "\n")
       }
     }
   }
@@ -210,9 +225,28 @@ calcRsquared <- function(parTable) {
   etas <- parTable$lhs[parTable$op == "~" & 
                        parTable$rhs != "1"] |>
     unique()
+  # Calculate Variances of Interaction Terms
+  intTerms <- parTable[grepl(":", parTable$rhs), ]
+  for (i in seq_len(nrow(intTerms))) {
+    # interaction term = XY
+    XY <- stringr::str_split_fixed(intTerms[i, "rhs"], ":", 2) 
+    varX <- parse(text = tracePath(parTable, XY[[1]], XY[[1]])) |>
+      eval()
+    varY <- parse(text = tracePath(parTable, XY[[2]], XY[[2]])) |>
+      eval()
+    covXY <- parse(text = tracePath(parTable, XY[[1]], XY[[2]])) |>
+      eval()
+    newRow <- data.frame(lhs = intTerms[i, "rhs"],
+                         op = "~~",
+                         rhs = intTerms[i, "rhs"],
+                         mod = as.character(varX * varY + covXY ^ 2))
+    parTable <- rbind(parTable, newRow)
+  }
+  # Calculate Variances/R squared of Etas
   variances <- residuals <- Rsqr <- vector("numeric", length(etas))
   for (i in seq_along(etas)) {
-    variances[[i]] <- parse(text = tracePath(parTable, etas[[i]], etas[[i]])) |>
+    variances[[i]] <- parse(text = tracePath(parTable, 
+                                             etas[[i]], etas[[i]])) |>
       eval()
     residuals[[i]] <- parTable$mod[parTable$lhs == etas[[i]] & 
                                    parTable$op == "~~" &
