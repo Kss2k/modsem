@@ -56,6 +56,13 @@ sigmaLms <- function(model, z1) {
   diag(OI) <- c(rep(0, k), rep(1, model$info$numXis - k))
 
   select <- matrices$selectionMatrixOmega
+
+  phiEta <- 
+    ((Binv %*% (Gx %*% subA + (t(zMat) %*% t(A) %*% Oxx %*% A) %*% select)) %*%
+                 OI %*%
+    t(Binv %*% (Gx %*% subA + (t(zMat) %*% t(A) %*% Oxx %*% A) %*% select))) +
+    (Binv %*% psi %*% t(Binv))
+
   Sxx <- lX %*% subA %*% OI %*%  
     t(subA) %*% t(lX) + dX
   Sxy <- lX %*% (subA %*% OI %*% 

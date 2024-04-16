@@ -5,6 +5,7 @@ specifyLmsModel <- function(syntax, data, method = "lms", m = 16) {
   structExprs <- parTable[parTable$op == "~" & 
                           parTable$rhs != "1", ]
   measrExprs <- parTable[parTable$op == "=~", ]
+
   # Etas ------------------------------------------------------------------------
   etas <- structExprs$lhs |>
     unique()
@@ -462,9 +463,13 @@ sortXisAndOmega <- function(xis, intXis, etas, intTerms) {
                          dimnames = list(sortedXis, etas))
   omegaEtaXi <- NULL
   for (eta in etas) {
-    lapply(intXis[intTerms$lhs == eta],
-            FUN = function(row) 
-              if (any(row %in% etas)) subOmegaEtaXi[row[[2]], row[[1]]] <<- NA)
+    lapply(intXis[intTerms$lhs == eta], FUN = function(row) {
+       if (any(row %in% etas) & !all(row %in% etas)) {
+         whichXi <- which(!row %in% etas)
+         whichEta <- which(row %in% etas)
+         subOmegaEtaXi[row[[whichXi]], row[[whichEta]]] <<- NA
+       }
+    })
     if (is.null(omegaEtaXi)) {
       omegaEtaXi <- subOmegaEtaXi
       next
@@ -491,10 +496,10 @@ removeInteractions <- function(model) {
 # Calculate weights and node points for mixture functions via Gauss-Hermite
 # quadrature as defined in Klein & Moosbrugger (2000)
 quadrature <- function(m, k) {
-  if (k == 0) return(list(n = data.frame(0), w = 1, k = 0, m = m))
+  if (k == 0) return(list(n = matrix(0), w = 1, k = 0, m = m))
   singleDimGauss <- gaussquad::hermite.h.quadrature.rules(m)[[m]]
   nodes <- lapply(seq_len(k), function(k) singleDimGauss$x) |>
-    expand.grid()
+    expand.grid() |> as.matrix()
   weights <- lapply(seq_len(k), function(k) singleDimGauss$w) |>
     expand.grid() |> apply(MARGIN = 1, prod)
   list(n = nodes * sqrt(2), w = weights * pi ^ (-k/2), k = k, m = m)
