@@ -1,7 +1,7 @@
 Package: modsem
 Type: Package
 Title: Latent Interaction (and Moderation) Analysis in Structural Equation Models (SEM)
-Version: 0.1.0
+Version: 0.1.1
 Authors@R: 
     person(given = "Kjell", family = "Solem Slupphaug", 
            email = "slupphaugkjell@gmail.com", role = c("aut", "cre"),
@@ -43,9 +43,6 @@ Description:
     Muthén, L.K. and Muthén, B.O. (1998-2017).  
       "'Mplus' User’s Guide.  Eighth Edition."
       <https://www.statmodel.com/>.
-    Umbach N, Naumann K, Brandt H, Kelava A (2017). 
-      "Fitting Nonlinear Structural Equation Models in R with Package 'nlsem'."
-      <doi:10.18637/jss.v077.i07>.
     Rosseel Y (2012). 
       <doi:10.18637/jss.v048.i02>.
       "'lavaan': An R Package for Structural Equation Modeling." 

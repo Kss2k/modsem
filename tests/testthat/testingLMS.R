@@ -34,13 +34,12 @@ tpb <- '
   # Causal Relationsships
   LINT ~ gIa * LATT + gIsn * LSN + gIpbc * LPBC
   LBEH ~ LINT + LPBC 
-  LBEH ~ LINT:LPBC  
+  LBEH ~ LPBC:LINT
 '
 
 startTime2 <- Sys.time()
 est2 <- modsem(tpb, TPB, method = "lms", optimize = TRUE, 
                convergence = 1e-2, sampleGrad = NULL,
-               maxstep = 1)
+               maxstep = 1, #control = list(iter.max = 10, rel.tol = 1e-4), verbose = TRUE,
+)
 duration2 <- Sys.time() - startTime2
-
-

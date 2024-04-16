@@ -53,8 +53,21 @@ m1 <- '
   Y ~ X + Z + X:Z 
 '
 
-est1 <- modsem(m1, oneInt)
-summary(est1)
+# Double centering approach
+est1Dblcent <- modsem(m1, oneInt)
+summary(est1Dblcent)
+
+# Constrained approach
+est1Ca <- modsem(m1, oneInt, method = "ca")
+summary(est1Ca)
+
+# QML approach 
+est1Qml <- modsem(m1, oneInt, method = "qml")
+summary(est1Qml) 
+
+# LMS approach 
+est1Lms <- modsem(m1, oneInt, method = "lms") 
+summary(est1Lms)
 ```
 
 ## Theory Of Planned Behavior
@@ -123,7 +136,8 @@ m4 <- '
   Y ~ X + Z + G + H + X:Z + G:H
 '
 
-est4 <- modsem(m4, twoInt)
+# Using unconstrained approach
+est4 <- modsem(m4, twoInt, method = "uca")
 summary(est4)
 ```
 
@@ -140,6 +154,7 @@ m5 <- '
   Y ~ X + Z + G + X:Z:G
 '
 
-est5 <- modsem(m5, tripleInt, standardizeData = TRUE)
+# Residual centering approach
+est5 <- modsem(m5, tripleInt, standardizeData = TRUE, method = "rca")
 summary(est5)
 ```
