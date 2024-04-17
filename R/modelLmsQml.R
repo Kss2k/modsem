@@ -25,13 +25,12 @@ specifyLmsModel <- function(syntax, data, method = "lms", m = 16) {
   # Xis and Interaction Terms --------------------------------------------------
   intTerms <- structExprs[grepl(":", structExprs$rhs), ] 
   
-  # Xis in interaction terms
-  intsXis <- lapplyNamed(intTerms$rhs,
+  # variablese in interaction terms
+  varsInts <- lapplyNamed(intTerms$rhs,
                          FUN = stringr::str_split_1,
                          pattern = ":",
-                         names = stringr::str_remove_all(intTerms$rhs,
-                                                         ":"))
-  allXisInInts <- unique(unlist(intsXis))
+                         names = stringr::str_remove_all(intTerms$rhs, ":"))
+  allVarsInInts <- unique(unlist(varsInts))
   
   # now etas are included as xis, but their loadings are in lambdaX is 0
   xis <- parTable[parTable$op == "=~" &
@@ -39,7 +38,7 @@ specifyLmsModel <- function(syntax, data, method = "lms", m = 16) {
   if (length(xis) == 0) stop("No xis in model")
 
   # Sorting Xis so that it is ordered with the xis in interactions first
-  omegaAndSortedXis <- sortXisAndOmega(xis, intsXis, etas, intTerms)
+  omegaAndSortedXis <- sortXisAndOmega(xis, varsInts, etas, intTerms)
   xis <- omegaAndSortedXis$sortedXis
   numXis <- length(xis)
 
@@ -231,7 +230,7 @@ specifyLmsModel <- function(syntax, data, method = "lms", m = 16) {
                      indsEtas = indsEtas,
                      allIndsEtas = allIndsEtas,
                      xis = xis,
-                     intXis = intsXis,
+                     varsInts = varsInts,
                      numXis = numXis,
                      indsXis = indsXis,
                      allIndsXis = allIndsXis,
@@ -302,19 +301,6 @@ createParamVector <- function(model, start = NULL) {
     )
   }
   theta
-}
-
-
-fetch <- function(x, pattern = ".*") {
-  x[grepl(pattern, names(x))]
-}
-
-
-stripMatrices <- function(matrices, fill = -1) {
-  lapply(matrices, function(mat) {
-    mat[!is.na(mat)] <- fill
-    mat
-  })
 }
 
 
@@ -397,40 +383,20 @@ fillSymmetric <- function(mat, values) {
 }
 
 
-convertPhi <- function(phi) {
-  A <- tryCatch(t(chol(phi)),
-                error=function(e)
-                  diag(1, nrow(phi)))
-  A
-}
-
-
-convertPhiTheta <- function(model, theta) {
-  matrices <- model$matrices
-  phi <- matrices$phi
-  A <- tryCatch(t(chol(phi)),
-                error=function(e)
-                  diag(1, nrow(phi)))
-  theta[grep("phi", names(theta))] <- A[lower.tri(A, diag=TRUE)
-                                        & is.na(model$matrices$phi)]
-  theta
-}
-
-
-varsInIntCombos <- function(xis, intXis) {
-  any(vapply(intXis, FUN.VALUE = logical(1L),
+varsInIntCombos <- function(xis, varsInts) {
+  any(vapply(varsInts, FUN.VALUE = logical(1L),
              FUN = function(combo) all(xis %in% combo) &&
                length(unique(xis)) == length(xis)))
 }
 
 
-sortXisAndOmega <- function(xis, intXis, etas, intTerms) {
+sortXisAndOmega <- function(xis, varsInts, etas, intTerms) {
   # i <= k, i < j, i = row, j = col
-  allXisInInts <- unique(unlist(intXis))
-  sortedXis <- c(allXisInInts, xis[!xis %in% allXisInInts])
+  allVarsInInts <- unique(unlist(varsInts))
+  sortedXis <- c(allVarsInInts, xis[!xis %in% allVarsInInts])
 
   nonLinearXis <- character(0L)
-  for (interaction in intXis) {
+  for (interaction in varsInts) {
     if (!any(interaction %in% nonLinearXis)) {
       if (all(interaction %in% etas)) 
         stop("Interactions between two endogenous variables are not allowed")
@@ -445,7 +411,7 @@ sortXisAndOmega <- function(xis, intXis, etas, intTerms) {
                         dimnames = list(sortedXis, sortedXis))
   omegaXiXi <- NULL
   for (eta in etas) {
-    lapply(intXis[intTerms$lhs == eta],
+    lapply(varsInts[intTerms$lhs == eta],
             FUN = function(row)
               if (all(row %in% sortedXis)) subOmegaXiXi[row[[1]], row[[2]]] <<- NA)
     if (is.null(omegaXiXi)) {
@@ -463,7 +429,7 @@ sortXisAndOmega <- function(xis, intXis, etas, intTerms) {
                          dimnames = list(sortedXis, etas))
   omegaEtaXi <- NULL
   for (eta in etas) {
-    lapply(intXis[intTerms$lhs == eta], FUN = function(row) {
+    lapply(varsInts[intTerms$lhs == eta], FUN = function(row) {
        if (any(row %in% etas) & !all(row %in% etas)) {
          whichXi <- which(!row %in% etas)
          whichEta <- which(row %in% etas)
@@ -483,13 +449,6 @@ sortXisAndOmega <- function(xis, intXis, etas, intTerms) {
   }
   list(sortedXis = sortedXis, omegaXiXi = omegaXiXi, omegaEtaXi = omegaEtaXi,
        k = length(nonLinearXis))
-}
-
-
-removeInteractions <- function(model) {
-  model$matrices$OmegaEtaXi[TRUE] <- 0 
-  model$matrices$OmegaXiXi[TRUE] <- 0
-  model
 }
 
 

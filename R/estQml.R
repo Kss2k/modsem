@@ -4,9 +4,9 @@ estQml <- function(model,
                   maxIter = 1000,
                   negHessian = TRUE,
                   ...) {
-  if (model$info$numEtas > 1) {
-    stop("Only one eta allowed in QML estimation")
-  }
+  #if (model$info$numEtas > 1) {
+  #  stop("Only one eta allowed in QML estimation")
+  #}
   startTheta <- model$theta
   final <- mstepQml(model = model, theta = startTheta, maxIter = maxIter, 
                     convergence = convergence,

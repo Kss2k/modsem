@@ -17,8 +17,8 @@ logLikQml <- function(theta, model) {
     m$R[is.na(m$R)] <- -m$lambdaY[!m$selectScalingY] # fill R with -Beta
     m$u <- m$y %*% t(m$R)
     m$Beta <- m$lambdaY[m$selectBetaRows, ]
-  } else u <- 0
-
+  } else m$u <- 0
+  
   m$subThetaEpsilon <- m$subThetaEpsilon
   m$subThetaEpsilon[is.na(m$subThetaEpsilon)] <- 
     m$thetaEpsilon[m$selectThetaEpsilon]
@@ -58,23 +58,6 @@ logLikQml <- function(theta, model) {
 }
 
 
-gradientLogLikQml <- function(model, theta, baseline = NULL, dt = 1e-10) {
-  if (is.null(baseline)) baseline <- logLikQml(theta, model)
-  vapply(seq_along(theta), FUN.VALUE = numeric(1L), FUN = function(i) {
-    itheta <- theta
-    itheta[[i]] <- itheta[[i]] + dt
-    (logLikQml(itheta, model) - baseline) / dt
-  })
-}
-
-
-newtonRaphson <- function(model, theta, baseline = NULL, ...) {
-  if (is.null(baseline)) baseline <- logLikQml(theta, model)
-  theta - baseline / gradientLogLikQml(model, theta)
-  theta 
-}
-
-
 mstepQml <- function(model, theta, negHessian = TRUE,
                      maxIter = 150, verbose = FALSE,
                      convergence = 1e-2,
@@ -96,5 +79,3 @@ mstepQml <- function(model, theta, negHessian = TRUE,
   }
   est
 }
-
-

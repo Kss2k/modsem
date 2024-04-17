@@ -1,20 +1,19 @@
 emLms <- function(model, verbose = FALSE,
                convergence = 1e-02, maxiter = 500,
-               maxstep = 1, 
+               maxstep = 1,
                breakOnLogLikIncrease = FALSE,
-               changeToPrecision = 30,
                sampleGrad = NULL,
+               control = list(),
                ...) {
   data <- model$data
   if (anyNA(data)) stop("Remove or replace missing values from data")
-
-  logLikRet <- NULL
+  
+  # Initialization
   logLikNew <- 0
-  logLikOld <- Inf
+  logLikOld <- 1.0e+10
   iterations <- 0     
   thetaNew <- model$theta
   nLogIncreased <- 0
-  precision <- FALSE
   run <- TRUE
   while(run) { # as long as no convergence is reached
     if (logLikNew - logLikOld > 0 && iterations > 3) {
@@ -25,28 +24,19 @@ emLms <- function(model, verbose = FALSE,
         break
       }
       nLogIncreased <- nLogIncreased + 1
-      if (!precision && nLogIncreased > changeToPrecision) {
-        precision <- TRUE 
-        maxstep <- 1
-      }
     }
-
     # Update loglikelihood
     logLikOld <- logLikNew
     thetaOld <- thetaNew
 
-    # E-step
-    P <- estepLms(model = model, theta = thetaOld, dat = data, 
-                  precision = precision, ...)
-    # M-step
+    P <- estepLms(model = model, theta = thetaOld, dat = data, ...)
     mstep <- mstepLms(model = model, P = P, dat = data,
                       theta = thetaOld, maxstep = maxstep, ...,
                       sampleGrad = sampleGrad,
-                      precision = precision)
+                      control = control)
 
-    logLikNew   <- mstep$objective
-    logLikRet   <- c(logLikRet, logLikNew)
-    thetaNew  <- unlist(mstep$par)
+    logLikNew <- mstep$objective
+    thetaNew <- unlist(mstep$par)
     iterations <- iterations + 1
 
     if (verbose) {
@@ -63,7 +53,8 @@ emLms <- function(model, verbose = FALSE,
   final <- mstepLms(model = model, P = P, dat = data,
                     theta = thetaNew, negHessian = TRUE,
                     maxstep = maxstep, sampleGrad = NULL, 
-                    verbose = verbose, ...)
+                    verbose = verbose, control = control,
+                    ...)
 
   coefficients <- final$par
   finalModel <- fillModel(model, coefficients, fillPhi = TRUE)
