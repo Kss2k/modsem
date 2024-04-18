@@ -3,3 +3,4 @@
 ^LICENSE\.md$
 ^\.git*
 ^tests/testthat/mplusResults* 
+sketches

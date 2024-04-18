@@ -62,6 +62,21 @@
 #' est1 <- modsem(m1, oneInt)
 #' summary(est1)
 #' 
+#' \dontrun{
+#' # The Constrained Approach 
+#' est1Constrained <- modsem(m1, oneInt, method = "ca")
+#' summary(est1Constrained)
+#'
+#' # LMS approach
+#' est1LMS <- modsem(m1, oneInt, method = "lms")
+#' summary(est1LMS)
+#'
+#' # QML approach
+#' est1QML <- modsem(m1, oneInt, method = "qml")
+#' summary(est1QML)
+#' 
+#' }
+#' 
 #' # Theory Of Planned Behavior
 #' tpb <- ' 
 #' # Outer Model (Based on Hagger et al., 2007)
@@ -84,6 +99,16 @@
 #' # double centering approach
 #' estTpb <- modsem(tpb, data = TPB)
 #' summary(estTpb)
+#'
+#' \dontrun{
+#' # The Constrained Approach 
+#' estTpbConstrained <- modsem(tpb, data = TPB, method = "ca")
+#' summary(estTpbConstrained)
+#'
+#' # LMS approach
+#' estTpbLMS <- modsem(tpb, data = TPB, method = "lms")
+#' summary(estTpbLMS)
+#' }
 modsem <- function(modelSyntax = NULL,
                    data = NULL,
                    method = "dblcent",
