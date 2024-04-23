@@ -4,11 +4,11 @@ modsem.LMS <- function(modelSpec,
                        qml = TRUE,
                        verbose = FALSE, 
                        optimize = TRUE,
-                       m = 16, 
+                       nodes = 16, 
                        convergence = 1e-2,
                        ...) {
   model <- specifyLmsModel(modelSpec$modelSyntax, data = data, 
-                           method = method, m = m)
+                           method = method, m = nodes)
   if (optimize) model <- optimizeStartingParamsLms(model)
   switch(method, 
          "qml" = estQml(model, verbose = verbose, 
