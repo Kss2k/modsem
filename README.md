@@ -1,3 +1,13 @@
+<img src="ModSEM.png" alt="Logo" width="100" height="100" class="logo">
+
+<style>
+.logo {
+  position: absolute;
+  top: 10px; /* Adjust the top position */
+  right: 10px; /* Adjust the right position */
+}
+</style>
+
 # ModSEM
 This is a package which allows you to perform interactions between latent variables (i.e., moderation) in CB-SEM. See https://bookdown.org/slupphaugkjell/quartomodsem/ for a tutorial.
 
