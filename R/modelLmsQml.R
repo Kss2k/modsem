@@ -107,16 +107,10 @@ specifyLmsModel <- function(syntax, data, method = "lms", m = 16) {
                 dimnames = list(etas, etas))
   diag(psi) <- NA
 
-  phi <- diag(numXis * numEtas)
-  colnames(phi) <- rownames(phi) <- rep(xis, numEtas)
-  subPhi <- diag(numXis)
-  colnames(subPhi) <- rownames(subPhi) <- xis
-  subA <- subPhi
-  subA[lower.tri(subA, diag = TRUE)] <- NA
-  A <- matrix(0, nrow = numXis * numEtas, ncol = numXis * numEtas,
-              dimnames = list(rep(xis, numEtas), 
-                              rep(xis, numEtas)))
-  A[seq_len(numXis), seq_len(numXis)] <- subA 
+  phi <- diag(numXis)
+  colnames(phi) <- rownames(phi) <- xis 
+  A <- phi
+  A[lower.tri(A, diag = TRUE)] <- NA
   if (method == "qml") {
     phi <- A 
     A[TRUE] <- 0
@@ -139,24 +133,6 @@ specifyLmsModel <- function(syntax, data, method = "lms", m = 16) {
   omegaEtaXi <- omegaAndSortedXis$omegaEtaXi
   omegaXiXi <- omegaAndSortedXis$omegaXiXi
 
-  selectionMatrixOmega <- rep(diag(numXis), numEtas) |> 
-    matrix(ncol = numXis, byrow = TRUE)
-  selectionMatrixOmegaEtaXi <- rep(diag(numEtas), numEtas) |> 
-    matrix(ncol = numEtas, byrow = TRUE)
-  collapseOmegaXiXi <- matrix(0, nrow = numXis * numEtas, ncol = numEtas,
-                             dimnames = list(rep(xis, numEtas), etas))
-  subsetRows <- seq_len(numXis)
-
-  for (i in seq_len(numEtas)) {
-    collapseOmegaXiXi[subsetRows + (i - 1) * numXis, i] <- rep(1, numXis)
-  }
-  collapseOmegaEtaXi <- matrix(0, nrow = numEtas * numEtas, ncol = numEtas,
-                             dimnames = list(rep(etas, numEtas), etas))
-  subsetRows <- seq_len(numEtas)
-  for (i in seq_len(numEtas)) {
-    collapseOmegaEtaXi[subsetRows + (i - 1) * numEtas, i] <- rep(1, numEtas)
-  }
-  
   # Select scaling variables for qml 
   selectScalingY <- !is.na(lambdaY)
   selectBetaRows <- apply(lambdaY, MARGIN = 1, 
@@ -212,10 +188,6 @@ specifyLmsModel <- function(syntax, data, method = "lms", m = 16) {
     alpha = alpha,
     omegaEtaXi = omegaEtaXi,
     omegaXiXi = omegaXiXi,
-    selectionMatrixOmega = selectionMatrixOmega,
-    selectionMatrixOmegaEtaXi = selectionMatrixOmegaEtaXi,
-    collapseOmegaXiXi = collapseOmegaXiXi,
-    collapseOmegaEtaXi = collapseOmegaEtaXi,
     selectScalingY = selectScalingY,
     selectThetaEpsilon = selectThetaEpsilon,
     selectBetaRows = selectBetaRows,
@@ -317,7 +289,7 @@ fillModel <- function(model, theta, fillPhi = FALSE) {
     fetch(theta, "thetaDelta[0-9]*")
   matrices$thetaEpsilon[is.na(matrices$thetaEpsilon)] <-
     fetch(theta, "thetaEpsilon[0-9]*")
-  matrices$A <- fillMatrixA(theta, matrices, model)
+  matrices$A[is.na(matrices$A)] <- fetch(theta, "^A[0-9]*$")
   matrices$phi <- fillMatrixPhi(theta, matrices, model)
   matrices$psi[is.na(matrices$psi)] <-
     fetch(theta, "^psi[0-9]*$")
@@ -343,36 +315,10 @@ fillModel <- function(model, theta, fillPhi = FALSE) {
 
 fillMatrixPhi <- function(theta, matrices, model) {
   if (!any(is.na(matrices$phi))) return(matrices$phi)
-  numXis <- model$info$numXis
-  numEtas <- model$info$numEtas
-  etas <- model$info$etas
-  xis <- model$info$xis
-  matrices$phi[is.na(matrices$phi)] <- fetch(theta, "^phi[0-9]*")
-  # converting back to Phi
-  subPhi <- matrices$phi[seq_len(numXis), seq_len(numXis)]
-  subPhi[upper.tri(subPhi)] <- t(subPhi[lower.tri(subPhi)])
-  for (i in seq_len(numEtas)) {
-    matrices$phi[(i - 1) * numXis + seq_len(numXis), 
-               (i - 1) * numXis + seq_len(numXis)] <- subPhi
-  }
-  matrices$phi
-}
-
-
-fillMatrixA <- function(theta, matrices, model) {
-  if (!any(is.na(matrices$A))) return(matrices$A)
-  numXis <- model$info$numXis
-  numEtas <- model$info$numEtas
-  etas <- model$info$etas
-  xis <- model$info$xis
-  matrices$A[is.na(matrices$A)] <- fetch(theta, "^A[0-9]*")
-  # converting back to Phi
-  subA <- matrices$A[seq_len(numXis), seq_len(numXis)]
-  for (i in seq_len(numEtas)) {
-    matrices$A[(i - 1) * numXis + seq_len(numXis), 
-               (i - 1) * numXis + seq_len(numXis)] <- subA
-  }
-  matrices$A
+  phi <- matrices$phi
+  phi[is.na(phi)] <- fetch(theta, "^phi[0-9]*")
+  phi[upper.tri(phi)] <- t(phi[lower.tri(phi)])
+  phi
 }
 
 
@@ -380,13 +326,6 @@ fillSymmetric <- function(mat, values) {
   mat[is.na(mat)] <- values
   mat[upper.tri(mat)] <- t(mat)[upper.tri(mat)]
   mat
-}
-
-
-varsInIntCombos <- function(xis, varsInts) {
-  any(vapply(varsInts, FUN.VALUE = logical(1L),
-             FUN = function(combo) all(xis %in% combo) &&
-               length(unique(xis)) == length(xis)))
 }
 
 
@@ -406,28 +345,21 @@ sortXisAndOmega <- function(xis, varsInts, etas, intTerms) {
   }
   linearXis <- xis[!xis %in% nonLinearXis]
   sortedXis <- c(nonLinearXis, linearXis)
+
   # submatrices for omegas
-  subOmegaXiXi <- matrix(0, nrow = length(xis), ncol = length(xis),
-                        dimnames = list(sortedXis, sortedXis))
   omegaXiXi <- NULL
+  subOmegaXiXi <- matrix(0, nrow = length(xis), ncol = length(xis),
+                         dimnames = list(sortedXis, sortedXis))
   for (eta in etas) {
     lapply(varsInts[intTerms$lhs == eta],
             FUN = function(row)
               if (all(row %in% sortedXis)) subOmegaXiXi[row[[1]], row[[2]]] <<- NA)
-    if (is.null(omegaXiXi)) {
-      omegaXiXi <- subOmegaXiXi
-      next
-    }
-    bottomLeft <- matrix(0, nrow = nrow(subOmegaXiXi), ncol = ncol(omegaXiXi),
-                         dimnames = list(rownames(subOmegaXiXi), colnames(omegaXiXi)))
-    topRight <- matrix(0, nrow = nrow(omegaXiXi), ncol = ncol(subOmegaXiXi),
-                       dimnames = list(rownames(omegaXiXi), colnames(subOmegaXiXi)))
-    omegaXiXi <- rbind(cbind(omegaXiXi, topRight),
-                   cbind(bottomLeft, subOmegaXiXi))
+    omegaXiXi <- rbind(omegaXiXi, subOmegaXiXi)
   }
-  subOmegaEtaXi <- matrix(0, nrow = length(xis), ncol = length(etas),
-                         dimnames = list(sortedXis, etas))
+
   omegaEtaXi <- NULL
+  subOmegaEtaXi <- matrix(0, nrow = length(xis), ncol = length(etas),
+                          dimnames = list(sortedXis, etas))
   for (eta in etas) {
     lapply(varsInts[intTerms$lhs == eta], FUN = function(row) {
        if (any(row %in% etas) & !all(row %in% etas)) {
@@ -436,16 +368,7 @@ sortXisAndOmega <- function(xis, varsInts, etas, intTerms) {
          subOmegaEtaXi[row[[whichXi]], row[[whichEta]]] <<- NA
        }
     })
-    if (is.null(omegaEtaXi)) {
-      omegaEtaXi <- subOmegaEtaXi
-      next
-    }
-    bottomLeft <- matrix(0, nrow = nrow(subOmegaEtaXi), ncol = ncol(omegaEtaXi),
-                         dimnames = list(rownames(subOmegaEtaXi), colnames(omegaEtaXi)))
-    topRight <- matrix(0, nrow = nrow(omegaEtaXi), ncol = ncol(subOmegaEtaXi),
-                       dimnames = list(rownames(omegaEtaXi), colnames(subOmegaEtaXi)))
-    omegaEtaXi <- rbind(cbind(omegaEtaXi, topRight),
-                   cbind(bottomLeft, subOmegaEtaXi))
+    omegaEtaXi <- rbind(omegaEtaXi, subOmegaEtaXi)
   }
   list(sortedXis = sortedXis, omegaXiXi = omegaXiXi, omegaEtaXi = omegaEtaXi,
        k = length(nonLinearXis))
@@ -507,9 +430,7 @@ matrixToParTable <- function(matrixNA, matrixEst, matrixSE,
 
 omegaToParTable <- function(omegaNA, omegaEst, omegaSE, etas) {
   numEtas <- length(etas) 
-  subNcol <- ncol(omegaNA) %/% numEtas
   subNrow <- nrow(omegaNA) %/% numEtas
-  subSeqCols <- seq_len(subNcol)
   subSeqRows <- seq_len(subNrow) 
   lastRow <- 0 
   lastCol <- 0
@@ -518,7 +439,7 @@ omegaToParTable <- function(omegaNA, omegaEst, omegaSE, etas) {
   parTable <- NULL
   for (eta_i in seq_len(numEtas)) {
     for (i in subSeqRows + (eta_i - 1) * subNrow) {
-      for (j in subSeqCols + (eta_i - 1) * subNcol) {
+      for (j in seq_len(ncol(omegaNA))) {
         if (!is.na(omegaNA[i, j])) next
         intTerm <- paste0(rowNames[[i]], ":", colNames[[j]])
         newRow <- data.frame(lhs = etas[[eta_i]], 

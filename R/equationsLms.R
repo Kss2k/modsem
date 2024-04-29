@@ -1,7 +1,6 @@
 muLms <- function(model, z1) {
   matrices <- model$matrices
   A <- matrices$A
-  subA <- A[seq_len(model$info$numXis), seq_len(model$info$numXis)]
   Oxx <- matrices$omegaXiXi
   Oex <- matrices$omegaEtaXi
   Ie <- matrices$Ieta
@@ -13,20 +12,17 @@ muLms <- function(model, z1) {
   Ge <- matrices$gammaEta
   a <- matrices$alpha
   psi <- matrices$psi
-  collapseEta <- rep(1, model$info$numEtas)
-  cOex <- matrices$selectionMatrixOmegaEtaXi
 
   k <- model$quad$k
-  zVec <- c(z1, rep(0, model$info$numXis - k))
-  zMat <- zToMatrix(zVec, model$info$numEtas)
-  if (ncol(Ie) == 1) Binv <- Ie else Binv <- matlib::inv(Ie - Ge - (t(zMat) %*% t(A) %*% Oex) %*% cOex)
+  zVec <- c(z1[0:k], rep(0, model$info$numXis - k))
+  kronZ <- kronecker(Ie, A %*% zVec)
+  if (ncol(Ie) == 1) Binv <- Ie else Binv <- solve(Ie - Ge - t(kronZ) %*% Oex)
 
-  muX <- tX + lX %*% subA %*% zVec
+  muX <- tX + lX %*% A %*% zVec
   muY <- tY + 
     lY %*% (Binv %*% (a + 
-            Gx %*% subA %*% zVec + 
-            (t(zMat) %*% t(A) %*% Oxx %*% A %*% zMat) %*%
-            collapseEta))
+            Gx %*% A %*% zVec + 
+            t(kronZ) %*% Oxx %*% A %*% zVec))
   rbind(muX, muY)
 }
 
@@ -37,8 +33,6 @@ sigmaLms <- function(model, z1) {
   Oex <- matrices$omegaEtaXi
   Ie <- matrices$Ieta
   A <- matrices$A
-  subA <- A[seq_len(model$info$numXis), seq_len(model$info$numXis)]
-  O <- matrices$omega
   lY <- matrices$lambdaY
   lX <- matrices$lambdaX
   Gx <- matrices$gammaXi
@@ -47,31 +41,21 @@ sigmaLms <- function(model, z1) {
   dY <- matrices$thetaEpsilon
   psi <- matrices$psi
   k <- model$quad$k
-  zVec <- c(z1, rep(0, model$info$numXis - k))
-  zMat <- zToMatrix(zVec, model$info$numEtas)
-  cOex <- matrices$selectionMatrixOmegaEtaXi
-  if (ncol(Ie) == 1) Binv <- Ie else Binv <- matlib::inv(Ie - Ge - (t(zMat) %*% t(A) %*% Oex) %*% cOex)
+  zVec <- c(z1[0:k], rep(0, model$info$numXis - k))
+  kronZ <- kronecker(Ie, A %*% zVec)
+  if (ncol(Ie) == 1) Binv <- Ie else Binv <- solve(Ie - Ge - t(kronZ) %*% Oex)
   
   OI <- diag(1, model$info$numXis)
   diag(OI) <- c(rep(0, k), rep(1, model$info$numXis - k))
 
-  select <- matrices$selectionMatrixOmega
-
-  phiEta <- 
-    ((Binv %*% (Gx %*% subA + (t(zMat) %*% t(A) %*% Oxx %*% A) %*% select)) %*%
-                 OI %*%
-    t(Binv %*% (Gx %*% subA + (t(zMat) %*% t(A) %*% Oxx %*% A) %*% select))) +
-    (Binv %*% psi %*% t(Binv))
-
-  Sxx <- lX %*% subA %*% OI %*%  
-    t(subA) %*% t(lX) + dX
-  Sxy <- lX %*% (subA %*% OI %*% 
-                 t(Binv %*% (Gx %*% subA + (t(zMat) %*% t(A) %*% Oxx %*% A) %*% 
-                             select))) %*% t(lY)
+  Sxx <- lX %*% A %*% OI %*%  
+    t(A) %*% t(lX) + dX
+  Sxy <- lX %*% A %*% OI %*% 
+                 t(Binv %*% (Gx %*% A + t(kronZ) %*% Oxx %*% A)) %*%  t(lY)
   Syy <- lY %*% 
-    ((Binv %*% (Gx %*% subA + (t(zMat) %*% t(A) %*% Oxx %*% A) %*% select)) %*%
+    (Binv %*% (Gx %*% A + t(kronZ) %*% Oxx %*% A)) %*%
                  OI %*%
-    t(Binv %*% (Gx %*% subA + (t(zMat) %*% t(A) %*% Oxx %*% A) %*% select))) %*% t(lY) +
+    t(Binv %*% (Gx %*% A + t(kronZ) %*% Oxx %*% A)) %*% t(lY) +
     lY %*% (Binv %*% psi %*% t(Binv)) %*% t(lY) + dY
   rbind(cbind(Sxx,  Sxy),
       cbind(t(Sxy), Syy))

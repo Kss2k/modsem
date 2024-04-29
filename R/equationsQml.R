@@ -23,26 +23,23 @@ logLikQml <- function(theta, model) {
   m$subThetaEpsilon[is.na(m$subThetaEpsilon)] <- 
     m$thetaEpsilon[m$selectThetaEpsilon]
 
-  m$subPhi <- m$phi[seq_len(model$info$numXis), seq_len(model$info$numXis)]
+  m$phi <- m$phi[seq_len(model$info$numXis), seq_len(model$info$numXis)]
   m$RER <- m$R %*% m$thetaEpsilon %*% t(m$R)
   invRER <- solve(m$RER)
-  m$LXPLX <- m$lambdaX %*% m$subPhi %*% t(m$lambdaX) + m$thetaDelta
+  m$LXPLX <- m$lambdaX %*% m$phi %*% t(m$lambdaX) + m$thetaDelta
   invLXPLX <- solve(m$LXPLX)
 
-  m$L1 <- m$subPhi %*% t(m$lambdaX) %*% invLXPLX
-  #m$L1 <- diagPartitioned(m$subL1, numEta) 
+  m$L1 <- m$phi %*% t(m$lambdaX) %*% invLXPLX
 
   m$L2 <- - m$subThetaEpsilon %*% t(m$Beta) %*% invRER
-  #m$L2 <- diagPartitioned(m$subL2, numEta)
 
-  m$Sigma1 <- m$subPhi - m$subPhi %*% t(m$lambdaX) %*% 
-    invLXPLX %*% m$lambdaX %*% m$subPhi
-  #m$Sigma1 <- diagPartitioned(m$subSigma1, numEta)
+  m$Sigma1 <- m$phi - m$phi %*% t(m$lambdaX) %*% 
+    invLXPLX %*% m$lambdaX %*% m$phi
 
   m$Sigma2 <- m$psi + m$subThetaEpsilon -
     m$subThetaEpsilon ^ 2 %*% t(m$Beta) %*%  
     invRER %*% m$Beta
-  #m$Sigma2 <- diagPartitioned(m$subSigma2, numEta)
+
   Ey <- muQmlCpp(m, t)
   sigmaEpsilon <- sigmaQmlCpp(m, t)
 
@@ -52,7 +49,6 @@ logLikQml <- function(theta, model) {
                                 nrow = nrow(m$RER)), m$RER))
   mean <- rep(0, ncol(sigmaXU))
   f2 <- dMvn(cbind(m$x, m$u), mean = mean, sigma = sigmaXU, log = TRUE)
-  # original implementation: produces NaN when sds are negative
   f3 <- dnormCpp(m$y[,1], mu = Ey, sigma = sqrt(sigmaEpsilon))
   -sum(f2 + f3)
 }

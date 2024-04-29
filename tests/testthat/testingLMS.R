@@ -42,7 +42,7 @@ tpb <- "
 startTime2 <- Sys.time()
 est2 <- modsem(tpb, TPB, 
   method = "lms", optimize = TRUE, verbose = TRUE, 
-  convergence = 1e-3, sampleGrad = NULL, 
-  nodes = 16, # closer to mplus when using higher number of nodes
+  convergence = 1e-2, sampleGrad = NULL, 
+  nodes = 20, # closer to mplus when using higher number of nodes
 )
 duration2 <- Sys.time() - startTime2

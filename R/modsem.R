@@ -30,6 +30,7 @@
 #' @param addToParTable rows to add to partable before sending to lavaan (for advanced users)
 #' @param macros macros to replace in the syntax before sending to lavaan 
 #' @param run should the model be estimated
+#' @param nodes nodes to use in lms
 #' @return ModSEM object
 #' @export 
 #' @description
@@ -131,6 +132,7 @@ modsem <- function(modelSyntax = NULL,
                    addToParTable = NULL,
                    macros = NULL,
                    run = TRUE, 
+                   nodes = 16,
                    ...) {
   if (is.null(modelSyntax)) stop("No model syntax provided in modsem")
   if (is.null(data)) stop("No data provided in modsem")
@@ -158,6 +160,7 @@ modsem <- function(modelSyntax = NULL,
     LMS <- modsem.LMS(modelSpec,
                       method = method,
                       data = modEnv$data,
+                      nodes = nodes,
                       ...)
     return(LMS)
 

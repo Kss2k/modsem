@@ -25,10 +25,6 @@ sigmaLmsCpp <- function(model, z) {
     .Call(`_modsem_sigmaLmsCpp`, model, z)
 }
 
-zToMatrix <- function(z, numEtas) {
-    .Call(`_modsem_zToMatrix`, z, numEtas)
-}
-
 #' Multiply indicators 
 #' @param df A data DataFrame
 #' @return A NumericVector
