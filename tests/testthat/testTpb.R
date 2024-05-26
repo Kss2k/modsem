@@ -1,3 +1,4 @@
+devtools::load_all()
 tpb <- ' 
 # Outer Model (Based on Hagger et al., 2007)
   LATT =~ att1 + att2 + att3 + att4 + att5

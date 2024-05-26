@@ -14,7 +14,7 @@ parseLavaan <- function(modelSyntax = NULL, variableNames = NULL, match = FALSE)
   lVs <- unique(parTable$lhs[parTable$op == "=~"])
   vars <- unique(c(parTable$rhs[parTable$op %in% c("~", "=~") & parTable$rhs != "1"],
                    parTable$lhs[parTable$op == "~"]))
-  oVs <- vars[!vars %in% lVs]
+  oVs <- vars[!vars %in% lVs & !grepl(":", vars)]
   structuralExprs <- parTable[parTable$op == "~",]
 
   # Interactions/Prod exprs
