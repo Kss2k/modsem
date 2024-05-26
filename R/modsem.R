@@ -136,16 +136,17 @@ modsem <- function(modelSyntax = NULL,
                    ...) {
   if (is.null(modelSyntax)) stop("No model syntax provided in modsem")
   if (is.null(data)) stop("No data provided in modsem")
-
+  if (!is.data.frame(data)) data <- as.data.frame(data)
+  
+  modEnv$data <- data
   # Get the specifications of the model 
   modelSpec <- parseLavaan(modelSyntax, colnames(data), match = match)
 
   # Data Processing  -----------------------------------------------------------
-  modEnv$data <- data <- as.data.frame(data)[modelSpec$oVs]
-  completeCases <- complete.cases(data)
+  modEnv$data <- modEnv$data[modelSpec$oVs]
+  completeCases <- complete.cases(modEnv$data)
   if (any(!completeCases)) {
     warning("Removing missing values case-wise.")
-    data <- data[completeCases, ]
     modEnv$data <- modEnv$data[completeCases, ]
   }
 

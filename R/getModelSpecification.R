@@ -13,8 +13,11 @@ parseLavaan <- function(modelSyntax = NULL, variableNames = NULL, match = FALSE)
   # Extracting some general information ----------------------------------------
   lVs <- unique(parTable$lhs[parTable$op == "=~"])
   vars <- unique(c(parTable$rhs[parTable$op %in% c("~", "=~") & parTable$rhs != "1"],
-                   parTable$lhs[parTable$op == "~"]))
-  oVs <- vars[!vars %in% lVs & !grepl(":", vars)]
+                   parTable$lhs[parTable$op == "~"])) 
+  vars <- vars|>
+    stringr::str_split(pattern = ":", simplify = FALSE) |>
+    unlist() |> unique()
+  oVs <- vars[!vars %in% lVs]
   structuralExprs <- parTable[parTable$op == "~",]
 
   # Interactions/Prod exprs

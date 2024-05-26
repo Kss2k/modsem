@@ -1,3 +1,7 @@
+devtools::load_all()
+
+naRm <- function(data) data[complete.cases(data), ]
+
 models <- list(m1 = ' 
                # latent variables 
                ind60 =~ x1 + x2 + x3 
@@ -72,11 +76,11 @@ M <- 0.5*X + rnorm(100)
 Y <- 0.7*M + rnorm(100)
 d7 <- data.frame(X = X, Y = Y, M = M)
 
-data <- list(d1 = lavaan::PoliticalDemocracy,
-             d3 = lavaan::HolzingerSwineford1939, 
-             d4 = lavaan::HolzingerSwineford1939, 
-             d5 = lavaan::HolzingerSwineford1939, 
-             d6 = lavaan::HolzingerSwineford1939, 
+data <- list(d1 = naRm(lavaan::PoliticalDemocracy),
+             d3 = naRm(lavaan::HolzingerSwineford1939), 
+             d4 = naRm(lavaan::HolzingerSwineford1939), 
+             d5 = naRm(lavaan::HolzingerSwineford1939), 
+             d6 = naRm(lavaan::HolzingerSwineford1939), 
              d7 = d7)
 
 nativeMethods <- allNativeMethods[!allNativeMethods %in%  c("pind",
