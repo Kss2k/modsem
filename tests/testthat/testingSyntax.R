@@ -1,3 +1,4 @@
+devtools::load_all()
 models <- list(m1 = ' 
                # latent variables 
                ind60 =~ x1 + x2 + x3 

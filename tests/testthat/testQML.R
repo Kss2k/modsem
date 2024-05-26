@@ -8,4 +8,4 @@ Y ~ X + Z + X:Z
 '
 
 est1 <- modsem(m1, data = oneInt, convergence = 1e-2,
-               method = "qml")
+               method = "qml", run = TRUE)

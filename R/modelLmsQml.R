@@ -1,4 +1,4 @@
-specifyLmsModel <- function(syntax, data, method = "lms", m = 16) {
+specifyLmsModel <- function(syntax, data = NULL, method = "lms", m = 16) {
   # The goal here is to create the model with its matrices
   parTable <- modsem::modsemify(syntax)
   # Some general information:
@@ -123,11 +123,6 @@ specifyLmsModel <- function(syntax, data, method = "lms", m = 16) {
                  dimnames = list(allIndsEtas, NULL))
 
   alpha <- matrix(0, nrow=numEtas, ncol=1, dimnames = list(etas, "alpha"))
-  # if (method == "qml") {
-  #    alpha[TRUE] <- NA
-  #    tauX[TRUE] <- 0 
-  #    tauY[TRUE] <- 0
-  # }
 
   # Quadratic Terms ------------------------------------------------------------
   omegaEtaXi <- omegaAndSortedXis$omegaEtaXi
@@ -212,12 +207,16 @@ specifyLmsModel <- function(syntax, data, method = "lms", m = 16) {
                 matrices = matrices,
                 syntax = syntax,
                 parTable = parTable)
-  # sort Data before optimizing starting params
-  sortedData <- sortData(data, allIndsXis,  allIndsEtas)
-  model$data <- sortedData
+
   model$theta <- createParamVector(model)
   model$info$bounds <- getParamBounds(model)
-  # Adding Expression for evaluating variances for etas in Phi
+  
+  if (!is.null(data)) {
+    # sort Data before optimizing starting params
+    sortedData <- sortData(data, allIndsXis,  allIndsEtas)
+    model$data <- sortedData
+  } else model$data <- NULL
+
   model
 }
 

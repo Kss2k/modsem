@@ -9,9 +9,12 @@ parseLavaan <- function(modelSyntax = NULL, variableNames = NULL, match = FALSE)
   }
   # Convert to partable --------------------------------------------------------
   parTable <- modsemify(modelSyntax)
-
+  
   # Extracting some general information ----------------------------------------
-  # Structural
+  lVs <- unique(parTable$lhs[parTable$op == "=~"])
+  vars <- unique(c(parTable$rhs[parTable$op %in% c("~", "=~") & parTable$rhs != "1"],
+                   parTable$lhs[parTable$op == "~"]))
+  oVs <- vars[!vars %in% lVs]
   structuralExprs <- parTable[parTable$op == "~",]
 
   # Interactions/Prod exprs
@@ -135,6 +138,8 @@ parseLavaan <- function(modelSyntax = NULL, variableNames = NULL, match = FALSE)
   # Return modelSpec -----------------------------------------------------------
   modelSpec <- list(modelSyntax = modelSyntax,
                     parTable = parTable,
+                    oVs = oVs,
+                    lVs = lVs,
                     prodNames = prodNamesCleaned,
                     elementsInProdNames = elementsInProds,
                     relDfs = relDfs,
@@ -247,12 +252,19 @@ createRelDf <- function(indsProdTerm, match = FALSE) {
                              shortest = shortest)
     }
     relDf <- t(as.data.frame(indsProdTerm))
+  } else if (!match) {
+    allCombos <- t(expand.grid(indsProdTerm))
+    relDf <- NULL
+    for (i in seq_len(ncol(allCombos))) {
+      if (!greplRowDf(allCombos[, i], relDf)) {
+        relDf <- cbind(relDf, allCombos[, i])
+      }
+    }
   }
-  else if (!match) 
-    relDf <- t(expand.grid(indsProdTerm))
   names <- apply(relDf, MARGIN = 2, FUN = stringr::str_c, collapse = "")
   structure(as.data.frame(relDf),
-            names = names)
+            names = names, 
+            row.names = rownames(relDf))
 }
 
 

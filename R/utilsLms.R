@@ -75,3 +75,12 @@ calcSE <- function(negHessian, names = NULL) {
   if (!is.null(names)) names(stdError) <- names
   stdError
 }
+
+
+diagPartitionedMat <- function(X, Y) {
+  if (is.null(X)) return(Y) else if (is.null(Y)) return(X)
+  structure(rbind(cbind(X, matrix(0, nrow = NROW(X), ncol = NCOL(Y))), 
+               cbind(matrix(0, nrow = NROW(Y), ncol = NCOL(X)), Y)),
+            dimnames = list(c(rownames(X), rownames(Y)), 
+                            c(colnames(X), colnames(Y))))
+}

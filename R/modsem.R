@@ -137,8 +137,18 @@ modsem <- function(modelSyntax = NULL,
   if (is.null(modelSyntax)) stop("No model syntax provided in modsem")
   if (is.null(data)) stop("No data provided in modsem")
 
-  # PreSteps -------------------------------------------------------------------
-  modEnv$data <- data <- as.data.frame(data)
+  # Get the specifications of the model 
+  modelSpec <- parseLavaan(modelSyntax, colnames(data), match = match)
+
+  # Data Processing  -----------------------------------------------------------
+  modEnv$data <- data <- as.data.frame(data)[modelSpec$oVs]
+  completeCases <- complete.cases(data)
+  if (any(!completeCases)) {
+    warning("Removing missing values case-wise.")
+    data <- data[completeCases, ]
+    modEnv$data <- modEnv$data[completeCases, ]
+  }
+
   ## Standardizing data
   if (standardizeData || method %in% auto.scale) {
     modEnv$data <- lapplyDf(modEnv$data,
@@ -151,8 +161,6 @@ modsem <- function(modelSyntax = NULL,
                             FUN = function(x) x - mean(x))
   }
 
-  # Get the specifications of the model 
-  modelSpec <- parseLavaan(modelSyntax, colnames(data), match = match)
 
   # Setting parameters according to method 
   if (method %in% c("lms", "qml")) {
@@ -253,7 +261,7 @@ createProdInds <- function(modelSpec,
                            centerBefore = FALSE,
                            centerAfter = FALSE,
                            residualsProds = FALSE) {
-
+  
   indProds <- purrr::map2(.x = modelSpec$relDfs,
                           .y = modelSpec$indsInProdTerms,
                           .f = createIndProds,
@@ -279,13 +287,13 @@ createProdInds <- function(modelSpec,
 }
 
 
-createIndProds <- function(relationDf,
+createIndProds <- function(relDf,
                            indNames,
                            data,
                            centered = FALSE) {
 
   # Getting the indProd names
-  varnames <- unname(colnames(relationDf))
+  varnames <- unname(colnames(relDf))
 
   # Selecting the inds from the dataset
   inds <- data[indNames]
@@ -305,15 +313,15 @@ createIndProds <- function(relationDf,
 
   prods <-
     lapplyNamed(varnames,
-                FUN = function(varname, data, relationDf)
-                  multiplyIndicatorsCpp(data[relationDf[[varname]]]),
+                FUN = function(varname, data, relDf)
+                  multiplyIndicatorsCpp(data[relDf[[varname]]]),
                 data = inds,
-                relationDf = relationDf,
+                relDf = relDf,
                 names = varnames)
 
   # return as data.frame()
   structure(prods,
-            row.names = 1:nrow(data),
+            row.names = seq_len(nrow(data)),
             class = "data.frame")
 }
 

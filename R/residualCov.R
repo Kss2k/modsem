@@ -154,12 +154,14 @@ getFormulaResCovProdInd <- function(indProd1, indProd2, relDf, pt) {
     return(NULL)
   }
   cols <- c(indProd1, indProd2)
-  rowShared <- relDf[relDf[[indProd1]] %in% relDf[[indProd2]], cols]
-  rowNotShared <- relDf[!(relDf[[indProd1]] %in% relDf[[indProd2]]), cols]
+  rowShared <- relDf[relDf[[indProd1]] %in_paired% relDf[[indProd2]], cols]
+  forceRowNames(rowShared) <- rownames(relDf)[relDf[[indProd1]] %in_paired% relDf[[indProd2]]]
+  rowNotShared <- relDf[!(relDf[[indProd1]] %in_paired% relDf[[indProd2]]), cols]
+  forceRowNames(rowNotShared) <- rownames(relDf)[!relDf[[indProd1]] %in_paired% relDf[[indProd2]]]
+
   latentNotShared <- rownames(rowNotShared)
   indShared <- rowShared[1, 1]
   indsNotShared <- unlist(rowNotShared[1, 1:2])
-
   lambdaShared <- createLabelLambda(indsNotShared, latentNotShared)
   varLatentNotShared <- tracePath(pt, latentNotShared, latentNotShared)
   varIndShared <- createLabelVar(indShared)

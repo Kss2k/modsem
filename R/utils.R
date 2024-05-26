@@ -161,8 +161,29 @@ rbindParTable <- function(parTable, newRows) {
 }
 
 
-silentStop <- function() {
-  opt <- options(show.error.messages = FALSE)
-  on.exit(options(opt))
-  stop()
+greplRowDf <- function(col, df) {
+  if (is.null(df)) return(FALSE)
+  any(apply(df, MARGIN = 2, 
+            FUN = function(dfCol) all(sort(col) == sort(dfCol))))
+}
+
+
+`forceRowNames<-` <- function(df, value) {
+  attr(df, "row.names") <- value
+  df
+}
+
+
+`%in_paired%` <- function(x, y) {
+  out <- vector("logical", length(x))
+  for (i in seq_along(x)) {
+    matches <- y == x[[i]]
+    if (any(matches)) {
+      y <- y[!matches]
+      out[[i]] <- TRUE
+    } else {
+      out[[i]] <- FALSE
+    }
+  }
+  out
 }

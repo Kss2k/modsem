@@ -142,7 +142,6 @@ specifyVarCovSingle <- function(parTable, relDf) {
 
   # Variance of latent product
   labelLatentProd <- createLabelVar(latentProd)
-  
   labelsElemsInProd <- vapply(elemsInProdTerm, 
                                FUN.VALUE = vector("character", length = 1L),
                                FUN = function(x) tracePath(parTable, x, x))
