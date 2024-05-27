@@ -479,14 +479,13 @@ finalModelToParTable <- function(finalModel, method = "lms") {
                               rowsLhs = FALSE)
   parTable <- rbind(parTable, newRows)
 
-  matricesNA$lambdaY[matricesEst$lambdaX == 1] <- NA
-  matricesSE$lambdaY[matricesEst$lambdaX == 1] <- NA
+  matricesNA$lambdaY[matricesEst$lambdaY == 1] <- NA
+  matricesSE$lambdaY[matricesEst$lambdaY == 1] <- NA
   newRows <- matrixToParTable(matricesNA$lambdaY,
                               matricesEst$lambdaY,
                               matricesSE$lambdaY, 
                               op = "=~",
                               rowsLhs = FALSE)
-
   parTable <- rbind(parTable, newRows)
 
   # coefficients Structural Model 
