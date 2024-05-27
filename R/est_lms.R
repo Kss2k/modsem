@@ -78,6 +78,6 @@ emLms <- function(model, verbose = FALSE,
               convergence = convergence,
               negHessian = final$hessian)
 
-  class(out) <- "modsemLMS"
+  class(out) <- "modsem_lms"
   out
 }

@@ -1,5 +1,48 @@
-
-modsem.mplus <- function(modelSyntax, data, ...) {
+#' Estimation latent interactions through mplus 
+#'
+#' @param modelSyntax lavaan/modsem syntax 
+#' @param data dataset
+#' @param estimator estimator argument passed to mplus
+#' @param type type argument passed to mplus
+#' @param algorithm algorithm argument passed to mplus
+#' @param process process argument passed to mplus
+#' @param ... arguments passed to other functions
+#'
+#' @return modsem_mplus object
+#' @export
+#'
+#' @examples
+#' # Theory Of Planned Behavior
+#' tpb <- ' 
+#' # Outer Model (Based on Hagger et al., 2007)
+#'   LATT =~ att1 + att2 + att3 + att4 + att5
+#'   LSN =~ sn1 + sn2
+#'   LPBC =~ pbc1 + pbc2 + pbc3
+#'   LINT =~ int1 + int2 + int3
+#'   LBEH =~ b1 + b2
+#' 
+#' # Inner Model (Based on Steinmetz et al., 2011)
+#'   # Covariances
+#'   LATT ~~ LSN + LPBC
+#'   LPBC ~~ LSN 
+#'   # Causal Relationsships
+#'   LINT ~ LATT + LSN + LPBC
+#'   LBEH ~ LINT + LPBC 
+#'   LBEH ~ LINT:LPBC  
+#' '
+#' 
+#' \dontrun{
+#' estTpbMplus <- modsem_mplus(tpb, data = TPB)
+#' summary(estTpbLMS)
+#' }
+#' 
+modsem_mplus <- function(modelSyntax, 
+                         data, 
+                         estimator = "ml", 
+                         type = "random", 
+                         algorithm = "integration", 
+                         process = "8", 
+                         ...) {
   parTable <- modsemify(modelSyntax)
   indicators <- parTable[parTable$op == "=~", "rhs", drop = TRUE] |>
     unique()
@@ -7,10 +50,11 @@ modsem.mplus <- function(modelSyntax, data, ...) {
     TITLE = "Running Model via Mplus",
     usevariables = indicators,
     ANALYSIS =
-      "estimator= ml;
-      type = random;
-      algorithm = integration;
-      process = 8;",
+      paste(paste("estimator =", estimator), 
+            paste("type =", type), 
+            paste("algorithm =", algorithm), 
+            paste("process =", process, ";\n"),
+            sep = ";\n"), 
     MODEL = parTableToMplusModel(parTable, ...),
     rdata = data[indicators],
   )
@@ -122,8 +166,7 @@ parTableToMplusModel <- function(parTable, ignoreLabels = TRUE) {
                    modifier, ";" ,"\n")
     out <- paste0(out, line)
   }
-  out <- stringr::str_remove_all(out, ":")
-  out
+  stringr::str_remove_all(out, ":")
 }
 
 
@@ -142,5 +185,3 @@ switchLavOpToMplus <- function(op) {
          ":" = "|",
          stop("Operator not supported for use in Mplus: ", op, "\n"))
 }
-
-

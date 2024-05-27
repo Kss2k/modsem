@@ -215,6 +215,11 @@ specifyLmsModel <- function(syntax, data = NULL, method = "lms", m = 16) {
     # sort Data before optimizing starting params
     sortedData <- sortData(data, allIndsXis,  allIndsEtas)
     model$data <- sortedData
+    completeCases <- stats::complete.cases(model$data)
+    if (any(!completeCases)) {
+      warning("Removing missing values case-wise.")
+      model$data <- model$data[completeCases, ]
+    }
   } else model$data <- NULL
 
   model
@@ -330,7 +335,10 @@ fillSymmetric <- function(mat, values) {
 
 sortXisAndOmega <- function(xis, varsInts, etas, intTerms) {
   # i <= k, i < j, i = row, j = col
-  allVarsInInts <- unique(unlist(varsInts))
+  # allVarsInInts should be sorted according to which variables 
+  # occur in the most interaction terms (makes it more efficient)
+  allVarsInInts <- unlist(varsInts) |> table() |> 
+    sort(decreasing = TRUE) |> names()
   sortedXis <- c(allVarsInInts, xis[!xis %in% allVarsInInts])
 
   nonLinearXis <- character(0L)

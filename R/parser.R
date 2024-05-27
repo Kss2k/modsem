@@ -74,9 +74,8 @@ evalToken.LavComment <- function(token, lhs, rhs) {
 
 #' @export
 evalToken.LavFunction <- function(token, lhs, rhs) {
-  updateVariablesEnvir()
   functionCall <- paste0(token, stringr::str_c(unlist(rhs), collapse = ","), ")")
-  out <- eval(rlang::parse_expr(functionCall), envir = modVarsEnv)
+  out <- eval(rlang::parse_expr(functionCall), envir = modEnv)
   attributes(out) <- attributes(token) 
   out
 }
@@ -124,8 +123,7 @@ evalTokens <- function(syntaxTree) {
 
 
 parseSyntaxTrees <- function(syntaxTrees) {
-  lapply(syntaxTrees,
-         evalTokens)
+  lapply(syntaxTrees, evalTokens)
 }
 
 

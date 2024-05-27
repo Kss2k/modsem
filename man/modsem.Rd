@@ -8,25 +8,8 @@ modsem(
   modelSyntax = NULL,
   data = NULL,
   method = "dblcent",
-  match = FALSE,
-  standardizeData = FALSE,
-  centerData = FALSE,
-  firstLoadingFixed = TRUE,
-  centerBefore = NULL,
-  centerAfter = NULL,
-  residualsProds = NULL,
-  residualCovSyntax = NULL,
-  constrainedProdMean = NULL,
-  constrainedLoadings = NULL,
-  constrainedVar = NULL,
-  constrainedResCovMethod = NULL,
-  auto.scale = "none",
-  auto.center = "none",
-  estimator = "ML",
-  removeFromParTable = NULL,
-  addToParTable = NULL,
-  macros = NULL,
-  run = TRUE,
+  standardize = FALSE,
+  center = FALSE,
   ...
 )
 }
@@ -44,45 +27,11 @@ modsem(
 "qml" = quasi maximum likelihood estimation of laten model structural equations (not passed to lavaan).
 "custom" = use parameters specified in the function call (passed to lavaan)}
 
-\item{match}{should the product indicators be created by using the match-strategy}
+\item{standardize}{should data be scaled before fitting model}
 
-\item{standardizeData}{should data be scaled before fitting model}
+\item{center}{should data be centered before fitting model}
 
-\item{centerData}{should data be centered before fitting model}
-
-\item{firstLoadingFixed}{Sould the first factorloading in the latent prod be fixed to one?}
-
-\item{centerBefore}{should inds in prods be centered before computing prods (overwritten by method, if method != NULL)}
-
-\item{centerAfter}{should ind prods be centered after they have been computed?}
-
-\item{residualsProds}{should ind prods be centered using residuals (overwritten by method, if method != NULL)}
-
-\item{residualCovSyntax}{should syntax for residual covariances be produced (overwritten by method, if method != NULL)}
-
-\item{constrainedProdMean}{should syntax prod mean be produced (overwritten by method, if method != NULL)}
-
-\item{constrainedLoadings}{should syntax for constrained loadings be produced (overwritten by method, if method != NULL)}
-
-\item{constrainedVar}{should syntax for constrained variances be produced (overwritten by method, if method != NULL)}
-
-\item{constrainedResCovMethod}{method for constraining residual covariances}
-
-\item{auto.scale}{methods which should be scaled automatically (usually not useful)}
-
-\item{auto.center}{methods which should be centered automatically (usually not useful)}
-
-\item{estimator}{estimator to use in lavaan}
-
-\item{removeFromParTable}{rows to remove from partable before sending to lavaan (for advanced users)}
-
-\item{addToParTable}{rows to add to partable before sending to lavaan (for advanced users)}
-
-\item{macros}{macros to replace in the syntax before sending to lavaan}
-
-\item{run}{should the model be estimated}
-
-\item{...}{arguments passed to other functions, e.g,. lavaan}
+\item{...}{arguments passed to other functions depending on method (see modsem_pi, modsem_lms_qml, and modsem_mplus)}
 }
 \value{
 ModSEM object
@@ -98,7 +47,9 @@ a fancy wrapper for lavaan::sem()  which generates the
 necessary syntax, and variables for the estimation of models with latent product indicators.
 The distributionally based approaches are implemented in seperately, and are 
 are not estimated using lavaan::sem(), but rather using custom functions (largely)
-written in C++ for performance reasons.
+written in C++ for performance reasons. For greater control, it is advised that 
+you use one of the sub-functions (modsem_pi, modsem_lms_qml, modsem_mplus) directly, 
+as passing additional arguments to them via modsem() can lead to unexpected behavior.
 }
 \examples{
 library(modsem)

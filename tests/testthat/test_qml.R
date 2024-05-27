@@ -7,5 +7,4 @@ Z =~ z1 + z2 + z3
 Y ~ X + Z + X:Z
 '
 
-est1 <- modsem(m1, data = oneInt, convergence = 1e-2,
-               method = "qml", run = TRUE)
+est1 <- modsem(m1, data = oneInt, convergence = 1e-2, method = "qml")

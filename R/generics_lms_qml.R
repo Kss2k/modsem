@@ -1,11 +1,11 @@
 #' @export
-summary.modsemLMS <- function(object, ...) {
+summary.modsem_lms <- function(object, ...) {
   summaryLmsAndQml(object, ...)
 }
 
 
 #' @export 
-summary.modsemQML <- function(object, ...) {
+summary.modsem_qml <- function(object, ...) {
   summaryLmsAndQml(object, ...)
 }
 
@@ -13,8 +13,8 @@ summary.modsemQML <- function(object, ...) {
 summaryLmsAndQml <- function(object, H0 = TRUE, verbose = TRUE, 
                               r.squared = TRUE, 
                               ...) {
-  if (inherits(object, "modsemQML")) method <- "qml" 
-  else if (inherits(object, "modsemLMS")) method <- "lms" 
+  if (inherits(object, "modsem_qml")) method <- "qml" 
+  else if (inherits(object, "modsem_lms")) method <- "lms" 
 
   parTable <- object$parTable
   parTable$pvalue <- format.pval(parTable$pvalue)
@@ -107,7 +107,7 @@ print.summaryModsemLMS_QML <- function(x, digits = 3, ...) {
 
 
 #' @export
-print.modsemLMS <- function(x, digits = 3, ...) {
+print.modsem_lms <- function(x, digits = 3, ...) {
   parTable <- x$parTable
   parTable$pvalue <- format.pval(parTable$pvalue)
   names(parTable) <- c("lhs", "op", "rhs", 
@@ -122,7 +122,7 @@ print.modsemLMS <- function(x, digits = 3, ...) {
 
 
 #' @export
-print.modsemQML <- function(x, digits = 3, ...) {
+print.modsem_qml <- function(x, digits = 3, ...) {
   parTable <- x$parTable
   parTable$pvalue <- format.pval(parTable$pvalue)
   names(parTable) <- c("lhs", "op", "rhs", 

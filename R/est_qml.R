@@ -36,7 +36,7 @@ estQml <- function(model,
               convergence = final$convergence,
               negHessian = final$hessian)
 
-  class(out) <- "modsemQML"
+  class(out) <- "modsem_qml"
   out
 }
 
