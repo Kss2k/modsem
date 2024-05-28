@@ -340,16 +340,17 @@ sortXisAndOmega <- function(xis, varsInts, etas, intTerms) {
   allVarsInInts <- unlist(varsInts) |> table() |> 
     sort(decreasing = TRUE) |> names()
   sortedXis <- c(allVarsInInts, xis[!xis %in% allVarsInInts])
-
   nonLinearXis <- character(0L)
   for (interaction in varsInts) {
     if (!any(interaction %in% nonLinearXis)) {
       if (all(interaction %in% etas)) 
         stop("Interactions between two endogenous variables are not allowed")
-      choice <- which(!interaction %in% etas)[[1]]
-      nonLinearXis <- c(nonLinearXis, interaction[[choice]])
+      choice <- interaction[which(!interaction %in% etas)] |> 
+        getFirstXinY(allVarsInInts)
+      nonLinearXis <- c(nonLinearXis, choice)
     }
   }
+
   linearXis <- xis[!xis %in% nonLinearXis]
   sortedXis <- c(nonLinearXis, linearXis)
 

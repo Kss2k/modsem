@@ -25,10 +25,10 @@ optimizeStartingParamsLms <- function(model) {
   alpha[is.na(alpha)] <- 0
   GammaEta <- findEstimatesParTable(matrices$gammaEta, pt, op = "~")
   GammaXi <- findEstimatesParTable(matrices$gammaXi, pt, op = "~")  
-  OmegaEtaXi <- findInteractionEstimatesParTable(matrices$omegaEtaXi, etas,
-                                                 c(etas, xis), pt)
-  OmegaXiXi <- findInteractionEstimatesParTable(matrices$omegaXiXi, 
-                                                 etas, xis, pt)
+  OmegaEtaXi <- findInteractionEstimatesParTable(matrices$omegaEtaXi, lhs = etas,
+                                                 rhs1 = etas, rhs2 = xis, pt = pt)
+  OmegaXiXi <- findInteractionEstimatesParTable(matrices$omegaXiXi, lhs = etas,
+                                                rhs1 = xis, rhs2 = xis, pt = pt)
   tauX <- apply(data[, indsXis], 2, mean)
   tauY <- apply(data[, indsEtas], 2, mean)
   theta <- unlist(list(LambdaX[is.na(matrices$lambdaX)], 
@@ -65,9 +65,14 @@ findEstimatesParTable <- function(mat, pt, op = NULL, rows_lhs = TRUE) {
 }
 
 
-findInteractionEstimatesParTable <- function(omega, lhs, rhs, pt) {
-  rhs <- expand.grid(rhs, rhs) |> apply(1, stringr::str_c, collapse = "") |>
-    unlist()
+findInteractionEstimatesParTable <- function(omega, lhs, rhs1, rhs2, pt) {
+  if (length(rhs1) != length(rhs2) || !all(rhs1 != rhs2)) {
+    combos <- rbind(expand.grid(rhs1, rhs2), expand.grid(rhs2, rhs1))
+  } else {
+    combos <- expand.grid(rhs1, rhs2)
+  }
+  rhs <- combos |> apply(1, stringr::str_c, collapse = "") |>
+    unlist() |> unique()
   omega[is.na(omega)] <- sortParTable(pt, lhs, "~", rhs)  
   omega
 }

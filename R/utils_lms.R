@@ -94,3 +94,14 @@ format_numeric <- function(x, digits = 3) {
     format(x, trim = FALSE, justify = "right") 
   }
 }
+
+
+getFirstXinY <- function(x, y) {
+  # pick the value in x which appears first in y
+  for (y_i in y) {
+    if (y_i %in% x) return(unique(x[x == y_i]))
+  }
+
+  # if no match, just return the first elem in x
+  x[[1]]
+}
