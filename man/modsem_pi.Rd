@@ -23,6 +23,7 @@ modsem_pi(
   auto.scale = "none",
   auto.center = "none",
   estimator = "ML",
+  group = NULL,
   run = TRUE,
   ...
 )
@@ -68,6 +69,8 @@ modsem_pi(
 \item{auto.center}{methods which should be centered automatically (usually not useful)}
 
 \item{estimator}{estimator to use in lavaan}
+
+\item{group}{group variable for multigroup analysis}
 
 \item{run}{should the model be run via lavaan, if FALSE only modified syntax and data is returned}
 

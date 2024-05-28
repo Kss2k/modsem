@@ -32,10 +32,10 @@ evalToken.LavToken <- function(token, lhs, rhs) {
 
 #' @export
 evalToken.LavAdd <- function(token, lhs, rhs) {
-  if ("LavToken" %in% class(rhs)) {
+  if (is.LavToken(rhs)) {
     rhs <- list(rhs)
   }
-  if ("LavToken" %in% class(lhs)) {
+  if (is.LavToken(lhs)) {
     lhs <- list(lhs)
   }
   c(lhs, rhs)
@@ -83,16 +83,12 @@ evalToken.LavFunction <- function(token, lhs, rhs) {
 
 #' @export
 evalToken.LeftBracket <- function(token, lhs, rhs) {
-  # if (!is.null(rhs$rightBracket) || !rhs$rightBracket) {
-  #   stop("Unmatched bracket ", highlightErrorToken(token))
-  # }
   rhs
 }
 
 
 #' @export
 evalToken.RightBracket <- function(token, lhs, rhs) {
-  #list(body = lhs, rightBracket = TRUE)
   lhs
 }
 

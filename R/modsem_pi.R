@@ -23,6 +23,7 @@
 #' @param auto.scale methods which should be scaled automatically (usually not useful)
 #' @param auto.center methods which should be centered automatically (usually not useful)
 #' @param estimator estimator to use in lavaan
+#' @param group group variable for multigroup analysis
 #' @param run should the model be run via lavaan, if FALSE only modified syntax and data is returned
 #' @param ... arguments passed to other functions, e.g,. lavaan
 #' @return ModSEM object
@@ -106,6 +107,7 @@ modsem_pi <- function(modelSyntax = NULL,
                    auto.scale = "none",
                    auto.center = "none",
                    estimator = "ML", 
+                   group = NULL,
                    run = TRUE, 
                    ...) {
   if (is.null(modelSyntax)) stop("No model syntax provided in modsem")
@@ -116,7 +118,7 @@ modsem_pi <- function(modelSyntax = NULL,
   modelSpec <- parseLavaan(modelSyntax, colnames(data), match = match)
 
   # Data Processing  -----------------------------------------------------------
-  data <- data[modelSpec$oVs]
+  data <- data[c(modelSpec$oVs, group)]
   completeCases <- stats::complete.cases(data)
   if (any(!completeCases)) {
     warning("Removing missing values case-wise.")
@@ -175,18 +177,19 @@ modsem_pi <- function(modelSyntax = NULL,
 
   # Estimating the model via lavaan::sem() 
   if (run) {
-    lavEst <- tryCatch(lavaan::sem(newSyntax, newData, estimator = estimator, ...),
-                                 error = function(cnd) {
-                                   warning("Error in Lavaan: \n")
-                                   warning(capturePrint(cnd))
-                                   NULL
-                                 })
+    lavEst <- tryCatch(lavaan::sem(newSyntax, newData, estimator = estimator, 
+                                   group = group, ...),
+                       error = function(cnd) {
+                         warning("Error in Lavaan: \n")
+                         warning(capturePrint(cnd))
+                         NULL
+                       })
     coefParTable <- tryCatch(lavaan::parameterEstimates(lavEst),
                              error = function(cnd) NULL)
     modelSpec$lavaan <- lavEst
     modelSpec$coefParTable <- coefParTable
   }
-  structure(modelSpec, class = "ModSEM", method = method)
+  structure(modelSpec, class = "modsem_pi", method = method)
 }
 
 
@@ -436,19 +439,4 @@ getParTableMeasure <- function(dependentName,
 
 createParTableRow <- function(vecLhsRhs, op, mod = "") {
   data.frame(lhs = vecLhsRhs[[1]], op = op, rhs = vecLhsRhs[[2]], mod = mod)
-}
-
-
-#' summary.ModSEM
-#'
-#' @param object modsem object to summarized
-#' @param ... arguments passed to lavaan::summary(), and nlsem::summary()
-#' @rdname summary
-#' @export 
-summary.ModSEM <- function(object, ...) {
-  cat("ModSEM: \nMethod =", attributes(object)$method, "\n")
-  if (attributes(object)$method == "Mplus") {
-    object$coefParTable
-
-  } else lavaan::summary(object$lavaan, ...)
 }

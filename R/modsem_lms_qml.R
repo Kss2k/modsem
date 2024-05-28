@@ -89,6 +89,10 @@ modsem_lms_qml <- function(modelSyntax = NULL,
   } else if (!is.data.frame(data)) {
     data <- as.data.frame(data)
   }
+    
+  if (!method %in% c("lms", "qml")) {
+    stop("Method must be either 'lms' or 'qml'")
+  }
 
   if (center) data <- lapplyDf(data, FUN = function(x) x - mean(x))
   if (standardize) data <- lapplyDf(data, FUN = scaleIfNumeric, 

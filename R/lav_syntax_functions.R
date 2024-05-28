@@ -32,7 +32,13 @@ LavStart <- function(number) {
 }
 
 
+LavConcat <- function(...) {
+  as.character(substitute(expression(c(...))))[[2]]
+}
+
+
 modEnv <- rlang::env(
   equal = LavEqual,
   start = LavStart,
+  c = LavConcat
 )

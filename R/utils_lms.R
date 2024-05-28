@@ -84,3 +84,13 @@ diagPartitionedMat <- function(X, Y) {
             dimnames = list(c(rownames(X), rownames(Y)), 
                             c(colnames(X), colnames(Y))))
 }
+
+
+format_numeric <- function(x, digits = 3) {
+  if (is.numeric(x)) {
+    format(round(x, digits), nsmall = digits, digits = digits, 
+           trim = FALSE, justify = "right")
+  } else {
+    format(x, trim = FALSE, justify = "right") 
+  }
+}

@@ -1,4 +1,3 @@
-
 modsemParseEnv <- rlang::env(
   syntaxLines = NULL
 )
@@ -7,7 +6,6 @@ modsemParseEnv <- rlang::env(
 resetModsemParseEnv <- function() {
   modsemParseEnv$syntaxLines <- NULL
 }
-
 
 
 getCharsLine <- function(line, i = 1) {
@@ -19,7 +17,6 @@ getCharsLine <- function(line, i = 1) {
   rest <- getCharsLine(line, i + 1)
   c(substr(line, i, i),rest)
 }
-
 
 
 getLines <- function(syntax) {
@@ -46,7 +43,7 @@ createTokensLine <- function(line, i = 1,
     return(appendToList(listTokens, token))
   }
 
-  if (length(listTokens) > 0 && is.EqualityOperator(last(listTokens))) {
+  if (length(listTokens) > 0 && is.MathOperator(last(listTokens))) {
     token <- buildMathExprToken(line[i:length(line)], pos = i)
     return(appendToList(listTokens, token))
   }
@@ -70,8 +67,8 @@ createTokensLine <- function(line, i = 1,
 }
 
 
-
 initializeToken <- function(char, pos, line) {
+  # optimaly this should be a switch
   if (grepl("#", char)) {
     type  <- "LavComment"
     priority <- 999
@@ -106,7 +103,6 @@ initializeToken <- function(char, pos, line) {
 }
 
 
-
 buildMathExprToken <- function(restLine, pos) {
   token <- stringr::str_c(restLine, collapse = "")
   structure(token,
@@ -114,8 +110,7 @@ buildMathExprToken <- function(restLine, pos) {
             lineNumber = attr(restLine, "lineNumber"),
             priority = 10,
             class = c("LavMathExpr", "LavToken"))
- }
-
+}
 
 
 fitsToken <- function(token, nextChar) {
@@ -272,12 +267,10 @@ assignSubClass.LavMathExpr <- function(token) {
 }
 
 
-
 appendToList <- function(list, elem) {
   list[[length(list) + 1]] <- elem
   list
 }
-
 
 
 prioritizeTokens <- function(listTokens, i = 1, brackets = list(),
@@ -306,7 +299,6 @@ prioritizeTokens <- function(listTokens, i = 1, brackets = list(),
 }
 
 
-
 removeLavBlankLine <- function(line, removeComments = TRUE) {
   if (is.null(line) || length(line) == 0) {
     return(line)
@@ -316,7 +308,6 @@ removeLavBlankLine <- function(line, removeComments = TRUE) {
                              FUN = function(token) is.LavBlankOrComment(token))
   line[!isBlankOrComment]
 }
-
 
 
 tokenizeSyntax <- function(syntax, optimize = TRUE) {
@@ -330,28 +321,23 @@ tokenizeSyntax <- function(syntax, optimize = TRUE) {
   tokenizedLines <- lines |>
     lapply(createTokensLine) |>
     lapply(removeLavBlankLine) |>
-    lapply(FUN = function(tokens)
-                   lapply(tokens, assignSubClass))
-  # modsemParseEnv$syntaxLines <- tokenizedLines
+    lapply(FUN = function(tokens) lapply(tokens, assignSubClass))
+
   tokenizedLines <- tokenizedLines |>
     lapply(prioritizeTokens)
 
-  isEmpty <- vapply(tokenizedLines,
-                    FUN.VALUE = logical(1L),
+  isEmpty <- vapply(tokenizedLines, FUN.VALUE = logical(1L),
                     FUN = function(line) is.null(line) || length(line) == 0)
 
   tokenizedLines[!isEmpty]
 }
 
 
-
 mergeTokensToString <- function(listTokens) {
-  vapply(listTokens,
-         FUN.VALUE = character(1L),
+  vapply(listTokens, FUN.VALUE = character(1L),
          FUN = getTokenString) |>
     stringr::str_c(collapse = "")
 }
-
 
 
 addCharToken <- function(token, nextChar) {
@@ -365,7 +351,6 @@ addCharToken <- function(token, nextChar) {
 }
 
 
-
 highlightError <- function(line, pos) {
   line <- stringr::str_c(line, collapse = "")
   indent <- "      "
@@ -374,7 +359,6 @@ highlightError <- function(line, pos) {
                                            collapse = ""), "^")
   message
 }
-
 
 
 highlightErrorToken <- function(token) {
@@ -401,7 +385,6 @@ getTokenString <- function(token) {
 
 
 
-
 getTokenPriority <- function(token) {
   attr(token, "priority")
 }
@@ -418,57 +401,49 @@ getTokenPosition <- function(token) {
 }
 
 
-
 is.LavToken <- function(token) {
-  "LavToken" %in% class(token)
+  inherits(token, "LavToken")
 }
-
 
 
 is.LavOperator <- function(token) {
-  "LavOperator" %in% class(token)
+  inherits(token, "LavOperator")
 }
 
 
-
-is.EqualityOperator <- function(token) {
+is.MathOperator <- function(token) {
   switch(getTokenString(token),
          "==" = TRUE,
          "<" = TRUE,
          ">" = TRUE,
+         ":=" = TRUE,
          FALSE)
 }
 
 
-
 is.LavBlankOrComment <- function(token) {
-  "LavBlank" %in% class(token) | "LavComment" %in% class(token)
+  inherits(token, "LavBlank") || inherits(token, "LavComment")
 }
-
 
 
 is.LeftClosure <- function(token) {
-  "LeftBracket" %in% class(token) | "LavFunction" %in% class(token)
+  inherits(token, "LeftBracket") || inherits(token, "LavFunction")
 }
-
 
 
 is.RightClosure <- function(token) {
-  "RightBracket" %in% class(token)
+  inherits(token, "RightBracket")
 }
-
 
 
 is.LavClosure <- function(token) {
-  "LavClosure" %in% class(token)
+  inherits(token, "LavClosure")
 }
-
 
 
 is.LavOperator <- function(token) {
-  "LavOperator" %in% class(token)
+  inherits(token, "LavOperator")
 }
-
 
 
 is.firstClassOperator <- function(token) {

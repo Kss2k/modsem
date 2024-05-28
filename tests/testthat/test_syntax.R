@@ -46,7 +46,9 @@ models <- list(m1 = '
                M ~ a*X
                Y ~ b*M
                # indirect effect (a*b)
-               ab := a*b
+               ab := a*b 
+               # total effect
+               total := c + (a*b)
                '
 )
 

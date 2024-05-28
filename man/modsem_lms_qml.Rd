@@ -68,13 +68,10 @@ m1 <- '
 '
 
 \dontrun{
-# Double centering approach
-est1 <- modsem_lms_qml(m1, oneInt)
+# QML Approach
+est1 <- modsem_lms_qml(m1, oneInt, method = "qml")
 summary(est1)
 
-# The Constrained Approach 
-est1Constrained <- modsem_lms_qml(m1, oneInt, method = "ca")
-summary(est1Constrained)
 
 # Theory Of Planned Behavior
 tpb <- ' 
