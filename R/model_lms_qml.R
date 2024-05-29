@@ -340,7 +340,8 @@ sortXisAndOmega <- function(xis, varsInts, etas, intTerms) {
   # allVarsInInts should be sorted according to which variables 
   # occur in the most interaction terms (makes it more efficient)
   allVarsInInts <- unique(unlist(varsInts))
-  freqInIntTerms <- as.data.frame(table(unlist(varsInts)))
+  freqInIntTerms <- lapply(varsInts, FUN = unique) |> unlist() |>
+    table() |> oneWayTableToDataFrame()
 
   sortedXis <- c(allVarsInInts, xis[!xis %in% allVarsInInts])
   nonLinearXis <- character(0L)
@@ -355,7 +356,7 @@ sortXisAndOmega <- function(xis, varsInts, etas, intTerms) {
 
     choice <- interaction[which(!interaction %in% etas)] 
     if (length(choice) > 1) {
-      freq <- freqInIntTerms$Freq[freqInIntTerms$Var1 %in% choice]
+      freq <- freqInIntTerms[choice, "freq"]
       choice <- choice[whichIsMax(freq)][[1]] # pick first if both are equal
     }
 
@@ -370,9 +371,12 @@ sortXisAndOmega <- function(xis, varsInts, etas, intTerms) {
   subOmegaXiXi <- matrix(0, nrow = length(xis), ncol = length(xis),
                          dimnames = list(sortedXis, sortedXis))
   for (eta in etas) {
-    lapply(varsInts[intTerms$lhs == eta],
-            FUN = function(row)
-              if (all(row %in% sortedXis)) subOmegaXiXi[row[[1]], row[[2]]] <<- NA)
+    lapply(varsInts[intTerms$lhs == eta], FUN = function(row) {
+       if (!all(row %in% sortedXis)) return(NULL) 
+       whichRow <- which(row %in% nonLinearXis)[[1]] # if quadratic term pick first
+       whichCol <- ifelse(whichRow == 1, 2, 1)
+       subOmegaXiXi[row[[whichRow]], row[[whichCol]]] <<- NA
+    })
     omegaXiXi <- rbind(omegaXiXi, subOmegaXiXi)
   }
 

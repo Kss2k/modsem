@@ -8,7 +8,7 @@ m1 <- "
 
 # Inner model
   Y ~ X + Z
-  Y ~ X:Z + X:X
+  Y ~ Z:X + X:X
 "
 # funnily enough, the starting parameters from the double centering approach
 # give better loglikelihoods than the ones arrived at by the EM algorithm
@@ -21,6 +21,13 @@ est1 <- modsem(m1, oneInt,
 )
 duration1 <- Sys.time() - startTime1
 
+
+# I have no clue why, but changing the ordering of how the interaction terms 
+# are specified, ends up changing the results (and number of iterations) ever 
+# so slightly -- even though the matrices are exactly the same. This can be 
+# seen through the fact that the starting loglikelihoods are the same (if optimized) 
+# indicating that the matrices are the same (i.e,. produce the same results, when
+# given the same values). 
 tpb <- "
 # Outer Model (Based on Hagger et al., 2007)
   LATT =~ att1 + att2 + att3 + att4 + att5
@@ -34,8 +41,8 @@ tpb <- "
   LINT ~ gIa * LATT + gIsn * LSN + gIpbc * LPBC
   LBEH ~ LINT + LPBC
   LBEH ~ LPBC:LINT
-  # LBEH ~ LATT:LPBC
-  # LBEH ~ LPBC:LPBC
+  #LBEH ~ LATT:LPBC
+  #LBEH ~ LPBC:LPBC
 "
 
 startTime2 <- Sys.time()

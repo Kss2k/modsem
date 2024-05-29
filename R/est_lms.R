@@ -7,7 +7,7 @@ emLms <- function(model, verbose = FALSE,
                ...) {
   data <- model$data
   if (anyNA(data)) stop("Remove or replace missing values from data")
-  
+    
   # Initialization
   logLikNew <- 0
   logLikOld <- 1.0e+10

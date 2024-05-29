@@ -52,8 +52,10 @@ removeInteractions <- function(model) {
 
 
 # Faster version of mvtnorm::dmvnorm() given that sigma is positive 
+# there are some drawbacks to using mvnfast. In particular, 
+# its a little less consistent
 dMvn <- function(X, mean, sigma, log = FALSE) {
-  sigma <- round(sigma, 12)
+  sigma <- round(sigma, 12) # makes it more reliable
   return(tryCatch(mvnfast::dmvn(X, mean, sigma, log, ncores = 2),
                   error = function(e) mvtnorm::dmvnorm(X, mean, sigma, log)))
 }
@@ -97,6 +99,14 @@ formatNumeric <- function(x, digits = 3) {
   } else {
     format(x, trim = FALSE, justify = "right") 
   }
+}
+
+
+oneWayTableToDataFrame <- function(table) {
+  df <- as.data.frame(table)
+  out <- data.frame(freq = df$Freq)
+  rownames(out) <- df$Var1
+  out
 }
 
 
