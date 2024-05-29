@@ -1,3 +1,6 @@
+# Estimate SEM using lms and qml
+# Last updated: 29.05.2024
+
 #' Interaction between latent variables using lms and qml approaches
 #' @param modelSyntax lavaan syntax
 #' @param data dataframe
@@ -98,8 +101,8 @@ modsem_lms_qml <- function(modelSyntax = NULL,
   if (standardize) data <- lapplyDf(data, FUN = scaleIfNumeric, 
                                     scaleFactor = FALSE)
 
-  model <- specifyLmsModel(modelSyntax, data = data, 
-                           method = method, m = nodes)
+  model <- specifyModelLmsQml(modelSyntax, data = data, 
+                              method = method, m = nodes)
   if (optimize) model <- optimizeStartingParamsLms(model)
   switch(method, 
          "qml" = estQml(model, verbose = verbose, 

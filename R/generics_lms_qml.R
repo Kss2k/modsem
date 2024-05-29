@@ -86,22 +86,22 @@ print.summary_lms_qml <- function(x, digits = 3, ...) {
                      width = maxWidth, side = "left")
   x$parTable[!grepl("lhs|op|rhs", colnames(x$parTable))] <- 
     lapplyDf(x$parTable[!grepl("lhs|op|rhs", colnames(x$parTable))], 
-             FUN = format_numeric,
+             FUN = formatNumeric,
              digits = digits)
   
   colnames(x$parTable)[[3]] <- "variable"
   if (!is.null(x$D)) {
     cat("\nComparative fit to H0 (no interaction effect)\n",
         paste0("Loglikelihood change = ", 
-               format_numeric(x$D$llChange, digits = 2), "\n"),
-        paste0("D(", x$D$df, ") = ", format_numeric(x$D$D, digits = 2), 
+               formatNumeric(x$D$llChange, digits = 2), "\n"),
+        paste0("D(", x$D$df, ") = ", formatNumeric(x$D$D, digits = 2), 
                ", p = ", format.pval(x$D$p, digits = digits), "\n"))
 
   } 
 
   if (!is.null(x$r.squared)) {
     r.squared <- x$r.squared
-    r.squared$Rsqr <- format_numeric(r.squared$Rsqr, digits = 3)
+    r.squared$Rsqr <- formatNumeric(r.squared$Rsqr, digits = 3)
     maxWidth <- max(vapply(r.squared$Rsqr, 
                            FUN.VALUE = numeric(1), FUN = nchar))
     r.squared$Rsqr <- stringr::str_pad(r.squared$Rsqr, 
@@ -111,7 +111,7 @@ print.summary_lms_qml <- function(x, digits = 3, ...) {
       cat("  ", r.squared$eta[[i]], "=", r.squared$Rsqr[[i]], "\n")
     }
     if (!is.null(r.squared$H0)) {
-      r.squared$H0$Rsqr <- format_numeric(r.squared$H0$Rsqr, digits = 3)
+      r.squared$H0$Rsqr <- formatNumeric(r.squared$H0$Rsqr, digits = 3)
       maxWidth <- max(vapply(r.squared$H0$Rsqr, 
                              FUN.VALUE = numeric(1), FUN = nchar))
       r.squared$H0$Rsqr <- stringr::str_pad(r.squared$H0$Rsqr, 
@@ -119,11 +119,11 @@ print.summary_lms_qml <- function(x, digits = 3, ...) {
       cat("R-squared Null-Model (H0):\n")
       for (i in seq_along(r.squared$H0$eta)) {
         cat("  ", r.squared$H0$eta[[i]], "=", 
-            format_numeric(r.squared$H0$Rsqr[[i]], digits = 2), "\n")
+            formatNumeric(r.squared$H0$Rsqr[[i]], digits = 2), "\n")
       }
 
       # Calculate Change (using unformatted Rsquared) 
-      r.squared$H0$diff <- format_numeric(x$r.squared$Rsqr - x$r.squared$H0$Rsqr, 
+      r.squared$H0$diff <- formatNumeric(x$r.squared$Rsqr - x$r.squared$H0$Rsqr, 
                                   digits = 3)
       cat("R-squared Change:\n")
       for (i in seq_along(r.squared$H0$eta)) {

@@ -1,16 +1,18 @@
-specifyLmsModel <- function(syntax, data = NULL, method = "lms", m = 16) {
-  # The goal here is to create the model with its matrices
+# Functions for Specifiying lms and qml model. modsem(method = c("lms", "qml"))
+# Last updated: 29.05.2024
+
+
+specifyModelLmsQml <- function(syntax, data = NULL, method = "lms", m = 16) {
   parTable <- modsem::modsemify(syntax)
-  # Some general information:
   structExprs <- parTable[parTable$op == "~" & 
                           parTable$rhs != "1", ]
   measrExprs <- parTable[parTable$op == "=~", ]
 
-  # Etas ------------------------------------------------------------------------
-  etas <- structExprs$lhs |>
-    unique()
+  # endogenous variables (etas)
+  etas <- unique(structExprs$lhs)
   numEtas <- length(etas)
   if (numEtas == 0) stop("No etas in model")
+
   indsEtas <- lapplyNamed(etas,
                     FUN = function(eta, measrExprs)
                       measrExprs[measrExprs$lhs == eta, "rhs"],
@@ -22,22 +24,19 @@ specifyLmsModel <- function(syntax, data = NULL, method = "lms", m = 16) {
   allIndsEtas <- unlist(indsEtas)
   numAllIndsEtas <- length(allIndsEtas)
   
-  # Xis and Interaction Terms --------------------------------------------------
+  # exogenouts variables (xis) and interaction terms 
   intTerms <- structExprs[grepl(":", structExprs$rhs), ] 
-  
-  # variablese in interaction terms
   varsInts <- lapplyNamed(intTerms$rhs,
-                         FUN = stringr::str_split_1,
-                         pattern = ":",
-                         names = stringr::str_remove_all(intTerms$rhs, ":"))
+                          FUN = stringr::str_split_1,
+                          pattern = ":",
+                          names = stringr::str_remove_all(intTerms$rhs, ":"))
   allVarsInInts <- unique(unlist(varsInts))
   
-  # now etas are included as xis, but their loadings are in lambdaX is 0
   xis <- parTable[parTable$op == "=~" &
                   !parTable$lhs %in% etas, "lhs"] |> unique()
   if (length(xis) == 0) stop("No xis in model")
 
-  # Sorting Xis so that it is ordered with the xis in interactions first
+  # Sorting xis so that it is ordered with the xis in interactions first
   omegaAndSortedXis <- sortXisAndOmega(xis, varsInts, etas, intTerms)
   xis <- omegaAndSortedXis$sortedXis
   numXis <- length(xis)
@@ -53,7 +52,8 @@ specifyLmsModel <- function(syntax, data = NULL, method = "lms", m = 16) {
   allIndsXis <- unlist(indsXis)
   numAllIndsXis <- length(allIndsXis)
 
-  # Measurement model ----------------------------------------------------------
+ 
+  # measurement model x
   lambdaX <- matrix(0, nrow = numAllIndsXis, ncol = numXis,
                      dimnames = list(allIndsXis, xis))
   lastRowPreviousXi <- 0
@@ -64,7 +64,16 @@ specifyLmsModel <- function(syntax, data = NULL, method = "lms", m = 16) {
       c(1, rep(NA, numIndsXis[[xis[[i]]]] - 1))
     lastRowPreviousXi <- lastRowPreviousXi + numIndsXis[[xis[[i]]]]
   }
-  # same as in univariate equations
+
+  tauX <- matrix(NA, nrow = numAllIndsXis, ncol=1,
+                 dimnames = list(allIndsXis, NULL))
+
+  thetaDelta <- matrix(0, nrow = numAllIndsXis, ncol = numAllIndsXis,
+                       dimnames = list(allIndsXis, allIndsXis))
+  diag(thetaDelta) <- NA
+
+
+  # measurement model y
   lambdaY <- matrix(0, nrow = numAllIndsEtas, ncol = numEtas,
                      dimnames = list(allIndsEtas, etas))
   lastRowPreviousEta <- 0
@@ -75,7 +84,15 @@ specifyLmsModel <- function(syntax, data = NULL, method = "lms", m = 16) {
     lastRowPreviousEta <- lastRowPreviousEta + numIndsEtas[[i]]
   }
   
-  # Structural (linear) coefficients -------------------------------------------
+  tauY <- matrix(NA, nrow = numAllIndsEtas, ncol = 1,
+                 dimnames = list(allIndsEtas, NULL))
+
+  thetaEpsilon <- matrix(0, nrow = numAllIndsEtas, ncol = numAllIndsEtas,
+                         dimnames = list(allIndsEtas, allIndsEtas))
+  diag(thetaEpsilon) <- NA
+
+  
+  # structural model 
   gammaXi <- matrix(0, nrow = numEtas, ncol = numXis,
                   dimnames = list(etas, xis))
   exprsGammaXi <- structExprs[structExprs$lhs %in% etas & 
@@ -93,20 +110,13 @@ specifyLmsModel <- function(syntax, data = NULL, method = "lms", m = 16) {
   if (nrow(exprsGammaEta) > 0) apply(exprsGammaEta, MARGIN = 1, 
           FUN = function(row) gammaEta[row[["lhs"]], row[["rhs"]]] <<- NA)
 
-  # Covariance Structure residuals observed variables --------------------------
-  thetaDelta <- matrix(0, nrow = numAllIndsXis, ncol = numAllIndsXis,
-                        dimnames = list(allIndsXis, allIndsXis))
-  diag(thetaDelta) <- NA
 
-  thetaEpsilon <- matrix(0, nrow = numAllIndsEtas, ncol = numAllIndsEtas,
-                          dimnames = list(allIndsEtas, allIndsEtas))
-  diag(thetaEpsilon) <- NA
-
-  # Covariance Structure latents -----------------------------------------------
+  # residuals etas
   psi <- matrix(0, nrow = numEtas, ncol = numEtas,
                 dimnames = list(etas, etas))
   diag(psi) <- NA
-
+  
+  # covariance matrix xis
   phi <- diag(numXis)
   colnames(phi) <- rownames(phi) <- xis 
   A <- phi
@@ -116,15 +126,11 @@ specifyLmsModel <- function(syntax, data = NULL, method = "lms", m = 16) {
     A[TRUE] <- 0
   }
   
-  # Mean Structure -------------------------------------------------------------
-  tauX <- matrix(NA, nrow = numAllIndsXis, ncol=1,
-                 dimnames = list(allIndsXis, NULL))
-  tauY <- matrix(NA, nrow = numAllIndsEtas, ncol = 1,
-                 dimnames = list(allIndsEtas, NULL))
-
+  # mean etas
   alpha <- matrix(0, nrow=numEtas, ncol=1, dimnames = list(etas, "alpha"))
 
-  # Quadratic Terms ------------------------------------------------------------
+
+  # quadratic terms 
   omegaEtaXi <- omegaAndSortedXis$omegaEtaXi
   omegaXiXi <- omegaAndSortedXis$omegaXiXi
 
@@ -162,9 +168,6 @@ specifyLmsModel <- function(syntax, data = NULL, method = "lms", m = 16) {
                             dimnames = list(scalingInds, 
                                             scalingInds))
   diag(subThetaEpsilon) <- NA
-  # B = (Ieta - gammaEta - gammaXi %*% A)
-  # B ^ -1 = (cholB %*% t(cholB)) ^ -1
-  # B ^ -1 = t(cholB) ^ -1 %*% cholB ^ -1
   Ieta <- diag(numEtas)
 
   matrices <- list(
@@ -334,21 +337,29 @@ fillSymmetric <- function(mat, values) {
 
 
 sortXisAndOmega <- function(xis, varsInts, etas, intTerms) {
-  # i <= k, i < j, i = row, j = col
   # allVarsInInts should be sorted according to which variables 
   # occur in the most interaction terms (makes it more efficient)
-  allVarsInInts <- unlist(varsInts) |> table() |> 
-    sort(decreasing = TRUE) |> names()
+  allVarsInInts <- unique(unlist(varsInts))
+  freqInIntTerms <- as.data.frame(table(unlist(varsInts)))
+
   sortedXis <- c(allVarsInInts, xis[!xis %in% allVarsInInts])
   nonLinearXis <- character(0L)
   for (interaction in varsInts) {
-    if (!any(interaction %in% nonLinearXis)) {
-      if (all(interaction %in% etas)) 
-        stop("Interactions between two endogenous variables are not allowed")
-      choice <- interaction[which(!interaction %in% etas)] |> 
-        getFirstXinY(allVarsInInts)
-      nonLinearXis <- c(nonLinearXis, choice)
+    if (any(interaction %in% nonLinearXis)) next # no need to add it again
+
+    if (length(interaction) > 2) {
+      stop("Only interactions between two variables are allowed")
+    } else if (all(interaction %in% etas)) {
+      stop("Interactions between two endogenous variables are not allowed")
     }
+
+    choice <- interaction[which(!interaction %in% etas)] 
+    if (length(choice) > 1) {
+      freq <- freqInIntTerms$Freq[freqInIntTerms$Var1 %in% choice]
+      choice <- choice[whichIsMax(freq)][[1]] # pick first if both are equal
+    }
+
+    nonLinearXis <- c(nonLinearXis, choice)
   }
 
   linearXis <- xis[!xis %in% nonLinearXis]

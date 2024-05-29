@@ -1,3 +1,7 @@
+# Utils for lms approach
+# Last updated: 29.05.2024
+
+
 sortData <- function(data, allIndsXis, allIndsEtas) {
   if (!all(c(allIndsXis, allIndsEtas) %in% colnames(data))) 
     stop("Missing Observed Variables in Data")
@@ -86,7 +90,7 @@ diagPartitionedMat <- function(X, Y) {
 }
 
 
-format_numeric <- function(x, digits = 3) {
+formatNumeric <- function(x, digits = 3) {
   if (is.numeric(x)) {
     format(round(x, digits), nsmall = digits, digits = digits, 
            trim = FALSE, justify = "right")
@@ -96,12 +100,6 @@ format_numeric <- function(x, digits = 3) {
 }
 
 
-getFirstXinY <- function(x, y) {
-  # pick the value in x which appears first in y
-  for (y_i in y) {
-    if (y_i %in% x) return(unique(x[x == y_i]))
-  }
-
-  # if no match, just return the first elem in x
-  x[[1]]
+whichIsMax <- function(x) {
+  which(x == max(x))
 }

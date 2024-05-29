@@ -8,7 +8,7 @@ m1 <- "
 
 # Inner model
   Y ~ X + Z
-  Y ~ X:Z
+  Y ~ X:Z + X:X
 "
 # funnily enough, the starting parameters from the double centering approach
 # give better loglikelihoods than the ones arrived at by the EM algorithm
@@ -30,19 +30,18 @@ tpb <- "
   LBEH =~ b1 + b2
 
 # Inner Model (Based on Steinmetz et al., 2011)
-  # Covariances
-  LATT ~~ cAsn * LSN + cApbc * LPBC
-  LPBC ~~ cPbcSn * LSN
   # Causal Relationsships
   LINT ~ gIa * LATT + gIsn * LSN + gIpbc * LPBC
   LBEH ~ LINT + LPBC
   LBEH ~ LPBC:LINT
+  # LBEH ~ LATT:LPBC
+  # LBEH ~ LPBC:LPBC
 "
 
 startTime2 <- Sys.time()
 est2 <- modsem(tpb, TPB, 
   method = "lms", optimize = TRUE, verbose = TRUE, 
   convergence = 1e-2, sampleGrad = NULL, 
-  nodes = 20, # closer to mplus when using higher number of nodes
+  nodes = 16, # closer to mplus when using higher number of nodes
 )
 duration2 <- Sys.time() - startTime2
