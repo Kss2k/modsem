@@ -204,8 +204,7 @@ specifyModelLmsQml <- function(syntax, data = NULL, method = "lms", m = 16) {
                      numXis = numXis,
                      indsXis = indsXis,
                      allIndsXis = allIndsXis,
-                     scalingInds = scalingInds,
-                     N = nrow(data)),
+                     scalingInds = scalingInds),
                 quad = quad,
                 matrices = matrices,
                 syntax = syntax,
@@ -222,8 +221,12 @@ specifyModelLmsQml <- function(syntax, data = NULL, method = "lms", m = 16) {
     if (any(!completeCases)) {
       warning("Removing missing values case-wise.")
       model$data <- model$data[completeCases, ]
+      model$info$N <- nrow(model$data)
     }
-  } else model$data <- NULL
+  } else {
+    model$data <- NULL
+    model$info$N <- NA
+  }
 
   model
 }

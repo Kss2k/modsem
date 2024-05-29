@@ -40,9 +40,9 @@ tpb <- "
   # Causal Relationsships
   LINT ~ gIa * LATT + gIsn * LSN + gIpbc * LPBC
   LBEH ~ LINT + LPBC
+  LBEH ~ LATT:LPBC
   LBEH ~ LPBC:LINT
-  #LBEH ~ LATT:LPBC
-  #LBEH ~ LPBC:LPBC
+  LBEH ~ LPBC:LPBC
 "
 
 startTime2 <- Sys.time()
