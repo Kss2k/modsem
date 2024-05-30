@@ -10,7 +10,11 @@ ests <- vector("list", length(methods))
 names(ests) <- methods
 
 for (method in methods) {
-  ests[[method]] <- modsem(m1, data = oneInt, method = method)
+  if (method == "ca") {
+    ests[[method]] <- modsem(m1, data = oneInt, method = method, match = TRUE)
+  } else {
+    ests[[method]] <- modsem(m1, data = oneInt, method = method)
+  }
 }
 
 nlsemModel <- '

@@ -192,10 +192,11 @@ createRelDf <- function(indsProdTerm, match = FALSE) {
       }
     }
   }
+  
   names <- apply(relDf, MARGIN = 2, FUN = stringr::str_c, collapse = "")
   structure(as.data.frame(relDf),
             names = names, 
-            row.names = rownames(relDf))
+            row.names = names(indsProdTerm))
 }
 
 
