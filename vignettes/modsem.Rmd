@@ -1,0 +1,129 @@
+---
+title: "modsem"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{modsem}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(modsem)
+```
+## The Basic Syntax
+
+ModSEM basically introduces two new feature to the lavaan-syntax, 1. The semicolon operator (":"), and 2. Parceling Functions (see chapter x).
+The semicolon operator works the same way as in the lm()-function. In order to specify an interaction effect between two variables, you join them by Var1:Var2,
+Models can either be estimated using the one of the product indicator approaches ("ca", "rca", "dblcent", "pind") or by using 
+the latent moderated structural equations approach ("lms"), or the quasi maximum likelihood approach ("qml").
+The product indicator approaches are estimated via lavaan, whilst the lms and qml approaches are estimated via modsem itself.
+
+Here we can see a simple example of how to specify an interaction effect between two latent variables in lavaan.
+
+```{r}
+library(modsem)
+m1 <- '
+  # Outer Model
+  X =~ x1 + x2 +x3
+  Y =~ y1 + y2 + y3
+  Z =~ z1 + z2 + z3
+  
+  # Inner model
+  Y ~ X + Z + X:Z 
+'
+
+est1 <- modsem(m1, oneInt)
+summary(est1)
+```
+By default the model is estimated using the "dblcent" method. If you want to use another method, 
+but the method can be changed using the method argument. 
+
+```{r}
+est1 <- modsem(m1, oneInt, method = "lms")
+summary(est1)
+```
+## Interactions between two observed variables
+
+ModSEM does not only allow you to estimate interactions between latent variables, but also interactions between observed variables. Here we first run a regression with only observed variables, where there is an interaction between x1 and z2, and then run an equivalent model using modsem().
+
+**Regression**
+
+```{r}
+reg1 <- lm(y1 ~ x1*z1, oneInt)
+summary(reg1)
+```
+
+**Using modsem()** In general, when you have interactions between observed variables it is recommended that you use method = "pind".
+
+```{r}
+# Here we use "pind" as the method (see chapter 3)
+est2 <- modsem('y1 ~ x1 + z1 + x1:z1', data = oneInt, method = "pind")
+summary(est2)
+```
+
+## Interactions between latent and observed variables
+
+ModSEM also allows you to estimate interaction effects between latent and observed variables. To do so, you just join a latent and an observed variable by a colon, e.g., 'latent:observer'. As with interactions between observed variables, it is generally recommended that you use method = "pind" for estimating the effect between observed x latent
+
+```{r}
+m3 <- '
+  # Outer Model
+  X =~ x1 + x2 +x3
+  Y =~ y1 + y2 + y3
+  
+  # Inner model
+  Y ~ X + z1 + X:z1 
+'
+
+est3 <- modsem(m3, oneInt, method = "pind")
+summary(est3)
+```
+
+## Multiple Interactions
+
+ModSEM also allows you to specify multiple interactionterms. This is done the same way as for single interactions.
+
+```{r}
+m4 <- '
+  # Outer Model
+  X =~ x1 + x2 +x3
+  Y =~ y1 + y2 + y3
+  Z =~ z1 + z2 + z3
+  G =~ g1 + g2 + g3
+  H =~ h1 + h2 + h3
+  
+  # Inner model
+  Y ~ X + Z + G + H + X:Z + G:H
+'
+
+est4 <- modsem(m4, twoInt)
+summary(est4)
+```
+
+## Interactionterms with more than two varaibles
+
+In some rare cases, you might want an interactionterm between more than two variables (e.g., var1:var2:var3). This can be done in modsem by just adding the extra variable with an extra colon. Note that the more variables you have in your interaction term, the more difficult it will be to estimate your model. It is therefore a good idea to standardize your data before computing your model, this makes it a lot easier for lavaan to estimate your model. This can be done in modsem by adding: standardizeData = TRUE.
+
+```{r}
+m5 <- '
+  # Outer Model
+  X =~ x1 + x2 +x3
+  Y =~ y1 + y2 + y3
+  Z =~ z1 + z2 + z3
+  G =~ g1 + g2 + g3
+  
+  # Inner model
+  Y ~ X + Z + G + X:Z:G
+'
+
+est5 <- modsem(m5, tripleInt, standardizeData = TRUE)
+summary(est5)
+```
+

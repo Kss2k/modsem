@@ -4,3 +4,6 @@
 ^\.git*
 ^tests/testthat/mplusResults* 
 sketches
+^_pkgdown\.yml$
+^docs$
+^pkgdown$

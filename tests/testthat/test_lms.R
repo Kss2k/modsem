@@ -23,11 +23,13 @@ duration1 <- Sys.time() - startTime1
 
 
 # I have no clue why, but changing the ordering of how the interaction terms 
-# are specified, ends up changing the results (and number of iterations) ever 
-# so slightly -- even though the matrices are exactly the same. This can be 
+# are specified, ends up changing the number of iterations (and results ever 
+# so slightly) -- even though the matrices are exactly the same. This can be 
 # seen through the fact that the starting loglikelihoods are the same (if optimized) 
 # indicating that the matrices are the same (i.e,. produce the same results, when
 # given the same values). 
+# Solution: slightly different results from lavaan, giving slightly different 
+# starting parameters
 tpb <- "
 # Outer Model (Based on Hagger et al., 2007)
   LATT =~ att1 + att2 + att3 + att4 + att5
@@ -40,15 +42,17 @@ tpb <- "
   # Causal Relationsships
   LINT ~ gIa * LATT + gIsn * LSN + gIpbc * LPBC
   LBEH ~ LINT + LPBC
-  LBEH ~ LATT:LPBC
+  # LBEH ~ LATT:LPBC
   LBEH ~ LPBC:LINT
-  LBEH ~ LPBC:LPBC
+  # LBEH ~ LPBC:LPBC
 "
 
 startTime2 <- Sys.time()
 est2 <- modsem(tpb, TPB, 
   method = "lms", optimize = TRUE, verbose = TRUE, 
   convergence = 1e-2, sampleGrad = NULL, 
-  nodes = 16, # closer to mplus when using higher number of nodes
+  nodes = 20
+  # closer to mplus when tweaking the number of nodes and convergence criterion
+  # nodes = 100, convergence = 1e-7 is very very close to mplus
 )
 duration2 <- Sys.time() - startTime2

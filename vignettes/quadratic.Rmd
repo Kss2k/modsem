@@ -1,0 +1,55 @@
+---
+title: "Quadratic Effects"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Quadratic Effects}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(modsem)
+```
+In essence quadratic effects are just a special case of interaction effects – where a variable has an interaction effect with itself. Thus, all of the modsem methods can be used to estimate quadratic effects as well.
+
+Here you can see a very simple example using the LMS-approach.
+
+```{r}
+library(modsem)
+m1 <- '
+# Outer Model
+X =~ x1 + x2 + x3
+Y =~ y1 + y2 + y3
+Z =~ z1 + z2 + z3
+
+# Inner model
+Y ~ X + Z + Z:X + X:X
+'
+
+est1Lms <- modsem(m1, data = oneInt, method = "lms")
+summary(est1Lms)
+```
+
+In this example we have a simple model with two quadratic effects and one interaction effect, using the QML- and double centering approach, using the data from a subset of the PISA 2006 data.
+
+```{r}
+m2 <- '
+ENJ =~ enjoy1 + enjoy2 + enjoy3 + enjoy4 + enjoy5
+CAREER =~ career1 + career2 + career3 + career4
+SC =~ academic1 + academic2 + academic3 + academic4 + academic5 + academic6
+CAREER ~ ENJ + SC + ENJ:ENJ + SC:SC + ENJ:SC
+'
+
+est2Dblcent <- modsem(m2, data = jordan)
+est2Qml <- modsem(m2, data = jordan, method = "qml")
+summary(est2Qml)
+```
+
+Note: The other approaches work as well, but might be quite slow depending on the number of interaction effects (particularly for the LMS- and constrained approach).

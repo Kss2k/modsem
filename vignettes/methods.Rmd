@@ -1,0 +1,56 @@
+---
+title: "methods"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{methods}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(modsem)
+```
+
+There are a number of approaches for estimating interaction effects in SEM. In modsem(), the method = "method" argument allows you to choose which to use.
+
+-   `"ca"` = constrained approach (Algina & Moulder, 2001)
+-   `"uca"` = unconstrained approach (Marsh, 2004)
+-   `"rca"` = residual centering approach (Little et al., 2006)
+    -   default
+-   `"dblcent"`= double centering approach (Marsh., 2013)
+-   `"pind"` = basic product indicator approach (not recommended)
+-   `"lms"` = The Latent Moderated Structural equations approach
+    -   note: there can not be an interaction between two endogenous variables.
+-   `"qml"` = The Quasi Maximum Likelihood approach.
+    -   note: can only be done if you have a single endogenous (dependent) variable.
+-   `"mplus"`
+    -   estimates model through Mplus, if it is installed
+
+```{r, eval = FALSE}
+
+m1 <- '
+# Outer Model
+X =~ x1 + x2 + x3
+Y =~ y1 + y2 + y3
+Z =~ z1 + z2 + z3
+
+# Inner model
+Y ~ X + Z + X:Z 
+'
+
+modsem(m1, data = oneInt, method = "ca")
+modsem(m1, data = oneInt, method = "uca")
+modsem(m1, data = oneInt, method = "rca")
+modsem(m1, data = oneInt, method = "dblcent")
+modsem(m1, data = oneInt, method = "mplus")
+modsem(m1, data = oneInt, method = "lms")
+modsem(m1, data = oneInt, method = "qml")
+```
+``

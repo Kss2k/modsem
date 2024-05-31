@@ -8,3 +8,5 @@ src/*.so
 src/*.dll
 tests/testthat/mplusResults*
 sketches/
+inst/doc
+docs
