@@ -1,8 +1,8 @@
 ---
-title: "Customizing Interaction Terms"
+title: "customizing interaction terms"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Customizing Interaction Terms}
+  %\VignetteIndexEntry{customizing interaction terms}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -10,7 +10,8 @@ vignette: >
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  eval = FALSE
 )
 ```
 

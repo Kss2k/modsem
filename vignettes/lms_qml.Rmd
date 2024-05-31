@@ -1,8 +1,8 @@
 ---
-title: "The LMS and QML approaches"
+title: "LMS and QML approaches"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{The LMS and QML approaches}
+  %\VignetteIndexEntry{LMS and QML approaches}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -10,7 +10,8 @@ vignette: >
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  eval = FALSE
 )
 ```
 
