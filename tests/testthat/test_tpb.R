@@ -21,3 +21,5 @@ method <- c("ca", "rca", "uca", "dblcent")
 ests <- lapply(method, function(m) modsem(tpb, data = TPB, method = m))
 estsMatch <- lapply(method, function(m) modsem(tpb, data = TPB, method = m,
                                                match = TRUE))
+
+print(summary(ests[[1]]))
