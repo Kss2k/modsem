@@ -66,9 +66,14 @@ methods <- list(m1 = nativeMethods[nativeMethods != "ca"],
 
 estimates <- vector("list", length(models))
 for (i in seq_along(estimates)) {
-    runMultipleMethods(models[[i]], data = data[[i]], 
-                              methods = methods[[i]],
-                              estimator = "ML")
+    estimates[[i]] <- runMultipleMethods(models[[i]], data = data[[i]], 
+                                         methods = methods[[i]],
+                                         estimator = "ML")
 
 }
 
+# testing plot function 
+plot_interaction(x = "ind60", z = "dem60", y = "dem65", xz = "ind60:dem60", 
+                 vals_z = c(-0.5, 0.5), model = estimates[[1]][["rca"]])
+plot_interaction(x = "speed", z = "textual", y = "visual", xz = "speed:textual", 
+                 vals_z = c(-0.5, 0.5), model = estimates[[2]][["ca"]])

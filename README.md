@@ -15,28 +15,28 @@ devtools::install_github("kss2k/modsem")
 
 There are a number of approaches for estimating interaction effects in SEM. In `modsem()`, the `method = "method"` argument allows you to choose which to use.
 
-- "ca" = constrained approach (Algina & Moulder, 2001)
+- `"ca"` = constrained approach (Algina & Moulder, 2001)
     - Note that constraints can become quite complicated for complex models, 
       particularly when there is an interaction including enodgenous variables.
       The method can therefore be quite slow. 
-- "uca" = unconstrained approach (Marsh, 2004)
-- "rca" = residual centering approach (Little et al., 2006)
-- "dblcent" = double centering approach (Marsh., 2013)
+- `"uca"` = unconstrained approach (Marsh, 2004)
+- `"rca"` = residual centering approach (Little et al., 2006)
+- `"dblcent"` = double centering approach (Marsh., 2013)
   - default 
-- "pind" = basic product indicator approach (not recommended)
-- "lms" = The latent moderated structural equations approach
+- `"pind"` = basic product indicator approach (not recommended)
+- `"lms"` = The latent moderated structural equations approach
   - note: now implemented with multiple endogenous variables
     however it does not allow interactions between two enodgenous
     variables, it does however allow interactions between exogenous:endogenous
     and exogenous:exogenous
   - do `optimize = TRUE` for faster convergence (experimental feature)
-- "qml" = The Quasi Maximum Likelihood estimation of latent moderated structural equations. 
+- `"qml"` = The Quasi Maximum Likelihood estimation of latent moderated structural equations. 
   - note: only works with a single endogenous variable.
-- "mplus" 
+- `"mplus"` 
   - estimates model through Mplus, if it is installed
 
-# New Feature (10.04.24)
-- Implemented a new estimator for the LMS approach, which now works with more complicated models
+# New Feature (01.06.2024)
+- New function for plotting interaction effects (`plot_interaction()`)
 
 # Examples 
 
@@ -72,23 +72,20 @@ summary(est1Lms)
 
 ## Theory Of Planned Behavior
 ```
-tpb <- ' 
+tpb <- "
 # Outer Model (Based on Hagger et al., 2007)
-  LATT =~ att1 + att2 + att3 + att4 + att5
+  ATT =~ att1 + att2 + att3 + att4 + att5
   LSN =~ sn1 + sn2
-  LPBC =~ pbc1 + pbc2 + pbc3
-  LINT =~ int1 + int2 + int3
-  LBEH =~ b1 + b2
+  PBC =~ pbc1 + pbc2 + pbc3
+  INT =~ int1 + int2 + int3
+  BEH =~ b1 + b2
 
 # Inner Model (Based on Steinmetz et al., 2011)
-  # Covariances
-  LATT ~~ LSN + LPBC
-  LPBC ~~ LSN 
   # Causal Relationsships
-  LINT ~ LATT + LSN + LPBC
-  LBEH ~ LINT + LPBC 
-  LBEH ~ LINT:LPBC  
-'
+  INT ~ ATT + LSN + PBC
+  BEH ~ INT + PBC
+  BEH ~ PBC:INT
+"
 
 # double centering approach
 estTpbDblCent <- modsem(tpb, data = TPB, method = "dblcent")

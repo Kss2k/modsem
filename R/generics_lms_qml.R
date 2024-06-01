@@ -1,3 +1,15 @@
+#' @export 
+parameter_estimates.modsem_lms <- function(object, ...) {
+  object$parTable 
+}
+
+
+#' @export 
+parameter_estimates.modsem_qml <- function(object, ...) {
+  object$parTable 
+}
+
+
 #' summary.modsem_lms
 #'
 #' @param object modsem object to summarized
@@ -7,6 +19,7 @@
 summary.modsem_lms <- function(object, ...) {
   summaryLmsAndQml(object, ...)
 }
+
 
 #' summary.modsem_qml
 #'
@@ -42,7 +55,7 @@ summaryLmsAndQml <- function(object, H0 = TRUE, verbose = TRUE,
                        "ci.lower", "ci.upper")
 
   out <- list(parTable = parTable,
-              data = object$model$data,
+              data = object$data,
               iterations = object$iterations,
               logLik = object$logLik, 
               D = NULL)

@@ -124,11 +124,12 @@ modsem_mplus <- function(modelSyntax,
   mplusParTable$z <- NA
 
   modelSpec <- list(parTable = parTable,
-       coefParTable = mplusParTable,
-       model = results,
-       coefs = coefs)
+                    coefParTable = mplusParTable,
+                    model = results,
+                    coefs = coefs,
+                    data = data)
   structure(modelSpec,
-            class = "ModSEM",
+            class = "modsem_mplus",
             method = "Mplus")
 }
 

@@ -68,10 +68,6 @@ tpb <- '
   BEH =~ b1 + b2
 
 # Inner Model (Based on Steinmetz et al., 2011)
-  # Covariances
-  ATT ~~ SN + PBC
-  PBC ~~ SN 
-  # Causal Relationsships
   INT ~ ATT + SN + PBC
   BEH ~ INT + PBC 
   BEH ~ INT:PBC  

@@ -5,6 +5,18 @@
 #' @rdname summary
 #' @export 
 summary.modsem_mplus <- function(object, ...) {
-  cat("ModSEM: \nMethod =", attributes(object)$method, "\n")
+  object
+}
+
+
+#' @export
+print.modsem_mplus <- function(x, ...) {
+  cat("ModSEM: \nMethod =", attributes(x)$method, "\n")
+  print(x$coefParTable)
+}
+
+
+#' @export
+parameter_estimates.modsem_mplus <- function(object, ...) {
   object$coefParTable
 }

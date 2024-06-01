@@ -1,11 +1,12 @@
 emLms <- function(model, verbose = FALSE,
-               convergence = 1e-02, maxiter = 500,
-               maxstep = 1,
-               breakOnLogLikIncrease = FALSE,
-               sampleGrad = NULL,
-               control = list(),
-               ...) {
+                  convergence = 1e-02, maxiter = 500,
+                  maxstep = 1,
+                  breakOnLogLikIncrease = FALSE,
+                  sampleGrad = NULL,
+                  control = list(),
+                  ...) {
   data <- model$data
+  model$data <- NULL # not needed in the model anymore
   if (anyNA(data)) stop("Remove or replace missing values from data")
     
   # Initialization
@@ -29,8 +30,8 @@ emLms <- function(model, verbose = FALSE,
     logLikOld <- logLikNew
     thetaOld <- thetaNew
 
-    P <- estepLms(model = model, theta = thetaOld, dat = data, ...)
-    mstep <- mstepLms(model = model, P = P, dat = data,
+    P <- estepLms(model = model, theta = thetaOld, data = data, ...)
+    mstep <- mstepLms(model = model, P = P, data = data,
                       theta = thetaOld, maxstep = maxstep, ...,
                       sampleGrad = sampleGrad,
                       control = control)
@@ -50,7 +51,7 @@ emLms <- function(model, verbose = FALSE,
     }
     if (abs(logLikOld - logLikNew) < convergence) run <- FALSE
   }
-  final <- mstepLms(model = model, P = P, dat = data,
+  final <- mstepLms(model = model, P = P, data = data,
                     theta = thetaNew, negHessian = TRUE,
                     maxstep = maxstep, sampleGrad = NULL, 
                     verbose = verbose, control = control,
@@ -70,6 +71,7 @@ emLms <- function(model, verbose = FALSE,
   if (iterations == maxiter) convergence <- FALSE else convergence <- TRUE
 
   out <- list(model = finalModel, 
+              data = data,
               theta = coefficients,
               parTable = parTable,
               originalParTable = model$parTable,

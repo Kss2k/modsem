@@ -20,7 +20,7 @@ est1 <- modsem(m1, oneInt,
   convergence = 1e-2, sampleGrad = NULL, maxstep = 1
 )
 duration1 <- Sys.time() - startTime1
-
+plot_interaction("X", "Z", "Y", "X:Z", -3:3, c(-0.5, 0.5), est1)
 
 # I have no clue why, but changing the ordering of how the interaction terms 
 # are specified, ends up changing the number of iterations (and results ever 
@@ -32,27 +32,28 @@ duration1 <- Sys.time() - startTime1
 # starting parameters
 tpb <- "
 # Outer Model (Based on Hagger et al., 2007)
-  LATT =~ att1 + att2 + att3 + att4 + att5
+  ATT =~ att1 + att2 + att3 + att4 + att5
   LSN =~ sn1 + sn2
-  LPBC =~ pbc1 + pbc2 + pbc3
-  LINT =~ int1 + int2 + int3
-  LBEH =~ b1 + b2
+  PBC =~ pbc1 + pbc2 + pbc3
+  INT =~ int1 + int2 + int3
+  BEH =~ b1 + b2
 
 # Inner Model (Based on Steinmetz et al., 2011)
   # Causal Relationsships
-  LINT ~ gIa * LATT + gIsn * LSN + gIpbc * LPBC
-  LBEH ~ LINT + LPBC
-  # LBEH ~ LATT:LPBC
-  LBEH ~ LPBC:LINT
-  # LBEH ~ LPBC:LPBC
+  INT ~ ATT + LSN + PBC
+  BEH ~ INT + PBC
+  # BEH ~ ATT:PBC
+  BEH ~ PBC:INT
+  # BEH ~ PBC:PBC
 "
 
 startTime2 <- Sys.time()
 est2 <- modsem(tpb, TPB, 
   method = "lms", optimize = TRUE, verbose = TRUE, 
   convergence = 1e-2, sampleGrad = NULL, 
-  nodes = 20
+  nodes = 16
   # closer to mplus when tweaking the number of nodes and convergence criterion
   # nodes = 100, convergence = 1e-7 is very very close to mplus
 )
 duration2 <- Sys.time() - startTime2
+plot_interaction(x = "INT", z = "PBC", y = "BEH", xz = "PBC:INT", vals_z = c(-0.5, 0.5), model = est2)

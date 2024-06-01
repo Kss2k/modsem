@@ -1,9 +1,9 @@
 estQml <- function(model, 
-                  convergence = 1e-2,
-                  verbose = FALSE, 
-                  maxIter = 1000,
-                  negHessian = TRUE,
-                  ...) {
+                   convergence = 1e-2,
+                   verbose = FALSE, 
+                   maxIter = 1000,
+                   negHessian = TRUE,
+                   ...) {
   if (model$info$numEtas > 1) {
     stop("Only one eta allowed in QML estimation")
   }
@@ -20,6 +20,7 @@ estQml <- function(model,
   finalModel <- fillModel(model, coefficients)
   finalModel$matricesNA <- model$matrices 
   finalModel$matricesSE <- fillModel(model, calcSE(final$hessian))$matrices 
+  finalModel$data <- NULL # not needed in the model anymore 
   parTable <- finalModelToParTable(finalModel, method = "qml")
 
   parTable$tvalue <- parTable$est / parTable$se
@@ -28,6 +29,7 @@ estQml <- function(model,
   parTable$ciUpper <- parTable$est + 1.96 * parTable$se
 
   out <- list(model = finalModel, 
+              data  = model$data,
               theta = coefficients,
               parTable = parTable,
               originalParTable = model$parTable,

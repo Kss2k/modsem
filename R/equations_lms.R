@@ -62,7 +62,7 @@ sigmaLms <- function(model, z1) {
 }
 
 
-estepLms <- function(model, theta, dat, ...) {
+estepLms <- function(model, theta, data, ...) {
   if (countFreeParams(model) != length(theta))
     stop("length paramaters does not match free parameters in model")
   modFilled <- fillModel(model = model, theta = theta)
@@ -75,38 +75,38 @@ estepLms <- function(model, theta, dat, ...) {
   # corresponding probability (weight w) for each node appearing. I.e., whats the 
   # probability of observing the data given the nodes, and what is the probability
   # of observing the given nodes (i.e., w). Sum the row probabilities = 1
-  P <- matrix(0, nrow = nrow(dat), ncol = length(w))
+  P <- matrix(0, nrow = nrow(data), ncol = length(w))
   sapply(seq_along(w), FUN = function(i) {
-      P[,i] <<- w[[i]] * dMvn(dat, mean = muLmsCpp(model = modFilled, z = V[i,]),
+      P[,i] <<- w[[i]] * dMvn(data, mean = muLmsCpp(model = modFilled, z = V[i,]),
                               sigma = sigmaLmsCpp(model = modFilled, z = V[i,]))
   })
   P / rowSums(P)
 }
 
 
-stochasticGradient <- function(theta, model, dat, P, 
+stochasticGradient <- function(theta, model, data, P, 
                                sampleGrad = NULL, ...) {
-  baseline <- logLikLms(theta, model, dat, P)
+  baseline <- logLikLms(theta, model, data, P)
   grad <- rep(0, length(theta))
   if (!is.null(sampleGrad)) params <- sample(seq_along(theta), sampleGrad)
   else params <- seq_along(theta)
   for (i in params) {
     theta[i] <- theta[i] + 1e-12
-    newLik <- logLikLms(theta, model, dat, P) 
+    newLik <- logLikLms(theta, model, data, P) 
     grad[i] <- (newLik - baseline) / 1e-12
   }
   grad
 } 
 
 
-logLikLms <- function(theta, model, dat, P, sampleGrad = NULL, ...) {
+logLikLms <- function(theta, model, data, P, sampleGrad = NULL, ...) {
   modFilled <- fillModel(model = model, theta = theta)
   k <- model$quad$k 
   V <- modFilled$quad$n
   # summed log probability of observing the data given the parameters
   # weighted my the posterior probability calculated in the E-step
   r <- vapply(seq_len(nrow(V)), FUN.VALUE = numeric(1L), FUN = function(i){
-    lls <- sum(dMvn(dat, mean = muLmsCpp(model = modFilled, z = V[i,]),
+    lls <- sum(dMvn(data, mean = muLmsCpp(model = modFilled, z = V[i,]),
                     sigma = sigmaLmsCpp(model = modFilled, z = V[i,]),
                     log = TRUE) * P[,i])
     lls
@@ -116,22 +116,22 @@ logLikLms <- function(theta, model, dat, P, sampleGrad = NULL, ...) {
 
 
 # Maximization step of EM-algorithm (see Klein & Moosbrugger, 2000)
-mstepLms <- function(theta, model, dat, P, negHessian = FALSE,
-                      maxstep,
-                      verbose = FALSE,
-                      control=list(), sampleGrad,...) {
+mstepLms <- function(theta, model, data, P, negHessian = FALSE,
+                     maxstep,
+                     verbose = FALSE,
+                     control = list(), sampleGrad,...) {
   if (is.null(sampleGrad)) stochasticGradient <- NULL
   if (is.null(control$iter.max)) control$iter.max <- maxstep
-  est <- stats::nlminb(start = theta, objective = logLikLms, dat = dat,
-                gradient = stochasticGradient, sampleGrad = sampleGrad,
-                model = model, P = P, 
-                upper = model$info$bounds$upper,
-                lower = model$info$bounds$lower, control = control,
-               ...) |> suppressWarnings()
+  est <- stats::nlminb(start = theta, objective = logLikLms, data = data,
+                       gradient = stochasticGradient, sampleGrad = sampleGrad,
+                       model = model, P = P, 
+                       upper = model$info$bounds$upper,
+                       lower = model$info$bounds$lower, control = control,
+                       ...) |> suppressWarnings()
   if (negHessian) {
     if (verbose) cat("Calculating Hessian\n")
-    est$hessian <- nlme::fdHess(pars = est$par, fun=logLikLms, 
-                                model = model, dat=dat, P=P,
+    est$hessian <- nlme::fdHess(pars = est$par, fun = logLikLms, 
+                                model = model, data = data, P = P,
                                 .relStep = .Machine$double.eps^(1/5))$Hessian
   }
   est

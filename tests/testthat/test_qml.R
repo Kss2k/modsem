@@ -8,3 +8,4 @@ Y ~ X + Z + X:Z
 '
 
 est1 <- modsem(m1, data = oneInt, convergence = 1e-2, method = "qml")
+plot_interaction(x = "X", z = "Z", y = "Y", xz = "X:Z", vals_z = c(-0.5, 0.5), model = est1)

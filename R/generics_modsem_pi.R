@@ -9,3 +9,8 @@ summary.modsem_pi <- function(object, ...) {
   lavaan::summary(object$lavaan, ...)
 }
 
+
+#' @export
+parameter_estimates.modsem_pi <- function(object, ...) {
+  lavaan::parameterEstimates(object$lavaan, ...)
+}
