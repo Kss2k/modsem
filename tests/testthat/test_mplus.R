@@ -19,6 +19,6 @@ run <- tryCatch({
 )
 if (run) {
   mplus <- modsem(m1, oneInt, method = "mplus")
-  summary(mplus)
+  print(summary(mplus))
   plot_interaction(x = "X", z = "Z", y = "Y", xz = "X:Z", vals_z = c(-0.5, 0.5), model = mplus)
 } 

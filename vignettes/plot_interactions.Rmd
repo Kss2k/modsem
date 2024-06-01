@@ -27,6 +27,7 @@ The x-variable is plotted on the x-axis and the y-variable is plotted on the y-a
 And the z-variable decides at what points of z the effect of x on y is plotted.
 The function will also plot the 95% confidence interval of the interaction effect.
 
+
 Here we can see a simple example using the double centering approach. 
 ```{r}
 m1 <- "
