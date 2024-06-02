@@ -57,12 +57,9 @@ tpb <- "
   BEH =~ b1 + b2
 
 # Inner Model (Based on Steinmetz et al., 2011)
-  # Causal Relationsships
   INT ~ ATT + LSN + PBC
   BEH ~ INT + PBC
-  # BEH ~ ATT:PBC
   BEH ~ PBC:INT
-  # BEH ~ PBC:PBC
 "
 
 est2 <- modsem(tpb, TPB, method = "lms")

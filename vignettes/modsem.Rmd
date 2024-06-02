@@ -20,7 +20,7 @@ library(modsem)
 ```
 # The Basic Syntax
 
-ModSEM basically introduces two new feature to the lavaan-syntax, 1. The semicolon operator (":"), and 2. Parceling Functions (see chapter x).
+ModSEM basically introduces a new feature to the lavaan-syntax -- the semicolon operator (":").
 The semicolon operator works the same way as in the lm()-function. In order to specify an interaction effect between two variables, you join them by Var1:Var2,
 Models can either be estimated using the one of the product indicator approaches ("ca", "rca", "dblcent", "pind") or by using 
 the latent moderated structural equations approach ("lms"), or the quasi maximum likelihood approach ("qml").
