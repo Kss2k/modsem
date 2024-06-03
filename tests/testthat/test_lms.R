@@ -33,25 +33,28 @@ print(summary(est1))
 tpb <- "
 # Outer Model (Based on Hagger et al., 2007)
   ATT =~ att1 + att2 + att3 + att4 + att5
-  LSN =~ sn1 + sn2
+  SN =~ sn1 + sn2
   PBC =~ pbc1 + pbc2 + pbc3
   INT =~ int1 + int2 + int3
   BEH =~ b1 + b2
 
 # Inner Model (Based on Steinmetz et al., 2011)
   # Causal Relationsships
-  INT ~ ATT + LSN + PBC
+  INT ~ ATT + SN + PBC
   BEH ~ INT + PBC
   # BEH ~ ATT:PBC
   BEH ~ PBC:INT
   # BEH ~ PBC:PBC
 "
 
+covModel <- '
+PBC ~ ATT + SN
+'
 startTime2 <- Sys.time()
 est2 <- modsem(tpb, TPB, 
   method = "lms", optimize = TRUE, verbose = TRUE, 
-  convergence = 1e-2, sampleGrad = NULL, 
-  nodes = 16
+  convergence = 1e-3, sampleGrad = NULL, covSyntax = covModel,
+  nodes = 100
   # closer to mplus when tweaking the number of nodes and convergence criterion
   # nodes = 100, convergence = 1e-7 is very very close to mplus
 )

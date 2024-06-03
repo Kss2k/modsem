@@ -2,7 +2,8 @@
 # Last updated: 29.05.2024
 
 
-specifyModelLmsQml <- function(syntax, data = NULL, method = "lms", m = 16) {
+specifyModelLmsQml <- function(syntax, data = NULL, method = "lms", m = 16,
+                               covSyntax = NULL) {
   parTable <- modsem::modsemify(syntax)
   structExprs <- parTable[parTable$op == "~" & 
                           parTable$rhs != "1", ]
@@ -124,6 +125,10 @@ specifyModelLmsQml <- function(syntax, data = NULL, method = "lms", m = 16) {
   if (method == "qml") {
     phi <- A 
     A[TRUE] <- 0
+  } 
+  if (!is.null(covSyntax)) {
+    phi[TRUE] <- 0
+    A[TRUE] <- 0
   }
   
   # mean etas
@@ -208,7 +213,8 @@ specifyModelLmsQml <- function(syntax, data = NULL, method = "lms", m = 16) {
                 quad = quad,
                 matrices = matrices,
                 syntax = syntax,
-                parTable = parTable)
+                parTable = parTable,
+                covModel = covModel(covSyntax, sortedXis = xis))
 
   model$theta <- createParamVector(model)
   model$info$bounds <- getParamBounds(model)
@@ -245,6 +251,7 @@ isInList <- function(elems, list) {
 
 
 createParamVector <- function(model, start = NULL) {
+  thetaCovModel <- model$covModel$theta
   set.seed(123)
   matrices <- model$matrices
   lambdaX <- as.vector(matrices$lambdaX)
@@ -261,65 +268,89 @@ createParamVector <- function(model, start = NULL) {
   gammaEta <- as.vector(matrices$gammaEta)
   omgeaXiXi <- as.vector(matrices$omegaXiXi)
   omegaEtaXi <- as.vector(matrices$omegaEtaXi)
-  theta <- c("lambdaX" = lambdaX,
-             "lambdaY" = lambdaY,
-             "tauX" = tauX,
-             "tauY" = tauY,
-             "thetaDelta" = thetaDelta,
-             "thetaEpsilon" = thetaEpsilon,
-             "phi" = phi,
-             "A" = A,
-             "psi" = psi,
-             "alpha" = alpha,
-             "gammaXi" = gammaXi,
-             "gammaEta" = gammaEta,
-             "omegaXiXi" = omgeaXiXi,
-             "omegaEtaXi" = omegaEtaXi)
-  theta <- theta[is.na(theta)]
+  thetaMainModel <- c("lambdaX" = lambdaX,
+                      "lambdaY" = lambdaY,
+                      "tauX" = tauX,
+                      "tauY" = tauY,
+                      "thetaDelta" = thetaDelta,
+                      "thetaEpsilon" = thetaEpsilon,
+                      "phi" = phi,
+                      "A" = A,
+                      "psi" = psi,
+                      "alpha" = alpha,
+                      "gammaXi" = gammaXi,
+                      "gammaEta" = gammaEta,
+                      "omegaXiXi" = omgeaXiXi,
+                      "omegaEtaXi" = omegaEtaXi)
+  thetaMainModel <- thetaMainModel[is.na(thetaMainModel)]
   if (is.null(start)) {
-   theta <- vapply(theta,
-      FUN.VALUE = vector("numeric", 1L),
-      FUN = function(x) stats::runif(1)
-    )
+   thetaMainModel <- vapply(thetaMainModel, FUN.VALUE = vector("numeric", 1L),
+                            FUN = function(x) stats::runif(1))
   }
-  theta
+  c(thetaCovModel, thetaMainModel)
 }
 
 
-fillModel <- function(model, theta, fillPhi = FALSE) {
+fillModel <- function(model, theta, fillPhi = FALSE, method = "lms") {
+  if (is.null(names(theta))) names(theta) <- names(model$theta)
+  # cov model
+  if (model$covModel$freeParams == 0) {
+    thetaCovModel <- NULL
+    thetaMainModel <- theta
+  } else {
+    thetaCovModel <- theta[seq_len(model$covModel$freeParams)]
+    thetaMainModel <- theta[-seq_len(model$covModel$freeParams)]
+  }
+
+  model$covModel <- fillCovModel(model$covModel, thetaCovModel, 
+                                 fillPhi = fillPhi, method = method)
+  model$matrices <- fillMainModel(model, thetaMainModel, fillPhi = fillPhi,
+                                  method = method)
+  model
+}
+
+
+fillMainModel <- function(model, thetaMainModel, fillPhi = FALSE, method = "lms") {
   numXis <- model$info$numXis
   numEtas <- model$info$numEtas
-  if (is.null(names(theta))) names(theta) <- names(model$theta)
   matrices <- model$matrices
   matrices$lambdaX[is.na(matrices$lambdaX)] <-
-    fetch(theta, "lambdaX[0-9]*$")
+    fetch(thetaMainModel, "lambdaX[0-9]*$")
   matrices$lambdaY[is.na(matrices$lambdaY)] <-
-    fetch(theta, "lambdaY[0-9]*$")
+    fetch(thetaMainModel, "lambdaY[0-9]*$")
   matrices$thetaDelta[is.na(matrices$thetaDelta)] <-
-    fetch(theta, "thetaDelta[0-9]*")
+    fetch(thetaMainModel, "thetaDelta[0-9]*")
   matrices$thetaEpsilon[is.na(matrices$thetaEpsilon)] <-
-    fetch(theta, "thetaEpsilon[0-9]*")
-  matrices$A[is.na(matrices$A)] <- fetch(theta, "^A[0-9]*$")
-  matrices$phi <- fillMatrixPhi(theta, matrices, model)
+    fetch(thetaMainModel, "thetaEpsilon[0-9]*")
+  
+  if (method == "lms") {
+    if (!is.null(model$covModel$matrices)) {
+      matrices$A <- expectedCovModel(model$covModel, chol = TRUE)
+    } else {
+      matrices$A[is.na(matrices$A)] <- fetch(thetaMainModel, "^A[0-9]*$")
+    }
+  } else if (method == "qml"){
+    matrices$phi <- fillMatrixPhi(thetaMainModel, matrices, model)
+  }
+
   matrices$psi[is.na(matrices$psi)] <-
-    fetch(theta, "^psi[0-9]*$")
+    fetch(thetaMainModel, "^psi[0-9]*$")
   matrices$tauX[is.na(matrices$tauX)] <-
-    fetch(theta, "tauX[0-9]*$")
+    fetch(thetaMainModel, "tauX[0-9]*$")
   matrices$tauY[is.na(matrices$tauY)] <-
-    fetch(theta, "tauY[0-9]*$")
+    fetch(thetaMainModel, "tauY[0-9]*$")
   matrices$alpha[is.na(matrices$alpha)] <-
-    fetch(theta, "alpha[0-9]*$")
+    fetch(thetaMainModel, "alpha[0-9]*$")
   matrices$gammaEta[is.na(matrices$gammaEta)] <-
-    fetch(theta, "gammaEta[0-9]*$")
+    fetch(thetaMainModel, "gammaEta[0-9]*$")
   matrices$gammaXi[is.na(matrices$gammaXi)] <-
-    fetch(theta, "gammaXi[0-9]*$")
+    fetch(thetaMainModel, "gammaXi[0-9]*$")
   matrices$omegaXiXi[is.na(matrices$omegaXiXi)] <-
-    fetch(theta, "omegaXiXi[0-9]*$")
+    fetch(thetaMainModel, "omegaXiXi[0-9]*$")
   matrices$omegaEtaXi[is.na(matrices$omegaEtaXi)] <-
-    fetch(theta, "omegaEtaXi[0-9]*$")
+    fetch(thetaMainModel, "omegaEtaXi[0-9]*$")
   if (fillPhi) matrices$phi <- matrices$A %*% t(matrices$A)
-  model$matrices <- matrices
-  model
+  matrices
 }
 
 
@@ -574,16 +605,16 @@ finalModelToParTable <- function(finalModel, method = "lms") {
   parTable <- rbind(parTable, newRows)
 
   # (Co) variances Structural Model 
-  selectPhi <- seq_len(numXis)
   if (method == "lms") {
-    phiNA <- matricesNA$A[selectPhi, selectPhi]
-    phiEst <- matricesEst$phi[selectPhi, selectPhi]
-    phiSE <- matricesSE$A[selectPhi, selectPhi]
+    phiNA <- matricesNA$A
+    phiEst <- matricesEst$phi
+    phiSE <- matricesSE$A
   } else {
-    phiNA <- matricesNA$phi[selectPhi, selectPhi]
-    phiEst <- matricesEst$phi[selectPhi, selectPhi]
-    phiSE <- matricesSE$phi[selectPhi, selectPhi]
+    phiNA <- matricesNA$phi 
+    phiEst <- matricesEst$phi 
+    phiSE <- matricesSE$phi 
   }
+
   newRows <- matrixToParTable(phiNA,
                               phiEst,
                               phiSE,

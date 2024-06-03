@@ -27,7 +27,7 @@ countFreeParams <- function(model) {
   vapply(matrices,
          FUN.VALUE = vector("integer", 1L),
          FUN = function(x) sum(is.na(x))) |>
-    sum()
+    sum() + model$covModel$freeParams
 }
 
 

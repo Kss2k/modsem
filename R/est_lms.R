@@ -8,7 +8,7 @@ emLms <- function(model, verbose = FALSE,
   data <- model$data
   model$data <- NULL # not needed in the model anymore
   if (anyNA(data)) stop("Remove or replace missing values from data")
-    
+
   # Initialization
   logLikNew <- 0
   logLikOld <- 1.0e+10
@@ -56,12 +56,16 @@ emLms <- function(model, verbose = FALSE,
                     maxstep = maxstep, sampleGrad = NULL, 
                     verbose = verbose, control = control,
                     ...)
-
+  
   coefficients <- final$par
   finalModel <- fillModel(model, coefficients, fillPhi = TRUE)
   finalModel$matricesNA <- model$matrices 
-  finalModel$matricesSE <- fillModel(model, calcSE(final$hessian))$matrices 
-  parTable <- finalModelToParTable(finalModel, method = "lms")
+  finalModel$covModelNA <- model$covModel
+  modelSE <- fillModel(model, calcSE(final$hessian))
+  finalModel$matricesSE <- modelSE$matrices
+  finalModel$covModelSE <- modelSE$covModel
+  parTable <- rbind(finalModelToParTable(finalModel, method = "lms"),
+                    covModelToParTable(finalModel, method = "lms"))
   parTable$tvalue <- parTable$est / parTable$se
   parTable$pvalue <- 2 * stats::pnorm(-abs(parTable$tvalue))
   parTable$ciLower <- parTable$est - 1.96 * parTable$se

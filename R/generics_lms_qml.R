@@ -62,6 +62,7 @@ summaryLmsAndQml <- function(object, H0 = TRUE, verbose = TRUE,
 
   if (H0) {
     estH0 <- estimateNullModel(object$originalParTable, data = out$data, 
+                               covSyntax = object$model$covModel$syntax,
                                method = method, verbose = verbose, ...)
     out$nullModel <- estH0
     out$D <- calcD(estH0, object)
@@ -247,12 +248,12 @@ printVariances <- function(parTable, digits = 3) {
 }
 
 
-estimateNullModel <- function(parTable, data, method = "lms", 
+estimateNullModel <- function(parTable, data, method = "lms", covSyntax = NULL,
                               verbose = FALSE,...) {
   strippedParTable <- parTable[!grepl(":", parTable$rhs), ]
   syntax <- parTableToSyntax(strippedParTable)
   if (verbose) cat("Estimating null model\n")
-  modsem(syntax, data, method, verbose = verbose, ...)
+  modsem_lms_qml(syntax, data, method, verbose = verbose, covSyntax = covSyntax, ...)
 }
 
 

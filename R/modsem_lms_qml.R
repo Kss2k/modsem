@@ -78,7 +78,8 @@ modsem_lms_qml <- function(modelSyntax = NULL,
                            convergence = 1e-2,
                            center = FALSE, 
                            standardize = FALSE,
-                       ...) {
+                           covSyntax = NULL,
+                           ...) {
   if (is.null(modelSyntax)) {
     stop("No modelSyntax provided")
   } else if (!is.character(modelSyntax)) {
@@ -102,7 +103,8 @@ modsem_lms_qml <- function(modelSyntax = NULL,
                                     scaleFactor = FALSE)
 
   model <- specifyModelLmsQml(modelSyntax, data = data, 
-                              method = method, m = nodes)
+                              method = method, m = nodes, 
+                              covSyntax = covSyntax)
   if (optimize) model <- optimizeStartingParamsLms(model)
   switch(method, 
          "qml" = estQml(model, verbose = verbose, 
