@@ -48,6 +48,13 @@ repPartitionedCols <- function(matrix, length = 1) {
 }
 
 
+as.logical.matrix <- function(mat) {
+  structure(mat != 0, 
+            dim = dim(mat), 
+            dimnames = dimnames(mat))
+}
+
+
 # not finished yet
 # calcStandardError.modsemQML <- function(object, ...) {
 #   # not correct yet

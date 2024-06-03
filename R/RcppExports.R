@@ -13,8 +13,8 @@ dnormCpp <- function(x, mu, sigma) {
     .Call(`_modsem_dnormCpp`, x, mu, sigma)
 }
 
-varZCpp <- function(Omega, Sigma1) {
-    .Call(`_modsem_varZCpp`, Omega, Sigma1)
+varZCpp <- function(Omega, Sigma1, numEta) {
+    .Call(`_modsem_varZCpp`, Omega, Sigma1, numEta)
 }
 
 muLmsCpp <- function(model, z) {
@@ -31,5 +31,13 @@ sigmaLmsCpp <- function(model, z) {
 #' @export
 multiplyIndicatorsCpp <- function(df) {
     .Call(`_modsem_multiplyIndicatorsCpp`, df)
+}
+
+rep_dmvnorm <- function(x, expected, sigma, t, cores) {
+    .Call(`_modsem_rep_dmvnorm`, x, expected, sigma, t, cores)
+}
+
+dmvnrm_arma_mc <- function(x, mean, sigma, logd = TRUE, cores = 2L) {
+    .Call(`_modsem_dmvnrm_arma_mc`, x, mean, sigma, logd, cores)
 }
 
