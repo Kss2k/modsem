@@ -39,16 +39,27 @@ logLikQml <- function(theta, model) {
   m$Sigma2 <- m$psi + m$subThetaEpsilon -
     m$subThetaEpsilon ^ 2 %*% t(m$Beta) %*%  
     invRER %*% m$Beta
+
+  if (numEta > 1) {
+    m$Binv <- solve(diag(1, numEta) - m$gammaEta)
+  } else m$Binv <- diag(1)
+
   Ey <- muQmlCpp(m, t)
-  sigmaEpsilon <- apply(sigmaQmlCpp(m, t), MARGIN = 2, abs)
-  
+  sigmaEpsilon <- sigmaQmlCpp(m, t)
   sigmaXU <- rbind(cbind(m$LXPLX, matrix(0, ncol = ncol(m$RER),
                                       nrow = nrow(m$LXPLX))), 
                    cbind(matrix(0, ncol = ncol(m$LXPLX),
                                 nrow = nrow(m$RER)), m$RER))
   mean <- rep(0, ncol(sigmaXU))
+
   f2 <- dMvn(cbind(m$x, m$u), mean = mean, sigma = sigmaXU, log = TRUE)
-  f3 <- dnormCpp(m$y[, colnames(m$subThetaEpsilon)], mu = Ey, sigma = sqrt(sigmaEpsilon))
+  if (numEta <= 1) {
+    f3 <- dnormCpp(m$y[,1], mu = Ey, sigma = sqrt(sigmaEpsilon))
+  } else {
+    f3 <- rep_dmvnorm(m$y[, colnames(m$subThetaEpsilon)], expected = Ey, 
+                      sigma = sigmaEpsilon, t = t, cores = 2)
+  }
+
   -sum(f2 + f3)
 }
 

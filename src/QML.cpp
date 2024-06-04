@@ -2,6 +2,7 @@
 #include "QML.h"
 // [[Rcpp::depends(RcppArmadillo)]]
 
+
 // [[Rcpp::export]]
 arma::mat muQmlCpp(Rcpp::List m, int t) {
   int numEta = Rcpp::as<int>(m["numEta"]);
@@ -15,11 +16,12 @@ arma::mat muQmlCpp(Rcpp::List m, int t) {
   arma::mat Ey = arma::mat(t, numEta);
   arma::mat Sigma1 = Rcpp::as<arma::mat>(m["Sigma1"]);
   arma::mat Ie = Rcpp::as<arma::mat>(m["Ieta"]);
+  arma::mat Binv = Rcpp::as<arma::mat>(m["Binv"]);
   arma::vec trOmegaSigma = traceOmegaSigma1(omegaXiXi * Sigma1, numEta);
 
   for (int i = 0; i < t; i++) {
-    Ey.row(i) = (trOmegaSigma + alpha + gammaXi * l1 * x.row(i).t() + 
-      arma::kron(Ie, x.row(i) * l1.t()) * omegaXiXi * l1 * x.row(i).t() + l2 * u.row(i).t()).t();
+    Ey.row(i) = (Binv * (trOmegaSigma + alpha + gammaXi * l1 * x.row(i).t() + 
+      arma::kron(Ie, x.row(i) * l1.t()) * omegaXiXi * l1 * x.row(i).t() + l2 * u.row(i).t())).t();
   }
   return Ey;
 }
@@ -34,20 +36,24 @@ arma::mat sigmaQmlCpp(Rcpp::List m, int t) {
   arma::mat l2 = Rcpp::as<arma::mat>(m["L2"]);
   arma::mat x = Rcpp::as<arma::mat>(m["x"]);
   arma::mat u = Rcpp::as<arma::mat>(m["u"]);
-  arma::mat Ey = arma::vec(t);
   arma::mat Sigma1 = Rcpp::as<arma::mat>(m["Sigma1"]);
   arma::mat Sigma2 = Rcpp::as<arma::mat>(m["Sigma2"]);
   arma::mat kronXiOmega; 
   arma::mat Ie = Rcpp::as<arma::mat>(m["Ieta"]);
   arma::mat sumVec = Rcpp::as<arma::vec>(m["sumVec"]);
-  arma::mat sigmaE = arma::mat(t, numEta);
-  arma::mat varZ = varZCpp(omegaXiXi, Sigma1, numEta); // uneccessary to call this twice?
-  
+  arma::mat sigmaE = arma::mat(t * numEta, numEta);
+  arma::mat Binv = Rcpp::as<arma::mat>(m["Binv"]);
+  arma::mat varZ = Binv * varZCpp(omegaXiXi, Sigma1, numEta) * Binv.t(); 
+  Sigma2 = Binv * Sigma2 * Binv.t();
+
+  int firstRow, lastRow, firstCol = 0, lastCol = numEta - 1;
   for (int i = 0; i < t; i++) {
+    firstRow = i * numEta;
+    lastRow = (i + 1) * numEta - 1;
     kronXiOmega = arma::kron(Ie, x.row(i) * l1.t()) * omegaXiXi; 
-    sigmaE.row(i) = 
-      (arma::diagmat((gammaXi + 2 * kronXiOmega) * Sigma1 * 
-      (gammaXi + 2 * kronXiOmega).t() + Sigma2  + varZ) * sumVec).t();
+    sigmaE.submat(firstRow, firstCol, lastRow, lastCol) = 
+      (Binv * (gammaXi + 2 * kronXiOmega)) * Sigma1 * 
+      (Binv * (gammaXi + 2 * kronXiOmega)).t() + Sigma2 + varZ;
   }
   return sigmaE;
 }
