@@ -2,9 +2,11 @@
 #define QML_H
 
 
-arma::vec muQmlCpp(Rcpp::List m, int t);
-arma::vec sigmaQmlCpp(Rcpp::List m, int t);
-double varZCpp(arma::mat Omega, arma::mat Sigma1);
+arma::mat muQmlCpp(Rcpp::List m, int t);
+arma::mat sigmaQmlCpp(Rcpp::List m, int t);
+arma::mat varZCpp(arma::mat Omega, arma::mat Sigma1, int numEta);
+double varZSubOmega(arma::mat Omega, arma::mat Sigma1);
+arma::vec traceOmegaSigma1(const arma::mat OmegaSigma1, const int numEta);
 
 
 #endif 

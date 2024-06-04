@@ -12,7 +12,7 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // muQmlCpp
-arma::vec muQmlCpp(Rcpp::List m, int t);
+arma::mat muQmlCpp(Rcpp::List m, int t);
 RcppExport SEXP _modsem_muQmlCpp(SEXP mSEXP, SEXP tSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -24,7 +24,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // sigmaQmlCpp
-arma::vec sigmaQmlCpp(Rcpp::List m, int t);
+arma::mat sigmaQmlCpp(Rcpp::List m, int t);
 RcppExport SEXP _modsem_sigmaQmlCpp(SEXP mSEXP, SEXP tSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -49,14 +49,15 @@ BEGIN_RCPP
 END_RCPP
 }
 // varZCpp
-double varZCpp(arma::mat Omega, arma::mat Sigma1);
-RcppExport SEXP _modsem_varZCpp(SEXP OmegaSEXP, SEXP Sigma1SEXP) {
+arma::mat varZCpp(arma::mat Omega, arma::mat Sigma1, int numEta);
+RcppExport SEXP _modsem_varZCpp(SEXP OmegaSEXP, SEXP Sigma1SEXP, SEXP numEtaSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::mat >::type Omega(OmegaSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type Sigma1(Sigma1SEXP);
-    rcpp_result_gen = Rcpp::wrap(varZCpp(Omega, Sigma1));
+    Rcpp::traits::input_parameter< int >::type numEta(numEtaSEXP);
+    rcpp_result_gen = Rcpp::wrap(varZCpp(Omega, Sigma1, numEta));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -95,15 +96,47 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// rep_dmvnorm
+arma::vec rep_dmvnorm(const arma::mat& x, const arma::mat& expected, const arma::mat& sigma, const int t, const int cores);
+RcppExport SEXP _modsem_rep_dmvnorm(SEXP xSEXP, SEXP expectedSEXP, SEXP sigmaSEXP, SEXP tSEXP, SEXP coresSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::mat& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type expected(expectedSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type sigma(sigmaSEXP);
+    Rcpp::traits::input_parameter< const int >::type t(tSEXP);
+    Rcpp::traits::input_parameter< const int >::type cores(coresSEXP);
+    rcpp_result_gen = Rcpp::wrap(rep_dmvnorm(x, expected, sigma, t, cores));
+    return rcpp_result_gen;
+END_RCPP
+}
+// dmvnrm_arma_mc
+arma::vec dmvnrm_arma_mc(arma::mat const& x, arma::rowvec const& mean, arma::mat const& sigma, bool const logd, int const cores);
+RcppExport SEXP _modsem_dmvnrm_arma_mc(SEXP xSEXP, SEXP meanSEXP, SEXP sigmaSEXP, SEXP logdSEXP, SEXP coresSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat const& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::rowvec const& >::type mean(meanSEXP);
+    Rcpp::traits::input_parameter< arma::mat const& >::type sigma(sigmaSEXP);
+    Rcpp::traits::input_parameter< bool const >::type logd(logdSEXP);
+    Rcpp::traits::input_parameter< int const >::type cores(coresSEXP);
+    rcpp_result_gen = Rcpp::wrap(dmvnrm_arma_mc(x, mean, sigma, logd, cores));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_modsem_muQmlCpp", (DL_FUNC) &_modsem_muQmlCpp, 2},
     {"_modsem_sigmaQmlCpp", (DL_FUNC) &_modsem_sigmaQmlCpp, 2},
     {"_modsem_dnormCpp", (DL_FUNC) &_modsem_dnormCpp, 3},
-    {"_modsem_varZCpp", (DL_FUNC) &_modsem_varZCpp, 2},
+    {"_modsem_varZCpp", (DL_FUNC) &_modsem_varZCpp, 3},
     {"_modsem_muLmsCpp", (DL_FUNC) &_modsem_muLmsCpp, 2},
     {"_modsem_sigmaLmsCpp", (DL_FUNC) &_modsem_sigmaLmsCpp, 2},
     {"_modsem_multiplyIndicatorsCpp", (DL_FUNC) &_modsem_multiplyIndicatorsCpp, 1},
+    {"_modsem_rep_dmvnorm", (DL_FUNC) &_modsem_rep_dmvnorm, 5},
+    {"_modsem_dmvnrm_arma_mc", (DL_FUNC) &_modsem_dmvnrm_arma_mc, 5},
     {NULL, NULL, 0}
 };
 

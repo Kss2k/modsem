@@ -65,7 +65,7 @@ calcSE <- function(negHessian, names = NULL) {
   stdError <- tryCatch({
       sqrt(diag(solve(negHessian)))
     }, error=function(e) {
-      NA
+      rep(NA, nrow(negHessian))
     }, warning=function(w) {
        if (grepl("NaN", conditionMessage(w))) {
          suppressWarnings(sqrt(diag(solve(negHessian))))

@@ -2,6 +2,7 @@ logLikQml <- function(theta, model) {
   modelFilled <- fillModel(model, theta)
   numEta <- model$info$numEta
   m <- modelFilled$matrices
+  m$numEta <- numEta
 
   m$x <- model$data[, model$info$allIndsXis]
   for (i in seq_len(ncol(m$x))) {
@@ -18,7 +19,7 @@ logLikQml <- function(theta, model) {
     m$u <- m$y %*% t(m$R)
     m$Beta <- m$lambdaY[m$selectBetaRows, ]
   } else m$u <- 0
-  
+    
   m$subThetaEpsilon <- m$subThetaEpsilon
   m$subThetaEpsilon[is.na(m$subThetaEpsilon)] <- 
     m$thetaEpsilon[m$selectThetaEpsilon]
@@ -30,7 +31,6 @@ logLikQml <- function(theta, model) {
   invLXPLX <- solve(m$LXPLX)
 
   m$L1 <- m$phi %*% t(m$lambdaX) %*% invLXPLX
-
   m$L2 <- - m$subThetaEpsilon %*% t(m$Beta) %*% invRER
 
   m$Sigma1 <- m$phi - m$phi %*% t(m$lambdaX) %*% 
@@ -40,16 +40,26 @@ logLikQml <- function(theta, model) {
     m$subThetaEpsilon ^ 2 %*% t(m$Beta) %*%  
     invRER %*% m$Beta
 
+  if (numEta > 1) {
+    m$Binv <- solve(diag(1, numEta) - m$gammaEta)
+  } else m$Binv <- diag(1)
+
   Ey <- muQmlCpp(m, t)
   sigmaEpsilon <- sigmaQmlCpp(m, t)
-
   sigmaXU <- rbind(cbind(m$LXPLX, matrix(0, ncol = ncol(m$RER),
                                       nrow = nrow(m$LXPLX))), 
                    cbind(matrix(0, ncol = ncol(m$LXPLX),
                                 nrow = nrow(m$RER)), m$RER))
   mean <- rep(0, ncol(sigmaXU))
+
   f2 <- dMvn(cbind(m$x, m$u), mean = mean, sigma = sigmaXU, log = TRUE)
-  f3 <- dnormCpp(m$y[,1], mu = Ey, sigma = sqrt(sigmaEpsilon))
+  if (numEta <= 1) {
+    f3 <- dnormCpp(m$y[,1], mu = Ey, sigma = sqrt(sigmaEpsilon))
+  } else {
+    f3 <- rep_dmvnorm(m$y[, colnames(m$subThetaEpsilon)], expected = Ey, 
+                      sigma = sigmaEpsilon, t = t, cores = 2)
+  }
+
   -sum(f2 + f3)
 }
 

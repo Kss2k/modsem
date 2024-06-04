@@ -162,10 +162,11 @@ specifyModelLmsQml <- function(syntax, data = NULL, method = "lms", m = 16,
     lastRow <- lastRow + nInds
     lastCol <- lastCol + nInds + 1
   }
+
   
   # theta epsilon
   scalingInds <- allIndsEtas[!allIndsEtas %in% rownames(emptyR)]  
-  selectThetaEpsilon <- thetaEpsilon
+  selectThetaEpsilon <- as.logical.matrix(thetaEpsilon)
   selectThetaEpsilon[TRUE] <- FALSE
   diag(selectThetaEpsilon)[scalingInds] <- TRUE
   subThetaEpsilon <- matrix(0, nrow = length(scalingInds), 
@@ -174,7 +175,8 @@ specifyModelLmsQml <- function(syntax, data = NULL, method = "lms", m = 16,
                                             scalingInds))
   diag(subThetaEpsilon) <- NA
   Ieta <- diag(numEtas)
-
+  sumVec <- rep(1, numEtas)
+  
   matrices <- list(
     lambdaX = lambdaX,
     lambdaY = lambdaY,
@@ -195,7 +197,8 @@ specifyModelLmsQml <- function(syntax, data = NULL, method = "lms", m = 16,
     selectThetaEpsilon = selectThetaEpsilon,
     selectBetaRows = selectBetaRows,
     emptyR = emptyR,
-    subThetaEpsilon = subThetaEpsilon)
+    subThetaEpsilon = subThetaEpsilon, 
+    sumVec = sumVec)
   k <- omegaAndSortedXis$k
   quad <- quadrature(m, k)
 

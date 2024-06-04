@@ -4,9 +4,6 @@ estQml <- function(model,
                    maxIter = 1000,
                    negHessian = TRUE,
                    ...) {
-  if (model$info$numEtas > 1) {
-    stop("Only one eta allowed in QML estimation")
-  }
   startTheta <- model$theta
   final <- mstepQml(model = model, theta = startTheta, maxIter = maxIter, 
                     convergence = convergence,
@@ -16,8 +13,6 @@ estQml <- function(model,
 
   info <- model$info
 
-  coefficients <- final$par
-  finalModel <- fillModel(model, coefficients)
   finalModel$matricesNA <- model$matrices 
   finalModel$matricesSE <- fillModel(model, calcSE(final$hessian))$matrices 
   finalModel$data <- NULL # not needed in the model anymore 
