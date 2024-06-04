@@ -32,7 +32,8 @@ There are a number of approaches for estimating interaction effects in SEM. In `
 # New Features (01.06.2024-04-06-2024)
 - New function for plotting interaction effects (`plot_interaction()`)
 - Interaction effects between two endogenous variables are now possible with the LMS 
-  and QML approach, using the 'cov_syntax' argument, see the [vignette](file:///home/kjell/Dropbox/code/R/repos/modsem/docs/articles/interaction_two_etas.html) for more information.
+  and QML approach, using the 'cov_syntax' argument, see the [vignette](file:///home/kjell/Dropbox/code/R/repos/modsem/docs/articles/interaction_two_etas.html/)
+  for more information.
   (only available on GitHub, not on CRAN)
 
 # Examples 
