@@ -24,15 +24,15 @@ There are a number of approaches for estimating interaction effects in SEM. In `
 - `"dblcent"` = double centering approach (Marsh., 2013)
   - default 
 - `"pind"` = basic product indicator approach (not recommended)
-- `"lms"` = The latent moderated structural equations approach
-- `"qml"` = The Quasi Maximum Likelihood estimation of latent moderated structural equations. 
+- `"lms"` = The Latent Moderated Structural equations (LMS) approach, see the [vignette](https://kss2k.github.io/intro_modsem/articles/lms_qml.html)
+- `"qml"` = The Quasi Maximum Likelihood (QML) approach, see the [vignette](https://kss2k.github.io/intro_modsem/articles/lms_qml.html)
 - `"mplus"` 
   - estimates model through Mplus, if it is installed
 
 # New Features (01.06.2024-04-06-2024)
-- New function for plotting interaction effects (`plot_interaction()`)
+- New function for plotting interaction effects (`plot_interaction()`), see the [vignette](https://kss2k.github.io/intro_modsem/articles/plot_interactions.html)
 - Interaction effects between two endogenous variables are now possible with the LMS 
-  and QML approach, using the 'cov_syntax' argument, see the [vignette](file:///home/kjell/Dropbox/code/R/repos/modsem/docs/articles/interaction_two_etas.html/)
+  and QML approach, using the 'cov_syntax' argument, see the [vignette](https://kss2k.github.io/intro_modsem/articles/interaction_two_etas.html)
   for more information.
   (only available on GitHub, not on CRAN)
 
