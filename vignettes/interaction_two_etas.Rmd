@@ -41,7 +41,7 @@ expensive than in the lms-approach.
 This being said, there is a work-around for these limitations for both the lms- and qml-approach.
 In essence, the model can be split into two parts, one linear and one non-linear. 
 Basically, you can replace the covariance matrix used in the estimation of the non-linear model, 
-with the model-implied covariajnce matrix from a linear model. Thus you can treat an 
+with the model-implied covariance matrix from a linear model. Thus you can treat an 
 endogenous variable as if it were exogenous -- given that it can be expressed in 
 a linear model.
 
