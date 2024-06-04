@@ -64,7 +64,7 @@ sigmaLms <- function(model, z1) {
 
 estepLms <- function(model, theta, data, ...) {
   if (countFreeParams(model) != length(theta))
-    stop("length paramaters does not match free parameters in model")
+    stop2("length paramaters does not match free parameters in model")
   modFilled <- fillModel(model = model, theta = theta, method = "lms")
   V <- modFilled$quad$n       # matrix of node vectors m x k
   w <- modFilled$quad$w       # weights

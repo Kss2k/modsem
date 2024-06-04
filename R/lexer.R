@@ -2,7 +2,7 @@
 expressionType <- function(op, lhs, rhs) {
 if (is.null(op) & is.null(rhs)) {
     if (is.null(lhs)) {
-      stop("Missing lhs")
+      stop2("Missing lhs")
     }
 
   }
@@ -25,7 +25,7 @@ getMinTokenPriority <- function(listTokens, min = NA) {
  # browser()
   if (is.null(listTokens) || length(listTokens) == 0) {
     if (is.na(min)) {
-      stop("Unable to find minimum priority for tokens")
+      stop2("Unable to find minimum priority for tokens")
     }
     return(min)
   }
@@ -45,7 +45,7 @@ chooseToken <- function(listTokens, i = 1, chosenTokenIdx = NULL,
   if (is.null(listTokens) || i > length(listTokens)) {
     if (is.null(chosenTokenIdx)) {
       if (length(leftClosures) > 0) {
-        stop("Unmatched left bracket", last(leftClosures))
+        stop2("Unmatched left bracket", last(leftClosures))
       }
     }
     return(chosenTokenIdx)
@@ -57,7 +57,7 @@ chooseToken <- function(listTokens, i = 1, chosenTokenIdx = NULL,
 
   } else if (is.RightClosure(token)) {
     if (length(leftClosures) == 0) {
-      stop("Unmatched right bracket", highlightErrorToken(token))
+      stop2("Unmatched right bracket", highlightErrorToken(token))
     }
     leftClosures <- leftClosures[-1]
     if (length(leftClosures) == 0) {

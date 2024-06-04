@@ -130,7 +130,7 @@ specifyVarCovSingle <- function(parTable, relDf) {
   # and indicator products. It will also specifies covariances for latent
   # products, and elements int those products.
   if (nrow(relDf) > 2) {
-    stop("Constraints for products with more than two ",
+    stop2("Constraints for products with more than two ",
          " elements are not supported for this method")
   }
   # General info

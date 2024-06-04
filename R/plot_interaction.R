@@ -53,7 +53,7 @@ plot_interaction <- function(x, z, y, xz, vals_x = seq(-3, 3, .001) , vals_z, mo
                              alpha_se = 0.15, ...) {
   if (!inherits(model, c("modsem_pi", "modsem_lms", 
                          "modsem_mplus", "modsem_qml"))) {
-    stop("model must be of class 'modsem_pi', 'modsem_lms_qml', or 'modsem_mplus'")
+    stop2("model must be of class 'modsem_pi', 'modsem_lms_qml', or 'modsem_mplus'")
   }
 
   if (!inherits(model, c("modsem_lms", "modsem_qml"))) {
@@ -75,12 +75,12 @@ plot_interaction <- function(x, z, y, xz, vals_x = seq(-3, 3, .001) , vals_z, mo
   var_z <- vars[vars$rhs == z, "est"]
   gamma_xz <- coefs[coefs$rhs == xz, "est"]
   sd <- sqrt(vars[vars$rhs == y, "est"]) # residual std.error
-  if (length(gamma_x) == 0) stop("coefficient for x not found in model")
-  if (length(var_x) == 0) stop("variance of x not found in model")
-  if (length(gamma_z) == 0) stop("coefficient for z not found in model")
-  if (length(var_z) == 0) stop("variance of z not found in model")
-  if (length(gamma_xz) == 0) stop("coefficient for xz not found in model")
-  if (length(sd) == 0) stop("residual std.error of y not found in model")
+  if (length(gamma_x) == 0) stop2("coefficient for x not found in model")
+  if (length(var_x) == 0) stop2("variance of x not found in model")
+  if (length(gamma_z) == 0) stop2("coefficient for z not found in model")
+  if (length(var_z) == 0) stop2("variance of z not found in model")
+  if (length(gamma_xz) == 0) stop2("coefficient for xz not found in model")
+  if (length(sd) == 0) stop2("residual std.error of y not found in model")
 
   # creating margins
   df <- expand.grid(x = vals_x, z = vals_z)

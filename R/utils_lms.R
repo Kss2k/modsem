@@ -4,7 +4,7 @@
 
 sortData <- function(data, allIndsXis, allIndsEtas) {
   if (!all(c(allIndsXis, allIndsEtas) %in% colnames(data))) 
-    stop("Missing Observed Variables in Data")
+    stop2("Missing Observed Variables in Data")
   as.matrix(data[c(allIndsXis, allIndsEtas)])
 }
 
@@ -74,9 +74,9 @@ calcSE <- function(negHessian, names = NULL) {
       }
     })
   if (all(is.na(stdError))) 
-    warning("SE's could not be computed, negative Hessian is singular.")
+    warning2("SE's could not be computed, negative Hessian is singular.")
   if (any(is.nan(stdError))) 
-    warning("SE's for some coefficients could not be computed.") 
+    warning2("SE's for some coefficients could not be computed.") 
   
   if (!is.null(names)) names(stdError) <- names
   stdError

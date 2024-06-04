@@ -269,7 +269,7 @@ calcD <- function(estH0, estH1) {
   D <- - 2 * (estH1$logLik - estH0$logLik)
   if (D > 0) {
     D <- -D 
-    warning("D is positive, this indicates that the null model ",
+    warning2("D is positive, this indicates that the null model ",
             "is better than the alternative model. ", 
             "Returning '-D' instead of 'D'")
   }

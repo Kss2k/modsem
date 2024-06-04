@@ -14,14 +14,14 @@ covModel <- function(syntax, sortedXis, method = "lms") {
   etas <- unique(structExprs$lhs)
   etas <- sortedXis[sortedXis %in% etas]
   numEtas <- length(etas)
-  if (numEtas == 0) stop("No etas in model")
+  if (numEtas == 0) stop2("No etas in model")
 
   xis <- parTable[parTable$op == "~" &
                   !parTable$rhs %in% etas & 
                   parTable$rhs != "1", "rhs"] |> unique()
   xis <- sortedXis[sortedXis %in% xis]
   numXis <- length(xis)
-  if (numXis == 0) stop("No xis in model")
+  if (numXis == 0) stop2("No xis in model")
 
   gammaXi <- matrix(0, nrow = numEtas, ncol = numXis,
                   dimnames = list(etas, xis))

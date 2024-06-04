@@ -110,8 +110,8 @@ modsem_pi <- function(model_syntax = NULL,
                    group = NULL,
                    run = TRUE, 
                    ...) {
-  if (is.null(model_syntax)) stop("No model syntax provided in modsem")
-  if (is.null(data)) stop("No data provided in modsem")
+  if (is.null(model_syntax)) stop2("No model syntax provided in modsem")
+  if (is.null(data)) stop2("No data provided in modsem")
   if (!is.data.frame(data)) data <- as.data.frame(data)
   
   # Get the specifications of the model 
@@ -121,7 +121,7 @@ modsem_pi <- function(model_syntax = NULL,
   data <- data[c(modelSpec$oVs, group)]
   completeCases <- stats::complete.cases(data)
   if (any(!completeCases)) {
-    warning("Removing missing values case-wise.")
+    warning2("Removing missing values case-wise.")
     data <- data[completeCases, ]
   }
 
@@ -180,8 +180,8 @@ modsem_pi <- function(model_syntax = NULL,
     lavEst <- tryCatch(lavaan::sem(newSyntax, newData, estimator = estimator, 
                                    group = group, ...),
                        error = function(cnd) {
-                         warning("Error in Lavaan: \n")
-                         warning(capturePrint(cnd))
+                         warning2("Error in Lavaan: \n")
+                         warning2(capturePrint(cnd))
                          NULL
                        })
     coefParTable <- tryCatch(lavaan::parameterEstimates(lavEst),
@@ -212,7 +212,7 @@ createProdInds <- function(modelSpec,
                   data = data)
 
   } else if (!is.logical(residualsProds)) {
-    stop("residualProds was neither FALSE nor TRUE in createProdInds")
+    stop2("residualProds was neither FALSE nor TRUE in createProdInds")
   }
   if (centerAfter) {
     indProds <- lapply(indProds, FUN = function(df)
@@ -238,7 +238,7 @@ createIndProds <- function(relDf,
   isNumeric <- sapply(inds, is.numeric)
 
   if (sum(as.integer(!isNumeric)) > 0) {
-    stop("Expected inds to be numeric when creating prods")
+    stop2("Expected inds to be numeric when creating prods")
   }
 
   # Centering them, if center == TRUE
@@ -329,7 +329,7 @@ addSpecsParTable <- function(modelSpec,
 
   # Residual covariances -------------------------------------------------------
   if (!is.logical(residualCovSyntax)) {
-    stop("residualCovSyntax is not FALSE or TRUE in generateSyntax")
+    stop2("residualCovSyntax is not FALSE or TRUE in generateSyntax")
 
   } else if (residualCovSyntax) {
     residualCovariances <- purrr::map(.x = relDfs,
@@ -371,7 +371,7 @@ addSpecsParTable <- function(modelSpec,
 getParTableRestrictedMean <- function(prodName, elementsInProdName, 
                                       createLabels = TRUE, pt) {
   if (length(elementsInProdName) > 2) {
-    stop("The mean of a latent prod should not be constrained when there",
+    stop2("The mean of a latent prod should not be constrained when there",
          " are more than two variables in the prod term. Please use a",
          " different method \n")
   }
@@ -420,7 +420,7 @@ getParTableMeasure <- function(dependentName,
                                operator = "=~",
                                firstFixed = FALSE) {
   if (length(dependentName) > 1) {
-    stop("Expected dependentName to be a single string in getParTableMeasure")
+    stop2("Expected dependentName to be a single string in getParTableMeasure")
   }
   if (length(predictorNames) == 1 && dependentName == predictorNames) {
     # In this case it should be seen as an observed variable, 

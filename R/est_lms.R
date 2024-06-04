@@ -7,7 +7,7 @@ emLms <- function(model, verbose = FALSE,
                   ...) {
   data <- model$data
   model$data <- NULL # not needed in the model anymore
-  if (anyNA(data)) stop("Remove or replace missing values from data")
+  if (anyNA(data)) stop2("Remove or replace missing values from data")
 
   # Initialization
   logLikNew <- 0
@@ -19,7 +19,7 @@ emLms <- function(model, verbose = FALSE,
   while(run) { # as long as no convergence is reached
     if (logLikNew - logLikOld > 0 && iterations > 3) {
       if (breakOnLogLikIncrease) {
-        warning("Loglikelihood is increasing. EM algorithm will be stopped.")
+        warning2("Loglikelihood is increasing. EM algorithm will be stopped.")
         logLikNew <- logLikOld
         thetaNew <- thetaOld
         break
@@ -45,7 +45,7 @@ emLms <- function(model, verbose = FALSE,
             iterations, -logLikNew, logLikOld - logLikNew))
     }
     if(iterations >= maxiter){
-      warning("Maximum number of iterations was reached. ",
+      warning2("Maximum number of iterations was reached. ",
               "EM algorithm might not have converged.")
       break
     }

@@ -84,21 +84,21 @@ modsem_lms_qml <- function(model_syntax = NULL,
                            cov_syntax = NULL,
                            ...) {
   if (is.null(model_syntax)) {
-    stop("No model_syntax provided")
+    stop2("No model_syntax provided")
   } else if (!is.character(model_syntax)) {
-    stop("The provided model syntax is not a string!")
+    stop2("The provided model syntax is not a string!")
   } else if (length(model_syntax) > 1) {
-    stop("The provided model syntax is not of length 1")
+    stop2("The provided model syntax is not of length 1")
   }
 
   if (is.null(data)) {
-    stop("No data provided")
+    stop2("No data provided")
   } else if (!is.data.frame(data)) {
     data <- as.data.frame(data)
   }
     
   if (!method %in% c("lms", "qml")) {
-    stop("Method must be either 'lms' or 'qml'")
+    stop2("Method must be either 'lms' or 'qml'")
   }
 
   if (center) data <- lapplyDf(data, FUN = function(x) x - mean(x))

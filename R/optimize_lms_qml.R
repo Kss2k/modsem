@@ -77,7 +77,7 @@ optimizeStartingParamsLms <- function(model) {
 
 
 findEstimatesParTable <- function(mat, pt, op = NULL, rows_lhs = TRUE) {
-  if (is.null(op)) stop("Missing operator")
+  if (is.null(op)) stop2("Missing operator")
   for (row in rownames(mat)) {
     for (col in colnames(mat)) {
       if (is.na(mat[row, col])) 
@@ -106,7 +106,7 @@ extractFromParTable <- function(row, op, col, pt, rows_lhs = TRUE) {
   else out <- pt[pt$lhs == col & pt$op == op & pt$rhs == row, "est"]
   if (length(out) == 0 && op == "~~") {
     out <- pt[pt$lhs == col & pt$op == op & pt$rhs == row, "est"]
-  } else if (length(out) != 1) stop("Incorrect length of matches")
+  } else if (length(out) != 1) stop2("Incorrect length of matches")
   out
 }
 

@@ -98,7 +98,7 @@ getParTableResCov.equality <- function(relDf, setToZero = FALSE) {
 # Constrained Approach ---------------------------------------------------------
 getParTableResCov.ca <- function(relDf, pt) {
   if (nrow(relDf) > 2) {
-    stop("Constrained approach for constraining residual covariances should ",
+    stop2("Constrained approach for constraining residual covariances should ",
          "not be used with latent products with more than two components")
   }
   if (ncol(relDf) <= 1) {

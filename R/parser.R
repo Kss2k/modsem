@@ -13,11 +13,11 @@ evalToken.LavOperator <- function(token, lhs, rhs) {
   }
   if (!is.atomic(lhs)) {
     if (is.LavOperator(lhs$op)) {
-      stop("Unexpected operator ", highlightErrorToken(lhs$op))
+      stop2("Unexpected operator ", highlightErrorToken(lhs$op))
     }
   } else if (!is.atomic(rhs)) {
     if (is.LavOperator(rhs$op)) {
-      stop("Unexpected operator ", highlightErrorToken(rhs$op))
+      stop2("Unexpected operator ", highlightErrorToken(rhs$op))
     }
   }
   list(lhs = lhs, op = token, rhs = rhs)
@@ -58,7 +58,7 @@ evalToken.LavBlank <- function(token, lhs, rhs) {
 #' @export
 evalToken.LavInteraction <- function(token, lhs, rhs) {
   if (!"LavName" %in% class(lhs) || !"LavName" %in% class(rhs)) {
-    stop("Interactions are reserved for objects ", highlightErrorToken(token))
+    stop2("Interactions are reserved for objects ", highlightErrorToken(token))
   }
   out <- paste0(lhs, token, rhs)
   attributes(out) <- attributes(lhs)
@@ -169,7 +169,7 @@ createParTableBranch <- function(syntaxTree) {
 #' modsemify(m1)
 modsemify <- function(syntax) {
   if (!is.character(syntax) && length(syntax) > 1) {
-    stop("Syntax is not a string og length 1")
+    stop2("Syntax is not a string og length 1")
   }
   syntaxTrees <- createSyntaxTreesSyntax(syntax)
   parsedTrees <- parseSyntaxTrees(syntaxTrees)
@@ -204,7 +204,7 @@ parTableToSyntax <- function(parTable, removeColon = FALSE) {
 
 mergeTokens <- function(x, y) {
   if (!"LavName" %in% class(x) || !"LavName" %in% class(x)) {
-    stop("Interactions are reserved for objects ", highlightErrorToken(x))
+    stop2("Interactions are reserved for objects ", highlightErrorToken(x))
   }
   out <- paste0(x, y)
   attributes(out) <- attributes(x)

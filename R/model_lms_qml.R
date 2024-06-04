@@ -12,7 +12,7 @@ specifyModelLmsQml <- function(syntax, data = NULL, method = "lms", m = 16,
   # endogenous variables (etas)
   etas <- unique(structExprs$lhs)
   numEtas <- length(etas)
-  if (numEtas == 0) stop("No etas in model")
+  if (numEtas == 0) stop2("No etas in model")
 
   indsEtas <- lapplyNamed(etas, FUN = function(eta, measrExprs)
                           measrExprs[measrExprs$lhs == eta, "rhs"],
@@ -34,7 +34,7 @@ specifyModelLmsQml <- function(syntax, data = NULL, method = "lms", m = 16,
   
   xis <- parTable[parTable$op == "=~" &
                   !parTable$lhs %in% etas, "lhs"] |> unique()
-  if (length(xis) == 0) stop("No xis in model")
+  if (length(xis) == 0) stop2("No xis in model")
 
   # Sorting xis so that it is ordered with the xis in interactions first
   omegaAndSortedXis <- sortXisAndOmega(xis, varsInts, etas, intTerms,
@@ -222,7 +222,7 @@ specifyModelLmsQml <- function(syntax, data = NULL, method = "lms", m = 16,
     model$data <- sortedData
     completeCases <- stats::complete.cases(model$data)
     if (any(!completeCases)) {
-      warning("Removing missing values case-wise.")
+      warning2("Removing missing values case-wise.")
       model$data <- model$data[completeCases, ]
       model$info$N <- nrow(model$data)
     }
@@ -373,13 +373,13 @@ sortXisAndOmega <- function(xis, varsInts, etas, intTerms, method = "lms") {
     if (any(interaction %in% nonLinearXis)) next # no need to add it again
 
     if (length(interaction) > 2) {
-      stop("Only interactions between two variables are allowed")
+      stop2("Only interactions between two variables are allowed")
     } else if (all(interaction %in% etas)) {
-      stop("Interactions between two endogenous variables are not allowed",
-           "see vignette(\"interaction_two_etas\", \"modsem\")")
+      stop2("Interactions between two endogenous variables are not allowed, ",
+           "see \nvignette(\"interaction_two_etas\", \"modsem\")")
     } else if (any(interaction %in% etas) && method == "qml") {
-      stop("Interactions between two endogenous variables are not allowed in qml",
-           "see vignette(\"interaction_two_etas\", \"modsem\")")
+      stop2("Interactions between two endogenous variables are not allowed in qml, ",
+           "see \nvignette(\"interaction_two_etas\", \"modsem\")")
     }
 
     choice <- interaction[which(!interaction %in% etas)] 

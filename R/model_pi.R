@@ -2,11 +2,11 @@ parseLavaan <- function(model_syntax = NULL, variableNames = NULL, match = FALSE
   # Checking prerequisites -----------------------------------------------------
   # Check if a model_syntax is provided, if not we should return an error
   if (is.null(model_syntax)) 
-    stop("No model_syntax provided")
+    stop2("No model_syntax provided")
   else if (!is.character(model_syntax)) 
-    stop("The provided model syntax is not a string!")
+    stop2("The provided model syntax is not a string!")
   else if (length(model_syntax) > 1) 
-    stop("The provided model syntax is not of length 1")
+    stop2("The provided model syntax is not of length 1")
 
   # Convert to partable --------------------------------------------------------
   parTable <- modsemify(model_syntax)
@@ -26,7 +26,7 @@ parseLavaan <- function(model_syntax = NULL, variableNames = NULL, match = FALSE
   # Get all the indicators in the model
   inds <- unique(measureExprs$rhs[!grepl(":", measureExprs$rhs)])
   if (!all(inds %in% variableNames)) {
-    stop("Unable to find observed variables in data: ",
+    stop2("Unable to find observed variables in data: ",
          capturePrint(inds[!inds %in% variableNames]))
   }
 
@@ -100,7 +100,7 @@ structureLavExprs <- function(parTable = NULL) {
 getIndsVariable <- function(varName = NULL,  indsLatents = NULL) {
   if (is.null(varName)) {
     return(
-           stop("Error in getIndsVariable(), varName is NULL")
+           stop2("Error in getIndsVariable(), varName is NULL")
     )
   }
   # Get the names of the latent variables in the model
@@ -116,7 +116,7 @@ getIndsVariable <- function(varName = NULL,  indsLatents = NULL) {
   }
 
   # Error if it is neither a latent- nor an observerd variable
-  stop("Something went wrong in getIndsVariable(), ",
+  stop2("Something went wrong in getIndsVariable(), ",
         "varName neither observed not latent")
 }
 
@@ -127,7 +127,7 @@ getIndsMultipleVariables <- function(varNames = NULL, indsLatents = NULL) {
   # output should be a list
   # Check that arguements are supplied/not NULL
   if (is.null(varNames)) {
-    stop("Error in getIndsMultipleVariables(), varNames is NULL")
+    stop2("Error in getIndsMultipleVariables(), varNames is NULL")
   }
   # use getIndsVariable for each element in varNames, and return a named list
   lapplyNamed(varNames,
@@ -138,10 +138,10 @@ getIndsMultipleVariables <- function(varNames = NULL, indsLatents = NULL) {
 
 splitProdName <- function(prodName, pattern) {
   if (is.null(prodName)) {
-    stop("prodNames in splitProdName was NULL")
+    stop2("prodNames in splitProdName was NULL")
   }
   if (is.null(pattern)) {
-    stop("pattern not supplied in splitProdName")
+    stop2("pattern not supplied in splitProdName")
   }
   stringr::str_split_1(prodName, pattern)
 }
@@ -149,10 +149,10 @@ splitProdName <- function(prodName, pattern) {
 
 splitProdNamesVec <- function(prodNames, pattern) {
   if (is.null(prodNames)) {
-    stop("prodNames in splitProdNamesVec was NULL")
+    stop2("prodNames in splitProdNamesVec was NULL")
   }
   if (is.null(pattern)) {
-    stop("pattern not supplied in splitProdName")
+    stop2("pattern not supplied in splitProdName")
   }
   unlist(stringr::str_split(prodNames, pattern))
 }
@@ -160,7 +160,7 @@ splitProdNamesVec <- function(prodNames, pattern) {
 
 fixProdNames <- function(prodName, pattern = NULL) {
   if (is.null(pattern)) {
-    stop("pattern not supplied in fixProdNames")
+    stop2("pattern not supplied in fixProdNames")
   }
   stringr::str_remove_all(prodName, pattern)
 }
@@ -176,7 +176,7 @@ createRelDf <- function(indsProdTerm, match = FALSE) {
     lengths <- vapply(indsProdTerm, FUN.VALUE = integer(1L), 
                       FUN = length) 
     if ((shortest <- min(lengths)) != (longest <- max(lengths))) {
-      warning("Unequal number of indicators for latent variables ",
+      warning2("Unequal number of indicators for latent variables ",
               "in product term, not all indicators will be used")
       indsProdTerm <- lapply(indsProdTerm,
                              FUN = function(x, shortest) x[seq_len(shortest)],

@@ -58,7 +58,7 @@ getMethodSettings <- function(method, args) {
         )
 
     if  (!method %in% names(settings)) {
-        stop("Unrecognized method")
+        stop2("Unrecognized method")
     }
     c(settings[[method]][missingArgs], args[!isMissing])
 }

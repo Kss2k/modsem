@@ -141,7 +141,7 @@ parTableToMplusModel <- function(parTable, ignoreLabels = TRUE) {
   newRows <- lapply(elemsInInts,
                     function(x) {
                       if (length(x) != 2) {
-                        stop("Number of variables in interaction must be two")
+                        stop2("Number of variables in interaction must be two")
                       }
                       lhs <- paste0(x[[1]], x[[2]])
                       rhs <- paste(x[[1]], "XWITH", x[[2]])
@@ -155,7 +155,7 @@ parTableToMplusModel <- function(parTable, ignoreLabels = TRUE) {
   if (ignoreLabels) parTable[["mod"]] <- ""
   for (i in 1:nrow(parTable)) {
     if (parTable[["mod"]][i] != "") {
-      warning("Using labels in Mplus, was this intended?")
+      warning2("Using labels in Mplus, was this intended?")
       modifier <- paste0("* (", parTable[["mod"]][[i]],")")
 
     } else {
@@ -184,5 +184,5 @@ switchLavOpToMplus <- function(op) {
          "~" = "ON",
          "~~" = "WITH",
          ":" = "|",
-         stop("Operator not supported for use in Mplus: ", op, "\n"))
+         stop2("Operator not supported for use in Mplus: ", op, "\n"))
 }
