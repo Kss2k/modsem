@@ -2,17 +2,20 @@
 # Last updated: 29.05.2024
 
 #' Interaction between latent variables using lms and qml approaches
-#' @param modelSyntax lavaan syntax
+#' @param model_syntax lavaan syntax
 #' @param data dataframe
 #' @param method method to use:
 #' "lms" = laten model structural equations (not passed to lavaan).
 #' "qml" = quasi maximum likelihood estimation of laten model structural equations (not passed to lavaan).
 #' @param verbose should estimation progress be shown
 #' @param optimize should starting parameters be optimized
-#' @param nodes number of quadrature nodes (points of integration) used in lms 
-#' @param convergence convergence criterion
+#' @param nodes number of quadrature nodes (points of integration) used in lms, 
+#' increased number gives better estimates but slower computation. How many is needed, depends on the complexity of the model 
+#' for simple models 16 is enough, for more complex models 100 is usually enough.
+#' @param convergence convergence criterion. Lower values give better estimates but slower computation.
 #' @param standardize should data be scaled before fitting model
 #' @param center should data be centered before fitting model
+#' @param cov_syntax model syntax for implied covariance matrix (see 'vignette("interaction_two_etas", "modsem")')
 #' @param ... arguments passed to other functions
 #' @return modsem_lms or modsem_qml object
 #' @export 
@@ -48,20 +51,20 @@
 #' # Theory Of Planned Behavior
 #' tpb <- ' 
 #' # Outer Model (Based on Hagger et al., 2007)
-#'   LATT =~ att1 + att2 + att3 + att4 + att5
-#'   LSN =~ sn1 + sn2
-#'   LPBC =~ pbc1 + pbc2 + pbc3
-#'   LINT =~ int1 + int2 + int3
-#'   LBEH =~ b1 + b2
+#'   ATT =~ att1 + att2 + att3 + att4 + att5
+#'   SN =~ sn1 + sn2
+#'   PBC =~ pbc1 + pbc2 + pbc3
+#'   INT =~ int1 + int2 + int3
+#'   BEH =~ b1 + b2
 #' 
 #' # Inner Model (Based on Steinmetz et al., 2011)
 #'   # Covariances
-#'   LATT ~~ LSN + LPBC
-#'   LPBC ~~ LSN 
+#'   ATT ~~ SN + PBC
+#'   PBC ~~ SN 
 #'   # Causal Relationsships
-#'   LINT ~ LATT + LSN + LPBC
-#'   LBEH ~ LINT + LPBC 
-#'   LBEH ~ LINT:LPBC  
+#'   INT ~ ATT + SN + PBC
+#'   BEH ~ INT + PBC 
+#'   BEH ~ INT:PBC  
 #' '
 #' 
 #' # lms approach
@@ -69,7 +72,7 @@
 #' summary(estTpb)
 #' }
 #'
-modsem_lms_qml <- function(modelSyntax = NULL,
+modsem_lms_qml <- function(model_syntax = NULL,
                            data = NULL,
                            method = "lms",
                            verbose = FALSE, 
@@ -78,13 +81,13 @@ modsem_lms_qml <- function(modelSyntax = NULL,
                            convergence = 1e-2,
                            center = FALSE, 
                            standardize = FALSE,
-                           covSyntax = NULL,
+                           cov_syntax = NULL,
                            ...) {
-  if (is.null(modelSyntax)) {
-    stop("No modelSyntax provided")
-  } else if (!is.character(modelSyntax)) {
+  if (is.null(model_syntax)) {
+    stop("No model_syntax provided")
+  } else if (!is.character(model_syntax)) {
     stop("The provided model syntax is not a string!")
-  } else if (length(modelSyntax) > 1) {
+  } else if (length(model_syntax) > 1) {
     stop("The provided model syntax is not of length 1")
   }
 
@@ -102,9 +105,9 @@ modsem_lms_qml <- function(modelSyntax = NULL,
   if (standardize) data <- lapplyDf(data, FUN = scaleIfNumeric, 
                                     scaleFactor = FALSE)
 
-  model <- specifyModelLmsQml(modelSyntax, data = data, 
+  model <- specifyModelLmsQml(model_syntax, data = data, 
                               method = method, m = nodes, 
-                              covSyntax = covSyntax)
+                              cov_syntax = cov_syntax)
   if (optimize) model <- optimizeStartingParamsLms(model)
   switch(method, 
          "qml" = estQml(model, verbose = verbose, 

@@ -5,7 +5,7 @@
 \title{Interaction between latent variables}
 \usage{
 modsem(
-  modelSyntax = NULL,
+  model_syntax = NULL,
   data = NULL,
   method = "dblcent",
   standardize = FALSE,
@@ -14,7 +14,7 @@ modsem(
 )
 }
 \arguments{
-\item{modelSyntax}{lavaan syntax}
+\item{model_syntax}{lavaan syntax}
 
 \item{data}{dataframe}
 
@@ -87,20 +87,20 @@ summary(est1QML)
 # Theory Of Planned Behavior
 tpb <- ' 
 # Outer Model (Based on Hagger et al., 2007)
-  LATT =~ att1 + att2 + att3 + att4 + att5
-  LSN =~ sn1 + sn2
-  LPBC =~ pbc1 + pbc2 + pbc3
-  LINT =~ int1 + int2 + int3
-  LBEH =~ b1 + b2
+  ATT =~ att1 + att2 + att3 + att4 + att5
+  SN =~ sn1 + sn2
+  PBC =~ pbc1 + pbc2 + pbc3
+  INT =~ int1 + int2 + int3
+  BEH =~ b1 + b2
 
 # Inner Model (Based on Steinmetz et al., 2011)
   # Covariances
-  LATT ~~ LSN + LPBC
-  LPBC ~~ LSN 
+  ATT ~~ SN + PBC
+  PBC ~~ SN 
   # Causal Relationsships
-  LINT ~ LATT + LSN + LPBC
-  LBEH ~ LINT + LPBC 
-  LBEH ~ LINT:LPBC  
+  INT ~ ATT + SN + PBC
+  BEH ~ INT + PBC 
+  BEH ~ INT:PBC  
 '
 
 # double centering approach

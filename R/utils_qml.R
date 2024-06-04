@@ -48,10 +48,11 @@ repPartitionedCols <- function(matrix, length = 1) {
 }
 
 
-as.logical.matrix <- function(mat) {
-  structure(mat != 0, 
-            dim = dim(mat), 
-            dimnames = dimnames(mat))
+#' @export
+as.logical.matrix <- function(x, ...) {
+  structure(x != 0, 
+            dim = dim(x), 
+            dimnames = dimnames(x))
 }
 
 

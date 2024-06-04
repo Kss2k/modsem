@@ -53,6 +53,10 @@ summary(qml1)
 ## A more complicated example
 Here you can see an example of a more complicated example using the model from the theory of planned behaviour (TPB), where there are two endogenous variables, where there is an interaction between an endogenous and exogenous variable. (note this does not work with the QML approach). For more complicated models, it is recommended that you increase the number of nodes used for numerical integration. By default the number of nodes is set to 16, and can be increased using the nodes argument.
 
+Note: If you want the lms-approach to give as similar results as possible to
+mplus, you would have to increase the number of nodes (e.g., `nodes = 100`), 
+and lower the convergence criterion (e.g., `conv_crit = 1e-5`).
+
 ```{r}
 # ATT = Attitude, 
 # PBC = Perceived Behavioural Control 

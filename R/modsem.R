@@ -1,6 +1,6 @@
 #' Interaction between latent variables
 #'
-#' @param modelSyntax lavaan syntax
+#' @param model_syntax lavaan syntax
 #' @param data dataframe
 #' @param method method to use:
 #' "rca" = residual centering approach (passed to lavaan),
@@ -65,20 +65,20 @@
 #' # Theory Of Planned Behavior
 #' tpb <- ' 
 #' # Outer Model (Based on Hagger et al., 2007)
-#'   LATT =~ att1 + att2 + att3 + att4 + att5
-#'   LSN =~ sn1 + sn2
-#'   LPBC =~ pbc1 + pbc2 + pbc3
-#'   LINT =~ int1 + int2 + int3
-#'   LBEH =~ b1 + b2
+#'   ATT =~ att1 + att2 + att3 + att4 + att5
+#'   SN =~ sn1 + sn2
+#'   PBC =~ pbc1 + pbc2 + pbc3
+#'   INT =~ int1 + int2 + int3
+#'   BEH =~ b1 + b2
 #' 
 #' # Inner Model (Based on Steinmetz et al., 2011)
 #'   # Covariances
-#'   LATT ~~ LSN + LPBC
-#'   LPBC ~~ LSN 
+#'   ATT ~~ SN + PBC
+#'   PBC ~~ SN 
 #'   # Causal Relationsships
-#'   LINT ~ LATT + LSN + LPBC
-#'   LBEH ~ LINT + LPBC 
-#'   LBEH ~ LINT:LPBC  
+#'   INT ~ ATT + SN + PBC
+#'   BEH ~ INT + PBC 
+#'   BEH ~ INT:PBC  
 #' '
 #' 
 #' # double centering approach
@@ -94,17 +94,17 @@
 #' estTpbLMS <- modsem(tpb, data = TPB, method = "lms")
 #' summary(estTpbLMS)
 #' }
-modsem <- function(modelSyntax = NULL,
+modsem <- function(model_syntax = NULL,
                    data = NULL,
                    method = "dblcent",
                    standardize = FALSE,
                    center = FALSE,
                    ...) {
-  if (is.null(modelSyntax)) {
-    stop("No modelSyntax provided")
-  } else if (!is.character(modelSyntax)) {
+  if (is.null(model_syntax)) {
+    stop("No model_syntax provided")
+  } else if (!is.character(model_syntax)) {
     stop("The provided model syntax is not a string!")
-  } else if (length(modelSyntax) > 1) {
+  } else if (length(model_syntax) > 1) {
     stop("The provided model syntax is not of length 1")
   }
 
@@ -119,11 +119,11 @@ modsem <- function(modelSyntax = NULL,
                                     scaleFactor = FALSE)
 
   if (method %in% c("rca", "uca", "dblcent", "pind", "ca", "custom")) {
-    return(modsem_pi(modelSyntax, data = data, method = method, ...))
+    return(modsem_pi(model_syntax, data = data, method = method, ...))
   } else if (method %in% c("lms", "qml")) {
-    return(modsem_lms_qml(modelSyntax, data = data, method = method, ...))
+    return(modsem_lms_qml(model_syntax, data = data, method = method, ...))
   } else if (method == "mplus") {
-    return(modsem_mplus(modelSyntax, data = data, ...))
+    return(modsem_mplus(model_syntax, data = data, ...))
   } else {
     stop("Method not recognized")
   }

@@ -42,19 +42,18 @@ tpb <- "
   # Causal Relationsships
   INT ~ ATT + SN + PBC
   BEH ~ INT + PBC
-  # BEH ~ ATT:PBC
   BEH ~ PBC:INT
-  # BEH ~ PBC:PBC
 "
 
 covModel <- '
 PBC ~ ATT + SN
 '
+
 startTime2 <- Sys.time()
 est2 <- modsem(tpb, TPB, 
   method = "lms", optimize = TRUE, verbose = TRUE, 
-  convergence = 1e-3, sampleGrad = NULL, covSyntax = covModel,
-  nodes = 100
+  convergence = 1e-3, sampleGrad = NULL, cov_syntax = covModel,
+  nodes = 16
   # closer to mplus when tweaking the number of nodes and convergence criterion
   # nodes = 100, convergence = 1e-7 is very very close to mplus
 )

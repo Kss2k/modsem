@@ -3,7 +3,7 @@
 
 
 specifyModelLmsQml <- function(syntax, data = NULL, method = "lms", m = 16,
-                               covSyntax = NULL) {
+                               cov_syntax = NULL) {
   parTable <- modsem::modsemify(syntax)
   structExprs <- parTable[parTable$op == "~" & 
                           parTable$rhs != "1", ]
@@ -14,11 +14,10 @@ specifyModelLmsQml <- function(syntax, data = NULL, method = "lms", m = 16,
   numEtas <- length(etas)
   if (numEtas == 0) stop("No etas in model")
 
-  indsEtas <- lapplyNamed(etas,
-                    FUN = function(eta, measrExprs)
-                      measrExprs[measrExprs$lhs == eta, "rhs"],
-                    measrExprs = measrExprs,
-                    names = etas)
+  indsEtas <- lapplyNamed(etas, FUN = function(eta, measrExprs)
+                          measrExprs[measrExprs$lhs == eta, "rhs"],
+                          measrExprs = measrExprs,
+                          names = etas)
   numIndsEtas <- vapply(indsEtas,
                        FUN.VALUE = vector("integer", 1L),
                        FUN = length)
@@ -38,22 +37,20 @@ specifyModelLmsQml <- function(syntax, data = NULL, method = "lms", m = 16,
   if (length(xis) == 0) stop("No xis in model")
 
   # Sorting xis so that it is ordered with the xis in interactions first
-  omegaAndSortedXis <- sortXisAndOmega(xis, varsInts, etas, intTerms)
+  omegaAndSortedXis <- sortXisAndOmega(xis, varsInts, etas, intTerms,
+                                       method = method)
   xis <- omegaAndSortedXis$sortedXis
   numXis <- length(xis)
 
-  indsXis <- lapplyNamed(xis[!xis %in% etas],
-                    FUN = function(xi, measrExprs)
-                      measrExprs[measrExprs$lhs == xi, "rhs"],
-                    measrExprs = measrExprs,
-                    names = xis[!xis %in% etas])
-  numIndsXis <- vapply(indsXis,
-                       FUN.VALUE = vector("integer", 1L),
+  indsXis <- lapplyNamed(xis[!xis %in% etas], FUN = function(xi, measrExprs)
+                         measrExprs[measrExprs$lhs == xi, "rhs"],
+                         measrExprs = measrExprs,
+                         names = xis[!xis %in% etas])
+  numIndsXis <- vapply(indsXis, FUN.VALUE = vector("integer", 1L),
                        FUN = length)
   allIndsXis <- unlist(indsXis)
   numAllIndsXis <- length(allIndsXis)
 
- 
   # measurement model x
   lambdaX <- matrix(0, nrow = numAllIndsXis, ncol = numXis,
                      dimnames = list(allIndsXis, xis))
@@ -73,10 +70,9 @@ specifyModelLmsQml <- function(syntax, data = NULL, method = "lms", m = 16,
                        dimnames = list(allIndsXis, allIndsXis))
   diag(thetaDelta) <- NA
 
-
   # measurement model y
   lambdaY <- matrix(0, nrow = numAllIndsEtas, ncol = numEtas,
-                     dimnames = list(allIndsEtas, etas))
+                    dimnames = list(allIndsEtas, etas))
   lastRowPreviousEta <- 0
   for (i in seq_along(etas)) {
     rowIndices <- 1:numIndsEtas[[i]] + lastRowPreviousEta
@@ -92,25 +88,26 @@ specifyModelLmsQml <- function(syntax, data = NULL, method = "lms", m = 16,
                          dimnames = list(allIndsEtas, allIndsEtas))
   diag(thetaEpsilon) <- NA
 
-  
   # structural model 
   gammaXi <- matrix(0, nrow = numEtas, ncol = numXis,
                   dimnames = list(etas, xis))
   exprsGammaXi <- structExprs[structExprs$lhs %in% etas & 
                     !grepl(":", structExprs$rhs) & 
                     structExprs$rhs %in% xis, ] 
-  if (nrow(exprsGammaXi) > 0) apply(exprsGammaXi, 
-        MARGIN = 1,  
-        FUN = function(row) gammaXi[row[["lhs"]], row[["rhs"]]] <<- NA)
+  if (nrow(exprsGammaXi) > 0) {
+    apply(exprsGammaXi, MARGIN = 1, FUN = function(row) 
+          gammaXi[row[["lhs"]], row[["rhs"]]] <<- NA)
+  }
 
   gammaEta <- matrix(0, nrow = numEtas, ncol = numEtas,
                   dimnames = list(etas, etas))
   exprsGammaEta <- structExprs[structExprs$lhs %in% etas & 
                     !grepl(":", structExprs$rhs) & 
                     structExprs$rhs %in% etas, ]
-  if (nrow(exprsGammaEta) > 0) apply(exprsGammaEta, MARGIN = 1, 
-          FUN = function(row) gammaEta[row[["lhs"]], row[["rhs"]]] <<- NA)
-
+  if (nrow(exprsGammaEta) > 0) { 
+    apply(exprsGammaEta, MARGIN = 1, FUN = function(row) 
+          gammaEta[row[["lhs"]], row[["rhs"]]] <<- NA)
+  }
 
   # residuals etas
   psi <- matrix(0, nrow = numEtas, ncol = numEtas,
@@ -126,14 +123,13 @@ specifyModelLmsQml <- function(syntax, data = NULL, method = "lms", m = 16,
     phi <- A 
     A[TRUE] <- 0
   } 
-  if (!is.null(covSyntax)) {
+  if (!is.null(cov_syntax)) {
     phi[TRUE] <- 0
     A[TRUE] <- 0
   }
   
   # mean etas
   alpha <- matrix(0, nrow=numEtas, ncol=1, dimnames = list(etas, "alpha"))
-
 
   # quadratic terms 
   omegaEtaXi <- omegaAndSortedXis$omegaEtaXi
@@ -148,9 +144,7 @@ specifyModelLmsQml <- function(syntax, data = NULL, method = "lms", m = 16,
   rownames(emptyR) <- 
     rownames(lambdaY)[selectBetaRows]
   colnames(emptyR) <- allIndsEtas
-  # NA  1  0  0  0
-  # NA  0  1  0  0
-  # 0   0  0  NA 1  
+
   lastRow <- 0
   lastCol <- 0
   for (i in seq_len(numEtas)) {
@@ -163,7 +157,6 @@ specifyModelLmsQml <- function(syntax, data = NULL, method = "lms", m = 16,
     lastCol <- lastCol + nInds + 1
   }
 
-  
   # theta epsilon
   scalingInds <- allIndsEtas[!allIndsEtas %in% rownames(emptyR)]  
   selectThetaEpsilon <- as.logical.matrix(thetaEpsilon)
@@ -217,7 +210,8 @@ specifyModelLmsQml <- function(syntax, data = NULL, method = "lms", m = 16,
                 matrices = matrices,
                 syntax = syntax,
                 parTable = parTable,
-                covModel = covModel(covSyntax, sortedXis = xis))
+                covModel = covModel(cov_syntax, sortedXis = xis, 
+                                    method = method))
 
   model$theta <- createParamVector(model)
   model$info$bounds <- getParamBounds(model)
@@ -313,7 +307,9 @@ fillModel <- function(model, theta, fillPhi = FALSE, method = "lms") {
 }
 
 
-fillMainModel <- function(model, thetaMainModel, fillPhi = FALSE, method = "lms") {
+fillMainModel <- function(model, thetaMainModel, fillPhi = FALSE, 
+                          method = "lms") {
+  xis <- model$info$xis
   numXis <- model$info$numXis
   numEtas <- model$info$numEtas
   matrices <- model$matrices
@@ -325,15 +321,22 @@ fillMainModel <- function(model, thetaMainModel, fillPhi = FALSE, method = "lms"
     fetch(thetaMainModel, "thetaDelta[0-9]*")
   matrices$thetaEpsilon[is.na(matrices$thetaEpsilon)] <-
     fetch(thetaMainModel, "thetaEpsilon[0-9]*")
-  
+
   if (method == "lms") {
     if (!is.null(model$covModel$matrices)) {
-      matrices$A <- expectedCovModel(model$covModel, chol = TRUE)
+      matrices$A <- expectedCovModel(model$covModel, method = "lms", 
+                                     sortedXis = xis)
     } else {
       matrices$A[is.na(matrices$A)] <- fetch(thetaMainModel, "^A[0-9]*$")
     }
   } else if (method == "qml"){
-    matrices$phi <- fillMatrixPhi(thetaMainModel, matrices, model)
+    if (!is.null(model$covModel$matrices)) {
+      matrices$phi <- expectedCovModel(model$covModel, method = "qml",
+                                       sortedXis = xis)
+    } else {
+      matrices$phi <- fillSymmetric(matrices$phi, fetch(thetaMainModel, 
+                                                        "^phi[0-9]*$"))
+    }
   }
 
   matrices$psi[is.na(matrices$psi)] <-
@@ -357,23 +360,7 @@ fillMainModel <- function(model, thetaMainModel, fillPhi = FALSE, method = "lms"
 }
 
 
-fillMatrixPhi <- function(theta, matrices, model) {
-  if (!any(is.na(matrices$phi))) return(matrices$phi)
-  phi <- matrices$phi
-  phi[is.na(phi)] <- fetch(theta, "^phi[0-9]*")
-  phi[upper.tri(phi)] <- t(phi[lower.tri(phi)])
-  phi
-}
-
-
-fillSymmetric <- function(mat, values) {
-  mat[is.na(mat)] <- values
-  mat[upper.tri(mat)] <- t(mat)[upper.tri(mat)]
-  mat
-}
-
-
-sortXisAndOmega <- function(xis, varsInts, etas, intTerms) {
+sortXisAndOmega <- function(xis, varsInts, etas, intTerms, method = "lms") {
   # allVarsInInts should be sorted according to which variables 
   # occur in the most interaction terms (makes it more efficient)
   allVarsInInts <- unique(unlist(varsInts))
@@ -388,7 +375,11 @@ sortXisAndOmega <- function(xis, varsInts, etas, intTerms) {
     if (length(interaction) > 2) {
       stop("Only interactions between two variables are allowed")
     } else if (all(interaction %in% etas)) {
-      stop("Interactions between two endogenous variables are not allowed")
+      stop("Interactions between two endogenous variables are not allowed",
+           "see vignette(\"interaction_two_etas\", \"modsem\")")
+    } else if (any(interaction %in% etas) && method == "qml") {
+      stop("Interactions between two endogenous variables are not allowed in qml",
+           "see vignette(\"interaction_two_etas\", \"modsem\")")
     }
 
     choice <- interaction[which(!interaction %in% etas)] 

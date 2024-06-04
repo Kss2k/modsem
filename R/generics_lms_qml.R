@@ -62,7 +62,7 @@ summaryLmsAndQml <- function(object, H0 = TRUE, verbose = TRUE,
 
   if (H0) {
     estH0 <- estimateNullModel(object$originalParTable, data = out$data, 
-                               covSyntax = object$model$covModel$syntax,
+                               cov_syntax = object$model$covModel$syntax,
                                method = method, verbose = verbose, ...)
     out$nullModel <- estH0
     out$D <- calcD(estH0, object)
@@ -87,6 +87,13 @@ print.summary_lms_qml <- function(x, digits = 3, ...) {
   cat("\n----Model Summary------------------------------------------------------\n")
   cat("\nNumber of iterations:", x$iterations, "\nFinal loglikelihood:",
     round(x$logLik, 3), "\n") 
+  # preformating 
+  covarianceRows <- x$parTable$op == "~~" & x$parTable$rhs != x$parTable$lhs
+
+  x$parTable$rhs[covarianceRows] <- 
+    apply(x$parTable[covarianceRows, c("rhs", "op", "lhs")], MARGIN = 1, 
+          FUN = function(x) stringr::str_c(x, collapse = ""))
+
   maxWidth <- max(vapply(x$parTable$rhs[x$parTable$rhs != "1"], 
                          FUN.VALUE = numeric(1), FUN = nchar))
   
@@ -248,12 +255,12 @@ printVariances <- function(parTable, digits = 3) {
 }
 
 
-estimateNullModel <- function(parTable, data, method = "lms", covSyntax = NULL,
+estimateNullModel <- function(parTable, data, method = "lms", cov_syntax = NULL,
                               verbose = FALSE,...) {
   strippedParTable <- parTable[!grepl(":", parTable$rhs), ]
   syntax <- parTableToSyntax(strippedParTable)
   if (verbose) cat("Estimating null model\n")
-  modsem_lms_qml(syntax, data, method, verbose = verbose, covSyntax = covSyntax, ...)
+  modsem_lms_qml(syntax, data, method, verbose = verbose, cov_syntax = cov_syntax, ...)
 }
 
 

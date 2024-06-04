@@ -65,7 +65,7 @@ sigmaLms <- function(model, z1) {
 estepLms <- function(model, theta, data, ...) {
   if (countFreeParams(model) != length(theta))
     stop("length paramaters does not match free parameters in model")
-  modFilled <- fillModel(model = model, theta = theta)
+  modFilled <- fillModel(model = model, theta = theta, method = "lms")
   V <- modFilled$quad$n       # matrix of node vectors m x k
   w <- modFilled$quad$w       # weights
   # the probability of each observation is derived as the sum of the probabilites 
@@ -100,7 +100,7 @@ stochasticGradient <- function(theta, model, data, P,
 
 
 logLikLms <- function(theta, model, data, P, sampleGrad = NULL, ...) {
-  modFilled <- fillModel(model = model, theta = theta)
+  modFilled <- fillModel(model = model, theta = theta, method = "lms")
   k <- model$quad$k 
   V <- modFilled$quad$n
   # summed log probability of observing the data given the parameters
@@ -135,24 +135,4 @@ mstepLms <- function(theta, model, data, P, negHessian = FALSE,
                                 .relStep = .Machine$double.eps^(1/5))$Hessian
   }
   est
-}
-
-
-# This is probably inneficient, but i'll fix it later
-zToMatrix <- function(zVec, nEta) {
-  mat <- matrix(0, nrow = nEta * length(zVec), ncol = nEta)
-  for (i in seq_len(nEta)) 
-    mat[seq_len(length(zVec)) + (i - 1) * length(zVec), i] <- zVec
-  mat
-}
-
-
-collapsePartitionedMatrixRow <- function(x, nEtas) {
-  out <- matrix(0, nrow = nrow(x) / nEtas, ncol = ncol(x))
-  rowOffset <- 0
-  for (i in seq_len(nEtas)) {
-    out <- out + x[seq_len(nrow(out)) + rowOffset, ]
-    rowOffset <- rowOffset + nrow(out) * nEtas
-  }
-  out
 }

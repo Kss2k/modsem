@@ -58,14 +58,19 @@ emLms <- function(model, verbose = FALSE,
                     ...)
   
   coefficients <- final$par
-  finalModel <- fillModel(model, coefficients, fillPhi = TRUE)
+  finalModel <- fillModel(model, coefficients, fillPhi = TRUE,
+                          method = "lms")
+
   finalModel$matricesNA <- model$matrices 
   finalModel$covModelNA <- model$covModel
-  modelSE <- fillModel(model, calcSE(final$hessian))
+
+  modelSE <- fillModel(model, calcSE(final$hessian), method = "lms")
   finalModel$matricesSE <- modelSE$matrices
   finalModel$covModelSE <- modelSE$covModel
+
   parTable <- rbind(finalModelToParTable(finalModel, method = "lms"),
                     covModelToParTable(finalModel, method = "lms"))
+
   parTable$tvalue <- parTable$est / parTable$se
   parTable$pvalue <- 2 * stats::pnorm(-abs(parTable$tvalue))
   parTable$ciLower <- parTable$est - 1.96 * parTable$se

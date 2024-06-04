@@ -1,6 +1,6 @@
 #' Interaction between latent variables using product indicators
 #'
-#' @param modelSyntax lavaan syntax
+#' @param model_syntax lavaan syntax
 #' @param data dataframe
 #' @param method method to use:
 #' "rca" = residual centering approach (passed to lavaan),
@@ -64,20 +64,20 @@
 #' # Theory Of Planned Behavior
 #' tpb <- ' 
 #' # Outer Model (Based on Hagger et al., 2007)
-#'   LATT =~ att1 + att2 + att3 + att4 + att5
-#'   LSN =~ sn1 + sn2
-#'   LPBC =~ pbc1 + pbc2 + pbc3
-#'   LINT =~ int1 + int2 + int3
-#'   LBEH =~ b1 + b2
+#'   ATT =~ att1 + att2 + att3 + att4 + att5
+#'   SN =~ sn1 + sn2
+#'   PBC =~ pbc1 + pbc2 + pbc3
+#'   INT =~ int1 + int2 + int3
+#'   BEH =~ b1 + b2
 #' 
 #' # Inner Model (Based on Steinmetz et al., 2011)
 #'   # Covariances
-#'   LATT ~~ LSN + LPBC
-#'   LPBC ~~ LSN 
+#'   ATT ~~ SN + PBC
+#'   PBC ~~ SN 
 #'   # Causal Relationsships
-#'   LINT ~ LATT + LSN + LPBC
-#'   LBEH ~ LINT + LPBC 
-#'   LBEH ~ LINT:LPBC  
+#'   INT ~ ATT + SN + PBC
+#'   BEH ~ INT + PBC 
+#'   BEH ~ INT:PBC  
 #' '
 #' 
 #' # double centering approach
@@ -89,7 +89,7 @@
 #' estTpbConstrained <- modsem_pi(tpb, data = TPB, method = "ca")
 #' summary(estTpbConstrained)
 #' }
-modsem_pi <- function(modelSyntax = NULL,
+modsem_pi <- function(model_syntax = NULL,
                    data = NULL,
                    method = "dblcent",
                    match = FALSE,
@@ -110,12 +110,12 @@ modsem_pi <- function(modelSyntax = NULL,
                    group = NULL,
                    run = TRUE, 
                    ...) {
-  if (is.null(modelSyntax)) stop("No model syntax provided in modsem")
+  if (is.null(model_syntax)) stop("No model syntax provided in modsem")
   if (is.null(data)) stop("No data provided in modsem")
   if (!is.data.frame(data)) data <- as.data.frame(data)
   
   # Get the specifications of the model 
-  modelSpec <- parseLavaan(modelSyntax, colnames(data), match = match)
+  modelSpec <- parseLavaan(model_syntax, colnames(data), match = match)
 
   # Data Processing  -----------------------------------------------------------
   data <- data[c(modelSpec$oVs, group)]

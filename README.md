@@ -8,7 +8,7 @@ install.packages("modsem")
 
 # Latest version from Github
 install.packages("devtools")
-devtools::install_github("kss2k/modsem")
+devtools::install_github("kss2k/modsem", build_vignettes = TRUE)
 ```
 
 # Methods/Approaches
@@ -25,18 +25,15 @@ There are a number of approaches for estimating interaction effects in SEM. In `
   - default 
 - `"pind"` = basic product indicator approach (not recommended)
 - `"lms"` = The latent moderated structural equations approach
-  - note: now implemented with multiple endogenous variables
-    however it does not allow interactions between two enodgenous
-    variables, it does however allow interactions between exogenous:endogenous
-    and exogenous:exogenous
-  - do `optimize = TRUE` for faster convergence (experimental feature)
 - `"qml"` = The Quasi Maximum Likelihood estimation of latent moderated structural equations. 
-  - note: only works with a single endogenous variable.
 - `"mplus"` 
   - estimates model through Mplus, if it is installed
 
-# New Feature (01.06.2024)
+# New Features (01.06.2024-04-06-2024)
 - New function for plotting interaction effects (`plot_interaction()`)
+- Interaction effects between two endogenous variables are now possible with the LMS 
+  and QML approach, using the 'cov_syntax' argument, see the [vignette](file:///home/kjell/Dropbox/code/R/repos/modsem/docs/articles/interaction_two_etas.html) for more information.
+  (only available on GitHub, not on CRAN)
 
 # Examples 
 
@@ -75,14 +72,14 @@ summary(est1Lms)
 tpb <- "
 # Outer Model (Based on Hagger et al., 2007)
   ATT =~ att1 + att2 + att3 + att4 + att5
-  LSN =~ sn1 + sn2
+  SN =~ sn1 + sn2
   PBC =~ pbc1 + pbc2 + pbc3
   INT =~ int1 + int2 + int3
   BEH =~ b1 + b2
 
 # Inner Model (Based on Steinmetz et al., 2011)
   # Causal Relationsships
-  INT ~ ATT + LSN + PBC
+  INT ~ ATT + SN + PBC
   BEH ~ INT + PBC
   BEH ~ PBC:INT
 "

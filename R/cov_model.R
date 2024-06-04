@@ -3,7 +3,7 @@
 # as you can split the model into a non-linear, and linear part. allowing 
 # you to use (normally distributed) endogenous variables as non-normal
 # as of now the mean-structure is excluded
-covModel <- function(syntax, sortedXis) {
+covModel <- function(syntax, sortedXis, method = "lms") {
   if (is.null(syntax)) return(list(matrices = NULL, freeParams = 0, 
                                    theta = NULL, syntax = syntax))
   parTable <- modsemify(syntax)
@@ -15,7 +15,6 @@ covModel <- function(syntax, sortedXis) {
   etas <- sortedXis[sortedXis %in% etas]
   numEtas <- length(etas)
   if (numEtas == 0) stop("No etas in model")
-
 
   xis <- parTable[parTable$op == "~" &
                   !parTable$rhs %in% etas & 
@@ -29,16 +28,19 @@ covModel <- function(syntax, sortedXis) {
   exprsGammaXi <- structExprs[structExprs$lhs %in% etas & 
                               !structExprs$rhs %in% etas, ] 
 
-  if (nrow(exprsGammaXi) > 0) apply(exprsGammaXi, 
-        MARGIN = 1,  
-        FUN = function(row) gammaXi[row[["lhs"]], row[["rhs"]]] <<- NA)
+  if (nrow(exprsGammaXi) > 0) {
+    apply(exprsGammaXi, MARGIN = 1, FUN = function(row) 
+          gammaXi[row[["lhs"]], row[["rhs"]]] <<- NA)
+  }
 
   gammaEta <- matrix(0, nrow = numEtas, ncol = numEtas,
                   dimnames = list(etas, etas))
   exprsGammaEta <- structExprs[structExprs$lhs %in% etas & 
                                structExprs$rhs %in% etas, ]
-  if (nrow(exprsGammaEta) > 0) apply(exprsGammaEta, MARGIN = 1, 
-          FUN = function(row) gammaEta[row[["lhs"]], row[["rhs"]]] <<- NA)
+  if (nrow(exprsGammaEta) > 0) { 
+    apply(exprsGammaEta, MARGIN = 1, FUN = function(row) 
+          gammaEta[row[["lhs"]], row[["rhs"]]] <<- NA)
+  }
 
   # residuals etas
   psi <- matrix(0, nrow = numEtas, ncol = numEtas,
@@ -48,14 +50,15 @@ covModel <- function(syntax, sortedXis) {
   # covariance matrix xis
   A <- diag(numXis)
   rownames(A) <- colnames(A) <- xis
-  A[lower.tri(A, diag = TRUE)] <- NA
+  phi <- A
+  if (method == "lms") A[lower.tri(A, diag = TRUE)] <- NA
+  else if (method == "qml") phi[lower.tri(phi, diag = TRUE)] <- NA
 
-  matrices <- list(
-    gammaXi = gammaXi,
-    gammaEta = gammaEta,
-    A = A,
-    psi = psi,
-    phi = NULL) # only filled in at the end
+  matrices <- list(gammaXi = gammaXi,
+                   gammaEta = gammaEta,
+                   A = A,
+                   psi = psi,
+                   phi = phi) 
 
   model <- list(info =
                 list(etas = etas,
@@ -77,14 +80,18 @@ fillCovModel <- function(covModel, covTheta, fillPhi = FALSE, method = "lms") {
   if (is.null(matrices)) return(NULL)
   if (is.null(names(covTheta))) names(covTheta) <- names(covModel$theta)
   matrices <- covModel$matrices
-  matrices$A[is.na(matrices$A)] <-
-    fetch(covTheta, "^A[0-9]*$")
   matrices$psi[is.na(matrices$psi)] <-
     fetch(covTheta, "^psi[0-9]*$")
   matrices$gammaEta[is.na(matrices$gammaEta)] <-
     fetch(covTheta, "gammaEta[0-9]*$")
   matrices$gammaXi[is.na(matrices$gammaXi)] <-
     fetch(covTheta, "gammaXi[0-9]*$")
+  if (method == "lms") {
+    matrices$A[is.na(matrices$A)] <-
+      fetch(covTheta, "^A[0-9]*$")
+  } else if (method == "qml") {
+    matrices$phi <- fillSymmetric(matrices$phi, fetch(covTheta, "^phi[0-9]*$"))
+  }
   if (fillPhi) matrices$phi <- matrices$A %*% t(matrices$A)
   covModel$matrices <- matrices 
   covModel
@@ -93,12 +100,14 @@ fillCovModel <- function(covModel, covTheta, fillPhi = FALSE, method = "lms") {
 
 createParamVectorCovModel <- function(matrices, start = NULL) {
   set.seed(123)
+  phi <- as.vector(matrices$phi)
   A <- as.vector(matrices$A)
   psi <- as.vector(matrices$psi)
   alpha <- as.vector(matrices$alpha)
   gammaXi <- as.vector(matrices$gammaXi)
   gammaEta <- as.vector(matrices$gammaEta)
-  theta <- c("A" = A,
+  theta <- c("phi" = phi,
+             "A" = A,
              "psi" = psi,
              "gammaXi" = gammaXi,
              "gammaEta" = gammaEta)
@@ -117,11 +126,16 @@ countFreeCovModel <- function(matrices) {
 }
 
 
-expectedCovModel <- function(model, chol = FALSE) {
+expectedCovModel <- function(model, method = "lms", sortedXis) {
   gammaXi <- model$matrices$gammaXi
   gammaEta <- model$matrices$gammaEta
-  A <- model$matrices$A
-  phi <- A %*% t(A)
+
+  if (method == "lms") {
+    A <- model$matrices$A
+    phi <- A %*% t(A)
+  } else if (method == "qml") {
+    phi <- model$matrices$phi
+  }
   psi <- model$matrices$psi
   
   Binv <- solve(diag(nrow(gammaEta)) - gammaEta)
@@ -129,8 +143,9 @@ expectedCovModel <- function(model, chol = FALSE) {
   covEtaXi <- Binv %*% gammaXi %*% phi
   sigma <- rbind(cbind(covEtaEta, covEtaXi),
                  cbind(t(covEtaXi), phi))
+  sigma <- sigma[sortedXis, sortedXis]
 
-  if (chol) return(t(chol(sigma)))
+  if (method == "lms") return(t(chol(sigma)))
   sigma
 }
 
@@ -164,7 +179,7 @@ covModelToParTable <- function(model, method = "lms") {
     phiNA <- matricesNA$A
     phiEst <- matricesEst$phi
     phiSE <- matricesSE$A
-  } else {
+  } else if (method == "qml") {
     phiNA <- matricesNA$phi
     phiEst <- matricesEst$phi
     phiSE <- matricesSE$phi

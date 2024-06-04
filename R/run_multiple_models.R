@@ -4,7 +4,7 @@ allMethods <- c("rca", "uca", "ca", "dblcent", "mplus", "pind")
 allNativeMethods <- allMethods[allMethods != "mplus"]
 fastMethods <- c("rca", "uca", "dblcent", "pind")
 
-runMultipleMethods <- function(modelSyntax, 
+runMultipleMethods <- function(model_syntax, 
                                data, 
                                methods = allNativeMethods,
                                ...) {
@@ -12,10 +12,10 @@ runMultipleMethods <- function(modelSyntax,
                          names = methods)
   for (method in methods) {
     estimates[[method]] <- tryCatch(
-      modsem(modelSyntax, data, method, ...),
+      modsem(model_syntax, data, method, ...),
       warning = function(w) {
         warning("Warning in ", method, "\n", capturePrint(w), "\n")
-        modsem(modelSyntax, data, method, ...)
+        modsem(model_syntax, data, method, ...)
       },
       error = function(e) {
         warning("Error in ", method, "\n", capturePrint(e))

@@ -113,3 +113,10 @@ oneWayTableToDataFrame <- function(table) {
 whichIsMax <- function(x) {
   which(x == max(x))
 }
+
+
+fillSymmetric <- function(mat, values) {
+  mat[is.na(mat)] <- values
+  mat[upper.tri(mat)] <- t(mat)[upper.tri(mat)]
+  mat
+}

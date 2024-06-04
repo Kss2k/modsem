@@ -13,10 +13,17 @@ estQml <- function(model,
 
   info <- model$info
 
+  finalModel <- fillModel(model, coefficients, method = "qml")
+
   finalModel$matricesNA <- model$matrices 
-  finalModel$matricesSE <- fillModel(model, calcSE(final$hessian))$matrices 
-  finalModel$data <- NULL # not needed in the model anymore 
-  parTable <- finalModelToParTable(finalModel, method = "qml")
+  finalModel$covModelNA <- model$covModel
+
+  modelSE <- fillModel(model, calcSE(final$hessian), method = "qml")
+  finalModel$matricesSE <- modelSE$matrices
+  finalModel$covModelSE <- modelSE$covModel
+
+  parTable <- rbind(finalModelToParTable(finalModel, method = "qml"),
+                    covModelToParTable(finalModel, method = "qml"))
 
   parTable$tvalue <- parTable$est / parTable$se
   parTable$pvalue <- 2 * stats::pnorm(-abs(parTable$tvalue))

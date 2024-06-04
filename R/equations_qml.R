@@ -1,5 +1,5 @@
 logLikQml <- function(theta, model) {
-  modelFilled <- fillModel(model, theta)
+  modelFilled <- fillModel(model, theta, method = "qml")
   numEta <- model$info$numEta
   m <- modelFilled$matrices
   m$numEta <- numEta
@@ -24,7 +24,6 @@ logLikQml <- function(theta, model) {
   m$subThetaEpsilon[is.na(m$subThetaEpsilon)] <- 
     m$thetaEpsilon[m$selectThetaEpsilon]
 
-  m$phi <- m$phi[seq_len(model$info$numXis), seq_len(model$info$numXis)]
   m$RER <- m$R %*% m$thetaEpsilon %*% t(m$R)
   invRER <- solve(m$RER)
   m$LXPLX <- m$lambdaX %*% m$phi %*% t(m$lambdaX) + m$thetaDelta

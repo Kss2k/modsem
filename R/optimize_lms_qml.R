@@ -5,50 +5,73 @@ optimizeStartingParamsLms <- function(model) {
   numXis <- model$info$numXis
   indsXis <- model$info$allIndsXis
   data <- model$data
-  pt <- modsem(model$syntax, data, method = "dblcent")$coefParTable
-  matrices <- model$matrices 
-  LambdaX <- findEstimatesParTable(matrices$lambdaX, pt, op = "=~", 
+  syntax <- paste(model$syntax, model$covModel$syntax, sep = "\n")
+  pt <- modsem(syntax, data, method = "dblcent")$coefParTable
+
+  # Main Model
+  matricesMain <- model$matrices
+  LambdaX <- findEstimatesParTable(matricesMain$lambdaX, pt, op = "=~", 
                                    rows_lhs = FALSE)
-  LambdaY <- findEstimatesParTable(matrices$lambdaY, pt, op = "=~",
+  LambdaY <- findEstimatesParTable(matricesMain$lambdaY, pt, op = "=~",
                                    rows_lhs = FALSE)
-  ThetaEpsilon <- findEstimatesParTable(matrices$thetaEpsilon, pt, op = "~~")
-  ThetaDelta <- findEstimatesParTable(matrices$thetaDelta, pt, op = "~~")
-  Psi <- findEstimatesParTable(matrices$psi, pt, op = "~~")
-  Phi <- findEstimatesParTable(matrices$phi, pt, op = "~~")
-  subPhi <- Phi[seq_len(numXis), seq_len(numXis)]
-  A <- findEstimatesParTable(matrices$A, pt, op = "~~")
-  subA <- A[seq_len(numXis), seq_len(numXis)]
-  subA[upper.tri(subA)] <- t(subA[lower.tri(subA)])
-  subA <- t(tryCatch(chol(subA), error = function(x) diag(ncol(subA))))
-  A[seq_len(numXis), seq_len(numXis)] <- subA
-  alpha <- matrices$alpha
+  ThetaEpsilon <- findEstimatesParTable(matricesMain$thetaEpsilon, pt, op = "~~")
+  ThetaDelta <- findEstimatesParTable(matricesMain$thetaDelta, pt, op = "~~")
+  Psi <- findEstimatesParTable(matricesMain$psi, pt, op = "~~")
+  Phi <- findEstimatesParTable(matricesMain$phi, pt, op = "~~")
+  A <- findEstimatesParTable(matricesMain$A, pt, op = "~~")
+  A[upper.tri(A)] <- t(A[lower.tri(A)])
+  A <- t(tryCatch(chol(A), error = function(x) diag(ncol(A))))
+  alpha <- matricesMain$alpha
   alpha[is.na(alpha)] <- 0
-  GammaEta <- findEstimatesParTable(matrices$gammaEta, pt, op = "~")
-  GammaXi <- findEstimatesParTable(matrices$gammaXi, pt, op = "~")  
-  OmegaEtaXi <- findInteractionEstimatesParTable(matrices$omegaEtaXi, lhs = etas,
+  GammaEta <- findEstimatesParTable(matricesMain$gammaEta, pt, op = "~")
+  GammaXi <- findEstimatesParTable(matricesMain$gammaXi, pt, op = "~")  
+  OmegaEtaXi <- findInteractionEstimatesParTable(matricesMain$omegaEtaXi, lhs = etas,
                                                  rhs1 = etas, rhs2 = xis, pt = pt)
-  OmegaXiXi <- findInteractionEstimatesParTable(matrices$omegaXiXi, lhs = etas,
+  OmegaXiXi <- findInteractionEstimatesParTable(matricesMain$omegaXiXi, lhs = etas,
                                                 rhs1 = xis, rhs2 = xis, pt = pt)
   tauX <- apply(data[, indsXis], 2, mean)
   tauY <- apply(data[, indsEtas], 2, mean)
-  theta <- unlist(list(LambdaX[is.na(matrices$lambdaX)], 
-                       LambdaY[is.na(matrices$lambdaY)], 
-                       tauX[is.na(matrices$tauX)], 
-                       tauY[is.na(matrices$tauY)],
-                       ThetaDelta[is.na(matrices$thetaDelta)],
-                       ThetaEpsilon[is.na(matrices$thetaEpsilon)],
-                       Phi[is.na(matrices$phi)], 
-                       A[is.na(matrices$A)], 
-                       Psi[is.na(matrices$psi)], 
-                       alpha[is.na(matrices$alpha)],
-                       GammaXi[is.na(matrices$gammaXi)], 
-                       GammaEta[is.na(matrices$gammaEta)], 
-                       OmegaXiXi[is.na(matrices$omegaXiXi)], 
-                       OmegaEtaXi[is.na(matrices$omegaEtaXi)]))
+  thetaMainModel <- unlist(list(LambdaX[is.na(matricesMain$lambdaX)], 
+                                LambdaY[is.na(matricesMain$lambdaY)], 
+                                tauX[is.na(matricesMain$tauX)], 
+                                tauY[is.na(matricesMain$tauY)],
+                                ThetaDelta[is.na(matricesMain$thetaDelta)],
+                                ThetaEpsilon[is.na(matricesMain$thetaEpsilon)],
+                                Phi[is.na(matricesMain$phi)], 
+                                A[is.na(matricesMain$A)], 
+                                Psi[is.na(matricesMain$psi)], 
+                                alpha[is.na(matricesMain$alpha)],
+                                GammaXi[is.na(matricesMain$gammaXi)], 
+                                GammaEta[is.na(matricesMain$gammaEta)], 
+                                OmegaXiXi[is.na(matricesMain$omegaXiXi)], 
+                                OmegaEtaXi[is.na(matricesMain$omegaEtaXi)]))
+
+  # Cov Model
+  matricesCov <- model$covModel$matrices 
+  if (!is.null(matricesCov)) {
+    PsiCovModel <- findEstimatesParTable(matricesCov$psi, pt, op = "~~")
+    PhiCovModel <- findEstimatesParTable(matricesCov$phi, pt, op = "~~")
+    ACovModel <- findEstimatesParTable(matricesCov$A, pt, op = "~~")
+    ACovModel[upper.tri(ACovModel)] <- t(ACovModel[lower.tri(ACovModel)])
+    ACovModel <- t(tryCatch(chol(ACovModel), error = function(x) 
+                            diag(ncol(ACovModel))))
+    GammaEtaCovModel <- findEstimatesParTable(matricesCov$gammaEta, pt, op = "~")
+    GammaXiCovModel <- findEstimatesParTable(matricesCov$gammaXi, pt, op = "~")  
+
+    thetaCovModel <- unlist(list(PhiCovModel[is.na(matricesCov$phi)], 
+                                 ACovModel[is.na(matricesCov$A)], 
+                                 PsiCovModel[is.na(matricesCov$psi)], 
+                                 GammaXiCovModel[is.na(matricesCov$gammaXi)], 
+                                 GammaEtaCovModel[is.na(matricesCov$gammaEta)]))
+  } else thetaCovModel <- NULL
+
+  # Combinging the two
+  theta <- c(thetaCovModel, thetaMainModel)
   if (length(theta) == length(model$theta)) {
     names(theta) <- names(model$theta)
     model$theta <- theta
   }
+
   model
 }
 
