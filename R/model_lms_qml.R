@@ -380,7 +380,7 @@ sortXisAndOmega <- function(xis, varsInts, etas, intTerms, method = "lms",
            "see \nvignette(\"interaction_two_etas\", \"modsem\")")
     } 
 
-    choice <- interaction[which(!interaction %in% etas)] 
+    choice <- unique(interaction[which(!interaction %in% etas)])
     if (length(choice) > 1 && !double) {
       freq <- freqInIntTerms[choice, "freq"]
       choice <- choice[whichIsMax(freq)][[1]] # pick first if both are equal
