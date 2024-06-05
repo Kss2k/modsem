@@ -8,13 +8,13 @@ m1 <- "
 
 # Inner model
   Y ~ X + Z
-  Y ~ Z:X + X:X
+  Y ~ X:Z + X:X
 "
 # funnily enough, the starting parameters from the double centering approach
 # give better loglikelihoods than the ones arrived at by the EM algorithm
 # i.e., the loglikelihood decreases from the starting parameters
 startTime1 <- Sys.time()
-est1 <- modsem(m1, oneInt,
+est1 <- modsem(m1, oneInt, 
   method = "lms",
   optimize = TRUE, verbose = TRUE,
   convergence = 1e-2, sampleGrad = NULL, maxstep = 1

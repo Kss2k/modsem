@@ -4,6 +4,7 @@ emLms <- function(model, verbose = FALSE,
                   breakOnLogLikIncrease = FALSE,
                   sampleGrad = NULL,
                   control = list(),
+                  hessian = TRUE,
                   ...) {
   data <- model$data
   model$data <- NULL # not needed in the model anymore
@@ -32,9 +33,9 @@ emLms <- function(model, verbose = FALSE,
 
     P <- estepLms(model = model, theta = thetaOld, data = data, ...)
     mstep <- mstepLms(model = model, P = P, data = data,
-                      theta = thetaOld, maxstep = maxstep, ...,
-                      sampleGrad = sampleGrad,
-                      control = control)
+                      theta = thetaOld, maxstep = maxstep, 
+                      sampleGrad = sampleGrad, hessian = FALSE,
+                      control = control, ...)
 
     logLikNew <- mstep$objective
     thetaNew <- unlist(mstep$par)
@@ -52,19 +53,23 @@ emLms <- function(model, verbose = FALSE,
     if (abs(logLikOld - logLikNew) < convergence) run <- FALSE
   }
   final <- mstepLms(model = model, P = P, data = data,
-                    theta = thetaNew, negHessian = TRUE,
+                    theta = thetaNew, hessian = hessian,
                     maxstep = maxstep, sampleGrad = NULL, 
                     verbose = verbose, control = control,
                     ...)
-  
+    
   coefficients <- final$par
   finalModel <- fillModel(model, coefficients, fillPhi = TRUE,
                           method = "lms")
 
   finalModel$matricesNA <- model$matrices 
   finalModel$covModelNA <- model$covModel
-
-  modelSE <- fillModel(model, calcSE(final$hessian), method = "lms")
+  
+  if (hessian) {
+    modelSE <- fillModel(model, calcSE(final$hessian), method = "lms")
+  } else {
+    modelSE <- fillModel(model, rep(NA, length(coefficients)), method = "lms")
+  }
   finalModel$matricesSE <- modelSE$matrices
   finalModel$covModelSE <- modelSE$covModel
 
@@ -87,7 +92,7 @@ emLms <- function(model, verbose = FALSE,
               logLik = -final$objective, 
               iterations = iterations,
               convergence = convergence,
-              negHessian = final$hessian)
+              hessian = final$hessian)
 
   class(out) <- "modsem_lms"
   out

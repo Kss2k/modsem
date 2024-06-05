@@ -61,16 +61,16 @@ dMvn <- function(X, mean, sigma, log = FALSE) {
 }
 
 
-calcSE <- function(negHessian, names = NULL) {
+calcSE <- function(hessian, names = NULL) {
   stdError <- tryCatch({
-      sqrt(diag(solve(negHessian)))
+      sqrt(diag(solve(hessian)))
     }, error=function(e) {
-      rep(NA, nrow(negHessian))
+      rep(NA, nrow(hessian))
     }, warning=function(w) {
        if (grepl("NaN", conditionMessage(w))) {
-         suppressWarnings(sqrt(diag(solve(negHessian))))
+         suppressWarnings(sqrt(diag(solve(hessian))))
       } else{
-         sqrt(diag(solve(negHessian)))
+         sqrt(diag(solve(hessian)))
       }
     })
   if (all(is.na(stdError))) 
@@ -119,4 +119,36 @@ fillSymmetric <- function(mat, values) {
   mat[is.na(mat)] <- values
   mat[upper.tri(mat)] <- t(mat)[upper.tri(mat)]
   mat
+}
+
+
+getK_NA <- function(omegaEta) {
+  sum(apply(omegaEta, 1, function(x) any(is.na(x))))
+}
+
+
+getSortedEtas <- function(parTable) {
+  structExprs <- parTable[parTable$op == "~" & 
+                          parTable$lhs != "1", ] 
+  unsortedEtas <- unique(structExprs$lhs)
+  sortedEtas <- c()
+  while (length(sortedEtas) < length(unsortedEtas) && nrow(structExprs) > 0) {
+    if (all(unique(structExprs$lhs) %in% structExprs$rhs)) {
+      stop("Model is non-recursive")
+    }
+    for (i in seq_len(nrow(structExprs))) {
+      eta <- structExprs[i, "lhs"]
+      if (eta %in% structExprs$rhs) next
+      sortedEtas <- c(sortedEtas, eta)
+      structExprs <- structExprs[!grepl(eta, structExprs$lhs), ]
+      break 
+    }
+  }
+
+  if (!all(sortedEtas %in% unsortedEtas) && 
+      length(sortedEtas) != length(unsortedEtas)) {
+      warning("unable to sort etas")
+      return(unsortedEtas)
+  }
+  sortedEtas
 }

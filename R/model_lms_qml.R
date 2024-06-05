@@ -3,14 +3,14 @@
 
 
 specifyModelLmsQml <- function(syntax, data = NULL, method = "lms", m = 16,
-                               cov_syntax = NULL) {
+                               cov_syntax = NULL, double = FALSE) {
   parTable <- modsem::modsemify(syntax)
   structExprs <- parTable[parTable$op == "~" & 
                           parTable$rhs != "1", ]
   measrExprs <- parTable[parTable$op == "=~", ]
 
   # endogenous variables (etas)
-  etas <- unique(structExprs$lhs)
+  etas <- getSortedEtas(structExprs)
   numEtas <- length(etas)
   if (numEtas == 0) stop2("No etas in model")
 
@@ -38,7 +38,7 @@ specifyModelLmsQml <- function(syntax, data = NULL, method = "lms", m = 16,
 
   # Sorting xis so that it is ordered with the xis in interactions first
   omegaAndSortedXis <- sortXisAndOmega(xis, varsInts, etas, intTerms,
-                                       method = method)
+                                       method = method, double = double)
   xis <- omegaAndSortedXis$sortedXis
   numXis <- length(xis)
 
@@ -168,7 +168,6 @@ specifyModelLmsQml <- function(syntax, data = NULL, method = "lms", m = 16,
                                             scalingInds))
   diag(subThetaEpsilon) <- NA
   Ieta <- diag(numEtas)
-  sumVec <- rep(1, numEtas)
   
   matrices <- list(
     lambdaX = lambdaX,
@@ -190,8 +189,8 @@ specifyModelLmsQml <- function(syntax, data = NULL, method = "lms", m = 16,
     selectThetaEpsilon = selectThetaEpsilon,
     selectBetaRows = selectBetaRows,
     emptyR = emptyR,
-    subThetaEpsilon = subThetaEpsilon, 
-    sumVec = sumVec)
+    subThetaEpsilon = subThetaEpsilon)
+
   k <- omegaAndSortedXis$k
   quad <- quadrature(m, k)
 
@@ -205,13 +204,13 @@ specifyModelLmsQml <- function(syntax, data = NULL, method = "lms", m = 16,
                      numXis = numXis,
                      indsXis = indsXis,
                      allIndsXis = allIndsXis,
-                     scalingInds = scalingInds),
+                     scalingInds = scalingInds,
+                     kOmegaEta = getK_NA(omegaEtaXi)),
                 quad = quad,
                 matrices = matrices,
                 syntax = syntax,
                 parTable = parTable,
-                covModel = covModel(cov_syntax, sortedXis = xis, 
-                                    method = method))
+                covModel = covModel(cov_syntax, method = method))
 
   model$theta <- createParamVector(model)
   model$info$bounds <- getParamBounds(model)
@@ -360,7 +359,8 @@ fillMainModel <- function(model, thetaMainModel, fillPhi = FALSE,
 }
 
 
-sortXisAndOmega <- function(xis, varsInts, etas, intTerms, method = "lms") {
+sortXisAndOmega <- function(xis, varsInts, etas, intTerms, method = "lms",
+                            double = FALSE) {
   # allVarsInInts should be sorted according to which variables 
   # occur in the most interaction terms (makes it more efficient)
   allVarsInInts <- unique(unlist(varsInts))
@@ -370,35 +370,32 @@ sortXisAndOmega <- function(xis, varsInts, etas, intTerms, method = "lms") {
   sortedXis <- c(allVarsInInts, xis[!xis %in% allVarsInInts])
   nonLinearXis <- character(0L)
   for (interaction in varsInts) {
-    if (any(interaction %in% nonLinearXis)) next # no need to add it again
+    if (any(interaction %in% nonLinearXis) && !double ||
+        all(interaction %in% nonLinearXis) && double) next # no need to add it again
 
     if (length(interaction) > 2) {
       stop2("Only interactions between two variables are allowed")
     } else if (all(interaction %in% etas)) {
       stop2("Interactions between two endogenous variables are not allowed, ",
            "see \nvignette(\"interaction_two_etas\", \"modsem\")")
-    } else if (any(interaction %in% etas) && method == "qml") {
-      stop2("Interactions between two endogenous variables are not allowed in qml, ",
-           "see \nvignette(\"interaction_two_etas\", \"modsem\")")
-    }
+    } 
 
     choice <- interaction[which(!interaction %in% etas)] 
-    if (length(choice) > 1) {
+    if (length(choice) > 1 && !double) {
       freq <- freqInIntTerms[choice, "freq"]
       choice <- choice[whichIsMax(freq)][[1]] # pick first if both are equal
     }
 
     nonLinearXis <- c(nonLinearXis, choice)
   }
-
   linearXis <- xis[!xis %in% nonLinearXis]
   sortedXis <- c(nonLinearXis, linearXis)
 
   # submatrices for omegas
   omegaXiXi <- NULL
-  subOmegaXiXi <- matrix(0, nrow = length(xis), ncol = length(xis),
-                         dimnames = list(sortedXis, sortedXis))
   for (eta in etas) {
+    subOmegaXiXi <- matrix(0, nrow = length(xis), ncol = length(xis),
+                           dimnames = list(sortedXis, sortedXis))
     lapply(varsInts[intTerms$lhs == eta], FUN = function(row) {
        if (!all(row %in% sortedXis)) return(NULL) 
        whichRow <- which(row %in% nonLinearXis)[[1]] # if quadratic term pick first
@@ -409,9 +406,9 @@ sortXisAndOmega <- function(xis, varsInts, etas, intTerms, method = "lms") {
   }
 
   omegaEtaXi <- NULL
-  subOmegaEtaXi <- matrix(0, nrow = length(xis), ncol = length(etas),
-                          dimnames = list(sortedXis, etas))
   for (eta in etas) {
+    subOmegaEtaXi <- matrix(0, nrow = length(xis), ncol = length(etas),
+                            dimnames = list(sortedXis, etas))
     lapply(varsInts[intTerms$lhs == eta], FUN = function(row) {
        if (any(row %in% etas) & !all(row %in% etas)) {
          whichXi <- which(!row %in% etas)
@@ -603,11 +600,11 @@ finalModelToParTable <- function(finalModel, method = "lms") {
     phiNA <- matricesNA$A
     phiEst <- matricesEst$phi
     phiSE <- matricesSE$A
-  } else {
+  } else if (method == "qml") {
     phiNA <- matricesNA$phi 
     phiEst <- matricesEst$phi 
     phiSE <- matricesSE$phi 
-  }
+  } 
 
   newRows <- matrixToParTable(phiNA,
                               phiEst,

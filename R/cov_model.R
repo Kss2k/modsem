@@ -3,7 +3,7 @@
 # as you can split the model into a non-linear, and linear part. allowing 
 # you to use (normally distributed) endogenous variables as non-normal
 # as of now the mean-structure is excluded
-covModel <- function(syntax, sortedXis, method = "lms") {
+covModel <- function(syntax, method = "lms") {
   if (is.null(syntax)) return(list(matrices = NULL, freeParams = 0, 
                                    theta = NULL, syntax = syntax))
   parTable <- modsemify(syntax)
@@ -11,15 +11,13 @@ covModel <- function(syntax, sortedXis, method = "lms") {
                           parTable$rhs != "1", ]
 
   # endogenous variables (etas)
-  etas <- unique(structExprs$lhs)
-  etas <- sortedXis[sortedXis %in% etas]
+  etas <- getSortedEtas(structExprs)
   numEtas <- length(etas)
   if (numEtas == 0) stop2("No etas in model")
 
   xis <- parTable[parTable$op == "~" &
                   !parTable$rhs %in% etas & 
                   parTable$rhs != "1", "rhs"] |> unique()
-  xis <- sortedXis[sortedXis %in% xis]
   numXis <- length(xis)
   if (numXis == 0) stop2("No xis in model")
 

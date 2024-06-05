@@ -15,6 +15,9 @@
 #' @param convergence convergence criterion. Lower values give better estimates but slower computation.
 #' @param standardize should data be scaled before fitting model
 #' @param center should data be centered before fitting model
+#' @param double try to double the number of dimensions of integrations used in LMS,
+#' this will be extremely slow, but should be more similar to mplus.
+#' @param hessian should hessian (i.e., std.errors) be calculated
 #' @param cov_syntax model syntax for implied covariance matrix (see 'vignette("interaction_two_etas", "modsem")')
 #' @param ... arguments passed to other functions
 #' @return modsem_lms or modsem_qml object
@@ -81,6 +84,8 @@ modsem_lms_qml <- function(model_syntax = NULL,
                            convergence = 1e-2,
                            center = FALSE, 
                            standardize = FALSE,
+                           double = FALSE, 
+                           hessian = TRUE,
                            cov_syntax = NULL,
                            ...) {
   if (is.null(model_syntax)) {
@@ -107,11 +112,14 @@ modsem_lms_qml <- function(model_syntax = NULL,
 
   model <- specifyModelLmsQml(model_syntax, data = data, 
                               method = method, m = nodes, 
-                              cov_syntax = cov_syntax)
+                              cov_syntax = cov_syntax, 
+                              double = double)
   if (optimize) model <- optimizeStartingParamsLms(model)
   switch(method, 
          "qml" = estQml(model, verbose = verbose, 
-                        convergence = convergence, ...),
+                        convergence = convergence, 
+                        hessian = hessian, ...),
          "lms" = emLms(model, verbose = verbose, 
-                       convergence = convergence, ...))
+                       convergence = convergence,
+                       hessian = hessian, ...))
 }

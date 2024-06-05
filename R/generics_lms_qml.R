@@ -256,11 +256,12 @@ printVariances <- function(parTable, digits = 3) {
 
 
 estimateNullModel <- function(parTable, data, method = "lms", cov_syntax = NULL,
-                              verbose = FALSE,...) {
+                              verbose = FALSE, hessian = FALSE, ...) {
   strippedParTable <- parTable[!grepl(":", parTable$rhs), ]
   syntax <- parTableToSyntax(strippedParTable)
   if (verbose) cat("Estimating null model\n")
-  modsem_lms_qml(syntax, data, method, verbose = verbose, cov_syntax = cov_syntax, ...)
+  modsem_lms_qml(syntax, data, method, verbose = verbose, cov_syntax = cov_syntax, 
+                 hessian = hessian, ...)
 }
 
 

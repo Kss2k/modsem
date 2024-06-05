@@ -2,12 +2,12 @@ estQml <- function(model,
                    convergence = 1e-2,
                    verbose = FALSE, 
                    maxIter = 1000,
-                   negHessian = TRUE,
+                   hessian = TRUE,
                    ...) {
   startTheta <- model$theta
   final <- mstepQml(model = model, theta = startTheta, maxIter = maxIter, 
                     convergence = convergence,
-                    negHessian = negHessian, verbose = verbose, ...)
+                    hessian = hessian, verbose = verbose, ...)
   coefficients <- final$par
   finalModel <- fillModel(model, coefficients)
 
@@ -18,7 +18,11 @@ estQml <- function(model,
   finalModel$matricesNA <- model$matrices 
   finalModel$covModelNA <- model$covModel
 
-  modelSE <- fillModel(model, calcSE(final$hessian), method = "qml")
+  if (hessian) {
+    modelSE <- fillModel(model, calcSE(final$hessian), method = "qml")
+  } else {
+    modelSE <- fillModel(model, rep(NA, length(coefficients)), method = "qml")
+  }
   finalModel$matricesSE <- modelSE$matrices
   finalModel$covModelSE <- modelSE$covModel
 
@@ -38,7 +42,7 @@ estQml <- function(model,
               logLik = -final$objective, 
               iterations = final$iterations,
               convergence = final$convergence,
-              negHessian = final$hessian)
+              hessian = final$hessian)
 
   class(out) <- "modsem_qml"
   out

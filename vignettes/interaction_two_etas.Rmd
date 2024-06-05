@@ -24,18 +24,11 @@ Interaction effects between two endogenous (i.e., dependent) variables work as y
 indicator methods (`"dblcent", "rca", "ca", "uca"`). For the lms- and qml approach however, 
 it is not as straight forward. 
 
-The lms approach can (by default) handle interaction effects between endogenous and exogenous 
+The lms- and qml approach can (by default) handle interaction effects between endogenous and exogenous 
 (i.e., independent) variables, 
 but not interaction effects between two endogenous variables. When there is an interaction 
 effect between two endogenous variables, the equations cannot easily be written in 'reduced'
 form -- meaning that normal estimation procedures won't work. 
-
-The qml approach can (by default) not handle interaction effects between two endogenous variables, 
-nor interaction effects between an endogenous and an exogenous variable. The qml-approach works 
-a bit differently from the lms approach (even though their fundamental equations are the same), 
-so while models with interaction effects between an endogenous and an exogenous variable (in theory) can 
-be estimated similarily to how they are estimated in the lms-approach, it would be a lot more computationally 
-expensive than in the lms-approach.
 
 ## The Solution
 This being said, there is a work-around for these limitations for both the lms- and qml-approach.
@@ -45,10 +38,9 @@ with the model-implied covariance matrix from a linear model. Thus you can treat
 endogenous variable as if it were exogenous -- given that it can be expressed in 
 a linear model.
 
-## Example 1
-Let's consider the the theory of planned behaviour (TPB) where we wish to model 
-the interaction effect between intention (INT) and perceived behavioural control (PBC) 
-onto behaviour (BEH). The TPB model is given by the following equations: 
+## Example
+Let's consider the the theory of planned behaviour (TPB) where we wish to 
+estimate the quadratic effect of INT on BEH (INT:INT). With the following model: 
 
 ```{r} 
 tpb <- ' 
@@ -62,14 +54,25 @@ tpb <- '
 # Inner Model (Based on Steinmetz et al., 2011)
   INT ~ ATT + SN + PBC
   BEH ~ INT + PBC 
-  BEH ~ PBC:INT
+  BEH ~ INT:INT
 '
 ```
 
 By default the qml-approach will not be able to estimate the model, since there 
 is an interaction effect between an endogenous and and exogenous variable. 
+```{r} 
+est_qml <- modsem(tpb_nonlinear, data = TPB, cov_syntax = tpb_linear,
+                  method = "qml")
+summary(est_qml)
+```
+----------------------------
+
+Since INT is an 
+endogenous variable, its quadratic term (i.e., an interaction effect with itself) 
+would include two endogenous variables. Thus we would ordinarily not be able to estimate
+this model using the lms- or qml-approach. 
 However, we can split the model into two parts, one linear and one non-linear.
-While INT is an endogenous variable, it can be expressed in a linear model, 
+While INT is an endogenous variable, it can be expressed in a linear model --
 since it is not affected by any interaction terms: 
 
 
@@ -90,72 +93,22 @@ tpb_nonlinear <- '
 
 # Inner Model (Based on Steinmetz et al., 2011)
   BEH ~ INT + PBC 
-  BEH ~ PBC:INT
+  BEH ~ INT:INT
 '
 ```
 
-We could now just estimate the non-linear model, since the INT now is 
+We could now just estimate the non-linear model, since INT now is 
 an exogenous variable. This would however not incorporate the structural model 
 for INT. To address this, we can make modsem replace the covariance matrix (phi) 
 of (INT, PBC, ATT, SN) with the model-implied covariance matrix from the linear model, 
 whilst estimating both models simultaneously. To acheive this, we can use the 
 `cov_syntax` argument in `modsem`:
 
-```{r} 
-est_qml <- modsem(tpb_nonlinear, data = TPB, cov_syntax = tpb_linear,
-                  method = "qml")
-summary(est_qml)
-```
-
-## Example 2
-Let's now consider a similar example for the lms-approach. In the lms-approach, 
-there would be no need to split the model into two parts, since the lms-approach
-can handle interaction effects between endogenous and exogenous variables. 
-However, the lms-approach cannot handle interaction effects between two endogenous 
-variables. So we could instead consider the following model, where we 
-wish to estimate the quadratic effect of INT on BEH (INT:INT):
-
-For this example the non-linear part of the model would look the same, 
-as the previous example. 
-
-
-```{r}
-tpb_linear <- 'INT ~ PBC + ATT + SN'
-```
-
-The non-linear part of the model would look slightly different, 
-replacing `BEH ~ PBC:INT` with `BEH ~ INT:INT`:
-
-```{r}
-tpb_nonlinear <- ' 
-# Outer Model (Based on Hagger et al., 2007)
-  ATT =~ att1 + att2 + att3 + att4 + att5
-  SN =~ sn1 + sn2
-  PBC =~ pbc1 + pbc2 + pbc3
-  INT =~ int1 + int2 + int3
-  BEH =~ b1 + b2
-
-# Inner Model (Based on Steinmetz et al., 2011)
-  BEH ~ INT + PBC 
-  BEH ~ INT:INT
-'
-```
-
-We could now just estimate the non-linear model. Now we can use the `cov_syntax` 
-argument in `modsem` as in the previous example, but this time for the lms-approach:
-Note: If you want the lms-approach to give as similar results as possible to
-mplus, you would have to increase the number of nodes (e.g., `nodes = 100`), 
-and lower the convergence criterion (e.g., `conv_crit = 1e-5`).
 
 ```{r}
 est_lms <- modsem(tpb_nonlinear, data = TPB, cov_syntax = tpb_linear, method = "lms")
 summary(est_lms)
-```
 
-We could also do this for the qml-approach, since it handles interaction effects 
-between two exogenous variables.
-
-```{r}
 est_qml <- modsem(tpb_nonlinear, data = TPB, cov_syntax = tpb_linear, method = "qml")
 summary(est_qml)
 ```

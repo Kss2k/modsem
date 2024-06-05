@@ -84,6 +84,10 @@ estepLms <- function(model, theta, data, ...) {
 }
 
 
+
+derivativeMuSigmaTheta <- function(model, theta) {
+
+}
 stochasticGradient <- function(theta, model, data, P, 
                                sampleGrad = NULL, ...) {
   baseline <- logLikLms(theta, model, data, P)
@@ -116,7 +120,7 @@ logLikLms <- function(theta, model, data, P, sampleGrad = NULL, ...) {
 
 
 # Maximization step of EM-algorithm (see Klein & Moosbrugger, 2000)
-mstepLms <- function(theta, model, data, P, negHessian = FALSE,
+mstepLms <- function(theta, model, data, P, hessian = FALSE,
                      maxstep,
                      verbose = FALSE,
                      control = list(), sampleGrad,...) {
@@ -128,7 +132,7 @@ mstepLms <- function(theta, model, data, P, negHessian = FALSE,
                        upper = model$info$bounds$upper,
                        lower = model$info$bounds$lower, control = control,
                        ...) |> suppressWarnings()
-  if (negHessian) {
+  if (hessian) {
     if (verbose) cat("Calculating Hessian\n")
     est$hessian <- nlme::fdHess(pars = est$par, fun = logLikLms, 
                                 model = model, data = data, P = P,

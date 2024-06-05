@@ -6,6 +6,7 @@
 // [[Rcpp::export]]
 arma::mat muQmlCpp(Rcpp::List m, int t) {
   int numEta = Rcpp::as<int>(m["numEta"]);
+  int numXi = Rcpp::as<int>(m["numXi"]);
   arma::mat alpha = Rcpp::as<arma::mat>(m["alpha"]);
   arma::mat gammaXi = Rcpp::as<arma::mat>(m["gammaXi"]);
   arma::mat omegaXiXi = Rcpp::as<arma::mat>(m["omegaXiXi"]);
@@ -18,10 +19,37 @@ arma::mat muQmlCpp(Rcpp::List m, int t) {
   arma::mat Ie = Rcpp::as<arma::mat>(m["Ieta"]);
   arma::mat Binv = Rcpp::as<arma::mat>(m["Binv"]);
   arma::vec trOmegaSigma = traceOmegaSigma1(omegaXiXi * Sigma1, numEta);
+  arma::mat kronXi = Rcpp::as<arma::mat>(m["kronXi"]); 
 
-  for (int i = 0; i < t; i++) {
-    Ey.row(i) = (Binv * (trOmegaSigma + alpha + gammaXi * l1 * x.row(i).t() + 
-      arma::kron(Ie, x.row(i) * l1.t()) * omegaXiXi * l1 * x.row(i).t() + l2 * u.row(i).t())).t();
+  arma::mat kronXi_t;
+  
+  int firstRow, lastRow, firstCol = 0,
+      lastColKOxx = numXi * numEta - 1, lastColBinv = numEta - 1;
+
+  if (int(Binv.n_rows) > numEta) {
+    arma::mat Binv_t;
+    for (int i = 0; i < t; i++) {
+      firstRow = i * numEta;
+      lastRow = (i + 1) * numEta - 1;
+
+      kronXi_t = 
+        kronXi.submat(firstRow, firstCol, lastRow, lastColKOxx);
+      Binv_t = Binv.submat(firstRow, firstCol, lastRow, lastColBinv);
+
+      Ey.row(i) = (Binv_t * (trOmegaSigma + alpha + gammaXi * l1 * x.row(i).t() + 
+        kronXi_t * omegaXiXi * l1 * x.row(i).t()) + l2 * u.row(i).t()).t();
+    }
+  } else {
+    for (int i = 0; i < t; i++) {
+      firstRow = i * numEta;
+      lastRow = (i + 1) * numEta - 1;
+
+      kronXi_t = 
+        kronXi.submat(firstRow, firstCol, lastRow, lastColKOxx);
+
+      Ey.row(i) = (Binv * (trOmegaSigma + alpha + gammaXi * l1 * x.row(i).t() + 
+            kronXi_t * omegaXiXi * l1 * x.row(i).t()) + l2 * u.row(i).t()).t();
+    }
   }
   return Ey;
 }
@@ -30,6 +58,7 @@ arma::mat muQmlCpp(Rcpp::List m, int t) {
 // [[Rcpp::export]]
 arma::mat sigmaQmlCpp(Rcpp::List m, int t) {
   int numEta = Rcpp::as<int>(m["numEta"]);
+  int numXi = Rcpp::as<int>(m["numXi"]);
   arma::mat gammaXi = Rcpp::as<arma::mat>(m["gammaXi"]);
   arma::mat omegaXiXi = Rcpp::as<arma::mat>(m["omegaXiXi"]);
   arma::mat l1 = Rcpp::as<arma::mat>(m["L1"]);
@@ -37,25 +66,107 @@ arma::mat sigmaQmlCpp(Rcpp::List m, int t) {
   arma::mat x = Rcpp::as<arma::mat>(m["x"]);
   arma::mat u = Rcpp::as<arma::mat>(m["u"]);
   arma::mat Sigma1 = Rcpp::as<arma::mat>(m["Sigma1"]);
-  arma::mat Sigma2 = Rcpp::as<arma::mat>(m["Sigma2"]);
-  arma::mat kronXiOmega; 
+  arma::mat Sigma2ThetaEpsilon = Rcpp::as<arma::mat>(m["Sigma2ThetaEpsilon"]);
+  arma::mat psi = Rcpp::as<arma::mat>(m["psi"]);
   arma::mat Ie = Rcpp::as<arma::mat>(m["Ieta"]);
-  arma::mat sumVec = Rcpp::as<arma::vec>(m["sumVec"]);
   arma::mat sigmaE = arma::mat(t * numEta, numEta);
   arma::mat Binv = Rcpp::as<arma::mat>(m["Binv"]);
-  arma::mat varZ = Binv * varZCpp(omegaXiXi, Sigma1, numEta) * Binv.t(); 
-  Sigma2 = Binv * Sigma2 * Binv.t();
+  arma::mat varZ = varZCpp(omegaXiXi, Sigma1, numEta); 
+  arma::mat  kronXi = Rcpp::as<arma::mat>(m["kronXi"]); 
+  
+  int firstRow, lastRow, firstCol = 0, lastColSigmaE = numEta - 1, 
+      lastColKOxx = numXi * numEta - 1;
+  arma::mat kronXi_t;
+  arma::mat Sigma2;
+  if (int(Binv.n_rows) > numEta) {
+    arma::mat Binv_t;
+    for (int i = 0; i < t; i++) {
+      firstRow = i * numEta;
+      lastRow = (i + 1) * numEta - 1;
+      
+      kronXi_t = 
+        kronXi.submat(firstRow, firstCol, lastRow, lastColKOxx);
+      Binv_t = Binv.submat(firstRow, firstCol, lastRow, lastColSigmaE);
 
-  int firstRow, lastRow, firstCol = 0, lastCol = numEta - 1;
+      Sigma2 = Binv_t * psi * Binv_t.t() + Sigma2ThetaEpsilon;
+      sigmaE.submat(firstRow, firstCol, lastRow, lastColSigmaE) = 
+        (Binv_t * (gammaXi + 2 * kronXi_t * omegaXiXi)) * Sigma1 * 
+        (Binv_t * (gammaXi + 2 * kronXi_t * omegaXiXi)).t() + Sigma2 + 
+        Binv_t * varZ * Binv_t.t();
+    }
+  } else {
+    varZ = Binv * varZ * Binv.t();
+    Sigma2 = Binv * psi * Binv.t() + Sigma2ThetaEpsilon;
+    for (int i = 0; i < t; i++) {
+      firstRow = i * numEta;
+      lastRow = (i + 1) * numEta - 1;
+
+      kronXi_t = 
+        kronXi.submat(firstRow, firstCol, lastRow, lastColKOxx);
+
+      sigmaE.submat(firstRow, firstCol, lastRow, lastColSigmaE) = 
+        (Binv * (gammaXi + 2 * kronXi_t * omegaXiXi)) * Sigma1 * 
+        (Binv * (gammaXi + 2 * kronXi_t * omegaXiXi)).t() + Sigma2 + varZ;
+    }
+  }
+
+  return sigmaE;
+}
+
+
+// [[Rcpp::export]]
+arma::mat calcKronXi(Rcpp::List m, int t) {
+  int numEta = Rcpp::as<int>(m["numEta"]);  
+  int numXi = Rcpp::as<int>(m["numXi"]);
+  arma::mat omegaXiXi = Rcpp::as<arma::mat>(m["omegaXiXi"]);
+  arma::mat l1 = Rcpp::as<arma::mat>(m["L1"]); 
+  arma::mat x = Rcpp::as<arma::mat>(m["x"]);
+  arma::mat Ie = Rcpp::as<arma::mat>(m["Ieta"]);
+  // dimensions of a single kronecker product (A (kron) B) = (m x n) (kron) (p x q) = (mp x nq)
+  // in this case: (numEta x numEta) (kron) (1 x numXi) = (numEta x numEta * numXi) 
+  arma::mat out = arma::mat(t * numEta, numXi * numEta);
+
+  for (int i = 0; i < t; i++) {
+    out.submat(i * numEta, 0, (i + 1) * numEta - 1, numXi * numEta - 1) = 
+      arma::kron(Ie, x.row(i) * l1.t());
+  }
+  return out;
+}
+
+
+// [[Rcpp::export]]
+arma::mat calcBinvCpp(Rcpp::List m, int t) {
+  int numEta = Rcpp::as<int>(m["numEta"]); 
+  int numXi = Rcpp::as<int>(m["numXi"]);
+  int kOmegaEta = Rcpp::as<int>(m["kOmegaEta"]);
+  arma::mat gammaEta = Rcpp::as<arma::mat>(m["gammaEta"]);
+
+  arma::mat Ie = Rcpp::as<arma::mat>(m["Ieta"]); 
+  arma::mat B = Ie - gammaEta;
+  arma::mat omegaEtaXi = Rcpp::as<arma::mat>(m["omegaEtaXi"]);
+
+  if (numEta == 1) return Ie;
+  else if (kOmegaEta == 0) return arma::inv(B);
+
+  arma::mat kronXi = Rcpp::as<arma::mat>(m["kronXi"]);
+  arma::mat B_t = arma::mat(t * numEta, numEta);
+
+  int firstRow, lastRow, firstCol = 0, lastColB = numEta - 1, 
+      lastColKOxx = numXi * numEta - 1;
+  arma::mat kronXi_t;
+
   for (int i = 0; i < t; i++) {
     firstRow = i * numEta;
     lastRow = (i + 1) * numEta - 1;
-    kronXiOmega = arma::kron(Ie, x.row(i) * l1.t()) * omegaXiXi; 
-    sigmaE.submat(firstRow, firstCol, lastRow, lastCol) = 
-      (Binv * (gammaXi + 2 * kronXiOmega)) * Sigma1 * 
-      (Binv * (gammaXi + 2 * kronXiOmega)).t() + Sigma2 + varZ;
+    
+    kronXi_t = 
+      kronXi.submat(firstRow, firstCol, lastRow, lastColKOxx);
+
+    B_t.submat(firstRow, firstCol, lastRow, lastColB) = 
+      arma::inv(B - kronXi_t * omegaEtaXi);
   }
-  return sigmaE;
+
+  return B_t;
 }
 
 

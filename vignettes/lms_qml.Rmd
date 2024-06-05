@@ -18,12 +18,16 @@ knitr::opts_chunk$set(
 ```{r setup}
 library(modsem)
 ```
-# The Latent Moderated Structural Equations (LMS) and the Quasi Maximum Likelihood (QML) approaches.
-
-The LMS and QML approaches are implemented in modsem. Currently the QML approach is only implented for simpler models with a single endogenous (i.e., dependent) variable. The LMS approach however works on most models, except for models where there is an interaction between two endogenous (i.e., dependent) variables. Both approaches (particularily the LMS approach) are quite computationally intensive, and are thus partly implemented in C++ (using Rcpp and RcppArmadillo). Additionally starting parameters are estimated using the double centering approach (and the means of the observed variables) are used to generate good starting parameters for faster convergence. If you want to see the progress of the estimation process you can use ´verbose = TRUE´.
+# The Latent Moderated Structural Equations (LMS) and the Quasi Maximum Likelihood (QML) approach 
+Both the LMS- and QML approach works on most models, but interaction effects with 
+endogenous can be a bit tricky to estimate (see the [vignette](https://kss2k.github.io/intro_modsem/articles/interaction_two_etas.html). 
+Both approaches (particularily the LMS approach) are quite computationally intensive, and are thus partly implemented in C++ (using Rcpp and RcppArmadillo). 
+Additionally starting parameters are estimated using the double centering approach (and the means of the observed variables) 
+are used to generate good starting parameters for faster convergence. If you want to see the progress of the estimation process you can use ´verbose = TRUE´.
 
 ## A Simple Example
-Here you can see an example of the LMS approach for a simple model. By default the summary function calculates fit measures compared to a null model (i.e., the same model without an interaction term).
+Here you can see an example of the LMS approach for a simple model. 
+By default the summary function calculates fit measures compared to a null model (i.e., the same model without an interaction term).
 
 ```{r}
 library(modsem)
@@ -51,7 +55,13 @@ summary(qml1)
 ```
 
 ## A more complicated example
-Here you can see an example of a more complicated example using the model from the theory of planned behaviour (TPB), where there are two endogenous variables, where there is an interaction between an endogenous and exogenous variable. (note this does not work with the QML approach). For more complicated models, it is recommended that you increase the number of nodes used for numerical integration. By default the number of nodes is set to 16, and can be increased using the nodes argument.
+Here you can see an example of a more complicated example using the model from the
+theory of planned behaviour (TPB), where there are two endogenous variables, 
+where there is an interaction between an endogenous and exogenous variable. 
+When estimating more complicated models with the LMS-approach, 
+it is recommended that you increase the number of 
+nodes used for numerical integration. By default the number of nodes is set to 16,
+and can be increased using the nodes argument. The argument has no effect on the QML approach.
 
 Note: If you want the lms-approach to give as similar results as possible to
 mplus, you would have to increase the number of nodes (e.g., `nodes = 100`), 
@@ -79,4 +89,7 @@ tpb <- '
 
 lms2 <- modsem(tpb, TPB, method = "lms", nodes = 20)
 summary(lms2)
+
+qml2 <- modsem(tpb, TPB, method = "qml")
+summary(qml2)
 ```

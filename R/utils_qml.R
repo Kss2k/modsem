@@ -59,7 +59,7 @@ as.logical.matrix <- function(x, ...) {
 # not finished yet
 # calcStandardError.modsemQML <- function(object, ...) {
 #   # not correct yet
-#   H <- object$negHessian 
+#   H <- object$hessian 
 #   invH <- solve(H)
 #   N <- object$object$info$N
 #   gradient <- gradientLogLikQml(object$emptyModel, object$coefficients)

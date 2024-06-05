@@ -11,6 +11,30 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// muLmsCpp
+arma::vec muLmsCpp(Rcpp::List model, arma::vec z);
+RcppExport SEXP _modsem_muLmsCpp(SEXP modelSEXP, SEXP zSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::List >::type model(modelSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type z(zSEXP);
+    rcpp_result_gen = Rcpp::wrap(muLmsCpp(model, z));
+    return rcpp_result_gen;
+END_RCPP
+}
+// sigmaLmsCpp
+arma::mat sigmaLmsCpp(Rcpp::List model, arma::vec z);
+RcppExport SEXP _modsem_sigmaLmsCpp(SEXP modelSEXP, SEXP zSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::List >::type model(modelSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type z(zSEXP);
+    rcpp_result_gen = Rcpp::wrap(sigmaLmsCpp(model, z));
+    return rcpp_result_gen;
+END_RCPP
+}
 // muQmlCpp
 arma::mat muQmlCpp(Rcpp::List m, int t);
 RcppExport SEXP _modsem_muQmlCpp(SEXP mSEXP, SEXP tSEXP) {
@@ -32,6 +56,30 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< Rcpp::List >::type m(mSEXP);
     Rcpp::traits::input_parameter< int >::type t(tSEXP);
     rcpp_result_gen = Rcpp::wrap(sigmaQmlCpp(m, t));
+    return rcpp_result_gen;
+END_RCPP
+}
+// calcKronXi
+arma::mat calcKronXi(Rcpp::List m, int t);
+RcppExport SEXP _modsem_calcKronXi(SEXP mSEXP, SEXP tSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::List >::type m(mSEXP);
+    Rcpp::traits::input_parameter< int >::type t(tSEXP);
+    rcpp_result_gen = Rcpp::wrap(calcKronXi(m, t));
+    return rcpp_result_gen;
+END_RCPP
+}
+// calcBinvCpp
+arma::mat calcBinvCpp(Rcpp::List m, int t);
+RcppExport SEXP _modsem_calcBinvCpp(SEXP mSEXP, SEXP tSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::List >::type m(mSEXP);
+    Rcpp::traits::input_parameter< int >::type t(tSEXP);
+    rcpp_result_gen = Rcpp::wrap(calcBinvCpp(m, t));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -58,30 +106,6 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::mat >::type Sigma1(Sigma1SEXP);
     Rcpp::traits::input_parameter< int >::type numEta(numEtaSEXP);
     rcpp_result_gen = Rcpp::wrap(varZCpp(Omega, Sigma1, numEta));
-    return rcpp_result_gen;
-END_RCPP
-}
-// muLmsCpp
-arma::vec muLmsCpp(Rcpp::List model, arma::vec z);
-RcppExport SEXP _modsem_muLmsCpp(SEXP modelSEXP, SEXP zSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::List >::type model(modelSEXP);
-    Rcpp::traits::input_parameter< arma::vec >::type z(zSEXP);
-    rcpp_result_gen = Rcpp::wrap(muLmsCpp(model, z));
-    return rcpp_result_gen;
-END_RCPP
-}
-// sigmaLmsCpp
-arma::mat sigmaLmsCpp(Rcpp::List model, arma::vec z);
-RcppExport SEXP _modsem_sigmaLmsCpp(SEXP modelSEXP, SEXP zSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::List >::type model(modelSEXP);
-    Rcpp::traits::input_parameter< arma::vec >::type z(zSEXP);
-    rcpp_result_gen = Rcpp::wrap(sigmaLmsCpp(model, z));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -128,12 +152,14 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_modsem_muQmlCpp", (DL_FUNC) &_modsem_muQmlCpp, 2},
-    {"_modsem_sigmaQmlCpp", (DL_FUNC) &_modsem_sigmaQmlCpp, 2},
-    {"_modsem_dnormCpp", (DL_FUNC) &_modsem_dnormCpp, 3},
-    {"_modsem_varZCpp", (DL_FUNC) &_modsem_varZCpp, 3},
     {"_modsem_muLmsCpp", (DL_FUNC) &_modsem_muLmsCpp, 2},
     {"_modsem_sigmaLmsCpp", (DL_FUNC) &_modsem_sigmaLmsCpp, 2},
+    {"_modsem_muQmlCpp", (DL_FUNC) &_modsem_muQmlCpp, 2},
+    {"_modsem_sigmaQmlCpp", (DL_FUNC) &_modsem_sigmaQmlCpp, 2},
+    {"_modsem_calcKronXi", (DL_FUNC) &_modsem_calcKronXi, 2},
+    {"_modsem_calcBinvCpp", (DL_FUNC) &_modsem_calcBinvCpp, 2},
+    {"_modsem_dnormCpp", (DL_FUNC) &_modsem_dnormCpp, 3},
+    {"_modsem_varZCpp", (DL_FUNC) &_modsem_varZCpp, 3},
     {"_modsem_multiplyIndicatorsCpp", (DL_FUNC) &_modsem_multiplyIndicatorsCpp, 1},
     {"_modsem_rep_dmvnorm", (DL_FUNC) &_modsem_rep_dmvnorm, 5},
     {"_modsem_dmvnrm_arma_mc", (DL_FUNC) &_modsem_dmvnrm_arma_mc, 5},

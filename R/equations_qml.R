@@ -1,8 +1,13 @@
 logLikQml <- function(theta, model) {
   modelFilled <- fillModel(model, theta, method = "qml")
   numEta <- model$info$numEta
+  numXi <- model$info$numXi
+  kOmegaEta <- model$info$kOmegaEta
+
   m <- modelFilled$matrices
   m$numEta <- numEta
+  m$numXi <- numXi
+  m$kOmegaEta <- kOmegaEta
 
   m$x <- model$data[, model$info$allIndsXis]
   for (i in seq_len(ncol(m$x))) {
@@ -19,7 +24,8 @@ logLikQml <- function(theta, model) {
     m$u <- m$y %*% t(m$R)
     m$Beta <- m$lambdaY[m$selectBetaRows, ]
   } else m$u <- 0
-    
+
+
   m$subThetaEpsilon <- m$subThetaEpsilon
   m$subThetaEpsilon[is.na(m$subThetaEpsilon)] <- 
     m$thetaEpsilon[m$selectThetaEpsilon]
@@ -32,19 +38,20 @@ logLikQml <- function(theta, model) {
   m$L1 <- m$phi %*% t(m$lambdaX) %*% invLXPLX
   m$L2 <- - m$subThetaEpsilon %*% t(m$Beta) %*% invRER
 
+  m$kronXi <- calcKronXi(m, t)
+  m$Binv <- calcBinvCpp(m, t)
+
   m$Sigma1 <- m$phi - m$phi %*% t(m$lambdaX) %*% 
     invLXPLX %*% m$lambdaX %*% m$phi
 
-  m$Sigma2 <- m$psi + m$subThetaEpsilon -
+  m$Sigma2ThetaEpsilon <-  # m$Binv %*% m$psi %*% t(m$Binv) + 
+    m$subThetaEpsilon -
     m$subThetaEpsilon ^ 2 %*% t(m$Beta) %*%  
     invRER %*% m$Beta
 
-  if (numEta > 1) {
-    m$Binv <- solve(diag(1, numEta) - m$gammaEta)
-  } else m$Binv <- diag(1)
-
   Ey <- muQmlCpp(m, t)
   sigmaEpsilon <- sigmaQmlCpp(m, t)
+
   sigmaXU <- rbind(cbind(m$LXPLX, matrix(0, ncol = ncol(m$RER),
                                       nrow = nrow(m$LXPLX))), 
                    cbind(matrix(0, ncol = ncol(m$LXPLX),
@@ -58,12 +65,11 @@ logLikQml <- function(theta, model) {
     f3 <- rep_dmvnorm(m$y[, colnames(m$subThetaEpsilon)], expected = Ey, 
                       sigma = sigmaEpsilon, t = t, cores = 2)
   }
-
   -sum(f2 + f3)
 }
 
 
-mstepQml <- function(model, theta, negHessian = TRUE,
+mstepQml <- function(model, theta, hessian = TRUE,
                      maxIter = 150, verbose = FALSE,
                      convergence = 1e-2,
                      control = list(), ...) {
@@ -76,7 +82,7 @@ mstepQml <- function(model, theta, negHessian = TRUE,
                 upper = model$info$bounds$upper,
                 lower = model$info$bounds$lower, control = control, ...)
 
-  if (negHessian){
+  if (hessian){
     if (verbose) cat("Calculating Hessian\n") 
     est$hessian <- nlme::fdHess(pars=est$par, fun = logLikQml,
                                 model = model, 
