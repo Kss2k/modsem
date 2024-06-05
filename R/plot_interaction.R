@@ -56,6 +56,7 @@ plot_interaction <- function(x, z, y, xz, vals_x = seq(-3, 3, .001) , vals_z, mo
     stop2("model must be of class 'modsem_pi', 'modsem_lms_qml', or 'modsem_mplus'")
   }
 
+  xz <- c(xz, reverseIntTerm(xz)) 
   if (!inherits(model, c("modsem_lms", "modsem_qml"))) {
     xz <- stringr::str_remove_all(xz, ":")
   }
@@ -74,7 +75,7 @@ plot_interaction <- function(x, z, y, xz, vals_x = seq(-3, 3, .001) , vals_z, mo
   var_x <- calcCovParTable(parTable, x, x)
   gamma_z <- coefs[coefs$rhs == z, "est"]
   var_z <- calcCovParTable(parTable, z, z)
-  gamma_xz <- coefs[coefs$rhs == xz, "est"]
+  gamma_xz <- coefs[coefs$rhs %in% xz, "est"]
   sd <- sqrt(vars[vars$rhs == y, "est"]) # residual std.error
   if (length(gamma_x) == 0) stop2("coefficient for x not found in model")
   if (length(var_x) == 0) stop2("variance of x not found in model")
