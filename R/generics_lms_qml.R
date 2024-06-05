@@ -280,9 +280,7 @@ calcD <- function(estH0, estH1) {
 
 
 calcRsquared <- function(parTable) {
-  parTable$mod <- as.character(parTable$est)
-  parTable <- parTable[c("lhs", "op", "rhs", "mod")]
-
+  parTable <- parTable[c("lhs", "op", "rhs", "est")]
   etas <- parTable$lhs[parTable$op == "~" & 
                        parTable$rhs != "1"] |>
     unique()
@@ -291,25 +289,20 @@ calcRsquared <- function(parTable) {
   for (i in seq_len(nrow(intTerms))) {
     # interaction term = XY
     XY <- stringr::str_split_fixed(intTerms[i, "rhs"], ":", 2) 
-    varX <- parse(text = tracePath(parTable, XY[[1]], XY[[1]])) |>
-      eval()
-    varY <- parse(text = tracePath(parTable, XY[[2]], XY[[2]])) |>
-      eval()
-    covXY <- parse(text = tracePath(parTable, XY[[1]], XY[[2]])) |>
-      eval()
+    varX <- calcCovParTable(parTable, XY[[1]], XY[[1]])
+    varY <- calcCovParTable(parTable, XY[[2]], XY[[2]])
+    covXY <- calcCovParTable(parTable, XY[[1]], XY[[2]])
     newRow <- data.frame(lhs = intTerms[i, "rhs"],
                          op = "~~",
                          rhs = intTerms[i, "rhs"],
-                         mod = as.character(varX * varY + covXY ^ 2))
+                         est = as.character(varX * varY + covXY ^ 2))
     parTable <- rbind(parTable, newRow)
   }
   # Calculate Variances/R squared of Etas
   variances <- residuals <- Rsqr <- vector("numeric", length(etas))
   for (i in seq_along(etas)) {
-    variances[[i]] <- parse(text = tracePath(parTable, 
-                                             etas[[i]], etas[[i]])) |>
-      eval()
-    residuals[[i]] <- parTable$mod[parTable$lhs == etas[[i]] & 
+    variances[[i]] <- calcCovParTable(parTable, etas[[i]], etas[[i]])
+    residuals[[i]] <- parTable$est[parTable$lhs == etas[[i]] & 
                                    parTable$op == "~~" &
                                    parTable$rhs == etas[[i]]] |>
       as.numeric()
