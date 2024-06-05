@@ -66,7 +66,8 @@ plot_interaction <- function(x, z, y, xz, vals_x = seq(-3, 3, .001) , vals_z, mo
   data <- model$data
   n <- nrow(data)
   lVs <- c(x, z, y, xz)
-  coefs <- parTable[parTable$op == "~" & parTable$rhs %in% lVs, ]
+  coefs <- parTable[parTable$op == "~" & parTable$rhs %in% lVs &
+                    parTable$lhs == y, ]
   vars <- parTable[parTable$op == "~~" & parTable$rhs %in% lVs &
              parTable$lhs == parTable$rhs, ]
   gamma_x <- coefs[coefs$rhs == x, "est"]
