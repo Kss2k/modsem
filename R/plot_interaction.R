@@ -74,7 +74,7 @@ plot_interaction <- function(x, z, y, xz, vals_x = seq(-3, 3, .001) , vals_z, mo
   gamma_z <- coefs[coefs$rhs == z, "est"]
   var_z <- calcCovParTable(parTable, z, z)
   gamma_xz <- coefs[coefs$rhs == xz, "est"]
-  sd <- sqrt(calcCovParTable(parTable, y, y))
+  sd <- sqrt(vars[vars$rhs == y, "est"]) # residual std.error
   if (length(gamma_x) == 0) stop2("coefficient for x not found in model")
   if (length(var_x) == 0) stop2("variance of x not found in model")
   if (length(gamma_z) == 0) stop2("coefficient for z not found in model")
