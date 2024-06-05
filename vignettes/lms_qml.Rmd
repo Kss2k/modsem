@@ -93,3 +93,4 @@ summary(lms2)
 qml2 <- modsem(tpb, TPB, method = "qml")
 summary(qml2)
 ```
+
