@@ -76,10 +76,10 @@ emLms <- function(model, verbose = FALSE,
   parTable <- rbind(finalModelToParTable(finalModel, method = "lms"),
                     covModelToParTable(finalModel, method = "lms"))
 
-  parTable$tvalue <- parTable$est / parTable$se
-  parTable$pvalue <- 2 * stats::pnorm(-abs(parTable$tvalue))
-  parTable$ciLower <- parTable$est - 1.96 * parTable$se
-  parTable$ciUpper <- parTable$est + 1.96 * parTable$se
+  parTable$t.value <- parTable$est / parTable$std.error
+  parTable$p.value <- 2 * stats::pnorm(-abs(parTable$t.value))
+  parTable$ci.lower <- parTable$est - 1.96 * parTable$std.error
+  parTable$ci.upper <- parTable$est + 1.96 * parTable$std.error
 
   # convergence of em
   if (iterations == maxiter) convergence <- FALSE else convergence <- TRUE

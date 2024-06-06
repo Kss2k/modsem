@@ -48,12 +48,6 @@ summaryLmsAndQml <- function(object, H0 = TRUE, verbose = TRUE,
   else if (inherits(object, "modsem_lms")) method <- "lms" 
 
   parTable <- object$parTable
-  parTable$pvalue <- format.pval(parTable$pvalue, digits = digits)
-  names(parTable) <- c("lhs", "op", "rhs", 
-                       "est", "std.error", 
-                       "t.value", "p.value", #"P(>|z|)", 
-                       "ci.lower", "ci.upper")
-
   out <- list(parTable = parTable,
               data = object$data,
               iterations = object$iterations,
@@ -83,39 +77,16 @@ summaryLmsAndQml <- function(object, H0 = TRUE, verbose = TRUE,
 
 
 #' @export
-print.summary_lms_qml <- function(x, digits = 3, ...) {
-  cat("\n----Model Summary------------------------------------------------------\n")
-  cat("\nNumber of iterations:", x$iterations, "\nFinal loglikelihood:",
+print.summary_lms_qml <- function(x, digits = 3, scientific = FALSE, ...) {
+  cat("\nModel Summary:\n")
+  cat("\n  Number of iterations:", x$iterations, "\n  Final loglikelihood:",
     round(x$logLik, 3), "\n") 
-  # preformating 
-  covarianceRows <- x$parTable$op == "~~" & x$parTable$rhs != x$parTable$lhs
-
-  x$parTable$rhs[covarianceRows] <- 
-    apply(x$parTable[covarianceRows, c("rhs", "op", "lhs")], MARGIN = 1, 
-          FUN = function(x) stringr::str_c(x, collapse = ""))
-
-  maxWidth <- max(vapply(x$parTable$rhs[x$parTable$rhs != "1"], 
-                         FUN.VALUE = numeric(1), FUN = nchar))
-  
-  # using format causes a bug, if the max string-length between lhs and rhs 
-  # is different
-  x$parTable$rhs[x$parTable$rhs != "1"] <- 
-    stringr::str_pad(x$parTable$rhs[x$parTable$rhs != "1"], 
-                     width = maxWidth, side = "left")
-  x$parTable$lhs[x$parTable$rhs == "1"] <- 
-    stringr::str_pad(x$parTable$lhs[x$parTable$rhs == "1"], 
-                     width = maxWidth, side = "left")
-  x$parTable[!grepl("lhs|op|rhs", colnames(x$parTable))] <- 
-    lapplyDf(x$parTable[!grepl("lhs|op|rhs", colnames(x$parTable))], 
-             FUN = formatNumeric,
-             digits = digits)
-  
-  colnames(x$parTable)[[3]] <- "variable"
+  colnames(x$parTable)[[3]] <- "rhs"
   if (!is.null(x$D)) {
-    cat("\nComparative fit to H0 (no interaction effect)\n",
-        paste0("Loglikelihood change = ", 
+    cat("\n  Comparative fit to H0 (no interaction effect)\n",
+        paste0("  Loglikelihood change = ", 
                formatNumeric(x$D$llChange, digits = 2), "\n"),
-        paste0("D(", x$D$df, ") = ", formatNumeric(x$D$D, digits = 2), 
+        paste0("  D(", x$D$df, ") = ", formatNumeric(x$D$D, digits = 2), 
                ", p = ", format.pval(x$D$p, digits = digits), "\n"))
 
   } 
@@ -127,9 +98,9 @@ print.summary_lms_qml <- function(x, digits = 3, ...) {
                            FUN.VALUE = numeric(1), FUN = nchar))
     r.squared$Rsqr <- stringr::str_pad(r.squared$Rsqr, 
                                         width = maxWidth, side = "left")
-    cat("\nR-squared:\n")
+    cat("\n  R-squared:\n")
     for (i in seq_along(r.squared$eta)) {
-      cat("  ", r.squared$eta[[i]], "=", r.squared$Rsqr[[i]], "\n")
+      cat("    ", r.squared$eta[[i]], "=", r.squared$Rsqr[[i]], "\n")
     }
     if (!is.null(r.squared$H0)) {
       r.squared$H0$Rsqr <- formatNumeric(r.squared$H0$Rsqr, digits = 3)
@@ -137,34 +108,32 @@ print.summary_lms_qml <- function(x, digits = 3, ...) {
                              FUN.VALUE = numeric(1), FUN = nchar))
       r.squared$H0$Rsqr <- stringr::str_pad(r.squared$H0$Rsqr, 
                                              width = maxWidth, side = "left")
-      cat("R-squared Null-Model (H0):\n")
+      cat("  R-squared Null-Model (H0):\n")
       for (i in seq_along(r.squared$H0$eta)) {
-        cat("  ", r.squared$H0$eta[[i]], "=", 
+        cat("    ", r.squared$H0$eta[[i]], "=", 
             formatNumeric(r.squared$H0$Rsqr[[i]], digits = 2), "\n")
       }
 
       # Calculate Change (using unformatted Rsquared) 
       r.squared$H0$diff <- formatNumeric(x$r.squared$Rsqr - x$r.squared$H0$Rsqr, 
                                   digits = 3)
-      cat("R-squared Change:\n")
+      cat("  R-squared Change:\n")
       for (i in seq_along(r.squared$H0$eta)) {
-        cat("  ", x$r.squared$H0$eta[[i]], "=", r.squared$H0$diff[[i]], "\n")
+        cat("    ", x$r.squared$H0$eta[[i]], "=", r.squared$H0$diff[[i]], "\n")
       }
     }
   }
 
-  cat("\n----Estimates----------------------------------------------------------\n")
-  printLambda(x$parTable)
-  printGamma(x$parTable)
-  printIntercepts(x$parTable)
-  printVariances(x$parTable)
+  cat("\nEstimates:\n\n")
+  printParTable(x$parTable, scientific =  scientific, padWidth = 2, 
+                padWidthLhs = 2, padWidthRhs = 6, spacing = 2)
 }
 
 
 #' @export
 print.modsem_lms <- function(x, digits = 3, ...) {
   parTable <- x$parTable
-  parTable$pvalue <- format.pval(parTable$pvalue, digits = digits)
+  parTable$p.value <- format.pval(parTable$p.value, digits = digits)
   names(parTable) <- c("lhs", "op", "rhs", 
                        "est", "std.error", 
                        "t.value", "p.value", #"P(>|z|)", 
@@ -179,7 +148,7 @@ print.modsem_lms <- function(x, digits = 3, ...) {
 #' @export
 print.modsem_qml <- function(x, digits = 3, ...) {
   parTable <- x$parTable
-  parTable$pvalue <- format.pval(parTable$pvalue, digits = digits)
+  parTable$p.value <- format.pval(parTable$p.value, digits = digits)
   names(parTable) <- c("lhs", "op", "rhs", 
                        "est", "std.error", 
                        "t.value", "p.value", #"P(>|z|)", 
@@ -188,70 +157,6 @@ print.modsem_qml <- function(x, digits = 3, ...) {
     if (is.numeric(col)) round(col, digits) else col) |>
     as.data.frame()
   print(est)
-}
-
-
-strippedColnames <- c("variable", "est", "std.error", 
-                      "t.value", "p.value", "ci.lower", "ci.upper")
-
-
-printLambda <- function(parTable, digits = 3) {
-  # get latent variableiables 
-  cat("\nLoadings:\n")
-  latentVars <- unique(parTable[parTable$op == "=~", "lhs"])
-  for (lv in latentVars) {
-    cat("", paste0(" ", lv, ":"), "\n  ")
-    out <- capturePrint(parTable[parTable$lhs == lv & 
-                                 parTable$op == "=~", 
-                                 strippedColnames], 
-                        row.names = FALSE,
-                        digits = digits)
-    cat(stringr::str_replace_all(out, "\n", "\n  "), "\n")
-  }
-}
-
-
-printGamma <- function(parTable, digits = 3) {
-  # get latent endogenousendogenous  variableiables 
-  cat("\nRegressions: \n")
-  latentVars <- unique(parTable[parTable$op == "~" &
-                                parTable$variable != "1", "lhs"])
-  for (lv in latentVars) {
-    cat("", paste0(" ", lv, ":"), "\n  ")
-    out <- capturePrint(parTable[parTable$lhs == lv &
-                                 parTable$op == "~" & 
-                                 parTable$variable != "1", 
-                                 strippedColnames],
-                        row.names = FALSE, 
-                        digits = digits)
-    cat(stringr::str_replace_all(out, "\n", "\n  "), "\n")
-  }
-}
-
-
-printIntercepts <- function(parTable, digits = 3) {
-  # get latent endogenousendogenous  variableiables 
-  cat("\nIntercepts: \n  ")
-  pt <- parTable[parTable$op == "~" &
-                 parTable$variable == "1", 
-                 !grepl("variable", colnames(parTable))]
-  colnames(pt)[[1]] <- "variable"
-
-  out <- capturePrint(pt[ , strippedColnames],
-                      row.names = FALSE,
-                      digits = digits)
-  cat(stringr::str_replace_all(out, "\n", "\n  "), "\n")
-}
-
-
-printVariances <- function(parTable, digits = 3) {
-  # get latent endogenousendogenous  variableiables 
-  cat("\nVariances:\n  ")
-  out <- capturePrint(parTable[parTable$op == "~~", 
-                               strippedColnames],
-                      row.names = FALSE,
-                      digits = digits)
-  cat(stringr::str_replace_all(out, "\n", "\n  "), "\n")
 }
 
 

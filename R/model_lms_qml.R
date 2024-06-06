@@ -276,7 +276,7 @@ matrixToParTable <- function(matrixNA, matrixEst, matrixSE,
         newRow <- data.frame(lhs = lhs, op = op, 
                              rhs = rhs,
                              est = matrixEst[lhs, rhs],
-                             se = matrixSE[lhs, rhs])
+                             std.error = matrixSE[lhs, rhs])
         parTable <- rbind(parTable, newRow)
       }
     }
@@ -302,7 +302,7 @@ omegaToParTable <- function(omegaNA, omegaEst, omegaSE, etas) {
         newRow <- data.frame(lhs = etas[[eta_i]], 
                              op = "~", rhs = intTerm,
                              est = omegaEst[i, j],
-                             se = omegaSE[i, j]) 
+                             std.error = omegaSE[i, j]) 
         parTable <- rbind(parTable, newRow)
       }
     }

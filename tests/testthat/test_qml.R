@@ -26,5 +26,5 @@ tpb <- '
   BEH ~ PBC:INT
 '
 
-est2 <- modsem(tpb, data = TPB, method = "qml")
+est2 <- modsem(tpb, data = TPB, method = "lms")
 print(summary(est2, H0 = TRUE))

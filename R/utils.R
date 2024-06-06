@@ -78,3 +78,8 @@ getVarsInts <- function(intTerms) {
   lapplyNamed(intTerms$rhs, FUN = stringr::str_split_1, pattern = ":", 
               names = stringr::str_remove_all(intTerms$rhs, ":"))
 }
+
+
+maxchar <- function(x) {
+  max(nchar(x), na.rm = TRUE)
+}
