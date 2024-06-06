@@ -77,7 +77,8 @@ summaryLmsAndQml <- function(object, H0 = TRUE, verbose = TRUE,
 
 
 #' @export
-print.summary_lms_qml <- function(x, digits = 3, scientific = FALSE, ...) {
+print.summary_lms_qml <- function(x, digits = 3, scientific = FALSE, 
+                                  ci = FALSE, ..) {
   cat("\nModel Summary:\n")
   cat("\n  Number of iterations:", x$iterations, "\n  Final loglikelihood:",
     round(x$logLik, 3), "\n") 
@@ -125,8 +126,8 @@ print.summary_lms_qml <- function(x, digits = 3, scientific = FALSE, ...) {
   }
 
   cat("\nEstimates:\n\n")
-  printParTable(x$parTable, scientific =  scientific, padWidth = 2, 
-                padWidthLhs = 2, padWidthRhs = 6, spacing = 2)
+  printParTable(x$parTable, scientific =  scientific, ci = ci, 
+                padWidth = 2, padWidthLhs = 2, padWidthRhs = 6, spacing = 2)
 }
 
 
