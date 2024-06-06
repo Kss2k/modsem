@@ -88,54 +88,13 @@ est3 <- modsem(m3, oneInt, method = "pind")
 summary(est3)
 ```
 
-## Multiple Interactions
-
-ModSEM also allows you to specify multiple interactionterms. This is done the same way as for single interactions.
-
-```{r}
-m4 <- '
-  # Outer Model
-  X =~ x1 + x2 +x3
-  Y =~ y1 + y2 + y3
-  Z =~ z1 + z2 + z3
-  G =~ g1 + g2 + g3
-  H =~ h1 + h2 + h3
-  
-  # Inner model
-  Y ~ X + Z + G + H + X:Z + G:H
-'
-
-est4 <- modsem(m4, twoInt)
-summary(est4)
-```
-
-## Interaction Terms with more than two varaibles
-
-In some rare cases, you might want an interactionterm between more than two variables (e.g., var1:var2:var3). This can be done in modsem by just adding the extra variable with an extra colon. Note that the more variables you have in your interaction term, the more difficult it will be to estimate your model. It is therefore a good idea to standardize your data before computing your model, this makes it a lot easier for lavaan to estimate your model. This can be done in modsem by adding: standardizeData = TRUE.
-
-```{r}
-m5 <- '
-  # Outer Model
-  X =~ x1 + x2 +x3
-  Y =~ y1 + y2 + y3
-  Z =~ z1 + z2 + z3
-  G =~ g1 + g2 + g3
-  
-  # Inner model
-  Y ~ X + Z + G + X:Z:G
-'
-
-est5 <- modsem(m5, tripleInt, standardizeData = TRUE)
-summary(est5)
-```
-
 ## Quadratic Effects 
 
 In essence, quadratic effects are just a special case of interaction effects. 
 Thus modsem can also be used to estimate quadratic effects.
 ```{r}
 
-m6 <- '
+m4 <- '
 # Outer Model
 X =~ x1 + x2 + x3
 Y =~ y1 + y2 + y3
@@ -161,13 +120,8 @@ tpb <- '
   BEH =~ b1 + b2
 
 # Inner Model (Based on Steinmetz et al., 2011)
-  # Covariances
-  ATT ~~ SN + PBC
-  PBC ~~ SN 
-  # Causal Relationsships
   INT ~ ATT + SN + PBC
-  BEH ~ INT + PBC 
-  BEH ~ INT:PBC  
+  BEH ~ INT + PBC + INT:PBC  
 '
 # the double centering apporach
 est_tpb <- modsem(tpb, TPB)
