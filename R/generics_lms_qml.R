@@ -39,11 +39,29 @@ summary.modsem_qml <- function(object, ...) {
 #' @param verbose print progress for the estimation of null model
 #' @param r.squared calculate R-squared
 #' @param digits number of digits to print
+#' @param scientific print p-values in scientific notation 
+#' @param ci print confidence intervals
 #' @param ... additional arguments
 #' @rdname summaryLmsAndQml
 #' @export 
+#' @examples
+#' \dontrun{
+#' m1 <- '
+#'  # Outer Model
+#'  X =~ x1 + x2 + x3
+#'  Y =~ y1 + y2 + y3
+#'  Z =~ z1 + z2 + z3
+#'  
+#'  # Inner model
+#'  Y ~ X + Z + X:Z 
+#' '
+#' 
+#' est1 <- modsem(m1, oneInt, "qml")
+#' summary(est1, ci = TRUE, scientific = TRUE)
+#' }
 summaryLmsAndQml <- function(object, H0 = TRUE, verbose = TRUE, 
-                             r.squared = TRUE, digits = 3, ...) {
+                             r.squared = TRUE, digits = 3, 
+                             scientific = FALSE, ci = FALSE, ...) {
   if (inherits(object, "modsem_qml")) method <- "qml" 
   else if (inherits(object, "modsem_lms")) method <- "lms" 
 
@@ -70,6 +88,8 @@ summaryLmsAndQml <- function(object, H0 = TRUE, verbose = TRUE,
   } else {
     out$r.squared <- NULL
   }
+  
+  out$format <- list(digits = digits, scientific = scientific, ci = ci)
 
   class(out) <- "summary_lms_qml"
   out
@@ -77,8 +97,7 @@ summaryLmsAndQml <- function(object, H0 = TRUE, verbose = TRUE,
 
 
 #' @export
-print.summary_lms_qml <- function(x, digits = 3, scientific = FALSE, 
-                                  ci = FALSE, ..) {
+print.summary_lms_qml <- function(x, digits = 3, ...) {
   cat("\nModel Summary:\n")
   cat("\n  Number of iterations:", x$iterations, "\n  Final loglikelihood:",
     round(x$logLik, 3), "\n") 
@@ -126,8 +145,9 @@ print.summary_lms_qml <- function(x, digits = 3, scientific = FALSE,
   }
 
   cat("\nEstimates:\n\n")
-  printParTable(x$parTable, scientific =  scientific, ci = ci, 
-                padWidth = 2, padWidthLhs = 2, padWidthRhs = 6, spacing = 2)
+  printParTable(x$parTable, scientific =  x$format$scientific, ci = x$format$ci, 
+                digits = x$format$digits, padWidth = 2, padWidthLhs = 2,
+                padWidthRhs = 6, spacing = 2)
 }
 
 

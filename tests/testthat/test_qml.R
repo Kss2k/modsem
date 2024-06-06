@@ -9,7 +9,7 @@ Y ~ X + Z + X:Z
 '
 
 est1 <- modsem(m1, data = oneInt, convergence = 1e-2, method = "qml")
-print(summary(est1))
+print(summary(est1, scientific = TRUE))
 plot_interaction(x = "X", z = "Z", y = "Y", xz = "X:Z", vals_z = c(-0.5, 0.5), model = est1)
 
 tpb <- ' 
@@ -27,4 +27,4 @@ tpb <- '
 '
 
 est2 <- modsem(tpb, data = TPB, method = "lms")
-print(summary(est2, H0 = TRUE))
+print(summary(est2, H0 = TRUE, ci = TRUE))

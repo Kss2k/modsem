@@ -12,7 +12,7 @@ formatParTable <- function(parTable, digits = 3, scientific = FALSE,
   }
   parTable <- parTable[colNames]
   
-  isStructOrMeasure <- parTable$op %in% c("~", "==", "~~") & 
+  isStructOrMeasure <- parTable$op %in% c("~", "=~", "~~") & 
     parTable$rhs != "1" & parTable$lhs != parTable$rhs
   parTable$lhs[isStructOrMeasure] <- 
     paste(parTable$lhs[isStructOrMeasure], parTable$op[isStructOrMeasure])
@@ -47,7 +47,7 @@ printParTable <- function(parTable, scientific = FALSE,
                           padWidth = 2, padWidthLhs = 2, 
                           padWidthRhs = 4, spacing = 2) {
   formatted <- formatParTable(parTable, digits = digits, 
-                              scientific = scientific)
+                              ci = ci, scientific = scientific)
   fParTable <- formatted$parTable 
   header <- formatted$header
   lhs <- unique(fParTable$lhs)
@@ -67,7 +67,7 @@ printParTable <- function(parTable, scientific = FALSE,
 
   # Regressions 
   regressions <- fParTable[parTable$op == "~" & parTable$rhs != "1", ]
-  cat("\nRegression Model:\n", formattedHeader)
+  cat("\nRegressions:\n", formattedHeader)
   printParTableDouble(regressions, padWidth = padWidth, padWidthLhs = padWidthLhs, 
                       padWidthRhs = padWidthRhs, spacing = spacing)
 
