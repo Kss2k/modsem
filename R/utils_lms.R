@@ -127,28 +127,12 @@ getK_NA <- function(omegaEta) {
 }
 
 
-getSortedEtas <- function(parTable) {
-  structExprs <- parTable[parTable$op == "~" & 
-                          parTable$lhs != "1", ] 
-  unsortedEtas <- unique(structExprs$lhs)
-  sortedEtas <- c()
-  while (length(sortedEtas) < length(unsortedEtas) && nrow(structExprs) > 0) {
-    if (all(unique(structExprs$lhs) %in% structExprs$rhs)) {
-      stop("Model is non-recursive")
-    }
-    for (i in seq_len(nrow(structExprs))) {
-      eta <- structExprs[i, "lhs"]
-      if (eta %in% structExprs$rhs) next
-      sortedEtas <- c(sortedEtas, eta)
-      structExprs <- structExprs[!grepl(eta, structExprs$lhs), ]
-      break 
-    }
-  }
-
-  if (!all(sortedEtas %in% unsortedEtas) && 
-      length(sortedEtas) != length(unsortedEtas)) {
-      warning("unable to sort etas")
-      return(unsortedEtas)
-  }
-  sortedEtas
+cleanAndSortData <- function(data, allIndsXis, allIndsEtas) {
+  if (is.null(data)) return(NULL)
+  # sort Data before optimizing starting params
+  data <- sortData(data, allIndsXis,  allIndsEtas)
+  completeCases <- stats::complete.cases(data)
+  if (any(!completeCases)) warning2("Removing missing values case-wise.")
+  data[completeCases, ]
 }
+

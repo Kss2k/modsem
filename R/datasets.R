@@ -6,25 +6,59 @@
 NULL
 
 
-#' twoInt
-#'
-#' @name twoInt
-#' @docType data 
-#' @description A simulated dataset with two interaction effects 
-NULL
-
-#' tripleInt
-#'
-#' @name tripleInt
-#' @docType data 
-#' @description A simulated dataset with three interaction effects 
-NULL 
-
 #' TPB
 #'
 #' @name TPB
 #' @docType data 
-#' @description A simulated dataset based on the Theory of Planned Behaviora
+#' @description A simulated dataset based on the Theory of Planned Behaviour
+#' @examples
+#' 
+#' tpb <- ' 
+#' # Outer Model (Based on Hagger et al., 2007)
+#'   ATT =~ att1 + att2 + att3 + att4 + att5
+#'   SN =~ sn1 + sn2
+#'   PBC =~ pbc1 + pbc2 + pbc3
+#'   INT =~ int1 + int2 + int3
+#'   BEH =~ b1 + b2
+#' 
+#' # Inner Model (Based on Steinmetz et al., 2011)
+#'   INT ~ ATT + SN + PBC
+#'   BEH ~ INT + PBC + INT:PBC  
+#' '
+#' 
+#' est <- modsem(tpb, data = TPB)
+NULL
+
+
+#' TPB_UK
+#'
+#' @name TPB_UK
+#' @docType data 
+#' @description A dataset based on the Theory of Planned Behaviour from a 
+#' UK sample. 4 variables with high communality were selected for each 
+#' latent variable (ATT, SN, PBC, INT, BEH), from two time points (t1 and t2).
+#'
+#' @source
+#' Gathered from a replciation study of the original by Hagger et al. (2023).
+#' Obtained from https://doi.org/10.23668/psycharchives.12187
+#' @examples
+#' 
+#' tpb_uk <- ' 
+#' # Outer Model (Based on Hagger et al., 2007)
+#'  ATT =~ att3 + att2 + att1 + att4
+#'  SN =~ sn4 + sn2 + sn3 + sn1
+#'  PBC =~ pbc2 + pbc1 + pbc3 + pbc4
+#'  INT =~ int2 + int1 + int3 + int4
+#'  BEH =~ beh3 + beh2 + beh1 + beh4
+#' 
+#' # Inner Model (Based on Steinmetz et al., 2011)
+#'  # Causal Relationsships
+#'  INT ~ ATT + SN + PBC
+#'  BEH ~ INT + PBC 
+#'  BEH ~ INT:PBC  
+#' '
+#' 
+#' est <- modsem(tpb_uk, data = TPB_UK)
 NULL
 
 
@@ -96,4 +130,16 @@ NULL
 #' Originally the dataset was gathered by the Organisation for Economic Co-Operation and Development (2009). 
 #' Pisa 2006: Science competencies for tomorrow's world (Tech. Rep.). 
 #' Paris, France. Obtained from: https://www.oecd.org/pisa/pisaproducts/database-pisa2006.htm
+#'
+#' @examples
+#' \dontrun{
+#' m1 <- '
+#'   ENJ =~ enjoy1 + enjoy2 + enjoy3 + enjoy4 + enjoy5
+#'   CAREER =~ career1 + career2 + career3 + career4
+#'   SC =~ academic1 + academic2 + academic3 + academic4 + academic5 + academic6
+#'   CAREER ~ ENJ + SC + ENJ:ENJ + SC:SC + ENJ:SC
+#' '
+#' 
+#' est <- modsem(m1, data = jordan)
+#' }
 NULL

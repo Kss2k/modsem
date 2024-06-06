@@ -9,12 +9,12 @@ logLikQml <- function(theta, model) {
   m$numXi <- numXi
   m$kOmegaEta <- kOmegaEta
 
-  m$x <- model$data[, model$info$allIndsXis]
+  m$x <- model$data[, model$info$allIndsXis, drop = FALSE]
   for (i in seq_len(ncol(m$x))) {
     m$x[, i] <- m$x[, i] - m$tauX[i]
   }
 
-  m$y <- model$data[, model$info$allIndsEtas] 
+  m$y <- model$data[, model$info$allIndsEtas, drop = FALSE] 
   for (i in seq_len(ncol(m$y))) m$y[, i] <- m$y[, i] - m$tauY[i]
 
   t <- NROW(m$x)

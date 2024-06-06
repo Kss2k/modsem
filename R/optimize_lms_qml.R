@@ -29,8 +29,8 @@ optimizeStartingParamsLms <- function(model) {
                                                  rhs1 = etas, rhs2 = xis, pt = pt)
   OmegaXiXi <- findInteractionEstimatesParTable(matricesMain$omegaXiXi, lhs = etas,
                                                 rhs1 = xis, rhs2 = xis, pt = pt)
-  tauX <- apply(data[, indsXis], 2, mean)
-  tauY <- apply(data[, indsEtas], 2, mean)
+  tauX <- apply(data[, indsXis, drop = FALSE], MARGIN = 2, FUN = mean)
+  tauY <- apply(data[, indsEtas, drop = FALSE], MARGIN = 2, FUN = mean)
   thetaMainModel <- unlist(list(LambdaX[is.na(matricesMain$lambdaX)], 
                                 LambdaY[is.na(matricesMain$lambdaY)], 
                                 tauX[is.na(matricesMain$tauX)], 
