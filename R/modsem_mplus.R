@@ -44,8 +44,7 @@ modsem_mplus <- function(model_syntax,
                          process = "8", 
                          ...) {
   parTable <- modsemify(model_syntax)
-  indicators <- parTable[parTable$op == "=~", "rhs", drop = TRUE] |>
-    unique()
+  indicators <- unique(parTable[parTable$op == "=~", "rhs", drop = TRUE])
   model <- MplusAutomation::mplusObject(
     TITLE = "Running Model via Mplus",
     usevariables = indicators,
@@ -64,8 +63,8 @@ modsem_mplus <- function(model_syntax,
   coefs <- MplusAutomation::extract.mplus.model(results)
   coefsTable <- data.frame(lhsOpRhs = coefs@coef.names,
                            est = coefs@coef,
-                           se = coefs@se,
-                           pvalue = coefs@pvalues)
+                           std.error = coefs@se,
+                           p.value = coefs@pvalues)
   # Measurement Model
   indicatorsCaps <- stringr::str_to_upper(indicators)
   patternMeas <-
@@ -79,7 +78,7 @@ modsem_mplus <- function(model_syntax,
   measLhs <- stringr::str_split_i(coefsTable$lhsOpRhs[measCoefNames],
                                   "<-", i = 2)
   measModel <- data.frame(lhs = measLhs, op = "=~", rhs = measRhs) |>
-    cbind(coefsTable[measCoefNames, c("est", "se", "pvalue")])
+    cbind(coefsTable[measCoefNames, c("est", "std.error", "p.value")])
 
   # Structural Model
   measrRemoved <- coefsTable[!measCoefNames, ]
@@ -91,7 +90,7 @@ modsem_mplus <- function(model_syntax,
   structRhs <- stringr::str_split_i(measrRemoved$lhsOpRhs[structCoefNames],
                                   "<-", i = 2)
   structModel <- data.frame(lhs = structLhs, op = "~", rhs = structRhs) |>
-    cbind(measrRemoved[structCoefNames, c("est", "se", "pvalue")])
+    cbind(measrRemoved[structCoefNames, c("est", "std.error", "p.value")])
 
   # Variances and Covariances
   structMeasrRemoved <- measrRemoved[!structCoefNames, ]
@@ -102,7 +101,7 @@ modsem_mplus <- function(model_syntax,
   covVarRhs <- stringr::str_split_i(structMeasrRemoved$lhsOpRhs[covVarCoefNames],
                                   "<->", i = 2)
   covVarModel <- data.frame(lhs = covVarLhs, op = "~~", rhs = covVarRhs) |>
-    cbind(structMeasrRemoved[covVarCoefNames, c("est", "se", "pvalue")])
+    cbind(structMeasrRemoved[covVarCoefNames, c("est", "std.error", "p.value")])
 
   # Intercepts
   covStructMeasrRemoved <- structMeasrRemoved[!covVarCoefNames, ]
@@ -111,20 +110,21 @@ modsem_mplus <- function(model_syntax,
   interceptLhs <- stringr::str_split_i(covStructMeasrRemoved$lhsOpRhs[interceptNames],
                                   "<-", i = 1)
   interceptModel <- data.frame(lhs = interceptLhs, op = "~", rhs = 1) |>
-    cbind(covStructMeasrRemoved[interceptNames, c("est", "se", "pvalue")])
+    cbind(covStructMeasrRemoved[interceptNames, c("est", "std.error", "p.value")])
 
   mplusParTable <- rbind(measModel, structModel, covVarModel, interceptModel)
-  mplusParTable [c("lhs", "rhs")] <- lapplyDf(mplusParTable[c("lhs", "rhs")],
-                                   function(x)
-                                    stringr::str_remove_all(x, " "))
-  mplusParTable$ci.lower <- mplusParTable$est - 1.96*mplusParTable$se
-  mplusParTable$ci.upper <- mplusParTable$est + 1.96*mplusParTable$se
-  mplusParTable$pvalue[mplusParTable$pvalue == 999] <- NA
+  mplusParTable [c("lhs", "rhs")] <- 
+    lapplyDf(mplusParTable[c("lhs", "rhs")], function(x)
+             stringr::str_remove_all(x, " "))
+  
+  mplusParTable$ci.lower <- mplusParTable$est - 1.96 * mplusParTable$std.error
+  mplusParTable$ci.upper <- mplusParTable$est + 1.96 * mplusParTable$std.error
+  mplusParTable$p.value[mplusParTable$p.value == 999] <- NA
+  mplusParTable$t.value <- mplusParTable$est / mplusParTable$std.error
+  mplusParTable$t.value[is.infinite(mplusParTable$t.value)] <- NA
   mplusParTable$label <- NA
-  mplusParTable$z <- NA
 
-  modelSpec <- list(parTable = parTable,
-                    coefParTable = mplusParTable,
+  modelSpec <- list(parTable = mplusParTable,
                     model = results,
                     coefs = coefs,
                     data = data)

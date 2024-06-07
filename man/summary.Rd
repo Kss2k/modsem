@@ -8,16 +8,77 @@
 \alias{summary.modsem_pi}
 \title{summary.modsem_lms}
 \usage{
-\method{summary}{modsem_lms}(object, ...)
+\method{summary}{modsem_lms}(
+  object,
+  H0 = TRUE,
+  verbose = TRUE,
+  r.squared = TRUE,
+  digits = 3,
+  scientific = FALSE,
+  ci = FALSE,
+  loadings = TRUE,
+  regressions = TRUE,
+  covariances = TRUE,
+  intercepts = TRUE,
+  variances = TRUE,
+  ...
+)
 
-\method{summary}{modsem_qml}(object, ...)
+\method{summary}{modsem_qml}(
+  object,
+  H0 = TRUE,
+  verbose = TRUE,
+  r.squared = TRUE,
+  digits = 3,
+  scientific = FALSE,
+  ci = FALSE,
+  loadings = TRUE,
+  regressions = TRUE,
+  covariances = TRUE,
+  intercepts = TRUE,
+  variances = TRUE,
+  ...
+)
 
-\method{summary}{modsem_mplus}(object, ...)
+\method{summary}{modsem_mplus}(
+  object,
+  scientific = FALSE,
+  ci = FALSE,
+  digits = 3,
+  loadings = TRUE,
+  regressions = TRUE,
+  covariances = TRUE,
+  intercepts = TRUE,
+  variances = TRUE,
+  ...
+)
 
 \method{summary}{modsem_pi}(object, ...)
 }
 \arguments{
 \item{object}{modsem object to summarized}
+
+\item{H0}{should a null model be estimated (used for comparison)}
+
+\item{verbose}{print progress for the estimation of null model}
+
+\item{r.squared}{calculate R-squared}
+
+\item{digits}{number of digits to print}
+
+\item{scientific}{print p-values in scientific notation}
+
+\item{ci}{print confidence intervals}
+
+\item{loadings}{print loadings}
+
+\item{regressions}{print regressions}
+
+\item{covariances}{print covariances}
+
+\item{intercepts}{print intercepts}
+
+\item{variances}{print variances}
 
 \item{...}{arguments passed to lavaan::summary()}
 }
@@ -29,4 +90,34 @@ summary.modsem_qml
 summary.modsem_mplus
 
 summary.modsem_pi
+}
+\examples{
+\dontrun{
+m1 <- '
+ # Outer Model
+ X =~ x1 + x2 + x3
+ Y =~ y1 + y2 + y3
+ Z =~ z1 + z2 + z3
+ 
+ # Inner model
+ Y ~ X + Z + X:Z 
+'
+
+est1 <- modsem(m1, oneInt, "lms")
+summary(est1, ci = TRUE, scientific = TRUE)
+}
+\dontrun{
+m1 <- '
+ # Outer Model
+ X =~ x1 + x2 + x3
+ Y =~ y1 + y2 + y3
+ Z =~ z1 + z2 + z3
+ 
+ # Inner model
+ Y ~ X + Z + X:Z 
+'
+
+est1 <- modsem(m1, oneInt, "qml")
+summary(est1, ci = TRUE, scientific = TRUE)
+}
 }

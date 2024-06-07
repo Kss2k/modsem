@@ -13,36 +13,73 @@ parameter_estimates.modsem_qml <- function(object, ...) {
 #' summary.modsem_lms
 #'
 #' @param object modsem object to summarized
-#' @param ... additional arguments (see summaryLmsAndQml)
-#' @rdname summary
-#' @export
-summary.modsem_lms <- function(object, ...) {
-  summaryLmsAndQml(object, ...)
-}
-
-
-#' summary.modsem_qml
-#'
-#' @param object modsem object to summarized
-#' @param ... additional arguments (see summaryLmsAndQml)
-#' @rdname summary
-#' @export 
-summary.modsem_qml <- function(object, ...) {
-  summaryLmsAndQml(object, ...)
-}
-
-
-#' summaryLmsAndQml
-#'
-#' @param object modsem object estimated with lms or qml
 #' @param H0 should a null model be estimated (used for comparison)
 #' @param verbose print progress for the estimation of null model
 #' @param r.squared calculate R-squared
 #' @param digits number of digits to print
 #' @param scientific print p-values in scientific notation 
 #' @param ci print confidence intervals
+#' @param loadings print loadings 
+#' @param regressions print regressions
+#' @param covariances print covariances
+#' @param intercepts print intercepts
+#' @param variances print variances
+#' @param ... additional arguments 
+#' @rdname summary
+#' @export
+#' @examples
+#' \dontrun{
+#' m1 <- '
+#'  # Outer Model
+#'  X =~ x1 + x2 + x3
+#'  Y =~ y1 + y2 + y3
+#'  Z =~ z1 + z2 + z3
+#'  
+#'  # Inner model
+#'  Y ~ X + Z + X:Z 
+#' '
+#' 
+#' est1 <- modsem(m1, oneInt, "lms")
+#' summary(est1, ci = TRUE, scientific = TRUE)
+#' }
+summary.modsem_lms <- function(object, 
+                               H0 = TRUE, 
+                               verbose = TRUE, 
+                               r.squared = TRUE, 
+                               digits = 3, 
+                               scientific = FALSE, 
+                               ci = FALSE, 
+                               loadings = TRUE,
+                               regressions = TRUE,
+                               covariances = TRUE,
+                               intercepts = TRUE,
+                               variances = TRUE,
+                               ...) {
+  summaryLmsAndQml(object, H0 = H0, verbose = verbose,
+                   r.squared = r.squared, digits = digits,
+                   scientific = scientific, ci = ci, 
+                   loadings = loadings, regressions = regressions,
+                   covariances = covariances, intercepts = intercepts,
+                   variances = variances, ...)
+}
+
+
+#' summary.modsem_qml
+#'
+#' @param object modsem object to summarized
+#' @param H0 should a null model be estimated (used for comparison)
+#' @param verbose print progress for the estimation of null model
+#' @param r.squared calculate R-squared
+#' @param digits number of digits to print
+#' @param scientific print p-values in scientific notation 
+#' @param ci print confidence intervals
+#' @param loadings print loadings 
+#' @param regressions print regressions
+#' @param covariances print covariances
+#' @param intercepts print intercepts
+#' @param variances print variances
 #' @param ... additional arguments
-#' @rdname summaryLmsAndQml
+#' @rdname summary
 #' @export 
 #' @examples
 #' \dontrun{
@@ -59,9 +96,41 @@ summary.modsem_qml <- function(object, ...) {
 #' est1 <- modsem(m1, oneInt, "qml")
 #' summary(est1, ci = TRUE, scientific = TRUE)
 #' }
-summaryLmsAndQml <- function(object, H0 = TRUE, verbose = TRUE, 
-                             r.squared = TRUE, digits = 3, 
-                             scientific = FALSE, ci = FALSE, ...) {
+summary.modsem_qml <- function(object, 
+                               H0 = TRUE, 
+                               verbose = TRUE, 
+                               r.squared = TRUE, 
+                               digits = 3, 
+                               scientific = FALSE, 
+                               ci = FALSE, 
+                               loadings = TRUE,
+                               regressions = TRUE,
+                               covariances = TRUE,
+                               intercepts = TRUE,
+                               variances = TRUE,
+                               ...) {
+  summaryLmsAndQml(object, H0 = H0, verbose = verbose,
+                   r.squared = r.squared, digits = digits,
+                   scientific = scientific, ci = ci, 
+                   loadings = loadings, regressions = regressions,
+                   covariances = covariances, intercepts = intercepts,
+                   variances = variances, ...)
+}
+
+
+summaryLmsAndQml <- function(object, 
+                             H0 = TRUE, 
+                             verbose = TRUE, 
+                             r.squared = TRUE, 
+                             digits = 3, 
+                             scientific = FALSE, 
+                             ci = FALSE,
+                             loadings = TRUE,
+                             regressions = TRUE,
+                             covariances = TRUE,
+                             intercepts = TRUE,
+                             variances = TRUE,
+                             ...) {
   if (inherits(object, "modsem_qml")) method <- "qml" 
   else if (inherits(object, "modsem_lms")) method <- "lms" 
 
@@ -89,7 +158,14 @@ summaryLmsAndQml <- function(object, H0 = TRUE, verbose = TRUE,
     out$r.squared <- NULL
   }
   
-  out$format <- list(digits = digits, scientific = scientific, ci = ci)
+  out$format <- list(digits = digits, 
+                     scientific = scientific, 
+                     ci = ci, 
+                     loadings = loadings, 
+                     regressions = regressions, 
+                     covariances = covariances, 
+                     intercepts = intercepts,
+                     variances = variances)
 
   class(out) <- "summary_lms_qml"
   out
@@ -145,8 +221,16 @@ print.summary_lms_qml <- function(x, digits = 3, ...) {
   }
 
   cat("\nEstimates:\n\n")
-  printParTable(x$parTable, scientific =  x$format$scientific, ci = x$format$ci, 
-                digits = x$format$digits, padWidth = 2, padWidthLhs = 2,
+  printParTable(x$parTable, 
+                scientific = x$format$scientific, 
+                ci = x$format$ci, 
+                digits = x$format$digits, 
+                loadings = x$format$loadings,
+                regressions = x$format$regressions,
+                covariances = x$format$covariances,
+                intercepts = x$format$intercepts,
+                variances = x$format$variances,
+                padWidth = 2, padWidthLhs = 2,
                 padWidthRhs = 6, spacing = 2)
 }
 

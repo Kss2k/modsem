@@ -42,8 +42,14 @@ formatParTable <- function(parTable, digits = 3, scientific = FALSE,
 }
 
 
-printParTable <- function(parTable, scientific = FALSE, 
+printParTable <- function(parTable, 
+                          scientific = FALSE, 
                           ci = FALSE, digits = 3, 
+                          loadings = TRUE,
+                          regressions = TRUE,
+                          covariances = TRUE,
+                          intercepts = TRUE,
+                          variances = TRUE,
                           padWidth = 2, padWidthLhs = 2, 
                           padWidthRhs = 4, spacing = 2) {
   formatted <- formatParTable(parTable, digits = digits, 
@@ -60,34 +66,45 @@ printParTable <- function(parTable, scientific = FALSE,
     paste0(pad, stringr::str_c(header[-(1:3)], collapse = space), "\n")
 
   # Measurement model 
-  loadings <- fParTable[fParTable$op == "=~", ]
-  cat("Latent Variables:\n", formattedHeader)
-  printParTableDouble(loadings, padWidth = padWidth, padWidthLhs = padWidthLhs, 
-                      padWidthRhs = padWidthRhs, spacing = spacing)
+  if (loadings) {
+    parTableLoadings <- fParTable[fParTable$op == "=~", ]
+    cat("Latent Variables:\n", formattedHeader)
+    printParTableDouble(parTableLoadings, padWidth = padWidth, padWidthLhs = padWidthLhs, 
+                        padWidthRhs = padWidthRhs, spacing = spacing)
+  }
 
   # Regressions 
-  regressions <- fParTable[parTable$op == "~" & parTable$rhs != "1", ]
-  cat("\nRegressions:\n", formattedHeader)
-  printParTableDouble(regressions, padWidth = padWidth, padWidthLhs = padWidthLhs, 
-                      padWidthRhs = padWidthRhs, spacing = spacing)
+  if (regressions) {
+    parTableRegressions <- fParTable[parTable$op == "~" & parTable$rhs != "1", ]
+    cat("\nRegressions:\n", formattedHeader)
+    printParTableDouble(parTableRegressions, padWidth = padWidth, padWidthLhs = padWidthLhs, 
+                        padWidthRhs = padWidthRhs, spacing = spacing)
+  }
 
   # Intercepts 
-  intercepts <- fParTable[parTable$op == "~" & parTable$rhs == "1", ]
-  cat("\nIntercepts:\n", formattedHeader) 
-  printParTableSingle(intercepts, padWidth = padWidth, padWidthLhs = padWidthLhs, 
-                      padWidthRhs = padWidthRhs, spacing = spacing)
+  if (intercepts) {
+    parTableIntercepts <- fParTable[parTable$op == "~" & parTable$rhs == "1", ]
+    cat("\nIntercepts:\n", formattedHeader) 
+    printParTableSingle(parTableIntercepts, padWidth = padWidth, padWidthLhs = padWidthLhs, 
+                        padWidthRhs = padWidthRhs, spacing = spacing)
+  }
   
   # Covariances 
-  covariances <- fParTable[parTable$op == "~~" & parTable$lhs != parTable$rhs, ]
-  cat("\nCovariances:\n", formattedHeader)
-  printParTableDouble(covariances, padWidth = padWidth, padWidthLhs = padWidthLhs, 
-                      padWidthRhs = padWidthRhs, spacing = spacing)   
+  if (covariances) {
+    parTableCovariances <- fParTable[parTable$op == "~~" & parTable$lhs != parTable$rhs, ]
+    cat("\nCovariances:\n", formattedHeader)
+    printParTableDouble(parTableCovariances, padWidth = padWidth, padWidthLhs = padWidthLhs, 
+                        padWidthRhs = padWidthRhs, spacing = spacing)   
+  }
 
   # Variances 
-  variances <- fParTable[parTable$op == "~~" & parTable$lhs == parTable$rhs, ]
-  cat("\nVariances:\n", formattedHeader)
-  printParTableSingle(variances, padWidth = padWidth, padWidthLhs = padWidthLhs, 
-                      padWidthRhs = padWidthRhs, spacing = spacing)
+  if (variances) {
+    parTableVariances <- fParTable[parTable$op == "~~" & parTable$lhs == parTable$rhs, ]
+    cat("\nVariances:\n", formattedHeader)
+    printParTableSingle(parTableVariances, padWidth = padWidth, padWidthLhs = padWidthLhs, 
+                        padWidthRhs = padWidthRhs, spacing = spacing)
+
+  }
 }
 
 

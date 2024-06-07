@@ -1,0 +1,27 @@
+TITLE:
+Running Model via Mplus
+DATA:
+FILE = "mplusResults_2f55eb38256759e6ebc9b0699ecf1d13.dat";
+ 
+VARIABLE:
+NAMES = x1 x2 z1 z2 y1 y2; 
+ MISSING=.;
+ 
+ANALYSIS:
+estimator = ml;
+type = random;
+algorithm = integration;
+process = 8 ;
+
+MODEL:
+X BY x1;
+X BY x2;
+Z BY z1;
+Z BY z2;
+Y BY y1;
+Y BY y2;
+Y ON X;
+Y ON Z;
+Y ON XZ;
+XZ | X XWITH Z;
+
