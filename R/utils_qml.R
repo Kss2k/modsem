@@ -56,6 +56,11 @@ as.logical.matrix <- function(x, ...) {
 }
 
 
+isScalingY <- function(x) {
+  seq_along(x) %in% which(x == 1 | x == 0)
+}
+
+
 # not finished yet
 # calcStandardError.modsemQML <- function(object, ...) {
 #   # not correct yet

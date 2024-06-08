@@ -136,3 +136,47 @@ cleanAndSortData <- function(data, allIndsXis, allIndsEtas) {
   data[completeCases, ]
 }
 
+
+canBeNumeric <- function(x, includeNA = FALSE) {
+  if (includeNA) x[x == ""] <- 0
+  !is.na(suppressWarnings(as.numeric(x)))
+}
+
+
+createDoubleIntTerms <- function(x) {
+  c(paste0(x[[1]], ":", x[[2]]), paste0(x[[2]], ":", x[[1]]))
+}
+
+
+getFreeOrConsIntTerms <- function(varsInInt, eta, intTerms) {
+  expr <- intTerms[intTerms$lhs == eta & intTerms$rhs %in% 
+                   createDoubleIntTerms(varsInInt), "mod"]
+  if (canBeNumeric(expr, includeNA = TRUE)) return(as.numeric(expr))
+  0
+}
+
+
+getLabelIntTerms <- function(varsInInt, eta, intTerms) {
+  expr <- intTerms[intTerms$lhs == eta & intTerms$rhs %in% 
+                   createDoubleIntTerms(varsInInt), "mod"]
+  if (!canBeNumeric(expr)) return(expr)
+  ""
+}
+
+
+getEmptyModel <- function(parTable, cov_syntax, parTableCovModel, 
+                          method = "lms") {
+  parTable$mod <- ""
+  if (!is.null(parTableCovModel)) parTableCovModel$mod <- ""
+  specifyModelLmsQml(parTable = parTable, method = method,
+                     cov_syntax = cov_syntax,
+                     parTableCovModel = parTableCovModel)
+}
+
+
+#' @export
+as.character.matrix <- function(x, empty = TRUE, ...) {
+  if (empty) x[TRUE] <- ""
+  matrix(as.character(x), nrow = NROW(x), ncol = NCOL(x),
+          dimnames = dimnames(x))
+}

@@ -15,13 +15,17 @@ estQml <- function(model,
 
   finalModel <- fillModel(model, coefficients, method = "qml")
 
-  finalModel$matricesNA <- model$matrices 
-  finalModel$covModelNA <- model$covModel
+  emptyModel <-  getEmptyModel(parTable = model$parTable, 
+                               cov_syntax = model$cov_syntax,
+                               parTableCovModel = model$covModel$parTable,
+                               method = "qml")
+  finalModel$matricesNA <- emptyModel$matrices
+  finalModel$covModelNA <- emptyModel$covModel
 
   if (hessian) {
     modelSE <- fillModel(model, calcSE(final$hessian), method = "qml")
   } else {
-    modelSE <- fillModel(model, rep(NA, length(coefficients)), method = "qml")
+    modelSE <- fillModel(model, rep(-999, length(coefficients)), method = "qml")
   }
   finalModel$matricesSE <- modelSE$matrices
   finalModel$covModelSE <- modelSE$covModel

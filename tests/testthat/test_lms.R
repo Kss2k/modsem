@@ -2,12 +2,13 @@ devtools::load_all()
 m1 <- "
 # Outer Model
   X =~ x1
-  X =~ x2 + x3
-  Z =~ z1 + z2 + z3
-  Y =~ y1 + y2 + y3
+  Z =~ z1 
+  x1 ~~ 0.1 * x1
+  Y =~ y1
 
 # Inner model
-  Y ~ X + Z
+  Y ~ a * X + a * Z
+  Y ~~ Y
   Y ~ X:Z + X:X
 "
 # funnily enough, the starting parameters from the double centering approach
@@ -17,7 +18,7 @@ startTime1 <- Sys.time()
 est1 <- modsem(m1, oneInt, 
   method = "lms",
   optimize = TRUE, verbose = TRUE,
-  convergence = 1e-2, sampleGrad = NULL, maxstep = 1
+  convergence = 1e-2,
 )
 duration1 <- Sys.time() - startTime1
 plot_interaction("X", "Z", "Y", "X:Z", -3:3, c(-0.5, 0.5), est1)
@@ -40,19 +41,19 @@ tpb <- "
 
 # Inner Model (Based on Steinmetz et al., 2011)
   # Causal Relationsships
-  INT ~ ATT + SN + PBC
-  BEH ~ INT + PBC
+  INT ~ a * ATT + b * SN + b * PBC
+  BEH ~ 0.2 * INT + a * PBC
   BEH ~ PBC:INT
 "
 
 covModel <- '
-PBC ~ ATT + SN
+PBC ~ a * ATT + a * SN
 '
 
 startTime2 <- Sys.time()
 est2 <- modsem(tpb, TPB, 
   method = "lms", optimize = TRUE, verbose = TRUE, 
-  convergence = 1e-3, sampleGrad = NULL, cov_syntax = covModel,
+  convergence = 1, sampleGrad = NULL, cov_syntax = covModel,
   nodes = 16
   # closer to mplus when tweaking the number of nodes and convergence criterion
   # nodes = 100, convergence = 1e-7 is very very close to mplus

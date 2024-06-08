@@ -3,60 +3,61 @@
 # as you can split the model into a non-linear, and linear part. allowing 
 # you to use (normally distributed) endogenous variables as non-normal
 # as of now the mean-structure is excluded
-covModel <- function(syntax, method = "lms") {
-  if (is.null(syntax)) return(list(matrices = NULL, freeParams = 0, 
-                                   theta = NULL, syntax = syntax))
-  parTable <- modsemify(syntax)
-  structExprs <- parTable[parTable$op == "~" & 
-                          parTable$rhs != "1", ]
 
-  # endogenous variables (etas)
-  etas <- getSortedEtas(structExprs)
+
+# global variables 
+paramMatricesCov <- c("gammaXi", "gammaEta", "A", "psi", "phi")
+
+
+# functions
+covModel <- function(syntax = NULL, method = "lms", parTable = NULL) {
+  if (!is.null(syntax)) parTable <- modsemify(syntax)
+  if (is.null(parTable)) {
+    return(list(matrices = NULL, freeParams = 0, 
+                theta = NULL, syntax = NULL, parTable = NULL))
+  }
+
+  etas <- getSortedEtas(parTable, isLV = FALSE, checkAny = TRUE)
   numEtas <- length(etas)
-  if (numEtas == 0) stop2("No etas in model")
-
-  xis <- parTable[parTable$op == "~" &
-                  !parTable$rhs %in% etas & 
-                  parTable$rhs != "1", "rhs"] |> unique()
+  xis <- getXis(parTable, checkAny = TRUE, isLV = FALSE)
   numXis <- length(xis)
-  if (numXis == 0) stop2("No xis in model")
 
-  gammaXi <- matrix(0, nrow = numEtas, ncol = numXis,
-                  dimnames = list(etas, xis))
-  exprsGammaXi <- structExprs[structExprs$lhs %in% etas & 
-                              !structExprs$rhs %in% etas, ] 
+  # Gamma
+  listGammaXi <- constructGamma(etas, xis, parTable = parTable)
+  gammaXi <- listGammaXi$numeric 
+  labelGammaXi <- listGammaXi$label 
 
-  if (nrow(exprsGammaXi) > 0) {
-    apply(exprsGammaXi, MARGIN = 1, FUN = function(row) 
-          gammaXi[row[["lhs"]], row[["rhs"]]] <<- NA)
-  }
+  listGammaEta <- constructGamma(etas, etas, parTable = parTable)
+  gammaEta <- listGammaEta$numeric 
+  labelGammaEta <- listGammaEta$label
 
-  gammaEta <- matrix(0, nrow = numEtas, ncol = numEtas,
-                  dimnames = list(etas, etas))
-  exprsGammaEta <- structExprs[structExprs$lhs %in% etas & 
-                               structExprs$rhs %in% etas, ]
-  if (nrow(exprsGammaEta) > 0) { 
-    apply(exprsGammaEta, MARGIN = 1, FUN = function(row) 
-          gammaEta[row[["lhs"]], row[["rhs"]]] <<- NA)
-  }
+  # covariance matrices
+  listPsi <- constructPsi(etas, parTable = parTable)
+  psi <- listPsi$numeric
+  labelPsi <- listPsi$label
 
-  # residuals etas
-  psi <- matrix(0, nrow = numEtas, ncol = numEtas,
-                dimnames = list(etas, etas))
-  diag(psi) <- NA
-  
-  # covariance matrix xis
-  A <- diag(numXis)
-  rownames(A) <- colnames(A) <- xis
-  phi <- A
-  if (method == "lms") A[lower.tri(A, diag = TRUE)] <- NA
-  else if (method == "qml") phi[lower.tri(phi, diag = TRUE)] <- NA
+  listPhi <- constructPhi(xis, method = method, parTable = parTable)
+  phi <- listPhi$numeric
+  labelPhi <- listPhi$label
 
-  matrices <- list(gammaXi = gammaXi,
-                   gammaEta = gammaEta,
-                   A = A,
-                   psi = psi,
-                   phi = phi) 
+  listA <- constructA(xis, method = method, parTable = parTable)
+  A <- listA$numeric
+  labelA <- listA$label
+
+  matrices <- list(
+    gammaXi = gammaXi,
+    gammaEta = gammaEta,
+    A = A,
+    psi = psi,
+    phi = phi) 
+
+  labelMatrices <- list(
+    gammaXi = labelGammaXi,
+    gammaEta = labelGammaEta,
+    A = labelA,
+    psi = labelPsi,
+    phi = labelPhi)
+
 
   model <- list(info =
                 list(etas = etas,
@@ -64,39 +65,58 @@ covModel <- function(syntax, method = "lms") {
                      xis = xis,
                      numXis = numXis),
                 matrices = matrices,
+                labelMatrices = labelMatrices,
                 syntax = syntax,
-                parTable = parTable, 
-                freeParams = countFreeCovModel(matrices),
-                theta = createParamVectorCovModel(matrices))
+                parTable = parTable)
    
+  listTheta <- createThetaCovModel(model)
+  model$freeParams <- listTheta$freeParams
+  model$lenLabelTheta <- listTheta$lenLabelTheta
+  model$theta <- listTheta$thetaCov
+
   model
 }
 
 
-fillCovModel <- function(covModel, covTheta, fillPhi = FALSE, method = "lms") {
+fillCovModel <- function(covModel, theta, fillPhi = FALSE, method = "lms") {
+  if (is.null(names(theta))) names(theta) <- names(covModel$theta)
+  if (is.null(covModel$matrices)) return(NULL)
   matrices <- covModel$matrices 
-  if (is.null(matrices)) return(NULL)
-  if (is.null(names(covTheta))) names(covTheta) <- names(covModel$theta)
-  matrices <- covModel$matrices
+  
+  if (covModel$lenLabelTheta == 0) {
+    thetaLabelCov <- NULL
+    thetaCov <- theta
+  } else {
+    thetaCov <- theta[-seq_len(covModel$lenLabelTheta)]
+    thetaLabelCov <- theta[seq_len(covModel$lenLabelTheta)]
+    matrices <- fillMatricesLabels(matrices[paramMatricesCov], 
+                                   covModel$labelMatrices[paramMatricesCov], 
+                                   thetaLabelCov)
+  }
+
   matrices$psi[is.na(matrices$psi)] <-
-    fetch(covTheta, "^psi[0-9]*$")
+    fetch(thetaCov, "^psi[0-9]*$")
   matrices$gammaEta[is.na(matrices$gammaEta)] <-
-    fetch(covTheta, "gammaEta[0-9]*$")
+    fetch(thetaCov, "gammaEta[0-9]*$")
   matrices$gammaXi[is.na(matrices$gammaXi)] <-
-    fetch(covTheta, "gammaXi[0-9]*$")
+    fetch(thetaCov, "gammaXi[0-9]*$")
   if (method == "lms") {
     matrices$A[is.na(matrices$A)] <-
-      fetch(covTheta, "^A[0-9]*$")
+      fetch(thetaCov, "^A[0-9]*$")
   } else if (method == "qml") {
-    matrices$phi <- fillSymmetric(matrices$phi, fetch(covTheta, "^phi[0-9]*$"))
+    matrices$phi <- fillSymmetric(matrices$phi, fetch(thetaCov, "^phi[0-9]*$"))
   }
+
   if (fillPhi) matrices$phi <- matrices$A %*% t(matrices$A)
   covModel$matrices <- matrices 
   covModel
 }
 
 
-createParamVectorCovModel <- function(matrices, start = NULL) {
+createThetaCovModel <- function(covModel, start = NULL) {
+  matrices <- covModel$matrices
+  labelThetaCov <- createLabelTheta(covModel$labelMatrices)
+
   set.seed(123)
   phi <- as.vector(matrices$phi)
   A <- as.vector(matrices$A)
@@ -104,17 +124,20 @@ createParamVectorCovModel <- function(matrices, start = NULL) {
   alpha <- as.vector(matrices$alpha)
   gammaXi <- as.vector(matrices$gammaXi)
   gammaEta <- as.vector(matrices$gammaEta)
-  theta <- c("phi" = phi,
+  thetaCov <- c("phi" = phi,
              "A" = A,
              "psi" = psi,
              "gammaXi" = gammaXi,
              "gammaEta" = gammaEta)
-  theta <- theta[is.na(theta)]
+  thetaCov <- thetaCov[is.na(thetaCov)]
   if (is.null(start)) {
-   theta <- vapply(theta, FUN.VALUE = vector("numeric", 1L),
+   thetaCov <- vapply(thetaCov, FUN.VALUE = vector("numeric", 1L),
                    FUN = function(x) stats::runif(1))
   }
-  theta
+
+  list(thetaCov = c(labelThetaCov, thetaCov),
+       freeParams = length(thetaCov) + length(labelThetaCov),
+       lenLabelTheta = length(labelThetaCov))
 }
 
 
@@ -143,7 +166,13 @@ expectedCovModel <- function(model, method = "lms", sortedXis) {
                  cbind(t(covEtaXi), phi))
   sigma <- sigma[sortedXis, sortedXis]
 
-  if (method == "lms") return(t(chol(sigma)))
+  if (method == "lms") {
+    sigma <- tryCatch(t(chol(sigma)), 
+                      error = function(e) {
+                        sigma[TRUE] <- NaN
+                        sigma
+                      })
+  }
   sigma
 }
 

@@ -50,8 +50,13 @@ getSortedEtas <- function(parTable, isLV = FALSE, checkAny = TRUE) {
 }
 
 
-getXis <- function(parTable, etas = NULL, checkAny = TRUE) {
-  if (is.null(etas)) etas <- getEtas(parTable)
+getXis <- function(parTable, etas = NULL, isLV = TRUE, checkAny = TRUE) {
+  if (is.null(etas)) etas <- getEtas(parTable, isLV = isLV)
+  if (!isLV) {
+    xis <- unique(parTable[parTable$rhs != "1" &
+                  parTable$lhs %in% etas, "rhs"])
+    return(xis)
+  } 
   xis <- unique(parTable[parTable$op == "=~" &
                 !parTable$lhs %in% etas, "lhs"])
   if (checkAny && length(xis) == 0) stop("No xis found")
