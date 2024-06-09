@@ -292,14 +292,14 @@ estimateNullModel <- function(parTable, data, method = "lms", cov_syntax = NULL,
 calcD <- function(estH0, estH1) {
   if (is.null(estH0) || is.null(estH1)) return(NULL)
   df <- length(estH1$theta) - length(estH0$theta) 
-  D <- - 2 * (estH1$logLik - estH0$logLik)
+  D <- - 2 * (estH0$logLik - estH1$logLik)
   if (D > 0) {
     D <- -D 
     warning2("D is positive, this indicates that the null model ",
             "is better than the alternative model. ", 
             "Returning '-D' instead of 'D'")
   }
-  p <- stats::qchisq(p = D, df = df, log = TRUE)
+  p <- stats::pchisq(p = D, df = df, log = TRUE)
   list(D = D, df = df, p = p, llChange = estH1$logLik - estH0$logLik) 
 }
 
