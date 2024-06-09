@@ -47,12 +47,15 @@ constructLambda <- function(lVs, indsLVs, parTable, autoConstraints = TRUE) {
 }
 
 
-constructTau <- function(lVs, indsLVs, parTable) {
+constructTau <- function(lVs, indsLVs, parTable, meanStructure = TRUE) {
   indsLVs <- indsLVs[lVs] # make sure it is sorted
   numIndsLVs <- lapply(indsLVs, FUN = length)
   allIndsLVs <- unlist(indsLVs)
   numAllIndsLVs <- length(allIndsLVs)
-  tau <- matrix(NA, nrow = numAllIndsLVs, ncol = 1,
+
+  if (meanStructure) default <- NA else default <- 0
+
+  tau <- matrix(default, nrow = numAllIndsLVs, ncol = 1,
                 dimnames = list(allIndsLVs, "1"))
   constExprs <- parTable[parTable$op == "~" & 
                          parTable$rhs == "1" &
@@ -278,9 +281,10 @@ constructA <- function(xis, method = "lms", cov_syntax = NULL,
 }
 
 
-constructAlpha <- function(etas, parTable, autoConstraints = TRUE) {
+constructAlpha <- function(etas, parTable, autoConstraints = TRUE,
+                           meanStructure = TRUE) {
   numEtas <- length(etas)
-  if (autoConstraints) default <- 0 else default <- NA
+  if (autoConstraints && meanStructure) default <- 0 else default <- NA
   alpha <- matrix(default, nrow = numEtas, ncol = 1, 
                   dimnames = list(etas, "1"))
 

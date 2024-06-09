@@ -65,6 +65,7 @@ logLikQml <- function(theta, model) {
     f3 <- rep_dmvnorm(m$y[, colnames(m$subThetaEpsilon)], expected = Ey, 
                       sigma = sigmaEpsilon, t = t, cores = 2)
   }
+
   -sum(f2 + f3)
 }
 

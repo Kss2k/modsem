@@ -214,3 +214,4 @@ getLabeledParamsLavaan <- function(parTable, fixedParams = NULL) {
   names(theta) <- labelRows$label
   theta
 }
+

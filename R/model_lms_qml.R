@@ -10,10 +10,17 @@ paramMatrices <- c("lambdaX", "lambdaY", "gammaXi", "gammaEta",
 
 
 # Functions
-specifyModelLmsQml <- function(syntax = NULL, data = NULL, method = "lms", m = 16,
-                               cov_syntax = NULL, double = FALSE, 
-                               parTable = NULL, parTableCovModel = NULL,
-                               autoConstraints = TRUE, createTheta = TRUE) {
+specifyModelLmsQml <- function(syntax = NULL, 
+                               data = NULL, 
+                               method = "lms", 
+                               m = 16,
+                               cov_syntax = NULL, 
+                               double = FALSE, 
+                               parTable = NULL, 
+                               parTableCovModel = NULL,
+                               autoConstraints = TRUE, 
+                               createTheta = TRUE,
+                               meanStructure = TRUE) {
   if (!is.null(syntax)) parTable <- modsemify(syntax)
   if (is.null(parTable)) stop("No parTable found")
 
@@ -50,7 +57,8 @@ specifyModelLmsQml <- function(syntax = NULL, data = NULL, method = "lms", m = 1
   lambdaX <- listLambdaX$numeric 
   labelLambdaX <- listLambdaX$label 
 
-  listTauX <- constructTau(xis, indsXis, parTable = parTable)
+  listTauX <- constructTau(xis, indsXis, parTable = parTable,
+                           meanStructure = meanStructure)
   tauX <- listTauX$numeric 
   labelTauX <- listTauX$label
 
@@ -65,7 +73,8 @@ specifyModelLmsQml <- function(syntax = NULL, data = NULL, method = "lms", m = 1
   lambdaY <- listLambdaY$numeric 
   labelLambdaY <- listLambdaY$label 
 
-  listTauY <- constructTau(etas, indsEtas, parTable = parTable)
+  listTauY <- constructTau(etas, indsEtas, parTable = parTable,
+                           meanStructure = meanStructure)
   tauY <- listTauY$numeric 
   labelTauY <- listTauY$label 
   
@@ -101,7 +110,8 @@ specifyModelLmsQml <- function(syntax = NULL, data = NULL, method = "lms", m = 1
 
   # mean etas
   listAlpha <- constructAlpha(etas, parTable = parTable, 
-                              autoConstraints = autoConstraints)
+                              autoConstraints = autoConstraints,
+                              meanStructure = meanStructure)
   alpha <- listAlpha$numeric
   labelAlpha <- listAlpha$label
 
@@ -363,14 +373,14 @@ quadrature <- function(m, k) {
 
 
 # Set bounds for parameters to (0, Inf)
-getParamBounds <- function(model) {
+getParamBounds <- function(model, lowest = 1e-6) {
   namePattern <- paste0("lambdaX[0-9]*$|lambdaY[0-9]*$|",
                         "thetaDelta[0-9]*$|thetaEpsilon[0-9]*$|",
                         "phi[0-9]*$|psi[0-9]*$")
   lower <- rep(-Inf, model$freeParams)
   upper <- rep(Inf, model$freeParams)
   names(lower) <- names(upper) <- names(model$theta)
-  lower[grepl(namePattern, names(lower))] <- 0
+  lower[grepl(namePattern, names(lower))] <- lowest
   list(lower = lower, upper = upper)
 }
 

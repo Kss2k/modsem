@@ -62,3 +62,9 @@ print.modsem_mplus <- function(x, ...) {
 parameter_estimates.modsem_mplus <- function(object, ...) {
   object$parTable
 }
+
+
+#' @export
+var_interactions.modsem_mplus <- function(object, ...) {
+  var_interactions.data.frame(parameter_estimates(object))
+}

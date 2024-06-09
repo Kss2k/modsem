@@ -150,7 +150,7 @@ summaryLmsAndQml <- function(object,
       warning2("Comparative fit to H0 will not be calculated.")
       H0 <- FALSE
     } 
-    out$D <- calcD(estH0, object)
+    out$D <- compare_fit(estH0, object)
   } else {
     out$D <- NULL
   }
@@ -289,40 +289,58 @@ estimateNullModel <- function(parTable, data, method = "lms", cov_syntax = NULL,
 }
 
 
-calcD <- function(estH0, estH1) {
+
+#' summary.modsem_lms
+#' 
+#' @param estH0 object of class `modsem_lms` or `modsem_qml` representing the 
+#' null hypothesis model
+#' @param estH1 object of class `modsem_lms` or `modsem_qml` representing the 
+#' alternative hypothesis model
+#' @rdname compare_fit
+#' @export
+#' @examples
+#' \dontrun{
+#' H0 <- '
+#'  # Outer Model
+#'  X =~ x1 + x2 + x3
+#'  Y =~ y1 + y2 + y3
+#'  Z =~ z1 + z2 + z3
+#'  
+#'  # Inner model
+#'  Y ~ X + Z
+#' '
+#' 
+#' estH0 <- modsem(m1, oneInt, "lms")
+#'
+#' H1 <- '
+#'  # Outer Model
+#'  X =~ x1 + x2 + x3
+#'  Y =~ y1 + y2 + y3
+#'  Z =~ z1 + z2 + z3
+#'  
+#'  # Inner model
+#'  Y ~ X + Z + X:Z 
+#' '
+#' 
+#' estH1 <- modsem(m1, oneInt, "lms")
+#' compare_fit(estH0, estH1)
+#' }
+#' @export
+compare_fit <- function(estH0, estH1) {
   if (is.null(estH0) || is.null(estH1)) return(NULL)
   df <- length(estH1$theta) - length(estH0$theta) 
   D <- - 2 * (estH0$logLik - estH1$logLik)
-  if (D > 0) {
-    D <- -D 
-    warning2("D is positive, this indicates that the null model ",
-            "is better than the alternative model. ", 
-            "Returning '-D' instead of 'D'")
-  }
-  p <- stats::pchisq(p = D, df = df, log = TRUE)
+  p <- stats::pchisq(D, df = df, lower.tail = FALSE, log.p = TRUE)
   list(D = D, df = df, p = p, llChange = estH1$logLik - estH0$logLik) 
 }
 
 
 calcRsquared <- function(parTable) {
-  parTable <- parTable[c("lhs", "op", "rhs", "est")]
-  etas <- parTable$lhs[parTable$op == "~" & 
-                       parTable$rhs != "1"] |>
-    unique()
-  # Calculate Variances of Interaction Terms
-  intTerms <- parTable[grepl(":", parTable$rhs), ]
-  for (i in seq_len(nrow(intTerms))) {
-    # interaction term = XY
-    XY <- stringr::str_split_fixed(intTerms[i, "rhs"], ":", 2) 
-    varX <- calcCovParTable(parTable, XY[[1]], XY[[1]])
-    varY <- calcCovParTable(parTable, XY[[2]], XY[[2]])
-    covXY <- calcCovParTable(parTable, XY[[1]], XY[[2]])
-    newRow <- data.frame(lhs = intTerms[i, "rhs"],
-                         op = "~~",
-                         rhs = intTerms[i, "rhs"],
-                         est = as.character(varX * varY + covXY ^ 2))
-    parTable <- rbind(parTable, newRow)
-  }
+  parTable <- parTable[c("lhs", "op", "rhs", "est")] |>
+    var_interactions.data.frame()
+  etas <- unique(parTable$lhs[parTable$op == "~" & 
+                              parTable$rhs != "1"])
+  
   # Calculate Variances/R squared of Etas
   variances <- residuals <- Rsqr <- vector("numeric", length(etas))
   for (i in seq_along(etas)) {
@@ -335,4 +353,16 @@ calcRsquared <- function(parTable) {
   }
   data.frame(eta = etas, variance = variances, 
              residual = residuals, Rsqr = Rsqr) 
+}
+
+
+#' @export
+var_interactions.modsem_lms <- function(object, ...) {
+  var_interactions.data.frame(parameter_estimates(object))
+}
+
+
+#' @export
+var_interactions.modsem_qml <- function(object, ...) {
+  var_interactions.data.frame(parameter_estimates(object))
 }

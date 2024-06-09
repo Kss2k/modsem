@@ -13,8 +13,9 @@
 #' increased number gives better estimates but slower computation. How many is needed, depends on the complexity of the model 
 #' for simple models 16 is enough, for more complex models 100 is usually enough.
 #' @param convergence convergence criterion. Lower values give better estimates but slower computation.
-#' @param standardize should data be scaled before fitting model
 #' @param center should data be centered before fitting model
+#' @param standardize should data be scaled before fitting model
+#' @param meanStructure should mean structure of the observed variables be estimated
 #' @param double try to double the number of dimensions of integrations used in LMS,
 #' this will be extremely slow, but should be more similar to mplus.
 #' @param hessian should hessian (i.e., std.errors) be calculated
@@ -84,6 +85,7 @@ modsem_lms_qml <- function(model_syntax = NULL,
                            convergence = 1e-2,
                            center = FALSE, 
                            standardize = FALSE,
+                           meanStructure = TRUE,
                            double = FALSE, 
                            hessian = TRUE,
                            cov_syntax = NULL,
@@ -106,9 +108,12 @@ modsem_lms_qml <- function(model_syntax = NULL,
     stop2("Method must be either 'lms' or 'qml'")
   }
 
-  if (center) data <- lapplyDf(data, FUN = function(x) x - mean(x))
-  if (standardize) data <- lapplyDf(data, FUN = scaleIfNumeric, 
-                                    scaleFactor = FALSE)
+  if (center) {
+    data <- lapplyDf(data, FUN = function(x) x - mean(x))
+  }
+  if (standardize) {
+    data <- lapplyDf(data, FUN = scaleIfNumeric, scaleFactor = FALSE)
+  }
 
   model <- specifyModelLmsQml(model_syntax, data = data, 
                               method = method, m = nodes, 

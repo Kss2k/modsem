@@ -14,6 +14,7 @@ modsem_lms_qml(
   convergence = 0.01,
   center = FALSE,
   standardize = FALSE,
+  meanStructure = TRUE,
   double = FALSE,
   hessian = TRUE,
   cov_syntax = NULL,
@@ -42,6 +43,8 @@ for simple models 16 is enough, for more complex models 100 is usually enough.}
 \item{center}{should data be centered before fitting model}
 
 \item{standardize}{should data be scaled before fitting model}
+
+\item{meanStructure}{should mean structure of the observed variables be estimated}
 
 \item{double}{try to double the number of dimensions of integrations used in LMS,
 this will be extremely slow, but should be more similar to mplus.}

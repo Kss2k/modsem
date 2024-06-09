@@ -15,7 +15,7 @@ createThetaLabel <- function(labelMatrices, labelMatricesCov,
     start <- vapply(labels, FUN.VALUE = vector("numeric", 1L),
                     FUN = function(x) stats::runif(1))
   }
-  warning2("Eq-constraints using == must appear in the correct order")
+  # warning2("Eq-constraints using == must appear in the correct order")
   names(start) <- labels
   start
 }
