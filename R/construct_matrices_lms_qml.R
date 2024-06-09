@@ -1,7 +1,7 @@
 # Functions for constructing matrices for LMS and QML. 
 # Last updated: 06.06.2024
 
-constructLambda <- function(lVs, indsLVs, parTable) {
+constructLambda <- function(lVs, indsLVs, parTable, autoConstraints = TRUE) {
   numLVs <- length(lVs) 
   indsLVs <- indsLVs[lVs] # make sure it is sorted
   numIndsLVs <- lapply(indsLVs, FUN = length)
@@ -11,10 +11,11 @@ constructLambda <- function(lVs, indsLVs, parTable) {
   lambda <- matrix(0, nrow = numAllIndsLVs, ncol = numLVs,
                     dimnames = list(allIndsLVs, lVs))
   lastRowPreviousLV <- 0
+  if (autoConstraints) firstVal <- 1 else firstVal <- NA
   for (i in seq_along(lVs)) {
-    rowIndices <- 1:numIndsLVs[[i]] + lastRowPreviousLV
+    rowIndices <- seq_len(numIndsLVs[[i]]) + lastRowPreviousLV
     lambda[rowIndices, i] <-
-      c(1, rep(NA, numIndsLVs[[i]] - 1))
+      c(firstVal, rep(NA, numIndsLVs[[i]] - 1))
     lastRowPreviousLV <- lastRowPreviousLV + numIndsLVs[[i]]
   }
 
@@ -80,7 +81,7 @@ constructTau <- function(lVs, indsLVs, parTable) {
 }
 
 
-constructTheta <- function(lVs, indsLVs, parTable) {
+constructTheta <- function(lVs, indsLVs, parTable, autoConstraints = TRUE) {
   numLVs <- length(lVs) 
   indsLVs <- indsLVs[lVs] # make sure it is sorted
   numIndsLVs <- lapply(indsLVs, FUN = length)
@@ -91,8 +92,10 @@ constructTheta <- function(lVs, indsLVs, parTable) {
                   dimnames = list(allIndsLVs, allIndsLVs))
   diag(theta) <- NA
 
-  for (lV in lVs) { # set to 0 if there is only a single indicator
-    if (numIndsLVs[[lV]] == 1) theta[indsLVs[[lV]], indsLVs[[lV]]] <- 0
+  if (autoConstraints) {
+    for (lV in lVs) { # set to 0 if there is only a single indicator
+      if (numIndsLVs[[lV]] == 1) theta[indsLVs[[lV]], indsLVs[[lV]]] <- 0
+    }
   }
 
   constExprs <- parTable[parTable$op == "~~" & 
@@ -275,9 +278,10 @@ constructA <- function(xis, method = "lms", cov_syntax = NULL,
 }
 
 
-constructAlpha <- function(etas, parTable) {
+constructAlpha <- function(etas, parTable, autoConstraints = TRUE) {
   numEtas <- length(etas)
-  alpha <- matrix(0, nrow = numEtas, ncol = 1, 
+  if (autoConstraints) default <- 0 else default <- NA
+  alpha <- matrix(default, nrow = numEtas, ncol = 1, 
                   dimnames = list(etas, "1"))
 
   constExprs <- parTable[parTable$op == "~" & 
@@ -331,10 +335,11 @@ constructR <- function(etas, indsEtas, lambdaY, method = "qml") {
   allIndsEtas <- unlist(indsEtas)
   numAllIndsEtas <- length(allIndsEtas)
   selectBetaRows <- selectBetaRows(lambdaY, method = method)
+  rowNamesR <- rownames(lambdaY)[selectBetaRows]
   
   R <- matrix(0, nrow = numAllIndsEtas - numEtas, 
               ncol = numAllIndsEtas, 
-              dimnames = list(rownames(lambdaY)[selectBetaRows], 
+              dimnames = list(rowNamesR[seq_len(numAllIndsEtas - numEtas)],
                               allIndsEtas))
 
   lastRow <- lastCol <- 0

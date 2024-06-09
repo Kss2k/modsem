@@ -38,7 +38,6 @@ getLines <- function(syntax) {
 
 createTokensLine <- function(line, i = 1,
                              token = NULL, listTokens = list()) {
-  # if (i == length(line)) browser()
   if (i > length(line)) {
     return(appendToList(listTokens, token))
   }

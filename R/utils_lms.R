@@ -9,25 +9,8 @@ sortData <- function(data, allIndsXis, allIndsEtas) {
 }
 
 
-countFreeParams <- function(model) {
-  matrices <- model$matrices[c("lambdaY", 
-                               "lambdaX",
-                               "tauY",
-                               "tauX",
-                               "thetaEpsilon",
-                               "thetaDelta",
-                               "gammaXi",
-                               "gammaEta",
-                               "omegaXiXi",
-                               "omegaEtaXi",
-                               "psi",
-                               "A",
-                               "phi",
-                               "alpha")]
-  vapply(matrices,
-         FUN.VALUE = vector("integer", 1L),
-         FUN = function(x) sum(is.na(x))) |>
-    sum() + model$covModel$freeParams
+getFreeParams <- function(model) {
+  model$freeParams
 }
 
 
@@ -61,7 +44,7 @@ dMvn <- function(X, mean, sigma, log = FALSE) {
 }
 
 
-calcSE <- function(hessian, names = NULL) {
+calcSE <- function(hessian, names = NULL, NA__ = -999) {
   stdError <- tryCatch({
       sqrt(diag(solve(hessian)))
     }, error=function(e) {
@@ -79,6 +62,7 @@ calcSE <- function(hessian, names = NULL) {
     warning2("SE's for some coefficients could not be computed.") 
   
   if (!is.null(names)) names(stdError) <- names
+  stdError[is.na(stdError)] <- NA__
   stdError
 }
 
@@ -143,8 +127,12 @@ canBeNumeric <- function(x, includeNA = FALSE) {
 }
 
 
-createDoubleIntTerms <- function(x) {
-  c(paste0(x[[1]], ":", x[[2]]), paste0(x[[2]], ":", x[[1]]))
+createDoubleIntTerms <- function(x, z = NULL, sep = ":") {
+  if (is.null(z)) {
+    z <- x[[2]]
+    x <- x[[1]]
+  }
+  c(paste0(x, sep, z), paste0(z, sep, x))
 }
 
 
@@ -170,7 +158,8 @@ getEmptyModel <- function(parTable, cov_syntax, parTableCovModel,
   if (!is.null(parTableCovModel)) parTableCovModel$mod <- ""
   specifyModelLmsQml(parTable = parTable, method = method,
                      cov_syntax = cov_syntax,
-                     parTableCovModel = parTableCovModel)
+                     parTableCovModel = parTableCovModel,
+                     autoConstraints = FALSE, createTheta = FALSE)
 }
 
 
@@ -179,4 +168,49 @@ as.character.matrix <- function(x, empty = TRUE, ...) {
   if (empty) x[TRUE] <- ""
   matrix(as.character(x), nrow = NROW(x), ncol = NCOL(x),
           dimnames = dimnames(x))
+}
+
+
+replaceNonNaModelMatrices <- function(model, value = -999) {
+  model$matrices <- lapply(model$matrices, function(x) {
+    x[!is.na(x)] <- value
+    x
+  })
+  model
+}
+
+
+getConstrExprs <- function(parTable, parTableCov) {
+  parTable <- rbind(parTable, parTableCov)
+  rows <- parTable[parTable$op %in% c("==", ">", "<"), ]
+  if (NROW(rows) == 0) return(NULL)
+
+  fixedParams <- unique(rows$lhs)
+  thetaFixedParams <- vector("list", length(fixedParams))
+  names(thetaFixedParams) <- fixedParams
+
+  exprs <- lapply(rows$rhs, function(expr) parse(text = expr))
+  list(fixedParams = fixedParams, thetaFixedParams = thetaFixedParams,
+       exprs = exprs)
+}
+
+
+removeUnknownLabels <- function(parTable) {
+  fixedParams <- unique(parTable[parTable$op %in% c("==", ">", "<"), ]$lhs)
+  parTable[!parTable$lhs %in% fixedParams &
+           !parTable$op %in% c("==", ">", "<") &
+           !parTable$lhs %in% parTable$mod, ]
+}
+
+
+getLabeledParamsLavaan <- function(parTable, fixedParams = NULL) {
+  if (is.null(parTable$label)) return(NULL)
+  labelRows <- parTable[parTable$label != "" &
+                        !parTable$label %in% fixedParams,
+                        c("est", "label"), drop = FALSE] |> 
+    lapply(unique)
+
+  theta <- as.numeric(labelRows$est)
+  names(theta) <- labelRows$label
+  theta
 }

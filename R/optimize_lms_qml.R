@@ -5,33 +5,45 @@ optimizeStartingParamsLms <- function(model) {
   numXis <- model$info$numXis
   indsXis <- model$info$allIndsXis
   data <- model$data
+
   syntax <- paste(model$syntax, model$covModel$syntax, sep = "\n")
-  pt <- modsem(syntax, data, method = "dblcent")$coefParTable
+  parTable <- modsem(syntax, data, method = "dblcent")$coefParTable
 
   # Main Model
   matricesMain <- model$matrices
-  LambdaX <- findEstimatesParTable(matricesMain$lambdaX, pt, op = "=~", 
+
+  LambdaX <- findEstimatesParTable(matricesMain$lambdaX, parTable, op = "=~", 
                                    rows_lhs = FALSE)
-  LambdaY <- findEstimatesParTable(matricesMain$lambdaY, pt, op = "=~",
+  LambdaY <- findEstimatesParTable(matricesMain$lambdaY, parTable, op = "=~",
                                    rows_lhs = FALSE)
-  ThetaEpsilon <- findEstimatesParTable(matricesMain$thetaEpsilon, pt, op = "~~")
-  ThetaDelta <- findEstimatesParTable(matricesMain$thetaDelta, pt, op = "~~")
-  Psi <- findEstimatesParTable(matricesMain$psi, pt, op = "~~")
-  Phi <- findEstimatesParTable(matricesMain$phi, pt, op = "~~")
-  A <- findEstimatesParTable(matricesMain$A, pt, op = "~~")
+
+  ThetaEpsilon <- findEstimatesParTable(matricesMain$thetaEpsilon, parTable, op = "~~")
+  ThetaDelta <- findEstimatesParTable(matricesMain$thetaDelta, parTable, op = "~~")
+
+  Psi <- findEstimatesParTable(matricesMain$psi, parTable, op = "~~")
+  Phi <- findEstimatesParTable(matricesMain$phi, parTable, op = "~~")
+
+  A <- findEstimatesParTable(matricesMain$A, parTable, op = "~~")
   A[upper.tri(A)] <- t(A[lower.tri(A)])
   A <- t(tryCatch(chol(A), error = function(x) diag(ncol(A))))
+
   alpha <- matricesMain$alpha
   alpha[is.na(alpha)] <- 0
-  GammaEta <- findEstimatesParTable(matricesMain$gammaEta, pt, op = "~")
-  GammaXi <- findEstimatesParTable(matricesMain$gammaXi, pt, op = "~")  
-  OmegaEtaXi <- findInteractionEstimatesParTable(matricesMain$omegaEtaXi, lhs = etas,
-                                                 rhs1 = etas, rhs2 = xis, pt = pt)
-  OmegaXiXi <- findInteractionEstimatesParTable(matricesMain$omegaXiXi, lhs = etas,
-                                                rhs1 = xis, rhs2 = xis, pt = pt)
+
+  GammaEta <- findEstimatesParTable(matricesMain$gammaEta, parTable, op = "~")
+  GammaXi <- findEstimatesParTable(matricesMain$gammaXi, parTable, op = "~")  
+
+  OmegaEtaXi <- findInteractionEstimatesParTable(matricesMain$omegaEtaXi, 
+                                                 etas = etas, 
+                                                 parTable = parTable)
+  OmegaXiXi <- findInteractionEstimatesParTable(matricesMain$omegaXiXi, 
+                                                etas = etas, 
+                                                parTable = parTable)
+
   tauX <- apply(data[, indsXis, drop = FALSE], MARGIN = 2, FUN = mean)
   tauY <- apply(data[, indsEtas, drop = FALSE], MARGIN = 2, FUN = mean)
-  thetaMainModel <- unlist(list(LambdaX[is.na(matricesMain$lambdaX)], 
+
+  thetaMain <- unlist(list(LambdaX[is.na(matricesMain$lambdaX)], 
                                 LambdaY[is.na(matricesMain$lambdaY)], 
                                 tauX[is.na(matricesMain$tauX)], 
                                 tauY[is.na(matricesMain$tauY)],
@@ -49,73 +61,97 @@ optimizeStartingParamsLms <- function(model) {
   # Cov Model
   matricesCov <- model$covModel$matrices 
   if (!is.null(matricesCov)) {
-    PsiCovModel <- findEstimatesParTable(matricesCov$psi, pt, op = "~~")
-    PhiCovModel <- findEstimatesParTable(matricesCov$phi, pt, op = "~~")
-    ACovModel <- findEstimatesParTable(matricesCov$A, pt, op = "~~")
+    PsiCovModel <- findEstimatesParTable(matricesCov$psi, parTable, op = "~~")
+    PhiCovModel <- findEstimatesParTable(matricesCov$phi, parTable, op = "~~")
+    ACovModel <- findEstimatesParTable(matricesCov$A, parTable, op = "~~")
     ACovModel[upper.tri(ACovModel)] <- t(ACovModel[lower.tri(ACovModel)])
     ACovModel <- t(tryCatch(chol(ACovModel), error = function(x) 
                             diag(ncol(ACovModel))))
-    GammaEtaCovModel <- findEstimatesParTable(matricesCov$gammaEta, pt, op = "~")
-    GammaXiCovModel <- findEstimatesParTable(matricesCov$gammaXi, pt, op = "~")  
+    GammaEtaCovModel <- findEstimatesParTable(matricesCov$gammaEta, parTable, op = "~")
+    GammaXiCovModel <- findEstimatesParTable(matricesCov$gammaXi, parTable, op = "~")  
 
-    thetaCovModel <- unlist(list(PhiCovModel[is.na(matricesCov$phi)], 
+    thetaCov <- unlist(list(PhiCovModel[is.na(matricesCov$phi)], 
                                  ACovModel[is.na(matricesCov$A)], 
                                  PsiCovModel[is.na(matricesCov$psi)], 
                                  GammaXiCovModel[is.na(matricesCov$gammaXi)], 
                                  GammaEtaCovModel[is.na(matricesCov$gammaEta)]))
-  } else thetaCovModel <- NULL
+  } else thetaCov <- NULL
+  
+  # labelTheta 
+  thetaLabel <- getLabeledParamsLavaan(parTable, model$constrExprs$fixedParams)  
 
   # Combinging the two
-  theta <- c(thetaCovModel, thetaMainModel)
+  theta <- c(thetaLabel, thetaCov, thetaMain)
   if (length(theta) == length(model$theta)) {
     names(theta) <- names(model$theta)
     model$theta <- theta
   }
-
+  
   model
 }
 
 
-findEstimatesParTable <- function(mat, pt, op = NULL, rows_lhs = TRUE) {
+findEstimatesParTable <- function(mat, parTable, op = NULL, rows_lhs = TRUE) {
   if (is.null(op)) stop2("Missing operator")
   for (row in rownames(mat)) {
     for (col in colnames(mat)) {
       if (is.na(mat[row, col])) 
-        mat[row, col] <- extractFromParTable(row, op, col, pt, rows_lhs)    
+        mat[row, col] <- extractFromParTable(row, op, col, parTable, rows_lhs)    
     }
   }
   mat 
 }
 
 
-findInteractionEstimatesParTable <- function(omega, lhs, rhs1, rhs2, pt) {
-  if (length(rhs1) != length(rhs2) || !all(rhs1 != rhs2)) {
-    combos <- rbind(expand.grid(rhs1, rhs2), expand.grid(rhs2, rhs1))
-  } else {
-    combos <- expand.grid(rhs1, rhs2)
+findInteractionEstimatesParTable <- function(omega, etas, parTable) {
+  nrowSubOmega <- nrow(omega) %/% length(etas)
+  firstRow <- 1
+  lastRow <- nrowSubOmega
+  for (eta in etas) {
+    subOmega <- omega[firstRow:lastRow, , drop = FALSE] 
+    rows <- rownames(subOmega)
+    cols <- colnames(subOmega)
+
+    for (row in seq_len(NROW(subOmega))) {
+      for (col in seq_len(NCOL(subOmega))) {
+        if (!is.na(subOmega[row, col])) next
+        xz <- createDoubleIntTerms(x = rows[[row]], z = cols[[col]], sep = "")
+        subOmega[row, col] <- extractFromParTable(eta, "~", xz, parTable, 
+                                                  rows_lhs = TRUE)
+      }
+    }
+    omega[firstRow:lastRow, ] <- subOmega
+    firstRow <- lastRow + 1
+    lastRow <- lastRow + nrowSubOmega
   }
-  rhs <- combos |> apply(1, stringr::str_c, collapse = "") |>
-    unlist() |> unique()
-  omega[is.na(omega)] <- sortParTable(pt, lhs, "~", rhs)  
   omega
 }
 
 
-extractFromParTable <- function(row, op, col, pt, rows_lhs = TRUE) {
-  if (rows_lhs) out <- (pt[pt$lhs == row & pt$op == op & pt$rhs == col, "est"])
-  else out <- pt[pt$lhs == col & pt$op == op & pt$rhs == row, "est"]
+extractFromParTable <- function(row, op, col, parTable, rows_lhs = TRUE) {
+  if (rows_lhs) {
+    out <- (parTable[parTable$lhs == row & 
+                     parTable$op == op & 
+                     parTable$rhs %in% col, "est"])
+  } else {
+    out <- parTable[parTable$lhs == col & 
+                    parTable$op == op & 
+                    parTable$rhs %in% row, "est"]
+  }
+
   if (length(out) == 0 && op == "~~") {
-    out <- pt[pt$lhs == col & pt$op == op & pt$rhs == row, "est"]
+    out <- parTable[parTable$lhs == col & parTable$op == op & parTable$rhs %in% row, "est"]
   } else if (length(out) != 1) stop2("Incorrect length of matches")
+
   out
 }
 
 
-sortParTable <- function(pt, lhs, op, rhs) {
+sortParTable <- function(parTable, lhs, op, rhs) {
   out <- NULL
   for (l in lhs) {
     for (r in rhs) {
-      row <- pt[pt$lhs == l & pt$op == op & pt$rhs == r, ]
+      row <- parTable[parTable$lhs == l & parTable$op == op & parTable$rhs == r, ]
       if (NROW(row) == 0) next
       out <- rbind(out, row)
     }

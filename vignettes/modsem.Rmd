@@ -103,6 +103,9 @@ Z =~ z1 + z2 + z3
 # Inner model
 Y ~ X + Z + Z:X + X:X
 '
+
+est4 <- modsem(m4, oneInt, "qml")
+summary(est4)
 ```
 
 ## More Complicated Examples 

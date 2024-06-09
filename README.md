@@ -53,20 +53,20 @@ m1 <- '
 '
 
 # Double centering approach
-est1Dblcent <- modsem(m1, oneInt)
-summary(est1Dblcent)
+est1_dca <- modsem(m1, oneInt)
+summary(est1_dca)
 
 # Constrained approach
-est1Ca <- modsem(m1, oneInt, method = "ca")
-summary(est1Ca)
+est1_ca <- modsem(m1, oneInt, method = "ca")
+summary(est1_ca)
 
 # QML approach 
-est1Qml <- modsem(m1, oneInt, method = "qml")
+est1_qml <- modsem(m1, oneInt, method = "qml")
 summary(est1Qml) 
 
 # LMS approach 
-est1Lms <- modsem(m1, oneInt, method = "lms") 
-summary(est1Lms)
+est1_lms <- modsem(m1, oneInt, method = "lms") 
+summary(est1_lms)
 ```
 
 ## Theory Of Planned Behavior
@@ -87,17 +87,17 @@ tpb <- "
 "
 
 # double centering approach
-estTpbDblCent <- modsem(tpb, data = TPB, method = "dblcent")
-summary(estTpbDblCent)
+est_tpb_dca <- modsem(tpb, data = TPB, method = "dblcent")
+summary(est_tpb_dca)
 
 # Constrained approach using Wrigths path tracing rules for generating
 # the appropriate constraints
-estTpbCa <- modsem(tpb, data = TPB, method = "ca") 
-summary(estTpbCa)
+est_tpb_ca <- modsem(tpb, data = TPB, method = "ca") 
+summary(est_tpb_ca)
 
 # LMS approach 
-estTpbLms <- modsem(tpb, data = TPB, method = "lms")
-summary(estTpbLms)
+est_tpb_lms <- modsem(tpb, data = TPB, method = "lms")
+summary(est_tpb_lms)
 ```
 ## Interactions between two observed variables
 ```

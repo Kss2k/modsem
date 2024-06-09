@@ -9,7 +9,8 @@ m1 <- "
 # Inner model
   Y ~ a * X + a * Z
   Y ~~ Y
-  Y ~ X:Z + X:X
+  Y ~ b * X:Z + 0.05 * X:X
+  b == a * 1.2
 "
 # funnily enough, the starting parameters from the double centering approach
 # give better loglikelihoods than the ones arrived at by the EM algorithm

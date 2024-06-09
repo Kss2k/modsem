@@ -22,7 +22,6 @@ createExprNode <- function(node, lhs = NULL, rhs = NULL,
 
 
 getMinTokenPriority <- function(listTokens, min = NA) {
- # browser()
   if (is.null(listTokens) || length(listTokens) == 0) {
     if (is.na(min)) {
       stop2("Unable to find minimum priority for tokens")

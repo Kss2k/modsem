@@ -22,11 +22,10 @@ estQml <- function(model,
   finalModel$matricesNA <- emptyModel$matrices
   finalModel$covModelNA <- emptyModel$covModel
 
-  if (hessian) {
-    modelSE <- fillModel(model, calcSE(final$hessian), method = "qml")
-  } else {
-    modelSE <- fillModel(model, rep(-999, length(coefficients)), method = "qml")
-  }
+  if (hessian) SE <- calcSE(final$hessian) 
+  else SE <- rep(-999, length(coefficients))
+  modelSE <- fillModel(replaceNonNaModelMatrices(model, value = -999), 
+                       SE, method = "qml")
   finalModel$matricesSE <- modelSE$matrices
   finalModel$covModelSE <- modelSE$covModel
 

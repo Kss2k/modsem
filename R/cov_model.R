@@ -11,7 +11,7 @@ paramMatricesCov <- c("gammaXi", "gammaEta", "A", "psi", "phi")
 
 # functions
 covModel <- function(syntax = NULL, method = "lms", parTable = NULL) {
-  if (!is.null(syntax)) parTable <- modsemify(syntax)
+  if (is.null(parTable) && !is.null(syntax)) parTable <- modsemify(syntax)
   if (is.null(parTable)) {
     return(list(matrices = NULL, freeParams = 0, 
                 theta = NULL, syntax = NULL, parTable = NULL))
@@ -58,7 +58,8 @@ covModel <- function(syntax = NULL, method = "lms", parTable = NULL) {
     psi = labelPsi,
     phi = labelPhi)
 
-
+  # constraint expressions 
+  
   model <- list(info =
                 list(etas = etas,
                      numEtas = numEtas,
@@ -68,43 +69,32 @@ covModel <- function(syntax = NULL, method = "lms", parTable = NULL) {
                 labelMatrices = labelMatrices,
                 syntax = syntax,
                 parTable = parTable)
-   
-  listTheta <- createThetaCovModel(model)
-  model$freeParams <- listTheta$freeParams
-  model$lenLabelTheta <- listTheta$lenLabelTheta
-  model$theta <- listTheta$thetaCov
 
   model
 }
 
 
-fillCovModel <- function(covModel, theta, fillPhi = FALSE, method = "lms") {
+fillCovModel <- function(covModel, theta, thetaLabel, fillPhi = FALSE, 
+                         method = "lms") {
   if (is.null(names(theta))) names(theta) <- names(covModel$theta)
   if (is.null(covModel$matrices)) return(NULL)
   matrices <- covModel$matrices 
-  
-  if (covModel$lenLabelTheta == 0) {
-    thetaLabelCov <- NULL
-    thetaCov <- theta
-  } else {
-    thetaCov <- theta[-seq_len(covModel$lenLabelTheta)]
-    thetaLabelCov <- theta[seq_len(covModel$lenLabelTheta)]
-    matrices <- fillMatricesLabels(matrices[paramMatricesCov], 
-                                   covModel$labelMatrices[paramMatricesCov], 
-                                   thetaLabelCov)
-  }
+
+  matrices <- fillMatricesLabels(matrices[paramMatricesCov], 
+                                 covModel$labelMatrices[paramMatricesCov], 
+                                 thetaLabel)
 
   matrices$psi[is.na(matrices$psi)] <-
-    fetch(thetaCov, "^psi[0-9]*$")
+    fetch(theta, "^psi[0-9]*$")
   matrices$gammaEta[is.na(matrices$gammaEta)] <-
-    fetch(thetaCov, "gammaEta[0-9]*$")
+    fetch(theta, "gammaEta[0-9]*$")
   matrices$gammaXi[is.na(matrices$gammaXi)] <-
-    fetch(thetaCov, "gammaXi[0-9]*$")
+    fetch(theta, "gammaXi[0-9]*$")
   if (method == "lms") {
     matrices$A[is.na(matrices$A)] <-
-      fetch(thetaCov, "^A[0-9]*$")
+      fetch(theta, "^A[0-9]*$")
   } else if (method == "qml") {
-    matrices$phi <- fillSymmetric(matrices$phi, fetch(thetaCov, "^phi[0-9]*$"))
+    matrices$phi <- fillSymmetric(matrices$phi, fetch(theta, "^phi[0-9]*$"))
   }
 
   if (fillPhi) matrices$phi <- matrices$A %*% t(matrices$A)
@@ -114,10 +104,9 @@ fillCovModel <- function(covModel, theta, fillPhi = FALSE, method = "lms") {
 
 
 createThetaCovModel <- function(covModel, start = NULL) {
-  matrices <- covModel$matrices
-  labelThetaCov <- createLabelTheta(covModel$labelMatrices)
-
   set.seed(123)
+  matrices <- covModel$matrices
+
   phi <- as.vector(matrices$phi)
   A <- as.vector(matrices$A)
   psi <- as.vector(matrices$psi)
@@ -134,10 +123,8 @@ createThetaCovModel <- function(covModel, start = NULL) {
    thetaCov <- vapply(thetaCov, FUN.VALUE = vector("numeric", 1L),
                    FUN = function(x) stats::runif(1))
   }
-
-  list(thetaCov = c(labelThetaCov, thetaCov),
-       freeParams = length(thetaCov) + length(labelThetaCov),
-       lenLabelTheta = length(labelThetaCov))
+  
+  thetaCov
 }
 
 
@@ -181,8 +168,10 @@ covModelToParTable <- function(model, method = "lms") {
   matricesEst <- model$covModel$matrices
   matricesSE <- model$covModelSE$matrices
   matricesNA <- model$covModelNA$matrices
+
   if (is.null(matricesEst) || is.null(matricesNA) ||
       is.null(matricesSE)) return(NULL)
+
   etas <- model$info$etas
   numXis <- model$info$numXis
   parTable <- NULL

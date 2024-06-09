@@ -6,6 +6,7 @@ X =~ x1 + x2 + x3
 Y =~ y1 + y2 + y3
 Z =~ z1 + z2 + z3
 Y ~ X + Z + X:Z
+X ~~ 0.2 * X
 '
 
 est1 <- modsem(m1, data = oneInt, convergence = 1e-2, method = "qml")
@@ -21,10 +22,11 @@ tpb <- '
   BEH =~ b1 + b2
 
 # Inner Model (Based on Steinmetz et al., 2011)
-  BEH ~ INT + PBC 
+  BEH ~ b * INT + PBC 
   INT ~ ATT + SN + PBC
-  BEH ~ PBC:INT
+  BEH ~ a * PBC:INT
+  b == a * 0.9365436
 '
 
-est2 <- modsem(tpb, data = TPB, method = "lms")
-print(summary(est2, H0 = TRUE, ci = TRUE))
+est2 <- modsem(tpb, data = TPB, method = "qml")
+print(summary(est2, H0 = FALSE, ci = TRUE))

@@ -66,16 +66,17 @@ emLms <- function(model, verbose = FALSE,
                                cov_syntax = model$cov_syntax,
                                parTableCovModel = model$covModel$parTable,
                                method = "lms")
+
   finalModel$matricesNA <- emptyModel$matrices
   finalModel$covModelNA <- emptyModel$covModel
 
-  if (hessian) {
-    modelSE <- fillModel(model, calcSE(final$hessian), method = "lms")
-  } else {
-    modelSE <- fillModel(model, rep(-999, length(coefficients)), method = "lms")
-  }
+  if (hessian) SE <- calcSE(final$hessian) 
+  else SE <- rep(-999, length(coefficients))
+  modelSE <- fillModel(replaceNonNaModelMatrices(model, value = -999), 
+                       SE, method = "lms")
   finalModel$matricesSE <- modelSE$matrices
   finalModel$covModelSE <- modelSE$covModel
+
   parTable <- rbind(finalModelToParTable(finalModel, method = "lms"),
                     covModelToParTable(finalModel, method = "lms"))
 

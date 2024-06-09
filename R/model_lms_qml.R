@@ -1,5 +1,5 @@
 # Functions for Specifiying lms and qml model. modsem(method = c("lms", "qml"))
-# Last updated: 06.06.2024
+# Last updated: 09.06.2024
 
 
 # Global variables 
@@ -12,8 +12,9 @@ paramMatrices <- c("lambdaX", "lambdaY", "gammaXi", "gammaEta",
 # Functions
 specifyModelLmsQml <- function(syntax = NULL, data = NULL, method = "lms", m = 16,
                                cov_syntax = NULL, double = FALSE, 
-                               parTable = NULL, parTableCovModel = NULL) {
-  if (!is.null(syntax)) parTable <- modsem::modsemify(syntax)
+                               parTable = NULL, parTableCovModel = NULL,
+                               autoConstraints = TRUE, createTheta = TRUE) {
+  if (!is.null(syntax)) parTable <- modsemify(syntax)
   if (is.null(parTable)) stop("No parTable found")
 
   # endogenous variables (etas)
@@ -44,7 +45,8 @@ specifyModelLmsQml <- function(syntax = NULL, data = NULL, method = "lms", m = 1
   numAllIndsXis <- length(allIndsXis)
 
   # measurement model x
-  listLambdaX <- constructLambda(xis, indsXis, parTable = parTable)
+  listLambdaX <- constructLambda(xis, indsXis, parTable = parTable,
+                                 autoConstraints = autoConstraints)
   lambdaX <- listLambdaX$numeric 
   labelLambdaX <- listLambdaX$label 
 
@@ -52,12 +54,14 @@ specifyModelLmsQml <- function(syntax = NULL, data = NULL, method = "lms", m = 1
   tauX <- listTauX$numeric 
   labelTauX <- listTauX$label
 
-  listThetaDelta <- constructTheta(xis, indsXis, parTable = parTable)
+  listThetaDelta <- constructTheta(xis, indsXis, parTable = parTable,
+                                   autoConstraints = autoConstraints)
   thetaDelta <- listThetaDelta$numeric
-  labelThetaDelta <- listThetaDelta$label
+  thetaLabelDelta <- listThetaDelta$label
 
   # measurement model y
-  listLambdaY <- constructLambda(etas, indsEtas, parTable = parTable)
+  listLambdaY <- constructLambda(etas, indsEtas, parTable = parTable,
+                                 autoConstraints = autoConstraints)
   lambdaY <- listLambdaY$numeric 
   labelLambdaY <- listLambdaY$label 
 
@@ -65,9 +69,10 @@ specifyModelLmsQml <- function(syntax = NULL, data = NULL, method = "lms", m = 1
   tauY <- listTauY$numeric 
   labelTauY <- listTauY$label 
   
-  listThetaEpsilon <- constructTheta(etas, indsEtas, parTable = parTable)
+  listThetaEpsilon <- constructTheta(etas, indsEtas, parTable = parTable,
+                                     autoConstraints = autoConstraints)
   thetaEpsilon <- listThetaEpsilon$numeric 
-  labelThetaEpsilon <- listThetaEpsilon$label
+  thetaLabelEpsilon <- listThetaEpsilon$label
 
   # structural model 
   Ieta <- diag(numEtas) # used for (B^-1 = (Ieta - gammaEta)^-1)
@@ -95,7 +100,8 @@ specifyModelLmsQml <- function(syntax = NULL, data = NULL, method = "lms", m = 1
   labelA <- listA$label
 
   # mean etas
-  listAlpha <- constructAlpha(etas, parTable = parTable)
+  listAlpha <- constructAlpha(etas, parTable = parTable, 
+                              autoConstraints = autoConstraints)
   alpha <- listAlpha$numeric
   labelAlpha <- listAlpha$label
 
@@ -146,8 +152,8 @@ specifyModelLmsQml <- function(syntax = NULL, data = NULL, method = "lms", m = 1
     lambdaY = labelLambdaY,
     gammaXi = labelGammaXi,
     gammaEta = labelGammaEta,
-    thetaDelta = labelThetaDelta,
-    thetaEpsilon = labelThetaEpsilon,
+    thetaDelta = thetaLabelDelta,
+    thetaEpsilon = thetaLabelEpsilon,
     phi = labelPhi,
     A = labelA,
     psi = labelPsi,
@@ -181,13 +187,19 @@ specifyModelLmsQml <- function(syntax = NULL, data = NULL, method = "lms", m = 1
                 covModel = covModel(cov_syntax, method = method,
                                     parTable = parTableCovModel))
 
-  listTheta <- createTheta(model)
-  model$freeParams = length(listTheta$theta)
-  model$theta <- listTheta$theta
-  model$lenLabelMain <- listTheta$lenLabelMain
+  model$constrExprs <- getConstrExprs(parTable, model$covModel$parTable)
+ 
+  if (createTheta) {
+    listTheta <- createTheta(model)
+    model$freeParams <- length(listTheta$theta)
+    model$lenThetaMain <- listTheta$lenThetaMain
+    model$lenThetaCov <- listTheta$lenThetaCov
+    model$lenThetaLabel <- listTheta$lenThetaLabel
+    model$totalLenThetaLabel <- listTheta$totalLenThetaLabel
+    model$theta <- listTheta$theta
+    model$info$bounds <- getParamBounds(model)
+  }
 
-  model$info$bounds <- getParamBounds(model)
-  
   model$data <- cleanAndSortData(data, allIndsXis, allIndsEtas)
   model$info$N <- NROW(model$data)
 
@@ -196,10 +208,13 @@ specifyModelLmsQml <- function(syntax = NULL, data = NULL, method = "lms", m = 1
 
 
 createTheta <- function(model, start = NULL) {
-  thetaCov <- model$covModel$theta
-  labelThetaMain <- createLabelTheta(model$labelMatrices)
-
   set.seed(123)
+  thetaCov <- createThetaCovModel(model$covModel)
+  thetaLabel <- createThetaLabel(model$labelMatrices, 
+                                 model$covModel$labelMatrices,
+                                 model$constrExprs)
+  totalThetaLabel <- calcThetaLabel(thetaLabel, model$constrExprs)
+
   matrices <- model$matrices
   lambdaX <- as.vector(matrices$lambdaX)
   lambdaY <- as.vector(matrices$lambdaY)
@@ -235,67 +250,72 @@ createTheta <- function(model, start = NULL) {
                             FUN = function(x) stats::runif(1))
   }
 
-  thetaMain <- c(labelThetaMain, thetaMain)
-  theta <- c(thetaCov, thetaMain)
+  theta <- c(thetaLabel, thetaCov, thetaMain)
   list(theta = theta,
-       lenLabelMain = length(labelThetaMain))
+       lenThetaMain = length(thetaMain),
+       lenThetaLabel = length(thetaLabel),
+       totalLenThetaLabel = length(totalThetaLabel),
+       lenThetaCov = length(thetaCov))
 }
 
 
 fillModel <- function(model, theta, fillPhi = FALSE, method = "lms") {
   if (is.null(names(theta))) names(theta) <- names(model$theta)
-  # cov model
-  if (model$covModel$freeParams == 0) {
-    thetaCov <- NULL
-    thetaMain <- theta
-  } else {
-    thetaCov <- theta[seq_len(model$covModel$freeParams)]
-    thetaMain <- theta[-seq_len(model$covModel$freeParams)]
+
+  # labeled parameters
+  thetaLabel <- NULL
+  if (model$totalLenThetaLabel > 0) {
+    if (model$lenThetaLabel > 0) {
+      thetaLabel <- theta[seq_len(model$totalLenThetaLabel)] 
+      theta <- theta[-seq_len(model$lenThetaLabel)]
+    } 
+    thetaLabel <- calcThetaLabel(thetaLabel, model$constrExprs)
   }
 
-  model$covModel <- fillCovModel(model$covModel, thetaCov, 
+  # cov model
+  thetaCov <- NULL
+  thetaMain <- theta
+  if (model$lenThetaCov > 0) {
+    thetaCov <- theta[seq_len(model$lenThetaCov)]
+    thetaMain <- theta[-seq_len(model$lenThetaCov)]
+  }
+
+  model$covModel <- fillCovModel(model$covModel, thetaCov, thetaLabel,
                                  fillPhi = fillPhi, method = method)
-  model$matrices <- fillMainModel(model, thetaMain, fillPhi = fillPhi,
-                                  method = method)
+  model$matrices <- fillMainModel(model, thetaMain, thetaLabel,
+                                  fillPhi = fillPhi, method = method)
   model
 }
 
 
-fillMainModel <- function(model, theta, fillPhi = FALSE, 
+fillMainModel <- function(model, theta, thetaLabel, fillPhi = FALSE, 
                           method = "lms") {
   xis <- model$info$xis
   numXis <- model$info$numXis
   numEtas <- model$info$numEtas
   matrices <- model$matrices
-  if (model$lenLabelMain == 0) {
-    thetaLabelMain <- NULL
-    thetaMain <- theta
-  } else {
-    thetaMain <- theta[-seq_len(model$lenLabelMain)]
-    thetaLabelMain <- theta[seq_len(model$lenLabelMain)]
-    matrices[paramMatrices] <- 
-      fillMatricesLabels(matrices[paramMatrices], 
-                         model$labelMatrices[paramMatrices], 
-                         thetaLabelMain)
-  }
+  matrices[paramMatrices] <- 
+    fillMatricesLabels(matrices[paramMatrices], 
+                       model$labelMatrices[paramMatrices], 
+                       thetaLabel)
 
   matrices$lambdaX[is.na(matrices$lambdaX)] <-
-    fetch(thetaMain, "lambdaX[0-9]*$")
+    fetch(theta, "lambdaX[0-9]*$")
   matrices$lambdaY[is.na(matrices$lambdaY)] <-
-    fetch(thetaMain, "lambdaY[0-9]*$")
+    fetch(theta, "lambdaY[0-9]*$")
   matrices$thetaDelta <- 
     fillSymmetric(matrices$thetaDelta, 
-                  fetch(thetaMain, "thetaDelta[0-9]*$"))
+                  fetch(theta, "thetaDelta[0-9]*$"))
   matrices$thetaEpsilon <- 
     fillSymmetric(matrices$thetaEpsilon, 
-                  fetch(thetaMain, "thetaEpsilon[0-9]*$"))
+                  fetch(theta, "thetaEpsilon[0-9]*$"))
 
   if (method == "lms") {
     if (!is.null(model$covModel$matrices)) {
       matrices$A <- expectedCovModel(model$covModel, method = "lms", 
                                      sortedXis = xis)
     } else {
-      matrices$A[is.na(matrices$A)] <- fetch(thetaMain, "^A[0-9]*$")
+      matrices$A[is.na(matrices$A)] <- fetch(theta, "^A[0-9]*$")
     }
   } else if (method == "qml"){
     if (!is.null(model$covModel$matrices)) {
@@ -303,27 +323,27 @@ fillMainModel <- function(model, theta, fillPhi = FALSE,
                                        sortedXis = xis)
     } else {
       matrices$phi <- fillSymmetric(matrices$phi, 
-                                    fetch(thetaMain, "^phi[0-9]*$"))
+                                    fetch(theta, "^phi[0-9]*$"))
     }
   }
 
   matrices$psi <- fillSymmetric(matrices$psi, 
-                                fetch(thetaMain, "^psi[0-9]*$"))
+                                fetch(theta, "^psi[0-9]*$"))
 
   matrices$tauX[is.na(matrices$tauX)] <-
-    fetch(thetaMain, "tauX[0-9]*$")
+    fetch(theta, "tauX[0-9]*$")
   matrices$tauY[is.na(matrices$tauY)] <-
-    fetch(thetaMain, "tauY[0-9]*$")
+    fetch(theta, "tauY[0-9]*$")
   matrices$alpha[is.na(matrices$alpha)] <-
-    fetch(thetaMain, "alpha[0-9]*$")
+    fetch(theta, "alpha[0-9]*$")
   matrices$gammaEta[is.na(matrices$gammaEta)] <-
-    fetch(thetaMain, "gammaEta[0-9]*$")
+    fetch(theta, "gammaEta[0-9]*$")
   matrices$gammaXi[is.na(matrices$gammaXi)] <-
-    fetch(thetaMain, "gammaXi[0-9]*$")
+    fetch(theta, "gammaXi[0-9]*$")
   matrices$omegaXiXi[is.na(matrices$omegaXiXi)] <-
-    fetch(thetaMain, "omegaXiXi[0-9]*$")
+    fetch(theta, "omegaXiXi[0-9]*$")
   matrices$omegaEtaXi[is.na(matrices$omegaEtaXi)] <-
-    fetch(thetaMain, "omegaEtaXi[0-9]*$")
+    fetch(theta, "omegaEtaXi[0-9]*$")
   if (fillPhi) matrices$phi <- matrices$A %*% t(matrices$A)
   matrices
 }
@@ -413,8 +433,6 @@ finalModelToParTable <- function(finalModel, method = "lms") {
   parTable <- NULL
 
   # Coefficients Measurement Model 
-  matricesNA$lambdaX[matricesEst$lambdaX == 1] <- NA
-  matricesSE$lambdaX[matricesEst$lambdaX == 1] <- NA
   newRows <- matrixToParTable(matricesNA$lambdaX,
                               matricesEst$lambdaX,
                               matricesSE$lambdaX, 
@@ -422,8 +440,6 @@ finalModelToParTable <- function(finalModel, method = "lms") {
                               rowsLhs = FALSE)
   parTable <- rbind(parTable, newRows)
 
-  matricesNA$lambdaY[matricesEst$lambdaY == 1] <- NA
-  matricesSE$lambdaY[matricesEst$lambdaY == 1] <- NA
   newRows <- matrixToParTable(matricesNA$lambdaY,
                               matricesEst$lambdaY,
                               matricesSE$lambdaY, 

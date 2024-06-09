@@ -146,6 +146,10 @@ summaryLmsAndQml <- function(object,
                                cov_syntax = object$model$covModel$syntax,
                                method = method, verbose = verbose, ...)
     out$nullModel <- estH0
+    if (is.null(estH0)) {
+      warning2("Comparative fit to H0 will not be calculated.")
+      H0 <- FALSE
+    } 
     out$D <- calcD(estH0, object)
   } else {
     out$D <- NULL
@@ -267,15 +271,26 @@ print.modsem_qml <- function(x, digits = 3, ...) {
 
 estimateNullModel <- function(parTable, data, method = "lms", cov_syntax = NULL,
                               verbose = FALSE, hessian = FALSE, ...) {
-  strippedParTable <- parTable[!grepl(":", parTable$rhs), ]
-  syntax <- parTableToSyntax(strippedParTable)
-  if (verbose) cat("Estimating null model\n")
-  modsem_lms_qml(syntax, data, method, verbose = verbose, cov_syntax = cov_syntax, 
-                 hessian = hessian, ...)
+  tryCatch({
+    strippedParTable <- removeUnknownLabels(parTable[!grepl(":", parTable$rhs), ])
+    if (NROW(strippedParTable) == NROW(parTable)) return(NULL)
+
+    syntax <- parTableToSyntax(strippedParTable)
+
+    if (verbose) cat("Estimating null model\n")
+    modsem_lms_qml(syntax, data, method, verbose = verbose, cov_syntax = cov_syntax, 
+                   hessian = hessian, ...)
+
+  }, error = function(e) {
+    warning2("Null model could not be estimated. ", 
+            "Error message: ", e$message)
+    NULL
+  })
 }
 
 
 calcD <- function(estH0, estH1) {
+  if (is.null(estH0) || is.null(estH1)) return(NULL)
   df <- length(estH1$theta) - length(estH0$theta) 
   D <- - 2 * (estH1$logLik - estH0$logLik)
   if (D > 0) {
