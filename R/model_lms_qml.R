@@ -137,6 +137,8 @@ specifyModelLmsQml <- function(syntax = NULL,
   subThetaEpsilon <- constructSubThetaEpsilon(indsEtas, thetaEpsilon, 
                                               scalingInds, method = method)
   
+  covModel <- covModel(cov.syntax, method = method, parTable = parTableCovModel)
+
   # list of matrices
   matrices <- list(
     lambdaX = lambdaX,
@@ -197,8 +199,8 @@ specifyModelLmsQml <- function(syntax = NULL,
                 syntax = syntax,
                 cov.syntax = cov.syntax,
                 parTable = parTable,
-                covModel = covModel(cov.syntax, method = method,
-                                    parTable = parTableCovModel))
+                covModel = covModel)
+
 
   model$constrExprs <- getConstrExprs(parTable, model$covModel$parTable)
  
@@ -215,6 +217,8 @@ specifyModelLmsQml <- function(syntax = NULL,
 
   model$data <- cleanAndSortData(data, allIndsXis, allIndsEtas)
   model$info$N <- NROW(model$data)
+
+  checkModel(model = model, covModel = covModel) 
 
   model
 }

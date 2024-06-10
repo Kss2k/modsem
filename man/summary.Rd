@@ -16,6 +16,7 @@
   digits = 3,
   scientific = FALSE,
   ci = FALSE,
+  standardized = FALSE,
   loadings = TRUE,
   regressions = TRUE,
   covariances = TRUE,
@@ -32,6 +33,7 @@
   digits = 3,
   scientific = FALSE,
   ci = FALSE,
+  standardized = FALSE,
   loadings = TRUE,
   regressions = TRUE,
   covariances = TRUE,
@@ -69,6 +71,8 @@
 \item{scientific}{print p-values in scientific notation}
 
 \item{ci}{print confidence intervals}
+
+\item{standardized}{print standardized estimates}
 
 \item{loadings}{print loadings}
 

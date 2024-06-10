@@ -36,7 +36,7 @@ getSortedEtas <- function(parTable, isLV = FALSE, checkAny = TRUE) {
     for (i in seq_len(nrow(structExprs))) {
       eta <- structExprs[i, "lhs"]
       if (eta %in% structExprs$rhs) next
-      sortedEtas <- c(sortedEtas, eta)
+      sortedEtas <- c(eta, sortedEtas)
       structExprs <- structExprs[!grepl(eta, structExprs$lhs), ]
       break 
     }

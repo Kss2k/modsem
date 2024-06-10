@@ -66,7 +66,7 @@ standardized_estimates.data.frame <- function(object, intercepts = FALSE, ...) {
   }
   lVs <- getLVs(parTable)
   intTerms <- unique(getIntTerms(parTable)$rhs)
-  etas <- rev(getSortedEtas(parTable, isLV = TRUE))
+  etas <- getSortedEtas(parTable, isLV = TRUE)
   xis <- getXis(parTable, etas = etas, isLV = TRUE)
   indsLVs <- getIndsLVs(parTable, lVs)
   allInds <- unique(unlist(indsLVs))

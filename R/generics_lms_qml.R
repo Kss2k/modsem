@@ -19,6 +19,7 @@ parameter_estimates.modsem_qml <- function(object, ...) {
 #' @param digits number of digits to print
 #' @param scientific print p-values in scientific notation
 #' @param ci print confidence intervals
+#' @param standardized print standardized estimates
 #' @param loadings print loadings
 #' @param regressions print regressions
 #' @param covariances print covariances
@@ -49,6 +50,7 @@ summary.modsem_lms <- function(object,
                                digits = 3,
                                scientific = FALSE,
                                ci = FALSE,
+                               standardized = FALSE,
                                loadings = TRUE,
                                regressions = TRUE,
                                covariances = TRUE,
@@ -59,6 +61,7 @@ summary.modsem_lms <- function(object,
     H0 = H0, verbose = verbose,
     r.squared = r.squared, digits = digits,
     scientific = scientific, ci = ci,
+    standardized = standardized, 
     loadings = loadings, regressions = regressions,
     covariances = covariances, intercepts = intercepts,
     variances = variances, ...
@@ -75,6 +78,7 @@ summary.modsem_lms <- function(object,
 #' @param digits number of digits to print
 #' @param scientific print p-values in scientific notation
 #' @param ci print confidence intervals
+#' @param standardized print standardized estimates
 #' @param loadings print loadings
 #' @param regressions print regressions
 #' @param covariances print covariances
@@ -105,6 +109,7 @@ summary.modsem_qml <- function(object,
                                digits = 3,
                                scientific = FALSE,
                                ci = FALSE,
+                               standardized = FALSE, 
                                loadings = TRUE,
                                regressions = TRUE,
                                covariances = TRUE,
@@ -115,6 +120,7 @@ summary.modsem_qml <- function(object,
     H0 = H0, verbose = verbose,
     r.squared = r.squared, digits = digits,
     scientific = scientific, ci = ci,
+    standardized = standardized, 
     loadings = loadings, regressions = regressions,
     covariances = covariances, intercepts = intercepts,
     variances = variances, ...
@@ -129,6 +135,7 @@ summaryLmsAndQml <- function(object,
                              digits = 3,
                              scientific = FALSE,
                              ci = FALSE,
+                             standardized = FALSE, 
                              loadings = TRUE,
                              regressions = TRUE,
                              covariances = TRUE,
@@ -139,7 +146,9 @@ summaryLmsAndQml <- function(object,
     method <- "qml"
   } else if (inherits(object, "modsem_lms")) method <- "lms"
 
-  parTable <- object$parTable
+  if (standardized) parTable <- standardized_estimates(object)
+  else parTable <- parameter_estimates(object)
+  
   args <- object$args
   out <- list(
     parTable = parTable,

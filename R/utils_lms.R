@@ -215,3 +215,19 @@ getLabeledParamsLavaan <- function(parTable, fixedParams = NULL) {
   theta
 }
 
+
+checkModel <- function(model, covModel = NULL) {
+  modelXis <- model$info$xis
+  if (!is.null(covModel$info)) {
+    covModelEtas <- covModel$info$etas
+    covModelXis <- covModel$info$xis 
+    if (!all(c(covModelXis, covModelEtas) %in% modelXis)) {
+      stop2("All latent variables in the cov-model must be an exogenous variable in the main model")
+    }
+    if (!all(modelXis %in% c(covModelXis, covModelEtas))) {
+      stop2("All exogenous variables in main model must be part of the cov-model")
+    }
+  }
+
+  NULL
+}

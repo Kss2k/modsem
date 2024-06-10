@@ -13,7 +13,7 @@ paramMatricesCov <- c("gammaXi", "gammaEta", "A", "psi", "phi")
 covModel <- function(syntax = NULL, method = "lms", parTable = NULL) {
   if (is.null(parTable) && !is.null(syntax)) parTable <- modsemify(syntax)
   if (is.null(parTable)) {
-    return(list(matrices = NULL, freeParams = 0, 
+    return(list(matrices = NULL, freeParams = 0, info = NULL,
                 theta = NULL, syntax = NULL, parTable = NULL))
   }
 
