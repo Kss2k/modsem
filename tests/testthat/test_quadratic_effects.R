@@ -9,6 +9,7 @@ methods <- c("rca", "ca", "dblcent", "lms", "qml")
 ests <- vector("list", length(methods))
 names(ests) <- methods
 
+
 for (method in methods) {
   if (method == "ca") {
     ests[[method]] <- modsem(m1, data = oneInt, method = method, match = TRUE)
@@ -24,8 +25,7 @@ SC =~ academic1 + academic2 + academic3 + academic4 + academic5 + academic6
 CAREER ~ ENJ + SC + ENJ:ENJ + SC:SC + ENJ:SC
 '
 
-ests2 <- vector("list", length(methods))
-names(ests2) <- methods
-for (method in c("rca", "dblcent", "qml")) {
-  ests2[[method]] <- modsem(nlsemModel, data = jordan, method = method)
-}
+est_qml2 <- modsem(nlsemModel, data = jordan, method = "qml", 
+                   mean.observed = FALSE, convergence = 1e-2)
+est_rca2 <- modsem(nlsemModel, data = jordan, method = "rca")
+est_dblcent2 <- modsem(nlsemModel, data = jordan, method = "dblcent")

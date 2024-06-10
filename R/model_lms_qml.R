@@ -14,17 +14,20 @@ specifyModelLmsQml <- function(syntax = NULL,
                                data = NULL, 
                                method = "lms", 
                                m = 16,
-                               cov_syntax = NULL, 
+                               cov.syntax = NULL, 
                                double = FALSE, 
                                parTable = NULL, 
                                parTableCovModel = NULL,
-                               autoConstraints = TRUE, 
-                               createTheta = TRUE,
-                               meanStructure = TRUE) {
+                               auto.constraints = TRUE, 
+                               create.theta = TRUE,
+                               mean.observed = TRUE,
+                               standardize.inp = FALSE, 
+                               standardize.out = FALSE
+                               ) {
   if (!is.null(syntax)) parTable <- modsemify(syntax)
   if (is.null(parTable)) stop("No parTable found")
 
-  # endogenous variables (etas)
+  # endogenous variables (etas)model
   etas <- getSortedEtas(parTable, isLV = TRUE, checkAny = TRUE)
   numEtas <- length(etas)
   
@@ -53,33 +56,33 @@ specifyModelLmsQml <- function(syntax = NULL,
 
   # measurement model x
   listLambdaX <- constructLambda(xis, indsXis, parTable = parTable,
-                                 autoConstraints = autoConstraints)
+                                 auto.constraints = auto.constraints)
   lambdaX <- listLambdaX$numeric 
   labelLambdaX <- listLambdaX$label 
 
   listTauX <- constructTau(xis, indsXis, parTable = parTable,
-                           meanStructure = meanStructure)
+                           mean.observed = mean.observed)
   tauX <- listTauX$numeric 
   labelTauX <- listTauX$label
 
   listThetaDelta <- constructTheta(xis, indsXis, parTable = parTable,
-                                   autoConstraints = autoConstraints)
+                                   auto.constraints = auto.constraints)
   thetaDelta <- listThetaDelta$numeric
   thetaLabelDelta <- listThetaDelta$label
 
   # measurement model y
   listLambdaY <- constructLambda(etas, indsEtas, parTable = parTable,
-                                 autoConstraints = autoConstraints)
+                                 auto.constraints = auto.constraints)
   lambdaY <- listLambdaY$numeric 
   labelLambdaY <- listLambdaY$label 
 
   listTauY <- constructTau(etas, indsEtas, parTable = parTable,
-                           meanStructure = meanStructure)
+                           mean.observed = mean.observed)
   tauY <- listTauY$numeric 
   labelTauY <- listTauY$label 
   
   listThetaEpsilon <- constructTheta(etas, indsEtas, parTable = parTable,
-                                     autoConstraints = autoConstraints)
+                                     auto.constraints = auto.constraints)
   thetaEpsilon <- listThetaEpsilon$numeric 
   thetaLabelEpsilon <- listThetaEpsilon$label
 
@@ -98,20 +101,20 @@ specifyModelLmsQml <- function(syntax = NULL,
   psi <- listPsi$numeric
   labelPsi <- listPsi$label
 
-  listPhi <- constructPhi(xis, method = method, cov_syntax = cov_syntax,
+  listPhi <- constructPhi(xis, method = method, cov.syntax = cov.syntax,
                           parTable = parTable)
   phi <- listPhi$numeric
   labelPhi <- listPhi$label
 
-  listA <- constructA(xis, method = method, cov_syntax = cov_syntax,
+  listA <- constructA(xis, method = method, cov.syntax = cov.syntax,
                   parTable = parTable)
   A <- listA$numeric
   labelA <- listA$label
 
   # mean etas
   listAlpha <- constructAlpha(etas, parTable = parTable, 
-                              autoConstraints = autoConstraints,
-                              meanStructure = meanStructure)
+                              auto.constraints = auto.constraints,
+                              mean.observed = mean.observed)
   alpha <- listAlpha$numeric
   labelAlpha <- listAlpha$label
 
@@ -192,15 +195,15 @@ specifyModelLmsQml <- function(syntax = NULL,
                 matrices = matrices,
                 labelMatrices = labelMatrices,
                 syntax = syntax,
-                cov_syntax = cov_syntax,
+                cov.syntax = cov.syntax,
                 parTable = parTable,
-                covModel = covModel(cov_syntax, method = method,
+                covModel = covModel(cov.syntax, method = method,
                                     parTable = parTableCovModel))
 
   model$constrExprs <- getConstrExprs(parTable, model$covModel$parTable)
  
-  if (createTheta) {
-    listTheta <- createTheta(model)
+  if (create.theta) {
+    listTheta <- create.theta(model)
     model$freeParams <- length(listTheta$theta)
     model$lenThetaMain <- listTheta$lenThetaMain
     model$lenThetaCov <- listTheta$lenThetaCov
@@ -217,10 +220,10 @@ specifyModelLmsQml <- function(syntax = NULL,
 }
 
 
-createTheta <- function(model, start = NULL) {
+create.theta <- function(model, start = NULL) {
   set.seed(123)
-  thetaCov <- createThetaCovModel(model$covModel)
-  thetaLabel <- createThetaLabel(model$labelMatrices, 
+  thetaCov <- create.thetaCovModel(model$covModel)
+  thetaLabel <- create.thetaLabel(model$labelMatrices, 
                                  model$covModel$labelMatrices,
                                  model$constrExprs)
   totalThetaLabel <- calcThetaLabel(thetaLabel, model$constrExprs)
@@ -276,7 +279,7 @@ fillModel <- function(model, theta, fillPhi = FALSE, method = "lms") {
   thetaLabel <- NULL
   if (model$totalLenThetaLabel > 0) {
     if (model$lenThetaLabel > 0) {
-      thetaLabel <- theta[seq_len(model$totalLenThetaLabel)] 
+      thetaLabel <- theta[seq_len(model$lenThetaLabel)] 
       theta <- theta[-seq_len(model$lenThetaLabel)]
     } 
     thetaLabel <- calcThetaLabel(thetaLabel, model$constrExprs)
@@ -304,6 +307,7 @@ fillMainModel <- function(model, theta, thetaLabel, fillPhi = FALSE,
   numXis <- model$info$numXis
   numEtas <- model$info$numEtas
   matrices <- model$matrices
+
   matrices[paramMatrices] <- 
     fillMatricesLabels(matrices[paramMatrices], 
                        model$labelMatrices[paramMatrices], 
@@ -362,7 +366,7 @@ fillMainModel <- function(model, theta, thetaLabel, fillPhi = FALSE,
 # Calculate weights and node points for mixture functions via Gauss-Hermite
 # quadrature as defined in Klein & Moosbrugger (2000)
 quadrature <- function(m, k) {
-  if (k == 0) return(list(n = matrix(0), w = 1, k = 0, m = m))
+  if (k == 0 || m == 0) return(list(n = matrix(0), w = 1, k = 0, m = m))
   singleDimGauss <- gaussquad::hermite.h.quadrature.rules(m)[[m]]
   nodes <- lapply(seq_len(k), function(k) singleDimGauss$x) |>
     expand.grid() |> as.matrix()

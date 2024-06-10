@@ -70,7 +70,7 @@ addCovariances <- function(pt) {
   latents <- unique(pt[pt$op == "=~", "lhs"])
   if (length(latents) == 0) return(pt)
 
-  combos <- getUniqueCombinations(latents)
+  combos <- getUniqueCombos(latents)
   combos$connected <- !is.na(apply(combos, MARGIN = 1, function(xy)
                                    tracePath(pt, xy[[1]], xy[[2]])))
   toBeSpecified <- combos[!combos$connected, c("V1", "V2")]
@@ -164,7 +164,7 @@ specifyVarCovSingle <- function(parTable, relDf) {
     purrr::list_rbind()
 
   # Variances of product indicators
-  constrainedVarProdInds <- vector("list", length = ncol(relDf))
+  constrained.varProdInds <- vector("list", length = ncol(relDf))
 
   for (indProd in colnames(relDf)) {
     labelVarIndProd <- createLabelVar(indProd)
@@ -195,13 +195,13 @@ specifyVarCovSingle <- function(parTable, relDf) {
     rhs3 <- paste(labelsVarInds[[1]], labelsVarInds[[2]], sep = " * ")
     rhs <- paste(rhs1, rhs2, rhs3, sep = " + ")
 
-    constrainedVarProdInds[[indProd]] <- createParTableRow(c(lhs, rhs), op = "==")
+    constrained.varProdInds[[indProd]] <- createParTableRow(c(lhs, rhs), op = "==")
   }
 
-  constrainedVarProdInds <- purrr::list_rbind(constrainedVarProdInds)
+  constrained.varProdInds <- purrr::list_rbind(constrained.varProdInds)
   rbindParTable(parTable, rbind(varLatentProd,
                                 covsElemsProd,
-                                constrainedVarProdInds))
+                                constrained.varProdInds))
 }
 
 

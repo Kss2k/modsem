@@ -103,7 +103,7 @@ fillCovModel <- function(covModel, theta, thetaLabel, fillPhi = FALSE,
 }
 
 
-createThetaCovModel <- function(covModel, start = NULL) {
+create.thetaCovModel <- function(covModel, start = NULL) {
   set.seed(123)
   matrices <- covModel$matrices
 

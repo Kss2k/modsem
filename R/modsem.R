@@ -1,7 +1,9 @@
 #' Interaction between latent variables
 #'
-#' @param model_syntax lavaan syntax
+#' @param model.syntax lavaan syntax
+#' 
 #' @param data dataframe
+#' 
 #' @param method method to use:
 #' "rca" = residual centering approach (passed to lavaan),
 #' "uca" = unconstrained approach (passed to lavaan),
@@ -10,8 +12,7 @@
 #' "lms" = laten model structural equations (not passed to lavaan).
 #' "qml" = quasi maximum likelihood estimation of laten model structural equations (not passed to lavaan).
 #' "custom" = use parameters specified in the function call (passed to lavaan)
-#' @param standardize should data be scaled before fitting model
-#' @param center should data be centered before fitting model
+#' 
 #' @param ... arguments passed to other functions depending on method (see modsem_pi, modsem_lms_qml, and modsem_mplus)
 #' @return ModSEM object
 #' @export 
@@ -49,16 +50,16 @@
 #' 
 #' \dontrun{
 #' # The Constrained Approach 
-#' est1Constrained <- modsem(m1, oneInt, method = "ca")
-#' summary(est1Constrained)
+#' est1_ca <- modsem(m1, oneInt, method = "ca")
+#' summary(est1_ca)
 #'
 #' # LMS approach
-#' est1LMS <- modsem(m1, oneInt, method = "lms")
-#' summary(est1LMS)
+#' est1_lms <- modsem(m1, oneInt, method = "lms")
+#' summary(est1_lms)
 #'
 #' # QML approach
-#' est1QML <- modsem(m1, oneInt, method = "qml")
-#' summary(est1QML)
+#' est1_qml <- modsem(m1, oneInt, method = "qml")
+#' summary(est1_qml)
 #' 
 #' }
 #' 
@@ -72,39 +73,37 @@
 #'   BEH =~ b1 + b2
 #' 
 #' # Inner Model (Based on Steinmetz et al., 2011)
-#'   # Covariances
-#'   ATT ~~ SN + PBC
-#'   PBC ~~ SN 
-#'   # Causal Relationsships
 #'   INT ~ ATT + SN + PBC
 #'   BEH ~ INT + PBC 
 #'   BEH ~ INT:PBC  
 #' '
 #' 
 #' # double centering approach
-#' estTpb <- modsem(tpb, data = TPB)
-#' summary(estTpb)
+#' est_tpb <- modsem(tpb, data = TPB)
+#' summary(est_tpb)
 #'
 #' \dontrun{
 #' # The Constrained Approach 
-#' estTpbConstrained <- modsem(tpb, data = TPB, method = "ca")
-#' summary(estTpbConstrained)
+#' est_tpb_ca <- modsem(tpb, data = TPB, method = "ca")
+#' summary(est_tpb_ca)
 #'
 #' # LMS approach
-#' estTpbLMS <- modsem(tpb, data = TPB, method = "lms")
-#' summary(estTpbLMS)
+#' est_tpb_lms <- modsem(tpb, data = TPB, method = "lms")
+#' summary(est_tpb_lms)
+#' 
+#' # QML approach
+#' est_tpb_qml <- modsem(tpb, data = TPB, method = "qml")
+#' summary(est_tpb_qml)
 #' }
-modsem <- function(model_syntax = NULL,
+modsem <- function(model.syntax = NULL,
                    data = NULL,
                    method = "dblcent",
-                   standardize = FALSE,
-                   center = FALSE,
                    ...) {
-  if (is.null(model_syntax)) {
-    stop2("No model_syntax provided")
-  } else if (!is.character(model_syntax)) {
+  if (is.null(model.syntax)) {
+    stop2("No model.syntax provided")
+  } else if (!is.character(model.syntax)) {
     stop2("The provided model syntax is not a string!")
-  } else if (length(model_syntax) > 1) {
+  } else if (length(model.syntax) > 1) {
     stop2("The provided model syntax is not of length 1")
   }
 
@@ -114,16 +113,12 @@ modsem <- function(model_syntax = NULL,
     data <- as.data.frame(data)
   }
 
-  if (center) data <- lapplyDf(data, FUN = function(x) x - mean(x))
-  if (standardize) data <- lapplyDf(data, FUN = scaleIfNumeric, 
-                                    scaleFactor = FALSE)
-
   if (method %in% c("rca", "uca", "dblcent", "pind", "ca", "custom")) {
-    return(modsem_pi(model_syntax, data = data, method = method, ...))
+    return(modsem_pi(model.syntax, data = data, method = method, ...))
   } else if (method %in% c("lms", "qml")) {
-    return(modsem_lms_qml(model_syntax, data = data, method = method, ...))
+    return(modsem_lms_qml(model.syntax, data = data, method = method, ...))
   } else if (method == "mplus") {
-    return(modsem_mplus(model_syntax, data = data, ...))
+    return(modsem_mplus(model.syntax, data = data, ...))
   } else {
     stop2("Method not recognized")
   }

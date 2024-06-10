@@ -22,11 +22,17 @@ tpb <- '
   BEH =~ b1 + b2
 
 # Inner Model (Based on Steinmetz et al., 2011)
-  BEH ~ b * INT + PBC 
+  BEH ~ INT + PBC 
   INT ~ ATT + SN + PBC
-  BEH ~ a * PBC:INT
-  b == a * 0.9365436
+  BEH ~ PBC:INT
 '
 
-est2 <- modsem(tpb, data = TPB, method = "qml")
+est2 <- modsem(tpb, data = TPB, method = "qml", 
+               standardize = TRUE, convergence = 1e-2)
 print(summary(est2, H0 = FALSE, ci = TRUE))
+
+testthat::expect_equal(standardized_estimates(est2), 
+                       parameter_estimates(est2))
+
+calcCovParTable("BEH", "BEH", parameter_estimates(est2)) |>
+  testthat::expect_equal(1)

@@ -1,15 +1,15 @@
-parseLavaan <- function(model_syntax = NULL, variableNames = NULL, match = FALSE) {
+parseLavaan <- function(model.syntax = NULL, variableNames = NULL, match = FALSE) {
   # Checking prerequisites -----------------------------------------------------
-  # Check if a model_syntax is provided, if not we should return an error
-  if (is.null(model_syntax)) 
-    stop2("No model_syntax provided")
-  else if (!is.character(model_syntax)) 
+  # Check if a model.syntax is provided, if not we should return an error
+  if (is.null(model.syntax)) 
+    stop2("No model.syntax provided")
+  else if (!is.character(model.syntax)) 
     stop2("The provided model syntax is not a string!")
-  else if (length(model_syntax) > 1) 
+  else if (length(model.syntax) > 1) 
     stop2("The provided model syntax is not of length 1")
 
   # Convert to partable --------------------------------------------------------
-  parTable <- modsemify(model_syntax)
+  parTable <- modsemify(model.syntax)
   structuralExprs <- parTable[parTable$op == "~",]
   measureExprs <- parTable[parTable$op %in% c("=~", "<~"), ]
   lVs <- unique(parTable$lhs[parTable$op == "=~"])
@@ -68,7 +68,7 @@ parseLavaan <- function(model_syntax = NULL, variableNames = NULL, match = FALSE
   }
 
   # Return modelSpec -----------------------------------------------------------
-  modelSpec <- list(model_syntax = model_syntax,
+  modelSpec <- list(model.syntax = model.syntax,
                     parTable = parTable,
                     oVs = oVs,
                     lVs = lVs,
@@ -166,8 +166,8 @@ fixProdNames <- function(prodName, pattern = NULL) {
 }
 
 
-fixLatentNamesSyntax <- function(model_syntax, pattern) {
-  stringr::str_replace_all(model_syntax, pattern, "")
+fixLatentNamesSyntax <- function(model.syntax, pattern) {
+  stringr::str_replace_all(model.syntax, pattern, "")
 }
 
 

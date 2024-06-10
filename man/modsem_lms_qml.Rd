@@ -5,24 +5,26 @@
 \title{Interaction between latent variables using lms and qml approaches}
 \usage{
 modsem_lms_qml(
-  model_syntax = NULL,
+  model.syntax = NULL,
   data = NULL,
   method = "lms",
-  verbose = FALSE,
-  optimize = TRUE,
-  nodes = 16,
-  convergence = 0.01,
-  center = FALSE,
-  standardize = FALSE,
-  meanStructure = TRUE,
-  double = FALSE,
-  hessian = TRUE,
-  cov_syntax = NULL,
+  verbose = NULL,
+  optimize = NULL,
+  nodes = NULL,
+  convergence = NULL,
+  center.data = NULL,
+  standardize.data = NULL,
+  standardize.out = NULL,
+  standardize = NULL,
+  mean.observed = NULL,
+  double = NULL,
+  hessian = NULL,
+  cov.syntax = NULL,
   ...
 )
 }
 \arguments{
-\item{model_syntax}{lavaan syntax}
+\item{model.syntax}{lavaan syntax}
 
 \item{data}{dataframe}
 
@@ -40,18 +42,36 @@ for simple models 16 is enough, for more complex models 100 is usually enough.}
 
 \item{convergence}{convergence criterion. Lower values give better estimates but slower computation.}
 
-\item{center}{should data be centered before fitting model}
+\item{center.data}{should data be centered before fitting model}
 
-\item{standardize}{should data be scaled before fitting model}
+\item{standardize.data}{should data be scaled before fitting model, will be overridden by 
+standardize if standardize is set to TRUE.
+NOTE: It is recommended that you estimate the model normally and then standardize the output using 
+`standardized_estimates()`.}
 
-\item{meanStructure}{should mean structure of the observed variables be estimated}
+\item{standardize.out}{should output be standardized (note will alter the relationsships of 
+parameter constraints, since to parameters are scaled unevenly, even if they 
+have the same label). This does not alter the estimation of the model, only the 
+output.
+NOTE: It is recommended that you estimate the model normally and then standardize the output using 
+`standardized_estimates()`.}
+
+\item{standardize}{will standardize the data before fitting the model, remove the mean
+structure of the observed variables, and standardize the output. Note that standardize.data
+mean.observed, standardize.out will be overridden by standardize if standardize is set to TRUE.
+NOTE: It is recommended that you estimate the model normally and then standardize the output using 
+`standardized_estimates()`.}
+
+\item{mean.observed}{should mean structure of the observed variables be estimated, 
+will be overridden by standardize if standardize is set to TRUE.
+NOTE: Not recommended unless you know what you are doing.}
 
 \item{double}{try to double the number of dimensions of integrations used in LMS,
 this will be extremely slow, but should be more similar to mplus.}
 
 \item{hessian}{should hessian (i.e., std.errors) be calculated}
 
-\item{cov_syntax}{model syntax for implied covariance matrix (see 'vignette("interaction_two_etas", "modsem")')}
+\item{cov.syntax}{model syntax for implied covariance matrix (see 'vignette("interaction_two_etas", "modsem")')}
 
 \item{...}{arguments passed to other functions}
 }

@@ -4,17 +4,10 @@
 \alias{modsem}
 \title{Interaction between latent variables}
 \usage{
-modsem(
-  model_syntax = NULL,
-  data = NULL,
-  method = "dblcent",
-  standardize = FALSE,
-  center = FALSE,
-  ...
-)
+modsem(model.syntax = NULL, data = NULL, method = "dblcent", ...)
 }
 \arguments{
-\item{model_syntax}{lavaan syntax}
+\item{model.syntax}{lavaan syntax}
 
 \item{data}{dataframe}
 
@@ -26,10 +19,6 @@ modsem(
 "lms" = laten model structural equations (not passed to lavaan).
 "qml" = quasi maximum likelihood estimation of laten model structural equations (not passed to lavaan).
 "custom" = use parameters specified in the function call (passed to lavaan)}
-
-\item{standardize}{should data be scaled before fitting model}
-
-\item{center}{should data be centered before fitting model}
 
 \item{...}{arguments passed to other functions depending on method (see modsem_pi, modsem_lms_qml, and modsem_mplus)}
 }
@@ -71,16 +60,16 @@ summary(est1)
 
 \dontrun{
 # The Constrained Approach 
-est1Constrained <- modsem(m1, oneInt, method = "ca")
-summary(est1Constrained)
+est1_ca <- modsem(m1, oneInt, method = "ca")
+summary(est1_ca)
 
 # LMS approach
-est1LMS <- modsem(m1, oneInt, method = "lms")
-summary(est1LMS)
+est1_lms <- modsem(m1, oneInt, method = "lms")
+summary(est1_lms)
 
 # QML approach
-est1QML <- modsem(m1, oneInt, method = "qml")
-summary(est1QML)
+est1_qml <- modsem(m1, oneInt, method = "qml")
+summary(est1_qml)
 
 }
 
@@ -94,26 +83,26 @@ tpb <- '
   BEH =~ b1 + b2
 
 # Inner Model (Based on Steinmetz et al., 2011)
-  # Covariances
-  ATT ~~ SN + PBC
-  PBC ~~ SN 
-  # Causal Relationsships
   INT ~ ATT + SN + PBC
   BEH ~ INT + PBC 
   BEH ~ INT:PBC  
 '
 
 # double centering approach
-estTpb <- modsem(tpb, data = TPB)
-summary(estTpb)
+est_tpb <- modsem(tpb, data = TPB)
+summary(est_tpb)
 
 \dontrun{
 # The Constrained Approach 
-estTpbConstrained <- modsem(tpb, data = TPB, method = "ca")
-summary(estTpbConstrained)
+est_tpb_ca <- modsem(tpb, data = TPB, method = "ca")
+summary(est_tpb_ca)
 
 # LMS approach
-estTpbLMS <- modsem(tpb, data = TPB, method = "lms")
-summary(estTpbLMS)
+est_tpb_lms <- modsem(tpb, data = TPB, method = "lms")
+summary(est_tpb_lms)
+
+# QML approach
+est_tpb_qml <- modsem(tpb, data = TPB, method = "qml")
+summary(est_tpb_qml)
 }
 }

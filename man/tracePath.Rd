@@ -4,7 +4,7 @@
 \alias{tracePath}
 \title{Estimate formulas for (co-)variance paths using Wright's path tracing rules}
 \usage{
-tracePath(pt, x, y, parenthesis = TRUE, ...)
+tracePath(pt, x, y, parenthesis = TRUE, measurement.model = FALSE, ...)
 }
 \arguments{
 \item{pt}{A data frame with columns lhs, op, rhs, and mod, from modsemify(syntax)}
@@ -15,6 +15,8 @@ tracePath(pt, x, y, parenthesis = TRUE, ...)
 
 \item{parenthesis}{if TRUE, the output will be enclosed in parenthesis}
 
+\item{measurement.model}{if TRUE, the function will use the measurement model}
+
 \item{...}{additional arguments passed to tracePath}
 }
 \value{
@@ -22,8 +24,9 @@ A string with the estimated path (simplified if possible)
 }
 \description{
 This function estimates the path from x to y using the path tracing rules, 
-note that it only works with structural parameters, so "=~" are ignored. If you
-you want to use the measurement model, it should work if you replace it "=~" with
+note that it only works with structural parameters, so "=~" are ignored. unless 
+measurement.model = TRUE.
+you want to use the measurement model, 
 "~" in the mod column of pt.
 }
 \examples{

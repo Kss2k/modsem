@@ -152,14 +152,14 @@ getLabelIntTerms <- function(varsInInt, eta, intTerms) {
 }
 
 
-getEmptyModel <- function(parTable, cov_syntax, parTableCovModel, 
+getEmptyModel <- function(parTable, cov.syntax, parTableCovModel, 
                           method = "lms") {
   parTable$mod <- ""
   if (!is.null(parTableCovModel)) parTableCovModel$mod <- ""
   specifyModelLmsQml(parTable = parTable, method = method,
-                     cov_syntax = cov_syntax,
+                     cov.syntax = cov.syntax,
                      parTableCovModel = parTableCovModel,
-                     autoConstraints = FALSE, createTheta = FALSE)
+                     auto.constraints = FALSE, create.theta = FALSE)
 }
 
 

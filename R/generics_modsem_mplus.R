@@ -68,3 +68,9 @@ parameter_estimates.modsem_mplus <- function(object, ...) {
 var_interactions.modsem_mplus <- function(object, ...) {
   var_interactions.data.frame(parameter_estimates(object))
 }
+
+
+#' @export 
+standardized_estimates.modsem_mplus <- function(object, ...) {
+  standardized_estimates.data.frame(parameter_estimates(object))
+}

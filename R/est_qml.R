@@ -14,9 +14,8 @@ estQml <- function(model,
   info <- model$info
 
   finalModel <- fillModel(model, coefficients, method = "qml")
-
   emptyModel <-  getEmptyModel(parTable = model$parTable, 
-                               cov_syntax = model$cov_syntax,
+                               cov.syntax = model$cov.syntax,
                                parTableCovModel = model$covModel$parTable,
                                method = "qml")
   finalModel$matricesNA <- emptyModel$matrices
@@ -32,8 +31,8 @@ estQml <- function(model,
   parTable <- rbind(finalModelToParTable(finalModel, method = "qml"),
                     covModelToParTable(finalModel, method = "qml"))
 
-  parTable$t.value <- parTable$est / parTable$std.error
-  parTable$p.value <- 2 * stats::pnorm(-abs(parTable$t.value))
+  parTable$z.value <- parTable$est / parTable$std.error
+  parTable$p.value <- 2 * stats::pnorm(-abs(parTable$z.value))
   parTable$ci.lower <- parTable$est - 1.96 * parTable$std.error
   parTable$ci.upper <- parTable$est + 1.96 * parTable$std.error
 

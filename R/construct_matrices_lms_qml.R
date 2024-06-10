@@ -1,7 +1,7 @@
 # Functions for constructing matrices for LMS and QML. 
 # Last updated: 06.06.2024
 
-constructLambda <- function(lVs, indsLVs, parTable, autoConstraints = TRUE) {
+constructLambda <- function(lVs, indsLVs, parTable, auto.constraints = TRUE) {
   numLVs <- length(lVs) 
   indsLVs <- indsLVs[lVs] # make sure it is sorted
   numIndsLVs <- lapply(indsLVs, FUN = length)
@@ -11,7 +11,7 @@ constructLambda <- function(lVs, indsLVs, parTable, autoConstraints = TRUE) {
   lambda <- matrix(0, nrow = numAllIndsLVs, ncol = numLVs,
                     dimnames = list(allIndsLVs, lVs))
   lastRowPreviousLV <- 0
-  if (autoConstraints) firstVal <- 1 else firstVal <- NA
+  if (auto.constraints) firstVal <- 1 else firstVal <- NA
   for (i in seq_along(lVs)) {
     rowIndices <- seq_len(numIndsLVs[[i]]) + lastRowPreviousLV
     lambda[rowIndices, i] <-
@@ -47,13 +47,13 @@ constructLambda <- function(lVs, indsLVs, parTable, autoConstraints = TRUE) {
 }
 
 
-constructTau <- function(lVs, indsLVs, parTable, meanStructure = TRUE) {
+constructTau <- function(lVs, indsLVs, parTable, mean.observed = TRUE) {
   indsLVs <- indsLVs[lVs] # make sure it is sorted
   numIndsLVs <- lapply(indsLVs, FUN = length)
   allIndsLVs <- unlist(indsLVs)
   numAllIndsLVs <- length(allIndsLVs)
 
-  if (meanStructure) default <- NA else default <- 0
+  if (mean.observed) default <- NA else default <- 0
 
   tau <- matrix(default, nrow = numAllIndsLVs, ncol = 1,
                 dimnames = list(allIndsLVs, "1"))
@@ -84,7 +84,7 @@ constructTau <- function(lVs, indsLVs, parTable, meanStructure = TRUE) {
 }
 
 
-constructTheta <- function(lVs, indsLVs, parTable, autoConstraints = TRUE) {
+constructTheta <- function(lVs, indsLVs, parTable, auto.constraints = TRUE) {
   numLVs <- length(lVs) 
   indsLVs <- indsLVs[lVs] # make sure it is sorted
   numIndsLVs <- lapply(indsLVs, FUN = length)
@@ -95,7 +95,7 @@ constructTheta <- function(lVs, indsLVs, parTable, autoConstraints = TRUE) {
                   dimnames = list(allIndsLVs, allIndsLVs))
   diag(theta) <- NA
 
-  if (autoConstraints) {
+  if (auto.constraints) {
     for (lV in lVs) { # set to 0 if there is only a single indicator
       if (numIndsLVs[[lV]] == 1) theta[indsLVs[[lV]], indsLVs[[lV]]] <- 0
     }
@@ -205,12 +205,12 @@ constructPsi <- function(etas, parTable) {
 }
 
 
-constructPhi <- function(xis, method = "lms", cov_syntax = NULL, 
+constructPhi <- function(xis, method = "lms", cov.syntax = NULL, 
                          parTable) {
   numXis <- length(xis)
   phi <- matrix(0, nrow = numXis, ncol = numXis,
                 dimnames = list(xis, xis))
-  if (method != "lms" && is.null(cov_syntax)) {
+  if (method != "lms" && is.null(cov.syntax)) {
     phi[lower.tri(phi, diag = TRUE)] <- NA
   }
   
@@ -243,12 +243,12 @@ constructPhi <- function(xis, method = "lms", cov_syntax = NULL,
 }
 
 
-constructA <- function(xis, method = "lms", cov_syntax = NULL,
+constructA <- function(xis, method = "lms", cov.syntax = NULL,
                        parTable) {
   numXis <- length(xis)
   A <- matrix(0, nrow = numXis, ncol = numXis,
               dimnames = list(xis, xis))
-  if (method == "lms" && is.null(cov_syntax)) {
+  if (method == "lms" && is.null(cov.syntax)) {
     A[lower.tri(A, diag = TRUE)] <- NA
   }
 
@@ -281,10 +281,10 @@ constructA <- function(xis, method = "lms", cov_syntax = NULL,
 }
 
 
-constructAlpha <- function(etas, parTable, autoConstraints = TRUE,
-                           meanStructure = TRUE) {
+constructAlpha <- function(etas, parTable, auto.constraints = TRUE,
+                           mean.observed = TRUE) {
   numEtas <- length(etas)
-  if (autoConstraints && meanStructure) default <- 0 else default <- NA
+  if (auto.constraints && mean.observed) default <- 0 else default <- NA
   alpha <- matrix(default, nrow = numEtas, ncol = 1, 
                   dimnames = list(etas, "1"))
 

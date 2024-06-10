@@ -1,7 +1,9 @@
 #' Interaction between latent variables using product indicators
 #'
-#' @param model_syntax lavaan syntax
+#' @param model.syntax lavaan syntax
+#' 
 #' @param data dataframe
+#' 
 #' @param method method to use:
 #' "rca" = residual centering approach (passed to lavaan),
 #' "uca" = unconstrained approach (passed to lavaan),
@@ -9,23 +11,41 @@
 #' "pind" = prod ind approach, with no constraints or centering (passed to lavaan),
 #' "custom" = use parameters specified in the function call (passed to lavaan)
 #' @param match should the product indicators be created by using the match-strategy
-#' @param standardizeData should data be scaled before fitting model
+#' 
+#' @param standardize.data should data be scaled before fitting model
+#' 
 #' @param firstLoadingFixed Sould the first factorloading in the latent prod be fixed to one?
-#' @param centerBefore should inds in prods be centered before computing prods (overwritten by method, if method != NULL)
-#' @param centerAfter should ind prods be centered after they have been computed?
-#' @param residualsProds should ind prods be centered using residuals (overwritten by method, if method != NULL)
-#' @param residualCovSyntax should syntax for residual covariances be produced (overwritten by method, if method != NULL)
-#' @param constrainedProdMean should syntax prod mean be produced (overwritten by method, if method != NULL)
-#' @param centerData should data be centered before fitting model
-#' @param constrainedLoadings should syntax for constrained loadings be produced (overwritten by method, if method != NULL)
-#' @param constrainedVar should syntax for constrained variances be produced (overwritten by method, if method != NULL)
-#' @param constrainedResCovMethod method for constraining residual covariances
+#' 
+#' @param center.before should inds in prods be centered before computing prods (overwritten by method, if method != NULL)
+#' 
+#' @param center.after should ind prods be centered after they have been computed?
+#' 
+#' @param residuals.prods should ind prods be centered using residuals (overwritten by method, if method != NULL)
+#' 
+#' @param residual.cov.syntax should syntax for residual covariances be produced (overwritten by method, if method != NULL)
+#' 
+#' @param constrained.prod.mean should syntax prod mean be produced (overwritten by method, if method != NULL)
+#' 
+#' @param center.data should data be centered before fitting model
+#' 
+#' @param constrained.loadings should syntax for constrained loadings be produced (overwritten by method, if method != NULL)
+#' 
+#' @param constrained.var should syntax for constrained variances be produced (overwritten by method, if method != NULL)
+#' 
+#' @param constrained.res.cov.method method for constraining residual covariances
+#' 
 #' @param auto.scale methods which should be scaled automatically (usually not useful)
+#' 
 #' @param auto.center methods which should be centered automatically (usually not useful)
+#' 
 #' @param estimator estimator to use in lavaan
+#' 
 #' @param group group variable for multigroup analysis
+#' 
 #' @param run should the model be run via lavaan, if FALSE only modified syntax and data is returned
+#' 
 #' @param ... arguments passed to other functions, e.g,. lavaan
+#' 
 #' @return ModSEM object
 #' @export 
 #' @description
@@ -89,33 +109,33 @@
 #' estTpbConstrained <- modsem_pi(tpb, data = TPB, method = "ca")
 #' summary(estTpbConstrained)
 #' }
-modsem_pi <- function(model_syntax = NULL,
-                   data = NULL,
-                   method = "dblcent",
-                   match = FALSE,
-                   standardizeData = FALSE,
-                   centerData = FALSE,
-                   firstLoadingFixed = TRUE,
-                   centerBefore = NULL,
-                   centerAfter = NULL,
-                   residualsProds = NULL,
-                   residualCovSyntax = NULL,
-                   constrainedProdMean = NULL,
-                   constrainedLoadings = NULL,
-                   constrainedVar = NULL,
-                   constrainedResCovMethod = NULL,
-                   auto.scale = "none",
-                   auto.center = "none",
-                   estimator = "ML", 
-                   group = NULL,
-                   run = TRUE, 
-                   ...) {
-  if (is.null(model_syntax)) stop2("No model syntax provided in modsem")
+modsem_pi <- function(model.syntax = NULL,
+                      data = NULL,
+                      method = "dblcent",
+                      match = FALSE,
+                      standardize.data = FALSE,
+                      center.data = FALSE,
+                      firstLoadingFixed = TRUE,
+                      center.before = NULL,
+                      center.after = NULL,
+                      residuals.prods = NULL,
+                      residual.cov.syntax = NULL,
+                      constrained.prod.mean = NULL,
+                      constrained.loadings = NULL,
+                      constrained.var = NULL,
+                      constrained.res.cov.method = NULL,
+                      auto.scale = "none",
+                      auto.center = "none",
+                      estimator = "ML", 
+                      group = NULL,
+                      run = TRUE, 
+                      ...) {
+  if (is.null(model.syntax)) stop2("No model syntax provided in modsem")
   if (is.null(data)) stop2("No data provided in modsem")
   if (!is.data.frame(data)) data <- as.data.frame(data)
   
   # Get the specifications of the model 
-  modelSpec <- parseLavaan(model_syntax, colnames(data), match = match)
+  modelSpec <- parseLavaan(model.syntax, colnames(data), match = match)
 
   # Data Processing  -----------------------------------------------------------
   data <- data[c(modelSpec$oVs, group)]
@@ -126,45 +146,44 @@ modsem_pi <- function(model_syntax = NULL,
   }
 
   ## Standardizing data
-  if (standardizeData || method %in% auto.scale) {
+  if (standardize.data || method %in% auto.scale) {
     data <- lapplyDf(data, FUN = scaleIfNumeric, scaleFactor = FALSE)
   }
   ## Centering Data (should not be paired with standardize data)
-  if (centerData || method %in% auto.center) {
+  if (center.data || method %in% auto.center) {
     data <- lapplyDf(data, FUN = function(x) x - mean(x))
   }
 
   methodSettings <-
-    getMethodSettings(method,
-                      args =
-                        list(centerBefore = centerBefore,
-                             centerAfter = centerAfter,
-                             residualsProds = residualsProds,
-                             residualCovSyntax = residualCovSyntax,
-                             constrainedProdMean = constrainedProdMean,
-                             constrainedLoadings = constrainedLoadings,
-                             constrainedVar = constrainedVar,
-                             constrainedResCovMethod = constrainedResCovMethod,
+    getMethodSettingsPI(method, args =
+                        list(center.before = center.before,
+                             center.after = center.after,
+                             residuals.prods = residuals.prods,
+                             residual.cov.syntax = residual.cov.syntax,
+                             constrained.prod.mean = constrained.prod.mean,
+                             constrained.loadings = constrained.loadings,
+                             constrained.var = constrained.var,
+                             constrained.res.cov.method = constrained.res.cov.method,
                              firstLoadingFixed = firstLoadingFixed))
 
   # ModSEM-algorithm for prod ind based approaches -----------------------------
   prodInds <-
     createProdInds(modelSpec,
                    data = data,
-                   centerBefore = methodSettings$centerBefore,
-                   centerAfter = methodSettings$centerAfter,
-                   residualsProds = methodSettings$residualsProds)
+                   center.before = methodSettings$center.before,
+                   center.after = methodSettings$center.after,
+                   residuals.prods = methodSettings$residuals.prods)
   mergedProdInds <- combineListDf(prodInds)
 
   # using list_cbind so that mergedProdInds can be NULL
   newData <- purrr::list_cbind(list(data, mergedProdInds))
   # Genereating a new syntax with constraints and measurmentmodel --------------
   parTable <- addSpecsParTable(modelSpec,
-                               residualCovSyntax = methodSettings$residualCovSyntax,
-                               constrainedResCovMethod = methodSettings$constrainedResCovMethod,
-                               constrainedProdMean = methodSettings$constrainedProdMean,
-                               constrainedLoadings = methodSettings$constrainedLoadings,
-                               constrainedVar = methodSettings$constrainedVar,
+                               residual.cov.syntax = methodSettings$residual.cov.syntax,
+                               constrained.res.cov.method = methodSettings$constrained.res.cov.method,
+                               constrained.prod.mean = methodSettings$constrained.prod.mean,
+                               constrained.loadings = methodSettings$constrained.loadings,
+                               constrained.var = methodSettings$constrained.var,
                                firstFixed = firstLoadingFixed,
                                ...)
 
@@ -195,26 +214,26 @@ modsem_pi <- function(model_syntax = NULL,
 
 createProdInds <- function(modelSpec,
                            data,
-                           centerBefore = FALSE,
-                           centerAfter = FALSE,
-                           residualsProds = FALSE) {
+                           center.before = FALSE,
+                           center.after = FALSE,
+                           residuals.prods = FALSE) {
   
   indProds <- purrr::map2(.x = modelSpec$relDfs,
                           .y = modelSpec$indsInLatentProds,
                           .f = createIndProds,
                           data = data,
-                          centered = centerBefore)
-  if (residualsProds) {
+                          centered = center.before)
+  if (residuals.prods) {
     indProds <-
       purrr::map2(.x = indProds,
                   .y = modelSpec$indsInLatentProds,
                   .f = calculateResidualsDf,
                   data = data)
 
-  } else if (!is.logical(residualsProds)) {
+  } else if (!is.logical(residuals.prods)) {
     stop2("residualProds was neither FALSE nor TRUE in createProdInds")
   }
-  if (centerAfter) {
+  if (center.after) {
     indProds <- lapply(indProds, FUN = function(df)
                        lapplyDf(df, FUN = function(x) x - mean(x)))
 
@@ -294,11 +313,11 @@ getResidualsFormula <- function(dependendtNames, indepNames) {
 
 
 addSpecsParTable <- function(modelSpec,
-                             residualCovSyntax = FALSE,
-                             constrainedResCovMethod = "equality",
-                             constrainedProdMean = FALSE,
-                             constrainedLoadings = FALSE,
-                             constrainedVar = FALSE,
+                             residual.cov.syntax = FALSE,
+                             constrained.res.cov.method = "equality",
+                             constrained.prod.mean = FALSE,
+                             constrained.loadings = FALSE,
+                             constrained.var = FALSE,
                              firstFixed = TRUE,
                              ...) {
   relDfs <- modelSpec$relDfs
@@ -320,7 +339,7 @@ addSpecsParTable <- function(modelSpec,
   parTable <- rbindParTable(parTable, measureParTable)
 
   # label parameters and add if necessary --------------------------------------
-  if (constrainedVar || constrainedLoadings || constrainedProdMean) {
+  if (constrained.var || constrained.loadings || constrained.prod.mean) {
     parTable <- addVariances(parTable) |> 
       addCovariances() |>
       labelParameters() |>
@@ -328,13 +347,13 @@ addSpecsParTable <- function(modelSpec,
   }
 
   # Residual covariances -------------------------------------------------------
-  if (!is.logical(residualCovSyntax)) {
-    stop2("residualCovSyntax is not FALSE or TRUE in generateSyntax")
+  if (!is.logical(residual.cov.syntax)) {
+    stop2("residual.cov.syntax is not FALSE or TRUE in generateSyntax")
 
-  } else if (residualCovSyntax) {
+  } else if (residual.cov.syntax) {
     residualCovariances <- purrr::map(.x = relDfs,
                                       .f = getParTableResCov,
-                                      method = constrainedResCovMethod,
+                                      method = constrained.res.cov.method,
                                       pt = parTable, # for caluclating formulas using path tracer
                                       ...)  |>
       purrr::list_rbind()
@@ -342,21 +361,21 @@ addSpecsParTable <- function(modelSpec,
   }
 
   # Constrained Vars and Covs --------------------------------------------------
-  if (constrainedVar) {
+  if (constrained.var) {
     parTable <- specifyVarCov(parTable, relDfs)
   }
 
   # Constrained Factor loadings ------------------------------------------------
-  if (constrainedLoadings) {
+  if (constrained.loadings) {
     parTable <- specifyFactorLoadings(parTable, relDfs)
   }
 
   # Constrained prod mean syntax -----------------------------------------------
-  if (constrainedProdMean) {
+  if (constrained.prod.mean) {
     restrictedMeans <- purrr::map2(modelSpec$prodNames,
                                    modelSpec$elementsInProdNames,
                                    getParTableRestrictedMean,
-                                   createLabels = !constrainedVar,
+                                   createLabels = !constrained.var,
                                    pt = parTable) |>
   purrr::list_rbind()
       parTable <- rbindParTable(parTable, restrictedMeans)
@@ -399,19 +418,6 @@ multiplyInds <- function(df) {
                         df[,-(1:2),drop = FALSE])
 
   multiplyInds(y)
-}
-
-
-#  function for getting unique combinations of two values in x
-getUniqueCombinations <- function(x) {
-  # Base case, x is 1 length long and there are no unique combos
-  if (length(x) <= 1) {
-    return(NULL)
-  }
-  rest <- getUniqueCombinations(x[-1])
-  combos <- data.frame(V1 = rep(x[[1]], length(x) - 1),
-                       V2 = x[-1])
-  rbind(combos, rest)
 }
 
 

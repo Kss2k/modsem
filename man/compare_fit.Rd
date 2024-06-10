@@ -7,10 +7,10 @@
 compare_fit(estH0, estH1)
 }
 \arguments{
-\item{estH0}{object of class `modsem_lms` or `modsem_qml` representing the 
+\item{estH0}{object of class `modsem_lms` or `modsem_qml` representing the
 null hypothesis model}
 
-\item{estH1}{object of class `modsem_lms` or `modsem_qml` representing the 
+\item{estH1}{object of class `modsem_lms` or `modsem_qml` representing the
 alternative hypothesis model}
 }
 \description{
@@ -18,27 +18,27 @@ summary.modsem_lms
 }
 \examples{
 \dontrun{
-H0 <- '
+H0 <- "
  # Outer Model
  X =~ x1 + x2 + x3
  Y =~ y1 + y2 + y3
  Z =~ z1 + z2 + z3
- 
+
  # Inner model
  Y ~ X + Z
-'
+"
 
 estH0 <- modsem(m1, oneInt, "lms")
 
-H1 <- '
+H1 <- "
  # Outer Model
  X =~ x1 + x2 + x3
  Y =~ y1 + y2 + y3
  Z =~ z1 + z2 + z3
- 
+
  # Inner model
- Y ~ X + Z + X:Z 
-'
+ Y ~ X + Z + X:Z
+"
 
 estH1 <- modsem(m1, oneInt, "lms")
 compare_fit(estH0, estH1)

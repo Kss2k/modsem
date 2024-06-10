@@ -5,21 +5,21 @@
 \title{Interaction between latent variables using product indicators}
 \usage{
 modsem_pi(
-  model_syntax = NULL,
+  model.syntax = NULL,
   data = NULL,
   method = "dblcent",
   match = FALSE,
-  standardizeData = FALSE,
-  centerData = FALSE,
+  standardize.data = FALSE,
+  center.data = FALSE,
   firstLoadingFixed = TRUE,
-  centerBefore = NULL,
-  centerAfter = NULL,
-  residualsProds = NULL,
-  residualCovSyntax = NULL,
-  constrainedProdMean = NULL,
-  constrainedLoadings = NULL,
-  constrainedVar = NULL,
-  constrainedResCovMethod = NULL,
+  center.before = NULL,
+  center.after = NULL,
+  residuals.prods = NULL,
+  residual.cov.syntax = NULL,
+  constrained.prod.mean = NULL,
+  constrained.loadings = NULL,
+  constrained.var = NULL,
+  constrained.res.cov.method = NULL,
   auto.scale = "none",
   auto.center = "none",
   estimator = "ML",
@@ -29,7 +29,7 @@ modsem_pi(
 )
 }
 \arguments{
-\item{model_syntax}{lavaan syntax}
+\item{model.syntax}{lavaan syntax}
 
 \item{data}{dataframe}
 
@@ -42,27 +42,27 @@ modsem_pi(
 
 \item{match}{should the product indicators be created by using the match-strategy}
 
-\item{standardizeData}{should data be scaled before fitting model}
+\item{standardize.data}{should data be scaled before fitting model}
 
-\item{centerData}{should data be centered before fitting model}
+\item{center.data}{should data be centered before fitting model}
 
 \item{firstLoadingFixed}{Sould the first factorloading in the latent prod be fixed to one?}
 
-\item{centerBefore}{should inds in prods be centered before computing prods (overwritten by method, if method != NULL)}
+\item{center.before}{should inds in prods be centered before computing prods (overwritten by method, if method != NULL)}
 
-\item{centerAfter}{should ind prods be centered after they have been computed?}
+\item{center.after}{should ind prods be centered after they have been computed?}
 
-\item{residualsProds}{should ind prods be centered using residuals (overwritten by method, if method != NULL)}
+\item{residuals.prods}{should ind prods be centered using residuals (overwritten by method, if method != NULL)}
 
-\item{residualCovSyntax}{should syntax for residual covariances be produced (overwritten by method, if method != NULL)}
+\item{residual.cov.syntax}{should syntax for residual covariances be produced (overwritten by method, if method != NULL)}
 
-\item{constrainedProdMean}{should syntax prod mean be produced (overwritten by method, if method != NULL)}
+\item{constrained.prod.mean}{should syntax prod mean be produced (overwritten by method, if method != NULL)}
 
-\item{constrainedLoadings}{should syntax for constrained loadings be produced (overwritten by method, if method != NULL)}
+\item{constrained.loadings}{should syntax for constrained loadings be produced (overwritten by method, if method != NULL)}
 
-\item{constrainedVar}{should syntax for constrained variances be produced (overwritten by method, if method != NULL)}
+\item{constrained.var}{should syntax for constrained variances be produced (overwritten by method, if method != NULL)}
 
-\item{constrainedResCovMethod}{method for constraining residual covariances}
+\item{constrained.res.cov.method}{method for constraining residual covariances}
 
 \item{auto.scale}{methods which should be scaled automatically (usually not useful)}
 

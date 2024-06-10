@@ -5,7 +5,7 @@
 \title{Estimation latent interactions through mplus}
 \usage{
 modsem_mplus(
-  model_syntax,
+  model.syntax,
   data,
   estimator = "ml",
   type = "random",
@@ -15,7 +15,7 @@ modsem_mplus(
 )
 }
 \arguments{
-\item{model_syntax}{lavaan/modsem syntax}
+\item{model.syntax}{lavaan/modsem syntax}
 
 \item{data}{dataset}
 

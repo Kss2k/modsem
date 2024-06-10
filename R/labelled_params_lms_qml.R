@@ -1,11 +1,10 @@
-createThetaLabel <- function(labelMatrices, labelMatricesCov, 
-                             constrExprs, start = NULL) {
+create.thetaLabel <- function(labelMatrices, labelMatricesCov, 
+                              constrExprs, start = NULL) {
   matrices <- c(labelMatrices, labelMatricesCov)  
   labels <- lapply(matrices, FUN = function(x) {
     select <- apply(x, MARGIN = 2, FUN = function(z) 
                     !canBeNumeric(z, includeNA = TRUE)) 
-    as.vector(x[select])
-  }) |> unlist() |> unique()
+    as.vector(x[select]) }) |> unlist() |> unique()
   # remove fixed params
   if (!is.null(constrExprs)) {
     labels <- labels[!labels %in% constrExprs$fixedParams]
@@ -15,7 +14,7 @@ createThetaLabel <- function(labelMatrices, labelMatricesCov,
     start <- vapply(labels, FUN.VALUE = vector("numeric", 1L),
                     FUN = function(x) stats::runif(1))
   }
-  # warning2("Eq-constraints using == must appear in the correct order")
+  # if (!is.null(constrExprs)) warning2("Eq-constraints using == must appear in the correct order")
   names(start) <- labels
   start
 }

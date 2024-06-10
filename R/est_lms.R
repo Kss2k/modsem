@@ -1,7 +1,8 @@
-emLms <- function(model, verbose = FALSE,
-                  convergence = 1e-02, maxiter = 500,
+emLms <- function(model, 
+                  verbose = FALSE,
+                  convergence = 1e-02, 
+                  maxiter = 500,
                   maxstep = 1,
-                  breakOnLogLikIncrease = FALSE,
                   sampleGrad = NULL,
                   control = list(),
                   hessian = TRUE,
@@ -18,15 +19,6 @@ emLms <- function(model, verbose = FALSE,
   nLogIncreased <- 0
   run <- TRUE
   while(run) { # as long as no convergence is reached
-    if (logLikNew - logLikOld > 0 && iterations > 3) {
-      if (breakOnLogLikIncrease) {
-        warning2("Loglikelihood is increasing. EM algorithm will be stopped.")
-        logLikNew <- logLikOld
-        thetaNew <- thetaOld
-        break
-      }
-      nLogIncreased <- nLogIncreased + 1
-    }
     # Update loglikelihood
     logLikOld <- logLikNew
     thetaOld <- thetaNew
@@ -63,7 +55,7 @@ emLms <- function(model, verbose = FALSE,
                           method = "lms")
 
   emptyModel <-  getEmptyModel(parTable = model$parTable, 
-                               cov_syntax = model$cov_syntax,
+                               cov.syntax = model$cov.syntax,
                                parTableCovModel = model$covModel$parTable,
                                method = "lms")
 
@@ -80,8 +72,8 @@ emLms <- function(model, verbose = FALSE,
   parTable <- rbind(finalModelToParTable(finalModel, method = "lms"),
                     covModelToParTable(finalModel, method = "lms"))
 
-  parTable$t.value <- parTable$est / parTable$std.error
-  parTable$p.value <- 2 * stats::pnorm(-abs(parTable$t.value))
+  parTable$z.value <- parTable$est / parTable$std.error
+  parTable$p.value <- 2 * stats::pnorm(-abs(parTable$z.value))
   parTable$ci.lower <- parTable$est - 1.96 * parTable$std.error
   parTable$ci.upper <- parTable$est + 1.96 * parTable$std.error
 

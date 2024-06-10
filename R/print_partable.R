@@ -1,7 +1,7 @@
 colNames <- c("lhs", "op", "rhs", "est", "std.error", 
-              "t.value", "p.value", "ci.lower", "ci.upper")
+              "z.value", "p.value", "ci.lower", "ci.upper")
 header <- c("Variable", "op", "Variable", "Estimate",
-            "Std.Error", "t-value", "Pr(>|z|)", "CI.Lower", "CI.Upper")
+            "Std.Error", "z.value", "Pr(>|z|)", "CI.Lower", "CI.Upper")
 
 
 formatParTable <- function(parTable, digits = 3, scientific = FALSE,

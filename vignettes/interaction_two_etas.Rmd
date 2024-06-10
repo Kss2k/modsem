@@ -61,7 +61,7 @@ tpb <- '
 By default the qml-approach will not be able to estimate the model, since there 
 is an interaction effect between an endogenous and and exogenous variable. 
 ```{r} 
-est_qml <- modsem(tpb_nonlinear, data = TPB, cov_syntax = tpb_linear,
+est_qml <- modsem(tpb_nonlinear, data = TPB, cov.syntax = tpb_linear,
                   method = "qml")
 summary(est_qml)
 ```
@@ -102,13 +102,13 @@ an exogenous variable. This would however not incorporate the structural model
 for INT. To address this, we can make modsem replace the covariance matrix (phi) 
 of (INT, PBC, ATT, SN) with the model-implied covariance matrix from the linear model, 
 whilst estimating both models simultaneously. To acheive this, we can use the 
-`cov_syntax` argument in `modsem`:
+`cov.syntax` argument in `modsem`:
 
 
 ```{r}
-est_lms <- modsem(tpb_nonlinear, data = TPB, cov_syntax = tpb_linear, method = "lms")
+est_lms <- modsem(tpb_nonlinear, data = TPB, cov.syntax = tpb_linear, method = "lms")
 summary(est_lms)
 
-est_qml <- modsem(tpb_nonlinear, data = TPB, cov_syntax = tpb_linear, method = "qml")
+est_qml <- modsem(tpb_nonlinear, data = TPB, cov.syntax = tpb_linear, method = "qml")
 summary(est_qml)
 ```

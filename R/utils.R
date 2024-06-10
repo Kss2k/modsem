@@ -1,8 +1,9 @@
 # utils for all methods
-calcCovParTable <- function(parTable, x, y) {
+calcCovParTable <- function(x, y, parTable, measurement.model = FALSE) {
   parTable$mod <- as.character(parTable$est)
   parTable <- parTable[c("lhs", "op", "rhs", "mod")]
-  eval(parse(text = tracePath(parTable, x, y)))
+  eval(parse(text = tracePath(parTable, x, y, 
+                              measurement.model = measurement.model)))
 }
 
 
@@ -64,6 +65,11 @@ getXis <- function(parTable, etas = NULL, isLV = TRUE, checkAny = TRUE) {
 }
 
 
+getLVs <- function(parTable) {
+  unique(parTable[parTable$op == "=~", "lhs"])
+}
+
+
 getIndsLVs <- function(parTable, lVs) {
   measrExprs <- parTable[parTable$op == "=~" & 
                          parTable$lhs %in% lVs, ]
@@ -87,4 +93,26 @@ getVarsInts <- function(intTerms) {
 
 maxchar <- function(x) {
   max(nchar(x), na.rm = TRUE)
+}
+
+
+fillColsParTable <- function(parTable) {
+  colNames <- c("lhs", "op", "est", "std.error", "z.value", "p.value", 
+                "ci.lower", "ci.upper")
+  parTable[colNames[!colNames %in% colnames(parTable)]] <- NA
+  parTable
+}
+
+
+#  function for getting unique combinations of two values in x
+getUniqueCombos <- function(x, match = FALSE) {
+  # Base case, x is 1 length long and there are no unique combos
+  if (length(x) <= 1) {
+    return(NULL)
+  }
+  rest <- getUniqueCombos(x[-1], match = FALSE)
+  combos <- data.frame(V1 = rep(x[[1]], length(x) - 1),
+                       V2 = x[-1])
+  if (match) combos <- rbind(data.frame(V1 = x, V2 = x), combos)
+  rbind(combos, rest)
 }

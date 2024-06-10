@@ -93,29 +93,29 @@ summary.modsem_pi
 }
 \examples{
 \dontrun{
-m1 <- '
+m1 <- "
  # Outer Model
  X =~ x1 + x2 + x3
  Y =~ y1 + y2 + y3
  Z =~ z1 + z2 + z3
- 
+
  # Inner model
- Y ~ X + Z + X:Z 
-'
+ Y ~ X + Z + X:Z
+"
 
 est1 <- modsem(m1, oneInt, "lms")
 summary(est1, ci = TRUE, scientific = TRUE)
 }
 \dontrun{
-m1 <- '
+m1 <- "
  # Outer Model
  X =~ x1 + x2 + x3
  Y =~ y1 + y2 + y3
  Z =~ z1 + z2 + z3
- 
+
  # Inner model
- Y ~ X + Z + X:Z 
-'
+ Y ~ X + Z + X:Z
+"
 
 est1 <- modsem(m1, oneInt, "qml")
 summary(est1, ci = TRUE, scientific = TRUE)

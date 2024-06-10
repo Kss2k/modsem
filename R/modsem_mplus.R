@@ -1,6 +1,6 @@
 #' Estimation latent interactions through mplus 
 #'
-#' @param model_syntax lavaan/modsem syntax 
+#' @param model.syntax lavaan/modsem syntax 
 #' @param data dataset
 #' @param estimator estimator argument passed to mplus
 #' @param type type argument passed to mplus
@@ -36,14 +36,14 @@
 #' summary(estTpbLMS)
 #' }
 #' 
-modsem_mplus <- function(model_syntax, 
+modsem_mplus <- function(model.syntax, 
                          data, 
                          estimator = "ml", 
                          type = "random", 
                          algorithm = "integration", 
                          process = "8", 
                          ...) {
-  parTable <- modsemify(model_syntax)
+  parTable <- modsemify(model.syntax)
   indicators <- unique(parTable[parTable$op == "=~", "rhs", drop = TRUE])
   model <- MplusAutomation::mplusObject(
     TITLE = "Running Model via Mplus",
@@ -120,8 +120,8 @@ modsem_mplus <- function(model_syntax,
   mplusParTable$ci.lower <- mplusParTable$est - 1.96 * mplusParTable$std.error
   mplusParTable$ci.upper <- mplusParTable$est + 1.96 * mplusParTable$std.error
   mplusParTable$p.value[mplusParTable$p.value == 999] <- NA
-  mplusParTable$t.value <- mplusParTable$est / mplusParTable$std.error
-  mplusParTable$t.value[is.infinite(mplusParTable$t.value)] <- NA
+  mplusParTable$z.value <- mplusParTable$est / mplusParTable$std.error
+  mplusParTable$z.value[is.infinite(mplusParTable$z.value)] <- NA
   mplusParTable$label <- NA
 
   modelSpec <- list(parTable = mplusParTable,
