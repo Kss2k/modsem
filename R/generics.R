@@ -59,8 +59,11 @@ standardized_estimates <- function(object, ...) {
 
 
 #' @export 
-standardized_estimates.data.frame <- function(object, ...) {
+standardized_estimates.data.frame <- function(object, intercepts = FALSE, ...) {
   parTable <- var_interactions(object)[c("lhs", "op", "rhs", "est", "std.error")]
+  if (!intercepts) {
+    parTable <- parTable[!(parTable$rhs == "1" & parTable$op == "~"), ]
+  }
   lVs <- getLVs(parTable)
   intTerms <- unique(getIntTerms(parTable)$rhs)
   etas <- rev(getSortedEtas(parTable, isLV = TRUE))
