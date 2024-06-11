@@ -45,6 +45,10 @@ modsem_mplus <- function(model.syntax,
                          ...) {
   parTable <- modsemify(model.syntax)
   indicators <- unique(parTable[parTable$op == "=~", "rhs", drop = TRUE])
+  intTerms <- unique(getIntTerms(parTable)$rhs)
+  intTermsMplus <- stringr::str_remove_all(intTerms, ":") |>
+    stringr::str_to_upper()
+
   model <- MplusAutomation::mplusObject(
     TITLE = "Running Model via Mplus",
     usevariables = indicators,
@@ -71,6 +75,7 @@ modsem_mplus <- function(model.syntax,
     paste0("(", stringr::str_c(indicatorsCaps, collapse = "|"), ")") |>
     paste0("<-(?!>|Intercept)")
   measCoefNames <- grepl(patternMeas, coefsTable$lhsOpRhs, perl = TRUE)
+
   # Mplus has lhs/rhs in reversed order for the measurement model,
     # compared to lavaan,
   measRhs <- stringr::str_split_i(coefsTable$lhsOpRhs[measCoefNames],
@@ -91,6 +96,13 @@ modsem_mplus <- function(model.syntax,
                                   "<-", i = 2)
   structModel <- data.frame(lhs = structLhs, op = "~", rhs = structRhs) |>
     cbind(measrRemoved[structCoefNames, c("est", "std.error", "p.value")])
+ 
+  for (i in seq_along(intTerms)) {
+    xzMplus <- intTermsMplus[[i]]
+    xzModsem <- intTerms[[i]]
+    structModel[structModel$rhs == xzMplus, "rhs"] <- xzModsem
+    structModel[structModel$lhs == xzMplus, "lhs"] <- xzModsem
+  }
 
   # Variances and Covariances
   structMeasrRemoved <- measrRemoved[!structCoefNames, ]

@@ -6,7 +6,6 @@ X =~ x1 + x2 + x3
 Y =~ y1 + y2 + y3
 Z =~ z1 + z2 + z3
 Y ~ X + Z + X:Z
-X ~~ 0.2 * X
 '
 
 est1 <- modsem(m1, data = oneInt, convergence = 1e-2, method = "qml")

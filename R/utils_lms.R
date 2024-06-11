@@ -67,6 +67,37 @@ calcSE <- function(hessian, names = NULL, NA__ = -999) {
 }
 
 
+calcRobustSE <- function(model, theta, verbose = FALSE, method = "qml") {
+  if (method == "qml") {
+    LL <- logLikQml
+    dLL <- gradientLogLikQml
+  } else if (method == "lms") {
+    stop2("Robust SE's not implemented for LMS yet")
+    LL <- logLikLms
+    dLL <- NULL # gradientLogLikLms
+  }
+
+  if (verbose) cat("Calculating robust standard errors:\n")
+  data <- model$data
+  N <- nrow(data)
+  rows <- seq_len(N)
+  J <- H <- matrix(0, nrow = length(theta), ncol = length(theta))
+
+  for (iter in seq_len(N)) {
+    if (verbose) cat("Progress", paste0(iter, "/", N), "\n")
+    model$data <- data[sample(rows, 1), , drop = FALSE]
+    gradient <- dLL(theta, model)
+    J <- J + gradient %*% t(gradient)
+    H <- H + nlme::fdHess(pars = theta, fun = LL, model = model,
+                          .relStep = .Machine$double.eps^(1/5))$Hessian
+  }
+
+  invH <- solve(-H)
+  Jstar <- (invH %*% J %*% invH)
+  sqrt(diag(Jstar))
+}
+
+
 diagPartitionedMat <- function(X, Y) {
   if (is.null(X)) return(Y) else if (is.null(Y)) return(X)
   structure(rbind(cbind(X, matrix(0, nrow = NROW(X), ncol = NCOL(Y))), 
@@ -155,7 +186,13 @@ getLabelIntTerms <- function(varsInInt, eta, intTerms) {
 getEmptyModel <- function(parTable, cov.syntax, parTableCovModel, 
                           method = "lms") {
   parTable$mod <- ""
-  if (!is.null(parTableCovModel)) parTableCovModel$mod <- ""
+  parTable <- removeConstraintExpressions(parTable)
+
+  if (!is.null(parTableCovModel)) {
+    parTableCovModel$mod <- ""
+    parTableCovModel <- removeConstraintExpressions(parTableCovModel)
+  }
+
   specifyModelLmsQml(parTable = parTable, method = method,
                      cov.syntax = cov.syntax,
                      parTableCovModel = parTableCovModel,
@@ -177,21 +214,6 @@ replaceNonNaModelMatrices <- function(model, value = -999) {
     x
   })
   model
-}
-
-
-getConstrExprs <- function(parTable, parTableCov) {
-  parTable <- rbind(parTable, parTableCov)
-  rows <- parTable[parTable$op %in% c("==", ">", "<"), ]
-  if (NROW(rows) == 0) return(NULL)
-
-  fixedParams <- unique(rows$lhs)
-  thetaFixedParams <- vector("list", length(fixedParams))
-  names(thetaFixedParams) <- fixedParams
-
-  exprs <- lapply(rows$rhs, function(expr) parse(text = expr))
-  list(fixedParams = fixedParams, thetaFixedParams = thetaFixedParams,
-       exprs = exprs)
 }
 
 
@@ -230,4 +252,10 @@ checkModel <- function(model, covModel = NULL) {
   }
 
   NULL
+}
+
+
+removeInteractionVariances <- function(parTable) {
+  parTable[!(parTable$op == "~~" & grepl(":", parTable$lhs) & 
+             grepl(":", parTable$rhs) & parTable$rhs == parTable$lhs), ]
 }

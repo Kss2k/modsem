@@ -57,7 +57,7 @@ plot_interaction <- function(x, z, y, xz, vals_x = seq(-3, 3, .001) , vals_z, mo
   }
 
   xz <- c(xz, reverseIntTerm(xz)) 
-  if (!inherits(model, c("modsem_lms", "modsem_qml"))) {
+  if (!inherits(model, c("modsem_lms", "modsem_qml", "modsem_mplus"))) {
     xz <- stringr::str_remove_all(xz, ":")
   }
 

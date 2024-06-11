@@ -1,11 +1,12 @@
 estQml <- function(model, 
                    convergence = 1e-2,
                    verbose = FALSE, 
-                   maxIter = 1000,
+                   max.iter = 1000,
                    hessian = TRUE,
+                   robust.se = FALSE,
                    ...) {
   startTheta <- model$theta
-  final <- mstepQml(model = model, theta = startTheta, maxIter = maxIter, 
+  final <- mstepQml(model = model, theta = startTheta, max.iter = max.iter, 
                     convergence = convergence,
                     hessian = hessian, verbose = verbose, ...)
   coefficients <- final$par
@@ -21,8 +22,15 @@ estQml <- function(model,
   finalModel$matricesNA <- emptyModel$matrices
   finalModel$covModelNA <- emptyModel$covModel
 
-  if (hessian) SE <- calcSE(final$hessian) 
-  else SE <- rep(-999, length(coefficients))
+  # Caclulate standard errors
+  if (hessian) {
+    SE <- calcSE(final$hessian) 
+  } else if (robust.se) {
+    SE <- calcRobustSE(model, theta = coefficients, verbose = verbose, 
+                       method = "qml")
+  } else {
+    SE <- rep(-999, length(coefficients))
+  }
   modelSE <- fillModel(replaceNonNaModelMatrices(model, value = -999), 
                        SE, method = "qml")
   finalModel$matricesSE <- modelSE$matrices

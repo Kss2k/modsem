@@ -20,6 +20,7 @@ modsem_lms_qml(
   double = NULL,
   hessian = NULL,
   cov.syntax = NULL,
+  robust.se = NULL,
   ...
 )
 }
@@ -36,33 +37,33 @@ modsem_lms_qml(
 
 \item{optimize}{should starting parameters be optimized}
 
-\item{nodes}{number of quadrature nodes (points of integration) used in lms, 
-increased number gives better estimates but slower computation. How many is needed, depends on the complexity of the model 
+\item{nodes}{number of quadrature nodes (points of integration) used in lms,
+increased number gives better estimates but slower computation. How many is needed, depends on the complexity of the model
 for simple models 16 is enough, for more complex models 100 is usually enough.}
 
 \item{convergence}{convergence criterion. Lower values give better estimates but slower computation.}
 
 \item{center.data}{should data be centered before fitting model}
 
-\item{standardize.data}{should data be scaled before fitting model, will be overridden by 
+\item{standardize.data}{should data be scaled before fitting model, will be overridden by
 standardize if standardize is set to TRUE.
-NOTE: It is recommended that you estimate the model normally and then standardize the output using 
+NOTE: It is recommended that you estimate the model normally and then standardize the output using
 `standardized_estimates()`.}
 
-\item{standardize.out}{should output be standardized (note will alter the relationsships of 
-parameter constraints, since to parameters are scaled unevenly, even if they 
-have the same label). This does not alter the estimation of the model, only the 
+\item{standardize.out}{should output be standardized (note will alter the relationsships of
+parameter constraints, since to parameters are scaled unevenly, even if they
+have the same label). This does not alter the estimation of the model, only the
 output.
-NOTE: It is recommended that you estimate the model normally and then standardize the output using 
+NOTE: It is recommended that you estimate the model normally and then standardize the output using
 `standardized_estimates()`.}
 
 \item{standardize}{will standardize the data before fitting the model, remove the mean
 structure of the observed variables, and standardize the output. Note that standardize.data
 mean.observed, standardize.out will be overridden by standardize if standardize is set to TRUE.
-NOTE: It is recommended that you estimate the model normally and then standardize the output using 
+NOTE: It is recommended that you estimate the model normally and then standardize the output using
 `standardized_estimates()`.}
 
-\item{mean.observed}{should mean structure of the observed variables be estimated, 
+\item{mean.observed}{should mean structure of the observed variables be estimated,
 will be overridden by standardize if standardize is set to TRUE.
 NOTE: Not recommended unless you know what you are doing.}
 
@@ -73,34 +74,37 @@ this will be extremely slow, but should be more similar to mplus.}
 
 \item{cov.syntax}{model syntax for implied covariance matrix (see 'vignette("interaction_two_etas", "modsem")')}
 
+\item{robust.se}{should robust standard errors using sandwhich estimator be calculated
+NOTE: Can be very slow.}
+
 \item{...}{arguments passed to other functions}
 }
 \value{
 modsem_lms or modsem_qml object
 }
 \description{
-modsem_lms_qml is a function for estimating interaction effects between latent variables, 
+modsem_lms_qml is a function for estimating interaction effects between latent variables,
 in structural equation models (SEMs), using product indicators.
-Methods for estimating interaction effects in SEM's can basically be split into 
-two frameworks: 1. Product Indicator based approaches ("dblcent", "rca", "uca", 
+Methods for estimating interaction effects in SEM's can basically be split into
+two frameworks: 1. Product Indicator based approaches ("dblcent", "rca", "uca",
 "ca", "pind"), and 2. Distributionally based approaches ("lms", "qml").
-modsem_lms_qml() is essentially a just 
-a fancy wrapper for lavaan::sem()  which generates the 
+modsem_lms_qml() is essentially a just
+a fancy wrapper for lavaan::sem()  which generates the
 necessary syntax, and variables for the estimation of models with latent product indicators.
 }
 \examples{
 library(modsem)
 # For more examples check README and/or GitHub.
 # One interaction
-m1 <- '
+m1 <- "
   # Outer Model
   X =~ x1 + x2 +x3
   Y =~ y1 + y2 + y3
   Z =~ z1 + z2 + z3
-  
+
   # Inner model
-  Y ~ X + Z + X:Z 
-'
+  Y ~ X + Z + X:Z
+"
 
 \dontrun{
 # QML Approach
@@ -109,7 +113,7 @@ summary(est1)
 
 
 # Theory Of Planned Behavior
-tpb <- ' 
+tpb <- "
 # Outer Model (Based on Hagger et al., 2007)
   ATT =~ att1 + att2 + att3 + att4 + att5
   SN =~ sn1 + sn2
@@ -120,12 +124,12 @@ tpb <- '
 # Inner Model (Based on Steinmetz et al., 2011)
   # Covariances
   ATT ~~ SN + PBC
-  PBC ~~ SN 
+  PBC ~~ SN
   # Causal Relationsships
   INT ~ ATT + SN + PBC
-  BEH ~ INT + PBC 
-  BEH ~ INT:PBC  
-'
+  BEH ~ INT + PBC
+  BEH ~ INT:PBC
+"
 
 # lms approach
 estTpb <- modsem_lms_qml(tpb, data = TPB, method = lms)

@@ -405,6 +405,11 @@ is.LavToken <- function(token) {
 }
 
 
+is.LavName <- function(token) {
+  inherits(token, "LavName")
+}
+
+
 is.LavOperator <- function(token) {
   inherits(token, "LavOperator")
 }
@@ -454,4 +459,11 @@ is.firstClassOperator <- function(token) {
          ">"  = TRUE,
          "==" = TRUE,
          FALSE)
+}
+
+
+#' @export
+as.character.LavToken <- function(x, ...) {
+  attributes(x) <- NULL
+  x
 }

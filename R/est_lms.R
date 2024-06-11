@@ -1,11 +1,12 @@
 emLms <- function(model, 
                   verbose = FALSE,
                   convergence = 1e-02, 
-                  maxiter = 500,
-                  maxstep = 1,
+                  max.iter = 500,
+                  max.step = 1,
                   sampleGrad = NULL,
                   control = list(),
                   hessian = TRUE,
+                  robust.se = FALSE,
                   ...) {
   data <- model$data
   model$data <- NULL # not needed in the model anymore
@@ -25,7 +26,7 @@ emLms <- function(model,
 
     P <- estepLms(model = model, theta = thetaOld, data = data, ...)
     mstep <- mstepLms(model = model, P = P, data = data,
-                      theta = thetaOld, maxstep = maxstep, 
+                      theta = thetaOld, max.step = max.step, 
                       sampleGrad = sampleGrad, hessian = FALSE,
                       control = control, ...)
 
@@ -37,7 +38,7 @@ emLms <- function(model,
       cat(sprintf("EM: Iteration = %5d, LogLik = %11.2f, Change = %10.3f\n",
             iterations, -logLikNew, logLikOld - logLikNew))
     }
-    if(iterations >= maxiter){
+    if(iterations >= max.iter){
       warning2("Maximum number of iterations was reached. ",
               "EM algorithm might not have converged.")
       break
@@ -46,7 +47,7 @@ emLms <- function(model,
   }
   final <- mstepLms(model = model, P = P, data = data,
                     theta = thetaNew, hessian = hessian,
-                    maxstep = maxstep, sampleGrad = NULL, 
+                    max.step = max.step, sampleGrad = NULL, 
                     verbose = verbose, control = control,
                     ...)
     
@@ -62,8 +63,14 @@ emLms <- function(model,
   finalModel$matricesNA <- emptyModel$matrices
   finalModel$covModelNA <- emptyModel$covModel
 
-  if (hessian) SE <- calcSE(final$hessian) 
-  else SE <- rep(-999, length(coefficients))
+  if (hessian) {
+    SE <- calcSE(final$hessian) 
+  } else if (robust.se) {
+    SE <- calcRobustSE(model, theta = coefficients, verbose = verbose, 
+                       method = "lms")
+  } else {
+    SE <- rep(-999, length(coefficients))
+  }
   modelSE <- fillModel(replaceNonNaModelMatrices(model, value = -999), 
                        SE, method = "lms")
   finalModel$matricesSE <- modelSE$matrices
@@ -78,7 +85,7 @@ emLms <- function(model,
   parTable$ci.upper <- parTable$est + 1.96 * parTable$std.error
 
   # convergence of em
-  if (iterations == maxiter) convergence <- FALSE else convergence <- TRUE
+  if (iterations == max.iter) convergence <- FALSE else convergence <- TRUE
 
   out <- list(model = finalModel, 
               data = data,

@@ -1,10 +1,8 @@
 getMethodSettingsLmsQml <- function(method, args) {
-    settingNames <- c("verbose", "optimize", "nodes", "convergence",
-                      "center.data", "standardize.data", "standardize.out",
-                      "standardize", "mean.observed", "double", "hessian")
-    args <- args[settingNames]
-    isMissing <- vapply(args, FUN.VALUE = logical(1L), FUN = is.null)
-    missingArgs <- settingNames[isMissing]
+    # settingNames <- c("verbose", "optimize", "nodes", "convergence",
+    #                   "center.data", "standardize.data", "standardize.out",
+    #                   "standardize", "mean.observed", "double", "hessian",
+    #                   "boot.qml", "boot.qml.sample")
 
     settings <- list(
         lms = list(verbose = FALSE, 
@@ -17,7 +15,8 @@ getMethodSettingsLmsQml <- function(method, args) {
                    standardize = FALSE,
                    mean.observed = TRUE,
                    double = FALSE, 
-                   hessian = TRUE),
+                   hessian = TRUE,
+                   robust.se = FALSE),
         qml = list(verbose = FALSE, 
                    optimize = TRUE,
                    nodes = 0, 
@@ -28,8 +27,14 @@ getMethodSettingsLmsQml <- function(method, args) {
                    standardize.out = FALSE, 
                    mean.observed = TRUE,
                    double = FALSE, 
-                   hessian = TRUE)
+                   hessian = TRUE,
+                   robust.se = FALSE)
     )
+
+    settingNames <- unique(unlist(lapply(settings, FUN = names))) 
+    args <- args[settingNames]
+    isMissing <- vapply(args, FUN.VALUE = logical(1L), FUN = is.null)
+    missingArgs <- settingNames[isMissing]
     
     if  (!method %in% names(settings)) {
         stop2("Unrecognized method")
@@ -43,6 +48,8 @@ getMethodSettingsLmsQml <- function(method, args) {
       args.out$standardize || args.out$standardize.out
     args.out$mean.observed <- 
       !args.out$standardize && args.out$mean.observed
+    args.out$hessian <- 
+      args.out$hessian && !args.out$robust.se
 
     args.out
 }

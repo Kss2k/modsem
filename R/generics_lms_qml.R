@@ -141,13 +141,20 @@ summaryLmsAndQml <- function(object,
                              covariances = TRUE,
                              intercepts = TRUE,
                              variances = TRUE,
+                             includeVarIntTerm = FALSE, 
                              ...) {
-  if (inherits(object, "modsem_qml")) {
+  if (inherits(object, "modsem_qml")) 
     method <- "qml"
-  } else if (inherits(object, "modsem_lms")) method <- "lms"
+  else if (inherits(object, "modsem_lms")) 
+    method <- "lms"
 
-  if (standardized) parTable <- standardized_estimates(object)
-  else parTable <- parameter_estimates(object)
+  if (standardized) 
+    parTable <- standardized_estimates(object)
+  else 
+    parTable <- parameter_estimates(object)
+
+  if (!includeVarIntTerm) 
+    parTable <- removeInteractionVariances(parTable)
   
   args <- object$args
   out <- list(

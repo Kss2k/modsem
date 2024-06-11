@@ -82,10 +82,6 @@ estepLms <- function(model, theta, data, ...) {
 }
 
 
-
-derivativeMuSigmaTheta <- function(model, theta) {
-
-}
 stochasticGradient <- function(theta, model, data, P, 
                                sampleGrad = NULL, ...) {
   baseline <- logLikLms(theta, model, data, P)
@@ -119,11 +115,11 @@ logLikLms <- function(theta, model, data, P, sampleGrad = NULL, ...) {
 
 # Maximization step of EM-algorithm (see Klein & Moosbrugger, 2000)
 mstepLms <- function(theta, model, data, P, hessian = FALSE,
-                     maxstep,
+                     max.step,
                      verbose = FALSE,
                      control = list(), sampleGrad,...) {
   if (is.null(sampleGrad)) stochasticGradient <- NULL
-  if (is.null(control$iter.max)) control$iter.max <- maxstep
+  if (is.null(control$iter.max)) control$iter.max <- max.step
   est <- stats::nlminb(start = theta, objective = logLikLms, data = data,
                        gradient = stochasticGradient, sampleGrad = sampleGrad,
                        model = model, P = P, 

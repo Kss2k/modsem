@@ -9,7 +9,7 @@ formatParTable <- function(parTable, digits = 3, scientific = FALSE,
   if (!ci) {
     header <- header[!grepl("CI", header)]
     colNames <- colNames[!grepl("ci", colNames)]
-  }
+  } 
   parTable <- parTable[colNames]
   
   isStructOrMeasure <- parTable$op %in% c("~", "=~", "~~") & 

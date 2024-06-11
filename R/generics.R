@@ -174,7 +174,6 @@ standardized_estimates.data.frame <- function(object, intercepts = FALSE, ...) {
     parTable[selectRows, selectCols] <- gamma / sqrt(varXZ)
   }
   
-
   parTable$z.value <- parTable$est / parTable$std.error
   parTable$p.value <- 2 * stats::pnorm(-abs(parTable$z.value))
   parTable$ci.lower <- parTable$est - 1.96 * parTable$std.error

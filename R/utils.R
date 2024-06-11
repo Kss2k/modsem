@@ -97,10 +97,10 @@ maxchar <- function(x) {
 
 
 fillColsParTable <- function(parTable) {
-  colNames <- c("lhs", "op", "est", "std.error", "z.value", "p.value", 
-                "ci.lower", "ci.upper")
+  colNames <- c("lhs", "op", "rhs", "est", "std.error", "z.value", 
+                "p.value", "ci.lower", "ci.upper")
   parTable[colNames[!colNames %in% colnames(parTable)]] <- NA
-  parTable
+  parTable[colNames]
 }
 
 
@@ -115,4 +115,9 @@ getUniqueCombos <- function(x, match = FALSE) {
                        V2 = x[-1])
   if (match) combos <- rbind(data.frame(V1 = x, V2 = x), combos)
   rbind(combos, rest)
+}
+
+
+lastRow <- function(x) {
+  x[nrow(x), ]
 }

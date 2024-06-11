@@ -70,18 +70,28 @@ logLikQml <- function(theta, model) {
 }
 
 
+gradientLogLikQml <- function(theta, model, dt = 1e-6) {
+  baseLL <- logLikQml(theta, model) 
+  vapply(seq_along(theta), FUN.VALUE = numeric(1L), FUN = function(i) {
+     theta[[i]] <- theta[[i]] + dt 
+     (logLikQml(theta, model) - baseLL) / dt
+  })
+}
+
+
 mstepQml <- function(model, theta, hessian = TRUE,
-                     maxIter = 150, verbose = FALSE,
+                     max.iter = 150, verbose = FALSE,
                      convergence = 1e-2,
                      control = list(), ...) {
-  control$iter.max <- maxIter
-  control$eval.max <- maxIter * 2
+  control$iter.max <- max.iter
+  control$eval.max <- max.iter * 2
   control$rel.tol <- convergence
   if (verbose) cat("Starting M-step\n")
   est <- stats::nlminb(start = theta, objective = logLikQml,
-                model = model,
-                upper = model$info$bounds$upper,
-                lower = model$info$bounds$lower, control = control, ...)
+                       model = model,
+                       upper = model$info$bounds$upper,
+                       lower = model$info$bounds$lower, 
+                       control = control, ...)
 
   if (hessian){
     if (verbose) cat("Calculating Hessian\n") 

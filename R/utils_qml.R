@@ -59,16 +59,3 @@ as.logical.matrix <- function(x, ...) {
 isScalingY <- function(x) {
   seq_along(x) %in% which(x == 1 | x == 0)
 }
-
-
-# not finished yet
-# calcStandardError.modsemQML <- function(object, ...) {
-#   # not correct yet
-#   H <- object$hessian 
-#   invH <- solve(H)
-#   N <- object$object$info$N
-#   gradient <- gradientLogLikQml(object$emptyModel, object$coefficients)
-#   J <- outer(gradient, gradient)
-#   Jstar <- (1 / N) * (invH %*% J %*% invH)
-#   sqrt(diag(Jstar))
-# }
