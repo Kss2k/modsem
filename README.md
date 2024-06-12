@@ -62,7 +62,7 @@ summary(est1_ca)
 
 # QML approach 
 est1_qml <- modsem(m1, oneInt, method = "qml")
-summary(est1Qml) 
+summary(est1_qml, standardized = TRUE) 
 
 # LMS approach 
 est1_lms <- modsem(m1, oneInt, method = "lms") 
@@ -97,7 +97,11 @@ summary(est_tpb_ca)
 
 # LMS approach 
 est_tpb_lms <- modsem(tpb, data = TPB, method = "lms")
-summary(est_tpb_lms)
+summary(est_tpb_lms, standardized = TRUE) 
+
+# QML approach 
+est_tpb_qml <- modsem(tpb, data = TPB, method = "qml") 
+summary(est_tpb_qml, standardized = TRUE)
 ```
 ## Interactions between two observed variables
 ```

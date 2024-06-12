@@ -14,3 +14,9 @@ summary.modsem_pi <- function(object, ...) {
 parameter_estimates.modsem_pi <- function(object, ...) {
   lavaan::parameterEstimates(object$lavaan, ...)
 }
+
+
+#' @export 
+standardized_estimates.modsem_pi <- function(object, ...) {
+  lavaan::standardizedSolution(object$lavaan, ...)
+}
