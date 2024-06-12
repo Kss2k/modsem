@@ -14,7 +14,7 @@
 #' "custom" = use parameters specified in the function call (passed to lavaan)
 #' 
 #' @param ... arguments passed to other functions depending on method (see modsem_pi, modsem_lms_qml, and modsem_mplus)
-#' @return ModSEM object
+#' @return modsem object
 #' @export 
 #' @description
 #' modsem is a function for estimating interaction effects between latent variables, 

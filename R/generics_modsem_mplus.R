@@ -36,7 +36,7 @@ summary.modsem_mplus <- function(object,
 
 #' @export
 print.summary_mplus <- function(x, ...) {
-  cat("ModSEM: \nMethod =", attributes(x)$method, "\n")
+  cat("modsem: \nMethod =", attributes(x)$method, "\n")
   printParTable(x$parTable, 
                 scientific = x$format$scientific, 
                 ci = x$format$ci, 
@@ -53,7 +53,7 @@ print.summary_mplus <- function(x, ...) {
 
 #' @export
 print.modsem_mplus <- function(x, ...) {
-  cat("ModSEM: \nMethod =", attributes(x)$method, "\n")
+  cat("modsem: \nMethod =", attributes(x)$method, "\n")
   print(x$parTable)
 }
 

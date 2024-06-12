@@ -77,7 +77,7 @@ modsem_pi(
 \item{...}{arguments passed to other functions, e.g,. lavaan}
 }
 \value{
-ModSEM object
+modsem object
 }
 \description{
 modsem_pi is a function for estimating interaction effects between latent variables, 

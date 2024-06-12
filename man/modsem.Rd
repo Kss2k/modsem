@@ -23,7 +23,7 @@ modsem(model.syntax = NULL, data = NULL, method = "dblcent", ...)
 \item{...}{arguments passed to other functions depending on method (see modsem_pi, modsem_lms_qml, and modsem_mplus)}
 }
 \value{
-ModSEM object
+modsem object
 }
 \description{
 modsem is a function for estimating interaction effects between latent variables, 

@@ -46,7 +46,7 @@
 #' 
 #' @param ... arguments passed to other functions, e.g,. lavaan
 #' 
-#' @return ModSEM object
+#' @return modsem object
 #' @export 
 #' @description
 #' modsem_pi is a function for estimating interaction effects between latent variables, 
@@ -166,7 +166,7 @@ modsem_pi <- function(model.syntax = NULL,
                              constrained.res.cov.method = constrained.res.cov.method,
                              firstLoadingFixed = firstLoadingFixed))
 
-  # ModSEM-algorithm for prod ind based approaches -----------------------------
+  # modsem-algorithm for prod ind based approaches -----------------------------
   prodInds <-
     createProdInds(modelSpec,
                    data = data,
