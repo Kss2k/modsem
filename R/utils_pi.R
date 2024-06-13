@@ -4,7 +4,7 @@ warning2 <- function(...) {
 
 
 stop2 <- function(...) {
-  stop(..., call. = FALSE)
+  stop2(..., call. = FALSE)
 }
 
 

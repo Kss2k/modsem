@@ -349,7 +349,7 @@ constructR <- function(etas, indsEtas, lambdaY, method = "qml") {
   lastRow <- lastCol <- 0
   for (i in seq_len(numEtas)) {
     nInds <- numIndsEtas[[etas[[i]]]] - 1
-    if (nInds == 0) stop("Etas in QML must have at least two indicators")
+    if (nInds == 0) stop2("Etas in QML must have at least two indicators")
     # free params 
     R[seq_len(nInds) + lastRow, lastCol + 1] <- NA
     R[seq_len(nInds) + lastRow, 

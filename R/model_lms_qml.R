@@ -25,7 +25,7 @@ specifyModelLmsQml <- function(syntax = NULL,
                                standardize.out = FALSE
                                ) {
   if (!is.null(syntax)) parTable <- modsemify(syntax)
-  if (is.null(parTable)) stop("No parTable found")
+  if (is.null(parTable)) stop2("No parTable found")
 
   # endogenous variables (etas)model
   etas <- getSortedEtas(parTable, isLV = TRUE, checkAny = TRUE)

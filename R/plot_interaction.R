@@ -98,7 +98,7 @@ plot_interaction <- function(x, z, y, xz, vals_x = seq(-3, 3, .001) , vals_z, mo
   ggplot2::ggplot(df, ggplot2::aes(x = x, y = proj_y, colour = cat_z, group = cat_z,)) + 
     ggplot2::geom_smooth(method = "lm", formula = "y ~ x", se = FALSE) + 
     ggplot2::geom_ribbon(ggplot2::aes(ymin = proj_y - 1.96 * se_x, ymax = proj_y + 1.96 * se_x),
-                         alpha = alpha_se, linewidth = 0) +
+                         alpha = alpha_se, linewidth = 0, linetype = "blank") +
     ggplot2::labs(x = x, y = y, colour = z)
 }
 

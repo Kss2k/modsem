@@ -20,7 +20,7 @@ getEtas <- function(parTable, isLV = FALSE, checkAny = TRUE) {
     cond <- cond & parTable$lhs %in% lVs
   }
   etas <- unique(parTable[cond, "lhs"])
-  if (checkAny && length(etas) == 0) stop("No etas found")
+  if (checkAny && length(etas) == 0) stop2("No etas found")
   etas
 }
 
@@ -31,7 +31,7 @@ getSortedEtas <- function(parTable, isLV = FALSE, checkAny = TRUE) {
   sortedEtas <- c()
   while (length(sortedEtas) < length(unsortedEtas) && nrow(structExprs) > 0) {
     if (all(unique(structExprs$lhs) %in% structExprs$rhs)) {
-      stop("Model is non-recursive")
+      stop2("Model is non-recursive")
     }
     for (i in seq_len(nrow(structExprs))) {
       eta <- structExprs[i, "lhs"]
@@ -60,7 +60,7 @@ getXis <- function(parTable, etas = NULL, isLV = TRUE, checkAny = TRUE) {
   } 
   xis <- unique(parTable[parTable$op == "=~" &
                 !parTable$lhs %in% etas, "lhs"])
-  if (checkAny && length(xis) == 0) stop("No xis found")
+  if (checkAny && length(xis) == 0) stop2("No xis found")
   xis
 }
 
@@ -73,7 +73,7 @@ getLVs <- function(parTable) {
 getIndsLVs <- function(parTable, lVs) {
   measrExprs <- parTable[parTable$op == "=~" & 
                          parTable$lhs %in% lVs, ]
-  if (NROW(measrExprs) == 0) stop("No measurement expressions found, for", lVs)
+  if (NROW(measrExprs) == 0) stop2("No measurement expressions found, for", lVs)
   lapplyNamed(lVs, FUN = function(lV) measrExprs[measrExprs$lhs == lV, "rhs"],
               names = lVs)
 }
