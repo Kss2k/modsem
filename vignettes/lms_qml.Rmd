@@ -44,7 +44,7 @@ m1 <- '
 '
 
 lms1 <- modsem(m1, oneInt, method = "lms")
-summary(lms1)
+summary(lms1, standardized = TRUE) # standardized estimates 
 ```
 
 Here you can see the same example using the QML approach. 
@@ -91,6 +91,6 @@ lms2 <- modsem(tpb, TPB, method = "lms", nodes = 20)
 summary(lms2)
 
 qml2 <- modsem(tpb, TPB, method = "qml")
-summary(qml2)
+summary(qml2, standardized = TRUE) # standardized estimates
 ```
 

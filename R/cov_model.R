@@ -168,6 +168,7 @@ covModelToParTable <- function(model, method = "lms") {
   matricesEst <- model$covModel$matrices
   matricesSE <- model$covModelSE$matrices
   matricesNA <- model$covModelNA$matrices
+  matricesLabel <- model$covModel$labelMatrices
 
   if (is.null(matricesEst) || is.null(matricesNA) ||
       is.null(matricesSE)) return(NULL)
@@ -180,6 +181,7 @@ covModelToParTable <- function(model, method = "lms") {
   newRows <- matrixToParTable(matricesNA$gammaXi,
                               matricesEst$gammaXi,
                               matricesSE$gammaXi, 
+                              matricesLabel$gammaXi,
                               op = "~",
                               rowsLhs = TRUE)
   parTable <- rbind(parTable, newRows)
@@ -187,6 +189,7 @@ covModelToParTable <- function(model, method = "lms") {
   newRows <- matrixToParTable(matricesNA$gammaEta,
                               matricesEst$gammaEta,
                               matricesSE$gammaEta, 
+                              matricesLabel$gammaEta,
                               op = "~",
                               rowsLhs = TRUE)
   parTable <- rbind(parTable, newRows)
@@ -195,15 +198,18 @@ covModelToParTable <- function(model, method = "lms") {
     phiNA <- matricesNA$A
     phiEst <- matricesEst$phi
     phiSE <- matricesSE$A
+    phiLabel <- matricesLabel$A
   } else if (method == "qml") {
     phiNA <- matricesNA$phi
     phiEst <- matricesEst$phi
     phiSE <- matricesSE$phi
+    phiLabel <- matricesLabel$phi
   }
 
   newRows <- matrixToParTable(phiNA,
                               phiEst,
                               phiSE,
+                              phiLabel,
                               op = "~~",
                               rowsLhs = FALSE)
   parTable <- rbind(parTable, newRows)
@@ -211,10 +217,12 @@ covModelToParTable <- function(model, method = "lms") {
   newRows <- matrixToParTable(matricesNA$psi,
                               matricesEst$psi,
                               matricesSE$psi, 
+                              matricesLabel$psi,
                               op = "~~",
                               rowsLhs = FALSE)
   parTable <- rbind(parTable, newRows)
 
+  parTable <- lapplyDf(parTable, FUN = function(x) replace(x, x == -999, NA))
   # return
   parTable
 }

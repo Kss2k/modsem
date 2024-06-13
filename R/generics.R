@@ -38,6 +38,7 @@ var_interactions.data.frame <- function(object, ...) {
     newRow <- data.frame(lhs = intTerms[[i]],
                          op = "~~",
                          rhs = intTerms[[i]],
+                         label = "",
                          est = varX * varY + covXY ^ 2,
                          std.error = NA, z.value = NA, p.value = NA,
                          ci.lower = NA, ci.upper = NA)
@@ -70,7 +71,8 @@ standardized_estimates <- function(object, ...) {
 
 #' @export 
 standardized_estimates.data.frame <- function(object, intercepts = FALSE, ...) {
-  parTable <- var_interactions(object)[c("lhs", "op", "rhs", "est", "std.error")]
+  parTable <- var_interactions(object)
+  parTable <- parTable[c("lhs", "op", "rhs", "label", "est", "std.error")]
   if (!intercepts) {
     parTable <- parTable[!(parTable$rhs == "1" & parTable$op == "~"), ]
   }

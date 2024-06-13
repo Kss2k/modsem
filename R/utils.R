@@ -97,8 +97,8 @@ maxchar <- function(x) {
 
 
 fillColsParTable <- function(parTable) {
-  colNames <- c("lhs", "op", "rhs", "est", "std.error", "z.value", 
-                "p.value", "ci.lower", "ci.upper")
+  colNames <- c("lhs", "op", "rhs", "label", "est", 
+                "std.error", "z.value", "p.value", "ci.lower", "ci.upper")
   parTable[colNames[!colNames %in% colnames(parTable)]] <- NA
   parTable[colNames]
 }

@@ -393,30 +393,32 @@ getParamBounds <- function(model, lowest = 1e-6) {
 }
 
 
-matrixToParTable <- function(matrixNA, matrixEst, matrixSE, 
+matrixToParTable <- function(matrixNA, matrixEst, matrixSE, matrixLabel,
                              op = "=~", rowsLhs = TRUE) {
   parTable <- NULL
   if (!rowsLhs) {
     matrixNA <- t(matrixNA)
     matrixEst <- t(matrixEst)
     matrixSE <- t(matrixSE)
+    matrixLabel <- t(matrixLabel)
   }
   for (lhs in rownames(matrixNA)) {
     for (rhs in colnames(matrixNA)) {
-      if (is.na(matrixNA[lhs, rhs])) {
-        newRow <- data.frame(lhs = lhs, op = op, 
-                             rhs = rhs,
-                             est = matrixEst[lhs, rhs],
-                             std.error = matrixSE[lhs, rhs])
-        parTable <- rbind(parTable, newRow)
-      }
+      if (!is.na(matrixNA[lhs, rhs]) && matrixLabel[lhs, rhs] == "") next
+      newRow <- data.frame(lhs = lhs, 
+                           op = op, 
+                           rhs = rhs,
+                           label = matrixLabel[lhs, rhs],
+                           est = matrixEst[lhs, rhs],
+                           std.error = matrixSE[lhs, rhs])
+      parTable <- rbind(parTable, newRow)
     }
   }
   parTable 
 }
 
 
-omegaToParTable <- function(omegaNA, omegaEst, omegaSE, etas) {
+omegaToParTable <- function(omegaNA, omegaEst, omegaSE, omegaLabel, etas) {
   numEtas <- length(etas) 
   subNrow <- nrow(omegaNA) %/% numEtas
   subSeqRows <- seq_len(subNrow) 
@@ -428,12 +430,14 @@ omegaToParTable <- function(omegaNA, omegaEst, omegaSE, etas) {
   for (eta_i in seq_len(numEtas)) {
     for (i in subSeqRows + (eta_i - 1) * subNrow) {
       for (j in seq_len(ncol(omegaNA))) {
-        if (!is.na(omegaNA[i, j])) next
+        if (!is.na(omegaNA[i, j]) && omegaLabel[i, j] == "") next
         intTerm <- paste0(rowNames[[i]], ":", colNames[[j]])
         newRow <- data.frame(lhs = etas[[eta_i]], 
-                             op = "~", rhs = intTerm,
+                             op = "~", 
+                             rhs = intTerm,
+                             label = omegaLabel[i, j],
                              est = omegaEst[i, j],
-                             std.error = omegaSE[i, j]) 
+                             std.error = omegaSE[i, j])
         parTable <- rbind(parTable, newRow)
       }
     }
@@ -446,6 +450,7 @@ finalModelToParTable <- function(finalModel, method = "lms") {
   matricesEst <- finalModel$matrices
   matricesSE <- finalModel$matricesSE
   matricesNA <- finalModel$matricesNA
+  matricesLabel <- finalModel$labelMatrices
   etas <- finalModel$info$etas
   numXis <- finalModel$info$numXis
   parTable <- NULL
@@ -454,6 +459,7 @@ finalModelToParTable <- function(finalModel, method = "lms") {
   newRows <- matrixToParTable(matricesNA$lambdaX,
                               matricesEst$lambdaX,
                               matricesSE$lambdaX, 
+                              matricesLabel$lambdaX,
                               op = "=~",
                               rowsLhs = FALSE)
   parTable <- rbind(parTable, newRows)
@@ -461,6 +467,7 @@ finalModelToParTable <- function(finalModel, method = "lms") {
   newRows <- matrixToParTable(matricesNA$lambdaY,
                               matricesEst$lambdaY,
                               matricesSE$lambdaY, 
+                              matricesLabel$lambdaY,
                               op = "=~",
                               rowsLhs = FALSE)
   parTable <- rbind(parTable, newRows)
@@ -469,6 +476,7 @@ finalModelToParTable <- function(finalModel, method = "lms") {
   newRows <- matrixToParTable(matricesNA$gammaXi,
                               matricesEst$gammaXi,
                               matricesSE$gammaXi, 
+                              matricesLabel$gammaXi,
                               op = "~",
                               rowsLhs = TRUE)
   parTable <- rbind(parTable, newRows)
@@ -476,6 +484,7 @@ finalModelToParTable <- function(finalModel, method = "lms") {
   newRows <- matrixToParTable(matricesNA$gammaEta,
                               matricesEst$gammaEta,
                               matricesSE$gammaEta, 
+                              matricesLabel$gammaEta,
                               op = "~",
                               rowsLhs = TRUE)
   parTable <- rbind(parTable, newRows)
@@ -484,12 +493,14 @@ finalModelToParTable <- function(finalModel, method = "lms") {
   newRows <- omegaToParTable(matricesNA$omegaXiXi,
                              matricesEst$omegaXiXi, 
                              matricesSE$omegaXiXi,
+                             matricesLabel$omegaXiXi,
                              etas = etas)
   parTable <- rbind(parTable, newRows)
 
   newRows <- omegaToParTable(matricesNA$omegaEtaXi,
                              matricesEst$omegaEtaXi, 
                              matricesSE$omegaEtaXi,
+                             matricesLabel$omegaEtaXi,
                              etas = etas)
   parTable <- rbind(parTable, newRows)
 
@@ -497,6 +508,7 @@ finalModelToParTable <- function(finalModel, method = "lms") {
   newRows <- matrixToParTable(matricesNA$tauX,
                               matricesEst$tauX,
                               matricesSE$tauX,
+                              matricesLabel$tauX,
                               op = "~",
                               rowsLhs = TRUE)
   parTable <- rbind(parTable, newRows)
@@ -504,6 +516,7 @@ finalModelToParTable <- function(finalModel, method = "lms") {
   newRows <- matrixToParTable(matricesNA$tauY,
                               matricesEst$tauY,
                               matricesSE$tauY,
+                              matricesLabel$tauY,
                               op = "~",
                               rowsLhs = TRUE)
   parTable <- rbind(parTable, newRows)
@@ -511,6 +524,7 @@ finalModelToParTable <- function(finalModel, method = "lms") {
   newRows <- matrixToParTable(matricesNA$alpha,
                               matricesEst$alpha,
                               matricesSE$alpha,
+                              matricesLabel$alpha,
                               op = "~",
                               rowsLhs = TRUE)
   parTable <- rbind(parTable, newRows)
@@ -519,6 +533,7 @@ finalModelToParTable <- function(finalModel, method = "lms") {
   newRows <- matrixToParTable(matricesNA$thetaDelta,
                               matricesEst$thetaDelta,
                               matricesSE$thetaDelta, 
+                              matricesLabel$thetaDelta,
                               op = "~~",
                               rowsLhs = TRUE)
   parTable <- rbind(parTable, newRows)
@@ -526,6 +541,7 @@ finalModelToParTable <- function(finalModel, method = "lms") {
   newRows <- matrixToParTable(matricesNA$thetaEpsilon,
                               matricesEst$thetaEpsilon,
                               matricesSE$thetaEpsilon, 
+                              matricesLabel$thetaEpsilon,
                               op = "~~",
                               rowsLhs = TRUE)
   parTable <- rbind(parTable, newRows)
@@ -535,15 +551,18 @@ finalModelToParTable <- function(finalModel, method = "lms") {
     phiNA <- matricesNA$A
     phiEst <- matricesEst$phi
     phiSE <- matricesSE$A
+    phiLabel <- matricesLabel$A
   } else if (method == "qml") {
     phiNA <- matricesNA$phi 
     phiEst <- matricesEst$phi 
     phiSE <- matricesSE$phi 
+    phiLabel <- matricesLabel$phi
   } 
 
   newRows <- matrixToParTable(phiNA,
                               phiEst,
                               phiSE,
+                              phiLabel,
                               op = "~~",
                               rowsLhs = FALSE)
   parTable <- rbind(parTable, newRows)
@@ -551,12 +570,11 @@ finalModelToParTable <- function(finalModel, method = "lms") {
   newRows <- matrixToParTable(matricesNA$psi,
                               matricesEst$psi,
                               matricesSE$psi, 
+                              matricesLabel$psi,
                               op = "~~",
                               rowsLhs = FALSE)
   parTable <- rbind(parTable, newRows)
 
-  # remove -999
   parTable <- lapplyDf(parTable, FUN = function(x) replace(x, x == -999, NA))
-  # return
   parTable
 }

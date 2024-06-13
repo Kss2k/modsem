@@ -45,9 +45,7 @@ print.summary_mplus <- function(x, ...) {
                 regressions = x$format$regressions,
                 covariances = x$format$covariances,
                 intercepts = x$format$intercepts,
-                variances = x$format$variances,
-                padWidth = 2, padWidthLhs = 2,
-                padWidthRhs = 6, spacing = 2)
+                variances = x$format$variances)
 }
 
 

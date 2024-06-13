@@ -177,7 +177,6 @@ summaryLmsAndQml <- function(object,
       mean.observed = args$mean.observed
     )
 
-
     out$nullModel <- estH0
     if (is.null(estH0)) {
       warning2("Comparative fit to H0 will not be calculated.")
@@ -282,10 +281,7 @@ print.summary_lms_qml <- function(x, digits = 3, ...) {
     regressions = x$format$regressions,
     covariances = x$format$covariances,
     intercepts = x$format$intercepts,
-    variances = x$format$variances,
-    padWidth = 2, padWidthLhs = 2,
-    padWidthRhs = 6, spacing = 2
-  )
+    variances = x$format$variances)
 }
 
 

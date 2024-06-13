@@ -134,7 +134,7 @@ modsem_mplus <- function(model.syntax,
   mplusParTable$p.value[mplusParTable$p.value == 999] <- NA
   mplusParTable$z.value <- mplusParTable$est / mplusParTable$std.error
   mplusParTable$z.value[is.infinite(mplusParTable$z.value)] <- NA
-  mplusParTable$label <- NA
+  mplusParTable$label <- ""
 
   modelSpec <- list(parTable = mplusParTable,
                     model = results,
