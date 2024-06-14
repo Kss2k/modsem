@@ -1,4 +1,4 @@
-optimizeStartingParamsLms <- function(model) {
+optimizeStartingParamsDA <- function(model) {
   etas <- model$info$etas
   indsEtas <- model$info$allIndsEtas
   xis <- model$info$xis

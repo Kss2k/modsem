@@ -30,7 +30,7 @@ plot_interaction(
 \item{vals_z}{The values of the moderator variable to plot. A seperate regression 
 line ("y ~ x | z") will be plotted for each value of the moderator variable}
 
-\item{model}{An object of class `modsem_pi`, `modsem_lms_qml`, or `modsem_mplus`}
+\item{model}{An object of class `modsem_pi`, `modsem_da`, or `modsem_mplus`}
 
 \item{alpha_se}{The alpha level for the std.error area}
 

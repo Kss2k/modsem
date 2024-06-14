@@ -1,6 +1,6 @@
 #' Extract parameterEstimates from an estimated model
 #'
-#' @param object An object of class `modsem_pi`, `modsem_lms_qml`, or `modsem_mplus`
+#' @param object An object of class `modsem_pi`, `modsem_da`, or `modsem_mplus`
 #' @param ... Additional arguments passed to other functions
 #' @export 
 parameter_estimates <- function(object, ...) {
@@ -10,7 +10,7 @@ parameter_estimates <- function(object, ...) {
 
 #' Extract or modify parTable from an estimated model with estimated variances of interaction terms
 #'
-#' @param object An object of class `modsem_lms_qml`,  `modsem_mplus`, 
+#' @param object An object of class `modsem_da`,  `modsem_mplus`, 
 #' or a parTable of class `data.frame`
 #' @param ... Additional arguments passed to other functions
 #' @export
@@ -50,7 +50,7 @@ var_interactions.data.frame <- function(object, ...) {
 
 #' Get standardized estimates
 #'
-#' @param object An object of class `modsem_lms_qml`,  `modsem_mplus`, 
+#' @param object An object of class `modsem_da`,  `modsem_mplus`, 
 #' or a parTable of class `data.frame`
 #' @param ... Additional arguments passed to other functions
 #' @details for `modsem_lms`, `modsem_qml` and `modsem_mplus` objects, 

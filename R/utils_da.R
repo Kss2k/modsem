@@ -45,7 +45,7 @@ dMvn <- function(X, mean, sigma, log = FALSE) {
 
 
 calcSE <- function(hessian, names = NULL, NA__ = -999) {
-  stdError <- tryCatch({
+  se <- tryCatch({
       sqrt(diag(solve(hessian)))
     }, error=function(e) {
       rep(NA, nrow(hessian))
@@ -56,45 +56,116 @@ calcSE <- function(hessian, names = NULL, NA__ = -999) {
          sqrt(diag(solve(hessian)))
       }
     })
-  if (all(is.na(stdError))) 
+  if (all(is.na(se))) 
     warning2("SE's could not be computed, negative Hessian is singular.")
-  if (any(is.nan(stdError))) 
+  if (any(is.nan(se))) 
     warning2("SE's for some coefficients could not be computed.") 
   
-  if (!is.null(names)) names(stdError) <- names
-  stdError[is.na(stdError)] <- NA__
-  stdError
+  if (is.null(names)) names(se) <- names
+  se[is.na(se)] <- NA__
+  se
 }
 
 
-calcRobustSE <- function(model, theta, verbose = FALSE, method = "qml") {
-  if (method == "qml") {
-    LL <- logLikQml
-    dLL <- gradientLogLikQml
-  } else if (method == "lms") {
-    stop2("Robust SE's not implemented for LMS yet")
-    LL <- logLikLms
-    dLL <- NULL # gradientLogLikLms
-  }
-
-  if (verbose) cat("Calculating robust standard errors:\n")
-  data <- model$data
+calcRobustSE_lms <- function(model, theta, data, P, verbose = FALSE,
+                             NA__ = -999) {
+  if (verbose) cat("Calculating robust standard errors\n")
   N <- nrow(data)
-  rows <- seq_len(N)
-  J <- H <- matrix(0, nrow = length(theta), ncol = length(theta))
+  # negative hessian (sign = -1)
+  H <- nlme::fdHess(pars = theta, fun = logLikLms, model = model,
+                    P = P, data = data, sign = -1, 
+                    .relStep = .Machine$double.eps^(1/5))$Hessian
 
-  for (iter in seq_len(N)) {
-    if (verbose) cat("Progress", paste0(iter, "/", N), "\n")
-    model$data <- data[sample(rows, 1), , drop = FALSE]
-    gradient <- dLL(theta, model)
-    J <- J + gradient %*% t(gradient)
-    H <- H + nlme::fdHess(pars = theta, fun = LL, model = model,
-                          .relStep = .Machine$double.eps^(1/5))$Hessian
+  # positive gradient, sign = 1
+  gradients_i <- gradientLogLikLms_i(theta, model, data = data, 
+                                     P = P, sign = 1)
+  
+  J <- matrix(0, nrow = length(theta), ncol = length(theta))
+  for (i in seq_len(nrow(gradients_i))) {
+    J <- J + gradients_i[i, ] %*% t(gradients_i[i, ])
   }
+  
+  se <- tryCatch({
+      invH <- solve(H)
+      Jstar <- (invH %*% J %*% invH)
+      sqrt(diag(Jstar))
 
-  invH <- solve(-H)
-  Jstar <- (invH %*% J %*% invH)
-  sqrt(diag(Jstar))
+    }, error=function(e) {
+      rep(NA, length(theta))
+
+    }, warning=function(w) {
+       if (grepl("NaN", conditionMessage(w))) {
+         suppressWarnings({
+            invH <- solve(H)
+            Jstar <- (invH %*% J %*% invH)
+            sqrt(diag(Jstar))
+         })
+      } else{
+        invH <- solve(H)
+        Jstar <- (invH %*% J %*% invH)
+        sqrt(diag(Jstar))
+      }
+    })
+
+  if (all(is.na(se))) 
+    warning2("SE's could not be computed, negative Hessian is singular.")
+
+  if (any(is.nan(se))) 
+    warning2("SE's for some coefficients could not be computed.") 
+  
+
+  if (is.null(names(se))) names(se) <- names(theta)
+  se[is.na(se)] <- NA__
+  se
+}
+
+
+calcRobustSE_qml <- function(model, theta, verbose = FALSE, NA__ = -999) {
+  if (verbose) cat("Calculating robust standard errors\n")
+  N <- nrow(model$data)
+  # negative hessian (sign = -1)
+  H <- nlme::fdHess(pars = theta, fun = logLikQml, model = model,
+                    sign = -1, .relStep = .Machine$double.eps^(1/5))$Hessian
+
+  # positive gradient, sign = 1
+  gradients_i <- gradientLogLikQml_i(theta, model, sign = 1)
+  
+  J <- matrix(0, nrow = length(theta), ncol = length(theta))
+  for (i in seq_len(nrow(gradients_i))) {
+    J <- J + gradients_i[i, ] %*% t(gradients_i[i, ])
+  }
+  
+  se <- tryCatch({
+      invH <- solve(H)
+      Jstar <- (invH %*% J %*% invH)
+      sqrt(diag(Jstar))
+
+    }, error=function(e) {
+      rep(NA, length(theta))
+
+    }, warning=function(w) {
+       if (grepl("NaN", conditionMessage(w))) {
+         suppressWarnings({
+            invH <- solve(H)
+            Jstar <- (invH %*% J %*% invH)
+            sqrt(diag(Jstar))
+         })
+      } else{
+        invH <- solve(H)
+        Jstar <- (invH %*% J %*% invH)
+        sqrt(diag(Jstar))
+      }
+    })
+
+  if (all(is.na(se))) 
+    warning2("SE's could not be computed, negative Hessian is singular.")
+
+  if (any(is.nan(se))) 
+    warning2("SE's for some coefficients could not be computed.") 
+  
+  if (is.null(names(se))) names(se) <- names(theta)
+  se[is.na(se)] <- NA__
+  se
 }
 
 
@@ -193,7 +264,7 @@ getEmptyModel <- function(parTable, cov.syntax, parTableCovModel,
     parTableCovModel <- removeConstraintExpressions(parTableCovModel)
   }
 
-  specifyModelLmsQml(parTable = parTable, method = method,
+  specifyModelDA(parTable = parTable, method = method,
                      cov.syntax = cov.syntax,
                      parTableCovModel = parTableCovModel,
                      auto.constraints = FALSE, create.theta = FALSE)
@@ -258,4 +329,67 @@ checkModel <- function(model, covModel = NULL) {
 removeInteractionVariances <- function(parTable) {
   parTable[!(parTable$op == "~~" & grepl(":", parTable$lhs) & 
              grepl(":", parTable$rhs) & parTable$rhs == parTable$lhs), ]
+}
+
+
+tr <- function(mat) sum(diag(mat))
+
+
+traceOmegaXiXi <- function(omega, numEta, numXi) {
+  lastRow <- 0 
+  lastCol <- 0  
+  trace <- numeric(numEta)
+  for (i in seq_len(numEta)) {
+    trace[[i]] <- tr(omega[seq_len(numXi) + (i - 1) * numXi, 
+                           seq_len(numXi) + (i - 1) * numXi]) 
+  }
+  trace
+}
+
+
+diagPartitioned <- function(matrix, length) {
+  out <- matrix(0, nrow = length * nrow(matrix), 
+                ncol = length * ncol(matrix))
+  nrows <- nrow(matrix)
+  rows <- seq_len(nrows)
+  ncols <- ncol(matrix)
+  cols <- seq_len(ncols)
+  for (i in seq_len(length)) {
+    out[rows + (i - 1) * nrows, 
+        cols + (i - 1) * ncols] <- matrix
+  }
+  out
+}
+
+
+repPartitionedRows <- function(matrix, length = 1) {
+  if (length <= 1) return(matrix)
+  out <- matrix 
+  for (i in seq_len(length - 1)) {
+    out <- rbind(out, matrix)
+  }
+  out
+}
+
+
+repPartitionedCols <- function(matrix, length = 1) {
+  if (length <= 1) return(matrix)
+  out <- matrix 
+  for (i in seq_len(length - 1)) {
+    out <- cbind(out, matrix)
+  }
+  out
+}
+
+
+#' @export
+as.logical.matrix <- function(x, ...) {
+  structure(x != 0, 
+            dim = dim(x), 
+            dimnames = dimnames(x))
+}
+
+
+isScalingY <- function(x) {
+  seq_along(x) %in% which(x == 1 | x == 0)
 }

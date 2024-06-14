@@ -20,7 +20,7 @@ modsem(model.syntax = NULL, data = NULL, method = "dblcent", ...)
 "qml" = quasi maximum likelihood estimation of laten model structural equations (not passed to lavaan).
 "custom" = use parameters specified in the function call (passed to lavaan)}
 
-\item{...}{arguments passed to other functions depending on method (see modsem_pi, modsem_lms_qml, and modsem_mplus)}
+\item{...}{arguments passed to other functions depending on method (see modsem_pi, modsem_da, and modsem_mplus)}
 }
 \value{
 modsem object
@@ -37,7 +37,7 @@ necessary syntax, and variables for the estimation of models with latent product
 The distributionally based approaches are implemented in seperately, and are 
 are not estimated using lavaan::sem(), but rather using custom functions (largely)
 written in C++ for performance reasons. For greater control, it is advised that 
-you use one of the sub-functions (modsem_pi, modsem_lms_qml, modsem_mplus) directly, 
+you use one of the sub-functions (modsem_pi, modsem_da, modsem_mplus) directly, 
 as passing additional arguments to them via modsem() can lead to unexpected behavior.
 }
 \examples{

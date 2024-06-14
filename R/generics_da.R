@@ -205,13 +205,13 @@ summaryLmsAndQml <- function(object,
     variances = variances
   )
 
-  class(out) <- "summary_lms_qml"
+  class(out) <- "summary_da"
   out
 }
 
 
 #' @export
-print.summary_lms_qml <- function(x, digits = 3, ...) {
+print.summary_da <- function(x, digits = 3, ...) {
   cat("\nModel Summary:\n")
   cat(
     "\n  Number of iterations:", x$iterations, "\n  Final loglikelihood:",
@@ -340,7 +340,7 @@ estimateNullModel <- function(parTable,
       syntax <- parTableToSyntax(strippedParTable)
 
       if (verbose) cat("Estimating null model\n")
-      modsem_lms_qml(syntax, data, method, verbose = verbose, 
+      modsem_da(syntax, data, method, verbose = verbose, 
                      cov.syntax = cov.syntax, hessian = hessian, 
                      standardize = standardize, 
                      standardize.out = standardize.out,

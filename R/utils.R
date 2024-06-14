@@ -121,3 +121,25 @@ getUniqueCombos <- function(x, match = FALSE) {
 lastRow <- function(x) {
   x[nrow(x), ]
 }
+
+
+lapplyMatrix <- function(X, FUN, FUN.VALUE, ...) {
+  matrix(vapply(X, FUN.VALUE = FUN.VALUE, FUN = FUN, ...),
+         nrow = length(FUN.VALUE), ncol = length(X), ...)
+}
+
+
+# Wrapper of lapply where elements are names based on names argument, by default names
+# are based on X
+lapplyNamed <- function(X, FUN, ..., names = X) {
+  structure(lapply(X, FUN, ...),
+            names = names)
+}
+
+
+lapplyDf <- function(df, FUN, ...) {
+  structure(lapply(df, FUN, ...),
+            names = names(df),
+            row.names = seq_len(nrow(df)),
+            class = "data.frame")
+}

@@ -9,10 +9,10 @@ tpb <- '
 
 # Inner Model (Based on Steinmetz et al., 2011)
   # Covariances
-  ATT ~~ cAsn * SN + cApbc * PBC
-  PBC ~~ cPbcSn * SN 
+  ATT ~~ SN + PBC
+  PBC ~~ SN 
   # Causal Relationsships
-  INT ~ gIa * ATT + gIsn * SN + gIpbc * PBC
+  INT ~ a * ATT + b * SN + c * PBC
   BEH ~ INT + PBC 
   BEH ~ INT:PBC  
 '

@@ -26,8 +26,7 @@ estQml <- function(model,
   if (hessian) {
     SE <- calcSE(final$hessian) 
   } else if (robust.se) {
-    SE <- calcRobustSE(model, theta = coefficients, verbose = verbose, 
-                       method = "qml")
+    SE <- calcRobustSE_qml(model, theta = coefficients, verbose = verbose)
   } else {
     SE <- rep(-999, length(coefficients))
   }

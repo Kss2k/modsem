@@ -7,7 +7,7 @@
 #' @param vals_x The values of the x variable to plot, the more values the smoother the std.error-area will be
 #' @param vals_z The values of the moderator variable to plot. A seperate regression 
 #' line ("y ~ x | z") will be plotted for each value of the moderator variable
-#' @param model An object of class `modsem_pi`, `modsem_lms_qml`, or `modsem_mplus` 
+#' @param model An object of class `modsem_pi`, `modsem_da`, or `modsem_mplus` 
 #' @param alpha_se The alpha level for the std.error area
 #' @param ... Additional arguments passed to other functions 
 #' @return A ggplot object
@@ -53,7 +53,7 @@ plot_interaction <- function(x, z, y, xz, vals_x = seq(-3, 3, .001) , vals_z, mo
                              alpha_se = 0.15, ...) {
   if (!inherits(model, c("modsem_pi", "modsem_lms", 
                          "modsem_mplus", "modsem_qml"))) {
-    stop2("model must be of class 'modsem_pi', 'modsem_lms_qml', or 'modsem_mplus'")
+    stop2("model must be of class 'modsem_pi', 'modsem_da', or 'modsem_mplus'")
   }
 
   xz <- c(xz, reverseIntTerm(xz)) 

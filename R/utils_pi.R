@@ -32,23 +32,6 @@ selectValuesByCol <- function(value, df, column.value, column.match) {
 }
 
 
-# Wrapper of lapply where elements are names based on names argument, by default names
-# are based on X
-lapplyNamed <- function(X, FUN, ..., names = X) {
-
-  structure(lapply(X, FUN, ...),
-            names = names)
-}
-
-
-lapplyDf <- function(df, FUN, ...) {
-  structure(lapply(df, FUN, ...),
-            names = names(df),
-            row.names = 1:nrow(df),
-            class = "data.frame")
-}
-
-
 # scale numeric vector is numeric
 scaleIfNumeric <- function(x, scaleFactor = TRUE) {
   if (is.null(x)) {

@@ -7,7 +7,7 @@
 var_interactions(object, ...)
 }
 \arguments{
-\item{object}{An object of class `modsem_lms_qml`,  `modsem_mplus`, 
+\item{object}{An object of class `modsem_da`,  `modsem_mplus`, 
 or a parTable of class `data.frame`}
 
 \item{...}{Additional arguments passed to other functions}

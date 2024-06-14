@@ -1,4 +1,4 @@
-getMethodSettingsLmsQml <- function(method, args) {
+getMethodSettingsDA <- function(method, args) {
     # settingNames <- c("verbose", "optimize", "nodes", "convergence",
     #                   "center.data", "standardize.data", "standardize.out",
     #                   "standardize", "mean.observed", "double", "hessian",

@@ -1,4 +1,4 @@
-# Estimate SEM using lms and qml
+# Estimate SEM using distribution analytic (DA) approaches
 # Last updated: 29.05.2024
 
 #' Interaction between latent variables using lms and qml approaches
@@ -52,20 +52,18 @@
 #' @param cov.syntax model syntax for implied covariance matrix (see 'vignette("interaction_two_etas", "modsem")')
 #'
 #' @param robust.se should robust standard errors using sandwhich estimator be calculated
-#' NOTE: Can be very slow.
 #'
 #' @param ... arguments passed to other functions
 #'
 #' @return modsem_lms or modsem_qml object
 #' @export
 #' @description
-#' modsem_lms_qml is a function for estimating interaction effects between latent variables,
-#' in structural equation models (SEMs), using product indicators.
+#' modsem_da is a function for estimating interaction effects between latent variables,
+#' in structural equation models (SEMs), using distributional analytic (DA) approaches.
 #' Methods for estimating interaction effects in SEM's can basically be split into
 #' two frameworks: 1. Product Indicator based approaches ("dblcent", "rca", "uca",
 #' "ca", "pind"), and 2. Distributionally based approaches ("lms", "qml").
-#' modsem_lms_qml() is essentially a just
-#' a fancy wrapper for lavaan::sem()  which generates the
+#' modsem_da() handles the latter, and can estimate models using both qml and lms
 #' necessary syntax, and variables for the estimation of models with latent product indicators.
 #' @examples
 #' library(modsem)
@@ -83,7 +81,7 @@
 #'
 #' \dontrun{
 #' # QML Approach
-#' est1 <- modsem_lms_qml(m1, oneInt, method = "qml")
+#' est1 <- modsem_da(m1, oneInt, method = "qml")
 #' summary(est1)
 #'
 #'
@@ -107,27 +105,27 @@
 #' "
 #'
 #' # lms approach
-#' estTpb <- modsem_lms_qml(tpb, data = TPB, method = lms)
+#' estTpb <- modsem_da(tpb, data = TPB, method = lms)
 #' summary(estTpb)
 #' }
 #'
-modsem_lms_qml <- function(model.syntax = NULL,
-                           data = NULL,
-                           method = "lms",
-                           verbose = NULL,
-                           optimize = NULL,
-                           nodes = NULL,
-                           convergence = NULL,
-                           center.data = NULL,
-                           standardize.data = NULL,
-                           standardize.out = NULL,
-                           standardize = NULL,
-                           mean.observed = NULL,
-                           double = NULL,
-                           hessian = NULL,
-                           cov.syntax = NULL,
-                           robust.se = NULL,
-                           ...) {
+modsem_da <- function(model.syntax = NULL,
+                      data = NULL,
+                      method = "lms",
+                      verbose = NULL,
+                      optimize = NULL,
+                      nodes = NULL,
+                      convergence = NULL,
+                      center.data = NULL,
+                      standardize.data = NULL,
+                      standardize.out = NULL,
+                      standardize = NULL,
+                      mean.observed = NULL,
+                      double = NULL,
+                      hessian = NULL,
+                      cov.syntax = NULL,
+                      robust.se = NULL,
+                      ...) {
   if (is.null(model.syntax)) {
     stop2("No model.syntax provided")
   } else if (!is.character(model.syntax)) {
@@ -143,7 +141,7 @@ modsem_lms_qml <- function(model.syntax = NULL,
   }
 
   args <-
-    getMethodSettingsLmsQml(method,
+    getMethodSettingsDA(method,
       args =
         list(
           verbose = verbose,
@@ -172,7 +170,7 @@ modsem_lms_qml <- function(model.syntax = NULL,
     data <- lapplyDf(data, FUN = scaleIfNumeric, scaleFactor = FALSE)
   }
 
-  model <- specifyModelLmsQml(model.syntax,
+  model <- specifyModelDA(model.syntax,
     data = data,
     method = method,
     m = args$nodes,
@@ -181,7 +179,7 @@ modsem_lms_qml <- function(model.syntax = NULL,
     double = args$double
   )
 
-  if (args$optimize) model <- optimizeStartingParamsLms(model)
+  if (args$optimize) model <- optimizeStartingParamsDA(model)
   est <- switch(method,
     "qml" = estQml(model,
       verbose = args$verbose,

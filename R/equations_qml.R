@@ -1,4 +1,4 @@
-logLikQml <- function(theta, model) {
+logLikQml <- function(theta, model, sum = TRUE, sign = -1) {
   modelFilled <- fillModel(model, theta, method = "qml")
   numEta <- model$info$numEta
   numXi <- model$info$numXi
@@ -65,8 +65,8 @@ logLikQml <- function(theta, model) {
     f3 <- rep_dmvnorm(m$y[, colnames(m$subThetaEpsilon)], expected = Ey, 
                       sigma = sigmaEpsilon, t = t, cores = 2)
   }
-
-  -sum(f2 + f3)
+  if (sum) return(sign * sum(f2 + f3))
+  sign * (f2 + f3)
 }
 
 
@@ -76,6 +76,23 @@ gradientLogLikQml <- function(theta, model, dt = 1e-6) {
      theta[[i]] <- theta[[i]] + dt 
      (logLikQml(theta, model) - baseLL) / dt
   })
+}
+
+
+# log likelihood for each observation -- not all 
+# wrapper fro logLikQml(sum = FALSE)
+logLikQml_i <- function(theta, model, sign = -1) {
+  logLikQml(theta, model, sum = FALSE, sign = sign)
+}
+
+
+# gradient function of logLikQml_i
+gradientLogLikQml_i <- function(theta, model, sign = -1, dt = 1e-6) {
+  baseLL <- logLikQml_i(theta, model, sign = sign) 
+  lapplyMatrix(seq_along(theta), FUN = function(i) {
+     theta[[i]] <- theta[[i]] + dt 
+     (logLikQml_i(theta, model, sign = sign) - baseLL) / dt
+  }, FUN.VALUE = numeric(nrow(model$data)))
 }
 
 

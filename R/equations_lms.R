@@ -82,22 +82,7 @@ estepLms <- function(model, theta, data, ...) {
 }
 
 
-stochasticGradient <- function(theta, model, data, P, 
-                               sampleGrad = NULL, ...) {
-  baseline <- logLikLms(theta, model, data, P)
-  grad <- rep(0, length(theta))
-  if (!is.null(sampleGrad)) params <- sample(seq_along(theta), sampleGrad)
-  else params <- seq_along(theta)
-  for (i in params) {
-    theta[i] <- theta[i] + 1e-12
-    newLik <- logLikLms(theta, model, data, P) 
-    grad[i] <- (newLik - baseline) / 1e-12
-  }
-  grad
-} 
-
-
-logLikLms <- function(theta, model, data, P, sampleGrad = NULL, ...) {
+logLikLms <- function(theta, model, data, P, sign = -1, ...) {
   modFilled <- fillModel(model = model, theta = theta, method = "lms")
   k <- model$quad$k 
   V <- modFilled$quad$n
@@ -109,7 +94,44 @@ logLikLms <- function(theta, model, data, P, sampleGrad = NULL, ...) {
                     log = TRUE) * P[,i])
     lls
   }) |> sum()
-  -r
+  sign * r
+}
+
+
+gradientLogLikLms <- function(theta, model, data, P, sign = -1, dt = 1e-6) {
+  baseLL <- logLikLms(theta, model, data = data, P = P, sign = sign) 
+  vapply(seq_along(theta), FUN.VALUE = numeric(1L), FUN = function(i) {
+     theta[[i]] <- theta[[i]] + dt 
+     (logLikLms(theta, model, data = data, P = P, sign = sign) - baseLL) / dt
+  })
+}
+
+
+# log likelihood for each observation -- not all
+logLikLms_i <- function(theta, model, data, P, sign = -1, ...) {
+  modFilled <- fillModel(model = model, theta = theta, method = "lms")
+  k <- model$quad$k 
+  V <- modFilled$quad$n
+  # summed log probability of observing the data given the parameters
+  # weighted my the posterior probability calculated in the E-step
+  r <- lapplyMatrix(seq_len(nrow(V)), FUN = function(i){
+    lls <- dMvn(data, mean = muLmsCpp(model = modFilled, z = V[i,]),
+                sigma = sigmaLmsCpp(model = modFilled, z = V[i,]),
+                log = TRUE) * P[,i]
+    lls
+  }, FUN.VALUE = numeric(nrow(data)))
+
+  sign * apply(r, MARGIN = 1, FUN = sum)
+}
+
+
+# gradient function of logLikLms_i
+gradientLogLikLms_i <- function(theta, model, data, P, sign = -1, dt = 1e-6) {
+  baseLL <- logLikLms_i(theta, model, data = data, P = P, sign = sign) 
+  lapplyMatrix(seq_along(theta), FUN = function(i) {
+     theta[[i]] <- theta[[i]] + dt 
+     (logLikLms_i(theta, model, data = data, P = P, sign = sign) - baseLL) / dt
+  }, FUN.VALUE = numeric(nrow(data)))
 }
 
 
@@ -117,11 +139,9 @@ logLikLms <- function(theta, model, data, P, sampleGrad = NULL, ...) {
 mstepLms <- function(theta, model, data, P, hessian = FALSE,
                      max.step,
                      verbose = FALSE,
-                     control = list(), sampleGrad,...) {
-  if (is.null(sampleGrad)) stochasticGradient <- NULL
+                     control = list(), ...) {
   if (is.null(control$iter.max)) control$iter.max <- max.step
   est <- stats::nlminb(start = theta, objective = logLikLms, data = data,
-                       gradient = stochasticGradient, sampleGrad = sampleGrad,
                        model = model, P = P, 
                        upper = model$info$bounds$upper,
                        lower = model$info$bounds$lower, control = control,

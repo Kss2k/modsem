@@ -13,7 +13,7 @@
 #' "qml" = quasi maximum likelihood estimation of laten model structural equations (not passed to lavaan).
 #' "custom" = use parameters specified in the function call (passed to lavaan)
 #' 
-#' @param ... arguments passed to other functions depending on method (see modsem_pi, modsem_lms_qml, and modsem_mplus)
+#' @param ... arguments passed to other functions depending on method (see modsem_pi, modsem_da, and modsem_mplus)
 #' @return modsem object
 #' @export 
 #' @description
@@ -28,7 +28,7 @@
 #' The distributionally based approaches are implemented in seperately, and are 
 #' are not estimated using lavaan::sem(), but rather using custom functions (largely)
 #' written in C++ for performance reasons. For greater control, it is advised that 
-#' you use one of the sub-functions (modsem_pi, modsem_lms_qml, modsem_mplus) directly, 
+#' you use one of the sub-functions (modsem_pi, modsem_da, modsem_mplus) directly, 
 #' as passing additional arguments to them via modsem() can lead to unexpected behavior.
 #' @examples
 #' library(modsem)
@@ -116,7 +116,7 @@ modsem <- function(model.syntax = NULL,
   if (method %in% c("rca", "uca", "dblcent", "pind", "ca", "custom")) {
     return(modsem_pi(model.syntax, data = data, method = method, ...))
   } else if (method %in% c("lms", "qml")) {
-    return(modsem_lms_qml(model.syntax, data = data, method = method, ...))
+    return(modsem_da(model.syntax, data = data, method = method, ...))
   } else if (method == "mplus") {
     return(modsem_mplus(model.syntax, data = data, ...))
   } else {

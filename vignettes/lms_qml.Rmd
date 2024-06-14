@@ -62,6 +62,8 @@ When estimating more complicated models with the LMS-approach,
 it is recommended that you increase the number of 
 nodes used for numerical integration. By default the number of nodes is set to 16,
 and can be increased using the nodes argument. The argument has no effect on the QML approach.
+You can also get robust standard errors by setting `robust.se = TRUE` in the 
+`modsem()` function.
 
 Note: If you want the lms-approach to give as similar results as possible to
 mplus, you would have to increase the number of nodes (e.g., `nodes = 100`), 
@@ -87,7 +89,8 @@ tpb <- '
   BEH ~ INT:PBC  
 '
 
-lms2 <- modsem(tpb, TPB, method = "lms", nodes = 20)
+lms2 <- modsem(tpb, TPB, method = "lms", nodes = 20,
+               robust.se = TRUE)
 summary(lms2)
 
 qml2 <- modsem(tpb, TPB, method = "qml")

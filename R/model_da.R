@@ -10,7 +10,7 @@ paramMatrices <- c("lambdaX", "lambdaY", "gammaXi", "gammaEta",
 
 
 # Functions
-specifyModelLmsQml <- function(syntax = NULL, 
+specifyModelDA <- function(syntax = NULL, 
                                data = NULL, 
                                method = "lms", 
                                m = 16,
