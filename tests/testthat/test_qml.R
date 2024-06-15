@@ -28,8 +28,9 @@ tpb <- '
 '
 
 est2 <- modsem(tpb, data = TPB, method = "qml", 
+               robust.se = TRUE,
                standardize = TRUE, convergence = 1e-2)
-print(summary(est2, H0 = FALSE, ci = TRUE))
+print(summary(est2, H0 = FALSE))
 
 testthat::expect_equal(standardized_estimates(est2), 
                        parameter_estimates(est2))

@@ -45,7 +45,7 @@ modsem_mplus <- function(model.syntax,
                          ...) {
   parTable <- modsemify(model.syntax)
   indicators <- unique(parTable[parTable$op == "=~", "rhs", drop = TRUE])
-  intTerms <- unique(getIntTerms(parTable)$rhs)
+  intTerms <- unique(getIntTermRows(parTable)$rhs)
   intTermsMplus <- stringr::str_remove_all(intTerms, ":") |>
     stringr::str_to_upper()
 

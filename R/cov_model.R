@@ -169,9 +169,9 @@ covModelToParTable <- function(model, method = "lms") {
   matricesSE <- model$covModelSE$matrices
   matricesNA <- model$covModelNA$matrices
   matricesLabel <- model$covModel$labelMatrices
-
-  if (is.null(matricesEst) || is.null(matricesNA) ||
-      is.null(matricesSE)) return(NULL)
+  
+  if (is.null(matricesEst) || is.null(matricesNA)) return(NULL)
+  if (is.null(matricesSE)) matricesSE <- matricesNA
 
   etas <- model$info$etas
   numXis <- model$info$numXis

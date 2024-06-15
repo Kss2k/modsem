@@ -96,7 +96,7 @@ gradientLogLikQml_i <- function(theta, model, sign = -1, dt = 1e-6) {
 }
 
 
-mstepQml <- function(model, theta, hessian = TRUE,
+mstepQml <- function(model, theta, 
                      max.iter = 150, verbose = FALSE,
                      convergence = 1e-2,
                      control = list(), ...) {
@@ -109,12 +109,5 @@ mstepQml <- function(model, theta, hessian = TRUE,
                        upper = model$info$bounds$upper,
                        lower = model$info$bounds$lower, 
                        control = control, ...)
-
-  if (hessian){
-    if (verbose) cat("Calculating Hessian\n") 
-    est$hessian <- nlme::fdHess(pars=est$par, fun = logLikQml,
-                                model = model, 
-                                .relStep = .Machine$double.eps^(1/5))$Hessian
-  }
   est
 }

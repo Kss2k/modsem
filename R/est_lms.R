@@ -1,11 +1,14 @@
 emLms <- function(model, 
                   verbose = FALSE,
-                  convergence = 1e-02, 
+                  convergence = 1e-2, 
                   max.iter = 500,
                   max.step = 1,
-                  sampleGrad = NULL,
                   control = list(),
-                  hessian = TRUE,
+                  calc.se = TRUE,
+                  FIM = "observed",
+                  OFIM.hessian = FALSE,
+                  EFIM.S = 3e4,
+                  EFIM.parametric = TRUE,
                   robust.se = FALSE,
                   ...) {
   data <- model$data
@@ -14,7 +17,7 @@ emLms <- function(model,
 
   # Initialization
   logLikNew <- 0
-  logLikOld <- 1.0e+10
+  logLikOld <- 1e10
   iterations <- 0     
   thetaNew <- model$theta
   nLogIncreased <- 0
@@ -27,7 +30,6 @@ emLms <- function(model,
     P <- estepLms(model = model, theta = thetaOld, data = data, ...)
     mstep <- mstepLms(model = model, P = P, data = data,
                       theta = thetaOld, max.step = max.step, 
-                      sampleGrad = sampleGrad, hessian = FALSE,
                       control = control, ...)
 
     logLikNew <- mstep$objective
@@ -46,8 +48,8 @@ emLms <- function(model,
     if (abs(logLikOld - logLikNew) < convergence) run <- FALSE
   }
   final <- mstepLms(model = model, P = P, data = data,
-                    theta = thetaNew, hessian = hessian,
-                    max.step = max.step, sampleGrad = NULL, 
+                    theta = thetaNew, 
+                    max.step = max.step, 
                     verbose = verbose, control = control,
                     ...)
     
@@ -63,21 +65,20 @@ emLms <- function(model,
   finalModel$matricesNA <- emptyModel$matrices
   finalModel$covModelNA <- emptyModel$covModel
 
-  if (hessian) {
-    SE <- calcSE(final$hessian) 
-  } else if (robust.se) {
-    SE <- calcRobustSE_lms(model, theta = coefficients, data = data, 
-                           P = P, verbose = verbose)
-  } else {
-    SE <- rep(-999, length(coefficients))
-  }
+  # Caclulate information matrix (I) and standard errors (SE)
+  FIM <- calcFIM_da(model = model, finalModel = finalModel, theta = coefficients, 
+                    data = data, method = "lms", EFIM.S = EFIM.S,
+                    hessian = OFIM.hessian, calc.se = calc.se, 
+                    EFIM.parametric = EFIM.parametric, verbose = verbose,
+                    FIM = FIM, robust.se = robust.se, NA__ = -999)
+  SE <- calcSE_da(calc.se = calc.se, vcov = FIM$vcov, theta = coefficients, NA__ = -999)
+
   modelSE <- fillModel(replaceNonNaModelMatrices(model, value = -999), 
-                       SE, method = "lms")
+                       theta = SE, method = "lms")
   finalModel$matricesSE <- modelSE$matrices
   finalModel$covModelSE <- modelSE$covModel
 
-  parTable <- rbind(finalModelToParTable(finalModel, method = "lms"),
-                    covModelToParTable(finalModel, method = "lms"))
+  parTable <- modelToParTable(finalModel, method = "lms")
 
   parTable$z.value <- parTable$est / parTable$std.error
   parTable$p.value <- 2 * stats::pnorm(-abs(parTable$z.value))
@@ -94,8 +95,9 @@ emLms <- function(model,
               originalParTable = model$parTable,
               logLik = -final$objective, 
               iterations = iterations,
-              convergence = convergence,
-              hessian = final$hessian)
+              convergence = convergence, 
+              FIM = FIM$FIM,
+              vcov = FIM$vcov)
 
   class(out) <- "modsem_lms"
   out

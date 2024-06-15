@@ -79,15 +79,23 @@ getIndsLVs <- function(parTable, lVs) {
 }
 
 
-getIntTerms <- function(parTable) {
+getIntTermRows <- function(parTable) {
   structExprs <- parTable[parTable$op == "~" & parTable$rhs != "1", ]
   structExprs[grepl(":", structExprs$rhs), ] 
 }
 
 
-getVarsInts <- function(intTerms) {
+getIntTerms <- function(parTable) {
+  structExprs <- parTable[parTable$op == "~" & parTable$rhs != "1", ]
+  unique(structExprs[grepl(":", structExprs$rhs), "rhs"])
+}
+
+
+getVarsInts <- function(intTerms, removeColonNames = TRUE) {
+  if (removeColonNames) names <- stringr::str_remove_all(intTerms$rhs, ":")
+  else names <- intTerms$rhs
   lapplyNamed(intTerms$rhs, FUN = stringr::str_split_1, pattern = ":", 
-              names = stringr::str_remove_all(intTerms$rhs, ":"))
+              names = names)
 }
 
 

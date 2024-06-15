@@ -1,9 +1,4 @@
-getMethodSettingsDA <- function(method, args) {
-    # settingNames <- c("verbose", "optimize", "nodes", "convergence",
-    #                   "center.data", "standardize.data", "standardize.out",
-    #                   "standardize", "mean.observed", "double", "hessian",
-    #                   "boot.qml", "boot.qml.sample")
-
+getMethodSettingsDA <- function(method, args = NULL) {
     settings <- list(
         lms = list(verbose = FALSE, 
                    optimize = TRUE,
@@ -15,7 +10,11 @@ getMethodSettingsDA <- function(method, args) {
                    standardize = FALSE,
                    mean.observed = TRUE,
                    double = FALSE, 
-                   hessian = TRUE,
+                   calc.se = TRUE,
+                   FIM = "expected",
+                   OFIM.hessian = FALSE,
+                   EFIM.S = 3e4,
+                   EFIM.parametric = TRUE,
                    robust.se = FALSE),
         qml = list(verbose = FALSE, 
                    optimize = TRUE,
@@ -27,9 +26,15 @@ getMethodSettingsDA <- function(method, args) {
                    standardize.out = FALSE, 
                    mean.observed = TRUE,
                    double = FALSE, 
-                   hessian = TRUE,
+                   calc.se = TRUE,
+                   FIM = "observed",
+                   OFIM.hessian = TRUE,
+                   EFIM.S = 3e4,
+                   EFIM.parametric = TRUE,
                    robust.se = FALSE)
     )
+
+    if (is.null(args)) return(settings[method])
 
     settingNames <- unique(unlist(lapply(settings, FUN = names))) 
     args <- args[settingNames]
@@ -48,8 +53,24 @@ getMethodSettingsDA <- function(method, args) {
       args.out$standardize || args.out$standardize.out
     args.out$mean.observed <- 
       !args.out$standardize && args.out$mean.observed
-    args.out$hessian <- 
-      args.out$hessian && !args.out$robust.se
+    args.out$OFIM.hessian <- 
+      args.out$OFIM.hessian && !args.out$robust.se
 
     args.out
+}
+
+
+
+#' default arguments fro LMS and QML approach
+#'
+#' @param method which method to get the settings for
+#' @return modsem_lms or modsem_qml object
+#' @export
+#' @description
+#' This function returns the default settings for the LMS and QML approach.
+#' @examples
+#' library(modsem)
+#' default_settings_da()
+default_settings_da <- function(method = c("lms", "qml")) {
+  getMethodSettingsDA(method = method, args = NULL)
 }

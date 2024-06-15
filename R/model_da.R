@@ -38,7 +38,7 @@ specifyModelDA <- function(syntax = NULL,
   numAllIndsEtas <- length(allIndsEtas)
   
   # exogenouts variables (xis) and interaction terms 
-  intTerms <- getIntTerms(parTable)
+  intTerms <- getIntTermRows(parTable)
   varsInts <- getVarsInts(intTerms)
   allVarsInInts <- unique(unlist(varsInts))
   xis <- getXis(parTable, checkAny = TRUE)
@@ -395,15 +395,16 @@ getParamBounds <- function(model, lowest = 1e-6) {
 
 matrixToParTable <- function(matrixNA, matrixEst, matrixSE, matrixLabel,
                              op = "=~", rowsLhs = TRUE) {
-  parTable <- NULL
   if (!rowsLhs) {
     matrixNA <- t(matrixNA)
     matrixEst <- t(matrixEst)
     matrixSE <- t(matrixSE)
     matrixLabel <- t(matrixLabel)
   }
-  for (lhs in rownames(matrixNA)) {
-    for (rhs in colnames(matrixNA)) {
+  
+  parTable <- NULL
+  for (lhs in rownames(matrixEst)) {
+    for (rhs in colnames(matrixEst)) {
       if (!is.na(matrixNA[lhs, rhs]) && matrixLabel[lhs, rhs] == "") next
       newRow <- data.frame(lhs = lhs, 
                            op = op, 
@@ -422,10 +423,9 @@ omegaToParTable <- function(omegaNA, omegaEst, omegaSE, omegaLabel, etas) {
   numEtas <- length(etas) 
   subNrow <- nrow(omegaNA) %/% numEtas
   subSeqRows <- seq_len(subNrow) 
-  lastRow <- 0 
-  lastCol <- 0
-  rowNames <- rownames(omegaNA)
-  colNames <- colnames(omegaNA)
+  rowNames <- rownames(omegaEst)
+  colNames <- colnames(omegaEst)
+
   parTable <- NULL
   for (eta_i in seq_len(numEtas)) {
     for (i in subSeqRows + (eta_i - 1) * subNrow) {
@@ -446,11 +446,14 @@ omegaToParTable <- function(omegaNA, omegaEst, omegaSE, omegaLabel, etas) {
 }
 
 
-finalModelToParTable <- function(finalModel, method = "lms") {
+mainModelToParTable <- function(finalModel, method = "lms") {
   matricesEst <- finalModel$matrices
   matricesSE <- finalModel$matricesSE
   matricesNA <- finalModel$matricesNA
   matricesLabel <- finalModel$labelMatrices
+  
+  if (is.null(matricesSE)) matricesSE <- matricesNA
+  
   etas <- finalModel$info$etas
   numXis <- finalModel$info$numXis
   parTable <- NULL
@@ -488,7 +491,7 @@ finalModelToParTable <- function(finalModel, method = "lms") {
                               op = "~",
                               rowsLhs = TRUE)
   parTable <- rbind(parTable, newRows)
-  
+
   # interaction effects
   newRows <- omegaToParTable(matricesNA$omegaXiXi,
                              matricesEst$omegaXiXi, 
@@ -577,4 +580,11 @@ finalModelToParTable <- function(finalModel, method = "lms") {
 
   parTable <- lapplyDf(parTable, FUN = function(x) replace(x, x == -999, NA))
   parTable
+}
+
+
+
+modelToParTable <- function(model, method = "lms") {
+  rbind(mainModelToParTable(model, method = method),
+        covModelToParTable(model, method = method))
 }

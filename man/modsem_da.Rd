@@ -17,9 +17,13 @@ modsem_da(
   standardize.out = NULL,
   standardize = NULL,
   mean.observed = NULL,
-  double = NULL,
-  hessian = NULL,
   cov.syntax = NULL,
+  double = NULL,
+  calc.se = NULL,
+  FIM = NULL,
+  EFIM.S = NULL,
+  OFIM.hessian = NULL,
+  EFIM.parametric = NULL,
   robust.se = NULL,
   ...
 )
@@ -67,16 +71,25 @@ NOTE: It is recommended that you estimate the model normally and then standardiz
 will be overridden by standardize if standardize is set to TRUE.
 NOTE: Not recommended unless you know what you are doing.}
 
-\item{double}{try to double the number of dimensions of integrations used in LMS,
-this will be extremely slow, but should be more similar to mplus.}
-
-\item{hessian}{should hessian (i.e., std.errors) be calculated}
-
 \item{cov.syntax}{model syntax for implied covariance matrix (see 'vignette("interaction_two_etas", "modsem")')}
 
-\item{robust.se}{should robust standard errors using sandwhich estimator be calculated}
+\item{double}{= NULL,}
 
-\item{...}{arguments passed to other functions}
+\item{calc.se}{should standard errros be computed, NOTE: If 'FALSE' information matrix will not be computed either}
+
+\item{FIM}{should fisher information matrix be calculated using observed of expected. must be either "observed" or "expected"}
+
+\item{EFIM.S}{if expected fisher information matrix is computed, EFIM.S selects the sample size of the generated data}
+
+\item{OFIM.hessian}{should observed fisher information be computed using hessian? if FALSE, it is computed using gradient}
+
+\item{EFIM.parametric}{should data for calculating expected fisher information matrix be 
+simulated parametrically (simulated based on the assumptions- and implied parameters
+from the model), or non-parametrically (stochastically sampled)}
+
+\item{robust.se}{should robust standard errors be computed?}
+
+\item{...}{additional arguments to be passed to the estimation function}
 }
 \value{
 modsem_lms or modsem_qml object
@@ -89,6 +102,7 @@ two frameworks: 1. Product Indicator based approaches ("dblcent", "rca", "uca",
 "ca", "pind"), and 2. Distributionally based approaches ("lms", "qml").
 modsem_da() handles the latter, and can estimate models using both qml and lms
 necessary syntax, and variables for the estimation of models with latent product indicators.
+NOTE: run 'default_settings_da()' to see default arguments.
 }
 \examples{
 library(modsem)

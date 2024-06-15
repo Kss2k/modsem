@@ -77,7 +77,7 @@ standardized_estimates.data.frame <- function(object, intercepts = FALSE, ...) {
     parTable <- parTable[!(parTable$rhs == "1" & parTable$op == "~"), ]
   }
   lVs <- getLVs(parTable)
-  intTerms <- unique(getIntTerms(parTable)$rhs)
+  intTerms <- unique(getIntTermRows(parTable)$rhs)
   etas <- getSortedEtas(parTable, isLV = TRUE)
   xis <- getXis(parTable, etas = etas, isLV = TRUE)
   indsLVs <- getIndsLVs(parTable, lVs)

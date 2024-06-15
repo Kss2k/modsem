@@ -24,6 +24,7 @@ est1 <- modsem(m1, oneInt,
 duration1 <- Sys.time() - startTime1
 plot_interaction("X", "Z", "Y", "X:Z", -3:3, c(-0.5, 0.5), est1)
 print(summary(est1))
+
 # I have no clue why, but changing the ordering of how the interaction terms 
 # are specified, ends up changing the number of iterations (and results ever 
 # so slightly) -- even though the matrices are exactly the same. This can be 
@@ -59,7 +60,7 @@ PBC ~ a * ATT + a * SN
 startTime2 <- Sys.time()
 est2 <- modsem(tpb, TPB, 
   method = "lms", optimize = TRUE, verbose = TRUE, 
-  convergence = 1, sampleGrad = NULL, cov.syntax = covModel,
+  convergence = 1, cov.syntax = covModel,
   nodes = 16, robust.se = TRUE,
   # closer to mplus when tweaking the number of nodes and convergence criterion
   # nodes = 100, convergence = 1e-7 is very very close to mplus

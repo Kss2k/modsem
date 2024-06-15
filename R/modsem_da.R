@@ -47,17 +47,30 @@
 #' @param double try to double the number of dimensions of integrations used in LMS,
 #' this will be extremely slow, but should be more similar to mplus.
 #'
-#' @param hessian should hessian (i.e., std.errors) be calculated
-#'
 #' @param cov.syntax model syntax for implied covariance matrix (see 'vignette("interaction_two_etas", "modsem")')
 #'
-#' @param robust.se should robust standard errors using sandwhich estimator be calculated
+#' @param double = NULL,
 #'
-#' @param ... arguments passed to other functions
+#' @param calc.se should standard errros be computed, NOTE: If 'FALSE' information matrix will not be computed either
+#'
+#' @param FIM should fisher information matrix be calculated using observed of expected. must be either "observed" or "expected"
+#'
+#' @param EFIM.S if expected fisher information matrix is computed, EFIM.S selects the sample size of the generated data
+#'
+#' @param OFIM.hessian should observed fisher information be computed using hessian? if FALSE, it is computed using gradient
+#'
+#' @param EFIM.parametric should data for calculating expected fisher information matrix be 
+#' simulated parametrically (simulated based on the assumptions- and implied parameters
+#' from the model), or non-parametrically (stochastically sampled) 
+#'
+#' @param robust.se should robust standard errors be computed?
+#'
+#' @param ... additional arguments to be passed to the estimation function
 #'
 #' @return modsem_lms or modsem_qml object
 #' @export
-#' @description
+#' 
+#' @description 
 #' modsem_da is a function for estimating interaction effects between latent variables,
 #' in structural equation models (SEMs), using distributional analytic (DA) approaches.
 #' Methods for estimating interaction effects in SEM's can basically be split into
@@ -65,6 +78,8 @@
 #' "ca", "pind"), and 2. Distributionally based approaches ("lms", "qml").
 #' modsem_da() handles the latter, and can estimate models using both qml and lms
 #' necessary syntax, and variables for the estimation of models with latent product indicators.
+#' NOTE: run 'default_settings_da()' to see default arguments.
+#'
 #' @examples
 #' library(modsem)
 #' # For more examples check README and/or GitHub.
@@ -121,9 +136,13 @@ modsem_da <- function(model.syntax = NULL,
                       standardize.out = NULL,
                       standardize = NULL,
                       mean.observed = NULL,
-                      double = NULL,
-                      hessian = NULL,
                       cov.syntax = NULL,
+                      double = NULL,
+                      calc.se = NULL,
+                      FIM = NULL,
+                      EFIM.S = NULL, 
+                      OFIM.hessian = NULL, 
+                      EFIM.parametric = NULL,
                       robust.se = NULL,
                       ...) {
   if (is.null(model.syntax)) {
@@ -154,7 +173,11 @@ modsem_da <- function(model.syntax = NULL,
           standardize = standardize,
           mean.observed = mean.observed,
           double = double,
-          hessian = hessian,
+          calc.se = calc.se,
+          FIM = FIM,
+          EFIM.S = EFIM.S, 
+          OFIM.hessian = OFIM.hessian, 
+          EFIM.parametric = EFIM.parametric,
           robust.se = robust.se
         )
     )
@@ -184,14 +207,22 @@ modsem_da <- function(model.syntax = NULL,
     "qml" = estQml(model,
       verbose = args$verbose,
       convergence = args$convergence,
-      hessian = args$hessian,
+      calc.se = args$calc.se,
+      FIM = args$FIM,
+      EFIM.S = args$EFIM.S,
+      OFIM.hessian = args$OFIM.hessian, 
+      EFIM.parametric = args$EFIM.parametric,
       robust.se = args$robust.se,
       ...
     ),
     "lms" = emLms(model,
       verbose = args$verbose,
       convergence = args$convergence,
-      hessian = args$hessian, 
+      calc.se = args$calc.se,
+      FIM = args$FIM,
+      EFIM.S = args$EFIM.S,
+      OFIM.hessian = args$OFIM.hessian, 
+      EFIM.parametric = args$EFIM.parametric,
       robust.se = args$robust.se,
       ...
     )

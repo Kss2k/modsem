@@ -171,7 +171,8 @@ summaryLmsAndQml <- function(object,
       method = method,
       cov.syntax = object$model$covModel$syntax,
       verbose = verbose,
-      hessian = FALSE,
+      calc.se = FALSE,
+      double = args$double,
       standardize = args$standardize,
       standardize.out = args$standardize.out,
       mean.observed = args$mean.observed
@@ -326,10 +327,11 @@ estimateNullModel <- function(parTable,
                               method = "lms",
                               cov.syntax = NULL,
                               verbose = FALSE,
-                              hessian = FALSE,
+                              calc.se = FALSE,
                               standardize = NULL,
                               standardize.out = NULL,
                               mean.observed = NULL,
+                              double = NULL,
                               ...) {
   tryCatch({
       strippedParTable <- removeUnknownLabels(parTable[!grepl(":", parTable$rhs), ])
@@ -340,11 +342,14 @@ estimateNullModel <- function(parTable,
       syntax <- parTableToSyntax(strippedParTable)
 
       if (verbose) cat("Estimating null model\n")
-      modsem_da(syntax, data, method, verbose = verbose, 
-                     cov.syntax = cov.syntax, hessian = hessian, 
-                     standardize = standardize, 
-                     standardize.out = standardize.out,
-                     mean.observed = mean.observed, ...)
+      modsem_da(syntax, data, method, 
+                verbose = verbose, 
+                cov.syntax = cov.syntax, 
+                calc.se = calc.se, 
+                double = double,
+                standardize = standardize, 
+                standardize.out = standardize.out,
+                mean.observed = mean.observed, ...)
     },
     error = function(e) {
       warning2(

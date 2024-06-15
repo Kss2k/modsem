@@ -82,6 +82,15 @@ estepLms <- function(model, theta, data, ...) {
 }
 
 
+function(model, N) {
+  V <- model$quad$n       # matrix of node vectors m x k
+  w <- model$quad$w       # weights
+  P <- matrix(rep(w, N), nrow = N, ncol = length(w),
+              byrow = TRUE)
+  P
+}
+
+
 logLikLms <- function(theta, model, data, P, sign = -1, ...) {
   modFilled <- fillModel(model = model, theta = theta, method = "lms")
   k <- model$quad$k 
@@ -99,10 +108,10 @@ logLikLms <- function(theta, model, data, P, sign = -1, ...) {
 
 
 gradientLogLikLms <- function(theta, model, data, P, sign = -1, dt = 1e-6) {
-  baseLL <- logLikLms(theta, model, data = data, P = P, sign = sign) 
+  baseLL <- logLikLms(theta, model = model, data = data, P = P, sign = sign) 
   vapply(seq_along(theta), FUN.VALUE = numeric(1L), FUN = function(i) {
      theta[[i]] <- theta[[i]] + dt 
-     (logLikLms(theta, model, data = data, P = P, sign = sign) - baseLL) / dt
+     (logLikLms(theta, model = model, data = data, P = P, sign = sign) - baseLL) / dt
   })
 }
 
@@ -136,7 +145,7 @@ gradientLogLikLms_i <- function(theta, model, data, P, sign = -1, dt = 1e-6) {
 
 
 # Maximization step of EM-algorithm (see Klein & Moosbrugger, 2000)
-mstepLms <- function(theta, model, data, P, hessian = FALSE,
+mstepLms <- function(theta, model, data, P, 
                      max.step,
                      verbose = FALSE,
                      control = list(), ...) {
@@ -146,11 +155,5 @@ mstepLms <- function(theta, model, data, P, hessian = FALSE,
                        upper = model$info$bounds$upper,
                        lower = model$info$bounds$lower, control = control,
                        ...) |> suppressWarnings()
-  if (hessian) {
-    if (verbose) cat("Calculating Hessian\n")
-    est$hessian <- nlme::fdHess(pars = est$par, fun = logLikLms, 
-                                model = model, data = data, P = P,
-                                .relStep = .Machine$double.eps^(1/5))$Hessian
-  }
   est
 }
