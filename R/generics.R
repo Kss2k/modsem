@@ -193,3 +193,52 @@ standardized_estimates.data.frame <- function(object, intercepts = FALSE, ...) {
 
   parTable
 }
+
+
+#' Inspect model information
+#'
+#' @param object fittet model to inspect
+#' @param what what to inspect
+#' @param ... Additional arguments passed to other functions
+#' @description funciton used to inspect fittet object. similar to `lavInspect()`
+#' argument 'what' decides what to inspect
+#' @details for `modsem_lms`, `modsem_qml` and `modsem_lavaan` 
+#' for `modsem_lavaan`, it is just a wrapper for `lavInspect()`
+#' for `modsem_lms` and `modsem_qml` what can either be "all", "matrices", "optim", 
+#' or just the name of what to extract. 
+#' @export
+modsem_inspect <- function(object, what = NULL, ...) {
+  UseMethod("modsem_inspect")
+}
+
+
+#' extract variance covariance matrix of model parameters
+#'
+#' @param object fitted model
+#' @param ... Additional arguments passed to other functions
+#' @export
+vcov <- function(object, ...) {
+  UseMethod("vcov")
+}
+
+
+#' Standard generic for "coef" defined from package "stats"
+#'
+#' @param object fitted model
+#' @description same as `coefficients()`
+#' @param ... Additional arguments passed to other functions
+#' @export
+coef <- function(object, ...) {
+  UseMethod("coef")
+}
+
+
+#' Standard generic for "coefficients" defined from package "stats"
+#'
+#' @param object fitted model
+#' @param ... Additional arguments passed to other functions
+#' @description same as `coef()`
+#' @export
+coefficients <- function(object, ...) {
+  UseMethod("coefficients")
+}

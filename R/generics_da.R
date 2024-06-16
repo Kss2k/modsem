@@ -454,3 +454,52 @@ standardized_estimates.modsem_lms <- function(object, ...) {
 standardized_estimates.modsem_qml <- function(object, ...) {
   standardized_estimates.data.frame(parameter_estimates(object))
 }
+
+
+#' @export 
+modsem_inspect.modsem_lms <- function(object, what = NULL, ...) {
+  if (is.null(what)) what <- "default"
+  modsem_inspect_da(object, what = what, ...)
+}
+
+
+#' @export 
+modsem_inspect.modsem_qml <- function(object, what = NULL, ...) {
+  if (is.null(what)) what <- "default"
+  modsem_inspect_da(object, what = what, ...)
+}
+
+
+#' @export 
+vcov.modsem_qml <- function(object, ...) {
+  modsem_inspect_da(object, what = "vcov")[[1]]
+}
+
+
+#' @export 
+vcov.modsem_lms <- function(object, ...) {
+  modsem_inspect_da(object, what = "vcov")[[1]]
+}
+
+
+#' @export 
+coefficients.modsem_qml <- function(object, ...) {
+  modsem_inspect_da(object, what = "coefficients")[[1]]
+}
+
+
+#' @export 
+coefficients.modsem_lms <- function(object, ...) {
+  modsem_inspect_da(object, what = "coefficients")[[1]]
+}
+
+#' @export 
+coef.modsem_qml <- function(object, ...) {
+  modsem_inspect_da(object, what = "coefficients")[[1]]
+}
+
+
+#' @export 
+coef.modsem_lms <- function(object, ...) {
+  modsem_inspect_da(object, what = "coefficients")[[1]]
+}

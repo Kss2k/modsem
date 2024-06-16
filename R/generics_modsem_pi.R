@@ -20,3 +20,28 @@ parameter_estimates.modsem_pi <- function(object, ...) {
 standardized_estimates.modsem_pi <- function(object, ...) {
   lavaan::standardizedSolution(object$lavaan, ...)
 }
+
+
+#' @export 
+modsem_inspect.modsem_pi <- function(object, what = NULL, ...) {
+  if (is.null(what)) what <- "free"
+  lavaan::lavInspect(object$lavaan, what = what, ...)
+}
+
+
+#' @export 
+vcov.modsem_pi <- function(object, ...) {
+  lavaan::vcov(object$lavaan, ...)
+}
+
+
+#' @export 
+coef.modsem_pi <- function(object, ...) {
+  lavaan::coef(object$lavaan, ...)
+}
+
+
+#' @export 
+coefficients.modsem_pi <- function(object, ...) {
+  lavaan::coef(object$lavaan, ...)
+}

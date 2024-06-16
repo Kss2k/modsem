@@ -46,6 +46,7 @@ calcFIM_da <- function(model,
     vcov <- solveFIM(I, NA__ = NA__)
   }
 
+  dimnames(I) <- dimnames(vcov) <- list(names(theta), names(theta))
   list(FIM = I, vcov = vcov)
 }
 

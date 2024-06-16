@@ -79,6 +79,11 @@ getIndsLVs <- function(parTable, lVs) {
 }
 
 
+getInds <- function(parTable) {
+  unique(unlist(getIndsLVs(parTable, lVs = getLVs(parTable))))
+}
+
+
 getIntTermRows <- function(parTable) {
   structExprs <- parTable[parTable$op == "~" & parTable$rhs != "1", ]
   structExprs[grepl(":", structExprs$rhs), ] 

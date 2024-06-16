@@ -70,3 +70,7 @@ plot_interaction(x = "INT", z = "PBC", y = "BEH", xz = "PBC:INT", vals_z = c(-0.
 print(summary(est2, H0 = FALSE))
 var_interactions(est2)
 standardized_estimates(est2)
+vcov(est2) 
+modsem_inspect(est2) 
+coef(est2)
+coefficients(est2)

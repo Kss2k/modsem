@@ -37,3 +37,8 @@ testthat::expect_equal(standardized_estimates(est2),
 
 calcCovParTable("BEH", "BEH", parameter_estimates(est2)) |>
   testthat::expect_equal(1)
+
+vcov(est2) 
+modsem_inspect(est2) 
+coef(est2)
+coefficients(est2)

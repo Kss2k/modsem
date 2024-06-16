@@ -28,10 +28,11 @@ simulateDataParTable <- function(parTable, N, colsOVs = NULL, colsLVs = NULL) {
           "components, yet")
   }
   # simulate data for xis 
-  phi <- getEstPhiParTable(parTable)
+  phi <- rmvnormParTable(parTable, type = "phi", N = N)
+  psi <- rmvnormParTable(parTable, type = "psi", N = N)
+  theta <- rmvnormParTable(parTable, type = "theta", N = N)
 
-  dataLVs <- as.matrix(mvtnorm::rmvnorm(n = N, mean = rep(0, numXis), sigma = phi))
-  colnames(dataLVs) <- xis
+  dataLVs <- phi 
 
   subVarsIntTerms <- varsIntTerms
   for (eta in etas) {
@@ -55,10 +56,7 @@ simulateDataParTable <- function(parTable, N, colsOVs = NULL, colsLVs = NULL) {
       y <-  y + row$est * dataLVs[ , row$rhs]
     }
 
-    psi <- parTable[parTable$lhs == parTable$rhs &
-                    parTable$lhs == eta & parTable$op == "~~", 
-                    "est"]
-    y <- y + stats::rnorm(N, mean = 0, sd = sqrt(psi))
+    y <- y + psi[, eta]
     dataLVs <- cbind(dataLVs, matrix(y, nrow = N, dimnames = list(NULL, eta)))   
   }
     
@@ -78,11 +76,10 @@ simulateDataParTable <- function(parTable, N, colsOVs = NULL, colsLVs = NULL) {
                        parTable$op == "=~" & 
                        parTable$rhs %in% inds, ] |>
       sortLambda(inds)
-    residuals <- getResidualsInds(parTable, lambda$rhs)                  
     dataOVs[, inds] <- 
       interceptVector %*% t(tau$est) + 
       dataLVs[, lV] %*% t(lambda$est) + 
-      mvtnorm::rmvnorm(N, rep(0, NROW(lambda)), residuals)
+      theta[, inds]
   }
 
   if (!is.null(colsOVs)) dataOVs <- dataOVs[ , colsOVs]
@@ -92,36 +89,30 @@ simulateDataParTable <- function(parTable, N, colsOVs = NULL, colsLVs = NULL) {
 }
 
 
-getEstPhiParTable <- function(parTable) {
-  xis <- getXis(parTable, checkAny = TRUE)
-  phi <- matrix(0, nrow = length(xis), ncol = length(xis), 
-                dimnames = list(xis, xis))
-  vcovExpres <- parTable[parTable$lhs %in% xis &
+rmvnormParTable <- function(parTable, type = "phi", N) {
+  vars <- switch(type, 
+                 phi = getXis(parTable, checkAny = TRUE),
+                 psi = getSortedEtas(parTable, checkAny = TRUE, isLV = TRUE),
+                 theta = getInds(parTable))
+
+  vcov <- matrix(0, nrow = length(vars), ncol = length(vars), 
+                dimnames = list(vars, vars))
+
+  vcovExpres <- parTable[parTable$lhs %in% vars &
                          parTable$op == "~~" & 
-                         parTable$rhs %in% xis, ]
+                         parTable$rhs %in% vars, ]
+
   for (i in seq_len(nrow(vcovExpres))) {
     lhs <- vcovExpres[i, "lhs"]
     rhs <- vcovExpres[i, "rhs"]
     est <- vcovExpres[i, "est"]
-    phi[lhs, rhs] <- phi[rhs, lhs] <- est
+    vcov[lhs, rhs] <- vcov[rhs, lhs] <- est
   }
-  phi
-}
 
-
-getResidualsInds <- function(parTable, inds) {
-  vcovRes <- matrix(0, nrow = length(inds), ncol = length(inds), 
-                dimnames = list(inds, inds))
-  vcovExpres <- parTable[parTable$lhs %in% inds &
-                         parTable$op == "~~" & 
-                         parTable$rhs %in% inds, ]
-  for (i in seq_len(nrow(vcovExpres))) {
-    lhs <- vcovExpres[i, "lhs"]
-    rhs <- vcovExpres[i, "rhs"]
-    est <- vcovExpres[i, "est"]
-    vcovRes[lhs, rhs] <- vcovRes[rhs, lhs] <- est
-  }
-  vcovRes
+  X <- as.matrix(mvtnorm::rmvnorm(n = N, mean = rep(0, length(vars)), 
+                                  sigma = vcov))
+  colnames(X) <- vars 
+  X
 }
 
 
