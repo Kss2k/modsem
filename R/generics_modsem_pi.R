@@ -1,4 +1,4 @@
-#' summary.modsem_pi
+#' summary for modsem objects
 #'
 #' @param object modsem object to summarized
 #' @param ... arguments passed to lavaan::summary()

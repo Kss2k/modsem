@@ -2,7 +2,7 @@
 % Please edit documentation in R/generics_da.R
 \name{compare_fit}
 \alias{compare_fit}
-\title{summary.modsem_lms}
+\title{compare model fit for qml and lms models}
 \usage{
 compare_fit(estH0, estH1)
 }
@@ -10,11 +10,15 @@ compare_fit(estH0, estH1)
 \item{estH0}{object of class `modsem_lms` or `modsem_qml` representing the
 null hypothesis model}
 
-\item{estH1}{object of class `modsem_lms` or `modsem_qml` representing the
-alternative hypothesis model}
+\item{estH1}{object of class `modsem_lms` or `modsem_qml` representing the}
 }
 \description{
-summary.modsem_lms
+Compare the fit of two models using the likelihood ratio test.
+`estH0` representing the null 
+hypothesis model, and `estH1` the alternative hypothesis model. Importantly, 
+the function assumes that `estH0` does not have more free parameters 
+(i.e., degrees of freedom) than `estH1`.
+alternative hypothesis model
 }
 \examples{
 \dontrun{

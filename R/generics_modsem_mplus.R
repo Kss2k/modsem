@@ -1,4 +1,4 @@
-#' summary.modsem_mplus
+#' summary for modsem objects
 #'
 #' @param object modsem object to summarized
 #' @param scientific print p-values in scientific notation

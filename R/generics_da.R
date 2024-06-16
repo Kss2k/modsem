@@ -10,7 +10,7 @@ parameter_estimates.modsem_qml <- function(object, ...) {
 }
 
 
-#' summary.modsem_lms
+#' summary for modsem objects
 #'
 #' @param object modsem object to summarized
 #' @param H0 should a null model be estimated (used for comparison)
@@ -69,7 +69,7 @@ summary.modsem_lms <- function(object,
 }
 
 
-#' summary.modsem_qml
+#' summary for modsem objects
 #'
 #' @param object modsem object to summarized
 #' @param H0 should a null model be estimated (used for comparison)
@@ -363,11 +363,16 @@ estimateNullModel <- function(parTable,
 
 
 
-#' summary.modsem_lms
+#' compare model fit for qml and lms models
 #'
 #' @param estH0 object of class `modsem_lms` or `modsem_qml` representing the
 #' null hypothesis model
 #' @param estH1 object of class `modsem_lms` or `modsem_qml` representing the
+#' @description Compare the fit of two models using the likelihood ratio test.
+#' `estH0` representing the null 
+#' hypothesis model, and `estH1` the alternative hypothesis model. Importantly, 
+#' the function assumes that `estH0` does not have more free parameters 
+#' (i.e., degrees of freedom) than `estH1`.
 #' alternative hypothesis model
 #' @rdname compare_fit
 #' @export

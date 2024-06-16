@@ -6,7 +6,7 @@
 \alias{summary.modsem_qml}
 \alias{summary.modsem_mplus}
 \alias{summary.modsem_pi}
-\title{summary.modsem_lms}
+\title{summary for modsem objects}
 \usage{
 \method{summary}{modsem_lms}(
   object,
@@ -87,13 +87,13 @@
 \item{...}{arguments passed to lavaan::summary()}
 }
 \description{
-summary.modsem_lms
+summary for modsem objects
 
-summary.modsem_qml
+summary for modsem objects
 
-summary.modsem_mplus
+summary for modsem objects
 
-summary.modsem_pi
+summary for modsem objects
 }
 \examples{
 \dontrun{
