@@ -39,11 +39,11 @@ calcFIM_da <- function(model,
     if (hessian && FIM == "observed")
       warning("'robust.se = TRUE' should not be paired with 'EFIM.hessian = TRUE' && 'FIM = \"observed\"'")
     H <- calcHessian(model, theta = theta, data = data, method = method)
-    invH <- solveHessian(H, NA__ = NA__)
+    invH <- solveFIM(H, NA__ = NA__)
     vcov <- invH %*% I %*% invH
 
   } else {
-    vcov <- solveHessian(I, NA__ = NA__)
+    vcov <- solveFIM(I, NA__ = NA__)
   }
 
   list(FIM = I, vcov = vcov)
@@ -68,7 +68,7 @@ calcHessian <- function(model, theta, data, method = "lms") {
 }
 
 
-solveHessian <- function(H, NA__ = -999) {
+solveFIM <- function(H, NA__ = -999) {
   tryCatch(solve(H), 
            error = function(e) {
              H[TRUE] <- NA__
@@ -127,7 +127,12 @@ calcEFIM_LMS <- function(model, finalModel = NULL, theta, data, S = 3e4,
   if (parametric) {
     if (is.null(finalModel)) stop2("finalModel must be included in calcEFIM_LMS")
     parTable <- modelToParTable(finalModel, method = "lms")
-    population <- simulateDataParTable(parTable, N = S)$oV
+    population <- tryCatch(
+      simulateDataParTable(parTable, N = S, colsOVs = colnames(data))$oV,
+      error = function(e) {
+        warning2("Unable to simulate data for EFIM, using stochastic sampling instead")
+        data[sample(N, S, replace = TRUE)]
+      })
 
   } else {
     population <- data[sample(N, S, replace = TRUE)]
@@ -169,8 +174,13 @@ calcEFIM_QML <- function(model, finalModel = NULL, theta, data, S = 3e4,
   if (parametric) {
     if (is.null(finalModel)) stop2("finalModel must be included in calcEFIM_QML")
     parTable <- modelToParTable(finalModel, method = "qml")
-    model$data <- simulateDataParTable(parTable, N = S)$oV
-
+    population <- tryCatch(
+      simulateDataParTable(parTable, N = S, colsOVs = colnames(data))$oV,
+      error = function(e) {
+        warning2("Unable to simulate data for EFIM, using stochastic sampling instead")
+        data[sample(N, S, replace = TRUE)]
+      })
+    model$data <- population
   } else {
     model$data <- data[sample(N, S, replace = TRUE)]
   }

@@ -1,4 +1,4 @@
-simulateDataParTable <- function(parTable, N) {
+simulateDataParTable <- function(parTable, N, colsOVs = NULL, colsLVs = NULL) {
   # endogenous variables (etas)model
   etas <- getSortedEtas(parTable, isLV = TRUE, checkAny = TRUE)
   numEtas <- length(etas)
@@ -84,6 +84,10 @@ simulateDataParTable <- function(parTable, N) {
       dataLVs[, lV] %*% t(lambda$est) + 
       mvtnorm::rmvnorm(N, rep(0, NROW(lambda)), residuals)
   }
+
+  if (!is.null(colsOVs)) dataOVs <- dataOVs[ , colsOVs]
+  if (!is.null(colsLVs)) dataLVs <- dataLVs[ , colsLVs]
+
   list(oV = dataOVs, lV = dataLVs)
 }
 
