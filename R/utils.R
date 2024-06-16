@@ -2,7 +2,7 @@
 calcCovParTable <- function(x, y, parTable, measurement.model = FALSE) {
   parTable$mod <- as.character(parTable$est)
   parTable <- parTable[c("lhs", "op", "rhs", "mod")]
-  eval(parse(text = tracePath(parTable, x, y, 
+  eval(parse(text = trace_path(parTable, x, y, 
                               measurement.model = measurement.model)))
 }
 

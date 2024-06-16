@@ -399,7 +399,7 @@ getParTableRestrictedMean <- function(prodName, elementsInProdName,
 
   meanStructure <- createParTableRow(vecLhsRhs = c(prodName, "1"),
                                      op = "~", mod = meanLabel)
-  covEquation <- tracePath(pt, elementsInProdName[[1]], elementsInProdName[[2]])
+  covEquation <- trace_path(pt, elementsInProdName[[1]], elementsInProdName[[2]])
   meanFormula <- createParTableRow(vecLhsRhs = c(meanLabel, covEquation), 
                                    op = "==") 
   rbind(meanStructure, meanFormula)

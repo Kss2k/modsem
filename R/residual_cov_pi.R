@@ -163,7 +163,7 @@ getFormulaResCovProdInd <- function(indProd1, indProd2, relDf, pt) {
   indShared <- rowShared[1, 1]
   indsNotShared <- unlist(rowNotShared[1, 1:2])
   lambdaShared <- createLabelLambda(indsNotShared, latentNotShared)
-  varLatentNotShared <- tracePath(pt, latentNotShared, latentNotShared)
+  varLatentNotShared <- trace_path(pt, latentNotShared, latentNotShared)
   varIndShared <- createLabelVar(indShared)
 
   rhs <- paste(lambdaShared[[1]], lambdaShared[[2]],

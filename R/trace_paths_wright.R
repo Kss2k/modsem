@@ -1,6 +1,10 @@
-getFromBack <- function(x, i = 0) {
-  x[(length(x) - i):length(x)]
-}
+# Functions for tracing paths in SEMs, used both for calculating (co-)variances, 
+# as well as calculating formulas for (co-)variances. In hindsight, 
+# using R6 and OOP principles to save the state of the PathTracer was the 
+# wrong choice. It would have been cleaner to store it using recursive 
+# function arguments. To do: remove R6 / OOP
+# Last updated 16.06.2024
+
 
 #' @importFrom R6 R6Class
 #' @importFrom dplyr if_else
@@ -9,7 +13,9 @@ PathTracer <- R6::R6Class("PathTracer", public = list(
   paths = NULL,
   x = NULL,
   y = NULL,
-  initialize = function(pt, x, y, addCovPt = TRUE) {
+  maxlen = 100,
+
+  initialize = function(pt, x, y, addCovPt = TRUE, maxlen = 100) {
     # Remove any potential ':' from the model
     pt <- lapplyDf(pt, stringr::str_remove_all, pattern = ":")
     structuralVars <- pt[pt$op == "~" & pt$rhs != "1", c("lhs", "rhs")] |>
@@ -29,10 +35,17 @@ PathTracer <- R6::R6Class("PathTracer", public = list(
     self$pt <- pt
     self$x <- x 
     self$y <- y
+    self$maxlen <- maxlen
     self$paths <- list()
   },
+
   trace = function(var = self$x, currentPath = c(), covCount = 0, 
-                   from = "lhs") {
+                   from = "lhs", depth = 1) {
+    if (depth > self$maxlen) {
+      warning2("Encountered a non-recursive model (infinite loop) when tracing paths")
+      return(FALSE)
+    } 
+
     if (covCount > 1) return(FALSE)
     if (var == self$y && from == "rhs") {
       self$paths <- c(self$paths, character(1))
@@ -53,12 +66,16 @@ PathTracer <- R6::R6Class("PathTracer", public = list(
         nextCovCount <- covCount + 1
         switch(from, lhs = nextFrom <- "rhs", rhs = nextFrom <- "lhs")
       }
-      rest <- c(rest, self$trace(nextVar, currentPath = c(currentPath, branch$mod),
-                                 covCount = nextCovCount, from = nextFrom))
+      rest <- c(rest, self$trace(nextVar, 
+                                 currentPath = c(currentPath, branch$mod),
+                                 covCount = nextCovCount, 
+                                 from = nextFrom, 
+                                 depth = depth + 1))
       
     } 
     any(rest)
   },
+
   clean = function() {
     squaredExprs <- purrr::map_chr(self$paths, function(x) {
              reps <- sort(x) |> table() |> as.data.frame()
@@ -77,6 +94,7 @@ PathTracer <- R6::R6Class("PathTracer", public = list(
             false = reps[[1]]) |>
       stringr::str_c(collapse = " + ")
   },
+
   generateSyntax = function(parenthesis = TRUE, ...) {
     self$paths <- list()
     solvedSelf <- self$trace(...) 
@@ -95,7 +113,8 @@ PathTracer <- R6::R6Class("PathTracer", public = list(
 #' @param y destination variable
 #' @param parenthesis if TRUE, the output will be enclosed in parenthesis
 #' @param measurement.model if TRUE, the function will use the measurement model
-#' @param ... additional arguments passed to tracePath
+#' @param maxlen maximum length of a path before aborting
+#' @param ... additional arguments passed to trace_path
 #'
 #' @return A string with the estimated path (simplified if possible)
 #' @export 
@@ -117,8 +136,9 @@ PathTracer <- R6::R6Class("PathTracer", public = list(
 #'   Y ~ X + Z + X:Z
 #''
 #' pt <- modsemify(m1)
-#' tracePath(pt, "Y", "Y") # variance of Y
-tracePath <- function(pt, x, y, parenthesis = TRUE, measurement.model = FALSE, ...) {
+#' trace_path(pt, "Y", "Y") # variance of Y
+trace_path <- function(pt, x, y, parenthesis = TRUE, measurement.model = FALSE, 
+                      maxlen = 100, ...) {
   if (measurement.model) {
     measurmentRows <- pt$op == "=~"
     measurmentRowsRhs <- pt$rhs[measurmentRows]
@@ -127,7 +147,7 @@ tracePath <- function(pt, x, y, parenthesis = TRUE, measurement.model = FALSE, .
     pt$lhs[measurmentRows] <- measurmentRowsRhs 
     pt$rhs[measurmentRows] <- measurmentRowsLhs
   }
-  pathTracer <- PathTracer$new(pt, x, y)
+  pathTracer <- PathTracer$new(pt = pt, x = x, y = y, maxlen = maxlen)
   out <- pathTracer$generateSyntax(parenthesis = parenthesis, ...)
   rm(pathTracer)
   out

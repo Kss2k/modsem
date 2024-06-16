@@ -72,7 +72,7 @@ addCovariances <- function(pt) {
 
   combos <- getUniqueCombos(latents)
   combos$connected <- !is.na(apply(combos, MARGIN = 1, function(xy)
-                                   tracePath(pt, xy[[1]], xy[[2]])))
+                                   trace_path(pt, xy[[1]], xy[[2]])))
   toBeSpecified <- combos[!combos$connected, c("V1", "V2")]
   newRows <- apply(toBeSpecified[c("V1", "V2")],
                    MARGIN = 1,
@@ -141,9 +141,9 @@ specifyVarCovSingle <- function(parTable, relDf) {
   labelLatentProd <- createLabelVar(latentProd)
   labelsElemsInProd <- vapply(elemsInProdTerm, 
                               FUN.VALUE = vector("character", length = 1L),
-                              FUN = function(x) tracePath(parTable, x, x))
+                              FUN = function(x) trace_path(parTable, x, x))
 
-  labelCovElems <- tracePath(parTable, elemsInProdTerm[[1]],
+  labelCovElems <- trace_path(parTable, elemsInProdTerm[[1]],
                              elemsInProdTerm[[2]]) |> paste0(" ^ 2")
 
   lhs <- labelLatentProd
@@ -178,7 +178,7 @@ specifyVarCovSingle <- function(parTable, relDf) {
         createLabelLambdaSquared(relDf[latent, indProd], 
                                  rownames(relDf)[[latent]])
       labelsVarLatents[[latent]] <- 
-        tracePath(parTable, rownames(relDf)[[latent]],
+        trace_path(parTable, rownames(relDf)[[latent]],
                   rownames(relDf)[[latent]])
       labelsVarInds[[latent]] <- createLabelVar(relDf[latent, indProd])
     }
