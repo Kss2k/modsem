@@ -30,18 +30,21 @@ modsem_inspect.modsem_pi <- function(object, what = NULL, ...) {
 
 
 #' @export 
+#' @importFrom stats vcov
 vcov.modsem_pi <- function(object, ...) {
   lavaan::vcov(object$lavaan, ...)
 }
 
 
 #' @export 
+#' @importFrom stats coef
 coef.modsem_pi <- function(object, ...) {
   lavaan::coef(object$lavaan, ...)
 }
 
 
 #' @export 
+#' @importFrom stats coefficients
 coefficients.modsem_pi <- function(object, ...) {
   lavaan::coef(object$lavaan, ...)
 }

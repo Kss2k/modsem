@@ -14,7 +14,7 @@
 #' 
 #' @param standardize.data should data be scaled before fitting model
 #' 
-#' @param firstLoadingFixed Sould the first factorloading in the latent prod be fixed to one?
+#' @param first.loading.fixed Sould the first factorloading in the latent prod be fixed to one?
 #' 
 #' @param center.before should inds in prods be centered before computing prods (overwritten by method, if method != NULL)
 #' 
@@ -115,7 +115,7 @@ modsem_pi <- function(model.syntax = NULL,
                       match = FALSE,
                       standardize.data = FALSE,
                       center.data = FALSE,
-                      firstLoadingFixed = TRUE,
+                      first.loading.fixed = TRUE,
                       center.before = NULL,
                       center.after = NULL,
                       residuals.prods = NULL,
@@ -164,7 +164,7 @@ modsem_pi <- function(model.syntax = NULL,
                              constrained.loadings = constrained.loadings,
                              constrained.var = constrained.var,
                              constrained.res.cov.method = constrained.res.cov.method,
-                             firstLoadingFixed = firstLoadingFixed))
+                             first.loading.fixed = first.loading.fixed))
 
   # modsem-algorithm for prod ind based approaches -----------------------------
   prodInds <-
@@ -184,7 +184,7 @@ modsem_pi <- function(model.syntax = NULL,
                                constrained.prod.mean = methodSettings$constrained.prod.mean,
                                constrained.loadings = methodSettings$constrained.loadings,
                                constrained.var = methodSettings$constrained.var,
-                               firstFixed = firstLoadingFixed,
+                               firstFixed = first.loading.fixed,
                                ...)
 
   newSyntax <- parTableToSyntax(parTable, removeColon = TRUE)
@@ -445,4 +445,125 @@ getParTableMeasure <- function(dependentName,
 
 createParTableRow <- function(vecLhsRhs, op, mod = "") {
   data.frame(lhs = vecLhsRhs[[1]], op = op, rhs = vecLhsRhs[[2]], mod = mod)
+}
+
+
+
+#' Get lavaan syntax for product indicator approaches
+#'
+#' @param model.syntax lavaan syntax
+#' 
+#' @param method method to use:
+#' "rca" = residual centering approach,
+#' "uca" = unconstrained approach,
+#' "dblcent" = double centering approach,
+#' "pind" = prod ind approach, with no constraints or centering,
+#' "custom" = use parameters specified in the function call
+#' @param match should the product indicators be created by using the match-strategy
+#' 
+#' @param match should product indicators be made using the match strategy
+#' @param ... arguments passed to other functions (e.g., modsem_pi)
+#' 
+#' @return character vector
+#' @export 
+#' @description
+#' get_pi_syntax is a function for creating the lavaan syntax used for estimating 
+#' latent interaction models using one of the product indiactors in lavaan. 
+#' @examples
+#' library(modsem)
+#' library(lavaan)
+#' m1 <- '
+#'   # Outer Model
+#'   X =~ x1 + x2 +x3
+#'   Y =~ y1 + y2 + y3
+#'   Z =~ z1 + z2 + z3
+#'   
+#'   # Inner model
+#'   Y ~ X + Z + X:Z 
+#' '
+#' syntax <- get_pi_syntax(m1)
+#' data <- get_pi_data(m1, oneInt)
+#' est <- sem(syntax, data)
+get_pi_syntax <- function(model.syntax,
+                          method = "dblcent",
+                          match = FALSE,
+                          ...) {
+  oVs <- getOVs(model.syntax = model.syntax)
+  emptyData <- as.data.frame(matrix(0, nrow = 1, ncol = length(oVs), 
+                                    dimnames = list(NULL, oVs)))
+  modsem_pi(model.syntax, method = method, match = match, 
+            data = emptyData, run = FALSE, ...)$syntax
+}
+
+
+#' Get data with product indicators for different approaches
+#'
+#' @param model.syntax lavaan syntax
+#' @param data data to create product indicators from 
+#' @param method method to use:
+#' "rca" = residual centering approach,
+#' "uca" = unconstrained approach,
+#' "dblcent" = double centering approach,
+#' "pind" = prod ind approach, with no constraints or centering,
+#' "custom" = use parameters specified in the function call
+#' @param match should the product indicators be created by using the match-strategy
+#' 
+#' @param match should product indicators be made using the match strategy
+#' @param ... arguments passed to other functions (e.g., modsem_pi)
+#' 
+#' @return data.frame
+#' @export 
+#' @description
+#' get_pi_syntax is a function for creating the lavaan syntax used for estimating 
+#' latent interaction models using one of the product indiactors in lavaan. 
+#' @examples
+#' library(modsem)
+#' library(lavaan)
+#' m1 <- '
+#'   # Outer Model
+#'   X =~ x1 + x2 +x3
+#'   Y =~ y1 + y2 + y3
+#'   Z =~ z1 + z2 + z3
+#'   
+#'   # Inner model
+#'   Y ~ X + Z + X:Z 
+#' '
+#' syntax <- get_pi_syntax(m1)
+#' data <- get_pi_data(m1, oneInt)
+#' est <- sem(syntax, data)
+get_pi_data <- function(model.syntax,
+                          data,
+                          method = "dblcent",
+                          match = FALSE,
+                          ...) {
+  modsem_pi(model.syntax, data = data, method = method, match = match, 
+            run = FALSE, ...)$data
+}
+
+
+
+#' extract lavaan object from modsem object estimated using product indicators
+#'
+#' @param object modsem object
+#' 
+#' @return lavaan object
+#' @export 
+#' @examples
+#' library(modsem)
+#' m1 <- '
+#'   # Outer Model
+#'   X =~ x1 + x2 + x3
+#'   Y =~ y1 + y2 + y3
+#'   Z =~ z1 + z2 + z3
+#'   
+#'   # Inner model
+#'   Y ~ X + Z + X:Z 
+#' '
+#' est <- modsem_pi(m1, oneInt)
+#' lav_est <- extract_lavaan(est) 
+extract_lavaan <- function(object) {
+  if (!inherits(object, "modsem_pi")) {
+    stop2("object is not of class modsem_pi")
+  }
+  object$lavaan
 }

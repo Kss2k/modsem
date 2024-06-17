@@ -210,35 +210,3 @@ standardized_estimates.data.frame <- function(object, intercepts = FALSE, ...) {
 modsem_inspect <- function(object, what = NULL, ...) {
   UseMethod("modsem_inspect")
 }
-
-
-#' extract variance covariance matrix of model parameters
-#'
-#' @param object fitted model
-#' @param ... Additional arguments passed to other functions
-#' @export
-vcov <- function(object, ...) {
-  UseMethod("vcov")
-}
-
-
-#' Standard generic for "coef" defined from package "stats"
-#'
-#' @param object fitted model
-#' @description same as `coefficients()`
-#' @param ... Additional arguments passed to other functions
-#' @export
-coef <- function(object, ...) {
-  UseMethod("coef")
-}
-
-
-#' Standard generic for "coefficients" defined from package "stats"
-#'
-#' @param object fitted model
-#' @param ... Additional arguments passed to other functions
-#' @description same as `coef()`
-#' @export
-coefficients <- function(object, ...) {
-  UseMethod("coefficients")
-}

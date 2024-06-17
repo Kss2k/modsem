@@ -476,35 +476,41 @@ modsem_inspect.modsem_qml <- function(object, what = NULL, ...) {
 
 
 #' @export 
+#' @importFrom stats vcov
 vcov.modsem_qml <- function(object, ...) {
   modsem_inspect_da(object, what = "vcov")[[1]]
 }
 
 
 #' @export 
+#' @importFrom stats vcov
 vcov.modsem_lms <- function(object, ...) {
   modsem_inspect_da(object, what = "vcov")[[1]]
 }
 
 
 #' @export 
+#' @importFrom stats coefficients
 coefficients.modsem_qml <- function(object, ...) {
   modsem_inspect_da(object, what = "coefficients")[[1]]
 }
 
 
 #' @export 
+#' @importFrom stats coefficients
 coefficients.modsem_lms <- function(object, ...) {
   modsem_inspect_da(object, what = "coefficients")[[1]]
 }
 
 #' @export 
+#' @importFrom stats coef
 coef.modsem_qml <- function(object, ...) {
   modsem_inspect_da(object, what = "coefficients")[[1]]
 }
 
 
 #' @export 
+#' @importFrom stats coef
 coef.modsem_lms <- function(object, ...) {
   modsem_inspect_da(object, what = "coefficients")[[1]]
 }

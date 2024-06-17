@@ -11,7 +11,7 @@ modsem_pi(
   match = FALSE,
   standardize.data = FALSE,
   center.data = FALSE,
-  firstLoadingFixed = TRUE,
+  first.loading.fixed = TRUE,
   center.before = NULL,
   center.after = NULL,
   residuals.prods = NULL,
@@ -46,7 +46,7 @@ modsem_pi(
 
 \item{center.data}{should data be centered before fitting model}
 
-\item{firstLoadingFixed}{Sould the first factorloading in the latent prod be fixed to one?}
+\item{first.loading.fixed}{Sould the first factorloading in the latent prod be fixed to one?}
 
 \item{center.before}{should inds in prods be centered before computing prods (overwritten by method, if method != NULL)}
 

@@ -70,6 +70,16 @@ getLVs <- function(parTable) {
 }
 
 
+getOVs <- function(parTable = NULL, model.syntax = NULL) {
+  if (!is.null(model.syntax)) parTable <- modsemify(model.syntax)
+  if (is.null(parTable)) stop2("Missing parTable")
+  lVs <- getLVs(parTable)   
+  select <- parTable$op %in% c("=~", "~", "~~") & parTable$lhs != "1"
+  vars <- unique(c(parTable$lhs[select], parTable$rhs[select]))
+  vars[!vars %in% lVs]
+}
+
+
 getIndsLVs <- function(parTable, lVs) {
   measrExprs <- parTable[parTable$op == "=~" & 
                          parTable$lhs %in% lVs, ]

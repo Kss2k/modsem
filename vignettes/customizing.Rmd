@@ -15,14 +15,13 @@ knitr::opts_chunk$set(
 )
 ```
 
-```{r setup}
+```{r setup, eval = TRUE}
 library(modsem)
 ```
 
 By default, modsem() creates product indicators for you, based on the interaction specified in your model. Behind the scenes we can see that modsem() creates in total 9 variables (product indicators) used as the indicators for your latent product.
 
 ```{r}
-library(modsem)
 m1 <- '
 # Outer Model
 X =~ x1 + x2 + x3
@@ -60,9 +59,18 @@ summary(est2)
 
 ## More complicated models
 
-I you want even more control you can use the 'run = FALSE' argument, such that you can extract the modified syntax and data from modsem, and alter them accordingly. This can be particularly useful in cases where you want to estimate a model using a feature in lavaan, which isn't available in modsem. For example, (as of yet) the syntax for both ordered- and multigroup models isn't as flexible as in lavaan. Thus you can modify the auto-generated syntax (with the altered dataset) from modsem to suit your needs.
+I you want even more control you can use the `get_pi_syntax()` and 
+`get_pi_data()` functions,
+such that you can extract the modified syntax and data from modsem, 
+and alter them accordingly. This can be particularly useful in 
+cases where you want to estimate a model using a feature in lavaan, 
+which isn't available in modsem. 
+For example, (as of yet) the syntax for both ordered- and 
+multigroup models isn't as flexible as in lavaan. 
+Thus you can modify the auto-generated syntax 
+(with the altered dataset) from modsem to suit your needs.
 
-```{r}
+```{r, eval = TRUE}
 m3 <- '
 # Outer Model
 X =~ x1 + x2
@@ -72,10 +80,11 @@ Z =~ z1 + z2
 # Inner model
 Y ~ X + Z + X:Z 
 '
-est3 <- modsem(m3, oneInt, run = FALSE)
-cat(est3$syntax)
+syntax <- get_pi_syntax(m3)
+cat(syntax)
 ```
 
-```{r}
-head(est3$data)
+```{r, eval = TRUE}
+data <- get_pi_data(m3, oneInt)
+head(data)
 ```
