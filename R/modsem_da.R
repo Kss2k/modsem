@@ -17,7 +17,11 @@
 #'
 #' @param nodes number of quadrature nodes (points of integration) used in lms,
 #' increased number gives better estimates but slower computation. How many is needed, depends on the complexity of the model
-#' for simple models 16 is enough, for more complex models 100 is usually enough.
+#' for simple models 16 is enough, for more complex higher numbers may be needed. If you want the highest possible accuracy 
+#' 100 is usually more than enough. For models where there is an interaction effects between and endogenous and exogenous variable 
+#' the number of nodes should at least be 20, but practically (e.g., ordinal/skewed data) >=32 is recommended. In cases, 
+#' where data is non-normal it mifht be better to use the qml approach instead.
+#'
 #' @param convergence convergence criterion. Lower values give better estimates but slower computation.
 #'
 #' @param center.data should data be centered before fitting model

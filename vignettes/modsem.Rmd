@@ -63,6 +63,9 @@ summary(reg1)
 ```
 
 **Using modsem()** In general, when you have interactions between observed variables it is recommended that you use method = "pind".
+Interaction effects with observed variables is not supported by the LMS- and QML-approach. 
+In certain circumstances, you can define a latent variabale with a single indicator to estimate the interaction effect between two observed variables, 
+in the LMS and QML approach, but it is generally not recommended.
 
 ```{r}
 # Here we use "pind" as the method (see chapter 3)
