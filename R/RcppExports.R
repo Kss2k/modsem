@@ -41,11 +41,11 @@ multiplyIndicatorsCpp <- function(df) {
     .Call(`_modsem_multiplyIndicatorsCpp`, df)
 }
 
-rep_dmvnorm <- function(x, expected, sigma, t, cores) {
-    .Call(`_modsem_rep_dmvnorm`, x, expected, sigma, t, cores)
+rep_dmvnorm <- function(x, expected, sigma, t) {
+    .Call(`_modsem_rep_dmvnorm`, x, expected, sigma, t)
 }
 
-dmvnrm_arma_mc <- function(x, mean, sigma, logd = TRUE, cores = 2L) {
-    .Call(`_modsem_dmvnrm_arma_mc`, x, mean, sigma, logd, cores)
+dmvnrm_arma_mc <- function(x, mean, sigma, logd = TRUE) {
+    .Call(`_modsem_dmvnrm_arma_mc`, x, mean, sigma, logd)
 }
 

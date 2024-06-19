@@ -71,9 +71,7 @@ logLikQml <- function(theta, model, sum = TRUE, sign = -1) {
     f3 <- dnormCpp(m$y[, 1], mu = Ey, sigma = sqrt(sigmaEpsilon))
   } else {
     f3 <- rep_dmvnorm(m$y[, colnames(m$subThetaEpsilon)],
-      expected = Ey,
-      sigma = sigmaEpsilon, t = t, cores = 2
-    )
+                      expected = Ey, sigma = sigmaEpsilon, t = t)
   }
   if (sum) {
     return(sign * sum(f2 + f3))
