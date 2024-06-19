@@ -37,8 +37,7 @@ removeInteractions <- function(model) {
 # Faster version of mvtnorm::dmvnorm() given that sigma is positive 
 # there are some drawbacks to using mvnfast. In particular, 
 # its a little less consistent
-dMvn <- function(X, mean, sigma, log = FALSE) {
-  sigma <- round(sigma, 12) # makes it more reliable
+dmvn <- function(X, mean, sigma, log = FALSE) {
   return(tryCatch(mvnfast::dmvn(X, mean, sigma, log, ncores = 2),
                   error = function(e) mvtnorm::dmvnorm(X, mean, sigma, log)))
 }
@@ -267,4 +266,20 @@ as.logical.matrix <- function(x, ...) {
 
 isScalingY <- function(x) {
   seq_along(x) %in% which(x == 1 | x == 0)
+}
+
+
+runningAverage <- function(x, n = 10) {
+  if (length(x) < n) return(0)
+  last <- length(x)  
+  if (last < n) first <- 1 else first <- last - n + 1
+  mean(x[first:last])
+}
+
+
+nNegativeLast <- function(x, n = 10) {
+  if (length(x) < n) return(0)
+  last <- length(x)  
+  if (last < n) first <- 1 else first <- last - n + 1
+  sum(x[first:last] < 0)
 }

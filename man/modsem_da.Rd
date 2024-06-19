@@ -25,6 +25,9 @@ modsem_da(
   OFIM.hessian = NULL,
   EFIM.parametric = NULL,
   robust.se = NULL,
+  max.iter = NULL,
+  max.step = NULL,
+  start = NULL,
   ...
 )
 }
@@ -88,6 +91,12 @@ simulated parametrically (simulated based on the assumptions- and implied parame
 from the model), or non-parametrically (stochastically sampled)}
 
 \item{robust.se}{should robust standard errors be computed?}
+
+\item{max.iter}{max numebr of iterations}
+
+\item{max.step}{max steps for the M-step in the EM algorithm}
+
+\item{start}{starting parameters}
 
 \item{...}{additional arguments to be passed to the estimation function}
 }

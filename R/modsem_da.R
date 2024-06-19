@@ -64,6 +64,9 @@
 #' from the model), or non-parametrically (stochastically sampled) 
 #'
 #' @param robust.se should robust standard errors be computed?
+#' @param max.iter max numebr of iterations
+#' @param max.step max steps for the M-step in the EM algorithm
+#' @param start starting parameters 
 #'
 #' @param ... additional arguments to be passed to the estimation function
 #'
@@ -144,6 +147,9 @@ modsem_da <- function(model.syntax = NULL,
                       OFIM.hessian = NULL, 
                       EFIM.parametric = NULL,
                       robust.se = NULL,
+                      max.iter = NULL, 
+                      max.step = NULL,
+                      start = NULL,
                       ...) {
   if (is.null(model.syntax)) {
     stop2("No model.syntax provided")
@@ -178,7 +184,9 @@ modsem_da <- function(model.syntax = NULL,
           EFIM.S = EFIM.S, 
           OFIM.hessian = OFIM.hessian, 
           EFIM.parametric = EFIM.parametric,
-          robust.se = robust.se
+          robust.se = robust.se,
+          max.iter = max.iter, 
+          max.step = max.step
         )
     )
 
@@ -203,6 +211,12 @@ modsem_da <- function(model.syntax = NULL,
   )
 
   if (args$optimize) model <- optimizeStartingParamsDA(model)
+  
+  if (!is.null(start)) {
+    checkStartingParams(start, model = model) # throws error if somethings wrong
+    model$theta <- start
+  }
+
   est <- switch(method,
     "qml" = estQml(model,
       verbose = args$verbose,
@@ -213,6 +227,7 @@ modsem_da <- function(model.syntax = NULL,
       OFIM.hessian = args$OFIM.hessian, 
       EFIM.parametric = args$EFIM.parametric,
       robust.se = args$robust.se,
+      max.iter = args$max.iter,
       ...
     ),
     "lms" = emLms(model,
@@ -224,6 +239,8 @@ modsem_da <- function(model.syntax = NULL,
       OFIM.hessian = args$OFIM.hessian, 
       EFIM.parametric = args$EFIM.parametric,
       robust.se = args$robust.se,
+      max.iter = args$max.iter, 
+      max.step = args$max.step,
       ...
     )
   )

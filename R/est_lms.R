@@ -17,36 +17,63 @@ emLms <- function(model,
 
   # Initialization
   logLikNew <- 0
-  logLikOld <- 1e10
+  logLikOld <- 0
   iterations <- 0     
   thetaNew <- model$theta
-  nLogIncreased <- 0
+
+  bestLogLik <- -Inf
+  bestP <- NULL 
+  bestTheta <- NULL
+  logLiks <- NULL
+  logLikChanges <- NULL
+
   run <- TRUE
-  while(run) { # as long as no convergence is reached
-    # Update loglikelihood
+  doEstep <- TRUE
+
+  while(run) {
     logLikOld <- logLikNew
     thetaOld <- thetaNew
 
-    P <- estepLms(model = model, theta = thetaOld, data = data, ...)
+    if (doEstep) P <- estepLms(model = model, theta = thetaOld, data = data, ...)
+
     mstep <- mstepLms(model = model, P = P, data = data,
                       theta = thetaOld, max.step = max.step, 
                       control = control, ...)
 
-    logLikNew <- mstep$objective
+    logLikNew <- -mstep$objective
     thetaNew <- unlist(mstep$par)
     iterations <- iterations + 1
+    logLiks <- c(logLiks, logLikNew)
+    logLikChanges <- c(logLikChanges, logLikNew - logLikOld)
 
     if (verbose) {
       cat(sprintf("EM: Iteration = %5d, LogLik = %11.2f, Change = %10.3f\n",
-            iterations, -logLikNew, logLikOld - logLikNew))
+            iterations, logLikNew, logLikNew - logLikOld))
     }
-    if(iterations >= max.iter){
+
+    if (logLikNew > bestLogLik) {
+      bestLogLik <- logLikNew
+      bestP <- P 
+      bestTheta <- thetaOld
+    }
+
+    if (abs(logLikOld - logLikNew) < convergence) run <- FALSE
+    if (iterations >= max.iter){
       warning2("Maximum number of iterations was reached. ",
               "EM algorithm might not have converged.")
-      break
+      run <- FALSE
     }
-    if (abs(logLikOld - logLikNew) < convergence) run <- FALSE
+
+    if (doEstep && runningAverage(logLikChanges, n = 30) < 0 && 
+        nNegativeLast(logLikChanges, n = 30) >= 15 && iterations > 100) {
+      doEstep <- FALSE  
+      P <- bestP 
+      thetaNew <- bestTheta
+      warning2("EM algorithm is not converging. ", 
+               "Attempting to fix prior probabilities from E-step")
+    }
   }
+
   final <- mstepLms(model = model, P = P, data = data,
                     theta = thetaNew, 
                     max.step = max.step, 

@@ -1,7 +1,7 @@
 estQml <- function(model, 
                    convergence = 1e-2,
                    verbose = FALSE, 
-                   max.iter = 1000,
+                   max.iter = 500,
                    calc.se = TRUE,
                    FIM = "observed",
                    OFIM.hessian = FALSE,

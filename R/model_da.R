@@ -588,3 +588,18 @@ modelToParTable <- function(model, method = "lms") {
   rbind(mainModelToParTable(model, method = method),
         covModelToParTable(model, method = method))
 }
+
+
+checkStartingParams <- function(start, model) {
+  if (length(start) != length(model$theta)) {
+    stop2("The length of the starting parameters does not match the number of parameters in the model")
+  }
+  if (is.null(names(start))) {
+    names(start) <- names(model$theta)
+  }
+  if (!all(names(start) %in% names(model$theta))) {
+    stop2("The names of the starting parameters do not match the names of the parameters in the model")
+  }
+
+  NULL
+}

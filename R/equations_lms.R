@@ -75,19 +75,11 @@ estepLms <- function(model, theta, data, ...) {
   # of observing the given nodes (i.e., w). Sum the row probabilities = 1
   P <- matrix(0, nrow = nrow(data), ncol = length(w))
   sapply(seq_along(w), FUN = function(i) {
-      P[,i] <<- w[[i]] * dMvn(data, mean = muLmsCpp(model = modFilled, z = V[i,]),
-                              sigma = sigmaLmsCpp(model = modFilled, z = V[i,]))
+      P[,i] <<- w[[i]] * dmvn(data, mean = muLmsCpp(model = modFilled, z = V[i,]),
+                              sigma = sigmaLmsCpp(model = modFilled, z = V[i,]), 
+                              log = FALSE)
   })
   P / rowSums(P)
-}
-
-
-function(model, N) {
-  V <- model$quad$n       # matrix of node vectors m x k
-  w <- model$quad$w       # weights
-  P <- matrix(rep(w, N), nrow = N, ncol = length(w),
-              byrow = TRUE)
-  P
 }
 
 
@@ -98,7 +90,7 @@ logLikLms <- function(theta, model, data, P, sign = -1, ...) {
   # summed log probability of observing the data given the parameters
   # weighted my the posterior probability calculated in the E-step
   r <- vapply(seq_len(nrow(V)), FUN.VALUE = numeric(1L), FUN = function(i){
-    lls <- sum(dMvn(data, mean = muLmsCpp(model = modFilled, z = V[i,]),
+    lls <- sum(dmvn(data, mean = muLmsCpp(model = modFilled, z = V[i,]),
                     sigma = sigmaLmsCpp(model = modFilled, z = V[i,]),
                     log = TRUE) * P[,i])
     lls
@@ -107,7 +99,7 @@ logLikLms <- function(theta, model, data, P, sign = -1, ...) {
 }
 
 
-gradientLogLikLms <- function(theta, model, data, P, sign = -1, dt = 1e-6) {
+gradientLogLikLms <- function(theta, model, data, P, sign = -1, dt = 1e-4) {
   baseLL <- logLikLms(theta, model = model, data = data, P = P, sign = sign) 
   vapply(seq_along(theta), FUN.VALUE = numeric(1L), FUN = function(i) {
      theta[[i]] <- theta[[i]] + dt 
@@ -124,7 +116,7 @@ logLikLms_i <- function(theta, model, data, P, sign = -1, ...) {
   # summed log probability of observing the data given the parameters
   # weighted my the posterior probability calculated in the E-step
   r <- lapplyMatrix(seq_len(nrow(V)), FUN = function(i){
-    lls <- dMvn(data, mean = muLmsCpp(model = modFilled, z = V[i,]),
+    lls <- dmvn(data, mean = muLmsCpp(model = modFilled, z = V[i,]),
                 sigma = sigmaLmsCpp(model = modFilled, z = V[i,]),
                 log = TRUE) * P[,i]
     lls
@@ -135,7 +127,7 @@ logLikLms_i <- function(theta, model, data, P, sign = -1, ...) {
 
 
 # gradient function of logLikLms_i
-gradientLogLikLms_i <- function(theta, model, data, P, sign = -1, dt = 1e-6) {
+gradientLogLikLms_i <- function(theta, model, data, P, sign = -1, dt = 1e-4) {
   baseLL <- logLikLms_i(theta, model, data = data, P = P, sign = sign) 
   lapplyMatrix(seq_along(theta), FUN = function(i) {
      theta[[i]] <- theta[[i]] + dt 
@@ -148,12 +140,30 @@ gradientLogLikLms_i <- function(theta, model, data, P, sign = -1, dt = 1e-6) {
 mstepLms <- function(theta, model, data, P, 
                      max.step,
                      verbose = FALSE,
-                     control = list(), ...) {
-  if (is.null(control$iter.max)) control$iter.max <- max.step
-  est <- stats::nlminb(start = theta, objective = logLikLms, data = data,
-                       model = model, P = P, 
-                       upper = model$info$bounds$upper,
-                       lower = model$info$bounds$lower, control = control,
-                       ...) |> suppressWarnings()
+                     control = list(), 
+                     optimizer = "nlminb",
+                     optim.method = "L-BFGS-B",
+                     ...) {
+
+  if (optimizer == "nlminb") {
+    if (is.null(control$iter.max)) control$iter.max <- max.step
+    est <- stats::nlminb(start = theta, objective = logLikLms, data = data,
+                         model = model, P = P, gradient = gradientLogLikLms,
+                         sign = -1,
+                         upper = model$info$bounds$upper,
+                         lower = model$info$bounds$lower, control = control,
+                         ...) |> suppressWarnings()
+
+  } else if (optimizer == "optim") {
+    if (is.null(control$maxit)) control$maxit <- max.step
+    est <- stats::optim(par = theta, fn = logLikLms, data = data,
+                        model = model, P = P, gr = gradientLogLikLms,
+                        method = optim.method, control = control, 
+                        lower = model$info$bounds$lower, 
+                        upper = model$info$bounds$upper,
+                        ...)
+    est$objective <- est$value
+  } else stop2("Unrecognized optimizer")
+
   est
 }
