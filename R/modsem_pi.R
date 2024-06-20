@@ -57,6 +57,7 @@
 #' modsem_pi() is essentially a just 
 #' a fancy wrapper for lavaan::sem()  which generates the 
 #' necessary syntax, and variables for the estimation of models with latent product indicators.
+#' use `default_settings_pi()` to get the default settings for the different methods.
 #' @examples
 #' library(modsem)
 #' # For more examples check README and/or GitHub.
@@ -112,7 +113,7 @@
 modsem_pi <- function(model.syntax = NULL,
                       data = NULL,
                       method = "dblcent",
-                      match = FALSE,
+                      match = NULL,
                       standardize.data = FALSE,
                       center.data = FALSE,
                       first.loading.fixed = TRUE,
@@ -133,9 +134,23 @@ modsem_pi <- function(model.syntax = NULL,
   if (is.null(model.syntax)) stop2("No model syntax provided in modsem")
   if (is.null(data)) stop2("No data provided in modsem")
   if (!is.data.frame(data)) data <- as.data.frame(data)
-  
+
+  methodSettings <-
+    getMethodSettingsPI(method, args =
+                        list(center.before = center.before,
+                             center.after = center.after,
+                             residuals.prods = residuals.prods,
+                             residual.cov.syntax = residual.cov.syntax,
+                             constrained.prod.mean = constrained.prod.mean,
+                             constrained.loadings = constrained.loadings,
+                             constrained.var = constrained.var,
+                             constrained.res.cov.method = constrained.res.cov.method,
+                             first.loading.fixed = first.loading.fixed,
+                             match = match))
+
   # Get the specifications of the model 
-  modelSpec <- parseLavaan(model.syntax, colnames(data), match = match)
+  modelSpec <- parseLavaan(model.syntax, colnames(data), 
+                           match = methodSettings$match)
 
   # Data Processing  -----------------------------------------------------------
   data <- data[c(modelSpec$oVs, group)]
@@ -154,17 +169,6 @@ modsem_pi <- function(model.syntax = NULL,
     data <- lapplyDf(data, FUN = function(x) x - mean(x))
   }
 
-  methodSettings <-
-    getMethodSettingsPI(method, args =
-                        list(center.before = center.before,
-                             center.after = center.after,
-                             residuals.prods = residuals.prods,
-                             residual.cov.syntax = residual.cov.syntax,
-                             constrained.prod.mean = constrained.prod.mean,
-                             constrained.loadings = constrained.loadings,
-                             constrained.var = constrained.var,
-                             constrained.res.cov.method = constrained.res.cov.method,
-                             first.loading.fixed = first.loading.fixed))
 
   # modsem-algorithm for prod ind based approaches -----------------------------
   prodInds <-

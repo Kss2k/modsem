@@ -8,7 +8,7 @@ modsem_pi(
   model.syntax = NULL,
   data = NULL,
   method = "dblcent",
-  match = FALSE,
+  match = NULL,
   standardize.data = FALSE,
   center.data = FALSE,
   first.loading.fixed = TRUE,
@@ -88,6 +88,7 @@ two frameworks: 1. Product Indicator based approaches ("dblcent", "rca", "uca",
 modsem_pi() is essentially a just 
 a fancy wrapper for lavaan::sem()  which generates the 
 necessary syntax, and variables for the estimation of models with latent product indicators.
+use `default_settings_pi()` to get the default settings for the different methods.
 }
 \examples{
 library(modsem)

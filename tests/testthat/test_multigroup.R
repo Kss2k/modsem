@@ -19,5 +19,5 @@ lavaanEst <- lavaan::parameterEstimates(fit_lavaan)
 lavaanEst[is.na(lavaanEst)] <- -999
 modsemEst <- lavaan::parameterEstimates(fit_modsem$lavaan)
 modsemEst[is.na(modsemEst)] <- -999
-stopifnot(all(lavaanEst == modsemEst))
+testthat::expect_equal(lavaanEst, modsemEst)
 

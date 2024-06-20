@@ -1,13 +1,5 @@
 getMethodSettingsPI <- function(method, args) {
-    settingNames <- c("center.before", "center.after",
-                    "residuals.prods", "residual.cov.syntax",
-                    "constrained.prod.mean", "constrained.loadings",
-                    "constrained.var", "constrained.res.cov.method")
-    args <- args[settingNames]
-    isMissing <- vapply(args, FUN.VALUE = logical(1L), FUN = is.null)
-    missingArgs <- settingNames[isMissing]
-    defaultResCov <- "simple" # could be defaultResCov both there is not really 
-                              # support for it in the literature
+    defaultResCov <- "simple" 
     settings <- list(
         rca = list(
             center.before = FALSE,
@@ -17,7 +9,8 @@ getMethodSettingsPI <- function(method, args) {
             constrained.prod.mean = FALSE,
             constrained.loadings = FALSE,
             constrained.var = FALSE,
-            constrained.res.cov.method =  defaultResCov),
+            constrained.res.cov.method =  defaultResCov,
+            match = FALSE),
         uca  = list(
             center.before = TRUE,
             center.after = FALSE,
@@ -26,7 +19,8 @@ getMethodSettingsPI <- function(method, args) {
             constrained.prod.mean = TRUE,
             constrained.loadings = FALSE,
             constrained.var = FALSE,
-            constrained.res.cov.method =  defaultResCov),
+            constrained.res.cov.method =  defaultResCov,
+            match = FALSE),
         pind  = list(
             center.before = FALSE,
             center.after = FALSE,
@@ -35,7 +29,8 @@ getMethodSettingsPI <- function(method, args) {
             constrained.prod.mean = FALSE,
             constrained.loadings = FALSE,
             constrained.var = FALSE,
-            constrained.res.cov.method =  defaultResCov),
+            constrained.res.cov.method =  defaultResCov,
+            match = FALSE),
         dblcent  = list(
             center.before = TRUE,
             center.after = TRUE,
@@ -44,7 +39,8 @@ getMethodSettingsPI <- function(method, args) {
             constrained.prod.mean = FALSE,
             constrained.loadings = FALSE,
             constrained.var = FALSE,
-            constrained.res.cov.method =  defaultResCov),
+            constrained.res.cov.method =  defaultResCov,
+            match = FALSE),
         ca = list(
             center.before = TRUE,
             center.after = FALSE,
@@ -53,12 +49,35 @@ getMethodSettingsPI <- function(method, args) {
             constrained.prod.mean = TRUE,
             constrained.loadings = TRUE,
             constrained.var = TRUE,
-            constrained.res.cov.method =  "ca")
+            constrained.res.cov.method =  "ca",
+            match = TRUE)
         )
 
+    settingNames <- unique(unlist(lapply(settings, FUN = names)))
+    args <- args[settingNames]
+
+    if (is.null(args)) return(settings[method])
+
+    isMissing <- vapply(args, FUN.VALUE = logical(1L), FUN = is.null)
+    missingArgs <- settingNames[isMissing]
     if  (!method %in% names(settings)) {
         stop2("Unrecognized method")
     }
     c(settings[[method]][missingArgs], args[!isMissing])
 }
 
+
+
+#' default arguments for product indicator approaches
+#'
+#' @param method which method to get the settings for
+#' @return modsem_lms or modsem_qml object
+#' @export
+#' @description
+#' This function returns the default settings for the product indicator approaches
+#' @examples
+#' library(modsem)
+#' default_settings_pi()
+default_settings_pi <- function(method = c("rca", "uca", "pind", "dblcent", "ca")) {
+  getMethodSettingsPI(method = method, args = NULL)
+}
