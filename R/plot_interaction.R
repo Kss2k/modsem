@@ -3,7 +3,8 @@
 #' @param x The name of the variable on the x-axis 
 #' @param z The name of the moderator variable 
 #' @param y The name of the outcome variable 
-#' @param xz The name of the interaction term
+#' @param xz The name of the interaction term. If the interaction term is not specified, it
+#' it will be created using `x` and `z`.
 #' @param vals_x The values of the x variable to plot, the more values the smoother the std.error-area will be
 #' @param vals_z The values of the moderator variable to plot. A seperate regression 
 #' line ("y ~ x | z") will be plotted for each value of the moderator variable
@@ -49,13 +50,13 @@
 #' plot_interaction(x = "INT", z = "PBC", y = "BEH", xz = "PBC:INT", 
 #'                  vals_z = c(-0.5, 0.5), model = est2)
 #' }
-plot_interaction <- function(x, z, y, xz, vals_x = seq(-3, 3, .001) , vals_z, model, 
-                             alpha_se = 0.15, ...) {
-  if (!inherits(model, c("modsem_pi", "modsem_lms", 
-                         "modsem_mplus", "modsem_qml"))) {
+plot_interaction <- function(x, z, y, xz = NULL, vals_x = seq(-3, 3, .001) , 
+                             vals_z, model, alpha_se = 0.15, ...) {
+  if (!isModsemObject(model)) {
     stop2("model must be of class 'modsem_pi', 'modsem_da', or 'modsem_mplus'")
   }
 
+  if (is.null(xz)) xz <- paste(x, z, sep = ":")
   xz <- c(xz, reverseIntTerm(xz)) 
   if (!inherits(model, c("modsem_lms", "modsem_qml", "modsem_mplus"))) {
     xz <- stringr::str_remove_all(xz, ":")
