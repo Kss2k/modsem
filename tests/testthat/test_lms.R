@@ -58,15 +58,14 @@ PBC ~ a * ATT + a * SN
 '
 
 startTime2 <- Sys.time()
-est2 <- modsem(tpb, TPB, 
-  method = "lms", optimize = TRUE, verbose = TRUE, 
-  convergence = 1, cov.syntax = covModel,
-  nodes = 16, robust.se = TRUE,
-  # closer to mplus when tweaking the number of nodes and convergence criterion
-  # nodes = 100, convergence = 1e-7 is very very close to mplus
-)
+testthat::expect_warning({
+  est2 <- modsem(tpb, TPB, 
+                 method = "lms", optimize = TRUE, verbose = TRUE, 
+                 convergence = 1, cov.syntax = covModel,
+                 nodes = 16, robust.se = TRUE)
+  }, regexp = "It is recommended .* between endogenous variables .*")
 duration2 <- Sys.time() - startTime2
-plot_interaction(x = "INT", z = "PBC", y = "BEH", xz = "PBC:INT", vals_z = c(-0.5, 0.5), model = est2)
+plot_interaction(x = "INT", z = "PBC", y = "BEH", vals_z = c(-0.5, 0.5), model = est2)
 print(summary(est2, H0 = FALSE))
 var_interactions(est2)
 standardized_estimates(est2)
@@ -74,3 +73,28 @@ vcov(est2)
 modsem_inspect(est2) 
 coef(est2)
 coefficients(est2)
+
+
+tpb2 <- ' 
+# Outer Model (Based on Hagger et al., 2007)
+  ATT =~ att1 + att2 + att3 + att4 + att5
+  SN =~ sn1 + sn2
+  PBC =~ pbc1 + pbc2 + pbc3
+  INT =~ int1 + int2 + int3
+  BEH =~ b1 + b2
+
+# Inner Model (Based on Steinmetz et al., 2011)
+  # Covariances
+  ATT ~~ SN + PBC
+  PBC ~~ SN 
+  # Causal Relationsships
+  INT ~ a * ATT + b * SN + c * PBC
+  BEH ~ INT + PBC 
+  BEH ~ INT:PBC  
+'
+
+testthat::expect_warning({
+  modsem(tpb, TPB, method = "lms",
+         convergence = 1000,
+         nodes = 16, calc.se = FALSE)
+  }, regexp = "It is recommended .* between exogenous and endogenous .*")
