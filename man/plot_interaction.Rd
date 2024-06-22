@@ -8,7 +8,7 @@ plot_interaction(
   x,
   z,
   y,
-  xz,
+  xz = NULL,
   vals_x = seq(-3, 3, 0.001),
   vals_z,
   model,
@@ -23,7 +23,8 @@ plot_interaction(
 
 \item{y}{The name of the outcome variable}
 
-\item{xz}{The name of the interaction term}
+\item{xz}{The name of the interaction term. If the interaction term is not specified, it
+it will be created using `x` and `z`.}
 
 \item{vals_x}{The values of the x variable to plot, the more values the smoother the std.error-area will be}
 
