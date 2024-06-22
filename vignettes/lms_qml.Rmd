@@ -62,12 +62,13 @@ When estimating more complicated models with the LMS-approach,
 it is recommended that you increase the number of 
 nodes used for numerical integration. By default the number of nodes is set to 16,
 and can be increased using the nodes argument. The argument has no effect on the QML approach.
+When there is an interaction effect between an endogenous and exogenous variable, 
+it is recommended that you use at least 32 nodes for the LMS-approach.
 You can also get robust standard errors by setting `robust.se = TRUE` in the 
 `modsem()` function.
 
 Note: If you want the lms-approach to give as similar results as possible to
-mplus, you would have to increase the number of nodes (e.g., `nodes = 100`), 
-and lower the convergence criterion (e.g., `conv_crit = 1e-5`).
+mplus, you would have to increase the number of nodes (e.g., `nodes = 100`).
 
 ```{r}
 # ATT = Attitude, 
@@ -89,7 +90,7 @@ tpb <- '
   BEH ~ INT:PBC  
 '
 
-lms2 <- modsem(tpb, TPB, method = "lms", nodes = 20,
+lms2 <- modsem(tpb, TPB, method = "lms", nodes = 32,
                robust.se = TRUE)
 summary(lms2)
 

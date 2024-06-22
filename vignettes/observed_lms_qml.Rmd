@@ -1,0 +1,110 @@
+---
+title: "observed variables in the LMS- and QML approach"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{observed variables in the LMS- and QML approach}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+```{r setup}
+library(modsem)
+```
+# The Latent Moderated Structural Equations (LMS) and the Quasi Maximum Likelihood (QML) approach 
+In contrast to the other approaches, the LMS and QML approaches are designed to 
+handle latent variables only. Thus observed variables cannot be as easily used, 
+as in the other approaches. One way of getting around this is by specifying 
+your observed variable as a latent variable with a single indicator. `modsem()`
+will by default constrain the factor loading to `1`, and the residual variance 
+of the indicator to `0`. Then, the only difference between the latent variable 
+and its indicator, is that (assuming that it is an exogenous variable) it has 
+a zero-mean. This will work for both the LMS- and QML 
+approach in most cases, except for two exceptions.
+
+## The LMS approach
+For the LMS approach you can use the above mentioned approach in almost 
+all cases, except in the case where you wish to use an observed variable as 
+a moderating variable. In the LMS approach, you will usually select one variable 
+in an interaction term as a moderator. The interaction effect is then estimated 
+via numerical integration, at `n` quadrature nodes of the moderating variable. 
+This process however, requires that the moderating variable has an error-term, 
+as the distribution of the moderating variable is modelled as $X \sim N(Az, \varepsilon)$,
+where $\bm{Az}$ is the expected value of $X$ at quadrature point `k`, and 
+$\varepsilon$ is the error term. If the error-term is zero, the probability of
+observing a given value of $X$ will not be computable. In most instances the 
+first variable in the interaction term, is chosen as the moderator. For example, 
+if the interaction term is `"X:Z"`, `"X"` will usually be chosen as the moderator. 
+Thus if only one of the variables are latent, you should put the latent variable 
+first in the interaction term. If both are observed, you have to specify a 
+measurement error (e.g., "x1 ~~ 0.1 * x1") for the indicator of the first variable 
+in the interaction term.
+
+```{r}
+library(modsem)
+
+# interaction effect between a latent and an observed variable
+m1 <- '
+# Outer Model
+  X =~ x1 # X is observed
+  Z =~ z1 + z2 # Z is latent
+  Y =~ y1 # Y is observed
+
+# Inner model
+  Y ~ X + Z
+  Y ~ Z:X
+'
+
+lms1 <- modsem(m1, oneInt, method = "lms")
+
+# interaction effect between two observed variables
+m2 <- '
+# Outer Model
+  X =~ x1 # X is observed
+  Z =~ z1 # Z is observed
+  Y =~ y1 # Y is observed
+  x1 ~~ 0.1 * x1 # specify a variance for the measurement error
+# Inner model
+  Y ~ X + Z
+  Y ~ X:Z
+'
+
+lms2 <- modsem(m1, oneInt, method = "lms")
+```
+
+## The QML approach
+The estimation of the QML approach is different from the LMS approach, 
+and you do not have the same issue as in the LMS approach. Thus you don't 
+have to specify a measurement error for moderating variables. The only 
+restriction in the QML approach, is that all endogenous variables have 
+to have atleast two indicators. This is due to a transformation, and 
+the approximation of the distribution of the indicators 
+in the endogenous variables. This problem will likely be fixed in a later 
+update, but as of now, latent endogenous variable need at least two indicators. 
+If a latent variable in the QML approach can be expressed without using an 
+interaction term, you can in some cases use the 'cov.syntax' argument as 
+a workaround. If this is the case, see the vignette on interaction effects 
+between two endogenous variable in the LMS- and QML approach 
+(`vignette("interaction_two_etas")`) 
+
+```{r} 
+m3 <- '
+# Outer Model
+  X =~ x1 # X is observed
+  Z =~ z1 # Z is observed
+  Y =~ y1 + y2 # Y needs to be latent, needing atleast two indicators
+
+# Inner model
+  Y ~ X + Z
+  Y ~ X:Z
+'
+
+qml3 <- modsem(m3, oneInt, method = "qml")
+``` 
