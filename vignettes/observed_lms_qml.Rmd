@@ -37,7 +37,7 @@ in an interaction term as a moderator. The interaction effect is then estimated
 via numerical integration, at `n` quadrature nodes of the moderating variable. 
 This process however, requires that the moderating variable has an error-term, 
 as the distribution of the moderating variable is modelled as $X \sim N(Az, \varepsilon)$,
-where $\bm{Az}$ is the expected value of $X$ at quadrature point `k`, and 
+where $Az$ is the expected value of $X$ at quadrature point `k`, and 
 $\varepsilon$ is the error term. If the error-term is zero, the probability of
 observing a given value of $X$ will not be computable. In most instances the 
 first variable in the interaction term, is chosen as the moderator. For example, 
