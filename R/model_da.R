@@ -11,19 +11,19 @@ paramMatrices <- c("lambdaX", "lambdaY", "gammaXi", "gammaEta",
 
 # Functions
 specifyModelDA <- function(syntax = NULL, 
-                               data = NULL, 
-                               method = "lms", 
-                               m = 16,
-                               cov.syntax = NULL, 
-                               double = FALSE, 
-                               parTable = NULL, 
-                               parTableCovModel = NULL,
-                               auto.constraints = TRUE, 
-                               create.theta = TRUE,
-                               mean.observed = TRUE,
-                               standardize.inp = FALSE, 
-                               standardize.out = FALSE
-                               ) {
+                           data = NULL, 
+                           method = "lms", 
+                           m = 16,
+                           cov.syntax = NULL, 
+                           double = FALSE, 
+                           parTable = NULL, 
+                           parTableCovModel = NULL,
+                           auto.constraints = TRUE, 
+                           create.theta = TRUE,
+                           mean.observed = TRUE,
+                           standardize.inp = FALSE, 
+                           standardize.out = FALSE,
+                           checkModel = TRUE) {
   if (!is.null(syntax)) parTable <- modsemify(syntax)
   if (is.null(parTable)) stop2("No parTable found")
 
@@ -218,7 +218,7 @@ specifyModelDA <- function(syntax = NULL,
   model$data <- cleanAndSortData(data, allIndsXis, allIndsEtas)
   model$info$N <- NROW(model$data)
 
-  checkModel(model = model, covModel = covModel) 
+  if (checkModel) checkModel(model = model, covModel = covModel, method = method)
 
   model
 }

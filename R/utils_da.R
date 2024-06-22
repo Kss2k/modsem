@@ -139,9 +139,10 @@ getEmptyModel <- function(parTable, cov.syntax, parTableCovModel,
   }
 
   specifyModelDA(parTable = parTable, method = method,
-                     cov.syntax = cov.syntax,
-                     parTableCovModel = parTableCovModel,
-                     auto.constraints = FALSE, create.theta = FALSE)
+                 cov.syntax = cov.syntax,
+                 parTableCovModel = parTableCovModel,
+                 auto.constraints = FALSE, create.theta = FALSE,
+                 checkModel = FALSE)
 }
 
 
@@ -183,7 +184,7 @@ getLabeledParamsLavaan <- function(parTable, fixedParams = NULL) {
 }
 
 
-checkModel <- function(model, covModel = NULL) {
+checkModel <- function(model, covModel = NULL, method = "lms") {
   modelXis <- model$info$xis
   if (!is.null(covModel$info)) {
     covModelEtas <- covModel$info$etas
@@ -196,7 +197,50 @@ checkModel <- function(model, covModel = NULL) {
     }
   }
 
+  checkNodesLms(parTable = rbind(model$parTable, covModel$parTable),
+                nodes = model$quad$m, method = method)
   NULL
+}
+
+
+checkNodesLms <- function(parTable,
+                          nodes, 
+                          method = "lms",
+                          minNodesXiXi = 16,
+                          minNodesXiEta = 32, 
+                          minNodesEtaEta = 50) {
+  if (method == "qml") return(NULL)
+
+  etas <- getEtas(parTable, isLV = TRUE)
+  xis <- getXis(parTable, etas = etas, isLV = TRUE)
+  varsInts <- getVarsInts(getIntTermRows(parTable))
+
+  nodesXiXi_ok <- TRUE
+  nodesXiEta_ok <- TRUE
+  nodesEtaEta_ok <- TRUE
+  
+  lapply(varsInts, FUN = function(x) {
+    if (all(x %in% xis)) nodesXiXi_ok <<- nodes >= minNodesXiXi
+    else if (all(x %in% etas)) nodesEtaEta_ok <<- nodes >= minNodesEtaEta
+    else if (any(x %in% etas)) nodesXiEta_ok <<- nodes >= minNodesXiEta
+    else warning2("Unable to classify latent variables in interaction terms")
+  }) 
+
+  if (!nodesXiXi_ok) {
+    warning2("It is recommended that you have at least ", minNodesXiXi,  " nodes ",
+             "for interaction effects between exogenous variables in the lms approach ", 
+             "'nodes = ", nodes, "'")
+  } 
+  if (!nodesXiEta_ok) {
+    warning2("It is recommended that you have at least ", minNodesXiEta, " nodes ", 
+             "for interaction effects between exogenous and endogenous variables in the lms approach ", 
+             "'nodes = ", nodes, "'")
+  }   
+  if (!nodesEtaEta_ok) {
+    warning2("It is recommended that you have at least ", minNodesEtaEta, " nodes ",
+             "for interaction effects between endogenous variables in the lms approach ", 
+             "'nodes = ", nodes, "'")
+  }
 }
 
 

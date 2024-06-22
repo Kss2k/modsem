@@ -166,3 +166,8 @@ lapplyDf <- function(df, FUN, ...) {
             row.names = seq_len(nrow(df)),
             class = "data.frame")
 }
+
+
+isModsemObject <- function(x) {
+  inherits(x, c("modsem_pi", "modsem_lms", "modsem_mplus", "modsem_qml"))
+}
