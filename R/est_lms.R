@@ -65,12 +65,13 @@ emLms <- function(model,
     }
 
     if (doEstep && runningAverage(logLikChanges, n = 30) < 0 && 
-        nNegativeLast(logLikChanges, n = 30) >= 15 && iterations > 100) {
+        nNegativeLast(logLikChanges, n = 30) >= 15 && iterations > 200) {
       doEstep <- FALSE  
       P <- bestP 
       thetaNew <- bestTheta
       warning2("EM algorithm is not converging. ", 
-               "Attempting to fix prior probabilities from E-step")
+               "Attempting to fix prior probabilities from E-step\n", 
+               "you might want to change the number of nodes (see 'help(modsem_da)')")
     }
   }
 
