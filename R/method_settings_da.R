@@ -1,8 +1,8 @@
 getMethodSettingsDA <- function(method, args = NULL) {
     settings <- list(
-        lms = list(verbose = TRUE, 
+        lms = list(verbose = FALSE, 
                    optimize = TRUE,
-                   nodes = 16, 
+                   nodes = 24, 
                    convergence = 1e-6,
                    center.data = FALSE, 
                    standardize.data = FALSE,
@@ -18,7 +18,7 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    robust.se = FALSE,
                    max.iter = 500, 
                    max.step = 1),
-        qml = list(verbose = TRUE, 
+        qml = list(verbose = FALSE, 
                    optimize = TRUE,
                    nodes = 0, 
                    convergence = 1e-6,
