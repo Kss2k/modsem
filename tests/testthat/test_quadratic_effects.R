@@ -11,8 +11,9 @@ names(ests) <- methods
 
 
 for (method in methods) {
-  if (method == "ca") {
-    ests[[method]] <- modsem(m1, data = oneInt, method = method, match = TRUE)
+  if (method == "lms") {
+    ests[[method]] <- modsem(m1, data = oneInt, method = method, 
+                             convergence = 1e-3)
   } else {
     ests[[method]] <- modsem(m1, data = oneInt, method = method)
   }
