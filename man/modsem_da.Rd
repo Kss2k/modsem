@@ -28,6 +28,7 @@ modsem_da(
   max.iter = NULL,
   max.step = NULL,
   start = NULL,
+  epsilon = NULL,
   ...
 )
 }
@@ -91,15 +92,19 @@ NOTE: Not recommended unless you know what you are doing.}
 
 \item{EFIM.parametric}{should data for calculating expected fisher information matrix be 
 simulated parametrically (simulated based on the assumptions- and implied parameters
-from the model), or non-parametrically (stochastically sampled)}
+from the model), or non-parametrically (stochastically sampled). If you believe that 
+normality assumptions are violated, 'EFIM.parametric = FALSE' might be the better option.}
 
-\item{robust.se}{should robust standard errors be computed?}
+\item{robust.se}{should robust standard errors be computed? Meant to be used for QML, 
+can be unreliable with the LMS-approach.}
 
 \item{max.iter}{max numebr of iterations}
 
-\item{max.step}{max steps for the M-step in the EM algorithm}
+\item{max.step}{max steps for the M-step in the EM algorithm (LMS)}
 
 \item{start}{starting parameters}
+
+\item{epsilon}{finite difference for numerical derivatives}
 
 \item{...}{additional arguments to be passed to the estimation function}
 }
