@@ -29,6 +29,7 @@ modsem_da(
   max.step = NULL,
   start = NULL,
   epsilon = NULL,
+  quad.range = NULL,
   ...
 )
 }
@@ -50,7 +51,8 @@ increased number gives better estimates but slower computation. How many is need
 For simple models you somwhere between 16-24 should be enough, for more complex higher numbers may be needed. 
 For models where there is an interaction effects between and endogenous and exogenous variable 
 the number of nodes should at least be 32, but practically (e.g., ordinal/skewed data) more than 32 is recommended. In cases, 
-where data is non-normal it might be better to use the qml approach instead.}
+where data is non-normal it might be better to use the qml approach instead. For large
+numbers of nodes, you might want to change the 'quad.range' argument.}
 
 \item{convergence}{convergence criterion. Lower values give better estimates but slower computation.}
 
@@ -105,6 +107,11 @@ can be unreliable with the LMS-approach.}
 \item{start}{starting parameters}
 
 \item{epsilon}{finite difference for numerical derivatives}
+
+\item{quad.range}{range in z-scores to perform numerical integration in LMS using 
+Gaussian-Hermite Quadratures. By default Inf, such that f(t) is integrated from -Inf to Inf, 
+but this will likely be inefficient and pointless at large number of nodes. Nodes outside 
++/- quad.range will be ignored.}
 
 \item{...}{additional arguments to be passed to the estimation function}
 }

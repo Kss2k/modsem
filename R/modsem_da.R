@@ -20,9 +20,11 @@
 #' For simple models you somwhere between 16-24 should be enough, for more complex higher numbers may be needed. 
 #' For models where there is an interaction effects between and endogenous and exogenous variable 
 #' the number of nodes should at least be 32, but practically (e.g., ordinal/skewed data) more than 32 is recommended. In cases, 
-#' where data is non-normal it might be better to use the qml approach instead.
+#' where data is non-normal it might be better to use the qml approach instead. For large
+#' numbers of nodes, you might want to change the 'quad.range' argument.
 #'
 #' @param convergence convergence criterion. Lower values give better estimates but slower computation.
+#' 
 #'
 #' @param center.data should data be centered before fitting model
 #'
@@ -74,6 +76,10 @@
 #' @param max.step max steps for the M-step in the EM algorithm (LMS)
 #' @param start starting parameters 
 #' @param epsilon finite difference for numerical derivatives
+#' @param quad.range range in z-scores to perform numerical integration in LMS using 
+#' Gaussian-Hermite Quadratures. By default Inf, such that f(t) is integrated from -Inf to Inf, 
+#' but this will likely be inefficient and pointless at large number of nodes. Nodes outside 
+#' +/- quad.range will be ignored.
 #'
 #' @param ... additional arguments to be passed to the estimation function
 #'
@@ -158,6 +164,7 @@ modsem_da <- function(model.syntax = NULL,
                       max.step = NULL,
                       start = NULL,
                       epsilon = NULL,
+                      quad.range = NULL,
                       ...) {
   if (is.null(model.syntax)) {
     stop2("No model.syntax provided")
@@ -195,7 +202,8 @@ modsem_da <- function(model.syntax = NULL,
           robust.se = robust.se,
           max.iter = max.iter, 
           max.step = max.step,
-          epsilon = epsilon
+          epsilon = epsilon,
+          quad.range = quad.range
         )
     )
 
@@ -216,7 +224,8 @@ modsem_da <- function(model.syntax = NULL,
     m = args$nodes,
     cov.syntax = cov.syntax,
     mean.observed = args$mean.observed,
-    double = args$double
+    double = args$double,
+    quad.range = args$quad.range
   )
 
   if (args$optimize) model <- optimizeStartingParamsDA(model)

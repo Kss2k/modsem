@@ -3,7 +3,7 @@ getMethodSettingsDA <- function(method, args = NULL) {
         lms = list(verbose = FALSE, 
                    optimize = TRUE,
                    nodes = 24, 
-                   convergence = 1e-6,
+                   convergence = 1e-4,
                    center.data = FALSE, 
                    standardize.data = FALSE,
                    standardize.out = FALSE, 
@@ -18,7 +18,8 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    robust.se = FALSE,
                    max.iter = 500, 
                    max.step = 1,
-                   epsilon = 1e-4),
+                   epsilon = 1e-4, 
+                   quad.range = Inf),
         qml = list(verbose = FALSE, 
                    optimize = TRUE,
                    nodes = 0, 
@@ -37,7 +38,8 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    robust.se = FALSE,
                    max.iter = 500, 
                    max.step = NULL,
-                   epsilon = 1e-8)
+                   epsilon = 1e-8, 
+                   quad.range = Inf)
     )
 
     if (is.null(args)) return(settings[method])

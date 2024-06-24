@@ -72,7 +72,7 @@ emLms <- function(model,
       thetaNew <- bestTheta
       warning2("EM algorithm is not converging. ", 
                "Attempting to fix prior probabilities from E-step\n", 
-               "you might want to change the number of nodes (see 'help(modsem_da)')")
+               "you might want to increase the convergence (i.e., less strict) criterion (see 'help(modsem_da)')")
     }
   }
 
