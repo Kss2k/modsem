@@ -99,11 +99,11 @@ logLikLms <- function(theta, model, data, P, sign = -1, ...) {
 }
 
 
-gradientLogLikLms <- function(theta, model, data, P, sign = -1, dt = 1e-4) {
+gradientLogLikLms <- function(theta, model, data, P, sign = -1, epsilon = 1e-4) {
   baseLL <- logLikLms(theta, model = model, data = data, P = P, sign = sign) 
   vapply(seq_along(theta), FUN.VALUE = numeric(1L), FUN = function(i) {
-     theta[[i]] <- theta[[i]] + dt 
-     (logLikLms(theta, model = model, data = data, P = P, sign = sign) - baseLL) / dt
+     theta[[i]] <- theta[[i]] + epsilon 
+     (logLikLms(theta, model = model, data = data, P = P, sign = sign) - baseLL) / epsilon
   })
 }
 
@@ -127,11 +127,11 @@ logLikLms_i <- function(theta, model, data, P, sign = -1, ...) {
 
 
 # gradient function of logLikLms_i
-gradientLogLikLms_i <- function(theta, model, data, P, sign = -1, dt = 1e-4) {
+gradientLogLikLms_i <- function(theta, model, data, P, sign = -1, epsilon = 1e-4) {
   baseLL <- logLikLms_i(theta, model, data = data, P = P, sign = sign) 
   lapplyMatrix(seq_along(theta), FUN = function(i) {
-     theta[[i]] <- theta[[i]] + dt 
-     (logLikLms_i(theta, model, data = data, P = P, sign = sign) - baseLL) / dt
+     theta[[i]] <- theta[[i]] + epsilon 
+     (logLikLms_i(theta, model, data = data, P = P, sign = sign) - baseLL) / epsilon
   }, FUN.VALUE = numeric(nrow(data)))
 }
 
@@ -143,13 +143,17 @@ mstepLms <- function(theta, model, data, P,
                      control = list(), 
                      optimizer = "nlminb",
                      optim.method = "L-BFGS-B",
+                     epsilon = 1e-6,
                      ...) {
+  gradient <- function(theta, model, data, P, sign) 
+    gradientLogLikLms(theta = theta, model = model, P = P, sign = sign, 
+                      data = data, epsilon = epsilon)
 
   if (optimizer == "nlminb") {
     if (is.null(control$iter.max)) control$iter.max <- max.step
     est <- stats::nlminb(start = theta, objective = logLikLms, data = data,
-                         model = model, P = P, gradient = gradientLogLikLms,
-                         sign = -1,
+                         model = model, P = P, gradient = gradient,
+                         sign = -1, 
                          upper = model$info$bounds$upper,
                          lower = model$info$bounds$lower, control = control,
                          ...) |> suppressWarnings()
@@ -157,7 +161,7 @@ mstepLms <- function(theta, model, data, P,
   } else if (optimizer == "optim") {
     if (is.null(control$maxit)) control$maxit <- max.step
     est <- stats::optim(par = theta, fn = logLikLms, data = data,
-                        model = model, P = P, gr = gradientLogLikLms,
+                        model = model, P = P, gr = gradient,
                         method = optim.method, control = control, 
                         lower = model$info$bounds$lower, 
                         upper = model$info$bounds$upper,

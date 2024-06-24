@@ -10,6 +10,7 @@ emLms <- function(model,
                   EFIM.S = 3e4,
                   EFIM.parametric = TRUE,
                   robust.se = FALSE,
+                  epsilon = 1e-6,
                   ...) {
   data <- model$data
   model$data <- NULL # not needed in the model anymore
@@ -35,9 +36,9 @@ emLms <- function(model,
     thetaOld <- thetaNew
 
     if (doEstep) P <- estepLms(model = model, theta = thetaOld, data = data, ...)
-
-    mstep <- mstepLms(model = model, P = P, data = data,
-                      theta = thetaOld, max.step = max.step, 
+  
+    mstep <- mstepLms(model = model, P = P, data = data, theta = thetaOld,
+                      max.step = max.step, epsilon = epsilon,
                       control = control, ...)
 
     logLikNew <- -mstep$objective
@@ -76,8 +77,8 @@ emLms <- function(model,
   }
 
   final <- mstepLms(model = model, P = P, data = data,
-                    theta = thetaNew, 
-                    max.step = max.step, 
+                    theta = thetaNew, max.step = max.step, 
+                    epsilon = epsilon,
                     verbose = verbose, control = control,
                     ...)
     
@@ -98,7 +99,8 @@ emLms <- function(model,
                     data = data, method = "lms", EFIM.S = EFIM.S,
                     hessian = OFIM.hessian, calc.se = calc.se, 
                     EFIM.parametric = EFIM.parametric, verbose = verbose,
-                    FIM = FIM, robust.se = robust.se, NA__ = -999)
+                    FIM = FIM, robust.se = robust.se, epsilon = epsilon,
+                    NA__ = -999)
   SE <- calcSE_da(calc.se = calc.se, vcov = FIM$vcov, theta = coefficients, NA__ = -999)
 
   modelSE <- fillModel(replaceNonNaModelMatrices(model, value = -999), 

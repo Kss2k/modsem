@@ -80,11 +80,11 @@ logLikQml <- function(theta, model, sum = TRUE, sign = -1) {
 }
 
 
-gradientLogLikQml <- function(theta, model, dt = 1e-8) {
+gradientLogLikQml <- function(theta, model, epsilon = 1e-8) {
   baseLL <- logLikQml(theta, model)
   vapply(seq_along(theta), FUN.VALUE = numeric(1L), FUN = function(i) {
-    theta[[i]] <- theta[[i]] + dt
-    (logLikQml(theta, model) - baseLL) / dt
+    theta[[i]] <- theta[[i]] + epsilon
+    (logLikQml(theta, model) - baseLL) / epsilon
   })
 }
 
@@ -97,44 +97,47 @@ logLikQml_i <- function(theta, model, sign = -1) {
 
 
 # gradient function of logLikQml_i
-gradientLogLikQml_i <- function(theta, model, sign = -1, dt = 1e-8) {
+gradientLogLikQml_i <- function(theta, model, sign = -1, epsilon = 1e-8) {
   baseLL <- logLikQml_i(theta, model, sign = sign)
   lapplyMatrix(seq_along(theta), FUN = function(i) {
-    theta[[i]] <- theta[[i]] + dt
-    (logLikQml_i(theta, model, sign = sign) - baseLL) / dt
+    theta[[i]] <- theta[[i]] + epsilon
+    (logLikQml_i(theta, model, sign = sign) - baseLL) / epsilon
   }, FUN.VALUE = numeric(nrow(model$data)))
 }
 
 
-mstepQml <- function(model, theta,
-                     max.iter = 150, verbose = FALSE,
-                     convergence = 1e-2,
+mstepQml <- function(model, 
+                     theta,
+                     max.iter = 500, 
+                     verbose = FALSE,
+                     convergence = 1e-6,
                      control = list(),
-                     optimizer = "nlminb", ...) {
+                     optimizer = "nlminb", 
+                     epsilon = 1e-8,
+                     optim.method = "L-BFGS-B",
+                     ...) {
+  gradient <- function(theta, model) 
+    gradientLogLikQml(theta = theta, model = model, epsilon = epsilon)  
+  
   if (verbose) cat("Starting M-step\n")
+
   if (optimizer == "nlminb") {
     control$iter.max <- max.iter
     control$eval.max <- max.iter * 2
     control$rel.tol <- convergence
-    est <- stats::nlminb(
-      start = theta, objective = logLikQml,
-      model = model,
-      gradient = gradientLogLikQml,
-      upper = model$info$bounds$upper,
-      lower = model$info$bounds$lower,
-      control = control, ...
-    )
+    est <- stats::nlminb(start = theta, objective = logLikQml, model = model,
+                         gradient = gradientLogLikQml, 
+                         upper = model$info$bounds$upper,
+                         lower = model$info$bounds$lower, control = control, ...)
 
   } else if (optimizer == "optim") {
+    if (optim.method == "L-BFGS-B") control$factr <- convergence
+    else control$reltol <- convergence
     control$maxit <- max.iter
-    control$reltol <- convergence
-    est <- stats::optim(
-      par = theta, fn = logLikQml,
-      model = model,
-      gr = gradientLogLikQml,
-      method = "BFGS",
-      control = control, ...
-    )
+    est <- stats::optim(par = theta, fn = logLikQml, model = model, 
+                        gr = gradientLogLikQml, method = , 
+                        control = control, ...)
+    est$objective <- est$value
   } else stop2("Unknown optimizer")
   
   est

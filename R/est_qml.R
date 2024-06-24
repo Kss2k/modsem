@@ -8,10 +8,11 @@ estQml <- function(model,
                    EFIM.S = 3e4,
                    EFIM.parametric = TRUE,
                    robust.se = FALSE,
+                   epsilon = 1e-6,
                    ...) {
   startTheta <- model$theta
   final <- mstepQml(model = model, theta = startTheta, max.iter = max.iter, 
-                    convergence = convergence,
+                    convergence = convergence, epsilon = epsilon,
                     verbose = verbose, ...)
   coefficients <- final$par
   finalModel <- fillModel(model, coefficients)
@@ -31,7 +32,8 @@ estQml <- function(model,
                     data = model$data, method = "qml", EFIM.S = EFIM.S,
                     hessian = OFIM.hessian, calc.se = calc.se, 
                     EFIM.parametric = EFIM.parametric, verbose = verbose,
-                    FIM = FIM, robust.se = robust.se, NA__ = -999)
+                    FIM = FIM, robust.se = robust.se, NA__ = -999, 
+                    epsilon = epsilon)
   SE <- calcSE_da(calc.se = calc.se, FIM$vcov, theta = coefficients, NA__ = -999)
 
   modelSE <- fillModel(replaceNonNaModelMatrices(model, value = -999), 

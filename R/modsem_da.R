@@ -65,12 +65,15 @@
 #'
 #' @param EFIM.parametric should data for calculating expected fisher information matrix be 
 #' simulated parametrically (simulated based on the assumptions- and implied parameters
-#' from the model), or non-parametrically (stochastically sampled) 
+#' from the model), or non-parametrically (stochastically sampled). If you believe that 
+#' normality assumptions are violated, 'EFIM.parametric = FALSE' might be the better option.
 #'
-#' @param robust.se should robust standard errors be computed?
+#' @param robust.se should robust standard errors be computed? Meant to be used for QML, 
+#' can be unreliable with the LMS-approach.
 #' @param max.iter max numebr of iterations
-#' @param max.step max steps for the M-step in the EM algorithm
+#' @param max.step max steps for the M-step in the EM algorithm (LMS)
 #' @param start starting parameters 
+#' @param epsilon finite difference for numerical derivatives
 #'
 #' @param ... additional arguments to be passed to the estimation function
 #'
@@ -154,6 +157,7 @@ modsem_da <- function(model.syntax = NULL,
                       max.iter = NULL, 
                       max.step = NULL,
                       start = NULL,
+                      epsilon = NULL,
                       ...) {
   if (is.null(model.syntax)) {
     stop2("No model.syntax provided")
@@ -190,7 +194,8 @@ modsem_da <- function(model.syntax = NULL,
           EFIM.parametric = EFIM.parametric,
           robust.se = robust.se,
           max.iter = max.iter, 
-          max.step = max.step
+          max.step = max.step,
+          epsilon = epsilon
         )
     )
 
@@ -232,6 +237,7 @@ modsem_da <- function(model.syntax = NULL,
       EFIM.parametric = args$EFIM.parametric,
       robust.se = args$robust.se,
       max.iter = args$max.iter,
+      epsilon = args$epsilon,
       ...
     ),
     "lms" = emLms(model,
@@ -245,6 +251,7 @@ modsem_da <- function(model.syntax = NULL,
       robust.se = args$robust.se,
       max.iter = args$max.iter, 
       max.step = args$max.step,
+      epsilon = args$epsilon,
       ...
     )
   )

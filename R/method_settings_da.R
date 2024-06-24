@@ -17,7 +17,8 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    EFIM.parametric = TRUE,
                    robust.se = FALSE,
                    max.iter = 500, 
-                   max.step = 1),
+                   max.step = 1,
+                   epsilon = 1e-4),
         qml = list(verbose = FALSE, 
                    optimize = TRUE,
                    nodes = 0, 
@@ -35,7 +36,8 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    EFIM.parametric = TRUE,
                    robust.se = FALSE,
                    max.iter = 500, 
-                   max.step = NULL)
+                   max.step = NULL,
+                   epsilon = 1e-8)
     )
 
     if (is.null(args)) return(settings[method])
