@@ -166,7 +166,13 @@ mstepLms <- function(theta, model, data, P,
                         lower = model$info$bounds$lower, 
                         upper = model$info$bounds$upper,
                         ...)
+
+    est <- stats::optim(par = theta, fn = logLikQml, model = model, 
+                        gr = gradient, method = optim.method, 
+                        control = control, ...)
+
     est$objective <- est$value
+    est$iterations <- est$counts[["function"]]
   } else stop2("Unrecognized optimizer")
 
   est

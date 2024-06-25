@@ -27,7 +27,6 @@ logLikQml <- function(theta, model, sum = TRUE, sign = -1) {
     m$u <- 0
   }
 
-
   m$subThetaEpsilon <- m$subThetaEpsilon
   m$subThetaEpsilon[is.na(m$subThetaEpsilon)] <-
     m$thetaEpsilon[m$selectThetaEpsilon]
@@ -55,14 +54,8 @@ logLikQml <- function(theta, model, sum = TRUE, sign = -1) {
   sigmaEpsilon <- sigmaQmlCpp(m, t)
 
   sigmaXU <- rbind(
-    cbind(m$LXPLX, matrix(0,
-      ncol = ncol(m$RER),
-      nrow = nrow(m$LXPLX)
-    )),
-    cbind(matrix(0,
-      ncol = ncol(m$LXPLX),
-      nrow = nrow(m$RER)
-    ), m$RER)
+    cbind(m$LXPLX, matrix(0, ncol = ncol(m$RER), nrow = nrow(m$LXPLX))),
+    cbind(matrix(0, ncol = ncol(m$LXPLX), nrow = nrow(m$RER)), m$RER)
   )
   mean <- rep(0, ncol(sigmaXU))
 
@@ -126,7 +119,7 @@ mstepQml <- function(model,
     control$eval.max <- max.iter * 2
     control$rel.tol <- convergence
     est <- stats::nlminb(start = theta, objective = logLikQml, model = model,
-                         gradient = gradientLogLikQml, 
+                         gradient = gradient, 
                          upper = model$info$bounds$upper,
                          lower = model$info$bounds$lower, control = control, ...)
 
@@ -134,10 +127,13 @@ mstepQml <- function(model,
     if (optim.method == "L-BFGS-B") control$factr <- convergence
     else control$reltol <- convergence
     control$maxit <- max.iter
+
     est <- stats::optim(par = theta, fn = logLikQml, model = model, 
-                        gr = gradientLogLikQml, method = , 
+                        gr = gradient, method = optim.method, 
                         control = control, ...)
+
     est$objective <- est$value
+    est$iterations <- est$counts[["function"]]
   } else stop2("Unknown optimizer")
   
   est
