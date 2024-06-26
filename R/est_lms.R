@@ -11,6 +11,7 @@ emLms <- function(model,
                   EFIM.parametric = TRUE,
                   robust.se = FALSE,
                   epsilon = 1e-6,
+                  optimizer = "nlminb",
                   ...) {
   data <- model$data
   model$data <- NULL # not needed in the model anymore
@@ -38,8 +39,8 @@ emLms <- function(model,
     if (doEstep) P <- estepLms(model = model, theta = thetaOld, data = data, ...)
   
     mstep <- mstepLms(model = model, P = P, data = data, theta = thetaOld,
-                      max.step = max.step, epsilon = epsilon,
-                      control = control, ...)
+                      max.step = max.step, epsilon = epsilon, 
+                      optimizer = optimizer, control = control, ...)
 
     logLikNew <- -mstep$objective
     thetaNew <- unlist(mstep$par)
@@ -78,9 +79,8 @@ emLms <- function(model,
 
   final <- mstepLms(model = model, P = P, data = data,
                     theta = thetaNew, max.step = max.step, 
-                    epsilon = epsilon,
-                    verbose = verbose, control = control,
-                    ...)
+                    epsilon = epsilon, optimizer = optimizer,
+                    verbose = verbose, control = control, ...)
     
   coefficients <- final$par
   finalModel <- fillModel(model, coefficients, fillPhi = TRUE,

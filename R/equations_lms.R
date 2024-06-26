@@ -158,22 +158,18 @@ mstepLms <- function(theta, model, data, P,
                          lower = model$info$bounds$lower, control = control,
                          ...) |> suppressWarnings()
 
-  } else if (optimizer == "optim") {
+  } else if (optimizer == "L-BFGS-B") {
     if (is.null(control$maxit)) control$maxit <- max.step
     est <- stats::optim(par = theta, fn = logLikLms, data = data,
                         model = model, P = P, gr = gradient,
-                        method = optim.method, control = control, 
+                        method = optimizer, control = control, 
                         lower = model$info$bounds$lower, 
                         upper = model$info$bounds$upper,
                         ...)
 
-    est <- stats::optim(par = theta, fn = logLikQml, model = model, 
-                        gr = gradient, method = optim.method, 
-                        control = control, ...)
-
     est$objective <- est$value
     est$iterations <- est$counts[["function"]]
-  } else stop2("Unrecognized optimizer")
+  } else stop2("Unrecognized optimizer, must be either 'nlminb' or 'L-BFGS-B'")
 
   est
 }

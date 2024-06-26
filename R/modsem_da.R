@@ -25,6 +25,8 @@
 #'
 #' @param convergence convergence criterion. Lower values give better estimates but slower computation.
 #' 
+#' @param optimizer optimizer to use, can be either "nlminb" or "L-BFGS-B". For LMS, "nlminb" is recommended. 
+#' For QML, "L-BFGS-B" may be faster if there is a large number of iterations, but slower if there are few iterations.
 #'
 #' @param center.data should data be centered before fitting model
 #'
@@ -54,8 +56,6 @@
 #' this will be extremely slow, but should be more similar to mplus.
 #'
 #' @param cov.syntax model syntax for implied covariance matrix (see 'vignette("interaction_two_etas", "modsem")')
-#'
-#' @param double = NULL,
 #'
 #' @param calc.se should standard errros be computed, NOTE: If 'FALSE' information matrix will not be computed either
 #'
@@ -147,6 +147,7 @@ modsem_da <- function(model.syntax = NULL,
                       optimize = NULL,
                       nodes = NULL,
                       convergence = NULL,
+                      optimizer = NULL,
                       center.data = NULL,
                       standardize.data = NULL,
                       standardize.out = NULL,
@@ -188,6 +189,7 @@ modsem_da <- function(model.syntax = NULL,
           optimize = optimize,
           nodes = nodes,
           convergence = convergence,
+          optimizer = optimizer,
           center.data = center.data,
           standardize.data = standardize.data,
           standardize.out = standardize.out,
@@ -247,6 +249,7 @@ modsem_da <- function(model.syntax = NULL,
       robust.se = args$robust.se,
       max.iter = args$max.iter,
       epsilon = args$epsilon,
+      optimizer = args$optimizer,
       ...
     ),
     "lms" = emLms(model,
@@ -261,6 +264,7 @@ modsem_da <- function(model.syntax = NULL,
       max.iter = args$max.iter, 
       max.step = args$max.step,
       epsilon = args$epsilon,
+      optimizer = args$optimizer,
       ...
     )
   )

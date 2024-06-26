@@ -107,7 +107,6 @@ mstepQml <- function(model,
                      control = list(),
                      optimizer = "nlminb", 
                      epsilon = 1e-8,
-                     optim.method = "L-BFGS-B",
                      ...) {
   gradient <- function(theta, model) 
     gradientLogLikQml(theta = theta, model = model, epsilon = epsilon)  
@@ -118,23 +117,23 @@ mstepQml <- function(model,
     control$iter.max <- max.iter
     control$eval.max <- max.iter * 2
     control$rel.tol <- convergence
+
     est <- stats::nlminb(start = theta, objective = logLikQml, model = model,
                          gradient = gradient, 
                          upper = model$info$bounds$upper,
                          lower = model$info$bounds$lower, control = control, ...)
 
-  } else if (optimizer == "optim") {
-    if (optim.method == "L-BFGS-B") control$factr <- convergence
-    else control$reltol <- convergence
+  } else if (optimizer == "L-BFGS-B") {
+    control$factr <- convergence
     control$maxit <- max.iter
 
     est <- stats::optim(par = theta, fn = logLikQml, model = model, 
-                        gr = gradient, method = optim.method, 
+                        gr = gradient, method = optimizer, 
                         control = control, ...)
 
     est$objective <- est$value
     est$iterations <- est$counts[["function"]]
-  } else stop2("Unknown optimizer")
+  } else stop2("Unrecognized optimizer, must be either 'nlminb' or 'L-BFGS-B'")
   
   est
 }

@@ -9,11 +9,12 @@ estQml <- function(model,
                    EFIM.parametric = TRUE,
                    robust.se = FALSE,
                    epsilon = 1e-6,
+                   optimizer = "nlminb",
                    ...) {
   startTheta <- model$theta
   final <- mstepQml(model = model, theta = startTheta, max.iter = max.iter, 
                     convergence = convergence, epsilon = epsilon,
-                    verbose = verbose, ...)
+                    verbose = verbose, optimizer = optimizer, ...)
   coefficients <- final$par
   finalModel <- fillModel(model, coefficients)
 
@@ -50,6 +51,11 @@ estQml <- function(model,
   parTable$p.value <- 2 * stats::pnorm(-abs(parTable$z.value))
   parTable$ci.lower <- parTable$est - 1.96 * parTable$std.error
   parTable$ci.upper <- parTable$est + 1.96 * parTable$std.error
+  
+  if (final$iterations >= max.iter) {
+      warning2("Maximum number of iterations was reached, ",
+               "model estimation might not have converged.")
+  }
 
   out <- list(model = finalModel, 
               data  = model$data,
