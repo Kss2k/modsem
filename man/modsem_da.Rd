@@ -12,6 +12,7 @@ modsem_da(
   optimize = NULL,
   nodes = NULL,
   convergence = NULL,
+  optimizer = NULL,
   center.data = NULL,
   standardize.data = NULL,
   standardize.out = NULL,
@@ -56,6 +57,9 @@ numbers of nodes, you might want to change the 'quad.range' argument.}
 
 \item{convergence}{convergence criterion. Lower values give better estimates but slower computation.}
 
+\item{optimizer}{optimizer to use, can be either "nlminb" or "L-BFGS-B". For LMS, "nlminb" is recommended. 
+For QML, "L-BFGS-B" may be faster if there is a large number of iterations, but slower if there are few iterations.}
+
 \item{center.data}{should data be centered before fitting model}
 
 \item{standardize.data}{should data be scaled before fitting model, will be overridden by
@@ -82,7 +86,8 @@ NOTE: Not recommended unless you know what you are doing.}
 
 \item{cov.syntax}{model syntax for implied covariance matrix (see 'vignette("interaction_two_etas", "modsem")')}
 
-\item{double}{= NULL,}
+\item{double}{try to double the number of dimensions of integrations used in LMS,
+this will be extremely slow, but should be more similar to mplus.}
 
 \item{calc.se}{should standard errros be computed, NOTE: If 'FALSE' information matrix will not be computed either}
 
