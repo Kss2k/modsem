@@ -45,6 +45,7 @@
 \method{summary}{modsem_mplus}(
   object,
   scientific = FALSE,
+  standardize = FALSE,
   ci = FALSE,
   digits = 3,
   loadings = TRUE,
@@ -85,6 +86,8 @@
 \item{variances}{print variances}
 
 \item{...}{arguments passed to lavaan::summary()}
+
+\item{standardize}{standardize estimates}
 }
 \description{
 summary for modsem objects

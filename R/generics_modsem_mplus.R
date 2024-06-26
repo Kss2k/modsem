@@ -2,6 +2,7 @@
 #'
 #' @param object modsem object to summarized
 #' @param scientific print p-values in scientific notation
+#' @param standardize standardize estimates
 #' @param ci print confidence intervals
 #' @param digits number of digits to print
 #' @param loadings print loadings 
@@ -14,6 +15,7 @@
 #' @export 
 summary.modsem_mplus <- function(object, 
                                  scientific = FALSE, 
+                                 standardize = FALSE,
                                  ci = FALSE, 
                                  digits = 3, 
                                  loadings = TRUE,
@@ -22,6 +24,7 @@ summary.modsem_mplus <- function(object,
                                  intercepts = TRUE,
                                  variances = TRUE,
                                  ...) {
+  if (standardize) object$parTable <- standardized_estimates(object)
   object$format <- list(digits = digits, 
                         scientific = scientific, 
                         ci = ci, 
