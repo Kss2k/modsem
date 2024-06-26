@@ -52,21 +52,30 @@
 #' }
 plot_interaction <- function(x, z, y, xz = NULL, vals_x = seq(-3, 3, .001) , 
                              vals_z, model, alpha_se = 0.15, ...) {
-  if (!isModsemObject(model)) {
-    stop2("model must be of class 'modsem_pi', 'modsem_da', or 'modsem_mplus'")
+  if (!isModsemObject(model) && !isLavaanObject(model)) {
+    stop2("model must be of class 'modsem_pi', 'modsem_da', 'modsem_mplus' or 'lavaan'")
   }
 
   if (is.null(xz)) xz <- paste(x, z, sep = ":")
   xz <- c(xz, reverseIntTerm(xz)) 
-  if (!inherits(model, c("modsem_lms", "modsem_qml", "modsem_mplus"))) {
+  if (!inherits(model, c("modsem_lms", "modsem_qml", "modsem_mplus")) && 
+      !isLavaanObject(model)) {
     xz <- stringr::str_remove_all(xz, ":")
   }
 
   parTable <- parameter_estimates(model)
   gamma_x <- parTable[parTable$lhs == x & parTable$op == "~", "est"] 
-  
-  data <- model$data
-  n <- nrow(data)
+ 
+  if (isLavaanObject(model)) {
+    # this won't work for multigroup models
+    nobs <- unlist(model@Data@nobs)
+    if (length(nobs) > 1) warning2("plot_interaction is not intended for multigroup models")
+    n <- nobs[[1]]
+
+  } else {
+    n <- nrow(model$data)
+  }
+
   lVs <- c(x, z, y, xz)
   coefs <- parTable[parTable$op == "~" & parTable$rhs %in% lVs &
                     parTable$lhs == y, ]
