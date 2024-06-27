@@ -171,3 +171,61 @@ lapplyDf <- function(df, FUN, ...) {
 isModsemObject <- function(x) {
   inherits(x, c("modsem_pi", "modsem_lms", "modsem_mplus", "modsem_qml"))
 }
+
+
+getIntercept <- function(x, parTable) {
+  if (length(x) > 1) stop2("x must be a single string")
+
+  intercept <- parTable[parTable$lhs == x & 
+                        parTable$op == "~" & 
+                        parTable$rhs == "1", "est"]
+
+  if (length(intercept) == 0) return(0) 
+  intercept
+}
+
+
+getMean <- function(x, parTable) {
+  if (length(x) > 1) stop2("x must be a single string")
+
+  meanY <- getIntercept(x, parTable = parTable)
+  gamma <- parTable[parTable$lhs == x & parTable$op == "~" & 
+                    parTable$rhs != "1", , drop = FALSE]
+
+  if (NROW(gamma) == 0) return(meanY)
+  for (i in NROW(gamma)) {
+    meanX <- getMean(gamma[i, "rhs"], parTable = parTable)
+    meanY <- meanY + gamma[i, "est"] * meanX
+  }
+
+  meanY
+}
+
+
+centerInteraction <- function(parTable) {
+  rows <- getIntTermRows(parTable)
+  for (i in NROW(rows)) {
+    Y <- rows[i, "lhs"]
+    XZ <- unlist(stringr::str_split(rows[i, "rhs"], ":"))
+    X <- XZ[[1]]
+    Z <- XZ[[2]]
+
+    meanX <- getMean(X, parTable)
+    meanZ <- getMean(Z, parTable)
+      
+    gammaXZ <- rows[i, "est"]
+    gamma <- parTable[parTable$lhs == Y & parTable$op == "~" & 
+                      parTable$rhs != "1", , drop = FALSE] 
+    gammaX <- gamma[gamma$rhs == X, "est"] + gammaXZ * meanZ
+
+    gammaZ <- gamma[gamma$rhs == Z, "est"] + gammaXZ * meanX
+    
+    parTable[parTable$lhs == Y & parTable$op == "~" & 
+             parTable$rhs == X, "est"] <- gammaX
+     
+    parTable[parTable$lhs == Y & parTable$op == "~" & 
+             parTable$rhs == Z, "est"] <- gammaZ
+  } 
+
+  parTable
+}

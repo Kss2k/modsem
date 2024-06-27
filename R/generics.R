@@ -32,14 +32,18 @@ var_interactions.data.frame <- function(object, ...) {
   for (i in seq_len(length(intTerms))) {
     # interaction term = XY
     XY <- stringr::str_split_fixed(intTerms[[i]], ":", 2) 
+    muX <- getMean(XY[[1]], parTable)
+    muY <- getMean(XY[[2]], parTable)
     varX <- calcCovParTable(XY[[1]], XY[[1]], parTable)
     varY <- calcCovParTable(XY[[2]], XY[[2]], parTable)
     covXY <- calcCovParTable(XY[[1]], XY[[2]], parTable)
+    varXZ <- muX ^ 2 * muY ^ 2 + varX * muY ^ 2 + varY * muX ^ 2 +
+      2 * muX * muY * covXY + varX * varY + covXY ^ 2
     newRow <- data.frame(lhs = intTerms[[i]],
                          op = "~~",
                          rhs = intTerms[[i]],
                          label = "",
-                         est = varX * varY + covXY ^ 2,
+                         est = varXZ,
                          std.error = NA, z.value = NA, p.value = NA,
                          ci.lower = NA, ci.upper = NA)
     parTable <- rbind(parTable, newRow)
@@ -71,13 +75,15 @@ standardized_estimates <- function(object, ...) {
 
 #' @export 
 standardized_estimates.data.frame <- function(object, intercepts = FALSE, ...) {
-  parTable <- var_interactions(object)
-  parTable <- parTable[c("lhs", "op", "rhs", "label", "est", "std.error")]
-  if (!intercepts) {
+  parTable <- object[c("lhs", "op", "rhs", "label", "est", "std.error")]
+  if (!intercepts) { # remove intercepts
+    parTable <- centerInteraction(parTable)
     parTable <- parTable[!(parTable$rhs == "1" & parTable$op == "~"), ]
   }
+  parTable <- var_interactions(parTable)
+
   lVs <- getLVs(parTable)
-  intTerms <- unique(getIntTermRows(parTable)$rhs)
+  intTerms <- getIntTerms(parTable)
   etas <- getSortedEtas(parTable, isLV = TRUE)
   xis <- getXis(parTable, etas = etas, isLV = TRUE)
   indsLVs <- getIndsLVs(parTable, lVs)
