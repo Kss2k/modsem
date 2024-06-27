@@ -58,7 +58,8 @@ printParTable <- function(parTable,
                           covariances = TRUE,
                           intercepts = TRUE,
                           variances = TRUE,
-                          padWidth = 2, padWidthLhs = 2, 
+                          padWidth = 2, 
+                          padWidthLhs = 2, 
                           spacing = 2) {
   formatted <- formatParTable(parTable, digits = digits, 
                               ci = ci, scientific = scientific)
@@ -174,4 +175,18 @@ pasteLabels <- function(vars, labels, width = 14, widthVar = 7, widthLabel = 4) 
     vars[[i]] <- paste0(vars[[i]], sep, labels[[i]])
   }
   vars
+}
+
+
+allignLhsRhs <- function(lhs, rhs, pad = "", width.out = 50) {
+  if (length(lhs) != length(rhs)) stop("lhs and rhs must have the same length")
+  out <- ""
+  for (i in seq_along(lhs)) {
+    ncharLhs <- nchar(lhs[[i]])
+    ncharRhs <- nchar(rhs[[i]])
+    sep <- stringr::str_dup(" ", max(0, width.out - ncharLhs - ncharRhs))
+    line <- paste0(pad, lhs[[i]], sep, rhs[[i]], "\n")
+    out <- paste0(out, line)
+  }
+  out
 }
