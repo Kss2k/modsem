@@ -164,7 +164,9 @@ summaryLmsAndQml <- function(object,
     logLik = object$logLik,
     AIC = object$AIC,
     D = NULL,
-    N = NROW(object$data)
+    N = NROW(object$data),
+    method = method,
+    optimizer = object$optimizer
   )
 
   if (H0) {
@@ -229,11 +231,13 @@ print.summary_da <- function(x, digits = 3, ...) {
                                        covariances = x$format$covariances,
                                        intercepts = x$format$intercepts,
                                        variances = x$format$variances)
-  cat("\nModel Fit:\n")
-  names <- c("Number of iterations", "Number of observations", 
+  cat("\nmodsem (version 1.0.1):\n")
+  names <- c("Estimator", "Optimization method",
+             "Number of observations", 
+             "Number of iterations", 
              "Final loglikelihood", "AIC")
-  values <- c(x$iterations, x$N, round(x$logLik, 3), round(x$AIC, 3))
-
+  values <- c(stringr::str_to_upper(c(x$method, x$optimizer)), 
+              x$N, x$iterations, round(x$logLik, 3), round(x$AIC, 3))
   cat(allignLhsRhs(lhs = names, rhs = values, pad = "  ", 
                    width.out = width.out), "\n")
 

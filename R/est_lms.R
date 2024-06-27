@@ -119,6 +119,8 @@ emLms <- function(model,
   if (iterations == max.iter) convergence <- FALSE else convergence <- TRUE
 
   out <- list(model = finalModel, 
+              method = "lms",
+              optimizer = optimizer,
               data = data,
               theta = coefficients,
               parTable = parTable,

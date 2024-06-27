@@ -58,6 +58,8 @@ estQml <- function(model,
   }
 
   out <- list(model = finalModel, 
+              method = "qml",
+              optimizer = optimizer,
               data  = model$data,
               theta = coefficients,
               parTable = parTable,
