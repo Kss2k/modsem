@@ -49,7 +49,7 @@ fit_modsem_da <- function(model) {
   E <- rbind(cbind(covX, t(covXY)),
               cbind(covXY, covY))
 
-  if (grepl("tau|alpha", names(coef))) {
+  if (any(grepl("tau|alpha", names(coef)))) {
     muX <- tauX
     muY <- tauY + lambdaY %*% Binv %*% alpha
     muHat <- rbind(muX, muY)
