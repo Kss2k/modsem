@@ -62,7 +62,7 @@ fit_modsem_da <- function(model) {
 
   list(sigma.observed = O, sigma.expected = E, 
        mu.observed = mu, mu.expected = muHat,
-       chisq.value = chisqValue, chisq.pvalue = chisqP, df = df, 
+       chisq.value = chisqValue, chisq.pvalue = chisqP, chisq.df = df, 
        AIC = AIC, RMSEA = RMSEA)
 }
 

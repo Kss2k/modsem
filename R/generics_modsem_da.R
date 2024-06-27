@@ -228,11 +228,12 @@ print.summary_da <- function(x, digits = 3, ...) {
   if (!is.null(x$D)) {
     cat("\n  Comparative fit to H0 (no interaction effect)\n")
     cat("    Loglikelihood change =", formatNumeric(x$D$llChange, digits = 2), "\n")
-    cat(paste0("    D(", x$D$df, ") ="), formatNumeric(x$D$D, digits = 2), 
-        ", p =", format.pval(x$D$p, digits = digits), "\n")
+    cat(paste0("    D(", x$D$df, ") ="), paste0(formatNumeric(x$D$D, digits = 2), ","),
+        "p =", format.pval(x$D$p, digits = digits), "\n")
 
     cat("\n  Fit measures for H0:\n")
     cat("    Chi-sq value =", formatNumeric(x$fitH0$chisq.value, digits = 2), "\n")
+    cat("    Chi-sq df =", x$fitH0$chisq.df, "\n")
     cat("    Chi-sq p-value =", format.pval(x$fitH0$chisq.pvalue, digits = digits), "\n")
     cat("    RMSEA =", formatNumeric(x$fitH0$RMSEA, digits = 3), "\n")
 
