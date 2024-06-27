@@ -219,11 +219,21 @@ summaryLmsAndQml <- function(object,
 
 
 #' @export
-print.summary_da <- function(x, digits = 3, width.out = 54, ...) {
+print.summary_da <- function(x, digits = 3, ...) {
+  width.out <- getWidthPrintedParTable(x$parTable,
+                                       scientific = x$format$scientific,
+                                       ci = x$format$ci,
+                                       digits = x$format$digits,
+                                       loadings = x$format$loadings,
+                                       regressions = x$format$regressions,
+                                       covariances = x$format$covariances,
+                                       intercepts = x$format$intercepts,
+                                       variances = x$format$variances)
   cat("\nModel Fit:\n")
   names <- c("Number of iterations", "Number of observations", 
              "Final loglikelihood", "AIC")
   values <- c(x$iterations, x$N, round(x$logLik, 3), round(x$AIC, 3))
+
   cat(allignLhsRhs(lhs = names, rhs = values, pad = "  ", 
                    width.out = width.out), "\n")
 

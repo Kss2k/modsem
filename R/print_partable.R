@@ -6,7 +6,6 @@ header <- c("Variable", "op", "Variable", "Estimate",
 
 formatParTable <- function(parTable, digits = 3, scientific = FALSE,
                            ci = FALSE, width = 14) {
-
   parTable <- fillColsParTable(parTable)
 
   isStructOrMeasure <- parTable$op %in% c("~", "=~", "~~") & 
@@ -181,6 +180,7 @@ pasteLabels <- function(vars, labels, width = 14, widthVar = 7, widthLabel = 4) 
 allignLhsRhs <- function(lhs, rhs, pad = "", width.out = 50) {
   if (length(lhs) != length(rhs)) stop("lhs and rhs must have the same length")
   out <- ""
+  width.out <- width.out - nchar(pad)
   for (i in seq_along(lhs)) {
     ncharLhs <- nchar(lhs[[i]])
     ncharRhs <- nchar(rhs[[i]])
@@ -189,4 +189,34 @@ allignLhsRhs <- function(lhs, rhs, pad = "", width.out = 50) {
     out <- paste0(out, line)
   }
   out
+}
+
+
+# this is really ugly, but it is the easiest way to get the width of the 
+# printed table without splitting the function into multiple functions 
+# in a messy way
+getWidthPrintedParTable <- function(parTable, 
+                                    scientific = FALSE, 
+                                    ci = FALSE, digits = 3, 
+                                    loadings = TRUE,
+                                    regressions = TRUE,
+                                    covariances = TRUE,
+                                    intercepts = TRUE,
+                                    variances = TRUE,
+                                    padWidth = 2, 
+                                    padWidthLhs = 2, 
+                                    spacing = 2) {
+  formatted <- formatParTable(parTable, digits = digits, 
+                              ci = ci, scientific = scientific)
+  fParTable <- formatted$parTable 
+  header <- formatted$header
+  lhs <- unique(fParTable$lhs)
+  
+  pad <- stringr::str_dup(" ", padWidth + padWidthLhs + 
+                          maxchar(fParTable$rhs) - 1)
+  space <- stringr::str_dup(" ", spacing)
+
+  formattedHeader <- 
+    paste0(pad, stringr::str_c(header[-(1:3)], collapse = space), "\n")
+  nchar(formattedHeader)
 }
