@@ -327,3 +327,11 @@ nNegativeLast <- function(x, n = 10) {
   if (last < n) first <- 1 else first <- last - n + 1
   sum(x[first:last] < 0)
 }
+
+
+getDegreesOfFreedom <- function(m, coef) {
+  t <- (m * (m + 1)) / 2
+  df <- t - length(coef)
+  nMeans <- sum(grepl("tau|alpha", names(coef)))
+  df + nMeans
+}

@@ -15,6 +15,7 @@ modsem_inspect_da <- function(model, what = "default") {
                partable = model$parTable,
                originalpartable = model$originalParTable ,
                loglik = model$logLik, 
+               AIC = model$AIC, 
                iterations = model$iterations,
                convergence = model$convergence, 
                lambda = diagPartitionedMat(matrices$lambdaX,

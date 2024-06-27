@@ -162,6 +162,7 @@ summaryLmsAndQml <- function(object,
     data = object$data,
     iterations = object$iterations,
     logLik = object$logLik,
+    AIC = object$AIC,
     D = NULL
   )
 
@@ -182,8 +183,13 @@ summaryLmsAndQml <- function(object,
     if (is.null(estH0)) {
       warning2("Comparative fit to H0 will not be calculated.")
       H0 <- FALSE
+      out$D <- NULL 
+      out$fitH0 <- NULL
+
+    } else {
+      out$D <- compare_fit(estH0, object)
+      out$fitH0 <- fit_modsem_da(estH0)
     }
-    out$D <- compare_fit(estH0, object)
   } else {
     out$D <- NULL
   }
@@ -214,61 +220,55 @@ summaryLmsAndQml <- function(object,
 #' @export
 print.summary_da <- function(x, digits = 3, ...) {
   cat("\nModel Summary:\n")
-  cat(
-    "\n  Number of iterations:", x$iterations, "\n  Final loglikelihood:",
-    round(x$logLik, 3), "\n"
-  )
+  cat("\n  Number of iterations:", x$iterations, 
+      "\n  Final loglikelihood:", round(x$logLik, 3), 
+      "\n  AIC:", round(x$AIC, 3), "\n")
+
   colnames(x$parTable)[[3]] <- "rhs"
   if (!is.null(x$D)) {
-    cat(
-      "\n  Comparative fit to H0 (no interaction effect)\n",
-      paste0(
-        "  Loglikelihood change = ",
-        formatNumeric(x$D$llChange, digits = 2), "\n"
-      ),
-      paste0(
-        "  D(", x$D$df, ") = ", formatNumeric(x$D$D, digits = 2),
-        ", p = ", format.pval(x$D$p, digits = digits), "\n"
-      )
-    )
+    cat("\n  Comparative fit to H0 (no interaction effect)\n")
+    cat("    Loglikelihood change =", formatNumeric(x$D$llChange, digits = 2), "\n")
+    cat(paste0("    D(", x$D$df, ") = "), formatNumeric(x$D$D, digits = 2), 
+        ", p = ", format.pval(x$D$p, digits = digits), "\n")
+
+    cat("\n  Fit measures for H0:\n")
+    cat("    Chi-sq value =", formatNumeric(x$fitH0$chisq.value, digits = 2), "\n")
+    cat("    Chi-sq p-value =", format.pval(x$fitH0$chisq.pvalue, digits = digits), "\n")
+    cat("    RMSEA =", formatNumeric(x$fitH0$RMSEA, digits = 3), "\n")
+
   }
 
   if (!is.null(x$r.squared)) {
     r.squared <- x$r.squared
     r.squared$Rsqr <- formatNumeric(r.squared$Rsqr, digits = 3)
-    maxWidth <- max(vapply(r.squared$Rsqr,
-      FUN.VALUE = numeric(1), FUN = nchar
-    ))
-    r.squared$Rsqr <- stringr::str_pad(r.squared$Rsqr,
-      width = maxWidth, side = "left"
-    )
+    maxWidth <- max(vapply(r.squared$Rsqr, FUN.VALUE = numeric(1), FUN = nchar))
+    r.squared$Rsqr <- 
+      stringr::str_pad(r.squared$Rsqr, width = maxWidth, side = "left")
+
     cat("\n  R-squared:\n")
     for (i in seq_along(r.squared$eta)) {
-      cat("    ", r.squared$eta[[i]], "=", r.squared$Rsqr[[i]], "\n")
+      cat("   ", r.squared$eta[[i]], "=", r.squared$Rsqr[[i]], "\n")
     }
+
     if (!is.null(r.squared$H0)) {
       r.squared$H0$Rsqr <- formatNumeric(r.squared$H0$Rsqr, digits = 3)
-      maxWidth <- max(vapply(r.squared$H0$Rsqr,
-        FUN.VALUE = numeric(1), FUN = nchar
-      ))
-      r.squared$H0$Rsqr <- stringr::str_pad(r.squared$H0$Rsqr,
-        width = maxWidth, side = "left"
-      )
+      maxWidth <- 
+        max(vapply(r.squared$H0$Rsqr, FUN.VALUE = numeric(1), FUN = nchar))
+      r.squared$H0$Rsqr <- 
+        stringr::str_pad(r.squared$H0$Rsqr, width = maxWidth, side = "left")
+
       cat("  R-squared Null-Model (H0):\n")
       for (i in seq_along(r.squared$H0$eta)) {
-        cat(
-          "    ", r.squared$H0$eta[[i]], "=",
-          formatNumeric(r.squared$H0$Rsqr[[i]], digits = 2), "\n"
-        )
+        cat("   ", r.squared$H0$eta[[i]], "=",
+          formatNumeric(r.squared$H0$Rsqr[[i]], digits = 2), "\n")
       }
 
       # Calculate Change (using unformatted Rsquared)
-      r.squared$H0$diff <- formatNumeric(x$r.squared$Rsqr - x$r.squared$H0$Rsqr,
-        digits = 3
-      )
+      r.squared$H0$diff <- 
+        formatNumeric(x$r.squared$Rsqr - x$r.squared$H0$Rsqr, digits = 3)
       cat("  R-squared Change:\n")
       for (i in seq_along(r.squared$H0$eta)) {
-        cat("    ", x$r.squared$H0$eta[[i]], "=", r.squared$H0$diff[[i]], "\n")
+        cat("   ", x$r.squared$H0$eta[[i]], "=", r.squared$H0$diff[[i]], "\n")
       }
     }
   }
@@ -340,7 +340,6 @@ estimateNullModel <- function(parTable,
       }
 
       syntax <- parTableToSyntax(strippedParTable)
-
       if (verbose) cat("Estimating null model\n")
       modsem_da(syntax, data, method, 
                 verbose = verbose, 
@@ -408,7 +407,7 @@ compare_fit <- function(estH0, estH1) {
   if (is.null(estH0) || is.null(estH1)) {
     return(NULL)
   }
-  df <- length(estH1$theta) - length(estH0$theta)
+  df <- length(coef(estH1)) - length(coef(estH0))
   D <- -2 * (estH0$logLik - estH1$logLik)
   p <- stats::pchisq(D, df = df, lower.tail = FALSE, log.p = TRUE)
   list(D = D, df = df, p = p, llChange = estH1$logLik - estH0$logLik)

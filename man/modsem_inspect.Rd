@@ -14,7 +14,7 @@ modsem_inspect(object, what = NULL, ...)
 \item{...}{Additional arguments passed to other functions}
 }
 \description{
-funciton used to inspect fittet object. similar to `lavInspect()`
+function used to inspect fittet object. similar to `lavInspect()`
 argument 'what' decides what to inspect
 }
 \details{
