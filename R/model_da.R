@@ -380,6 +380,7 @@ quadrature <- function(m, k, cut = Inf) {
   select <- abs(nodes) < cut
   nodes <- nodes[select]
   weights  <- weights[select]
+  m <- length(weights)  
 
   nodes <- lapply(seq_len(k), function(k) nodes) |>
     expand.grid() |> as.matrix()

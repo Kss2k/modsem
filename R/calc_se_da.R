@@ -49,7 +49,7 @@ calcFIM_da <- function(model,
   }
 
   dimnames(I) <- dimnames(vcov) <- list(names(theta), names(theta))
-  list(FIM = I, vcov = vcov)
+  list(FIM = I, vcov = vcov, type = FIM)
 }
 
 calcHessian <- function(model, theta, data, method = "lms", 

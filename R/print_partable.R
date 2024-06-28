@@ -178,7 +178,12 @@ pasteLabels <- function(vars, labels, width = 14, widthVar = 7, widthLabel = 4) 
 
 
 allignLhsRhs <- function(lhs, rhs, pad = "", width.out = 50) {
-  if (length(lhs) != length(rhs)) stop("lhs and rhs must have the same length")
+  if (length(lhs) != length(rhs)) {
+    warning("lhs and rhs must have the same length")
+    if (length(lhs) > length(rhs)) lhs <- rhs[seq_along(lhs)]
+    else rhs <- lhs[seq_along(rhs)]
+  }
+
   out <- ""
   width.out <- width.out - nchar(pad)
   for (i in seq_along(lhs)) {

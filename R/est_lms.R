@@ -95,6 +95,7 @@ emLms <- function(model,
   finalModel$covModelNA <- emptyModel$covModel
 
   # Caclulate information matrix (I) and standard errors (SE)
+  typeSE <- ifelse(!calc.se, "none", ifelse(robust.se, "robust", "standard")) 
   FIM <- calcFIM_da(model = model, finalModel = finalModel, theta = coefficients, 
                     data = data, method = "lms", EFIM.S = EFIM.S,
                     hessian = OFIM.hessian, calc.se = calc.se, 
@@ -120,7 +121,7 @@ emLms <- function(model,
 
   out <- list(model = finalModel, 
               method = "lms",
-              optimizer = optimizer,
+              optimizer = paste0("EM-", optimizer),
               data = data,
               theta = coefficients,
               parTable = parTable,
@@ -129,8 +130,12 @@ emLms <- function(model,
               AIC = calcAIC(-final$objective, length(coefficients)),
               iterations = iterations,
               convergence = convergence, 
+              type.se = typeSE,
+              info.quad = getInfoQuad(model$quad),
+              type.estimates = "unstandardized",
               FIM = FIM$FIM,
-              vcov = FIM$vcov)
+              vcov = FIM$vcov,
+              information = FIM$type)
 
   class(out) <- "modsem_lms"
   out

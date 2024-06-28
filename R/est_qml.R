@@ -29,6 +29,7 @@ estQml <- function(model,
   finalModel$covModelNA <- emptyModel$covModel
 
   # Caclulate information matrix (I) and standard errors (SE)
+  typeSE <- ifelse(!calc.se, "none", ifelse(robust.se, "robust", "standard")) 
   FIM <- calcFIM_da(model = model, finalModel = finalModel, theta = coefficients, 
                     data = model$data, method = "qml", EFIM.S = EFIM.S,
                     hessian = OFIM.hessian, calc.se = calc.se, 
@@ -68,11 +69,13 @@ estQml <- function(model,
               AIC = calcAIC(-final$objective, length(coefficients)),
               iterations = final$iterations,
               convergence = final$convergence, 
+              type.se = typeSE,
+              type.estimates = "unstandardized",
+              info.quad = NULL,
               FIM = FIM$FIM,
-              vcov = FIM$vcov)
+              vcov = FIM$vcov,
+              information = FIM$type)
 
   class(out) <- "modsem_qml"
   out
 }
-
-

@@ -269,7 +269,10 @@ modsem_da <- function(model.syntax = NULL,
     )
   )
 
-  if (args$standardize.out) est$parTable <- standardized_estimates(est)
+  if (args$standardize.out) {
+    est$type.estimates <- "standardized"
+    est$parTable <- standardized_estimates(est)
+  }
 
   est$args <- args
   est

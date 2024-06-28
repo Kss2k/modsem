@@ -335,3 +335,7 @@ getDegreesOfFreedom <- function(m, coef) {
   nMeans <- sum(grepl("tau|alpha", names(coef)))
   df + nMeans
 }
+
+getInfoQuad <- function(quad) {
+  list(dim = quad$k, nodes.dim = quad$m, nodes.total = quad$m ^ quad$k) 
+}

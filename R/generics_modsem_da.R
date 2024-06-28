@@ -166,7 +166,11 @@ summaryLmsAndQml <- function(object,
     D = NULL,
     N = NROW(object$data),
     method = method,
-    optimizer = object$optimizer
+    optimizer = object$optimizer,
+    quad = object$info.quad,
+    type.se = object$type.se, 
+    type.estimates = ifelse(standardized, "standardized", object$type.estimates),
+    information = object$information
   )
 
   if (H0) {
@@ -232,16 +236,23 @@ print.summary_da <- function(x, digits = 3, ...) {
                                        intercepts = x$format$intercepts,
                                        variances = x$format$variances)
   cat("\nmodsem (version 1.0.1):\n")
-  names <- c("Estimator", "Optimization method",
-             "Number of observations", 
-             "Number of iterations", 
-             "Final loglikelihood", "AIC")
+  names <- c("Estimator", "Optimization method", "Number of observations", 
+             "Number of iterations", "Final loglikelihood", "AIC")
   values <- c(stringr::str_to_upper(c(x$method, x$optimizer)), 
               x$N, x$iterations, round(x$logLik, 3), round(x$AIC, 3))
   cat(allignLhsRhs(lhs = names, rhs = values, pad = "  ", 
                    width.out = width.out), "\n")
+  
+  if (!is.null(x$quad)) {
+    cat("Numerical Integration:\n")
+    names <- c("Points of integration (per dim)", "Dimensions",
+               "Total points of integration")
+    values <- c(x$quad$nodes.dim, x$quad$dim, x$quad$nodes.total)
+    cat(allignLhsRhs(lhs = names, rhs = values, pad = "  ", 
+                     width.out = width.out), "\n")
 
-  colnames(x$parTable)[[3]] <- "rhs"
+  }
+
   if (!is.null(x$D)) {
     cat("Comparative fit to H0 (no interaction effect)\n")
     names <- c("Loglikelihood change", "Difference test (D)", 
@@ -253,7 +264,7 @@ print.summary_da <- function(x, digits = 3, ...) {
     cat(allignLhsRhs(lhs = names, rhs = values, pad = "  ", 
                      width.out = width.out), "\n")
     
-    cat("Fit measures for H0:\n")
+    cat("Fit Measures for H0:\n")
     names <- c("Chi-square", "Degrees of Freedom (Chi-square)", 
                "P-value (Chi-square)", "RMSEA") 
     values <- c(formatNumeric(x$fitH0$chisq.value, digits = 2), 
@@ -272,7 +283,7 @@ print.summary_da <- function(x, digits = 3, ...) {
     r.squared$Rsqr <- 
       stringr::str_pad(r.squared$Rsqr, width = maxWidth, side = "left")
 
-    cat("R-squared:\n")
+    cat("R-Squared:\n")
     names <- r.squared$eta
     values <- character(length(names)) 
     for (i in seq_along(r.squared$eta)) {
@@ -288,7 +299,7 @@ print.summary_da <- function(x, digits = 3, ...) {
       r.squared$H0$Rsqr <- 
         stringr::str_pad(r.squared$H0$Rsqr, width = maxWidth, side = "left")
 
-      cat("R-squared Null-Model (H0):\n")
+      cat("R-Squared Null-Model (H0):\n")
       names <- r.squared$H0$eta
       for (i in seq_along(names)) {
           values[[i]] <- formatNumeric(r.squared$H0$Rsqr[[i]], digits = 3)
@@ -299,7 +310,7 @@ print.summary_da <- function(x, digits = 3, ...) {
       # Calculate Change (using unformatted Rsquared)
       r.squared$H0$diff <- 
         formatNumeric(x$r.squared$Rsqr - x$r.squared$H0$Rsqr, digits = 3)
-      cat("R-squared Change:\n")
+      cat("R-Squared Change:\n")
       for (i in seq_along(names)) {
         values[[i]] <- r.squared$H0$diff[[i]]
       }
@@ -308,7 +319,12 @@ print.summary_da <- function(x, digits = 3, ...) {
     }
   }
 
-  cat("\nParameter Estimates:\n\n")
+  cat("\nParameter Estimates:\n")
+  names <- c("Coefficients", "Information", "Standard errors")
+  values <- c(x$type.estimates, x$information, x$type.se)
+  cat(allignLhsRhs(lhs = names, rhs = values, pad = "  ", 
+                   width.out = width.out), "\n")
+
   printParTable(x$parTable,
     scientific = x$format$scientific,
     ci = x$format$ci,
