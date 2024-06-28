@@ -28,6 +28,7 @@ modsem_da(
   robust.se = NULL,
   max.iter = NULL,
   max.step = NULL,
+  fix.estep = NULL,
   start = NULL,
   epsilon = NULL,
   quad.range = NULL,
@@ -108,6 +109,9 @@ can be unreliable with the LMS-approach.}
 \item{max.iter}{max numebr of iterations}
 
 \item{max.step}{max steps for the M-step in the EM algorithm (LMS)}
+
+\item{fix.estep}{if TRUE, E-step will be fixed and the prior probabilities are set to the best prior probabilities, 
+if loglikelihood is decreasing for more than 30 iterations.}
 
 \item{start}{starting parameters}
 

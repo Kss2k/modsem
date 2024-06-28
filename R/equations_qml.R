@@ -73,11 +73,11 @@ logLikQml <- function(theta, model, sum = TRUE, sign = -1) {
 }
 
 
-gradientLogLikQml <- function(theta, model, epsilon = 1e-8) {
-  baseLL <- logLikQml(theta, model)
+gradientLogLikQml <- function(theta, model, epsilon = 1e-8, sign = -1) {
+  baseLL <- logLikQml(theta, model, sign = sign)
   vapply(seq_along(theta), FUN.VALUE = numeric(1L), FUN = function(i) {
     theta[[i]] <- theta[[i]] + epsilon
-    (logLikQml(theta, model) - baseLL) / epsilon
+    (logLikQml(theta, model, sign = sign) - baseLL) / epsilon
   })
 }
 
@@ -108,8 +108,8 @@ mstepQml <- function(model,
                      optimizer = "nlminb", 
                      epsilon = 1e-8,
                      ...) {
-  gradient <- function(theta, model) 
-    gradientLogLikQml(theta = theta, model = model, epsilon = epsilon)  
+  gradient <- function(theta, model, sign) 
+    gradientLogLikQml(theta = theta, model = model, epsilon = epsilon, sign = sign)  
   
   if (verbose) cat("Starting M-step\n")
 
@@ -119,7 +119,7 @@ mstepQml <- function(model,
     control$rel.tol <- convergence
 
     est <- stats::nlminb(start = theta, objective = logLikQml, model = model,
-                         gradient = gradient, 
+                         gradient = gradient, sign = -1,
                          upper = model$info$bounds$upper,
                          lower = model$info$bounds$lower, control = control, ...)
 
@@ -128,7 +128,7 @@ mstepQml <- function(model,
     control$maxit <- max.iter
 
     est <- stats::optim(par = theta, fn = logLikQml, model = model, 
-                        gr = gradient, method = optimizer, 
+                        gr = gradient, method = optimizer, sign = -1,
                         control = control, ...)
 
     est$objective <- est$value

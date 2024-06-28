@@ -12,6 +12,7 @@ emLms <- function(model,
                   robust.se = FALSE,
                   epsilon = 1e-6,
                   optimizer = "nlminb",
+                  fix.estep = TRUE,
                   ...) {
   data <- model$data
   model$data <- NULL # not needed in the model anymore
@@ -66,7 +67,7 @@ emLms <- function(model,
       run <- FALSE
     }
 
-    if (doEstep && runningAverage(logLikChanges, n = 30) < 0 && 
+    if (doEstep && fix.estep && runningAverage(logLikChanges, n = 30) < 0 && 
         nNegativeLast(logLikChanges, n = 30) >= 15 && iterations > 200) {
       doEstep <- FALSE  
       P <- bestP 

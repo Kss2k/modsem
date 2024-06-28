@@ -237,7 +237,7 @@ print.summary_da <- function(x, digits = 3, ...) {
                                        variances = x$format$variances)
   cat("\nmodsem (version 1.0.1):\n")
   names <- c("Estimator", "Optimization method", "Number of observations", 
-             "Number of iterations", "Final loglikelihood", "AIC")
+             "Number of iterations", "Final loglikelihood", "Akaike (AIC)")
   values <- c(stringr::str_to_upper(c(x$method, x$optimizer)), 
               x$N, x$iterations, round(x$logLik, 3), round(x$AIC, 3))
   cat(allignLhsRhs(lhs = names, rhs = values, pad = "  ", 
@@ -255,9 +255,12 @@ print.summary_da <- function(x, digits = 3, ...) {
 
   if (!is.null(x$D)) {
     cat("Comparative fit to H0 (no interaction effect)\n")
-    names <- c("Loglikelihood change", "Difference test (D)", 
+    names <- c("Loglikelihood change", 
+               "Bayesian (BIC)",
+               "Difference test (D)", 
                "Degrees of freedom (D)", "P-value (D)")
     values <- c(formatNumeric(x$D$llChange, digits = 2), 
+                formatNumeric(x$D$BIC, digits = 2),
                 formatNumeric(x$D$D, digits = 2),
                 x$D$df, 
                 format.pval(x$D$p, digits = digits))
@@ -460,8 +463,9 @@ compare_fit <- function(estH0, estH1) {
   }
   df <- length(coef(estH1)) - length(coef(estH0))
   D <- -2 * (estH0$logLik - estH1$logLik)
+  BIC <- 2 * (estH1$logLik - estH0$logLik) + df * log(NROW(estH1$data))
   p <- stats::pchisq(D, df = df, lower.tail = FALSE, log.p = TRUE)
-  list(D = D, df = df, p = p, llChange = estH1$logLik - estH0$logLik)
+  list(D = D, BIC = BIC, df = df, p = p, llChange = estH1$logLik - estH0$logLik)
 }
 
 

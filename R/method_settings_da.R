@@ -19,6 +19,7 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    robust.se = FALSE,
                    max.iter = 500, 
                    max.step = 1,
+                   fix.estep = TRUE,
                    epsilon = 1e-4, 
                    quad.range = Inf),
         qml = list(verbose = FALSE, 
@@ -40,6 +41,7 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    robust.se = FALSE,
                    max.iter = 500, 
                    max.step = NULL,
+                   fix.estep = NULL,
                    epsilon = 1e-8, 
                    quad.range = Inf)
     )

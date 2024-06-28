@@ -74,6 +74,8 @@
 #' can be unreliable with the LMS-approach.
 #' @param max.iter max numebr of iterations
 #' @param max.step max steps for the M-step in the EM algorithm (LMS)
+#' @param fix.estep if TRUE, E-step will be fixed and the prior probabilities are set to the best prior probabilities, 
+#' if loglikelihood is decreasing for more than 30 iterations.
 #' @param start starting parameters 
 #' @param epsilon finite difference for numerical derivatives
 #' @param quad.range range in z-scores to perform numerical integration in LMS using 
@@ -163,6 +165,7 @@ modsem_da <- function(model.syntax = NULL,
                       robust.se = NULL,
                       max.iter = NULL, 
                       max.step = NULL,
+                      fix.estep = NULL,
                       start = NULL,
                       epsilon = NULL,
                       quad.range = NULL,
@@ -204,6 +207,7 @@ modsem_da <- function(model.syntax = NULL,
           robust.se = robust.se,
           max.iter = max.iter, 
           max.step = max.step,
+          fix.estep = fix.estep,
           epsilon = epsilon,
           quad.range = quad.range
         )
@@ -265,6 +269,7 @@ modsem_da <- function(model.syntax = NULL,
       max.step = args$max.step,
       epsilon = args$epsilon,
       optimizer = args$optimizer,
+      fix.estep = args$fix.estep,
       ...
     )
   )
