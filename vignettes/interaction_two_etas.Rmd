@@ -58,15 +58,6 @@ tpb <- '
 '
 ```
 
-By default the qml-approach will not be able to estimate the model, since there 
-is an interaction effect between an endogenous and and exogenous variable. 
-```{r} 
-est_qml <- modsem(tpb_nonlinear, data = TPB, cov.syntax = tpb_linear,
-                  method = "qml")
-summary(est_qml)
-```
-----------------------------
-
 Since INT is an 
 endogenous variable, its quadratic term (i.e., an interaction effect with itself) 
 would include two endogenous variables. Thus we would ordinarily not be able to estimate
