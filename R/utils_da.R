@@ -208,7 +208,7 @@ checkNodesLms <- function(parTable,
                           method = "lms",
                           minNodesXiXi = 16,
                           minNodesXiEta = 32, 
-                          minNodesEtaEta = 50) {
+                          minNodesEtaEta = 48) {
   if (method == "qml") return(NULL)
 
   etas <- getEtas(parTable, isLV = TRUE)
