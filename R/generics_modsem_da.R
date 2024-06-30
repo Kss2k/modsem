@@ -16,6 +16,7 @@ parameter_estimates.modsem_qml <- function(object, ...) {
 #' @param H0 should a null model be estimated (used for comparison)
 #' @param verbose print progress for the estimation of null model
 #' @param r.squared calculate R-squared
+#' @param adjusted.stat should sample size corrected/adjustes AIC and BIC be reported?
 #' @param digits number of digits to print
 #' @param scientific print p-values in scientific notation
 #' @param ci print confidence intervals
@@ -47,6 +48,7 @@ summary.modsem_lms <- function(object,
                                H0 = TRUE,
                                verbose = TRUE,
                                r.squared = TRUE,
+                               adjusted.stat = FALSE,
                                digits = 3,
                                scientific = FALSE,
                                ci = FALSE,
@@ -59,8 +61,8 @@ summary.modsem_lms <- function(object,
                                ...) {
   summaryLmsAndQml(object,
     H0 = H0, verbose = verbose,
-    r.squared = r.squared, digits = digits,
-    scientific = scientific, ci = ci,
+    r.squared = r.squared, adjusted.stat = adjusted.stat,
+    digits = digits, scientific = scientific, ci = ci,
     standardized = standardized, 
     loadings = loadings, regressions = regressions,
     covariances = covariances, intercepts = intercepts,
@@ -75,6 +77,7 @@ summary.modsem_lms <- function(object,
 #' @param H0 should a null model be estimated (used for comparison)
 #' @param verbose print progress for the estimation of null model
 #' @param r.squared calculate R-squared
+#' @param adjusted.stat should sample size corrected/adjustes AIC and BIC be reported?
 #' @param digits number of digits to print
 #' @param scientific print p-values in scientific notation
 #' @param ci print confidence intervals
@@ -106,6 +109,7 @@ summary.modsem_qml <- function(object,
                                H0 = TRUE,
                                verbose = TRUE,
                                r.squared = TRUE,
+                               adjusted.stat = FALSE,
                                digits = 3,
                                scientific = FALSE,
                                ci = FALSE,
@@ -118,8 +122,8 @@ summary.modsem_qml <- function(object,
                                ...) {
   summaryLmsAndQml(object,
     H0 = H0, verbose = verbose,
-    r.squared = r.squared, digits = digits,
-    scientific = scientific, ci = ci,
+    r.squared = r.squared, adjusted.stat = adjusted.stat,
+    digits = digits, scientific = scientific, ci = ci,
     standardized = standardized, 
     loadings = loadings, regressions = regressions,
     covariances = covariances, intercepts = intercepts,
@@ -132,6 +136,7 @@ summaryLmsAndQml <- function(object,
                              H0 = TRUE,
                              verbose = TRUE,
                              r.squared = TRUE,
+                             adjusted.stat = FALSE,
                              digits = 3,
                              scientific = FALSE,
                              ci = FALSE,
@@ -162,7 +167,7 @@ summaryLmsAndQml <- function(object,
     data = object$data,
     iterations = object$iterations,
     logLik = object$logLik,
-    AIC = object$AIC,
+    fit = fit_modsem_da(object, chisq = FALSE),
     D = NULL,
     N = NROW(object$data),
     method = method,
@@ -211,6 +216,7 @@ summaryLmsAndQml <- function(object,
   out$format <- list(
     digits = digits,
     scientific = scientific,
+    adjusted.stat = adjusted.stat,
     ci = ci,
     loadings = loadings,
     regressions = regressions,
@@ -237,9 +243,16 @@ print.summary_da <- function(x, digits = 3, ...) {
                                        variances = x$format$variances)
   cat("\nmodsem (version 1.0.1):\n")
   names <- c("Estimator", "Optimization method", "Number of observations", 
-             "Number of iterations", "Final loglikelihood", "Akaike (AIC)")
+             "Number of iterations", "Loglikelihood", 
+             "Akaike (AIC)", "Bayesian (BIC)")
   values <- c(stringr::str_to_upper(c(x$method, x$optimizer)), 
-              x$N, x$iterations, round(x$logLik, 3), round(x$AIC, 3))
+              x$N, x$iterations, round(x$logLik, 2), round(x$fit$AIC, 2), 
+              round(x$fit$BIC, 2))
+  if (x$format$adjusted.stat) {
+    names <- c(names, "Corrected Akaike (AICc)", "Adjusted Bayesian (aBIC)")
+    values <- c(values, round(x$fit$AICc, 2), round(x$fit$aBIC, 2))
+  }
+
   cat(allignLhsRhs(lhs = names, rhs = values, pad = "  ", 
                    width.out = width.out), "\n")
   
@@ -254,26 +267,32 @@ print.summary_da <- function(x, digits = 3, ...) {
   }
 
   if (!is.null(x$D)) {
+    cat("Fit Measures for H0:\n")
+    names <- c("Loglikelihood", "Akaike (AIC)", "Bayesian (BIC)") 
+    values <- c(round(x$nullModel$logLik), round(x$fitH0$AIC, 2), round(x$fitH0$BIC, 2))
+
+    if (x$format$adjusted.stat) {
+      names <- c(names, "Corrected Akaike (AICc)", "Adjusted Bayesian (aBIC)")
+      values <- c(values, round(x$fitH0$AICc, 2), round(x$fitH0$aBIC, 2))
+    }
+
+    names <- c(names, "Chi-square", "Degrees of Freedom (Chi-square)", 
+               "P-value (Chi-square)", "RMSEA")
+    values <- c(values, formatNumeric(x$fitH0$chisq.value, digits = 2), 
+                x$fitH0$chisq.df,
+                formatPval(x$fitH0$chisq.pvalue, scientific = x$format$scientific),
+                formatNumeric(x$fitH0$RMSEA, digits = 3))
+    cat(allignLhsRhs(lhs = names, rhs = values, pad = "  ", 
+                     width.out = width.out), "\n")
+
     cat("Comparative fit to H0 (no interaction effect)\n")
     names <- c("Loglikelihood change", 
-               "Bayesian (BIC)",
                "Difference test (D)", 
                "Degrees of freedom (D)", "P-value (D)")
     values <- c(formatNumeric(x$D$llChange, digits = 2), 
-                formatNumeric(x$D$BIC, digits = 2),
                 formatNumeric(x$D$D, digits = 2),
                 x$D$df, 
-                format.pval(x$D$p, digits = digits))
-    cat(allignLhsRhs(lhs = names, rhs = values, pad = "  ", 
-                     width.out = width.out), "\n")
-    
-    cat("Fit Measures for H0:\n")
-    names <- c("Chi-square", "Degrees of Freedom (Chi-square)", 
-               "P-value (Chi-square)", "RMSEA") 
-    values <- c(formatNumeric(x$fitH0$chisq.value, digits = 2), 
-                x$fitH0$chisq.df,
-                format.pval(x$fitH0$chisq.pvalue, digits = digits),
-                formatNumeric(x$fitH0$RMSEA, digits = 3))
+                formatPval(x$D$p, scientific = x$format$scientific))
     cat(allignLhsRhs(lhs = names, rhs = values, pad = "  ", 
                      width.out = width.out), "\n")
 
@@ -463,9 +482,8 @@ compare_fit <- function(estH0, estH1) {
   }
   df <- length(coef(estH1)) - length(coef(estH0))
   D <- -2 * (estH0$logLik - estH1$logLik)
-  BIC <- 2 * (estH1$logLik - estH0$logLik) + df * log(NROW(estH1$data))
-  p <- stats::pchisq(D, df = df, lower.tail = FALSE, log.p = TRUE)
-  list(D = D, BIC = BIC, df = df, p = p, llChange = estH1$logLik - estH0$logLik)
+  p <- stats::pchisq(D, df = df, lower.tail = FALSE, log.p = FALSE)
+  list(D = D, df = df, p = p, llChange = estH1$logLik - estH0$logLik)
 }
 
 

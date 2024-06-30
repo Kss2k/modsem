@@ -13,6 +13,7 @@
   H0 = TRUE,
   verbose = TRUE,
   r.squared = TRUE,
+  adjusted.stat = FALSE,
   digits = 3,
   scientific = FALSE,
   ci = FALSE,
@@ -30,6 +31,7 @@
   H0 = TRUE,
   verbose = TRUE,
   r.squared = TRUE,
+  adjusted.stat = FALSE,
   digits = 3,
   scientific = FALSE,
   ci = FALSE,
@@ -66,6 +68,8 @@
 \item{verbose}{print progress for the estimation of null model}
 
 \item{r.squared}{calculate R-squared}
+
+\item{adjusted.stat}{should sample size corrected/adjustes AIC and BIC be reported?}
 
 \item{digits}{number of digits to print}
 

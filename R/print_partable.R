@@ -25,11 +25,8 @@ formatParTable <- function(parTable, digits = 3, scientific = FALSE,
   parTable$lhs <- format(parTable$lhs, width = width, justify = "left")
   parTable$rhs <- format(parTable$rhs, width = width, justify = "left")
 
-  if (scientific) {
-    parTable$p.value <- format.pval(parTable$p.value)
-  } else {
-    parTable$p.value <- format(round(parTable$p.value, digits = 3), nsmall = 3)
-  }
+  parTable$p.value <- formatPval(parTable$p.value, scientific = scientific)
+
   if (!ci) {
     header <- header[!grepl("CI", header)]
     colsOut <- colsOut[!grepl("ci", colsOut)]
@@ -224,4 +221,10 @@ getWidthPrintedParTable <- function(parTable,
   formattedHeader <- 
     paste0(pad, stringr::str_c(header[-(1:3)], collapse = space), "\n")
   nchar(formattedHeader)
+}
+
+
+formatPval <- function(p, scientific = TRUE) {
+  if (scientific) return(format.pval(p))
+  format(round(p, digits = 3), nsmall = 3)
 }

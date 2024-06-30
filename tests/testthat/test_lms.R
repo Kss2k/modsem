@@ -23,7 +23,7 @@ est1 <- modsem(m1, oneInt,
 )
 duration1 <- Sys.time() - startTime1
 plot_interaction("X", "Z", "Y", "X:Z", -3:3, c(-0.5, 0.5), est1)
-print(summary(est1))
+print(summary(est1, adjusted.stat = TRUE))
 
 # I have no clue why, but changing the ordering of how the interaction terms 
 # are specified, ends up changing the number of iterations (and results ever 

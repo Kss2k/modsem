@@ -90,8 +90,7 @@ tpb <- '
   BEH ~ INT:PBC  
 '
 
-lms2 <- modsem(tpb, TPB, method = "lms", nodes = 32,
-               robust.se = TRUE)
+lms2 <- modsem(tpb, TPB, method = "lms", nodes = 32)
 summary(lms2)
 
 qml2 <- modsem(tpb, TPB, method = "qml")
