@@ -29,13 +29,22 @@ There are a number of approaches for estimating interaction effects in SEM. In `
 - `"mplus"` 
   - estimates model through Mplus, if it is installed
 
-# New Features (01.06.2024-05-06-2024)
-- New function for plotting interaction effects (`plot_interaction()`), see the [vignette](https://kss2k.github.io/intro_modsem/articles/plot_interactions.html)
+# New Features version 1.0.1 (Available on GitHub, not on CRAN)
 - Interaction effects between endogenous and exogenous variables are now possible by default with QML-approach.
 - Interaction effects between two endogenous variables are now possible with the LMS 
   and QML approach, using the 'cov.syntax' argument, see the [vignette](https://kss2k.github.io/intro_modsem/articles/interaction_two_etas.html)
   for more information.
-  (only available on GitHub, not on CRAN)
+- Improved `summary()` function for LMS and QML: 
+    1. Standardized estimates are now available for the LMS and QML approach, 
+    using the `standardized = TRUE` argument.
+    2. The `summary()` function now also returns the RMSEA, Chi-Square, AIC, BIC, and Expected covariance matrix for the LMS and QML approach.
+    3. The `summary()` function now resembles the output of the `summary()` function from the `lavaan` package.
+- Added post-estimation functions for LMS and QML:
+    1. modsem_inspect() for inspecting the results of the LMS and QML approach 
+    2. `fit_modsem_da()` caluculates a variety of fit indices for the LMS and QML approach, 
+        RMSEA, Chi-Square, AIC, BIC, and Expected covariance matrix.
+    3. `vcov()` returns the variance-covariance matrix of the parameter estimates for the LMS and QML approach. 
+    4. `coef()` returns the parameter estimates for the LMS and QML approach.
 
 # Examples 
 
