@@ -40,7 +40,7 @@ There are a number of approaches for estimating interaction effects in SEM. In `
     2. The `summary()` function now also returns the RMSEA, Chi-Square, AIC, BIC, and Expected covariance matrix for the LMS and QML approach.
     3. The `summary()` function now resembles the output of the `summary()` function from the `lavaan` package.
 - Added post-estimation functions for LMS and QML:
-    1. modsem_inspect() for inspecting the results of the LMS and QML approach 
+    1. `modsem_inspect()` for inspecting the results of the LMS and QML approach 
     2. `fit_modsem_da()` caluculates a variety of fit indices for the LMS and QML approach, 
         RMSEA, Chi-Square, AIC, BIC, and Expected covariance matrix.
     3. `vcov()` returns the variance-covariance matrix of the parameter estimates for the LMS and QML approach. 
