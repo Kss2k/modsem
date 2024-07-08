@@ -29,7 +29,7 @@ There are a number of approaches for estimating interaction effects in SEM. In `
 - `"mplus"` 
   - estimates model through Mplus, if it is installed
 
-# New Features version 1.0.1 (Available on GitHub, not on CRAN)
+# New Features version 1.0.1
 - Interaction effects between endogenous and exogenous variables are now possible by default with QML-approach.
 - Interaction effects between two endogenous variables are now possible with the LMS 
   and QML approach, using the 'cov.syntax' argument, see the [vignette](https://kss2k.github.io/intro_modsem/articles/interaction_two_etas.html)
