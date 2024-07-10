@@ -35,7 +35,7 @@ print(summary(est1, adjusted.stat = TRUE))
 # starting parameters
 tpb <- "
 # Outer Model (Based on Hagger et al., 2007)
-  ATT =~ a1 * att1 + a2 * att2 + att3 + att4 + att5
+  LATENT_VAR_ATT =~ a1 * att1 + a2 * att2 + att3 + att4 + att5
   SN =~ s1 * sn1 + sn2
   PBC =~ p1 * pbc1 + pbc2 + pbc3
   INT =~ i1 * int1 + int2 + int3
@@ -43,7 +43,7 @@ tpb <- "
 
 # Inner Model (Based on Steinmetz et al., 2011)
   # Causal Relationsships
-  INT ~ gamma_int_att * ATT + b * SN + b * PBC
+  INT ~ gamma_int_att * LATENT_VAR_ATT + b * SN + b * PBC
   BEH ~ 0.2 * INT + a * PBC
   BEH ~ PBC:INT
   gamma_int_att == a
@@ -54,7 +54,7 @@ tpb <- "
 "
 
 covModel <- '
-PBC ~ a * ATT + a * SN
+PBC ~ a * LATENT_VAR_ATT + a * SN
 '
 
 startTime2 <- Sys.time()

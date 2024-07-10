@@ -23,9 +23,9 @@ formatParTable <- function(parTable, digits = 3, scientific = FALSE,
     pasteLabels(parTable$rhs[parTable$rhs != "1"], 
                 parTable$label[parTable$rhs != "1"], width = width)
 
-  parTable$lhs <- format(parTable$lhs, width = width, justify = "left")
+  parTable$lhs[!isStructOrMeasure] <- 
+    format(parTable$lhs[!isStructOrMeasure], width = width, justify = "left")
   parTable$rhs <- format(parTable$rhs, width = width, justify = "left")
-
   parTable$p.value <- formatPval(parTable$p.value, scientific = scientific)
 
   if (!ci) {
