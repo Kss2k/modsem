@@ -2,9 +2,9 @@ devtools::load_all()
 set.seed(123)
 
 m1 <- '
-X =~ x1 + x2 + x3
-Y =~ y1 + y2 + y3
-Z =~ z1 + z2 + z3
+X =~ x1 #+ x2 + x3
+Y =~ y1 #+ y2 + y3
+Z =~ z1 #+ z2 + z3
 Y ~ X + Z + X:Z
 '
 
@@ -19,7 +19,7 @@ tpb <- '
   SN =~ sn1 + sn2
   PBC =~ pbc1 + pbc2 + pbc3
   INT =~ int1 + int2 + int3
-  BEH =~ b1 + b2
+  BEH =~ b1 # + b2
 
 # Inner Model (Based on Steinmetz et al., 2011)
   BEH ~ INT + PBC 

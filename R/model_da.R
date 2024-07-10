@@ -132,12 +132,26 @@ specifyModelDA <- function(syntax = NULL,
   selectScalingY <- selectScalingY(lambdaY, method = method)
   selectBetaRows <- selectBetaRows(lambdaY, method = method)
   emptyR <- constructR(etas, indsEtas, lambdaY, method = method)
-  scalingInds <- getScalingInds(allIndsEtas, R = emptyR, method = method)
+  fullR <- constructFullR(etas, indsEtas, lambdaY, method = method)
+
+  latentEtas <- getLatentEtasQml(indsEtas, method = method)
+  colsU <- getColsU(etas, indsEtas, lambdaY, method = method)
+
+  fullL2 <- constructFullL2(colsU, etas = etas, method = method)
+  selectSubL2 <- getSelectSubL2(fullL2, colsU = colsU, latentEtas = latentEtas, 
+                                method = method)
+  fullSigma2ThetaEpsilon <- constructFullSigma2ThetaEpsilon(psi, method = method)
+  selectSubSigma2ThetaEpsilon <- 
+    getSelectSubSigma2ThetaEpsilon(fullSigma2ThetaEpsilon, latentEtas = latentEtas, 
+                                   method = method)
+  fullU <- constructFullU(fullL2 = fullL2, N = NROW(data), etas = etas, method = method)
+
+  scalingInds <- getScalingInds(indsEtas, R = emptyR, latentEtas = latentEtas, method = method)
   selectThetaEpsilon <- selectThetaEpsilon(lambdaY, thetaEpsilon, 
                                            scalingInds, method = method)
   subThetaEpsilon <- constructSubThetaEpsilon(indsEtas, thetaEpsilon, 
                                               scalingInds, method = method)
-  
+
   covModel <- covModel(cov.syntax, method = method, parTable = parTableCovModel)
 
   # list of matrices
@@ -161,6 +175,13 @@ specifyModelDA <- function(syntax = NULL,
     selectThetaEpsilon = selectThetaEpsilon,
     selectBetaRows = selectBetaRows,
     emptyR = emptyR,
+    fullR = fullR,
+    fullSigma2ThetaEpsilon = fullSigma2ThetaEpsilon, 
+    selectSubSigma2ThetaEpsilon = selectSubSigma2ThetaEpsilon,
+    fullL2 = fullL2,
+    selectSubL2 = selectSubL2,
+    fullU = fullU,
+    colsU = colsU,
     subThetaEpsilon = subThetaEpsilon)
 
   labelMatrices <- list(
@@ -184,6 +205,7 @@ specifyModelDA <- function(syntax = NULL,
 
   model <- list(info =
                 list(etas = etas,
+                     latentEtas = latentEtas,
                      numEtas = numEtas,
                      indsEtas = indsEtas,
                      allIndsEtas = allIndsEtas,

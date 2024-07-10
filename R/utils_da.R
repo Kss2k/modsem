@@ -300,6 +300,13 @@ repPartitionedCols <- function(matrix, length = 1) {
 }
 
 
+diagBindSquareMatrices <- function(X, Y) {
+  XY <- matrix(0, nrow = NROW(X), ncol = NCOL(Y), 
+               dimnames = list(rownames(X), colnames(Y)))
+  rbind(cbind(X, XY), cbind(t(XY), Y))
+}
+
+
 #' @export
 as.logical.matrix <- function(x, ...) {
   structure(x != 0, 
@@ -309,7 +316,11 @@ as.logical.matrix <- function(x, ...) {
 
 
 isScalingY <- function(x) {
-  seq_along(x) %in% which(x == 1 | x == 0)
+  out <- (seq_along(x) %in% which(x == 0)) | seq_along(x) %in% which.max(x == 1)
+  if (all(out) && which.max(x == 1) < length(out)) {
+    out[which.max(x == 1)] <- FALSE
+  }
+  out
 }
 
 
@@ -335,6 +346,7 @@ getDegreesOfFreedom <- function(m, coef) {
   nMeans <- sum(grepl("tau|alpha", names(coef)))
   df + nMeans
 }
+
 
 getInfoQuad <- function(quad) {
   list(dim = quad$k, nodes.dim = quad$m, nodes.total = quad$m ^ quad$k) 

@@ -334,6 +334,12 @@ selectBetaRows <- function(lambdaY, method = "qml") {
 
 constructR <- function(etas, indsEtas, lambdaY, method = "qml") {
   if (method != "qml") return(NULL)
+  hasMultipleInds <- vapply(indsEtas, FUN = function(x) length(x) > 1,
+                            FUN.VALUE = logical(1L))
+  etas <- names(indsEtas)[hasMultipleInds] 
+  indsEtas <- indsEtas[etas] 
+  if (length(etas) == 0) return(NULL)
+
   numEtas <- length(etas)
   numIndsEtas <- lapply(indsEtas, FUN = length)
   allIndsEtas <- unlist(indsEtas)
@@ -361,9 +367,102 @@ constructR <- function(etas, indsEtas, lambdaY, method = "qml") {
 }
 
 
-getScalingInds <- function(indsEtas, R, method = "qml") {
+getLatentEtasQml <- function(indsEtas, method = "qml") {
   if (method != "qml") return(NULL)
+  hasMultipleInds <- vapply(indsEtas, FUN = function(x) length(x) > 1,
+                            FUN.VALUE = logical(1L))
+  etas <- names(indsEtas)[hasMultipleInds]
+  if (length(etas) == 0) return(NULL)
+  etas
+}
+
+
+getColsU <- function(etas, indsEtas, lambdaY, method = "qml") {
+  numEtas <- length(etas)
+  numIndsEtas <- lapply(indsEtas, FUN = length)
   allIndsEtas <- unlist(indsEtas)
+  numAllIndsEtas <- length(allIndsEtas)
+  selectBetaRows <- selectBetaRows(lambdaY, method = "qml")
+  rowNamesR <- rownames(lambdaY)[selectBetaRows]
+  hasMultipleInds <- vapply(indsEtas, FUN = function(x) length(x) > 1,
+                            FUN.VALUE = logical(1L))
+  if (sum(hasMultipleInds) == 0) return(NULL) 
+  colsU <- rowNamesR[seq_len(numAllIndsEtas - sum(hasMultipleInds))]
+  colsU[is.na(colsU)] <- paste0("__FILL__ZERO__", seq_len(sum(is.na(colsU))))
+  colsU
+}
+
+
+constructFullU <- function(fullL2, N, etas, method = "qml") {
+  if (method != "qml" || N == 0) return(NULL)
+
+  if (is.null(fullL2)) nCols <- length(etas)
+  else nCols <- NCOL(fullL2)
+
+  matrix(0, nrow = N, ncol = nCols, dimnames = list(NULL, colnames(fullL2)))
+}
+
+
+constructFullR <- function(etas, indsEtas, lambdaY, method = "qml") {
+  if (method != "qml") return(NULL)
+
+  numEtas <- length(etas)
+  numIndsEtas <- lapply(indsEtas, FUN = length)
+  allIndsEtas <- unlist(indsEtas)
+  numAllIndsEtas <- length(allIndsEtas)
+  selectBetaRows <- selectBetaRows(lambdaY, method = "qml")
+  rowNamesR <- rownames(lambdaY)[selectBetaRows]
+  hasMultipleInds <- vapply(indsEtas, FUN = function(x) length(x) > 1,
+                            FUN.VALUE = logical(1L))
+  if (sum(hasMultipleInds) == 0) return(NULL) 
+
+  matrix(0, nrow = numAllIndsEtas - sum(hasMultipleInds), 
+         ncol = numAllIndsEtas, 
+         dimnames = list(rowNamesR[seq_len(numAllIndsEtas - sum(hasMultipleInds))],
+                                           allIndsEtas))
+
+}
+
+
+constructFullSigma2ThetaEpsilon <- function(psi, method = "qml") {
+  if (method != "qml") return(NULL)
+  matrix(0, nrow = nrow(psi), ncol = ncol(psi), 
+         dimnames = dimnames(psi))
+}
+
+
+getSelectSubSigma2ThetaEpsilon <- function(fullSigma2ThetaEpsilon, 
+                                           latentEtas, method = "qml") {
+  if (method != "qml") return(NULL)
+  select <- as.logical.matrix(fullSigma2ThetaEpsilon) 
+  select[TRUE] <- FALSE 
+  select[latentEtas, latentEtas] <- TRUE
+  select
+}
+
+
+constructFullL2 <- function(colsU, etas, method = "qml") {
+  if (method != "qml") return(NULL)
+  
+  if (is.null(colsU)) nCols <- length(etas)
+  else nCols <- length(colsU)
+  matrix(0, nrow = length(etas), ncol = nCols,
+         dimnames = list(etas, colsU))
+}
+
+
+getSelectSubL2 <- function(fullL2, colsU, latentEtas, method = "qml") {
+  if (method != "qml") return(NULL)
+  select <- as.logical.matrix(fullL2)
+  select[TRUE] <- FALSE
+  select[latentEtas, !grepl("__FILL__ZERO__", colnames(select))] <- TRUE
+  select
+}
+
+
+getScalingInds <- function(indsEtas, R, latentEtas, method = "qml") {
+  if (method != "qml") return(NULL)
+  allIndsEtas <- unlist(indsEtas[latentEtas])
   scalingInds <- allIndsEtas[!allIndsEtas %in% rownames(R)]
   scalingInds
 }
@@ -388,6 +487,16 @@ constructSubThetaEpsilon <- function(indsEtas, thetaEpsilon, scalingInds,
                                             scalingInds))
   diag(subThetaEpsilon) <- NA
   subThetaEpsilon
+}
+
+
+getScalingLambdaY <- function(lambdaY, indsEtas, etas, method = "qml") {
+  if (method != "qml") return(NULL)
+  hasMultipleInds <- vapply(indsEtas, FUN = function(x) length(x) > 1,
+                            FUN.VALUE = logical(1L))
+  latentEtas <- names(indsEtas)[hasMultipleInds] 
+  indsLatentEtas <- unlist(indsEtas[latentEtas])
+  lambdaY[indsLatentEtas, latentEtas]
 }
 
 

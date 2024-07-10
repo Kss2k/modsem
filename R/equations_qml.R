@@ -3,6 +3,7 @@ logLikQml <- function(theta, model, sum = TRUE, sign = -1) {
   numEta <- model$info$numEta
   numXi <- model$info$numXi
   kOmegaEta <- model$info$kOmegaEta
+  latentEtas <- model$info$latentEtas
 
   m <- modelFilled$matrices
   m$numEta <- numEta
@@ -10,60 +11,59 @@ logLikQml <- function(theta, model, sum = TRUE, sign = -1) {
   m$kOmegaEta <- kOmegaEta
 
   m$x <- model$data[, model$info$allIndsXis, drop = FALSE]
-  for (i in seq_len(ncol(m$x))) {
-    m$x[, i] <- m$x[, i] - m$tauX[i]
-  }
+  for (i in seq_len(ncol(m$x))) m$x[, i] <- m$x[, i] - m$tauX[i]
 
   m$y <- model$data[, model$info$allIndsEtas, drop = FALSE]
   for (i in seq_len(ncol(m$y))) m$y[, i] <- m$y[, i] - m$tauY[i]
 
   t <- NROW(m$x)
-  if (ncol(m$y) > 1) {
+  if (!is.null(m$emptyR)) {
     m$R <- m$emptyR
     m$R[is.na(m$R)] <- -m$lambdaY[!m$selectScalingY] # fill R with -Beta
-    m$u <- m$y %*% t(m$R)
-    m$Beta <- m$lambdaY[m$selectBetaRows, ]
-  } else {
-    m$u <- 0
+    m$fullR[rownames(m$R), colnames(m$R)] <- m$R
+    m$u <- m$y %*% t(m$fullR)
+    m$fullU[, m$colsU] <- m$u
+    m$Beta <- m$lambdaY[m$selectBetaRows, latentEtas]
+    m$subThetaEpsilon <- m$subThetaEpsilon
+    m$subThetaEpsilon[is.na(m$subThetaEpsilon)] <-
+      m$thetaEpsilon[m$selectThetaEpsilon]
+
+    m$RER <- m$R %*% m$thetaEpsilon[colnames(m$R), colnames(m$R)] %*% t(m$R)
+    invRER <- solve(m$RER)
+    m$L2 <- -m$subThetaEpsilon %*% t(m$Beta) %*% invRER
+    m$fullL2[m$selectSubL2] <- m$L2
+
+    m$Sigma2ThetaEpsilon <- # m$Binv %*% m$psi %*% t(m$Binv) +
+      m$subThetaEpsilon -
+      m$subThetaEpsilon ^ 2 %*% t(m$Beta) %*%
+      invRER %*% m$Beta 
+    
+    m$fullSigma2ThetaEpsilon[m$selectFullSigma2ThetaEpsilon] <- m$Sigma2ThetaEpsilon
   }
-
-  m$subThetaEpsilon <- m$subThetaEpsilon
-  m$subThetaEpsilon[is.na(m$subThetaEpsilon)] <-
-    m$thetaEpsilon[m$selectThetaEpsilon]
-
-  m$RER <- m$R %*% m$thetaEpsilon %*% t(m$R)
-  invRER <- solve(m$RER)
+  
+  m$Sigma2ThetaEpsilon <- m$fullSigma2ThetaEpsilon 
+  m$L2 <- m$fullL2
+  m$u <- m$fullU
   m$LXPLX <- m$lambdaX %*% m$phi %*% t(m$lambdaX) + m$thetaDelta
   invLXPLX <- solve(m$LXPLX)
-
   m$L1 <- m$phi %*% t(m$lambdaX) %*% invLXPLX
-  m$L2 <- -m$subThetaEpsilon %*% t(m$Beta) %*% invRER
-
-  m$kronXi <- calcKronXi(m, t)
-  m$Binv <- calcBinvCpp(m, t)
-
   m$Sigma1 <- m$phi - m$phi %*% t(m$lambdaX) %*%
     invLXPLX %*% m$lambdaX %*% m$phi
-
-  m$Sigma2ThetaEpsilon <- # m$Binv %*% m$psi %*% t(m$Binv) +
-    m$subThetaEpsilon -
-    m$subThetaEpsilon^2 %*% t(m$Beta) %*%
-    invRER %*% m$Beta
+  m$kronXi <- calcKronXi(m, t)
+  m$Binv <- calcBinvCpp(m, t)
 
   Ey <- muQmlCpp(m, t)
   sigmaEpsilon <- sigmaQmlCpp(m, t)
 
-  sigmaXU <- rbind(
-    cbind(m$LXPLX, matrix(0, ncol = ncol(m$RER), nrow = nrow(m$LXPLX))),
-    cbind(matrix(0, ncol = ncol(m$LXPLX), nrow = nrow(m$RER)), m$RER)
-  )
-  mean <- rep(0, ncol(sigmaXU))
+  if (is.null(m$emptyR)) sigmaXU <- m$LXPLX
+  else sigmaXU <- diagBindSquareMatrices(m$LXPLX, m$RER)
 
-  f2 <- dmvn(cbind(m$x, m$u), mean = mean, sigma = sigmaXU, log = TRUE)
+  mean <- rep(0, ncol(sigmaXU))
+  f2 <- dmvn(cbind(m$x, m$u)[, colnames(sigmaXU)], mean = mean, sigma = sigmaXU, log = TRUE)
   if (numEta <= 1) {
     f3 <- dnormCpp(m$y[, 1], mu = Ey, sigma = sqrt(sigmaEpsilon))
   } else {
-    f3 <- rep_dmvnorm(m$y[, colnames(m$subThetaEpsilon)],
+    f3 <- rep_dmvnorm(m$y[, !colnames(m$y) %in% colnames(sigmaXU)],
                       expected = Ey, sigma = sigmaEpsilon, t = t)
   }
   if (sum) {
