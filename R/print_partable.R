@@ -14,9 +14,10 @@ formatParTable <- function(parTable, digits = 3, scientific = FALSE,
     paste(parTable$lhs[isStructOrMeasure], parTable$op[isStructOrMeasure])
 
 
-  parTable$lhs[parTable$rhs == "1"] <- 
-    pasteLabels(parTable$lhs[parTable$rhs == "1"], 
-                parTable$label[parTable$rhs == "1"], 
+  isResVar <- parTable$op == "~~" & parTable$lhs == parTable$rhs
+  parTable$lhs[parTable$rhs == "1" | isResVar] <- 
+    pasteLabels(parTable$lhs[parTable$rhs == "1" | isResVar], 
+                parTable$label[parTable$rhs == "1" | isResVar], 
                 width = width)
   parTable$rhs[parTable$rhs != "1"] <- 
     pasteLabels(parTable$rhs[parTable$rhs != "1"], 
