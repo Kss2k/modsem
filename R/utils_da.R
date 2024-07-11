@@ -316,11 +316,7 @@ as.logical.matrix <- function(x, ...) {
 
 
 isScalingY <- function(x) {
-  out <- (seq_along(x) %in% which(x == 0)) | seq_along(x) %in% which.max(x == 1)
-  if (all(out) && which.max(x == 1) < length(out)) {
-    out[which.max(x == 1)] <- FALSE
-  }
-  out
+  (seq_along(x) %in% which(x == 0)) | seq_along(x) %in% which.max(x == 1)
 }
 
 
