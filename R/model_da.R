@@ -182,6 +182,8 @@ specifyModelDA <- function(syntax = NULL,
     selectSubL2 = selectSubL2,
     fullU = fullU,
     colsU = colsU,
+    colsR = colnames(emptyR),
+    rowsR = rownames(emptyR),
     subThetaEpsilon = subThetaEpsilon)
 
   labelMatrices <- list(

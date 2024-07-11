@@ -80,10 +80,28 @@ lms2 <- modsem(m1, oneInt, method = "lms")
 ```
 
 ## The QML approach
+### If you are using the latest GitHub version
 The estimation of the QML approach is different from the LMS approach, 
 and you do not have the same issue as in the LMS approach. Thus you don't 
-have to specify a measurement error for moderating variables. The only 
-restriction in the QML approach, is that all endogenous variables have 
+have to specify a measurement error for moderating variables. 
+
+```{r} 
+m3 <- '
+# Outer Model
+  X =~ x1 # X is observed
+  Z =~ z1 # Z is observed
+  Y =~ y1 # Y is observed
+
+# Inner model
+  Y ~ X + Z
+  Y ~ X:Z
+'
+
+qml3 <- modsem(m3, oneInt, method = "qml")
+``` 
+### If you are using the CRAN version
+If you are using the latest CRAN version, there is a slight 
+caveat, in that all endogenous variables have 
 to have atleast two indicators. This is due to a transformation, and 
 the approximation of the distribution of the indicators 
 in the endogenous variables. This problem will likely be fixed in a later 
@@ -95,7 +113,7 @@ between two endogenous variable in the LMS- and QML approach
 (`vignette("interaction_two_etas")`) 
 
 ```{r} 
-m3 <- '
+m4 <- '
 # Outer Model
   X =~ x1 # X is observed
   Z =~ z1 # Z is observed
@@ -106,5 +124,5 @@ m3 <- '
   Y ~ X:Z
 '
 
-qml3 <- modsem(m3, oneInt, method = "qml")
+qml4 <- modsem(m3, oneInt, method = "qml")
 ``` 
