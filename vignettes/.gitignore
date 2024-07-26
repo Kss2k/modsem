@@ -1,2 +1,3 @@
 *.html
 *.R
+set_eval_.*_.bash
