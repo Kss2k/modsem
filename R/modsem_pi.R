@@ -225,7 +225,6 @@ createProdInds <- function(modelSpec,
                            center.before = FALSE,
                            center.after = FALSE,
                            residuals.prods = FALSE) {
-  
   indProds <- purrr::map2(.x = modelSpec$relDfs,
                           .y = modelSpec$indsInLatentProds,
                           .f = createIndProds,
@@ -264,12 +263,12 @@ createIndProds <- function(relDf,
   # Check if inds are numeric
   isNumeric <- sapply(inds, is.numeric)
 
-  if (sum(as.integer(!isNumeric)) > 0) {
+  if (any(!isNumeric)) {
     stop2("Expected inds to be numeric when creating prods")
   }
 
-  # Centering them, if center == TRUE
-  if (centered == TRUE) {
+  # Centering them
+  if (centered) {
     inds <- lapplyDf(inds,
                      FUN = function(x) x - mean(x))
 
