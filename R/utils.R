@@ -14,7 +14,7 @@ reverseIntTerm <- function(xz) {
 
 
 getEtas <- function(parTable, isLV = FALSE, checkAny = TRUE) {
-  cond <- parTable$op == "~" & parTable$lhs != "1"
+  cond <- parTable$op == "~" & parTable$rhs != "1"
   if (isLV) {
     lVs <- unique(parTable[parTable$op == "=~", "lhs"])
     cond <- cond & parTable$lhs %in% lVs

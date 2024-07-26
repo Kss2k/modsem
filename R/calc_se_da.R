@@ -91,7 +91,7 @@ calcSE_da <- function(calc.se = TRUE, vcov, theta, NA__ = -999) {
     return(rep(NA__, length(theta)))
   }
 
-  se <- sqrt(diag(vcov))
+  se <- suppressWarnings(sqrt(diag(vcov)))
 
   if (all(is.na(se))) 
     warning2("SE's could not be computed, negative Hessian is singular.")
