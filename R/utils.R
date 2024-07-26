@@ -229,3 +229,9 @@ centerInteraction <- function(parTable) {
 
   parTable
 }
+
+
+getWarningWrapper <- function(silent = FALSE) { # function factory
+  if (silent) return(suppressWarnings)
+  function(x) x
+}

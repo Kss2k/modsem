@@ -7,7 +7,8 @@ optimizeStartingParamsDA <- function(model) {
   data <- model$data
 
   syntax <- paste(model$syntax, model$covModel$syntax, sep = "\n")
-  parTable <- modsem(syntax, data, method = "dblcent")$coefParTable
+  parTable <- modsem_pi(syntax, data, method = "dblcent", 
+                        suppress.warnings.lavaan = TRUE)$coefParTable
 
   # Main Model
   matricesMain <- model$matrices

@@ -25,6 +25,7 @@ modsem_pi(
   estimator = "ML",
   group = NULL,
   run = TRUE,
+  suppress.warnings.lavaan = FALSE,
   ...
 )
 }
@@ -73,6 +74,8 @@ modsem_pi(
 \item{group}{group variable for multigroup analysis}
 
 \item{run}{should the model be run via lavaan, if FALSE only modified syntax and data is returned}
+
+\item{suppress.warnings.lavaan}{should warnings from lavaan be supressed?}
 
 \item{...}{arguments passed to other functions, e.g,. lavaan}
 }
