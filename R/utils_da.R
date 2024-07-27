@@ -347,3 +347,12 @@ getDegreesOfFreedom <- function(m, coef) {
 getInfoQuad <- function(quad) {
   list(dim = quad$k, nodes.dim = quad$m, nodes.total = quad$m ^ quad$k) 
 }
+
+
+getFixedInterceptSyntax <- function(indicator, syntax, parTable) {
+  if (is.null(indicator) || is.null(syntax) ||
+      NROW(parTable[parTable$lhs == indicator &
+           parTable$op == "~" & parTable$rhs == "1", ])) return(syntax)
+  else addition <-  paste0("\n", indicator, " ~ 0 * 1")
+  paste0(syntax, addition)
+}

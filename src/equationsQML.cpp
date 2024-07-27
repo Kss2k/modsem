@@ -8,6 +8,7 @@ arma::mat muQmlCpp(Rcpp::List m, int t) {
   int numEta = Rcpp::as<int>(m["numEta"]);
   int numXi = Rcpp::as<int>(m["numXi"]);
   arma::mat alpha = Rcpp::as<arma::mat>(m["alpha"]);
+  arma::mat beta0 = Rcpp::as<arma::mat>(m["beta0"]);
   arma::mat gammaXi = Rcpp::as<arma::mat>(m["gammaXi"]);
   arma::mat omegaXiXi = Rcpp::as<arma::mat>(m["omegaXiXi"]);
   arma::mat l1 = Rcpp::as<arma::mat>(m["L1"]); // L1 refers to L1 cache
@@ -36,8 +37,8 @@ arma::mat muQmlCpp(Rcpp::List m, int t) {
         kronXi.submat(firstRow, firstCol, lastRow, lastColKOxx);
       Binv_t = Binv.submat(firstRow, firstCol, lastRow, lastColBinv);
 
-      Ey.row(i) = (Binv_t * (trOmegaSigma + alpha + gammaXi * l1 * x.row(i).t() + 
-        kronXi_t * omegaXiXi * l1 * x.row(i).t()) + l2 * u.row(i).t()).t();
+      Ey.row(i) = (Binv_t * (trOmegaSigma + alpha + gammaXi * (beta0 + l1 * x.row(i).t()) + 
+        kronXi_t * omegaXiXi * (beta0 + l1 * x.row(i).t())) + l2 * u.row(i).t()).t();
     }
   } else {
     for (int i = 0; i < t; i++) {
@@ -47,8 +48,8 @@ arma::mat muQmlCpp(Rcpp::List m, int t) {
       kronXi_t = 
         kronXi.submat(firstRow, firstCol, lastRow, lastColKOxx);
 
-      Ey.row(i) = (Binv * (trOmegaSigma + alpha + gammaXi * l1 * x.row(i).t() + 
-            kronXi_t * omegaXiXi * l1 * x.row(i).t()) + l2 * u.row(i).t()).t();
+      Ey.row(i) = (Binv * (trOmegaSigma + alpha + gammaXi * (beta0 + l1 * x.row(i).t()) + 
+            kronXi_t * omegaXiXi * (beta0 + l1 * x.row(i).t())) + l2 * u.row(i).t()).t();
     }
   }
   return Ey;
@@ -118,6 +119,7 @@ arma::mat sigmaQmlCpp(Rcpp::List m, int t) {
 arma::mat calcKronXi(Rcpp::List m, int t) {
   int numEta = Rcpp::as<int>(m["numEta"]);  
   int numXi = Rcpp::as<int>(m["numXi"]);
+  arma::mat beta0 = Rcpp::as<arma::mat>(m["beta0"]);
   arma::mat omegaXiXi = Rcpp::as<arma::mat>(m["omegaXiXi"]);
   arma::mat l1 = Rcpp::as<arma::mat>(m["L1"]); 
   arma::mat x = Rcpp::as<arma::mat>(m["x"]);
@@ -128,7 +130,7 @@ arma::mat calcKronXi(Rcpp::List m, int t) {
 
   for (int i = 0; i < t; i++) {
     out.submat(i * numEta, 0, (i + 1) * numEta - 1, numXi * numEta - 1) = 
-      arma::kron(Ie, x.row(i) * l1.t());
+      arma::kron(Ie, beta0.t() + x.row(i) * l1.t());
   }
   return out;
 }

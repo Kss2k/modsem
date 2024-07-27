@@ -21,11 +21,12 @@ arma::vec muLmsCpp(Rcpp::List model, arma::vec z) {
   arma::mat Gx = Rcpp::as<arma::mat>(matrices["gammaXi"]);
   arma::mat Ge = Rcpp::as<arma::mat>(matrices["gammaEta"]);
   arma::mat a = Rcpp::as<arma::mat>(matrices["alpha"]);
+  arma::mat beta0 = Rcpp::as<arma::mat>(matrices["beta0"]);
   
   arma::vec zVec;
   if (k > 0) zVec = arma::join_cols(z, arma::zeros<arma::vec>(numXis - k));
   else zVec = arma::zeros<arma::vec>(numXis);
-  arma::mat kronZ = arma::kron(Ie, A * zVec);
+  arma::mat kronZ = arma::kron(Ie, beta0 + A * zVec);
 
   arma::mat Binv;
   if (Ie.n_cols == 1) {
@@ -33,11 +34,11 @@ arma::vec muLmsCpp(Rcpp::List model, arma::vec z) {
   } else {
     Binv = arma::inv(Ie - Ge - kronZ.t() * Oex);
   }
-  arma::vec muX = tX + lX * A * zVec;
+  arma::vec muX = tX + lX * (beta0 + A * zVec);
   arma::vec muY = tY + 
     lY * (Binv * (a + 
-          Gx * A * zVec + 
-          kronZ.t() * Oxx * A * zVec));
+          Gx * (beta0 + A * zVec) + 
+          kronZ.t() * Oxx * (beta0 + A * zVec)));
   return arma::join_cols(muX, muY);
 }
 
@@ -60,6 +61,7 @@ arma::mat sigmaLmsCpp(Rcpp::List model, arma::vec z) {
   arma::mat Gx = Rcpp::as<arma::mat>(matrices["gammaXi"]);
   arma::mat Ge = Rcpp::as<arma::mat>(matrices["gammaEta"]);
   arma::mat a = Rcpp::as<arma::mat>(matrices["alpha"]);
+  arma::mat beta0 = Rcpp::as<arma::mat>(matrices["beta0"]);
   arma::mat Psi = Rcpp::as<arma::mat>(matrices["psi"]); 
   arma::mat d = Rcpp::as<arma::mat>(matrices["thetaDelta"]);
   arma::mat e = Rcpp::as<arma::mat>(matrices["thetaEpsilon"]);
@@ -67,7 +69,7 @@ arma::mat sigmaLmsCpp(Rcpp::List model, arma::vec z) {
   arma::vec zVec;
   if (k > 0) zVec = arma::join_cols(z, arma::zeros<arma::vec>(numXis - k));
   else zVec = arma::zeros<arma::vec>(numXis);
-  arma::mat kronZ = arma::kron(Ie, A * zVec);
+  arma::mat kronZ = arma::kron(Ie, beta0 + A * zVec);
 
   arma::mat Binv;
   if (Ie.n_cols == 1) {

@@ -11,6 +11,7 @@ logLikQml <- function(theta, model, sum = TRUE, sign = -1) {
   m$kOmegaEta <- kOmegaEta
 
   m$x <- model$data[, model$info$allIndsXis, drop = FALSE]
+  m$tauX <- m$tauX + m$lambdaX %*% m$beta0
   for (i in seq_len(ncol(m$x))) m$x[, i] <- m$x[, i] - m$tauX[i]
 
   m$y <- model$data[, model$info$allIndsEtas, drop = FALSE]

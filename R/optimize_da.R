@@ -6,8 +6,11 @@ optimizeStartingParamsDA <- function(model) {
   indsXis <- model$info$allIndsXis
   data <- model$data
 
-  syntax <- paste(model$syntax, model$covModel$syntax, sep = "\n")
+  syntax <- paste(model$syntax, model$covModel$syntax, 
+                  model$info$lavOptimizerSyntaxAdditions,
+                  sep = "\n")
   parTable <- modsem_pi(syntax, data, method = "dblcent", 
+                        meanstructure = TRUE,
                         suppress.warnings.lavaan = TRUE)$coefParTable
 
   # Main Model
@@ -28,8 +31,8 @@ optimizeStartingParamsDA <- function(model) {
   A[upper.tri(A)] <- t(A[lower.tri(A)])
   A <- t(tryCatch(chol(A), error = function(x) diag(ncol(A))))
 
-  alpha <- matricesMain$alpha
-  alpha[is.na(alpha)] <- 0
+  beta0 <- findInterceptsParTable(matricesMain$beta0, parTable, fill = 0)
+  alpha <- findInterceptsParTable(matricesMain$alpha, parTable, fill = 0)
 
   GammaEta <- findEstimatesParTable(matricesMain$gammaEta, parTable, op = "~")
   GammaXi <- findEstimatesParTable(matricesMain$gammaXi, parTable, op = "~")  
@@ -40,24 +43,24 @@ optimizeStartingParamsDA <- function(model) {
   OmegaXiXi <- findInteractionEstimatesParTable(matricesMain$omegaXiXi, 
                                                 etas = etas, 
                                                 parTable = parTable)
-
-  tauX <- apply(data[, indsXis, drop = FALSE], MARGIN = 2, FUN = mean)
-  tauY <- apply(data[, indsEtas, drop = FALSE], MARGIN = 2, FUN = mean)
+  tauX <- findInterceptsParTable(matricesMain$tauX, parTable, fill = 0)
+  tauY <- findInterceptsParTable(matricesMain$tauY, parTable, fill = 0)
 
   thetaMain <- unlist(list(LambdaX[is.na(matricesMain$lambdaX)], 
-                                LambdaY[is.na(matricesMain$lambdaY)], 
-                                tauX[is.na(matricesMain$tauX)], 
-                                tauY[is.na(matricesMain$tauY)],
-                                ThetaDelta[is.na(matricesMain$thetaDelta)],
-                                ThetaEpsilon[is.na(matricesMain$thetaEpsilon)],
-                                Phi[is.na(matricesMain$phi)], 
-                                A[is.na(matricesMain$A)], 
-                                Psi[is.na(matricesMain$psi)], 
-                                alpha[is.na(matricesMain$alpha)],
-                                GammaXi[is.na(matricesMain$gammaXi)], 
-                                GammaEta[is.na(matricesMain$gammaEta)], 
-                                OmegaXiXi[is.na(matricesMain$omegaXiXi)], 
-                                OmegaEtaXi[is.na(matricesMain$omegaEtaXi)]))
+                           LambdaY[is.na(matricesMain$lambdaY)], 
+                           tauX[is.na(matricesMain$tauX)], 
+                           tauY[is.na(matricesMain$tauY)],
+                           ThetaDelta[is.na(matricesMain$thetaDelta)],
+                           ThetaEpsilon[is.na(matricesMain$thetaEpsilon)],
+                           Phi[is.na(matricesMain$phi)], 
+                           A[is.na(matricesMain$A)], 
+                           Psi[is.na(matricesMain$psi)], 
+                           alpha[is.na(matricesMain$alpha)],
+                           beta0[is.na(matricesMain$beta0)],
+                           GammaXi[is.na(matricesMain$gammaXi)], 
+                           GammaEta[is.na(matricesMain$gammaEta)], 
+                           OmegaXiXi[is.na(matricesMain$omegaXiXi)], 
+                           OmegaEtaXi[is.na(matricesMain$omegaEtaXi)]))
 
   # Cov Model
   matricesCov <- model$covModel$matrices 
@@ -72,10 +75,10 @@ optimizeStartingParamsDA <- function(model) {
     GammaXiCovModel <- findEstimatesParTable(matricesCov$gammaXi, parTable, op = "~")  
 
     thetaCov <- unlist(list(PhiCovModel[is.na(matricesCov$phi)], 
-                                 ACovModel[is.na(matricesCov$A)], 
-                                 PsiCovModel[is.na(matricesCov$psi)], 
-                                 GammaXiCovModel[is.na(matricesCov$gammaXi)], 
-                                 GammaEtaCovModel[is.na(matricesCov$gammaEta)]))
+                            ACovModel[is.na(matricesCov$A)], 
+                            PsiCovModel[is.na(matricesCov$psi)], 
+                            GammaXiCovModel[is.na(matricesCov$gammaXi)], 
+                            GammaEtaCovModel[is.na(matricesCov$gammaEta)]))
   } else thetaCov <- NULL
   
   # labelTheta 
@@ -92,15 +95,29 @@ optimizeStartingParamsDA <- function(model) {
 }
 
 
-findEstimatesParTable <- function(mat, parTable, op = NULL, rows_lhs = TRUE) {
-  if (is.null(op)) stop2("Missing operator")
+findEstimatesParTable <- function(mat, parTable, op = NULL, rows_lhs = TRUE, 
+                                  fill = NULL) {
+  if (is.null(op)) stop("Missing operator")
   for (row in rownames(mat)) {
     for (col in colnames(mat)) {
       if (is.na(mat[row, col])) 
-        mat[row, col] <- extractFromParTable(row, op, col, parTable, rows_lhs)    
+        mat[row, col] <- extractFromParTable(row = row, op = op, col = col, 
+                                             parTable = parTable, 
+                                             rows_lhs = rows_lhs, fill = fill)    
     }
   }
   mat 
+}
+
+
+findInterceptsParTable <- function(mat, parTable, fill = NULL) {
+  for (row in rownames(mat)) {
+    if (is.na(mat[row, ])) 
+      mat[row, ] <- extractFromParTable(row = row, op = "~1", col = "", 
+                                        parTable = parTable, rows_lhs = TRUE, 
+                                        fill = fill)    
+  }
+  mat
 }
 
 
@@ -129,11 +146,11 @@ findInteractionEstimatesParTable <- function(omega, etas, parTable) {
 }
 
 
-extractFromParTable <- function(row, op, col, parTable, rows_lhs = TRUE) {
+extractFromParTable <- function(row, op, col, parTable, rows_lhs = TRUE, fill = NULL) {
   if (rows_lhs) {
-    out <- (parTable[parTable$lhs == row & 
-                     parTable$op == op & 
-                     parTable$rhs %in% col, "est"])
+    out <- parTable[parTable$lhs == row & 
+                    parTable$op == op & 
+                    parTable$rhs %in% col, "est"]
   } else {
     out <- parTable[parTable$lhs == col & 
                     parTable$op == op & 
@@ -141,9 +158,16 @@ extractFromParTable <- function(row, op, col, parTable, rows_lhs = TRUE) {
   }
 
   if (length(out) == 0 && op == "~~") {
-    out <- parTable[parTable$lhs == col & parTable$op == op & parTable$rhs %in% row, "est"]
-  } else if (length(out) != 1) stop2("Incorrect length of matches")
+    out <- parTable[parTable$lhs == col & parTable$op == op & 
+                    parTable$rhs %in% row, "est"]
+  } 
 
+  if (length(out) == 0) {
+    if (is.null(fill)) stop("No match found")
+    out <- fill
+  }
+
+  if (length(out) > 1) stop("Incorrect length of matches")
   out
 }
 

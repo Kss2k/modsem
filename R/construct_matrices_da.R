@@ -52,11 +52,23 @@ constructTau <- function(lVs, indsLVs, parTable, mean.observed = TRUE) {
   numIndsLVs <- lapply(indsLVs, FUN = length)
   allIndsLVs <- unlist(indsLVs)
   numAllIndsLVs <- length(allIndsLVs)
+  lavOptimizerSyntaxAdditions <- ""
 
   if (mean.observed) default <- NA else default <- 0
 
   tau <- matrix(default, nrow = numAllIndsLVs, ncol = 1,
                 dimnames = list(allIndsLVs, "1"))
+  for (lV in lVs) { # set first ind to 0, if lV has meanstructure
+    if (NROW(parTable[parTable$lhs == lV & parTable$op == "~" & 
+             parTable$rhs == "1", ])) {
+      firstInd <- indsLVs[[lV]][[1]]
+      tau[firstInd, 1] <- 0 
+      lavOptimizerSyntaxAdditions <- 
+        getFixedInterceptSyntax(indicator = firstInd, parTable = parTable, 
+                                syntax = lavOptimizerSyntaxAdditions) 
+    }
+  }
+
   constExprs <- parTable[parTable$op == "~" & 
                          parTable$rhs == "1" &
                          parTable$lhs %in% allIndsLVs &
@@ -80,7 +92,7 @@ constructTau <- function(lVs, indsLVs, parTable, mean.observed = TRUE) {
     labelTau[lhs, 1] <- mod
   }
   
-  list(numeric = tau, label = labelTau)
+  list(numeric = tau, label = labelTau, syntaxAdditions = lavOptimizerSyntaxAdditions)
 }
 
 

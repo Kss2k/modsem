@@ -234,7 +234,16 @@ modsem_da <- function(model.syntax = NULL,
     quad.range = args$quad.range
   )
 
-  if (args$optimize) model <- optimizeStartingParamsDA(model)
+  if (args$optimize) {
+    model <- tryCatch(optimizeStartingParamsDA(model), 
+                      warning = function(w) {
+                       warning2("warning when optimizing starting parameters:\n", w)
+                       suppressWarnings(optimizeStartingParamsDA(model))
+                      }, error = function(e) {
+                       warning2("unable to optimize starting parameters:\n", e)
+                       model
+                      })
+  }
   
   if (!is.null(start)) {
     checkStartingParams(start, model = model) # throws error if somethings wrong
