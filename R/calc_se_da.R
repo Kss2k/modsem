@@ -13,7 +13,7 @@ calcFIM_da <- function(model,
                        EFIM.S = 3e4, 
                        epsilon = 1e-8,
                        verbose = FALSE) {
-  if (!calc.se) return(NULL)
+  if (!calc.se) return(list(FIM = NULL, vcov = NULL, type = "none"))
   if (verbose) cat("Calculating standard errors\n")
   
   I <- switch(method, 
