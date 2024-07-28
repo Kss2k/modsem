@@ -32,6 +32,7 @@ modsem_da(
   start = NULL,
   epsilon = NULL,
   quad.range = NULL,
+  n.threads = NULL,
   ...
 )
 }
@@ -121,6 +122,11 @@ if loglikelihood is decreasing for more than 30 iterations.}
 Gaussian-Hermite Quadratures. By default Inf, such that f(t) is integrated from -Inf to Inf, 
 but this will likely be inefficient and pointless at large number of nodes. Nodes outside 
 +/- quad.range will be ignored.}
+
+\item{n.threads}{number of cores to use for parallel processing, if NULL, it will use <= 2 threads, 
+if an integer is specified, it will use that number of threads (e.g., `n.threads = 4`, will use 4 threads)
+if = "default" it will use the default number of threads (2).
+if = "max" it will use all available threads, "min" will use 1 thread.}
 
 \item{...}{additional arguments to be passed to the estimation function}
 }

@@ -21,7 +21,8 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    max.step = 1,
                    fix.estep = TRUE,
                    epsilon = 1e-4, 
-                   quad.range = Inf),
+                   quad.range = Inf, 
+                   n.threads = NULL),
         qml = list(verbose = FALSE, 
                    optimize = TRUE,
                    nodes = 0, 
@@ -43,7 +44,8 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    max.step = NULL,
                    fix.estep = NULL,
                    epsilon = 1e-8, 
-                   quad.range = Inf)
+                   quad.range = Inf, 
+                   n.threads = NULL)
     )
 
     if (is.null(args)) return(settings[method])
@@ -68,6 +70,7 @@ getMethodSettingsDA <- function(method, args = NULL) {
     args.out$OFIM.hessian <- 
       args.out$OFIM.hessian && !args.out$robust.se
 
+    args.out$n.threads <- setThreads(args.out$n.threads)
     args.out
 }
 

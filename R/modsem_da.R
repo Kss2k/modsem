@@ -83,6 +83,10 @@
 #' but this will likely be inefficient and pointless at large number of nodes. Nodes outside 
 #' +/- quad.range will be ignored.
 #'
+#' @param n.threads number of cores to use for parallel processing, if NULL, it will use <= 2 threads, 
+#' if an integer is specified, it will use that number of threads (e.g., `n.threads = 4`, will use 4 threads)
+#' if = "default" it will use the default number of threads (2).
+#' if = "max" it will use all available threads, "min" will use 1 thread.
 #' @param ... additional arguments to be passed to the estimation function
 #'
 #' @return modsem_lms or modsem_qml object
@@ -169,6 +173,7 @@ modsem_da <- function(model.syntax = NULL,
                       start = NULL,
                       epsilon = NULL,
                       quad.range = NULL,
+                      n.threads = NULL,
                       ...) {
   if (is.null(model.syntax)) {
     stop2("No model.syntax provided")
@@ -209,7 +214,8 @@ modsem_da <- function(model.syntax = NULL,
           max.step = max.step,
           fix.estep = fix.estep,
           epsilon = epsilon,
-          quad.range = quad.range
+          quad.range = quad.range,
+          n.threads = n.threads
         )
     )
 
@@ -287,6 +293,9 @@ modsem_da <- function(model.syntax = NULL,
     est$type.estimates <- "standardized"
     est$parTable <- standardized_estimates(est)
   }
+
+  # clean up
+  resetThreads()
 
   est$args <- args
   est
