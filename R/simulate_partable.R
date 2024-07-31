@@ -66,19 +66,14 @@ simulateDataParTable <- function(parTable, N, colsOVs = NULL, colsLVs = NULL) {
                     dimnames = list(NULL, c(allIndsXis, allIndsEtas)))
   indsLVs <- c(indsXis, indsEtas)
   interceptVector <- rep(1, N)
-  for (lV in c(xis, etas)) {
+
+  for (lV in c(xis, etas)) { 
     inds <- indsLVs[[lV]] 
-    tau <- parTable[parTable$lhs %in% inds & 
-                    parTable$op == "~" & 
-                    parTable$rhs == "1", ] |> 
-      sortTau(inds)
-    lambda <- parTable[parTable$lhs == lV & 
-                       parTable$op == "=~" & 
-                       parTable$rhs %in% inds, ] |>
-      sortLambda(inds)
+    tau <- getIntercepts(inds, parTable = parTable)
+    lambda <- getLambda(lV = lV, inds = inds, parTable = parTable)  
     dataOVs[, inds] <- 
-      interceptVector %*% t(tau$est) + 
-      dataLVs[, lV] %*% t(lambda$est) + 
+      interceptVector %*% t(tau) + 
+      dataLVs[, lV] %*% t(lambda) + 
       theta[, inds]
   }
 
@@ -109,8 +104,10 @@ rmvnormParTable <- function(parTable, type = "phi", N) {
     vcov[lhs, rhs] <- vcov[rhs, lhs] <- est
   }
 
-  X <- as.matrix(mvtnorm::rmvnorm(n = N, mean = rep(0, length(vars)), 
-                                  sigma = vcov))
+  if (type == "phi") beta0 <- getIntercepts(vars, parTable = parTable)
+  else beta0 <- rep(0, length(vars))
+
+  X <- as.matrix(mvtnorm::rmvnorm(n = N, mean = beta0, sigma = vcov))
   colnames(X) <- vars 
   X
 }
@@ -129,19 +126,11 @@ mutliplyPairs <- function(X, XZ) {
 }
 
 
-sortLambda <- function(lambda, inds) {
-  lambdaSorted <- NULL 
-  for (ind in inds) {
-    lambdaSorted <- rbind(lambdaSorted, lambda[lambda$rhs == ind, ])
-  }
-  lambdaSorted
-}
-
-
-sortTau <- function(tau, inds) {
-  tauSorted <- NULL 
-  for (ind in inds) {
-    tauSorted <- rbind(tauSorted, tau[tau$lhs == ind, ])
-  }
-  tauSorted
+getLambda <- function(lV, inds, parTable) {
+  lambda <- parTable[parTable$lhs == lV & 
+                     parTable$op == "=~" & 
+                     parTable$rhs %in% inds, ]
+  out <- lambda$est
+  names(out) <- lambda$rhs
+  out[inds]
 }

@@ -1,12 +1,5 @@
 # Utils for lms approach
-# Last updated: 29.05.2024
-
-
-sortData <- function(data, allIndsXis, allIndsEtas) {
-  if (!all(c(allIndsXis, allIndsEtas) %in% colnames(data))) 
-    stop2("Missing Observed Variables in Data")
-  as.matrix(data[c(allIndsXis, allIndsEtas)])
-}
+# Last updated: 31.07.2024
 
 
 getFreeParams <- function(model) {
@@ -87,13 +80,47 @@ getK_NA <- function(omegaEta) {
 }
 
 
-cleanAndSortData <- function(data, allIndsXis, allIndsEtas) {
-  if (is.null(data)) return(NULL)
-  # sort Data before optimizing starting params
-  data <- sortData(data, allIndsXis,  allIndsEtas)
+sortData <- function(data, allIndsXis, allIndsEtas) {
+  if (!all(c(allIndsXis, allIndsEtas) %in% colnames(data))) 
+    stop2("Missing Observed Variables in Data")
+  data[c(allIndsXis, allIndsEtas)]
+}
+
+
+anyAllNA <- function(data) {
+  any(vapply(data, FUN.VALUE = logical(1L), function(x) all(is.na(x))))
+}
+
+
+castDataNumericMatrix <- function(data) {
+  data <- tryCatch({
+    numericData <- lapplyDf(data, FUN = as.numeric)
+  },
+  warning = function(w) {
+    warning2("Warning in converting data to numeric: \n", w)
+    numericData <- suppressWarnings(lapplyDf(data, FUN = as.numeric))
+    if (anyAllNA(numericData)) stop2("Unable to conver data to type numeric") 
+    numeric
+  }, 
+  error = function(e) {
+    stop2("Unable to convert data to type numeric")
+  })
+  as.matrix(data)
+}
+
+
+filterData <- function(data) {
   completeCases <- stats::complete.cases(data)
   if (any(!completeCases)) warning2("Removing missing values case-wise.")
   data[completeCases, ]
+}
+
+
+cleanAndSortData <- function(data, allIndsXis, allIndsEtas) {
+  if (is.null(data)) return(NULL)
+  # sort Data before optimizing starting params
+  sortData(data, allIndsXis,  allIndsEtas) |> 
+    castDataNumericMatrix() |> filterData()
 }
 
 
