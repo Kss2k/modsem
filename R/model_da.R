@@ -341,10 +341,10 @@ fillModel <- function(model, theta, fillPhi = FALSE, method = "lms") {
     thetaMain <- theta[-seq_len(model$lenThetaCov)]
   }
 
-  if (!is.null(model$covModel)) {
-    model$covModel <- fillCovModel(model$covModel, thetaCov, thetaLabel,
-                                   fillPhi = fillPhi, method = method)
-  }
+
+  model$covModel <- fillCovModel(model$covModel, thetaCov, thetaLabel,
+                                  fillPhi = fillPhi, method = method)
+  
   model$matrices <- fillMainModel(model, thetaMain, thetaLabel,
                                   fillPhi = fillPhi, method = method)
   model
