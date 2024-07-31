@@ -1,7 +1,7 @@
 logLikQml <- function(theta, model, sum = TRUE, sign = -1) {
   modelFilled <- fillModel(model, theta, method = "qml")
-  numEta <- model$info$numEta
-  numXi <- model$info$numXi
+  numEta <- model$info$numEtas
+  numXi <- model$info$numXis
   kOmegaEta <- model$info$kOmegaEta
   latentEtas <- model$info$latentEtas
 
