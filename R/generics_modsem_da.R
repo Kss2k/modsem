@@ -10,6 +10,7 @@ parameter_estimates.modsem_qml <- function(object, ...) {
 }
 
 
+MODSEM_VERSION <- "1.0.2"
 #' summary for modsem objects
 #'
 #' @param object modsem object to summarized
@@ -241,7 +242,7 @@ print.summary_da <- function(x, digits = 3, ...) {
                                        covariances = x$format$covariances,
                                        intercepts = x$format$intercepts,
                                        variances = x$format$variances)
-  cat("\nmodsem (version 1.0.1):\n")
+  cat(paste0("\nmodsem (version ", MODSEM_VERSION, "):\n"))
   names <- c("Estimator", "Optimization method", "Number of observations", 
              "Number of iterations", "Loglikelihood", 
              "Akaike (AIC)", "Bayesian (BIC)")
