@@ -1,5 +1,6 @@
-# [modsem](https://kss2k.github.io/intro_modsem/) <img src="man/figures/modsem.png" alt="Logo" align = "right" height="139" class="logo">
-This is a package which allows you to perform interactions between latent variables (i.e., moderation) in CB-SEM. See https://kss2k.github.io/intro_modsem/ for a tutorial.
+# `modsem` <img src="man/figures/modsem.png" alt="Logo" align = "right" height="139" class="logo">
+This is a package which allows you to perform interactions between latent variables (i.e., moderation) in CB-SEM. 
+See https://kss2k.github.io/intro_modsem/ for a tutorial.
 
 # To Install 
 ```
@@ -28,23 +29,6 @@ There are a number of approaches for estimating interaction effects in SEM. In `
 - `"qml"` = The Quasi Maximum Likelihood (QML) approach, see the [vignette](https://kss2k.github.io/intro_modsem/articles/lms_qml.html)
 - `"mplus"` 
   - estimates model through Mplus, if it is installed
-
-# New Features version 1.0.1
-- Interaction effects between endogenous and exogenous variables are now possible by default with QML-approach.
-- Interaction effects between two endogenous variables are now possible with the LMS 
-  and QML approach, using the 'cov.syntax' argument, see the [vignette](https://kss2k.github.io/intro_modsem/articles/interaction_two_etas.html)
-  for more information.
-- Improved `summary()` function for LMS and QML: 
-    1. Standardized estimates are now available for the LMS and QML approach, 
-    using the `standardized = TRUE` argument.
-    2. The `summary()` function now also returns the RMSEA, Chi-Square, AIC, BIC, and Expected covariance matrix for the LMS and QML approach.
-    3. The `summary()` function now resembles the output of the `summary()` function from the `lavaan` package.
-- Added post-estimation functions for LMS and QML:
-    1. `modsem_inspect()` for inspecting the results of the LMS and QML approach 
-    2. `fit_modsem_da()` caluculates a variety of fit indices for the LMS and QML approach, 
-        RMSEA, Chi-Square, AIC, BIC, and Expected covariance matrix.
-    3. `vcov()` returns the variance-covariance matrix of the parameter estimates for the LMS and QML approach. 
-    4. `coef()` returns the parameter estimates for the LMS and QML approach.
 
 # Examples 
 
