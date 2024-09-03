@@ -75,6 +75,5 @@ estQml <- function(model,
               vcov = FIM$vcov,
               information = FIM$type)
 
-  class(out) <- "modsem_qml"
   out
 }

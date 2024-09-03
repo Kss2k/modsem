@@ -79,7 +79,7 @@ getMethodSettingsDA <- function(method, args = NULL) {
 #' default arguments fro LMS and QML approach
 #'
 #' @param method which method to get the settings for
-#' @return modsem_lms or modsem_qml object
+#' @return list
 #' @export
 #' @description
 #' This function returns the default settings for the LMS and QML approach.

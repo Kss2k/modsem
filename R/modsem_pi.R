@@ -216,7 +216,7 @@ modsem_pi <- function(model.syntax = NULL,
     modelSpec$lavaan <- lavEst
     modelSpec$coefParTable <- coefParTable
   }
-  structure(modelSpec, class = "modsem_pi", method = method)
+  structure(modelSpec, class = c("modsem_pi", "modsem"), method = method)
 }
 
 

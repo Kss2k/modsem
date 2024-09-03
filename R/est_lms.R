@@ -137,6 +137,5 @@ emLms <- function(model,
               vcov = FIM$vcov,
               information = FIM$type)
 
-  class(out) <- "modsem_lms"
   out
 }

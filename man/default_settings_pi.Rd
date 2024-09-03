@@ -10,7 +10,7 @@ default_settings_pi(method = c("rca", "uca", "pind", "dblcent", "ca"))
 \item{method}{which method to get the settings for}
 }
 \value{
-modsem_lms or modsem_qml object
+list
 }
 \description{
 This function returns the default settings for the product indicator approaches

@@ -58,7 +58,7 @@ plot_interaction <- function(x, z, y, xz = NULL, vals_x = seq(-3, 3, .001) ,
 
   if (is.null(xz)) xz <- paste(x, z, sep = ":")
   xz <- c(xz, reverseIntTerm(xz)) 
-  if (!inherits(model, c("modsem_lms", "modsem_qml", "modsem_mplus")) && 
+  if (!inherits(model, c("modsem_da", "modsem_mplus")) && 
       !isLavaanObject(model)) {
     xz <- stringr::str_remove_all(xz, ":")
   }

@@ -57,7 +57,7 @@ var_interactions.data.frame <- function(object, ...) {
 #' @param object An object of class `modsem_da`,  `modsem_mplus`, 
 #' or a parTable of class `data.frame`
 #' @param ... Additional arguments passed to other functions
-#' @details for `modsem_lms`, `modsem_qml` and `modsem_mplus` objects, 
+#' @details for `modsem_da`, and `modsem_mplus` objects, 
 #' the interaction term is not standardized such that var(xz) = 1. 
 #' The interaction term is not an actual variable in the model, meaning that it does not 
 #' have a variance. It must therefore be calculated from the other parameters in the model.
@@ -208,11 +208,23 @@ standardized_estimates.data.frame <- function(object, intercepts = FALSE, ...) {
 #' @param ... Additional arguments passed to other functions
 #' @description function used to inspect fittet object. similar to `lavInspect()`
 #' argument 'what' decides what to inspect
-#' @details for `modsem_lms`, `modsem_qml` and `modsem_lavaan` 
+#' @details for `modsem_da`, and `modsem_lavaan` 
 #' for `modsem_lavaan`, it is just a wrapper for `lavInspect()`
-#' for `modsem_lms` and `modsem_qml` what can either be "all", "matrices", "optim", 
+#' for `modsem_da` and `` what can either be "all", "matrices", "optim", 
 #' or just the name of what to extract. 
 #' @export
 modsem_inspect <- function(object, what = NULL, ...) {
   UseMethod("modsem_inspect")
+}
+
+
+#' @export
+vcov <- function(object, ...) {
+  UseMethod("vcov")
+}
+
+
+#' @export
+coef <- function(object, ...) {
+  UseMethod("coef")
 }

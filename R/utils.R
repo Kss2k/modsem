@@ -169,7 +169,7 @@ lapplyDf <- function(df, FUN, ...) {
 
 
 isModsemObject <- function(x) {
-  inherits(x, c("modsem_pi", "modsem_lms", "modsem_mplus", "modsem_qml"))
+  inherits(x, c("modsem_pi", "modsem_da", "modsem_mplus"))
 }
 
 

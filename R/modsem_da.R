@@ -89,7 +89,7 @@
 #' if = "max" it will use all available threads, "min" will use 1 thread.
 #' @param ... additional arguments to be passed to the estimation function
 #'
-#' @return modsem_lms or modsem_qml object
+#' @return modsem_da object
 #' @export
 #' 
 #' @description 
@@ -289,6 +289,7 @@ modsem_da <- function(model.syntax = NULL,
     )
   )
 
+  class(est) <- c("modsem_da", "modsem")
   if (args$standardize.out) {
     est$type.estimates <- "standardized"
     est$parTable <- standardized_estimates(est)

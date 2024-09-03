@@ -131,7 +131,7 @@ if = "max" it will use all available threads, "min" will use 1 thread.}
 \item{...}{additional arguments to be passed to the estimation function}
 }
 \value{
-modsem_lms or modsem_qml object
+modsem_da object
 }
 \description{
 modsem_da is a function for estimating interaction effects between latent variables,

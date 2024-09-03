@@ -7,10 +7,10 @@
 compare_fit(estH0, estH1)
 }
 \arguments{
-\item{estH0}{object of class `modsem_lms` or `modsem_qml` representing the
+\item{estH0}{object of class `modsem_da` representing the
 null hypothesis model}
 
-\item{estH1}{object of class `modsem_lms` or `modsem_qml` representing the}
+\item{estH1}{object of class `modsem_da` representing the}
 }
 \description{
 Compare the fit of two models using the likelihood ratio test.

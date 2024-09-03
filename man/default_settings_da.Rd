@@ -10,7 +10,7 @@ default_settings_da(method = c("lms", "qml"))
 \item{method}{which method to get the settings for}
 }
 \value{
-modsem_lms or modsem_qml object
+list
 }
 \description{
 This function returns the default settings for the LMS and QML approach.

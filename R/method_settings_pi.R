@@ -71,7 +71,7 @@ getMethodSettingsPI <- function(method, args) {
 #' default arguments for product indicator approaches
 #'
 #' @param method which method to get the settings for
-#' @return modsem_lms or modsem_qml object
+#' @return list
 #' @export
 #' @description
 #' This function returns the default settings for the product indicator approaches
