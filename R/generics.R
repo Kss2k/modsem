@@ -216,15 +216,3 @@ standardized_estimates.data.frame <- function(object, intercepts = FALSE, ...) {
 modsem_inspect <- function(object, what = NULL, ...) {
   UseMethod("modsem_inspect")
 }
-
-
-#' @export
-vcov <- function(object, ...) {
-  UseMethod("vcov")
-}
-
-
-#' @export
-coef <- function(object, ...) {
-  UseMethod("coef")
-}

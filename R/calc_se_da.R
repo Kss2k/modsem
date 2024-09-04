@@ -36,6 +36,7 @@ calcFIM_da <- function(model,
      stop2("Unrecognized method: ", method) 
   )
 
+
   if (robust.se) {
     if (hessian && FIM == "observed")
       warning("'robust.se = TRUE' should not be paired with 'EFIM.hessian = TRUE' && 'FIM = \"observed\"'")
@@ -48,7 +49,11 @@ calcFIM_da <- function(model,
     vcov <- solveFIM(I, NA__ = NA__)
   }
 
-  dimnames(I) <- dimnames(vcov) <- list(names(theta), names(theta))
+  lavLabels <- model$lavLabels[names(theta)]
+  labels <- names(theta)
+  labels[labels %in% names(lavLabels)] <- lavLabels[names(lavLabels) %in% labels]
+  dimnames(I) <- dimnames(vcov) <- list(labels, labels)
+
   list(FIM = I, vcov = vcov, type = FIM)
 }
 

@@ -19,7 +19,7 @@ specifyModelDA <- function(syntax = NULL,
                            parTable = NULL, 
                            parTableCovModel = NULL,
                            auto.constraints = TRUE, 
-                           create.theta = TRUE,
+                           createTheta = TRUE,
                            mean.observed = TRUE,
                            standardize.inp = FALSE, 
                            standardize.out = FALSE,
@@ -246,14 +246,15 @@ specifyModelDA <- function(syntax = NULL,
 
   model$constrExprs <- getConstrExprs(parTable, model$covModel$parTable)
  
-  if (create.theta) {
-    listTheta <- create.theta(model)
+  if (createTheta) {
+    listTheta <- createTheta(model)
     model$freeParams <- length(listTheta$theta)
     model$lenThetaMain <- listTheta$lenThetaMain
     model$lenThetaCov <- listTheta$lenThetaCov
     model$lenThetaLabel <- listTheta$lenThetaLabel
     model$totalLenThetaLabel <- listTheta$totalLenThetaLabel
     model$theta <- listTheta$theta
+    model$lavLabels <- listTheta$lavLabels
     model$info$bounds <- getParamBounds(model)
   }
 
@@ -266,10 +267,13 @@ specifyModelDA <- function(syntax = NULL,
 }
 
 
-create.theta <- function(model, start = NULL) {
+createTheta <- function(model, start = NULL) {
   set.seed(123)
-  thetaCov <- create.thetaCovModel(model$covModel)
-  thetaLabel <- create.thetaLabel(model$labelMatrices, 
+  listThetaCov <- createThetaCovModel(model$covModel)
+  thetaCov <- listThetaCov$theta
+  lavLabelsCov <- listThetaCov$labels
+
+  thetaLabel <- createThetaLabel(model$labelMatrices, 
                                  model$covModel$labelMatrices,
                                  model$constrExprs)
   totalThetaLabel <- calcThetaLabel(thetaLabel, model$constrExprs)
@@ -305,18 +309,22 @@ create.theta <- function(model, start = NULL) {
                  "gammaEta" = gammaEta,
                  "omegaXiXi" = omegaXiXi,
                  "omegaEtaXi" = omegaEtaXi)
+  lavLabelsMain <- createLavLabels(matrices, subset=is.na(thetaMain))
   thetaMain <- thetaMain[is.na(thetaMain)]
+
   if (is.null(start)) {
    thetaMain <- vapply(thetaMain, FUN.VALUE = vector("numeric", 1L),
                        FUN = function(x) stats::runif(1))
   }
-
   theta <- c(thetaLabel, thetaCov, thetaMain)
+  lavLabels <- c(lavLabelsCov, lavLabelsMain) 
+
   list(theta = theta,
        lenThetaMain = length(thetaMain),
        lenThetaLabel = length(thetaLabel),
        totalLenThetaLabel = length(totalThetaLabel),
-       lenThetaCov = length(thetaCov))
+       lenThetaCov = length(thetaCov),
+       lavLabels = lavLabels)
 }
 
 

@@ -54,7 +54,7 @@ tpb <- "
 "
 
 covModel <- '
-PBC ~ a * LATENT_VAR_ATT + a * SN
+PBC ~ a * LATENT_VAR_ATT + SN
 '
 
 startTime2 <- Sys.time()

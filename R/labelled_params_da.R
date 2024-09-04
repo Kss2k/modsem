@@ -1,4 +1,4 @@
-create.thetaLabel <- function(labelMatrices, labelMatricesCov, 
+createThetaLabel <- function(labelMatrices, labelMatricesCov, 
                               constrExprs, start = NULL) {
   matrices <- c(labelMatrices, labelMatricesCov)  
   labels <- lapply(matrices, FUN = function(x) {

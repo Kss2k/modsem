@@ -22,6 +22,7 @@ MODSEM_VERSION <- "1.0.3"
 #' @param covariances print covariances
 #' @param intercepts print intercepts
 #' @param variances print variances
+#' @param var.interaction if FALSE (default) variances for interaction terms will be removed (if present)
 #' @param ... additional arguments
 #' @rdname summary
 #' @export
@@ -54,7 +55,7 @@ summary.modsem_da <- function(object,
                               covariances = TRUE,
                               intercepts = TRUE,
                               variances = TRUE,
-                              includeVarIntTerm = FALSE,
+                              var.interaction = FALSE,
                               ...) {
   method <- object$method
 
@@ -64,7 +65,7 @@ summary.modsem_da <- function(object,
     parTable <- parameter_estimates(object)
   }
 
-  if (!includeVarIntTerm) {
+  if (!var.interaction) {
     parTable <- removeInteractionVariances(parTable)
   }
   
@@ -430,8 +431,34 @@ coefficients.modsem_da <- function(object, ...) {
   modsem_inspect_da(object, what = "coefficients")[[1]]
 }
 
+
 #' @export 
 #' @importFrom stats coef
 coef.modsem_da <- function(object, ...) {
   modsem_inspect_da(object, what = "coefficients")[[1]]
+}
+
+
+
+#' Wrapper for vcov
+#'
+#' @param object fittet model to inspect
+#' @param ... additional arguments
+#' @description wrapper for vcov, to be used with modsem::vcov_modsem_da, 
+#' since vcov is not in the namespace of modsem, but stats
+#' @export
+vcov_modsem_da <- function(object, ...) {
+  vcov.modsem_da(object, ...)
+}
+
+
+#' Wrapper for coef
+#'
+#' @param object fittet model to inspect
+#' @param ... additional arguments
+#' @description wrapper for coef, to be used with modsem::coef_modsem_da, 
+#' since coef is not in the namespace of modsem, but stats
+#' @export
+coef_modsem_da <- function(object, ...) {
+  coef.modsem_da(object, ...)
 }

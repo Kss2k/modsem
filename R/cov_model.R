@@ -58,8 +58,6 @@ covModel <- function(syntax = NULL, method = "lms", parTable = NULL) {
     psi = labelPsi,
     phi = labelPhi)
 
-  # constraint expressions 
-  
   model <- list(info =
                 list(etas = etas,
                      numEtas = numEtas,
@@ -103,7 +101,7 @@ fillCovModel <- function(covModel, theta, thetaLabel, fillPhi = FALSE,
 }
 
 
-create.thetaCovModel <- function(covModel, start = NULL) {
+createThetaCovModel <- function(covModel, start = NULL) {
   set.seed(123)
   matrices <- covModel$matrices
 
@@ -114,17 +112,20 @@ create.thetaCovModel <- function(covModel, start = NULL) {
   gammaXi <- as.vector(matrices$gammaXi)
   gammaEta <- as.vector(matrices$gammaEta)
   thetaCov <- c("phi" = phi,
-             "A" = A,
-             "psi" = psi,
-             "gammaXi" = gammaXi,
-             "gammaEta" = gammaEta)
+                "A" = A,
+                "psi" = psi,
+                "gammaXi" = gammaXi,
+                "gammaEta" = gammaEta)
+  
+  lavLabelsCov <- createLavLabelsCov(matrices, subset = is.na(thetaCov))
   thetaCov <- thetaCov[is.na(thetaCov)]
+
   if (is.null(start)) {
    thetaCov <- vapply(thetaCov, FUN.VALUE = vector("numeric", 1L),
                    FUN = function(x) stats::runif(1))
   }
   
-  thetaCov
+  list(theta = thetaCov, labels = lavLabelsCov)
 }
 
 

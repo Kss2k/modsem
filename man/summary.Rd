@@ -22,7 +22,7 @@
   covariances = TRUE,
   intercepts = TRUE,
   variances = TRUE,
-  includeVarIntTerm = FALSE,
+  var.interaction = FALSE,
   ...
 )
 
@@ -70,6 +70,8 @@
 \item{intercepts}{print intercepts}
 
 \item{variances}{print variances}
+
+\item{var.interaction}{if FALSE (default) variances for interaction terms will be removed (if present)}
 
 \item{...}{arguments passed to lavaan::summary()}
 

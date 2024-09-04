@@ -168,7 +168,7 @@ getEmptyModel <- function(parTable, cov.syntax, parTableCovModel,
   specifyModelDA(parTable = parTable, method = method,
                  cov.syntax = cov.syntax,
                  parTableCovModel = parTableCovModel,
-                 auto.constraints = FALSE, create.theta = FALSE,
+                 auto.constraints = FALSE, createTheta = FALSE,
                  checkModel = FALSE)
 }
 
