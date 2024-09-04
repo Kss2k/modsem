@@ -1,14 +1,3 @@
-# Functions for Specifiying lms and qml model. modsem(method = c("lms", "qml"))
-# Last updated: 09.06.2024
-
-
-# Global variables 
-paramMatrices <- c("lambdaX", "lambdaY", "gammaXi", "gammaEta", 
-                   "thetaDelta", "thetaEpsilon", "phi", "A",
-                   "psi", "tauX", "tauY", "alpha", "beta0", "omegaEtaXi", 
-                   "omegaXiXi")
-
-
 # Functions
 specifyModelDA <- function(syntax = NULL, 
                            data = NULL, 
@@ -247,14 +236,9 @@ specifyModelDA <- function(syntax = NULL,
   model$constrExprs <- getConstrExprs(parTable, model$covModel$parTable)
  
   if (createTheta) {
-    listTheta <- createTheta(model)
-    model$freeParams <- length(listTheta$theta)
-    model$lenThetaMain <- listTheta$lenThetaMain
-    model$lenThetaCov <- listTheta$lenThetaCov
-    model$lenThetaLabel <- listTheta$lenThetaLabel
-    model$totalLenThetaLabel <- listTheta$totalLenThetaLabel
-    model$theta <- listTheta$theta
-    model$lavLabels <- listTheta$lavLabels
+    listTheta         <- createTheta(model)
+    model             <- c(model, listTheta)
+    model$freeParams  <- length(listTheta$theta)
     model$info$bounds <- getParamBounds(model)
   }
 
@@ -264,181 +248,6 @@ specifyModelDA <- function(syntax = NULL,
   if (checkModel) checkModel(model = model, covModel = covModel, method = method)
 
   model
-}
-
-
-createTheta <- function(model, start = NULL) {
-  set.seed(123)
-  listThetaCov <- createThetaCovModel(model$covModel)
-  thetaCov <- listThetaCov$theta
-  lavLabelsCov <- listThetaCov$labels
-
-  thetaLabel <- createThetaLabel(model$labelMatrices, 
-                                 model$covModel$labelMatrices,
-                                 model$constrExprs)
-  totalThetaLabel <- calcThetaLabel(thetaLabel, model$constrExprs)
-
-  matrices <- model$matrices
-  lambdaX <- as.vector(matrices$lambdaX)
-  lambdaY <- as.vector(matrices$lambdaY)
-  thetaDelta <- as.vector(matrices$thetaDelta)
-  thetaEpsilon <- as.vector(matrices$thetaEpsilon)
-  phi <- as.vector(matrices$phi)
-  A <- as.vector(matrices$A)
-  psi <- as.vector(matrices$psi)
-  tauX <- as.vector(matrices$tauX)
-  tauY <- as.vector(matrices$tauY)
-  alpha <- as.vector(matrices$alpha)
-  beta0 <- as.vector(matrices$beta0)
-  gammaXi <- as.vector(matrices$gammaXi)
-  gammaEta <- as.vector(matrices$gammaEta)
-  omegaXiXi <- as.vector(matrices$omegaXiXi)
-  omegaEtaXi <- as.vector(matrices$omegaEtaXi)
-  thetaMain <- c("lambdaX" = lambdaX,
-                 "lambdaY" = lambdaY,
-                 "tauX" = tauX,
-                 "tauY" = tauY,
-                 "thetaDelta" = thetaDelta,
-                 "thetaEpsilon" = thetaEpsilon,
-                 "phi" = phi,
-                 "A" = A,
-                 "psi" = psi,
-                 "alpha" = alpha,
-                 "beta0" = beta0,
-                 "gammaXi" = gammaXi,
-                 "gammaEta" = gammaEta,
-                 "omegaXiXi" = omegaXiXi,
-                 "omegaEtaXi" = omegaEtaXi)
-  lavLabelsMain <- createLavLabels(matrices, subset=is.na(thetaMain))
-  thetaMain <- thetaMain[is.na(thetaMain)]
-
-  if (is.null(start)) {
-   thetaMain <- vapply(thetaMain, FUN.VALUE = vector("numeric", 1L),
-                       FUN = function(x) stats::runif(1))
-  }
-  theta <- c(thetaLabel, thetaCov, thetaMain)
-  lavLabels <- c(lavLabelsCov, lavLabelsMain) 
-
-  list(theta = theta,
-       lenThetaMain = length(thetaMain),
-       lenThetaLabel = length(thetaLabel),
-       totalLenThetaLabel = length(totalThetaLabel),
-       lenThetaCov = length(thetaCov),
-       lavLabels = lavLabels)
-}
-
-
-fillModel <- function(model, theta, fillPhi = FALSE, method = "lms") {
-  if (is.null(names(theta))) names(theta) <- names(model$theta)
-
-  # labeled parameters
-  thetaLabel <- NULL
-  if (model$totalLenThetaLabel > 0) {
-    if (model$lenThetaLabel > 0) {
-      thetaLabel <- theta[seq_len(model$lenThetaLabel)] 
-      theta <- theta[-seq_len(model$lenThetaLabel)]
-    } 
-    thetaLabel <- calcThetaLabel(thetaLabel, model$constrExprs)
-  }
-
-  # cov model
-  thetaCov <- NULL
-  thetaMain <- theta
-  if (model$lenThetaCov > 0) {
-    thetaCov <- theta[seq_len(model$lenThetaCov)]
-    thetaMain <- theta[-seq_len(model$lenThetaCov)]
-  }
-
-
-  model$covModel <- fillCovModel(model$covModel, thetaCov, thetaLabel,
-                                  fillPhi = fillPhi, method = method)
-  
-  model$matrices <- fillMainModel(model, thetaMain, thetaLabel,
-                                  fillPhi = fillPhi, method = method)
-  model
-}
-
-
-fillMainModel <- function(model, theta, thetaLabel, fillPhi = FALSE, 
-                          method = "lms") {
-  xis <- model$info$xis
-  numXis <- model$info$numXis
-  numEtas <- model$info$numEtas
-  matrices <- model$matrices
-
-  matrices[paramMatrices] <- 
-    fillMatricesLabels(matrices[paramMatrices], 
-                       model$labelMatrices[paramMatrices], 
-                       thetaLabel)
-
-  matrices$lambdaX[is.na(matrices$lambdaX)] <-
-    fetch(theta, "lambdaX[0-9]*$")
-  matrices$lambdaY[is.na(matrices$lambdaY)] <-
-    fetch(theta, "lambdaY[0-9]*$")
-  matrices$thetaDelta <- 
-    fillSymmetric(matrices$thetaDelta, 
-                  fetch(theta, "thetaDelta[0-9]*$"))
-  matrices$thetaEpsilon <- 
-    fillSymmetric(matrices$thetaEpsilon, 
-                  fetch(theta, "thetaEpsilon[0-9]*$"))
-
-  if (!is.null(model$covModel$matrices)) {
-      matrices$phi <- matrices$A <- 
-        expectedCovModel(model$covModel, method = method, sortedXis = xis)
-
-  } else if (method == "lms") {
-      matrices$A[is.na(matrices$A)] <- fetch(theta, "^A[0-9]*$")
-
-  } else if (method == "qml") {
-      matrices$phi <- fillSymmetric(matrices$phi, fetch(theta, "^phi[0-9]*$"))
-  }
-
-  matrices$psi <- fillSymmetric(matrices$psi, fetch(theta, "^psi[0-9]*$"))
-  matrices$tauX[is.na(matrices$tauX)] <- fetch(theta, "tauX[0-9]*$")
-  matrices$tauY[is.na(matrices$tauY)] <- fetch(theta, "tauY[0-9]*$")
-  matrices$alpha[is.na(matrices$alpha)] <- fetch(theta, "alpha[0-9]*$")
-  matrices$beta0[is.na(matrices$beta0)] <- fetch(theta, "beta0[0-9]*$")
-  matrices$gammaEta[is.na(matrices$gammaEta)] <- fetch(theta, "gammaEta[0-9]*$")
-  matrices$gammaXi[is.na(matrices$gammaXi)] <- fetch(theta, "gammaXi[0-9]*$")
-  matrices$omegaXiXi[is.na(matrices$omegaXiXi)] <- fetch(theta, "omegaXiXi[0-9]*$")
-  matrices$omegaEtaXi[is.na(matrices$omegaEtaXi)] <- fetch(theta, "omegaEtaXi[0-9]*$")
-  if (fillPhi) matrices$phi <- matrices$A %*% t(matrices$A)
-  matrices
-}
-
-
-# Calculate weights and node points for mixture functions via Gauss-Hermite
-# quadrature as defined in Klein & Moosbrugger (2000)
-quadrature <- function(m, k, cut = Inf) {
-  if (k == 0 || m == 0) return(list(n = matrix(0), w = 1, k = 0, m = m))
-  singleDimGauss <- fastGHQuad::gaussHermiteData(m)
-
-  nodes <- singleDimGauss$x 
-  weights <- singleDimGauss$w
- 
-  select <- abs(nodes) < cut
-  nodes <- nodes[select]
-  weights  <- weights[select]
-  m <- length(weights)  
-
-  nodes <- lapply(seq_len(k), function(k) nodes) |>
-    expand.grid() |> as.matrix()
-  weights <- lapply(seq_len(k), function(k) weights) |>
-    expand.grid() |> apply(MARGIN = 1, prod)
-  list(n = nodes * sqrt(2), w = weights * pi ^ (-k/2), k = k, m = m)
-}
-
-
-# Set bounds for parameters to (0, Inf)
-getParamBounds <- function(model, lowest = 1e-6) {
-  namePattern <- paste0("lambdaX[0-9]*$|lambdaY[0-9]*$|",
-                        "thetaDelta[0-9]*$|thetaEpsilon[0-9]*$|",
-                        "phi[0-9]*$|psi[0-9]*$")
-  lower <- rep(-Inf, model$freeParams)
-  upper <- rep(Inf, model$freeParams)
-  names(lower) <- names(upper) <- names(model$theta)
-  lower[grepl(namePattern, names(lower))] <- lowest
-  list(lower = lower, upper = upper)
 }
 
 
@@ -644,19 +453,4 @@ mainModelToParTable <- function(finalModel, method = "lms") {
 modelToParTable <- function(model, method = "lms") {
   rbind(mainModelToParTable(model, method = method),
         covModelToParTable(model, method = method))
-}
-
-
-checkStartingParams <- function(start, model) {
-  if (length(start) != length(model$theta)) {
-    stop2("The length of the starting parameters does not match the number of parameters in the model")
-  }
-  if (is.null(names(start))) {
-    names(start) <- names(model$theta)
-  }
-  if (!all(names(start) %in% names(model$theta))) {
-    stop2("The names of the starting parameters do not match the names of the parameters in the model")
-  }
-
-  NULL
 }

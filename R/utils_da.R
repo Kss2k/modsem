@@ -68,13 +68,6 @@ whichIsMax <- function(x) {
 }
 
 
-fillSymmetric <- function(mat, values) {
-  mat[is.na(mat)] <- values
-  mat[upper.tri(mat)] <- t(mat)[upper.tri(mat)]
-  mat
-}
-
-
 getK_NA <- function(omegaEta) {
   sum(apply(omegaEta, 1, function(x) any(is.na(x))))
 }
