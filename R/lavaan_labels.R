@@ -1,3 +1,12 @@
+combineLavLabels <- function(lavLabelsCov, lavLabelsMain, currentLabels) {
+  lavLabels <- c(lavLabelsCov, lavLabelsMain)
+  finalLabels <- currentLabels
+  finalLabels[finalLabels %in% names(lavLabels)] <- 
+    lavLabels[names(lavLabels) %in% finalLabels]
+  finalLabels
+}
+
+
 createLavLabels <- function(matrices, subset) {
   lambdaX <- createLabelsMatrix(matrices$lambdaX, op = "~")
   lambdaY <- createLabelsMatrix(matrices$lambdaY, op = "~")

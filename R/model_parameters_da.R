@@ -9,7 +9,7 @@ namesParMatricesCov <- c("gammaXi", "gammaEta", "A", "psi", "phi")
 createTheta <- function(model, start = NULL) {
   listThetaCov <- createThetaCovModel(model$covModel)
   thetaCov     <- listThetaCov$theta
-  lavLabelsCov <- listThetaCov$labels
+  lavLabelsCov <- listThetaCov$lavLabels
   thetaLabel   <- createThetaLabel(model$labelMatrices, 
                                    model$covModel$labelMatrices,
                                    model$constrExprs)
@@ -49,15 +49,14 @@ createTheta <- function(model, start = NULL) {
                       "omegaEtaXi" = omegaEtaXi)
   
   lavLabelsMain <- createLavLabels(M, subset=is.na(allModelValues))
-  lavLabels <- c(lavLabelsCov, lavLabelsMain) 
 
   thetaMain <- allModelValues[is.na(allModelValues)]
-  if (is.null(start)) {
-    thetaMain <- vapply(thetaMain, FUN.VALUE = vector("numeric", 1L),
-                        FUN = function(x) stats::runif(1))
-  }
-  
+  thetaMain <- fillThetaIfStartNULL(start = start, theta = thetaMain) 
   theta <- c(thetaLabel, thetaCov, thetaMain)
+  
+  lavLabels <- combineLavLabels(lavLabelsMain = lavLabelsMain, 
+                                lavLabelsCov = lavLabelsCov, 
+                                currentLabels = names(theta)) 
 
   list(theta = theta, lenThetaMain = length(thetaMain),
        lenThetaLabel = length(thetaLabel),
@@ -83,13 +82,16 @@ createThetaCovModel <- function(covModel, start = NULL) {
   
   lavLabelsCov <- createLavLabelsCov(M, subset = is.na(thetaCov))
   thetaCov <- thetaCov[is.na(thetaCov)]
-
-  if (is.null(start)) {
-   thetaCov <- vapply(thetaCov, FUN.VALUE = vector("numeric", 1L),
-                   FUN = function(x) stats::runif(1))
-  }
+  thetaCov <- fillThetaIfStartNULL(start = start, theta = thetaCov)
   
-  list(theta = thetaCov, labels = lavLabelsCov)
+  list(theta = thetaCov, lavLabels = lavLabelsCov)
+}
+  
+
+fillThetaIfStartNULL <- function(start, theta) {
+  if (!is.null(start)) return(theta)
+  vapply(theta, FUN = function(x) stats::runif(1),
+         FUN.VALUE = vector("numeric", 1L))
 }
 
 

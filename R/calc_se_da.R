@@ -49,10 +49,8 @@ calcFIM_da <- function(model,
     vcov <- solveFIM(I, NA__ = NA__)
   }
 
-  lavLabels <- model$lavLabels[names(theta)]
-  labels <- names(theta)
-  labels[labels %in% names(lavLabels)] <- lavLabels[names(lavLabels) %in% labels]
-  dimnames(I) <- dimnames(vcov) <- list(labels, labels)
+  lavLabels <- model$lavLabels
+  dimnames(I) <- dimnames(vcov) <- list(lavLabels, lavLabels)
 
   list(FIM = I, vcov = vcov, type = FIM)
 }
