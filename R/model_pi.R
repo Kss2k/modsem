@@ -1,5 +1,4 @@
 parseLavaan <- function(model.syntax = NULL, variableNames = NULL, match = FALSE) {
-  # Checking prerequisites -----------------------------------------------------
   # Check if a model.syntax is provided, if not we should return an error
   if (is.null(model.syntax)) 
     stop2("No model.syntax provided")
@@ -8,7 +7,6 @@ parseLavaan <- function(model.syntax = NULL, variableNames = NULL, match = FALSE
   else if (length(model.syntax) > 1) 
     stop2("The provided model syntax is not of length 1")
 
-  # Convert to partable --------------------------------------------------------
   parTable <- modsemify(model.syntax)
   structuralExprs <- parTable[parTable$op == "~",]
   measureExprs <- parTable[parTable$op %in% c("=~", "<~"), ]
@@ -25,10 +23,9 @@ parseLavaan <- function(model.syntax = NULL, variableNames = NULL, match = FALSE
 
   # Get all the indicators in the model
   inds <- unique(measureExprs$rhs[!grepl(":", measureExprs$rhs)])
-  if (!all(inds %in% variableNames)) {
-    stop2("Unable to find observed variables in data: ",
+  stopif(!all(inds %in% variableNames), 
+         "Unable to find observed variables in data: ",
          capturePrint(inds[!inds %in% variableNames]))
-  }
 
   # Are prods latent?
   elementsInProds <- lapplyNamed(prodNames,
@@ -67,22 +64,24 @@ parseLavaan <- function(model.syntax = NULL, variableNames = NULL, match = FALSE
     indProdNames <- NULL 
   }
 
-  # Return modelSpec -----------------------------------------------------------
+  # Return modelSpec
   modelSpec <- list(model.syntax = model.syntax,
-                    parTable = parTable,
+                    parTable     = parTable,
+
                     oVs = oVs,
                     lVs = lVs,
-                    prodNames = prodNamesCleaned,
+                    prodNames           = prodNamesCleaned,
                     elementsInProdNames = elementsInProds,
                     relDfs = relDfs,
+
                     indsInLatentProds = indsInLatentProds,
-                    latentProds = names(indsInLatentProds),
-                    indProdNames = indProdNames)
+                    latentProds       = names(indsInLatentProds),
+                    indProdNames      = indProdNames)
   modelSpec
 }
 
 
-# Function for structuring exprs in a parTable ---------------------------
+# Function for structuring exprs in a parTable
 structureLavExprs <- function(parTable = NULL) {
   # If empty return NULL
   if (is.null(parTable)) return(NULL)
@@ -98,11 +97,7 @@ structureLavExprs <- function(parTable = NULL) {
 
 
 getIndsVariable <- function(varName = NULL,  indsLatents = NULL) {
-  if (is.null(varName)) {
-    return(
-           stop2("Error in getIndsVariable(), varName is NULL")
-    )
-  }
+  stopif(is.null(varName), "Error in getIndsVariable(), varName is NULL")
   # Get the names of the latent variables in the model
   lVs <- names(indsLatents)
 
@@ -121,14 +116,12 @@ getIndsVariable <- function(varName = NULL,  indsLatents = NULL) {
 }
 
 
-# Function for getting inds for mutliple variables -----------------------
+# Function for getting inds for mutliple variables
 getIndsMultipleVariables <- function(varNames = NULL, indsLatents = NULL) {
   # varNames = vector with variableNames
   # output should be a list
   # Check that arguements are supplied/not NULL
-  if (is.null(varNames)) {
-    stop2("Error in getIndsMultipleVariables(), varNames is NULL")
-  }
+  stopif(is.null(varNames), "Error in getIndsMultipleVariables(), varNames is NULL")
   # use getIndsVariable for each element in varNames, and return a named list
   lapplyNamed(varNames,
               FUN = getIndsVariable,
@@ -137,31 +130,21 @@ getIndsMultipleVariables <- function(varNames = NULL, indsLatents = NULL) {
 
 
 splitProdName <- function(prodName, pattern) {
-  if (is.null(prodName)) {
-    stop2("prodNames in splitProdName was NULL")
-  }
-  if (is.null(pattern)) {
-    stop2("pattern not supplied in splitProdName")
-  }
+  stopif(is.null(prodName) ,"prodNames in splitProdName was NULL")
+  stopif(is.null(pattern) ,"pattern in splitProdName was NULL")
   stringr::str_split_1(prodName, pattern)
 }
 
 
 splitProdNamesVec <- function(prodNames, pattern) {
-  if (is.null(prodNames)) {
-    stop2("prodNames in splitProdNamesVec was NULL")
-  }
-  if (is.null(pattern)) {
-    stop2("pattern not supplied in splitProdName")
-  }
+  stopif(is.null(prodNames) ,"prodNames in splitProdNamesVec was NULL")
+  stopif(is.null(pattern) ,"pattern in splitProdNamesVec was NULL")
   unlist(stringr::str_split(prodNames, pattern))
 }
 
 
 fixProdNames <- function(prodName, pattern = NULL) {
-  if (is.null(pattern)) {
-    stop2("pattern not supplied in fixProdNames")
-  }
+  stopif(is.null(pattern) ,"pattern in fixProdNames was NULL")
   stringr::str_remove_all(prodName, pattern)
 }
 

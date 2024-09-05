@@ -1,4 +1,4 @@
-muLms <- function(model, z1) {
+muLms <- function(model, z1) { # for testing purposes
   matrices <- model$matrices
   A <- matrices$A
   Oxx <- matrices$omegaXiXi
@@ -27,7 +27,7 @@ muLms <- function(model, z1) {
 }
 
 
-sigmaLms <- function(model, z1) {
+sigmaLms <- function(model, z1) { # for testing purposes
   matrices <- model$matrices
   Oxx <- matrices$omegaXiXi
   Oex <- matrices$omegaEtaXi
@@ -154,35 +154,28 @@ mstepLms <- function(theta, model, data, P,
                      epsilon = 1e-6,
                      ...) {
   gradient <- function(theta, model, data, P, sign) {
-    gradientLogLikLms(
-      theta = theta, model = model, P = P, sign = sign,
-      data = data, epsilon = epsilon
-    )
+    gradientLogLikLms(theta = theta, model = model, P = P, sign = sign,
+                      data = data, epsilon = epsilon)
   }
 
   if (optimizer == "nlminb") {
     if (is.null(control$iter.max)) control$iter.max <- max.step
-    est <- stats::nlminb(
-      start = theta, objective = logLikLms, data = data,
-      model = model, P = P, gradient = gradient,
-      sign = -1,
-      upper = model$info$bounds$upper,
-      lower = model$info$bounds$lower, control = control,
-      ...
-    ) |> suppressWarnings()
+    est <- stats::nlminb(start = theta, objective = logLikLms, data = data,
+                         model = model, P = P, gradient = gradient,
+                         sign = -1,
+                         upper = model$info$bounds$upper,
+                         lower = model$info$bounds$lower, control = control,
+                         ...) |> suppressWarnings()
+
   } else if (optimizer == "L-BFGS-B") {
     if (is.null(control$maxit)) control$maxit <- max.step
-    est <- stats::optim(
-      par = theta, fn = logLikLms, data = data,
-      model = model, P = P, gr = gradient,
-      method = optimizer, control = control,
-      sign = -1,
-      lower = model$info$bounds$lower,
-      upper = model$info$bounds$upper,
-      ...
-    )
+    est <- stats::optim(par = theta, fn = logLikLms, data = data,
+                        model = model, P = P, gr = gradient,
+                        method = optimizer, control = control,
+                        sign = -1, lower = model$info$bounds$lower,
+                        upper = model$info$bounds$upper, ...)
 
-    est$objective <- est$value
+    est$objective  <- est$value
     est$iterations <- est$counts[["function"]]
   } else {
     stop2("Unrecognized optimizer, must be either 'nlminb' or 'L-BFGS-B'")

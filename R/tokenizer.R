@@ -119,9 +119,7 @@ fitsToken <- function(token, nextChar) {
 
 #' @export
 fitsToken.LavName <- function(token, nextChar) {
-  if (length(nextChar) != 1) {
-    stop2("Wrong length of nextChar", nextChar)
-  }
+  stopif(length(nextChar) != 1, "Wrong length of nextChar", nextChar)
   # if object name ends with ( it is a function,
   # and next char belongs to a new object
   if (grepl("\\($", token)) {
@@ -133,9 +131,7 @@ fitsToken.LavName <- function(token, nextChar) {
 
 #' @export
 fitsToken.LavString <- function(token, nextChar) {
-  if (length(nextChar) != 1) {
-    stop2("Wrong length of nextChar", nextChar)
-  }
+  stopif(length(nextChar) != 1, "Wrong length of nextChar", nextChar)
   # if object name ends with ( it is a function,
   # and next char belongs to a new object
   if (grepl('\\"$', token)) {
@@ -147,9 +143,8 @@ fitsToken.LavString <- function(token, nextChar) {
 
 #' @export
 fitsToken.LavOperator <- function(token, nextChar) {
-  if (length(nextChar) != 1) {
-    stop2("Wrong length of nextChar", nextChar)
-  }
+  stopif(length(nextChar) != 1, "Wrong length of nextChar", nextChar)
+
   completeToken <- paste0(token, nextChar)
   switch(completeToken,
          "=~" = TRUE,
@@ -165,9 +160,7 @@ fitsToken.LavOperator <- function(token, nextChar) {
 
 #' @export
 fitsToken.LavBlank <- function(token, nextChar) {
-  if (length(nextChar) != 1) {
-    stop2("Wrong length of nextChar", nextChar)
-  }
+  stopif(length(nextChar) != 1, "Wrong length of nextChar", nextChar)
   grepl("\\s+", nextChar)
 }
 
@@ -180,9 +173,7 @@ fitsToken.LavClosure <- function(token, nextChar) {
 
 #' @export
 fitsToken.LavNumeric <- function(token, nextChar) {
-  if (length(nextChar) != 1) {
-    stop2("Wrong length of nextChar", nextChar)
-  }
+  stopif(length(nextChar) != 1, "Wrong length of nextChar", nextChar)
   grepl("[[:digit:].]", nextChar)
 }
 
@@ -275,16 +266,14 @@ appendToList <- function(list, elem) {
 prioritizeTokens <- function(listTokens, i = 1, brackets = list(),
                              nLeftBrackets = 0) {
   if (is.null(listTokens) || i > length(listTokens)) {
-    if (nLeftBrackets != 0) {
-        stop2("Unmatched left bracket", highlightErrorToken(brackets[[1]]))
-    }
+    stopif(nLeftBrackets != 0, "Unmatched left bracket", 
+           highlightErrorToken(brackets[[1]]))
     return(listTokens)
   } else if (is.RightClosure(listTokens[[i]])) {
     brackets <- brackets[-length(brackets)]
     nLeftBrackets <- nLeftBrackets - 1
-    if (nLeftBrackets < 0) {
-      stop2("Unmatched right bracket ", highlightErrorToken(listTokens[[i]]))
-    }
+    stopif(nLeftBrackets < 0, "Unmatched right bracket ", 
+           highlightErrorToken(listTokens[[i]]))
   }
   getTokenPriority(listTokens[[i]]) <-
     getTokenPriority(listTokens[[i]]) + nLeftBrackets*10
@@ -311,9 +300,8 @@ removeLavBlankLine <- function(line, removeComments = TRUE) {
 
 tokenizeSyntax <- function(syntax, optimize = TRUE) {
   resetModsemParseEnv()
-  if (!is.character(syntax)) {
-    stop2("Syntax must be a string")
-  }
+  stopif(!is.character(syntax), "Syntax must be a string")
+
   lines <- getLines(syntax)
   modsemParseEnv$syntaxLines <- lines
 
@@ -340,9 +328,7 @@ mergeTokensToString <- function(listTokens) {
 
 
 addCharToken <- function(token, nextChar) {
-  if (length(nextChar) != 1) {
-    stop2("Wrong length of nextChar ", nextChar)
-  }
+  stopif(length(nextChar) != 1, "Wrong length of nextChar ", nextChar)
 
   out <- paste0(token, nextChar)
   attributes(out) <- attributes(token)

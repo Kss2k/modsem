@@ -1,3 +1,23 @@
+warning2 <- function(...) {
+  warning(..., call. = FALSE)
+}
+
+
+stop2 <- function(...) {
+  stop(..., call. = FALSE)
+}
+
+
+stopif <- function(cond, ...) {
+  if (cond) stop2(...)
+}
+
+
+warnif <- function(cond, ...) {
+  if (cond) stop2(...)
+}
+
+
 # utils for all methods
 calcCovParTable <- function(x, y, parTable, measurement.model = FALSE) {
   parTable$mod <- as.character(parTable$est)

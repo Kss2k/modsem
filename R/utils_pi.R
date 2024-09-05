@@ -1,13 +1,3 @@
-warning2 <- function(...) {
-  warning(..., call. = FALSE)
-}
-
-
-stop2 <- function(...) {
-  stop(..., call. = FALSE)
-}
-
-
 # function for selecting rows in a dataframe matching values on a specified column (type chr_vec)
 selectRowsByCol <- function(value, df, column) {
   column <- as.character(column)

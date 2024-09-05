@@ -1,21 +1,20 @@
 logLikQml <- function(theta, model, sum = TRUE, sign = -1) {
   modelFilled <- fillModel(model, theta, method = "qml")
-  numEta <- model$info$numEtas
-  numXi <- model$info$numXis
-  kOmegaEta <- model$info$kOmegaEta
-  latentEtas <- model$info$latentEtas
+  numXi       <- model$info$numXis
+  numEta      <- model$info$numEtas
+  kOmegaEta   <- model$info$kOmegaEta
+  latentEtas  <- model$info$latentEtas
 
   m <- modelFilled$matrices
-  m$numEta <- numEta
-  m$numXi <- numXi
+  m$numEta    <- numEta
+  m$numXi     <- numXi
   m$kOmegaEta <- kOmegaEta
 
+  m$tauX      <- m$tauX + m$lambdaX %*% m$beta0
   m$x <- model$data[, model$info$allIndsXis, drop = FALSE]
-  m$tauX <- m$tauX + m$lambdaX %*% m$beta0
-  for (i in seq_len(ncol(m$x))) m$x[, i] <- m$x[, i] - m$tauX[i]
-
   m$y <- model$data[, model$info$allIndsEtas, drop = FALSE]
-  for (i in seq_len(ncol(m$y))) m$y[, i] <- m$y[, i] - m$tauY[i]
+  m$x <- centerIndicators(m$x, tau = m$tauX)
+  m$y <- centerIndicators(m$y, tau = m$tauY)
 
   t <- NROW(m$x)
   if (!is.null(m$emptyR)) {
@@ -34,44 +33,65 @@ logLikQml <- function(theta, model, sum = TRUE, sign = -1) {
     m$L2 <- -m$subThetaEpsilon %*% t(m$Beta) %*% invRER
     m$fullL2[m$selectSubL2] <- m$L2
 
-    m$Sigma2ThetaEpsilon <- # m$Binv %*% m$psi %*% t(m$Binv) +
-      m$subThetaEpsilon -
-      m$subThetaEpsilon ^ 2 %*% t(m$Beta) %*%
-      invRER %*% m$Beta 
+    m$Sigma2ThetaEpsilon <- m$subThetaEpsilon - m$subThetaEpsilon ^ 2 %*% 
+      t(m$Beta) %*% invRER %*% m$Beta 
     
-    m$fullSigma2ThetaEpsilon[m$selectSubSigma2ThetaEpsilon] <- m$Sigma2ThetaEpsilon
+    m$fullSigma2ThetaEpsilon[m$selectSubSigma2ThetaEpsilon] <- 
+      m$Sigma2ThetaEpsilon
   }
   
   m$Sigma2ThetaEpsilon <- m$fullSigma2ThetaEpsilon 
-  m$L2 <- m$fullL2
-  m$u <- m$fullU
-  m$LXPLX <- m$lambdaX %*% m$phi %*% t(m$lambdaX) + m$thetaDelta
+  m$L2     <- m$fullL2
+  m$u      <- m$fullU
+  m$LXPLX  <- m$lambdaX %*% m$phi %*% t(m$lambdaX) + m$thetaDelta
   invLXPLX <- solve(m$LXPLX)
-  m$L1 <- m$phi %*% t(m$lambdaX) %*% invLXPLX
-  m$Sigma1 <- m$phi - m$phi %*% t(m$lambdaX) %*%
-    invLXPLX %*% m$lambdaX %*% m$phi
+  m$L1     <- m$phi %*% t(m$lambdaX) %*% invLXPLX
+  m$Sigma1 <- m$phi - m$phi %*% t(m$lambdaX) %*% invLXPLX %*% m$lambdaX %*% m$phi
   m$kronXi <- calcKronXi(m, t)
-  m$Binv <- calcBinvCpp(m, t)
+  m$Binv   <- calcBinvCpp(m, t)
 
-  Ey <- muQmlCpp(m, t)
-  sigmaEpsilon <- sigmaQmlCpp(m, t)
+  Ey            <- muQmlCpp(m, t)
+  sigmaEpsilon  <- sigmaQmlCpp(m, t)
+  sigmaXU       <- calcSigmaXU(m)
+  
+  normalInds    <- colnames(sigmaXU)
+  indsY         <- colnames(m$y)
+  nonNormalInds <- indsY[!indsY %in% normalInds] 
 
-  if (is.null(m$emptyR)) sigmaXU <- m$LXPLX
-  else sigmaXU <- diagBindSquareMatrices(m$LXPLX, m$RER)
-  colsSigmaXU <- colnames(sigmaXU)
-
-  mean <- rep(0, ncol(sigmaXU))
-  f2 <- dmvn(cbind(m$x, m$u)[ , colsSigmaXU], mean = mean, sigma = sigmaXU, log = TRUE)
-  if (numEta <= 1) {
-    f3 <- dnormCpp(m$y[, 1], mu = Ey, sigma = sqrt(sigmaEpsilon))
-  } else {
-    f3 <- rep_dmvnorm(m$y[, !colnames(m$y) %in% colsSigmaXU],
-                      expected = Ey, sigma = sigmaEpsilon, t = t)
-  }
-  if (sum) {
-    return(sign * sum(f2 + f3))
-  }
+  f2 <- probf2(matrices = m, normalInds = normalInds, sigma = sigmaXU)
+  f3 <- probf3(matrices = m, nonNormalInds = nonNormalInds, expected = Ey,
+               sigma = sigmaEpsilon, t = t, numEta = numEta)
+  
+  if (sum) return(sign * sum(f2 + f3))
   sign * (f2 + f3)
+}
+
+
+calcSigmaXU <- function(matrices) {
+  if (is.null(matrices$emptyR)) return(matrices$LXPLX)
+  diagBindSquareMatrices(matrices$LXPLX, matrices$RER)
+}
+
+
+probf2 <- function(matrices, normalInds, sigma) {
+  mu <- rep(0, ncol(sigma))
+  X  <- cbind(matrices$x, matrices$u)[ , normalInds]
+  dmvn(X, mean = mu, sigma = sigma, log = TRUE)
+}
+
+
+probf3 <- function(matrices, nonNormalInds, expected, sigma, t, numEta) {
+  if (numEta == 1) {
+    return(dnormCpp(matrices$y[, 1], mu = expected, sigma = sqrt(sigma)))
+  } 
+  rep_dmvnorm(matrices$y[, nonNormalInds], expected = expected, 
+              sigma = sigma, t = t)
+}
+
+
+centerIndicators <- function(X, tau) {
+  for (i in seq_len(ncol(X))) X[, i] <- X[, i] - tau[[i]]
+  X
 }
 
 
@@ -118,7 +138,7 @@ mstepQml <- function(model,
   if (optimizer == "nlminb") {
     control$iter.max <- max.iter
     control$eval.max <- max.iter * 2
-    control$rel.tol <- convergence
+    control$rel.tol  <- convergence
 
     est <- stats::nlminb(start = theta, objective = logLikQml, model = model,
                          gradient = gradient, sign = -1,
@@ -133,7 +153,7 @@ mstepQml <- function(model,
                         gr = gradient, method = optimizer, sign = -1,
                         control = control, ...)
 
-    est$objective <- est$value
+    est$objective  <- est$value
     est$iterations <- est$counts[["function"]]
   } else stop2("Unrecognized optimizer, must be either 'nlminb' or 'L-BFGS-B'")
   

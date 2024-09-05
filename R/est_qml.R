@@ -48,8 +48,8 @@ estQml <- function(model,
 
   parTable <- modelToParTable(finalModel, method = "qml")
 
-  parTable$z.value <- parTable$est / parTable$std.error
-  parTable$p.value <- 2 * stats::pnorm(-abs(parTable$z.value))
+  parTable$z.value  <- parTable$est / parTable$std.error
+  parTable$p.value  <- 2 * stats::pnorm(-abs(parTable$z.value))
   parTable$ci.lower <- parTable$est - 1.96 * parTable$std.error
   parTable$ci.upper <- parTable$est + 1.96 * parTable$std.error
   
@@ -58,21 +58,25 @@ estQml <- function(model,
                "model estimation might not have converged.")
   }
 
-  out <- list(model = finalModel, 
-              method = "qml",
+  out <- list(model     = finalModel, 
+              method    = "qml",
               optimizer = optimizer,
-              data  = model$data,
-              theta = coefficients,
-              parTable = parTable,
+              data      = model$data,
+              theta     = coefficients,
+              parTable  = parTable,
+
               originalParTable = model$parTable,
-              logLik = -final$objective, 
-              iterations = final$iterations,
+
+              logLik      = -final$objective, 
+              iterations  = final$iterations,
               convergence = final$convergence, 
-              type.se = typeSE,
+              type.se     = typeSE,
+
               type.estimates = "unstandardized",
-              info.quad = NULL,
-              FIM = FIM$FIM,
-              vcov = FIM$vcov,
+
+              info.quad   = NULL,
+              FIM         = FIM$FIM,
+              vcov        = FIM$vcov,
               information = FIM$type)
 
   out

@@ -168,9 +168,8 @@ createParTableBranch <- function(syntaxTree) {
 #''
 #' modsemify(m1)
 modsemify <- function(syntax) {
-  if (!is.character(syntax) && length(syntax) > 1) {
-    stop2("Syntax is not a string og length 1")
-  }
+  stopif(!is.character(syntax) && length(syntax) > 1,
+         "Syntax is not a string og length 1")
   syntaxTrees <- createSyntaxTreesSyntax(syntax)
   parsedTrees <- parseSyntaxTrees(syntaxTrees)
   purrr::list_rbind(lapply(parsedTrees,
@@ -203,9 +202,10 @@ parTableToSyntax <- function(parTable, removeColon = FALSE) {
 
 
 mergeTokens <- function(x, y) {
-  if (!"LavName" %in% class(x) || !"LavName" %in% class(x)) {
-    stop2("Interactions are reserved for objects ", highlightErrorToken(x))
-  }
+  stopif(!"LavName" %in% class(x) || !"LavName" %in% class(x),
+         "Interactions are reserved for objects ", 
+         highlightErrorToken(x))
+
   out <- paste0(x, y)
   attributes(out) <- attributes(x)
   out
