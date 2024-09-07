@@ -22,7 +22,7 @@ optimizeStartingParamsDA <- function(model) {
                                    rows_lhs = FALSE)
 
   ThetaEpsilon <- findEstimatesParTable(matricesMain$thetaEpsilon, parTable, op = "~~")
-  ThetaDelta <- findEstimatesParTable(matricesMain$thetaDelta, parTable, op = "~~")
+  ThetaDelta   <- findEstimatesParTable(matricesMain$thetaDelta, parTable, op = "~~")
 
   Psi <- findEstimatesParTable(matricesMain$psi, parTable, op = "~~")
   Phi <- findEstimatesParTable(matricesMain$phi, parTable, op = "~~")
@@ -35,13 +35,11 @@ optimizeStartingParamsDA <- function(model) {
   alpha <- findInterceptsParTable(matricesMain$alpha, parTable, fill = 0)
 
   GammaEta <- findEstimatesParTable(matricesMain$gammaEta, parTable, op = "~")
-  GammaXi <- findEstimatesParTable(matricesMain$gammaXi, parTable, op = "~")  
+  GammaXi  <- findEstimatesParTable(matricesMain$gammaXi, parTable, op = "~")  
 
   OmegaEtaXi <- findInteractionEstimatesParTable(matricesMain$omegaEtaXi, 
-                                                 etas = etas, 
                                                  parTable = parTable)
   OmegaXiXi <- findInteractionEstimatesParTable(matricesMain$omegaXiXi, 
-                                                etas = etas, 
                                                 parTable = parTable)
   tauX <- findInterceptsParTable(matricesMain$tauX, parTable, fill = 0)
   tauY <- findInterceptsParTable(matricesMain$tauY, parTable, fill = 0)
@@ -121,26 +119,17 @@ findInterceptsParTable <- function(mat, parTable, fill = NULL) {
 }
 
 
-findInteractionEstimatesParTable <- function(omega, etas, parTable) {
-  nrowSubOmega <- nrow(omega) %/% length(etas)
-  firstRow <- 1
-  lastRow <- nrowSubOmega
-  for (eta in etas) {
-    subOmega <- omega[firstRow:lastRow, , drop = FALSE] 
-    rows <- rownames(subOmega)
-    cols <- colnames(subOmega)
+findInteractionEstimatesParTable <- function(omega, parTable) {
+  rows <- rownames(omega)
+  cols <- colnames(omega)
 
-    for (row in seq_len(NROW(subOmega))) {
-      for (col in seq_len(NCOL(subOmega))) {
-        if (!is.na(subOmega[row, col])) next
-        xz <- createDoubleIntTerms(x = rows[[row]], z = cols[[col]], sep = "")
-        subOmega[row, col] <- extractFromParTable(eta, "~", xz, parTable, 
-                                                  rows_lhs = TRUE)
-      }
-    }
-    omega[firstRow:lastRow, ] <- subOmega
-    firstRow <- lastRow + 1
-    lastRow <- lastRow + nrowSubOmega
+  for (row in rows) for (col in cols) {
+    if (!is.na(omega[row, col])) next
+    eta <- getEtaRowLabelOmega(row)
+    x   <- getXiRowLabelOmega(row)
+    xz  <- createDoubleIntTerms(x = x, z = col, sep = "")
+    omega[row, col] <- extractFromParTable(eta, "~", xz, parTable, 
+                                           rows_lhs = TRUE)
   }
   omega
 }

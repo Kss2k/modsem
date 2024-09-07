@@ -21,8 +21,8 @@ createLavLabels <- function(matrices, subset, etas) {
   beta0        <- createLabelsMatrix(matrices$beta0, op = "~")
   gammaXi      <- createLabelsMatrix(matrices$gammaXi, op = "~", first = "rows")
   gammaEta     <- createLabelsMatrix(matrices$gammaEta, op = "~", first = "rows")
-  omegaXiXi    <- createLabelsOmega(matrices$omegaXiXi, etas = etas)
-  omegaEtaXi   <- createLabelsOmega(matrices$omegaEtaXi, etas = etas)
+  omegaXiXi    <- createLabelsOmega(matrices$omegaXiXi)
+  omegaEtaXi   <- createLabelsOmega(matrices$omegaEtaXi)
 
   labels <- c("lambdaX" = lambdaX,
               "lambdaY" = lambdaY,
@@ -80,23 +80,13 @@ createLabelsMatrix <- function(X, op = "~", first = "cols") {
 }
 
 
-createLabelsOmega <- function(X, etas) {
-  rows       <- rownames(X)
-  cols       <- colnames(X)
-  numEtas    <- length(etas) 
-  subNrow    <- nrow(X) %/% numEtas
-  subSeqRows <- seq_len(subNrow) 
-
+createLabelsOmega <- function(X) {
+  rows   <- rownames(X)
+  cols   <- colnames(X)
   labels <- character(0L)
-  # this is ugly, but... we have to read by cols first, but also assign the
-  # correct eta -- I don't want to do a check in the middle to see if j is 
-  # in the range of a specified eta
-  for (i in seq_len(ncol(X))) {
-    for (eta_i in seq_len(numEtas)) {
-      for (j in subSeqRows + (eta_i - 1) * subNrow) {
-        labels <- c(labels, paste0(etas[eta_i], "~", rows[[j]], ":", cols[[i]]))
-      }
-    }
+
+  for (i in seq_len(ncol(X))) for (j in seq_len(nrow(X))) {
+    labels <- c(labels, paste0(rows[[j]], ":", cols[[i]]))
   }
 
   labels

@@ -406,7 +406,28 @@ getScalingLambdaY <- function(lambdaY, indsEtas, etas, method = "qml") {
 
 sortXisConstructOmega <- function(xis, varsInts, etas, intTerms, 
                                   method = "lms", double = FALSE) {
-  # this is a piece of sh*t -- should be refactored in the future
+  listSortedXis  <- sortXis(xis = xis, varsInts = varsInts, etas = etas, 
+                            intTerms = intTerms, double = double)
+  sortedXis    <- listSortedXis$sortedXis
+  nonLinearXis <- listSortedXis$nonLinearXis
+
+  omegaXiXi <- constructOmegaXiXi(xis = xis, etas = etas, 
+                                  sortedXis = sortedXis, 
+                                  nonLinearXis = nonLinearXis, 
+                                  varsInts = varsInts,
+                                  intTerms = intTerms)
+  omegaEtaXi <- constructOmegaEtaXi(xis = xis, etas = etas,
+                                    sortedXis = sortedXis, 
+                                    nonLinearXis = nonLinearXis, 
+                                    varsInts = varsInts,
+                                    intTerms = intTerms)
+
+  list(sortedXis = sortedXis, omegaXiXi = omegaXiXi,
+       omegaEtaXi = omegaEtaXi, k = length(nonLinearXis))
+}
+
+
+sortXis <- function(xis, varsInts, etas, intTerms, double) {
   # allVarsInInts should be sorted according to which variables 
   # occur in the most interaction terms (makes it more efficient)
   allVarsInInts <- unique(unlist(varsInts))
@@ -431,54 +452,73 @@ sortXisConstructOmega <- function(xis, varsInts, etas, intTerms,
 
     nonLinearXis <- c(nonLinearXis, choice)
   }
+
   linearXis <- xis[!xis %in% nonLinearXis]
-  sortedXis <- c(nonLinearXis, linearXis)
 
-  # submatrices for omegas
-  omegaXiXi <- NULL
-  labelOmegaXiXi <- NULL
+  list(linearXis = linearXis, sortedXis = c(nonLinearXis, linearXis),
+       nonLinearXis = nonLinearXis)
+}
+
+
+constructOmegaEtaXi <- function(xis, etas, sortedXis, nonLinearXis,
+                                varsInts, intTerms) {
+  omega      <- NULL
+  labelOmega <- NULL 
+
   for (eta in etas) {
-    subOmegaXiXi <- matrix(0, nrow = length(xis), ncol = length(xis),
-                           dimnames = list(sortedXis, sortedXis))
-    subLabelOmegaXiXi <- as.character.matrix(subOmegaXiXi, empty = TRUE)
+    subOmega <- matrix(0, nrow = length(xis), ncol = length(etas),
+                            dimnames = list(sortedXis, etas))
+    subLabelOmega <- as.character.matrix(subOmega, empty = TRUE)
 
-    lapply(varsInts[intTerms$lhs == eta], FUN = function(row) {
-       if (!all(row %in% sortedXis)) return(NULL) 
+    for (row in varsInts[intTerms$lhs == eta]) {
+      if (!any(row %in% etas) || all(row %in% etas)) next
+
+      whichXi  <- which(!row %in% etas)
+      whichEta <- which(row %in% etas)
+
+      subOmega[row[[whichXi]], row[[whichEta]]] <- 
+        getFreeOrConstIntTerms(row, eta, intTerms)
+      subLabelOmega[row[[whichXi]], row[[whichEta]]] <- 
+        getLabelIntTerms(row, eta, intTerms)
+    }
+
+    omega      <- rbind(omega, labelRowsOmega(subOmega, eta = eta))
+    labelOmega <- rbind(labelOmega, labelRowsOmega(subLabelOmega, eta = eta))
+  }
+  list(numeric = omega, label = labelOmega)
+}
+
+
+constructOmegaXiXi <- function(xis, etas, sortedXis, nonLinearXis,
+                               varsInts, intTerms) {
+  omega      <- NULL
+  labelOmega <- NULL
+  for (eta in etas) {
+    subOmega <- matrix(0, nrow = length(sortedXis), ncol = length(sortedXis),
+                       dimnames = list(sortedXis, sortedXis))
+    subLabelOmega <- as.character.matrix(subOmega, empty = TRUE)
+
+    for (row in varsInts[intTerms$lhs == eta]) {
+       if (!all(row %in% sortedXis)) next
+
        whichRow <- which(row %in% nonLinearXis)[[1]] # if quadratic term pick first
        whichCol <- ifelse(whichRow == 1, 2, 1)
        
-       subOmegaXiXi[row[[whichRow]], row[[whichCol]]] <<- 
-         getFreeOrConsIntTerms(row, eta, intTerms)
-       subLabelOmegaXiXi[row[[whichRow]], row[[whichCol]]] <<-
+       subOmega[row[[whichRow]], row[[whichCol]]] <- 
+         getFreeOrConstIntTerms(row, eta, intTerms)
+       subLabelOmega[row[[whichRow]], row[[whichCol]]] <-
          getLabelIntTerms(row, eta, intTerms)
-    })
-    omegaXiXi <- rbind(omegaXiXi, subOmegaXiXi)
-    labelOmegaXiXi <- rbind(labelOmegaXiXi, subLabelOmegaXiXi)
+    }
+
+    omega      <- rbind(omega, labelRowsOmega(subOmega, eta = eta))
+    labelOmega <- rbind(labelOmega, labelRowsOmega(subLabelOmega, eta = eta))
   }
 
-  omegaEtaXi <- NULL
-  labelOmegaEtaXi <- NULL 
-  for (eta in etas) {
-    subOmegaEtaXi <- matrix(0, nrow = length(xis), ncol = length(etas),
-                            dimnames = list(sortedXis, etas))
-    subLabelOmegaEtaXi <- as.character.matrix(subOmegaEtaXi, empty = TRUE)
+  list(numeric = omega, label = labelOmega)
+}
 
-    lapply(varsInts[intTerms$lhs == eta], FUN = function(row) {
-       if (any(row %in% etas) & !all(row %in% etas)) {
-         whichXi <- which(!row %in% etas)
-         whichEta <- which(row %in% etas)
 
-         subOmegaEtaXi[row[[whichXi]], row[[whichEta]]] <<- 
-           getFreeOrConsIntTerms(row, eta, intTerms)
-         subLabelOmegaEtaXi[row[[whichXi]], row[[whichEta]]] <<- 
-           getLabelIntTerms(row, eta, intTerms)
-       }
-    })
-    omegaEtaXi <- rbind(omegaEtaXi, subOmegaEtaXi)
-    labelOmegaEtaXi <- rbind(labelOmegaEtaXi, subLabelOmegaEtaXi)
-  }
-  list(sortedXis = sortedXis, 
-       omegaXiXi = list(numeric = omegaXiXi, label = labelOmegaXiXi),
-       omegaEtaXi = list(numeric = omegaEtaXi, label = labelOmegaEtaXi),
-       k = length(nonLinearXis))
+labelRowsOmega <- function(X, eta) {
+  rownames(X) <- paste0(eta, "~", rownames(X))
+  X
 }

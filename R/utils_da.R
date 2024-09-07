@@ -132,7 +132,7 @@ createDoubleIntTerms <- function(x, z = NULL, sep = ":") {
 }
 
 
-getFreeOrConsIntTerms <- function(varsInInt, eta, intTerms) {
+getFreeOrConstIntTerms <- function(varsInInt, eta, intTerms) {
   expr <- intTerms[intTerms$lhs == eta & intTerms$rhs %in% 
                    createDoubleIntTerms(varsInInt), "mod"]
   if (canBeNumeric(expr, includeNA = TRUE)) return(as.numeric(expr))
@@ -375,4 +375,14 @@ getFixedInterceptSyntax <- function(indicator, syntax, parTable) {
            parTable$op == "~" & parTable$rhs == "1", ])) return(syntax)
   else addition <-  paste0("\n", indicator, " ~ 0 * 1")
   paste0(syntax, addition)
+}
+
+
+getEtaRowLabelOmega <- function(label) {
+  stringr::str_split_1(label, "~")[[1]]
+}
+
+
+getXiRowLabelOmega <- function(label) {
+  stringr::str_split_1(label, "~")[[2]]
 }

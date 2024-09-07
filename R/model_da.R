@@ -286,27 +286,21 @@ matrixToParTable <- function(matrixNA, matrixEst, matrixSE, matrixLabel,
 }
 
 
-omegaToParTable <- function(omegaNA, omegaEst, omegaSE, omegaLabel, etas) {
-  numEtas    <- length(etas) 
-  subNrow    <- nrow(omegaNA) %/% numEtas
-  subSeqRows <- seq_len(subNrow) 
-  rowNames   <- rownames(omegaEst)
-  colNames   <- colnames(omegaEst)
+omegaToParTable <- function(omegaNA, omegaEst, omegaSE, omegaLabel) {
+  rows <- rownames(omegaEst)
+  cols <- colnames(omegaEst)
 
   parTable <- NULL
-  for (eta_i in seq_len(numEtas)) {
-    for (i in subSeqRows + (eta_i - 1) * subNrow) {
-      for (j in seq_len(ncol(omegaNA))) {
-        if (!is.na(omegaNA[i, j]) && omegaLabel[i, j] == "") next
-        intTerm <- paste0(rowNames[[i]], ":", colNames[[j]])
-        newRow <- data.frame(lhs = etas[[eta_i]], op = "~", 
-                             rhs = intTerm,
-                             label = omegaLabel[i, j],
-                             est = omegaEst[i, j],
-                             std.error = omegaSE[i, j])
-        parTable <- rbind(parTable, newRow)
-      }
-    }
+  for (row in rows) for (col in cols) {
+    if (!is.na(omegaNA[row, col]) && omegaLabel[row, col] == "") next
+    eta     <- getEtaRowLabelOmega(row)
+    x       <- getXiRowLabelOmega(row)
+    intTerm <- paste0(x, ":", col)
+
+    newRow <- data.frame(lhs = eta, op = "~", rhs = intTerm,
+                         label = omegaLabel[row, col], est = omegaEst[row, col],
+                         std.error = omegaSE[row, col])
+    parTable <- rbind(parTable, newRow)
   }
   parTable
 }
@@ -362,15 +356,13 @@ mainModelToParTable <- function(finalModel, method = "lms") {
   newRows <- omegaToParTable(matricesNA$omegaXiXi,
                              matricesEst$omegaXiXi, 
                              matricesSE$omegaXiXi,
-                             matricesLabel$omegaXiXi,
-                             etas = etas)
+                             matricesLabel$omegaXiXi)
   parTable <- rbind(parTable, newRows)
 
   newRows <- omegaToParTable(matricesNA$omegaEtaXi,
                              matricesEst$omegaEtaXi, 
                              matricesSE$omegaEtaXi,
-                             matricesLabel$omegaEtaXi,
-                             etas = etas)
+                             matricesLabel$omegaEtaXi)
   parTable <- rbind(parTable, newRows)
 
   # Intercepts
