@@ -263,3 +263,19 @@ getWarningWrapper <- function(silent = FALSE) { # function factory
   if (silent) return(suppressWarnings)
   function(x) x
 }
+
+
+isRowInParTable <- function(row, pt, ignore = NULL) {
+  if (!is.null(ignore)) {
+    row <- row[!names(row) %in% ignore]
+    pt  <- pt[!colnames(pt) %in% ignore]
+  }
+
+  for (i in seq_len(nrow(pt))) {
+    x <- unlist(row)
+    y <- unlist(pt[i, ])
+    if (all(x == y)) return(TRUE)
+  }
+
+  return(FALSE)
+}

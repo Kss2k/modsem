@@ -9,6 +9,7 @@ trace_path(
   x,
   y,
   parenthesis = TRUE,
+  missing.cov = FALSE,
   measurement.model = FALSE,
   maxlen = 100,
   ...
@@ -22,6 +23,8 @@ trace_path(
 \item{y}{destination variable}
 
 \item{parenthesis}{if TRUE, the output will be enclosed in parenthesis}
+
+\item{missing.cov}{if TRUE covariances missing from the model syntax will be added}
 
 \item{measurement.model}{if TRUE, the function will use the measurement model}
 
@@ -51,5 +54,5 @@ m1 <- '
   Y ~ X + Z + X:Z
 '
 pt <- modsemify(m1)
-trace_path(pt, "Y", "Y") # variance of Y
+trace_path(pt, x = "Y", y = "Y", missing.cov = TRUE) # variance of Y
 }

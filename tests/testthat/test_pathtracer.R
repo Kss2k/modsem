@@ -25,3 +25,23 @@ x4 ~~ x4
 
 testthat::expect_equal(trace_path(m2, "x3", "x3"), "(x3~~x3 + x3~x4 ^ 2 * x4~~x4)")
 testthat::expect_equal(trace_path(m2, "x4", "x4"), "(x4~~x4)")
+               
+m3 <- modsemify('visual  =~ x1 + x2 + x3 
+                textual =~ x4 + x5 + x6
+                speed   =~ x7 + x8 + x9
+                visual  ~ speed + textual + speed:textual')
+
+testthat::expect_true(is.na(trace_path(m3, "textual", "textual")))
+
+
+m4 <- modsemify('
+   # Outer Model
+   X =~ x1 + x2 +x3
+   Y =~ y1 + y2 + y3
+   Z =~ z1 + z2 + z3
+
+   # Inner model
+   Y ~ X + Z + X:Z
+')
+
+testthat::expect_equal(trace_path(m4, "X", "X", missing.cov = TRUE), "(X~~X)")

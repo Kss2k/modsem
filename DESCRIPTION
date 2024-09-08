@@ -51,7 +51,7 @@ Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.3.2
 LinkingTo: Rcpp, RcppArmadillo
-Imports: Rcpp, purrr, stringr, lavaan, rlang, MplusAutomation, nlme, R6, dplyr, 
+Imports: Rcpp, purrr, stringr, lavaan, rlang, MplusAutomation, nlme, dplyr, 
   mvnfast, stats, fastGHQuad, mvtnorm, ggplot2, parallel
 Depends: 
     R (>= 3.50)
