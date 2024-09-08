@@ -12,67 +12,67 @@
 #' @export
 fit_modsem_da <- function(model, chisq = TRUE) {
   parTable <- model$parTable
-  if (any(grepl(":", parTable$rhs)) && chisq) {
-    warning2("Chi-Square based fit-measures for LMS and QML should be calculated for baseline model ", 
-             "i.e., the model without the interaction effect")
-  }
+  warnif(any(grepl(":", parTable$rhs)) && chisq, 
+         "Chi-Square based fit-measures for LMS and QML ",
+         "should be calculated for baseline model ", 
+         "i.e., the model without the interaction effect")
  
   logLik <- model$logLik
-  O <- stats::cov(model$data)
-  mu <- apply(model$data, 2, mean)
-  N <- NROW(model$data) 
-  p <- NCOL(model$data)
-  coef <- coef(model)
-  k <- length(coef)
-  df <- getDegreesOfFreedom(m = p, coef = coef)
+  O      <- stats::cov(model$data)
+  mu     <- apply(model$data, 2, mean)
+  N      <- NROW(model$data) 
+  p      <- NCOL(model$data)
+  coef   <- coef(model)
+  k      <- length(coef)
+  df     <- getDegreesOfFreedom(m = p, coef = coef)
 
   matrices <- model$model$matrices
-  gammaXi <- matrices$gammaXi
+  gammaXi  <- matrices$gammaXi
   gammaEta <- matrices$gammaEta
-  phi <- matrices$phi
-  psi <- matrices$psi
-  lambdaX <- matrices$lambdaX
-  lambdaY <- matrices$lambdaY
-  thetaY <- matrices$thetaEpsilon
-  thetaX <- matrices$thetaDelta
-  tauX <- matrices$tauX
-  tauY <- matrices$tauY 
-  alpha <- matrices$alpha
-  Ieta <- matrices$Ieta
-  Binv <- solve(Ieta - gammaEta)
+  phi      <- matrices$phi
+  psi      <- matrices$psi
+  lambdaX  <- matrices$lambdaX
+  lambdaY  <- matrices$lambdaY
+  thetaY   <- matrices$thetaEpsilon
+  thetaX   <- matrices$thetaDelta
+  tauX     <- matrices$tauX
+  tauY     <- matrices$tauY 
+  alpha    <- matrices$alpha
+  Ieta     <- matrices$Ieta
+  Binv     <- solve(Ieta - gammaEta)
 
   if (chisq) {
-    covX <- lambdaX %*% phi %*% t(lambdaX) + thetaX
+    covX  <- lambdaX %*% phi %*% t(lambdaX) + thetaX
     covXY <- lambdaY %*% (Binv %*% gammaXi %*% phi) %*% t(lambdaX) 
-    covY <- lambdaY %*% 
+    covY  <- lambdaY %*% 
       (Binv %*% (gammaXi %*% phi %*% t(gammaXi) + psi) %*% t(Binv)) %*% 
       t(lambdaY) + thetaY
 
     E <- rbind(cbind(covX, t(covXY)),
-                cbind(covXY, covY))
+               cbind(covXY, covY))
 
     if (any(grepl("tau|alpha", names(coef)))) {
-      muX <- tauX
-      muY <- tauY + lambdaY %*% Binv %*% alpha
+      muX   <- tauX
+      muY   <- tauY + lambdaY %*% Binv %*% alpha
       muHat <- rbind(muX, muY)
-    } else muHat <- mu # diff_mu = 0
+    } else muHat <- mu
 
     chisqValue <- calcChiSqr(O = O, E = E, N = N, p = p, mu = mu, muHat = muHat)
-    chisqP <- stats::pchisq(chisqValue, df, lower.tail = FALSE)
-    RMSEA <- calcRMSEA(chisqValue, df, N)
+    chisqP     <- stats::pchisq(chisqValue, df, lower.tail = FALSE)
+    RMSEA      <- calcRMSEA(chisqValue, df, N)
 
   } else {
-    E <- NULL
+    E          <- NULL
     chisqValue <- NULL
-    chisqP <- NULL 
-    df <- NULL
-    RMSEA <- NULL 
-    muHat <- NULL
+    chisqP     <- NULL 
+    df         <- NULL
+    RMSEA      <- NULL 
+    muHat      <- NULL
   }
 
-  AIC <- calcAIC(logLik, k = k)
+  AIC  <- calcAIC(logLik, k = k)
   AICc <- calcAdjAIC(logLik, k = k, N = N)
-  BIC <- calcBIC(logLik, k = k, N = N)
+  BIC  <- calcBIC(logLik, k = k, N = N)
   aBIC <- calcAdjBIC(logLik, k = k, N = N)
 
   list(sigma.observed = O, sigma.expected = E, 
@@ -84,8 +84,9 @@ fit_modsem_da <- function(model, chisq = TRUE) {
 
 calcChiSqr <- function(O, E, N, p, mu, muHat) {
   diff_mu <- mu - muHat
-  Einv <- solve(E)
-  (N - 1) * (t(diff_mu) %*% Einv %*% diff_mu + tr(O %*% Einv) - log(det(O %*% Einv)) - p)
+  Einv    <- solve(E)
+  (N - 1) * (t(diff_mu) %*% Einv %*% diff_mu + 
+             tr(O %*% Einv) - log(det(O %*% Einv)) - p)
 }
 
 

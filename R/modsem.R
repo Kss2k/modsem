@@ -114,11 +114,11 @@ modsem <- function(model.syntax = NULL,
   }
 
   if (method %in% c("rca", "uca", "dblcent", "pind", "ca", "custom")) {
-    return(modsem_pi(model.syntax, data = data, method = method, ...))
+    modsem_pi(model.syntax, data = data, method = method, ...)
   } else if (method %in% c("lms", "qml")) {
-    return(modsem_da(model.syntax, data = data, method = method, ...))
+    modsem_da(model.syntax, data = data, method = method, ...)
   } else if (method == "mplus") {
-    return(modsem_mplus(model.syntax, data = data, ...))
+    modsem_mplus(model.syntax, data = data, ...)
   } else {
     stop2("Method not recognized")
   }
