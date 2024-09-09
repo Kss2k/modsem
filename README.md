@@ -1,6 +1,6 @@
 # `modsem` <img src="man/figures/modsem.png" alt="Logo" align = "right" height="139" class="logo">
 This is a package which allows you to perform interactions between latent variables (i.e., moderation) in CB-SEM. 
-See https://kss2k.github.io/intro_modsem/ for a tutorial.
+See https://kss2k.github.io/modsem/ for a tutorial.
 
 # To Install 
 ```
@@ -25,8 +25,8 @@ There are a number of approaches for estimating interaction effects in SEM. In `
 - `"dblcent"` = double centering approach (Marsh., 2013)
   - default 
 - `"pind"` = basic product indicator approach (not recommended)
-- `"lms"` = The Latent Moderated Structural equations (LMS) approach, see the [vignette](https://kss2k.github.io/intro_modsem/articles/lms_qml.html)
-- `"qml"` = The Quasi Maximum Likelihood (QML) approach, see the [vignette](https://kss2k.github.io/intro_modsem/articles/lms_qml.html)
+- `"lms"` = The Latent Moderated Structural equations (LMS) approach, see the [vignette](https://kss2k.github.io/modsem/articles/lms_qml.html)
+- `"qml"` = The Quasi Maximum Likelihood (QML) approach, see the [vignette](https://kss2k.github.io/modsem/articles/lms_qml.html)
 - `"mplus"` 
   - estimates model through Mplus, if it is installed
 
