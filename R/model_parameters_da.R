@@ -56,10 +56,11 @@ createTheta <- function(model, start = NULL) {
   thetaMain <- allModelValues[is.na(allModelValues)]
   thetaMain <- fillThetaIfStartNULL(start = start, theta = thetaMain) 
   theta     <- c(thetaLabel, thetaCov, thetaMain)
-  
+
+  allLabels <- names(c(totalThetaLabel, thetaCov, thetaMain))
   lavLabels <- combineLavLabels(lavLabelsMain = lavLabelsMain, 
                                 lavLabelsCov = lavLabelsCov, 
-                                currentLabels = names(theta)) 
+                                currentLabels = allLabels)
 
   list(theta = theta, lenThetaMain = length(thetaMain),
        lenThetaLabel = length(thetaLabel),
@@ -160,7 +161,7 @@ fillMainModel <- function(model, theta, thetaLabel, fillPhi = FALSE,
   M$gammaXi      <- fillNA_Matrix(M$gammaXi, theta = theta, pattern = "^gammaXi")
   M$omegaXiXi    <- fillNA_Matrix(M$omegaXiXi, theta = theta, pattern = "^omegaXiXi")
   M$omegaEtaXi   <- fillNA_Matrix(M$omegaEtaXi, theta = theta, pattern = "^omegaEtaXi")
-  
+
   if (fillPhi) M$phi <- M$A %*% t(M$A)
   M
 }
@@ -231,4 +232,24 @@ checkStartingParams <- function(start, model) {
   }
 
   NULL
+}
+
+
+calcPhiTheta <- function(theta, model, method) {
+  if (method != "lms") return(theta)
+  filledModel <- fillModel(theta = theta, model = model, method = method,
+                           fillPhi = TRUE)
+
+  if (!is.null(model$covModel$matrices)) {
+    matEst <- filledModel$covModel$matrices
+    matNA  <- model$covModel$matrices
+    vals   <- as.vector(matEst$A[is.na(matNA$A)]) 
+  } else {
+    matEst <- filledModel$matrices
+    matNA  <- model$matrices
+    vals   <- as.vector(matEst$A[is.na(matNA$A)]) 
+  }
+
+  theta[grepl("^A[0-9]+$", names(theta))] <- vals
+  theta
 }

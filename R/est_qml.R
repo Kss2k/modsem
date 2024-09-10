@@ -15,16 +15,18 @@ estQml <- function(model,
   final <- mstepQml(model = model, theta = startTheta, max.iter = max.iter, 
                     convergence = convergence, epsilon = epsilon,
                     verbose = verbose, optimizer = optimizer, ...)
-  coefficients <- final$par
-  finalModel <- fillModel(model, coefficients)
 
-  info <- model$info
+  coefficients    <- final$par
+  allCoefficients <- getTransformationsTheta(model = model, theta = coefficients,
+                                             method = "qml")
+  finalModel      <- fillModel(model, coefficients)
+  info            <- model$info
 
   finalModel <- fillModel(model, coefficients, method = "qml")
-  emptyModel <-  getEmptyModel(parTable = model$parTable, 
-                               cov.syntax = model$cov.syntax,
-                               parTableCovModel = model$covModel$parTable,
-                               method = "qml")
+  emptyModel <- getEmptyModel(parTable = model$parTable, 
+                              cov.syntax = model$cov.syntax,
+                              parTableCovModel = model$covModel$parTable,
+                              method = "qml")
   finalModel$matricesNA <- emptyModel$matrices
   finalModel$covModelNA <- emptyModel$covModel
 
@@ -36,17 +38,16 @@ estQml <- function(model,
                     EFIM.parametric = EFIM.parametric, verbose = verbose,
                     FIM = FIM, robust.se = robust.se, NA__ = -999, 
                     epsilon = epsilon)
-  SE <- calcSE_da(calc.se = calc.se, FIM$vcov, theta = coefficients, NA__ = -999)
+  SE <- calcSE_da(calc.se = calc.se, FIM$vcov, rawLabels = FIM$raw.labels, 
+                  NA__ = -999)
+  modelSE <- getSE_Model(model, se = SE, method = "qml",
+                         n.additions = FIM$n.additions)
 
-  modelSE <- fillModel(replaceNonNaModelMatrices(model, value = -999), 
-                       theta = SE, method = "lms")
-
-  modelSE <- fillModel(replaceNonNaModelMatrices(model, value = -999), 
-                       SE, method = "qml")
   finalModel$matricesSE <- modelSE$matrices
   finalModel$covModelSE <- modelSE$covModel
 
-  parTable <- modelToParTable(finalModel, method = "qml")
+  parTable <- modelToParTable(finalModel, coefs = allCoefficients,
+                              se = SE, method = "qml")
 
   parTable$z.value  <- parTable$est / parTable$std.error
   parTable$p.value  <- 2 * stats::pnorm(-abs(parTable$z.value))

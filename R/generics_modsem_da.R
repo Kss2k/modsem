@@ -269,17 +269,12 @@ print.summary_da <- function(x, digits = 3, ...) {
 
 #' @export
 print.modsem_da <- function(x, digits = 3, ...) {
-  parTable <- x$parTable
+  parTable         <- x$parTable
   parTable$p.value <- format.pval(parTable$p.value, digits = digits)
-  names(parTable) <- c(
-    "lhs", "op", "rhs",
-    "est", "std.error",
-    "z.value", "p.value", # "P(>|z|)",
-    "ci.lower", "ci.upper"
-  )
-  est <- lapply(parTable, function(col) {
-    if (is.numeric(col)) round(col, digits) else col
-  }) |>
+  names(parTable)  <- c("lhs", "op", "rhs", "label", "est", "std.error",
+                        "z.value", "p.value", "ci.lower", "ci.upper")
+  est <- lapply(parTable, function(col) 
+    if (is.numeric(col)) round(col, digits) else col) |>
     as.data.frame()
   print(est)
 }
@@ -297,30 +292,30 @@ estimateNullModel <- function(parTable,
                               double = NULL,
                               ...) {
   tryCatch({
-      strippedParTable <- removeUnknownLabels(parTable[!grepl(":", parTable$rhs), ])
-      if (NROW(strippedParTable) == NROW(parTable)) {
-        return(NULL)
-      }
-
-      syntax <- parTableToSyntax(strippedParTable)
-      if (verbose) cat("Estimating null model\n")
-      modsem_da(syntax, data, method, 
-                verbose = verbose, 
-                cov.syntax = cov.syntax, 
-                calc.se = calc.se, 
-                double = double,
-                standardize = standardize, 
-                standardize.out = standardize.out,
-                mean.observed = mean.observed, ...)
-    },
-    error = function(e) {
-      warning2(
-        "Null model could not be estimated. ",
-        "Error message: ", e$message
-      )
-      NULL
+    strippedParTable <- removeUnknownLabels(parTable[!grepl(":", parTable$rhs), ])
+    if (NROW(strippedParTable) == NROW(parTable)) {
+      return(NULL)
     }
-  )
+
+    syntax <- parTableToSyntax(strippedParTable)
+    if (verbose) cat("Estimating null model\n")
+    modsem_da(syntax, data = data, 
+              method = method, 
+              verbose = verbose, 
+              cov.syntax = cov.syntax, 
+              calc.se = calc.se, 
+              double = double,
+              standardize = standardize, 
+              standardize.out = standardize.out,
+              mean.observed = mean.observed, ...)
+  },
+  error = function(e) {
+    warning2(
+             "Null model could not be estimated. ",
+             "Error message: ", e$message
+    )
+    NULL
+  })
 }
 
 

@@ -144,7 +144,12 @@ createParTableBranch <- function(syntaxTree) {
                   rep(x, len),
                 len = length(rhs)) |> as.vector()
   op <- rep(getTokenString(syntaxTree$op), length(rhs))
-  data.frame(lhs = lhs, op = op, rhs = rhs, mod = mod)
+  parTable <- data.frame(lhs = lhs, op = op, rhs = rhs, mod = mod)
+
+  # post-processing
+  parTable[parTable$op == ":=", "mod"] <- parTable[parTable$op == ":=", "lhs"]
+
+  parTable
 }
 
 
@@ -185,7 +190,7 @@ parTableToSyntax <- function(parTable, removeColon = FALSE) {
     parTable$mod <- stringr::str_remove_all(parTable$mod, ":")
   }
   for (i in 1:nrow(parTable)) {
-    if (parTable[["mod"]][i] != "") {
+    if (parTable[["mod"]][[i]] != "" && parTable[["op"]][[i]] != ":=") {
       modifier <- paste0(parTable[["mod"]][[i]], "*")
     } else {
       modifier <- ""

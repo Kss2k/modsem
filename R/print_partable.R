@@ -55,6 +55,7 @@ printParTable <- function(parTable,
                           covariances = TRUE,
                           intercepts = TRUE,
                           variances = TRUE,
+                          custom = TRUE,
                           padWidth = 2, 
                           padWidthLhs = 2, 
                           spacing = 2) {
@@ -108,6 +109,15 @@ printParTable <- function(parTable,
   if (variances && NROW(parTableVariances) > 0) {
     cat("\nVariances:\n", formattedHeader)
     printParTableSingle(parTableVariances, padWidth = padWidth, padWidthLhs = padWidthLhs, 
+                        spacing = spacing)
+
+  }
+
+  # Custom parameters
+  parTableCustom <- fParTable[parTable$op == ":=", ]
+  if (custom && NROW(parTableCustom) > 0) {
+    cat("\nCustom Parameters:\n", formattedHeader)
+    printParTableSingle(parTableCustom, padWidth = padWidth, padWidthLhs = padWidthLhs, 
                         spacing = spacing)
 
   }

@@ -243,9 +243,8 @@ specifyModelDA <- function(syntax = NULL,
                 parTable      = parTable,
                 covModel      = covModel)
 
-
   model$constrExprs <- getConstrExprs(parTable, model$covModel$parTable)
- 
+
   if (createTheta) {
     listTheta         <- createTheta(model)
     model             <- c(model, listTheta)
@@ -449,7 +448,32 @@ mainModelToParTable <- function(finalModel, method = "lms") {
 }
 
 
-modelToParTable <- function(model, method = "lms") {
-  rbind(mainModelToParTable(model, method = method),
-        covModelToParTable(model, method = method))
+customParamsToParTable <- function(model, coefs, se) {
+  parTable <- model$parTable
+  custom   <- parTable[parTable$op == ":=", ]
+  if (!NROW(custom$lhs)) return(NULL)
+  parTable <- NULL
+  for (lhs in custom$lhs) {
+    newRow <- data.frame(lhs = lhs, op = ":=", rhs = "",
+                         label = lhs, est = coefs[[lhs]],
+                         std.error = se[[lhs]])
+    parTable <- rbind(parTable, newRow)
+  }
+  parTable
+}
+
+
+modelToParTable <- function(model, coefs = NULL, se = NULL, method = "lms") {
+  parTable <- rbind(mainModelToParTable(model, method = method),
+                    covModelToParTable(model, method = method))
+
+  if (!is.null(coefs) && !is.null(se)) {
+    parTable <- rbind(parTable, customParamsToParTable(model, coefs, se))
+    # this is ugly but should work
+    isLabelled <- parTable$label != ""
+    labels     <- parTable[isLabelled, "label"] 
+    parTable[isLabelled, "se"] <- se[labels]
+  }
+
+  parTable
 }

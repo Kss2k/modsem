@@ -38,10 +38,10 @@ fillMatricesLabels <- function(matrices, labelMatrices, thetaLabel,
   if (is.null(thetaLabel)) return(matrices)
   labels <- names(thetaLabel)
   purrr::map2(.x = matrices, .y = labelMatrices, .f = function(M, L) {
-                lapply(labels, FUN = function(label) {
-                         M[L == label] <<- thetaLabel[[label]]
-                })
-                M
+    lapply(labels, FUN = function(label) {
+      M[L == label] <<- thetaLabel[[label]]
+    })
+    M
   })
 }
 
@@ -62,10 +62,10 @@ getConstrExprs <- function(parTable, parTableCov) {
 
 
 sortConstrExprs <- function(parTable) {
-  rows <- parTable[parTable$op %in% c("==", ">", "<"), ]
+  rows <- parTable[parTable$op %in% c("==", ">", "<", ":="), ]
   if (NROW(rows) == 0) return(NULL)
 
-  labelled <- unique(parTable$mod[parTable$mod != ""]) 
+  labelled <- unique(parTable$mod[parTable$mod != ""])
 
   if (!all(rows$lhs %in% labelled)) {
     stop2("Unknown labels in constraints: ", rows$lhs[!rows$lhs %in% labelled])
@@ -116,5 +116,46 @@ getVarsExpr <- function(expr) {
 
 
 removeConstraintExpressions <- function(parTable) {
-  parTable[!parTable$op %in% c("==", "<", ">"), ]
+  parTable[!parTable$op %in% c("==", "<", ">", ":="), ]
+}
+
+
+getVCOV_LabelledParams <- function(vcov, model, theta, method, epsilon = 1e-8) {
+  J <- getJacobianLabelledParams(model = model, theta = theta, epsilon = epsilon,
+                                 method = method)
+  if (is.null(J)) return(vcov)
+  J %*% vcov %*% t(J)
+}
+
+
+getJacobianLabelledParams <- function(model, theta, method, epsilon = 1e-8) {
+  constrExprs <- model$constrExprs
+  if (!length(constrExprs)) return(NULL)
+
+  g <- getTransformationsTheta(model, theta = theta, method = method)
+  J <- matrix(0, nrow = length(g), ncol = length(theta),
+              dimnames = list(names(g), names(theta)))
+
+  for (i in seq_along(theta)) {
+    theta_i      <- theta
+    theta_i[[i]] <- theta[[i]] + epsilon
+    g_i <- getTransformationsTheta(model, theta = theta_i, method = method)
+
+    J[, i] <- (g_i - g) / epsilon
+  }
+
+  J
+}
+
+
+getTransformationsTheta <- function(model, theta, method) {
+  theta <- calcPhiTheta(theta = theta, model = model, method = method)
+  if (!model$totalLenThetaLabel) return(theta)
+  if (model$lenThetaLabel) {
+    thetaLabel <- theta[seq_len(model$lenThetaLabel)]
+    theta <- theta[-seq_len(model$lenThetaLabel)]
+  } else thetaLabel <- NULL
+
+  thetaLabel <- calcThetaLabel(thetaLabel, model$constrExprs)
+  c(thetaLabel, theta)
 }

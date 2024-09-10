@@ -83,9 +83,11 @@ emLms <- function(model,
                     epsilon = epsilon, optimizer = optimizer,
                     verbose = verbose, control = control, ...)
     
-  coefficients <- final$par
-  finalModel   <- fillModel(model, coefficients, fillPhi = TRUE,
-                            method = "lms")
+  coefficients    <- final$par
+  allCoefficients <- getTransformationsTheta(model = model, theta = coefficients,
+                                             method = "lms")
+  finalModel      <- fillModel(model, coefficients, fillPhi = TRUE, method = "lms")
+  info            <- model$info
 
   emptyModel <- getEmptyModel(parTable = model$parTable, 
                               cov.syntax = model$cov.syntax,
@@ -103,15 +105,16 @@ emLms <- function(model,
                     EFIM.parametric = EFIM.parametric, verbose = verbose,
                     FIM = FIM, robust.se = robust.se, epsilon = epsilon,
                     NA__ = -999)
-  SE <- calcSE_da(calc.se = calc.se, vcov = FIM$vcov, 
-                  theta = coefficients, NA__ = -999)
+  SE <- calcSE_da(calc.se = calc.se, FIM$vcov, rawLabels = FIM$raw.labels, 
+                  NA__ = -999)
+  modelSE <- getSE_Model(model, se = SE, method = "lms",
+                         n.additions = FIM$n.additions)
 
-  modelSE <- fillModel(replaceNonNaModelMatrices(model, value = -999), 
-                       theta = SE, method = "lms")
   finalModel$matricesSE <- modelSE$matrices
   finalModel$covModelSE <- modelSE$covModel
 
-  parTable <- modelToParTable(finalModel, method = "lms")
+  parTable <- modelToParTable(finalModel, coefs = allCoefficients,
+                              se = SE, method = "lms")
 
   parTable$z.value  <- parTable$est / parTable$std.error
   parTable$p.value  <- 2 * stats::pnorm(-abs(parTable$z.value))
@@ -138,9 +141,8 @@ emLms <- function(model,
 
               type.estimates = "unstandardized",
 
-              FIM  = FIM$FIM,
-              vcov = FIM$vcov,
-
+              FIM         = FIM$FIM,
+              vcov        = FIM$vcov,
               information = FIM$type)
 
   out

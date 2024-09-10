@@ -18,7 +18,7 @@ createLavLabels <- function(matrices, subset, etas) {
   tauX         <- createLabelsMatrix(matrices$tauX, op = "~", first = "rows")
   tauY         <- createLabelsMatrix(matrices$tauY, op = "~", first = "rows")
   alpha        <- createLabelsMatrix(matrices$alpha, op = "~", first = "rows")
-  beta0        <- createLabelsMatrix(matrices$beta0, op = "~")
+  beta0        <- createLabelsMatrix(matrices$beta0, op = "~", first = "rows")
   gammaXi      <- createLabelsMatrix(matrices$gammaXi, op = "~", first = "rows")
   gammaEta     <- createLabelsMatrix(matrices$gammaEta, op = "~", first = "rows")
   omegaXiXi    <- createLabelsOmega(matrices$omegaXiXi)

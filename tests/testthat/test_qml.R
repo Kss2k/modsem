@@ -22,9 +22,10 @@ tpb <- '
   BEH =~ b1 + b2
 
 # Inner Model (Based on Steinmetz et al., 2011)
-  BEH ~ INT + PBC 
-  INT ~ ATT + SN + PBC
+  BEH ~ b * INT + PBC 
+  INT ~ ATT + SN + a * PBC
   BEH ~ PBC:INT
+  c := a * b
 '
 
 est2 <- modsem(tpb, data = TPB, method = "qml", 

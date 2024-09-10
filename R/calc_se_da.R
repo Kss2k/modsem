@@ -13,7 +13,8 @@ calcFIM_da <- function(model,
                        EFIM.S = 3e4, 
                        epsilon = 1e-8,
                        verbose = FALSE) {
-  if (!calc.se) return(list(FIM = NULL, vcov = NULL, type = "none"))
+  if (!calc.se) return(list(FIM = NULL, vcov = NULL, type = "none",
+                            raw.labels = names(theta), n.additions = 0))
   if (verbose) cat("Calculating standard errors\n")
   
   I <- switch(method, 
@@ -49,11 +50,20 @@ calcFIM_da <- function(model,
     vcov <- solveFIM(I, NA__ = NA__)
   }
 
-  lavLabels <- model$lavLabels
-  dimnames(I) <- dimnames(vcov) <- list(lavLabels, lavLabels)
+  vcov.all <- getVCOV_LabelledParams(vcov = vcov, model = model, theta = theta,
+                                     method = method)
+ 
+  nAdditions   <- ncol(vcov.all) - ncol(vcov)
+  lavLabels    <- model$lavLabels
+  subLavLabels <- lavLabels[colnames(vcov.all) %in% names(theta)]
+  rawLabels    <- colnames(vcov.all)
+  dimnames(vcov.all) <- list(lavLabels, lavLabels)
+  dimnames(I) <- dimnames(vcov) <- list(subLavLabels, subLavLabels)
 
-  list(FIM = I, vcov = vcov, type = FIM)
+  list(FIM = I, vcov = vcov.all, vcov.sub = vcov, type = FIM,
+       raw.labels = rawLabels, n.additions = nAdditions)
 }
+
 
 calcHessian <- function(model, theta, data, method = "lms", 
                         epsilon = 1e-8) {
@@ -86,12 +96,12 @@ solveFIM <- function(H, NA__ = -999) {
 }
 
 
-calcSE_da <- function(calc.se = TRUE, vcov, theta, NA__ = -999) {
-  if (!calc.se) return(rep(NA__, length(theta)))
+calcSE_da <- function(calc.se = TRUE, vcov, rawLabels, NA__ = -999) {
+  if (!calc.se) return(rep(NA__, length(rawLabels)))
   if (is.null(vcov)) {
     warning2("Fisher Information Matrix (FIM) was not calculated, ",
              "unable to compute standard errors")
-    return(rep(NA__, length(theta)))
+    return(rep(NA__, length(rawLabels)))
   }
 
   se <- suppressWarnings(sqrt(diag(vcov)))
@@ -101,7 +111,7 @@ calcSE_da <- function(calc.se = TRUE, vcov, theta, NA__ = -999) {
   if (any(is.nan(se))) 
     warning2("SE's for some coefficients could not be computed.") 
 
-  if (!is.null(names(se))) names(se) <- names(theta)
+  if (!is.null(names(se))) names(se) <- rawLabels
   se[is.na(se)] <- NA__
   se
 }
@@ -200,4 +210,11 @@ calcEFIM_QML <- function(model, finalModel = NULL, theta, data, S = 3e4,
   for (i in seq_len(S)) I <- I + J[i, ] %*% t(J[i, ])
 
   I / (S / N)
+}
+
+
+getSE_Model <- function(model, se, method, n.additions) {
+  model$lenThetaLabel <- model$lenThetaLabel + n.additions
+  fillModel(replaceNonNaModelMatrices(model, value = -999),
+            theta = se, method = method)
 }

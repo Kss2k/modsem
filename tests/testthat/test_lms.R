@@ -66,7 +66,7 @@ testthat::expect_warning({
   }, regexp = "It is recommended .* between endogenous variables .*")
 duration2 <- Sys.time() - startTime2
 plot_interaction(x = "INT", z = "PBC", y = "BEH", vals_z = c(-0.5, 0.5), model = est2)
-print(summary(est2, H0 = FALSE))
+print(summary(est2))
 var_interactions(est2)
 standardized_estimates(est2)
 vcov(est2) 

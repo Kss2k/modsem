@@ -184,10 +184,10 @@ replaceNonNaModelMatrices <- function(model, value = -999) {
 
 
 removeUnknownLabels <- function(parTable) {
-  fixedParams <- unique(parTable[parTable$op %in% c("==", ">", "<"), ]$lhs)
-  parTable[!parTable$lhs %in% fixedParams &
-           !parTable$op %in% c("==", ">", "<") &
-           !parTable$lhs %in% parTable$mod, ]
+  ops <- c("==", ">", "<", ":=")
+  parTable[!parTable$op %in% ops |
+           (parTable$op %in% ops &
+            parTable$lhs %in% parTable$mod) , ]
 }
 
 
@@ -195,12 +195,25 @@ getLabeledParamsLavaan <- function(parTable, fixedParams = NULL) {
   if (is.null(parTable$label)) return(NULL)
   labelRows <- parTable[parTable$label != "" &
                         !parTable$label %in% fixedParams,
-                        c("est", "label"), drop = FALSE] |> 
-    lapply(unique)
-
+                        c("est", "label"), drop = FALSE] |>
+    uniqueByVar("label")
+  
   theta <- as.numeric(labelRows$est)
   names(theta) <- labelRows$label
   theta
+}
+
+
+uniqueByVar <- function(df, var) {
+  vals <- unique(df[[var]])
+  udf  <- NULL
+
+  for (v in vals) {
+    match <- df[df[[var]] == v, , drop = FALSE][1, , drop = FALSE]
+    udf <- rbind(udf, match)
+  }
+
+  udf
 }
 
 

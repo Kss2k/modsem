@@ -1,10 +1,10 @@
 optimizeStartingParamsDA <- function(model) {
-  etas <- model$info$etas
+  etas     <- model$info$etas
   indsEtas <- model$info$allIndsEtas
-  xis <- model$info$xis
-  numXis <- model$info$numXis
-  indsXis <- model$info$allIndsXis
-  data <- model$data
+  xis      <- model$info$xis
+  numXis   <- model$info$numXis
+  indsXis  <- model$info$allIndsXis
+  data     <- model$data
 
   syntax <- paste(model$syntax, model$covModel$syntax, 
                   model$info$lavOptimizerSyntaxAdditions,
@@ -80,7 +80,7 @@ optimizeStartingParamsDA <- function(model) {
   } else thetaCov <- NULL
   
   # labelTheta 
-  thetaLabel <- getLabeledParamsLavaan(parTable, model$constrExprs$fixedParams)  
+  thetaLabel <- getLabeledParamsLavaan(parTable, model$constrExprs$fixedParams)
 
   # Combinging the two
   theta <- c(thetaLabel, thetaCov, thetaMain)
