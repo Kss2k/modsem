@@ -25,7 +25,7 @@ tpb <- '
   BEH ~ b * INT + PBC 
   INT ~ ATT + SN + a * PBC
   BEH ~ PBC:INT
-  c := a * b
+  VERY_LONG_LABEL_THAT_SHOULD_BE_SHORTENED := a * b
 '
 
 est2 <- modsem(tpb, data = TPB, method = "qml", 
