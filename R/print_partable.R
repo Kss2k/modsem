@@ -115,14 +115,15 @@ printParTable <- function(parTable,
 
   }
 
-  # Custom parameters
+  # Defined parameters
   parTableCustom <- fParTable[parTable$op == ":=", ]
   if (custom && NROW(parTableCustom) > 0) {
-    cat("\nCustom Parameters:\n", formattedHeader)
+    cat("\nDefined Parameters:\n", formattedHeader)
     printParTableSingle(parTableCustom, padWidth = padWidth, padWidthLhs = padWidthLhs, 
                         spacing = spacing)
 
   }
+  cat("\n")
 }
 
 
