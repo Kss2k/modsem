@@ -47,10 +47,11 @@ tpb <- "
   BEH ~ 0.2 * INT + a * PBC
   BEH ~ PBC:INT
   gamma_int_att == a
-  p1 == 1 
+  p1 == 1 + 0.1
   a2 == 1
   s1 == 1 
   i1 == 1
+  my_custom_parameter := a * 2
 "
 
 covModel <- '

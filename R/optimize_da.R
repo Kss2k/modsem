@@ -12,10 +12,12 @@ optimizeStartingParamsDA <- function(model) {
   parTable <- modsem_pi(syntax, data, method = "dblcent", 
                         meanstructure = TRUE,
                         suppress.warnings.lavaan = TRUE)$coefParTable
-
+  if (is.null(parTable)) {
+    modsem_pi(syntax, data, method = "dblcent", meanstructure = TRUE)
+    stop2("lavaan failed")
+  }
   # Main Model
   matricesMain <- model$matrices
-
   LambdaX <- findEstimatesParTable(matricesMain$lambdaX, parTable, op = "=~", 
                                    rows_lhs = FALSE)
   LambdaY <- findEstimatesParTable(matricesMain$lambdaY, parTable, op = "=~",

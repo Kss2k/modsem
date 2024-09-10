@@ -204,7 +204,6 @@ modsem_pi <- function(model.syntax = NULL,
     lavEst <- tryCatch(lavaan::sem(newSyntax, newData, estimator = estimator, 
                                    group = group, ...) |> lavWrapper(),
                        error = function(cnd) {
-                         warning2("Error in Lavaan: \n")
                          warning2(capturePrint(cnd))
                          NULL
                        })
