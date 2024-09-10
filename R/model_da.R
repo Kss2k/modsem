@@ -231,7 +231,7 @@ specifyModelDA <- function(syntax = NULL,
                      varsInts    = varsInts,
                      latentEtas  = latentEtas,
                      scalingInds = scalingInds,
-                     kOmegaEta   = getK_NA(omegaEtaXi),
+                     kOmegaEta   = getK_NA(omegaEtaXi, labelOmegaEtaXi),
 
                      lavOptimizerSyntaxAdditions = lavOptimizerSyntaxAdditions),
 
@@ -467,7 +467,7 @@ modelToParTable <- function(model, coefs = NULL, se = NULL, method = "lms") {
   parTable <- rbind(mainModelToParTable(model, method = method),
                     covModelToParTable(model, method = method))
 
-  if (!is.null(coefs) && !is.null(se)) {
+  if (!is.null(coefs) && !is.null(se) && !is.null(names(se))) {
     parTable <- rbind(parTable, customParamsToParTable(model, coefs, se))
     # this is ugly but should work
     isLabelled <- parTable$label != ""

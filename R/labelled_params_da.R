@@ -159,3 +159,12 @@ getTransformationsTheta <- function(model, theta, method) {
   thetaLabel <- calcThetaLabel(thetaLabel, model$constrExprs)
   c(thetaLabel, theta)
 }
+
+
+constraintsContainUnmatchedLabels <- function(parTable, labels) {
+  vapply(seq_len(NROW(parTable)), FUN.VALUE = logical(1L), FUN = function(i) {
+    if (!parTable[i, "op"] %in% c("==", "<", ">", ":=")) return(FALSE)
+    x <- getVarsExpr(parTable[i, "rhs"])
+    !all(x %in% labels) 
+  })
+}

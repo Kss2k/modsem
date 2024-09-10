@@ -12,12 +12,14 @@ formatParTable <- function(parTable, digits = 3, scientific = FALSE,
     parTable$rhs != "1" & parTable$lhs != parTable$rhs
   parTable$lhs[isStructOrMeasure] <- 
     paste(parTable$lhs[isStructOrMeasure], parTable$op[isStructOrMeasure])
+  isLabel  <- parTable$op == ":="
+  parTable[isLabel, "label"] <- ""
 
 
   isResVar <- parTable$op == "~~" & parTable$lhs == parTable$rhs
-  parTable$lhs[parTable$rhs == "1" | isResVar] <- 
-    pasteLabels(parTable$lhs[parTable$rhs == "1" | isResVar], 
-                parTable$label[parTable$rhs == "1" | isResVar], 
+  parTable$lhs[parTable$rhs == "1" | isResVar | isLabel] <- 
+    pasteLabels(parTable$lhs[parTable$rhs == "1" | isResVar | isLabel], 
+                parTable$label[parTable$rhs == "1" | isResVar | isLabel], 
                 width = width)
   parTable$rhs[parTable$rhs != "1"] <- 
     pasteLabels(parTable$rhs[parTable$rhs != "1"], 
@@ -128,7 +130,6 @@ printParTableDouble <- function(parTable, padWidth = 2, padWidthLhs = 2,
                                 spacing = 2) {
   lhs <- unique(parTable$lhs)
   pad <- stringr::str_dup(" ", padWidth) 
-
   for (l in lhs) {
     cat(paste0(pad, l), "\n")
     printRowsParTable(lhs = parTable[parTable$lhs == l, "rhs", drop = FALSE],

@@ -13,7 +13,7 @@ calcFIM_da <- function(model,
                        EFIM.S = 3e4, 
                        epsilon = 1e-8,
                        verbose = FALSE) {
-  if (!calc.se) return(list(FIM = NULL, vcov = NULL, type = "none",
+  if (!calc.se) return(list(FIM = NULL, vcov = NULL, vcov.sub = NULL, type = "none",
                             raw.labels = names(theta), n.additions = 0))
   if (verbose) cat("Calculating standard errors\n")
   
@@ -169,6 +169,7 @@ calcEFIM_LMS <- function(model, finalModel = NULL, theta, data, S = 3e4,
 calcOFIM_QML <- function(model, theta, data, hessian = FALSE, 
                          epsilon = 1e-8) {
   N <- nrow(model$data)
+
   if (hessian) {
     # negative hessian (sign = -1)
     I <- nlme::fdHess(pars = theta, fun = logLikQml, model = model, 

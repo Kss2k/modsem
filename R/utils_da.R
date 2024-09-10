@@ -68,8 +68,10 @@ whichIsMax <- function(x) {
 }
 
 
-getK_NA <- function(omegaEta) {
-  sum(apply(omegaEta, 1, function(x) any(is.na(x))))
+getK_NA <- function(omega, labelOmega) {
+  na    <- apply(omega, MARGIN = 1, FUN = function(x) any(is.na(x)))
+  label <- apply(labelOmega, MARGIN = 1, FUN = function(x) any(x != ""))
+  sum(na | label)
 }
 
 
@@ -184,10 +186,12 @@ replaceNonNaModelMatrices <- function(model, value = -999) {
 
 
 removeUnknownLabels <- function(parTable) {
-  ops <- c("==", ">", "<", ":=")
+  ops    <- c("==", ">", "<", ":=")
+  labels <- unique(parTable$mod[parTable$mod != ""])
   parTable[!parTable$op %in% ops |
            (parTable$op %in% ops &
-            parTable$lhs %in% parTable$mod) , ]
+            parTable$lhs %in% parTable$mod &
+            !constraintsContainUnmatchedLabels(parTable, labels)), ]
 }
 
 
