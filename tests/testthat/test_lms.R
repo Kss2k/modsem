@@ -42,6 +42,9 @@ tpb <- "
   BEH =~ b1 + b2
 
 # Inner Model (Based on Steinmetz et al., 2011)
+  # Covariances
+  LATENT_VAR_ATT ~~ SN + PBC
+  PBC ~~ SN 
   # Causal Relationsships
   INT ~ gamma_int_att * LATENT_VAR_ATT + b * SN + b * PBC
   BEH ~ 0.2 * INT + a * PBC

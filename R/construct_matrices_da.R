@@ -76,6 +76,12 @@ setValSymmetric <- function(X, rhs, lhs, val) {
 }
 
 
+getEmptyPhi <- function(phi) {
+  labelPhi <- as.character.matrix(phi, empty = TRUE)
+  list(numeric = phi, label = labelPhi)
+}
+
+
 constructLambda <- function(lVs, indsLVs, parTable, auto.constraints = TRUE) {
   numLVs        <- length(lVs) 
   indsLVs       <- indsLVs[lVs] # make sure it is sorted
@@ -184,10 +190,10 @@ constructPhi <- function(xis, method = "lms", cov.syntax = NULL,
                    dimnames = list(xis, xis))
   if (method != "lms" && is.null(cov.syntax)) {
     phi[lower.tri(phi, diag = TRUE)] <- NA
-  }
-  setMatrixConstraints(X = phi, parTable = parTable, op = "~~", 
-                       RHS = xis, LHS = xis, type = "symmetric",
-                       nonFreeParams = FALSE)
+    setMatrixConstraints(X = phi, parTable = parTable, op = "~~", 
+                         RHS = xis, LHS = xis, type = "symmetric",
+                         nonFreeParams = FALSE)
+  } else getEmptyPhi(phi = phi)
 }
 
 
@@ -198,11 +204,10 @@ constructA <- function(xis, method = "lms", cov.syntax = NULL,
                    dimnames = list(xis, xis))
   if (method == "lms" && is.null(cov.syntax)) {
     A[lower.tri(A, diag = TRUE)] <- NA
-  }
-
-  setMatrixConstraints(X = A, parTable = parTable, op = "~~", 
-                       RHS = xis, LHS = xis, type = "symmetric",
-                       nonFreeParams = FALSE)
+    setMatrixConstraints(X = A, parTable = parTable, op = "~~", 
+                         RHS = xis, LHS = xis, type = "symmetric",
+                         nonFreeParams = FALSE)
+  } else getEmptyPhi(phi = A)
 }
 
 

@@ -54,10 +54,9 @@ estQml <- function(model,
   parTable$ci.lower <- parTable$est - 1.96 * parTable$std.error
   parTable$ci.upper <- parTable$est + 1.96 * parTable$std.error
   
-  if (final$iterations >= max.iter) {
-      warning2("Maximum number of iterations was reached, ",
-               "model estimation might not have converged.")
-  }
+  warnif(final$iterations >= max.iter,
+         "Maximum number of iterations was reached, ",
+         "model estimation might not have converged.")
 
   out <- list(model     = finalModel, 
               method    = "qml",

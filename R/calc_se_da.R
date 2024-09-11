@@ -39,8 +39,9 @@ calcFIM_da <- function(model,
 
 
   if (robust.se) {
-    if (hessian && FIM == "observed")
-      warning("'robust.se = TRUE' should not be paired with 'EFIM.hessian = TRUE' && 'FIM = \"observed\"'")
+    warnif(hessian && FIM == "observed", 
+           "'robust.se = TRUE' should not be paired with ",
+           "'EFIM.hessian = TRUE' && 'FIM = \"observed\"'")
     H <- calcHessian(model, theta = theta, data = data, method = method, 
                      epsilon = epsilon)
     invH <- solveFIM(H, NA__ = NA__)
@@ -106,10 +107,11 @@ calcSE_da <- function(calc.se = TRUE, vcov, rawLabels, NA__ = -999) {
 
   se <- suppressWarnings(sqrt(diag(vcov)))
 
-  if (all(is.na(se))) 
+  if (all(is.na(se))) {
     warning2("SE's could not be computed, negative Hessian is singular.")
-  if (any(is.nan(se))) 
+  } else if (any(is.nan(se))) {
     warning2("SE's for some coefficients could not be computed.") 
+  }
 
   if (!is.null(names(se))) names(se) <- rawLabels
   se[is.na(se)] <- NA__

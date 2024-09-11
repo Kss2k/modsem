@@ -21,6 +21,9 @@ tpb <- '
   INT =~ int1 + int2 + int3
   BEH =~ b1 + b2
 
+  # Covariances
+  ATT ~~ SN + PBC
+  PBC ~~ SN 
 # Inner Model (Based on Steinmetz et al., 2011)
   BEH ~ b * INT + PBC 
   INT ~ ATT + SN + a * PBC
