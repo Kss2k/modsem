@@ -28,7 +28,7 @@ calcCovParTable <- function(x, y, parTable, measurement.model = FALSE) {
 
 
 reverseIntTerm <- function(xz) {
-  if (length(xz) > 1) stop2("xz must be a single string")
+  stopif(length(xz) > 1, "xz must be a single string")
   stringr::str_c(rev(stringr::str_split_1(xz, ":")), collapse = ":")
 }
 
@@ -39,24 +39,25 @@ getEtas <- function(parTable, isLV = FALSE, checkAny = TRUE) {
     lVs <- unique(parTable[parTable$op == "=~", "lhs"])
     cond <- cond & parTable$lhs %in% lVs
   }
+
   etas <- unique(parTable[cond, "lhs"])
-  if (checkAny && length(etas) == 0) stop2("No etas found")
+  stopif(checkAny && !length(etas), "No etas found")
   etas
 }
 
 
 getSortedEtas <- function(parTable, isLV = FALSE, checkAny = TRUE) {
-  structExprs <- parTable[parTable$op == "~" & parTable$rhs != "1", ]
+  structExprs  <- parTable[parTable$op == "~" & parTable$rhs != "1", ]
   unsortedEtas <- getEtas(parTable, isLV = isLV, checkAny = checkAny)
-  sortedEtas <- c()
+  sortedEtas   <- character(0L)
+
   while (length(sortedEtas) < length(unsortedEtas) && nrow(structExprs) > 0) {
-    if (all(unique(structExprs$lhs) %in% structExprs$rhs)) {
-      stop2("Model is non-recursive")
-    }
+    stopif(all(unique(structExprs$lhs) %in% structExprs$rhs), "Model is non-recursive")
+
     for (i in seq_len(nrow(structExprs))) {
-      eta <- structExprs[i, "lhs"]
-      if (eta %in% structExprs$rhs) next
-      sortedEtas <- c(eta, sortedEtas)
+      if ((eta <- structExprs[i, "lhs"]) %in% structExprs$rhs) next
+
+      sortedEtas  <- c(eta, sortedEtas)
       structExprs <- structExprs[!grepl(eta, structExprs$lhs), ]
       break 
     }
@@ -67,6 +68,7 @@ getSortedEtas <- function(parTable, isLV = FALSE, checkAny = TRUE) {
       warning("unable to sort etas")
       return(unsortedEtas)
   }
+
   sortedEtas
 }
 
@@ -76,11 +78,12 @@ getXis <- function(parTable, etas = NULL, isLV = TRUE, checkAny = TRUE) {
   if (!isLV) {
     xis <- unique(parTable[parTable$rhs != "1" &
                   parTable$lhs %in% etas, "rhs"])
-    return(xis)
-  } 
-  xis <- unique(parTable[parTable$op == "=~" &
-                !parTable$lhs %in% etas, "lhs"])
-  if (checkAny && length(xis) == 0) stop2("No xis found")
+  } else {
+    xis <- unique(parTable[parTable$op == "=~" &
+                  !parTable$lhs %in% etas, "lhs"])
+  }
+  
+  stopif(checkAny && !length(xis), "No xis found")
   xis
 }
 
@@ -92,10 +95,12 @@ getLVs <- function(parTable) {
 
 getOVs <- function(parTable = NULL, model.syntax = NULL) {
   if (!is.null(model.syntax)) parTable <- modsemify(model.syntax)
-  if (is.null(parTable)) stop2("Missing parTable")
-  lVs <- getLVs(parTable)   
+  stopif(is.null(parTable), "Missing parTable")
+
+  lVs    <- getLVs(parTable)   
   select <- parTable$op %in% c("=~", "~", "~~") & parTable$rhs != "1"
-  vars <- unique(c(parTable$lhs[select], parTable$rhs[select]))
+  vars   <- unique(c(parTable$lhs[select], parTable$rhs[select]))
+
   vars[!vars %in% lVs]
 }
 
@@ -103,7 +108,7 @@ getOVs <- function(parTable = NULL, model.syntax = NULL) {
 getIndsLVs <- function(parTable, lVs) {
   measrExprs <- parTable[parTable$op == "=~" & 
                          parTable$lhs %in% lVs, ]
-  if (NROW(measrExprs) == 0) stop2("No measurement expressions found, for", lVs)
+  stopif(!NROW(measrExprs), "No measurement expressions found, for", lVs)
   lapplyNamed(lVs, FUN = function(lV) measrExprs[measrExprs$lhs == lV, "rhs"],
               names = lVs)
 }
@@ -150,9 +155,8 @@ fillColsParTable <- function(parTable) {
 #  function for getting unique combinations of two values in x
 getUniqueCombos <- function(x, match = FALSE) {
   # Base case, x is 1 length long and there are no unique combos
-  if (length(x) <= 1) {
-    return(NULL)
-  }
+  if (length(x) <= 1) return(NULL)
+
   rest <- getUniqueCombos(x[-1], match = FALSE)
   combos <- data.frame(V1 = rep(x[[1]], length(x) - 1),
                        V2 = x[-1])
@@ -214,7 +218,7 @@ getIntercepts <- function(x, parTable) {
 
 
 getMean <- function(x, parTable) {
-  if (length(x) > 1) stop2("x must be a single string")
+  stopif(length(x) > 1, "x must be a single string")
 
   meanY <- getIntercept(x, parTable = parTable)
   gamma <- parTable[parTable$lhs == x & parTable$op == "~" & 

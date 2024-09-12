@@ -282,8 +282,8 @@ checkNodesLms <- function(parTable,
 
 
 removeInteractionVariances <- function(parTable) {
-  parTable[!(parTable$op == "~~" & grepl(":", parTable$lhs) & 
-             grepl(":", parTable$rhs) & parTable$rhs == parTable$lhs), ]
+  parTable[!(parTable$op == "~~" & 
+             (grepl(":", parTable$lhs) | grepl(":", parTable$rhs))), ]
 }
 
 

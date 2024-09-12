@@ -21,29 +21,33 @@ var_interactions <- function(object, ...) {
 
 #' @export
 var_interactions.data.frame <- function(object, ...) {
-  parTable <- fillColsParTable(object)
+  parTable <- removeInteractionVariances(fillColsParTable(object))
   intTermVarRows <- parTable$lhs == parTable$rhs &
     grepl(":", parTable$lhs) & parTable$op == "~~"
-  parTable <- parTable[!intTermVarRows, ]
+  intTermCovRows <- parTable$lhs != parTable$lhs & parTable$op == "~~" &
+    (grepl(":", parTable$lhs) | grepl(":", parTable$rhs)) 
+  parTable <- parTable[!(intTermVarRows | intTermCovRows), ]
 
   intTerms <- unique(parTable[grepl(":", parTable$rhs) & 
                      parTable$op == "~", "rhs"])
 
   for (i in seq_len(length(intTerms))) {
-    # interaction term = XY
-    XY <- stringr::str_split_fixed(intTerms[[i]], ":", 2) 
-    muX <- getMean(XY[[1]], parTable)
-    muY <- getMean(XY[[2]], parTable)
-    varX <- calcCovParTable(XY[[1]], XY[[1]], parTable)
-    varY <- calcCovParTable(XY[[2]], XY[[2]], parTable)
-    covXY <- calcCovParTable(XY[[1]], XY[[2]], parTable)
-    varXZ <- muX ^ 2 * muY ^ 2 + varX * muY ^ 2 + varY * muX ^ 2 +
-      2 * muX * muY * covXY + varX * varY + covXY ^ 2
-    newRow <- data.frame(lhs = intTerms[[i]],
-                         op = "~~",
-                         rhs = intTerms[[i]],
+    # interaction term = XZ
+    XZ    <- stringr::str_split_fixed(intTerms[[i]], ":", 2) 
+    muX   <- getMean(XZ[[1]], parTable)
+    muZ   <- getMean(XZ[[2]], parTable)
+    varX  <- calcCovParTable(XZ[[1]], XZ[[1]], parTable)
+    varZ  <- calcCovParTable(XZ[[2]], XZ[[2]], parTable)
+    covXZ <- calcCovParTable(XZ[[1]], XZ[[2]], parTable)
+    varXZ <- muX ^ 2 * muZ ^ 2 + varX * muZ ^ 2 + varZ * muX ^ 2 +
+      2 * muX * muZ * covXZ + varX * varZ + covXZ ^ 2
+    covX_XZ <- varX * muZ + muX * covXZ
+    covZ_XZ <- varZ * muX + muZ * covXZ
+    newRow <- data.frame(lhs = c(intTerms[[i]], XZ[[1]], XZ[[2]]),
+                         op = rep("~~", 3),
+                         rhs = rep(intTerms[[i]], 3),
                          label = "",
-                         est = varXZ,
+                         est = c(varXZ, covX_XZ, covZ_XZ),
                          std.error = NA, z.value = NA, p.value = NA,
                          ci.lower = NA, ci.upper = NA)
     parTable <- rbind(parTable, newRow)
@@ -192,8 +196,8 @@ standardized_estimates.data.frame <- function(object, intercepts = FALSE, ...) {
     parTable[selectRows, selectCols] <- gamma / sqrt(varXZ)
   }
   
-  parTable$z.value <- parTable$est / parTable$std.error
-  parTable$p.value <- 2 * stats::pnorm(-abs(parTable$z.value))
+  parTable$z.value  <- parTable$est / parTable$std.error
+  parTable$p.value  <- 2 * stats::pnorm(-abs(parTable$z.value))
   parTable$ci.lower <- parTable$est - 1.96 * parTable$std.error
   parTable$ci.upper <- parTable$est + 1.96 * parTable$std.error
 
