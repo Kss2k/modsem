@@ -71,43 +71,44 @@ summary.modsem_da <- function(object,
   
   args <- object$args
   out <- list(
-    parTable = parTable,
-    data = object$data,
-    iterations = object$iterations,
-    logLik = object$logLik,
-    fit = fit_modsem_da(object, chisq = FALSE),
-    D = NULL,
-    N = NROW(object$data),
-    method = method,
-    optimizer = object$optimizer,
-    quad = object$info.quad,
-    type.se = object$type.se, 
+    parTable       = parTable,
+    data           = object$data,
+    iterations     = object$iterations,
+    logLik         = object$logLik,
+    fit            = fit_modsem_da(object, chisq = FALSE),
+    D              = NULL,
+    N              = NROW(object$data),
+    method         = method,
+    optimizer      = object$optimizer,
+    quad           = object$info.quad,
+    type.se        = object$type.se, 
     type.estimates = ifelse(standardized, "standardized", object$type.estimates),
-    information = object$information
+    information    = object$information
   )
 
   if (H0) {
-    estH0 <- estimateNullModel(object$originalParTable,
-      data = out$data,
-      method = method,
-      cov.syntax = object$model$covModel$syntax,
-      verbose = verbose,
-      calc.se = FALSE,
-      double = args$double,
-      standardize = args$standardize,
-      standardize.out = args$standardize.out,
-      mean.observed = args$mean.observed
+    estH0 <- estimateNullModel(
+        object$originalParTable,
+        data            = out$data,
+        method          = method,
+        cov.syntax      = object$model$covModel$syntax,
+        verbose         = verbose,
+        calc.se         = FALSE,
+        double          = args$double,
+        standardize     = args$standardize,
+        standardize.out = args$standardize.out,
+        mean.observed   = args$mean.observed
     )
 
     out$nullModel <- estH0
     if (is.null(estH0)) {
       warning2("Comparative fit to H0 will not be calculated.")
-      H0 <- FALSE
-      out$D <- NULL 
+      H0        <- FALSE
+      out$D     <- NULL 
       out$fitH0 <- NULL
 
     } else {
-      out$D <- compare_fit(estH0, object)
+      out$D     <- compare_fit(estH0, object)
       out$fitH0 <- fit_modsem_da(estH0)
     }
   } else {
@@ -117,20 +118,18 @@ summary.modsem_da <- function(object,
   if (r.squared) {
     out$r.squared <- calcRsquared(parTable)
     if (H0) out$r.squared$H0 <- calcRsquared(estH0$parTable)
-  } else {
-    out$r.squared <- NULL
-  }
+  } else out$r.squared <- NULL
 
   out$format <- list(
-    digits = digits,
-    scientific = scientific,
+    digits        = digits,
+    scientific    = scientific,
     adjusted.stat = adjusted.stat,
-    ci = ci,
-    loadings = loadings,
-    regressions = regressions,
-    covariances = covariances,
-    intercepts = intercepts,
-    variances = variances
+    ci            = ci,
+    loadings      = loadings,
+    regressions   = regressions,
+    covariances   = covariances,
+    intercepts    = intercepts,
+    variances     = variances
   )
 
   class(out) <- "summary_da"
@@ -157,7 +156,7 @@ print.summary_da <- function(x, digits = 3, ...) {
               x$N, x$iterations, round(x$logLik, 2), round(x$fit$AIC, 2), 
               round(x$fit$BIC, 2))
   if (x$format$adjusted.stat) {
-    names <- c(names, "Corrected Akaike (AICc)", "Adjusted Bayesian (aBIC)")
+    names  <- c(names, "Corrected Akaike (AICc)", "Adjusted Bayesian (aBIC)")
     values <- c(values, round(x$fit$AICc, 2), round(x$fit$aBIC, 2))
   }
 
@@ -256,14 +255,14 @@ print.summary_da <- function(x, digits = 3, ...) {
                    width.out = width.out), "\n")
 
   printParTable(x$parTable,
-    scientific = x$format$scientific,
-    ci = x$format$ci,
-    digits = x$format$digits,
-    loadings = x$format$loadings,
-    regressions = x$format$regressions,
-    covariances = x$format$covariances,
-    intercepts = x$format$intercepts,
-    variances = x$format$variances)
+                scientific  = x$format$scientific,
+                ci          = x$format$ci,
+                digits      = x$format$digits,
+                loadings    = x$format$loadings,
+                regressions = x$format$regressions,
+                covariances = x$format$covariances,
+                intercepts  = x$format$intercepts,
+                variances   = x$format$variances)
 }
 
 
@@ -273,8 +272,8 @@ print.modsem_da <- function(x, digits = 3, ...) {
   parTable$p.value <- format.pval(parTable$p.value, digits = digits)
   names(parTable)  <- c("lhs", "op", "rhs", "label", "est", "std.error",
                         "z.value", "p.value", "ci.lower", "ci.upper")
-  est <- lapply(parTable, function(col) 
-    if (is.numeric(col)) round(col, digits) else col) |>
+  est <- lapply(parTable, FUN = function(col) 
+                if (is.numeric(col)) round(col, digits) else col) |>
     as.data.frame()
   print(est)
 }
@@ -293,9 +292,7 @@ estimateNullModel <- function(parTable,
                               ...) {
   tryCatch({
     strippedParTable <- removeUnknownLabels(parTable[!grepl(":", parTable$rhs), ])
-    if (NROW(strippedParTable) == NROW(parTable)) {
-      return(NULL)
-    }
+    if (NROW(strippedParTable) == NROW(parTable)) return(NULL)
 
     syntax <- parTableToSyntax(strippedParTable)
     if (verbose) cat("Estimating null model\n")
@@ -310,10 +307,8 @@ estimateNullModel <- function(parTable,
               mean.observed = mean.observed, ...)
   },
   error = function(e) {
-    warning2(
-             "Null model could not be estimated. ",
-             "Error message: ", e$message
-    )
+    warning2("Null model could not be estimated. ",
+             "Error message: ", e$message)
     NULL
   })
 }
@@ -374,23 +369,20 @@ compare_fit <- function(estH0, estH1) {
 
 calcRsquared <- function(parTable) {
   parTable <- var_interactions.data.frame(parTable)
-  etas <- unique(parTable$lhs[parTable$op == "~" &
-    parTable$rhs != "1"])
+  etas     <- unique(parTable$lhs[parTable$op == "~" & parTable$rhs != "1"])
 
   # Calculate Variances/R squared of Etas
   variances <- residuals <- Rsqr <- vector("numeric", length(etas))
   for (i in seq_along(etas)) {
     variances[[i]] <- calcCovParTable(etas[[i]], etas[[i]], parTable)
-    residuals[[i]] <- parTable$est[parTable$lhs == etas[[i]] &
-      parTable$op == "~~" &
-      parTable$rhs == etas[[i]]] |>
-      as.numeric()
+    residuals[[i]] <- as.numeric(parTable$est[parTable$lhs == etas[[i]] &
+                                              parTable$op == "~~" &
+                                              parTable$rhs == etas[[i]]])
     Rsqr[[i]] <- 1 - residuals[[i]] / variances[[i]]
   }
-  data.frame(
-    eta = etas, variance = variances,
-    residual = residuals, Rsqr = Rsqr
-  )
+
+  data.frame(eta = etas, variance = variances,
+             residual = residuals, Rsqr = Rsqr)
 }
 
 

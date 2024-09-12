@@ -219,29 +219,31 @@ specifyModelDA <- function(syntax = NULL,
   k <- omegaAndSortedXis$k
   quad <- quadrature(m, k, cut = quad.range)
 
-  model <- list(info =
-                list(xis         = xis,
-                     etas        = etas,
-                     numXis      = numXis,
-                     numEtas     = numEtas,
-                     indsXis     = indsXis,
-                     indsEtas    = indsEtas,
-                     allIndsXis  = allIndsXis,
-                     allIndsEtas = allIndsEtas,
-                     varsInts    = varsInts,
-                     latentEtas  = latentEtas,
-                     scalingInds = scalingInds,
-                     kOmegaEta   = getK_NA(omegaEtaXi, labelOmegaEtaXi),
+  model <- list(
+    info = list(
+      xis         = xis,
+      etas        = etas,
+      numXis      = numXis,
+      numEtas     = numEtas,
+      indsXis     = indsXis,
+      indsEtas    = indsEtas,
+      allIndsXis  = allIndsXis,
+      allIndsEtas = allIndsEtas,
+      varsInts    = varsInts,
+      latentEtas  = latentEtas,
+      scalingInds = scalingInds,
+      kOmegaEta   = getK_NA(omegaEtaXi, labelOmegaEtaXi
+    ),
+    lavOptimizerSyntaxAdditions = lavOptimizerSyntaxAdditions),
 
-                     lavOptimizerSyntaxAdditions = lavOptimizerSyntaxAdditions),
-
-                quad          = quad,
-                matrices      = matrices,
-                labelMatrices = labelMatrices,
-                syntax        = syntax,
-                cov.syntax    = cov.syntax,
-                parTable      = parTable,
-                covModel      = covModel)
+    quad          = quad,
+    matrices      = matrices,
+    labelMatrices = labelMatrices,
+    syntax        = syntax,
+    cov.syntax    = cov.syntax,
+    parTable      = parTable,
+    covModel      = covModel
+  )
 
   model$constrExprs <- getConstrExprs(parTable, model$covModel$parTable)
 
