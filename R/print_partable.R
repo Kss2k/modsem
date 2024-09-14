@@ -9,7 +9,7 @@ formatParTable <- function(parTable, digits = 3, scientific = FALSE,
   parTable <- fillColsParTable(parTable)
 
   isStructOrMeasure <- parTable$op %in% c("~", "=~", "~~") & 
-    parTable$rhs != "1" & parTable$lhs != parTable$rhs
+    parTable$lhs != parTable$rhs
   parTable$lhs[isStructOrMeasure] <- 
     paste(parTable$lhs[isStructOrMeasure], parTable$op[isStructOrMeasure])
   isLabel  <- parTable$op == ":="
@@ -17,13 +17,13 @@ formatParTable <- function(parTable, digits = 3, scientific = FALSE,
 
 
   isResVar <- parTable$op == "~~" & parTable$lhs == parTable$rhs
-  parTable$lhs[parTable$rhs == "1" | isResVar | isLabel] <- 
-    pasteLabels(parTable$lhs[parTable$rhs == "1" | isResVar | isLabel], 
-                parTable$label[parTable$rhs == "1" | isResVar | isLabel], 
+  parTable$lhs[parTable$op == "~1" | isResVar | isLabel] <-
+    pasteLabels(parTable$lhs[parTable$op == "~1" | isResVar | isLabel],
+                parTable$label[parTable$op == "~1" | isResVar | isLabel],
                 width = width)
-  parTable$rhs[parTable$rhs != "1"] <- 
-    pasteLabels(parTable$rhs[parTable$rhs != "1"], 
-                parTable$label[parTable$rhs != "1"], width = width)
+  parTable$rhs[parTable$op != "~1"] <-
+    pasteLabels(parTable$rhs[parTable$op != "~1"], 
+                parTable$label[parTable$op != "~1"], width = width)
 
   parTable$lhs[!isStructOrMeasure] <- 
     format(parTable$lhs[!isStructOrMeasure], width = width, justify = "left")
@@ -83,7 +83,7 @@ printParTable <- function(parTable,
   }
 
   # Regressions 
-  parTableRegressions <- fParTable[parTable$op == "~" & parTable$rhs != "1", ]
+  parTableRegressions <- fParTable[parTable$op == "~", ]
   if (regressions && NROW(parTableRegressions) > 0) {
     cat("\nRegressions:\n", formattedHeader)
     printParTableDouble(parTableRegressions, padWidth = padWidth, padWidthLhs = padWidthLhs, 
@@ -91,7 +91,7 @@ printParTable <- function(parTable,
   }
 
   # Intercepts 
-  parTableIntercepts <- fParTable[parTable$op == "~" & parTable$rhs == "1", ]
+  parTableIntercepts <- fParTable[parTable$op == "~1", ]
   if (intercepts && NROW(parTableIntercepts) > 0) {
     cat("\nIntercepts:\n", formattedHeader) 
     printParTableSingle(parTableIntercepts, padWidth = padWidth, padWidthLhs = padWidthLhs, 

@@ -42,12 +42,9 @@ simulateDataParTable <- function(parTable, N, colsOVs = NULL, colsLVs = NULL) {
     subVarsIntTerms <- subVarsIntTerms[!toBuildXZ]
     dataLVs <- cbind(dataLVs, XZ)
    
-    structExprsEta <- parTable[parTable$lhs == eta & 
-                               parTable$op == "~" & 
-                               parTable$rhs != "1", , drop = FALSE]
-    alpha <- parTable[parTable$lhs == eta & 
-                      parTable$op == "~" & 
-                      parTable$rhs == "1", "est"]
+    structExprsEta <- parTable[parTable$lhs == eta & parTable$op == "~", , 
+                               drop = FALSE]
+    alpha <- parTable[parTable$lhs == eta & parTable$op == "~", "est"]
     if (NROW(alpha) == 0) alpha <- 0
 
     y <- rep(alpha, length = N)

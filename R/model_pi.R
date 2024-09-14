@@ -11,8 +11,7 @@ parseLavaan <- function(model.syntax = NULL, variableNames = NULL, match = FALSE
   structuralExprs <- parTable[parTable$op == "~",]
   measureExprs <- parTable[parTable$op %in% c("=~", "<~"), ]
   lVs <- unique(parTable$lhs[parTable$op == "=~"])
-  vars <- unique(c(parTable$rhs[parTable$op %in% c("~", "=~") & 
-                   parTable$rhs != "1"],
+  vars <- unique(c(parTable$rhs[parTable$op %in% c("~", "=~")],
                    parTable$lhs[parTable$op == "~"])) |>
     stringr::str_split(pattern = ":", simplify = FALSE) |>
     unlist() |> unique()

@@ -389,7 +389,7 @@ getInfoQuad <- function(quad) {
 getFixedInterceptSyntax <- function(indicator, syntax, parTable) {
   if (is.null(indicator) || is.null(syntax) ||
       NROW(parTable[parTable$lhs == indicator &
-           parTable$op == "~" & parTable$rhs == "1", ])) return(syntax)
+           parTable$op == "~1", ])) return(syntax)
   else addition <-  paste0("\n", indicator, " ~ 0 * 1")
   paste0(syntax, addition)
 }

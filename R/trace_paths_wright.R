@@ -3,7 +3,7 @@
 prepParTable <- function(pt, addCovPt = TRUE, maxlen = 100) {
   # Remove any potential ':' from the model
   pt <- lapplyDf(pt, stringr::str_remove_all, pattern = ":")
-  structuralVars <- pt[pt$op == "~" & pt$rhs != "1", c("lhs", "rhs")] |>
+  structuralVars <- pt[pt$op == "~", c("lhs", "rhs")] |>
     unlist() |> unique() 
   pt <- pt[pt$lhs %in% structuralVars & pt$rhs %in% structuralVars, ]
   pt$mod[pt$mod == ""] <- apply(pt[pt$mod == "", c("lhs", "op", "rhs")],
@@ -83,7 +83,7 @@ generateSyntax <- function(x, y, pt, maxlen = 100, parenthesis = TRUE, ...) {
 
 
 addMissingCovariances <- function(pt) {
-  pt <- pt[pt$op != "=~" & pt$rhs != "1", ]
+  pt <- pt[!pt$op %in% c("=~", "~1"), ]
 
   xis  <- getXis(pt, checkAny = FALSE, isLV = FALSE)
   xis  <- xis[!grepl(":", xis)]

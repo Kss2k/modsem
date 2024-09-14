@@ -287,6 +287,14 @@ matrixToParTable <- function(matrixNA, matrixEst, matrixSE, matrixLabel,
 }
 
 
+interceptsToParTable <- function(matrixNA, matrixEst, matrixSE, matrixLabel) {
+  parTable <- matrixToParTable(matrixNA, matrixEst, matrixSE, matrixLabel, 
+                               op = "~1", rowsLhs = TRUE)
+  parTable$rhs <- ""
+  parTable
+}
+
+
 omegaToParTable <- function(omegaNA, omegaEst, omegaSE, omegaLabel) {
   rows <- rownames(omegaEst)
   cols <- colnames(omegaEst)
@@ -367,36 +375,28 @@ mainModelToParTable <- function(finalModel, method = "lms") {
   parTable <- rbind(parTable, newRows)
 
   # Intercepts
-  newRows <- matrixToParTable(matricesNA$tauX,
-                              matricesEst$tauX,
-                              matricesSE$tauX,
-                              matricesLabel$tauX,
-                              op = "~",
-                              rowsLhs = TRUE)
+  newRows <- interceptsToParTable(matricesNA$tauX,
+                                  matricesEst$tauX,
+                                  matricesSE$tauX,
+                                  matricesLabel$tauX)
   parTable <- rbind(parTable, newRows)
 
-  newRows <- matrixToParTable(matricesNA$tauY,
-                              matricesEst$tauY,
-                              matricesSE$tauY,
-                              matricesLabel$tauY,
-                              op = "~",
-                              rowsLhs = TRUE)
+  newRows <- interceptsToParTable(matricesNA$tauY,
+                                  matricesEst$tauY,
+                                  matricesSE$tauY,
+                                  matricesLabel$tauY)
   parTable <- rbind(parTable, newRows)
 
-  newRows <- matrixToParTable(matricesNA$alpha,
-                              matricesEst$alpha,
-                              matricesSE$alpha,
-                              matricesLabel$alpha,
-                              op = "~",
-                              rowsLhs = TRUE)
+  newRows <- interceptsToParTable(matricesNA$alpha,
+                                  matricesEst$alpha,
+                                  matricesSE$alpha,
+                                  matricesLabel$alpha)
   parTable <- rbind(parTable, newRows)
   
-  newRows <- matrixToParTable(matricesNA$beta0,
-                              matricesEst$beta0,
-                              matricesSE$beta0,
-                              matricesLabel$beta0,
-                              op = "~",
-                              rowsLhs = TRUE)
+  newRows <- interceptsToParTable(matricesNA$beta0,
+                                  matricesEst$beta0,
+                                  matricesSE$beta0,
+                                  matricesLabel$beta0)
   parTable <- rbind(parTable, newRows)
 
   # Residual (co) variances Measurement Model 

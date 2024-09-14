@@ -148,6 +148,9 @@ createParTableBranch <- function(syntaxTree) {
 
   # post-processing
   parTable[parTable$op == ":=", "mod"] <- parTable[parTable$op == ":=", "lhs"]
+  intercepts <- parTable$op == "~" & parTable$rhs == "1"
+  parTable[intercepts, "op"]  <- "~1"
+  parTable[intercepts, "rhs"] <- ""
 
   parTable
 }
@@ -183,7 +186,11 @@ modsemify <- function(syntax) {
 
 
 parTableToSyntax <- function(parTable, removeColon = FALSE) {
-  out <- ''
+  intercepts <- parTable$op == "~1"
+  parTable[intercepts, "rhs"] <- "1"
+  parTable[intercepts, "op"]  <- "~"
+
+  out <- ""
   if (removeColon) {
     parTable$lhs <- stringr::str_remove_all(parTable$lhs, ":")
     parTable$rhs <- stringr::str_remove_all(parTable$rhs, ":")

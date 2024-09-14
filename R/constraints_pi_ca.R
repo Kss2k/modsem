@@ -89,8 +89,8 @@ labelParameters <- function(pt) {
   observed <- unique(pt[pt$op == "=~", "rhs"])
 
   # Gamma
-  pt[pt$op == "~" & pt$rhs != "1", "mod"] <-
-    apply(pt[pt$op == "~" & pt$rhs != "1", c("rhs", "lhs")],
+  pt[pt$op == "~", "mod"] <-
+    apply(pt[pt$op == "~", c("rhs", "lhs")],
           MARGIN = 1, FUN = function(x) 
             createLabelGamma(x[[1]], x[[2]]))
 

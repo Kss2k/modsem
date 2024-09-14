@@ -34,7 +34,7 @@ reverseIntTerm <- function(xz) {
 
 
 getEtas <- function(parTable, isLV = FALSE, checkAny = TRUE) {
-  cond <- parTable$op == "~" & parTable$rhs != "1"
+  cond <- parTable$op == "~"
   if (isLV) {
     lVs <- unique(parTable[parTable$op == "=~", "lhs"])
     cond <- cond & parTable$lhs %in% lVs
@@ -47,7 +47,7 @@ getEtas <- function(parTable, isLV = FALSE, checkAny = TRUE) {
 
 
 getSortedEtas <- function(parTable, isLV = FALSE, checkAny = TRUE) {
-  structExprs  <- parTable[parTable$op == "~" & parTable$rhs != "1", ]
+  structExprs  <- parTable[parTable$op == "~", ]
   unsortedEtas <- getEtas(parTable, isLV = isLV, checkAny = checkAny)
   sortedEtas   <- character(0L)
 
@@ -76,7 +76,7 @@ getSortedEtas <- function(parTable, isLV = FALSE, checkAny = TRUE) {
 getXis <- function(parTable, etas = NULL, isLV = TRUE, checkAny = TRUE) {
   if (is.null(etas)) etas <- getEtas(parTable, isLV = isLV)
   if (!isLV) {
-    xis <- unique(parTable[parTable$rhs != "1" &
+    xis <- unique(parTable[parTable$op != "~1" &
                   parTable$lhs %in% etas, "rhs"])
   } else {
     xis <- unique(parTable[parTable$op == "=~" &
@@ -97,8 +97,8 @@ getOVs <- function(parTable = NULL, model.syntax = NULL) {
   if (!is.null(model.syntax)) parTable <- modsemify(model.syntax)
   stopif(is.null(parTable), "Missing parTable")
 
-  lVs    <- getLVs(parTable)   
-  select <- parTable$op %in% c("=~", "~", "~~") & parTable$rhs != "1"
+  lVs    <- getLVs(parTable)
+  select <- parTable$op %in% c("=~", "~", "~~")
   vars   <- unique(c(parTable$lhs[select], parTable$rhs[select]))
 
   vars[!vars %in% lVs]
@@ -120,13 +120,13 @@ getInds <- function(parTable) {
 
 
 getIntTermRows <- function(parTable) {
-  structExprs <- parTable[parTable$op == "~" & parTable$rhs != "1", ]
+  structExprs <- parTable[parTable$op == "~", ]
   structExprs[grepl(":", structExprs$rhs), ] 
 }
 
 
 getIntTerms <- function(parTable) {
-  structExprs <- parTable[parTable$op == "~" & parTable$rhs != "1", ]
+  structExprs <- parTable[parTable$op == "~", ]
   unique(structExprs[grepl(":", structExprs$rhs), "rhs"])
 }
 
@@ -200,11 +200,9 @@ isModsemObject <- function(x) {
 getIntercept <- function(x, parTable) {
   if (length(x) > 1) stop2("x must be a single string")
 
-  intercept <- parTable[parTable$lhs == x & 
-                        parTable$op == "~" & 
-                        parTable$rhs == "1", "est"]
+  intercept <- parTable[parTable$lhs == x & parTable$op == "~1", "est"]
 
-  if (length(intercept) == 0) return(0) 
+  if (length(intercept) == 0) return(0)
   intercept
 }
 
@@ -221,8 +219,7 @@ getMean <- function(x, parTable) {
   stopif(length(x) > 1, "x must be a single string")
 
   meanY <- getIntercept(x, parTable = parTable)
-  gamma <- parTable[parTable$lhs == x & parTable$op == "~" & 
-                    parTable$rhs != "1", , drop = FALSE]
+  gamma <- parTable[parTable$lhs == x & parTable$op == "~", , drop = FALSE]
 
   if (NROW(gamma) == 0) return(meanY)
   for (i in NROW(gamma)) {
@@ -246,8 +243,7 @@ centerInteraction <- function(parTable) {
     meanZ <- getMean(Z, parTable)
       
     gammaXZ <- rows[i, "est"]
-    gamma <- parTable[parTable$lhs == Y & parTable$op == "~" & 
-                      parTable$rhs != "1", , drop = FALSE] 
+    gamma <- parTable[parTable$lhs == Y & parTable$op == "~", , drop = FALSE] 
     gammaX <- gamma[gamma$rhs == X, "est"] + gammaXZ * meanZ
 
     gammaZ <- gamma[gamma$rhs == Z, "est"] + gammaXZ * meanX

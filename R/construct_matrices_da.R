@@ -12,6 +12,7 @@ fillConstExprs <- function(X, parTable, op, RHS, LHS, type, nonFreeParams = TRUE
                          parTable$rhs %in% RHS &
                          parTable$lhs %in% LHS &
                          canBeNumeric(parTable$mod, includeNA = !nonFreeParams), ]
+  constExprs[constExprs$op == "~1", "rhs"] <- "1"
   
   setVal <- getSetValFunc(type)
   for (i in seq_len(NROW(constExprs))) {
@@ -34,6 +35,7 @@ fillDynExprs <- function(X, parTable, op, RHS, LHS, type) {
                            parTable$lhs %in% LHS &
                            !canBeNumeric(parTable$mod,
                                          includeNA = TRUE), ]
+  dynamicExprs[dynamicExprs$op == "~1", "rhs"] <- "1"
 
   setVal <- getSetValFunc(type)
   for (i in seq_len(NROW(dynamicExprs))) {
@@ -117,19 +119,18 @@ constructTau <- function(lVs, indsLVs, parTable, mean.observed = TRUE) {
   tau <- matrix(default, nrow = numAllIndsLVs, ncol = 1,
                 dimnames = list(allIndsLVs, "1"))
   for (lV in lVs) { # set first ind to 0, if lV has meanstructure
-    subPT <- parTable[parTable$lhs == lV & parTable$op == "~" & 
-                      parTable$rhs == "1", ]
+    subPT <- parTable[parTable$lhs == lV & parTable$op == "~1", ]
     if (NROW(subPT)) {
       firstInd         <- indsLVs[[lV]][[1]]
-      tau[firstInd, 1] <- 0 
-      lavOptimizerSyntaxAdditions <- 
-        getFixedInterceptSyntax(indicator = firstInd, parTable = parTable, 
-                                syntax = lavOptimizerSyntaxAdditions) 
+      tau[firstInd, 1] <- 0
+      lavOptimizerSyntaxAdditions <-
+        getFixedInterceptSyntax(indicator = firstInd, parTable = parTable,
+                                syntax = lavOptimizerSyntaxAdditions)
     }
   }
 
-  c(setMatrixConstraints(X = tau, parTable = parTable, op = "~", 
-                         RHS = "1", LHS = allIndsLVs, type = "lhs",
+  c(setMatrixConstraints(X = tau, parTable = parTable, op = "~1", 
+                         RHS = "", LHS = allIndsLVs, type = "lhs",
                          nonFreeParams = FALSE),
     list(syntaxAdditions = lavOptimizerSyntaxAdditions))
 }
@@ -160,8 +161,7 @@ constructTheta <- function(lVs, indsLVs, parTable, auto.constraints = TRUE) {
 
 
 constructGamma <- function(DVs, IVs, parTable) {
-  exprsGamma <- parTable[parTable$op == "~" & !grepl(":", parTable$rhs) & 
-                         parTable$rhs != "1", ]
+  exprsGamma <- parTable[parTable$op == "~" & !grepl(":", parTable$rhs), ]
   numDVs <- length(DVs)
   numIVs <- length(IVs)
   gamma  <- matrix(0, nrow = numDVs, ncol = numIVs, dimnames = list(DVs, IVs))
@@ -218,8 +218,8 @@ constructAlpha <- function(etas, parTable, auto.constraints = TRUE,
   alpha <- matrix(default, nrow = numEtas, ncol = 1, 
                   dimnames = list(etas, "1"))
 
-  setMatrixConstraints(X = alpha, parTable = parTable, op = "~", 
-                       RHS = "1", LHS = etas, type = "lhs",
+  setMatrixConstraints(X = alpha, parTable = parTable, op = "~1", 
+                       RHS = "", LHS = etas, type = "lhs",
                        nonFreeParams = FALSE)
 }
 

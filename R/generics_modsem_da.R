@@ -369,7 +369,7 @@ compare_fit <- function(estH0, estH1) {
 
 calcRsquared <- function(parTable) {
   parTable <- var_interactions.data.frame(parTable)
-  etas     <- unique(parTable$lhs[parTable$op == "~" & parTable$rhs != "1"])
+  etas     <- unique(parTable$lhs[parTable$op == "~"])
 
   # Calculate Variances/R squared of Etas
   variances <- residuals <- Rsqr <- vector("numeric", length(etas))

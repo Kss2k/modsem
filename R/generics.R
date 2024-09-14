@@ -82,7 +82,7 @@ standardized_estimates.data.frame <- function(object, intercepts = FALSE, ...) {
   parTable <- object[c("lhs", "op", "rhs", "label", "est", "std.error")]
   if (!intercepts) { # remove intercepts
     parTable <- centerInteraction(parTable)
-    parTable <- parTable[!(parTable$rhs == "1" & parTable$op == "~"), ]
+    parTable <- parTable[parTable$op != "~1", ]
   }
   parTable <- var_interactions(parTable)
 
@@ -131,8 +131,7 @@ standardized_estimates.data.frame <- function(object, intercepts = FALSE, ...) {
   gamma <- NULL
   selectStrucExprsEta <- NULL
   structExprsEta <- NULL
-  selectStrucExprs <- parTable$op == "~" & parTable$rhs != "1" &
-                         parTable$lhs %in% etas
+  selectStrucExprs <- parTable$op == "~" & parTable$lhs %in% etas
   for (eta in etas) {
     selectStrucExprsEta <- selectStrucExprs & parTable$lhs == eta
     structExprsEta <- parTable[selectStrucExprsEta, ]
