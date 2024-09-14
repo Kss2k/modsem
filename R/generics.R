@@ -39,7 +39,7 @@ var_interactions.data.frame <- function(object, ...) {
     varX  <- calcCovParTable(XZ[[1]], XZ[[1]], parTable)
     varZ  <- calcCovParTable(XZ[[2]], XZ[[2]], parTable)
     covXZ <- calcCovParTable(XZ[[1]], XZ[[2]], parTable)
-    varXZ <- muX ^ 2 * muZ ^ 2 + varX * muZ ^ 2 + varZ * muX ^ 2 +
+    varXZ <- varX * muZ ^ 2 + varZ * muX ^ 2 +
       2 * muX * muZ * covXZ + varX * varZ + covXZ ^ 2
     covX_XZ <- varX * muZ + muX * covXZ
     covZ_XZ <- varZ * muX + muZ * covXZ
