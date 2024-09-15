@@ -453,6 +453,7 @@ coef_modsem_da <- function(object, ...) {
 
 
 #' @export
+#' @importFrom stats nobs
 nobs.modsem_da <- function(object, ...) {
   modsem_inspect_da(object, what = "N", ...)[[1]]
 }

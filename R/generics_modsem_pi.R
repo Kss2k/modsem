@@ -51,6 +51,7 @@ coefficients.modsem_pi <- function(object, ...) {
 
 
 #' @export
+#' @importFrom stats nobs
 nobs.modsem_pi <- function(object, ...) {
   lavaan::nobs(object$lavaan, ...)
 }
