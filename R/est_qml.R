@@ -16,9 +16,8 @@ estQml <- function(model,
                     convergence = convergence, epsilon = epsilon,
                     verbose = verbose, optimizer = optimizer, ...)
 
-  coefficients    <- final$par
-  allCoefficients <- getTransformationsTheta(model = model, theta = coefficients,
-                                             method = "qml")
+  coefficients <- final$par
+  lavCoefs     <- getLavCoefs(model = model, theta = coefficients, method = "lms")
   finalModel      <- fillModel(model, coefficients)
   info            <- model$info
 
@@ -46,7 +45,7 @@ estQml <- function(model,
   finalModel$matricesSE <- modelSE$matrices
   finalModel$covModelSE <- modelSE$covModel
 
-  parTable <- modelToParTable(finalModel, coefs = allCoefficients,
+  parTable <- modelToParTable(finalModel, coefs = lavCoefs,
                               se = SE, method = "qml")
 
   parTable$z.value  <- parTable$est / parTable$std.error
@@ -58,11 +57,12 @@ estQml <- function(model,
          "Maximum number of iterations was reached, ",
          "model estimation might not have converged.")
 
-  out <- list(model     = finalModel, 
+  out <- list(model     = finalModel,
               method    = "qml",
               optimizer = optimizer,
               data      = model$data,
               theta     = coefficients,
+              coefs     = lavCoefs,
               parTable  = parTable,
 
               originalParTable = model$parTable,

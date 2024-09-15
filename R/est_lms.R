@@ -83,9 +83,8 @@ emLms <- function(model,
                     epsilon = epsilon, optimizer = optimizer,
                     verbose = verbose, control = control, ...)
     
-  coefficients    <- final$par
-  allCoefficients <- getTransformationsTheta(model = model, theta = coefficients,
-                                             method = "lms")
+  coefficients <- final$par
+  lavCoefs     <- getLavCoefs(model = model, theta = coefficients, method = "lms")
   finalModel      <- fillModel(model, coefficients, fillPhi = TRUE, method = "lms")
   info            <- model$info
 
@@ -113,7 +112,7 @@ emLms <- function(model,
   finalModel$matricesSE <- modelSE$matrices
   finalModel$covModelSE <- modelSE$covModel
 
-  parTable <- modelToParTable(finalModel, coefs = allCoefficients,
+  parTable <- modelToParTable(finalModel, coefs = lavCoefs,
                               se = SE, method = "lms")
 
   parTable$z.value  <- parTable$est / parTable$std.error
@@ -129,6 +128,7 @@ emLms <- function(model,
               optimizer = paste0("EM-", optimizer),
               data      = data,
               theta     = coefficients,
+              coefs     = lavCoefs,
               parTable  = parTable,
 
               originalParTable = model$parTable,

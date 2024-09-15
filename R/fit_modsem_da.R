@@ -22,7 +22,7 @@ fit_modsem_da <- function(model, chisq = TRUE) {
   mu     <- apply(model$data, 2, mean)
   N      <- NROW(model$data) 
   p      <- NCOL(model$data)
-  coef   <- coef(model)
+  coef   <- coef(model, type = "free")
   k      <- length(coef)
   df     <- getDegreesOfFreedom(m = p, coef = coef)
 

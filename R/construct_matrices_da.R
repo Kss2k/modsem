@@ -13,7 +13,7 @@ fillConstExprs <- function(X, parTable, op, RHS, LHS, type, nonFreeParams = TRUE
                          parTable$lhs %in% LHS &
                          canBeNumeric(parTable$mod, includeNA = !nonFreeParams), ]
   constExprs[constExprs$op == "~1", "rhs"] <- "1"
-  
+
   setVal <- getSetValFunc(type)
   for (i in seq_len(NROW(constExprs))) {
     lhs <- constExprs[i, "lhs"]

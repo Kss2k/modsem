@@ -219,3 +219,13 @@ standardized_estimates.data.frame <- function(object, intercepts = FALSE, ...) {
 modsem_inspect <- function(object, what = NULL, ...) {
   UseMethod("modsem_inspect")
 }
+
+
+#' Get number of observations
+#'
+#' @param object fittet model to inspect
+#' @param ... additional arguments
+#' @export
+nobs <- function(object, ...) {
+  UseMethod("nobs")
+}

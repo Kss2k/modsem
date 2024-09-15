@@ -8,8 +8,8 @@ combineLavLabels <- function(lavLabelsCov, lavLabelsMain, currentLabels) {
 
 
 createLavLabels <- function(matrices, subset, etas) {
-  lambdaX      <- createLabelsMatrix(matrices$lambdaX, op = "~")
-  lambdaY      <- createLabelsMatrix(matrices$lambdaY, op = "~")
+  lambdaX      <- createLabelsMatrix(matrices$lambdaX, op = "=~")
+  lambdaY      <- createLabelsMatrix(matrices$lambdaY, op = "=~")
   thetaDelta   <- createLabelsMatrix(matrices$thetaDelta, op = "~~")
   thetaEpsilon <- createLabelsMatrix(matrices$thetaEpsilon, op = "~~")
   phi          <- createLabelsMatrix(matrices$phi, op = "~~")
@@ -90,4 +90,11 @@ createLabelsOmega <- function(X) {
   }
 
   labels
+}
+
+
+getLavCoefs <- function(model, theta, method) {
+  fullTheta <- getTransformationsTheta(model, theta, method)
+  names(fullTheta) <- model$lavLabels
+  fullTheta
 }

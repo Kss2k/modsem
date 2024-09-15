@@ -360,7 +360,7 @@ compare_fit <- function(estH0, estH1) {
   if (is.null(estH0) || is.null(estH1)) {
     return(NULL)
   }
-  df <- length(coef(estH1)) - length(coef(estH0))
+  df <- length(coef(estH1, type = "free")) - length(coef(estH0, type = "free"))
   D <- -2 * (estH0$logLik - estH1$logLik)
   p <- stats::pchisq(D, df = df, lower.tail = FALSE, log.p = FALSE)
   list(D = D, df = df, p = p, llChange = estH1$logLik - estH0$logLik)
@@ -414,17 +414,18 @@ vcov.modsem_da <- function(object, ...) {
 
 #' @export 
 #' @importFrom stats coefficients
-coefficients.modsem_da <- function(object, ...) {
-  modsem_inspect_da(object, what = "coefficients")[[1]]
+coefficients.modsem_da <- function(object, type = "all", ...) {
+  what <- ifelse(type == "all", yes = "all.coefficients",
+                 no = "free.coefficients")
+  modsem_inspect_da(object, what = what)[[1]]
 }
 
 
 #' @export 
 #' @importFrom stats coef
-coef.modsem_da <- function(object, ...) {
-  modsem_inspect_da(object, what = "coefficients")[[1]]
+coef.modsem_da <- function(object, type = "all", ...) {
+  coefficients.modsem_da(object, type = type, ...)
 }
-
 
 
 #' Wrapper for vcov
@@ -448,4 +449,10 @@ vcov_modsem_da <- function(object, ...) {
 #' @export
 coef_modsem_da <- function(object, ...) {
   coef.modsem_da(object, ...)
+}
+
+
+#' @export
+nobs.modsem_da <- function(object, ...) {
+  modsem_inspect_da(object, what = "N", ...)[[1]]
 }

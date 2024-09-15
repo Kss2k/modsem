@@ -73,11 +73,11 @@ plot_interaction(x = "INT", z = "PBC", y = "BEH", vals_z = c(-0.5, 0.5), model =
 print(summary(est2))
 var_interactions(est2)
 standardized_estimates(est2)
-vcov(est2) 
-modsem_inspect(est2) 
-coef(est2)
+print(vcov(est2)[8:14, 8:14])
+modsem_inspect(est2)
+print(coef(est2))
 coefficients(est2)
-
+cat("Number of observations using 'nobs()':", nobs(est2), "\n")
 
 tpb2 <- ' 
 # Outer Model (Based on Hagger et al., 2007)
