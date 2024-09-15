@@ -73,7 +73,12 @@
     
     
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/Kss2k/modsem" class="external-link">modsem</a></span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/Kss2k/modsem" class="external-link">modsem</a></span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Attaching package: 'modsem'</span></span>
+<span><span class="co">#&gt; The following object is masked from 'package:stats':</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;     nobs</span></span></code></pre></div>
 <div class="section level2">
 <h2 id="the-latent-moderated-structural-equations-lms-and-the-quasi-maximum-likelihood-qml-approach">The Latent Moderated Structural Equations (LMS) and the Quasi
 Maximum Likelihood (QML) approach<a class="anchor" aria-label="anchor" href="#the-latent-moderated-structural-equations-lms-and-the-quasi-maximum-likelihood-qml-approach"></a>
@@ -197,7 +202,7 @@ term.</p>
 <span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   Z =~ </span></span>
 <span><span class="co">#&gt;     z1               1.000                             </span></span>
-<span><span class="co">#&gt;     z2               0.811      0.018    45.25    0.000</span></span>
+<span><span class="co">#&gt;     z2               0.811      0.016    50.04    0.000</span></span>
 <span><span class="co">#&gt;   X =~ </span></span>
 <span><span class="co">#&gt;     x1               1.000                             </span></span>
 <span><span class="co">#&gt;   Y =~ </span></span>
@@ -206,16 +211,16 @@ term.</p>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   Y ~ </span></span>
-<span><span class="co">#&gt;     Z                0.587      0.032    18.10    0.000</span></span>
-<span><span class="co">#&gt;     X                0.574      0.029    19.96    0.000</span></span>
-<span><span class="co">#&gt;     Z:X              0.627      0.026    23.76    0.000</span></span>
+<span><span class="co">#&gt;     Z                0.587      0.033    17.65    0.000</span></span>
+<span><span class="co">#&gt;     X                0.574      0.030    19.03    0.000</span></span>
+<span><span class="co">#&gt;     Z:X              0.627      0.026    24.18    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Intercepts:</span></span>
 <span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;     z1               1.009      0.024    42.22    0.000</span></span>
-<span><span class="co">#&gt;     z2               1.203      0.020    60.50    0.000</span></span>
-<span><span class="co">#&gt;     x1               1.023      0.024    43.13    0.000</span></span>
-<span><span class="co">#&gt;     y1               1.046      0.033    31.33    0.000</span></span>
+<span><span class="co">#&gt;     z1               1.009      0.027    37.84    0.000</span></span>
+<span><span class="co">#&gt;     z2               1.203      0.022    54.45    0.000</span></span>
+<span><span class="co">#&gt;     x1               1.023      0.027    38.49    0.000</span></span>
+<span><span class="co">#&gt;     y1               1.046      0.037    28.54    0.000</span></span>
 <span><span class="co">#&gt;     Y                0.000                             </span></span>
 <span><span class="co">#&gt;     Z                0.000                             </span></span>
 <span><span class="co">#&gt;     X                0.000                             </span></span>
@@ -223,17 +228,17 @@ term.</p>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   Z ~~ </span></span>
-<span><span class="co">#&gt;     X                0.211      0.025     8.56    0.000</span></span>
+<span><span class="co">#&gt;     X                0.211      0.028     7.66    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;     z1               0.170      0.018     9.23    0.000</span></span>
-<span><span class="co">#&gt;     z2               0.160      0.013    12.64    0.000</span></span>
+<span><span class="co">#&gt;     z1               0.170      0.017    10.24    0.000</span></span>
+<span><span class="co">#&gt;     z2               0.160      0.011    13.94    0.000</span></span>
 <span><span class="co">#&gt;     x1               0.000                             </span></span>
 <span><span class="co">#&gt;     y1               0.000                             </span></span>
-<span><span class="co">#&gt;     Z                1.010      0.020    50.04    0.000</span></span>
-<span><span class="co">#&gt;     X                1.141      0.016    69.82    0.000</span></span>
-<span><span class="co">#&gt;     Y                1.284      0.043    29.70    0.000</span></span></code></pre></div>
+<span><span class="co">#&gt;     Z                1.010      0.020    51.26    0.000</span></span>
+<span><span class="co">#&gt;     X                1.141      0.017    69.00    0.000</span></span>
+<span><span class="co">#&gt;     Y                1.284      0.043    30.19    0.000</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="the-qml-approach">The QML approach<a class="anchor" aria-label="anchor" href="#the-qml-approach"></a>
