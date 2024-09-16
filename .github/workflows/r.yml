@@ -29,10 +29,11 @@ jobs:
 
       - name: Install dependencies
         run: |
+          Rscript -e 'install.packages("devtools")'
           if [ -f "renv.lock" ]; then
             Rscript -e 'install.packages("renv"); renv::restore()'
           else
-            Rscript -e 'install.packages("devtools"); devtools::install_deps(dep = TRUE)'
+            Rscript -e 'devtools::install_deps(dep = TRUE)'
           fi
 
       - name: Run tests
