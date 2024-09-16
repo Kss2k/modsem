@@ -26,12 +26,14 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libcurl4-openssl-dev libxml2-dev libssl-dev
-
+          sudo apt-get install -y libfreetype6-dev libharfbuzz-dev libfribidi-dev \
+                                  libpng-dev libjpeg-dev libtiff-dev libcairo2-dev \
+                                  libfontconfig1-dev libpango1.0-dev
       # Step 4: Cache R package dependencies
       - name: Cache R package dependencies
         uses: actions/cache@v3
         with:
-          path: ${{ runner.temp }}/R/renv
+          path: ~/R/library
           key: ${{ runner.os }}-r-${{ hashFiles('renv.lock') }}
           restore-keys: |
             ${{ runner.os }}-r-
