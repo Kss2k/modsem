@@ -28,7 +28,7 @@ jobs:
           sudo apt-get install -y libcurl4-openssl-dev libxml2-dev libssl-dev
           sudo apt-get install -y libfreetype6-dev libharfbuzz-dev libfribidi-dev \
                                   libpng-dev libjpeg-dev libtiff-dev libcairo2-dev \
-                                  libfontconfig1-dev libpango1.0-dev
+                                  libfontconfig1-dev libpango1.0-dev pandoc
       # Step 4: Cache R package dependencies
       - name: Cache R package dependencies
         uses: actions/cache@v3
@@ -46,7 +46,7 @@ jobs:
       # Step 6: Install devtools and dependencies
       - name: Install devtools and other dependencies
         run: |
-          Rscript -e 'install.packages("devtools", repos="http://cran.us.r-project.org")'
+          Rscript -e 'install.packages(c("devtools", "rmarkdown"), repos="http://cran.us.r-project.org")'
           if [ -f "renv.lock" ]; then
             Rscript -e 'install.packages("renv"); renv::restore()'
           else
