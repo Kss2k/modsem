@@ -1,4 +1,4 @@
-name: Test modsem
+name: R Package CI
 
 on:
   push:
@@ -13,12 +13,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Step 1: Check out the repository
       - name: Check out the repository
         uses: actions/checkout@v4
 
+      # Step 2: Set up R environment
       - name: Set up R
         uses: r-lib/actions/setup-r@v2
 
+      # Step 3: Install system dependencies for R
+      - name: Install system dependencies for R
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libcurl4-openssl-dev libxml2-dev libssl-dev
+
+      # Step 4: Cache R package dependencies
       - name: Cache R package dependencies
         uses: actions/cache@v3
         with:
@@ -27,19 +36,27 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-r-
 
-      - name: Install dependencies
+      # Step 5: Install missing R packages (before devtools)
+      - name: Install R packages required by devtools
         run: |
-          Rscript -e 'install.packages("devtools")'
+          Rscript -e 'install.packages(c("usethis", "pkgdown", "rcmdcheck", "rversions", "urlchecker"), repos="http://cran.us.r-project.org")'
+
+      # Step 6: Install devtools and dependencies
+      - name: Install devtools and other dependencies
+        run: |
+          Rscript -e 'install.packages("devtools", repos="http://cran.us.r-project.org")'
           if [ -f "renv.lock" ]; then
             Rscript -e 'install.packages("renv"); renv::restore()'
           else
             Rscript -e 'devtools::install_deps(dep = TRUE)'
           fi
 
+      # Step 7: Run tests
       - name: Run tests
         run: |
           Rscript -e 'devtools::test()'
 
+      # Step 8: R CMD CHECK
       - name: R CMD CHECK
         run: |
           Rscript -e 'devtools::check()'
