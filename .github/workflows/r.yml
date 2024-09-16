@@ -13,15 +13,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the repository
       - name: Check out the repository
         uses: actions/checkout@v4
 
-      # Step 2: Set up R environment
       - name: Set up R
         uses: r-lib/actions/setup-r@v2
 
-      # Step 3: Cache R package dependencies
       - name: Cache R package dependencies
         uses: actions/cache@v3
         with:
@@ -30,7 +27,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-r-
 
-      # Step 4: Install R package dependencies
       - name: Install dependencies
         run: |
           if [ -f "renv.lock" ]; then
@@ -39,7 +35,6 @@ jobs:
             Rscript -e 'install.packages("devtools"); devtools::install_deps(dep = TRUE)'
           fi
 
-      # Step 5: Run R package tests
       - name: Run tests
         run: |
           Rscript -e 'devtools::test()'
