@@ -2,7 +2,7 @@
 % Please edit documentation in R/modsem-package.R, R/modsem.R
 \name{modsem}
 \alias{modsem}
-\title{Interaction between latent variables}
+\title{Estimate interaction effects in structural equation models (SEMs)}
 \usage{
 modsem(model.syntax = NULL, data = NULL, method = "dblcent", ...)
 }
@@ -20,10 +20,10 @@ modsem(model.syntax = NULL, data = NULL, method = "dblcent", ...)
 \code{"qml"} = quasi maximum likelihood estimation of latent model structural equations (not passed to \code{lavaan}),
 \code{"custom"} = use parameters specified in the function call (passed to \code{lavaan}).}
 
-\item{...}{arguments passed to other functions depending on the method (see \link{modsem_pi}, \link{modsem_da}, and \link{modsem_mplus})}
+\item{...}{arguments passed to other functions depending on the method (see \code{\link{modsem_pi}}, \code{\link{modsem_da}}, and \code{\link{modsem_mplus}})}
 }
 \value{
-\code{modsem} object with class \code{link{modsem_pi}}, \code{link{modsem_da}}, or \code{link{modsem_mplus}}
+\code{modsem} object with class \code{\link{modsem_pi}}, \code{\link{modsem_da}}, or \code{\link{modsem_mplus}}
 }
 \description{
 \code{modsem()} is a function for estimating interaction effects between latent variables 
