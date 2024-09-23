@@ -90,7 +90,7 @@ This will be overridden by \code{standardize} if \code{standardize} is set to \c
 
 \strong{NOTE}: Not recommended unless you know what you are doing.}
 
-\item{cov.syntax}{model syntax for implied covariance matrix (see 'vignette("interaction_two_etas", "modsem")')}
+\item{cov.syntax}{model syntax for implied covariance matrix (see \code{vignette("interaction_two_etas", "modsem")})}
 
 \item{double}{try to double the number of dimensions of integration used in LMS,
 this will be extremely slow but should be more similar to \code{mplus}.}

@@ -56,7 +56,7 @@
 #' @param double try to double the number of dimensions of integration used in LMS,
 #' this will be extremely slow but should be more similar to \code{mplus}.
 #'
-#' @param cov.syntax model syntax for implied covariance matrix (see 'vignette("interaction_two_etas", "modsem")')
+#' @param cov.syntax model syntax for implied covariance matrix (see \code{vignette("interaction_two_etas", "modsem")})
 #'
 #' @param calc.se should standard errors be computed? \strong{NOTE}: If \code{FALSE}, the information matrix will not be computed either.
 #'

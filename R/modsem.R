@@ -14,7 +14,7 @@
 #' \code{"custom"} = use parameters specified in the function call (passed to \code{lavaan}).
 #' 
 #' @param ... arguments passed to other functions depending on the method (see \link{modsem_pi}, \link{modsem_da}, and \link{modsem_mplus})
-#' @return \code{modsem} object
+#' @return \code{modsem} object with class \code{link{modsem_pi}}, \code{link{modsem_da}}, or \code{link{modsem_mplus}}
 #' @export 
 #' @description
 #' \code{modsem()} is a function for estimating interaction effects between latent variables 

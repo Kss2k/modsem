@@ -8,7 +8,7 @@
 #' @param vals_x The values of the \code{x} variable to plot, the more values the smoother the std.error-area will be
 #' @param vals_z The values of the moderator variable to plot. A separate regression 
 #' line (\code{y ~ x | z}) will be plotted for each value of the moderator variable
-#' @param model An object of class \code{modsem_pi}, \code{modsem_da}, or \code{modsem_mplus} 
+#' @param model An object of class \code{\link{modsem_pi}}, \code{\link{modsem_da}}, or \code{\link{modsem_mplus}}
 #' @param alpha_se The alpha level for the std.error area
 #' @param ... Additional arguments passed to other functions 
 #' @return A \code{ggplot} object
