@@ -5,55 +5,70 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="description" content="modsem">
 <title>observed variables in the LMS- and QML approach • modsem</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.4.2/css/all.min.css" rel="stylesheet">
-<link href="../deps/font-awesome-6.4.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="observed variables in the LMS- and QML approach">
+<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
+<!-- bootstrap-toc --><script src="https://cdn.jsdelivr.net/gh/afeld/bootstrap-toc@v1.0.1/dist/bootstrap-toc.min.js" integrity="sha256-4veVQbu7//Lk5TSmc7YV48MxtMy98e26cf5MrgZYnwo=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- search --><script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.js" integrity="sha512-zv6Ywkjyktsohkbp9bb45V6tEMoWhzFzXis+LrMehmJZZSys19Yxf1dopHx7WzIKxr5tK2dVcYmaCk2uqdjF4A==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/autocomplete.js/0.38.0/autocomplete.jquery.min.js" integrity="sha512-GU9ayf+66Xx2TmpxqJpliWbT5PiGYxpaG8rfnBEk1LL8l1KGkRShhngwdXK1UgqhAzWpZHSiYPc09/NwDQIGyg==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/mark.min.js" integrity="sha512-5CYOlHXGh6QpOFA/TeTylKLWfB3ftPsde7AnmhuitiTX4K5SqCLBeKro6sPS8ilsz1Q4NRx3v8Ko2IBiszzdww==" crossorigin="anonymous"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="observed variables in the LMS- and QML approach">
+<meta property="og:description" content="modsem">
+<!-- mathjax --><script src="file:///usr/share/javascript/mathjax/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
+<script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+<![endif]-->
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
+    
 
-
-    <nav class="navbar navbar-expand-lg fixed-top bg-light" data-bs-theme="light" aria-label="Site navigation"><div class="container">
-
+    <nav class="navbar fixed-top navbar-light navbar-expand-lg bg-light"><div class="container">
+    
     <a class="navbar-brand me-2" href="../index.html">modsem</a>
 
     <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.3</small>
 
-
+    
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
-<li class="nav-item"><a class="nav-link" href="../articles/modsem.html">Get started</a></li>
-<li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
+<li class="nav-item">
+  <a class="nav-link" href="../articles/modsem.html">Get started</a>
+</li>
+<li class="nav-item">
+  <a class="nav-link" href="../reference/index.html">Reference</a>
+</li>
 <li class="active nav-item dropdown">
-  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/customizing.html">customizing interaction terms</a></li>
-    <li><a class="dropdown-item" href="../articles/interaction_two_etas.html">interaction effects between endogenous variables</a></li>
-    <li><a class="dropdown-item" href="../articles/lavaan.html">using lavaan functions</a></li>
-    <li><a class="dropdown-item" href="../articles/lms_qml.html">LMS and QML approaches</a></li>
-    <li><a class="dropdown-item" href="../articles/methods.html">methods</a></li>
-    <li><a class="dropdown-item" href="../articles/observed_lms_qml.html">observed variables in the LMS- and QML approach</a></li>
-    <li><a class="dropdown-item" href="../articles/plot_interactions.html">plotting interaction effects</a></li>
-    <li><a class="dropdown-item" href="../articles/quadratic.html">quadratic effects</a></li>
-  </ul>
+  <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-articles">Articles</a>
+  <div class="dropdown-menu" aria-labelledby="dropdown-articles">
+    <a class="dropdown-item" href="../articles/customizing.html">customizing interaction terms</a>
+    <a class="dropdown-item" href="../articles/interaction_two_etas.html">interaction effects between endogenous variables</a>
+    <a class="dropdown-item" href="../articles/lavaan.html">using lavaan functions</a>
+    <a class="dropdown-item" href="../articles/lms_qml.html">LMS and QML approaches</a>
+    <a class="dropdown-item" href="../articles/methods.html">methods</a>
+    <a class="dropdown-item" href="../articles/observed_lms_qml.html">observed variables in the LMS- and QML approach</a>
+    <a class="dropdown-item" href="../articles/plot_interactions.html">plotting interaction effects</a>
+    <a class="dropdown-item" href="../articles/quadratic.html">quadratic effects</a>
+  </div>
 </li>
       </ul>
-<ul class="navbar-nav">
-<li class="nav-item"><form class="form-inline" role="search">
- <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
-</form></li>
-<li class="nav-item"><a class="external-link nav-link" href="https://github.com/Kss2k/modsem/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
+<form class="form-inline my-2 my-lg-0" role="search">
+        <input type="search" class="form-control me-sm-2" aria-label="Toggle navigation" name="search-input" data-search-index="../search.json" id="search-input" placeholder="Search for" autocomplete="off">
+</form>
+
+      <ul class="navbar-nav">
+<li class="nav-item">
+  <a class="external-link nav-link" href="https://github.com/Kss2k/modsem/" aria-label="github">
+    <span class="fab fa fab fa-github fa-lg"></span>
+     
+  </a>
+</li>
       </ul>
 </div>
 
-
+    
   </div>
 </nav><div class="container template-article">
 
@@ -62,8 +77,7 @@
 
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-
-      <h1>observed variables in the LMS- and QML approach</h1>
+      <img src="" class="logo" alt=""><h1>observed variables in the LMS- and QML approach</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/Kss2k/modsem/blob/HEAD/vignettes/observed_lms_qml.Rmd" class="external-link"><code>vignettes/observed_lms_qml.Rmd</code></a></small>
@@ -98,25 +112,17 @@ select one variable in an interaction term as a moderator. The
 interaction effect is then estimated via numerical integration, at
 <code>n</code> quadrature nodes of the moderating variable. This process
 however, requires that the moderating variable has an error-term, as the
-distribution of the moderating variable is modelled as
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>X</mi><mo>∼</mo><mi>N</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>A</mi><mi>z</mi><mo>,</mo><mi>ε</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">X \sim N(Az, \varepsilon)</annotation></semantics></math>,
-where
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>A</mi><mi>z</mi></mrow><annotation encoding="application/x-tex">Az</annotation></semantics></math>
-is the expected value of
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>X</mi><annotation encoding="application/x-tex">X</annotation></semantics></math>
-at quadrature point <code>k</code>, and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ε</mi><annotation encoding="application/x-tex">\varepsilon</annotation></semantics></math>
-is the error term. If the error-term is zero, the probability of
-observing a given value of
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>X</mi><annotation encoding="application/x-tex">X</annotation></semantics></math>
-will not be computable. In most instances the first variable in the
-interaction term, is chosen as the moderator. For example, if the
-interaction term is <code>"X:Z"</code>, <code>"X"</code> will usually be
-chosen as the moderator. Thus if only one of the variables are latent,
-you should put the latent variable first in the interaction term. If
-both are observed, you have to specify a measurement error (e.g., “x1 ~~
-0.1 * x1”) for the indicator of the first variable in the interaction
-term.</p>
+distribution of the moderating variable is modelled as <span class="math inline">\(X \sim N(Az, \varepsilon)\)</span>, where <span class="math inline">\(Az\)</span> is the expected value of <span class="math inline">\(X\)</span> at quadrature point <code>k</code>, and
+<span class="math inline">\(\varepsilon\)</span> is the error term. If
+the error-term is zero, the probability of observing a given value of
+<span class="math inline">\(X\)</span> will not be computable. In most
+instances the first variable in the interaction term, is chosen as the
+moderator. For example, if the interaction term is <code>"X:Z"</code>,
+<code>"X"</code> will usually be chosen as the moderator. Thus if only
+one of the variables are latent, you should put the latent variable
+first in the interaction term. If both are observed, you have to specify
+a measurement error (e.g., “x1 ~~ 0.1 * x1”) for the indicator of the
+first variable in the interaction term.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/Kss2k/modsem" class="external-link">modsem</a></span><span class="op">)</span></span>
 <span></span>
@@ -197,7 +203,7 @@ term.</p>
 <span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   Z =~ </span></span>
 <span><span class="co">#&gt;     z1               1.000                             </span></span>
-<span><span class="co">#&gt;     z2               0.811      0.016    50.04    0.000</span></span>
+<span><span class="co">#&gt;     z2               0.811      0.016    49.60    0.000</span></span>
 <span><span class="co">#&gt;   X =~ </span></span>
 <span><span class="co">#&gt;     x1               1.000                             </span></span>
 <span><span class="co">#&gt;   Y =~ </span></span>
@@ -206,16 +212,16 @@ term.</p>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   Y ~ </span></span>
-<span><span class="co">#&gt;     Z                0.587      0.033    17.65    0.000</span></span>
-<span><span class="co">#&gt;     X                0.574      0.030    19.03    0.000</span></span>
-<span><span class="co">#&gt;     Z:X              0.627      0.026    24.18    0.000</span></span>
+<span><span class="co">#&gt;     Z                0.587      0.033    17.76    0.000</span></span>
+<span><span class="co">#&gt;     X                0.574      0.030    19.13    0.000</span></span>
+<span><span class="co">#&gt;     Z:X              0.627      0.026    24.33    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Intercepts:</span></span>
 <span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;     z1               1.009      0.027    37.84    0.000</span></span>
-<span><span class="co">#&gt;     z2               1.203      0.022    54.45    0.000</span></span>
-<span><span class="co">#&gt;     x1               1.023      0.027    38.49    0.000</span></span>
-<span><span class="co">#&gt;     y1               1.046      0.037    28.54    0.000</span></span>
+<span><span class="co">#&gt;     z1               1.009      0.026    38.54    0.000</span></span>
+<span><span class="co">#&gt;     z2               1.203      0.022    55.11    0.000</span></span>
+<span><span class="co">#&gt;     x1               1.023      0.027    38.23    0.000</span></span>
+<span><span class="co">#&gt;     y1               1.046      0.036    28.86    0.000</span></span>
 <span><span class="co">#&gt;     Y                0.000                             </span></span>
 <span><span class="co">#&gt;     Z                0.000                             </span></span>
 <span><span class="co">#&gt;     X                0.000                             </span></span>
@@ -223,17 +229,17 @@ term.</p>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   Z ~~ </span></span>
-<span><span class="co">#&gt;     X                0.211      0.028     7.66    0.000</span></span>
+<span><span class="co">#&gt;     X                0.211      0.027     7.75    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;     z1               0.170      0.017    10.24    0.000</span></span>
-<span><span class="co">#&gt;     z2               0.160      0.011    13.94    0.000</span></span>
+<span><span class="co">#&gt;     z1               0.170      0.017    10.18    0.000</span></span>
+<span><span class="co">#&gt;     z2               0.160      0.012    13.55    0.000</span></span>
 <span><span class="co">#&gt;     x1               0.000                             </span></span>
 <span><span class="co">#&gt;     y1               0.000                             </span></span>
-<span><span class="co">#&gt;     Z                1.010      0.020    51.26    0.000</span></span>
-<span><span class="co">#&gt;     X                1.141      0.017    69.00    0.000</span></span>
-<span><span class="co">#&gt;     Y                1.284      0.043    30.19    0.000</span></span></code></pre></div>
+<span><span class="co">#&gt;     Z                1.010      0.019    51.97    0.000</span></span>
+<span><span class="co">#&gt;     X                1.141      0.017    67.76    0.000</span></span>
+<span><span class="co">#&gt;     Y                1.284      0.042    30.63    0.000</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="the-qml-approach">The QML approach<a class="anchor" aria-label="anchor" href="#the-qml-approach"></a>
@@ -335,26 +341,28 @@ variables.</p>
 <span><span class="co">#&gt;     Y                1.399      0.044    31.62    0.000</span></span></code></pre></div>
 </div>
 </div>
-  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+  </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>
     </nav></aside>
 </div>
 
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Kjell Solem Slupphaug.</p>
+  <p></p>
+<p>Developed by Kjell Solem Slupphaug.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.0.</p>
+  <p></p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
 </div>
 
     </footer>
 </div>
 
+  
 
-
-
+  
 
   </body>
 </html>
