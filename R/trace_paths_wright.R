@@ -113,23 +113,23 @@ addMissingCovariances <- function(pt) {
 
 #' Estimate formulas for (co-)variance paths using Wright's path tracing rules
 #'
-#' @param pt A data frame with columns lhs, op, rhs, and mod, from modsemify(syntax)
-#' @param x source variable
-#' @param y destination variable
-#' @param parenthesis if TRUE, the output will be enclosed in parenthesis
-#' @param missing.cov if TRUE covariances missing from the model syntax will be added
-#' @param measurement.model if TRUE, the function will use the measurement model
-#' @param maxlen maximum length of a path before aborting
-#' @param ... additional arguments passed to trace_path
+#' @param pt A data frame with columns \code{lhs}, \code{op}, \code{rhs}, and \code{mod}, from \link{modsemify}
+#' @param x Source variable
+#' @param y Destination variable
+#' @param parenthesis If \code{TRUE}, the output will be enclosed in parenthesis
+#' @param missing.cov If \code{TRUE}, covariances missing from the model syntax will be added
+#' @param measurement.model If \code{TRUE}, the function will use the measurement model
+#' @param maxlen Maximum length of a path before aborting
+#' @param ... Additional arguments passed to \link{trace_path}
 #'
 #' @return A string with the estimated path (simplified if possible)
 #' @export 
 #' @description
-#' This function estimates the path from x to y using the path tracing rules, 
-#' note that it only works with structural parameters, so "=~" are ignored. unless 
-#' measurement.model = TRUE.
-#' you want to use the measurement model, 
-#' "~" in the mod column of pt.
+#' This function estimates the path from \code{x} to \code{y} using the path tracing rules. 
+#' Note that it only works with structural parameters, so \code{"=~"} are ignored, unless 
+#' \code{measurement.model = TRUE}.
+#' If you want to use the measurement model, 
+#' \code{"~"} should be in the \code{mod} column of \code{pt}.
 #' @examples
 #' library(modsem)
 #' m1 <- '
@@ -140,7 +140,7 @@ addMissingCovariances <- function(pt) {
 #'
 #'   # Inner model
 #'   Y ~ X + Z + X:Z
-#''
+#' '
 #' pt <- modsemify(m1)
 #' trace_path(pt, x = "Y", y = "Y", missing.cov = TRUE) # variance of Y
 trace_path <- function(pt, x, y, parenthesis = TRUE, missing.cov = FALSE,

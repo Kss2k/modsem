@@ -156,11 +156,11 @@ createParTableBranch <- function(syntaxTree) {
 }
 
 
-#' Generate parameter table for lavaan syntax 
+#' Generate parameter table for \code{lavaan} syntax 
 #'
 #' @param syntax model syntax
 #'
-#' @return data.frame with columns lhs, op, rhs, mod
+#' @return \code{data.frame} with columns \code{lhs, op, rhs, mod}
 #' @export modsemify
 #'
 #' @examples 

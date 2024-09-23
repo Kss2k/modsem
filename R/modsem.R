@@ -1,38 +1,42 @@
 #' Interaction between latent variables
 #'
-#' @param model.syntax lavaan syntax
+#' @param model.syntax \code{lavaan} syntax
 #' 
 #' @param data dataframe
 #' 
 #' @param method method to use:
-#' "rca" = residual centering approach (passed to lavaan),
-#' "uca" = unconstrained approach (passed to lavaan),
-#' "dblcent" = double centering approach (passed to lavaan),
-#' "pind" = prod ind approach, with no constraints or centering (passed to lavaan),
-#' "lms" = laten model structural equations (not passed to lavaan).
-#' "qml" = quasi maximum likelihood estimation of laten model structural equations (not passed to lavaan).
-#' "custom" = use parameters specified in the function call (passed to lavaan)
+#' \code{"rca"} = residual centering approach (passed to \code{lavaan}),
+#' \code{"uca"} = unconstrained approach (passed to \code{lavaan}),
+#' \code{"dblcent"} = double centering approach (passed to \code{lavaan}),
+#' \code{"pind"} = prod ind approach, with no constraints or centering (passed to \code{lavaan}),
+#' \code{"lms"} = latent model structural equations (not passed to \code{lavaan}),
+#' \code{"qml"} = quasi maximum likelihood estimation of latent model structural equations (not passed to \code{lavaan}),
+#' \code{"custom"} = use parameters specified in the function call (passed to \code{lavaan}).
 #' 
-#' @param ... arguments passed to other functions depending on method (see modsem_pi, modsem_da, and modsem_mplus)
-#' @return modsem object
+#' @param ... arguments passed to other functions depending on the method (see \link{modsem_pi}, \link{modsem_da}, and \link{modsem_mplus})
+#' @return \code{modsem} object
 #' @export 
 #' @description
-#' modsem is a function for estimating interaction effects between latent variables, 
-#' in structural equation models (SEM's).
-#' Methods for estimating interaction effects in SEM's can basically be split into 
-#' two frameworks: 1. Product Indicator based approaches ("dblcent", "rca", "uca", 
-#' "ca", "pind"), and 2. Distributionally based approaches ("lms", "qml").
-#' For the product indicator based approaces, modsem() is essentially a just 
-#' a fancy wrapper for lavaan::sem()  which generates the 
-#' necessary syntax, and variables for the estimation of models with latent product indicators.
-#' The distributionally based approaches are implemented in seperately, and are 
-#' are not estimated using lavaan::sem(), but rather using custom functions (largely)
-#' written in C++ for performance reasons. For greater control, it is advised that 
-#' you use one of the sub-functions (modsem_pi, modsem_da, modsem_mplus) directly, 
-#' as passing additional arguments to them via modsem() can lead to unexpected behavior.
+#' \code{modsem()} is a function for estimating interaction effects between latent variables 
+#' in structural equation models (SEMs).
+#' Methods for estimating interaction effects in SEMs can basically be split into 
+#' two frameworks: 
+#' 1. Product Indicator-based approaches (\code{"dblcent"}, \code{"rca"}, \code{"uca"}, 
+#' \code{"ca"}, \code{"pind"})
+#' 2. Distributionally based approaches (\code{"lms"}, \code{"qml"}).
+#' 
+#' For the product indicator-based approaches, \code{modsem()} is essentially a fancy wrapper for \code{lavaan::sem()} which generates the 
+#' necessary syntax and variables for the estimation of models with latent product indicators.
+#' 
+#' The distributionally based approaches are implemented separately and are 
+#' not estimated using \code{lavaan::sem()}, but rather using custom functions (largely
+#' written in \code{C++} for performance reasons). For greater control, it is advised that 
+#' you use one of the sub-functions (\link{modsem_pi}, \link{modsem_da}, \link{modsem_mplus}) directly, 
+#' as passing additional arguments to them via \code{modsem()} can lead to unexpected behavior.
+#' 
 #' @examples
 #' library(modsem)
-#' # For more examples check README and/or GitHub.
+#' # For more examples, check README and/or GitHub.
 #' # One interaction
 #' m1 <- '
 #'   # Outer Model
@@ -60,7 +64,6 @@
 #' # QML approach
 #' est1_qml <- modsem(m1, oneInt, method = "qml")
 #' summary(est1_qml)
-#' 
 #' }
 #' 
 #' # Theory Of Planned Behavior
@@ -78,7 +81,7 @@
 #'   BEH ~ INT:PBC  
 #' '
 #' 
-#' # double centering approach
+#' # Double centering approach
 #' est_tpb <- modsem(tpb, data = TPB)
 #' summary(est_tpb)
 #'

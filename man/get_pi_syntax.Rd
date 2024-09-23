@@ -2,37 +2,37 @@
 % Please edit documentation in R/modsem_pi.R
 \name{get_pi_syntax}
 \alias{get_pi_syntax}
-\title{Get lavaan syntax for product indicator approaches}
+\title{Get \code{lavaan} syntax for product indicator approaches}
 \usage{
 get_pi_syntax(model.syntax, method = "dblcent", match = FALSE, ...)
 }
 \arguments{
-\item{model.syntax}{lavaan syntax}
+\item{model.syntax}{\code{lavaan} syntax}
 
 \item{method}{method to use:
-"rca" = residual centering approach,
-"uca" = unconstrained approach,
-"dblcent" = double centering approach,
-"pind" = prod ind approach, with no constraints or centering,
-"custom" = use parameters specified in the function call}
+\code{"rca"} = residual centering approach,
+\code{"uca"} = unconstrained approach,
+\code{"dblcent"} = double centering approach,
+\code{"pind"} = prod ind approach, with no constraints or centering,
+\code{"custom"} = use parameters specified in the function call}
 
-\item{match}{should product indicators be made using the match strategy}
+\item{match}{should the product indicators be created by using the match-strategy}
 
-\item{...}{arguments passed to other functions (e.g., modsem_pi)}
+\item{...}{arguments passed to other functions (e.g., \link{modsem_pi})}
 }
 \value{
-character vector
+\code{character} vector
 }
 \description{
-get_pi_syntax is a function for creating the lavaan syntax used for estimating 
-latent interaction models using one of the product indiactors in lavaan.
+\code{get_pi_syntax()} is a function for creating the \code{lavaan} syntax used for estimating 
+latent interaction models using one of the product indicators in \code{lavaan}.
 }
 \examples{
 library(modsem)
 library(lavaan)
 m1 <- '
   # Outer Model
-  X =~ x1 + x2 +x3
+  X =~ x1 + x2 + x3
   Y =~ y1 + y2 + y3
   Z =~ z1 + z2 + z3
   

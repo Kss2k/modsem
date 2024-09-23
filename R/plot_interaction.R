@@ -4,14 +4,14 @@
 #' @param z The name of the moderator variable 
 #' @param y The name of the outcome variable 
 #' @param xz The name of the interaction term. If the interaction term is not specified, it
-#' it will be created using `x` and `z`.
-#' @param vals_x The values of the x variable to plot, the more values the smoother the std.error-area will be
-#' @param vals_z The values of the moderator variable to plot. A seperate regression 
-#' line ("y ~ x | z") will be plotted for each value of the moderator variable
-#' @param model An object of class `modsem_pi`, `modsem_da`, or `modsem_mplus` 
+#' will be created using \code{x} and \code{z}.
+#' @param vals_x The values of the \code{x} variable to plot, the more values the smoother the std.error-area will be
+#' @param vals_z The values of the moderator variable to plot. A separate regression 
+#' line (\code{y ~ x | z}) will be plotted for each value of the moderator variable
+#' @param model An object of class \code{modsem_pi}, \code{modsem_da}, or \code{modsem_mplus} 
 #' @param alpha_se The alpha level for the std.error area
 #' @param ... Additional arguments passed to other functions 
-#' @return A ggplot object
+#' @return A \code{ggplot} object
 #' @export 
 #' @examples
 #' library(modsem)

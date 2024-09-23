@@ -1,6 +1,6 @@
 #' Extract parameterEstimates from an estimated model
 #'
-#' @param object An object of class `modsem_pi`, `modsem_da`, or `modsem_mplus`
+#' @param object An object of class \code{\link{modsem_pi}}, \code{\link{modsem_da}}, or \code{\link{modsem_mplus}}
 #' @param ... Additional arguments passed to other functions
 #' @export 
 parameter_estimates <- function(object, ...) {
@@ -10,8 +10,8 @@ parameter_estimates <- function(object, ...) {
 
 #' Extract or modify parTable from an estimated model with estimated variances of interaction terms
 #'
-#' @param object An object of class `modsem_da`,  `modsem_mplus`, 
-#' or a parTable of class `data.frame`
+#' @param object An object of class \code{\link{modsem_da}},  \code{\link{modsem_mplus}}, 
+#' or a parTable of class \code{\link{data.frame}}
 #' @param ... Additional arguments passed to other functions
 #' @export
 var_interactions <- function(object, ...) {
@@ -58,18 +58,18 @@ var_interactions.data.frame <- function(object, ...) {
 
 #' Get standardized estimates
 #'
-#' @param object An object of class `modsem_da`,  `modsem_mplus`, 
-#' or a parTable of class `data.frame`
+#' @param object An object of class \code{modsem_da}, \code{modsem_mplus}, 
+#' or a \code{parTable} of class \code{data.frame}
 #' @param ... Additional arguments passed to other functions
-#' @details for `modsem_da`, and `modsem_mplus` objects, 
-#' the interaction term is not standardized such that var(xz) = 1. 
+#' @details For \code{modsem_da}, and \code{modsem_mplus} objects, 
+#' the interaction term is not standardized such that \code{var(xz) = 1}. 
 #' The interaction term is not an actual variable in the model, meaning that it does not 
 #' have a variance. It must therefore be calculated from the other parameters in the model.
-#' Assuming normality and zero-means the variance is calculated as 
-#' `var(xz) = var(x) * var(z) + cov(x, z)^2`. Thus setting the variance of the interaction 
-#' term to 1, would only be 'correct' if the correlation between x and z is zero.
+#' Assuming normality and zero-means, the variance is calculated as 
+#' \code{var(xz) = var(x) * var(z) + cov(x, z)^2}. Thus setting the variance of the interaction 
+#' term to 1 would only be 'correct' if the correlation between \code{x} and \code{z} is zero.
 #' This means that the standardized estimates for the interaction term will 
-#' be different from those using lavaan, since there the interaction term is an 
+#' be different from those using \code{lavaan}, since there the interaction term is an 
 #' actual latent variable in the model, with a standardized variance of 1.
 #' @export
 standardized_estimates <- function(object, ...) {

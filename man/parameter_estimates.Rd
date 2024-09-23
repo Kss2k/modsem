@@ -7,7 +7,7 @@
 parameter_estimates(object, ...)
 }
 \arguments{
-\item{object}{An object of class `modsem_pi`, `modsem_da`, or `modsem_mplus`}
+\item{object}{An object of class \code{\link{modsem_pi}}, \code{\link{modsem_da}}, or \code{\link{modsem_mplus}}}
 
 \item{...}{Additional arguments passed to other functions}
 }

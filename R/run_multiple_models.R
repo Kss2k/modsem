@@ -1,5 +1,5 @@
-# ------------------------------------------------------------------------------
 # Function for running the same model with multiple methods 
+# Used within tests
 allMethods <- c("rca", "uca", "ca", "dblcent", "mplus", "pind")
 allNativeMethods <- allMethods[allMethods != "mplus"]
 fastMethods <- c("rca", "uca", "dblcent", "pind")

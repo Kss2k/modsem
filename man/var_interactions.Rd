@@ -7,8 +7,8 @@
 var_interactions(object, ...)
 }
 \arguments{
-\item{object}{An object of class `modsem_da`,  `modsem_mplus`, 
-or a parTable of class `data.frame`}
+\item{object}{An object of class \code{\link{modsem_da}},  \code{\link{modsem_mplus}}, 
+or a parTable of class \code{\link{data.frame}}}
 
 \item{...}{Additional arguments passed to other functions}
 }

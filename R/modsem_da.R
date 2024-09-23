@@ -1,110 +1,122 @@
-# Estimate SEM using distribution analytic (DA) approaches
-# Last updated: 29.05.2024
-
 #' Interaction between latent variables using lms and qml approaches
 #'
-#' @param model.syntax lavaan syntax
+#' @param model.syntax \code{lavaan} syntax
 #'
 #' @param data dataframe
 #'
 #' @param method method to use:
-#' "lms" = laten model structural equations (not passed to lavaan).
-#' "qml" = quasi maximum likelihood estimation of laten model structural equations (not passed to lavaan).
+#' \code{"lms"} = latent model structural equations (not passed to \code{lavaan}).
+#' \code{"qml"} = quasi maximum likelihood estimation of latent model structural equations (not passed to \code{lavaan}).
 #'
 #' @param verbose should estimation progress be shown
 #'
 #' @param optimize should starting parameters be optimized
 #'
-#' @param nodes number of quadrature nodes (points of integration) used in lms,
-#' increased number gives better estimates but slower computation. How many is needed, depends on the complexity of the model
-#' For simple models you somwhere between 16-24 should be enough, for more complex higher numbers may be needed. 
-#' For models where there is an interaction effects between and endogenous and exogenous variable 
-#' the number of nodes should at least be 32, but practically (e.g., ordinal/skewed data) more than 32 is recommended. In cases, 
-#' where data is non-normal it might be better to use the qml approach instead. For large
-#' numbers of nodes, you might want to change the 'quad.range' argument.
+#' @param nodes number of quadrature nodes (points of integration) used in \code{lms},
+#' increased number gives better estimates but slower computation. How many are needed depends on the complexity of the model.
+#' For simple models, somewhere between 16-24 nodes should be enough; for more complex models, higher numbers may be needed. 
+#' For models where there is an interaction effect between an endogenous and exogenous variable, 
+#' the number of nodes should be at least 32, but practically (e.g., ordinal/skewed data), more than 32 is recommended. In cases 
+#' where data is non-normal, it might be better to use the \code{qml} approach instead. For large
+#' numbers of nodes, you might want to change the \code{'quad.range'} argument.
 #'
 #' @param convergence convergence criterion. Lower values give better estimates but slower computation.
 #' 
-#' @param optimizer optimizer to use, can be either "nlminb" or "L-BFGS-B". For LMS, "nlminb" is recommended. 
-#' For QML, "L-BFGS-B" may be faster if there is a large number of iterations, but slower if there are few iterations.
+#' @param optimizer optimizer to use, can be either \code{"nlminb"} or \code{"L-BFGS-B"}. For LMS, \code{"nlminb"} is recommended. 
+#' For QML, \code{"L-BFGS-B"} may be faster if there is a large number of iterations, but slower if there are few iterations.
 #'
 #' @param center.data should data be centered before fitting model
 #'
 #' @param standardize.data should data be scaled before fitting model, will be overridden by
-#' standardize if standardize is set to TRUE.
-#' NOTE: It is recommended that you estimate the model normally and then standardize the output using
-#' `standardized_estimates()`.
+#' \code{standardize} if \code{standardize} is set to \code{TRUE}.
+#' 
+#' \strong{NOTE}: It is recommended that you estimate the model normally and then standardize the output using
+#' \code{\link{standardized_estimates}}.
 #'
-#' @param standardize.out should output be standardized (note will alter the relationsships of
-#' parameter constraints, since to parameters are scaled unevenly, even if they
+#' @param standardize.out should output be standardized (note will alter the relationships of
+#' parameter constraints since parameters are scaled unevenly, even if they
 #' have the same label). This does not alter the estimation of the model, only the
 #' output.
-#' NOTE: It is recommended that you estimate the model normally and then standardize the output using
-#' `standardized_estimates()`.
+#' 
+#' \strong{NOTE}: It is recommended that you estimate the model normally and then standardize the output using
+#' \code{\link{standardized_estimates}}.
 #'
-#' @param mean.observed should mean structure of the observed variables be estimated,
-#' will be overridden by standardize if standardize is set to TRUE.
-#' NOTE: Not recommended unless you know what you are doing.
+#' @param mean.observed should the mean structure of the observed variables be estimated?
+#' This will be overridden by \code{standardize} if \code{standardize} is set to \code{TRUE}.
+#' 
+#' \strong{NOTE}: Not recommended unless you know what you are doing.
 #'
 #' @param standardize will standardize the data before fitting the model, remove the mean
-#' structure of the observed variables, and standardize the output. Note that standardize.data
-#' mean.observed, standardize.out will be overridden by standardize if standardize is set to TRUE.
-#' NOTE: It is recommended that you estimate the model normally and then standardize the output using
-#' `standardized_estimates()`.
+#' structure of the observed variables, and standardize the output. Note that \code{standardize.data},
+#' \code{mean.observed}, and \code{standardize.out} will be overridden by \code{standardize} if \code{standardize} is set to \code{TRUE}.
+#' 
+#' \strong{NOTE}: It is recommended that you estimate the model normally and then standardize the output using
+#' \code{\link{standardized_estimates}}.
 #'
-#' @param double try to double the number of dimensions of integrations used in LMS,
-#' this will be extremely slow, but should be more similar to mplus.
+#' @param double try to double the number of dimensions of integration used in LMS,
+#' this will be extremely slow but should be more similar to \code{mplus}.
 #'
 #' @param cov.syntax model syntax for implied covariance matrix (see 'vignette("interaction_two_etas", "modsem")')
 #'
-#' @param calc.se should standard errros be computed, NOTE: If 'FALSE' information matrix will not be computed either
+#' @param calc.se should standard errors be computed? \strong{NOTE}: If \code{FALSE}, the information matrix will not be computed either.
 #'
-#' @param FIM should fisher information matrix be calculated using observed of expected. must be either "observed" or "expected"
+#' @param FIM should the Fisher information matrix be calculated using the observed or expected values? Must be either \code{"observed"} or \code{"expected"}.
 #'
-#' @param EFIM.S if expected fisher information matrix is computed, EFIM.S selects the sample size of the generated data
+#' @param EFIM.S if the expected Fisher information matrix is computed, \code{EFIM.S} selects the sample size of the generated data.
 #'
-#' @param OFIM.hessian should observed fisher information be computed using hessian? if FALSE, it is computed using gradient
+#' @param OFIM.hessian should the observed Fisher information be computed using the Hessian? If \code{FALSE}, it is computed using the gradient.
 #'
-#' @param EFIM.parametric should data for calculating expected fisher information matrix be 
-#' simulated parametrically (simulated based on the assumptions- and implied parameters
-#' from the model), or non-parametrically (stochastically sampled). If you believe that 
-#' normality assumptions are violated, 'EFIM.parametric = FALSE' might be the better option.
+#' @param EFIM.parametric should data for calculating the expected Fisher information matrix be 
+#' simulated parametrically (simulated based on the assumptions and implied parameters
+#' from the model), or non-parametrically (stochastically sampled)? If you believe that 
+#' normality assumptions are violated, \code{EFIM.parametric = FALSE} might be the better option.
 #'
 #' @param robust.se should robust standard errors be computed? Meant to be used for QML, 
-#' can be unreliable with the LMS-approach.
-#' @param max.iter max numebr of iterations
-#' @param max.step max steps for the M-step in the EM algorithm (LMS)
-#' @param fix.estep if TRUE, E-step will be fixed and the prior probabilities are set to the best prior probabilities, 
-#' if loglikelihood is decreasing for more than 30 iterations.
-#' @param start starting parameters 
-#' @param epsilon finite difference for numerical derivatives
+#' can be unreliable with the LMS approach.
+#'
+#' @param max.iter maximum number of iterations.
+#'
+#' @param max.step maximum steps for the M-step in the EM algorithm (LMS).
+#'
+#' @param fix.estep if \code{TRUE}, the E-step will be fixed, and the prior probabilities will be set to the best prior probabilities, 
+#' if the log-likelihood decreases for more than 30 iterations.
+#'
+#' @param start starting parameters.
+#'
+#' @param epsilon finite difference for numerical derivatives.
+#'
 #' @param quad.range range in z-scores to perform numerical integration in LMS using 
-#' Gaussian-Hermite Quadratures. By default Inf, such that f(t) is integrated from -Inf to Inf, 
-#' but this will likely be inefficient and pointless at large number of nodes. Nodes outside 
-#' +/- quad.range will be ignored.
+#' Gaussian-Hermite Quadratures. By default \code{Inf}, such that \code{f(t)} is integrated from -Inf to Inf, 
+#' but this will likely be inefficient and pointless at a large number of nodes. Nodes outside 
+#' \code{+/- quad.range} will be ignored.
 #'
-#' @param n.threads number of cores to use for parallel processing, if NULL, it will use <= 2 threads, 
-#' if an integer is specified, it will use that number of threads (e.g., `n.threads = 4`, will use 4 threads)
-#' if = "default" it will use the default number of threads (2).
-#' if = "max" it will use all available threads, "min" will use 1 thread.
-#' @param ... additional arguments to be passed to the estimation function
+#' @param n.threads number of cores to use for parallel processing. If \code{NULL}, it will use <= 2 threads. 
+#' If an integer is specified, it will use that number of threads (e.g., \code{n.threads = 4} will use 4 threads).
+#' If \code{"default"}, it will use the default number of threads (2).
+#' If \code{"max"}, it will use all available threads, \code{"min"} will use 1 thread.
 #'
-#' @return modsem_da object
+#' @param ... additional arguments to be passed to the estimation function.
+#'
+#' @return \code{modsem_da} object
 #' @export
 #' 
 #' @description 
-#' modsem_da is a function for estimating interaction effects between latent variables,
-#' in structural equation models (SEMs), using distributional analytic (DA) approaches.
-#' Methods for estimating interaction effects in SEM's can basically be split into
-#' two frameworks: 1. Product Indicator based approaches ("dblcent", "rca", "uca",
-#' "ca", "pind"), and 2. Distributionally based approaches ("lms", "qml").
-#' modsem_da() handles the latter, and can estimate models using both qml and lms
+#' \code{modsem_da()} is a function for estimating interaction effects between latent variables
+#' in structural equation models (SEMs) using distributional analytic (DA) approaches.
+#' Methods for estimating interaction effects in SEMs can basically be split into
+#' two frameworks: 
+#' 1. Product Indicator-based approaches (\code{"dblcent"}, \code{"rca"}, \code{"uca"},
+#' \code{"ca"}, \code{"pind"})
+#' 2. Distributionally based approaches (\code{"lms"}, \code{"qml"}).
+#' 
+#' \code{modsem_da()} handles the latter and can estimate models using both QML and LMS,
 #' necessary syntax, and variables for the estimation of models with latent product indicators.
-#' NOTE: run 'default_settings_da()' to see default arguments.
+#' 
+#' \strong{NOTE}: Run \code{\link{default_settings_da}} to see default arguments.
 #'
 #' @examples
 #' library(modsem)
-#' # For more examples check README and/or GitHub.
+#' # For more examples, check README and/or GitHub.
 #' # One interaction
 #' m1 <- "
 #'   # Outer Model
@@ -121,7 +133,6 @@
 #' est1 <- modsem_da(m1, oneInt, method = "qml")
 #' summary(est1)
 #'
-#'
 #' # Theory Of Planned Behavior
 #' tpb <- "
 #' # Outer Model (Based on Hagger et al., 2007)
@@ -135,17 +146,16 @@
 #'   # Covariances
 #'   ATT ~~ SN + PBC
 #'   PBC ~~ SN
-#'   # Causal Relationsships
+#'   # Causal Relationships
 #'   INT ~ ATT + SN + PBC
 #'   BEH ~ INT + PBC
 #'   BEH ~ INT:PBC
 #' "
 #'
-#' # lms approach
+#' # LMS Approach
 #' estTpb <- modsem_da(tpb, data = TPB, method = lms)
 #' summary(estTpb)
 #' }
-#'
 modsem_da <- function(model.syntax = NULL,
                       data = NULL,
                       method = "lms",

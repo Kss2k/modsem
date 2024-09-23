@@ -2,7 +2,7 @@
 % Please edit documentation in R/parser.R
 \name{modsemify}
 \alias{modsemify}
-\title{Generate parameter table for lavaan syntax}
+\title{Generate parameter table for \code{lavaan} syntax}
 \usage{
 modsemify(syntax)
 }
@@ -10,10 +10,10 @@ modsemify(syntax)
 \item{syntax}{model syntax}
 }
 \value{
-data.frame with columns lhs, op, rhs, mod
+\code{data.frame} with columns \code{lhs, op, rhs, mod}
 }
 \description{
-Generate parameter table for lavaan syntax
+Generate parameter table for \code{lavaan} syntax
 }
 \examples{
 library(modsem)

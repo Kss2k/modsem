@@ -30,16 +30,16 @@ modsem_pi(
 )
 }
 \arguments{
-\item{model.syntax}{lavaan syntax}
+\item{model.syntax}{\code{lavaan} syntax}
 
 \item{data}{dataframe}
 
 \item{method}{method to use:
-"rca" = residual centering approach (passed to lavaan),
-"uca" = unconstrained approach (passed to lavaan),
-"dblcent" = double centering approach (passed to lavaan),
-"pind" = prod ind approach, with no constraints or centering (passed to lavaan),
-"custom" = use parameters specified in the function call (passed to lavaan)}
+\code{"rca"} = residual centering approach (passed to \code{lavaan}),
+\code{"uca"} = unconstrained approach (passed to \code{lavaan}),
+\code{"dblcent"} = double centering approach (passed to \code{lavaan}),
+\code{"pind"} = prod ind approach, with no constraints or centering (passed to \code{lavaan}),
+\code{"custom"} = use parameters specified in the function call (passed to \code{lavaan})}
 
 \item{match}{should the product indicators be created by using the match-strategy}
 
@@ -47,21 +47,21 @@ modsem_pi(
 
 \item{center.data}{should data be centered before fitting model}
 
-\item{first.loading.fixed}{Sould the first factorloading in the latent prod be fixed to one?}
+\item{first.loading.fixed}{Should the first factor loading in the latent product be fixed to one?}
 
-\item{center.before}{should inds in prods be centered before computing prods (overwritten by method, if method != NULL)}
+\item{center.before}{should indicators in products be centered before computing products (overwritten by \code{method}, if \code{method != NULL})}
 
-\item{center.after}{should ind prods be centered after they have been computed?}
+\item{center.after}{should indicator products be centered after they have been computed?}
 
-\item{residuals.prods}{should ind prods be centered using residuals (overwritten by method, if method != NULL)}
+\item{residuals.prods}{should indicator products be centered using residuals (overwritten by \code{method}, if \code{method != NULL})}
 
-\item{residual.cov.syntax}{should syntax for residual covariances be produced (overwritten by method, if method != NULL)}
+\item{residual.cov.syntax}{should syntax for residual covariances be produced (overwritten by \code{method}, if \code{method != NULL})}
 
-\item{constrained.prod.mean}{should syntax prod mean be produced (overwritten by method, if method != NULL)}
+\item{constrained.prod.mean}{should syntax for product mean be produced (overwritten by \code{method}, if \code{method != NULL})}
 
-\item{constrained.loadings}{should syntax for constrained loadings be produced (overwritten by method, if method != NULL)}
+\item{constrained.loadings}{should syntax for constrained loadings be produced (overwritten by \code{method}, if \code{method != NULL})}
 
-\item{constrained.var}{should syntax for constrained variances be produced (overwritten by method, if method != NULL)}
+\item{constrained.var}{should syntax for constrained variances be produced (overwritten by \code{method}, if \code{method != NULL})}
 
 \item{constrained.res.cov.method}{method for constraining residual covariances}
 
@@ -69,33 +69,34 @@ modsem_pi(
 
 \item{auto.center}{methods which should be centered automatically (usually not useful)}
 
-\item{estimator}{estimator to use in lavaan}
+\item{estimator}{estimator to use in \code{lavaan}}
 
 \item{group}{group variable for multigroup analysis}
 
-\item{run}{should the model be run via lavaan, if FALSE only modified syntax and data is returned}
+\item{run}{should the model be run via \code{lavaan}, if \code{FALSE} only modified syntax and data is returned}
 
-\item{suppress.warnings.lavaan}{should warnings from lavaan be supressed?}
+\item{suppress.warnings.lavaan}{should warnings from \code{lavaan} be suppressed?}
 
-\item{...}{arguments passed to other functions, e.g,. lavaan}
+\item{...}{arguments passed to other functions, e.g., \code{lavaan}}
 }
 \value{
-modsem object
+\code{modsem} object
 }
 \description{
-modsem_pi is a function for estimating interaction effects between latent variables, 
+\code{modsem_pi()} is a function for estimating interaction effects between latent variables, 
 in structural equation models (SEMs), using product indicators.
-Methods for estimating interaction effects in SEM's can basically be split into 
-two frameworks: 1. Product Indicator based approaches ("dblcent", "rca", "uca", 
-"ca", "pind"), and 2. Distributionally based approaches ("lms", "qml").
-modsem_pi() is essentially a just 
-a fancy wrapper for lavaan::sem()  which generates the 
-necessary syntax, and variables for the estimation of models with latent product indicators.
-use `default_settings_pi()` to get the default settings for the different methods.
+Methods for estimating interaction effects in SEMs can basically be split into 
+two frameworks: 
+1. Product Indicator based approaches (\code{"dblcent"}, \code{"rca"}, \code{"uca"}, 
+\code{"ca"}, \code{"pind"}), and 
+2. Distributionally based approaches (\code{"lms"}, \code{"qml"}).
+\code{modsem_pi()} is essentially a fancy wrapper for \code{lavaan::sem()} which generates the 
+necessary syntax and variables for the estimation of models with latent product indicators.
+Use \code{default_settings_pi()} to get the default settings for the different methods.
 }
 \examples{
 library(modsem)
-# For more examples check README and/or GitHub.
+# For more examples, check README and/or GitHub.
 # One interaction
 m1 <- '
   # Outer Model
@@ -130,13 +131,13 @@ tpb <- '
   # Covariances
   ATT ~~ SN + PBC
   PBC ~~ SN 
-  # Causal Relationsships
+  # Causal Relationships
   INT ~ ATT + SN + PBC
   BEH ~ INT + PBC 
   BEH ~ INT:PBC  
 '
 
-# double centering approach
+# Double centering approach
 estTpb <- modsem_pi(tpb, data = TPB)
 summary(estTpb)
 
