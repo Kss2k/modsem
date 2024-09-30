@@ -88,6 +88,7 @@ anyAllNA <- function(data) {
 
 
 castDataNumericMatrix <- function(data) {
+  force(data) # evaluate to check for errors
   data <- tryCatch({
     numericData <- lapplyDf(data, FUN = as.numeric)
   },
