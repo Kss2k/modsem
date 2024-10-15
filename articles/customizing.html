@@ -66,7 +66,7 @@
       <h1>customizing interaction terms</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/Kss2k/modsem/blob/push-to-gh-pages/vignettes/customizing.Rmd" class="external-link"><code>vignettes/customizing.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/Kss2k/modsem/blob/main/vignettes/customizing.Rmd" class="external-link"><code>vignettes/customizing.Rmd</code></a></small>
       <div class="d-none name"><code>customizing.Rmd</code></div>
     </div>
 
@@ -90,7 +90,64 @@ indicators for your latent product.</p>
 <span><span class="st">'</span></span>
 <span></span>
 <span><span class="va">est1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m1</span>, <span class="va">oneInt</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="va">est1</span><span class="op">$</span><span class="va">syntax</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="va">est1</span><span class="op">$</span><span class="va">syntax</span><span class="op">)</span></span>
+<span><span class="co">#&gt; X =~ x1</span></span>
+<span><span class="co">#&gt; X =~ x2</span></span>
+<span><span class="co">#&gt; X =~ x3</span></span>
+<span><span class="co">#&gt; Y =~ y1</span></span>
+<span><span class="co">#&gt; Y =~ y2</span></span>
+<span><span class="co">#&gt; Y =~ y3</span></span>
+<span><span class="co">#&gt; Z =~ z1</span></span>
+<span><span class="co">#&gt; Z =~ z2</span></span>
+<span><span class="co">#&gt; Z =~ z3</span></span>
+<span><span class="co">#&gt; Y ~ X</span></span>
+<span><span class="co">#&gt; Y ~ Z</span></span>
+<span><span class="co">#&gt; Y ~ XZ</span></span>
+<span><span class="co">#&gt; XZ =~ 1*x1z1</span></span>
+<span><span class="co">#&gt; XZ =~ x2z1</span></span>
+<span><span class="co">#&gt; XZ =~ x3z1</span></span>
+<span><span class="co">#&gt; XZ =~ x1z2</span></span>
+<span><span class="co">#&gt; XZ =~ x2z2</span></span>
+<span><span class="co">#&gt; XZ =~ x3z2</span></span>
+<span><span class="co">#&gt; XZ =~ x1z3</span></span>
+<span><span class="co">#&gt; XZ =~ x2z3</span></span>
+<span><span class="co">#&gt; XZ =~ x3z3</span></span>
+<span><span class="co">#&gt; x1z1 ~~ 0*x2z2</span></span>
+<span><span class="co">#&gt; x1z1 ~~ 0*x2z3</span></span>
+<span><span class="co">#&gt; x1z1 ~~ 0*x3z2</span></span>
+<span><span class="co">#&gt; x1z1 ~~ 0*x3z3</span></span>
+<span><span class="co">#&gt; x1z2 ~~ 0*x2z1</span></span>
+<span><span class="co">#&gt; x1z2 ~~ 0*x2z3</span></span>
+<span><span class="co">#&gt; x1z2 ~~ 0*x3z1</span></span>
+<span><span class="co">#&gt; x1z2 ~~ 0*x3z3</span></span>
+<span><span class="co">#&gt; x1z3 ~~ 0*x2z1</span></span>
+<span><span class="co">#&gt; x1z3 ~~ 0*x2z2</span></span>
+<span><span class="co">#&gt; x1z3 ~~ 0*x3z1</span></span>
+<span><span class="co">#&gt; x1z3 ~~ 0*x3z2</span></span>
+<span><span class="co">#&gt; x2z1 ~~ 0*x3z2</span></span>
+<span><span class="co">#&gt; x2z1 ~~ 0*x3z3</span></span>
+<span><span class="co">#&gt; x2z2 ~~ 0*x3z1</span></span>
+<span><span class="co">#&gt; x2z2 ~~ 0*x3z3</span></span>
+<span><span class="co">#&gt; x2z3 ~~ 0*x3z1</span></span>
+<span><span class="co">#&gt; x2z3 ~~ 0*x3z2</span></span>
+<span><span class="co">#&gt; x1z1 ~~ x1z2</span></span>
+<span><span class="co">#&gt; x1z1 ~~ x1z3</span></span>
+<span><span class="co">#&gt; x1z1 ~~ x2z1</span></span>
+<span><span class="co">#&gt; x1z1 ~~ x3z1</span></span>
+<span><span class="co">#&gt; x1z2 ~~ x1z3</span></span>
+<span><span class="co">#&gt; x1z2 ~~ x2z2</span></span>
+<span><span class="co">#&gt; x1z2 ~~ x3z2</span></span>
+<span><span class="co">#&gt; x1z3 ~~ x2z3</span></span>
+<span><span class="co">#&gt; x1z3 ~~ x3z3</span></span>
+<span><span class="co">#&gt; x2z1 ~~ x2z2</span></span>
+<span><span class="co">#&gt; x2z1 ~~ x2z3</span></span>
+<span><span class="co">#&gt; x2z1 ~~ x3z1</span></span>
+<span><span class="co">#&gt; x2z2 ~~ x2z3</span></span>
+<span><span class="co">#&gt; x2z2 ~~ x3z2</span></span>
+<span><span class="co">#&gt; x2z3 ~~ x3z3</span></span>
+<span><span class="co">#&gt; x3z1 ~~ x3z2</span></span>
+<span><span class="co">#&gt; x3z1 ~~ x3z3</span></span>
+<span><span class="co">#&gt; x3z2 ~~ x3z3</span></span></code></pre></div>
 <p>Whilst this often is sufficient, you might want some control over how
 these indicators are created. In general, modsem() has two mechanisms
 for giving control over the creating of indicator products: 1. By
@@ -120,7 +177,75 @@ argument.</p>
 <span><span class="st">'</span></span>
 <span></span>
 <span><span class="va">est2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m2</span>, <span class="va">oneInt</span>, match <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est2</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est2</span><span class="op">)</span></span>
+<span><span class="co">#&gt; modsem: </span></span>
+<span><span class="co">#&gt; Method = dblcent</span></span>
+<span><span class="co">#&gt; lavaan 0.6-19 ended normally after 41 iterations</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;   Estimator                                         ML</span></span>
+<span><span class="co">#&gt;   Optimization method                           NLMINB</span></span>
+<span><span class="co">#&gt;   Number of model parameters                        22</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;   Number of observations                          2000</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Model Test User Model:</span></span>
+<span><span class="co">#&gt;                                                       </span></span>
+<span><span class="co">#&gt;   Test statistic                                11.355</span></span>
+<span><span class="co">#&gt;   Degrees of freedom                                14</span></span>
+<span><span class="co">#&gt;   P-value (Chi-square)                           0.658</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Parameter Estimates:</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;   Standard errors                             Standard</span></span>
+<span><span class="co">#&gt;   Information                                 Expected</span></span>
+<span><span class="co">#&gt;   Information saturated (h1) model          Structured</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Latent Variables:</span></span>
+<span><span class="co">#&gt;                    Estimate  Std.Err  z-value  P(&gt;|z|)</span></span>
+<span><span class="co">#&gt;   X =~                                                </span></span>
+<span><span class="co">#&gt;     x1                1.000                           </span></span>
+<span><span class="co">#&gt;     x2                0.819    0.021   38.127    0.000</span></span>
+<span><span class="co">#&gt;   Y =~                                                </span></span>
+<span><span class="co">#&gt;     y1                1.000                           </span></span>
+<span><span class="co">#&gt;     y2                0.807    0.010   82.495    0.000</span></span>
+<span><span class="co">#&gt;   Z =~                                                </span></span>
+<span><span class="co">#&gt;     z1                1.000                           </span></span>
+<span><span class="co">#&gt;     z2                0.836    0.024   35.392    0.000</span></span>
+<span><span class="co">#&gt;   XZ =~                                               </span></span>
+<span><span class="co">#&gt;     x1z1              1.000                           </span></span>
+<span><span class="co">#&gt;     x2z2              0.645    0.024   26.904    0.000</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Regressions:</span></span>
+<span><span class="co">#&gt;                    Estimate  Std.Err  z-value  P(&gt;|z|)</span></span>
+<span><span class="co">#&gt;   Y ~                                                 </span></span>
+<span><span class="co">#&gt;     X                 0.688    0.029   23.366    0.000</span></span>
+<span><span class="co">#&gt;     Z                 0.576    0.029   20.173    0.000</span></span>
+<span><span class="co">#&gt;     XZ                0.706    0.032   22.405    0.000</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Covariances:</span></span>
+<span><span class="co">#&gt;                    Estimate  Std.Err  z-value  P(&gt;|z|)</span></span>
+<span><span class="co">#&gt;  .x1z1 ~~                                             </span></span>
+<span><span class="co">#&gt;    .x2z2              0.000                           </span></span>
+<span><span class="co">#&gt;   X ~~                                                </span></span>
+<span><span class="co">#&gt;     Z                 0.202    0.025    8.182    0.000</span></span>
+<span><span class="co">#&gt;     XZ                0.003    0.026    0.119    0.905</span></span>
+<span><span class="co">#&gt;   Z ~~                                                </span></span>
+<span><span class="co">#&gt;     XZ                0.042    0.026    1.621    0.105</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Variances:</span></span>
+<span><span class="co">#&gt;                    Estimate  Std.Err  z-value  P(&gt;|z|)</span></span>
+<span><span class="co">#&gt;    .x1                0.179    0.022    8.029    0.000</span></span>
+<span><span class="co">#&gt;    .x2                0.151    0.015    9.956    0.000</span></span>
+<span><span class="co">#&gt;    .y1                0.184    0.021    8.577    0.000</span></span>
+<span><span class="co">#&gt;    .y2                0.136    0.014    9.663    0.000</span></span>
+<span><span class="co">#&gt;    .z1                0.197    0.025    7.802    0.000</span></span>
+<span><span class="co">#&gt;    .z2                0.138    0.018    7.831    0.000</span></span>
+<span><span class="co">#&gt;    .x1z1              0.319    0.035    9.141    0.000</span></span>
+<span><span class="co">#&gt;    .x2z2              0.244    0.016   15.369    0.000</span></span>
+<span><span class="co">#&gt;     X                 0.962    0.042   23.120    0.000</span></span>
+<span><span class="co">#&gt;    .Y                 0.964    0.042   23.110    0.000</span></span>
+<span><span class="co">#&gt;     Z                 0.987    0.044   22.260    0.000</span></span>
+<span><span class="co">#&gt;     XZ                1.041    0.054   19.441    0.000</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="more-complicated-models">More complicated models<a class="anchor" aria-label="anchor" href="#more-complicated-models"></a>
