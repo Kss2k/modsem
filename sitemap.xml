@@ -1,132 +1,46 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>/404.html</loc>
-  </url>
-  <url>
-    <loc>/LICENSE-text.html</loc>
-  </url>
-  <url>
-    <loc>/LICENSE.html</loc>
-  </url>
-  <url>
-    <loc>/articles/customizing.html</loc>
-  </url>
-  <url>
-    <loc>/articles/index.html</loc>
-  </url>
-  <url>
-    <loc>/articles/interaction_two_etas.html</loc>
-  </url>
-  <url>
-    <loc>/articles/lavaan.html</loc>
-  </url>
-  <url>
-    <loc>/articles/lms_qml.html</loc>
-  </url>
-  <url>
-    <loc>/articles/methods.html</loc>
-  </url>
-  <url>
-    <loc>/articles/modsem.html</loc>
-  </url>
-  <url>
-    <loc>/articles/observed_lms_qml.html</loc>
-  </url>
-  <url>
-    <loc>/articles/plot_interactions.html</loc>
-  </url>
-  <url>
-    <loc>/articles/quadratic.html</loc>
-  </url>
-  <url>
-    <loc>/authors.html</loc>
-  </url>
-  <url>
-    <loc>/index.html</loc>
-  </url>
-  <url>
-    <loc>/reference/TPB.html</loc>
-  </url>
-  <url>
-    <loc>/reference/TPB_UK.html</loc>
-  </url>
-  <url>
-    <loc>/reference/coef_modsem_da.html</loc>
-  </url>
-  <url>
-    <loc>/reference/compare_fit.html</loc>
-  </url>
-  <url>
-    <loc>/reference/default_settings_da.html</loc>
-  </url>
-  <url>
-    <loc>/reference/default_settings_pi.html</loc>
-  </url>
-  <url>
-    <loc>/reference/extract_lavaan.html</loc>
-  </url>
-  <url>
-    <loc>/reference/fit_modsem_da.html</loc>
-  </url>
-  <url>
-    <loc>/reference/get_pi_data.html</loc>
-  </url>
-  <url>
-    <loc>/reference/get_pi_syntax.html</loc>
-  </url>
-  <url>
-    <loc>/reference/index.html</loc>
-  </url>
-  <url>
-    <loc>/reference/jordan.html</loc>
-  </url>
-  <url>
-    <loc>/reference/modsem-package.html</loc>
-  </url>
-  <url>
-    <loc>/reference/modsem.html</loc>
-  </url>
-  <url>
-    <loc>/reference/modsem_da.html</loc>
-  </url>
-  <url>
-    <loc>/reference/modsem_inspect.html</loc>
-  </url>
-  <url>
-    <loc>/reference/modsem_mplus.html</loc>
-  </url>
-  <url>
-    <loc>/reference/modsem_pi.html</loc>
-  </url>
-  <url>
-    <loc>/reference/modsemify.html</loc>
-  </url>
-  <url>
-    <loc>/reference/multiplyIndicatorsCpp.html</loc>
-  </url>
-  <url>
-    <loc>/reference/oneInt.html</loc>
-  </url>
-  <url>
-    <loc>/reference/parameter_estimates.html</loc>
-  </url>
-  <url>
-    <loc>/reference/plot_interaction.html</loc>
-  </url>
-  <url>
-    <loc>/reference/standardized_estimates.html</loc>
-  </url>
-  <url>
-    <loc>/reference/summary.html</loc>
-  </url>
-  <url>
-    <loc>/reference/trace_path.html</loc>
-  </url>
-  <url>
-    <loc>/reference/var_interactions.html</loc>
-  </url>
-  <url>
-    <loc>/reference/vcov_modsem_da.html</loc>
-  </url>
+<urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
+<url><loc>/404.html</loc></url>
+<url><loc>/LICENSE-text.html</loc></url>
+<url><loc>/LICENSE.html</loc></url>
+<url><loc>/articles/customizing.html</loc></url>
+<url><loc>/articles/index.html</loc></url>
+<url><loc>/articles/interaction_two_etas.html</loc></url>
+<url><loc>/articles/lavaan.html</loc></url>
+<url><loc>/articles/lms_qml.html</loc></url>
+<url><loc>/articles/methods.html</loc></url>
+<url><loc>/articles/modsem.html</loc></url>
+<url><loc>/articles/observed_lms_qml.html</loc></url>
+<url><loc>/articles/plot_interactions.html</loc></url>
+<url><loc>/articles/quadratic.html</loc></url>
+<url><loc>/authors.html</loc></url>
+<url><loc>/index.html</loc></url>
+<url><loc>/reference/TPB.html</loc></url>
+<url><loc>/reference/TPB_UK.html</loc></url>
+<url><loc>/reference/coef_modsem_da.html</loc></url>
+<url><loc>/reference/compare_fit.html</loc></url>
+<url><loc>/reference/default_settings_da.html</loc></url>
+<url><loc>/reference/default_settings_pi.html</loc></url>
+<url><loc>/reference/extract_lavaan.html</loc></url>
+<url><loc>/reference/fit_modsem_da.html</loc></url>
+<url><loc>/reference/get_pi_data.html</loc></url>
+<url><loc>/reference/get_pi_syntax.html</loc></url>
+<url><loc>/reference/index.html</loc></url>
+<url><loc>/reference/jordan.html</loc></url>
+<url><loc>/reference/modsem-package.html</loc></url>
+<url><loc>/reference/modsem.html</loc></url>
+<url><loc>/reference/modsem_da.html</loc></url>
+<url><loc>/reference/modsem_inspect.html</loc></url>
+<url><loc>/reference/modsem_mplus.html</loc></url>
+<url><loc>/reference/modsem_pi.html</loc></url>
+<url><loc>/reference/modsemify.html</loc></url>
+<url><loc>/reference/multiplyIndicatorsCpp.html</loc></url>
+<url><loc>/reference/oneInt.html</loc></url>
+<url><loc>/reference/parameter_estimates.html</loc></url>
+<url><loc>/reference/plot_interaction.html</loc></url>
+<url><loc>/reference/standardized_estimates.html</loc></url>
+<url><loc>/reference/summary.html</loc></url>
+<url><loc>/reference/trace_path.html</loc></url>
+<url><loc>/reference/var_interactions.html</loc></url>
+<url><loc>/reference/vcov_modsem_da.html</loc></url>
 </urlset>
+

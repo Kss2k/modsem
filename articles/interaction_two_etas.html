@@ -5,70 +5,55 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<meta name="description" content="modsem">
 <title>interaction effects between endogenous variables • modsem</title>
-<script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<script src="../deps/jquery-3.6.1/jquery-3.6.1.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
-<!-- bootstrap-toc --><script src="https://cdn.jsdelivr.net/gh/afeld/bootstrap-toc@v1.0.1/dist/bootstrap-toc.min.js" integrity="sha256-4veVQbu7//Lk5TSmc7YV48MxtMy98e26cf5MrgZYnwo=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- search --><script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.js" integrity="sha512-zv6Ywkjyktsohkbp9bb45V6tEMoWhzFzXis+LrMehmJZZSys19Yxf1dopHx7WzIKxr5tK2dVcYmaCk2uqdjF4A==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/autocomplete.js/0.38.0/autocomplete.jquery.min.js" integrity="sha512-GU9ayf+66Xx2TmpxqJpliWbT5PiGYxpaG8rfnBEk1LL8l1KGkRShhngwdXK1UgqhAzWpZHSiYPc09/NwDQIGyg==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/mark.min.js" integrity="sha512-5CYOlHXGh6QpOFA/TeTylKLWfB3ftPsde7AnmhuitiTX4K5SqCLBeKro6sPS8ilsz1Q4NRx3v8Ko2IBiszzdww==" crossorigin="anonymous"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="interaction effects between endogenous variables">
-<meta property="og:description" content="modsem">
-<!-- mathjax --><script src="file:///usr/share/javascript/mathjax/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
-<script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-<![endif]-->
+<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.4.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/font-awesome-6.4.2/css/v4-shims.min.css" rel="stylesheet">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="interaction effects between endogenous variables">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
-    
 
-    <nav class="navbar fixed-top navbar-light navbar-expand-lg bg-light"><div class="container">
-    
+
+    <nav class="navbar navbar-expand-lg fixed-top bg-light" data-bs-theme="light" aria-label="Site navigation"><div class="container">
+
     <a class="navbar-brand me-2" href="../index.html">modsem</a>
 
     <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.3</small>
 
-    
+
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
-<li class="nav-item">
-  <a class="nav-link" href="../articles/modsem.html">Get started</a>
-</li>
-<li class="nav-item">
-  <a class="nav-link" href="../reference/index.html">Reference</a>
-</li>
+<li class="nav-item"><a class="nav-link" href="../articles/modsem.html">Get started</a></li>
+<li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="active nav-item dropdown">
-  <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-articles">Articles</a>
-  <div class="dropdown-menu" aria-labelledby="dropdown-articles">
-    <a class="dropdown-item" href="../articles/customizing.html">customizing interaction terms</a>
-    <a class="dropdown-item" href="../articles/interaction_two_etas.html">interaction effects between endogenous variables</a>
-    <a class="dropdown-item" href="../articles/lavaan.html">using lavaan functions</a>
-    <a class="dropdown-item" href="../articles/lms_qml.html">LMS and QML approaches</a>
-    <a class="dropdown-item" href="../articles/methods.html">methods</a>
-    <a class="dropdown-item" href="../articles/observed_lms_qml.html">observed variables in the LMS- and QML approach</a>
-    <a class="dropdown-item" href="../articles/plot_interactions.html">plotting interaction effects</a>
-    <a class="dropdown-item" href="../articles/quadratic.html">quadratic effects</a>
-  </div>
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
+<li><a class="dropdown-item" href="../articles/customizing.html">customizing interaction terms</a></li>
+    <li><a class="dropdown-item" href="../articles/interaction_two_etas.html">interaction effects between endogenous variables</a></li>
+    <li><a class="dropdown-item" href="../articles/lavaan.html">using lavaan functions</a></li>
+    <li><a class="dropdown-item" href="../articles/lms_qml.html">LMS and QML approaches</a></li>
+    <li><a class="dropdown-item" href="../articles/methods.html">methods</a></li>
+    <li><a class="dropdown-item" href="../articles/observed_lms_qml.html">observed variables in the LMS- and QML approach</a></li>
+    <li><a class="dropdown-item" href="../articles/plot_interactions.html">plotting interaction effects</a></li>
+    <li><a class="dropdown-item" href="../articles/quadratic.html">quadratic effects</a></li>
+  </ul>
 </li>
       </ul>
-<form class="form-inline my-2 my-lg-0" role="search">
-        <input type="search" class="form-control me-sm-2" aria-label="Toggle navigation" name="search-input" data-search-index="../search.json" id="search-input" placeholder="Search for" autocomplete="off">
-</form>
-
-      <ul class="navbar-nav">
-<li class="nav-item">
-  <a class="external-link nav-link" href="https://github.com/Kss2k/modsem/" aria-label="github">
-    <span class="fab fa fab fa-github fa-lg"></span>
-     
-  </a>
-</li>
+<ul class="navbar-nav">
+<li class="nav-item"><form class="form-inline" role="search">
+ <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
+</form></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/Kss2k/modsem/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
       </ul>
 </div>
 
-    
+
   </div>
 </nav><div class="container template-article">
 
@@ -77,10 +62,11 @@
 
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-      <img src="" class="logo" alt=""><h1>interaction effects between endogenous variables</h1>
+
+      <h1>interaction effects between endogenous variables</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/Kss2k/modsem/blob/HEAD/vignettes/interaction_two_etas.Rmd" class="external-link"><code>vignettes/interaction_two_etas.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/Kss2k/modsem/blob/push-to-gh-pages/vignettes/interaction_two_etas.Rmd" class="external-link"><code>vignettes/interaction_two_etas.Rmd</code></a></small>
       <div class="d-none name"><code>interaction_two_etas.Rmd</code></div>
     </div>
 
@@ -166,454 +152,31 @@ simultaneously. To acheive this, we can use the <code>cov.syntax</code>
 argument in <code>modsem</code>:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">est_lms</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">tpb_nonlinear</span>, data <span class="op">=</span> <span class="va">TPB</span>, cov.syntax <span class="op">=</span> <span class="va">tpb_linear</span>, method <span class="op">=</span> <span class="st">"lms"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: It is recommended that you have at least 48 nodes for interaction</span></span>
-<span><span class="co">#&gt; effects between endogenous variables in the lms approach 'nodes = 24'</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_lms</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Estimating null model</span></span>
-<span><span class="co">#&gt; EM: Iteration =     1, LogLik =   -28467.33, Change = -28467.332</span></span>
-<span><span class="co">#&gt; EM: Iteration =     2, LogLik =   -28124.48, Change =    342.852</span></span>
-<span><span class="co">#&gt; EM: Iteration =     3, LogLik =   -27825.10, Change =    299.377</span></span>
-<span><span class="co">#&gt; EM: Iteration =     4, LogLik =   -27581.12, Change =    243.980</span></span>
-<span><span class="co">#&gt; EM: Iteration =     5, LogLik =   -27370.69, Change =    210.431</span></span>
-<span><span class="co">#&gt; EM: Iteration =     6, LogLik =   -27175.43, Change =    195.264</span></span>
-<span><span class="co">#&gt; EM: Iteration =     7, LogLik =   -27000.48, Change =    174.946</span></span>
-<span><span class="co">#&gt; EM: Iteration =     8, LogLik =   -26848.56, Change =    151.919</span></span>
-<span><span class="co">#&gt; EM: Iteration =     9, LogLik =   -26711.51, Change =    137.051</span></span>
-<span><span class="co">#&gt; EM: Iteration =    10, LogLik =   -26592.54, Change =    118.968</span></span>
-<span><span class="co">#&gt; EM: Iteration =    11, LogLik =   -26504.04, Change =     88.504</span></span>
-<span><span class="co">#&gt; EM: Iteration =    12, LogLik =   -26466.85, Change =     37.190</span></span>
-<span><span class="co">#&gt; EM: Iteration =    13, LogLik =   -26452.38, Change =     14.465</span></span>
-<span><span class="co">#&gt; EM: Iteration =    14, LogLik =   -26439.05, Change =     13.331</span></span>
-<span><span class="co">#&gt; EM: Iteration =    15, LogLik =   -26430.51, Change =      8.541</span></span>
-<span><span class="co">#&gt; EM: Iteration =    16, LogLik =   -26422.81, Change =      7.698</span></span>
-<span><span class="co">#&gt; EM: Iteration =    17, LogLik =   -26403.89, Change =     18.924</span></span>
-<span><span class="co">#&gt; EM: Iteration =    18, LogLik =   -26402.25, Change =      1.642</span></span>
-<span><span class="co">#&gt; EM: Iteration =    19, LogLik =   -26401.21, Change =      1.037</span></span>
-<span><span class="co">#&gt; EM: Iteration =    20, LogLik =   -26400.26, Change =      0.955</span></span>
-<span><span class="co">#&gt; EM: Iteration =    21, LogLik =   -26399.30, Change =      0.960</span></span>
-<span><span class="co">#&gt; EM: Iteration =    22, LogLik =   -26398.64, Change =      0.658</span></span>
-<span><span class="co">#&gt; EM: Iteration =    23, LogLik =   -26398.02, Change =      0.615</span></span>
-<span><span class="co">#&gt; EM: Iteration =    24, LogLik =   -26397.74, Change =      0.278</span></span>
-<span><span class="co">#&gt; EM: Iteration =    25, LogLik =   -26397.33, Change =      0.420</span></span>
-<span><span class="co">#&gt; EM: Iteration =    26, LogLik =   -26397.20, Change =      0.128</span></span>
-<span><span class="co">#&gt; EM: Iteration =    27, LogLik =   -26396.77, Change =      0.425</span></span>
-<span><span class="co">#&gt; EM: Iteration =    28, LogLik =   -26396.48, Change =      0.292</span></span>
-<span><span class="co">#&gt; EM: Iteration =    29, LogLik =   -26396.34, Change =      0.145</span></span>
-<span><span class="co">#&gt; EM: Iteration =    30, LogLik =   -26396.31, Change =      0.022</span></span>
-<span><span class="co">#&gt; EM: Iteration =    31, LogLik =   -26395.95, Change =      0.365</span></span>
-<span><span class="co">#&gt; EM: Iteration =    32, LogLik =   -26395.73, Change =      0.215</span></span>
-<span><span class="co">#&gt; EM: Iteration =    33, LogLik =   -26395.68, Change =      0.055</span></span>
-<span><span class="co">#&gt; EM: Iteration =    34, LogLik =   -26395.37, Change =      0.304</span></span>
-<span><span class="co">#&gt; EM: Iteration =    35, LogLik =   -26395.30, Change =      0.079</span></span>
-<span><span class="co">#&gt; EM: Iteration =    36, LogLik =   -26395.10, Change =      0.198</span></span>
-<span><span class="co">#&gt; EM: Iteration =    37, LogLik =   -26395.04, Change =      0.057</span></span>
-<span><span class="co">#&gt; EM: Iteration =    38, LogLik =   -26394.99, Change =      0.054</span></span>
-<span><span class="co">#&gt; EM: Iteration =    39, LogLik =   -26394.96, Change =      0.028</span></span>
-<span><span class="co">#&gt; EM: Iteration =    40, LogLik =   -26394.93, Change =      0.031</span></span>
-<span><span class="co">#&gt; EM: Iteration =    41, LogLik =   -26394.91, Change =      0.019</span></span>
-<span><span class="co">#&gt; EM: Iteration =    42, LogLik =   -26394.89, Change =      0.023</span></span>
-<span><span class="co">#&gt; EM: Iteration =    43, LogLik =   -26394.87, Change =      0.015</span></span>
-<span><span class="co">#&gt; EM: Iteration =    44, LogLik =   -26394.85, Change =      0.019</span></span>
-<span><span class="co">#&gt; EM: Iteration =    45, LogLik =   -26394.84, Change =      0.013</span></span>
-<span><span class="co">#&gt; EM: Iteration =    46, LogLik =   -26394.82, Change =      0.018</span></span>
-<span><span class="co">#&gt; EM: Iteration =    47, LogLik =   -26394.81, Change =      0.012</span></span>
-<span><span class="co">#&gt; EM: Iteration =    48, LogLik =   -26394.79, Change =      0.018</span></span>
-<span><span class="co">#&gt; EM: Iteration =    49, LogLik =   -26394.78, Change =      0.013</span></span>
-<span><span class="co">#&gt; EM: Iteration =    50, LogLik =   -26394.76, Change =      0.020</span></span>
-<span><span class="co">#&gt; EM: Iteration =    51, LogLik =   -26394.74, Change =      0.015</span></span>
-<span><span class="co">#&gt; EM: Iteration =    52, LogLik =   -26394.72, Change =      0.028</span></span>
-<span><span class="co">#&gt; EM: Iteration =    53, LogLik =   -26394.69, Change =      0.022</span></span>
-<span><span class="co">#&gt; EM: Iteration =    54, LogLik =   -26394.63, Change =      0.062</span></span>
-<span><span class="co">#&gt; EM: Iteration =    55, LogLik =   -26394.58, Change =      0.057</span></span>
-<span><span class="co">#&gt; EM: Iteration =    56, LogLik =   -26394.29, Change =      0.284</span></span>
-<span><span class="co">#&gt; EM: Iteration =    57, LogLik =   -26394.04, Change =      0.248</span></span>
-<span><span class="co">#&gt; EM: Iteration =    58, LogLik =   -26393.97, Change =      0.075</span></span>
-<span><span class="co">#&gt; EM: Iteration =    59, LogLik =   -26393.73, Change =      0.240</span></span>
-<span><span class="co">#&gt; EM: Iteration =    60, LogLik =   -26393.72, Change =      0.011</span></span>
-<span><span class="co">#&gt; EM: Iteration =    61, LogLik =   -26393.71, Change =      0.013</span></span>
-<span><span class="co">#&gt; EM: Iteration =    62, LogLik =   -26393.70, Change =      0.005</span></span>
-<span><span class="co">#&gt; EM: Iteration =    63, LogLik =   -26393.69, Change =      0.008</span></span>
-<span><span class="co">#&gt; EM: Iteration =    64, LogLik =   -26393.69, Change =      0.003</span></span>
-<span><span class="co">#&gt; EM: Iteration =    65, LogLik =   -26393.68, Change =      0.007</span></span>
-<span><span class="co">#&gt; EM: Iteration =    66, LogLik =   -26393.68, Change =      0.003</span></span>
-<span><span class="co">#&gt; EM: Iteration =    67, LogLik =   -26393.67, Change =      0.007</span></span>
-<span><span class="co">#&gt; EM: Iteration =    68, LogLik =   -26393.67, Change =      0.003</span></span>
-<span><span class="co">#&gt; EM: Iteration =    69, LogLik =   -26393.66, Change =      0.006</span></span>
-<span><span class="co">#&gt; EM: Iteration =    70, LogLik =   -26393.66, Change =      0.002</span></span>
-<span><span class="co">#&gt; EM: Iteration =    71, LogLik =   -26393.66, Change =      0.006</span></span>
-<span><span class="co">#&gt; EM: Iteration =    72, LogLik =   -26393.65, Change =      0.002</span></span>
-<span><span class="co">#&gt; EM: Iteration =    73, LogLik =   -26393.65, Change =      0.005</span></span>
-<span><span class="co">#&gt; EM: Iteration =    74, LogLik =   -26393.65, Change =      0.002</span></span>
-<span><span class="co">#&gt; EM: Iteration =    75, LogLik =   -26393.64, Change =      0.005</span></span>
-<span><span class="co">#&gt; EM: Iteration =    76, LogLik =   -26393.64, Change =      0.002</span></span>
-<span><span class="co">#&gt; EM: Iteration =    77, LogLik =   -26393.63, Change =      0.004</span></span>
-<span><span class="co">#&gt; EM: Iteration =    78, LogLik =   -26393.63, Change =      0.002</span></span>
-<span><span class="co">#&gt; EM: Iteration =    79, LogLik =   -26393.63, Change =      0.004</span></span>
-<span><span class="co">#&gt; EM: Iteration =    80, LogLik =   -26393.63, Change =      0.002</span></span>
-<span><span class="co">#&gt; EM: Iteration =    81, LogLik =   -26393.62, Change =      0.004</span></span>
-<span><span class="co">#&gt; EM: Iteration =    82, LogLik =   -26393.62, Change =      0.002</span></span>
-<span><span class="co">#&gt; EM: Iteration =    83, LogLik =   -26393.62, Change =      0.004</span></span>
-<span><span class="co">#&gt; EM: Iteration =    84, LogLik =   -26393.61, Change =      0.002</span></span>
-<span><span class="co">#&gt; EM: Iteration =    85, LogLik =   -26393.61, Change =      0.003</span></span>
-<span><span class="co">#&gt; EM: Iteration =    86, LogLik =   -26393.61, Change =      0.002</span></span>
-<span><span class="co">#&gt; EM: Iteration =    87, LogLik =   -26393.60, Change =      0.003</span></span>
-<span><span class="co">#&gt; EM: Iteration =    88, LogLik =   -26393.60, Change =      0.003</span></span>
-<span><span class="co">#&gt; EM: Iteration =    89, LogLik =   -26393.60, Change =      0.003</span></span>
-<span><span class="co">#&gt; EM: Iteration =    90, LogLik =   -26393.60, Change =      0.003</span></span>
-<span><span class="co">#&gt; EM: Iteration =    91, LogLik =   -26393.59, Change =      0.003</span></span>
-<span><span class="co">#&gt; EM: Iteration =    92, LogLik =   -26393.59, Change =      0.003</span></span>
-<span><span class="co">#&gt; EM: Iteration =    93, LogLik =   -26393.59, Change =      0.003</span></span>
-<span><span class="co">#&gt; EM: Iteration =    94, LogLik =   -26393.59, Change =      0.003</span></span>
-<span><span class="co">#&gt; EM: Iteration =    95, LogLik =   -26393.58, Change =      0.003</span></span>
-<span><span class="co">#&gt; EM: Iteration =    96, LogLik =   -26393.58, Change =      0.003</span></span>
-<span><span class="co">#&gt; EM: Iteration =    97, LogLik =   -26393.58, Change =      0.002</span></span>
-<span><span class="co">#&gt; EM: Iteration =    98, LogLik =   -26393.58, Change =      0.003</span></span>
-<span><span class="co">#&gt; EM: Iteration =    99, LogLik =   -26393.57, Change =      0.002</span></span>
-<span><span class="co">#&gt; EM: Iteration =   100, LogLik =   -26393.57, Change =      0.003</span></span>
-<span><span class="co">#&gt; EM: Iteration =   101, LogLik =   -26393.57, Change =      0.002</span></span>
-<span><span class="co">#&gt; EM: Iteration =   102, LogLik =   -26393.57, Change =      0.003</span></span>
-<span><span class="co">#&gt; EM: Iteration =   103, LogLik =   -26393.56, Change =      0.002</span></span>
-<span><span class="co">#&gt; EM: Iteration =   104, LogLik =   -26393.56, Change =      0.003</span></span>
-<span><span class="co">#&gt; EM: Iteration =   105, LogLik =   -26393.56, Change =      0.002</span></span>
-<span><span class="co">#&gt; EM: Iteration =   106, LogLik =   -26393.56, Change =      0.003</span></span>
-<span><span class="co">#&gt; EM: Iteration =   107, LogLik =   -26393.55, Change =      0.002</span></span>
-<span><span class="co">#&gt; EM: Iteration =   108, LogLik =   -26393.55, Change =      0.003</span></span>
-<span><span class="co">#&gt; EM: Iteration =   109, LogLik =   -26393.55, Change =      0.002</span></span>
-<span><span class="co">#&gt; EM: Iteration =   110, LogLik =   -26393.55, Change =      0.003</span></span>
-<span><span class="co">#&gt; EM: Iteration =   111, LogLik =   -26393.54, Change =      0.002</span></span>
-<span><span class="co">#&gt; EM: Iteration =   112, LogLik =   -26393.54, Change =      0.003</span></span>
-<span><span class="co">#&gt; EM: Iteration =   113, LogLik =   -26393.54, Change =      0.002</span></span>
-<span><span class="co">#&gt; EM: Iteration =   114, LogLik =   -26393.54, Change =      0.003</span></span>
-<span><span class="co">#&gt; EM: Iteration =   115, LogLik =   -26393.53, Change =      0.002</span></span>
-<span><span class="co">#&gt; EM: Iteration =   116, LogLik =   -26393.53, Change =      0.003</span></span>
-<span><span class="co">#&gt; EM: Iteration =   117, LogLik =   -26393.53, Change =      0.002</span></span>
-<span><span class="co">#&gt; EM: Iteration =   118, LogLik =   -26393.53, Change =      0.003</span></span>
-<span><span class="co">#&gt; EM: Iteration =   119, LogLik =   -26393.53, Change =      0.001</span></span>
-<span><span class="co">#&gt; EM: Iteration =   120, LogLik =   -26393.52, Change =      0.003</span></span>
-<span><span class="co">#&gt; EM: Iteration =   121, LogLik =   -26393.52, Change =      0.001</span></span>
-<span><span class="co">#&gt; EM: Iteration =   122, LogLik =   -26393.52, Change =      0.003</span></span>
-<span><span class="co">#&gt; EM: Iteration =   123, LogLik =   -26393.52, Change =      0.001</span></span>
-<span><span class="co">#&gt; EM: Iteration =   124, LogLik =   -26393.51, Change =      0.003</span></span>
-<span><span class="co">#&gt; EM: Iteration =   125, LogLik =   -26393.51, Change =      0.001</span></span>
-<span><span class="co">#&gt; EM: Iteration =   126, LogLik =   -26393.51, Change =      0.003</span></span>
-<span><span class="co">#&gt; EM: Iteration =   127, LogLik =   -26393.51, Change =      0.001</span></span>
-<span><span class="co">#&gt; EM: Iteration =   128, LogLik =   -26393.51, Change =      0.003</span></span>
-<span><span class="co">#&gt; EM: Iteration =   129, LogLik =   -26393.50, Change =      0.001</span></span>
-<span><span class="co">#&gt; EM: Iteration =   130, LogLik =   -26393.50, Change =      0.003</span></span>
-<span><span class="co">#&gt; EM: Iteration =   131, LogLik =   -26393.50, Change =      0.001</span></span>
-<span><span class="co">#&gt; EM: Iteration =   132, LogLik =   -26393.50, Change =      0.003</span></span>
-<span><span class="co">#&gt; EM: Iteration =   133, LogLik =   -26393.50, Change =      0.001</span></span>
-<span><span class="co">#&gt; EM: Iteration =   134, LogLik =   -26393.49, Change =      0.003</span></span>
-<span><span class="co">#&gt; EM: Iteration =   135, LogLik =   -26393.49, Change =      0.001</span></span>
-<span><span class="co">#&gt; EM: Iteration =   136, LogLik =   -26393.49, Change =      0.003</span></span>
-<span><span class="co">#&gt; EM: Iteration =   137, LogLik =   -26393.49, Change =      0.001</span></span>
-<span><span class="co">#&gt; EM: Iteration =   138, LogLik =   -26393.48, Change =      0.003</span></span>
-<span><span class="co">#&gt; EM: Iteration =   139, LogLik =   -26393.48, Change =      0.001</span></span>
-<span><span class="co">#&gt; EM: Iteration =   140, LogLik =   -26393.48, Change =      0.003</span></span>
-<span><span class="co">#&gt; EM: Iteration =   141, LogLik =   -26393.48, Change =      0.001</span></span>
-<span><span class="co">#&gt; EM: Iteration =   142, LogLik =   -26393.48, Change =      0.003</span></span>
-<span><span class="co">#&gt; EM: Iteration =   143, LogLik =   -26393.48, Change =      0.001</span></span>
-<span><span class="co">#&gt; EM: Iteration =   144, LogLik =   -26393.47, Change =      0.003</span></span>
-<span><span class="co">#&gt; EM: Iteration =   145, LogLik =   -26393.47, Change =      0.001</span></span>
-<span><span class="co">#&gt; EM: Iteration =   146, LogLik =   -26393.47, Change =      0.003</span></span>
-<span><span class="co">#&gt; EM: Iteration =   147, LogLik =   -26393.47, Change =      0.000</span></span>
-<span><span class="co">#&gt; EM: Iteration =   148, LogLik =   -26393.46, Change =      0.003</span></span>
-<span><span class="co">#&gt; EM: Iteration =   149, LogLik =   -26393.46, Change =      0.000</span></span>
-<span><span class="co">#&gt; EM: Iteration =   150, LogLik =   -26393.46, Change =      0.003</span></span>
-<span><span class="co">#&gt; EM: Iteration =   151, LogLik =   -26393.46, Change =      0.000</span></span>
-<span><span class="co">#&gt; EM: Iteration =   152, LogLik =   -26393.46, Change =      0.004</span></span>
-<span><span class="co">#&gt; EM: Iteration =   153, LogLik =   -26393.46, Change =      0.000</span></span>
-<span><span class="co">#&gt; EM: Iteration =   154, LogLik =   -26393.45, Change =      0.004</span></span>
-<span><span class="co">#&gt; EM: Iteration =   155, LogLik =   -26393.45, Change =      0.000</span></span>
-<span><span class="co">#&gt; EM: Iteration =   156, LogLik =   -26393.45, Change =      0.004</span></span>
-<span><span class="co">#&gt; EM: Iteration =   157, LogLik =   -26393.45, Change =      0.000</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (version 1.0.3):</span></span>
-<span><span class="co">#&gt;   Estimator                                         LMS</span></span>
-<span><span class="co">#&gt;   Optimization method                         EM-NLMINB</span></span>
-<span><span class="co">#&gt;   Number of observations                           2000</span></span>
-<span><span class="co">#&gt;   Number of iterations                              136</span></span>
-<span><span class="co">#&gt;   Loglikelihood                               -23781.36</span></span>
-<span><span class="co">#&gt;   Akaike (AIC)                                 47670.72</span></span>
-<span><span class="co">#&gt;   Bayesian (BIC)                               47973.16</span></span>
-<span><span class="co">#&gt;  </span></span>
-<span><span class="co">#&gt; Numerical Integration:</span></span>
-<span><span class="co">#&gt;   Points of integration (per dim)                    24</span></span>
-<span><span class="co">#&gt;   Dimensions                                          1</span></span>
-<span><span class="co">#&gt;   Total points of integration                        24</span></span>
-<span><span class="co">#&gt;  </span></span>
-<span><span class="co">#&gt; Fit Measures for H0:</span></span>
-<span><span class="co">#&gt;   Loglikelihood                                  -26393</span></span>
-<span><span class="co">#&gt;   Akaike (AIC)                                 52892.89</span></span>
-<span><span class="co">#&gt;   Bayesian (BIC)                               53189.74</span></span>
-<span><span class="co">#&gt;   Chi-square                                      66.72</span></span>
-<span><span class="co">#&gt;   Degrees of Freedom (Chi-square)                    82</span></span>
-<span><span class="co">#&gt;   P-value (Chi-square)                            0.889</span></span>
-<span><span class="co">#&gt;   RMSEA                                           0.000</span></span>
-<span><span class="co">#&gt;  </span></span>
-<span><span class="co">#&gt; Comparative fit to H0 (no interaction effect)</span></span>
-<span><span class="co">#&gt;   Loglikelihood change                          2612.09</span></span>
-<span><span class="co">#&gt;   Difference test (D)                           5224.18</span></span>
-<span><span class="co">#&gt;   Degrees of freedom (D)                              1</span></span>
-<span><span class="co">#&gt;   P-value (D)                                     0.000</span></span>
-<span><span class="co">#&gt;  </span></span>
-<span><span class="co">#&gt; R-Squared:</span></span>
-<span><span class="co">#&gt;   BEH                                             0.235</span></span>
-<span><span class="co">#&gt;   INT                                             0.365</span></span>
-<span><span class="co">#&gt; R-Squared Null-Model (H0):</span></span>
-<span><span class="co">#&gt;   BEH                                             0.210</span></span>
-<span><span class="co">#&gt;   INT                                             0.367</span></span>
-<span><span class="co">#&gt; R-Squared Change:</span></span>
-<span><span class="co">#&gt;   BEH                                             0.025</span></span>
-<span><span class="co">#&gt;   INT                                            -0.002</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Parameter Estimates:</span></span>
-<span><span class="co">#&gt;   Coefficients                           unstandardized</span></span>
-<span><span class="co">#&gt;   Information                                  expected</span></span>
-<span><span class="co">#&gt;   Standard errors                              standard</span></span>
-<span><span class="co">#&gt;  </span></span>
-<span><span class="co">#&gt; Latent Variables:</span></span>
-<span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;   INT =~ </span></span>
-<span><span class="co">#&gt;     int1             1.000                             </span></span>
-<span><span class="co">#&gt;     int2             0.915      0.016    58.10    0.000</span></span>
-<span><span class="co">#&gt;     int3             0.807      0.015    54.83    0.000</span></span>
-<span><span class="co">#&gt;   ATT =~ </span></span>
-<span><span class="co">#&gt;     att1             1.000                             </span></span>
-<span><span class="co">#&gt;     att2             0.876      0.012    71.17    0.000</span></span>
-<span><span class="co">#&gt;     att3             0.787      0.012    65.99    0.000</span></span>
-<span><span class="co">#&gt;     att4             0.693      0.011    60.78    0.000</span></span>
-<span><span class="co">#&gt;     att5             0.885      0.013    70.00    0.000</span></span>
-<span><span class="co">#&gt;   SN =~ </span></span>
-<span><span class="co">#&gt;     sn1              1.000                             </span></span>
-<span><span class="co">#&gt;     sn2              0.893      0.017    52.77    0.000</span></span>
-<span><span class="co">#&gt;   PBC =~ </span></span>
-<span><span class="co">#&gt;     pbc1             1.000                             </span></span>
-<span><span class="co">#&gt;     pbc2             0.912      0.013    69.14    0.000</span></span>
-<span><span class="co">#&gt;     pbc3             0.801      0.012    65.13    0.000</span></span>
-<span><span class="co">#&gt;   BEH =~ </span></span>
-<span><span class="co">#&gt;     b1               1.000                             </span></span>
-<span><span class="co">#&gt;     b2               0.959      0.031    31.20    0.000</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Regressions:</span></span>
-<span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;   BEH ~ </span></span>
-<span><span class="co">#&gt;     INT              0.196      0.025     7.78    0.000</span></span>
-<span><span class="co">#&gt;     PBC              0.238      0.022    10.63    0.000</span></span>
-<span><span class="co">#&gt;     INT:INT          0.129      0.017     7.51    0.000</span></span>
-<span><span class="co">#&gt;   INT ~ </span></span>
-<span><span class="co">#&gt;     PBC              0.218      0.029     7.51    0.000</span></span>
-<span><span class="co">#&gt;     ATT              0.210      0.026     8.19    0.000</span></span>
-<span><span class="co">#&gt;     SN               0.172      0.028     6.22    0.000</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Intercepts:</span></span>
-<span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;     int1             1.005      0.022    46.34    0.000</span></span>
-<span><span class="co">#&gt;     int2             1.004      0.020    49.69    0.000</span></span>
-<span><span class="co">#&gt;     int3             0.998      0.018    54.14    0.000</span></span>
-<span><span class="co">#&gt;     att1             1.007      0.025    40.34    0.000</span></span>
-<span><span class="co">#&gt;     att2             1.001      0.022    45.24    0.000</span></span>
-<span><span class="co">#&gt;     att3             1.011      0.020    49.81    0.000</span></span>
-<span><span class="co">#&gt;     att4             0.994      0.018    53.77    0.000</span></span>
-<span><span class="co">#&gt;     att5             0.986      0.022    44.12    0.000</span></span>
-<span><span class="co">#&gt;     sn1              1.000      0.025    40.65    0.000</span></span>
-<span><span class="co">#&gt;     sn2              1.005      0.022    45.04    0.000</span></span>
-<span><span class="co">#&gt;     pbc1             0.991      0.024    40.79    0.000</span></span>
-<span><span class="co">#&gt;     pbc2             0.979      0.023    43.13    0.000</span></span>
-<span><span class="co">#&gt;     pbc3             0.986      0.020    48.61    0.000</span></span>
-<span><span class="co">#&gt;     b1               0.995      0.024    41.61    0.000</span></span>
-<span><span class="co">#&gt;     b2               1.014      0.023    45.01    0.000</span></span>
-<span><span class="co">#&gt;     BEH              0.000                             </span></span>
-<span><span class="co">#&gt;     INT              0.000                             </span></span>
-<span><span class="co">#&gt;     ATT              0.000                             </span></span>
-<span><span class="co">#&gt;     SN               0.000                             </span></span>
-<span><span class="co">#&gt;     PBC              0.000                             </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Covariances:</span></span>
-<span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;   PBC ~~ </span></span>
-<span><span class="co">#&gt;     ATT              0.668      0.079     8.50    0.000</span></span>
-<span><span class="co">#&gt;     SN               0.675      0.054    12.51    0.000</span></span>
-<span><span class="co">#&gt;   ATT ~~ </span></span>
-<span><span class="co">#&gt;     SN               0.625      0.029    21.80    0.000</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Variances:</span></span>
-<span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;     int1             0.161      0.009    18.35    0.000</span></span>
-<span><span class="co">#&gt;     int2             0.161      0.008    20.73    0.000</span></span>
-<span><span class="co">#&gt;     int3             0.170      0.007    24.21    0.000</span></span>
-<span><span class="co">#&gt;     att1             0.167      0.007    23.03    0.000</span></span>
-<span><span class="co">#&gt;     att2             0.150      0.006    24.44    0.000</span></span>
-<span><span class="co">#&gt;     att3             0.160      0.006    26.45    0.000</span></span>
-<span><span class="co">#&gt;     att4             0.163      0.006    27.70    0.000</span></span>
-<span><span class="co">#&gt;     att5             0.159      0.006    24.68    0.000</span></span>
-<span><span class="co">#&gt;     sn1              0.181      0.014    12.51    0.000</span></span>
-<span><span class="co">#&gt;     sn2              0.155      0.012    13.40    0.000</span></span>
-<span><span class="co">#&gt;     pbc1             0.145      0.008    18.27    0.000</span></span>
-<span><span class="co">#&gt;     pbc2             0.160      0.007    21.54    0.000</span></span>
-<span><span class="co">#&gt;     pbc3             0.154      0.007    23.57    0.000</span></span>
-<span><span class="co">#&gt;     b1               0.185      0.019     9.67    0.000</span></span>
-<span><span class="co">#&gt;     b2               0.136      0.018     7.74    0.000</span></span>
-<span><span class="co">#&gt;     BEH              0.475      0.024    20.05    0.000</span></span>
-<span><span class="co">#&gt;     PBC              0.960      0.037    26.25    0.000</span></span>
-<span><span class="co">#&gt;     ATT              1.000      0.057    17.42    0.000</span></span>
-<span><span class="co">#&gt;     SN               0.968      0.085    11.35    0.000</span></span>
-<span><span class="co">#&gt;     INT              0.481      0.020    24.60    0.000</span></span>
 <span></span>
 <span><span class="va">est_qml</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">tpb_nonlinear</span>, data <span class="op">=</span> <span class="va">TPB</span>, cov.syntax <span class="op">=</span> <span class="va">tpb_linear</span>, method <span class="op">=</span> <span class="st">"qml"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_qml</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Estimating null model</span></span>
-<span><span class="co">#&gt; Starting M-step</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (version 1.0.3):</span></span>
-<span><span class="co">#&gt;   Estimator                                         QML</span></span>
-<span><span class="co">#&gt;   Optimization method                            NLMINB</span></span>
-<span><span class="co">#&gt;   Number of observations                           2000</span></span>
-<span><span class="co">#&gt;   Number of iterations                               76</span></span>
-<span><span class="co">#&gt;   Loglikelihood                               -26360.52</span></span>
-<span><span class="co">#&gt;   Akaike (AIC)                                 52829.04</span></span>
-<span><span class="co">#&gt;   Bayesian (BIC)                               53131.49</span></span>
-<span><span class="co">#&gt;  </span></span>
-<span><span class="co">#&gt; Fit Measures for H0:</span></span>
-<span><span class="co">#&gt;   Loglikelihood                                  -26393</span></span>
-<span><span class="co">#&gt;   Akaike (AIC)                                 52892.45</span></span>
-<span><span class="co">#&gt;   Bayesian (BIC)                               53189.29</span></span>
-<span><span class="co">#&gt;   Chi-square                                      66.27</span></span>
-<span><span class="co">#&gt;   Degrees of Freedom (Chi-square)                    82</span></span>
-<span><span class="co">#&gt;   P-value (Chi-square)                            0.897</span></span>
-<span><span class="co">#&gt;   RMSEA                                           0.000</span></span>
-<span><span class="co">#&gt;  </span></span>
-<span><span class="co">#&gt; Comparative fit to H0 (no interaction effect)</span></span>
-<span><span class="co">#&gt;   Loglikelihood change                            32.70</span></span>
-<span><span class="co">#&gt;   Difference test (D)                             65.41</span></span>
-<span><span class="co">#&gt;   Degrees of freedom (D)                              1</span></span>
-<span><span class="co">#&gt;   P-value (D)                                     0.000</span></span>
-<span><span class="co">#&gt;  </span></span>
-<span><span class="co">#&gt; R-Squared:</span></span>
-<span><span class="co">#&gt;   BEH                                             0.239</span></span>
-<span><span class="co">#&gt;   INT                                             0.370</span></span>
-<span><span class="co">#&gt; R-Squared Null-Model (H0):</span></span>
-<span><span class="co">#&gt;   BEH                                             0.210</span></span>
-<span><span class="co">#&gt;   INT                                             0.367</span></span>
-<span><span class="co">#&gt; R-Squared Change:</span></span>
-<span><span class="co">#&gt;   BEH                                             0.029</span></span>
-<span><span class="co">#&gt;   INT                                             0.003</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Parameter Estimates:</span></span>
-<span><span class="co">#&gt;   Coefficients                           unstandardized</span></span>
-<span><span class="co">#&gt;   Information                                  observed</span></span>
-<span><span class="co">#&gt;   Standard errors                              standard</span></span>
-<span><span class="co">#&gt;  </span></span>
-<span><span class="co">#&gt; Latent Variables:</span></span>
-<span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;   INT =~ </span></span>
-<span><span class="co">#&gt;     int1             1.000                             </span></span>
-<span><span class="co">#&gt;     int2             0.914      0.015    59.04    0.000</span></span>
-<span><span class="co">#&gt;     int3             0.807      0.015    55.65    0.000</span></span>
-<span><span class="co">#&gt;   ATT =~ </span></span>
-<span><span class="co">#&gt;     att1             1.000                             </span></span>
-<span><span class="co">#&gt;     att2             0.878      0.012    71.56    0.000</span></span>
-<span><span class="co">#&gt;     att3             0.789      0.012    66.37    0.000</span></span>
-<span><span class="co">#&gt;     att4             0.695      0.011    61.00    0.000</span></span>
-<span><span class="co">#&gt;     att5             0.887      0.013    70.85    0.000</span></span>
-<span><span class="co">#&gt;   SN =~ </span></span>
-<span><span class="co">#&gt;     sn1              1.000                             </span></span>
-<span><span class="co">#&gt;     sn2              0.888      0.017    52.62    0.000</span></span>
-<span><span class="co">#&gt;   PBC =~ </span></span>
-<span><span class="co">#&gt;     pbc1             1.000                             </span></span>
-<span><span class="co">#&gt;     pbc2             0.913      0.013    69.38    0.000</span></span>
-<span><span class="co">#&gt;     pbc3             0.801      0.012    66.08    0.000</span></span>
-<span><span class="co">#&gt;   BEH =~ </span></span>
-<span><span class="co">#&gt;     b1               1.000                             </span></span>
-<span><span class="co">#&gt;     b2               0.960      0.032    29.91    0.000</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Regressions:</span></span>
-<span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;   BEH ~ </span></span>
-<span><span class="co">#&gt;     INT              0.197      0.025     7.76    0.000</span></span>
-<span><span class="co">#&gt;     PBC              0.239      0.023    10.59    0.000</span></span>
-<span><span class="co">#&gt;     INT:INT          0.128      0.016     7.88    0.000</span></span>
-<span><span class="co">#&gt;   INT ~ </span></span>
-<span><span class="co">#&gt;     PBC              0.222      0.030     7.51    0.000</span></span>
-<span><span class="co">#&gt;     ATT              0.213      0.026     8.17    0.000</span></span>
-<span><span class="co">#&gt;     SN               0.175      0.028     6.33    0.000</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Intercepts:</span></span>
-<span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;     int1             1.014      0.022    46.96    0.000</span></span>
-<span><span class="co">#&gt;     int2             1.012      0.020    50.41    0.000</span></span>
-<span><span class="co">#&gt;     int3             1.005      0.018    54.80    0.000</span></span>
-<span><span class="co">#&gt;     att1             1.014      0.024    42.01    0.000</span></span>
-<span><span class="co">#&gt;     att2             1.007      0.021    46.97    0.000</span></span>
-<span><span class="co">#&gt;     att3             1.016      0.020    51.45    0.000</span></span>
-<span><span class="co">#&gt;     att4             0.999      0.018    55.65    0.000</span></span>
-<span><span class="co">#&gt;     att5             0.992      0.022    45.67    0.000</span></span>
-<span><span class="co">#&gt;     sn1              1.006      0.024    41.66    0.000</span></span>
-<span><span class="co">#&gt;     sn2              1.010      0.022    46.71    0.000</span></span>
-<span><span class="co">#&gt;     pbc1             0.998      0.024    42.41    0.000</span></span>
-<span><span class="co">#&gt;     pbc2             0.985      0.022    44.93    0.000</span></span>
-<span><span class="co">#&gt;     pbc3             0.991      0.020    50.45    0.000</span></span>
-<span><span class="co">#&gt;     b1               0.999      0.023    42.64    0.000</span></span>
-<span><span class="co">#&gt;     b2               1.017      0.022    46.25    0.000</span></span>
-<span><span class="co">#&gt;     BEH              0.000                             </span></span>
-<span><span class="co">#&gt;     INT              0.000                             </span></span>
-<span><span class="co">#&gt;     ATT              0.000                             </span></span>
-<span><span class="co">#&gt;     SN               0.000                             </span></span>
-<span><span class="co">#&gt;     PBC              0.000                             </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Covariances:</span></span>
-<span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;   PBC ~~ </span></span>
-<span><span class="co">#&gt;     ATT              0.678      0.029    23.45    0.000</span></span>
-<span><span class="co">#&gt;     SN               0.678      0.029    23.08    0.000</span></span>
-<span><span class="co">#&gt;   ATT ~~ </span></span>
-<span><span class="co">#&gt;     SN               0.629      0.029    21.70    0.000</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Variances:</span></span>
-<span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;     int1             0.158      0.009    18.22    0.000</span></span>
-<span><span class="co">#&gt;     int2             0.160      0.008    20.38    0.000</span></span>
-<span><span class="co">#&gt;     int3             0.168      0.007    23.63    0.000</span></span>
-<span><span class="co">#&gt;     att1             0.167      0.007    23.53    0.000</span></span>
-<span><span class="co">#&gt;     att2             0.150      0.006    24.71    0.000</span></span>
-<span><span class="co">#&gt;     att3             0.160      0.006    26.38    0.000</span></span>
-<span><span class="co">#&gt;     att4             0.162      0.006    27.64    0.000</span></span>
-<span><span class="co">#&gt;     att5             0.159      0.006    24.93    0.000</span></span>
-<span><span class="co">#&gt;     sn1              0.178      0.015    12.09    0.000</span></span>
-<span><span class="co">#&gt;     sn2              0.157      0.012    13.26    0.000</span></span>
-<span><span class="co">#&gt;     pbc1             0.145      0.008    18.44    0.000</span></span>
-<span><span class="co">#&gt;     pbc2             0.160      0.007    21.42    0.000</span></span>
-<span><span class="co">#&gt;     pbc3             0.154      0.006    23.80    0.000</span></span>
-<span><span class="co">#&gt;     b1               0.185      0.020     9.42    0.000</span></span>
-<span><span class="co">#&gt;     b2               0.135      0.018     7.60    0.000</span></span>
-<span><span class="co">#&gt;     BEH              0.475      0.024    19.74    0.000</span></span>
-<span><span class="co">#&gt;     PBC              0.962      0.036    27.04    0.000</span></span>
-<span><span class="co">#&gt;     ATT              0.998      0.037    26.93    0.000</span></span>
-<span><span class="co">#&gt;     SN               0.988      0.039    25.23    0.000</span></span>
-<span><span class="co">#&gt;     INT              0.488      0.020    24.59    0.000</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_qml</span><span class="op">)</span></span></code></pre></div>
 </div>
-  </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
 </div>
 
 
 
     <footer><div class="pkgdown-footer-left">
-  <p></p>
-<p>Developed by Kjell Solem Slupphaug.</p>
+  <p>Developed by Kjell Solem Slupphaug.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
 </div>
 
     </footer>
 </div>
 
-  
 
-  
+
+
 
   </body>
 </html>
