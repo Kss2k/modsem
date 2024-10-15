@@ -25,18 +25,19 @@ jobs:
           git clone https://github.com/kss2k/modsem
           cd modsem/vignettes
           # make vignettes print their ouptut on the pkgdown site  
-          ls -A *.Rmd | xargs sed -i "s/EVAL_DEFAULT <- FALSE/EVAL_DEFAULT <- TRUE/"
+          # ls -A *.Rmd | xargs sed -i "s/EVAL_DEFAULT <- FALSE/EVAL_DEFAULT <- TRUE/"
           cd ..
           git clone https://github.com/kss2k/modsem --branch pkgdown docs
           Rscript -e 'pkgdown::build_site(preview = FALSE)'
       - name: Commit and push changes to pkgdown branch
+      - name: Commit and push changes to pkgdown branch
         run: |
-          echo "https://x-access-token:${GITHUB_TOKEN}@github.com" > ~/.git-credentials
           git config --global user.name "${{ github.actor }}"
           git config --global user.email "${{ github.actor }}@users.noreply.github.com"
           cd modsem/docs
           git add --all
           git commit -m "Update pkgdown site [skip ci]" || echo "No changes to commit"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
           git push origin pkgdown
         env:
-          GITHUB_TOKEN: ${{ secrets.PKGDOWN_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
