@@ -32,7 +32,7 @@ jobs:
       - name: Commit and push changes to pkgdown branch
         run: |
           echo "https://x-access-token:${GITHUB_TOKEN}@github.com" > ~/.git-credentials
-          cd docs
+          cd modsem/docs
           git add --all
           git commit -m "Update pkgdown site [skip ci]" || echo "No changes to commit"
           git push origin pkgdown
