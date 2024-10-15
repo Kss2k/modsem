@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - push-to-gh-pages
 
 jobs:
   push-to-gh-pages:
@@ -29,7 +28,7 @@ jobs:
           git clone https://github.com/kss2k/modsem
           cd modsem/vignettes
           # make vignettes print their ouptut on the pkgdown site  
-          # ls -A *.Rmd | xargs sed -i "s/EVAL_DEFAULT <- FALSE/EVAL_DEFAULT <- TRUE/"
+          ls -A *.Rmd | xargs sed -i "s/EVAL_DEFAULT <- FALSE/EVAL_DEFAULT <- TRUE/"
           cd ..
           git clone https://github.com/kss2k/modsem --branch pkgdown docs
           Rscript -e 'pkgdown::build_site(preview = FALSE)'
