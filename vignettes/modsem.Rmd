@@ -56,14 +56,15 @@ summary(est1)
 
 modsem does not only allow you to estimate interactions between latent variables, but also interactions between observed variables. Here we first run a regression with only observed variables, where there is an interaction between x1 and z2, and then run an equivalent model using modsem().
 
-**Regression**
+### Using a Regression
 
 ```{r}
 reg1 <- lm(y1 ~ x1*z1, oneInt)
 summary(reg1)
 ```
 
-**Using modsem()** In general, when you have interactions between observed variables it is recommended that you use method = "pind".
+### Using `modsem`
+In general, when you have interactions between observed variables it is recommended that you use method = "pind".
 Interaction effects with observed variables is not supported by the LMS- and QML-approach. 
 In certain circumstances, you can define a latent variabale with a single indicator to estimate the interaction effect between two observed variables, 
 in the LMS and QML approach, but it is generally not recommended.
