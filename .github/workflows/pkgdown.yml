@@ -16,6 +16,10 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GHCR_PAT }}
 
+    permissions:
+      contents: write
+      packages: write
+
     steps:
       - name: Check out the repository
         uses: actions/checkout@v4
