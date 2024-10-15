@@ -1,6 +1,6 @@
 # `modsem` <img src="man/figures/modsem.png" alt="Logo" align = "right" height="139" class="logo">
 This is a package which allows you to perform interactions between latent variables (i.e., moderation) in CB-SEM. 
-See https://kss2k.github.io/modsem/ for a tutorial.
+See https://www.modsem.org for a tutorial.
 
 # To Install 
 ```
