@@ -30,7 +30,6 @@ jobs:
           git clone https://github.com/kss2k/modsem --branch pkgdown docs
           Rscript -e 'pkgdown::build_site(preview = FALSE)'
       - name: Commit and push changes to pkgdown branch
-      - name: Commit and push changes to pkgdown branch
         run: |
           git config --global user.name "${{ github.actor }}"
           git config --global user.email "${{ github.actor }}@users.noreply.github.com"
