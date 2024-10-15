@@ -26,9 +26,7 @@ jobs:
           cd modsem/vignettes
           # make vignettes print their ouptut on the pkgdown site  
           ls -A *.Rmd | xargs sed -i "s/EVAL_DEFAULT <- FALSE/EVAL_DEFAULT <- TRUE/"
-          cd ..
-          git clone https://github.com/kss2k/modsem --branch pkgdown
-          mv pkgdown docs
+          git clone https://github.com/kss2k/modsem --branch pkgdown docs
           Rscript -e 'pkgdown::build_site(preview = FALSE)'
       - name: Commit and push changes to pkgdown branch
         run: |
