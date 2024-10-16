@@ -33,6 +33,12 @@ var_interactions.data.frame <- function(object, ...) {
 
   for (i in seq_len(length(intTerms))) {
     # interaction term = XZ
+    # TO DO: 
+    #   I should also add covariances between X:Z and the other exogenous
+    #   variables... (only relevant when mu(X) or mu(Z) != 0)
+    #   Let Y denote the other exogenous variables, and xz denote the variables in
+    #   the interaction term
+    #   S(X:Z, Y) = S(X:Z, xz) %*% inv(S(xz, xz)) %*% S(xz, Y) ??
     XZ    <- stringr::str_split_fixed(intTerms[[i]], ":", 2) 
     muX   <- getMean(XZ[[1]], parTable)
     muZ   <- getMean(XZ[[2]], parTable)
@@ -41,6 +47,8 @@ var_interactions.data.frame <- function(object, ...) {
     covXZ <- calcCovParTable(XZ[[1]], XZ[[2]], parTable)
     varXZ <- varX * muZ ^ 2 + varZ * muX ^ 2 +
       2 * muX * muZ * covXZ + varX * varZ + covXZ ^ 2
+    # needed if mu != 0, but not sure if this is completely correct
+    # when X or Z is endogenous
     covX_XZ <- varX * muZ + muX * covXZ
     covZ_XZ <- varZ * muX + muZ * covXZ
     newRow <- data.frame(lhs = c(intTerms[[i]], XZ[[1]], XZ[[2]]),
