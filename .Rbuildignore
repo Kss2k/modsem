@@ -7,3 +7,4 @@ sketches
 ^_pkgdown\.yml$
 ^docs$
 ^pkgdown$
+CONTRIBUTING.md
