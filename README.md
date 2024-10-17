@@ -1,4 +1,9 @@
 # `modsem` <img src="man/figures/modsem.png" alt="Logo" align = "right" height="139" class="logo">
+<!-- badges: start -->
+[![R-CMD-check](https://github.com/kss2k/modsem/actions/workflows/checks.yml/badge.svg)](https://github.com/kss2k/modsem/actions/workflows/checks.yml)
+[![Tests](https://github.com/kss2k/modsem/actions/workflows/tests.yml/badge.svg)](https://github.com/kss2k/modsem/actions/workflows/tests.yml)
+[![CRAN](https://www.r-pkg.org/badges/version/modsem)](https://cran.r-project.org/package=modsem)
+<!-- badges: end -->
 This is a package which allows you to perform interactions between latent variables (i.e., moderation) in CB-SEM. 
 See https://www.modsem.org for a tutorial.
 
@@ -7,7 +12,7 @@ See https://www.modsem.org for a tutorial.
 # From CRAN 
 install.packages("modsem")
 
-# Latest version from Github
+# Latest version from GitHub
 install.packages("devtools")
 devtools::install_github("kss2k/modsem", build_vignettes = TRUE)
 ```
@@ -32,7 +37,7 @@ There are a number of approaches for estimating interaction effects in SEM. In `
 
 # Examples 
 
-## One interaction
+## Elementary Interaction Model (Kenny & Judd, 1984)
 ```
 library(modsem)
 m1 <- '
@@ -73,7 +78,6 @@ tpb <- "
   BEH =~ b1 + b2
 
 # Inner Model (Based on Steinmetz et al., 2011)
-  # Causal Relationsships
   INT ~ ATT + SN + PBC
   BEH ~ INT + PBC
   BEH ~ PBC:INT
@@ -100,8 +104,10 @@ summary(est_tpb_qml, standardized = TRUE)
 ```
 est2 <- modsem('y1 ~ x1 + z1 + x1:z1', data = oneInt, method = "pind")
 summary(est2)
+```
 
 ## Interaction between an obsereved and a latent variable 
+```
 m3 <- '
   # Outer Model
   X =~ x1 + x2 +x3

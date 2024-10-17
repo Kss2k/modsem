@@ -1,4 +1,4 @@
-name: Run tests and check (ubuntu)
+name: Tests (Ubuntu-latest)
 
 on:
   push:
@@ -24,7 +24,3 @@ jobs:
       - name: Run tests
         run: |
           Rscript -e 'devtools::test(stop_on_failure = TRUE)'
-
-      - name: R CMD CHECK
-        run: |
-          Rscript -e 'devtools::check(error_on = "warning")'
