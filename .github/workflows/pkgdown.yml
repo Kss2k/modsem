@@ -1,4 +1,4 @@
-name: pkgdown
+name: 'pkgdown: Build and Deployment'
 
 on:
   push:

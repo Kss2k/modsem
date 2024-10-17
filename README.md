@@ -3,6 +3,7 @@
 [![R-CMD-check](https://github.com/kss2k/modsem/actions/workflows/checks.yml/badge.svg)](https://github.com/kss2k/modsem/actions/workflows/checks.yml)
 [![Tests](https://github.com/kss2k/modsem/actions/workflows/tests.yml/badge.svg)](https://github.com/kss2k/modsem/actions/workflows/tests.yml)
 [![CRAN](https://www.r-pkg.org/badges/version/modsem)](https://cran.r-project.org/package=modsem)
+[![PKGDOWN-Build](https://github.com/kss2k/modsem/actions/workflows/pkgdown.yml/badge.svg)](https://github.com/kss2k/modsem/actions/workflows/pkgdown.yml)
 <!-- badges: end -->
 This is a package which allows you to perform interactions between latent variables (i.e., moderation) in CB-SEM. 
 See https://www.modsem.org for a tutorial.
