@@ -16,9 +16,6 @@ jobs:
 
     container:
       image: ghcr.io/kss2k/container-modsem:latest
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GHCR_PAT }}
 
     steps:
       - name: Check out the repository
