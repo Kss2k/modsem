@@ -20,7 +20,7 @@ knitr::opts_chunk$set(
 library(modsem)
 ```
 
-By default, modsem() creates product indicators for you, based on the interaction specified in your model. Behind the scenes we can see that modsem() creates in total 9 variables (product indicators) used as the indicators for your latent product.
+By default, `modsem()` creates product indicators for you based on the interaction specified in your model. Behind the scenes, `modsem()` generates a total of 9 variables (product indicators) that are used as the indicators for your latent product.
 
 ```{r}
 m1 <- '
@@ -37,11 +37,13 @@ est1 <- modsem(m1, oneInt)
 cat(est1$syntax)
 ```
 
-Whilst this often is sufficient, you might want some control over how these indicators are created. In general, modsem() has two mechanisms for giving control over the creating of indicator products: 1. By specifying the measurement model of your latent product your self, and 2. By using the mean() and sum() function, collectively known as parceling operations.
+While this is often sufficient, you might want more control over how these indicators are created. In general, `modsem()` offers two mechanisms for controlling the creation of product indicators:
+1. By specifying the measurement model for your latent product yourself.
+2. By using the `mean()` and `sum()` functions, collectively known as parceling operations.
 
-## Specifying The Measurement Model
+## Specifying the Measurement Model
 
-By default, modsem() creates all possible combinations of different product indicators. However, another common approach is to match the indicators by order. For example, let's say you have an interaction between the laten variables X and Z: 'X =\~ x1 + x2' and 'Z =\~ z1 + z2'. By default you would get 'XZ =\~ x1z1 + x1z2 + x2z1 + x2z2'. If you wanted to use the *matching approach* you would want to get 'XZ =\~ x1z1 + x2z2' instead. To achieve this you can use the 'match = TRUE' argument.
+By default, `modsem()` creates all possible combinations of product indicators. However, another common approach is to match the indicators by order. For example, let's say you have an interaction between the latent variables `X` and `Z`: `X =~ x1 + x2` and `Z =~ z1 + z2`. By default, you would get `XZ =~ x1z1 + x1z2 + x2z1 + x2z2`. If you prefer to use the *matching approach*, you would expect `XZ =~ x1z1 + x2z2` instead. To achieve this, you can use the `match = TRUE` argument.
 
 ```{r}
 m2 <- '
@@ -58,20 +60,13 @@ est2 <- modsem(m2, oneInt, match = TRUE)
 summary(est2)
 ```
 
-## More complicated models
+## More Complicated Models
 
-I you want even more control you can use the `get_pi_syntax()` and 
-`get_pi_data()` functions,
-such that you can extract the modified syntax and data from modsem, 
-and alter them accordingly. This can be particularly useful in 
-cases where you want to estimate a model using a feature in lavaan, 
-which isn't available in modsem. 
-For example, (as of yet) the syntax for both ordered- and 
-multigroup models isn't as flexible as in lavaan. 
-Thus you can modify the auto-generated syntax 
-(with the altered dataset) from modsem to suit your needs.
+If you want even more control, you can use the `get_pi_syntax()` and `get_pi_data()` functions to extract the modified syntax and data from `modsem()`, allowing you to modify them as needed. This can be particularly useful in cases where you want to estimate a model using a feature in `lavaan` that isn't available in `modsem()`. 
 
-```{r, eval = TRUE}
+For example, the syntax for ordered and multigroup models (as of now) isn't as flexible in `modsem()` as it is in `lavaan`. You can modify the auto-generated syntax (along with the altered dataset) from `modsem()` to suit your needs.
+
+```{r}
 m3 <- '
 # Outer Model
 X =~ x1 + x2
@@ -85,7 +80,7 @@ syntax <- get_pi_syntax(m3)
 cat(syntax)
 ```
 
-```{r, eval = TRUE}
+```{r}
 data <- get_pi_data(m3, oneInt)
 head(data)
 ```

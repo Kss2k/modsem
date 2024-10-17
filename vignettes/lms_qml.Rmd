@@ -19,16 +19,14 @@ knitr::opts_chunk$set(
 ```{r setup}
 library(modsem)
 ```
-# The Latent Moderated Structural Equations (LMS) and the Quasi Maximum Likelihood (QML) approach 
-Both the LMS- and QML approach works on most models, but interaction effects with 
-endogenous can be a bit tricky to estimate (see the [vignette](https://kss2k.github.io/modsem/articles/interaction_two_etas.html). 
-Both approaches (particularily the LMS approach) are quite computationally intensive, and are thus partly implemented in C++ (using Rcpp and RcppArmadillo). 
-Additionally starting parameters are estimated using the double centering approach (and the means of the observed variables) 
-are used to generate good starting parameters for faster convergence. If you want to see the progress of the estimation process you can use ´verbose = TRUE´.
+
+# The Latent Moderated Structural Equations (LMS) and the Quasi Maximum Likelihood (QML) Approach
+
+Both the `LMS` and `QML` approaches work on most models, but interaction effects with endogenous variables can be tricky to estimate (see the [vignette](https://kss2k.github.io/modsem/articles/interaction_two_etas.html)). Both approaches, particularly the `LMS` approach, are computationally intensive and are partially implemented in C++ (using `Rcpp` and `RcppArmadillo`). Additionally, starting parameters are estimated using the double-centering approach, and the means of the observed variables are used to generate good starting parameters for faster convergence. If you want to monitor the progress of the estimation process, you can use `verbose = TRUE`.
 
 ## A Simple Example
-Here you can see an example of the LMS approach for a simple model. 
-By default the summary function calculates fit measures compared to a null model (i.e., the same model without an interaction term).
+
+Here is an example of the `LMS` approach for a simple model. By default, the `summary()` function calculates fit measures compared to a null model (i.e., the same model without an interaction term).
 
 ```{r}
 library(modsem)
@@ -39,44 +37,36 @@ m1 <- '
   Z =~ z1 + z2 + z3
   Y =~ y1 + y2 + y3
 
-# Inner model
+# Inner Model
   Y ~ X + Z
   Y ~ X:Z
 '
 
 lms1 <- modsem(m1, oneInt, method = "lms")
-summary(lms1, standardized = TRUE) # standardized estimates 
+summary(lms1, standardized = TRUE) # Standardized estimates
 ```
 
-Here you can see the same example using the QML approach. 
+Here is the same example using the `QML` approach:
 
 ```{r}
 qml1 <- modsem(m1, oneInt, method = "qml")
 summary(qml1)
 ```
 
-## A more complicated example
-Here you can see an example of a more complicated example using the model from the
-theory of planned behaviour (TPB), where there are two endogenous variables, 
-where there is an interaction between an endogenous and exogenous variable. 
-When estimating more complicated models with the LMS-approach, 
-it is recommended that you increase the number of 
-nodes used for numerical integration. By default the number of nodes is set to 16,
-and can be increased using the nodes argument. The argument has no effect on the QML approach.
-When there is an interaction effect between an endogenous and exogenous variable, 
-it is recommended that you use at least 32 nodes for the LMS-approach.
-You can also get robust standard errors by setting `robust.se = TRUE` in the 
-`modsem()` function.
+## A More Complicated Example
 
-Note: If you want the lms-approach to give as similar results as possible to
-mplus, you would have to increase the number of nodes (e.g., `nodes = 100`).
+Below is an example of a more complex model based on the theory of planned behavior (TPB), which includes two endogenous variables and an interaction between an endogenous and exogenous variable. When estimating more complex models with the `LMS` approach, it is recommended to increase the number of nodes used for numerical integration. By default, the number of nodes is set to 16, but this can be increased using the `nodes` argument. The `nodes` argument has no effect on the `QML` approach.
+
+When there is an interaction effect between an endogenous and exogenous variable, it is recommended to use at least 32 nodes for the `LMS` approach. You can also obtain robust standard errors by setting `robust.se = TRUE` in the `modsem()` function.
+
+**Note**: If you want the `LMS` approach to produce results as similar as possible to Mplus, you should increase the number of nodes (e.g., `nodes = 100`).
 
 ```{r}
-# ATT = Attitude, 
-# PBC = Perceived Behavioural Control 
-# INT = Intention 
+# ATT = Attitude
+# PBC = Perceived Behavioral Control
+# INT = Intention
 # SN = Subjective Norms
-# BEH = Behaviour
+# BEH = Behavior
 tpb <- ' 
 # Outer Model (Based on Hagger et al., 2007)
   ATT =~ att1 + att2 + att3 + att4 + att5
@@ -95,6 +85,5 @@ lms2 <- modsem(tpb, TPB, method = "lms", nodes = 32)
 summary(lms2)
 
 qml2 <- modsem(tpb, TPB, method = "qml")
-summary(qml2, standardized = TRUE) # standardized estimates
+summary(qml2, standardized = TRUE) # Standardized estimates
 ```
-

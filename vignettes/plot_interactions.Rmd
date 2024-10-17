@@ -18,18 +18,19 @@ knitr::opts_chunk$set(
 library(modsem)
 ```
 
-# Plotting interaction effects 
-Interaction effects can be plotted using the included `plot_interaction` function.
-This function takes a fitted model object and the names of the two variables 
-that are interacting. 
-The function will plot the interaction effect of the two variables. 
-The x-variable is plotted on the x-axis and the y-variable is plotted on the y-axis. 
-And the z-variable decides at what points of z the effect of x on y is plotted.
-The function will also plot the 95% confidence interval of the interaction effect.
+# Plotting Interaction Effects
 
+Interaction effects can be plotted using the included `plot_interaction()` function. This function takes a fitted model object and the names of the two variables that are interacting. The function will plot the interaction effect of the two variables, where:
 
-Here we can see a simple example using the double centering approach. 
-```{r}
+- The x-variable is plotted on the x-axis.
+- The y-variable is plotted on the y-axis.
+- The z-variable determines at which points the effect of x on y is plotted.
+  
+The function will also plot the 95% confidence interval for the interaction effect.
+
+Here is a simple example using the double-centering approach:
+
+```r
 m1 <- "
 # Outer Model
   X =~ x1
@@ -37,17 +38,16 @@ m1 <- "
   Z =~ z1 + z2 + z3
   Y =~ y1 + y2 + y3
 
-# Inner model
+# Inner Model
   Y ~ X + Z + X:Z
 "
 est1 <- modsem(m1, data = oneInt)
-plot_interaction("X", "Z", "Y", "X:Z", -3:3, c(-0.2, 0), est1)
-
+plot_interaction("X", "Z", "Y", "X:Z", vals_z = -3:3, range_y = c(-0.2, 0), model = est1)
 ```
-Here we can see a different example using the LMS approach, in the 
-theory of planned behavior model.
 
-```{r}
+Here is a different example using the `LMS` approach in the theory of planned behavior model:
+
+```r
 tpb <- "
 # Outer Model (Based on Hagger et al., 2007)
   ATT =~ att1 + att2 + att3 + att4 + att5

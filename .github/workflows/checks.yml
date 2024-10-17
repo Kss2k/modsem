@@ -10,7 +10,7 @@ on:
       - test-workflow
 
 jobs:
-  test:
+  R-CMD-CHECK:
     runs-on: ubuntu-latest
 
     container:

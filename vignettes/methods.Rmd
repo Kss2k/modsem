@@ -20,7 +20,7 @@ knitr::opts_chunk$set(
 library(modsem)
 ```
 
-There are a number of approaches for estimating interaction effects in SEM. In modsem(), the method = "method" argument allows you to choose which to use.
+There are a number of approaches for estimating interaction effects in SEM. In `modsem()`, the `method = "method"` argument allows you to choose which to use.
 
 -   `"ca"` = constrained approach (Algina & Moulder, 2001)
 -   `"uca"` = unconstrained approach (Marsh, 2004)

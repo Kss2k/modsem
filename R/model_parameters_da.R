@@ -170,8 +170,8 @@ fillMainModel <- function(model, theta, thetaLabel, fillPhi = FALSE,
 fillCovModel <- function(covModel, theta, thetaLabel, fillPhi = FALSE, 
                          method = "lms") {
   if (is.null(names(theta))) names(theta) <- names(covModel$theta)
-  if (is.null(covModel$matrices)) return(NULL)
-  M <- covModel$matrices 
+  if (is.null(covModel$matrices)) return(covModel)
+  M <- covModel$matrices
 
   lMatrices <- covModel$labelMatrices[namesParMatricesCov]
   pMatrices <- M[namesParMatricesCov]

@@ -85,10 +85,10 @@ emLms <- function(model,
     
   coefficients <- final$par
   lavCoefs     <- getLavCoefs(model = model, theta = coefficients, method = "lms")
-  finalModel      <- fillModel(model, coefficients, fillPhi = TRUE, method = "lms")
-  info            <- model$info
+  finalModel   <- fillModel(model, coefficients, fillPhi = TRUE, method = "lms")
+  info         <- model$info
 
-  emptyModel <- getEmptyModel(parTable = model$parTable, 
+  emptyModel <- getEmptyModel(parTable = model$parTable,
                               cov.syntax = model$cov.syntax,
                               parTableCovModel = model$covModel$parTable,
                               method = "lms")

@@ -19,11 +19,13 @@ knitr::opts_chunk$set(
 ```{r setup}
 library(modsem)
 ```
-In essence quadratic effects are just a special case of interaction effects – where a variable has an interaction effect with itself. Thus, all of the modsem methods can be used to estimate quadratic effects as well.
+# Quadratic Effects and Interaction Effects
 
-Here you can see a very simple example using the LMS-approach.
+Quadratic effects are essentially a special case of interaction effects—where a variable interacts with itself. As such, all of the methods in `modsem` can also be used to estimate quadratic effects.
 
-```{r}
+Below is a simple example using the `LMS` approach.
+
+```r
 library(modsem)
 m1 <- '
 # Outer Model
@@ -39,9 +41,9 @@ est1Lms <- modsem(m1, data = oneInt, method = "lms")
 summary(est1Lms)
 ```
 
-In this example we have a simple model with two quadratic effects and one interaction effect, using the QML- and double centering approach, using the data from a subset of the PISA 2006 data.
+In this example, we have a simple model with two quadratic effects and one interaction effect. We estimate the model using both the `QML` and double-centering approaches, with data from a subset of the PISA 2006 dataset.
 
-```{r}
+```r
 m2 <- '
 ENJ =~ enjoy1 + enjoy2 + enjoy3 + enjoy4 + enjoy5
 CAREER =~ career1 + career2 + career3 + career4
@@ -54,4 +56,4 @@ est2Qml <- modsem(m2, data = jordan, method = "qml")
 summary(est2Qml)
 ```
 
-Note: The other approaches work as well, but might be quite slow depending on the number of interaction effects (particularly for the LMS- and constrained approach).
+**Note**: The other approaches (e.g., `LMS` and constrained methods) can also be used but may be slower depending on the number of interaction effects, especially for the `LMS` and constrained approaches.

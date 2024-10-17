@@ -19,39 +19,21 @@ knitr::opts_chunk$set(
 ```{r setup}
 library(modsem)
 ```
-# The Latent Moderated Structural Equations (LMS) and the Quasi Maximum Likelihood (QML) approach 
-In contrast to the other approaches, the LMS and QML approaches are designed to 
-handle latent variables only. Thus observed variables cannot be as easily used, 
-as in the other approaches. One way of getting around this is by specifying 
-your observed variable as a latent variable with a single indicator. `modsem()`
-will by default constrain the factor loading to `1`, and the residual variance 
-of the indicator to `0`. Then, the only difference between the latent variable 
-and its indicator, is that (assuming that it is an exogenous variable) it has 
-a zero-mean. This will work for both the LMS- and QML 
-approach in most cases, except for two exceptions.
 
-## The LMS approach
-For the LMS approach you can use the above mentioned approach in almost 
-all cases, except in the case where you wish to use an observed variable as 
-a moderating variable. In the LMS approach, you will usually select one variable 
-in an interaction term as a moderator. The interaction effect is then estimated 
-via numerical integration, at `n` quadrature nodes of the moderating variable. 
-This process however, requires that the moderating variable has an error-term, 
-as the distribution of the moderating variable is modelled as $X \sim N(Az, \varepsilon)$,
-where $Az$ is the expected value of $X$ at quadrature point `k`, and 
-$\varepsilon$ is the error term. If the error-term is zero, the probability of
-observing a given value of $X$ will not be computable. In most instances the 
-first variable in the interaction term, is chosen as the moderator. For example, 
-if the interaction term is `"X:Z"`, `"X"` will usually be chosen as the moderator. 
-Thus if only one of the variables are latent, you should put the latent variable 
-first in the interaction term. If both are observed, you have to specify a 
-measurement error (e.g., "x1 ~~ 0.1 * x1") for the indicator of the first variable 
-in the interaction term.
+# The Latent Moderated Structural Equations (LMS) and the Quasi Maximum Likelihood (QML) Approach
+
+In contrast to the other approaches, the `LMS` and `QML` approaches are designed to handle latent variables only. Thus, observed variables cannot be used as easily as in the other approaches. One way to get around this is by specifying your observed variable as a latent variable with a single indicator. `modsem()` will, by default, constrain the factor loading to `1` and the residual variance of the indicator to `0`. The only difference between the latent variable and its indicator, assuming it is an exogenous variable, is that it has a zero-mean. This approach works for both the `LMS` and `QML` methods in most cases, with two exceptions.
+
+## The LMS Approach
+
+For the `LMS` approach, you can use the above-mentioned method in almost all cases, except when using an observed variable as a moderating variable. In the `LMS` approach, you typically select one variable in an interaction term as the moderator. The interaction effect is then estimated via numerical integration at `n` quadrature nodes of the moderating variable. However, this process requires that the moderating variable has an error term, as the distribution of the moderating variable is modeled as \( X \sim N(Az, \varepsilon) \), where \( Az \) is the expected value of \( X \) at quadrature point `k`, and \( \varepsilon \) is the error term. If the error term is zero, the probability of observing a given value of \( X \) will not be computable.
+
+In most instances, the first variable in the interaction term is chosen as the moderator. For example, if the interaction term is `"X:Z"`, `"X"` will usually be chosen as the moderator. Therefore, if only one of the variables is latent, you should place the latent variable first in the interaction term. If both variables are observed, you must specify a measurement error (e.g., `"x1 ~~ 0.1 * x1"`) for the indicator of the first variable in the interaction term.
 
 ```{r}
 library(modsem)
 
-# interaction effect between a latent and an observed variable
+# Interaction effect between a latent and an observed variable
 m1 <- '
 # Outer Model
   X =~ x1 # X is observed
@@ -65,28 +47,28 @@ m1 <- '
 
 lms1 <- modsem(m1, oneInt, method = "lms")
 
-# interaction effect between two observed variables
+# Interaction effect between two observed variables
 m2 <- '
 # Outer Model
   X =~ x1 # X is observed
   Z =~ z1 # Z is observed
   Y =~ y1 # Y is observed
-  x1 ~~ 0.1 * x1 # specify a variance for the measurement error
+  x1 ~~ 0.1 * x1 # Specify a variance for the measurement error
+
 # Inner model
   Y ~ X + Z
   Y ~ X:Z
 '
 
-lms2 <- modsem(m1, oneInt, method = "lms")
+lms2 <- modsem(m2, oneInt, method = "lms")
 summary(lms2)
 ```
 
-## The QML approach
-The estimation of the QML approach is different from the LMS approach, 
-and you do not have the same issue as in the LMS approach. Thus you don't 
-have to specify a measurement error for moderating variables. 
+## The QML Approach
 
-```{r} 
+The estimation process for the `QML` approach differs from the `LMS` approach, and you do not encounter the same issue as in the `LMS` approach. Therefore, you don't need to specify a measurement error for moderating variables.
+
+```{r}
 m3 <- '
 # Outer Model
   X =~ x1 # X is observed
@@ -100,4 +82,4 @@ m3 <- '
 
 qml3 <- modsem(m3, oneInt, method = "qml")
 summary(qml3)
-``` 
+```
