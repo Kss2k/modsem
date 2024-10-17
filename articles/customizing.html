@@ -74,10 +74,10 @@
     
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/Kss2k/modsem" class="external-link">modsem</a></span><span class="op">)</span></span></code></pre></div>
-<p>By default, modsem() creates product indicators for you, based on the
-interaction specified in your model. Behind the scenes we can see that
-modsem() creates in total 9 variables (product indicators) used as the
-indicators for your latent product.</p>
+<p>By default, <code><a href="../reference/modsem.html">modsem()</a></code> creates product indicators for you
+based on the interaction specified in your model. Behind the scenes,
+<code><a href="../reference/modsem.html">modsem()</a></code> generates a total of 9 variables (product
+indicators) that are used as the indicators for your latent product.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">m1</span> <span class="op">&lt;-</span> <span class="st">'</span></span>
 <span><span class="st"># Outer Model</span></span>
@@ -148,23 +148,24 @@ indicators for your latent product.</p>
 <span><span class="co">#&gt; x3z1 ~~ x3z2</span></span>
 <span><span class="co">#&gt; x3z1 ~~ x3z3</span></span>
 <span><span class="co">#&gt; x3z2 ~~ x3z3</span></span></code></pre></div>
-<p>Whilst this often is sufficient, you might want some control over how
-these indicators are created. In general, modsem() has two mechanisms
-for giving control over the creating of indicator products: 1. By
-specifying the measurement model of your latent product your self, and
-2. By using the mean() and sum() function, collectively known as
-parceling operations.</p>
+<p>While this is often sufficient, you might want more control over how
+these indicators are created. In general, <code><a href="../reference/modsem.html">modsem()</a></code> offers
+two mechanisms for controlling the creation of product indicators: 1. By
+specifying the measurement model for your latent product yourself. 2. By
+using the <code><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean()</a></code> and <code><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum()</a></code> functions,
+collectively known as parceling operations.</p>
 <div class="section level2">
-<h2 id="specifying-the-measurement-model">Specifying The Measurement Model<a class="anchor" aria-label="anchor" href="#specifying-the-measurement-model"></a>
+<h2 id="specifying-the-measurement-model">Specifying the Measurement Model<a class="anchor" aria-label="anchor" href="#specifying-the-measurement-model"></a>
 </h2>
-<p>By default, modsem() creates all possible combinations of different
-product indicators. However, another common approach is to match the
+<p>By default, <code><a href="../reference/modsem.html">modsem()</a></code> creates all possible combinations
+of product indicators. However, another common approach is to match the
 indicators by order. For example, let’s say you have an interaction
-between the laten variables X and Z: ‘X =~ x1 + x2’ and ‘Z =~ z1 + z2’.
-By default you would get ‘XZ =~ x1z1 + x1z2 + x2z1 + x2z2’. If you
-wanted to use the <em>matching approach</em> you would want to get ‘XZ
-=~ x1z1 + x2z2’ instead. To achieve this you can use the ‘match = TRUE’
-argument.</p>
+between the latent variables <code>X</code> and <code>Z</code>:
+<code>X =~ x1 + x2</code> and <code>Z =~ z1 + z2</code>. By default, you
+would get <code>XZ =~ x1z1 + x1z2 + x2z1 + x2z2</code>. If you prefer to
+use the <em>matching approach</em>, you would expect
+<code>XZ =~ x1z1 + x2z2</code> instead. To achieve this, you can use the
+<code>match = TRUE</code> argument.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">m2</span> <span class="op">&lt;-</span> <span class="st">'</span></span>
 <span><span class="st"># Outer Model</span></span>
@@ -248,17 +249,19 @@ argument.</p>
 <span><span class="co">#&gt;     XZ                1.041    0.054   19.441    0.000</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="more-complicated-models">More complicated models<a class="anchor" aria-label="anchor" href="#more-complicated-models"></a>
+<h2 id="more-complicated-models">More Complicated Models<a class="anchor" aria-label="anchor" href="#more-complicated-models"></a>
 </h2>
-<p>I you want even more control you can use the
-<code><a href="../reference/get_pi_syntax.html">get_pi_syntax()</a></code> and <code><a href="../reference/get_pi_data.html">get_pi_data()</a></code> functions,
-such that you can extract the modified syntax and data from modsem, and
-alter them accordingly. This can be particularly useful in cases where
-you want to estimate a model using a feature in lavaan, which isn’t
-available in modsem. For example, (as of yet) the syntax for both
-ordered- and multigroup models isn’t as flexible as in lavaan. Thus you
-can modify the auto-generated syntax (with the altered dataset) from
-modsem to suit your needs.</p>
+<p>If you want even more control, you can use the
+<code><a href="../reference/get_pi_syntax.html">get_pi_syntax()</a></code> and <code><a href="../reference/get_pi_data.html">get_pi_data()</a></code> functions to
+extract the modified syntax and data from <code><a href="../reference/modsem.html">modsem()</a></code>,
+allowing you to modify them as needed. This can be particularly useful
+in cases where you want to estimate a model using a feature in
+<code>lavaan</code> that isn’t available in <code><a href="../reference/modsem.html">modsem()</a></code>.</p>
+<p>For example, the syntax for ordered and multigroup models (as of now)
+isn’t as flexible in <code><a href="../reference/modsem.html">modsem()</a></code> as it is in
+<code>lavaan</code>. You can modify the auto-generated syntax (along
+with the altered dataset) from <code><a href="../reference/modsem.html">modsem()</a></code> to suit your
+needs.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">m3</span> <span class="op">&lt;-</span> <span class="st">'</span></span>
 <span><span class="st"># Outer Model</span></span>

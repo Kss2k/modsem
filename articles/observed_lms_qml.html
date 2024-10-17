@@ -76,29 +76,30 @@
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/Kss2k/modsem" class="external-link">modsem</a></span><span class="op">)</span></span></code></pre></div>
 <div class="section level2">
 <h2 id="the-latent-moderated-structural-equations-lms-and-the-quasi-maximum-likelihood-qml-approach">The Latent Moderated Structural Equations (LMS) and the Quasi
-Maximum Likelihood (QML) approach<a class="anchor" aria-label="anchor" href="#the-latent-moderated-structural-equations-lms-and-the-quasi-maximum-likelihood-qml-approach"></a>
+Maximum Likelihood (QML) Approach<a class="anchor" aria-label="anchor" href="#the-latent-moderated-structural-equations-lms-and-the-quasi-maximum-likelihood-qml-approach"></a>
 </h2>
-<p>In contrast to the other approaches, the LMS and QML approaches are
-designed to handle latent variables only. Thus observed variables cannot
-be as easily used, as in the other approaches. One way of getting around
-this is by specifying your observed variable as a latent variable with a
-single indicator. <code><a href="../reference/modsem.html">modsem()</a></code> will by default constrain the
-factor loading to <code>1</code>, and the residual variance of the
-indicator to <code>0</code>. Then, the only difference between the
-latent variable and its indicator, is that (assuming that it is an
-exogenous variable) it has a zero-mean. This will work for both the LMS-
-and QML approach in most cases, except for two exceptions.</p>
+<p>In contrast to the other approaches, the <code>LMS</code> and
+<code>QML</code> approaches are designed to handle latent variables
+only. Thus, observed variables cannot be used as easily as in the other
+approaches. One way to get around this is by specifying your observed
+variable as a latent variable with a single indicator.
+<code><a href="../reference/modsem.html">modsem()</a></code> will, by default, constrain the factor loading to
+<code>1</code> and the residual variance of the indicator to
+<code>0</code>. The only difference between the latent variable and its
+indicator, assuming it is an exogenous variable, is that it has a
+zero-mean. This approach works for both the <code>LMS</code> and
+<code>QML</code> methods in most cases, with two exceptions.</p>
 <div class="section level3">
-<h3 id="the-lms-approach">The LMS approach<a class="anchor" aria-label="anchor" href="#the-lms-approach"></a>
+<h3 id="the-lms-approach">The LMS Approach<a class="anchor" aria-label="anchor" href="#the-lms-approach"></a>
 </h3>
-<p>For the LMS approach you can use the above mentioned approach in
-almost all cases, except in the case where you wish to use an observed
-variable as a moderating variable. In the LMS approach, you will usually
-select one variable in an interaction term as a moderator. The
-interaction effect is then estimated via numerical integration, at
-<code>n</code> quadrature nodes of the moderating variable. This process
-however, requires that the moderating variable has an error-term, as the
-distribution of the moderating variable is modelled as
+<p>For the <code>LMS</code> approach, you can use the above-mentioned
+method in almost all cases, except when using an observed variable as a
+moderating variable. In the <code>LMS</code> approach, you typically
+select one variable in an interaction term as the moderator. The
+interaction effect is then estimated via numerical integration at
+<code>n</code> quadrature nodes of the moderating variable. However,
+this process requires that the moderating variable has an error term, as
+the distribution of the moderating variable is modeled as
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>X</mi><mo>∼</mo><mi>N</mi><mrow><mo stretchy="true" form="prefix">(</mo><mi>A</mi><mi>z</mi><mo>,</mo><mi>ε</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">X \sim N(Az, \varepsilon)</annotation></semantics></math>,
 where
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>A</mi><mi>z</mi></mrow><annotation encoding="application/x-tex">Az</annotation></semantics></math>
@@ -106,21 +107,22 @@ is the expected value of
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>X</mi><annotation encoding="application/x-tex">X</annotation></semantics></math>
 at quadrature point <code>k</code>, and
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ε</mi><annotation encoding="application/x-tex">\varepsilon</annotation></semantics></math>
-is the error term. If the error-term is zero, the probability of
+is the error term. If the error term is zero, the probability of
 observing a given value of
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>X</mi><annotation encoding="application/x-tex">X</annotation></semantics></math>
-will not be computable. In most instances the first variable in the
-interaction term, is chosen as the moderator. For example, if the
-interaction term is <code>"X:Z"</code>, <code>"X"</code> will usually be
-chosen as the moderator. Thus if only one of the variables are latent,
-you should put the latent variable first in the interaction term. If
-both are observed, you have to specify a measurement error (e.g., “x1 ~~
-0.1 * x1”) for the indicator of the first variable in the interaction
-term.</p>
+will not be computable.</p>
+<p>In most instances, the first variable in the interaction term is
+chosen as the moderator. For example, if the interaction term is
+<code>"X:Z"</code>, <code>"X"</code> will usually be chosen as the
+moderator. Therefore, if only one of the variables is latent, you should
+place the latent variable first in the interaction term. If both
+variables are observed, you must specify a measurement error (e.g.,
+<code>"x1 ~~ 0.1 * x1"</code>) for the indicator of the first variable
+in the interaction term.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/Kss2k/modsem" class="external-link">modsem</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># interaction effect between a latent and an observed variable</span></span>
+<span><span class="co"># Interaction effect between a latent and an observed variable</span></span>
 <span><span class="va">m1</span> <span class="op">&lt;-</span> <span class="st">'</span></span>
 <span><span class="st"># Outer Model</span></span>
 <span><span class="st">  X =~ x1 # X is observed</span></span>
@@ -134,32 +136,33 @@ term.</p>
 <span></span>
 <span><span class="va">lms1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m1</span>, <span class="va">oneInt</span>, method <span class="op">=</span> <span class="st">"lms"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># interaction effect between two observed variables</span></span>
+<span><span class="co"># Interaction effect between two observed variables</span></span>
 <span><span class="va">m2</span> <span class="op">&lt;-</span> <span class="st">'</span></span>
 <span><span class="st"># Outer Model</span></span>
 <span><span class="st">  X =~ x1 # X is observed</span></span>
 <span><span class="st">  Z =~ z1 # Z is observed</span></span>
 <span><span class="st">  Y =~ y1 # Y is observed</span></span>
-<span><span class="st">  x1 ~~ 0.1 * x1 # specify a variance for the measurement error</span></span>
+<span><span class="st">  x1 ~~ 0.1 * x1 # Specify a variance for the measurement error</span></span>
+<span><span class="st"></span></span>
 <span><span class="st"># Inner model</span></span>
 <span><span class="st">  Y ~ X + Z</span></span>
 <span><span class="st">  Y ~ X:Z</span></span>
 <span><span class="st">'</span></span>
 <span></span>
-<span><span class="va">lms2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m1</span>, <span class="va">oneInt</span>, method <span class="op">=</span> <span class="st">"lms"</span><span class="op">)</span></span>
+<span><span class="va">lms2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m2</span>, <span class="va">oneInt</span>, method <span class="op">=</span> <span class="st">"lms"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">lms2</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Estimating null model</span></span>
-<span><span class="co">#&gt; EM: Iteration =     1, LogLik =   -10816.13, Change = -10816.126</span></span>
-<span><span class="co">#&gt; EM: Iteration =     2, LogLik =   -10816.13, Change =      0.000</span></span>
+<span><span class="co">#&gt; EM: Iteration =     1, LogLik =    -9369.23, Change =  -9369.232</span></span>
+<span><span class="co">#&gt; EM: Iteration =     2, LogLik =    -9369.23, Change =      0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; modsem (version 1.0.3):</span></span>
 <span><span class="co">#&gt;   Estimator                                         LMS</span></span>
 <span><span class="co">#&gt;   Optimization method                         EM-NLMINB</span></span>
 <span><span class="co">#&gt;   Number of observations                           2000</span></span>
-<span><span class="co">#&gt;   Number of iterations                               58</span></span>
-<span><span class="co">#&gt;   Loglikelihood                                 -8087.2</span></span>
-<span><span class="co">#&gt;   Akaike (AIC)                                  16202.4</span></span>
-<span><span class="co">#&gt;   Bayesian (BIC)                               16280.81</span></span>
+<span><span class="co">#&gt;   Number of iterations                               38</span></span>
+<span><span class="co">#&gt;   Loglikelihood                                -6632.86</span></span>
+<span><span class="co">#&gt;   Akaike (AIC)                                 13285.71</span></span>
+<span><span class="co">#&gt;   Bayesian (BIC)                               13341.72</span></span>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; Numerical Integration:</span></span>
 <span><span class="co">#&gt;   Points of integration (per dim)                    24</span></span>
@@ -167,26 +170,26 @@ term.</p>
 <span><span class="co">#&gt;   Total points of integration                        24</span></span>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; Fit Measures for H0:</span></span>
-<span><span class="co">#&gt;   Loglikelihood                                  -10816</span></span>
-<span><span class="co">#&gt;   Akaike (AIC)                                 21658.25</span></span>
-<span><span class="co">#&gt;   Bayesian (BIC)                               21731.06</span></span>
-<span><span class="co">#&gt;   Chi-square                                       0.01</span></span>
-<span><span class="co">#&gt;   Degrees of Freedom (Chi-square)                     1</span></span>
-<span><span class="co">#&gt;   P-value (Chi-square)                            0.917</span></span>
+<span><span class="co">#&gt;   Loglikelihood                                   -9369</span></span>
+<span><span class="co">#&gt;   Akaike (AIC)                                 18756.46</span></span>
+<span><span class="co">#&gt;   Bayesian (BIC)                               18806.87</span></span>
+<span><span class="co">#&gt;   Chi-square                                       0.00</span></span>
+<span><span class="co">#&gt;   Degrees of Freedom (Chi-square)                     0</span></span>
+<span><span class="co">#&gt;   P-value (Chi-square)                            0.000</span></span>
 <span><span class="co">#&gt;   RMSEA                                           0.000</span></span>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; Comparative fit to H0 (no interaction effect)</span></span>
-<span><span class="co">#&gt;   Loglikelihood change                          2728.93</span></span>
-<span><span class="co">#&gt;   Difference test (D)                           5457.85</span></span>
+<span><span class="co">#&gt;   Loglikelihood change                          2736.38</span></span>
+<span><span class="co">#&gt;   Difference test (D)                           5472.75</span></span>
 <span><span class="co">#&gt;   Degrees of freedom (D)                              1</span></span>
 <span><span class="co">#&gt;   P-value (D)                                     0.000</span></span>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; R-Squared:</span></span>
-<span><span class="co">#&gt;   Y                                               0.510</span></span>
+<span><span class="co">#&gt;   Y                                               0.494</span></span>
 <span><span class="co">#&gt; R-Squared Null-Model (H0):</span></span>
-<span><span class="co">#&gt;   Y                                               0.343</span></span>
+<span><span class="co">#&gt;   Y                                               0.335</span></span>
 <span><span class="co">#&gt; R-Squared Change:</span></span>
-<span><span class="co">#&gt;   Y                                               0.167</span></span>
+<span><span class="co">#&gt;   Y                                               0.160</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Parameter Estimates:</span></span>
 <span><span class="co">#&gt;   Coefficients                           unstandardized</span></span>
@@ -195,53 +198,50 @@ term.</p>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; Latent Variables:</span></span>
 <span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;   Z =~ </span></span>
-<span><span class="co">#&gt;     z1               1.000                             </span></span>
-<span><span class="co">#&gt;     z2               0.811      0.016    50.04    0.000</span></span>
 <span><span class="co">#&gt;   X =~ </span></span>
 <span><span class="co">#&gt;     x1               1.000                             </span></span>
+<span><span class="co">#&gt;   Z =~ </span></span>
+<span><span class="co">#&gt;     z1               1.000                             </span></span>
 <span><span class="co">#&gt;   Y =~ </span></span>
 <span><span class="co">#&gt;     y1               1.000                             </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   Y ~ </span></span>
-<span><span class="co">#&gt;     Z                0.587      0.033    17.65    0.000</span></span>
-<span><span class="co">#&gt;     X                0.574      0.030    19.03    0.000</span></span>
-<span><span class="co">#&gt;     Z:X              0.627      0.026    24.18    0.000</span></span>
+<span><span class="co">#&gt;     X                0.663      0.032    20.68    0.000</span></span>
+<span><span class="co">#&gt;     Z                0.482      0.029    16.55    0.000</span></span>
+<span><span class="co">#&gt;     X:Z              0.586      0.025    23.89    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Intercepts:</span></span>
 <span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;     z1               1.009      0.027    37.84    0.000</span></span>
-<span><span class="co">#&gt;     z2               1.203      0.022    54.45    0.000</span></span>
-<span><span class="co">#&gt;     x1               1.023      0.027    38.49    0.000</span></span>
-<span><span class="co">#&gt;     y1               1.046      0.037    28.54    0.000</span></span>
+<span><span class="co">#&gt;     x1               1.023      0.025    40.20    0.000</span></span>
+<span><span class="co">#&gt;     z1               1.011      0.027    37.67    0.000</span></span>
+<span><span class="co">#&gt;     y1               1.057      0.036    29.02    0.000</span></span>
 <span><span class="co">#&gt;     Y                0.000                             </span></span>
-<span><span class="co">#&gt;     Z                0.000                             </span></span>
 <span><span class="co">#&gt;     X                0.000                             </span></span>
+<span><span class="co">#&gt;     Z                0.000                             </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;   Z ~~ </span></span>
-<span><span class="co">#&gt;     X                0.211      0.028     7.66    0.000</span></span>
+<span><span class="co">#&gt;   X ~~ </span></span>
+<span><span class="co">#&gt;     Z                0.208      0.028     7.51    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;     z1               0.170      0.017    10.24    0.000</span></span>
-<span><span class="co">#&gt;     z2               0.160      0.011    13.94    0.000</span></span>
-<span><span class="co">#&gt;     x1               0.000                             </span></span>
+<span><span class="co">#&gt;     x1               0.100                             </span></span>
+<span><span class="co">#&gt;     z1               0.000                             </span></span>
 <span><span class="co">#&gt;     y1               0.000                             </span></span>
-<span><span class="co">#&gt;     Z                1.010      0.020    51.26    0.000</span></span>
-<span><span class="co">#&gt;     X                1.141      0.017    69.00    0.000</span></span>
-<span><span class="co">#&gt;     Y                1.284      0.043    30.19    0.000</span></span></code></pre></div>
+<span><span class="co">#&gt;     X                1.028      0.017    59.57    0.000</span></span>
+<span><span class="co">#&gt;     Z                1.184      0.017    70.24    0.000</span></span>
+<span><span class="co">#&gt;     Y                1.323      0.044    30.17    0.000</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="the-qml-approach">The QML approach<a class="anchor" aria-label="anchor" href="#the-qml-approach"></a>
+<h3 id="the-qml-approach">The QML Approach<a class="anchor" aria-label="anchor" href="#the-qml-approach"></a>
 </h3>
-<p>The estimation of the QML approach is different from the LMS
-approach, and you do not have the same issue as in the LMS approach.
-Thus you don’t have to specify a measurement error for moderating
-variables.</p>
+<p>The estimation process for the <code>QML</code> approach differs from
+the <code>LMS</code> approach, and you do not encounter the same issue
+as in the <code>LMS</code> approach. Therefore, you don’t need to
+specify a measurement error for moderating variables.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">m3</span> <span class="op">&lt;-</span> <span class="st">'</span></span>
 <span><span class="st"># Outer Model</span></span>

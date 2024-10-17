@@ -75,18 +75,22 @@
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/Kss2k/modsem" class="external-link">modsem</a></span><span class="op">)</span></span></code></pre></div>
 <div class="section level2">
-<h2 id="plotting-interaction-effects">Plotting interaction effects<a class="anchor" aria-label="anchor" href="#plotting-interaction-effects"></a>
+<h2 id="plotting-interaction-effects">Plotting Interaction Effects<a class="anchor" aria-label="anchor" href="#plotting-interaction-effects"></a>
 </h2>
 <p>Interaction effects can be plotted using the included
-<code>plot_interaction</code> function. This function takes a fitted
+<code><a href="../reference/plot_interaction.html">plot_interaction()</a></code> function. This function takes a fitted
 model object and the names of the two variables that are interacting.
-The function will plot the interaction effect of the two variables. The
-x-variable is plotted on the x-axis and the y-variable is plotted on the
-y-axis. And the z-variable decides at what points of z the effect of x
-on y is plotted. The function will also plot the 95% confidence interval
-of the interaction effect.</p>
-<p>Here we can see a simple example using the double centering
-approach.</p>
+The function will plot the interaction effect of the two variables,
+where:</p>
+<ul>
+<li>The x-variable is plotted on the x-axis.</li>
+<li>The y-variable is plotted on the y-axis.</li>
+<li>The z-variable determines at which points the effect of x on y is
+plotted.</li>
+</ul>
+<p>The function will also plot the 95% confidence interval for the
+interaction effect.</p>
+<p>Here is a simple example using the double-centering approach:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">m1</span> <span class="op">&lt;-</span> <span class="st">"</span></span>
 <span><span class="st"># Outer Model</span></span>
@@ -95,14 +99,13 @@ approach.</p>
 <span><span class="st">  Z =~ z1 + z2 + z3</span></span>
 <span><span class="st">  Y =~ y1 + y2 + y3</span></span>
 <span><span class="st"></span></span>
-<span><span class="st"># Inner model</span></span>
+<span><span class="st"># Inner Model</span></span>
 <span><span class="st">  Y ~ X + Z + X:Z</span></span>
 <span><span class="st">"</span></span>
 <span><span class="va">est1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m1</span>, data <span class="op">=</span> <span class="va">oneInt</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/plot_interaction.html">plot_interaction</a></span><span class="op">(</span><span class="st">"X"</span>, <span class="st">"Z"</span>, <span class="st">"Y"</span>, <span class="st">"X:Z"</span>, <span class="op">-</span><span class="fl">3</span><span class="op">:</span><span class="fl">3</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">0.2</span>, <span class="fl">0</span><span class="op">)</span>, <span class="va">est1</span><span class="op">)</span></span></code></pre></div>
-<p><img src="plot_interactions_files/figure-html/unnamed-chunk-2-1.png" width="700">
-Here we can see a different example using the LMS approach, in the
-theory of planned behavior model.</p>
+<span><span class="fu"><a href="../reference/plot_interaction.html">plot_interaction</a></span><span class="op">(</span><span class="st">"X"</span>, <span class="st">"Z"</span>, <span class="st">"Y"</span>, <span class="st">"X:Z"</span>, vals_z <span class="op">=</span> <span class="op">-</span><span class="fl">3</span><span class="op">:</span><span class="fl">3</span>, range_y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">0.2</span>, <span class="fl">0</span><span class="op">)</span>, model <span class="op">=</span> <span class="va">est1</span><span class="op">)</span></span></code></pre></div>
+<p>Here is a different example using the <code>LMS</code> approach in
+the theory of planned behavior model:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">tpb</span> <span class="op">&lt;-</span> <span class="st">"</span></span>
 <span><span class="st"># Outer Model (Based on Hagger et al., 2007)</span></span>
@@ -119,12 +122,8 @@ theory of planned behavior model.</p>
 <span><span class="st">"</span></span>
 <span></span>
 <span><span class="va">est2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">tpb</span>, <span class="va">TPB</span>, method <span class="op">=</span> <span class="st">"lms"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: It is recommended that you have at least 32 nodes for interaction</span></span>
-<span><span class="co">#&gt; effects between exogenous and endogenous variables in the lms approach 'nodes =</span></span>
-<span><span class="co">#&gt; 24'</span></span>
 <span><span class="fu"><a href="../reference/plot_interaction.html">plot_interaction</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"INT"</span>, z <span class="op">=</span> <span class="st">"PBC"</span>, y <span class="op">=</span> <span class="st">"BEH"</span>, xz <span class="op">=</span> <span class="st">"PBC:INT"</span>, </span>
 <span>                 vals_z <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">0.5</span>, <span class="fl">0.5</span><span class="op">)</span>, model <span class="op">=</span> <span class="va">est2</span><span class="op">)</span></span></code></pre></div>
-<p><img src="plot_interactions_files/figure-html/unnamed-chunk-3-1.png" width="700"></p>
 </div>
   </main>
 </div>

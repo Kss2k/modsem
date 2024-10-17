@@ -76,23 +76,26 @@
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/Kss2k/modsem" class="external-link">modsem</a></span><span class="op">)</span></span></code></pre></div>
 <div class="section level2">
 <h2 id="the-latent-moderated-structural-equations-lms-and-the-quasi-maximum-likelihood-qml-approach">The Latent Moderated Structural Equations (LMS) and the Quasi
-Maximum Likelihood (QML) approach<a class="anchor" aria-label="anchor" href="#the-latent-moderated-structural-equations-lms-and-the-quasi-maximum-likelihood-qml-approach"></a>
+Maximum Likelihood (QML) Approach<a class="anchor" aria-label="anchor" href="#the-latent-moderated-structural-equations-lms-and-the-quasi-maximum-likelihood-qml-approach"></a>
 </h2>
-<p>Both the LMS- and QML approach works on most models, but interaction
-effects with endogenous can be a bit tricky to estimate (see the <a href="https://kss2k.github.io/modsem/articles/interaction_two_etas.html" class="external-link">vignette</a>.
-Both approaches (particularily the LMS approach) are quite
-computationally intensive, and are thus partly implemented in C++ (using
-Rcpp and RcppArmadillo). Additionally starting parameters are estimated
-using the double centering approach (and the means of the observed
-variables) are used to generate good starting parameters for faster
-convergence. If you want to see the progress of the estimation process
-you can use ´verbose = TRUE´.</p>
+<p>Both the <code>LMS</code> and <code>QML</code> approaches work on
+most models, but interaction effects with endogenous variables can be
+tricky to estimate (see the <a href="https://kss2k.github.io/modsem/articles/interaction_two_etas.html" class="external-link">vignette</a>).
+Both approaches, particularly the <code>LMS</code> approach, are
+computationally intensive and are partially implemented in C++ (using
+<code>Rcpp</code> and <code>RcppArmadillo</code>). Additionally,
+starting parameters are estimated using the double-centering approach,
+and the means of the observed variables are used to generate good
+starting parameters for faster convergence. If you want to monitor the
+progress of the estimation process, you can use
+<code>verbose = TRUE</code>.</p>
 <div class="section level3">
 <h3 id="a-simple-example">A Simple Example<a class="anchor" aria-label="anchor" href="#a-simple-example"></a>
 </h3>
-<p>Here you can see an example of the LMS approach for a simple model.
-By default the summary function calculates fit measures compared to a
-null model (i.e., the same model without an interaction term).</p>
+<p>Here is an example of the <code>LMS</code> approach for a simple
+model. By default, the <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> function calculates fit
+measures compared to a null model (i.e., the same model without an
+interaction term).</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/Kss2k/modsem" class="external-link">modsem</a></span><span class="op">)</span></span>
 <span><span class="va">m1</span> <span class="op">&lt;-</span> <span class="st">'</span></span>
@@ -102,13 +105,13 @@ null model (i.e., the same model without an interaction term).</p>
 <span><span class="st">  Z =~ z1 + z2 + z3</span></span>
 <span><span class="st">  Y =~ y1 + y2 + y3</span></span>
 <span><span class="st"></span></span>
-<span><span class="st"># Inner model</span></span>
+<span><span class="st"># Inner Model</span></span>
 <span><span class="st">  Y ~ X + Z</span></span>
 <span><span class="st">  Y ~ X:Z</span></span>
 <span><span class="st">'</span></span>
 <span></span>
 <span><span class="va">lms1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m1</span>, <span class="va">oneInt</span>, method <span class="op">=</span> <span class="st">"lms"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">lms1</span>, standardized <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="co"># standardized estimates </span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">lms1</span>, standardized <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="co"># Standardized estimates</span></span>
 <span><span class="co">#&gt; Estimating null model</span></span>
 <span><span class="co">#&gt; EM: Iteration =     1, LogLik =   -17831.87, Change = -17831.875</span></span>
 <span><span class="co">#&gt; EM: Iteration =     2, LogLik =   -17831.87, Change =      0.000</span></span>
@@ -195,7 +198,7 @@ null model (i.e., the same model without an interaction term).</p>
 <span><span class="co">#&gt;     X                1.000      0.016    60.80    0.000</span></span>
 <span><span class="co">#&gt;     Z                1.000      0.018    54.92    0.000</span></span>
 <span><span class="co">#&gt;     Y                0.404      0.015    27.12    0.000</span></span></code></pre></div>
-<p>Here you can see the same example using the QML approach.</p>
+<p>Here is the same example using the <code>QML</code> approach:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">qml1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m1</span>, <span class="va">oneInt</span>, method <span class="op">=</span> <span class="st">"qml"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">qml1</span><span class="op">)</span></span>
@@ -296,29 +299,31 @@ null model (i.e., the same model without an interaction term).</p>
 <span><span class="co">#&gt;     Y                0.943      0.038    24.87    0.000</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="a-more-complicated-example">A more complicated example<a class="anchor" aria-label="anchor" href="#a-more-complicated-example"></a>
+<h3 id="a-more-complicated-example">A More Complicated Example<a class="anchor" aria-label="anchor" href="#a-more-complicated-example"></a>
 </h3>
-<p>Here you can see an example of a more complicated example using the
-model from the theory of planned behaviour (TPB), where there are two
-endogenous variables, where there is an interaction between an
-endogenous and exogenous variable. When estimating more complicated
-models with the LMS-approach, it is recommended that you increase the
-number of nodes used for numerical integration. By default the number of
-nodes is set to 16, and can be increased using the nodes argument. The
-argument has no effect on the QML approach. When there is an interaction
-effect between an endogenous and exogenous variable, it is recommended
-that you use at least 32 nodes for the LMS-approach. You can also get
-robust standard errors by setting <code>robust.se = TRUE</code> in the
-<code><a href="../reference/modsem.html">modsem()</a></code> function.</p>
-<p>Note: If you want the lms-approach to give as similar results as
-possible to mplus, you would have to increase the number of nodes (e.g.,
-<code>nodes = 100</code>).</p>
+<p>Below is an example of a more complex model based on the theory of
+planned behavior (TPB), which includes two endogenous variables and an
+interaction between an endogenous and exogenous variable. When
+estimating more complex models with the <code>LMS</code> approach, it is
+recommended to increase the number of nodes used for numerical
+integration. By default, the number of nodes is set to 16, but this can
+be increased using the <code>nodes</code> argument. The
+<code>nodes</code> argument has no effect on the <code>QML</code>
+approach.</p>
+<p>When there is an interaction effect between an endogenous and
+exogenous variable, it is recommended to use at least 32 nodes for the
+<code>LMS</code> approach. You can also obtain robust standard errors by
+setting <code>robust.se = TRUE</code> in the <code><a href="../reference/modsem.html">modsem()</a></code>
+function.</p>
+<p><strong>Note</strong>: If you want the <code>LMS</code> approach to
+produce results as similar as possible to Mplus, you should increase the
+number of nodes (e.g., <code>nodes = 100</code>).</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># ATT = Attitude, </span></span>
-<span><span class="co"># PBC = Perceived Behavioural Control </span></span>
-<span><span class="co"># INT = Intention </span></span>
+<code class="sourceCode R"><span><span class="co"># ATT = Attitude</span></span>
+<span><span class="co"># PBC = Perceived Behavioral Control</span></span>
+<span><span class="co"># INT = Intention</span></span>
 <span><span class="co"># SN = Subjective Norms</span></span>
-<span><span class="co"># BEH = Behaviour</span></span>
+<span><span class="co"># BEH = Behavior</span></span>
 <span><span class="va">tpb</span> <span class="op">&lt;-</span> <span class="st">' </span></span>
 <span><span class="st"># Outer Model (Based on Hagger et al., 2007)</span></span>
 <span><span class="st">  ATT =~ att1 + att2 + att3 + att4 + att5</span></span>
@@ -472,7 +477,7 @@ possible to mplus, you would have to increase the number of nodes (e.g.,
 <span><span class="co">#&gt;     BEH              0.456      0.023    20.13    0.000</span></span>
 <span></span>
 <span><span class="va">qml2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">tpb</span>, <span class="va">TPB</span>, method <span class="op">=</span> <span class="st">"qml"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">qml2</span>, standardized <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="co"># standardized estimates</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">qml2</span>, standardized <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="co"># Standardized estimates</span></span>
 <span><span class="co">#&gt; Estimating null model</span></span>
 <span><span class="co">#&gt; Starting M-step</span></span>
 <span><span class="co">#&gt; </span></span>
