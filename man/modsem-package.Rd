@@ -17,5 +17,10 @@ Useful links:
 \author{
 \strong{Maintainer}: Kjell Solem Slupphaug \email{slupphaugkjell@gmail.com} (\href{https://orcid.org/0009-0005-8324-2834}{ORCID})
 
+Other contributors:
+\itemize{
+  \item Matthias Mittner \email{matthias.mittner@uit.no} (\href{https://orcid.org/0000-0003-0205-7353}{ORCID}) [contributor]
+}
+
 }
 \keyword{internal}
