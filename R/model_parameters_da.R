@@ -247,7 +247,7 @@ calcPhiTheta <- function(theta, model, method) {
   } else {
     matEst <- filledModel$matrices
     matNA  <- model$matrices
-    vals   <- as.vector(matEst$A[is.na(matNA$A)]) 
+    vals   <- as.vector(matEst$phi[is.na(matNA$A)]) 
   }
 
   theta[grepl("^A[0-9]+$", names(theta))] <- vals

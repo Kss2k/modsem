@@ -130,7 +130,6 @@ getVCOV_LabelledParams <- function(vcov, model, theta, method, epsilon = 1e-8) {
 
 getJacobianLabelledParams <- function(model, theta, method, epsilon = 1e-8) {
   constrExprs <- model$constrExprs
-  if (!length(constrExprs)) return(NULL)
 
   g <- getTransformationsTheta(model, theta = theta, method = method)
   J <- matrix(0, nrow = length(g), ncol = length(theta),
