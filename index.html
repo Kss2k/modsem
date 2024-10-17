@@ -63,7 +63,8 @@
 <div class="page-header"><h1 id="modsem-">
 <code>modsem</code> <img src="reference/figures/modsem.png" alt="Logo" align="right" height="139" class="logo"><a class="anchor" aria-label="anchor" href="#modsem-"></a>
 </h1></div>
-<p>This is a package which allows you to perform interactions between latent variables (i.e., moderation) in CB-SEM. See <a href="https://www.modsem.org" class="external-link uri">https://www.modsem.org</a> for a tutorial.</p>
+<!-- badges: start -->
+
 </div>
 <div class="section level1">
 <h1 id="to-install">To Install<a class="anchor" aria-label="anchor" href="#to-install"></a>
@@ -71,7 +72,7 @@
 <pre><code><span><span class="co"># From CRAN</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"modsem"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Latest version from Github</span></span>
+<span><span class="co"># Latest version from GitHub</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"devtools"</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"kss2k/modsem"</span>, build_vignettes <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre>
 </div>
@@ -116,7 +117,7 @@
 <h1 id="examples">Examples<a class="anchor" aria-label="anchor" href="#examples"></a>
 </h1>
 <div class="section level2">
-<h2 id="one-interaction">One interaction<a class="anchor" aria-label="anchor" href="#one-interaction"></a>
+<h2 id="elementary-interaction-model-kenny--judd-1984">Elementary Interaction Model (Kenny &amp; Judd, 1984)<a class="anchor" aria-label="anchor" href="#elementary-interaction-model-kenny--judd-1984"></a>
 </h2>
 <pre><code><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/Kss2k/modsem" class="external-link">modsem</a></span><span class="op">)</span></span>
 <span><span class="va">m1</span> <span class="op">&lt;-</span> <span class="st">'</span></span>
@@ -157,7 +158,6 @@
 <span><span class="st">  BEH =~ b1 + b2</span></span>
 <span><span class="st"></span></span>
 <span><span class="st"># Inner Model (Based on Steinmetz et al., 2011)</span></span>
-<span><span class="st">  # Causal Relationsships</span></span>
 <span><span class="st">  INT ~ ATT + SN + PBC</span></span>
 <span><span class="st">  BEH ~ INT + PBC</span></span>
 <span><span class="st">  BEH ~ PBC:INT</span></span>
@@ -184,10 +184,12 @@
 <h2 id="interactions-between-two-observed-variables">Interactions between two observed variables<a class="anchor" aria-label="anchor" href="#interactions-between-two-observed-variables"></a>
 </h2>
 <pre><code><span><span class="va">est2</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/modsem.html">modsem</a></span><span class="op">(</span><span class="st">'y1 ~ x1 + z1 + x1:z1'</span>, data <span class="op">=</span> <span class="va">oneInt</span>, method <span class="op">=</span> <span class="st">"pind"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est2</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co">## Interaction between an obsereved and a latent variable</span></span>
-<span><span class="va">m3</span> <span class="op">&lt;-</span> <span class="st">'</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est2</span><span class="op">)</span></span></code></pre>
+</div>
+<div class="section level2">
+<h2 id="interaction-between-an-obsereved-and-a-latent-variable">Interaction between an obsereved and a latent variable<a class="anchor" aria-label="anchor" href="#interaction-between-an-obsereved-and-a-latent-variable"></a>
+</h2>
+<pre><code><span><span class="va">m3</span> <span class="op">&lt;-</span> <span class="st">'</span></span>
 <span><span class="st">  # Outer Model</span></span>
 <span><span class="st">  X =~ x1 + x2 +x3</span></span>
 <span><span class="st">  Y =~ y1 + y2 + y3</span></span>
@@ -231,14 +233,29 @@
 </ul>
 </div>
 
+<div class="developers">
+<h2 data-toc-skip>Developers</h2>
+<ul class="list-unstyled">
+<li>Kjell Solem Slupphaug <br><small class="roles"> Author, maintainer </small> <a href="https://orcid.org/0009-0005-8324-2834" target="orcid.widget" aria-label="ORCID" class="external-link"><span class="fab fa-orcid orcid" aria-hidden="true"></span></a> </li>
+<li><a href="authors.html">More about authors...</a></li>
+</ul>
+</div>
 
+<div class="dev-status">
+<h2 data-toc-skip>Dev status</h2>
+<ul class="list-unstyled">
+<li><a href="https://github.com/kss2k/modsem/actions/workflows/checks.yml" class="external-link"><img src="https://github.com/kss2k/modsem/actions/workflows/checks.yml/badge.svg" alt="R-CMD-check"></a></li>
+<li><a href="https://github.com/kss2k/modsem/actions/workflows/tests.yml" class="external-link"><img src="https://github.com/kss2k/modsem/actions/workflows/tests.yml/badge.svg" alt="Tests"></a></li>
+<li><a href="https://cran.r-project.org/package=modsem" class="external-link"><img src="https://www.r-pkg.org/badges/version/modsem" alt="CRAN"></a></li>
+</ul>
+</div>
 
   </aside>
 </div>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by .</p>
+  <p>Developed by Kjell Solem Slupphaug.</p>
 </div>
 
 <div class="pkgdown-footer-right">
