@@ -63,15 +63,11 @@ combineListDf <- function(listDf) {
   if (sum(as.integer(matchingColnames)) > 0) {
     duplicates <- stringr::str_c(colnames(listDf[[2]])[matchingColnames],
                                  collapse = ", ")
-    warning2(
-      "There were some duplicate product indicators, was this intended?\n",
-      "The duplicates of these product indicators were removed: \n",
-      duplicates, "\n")
+    warning2("There were some duplicate product indicators, was this intended?\n",
+             "The duplicates of these product indicators were removed: \n", duplicates, "\n")
   }
 
-  combinedDf <- cbind.data.frame(
-    listDf[[1]], listDf[[2]][,!matchingColnames, drop = FALSE]
-    )
+  combinedDf <- cbind.data.frame(listDf[[1]], listDf[[2]][,!matchingColnames, drop = FALSE])
 
   combineListDf(c(list(combinedDf), listDf[-(1:2)]))
 }
@@ -83,9 +79,7 @@ maxDepth <- function(list, max = 2, depth = 1) {
     return(depth)
   }
 
-  if (depth > max) {
-    stop2("Incorrectly nested syntax")
-  }
+  stopif(depth > max, "Incorrectly nested syntax")
   deepest <- 1
   for (i in seq_along(list)) {
     branchDepth <- maxDepth(list[[i]], max = max, depth + 1)
@@ -120,19 +114,19 @@ rbindParTable <- function(parTable, newRows) {
         FUN = function(row, parTableRows)
           list(row) %in% parTableRows,
         parTableRows = newParTableRows)
-  if (sum(as.integer(duplicateRows)) > 0) {
-    warning2("Some duplicates in the parTable was removed, have you accidentally ",
-            "specified some of these in your syntax? \n",
-            capturePrint(parTable[duplicateRows, ]))
-  }
+
+  warnif(sum(as.integer(duplicateRows)) > 0,
+          "Some duplicates in the parTable was removed, have you accidentally ",
+          "specified some of these in your syntax? \n",
+          capturePrint(parTable[duplicateRows, ]))
+
   rbind(parTable[!duplicateRows, ], newRows)
 }
 
 
 greplRowDf <- function(col, df) {
   if (is.null(df)) return(FALSE)
-  any(apply(df, MARGIN = 2, 
-            FUN = function(dfCol) all(sort(col) == sort(dfCol))))
+  any(apply(df, MARGIN = 2, FUN = function(dfCol) all(sort(col) == sort(dfCol))))
 }
 
 
@@ -156,4 +150,61 @@ greplRowDf <- function(col, df) {
     }
   }
   out
+}
+
+
+defineUndefinedLabels <- function(parTable.x, parTable.y) {
+  # parTable.x = original parTable without new constraints
+  # parTable.y = altered parTable with new constraints (and new labels)
+  # goal: make sure user-specified labels are not overwritten
+
+  parTable.o <- parTable.y # parTable out
+  parTable.x <- rename(parTable.x, mod="mod.x")
+  parTable.y <- rename(parTable.y, mod="mod.y")
+
+  # means that we ha replaced a label
+  parTable.z <- merge(parTable.y, parTable.x)
+  parTable.z <- parTable.z[parTable.z$mod.y != "" &  parTable.z$mod.x != "" &
+                           parTable.z$mod.x != parTable.z$mod.y &
+                           parTable.z$op %in% c("=~", "~1", "~", "~~"), ] 
+
+  redefinedLabels <- getRedefinedLabels(parTable.z=parTable.z)
+
+  rbind(redefinedLabels, parTable.o) # place redefinitions at the start, as to not confuse lavaan
+}
+
+
+getRedefinedLabels <- function(parTable.z) {
+  redefinedLabels <- NULL
+  for (i in seq_len(nrow(parTable.z))) {
+    row <- parTable.z[i, , drop = FALSE]
+
+    if (isLavLabelFunction(label = row$mod.x)) { # is function? then: skip and warn
+      warnReplacingLabel(old = row$mod.x, new = row$mod.y, parTable.row = row)
+      next
+    }
+
+    if (canBeNumeric(row$mod.x)) { # is numeric constant? then: constrain
+      redef <- data.frame(lhs = row$mod.y, op = "==", rhs = row$mod.x, mod = "")
+    } else { # is label? then: redefine using `:=`
+      redef <- data.frame(lhs = row$mod.x, op = ":=", rhs = row$mod.y, mod = "")
+    }
+
+    redefinedLabels <- rbind(redefinedLabels, redef)
+  }
+
+  redefinedLabels
+}
+
+
+isLavLabelFunction <- function(label, context, warning = FALSE) {
+  grepl("^(start|equal)\\(.*\\)$", label)
+}
+
+
+warnReplacingLabel <- function(old, new, parTable.row) {
+  context <- paste(parTable.row$lhs, parTable.row$op, 
+                   paste0(old, "*", parTable.row$rhs))
+  warning2("Replacing `", old, "` with new label `", new, "` in: `", 
+           context, "`")
 }

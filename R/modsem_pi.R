@@ -351,8 +351,11 @@ addSpecsParTable <- function(modelSpec,
       purrr::list_rbind()
     parTable <- rbindParTable(parTable, restrictedMeans)
   }
+  
+  # redefine labels (using 'old' := 'new'), if any were overwritten when adding constraints
+  parTable <- defineUndefinedLabels(parTable.x = modelSpec$parTable,
+                                    parTable.y = parTable)
 
-  modEnv$parTable <- parTable
   parTable
 }
 

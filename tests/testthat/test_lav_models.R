@@ -65,12 +65,19 @@ methods <- list(m1 = nativeMethods[nativeMethods != "ca"],
 
 
 estimates <- vector("list", length(models))
-for (i in seq_along(estimates)) {
-    estimates[[i]] <- runMultipleMethods(models[[i]], data = data[[i]], 
-                                         methods = methods[[i]],
-                                         estimator = "ML")
+testthat::expect_warning({
+  for (i in seq_along(estimates)) {
+    model  <- models[[i]]
+    data_i <- data[[i]]
+    ests   <- vector("list", length(methods))
+    names(ests) <- methods
 
-}
+    for (method in methods[[i]]) {
+      ests[[method]] <- modsem(model, data_i, method=method, estimator = "ML")
+    }
+    estimates[[i]] <- ests
+  }
+}, regexp = ".*Replacing `start.*`.* in.*") # make this more informative later
 
 # testing plot function 
 plot_interaction(x = "ind60", z = "dem60", y = "dem65", xz = "ind60:dem60", 
