@@ -122,8 +122,8 @@ standardized_estimates.data.frame <- function(object, intercepts = FALSE, ...) {
   }
 
   # factor loadings
-  lambda <- NULL 
-  selectRows <- NULL 
+  lambda <- NULL
+  selectRows <- NULL
   selectCols <- c("est", "std.error")
   for (lV in lVs) {
     for (ind in indsLVs[[lV]]) {

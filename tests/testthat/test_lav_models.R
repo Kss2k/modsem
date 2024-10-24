@@ -84,3 +84,8 @@ plot_interaction(x = "ind60", z = "dem60", y = "dem65", xz = "ind60:dem60",
                  vals_z = c(-0.5, 0.5), model = estimates[[1]][["rca"]])
 plot_interaction(x = "speed", z = "textual", y = "visual", xz = "speed:textual", 
                  vals_z = c(-0.5, 0.5), model = estimates[[2]][["ca"]])
+
+print(summary(estimates[[1]][["rca"]]))
+print(estimates[[1]][["rca"]])
+
+testthat::expect_true(summary(estimates[[1]][["rca"]])$info$version != "??")

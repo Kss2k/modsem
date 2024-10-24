@@ -1,3 +1,9 @@
+printModsemPIHeader <- function(approach) {
+  cat(paste0("modsem (version ", PKG_INFO$version, ", approach = ",
+             approach, "):\n"))
+}
+
+
 #' summary for modsem objects
 #'
 #' @param object modsem object to summarized
@@ -5,8 +11,17 @@
 #' @rdname summary
 #' @export 
 summary.modsem_pi <- function(object, ...) {
-  cat("modsem: \nMethod =", attributes(object)$method, "\n")
-  lavaan::summary(object$lavaan, ...)
+  structure(list(lavaan = lavaan::summary(object$lavaan, ...),
+                 info   = list(version = PKG_INFO$version,
+                               approach = attributes(object)$method)),
+            class = c("summary_modsem_pi", "list"))
+}
+
+
+#' @export
+print.summary_modsem_pi <- function(x, ...) {
+  printModsemPIHeader(x$info$approach)
+  print(x$lavaan)
 }
 
 
@@ -54,4 +69,11 @@ coefficients.modsem_pi <- function(object, ...) {
 #' @importFrom stats nobs
 nobs.modsem_pi <- function(object, ...) {
   lavaan::nobs(object$lavaan, ...)
+}
+
+
+#' @export
+print.modsem_pi <- function(x, ...) {
+  printModsemPIHeader(attributes(x)$method)
+  print(x$lavaan)
 }

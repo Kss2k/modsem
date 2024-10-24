@@ -4,8 +4,6 @@ parameter_estimates.modsem_da <- function(object, ...) {
 }
 
 
-MODSEM_VERSION <- "1.0.3"
-
 #' summary for modsem objects
 #'
 #' @param object modsem object to summarized
@@ -104,7 +102,7 @@ summary.modsem_da <- function(object,
     if (is.null(estH0)) {
       warning2("Comparative fit to H0 will not be calculated.")
       H0        <- FALSE
-      out$D     <- NULL 
+      out$D     <- NULL
       out$fitH0 <- NULL
 
     } else {
@@ -148,7 +146,7 @@ print.summary_da <- function(x, digits = 3, ...) {
                                        covariances = x$format$covariances,
                                        intercepts = x$format$intercepts,
                                        variances = x$format$variances)
-  cat(paste0("\nmodsem (version ", MODSEM_VERSION, "):\n"))
+  cat(paste0("\nmodsem (version ", PKG_INFO$version, "):\n"))
   names <- c("Estimator", "Optimization method", "Number of observations", 
              "Number of iterations", "Loglikelihood", 
              "Akaike (AIC)", "Bayesian (BIC)")
