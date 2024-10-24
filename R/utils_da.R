@@ -76,8 +76,13 @@ getK_NA <- function(omega, labelOmega) {
 
 
 sortData <- function(data, allIndsXis, allIndsEtas) {
-  if (!all(c(allIndsXis, allIndsEtas) %in% colnames(data))) 
-    stop2("Missing Observed Variables in Data")
+  inds    <- c(allIndsXis, allIndsEtas)
+  ovs     <- colnames(data)
+  missing <- inds[!inds %in% ovs]
+
+  stopif(!all(inds %in% ovs), "Missing observed variables in data:\n  ",
+         missing)
+
   data[c(allIndsXis, allIndsEtas)]
 }
 
@@ -95,7 +100,7 @@ castDataNumericMatrix <- function(data) {
   warning = function(w) {
     warning2("Warning in converting data to numeric: \n", w)
     numericData <- suppressWarnings(lapplyDf(data, FUN = as.numeric))
-    if (anyAllNA(numericData)) stop2("Unable to conver data to type numeric") 
+    stopif(anyAllNA(numericData), "Unable to convert data to type numeric") 
     numeric
   }, 
   error = function(e) {
@@ -219,66 +224,6 @@ uniqueByVar <- function(df, var) {
   }
 
   udf
-}
-
-
-checkModel <- function(model, covModel = NULL, method = "lms") {
-  modelXis <- model$info$xis
-  if (!is.null(covModel$info)) {
-    covModelEtas <- covModel$info$etas
-    covModelXis <- covModel$info$xis 
-    if (!all(c(covModelXis, covModelEtas) %in% modelXis)) {
-      stop2("All latent variables in the cov-model must be an exogenous variable in the main model")
-    }
-    if (!all(modelXis %in% c(covModelXis, covModelEtas))) {
-      stop2("All exogenous variables in main model must be part of the cov-model")
-    }
-  }
-
-  checkNodesLms(parTable = rbind(model$parTable, covModel$parTable),
-                nodes = model$quad$m, method = method)
-  NULL
-}
-
-
-checkNodesLms <- function(parTable,
-                          nodes, 
-                          method = "lms",
-                          minNodesXiXi = 16,
-                          minNodesXiEta = 32, 
-                          minNodesEtaEta = 48) {
-  if (method == "qml") return(NULL)
-
-  etas <- getEtas(parTable, isLV = TRUE)
-  xis <- getXis(parTable, etas = etas, isLV = TRUE)
-  varsInts <- getVarsInts(getIntTermRows(parTable))
-
-  nodesXiXi_ok <- TRUE
-  nodesXiEta_ok <- TRUE
-  nodesEtaEta_ok <- TRUE
-  
-  lapply(varsInts, FUN = function(x) {
-    if (all(x %in% xis)) nodesXiXi_ok <<- nodes >= minNodesXiXi
-    else if (all(x %in% etas)) nodesEtaEta_ok <<- nodes >= minNodesEtaEta
-    else if (any(x %in% etas)) nodesXiEta_ok <<- nodes >= minNodesXiEta
-    else warning2("Unable to classify latent variables in interaction terms")
-  }) 
-
-  if (!nodesXiXi_ok) {
-    warning2("It is recommended that you have at least ", minNodesXiXi,  " nodes ",
-             "for interaction effects between exogenous variables in the lms approach ", 
-             "'nodes = ", nodes, "'")
-  } 
-  if (!nodesXiEta_ok) {
-    warning2("It is recommended that you have at least ", minNodesXiEta, " nodes ", 
-             "for interaction effects between exogenous and endogenous variables in the lms approach ", 
-             "'nodes = ", nodes, "'")
-  }   
-  if (!nodesEtaEta_ok) {
-    warning2("It is recommended that you have at least ", minNodesEtaEta, " nodes ",
-             "for interaction effects between endogenous variables in the lms approach ", 
-             "'nodes = ", nodes, "'")
-  }
 }
 
 

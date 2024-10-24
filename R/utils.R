@@ -14,7 +14,7 @@ stopif <- function(cond, ...) {
 
 
 warnif <- function(cond, ...) {
-  if (cond) stop2(...)
+  if (cond) warning2(...)
 }
 
 
@@ -75,14 +75,16 @@ getSortedEtas <- function(parTable, isLV = FALSE, checkAny = TRUE) {
 
 getXis <- function(parTable, etas = NULL, isLV = TRUE, checkAny = TRUE) {
   if (is.null(etas)) etas <- getEtas(parTable, isLV = isLV)
-  if (!isLV) {
-    xis <- unique(parTable[parTable$op != "~1" &
-                  parTable$lhs %in% etas, "rhs"])
-  } else {
-    xis <- unique(parTable[parTable$op == "=~" &
-                  !parTable$lhs %in% etas, "lhs"])
+  # add all LVs which are not etas
+  xis <- unique(parTable[parTable$op == "=~" & !parTable$lhs %in% etas, "lhs"])
+
+  if (!isLV) { # add any other variabels found in structural expressions
+    xis <- unique(c(xis, parTable[parTable$op == "~" &
+                                  !parTable$rhs %in% etas, "rhs"]))
   }
   
+  xis <- xis[!grepl(":", xis)] # remove interaction terms
+
   stopif(checkAny && !length(xis), "No xis found")
   xis
 }
@@ -101,13 +103,12 @@ getOVs <- function(parTable = NULL, model.syntax = NULL) {
   select <- parTable$op %in% c("=~", "~", "~~")
   vars   <- unique(c(parTable$lhs[select], parTable$rhs[select]))
 
-  vars[!vars %in% lVs]
+  vars[!vars %in% lVs & !grepl(":", vars)]
 }
 
 
 getIndsLVs <- function(parTable, lVs) {
-  measrExprs <- parTable[parTable$op == "=~" & 
-                         parTable$lhs %in% lVs, ]
+  measrExprs <- parTable[parTable$op == "=~" & parTable$lhs %in% lVs, ]
   stopif(!NROW(measrExprs), "No measurement expressions found, for", lVs)
   lapplyNamed(lVs, FUN = function(lV) measrExprs[measrExprs$lhs == lV, "rhs"],
               names = lVs)
