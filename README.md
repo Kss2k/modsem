@@ -5,8 +5,8 @@
 [![CRAN](https://www.r-pkg.org/badges/version/modsem)](https://cran.r-project.org/package=modsem)
 [![PKGDOWN-Build](https://github.com/kss2k/modsem/actions/workflows/pkgdown.yml/badge.svg)](https://github.com/kss2k/modsem/actions/workflows/pkgdown.yml)
 <!-- badges: end -->
-This is a package which allows you to perform interactions between latent variables (i.e., moderation) in CB-SEM. 
-See https://www.modsem.org for a tutorial.
+`modsem` is an `R`-package for estimating interaction (i.e., moderation) effects between latent variables
+in structural equation models (SEMs). See https://www.modsem.org for a tutorial.
 
 # To Install 
 ```
@@ -20,8 +20,12 @@ devtools::install_github("kss2k/modsem", build_vignettes = TRUE)
 
 # Methods/Approaches
 
-There are a number of approaches for estimating interaction effects in SEM. In `modsem()`, the `method = "method"` argument allows you to choose which to use.
+There are a number of approaches for estimating interaction effects in SEM. 
+In `modsem()`, the `method = "method"` argument allows you to choose which to use.
+Different approaches can be categorized into two groups: 
+Product Indicator (PI) and Distribution Analytic (DA) approaches.
 
+## Product Indicator (PI) Approaches:
 - `"ca"` = constrained approach (Algina & Moulder, 2001)
     - Note that constraints can become quite complicated for complex models, 
       particularly when there is an interaction including enodgenous variables.
@@ -31,6 +35,8 @@ There are a number of approaches for estimating interaction effects in SEM. In `
 - `"dblcent"` = double centering approach (Marsh., 2013)
   - default 
 - `"pind"` = basic product indicator approach (not recommended)
+
+## Distribution Analytic (DA) Approaches
 - `"lms"` = The Latent Moderated Structural equations (LMS) approach, see the [vignette](https://kss2k.github.io/modsem/articles/lms_qml.html)
 - `"qml"` = The Quasi Maximum Likelihood (QML) approach, see the [vignette](https://kss2k.github.io/modsem/articles/lms_qml.html)
 - `"mplus"` 

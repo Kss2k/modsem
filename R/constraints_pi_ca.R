@@ -1,5 +1,4 @@
 # Functitions for specifying constraints in the constrained approach
-# modsem(method = "ca"). Last updated: 29.05.2024
 
 
 labelFactorLoadings <- function(parTable) {
@@ -14,14 +13,17 @@ labelFactorLoadings <- function(parTable) {
 
 specifyFactorLoadingsSingle <- function(parTable, relDf) {
   latentProdName <- stringr::str_c(rownames(relDf), collapse = "")
+  
   for (indProd in colnames(relDf)) {
-    indProdLabel <- createLabelLambda(indProd, latentProdName)
+    indProdLabel     <- createLabelLambda(indProd, latentProdName)
     indsInProdLabels <- createLabelLambda(relDf[[indProd]], rownames(relDf))
-    vecLhsRhs <- c(indProdLabel, stringr::str_c(indsInProdLabels,
-                                                collapse = " * "))
-    newRow <- createParTableRow(vecLhsRhs, op = "==")
+    vecLhsRhs        <- c(indProdLabel, stringr::str_c(indsInProdLabels,
+                                                       collapse = " * "))
+
+    newRow   <- createParTableRow(vecLhsRhs, op = "==")
     parTable <- rbind(parTable, newRow)
   }
+
   parTable
 }
 
@@ -129,10 +131,9 @@ specifyVarCovSingle <- function(parTable, relDf) {
   # This function specifies variances for latents, indicators,
   # and indicator products. It will also specifies covariances for latent
   # products, and elements int those products.
-  if (nrow(relDf) > 2) {
-    stop2("Constraints for products with more than two ",
+  stopif(nrow(relDf) > 2, "Constraints for products with more than two ",
          " elements are not supported for this method")
-  }
+
   # General info
   elemsInProdTerm <- rownames(relDf)
   latentProd <- stringr::str_c(rownames(relDf), collapse = "")
@@ -144,12 +145,11 @@ specifyVarCovSingle <- function(parTable, relDf) {
                               FUN = function(x) trace_path(parTable, x, x))
 
   labelCovElems <- trace_path(parTable, elemsInProdTerm[[1]],
-                             elemsInProdTerm[[2]]) |> paste0(" ^ 2")
+                              elemsInProdTerm[[2]]) |> paste0(" ^ 2")
 
   lhs <- labelLatentProd
   rhs <- paste(stringr::str_c(labelsElemsInProd, collapse = " * "),
-               labelCovElems,
-               sep = " + ")
+               labelCovElems, sep = " + ")
   varLatentProd <- createParTableRow(c(lhs, rhs), op = "==")
 
   # covariances between elems and latents
@@ -170,30 +170,26 @@ specifyVarCovSingle <- function(parTable, relDf) {
     labelVarIndProd <- createLabelVar(indProd)
 
     labelsFactorLoadings <- vector("character", length = nrow(relDf))
-    labelsVarLatents <- vector("character", length = nrow(relDf))
-    labelsVarInds <- vector("character", length = nrow(relDf))
+    labelsVarLatents     <- vector("character", length = nrow(relDf))
+    labelsVarInds        <- vector("character", length = nrow(relDf))
 
-    for (latent in 1:nrow(relDf)) {
+    for (latent in seq_len(nrow(relDf))) {
       labelsFactorLoadings[[latent]] <- 
         createLabelLambdaSquared(relDf[latent, indProd], 
                                  rownames(relDf)[[latent]])
       labelsVarLatents[[latent]] <- 
         trace_path(parTable, rownames(relDf)[[latent]],
-                  rownames(relDf)[[latent]])
+                   rownames(relDf)[[latent]])
       labelsVarInds[[latent]] <- createLabelVar(relDf[latent, indProd])
     }
 
-    lhs <- labelVarIndProd
-    rhs1 <- paste(labelsFactorLoadings[[1]],
-                  labelsVarLatents[[1]],
-                  labelsVarInds[[2]],
-                  sep = " * ")
-    rhs2 <- paste(labelsFactorLoadings[[2]],
-                  labelsVarLatents[[2]],
-                  labelsVarInds[[1]],
-                  sep = " * ")
+    lhs  <- labelVarIndProd
+    rhs1 <- paste(labelsFactorLoadings[[1]], labelsVarLatents[[1]],
+                  labelsVarInds[[2]], sep = " * ")
+    rhs2 <- paste(labelsFactorLoadings[[2]], labelsVarLatents[[2]],
+                  labelsVarInds[[1]], sep = " * ")
     rhs3 <- paste(labelsVarInds[[1]], labelsVarInds[[2]], sep = " * ")
-    rhs <- paste(rhs1, rhs2, rhs3, sep = " + ")
+    rhs  <- paste(rhs1, rhs2, rhs3, sep = " + ")
 
     constrained.varProdInds[[indProd]] <- createParTableRow(c(lhs, rhs), op = "==")
   }

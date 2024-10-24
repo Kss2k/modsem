@@ -19,21 +19,27 @@ knitr::opts_chunk$set(
 ```{r setup}
 library(modsem)
 ```
+There are a number of approaches for estimating interaction effects in SEM. 
+In `modsem()`, the `method = "method"` argument allows you to choose which to use.
+Different approaches can be categorized into two groups: 
+Product Indicator (PI) and Distribution Analytic (DA) approaches.
 
-There are a number of approaches for estimating interaction effects in SEM. In `modsem()`, the `method = "method"` argument allows you to choose which to use.
+## Product Indicator (PI) Approaches:
+- `"ca"` = constrained approach (Algina & Moulder, 2001)
+    - Note that constraints can become quite complicated for complex models, 
+      particularly when there is an interaction including enodgenous variables.
+      The method can therefore be quite slow. 
+- `"uca"` = unconstrained approach (Marsh, 2004)
+- `"rca"` = residual centering approach (Little et al., 2006)
+- `"dblcent"` = double centering approach (Marsh., 2013)
+  - default 
+- `"pind"` = basic product indicator approach (not recommended)
 
--   `"ca"` = constrained approach (Algina & Moulder, 2001)
--   `"uca"` = unconstrained approach (Marsh, 2004)
--   `"rca"` = residual centering approach (Little et al., 2006)
-    -   default
--   `"dblcent"`= double centering approach (Marsh., 2013)
--   `"pind"` = basic product indicator approach (not recommended)
--   `"lms"` = The Latent Moderated Structural equations approach
-    -   note: there can not be an interaction between two endogenous variables.
--   `"qml"` = The Quasi Maximum Likelihood approach.
-    -   note: can only be done if you have a single endogenous (dependent) variable.
--   `"mplus"`
-    -   estimates model through Mplus, if it is installed
+## Distribution Analytic (DA) Approaches
+- `"lms"` = The Latent Moderated Structural equations (LMS) approach, see the [vignette](https://kss2k.github.io/modsem/articles/lms_qml.html)
+- `"qml"` = The Quasi Maximum Likelihood (QML) approach, see the [vignette](https://kss2k.github.io/modsem/articles/lms_qml.html)
+- `"mplus"` 
+  - estimates model through Mplus, if it is installed
 
 ```{r, eval = FALSE}
 
@@ -47,10 +53,13 @@ Z =~ z1 + z2 + z3
 Y ~ X + Z + X:Z 
 '
 
+# Product Indicator Approaches
 modsem(m1, data = oneInt, method = "ca")
 modsem(m1, data = oneInt, method = "uca")
 modsem(m1, data = oneInt, method = "rca")
 modsem(m1, data = oneInt, method = "dblcent")
+
+# Distribution Analytic Approaches
 modsem(m1, data = oneInt, method = "mplus")
 modsem(m1, data = oneInt, method = "lms")
 modsem(m1, data = oneInt, method = "qml")
