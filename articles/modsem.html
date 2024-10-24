@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">modsem</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -108,8 +108,7 @@ between two latent variables in <code>lavaan</code>.</p>
 <span></span>
 <span><span class="va">est1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m1</span>, <span class="va">oneInt</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est1</span><span class="op">)</span></span>
-<span><span class="co">#&gt; modsem: </span></span>
-<span><span class="co">#&gt; Method = dblcent</span></span>
+<span><span class="co">#&gt; modsem (version 1.0.4, approach = dblcent):</span></span>
 <span><span class="co">#&gt; lavaan 0.6-19 ended normally after 159 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                         ML</span></span>
@@ -262,7 +261,7 @@ method. If you want to use another method, you can change it using the
 <span><span class="co">#&gt; EM: Iteration =     1, LogLik =   -17831.87, Change = -17831.875</span></span>
 <span><span class="co">#&gt; EM: Iteration =     2, LogLik =   -17831.87, Change =      0.000</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (version 1.0.3):</span></span>
+<span><span class="co">#&gt; modsem (version 1.0.4):</span></span>
 <span><span class="co">#&gt;   Estimator                                         LMS</span></span>
 <span><span class="co">#&gt;   Optimization method                         EM-NLMINB</span></span>
 <span><span class="co">#&gt;   Number of observations                           2000</span></span>
@@ -410,8 +409,7 @@ not recommended.</p>
 <code class="sourceCode R"><span><span class="co"># Using "pind" as the method (see Chapter 3)</span></span>
 <span><span class="va">est2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="st">'y1 ~ x1 + z1 + x1:z1'</span>, data <span class="op">=</span> <span class="va">oneInt</span>, method <span class="op">=</span> <span class="st">"pind"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; modsem: </span></span>
-<span><span class="co">#&gt; Method = pind</span></span>
+<span><span class="co">#&gt; modsem (version 1.0.4, approach = pind):</span></span>
 <span><span class="co">#&gt; lavaan 0.6-19 ended normally after 1 iteration</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                         ML</span></span>
@@ -465,8 +463,7 @@ and observed variables.</p>
 <span></span>
 <span><span class="va">est3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m3</span>, <span class="va">oneInt</span>, method <span class="op">=</span> <span class="st">"pind"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est3</span><span class="op">)</span></span>
-<span><span class="co">#&gt; modsem: </span></span>
-<span><span class="co">#&gt; Method = pind</span></span>
+<span><span class="co">#&gt; modsem (version 1.0.4, approach = pind):</span></span>
 <span><span class="co">#&gt; lavaan 0.6-19 ended normally after 45 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                         ML</span></span>
@@ -551,7 +548,7 @@ quadratic effects.</p>
 <span><span class="co">#&gt; Estimating null model</span></span>
 <span><span class="co">#&gt; Starting M-step</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (version 1.0.3):</span></span>
+<span><span class="co">#&gt; modsem (version 1.0.4):</span></span>
 <span><span class="co">#&gt;   Estimator                                         QML</span></span>
 <span><span class="co">#&gt;   Optimization method                            NLMINB</span></span>
 <span><span class="co">#&gt;   Number of observations                           2000</span></span>
@@ -677,7 +674,7 @@ quadratic effects.</p>
 <span><span class="co">#&gt; EM: Iteration =     1, LogLik =   -26393.22, Change = -26393.223</span></span>
 <span><span class="co">#&gt; EM: Iteration =     2, LogLik =   -26393.22, Change =      0.000</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (version 1.0.3):</span></span>
+<span><span class="co">#&gt; modsem (version 1.0.4):</span></span>
 <span><span class="co">#&gt;   Estimator                                         LMS</span></span>
 <span><span class="co">#&gt;   Optimization method                         EM-NLMINB</span></span>
 <span><span class="co">#&gt;   Number of observations                           2000</span></span>
@@ -825,7 +822,7 @@ is a subset of the PISA 2006 dataset.</p>
 <span><span class="co">#&gt; Estimating null model</span></span>
 <span><span class="co">#&gt; Starting M-step</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (version 1.0.3):</span></span>
+<span><span class="co">#&gt; modsem (version 1.0.4):</span></span>
 <span><span class="co">#&gt;   Estimator                                         QML</span></span>
 <span><span class="co">#&gt;   Optimization method                            NLMINB</span></span>
 <span><span class="co">#&gt;   Number of observations                           6038</span></span>
