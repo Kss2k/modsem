@@ -76,40 +76,49 @@
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/Kss2k/modsem" class="external-link">modsem</a></span><span class="op">)</span></span></code></pre></div>
 <p>There are a number of approaches for estimating interaction effects
 in SEM. In <code><a href="../reference/modsem.html">modsem()</a></code>, the <code>method = "method"</code>
-argument allows you to choose which to use.</p>
+argument allows you to choose which to use. Different approaches can be
+categorized into two groups: Product Indicator (PI) and Distribution
+Analytic (DA) approaches.</p>
+<div class="section level2">
+<h2 id="product-indicator-pi-approaches">Product Indicator (PI) Approaches:<a class="anchor" aria-label="anchor" href="#product-indicator-pi-approaches"></a>
+</h2>
 <ul>
 <li>
 <code>"ca"</code> = constrained approach (Algina &amp; Moulder,
-2001)</li>
+2001)
+<ul>
+<li>Note that constraints can become quite complicated for complex
+models, particularly when there is an interaction including enodgenous
+variables. The method can therefore be quite slow.</li>
+</ul>
+</li>
 <li>
 <code>"uca"</code> = unconstrained approach (Marsh, 2004)</li>
 <li>
 <code>"rca"</code> = residual centering approach (Little et al.,
-2006)
+2006)</li>
+<li>
+<code>"dblcent"</code> = double centering approach (Marsh., 2013)
 <ul>
 <li>default</li>
 </ul>
 </li>
 <li>
-<code>"dblcent"</code>= double centering approach (Marsh.,
-2013)</li>
-<li>
 <code>"pind"</code> = basic product indicator approach (not
 recommended)</li>
-<li>
-<code>"lms"</code> = The Latent Moderated Structural equations
-approach
-<ul>
-<li>note: there can not be an interaction between two endogenous
-variables.</li>
 </ul>
+</div>
+<div class="section level2">
+<h2 id="distribution-analytic-da-approaches">Distribution Analytic (DA) Approaches<a class="anchor" aria-label="anchor" href="#distribution-analytic-da-approaches"></a>
+</h2>
+<ul>
+<li>
+<code>"lms"</code> = The Latent Moderated Structural equations (LMS)
+approach, see the <a href="https://kss2k.github.io/modsem/articles/lms_qml.html" class="external-link">vignette</a>
 </li>
 <li>
-<code>"qml"</code> = The Quasi Maximum Likelihood approach.
-<ul>
-<li>note: can only be done if you have a single endogenous (dependent)
-variable.</li>
-</ul>
+<code>"qml"</code> = The Quasi Maximum Likelihood (QML) approach,
+see the <a href="https://kss2k.github.io/modsem/articles/lms_qml.html" class="external-link">vignette</a>
 </li>
 <li>
 <code>"mplus"</code>
@@ -130,14 +139,19 @@ variable.</li>
 <span><span class="st">Y ~ X + Z + X:Z </span></span>
 <span><span class="st">'</span></span>
 <span></span>
+<span><span class="co"># Product Indicator Approaches</span></span>
 <span><span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m1</span>, data <span class="op">=</span> <span class="va">oneInt</span>, method <span class="op">=</span> <span class="st">"ca"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m1</span>, data <span class="op">=</span> <span class="va">oneInt</span>, method <span class="op">=</span> <span class="st">"uca"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m1</span>, data <span class="op">=</span> <span class="va">oneInt</span>, method <span class="op">=</span> <span class="st">"rca"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m1</span>, data <span class="op">=</span> <span class="va">oneInt</span>, method <span class="op">=</span> <span class="st">"dblcent"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Distribution Analytic Approaches</span></span>
 <span><span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m1</span>, data <span class="op">=</span> <span class="va">oneInt</span>, method <span class="op">=</span> <span class="st">"mplus"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m1</span>, data <span class="op">=</span> <span class="va">oneInt</span>, method <span class="op">=</span> <span class="st">"lms"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m1</span>, data <span class="op">=</span> <span class="va">oneInt</span>, method <span class="op">=</span> <span class="st">"qml"</span><span class="op">)</span></span></code></pre></div>
-  </main>
+</div>
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+    </nav></aside>
 </div>
 
 

@@ -79,7 +79,10 @@
 <div class="section level1">
 <h1 id="methodsapproaches">Methods/Approaches<a class="anchor" aria-label="anchor" href="#methodsapproaches"></a>
 </h1>
-<p>There are a number of approaches for estimating interaction effects in SEM. In <code><a href="reference/modsem.html">modsem()</a></code>, the <code>method = "method"</code> argument allows you to choose which to use.</p>
+<p>There are a number of approaches for estimating interaction effects in SEM. In <code><a href="reference/modsem.html">modsem()</a></code>, the <code>method = "method"</code> argument allows you to choose which to use. Different approaches can be categorized into two groups: Product Indicator (PI) and Distribution Analytic (DA) approaches.</p>
+<div class="section level2">
+<h2 id="product-indicator-pi-approaches">Product Indicator (PI) Approaches:<a class="anchor" aria-label="anchor" href="#product-indicator-pi-approaches"></a>
+</h2>
 <ul>
 <li>
 <code>"ca"</code> = constrained approach (Algina &amp; Moulder, 2001)
@@ -99,6 +102,12 @@
 </li>
 <li>
 <code>"pind"</code> = basic product indicator approach (not recommended)</li>
+</ul>
+</div>
+<div class="section level2">
+<h2 id="distribution-analytic-da-approaches">Distribution Analytic (DA) Approaches<a class="anchor" aria-label="anchor" href="#distribution-analytic-da-approaches"></a>
+</h2>
+<ul>
 <li>
 <code>"lms"</code> = The Latent Moderated Structural equations (LMS) approach, see the <a href="https://kss2k.github.io/modsem/articles/lms_qml.html" class="external-link">vignette</a>
 </li>
@@ -112,6 +121,7 @@
 </ul>
 </li>
 </ul>
+</div>
 </div>
 <div class="section level1">
 <h1 id="examples">Examples<a class="anchor" aria-label="anchor" href="#examples"></a>
