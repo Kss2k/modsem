@@ -182,7 +182,7 @@ fillCovModel <- function(covModel, theta, thetaLabel, fillPhi = FALSE,
   M$gammaXi  <- fillNA_Matrix(M$gammaXi, theta = theta, pattern = "^gammaXi")
   
   if (method == "lms") {
-    M$A <- fillSymmetric(M$A, fetch(theta, "^A[0-9]+"))
+    M$A <- fillNA_Matrix(M$A, theta = theta, pattern = "^A[0-9]+")
   } else if (method == "qml") {
     M$phi <- fillSymmetric(M$phi, fetch(theta, "^phi"))
   }
