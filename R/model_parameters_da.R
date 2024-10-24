@@ -243,7 +243,7 @@ calcPhiTheta <- function(theta, model, method) {
   if (!is.null(model$covModel$matrices)) {
     matEst <- filledModel$covModel$matrices
     matNA  <- model$covModel$matrices
-    vals   <- as.vector(matEst$A[is.na(matNA$A)]) 
+    vals   <- as.vector(matEst$phi[is.na(matNA$A)]) 
   } else {
     matEst <- filledModel$matrices
     matNA  <- model$matrices
