@@ -23,14 +23,14 @@ specifyModelDA <- function(syntax = NULL,
   # endogenous variables (etas)model
   etas    <- getSortedEtas(parTable, isLV = TRUE, checkAny = TRUE)
   numEtas <- length(etas)
-  
+
   indsEtas    <- getIndsLVs(parTable, etas)
   numIndsEtas <- vapply(indsEtas, FUN.VALUE = vector("integer", 1L),
                         FUN = length)
-  allIndsEtas    <- unlist(indsEtas)
+  allIndsEtas    <- unique(unlist(indsEtas))
   numAllIndsEtas <- length(allIndsEtas)
-  
-  # exogenouts variables (xis) and interaction terms 
+
+  # exogenouts variables (xis) and interaction terms
   intTerms      <- getIntTermRows(parTable)
   varsInts      <- getVarsInts(intTerms)
   allVarsInInts <- unique(unlist(varsInts))
@@ -44,7 +44,7 @@ specifyModelDA <- function(syntax = NULL,
   indsXis    <- getIndsLVs(parTable, xis)
   numIndsXis <- vapply(indsXis, FUN.VALUE = vector("integer", 1L),
                        FUN = length)
-  allIndsXis    <- unlist(indsXis)
+  allIndsXis    <- unique(unlist(indsXis))
   numAllIndsXis <- length(allIndsXis)
 
   # measurement model x

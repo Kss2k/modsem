@@ -7,7 +7,9 @@ checkModel <- function(model, covModel = NULL, method = "lms") {
 
   checkOVsInStructuralModel(parTableMain = model$parTable,
                             parTableCov  = covModel$parTable)
-  NULL
+
+  checkOverlappingIndicators(allIndsXis = model$info$allIndsXis,
+                             allIndsEtas = model$info$allIndsEtas)
 }
 
 
@@ -23,6 +25,7 @@ checkCovModelVariables <- function(covModel, modelXis) {
          "All exogenous variables in main model must be ",
          "part of the cov-model")
 }
+
 
 checkNodesLms <- function(parTableMain,
                           parTableCov,
@@ -71,4 +74,12 @@ checkOVsInStructuralModel <- function(parTableMain, parTableCov) {
          "Observed variables are not allowed in the structural model in LMS/QML directly. ",
          "Please redefine them as latent.\nSee:\n",
          "  vignette(\"observed_lms_qml\", \"modsem\")")
+}
+
+
+checkOverlappingIndicators <- function(allIndsXis, allIndsEtas) {
+  stopif(any(allIndsXis %in% allIndsEtas), 
+         "The same indicator cannot be used for both an exogenous ",
+         "and endogenous variable, in the same model: ",
+         paste(allIndsXis[allIndsXis %in% allIndsEtas], collapse = ", "))
 }

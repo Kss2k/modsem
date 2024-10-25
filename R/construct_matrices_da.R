@@ -84,24 +84,32 @@ getEmptyPhi <- function(phi) {
 }
 
 
+notFilledLambda <- function(ind, lambda) {
+  !any(is.na(lambda[ind, ])) && all(lambda[ind, ] == 0)
+}
+
+
 constructLambda <- function(lVs, indsLVs, parTable, auto.constraints = TRUE) {
   numLVs        <- length(lVs) 
   indsLVs       <- indsLVs[lVs] # make sure it is sorted
-  numIndsLVs    <- lapply(indsLVs, FUN = length)
-  allIndsLVs    <- unlist(indsLVs)
+  allIndsLVs    <- unique(unlist(indsLVs))
   numAllIndsLVs <- length(allIndsLVs)
   firstVal      <- ifelse(auto.constraints, 1, NA)
 
-  lastRowPreviousLV <- 0
   lambda <- matrix(0, nrow = numAllIndsLVs, ncol = numLVs,
                    dimnames = list(allIndsLVs, lVs))
 
-  for (i in seq_along(lVs)) {
-    rowIndices            <- seq_len(numIndsLVs[[i]]) + lastRowPreviousLV
-    lambda[rowIndices, i] <- c(firstVal, rep(NA, numIndsLVs[[i]] - 1))
-    lastRowPreviousLV     <- lastRowPreviousLV + numIndsLVs[[i]]
+  for (lV in lVs) {
+    firstFilled <- FALSE
+    for (ind in indsLVs[[lV]]) {
+      # TODO: make this work when duplicates appear seperately in lambdaY and lambdaX
+      if (!firstFilled && auto.constraints && notFilledLambda(ind, lambda)) {
+        lambda[ind, lV] <- firstVal
+        firstFilled <- TRUE
+      } else lambda[ind, lV] <- NA
+    }
   }
-  
+
   setMatrixConstraints(X = lambda, parTable = parTable, op = "=~", 
                        RHS = allIndsLVs, LHS = lVs, type = "rhs", 
                        nonFreeParams = TRUE) # first params are by default set to 1
@@ -110,8 +118,7 @@ constructLambda <- function(lVs, indsLVs, parTable, auto.constraints = TRUE) {
 
 constructTau <- function(lVs, indsLVs, parTable, mean.observed = TRUE) {
   indsLVs       <- indsLVs[lVs] # make sure it is sorted
-  numIndsLVs    <- lapply(indsLVs, FUN = length)
-  allIndsLVs    <- unlist(indsLVs)
+  allIndsLVs    <- unique(unlist(indsLVs))
   numAllIndsLVs <- length(allIndsLVs)
   default       <- ifelse(mean.observed, NA, 0)
   lavOptimizerSyntaxAdditions <- ""
@@ -140,7 +147,7 @@ constructTheta <- function(lVs, indsLVs, parTable, auto.constraints = TRUE) {
   numLVs        <- length(lVs) 
   indsLVs       <- indsLVs[lVs] # make sure it is sorted
   numIndsLVs    <- lapply(indsLVs, FUN = length)
-  allIndsLVs    <- unlist(indsLVs)
+  allIndsLVs    <- unique(unlist(indsLVs))
   numAllIndsLVs <- length(allIndsLVs)
 
   theta <- matrix(0, nrow = numAllIndsLVs, ncol = numAllIndsLVs,
@@ -251,7 +258,7 @@ constructR <- function(etas, indsEtas, lambdaY, method = "qml") {
 
   numEtas <- length(etas)
   numIndsEtas <- lapply(indsEtas, FUN = length)
-  allIndsEtas <- unlist(indsEtas)
+  allIndsEtas <- unique(unlist(indsEtas))
   numAllIndsEtas <- length(allIndsEtas)
   selectBetaRows <- selectBetaRows(lambdaY, method = method)
   rowNamesR <- rownames(lambdaY)[selectBetaRows]
@@ -287,17 +294,20 @@ getLatentEtasQml <- function(indsEtas, method = "qml") {
 
 
 getColsU <- function(etas, indsEtas, lambdaY, method = "qml") {
-  numEtas <- length(etas)
-  numIndsEtas <- lapply(indsEtas, FUN = length)
-  allIndsEtas <- unlist(indsEtas)
-  numAllIndsEtas <- length(allIndsEtas)
-  selectBetaRows <- selectBetaRows(lambdaY, method = "qml")
-  rowNamesR <- rownames(lambdaY)[selectBetaRows]
+  numEtas         <- length(etas)
+  numIndsEtas     <- lapply(indsEtas, FUN = length)
+  allIndsEtas     <- unique(unlist(indsEtas))
+  numAllIndsEtas  <- length(allIndsEtas)
+  selectBetaRows  <- selectBetaRows(lambdaY, method = "qml")
+  rowNamesR       <- rownames(lambdaY)[selectBetaRows]
+
   hasMultipleInds <- vapply(indsEtas, FUN = function(x) length(x) > 1,
                             FUN.VALUE = logical(1L))
   if (sum(hasMultipleInds) == 0) return(NULL) 
+
   colsU <- rowNamesR[seq_len(numAllIndsEtas - sum(hasMultipleInds))]
   colsU[is.na(colsU)] <- paste0("__FILL__ZERO__", seq_len(sum(is.na(colsU))))
+
   colsU
 }
 
@@ -371,7 +381,7 @@ getSelectSubL2 <- function(fullL2, colsU, latentEtas, method = "qml") {
 
 getScalingInds <- function(indsEtas, R, latentEtas, method = "qml") {
   if (method != "qml") return(NULL)
-  allIndsEtas <- unlist(indsEtas[latentEtas])
+  allIndsEtas <- unique(unlist(indsEtas[latentEtas]))
   scalingInds <- allIndsEtas[!allIndsEtas %in% rownames(R)]
   scalingInds
 }
@@ -392,8 +402,7 @@ constructSubThetaEpsilon <- function(indsEtas, thetaEpsilon, scalingInds,
   if (method != "qml") return(NULL)
   subThetaEpsilon <- matrix(0, nrow = length(scalingInds), 
                             ncol = length(scalingInds), 
-                            dimnames = list(scalingInds, 
-                                            scalingInds))
+                            dimnames = list(scalingInds, scalingInds))
   diag(subThetaEpsilon) <- NA
   subThetaEpsilon
 }

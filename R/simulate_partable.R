@@ -1,32 +1,33 @@
 simulateDataParTable <- function(parTable, N, colsOVs = NULL, colsLVs = NULL) {
   # endogenous variables (etas)model
-  etas <- getSortedEtas(parTable, isLV = TRUE, checkAny = TRUE)
+  etas    <- getSortedEtas(parTable, isLV = TRUE, checkAny = TRUE)
   numEtas <- length(etas)
   
-  indsEtas <- getIndsLVs(parTable, etas)
+  indsEtas    <- getIndsLVs(parTable, etas)
   numIndsEtas <- vapply(indsEtas, FUN.VALUE = vector("integer", 1L),
                         FUN = length)
-  allIndsEtas <- unlist(indsEtas)
+  allIndsEtas    <- unique(unlist(indsEtas))
   numAllIndsEtas <- length(allIndsEtas)
   
   # exogenouts variables (xis) and interaction terms 
-  xis <- getXis(parTable, checkAny = TRUE)
+  xis    <- getXis(parTable, checkAny = TRUE)
   numXis <- length(xis)
 
-  indsXis <- getIndsLVs(parTable, xis)
+  indsXis    <- getIndsLVs(parTable, xis)
   numIndsXis <- vapply(indsXis, FUN.VALUE = vector("integer", 1L),
                        FUN = length)
-  allIndsXis <- unlist(indsXis)
+  allIndsXis    <- unique(unlist(indsXis))
   numAllIndsXis <- length(allIndsXis)
   
   # interaction terms
   intTerms <- getIntTerms(parTable)
   intTermRows <- getIntTermRows(parTable)
   varsIntTerms <- getVarsInts(intTermRows, removeColonNames = FALSE)
-  if (any(vapply(varsIntTerms, FUN.VALUE = numeric(1L), FUN = length) > 2)) {
-    stop2("Cannot simulate data for interaction effects with more than two ", 
-          "components, yet")
-  }
+
+  stopif(any(vapply(varsIntTerms, FUN.VALUE = numeric(1L), FUN = length) > 2),
+         "Cannot simulate data for interaction effects with more than two ", 
+         "components, yet")
+
   # simulate data for xis 
   phi <- rmvnormParTable(parTable, type = "phi", N = N)
   psi <- rmvnormParTable(parTable, type = "psi", N = N)
