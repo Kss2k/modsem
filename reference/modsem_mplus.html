@@ -101,7 +101,7 @@
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Theory Of Planned Behavior</span></span></span>
-<span class="r-in"><span><span class="va">tpb</span> <span class="op">&lt;-</span> <span class="st">' </span></span></span>
+<span class="r-in"><span><span class="va">tpb</span> <span class="op">&lt;-</span> <span class="st">'</span></span></span>
 <span class="r-in"><span><span class="st"># Outer Model (Based on Hagger et al., 2007)</span></span></span>
 <span class="r-in"><span><span class="st">  ATT =~ att1 + att2 + att3 + att4 + att5</span></span></span>
 <span class="r-in"><span><span class="st">  SN =~ sn1 + sn2</span></span></span>
@@ -112,11 +112,11 @@
 <span class="r-in"><span><span class="st"># Inner Model (Based on Steinmetz et al., 2011)</span></span></span>
 <span class="r-in"><span><span class="st">  # Covariances</span></span></span>
 <span class="r-in"><span><span class="st">  ATT ~~ SN + PBC</span></span></span>
-<span class="r-in"><span><span class="st">  PBC ~~ SN </span></span></span>
+<span class="r-in"><span><span class="st">  PBC ~~ SN</span></span></span>
 <span class="r-in"><span><span class="st">  # Causal Relationsships</span></span></span>
 <span class="r-in"><span><span class="st">  INT ~ ATT + SN + PBC</span></span></span>
-<span class="r-in"><span><span class="st">  BEH ~ INT + PBC </span></span></span>
-<span class="r-in"><span><span class="st">  BEH ~ INT:PBC  </span></span></span>
+<span class="r-in"><span><span class="st">  BEH ~ INT + PBC</span></span></span>
+<span class="r-in"><span><span class="st">  BEH ~ INT:PBC</span></span></span>
 <span class="r-in"><span><span class="st">'</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>

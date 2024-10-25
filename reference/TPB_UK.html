@@ -64,7 +64,7 @@ Obtained from https://doi.org/10.23668/psycharchives.12187</p>
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="va">tpb_uk</span> <span class="op">&lt;-</span> <span class="st">' </span></span></span>
+<span class="r-in"><span><span class="va">tpb_uk</span> <span class="op">&lt;-</span> <span class="st">'</span></span></span>
 <span class="r-in"><span><span class="st"># Outer Model (Based on Hagger et al., 2007)</span></span></span>
 <span class="r-in"><span><span class="st"> ATT =~ att3 + att2 + att1 + att4</span></span></span>
 <span class="r-in"><span><span class="st"> SN =~ sn4 + sn2 + sn3 + sn1</span></span></span>
@@ -75,8 +75,8 @@ Obtained from https://doi.org/10.23668/psycharchives.12187</p>
 <span class="r-in"><span><span class="st"># Inner Model (Based on Steinmetz et al., 2011)</span></span></span>
 <span class="r-in"><span><span class="st"> # Causal Relationsships</span></span></span>
 <span class="r-in"><span><span class="st"> INT ~ ATT + SN + PBC</span></span></span>
-<span class="r-in"><span><span class="st"> BEH ~ INT + PBC </span></span></span>
-<span class="r-in"><span><span class="st"> BEH ~ INT:PBC  </span></span></span>
+<span class="r-in"><span><span class="st"> BEH ~ INT + PBC</span></span></span>
+<span class="r-in"><span><span class="st"> BEH ~ INT:PBC</span></span></span>
 <span class="r-in"><span><span class="st">'</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">est</span> <span class="op">&lt;-</span> <span class="fu"><a href="modsem.html">modsem</a></span><span class="op">(</span><span class="va">tpb_uk</span>, data <span class="op">=</span> <span class="va">TPB_UK</span><span class="op">)</span></span></span>
