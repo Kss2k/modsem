@@ -1,68 +1,68 @@
 #' Interaction between latent variables using product indicators
 #'
 #' @param model.syntax \code{lavaan} syntax
-#' 
+#'
 #' @param data dataframe
-#' 
+#'
 #' @param method method to use:
 #' \code{"rca"} = residual centering approach (passed to \code{lavaan}),
 #' \code{"uca"} = unconstrained approach (passed to \code{lavaan}),
 #' \code{"dblcent"} = double centering approach (passed to \code{lavaan}),
 #' \code{"pind"} = prod ind approach, with no constraints or centering (passed to \code{lavaan}),
 #' \code{"custom"} = use parameters specified in the function call (passed to \code{lavaan})
-#' 
+#'
 #' @param match should the product indicators be created by using the match-strategy
-#' 
+#'
 #' @param standardize.data should data be scaled before fitting model
-#' 
+#'
 #' @param first.loading.fixed Should the first factor loading in the latent product be fixed to one?
-#' 
+#'
 #' @param center.before should indicators in products be centered before computing products (overwritten by \code{method}, if \code{method != NULL})
-#' 
+#'
 #' @param center.after should indicator products be centered after they have been computed?
-#' 
+#'
 #' @param residuals.prods should indicator products be centered using residuals (overwritten by \code{method}, if \code{method != NULL})
-#' 
+#'
 #' @param residual.cov.syntax should syntax for residual covariances be produced (overwritten by \code{method}, if \code{method != NULL})
-#' 
+#'
 #' @param constrained.prod.mean should syntax for product mean be produced (overwritten by \code{method}, if \code{method != NULL})
-#' 
+#'
 #' @param center.data should data be centered before fitting model
-#' 
+#'
 #' @param constrained.loadings should syntax for constrained loadings be produced (overwritten by \code{method}, if \code{method != NULL})
-#' 
+#'
 #' @param constrained.var should syntax for constrained variances be produced (overwritten by \code{method}, if \code{method != NULL})
-#' 
+#'
 #' @param constrained.res.cov.method method for constraining residual covariances
-#' 
+#'
 #' @param auto.scale methods which should be scaled automatically (usually not useful)
-#' 
+#'
 #' @param auto.center methods which should be centered automatically (usually not useful)
-#' 
+#'
 #' @param estimator estimator to use in \code{lavaan}
-#' 
+#'
 #' @param group group variable for multigroup analysis
-#' 
+#'
 #' @param run should the model be run via \code{lavaan}, if \code{FALSE} only modified syntax and data is returned
 #'
 #' @param suppress.warnings.lavaan should warnings from \code{lavaan} be suppressed?
-#' 
+#'
 #' @param ... arguments passed to other functions, e.g., \code{lavaan}
-#' 
+#'
 #' @return \code{modsem} object
-#' @export 
+#' @export
 #' @description
-#' \code{modsem_pi()} is a function for estimating interaction effects between latent variables, 
+#' \code{modsem_pi()} is a function for estimating interaction effects between latent variables,
 #' in structural equation models (SEMs), using product indicators.
-#' Methods for estimating interaction effects in SEMs can basically be split into 
-#' two frameworks: 
-#' 1. Product Indicator based approaches (\code{"dblcent"}, \code{"rca"}, \code{"uca"}, 
-#' \code{"ca"}, \code{"pind"}), and 
+#' Methods for estimating interaction effects in SEMs can basically be split into
+#' two frameworks:
+#' 1. Product Indicator based approaches (\code{"dblcent"}, \code{"rca"}, \code{"uca"},
+#' \code{"ca"}, \code{"pind"}), and
 #' 2. Distributionally based approaches (\code{"lms"}, \code{"qml"}).
-#' \code{modsem_pi()} is essentially a fancy wrapper for \code{lavaan::sem()} which generates the 
+#' \code{modsem_pi()} is essentially a fancy wrapper for \code{lavaan::sem()} which generates the
 #' necessary syntax and variables for the estimation of models with latent product indicators.
 #' Use \code{default_settings_pi()} to get the default settings for the different methods.
-#' 
+#'
 #' @examples
 #' library(modsem)
 #' # For more examples, check README and/or GitHub.
@@ -72,46 +72,46 @@
 #'   X =~ x1 + x2 +x3
 #'   Y =~ y1 + y2 + y3
 #'   Z =~ z1 + z2 + z3
-#'   
+#'
 #'   # Inner model
-#'   Y ~ X + Z + X:Z 
+#'   Y ~ X + Z + X:Z
 #' '
-#' 
+#'
 #' # Double centering approach
 #' est1 <- modsem_pi(m1, oneInt)
 #' summary(est1)
-#' 
+#'
 #' \dontrun{
-#' # The Constrained Approach 
+#' # The Constrained Approach
 #' est1Constrained <- modsem_pi(m1, oneInt, method = "ca")
 #' summary(est1Constrained)
 #' }
-#' 
+#'
 #' # Theory Of Planned Behavior
-#' tpb <- ' 
+#' tpb <- '
 #' # Outer Model (Based on Hagger et al., 2007)
 #'   ATT =~ att1 + att2 + att3 + att4 + att5
 #'   SN =~ sn1 + sn2
 #'   PBC =~ pbc1 + pbc2 + pbc3
 #'   INT =~ int1 + int2 + int3
 #'   BEH =~ b1 + b2
-#' 
+#'
 #' # Inner Model (Based on Steinmetz et al., 2011)
 #'   # Covariances
 #'   ATT ~~ SN + PBC
-#'   PBC ~~ SN 
+#'   PBC ~~ SN
 #'   # Causal Relationships
 #'   INT ~ ATT + SN + PBC
-#'   BEH ~ INT + PBC 
-#'   BEH ~ INT:PBC  
+#'   BEH ~ INT + PBC
+#'   BEH ~ INT:PBC
 #' '
-#' 
+#'
 #' # Double centering approach
 #' estTpb <- modsem_pi(tpb, data = TPB)
 #' summary(estTpb)
 #'
 #' \dontrun{
-#' # The Constrained Approach 
+#' # The Constrained Approach
 #' estTpbConstrained <- modsem_pi(tpb, data = TPB, method = "ca")
 #' summary(estTpbConstrained)
 #' }
@@ -132,9 +132,9 @@ modsem_pi <- function(model.syntax = NULL,
                       constrained.res.cov.method = NULL,
                       auto.scale = "none",
                       auto.center = "none",
-                      estimator = "ML", 
+                      estimator = "ML",
                       group = NULL,
-                      run = TRUE, 
+                      run = TRUE,
                       suppress.warnings.lavaan = FALSE,
                       ...) {
   stopif(is.null(model.syntax), "No model syntax provided in modsem")
@@ -154,8 +154,8 @@ modsem_pi <- function(model.syntax = NULL,
                              first.loading.fixed = first.loading.fixed,
                              match = match))
 
-  # Get the specifications of the model 
-  modelSpec <- parseLavaan(model.syntax, colnames(data), 
+  # Get the specifications of the model
+  modelSpec <- parseLavaan(model.syntax, colnames(data),
                            match = methodSettings$match)
 
   # Data Processing  -----------------------------------------------------------
@@ -204,7 +204,7 @@ modsem_pi <- function(model.syntax = NULL,
 
   if (run) {
     lavWrapper <- getWarningWrapper(silent = suppress.warnings.lavaan)
-    lavEst <- tryCatch(lavaan::sem(newSyntax, newData, estimator = estimator, 
+    lavEst <- tryCatch(lavaan::sem(newSyntax, newData, estimator = estimator,
                                    group = group, ...) |> lavWrapper(),
                        error = function(cnd) {
                          warning2(capturePrint(cnd))
@@ -282,7 +282,7 @@ calculateResidualsDf <- function(dependentDf, independentNames, data) {
   formula <- getResidualsFormula(dependentNames, independentNames)
 
   if (length(dependentNames <= 1)) {
-    res <- as.data.frame(stats::residuals(stats::lm(formula = formula, 
+    res <- as.data.frame(stats::residuals(stats::lm(formula = formula,
                                                     combinedData)))
     colnames(res) <- dependentNames
     return(res)
@@ -316,16 +316,16 @@ addSpecsParTable <- function(modelSpec,
   if (is.null(relDfs) || length(relDfs) < 1) return(parTable)
 
   measureParTable <- purrr::map2(.x = latentProds, .y = indProdNames,
-                                 .f = getParTableMeasure, operator = "=~", 
+                                 .f = getParTableMeasure, operator = "=~",
                                  firstFixed = firstFixed) |>
     purrr::list_rbind()
   parTable <- rbindParTable(parTable, measureParTable)
 
   if (constrained.var || constrained.loadings || constrained.prod.mean) {
-    parTable <- addVariances(parTable) |> 
+    parTable <- addVariances(parTable) |>
       addCovariances() |>
       labelParameters() |>
-      labelFactorLoadings() 
+      labelFactorLoadings()
   }
 
   if (!is.logical(residual.cov.syntax)) {
@@ -351,7 +351,7 @@ addSpecsParTable <- function(modelSpec,
       purrr::list_rbind()
     parTable <- rbindParTable(parTable, restrictedMeans)
   }
-  
+
   # redefine labels (using 'old' := 'new'), if any were overwritten when adding constraints
   parTable <- defineUndefinedLabels(parTable.x = modelSpec$parTable,
                                     parTable.y = parTable)
@@ -361,7 +361,7 @@ addSpecsParTable <- function(modelSpec,
 
 
 # this function assumes a prod of only two latent variables no more
-getParTableRestrictedMean <- function(prodName, elementsInProdName, 
+getParTableRestrictedMean <- function(prodName, elementsInProdName,
                                       createLabels = TRUE, pt) {
   stopif(length(elementsInProdName) > 2,
          "The mean of a latent prod should not be constrained when there",
@@ -372,8 +372,8 @@ getParTableRestrictedMean <- function(prodName, elementsInProdName,
   meanStructure <- createParTableRow(vecLhsRhs = c(prodName, ""),
                                      op = "~1", mod = meanLabel)
   covEquation   <- trace_path(pt, elementsInProdName[[1]], elementsInProdName[[2]])
-  meanFormula   <- createParTableRow(vecLhsRhs = c(meanLabel, covEquation), 
-                                     op = "==") 
+  meanFormula   <- createParTableRow(vecLhsRhs = c(meanLabel, covEquation),
+                                     op = "==")
   rbind(meanStructure, meanFormula)
 }
 
@@ -397,7 +397,7 @@ getParTableMeasure <- function(dependentName,
          "to be a single string in getParTableMeasure")
 
   if (length(predictorNames) == 1 && dependentName == predictorNames) {
-    # In this case it should be seen as an observed variable, 
+    # In this case it should be seen as an observed variable,
     # and should not have a measurement model
     return(NULL)
   }
@@ -421,24 +421,24 @@ createParTableRow <- function(vecLhsRhs, op, mod = "") {
 #' Get \code{lavaan} syntax for product indicator approaches
 #'
 #' @param model.syntax \code{lavaan} syntax
-#' 
+#'
 #' @param method method to use:
 #' \code{"rca"} = residual centering approach,
 #' \code{"uca"} = unconstrained approach,
 #' \code{"dblcent"} = double centering approach,
 #' \code{"pind"} = prod ind approach, with no constraints or centering,
 #' \code{"custom"} = use parameters specified in the function call
-#' 
+#'
 #' @param match should the product indicators be created by using the match-strategy
-#' 
+#'
 #' @param ... arguments passed to other functions (e.g., \link{modsem_pi})
-#' 
+#'
 #' @return \code{character} vector
-#' @export 
+#' @export
 #' @description
-#' \code{get_pi_syntax()} is a function for creating the \code{lavaan} syntax used for estimating 
+#' \code{get_pi_syntax()} is a function for creating the \code{lavaan} syntax used for estimating
 #' latent interaction models using one of the product indicators in \code{lavaan}.
-#' 
+#'
 #' @examples
 #' library(modsem)
 #' library(lavaan)
@@ -447,9 +447,9 @@ createParTableRow <- function(vecLhsRhs, op, mod = "") {
 #'   X =~ x1 + x2 + x3
 #'   Y =~ y1 + y2 + y3
 #'   Z =~ z1 + z2 + z3
-#'   
+#'
 #'   # Inner model
-#'   Y ~ X + Z + X:Z 
+#'   Y ~ X + Z + X:Z
 #' '
 #' syntax <- get_pi_syntax(m1)
 #' data <- get_pi_data(m1, oneInt)
@@ -459,9 +459,9 @@ get_pi_syntax <- function(model.syntax,
                           match = FALSE,
                           ...) {
   oVs       <- getOVs(model.syntax = model.syntax)
-  emptyData <- as.data.frame(matrix(0, nrow = 1, ncol = length(oVs), 
+  emptyData <- as.data.frame(matrix(0, nrow = 1, ncol = length(oVs),
                                     dimnames = list(NULL, oVs)))
-  modsem_pi(model.syntax, method = method, match = match, 
+  modsem_pi(model.syntax, method = method, match = match,
             data = emptyData, run = FALSE, ...)$syntax
 }
 
@@ -469,7 +469,7 @@ get_pi_syntax <- function(model.syntax,
 #' Get data with product indicators for different approaches
 #'
 #' @param model.syntax \code{lavaan} syntax
-#' @param data data to create product indicators from 
+#' @param data data to create product indicators from
 #' @param method method to use:
 #' \code{"rca"} = residual centering approach,
 #' \code{"uca"} = unconstrained approach,
@@ -477,15 +477,15 @@ get_pi_syntax <- function(model.syntax,
 #' \code{"pind"} = prod ind approach, with no constraints or centering,
 #' \code{"custom"} = use parameters specified in the function call
 #' @param match should the product indicators be created by using the match-strategy
-#' 
+#'
 #' @param ... arguments passed to other functions (e.g., \link{modsem_pi})
-#' 
+#'
 #' @return \code{data.frame}
-#' @export 
+#' @export
 #' @description
-#' \code{get_pi_syntax()} is a function for creating the \code{lavaan} syntax used for estimating 
+#' \code{get_pi_syntax()} is a function for creating the \code{lavaan} syntax used for estimating
 #' latent interaction models using one of the product indicators in \code{lavaan}.
-#' 
+#'
 #' @examples
 #' library(modsem)
 #' library(lavaan)
@@ -494,16 +494,16 @@ get_pi_syntax <- function(model.syntax,
 #'   X =~ x1 + x2 +x3
 #'   Y =~ y1 + y2 + y3
 #'   Z =~ z1 + z2 + z3
-#'   
+#'
 #'   # Inner model
-#'   Y ~ X + Z + X:Z 
+#'   Y ~ X + Z + X:Z
 #' '
 #' syntax <- get_pi_syntax(m1)
 #' data <- get_pi_data(m1, oneInt)
 #' est <- sem(syntax, data)
 get_pi_data <- function(model.syntax, data, method = "dblcent",
                         match = FALSE, ...) {
-  modsem_pi(model.syntax, data = data, method = method, match = match, 
+  modsem_pi(model.syntax, data = data, method = method, match = match,
             run = FALSE, ...)$data
 }
 
@@ -512,9 +512,9 @@ get_pi_data <- function(model.syntax, data, method = "dblcent",
 #' extract lavaan object from modsem object estimated using product indicators
 #'
 #' @param object modsem object
-#' 
+#'
 #' @return lavaan object
-#' @export 
+#' @export
 #' @examples
 #' library(modsem)
 #' m1 <- '
@@ -522,12 +522,12 @@ get_pi_data <- function(model.syntax, data, method = "dblcent",
 #'   X =~ x1 + x2 + x3
 #'   Y =~ y1 + y2 + y3
 #'   Z =~ z1 + z2 + z3
-#'   
+#'
 #'   # Inner model
-#'   Y ~ X + Z + X:Z 
+#'   Y ~ X + Z + X:Z
 #' '
 #' est <- modsem_pi(m1, oneInt)
-#' lav_est <- extract_lavaan(est) 
+#' lav_est <- extract_lavaan(est)
 extract_lavaan <- function(object) {
   if (!inherits(object, "modsem_pi")) {
     stop2("object is not of class modsem_pi")

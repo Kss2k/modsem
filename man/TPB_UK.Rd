@@ -9,13 +9,13 @@ Gathered from a replciation study of the original by Hagger et al. (2023).
 Obtained from https://doi.org/10.23668/psycharchives.12187
 }
 \description{
-A dataset based on the Theory of Planned Behaviour from a 
-UK sample. 4 variables with high communality were selected for each 
+A dataset based on the Theory of Planned Behaviour from a
+UK sample. 4 variables with high communality were selected for each
 latent variable (ATT, SN, PBC, INT, BEH), from two time points (t1 and t2).
 }
 \examples{
 
-tpb_uk <- ' 
+tpb_uk <- '
 # Outer Model (Based on Hagger et al., 2007)
  ATT =~ att3 + att2 + att1 + att4
  SN =~ sn4 + sn2 + sn3 + sn1
@@ -26,8 +26,8 @@ tpb_uk <- '
 # Inner Model (Based on Steinmetz et al., 2011)
  # Causal Relationsships
  INT ~ ATT + SN + PBC
- BEH ~ INT + PBC 
- BEH ~ INT:PBC  
+ BEH ~ INT + PBC
+ BEH ~ INT:PBC
 '
 
 est <- modsem(tpb_uk, data = TPB_UK)

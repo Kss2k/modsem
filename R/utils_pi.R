@@ -136,7 +136,7 @@ greplRowDf <- function(col, df) {
 }
 
 
-# see functions for generating formulas for 
+# see functions for generating formulas for
 # constrained approach
 `%in_paired%` <- function(x, y) {
   out <- vector("logical", length(x))
@@ -166,7 +166,7 @@ defineUndefinedLabels <- function(parTable.x, parTable.y) {
   parTable.z <- merge(parTable.y, parTable.x)
   parTable.z <- parTable.z[parTable.z$mod.y != "" &  parTable.z$mod.x != "" &
                            parTable.z$mod.x != parTable.z$mod.y &
-                           parTable.z$op %in% c("=~", "~1", "~", "~~"), ] 
+                           parTable.z$op %in% c("=~", "~1", "~", "~~"), ]
 
   redefinedLabels <- getRedefinedLabels(parTable.z=parTable.z)
 
@@ -203,8 +203,8 @@ isLavLabelFunction <- function(label, context, warning = FALSE) {
 
 
 warnReplacingLabel <- function(old, new, parTable.row) {
-  context <- paste(parTable.row$lhs, parTable.row$op, 
+  context <- paste(parTable.row$lhs, parTable.row$op,
                    paste0(old, "*", parTable.row$rhs))
-  warning2("Replacing `", old, "` with new label `", new, "` in: `", 
+  warning2("Replacing `", old, "` with new label `", new, "` in: `",
            context, "`")
 }

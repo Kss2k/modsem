@@ -18,8 +18,8 @@ function used to inspect fittet object. similar to `lavInspect()`
 argument 'what' decides what to inspect
 }
 \details{
-for `modsem_da`, and `modsem_lavaan` 
+for `modsem_da`, and `modsem_lavaan`
 for `modsem_lavaan`, it is just a wrapper for `lavInspect()`
-for `modsem_da` and `` what can either be "all", "matrices", "optim", 
+for `modsem_da` and `` what can either be "all", "matrices", "optim",
 or just the name of what to extract.
 }

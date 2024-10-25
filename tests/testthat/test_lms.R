@@ -12,27 +12,22 @@ m1 <- "
   Y ~ b * X:Z + 0.05 * X:X
   b == a * 1.2
 "
-# funnily enough, the starting parameters from the double centering approach
-# give better loglikelihoods than the ones arrived at by the EM algorithm
-# i.e., the loglikelihood decreases from the starting parameters
-startTime1 <- Sys.time()
-est1 <- modsem(m1, oneInt, 
-  method = "lms",
-  optimize = TRUE, verbose = TRUE,
-  convergence = 1e-2,
-)
-duration1 <- Sys.time() - startTime1
+
+est1 <- modsem(m1, oneInt, method = "lms", optimize = TRUE, verbose = TRUE,
+               convergence = 1e-2)
 plot_interaction("X", "Z", "Y", "X:Z", -3:3, c(-0.5, 0.5), est1)
 print(summary(est1, adjusted.stat = TRUE))
 
-# I have no clue why, but changing the ordering of how the interaction terms 
-# are specified, ends up changing the number of iterations (and results ever 
-# so slightly) -- even though the matrices are exactly the same. This can be 
-# seen through the fact that the starting loglikelihoods are the same (if optimized) 
-# indicating that the matrices are the same (i.e,. produce the same results, when
-# given the same values). 
-# Solution: slightly different results from lavaan, giving slightly different 
-# starting parameters
+# PROBLEM:
+#   I have no clue why, but changing the ordering of how the interaction terms 
+#   are specified, ends up changing the number of iterations (and results ever 
+#   so slightly) -- even though the matrices are exactly the same. This can be 
+#   seen through the fact that the starting loglikelihoods are the same (if optimized) 
+#   indicating that the matrices are the same (i.e,. produce the same results, when
+#   given the same values). 
+# ANSWER: 
+#   slightly different results from lavaan, giving slightly different 
+#   starting parameters
 tpb <- "
 # Outer Model (Based on Hagger et al., 2007)
   LATENT_VAR_ATT =~ a1 * att1 + a2 * att2 + att3 + att4 + att5
@@ -61,14 +56,11 @@ covModel <- '
 PBC ~ a * LATENT_VAR_ATT + SN
 '
 
-startTime2 <- Sys.time()
 testthat::expect_warning({
-  est2 <- modsem(tpb, TPB, 
-                 method = "lms", optimize = TRUE, verbose = TRUE, 
-                 convergence = 1, cov.syntax = covModel,
-                 nodes = 16, robust.se = TRUE)
-  }, regexp = "It is recommended .* between endogenous variables .*")
-duration2 <- Sys.time() - startTime2
+  est2 <- modsem(tpb, TPB, method = "lms", verbose = TRUE, convergence = 1, 
+                 cov.syntax = covModel, nodes = 16, robust.se = TRUE)
+}, regexp = "It is recommended .* between endogenous variables .*")
+
 plot_interaction(x = "INT", z = "PBC", y = "BEH", vals_z = c(-0.5, 0.5), model = est2)
 print(summary(est2))
 var_interactions(est2)
@@ -97,8 +89,19 @@ tpb2 <- '
   BEH ~ INT:PBC  
 '
 
-testthat::expect_warning({
-  modsem(tpb, TPB, method = "lms",
-         convergence = 1000,
-         nodes = 16, calc.se = FALSE)
-  }, regexp = "It is recommended .* between exogenous and endogenous .*")
+testthat::expect_warning(modsem(tpb, TPB, method = "lms", convergence = 1000,
+                                nodes = 16, calc.se = FALSE),
+                         regexp = "It is recommended .* between exogenous and endogenous .*")
+
+
+testthat::expect_true({
+  parTable <- summary(est2, H0 = FALSE, standardized = TRUE,
+                      intercepts = TRUE)$parTable
+  all(parTable[parTable$op == "~1", "est"] == 0)
+})
+
+
+testthat::expect_true({
+  parTable <- summary(est2, H0 = FALSE, standardized = TRUE)$parTable
+  length(parTable[parTable$op == "~1", "est"]) == 0
+})

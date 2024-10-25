@@ -13,7 +13,7 @@ labelFactorLoadings <- function(parTable) {
 
 specifyFactorLoadingsSingle <- function(parTable, relDf) {
   latentProdName <- stringr::str_c(rownames(relDf), collapse = "")
-  
+
   for (indProd in colnames(relDf)) {
     indProdLabel     <- createLabelLambda(indProd, latentProdName)
     indsInProdLabels <- createLabelLambda(relDf[[indProd]], rownames(relDf))
@@ -46,12 +46,12 @@ addVariances <- function(pt) {
                      pt$lhs == pt$rhs, "lhs"] |> unique()
   toBeSpecifiedLvs <- latents[!latents %in% specifiedLvs]
 
-  newRows <- lapply(toBeSpecifiedLvs, FUN = function(x) 
+  newRows <- lapply(toBeSpecifiedLvs, FUN = function(x)
                     createParTableRow(c(x, x), op = "~~")) |>
     purrr::list_rbind()
   pt <- rbind(pt, newRows)
 
-  # Add variance for observed variables if missing 
+  # Add variance for observed variables if missing
   observed <- unique(pt[pt$op == "=~", "rhs"])
 
   specifiedOvs <- pt[pt$lhs %in% observed &
@@ -85,7 +85,7 @@ addCovariances <- function(pt) {
 
 
 labelParameters <- function(pt) {
-  latents <- unique(pt[pt$op == "=~", "lhs"]) 
+  latents <- unique(pt[pt$op == "=~", "lhs"])
   endogenous <- latents[latents %in% pt[pt$op == "~", "lhs"]]
   exogenous <- latents[!latents %in% endogenous]
   observed <- unique(pt[pt$op == "=~", "rhs"])
@@ -93,12 +93,12 @@ labelParameters <- function(pt) {
   # Gamma
   pt[pt$op == "~", "mod"] <-
     apply(pt[pt$op == "~", c("rhs", "lhs")],
-          MARGIN = 1, FUN = function(x) 
+          MARGIN = 1, FUN = function(x)
             createLabelGamma(x[[1]], x[[2]]))
 
   # Variances of exogenous
   pt[pt$op == "~~" & pt$lhs == pt$rhs & pt$lhs %in% exogenous, "mod"] <-
-    vapply(pt[pt$op == "~~" & pt$lhs == pt$rhs & 
+    vapply(pt[pt$op == "~~" & pt$lhs == pt$rhs &
               pt$lhs %in% exogenous, "lhs"],
            FUN.VALUE = vector("character", length = 1L),
            FUN = createLabelVar)
@@ -110,7 +110,7 @@ labelParameters <- function(pt) {
            FUN.VALUE = vector("character", length = 1L),
            FUN = createLabelZeta)
 
-  # Variance of Observed Variables  
+  # Variance of Observed Variables
   pt[pt$op == "~~" & pt$rhs %in% observed & pt$lhs == pt$rhs, "mod"] <-
     vapply(pt[pt$op == "~~" & pt$rhs %in% observed &
            pt$lhs == pt$rhs, "rhs"],
@@ -120,7 +120,7 @@ labelParameters <- function(pt) {
   # Covariances
   pt[pt$op == "~~" & pt$lhs != pt$rhs, "mod"] <-
     apply(pt[pt$op == "~~" & pt$lhs != pt$rhs, c("lhs", "rhs")],
-          MARGIN = 1, FUN = function(x) 
+          MARGIN = 1, FUN = function(x)
             createLabelCov(x[[1]], x[[2]]))
 
   pt
@@ -140,7 +140,7 @@ specifyVarCovSingle <- function(parTable, relDf) {
 
   # Variance of latent product
   labelLatentProd <- createLabelVar(latentProd)
-  labelsElemsInProd <- vapply(elemsInProdTerm, 
+  labelsElemsInProd <- vapply(elemsInProdTerm,
                               FUN.VALUE = vector("character", length = 1L),
                               FUN = function(x) trace_path(parTable, x, x))
 
@@ -159,7 +159,7 @@ specifyVarCovSingle <- function(parTable, relDf) {
       FUN = function(elem) createLabelCov(elem, latentProd)) # wrap in anonymous fun
                                                              # scope latentProd
 
-  covsElemsProd <- lapply(labelsCovElemProd, FUN = function(x) 
+  covsElemsProd <- lapply(labelsCovElemProd, FUN = function(x)
                             createParTableRow(c(x, "0"), op = "==")) |>
     purrr::list_rbind()
 
@@ -174,10 +174,10 @@ specifyVarCovSingle <- function(parTable, relDf) {
     labelsVarInds        <- vector("character", length = nrow(relDf))
 
     for (latent in seq_len(nrow(relDf))) {
-      labelsFactorLoadings[[latent]] <- 
-        createLabelLambdaSquared(relDf[latent, indProd], 
+      labelsFactorLoadings[[latent]] <-
+        createLabelLambdaSquared(relDf[latent, indProd],
                                  rownames(relDf)[[latent]])
-      labelsVarLatents[[latent]] <- 
+      labelsVarLatents[[latent]] <-
         trace_path(parTable, rownames(relDf)[[latent]],
                    rownames(relDf)[[latent]])
       labelsVarInds[[latent]] <- createLabelVar(relDf[latent, indProd])

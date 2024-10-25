@@ -1,6 +1,6 @@
-emLms <- function(model, 
+emLms <- function(model,
                   verbose = FALSE,
-                  convergence = 1e-2, 
+                  convergence = 1e-2,
                   max.iter = 500,
                   max.step = 1,
                   control = list(),
@@ -20,11 +20,11 @@ emLms <- function(model,
   # Initialization
   logLikNew  <- 0
   logLikOld  <- 0
-  iterations <- 0     
+  iterations <- 0
   thetaNew   <- model$theta
 
   bestLogLik    <- -Inf
-  bestP         <- NULL 
+  bestP         <- NULL
   bestTheta     <- NULL
   logLiks       <- NULL
   logLikChanges <- NULL
@@ -37,9 +37,9 @@ emLms <- function(model,
     thetaOld  <- thetaNew
 
     if (doEstep) P <- estepLms(model = model, theta = thetaOld, data = data, ...)
-  
+
     mstep <- mstepLms(model = model, P = P, data = data, theta = thetaOld,
-                      max.step = max.step, epsilon = epsilon, 
+                      max.step = max.step, epsilon = epsilon,
                       optimizer = optimizer, control = control, ...)
 
     logLikNew     <- -mstep$objective
@@ -55,7 +55,7 @@ emLms <- function(model,
 
     if (logLikNew > bestLogLik) {
       bestLogLik <- logLikNew
-      bestP      <- P 
+      bestP      <- P
       bestTheta  <- thetaOld
     }
 
@@ -66,23 +66,23 @@ emLms <- function(model,
       run <- FALSE
     }
 
-    if (doEstep && fix.estep && runningAverage(logLikChanges, n = 30) < 0 && 
+    if (doEstep && fix.estep && runningAverage(logLikChanges, n = 30) < 0 &&
         nNegativeLast(logLikChanges, n = 30) >= 15 && iterations > 200) {
-      doEstep  <- FALSE  
-      P        <- bestP 
+      doEstep  <- FALSE
+      P        <- bestP
       thetaNew <- bestTheta
 
-      warning2("EM algorithm is not converging. ", 
-               "Attempting to fix prior probabilities from E-step\n", 
+      warning2("EM algorithm is not converging. ",
+               "Attempting to fix prior probabilities from E-step\n",
                "you might want to increase the convergence (i.e., less strict) criterion (see 'help(modsem_da)')")
     }
   }
 
   final <- mstepLms(model = model, P = P, data = data,
-                    theta = thetaNew, max.step = max.step, 
+                    theta = thetaNew, max.step = max.step,
                     epsilon = epsilon, optimizer = optimizer,
                     verbose = verbose, control = control, ...)
-    
+
   coefficients <- final$par
   lavCoefs     <- getLavCoefs(model = model, theta = coefficients, method = "lms")
   finalModel   <- fillModel(model, coefficients, fillPhi = TRUE, method = "lms")
@@ -97,14 +97,14 @@ emLms <- function(model,
   finalModel$covModelNA <- emptyModel$covModel
 
   # Caclulate information matrix (I) and standard errors (SE)
-  typeSE <- ifelse(!calc.se, "none", ifelse(robust.se, "robust", "standard")) 
-  FIM <- calcFIM_da(model = model, finalModel = finalModel, theta = coefficients, 
+  typeSE <- ifelse(!calc.se, "none", ifelse(robust.se, "robust", "standard"))
+  FIM <- calcFIM_da(model = model, finalModel = finalModel, theta = coefficients,
                     data = data, method = "lms", EFIM.S = EFIM.S,
-                    hessian = OFIM.hessian, calc.se = calc.se, 
+                    hessian = OFIM.hessian, calc.se = calc.se,
                     EFIM.parametric = EFIM.parametric, verbose = verbose,
                     FIM = FIM, robust.se = robust.se, epsilon = epsilon,
                     NA__ = -999)
-  SE <- calcSE_da(calc.se = calc.se, FIM$vcov, rawLabels = FIM$raw.labels, 
+  SE <- calcSE_da(calc.se = calc.se, FIM$vcov, rawLabels = FIM$raw.labels,
                   NA__ = -999)
   modelSE <- getSE_Model(model, se = SE, method = "lms",
                          n.additions = FIM$n.additions)
@@ -123,7 +123,7 @@ emLms <- function(model,
   # convergence of em
   if (iterations == max.iter) convergence <- FALSE else convergence <- TRUE
 
-  out <- list(model     = finalModel, 
+  out <- list(model     = finalModel,
               method    = "lms",
               optimizer = paste0("EM-", optimizer),
               data      = data,
@@ -133,9 +133,9 @@ emLms <- function(model,
 
               originalParTable = model$parTable,
 
-              logLik      = -final$objective, 
+              logLik      = -final$objective,
               iterations  = iterations,
-              convergence = convergence, 
+              convergence = convergence,
               type.se     = typeSE,
               info.quad   = getInfoQuad(model$quad),
 

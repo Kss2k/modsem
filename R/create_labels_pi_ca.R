@@ -1,14 +1,14 @@
 
 
-createLabelCov <- function(x, y) 
+createLabelCov <- function(x, y)
   paste("Cov", x, y, sep = "_")
 
 
-createLabelVar <- function(x) 
+createLabelVar <- function(x)
   paste("Var", x, sep = "_")
 
 
-createLabelLambda <- function(ind, latent) 
+createLabelLambda <- function(ind, latent)
   paste("lambda", ind, latent, sep = "_")
 
 
@@ -16,7 +16,7 @@ createLabelLambdaSquared <- function(ind, latent)
   paste0(createLabelLambda(ind, latent), " ^ 2")
 
 
-createLabelGamma <- function(x, y) 
+createLabelGamma <- function(x, y)
   paste("Gamma", x, y, sep = "_")
 
 

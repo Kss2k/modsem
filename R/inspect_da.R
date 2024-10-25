@@ -1,4 +1,4 @@
-inspectDA_Matrices <- c("lambda", "tau", "theta", "gamma_xi", 
+inspectDA_Matrices <- c("lambda", "tau", "theta", "gamma_xi",
                         "gamma_eta", "omega_xi_xi",
                         "omega_eta_xi", "phi", "psi", "alpha")
 
@@ -27,22 +27,22 @@ modsem_inspect_da <- function(model, what = "default") {
                                                  matrices$tauY),
                theta        = diagPartitionedMat(matrices$thetaDelta,
                                                  matrices$thetaEpsilon),
-               gamma_xi     = diagPartitionedMat(matrices$gammaXi, 
+               gamma_xi     = diagPartitionedMat(matrices$gammaXi,
                                                  matricesCovModel$gammaXi),
-               gamma_eta    = diagPartitionedMat(matrices$gammaEta, 
+               gamma_eta    = diagPartitionedMat(matrices$gammaEta,
                                                  matricesCovModel$gammaEta),
-               omega_xi_xi  = diagPartitionedMat(matrices$omegaXiXi, 
+               omega_xi_xi  = diagPartitionedMat(matrices$omegaXiXi,
                                                  matricesCovModel$omegaXiXi),
-               omega_eta_xi = diagPartitionedMat(matrices$omegaEtaXi, 
+               omega_eta_xi = diagPartitionedMat(matrices$omegaEtaXi,
                                                  matricesCovModel$omegaEtaXi),
 
-               phi   = diagPartitionedMat(matrices$phi, 
+               phi   = diagPartitionedMat(matrices$phi,
                                           matricesCovModel$phi),
-               psi   = diagPartitionedMat(matrices$psi, 
+               psi   = diagPartitionedMat(matrices$psi,
                                           matricesCovModel$psi),
                alpha = matrices$alpha)
 
-  switch(what, 
+  switch(what,
          default = info[names(info) != "data"],
          all = info,
          matrices = info[inspectDA_Matrices],

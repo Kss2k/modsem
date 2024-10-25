@@ -7,7 +7,7 @@ evalToken <- function(token, lhs, rhs) {
 evalToken.LavOperator <- function(token, lhs, rhs) {
   if (is.LavToken(rhs)) {
     rhs <- list(rhs)
-  } 
+  }
   if (is.LavToken(lhs)) {
     lhs <- list(lhs)
   }
@@ -76,7 +76,7 @@ evalToken.LavComment <- function(token, lhs, rhs) {
 evalToken.LavFunction <- function(token, lhs, rhs) {
   functionCall <- paste0(token, stringr::str_c(unlist(rhs), collapse = ","), ")")
   out <- eval(rlang::parse_expr(functionCall), envir = modEnv)
-  attributes(out) <- attributes(token) 
+  attributes(out) <- attributes(token)
   out
 }
 
@@ -140,7 +140,7 @@ createParTableBranch <- function(syntaxTree) {
   lhs <- vapply(syntaxTree[["lhs"]], FUN.VALUE = character(1L),
                 FUN = getTokenString)
   lhs <- vapply(lhs, FUN.VALUE = character(length(rhs)),
-                FUN = function(x, len) 
+                FUN = function(x, len)
                   rep(x, len),
                 len = length(rhs)) |> as.vector()
   op <- rep(getTokenString(syntaxTree$op), length(rhs))
@@ -156,14 +156,14 @@ createParTableBranch <- function(syntaxTree) {
 }
 
 
-#' Generate parameter table for \code{lavaan} syntax 
+#' Generate parameter table for \code{lavaan} syntax
 #'
 #' @param syntax model syntax
 #'
 #' @return \code{data.frame} with columns \code{lhs, op, rhs, mod}
 #' @export modsemify
 #'
-#' @examples 
+#' @examples
 #' library(modsem)
 #' m1 <- '
 #'   # Outer Model
@@ -215,7 +215,7 @@ parTableToSyntax <- function(parTable, removeColon = FALSE) {
 
 mergeTokens <- function(x, y) {
   stopif(!"LavName" %in% class(x) || !"LavName" %in% class(x),
-         "Interactions are reserved for objects ", 
+         "Interactions are reserved for objects ",
          highlightErrorToken(x))
 
   out <- paste0(x, y)

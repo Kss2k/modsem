@@ -14,22 +14,22 @@
 #'
 #' @param nodes number of quadrature nodes (points of integration) used in \code{lms},
 #' increased number gives better estimates but slower computation. How many are needed depends on the complexity of the model.
-#' For simple models, somewhere between 16-24 nodes should be enough; for more complex models, higher numbers may be needed. 
-#' For models where there is an interaction effect between an endogenous and exogenous variable, 
-#' the number of nodes should be at least 32, but practically (e.g., ordinal/skewed data), more than 32 is recommended. In cases 
+#' For simple models, somewhere between 16-24 nodes should be enough; for more complex models, higher numbers may be needed.
+#' For models where there is an interaction effect between an endogenous and exogenous variable,
+#' the number of nodes should be at least 32, but practically (e.g., ordinal/skewed data), more than 32 is recommended. In cases
 #' where data is non-normal, it might be better to use the \code{qml} approach instead. For large
 #' numbers of nodes, you might want to change the \code{'quad.range'} argument.
 #'
 #' @param convergence convergence criterion. Lower values give better estimates but slower computation.
-#' 
-#' @param optimizer optimizer to use, can be either \code{"nlminb"} or \code{"L-BFGS-B"}. For LMS, \code{"nlminb"} is recommended. 
+#'
+#' @param optimizer optimizer to use, can be either \code{"nlminb"} or \code{"L-BFGS-B"}. For LMS, \code{"nlminb"} is recommended.
 #' For QML, \code{"L-BFGS-B"} may be faster if there is a large number of iterations, but slower if there are few iterations.
 #'
 #' @param center.data should data be centered before fitting model
 #'
 #' @param standardize.data should data be scaled before fitting model, will be overridden by
 #' \code{standardize} if \code{standardize} is set to \code{TRUE}.
-#' 
+#'
 #' \strong{NOTE}: It is recommended that you estimate the model normally and then standardize the output using
 #' \code{\link{standardized_estimates}}.
 #'
@@ -37,19 +37,19 @@
 #' parameter constraints since parameters are scaled unevenly, even if they
 #' have the same label). This does not alter the estimation of the model, only the
 #' output.
-#' 
+#'
 #' \strong{NOTE}: It is recommended that you estimate the model normally and then standardize the output using
 #' \code{\link{standardized_estimates}}.
 #'
 #' @param mean.observed should the mean structure of the observed variables be estimated?
 #' This will be overridden by \code{standardize} if \code{standardize} is set to \code{TRUE}.
-#' 
+#'
 #' \strong{NOTE}: Not recommended unless you know what you are doing.
 #'
 #' @param standardize will standardize the data before fitting the model, remove the mean
 #' structure of the observed variables, and standardize the output. Note that \code{standardize.data},
 #' \code{mean.observed}, and \code{standardize.out} will be overridden by \code{standardize} if \code{standardize} is set to \code{TRUE}.
-#' 
+#'
 #' \strong{NOTE}: It is recommended that you estimate the model normally and then standardize the output using
 #' \code{\link{standardized_estimates}}.
 #'
@@ -66,31 +66,31 @@
 #'
 #' @param OFIM.hessian should the observed Fisher information be computed using the Hessian? If \code{FALSE}, it is computed using the gradient.
 #'
-#' @param EFIM.parametric should data for calculating the expected Fisher information matrix be 
+#' @param EFIM.parametric should data for calculating the expected Fisher information matrix be
 #' simulated parametrically (simulated based on the assumptions and implied parameters
-#' from the model), or non-parametrically (stochastically sampled)? If you believe that 
+#' from the model), or non-parametrically (stochastically sampled)? If you believe that
 #' normality assumptions are violated, \code{EFIM.parametric = FALSE} might be the better option.
 #'
-#' @param robust.se should robust standard errors be computed? Meant to be used for QML, 
+#' @param robust.se should robust standard errors be computed? Meant to be used for QML,
 #' can be unreliable with the LMS approach.
 #'
 #' @param max.iter maximum number of iterations.
 #'
 #' @param max.step maximum steps for the M-step in the EM algorithm (LMS).
 #'
-#' @param fix.estep if \code{TRUE}, the E-step will be fixed, and the prior probabilities will be set to the best prior probabilities, 
+#' @param fix.estep if \code{TRUE}, the E-step will be fixed, and the prior probabilities will be set to the best prior probabilities,
 #' if the log-likelihood decreases for more than 30 iterations.
 #'
 #' @param start starting parameters.
 #'
 #' @param epsilon finite difference for numerical derivatives.
 #'
-#' @param quad.range range in z-scores to perform numerical integration in LMS using 
-#' Gaussian-Hermite Quadratures. By default \code{Inf}, such that \code{f(t)} is integrated from -Inf to Inf, 
-#' but this will likely be inefficient and pointless at a large number of nodes. Nodes outside 
+#' @param quad.range range in z-scores to perform numerical integration in LMS using
+#' Gaussian-Hermite Quadratures. By default \code{Inf}, such that \code{f(t)} is integrated from -Inf to Inf,
+#' but this will likely be inefficient and pointless at a large number of nodes. Nodes outside
 #' \code{+/- quad.range} will be ignored.
 #'
-#' @param n.threads number of cores to use for parallel processing. If \code{NULL}, it will use <= 2 threads. 
+#' @param n.threads number of cores to use for parallel processing. If \code{NULL}, it will use <= 2 threads.
 #' If an integer is specified, it will use that number of threads (e.g., \code{n.threads = 4} will use 4 threads).
 #' If \code{"default"}, it will use the default number of threads (2).
 #' If \code{"max"}, it will use all available threads, \code{"min"} will use 1 thread.
@@ -99,19 +99,19 @@
 #'
 #' @return \code{modsem_da} object
 #' @export
-#' 
-#' @description 
+#'
+#' @description
 #' \code{modsem_da()} is a function for estimating interaction effects between latent variables
 #' in structural equation models (SEMs) using distributional analytic (DA) approaches.
 #' Methods for estimating interaction effects in SEMs can basically be split into
-#' two frameworks: 
+#' two frameworks:
 #' 1. Product Indicator-based approaches (\code{"dblcent"}, \code{"rca"}, \code{"uca"},
 #' \code{"ca"}, \code{"pind"})
 #' 2. Distributionally based approaches (\code{"lms"}, \code{"qml"}).
-#' 
+#'
 #' \code{modsem_da()} handles the latter and can estimate models using both QML and LMS,
 #' necessary syntax, and variables for the estimation of models with latent product indicators.
-#' 
+#'
 #' \strong{NOTE}: Run \code{\link{default_settings_da}} to see default arguments.
 #'
 #' @examples
@@ -173,11 +173,11 @@ modsem_da <- function(model.syntax = NULL,
                       double = NULL,
                       calc.se = NULL,
                       FIM = NULL,
-                      EFIM.S = NULL, 
-                      OFIM.hessian = NULL, 
+                      EFIM.S = NULL,
+                      OFIM.hessian = NULL,
                       EFIM.parametric = NULL,
                       robust.se = NULL,
-                      max.iter = NULL, 
+                      max.iter = NULL,
                       max.step = NULL,
                       fix.estep = NULL,
                       start = NULL,
@@ -216,11 +216,11 @@ modsem_da <- function(model.syntax = NULL,
           double = double,
           calc.se = calc.se,
           FIM = FIM,
-          EFIM.S = EFIM.S, 
-          OFIM.hessian = OFIM.hessian, 
+          EFIM.S = EFIM.S,
+          OFIM.hessian = OFIM.hessian,
           EFIM.parametric = EFIM.parametric,
           robust.se = robust.se,
-          max.iter = max.iter, 
+          max.iter = max.iter,
           max.step = max.step,
           fix.estep = fix.estep,
           epsilon = epsilon,
@@ -251,7 +251,7 @@ modsem_da <- function(model.syntax = NULL,
   )
 
   if (args$optimize) {
-    model <- tryCatch(optimizeStartingParamsDA(model), 
+    model <- tryCatch(optimizeStartingParamsDA(model),
                       warning = function(w) {
                        warning2("warning when optimizing starting parameters:\n", w)
                        suppressWarnings(optimizeStartingParamsDA(model))
@@ -260,7 +260,7 @@ modsem_da <- function(model.syntax = NULL,
                        model
                       })
   }
-  
+
   if (!is.null(start)) {
     checkStartingParams(start, model = model) # throws error if somethings wrong
     model$theta <- start
@@ -273,7 +273,7 @@ modsem_da <- function(model.syntax = NULL,
       calc.se = args$calc.se,
       FIM = args$FIM,
       EFIM.S = args$EFIM.S,
-      OFIM.hessian = args$OFIM.hessian, 
+      OFIM.hessian = args$OFIM.hessian,
       EFIM.parametric = args$EFIM.parametric,
       robust.se = args$robust.se,
       max.iter = args$max.iter,
@@ -287,10 +287,10 @@ modsem_da <- function(model.syntax = NULL,
       calc.se = args$calc.se,
       FIM = args$FIM,
       EFIM.S = args$EFIM.S,
-      OFIM.hessian = args$OFIM.hessian, 
+      OFIM.hessian = args$OFIM.hessian,
       EFIM.parametric = args$EFIM.parametric,
       robust.se = args$robust.se,
-      max.iter = args$max.iter, 
+      max.iter = args$max.iter,
       max.step = args$max.step,
       epsilon = args$epsilon,
       optimizer = args$optimizer,

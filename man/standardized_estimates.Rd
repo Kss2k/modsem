@@ -7,7 +7,7 @@
 standardized_estimates(object, ...)
 }
 \arguments{
-\item{object}{An object of class \code{modsem_da}, \code{modsem_mplus}, 
+\item{object}{An object of class \code{modsem_da}, \code{modsem_mplus},
 or a \code{parTable} of class \code{data.frame}}
 
 \item{...}{Additional arguments passed to other functions}
@@ -16,14 +16,14 @@ or a \code{parTable} of class \code{data.frame}}
 Get standardized estimates
 }
 \details{
-For \code{modsem_da}, and \code{modsem_mplus} objects, 
-the interaction term is not standardized such that \code{var(xz) = 1}. 
-The interaction term is not an actual variable in the model, meaning that it does not 
+For \code{modsem_da}, and \code{modsem_mplus} objects,
+the interaction term is not standardized such that \code{var(xz) = 1}.
+The interaction term is not an actual variable in the model, meaning that it does not
 have a variance. It must therefore be calculated from the other parameters in the model.
-Assuming normality and zero-means, the variance is calculated as 
-\code{var(xz) = var(x) * var(z) + cov(x, z)^2}. Thus setting the variance of the interaction 
+Assuming normality and zero-means, the variance is calculated as
+\code{var(xz) = var(x) * var(z) + cov(x, z)^2}. Thus setting the variance of the interaction
 term to 1 would only be 'correct' if the correlation between \code{x} and \code{z} is zero.
-This means that the standardized estimates for the interaction term will 
-be different from those using \code{lavaan}, since there the interaction term is an 
+This means that the standardized estimates for the interaction term will
+be different from those using \code{lavaan}, since there the interaction term is an
 actual latent variable in the model, with a standardized variance of 1.
 }

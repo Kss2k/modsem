@@ -20,7 +20,7 @@ getCharsLine <- function(line, i = 1) {
 
 
 getLines <- function(syntax) {
-  operators <- c("==", ":=", "~~", "~", "+", "*", "<-", "->", "<", ">") 
+  operators <- c("==", ":=", "~~", "~", "+", "*", "<-", "->", "<", ">")
   for (op in operators) {
     pattern <- paste0("\\", op, "\\s*[\n|;]")
     syntax <- stringr::str_replace_all(syntax, pattern, op)
@@ -153,7 +153,7 @@ fitsToken.LavOperator <- function(token, nextChar) {
          "->" = TRUE,
          "==" = TRUE,
          "!=" = TRUE,
-         ":=" = TRUE, 
+         ":=" = TRUE,
          FALSE)
 }
 
@@ -266,13 +266,13 @@ appendToList <- function(list, elem) {
 prioritizeTokens <- function(listTokens, i = 1, brackets = list(),
                              nLeftBrackets = 0) {
   if (is.null(listTokens) || i > length(listTokens)) {
-    stopif(nLeftBrackets != 0, "Unmatched left bracket", 
+    stopif(nLeftBrackets != 0, "Unmatched left bracket",
            highlightErrorToken(brackets[[1]]))
     return(listTokens)
   } else if (is.RightClosure(listTokens[[i]])) {
     brackets <- brackets[-length(brackets)]
     nLeftBrackets <- nLeftBrackets - 1
-    stopif(nLeftBrackets < 0, "Unmatched right bracket ", 
+    stopif(nLeftBrackets < 0, "Unmatched right bracket ",
            highlightErrorToken(listTokens[[i]]))
   }
   getTokenPriority(listTokens[[i]]) <-

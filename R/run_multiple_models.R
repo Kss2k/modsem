@@ -1,11 +1,11 @@
-# Function for running the same model with multiple methods 
+# Function for running the same model with multiple methods
 # Used within tests
 allMethods <- c("rca", "uca", "ca", "dblcent", "mplus", "pind")
 allNativeMethods <- allMethods[allMethods != "mplus"]
 fastMethods <- c("rca", "uca", "dblcent", "pind")
 
-runMultipleMethods <- function(model.syntax, 
-                               data, 
+runMultipleMethods <- function(model.syntax,
+                               data,
                                methods = allNativeMethods,
                                ...) {
   estimates <- structure(vector("list", length = length(methods)),

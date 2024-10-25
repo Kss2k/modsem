@@ -2,7 +2,7 @@
 #'
 #' @param object An object of class \code{\link{modsem_pi}}, \code{\link{modsem_da}}, or \code{\link{modsem_mplus}}
 #' @param ... Additional arguments passed to other functions
-#' @export 
+#' @export
 parameter_estimates <- function(object, ...) {
   UseMethod("parameter_estimates")
 }
@@ -10,7 +10,7 @@ parameter_estimates <- function(object, ...) {
 
 #' Extract or modify parTable from an estimated model with estimated variances of interaction terms
 #'
-#' @param object An object of class \code{\link{modsem_da}},  \code{\link{modsem_mplus}}, 
+#' @param object An object of class \code{\link{modsem_da}},  \code{\link{modsem_mplus}},
 #' or a parTable of class \code{\link{data.frame}}
 #' @param ... Additional arguments passed to other functions
 #' @export
@@ -25,21 +25,21 @@ var_interactions.data.frame <- function(object, ...) {
   intTermVarRows <- parTable$lhs == parTable$rhs &
     grepl(":", parTable$lhs) & parTable$op == "~~"
   intTermCovRows <- parTable$lhs != parTable$lhs & parTable$op == "~~" &
-    (grepl(":", parTable$lhs) | grepl(":", parTable$rhs)) 
+    (grepl(":", parTable$lhs) | grepl(":", parTable$rhs))
   parTable <- parTable[!(intTermVarRows | intTermCovRows), ]
 
-  intTerms <- unique(parTable[grepl(":", parTable$rhs) & 
+  intTerms <- unique(parTable[grepl(":", parTable$rhs) &
                      parTable$op == "~", "rhs"])
 
   for (i in seq_len(length(intTerms))) {
     # interaction term = XZ
-    # TO DO: 
+    # TO DO:
     #   I should also add covariances between X:Z and the other exogenous
     #   variables... (only relevant when mu(X) or mu(Z) != 0)
     #   Let Y denote the other exogenous variables, and xz denote the variables in
     #   the interaction term
     #   S(X:Z, Y) = S(X:Z, xz) %*% inv(S(xz, xz)) %*% S(xz, Y) ??
-    XZ    <- stringr::str_split_fixed(intTerms[[i]], ":", 2) 
+    XZ    <- stringr::str_split_fixed(intTerms[[i]], ":", 2)
     muX   <- getMean(XZ[[1]], parTable)
     muZ   <- getMean(XZ[[2]], parTable)
     varX  <- calcCovParTable(XZ[[1]], XZ[[1]], parTable)
@@ -66,18 +66,18 @@ var_interactions.data.frame <- function(object, ...) {
 
 #' Get standardized estimates
 #'
-#' @param object An object of class \code{modsem_da}, \code{modsem_mplus}, 
+#' @param object An object of class \code{modsem_da}, \code{modsem_mplus},
 #' or a \code{parTable} of class \code{data.frame}
 #' @param ... Additional arguments passed to other functions
-#' @details For \code{modsem_da}, and \code{modsem_mplus} objects, 
-#' the interaction term is not standardized such that \code{var(xz) = 1}. 
-#' The interaction term is not an actual variable in the model, meaning that it does not 
+#' @details For \code{modsem_da}, and \code{modsem_mplus} objects,
+#' the interaction term is not standardized such that \code{var(xz) = 1}.
+#' The interaction term is not an actual variable in the model, meaning that it does not
 #' have a variance. It must therefore be calculated from the other parameters in the model.
-#' Assuming normality and zero-means, the variance is calculated as 
-#' \code{var(xz) = var(x) * var(z) + cov(x, z)^2}. Thus setting the variance of the interaction 
+#' Assuming normality and zero-means, the variance is calculated as
+#' \code{var(xz) = var(x) * var(z) + cov(x, z)^2}. Thus setting the variance of the interaction
 #' term to 1 would only be 'correct' if the correlation between \code{x} and \code{z} is zero.
-#' This means that the standardized estimates for the interaction term will 
-#' be different from those using \code{lavaan}, since there the interaction term is an 
+#' This means that the standardized estimates for the interaction term will
+#' be different from those using \code{lavaan}, since there the interaction term is an
 #' actual latent variable in the model, with a standardized variance of 1.
 #' @export
 standardized_estimates <- function(object, ...) {
@@ -85,124 +85,132 @@ standardized_estimates <- function(object, ...) {
 }
 
 
-#' @export 
+#' @export
 standardized_estimates.data.frame <- function(object, intercepts = FALSE, ...) {
   parTable <- object[c("lhs", "op", "rhs", "label", "est", "std.error")]
-  if (!intercepts) { # remove intercepts
-    parTable <- centerInteraction(parTable)
-    parTable <- parTable[parTable$op != "~1", ]
-  }
-  parTable <- var_interactions(parTable)
+  parTable <- centerInteraction(parTable) # re-estimate path-coefficients 
+                                          # when intercepts are zero
 
-  lVs <- getLVs(parTable)
+  if (!intercepts) {
+    parTable <- parTable[parTable$op != "~1", ]
+  } else {
+    parTable[parTable$op == "~1", "est"]       <- 0
+    parTable[parTable$op == "~1", "std.error"] <- NA
+  }
+
+  parTable <- var_interactions(parTable)
+  lVs      <- getLVs(parTable)
   intTerms <- getIntTerms(parTable)
-  etas <- getSortedEtas(parTable, isLV = TRUE)
-  xis <- getXis(parTable, etas = etas, isLV = TRUE)
-  indsLVs <- getIndsLVs(parTable, lVs)
-  allInds <- unique(unlist(indsLVs))
+  etas     <- getSortedEtas(parTable, isLV = TRUE)
+  xis      <- getXis(parTable, etas = etas, isLV = TRUE)
+  indsLVs  <- getIndsLVs(parTable, lVs)
+  allInds  <- unique(unlist(indsLVs))
 
   variances <- vector("list", length = length(allInds) + length(lVs) +
                       length(intTerms))
   names(variances) <- c(allInds, lVs, intTerms)
 
-  # get variances 
+  # get variances
   for (x in allInds) {
-    variances[[x]] <- calcCovParTable(x, x, parTable, 
+    variances[[x]] <- calcCovParTable(x, x, parTable,
                                       measurement.model = TRUE)
-  } 
+  }
   for (lV in lVs) {
-    variances[[lV]] <- calcCovParTable(lV, lV, parTable, 
+    variances[[lV]] <- calcCovParTable(lV, lV, parTable,
                                        measurement.model = FALSE)
-  } 
+  }
   for (xz in intTerms) {
-    variances[[xz]] <- parTable[parTable$lhs == xz & 
-                                parTable$rhs == xz & 
+    variances[[xz]] <- parTable[parTable$lhs == xz &
+                                parTable$rhs == xz &
                                 parTable$op == "~~", "est"]
 
   }
 
-  # factor loadings
-  lambda <- NULL
+  # Factor Loadings
+  lambda     <- NULL
   selectRows <- NULL
   selectCols <- c("est", "std.error")
+
   for (lV in lVs) {
     for (ind in indsLVs[[lV]]) {
-      selectRows <- parTable$lhs == lV & parTable$op == "=~" & 
-        parTable$rhs == ind
-      lambda <- parTable[selectRows, selectCols]
-      parTable[selectRows, selectCols] <- 
-        lambda * (sqrt(variances[[lV]]) / sqrt(variances[[ind]]))
+      selectRows  <- parTable$lhs == lV & parTable$op == "=~" & parTable$rhs == ind
+      scalingCoef <- sqrt(variances[[lV]]) / sqrt(variances[[ind]])
+      lambda      <- parTable[selectRows, selectCols]
+
+      parTable[selectRows, selectCols] <- lambda * scalingCoef
     }
   }
 
-  # structural coefficients
-  gamma <- NULL
+  # Structural Coefficients
+  gamma               <- NULL
   selectStrucExprsEta <- NULL
-  structExprsEta <- NULL
-  selectStrucExprs <- parTable$op == "~" & parTable$lhs %in% etas
+  structExprsEta      <- NULL
+  selectStrucExprs    <- parTable$op == "~" & parTable$lhs %in% etas
+
   for (eta in etas) {
     selectStrucExprsEta <- selectStrucExprs & parTable$lhs == eta
-    structExprsEta <- parTable[selectStrucExprsEta, ]
+    structExprsEta      <- parTable[selectStrucExprsEta, ]
 
     for (xi in structExprsEta$rhs) {
-      selectRows <- selectStrucExprsEta & parTable$rhs == xi
-      gamma <- parTable[selectRows, selectCols]
-      parTable[selectRows, selectCols] <- 
-        gamma * (sqrt(variances[[xi]]) / sqrt(variances[[eta]]))
+      selectRows  <- selectStrucExprsEta & parTable$rhs == xi
+      scalingCoef <- sqrt(variances[[xi]]) / sqrt(variances[[eta]])
+      gamma       <- parTable[selectRows, selectCols]
+
+      parTable[selectRows, selectCols] <- gamma * scalingCoef
     }
   }
-  
-  # variances / covariances of xis 
-  selectCovXis <- parTable$op == "~~" & parTable$lhs %in% xis
-  selectRows <- NULL
-  combosXis <- getUniqueCombos(xis, match = TRUE)
-  for (i in seq_len(nrow(combosXis))) {
-    xis <- combosXis[i, , drop = TRUE]
 
-    selectRows <- selectCovXis & parTable$lhs %in% xis & 
-      parTable$rhs %in% xis 
+  # (Co-) Variances of xis
+  selectCovXis <- parTable$op == "~~" & parTable$lhs %in% xis
+  selectRows   <- NULL
+  combosXis    <- getUniqueCombos(xis, match = TRUE)
+
+  for (i in seq_len(nrow(combosXis))) {
+    xis         <- combosXis[i, , drop = TRUE]
+    selectRows  <- selectCovXis & parTable$lhs %in% xis & parTable$rhs %in% xis
+    scalingCoef <- sqrt(variances[[xis[[1]]]]) * sqrt(variances[[xis[[2]]]])
+
     if (xis[[1]] != xis[[2]]) {
       selectRows <- selectRows & parTable$lhs != parTable$rhs
     }
 
     covXis <- parTable[selectRows, selectCols]
-    parTable[selectRows, selectCols] <- 
-      covXis / (sqrt(variances[[xis[[1]]]]) * sqrt(variances[[xis[[2]]]]))
+    parTable[selectRows, selectCols] <- covXis / scalingCoef
   }
 
-  # residual variances etas
-  selectRows <- NULL 
-  residual <- NULL
+  # Residual Variances etas
+  selectRows <- NULL
+  residual   <- NULL
+
+  # TODO: Rescale Residual Covariances!?
   for (eta in etas) {
-    selectRows <- parTable$lhs == eta & parTable$op == "~~" & 
-      parTable$rhs == eta
-    residual <- parTable[selectRows, selectCols]
-    projected <- calcCovParTable(eta, eta, parTable) - residual 
+    selectRows <- parTable$lhs == eta & parTable$op == "~~" & parTable$rhs == eta
+    residual   <- parTable[selectRows, selectCols]
+    projected  <- calcCovParTable(eta, eta, parTable) - residual
+
     parTable[selectRows, selectCols] <- residual / variances[[eta]]
   }
 
   # residual variances inds
   for (ind in allInds) {
-    selectRows <- parTable$lhs == ind & parTable$op == "~~" & 
-      parTable$rhs == ind
-    residual <- parTable[selectRows, selectCols]
-    
+    selectRows <- parTable$lhs == ind & parTable$op == "~~" & parTable$rhs == ind
+    residual   <- parTable[selectRows, selectCols]
+
     parTable[selectRows, selectCols] <- residual / variances[[ind]]
   }
-  
+
   # recalculate variance of interaction terms
   # and rescale coefficients for interaction terms
   parTable <- var_interactions(parTable)
   for (xz in intTerms) {
     selectRows <- parTable$rhs == xz & parTable$op == "~"
-    varXZ <- parTable[parTable$lhs == xz & 
-                      parTable$op == "~~" & 
-                      parTable$rhs == xz, "est"]
+    varXZ      <- parTable[parTable$lhs == xz & parTable$op == "~~" &
+                           parTable$rhs == xz, "est"]
+    gamma      <- parTable[selectRows, selectCols]
 
-    gamma <- parTable[selectRows, selectCols]
     parTable[selectRows, selectCols] <- gamma / sqrt(varXZ)
   }
-  
+
   parTable$z.value  <- parTable$est / parTable$std.error
   parTable$p.value  <- 2 * stats::pnorm(-abs(parTable$z.value))
   parTable$ci.lower <- parTable$est - 1.96 * parTable$std.error
@@ -219,10 +227,10 @@ standardized_estimates.data.frame <- function(object, intercepts = FALSE, ...) {
 #' @param ... Additional arguments passed to other functions
 #' @description function used to inspect fittet object. similar to `lavInspect()`
 #' argument 'what' decides what to inspect
-#' @details for `modsem_da`, and `modsem_lavaan` 
+#' @details for `modsem_da`, and `modsem_lavaan`
 #' for `modsem_lavaan`, it is just a wrapper for `lavInspect()`
-#' for `modsem_da` and `` what can either be "all", "matrices", "optim", 
-#' or just the name of what to extract. 
+#' for `modsem_da` and `` what can either be "all", "matrices", "optim",
+#' or just the name of what to extract.
 #' @export
 modsem_inspect <- function(object, what = NULL, ...) {
   UseMethod("modsem_inspect")

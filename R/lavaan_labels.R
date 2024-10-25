@@ -1,7 +1,7 @@
 combineLavLabels <- function(lavLabelsCov, lavLabelsMain, currentLabels) {
   lavLabels <- c(lavLabelsCov, lavLabelsMain)
   finalLabels <- currentLabels
-  finalLabels[finalLabels %in% names(lavLabels)] <- 
+  finalLabels[finalLabels %in% names(lavLabels)] <-
     lavLabels[names(lavLabels) %in% finalLabels]
   finalLabels
 }
@@ -71,9 +71,9 @@ createLabelsMatrix <- function(X, op = "~", first = "cols") {
   # this is ugly, but... we have to read by cols first
   getLabel <- switch(first, cols = function(col, row) paste0(col, op, row),
                      rows = function(col, row) paste0(row, op, col))
-  
+
   for (i in seq_len(ncol(X))) for (j in seq_len(nrow(X))) {
-    labels <- c(labels, getLabel(col = cols[[i]], row = rows[[j]])) 
+    labels <- c(labels, getLabel(col = cols[[i]], row = rows[[j]]))
   }
 
   labels

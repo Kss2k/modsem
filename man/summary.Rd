@@ -20,7 +20,7 @@
   loadings = TRUE,
   regressions = TRUE,
   covariances = TRUE,
-  intercepts = TRUE,
+  intercepts = !standardized,
   variances = TRUE,
   var.interaction = FALSE,
   ...

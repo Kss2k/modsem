@@ -26,7 +26,7 @@ get_pi_data(model.syntax, data, method = "dblcent", match = FALSE, ...)
 \code{data.frame}
 }
 \description{
-\code{get_pi_syntax()} is a function for creating the \code{lavaan} syntax used for estimating 
+\code{get_pi_syntax()} is a function for creating the \code{lavaan} syntax used for estimating
 latent interaction models using one of the product indicators in \code{lavaan}.
 }
 \examples{
@@ -37,9 +37,9 @@ m1 <- '
   X =~ x1 + x2 +x3
   Y =~ y1 + y2 + y3
   Z =~ z1 + z2 + z3
-  
+
   # Inner model
-  Y ~ X + Z + X:Z 
+  Y ~ X + Z + X:Z
 '
 syntax <- get_pi_syntax(m1)
 data <- get_pi_data(m1, oneInt)

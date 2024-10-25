@@ -1,6 +1,6 @@
-# functions for computing the constrained covariance matrix, 
-# based on causal relationships. This can make the lms method more flexible, 
-# as you can split the model into a non-linear, and linear part. allowing 
+# functions for computing the constrained covariance matrix,
+# based on causal relationships. This can make the lms method more flexible,
+# as you can split the model into a non-linear, and linear part. allowing
 # you to use (normally distributed) endogenous variables as non-normal
 # as of now the mean-structure is excluded
 covModel <- function(syntax = NULL, method = "lms", parTable = NULL) {
@@ -17,11 +17,11 @@ covModel <- function(syntax = NULL, method = "lms", parTable = NULL) {
 
   # Gamma
   listGammaXi <- constructGamma(etas, xis, parTable = parTable)
-  gammaXi <- listGammaXi$numeric 
-  labelGammaXi <- listGammaXi$label 
+  gammaXi <- listGammaXi$numeric
+  labelGammaXi <- listGammaXi$label
 
   listGammaEta <- constructGamma(etas, etas, parTable = parTable)
-  gammaEta <- listGammaEta$numeric 
+  gammaEta <- listGammaEta$numeric
   labelGammaEta <- listGammaEta$label
 
   # covariance matrices
@@ -42,7 +42,7 @@ covModel <- function(syntax = NULL, method = "lms", parTable = NULL) {
     gammaEta = gammaEta,
     A = A,
     psi = psi,
-    phi = phi) 
+    phi = phi)
 
   labelMatrices <- list(
     gammaXi = labelGammaXi,
@@ -66,7 +66,7 @@ covModel <- function(syntax = NULL, method = "lms", parTable = NULL) {
 
 
 countFreeCovModel <- function(matrices) {
-  vapply(matrices, FUN.VALUE = integer(1L), 
+  vapply(matrices, FUN.VALUE = integer(1L),
          FUN = function(x) sum(is.na(x))) |> sum()
 }
 
@@ -82,7 +82,7 @@ expectedCovModel <- function(model, method = "lms", sortedXis) {
     phi <- model$matrices$phi
   }
   psi <- model$matrices$psi
-  
+
   Binv <- solve(diag(nrow(gammaEta)) - gammaEta)
   covEtaEta <- Binv %*% (gammaXi %*% phi %*% t(gammaXi) + psi) %*% t(Binv)
   covEtaXi <- Binv %*% gammaXi %*% phi
@@ -91,7 +91,7 @@ expectedCovModel <- function(model, method = "lms", sortedXis) {
   sigma <- sigma[sortedXis, sortedXis]
 
   if (method == "lms") {
-    sigma <- tryCatch(t(chol(sigma)), 
+    sigma <- tryCatch(t(chol(sigma)),
                       error = function(e) {
                         sigma[TRUE] <- NaN
                         sigma
@@ -106,7 +106,7 @@ covModelToParTable <- function(model, method = "lms") {
   matricesSE <- model$covModelSE$matrices
   matricesNA <- model$covModelNA$matrices
   matricesLabel <- model$covModel$labelMatrices
-  
+
   if (is.null(matricesEst) || is.null(matricesNA)) return(NULL)
   if (is.null(matricesSE)) matricesSE <- matricesNA
 
@@ -114,23 +114,23 @@ covModelToParTable <- function(model, method = "lms") {
   numXis <- model$info$numXis
   parTable <- NULL
 
-  # coefficients Structural Model 
+  # coefficients Structural Model
   newRows <- matrixToParTable(matricesNA$gammaXi,
                               matricesEst$gammaXi,
-                              matricesSE$gammaXi, 
+                              matricesSE$gammaXi,
                               matricesLabel$gammaXi,
                               op = "~",
                               rowsLhs = TRUE)
   parTable <- rbind(parTable, newRows)
-  
+
   newRows <- matrixToParTable(matricesNA$gammaEta,
                               matricesEst$gammaEta,
-                              matricesSE$gammaEta, 
+                              matricesSE$gammaEta,
                               matricesLabel$gammaEta,
                               op = "~",
                               rowsLhs = TRUE)
   parTable <- rbind(parTable, newRows)
-  
+
   if (method == "lms") {
     phiNA <- matricesNA$A
     phiEst <- matricesEst$phi
@@ -153,7 +153,7 @@ covModelToParTable <- function(model, method = "lms") {
 
   newRows <- matrixToParTable(matricesNA$psi,
                               matricesEst$psi,
-                              matricesSE$psi, 
+                              matricesSE$psi,
                               matricesLabel$psi,
                               op = "~~",
                               rowsLhs = FALSE)

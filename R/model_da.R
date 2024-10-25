@@ -1,16 +1,16 @@
 # Functions
-specifyModelDA <- function(syntax = NULL, 
-                           data = NULL, 
-                           method = "lms", 
+specifyModelDA <- function(syntax = NULL,
+                           data = NULL,
+                           method = "lms",
                            m = 16,
-                           cov.syntax = NULL, 
-                           double = FALSE, 
-                           parTable = NULL, 
+                           cov.syntax = NULL,
+                           double = FALSE,
+                           parTable = NULL,
                            parTableCovModel = NULL,
-                           auto.constraints = TRUE, 
+                           auto.constraints = TRUE,
                            createTheta = TRUE,
                            mean.observed = TRUE,
-                           standardize.inp = FALSE, 
+                           standardize.inp = FALSE,
                            standardize.out = FALSE,
                            checkModel = TRUE,
                            quad.range = Inf) {
@@ -50,14 +50,14 @@ specifyModelDA <- function(syntax = NULL,
   # measurement model x
   listLambdaX <- constructLambda(xis, indsXis, parTable = parTable,
                                  auto.constraints = auto.constraints)
-  lambdaX      <- listLambdaX$numeric 
-  labelLambdaX <- listLambdaX$label 
+  lambdaX      <- listLambdaX$numeric
+  labelLambdaX <- listLambdaX$label
 
   listTauX <- constructTau(xis, indsXis, parTable = parTable,
                            mean.observed = mean.observed)
-  tauX      <- listTauX$numeric 
+  tauX      <- listTauX$numeric
   labelTauX <- listTauX$label
-  lavOptimizerSyntaxAdditions <- paste0(lavOptimizerSyntaxAdditions, 
+  lavOptimizerSyntaxAdditions <- paste0(lavOptimizerSyntaxAdditions,
                                         listTauX$syntaxAdditions)
 
   listThetaDelta <- constructTheta(xis, indsXis, parTable = parTable,
@@ -68,29 +68,29 @@ specifyModelDA <- function(syntax = NULL,
   # measurement model y
   listLambdaY <- constructLambda(etas, indsEtas, parTable = parTable,
                                  auto.constraints = auto.constraints)
-  lambdaY      <- listLambdaY$numeric 
+  lambdaY      <- listLambdaY$numeric
   labelLambdaY <- listLambdaY$label
 
   listTauY <- constructTau(etas, indsEtas, parTable = parTable,
                            mean.observed = mean.observed)
-  tauY      <- listTauY$numeric 
-  labelTauY <- listTauY$label 
-  lavOptimizerSyntaxAdditions <- paste0(lavOptimizerSyntaxAdditions, 
+  tauY      <- listTauY$numeric
+  labelTauY <- listTauY$label
+  lavOptimizerSyntaxAdditions <- paste0(lavOptimizerSyntaxAdditions,
                                         listTauY$syntaxAdditions)
-  
+
   listThetaEpsilon <- constructTheta(etas, indsEtas, parTable = parTable,
                                      auto.constraints = auto.constraints)
-  thetaEpsilon      <- listThetaEpsilon$numeric 
+  thetaEpsilon      <- listThetaEpsilon$numeric
   thetaLabelEpsilon <- listThetaEpsilon$label
 
-  # structural model 
+  # structural model
   Ieta         <- diag(numEtas) # used for (B^-1 = (Ieta - gammaEta)^-1)
   listGammaXi  <- constructGamma(etas, xis, parTable = parTable)
-  gammaXi      <- listGammaXi$numeric 
-  labelGammaXi <- listGammaXi$label 
+  gammaXi      <- listGammaXi$numeric
+  labelGammaXi <- listGammaXi$label
 
   listGammaEta  <- constructGamma(etas, etas, parTable = parTable)
-  gammaEta      <- listGammaEta$numeric 
+  gammaEta      <- listGammaEta$numeric
   labelGammaEta <- listGammaEta$label
 
   # covariance matrices
@@ -109,20 +109,20 @@ specifyModelDA <- function(syntax = NULL,
   labelA <- listA$label
 
   # mean etas
-  listAlpha <- constructAlpha(etas, parTable = parTable, 
+  listAlpha <- constructAlpha(etas, parTable = parTable,
                               auto.constraints = auto.constraints,
                               mean.observed = mean.observed)
   alpha      <- listAlpha$numeric
   labelAlpha <- listAlpha$label
 
-  # mean xis 
-  listBeta0 <- constructAlpha(xis, parTable = parTable, 
+  # mean xis
+  listBeta0 <- constructAlpha(xis, parTable = parTable,
                               auto.constraints = auto.constraints,
                               mean.observed = mean.observed)
   beta0      <- listBeta0$numeric
   labelBeta0 <- listBeta0$label
 
-  # quadratic terms 
+  # quadratic terms
   listOmegaEtaXi  <- omegaAndSortedXis$omegaEtaXi
   omegaEtaXi      <- listOmegaEtaXi$numeric
   labelOmegaEtaXi <- listOmegaEtaXi$label
@@ -141,19 +141,19 @@ specifyModelDA <- function(syntax = NULL,
   colsU      <- getColsU(etas, indsEtas, lambdaY, method = method)
 
   fullL2      <- constructFullL2(colsU, etas = etas, method = method)
-  selectSubL2 <- getSelectSubL2(fullL2, colsU = colsU, latentEtas = latentEtas, 
+  selectSubL2 <- getSelectSubL2(fullL2, colsU = colsU, latentEtas = latentEtas,
                                 method = method)
   fullSigma2ThetaEpsilon <- constructFullSigma2ThetaEpsilon(psi, method = method)
-  selectSubSigma2ThetaEpsilon <- 
-    getSelectSubSigma2ThetaEpsilon(fullSigma2ThetaEpsilon, latentEtas = latentEtas, 
+  selectSubSigma2ThetaEpsilon <-
+    getSelectSubSigma2ThetaEpsilon(fullSigma2ThetaEpsilon, latentEtas = latentEtas,
                                    method = method)
   fullU <- constructFullU(fullL2 = fullL2, N = NROW(data), etas = etas, method = method)
 
-  scalingInds <- getScalingInds(indsEtas, R = emptyR, latentEtas = latentEtas, 
+  scalingInds <- getScalingInds(indsEtas, R = emptyR, latentEtas = latentEtas,
                                 method = method)
-  selectThetaEpsilon <- selectThetaEpsilon(lambdaY, thetaEpsilon, 
+  selectThetaEpsilon <- selectThetaEpsilon(lambdaY, thetaEpsilon,
                                            scalingInds, method = method)
-  subThetaEpsilon <- constructSubThetaEpsilon(indsEtas, thetaEpsilon, 
+  subThetaEpsilon <- constructSubThetaEpsilon(indsEtas, thetaEpsilon,
                                               scalingInds, method = method)
 
   covModel <- covModel(cov.syntax, method = method, parTable = parTableCovModel)
@@ -184,7 +184,7 @@ specifyModelDA <- function(syntax = NULL,
     emptyR = emptyR,
     fullR  = fullR,
 
-    fullSigma2ThetaEpsilon      = fullSigma2ThetaEpsilon, 
+    fullSigma2ThetaEpsilon      = fullSigma2ThetaEpsilon,
     selectSubSigma2ThetaEpsilon = selectSubSigma2ThetaEpsilon,
 
     fullL2      = fullL2,
@@ -271,7 +271,7 @@ matrixToParTable <- function(matrixNA, matrixEst, matrixSE, matrixLabel,
     matrixSE    <- t(matrixSE)
     matrixLabel <- t(matrixLabel)
   }
-  
+
   parTable <- NULL
   for (lhs in rownames(matrixEst)) {
     for (rhs in colnames(matrixEst)) {
@@ -283,12 +283,12 @@ matrixToParTable <- function(matrixNA, matrixEst, matrixSE, matrixLabel,
       parTable <- rbind(parTable, newRow)
     }
   }
-  parTable 
+  parTable
 }
 
 
 interceptsToParTable <- function(matrixNA, matrixEst, matrixSE, matrixLabel) {
-  parTable <- matrixToParTable(matrixNA, matrixEst, matrixSE, matrixLabel, 
+  parTable <- matrixToParTable(matrixNA, matrixEst, matrixSE, matrixLabel,
                                op = "~1", rowsLhs = TRUE)
   parTable$rhs <- ""
   parTable
@@ -320,17 +320,17 @@ mainModelToParTable <- function(finalModel, method = "lms") {
   matricesSE    <- finalModel$matricesSE
   matricesNA    <- finalModel$matricesNA
   matricesLabel <- finalModel$labelMatrices
-  
+
   if (is.null(matricesSE)) matricesSE <- matricesNA
-  
+
   etas     <- finalModel$info$etas
   numXis   <- finalModel$info$numXis
   parTable <- NULL
 
-  # Coefficients Measurement Model 
+  # Coefficients Measurement Model
   newRows <- matrixToParTable(matricesNA$lambdaX,
                               matricesEst$lambdaX,
-                              matricesSE$lambdaX, 
+                              matricesSE$lambdaX,
                               matricesLabel$lambdaX,
                               op = "=~",
                               rowsLhs = FALSE)
@@ -338,16 +338,16 @@ mainModelToParTable <- function(finalModel, method = "lms") {
 
   newRows <- matrixToParTable(matricesNA$lambdaY,
                               matricesEst$lambdaY,
-                              matricesSE$lambdaY, 
+                              matricesSE$lambdaY,
                               matricesLabel$lambdaY,
                               op = "=~",
                               rowsLhs = FALSE)
   parTable <- rbind(parTable, newRows)
 
-  # coefficients Structural Model 
+  # coefficients Structural Model
   newRows <- matrixToParTable(matricesNA$gammaXi,
                               matricesEst$gammaXi,
-                              matricesSE$gammaXi, 
+                              matricesSE$gammaXi,
                               matricesLabel$gammaXi,
                               op = "~",
                               rowsLhs = TRUE)
@@ -355,7 +355,7 @@ mainModelToParTable <- function(finalModel, method = "lms") {
 
   newRows <- matrixToParTable(matricesNA$gammaEta,
                               matricesEst$gammaEta,
-                              matricesSE$gammaEta, 
+                              matricesSE$gammaEta,
                               matricesLabel$gammaEta,
                               op = "~",
                               rowsLhs = TRUE)
@@ -363,13 +363,13 @@ mainModelToParTable <- function(finalModel, method = "lms") {
 
   # interaction effects
   newRows <- omegaToParTable(matricesNA$omegaXiXi,
-                             matricesEst$omegaXiXi, 
+                             matricesEst$omegaXiXi,
                              matricesSE$omegaXiXi,
                              matricesLabel$omegaXiXi)
   parTable <- rbind(parTable, newRows)
 
   newRows <- omegaToParTable(matricesNA$omegaEtaXi,
-                             matricesEst$omegaEtaXi, 
+                             matricesEst$omegaEtaXi,
                              matricesSE$omegaEtaXi,
                              matricesLabel$omegaEtaXi)
   parTable <- rbind(parTable, newRows)
@@ -392,17 +392,17 @@ mainModelToParTable <- function(finalModel, method = "lms") {
                                   matricesSE$alpha,
                                   matricesLabel$alpha)
   parTable <- rbind(parTable, newRows)
-  
+
   newRows <- interceptsToParTable(matricesNA$beta0,
                                   matricesEst$beta0,
                                   matricesSE$beta0,
                                   matricesLabel$beta0)
   parTable <- rbind(parTable, newRows)
 
-  # Residual (co) variances Measurement Model 
+  # Residual (co) variances Measurement Model
   newRows <- matrixToParTable(matricesNA$thetaDelta,
                               matricesEst$thetaDelta,
-                              matricesSE$thetaDelta, 
+                              matricesSE$thetaDelta,
                               matricesLabel$thetaDelta,
                               op = "~~",
                               rowsLhs = TRUE)
@@ -410,24 +410,24 @@ mainModelToParTable <- function(finalModel, method = "lms") {
 
   newRows <- matrixToParTable(matricesNA$thetaEpsilon,
                               matricesEst$thetaEpsilon,
-                              matricesSE$thetaEpsilon, 
+                              matricesSE$thetaEpsilon,
                               matricesLabel$thetaEpsilon,
                               op = "~~",
                               rowsLhs = TRUE)
   parTable <- rbind(parTable, newRows)
 
-  # (Co) variances Structural Model 
+  # (Co) variances Structural Model
   if (method == "lms") {
     phiNA <- matricesNA$A
     phiEst <- matricesEst$phi
     phiSE <- matricesSE$A
     phiLabel <- matricesLabel$A
   } else if (method == "qml") {
-    phiNA <- matricesNA$phi 
-    phiEst <- matricesEst$phi 
-    phiSE <- matricesSE$phi 
+    phiNA <- matricesNA$phi
+    phiEst <- matricesEst$phi
+    phiSE <- matricesSE$phi
     phiLabel <- matricesLabel$phi
-  } 
+  }
 
   newRows <- matrixToParTable(phiNA,
                               phiEst,
@@ -439,7 +439,7 @@ mainModelToParTable <- function(finalModel, method = "lms") {
 
   newRows <- matrixToParTable(matricesNA$psi,
                               matricesEst$psi,
-                              matricesSE$psi, 
+                              matricesSE$psi,
                               matricesLabel$psi,
                               op = "~~",
                               rowsLhs = FALSE)
@@ -473,7 +473,7 @@ modelToParTable <- function(model, coefs = NULL, se = NULL, method = "lms") {
     parTable <- rbind(parTable, customParamsToParTable(model, coefs, se))
     # this is ugly but should work
     isLabelled <- parTable$label != ""
-    labels     <- parTable[isLabelled, "label"] 
+    labels     <- parTable[isLabelled, "label"]
     parTable[isLabelled, "se"] <- se[labels]
   }
 

@@ -33,14 +33,14 @@ logLikQml <- function(theta, model, sum = TRUE, sign = -1) {
     m$L2 <- -m$subThetaEpsilon %*% t(m$Beta) %*% invRER
     m$fullL2[m$selectSubL2] <- m$L2
 
-    m$Sigma2ThetaEpsilon <- m$subThetaEpsilon - m$subThetaEpsilon ^ 2 %*% 
-      t(m$Beta) %*% invRER %*% m$Beta 
-    
-    m$fullSigma2ThetaEpsilon[m$selectSubSigma2ThetaEpsilon] <- 
+    m$Sigma2ThetaEpsilon <- m$subThetaEpsilon - m$subThetaEpsilon ^ 2 %*%
+      t(m$Beta) %*% invRER %*% m$Beta
+
+    m$fullSigma2ThetaEpsilon[m$selectSubSigma2ThetaEpsilon] <-
       m$Sigma2ThetaEpsilon
   }
-  
-  m$Sigma2ThetaEpsilon <- m$fullSigma2ThetaEpsilon 
+
+  m$Sigma2ThetaEpsilon <- m$fullSigma2ThetaEpsilon
   m$L2     <- m$fullL2
   m$u      <- m$fullU
   m$LXPLX  <- m$lambdaX %*% m$phi %*% t(m$lambdaX) + m$thetaDelta
@@ -53,15 +53,15 @@ logLikQml <- function(theta, model, sum = TRUE, sign = -1) {
   Ey            <- muQmlCpp(m, t)
   sigmaEpsilon  <- sigmaQmlCpp(m, t)
   sigmaXU       <- calcSigmaXU(m)
-  
+
   normalInds    <- colnames(sigmaXU)
   indsY         <- colnames(m$y)
-  nonNormalInds <- indsY[!indsY %in% normalInds] 
+  nonNormalInds <- indsY[!indsY %in% normalInds]
 
   f2 <- probf2(matrices = m, normalInds = normalInds, sigma = sigmaXU)
   f3 <- probf3(matrices = m, nonNormalInds = nonNormalInds, expected = Ey,
                sigma = sigmaEpsilon, t = t, numEta = numEta)
-  
+
   if (sum) return(sign * sum(f2 + f3))
   sign * (f2 + f3)
 }
@@ -83,8 +83,8 @@ probf2 <- function(matrices, normalInds, sigma) {
 probf3 <- function(matrices, nonNormalInds, expected, sigma, t, numEta) {
   if (numEta == 1) {
     return(dnormCpp(matrices$y[, 1], mu = expected, sigma = sqrt(sigma)))
-  } 
-  rep_dmvnorm(matrices$y[, nonNormalInds], expected = expected, 
+  }
+  rep_dmvnorm(matrices$y[, nonNormalInds], expected = expected,
               sigma = sigma, t = t)
 }
 
@@ -121,18 +121,18 @@ gradientLogLikQml_i <- function(theta, model, sign = -1, epsilon = 1e-8) {
 }
 
 
-mstepQml <- function(model, 
+mstepQml <- function(model,
                      theta,
-                     max.iter = 500, 
+                     max.iter = 500,
                      verbose = FALSE,
                      convergence = 1e-6,
                      control = list(),
-                     optimizer = "nlminb", 
+                     optimizer = "nlminb",
                      epsilon = 1e-8,
                      ...) {
-  gradient <- function(theta, model, sign) 
-    gradientLogLikQml(theta = theta, model = model, epsilon = epsilon, sign = sign)  
-  
+  gradient <- function(theta, model, sign)
+    gradientLogLikQml(theta = theta, model = model, epsilon = epsilon, sign = sign)
+
   if (verbose) cat("Starting M-step\n")
 
   if (optimizer == "nlminb") {
@@ -149,13 +149,13 @@ mstepQml <- function(model,
     control$factr <- convergence
     control$maxit <- max.iter
 
-    est <- stats::optim(par = theta, fn = logLikQml, model = model, 
+    est <- stats::optim(par = theta, fn = logLikQml, model = model,
                         gr = gradient, method = optimizer, sign = -1,
                         control = control, ...)
 
     est$objective  <- est$value
     est$iterations <- est$counts[["function"]]
   } else stop2("Unrecognized optimizer, must be either 'nlminb' or 'L-BFGS-B'")
-  
+
   est
 }

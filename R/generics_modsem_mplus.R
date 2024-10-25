@@ -5,19 +5,19 @@
 #' @param standardize standardize estimates
 #' @param ci print confidence intervals
 #' @param digits number of digits to print
-#' @param loadings print loadings 
+#' @param loadings print loadings
 #' @param regressions print regressions
 #' @param covariances print covariances
 #' @param intercepts print intercepts
 #' @param variances print variances
 #' @param ... arguments passed to other functions
 #' @rdname summary
-#' @export 
-summary.modsem_mplus <- function(object, 
-                                 scientific = FALSE, 
+#' @export
+summary.modsem_mplus <- function(object,
+                                 scientific = FALSE,
                                  standardize = FALSE,
-                                 ci = FALSE, 
-                                 digits = 3, 
+                                 ci = FALSE,
+                                 digits = 3,
                                  loadings = TRUE,
                                  regressions = TRUE,
                                  covariances = TRUE,
@@ -25,12 +25,12 @@ summary.modsem_mplus <- function(object,
                                  variances = TRUE,
                                  ...) {
   if (standardize) object$parTable <- standardized_estimates(object)
-  object$format <- list(digits = digits, 
-                        scientific = scientific, 
-                        ci = ci, 
-                        loadings = loadings, 
-                        regressions = regressions, 
-                        covariances = covariances, 
+  object$format <- list(digits = digits,
+                        scientific = scientific,
+                        ci = ci,
+                        loadings = loadings,
+                        regressions = regressions,
+                        covariances = covariances,
                         intercepts = intercepts,
                         variances = variances)
   structure(object, class = "summary_mplus")
@@ -40,10 +40,10 @@ summary.modsem_mplus <- function(object,
 #' @export
 print.summary_mplus <- function(x, ...) {
   cat("modsem: \nMethod =", attributes(x)$method, "\n")
-  printParTable(x$parTable, 
-                scientific = x$format$scientific, 
-                ci = x$format$ci, 
-                digits = x$format$digits, 
+  printParTable(x$parTable,
+                scientific = x$format$scientific,
+                ci = x$format$ci,
+                digits = x$format$digits,
                 loadings = x$format$loadings,
                 regressions = x$format$regressions,
                 covariances = x$format$covariances,
@@ -71,7 +71,7 @@ var_interactions.modsem_mplus <- function(object, ...) {
 }
 
 
-#' @export 
+#' @export
 standardized_estimates.modsem_mplus <- function(object, ...) {
   standardized_estimates.data.frame(parameter_estimates(object))
 }

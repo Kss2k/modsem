@@ -1,5 +1,5 @@
 getMethodSettingsPI <- function(method, args) {
-    defaultResCov <- "simple" 
+    defaultResCov <- "simple"
     settings <- list(
         rca = list(
             center.before = FALSE,

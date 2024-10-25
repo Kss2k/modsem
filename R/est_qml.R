@@ -1,6 +1,6 @@
-estQml <- function(model, 
+estQml <- function(model,
                    convergence = 1e-2,
-                   verbose = FALSE, 
+                   verbose = FALSE,
                    max.iter = 500,
                    calc.se = TRUE,
                    FIM = "observed",
@@ -12,7 +12,7 @@ estQml <- function(model,
                    optimizer = "nlminb",
                    ...) {
   startTheta <- model$theta
-  final <- mstepQml(model = model, theta = startTheta, max.iter = max.iter, 
+  final <- mstepQml(model = model, theta = startTheta, max.iter = max.iter,
                     convergence = convergence, epsilon = epsilon,
                     verbose = verbose, optimizer = optimizer, ...)
 
@@ -22,7 +22,7 @@ estQml <- function(model,
   info            <- model$info
 
   finalModel <- fillModel(model, coefficients, method = "qml")
-  emptyModel <- getEmptyModel(parTable = model$parTable, 
+  emptyModel <- getEmptyModel(parTable = model$parTable,
                               cov.syntax = model$cov.syntax,
                               parTableCovModel = model$covModel$parTable,
                               method = "qml")
@@ -30,14 +30,14 @@ estQml <- function(model,
   finalModel$covModelNA <- emptyModel$covModel
 
   # Caclulate information matrix (I) and standard errors (SE)
-  typeSE <- ifelse(!calc.se, "none", ifelse(robust.se, "robust", "standard")) 
-  FIM <- calcFIM_da(model = model, finalModel = finalModel, theta = coefficients, 
+  typeSE <- ifelse(!calc.se, "none", ifelse(robust.se, "robust", "standard"))
+  FIM <- calcFIM_da(model = model, finalModel = finalModel, theta = coefficients,
                     data = model$data, method = "qml", EFIM.S = EFIM.S,
-                    hessian = OFIM.hessian, calc.se = calc.se, 
+                    hessian = OFIM.hessian, calc.se = calc.se,
                     EFIM.parametric = EFIM.parametric, verbose = verbose,
-                    FIM = FIM, robust.se = robust.se, NA__ = -999, 
+                    FIM = FIM, robust.se = robust.se, NA__ = -999,
                     epsilon = epsilon)
-  SE <- calcSE_da(calc.se = calc.se, FIM$vcov, rawLabels = FIM$raw.labels, 
+  SE <- calcSE_da(calc.se = calc.se, FIM$vcov, rawLabels = FIM$raw.labels,
                   NA__ = -999)
   modelSE <- getSE_Model(model, se = SE, method = "qml",
                          n.additions = FIM$n.additions)
@@ -52,7 +52,7 @@ estQml <- function(model,
   parTable$p.value  <- 2 * stats::pnorm(-abs(parTable$z.value))
   parTable$ci.lower <- parTable$est - 1.96 * parTable$std.error
   parTable$ci.upper <- parTable$est + 1.96 * parTable$std.error
-  
+
   warnif(final$iterations >= max.iter,
          "Maximum number of iterations was reached, ",
          "model estimation might not have converged.")
@@ -67,9 +67,9 @@ estQml <- function(model,
 
               originalParTable = model$parTable,
 
-              logLik      = -final$objective, 
+              logLik      = -final$objective,
               iterations  = final$iterations,
-              convergence = final$convergence, 
+              convergence = final$convergence,
               type.se     = typeSE,
 
               type.estimates = "unstandardized",

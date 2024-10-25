@@ -7,15 +7,15 @@
 fit_modsem_da(model, chisq = TRUE)
 }
 \arguments{
-\item{model}{fitted model. Thereafter, you can use 'compare_fit()' 
-to assess the comparative fit of the models. If the interaction effect makes 
-the model better, and e.g., the RMSEA is good for the baseline model, 
+\item{model}{fitted model. Thereafter, you can use 'compare_fit()'
+to assess the comparative fit of the models. If the interaction effect makes
+the model better, and e.g., the RMSEA is good for the baseline model,
 the interaction model likely has a good RMSEA as well.}
 
 \item{chisq}{should Chi-Square based fit-measures be calculated?}
 }
 \description{
-Calculates chi-sq test and p-value, as well as RMSEA for 
+Calculates chi-sq test and p-value, as well as RMSEA for
 the LMS and QML models. Note that the Chi-Square based fit measures should be calculated
 for the baseline model, i.e., the model without the interaction effect
 }

@@ -15,7 +15,7 @@ setThreads <- function(n) {
   if (is.null(n)) k <- getDefaultThreads()
   else if (is.numeric(n)) k <- getThreadsN(n)
   else if (is.character(n)) {
-    k <- switch(n, 
+    k <- switch(n,
                 "default" = getDefaultThreads(),
                 "max" = getMaxThreads(),
                 "min" = getMinThreads(),
@@ -49,5 +49,5 @@ getMinThreads <- function() {
 
 getThreadsN <- function(n) {
   ncores <- parallel::detectCores()
-  ifelse(n >= ncores, ncores, n) 
+  ifelse(n >= ncores, ncores, n)
 }

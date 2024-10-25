@@ -36,10 +36,10 @@ trace_path(
 A string with the estimated path (simplified if possible)
 }
 \description{
-This function estimates the path from \code{x} to \code{y} using the path tracing rules. 
-Note that it only works with structural parameters, so \code{"=~"} are ignored, unless 
+This function estimates the path from \code{x} to \code{y} using the path tracing rules.
+Note that it only works with structural parameters, so \code{"=~"} are ignored, unless
 \code{measurement.model = TRUE}.
-If you want to use the measurement model, 
+If you want to use the measurement model,
 \code{"~"} should be in the \code{mod} column of \code{pt}.
 }
 \examples{

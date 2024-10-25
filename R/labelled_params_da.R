@@ -1,9 +1,9 @@
-createThetaLabel <- function(labelMatrices, labelMatricesCov, 
+createThetaLabel <- function(labelMatrices, labelMatricesCov,
                               constrExprs, start = NULL) {
-  matrices <- c(labelMatrices, labelMatricesCov)  
+  matrices <- c(labelMatrices, labelMatricesCov)
   labels <- lapply(matrices, FUN = function(x) {
-    select <- apply(x, MARGIN = 2, FUN = function(z) 
-                    !canBeNumeric(z, includeNA = TRUE)) 
+    select <- apply(x, MARGIN = 2, FUN = function(z)
+                    !canBeNumeric(z, includeNA = TRUE))
     as.vector(x[select]) }) |> unlist() |> unique()
 
   if (!is.null(constrExprs)) {
@@ -21,19 +21,19 @@ createThetaLabel <- function(labelMatrices, labelMatricesCov,
 
 
 calcThetaLabel <- function(theta, constrExprs) {
-  if (is.null(constrExprs)) return(theta) 
-  Theta <- c(as.list(theta), constrExprs$thetaFixedParams) 
+  if (is.null(constrExprs)) return(theta)
+  Theta <- c(as.list(theta), constrExprs$thetaFixedParams)
 
   for (i in seq_along(constrExprs$fixedParams)) {
-    Theta[constrExprs$fixedParams[[i]]] <- 
+    Theta[constrExprs$fixedParams[[i]]] <-
       eval(constrExprs$exprs[[i]], envir = Theta)
-  }  
+  }
 
   unlist(Theta)
 }
 
 
-fillMatricesLabels <- function(matrices, labelMatrices, thetaLabel, 
+fillMatricesLabels <- function(matrices, labelMatrices, thetaLabel,
                                constraintExprs = NULL) {
   if (is.null(thetaLabel)) return(matrices)
   labels <- names(thetaLabel)
@@ -50,7 +50,7 @@ getConstrExprs <- function(parTable, parTableCov) {
   parTable <- rbind(parTable, parTableCov)
   rows <- sortConstrExprs(parTable)
   if (is.null(rows)) return(NULL)
-  
+
   fixedParams <- unique(rows$lhs)
   thetaFixedParams <- vector("list", length(fixedParams))
   names(thetaFixedParams) <- fixedParams
@@ -83,7 +83,7 @@ sortConstrExprs <- function(parTable) {
   while (NROW(subRows) > 0) {
     matchedAny <- FALSE
     for (i in seq_len(nrow(subRows))) {
-      labels_i <- getVarsExpr(subRows[i, "rhs"]) 
+      labels_i <- getVarsExpr(subRows[i, "rhs"])
       if (length(labels_i) == 0 || all(labels_i %in% definedLabels)) {
         matchedAny <- TRUE
         sortedRows <- rbind(sortedRows, subRows[i, ])
@@ -94,13 +94,13 @@ sortConstrExprs <- function(parTable) {
     }
 
     if (!matchedAny) {
-      stop2("Unkown labels in constraints: ", 
+      stop2("Unkown labels in constraints: ",
             labels_i[!labels_i %in% definedLabels])
     }
   }
- 
+
   if (NROW(sortedRows) != NROW(rows)) {
-    warning2("Something went wrong when sorting and parsing constraint-expressions ", 
+    warning2("Something went wrong when sorting and parsing constraint-expressions ",
              "attempting to estimate model with unsorted expressions")
     return(rows)
   }
@@ -164,6 +164,6 @@ constraintsContainUnmatchedLabels <- function(parTable, labels) {
   vapply(seq_len(NROW(parTable)), FUN.VALUE = logical(1L), FUN = function(i) {
     if (!parTable[i, "op"] %in% c("==", "<", ">", ":=")) return(FALSE)
     x <- getVarsExpr(parTable[i, "rhs"])
-    !all(x %in% labels) 
+    !all(x %in% labels)
   })
 }

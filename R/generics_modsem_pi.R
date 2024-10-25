@@ -9,7 +9,7 @@ printModsemPIHeader <- function(approach) {
 #' @param object modsem object to summarized
 #' @param ... arguments passed to lavaan::summary()
 #' @rdname summary
-#' @export 
+#' @export
 summary.modsem_pi <- function(object, ...) {
   structure(list(lavaan = lavaan::summary(object$lavaan, ...),
                  info   = list(version = PKG_INFO$version,
@@ -31,34 +31,34 @@ parameter_estimates.modsem_pi <- function(object, ...) {
 }
 
 
-#' @export 
+#' @export
 standardized_estimates.modsem_pi <- function(object, ...) {
   lavaan::standardizedSolution(object$lavaan, ...)
 }
 
 
-#' @export 
+#' @export
 modsem_inspect.modsem_pi <- function(object, what = NULL, ...) {
   if (is.null(what)) what <- "free"
   lavaan::lavInspect(object$lavaan, what = what, ...)
 }
 
 
-#' @export 
+#' @export
 #' @importFrom stats vcov
 vcov.modsem_pi <- function(object, ...) {
   lavaan::vcov(object$lavaan, ...)
 }
 
 
-#' @export 
+#' @export
 #' @importFrom stats coef
 coef.modsem_pi <- function(object, ...) {
   lavaan::coef(object$lavaan, ...)
 }
 
 
-#' @export 
+#' @export
 #' @importFrom stats coefficients
 coefficients.modsem_pi <- function(object, ...) {
   lavaan::coef(object$lavaan, ...)

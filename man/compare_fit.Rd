@@ -14,9 +14,9 @@ null hypothesis model}
 }
 \description{
 Compare the fit of two models using the likelihood ratio test.
-`estH0` representing the null 
-hypothesis model, and `estH1` the alternative hypothesis model. Importantly, 
-the function assumes that `estH0` does not have more free parameters 
+`estH0` representing the null
+hypothesis model, and `estH1` the alternative hypothesis model. Importantly,
+the function assumes that `estH0` does not have more free parameters
 (i.e., degrees of freedom) than `estH1`.
 alternative hypothesis model
 }

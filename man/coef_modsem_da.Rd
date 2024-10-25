@@ -12,6 +12,6 @@ coef_modsem_da(object, ...)
 \item{...}{additional arguments}
 }
 \description{
-wrapper for coef, to be used with modsem::coef_modsem_da, 
+wrapper for coef, to be used with modsem::coef_modsem_da,
 since coef is not in the namespace of modsem, but stats
 }

@@ -22,10 +22,10 @@ m1 <- '
   X =~ x1 + x2 + x3
   Y =~ y1 + y2 + y3
   Z =~ z1 + z2 + z3
-  
+
   # Inner model
-  Y ~ X + Z + X:Z 
+  Y ~ X + Z + X:Z
 '
 est <- modsem_pi(m1, oneInt)
-lav_est <- extract_lavaan(est) 
+lav_est <- extract_lavaan(est)
 }

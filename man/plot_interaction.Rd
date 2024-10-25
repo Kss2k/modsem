@@ -28,7 +28,7 @@ will be created using \code{x} and \code{z}.}
 
 \item{vals_x}{The values of the \code{x} variable to plot, the more values the smoother the std.error-area will be}
 
-\item{vals_z}{The values of the moderator variable to plot. A separate regression 
+\item{vals_z}{The values of the moderator variable to plot. A separate regression
 line (\code{y ~ x | z}) will be plotted for each value of the moderator variable}
 
 \item{model}{An object of class \code{\link{modsem_pi}}, \code{\link{modsem_da}}, or \code{\link{modsem_mplus}}}
@@ -77,7 +77,7 @@ tpb <- "
 "
 
 est2 <- modsem(tpb, TPB, method = "lms")
-plot_interaction(x = "INT", z = "PBC", y = "BEH", xz = "PBC:INT", 
+plot_interaction(x = "INT", z = "PBC", y = "BEH", xz = "PBC:INT",
                  vals_z = c(-0.5, 0.5), model = est2)
 }
 }

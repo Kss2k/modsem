@@ -12,6 +12,6 @@ vcov_modsem_da(object, ...)
 \item{...}{additional arguments}
 }
 \description{
-wrapper for vcov, to be used with modsem::vcov_modsem_da, 
+wrapper for vcov, to be used with modsem::vcov_modsem_da,
 since vcov is not in the namespace of modsem, but stats
 }

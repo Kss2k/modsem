@@ -53,20 +53,20 @@ career4
 indicator for career aspirations in science, item ST29Q04: I would like to work on <broad science> projects as an adult.
 }
 \source{
-This version of the dataset, as well as the description was gathered from the 
-documentation of the 'nlsem' package (https://cran.r-project.org/package=nlsem), 
+This version of the dataset, as well as the description was gathered from the
+documentation of the 'nlsem' package (https://cran.r-project.org/package=nlsem),
 where the only difference is that the names of the variables were changed
 
-Originally the dataset was gathered by the Organisation for Economic Co-Operation and Development (2009). 
-Pisa 2006: Science competencies for tomorrow's world (Tech. Rep.). 
+Originally the dataset was gathered by the Organisation for Economic Co-Operation and Development (2009).
+Pisa 2006: Science competencies for tomorrow's world (Tech. Rep.).
 Paris, France. Obtained from: https://www.oecd.org/pisa/pisaproducts/database-pisa2006.htm
 }
 \description{
-The data stem from the large-scale assessment study PISA 2006 
-(Organisation for Economic Co-Operation and Development, 2009) where 
-competencies of 15-year-old students in reading, mathematics, and science 
-are assessed using nationally representative samples in 3-year cycles. 
-In this eacademicample, data from the student background questionnaire from the 
+The data stem from the large-scale assessment study PISA 2006
+(Organisation for Economic Co-Operation and Development, 2009) where
+competencies of 15-year-old students in reading, mathematics, and science
+are assessed using nationally representative samples in 3-year cycles.
+In this eacademicample, data from the student background questionnaire from the
 Jordan sample of PISA 2006 were used. Only data of students with complete
 responses to all 15 items (N = 6,038) were considered.
 }

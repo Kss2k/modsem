@@ -1,5 +1,5 @@
 getParTableResCov <- function(relDf, method, ...) {
-  switch(method, 
+  switch(method,
          "simple" = getParTableResCov.simple(relDf),
          "ca" = getParTableResCov.ca(relDf, ...),
          "equality" = getParTableResCov.equality(relDf, ...))
@@ -136,8 +136,8 @@ getParTableResCov.ca <- function(relDf, pt) {
     eqConstraints <- apply(parTable[parTable$mod != "0", c("lhs", "rhs")],
                            MARGIN = 1,
                            FUN = function(vars, relDf)
-                             getFormulaResCovProdInd(vars[["lhs"]], 
-                                                     vars[["rhs"]], 
+                             getFormulaResCovProdInd(vars[["lhs"]],
+                                                     vars[["rhs"]],
                                                      relDf, pt),
                            relDf = relDf) |>
       purrr::list_rbind()

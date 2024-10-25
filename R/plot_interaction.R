@@ -1,18 +1,18 @@
-#' Plot Interaction Effects 
-#' 
-#' @param x The name of the variable on the x-axis 
-#' @param z The name of the moderator variable 
-#' @param y The name of the outcome variable 
+#' Plot Interaction Effects
+#'
+#' @param x The name of the variable on the x-axis
+#' @param z The name of the moderator variable
+#' @param y The name of the outcome variable
 #' @param xz The name of the interaction term. If the interaction term is not specified, it
 #' will be created using \code{x} and \code{z}.
 #' @param vals_x The values of the \code{x} variable to plot, the more values the smoother the std.error-area will be
-#' @param vals_z The values of the moderator variable to plot. A separate regression 
+#' @param vals_z The values of the moderator variable to plot. A separate regression
 #' line (\code{y ~ x | z}) will be plotted for each value of the moderator variable
 #' @param model An object of class \code{\link{modsem_pi}}, \code{\link{modsem_da}}, or \code{\link{modsem_mplus}}
 #' @param alpha_se The alpha level for the std.error area
-#' @param ... Additional arguments passed to other functions 
+#' @param ... Additional arguments passed to other functions
 #' @return A \code{ggplot} object
-#' @export 
+#' @export
 #' @examples
 #' library(modsem)
 #' \dontrun{
@@ -22,7 +22,7 @@
 #'   X =~ x2 + x3
 #'   Z =~ z1 + z2 + z3
 #'   Y =~ y1 + y2 + y3
-#' 
+#'
 #' # Inner model
 #'   Y ~ X + Z + X:Z
 #' "
@@ -36,7 +36,7 @@
 #'   PBC =~ pbc1 + pbc2 + pbc3
 #'   INT =~ int1 + int2 + int3
 #'   BEH =~ b1 + b2
-#' 
+#'
 #' # Inner Model (Based on Steinmetz et al., 2011)
 #'   # Causal Relationsships
 #'   INT ~ ATT + SN + PBC
@@ -45,27 +45,27 @@
 #'   BEH ~ PBC:INT
 #'   # BEH ~ PBC:PBC
 #' "
-#' 
+#'
 #' est2 <- modsem(tpb, TPB, method = "lms")
-#' plot_interaction(x = "INT", z = "PBC", y = "BEH", xz = "PBC:INT", 
+#' plot_interaction(x = "INT", z = "PBC", y = "BEH", xz = "PBC:INT",
 #'                  vals_z = c(-0.5, 0.5), model = est2)
 #' }
-plot_interaction <- function(x, z, y, xz = NULL, vals_x = seq(-3, 3, .001) , 
+plot_interaction <- function(x, z, y, xz = NULL, vals_x = seq(-3, 3, .001) ,
                              vals_z, model, alpha_se = 0.15, ...) {
   if (!isModsemObject(model) && !isLavaanObject(model)) {
     stop2("model must be of class 'modsem_pi', 'modsem_da', 'modsem_mplus' or 'lavaan'")
   }
 
   if (is.null(xz)) xz <- paste(x, z, sep = ":")
-  xz <- c(xz, reverseIntTerm(xz)) 
-  if (!inherits(model, c("modsem_da", "modsem_mplus")) && 
+  xz <- c(xz, reverseIntTerm(xz))
+  if (!inherits(model, c("modsem_da", "modsem_mplus")) &&
       !isLavaanObject(model)) {
     xz <- stringr::str_remove_all(xz, ":")
   }
 
   parTable <- parameter_estimates(model)
-  gamma_x <- parTable[parTable$lhs == x & parTable$op == "~", "est"] 
- 
+  gamma_x <- parTable[parTable$lhs == x & parTable$op == "~", "est"]
+
   if (isLavaanObject(model)) {
     # this won't work for multigroup models
     nobs <- unlist(model@Data@nobs)
@@ -101,19 +101,19 @@ plot_interaction <- function(x, z, y, xz = NULL, vals_x = seq(-3, 3, .001) ,
   df$proj_y <- gamma_x * df$x + gamma_z + df$z + df$z * df$x * gamma_xz
   df$cat_z <- as.factor(df$z)
 
-  se_x <- df$se_x 
-  proj_y <- df$proj_y 
+  se_x <- df$se_x
+  proj_y <- df$proj_y
   cat_z <- df$cat_z
   # plotting margins
-  ggplot2::ggplot(df, ggplot2::aes(x = x, y = proj_y, colour = cat_z, group = cat_z,)) + 
-    ggplot2::geom_smooth(method = "lm", formula = "y ~ x", se = FALSE) + 
+  ggplot2::ggplot(df, ggplot2::aes(x = x, y = proj_y, colour = cat_z, group = cat_z,)) +
+    ggplot2::geom_smooth(method = "lm", formula = "y ~ x", se = FALSE) +
     ggplot2::geom_ribbon(ggplot2::aes(ymin = proj_y - 1.96 * se_x, ymax = proj_y + 1.96 * se_x),
                          alpha = alpha_se, linewidth = 0, linetype = "blank") +
     ggplot2::labs(x = x, y = y, colour = z)
 }
 
 
-# function for calculating std.error of predicted value 
+# function for calculating std.error of predicted value
 calc_se <- function(x, var, n, s) {
   # x = values of x (predictor),
     # this function assumes that 'mean(x) = 0'
