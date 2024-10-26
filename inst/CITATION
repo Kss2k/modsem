@@ -7,18 +7,20 @@ bibentry(
     person(given = "Mehmet", family = "Mehmetoglu"),
     person(given = "Matthias", family = "Mittner")
   ),
-  journal = "Structural Equation Modeling: A Multidisciplinary Journal",
+  # journal = "Structural Equation Modeling: A Multidisciplinary Journal",
   year    = "2024",
-#  volume  = "XX",  # Replace XX with the actual volume number
-#  number  = "X",   # Replace X with the actual issue number
-#  pages   = "AAA–BBB",  # Replace AAA–BBB with the actual page range
-  doi     = "10.1080/10705511.2024.2417409",
+  #  volume  = "XX",
+  #  number  = "X",
+  #  pages   = "AAA–BBB",
+  # doi      = "10.1080/10705511.2024.2417409",
+  doi      = "https://doi.org/10.31219/osf.io/h3rpw",
   textVersion = paste(
     "Slupphaug, K. S., Mehmetoglu, M., & Mittner, M. (2024).",
     "modsem: An R package for estimating latent interactions and quadratic effects.",
-    "Structural Equation Modeling: A Multidisciplinary Journal", 
+    # "Structural Equation Modeling: A Multidisciplinary Journal", 
     # "XX(X)", 
     # "AAA–BBB.",
-    "doi:10.1080/10705511.2024.2417409"
+    # "doi:10.1080/10705511.2024.2417409"
+    "https://doi.org/10.31219/osf.io/h3rpw"
   )
 )
