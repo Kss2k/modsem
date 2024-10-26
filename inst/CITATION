@@ -8,6 +8,7 @@ bibentry(
     person(given = "Matthias", family = "Mittner")
   ),
   # journal = "Structural Equation Modeling: A Multidisciplinary Journal",
+  journal = "Preprint: Open Science Foundation",
   year    = "2024",
   #  volume  = "XX",
   #  number  = "X",
