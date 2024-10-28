@@ -42,7 +42,7 @@ parameter_estimates.modsem_da <- function(object, ...) {
 #' }
 summary.modsem_da <- function(object,
                               H0 = TRUE,
-                              verbose = TRUE,
+                              verbose = interactive(),
                               r.squared = TRUE,
                               adjusted.stat = FALSE,
                               digits = 3,

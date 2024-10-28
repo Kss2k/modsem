@@ -1,6 +1,6 @@
 getMethodSettingsDA <- function(method, args = NULL) {
     settings <- list(
-        lms = list(verbose = TRUE,
+        lms = list(verbose = interactive(),
                    optimize = TRUE,
                    nodes = 24,
                    convergence = 1e-4,
@@ -23,7 +23,7 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    epsilon = 1e-4,
                    quad.range = Inf,
                    n.threads = NULL),
-        qml = list(verbose = TRUE,
+        qml = list(verbose = interactive(),
                    optimize = TRUE,
                    nodes = 0,
                    convergence = 1e-6,
