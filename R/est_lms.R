@@ -49,8 +49,9 @@ emLms <- function(model,
     logLikChanges <- c(logLikChanges, logLikNew - logLikOld)
 
     if (verbose) {
-      cat(sprintf("EM: Iteration = %5d, LogLik = %11.2f, Change = %10.3f\n",
-                  iterations, logLikNew, logLikNew - logLikOld))
+      clearConsoleLine()
+      printf("\rEM: Iteration = %d, LogLik = %.2f, Change = %.3f",
+             iterations, logLikNew, logLikNew - logLikOld)
     }
 
     if (logLikNew > bestLogLik) {
@@ -77,6 +78,8 @@ emLms <- function(model,
                "you might want to increase the convergence (i.e., less strict) criterion (see 'help(modsem_da)')")
     }
   }
+
+  if (verbose) cat("\n")
 
   final <- mstepLms(model = model, P = P, data = data,
                     theta = thetaNew, max.step = max.step,

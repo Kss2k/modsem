@@ -292,3 +292,20 @@ rename <- function(X, ...) {
 
   X
 }
+
+
+printf <- function(...) {
+  cat(sprintf(...))
+}
+  
+
+clearConsoleLine <- function() {
+  printf(paste0("\r", strrep(" ", getOption("width")), "\r"))
+}
+
+
+getDiffTwoMax <- function(x) {
+  if (length(x) < 2) return(NA)
+  y <- sort(x, decreasing = TRUE)
+  y[[1]] - y[[2]]
+}
