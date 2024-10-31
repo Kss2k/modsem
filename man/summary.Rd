@@ -10,7 +10,7 @@
 \method{summary}{modsem_da}(
   object,
   H0 = TRUE,
-  verbose = TRUE,
+  verbose = interactive(),
   r.squared = TRUE,
   adjusted.stat = FALSE,
   digits = 3,

@@ -296,6 +296,7 @@ rename <- function(X, ...) {
 
 printf <- function(...) {
   cat(sprintf(...))
+  utils::flush.console()
 }
   
 

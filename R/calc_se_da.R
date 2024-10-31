@@ -15,7 +15,7 @@ calcFIM_da <- function(model,
                        verbose = FALSE) {
   if (!calc.se) return(list(FIM = NULL, vcov = NULL, vcov.sub = NULL, type = "none",
                             raw.labels = names(theta), n.additions = 0))
-  if (verbose) cat("Calculating standard errors\n")
+  if (verbose) printf("Calculating standard errors\n")
 
   I <- switch(method,
      lms =
