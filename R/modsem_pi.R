@@ -343,9 +343,9 @@ addSpecsParTable <- function(modelSpec,
   if (constrained.loadings) parTable <- specifyFactorLoadings(parTable, relDfs)
 
   if (constrained.prod.mean) {
-    restrictedMeans <- purrr::map2(modelSpec$prodNames,
-                                   modelSpec$elementsInProdNames,
-                                   getParTableRestrictedMean,
+    restrictedMeans <- purrr::map2(.x = modelSpec$prodNames,
+                                   .y = modelSpec$elementsInProdNames,
+                                   .f = getParTableRestrictedMean,
                                    createLabels = !constrained.var,
                                    pt = parTable) |>
       purrr::list_rbind()

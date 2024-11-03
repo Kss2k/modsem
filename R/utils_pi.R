@@ -197,6 +197,14 @@ getRedefinedLabels <- function(parTable.z) {
 }
 
 
+getVarsPI <- function(parTable) {
+  unique(c(parTable$rhs[parTable$op %in% c("~", "=~")],
+           parTable$lhs[parTable$op == "~"])) |>
+  stringr::str_split(pattern = ":", simplify = FALSE) |>
+  unlist() |> unique()
+}
+
+
 isLavLabelFunction <- function(label, context, warning = FALSE) {
   grepl("^(start|equal)\\(.*\\)$", label)
 }

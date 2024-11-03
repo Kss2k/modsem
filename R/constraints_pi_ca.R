@@ -36,15 +36,15 @@ specifyFactorLoadings <- function(parTable, relDfs) {
 
 
 addVariances <- function(pt) {
-  # Add variance-labels if missing for latents
-  latents <- unique(pt[pt$op == "=~", "lhs"])
-  if (length(latents) == 0) return(pt)
+  # Add variance-labels if missing for LVs
+  LVs <- getLVs(pt)
+  if (length(LVs) == 0) return(pt)
 
-  specifiedLvs <- pt[pt$lhs %in% latents &
+  specifiedLVs <- pt[pt$lhs %in% LVs &
                      pt$op == "~~" &
-                     pt$rhs %in% latents &
+                     pt$rhs %in% LVs &
                      pt$lhs == pt$rhs, "lhs"] |> unique()
-  toBeSpecifiedLvs <- latents[!latents %in% specifiedLvs]
+  toBeSpecifiedLvs <- LVs[!LVs %in% specifiedLVs]
 
   newRows <- lapply(toBeSpecifiedLvs, FUN = function(x)
                     createParTableRow(c(x, x), op = "~~")) |>
@@ -52,12 +52,12 @@ addVariances <- function(pt) {
   pt <- rbind(pt, newRows)
 
   # Add variance for observed variables if missing
-  observed <- unique(pt[pt$op == "=~", "rhs"])
+  observed <- getIndicators(pt, observed = TRUE)
 
   specifiedOvs <- pt[pt$lhs %in% observed &
-                        pt$op == "~~" &
-                        pt$rhs %in% observed &
-                        pt$lhs == pt$rhs, "lhs"] |> unique()
+                     pt$op == "~~" &
+                     pt$rhs %in% observed &
+                     pt$lhs == pt$rhs, "lhs"] |> unique()
   toBeSpecifiedOvs <- observed[!observed %in% specifiedOvs]
 
   newRows <- lapply(toBeSpecifiedOvs,
@@ -69,7 +69,7 @@ addVariances <- function(pt) {
 
 addCovariances <- function(pt) {
   # Add covariances for exogenous variables if missing
-  latents <- unique(pt[pt$op == "=~", "lhs"])
+  latents <- getLVs(pt)
   if (length(latents) == 0) return(pt)
 
   combos <- getUniqueCombos(latents)
@@ -85,10 +85,10 @@ addCovariances <- function(pt) {
 
 
 labelParameters <- function(pt) {
-  latents <- unique(pt[pt$op == "=~", "lhs"])
+  latents <- getLVs(pt)
   endogenous <- latents[latents %in% pt[pt$op == "~", "lhs"]]
   exogenous <- latents[!latents %in% endogenous]
-  observed <- unique(pt[pt$op == "=~", "rhs"])
+  observed <- getOVs(pt)
 
   # Gamma
   pt[pt$op == "~", "mod"] <-

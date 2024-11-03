@@ -9,19 +9,16 @@ parseLavaan <- function(model.syntax = NULL, variableNames = NULL, match = FALSE
 
   parTable <- modsemify(model.syntax)
   structuralExprs <- parTable[parTable$op == "~",]
-  measureExprs <- parTable[parTable$op %in% c("=~", "<~"), ]
-  lVs <- unique(parTable$lhs[parTable$op == "=~"])
-  vars <- unique(c(parTable$rhs[parTable$op %in% c("~", "=~")],
-                   parTable$lhs[parTable$op == "~"])) |>
-    stringr::str_split(pattern = ":", simplify = FALSE) |>
-    unlist() |> unique()
-  oVs <- vars[!vars %in% lVs]
-  prodNames <- parTable$rhs[grepl(":", parTable$rhs) & parTable$op == "~"] |>
-    unique()
+  measureExprs    <- parTable[parTable$op %in% c("=~", "<~"), ]
+
+  oVs  <- getOVs(parTable)
+  lVs  <- getLVs(parTable)
+  vars <- getVarsPI(parTable)
+  prodNames <- getProdNames(parTable)
   prodNamesCleaned <- stringr::str_remove_all(prodNames, ":")
 
   # Get all the indicators in the model
-  inds <- unique(measureExprs$rhs[!grepl(":", measureExprs$rhs)])
+  inds <- getIndicators(parTable, observed=TRUE)
   stopif(!all(inds %in% variableNames),
          "Unable to find observed variables in data: ",
          capturePrint(inds[!inds %in% variableNames]))

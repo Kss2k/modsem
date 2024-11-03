@@ -4,7 +4,7 @@ prepParTable <- function(pt, addCovPt = TRUE, maxlen = 100) {
   # Remove any potential ':' from the model
   pt <- lapplyDf(pt, stringr::str_remove_all, pattern = ":")
   structuralVars <- pt[pt$op == "~", c("lhs", "rhs")] |>
-    unlist() |> unique()
+    unlist() |> c(getLVs(pt)) |> unique()
   pt <- pt[pt$lhs %in% structuralVars & pt$rhs %in% structuralVars, ]
   pt$mod[pt$mod == ""] <- apply(pt[pt$mod == "", c("lhs", "op", "rhs")],
                                 MARGIN = 1, FUN = stringr::str_c, collapse = "")

@@ -88,6 +88,21 @@ getXis <- function(parTable, etas = NULL, isLV = TRUE, checkAny = TRUE) {
   stopif(checkAny && !length(xis), "No xis found")
   xis
 }
+   
+
+getIndicators <- function(parTable, observed=TRUE) {
+  indicators <- unique(parTable[!grepl(":", parTable$rhs) & 
+                                parTable$op == "=~", "rhs"])
+
+  if (observed) indicators <- indicators[!indicators %in% getLVs(parTable)]
+  indicators
+}
+
+
+getProdNames <- function(parTable) {
+  unique(parTable[grepl(":", parTable$rhs) & 
+         parTable$op %in% c("~", "=~"), "rhs"])
+}
 
 
 getLVs <- function(parTable) {
