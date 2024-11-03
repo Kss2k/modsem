@@ -83,3 +83,9 @@ checkOverlappingIndicators <- function(allIndsXis, allIndsEtas) {
          "and endogenous variable, in the same model: ",
          paste(allIndsXis[allIndsXis %in% allIndsEtas], collapse = ", "))
 }
+
+
+checkParTableDA <- function(parTable) {
+  stopif(length(getHigherOrderLVs(parTable)) > 0,
+         "Higher-order latent variables are not supported in the lms and qml approaches.")
+}

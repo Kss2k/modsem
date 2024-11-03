@@ -29,6 +29,8 @@ parseLavaan <- function(model.syntax = NULL, variableNames = NULL, match = FALSE
                                  pattern = ":",
                                  names = prodNamesCleaned)
 
+  checkHigherOrderInteractions(elementsInProds, parTable=parTable)
+
   # Inds belonging to latent variables which are specified in the syntax
   indsLatents <- structureLavExprs(measureExprs)
 

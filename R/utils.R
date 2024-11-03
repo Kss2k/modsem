@@ -122,6 +122,20 @@ getOVs <- function(parTable = NULL, model.syntax = NULL) {
 }
 
 
+getHigherOrderLVs <- function(parTable) {
+  lVs                  <- getLVs(parTable)
+  isHigherOrder        <- logical(length(lVs))
+  names(isHigherOrder) <- lVs
+
+  for (lV in lVs) {
+    inds <- parTable[parTable$lhs == lV & parTable$op == "=~", "rhs"]
+    if (any(inds %in% lVs)) isHigherOrder[[lV]] <- TRUE
+  }
+
+  lVs[isHigherOrder]
+}
+
+
 getIndsLVs <- function(parTable, lVs) {
   measrExprs <- parTable[parTable$op == "=~" & parTable$lhs %in% lVs, ]
   stopif(!NROW(measrExprs), "No measurement expressions found, for", lVs)

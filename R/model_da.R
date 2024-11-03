@@ -16,7 +16,8 @@ specifyModelDA <- function(syntax = NULL,
                            quad.range = Inf) {
   if (!is.null(syntax)) parTable <- modsemify(syntax)
   stopif(is.null(parTable), "No parTable found")
-
+  
+  checkParTableDA(parTable)
   # additions to lavaan-syntax for optimizer
   lavOptimizerSyntaxAdditions <- ""
 
