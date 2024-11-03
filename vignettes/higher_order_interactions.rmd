@@ -1,5 +1,5 @@
 ---
-title: "Higher order interactions"
+title: "higher order interactions"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{higher order interactions}

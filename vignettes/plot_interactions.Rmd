@@ -10,7 +10,8 @@ vignette: >
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  eval = TRUE
 )
 ```
 
@@ -30,7 +31,7 @@ The function will also plot the 95% confidence interval for the interaction effe
 
 Here is a simple example using the double-centering approach:
 
-```r
+```{r}
 m1 <- "
 # Outer Model
   X =~ x1
@@ -45,9 +46,9 @@ est1 <- modsem(m1, data = oneInt)
 plot_interaction("X", "Z", "Y", "X:Z", vals_z = -3:3, range_y = c(-0.2, 0), model = est1)
 ```
 
-Here is a different example using the `LMS` approach in the theory of planned behavior model:
+Here is a different example using the `lms` approach in the theory of planned behavior model:
 
-```r
+```{r}
 tpb <- "
 # Outer Model (Based on Hagger et al., 2007)
   ATT =~ att1 + att2 + att3 + att4 + att5
