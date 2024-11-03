@@ -5,12 +5,12 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>using lavaan functions • modsem</title>
+<title>Higher order interactions • modsem</title>
 <script src="../deps/jquery-3.6.1/jquery-3.6.1.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.4.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.4.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="using lavaan functions">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Higher order interactions">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -64,39 +64,51 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>using lavaan functions</h1>
+      <h1>Higher order interactions</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/Kss2k/modsem/blob/main/vignettes/lavaan.Rmd" class="external-link"><code>vignettes/lavaan.Rmd</code></a></small>
-      <div class="d-none name"><code>lavaan.Rmd</code></div>
+      <small class="dont-index">Source: <a href="https://github.com/Kss2k/modsem/blob/main/vignettes/higher_order_interactions.rmd" class="external-link"><code>vignettes/higher_order_interactions.rmd</code></a></small>
+      <div class="d-none name"><code>higher_order_interactions.rmd</code></div>
     </div>
 
     
     
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/Kss2k/modsem" class="external-link">modsem</a></span><span class="op">)</span></span></code></pre></div>
-<p>If you’re using one of the product indicator approaches, you might
-want to use some lavaan functions on top of the estimated lavaan-object.
-To do so you can extract the lavaan-object using the
-<code><a href="../reference/extract_lavaan.html">extract_lavaan()</a></code> function.</p>
+<p>As of yet, the <code>modsem</code> package does not support using the
+interaction operator <code>:</code> between two higher order constructs.
+However, you can still estimate the interaction effect between two
+higher order constructs by specifying the interaction term in models
+using the product indicator approaches (higher order constructs are not
+supported at all in the <code>lms</code> and <code>qml</code> approaches
+yet). The <code>modsem</code> package will then estimate the interaction
+effect between the two higher order constructs.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://lavaan.ugent.be" class="external-link">lavaan</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; This is lavaan 0.6-19</span></span>
-<span><span class="co">#&gt; lavaan is FREE software! Please report any bugs.</span></span>
-<span></span>
-<span><span class="va">m1</span> <span class="op">&lt;-</span> <span class="st">'</span></span>
-<span><span class="st"># Outer Model</span></span>
-<span><span class="st">X =~ x1 + x2 + x3</span></span>
-<span><span class="st">Y =~ y1 + y2 + y3</span></span>
-<span><span class="st">Z =~ z1 + z2 + z3</span></span>
+<code class="sourceCode R"><span><span class="va">tpb</span> <span class="op">&lt;-</span> <span class="st">'</span></span>
+<span><span class="st">  ATT =~ att1 + att2 + att3 + att4 + att5</span></span>
+<span><span class="st">  SN  =~ sn1 + sn2</span></span>
+<span><span class="st">  PBC =~ pbc1 + pbc2 + pbc3</span></span>
+<span><span class="st">  INT =~ int1 + int2 + int3</span></span>
 <span><span class="st"></span></span>
-<span><span class="st"># Inner model</span></span>
-<span><span class="st">Y ~ X + Z + X:Z</span></span>
+<span><span class="st">  # Higher order constructs</span></span>
+<span><span class="st">  HIGH1 =~ PBC + ATT</span></span>
+<span><span class="st">  HIGH2 =~ INT + SN</span></span>
+<span><span class="st">  # Higher order interaction</span></span>
+<span><span class="st">  INTERACTION =~ PBC:INT + ATT:SN + PBC:SN + ATT:INT</span></span>
+<span><span class="st">  </span></span>
+<span><span class="st">  BEH =~ b1 + b2</span></span>
+<span><span class="st"></span></span>
+<span><span class="st">  BEH ~ HIGH1 + HIGH2 + INTERACTION</span></span>
 <span><span class="st">'</span></span>
 <span></span>
-<span><span class="va">est</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m1</span>, <span class="va">oneInt</span><span class="op">)</span></span>
-<span><span class="va">lav_object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/extract_lavaan.html">extract_lavaan</a></span><span class="op">(</span><span class="va">est</span><span class="op">)</span></span>
-<span><span class="va">bootstrap</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/lavaan/man/bootstrap.html" class="external-link">bootstrapLavaan</a></span><span class="op">(</span><span class="va">lav_object</span>, R <span class="op">=</span> <span class="fl">500</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">est</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">tpb</span>, <span class="va">TPB</span>, method <span class="op">=</span> <span class="st">"uca"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est</span><span class="op">)</span></span></code></pre></div>
+<p>Please note that the literature on higher order interactions in
+product indicator approaches is next to non-existant, and you will
+likely need to do some experimenting. In this example you get some
+warnings, which might be since the model is misspecified. Using the
+<code>rca</code> or the <code>uca</code> gives no warnings, but the
+standard errors are very high.</p>
   </main>
 </div>
 

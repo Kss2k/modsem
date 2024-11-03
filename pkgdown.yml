@@ -3,6 +3,7 @@ pkgdown: 2.1.1
 pkgdown_sha: ~
 articles:
   customizing: customizing.html
+  higher_order_interactions: higher_order_interactions.html
   interaction_two_etas: interaction_two_etas.html
   lavaan: lavaan.html
   lms_qml: lms_qml.html
@@ -11,4 +12,4 @@ articles:
   observed_lms_qml: observed_lms_qml.html
   plot_interactions: plot_interactions.html
   quadratic: quadratic.html
-last_built: 2024-10-31T10:45Z
+last_built: 2024-11-03T17:27Z
