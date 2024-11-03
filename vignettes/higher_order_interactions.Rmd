@@ -23,7 +23,16 @@ library(modsem)
 As of yet, the `modsem` package does not support using the interaction operator `:` between two higher order constructs.
 However, you can still attempt to estimate the interaction effect between two higher order constructs by specifying the interaction term in 
 models using the product indicator approaches (higher order constructs are not supported at all in the `lms` and `qml` approaches yet).
-The `modsem` package will then estimate the interaction effect between the two higher order constructs.
+The `modsem` package will then attempt to estimate the interaction effect between the two higher order constructs.
+
+**WARNING:** Please note that the literature on higher order
+interactions in product indicator approaches is virtually non-existant, and you
+will likely need to do some experimenting. In this example you get some very 
+high standard errors. Possible due to the fact that higher order interactions
+do not fit the model, or that it is too unstable to estimate. It might be better 
+to use the constrained or unconstrained approach to estimate the interactions
+but they are not yet well suited for calculating constraints with higher order
+constructs.
 
 ```{r}
 tpb <- '
@@ -47,12 +56,5 @@ est  <- modsem(tpb, TPB)
 summary(est)
 ```
 
-*WARNING:* Please note that the literature on higher order
-interactions in product indicator approaches is next to non-existant, and you
-will likely need to do some experimenting. In this example you get some very 
-high standard errors. Possible due to the fact that higher order interactions
-do not fit the model, or that it is too unstable to estimate. It might be better 
-to use the constrained or unconstrained approach to estimate the interactions
-but they are not yet well suited for calculating constraints with higher order
-constructs.
+
 
