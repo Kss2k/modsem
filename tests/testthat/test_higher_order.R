@@ -18,4 +18,4 @@ tpb <- '
   BEH ~ HIGH1 + HIGH2 + INTERACTION
 '
 
-est <- modsem(tpb, TPB)
+est  <- modsem(tpb, TPB, method = "rca")
