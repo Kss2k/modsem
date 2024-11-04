@@ -28,11 +28,11 @@ The `modsem` package will then attempt to estimate the interaction effect betwee
 **WARNING:** Please note that the literature on higher order
 interactions in product indicator approaches is virtually non-existant, and you
 will likely need to do some experimenting. In this example you get some very 
-high standard errors. Possible due to the fact that higher order interactions
+high standard errors. Possibly due to the fact that higher order interactions
 do not fit the model, or that it is too unstable to estimate. It might be better 
 to use the constrained or unconstrained approach to estimate the interactions
-but they are not yet well suited for calculating constraints with higher order
-constructs.
+but the constraints for the higher order measurement model are not yet implemented, 
+and are therefore only specified for the first order measurement model.
 
 ```{r}
 tpb <- '
