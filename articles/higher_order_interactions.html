@@ -90,8 +90,9 @@ non-existant, and you will likely need to do some experimenting. In this
 example you get some very high standard errors if you don’t use the
 constrained approach (i.e., <code>method = "ca"</code>). Possibly due to
 the fact that higher order interactions do not fit the model, or that it
-is too unstable to estimate. It might be better to use the constrained
-to estimate the interactions but the constraints for the higher order
+is too unstable to estimate higher order interactions with minimal
+constraints. It might be better to use the constrained approach to
+estimate the interactions but the constraints for the higher order
 measurement model are not yet implemented, and are therefore only
 specified for the first order measurement model. It might therefore be a
 good idea to add some constraints to the model yourself (see the example
@@ -117,13 +118,8 @@ below).</p>
 <span><span class="st">  INTERACTION ~~ 0*HIGH1 + 0*HIGH2</span></span>
 <span><span class="st">'</span></span>
 <span></span>
-<span><span class="va">est</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">tpb</span>, data <span class="op">=</span> <span class="va">TPB</span>, method <span class="op">=</span> <span class="st">"ca"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: Unequal number of indicators for latent variables in product term, not</span></span>
-<span><span class="co">#&gt; all indicators will be used</span></span>
-<span><span class="co">#&gt; Warning: Unequal number of indicators for latent variables in product term, not</span></span>
-<span><span class="co">#&gt; all indicators will be used</span></span>
-<span><span class="co">#&gt; Warning: Unequal number of indicators for latent variables in product term, not</span></span>
-<span><span class="co">#&gt; all indicators will be used</span></span>
+<span><span class="va">est</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">tpb</span>, data <span class="op">=</span> <span class="va">TPB</span>, method <span class="op">=</span> <span class="st">"ca"</span>,</span>
+<span>               suppress.warnings.match <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est</span><span class="op">)</span></span>
 <span><span class="co">#&gt; modsem (version 1.0.4, approach = ca):</span></span>
 <span><span class="co">#&gt; lavaan 0.6-19 ended normally after 538 iterations</span></span>
