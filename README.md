@@ -44,7 +44,7 @@ Product Indicator (PI) and Distribution Analytic (DA) approaches.
 
 # Examples 
 
-## Elementary Interaction Model (Kenny & Judd, 1984)
+## Elementary Interaction Model (Kenny & Judd, 1984; Jaccard & Wan, 1995)
 ```
 library(modsem)
 m1 <- '
