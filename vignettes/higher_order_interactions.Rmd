@@ -28,11 +28,13 @@ The `modsem` package will then attempt to estimate the interaction effect betwee
 **WARNING:** Please note that the literature on higher order
 interactions in product indicator approaches is virtually non-existant, and you
 will likely need to do some experimenting. In this example you get some very 
-high standard errors. Possibly due to the fact that higher order interactions
+high standard errors if you don't use the constrained approach (i.e., `method = "ca"`). 
+Possibly due to the fact that higher order interactions
 do not fit the model, or that it is too unstable to estimate. It might be better 
-to use the constrained or unconstrained approach to estimate the interactions
+to use the constrained to estimate the interactions
 but the constraints for the higher order measurement model are not yet implemented, 
-and are therefore only specified for the first order measurement model.
+and are therefore only specified for the first order measurement model. It might therefore
+be a good idea to add some constraints to the model yourself (see the example below).
 
 ```{r}
 tpb <- '
@@ -50,9 +52,12 @@ tpb <- '
   BEH =~ b1 + b2
 
   BEH ~ HIGH1 + HIGH2 + INTERACTION
+
+  # Adding some constraints
+  INTERACTION ~~ 0*HIGH1 + 0*HIGH2
 '
 
-est  <- modsem(tpb, TPB)
+est  <- modsem(tpb, data = TPB, method = "ca")
 summary(est)
 ```
 

@@ -1,4 +1,7 @@
-parseLavaan <- function(model.syntax = NULL, variableNames = NULL, match = FALSE) {
+parseLavaan <- function(model.syntax = NULL, 
+                        variableNames = NULL, 
+                        match = FALSE,
+                        suppress.warnings.match = FALSE) {
   # Check if a model.syntax is provided, if not we should return an error
   if (is.null(model.syntax))
     stop2("No model.syntax provided")
@@ -44,9 +47,8 @@ parseLavaan <- function(model.syntax = NULL, variableNames = NULL, match = FALSE
                   names = prodNamesCleaned)
 
     # Creating a relDF for prodTerms
-    relDfs <- lapply(indsInLatentProds,
-                     FUN = createRelDf,
-                     match = match)
+    relDfs <- lapply(indsInLatentProds, FUN = createRelDf, match = match,
+                     suppress.warnings.match = suppress.warnings.match)
 
     # Get a list with all the inds in each interactionterm
     indsInLatentProds <- lapplyNamed(indsInLatentProds,
@@ -152,13 +154,13 @@ fixLatentNamesSyntax <- function(model.syntax, pattern) {
 }
 
 
-createRelDf <- function(indsProdTerm, match = FALSE) {
+createRelDf <- function(indsProdTerm, match = FALSE, suppress.warnings.match = FALSE) {
   if (match) {
     lengths <- vapply(indsProdTerm, FUN.VALUE = integer(1L),
                       FUN = length)
     if ((shortest <- min(lengths)) != (longest <- max(lengths))) {
-      warning2("Unequal number of indicators for latent variables ",
-              "in product term, not all indicators will be used")
+      warnif(!suppress.warnings.match, "Unequal number of indicators for latent variables ",
+             "in product term, not all indicators will be used")
       indsProdTerm <- lapply(indsProdTerm,
                              FUN = function(x, shortest) x[seq_len(shortest)],
                              shortest = shortest)

@@ -1,5 +1,5 @@
 warning2 <- function(...) {
-  warning(..., call. = FALSE)
+  warning(..., call. = FALSE, immediate. = TRUE)
 }
 
 

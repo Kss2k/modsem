@@ -26,6 +26,7 @@ modsem_pi(
   group = NULL,
   run = TRUE,
   suppress.warnings.lavaan = FALSE,
+  suppress.warnings.match = FALSE,
   ...
 )
 }
@@ -76,6 +77,8 @@ modsem_pi(
 \item{run}{should the model be run via \code{lavaan}, if \code{FALSE} only modified syntax and data is returned}
 
 \item{suppress.warnings.lavaan}{should warnings from \code{lavaan} be suppressed?}
+
+\item{suppress.warnings.match}{should warnings from \code{match} be suppressed?}
 
 \item{...}{arguments passed to other functions, e.g., \code{lavaan}}
 }

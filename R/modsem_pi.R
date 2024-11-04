@@ -46,6 +46,7 @@
 #' @param run should the model be run via \code{lavaan}, if \code{FALSE} only modified syntax and data is returned
 #'
 #' @param suppress.warnings.lavaan should warnings from \code{lavaan} be suppressed?
+#' @param suppress.warnings.match should warnings from \code{match} be suppressed?
 #'
 #' @param ... arguments passed to other functions, e.g., \code{lavaan}
 #'
@@ -136,6 +137,7 @@ modsem_pi <- function(model.syntax = NULL,
                       group = NULL,
                       run = TRUE,
                       suppress.warnings.lavaan = FALSE,
+                      suppress.warnings.match = FALSE,
                       ...) {
   stopif(is.null(model.syntax), "No model syntax provided in modsem")
   stopif(is.null(data), "No data provided in modsem")
@@ -156,7 +158,8 @@ modsem_pi <- function(model.syntax = NULL,
 
   # Get the specifications of the model
   modelSpec <- parseLavaan(model.syntax, colnames(data),
-                           match = methodSettings$match)
+                           match = methodSettings$match,
+                           suppress.warnings.match = suppress.warnings.match)
 
   # Data Processing  -----------------------------------------------------------
   data          <- data[c(modelSpec$oVs, group)]

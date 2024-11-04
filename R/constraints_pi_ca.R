@@ -178,14 +178,17 @@ specifyVarCovSingle <- function(parTable, relDf) {
 
   # covariances between elems and latents
   labelsCovElemProd <-
-    vapply(elemsInProdTerm,
-      FUN.VALUE = vector("character", length = 1L),
-      FUN = function(elem) createLabelCov(elem, latentProd)) # wrap in anonymous fun
+    vapply(elemsInProdTerm, FUN.VALUE = vector("character", length = 1L),
+           FUN = function(elem) createLabelCov(elem, latentProd)) # wrap in anonymous fun
                                                              # scope latentProd
+  
+  labelsCovElemProd <- labelsCovElemProd[labelsCovElemProd %in% parTable$mod]
 
-  covsElemsProd <- lapply(labelsCovElemProd, FUN = function(x)
-                            createParTableRow(c(x, "0"), op = "==")) |>
-    purrr::list_rbind()
+  if (length(labelsCovElemProd)) { # should not be added in higher order models
+    covsElemsProd <- lapply(labelsCovElemProd, FUN = function(x)
+                              createParTableRow(c(x, "0"), op = "==")) |>
+      purrr::list_rbind()
+  } else covsElemsProd <- NULL
 
   # Variances of product indicators
   constrained.varProdInds <- vector("list", length = ncol(relDf))

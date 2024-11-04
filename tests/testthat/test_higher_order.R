@@ -16,9 +16,14 @@ tpb <- '
   BEH =~ b1 + b2
 
   BEH ~ HIGH1 + HIGH2 + INTERACTION
+
+  # Adding some constraints
+  INTERACTION ~~ 0*HIGH1 + 0*HIGH2
 '
 
-est  <- modsem(tpb, TPB, method = "rca")
+est  <- modsem(tpb, data = TPB, method = "ca",
+               suppress.warnings.match = TRUE)
+summary(est)
 
 testthat::expect_error(modsem(tpb, TPB, method = "lms"),
                        regexp = "Higher-order latent variables are not supported in the lms and qml approaches.")
