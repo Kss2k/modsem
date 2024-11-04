@@ -1,20 +1,31 @@
 # Functions for tracing paths in SEMs, used both for calculating (co-)variances,
 # as well as calculating formulas for (co-)variances.
-prepParTable <- function(pt, addCovPt = TRUE, maxlen = 100) {
+prepParTable <- function(parTable, addCovPt = TRUE, maxlen = 100) {
   # Remove any potential ':' from the model
-  pt <- lapplyDf(pt, stringr::str_remove_all, pattern = ":")
-  structuralVars <- pt[pt$op == "~", c("lhs", "rhs")] |>
-    unlist() |> c(getLVs(pt)) |> unique()
-  pt <- pt[pt$lhs %in% structuralVars & pt$rhs %in% structuralVars, ]
-  pt$mod[pt$mod == ""] <- apply(pt[pt$mod == "", c("lhs", "op", "rhs")],
-                                MARGIN = 1, FUN = stringr::str_c, collapse = "")
+  parTable <- lapplyDf(parTable, stringr::str_remove_all, pattern = ":")
+
+  # get relevant variables
+  structuralVars <- parTable[parTable$op == "~", c("lhs", "rhs")] |>
+    unlist() |> c(getLVs(parTable)) |> unique()
+
+  parTable <- parTable[(parTable$lhs %in% structuralVars & 
+                       parTable$rhs %in% structuralVars) |
+                       parTable$op == "~~", ]
+  # redefine higher order (i.e.,`=~` -> `~`)
+  if (any(parTable$op == "=~")) parTable <- redefineMeasurementModel(parTable)
+
+  # add missing labels
+  labels <- apply(parTable[parTable$mod == "", c("lhs", "op", "rhs")],
+                  MARGIN = 1, FUN = stringr::str_c, collapse = "")
+  parTable[parTable$mod == "", "mod"] <- labels
+
   if (addCovPt) {
-    reversedCovPaths <- pt[pt$lhs != pt$rhs & pt$op == "~~", ]
+    reversedCovPaths <- parTable[parTable$lhs != parTable$rhs & parTable$op == "~~", ]
     colnames(reversedCovPaths) <- c("rhs", "op", "lhs", "mod")
-    pt <- rbind(pt, reversedCovPaths)
+    parTable <- rbind(parTable, reversedCovPaths)
   }
 
-  pt
+  parTable
 }
 
 
@@ -145,14 +156,7 @@ addMissingCovariances <- function(pt) {
 #' trace_path(pt, x = "Y", y = "Y", missing.cov = TRUE) # variance of Y
 trace_path <- function(pt, x, y, parenthesis = TRUE, missing.cov = FALSE,
                        measurement.model = FALSE, maxlen = 100, ...) {
-  if (measurement.model) {
-    measurmentRows         <- pt$op == "=~"
-    measurmentRowsRhs      <- pt$rhs[measurmentRows]
-    measurmentRowsLhs      <- pt$lhs[measurmentRows]
-    pt$op[measurmentRows]  <- "~"
-    pt$lhs[measurmentRows] <- measurmentRowsRhs
-    pt$rhs[measurmentRows] <- measurmentRowsLhs
-  }
+  if (measurement.model) pt <- redefineMeasurementModel(pt)
   if (missing.cov) pt <- addMissingCovariances(pt)
   generateSyntax(x = x, y = y, pt = pt, maxlen = maxlen, parenthesis = parenthesis, ...)
 }

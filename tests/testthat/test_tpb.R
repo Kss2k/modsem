@@ -14,9 +14,9 @@ tpb <- '
   # Causal Relationsships
   INT ~ a * ATT + b * SN + c * PBC
   BEH ~ INT + PBC 
-  BEH ~ INT:PBC
+  BEH ~ d * INT:PBC
 
-  a_b := a * b # check that labels arent overwritten without redefining
+  a_b := a * b * d # check that labels arent overwritten without redefining
 '
 
 method <- c("ca", "rca", "uca", "dblcent")

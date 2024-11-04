@@ -128,7 +128,9 @@ getHigherOrderLVs <- function(parTable) {
   names(isHigherOrder) <- lVs
 
   for (lV in lVs) {
-    inds <- parTable[parTable$lhs == lV & parTable$op == "=~", "rhs"]
+    inds <- parTable[parTable$lhs == lV & parTable$op == "=~", "rhs"] |>
+      stringr::str_split(pattern = ":") |> unlist()
+     
     if (any(inds %in% lVs)) isHigherOrder[[lV]] <- TRUE
   }
 
@@ -338,4 +340,11 @@ getDiffTwoMax <- function(x) {
   if (length(x) < 2) return(NA)
   y <- sort(x, decreasing = TRUE)
   y[[1]] - y[[2]]
+}
+
+
+stripColonsParTable <- function(parTable) {
+  parTable$lhs <- stringr::str_remove_all(parTable$lhs, ":")
+  parTable$rhs <- stringr::str_remove_all(parTable$rhs, ":")
+  parTable
 }

@@ -157,8 +157,9 @@ defineUndefinedLabels <- function(parTable.x, parTable.y) {
   # parTable.x = original parTable without new constraints
   # parTable.y = altered parTable with new constraints (and new labels)
   # goal: make sure user-specified labels are not overwritten
-
+  
   parTable.o <- parTable.y # parTable out
+  parTable.x <- stripColonsParTable(parTable.x)
   parTable.x <- rename(parTable.x, mod="mod.x")
   parTable.y <- rename(parTable.y, mod="mod.y")
 
@@ -226,4 +227,14 @@ checkHigherOrderInteractions <- function(elementsInProds, parTable) {
            "as a higher order latent variable using the '=~' operator.\n",
            "Run 'vignette(\"higher_order_interactions\")' for more information")
   }
+}
+
+
+redefineMeasurementModel <- function(parTable) {
+  lhs <- parTable$lhs
+  rhs <- parTable$rhs
+  parTable$lhs <- ifelse(parTable$op == "=~",  yes = rhs, no = lhs)
+  parTable$rhs <- ifelse(parTable$op == "=~",  yes = lhs, no = rhs)
+  parTable$op  <- ifelse(parTable$op == "=~", yes = "~", no = parTable$op)
+  parTable
 }

@@ -69,18 +69,42 @@ addVariances <- function(pt) {
 
 addCovariances <- function(pt) {
   # Add covariances for exogenous variables if missing
-  latents <- getLVs(pt)
+  pt       <- stripColonsParTable(pt)
+  latents  <- getLVs(pt)
   if (length(latents) == 0) return(pt)
 
-  combos <- getUniqueCombos(latents)
-  combos$connected <- !is.na(apply(combos, MARGIN = 1, function(xy)
-                                   trace_path(pt, xy[[1]], xy[[2]])))
-  toBeSpecified <- combos[!combos$connected, c("V1", "V2")]
-  newRows <- apply(toBeSpecified[c("V1", "V2")],
-                   MARGIN = 1,
-                   FUN = function(x) createParTableRow(x, op = "~~")) |>
-    purrr::list_rbind()
-  rbind(pt, newRows)
+  higherOrder <- getHigherOrderLVs(pt)
+  firstOrder  <- latents[!latents %in% higherOrder]
+
+  if (length(higherOrder)) { # then we should not touch the first order covariances
+    combosHO <- getUniqueCombos(higherOrder)
+    ptHO     <- pt[pt$lhs %in% higherOrder & pt$rhs %in% higherOrder, ]
+    combosHO$connected <- !is.na(apply(combosHO, MARGIN = 1, function(xy)
+                                       trace_path(ptHO, xy[[1]], xy[[2]])))
+    toBeSpecified <- combosHO[!combosHO$connected, c("V1", "V2")]
+    if (nrow(toBeSpecified)) {
+      newRows <- apply(toBeSpecified[c("V1", "V2")],
+                       MARGIN = 1,
+                       FUN = function(x) createParTableRow(x, op = "~~")) |>
+        purrr::list_rbind()
+      pt <- rbind(pt, newRows)
+    }
+  } else {
+    combosFO <- getUniqueCombos(firstOrder)
+    ptFO     <- pt[pt$lhs %in% firstOrder & pt$rhs %in% firstOrder, ]
+    combosFO$connected <- !is.na(apply(combosFO, MARGIN = 1, function(xy)
+                                       trace_path(ptFO, xy[[1]], xy[[2]])))
+    toBeSpecified <- combosFO[!combosFO$connected, c("V1", "V2")]
+    if (nrow(toBeSpecified)) {
+      newRows <- apply(toBeSpecified[c("V1", "V2")],
+                       MARGIN = 1,
+                       FUN = function(x) createParTableRow(x, op = "~~")) |>
+        purrr::list_rbind()
+      pt <- rbind(pt, newRows)
+    }
+  }
+
+  pt
 }
 
 
