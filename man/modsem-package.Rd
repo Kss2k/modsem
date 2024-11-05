@@ -19,6 +19,7 @@ Useful links:
 
 Other contributors:
 \itemize{
+  \item Mehmet Mehmetoglu \email{mehmetm@ntnu.no} (\href{https://orcid.org/0000-0002-6092-8551}{ORCID}) [contributor]
   \item Matthias Mittner \email{matthias.mittner@uit.no} (\href{https://orcid.org/0000-0003-0205-7353}{ORCID}) [contributor]
 }
 

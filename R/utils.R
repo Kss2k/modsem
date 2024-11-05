@@ -332,7 +332,7 @@ printf <- function(...) {
   
 
 clearConsoleLine <- function() {
-  printf(paste0("\r", strrep(" ", getOption("width")), "\r"))
+  printf(paste0("\r", strrep(" ", getOption("width", default=0L)), "\r"))
 }
 
 
