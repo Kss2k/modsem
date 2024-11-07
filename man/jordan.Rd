@@ -72,12 +72,12 @@ responses to all 15 items (N = 6,038) were considered.
 }
 \examples{
 \dontrun{
-m1 <- '
+m1 <- "
   ENJ =~ enjoy1 + enjoy2 + enjoy3 + enjoy4 + enjoy5
   CAREER =~ career1 + career2 + career3 + career4
   SC =~ academic1 + academic2 + academic3 + academic4 + academic5 + academic6
   CAREER ~ ENJ + SC + ENJ:ENJ + SC:SC + ENJ:SC
-'
+"
 
 est <- modsem(m1, data = jordan)
 }

@@ -13,7 +13,7 @@ NULL
 #' @description A simulated dataset based on the Theory of Planned Behaviour
 #' @examples
 #'
-#' tpb <- '
+#' tpb <- "
 #' # Outer Model (Based on Hagger et al., 2007)
 #'   ATT =~ att1 + att2 + att3 + att4 + att5
 #'   SN =~ sn1 + sn2
@@ -24,9 +24,73 @@ NULL
 #' # Inner Model (Based on Steinmetz et al., 2011)
 #'   INT ~ ATT + SN + PBC
 #'   BEH ~ INT + PBC + INT:PBC
-#' '
+#' "
 #'
 #' est <- modsem(tpb, data = TPB)
+NULL
+
+
+#' TPB_1SO
+#'
+#' @name TPB_1SO
+#' @docType data
+#' @description A simulated dataset based on the Theory of Planned Behaviour,
+#' where INT is a higher order construct of ATT, SN, and PBC.
+#' tpb <- '
+#'   # First order constructs
+#'   ATT =~ att1 + att2 + att3
+#'   SN  =~ sn1 + sn2 + sn3
+#'   PBC =~ pbc1 + pbc2 + pbc3
+#'   BEH =~ b1 + b2
+#' 
+#'   # Higher order constructs
+#'   INT =~ ATT + PBC + SN
+#' 
+#'   # Higher order interaction
+#'   INTxPBC =~ ATT:PBC + SN:PBC + PBC:PBC
+#'   
+#'   # Structural model
+#'   BEH ~ PBC + INT + INTxPBC
+#' '
+#' 
+#' if (FALSE) {
+#' est <- modsem(tpb, data = TPB_2SO, method = "ca")
+#' summary(est)
+#' }
+NULL
+
+
+#' TPB_2SO
+#'
+#' @name TPB_2SO
+#' @docType data
+#' @description A simulated dataset based on the Theory of Planned Behaviour,
+#' where INT is a higher order construct of ATT and SN, and PBC is a higher order
+#' construct of PC and PB.
+#' @examples
+#' tpb <- "
+#'   # First order constructs
+#'   ATT =~ att1 + att2 + att3
+#'   SN  =~ sn1 + sn2 + sn3
+#'   PB =~ pb1 + pb2 + pb3
+#'   PC =~ pc1 + pc2 + pc3
+#'   BEH =~ b1 + b2
+#'
+#'   # Higher order constructs
+#'   INT =~ ATT + SN
+#'   PBC =~ PC + PB
+#'
+#'   # Higher order interaction
+#'   INTxPBC =~ ATT:PC + ATT:PB + SN:PC + SN:PB
+#'
+#'   # Structural model
+#'   BEH ~ PBC + INT + INTxPBC
+#' "
+#'
+#' if (FALSE) {
+#' est <- modsem(tpb, data = TPB_2SO, method = "ca")
+#' summary(est)
+#' }
 NULL
 
 
@@ -43,7 +107,7 @@ NULL
 #' Obtained from https://doi.org/10.23668/psycharchives.12187
 #' @examples
 #'
-#' tpb_uk <- '
+#' tpb_uk <- "
 #' # Outer Model (Based on Hagger et al., 2007)
 #'  ATT =~ att3 + att2 + att1 + att4
 #'  SN =~ sn4 + sn2 + sn3 + sn1
@@ -56,7 +120,7 @@ NULL
 #'  INT ~ ATT + SN + PBC
 #'  BEH ~ INT + PBC
 #'  BEH ~ INT:PBC
-#' '
+#' "
 #'
 #' est <- modsem(tpb_uk, data = TPB_UK)
 NULL
@@ -133,12 +197,12 @@ NULL
 #'
 #' @examples
 #' \dontrun{
-#' m1 <- '
+#' m1 <- "
 #'   ENJ =~ enjoy1 + enjoy2 + enjoy3 + enjoy4 + enjoy5
 #'   CAREER =~ career1 + career2 + career3 + career4
 #'   SC =~ academic1 + academic2 + academic3 + academic4 + academic5 + academic6
 #'   CAREER ~ ENJ + SC + ENJ:ENJ + SC:SC + ENJ:SC
-#' '
+#' "
 #'
 #' est <- modsem(m1, data = jordan)
 #' }

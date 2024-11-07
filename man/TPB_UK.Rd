@@ -15,7 +15,7 @@ latent variable (ATT, SN, PBC, INT, BEH), from two time points (t1 and t2).
 }
 \examples{
 
-tpb_uk <- '
+tpb_uk <- "
 # Outer Model (Based on Hagger et al., 2007)
  ATT =~ att3 + att2 + att1 + att4
  SN =~ sn4 + sn2 + sn3 + sn1
@@ -28,7 +28,7 @@ tpb_uk <- '
  INT ~ ATT + SN + PBC
  BEH ~ INT + PBC
  BEH ~ INT:PBC
-'
+"
 
 est <- modsem(tpb_uk, data = TPB_UK)
 }

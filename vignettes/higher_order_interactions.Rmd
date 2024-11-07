@@ -28,73 +28,67 @@ The `modsem` package will then attempt to estimate the interaction effect betwee
 # Interaction between two higher order constructs
 **WARNING:** Please note that the literature on higher order
 interactions in product indicator approaches is virtually non-existant, and you
-will likely need to do some experimenting. In this example you get some very 
-high standard errors if you don't use the constrained approach (i.e., `method = "ca"`). 
-Possibly due to the model being misspecified (**see the second example for a more realistic model**).
-It might be better to use the constrained approach to estimate the interactions
-but the constraints for the higher order measurement model are not yet implemented, 
-and are therefore only specified for the first order measurement model. It might therefore
-be a good idea to add some constraints to the model yourself (see the example below).
+will likely need to experiment with different approaches to find one that works.
+As well as experiment with adding constraints to the model.
 
-
-```{r}
-tpb <- '
-  ATT =~ att1 + att2 + att3 + att4 + att5
-  SN  =~ sn1 + sn2
-  PBC =~ pbc1 + pbc2 + pbc3
-  INT =~ int1 + int2 + int3
-
-  # Higher order constructs
-  HIGH1 =~ PBC + ATT
-  HIGH2 =~ INT + SN
-  # Higher order interaction
-  INTERACTION =~ PBC:INT + ATT:SN + PBC:SN + ATT:INT
-  
-  BEH =~ b1 + b2
-
-  BEH ~ HIGH1 + HIGH2 + INTERACTION
-
-  # Adding some constraints
-  INTERACTION ~~ 0*HIGH1 + 0*HIGH2
-'
-
-est  <- modsem(tpb, data = TPB, method = "ca",
-               suppress.warnings.match = TRUE)
-summary(est)
-```
-
-# Interaction between a first order and a higher order construct
-
-Here we show a more realistic example, which better fits the observed data, where we model `INT` (intention) as 
-a higher order construct of `ATT` (attitude) `PBC` (perceived hehavioural control) and `SN` (subjective norm).
-We then model the interaction between `INT` and `PBC` on `BEH` (behaviour). In this case we can 
-see that both the constrained approach and less strict approaches yield reasonable standard errors.
+In `modsem` there are two datasets which are variants of the Theory of Planned Behaviour (`TPB`) dataset.
+The `TPB_2SO` contains two second order constructs, 
+`INT` (intention) which is a second order construct of `ATT` (attitude) and `SN` (subjective norm), 
+and `PBC` (perceived behavioural control) which is a second order construct of 
+`PC` (perceived control) and `PB` (perceived behaviour).
 
 ```{r}
 tpb <- '
   # First order constructs
-  ATT =~ att1 + att2 + att3 + att4 + att5
-  SN  =~ sn1 + sn2
-  PBC =~ pbc1 + pbc2 + pbc3
+  ATT =~ att1 + att2 + att3
+  SN  =~ sn1 + sn2 + sn3
+  PB =~ pb1 + pb2 + pb3
+  PC =~ pc1 + pc2 + pc3
   BEH =~ b1 + b2
 
   # Higher order constructs
-  INT =~ PBC + ATT + SN
+  INT =~ ATT + SN
+  PBC =~ PC + PB
 
   # Higher order interaction
-  INTxPBC =~ PBC:PBC + ATT:PBC + SN:PBC
+  INTxPBC =~ ATT:PC + ATT:PB + SN:PC + SN:PB
   
   # Structural model
   BEH ~ PBC + INT + INTxPBC
 '
 
-est_ca  <- modsem(tpb, data = TPB, method = "ca",
-                  suppress.warnings.match = TRUE)
+est_ca <- modsem(tpb, data = TPB_2SO, method = "ca")
 summary(est_ca)
 
-est_rca  <- modsem(tpb, data = TPB, method = "rca")
-summary(est_rca)
+est_dblcent <- modsem(tpb, data = TPB_2SO, method = "dblcent")
+summary(est_dblcent)
+```
 
-est_dblcent  <- modsem(tpb, data = TPB, method = "dblcent")
+# Interaction between a first order and a higher order construct
+In the `TPB_1SO` dataset, the `INT` construct is a second order construct of `ATT`, `SN` and `PBC`.
+In this example, we will estimate the interaction between the `INT` (higher order construct) and `PBC` (first order construct).
+
+```{r}
+tpb <- '
+  # First order constructs
+  ATT =~ att1 + att2 + att3
+  SN  =~ sn1 + sn2 + sn3
+  PBC =~ pbc1 + pbc2 + pbc3
+  BEH =~ b1 + b2
+
+  # Higher order constructs
+  INT =~ ATT + PBC + SN
+
+  # Higher order interaction
+  INTxPBC =~ ATT:PBC + SN:PBC + PBC:PBC
+  
+  # Structural model
+  BEH ~ PBC + INT + INTxPBC
+'
+
+est_ca <- modsem(tpb, data = TPB_1SO, method = "ca")
+summary(est_ca)
+
+est_dblcent  <- modsem(tpb, data = TPB_1SO, method = "dblcent")
 summary(est_dblcent)
 ```
