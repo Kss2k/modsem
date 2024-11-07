@@ -25,16 +25,17 @@ However, you can still attempt to estimate the interaction effect between two hi
 models using the product indicator approaches (higher order constructs are not supported at all in the `lms` and `qml` approaches yet).
 The `modsem` package will then attempt to estimate the interaction effect between the two higher order constructs.
 
+# Interaction between two higher order constructs
 **WARNING:** Please note that the literature on higher order
 interactions in product indicator approaches is virtually non-existant, and you
 will likely need to do some experimenting. In this example you get some very 
 high standard errors if you don't use the constrained approach (i.e., `method = "ca"`). 
-Possibly due to the fact that higher order interactions
-do not fit the model, or that it is too unstable to estimate higher order interactions with minimal constraints. 
+Possibly due to the model being misspecified (**see the second example for a more realistic model**).
 It might be better to use the constrained approach to estimate the interactions
 but the constraints for the higher order measurement model are not yet implemented, 
 and are therefore only specified for the first order measurement model. It might therefore
 be a good idea to add some constraints to the model yourself (see the example below).
+
 
 ```{r}
 tpb <- '
@@ -62,5 +63,38 @@ est  <- modsem(tpb, data = TPB, method = "ca",
 summary(est)
 ```
 
+# Interaction between a first order and a higher order construct
 
+Here we show a more realistic example, which better fits the observed data, where we model `INT` (intention) as 
+a higher order construct of `ATT` (attitude) `PBC` (perceived hehavioural control) and `SN` (subjective norm).
+We then model the interaction between `INT` and `PBC` on `BEH` (behaviour). In this case we can 
+see that both the constrained approach and less strict approaches yield reasonable standard errors.
 
+```{r}
+tpb <- '
+  # First order constructs
+  ATT =~ att1 + att2 + att3 + att4 + att5
+  SN  =~ sn1 + sn2
+  PBC =~ pbc1 + pbc2 + pbc3
+  BEH =~ b1 + b2
+
+  # Higher order constructs
+  INT =~ PBC + ATT + SN
+
+  # Higher order interaction
+  INTxPBC =~ PBC:PBC + ATT:PBC + SN:PBC
+  
+  # Structural model
+  BEH ~ PBC + INT + INTxPBC
+'
+
+est_ca  <- modsem(tpb, data = TPB, method = "ca",
+                  suppress.warnings.match = TRUE)
+summary(est_ca)
+
+est_rca  <- modsem(tpb, data = TPB, method = "rca")
+summary(est_rca)
+
+est_dblcent  <- modsem(tpb, data = TPB, method = "dblcent")
+summary(est_dblcent)
+```
