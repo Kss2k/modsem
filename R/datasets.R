@@ -36,6 +36,7 @@ NULL
 #' @docType data
 #' @description A simulated dataset based on the Theory of Planned Behaviour,
 #' where INT is a higher order construct of ATT, SN, and PBC.
+#' @examples
 #' tpb <- '
 #'   # First order constructs
 #'   ATT =~ att1 + att2 + att3
@@ -53,7 +54,7 @@ NULL
 #'   BEH ~ PBC + INT + INTxPBC
 #' '
 #' 
-#' if (FALSE) {
+#' \dontrun{
 #' est <- modsem(tpb, data = TPB_2SO, method = "ca")
 #' summary(est)
 #' }
@@ -87,7 +88,7 @@ NULL
 #'   BEH ~ PBC + INT + INTxPBC
 #' "
 #'
-#' if (FALSE) {
+#' \dontrun{
 #' est <- modsem(tpb, data = TPB_2SO, method = "ca")
 #' summary(est)
 #' }

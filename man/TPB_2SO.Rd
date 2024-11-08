@@ -29,7 +29,7 @@ tpb <- "
   BEH ~ PBC + INT + INTxPBC
 "
 
-if (FALSE) {
+\dontrun{
 est <- modsem(tpb, data = TPB_2SO, method = "ca")
 summary(est)
 }
