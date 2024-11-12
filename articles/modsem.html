@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>modsem • modsem</title>
-<script src="../deps/jquery-3.6.1/jquery-3.6.1.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.4.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.4.2/css/v4-shims.min.css" rel="stylesheet">
@@ -110,7 +110,7 @@ between two latent variables in <code>lavaan</code>.</p>
 <span><span class="va">est1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m1</span>, <span class="va">oneInt</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est1</span><span class="op">)</span></span>
 <span><span class="co">#&gt; modsem (version 1.0.4, approach = dblcent):</span></span>
-<span><span class="co">#&gt; lavaan 0.6-19 ended normally after 159 iterations</span></span>
+<span><span class="co">#&gt; lavaan 0.6-19 ended normally after 161 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                         ML</span></span>
 <span><span class="co">#&gt;   Optimization method                           NLMINB</span></span>
@@ -548,10 +548,10 @@ quadratic effects.</p>
 <span><span class="co">#&gt;   Estimator                                         QML</span></span>
 <span><span class="co">#&gt;   Optimization method                            NLMINB</span></span>
 <span><span class="co">#&gt;   Number of observations                           2000</span></span>
-<span><span class="co">#&gt;   Number of iterations                              123</span></span>
+<span><span class="co">#&gt;   Number of iterations                              107</span></span>
 <span><span class="co">#&gt;   Loglikelihood                                -17496.2</span></span>
 <span><span class="co">#&gt;   Akaike (AIC)                                  35056.4</span></span>
-<span><span class="co">#&gt;   Bayesian (BIC)                               35235.63</span></span>
+<span><span class="co">#&gt;   Bayesian (BIC)                               35235.62</span></span>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; Fit Measures for H0:</span></span>
 <span><span class="co">#&gt;   Loglikelihood                                  -17832</span></span>
@@ -585,35 +585,35 @@ quadratic effects.</p>
 <span><span class="co">#&gt;   X =~ </span></span>
 <span><span class="co">#&gt;     x1               1.000                             </span></span>
 <span><span class="co">#&gt;     x2               0.803      0.013   63.961    0.000</span></span>
-<span><span class="co">#&gt;     x3               0.914      0.013   67.797    0.000</span></span>
+<span><span class="co">#&gt;     x3               0.914      0.013   67.796    0.000</span></span>
 <span><span class="co">#&gt;   Z =~ </span></span>
 <span><span class="co">#&gt;     z1               1.000                             </span></span>
-<span><span class="co">#&gt;     z2               0.810      0.012   65.124    0.000</span></span>
+<span><span class="co">#&gt;     z2               0.810      0.012   65.123    0.000</span></span>
 <span><span class="co">#&gt;     z3               0.881      0.013   67.621    0.000</span></span>
 <span><span class="co">#&gt;   Y =~ </span></span>
 <span><span class="co">#&gt;     y1               1.000                             </span></span>
-<span><span class="co">#&gt;     y2               0.798      0.007  107.567    0.000</span></span>
-<span><span class="co">#&gt;     y3               0.899      0.008  112.542    0.000</span></span>
+<span><span class="co">#&gt;     y2               0.798      0.007  107.568    0.000</span></span>
+<span><span class="co">#&gt;     y3               0.899      0.008  112.541    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   Y ~ </span></span>
-<span><span class="co">#&gt;     X                0.674      0.032   20.888    0.000</span></span>
-<span><span class="co">#&gt;     Z                0.566      0.030   18.948    0.000</span></span>
+<span><span class="co">#&gt;     X                0.674      0.032   20.887    0.000</span></span>
+<span><span class="co">#&gt;     Z                0.566      0.030   18.947    0.000</span></span>
 <span><span class="co">#&gt;     X:X             -0.005      0.023   -0.207    0.836</span></span>
 <span><span class="co">#&gt;     X:Z              0.713      0.029   24.554    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Intercepts:</span></span>
 <span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;     x1               1.023      0.024   42.894    0.000</span></span>
-<span><span class="co">#&gt;     x2               1.216      0.020   60.996    0.000</span></span>
+<span><span class="co">#&gt;     x1               1.023      0.024   42.893    0.000</span></span>
+<span><span class="co">#&gt;     x2               1.215      0.020   60.995    0.000</span></span>
 <span><span class="co">#&gt;     x3               0.919      0.022   41.484    0.000</span></span>
-<span><span class="co">#&gt;     z1               1.012      0.024   41.576    0.000</span></span>
-<span><span class="co">#&gt;     z2               1.206      0.020   59.271    0.000</span></span>
-<span><span class="co">#&gt;     z3               0.916      0.022   42.063    0.000</span></span>
-<span><span class="co">#&gt;     y1               1.042      0.038   27.684    0.000</span></span>
-<span><span class="co">#&gt;     y2               1.224      0.030   40.159    0.000</span></span>
-<span><span class="co">#&gt;     y3               0.958      0.034   28.101    0.000</span></span>
+<span><span class="co">#&gt;     z1               1.012      0.024   41.575    0.000</span></span>
+<span><span class="co">#&gt;     z2               1.206      0.020   59.269    0.000</span></span>
+<span><span class="co">#&gt;     z3               0.916      0.022   42.062    0.000</span></span>
+<span><span class="co">#&gt;     y1               1.042      0.038   27.682    0.000</span></span>
+<span><span class="co">#&gt;     y2               1.224      0.030   40.156    0.000</span></span>
+<span><span class="co">#&gt;     y3               0.958      0.034   28.099    0.000</span></span>
 <span><span class="co">#&gt;     Y                0.000                             </span></span>
 <span><span class="co">#&gt;     X                0.000                             </span></span>
 <span><span class="co">#&gt;     Z                0.000                             </span></span>
@@ -625,18 +625,18 @@ quadratic effects.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;     x1               0.158      0.009   18.145    0.000</span></span>
-<span><span class="co">#&gt;     x2               0.162      0.007   23.188    0.000</span></span>
+<span><span class="co">#&gt;     x1               0.158      0.009   18.143    0.000</span></span>
+<span><span class="co">#&gt;     x2               0.162      0.007   23.187    0.000</span></span>
 <span><span class="co">#&gt;     x3               0.165      0.008   20.821    0.000</span></span>
 <span><span class="co">#&gt;     z1               0.166      0.009   18.341    0.000</span></span>
-<span><span class="co">#&gt;     z2               0.159      0.007   22.622    0.000</span></span>
+<span><span class="co">#&gt;     z2               0.159      0.007   22.621    0.000</span></span>
 <span><span class="co">#&gt;     z3               0.158      0.008   20.714    0.000</span></span>
 <span><span class="co">#&gt;     y1               0.159      0.009   17.975    0.000</span></span>
-<span><span class="co">#&gt;     y2               0.154      0.007   22.670    0.000</span></span>
+<span><span class="co">#&gt;     y2               0.154      0.007   22.669    0.000</span></span>
 <span><span class="co">#&gt;     y3               0.164      0.008   20.711    0.000</span></span>
-<span><span class="co">#&gt;     X                0.983      0.036   26.994    0.000</span></span>
+<span><span class="co">#&gt;     X                0.983      0.036   26.995    0.000</span></span>
 <span><span class="co">#&gt;     Z                1.019      0.038   26.951    0.000</span></span>
-<span><span class="co">#&gt;     Y                0.943      0.038   24.820    0.000</span></span></code></pre></div>
+<span><span class="co">#&gt;     Y                0.943      0.038   24.819    0.000</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="more-complicated-examples">More Complicated Examples<a class="anchor" aria-label="anchor" href="#more-complicated-examples"></a>
@@ -754,7 +754,7 @@ quadratic effects.</p>
 <span><span class="co">#&gt;     att2             0.983      0.020    49.45    0.000</span></span>
 <span><span class="co">#&gt;     att3             0.995      0.018    54.27    0.000</span></span>
 <span><span class="co">#&gt;     att4             0.980      0.017    58.41    0.000</span></span>
-<span><span class="co">#&gt;     att5             0.969      0.020    48.14    0.000</span></span>
+<span><span class="co">#&gt;     att5             0.968      0.020    48.14    0.000</span></span>
 <span><span class="co">#&gt;     sn1              0.979      0.023    43.04    0.000</span></span>
 <span><span class="co">#&gt;     sn2              0.987      0.020    48.23    0.000</span></span>
 <span><span class="co">#&gt;     int1             0.995      0.022    46.17    0.000</span></span>
@@ -817,10 +817,10 @@ is a subset of the PISA 2006 dataset.</p>
 <span><span class="co">#&gt;   Estimator                                         QML</span></span>
 <span><span class="co">#&gt;   Optimization method                            NLMINB</span></span>
 <span><span class="co">#&gt;   Number of observations                           6038</span></span>
-<span><span class="co">#&gt;   Number of iterations                              101</span></span>
+<span><span class="co">#&gt;   Number of iterations                               93</span></span>
 <span><span class="co">#&gt;   Loglikelihood                              -110520.22</span></span>
 <span><span class="co">#&gt;   Akaike (AIC)                                221142.45</span></span>
-<span><span class="co">#&gt;   Bayesian (BIC)                              221484.44</span></span>
+<span><span class="co">#&gt;   Bayesian (BIC)                              221484.45</span></span>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; Fit Measures for H0:</span></span>
 <span><span class="co">#&gt;   Loglikelihood                                 -110521</span></span>
@@ -832,7 +832,7 @@ is a subset of the PISA 2006 dataset.</p>
 <span><span class="co">#&gt;   RMSEA                                           0.005</span></span>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; Comparative fit to H0 (no interaction effect)</span></span>
-<span><span class="co">#&gt;   Loglikelihood change                             1.07</span></span>
+<span><span class="co">#&gt;   Loglikelihood change                             1.06</span></span>
 <span><span class="co">#&gt;   Difference test (D)                              2.13</span></span>
 <span><span class="co">#&gt;   Degrees of freedom (D)                              3</span></span>
 <span><span class="co">#&gt;   P-value (D)                                     0.546</span></span>
@@ -853,17 +853,17 @@ is a subset of the PISA 2006 dataset.</p>
 <span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   ENJ =~ </span></span>
 <span><span class="co">#&gt;     enjoy1           1.000                             </span></span>
-<span><span class="co">#&gt;     enjoy2           1.002      0.020   50.587    0.000</span></span>
-<span><span class="co">#&gt;     enjoy3           0.894      0.020   43.669    0.000</span></span>
-<span><span class="co">#&gt;     enjoy4           0.999      0.021   48.227    0.000</span></span>
-<span><span class="co">#&gt;     enjoy5           1.047      0.021   50.400    0.000</span></span>
+<span><span class="co">#&gt;     enjoy2           1.002      0.020   50.585    0.000</span></span>
+<span><span class="co">#&gt;     enjoy3           0.894      0.020   43.667    0.000</span></span>
+<span><span class="co">#&gt;     enjoy4           0.999      0.021   48.225    0.000</span></span>
+<span><span class="co">#&gt;     enjoy5           1.047      0.021   50.397    0.000</span></span>
 <span><span class="co">#&gt;   SC =~ </span></span>
 <span><span class="co">#&gt;     academic1        1.000                             </span></span>
-<span><span class="co">#&gt;     academic2        1.104      0.028   38.946    0.000</span></span>
-<span><span class="co">#&gt;     academic3        1.235      0.030   41.720    0.000</span></span>
-<span><span class="co">#&gt;     academic4        1.254      0.030   41.828    0.000</span></span>
-<span><span class="co">#&gt;     academic5        1.113      0.029   38.647    0.000</span></span>
-<span><span class="co">#&gt;     academic6        1.198      0.030   40.356    0.000</span></span>
+<span><span class="co">#&gt;     academic2        1.104      0.028   38.944    0.000</span></span>
+<span><span class="co">#&gt;     academic3        1.235      0.030   41.717    0.000</span></span>
+<span><span class="co">#&gt;     academic4        1.254      0.030   41.825    0.000</span></span>
+<span><span class="co">#&gt;     academic5        1.113      0.029   38.645    0.000</span></span>
+<span><span class="co">#&gt;     academic6        1.198      0.030   40.354    0.000</span></span>
 <span><span class="co">#&gt;   CAREER =~ </span></span>
 <span><span class="co">#&gt;     career1          1.000                             </span></span>
 <span><span class="co">#&gt;     career2          1.040      0.016   65.180    0.000</span></span>
@@ -873,29 +873,29 @@ is a subset of the PISA 2006 dataset.</p>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   CAREER ~ </span></span>
-<span><span class="co">#&gt;     ENJ              0.523      0.020   26.286    0.000</span></span>
-<span><span class="co">#&gt;     SC               0.467      0.023   19.884    0.000</span></span>
-<span><span class="co">#&gt;     ENJ:ENJ          0.026      0.022    1.206    0.228</span></span>
-<span><span class="co">#&gt;     ENJ:SC          -0.039      0.046   -0.851    0.395</span></span>
-<span><span class="co">#&gt;     SC:SC           -0.002      0.035   -0.058    0.953</span></span>
+<span><span class="co">#&gt;     ENJ              0.523      0.020   26.282    0.000</span></span>
+<span><span class="co">#&gt;     SC               0.467      0.024   19.865    0.000</span></span>
+<span><span class="co">#&gt;     ENJ:ENJ          0.026      0.022    1.217    0.224</span></span>
+<span><span class="co">#&gt;     ENJ:SC          -0.040      0.046   -0.863    0.388</span></span>
+<span><span class="co">#&gt;     SC:SC           -0.002      0.035   -0.044    0.965</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Intercepts:</span></span>
 <span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;     enjoy1           0.000      0.013   -0.008    0.994</span></span>
-<span><span class="co">#&gt;     enjoy2           0.000      0.015    0.010    0.992</span></span>
-<span><span class="co">#&gt;     enjoy3           0.000      0.013   -0.023    0.982</span></span>
-<span><span class="co">#&gt;     enjoy4           0.000      0.014    0.008    0.993</span></span>
-<span><span class="co">#&gt;     enjoy5           0.000      0.014    0.025    0.980</span></span>
-<span><span class="co">#&gt;     academic1        0.000      0.016   -0.009    0.993</span></span>
+<span><span class="co">#&gt;     enjoy1           0.000      0.014   -0.008    0.994</span></span>
+<span><span class="co">#&gt;     enjoy2           0.000      0.012    0.011    0.991</span></span>
+<span><span class="co">#&gt;     enjoy3           0.000      0.012   -0.025    0.980</span></span>
+<span><span class="co">#&gt;     enjoy4           0.000      0.012    0.009    0.993</span></span>
+<span><span class="co">#&gt;     enjoy5           0.000      0.012    0.031    0.975</span></span>
+<span><span class="co">#&gt;     academic1        0.000      0.014   -0.010    0.992</span></span>
 <span><span class="co">#&gt;     academic2        0.000      0.014   -0.009    0.993</span></span>
-<span><span class="co">#&gt;     academic3        0.000      0.015   -0.028    0.978</span></span>
-<span><span class="co">#&gt;     academic4        0.000      0.016   -0.015    0.988</span></span>
-<span><span class="co">#&gt;     academic5       -0.001      0.014   -0.044    0.965</span></span>
-<span><span class="co">#&gt;     academic6        0.001      0.015    0.048    0.962</span></span>
-<span><span class="co">#&gt;     career1         -0.004      0.017   -0.204    0.838</span></span>
-<span><span class="co">#&gt;     career2         -0.004      0.018   -0.248    0.804</span></span>
-<span><span class="co">#&gt;     career3         -0.004      0.017   -0.214    0.830</span></span>
-<span><span class="co">#&gt;     career4         -0.004      0.016   -0.232    0.816</span></span>
+<span><span class="co">#&gt;     academic3        0.000      0.012   -0.036    0.971</span></span>
+<span><span class="co">#&gt;     academic4        0.000      0.012   -0.020    0.984</span></span>
+<span><span class="co">#&gt;     academic5       -0.001      0.012   -0.053    0.958</span></span>
+<span><span class="co">#&gt;     academic6        0.001      0.012    0.057    0.955</span></span>
+<span><span class="co">#&gt;     career1         -0.004      0.016   -0.234    0.815</span></span>
+<span><span class="co">#&gt;     career2         -0.005      0.016   -0.283    0.777</span></span>
+<span><span class="co">#&gt;     career3         -0.004      0.016   -0.243    0.808</span></span>
+<span><span class="co">#&gt;     career4         -0.004      0.015   -0.257    0.797</span></span>
 <span><span class="co">#&gt;     CAREER           0.000                             </span></span>
 <span><span class="co">#&gt;     ENJ              0.000                             </span></span>
 <span><span class="co">#&gt;     SC               0.000                             </span></span>
@@ -903,28 +903,28 @@ is a subset of the PISA 2006 dataset.</p>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   ENJ ~~ </span></span>
-<span><span class="co">#&gt;     SC               0.218      0.009   25.477    0.000</span></span>
+<span><span class="co">#&gt;     SC               0.218      0.009   25.475    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;     enjoy1           0.487      0.011   44.335    0.000</span></span>
 <span><span class="co">#&gt;     enjoy2           0.488      0.011   44.406    0.000</span></span>
-<span><span class="co">#&gt;     enjoy3           0.596      0.012   48.233    0.000</span></span>
+<span><span class="co">#&gt;     enjoy3           0.596      0.012   48.232    0.000</span></span>
 <span><span class="co">#&gt;     enjoy4           0.488      0.011   44.561    0.000</span></span>
-<span><span class="co">#&gt;     enjoy5           0.442      0.010   42.470    0.000</span></span>
-<span><span class="co">#&gt;     academic1        0.645      0.013   49.813    0.000</span></span>
-<span><span class="co">#&gt;     academic2        0.566      0.012   47.864    0.000</span></span>
-<span><span class="co">#&gt;     academic3        0.473      0.011   44.319    0.000</span></span>
-<span><span class="co">#&gt;     academic4        0.455      0.010   43.579    0.000</span></span>
-<span><span class="co">#&gt;     academic5        0.565      0.012   47.695    0.000</span></span>
+<span><span class="co">#&gt;     enjoy5           0.442      0.010   42.471    0.000</span></span>
+<span><span class="co">#&gt;     academic1        0.644      0.013   49.814    0.000</span></span>
+<span><span class="co">#&gt;     academic2        0.566      0.012   47.865    0.000</span></span>
+<span><span class="co">#&gt;     academic3        0.473      0.011   44.317    0.000</span></span>
+<span><span class="co">#&gt;     academic4        0.455      0.010   43.578    0.000</span></span>
+<span><span class="co">#&gt;     academic5        0.565      0.012   47.693    0.000</span></span>
 <span><span class="co">#&gt;     academic6        0.502      0.011   45.434    0.000</span></span>
 <span><span class="co">#&gt;     career1          0.373      0.009   40.392    0.000</span></span>
-<span><span class="co">#&gt;     career2          0.328      0.009   37.019    0.000</span></span>
+<span><span class="co">#&gt;     career2          0.328      0.009   37.018    0.000</span></span>
 <span><span class="co">#&gt;     career3          0.436      0.010   43.272    0.000</span></span>
-<span><span class="co">#&gt;     career4          0.576      0.012   48.372    0.000</span></span>
-<span><span class="co">#&gt;     ENJ              0.500      0.017   29.547    0.000</span></span>
-<span><span class="co">#&gt;     SC               0.338      0.015   23.195    0.000</span></span>
-<span><span class="co">#&gt;     CAREER           0.302      0.010   29.711    0.000</span></span></code></pre></div>
+<span><span class="co">#&gt;     career4          0.576      0.012   48.374    0.000</span></span>
+<span><span class="co">#&gt;     ENJ              0.500      0.017   29.544    0.000</span></span>
+<span><span class="co">#&gt;     SC               0.338      0.015   23.193    0.000</span></span>
+<span><span class="co">#&gt;     CAREER           0.302      0.010   29.709    0.000</span></span></code></pre></div>
 <p><strong>Note</strong>: Other approaches also work but may be quite
 slow depending on the number of interaction effects, particularly for
 the <code>LMS</code> and constrained approaches.</p>
