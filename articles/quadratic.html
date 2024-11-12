@@ -210,13 +210,14 @@ subset of the PISA 2006 dataset.</p>
 <span></span>
 <span><span class="va">est2Dblcent</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m2</span>, data <span class="op">=</span> <span class="va">jordan</span><span class="op">)</span></span>
 <span><span class="va">est2Qml</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m2</span>, data <span class="op">=</span> <span class="va">jordan</span>, method <span class="op">=</span> <span class="st">"qml"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning: SE's for some coefficients could not be computed.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est2Qml</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; modsem (version 1.0.4):</span></span>
 <span><span class="co">#&gt;   Estimator                                         QML</span></span>
 <span><span class="co">#&gt;   Optimization method                            NLMINB</span></span>
 <span><span class="co">#&gt;   Number of observations                           6038</span></span>
-<span><span class="co">#&gt;   Number of iterations                               93</span></span>
+<span><span class="co">#&gt;   Number of iterations                              104</span></span>
 <span><span class="co">#&gt;   Loglikelihood                              -110520.22</span></span>
 <span><span class="co">#&gt;   Akaike (AIC)                                221142.45</span></span>
 <span><span class="co">#&gt;   Bayesian (BIC)                              221484.45</span></span>
@@ -231,7 +232,7 @@ subset of the PISA 2006 dataset.</p>
 <span><span class="co">#&gt;   RMSEA                                           0.005</span></span>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; Comparative fit to H0 (no interaction effect)</span></span>
-<span><span class="co">#&gt;   Loglikelihood change                             1.06</span></span>
+<span><span class="co">#&gt;   Loglikelihood change                             1.07</span></span>
 <span><span class="co">#&gt;   Difference test (D)                              2.13</span></span>
 <span><span class="co">#&gt;   Degrees of freedom (D)                              3</span></span>
 <span><span class="co">#&gt;   P-value (D)                                     0.546</span></span>
@@ -252,49 +253,49 @@ subset of the PISA 2006 dataset.</p>
 <span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   ENJ =~ </span></span>
 <span><span class="co">#&gt;     enjoy1           1.000                             </span></span>
-<span><span class="co">#&gt;     enjoy2           1.002      0.020   50.585    0.000</span></span>
-<span><span class="co">#&gt;     enjoy3           0.894      0.020   43.667    0.000</span></span>
-<span><span class="co">#&gt;     enjoy4           0.999      0.021   48.225    0.000</span></span>
-<span><span class="co">#&gt;     enjoy5           1.047      0.021   50.397    0.000</span></span>
+<span><span class="co">#&gt;     enjoy2           1.002      0.020   50.588    0.000</span></span>
+<span><span class="co">#&gt;     enjoy3           0.894      0.020   43.671    0.000</span></span>
+<span><span class="co">#&gt;     enjoy4           0.999      0.021   48.230    0.000</span></span>
+<span><span class="co">#&gt;     enjoy5           1.047      0.021   50.403    0.000</span></span>
 <span><span class="co">#&gt;   SC =~ </span></span>
 <span><span class="co">#&gt;     academic1        1.000                             </span></span>
-<span><span class="co">#&gt;     academic2        1.104      0.028   38.944    0.000</span></span>
-<span><span class="co">#&gt;     academic3        1.235      0.030   41.717    0.000</span></span>
-<span><span class="co">#&gt;     academic4        1.254      0.030   41.825    0.000</span></span>
-<span><span class="co">#&gt;     academic5        1.113      0.029   38.645    0.000</span></span>
-<span><span class="co">#&gt;     academic6        1.198      0.030   40.354    0.000</span></span>
+<span><span class="co">#&gt;     academic2        1.104      0.028   38.953    0.000</span></span>
+<span><span class="co">#&gt;     academic3        1.235      0.030   41.729    0.000</span></span>
+<span><span class="co">#&gt;     academic4        1.254      0.030   41.838    0.000</span></span>
+<span><span class="co">#&gt;     academic5        1.113      0.029   38.655    0.000</span></span>
+<span><span class="co">#&gt;     academic6        1.198      0.030   40.365    0.000</span></span>
 <span><span class="co">#&gt;   CAREER =~ </span></span>
 <span><span class="co">#&gt;     career1          1.000                             </span></span>
 <span><span class="co">#&gt;     career2          1.040      0.016   65.180    0.000</span></span>
-<span><span class="co">#&gt;     career3          0.952      0.016   57.838    0.000</span></span>
+<span><span class="co">#&gt;     career3          0.952      0.016   57.837    0.000</span></span>
 <span><span class="co">#&gt;     career4          0.818      0.017   48.358    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   CAREER ~ </span></span>
-<span><span class="co">#&gt;     ENJ              0.523      0.020   26.282    0.000</span></span>
-<span><span class="co">#&gt;     SC               0.467      0.024   19.865    0.000</span></span>
+<span><span class="co">#&gt;     ENJ              0.523      0.020   26.292    0.000</span></span>
+<span><span class="co">#&gt;     SC               0.467      0.023   19.892    0.000</span></span>
 <span><span class="co">#&gt;     ENJ:ENJ          0.026      0.022    1.217    0.224</span></span>
-<span><span class="co">#&gt;     ENJ:SC          -0.040      0.046   -0.863    0.388</span></span>
-<span><span class="co">#&gt;     SC:SC           -0.002      0.035   -0.044    0.965</span></span>
+<span><span class="co">#&gt;     ENJ:SC          -0.040      0.046   -0.869    0.385</span></span>
+<span><span class="co">#&gt;     SC:SC           -0.002      0.034   -0.046    0.963</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Intercepts:</span></span>
 <span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;     enjoy1           0.000      0.014   -0.008    0.994</span></span>
-<span><span class="co">#&gt;     enjoy2           0.000      0.012    0.011    0.991</span></span>
-<span><span class="co">#&gt;     enjoy3           0.000      0.012   -0.025    0.980</span></span>
-<span><span class="co">#&gt;     enjoy4           0.000      0.012    0.009    0.993</span></span>
-<span><span class="co">#&gt;     enjoy5           0.000      0.012    0.031    0.975</span></span>
-<span><span class="co">#&gt;     academic1        0.000      0.014   -0.010    0.992</span></span>
-<span><span class="co">#&gt;     academic2        0.000      0.014   -0.009    0.993</span></span>
-<span><span class="co">#&gt;     academic3        0.000      0.012   -0.036    0.971</span></span>
-<span><span class="co">#&gt;     academic4        0.000      0.012   -0.020    0.984</span></span>
-<span><span class="co">#&gt;     academic5       -0.001      0.012   -0.053    0.958</span></span>
-<span><span class="co">#&gt;     academic6        0.001      0.012    0.057    0.955</span></span>
-<span><span class="co">#&gt;     career1         -0.004      0.016   -0.234    0.815</span></span>
-<span><span class="co">#&gt;     career2         -0.005      0.016   -0.283    0.777</span></span>
-<span><span class="co">#&gt;     career3         -0.004      0.016   -0.243    0.808</span></span>
-<span><span class="co">#&gt;     career4         -0.004      0.015   -0.257    0.797</span></span>
+<span><span class="co">#&gt;     enjoy1           0.000                             </span></span>
+<span><span class="co">#&gt;     enjoy2           0.000      0.006    0.023    0.981</span></span>
+<span><span class="co">#&gt;     enjoy3           0.000      0.007   -0.039    0.969</span></span>
+<span><span class="co">#&gt;     enjoy4           0.000                             </span></span>
+<span><span class="co">#&gt;     enjoy5           0.000                             </span></span>
+<span><span class="co">#&gt;     academic1        0.000                             </span></span>
+<span><span class="co">#&gt;     academic2        0.000                             </span></span>
+<span><span class="co">#&gt;     academic3        0.000                             </span></span>
+<span><span class="co">#&gt;     academic4        0.000                             </span></span>
+<span><span class="co">#&gt;     academic5       -0.001      0.005   -0.128    0.898</span></span>
+<span><span class="co">#&gt;     academic6        0.001                             </span></span>
+<span><span class="co">#&gt;     career1         -0.004      0.012   -0.297    0.766</span></span>
+<span><span class="co">#&gt;     career2         -0.005      0.013   -0.363    0.716</span></span>
+<span><span class="co">#&gt;     career3         -0.004      0.013   -0.302    0.762</span></span>
+<span><span class="co">#&gt;     career4         -0.004      0.012   -0.310    0.757</span></span>
 <span><span class="co">#&gt;     CAREER           0.000                             </span></span>
 <span><span class="co">#&gt;     ENJ              0.000                             </span></span>
 <span><span class="co">#&gt;     SC               0.000                             </span></span>
@@ -302,28 +303,28 @@ subset of the PISA 2006 dataset.</p>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   ENJ ~~ </span></span>
-<span><span class="co">#&gt;     SC               0.218      0.009   25.475    0.000</span></span>
+<span><span class="co">#&gt;     SC               0.218      0.009   25.480    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;     enjoy1           0.487      0.011   44.335    0.000</span></span>
+<span><span class="co">#&gt;     enjoy1           0.487      0.011   44.338    0.000</span></span>
 <span><span class="co">#&gt;     enjoy2           0.488      0.011   44.406    0.000</span></span>
 <span><span class="co">#&gt;     enjoy3           0.596      0.012   48.232    0.000</span></span>
 <span><span class="co">#&gt;     enjoy4           0.488      0.011   44.561    0.000</span></span>
 <span><span class="co">#&gt;     enjoy5           0.442      0.010   42.471    0.000</span></span>
-<span><span class="co">#&gt;     academic1        0.644      0.013   49.814    0.000</span></span>
-<span><span class="co">#&gt;     academic2        0.566      0.012   47.865    0.000</span></span>
-<span><span class="co">#&gt;     academic3        0.473      0.011   44.317    0.000</span></span>
-<span><span class="co">#&gt;     academic4        0.455      0.010   43.578    0.000</span></span>
-<span><span class="co">#&gt;     academic5        0.565      0.012   47.693    0.000</span></span>
-<span><span class="co">#&gt;     academic6        0.502      0.011   45.434    0.000</span></span>
-<span><span class="co">#&gt;     career1          0.373      0.009   40.392    0.000</span></span>
+<span><span class="co">#&gt;     academic1        0.644      0.013   49.815    0.000</span></span>
+<span><span class="co">#&gt;     academic2        0.566      0.012   47.864    0.000</span></span>
+<span><span class="co">#&gt;     academic3        0.473      0.011   44.319    0.000</span></span>
+<span><span class="co">#&gt;     academic4        0.455      0.010   43.581    0.000</span></span>
+<span><span class="co">#&gt;     academic5        0.565      0.012   47.696    0.000</span></span>
+<span><span class="co">#&gt;     academic6        0.502      0.011   45.435    0.000</span></span>
+<span><span class="co">#&gt;     career1          0.373      0.009   40.393    0.000</span></span>
 <span><span class="co">#&gt;     career2          0.328      0.009   37.018    0.000</span></span>
 <span><span class="co">#&gt;     career3          0.436      0.010   43.272    0.000</span></span>
 <span><span class="co">#&gt;     career4          0.576      0.012   48.374    0.000</span></span>
-<span><span class="co">#&gt;     ENJ              0.500      0.017   29.544    0.000</span></span>
-<span><span class="co">#&gt;     SC               0.338      0.015   23.193    0.000</span></span>
-<span><span class="co">#&gt;     CAREER           0.302      0.010   29.709    0.000</span></span></code></pre></div>
+<span><span class="co">#&gt;     ENJ              0.500      0.017   29.551    0.000</span></span>
+<span><span class="co">#&gt;     SC               0.338      0.015   23.203    0.000</span></span>
+<span><span class="co">#&gt;     CAREER           0.302      0.010   29.710    0.000</span></span></code></pre></div>
 <p><strong>Note</strong>: The other approaches (e.g., <code>LMS</code>
 and constrained methods) can also be used but may be slower depending on
 the number of interaction effects, especially for the <code>LMS</code>
