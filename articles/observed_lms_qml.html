@@ -50,7 +50,6 @@
 <li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
 </form></li>
-<li class="nav-item"><a class="external-link nav-link" href="https://github.com/Kss2k/modsem/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
       </ul>
 </div>
 
@@ -67,14 +66,14 @@
       <h1>observed variables in the LMS- and QML approach</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/Kss2k/modsem/blob/main/vignettes/observed_lms_qml.Rmd" class="external-link"><code>vignettes/observed_lms_qml.Rmd</code></a></small>
+
       <div class="d-none name"><code>observed_lms_qml.Rmd</code></div>
     </div>
 
     
     
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/Kss2k/modsem" class="external-link">modsem</a></span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://modsem.org" class="external-link">modsem</a></span><span class="op">)</span></span></code></pre></div>
 <div class="section level2">
 <h2 id="the-latent-moderated-structural-equations-lms-and-the-quasi-maximum-likelihood-qml-approach">The Latent Moderated Structural Equations (LMS) and the Quasi
 Maximum Likelihood (QML) Approach<a class="anchor" aria-label="anchor" href="#the-latent-moderated-structural-equations-lms-and-the-quasi-maximum-likelihood-qml-approach"></a>
@@ -121,7 +120,7 @@ variables are observed, you must specify a measurement error (e.g.,
 <code>"x1 ~~ 0.1 * x1"</code>) for the indicator of the first variable
 in the interaction term.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/Kss2k/modsem" class="external-link">modsem</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://modsem.org" class="external-link">modsem</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Interaction effect between a latent and an observed variable</span></span>
 <span><span class="va">m1</span> <span class="op">&lt;-</span> <span class="st">'</span></span>
