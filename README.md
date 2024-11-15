@@ -37,8 +37,8 @@ Product Indicator (PI) and Distribution Analytic (DA) approaches.
 - `"pind"` = basic product indicator approach (not recommended)
 
 ## Distribution Analytic (DA) Approaches
-- `"lms"` = The Latent Moderated Structural equations (LMS) approach, see the [vignette](https://kss2k.github.io/modsem/articles/lms_qml.html)
-- `"qml"` = The Quasi Maximum Likelihood (QML) approach, see the [vignette](https://kss2k.github.io/modsem/articles/lms_qml.html)
+- `"lms"` = The Latent Moderated Structural equations (LMS) approach, see the [vignette](https://modsem.org/articles/lms_qml.html)
+- `"qml"` = The Quasi Maximum Likelihood (QML) approach, see the [vignette](https://modsem.org/articles/lms_qml.html)
 - `"mplus"` 
   - estimates model through Mplus, if it is installed
 

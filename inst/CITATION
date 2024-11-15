@@ -14,7 +14,7 @@ bibentry(
   #  number  = "X",
   #  pages   = "AAA–BBB",
   # doi      = "10.1080/10705511.2024.2417409",
-  doi      = "https://doi.org/10.31219/osf.io/h3rpw",
+  doi      = "10.31219/osf.io/h3rpw",
   textVersion = paste(
     "Slupphaug, K. S., Mehmetoglu, M., & Mittner, M. (2024).",
     "modsem: An R package for estimating latent interactions and quadratic effects.",
