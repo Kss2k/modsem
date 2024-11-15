@@ -89,3 +89,13 @@ checkParTableDA <- function(parTable) {
   stopif(length(getHigherOrderLVs(parTable)) > 0,
          "Higher-order latent variables are not supported in the lms and qml approaches.")
 }
+
+
+checkVarsIntsDA <- function(varsInts, lVs) {
+  for (xz in varsInts) {
+    stopif(!all(xz %in% lVs), "Element in product term is not a latent variable: `",
+           xz[!xz %in% lVs][[1]], "`!\n",
+           "If it is an observed variable, please redefine it as a latent variable.\n",
+           "See:\n  vignette(\"observed_lms_qml\", \"modsem\")")
+  }
+}

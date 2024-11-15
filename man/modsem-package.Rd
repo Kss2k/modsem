@@ -10,7 +10,7 @@ Estimation of interaction (i.e., moderation) effects between latent variables in
 \seealso{
 Useful links:
 \itemize{
-  \item \url{https://github.com/Kss2k/modsem}
+  \item \url{https://modsem.org}
 }
 
 }

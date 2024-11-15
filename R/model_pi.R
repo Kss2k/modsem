@@ -31,7 +31,7 @@ parseLavaan <- function(model.syntax = NULL,
                                  FUN = splitProdName,
                                  pattern = ":",
                                  names = prodNamesCleaned)
-
+  checkElementsInProds(elementsInProds, lVs=lVs, oVs=oVs)
   checkHigherOrderInteractions(elementsInProds, parTable=parTable)
 
   # Inds belonging to latent variables which are specified in the syntax

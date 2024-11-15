@@ -420,6 +420,7 @@ getScalingLambdaY <- function(lambdaY, indsEtas, etas, method = "qml") {
 
 sortXisConstructOmega <- function(xis, varsInts, etas, intTerms,
                                   method = "lms", double = FALSE) {
+  checkVarsIntsDA(varsInts, lVs = c(etas, xis))
   listSortedXis  <- sortXis(xis = xis, varsInts = varsInts, etas = etas,
                             intTerms = intTerms, double = double)
   sortedXis    <- listSortedXis$sortedXis

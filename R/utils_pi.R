@@ -230,6 +230,14 @@ checkHigherOrderInteractions <- function(elementsInProds, parTable) {
 }
 
 
+checkElementsInProds <- function(elementsInProds, lVs, oVs) {
+  for (xz in elementsInProds) {
+    stopif(!all(xz %in% c(lVs, oVs)), "Unknown element in product term: `",
+           xz[!xz %in% c(lVs, oVs)][[1]], "`!")
+  }
+}
+
+
 redefineMeasurementModel <- function(parTable) {
   lhs <- parTable$lhs
   rhs <- parTable$rhs

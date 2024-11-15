@@ -37,7 +37,7 @@ specifyModelDA <- function(syntax = NULL,
   allVarsInInts <- unique(unlist(varsInts))
   xis           <- getXis(parTable, checkAny = TRUE)
   numXis        <- length(xis)
-
+  
   omegaAndSortedXis <- sortXisConstructOmega(xis, varsInts, etas, intTerms,
                                              method = method, double = double)
   xis <- omegaAndSortedXis$sortedXis # get sorted xis according to interaction terms
