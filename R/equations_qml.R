@@ -122,7 +122,8 @@ centerIndicators <- function(X, tau) {
 }
 
 
-gradientLogLikQml <- function(theta, model, epsilon = 1e-8, sign = -1) {
+gradientLogLikQml <- function(theta, model, epsilon = 1e-8, sign = -1, data=NULL) {
+  if (!is.null(data)) model$data <- data
   baseLL <- logLikQml(theta, model, sign = sign, verbose = FALSE)
   vapply(seq_along(theta), FUN.VALUE = numeric(1L), FUN = function(i) {
     theta[[i]] <- theta[[i]] + epsilon

@@ -15,24 +15,24 @@ calcFIM_da <- function(model,
                        verbose = FALSE) {
   if (!calc.se) return(list(FIM = NULL, vcov = NULL, vcov.sub = NULL, type = "none",
                             raw.labels = names(theta), n.additions = 0))
-  if (verbose) printf("Calculating standard errors\n")
+  if (verbose) printf("Calculating standard errors (%s)\n", FIM)
 
   I <- switch(method,
      lms =
        switch(FIM,
           observed = calcOFIM_LMS(model, theta = theta, data = data,
                                   epsilon = epsilon, hessian = hessian),
-          expected = calcEFIM_LMS(model, finalModel = finalModel,
-                                  theta = theta, data = data, epsilon = epsilon,
-                                  S = EFIM.S, parametric = EFIM.parametric),
+          expected = calcEFIM_LMS(model, finalModel = finalModel, theta = theta, 
+                                  data = data, epsilon = epsilon, S = EFIM.S, 
+                                  parametric = EFIM.parametric, verbose = verbose),
           stop2("FIM must be either expected or observed")),
      qml =
        switch(FIM,
           observed = calcOFIM_QML(model, theta = theta, data = data,
                                   hessian = hessian, epsilon = epsilon),
-          expected = calcEFIM_QML(model, finalModel = finalModel,
-                                  theta = theta, data = data, epsilon = epsilon,
-                                  S = EFIM.S, parametric = EFIM.parametric),
+          expected = calcEFIM_QML(model, finalModel = finalModel, theta = theta, 
+                                  data = data, epsilon = epsilon, S = EFIM.S,
+                                  parametric = EFIM.parametric, verbose = verbose),
           stop2("FIM must be either expected or observed")),
      stop2("Unrecognized method: ", method)
   )
@@ -130,41 +130,53 @@ calcOFIM_LMS <- function(model, theta, data, hessian = FALSE,
                       .relStep = .Machine$double.eps^(1/5))$Hessian
     return(I)
   }
-  J <- gradientLogLikLms_i(theta, model = model, data = data,
-                           P = P, sign = 1, epsilon = epsilon)
-  I <- matrix(0, nrow = length(theta), ncol = length(theta))
-  for (i in seq_len(N)) I <- I + J[i, ] %*% t(J[i, ])
-
+  J <- gradientLogLikLms(theta, model = model, data = data,
+                         P = P, sign = 1, epsilon = epsilon)
+  I <- J %*% t(J)
   I
 }
 
 
 calcEFIM_LMS <- function(model, finalModel = NULL, theta, data, S = 3e4,
-                         parametric = TRUE, epsilon = 1e-6) {
+                         parametric = TRUE, epsilon = 1e-6, verbose = FALSE) {
   N <- nrow(data)
 
   if (parametric) {
     if (is.null(finalModel)) stop2("finalModel must be included in calcEFIM_LMS")
-    parTable <- modelToParTable(finalModel, method = "lms")
+    parTable   <- modelToParTable(finalModel, method = "lms")
     population <- tryCatch(
-      simulateDataParTable(parTable, N = S, colsOVs = colnames(data))$oV,
+      simulateDataParTable(parTable, N = S * N, colsOVs = colnames(data))$oV,
       error = function(e) {
         warning2("Unable to simulate data for EFIM, using stochastic sampling instead")
-        data[sample(N, S, replace = TRUE), ]
+        calcEFIM_LMS(model = model, theta = theta, data = data, S = S, 
+                     parametric = FALSE, epsilon = epsilon)
       })
 
   } else {
-    population <- data[sample(N, S, replace = TRUE), ]
+    population <- data[sample(N * S, N * S, replace = TRUE), ]
   }
 
-  P <- estepLms(model, theta, data = population)
-  J <- gradientLogLikLms_i(theta, model = model, data = population,
-                           P = P, sign = 1, epsilon = epsilon)
-
   I <- matrix(0, nrow = length(theta), ncol = length(theta))
-  for (i in seq_len(S)) I <- I + J[i, ] %*% t(J[i, ])
 
-  I / (S / N)
+  P <- estepLms(model = model, theta=theta, data = population)
+  for (i in seq_len(S)) {
+    if (verbose) printf("\rMonte-Carlo: Iteration = %d/%d", i, S)
+
+    n1 <- (i - 1) * N + 1
+    nn <- n1 + N - 1
+
+    J <- gradientLogLikLms(theta = theta, model = model, data = population[n1:nn, ],
+                           P = P[n1:nn, ], sign = 1, epsilon = epsilon)
+
+    I <- I + J %*% t(J)
+  }
+  
+  if (verbose) {
+    cat("\n")
+    if (S <= 100) cat("Consider increasing the iterations, using the `EFIM.S` argument!\n")
+  }
+
+  I / S
 }
 
 
@@ -179,40 +191,48 @@ calcOFIM_QML <- function(model, theta, data, hessian = FALSE,
     return(I)
   }
 
-  J <- gradientLogLikQml_i(theta, model = model, sign = 1,
-                           epsilon = epsilon)
-  I <- matrix(0, nrow = length(theta), ncol = length(theta))
-  for (i in seq_len(N)) I <- I + J[i, ] %*% t(J[i, ])
+  J <- gradientLogLikQml(theta, model = model, sign = 1, epsilon = epsilon)
+  I <- J %*% t(J)
 
   I
 }
 
 
-calcEFIM_QML <- function(model, finalModel = NULL, theta, data, S = 3e4,
-                         parametric = TRUE, epsilon = 1e-8) {
+calcEFIM_QML <- function(model, finalModel = NULL, theta, data, S = 100,
+                         parametric = TRUE, epsilon = 1e-8, verbose = FALSE) {
   N <- nrow(model$data)
 
   if (parametric) {
     if (is.null(finalModel)) stop2("finalModel must be included in calcEFIM_QML")
     parTable <- modelToParTable(finalModel, method = "qml")
     population <- tryCatch(
-      simulateDataParTable(parTable, N = S, colsOVs = colnames(data))$oV,
+      simulateDataParTable(parTable, N = N * S, colsOVs = colnames(data))$oV,
       error = function(e) {
         warning2("Unable to simulate data for EFIM, using stochastic sampling instead")
-        data[sample(N, S, replace = TRUE), ]
+        calcEFIM_QML(model = model, theta = theta, data = data, S = S, 
+                     parametric = FALSE, epsilon = epsilon)
       })
-    model$data <- population
   } else {
-    model$data <- data[sample(N, S, replace = TRUE), ]
+    population <- data[sample(N * S, N * S, replace = TRUE), ]
   }
 
-  J <- gradientLogLikQml_i(theta, model = model, sign = 1,
-                           epsilon = epsilon)
-
   I <- matrix(0, nrow = length(theta), ncol = length(theta))
-  for (i in seq_len(S)) I <- I + J[i, ] %*% t(J[i, ])
+  for (i in seq_len(S)) {
+    if (verbose) printf("\rMonte-Carlo: Iteration = %d/%d", i, S)
+    n1 <- (i - 1) * N + 1
+    nn <- n1 + N - 1
 
-  I / (S / N)
+    J <- gradientLogLikQml(theta = theta, model = model, sign = 1, epsilon = epsilon,
+                           data = population[n1:nn, ])
+    I <- I + J %*% t(J)
+  }
+
+  if (verbose) {
+    cat("\n")
+    if (S <= 100) cat("Consider increasing the iterations, using the `EFIM.S` argument!\n")
+  }
+
+  I / S
 }
 
 

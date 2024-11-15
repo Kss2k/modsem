@@ -99,7 +99,8 @@ this will be extremely slow but should be more similar to \code{mplus}.}
 
 \item{FIM}{should the Fisher information matrix be calculated using the observed or expected values? Must be either \code{"observed"} or \code{"expected"}.}
 
-\item{EFIM.S}{if the expected Fisher information matrix is computed, \code{EFIM.S} selects the sample size of the generated data.}
+\item{EFIM.S}{if the expected Fisher information matrix is computed, \code{EFIM.S} selects the number of Monte Carlo samples. Defaults to 100. 
+\strong{NOTE}: This number should likely be increased for better estimates (e.g., 1000-10000), but it might drasticly increase computation time.}
 
 \item{OFIM.hessian}{should the observed Fisher information be computed using the Hessian? If \code{FALSE}, it is computed using the gradient.}
 
