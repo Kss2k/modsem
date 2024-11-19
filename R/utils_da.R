@@ -31,8 +31,11 @@ removeInteractions <- function(model) {
 # there are some drawbacks to using mvnfast. In particular,
 # its a little less consistent
 dmvn <- function(X, mean, sigma, log = FALSE) {
-  return(tryCatch(mvnfast::dmvn(X, mean, sigma, log, ncores = 2), #ThreadEnv$n.threads),
-                  error = function(e) mvtnorm::dmvnorm(X, mean, sigma, log)))
+  tryCatch({
+    csigma <- suppressWarnings(chol(sigma))
+    mvnfast::dmvn(X, mu=mean, sigma=csigma, log=log, 
+                  ncores = ThreadEnv$n.threads, isChol=TRUE)
+  }, error = function(e) mvtnorm::dmvnorm(X, mean, sigma, log))
 }
 
 
