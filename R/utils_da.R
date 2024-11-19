@@ -349,3 +349,11 @@ getEtaRowLabelOmega <- function(label) {
 getXiRowLabelOmega <- function(label) {
   stringr::str_split_1(label, "~")[[2]]
 }
+
+
+isDiag <- function(M) {
+  Y <- as.logical.matrix(M)
+  Y[TRUE] <- FALSE
+  diag(Y) <- TRUE
+  Y
+}

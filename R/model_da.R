@@ -233,9 +233,9 @@ specifyModelDA <- function(syntax = NULL,
       varsInts    = varsInts,
       latentEtas  = latentEtas,
       scalingInds = scalingInds,
-      kOmegaEta   = getK_NA(omegaEtaXi, labelOmegaEtaXi
+      kOmegaEta   = getK_NA(omegaEtaXi, labelOmegaEtaXi),
+      lavOptimizerSyntaxAdditions = lavOptimizerSyntaxAdditions
     ),
-    lavOptimizerSyntaxAdditions = lavOptimizerSyntaxAdditions),
 
     quad          = quad,
     matrices      = matrices,
@@ -252,7 +252,7 @@ specifyModelDA <- function(syntax = NULL,
     listTheta         <- createTheta(model)
     model             <- c(model, listTheta)
     model$freeParams  <- length(listTheta$theta)
-    model$info$bounds <- getParamBounds(model)
+    model$info$bounds <- getParamBounds(model, varParams=listTheta$diagFreeParams)
   }
 
   model$data <- cleanAndSortData(data, allIndsXis, allIndsEtas)

@@ -61,10 +61,29 @@ createTheta <- function(model, start = NULL) {
   lavLabels <- combineLavLabels(lavLabelsMain = lavLabelsMain,
                                 lavLabelsCov = lavLabelsCov,
                                 currentLabels = allLabels)
+  
+  isDiagThetaDelta   <- as.vector(isDiag(M$thetaDelta))
+  isDiagThetaEpsilon <- as.vector(isDiag(M$thetaEpsilon))
+  isDiagPhi          <- as.vector(isDiag(M$phi))
+  isDiagA            <- as.vector(isDiag(M$A))
+  isDiagPsi          <- as.vector(isDiag(M$psi))
+  
+  isDiagMatrices <- c("thetaDelta"   = isDiagThetaDelta,
+                      "thetaEpsilon" = isDiagThetaEpsilon,
+                      "phi"          = isDiagPhi,
+                      "A"            = isDiagA,
+                      "psi"          = isDiagPsi)
+  diagMatrices <- c("thetaDelta" = thetaDelta,
+                    "thetaEpsilon" = thetaEpsilon,
+                    "phi" = phi, "A" = A, "psi" = psi)
+  diagParams <- names(diagMatrices)
+  diagFreeParams <- c(diagParams[is.na(diagMatrices) & isDiagMatrices],
+                      listThetaCov$diagFreeParams)
 
   list(theta = theta, lenThetaMain = length(thetaMain),
        lenThetaLabel = length(thetaLabel),
        totalLenThetaLabel = length(totalThetaLabel),
+       diagFreeParams = diagFreeParams,
        lenThetaCov = length(thetaCov), lavLabels = lavLabels)
 }
 
@@ -87,8 +106,18 @@ createThetaCovModel <- function(covModel, start = NULL) {
   lavLabelsCov <- createLavLabelsCov(M, subset = is.na(thetaCov))
   thetaCov <- thetaCov[is.na(thetaCov)]
   thetaCov <- fillThetaIfStartNULL(start = start, theta = thetaCov)
+  
+  isDiagPhi          <- as.vector(isDiag(M$phi))
+  isDiagA            <- as.vector(isDiag(M$A))
+  isDiagPsi          <- as.vector(isDiag(M$psi))
+  
+  isDiagMatrices <- c("phi" = isDiagPhi, "A" = isDiagA, "psi" = isDiagPsi)
+  diagMatrices   <- c("phi" = phi, "A" = A, "psi" = psi)
+  diagParams     <- names(diagMatrices)
+  diagFreeParams <- diagParams[is.na(diagMatrices) & isDiagMatrices]
 
-  list(theta = thetaCov, lavLabels = lavLabelsCov)
+  list(theta = thetaCov, lavLabels = lavLabelsCov,
+       diagFreeParams=diagFreeParams)
 }
 
 
@@ -208,14 +237,15 @@ fillSymmetric <- function(mat, values) {
 
 
 # Set bounds for parameters to (0, Inf)
-getParamBounds <- function(model, lowest = 1e-6) {
+getParamBounds <- function(model, lowest = 0, varParams=NULL) {
   namePattern <- paste0("lambdaX[0-9]*$|lambdaY[0-9]*$|",
                         "thetaDelta[0-9]*$|thetaEpsilon[0-9]*$|",
-                        "phi[0-9]*$|psi[0-9]*$")
+                        "phi[0-9]*$|psi[0-9]*$|^A[0-9]*$")
   lower <- rep(-Inf, model$freeParams)
   upper <- rep(Inf, model$freeParams)
   names(lower) <- names(upper) <- names(model$theta)
-  lower[grepl(namePattern, names(lower))] <- lowest
+  lower[grepl(namePattern, names(lower)) & 
+        names(lower) %in% varParams] <- lowest
   list(lower = lower, upper = upper)
 }
 
