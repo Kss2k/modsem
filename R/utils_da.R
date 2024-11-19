@@ -352,6 +352,7 @@ getXiRowLabelOmega <- function(label) {
 
 
 isDiag <- function(M) {
+  if (is.null(M)) return(M)
   Y <- as.logical.matrix(M)
   Y[TRUE] <- FALSE
   diag(Y) <- TRUE
