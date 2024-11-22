@@ -311,7 +311,7 @@ If <code>"max"</code>, it will use all available threads, <code>"min"</code> wil
 <span class="r-in"><span><span class="st">"</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># LMS Approach</span></span></span>
-<span class="r-in"><span><span class="va">estTpb</span> <span class="op">&lt;-</span> <span class="fu">modsem_da</span><span class="op">(</span><span class="va">tpb</span>, data <span class="op">=</span> <span class="va">TPB</span>, method <span class="op">=</span> <span class="va">lms</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">estTpb</span> <span class="op">&lt;-</span> <span class="fu">modsem_da</span><span class="op">(</span><span class="va">tpb</span>, data <span class="op">=</span> <span class="va">TPB</span>, method <span class="op">=</span> <span class="va">lms</span>, EFIM.S <span class="op">=</span> <span class="fl">1000</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">estTpb</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 </code></pre></div>

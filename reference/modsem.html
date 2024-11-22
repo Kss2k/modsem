@@ -293,7 +293,7 @@ as passing additional arguments to them via <code>modsem()</code> can lead to un
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est1_ca</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># LMS approach</span></span></span>
-<span class="r-in"><span><span class="va">est1_lms</span> <span class="op">&lt;-</span> <span class="fu">modsem</span><span class="op">(</span><span class="va">m1</span>, <span class="va">oneInt</span>, method <span class="op">=</span> <span class="st">"lms"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">est1_lms</span> <span class="op">&lt;-</span> <span class="fu">modsem</span><span class="op">(</span><span class="va">m1</span>, <span class="va">oneInt</span>, method <span class="op">=</span> <span class="st">"lms"</span>, EFIM.S<span class="op">=</span><span class="fl">1000</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est1_lms</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># QML approach</span></span></span>
