@@ -25,6 +25,7 @@ modsem_pi(
   estimator = "ML",
   group = NULL,
   run = TRUE,
+  na.rm = NULL,
   suppress.warnings.lavaan = FALSE,
   suppress.warnings.match = FALSE,
   ...
@@ -75,6 +76,10 @@ modsem_pi(
 \item{group}{group variable for multigroup analysis}
 
 \item{run}{should the model be run via \code{lavaan}, if \code{FALSE} only modified syntax and data is returned}
+
+\item{na.rm}{should missing values be removed (case-wise)? Default is \code{NULL}, which has the same effect as \code{TRUE}
+but will generate a warning if missing values are present. If \code{TRUE}, missing values are removed without any warning. 
+If \code{FALSE} they are not removed.}
 
 \item{suppress.warnings.lavaan}{should warnings from \code{lavaan} be suppressed?}
 

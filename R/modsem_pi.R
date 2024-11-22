@@ -45,6 +45,10 @@
 #'
 #' @param run should the model be run via \code{lavaan}, if \code{FALSE} only modified syntax and data is returned
 #'
+#' @param na.rm should missing values be removed (case-wise)? Default is \code{NULL}, which has the same effect as \code{TRUE}
+#' but will generate a warning if missing values are present. If \code{TRUE}, missing values are removed without any warning. 
+#' If \code{FALSE} they are not removed.
+#'
 #' @param suppress.warnings.lavaan should warnings from \code{lavaan} be suppressed?
 #' @param suppress.warnings.match should warnings from \code{match} be suppressed?
 #'
@@ -136,6 +140,7 @@ modsem_pi <- function(model.syntax = NULL,
                       estimator = "ML",
                       group = NULL,
                       run = TRUE,
+                      na.rm = NULL,
                       suppress.warnings.lavaan = FALSE,
                       suppress.warnings.match = FALSE,
                       ...) {
@@ -164,8 +169,9 @@ modsem_pi <- function(model.syntax = NULL,
   # Data Processing  -----------------------------------------------------------
   data          <- data[c(modelSpec$oVs, group)]
   completeCases <- stats::complete.cases(data)
-  if (any(!completeCases)) {
-    warning2("Removing missing values case-wise.")
+  
+  if (any(!completeCases) && (is.null(na.rm) || na.rm)) {
+    warnif(is.null(na.rm), "Removing missing values case-wise.")
     data <- data[completeCases, ]
   }
 
@@ -174,7 +180,7 @@ modsem_pi <- function(model.syntax = NULL,
   }
 
   if (center.data || method %in% auto.center) {
-    data <- lapplyDf(data, FUN = function(x) x - mean(x))
+    data <- lapplyDf(data, FUN = function(x) x - mean(x, na.rm = TRUE))
   }
 
   prodInds <-
@@ -243,7 +249,7 @@ createProdInds <- function(modelSpec,
 
   if (center.after) {
     indProds <- lapply(indProds, FUN = function(df)
-                       lapplyDf(df, FUN = function(x) x - mean(x)))
+                       lapplyDf(df, FUN = function(x) x - mean(x, na.rm = TRUE)))
 
   }
 
@@ -252,22 +258,19 @@ createProdInds <- function(modelSpec,
 
 
 createIndProds <- function(relDf, indNames, data, centered = FALSE) {
-  # Getting the indProd names
   varnames <- unname(colnames(relDf))
-  # Selecting the inds from the dataset
-  inds <- data[indNames]
-  # Check if inds are numeric
+  inds      <- data[indNames]
   isNumeric <- sapply(inds, is.numeric)
 
   stopif(any(!isNumeric), "Expected inds to be numeric when creating prods")
 
-  # Centering them
-  if (centered) inds <- lapplyDf(inds, FUN = function(x) x - mean(x))
+  if (centered) {
+    inds <- lapplyDf(inds, FUN = function(x) x - mean(x, na.rm = TRUE))
+  }
 
-  prods <- lapplyNamed(varnames,
-                FUN = function(varname, data, relDf)
-                  multiplyIndicatorsCpp(data[relDf[[varname]]]),
-                data = inds, relDf = relDf, names = varnames)
+  prods <- lapplyNamed(varnames, FUN = function(varname, data, relDf)
+                       multiplyIndicatorsCpp(data[relDf[[varname]]]),
+                       data = inds, relDf = relDf, names = varnames)
 
   # return as data.frame()
   structure(prods, row.names = seq_len(nrow(data)),
@@ -284,14 +287,14 @@ calculateResidualsDf <- function(dependentDf, independentNames, data) {
   # Getting formula
   formula <- getResidualsFormula(dependentNames, independentNames)
 
-  if (length(dependentNames <= 1)) {
-    res <- as.data.frame(stats::residuals(stats::lm(formula = formula,
-                                                    combinedData)))
-    colnames(res) <- dependentNames
-    return(res)
-  }
+  resNoNA <- as.data.frame(stats::residuals(stats::lm(formula = formula,
+                                                      combinedData)))
+  colnames(resNoNA) <- dependentNames
 
-  stats::residuals(stats::lm(formula = formula, combinedData))
+  resNA <- dependentDf 
+  resNA[stats::complete.cases(data), ] <- resNoNA
+
+  resNA
 }
 
 
@@ -381,14 +384,14 @@ getParTableRestrictedMean <- function(prodName, elementsInProdName,
 }
 
 
-multiplyInds <- function(df) {
+multiplyIndicators <- function(df) {
   if (is.null(df)) return(NULL)
   if (ncol(df) <= 1) return(df[[1]])
 
   y <- cbind.data.frame(df[[1]] * df[[2]],
                         df[,-(1:2),drop = FALSE])
 
-  multiplyInds(y)
+  multiplyIndicators(y)
 }
 
 

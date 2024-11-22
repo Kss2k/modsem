@@ -67,7 +67,7 @@ est1_ca <- modsem(m1, oneInt, method = "ca")
 summary(est1_ca)
 
 # LMS approach
-est1_lms <- modsem(m1, oneInt, method = "lms")
+est1_lms <- modsem(m1, oneInt, method = "lms", EFIM.S=1000)
 summary(est1_lms)
 
 # QML approach
