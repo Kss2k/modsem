@@ -135,7 +135,8 @@ calc_se <- function(x, var, n, s) {
 #' @param model A fitted model object of class \code{modsem_da}, \code{modsem_mplus}, \code{modsem_pi}, or \code{lavaan}.
 #' @param min_z The minimum value of the moderator variable \code{z} to be used in the plot (default is -3).
 #' @param max_z The maximum value of the moderator variable \code{z} to be used in the plot (default is 3).
-#' @param alpha The significance level for the confidence intervals (default is 0.05).
+#' @param sig.level The significance level for the confidence intervals (default is 0.05).
+#' @param alpha alpha setting used in `ggplot` (i.e., the opposite of opacity)
 #' @param detail The number of generated data points to use for the plot (default is 1000). You can increase this value for smoother plots.
 #' @param ... Additional arguments (currently not used).
 #' @return A \code{ggplot} object showing the interaction plot with regions of significance.
@@ -170,7 +171,8 @@ calc_se <- function(x, var, n, s) {
 #' }
 #' @importFrom ggplot2 ggplot aes geom_line geom_ribbon geom_vline annotate scale_fill_manual labs theme_minimal
 #' @export
-plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3, alpha = 0.05, detail = 1000, ...) {
+plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3, 
+                    sig.level = 0.05, alpha = 0.2, detail = 1000, ...) {
   # Check if model is a valid object
   stopif(!inherits(model, c("modsem_da", "modsem_mplus", "modsem_pi", "lavaan")),
          "model must be of class 'modsem_pi', 'modsem_da', 'modsem_mplus', or 'lavaan'")
@@ -213,7 +215,7 @@ plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3, alpha = 0.
          "The model may have fewer observations than parameters.")
 
   # Critical t-value
-  t_crit <- stats::qt(1 - alpha / 2, df_resid)
+  t_crit <- stats::qt(1 - sig.level / 2, df_resid)
 
   # Quadratic equation components
   A <- beta_xz^2 - t_crit^2 * var_beta_xz
@@ -258,24 +260,49 @@ plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3, alpha = 0.
   SE_slope    <- sqrt(var_beta_x + z_range^2 * var_beta_xz + 2 * z_range * cov_beta_x_beta_xz)
   t_value     <- slope / SE_slope
   p_value     <- 2 * (1 - stats::pt(abs(t_value), df_resid))
-  significant <- p_value < alpha
+  significant <- p_value < sig.level
   lower_all   <- slope - t_crit * SE_slope
   upper_all   <- slope + t_crit * SE_slope
   lower_sig   <- ifelse(significant,  lower_all, NA)
   upper_sig   <- ifelse(significant,  upper_all, NA)
+  lower_sig   <- ifelse(significant, lower_all, NA)
+  upper_sig   <- ifelse(significant, upper_all, NA)
   lower_nsig  <- ifelse(!significant, lower_all, NA)
   upper_nsig  <- ifelse(!significant, upper_all, NA)
+  significance <- ifelse(significant, sprintf("p < %s", sig.level), "n.s.")
 
-  df_plot <- data.frame(z = z_range, slope = slope, SE = SE_slope, t = t_value, p = p_value, significant = significant,
-                        upper_all = upper_all, lower_all = lower_all, upper_sig = upper_sig, lower_sig = lower_sig, 
-                        upper_nsig = upper_nsig, lower_nsig = lower_nsig)
+  # Create the data frame
+  df_plot <- data.frame(
+      z = z_range,
+      slope = slope,
+      SE = SE_slope,
+      t = t_value,
+      p = p_value,
+      significant = significant,
+      upper_all = upper_all,
+      lower_all = lower_all,
+      upper_sig = upper_sig,
+      lower_sig = lower_sig,
+      upper_nsig = upper_nsig,
+      lower_nsig = lower_nsig,
+      significance = significance
+  )
 
+  # Define breaks and values
+  breaks <- c(sprintf("p < %s", sig.level), "n.s.")
+  values <- c("cyan3", "red")
+  names(values) <- breaks
+
+  # Correct ggplot code
   p <- ggplot2::ggplot(df_plot, ggplot2::aes(x = z, y = slope)) +
-    ggplot2::geom_line() +
-    ggplot2::geom_ribbon(ggplot2::aes(ymin = lower_nsig, ymax = upper_nsig), fill="grey", alpha = 0.2) +
-    ggplot2::geom_ribbon(ggplot2::aes(ymin = lower_sig, ymax = upper_sig), fill="blue", alpha = 0.2) +
-    ggplot2::labs(x = z, y = paste("Simple slope of", x, "on", y)) +
+    ggplot2::geom_line(ggplot2::aes(colour=significance), size=1) +
+    ggplot2::geom_ribbon(ggplot2::aes(ymin = lower_nsig, ymax = upper_nsig, fill = "n.s."), alpha = alpha) +
+    ggplot2::geom_ribbon(ggplot2::aes(ymin = lower_sig, ymax = upper_sig, fill = sprintf("p < %s", sig.level)), alpha = alpha) +
+    ggplot2::labs(x = z, y = paste("Slope of", x, "on", y)) +
+    ggplot2::ggtitle("Johnson-Neyman Plot") +
+    ggplot2::scale_fill_manual(name = "Significance", values = values, breaks = breaks) +
     ggplot2::theme_minimal()
+
 
   # Add Johnson-Neyman points if applicable
   if (!significant_everywhere) {
@@ -290,11 +317,6 @@ plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3, alpha = 0.
       }
     } else {
       # Two JN points
-      if (z_lower >= min_z && z_lower <= max_z && z_upper >= min_z && z_upper <= max_z) {
-        # Add light red fill between z_lower and z_upper
-        p <- p +
-          ggplot2::annotate(geom="rect", xmin = z_lower, xmax = z_upper, ymin = -Inf, ymax = Inf, fill = "red", alpha = 0.1)
-      }
       if (z_lower >= min_z && z_lower <= max_z) {
         p <- p +
           ggplot2::geom_vline(xintercept = z_lower, linetype = "dashed", color = "red") +
