@@ -136,6 +136,7 @@ calc_se <- function(x, var, n, s) {
 #' @param min_z The minimum value of the moderator variable \code{z} to be used in the plot (default is -3).
 #' @param max_z The maximum value of the moderator variable \code{z} to be used in the plot (default is 3).
 #' @param alpha The significance level for the confidence intervals (default is 0.05).
+#' @param detail The number of generated data points to use for the plot (default is 1000). You can increase this value for smoother plots.
 #' @param ... Additional arguments (currently not used).
 #' @return A \code{ggplot} object showing the interaction plot with regions of significance.
 #' @details
@@ -169,7 +170,7 @@ calc_se <- function(x, var, n, s) {
 #' }
 #' @importFrom ggplot2 ggplot aes geom_line geom_ribbon geom_vline annotate scale_fill_manual labs theme_minimal
 #' @export
-plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3, alpha = 0.05, ...) {
+plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3, alpha = 0.05, detail = 1000, ...) {
   # Check if model is a valid object
   stopif(!inherits(model, c("modsem_da", "modsem_mplus", "modsem_pi", "lavaan")),
          "model must be of class 'modsem_pi', 'modsem_da', 'modsem_mplus', or 'lavaan'")
@@ -235,6 +236,7 @@ plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3, alpha = 0.
   } else if (discriminant < 0) {
     message("No regions where the effect transitions between significant and non-significant.")
     significant_everywhere <- TRUE
+
   } else if (discriminant == 0) {
     # One real root
     z_jn <- -B / (2 * A)
@@ -250,23 +252,28 @@ plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3, alpha = 0.
     significant_everywhere <- FALSE
   }
 
-  z_range <- seq(min_z, max_z, length.out = 100)
+  z_range <- seq(min_z, max_z, length.out = detail)
 
-  # Calculate slopes and statistics
-  slope <- beta_x + beta_xz * z_range
-  SE_slope <- sqrt(var_beta_x + z_range^2 * var_beta_xz + 2 * z_range * cov_beta_x_beta_xz)
-  t_value <- slope / SE_slope
-  p_value <- 2 * (1 - stats::pt(abs(t_value), df_resid))
+  slope       <- beta_x + beta_xz * z_range
+  SE_slope    <- sqrt(var_beta_x + z_range^2 * var_beta_xz + 2 * z_range * cov_beta_x_beta_xz)
+  t_value     <- slope / SE_slope
+  p_value     <- 2 * (1 - stats::pt(abs(t_value), df_resid))
   significant <- p_value < alpha
+  lower_all   <- slope - t_crit * SE_slope
+  upper_all   <- slope + t_crit * SE_slope
+  lower_sig   <- ifelse(significant,  lower_all, NA)
+  upper_sig   <- ifelse(significant,  upper_all, NA)
+  lower_nsig  <- ifelse(!significant, lower_all, NA)
+  upper_nsig  <- ifelse(!significant, upper_all, NA)
 
-  # Create plotting data frame
-  df_plot <- data.frame(z = z_range, slope = slope, SE = SE_slope, t = t_value, p = p_value, significant = significant)
+  df_plot <- data.frame(z = z_range, slope = slope, SE = SE_slope, t = t_value, p = p_value, significant = significant,
+                        upper_all = upper_all, lower_all = lower_all, upper_sig = upper_sig, lower_sig = lower_sig, 
+                        upper_nsig = upper_nsig, lower_nsig = lower_nsig)
 
-  # Plotting
   p <- ggplot2::ggplot(df_plot, ggplot2::aes(x = z, y = slope)) +
     ggplot2::geom_line() +
-    ggplot2::geom_ribbon(ggplot2::aes(ymin = slope - t_crit * SE_slope, ymax = slope + t_crit * SE_slope, fill = significant), alpha = 0.2) +
-    ggplot2::scale_fill_manual(values = c("TRUE" = "blue", "FALSE" = "grey"), guide = "none") +
+    ggplot2::geom_ribbon(ggplot2::aes(ymin = lower_nsig, ymax = upper_nsig), fill="grey", alpha = 0.2) +
+    ggplot2::geom_ribbon(ggplot2::aes(ymin = lower_sig, ymax = upper_sig), fill="blue", alpha = 0.2) +
     ggplot2::labs(x = z, y = paste("Simple slope of", x, "on", y)) +
     ggplot2::theme_minimal()
 

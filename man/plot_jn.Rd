@@ -4,7 +4,18 @@
 \alias{plot_jn}
 \title{Plot Interaction Effect Using the Johnson-Neyman Technique}
 \usage{
-plot_jn(x, z, y, xz = NULL, model, min_z = -3, max_z = 3, alpha = 0.05, ...)
+plot_jn(
+  x,
+  z,
+  y,
+  xz = NULL,
+  model,
+  min_z = -3,
+  max_z = 3,
+  alpha = 0.05,
+  detail = 1000,
+  ...
+)
 }
 \arguments{
 \item{x}{The name of the predictor variable (as a character string).}
@@ -22,6 +33,8 @@ plot_jn(x, z, y, xz = NULL, model, min_z = -3, max_z = 3, alpha = 0.05, ...)
 \item{max_z}{The maximum value of the moderator variable \code{z} to be used in the plot (default is 3).}
 
 \item{alpha}{The significance level for the confidence intervals (default is 0.05).}
+
+\item{detail}{The number of generated data points to use for the plot (default is 1000). You can increase this value for smoother plots.}
 
 \item{...}{Additional arguments (currently not used).}
 }
