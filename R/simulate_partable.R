@@ -66,12 +66,13 @@ simulateDataParTable <- function(parTable, N, colsOVs = NULL, colsLVs = NULL) {
   interceptVector <- rep(1, N)
 
   for (lV in c(xis, etas)) {
-    inds <- indsLVs[[lV]]
-    tau <- getIntercepts(inds, parTable = parTable)
+    inds   <- indsLVs[[lV]]
+    tau    <- getIntercepts(inds, parTable = parTable)
+    alpha  <- getMean(lV, parTable = parTable)
     lambda <- getLambda(lV = lV, inds = inds, parTable = parTable)
     dataOVs[, inds] <-
       interceptVector %*% t(tau) +
-      dataLVs[, lV] %*% t(lambda) +
+      (alpha + dataLVs[, lV]) %*% t(lambda) +
       theta[, inds]
   }
 

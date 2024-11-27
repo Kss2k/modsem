@@ -263,6 +263,14 @@ getMean <- function(x, parTable) {
 }
 
 
+getMeans <- function(x, parTable) {
+  out <- vapply(x, FUN.VALUE = numeric(1L), FUN = function(x_i)
+                getMean(x_i, parTable = parTable))
+  names(out) <- x
+  out
+}
+
+
 centerInteraction <- function(parTable) {
   rows <- getIntTermRows(parTable)
   for (i in NROW(rows)) {

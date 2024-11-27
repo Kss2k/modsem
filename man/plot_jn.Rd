@@ -12,8 +12,10 @@ plot_jn(
   model,
   min_z = -3,
   max_z = 3,
-  alpha = 0.05,
+  sig.level = 0.05,
+  alpha = 0.2,
   detail = 1000,
+  sd.line = 2,
   ...
 )
 }
@@ -28,13 +30,18 @@ plot_jn(
 
 \item{model}{A fitted model object of class \code{modsem_da}, \code{modsem_mplus}, \code{modsem_pi}, or \code{lavaan}.}
 
-\item{min_z}{The minimum value of the moderator variable \code{z} to be used in the plot (default is -3).}
+\item{min_z}{The minimum value of the moderator variable \code{z} to be used in the plot (default is -3). It is relative to the mean of z.}
 
-\item{max_z}{The maximum value of the moderator variable \code{z} to be used in the plot (default is 3).}
+\item{max_z}{The maximum value of the moderator variable \code{z} to be used in the plot (default is 3). It is relative to the mean of z.}
 
-\item{alpha}{The significance level for the confidence intervals (default is 0.05).}
+\item{sig.level}{The significance level for the confidence intervals (default is 0.05).}
+
+\item{alpha}{alpha setting used in `ggplot` (i.e., the opposite of opacity)}
 
 \item{detail}{The number of generated data points to use for the plot (default is 1000). You can increase this value for smoother plots.}
+
+\item{sd.line}{A thick black line showing \code{+/- sd.line * sd(z)}. NOTE: This line will be truncated by \code{min_z} and \code{max_z} if 
+the sd.line falls outside of \code{[min_z, max_z]}.}
 
 \item{...}{Additional arguments (currently not used).}
 }
