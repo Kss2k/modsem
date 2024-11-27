@@ -50,7 +50,18 @@
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">plot_jn</span><span class="op">(</span><span class="va">x</span>, <span class="va">z</span>, <span class="va">y</span>, xz <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">model</span>, min_z <span class="op">=</span> <span class="op">-</span><span class="fl">3</span>, max_z <span class="op">=</span> <span class="fl">3</span>, alpha <span class="op">=</span> <span class="fl">0.05</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">plot_jn</span><span class="op">(</span></span>
+<span>  <span class="va">x</span>,</span>
+<span>  <span class="va">z</span>,</span>
+<span>  <span class="va">y</span>,</span>
+<span>  xz <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  <span class="va">model</span>,</span>
+<span>  min_z <span class="op">=</span> <span class="op">-</span><span class="fl">3</span>,</span>
+<span>  max_z <span class="op">=</span> <span class="fl">3</span>,</span>
+<span>  alpha <span class="op">=</span> <span class="fl">0.05</span>,</span>
+<span>  detail <span class="op">=</span> <span class="fl">1000</span>,</span>
+<span>  <span class="va">...</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -87,6 +98,10 @@
 
 <dt id="arg-alpha">alpha<a class="anchor" aria-label="anchor" href="#arg-alpha"></a></dt>
 <dd><p>The significance level for the confidence intervals (default is 0.05).</p></dd>
+
+
+<dt id="arg-detail">detail<a class="anchor" aria-label="anchor" href="#arg-detail"></a></dt>
+<dd><p>The number of generated data points to use for the plot (default is 1000). You can increase this value for smoother plots.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
