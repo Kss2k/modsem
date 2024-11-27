@@ -58,8 +58,10 @@
 <span>  <span class="va">model</span>,</span>
 <span>  min_z <span class="op">=</span> <span class="op">-</span><span class="fl">3</span>,</span>
 <span>  max_z <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  alpha <span class="op">=</span> <span class="fl">0.05</span>,</span>
+<span>  sig.level <span class="op">=</span> <span class="fl">0.05</span>,</span>
+<span>  alpha <span class="op">=</span> <span class="fl">0.2</span>,</span>
 <span>  detail <span class="op">=</span> <span class="fl">1000</span>,</span>
+<span>  sd.line <span class="op">=</span> <span class="fl">2</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -89,19 +91,28 @@
 
 
 <dt id="arg-min-z">min_z<a class="anchor" aria-label="anchor" href="#arg-min-z"></a></dt>
-<dd><p>The minimum value of the moderator variable <code>z</code> to be used in the plot (default is -3).</p></dd>
+<dd><p>The minimum value of the moderator variable <code>z</code> to be used in the plot (default is -3). It is relative to the mean of z.</p></dd>
 
 
 <dt id="arg-max-z">max_z<a class="anchor" aria-label="anchor" href="#arg-max-z"></a></dt>
-<dd><p>The maximum value of the moderator variable <code>z</code> to be used in the plot (default is 3).</p></dd>
+<dd><p>The maximum value of the moderator variable <code>z</code> to be used in the plot (default is 3). It is relative to the mean of z.</p></dd>
+
+
+<dt id="arg-sig-level">sig.level<a class="anchor" aria-label="anchor" href="#arg-sig-level"></a></dt>
+<dd><p>The significance level for the confidence intervals (default is 0.05).</p></dd>
 
 
 <dt id="arg-alpha">alpha<a class="anchor" aria-label="anchor" href="#arg-alpha"></a></dt>
-<dd><p>The significance level for the confidence intervals (default is 0.05).</p></dd>
+<dd><p>alpha setting used in `ggplot` (i.e., the opposite of opacity)</p></dd>
 
 
 <dt id="arg-detail">detail<a class="anchor" aria-label="anchor" href="#arg-detail"></a></dt>
 <dd><p>The number of generated data points to use for the plot (default is 1000). You can increase this value for smoother plots.</p></dd>
+
+
+<dt id="arg-sd-line">sd.line<a class="anchor" aria-label="anchor" href="#arg-sd-line"></a></dt>
+<dd><p>A thick black line showing <code>+/- sd.line * sd(z)</code>. NOTE: This line will be truncated by <code>min_z</code> and <code>max_z</code> if
+the sd.line falls outside of <code>[min_z, max_z]</code>.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
