@@ -348,3 +348,12 @@ stripColonsParTable <- function(parTable) {
   parTable$rhs <- stringr::str_remove_all(parTable$rhs, ":")
   parTable
 }
+
+
+getMissingLabels <- function(parTable) {
+  if (!"label" %in% colnames(parTable)) parTable$label <- ""
+  missing <- is.na(parTable$label) | parTable$label == ""
+  labels <- sprintf("%s%s%s", parTable$lhs, parTable$op, parTable$rhs)
+  parTable[missing, "label"] <- labels[missing]
+  parTable
+}

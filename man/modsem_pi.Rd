@@ -25,7 +25,7 @@ modsem_pi(
   estimator = "ML",
   group = NULL,
   run = TRUE,
-  na.rm = NULL,
+  na.rm = FALSE,
   suppress.warnings.lavaan = FALSE,
   suppress.warnings.match = FALSE,
   ...
@@ -77,8 +77,7 @@ modsem_pi(
 
 \item{run}{should the model be run via \code{lavaan}, if \code{FALSE} only modified syntax and data is returned}
 
-\item{na.rm}{should missing values be removed (case-wise)? Default is \code{NULL}, which has the same effect as \code{TRUE}
-but will generate a warning if missing values are present. If \code{TRUE}, missing values are removed without any warning. 
+\item{na.rm}{should missing values be removed (case-wise)? Defaults to FALSE. If \code{TRUE}, missing values are removed case-wise.
 If \code{FALSE} they are not removed.}
 
 \item{suppress.warnings.lavaan}{should warnings from \code{lavaan} be suppressed?}

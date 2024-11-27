@@ -35,6 +35,9 @@ est2 <- modsem(tpb, data = TPB, method = "qml",
                robust.se = TRUE,
                standardize = TRUE, convergence = 1e-2)
 print(summary(est2, H0 = FALSE))
+plot_jn(x = "INT", z = "PBC", y = "BEH", model = est2,
+        min_z = -1.5, max_z = -0.5)
+
 
 testthat::expect_equal(standardized_estimates(est2), 
                        parameter_estimates(est2))
