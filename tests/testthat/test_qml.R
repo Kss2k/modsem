@@ -35,8 +35,15 @@ est2 <- modsem(tpb, data = TPB, method = "qml",
                robust.se = TRUE,
                standardize = TRUE, convergence = 1e-2)
 print(summary(est2, H0 = FALSE))
-plot_jn(x = "INT", z = "PBC", y = "BEH", model = est2,
-        min_z = -1.5, max_z = -0.5)
+expect_warning(plot_jn(x = "INT", z = "PBC", y = "BEH", model = est2,
+                       min_z = -1.5, max_z = -0.5),
+               regex = "Truncating.*right.*left.*")
+expect_warning(plot_jn(x = "INT", z = "PBC", y = "BEH", model = est2,
+                       min_z = -1.5, max_z = 2.5) ,
+               regex = "Truncating SD-range on the left!")
+expect_warning(plot_jn(x = "INT", z = "PBC", y = "BEH", model = est2,
+                       min_z = -2, max_z = 1) ,
+               regex = "Truncating SD-range on the right!")
 
 
 testthat::expect_equal(standardized_estimates(est2), 

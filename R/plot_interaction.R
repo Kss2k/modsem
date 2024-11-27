@@ -228,8 +228,12 @@ plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3,
 
   df_resid <- nobs - npar
   
-  stopif(df_resid < 1, "Degrees of freedom for residuals must be greater than 0. ",
-         "The model may have fewer observations than parameters.")
+  if (df_resid < 1) {
+    warning2("Degrees of freedom for residuals must be greater than 0. ",
+             "The model may have fewer observations than parameters.\n",
+             "Using sample size instead of degrees of freedom")
+    df_resid <- nobs
+  }
 
   # Critical t-value
   t_crit <- stats::qt(1 - sig.level / 2, df_resid)
@@ -309,15 +313,25 @@ plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3,
   )
   
   # get info for thick line segment
-  x_start     <- max(mean_z - sd.line * sd_z, min_z)
-  x_end       <- min(mean_z + sd.line * sd_z, max_z)
+  x_start <- mean_z - sd.line * sd_z
+  x_end   <- mean_z + sd.line * sd_z
+
+  if (x_start < min_z && x_end > max_z) {
+    warning2("Truncating SD-range on the right and left!")
+  } else if (x_start < min_z) {
+    warning2("Truncating SD-range on the left!")
+  } else if (x_end > max_z) {
+    warning2("Truncating SD-range on the right!")
+  }
+
+  x_start     <- max(x_start, min_z)
+  x_end       <- min(x_end, max_z)
   y_start     <- y_end <- 0
   hline_label <- sprintf("+/- %s SDs of %s", sd.line, z)
 
   data_hline <- data.frame(x_start = x_start, x_end = x_end, 
                            y_start = y_start, y_end = y_end,
                            hline_label = hline_label)
-
 
   siglabel <- sprintf("p < %s", sig.level)
   breaks   <- c(siglabel, "n.s.", hline_label)
