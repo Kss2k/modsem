@@ -8,8 +8,8 @@
 <title>plotting interaction effects • modsem</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.4.2/css/all.min.css" rel="stylesheet">
-<link href="../deps/font-awesome-6.4.2/css/v4-shims.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="plotting interaction effects">
 </head>
 <body>
@@ -130,7 +130,60 @@ the theory of planned behavior model:</p>
 <span>                 vals_z <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">0.5</span>, <span class="fl">0.5</span><span class="op">)</span>, model <span class="op">=</span> <span class="va">est2</span><span class="op">)</span></span></code></pre></div>
 <p><img src="plot_interactions_files/figure-html/unnamed-chunk-3-1.png" width="700"></p>
 </div>
-  </main>
+<div class="section level2">
+<h2 id="plotting-johnson-neyman-regions">Plotting Johnson-Neyman Regions<a class="anchor" aria-label="anchor" href="#plotting-johnson-neyman-regions"></a>
+</h2>
+<p>The <code><a href="../reference/plot_jn.html">plot_jn()</a></code> function can be used to plot
+Johnson-Neyman regions for a given interaction effect. This function
+takes a fitted model object, the names of the two variables that are
+interacting, and the name of the interaction effect. The function will
+plot the Johnson-Neyman regions for the interaction effect.</p>
+<p>The <code><a href="../reference/plot_jn.html">plot_jn()</a></code> function will also plot the 95% confidence
+interval for the interaction effect.</p>
+<p><code>x</code> is the name of the x-variable, <code>z</code> is the
+name of the z-variable, and <code>y</code> is the name of the
+y-variable. <code>model</code> is the fitted model object. The argument
+<code>min_z</code> and <code>max_z</code> are used to specify the range
+of values for the moderating variable.</p>
+<p>Here is an example using the <code>ca</code> approach in the
+Holzinger-Swineford (1939) dataset:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">m1</span> <span class="op">&lt;-</span>  <span class="st">' </span></span>
+<span><span class="st">  visual  =~ x1 + x2 + x3 </span></span>
+<span><span class="st">  textual =~ x4 + x5 + x6</span></span>
+<span><span class="st">  speed   =~ x7 + x8 + x9</span></span>
+<span><span class="st"></span></span>
+<span><span class="st">  visual ~ speed + textual + speed:textual</span></span>
+<span><span class="st">'</span></span>
+<span></span>
+<span><span class="va">est</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m1</span>, data <span class="op">=</span> <span class="fu">lavaan</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/lavaan/man/HolzingerSwineford1939.html" class="external-link">HolzingerSwineford1939</a></span>, method <span class="op">=</span> <span class="st">"ca"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/plot_jn.html">plot_jn</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"speed"</span>, z <span class="op">=</span> <span class="st">"textual"</span>, y <span class="op">=</span> <span class="st">"visual"</span>, model <span class="op">=</span> <span class="va">est</span>, max_z <span class="op">=</span> <span class="fl">6</span><span class="op">)</span></span></code></pre></div>
+<p><img src="plot_interactions_files/figure-html/unnamed-chunk-4-1.png" width="700"></p>
+<p>Here is another example using the <code>qml</code> approach in the
+theory of planned behavior model:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
+<span><span class="va">tpb</span> <span class="op">&lt;-</span> <span class="st">"</span></span>
+<span><span class="st"># Outer Model (Based on Hagger et al., 2007)</span></span>
+<span><span class="st">  ATT =~ att1 + att2 + att3 + att4 + att5</span></span>
+<span><span class="st">  SN =~ sn1 + sn2</span></span>
+<span><span class="st">  PBC =~ pbc1 + pbc2 + pbc3</span></span>
+<span><span class="st">  INT =~ int1 + int2 + int3</span></span>
+<span><span class="st">  BEH =~ b1 + b2</span></span>
+<span><span class="st"></span></span>
+<span><span class="st"># Inner Model (Based on Steinmetz et al., 2011)</span></span>
+<span><span class="st">  INT ~ ATT + SN + PBC</span></span>
+<span><span class="st">  BEH ~ INT + PBC</span></span>
+<span><span class="st">  BEH ~ PBC:INT</span></span>
+<span><span class="st">"</span></span>
+<span></span>
+<span><span class="va">est2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">tpb</span>, <span class="va">TPB</span>, method <span class="op">=</span> <span class="st">"qml"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/plot_jn.html">plot_jn</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"INT"</span>, z <span class="op">=</span> <span class="st">"PBC"</span>, y <span class="op">=</span> <span class="st">"BEH"</span>, model <span class="op">=</span> <span class="va">est2</span>,</span>
+<span>                    min_z <span class="op">=</span> <span class="op">-</span><span class="fl">1.5</span>, max_z <span class="op">=</span> <span class="op">-</span><span class="fl">0.5</span><span class="op">)</span></span></code></pre></div>
+<p><img src="plot_interactions_files/figure-html/unnamed-chunk-5-1.png" width="700"></p>
+</div>
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+    </nav></aside>
 </div>
 
 
