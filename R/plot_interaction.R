@@ -54,9 +54,8 @@
 #' }
 plot_interaction <- function(x, z, y, xz = NULL, vals_x = seq(-3, 3, .001) ,
                              vals_z, model, alpha_se = 0.15, ...) {
-  if (!isModsemObject(model) && !isLavaanObject(model)) {
-    stop2("model must be of class 'modsem_pi', 'modsem_da', 'modsem_mplus' or 'lavaan'")
-  }
+  stopif(!isModsemObject(model) && !isLavaanObject(model), "model must be of class ",
+         "'modsem_pi', 'modsem_da', 'modsem_mplus' or 'lavaan'")
 
   if (is.null(xz)) xz <- paste(x, z, sep = ":")
   xz <- c(xz, reverseIntTerm(xz))
@@ -83,41 +82,44 @@ plot_interaction <- function(x, z, y, xz = NULL, vals_x = seq(-3, 3, .001) ,
                     parTable$lhs == y, ]
   vars <- parTable[parTable$op == "~~" & parTable$rhs %in% lVs &
              parTable$lhs == parTable$rhs, ]
-  gamma_x <- coefs[coefs$rhs == x, "est"]
-  var_x <- calcCovParTable(x, x, parTable)
-  gamma_z <- coefs[coefs$rhs == z, "est"]
-  var_z <- calcCovParTable(z, z, parTable)
+  gamma_x  <- coefs[coefs$rhs == x, "est"]
+  var_x    <- calcCovParTable(x, x, parTable)
+  gamma_z  <- coefs[coefs$rhs == z, "est"]
+  var_z    <- calcCovParTable(z, z, parTable)
   gamma_xz <- coefs[coefs$rhs %in% xz, "est"]
-  sd <- sqrt(vars[vars$rhs == y, "est"]) # residual std.error
+  sd       <- sqrt(vars[vars$rhs == y, "est"]) # residual std.error
 
-  if (length(gamma_x) == 0) stop2("coefficient for x not found in model")
-  if (length(var_x) == 0) stop2("variance of x not found in model")
-  if (length(gamma_z) == 0) stop2("coefficient for z not found in model")
-  if (length(var_z) == 0) stop2("variance of z not found in model")
-  if (length(gamma_xz) == 0) stop2("coefficient for xz not found in model")
-  if (length(sd) == 0) stop2("residual std.error of y not found in model")
+  stopif(!length(gamma_x),  "coefficient for x not found in model")
+  stopif(!length(var_x),    "variance of x not found in model")
+  stopif(!length(gamma_z),  "coefficient for z not found in model")
+  stopif(!length(var_z),    "variance of z not found in model")
+  stopif(!length(gamma_xz), "coefficient for xz not found in model")
+  stopif(!length(sd),       "residual std.error of y not found in model")
 
-  # offset my mean
+  # offset by mean
   mean_x <- getMean(x, parTable = parTable)
   mean_z <- getMean(z, parTable = parTable)
   vals_x <- vals_x + mean_x
   vals_z <- vals_z + mean_z
 
   # creating margins
-  df <- expand.grid(x = vals_x, z = vals_z)
-  df$se_x <- calc_se(df$x, var = var_x, n = n, s = sd)
+  df        <- expand.grid(x = vals_x, z = vals_z)
+  df$se_x   <- calc_se(df$x, var = var_x, n = n, s = sd)
   df$proj_y <- gamma_x * df$x + gamma_z + df$z + df$z * df$x * gamma_xz
-  df$cat_z <- as.factor(df$z)
+  df$cat_z  <- as.factor(df$z)
 
-  se_x <- df$se_x
+  se_x   <- df$se_x
   proj_y <- df$proj_y
-  cat_z <- df$cat_z
+  cat_z  <- df$cat_z
+
   # plotting margins
   ggplot2::ggplot(df, ggplot2::aes(x = x, y = proj_y, colour = cat_z, group = cat_z,)) +
     ggplot2::geom_smooth(method = "lm", formula = "y ~ x", se = FALSE) +
     ggplot2::geom_ribbon(ggplot2::aes(ymin = proj_y - 1.96 * se_x, ymax = proj_y + 1.96 * se_x),
                          alpha = alpha_se, linewidth = 0, linetype = "blank") +
-    ggplot2::labs(x = x, y = y, colour = z)
+    ggplot2::labs(x = x, y = y, colour = z) + 
+    ggplot2::ggtitle(sprintf("Marginal Effects of %s on %s, Given %s", x, y, z)) + 
+    ggplot2::theme_bw()
 }
 
 
@@ -219,8 +221,8 @@ plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3,
   label_beta_xz <- parTable[parTable$lhs == y & parTable$rhs %in% xz & parTable$op == "~", "label"]
 
   # Extract variances and covariances
-  var_beta_x <- VCOV[label_beta_x, label_beta_x]
-  var_beta_xz <- VCOV[label_beta_xz, label_beta_xz]
+  var_beta_x         <- VCOV[label_beta_x, label_beta_x]
+  var_beta_xz        <- VCOV[label_beta_xz, label_beta_xz]
   cov_beta_x_beta_xz <- VCOV[label_beta_x, label_beta_xz]
 
   nobs <- nobs(model)
@@ -343,9 +345,11 @@ plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3,
     ggplot2::geom_ribbon(ggplot2::aes(ymin = lower_sig, ymax = upper_sig, fill = sprintf("p < %s", sig.level)), alpha = alpha) +
     ggplot2::labs(x = z, y = paste("Slope of", x, "on", y)) +
     ggplot2::geom_hline(yintercept = 0, color="black", linewidth = 0.5) + 
-    suppressWarnings(ggplot2::geom_segment(mapping = aes(x = x_start, xend = x_end, y = y_start, yend = y_end, 
-                                                         color = hline_label, fill = hline_label), 
-                                           data = data_hline, linewidth = 1.5)) + 
+    suppressWarnings(ggplot2::geom_segment(
+        mapping = aes(x = x_start, xend = x_end, y = y_start, yend = y_end, 
+                      color = hline_label, fill = hline_label), 
+        data = data_hline, linewidth = 1.5)
+    ) + 
     ggplot2::ggtitle("Johnson-Neyman Plot") +
     ggplot2::scale_fill_manual(name = "", values = values, breaks = breaks) +
     ggplot2::scale_color_manual(name = "", values = values, breaks = breaks) +
@@ -354,9 +358,7 @@ plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3,
     ggplot2::theme_minimal()
 
 
-  # Add Johnson-Neyman points if applicable
   if (!significant_everywhere) {
-    # Ensure JN points are within the range of z
     if (exists("z_jn")) {
       # Single JN point
       if (z_jn >= min_z && z_jn <= max_z) {
@@ -383,6 +385,7 @@ plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3,
 
   p
 }
+
 
 # Helper function to reverse interaction term
 reverseIntTerm <- function(xz) {

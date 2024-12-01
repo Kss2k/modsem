@@ -1,3 +1,4 @@
+devtools::load_all()
 set.seed(123)
 models <- list(m1 = ' 
                # latent variables 
@@ -84,6 +85,7 @@ plot_interaction(x = "ind60", z = "dem60", y = "dem65", xz = "ind60:dem60",
                  vals_z = c(-0.5, 0.5), model = estimates[[1]][["rca"]])
 plot_interaction(x = "speed", z = "textual", y = "visual", 
                  vals_z = c(-0.5, 0.5), model = estimates[[2]][["ca"]])
+
 testthat::expect_warning(
   plot_jn(x = "ind60", z = "dem60", y = "dem65", model = estimates[[1]][["rca"]],
           max_z = 10, min_z = -10), regex = "Degrees of freedom .*"
