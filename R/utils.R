@@ -20,10 +20,9 @@ warnif <- function(cond, ...) {
 
 # utils for all methods
 calcCovParTable <- function(x, y, parTable, measurement.model = FALSE) {
-  parTable$mod <- as.character(parTable$est)
+  parTable$mod <- paste0("(", as.character(parTable$est), ")")
   parTable <- parTable[c("lhs", "op", "rhs", "mod")]
-  eval(parse(text = trace_path(parTable, x, y,
-                              measurement.model = measurement.model)))
+  eval(parse(text = trace_path(parTable, x, y, measurement.model = measurement.model)))
 }
 
 
