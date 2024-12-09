@@ -14,7 +14,7 @@ m1 <- "
 "
 
 est1 <- modsem(m1, oneInt, method = "lms", optimize = TRUE, verbose = TRUE,
-               convergence = 1e-2)
+               convergence = 1e-2, R.max = 50000)
 plot_interaction("X", "Z", "Y", "X:Z", -3:3, c(-0.5, 0.5), est1)
 print(summary(est1, adjusted.stat = TRUE))
 

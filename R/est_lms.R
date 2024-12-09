@@ -13,6 +13,7 @@ emLms <- function(model,
                   epsilon = 1e-6,
                   optimizer = "nlminb",
                   fix.estep = TRUE,
+                  R.max = 1e6,
                   ...) {
   data <- model$data
   stopif(anyNA(data), "Remove or replace missing values from data")
@@ -106,7 +107,7 @@ emLms <- function(model,
                     hessian = OFIM.hessian, calc.se = calc.se,
                     EFIM.parametric = EFIM.parametric, verbose = verbose,
                     FIM = FIM, robust.se = robust.se, epsilon = epsilon,
-                    NA__ = -999)
+                    R.max = R.max, NA__ = -999)
   SE <- calcSE_da(calc.se = calc.se, FIM$vcov, rawLabels = FIM$raw.labels,
                   NA__ = -999)
   modelSE <- getSE_Model(model, se = SE, method = "lms",

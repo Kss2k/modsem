@@ -26,6 +26,7 @@ modsem_da(
   OFIM.hessian = NULL,
   EFIM.parametric = NULL,
   robust.se = NULL,
+  R.max = NULL,
   max.iter = NULL,
   max.step = NULL,
   fix.estep = NULL,
@@ -111,6 +112,9 @@ normality assumptions are violated, \code{EFIM.parametric = FALSE} might be the 
 
 \item{robust.se}{should robust standard errors be computed? Meant to be used for QML,
 can be unreliable with the LMS approach.}
+
+\item{R.max}{Maximum population size (not sample size) used in the calculated of the expected
+fischer information matrix.}
 
 \item{max.iter}{maximum number of iterations.}
 

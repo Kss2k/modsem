@@ -12,6 +12,7 @@ calcFIM_da <- function(model,
                        NA__ = -999,
                        EFIM.S = 3e4,
                        epsilon = 1e-8,
+                       R.max = 1e6,
                        verbose = FALSE) {
   if (!calc.se) return(list(FIM = NULL, vcov = NULL, vcov.sub = NULL, type = "none",
                             raw.labels = names(theta), n.additions = 0))
@@ -24,7 +25,8 @@ calcFIM_da <- function(model,
                                   epsilon = epsilon, hessian = hessian),
           expected = calcEFIM_LMS(model, finalModel = finalModel, theta = theta, 
                                   data = data, epsilon = epsilon, S = EFIM.S, 
-                                  parametric = EFIM.parametric, verbose = verbose),
+                                  parametric = EFIM.parametric, verbose = verbose,
+                                  R.max = R.max),
           stop2("FIM must be either expected or observed")),
      qml =
        switch(FIM,
@@ -32,7 +34,8 @@ calcFIM_da <- function(model,
                                   hessian = hessian, epsilon = epsilon),
           expected = calcEFIM_QML(model, finalModel = finalModel, theta = theta, 
                                   data = data, epsilon = epsilon, S = EFIM.S,
-                                  parametric = EFIM.parametric, verbose = verbose),
+                                  parametric = EFIM.parametric, verbose = verbose,
+                                  R.max = R.max),
           stop2("FIM must be either expected or observed")),
      stop2("Unrecognized method: ", method)
   )
@@ -138,23 +141,29 @@ calcOFIM_LMS <- function(model, theta, data, hessian = FALSE,
 
 
 calcEFIM_LMS <- function(model, finalModel = NULL, theta, data, S = 3e4,
-                         parametric = TRUE, epsilon = 1e-6, verbose = FALSE) {
-  N <- nrow(data)
+                         parametric = TRUE, epsilon = 1e-6, verbose = FALSE,
+                         R.max = 1e6) {
+  N      <- nrow(model$data)
+  R.ceil <- N * S > R.max
+  R      <- ifelse(R.ceil, yes = R.max, no = N * S) 
+ 
+  if (R < N) {
+    warning2("Population size is smaller than sample size, please increase it using the `R.max` argument!")
+    R <- N
+  }
 
   if (parametric) {
     if (is.null(finalModel)) stop2("finalModel must be included in calcEFIM_LMS")
     parTable   <- modelToParTable(finalModel, method = "lms")
     population <- tryCatch(
-      simulateDataParTable(parTable, N = S * N, colsOVs = colnames(data))$oV,
+      simulateDataParTable(parTable, N = R, colsOVs = colnames(data))$oV,
       error = function(e) {
         warning2("Unable to simulate data for EFIM, using stochastic sampling instead")
         calcEFIM_LMS(model = model, theta = theta, data = data, S = S, 
                      parametric = FALSE, epsilon = epsilon)
       })
 
-  } else {
-    population <- data[sample(N * S, N * S, replace = TRUE), ]
-  }
+  } else population <- data[sample(R, N, replace = TRUE), ]
 
   I <- matrix(0, nrow = length(theta), ncol = length(theta))
 
@@ -162,18 +171,21 @@ calcEFIM_LMS <- function(model, finalModel = NULL, theta, data, S = 3e4,
   for (i in seq_len(S)) {
     if (verbose) printf("\rMonte-Carlo: Iteration = %d/%d", i, S)
 
-    n1 <- (i - 1) * N + 1
-    nn <- n1 + N - 1
+    if (!R.ceil) {
+      n1  <- (i - 1) * N + 1
+      nn  <- n1 + N - 1
+      sub <- n1:nn
+    } else sub <- sample(R, N)
 
-    J <- gradientLogLikLms(theta = theta, model = model, data = population[n1:nn, ],
-                           P = P[n1:nn, ], sign = 1, epsilon = epsilon)
+    J <- gradientLogLikLms(theta = theta, model = model, data = population[sub, ],
+                           P = P[sub, ], sign = 1, epsilon = epsilon)
 
     I <- I + J %*% t(J)
   }
   
   if (verbose) {
     cat("\n")
-    if (S <= 100) cat("Consider increasing the iterations, using the `EFIM.S` argument!\n")
+    if (S <= 100) message("Consider increasing the Monte-Carlo Monte-Carloiterations, using the `EFIM.S` argument!")
   }
 
   I / S
@@ -199,37 +211,50 @@ calcOFIM_QML <- function(model, theta, data, hessian = FALSE,
 
 
 calcEFIM_QML <- function(model, finalModel = NULL, theta, data, S = 100,
-                         parametric = TRUE, epsilon = 1e-8, verbose = FALSE) {
-  N <- nrow(model$data)
+                         parametric = TRUE, epsilon = 1e-8, verbose = FALSE,
+                         R.max = 1e6) {
+  N      <- nrow(model$data)
+  R.ceil <- N * S > R.max
+  R      <- ifelse(R.ceil, yes = R.max, no = N * S) 
+  
+  if (R < N) {
+    warning2("Population size is smaller than sample size, please increase it using the `R.max` argument!")
+    R <- N
+  }
 
   if (parametric) {
     if (is.null(finalModel)) stop2("finalModel must be included in calcEFIM_QML")
     parTable <- modelToParTable(finalModel, method = "qml")
     population <- tryCatch(
-      simulateDataParTable(parTable, N = N * S, colsOVs = colnames(data))$oV,
+      simulateDataParTable(parTable, N = R, colsOVs = colnames(data))$oV,
       error = function(e) {
         warning2("Unable to simulate data for EFIM, using stochastic sampling instead")
         calcEFIM_QML(model = model, theta = theta, data = data, S = S, 
                      parametric = FALSE, epsilon = epsilon)
-      })
-  } else {
-    population <- data[sample(N * S, N * S, replace = TRUE), ]
-  }
+      }
+    )
+
+  } else population <- data[sample(R, N, replace = TRUE), ]
+
 
   I <- matrix(0, nrow = length(theta), ncol = length(theta))
   for (i in seq_len(S)) {
     if (verbose) printf("\rMonte-Carlo: Iteration = %d/%d", i, S)
-    n1 <- (i - 1) * N + 1
-    nn <- n1 + N - 1
+   
+    if (!R.ceil) {
+      n1  <- (i - 1) * N + 1
+      nn  <- n1 + N - 1
+      sub <- n1:nn
+    } else sub <- sample(R, N)
 
     J <- gradientLogLikQml(theta = theta, model = model, sign = 1, epsilon = epsilon,
-                           data = population[n1:nn, ])
+                           data = population[sub, ])
     I <- I + J %*% t(J)
   }
 
   if (verbose) {
     cat("\n")
-    if (S <= 100) cat("Consider increasing the iterations, using the `EFIM.S` argument!\n")
+    if (S <= 100) message("Consider increasing the Monte-Carlo iterations, using the `EFIM.S` argument!")
   }
 
   I / S

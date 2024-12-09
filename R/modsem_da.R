@@ -72,6 +72,9 @@
 #' from the model), or non-parametrically (stochastically sampled)? If you believe that
 #' normality assumptions are violated, \code{EFIM.parametric = FALSE} might be the better option.
 #'
+#' @param R.max Maximum population size (not sample size) used in the calculated of the expected
+#' fischer information matrix.
+#'
 #' @param robust.se should robust standard errors be computed? Meant to be used for QML,
 #' can be unreliable with the LMS approach.
 #'
@@ -178,6 +181,7 @@ modsem_da <- function(model.syntax = NULL,
                       OFIM.hessian = NULL,
                       EFIM.parametric = NULL,
                       robust.se = NULL,
+                      R.max = NULL,
                       max.iter = NULL,
                       max.step = NULL,
                       fix.estep = NULL,
@@ -221,6 +225,7 @@ modsem_da <- function(model.syntax = NULL,
           OFIM.hessian = OFIM.hessian,
           EFIM.parametric = EFIM.parametric,
           robust.se = robust.se,
+          R.max = R.max,
           max.iter = max.iter,
           max.step = max.step,
           fix.estep = fix.estep,
@@ -230,12 +235,10 @@ modsem_da <- function(model.syntax = NULL,
         )
     )
 
-  if (!method %in% c("lms", "qml")) {
-    stop2("Method must be either 'lms' or 'qml'")
-  }
+  stopif(!method %in% c("lms", "qml"), "Method must be either 'lms' or 'qml'")
 
   if (args$center.data) {
-    data <- lapplyDf(data, FUN = function(x) x - mean(x))
+    data <- lapplyDf(data, FUN = function(x) x - mean(x, na.rm = TRUE))
   }
   if (args$standardize.data) {
     data <- lapplyDf(data, FUN = scaleIfNumeric, scaleFactor = FALSE)
@@ -280,6 +283,7 @@ modsem_da <- function(model.syntax = NULL,
       max.iter = args$max.iter,
       epsilon = args$epsilon,
       optimizer = args$optimizer,
+      R.max = args$R.max,
       ...
     ),
     "lms" = emLms(model,
@@ -296,6 +300,7 @@ modsem_da <- function(model.syntax = NULL,
       epsilon = args$epsilon,
       optimizer = args$optimizer,
       fix.estep = args$fix.estep,
+      R.max = args$R.max,
       ...
     )
   )

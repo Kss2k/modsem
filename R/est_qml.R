@@ -10,6 +10,7 @@ estQml <- function(model,
                    robust.se = FALSE,
                    epsilon = 1e-6,
                    optimizer = "nlminb",
+                   R.max = 1e6,
                    ...) {
   startTheta <- model$theta
   final <- mstepQml(model = model, theta = startTheta, max.iter = max.iter,
@@ -36,7 +37,7 @@ estQml <- function(model,
                     hessian = OFIM.hessian, calc.se = calc.se,
                     EFIM.parametric = EFIM.parametric, verbose = verbose,
                     FIM = FIM, robust.se = robust.se, NA__ = -999,
-                    epsilon = epsilon)
+                    epsilon = epsilon, R.max = R.max)
   SE <- calcSE_da(calc.se = calc.se, FIM$vcov, rawLabels = FIM$raw.labels,
                   NA__ = -999)
   modelSE <- getSE_Model(model, se = SE, method = "qml",
