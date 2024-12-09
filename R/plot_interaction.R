@@ -280,20 +280,23 @@ plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3,
 
   z_range <- seq(min_z, max_z, length.out = detail)
 
-  slope        <- beta_x + beta_xz * z_range
-  SE_slope     <- sqrt(var_beta_x + z_range ^ 2 * var_beta_xz + 2 * z_range * cov_beta_x_beta_xz)
-  t_value      <- slope / SE_slope
-  p_value      <- 2 * (1 - stats::pt(abs(t_value), df_resid))
-  significant  <- p_value < sig.level
-  lower_all    <- slope - t_crit * SE_slope
-  upper_all    <- slope + t_crit * SE_slope
-  lower_sig    <- ifelse(significant,  lower_all, NA)
-  upper_sig    <- ifelse(significant,  upper_all, NA)
-  lower_sig    <- ifelse(significant, lower_all, NA)
-  upper_sig    <- ifelse(significant, upper_all, NA)
-  lower_nsig   <- ifelse(!significant, lower_all, NA)
-  upper_nsig   <- ifelse(!significant, upper_all, NA)
-  significance <- ifelse(significant, sprintf("p < %s", sig.level), "n.s.")
+  # if not defined here (as opposed to only in the dataframe) we will get 
+  # some bogus notes in the R CMD check
+  slope         <- beta_x + beta_xz * z_range
+  SE_slope      <- sqrt(var_beta_x + z_range ^ 2 * var_beta_xz + 2 * z_range * cov_beta_x_beta_xz)
+  t_value       <- slope / SE_slope
+  p_value       <- 2 * (1 - stats::pt(abs(t_value), df_resid))
+  significant   <- p_value < sig.level
+  lower_all     <- slope - t_crit * SE_slope
+  upper_all     <- slope + t_crit * SE_slope
+  lower_sig     <- ifelse(significant,  lower_all, NA)
+  upper_sig     <- ifelse(significant,  upper_all, NA)
+  lower_sig     <- ifelse(significant, lower_all, NA)
+  upper_sig     <- ifelse(significant, upper_all, NA)
+  lower_nsig    <- ifelse(!significant, lower_all, NA)
+  upper_nsig    <- ifelse(!significant, upper_all, NA)
+  significance  <- ifelse(significant, sprintf("p < %s", sig.level), "n.s.")
+  line_segments <- cumsum(c(0, diff(as.numeric(significant)) != 0))
 
   # Create the data frame
   df_plot <- data.frame(
@@ -312,7 +315,7 @@ plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3,
       Significance = significance,
       # Really f***ing ugly, but works... (if not the line will sometimes be 
       # on color...)
-      line_segments = cumsum(c(0, diff(as.numeric(significant)) != 0))
+      line_segments = line_segments
   )
   
   # get info for thick line segment
