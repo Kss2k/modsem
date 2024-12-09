@@ -99,6 +99,7 @@ necessary syntax, and variables for the estimation of models with latent product
 <span>  OFIM.hessian <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  EFIM.parametric <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  robust.se <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  R.max <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  max.iter <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  max.step <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  fix.estep <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -225,6 +226,11 @@ normality assumptions are violated, <code>EFIM.parametric = FALSE</code> might b
 <dt id="arg-robust-se">robust.se<a class="anchor" aria-label="anchor" href="#arg-robust-se"></a></dt>
 <dd><p>should robust standard errors be computed? Meant to be used for QML,
 can be unreliable with the LMS approach.</p></dd>
+
+
+<dt id="arg-r-max">R.max<a class="anchor" aria-label="anchor" href="#arg-r-max"></a></dt>
+<dd><p>Maximum population size (not sample size) used in the calculated of the expected
+fischer information matrix.</p></dd>
 
 
 <dt id="arg-max-iter">max.iter<a class="anchor" aria-label="anchor" href="#arg-max-iter"></a></dt>
