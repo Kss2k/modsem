@@ -12,6 +12,7 @@
 #' line (\code{y ~ x | z}) will be plotted for each value of the moderator variable
 #' @param model An object of class \code{\link{modsem_pi}}, \code{\link{modsem_da}}, or \code{\link{modsem_mplus}}
 #' @param alpha_se The alpha level for the std.error area
+#' @param digits The number of digits to round the mean-shifted values of \code{z}
 #' @param ... Additional arguments passed to other functions
 #' @return A \code{ggplot} object
 #' @export
@@ -53,7 +54,7 @@
 #'                  vals_z = c(-0.5, 0.5), model = est2)
 #' }
 plot_interaction <- function(x, z, y, xz = NULL, vals_x = seq(-3, 3, .001) ,
-                             vals_z, model, alpha_se = 0.15, ...) {
+                             vals_z, model, alpha_se = 0.15, digits = 2, ...) {
   stopif(!isModsemObject(model) && !isLavaanObject(model), "model must be of class ",
          "'modsem_pi', 'modsem_da', 'modsem_mplus' or 'lavaan'")
 
@@ -100,7 +101,7 @@ plot_interaction <- function(x, z, y, xz = NULL, vals_x = seq(-3, 3, .001) ,
   mean_x <- getMean(x, parTable = parTable)
   mean_z <- getMean(z, parTable = parTable)
   vals_x <- vals_x + mean_x
-  vals_z <- vals_z + mean_z
+  vals_z <- round(vals_z + mean_z, digits)
 
   # creating margins
   df        <- expand.grid(x = vals_x, z = vals_z)
@@ -113,11 +114,11 @@ plot_interaction <- function(x, z, y, xz = NULL, vals_x = seq(-3, 3, .001) ,
   cat_z  <- df$cat_z
 
   # plotting margins
-  ggplot2::ggplot(df, ggplot2::aes(x = x, y = proj_y, colour = cat_z, group = cat_z,)) +
+  ggplot2::ggplot(df, ggplot2::aes(x = x, y = proj_y, colour = cat_z, group = cat_z)) +
     ggplot2::geom_smooth(method = "lm", formula = "y ~ x", se = FALSE) +
-    ggplot2::geom_ribbon(ggplot2::aes(ymin = proj_y - 1.96 * se_x, ymax = proj_y + 1.96 * se_x),
+    ggplot2::geom_ribbon(ggplot2::aes(ymin = proj_y - 1.96 * se_x, ymax = proj_y + 1.96 * se_x, fill = cat_z),
                          alpha = alpha_se, linewidth = 0, linetype = "blank") +
-    ggplot2::labs(x = x, y = y, colour = z) + 
+    ggplot2::labs(x = x, y = y, colour = z, fill = z) + 
     ggplot2::ggtitle(sprintf("Marginal Effects of %s on %s, Given %s", x, y, z)) + 
     ggplot2::theme_bw()
 }
