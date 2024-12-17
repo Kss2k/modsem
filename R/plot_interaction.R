@@ -197,6 +197,12 @@ plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3,
   if (!inherits(model, c("modsem_da", "modsem_mplus")) && !inherits(model, "lavaan")) {
     xz <- stringr::str_remove_all(xz, ":")
   }
+    
+  if (inherits(model, "lavaan")) {
+    vcov <- lavaan::vcov
+    coef <- lavaan::coef
+    nobs <- lavaan::nobs
+  }
 
   # Extract parameter estimates
   parTable <- parameter_estimates(model)
