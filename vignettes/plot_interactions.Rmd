@@ -138,6 +138,5 @@ tpb <- "
 "
 
 est2 <- modsem(tpb, TPB, method = "qml")
-
-plot_surface(x = "X", z = "Z", y = "Y", model = est1)
+plot_surface(x = "INT", z = "PBC", y = "BEH", model = est2)
 ```
