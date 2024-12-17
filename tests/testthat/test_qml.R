@@ -12,6 +12,7 @@ est1 <- modsem(m1, data = oneInt, convergence = 1e-2, method = "qml",
                robust.se = TRUE)
 print(summary(est1, scientific = TRUE))
 plot_interaction(x = "X", z = "Z", y = "Y", xz = "X:Z", vals_z = c(-0.5, 0.5), model = est1)
+plot_surface(x = "X", z = "Z", y = "Y", model = est)
 
 tpb <- ' 
 # Outer Model (Based on Hagger et al., 2007)

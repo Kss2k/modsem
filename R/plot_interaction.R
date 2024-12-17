@@ -397,6 +397,80 @@ plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3,
 }
 
 
+#' Plot Surface for Interaction Effects
+#'
+#' Generates a 3D surface plot to visualize the interaction effect of two variables (`x` and `z`) on an outcome (`y`)
+#' using parameter estimates from a supported model object (e.g., `lavaan` or `modsem`).
+#' The function allows specifying ranges for `x` and `z` in standardized z-scores, which are then transformed
+#' back to the original scale based on their means and standard deviations.
+#'
+#' @param x A character string specifying the name of the first predictor variable.
+#' @param z A character string specifying the name of the second predictor variable.
+#' @param y A character string specifying the name of the outcome variable.
+#' @param xz Optional. A character string or vector specifying the interaction term between `x` and `z`.
+#'   If `NULL`, the interaction term is constructed as `paste(x, z, sep = ":")` and adjusted for specific model classes.
+#' @param model A model object of class `'modsem_pi'`, `'modsem_da'`, `'modsem_mplus'`, or `'lavaan'`. The model should
+#'   include paths for the predictors (`x`, `z`, and `xz`) to the outcome (`y`).
+#' @param min_x Numeric. Minimum value of `x` in z-scores. Default is -3.
+#' @param max_x Numeric. Maximum value of `x` in z-scores. Default is 3.
+#' @param min_z Numeric. Minimum value of `z` in z-scores. Default is -3.
+#' @param max_z Numeric. Maximum value of `z` in z-scores. Default is 3.
+#' @param detail Numeric. Step size for the grid of `x` and `z` values, determining the resolution of the surface.
+#'   Smaller values increase plot resolution. Default is `1e-2`.
+#' @param ... Additional arguments passed to `plotly::plot_ly`.
+#'
+#' @details
+#' The input `min_x`, `max_x`, `min_z`, and `max_z` define the range of `x` and `z` values in z-scores.
+#' These are scaled by the standard deviations and shifted by the means of the respective variables, obtained
+#' from the model parameter table. The resulting surface shows the predicted values of `y` over the grid of `x` and `z`.
+#'
+#' The function supports models of class `modsem` (with subclasses `modsem_pi`, `modsem_da`, `modsem_mplus`) and `lavaan`.
+#' For `lavaan` models, it is not designed for multigroup models, and a warning will be issued if multiple groups are detected.
+#'
+#' @return A `plotly` surface plot object displaying the predicted values of `y` across the grid of `x` and `z` values.
+#'   The color bar shows the values of `y`.
+#'
+#' @note
+#' The interaction term (`xz`) may need to be manually specified for some models. For non-`lavaan` models,
+#' interaction terms may have their separator (`:`) removed based on circumstances.
+#'
+#' @examples
+#' \dontrun{
+#' m1 <- "
+#' # Outer Model
+#'   X =~ x1
+#'   X =~ x2 + x3
+#'   Z =~ z1 + z2 + z3
+#'   Y =~ y1 + y2 + y3
+#'
+#' # Inner model
+#'   Y ~ X + Z + X:Z
+#' "
+#' est1 <- modsem(m1, data = oneInt)
+#' plot_surface("X", "Z", "Y", model = est1)
+#'
+#' tpb <- "
+#' # Outer Model (Based on Hagger et al., 2007)
+#'   ATT =~ att1 + att2 + att3 + att4 + att5
+#'   SN =~ sn1 + sn2
+#'   PBC =~ pbc1 + pbc2 + pbc3
+#'   INT =~ int1 + int2 + int3
+#'   BEH =~ b1 + b2
+#'
+#' # Inner Model (Based on Steinmetz et al., 2011)
+#'   # Causal Relationsships
+#'   INT ~ ATT + SN + PBC
+#'   BEH ~ INT + PBC
+#'   # BEH ~ ATT:PBC
+#'   BEH ~ PBC:INT
+#'   # BEH ~ PBC:PBC
+#' "
+#'
+#' est2 <- modsem(tpb, TPB, method = "lms")
+#' plot_surface(x = "INT", z = "PBC", y = "BEH", model = est1)
+#' }
+#'
+#' @export
 plot_surface <- function(x, z, y, xz = NULL, model, 
                          min_x = -3, max_x = 3, 
                          min_z = -3, max_z = 3,
@@ -427,31 +501,32 @@ plot_surface <- function(x, z, y, xz = NULL, model,
   lVs <- c(x, z, y, xz)
   coefs <- parTable[parTable$op == "~" & parTable$rhs %in% lVs &
                     parTable$lhs == y, ]
-  vars <- parTable[parTable$op == "~~" & parTable$rhs %in% lVs &
-             parTable$lhs == parTable$rhs, ]
   gamma_x  <- coefs[coefs$rhs == x, "est"]
-  var_x    <- calcCovParTable(x, x, parTable)
+  sd_x     <- sqrt(calcCovParTable(x, x, parTable))
   gamma_z  <- coefs[coefs$rhs == z, "est"]
-  var_z    <- calcCovParTable(z, z, parTable)
+  sd_z     <- sqrt(calcCovParTable(z, z, parTable))
   gamma_xz <- coefs[coefs$rhs %in% xz, "est"]
-  sd       <- sqrt(vars[vars$rhs == y, "est"]) # residual std.error
 
   stopif(!length(gamma_x),  "coefficient for x not found in model")
-  stopif(!length(var_x),    "variance of x not found in model")
+  stopif(!length(sd_x),    "variance of x not found in model")
   stopif(!length(gamma_z),  "coefficient for z not found in model")
-  stopif(!length(var_z),    "variance of z not found in model")
+  stopif(!length(sd_z),    "variance of z not found in model")
   stopif(!length(gamma_xz), "coefficient for xz not found in model")
-  stopif(!length(sd),       "residual std.error of y not found in model")
 
   # offset by mean
   mean_x <- getMean(x, parTable = parTable)
   mean_z <- getMean(z, parTable = parTable)
-  vals_x <- seq(min_x, max_x, by = detail) + mean_x
-  vals_z <- seq(min_z, max_z, by = detail) + mean_z
+  vals_x <- sd_x * seq(min_x, max_x, by = detail) + mean_x
+  vals_z <- sd_z * seq(min_z, max_z, by = detail) + mean_z
 
   proj_y <- outer(vals_x, vals_z, \(x, z) gamma_x * x + gamma_z + z + z * x * gamma_xz)
 
-  plotly::plot_ly(z = ~proj_y, x = ~vals_x, y = ~vals_z, type = "surface")
+  plotly::plot_ly(z = ~proj_y, x = ~vals_x, y = ~vals_z, type = "surface",
+                  colorbar = list(title = y)) |>
+    plotly::layout(title = sprintf("Surface Plot of Interaction Effect between %s and %s, on %s", x, z, y),
+                   scene = list(xaxis = list(title = x), 
+                                zaxis = list(title = z), 
+                                yaxis = list(title = y)))
 }
 
 
