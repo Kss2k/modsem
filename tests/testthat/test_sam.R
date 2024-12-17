@@ -14,5 +14,7 @@ testthat::expect_warning(
 
 summary(est)
 
-plot_interaction(x = "X", z = "Z", y = "Y", xz = "X:Z", vals_z = c(-0.5, 0.5), model = est)
+plot_interaction(x = "X", z = "Z", y = "Y", xz = "X:Z",
+                 vals_z = c(-0.5, 0.5), model = est)
 plot_jn(x = "X", z = "Z", y = "Y", model = est)
+plot_surface(x = "X", z = "Z", y = "Y", model = est)

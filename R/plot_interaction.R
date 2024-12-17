@@ -71,7 +71,7 @@ plot_interaction <- function(x, z, y, xz = NULL, vals_x = seq(-3, 3, .001) ,
   if (isLavaanObject(model)) {
     # this won't work for multigroup models
     nobs <- unlist(model@Data@nobs)
-    if (length(nobs) > 1) warning2("plot_interaction is not intended for multigroup models")
+    warnif(length(nobs) > 1, "plot_interaction is not intended for multigroup models")
     n <- nobs[[1]]
 
   } else {
@@ -394,6 +394,64 @@ plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3,
   }
 
   p
+}
+
+
+plot_surface <- function(x, z, y, xz = NULL, model, 
+                         min_x = -3, max_x = 3, 
+                         min_z = -3, max_z = 3,
+                         detail = 1e-2, ...) {
+  stopif(!isModsemObject(model) && !isLavaanObject(model), "model must be of class ",
+         "'modsem_pi', 'modsem_da', 'modsem_mplus' or 'lavaan'")
+
+  if (is.null(xz)) xz <- paste(x, z, sep = ":")
+  xz <- c(xz, reverseIntTerm(xz))
+  if (!inherits(model, c("modsem_da", "modsem_mplus")) &&
+      !isLavaanObject(model)) {
+    xz <- stringr::str_remove_all(xz, ":")
+  }
+
+  parTable <- parameter_estimates(model)
+  gamma_x <- parTable[parTable$lhs == x & parTable$op == "~", "est"]
+
+  if (isLavaanObject(model)) {
+    # this won't work for multigroup models
+    nobs <- unlist(model@Data@nobs)
+    warnif(length(nobs) > 1, "plot_interaction is not intended for multigroup models")
+    n <- nobs[[1]]
+
+  } else {
+    n <- nrow(model$data)
+  }
+
+  lVs <- c(x, z, y, xz)
+  coefs <- parTable[parTable$op == "~" & parTable$rhs %in% lVs &
+                    parTable$lhs == y, ]
+  vars <- parTable[parTable$op == "~~" & parTable$rhs %in% lVs &
+             parTable$lhs == parTable$rhs, ]
+  gamma_x  <- coefs[coefs$rhs == x, "est"]
+  var_x    <- calcCovParTable(x, x, parTable)
+  gamma_z  <- coefs[coefs$rhs == z, "est"]
+  var_z    <- calcCovParTable(z, z, parTable)
+  gamma_xz <- coefs[coefs$rhs %in% xz, "est"]
+  sd       <- sqrt(vars[vars$rhs == y, "est"]) # residual std.error
+
+  stopif(!length(gamma_x),  "coefficient for x not found in model")
+  stopif(!length(var_x),    "variance of x not found in model")
+  stopif(!length(gamma_z),  "coefficient for z not found in model")
+  stopif(!length(var_z),    "variance of z not found in model")
+  stopif(!length(gamma_xz), "coefficient for xz not found in model")
+  stopif(!length(sd),       "residual std.error of y not found in model")
+
+  # offset by mean
+  mean_x <- getMean(x, parTable = parTable)
+  mean_z <- getMean(z, parTable = parTable)
+  vals_x <- seq(min_x, max_x, by = detail) + mean_x
+  vals_z <- seq(min_z, max_z, by = detail) + mean_z
+
+  proj_y <- outer(vals_x, vals_z, \(x, z) gamma_x * x + gamma_z + z + z * x * gamma_xz)
+
+  plotly::plot_ly(z = ~proj_y, x = ~vals_x, y = ~vals_z, type = "surface")
 }
 
 
