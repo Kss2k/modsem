@@ -17,6 +17,7 @@ est1 <- modsem(m1, oneInt, method = "lms", optimize = TRUE, verbose = TRUE,
                convergence = 1e-2, R.max = 50000)
 plot_interaction("X", "Z", "Y", "X:Z", -3:3, c(-0.5, 0.5), est1)
 print(summary(est1, adjusted.stat = TRUE))
+plot_surface(x = "X", z = "Z", y = "Y", model = est1)
 
 # PROBLEM:
 #   I have no clue why, but changing the ordering of how the interaction terms 

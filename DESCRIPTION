@@ -47,7 +47,7 @@ Description:
       <doi:10.1037/1082-989X.9.3.275>.
       "Structural equation models of latent interactions: evaluation of alternative estimation strategies and indicator construction."
     Muthén, L.K. and Muthén, B.O. (1998-2017).  
-      "'Mplus' User’s Guide.  Eighth Edition."
+      "'Mplus' User’s Guide. Eighth Edition."
       <https://www.statmodel.com/>.
     Rosseel Y (2012). 
       <doi:10.18637/jss.v048.i02>.
@@ -58,7 +58,7 @@ LazyData: true
 RoxygenNote: 7.3.2
 LinkingTo: Rcpp, RcppArmadillo
 Imports: Rcpp, purrr, stringr, lavaan, rlang, MplusAutomation, nlme, dplyr, 
-  mvnfast, stats, fastGHQuad, mvtnorm, ggplot2, parallel
+  mvnfast, stats, fastGHQuad, mvtnorm, ggplot2, parallel, plotly
 Depends: 
     R (>= 3.5.0)
 URL: https://modsem.org

@@ -43,7 +43,8 @@ m1 <- "
   Y ~ X + Z + X:Z
 "
 est1 <- modsem(m1, data = oneInt)
-plot_interaction("X", "Z", "Y", "X:Z", vals_z = -3:3, range_y = c(-0.2, 0), model = est1)
+plot_interaction("X", "Z", "Y", "X:Z", vals_z = -3:3, 
+                 range_y = c(-0.2, 0), model = est1)
 ```
 
 Here is a different example using the `lms` approach in the theory of planned behavior model:
@@ -91,13 +92,12 @@ m1 <-  '
   visual ~ speed + textual + speed:textual
 '
 
-est <- modsem(m1, data = lavaan::HolzingerSwineford1939, method = "ca")
-plot_jn(x = "speed", z = "textual", y = "visual", model = est, max_z = 6)
+est1 <- modsem(m1, data = lavaan::HolzingerSwineford1939, method = "ca")
+plot_jn(x = "speed", z = "textual", y = "visual", model = est1, max_z = 6)
 ```
 
 Here is another example using the `qml` approach in the theory of planned behavior model:
 ```{r}
-
 tpb <- "
 # Outer Model (Based on Hagger et al., 2007)
   ATT =~ att1 + att2 + att3 + att4 + att5
@@ -113,7 +113,31 @@ tpb <- "
 "
 
 est2 <- modsem(tpb, TPB, method = "qml")
-plot_jn(x = "INT", z = "PBC", y = "BEH", model = est2,
-                    min_z = -1.5, max_z = -0.5)
+plot_jn(x = "INT", z = "PBC", y = "BEH", model = est2, 
+        min_z = -1.5, max_z = -0.5)
 ```
 
+# Plotting (3D) Surface Plots
+The `plot_surface()` function can be used to plot 3D surface plots for a given interaction effect.
+This function takes a fitted model object, the names of the two variables that are interacting,
+and the name of the dependent variable. The function will plot the 3D surface plot for the interaction effect.
+
+```{r}
+tpb <- "
+# Outer Model (Based on Hagger et al., 2007)
+  ATT =~ att1 + att2 + att3 + att4 + att5
+  SN =~ sn1 + sn2
+  PBC =~ pbc1 + pbc2 + pbc3
+  INT =~ int1 + int2 + int3
+  BEH =~ b1 + b2
+
+# Inner Model (Based on Steinmetz et al., 2011)
+  INT ~ ATT + SN + PBC
+  BEH ~ INT + PBC
+  BEH ~ PBC:INT
+"
+
+est2 <- modsem(tpb, TPB, method = "qml")
+
+plot_surface(x = "X", z = "Z", y = "Y", model = est1)
+```
