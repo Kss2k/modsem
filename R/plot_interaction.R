@@ -524,9 +524,9 @@ plot_surface <- function(x, z, y, xz = NULL, model,
   plotly::plot_ly(z = ~proj_y, x = ~vals_x, y = ~vals_z, type = "surface",
                   colorbar = list(title = y)) |>
     plotly::layout(title = sprintf("Surface Plot of Interaction Effect between %s and %s, on %s", x, z, y),
-                   scene = list(xaxis = list(title = x), 
-                                zaxis = list(title = z), 
-                                yaxis = list(title = y)))
+                   scene = list(xaxis = list(title = x),
+                                zaxis = list(title = y),
+                                yaxis = list(title = z)))
 }
 
 
