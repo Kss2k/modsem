@@ -12,4 +12,5 @@ m1 <- "
 "
 est1 <- modsem(m1, data = oneInt)
 simple_slopes(x = "X", z = "Z", y = "Y", model = est1)
-plot_interaction(x = "X", z = "Z", y = "Y", xz = "X:Z", vals_z = c(1, 0), model = est1)
+plot_interaction(x = "X", z = "Z", y = "Y", xz = "X:Z", 
+                 vals_z = c(1, 0), model = est1)
