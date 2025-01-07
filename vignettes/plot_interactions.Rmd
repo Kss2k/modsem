@@ -27,7 +27,9 @@ Interaction effects can be plotted using the included `plot_interaction()` funct
 - The y-variable is plotted on the y-axis.
 - The z-variable determines at which points the effect of x on y is plotted.
   
-The function will also plot the 95% confidence interval for the interaction effect.
+The function will also plot the 95% confidence interval for the interaction effect. 
+Note that the `vals_z` argument (as well as the values of `x`) are scaled by the
+mean and standard deviation of the variables. Unless the `rescale` argument is set to `FALSE`.
 
 Here is a simple example using the double-centering approach:
 
@@ -43,8 +45,8 @@ m1 <- "
   Y ~ X + Z + X:Z
 "
 est1 <- modsem(m1, data = oneInt)
-plot_interaction("X", "Z", "Y", "X:Z", vals_z = -3:3, 
-                 range_y = c(-0.2, 0), model = est1)
+plot_interaction(x = "X", z = "Z", y = "Y",
+                 vals_z = -3:3, model = est1)
 ```
 
 Here is a different example using the `lms` approach in the theory of planned behavior model:
@@ -65,7 +67,7 @@ tpb <- "
 "
 
 est2 <- modsem(tpb, TPB, method = "lms")
-plot_interaction(x = "INT", z = "PBC", y = "BEH", xz = "PBC:INT", 
+plot_interaction(x = "INT", z = "PBC", y = "BEH",
                  vals_z = c(-0.5, 0.5), model = est2)
 ```
 
