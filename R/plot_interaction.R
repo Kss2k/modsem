@@ -6,14 +6,17 @@
 #' @param xz The name of the interaction term. If the interaction term is not specified, it
 #' will be created using \code{x} and \code{z}.
 #' @param vals_x The values of the \code{x} variable to plot, the more values the smoother the std.error-area will be.
-#' NOTE: \code{vals_x} are measured relative to the mean of \code{x}. The correct values will show up in the plot.
+#' NOTE: \code{vals_x} are measured relative to the mean and standard deviation of \code{x} (overridden by \code{rescale=FALSE}). 
+#' The correct values will show up in the plot.
 #' @param vals_z The values of the moderator variable to plot. A separate regression
-#' NOTE: \code{vals_z} are measured relative to the mean of \code{z}. The correct values will show up in the plot.
+#' NOTE: \code{vals_z} are measured relative to the mean and standard deviation of \code{z} (overridden by \code{rescale=FALSE}). 
+#' The correct values will show up in the plot.
 #' line (\code{y ~ x | z}) will be plotted for each value of the moderator variable
 #' @param model An object of class \code{\link{modsem_pi}}, \code{\link{modsem_da}}, or \code{\link{modsem_mplus}}
 #' @param alpha_se The alpha level for the std.error area
 #' @param digits The number of digits to round the mean-shifted values of \code{z}
 #' @param ci_width The width of the confidence interval (default is 1.96, corresponding to a 95\% confidence interval)
+#' @param rescale Logical. If \code{TRUE} (default), the values of \code{x} and \code{z} will be rescaled relative to their means and standard deviations.
 #' @param ... Additional arguments passed to other functions
 #' @return A \code{ggplot} object
 #' @export
@@ -56,70 +59,22 @@
 #' }
 plot_interaction <- function(x, z, y, xz = NULL, vals_x = seq(-3, 3, .001),
                              vals_z, model, alpha_se = 0.15, digits = 2, 
-                             ci_width = 1.96, ...) {
-  stopif(!isModsemObject(model) && !isLavaanObject(model), "model must be of class ",
-         "'modsem_pi', 'modsem_da', 'modsem_mplus' or 'lavaan'")
-
-  if (is.null(xz)) xz <- paste(x, z, sep = ":")
-  xz <- c(xz, reverseIntTerm(xz))
-  if (!inherits(model, c("modsem_da", "modsem_mplus")) &&
-      !isLavaanObject(model)) {
-    xz <- stringr::str_remove_all(xz, ":")
-  }
-
-  parTable <- parameter_estimates(model)
-  gamma_x <- parTable[parTable$lhs == x & parTable$op == "~", "est"]
-
-  if (isLavaanObject(model)) {
-    # this won't work for multigroup models
-    nobs <- unlist(model@Data@nobs)
-    warnif(length(nobs) > 1, "plot_interaction is not intended for multigroup models")
-    n <- nobs[[1]]
-
-  } else {
-    n <- nrow(model$data)
-  }
-
-  lVs <- c(x, z, y, xz)
-  coefs <- parTable[parTable$op == "~" & parTable$rhs %in% lVs &
-                    parTable$lhs == y, ]
-  vars <- parTable[parTable$op == "~~" & parTable$rhs %in% lVs &
-             parTable$lhs == parTable$rhs, ]
-  gamma_x  <- coefs[coefs$rhs == x, "est"]
-  var_x    <- calcCovParTable(x, x, parTable)
-  gamma_z  <- coefs[coefs$rhs == z, "est"]
-  var_z    <- calcCovParTable(z, z, parTable)
-  gamma_xz <- coefs[coefs$rhs %in% xz, "est"]
-  sd       <- sqrt(vars[vars$rhs == y, "est"]) # residual std.error
-
-  stopif(!length(gamma_x),  "coefficient for x not found in model")
-  stopif(!length(var_x),    "variance of x not found in model")
-  stopif(!length(gamma_z),  "coefficient for z not found in model")
-  stopif(!length(var_z),    "variance of z not found in model")
-  stopif(!length(gamma_xz), "coefficient for xz not found in model")
-  stopif(!length(sd),       "residual std.error of y not found in model")
-
-  # offset by mean
-  mean_x <- getMean(x, parTable = parTable)
-  mean_z <- getMean(z, parTable = parTable)
-  vals_x <- vals_x + mean_x
-  vals_z <- round(vals_z + mean_z, digits)
-
-  # creating margins
-  df        <- expand.grid(x = vals_x, z = vals_z)
-  df$se_x   <- calc_se(df$x, var = var_x, n = n, s = sd)
-  df$proj_y <- gamma_x * df$x + gamma_z + df$z + df$z * df$x * gamma_xz
-  df$cat_z  <- as.factor(df$z)
-
-  se_x   <- df$se_x
-  proj_y <- df$proj_y
-  cat_z  <- df$cat_z
+                             ci_width = 1.96, rescale = TRUE, ...) {
+  df <- simple_slopes(x = x, z = z, y = y, model = model, vals_x = vals_x, vals_z = vals_z, 
+                      rescale = rescale, ci_width = ci_width, ...)
+  df$cat_z     <- as.factor(round(df$vals_z, digits))
+  
+  std.error <- df$std.error
+  predicted <- df$predicted
+  cat_z     <- df$cat_z
+  vals_x    <- df$vals_x
+  ci.lower  <- df$ci.lower
+  ci.upper  <- df$ci.upper
 
   # plotting margins
-  ggplot2::ggplot(df, ggplot2::aes(x = x, y = proj_y, colour = cat_z, group = cat_z)) +
+  ggplot2::ggplot(df, ggplot2::aes(x = vals_x, y = predicted, colour = cat_z, group = cat_z)) +
     ggplot2::geom_smooth(method = "lm", formula = "y ~ x", se = FALSE) +
-    ggplot2::geom_ribbon(ggplot2::aes(ymin = proj_y - ci_width * se_x, 
-                                      ymax = proj_y + ci_width * se_x, fill = cat_z),
+    ggplot2::geom_ribbon(ggplot2::aes(ymin = ci.lower, ymax = ci.upper, fill = cat_z),
                          alpha = alpha_se, linewidth = 0, linetype = "blank") +
     ggplot2::labs(x = x, y = y, colour = z, fill = z) + 
     ggplot2::ggtitle(sprintf("Marginal Effects of %s on %s, Given %s", x, y, z)) + 
