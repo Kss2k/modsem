@@ -62,8 +62,9 @@ plot_interaction <- function(x, z, y, xz = NULL, vals_x = seq(-3, 3, .001),
                              ci_width = 1.96, rescale = TRUE, ...) {
   df <- simple_slopes(x = x, z = z, y = y, model = model, vals_x = vals_x, vals_z = vals_z, 
                       rescale = rescale, ci_width = ci_width, ...)
-  df$cat_z     <- as.factor(round(df$vals_z, digits))
-  
+  df$cat_z <- as.factor(round(df$vals_z, digits))
+
+  # declare within the scope, to not get notes in R CMD check
   std.error <- df$std.error
   predicted <- df$predicted
   cat_z     <- df$cat_z
@@ -92,6 +93,7 @@ calc_se <- function(x, var, n, s) {
   SSx <- (n - 1) * var # sum of squares of x
   s * sqrt(1 / n + x ^ 2 / SSx)
 }
+
 
 #' Plot Interaction Effect Using the Johnson-Neyman Technique
 #'
