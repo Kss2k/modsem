@@ -14,6 +14,7 @@ plot_interaction(
   model,
   alpha_se = 0.15,
   digits = 2,
+  ci_width = 1.96,
   ...
 )
 }
@@ -39,6 +40,8 @@ line (\code{y ~ x | z}) will be plotted for each value of the moderator variable
 \item{alpha_se}{The alpha level for the std.error area}
 
 \item{digits}{The number of digits to round the mean-shifted values of \code{z}}
+
+\item{ci_width}{The width of the confidence interval (default is 1.96, corresponding to a 95\% confidence interval)}
 
 \item{...}{Additional arguments passed to other functions}
 }
