@@ -12,4 +12,5 @@ articles:
   observed_lms_qml: observed_lms_qml.html
   plot_interactions: plot_interactions.html
   quadratic: quadratic.html
-last_built: 2025-01-07T17:15Z
+  simple_slopes: simple_slopes.html
+last_built: 2025-01-07T18:04Z
