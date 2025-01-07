@@ -32,11 +32,11 @@ will be created using \code{x} and \code{z}.}
 
 \item{vals_x}{The values of the \code{x} variable to plot, the more values the smoother the std.error-area will be.
 NOTE: \code{vals_x} are measured relative to the mean and standard deviation of \code{x} (overridden by \code{rescale=FALSE}). 
-The correct values will show up in the plot.}
+The correct values will show up in the table.}
 
 \item{vals_z}{The values of the moderator variable to plot. A separate regression
 NOTE: \code{vals_z} are measured relative to the mean and standard deviation of \code{z} (overridden by \code{rescale=FALSE}). 
-The correct values will show up in the plot.
+The correct values will show up in the table.
 line (\code{y ~ x | z}) will be plotted for each value of the moderator variable}
 
 \item{rescale}{Logical. If \code{TRUE} (default), the values of \code{x} and \code{z} will be rescaled relative to their means and standard deviations.}
