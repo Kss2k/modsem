@@ -60,6 +60,7 @@
 <span>  <span class="va">model</span>,</span>
 <span>  alpha_se <span class="op">=</span> <span class="fl">0.15</span>,</span>
 <span>  digits <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>  ci_width <span class="op">=</span> <span class="fl">1.96</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -106,6 +107,10 @@ line (<code>y ~ x | z</code>) will be plotted for each value of the moderator va
 
 <dt id="arg-digits">digits<a class="anchor" aria-label="anchor" href="#arg-digits"></a></dt>
 <dd><p>The number of digits to round the mean-shifted values of <code>z</code></p></dd>
+
+
+<dt id="arg-ci-width">ci_width<a class="anchor" aria-label="anchor" href="#arg-ci-width"></a></dt>
+<dd><p>The width of the confidence interval (default is 1.96, corresponding to a 95% confidence interval)</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
