@@ -116,37 +116,55 @@ simple_slopes <- function(x, z, y,
 }
 
 
+printTable <- function(x, header = NULL) {
+  if (!NROW(x)) return(NULL)
+
+                          
+   
+  for (i in seq_len(nrow(x))) {
+    str <- paste(x[i, ], collapse = " | ")
+    
+    if (i == 1) {
+      sep <- paste0(strrep("-", nchar(str)), "\n")
+      cat(sep)
+      cat(str, "\n")
+      cat(sep)
+    } else cat(str, "\n")
+  }
+}
+
+
 #' @export
 print.simple_slopes <- function(x, digits = 2, scientific.p = FALSE, ...) {
 
   variables  <- attr(x, "variable_names")
   predictors <- variables[1:2]
   outcome    <- variables[3]
-  header     <- c(predictors, sprintf("E[%s]", outcome), "Std.Error", "z.value", "p.value", "95% CI")
+  header     <- c(predictors[1], sprintf("Predicted %s", outcome), "Std.Error", "z.value", "p.value", "Conf.Interval")
   ci.lower   <- format(x$ci.lower, digits = digits)
   ci.upper   <- format(x$ci.upper, digits = digits)
+  cat_z      <- as.factor(round(x$vals_z, digits))
 
-  y <- data.frame(vals_x    = format(x$vals_x, digits = digits),
-                  vals_z    = format(x$vals_z, digits = digits),
+  X <- data.frame(vals_x    = format(x$vals_x, digits = digits),
                   predicted = format(x$predicted, digits = digits),
                   std.error = format(x$std.error, digits = digits),
                   z.value   = format(x$z.value, digits = digits),
                   p.value   = formatPval(x$p.value, scientific = scientific.p),
                   ci        = paste0("[", ci.lower, ", ", ci.upper, "]"))
 
-  z1 <- matrix(header, nrow = 1)
-  z2 <- as.matrix(y)
+  X1 <- matrix(header, nrow = 1)
+  X2 <- as.matrix(X)
 
-  z <- rbind(z1, z2)
-  z[, 1:3] <- apply(z[, 1:3], MARGIN = 2, format, digits = digits, justify = "right")
-  z[, 4:7] <- apply(z[, 4:7], MARGIN = 2, format, digits = digits, justify = "right")
+  X <- apply(rbind(X1, X2), MARGIN = 2, format, digits = digits, justify = "right")
   
-  printf("\nPredicted values of %s\n\n", outcome)
+  for (z_i in unique(cat_z)) {
+    Z1 <- X[1, ]
+    Z2 <- X[2:nrow(X),][cat_z == z_i,]
+    Z  <- rbind(Z1, Z2)
 
-  for (i in seq_len(nrow(z))) {
-    str <- paste(z[i, ], collapse = " | ")
 
-    cat(str, "\n")
-    if (i == 1) cat(strrep("-", nchar(str)), "\n")
+    printf("\nPredicted %s, given %s = %s:\n", outcome, predictors[2], z_i)
+    printTable(Z, header = header)
+    cat("\n") 
   }
 }
