@@ -25,7 +25,7 @@ Description:
       The quasi-maximum likelihood (QML) approach (Klein & Muthén, 2007) (temporarily unavailable)
     The constrained- unconstrained, residual- and double centering- approaches
     are estimated via 'lavaan' (Rosseel, 2012), whilst the LMS- and QML- approaches
-    are estimated via by modsem it self. Alternatively model can be
+    are estimated via 'modsem' it self. Alternatively model can be
     estimated via 'Mplus' (Muthén & Muthén, 1998-2017).
     References:
     Algina, J., & Moulder, B. C. (2001). 
