@@ -95,6 +95,35 @@ calc_se <- function(x, var, n, s) {
 }
 
 
+calc_se_moderator <- function(x, z, var_x, var_z, cov_xz, n, s) {
+  # x = values of X (predictor)
+  # z = values of Z (moderator)
+  # var_x = variance of X
+  # var_z = variance of Z
+  # cov_xz = covariance of X and Z
+  # n = sample size
+  # s = residual standard error of the model
+
+  # Compute the sum of squares for X
+  SSx <- (n - 1) * var_x # Sum of squares for X
+
+  # Compute the sum of squares for Z
+  SSz <- (n - 1) * var_z # Sum of squares for Z
+
+  # Include covariance term
+  SSxz <- (n - 1) * cov_xz # Sum of cross-products for X and Z
+
+  # Compute the standard error
+  s * sqrt(
+    1 / n + 
+    x^2 / SSx + 
+    z^2 / SSz + 
+    2 * x * z * SSxz / (SSx * SSz)
+  )
+}
+
+
+
 #' Plot Interaction Effect Using the Johnson-Neyman Technique
 #'
 #' This function plots the simple slopes of an interaction effect across different values of a moderator variable using the Johnson-Neyman technique. It identifies regions where the effect of the predictor on the outcome is statistically significant.
