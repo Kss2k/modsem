@@ -221,7 +221,7 @@ calc_se <- function(df, e, VCOV, se_type = "confidence") {
   X <- matrix(c(i, vals_x, vals_z, vals_x * vals_z), nrow=n)
   V <- calcSESimpleSlopes(X, VCOV)
 
-  as.vector(V)
+  sqrt(as.vector(V))
 }
 
 
@@ -229,8 +229,6 @@ calc_se <- function(df, e, VCOV, se_type = "confidence") {
 printTable <- function(x, header = NULL) {
   if (!NROW(x)) return(NULL)
 
-                          
-   
   for (i in seq_len(nrow(x))) {
     str <- paste(x[i, ], collapse = " | ")
     
@@ -286,7 +284,8 @@ subsetVCOV <- function(VCOV, labels) {
   noNa[is.na(noNa) | !noNa %in% vlabels] <- vlabels[1]
 
   V <- VCOV[noNa, noNa]
-  V[is.na(labels), is.na(labels)] <- 0
+  V[is.na(labels), ] <- 0
+  V[, is.na(labels)] <- 0
 
   V
 }
