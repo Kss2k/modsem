@@ -107,7 +107,8 @@ set to <code>FALSE</code>.</p>
 <span><span class="st">  Y ~ X + Z + X:Z</span></span>
 <span><span class="st">"</span></span>
 <span><span class="va">est1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m1</span>, data <span class="op">=</span> <span class="va">oneInt</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/plot_interaction.html">plot_interaction</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"X"</span>, z <span class="op">=</span> <span class="st">"Z"</span>, y <span class="op">=</span> <span class="st">"Y"</span>, vals_z <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span>, model <span class="op">=</span> <span class="va">est1</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/plot_interaction.html">plot_interaction</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"X"</span>, z <span class="op">=</span> <span class="st">"Z"</span>, y <span class="op">=</span> <span class="st">"Y"</span>, vals_z <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span>, model <span class="op">=</span> <span class="va">est1</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning in sqrt(as.vector(V)): NaNs produced</span></span></code></pre></div>
 <p><img src="simple_slopes_files/figure-html/unnamed-chunk-2-1.png" width="700"></p>
 <p>If you want to see the numerical values of the simple slopes, you can
 use the <code><a href="../reference/simple_slopes.html">simple_slopes()</a></code> function:</p>
@@ -127,29 +128,29 @@ use the <code><a href="../reference/simple_slopes.html">simple_slopes()</a></cod
 <span><span class="fu"><a href="../reference/simple_slopes.html">simple_slopes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"X"</span>, z <span class="op">=</span> <span class="st">"Z"</span>, y <span class="op">=</span> <span class="st">"Y"</span>, vals_z <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span>, model <span class="op">=</span> <span class="va">est1</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Predicted Y, given Z = 0:</span></span>
-<span><span class="co">#&gt; ---------------------------------------------------------------------</span></span>
-<span><span class="co">#&gt;     X | Predicted Y | Std.Error | z.value | p.value |   Conf.Interval </span></span>
-<span><span class="co">#&gt; ---------------------------------------------------------------------</span></span>
-<span><span class="co">#&gt; -2.97 |       -1.44 |     0.070 |   -20.5 |   0.000 | [-1.58, -1.306] </span></span>
-<span><span class="co">#&gt; -1.98 |       -0.78 |     0.050 |   -15.6 |   0.000 | [-0.87, -0.678] </span></span>
-<span><span class="co">#&gt; -0.99 |       -0.11 |     0.031 |    -3.4 |   0.001 | [-0.17, -0.046] </span></span>
-<span><span class="co">#&gt;  0.00 |        0.56 |     0.022 |    25.2 |   0.000 | [ 0.52,  0.604] </span></span>
-<span><span class="co">#&gt;  0.99 |        1.23 |     0.031 |    39.0 |   0.000 | [ 1.17,  1.290] </span></span>
-<span><span class="co">#&gt;  1.98 |        1.90 |     0.050 |    38.1 |   0.000 | [ 1.80,  1.994] </span></span>
-<span><span class="co">#&gt;  2.97 |        2.57 |     0.070 |    36.4 |   0.000 | [ 2.43,  2.703] </span></span>
+<span><span class="co">#&gt; --------------------------------------------------------------------</span></span>
+<span><span class="co">#&gt;     X | Predicted Y | Std.Error | z.value | p.value |  Conf.Interval </span></span>
+<span><span class="co">#&gt; --------------------------------------------------------------------</span></span>
+<span><span class="co">#&gt; -2.97 |       -1.44 |     0.077 |   -18.8 |   0.000 | [-1.59, -1.29] </span></span>
+<span><span class="co">#&gt; -1.98 |       -0.78 |     0.051 |   -15.3 |   0.000 | [-0.87, -0.68] </span></span>
+<span><span class="co">#&gt; -0.99 |       -0.11 |     0.024 |    -4.4 |   0.000 | [-0.15, -0.06] </span></span>
+<span><span class="co">#&gt;  0.00 |        0.56 |     0.000 |     Inf |   0.000 | [ 0.56,  0.56] </span></span>
+<span><span class="co">#&gt;  0.99 |        1.23 |     0.028 |    43.4 |   0.000 | [ 1.17,  1.28] </span></span>
+<span><span class="co">#&gt;  1.98 |        1.90 |     0.055 |    34.7 |   0.000 | [ 1.79,  2.00] </span></span>
+<span><span class="co">#&gt;  2.97 |        2.57 |     0.081 |    31.7 |   0.000 | [ 2.41,  2.72] </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Predicted Y, given Z = 1.01:</span></span>
-<span><span class="co">#&gt; ---------------------------------------------------------------------</span></span>
-<span><span class="co">#&gt;     X | Predicted Y | Std.Error | z.value | p.value |   Conf.Interval </span></span>
-<span><span class="co">#&gt; ---------------------------------------------------------------------</span></span>
-<span><span class="co">#&gt; -2.97 |       -2.54 |     0.070 |   -36.1 |   0.000 | [-2.68, -2.400] </span></span>
-<span><span class="co">#&gt; -1.98 |       -1.17 |     0.050 |   -23.5 |   0.000 | [-1.27, -1.072] </span></span>
-<span><span class="co">#&gt; -0.99 |        0.20 |     0.031 |     6.3 |   0.000 | [ 0.14,  0.261] </span></span>
-<span><span class="co">#&gt;  0.00 |        1.57 |     0.022 |    70.5 |   0.000 | [ 1.53,  1.612] </span></span>
-<span><span class="co">#&gt;  0.99 |        2.94 |     0.031 |    93.3 |   0.000 | [ 2.88,  2.999] </span></span>
-<span><span class="co">#&gt;  1.98 |        4.31 |     0.050 |    86.5 |   0.000 | [ 4.21,  4.404] </span></span>
-<span><span class="co">#&gt;  2.97 |        5.68 |     0.070 |    80.6 |   0.000 | [ 5.54,  5.814]</span></span></code></pre></div>
+<span><span class="co">#&gt; --------------------------------------------------------------------</span></span>
+<span><span class="co">#&gt;     X | Predicted Y | Std.Error | z.value | p.value |  Conf.Interval </span></span>
+<span><span class="co">#&gt; --------------------------------------------------------------------</span></span>
+<span><span class="co">#&gt; -2.97 |       -2.54 |     0.119 |   -21.4 |   0.000 | [-2.77, -2.31] </span></span>
+<span><span class="co">#&gt; -1.98 |       -1.17 |     0.082 |   -14.2 |   0.000 | [-1.33, -1.01] </span></span>
+<span><span class="co">#&gt; -0.99 |        0.20 |     0.048 |     4.1 |   0.000 | [ 0.11,  0.29] </span></span>
+<span><span class="co">#&gt;  0.00 |        1.57 |     0.026 |    60.0 |   0.000 | [ 1.52,  1.62] </span></span>
+<span><span class="co">#&gt;  0.99 |        2.94 |     0.043 |    67.7 |   0.000 | [ 2.85,  3.02] </span></span>
+<span><span class="co">#&gt;  1.98 |        4.31 |     0.077 |    56.0 |   0.000 | [ 4.16,  4.46] </span></span>
+<span><span class="co">#&gt;  2.97 |        5.68 |     0.113 |    50.2 |   0.000 | [ 5.45,  5.90]</span></span></code></pre></div>
 <p>The <code><a href="../reference/simple_slopes.html">simple_slopes()</a></code> function returns a simple_slopes
 object, which is a <code>data.frame</code> with some additional
 attributes. It only has a single method (or technically, a generic
@@ -174,35 +175,35 @@ slopes as a <code>data.frame</code>, you can use the
 <span>                        vals_z <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span>, model <span class="op">=</span> <span class="va">est1</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="va">slopes</span><span class="op">)</span></span>
 <span><span class="co">#&gt;        vals_x   vals_z  predicted  std.error    z.value       p.value</span></span>
-<span><span class="co">#&gt; 1  -2.9713704 0.000000 -1.4436879 0.07038380 -20.511650  1.694474e-93</span></span>
-<span><span class="co">#&gt; 2  -1.9809136 0.000000 -0.7755712 0.04976762 -15.583852  9.373143e-55</span></span>
-<span><span class="co">#&gt; 3  -0.9904568 0.000000 -0.1074546 0.03147345  -3.414134  6.398509e-04</span></span>
-<span><span class="co">#&gt; 4   0.0000000 0.000000  0.5606621 0.02225230  25.195689 4.466096e-140</span></span>
-<span><span class="co">#&gt; 5   0.9904568 0.000000  1.2287788 0.03147345  39.041763  0.000000e+00</span></span>
-<span><span class="co">#&gt; 6   1.9809136 0.000000  1.8968955 0.04976762  38.115054  0.000000e+00</span></span>
-<span><span class="co">#&gt; 7   2.9713704 0.000000  2.5650122 0.07038380  36.443217 8.810454e-291</span></span>
-<span><span class="co">#&gt; 8  -2.9713704 1.008084 -2.5384235 0.07038380 -36.065450 7.897367e-285</span></span>
-<span><span class="co">#&gt; 9  -1.9809136 1.008084 -1.1693670 0.04976762 -23.496542 4.424602e-122</span></span>
-<span><span class="co">#&gt; 10 -0.9904568 1.008084  0.1996895 0.03147345   6.344698  2.228623e-10</span></span>
-<span><span class="co">#&gt; 11  0.0000000 1.008084  1.5687460 0.02225230  70.498138  0.000000e+00</span></span>
-<span><span class="co">#&gt; 12  0.9904568 1.008084  2.9378025 0.03147345  93.342259  0.000000e+00</span></span>
-<span><span class="co">#&gt; 13  1.9809136 1.008084  4.3068590 0.04976762  86.539381  0.000000e+00</span></span>
-<span><span class="co">#&gt; 14  2.9713704 1.008084  5.6759155 0.07038380  80.642353  0.000000e+00</span></span>
-<span><span class="co">#&gt;       ci.upper   ci.lower</span></span>
-<span><span class="co">#&gt; 1  -1.30573568 -1.5816402</span></span>
-<span><span class="co">#&gt; 2  -0.67802671 -0.8731158</span></span>
-<span><span class="co">#&gt; 3  -0.04576661 -0.1691425</span></span>
-<span><span class="co">#&gt; 4   0.60427664  0.5170476</span></span>
-<span><span class="co">#&gt; 5   1.29046676  1.1670909</span></span>
-<span><span class="co">#&gt; 6   1.99444003  1.7993510</span></span>
-<span><span class="co">#&gt; 7   2.70296443  2.4270599</span></span>
-<span><span class="co">#&gt; 8  -2.40047123 -2.6763757</span></span>
-<span><span class="co">#&gt; 9  -1.07182246 -1.2669115</span></span>
-<span><span class="co">#&gt; 10  0.26137746  0.1380016</span></span>
-<span><span class="co">#&gt; 11  1.61236052  1.5251315</span></span>
-<span><span class="co">#&gt; 12  2.99949045  2.8761145</span></span>
-<span><span class="co">#&gt; 13  4.40440353  4.2093145</span></span>
-<span><span class="co">#&gt; 14  5.81386774  5.5379632</span></span></code></pre></div>
+<span><span class="co">#&gt; 1  -2.9713704 0.000000 -1.4436879 0.07687409 -18.779903  1.102817e-78</span></span>
+<span><span class="co">#&gt; 2  -1.9809136 0.000000 -0.7755712 0.05053380 -15.347573  3.676862e-53</span></span>
+<span><span class="co">#&gt; 3  -0.9904568 0.000000 -0.1074546 0.02416175  -4.447301  8.695608e-06</span></span>
+<span><span class="co">#&gt; 4   0.0000000 0.000000  0.5606621 0.00000000        Inf  0.000000e+00</span></span>
+<span><span class="co">#&gt; 5   0.9904568 0.000000  1.2287788 0.02832481  43.381710  0.000000e+00</span></span>
+<span><span class="co">#&gt; 6   1.9809136 0.000000  1.8968955 0.05468707  34.686364 1.264878e-263</span></span>
+<span><span class="co">#&gt; 7   2.9713704 0.000000  2.5650122 0.08102555  31.656830 6.107664e-220</span></span>
+<span><span class="co">#&gt; 8  -2.9713704 1.008084 -2.5384235 0.11878616 -21.369691 2.558177e-101</span></span>
+<span><span class="co">#&gt; 9  -1.9809136 1.008084 -1.1693670 0.08244253 -14.184026  1.150517e-45</span></span>
+<span><span class="co">#&gt; 10 -0.9904568 1.008084  0.1996895 0.04817959   4.144691  3.402725e-05</span></span>
+<span><span class="co">#&gt; 11  0.0000000 1.008084  1.5687460 0.02614685  59.997516  0.000000e+00</span></span>
+<span><span class="co">#&gt; 12  0.9904568 1.008084  2.9378025 0.04340420  67.684745  0.000000e+00</span></span>
+<span><span class="co">#&gt; 13  1.9809136 1.008084  4.3068590 0.07695502  55.965929  0.000000e+00</span></span>
+<span><span class="co">#&gt; 14  2.9713704 1.008084  5.6759155 0.11312872  50.172190  0.000000e+00</span></span>
+<span><span class="co">#&gt;      ci.upper   ci.lower</span></span>
+<span><span class="co">#&gt; 1  -1.2930175 -1.5943584</span></span>
+<span><span class="co">#&gt; 2  -0.6765268 -0.8746157</span></span>
+<span><span class="co">#&gt; 3  -0.0600984 -0.1548107</span></span>
+<span><span class="co">#&gt; 4   0.5606621  0.5606621</span></span>
+<span><span class="co">#&gt; 5   1.2842944  1.1732632</span></span>
+<span><span class="co">#&gt; 6   2.0040802  1.7897108</span></span>
+<span><span class="co">#&gt; 7   2.7238193  2.4062050</span></span>
+<span><span class="co">#&gt; 8  -2.3056069 -2.7712401</span></span>
+<span><span class="co">#&gt; 9  -1.0077826 -1.3309514</span></span>
+<span><span class="co">#&gt; 10  0.2941198  0.1052592</span></span>
+<span><span class="co">#&gt; 11  1.6199929  1.5174991</span></span>
+<span><span class="co">#&gt; 12  3.0228732  2.8527318</span></span>
+<span><span class="co">#&gt; 13  4.4576881  4.1560299</span></span>
+<span><span class="co">#&gt; 14  5.8976437  5.4541873</span></span></code></pre></div>
 </div>
   </main>
 </div>
