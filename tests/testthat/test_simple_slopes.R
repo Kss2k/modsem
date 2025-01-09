@@ -10,7 +10,10 @@ m1 <- "
 # Inner model
   Y ~ X + Z + X:Z
 "
+
 est1 <- modsem(m1, data = oneInt)
 simple_slopes(x = "X", z = "Z", y = "Y", model = est1)
-plot_interaction(x = "X", z = "Z", y = "Y", xz = "X:Z", 
+plot_interaction(x = "X", z = "Z", y = "Y",
                  vals_z = c(1, 0), model = est1)
+plot_interaction(x = "X", z = "Z", y = "Y", xz = "X:Z",
+                 vals_z = c(1, 0), model = est1, ci_type = "prediction")

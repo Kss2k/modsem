@@ -1,31 +1,97 @@
 #' Get the simple slopes of a SEM model
 #'
-#' @param x The name of the variable on the x-axis
-#' @param z The name of the moderator variable
-#' @param y The name of the outcome variable
-#' @param xz The name of the interaction term. If the interaction term is not specified, it
-#' @param model An object of class \code{\link{modsem_pi}}, \code{\link{modsem_da}}, or \code{\link{modsem_mplus}}
-#' will be created using \code{x} and \code{z}.
-#' @param vals_x The values of the \code{x} variable to plot, the more values the smoother the std.error-area will be.
-#' NOTE: \code{vals_x} are measured relative to the mean and standard deviation of \code{x} (overridden by \code{rescale=FALSE}). 
-#' The correct values will show up in the table.
-#' @param vals_z The values of the moderator variable to plot. A separate regression
-#' NOTE: \code{vals_z} are measured relative to the mean and standard deviation of \code{z} (overridden by \code{rescale=FALSE}). 
-#' The correct values will show up in the table.
-#' line (\code{y ~ x | z}) will be plotted for each value of the moderator variable
-#' @param rescale Logical. If \code{TRUE} (default), the values of \code{x} and \code{z} will be rescaled relative to their means and standard deviations.
-#' @param ci_width The width of the confidence interval (default is 1.96, corresponding to a 95\% confidence interval)
-#' @param relative_h0 Logical. If \code{TRUE} (default), the null hypothesis is that the mean of the outcome variable is equal to the predicted value of the outcome variable. If \code{FALSE}, the null hypothesis is that the outcome variable is equal to zero.
-#' @param ... Additional arguments passed to other functions
-#' @return A \code{ggplot} object
+#' This function calculates simple slopes (predicted values of the outcome variable)
+#' at user-specified values of the focal predictor (\code{x}) and moderator (\code{z})
+#' in a structural equation modeling (SEM) framework. It supports interaction terms
+#' (\code{xz}), computes standard errors (SE), and optionally returns confidence or
+#' prediction intervals for these predicted values. It also provides p-values for
+#' hypothesis testing. This is useful for visualizing and interpreting moderation
+#' effects or to see how the slope changes at different values of the moderator.
+#'
+#' @param x The name of the variable on the x-axis (focal predictor).
+#' @param z The name of the moderator variable.
+#' @param y The name of the outcome variable.
+#' @param xz The name of the interaction term (\code{x:z}). If \code{NULL}, it will
+#'   be created by combining \code{x} and \code{z} with a colon (e.g., \code{"x:z"}).
+#'   Some backends may remove or alter the colon symbol, so the function tries to
+#'   account for that internally.
+#' @param model An object of class \code{\link{modsem_pi}}, \code{\link{modsem_da}},
+#'   \code{\link{modsem_mplus}}, or a \code{lavaan} object. This should be a fitted SEM
+#'   model that includes paths for \code{y ~ x + z + x:z}.
+#' @param vals_x Numeric vector of values of \code{x} at which to compute predicted
+#'   slopes. Defaults to \code{-3:3}. If \code{rescale = TRUE}, these values are taken
+#'   relative to the mean and standard deviation of \code{x}. A higher density of points
+#'   (e.g., \code{seq(-3, 3, 0.1)}) will produce smoother curves and confidence bands.
+#' @param vals_z Numeric vector of values of the moderator \code{z} at which to compute
+#'   predicted slopes. Defaults to \code{-1:1}. If \code{rescale = TRUE}, these values
+#'   are taken relative to the mean and standard deviation of \code{z}. Each unique value
+#'   of \code{z} generates a separate regression line \code{y ~ x | z}.
+#' @param rescale Logical. If \code{TRUE} (default), \code{x} and \code{z} are standardized
+#'   according to their means and standard deviations in the model. The values in
+#'   \code{vals_x} and \code{vals_z} are interpreted in those standardized units. The
+#'   raw (unscaled) values corresponding to these standardized points will be displayed
+#'   in the returned table.
+#' @param ci_width A numeric value between 0 and 1 indicating the confidence (or
+#'   prediction) interval width. The default is 0.95 (i.e., 95\% interval).
+#' @param ci_type A string indicating whether to compute a \code{"confidence"} interval
+#'   for the predicted mean (\emph{i.e.}, uncertainty in the regression line) or a
+#'   \code{"prediction"} interval for individual outcomes. The default is
+#'   \code{"confidence"}. If \code{"prediction"}, the residual variance is added to the
+#'   variance of the fitted mean, resulting in a wider interval.
+#' @param relative_h0 Logical. If \code{TRUE} (default), hypothesis tests for the
+#'   predicted values (\code{predicted - h0}) assume \code{h0} is the model-estimated
+#'   mean of \code{y}. If \code{FALSE}, the null hypothesis is \code{h0 = 0}.
+#' @param ... Additional arguments passed to lower-level functions or other internal
+#'   helpers.
+#'
+#' @details
+#' \strong{Computation Steps}  
+#' 1. The function extracts parameter estimates (and, if necessary, their covariance
+#'    matrix) from the fitted SEM model (\code{model}).  
+#' 2. It identifies the coefficients for \code{x}, \code{z}, and \code{x:z} in the model's
+#'    parameter table, as well as the variance of \code{x}, \code{z}, and the residual.  
+#' 3. If \code{xz} is not provided, it will be constructed by combining \code{x} and
+#'    \code{z} with a colon (\code{":"}). In certain SEM software, the colon may be
+#'    removed or replaced internally; the function attempts to reconcile that.  
+#' 4. A grid of \code{x} and \code{z} values is created from \code{vals_x} and
+#'    \code{vals_z}. If \code{rescale = TRUE}, these values are transformed back into raw
+#'    metric units for display in the output.  
+#' 5. For each point in the grid, a predicted value of \code{y} is computed via
+#'    \code{(beta0 + beta_x * x + beta_z * z + beta_xz * x * z)} and, if included, a
+#'    mean offset.  
+#' 6. The standard error (\code{std.error}) is derived from the covariance matrix of
+#'    the relevant parameters, and if \code{ci_type = "prediction"}, adds the residual
+#'    variance.  
+#' 7. Confidence (or prediction) intervals are formed using \code{ci_width} (defaulting
+#'    to 95\%). The result is a table-like data frame with predicted values, CIs,
+#'    standard errors, z-values, and p-values.  
+#'
+#' @return A \code{data.frame} (invisibly inheriting class \code{"simple_slopes"})
+#' with columns:
+#' \itemize{
+#'   \item \code{vals_x}, \code{vals_z}: The requested grid values of \code{x} and \code{z}.
+#'   \item \code{predicted}: The predicted value of \code{y} at that combination of
+#'         \code{x} and \code{z}.
+#'   \item \code{std.error}: The standard error of the predicted value.
+#'   \item \code{z.value}, \code{p.value}: The z-statistic and corresponding p-value
+#'         for testing the null hypothesis that \code{predicted == h0}.
+#'   \item \code{ci.lower}, \code{ci.upper}: Lower and upper bounds of the confidence
+#'         (or prediction) interval.
+#' }
+#' An attribute \code{"variable_names"} (list of \code{x}, \code{z}, \code{y})
+#' is attached for convenience. Typically, the returned object can be passed to
+#' \code{plot()} or \code{\link{plot.simple_slopes}} to visualize the slopes and their
+#' intervals.
+#'
 #' @export
+#' 
 #' @examples
-#' library(modsem)
 #' \dontrun{
+#' library(modsem)
+#'
 #' m1 <- "
 #' # Outer Model
-#'   X =~ x1
-#'   X =~ x2 + x3
+#'   X =~ x1 + x2 + x3
 #'   Z =~ z1 + z2 + z3
 #'   Y =~ y1 + y2 + y3
 #'
@@ -33,15 +99,23 @@
 #'   Y ~ X + Z + X:Z
 #' "
 #' est1 <- modsem(m1, data = oneInt)
+#'
+#' # Simple slopes at X in [-3, 3] and Z in [-1, 1], rescaled to the raw metric.
 #' simple_slopes(x = "X", z = "Z", y = "Y", model = est1)
+#'
+#' # If the data or user wants unscaled values, set rescale = FALSE, etc.
+#' simple_slopes(x = "X", z = "Z", y = "Y", model = est1, rescale = FALSE)
 #' }
-simple_slopes <- function(x, z, y,
+simple_slopes <- function(x, 
+                          z, 
+                          y,
                           xz = NULL,
                           model,
                           vals_x = -3:3,
                           vals_z = -1:1,
                           rescale = TRUE,
-                          ci_width = 1.96, 
+                          ci_width = 0.95, 
+                          ci_type = "confidence",
                           relative_h0 = TRUE,
                           ...) {
   stopif(!isModsemObject(model) && !isLavaanObject(model), "model must be of class ",
@@ -57,36 +131,53 @@ simple_slopes <- function(x, z, y,
     xz <- stringr::str_remove_all(xz, ":")
 
   parTable <- parameter_estimates(model)
-  gamma_x <- parTable[parTable$lhs == x & parTable$op == "~", "est"]
+  parTable <- getMissingLabels(parTable)
+
 
   if (isLavaanObject(model)) {
-    # this won't work for multigroup models
-    nobs <- unlist(model@Data@nobs)
-    warnif(length(nobs) > 1, "plot_interaction is not intended for multigroup models")
-    n <- nobs[[1]]
+    vcov <- lavaan::vcov
+    nobs <- lavaan::nobs
+    coef <- lavaan::coef
+  } 
+   
+  n     <- nobs(model) 
+  VCOV  <- vcov(model)
+  coefs <- coef(model)
 
-  } else {
-    n <- nrow(model$data)
+  if (length(n) > 1) {
+    # this won't work for multigroup models
+    warning("simple_slopes/plot_interaction does not support multigroup models, be vary of results!")
+    n <- n[1]
   }
 
-  lVs <- c(x, z, y, xz)
-  coefs <- parTable[parTable$op == "~" & parTable$rhs %in% lVs &
-                    parTable$lhs == y, ]
-  vars <- parTable[parTable$op == "~~" & parTable$rhs %in% lVs &
-             parTable$lhs == parTable$rhs, ]
-  gamma_x  <- coefs[coefs$rhs == x, "est"]
-  var_x    <- calcCovParTable(x, x, parTable)
-  gamma_z  <- coefs[coefs$rhs == z, "est"]
-  var_z    <- calcCovParTable(z, z, parTable)
-  gamma_xz <- coefs[coefs$rhs %in% xz, "est"]
-  sd       <- sqrt(vars[vars$rhs == y, "est"]) # residual std.error
+  # Extract coefficients
+  beta_x  <- parTable[parTable$lhs == y & parTable$rhs == x & parTable$op == "~", "est"]
+  beta_z  <- parTable[parTable$lhs == y & parTable$rhs == z & parTable$op == "~", "est"]
+  beta_xz <- parTable[parTable$lhs == y & parTable$rhs %in% xz & parTable$op == "~", "est"]
+  beta0_y <- parTable[parTable$lhs == y & parTable$op == "~1", "est"]
+  res_y   <- parTable[parTable$lhs == y & parTable$rhs == y & parTable$op == "~~", "est"]
 
-  stopif(!length(gamma_x),  "coefficient for x not found in model")
-  stopif(!length(var_x),    "variance of x not found in model")
-  stopif(!length(gamma_z),  "coefficient for z not found in model")
-  stopif(!length(var_z),    "variance of z not found in model")
-  stopif(!length(gamma_xz), "coefficient for xz not found in model")
-  stopif(!length(sd),       "residual std.error of y not found in model")
+  var_x   <- calcCovParTable(x, x, parTable)
+  var_z   <- calcCovParTable(z, z, parTable)
+
+  stopif(length(var_x) == 0, "Variance for x not found in model")
+  stopif(length(var_z) == 0, "Variance for z not found in model")
+  stopif(length(beta_x) == 0, "Coefficient for x not found in model")
+  stopif(length(beta_z) == 0, "Coefficient for z not found in model")
+  stopif(length(beta_xz) == 0, "Coefficient for interaction term not found in model")
+
+  label_beta_x  <- parTable[parTable$lhs == y & parTable$rhs == x & parTable$op == "~", "label"]
+  label_beta_z  <- parTable[parTable$lhs == y & parTable$rhs == z & parTable$op == "~", "label"]
+  label_beta_xz <- parTable[parTable$lhs == y & parTable$rhs %in% xz & parTable$op == "~", "label"]
+  label_beta0_y <- parTable[parTable$lhs == y & parTable$op == "~1", "label"]
+
+  label_beta_x  <- ifelse(length(label_beta_x) == 0, NA, label_beta_x)
+  label_beta_z  <- ifelse(length(label_beta_z) == 0, NA, label_beta_z)
+  label_beta_xz <- ifelse(length(label_beta_xz) == 0, NA, label_beta_xz)
+  label_beta0_y <- ifelse(length(label_beta0_y) == 0, NA, label_beta0_y)
+
+  labels <- c(label_beta0_y, label_beta_x, label_beta_z, label_beta_xz)
+  VCOV   <- subsetVCOV(VCOV, labels)
 
   mean_x <- getMean(x, parTable = parTable)
   mean_z <- getMean(z, parTable = parTable)
@@ -98,15 +189,17 @@ simple_slopes <- function(x, z, y,
     vals_z <- vals_z * sqrt(var_z) + mean_z
   }
 
+  alpha  <- 1 - ci_width
+  ci.sig <- stats::qnorm(1 - alpha / 2) # two-tailed
+
   # creating margins
-  df           <- expand.grid(x = vals_x, z = vals_z)
-  colnames(df) <- c("vals_x", "vals_z")
-  df$predicted <- mean_y + gamma_x * df$vals_x + gamma_z + df$vals_z + df$vals_z * df$vals_x * gamma_xz
-  df$std.error <- calc_se(df$vals_x, var = var_x, n = n, s = sd)
+  df           <- structure(expand.grid(x = vals_x, z = vals_z), names= c("vals_x", "vals_z"))
+  df$predicted <- mean_y + beta_x * df$vals_x + beta_z + df$vals_z + df$vals_z * df$vals_x * beta_xz
+  df$std.error <- calc_se(df, e = res_y, VCOV = VCOV, se_type = ci_type)
   df$z.value   <- (df$predicted - h0) / df$std.error # H0 = mean_y
   df$p.value   <- 2 * stats::pnorm(-abs(df$z.value))
-  df$ci.upper  <- df$predicted + ci_width * df$std.error
-  df$ci.lower  <- df$predicted - ci_width * df$std.error
+  df$ci.upper  <- df$predicted + ci.sig * df$std.error
+  df$ci.lower  <- df$predicted - ci.sig * df$std.error
 
 
   variable_names <- c(x = x, z = z, y = y)
@@ -114,6 +207,28 @@ simple_slopes <- function(x, z, y,
   class(df) <- c("simple_slopes", class(df))
   df
 }
+
+
+calc_se <- function(df, e, VCOV, se_type = "confidence") {
+  if (se_type == "prediction") 
+    return(sqrt(rep(e, nrow(df))))
+  else if (se_type != "confidence") 
+    warning("se_type must be 'confidence' or 'prediction', using 'confidence'!")
+
+  vals_x <- df$vals_x
+  vals_z <- df$vals_z
+
+  n <- nrow(df)
+  i <- rep(1, n)
+  X <- matrix(c(i, vals_x, vals_z, vals_x * vals_z), nrow=n)
+  V <- calcSESimpleSlopes(X, VCOV)
+
+  s <- sqrt(as.vector(V))
+  s[is.infinite(s)] <- NA
+
+  s
+}
+
 
 
 printTable <- function(x, header = NULL) {
@@ -167,4 +282,17 @@ print.simple_slopes <- function(x, digits = 2, scientific.p = FALSE, ...) {
     printTable(Z, header = header)
     cat("\n") 
   }
+}
+
+
+subsetVCOV <- function(VCOV, labels) {
+  vlabels <- colnames(VCOV)
+
+  noNa <- labels
+  noNa[is.na(noNa) | !noNa %in% vlabels] <- vlabels[1]
+
+  V <- VCOV[noNa, noNa]
+  V[is.na(labels), is.na(labels)] <- 0
+
+  V
 }

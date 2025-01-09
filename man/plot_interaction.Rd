@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot_interaction.R
 \name{plot_interaction}
 \alias{plot_interaction}
-\title{Plot Interaction Effects}
+\title{Plot Interaction Effects in a SEM Model}
 \usage{
 plot_interaction(
   x,
@@ -14,83 +14,135 @@ plot_interaction(
   model,
   alpha_se = 0.15,
   digits = 2,
-  ci_width = 1.96,
+  ci_width = 0.95,
+  ci_type = "confidence",
   rescale = TRUE,
   ...
 )
 }
 \arguments{
-\item{x}{The name of the variable on the x-axis}
+\item{x}{A character string specifying the focal predictor (x-axis variable).}
 
-\item{z}{The name of the moderator variable}
+\item{z}{A character string specifying the moderator variable.}
 
-\item{y}{The name of the outcome variable}
+\item{y}{A character string specifying the outcome (dependent) variable.}
 
-\item{xz}{The name of the interaction term. If the interaction term is not specified, it
-will be created using \code{x} and \code{z}.}
+\item{xz}{A character string specifying the interaction term (\code{x:z}).
+If \code{NULL}, the term is created automatically as \code{paste(x, z, sep = ":")}.
+Some SEM backends may handle the interaction term differently (for instance, by
+removing or modifying the colon), and this function attempts to reconcile that
+internally.}
 
-\item{vals_x}{The values of the \code{x} variable to plot, the more values the smoother the std.error-area will be.
-NOTE: \code{vals_x} are measured relative to the mean and standard deviation of \code{x} (overridden by \code{rescale=FALSE}). 
-The correct values will show up in the plot.}
+\item{vals_x}{A numeric vector of values at which to compute and plot the focal
+predictor \code{x}. The default is \code{seq(-3, 3, .001)}, which provides a
+relatively fine grid for smooth lines. If \code{rescale=TRUE}, these values
+are in standardized (mean-centered and scaled) units, and will be converted back
+to the original metric in the internal computation of predicted means.}
 
-\item{vals_z}{The values of the moderator variable to plot. A separate regression
-NOTE: \code{vals_z} are measured relative to the mean and standard deviation of \code{z} (overridden by \code{rescale=FALSE}). 
-The correct values will show up in the plot.
-line (\code{y ~ x | z}) will be plotted for each value of the moderator variable}
+\item{vals_z}{A numeric vector of values of the moderator \code{z} at which to draw
+separate regression lines. Each distinct value in \code{vals_z} defines a separate
+group (plotted with a different color). If \code{rescale=TRUE}, these values
+are also assumed to be in standardized units.}
 
-\item{model}{An object of class \code{\link{modsem_pi}}, \code{\link{modsem_da}}, or \code{\link{modsem_mplus}}}
+\item{model}{An object of class \code{\link{modsem_pi}}, \code{\link{modsem_da}}, 
+\code{\link{modsem_mplus}}, or possibly a \code{lavaan} object. Must be a fitted
+SEM model containing paths for \code{y ~ x + z + x:z}.}
 
-\item{alpha_se}{The alpha level for the std.error area}
+\item{alpha_se}{A numeric value in \([0, 1]\) specifying the transparency of
+the confidence/prediction interval ribbon. Default is \code{0.15}.}
 
-\item{digits}{The number of digits to round the mean-shifted values of \code{z}}
+\item{digits}{An integer specifying the number of decimal places to which the
+moderator values (\code{z}) are rounded for labeling/grouping in the plot.}
 
-\item{ci_width}{The width of the confidence interval (default is 1.96, corresponding to a 95\% confidence interval)}
+\item{ci_width}{A numeric value in \((0,1)\) indicating the coverage of the
+confidence (or prediction) interval. The default is \code{0.95} for a 95\%
+interval.}
 
-\item{rescale}{Logical. If \code{TRUE} (default), the values of \code{x} and \code{z} will be rescaled relative to their means and standard deviations.}
+\item{ci_type}{A character string specifying whether to compute
+\code{"confidence"} intervals (for the mean of the predicted values, default)
+or \code{"prediction"} intervals (which include residual variance).}
 
-\item{...}{Additional arguments passed to other functions}
+\item{rescale}{Logical. If \code{TRUE} (default), \code{vals_x} and \code{vals_z}
+are interpreted as standardized units, which are mapped back to the raw scale
+before computing predictions. If \code{FALSE}, \code{vals_x} and \code{vals_z}
+are taken as raw-scale values directly.}
+
+\item{...}{Additional arguments passed on to \code{\link{simple_slopes}}.}
 }
 \value{
-A \code{ggplot} object
+A \code{ggplot} object that can be further customized (e.g., with
+  additional \code{+ theme(...)} layers). By default, it shows lines for each
+  moderator value and a shaded region corresponding to the interval type
+  (confidence or prediction).
 }
 \description{
-Plot Interaction Effects
+This function creates an interaction plot of the outcome variable (\code{y}) as a function
+of a focal predictor (\code{x}) at multiple values of a moderator (\code{z}). It is
+designed for use with structural equation modeling (SEM) objects (e.g., those from
+\code{\link{modsem}}). Predicted means (or predicted individual values) are calculated
+via \code{\link{simple_slopes}}, and then plotted with \code{ggplot2} to display
+multiple regression lines and confidence/prediction bands.
+}
+\details{
+\strong{Computation Steps:}
+\enumerate{
+  \item Calls \code{\link{simple_slopes}} to compute the predicted values of \code{y}
+        at the specified grid of \code{x} and \code{z} values.
+  \item Groups the resulting predictions by unique \code{z}-values (rounded to
+        \code{digits}) to create colored lines.
+  \item Plots these lines using \code{ggplot2}, adding ribbons for confidence
+        (or prediction) intervals, with transparency controlled by \code{alpha_se}.
+}
+
+\strong{Interpretation:}
+Each line in the plot corresponds to the regression of \code{y} on \code{x} at
+a given level of \code{z}. The shaded region around each line (ribbon) shows
+either the confidence interval for the predicted mean (if \code{ci_type =
+"confidence"}) or the prediction interval for individual observations (if
+\code{ci_type = "prediction"}). Where the ribbons do not overlap, there is
+evidence that the lines differ significantly over that range of \code{x}.
 }
 \examples{
-library(modsem)
 \dontrun{
+library(modsem)
+
+# Example 1: Interaction of X and Z in a simple SEM
 m1 <- "
 # Outer Model
-  X =~ x1
-  X =~ x2 + x3
+  X =~ x1 + x2 + x3
   Z =~ z1 + z2 + z3
   Y =~ y1 + y2 + y3
 
-# Inner model
+# Inner Model
   Y ~ X + Z + X:Z
 "
 est1 <- modsem(m1, data = oneInt)
-plot_interaction("X", "Z", "Y", "X:Z", -3:3, c(-0.2, 0), est1)
 
+# Plot interaction using a moderate range of X and two values of Z
+plot_interaction(x = "X", z = "Z", y = "Y", xz = "X:Z",
+                 vals_x = -3:3, vals_z = c(-0.2, 0), model = est1)
+
+# Example 2: Interaction in a theory-of-planned-behavior-style model
 tpb <- "
-# Outer Model (Based on Hagger et al., 2007)
+# Outer Model
   ATT =~ att1 + att2 + att3 + att4 + att5
-  SN =~ sn1 + sn2
+  SN  =~ sn1 + sn2
   PBC =~ pbc1 + pbc2 + pbc3
   INT =~ int1 + int2 + int3
   BEH =~ b1 + b2
 
-# Inner Model (Based on Steinmetz et al., 2011)
-  # Causal Relationsships
+# Inner Model
   INT ~ ATT + SN + PBC
   BEH ~ INT + PBC
-  # BEH ~ ATT:PBC
   BEH ~ PBC:INT
-  # BEH ~ PBC:PBC
 "
+est2 <- modsem(tpb, data = TPB, method = "lms")
 
-est2 <- modsem(tpb, TPB, method = "lms")
-plot_interaction(x = "INT", z = "PBC", y = "BEH", xz = "PBC:INT",
-                 vals_z = c(-0.5, 0.5), model = est2)
+# Plot with custom Z values and a denser X grid
+plot_interaction(x = "INT", z = "PBC", y = "BEH",
+                 xz = "PBC:INT",
+                 vals_x = seq(-3, 3, 0.01),
+                 vals_z = c(-0.5, 0.5),
+                 model = est2)
 }
 }

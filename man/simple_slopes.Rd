@@ -13,53 +13,116 @@ simple_slopes(
   vals_x = -3:3,
   vals_z = -1:1,
   rescale = TRUE,
-  ci_width = 1.96,
+  ci_width = 0.95,
+  ci_type = "confidence",
   relative_h0 = TRUE,
   ...
 )
 }
 \arguments{
-\item{x}{The name of the variable on the x-axis}
+\item{x}{The name of the variable on the x-axis (focal predictor).}
 
-\item{z}{The name of the moderator variable}
+\item{z}{The name of the moderator variable.}
 
-\item{y}{The name of the outcome variable}
+\item{y}{The name of the outcome variable.}
 
-\item{xz}{The name of the interaction term. If the interaction term is not specified, it}
+\item{xz}{The name of the interaction term (\code{x:z}). If \code{NULL}, it will
+be created by combining \code{x} and \code{z} with a colon (e.g., \code{"x:z"}).
+Some backends may remove or alter the colon symbol, so the function tries to
+account for that internally.}
 
-\item{model}{An object of class \code{\link{modsem_pi}}, \code{\link{modsem_da}}, or \code{\link{modsem_mplus}}
-will be created using \code{x} and \code{z}.}
+\item{model}{An object of class \code{\link{modsem_pi}}, \code{\link{modsem_da}},
+\code{\link{modsem_mplus}}, or a \code{lavaan} object. This should be a fitted SEM
+model that includes paths for \code{y ~ x + z + x:z}.}
 
-\item{vals_x}{The values of the \code{x} variable to plot, the more values the smoother the std.error-area will be.
-NOTE: \code{vals_x} are measured relative to the mean and standard deviation of \code{x} (overridden by \code{rescale=FALSE}). 
-The correct values will show up in the table.}
+\item{vals_x}{Numeric vector of values of \code{x} at which to compute predicted
+slopes. Defaults to \code{-3:3}. If \code{rescale = TRUE}, these values are taken
+relative to the mean and standard deviation of \code{x}. A higher density of points
+(e.g., \code{seq(-3, 3, 0.1)}) will produce smoother curves and confidence bands.}
 
-\item{vals_z}{The values of the moderator variable to plot. A separate regression
-NOTE: \code{vals_z} are measured relative to the mean and standard deviation of \code{z} (overridden by \code{rescale=FALSE}). 
-The correct values will show up in the table.
-line (\code{y ~ x | z}) will be plotted for each value of the moderator variable}
+\item{vals_z}{Numeric vector of values of the moderator \code{z} at which to compute
+predicted slopes. Defaults to \code{-1:1}. If \code{rescale = TRUE}, these values
+are taken relative to the mean and standard deviation of \code{z}. Each unique value
+of \code{z} generates a separate regression line \code{y ~ x | z}.}
 
-\item{rescale}{Logical. If \code{TRUE} (default), the values of \code{x} and \code{z} will be rescaled relative to their means and standard deviations.}
+\item{rescale}{Logical. If \code{TRUE} (default), \code{x} and \code{z} are standardized
+according to their means and standard deviations in the model. The values in
+\code{vals_x} and \code{vals_z} are interpreted in those standardized units. The
+raw (unscaled) values corresponding to these standardized points will be displayed
+in the returned table.}
 
-\item{ci_width}{The width of the confidence interval (default is 1.96, corresponding to a 95\% confidence interval)}
+\item{ci_width}{A numeric value between 0 and 1 indicating the confidence (or
+prediction) interval width. The default is 0.95 (i.e., 95\% interval).}
 
-\item{relative_h0}{Logical. If \code{TRUE} (default), the null hypothesis is that the mean of the outcome variable is equal to the predicted value of the outcome variable. If \code{FALSE}, the null hypothesis is that the outcome variable is equal to zero.}
+\item{ci_type}{A string indicating whether to compute a \code{"confidence"} interval
+for the predicted mean (\emph{i.e.}, uncertainty in the regression line) or a
+\code{"prediction"} interval for individual outcomes. The default is
+\code{"confidence"}. If \code{"prediction"}, the residual variance is added to the
+variance of the fitted mean, resulting in a wider interval.}
 
-\item{...}{Additional arguments passed to other functions}
+\item{relative_h0}{Logical. If \code{TRUE} (default), hypothesis tests for the
+predicted values (\code{predicted - h0}) assume \code{h0} is the model-estimated
+mean of \code{y}. If \code{FALSE}, the null hypothesis is \code{h0 = 0}.}
+
+\item{...}{Additional arguments passed to lower-level functions or other internal
+helpers.}
 }
 \value{
-A \code{ggplot} object
+A \code{data.frame} (invisibly inheriting class \code{"simple_slopes"})
+with columns:
+\itemize{
+  \item \code{vals_x}, \code{vals_z}: The requested grid values of \code{x} and \code{z}.
+  \item \code{predicted}: The predicted value of \code{y} at that combination of
+        \code{x} and \code{z}.
+  \item \code{std.error}: The standard error of the predicted value.
+  \item \code{z.value}, \code{p.value}: The z-statistic and corresponding p-value
+        for testing the null hypothesis that \code{predicted == h0}.
+  \item \code{ci.lower}, \code{ci.upper}: Lower and upper bounds of the confidence
+        (or prediction) interval.
+}
+An attribute \code{"variable_names"} (list of \code{x}, \code{z}, \code{y})
+is attached for convenience. Typically, the returned object can be passed to
+\code{plot()} or \code{\link{plot.simple_slopes}} to visualize the slopes and their
+intervals.
 }
 \description{
-Get the simple slopes of a SEM model
+This function calculates simple slopes (predicted values of the outcome variable)
+at user-specified values of the focal predictor (\code{x}) and moderator (\code{z})
+in a structural equation modeling (SEM) framework. It supports interaction terms
+(\code{xz}), computes standard errors (SE), and optionally returns confidence or
+prediction intervals for these predicted values. It also provides p-values for
+hypothesis testing. This is useful for visualizing and interpreting moderation
+effects or to see how the slope changes at different values of the moderator.
+}
+\details{
+\strong{Computation Steps}  
+1. The function extracts parameter estimates (and, if necessary, their covariance
+   matrix) from the fitted SEM model (\code{model}).  
+2. It identifies the coefficients for \code{x}, \code{z}, and \code{x:z} in the model's
+   parameter table, as well as the variance of \code{x}, \code{z}, and the residual.  
+3. If \code{xz} is not provided, it will be constructed by combining \code{x} and
+   \code{z} with a colon (\code{":"}). In certain SEM software, the colon may be
+   removed or replaced internally; the function attempts to reconcile that.  
+4. A grid of \code{x} and \code{z} values is created from \code{vals_x} and
+   \code{vals_z}. If \code{rescale = TRUE}, these values are transformed back into raw
+   metric units for display in the output.  
+5. For each point in the grid, a predicted value of \code{y} is computed via
+   \code{(beta0 + beta_x * x + beta_z * z + beta_xz * x * z)} and, if included, a
+   mean offset.  
+6. The standard error (\code{std.error}) is derived from the covariance matrix of
+   the relevant parameters, and if \code{ci_type = "prediction"}, adds the residual
+   variance.  
+7. Confidence (or prediction) intervals are formed using \code{ci_width} (defaulting
+   to 95\%). The result is a table-like data frame with predicted values, CIs,
+   standard errors, z-values, and p-values.
 }
 \examples{
-library(modsem)
 \dontrun{
+library(modsem)
+
 m1 <- "
 # Outer Model
-  X =~ x1
-  X =~ x2 + x3
+  X =~ x1 + x2 + x3
   Z =~ z1 + z2 + z3
   Y =~ y1 + y2 + y3
 
@@ -67,6 +130,11 @@ m1 <- "
   Y ~ X + Z + X:Z
 "
 est1 <- modsem(m1, data = oneInt)
+
+# Simple slopes at X in [-3, 3] and Z in [-1, 1], rescaled to the raw metric.
 simple_slopes(x = "X", z = "Z", y = "Y", model = est1)
+
+# If the data or user wants unscaled values, set rescale = FALSE, etc.
+simple_slopes(x = "X", z = "Z", y = "Y", model = est1, rescale = FALSE)
 }
 }
