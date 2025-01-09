@@ -1,5 +1,5 @@
 #include <RcppArmadillo.h>
-#include "LMS.h"
+#include "lms.h"
 // [[Rcpp::depends(RcppArmadillo)]]
 
 

@@ -1,5 +1,5 @@
 #include <RcppArmadillo.h>
-#include "QML.h"
+#include "qml.h"
 // [[Rcpp::depends(RcppArmadillo)]]
 
 

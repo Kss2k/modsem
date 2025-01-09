@@ -11,6 +11,18 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// calcSESimpleSlopes
+arma::vec calcSESimpleSlopes(arma::mat const& X, arma::mat const& V);
+RcppExport SEXP _modsem_calcSESimpleSlopes(SEXP XSEXP, SEXP VSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat const& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< arma::mat const& >::type V(VSEXP);
+    rcpp_result_gen = Rcpp::wrap(calcSESimpleSlopes(X, V));
+    return rcpp_result_gen;
+END_RCPP
+}
 // muLmsCpp
 arma::vec muLmsCpp(Rcpp::List model, arma::vec z);
 RcppExport SEXP _modsem_muLmsCpp(SEXP modelSEXP, SEXP zSEXP) {
@@ -150,6 +162,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_modsem_calcSESimpleSlopes", (DL_FUNC) &_modsem_calcSESimpleSlopes, 2},
     {"_modsem_muLmsCpp", (DL_FUNC) &_modsem_muLmsCpp, 2},
     {"_modsem_sigmaLmsCpp", (DL_FUNC) &_modsem_sigmaLmsCpp, 2},
     {"_modsem_muQmlCpp", (DL_FUNC) &_modsem_muQmlCpp, 2},
