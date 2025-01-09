@@ -221,10 +221,7 @@ calc_se <- function(df, e, VCOV, se_type = "confidence") {
   X <- matrix(c(i, vals_x, vals_z, vals_x * vals_z), nrow=n)
   V <- calcSESimpleSlopes(X, VCOV)
 
-  s <- sqrt(as.vector(V))
-  s[is.infinite(s)] <- NA
-
-  s
+  as.vector(V)
 }
 
 
@@ -274,7 +271,6 @@ print.simple_slopes <- function(x, digits = 2, scientific.p = FALSE, ...) {
     Z1 <- X[1, ]
     Z2 <- X[2:nrow(X),][cat_z == z_i,]
     Z  <- rbind(Z1, Z2)
-
 
     printf("\nPredicted %s, given %s = %s:\n", outcome, predictors[2], z_i)
     printTable(Z, header = header)
