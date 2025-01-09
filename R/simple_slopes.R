@@ -192,7 +192,7 @@ simple_slopes <- function(x,
 
   # creating margins
   df           <- structure(expand.grid(x = vals_x, z = vals_z), names= c("vals_x", "vals_z"))
-  df$predicted <- mean_y + beta_x * df$vals_x + beta_z + df$vals_z + df$vals_z * df$vals_x * beta_xz
+  df$predicted <- mean_y + beta_x * df$vals_x + beta_z * df$vals_z + df$vals_z * df$vals_x * beta_xz
   df$std.error <- calc_se(df, e = res_y, VCOV = VCOV, se_type = ci_type)
   df$z.value   <- (df$predicted - h0) / df$std.error # H0 = mean_y
   df$p.value   <- 2 * stats::pnorm(-abs(df$z.value))
