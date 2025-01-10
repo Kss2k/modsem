@@ -48,6 +48,9 @@ specifyModelDA <- function(syntax = NULL,
   allIndsXis    <- unique(unlist(indsXis))
   numAllIndsXis <- length(allIndsXis)
 
+  # clean data
+  data <- cleanAndSortData(data, allIndsXis, allIndsEtas)
+
   # measurement model x
   listLambdaX <- constructLambda(xis, indsXis, parTable = parTable,
                                  auto.constraints = auto.constraints)
@@ -222,6 +225,7 @@ specifyModelDA <- function(syntax = NULL,
 
   model <- list(
     info = list(
+      N           = NROW(data),
       xis         = xis,
       etas        = etas,
       numXis      = numXis,
@@ -237,6 +241,7 @@ specifyModelDA <- function(syntax = NULL,
       lavOptimizerSyntaxAdditions = lavOptimizerSyntaxAdditions
     ),
 
+    data          = data,
     quad          = quad,
     matrices      = matrices,
     labelMatrices = labelMatrices,
@@ -255,10 +260,8 @@ specifyModelDA <- function(syntax = NULL,
     model$info$bounds <- getParamBounds(model, varParams=listTheta$diagFreeParams)
   }
 
-  model$data <- cleanAndSortData(data, allIndsXis, allIndsEtas)
-  model$info$N <- NROW(model$data)
-
-  if (checkModel) checkModel(model = model, covModel = covModel, method = method)
+  if (checkModel) 
+    checkModel(model = model, covModel = covModel, method = method)
 
   model
 }
