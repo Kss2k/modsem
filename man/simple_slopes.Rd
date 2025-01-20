@@ -81,9 +81,7 @@ with columns:
         (or prediction) interval.
 }
 An attribute \code{"variable_names"} (list of \code{x}, \code{z}, \code{y})
-is attached for convenience. Typically, the returned object can be passed to
-\code{plot()} or \code{\link{plot.simple_slopes}} to visualize the slopes and their
-intervals.
+is attached for convenience.
 }
 \description{
 This function calculates simple slopes (predicted values of the outcome variable)
