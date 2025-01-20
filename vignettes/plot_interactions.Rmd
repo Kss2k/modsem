@@ -8,6 +8,7 @@ vignette: >
 ---
 
 ```{r, include = FALSE}
+EVAL_DEFAULT <- FALSE
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
@@ -124,7 +125,7 @@ The `plot_surface()` function can be used to plot 3D surface plots for a given i
 This function takes a fitted model object, the names of the two variables that are interacting,
 and the name of the dependent variable. The function will plot the 3D surface plot for the interaction effect.
 
-```{r}
+```{r, eval = EVAL_DEFAULT}
 tpb <- "
 # Outer Model (Based on Hagger et al., 2007)
   ATT =~ att1 + att2 + att3 + att4 + att5
