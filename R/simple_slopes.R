@@ -119,10 +119,23 @@ simple_slopes <- function(x,
   stopif(!isModsemObject(model) && !isLavaanObject(model), "model must be of class ",
          "'modsem_pi', 'modsem_da', 'modsem_mplus' or 'lavaan'")
 
+  group_labels <- modsem_inspect(model, "group.label")
+  
+  x.g <- getGroupIdentificator(x, labels = group_labels)
+  z.g <- getGroupIdentificator(z, labels = group_labels)
+  y.g <- getGroupIdentificator(y, labels = group_labels)
+  xz.g <- if (!is.null(xz)) getGroupIdentificator(xz, labels = group_labels) else x.g
+
+  x <- getVariableIdentificator(x, labels = group_labels)
+  z <- getVariableIdentificator(z, labels = group_labels)
+  y <- getVariableIdentificator(y, labels = group_labels)
+  xz <- if (!is.null(xz)) getVariableIdentificator(xz, labels = group_labels) else NULL
+
   if (is.null(xz))
     xz <- paste(x, z, sep = ":")
 
-  xz <- c(xz, reverseIntTerm(xz))
+  browser()
+  xz <- unique(c(xz, reverseIntTerm(xz)))
 
   if (!inherits(model, c("modsem_da", "modsem_mplus")) &&
       !isLavaanObject(model)) 
@@ -130,7 +143,9 @@ simple_slopes <- function(x,
 
   parTable <- parameter_estimates(model)
   parTable <- getMissingLabels(parTable)
-
+  
+  if (!"group" %in% colnames(parTable))
+    parTable$group <- 0
 
   if (isLavaanObject(model)) {
     vcov <- lavaan::vcov
@@ -142,18 +157,21 @@ simple_slopes <- function(x,
   VCOV  <- vcov(model)
   coefs <- coef(model)
 
-  if (length(n) > 1) {
-    # this won't work for multigroup models
-    warning("simple_slopes/plot_interaction does not support multigroup models, be vary of results!")
-    n <- n[1]
-  }
+  if (length(n) > 1 && xz.g != 0) n <- sum(n)
+  else if (length(n) > 1)         n <- n[xz.g]
 
   # Extract coefficients
-  beta_x  <- parTable[parTable$lhs == y & parTable$rhs == x & parTable$op == "~", "est"]
-  beta_z  <- parTable[parTable$lhs == y & parTable$rhs == z & parTable$op == "~", "est"]
-  beta_xz <- parTable[parTable$lhs == y & parTable$rhs %in% xz & parTable$op == "~", "est"]
-  beta0_y <- parTable[parTable$lhs == y & parTable$op == "~1", "est"]
-  res_y   <- parTable[parTable$lhs == y & parTable$rhs == y & parTable$op == "~~", "est"]
+  beta_x  <- parTable[parTable$lhs == y & parTable$rhs == x & 
+                      parTable$op == "~" & parTable$group == x.g, "est"]
+  beta_z  <- parTable[parTable$lhs == y & parTable$rhs == z & 
+                      parTable$op == "~" & parTable$group == z.g, "est"]
+  beta_xz <- parTable[((parTable$lhs == y & parTable$rhs %in% xz & 
+                      parTable$op == "~") | (parTable$op == ":=" & parTable$lhs == xz)) &
+                      parTable$group == xz.g, "est"]
+  beta0_y <- parTable[parTable$lhs == y & parTable$op == "~1" &
+                      parTable$group == y.g, "est"]
+  res_y   <- parTable[parTable$lhs == y & parTable$rhs == y & 
+                      parTable$op == "~~" & parTable$group == y.g, "est"]
 
   var_x   <- calcCovParTable(x, x, parTable)
   var_z   <- calcCovParTable(z, z, parTable)
@@ -164,10 +182,15 @@ simple_slopes <- function(x,
   stopif(length(beta_z) == 0, "Coefficient for z not found in model")
   stopif(length(beta_xz) == 0, "Coefficient for interaction term not found in model")
 
-  label_beta_x  <- parTable[parTable$lhs == y & parTable$rhs == x & parTable$op == "~", "label"]
-  label_beta_z  <- parTable[parTable$lhs == y & parTable$rhs == z & parTable$op == "~", "label"]
-  label_beta_xz <- parTable[parTable$lhs == y & parTable$rhs %in% xz & parTable$op == "~", "label"]
-  label_beta0_y <- parTable[parTable$lhs == y & parTable$op == "~1", "label"]
+  label_beta_x  <- parTable[parTable$lhs == y & parTable$rhs == x &
+                            parTable$op == "~" & parTable$group == x.g, "label"]
+  label_beta_z  <- parTable[parTable$lhs == y & parTable$rhs == z & 
+                            parTable$op == "~" & parTable$group == z.g, "label"]
+  label_beta_xz <- parTable[((parTable$lhs == y & parTable$rhs %in% xz & 
+                            parTable$op == "~") | (parTable$op == ":=" & parTable$lhs == xz)) &
+                            parTable$group == xz.g, "label"]
+  label_beta0_y <- parTable[parTable$lhs == y & parTable$op == "~1" & 
+                            parTable$group == y.g, "label"]
 
   label_beta_x  <- ifelse(length(label_beta_x) == 0, NA, label_beta_x)
   label_beta_z  <- ifelse(length(label_beta_z) == 0, NA, label_beta_z)
@@ -244,7 +267,6 @@ printTable <- function(x, header = NULL) {
 
 #' @export
 print.simple_slopes <- function(x, digits = 2, scientific.p = FALSE, ...) {
-
   variables  <- attr(x, "variable_names")
   predictors <- variables[1:2]
   outcome    <- variables[3]
@@ -288,4 +310,42 @@ subsetVCOV <- function(VCOV, labels) {
   V[, is.na(labels)] <- 0
 
   V
+}
+
+
+getLabelElems <- function(x) {
+  elems <- strsplit(x, "\\|| ")[[1]]
+  elems <- elems[!elems %in% c("", " ", "|")]
+
+  stopif(length(elems) < 2, "invalid label for variable!, nothing before or after '|'")
+  stopif(length(elems) > 2, "invalid label for variable!, more than one '|'")
+
+  elems
+}
+
+
+getGroupIdentificator <- function(x, labels) {
+  x <- x[[1]]
+
+  if (!grepl("\\|", x)) return(0)
+
+  elems <- getLabelElems(x)
+  group <- elems[2]
+
+  if (!group %in% labels) {
+    warning2("Group not found in labels")
+    return(0)
+  }
+
+  which(labels == group)
+}
+
+
+getVariableIdentificator <- function(x, labels) {
+  x <- x[[1]]
+
+  if (!grepl("\\|", x)) return(x)
+
+  elems <- getLabelElems(x)
+  elems[1]
 }

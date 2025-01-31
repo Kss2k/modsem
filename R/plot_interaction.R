@@ -115,7 +115,7 @@
 plot_interaction <- function(x, z, y, xz = NULL, vals_x = seq(-3, 3, .001),
                              vals_z, model, alpha_se = 0.15, digits = 2, 
                              ci_width = 0.95, ci_type = "confidence", rescale = TRUE, ...) {
-  df <- simple_slopes(x = x, z = z, y = y, model = model, vals_x = vals_x, vals_z = vals_z, 
+  df <- simple_slopes(x = x, z = z, y = y, xz = xz, model = model, vals_x = vals_x, vals_z = vals_z, 
                       rescale = rescale, ci_width = ci_width, ci_type = ci_type, ...)
   df$cat_z <- as.factor(round(df$vals_z, digits))
 

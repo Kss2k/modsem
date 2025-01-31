@@ -14,6 +14,9 @@ fit_modsem <- modsem(HS.model,
                      data = lavaan::HolzingerSwineford1939, 
                      group = "school")
 
+plot_interaction(x = "speed|Pasteur", z = "textual|Pasteur",,
+                 y = "visual|Pasteur", xz = "interaction", vals_z = c(1, 0),
+                 model = fit_modsem)
 
 lavaanEst <- lavaan::parameterEstimates(fit_lavaan)
 lavaanEst[is.na(lavaanEst)] <- -999

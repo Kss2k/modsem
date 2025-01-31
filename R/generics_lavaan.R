@@ -7,3 +7,9 @@ parameter_estimates.lavaan <- function(object, ...) {
 isLavaanObject <- function(x) {
   inherits(x, "lavaan")
 }
+
+
+#' @export
+modsem_inspect.lavaan <- function(object, ...) {
+  lavaan::lavInspect(object, ...)
+}
