@@ -159,14 +159,14 @@ simple_slopes <- function(x,
   if (length(n) > 1 && xz.g != 0) n <- sum(n)
   else if (length(n) > 1)         n <- n[xz.g]
 
-  row_x <- parTable$lhs == x & parTable$rhs == x & parTable$op == "~~" & 
-    parTable$group == x.g
-  row_z <- parTable$lhs == z & parTable$rhs == z & parTable$op == "~~" & 
-    parTable$group == z.g
-  row_y_b0  <- parTable$lhs == y & parTable$rhs == y & parTable$op == "~~" & 
-    parTable$group == y.g
-  row_y_res <- parTable$lhs == y & parTable$rhs == y & parTable$op == "~~" & 
-    parTable$group == y.g
+  row_x <- ((parTable$lhs == y & parTable$rhs == x & parTable$op == "~") |
+            parTable$op == ":=" & parTable$lhs == x) & parTable$group == x.g
+  row_z <- ((parTable$lhs == y & parTable$rhs == z & parTable$op == "~") |
+            parTable$op == ":=" & parTable$lhs == z) & parTable$group == z.g
+  row_y_b0 <- ((parTable$lhs == y & parTable$op == "~1") |
+               parTable$op == ":=" & parTable$lhs == y) & parTable$group == y.g
+  row_y_res <- ((parTable$lhs == y & parTable$rhs == y & parTable$op == "~~") |
+                parTable$op == ":=" & parTable$lhs == y) & parTable$group == y.g
   row_xz <- ((parTable$lhs == y & parTable$rhs %in% xz & parTable$op == "~") | 
              (parTable$op == ":=" & parTable$lhs == xz)) & parTable$group == xz.g
 
