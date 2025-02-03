@@ -246,15 +246,18 @@ getIntercepts <- function(x, parTable) {
 }
 
 
-getMean <- function(x, parTable) {
+getMean <- function(x, parTable, group = NULL) {
   stopif(length(x) > 1, "x must be a single string")
+
+  if (!is.null(group)) 
+    parTable <- parTable[parTable$group == group, ]
 
   meanY <- getIntercept(x, parTable = parTable)
   gamma <- parTable[parTable$lhs == x & parTable$op == "~", , drop = FALSE]
 
   if (NROW(gamma) == 0) return(meanY)
   for (i in NROW(gamma)) {
-    meanX <- getMean(gamma[i, "rhs"], parTable = parTable)
+    meanX <- getMean(gamma[i, "rhs"], parTable = parTable) # group already set
     meanY <- meanY + gamma[i, "est"] * meanX
   }
 

@@ -134,7 +134,6 @@ simple_slopes <- function(x,
   if (is.null(xz))
     xz <- paste(x, z, sep = ":")
 
-  browser()
   xz <- unique(c(xz, reverseIntTerm(xz)))
 
   if (!inherits(model, c("modsem_da", "modsem_mplus")) &&
@@ -160,18 +159,23 @@ simple_slopes <- function(x,
   if (length(n) > 1 && xz.g != 0) n <- sum(n)
   else if (length(n) > 1)         n <- n[xz.g]
 
+  row_x <- parTable$lhs == x & parTable$rhs == x & parTable$op == "~~" & 
+    parTable$group == x.g
+  row_z <- parTable$lhs == z & parTable$rhs == z & parTable$op == "~~" & 
+    parTable$group == z.g
+  row_y_b0  <- parTable$lhs == y & parTable$rhs == y & parTable$op == "~~" & 
+    parTable$group == y.g
+  row_y_res <- parTable$lhs == y & parTable$rhs == y & parTable$op == "~~" & 
+    parTable$group == y.g
+  row_xz <- ((parTable$lhs == y & parTable$rhs %in% xz & parTable$op == "~") | 
+             (parTable$op == ":=" & parTable$lhs == xz)) & parTable$group == xz.g
+
   # Extract coefficients
-  beta_x  <- parTable[parTable$lhs == y & parTable$rhs == x & 
-                      parTable$op == "~" & parTable$group == x.g, "est"]
-  beta_z  <- parTable[parTable$lhs == y & parTable$rhs == z & 
-                      parTable$op == "~" & parTable$group == z.g, "est"]
-  beta_xz <- parTable[((parTable$lhs == y & parTable$rhs %in% xz & 
-                      parTable$op == "~") | (parTable$op == ":=" & parTable$lhs == xz)) &
-                      parTable$group == xz.g, "est"]
-  beta0_y <- parTable[parTable$lhs == y & parTable$op == "~1" &
-                      parTable$group == y.g, "est"]
-  res_y   <- parTable[parTable$lhs == y & parTable$rhs == y & 
-                      parTable$op == "~~" & parTable$group == y.g, "est"]
+  beta_x <- parTable[row_x, "est"]
+  beta_z <- parTable[row_z, "est"]
+  beta_xz <- parTable[row_xz, "est"]
+  beta0_y <- parTable[row_y_b0, "est"]
+  res_y <- parTable[row_y_res, "est"]
 
   var_x   <- calcCovParTable(x, x, parTable)
   var_z   <- calcCovParTable(z, z, parTable)
@@ -182,15 +186,10 @@ simple_slopes <- function(x,
   stopif(length(beta_z) == 0, "Coefficient for z not found in model")
   stopif(length(beta_xz) == 0, "Coefficient for interaction term not found in model")
 
-  label_beta_x  <- parTable[parTable$lhs == y & parTable$rhs == x &
-                            parTable$op == "~" & parTable$group == x.g, "label"]
-  label_beta_z  <- parTable[parTable$lhs == y & parTable$rhs == z & 
-                            parTable$op == "~" & parTable$group == z.g, "label"]
-  label_beta_xz <- parTable[((parTable$lhs == y & parTable$rhs %in% xz & 
-                            parTable$op == "~") | (parTable$op == ":=" & parTable$lhs == xz)) &
-                            parTable$group == xz.g, "label"]
-  label_beta0_y <- parTable[parTable$lhs == y & parTable$op == "~1" & 
-                            parTable$group == y.g, "label"]
+  label_beta_x  <- parTable[row_x, "label"]
+  label_beta_z  <- parTable[row_z, "label"]
+  label_beta_xz <- parTable[row_xz, "label"]
+  label_beta0_y <- parTable[row_y_b0, "label"]
 
   label_beta_x  <- ifelse(length(label_beta_x) == 0, NA, label_beta_x)
   label_beta_z  <- ifelse(length(label_beta_z) == 0, NA, label_beta_z)
@@ -200,9 +199,9 @@ simple_slopes <- function(x,
   labels <- c(label_beta0_y, label_beta_x, label_beta_z, label_beta_xz)
   VCOV   <- subsetVCOV(VCOV, labels)
 
-  mean_x <- getMean(x, parTable = parTable)
-  mean_z <- getMean(z, parTable = parTable)
-  mean_y <- getMean(y, parTable = parTable)
+  mean_x <- getMean(x, parTable = parTable, group = x.g)
+  mean_z <- getMean(z, parTable = parTable, group = z.g)
+  mean_y <- getMean(y, parTable = parTable, group = y.g)
   h0     <- if (relative_h0) mean_y else 0
 
   if (rescale) {
@@ -246,7 +245,6 @@ calc_se <- function(df, e, VCOV, se_type = "confidence") {
 
   sqrt(as.vector(V))
 }
-
 
 
 printTable <- function(x, header = NULL) {
@@ -332,8 +330,12 @@ getGroupIdentificator <- function(x, labels) {
   elems <- getLabelElems(x)
   group <- elems[2]
 
-  if (!group %in% labels) {
-    warning2("Group not found in labels")
+  if (is.null(labels)) {
+    warning2("Unable to find groups in model! Sure you are using a multigroup model?")
+    return(0)
+
+  } else if (!group %in% labels) {
+    warning2("Group not found in labels! Have you written it correctly?")
     return(0)
   }
 

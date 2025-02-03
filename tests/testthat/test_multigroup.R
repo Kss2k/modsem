@@ -15,7 +15,7 @@ fit_modsem <- modsem(HS.model,
                      group = "school")
 
 plot_interaction(x = "speed|Pasteur", z = "textual|Pasteur",,
-                 y = "visual|Pasteur", xz = "interaction", vals_z = c(1, 0),
+                 y = "visual|Pasteur", xz = "interaction", vals_z = c(0, 1),
                  model = fit_modsem)
 
 lavaanEst <- lavaan::parameterEstimates(fit_lavaan)
