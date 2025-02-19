@@ -9,7 +9,7 @@
 in structural equation models (SEMs). See https://www.modsem.org for a tutorial.
 
 # To Install 
-```
+```R
 # From CRAN 
 install.packages("modsem")
 
@@ -45,7 +45,7 @@ Product Indicator (PI) and Distribution Analytic (DA) approaches.
 # Examples 
 
 ## Elementary Interaction Model (Kenny & Judd, 1984; Jaccard & Wan, 1995)
-```
+```R
 library(modsem)
 m1 <- '
   # Outer Model
@@ -75,7 +75,7 @@ summary(est1_lms)
 ```
 
 ## Theory Of Planned Behavior
-```
+```R
 tpb <- "
 # Outer Model (Based on Hagger et al., 2007)
   ATT =~ att1 + att2 + att3 + att4 + att5
@@ -108,13 +108,13 @@ est_tpb_qml <- modsem(tpb, data = TPB, method = "qml")
 summary(est_tpb_qml, standardized = TRUE)
 ```
 ## Interactions between two observed variables
-```
+```R
 est2 <- modsem('y1 ~ x1 + z1 + x1:z1', data = oneInt, method = "pind")
 summary(est2)
 ```
 
 ## Interaction between an obsereved and a latent variable 
-```
+```R
 m3 <- '
   # Outer Model
   X =~ x1 + x2 +x3
