@@ -68,8 +68,9 @@
 
 </div>
 <div class="section level1">
-<h1 id="to-install">To Install<a class="anchor" aria-label="anchor" href="#to-install"></a>
+<h1 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h1>
+<p><code>modsem</code> is available on <code>CRAN</code> and <code>GitHub</code>, and can be installed as follows:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># From CRAN </span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"modsem"</span><span class="op">)</span></span>
@@ -77,6 +78,7 @@
 <span><span class="co"># Latest version from GitHub</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"devtools"</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"kss2k/modsem"</span>, build_vignettes <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<p><strong>Note</strong>: The package needs to be compiled from source on <code>macOS</code> and <code>Linux</code>. If you have issues installing the package on <code>macOS</code>, you might need to install the <code>gfortran</code> compiler. A <code>C++</code> compiler is also required, but should be installed by default on most systems. See the <a href="https://cran.r-project.org/bin/macosx/tools/" class="external-link">R for macOs</a> page for more information.</p>
 </div>
 <div class="section level1">
 <h1 id="methodsapproaches">Methods/Approaches<a class="anchor" aria-label="anchor" href="#methodsapproaches"></a>
