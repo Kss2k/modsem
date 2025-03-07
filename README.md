@@ -8,7 +8,9 @@
 `modsem` is an `R`-package for estimating interaction (i.e., moderation) effects between latent variables
 in structural equation models (SEMs). See https://www.modsem.org for a tutorial.
 
-# To Install 
+# Installation
+`modsem` is available on `CRAN` and `GitHub`, and can be installed as follows:
+
 ```R
 # From CRAN 
 install.packages("modsem")
@@ -17,6 +19,11 @@ install.packages("modsem")
 install.packages("devtools")
 devtools::install_github("kss2k/modsem", build_vignettes = TRUE)
 ```
+
+**Note**: The package needs to be compiled from source on `macOS` and `Linux`.
+If you have issues installing the package on `macOS`, you might need to install the `gfortran` compiler.
+A `C++` compiler is also required, but should be installed by default on most systems.
+See the [R for macOs](https://cran.r-project.org/bin/macosx/tools/) page for more information.
 
 # Methods/Approaches
 
