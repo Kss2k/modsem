@@ -41,6 +41,7 @@ specifyModelDA <- function(syntax = NULL,
   omegaAndSortedXis <- sortXisConstructOmega(xis, varsInts, etas, intTerms,
                                              method = method, double = double)
   xis <- omegaAndSortedXis$sortedXis # get sorted xis according to interaction terms
+  nonLinearXis <- omegaAndSortedXis$nonLinearXis
 
   indsXis    <- getIndsLVs(parTable, xis)
   numIndsXis <- vapply(indsXis, FUN.VALUE = vector("integer", 1L),
@@ -225,19 +226,20 @@ specifyModelDA <- function(syntax = NULL,
 
   model <- list(
     info = list(
-      N           = NROW(data),
-      xis         = xis,
-      etas        = etas,
-      numXis      = numXis,
-      numEtas     = numEtas,
-      indsXis     = indsXis,
-      indsEtas    = indsEtas,
-      allIndsXis  = allIndsXis,
-      allIndsEtas = allIndsEtas,
-      varsInts    = varsInts,
-      latentEtas  = latentEtas,
-      scalingInds = scalingInds,
-      kOmegaEta   = getK_NA(omegaEtaXi, labelOmegaEtaXi),
+      N            = NROW(data),
+      xis          = xis,
+      etas         = etas,
+      numXis       = numXis,
+      numEtas      = numEtas,
+      indsXis      = indsXis,
+      indsEtas     = indsEtas,
+      allIndsXis   = allIndsXis,
+      allIndsEtas  = allIndsEtas,
+      varsInts     = varsInts,
+      latentEtas   = latentEtas,
+      scalingInds  = scalingInds,
+      kOmegaEta    = getK_NA(omegaEtaXi, labelOmegaEtaXi),
+      nonLinearXis = nonLinearXis,
       lavOptimizerSyntaxAdditions = lavOptimizerSyntaxAdditions
     ),
 

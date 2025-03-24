@@ -437,8 +437,9 @@ sortXisConstructOmega <- function(xis, varsInts, etas, intTerms,
                                     varsInts = varsInts,
                                     intTerms = intTerms)
 
-  list(sortedXis = sortedXis, omegaXiXi = omegaXiXi,
-       omegaEtaXi = omegaEtaXi, k = length(nonLinearXis))
+  list(sortedXis = sortedXis, nonLinearXis = nonLinearXis, 
+       omegaXiXi = omegaXiXi, omegaEtaXi = omegaEtaXi, 
+       k = length(nonLinearXis))
 }
 
 

@@ -48,6 +48,7 @@ calcFIM_da <- function(model,
     H <- calcHessian(model, theta = theta, data = data, method = method,
                      epsilon = epsilon)
     invH <- solveFIM(H, NA__ = NA__)
+
     vcov <- invH %*% I %*% invH
 
   } else {
@@ -69,19 +70,30 @@ calcFIM_da <- function(model,
 }
 
 
+fdHESS <- function(pars, ...) {
+  tryCatch(
+    nlme::fdHess(pars = pars, ...)$Hessian,
+    error = function(e) {
+      warning2("Calculation of Hessian matrix failed...\n  ", e$message)
+      matrix(NA, nrow = length(pars), ncol = length(pars)) 
+    }
+  )
+}
+
+
 calcHessian <- function(model, theta, data, method = "lms",
                         epsilon = 1e-8) {
   if (method == "lms") {
     P <- estepLms(model, theta = theta, data = data)
     # negative hessian (sign = -1)
-    H <- nlme::fdHess(pars = theta, fun = logLikLms, model = model,
-                      data = data, P = P, sign = -1,
-                      .relStep = .Machine$double.eps^(1/5))$Hessian
+    H <- fdHESS(pars = theta, fun = logLikLms, model = model,
+                data = data, P = P, sign = -1,
+                .relStep = .Machine$double.eps^(1/5))
 
   } else if (method == "qml") {
     # negative hessian (sign = -1)
-    H <- nlme::fdHess(pars = theta, fun = logLikQml, model = model, sign = -1,
-                      .relStep = .Machine$double.eps^(1/5))$Hessian
+    H <- fdHESS(pars = theta, fun = logLikQml, model = model, sign = -1,
+                .relStep = .Machine$double.eps^(1/5))
   }
 
   H
@@ -128,14 +140,20 @@ calcOFIM_LMS <- function(model, theta, data, hessian = FALSE,
   P <- estepLms(model, theta = theta, data = data)
   if (hessian) {
     # negative hessian (sign = -1)
-    I <- nlme::fdHess(pars = theta, fun = logLikLms, model = model,
-                      data = data, P = P, sign = -1,
-                      .relStep = .Machine$double.eps^(1/5))$Hessian
+    I <- fdHESS(pars = theta, fun = logLikLms, model = model,
+                data = data, P = P, sign = -1,
+                .relStep = .Machine$double.eps^(1/5))
     return(I)
   }
-  J <- gradientLogLikLms(theta, model = model, data = data,
-                         P = P, sign = 1, epsilon = epsilon)
-  I <- J %*% t(J)
+  J <- gradientLogLikLms_i(theta, model = model, data = data,
+                          P = P, sign = 1, epsilon = epsilon)
+  I <- matrix(0, nrow = length(theta), ncol = length(theta))
+
+  for (i in seq_len(N)) {
+    J_i <- J[i,]
+    I <- I + J %*% t(J)
+  }
+
   I
 }
 
@@ -198,13 +216,18 @@ calcOFIM_QML <- function(model, theta, data, hessian = FALSE,
 
   if (hessian) {
     # negative hessian (sign = -1)
-    I <- nlme::fdHess(pars = theta, fun = logLikQml, model = model,
-                      sign = -1, .relStep = .Machine$double.eps^(1/5))$Hessian
+    I <- fdHESS(pars = theta, fun = logLikQml, model = model,
+                sign = -1, .relStep = .Machine$double.eps^(1/5))
     return(I)
   }
 
-  J <- gradientLogLikQml(theta, model = model, sign = 1, epsilon = epsilon)
-  I <- J %*% t(J)
+  J <- gradientLogLikQml_i(theta, model = model, sign = 1, epsilon = epsilon)
+  I <- matrix(0, nrow = length(theta), ncol = length(theta))
+
+  for (i in seq_len(N)) {
+    J_i <- J[i,]
+    I <- I + J_i %*% t(J_i)
+  }
 
   I
 }

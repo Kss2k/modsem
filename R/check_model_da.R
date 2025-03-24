@@ -1,6 +1,8 @@
 checkModel <- function(model, covModel = NULL, method = "lms") {
   checkCovModelVariables(covModel = covModel, modelXis = model$info$xis)
 
+  checkZeroVariances(model = model, method = method)
+
   checkNodesLms(parTableMain = model$parTable,
                 parTableCov  = covModel$parTable,
                 nodes = model$quad$m, method = method)
@@ -24,6 +26,41 @@ checkCovModelVariables <- function(covModel, modelXis) {
   stopif(!all(modelXis %in% c(covModelXis, covModelEtas)),
          "All exogenous variables in main model must be ",
          "part of the cov-model")
+}
+
+
+checkZeroVariances <- function(model, method = "lms") {
+  if (method != "lms") return(NULL)
+  
+  nonLinearXis <- model$info$nonLinearXis
+  inds <- model$info$indsXis[nonLinearXis]
+
+  thetaDelta <- model$matrices$thetaDelta 
+
+  message <- paste(
+      "The variance of a moderating variable of integration",
+      "has an indicator with zero residual variance!",
+      "\nThis will likely not work with the LMS approach, see:",
+      "\n   `vignette('observed_lms_qml', 'modsem')` for more information.",
+      "\n\nThe following indicators have zero residual variance:"
+  )
+
+  m1 <- \(i) sprintf("  -> %s", i)
+
+  width <- options()$width
+  width <- if (is.null(width) || width == Inf) 30 else (width - 11) / 2
+
+  error <- FALSE
+  for (lv in nonLinearXis) for (ind in inds[[lv]]) {
+    est <- thetaDelta[ind, ind]
+
+    if (!is.na(est) && est == 0) {
+      error <- TRUE
+      message <- paste(message, m1(ind), sep = "\n")
+    }
+  }
+
+  if (error) stop2(message)
 }
 
 
