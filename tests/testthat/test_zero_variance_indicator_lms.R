@@ -25,9 +25,6 @@ dummy_data <- data.frame(
   intention_to_change_leadership_binary = sample(0:1, n, replace = TRUE)
 )
 
-# Save to .sav file
-library(haven)
-
 # Job Demands-Resources (JDR) model for SEM
 JDR_Model_modsem <- '
 # Measurement model
@@ -52,16 +49,12 @@ JDR_Model_modsem <- '
 # Structural model
   work_engagement ~ psc + SWE + decisions_not_influenced_latent
   irritation ~ psc + SWE + decisions_not_influenced_latent
-  stress ~ work_engagement + irritation
+  stress ~ work_engagement + irritation 
   intention_to_change_leadership_binary_latent ~ work_engagement
 
 # Interactions
   work_engagement ~ psc:decisions_not_influenced_latent
   work_engagement ~ SWE:decisions_not_influenced_latent
-
-  # Optional (commented out):
-  # irritation ~ psc:decisions_not_influenced_latent
-  # irritation ~ SWE:decisions_not_influenced_latent
 '
 
 
