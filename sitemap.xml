@@ -33,10 +33,13 @@
 <url><loc>/reference/jordan.html</loc></url>
 <url><loc>/reference/modsem-package.html</loc></url>
 <url><loc>/reference/modsem.html</loc></url>
+<url><loc>/reference/modsem_coef.html</loc></url>
 <url><loc>/reference/modsem_da.html</loc></url>
 <url><loc>/reference/modsem_inspect.html</loc></url>
 <url><loc>/reference/modsem_mplus.html</loc></url>
+<url><loc>/reference/modsem_nobs.html</loc></url>
 <url><loc>/reference/modsem_pi.html</loc></url>
+<url><loc>/reference/modsem_vcov.html</loc></url>
 <url><loc>/reference/modsemify.html</loc></url>
 <url><loc>/reference/multiplyIndicatorsCpp.html</loc></url>
 <url><loc>/reference/oneInt.html</loc></url>
