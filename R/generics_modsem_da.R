@@ -427,30 +427,6 @@ coef.modsem_da <- function(object, type = "all", ...) {
 }
 
 
-#' Wrapper for vcov
-#'
-#' @param object fittet model to inspect
-#' @param ... additional arguments
-#' @description wrapper for vcov, to be used with modsem::vcov_modsem_da,
-#' since vcov is not in the namespace of modsem, but stats
-#' @export
-vcov_modsem_da <- function(object, ...) {
-  vcov.modsem_da(object, ...)
-}
-
-
-#' Wrapper for coef
-#'
-#' @param object fittet model to inspect
-#' @param ... additional arguments
-#' @description wrapper for coef, to be used with modsem::coef_modsem_da,
-#' since coef is not in the namespace of modsem, but stats
-#' @export
-coef_modsem_da <- function(object, ...) {
-  coef.modsem_da(object, ...)
-}
-
-
 #' @export
 #' @importFrom stats nobs
 nobs.modsem_da <- function(object, ...) {

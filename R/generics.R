@@ -235,3 +235,43 @@ standardized_estimates.data.frame <- function(object, intercepts = FALSE, ...) {
 modsem_inspect <- function(object, what = NULL, ...) {
   UseMethod("modsem_inspect")
 }
+
+
+
+#' Wrapper for vcov
+#'
+#' @param object fittet model to inspect
+#' @param ... additional arguments
+#' @description wrapper for vcov, to be used with modsem::modsem_vcov, since
+#' vcov is not in the namespace of modsem, but stats
+#' since vcov is not in the namespace of modsem, but stats
+#' @export
+modsem_vcov <- function(object, ...) {
+  vcov(object, ...)
+}
+
+
+#' Wrapper for coef
+#'
+#' @param object fittet model to inspect
+#' @param ... additional arguments
+#' @description wrapper for coef, to be used with modsem::modsem_coef, since
+#' coef is not in the namespace of modsem, but stats
+#' since coef is not in the namespace of modsem, but stats
+#' @export
+modsem_coef <- function(object, ...) {
+  coef(object, ...)
+}
+
+
+#' Wrapper for nobs
+#'
+#' @param object fittet model to inspect
+#' @param ... additional arguments
+#' @description wrapper for nobs, to be used with modsem::modsem_nobs, since
+#' nobs is not in the namespace of modsem, but stats
+#' since nobs is not in the namespace of modsem, but stats
+#' @export
+modsem_nobs <- function(object, ...) {
+  nobs(object, ...)
+}
