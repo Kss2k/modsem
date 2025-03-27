@@ -8,7 +8,7 @@ vignette: >
 ---
 
 ```{r, include = FALSE}
-EVAL_DEFAULT <- FALSE
+EVAL_DEFAULT <- TRUE
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
@@ -63,6 +63,23 @@ m2 <- '
 lms2 <- modsem(m2, oneInt, method = "lms")
 summary(lms2)
 ```
+If you forget to specify a measurement error for the indicator of the first variable in the interaction term, you will receive an error message.
+
+```{r, error = TRUE}
+m2 <- '
+# Outer Model
+  X =~ x1 # X is observed
+  Z =~ z1 # Z is observed
+  Y =~ y1 # Y is observed
+
+# Inner model
+  Y ~ X + Z
+  Y ~ X:Z
+'
+
+lms3 <- modsem(m2, oneInt, method = "lms")
+```
+**Note:** You only get an error message for `X`/`x1`, since `Z` is not modelled as a moderating variable in this example.
 
 ## The QML Approach
 
