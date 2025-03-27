@@ -232,6 +232,31 @@ in the interaction term.</p>
 <span><span class="co">#&gt;     X                1.028      0.041    25.03    0.000</span></span>
 <span><span class="co">#&gt;     Z                1.184      0.038    31.27    0.000</span></span>
 <span><span class="co">#&gt;     Y                1.323      0.044    29.76    0.000</span></span></code></pre></div>
+<p>If you forget to specify a measurement error for the indicator of the
+first variable in the interaction term, you will receive an error
+message.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">m2</span> <span class="op">&lt;-</span> <span class="st">'</span></span>
+<span><span class="st"># Outer Model</span></span>
+<span><span class="st">  X =~ x1 # X is observed</span></span>
+<span><span class="st">  Z =~ z1 # Z is observed</span></span>
+<span><span class="st">  Y =~ y1 # Y is observed</span></span>
+<span><span class="st"></span></span>
+<span><span class="st"># Inner model</span></span>
+<span><span class="st">  Y ~ X + Z</span></span>
+<span><span class="st">  Y ~ X:Z</span></span>
+<span><span class="st">'</span></span>
+<span></span>
+<span><span class="va">lms3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m2</span>, <span class="va">oneInt</span>, method <span class="op">=</span> <span class="st">"lms"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error: The variance of a moderating variable of integration has an indicator with zero residual variance! </span></span>
+<span><span class="co">#&gt; This will likely not work with the LMS approach, see: </span></span>
+<span><span class="co">#&gt;    `vignette('observed_lms_qml', 'modsem')` for more information. </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; The following indicators have zero residual variance:</span></span>
+<span><span class="co">#&gt;   -&gt; x1</span></span></code></pre></div>
+<p><strong>Note:</strong> You only get an error message for
+<code>X</code>/<code>x1</code>, since <code>Z</code> is not modelled as
+a moderating variable in this example.</p>
 </div>
 <div class="section level3">
 <h3 id="the-qml-approach">The QML Approach<a class="anchor" aria-label="anchor" href="#the-qml-approach"></a>
@@ -240,7 +265,7 @@ in the interaction term.</p>
 the <code>LMS</code> approach, and you do not encounter the same issue
 as in the <code>LMS</code> approach. Therefore, you don’t need to
 specify a measurement error for moderating variables.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">m3</span> <span class="op">&lt;-</span> <span class="st">'</span></span>
 <span><span class="st"># Outer Model</span></span>
 <span><span class="st">  X =~ x1 # X is observed</span></span>
