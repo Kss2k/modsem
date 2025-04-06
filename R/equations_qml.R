@@ -81,12 +81,11 @@ logLikQml <- function(theta, model, sum = TRUE, sign = -1, verbose = FALSE) {
   indsY         <- colnames(m$y)
   nonNormalInds <- indsY[!indsY %in% normalInds]
 
-  f2 <- probf2(matrices = m, normalInds = normalInds, sigma = sigmaXU)
+  f2 <- probf2(matrices = m, normalInds = normalInds, sigma = sigmaXU, sum = sum)
   f3 <- probf3(matrices = m, nonNormalInds = nonNormalInds, expected = Ey,
-               sigma = sigmaEpsilon, t = t, numEta = numEta)
+               sigma = sigmaEpsilon, t = t, numEta = numEta, sum = sum)
 
-  if (sum) logLik <- sum(f2 + f3)
-  else     logLik <- (f2 + f3)
+  logLik <- (f2 + f3)
 
   if (verbose) incrementIterations(logLik)
 
@@ -100,19 +99,53 @@ calcSigmaXU <- function(matrices) {
 }
 
 
-probf2 <- function(matrices, normalInds, sigma) {
+probf2 <- function(matrices, normalInds, sigma, sum=FALSE) {
   mu <- rep(0, ncol(sigma))
   X  <- cbind(matrices$x, matrices$u)[ , normalInds]
-  dmvn(X, mean = mu, sigma = sigma, log = TRUE)
+
+  if (sum)
+    total_log_dmvn(X, mu = mu, sigma = sigma)
+  else
+    dmvn(X, mean = mu, sigma = sigma, log = TRUE)
+
 }
 
 
-probf3 <- function(matrices, nonNormalInds, expected, sigma, t, numEta) {
-  if (numEta == 1) {
-    return(dnormCpp(matrices$y[, 1], mu = expected, sigma = sqrt(sigma)))
-  }
-  rep_dmvnorm(matrices$y[, nonNormalInds], expected = expected,
+total_log_dmvn <- function(X, mu, sigma) {
+  # X: n x d matrix of observations (rows = samples, cols = features)
+  # mu: d-dimensional mean vector
+  # sigma: d x d covariance matrix
+
+  n <- nrow(X)
+  d <- ncol(X)
+  
+  # Compute empirical mean and scatter matrix
+  x_bar <- colMeans(X)
+  S <- t(X - matrix(x_bar, n, d, byrow = TRUE)) %*% (X - matrix(x_bar, n, d, byrow = TRUE))
+  
+  # Inverse and determinant of sigma
+  sigma_inv <- solve(sigma)
+  log_det_sigma <- determinant(sigma, logarithm = TRUE)$modulus
+  
+  # Compute quadratic terms
+  trace_term <- sum(sigma_inv * S)  # Efficient trace of product
+  mean_diff <- matrix(x_bar - mu, nrow = 1)
+  mahalanobis_term <- n * (mean_diff %*% sigma_inv %*% t(mean_diff))
+
+  # Final log-likelihood
+  log_likelihood <- -0.5 * (n * d * log(2 * pi) + n * log_det_sigma + trace_term + mahalanobis_term)
+  return(as.numeric(log_likelihood))
+}
+
+
+probf3 <- function(matrices, nonNormalInds, expected, sigma, t, numEta, sum = FALSE) {
+  if (numEta == 1)
+    p <- dnormCpp(matrices$y[, 1], mu = expected, sigma = sqrt(sigma))
+  else 
+    p <- rep_dmvnorm(matrices$y[, nonNormalInds], expected = expected,
               sigma = sigma, t = t)
+
+  if (sum) sum(p) else p
 }
 
 
