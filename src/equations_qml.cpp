@@ -188,13 +188,14 @@ arma::vec logNormalPdf(const arma::vec& x, const arma::vec& mu, const arma::mat&
       result(i) += -0.5 * log_2pi - std::log(sigma(i, j)) - 0.5 * (diff * diff) / sigma_sq;
     }
   }
+
   return result;
 }
 
 
 // [[Rcpp::export]]
 arma::vec dnormCpp(const arma::vec& x, const arma::vec& mu, const arma::vec& sigma) {
-    return logNormalPdf(x, mu, sigma);
+  return logNormalPdf(x, mu, sigma);
 }
 
 
