@@ -73,17 +73,15 @@ double totalDmvnWeightedCpp(const arma::vec& mu,
                             double tgamma,
                             int n,
                             int d) {
+  if (!sigma.is_finite()) return NA_REAL;
+
   if (arma::any(arma::diagvec(sigma) <= 0)) return NA_REAL;
 
   arma::mat L;
-  bool success = arma::chol(L, sigma, "lower");
-
-  if (!success) return NA_REAL;
+  if (!arma::chol(L, sigma, "lower")) return NA_REAL;
 
   double log_det_sigma = 2.0 * arma::sum(log(L.diag()));
-
   arma::mat sigma_inv = arma::inv_sympd(sigma);
-
   if (!sigma_inv.is_finite()) return NA_REAL;
 
   arma::vec diff = nu - mu;
