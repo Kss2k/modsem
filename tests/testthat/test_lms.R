@@ -106,3 +106,22 @@ testthat::expect_true({
   parTable <- summary(est2, H0 = FALSE, standardized = TRUE)$parTable
   length(parTable[parTable$op == "~1", "est"]) == 0
 })
+
+tpb_uk <- '
+# Outer Model (Based on Hagger et al., Citation2007)
+  ATT =~ att3 + att2 + att1 + att4
+  SN =~ sn4 + sn2 + sn3 + sn1
+  PBC =~ pbc2 + pbc1 + pbc3 + pbc4
+  INT =~ int2 + int1 + int3 + int4
+  BEH =~ beh3 + beh2 + beh1 + beh4
+
+# Inner Model (Based on Steinmetz et al., Citation2011)
+# Causal Relationships
+  INT ~ ATT + SN + PBC
+  BEH ~ INT + PBC
+  BEH ~ INT:PBC
+'
+
+testthat::expect_warning(
+modsem(tpb_uk, TPB_UK, method = "lms", nodes=32, max.iter=10, calc.se=FALSE)
+)

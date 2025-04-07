@@ -113,15 +113,16 @@ logLikLms <- function(theta, model, data, P, sign = -1, ...) {
   d <- ncol(data)
   # summed log probability of observing the data given the parameters
   # weighted my the posterior probability calculated in the E-step
-  r_2 <- vapply(seq_len(nrow(V)), FUN.VALUE = numeric(1L), FUN = function(i) {
+  r <- vapply(seq_len(nrow(V)), FUN.VALUE = numeric(1L), FUN = function(i) {
+    if (P$tgamma[[i]] < .Machine$double.xmin) return(0)
+
     totalDmvnWeightedCpp(mu=muLmsCpp(model=modFilled, z=V[i, ]),
                          sigma=sigmaLmsCpp(model=modFilled, z=V[i, ]), 
                          nu=P$mean[[i]], S=P$cov[[i]], tgamma=P$tgamma[[i]], 
                          n = n, d = d)
-
   })
-
-  sign * sum(r_2)
+  
+  sign * sum(r)
 }
 
 
