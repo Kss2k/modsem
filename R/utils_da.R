@@ -39,6 +39,55 @@ dmvn <- function(X, mean, sigma, log = FALSE) {
 }
 
 
+totalLogDmvn <- function(mu, sigma, nu, S, n, d) {
+  # X: n x d matrix of observations (rows = samples, cols = features)
+  # mu: d-dimensional mean vector
+  # sigma: d x d covariance matrix
+  if (any(diag(sigma) < 0)) 
+    return(NaN)
+
+  tryCatch({
+    sigma_inv <- chol2inv(chol(sigma))
+
+    log_det_sigma <- determinant(sigma, logarithm = TRUE)$modulus
+    
+    trace_term <- sum(sigma_inv * S)  # Efficient trace of product
+    mean_diff <- matrix(nu - mu, nrow = 1)
+    mahalanobis_term <- n * (mean_diff %*% sigma_inv %*% t(mean_diff))
+
+    log_likelihood <- -0.5 * (n * d * log(2 * pi) + n * log_det_sigma + trace_term + mahalanobis_term)
+    as.numeric(log_likelihood)
+
+  }, error = function(e) NA)
+}
+
+
+totalLogDvmnW <- function(X, mu, sigma, nu, S, tgamma, n, d) {
+  # X: n x d matrix of data
+  # mu: d-dimensional mean vector
+  # sigma: d x d covariance matrix
+  # gamma: n-dimensional vector of weights
+  # nu: weighted observed means
+  # S: weighted observed covariance matrix
+  if (any(diag(sigma) < 0)) 
+    return(NaN)
+
+  tryCatch({
+    sigma_inv <- chol2inv(chol(sigma))
+
+    log_det_sigma <- determinant(sigma, logarithm = TRUE)$modulus
+
+    trace_term <- sum(sigma_inv * S)
+    mean_diff <- matrix(nu - mu, nrow = 1)
+    mahalanobis_term <- tgamma * (mean_diff %*% sigma_inv %*% t(mean_diff))
+
+    log_likelihood <- -0.5 * (tgamma * d * log(2 * pi) + tgamma * log_det_sigma + trace_term + mahalanobis_term)
+    as.numeric(log_likelihood)
+
+  },  error = function(e) NA)
+}
+
+
 diagPartitionedMat <- function(X, Y) {
   if (is.null(X)) return(Y) else if (is.null(Y)) return(X)
   structure(rbind(cbind(X, matrix(0, nrow = NROW(X), ncol = NCOL(Y))),

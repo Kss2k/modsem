@@ -103,48 +103,25 @@ probf2 <- function(matrices, normalInds, sigma, sum=FALSE) {
   mu <- rep(0, ncol(sigma))
   X  <- cbind(matrices$x, matrices$u)[ , normalInds]
 
-  if (sum)
-    total_log_dmvn(X, mu = mu, sigma = sigma)
-  else
-    dmvn(X, mean = mu, sigma = sigma, log = TRUE)
+  # if (sum)
+  #   total_log_dmvn(X, mu = mu, sigma = sigma)
+  # else
+  #  dmvn(X, mean = mu, sigma = sigma, log = TRUE)
 
+  p <- dmvn(X, mean = mu, sigma = sigma, log = TRUE)
+
+  if (sum) sum(p) else p
 }
 
 
-total_log_dmvn <- function(X, mu, sigma) {
-  # X: n x d matrix of observations (rows = samples, cols = features)
-  # mu: d-dimensional mean vector
-  # sigma: d x d covariance matrix
-
-  n <- nrow(X)
-  d <- ncol(X)
-  
-  # Compute empirical mean and scatter matrix
-  x_bar <- colMeans(X)
-  S <- t(X - matrix(x_bar, n, d, byrow = TRUE)) %*% (X - matrix(x_bar, n, d, byrow = TRUE))
-  
-  # Inverse and determinant of sigma
-  sigma_inv <- solve(sigma)
-  log_det_sigma <- determinant(sigma, logarithm = TRUE)$modulus
-  
-  # Compute quadratic terms
-  trace_term <- sum(sigma_inv * S)  # Efficient trace of product
-  mean_diff <- matrix(x_bar - mu, nrow = 1)
-  mahalanobis_term <- n * (mean_diff %*% sigma_inv %*% t(mean_diff))
-
-  # Final log-likelihood
-  log_likelihood <- -0.5 * (n * d * log(2 * pi) + n * log_det_sigma + trace_term + mahalanobis_term)
-  return(as.numeric(log_likelihood))
-}
 
 
 probf3 <- function(matrices, nonNormalInds, expected, sigma, t, numEta, sum = FALSE) {
-  if (numEta == 1)
+  if (numEta == 1) 
     p <- dnormCpp(matrices$y[, 1], mu = expected, sigma = sqrt(sigma))
   else 
     p <- rep_dmvnorm(matrices$y[, nonNormalInds], expected = expected,
               sigma = sigma, t = t)
-
   if (sum) sum(p) else p
 }
 
