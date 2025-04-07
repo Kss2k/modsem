@@ -1,6 +1,7 @@
 // [[Rcpp::depends("RcppArmadillo")]]
 #include <RcppArmadillo.h>
 #include "mvnorm.h"
+#include <cfloat>
 
 
 static double const log2pi = std::log(2.0 * M_PI);
