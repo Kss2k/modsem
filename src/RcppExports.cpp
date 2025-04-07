@@ -160,6 +160,23 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// totalDmvnWeightedCpp
+double totalDmvnWeightedCpp(const arma::vec& mu, const arma::mat& sigma, const arma::vec& nu, const arma::mat& S, double tgamma, int n, int d);
+RcppExport SEXP _modsem_totalDmvnWeightedCpp(SEXP muSEXP, SEXP sigmaSEXP, SEXP nuSEXP, SEXP SSEXP, SEXP tgammaSEXP, SEXP nSEXP, SEXP dSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::vec& >::type mu(muSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type sigma(sigmaSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type nu(nuSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type S(SSEXP);
+    Rcpp::traits::input_parameter< double >::type tgamma(tgammaSEXP);
+    Rcpp::traits::input_parameter< int >::type n(nSEXP);
+    Rcpp::traits::input_parameter< int >::type d(dSEXP);
+    rcpp_result_gen = Rcpp::wrap(totalDmvnWeightedCpp(mu, sigma, nu, S, tgamma, n, d));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_modsem_calcSESimpleSlopes", (DL_FUNC) &_modsem_calcSESimpleSlopes, 2},
@@ -174,6 +191,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_modsem_multiplyIndicatorsCpp", (DL_FUNC) &_modsem_multiplyIndicatorsCpp, 1},
     {"_modsem_rep_dmvnorm", (DL_FUNC) &_modsem_rep_dmvnorm, 4},
     {"_modsem_dmvnrm_arma_mc", (DL_FUNC) &_modsem_dmvnrm_arma_mc, 4},
+    {"_modsem_totalDmvnWeightedCpp", (DL_FUNC) &_modsem_totalDmvnWeightedCpp, 7},
     {NULL, NULL, 0}
 };
 

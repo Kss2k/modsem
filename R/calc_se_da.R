@@ -195,8 +195,9 @@ calcEFIM_LMS <- function(model, finalModel = NULL, theta, data, S = 3e4,
       sub <- n1:nn
     } else sub <- sample(R, N)
 
+    P <- estepLms(model = model, theta=theta, data = population[sub, ])
     J <- gradientLogLikLms(theta = theta, model = model, data = population[sub, ],
-                           P = P[sub, ], sign = 1, epsilon = epsilon)
+                                  P = P, sign = 1, epsilon = epsilon)
 
     I <- I + J %*% t(J)
   }

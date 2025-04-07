@@ -76,47 +76,32 @@ estepLms <- function(model, theta, data, ...) {
   # probability of observing the data given the nodes, and what is the probability
   # of observing the given nodes (i.e., w). Sum the row probabilities = 1
   P <- matrix(0, nrow = nrow(data), ncol = length(w))
-  sapply(seq_along(w), FUN = function(i) {
-    P[, i] <<- w[[i]] * dmvn(data,
-      mean = muLmsCpp(model = modFilled, z = V[i, ]),
-      sigma = sigmaLmsCpp(model = modFilled, z = V[i, ]),
-      log = FALSE
-    )
-  })
-  P / rowSums(P)
-}
 
+  for (i in seq_along(w)) {
+    P[, i] <- dmvn(data, mean = muLmsCpp(model = modFilled, z = V[i, ]),
+                   sigma = sigmaLmsCpp(model = modFilled, z = V[i, ]),
+                   log = FALSE) * w[[i]]
+  }
 
-total_dmvn_weighted <- function(X, mu, sigma, gamma) {
-  # X: n x d matrix of data
-  # mu: d-dimensional mean vector
-  # sigma: d x d covariance matrix
-  # gamma: n-dimensional vector of weights
-
-  n <- nrow(X)
-  d <- ncol(X)
+  P <- P / rowSums(P)
   
-  Gamma <- sum(gamma)
-  
-  # Weighted mean
-  x_bar <- colSums(X * gamma) / Gamma
+  wMeans <- vector("list", length = length(w))
+  wCovs  <- vector("list", length = length(w))
+  tGamma <- vector("list", length = length(w))
 
-  # Weighted scatter matrix
-  X_centered <- X - matrix(x_bar, n, d, byrow = TRUE)
-  S_gamma <- t(X_centered) %*% (X_centered * gamma)
+  for (i in seq_along(w)) {
+    p    <- P[, i]
+    wm   <- colSums(data * p) / sum(p)
+    X    <- data - matrix(wm, nrow=nrow(data), ncol=ncol(data), byrow=TRUE)
+    wcov <- t(X) %*% (X * p)
 
-  # Inverse and determinant
-  sigma_inv <- solve(sigma)
-  log_det_sigma <- determinant(sigma, logarithm = TRUE)$modulus
+    P[, i]      <- p
+    wMeans[[i]] <- wm
+    wCovs[[i]]  <- wcov
+    tGamma[[i]] <- sum(p)
+  }
 
-  # Quadratic terms
-  trace_term <- sum(sigma_inv * S_gamma)
-  mean_diff <- matrix(x_bar - mu, nrow = 1)
-  mahalanobis_term <- Gamma * (mean_diff %*% sigma_inv %*% t(mean_diff))
-
-  # Final log-likelihood
-  log_likelihood <- -0.5 * (Gamma * d * log(2 * pi) + Gamma * log_det_sigma + trace_term + mahalanobis_term)
-  as.numeric(log_likelihood)
+  list(P = P, mean = wMeans, cov = wCovs, tgamma = tGamma)
 }
 
 
@@ -124,26 +109,19 @@ logLikLms <- function(theta, model, data, P, sign = -1, ...) {
   modFilled <- fillModel(model = model, theta = theta, method = "lms")
   k <- model$quad$k
   V <- modFilled$quad$n
+  n <- nrow(data)
+  d <- ncol(data)
   # summed log probability of observing the data given the parameters
   # weighted my the posterior probability calculated in the E-step
-  r <- vapply(seq_len(nrow(V)), FUN.VALUE = numeric(1L), FUN = function(i) {
-    lls <- sum(dmvn(data,
-      mean = muLmsCpp(model = modFilled, z = V[i, ]),
-      sigma = sigmaLmsCpp(model = modFilled, z = V[i, ]),
-      log = TRUE
-    ) * P[, i])
-    lls
-    lls2 <- total_dmvn_weighted(X = data,
-      mu = muLmsCpp(model = modFilled, z = V[i, ]),
-      sigma = sigmaLmsCpp(model = modFilled, z = V[i, ]),
-      gamma = P[, i])
+  r_2 <- vapply(seq_len(nrow(V)), FUN.VALUE = numeric(1L), FUN = function(i) {
+    totalDmvnWeightedCpp(mu=muLmsCpp(model=modFilled, z=V[i, ]),
+                         sigma=sigmaLmsCpp(model=modFilled, z=V[i, ]), 
+                         nu=P$mean[[i]], S=P$cov[[i]], tgamma=P$tgamma[[i]], 
+                         n = n, d = d)
 
-    lls2
+  })
 
-    if (round(lls2, 6) != round(lls, 6)) browser()
-    lls2
-  }) |> sum()
-  sign * r
+  sign * sum(r_2)
 }
 
 
@@ -161,6 +139,7 @@ logLikLms_i <- function(theta, model, data, P, sign = -1, ...) {
   modFilled <- fillModel(model = model, theta = theta, method = "lms")
   k <- model$quad$k
   V <- modFilled$quad$n
+  P <- P$P
   # summed log probability of observing the data given the parameters
   # weighted my the posterior probability calculated in the E-step
   r <- lapplyMatrix(seq_len(nrow(V)), FUN = function(i) {

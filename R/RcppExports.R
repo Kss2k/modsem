@@ -53,3 +53,7 @@ dmvnrm_arma_mc <- function(x, mean, sigma, logd = TRUE) {
     .Call(`_modsem_dmvnrm_arma_mc`, x, mean, sigma, logd)
 }
 
+totalDmvnWeightedCpp <- function(mu, sigma, nu, S, tgamma, n, d) {
+    .Call(`_modsem_totalDmvnWeightedCpp`, mu, sigma, nu, S, tgamma, n, d)
+}
+
