@@ -125,3 +125,9 @@ tpb_uk <- '
 testthat::expect_warning(
 modsem(tpb_uk, TPB_UK, method = "lms", nodes=32, max.iter=10, calc.se=FALSE)
 )
+
+
+testthat::expect_error(
+  modsem(m1, oneInt, method = "lms", optimizer = "ssjj"),
+  regexp = "*Model estimation failed!*"
+)

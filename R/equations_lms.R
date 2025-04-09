@@ -146,12 +146,11 @@ logLikLms_i <- function(theta, model, data, P, sign = -1, ...) {
   # summed log probability of observing the data given the parameters
   # weighted my the posterior probability calculated in the E-step
   r <- lapplyMatrix(seq_len(nrow(V)), FUN = function(i) {
-    lls <- dmvn(data,
+    dmvn(data,
       mean = muLmsCpp(model = modFilled, z = V[i, ]),
       sigma = sigmaLmsCpp(model = modFilled, z = V[i, ]),
       log = TRUE
     ) * P[, i]
-    lls
   }, FUN.VALUE = numeric(nrow(data)))
 
   sign * apply(r, MARGIN = 1, FUN = sum)

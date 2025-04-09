@@ -255,14 +255,18 @@ modsem_da <- function(model.syntax = NULL,
   )
 
   if (args$optimize) {
-    model <- tryCatch(optimizeStartingParamsDA(model),
-                      warning = function(w) {
-                       warning2("warning when optimizing starting parameters:\n", w)
-                       suppressWarnings(optimizeStartingParamsDA(model))
-                      }, error = function(e) {
-                       warning2("unable to optimize starting parameters:\n", e)
-                       model
-                      })
+    model <- tryCatch(
+      optimizeStartingParamsDA(model),
+      
+      warning = function(w) {
+        warning2("warning when optimizing starting parameters:\n", w)
+        suppressWarnings(optimizeStartingParamsDA(model))
+      }, 
+
+      error = function(e) {
+        warning2("unable to optimize starting parameters:\n", e)
+        model
+      })
   }
 
   if (!is.null(start)) {
@@ -270,7 +274,7 @@ modsem_da <- function(model.syntax = NULL,
     model$theta <- start
   }
 
-  est <- switch(method,
+  est <- tryCatch(switch(method,
     "qml" = estQml(model,
       verbose = args$verbose,
       convergence = args$convergence,
@@ -302,8 +306,15 @@ modsem_da <- function(model.syntax = NULL,
       fix.estep = args$fix.estep,
       R.max = args$R.max,
       ...
-    )
-  )
+  )),
+  error = function(e) {
+    message <- paste0("modsem [%s]: Model estimation failed!\n", 
+                      "Message: %s")
+    stop2(sprintf(message, method, e$message))
+
+    return(NULL)
+  })
+  
 
   class(est) <- c("modsem_da", "modsem")
   if (args$standardize.out) {
