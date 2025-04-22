@@ -146,7 +146,7 @@ calcOFIM_LMS <- function(model, theta, data, hessian = FALSE,
     return(I)
   }
   J <- gradientLogLikLms_i(theta, model = model, data = data,
-                          P = P, sign = 1, epsilon = epsilon)
+                           P = P, sign = 1, epsilon = epsilon)
   I <- matrix(0, nrow = length(theta), ncol = length(theta))
 
   for (i in seq_len(N)) {
@@ -185,7 +185,6 @@ calcEFIM_LMS <- function(model, finalModel = NULL, theta, data, S = 3e4,
 
   I <- matrix(0, nrow = length(theta), ncol = length(theta))
 
-  P <- estepLms(model = model, theta=theta, data = population)
   for (i in seq_len(S)) {
     if (verbose) printf("\rMonte-Carlo: Iteration = %d/%d", i, S)
 
