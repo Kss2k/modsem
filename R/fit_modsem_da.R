@@ -92,7 +92,7 @@ calcChiSqr <- function(O, E, N, p, mu, muHat) {
 
 calcRMSEA <- function(chi.sq, df, N) {
   ncp <- max(0, chi.sq - df)
-  sqrt(ncp / ((N - df) * (N - df)))
+  sqrt(ncp) / sqrt(df * (N - 1))
 }
 
 
