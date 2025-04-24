@@ -11,8 +11,8 @@ m1 <- "
 est_lms <- modsem(m1, data = oneInt, method = "lms", calc.se=FALSE)
 fit_mod <- fit_modsem_da(est_lms)
 
-est_lavaan <- sem(m1, data = oneInt)
-fit_lav <- as.list(lavInspect(est_lavaan, "fit"))
+est_lavaan <- lavaan::sem(m1, data = oneInt)
+fit_lav <- as.list(lavaan::lavInspect(est_lavaan, "fit"))
 
 expect_equal <- function(x, y, tolerance) {
   diff <- abs(x - y)
