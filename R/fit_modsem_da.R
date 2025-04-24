@@ -110,16 +110,24 @@ calcChiSqr <- function(O, E, N, p, mu, muHat) {
 }
 
 
+tryCatchUniroot <- function(f, lower, upper, errorVal = NA) {
+  tryCatch(
+    uniroot(f, lower = lower, upper = upper)$root,
+    error = function(e) errorVal
+  )
+}
+
+
 calcRMSEA <- function(chi.sq, df, N, ci.level = 0.90, close.h0=0.05) {
   alpha  <- 1 - ci.level
 
   fLower <- \(lambda) pchisq(chi.sq, df, ncp=lambda) - (1 - alpha/2)
   fUpper <- \(lambda) pchisq(chi.sq, df, ncp=lambda) - (    alpha/2)
-  fRMSEA <- \(lambda) sqrt(max(lambda, 0) / (df * N - 1))
+  fRMSEA <- \(lambda) sqrt(max(lambda, 0) / (df * (N - 1)))
 
   point <- chi.sq - df
-  lower <- if (chi.sq <= df) 0 else uniroot(fLower, lower=0, upper=chi.sq)$root
-  upper <- uniroot(fUpper, lower=0, upper=10*chi.sq)$root
+  lower <- tryCatchUniroot(fLower, lower=0, upper=chi.sq, errorVal=0)
+  upper <- tryCatchUniroot(fUpper, lower=0, upper=10*chi.sq, errorVal=df * (N - 1)) # i.e., RMSEA.upper = 1
 
   rmseaLower  <- fRMSEA(lower)
   rmseaUpper  <- fRMSEA(upper)
