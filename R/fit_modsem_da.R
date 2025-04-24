@@ -75,24 +75,59 @@ fit_modsem_da <- function(model, chisq = TRUE) {
   BIC  <- calcBIC(logLik, k = k, N = N)
   aBIC <- calcAdjBIC(logLik, k = k, N = N)
 
-  list(sigma.observed = O, sigma.expected = E,
-       mu.observed = mu, mu.expected = muHat,
-       chisq.value = chisqValue, chisq.pvalue = chisqP, chisq.df = df,
-       AIC = AIC, AICc = AICc, BIC = BIC, aBIC = aBIC, RMSEA = RMSEA)
+  list(
+    sigma.observed = O, 
+    sigma.expected = E,
+    mu.observed    = mu,
+    mu.expected    = muHat,
+    
+    chisq.value  = chisqValue, 
+    chisq.pvalue = chisqP,
+    chisq.df     = df,
+
+    AIC  = AIC,
+    AICc = AICc,
+    BIC  = BIC,
+    aBIC = aBIC, 
+
+    RMSEA          = RMSEA$rmsea,
+    RMSEA.lower    = RMSEA$lower,
+    RMSEA.upper    = RMSEA$upper,
+    RMSEA.ci.level = RMSEA$ci.level,
+    RMSEA.pvalue   = RMSEA$pvalue, 
+    RMSEA.close.h0 = RMSEA$close.h0
+  )
 }
 
 
 calcChiSqr <- function(O, E, N, p, mu, muHat) {
   diff_mu <- mu - muHat
   Einv    <- solve(E)
-  (N - 1) * (t(diff_mu) %*% Einv %*% diff_mu +
-             tr(O %*% Einv) - log(det(O %*% Einv)) - p)
+  as.vector(
+    (N - 1) * (t(diff_mu) %*% Einv %*% diff_mu +
+               tr(O %*% Einv) - log(det(O %*% Einv)) - p)
+  )
 }
 
 
-calcRMSEA <- function(chi.sq, df, N) {
-  ncp <- max(0, chi.sq - df)
-  sqrt(ncp) / sqrt(df * (N - 1))
+calcRMSEA <- function(chi.sq, df, N, ci.level = 0.90, close.h0=0.05) {
+  alpha  <- 1 - ci.level
+
+  fLower <- \(lambda) pchisq(chi.sq, df, ncp=lambda) - (1 - alpha/2)
+  fUpper <- \(lambda) pchisq(chi.sq, df, ncp=lambda) - (    alpha/2)
+  fRMSEA <- \(lambda) sqrt(max(lambda, 0) / (df * N - 1))
+
+  point <- chi.sq - df
+  lower <- if (chi.sq <= df) 0 else uniroot(fLower, lower=0, upper=chi.sq)$root
+  upper <- uniroot(fUpper, lower=0, upper=10*chi.sq)$root
+
+  rmseaLower  <- fRMSEA(lower)
+  rmseaUpper  <- fRMSEA(upper)
+  rmseaHat    <- fRMSEA(point)
+  rmseaPvalue <- 1 - pchisq(chi.sq, df=df, ncp=df*(N-1)*close.h0^2)
+
+  list(rmsea = rmseaHat, lower = rmseaLower, upper = rmseaUpper, 
+       ci.level = ci.level, pvalue = rmseaPvalue, close.h0 = close.h0)
 }
 
 
