@@ -5,27 +5,31 @@ evalToken <- function(token, lhs, rhs) {
 
 #' @export
 evalToken.LavOperator <- function(token, lhs, rhs) {
-  if (is.LavToken(rhs)) {
-    rhs <- list(rhs)
-  }
-  if (is.LavToken(lhs)) {
-    lhs <- list(lhs)
-  }
-  if (!is.atomic(lhs)) {
-    if (is.LavOperator(lhs$op)) {
-      stop2("Unexpected operator ", highlightErrorToken(lhs$op))
-    }
-  } else if (!is.atomic(rhs)) {
-    if (is.LavOperator(rhs$op)) {
-      stop2("Unexpected operator ", highlightErrorToken(rhs$op))
-    }
-  }
+  if (is.LavToken(rhs)) rhs <- list(rhs)
+  if (is.LavToken(lhs)) lhs <- list(lhs)
+
+  stopif(!is.atomic(lhs) && is.LavOperator(lhs$op), "Unexpected operator ", 
+         highlightErrorToken(lhs$op))
+
+  stopif(!is.atomic(rhs) && is.LavOperator(rhs$op), "Unexpected operator ", 
+         highlightErrorToken(rhs$op))
+
   list(lhs = lhs, op = token, rhs = rhs)
 }
 
 
 #' @export
 evalToken.LavToken <- function(token, lhs, rhs) {
+  token
+}
+
+
+#' @export
+evalToken.LavName <- function(token, lhs, rhs) {
+  stopif(is.LavToken(rhs), "Unexpected token ", 
+         highlightErrorToken(rhs))
+  stopif(is.LavToken(lhs), "Unexpected token ",
+         highlightErrorToken(lhs))
   token
 }
 
@@ -109,6 +113,7 @@ evalTokens <- function(syntaxTree) {
   if (is.null(syntaxTree) || length(syntaxTree) == 0) {
     return(NULL)
   }
+
   lhs <- evalTokens(syntaxTree$lhs)
   rhs <- evalTokens(syntaxTree$rhs)
 

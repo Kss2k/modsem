@@ -108,3 +108,9 @@ for (est in estimates) {
   modsemEst[is.na(modsemEst)] <- -999
   testthat::expect_equal(lavaanEst, modsemEst)
 }
+
+
+m1 <- '
+X =~ x1 x2 + x3
+'
+testthat::expect_error(modsemify(m1), regexp = "Unexpected token.*")
