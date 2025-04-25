@@ -1,8 +1,8 @@
 ---
-title: "Fit Measures for LMS and QML Estimation of Latent Interactions"
+title: "fit measures for LMS and QML"
 output: rmarkdown::html_vignette
 vignette: |
-  %\VignetteIndexEntry{Fit Measures for LMS and QML}
+  %\VignetteIndexEntry{fit measures for LMS and QML}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -53,7 +53,7 @@ Y ~ X + Z + X:Z
 est_h1 <- modsem(m1, oneInt, method = "lms")
 
 # Estimate the baseline (H0) model without interaction
-est_h0 <- estimate_h0(est_h1, calc.se = FALSE)
+est_h0 <- estimate_h0(est_h1, calc.se = FALSE) # std.errors are not needed
 ```
 # Fit measures baseline model
 
