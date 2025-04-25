@@ -35,6 +35,7 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/customizing.html">customizing interaction terms</a></li>
+    <li><a class="dropdown-item" href="../articles/fit_measures_da.html">Fit Measures for LMS and QML Estimation of Latent Interactions</a></li>
     <li><a class="dropdown-item" href="../articles/higher_order_interactions.html">higher order interactions</a></li>
     <li><a class="dropdown-item" href="../articles/interaction_two_etas.html">interaction effects between endogenous variables</a></li>
     <li><a class="dropdown-item" href="../articles/lavaan.html">using lavaan functions</a></li>
@@ -258,6 +259,7 @@ method. If you want to use another method, you can change it using the
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">est1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m1</span>, <span class="va">oneInt</span>, method <span class="op">=</span> <span class="st">"lms"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est1</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Estimating baseline model (H0)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; modsem (version 1.0.8):</span></span>
 <span><span class="co">#&gt;   Estimator                                         LMS</span></span>
@@ -543,6 +545,7 @@ quadratic effects.</p>
 <span></span>
 <span><span class="va">est4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m4</span>, <span class="va">oneInt</span>, method <span class="op">=</span> <span class="st">"qml"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est4</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Estimating baseline model (H0)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; modsem (version 1.0.8):</span></span>
 <span><span class="co">#&gt;   Estimator                                         QML</span></span>
@@ -666,6 +669,7 @@ quadratic effects.</p>
 <span><span class="co">#&gt; effects between exogenous and endogenous variables in the lms approach 'nodes =</span></span>
 <span><span class="co">#&gt; 24'</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_tpb_lms</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Estimating baseline model (H0)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; modsem (version 1.0.8):</span></span>
 <span><span class="co">#&gt;   Estimator                                         LMS</span></span>
@@ -813,6 +817,7 @@ is a subset of the PISA 2006 dataset.</p>
 <span><span class="va">est_jordan_qml</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m2</span>, data <span class="op">=</span> <span class="va">jordan</span>, method <span class="op">=</span> <span class="st">"qml"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning: SE's for some coefficients could not be computed.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_jordan_qml</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Estimating baseline model (H0)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; modsem (version 1.0.8):</span></span>
 <span><span class="co">#&gt;   Estimator                                         QML</span></span>
