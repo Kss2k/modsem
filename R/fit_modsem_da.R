@@ -66,8 +66,15 @@ fit_modsem_da <- function(model, chisq = TRUE) {
     chisqValue <- NULL
     chisqP     <- NULL
     df         <- NULL
-    RMSEA      <- NULL
     muHat      <- NULL
+    RMSEA      <- list(
+      RMSEA          = NULL, 
+      RMSEA.lower    = NULL, 
+      RMSEA.upper    = NULL, 
+      RMSEA.ci.level = NULL,
+      RMSEA.pvalue   = NULL, 
+      RMSEA.close.h0 = NULL
+    )
   }
 
   AIC  <- calcAIC(logLik, k = k)
@@ -112,7 +119,7 @@ calcChiSqr <- function(O, E, N, p, mu, muHat) {
 
 tryCatchUniroot <- function(f, lower, upper, errorVal = NA) {
   tryCatch(
-    uniroot(f, lower = lower, upper = upper)$root,
+    stats::uniroot(f, lower = lower, upper = upper)$root,
     error = function(e) errorVal
   )
 }
@@ -121,8 +128,8 @@ tryCatchUniroot <- function(f, lower, upper, errorVal = NA) {
 calcRMSEA <- function(chi.sq, df, N, ci.level = 0.90, close.h0=0.05) {
   alpha  <- 1 - ci.level
 
-  fLower <- \(lambda) pchisq(chi.sq, df, ncp=lambda) - (1 - alpha/2)
-  fUpper <- \(lambda) pchisq(chi.sq, df, ncp=lambda) - (    alpha/2)
+  fLower <- \(lambda) stats::pchisq(chi.sq, df, ncp=lambda) - (1 - alpha/2)
+  fUpper <- \(lambda) stats::pchisq(chi.sq, df, ncp=lambda) - (    alpha/2)
   fRMSEA <- \(lambda) sqrt(max(lambda, 0) / (df * (N - 1)))
 
   point <- chi.sq - df
@@ -132,7 +139,7 @@ calcRMSEA <- function(chi.sq, df, N, ci.level = 0.90, close.h0=0.05) {
   rmseaLower  <- fRMSEA(lower)
   rmseaUpper  <- fRMSEA(upper)
   rmseaHat    <- fRMSEA(point)
-  rmseaPvalue <- 1 - pchisq(chi.sq, df=df, ncp=df*(N-1)*close.h0^2)
+  rmseaPvalue <- 1 - stats::pchisq(chi.sq, df=df, ncp=df*(N-1)*close.h0^2)
 
   list(rmsea = rmseaHat, lower = rmseaLower, upper = rmseaUpper, 
        ci.level = ci.level, pvalue = rmseaPvalue, close.h0 = close.h0)

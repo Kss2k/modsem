@@ -47,5 +47,13 @@ modsem_inspect_da <- function(model, what = "default") {
          all = info,
          matrices = info[inspectDA_Matrices],
          optim = info[inspectDA_Optim],
+         fit = {
+           h0 <- estimate_h0(model, calc.se = FALSE)
+           list(
+              fit.h0 = fit_modsem_da(h0, chisq = TRUE),
+              fit.h1 = fit_modsem_da(model, chisq = FALSE),
+              comparative.fit = compare_fit(h0, model)
+           )
+         },
          info[what])
 }

@@ -4,37 +4,25 @@
 \alias{compare_fit}
 \title{compare model fit for qml and lms models}
 \usage{
-compare_fit(estH0, estH1)
+compare_fit(est_h0, est_h1)
 }
 \arguments{
-\item{estH0}{object of class `modsem_da` representing the
+\item{est_h0}{object of class `modsem_da` representing the
 null hypothesis model}
 
-\item{estH1}{object of class `modsem_da` representing the}
+\item{est_h1}{object of class `modsem_da` representing the}
 }
 \description{
 Compare the fit of two models using the likelihood ratio test.
-`estH0` representing the null
-hypothesis model, and `estH1` the alternative hypothesis model. Importantly,
-the function assumes that `estH0` does not have more free parameters
-(i.e., degrees of freedom) than `estH1`.
+`est_h0` representing the null
+hypothesis model, and `est_h1` the alternative hypothesis model. Importantly,
+the function assumes that `est_h0` does not have more free parameters
+(i.e., degrees of freedom) than `est_h1`.
 alternative hypothesis model
 }
 \examples{
 \dontrun{
-H0 <- "
- # Outer Model
- X =~ x1 + x2 + x3
- Y =~ y1 + y2 + y3
- Z =~ z1 + z2 + z3
-
- # Inner model
- Y ~ X + Z
-"
-
-estH0 <- modsem(m1, oneInt, "lms")
-
-H1 <- "
+m1 <- "
  # Outer Model
  X =~ x1 + x2 + x3
  Y =~ y1 + y2 + y3
@@ -44,7 +32,8 @@ H1 <- "
  Y ~ X + Z + X:Z
 "
 
-estH1 <- modsem(m1, oneInt, "lms")
-compare_fit(estH0, estH1)
+est_h1 <- modsem(m1, oneInt, "lms")
+est_h0 <- estimate_h0(est_h1, calc.se=FALSE) # std.errors are not needed
+compare_fit(est_h0, est_h1)
 }
 }

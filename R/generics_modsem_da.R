@@ -86,29 +86,19 @@ summary.modsem_da <- function(object,
   )
 
   if (H0) {
-    estH0 <- estimateNullModel(
-        object$originalParTable,
-        data            = out$data,
-        method          = method,
-        cov.syntax      = object$model$covModel$syntax,
-        verbose         = verbose,
-        calc.se         = FALSE,
-        double          = args$double,
-        standardize     = args$standardize,
-        standardize.out = args$standardize.out,
-        mean.observed   = args$mean.observed
-    )
+    if (verbose) cat("Estimating null model\n")
+    est_h0 <- estimate_h0(object, calc.se=FALSE)
 
-    out$nullModel <- estH0
-    if (is.null(estH0)) {
+    out$nullModel <- est_h0
+    if (is.null(est_h0)) {
       warning2("Comparative fit to H0 will not be calculated.")
       H0        <- FALSE
       out$D     <- NULL
       out$fitH0 <- NULL
 
     } else {
-      out$D     <- compare_fit(estH0, object)
-      out$fitH0 <- fit_modsem_da(estH0)
+      out$D     <- compare_fit(est_h0, object)
+      out$fitH0 <- fit_modsem_da(est_h0)
     }
   } else {
     out$D <- NULL
@@ -116,7 +106,7 @@ summary.modsem_da <- function(object,
 
   if (r.squared) {
     out$r.squared <- calcRsquared(parTable)
-    if (H0) out$r.squared$H0 <- calcRsquared(estH0$parTable)
+    if (H0) out$r.squared$H0 <- calcRsquared(est_h0$parTable)
   } else out$r.squared <- NULL
 
   out$format <- list(
@@ -278,70 +268,22 @@ print.modsem_da <- function(x, digits = 3, ...) {
 }
 
 
-estimateNullModel <- function(parTable,
-                              data,
-                              method = "lms",
-                              cov.syntax = NULL,
-                              verbose = FALSE,
-                              calc.se = FALSE,
-                              standardize = NULL,
-                              standardize.out = NULL,
-                              mean.observed = NULL,
-                              double = NULL,
-                              ...) {
-  tryCatch({
-    strippedParTable <- removeUnknownLabels(parTable[!grepl(":", parTable$rhs), ])
-    if (NROW(strippedParTable) == NROW(parTable)) return(NULL)
-
-    syntax <- parTableToSyntax(strippedParTable)
-    if (verbose) cat("Estimating null model\n")
-    modsem_da(syntax, data = data,
-              method = method,
-              verbose = verbose,
-              cov.syntax = cov.syntax,
-              calc.se = calc.se,
-              double = double,
-              standardize = standardize,
-              standardize.out = standardize.out,
-              mean.observed = mean.observed, ...)
-  },
-  error = function(e) {
-    warning2("Null model could not be estimated. ",
-             "Error message: ", e$message)
-    NULL
-  })
-}
-
-
-
 #' compare model fit for qml and lms models
 #'
-#' @param estH0 object of class `modsem_da` representing the
+#' @param est_h0 object of class `modsem_da` representing the
 #' null hypothesis model
-#' @param estH1 object of class `modsem_da` representing the
+#' @param est_h1 object of class `modsem_da` representing the
 #' @description Compare the fit of two models using the likelihood ratio test.
-#' `estH0` representing the null
-#' hypothesis model, and `estH1` the alternative hypothesis model. Importantly,
-#' the function assumes that `estH0` does not have more free parameters
-#' (i.e., degrees of freedom) than `estH1`.
+#' `est_h0` representing the null
+#' hypothesis model, and `est_h1` the alternative hypothesis model. Importantly,
+#' the function assumes that `est_h0` does not have more free parameters
+#' (i.e., degrees of freedom) than `est_h1`.
 #' alternative hypothesis model
 #' @rdname compare_fit
 #' @export
 #' @examples
 #' \dontrun{
-#' H0 <- "
-#'  # Outer Model
-#'  X =~ x1 + x2 + x3
-#'  Y =~ y1 + y2 + y3
-#'  Z =~ z1 + z2 + z3
-#'
-#'  # Inner model
-#'  Y ~ X + Z
-#' "
-#'
-#' estH0 <- modsem(m1, oneInt, "lms")
-#'
-#' H1 <- "
+#' m1 <- "
 #'  # Outer Model
 #'  X =~ x1 + x2 + x3
 #'  Y =~ y1 + y2 + y3
@@ -351,18 +293,19 @@ estimateNullModel <- function(parTable,
 #'  Y ~ X + Z + X:Z
 #' "
 #'
-#' estH1 <- modsem(m1, oneInt, "lms")
-#' compare_fit(estH0, estH1)
+#' est_h1 <- modsem(m1, oneInt, "lms")
+#' est_h0 <- estimate_h0(est_h1, calc.se=FALSE) # std.errors are not needed
+#' compare_fit(est_h0, est_h1)
 #' }
 #' @export
-compare_fit <- function(estH0, estH1) {
-  if (is.null(estH0) || is.null(estH1)) {
+compare_fit <- function(est_h0, est_h1) {
+  if (is.null(est_h0) || is.null(est_h1)) {
     return(NULL)
   }
-  df <- length(coef(estH1, type = "free")) - length(coef(estH0, type = "free"))
-  D <- -2 * (estH0$logLik - estH1$logLik)
+  df <- length(coef(est_h1, type = "free")) - length(coef(est_h0, type = "free"))
+  D <- -2 * (est_h0$logLik - est_h1$logLik)
   p <- stats::pchisq(D, df = df, lower.tail = FALSE, log.p = FALSE)
-  list(D = D, df = df, p = p, llChange = estH1$logLik - estH0$logLik)
+  list(D = D, df = df, p = p, llChange = est_h1$logLik - est_h0$logLik)
 }
 
 

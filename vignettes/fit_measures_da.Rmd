@@ -1,0 +1,96 @@
+---
+title: "Fit Measures for LMS and QML Estimation of Latent Interactions"
+output: rmarkdown::html_vignette
+vignette: |
+  %\VignetteIndexEntry{Fit Measures for LMS and QML}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include=FALSE}
+EVAL_DEFAULT <- FALSE
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = EVAL_DEFAULT
+)
+```
+
+```{r setup}
+library(modsem)
+```
+
+# Introduction
+
+This vignette demonstrates how to evaluate and compare model fit for latent interaction models estimated via
+
+- **LMS** (Latent Moderated Structural Equations)
+- **QML** (Quasi-Maximum Likelihood)
+
+using the **modsem** package (v≥1.0.8). Because standard Chi-square statistics are not available under LMS/QML, we assess fit by:
+
+1. Examining fit indices for the baseline (no-interaction) model.
+2. Conducting a likelihood-ratio difference test to compare the baseline and interaction models (Klein & Moosbrugger, 2000; Klein & Múthen, 2007).
+
+If the baseline model shows acceptable fit and adding the latent interaction significantly improves fit, the interaction model can also be deemed well-fitting.
+
+# Example
+
+We define a model with three latent variables (X, Y, Z) and their interaction (X:Z):
+
+```{r}
+m1 <- "
+# Outer (measurement) model
+X =~ x1 + x2 + x3
+Y =~ y1 + y2 + y3
+Z =~ z1 + z2 + z3
+
+# Inner (structural) model
+Y ~ X + Z + X:Z
+"
+
+# Estimate the full (H1) model via LMS
+est_h1 <- modsem(m1, oneInt, method = "lms")
+
+# Estimate the baseline (H0) model without interaction
+est_h0 <- estimate_h0(est_h1, calc.se = FALSE)
+```
+# Fit measures baseline model
+
+To get fit measures for the baseline model you can use the `fit_modsem_da()` function.
+```{r}
+fit_modsem_da(est_h0)
+```
+It can also be used to get fit measures for the full model, but should be pared with 
+`chisq = FALSE` to avoid the Chi-square test. If it is set to `TRUE` it will 
+calculate the Chi-square test while ignoring the interaction terms in the model.
+
+```{r}
+fit_modsem_da(est_h1, chisq = FALSE)
+```
+
+# Difference Test of Fit
+
+Compare H0 vs. H1 using a log-likelihood ratio test:
+
+```{r}
+compare_fit(est_h0, est_h1)
+```
+
+A **significant** p-value indicates the latent interaction term significantly improves model fit.
+
+# Inspecting Fit Indices
+For convenience, you can also use the `modsem_inspect()` function with 
+`what = "fit"` to get fit indices for both models, and comparative fit in one go.
+
+```{r}
+modsem_inspect(est_h1, what = "fit")
+```
+
+# References
+    Klein, A., & Moosbrugger, H. (2000). 
+      <doi:10.1007/BF02296338>.
+      "Maximum likelihood estimation of latent interaction effects with the LMS method."
+    Klein, A. G., & Muthén, B. O. (2007). 
+      <doi:10.1080/00273170701710205>.
+      "Quasi-maximum likelihood estimation of structural equation models with multiple interaction and quadratic effects."
