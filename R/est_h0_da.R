@@ -2,6 +2,7 @@
 #' Estimate baseline model for the LMS and QML approach
 #'
 #' @param object An object of class `modsem_da`.
+#' @param warn_no_interaction Logical. If `TRUE`, a warning is issued if no interaction terms are found in the model.
 #' @param ... Additional arguments passed to the `modsem_da` function, overriding
 #'   the arguments in the original model.
 #' @description Estimates a baseline model (H0) from a given model (H1) and compares the fit of both models.
@@ -25,11 +26,12 @@
 #' compare_fit(est_h0, est_h1)
 #' }
 #' @export
-estimate_h0 <- function(object, ...) {
-  argList  <- object$args
-  parTable <- object$originalParTable
-  data     <- object$data
-  method   <- object$method
+estimate_h0 <- function(object, warn_no_interaction = TRUE, ...) {
+  argList    <- object$args
+  parTable   <- object$originalParTable
+  data       <- object$data
+  method     <- object$method
+  cov.syntax <- object$model$covModel$syntax
 
   newArgList <- list(...) 
   newArgNames <- intersect(names(argList), names(newArgList))
@@ -39,14 +41,17 @@ estimate_h0 <- function(object, ...) {
     strippedParTable <- removeUnknownLabels(parTable[!grepl(":", parTable$rhs), ])
     
     if (NROW(strippedParTable) == NROW(parTable)) {
-      warning2("No interaction terms found in the model. ",
-               "The baseline model is identical to the original model, ",
-               "and won't be estimated!")
+      warnif(warn_no_interaction, "No interaction terms found in the model. ",
+             "The baseline model is identical to the original model, ",
+             "and won't be estimated!")
       return(NULL)
     } 
-
+    
     syntax <- parTableToSyntax(strippedParTable)
-    argList <- c(list(model.syntax = syntax, data = data, method = method), argList)
+    argList <- c(
+        list(model.syntax = syntax, data = data, method = method,
+             cov.syntax = cov.syntax), argList
+    )
     
     do.call(modsem_da, args = argList)
   },

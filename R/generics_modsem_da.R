@@ -86,9 +86,9 @@ summary.modsem_da <- function(object,
   )
 
   if (H0) {
-    if (verbose) cat("Estimating null model\n")
-    est_h0 <- estimate_h0(object, calc.se=FALSE)
-
+    if (any(grepl(":", parTable$rhs))) cat("Estimating baseline model (H0)\n")
+    est_h0 <- estimate_h0(object, calc.se = FALSE, warn_no_interaction = FALSE)
+    
     out$nullModel <- est_h0
     if (is.null(est_h0)) {
       warning2("Comparative fit to H0 will not be calculated.")
