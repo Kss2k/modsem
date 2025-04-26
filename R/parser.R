@@ -35,6 +35,16 @@ evalToken.LavName <- function(token, lhs, rhs) {
 
 
 #' @export
+evalToken.LavNumeric <- function(token, lhs, rhs) {
+  stopif(is.LavToken(rhs), "Unexpected token ", 
+         highlightErrorToken(rhs))
+  stopif(is.LavToken(lhs), "Unexpected token ",
+         highlightErrorToken(lhs))
+  token
+}
+
+
+#' @export
 evalToken.LavAdd <- function(token, lhs, rhs) {
   if (is.LavToken(rhs)) {
     rhs <- list(rhs)

@@ -111,6 +111,8 @@ for (est in estimates) {
 
 
 m1 <- '
-X =~ x1 x2 + x3
+
 '
-testthat::expect_error(modsemify(m1), regexp = "Unexpected token.*")
+testthat::expect_error(modsemify('X =~ x1 x2 + x3'), regexp = "Unexpected token.*")
+testthat::expect_error(modsemify('X =~ 1.0 1.0'),
+                       regexp = "Unexpected token.*")
