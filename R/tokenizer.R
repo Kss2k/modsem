@@ -20,10 +20,12 @@ getCharsLine <- function(line, i = 1) {
 
 
 getLines <- function(syntax) {
-  operators <- c("==", ":=", "~~", "~", "+", "*", "<-", "->", "<", ">")
+  operators <- c("=~", "<=", ">=", "==", ":=", "~~", "~", 
+                 "+", "*", "<-", "->", "<", ">")
   for (op in operators) {
     pattern <- paste0("\\", op, "\\s*[\n|;]")
-    syntax <- stringr::str_replace_all(syntax, pattern, op)
+    replace <- paste0(op, " ")
+    syntax <- stringr::str_replace_all(syntax, pattern, replace)
   }
   lines <- strsplit(syntax, "\n|;") |>
     unlist() |>

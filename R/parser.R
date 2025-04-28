@@ -46,6 +46,12 @@ evalToken.LavNumeric <- function(token, lhs, rhs) {
 
 #' @export
 evalToken.LavAdd <- function(token, lhs, rhs) {
+  if (is.null(rhs)) {
+    stop2("Expected token after `+` ", highlightErrorToken(token))
+  } else if (is.null(lhs)) { 
+    stop2("Expected token before `+` ", highlightErrorToken(token))
+  } 
+  
   if (is.LavToken(rhs)) {
     rhs <- list(rhs)
   }
