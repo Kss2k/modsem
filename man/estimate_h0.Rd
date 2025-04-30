@@ -4,10 +4,12 @@
 \alias{estimate_h0}
 \title{Estimate baseline model for the LMS and QML approach}
 \usage{
-estimate_h0(object, ...)
+estimate_h0(object, warn_no_interaction = TRUE, ...)
 }
 \arguments{
 \item{object}{An object of class `modsem_da`.}
+
+\item{warn_no_interaction}{Logical. If `TRUE`, a warning is issued if no interaction terms are found in the model.}
 
 \item{...}{Additional arguments passed to the `modsem_da` function, overriding
 the arguments in the original model.}
