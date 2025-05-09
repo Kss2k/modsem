@@ -477,10 +477,16 @@ modelToParTable <- function(model, coefs = NULL, se = NULL, method = "lms") {
 
   if (!is.null(coefs) && !is.null(se) && !is.null(names(se))) {
     parTable <- rbind(parTable, customParamsToParTable(model, coefs, se))
-    # this is ugly but should work
+
+    # this is ugly but should work...
+    # due to how values are read from the matrices, std.errors are overwritten
+    # by the custom parameter-values (e.g., 'X=~a*x1; a==1.2' results in a std.error of 1.2, when it should be 0)
     isLabelled <- parTable$label != ""
     labels     <- parTable[isLabelled, "label"]
-    parTable[isLabelled, "se"] <- se[labels]
+    parTable[isLabelled, "std.error"] <- se[labels]
+    # if the std.error of a labelled parameter is 0, it is invariant, and should be NA
+    # NB: there is a very small chance that a std.error of 0 is caused by a rounding error
+    parTable[isLabelled & parTable$std.error == 0, "std.error"] <- NA
   }
 
   parTable

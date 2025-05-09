@@ -11,6 +11,8 @@ m1 <- "
   Y ~~ Y
   Y ~ b * X:Z + 0.05 * X:X
   b == a * 1.2
+
+  coef := a * 2 + b^2
 "
 
 est1 <- modsem(m1, oneInt, method = "lms", optimize = TRUE, verbose = TRUE,
@@ -62,6 +64,8 @@ testthat::expect_warning({
                  cov.syntax = covModel, nodes = 16, robust.se = TRUE)
 }, regexp = "It is recommended .* between endogenous variables .*")
 
+pt2 <- parameter_estimates(est2)
+testthat::expect_true(all(is.na(pt2[pt2$label == "p1", "std.error"])))
 plot_interaction(x = "INT", z = "PBC", y = "BEH", vals_z = c(-0.5, 0.5), model = est2)
 print(summary(est2))
 var_interactions(est2)
