@@ -215,7 +215,7 @@ standardized_estimates.data.frame <- function(object, intercepts = FALSE, ...) {
   constrExprs <- sortConstrExprsFinalPt(parTable)
   parTable <- parTable[parTable$op != ":=", ]
 
-  for (i in seq_len(nrow(constrExprs))) {
+  for (i in seq_len(NROW(constrExprs))) {
     row <- constrExprs[i, , drop=FALSE]
 
     expr      <- parse(text=constrExprs[i, "rhs"])

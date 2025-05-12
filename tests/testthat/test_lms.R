@@ -74,8 +74,8 @@ u_z <- ust_pt[ust_pt$label == label, "z.value"]
 s_est <- std_pt[std_pt$label == label, "est"]
 s_z <- std_pt[std_pt$label == label, "z.value"]
 
-expect_true(u_z == s_z)
-expect_true(u_est < s_est)
+expect_equal(u_z, s_z)
+expect_true(round(u_est, 5) < round(s_est, 5))
 
 plot_interaction(x = "INT", z = "PBC", y = "BEH", vals_z = c(-0.5, 0.5), model = est2)
 print(summary(est2))

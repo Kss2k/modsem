@@ -108,12 +108,13 @@ sortConstrExprs <- function(parTable) {
 
 
 sortConstrExprsFinalPt <- function(parTable) {
+  if (!NROW(parTable)) return(NULL)
+
   # wrapr for sortConstrExprs meant to be used on the final output parTable
   # not for the input parTable (e.g., mod -> label)
+  constrExprs <- sortConstrExprs(dplyr::rename(parTable, mod=label))
 
-  dplyr::rename(parTable, mod=label) |>
-    sortConstrExprs() |>
-    dplyr::rename(label=mod)
+  if (is.null(constrExprs)) NULL else dplyr::rename(label=mod)
 }
 
 
