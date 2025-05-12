@@ -64,12 +64,22 @@ testthat::expect_warning({
                  cov.syntax = covModel, nodes = 16, robust.se = TRUE)
 }, regexp = "It is recommended .* between endogenous variables .*")
 
-pt2 <- parameter_estimates(est2)
-testthat::expect_true(all(is.na(pt2[pt2$label == "p1", "std.error"])))
+ust_pt <- parameter_estimates(est2)
+std_pt <- standardized_estimates(est2)
+testthat::expect_true(all(is.na(ust_pt[ust_pt$label == "p1", "std.error"])))
+
+label <- "my_custom_parameter"
+u_est <- ust_pt[ust_pt$label == label, "est"]
+u_z <- ust_pt[ust_pt$label == label, "z.value"]
+s_est <- std_pt[std_pt$label == label, "est"]
+s_z <- std_pt[std_pt$label == label, "z.value"]
+
+expect_true(u_z == s_z)
+expect_true(u_est < s_est)
+
 plot_interaction(x = "INT", z = "PBC", y = "BEH", vals_z = c(-0.5, 0.5), model = est2)
 print(summary(est2))
 var_interactions(est2)
-standardized_estimates(est2)
 print(vcov(est2)[8:14, 8:14])
 modsem_inspect(est2)
 print(coef(est2))

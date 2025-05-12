@@ -22,6 +22,7 @@ var_interactions <- function(object, ...) {
 #' @export
 var_interactions.data.frame <- function(object, ...) {
   parTable <- removeInteractionVariances(fillColsParTable(object))
+
   intTermVarRows <- parTable$lhs == parTable$rhs &
     grepl(":", parTable$lhs) & parTable$op == "~~"
   intTermCovRows <- parTable$lhs != parTable$lhs & parTable$op == "~~" &
@@ -182,7 +183,6 @@ standardized_estimates.data.frame <- function(object, intercepts = FALSE, ...) {
   selectRows <- NULL
   residual   <- NULL
 
-  # TODO: Rescale Residual Covariances!?
   for (eta in etas) {
     selectRows <- parTable$lhs == eta & parTable$op == "~~" & parTable$rhs == eta
     residual   <- parTable[selectRows, selectCols]
@@ -209,6 +209,27 @@ standardized_estimates.data.frame <- function(object, intercepts = FALSE, ...) {
     gamma      <- parTable[selectRows, selectCols]
 
     parTable[selectRows, selectCols] <- gamma / sqrt(varXZ)
+  }
+
+  # recalculate custom parameters
+  constrExprs <- sortConstrExprsFinalPt(parTable)
+  parTable <- parTable[parTable$op != ":=", ]
+
+  for (i in seq_len(nrow(constrExprs))) {
+    row <- constrExprs[i, , drop=FALSE]
+
+    expr      <- parse(text=constrExprs[i, "rhs"])
+    labelList <- parTableLabelsToList(parTable) # must be updated for each iteration
+  
+    oldVal <- row$est
+    newVal <- eval(expr, envir = labelList)
+
+    ratio  <- newVal / oldVal
+    values <- row[ , selectCols]
+   
+    row[, selectCols] <- values * ratio
+
+    parTable <- rbind(parTable, row)
   }
 
   parTable$z.value  <- parTable$est / parTable$std.error

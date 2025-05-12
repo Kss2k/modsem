@@ -93,10 +93,8 @@ sortConstrExprs <- function(parTable) {
       }
     }
 
-    if (!matchedAny) {
-      stop2("Unkown labels in constraints: ",
-            labels_i[!labels_i %in% definedLabels])
-    }
+    stopif(!matchedAny, "Unkown labels in constraints: ",
+           labels_i[!labels_i %in% definedLabels])
   }
 
   if (NROW(sortedRows) != NROW(rows)) {
@@ -104,7 +102,33 @@ sortConstrExprs <- function(parTable) {
              "attempting to estimate model with unsorted expressions")
     return(rows)
   }
+
   sortedRows
+}
+
+
+sortConstrExprsFinalPt <- function(parTable) {
+  # wrapr for sortConstrExprs meant to be used on the final output parTable
+  # not for the input parTable (e.g., mod -> label)
+
+  dplyr::rename(parTable, mod=label) |>
+    sortConstrExprs() |>
+    dplyr::rename(label=mod)
+}
+
+
+parTableLabelsToList <- function(parTable) {
+  parTable <- parTable[parTable$label != "", ]
+
+  labelList <- list()
+  for (i in seq_len(NROW(parTable))) {
+    val   <- parTable[i, "est"]
+    label <- parTable[i, "label"]
+
+    labelList[[label]] <- val
+  }
+
+  labelList
 }
 
 

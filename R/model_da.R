@@ -459,10 +459,14 @@ mainModelToParTable <- function(finalModel, method = "lms") {
 customParamsToParTable <- function(model, coefs, se) {
   parTable <- model$parTable
   custom   <- parTable[parTable$op == ":=", ]
+
   if (!NROW(custom$lhs)) return(NULL)
   parTable <- NULL
-  for (lhs in custom$lhs) {
-    newRow <- data.frame(lhs = lhs, op = ":=", rhs = "",
+  for (i in seq_len(NROW(custom))) {
+    lhs <- custom[i, "lhs"]
+    rhs <- custom[i, "rhs"]
+
+    newRow <- data.frame(lhs = lhs, op = ":=", rhs = rhs,
                          label = lhs, est = coefs[[lhs]],
                          std.error = se[[lhs]])
     parTable <- rbind(parTable, newRow)
