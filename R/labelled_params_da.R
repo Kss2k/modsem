@@ -110,11 +110,16 @@ sortConstrExprs <- function(parTable) {
 sortConstrExprsFinalPt <- function(parTable) {
   if (!NROW(parTable)) return(NULL)
 
+  label <- NULL # R CMD check will complain that label and mod are not defined
+  mod   <- NULL # but they are defined in the parTable, and lazily evaluated
+                # defining them here stops R CMD check from complaining
+                # but doesn't change the behaviout of dplyr::rename()
+
   # wrapr for sortConstrExprs meant to be used on the final output parTable
   # not for the input parTable (e.g., mod -> label)
   constrExprs <- sortConstrExprs(dplyr::rename(parTable, mod=label))
-
-  if (is.null(constrExprs)) NULL else dplyr::rename(label=mod)
+  
+  if (is.null(constrExprs)) NULL else dplyr::rename(constrExprs, label=mod)
 }
 
 
