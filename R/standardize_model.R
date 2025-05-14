@@ -1,11 +1,11 @@
 #' Standardize the parameter vector and VCOV matrix of a \code{modsem_da} model
 #'
 #' \code{standardize_model()} post-processes the output of
-#' [modsem_da()] (or of [modsem()] when \code{method = "lms"} /
-#' \code{method = "qml"}), replacing the *unstandardized* coefficient vector
-#' (\code{$coefs}) and its variance–covariance matrix (\code{$vcov}) with *fully
-#' standardized* counterparts (including the measurement model).The procedure is purely
-#' algebraic—**no re-estimation is carried out**—and is therefore fast and
+#' \code{\link{modsem_da()}} (or of \code{\link{modsem()}} when \code{method = "lms"} /
+#' \code{method = "qml"}), replacing the \emph{unstandardized} coefficient vector
+#' (\code{$coefs}) and its variance–covariance matrix (\code{$vcov}) with \emph{fully
+#' standardized} counterparts (including the measurement model).The procedure is purely
+#' algebraic— \strong{no re-estimation is carried out} —and is therefore fast and
 #' deterministic.
 #'
 #' @param model A fitted object of class \code{modsem_da}.
@@ -15,26 +15,26 @@
 #' \describe{
 #'   \item{\code{$parTable}}{Parameter table whose columns \code{est} and \code{std.error}
 #'         now hold standardized estimates and their (delta-method)
-#'         standard errors, as produced by [standardized_estimates()].}
+#'         standard errors, as produced by \code{\link{standardized_estimates()}}.}
 #'   \item{\code{$coefs}}{Named numeric vector of standardized coefficients.
 #'         Intercepts (operator \code{~1}) are removed, because a standardized
 #'         variable has mean 0 by definition.}
 #'   \item{\code{$vcov}}{Variance–covariance matrix corresponding to the updated
 #'         coefficient vector.  Rows/columns for intercepts are dropped, and
 #'         the sub-matrix associated with rescaled parameters is adjusted via
-#'         [rescaleVCOV()] so that its diagonal equals the squared
+#'         \code{\link{rescaleVCOV()}} so that its diagonal equals the squared
 #'         standardized standard errors.}
 #' }
 #' The object keeps its class attributes, allowing seamless use by downstream
 #' S3 methods such as \code{summary()}, \code{coef()}, or \code{vcov()}.
 #'
-#' Because the function merely transforms existing estimates, *parameter
-#' constraints imposed through shared labels remain satisfied*. 
+#' Because the function merely transforms existing estimates, \emph{parameter
+#' constraints imposed through shared labels remain satisfied}. 
 #'
 #' @seealso
-#' * [standardized_estimates()] – obtains the fully standardized
+#' \item{\code{\link{standardized_estimates()}} – obtains the fully standardized}
 #'   parameter table used here.  
-#' * [modsem_da()], [modsem()] for model fitting.
+#' \item{\code{\link{modsem_da()}}, \code{\link{modsem()}} for model fitting.}
 #'
 #' @examples
 #' \dontrun{
