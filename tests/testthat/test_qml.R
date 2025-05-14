@@ -47,23 +47,26 @@ expect_warning(plot_jn(x = "INT", z = "PBC", y = "BEH", model = est2,
                        min_z = -2, max_z = 1) ,
                regex = "Truncating SD-range on the right!")
 
-
+# check that standardizing twice does not change the estimates
 testthat::expect_equal(standardized_estimates(est2), 
                        parameter_estimates(est2))
 
+# check correct standardization
 calcCovParTable("BEH", "BEH", parameter_estimates(est2))[[1]] |>
   testthat::expect_equal(1)
 
-# check that everything is standardized the same way
+# check that estimates are standardized the same way 
+# in vcov, coef and parameter_estimates
 pt <- parameter_estimates(est2)
 vcov_sd <- sqrt(vcov(est2)["BEH~PBC:INT", "BEH~PBC:INT"])
-pt_sd <- pt[pt$lhs == "BEH" & pt$op == "~" & pt$rhs == "PBC:INT", "std.error"]
-pt_est <- pt[pt$lhs == "BEH" & pt$op == "~" & pt$rhs == "PBC:INT", "est"]
+cond <- pt$lhs == "BEH" & pt$op == "~" & pt$rhs == "PBC:INT"
+pt_sd <- pt[cond, "std.error"]
+pt_est <- pt[cond, est]
 coef_est <- coef(est2)[["BEH~PBC:INT"]]
 
 expect_equal(vcov_sd, pt_sd)
 expect_equal(pt_est, coef_est)
-]
+
 modsem_inspect(est2) 
 coefficients(est2)
 
