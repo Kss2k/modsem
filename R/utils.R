@@ -19,10 +19,32 @@ warnif <- function(cond, ...) {
 
 
 # utils for all methods
-calcCovParTable <- function(x, y, parTable, measurement.model = FALSE) {
-  parTable$mod <- paste0("(", as.character(parTable$est), ")")
-  parTable <- parTable[c("lhs", "op", "rhs", "mod")]
-  eval(parse(text = trace_path(parTable, x, y, measurement.model = measurement.model)))
+calcCovParTable <- function(x, y, parTable, measurement.model = FALSE, maxlen = 100) {
+  if (measurement.model) {
+    parTable <- redefineMeasurementModel(parTable)
+  }
+  
+  parTable <- prepParTable(parTable[c("lhs", "op", "rhs", "est")], paramCol = "est")
+
+  stopif(length(x) != length(y), "x and y must be the same length")
+
+  covs <- structure(numeric(length(x)), names = paste0(x, "~~", y))
+
+  for (i in seq_along(x)) {
+    paths <- tracePathsRecursively(x = x[i], y = y[i], pt = parTable, 
+                                   paramCol = "est", maxlen = maxlen)
+
+    covs[i] <- sum(vapply(paths, FUN.VALUE = numeric(1L), FUN = prod))
+  }
+
+  covs
+}
+
+
+calcVarParTable <- function(x, parTable, measurement.model = FALSE, maxlen = 100) {
+  var <- calcCovParTable(x = x, y = x, parTable = parTable, 
+                         measurement.model = measurement.model, maxlen = maxlen)
+  structure(var, names = x)
 }
 
 
@@ -363,4 +385,9 @@ getMissingLabels <- function(parTable) {
   labels <- sprintf("%s%s%s", parTable$lhs, parTable$op, parTable$rhs)
   parTable[missing, "label"] <- labels[missing]
   parTable
+}
+
+
+strRemovIfString <- function(x, pattern) {
+  if (is.character(x)) stringr::str_remove_all(x, pattern=pattern) else x
 }

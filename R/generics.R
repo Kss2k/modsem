@@ -32,6 +32,8 @@ var_interactions.data.frame <- function(object, ...) {
   intTerms <- unique(parTable[grepl(":", parTable$rhs) &
                      parTable$op == "~", "rhs"])
 
+  getLabel <- \(x, y) sprintf("%s~~%s", x, y)
+
   for (i in seq_len(length(intTerms))) {
     # interaction term = XZ
     # TO DO:
@@ -40,12 +42,21 @@ var_interactions.data.frame <- function(object, ...) {
     #   Let Y denote the other exogenous variables, and xz denote the variables in
     #   the interaction term
     #   S(X:Z, Y) = S(X:Z, xz) %*% inv(S(xz, xz)) %*% S(xz, Y) ??
-    XZ    <- stringr::str_split_fixed(intTerms[[i]], ":", 2)
-    muX   <- getMean(XZ[[1]], parTable)
-    muZ   <- getMean(XZ[[2]], parTable)
-    varX  <- calcCovParTable(XZ[[1]], XZ[[1]], parTable)
-    varZ  <- calcCovParTable(XZ[[2]], XZ[[2]], parTable)
-    covXZ <- calcCovParTable(XZ[[1]], XZ[[2]], parTable)
+    XZ   <- stringr::str_split_fixed(intTerms[[i]], ":", 2)
+    X    <- XZ[[1]]
+    Z    <- XZ[[2]]
+
+    muX  <- getMean(X, parTable)
+    muZ  <- getMean(Z, parTable)
+
+    lhs  <- c(X, Z, X)
+    rhs  <- c(X, Z, Z)
+
+    covs  <- calcCovParTable(lhs, rhs, parTable)
+    varX  <- covs[[getLabel(X, X)]]
+    varZ  <- covs[[getLabel(Z, Z)]]
+    covXZ <- covs[[getLabel(X, Z)]]
+
     varXZ <- varX * muZ ^ 2 + varZ * muX ^ 2 +
       2 * muX * muZ * covXZ + varX * varZ + covXZ ^ 2
     # needed if mu != 0, but not sure if this is completely correct
@@ -107,25 +118,18 @@ standardized_estimates.data.frame <- function(object, intercepts = FALSE, ...) {
   indsLVs  <- getIndsLVs(parTable, lVs)
   allInds  <- unique(unlist(indsLVs))
 
-  variances <- vector("list", length = length(allInds) + length(lVs) +
-                      length(intTerms))
-  names(variances) <- c(allInds, lVs, intTerms)
-
   # get variances
-  for (x in allInds) {
-    variances[[x]] <- calcCovParTable(x, x, parTable,
-                                      measurement.model = TRUE)
-  }
-  for (lV in lVs) {
-    variances[[lV]] <- calcCovParTable(lV, lV, parTable,
-                                       measurement.model = FALSE)
-  }
-  for (xz in intTerms) {
-    variances[[xz]] <- parTable[parTable$lhs == xz &
-                                parTable$rhs == xz &
-                                parTable$op == "~~", "est"]
+  variancesInds <- calcVarParTable(allInds, parTable, measurement.model = TRUE)
+  variancesLVs  <- calcVarParTable(lVs, parTable, measurement.model = FALSE)
+  variancesIntTerms <- structure(numeric(length(intTerms)), names = intTerms)
 
+  for (xz in intTerms) {
+    variancesIntTerms[[xz]] <- parTable[parTable$lhs == xz & 
+                                        parTable$rhs == xz &
+                                        parTable$op == "~~", "est"]
   }
+
+  variances <- c(variancesInds, variancesLVs, variancesIntTerms)
 
   # Factor Loadings
   lambda     <- NULL

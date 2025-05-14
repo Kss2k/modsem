@@ -314,14 +314,11 @@ calcRsquared <- function(parTable) {
   etas     <- unique(parTable$lhs[parTable$op == "~"])
 
   # Calculate Variances/R squared of Etas
-  variances <- residuals <- Rsqr <- vector("numeric", length(etas))
-  for (i in seq_along(etas)) {
-    variances[[i]] <- calcCovParTable(etas[[i]], etas[[i]], parTable)
-    residuals[[i]] <- as.numeric(parTable$est[parTable$lhs == etas[[i]] &
-                                              parTable$op == "~~" &
-                                              parTable$rhs == etas[[i]]])
-    Rsqr[[i]] <- 1 - residuals[[i]] / variances[[i]]
-  }
+  residuals_df <- parTable[parTable$lhs %in% etas & 
+                           parTable$rhs == parTable$lhs, ]
+  residuals <- structure(residuals_df$est, names=residuals_df$lhs)[etas]
+  variances <- calcVarParTable(etas, parTable)
+  Rsqr <- 1 - residuals / variances
 
   data.frame(eta = etas, variance = variances,
              residual = residuals, Rsqr = Rsqr)

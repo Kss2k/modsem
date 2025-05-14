@@ -51,7 +51,7 @@ expect_warning(plot_jn(x = "INT", z = "PBC", y = "BEH", model = est2,
 testthat::expect_equal(standardized_estimates(est2), 
                        parameter_estimates(est2))
 
-calcCovParTable("BEH", "BEH", parameter_estimates(est2)) |>
+calcCovParTable("BEH", "BEH", parameter_estimates(est2))[[1]] |>
   testthat::expect_equal(1)
 
 vcov(est2) 
@@ -94,7 +94,7 @@ print(summary(est4, H0 = FALSE))
 testthat::expect_equal(standardized_estimates(est4), 
                        parameter_estimates(est4))
 
-calcCovParTable("BEH", "BEH", parameter_estimates(est4)) |>
+calcCovParTable("BEH", "BEH", parameter_estimates(est4))[[1]] |>
   testthat::expect_equal(1)
 
 vcov(est4) 

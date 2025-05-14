@@ -1,8 +1,8 @@
 # Functions for tracing paths in SEMs, used both for calculating (co-)variances,
 # as well as calculating formulas for (co-)variances.
-prepParTable <- function(parTable, addCovPt = TRUE, maxlen = 100) {
+prepParTable <- function(parTable, addCovPt = TRUE, maxlen = 100, paramCol = "mod") {
   # Remove any potential ':' from the model
-  parTable <- lapplyDf(parTable, stringr::str_remove_all, pattern = ":")
+  parTable <- lapplyDf(parTable, strRemovIfString, pattern = ":")
 
   # get relevant variables
   structuralVars <- parTable[parTable$op == "~", c("lhs", "rhs")] |>
@@ -15,13 +15,15 @@ prepParTable <- function(parTable, addCovPt = TRUE, maxlen = 100) {
   if (any(parTable$op == "=~")) parTable <- redefineMeasurementModel(parTable)
 
   # add missing labels
-  labels <- apply(parTable[parTable$mod == "", c("lhs", "op", "rhs")],
-                  MARGIN = 1, FUN = stringr::str_c, collapse = "")
-  parTable[parTable$mod == "", "mod"] <- labels
+  if (paramCol %in% c("mod", "label")) {
+    labels <- apply(parTable[parTable[[paramCol]] == "", c("lhs", "op", "rhs")],
+                    MARGIN = 1, FUN = stringr::str_c, collapse = "")
+    parTable[parTable[[paramCol]] == "", paramCol] <- labels
+  }
 
   if (addCovPt) {
     reversedCovPaths <- parTable[parTable$lhs != parTable$rhs & parTable$op == "~~", ]
-    colnames(reversedCovPaths) <- c("rhs", "op", "lhs", "mod")
+    colnames(reversedCovPaths) <- c("rhs", "op", "lhs", paramCol)
     parTable <- rbind(parTable, reversedCovPaths)
   }
 
@@ -29,8 +31,9 @@ prepParTable <- function(parTable, addCovPt = TRUE, maxlen = 100) {
 }
 
 
-tracePathsRecurively = function(x, y, pt, maxlen, currentPath = c(),
-                                covCount = 0, from = "lhs", depth = 1) {
+tracePathsRecursively = function(x, y, pt, maxlen, currentPath = c(),
+                                 covCount = 0, from = "lhs", depth = 1, 
+                                 paramCol = "mod") {
   if (depth > maxlen) {
     warning2("Encountered a non-recursive model (infinite loop) when tracing paths")
     return(NULL)
@@ -55,13 +58,14 @@ tracePathsRecurively = function(x, y, pt, maxlen, currentPath = c(),
       nextFrom <- ifelse(from == "lhs", yes = "rhs", no = "lhs")
     }
 
-    newPaths <- tracePathsRecurively(x = nextVar, y = y, pt = pt, maxlen = maxlen,
-                                     currentPath = c(currentPath, branch$mod),
-                                     covCount = nextCovCount,
-                                     from = nextFrom, depth = depth + 1)
+    newPaths <- tracePathsRecursively(x = nextVar, y = y, pt = pt, maxlen = maxlen,
+                                      currentPath = c(currentPath, branch[[paramCol]]),
+                                      covCount = nextCovCount, from = nextFrom, 
+                                      depth = depth + 1, paramCol = paramCol)
     paths <- c(paths, newPaths)
 
   }
+
   paths
 }
 
@@ -84,7 +88,7 @@ cleanTracedPaths <- function(paths) {
 
 generateSyntax <- function(x, y, pt, maxlen = 100, parenthesis = TRUE, ...) {
   pt    <- prepParTable(pt, ...)
-  paths <- tracePathsRecurively(x = x, y = y, pt = pt, maxlen = maxlen)
+  paths <- tracePathsRecursively(x = x, y = y, pt = pt, maxlen = maxlen)
 
   if (!length(paths)) return(NA)
   cleaned <- cleanTracedPaths(paths)
