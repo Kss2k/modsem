@@ -1,4 +1,4 @@
-#' Standardize the parameter vector and VCOV matrix of a \code{modsem_da} model
+#' Standardize a fitted \code{modsem_da} model
 #'
 #' \code{standardize_model()} post-processes the output of
 #' \code{\link{modsem_da}()} (or of \code{\link{modsem}())} when \code{method = "lms"} /
@@ -50,8 +50,8 @@
 #' sfit <- standardize_model(fit)
 #'
 #' # Compare unstandardized vs. standardized summaries
-#' summary(fit)      # raw metric
-#' summary(sfit)     # correlation metric
+#' summary(fit)  # unstandardized
+#' summary(sfit) # standardized 
 #' }
 #'
 #' @export

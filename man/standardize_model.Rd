@@ -2,7 +2,7 @@
 % Please edit documentation in R/standardize_model.R
 \name{standardize_model}
 \alias{standardize_model}
-\title{Standardize the parameter vector and VCOV matrix of a \code{modsem_da} model}
+\title{Standardize a fitted \code{modsem_da} model}
 \usage{
 standardize_model(model)
 }
@@ -52,8 +52,8 @@ fit  <- modsem_da(syntax, data = oneInt, method = "lms")
 sfit <- standardize_model(fit)
 
 # Compare unstandardized vs. standardized summaries
-summary(fit)      # raw metric
-summary(sfit)     # correlation metric
+summary(fit)  # unstandardized
+summary(sfit) # standardized 
 }
 
 }
