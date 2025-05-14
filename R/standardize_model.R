@@ -1,7 +1,7 @@
 #' Standardize the parameter vector and VCOV matrix of a \code{modsem_da} model
 #'
 #' \code{standardize_model()} post-processes the output of
-#' \code{\link{modsem_da()}} (or of \code{\link{modsem()}} when \code{method = "lms"} /
+#' \code{\link{modsem_da}()} (or of \code{\link{modsem}())} when \code{method = "lms"} /
 #' \code{method = "qml"}), replacing the \emph{unstandardized} coefficient vector
 #' (\code{$coefs}) and its variance–covariance matrix (\code{$vcov}) with \emph{fully
 #' standardized} counterparts (including the measurement model).The procedure is purely
@@ -15,15 +15,14 @@
 #' \describe{
 #'   \item{\code{$parTable}}{Parameter table whose columns \code{est} and \code{std.error}
 #'         now hold standardized estimates and their (delta-method)
-#'         standard errors, as produced by \code{\link{standardized_estimates()}}.}
+#'         standard errors, as produced by \code{\link{standardized_estimates}()}.}
 #'   \item{\code{$coefs}}{Named numeric vector of standardized coefficients.
 #'         Intercepts (operator \code{~1}) are removed, because a standardized
 #'         variable has mean 0 by definition.}
 #'   \item{\code{$vcov}}{Variance–covariance matrix corresponding to the updated
 #'         coefficient vector.  Rows/columns for intercepts are dropped, and
-#'         the sub-matrix associated with rescaled parameters is adjusted via
-#'         \code{\link{rescaleVCOV()}} so that its diagonal equals the squared
-#'         standardized standard errors.}
+#'         the sub-matrix associated with rescaled parameters is adjusted 
+#'         so that its diagonal equals the squared standardized standard errors.}
 #' }
 #' The object keeps its class attributes, allowing seamless use by downstream
 #' S3 methods such as \code{summary()}, \code{coef()}, or \code{vcov()}.
@@ -32,9 +31,9 @@
 #' constraints imposed through shared labels remain satisfied}. 
 #'
 #' @seealso
-#' \item{\code{\link{standardized_estimates()}} – obtains the fully standardized}
+#' \item{\code{\link{standardized_estimates}()} – obtains the fully standardized}
 #'   parameter table used here.  
-#' \item{\code{\link{modsem_da()}}, \code{\link{modsem()}} for model fitting.}
+#' \item{\code{\link{modsem_da}()}, \code{\link{modsem}()} for model fitting.}
 #'
 #' @examples
 #' \dontrun{
