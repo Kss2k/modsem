@@ -58,7 +58,10 @@ summary(sfit)     # correlation metric
 
 }
 \seealso{
-\item{\code{\link{standardized_estimates}()} – obtains the fully standardized}
-  parameter table used here.  
-\item{\code{\link{modsem_da}()}, \code{\link{modsem}()} for model fitting.}
+\describe{
+   \item{\code{\link{standardized_estimates}()}}{Obtains the fully standardized
+         parameter table used here.}
+   \item{\code{\link{modsem}()}}{Fit model using LMS or QML approaches.}
+   \item{\code{\link{modsem_da}()}}{Fit model using LMS or QML approaches.}
+}
 }
