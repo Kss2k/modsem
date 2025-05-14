@@ -61,7 +61,7 @@ pt <- parameter_estimates(est2)
 vcov_sd <- sqrt(vcov(est2)["BEH~PBC:INT", "BEH~PBC:INT"])
 cond <- pt$lhs == "BEH" & pt$op == "~" & pt$rhs == "PBC:INT"
 pt_sd <- pt[cond, "std.error"]
-pt_est <- pt[cond, est]
+pt_est <- pt[cond, "est"]
 coef_est <- coef(est2)[["BEH~PBC:INT"]]
 
 expect_equal(vcov_sd, pt_sd)
