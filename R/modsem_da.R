@@ -317,14 +317,11 @@ modsem_da <- function(model.syntax = NULL,
   
 
   class(est) <- c("modsem_da", "modsem")
-  if (args$standardize.out) {
-    est$type.estimates <- "standardized"
-    est$parTable <- standardized_estimates(est)
-  }
 
   # clean up
   resetThreads()
 
   est$args <- args
-  est
+    
+  if (args$standardize.out) standardize_model(est) else est
 }

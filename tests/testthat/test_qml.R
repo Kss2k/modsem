@@ -54,9 +54,17 @@ testthat::expect_equal(standardized_estimates(est2),
 calcCovParTable("BEH", "BEH", parameter_estimates(est2))[[1]] |>
   testthat::expect_equal(1)
 
-vcov(est2) 
+# check that everything is standardized the same way
+pt <- parameter_estimates(est2)
+vcov_sd <- sqrt(vcov(est2)["BEH~PBC:INT", "BEH~PBC:INT"])
+pt_sd <- pt[pt$lhs == "BEH" & pt$op == "~" & pt$rhs == "PBC:INT", "std.error"]
+pt_est <- pt[pt$lhs == "BEH" & pt$op == "~" & pt$rhs == "PBC:INT", "est"]
+coef_est <- coef(est2)[["BEH~PBC:INT"]]
+
+expect_equal(vcov_sd, pt_sd)
+expect_equal(pt_est, coef_est)
+]
 modsem_inspect(est2) 
-coef(est2)
 coefficients(est2)
 
 # Observed Variables
