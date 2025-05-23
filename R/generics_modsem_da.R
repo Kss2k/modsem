@@ -498,7 +498,7 @@ standardized_estimates_mc <- function(object, mc.reps = 10000, tolerance.zero = 
 
       COEFS[[label]] <- lambda
       parTable[selectRows, "est"] <- lambda[[1]]
-      parTable[selectRows, "std.error"] <- sd(lambda) # std.error in COEFS
+      parTable[selectRows, "std.error"] <- stats::sd(lambda) # std.error in COEFS
     }
   }
 
@@ -520,7 +520,7 @@ standardized_estimates_mc <- function(object, mc.reps = 10000, tolerance.zero = 
       
       COEFS[[label]] <- gamma
       parTable[selectRows, "est"] <- gamma[[1]]
-      parTable[selectRows, "std.error"] <- sd(gamma) # std.error in COEFS
+      parTable[selectRows, "std.error"] <- stats::sd(gamma) # std.error in COEFS
     }
   }
 
@@ -542,7 +542,7 @@ standardized_estimates_mc <- function(object, mc.reps = 10000, tolerance.zero = 
     covs <- COEFS[[label]] / scalingCoef
 
     parTable[selectRows, "est"] <- covs[[1]]
-    parTable[selectRows, "std.error"] <- sd(covs) # std.error in COEFS
+    parTable[selectRows, "std.error"] <- stats::sd(covs) # std.error in COEFS
   }
 
   # Residual Variances etas
@@ -556,7 +556,7 @@ standardized_estimates_mc <- function(object, mc.reps = 10000, tolerance.zero = 
 
     COEFS[[label]] <- residual
     parTable[selectRows, "est"] <- residual[[1]]
-    parTable[selectRows, "std.error"] <- sd(residual) # std.error in COEFS
+    parTable[selectRows, "std.error"] <- stats::sd(residual) # std.error in COEFS
   }
 
   # residual variances inds
@@ -567,7 +567,7 @@ standardized_estimates_mc <- function(object, mc.reps = 10000, tolerance.zero = 
 
     COEFS[[label]] <- residual
     parTable[selectRows, "est"] <- residual[[1]]
-    parTable[selectRows, "std.error"] <- sd(residual) # std.error in COEFS
+    parTable[selectRows, "std.error"] <- stats::sd(residual) # std.error in COEFS
   }
 
   # recalculate variance of interaction terms
@@ -585,7 +585,7 @@ standardized_estimates_mc <- function(object, mc.reps = 10000, tolerance.zero = 
 
     COEFS[[label]] <- gamma 
     parTable[selectRows, "est"] <- gamma[[1]]
-    parTable[selectRows, "std.error"] <- sd(gamma) # std.error in COEFS
+    parTable[selectRows, "std.error"] <- stats::sd(gamma) # std.error in COEFS
   }
 
   # recalculate custom parameters
@@ -602,7 +602,7 @@ standardized_estimates_mc <- function(object, mc.reps = 10000, tolerance.zero = 
   
     COEFS[[label]] <- newVals
     row$est <- newVals[[1]]
-    row$std.error <- sd(newVals) # std.error in COEFS
+    row$std.error <- stats::sd(newVals) # std.error in COEFS
 
     parTable <- rbind(parTable, row)
   }
