@@ -69,6 +69,8 @@ summary for modsem objects"></head><body>
 <span>  scientific <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  ci <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  standardized <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  monte.carlo <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  mc.reps <span class="op">=</span> <span class="fl">10000</span>,</span>
 <span>  loadings <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  regressions <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  covariances <span class="op">=</span> <span class="cn">TRUE</span>,</span>
@@ -135,6 +137,16 @@ summary for modsem objects"></head><body>
 
 <dt id="arg-standardized">standardized<a class="anchor" aria-label="anchor" href="#arg-standardized"></a></dt>
 <dd><p>print standardized estimates</p></dd>
+
+
+<dt id="arg-monte-carlo">monte.carlo<a class="anchor" aria-label="anchor" href="#arg-monte-carlo"></a></dt>
+<dd><p>should Monte Carlo bootstrapped standard errors be used? Only
+relevant if `standardized = TRUE`.</p></dd>
+
+
+<dt id="arg-mc-reps">mc.reps<a class="anchor" aria-label="anchor" href="#arg-mc-reps"></a></dt>
+<dd><p>number of Monte Carlo repetitions. Only relevant if `monte.carlo = TRUE`,
+and `standardized = TRUE`.</p></dd>
 
 
 <dt id="arg-loadings">loadings<a class="anchor" aria-label="anchor" href="#arg-loadings"></a></dt>
