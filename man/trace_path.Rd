@@ -12,6 +12,7 @@ trace_path(
   missing.cov = FALSE,
   measurement.model = FALSE,
   maxlen = 100,
+  paramCol = "mod",
   ...
 )
 }
@@ -29,6 +30,8 @@ trace_path(
 \item{measurement.model}{If \code{TRUE}, the function will use the measurement model}
 
 \item{maxlen}{Maximum length of a path before aborting}
+
+\item{paramCol}{The column name in \code{pt} that contains the parameter labels}
 
 \item{...}{Additional arguments passed to \link{trace_path}}
 }

@@ -3,6 +3,7 @@
 prepParTable <- function(parTable, addCovPt = TRUE, maxlen = 100, paramCol = "mod") {
   # Remove any potential ':' from the model
   parTable <- lapplyDf(parTable, strRemovIfString, pattern = ":")
+  parTable <- parTable[c("lhs", "op", "rhs", paramCol)]
 
   # get relevant variables
   structuralVars <- parTable[parTable$op == "~", c("lhs", "rhs")] |>
@@ -86,9 +87,9 @@ cleanTracedPaths <- function(paths) {
 }
 
 
-generateSyntax <- function(x, y, pt, maxlen = 100, parenthesis = TRUE, ...) {
-  pt    <- prepParTable(pt, ...)
-  paths <- tracePathsRecursively(x = x, y = y, pt = pt, maxlen = maxlen)
+generateSyntax <- function(x, y, pt, maxlen = 100, parenthesis = TRUE, paramCol = "mod",...) {
+  pt    <- prepParTable(pt, paramCol = paramCol, ...)
+  paths <- tracePathsRecursively(x = x, y = y, pt = pt, maxlen = maxlen, paramCol = paramCol)
 
   if (!length(paths)) return(NA)
   cleaned <- cleanTracedPaths(paths)
@@ -97,7 +98,7 @@ generateSyntax <- function(x, y, pt, maxlen = 100, parenthesis = TRUE, ...) {
 }
 
 
-addMissingCovariances <- function(pt) {
+addMissingCovariances <- function(pt, paramCol = "mod") {
   pt <- pt[!pt$op %in% c("=~", "~1"), ]
 
   xis  <- getXis(pt, checkAny = FALSE, isLV = FALSE)
@@ -118,7 +119,7 @@ addMissingCovariances <- function(pt) {
   covs <- rbind(psi, phi)
   for (i in seq_len(nrow(covs))) {
     row <- covs[i, , drop = FALSE]
-    if (isRowInParTable(row = row, pt = pt, ignore = "mod")) next
+    if (isRowInParTable(row = row, pt = pt, ignore = paramCol)) next
     pt <- rbind(pt, row)
   }
 
@@ -135,6 +136,7 @@ addMissingCovariances <- function(pt) {
 #' @param missing.cov If \code{TRUE}, covariances missing from the model syntax will be added
 #' @param measurement.model If \code{TRUE}, the function will use the measurement model
 #' @param maxlen Maximum length of a path before aborting
+#' @param paramCol The column name in \code{pt} that contains the parameter labels
 #' @param ... Additional arguments passed to \link{trace_path}
 #'
 #' @return A string with the estimated path (simplified if possible)
@@ -159,8 +161,15 @@ addMissingCovariances <- function(pt) {
 #' pt <- modsemify(m1)
 #' trace_path(pt, x = "Y", y = "Y", missing.cov = TRUE) # variance of Y
 trace_path <- function(pt, x, y, parenthesis = TRUE, missing.cov = FALSE,
-                       measurement.model = FALSE, maxlen = 100, ...) {
+                       measurement.model = FALSE, maxlen = 100, 
+                       paramCol = "mod", ...) {
   if (measurement.model) pt <- redefineMeasurementModel(pt)
-  if (missing.cov) pt <- addMissingCovariances(pt)
-  generateSyntax(x = x, y = y, pt = pt, maxlen = maxlen, parenthesis = parenthesis, ...)
+  if (missing.cov) pt <- addMissingCovariances(pt, paramCol = paramCol)
+  generateSyntax(x = x, y = y, pt = pt, maxlen = maxlen, 
+                 parenthesis = parenthesis, paramCol = paramCol, ...)
+}
+
+
+getCovEqExpr <- function(x, y, parTable, paramCol = "label", ...) {
+  parse(text=trace_path(x = x, y = y, pt = parTable, paramCol = paramCol, ...))
 }

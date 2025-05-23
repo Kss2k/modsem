@@ -11,6 +11,15 @@
 #' @param model A fitted object of class \code{modsem_da}.
 #'   Passing any other object triggers an error.
 #'
+#' @param monte.carlo Logical. If \code{TRUE}, the function will use Monte Carlo
+#'   simulation to obtain the standard errors of the standardized estimates.
+#'   If \code{FALSE}, the function will simply rescale the standard errors. This means that 
+#'   the function will not be able to provide standard errors for fixed parameters.
+#'   Default is \code{FALSE}.
+#'
+#' @param mc.reps Number of Monte Carlo replications. Default is 10,000.
+#'   Ignored if \code{monte.carlo = FALSE}.
+#'
 #' @return The same object (returned invisibly) with three slots overwritten  
 #' \describe{
 #'   \item{\code{$parTable}}{Parameter table whose columns \code{est} and \code{std.error}
@@ -47,7 +56,7 @@
 #'   Y ~ X + Z + X:Z
 #' "
 #' fit  <- modsem_da(syntax, data = oneInt, method = "lms")
-#' sfit <- standardize_model(fit)
+#' sfit <- standardize_model(fit, monte.carlo = TRUE)
 #'
 #' # Compare unstandardized vs. standardized summaries
 #' summary(fit)  # unstandardized
@@ -55,14 +64,13 @@
 #' }
 #'
 #' @export
-standardize_model <- function(model) {
+standardize_model <- function(model, monte.carlo = FALSE, mc.reps = 10000) {
   stopif(!inherits(model, "modsem_da"), "The model must be of class 'modsem_da'.")
 
-  parTable <- standardized_estimates(model)
+  parTable <- standardized_estimates(model, monte.carlo = monte.carlo, 
+                                     mc.reps = mc.reps)
 
-  labels <- ifelse(parTable$label == "", 
-                   yes = paste0(parTable$lhs, parTable$op, parTable$rhs),
-                   no = parTable$label)
+  labels <- getParTableLabels(parTable, labelCol="label")
   interceptLabels <- labels[parTable$op == "~1"]
 
   coefs  <- coef(model)

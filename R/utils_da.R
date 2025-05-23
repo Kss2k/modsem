@@ -1,5 +1,8 @@
-# Utils for lms approach
-# Last updated: 31.07.2024
+OP_REPLACEMENTS <- c("~~" = "_COV_",
+                     "=~" = "_MEASR_",
+                     ":=" = "_CUSTOM_",
+                     "~"  = "_REG_",
+                     ":"  = "_INT_")
 
 
 getFreeParams <- function(model) {
@@ -401,3 +404,65 @@ getEtaRowLabelOmega <- function(label) {
 getXiRowLabelOmega <- function(label) {
   stringr::str_split_1(label, "~")[[2]]
 }
+
+
+expandVCOV <- function(vcov, labels) {
+  labels_vcov <- colnames(vcov)
+  labels_vv <- intersect(labels, labels_vcov) 
+  labels_zz <- setdiff(labels, labels_vcov)
+
+  m <- length(labels_vv)
+  k <- length(labels_zz)
+
+  Vvv <- vcov[labels_vv, labels_vv]
+  Vzz <- matrix(0, nrow = k, ncol = k, dimnames = list(labels_zz, labels_zz))
+  Vvz <- matrix(0, nrow = m, ncol = k, dimnames = list(labels_vv, labels_zz))
+
+  V <- rbind(cbind(Vvv, Vvz), cbind(t(Vvz), Vzz))
+  V[labels, labels] # sort
+}
+
+
+var_interactions_COEFS <- function(parTable, COEFS) {
+  intTermVarRows <- parTable$lhs == parTable$rhs &
+    grepl(":", parTable$lhs) & parTable$op == "~~"
+  intTermCovRows <- parTable$lhs != parTable$lhs & parTable$op == "~~" &
+    (grepl(":", parTable$lhs) | grepl(":", parTable$rhs))
+  parTable <- parTable[!(intTermVarRows | intTermCovRows), ]
+
+  intTerms <- unique(parTable[grepl(":", parTable$rhs) &
+                     parTable$op == "~", "rhs"])
+
+  for (i in seq_len(length(intTerms))) {
+    XZ   <- stringr::str_split_fixed(intTerms[[i]], ":", 2)
+    X    <- XZ[[1]]
+    Z    <- XZ[[2]]
+
+    labelVarXZ   <- paste0(X, Z, OP_REPLACEMENTS[["~~"]], X, Z)
+  
+    # since the interaction term has been standardized there is no need
+    # to worry about the means of X and Z, and hence the covariances between XZ~~X and XZ~~Z
+    eqVarX  <- getCovEqExpr(x=X, y=X, parTable=parTable)
+    eqVarZ  <- getCovEqExpr(x=Z, y=Z, parTable=parTable)
+    eqCovXZ <- getCovEqExpr(x=X, y=Z, parTable=parTable)
+
+    varX <- eval(eqVarX, envir = COEFS)
+    varZ <- eval(eqVarZ, envir = COEFS)
+    covXZ <- eval(eqCovXZ, envir = COEFS)
+
+    varXZ <- varX * varZ + covXZ ^ 2
+    COEFS[[labelVarXZ]] <- varXZ
+
+    newRow <- data.frame(lhs = intTerms[[i]],
+                         op = "~~",
+                         rhs = intTerms[[i]],
+                         est = varXZ[[1]],
+                         label = labelVarXZ, 
+                         std.error = NA)
+    parTable <- rbind(parTable, newRow)
+  }
+
+  list(parTable = parTable, COEFS = COEFS)
+}
+
+

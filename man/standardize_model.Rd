@@ -4,11 +4,20 @@
 \alias{standardize_model}
 \title{Standardize a fitted \code{modsem_da} model}
 \usage{
-standardize_model(model)
+standardize_model(model, monte.carlo = FALSE, mc.reps = 10000)
 }
 \arguments{
 \item{model}{A fitted object of class \code{modsem_da}.
 Passing any other object triggers an error.}
+
+\item{monte.carlo}{Logical. If \code{TRUE}, the function will use Monte Carlo
+simulation to obtain the standard errors of the standardized estimates.
+If \code{FALSE}, the function will simply rescale the standard errors. This means that 
+the function will not be able to provide standard errors for fixed parameters.
+Default is \code{FALSE}.}
+
+\item{mc.reps}{Number of Monte Carlo replications. Default is 10,000.
+Ignored if \code{monte.carlo = FALSE}.}
 }
 \value{
 The same object (returned invisibly) with three slots overwritten  
@@ -49,7 +58,7 @@ syntax <- "
   Y ~ X + Z + X:Z
 "
 fit  <- modsem_da(syntax, data = oneInt, method = "lms")
-sfit <- standardize_model(fit)
+sfit <- standardize_model(fit, monte.carlo = TRUE)
 
 # Compare unstandardized vs. standardized summaries
 summary(fit)  # unstandardized

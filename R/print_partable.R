@@ -40,7 +40,7 @@ formatParTable <- function(parTable, digits = 3, scientific = FALSE,
     if (is.numeric(parTable[[i]])) parTable[[i]] <- round(parTable[[i]], digits)
     maxWidth <- maxchar(c(header[[i]], parTable[[i]]))
     parTable[[i]] <- format(parTable[[i]], width = maxWidth,
-                            digits = digits, justify = "right")
+                            digits = digits, justify = "right", scientific=FALSE)
     parTable[[i]] <- stringr::str_replace_all(parTable[[i]], "NA", "  ")
     header[[i]] <- format(header[[i]], width = maxWidth, justify = "right")
   }

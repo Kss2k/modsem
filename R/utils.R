@@ -391,3 +391,10 @@ getMissingLabels <- function(parTable) {
 strRemovIfString <- function(x, pattern) {
   if (is.character(x)) stringr::str_remove_all(x, pattern=pattern) else x
 }
+
+
+getParTableLabels <- function(parTable, labelCol="label") {
+  ifelse(parTable[[labelCol]] == "", 
+         yes = paste0(parTable$lhs, parTable$op, parTable$rhs),
+         no = parTable[[labelCol]])
+}

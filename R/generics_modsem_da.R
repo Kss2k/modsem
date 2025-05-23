@@ -15,6 +15,10 @@ parameter_estimates.modsem_da <- function(object, ...) {
 #' @param scientific print p-values in scientific notation
 #' @param ci print confidence intervals
 #' @param standardized print standardized estimates
+#' @param monte.carlo should Monte Carlo bootstrapped standard errors be used? Only 
+#'   relevant if `standardized = TRUE`.
+#' @param mc.reps number of Monte Carlo repetitions. Only relevant if `monte.carlo = TRUE`, 
+#'   and `standardized = TRUE`.
 #' @param loadings print loadings
 #' @param regressions print regressions
 #' @param covariances print covariances
@@ -49,6 +53,8 @@ summary.modsem_da <- function(object,
                               scientific = FALSE,
                               ci = FALSE,
                               standardized = FALSE,
+                              monte.carlo = FALSE,
+                              mc.reps = 10000,
                               loadings = TRUE,
                               regressions = TRUE,
                               covariances = TRUE,
@@ -59,7 +65,8 @@ summary.modsem_da <- function(object,
   method <- object$method
 
   if (standardized) {
-    parTable <- standardized_estimates(object, intercepts = intercepts)
+    parTable <- standardized_estimates(object, intercepts = intercepts, 
+                                       monte.carlo = monte.carlo, mc.reps = mc.reps)
   } else {
     parTable <- parameter_estimates(object)
   }
@@ -332,8 +339,15 @@ var_interactions.modsem_da <- function(object, ...) {
 
 
 #' @export
-standardized_estimates.modsem_da <- function(object, ...) {
-  standardized_estimates.data.frame(parameter_estimates(object), ...)
+standardized_estimates.modsem_da <- function(object, 
+                                             monte.carlo = FALSE, 
+                                             mc.reps = 10000, ...) {
+  if (!monte.carlo) {
+    parTable <- parameter_estimates(object)
+    standardized_estimates.data.frame(parTable, ...)
+  } else {
+    standardized_estimates_mc(object, mc.reps = mc.reps, ...)
+  }
 }
 
 
@@ -371,4 +385,236 @@ coef.modsem_da <- function(object, type = "all", ...) {
 #' @importFrom stats nobs
 nobs.modsem_da <- function(object, ...) {
   modsem_inspect_da(object, what = "N", ...)[[1]]
+}
+
+
+#' Get standardized estimates with Monte Carlo bootstrapped standard errors
+#'
+#' @param object An object of class \code{modsem_da}
+#' @param mc.reps Number of Monte Carlo repetitions
+#' @param tolerance.zero Tolerance for zero values. Standard errors smaller than this 
+#'   value will be set to NA.
+#' @param ... Additional arguments passed to other functions
+#' @details The interaction term is not standardized such that \code{var(xz) = 1}.
+#' The interaction term is not an actual variable in the model, meaning that it does not
+#' have a variance. It must therefore be calculated from the other parameters in the model.
+#' Assuming normality and zero-means, the variance is calculated as
+#' \code{var(xz) = var(x) * var(z) + cov(x, z)^2}. Thus setting the variance of the interaction
+#' term to 1 would only be 'correct' if the correlation between \code{x} and \code{z} is zero.
+#' This means that the standardized estimates for the interaction term will
+#' be different from those using \code{lavaan}, since there the interaction term is an
+#' actual latent variable in the model, with a standardized variance of 1.
+#' @export
+standardized_estimates_mc <- function(object, mc.reps = 10000, tolerance.zero = 1e-12, ...) {
+  stopif(!inherits(object, "modsem_da"), "The object must be of class 'modsem_da'.")
+
+  parTable <- parameter_estimates(object)
+  parTable <- parTable[c("lhs", "op", "rhs", "label", "est", "std.error")]
+  parTable <- centerInteraction(parTable) # re-estimate path-coefficients 
+                                          # when intercepts are zero
+  
+  lVs      <- getLVs(parTable)
+  intTerms <- getIntTerms(parTable)
+  etas     <- getSortedEtas(parTable, isLV = TRUE)
+  xis      <- getXis(parTable, etas = etas, isLV = TRUE)
+  indsLVs  <- getIndsLVs(parTable, lVs)
+  allInds  <- unique(unlist(indsLVs))
+
+  originalLabels <- parTable$label
+  labels <- getParTableLabels(parTable, labelCol="label")
+  parTable$label <- labels
+
+  V <- vcov(object)
+  coefs <- structure(parTable$est, names = labels)
+
+  # parTable$est <- NULL # no longer needed
+  parTable$std.error <- NA
+
+  isIntercept <- parTable$op == "~1"
+  labels <- labels[!isIntercept] # remove intercept labels
+  parTable <- parTable[!isIntercept, ]
+
+  V <- expandVCOV(V, labels=labels)
+  coefs <- coefs[labels]
+
+  legalNames <- stringr::str_replace_all(labels, OP_REPLACEMENTS)
+  COEFS <- as.data.frame(mvtnorm::rmvnorm(mc.reps, mean = coefs, sigma = V))
+
+  # Get legal parameter names
+  names(COEFS) <- legalNames
+  names(coefs) <- legalNames
+  COEFS <- rbind(as.data.frame(as.list(coefs)), COEFS) # first row is the original values
+
+  colnames(V) <- legalNames
+  rownames(V) <- legalNames
+  parTable$label <- legalNames
+  
+
+  ptCoefs <- var_interactions_COEFS(parTable, COEFS) # calculate variances of interaction terms
+  parTable <- ptCoefs$parTable
+  COEFS <- ptCoefs$COEFS
+  # Calculate 
+
+  # get variances
+  varianceEquations <- list()
+  variances <- list()
+
+  for (x in allInds) {
+    # get the variance equation for each variable
+    eqVarX <- getCovEqExpr(x=x, y=x, parTable=parTable, measurement.model=TRUE)
+    varianceEquations[[x]] <- eqVarX  
+    variances[[x]] <- eval(eqVarX, envir = COEFS)
+  }
+  
+  for (x in lVs) {
+    # get the variance equation for each variable
+    eqVarX <- getCovEqExpr(x=x, y=x, parTable=parTable)
+    varianceEquations[[x]] <- eqVarX  
+    variances[[x]] <- eval(eqVarX, envir = COEFS)
+  }
+
+  for (xz in intTerms) {
+    labelXZ <- parTable[parTable$lhs == xz & parTable$rhs == xz & 
+                        parTable$op == "~~", "label"]
+    eqVarXZ <- parse(text=labelXZ)
+    varianceEquations[[xz]] <- eqVarXZ
+    variances[[xz]] <- eval(eqVarXZ, envir = COEFS)
+  }
+
+  # variances <- as.data.frame(variances)
+
+  # Factor Loadings
+  lambda     <- NULL
+  selectRows <- NULL
+
+  for (lV in lVs) {
+    for (ind in indsLVs[[lV]]) {
+      selectRows  <- parTable$lhs == lV & parTable$op == "=~" & parTable$rhs == ind
+      label <- parTable[selectRows, "label"]
+
+      # est in parTable
+      scalingCoef <- sqrt(variances[[lV]]) / sqrt(variances[[ind]])
+      lambda      <- COEFS[[label]] * scalingCoef
+
+      COEFS[[label]] <- lambda
+      parTable[selectRows, "est"] <- lambda[[1]]
+      parTable[selectRows, "std.error"] <- sd(lambda) # std.error in COEFS
+    }
+  }
+
+  # Structural Coefficients
+  gamma               <- NULL
+  selectStrucExprsEta <- NULL
+  structExprsEta      <- NULL
+  selectStrucExprs    <- parTable$op == "~" & parTable$lhs %in% etas
+
+  for (eta in etas) {
+    selectStrucExprsEta <- selectStrucExprs & parTable$lhs == eta
+    structExprsEta      <- parTable[selectStrucExprsEta, ]
+
+    for (xi in structExprsEta$rhs) {
+      selectRows  <- selectStrucExprsEta & parTable$rhs == xi
+      scalingCoef <- sqrt(variances[[xi]]) / sqrt(variances[[eta]])
+      label       <- parTable[selectRows, "label"]
+      gamma       <- COEFS[[label]] * scalingCoef
+      
+      COEFS[[label]] <- gamma
+      parTable[selectRows, "est"] <- gamma[[1]]
+      parTable[selectRows, "std.error"] <- sd(gamma) # std.error in COEFS
+    }
+  }
+
+  # (Co-) Variances of xis
+  selectCovXis <- parTable$op == "~~" & parTable$lhs %in% xis
+  selectRows   <- NULL
+  combosXis    <- getUniqueCombos(xis, match = TRUE)
+
+  for (i in seq_len(nrow(combosXis))) {
+    xis         <- combosXis[i, , drop = TRUE]
+    selectRows  <- selectCovXis & parTable$lhs %in% xis & parTable$rhs %in% xis
+    scalingCoef <- sqrt(variances[[xis[[1]]]]) * sqrt(variances[[xis[[2]]]])
+
+    if (xis[[1]] != xis[[2]]) {
+      selectRows <- selectRows & parTable$lhs != parTable$rhs
+    }
+
+    label <- parTable[selectRows, "label"]
+    covs <- COEFS[[label]] / scalingCoef
+
+    parTable[selectRows, "est"] <- covs[[1]]
+    parTable[selectRows, "std.error"] <- sd(covs) # std.error in COEFS
+  }
+
+  # Residual Variances etas
+  selectRows <- NULL
+  residual   <- NULL
+
+  for (eta in etas) {
+    selectRows <- parTable$lhs == eta & parTable$op == "~~" & parTable$rhs == eta
+    label <- parTable[selectRows, "label"]
+    residual <- COEFS[[label]] / variances[[eta]]
+
+    COEFS[[label]] <- residual
+    parTable[selectRows, "est"] <- residual[[1]]
+    parTable[selectRows, "std.error"] <- sd(residual) # std.error in COEFS
+  }
+
+  # residual variances inds
+  for (ind in allInds) {
+    selectRows <- parTable$lhs == ind & parTable$op == "~~" & parTable$rhs == ind
+    label <- parTable[selectRows, "label"]
+    residual <- COEFS[[label]] / variances[[ind]]
+
+    COEFS[[label]] <- residual
+    parTable[selectRows, "est"] <- residual[[1]]
+    parTable[selectRows, "std.error"] <- sd(residual) # std.error in COEFS
+  }
+
+  # recalculate variance of interaction terms
+  # and rescale coefficients for interaction terms
+  ptCoefs <- var_interactions_COEFS(parTable, COEFS)
+  parTable <- ptCoefs$parTable
+  COEFS <- ptCoefs$COEFS
+
+  for (xz in intTerms) {
+    selectRows <- parTable$rhs == xz & parTable$op == "~"
+    labelVarXZ  <- parTable[parTable$lhs == xz & parTable$op == "~~" &
+                                parTable$rhs == xz, "label"]
+    label <- parTable[selectRows, "label"]
+    gamma <- COEFS[[label]] / sqrt(COEFS[[labelVarXZ]])
+
+    COEFS[[label]] <- gamma 
+    parTable[selectRows, "est"] <- gamma[[1]]
+    parTable[selectRows, "std.error"] <- sd(gamma) # std.error in COEFS
+  }
+
+  # recalculate custom parameters
+  constrExprs <- sortConstrExprsFinalPt(parTable)
+  parTable <- parTable[parTable$op != ":=", ]
+
+  for (i in seq_len(NROW(constrExprs))) {
+    row <- constrExprs[i, , drop=FALSE]
+    label <- row$label
+
+    expr      <- parse(text=constrExprs[i, "rhs"])
+  
+    newVals <- eval(expr, envir = COEFS)
+  
+    COEFS[[label]] <- newVals
+    row$est <- newVals[[1]]
+    row$std.error <- sd(newVals) # std.error in COEFS
+
+    parTable <- rbind(parTable, row)
+  }
+  
+  parTable[!is.na(parTable$std.error) & 
+           abs(parTable$std.error) < tolerance.zero, "std.error"] <- NA
+  parTable[!parTable$label %in% originalLabels, "label"] <- "" 
+
+  parTable$z.value  <- parTable$est / parTable$std.error
+  parTable$p.value  <- 2 * stats::pnorm(-abs(parTable$z.value))
+  parTable$ci.lower <- parTable$est - 1.96 * parTable$std.error
+  parTable$ci.upper <- parTable$est + 1.96 * parTable$std.error
+
+  parTable
 }

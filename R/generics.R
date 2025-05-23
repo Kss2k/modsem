@@ -156,7 +156,7 @@ standardized_estimates.data.frame <- function(object, intercepts = FALSE, ...) {
     selectStrucExprsEta <- selectStrucExprs & parTable$lhs == eta
     structExprsEta      <- parTable[selectStrucExprsEta, ]
 
-    for (xi in structExprsEta$rhs) {
+    for (xi in structExprsEta$rhs) { # xi can be an interaction term
       selectRows  <- selectStrucExprsEta & parTable$rhs == xi
       scalingCoef <- sqrt(variances[[xi]]) / sqrt(variances[[eta]])
       gamma       <- parTable[selectRows, selectCols]
@@ -190,7 +190,6 @@ standardized_estimates.data.frame <- function(object, intercepts = FALSE, ...) {
   for (eta in etas) {
     selectRows <- parTable$lhs == eta & parTable$op == "~~" & parTable$rhs == eta
     residual   <- parTable[selectRows, selectCols]
-    projected  <- calcCovParTable(eta, eta, parTable) - residual
 
     parTable[selectRows, selectCols] <- residual / variances[[eta]]
   }
@@ -212,7 +211,7 @@ standardized_estimates.data.frame <- function(object, intercepts = FALSE, ...) {
                            parTable$rhs == xz, "est"]
     gamma      <- parTable[selectRows, selectCols]
 
-    parTable[selectRows, selectCols] <- gamma / sqrt(varXZ)
+    parTable[selectRows, selectCols] <- gamma / sqrt(varXZ) # unstandardizing, since varXZ != 1 | cov(X, Z) != 0
   }
 
   # recalculate custom parameters
