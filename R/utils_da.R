@@ -1,8 +1,9 @@
-OP_REPLACEMENTS <- c("~~" = "_COV_",
-                     "=~" = "_MEASR_",
-                     ":=" = "_CUSTOM_",
-                     "~"  = "_REG_",
-                     ":"  = "_INT_")
+OP_REPLACEMENTS <- c("~~" = "___COVARIANCE___",
+                     "=~" = "___MEASUREMENT___",
+                     ":=" = "___CUSTOM___",
+                     "~"  = "___REGRESSION___",
+                     ":"  = "___INTERACTION___")
+OP_REPLACEMENTS_INV <- structure(names(OP_REPLACEMENTS), names = OP_REPLACEMENTS)
 
 
 getFreeParams <- function(model) {
@@ -438,7 +439,8 @@ var_interactions_COEFS <- function(parTable, COEFS) {
     X    <- XZ[[1]]
     Z    <- XZ[[2]]
 
-    labelVarXZ   <- paste0(X, Z, OP_REPLACEMENTS[["~~"]], X, Z)
+    labelXZ <- paste0(X, Z, OP_REPLACEMENTS[[":"]], X, Z)
+    labelVarXZ   <- paste0(labelXZ, OP_REPLACEMENTS[["~~"]], labelXZ)
   
     # since the interaction term has been standardized there is no need
     # to worry about the means of X and Z, and hence the covariances between XZ~~X and XZ~~Z
@@ -458,11 +460,9 @@ var_interactions_COEFS <- function(parTable, COEFS) {
                          rhs = intTerms[[i]],
                          est = varXZ[[1]],
                          label = labelVarXZ, 
-                         std.error = NA)
+                         std.error = stats::sd(varXZ))
     parTable <- rbind(parTable, newRow)
   }
 
   list(parTable = parTable, COEFS = COEFS)
 }
-
-

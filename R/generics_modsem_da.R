@@ -53,7 +53,7 @@ summary.modsem_da <- function(object,
                               scientific = FALSE,
                               ci = FALSE,
                               standardized = FALSE,
-                              monte.carlo = FALSE,
+                              monte.carlo = TRUE,
                               mc.reps = 10000,
                               loadings = TRUE,
                               regressions = TRUE,
@@ -340,7 +340,7 @@ var_interactions.modsem_da <- function(object, ...) {
 
 #' @export
 standardized_estimates.modsem_da <- function(object, 
-                                             monte.carlo = FALSE, 
+                                             monte.carlo = TRUE, 
                                              mc.reps = 10000, ...) {
   if (!monte.carlo) {
     parTable <- parameter_estimates(object)
@@ -406,6 +406,11 @@ nobs.modsem_da <- function(object, ...) {
 #' actual latent variable in the model, with a standardized variance of 1.
 #' @export
 standardized_estimates_mc <- function(object, mc.reps = 10000, tolerance.zero = 1e-12, ...) {
+  standardized_solution_mc(object, mc.reps = mc.reps, tolerance.zero = tolerance.zero, ...)$parTable
+}
+
+
+standardized_solution_mc <- function(object, mc.reps = 10000, tolerance.zero = 1e-12, ...) {
   stopif(!inherits(object, "modsem_da"), "The object must be of class 'modsem_da'.")
 
   parTable <- parameter_estimates(object)
@@ -606,15 +611,33 @@ standardized_estimates_mc <- function(object, mc.reps = 10000, tolerance.zero = 
 
     parTable <- rbind(parTable, row)
   }
-  
+
+  # Fill in NA on zero-standard errors, and create vcov and coefs
   parTable[!is.na(parTable$std.error) & 
            abs(parTable$std.error) < tolerance.zero, "std.error"] <- NA
-  parTable[!parTable$label %in% originalLabels, "label"] <- "" 
 
+  isFree <- !is.na(parTable$std.error)
+  coefs <- structure(parTable$est[isFree], names = parTable$label[isFree])
+  vcov  <- cov(COEFS)
+  params <- intersect(names(coefs), rownames(vcov))
+
+  coefs <- coefs[params]
+  vcov <- vcov[params, params]
+
+  cleanedParamLabels <- stringr::str_replace_all(params, OP_REPLACEMENTS_INV)
+  names(coefs) <- cleanedParamLabels 
+  colnames(vcov) <- rownames(vcov) <- cleanedParamLabels
+
+  # Finalize parTable
+  parTable[!parTable$label %in% originalLabels, "label"] <- "" 
   parTable$z.value  <- parTable$est / parTable$std.error
   parTable$p.value  <- 2 * stats::pnorm(-abs(parTable$z.value))
   parTable$ci.lower <- parTable$est - 1.96 * parTable$std.error
   parTable$ci.upper <- parTable$est + 1.96 * parTable$std.error
 
-  parTable
+
+  list(parTable = parTable,
+       coefs    = coefs, 
+       vcov     = vcov,
+       COEFS    = COEFS)
 }

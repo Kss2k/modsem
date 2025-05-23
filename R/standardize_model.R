@@ -64,29 +64,37 @@
 #' }
 #'
 #' @export
-standardize_model <- function(model, monte.carlo = FALSE, mc.reps = 10000) {
+standardize_model <- function(model, monte.carlo = TRUE, mc.reps = 10000) {
   stopif(!inherits(model, "modsem_da"), "The model must be of class 'modsem_da'.")
 
-  parTable <- standardized_estimates(model, monte.carlo = monte.carlo, 
-                                     mc.reps = mc.reps)
+  if (monte.carlo) {
+    solution <- standardized_solution_mc(model, mc.reps = mc.reps)
 
-  labels <- getParTableLabels(parTable, labelCol="label")
-  interceptLabels <- labels[parTable$op == "~1"]
+    vcov <- solution$vcov
+    coefs <- solution$coefs
+    parTable <- solution$parTable
 
-  coefs  <- coef(model)
-  params <- intersect(names(coefs), labels)
-  scoefs <- structure(parTable$est, names = labels)
+  } else {
+    parTable <- standardized_estimates(model, monte.carlo = FALSE)
 
-  coefs[params] <- scoefs[params]
-  coefs <- coefs[!names(coefs) %in% interceptLabels]
-  
-  vcov    <- vcov(model)
-  params  <- intersect(colnames(vcov), labels)
-  std_se  <- structure(parTable$std.error, names = labels)
+    labels <- getParTableLabels(parTable, labelCol="label")
+    interceptLabels <- labels[parTable$op == "~1"]
 
-  vcov[params, params] <- rescaleVCOV(vcov[params, params], new_se = std_se[params])
-  vcov <- vcov[!rownames(vcov) %in% interceptLabels, 
-               !colnames(vcov) %in% interceptLabels]
+    coefs  <- coef(model)
+    params <- intersect(names(coefs), labels)
+    scoefs <- structure(parTable$est, names = labels)
+
+    coefs[params] <- scoefs[params]
+    coefs <- coefs[!names(coefs) %in% interceptLabels]
+    
+    vcov    <- vcov(model)
+    params  <- intersect(colnames(vcov), labels)
+    std_se  <- structure(parTable$std.error, names = labels)
+
+    vcov[params, params] <- rescaleVCOV(vcov[params, params], new_se = std_se[params])
+    vcov <- vcov[!rownames(vcov) %in% interceptLabels, 
+                 !colnames(vcov) %in% interceptLabels]
+  }
 
   model$type.estimates <- "standardized"
   model$parTable       <- parTable
