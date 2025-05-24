@@ -17,7 +17,7 @@
   scientific = FALSE,
   ci = FALSE,
   standardized = FALSE,
-  monte.carlo = FALSE,
+  monte.carlo = TRUE,
   mc.reps = 10000,
   loadings = TRUE,
   regressions = TRUE,

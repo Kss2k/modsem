@@ -48,9 +48,9 @@ expect_warning(plot_jn(x = "INT", z = "PBC", y = "BEH", model = est2,
                regex = "Truncating SD-range on the right!")
 
 # check that standardizing twice does not change the estimates
-cols <- c("lhs", "op", "rhs", "est")
-testthat::expect_equal(standardized_estimates(est2)[cols], 
-                       parameter_estimates(est2)[cols])
+deterministicCols <- c("lhs", "op", "rhs", "est") # std.error based cols are subject to rng
+testthat::expect_equal(standardized_estimates(est2)[deterministicCols], 
+                       parameter_estimates(est2)[deterministicCols])
 
 # check correct standardization
 calcCovParTable("BEH", "BEH", parameter_estimates(est2))[[1]] |>
@@ -103,8 +103,8 @@ est4 <- modsem(tpb2, data = TPB, method = "qml",
                standardize = TRUE, convergence = 1e-2)
 print(summary(est4, H0 = FALSE))
 
-testthat::expect_equal(standardized_estimates(est4), 
-                       parameter_estimates(est4))
+testthat::expect_equal(standardized_estimates(est4)[deterministicCols], 
+                       parameter_estimates(est4)[deterministicCols])
 
 calcCovParTable("BEH", "BEH", parameter_estimates(est4))[[1]] |>
   testthat::expect_equal(1)
