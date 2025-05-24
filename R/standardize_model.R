@@ -14,7 +14,8 @@
 #' @param monte.carlo Logical. If \code{TRUE}, the function will use Monte Carlo
 #'   simulation to obtain the standard errors of the standardized estimates.
 #'   If \code{FALSE}, the function will simply rescale the standard errors. This means that 
-#'   the function will not be able to provide standard errors for fixed parameters.
+#'   the function will not be able to provide standard errors for fixed parameters. But ensures
+#'   that p and z values remain unchanges for the standardized model.
 #'   Default is \code{FALSE}.
 #'
 #' @param mc.reps Number of Monte Carlo replications. Default is 10,000.

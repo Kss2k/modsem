@@ -31,7 +31,7 @@
 #' \code{standardize} if \code{standardize} is set to \code{TRUE}.
 #'
 #' \strong{NOTE}: It is recommended that you estimate the model normally and then standardize the output using
-#' \code{\link{standardized_estimates}}.
+#' \code{\link{standardize_model}} \code{\link{standardized_estimates}}, \code{summary(<modsem_da-object>, standardize=TRUE)}
 #'
 #' @param standardize.out should output be standardized (note will alter the relationships of
 #' parameter constraints since parameters are scaled unevenly, even if they

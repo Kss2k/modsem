@@ -41,8 +41,8 @@ m1 <- '
 '
 
 lms1 <- modsem(m1, oneInt, method = "lms")
-# Standardized estimates using Monte Carlo for standardized std.errors
-summary(lms1, standardized = TRUE, monte.carlo = TRUE)
+# Standardized estimates
+summary(lms1, standardized = TRUE)
 ```
 
 Here is the same example using the `QML` approach:
