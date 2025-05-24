@@ -128,6 +128,7 @@ emLms <- function(model,
   if (iterations == max.iter) convergence <- FALSE else convergence <- TRUE
 
   out <- list(model     = finalModel,
+              start.model = model,
               method    = "lms",
               optimizer = paste0("EM-", optimizer),
               data      = data,

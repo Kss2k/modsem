@@ -65,7 +65,7 @@ testthat::expect_warning({
 }, regexp = "It is recommended .* between endogenous variables .*")
 
 ust_pt <- parameter_estimates(est2)
-std_pt <- standardized_estimates(est2)
+std_pt <- standardized_estimates(est2, monte.carlo=FALSE)
 testthat::expect_true(all(is.na(ust_pt[ust_pt$label == "p1", "std.error"])))
 
 label <- "my_custom_parameter"

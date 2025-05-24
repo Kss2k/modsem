@@ -410,7 +410,9 @@ standardized_estimates_mc <- function(object, mc.reps = 10000, tolerance.zero = 
 }
 
 
-standardized_solution_mc <- function(object, mc.reps = 10000, tolerance.zero = 1e-12, ...) {
+standardized_solution_mc <- function(object, mc.reps = 10000, tolerance.zero = 1e-12, seed = 123, ...) {
+  set.seed(seed)
+
   stopif(!inherits(object, "modsem_da"), "The object must be of class 'modsem_da'.")
 
   parTable <- parameter_estimates(object)
@@ -546,6 +548,7 @@ standardized_solution_mc <- function(object, mc.reps = 10000, tolerance.zero = 1
     label <- parTable[selectRows, "label"]
     covs <- COEFS[[label]] / scalingCoef
 
+    COEFS[[label]] <- covs
     parTable[selectRows, "est"] <- covs[[1]]
     parTable[selectRows, "std.error"] <- stats::sd(covs) # std.error in COEFS
   }

@@ -424,23 +424,32 @@ expandVCOV <- function(vcov, labels) {
 }
 
 
-var_interactions_COEFS <- function(parTable, COEFS) {
-  intTermVarRows <- parTable$lhs == parTable$rhs &
-    grepl(":", parTable$lhs) & parTable$op == "~~"
-  intTermCovRows <- parTable$lhs != parTable$lhs & parTable$op == "~~" &
-    (grepl(":", parTable$lhs) | grepl(":", parTable$rhs))
-  parTable <- parTable[!(intTermVarRows | intTermCovRows), ]
+getLabelVarXZ <- function(intTerm) {
+  XZ   <- stringr::str_split_fixed(intTerm, ":", 2)
+  X    <- XZ[[1]]
+  Z    <- XZ[[2]]
 
+  labelXZ <- paste0(X, Z, OP_REPLACEMENTS[[":"]], X, Z)
+  paste0(labelXZ, OP_REPLACEMENTS[["~~"]], labelXZ)
+}
+
+
+var_interactions_COEFS <- function(parTable, COEFS) {
+  parTable <- removeInteractionVariances(parTable)
   intTerms <- unique(parTable[grepl(":", parTable$rhs) &
                      parTable$op == "~", "rhs"])
+  
+  for (intTerm in intTerms) { # remove interaction variances from COEFS
+    labelVarXZ <- getLabelVarXZ(intTerm)
+    COEFS[[labelVarXZ]] <- NULL
+  }
 
-  for (i in seq_len(length(intTerms))) {
-    XZ   <- stringr::str_split_fixed(intTerms[[i]], ":", 2)
+  for (intTerm in intTerms) {
+    XZ   <- stringr::str_split_fixed(intTerm, ":", 2)
     X    <- XZ[[1]]
     Z    <- XZ[[2]]
 
-    labelXZ <- paste0(X, Z, OP_REPLACEMENTS[[":"]], X, Z)
-    labelVarXZ   <- paste0(labelXZ, OP_REPLACEMENTS[["~~"]], labelXZ)
+    labelVarXZ <- getLabelVarXZ(intTerm)
   
     # since the interaction term has been standardized there is no need
     # to worry about the means of X and Z, and hence the covariances between XZ~~X and XZ~~Z
@@ -455,9 +464,9 @@ var_interactions_COEFS <- function(parTable, COEFS) {
     varXZ <- varX * varZ + covXZ ^ 2
     COEFS[[labelVarXZ]] <- varXZ
 
-    newRow <- data.frame(lhs = intTerms[[i]],
+    newRow <- data.frame(lhs = intTerm,
                          op = "~~",
-                         rhs = intTerms[[i]],
+                         rhs = intTerm,
                          est = varXZ[[1]],
                          label = labelVarXZ, 
                          std.error = stats::sd(varXZ))

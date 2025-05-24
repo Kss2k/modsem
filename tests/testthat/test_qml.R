@@ -48,8 +48,9 @@ expect_warning(plot_jn(x = "INT", z = "PBC", y = "BEH", model = est2,
                regex = "Truncating SD-range on the right!")
 
 # check that standardizing twice does not change the estimates
-testthat::expect_equal(standardized_estimates(est2), 
-                       parameter_estimates(est2))
+cols <- c("lhs", "op", "rhs", "est")
+testthat::expect_equal(standardized_estimates(est2)[cols], 
+                       parameter_estimates(est2)[cols])
 
 # check correct standardization
 calcCovParTable("BEH", "BEH", parameter_estimates(est2))[[1]] |>

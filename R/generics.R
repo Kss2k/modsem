@@ -23,18 +23,12 @@ var_interactions <- function(object, ...) {
 var_interactions.data.frame <- function(object, ...) {
   parTable <- removeInteractionVariances(fillColsParTable(object))
 
-  intTermVarRows <- parTable$lhs == parTable$rhs &
-    grepl(":", parTable$lhs) & parTable$op == "~~"
-  intTermCovRows <- parTable$lhs != parTable$lhs & parTable$op == "~~" &
-    (grepl(":", parTable$lhs) | grepl(":", parTable$rhs))
-  parTable <- parTable[!(intTermVarRows | intTermCovRows), ]
-
   intTerms <- unique(parTable[grepl(":", parTable$rhs) &
                      parTable$op == "~", "rhs"])
 
   getLabel <- \(x, y) sprintf("%s~~%s", x, y)
 
-  for (i in seq_len(length(intTerms))) {
+  for (intTerm in intTerms) {
     # interaction term = XZ
     # TO DO:
     #   I should also add covariances between X:Z and the other exogenous
@@ -42,7 +36,7 @@ var_interactions.data.frame <- function(object, ...) {
     #   Let Y denote the other exogenous variables, and xz denote the variables in
     #   the interaction term
     #   S(X:Z, Y) = S(X:Z, xz) %*% inv(S(xz, xz)) %*% S(xz, Y) ??
-    XZ   <- stringr::str_split_fixed(intTerms[[i]], ":", 2)
+    XZ   <- stringr::str_split_fixed(intTerm, ":", 2)
     X    <- XZ[[1]]
     Z    <- XZ[[2]]
 
@@ -63,9 +57,9 @@ var_interactions.data.frame <- function(object, ...) {
     # when X or Z is endogenous
     covX_XZ <- varX * muZ + muX * covXZ
     covZ_XZ <- varZ * muX + muZ * covXZ
-    newRow <- data.frame(lhs = c(intTerms[[i]], XZ[[1]], XZ[[2]]),
+    newRow <- data.frame(lhs = c(intTerm, XZ[[1]], XZ[[2]]),
                          op = rep("~~", 3),
-                         rhs = rep(intTerms[[i]], 3),
+                         rhs = rep(intTerm, 3),
                          label = "",
                          est = c(varXZ, covX_XZ, covZ_XZ),
                          std.error = NA, z.value = NA, p.value = NA,
