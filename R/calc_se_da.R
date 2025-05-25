@@ -158,9 +158,16 @@ calcOFIM_LMS <- function(model, theta, data, hessian = FALSE,
 }
 
 
-calcEFIM_LMS <- function(model, finalModel = NULL, theta, data, S = 3e4,
+calcEFIM_LMS <- function(model, finalModel = NULL, theta, data, S = 100,
                          parametric = TRUE, epsilon = 1e-6, verbose = FALSE,
                          R.max = 1e6) {
+  k <- length(theta)
+
+  if (S <= k) {
+    warning2("`EFIM.S` is lower than the number of free parameters! Increasing `EFIM.S` to ", 2 * k)
+    S <- 2 * k
+  }
+
   N      <- nrow(model$data)
   R.ceil <- N * S > R.max
   R      <- ifelse(R.ceil, yes = R.max, no = N * S) 
@@ -169,7 +176,7 @@ calcEFIM_LMS <- function(model, finalModel = NULL, theta, data, S = 3e4,
     warning2("Population size is smaller than sample size, please increase it using the `R.max` argument!")
     R <- N
   }
-
+  
   if (parametric) {
     if (is.null(finalModel)) stop2("finalModel must be included in calcEFIM_LMS")
     parTable   <- modelToParTable(finalModel, method = "lms")
@@ -183,7 +190,7 @@ calcEFIM_LMS <- function(model, finalModel = NULL, theta, data, S = 3e4,
 
   } else population <- data[sample(R, N, replace = TRUE), ]
 
-  I <- matrix(0, nrow = length(theta), ncol = length(theta))
+  I <- matrix(0, nrow = k, ncol = k)
 
   for (i in seq_len(S)) {
     if (verbose) printf("\rMonte-Carlo: Iteration = %d/%d", i, S)
@@ -206,7 +213,7 @@ calcEFIM_LMS <- function(model, finalModel = NULL, theta, data, S = 3e4,
     if (S <= 100) message("Consider increasing the Monte-Carlo Monte-Carloiterations, using the `EFIM.S` argument!")
   }
 
-  I / S
+  I / (S - k) # minus degrees of freedom
 }
 
 
@@ -236,6 +243,13 @@ calcOFIM_QML <- function(model, theta, data, hessian = FALSE,
 calcEFIM_QML <- function(model, finalModel = NULL, theta, data, S = 100,
                          parametric = TRUE, epsilon = 1e-8, verbose = FALSE,
                          R.max = 1e6) {
+  k <- length(theta)
+  
+  if (S <= k) {
+    warning2("`EFIM.S` is lower than the number of free parameters! Increasing `EFIM.S` to ", 2 * k)
+    S <- 2 * k
+  }
+
   N      <- nrow(model$data)
   R.ceil <- N * S > R.max
   R      <- ifelse(R.ceil, yes = R.max, no = N * S) 
@@ -244,7 +258,7 @@ calcEFIM_QML <- function(model, finalModel = NULL, theta, data, S = 100,
     warning2("Population size is smaller than sample size, please increase it using the `R.max` argument!")
     R <- N
   }
-
+  
   if (parametric) {
     if (is.null(finalModel)) stop2("finalModel must be included in calcEFIM_QML")
     parTable <- modelToParTable(finalModel, method = "qml")
@@ -260,7 +274,7 @@ calcEFIM_QML <- function(model, finalModel = NULL, theta, data, S = 100,
   } else population <- data[sample(R, N, replace = TRUE), ]
 
 
-  I <- matrix(0, nrow = length(theta), ncol = length(theta))
+  I <- matrix(0, nrow = k, ncol = k)
   for (i in seq_len(S)) {
     if (verbose) printf("\rMonte-Carlo: Iteration = %d/%d", i, S)
    
@@ -280,7 +294,7 @@ calcEFIM_QML <- function(model, finalModel = NULL, theta, data, S = 100,
     if (S <= 100) message("Consider increasing the Monte-Carlo iterations, using the `EFIM.S` argument!")
   }
 
-  I / S
+  I / (S - k) # minus degrees of freedom
 }
 
 
