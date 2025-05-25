@@ -601,7 +601,7 @@ standardized_solution_COEFS <- function(object, monte.carlo = FALSE, mc.reps = 1
   COEFS <- round(COEFS[2:(nrow(COEFS)), ],  nzeros) # skip first row
 
   if (monte.carlo) {
-    vcov <- cov(COEFS)
+    vcov <- stats::cov(COEFS)
   } else {
     # delta method
     p <- 1:k

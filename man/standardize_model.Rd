@@ -17,6 +17,8 @@ Default is \code{FALSE}.}
 
 \item{mc.reps}{Number of Monte Carlo replications. Default is 10,000.
 Ignored if \code{monte.carlo = FALSE}.}
+
+\item{...}{Arguments passed on to other functions}
 }
 \value{
 The same object (returned invisibly) with three slots overwritten  
