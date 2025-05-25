@@ -463,15 +463,7 @@ var_interactions_COEFS <- function(parTable, COEFS) {
 
     varXZ <- varX * varZ + covXZ ^ 2
     COEFS[[labelVarXZ]] <- varXZ
-
-    newRow <- data.frame(lhs = intTerm,
-                         op = "~~",
-                         rhs = intTerm,
-                         est = varXZ[[1]],
-                         label = labelVarXZ, 
-                         std.error = stats::sd(varXZ))
-    parTable <- rbind(parTable, newRow)
   }
 
-  list(parTable = parTable, COEFS = COEFS)
+  COEFS
 }

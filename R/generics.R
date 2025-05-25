@@ -231,8 +231,8 @@ standardized_estimates.data.frame <- function(object, intercepts = FALSE, ...) {
 
   parTable$z.value  <- parTable$est / parTable$std.error
   parTable$p.value  <- 2 * stats::pnorm(-abs(parTable$z.value))
-  parTable$ci.lower <- parTable$est - 1.96 * parTable$std.error
-  parTable$ci.upper <- parTable$est + 1.96 * parTable$std.error
+  parTable$ci.lower <- parTable$est - CI_WIDTH * parTable$std.error
+  parTable$ci.upper <- parTable$est + CI_WIDTH * parTable$std.error
 
   parTable
 }

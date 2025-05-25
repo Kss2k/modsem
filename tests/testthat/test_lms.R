@@ -20,6 +20,8 @@ est1 <- modsem(m1, oneInt, method = "lms", optimize = TRUE, verbose = TRUE,
 plot_interaction("X", "Z", "Y", "X:Z", -3:3, c(-0.5, 0.5), est1)
 print(summary(est1, adjusted.stat = TRUE))
 plot_surface(x = "X", z = "Z", y = "Y", model = est1)
+standardize_model(est1, monte.carlo=TRUE)
+standardize_model(est1, monte.carlo=FALSE)
 
 # PROBLEM:
 #   I have no clue why, but changing the ordering of how the interaction terms 
@@ -70,11 +72,7 @@ testthat::expect_true(all(is.na(ust_pt[ust_pt$label == "p1", "std.error"])))
 
 label <- "my_custom_parameter"
 u_est <- ust_pt[ust_pt$label == label, "est"]
-u_z <- ust_pt[ust_pt$label == label, "z.value"]
 s_est <- std_pt[std_pt$label == label, "est"]
-s_z <- std_pt[std_pt$label == label, "z.value"]
-
-expect_equal(u_z, s_z)
 expect_true(round(u_est, 5) < round(s_est, 5))
 
 plot_interaction(x = "INT", z = "PBC", y = "BEH", vals_z = c(-0.5, 0.5), model = est2)

@@ -129,8 +129,8 @@ modsem_mplus <- function(model.syntax,
     lapplyDf(mplusParTable[c("lhs", "rhs")], function(x)
              stringr::str_remove_all(x, " "))
 
-  mplusParTable$ci.lower <- mplusParTable$est - 1.96 * mplusParTable$std.error
-  mplusParTable$ci.upper <- mplusParTable$est + 1.96 * mplusParTable$std.error
+  mplusParTable$ci.lower <- mplusParTable$est - CI_WIDTH * mplusParTable$std.error
+  mplusParTable$ci.upper <- mplusParTable$est + CI_WIDTH * mplusParTable$std.error
   mplusParTable$p.value[mplusParTable$p.value == 999] <- NA
   mplusParTable$z.value <- mplusParTable$est / mplusParTable$std.error
   mplusParTable$z.value[is.infinite(mplusParTable$z.value)] <- NA

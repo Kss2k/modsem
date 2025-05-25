@@ -64,10 +64,10 @@
 \item{standardized}{print standardized estimates}
 
 \item{monte.carlo}{should Monte Carlo bootstrapped standard errors be used? Only 
-relevant if `standardized = TRUE`.}
+relevant if \code{standardized = TRUE}. If \code{FALSE} delta method is used instead.}
 
-\item{mc.reps}{number of Monte Carlo repetitions. Only relevant if `monte.carlo = TRUE`, 
-and `standardized = TRUE`.}
+\item{mc.reps}{number of Monte Carlo repetitions. Only relevant if \code{monte.carlo = TRUE}, 
+and \code{standardized = TRUE}.}
 
 \item{loadings}{print loadings}
 

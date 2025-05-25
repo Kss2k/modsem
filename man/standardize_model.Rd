@@ -4,7 +4,7 @@
 \alias{standardize_model}
 \title{Standardize a fitted \code{modsem_da} model}
 \usage{
-standardize_model(model, monte.carlo = TRUE, mc.reps = 10000)
+standardize_model(model, monte.carlo = FALSE, mc.reps = 10000, ...)
 }
 \arguments{
 \item{model}{A fitted object of class \code{modsem_da}.
@@ -12,9 +12,7 @@ Passing any other object triggers an error.}
 
 \item{monte.carlo}{Logical. If \code{TRUE}, the function will use Monte Carlo
 simulation to obtain the standard errors of the standardized estimates.
-If \code{FALSE}, the function will simply rescale the standard errors. This means that 
-the function will not be able to provide standard errors for fixed parameters. But ensures
-that p and z values remain unchanges for the standardized model.
+If \code{FALSE}, the delta method is used.
 Default is \code{FALSE}.}
 
 \item{mc.reps}{Number of Monte Carlo replications. Default is 10,000.

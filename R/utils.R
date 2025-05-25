@@ -398,3 +398,6 @@ getParTableLabels <- function(parTable, labelCol="label") {
          yes = paste0(parTable$lhs, parTable$op, parTable$rhs),
          no = parTable[[labelCol]])
 }
+
+
+CI_WIDTH <- qnorm(.975)
