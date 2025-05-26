@@ -213,7 +213,7 @@ calcEFIM_LMS <- function(model, finalModel = NULL, theta, data, S = 100,
     if (S <= 100) message("Consider increasing the Monte-Carlo Monte-Carloiterations, using the `EFIM.S` argument!")
   }
 
-  I / (S - k) # minus degrees of freedom
+  I / (S - k) # divide by degrees of freedom
 }
 
 
@@ -294,7 +294,7 @@ calcEFIM_QML <- function(model, finalModel = NULL, theta, data, S = 100,
     if (S <= 100) message("Consider increasing the Monte-Carlo iterations, using the `EFIM.S` argument!")
   }
 
-  I / (S - k) # minus degrees of freedom
+  I / (S - k) # divide by degrees of freedom
 }
 
 
