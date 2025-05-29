@@ -238,14 +238,25 @@ calcPhiTheta <- function(theta, model, method) {
 
   if (!is.null(model$covModel$matrices)) {
     matEst <- filledModel$covModel$matrices
+    matLab <- model$covModel$labelMatrices
     matNA  <- model$covModel$matrices
-    vals   <- as.vector(matEst$phi[is.na(matNA$A)])
   } else {
     matEst <- filledModel$matrices
     matNA  <- model$matrices
-    vals   <- as.vector(matEst$phi[is.na(matNA$A)])
+    matLab <- model$labelMatrices
   }
 
+  vals   <- as.vector(matEst$phi[is.na(matNA$A)])
+  labels <- as.vector(matLab$A)
+
+  if (any(labels != "")) {
+    allVals <- as.vector(matEst$phi)
+    labVals <- allVals[labels != ""]
+    labels  <- labels[labels != ""]
+    theta[labels] <- labVals
+  }
+
+  if (!is.null(labVals)) theta[names(labVals)] <- labVals
   theta[grepl("^A[0-9]+$", names(theta))] <- vals
   theta
 }
