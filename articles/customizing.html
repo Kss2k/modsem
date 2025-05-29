@@ -105,7 +105,7 @@ indicators) that are used as the indicators for your latent product.</p>
 <span><span class="co">#&gt; Y ~ X</span></span>
 <span><span class="co">#&gt; Y ~ Z</span></span>
 <span><span class="co">#&gt; Y ~ XZ</span></span>
-<span><span class="co">#&gt; XZ =~ 1*x1z1</span></span>
+<span><span class="co">#&gt; XZ =~ x1z1</span></span>
 <span><span class="co">#&gt; XZ =~ x2z1</span></span>
 <span><span class="co">#&gt; XZ =~ x3z1</span></span>
 <span><span class="co">#&gt; XZ =~ x1z2</span></span>
@@ -287,7 +287,7 @@ needs.</p>
 <span><span class="co">#&gt; Y ~ X</span></span>
 <span><span class="co">#&gt; Y ~ Z</span></span>
 <span><span class="co">#&gt; Y ~ XZ</span></span>
-<span><span class="co">#&gt; XZ =~ 1*x1z1</span></span>
+<span><span class="co">#&gt; XZ =~ x1z1</span></span>
 <span><span class="co">#&gt; XZ =~ x2z1</span></span>
 <span><span class="co">#&gt; XZ =~ x3z1</span></span>
 <span><span class="co">#&gt; XZ =~ x1z2</span></span>
@@ -364,23 +364,23 @@ modify the the generated syntax and data.</p>
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://lavaan.ugent.be" class="external-link">lavaan</a></span><span class="op">)</span></span>
 <span><span class="co">#&gt; This is lavaan 0.6-19</span></span>
 <span><span class="co">#&gt; lavaan is FREE software! Please report any bugs.</span></span>
-<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">lavaan</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/lavaan/man/sem.html" class="external-link">sem</a></span><span class="op">(</span><span class="va">syntax</span>, data <span class="op">=</span> <span class="va">data</span>, fixed.x <span class="op">=</span> <span class="cn">FALSE</span>, </span>
-<span>                   std.lv <span class="op">=</span> <span class="cn">TRUE</span>, auto.fix.first <span class="op">=</span> <span class="cn">TRUE</span>, </span>
-<span>                   auto.var <span class="op">=</span> <span class="cn">TRUE</span>, auto.cov.lv.x <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/lavaan/man/sem.html" class="external-link">sem</a></span><span class="op">(</span><span class="va">syntax</span>, data <span class="op">=</span> <span class="va">data</span>, fixed.x <span class="op">=</span> <span class="cn">FALSE</span>, </span>
+<span>           std.lv <span class="op">=</span> <span class="cn">TRUE</span>, auto.fix.first <span class="op">=</span> <span class="cn">TRUE</span>, </span>
+<span>           auto.var <span class="op">=</span> <span class="cn">TRUE</span>, auto.cov.lv.x <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
-<span><span class="co">#&gt; lavaan 0.6-19 ended normally after 191 iterations</span></span>
+<span><span class="co">#&gt; lavaan 0.6-19 ended normally after 200 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                         ML</span></span>
 <span><span class="co">#&gt;   Optimization method                           NLMINB</span></span>
-<span><span class="co">#&gt;   Number of model parameters                        59</span></span>
+<span><span class="co">#&gt;   Number of model parameters                        60</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Number of observations                          2000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Model Test User Model:</span></span>
 <span><span class="co">#&gt;                                                       </span></span>
-<span><span class="co">#&gt;   Test statistic                               124.058</span></span>
-<span><span class="co">#&gt;   Degrees of freedom                               112</span></span>
-<span><span class="co">#&gt;   P-value (Chi-square)                           0.205</span></span>
+<span><span class="co">#&gt;   Test statistic                               122.924</span></span>
+<span><span class="co">#&gt;   Degrees of freedom                               111</span></span>
+<span><span class="co">#&gt;   P-value (Chi-square)                           0.207</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Parameter Estimates:</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -391,34 +391,34 @@ modify the the generated syntax and data.</p>
 <span><span class="co">#&gt; Latent Variables:</span></span>
 <span><span class="co">#&gt;                    Estimate  Std.Err  z-value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   X =~                                                </span></span>
-<span><span class="co">#&gt;     x1                0.990    0.018   53.790    0.000</span></span>
+<span><span class="co">#&gt;     x1                0.990    0.018   53.791    0.000</span></span>
 <span><span class="co">#&gt;     x2                0.796    0.016   50.482    0.000</span></span>
 <span><span class="co">#&gt;     x3                0.907    0.017   52.468    0.000</span></span>
 <span><span class="co">#&gt;   Y =~                                                </span></span>
-<span><span class="co">#&gt;     y1                0.995    0.019   51.813    0.000</span></span>
-<span><span class="co">#&gt;     y2                0.794    0.016   50.726    0.000</span></span>
-<span><span class="co">#&gt;     y3                0.895    0.017   51.248    0.000</span></span>
+<span><span class="co">#&gt;     y1                0.995    0.019   51.851    0.000</span></span>
+<span><span class="co">#&gt;     y2                0.794    0.016   50.768    0.000</span></span>
+<span><span class="co">#&gt;     y3                0.895    0.017   51.288    0.000</span></span>
 <span><span class="co">#&gt;   Z =~                                                </span></span>
-<span><span class="co">#&gt;     z1                1.008    0.019   53.711    0.000</span></span>
-<span><span class="co">#&gt;     z2                0.818    0.016   51.137    0.000</span></span>
-<span><span class="co">#&gt;     z3                0.889    0.017   52.409    0.000</span></span>
+<span><span class="co">#&gt;     z1                1.008    0.019   53.712    0.000</span></span>
+<span><span class="co">#&gt;     z2                0.818    0.016   51.138    0.000</span></span>
+<span><span class="co">#&gt;     z3                0.889    0.017   52.410    0.000</span></span>
 <span><span class="co">#&gt;   XZ =~                                               </span></span>
-<span><span class="co">#&gt;     x1z1              1.000                           </span></span>
-<span><span class="co">#&gt;     x2z1              0.809    0.013   62.153    0.000</span></span>
-<span><span class="co">#&gt;     x3z1              0.882    0.014   64.290    0.000</span></span>
-<span><span class="co">#&gt;     x1z2              0.797    0.013   60.837    0.000</span></span>
-<span><span class="co">#&gt;     x2z2              0.653    0.014   47.187    0.000</span></span>
-<span><span class="co">#&gt;     x3z2              0.714    0.015   48.032    0.000</span></span>
-<span><span class="co">#&gt;     x1z3              0.892    0.013   66.674    0.000</span></span>
-<span><span class="co">#&gt;     x2z3              0.724    0.015   49.917    0.000</span></span>
-<span><span class="co">#&gt;     x3z3              0.789    0.016   49.538    0.000</span></span>
+<span><span class="co">#&gt;     x1z1              1.022    0.021   48.007    0.000</span></span>
+<span><span class="co">#&gt;     x2z1              0.823    0.019   44.481    0.000</span></span>
+<span><span class="co">#&gt;     x3z1              0.897    0.020   45.052    0.000</span></span>
+<span><span class="co">#&gt;     x1z2              0.810    0.018   44.153    0.000</span></span>
+<span><span class="co">#&gt;     x2z2              0.661    0.016   41.964    0.000</span></span>
+<span><span class="co">#&gt;     x3z2              0.722    0.017   42.568    0.000</span></span>
+<span><span class="co">#&gt;     x1z3              0.907    0.019   47.031    0.000</span></span>
+<span><span class="co">#&gt;     x2z3              0.732    0.017   43.902    0.000</span></span>
+<span><span class="co">#&gt;     x3z3              0.799    0.018   43.671    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                    Estimate  Std.Err  z-value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   Y ~                                                 </span></span>
-<span><span class="co">#&gt;     X                 0.671    0.031   21.821    0.000</span></span>
-<span><span class="co">#&gt;     Z                 0.568    0.029   19.347    0.000</span></span>
-<span><span class="co">#&gt;     XZ                0.713    0.031   23.083    0.000</span></span>
+<span><span class="co">#&gt;     X                 0.671    0.031   21.829    0.000</span></span>
+<span><span class="co">#&gt;     Z                 0.568    0.029   19.352    0.000</span></span>
+<span><span class="co">#&gt;     XZ                0.721    0.032   22.569    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                    Estimate  Std.Err  z-value  P(&gt;|z|)</span></span>
@@ -455,57 +455,57 @@ modify the the generated syntax and data.</p>
 <span><span class="co">#&gt;  .x3z2 ~~                                             </span></span>
 <span><span class="co">#&gt;    .x2z3              0.000                           </span></span>
 <span><span class="co">#&gt;  .x1z1 ~~                                             </span></span>
-<span><span class="co">#&gt;    .x1z2              0.117    0.008   15.160    0.000</span></span>
-<span><span class="co">#&gt;    .x1z3              0.116    0.008   14.317    0.000</span></span>
-<span><span class="co">#&gt;    .x2z1              0.126    0.008   16.450    0.000</span></span>
-<span><span class="co">#&gt;    .x3z1              0.142    0.009   16.499    0.000</span></span>
+<span><span class="co">#&gt;    .x1z2              0.115    0.008   14.802    0.000</span></span>
+<span><span class="co">#&gt;    .x1z3              0.114    0.008   13.947    0.000</span></span>
+<span><span class="co">#&gt;    .x2z1              0.125    0.008   16.095    0.000</span></span>
+<span><span class="co">#&gt;    .x3z1              0.140    0.009   16.135    0.000</span></span>
 <span><span class="co">#&gt;  .x1z2 ~~                                             </span></span>
-<span><span class="co">#&gt;    .x1z3              0.104    0.007   14.975    0.000</span></span>
-<span><span class="co">#&gt;    .x2z2              0.128    0.006   20.808    0.000</span></span>
-<span><span class="co">#&gt;    .x3z2              0.145    0.007   21.201    0.000</span></span>
+<span><span class="co">#&gt;    .x1z3              0.103    0.007   14.675    0.000</span></span>
+<span><span class="co">#&gt;    .x2z2              0.128    0.006   20.850    0.000</span></span>
+<span><span class="co">#&gt;    .x3z2              0.146    0.007   21.243    0.000</span></span>
 <span><span class="co">#&gt;  .x1z3 ~~                                             </span></span>
-<span><span class="co">#&gt;    .x2z3              0.116    0.007   17.767    0.000</span></span>
-<span><span class="co">#&gt;    .x3z3              0.134    0.007   18.284    0.000</span></span>
+<span><span class="co">#&gt;    .x2z3              0.116    0.007   17.818    0.000</span></span>
+<span><span class="co">#&gt;    .x3z3              0.135    0.007   18.335    0.000</span></span>
 <span><span class="co">#&gt;  .x2z1 ~~                                             </span></span>
-<span><span class="co">#&gt;    .x2z2              0.134    0.006   20.865    0.000</span></span>
-<span><span class="co">#&gt;    .x2z3              0.145    0.007   21.110    0.000</span></span>
-<span><span class="co">#&gt;    .x3z1              0.115    0.007   16.352    0.000</span></span>
+<span><span class="co">#&gt;    .x2z2              0.135    0.006   20.905    0.000</span></span>
+<span><span class="co">#&gt;    .x2z3              0.145    0.007   21.145    0.000</span></span>
+<span><span class="co">#&gt;    .x3z1              0.114    0.007   16.058    0.000</span></span>
 <span><span class="co">#&gt;  .x2z2 ~~                                             </span></span>
-<span><span class="co">#&gt;    .x2z3              0.117    0.006   20.378    0.000</span></span>
-<span><span class="co">#&gt;    .x3z2              0.115    0.006   20.542    0.000</span></span>
+<span><span class="co">#&gt;    .x2z3              0.117    0.006   20.419    0.000</span></span>
+<span><span class="co">#&gt;    .x3z2              0.116    0.006   20.586    0.000</span></span>
 <span><span class="co">#&gt;  .x2z3 ~~                                             </span></span>
-<span><span class="co">#&gt;    .x3z3              0.109    0.006   18.007    0.000</span></span>
+<span><span class="co">#&gt;    .x3z3              0.109    0.006   18.059    0.000</span></span>
 <span><span class="co">#&gt;  .x3z1 ~~                                             </span></span>
-<span><span class="co">#&gt;    .x3z2              0.137    0.007   19.292    0.000</span></span>
-<span><span class="co">#&gt;    .x3z3              0.157    0.008   20.233    0.000</span></span>
+<span><span class="co">#&gt;    .x3z2              0.138    0.007   19.331    0.000</span></span>
+<span><span class="co">#&gt;    .x3z3              0.158    0.008   20.269    0.000</span></span>
 <span><span class="co">#&gt;  .x3z2 ~~                                             </span></span>
-<span><span class="co">#&gt;    .x3z3              0.131    0.007   19.917    0.000</span></span>
+<span><span class="co">#&gt;    .x3z3              0.131    0.007   19.958    0.000</span></span>
 <span><span class="co">#&gt;   X ~~                                                </span></span>
 <span><span class="co">#&gt;     Z                 0.201    0.023    8.786    0.000</span></span>
-<span><span class="co">#&gt;     XZ                0.015    0.025    0.627    0.531</span></span>
+<span><span class="co">#&gt;     XZ                0.015    0.024    0.628    0.530</span></span>
 <span><span class="co">#&gt;   Z ~~                                                </span></span>
-<span><span class="co">#&gt;     XZ                0.059    0.024    2.432    0.015</span></span>
+<span><span class="co">#&gt;     XZ                0.060    0.024    2.462    0.014</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                    Estimate  Std.Err  z-value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;    .x1                0.160    0.009   17.872    0.000</span></span>
+<span><span class="co">#&gt;    .x1                0.160    0.009   17.871    0.000</span></span>
 <span><span class="co">#&gt;    .x2                0.162    0.007   22.969    0.000</span></span>
 <span><span class="co">#&gt;    .x3                0.163    0.008   20.161    0.000</span></span>
-<span><span class="co">#&gt;    .y1                0.159    0.009   17.893    0.000</span></span>
-<span><span class="co">#&gt;    .y2                0.154    0.007   22.638    0.000</span></span>
-<span><span class="co">#&gt;    .y3                0.164    0.008   20.696    0.000</span></span>
+<span><span class="co">#&gt;    .y1                0.159    0.009   17.896    0.000</span></span>
+<span><span class="co">#&gt;    .y2                0.154    0.007   22.640    0.000</span></span>
+<span><span class="co">#&gt;    .y3                0.164    0.008   20.698    0.000</span></span>
 <span><span class="co">#&gt;    .z1                0.168    0.009   18.143    0.000</span></span>
 <span><span class="co">#&gt;    .z2                0.158    0.007   22.264    0.000</span></span>
 <span><span class="co">#&gt;    .z3                0.158    0.008   20.389    0.000</span></span>
-<span><span class="co">#&gt;    .x1z1              0.314    0.014   23.083    0.000</span></span>
-<span><span class="co">#&gt;    .x2z1              0.293    0.011   27.361    0.000</span></span>
-<span><span class="co">#&gt;    .x3z1              0.327    0.012   26.356    0.000</span></span>
-<span><span class="co">#&gt;    .x1z2              0.291    0.011   27.019    0.000</span></span>
-<span><span class="co">#&gt;    .x2z2              0.238    0.008   29.720    0.000</span></span>
-<span><span class="co">#&gt;    .x3z2              0.269    0.009   29.073    0.000</span></span>
-<span><span class="co">#&gt;    .x1z3              0.273    0.012   23.659    0.000</span></span>
-<span><span class="co">#&gt;    .x2z3              0.244    0.009   27.943    0.000</span></span>
-<span><span class="co">#&gt;    .x3z3              0.296    0.011   28.119    0.000</span></span>
+<span><span class="co">#&gt;    .x1z1              0.311    0.014   22.227    0.000</span></span>
+<span><span class="co">#&gt;    .x2z1              0.292    0.011   27.287    0.000</span></span>
+<span><span class="co">#&gt;    .x3z1              0.327    0.012   26.275    0.000</span></span>
+<span><span class="co">#&gt;    .x1z2              0.290    0.011   26.910    0.000</span></span>
+<span><span class="co">#&gt;    .x2z2              0.239    0.008   29.770    0.000</span></span>
+<span><span class="co">#&gt;    .x3z2              0.270    0.009   29.117    0.000</span></span>
+<span><span class="co">#&gt;    .x1z3              0.272    0.012   23.586    0.000</span></span>
+<span><span class="co">#&gt;    .x2z3              0.245    0.009   27.979    0.000</span></span>
+<span><span class="co">#&gt;    .x3z3              0.297    0.011   28.154    0.000</span></span>
 <span><span class="co">#&gt;     X                 1.000                           </span></span>
 <span><span class="co">#&gt;    .Y                 1.000                           </span></span>
 <span><span class="co">#&gt;     Z                 1.000                           </span></span>

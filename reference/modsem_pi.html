@@ -86,7 +86,7 @@ Use <code><a href="default_settings_pi.html">default_settings_pi()</a></code> to
 <span>  match <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  standardize.data <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  center.data <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  first.loading.fixed <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  first.loading.fixed <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  center.before <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  center.after <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  residuals.prods <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -141,7 +141,9 @@ Use <code><a href="default_settings_pi.html">default_settings_pi()</a></code> to
 
 
 <dt id="arg-first-loading-fixed">first.loading.fixed<a class="anchor" aria-label="anchor" href="#arg-first-loading-fixed"></a></dt>
-<dd><p>Should the first factor loading in the latent product be fixed to one?</p></dd>
+<dd><p>Should the first factor loading in the latent product be fixed to one? Defaults to <code>FALSE</code>, as
+this already happens in <code>lavaan</code> by default. If <code>TRUE</code>, the first factor loading in the latent product is fixed to one.
+manually in the generated syntax (e.g., <code>XZ =~ 1*x1z1</code>).'</p></dd>
 
 
 <dt id="arg-center-before">center.before<a class="anchor" aria-label="anchor" href="#arg-center-before"></a></dt>
