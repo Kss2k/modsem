@@ -82,6 +82,7 @@ effects or to see how the slope changes at different values of the moderator.</p
 <span>  ci_width <span class="op">=</span> <span class="fl">0.95</span>,</span>
 <span>  ci_type <span class="op">=</span> <span class="st">"confidence"</span>,</span>
 <span>  relative_h0 <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  standardized <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -154,6 +155,10 @@ variance of the fitted mean, resulting in a wider interval.</p></dd>
 <dd><p>Logical. If <code>TRUE</code> (default), hypothesis tests for the
 predicted values (<code>predicted - h0</code>) assume <code>h0</code> is the model-estimated
 mean of <code>y</code>. If <code>FALSE</code>, the null hypothesis is <code>h0 = 0</code>.</p></dd>
+
+
+<dt id="arg-standardized">standardized<a class="anchor" aria-label="anchor" href="#arg-standardized"></a></dt>
+<dd><p>Should coefficients be standardized beforehand?</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
