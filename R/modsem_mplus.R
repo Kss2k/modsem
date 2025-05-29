@@ -33,7 +33,7 @@
 #'
 #' \dontrun{
 #' estTpbMplus <- modsem_mplus(tpb, data = TPB)
-#' summary(estTpbLMS)
+#' summary(estTpbMplus)
 #' }
 #'
 modsem_mplus <- function(model.syntax,

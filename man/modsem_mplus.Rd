@@ -57,7 +57,7 @@ tpb <- '
 
 \dontrun{
 estTpbMplus <- modsem_mplus(tpb, data = TPB)
-summary(estTpbLMS)
+summary(estTpbMplus)
 }
 
 }
