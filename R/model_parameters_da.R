@@ -256,7 +256,6 @@ calcPhiTheta <- function(theta, model, method) {
     theta[labels] <- labVals
   }
 
-  if (!is.null(labVals)) theta[names(labVals)] <- labVals
   theta[grepl("^A[0-9]+$", names(theta))] <- vals
   theta
 }
