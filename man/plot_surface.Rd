@@ -14,6 +14,7 @@ plot_surface(
   max_x = 3,
   min_z = -3,
   max_z = 3,
+  standardized = FALSE,
   detail = 0.01,
   ...
 )
@@ -38,6 +39,8 @@ include paths for the predictors (`x`, `z`, and `xz`) to the outcome (`y`).}
 \item{min_z}{Numeric. Minimum value of `z` in z-scores. Default is -3.}
 
 \item{max_z}{Numeric. Maximum value of `z` in z-scores. Default is 3.}
+
+\item{standardized}{Should coefficients be standardized beforehand?}
 
 \item{detail}{Numeric. Step size for the grid of `x` and `z` values, determining the resolution of the surface.
 Smaller values increase plot resolution. Default is `1e-2`.}

@@ -41,6 +41,8 @@
 #' @param relative_h0 Logical. If \code{TRUE} (default), hypothesis tests for the
 #'   predicted values (\code{predicted - h0}) assume \code{h0} is the model-estimated
 #'   mean of \code{y}. If \code{FALSE}, the null hypothesis is \code{h0 = 0}.
+#' @param standardized Should coefficients be standardized beforehand?
+#'
 #' @param ... Additional arguments passed to lower-level functions or other internal
 #'   helpers.
 #'
@@ -115,6 +117,7 @@ simple_slopes <- function(x,
                           ci_width = 0.95, 
                           ci_type = "confidence",
                           relative_h0 = TRUE,
+                          standardized = FALSE,
                           ...) {
   stopif(!isModsemObject(model) && !isLavaanObject(model), "model must be of class ",
          "'modsem_pi', 'modsem_da', 'modsem_mplus' or 'lavaan'")
@@ -128,7 +131,10 @@ simple_slopes <- function(x,
       !isLavaanObject(model)) 
     xz <- stringr::str_remove_all(xz, ":")
 
-  parTable <- parameter_estimates(model)
+  if (standardized) {
+    parTable <- standardized_estimates(model)
+  } else parTable <- parameter_estimates(model)
+
   parTable <- getMissingLabels(parTable)
 
 

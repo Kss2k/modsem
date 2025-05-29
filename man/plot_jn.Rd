@@ -16,6 +16,7 @@ plot_jn(
   alpha = 0.2,
   detail = 1000,
   sd.line = 2,
+  standardized = FALSE,
   ...
 )
 }
@@ -42,6 +43,8 @@ plot_jn(
 
 \item{sd.line}{A thick black line showing \code{+/- sd.line * sd(z)}. NOTE: This line will be truncated by \code{min_z} and \code{max_z} if 
 the sd.line falls outside of \code{[min_z, max_z]}.}
+
+\item{standardized}{Should coefficients be standardized beforehand?}
 
 \item{...}{Additional arguments (currently not used).}
 }

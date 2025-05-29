@@ -41,6 +41,7 @@
 #'   are interpreted as standardized units, which are mapped back to the raw scale
 #'   before computing predictions. If \code{FALSE}, \code{vals_x} and \code{vals_z}
 #'   are taken as raw-scale values directly.
+#' @param standardized Should coefficients be standardized beforehand?
 #' @param ... Additional arguments passed on to \code{\link{simple_slopes}}.
 #'
 #' @details
@@ -114,9 +115,11 @@
 #' }
 plot_interaction <- function(x, z, y, xz = NULL, vals_x = seq(-3, 3, .001),
                              vals_z, model, alpha_se = 0.15, digits = 2, 
-                             ci_width = 0.95, ci_type = "confidence", rescale = TRUE, ...) {
+                             ci_width = 0.95, ci_type = "confidence", rescale = TRUE, 
+                             standardized = FALSE, ...) {
   df <- simple_slopes(x = x, z = z, y = y, model = model, vals_x = vals_x, vals_z = vals_z, 
-                      rescale = rescale, ci_width = ci_width, ci_type = ci_type, ...)
+                      rescale = rescale, ci_width = ci_width, ci_type = ci_type, 
+                      standardized = standardized, ...)
   df$cat_z <- as.factor(round(df$vals_z, digits))
 
   # declare within the scope, to not get notes in R CMD check
@@ -154,6 +157,7 @@ plot_interaction <- function(x, z, y, xz = NULL, vals_x = seq(-3, 3, .001),
 #' @param detail The number of generated data points to use for the plot (default is 1000). You can increase this value for smoother plots.
 #' @param sd.line A thick black line showing \code{+/- sd.line * sd(z)}. NOTE: This line will be truncated by \code{min_z} and \code{max_z} if 
 #' the sd.line falls outside of \code{[min_z, max_z]}.
+#' @param standardized Should coefficients be standardized beforehand?
 #' @param ... Additional arguments (currently not used).
 #' @return A \code{ggplot} object showing the interaction plot with regions of significance.
 #' @details
@@ -189,7 +193,7 @@ plot_interaction <- function(x, z, y, xz = NULL, vals_x = seq(-3, 3, .001),
 #' @export
 plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3, 
                     sig.level = 0.05, alpha = 0.2, detail = 1000, 
-                    sd.line = 2, ...) {
+                    sd.line = 2, standardized = FALSE, ...) {
   # Check if model is a valid object
   stopif(!inherits(model, c("modsem_da", "modsem_mplus", "modsem_pi", "lavaan")),
          "model must be of class 'modsem_pi', 'modsem_da', 'modsem_mplus', or 'lavaan'")
@@ -207,8 +211,9 @@ plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3,
     nobs <- lavaan::nobs
   }
 
-  # Extract parameter estimates
-  parTable <- parameter_estimates(model)
+  if (standardized) {
+    parTable <- standardized_estimates(model)
+  } else parTable <- parameter_estimates(model)
   parTable <- getMissingLabels(parTable)
 
   # mean and sd x
@@ -418,6 +423,7 @@ plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3,
 #' @param max_x Numeric. Maximum value of `x` in z-scores. Default is 3.
 #' @param min_z Numeric. Minimum value of `z` in z-scores. Default is -3.
 #' @param max_z Numeric. Maximum value of `z` in z-scores. Default is 3.
+#' @param standardized Should coefficients be standardized beforehand?
 #' @param detail Numeric. Step size for the grid of `x` and `z` values, determining the resolution of the surface.
 #'   Smaller values increase plot resolution. Default is `1e-2`.
 #' @param ... Additional arguments passed to `plotly::plot_ly`.
@@ -477,6 +483,7 @@ plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3,
 plot_surface <- function(x, z, y, xz = NULL, model, 
                          min_x = -3, max_x = 3, 
                          min_z = -3, max_z = 3,
+                         standardized = FALSE, 
                          detail = 1e-2, ...) {
   stopif(!isModsemObject(model) && !isLavaanObject(model), "model must be of class ",
          "'modsem_pi', 'modsem_da', 'modsem_mplus' or 'lavaan'")
@@ -488,7 +495,9 @@ plot_surface <- function(x, z, y, xz = NULL, model,
     xz <- stringr::str_remove_all(xz, ":")
   }
 
-  parTable <- parameter_estimates(model)
+  if (standardized) {
+    parTable <- standardized_estimates(model)
+  } else parTable <- parameter_estimates(model)
 
   if (isLavaanObject(model)) {
     # this won't work for multigroup models

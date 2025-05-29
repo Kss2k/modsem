@@ -16,6 +16,7 @@ simple_slopes(
   ci_width = 0.95,
   ci_type = "confidence",
   relative_h0 = TRUE,
+  standardized = FALSE,
   ...
 )
 }
@@ -63,6 +64,8 @@ variance of the fitted mean, resulting in a wider interval.}
 \item{relative_h0}{Logical. If \code{TRUE} (default), hypothesis tests for the
 predicted values (\code{predicted - h0}) assume \code{h0} is the model-estimated
 mean of \code{y}. If \code{FALSE}, the null hypothesis is \code{h0 = 0}.}
+
+\item{standardized}{Should coefficients be standardized beforehand?}
 
 \item{...}{Additional arguments passed to lower-level functions or other internal
 helpers.}

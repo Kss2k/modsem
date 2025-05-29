@@ -30,6 +30,8 @@ Here is an example of the `LMS` approach for a simple model. By default, the `su
 
 ```{r}
 library(modsem)
+
+# ROBUST STANDARD ERRORS
 m1 <- '
 # Outer Model
   X =~ x1 + x2 + x3
@@ -40,7 +42,33 @@ m1 <- '
   Y ~ X + Z + X:Z
 '
 
-lms1 <- modsem(m1, oneInt, method = "lms")
+# robust.se can be used with the LMS approach, but it is recommended that 
+# it is used with the QML approach instead
+lms <- modsem(m1, oneInt, method = "lms", robust.se=TRUE) 
+qml <- modsem(m1, oneInt, method = "qml", robust.se=TRUE)
+dblcent <- modsem(m1, oneInt, method = "dblcent", estimator="MLR")
+
+
+# THREE-WAY INTERACTIONS
+tpb <- ' 
+# Outer Model (Based on Hagger et al., 2007)
+  ATT =~ att1 + att2 + att3 + att4 + att5
+  SN =~ sn1 + sn2
+  PBC =~ pbc1 + pbc2 + pbc3
+  INT =~ int1 + int2 + int3
+  BEH =~ b1 + b2
+
+# Inner Model (Based on Steinmetz et al., 2011)
+  INT ~ ATT + SN + PBC
+  BEH ~ INT + PBC 
+  BEH ~ INT:PBC:SN
+'
+
+# The residual centering approach seems to work the best, but 
+# that is only based on personal experimentation
+rca <- modsem(tpb, TPB, method="rca")
+
+
 # Standardized estimates
 summary(lms1, standardized = TRUE)
 ```

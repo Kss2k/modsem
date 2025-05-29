@@ -17,6 +17,7 @@ plot_interaction(
   ci_width = 0.95,
   ci_type = "confidence",
   rescale = TRUE,
+  standardized = FALSE,
   ...
 )
 }
@@ -66,6 +67,8 @@ or \code{"prediction"} intervals (which include residual variance).}
 are interpreted as standardized units, which are mapped back to the raw scale
 before computing predictions. If \code{FALSE}, \code{vals_x} and \code{vals_z}
 are taken as raw-scale values directly.}
+
+\item{standardized}{Should coefficients be standardized beforehand?}
 
 \item{...}{Additional arguments passed on to \code{\link{simple_slopes}}.}
 }

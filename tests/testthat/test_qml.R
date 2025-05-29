@@ -82,7 +82,8 @@ Y ~ X + Z + X:Z
 est3 <- modsem(m3, data = oneInt, convergence = 1e-2, method = "qml",
                robust.se = TRUE)
 print(summary(est3, scientific = TRUE))
-plot_interaction(x = "X", z = "Z", y = "Y", xz = "X:Z", vals_z = c(-0.5, 0.5), model = est3)
+plot_interaction(x = "X", z = "Z", y = "Y", xz = "X:Z", vals_z = c(-0.5, 0.5), model = est3, 
+                 standardized = TRUE)
 
 tpb2 <- ' 
 # Outer Model (Based on Hagger et al., 2007)

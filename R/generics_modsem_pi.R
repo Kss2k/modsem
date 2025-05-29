@@ -33,7 +33,12 @@ parameter_estimates.modsem_pi <- function(object, ...) {
 
 #' @export
 standardized_estimates.modsem_pi <- function(object, ...) {
-  lavaan::standardizedSolution(object$lavaan, ...)
+  parTable <- lavaan::standardizedSolution(object$lavaan, ...)
+
+  parTable$est <- parTable$est.std
+  parTable$est.std <- NULL
+
+  parTable
 }
 
 
