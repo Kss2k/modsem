@@ -69,9 +69,9 @@ For example, the syntax for ordered and multigroup models (as of now) isn't as f
 ```{r}
 m3 <- '
 # Outer Model
-X =~ x1 + x2
-Y =~ y1 + y2
-Z =~ z1 + z2
+X =~ x1 + x2 + x3
+Y =~ y1 + y2 + y3
+Z =~ z1 + z2 + z3
 
 # Inner model
 Y ~ X + Z + X:Z 
@@ -83,4 +83,16 @@ cat(syntax)
 ```{r}
 data <- get_pi_data(m3, oneInt)
 head(data)
+```
+
+The generated syntax and data can then be used to estimate a model using `lavaan`, giving the 
+user more control over arguments passed onto `lavaan::sem()`, and potentially the ability to 
+modify the the generated syntax and data.
+
+```{r}
+library(lavaan)
+fit <- lavaan::sem(syntax, data = data, fixed.x = FALSE, 
+                   std.lv = TRUE, auto.fix.first = TRUE, 
+                   auto.var = TRUE, auto.cov.lv.x = TRUE)
+summary(fit)
 ```
