@@ -84,7 +84,7 @@ If \code{FALSE} they are not removed.}
 
 \item{suppress.warnings.match}{should warnings from \code{match} be suppressed?}
 
-\item{...}{arguments passed to other functions, e.g., \code{lavaan}}
+\item{...}{arguments passed to \code{lavaan::sem()}}
 }
 \value{
 \code{modsem} object
