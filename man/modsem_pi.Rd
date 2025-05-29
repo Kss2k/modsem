@@ -11,7 +11,7 @@ modsem_pi(
   match = NULL,
   standardize.data = FALSE,
   center.data = FALSE,
-  first.loading.fixed = TRUE,
+  first.loading.fixed = FALSE,
   center.before = NULL,
   center.after = NULL,
   residuals.prods = NULL,
@@ -49,7 +49,9 @@ modsem_pi(
 
 \item{center.data}{should data be centered before fitting model}
 
-\item{first.loading.fixed}{Should the first factor loading in the latent product be fixed to one?}
+\item{first.loading.fixed}{Should the first factor loading in the latent product be fixed to one? Defaults to \code{FALSE}, as 
+this already happens in \code{lavaan} by default. If \code{TRUE}, the first factor loading in the latent product is fixed to one.
+manually in the generated syntax (e.g., \code{XZ =~ 1*x1z1}).'}
 
 \item{center.before}{should indicators in products be centered before computing products (overwritten by \code{method}, if \code{method != NULL})}
 

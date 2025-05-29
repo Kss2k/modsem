@@ -15,7 +15,9 @@
 #'
 #' @param standardize.data should data be scaled before fitting model
 #'
-#' @param first.loading.fixed Should the first factor loading in the latent product be fixed to one?
+#' @param first.loading.fixed Should the first factor loading in the latent product be fixed to one? Defaults to \code{FALSE}, as 
+#'   this already happens in \code{lavaan} by default. If \code{TRUE}, the first factor loading in the latent product is fixed to one.
+#'   manually in the generated syntax (e.g., \code{XZ =~ 1*x1z1}).'
 #'
 #' @param center.before should indicators in products be centered before computing products (overwritten by \code{method}, if \code{method != NULL})
 #'
@@ -125,7 +127,7 @@ modsem_pi <- function(model.syntax = NULL,
                       match = NULL,
                       standardize.data = FALSE,
                       center.data = FALSE,
-                      first.loading.fixed = TRUE,
+                      first.loading.fixed = FALSE,
                       center.before = NULL,
                       center.after = NULL,
                       residuals.prods = NULL,
