@@ -393,8 +393,14 @@ is.LavToken <- function(token) {
 }
 
 
-is.LavName <- function(token) {
-  inherits(token, "LavName")
+is.LavName <- function(token, ignore.function=TRUE) {
+  isName <- inherits(token, "LavName")
+
+  if (ignore.function) {
+    isName <- isName && !grepl("\\($", getTokenString(token))
+  }
+
+  isName
 }
 
 
