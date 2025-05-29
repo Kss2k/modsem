@@ -51,7 +51,7 @@
 #' @param suppress.warnings.lavaan should warnings from \code{lavaan} be suppressed?
 #' @param suppress.warnings.match should warnings from \code{match} be suppressed?
 #'
-#' @param ... arguments passed to other functions, e.g., \code{lavaan}
+#' @param ... arguments passed to \code{lavaan::sem()}
 #'
 #' @return \code{modsem} object
 #' @export
@@ -200,8 +200,7 @@ modsem_pi <- function(model.syntax = NULL,
                                constrained.prod.mean = methodSettings$constrained.prod.mean,
                                constrained.loadings = methodSettings$constrained.loadings,
                                constrained.var = methodSettings$constrained.var,
-                               firstFixed = first.loading.fixed,
-                               ...)
+                               firstFixed = first.loading.fixed)
 
   newSyntax <- parTableToSyntax(parTable, removeColon = TRUE)
 
@@ -311,8 +310,7 @@ addSpecsParTable <- function(modelSpec,
                              constrained.prod.mean = FALSE,
                              constrained.loadings = FALSE,
                              constrained.var = FALSE,
-                             firstFixed = TRUE,
-                             ...) {
+                             firstFixed = TRUE) {
   relDfs       <- modelSpec$relDfs
   latentProds  <- modelSpec$latentProds
   indProdNames <- modelSpec$indProdNames
@@ -339,7 +337,7 @@ addSpecsParTable <- function(modelSpec,
   } else if (residual.cov.syntax) {
     residualCovariances <- purrr::map(.x = relDfs, .f = getParTableResCov,
                                       method = constrained.res.cov.method,
-                                      pt = parTable, ...)  |>
+                                      pt = parTable)  |>
       purrr::list_rbind()
     parTable <- rbindParTable(parTable, residualCovariances)
   }
