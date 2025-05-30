@@ -108,7 +108,7 @@ set to <code>FALSE</code>.</p>
 <span><span class="st">  Y ~ X + Z + X:Z</span></span>
 <span><span class="st">"</span></span>
 <span><span class="va">est1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m1</span>, data <span class="op">=</span> <span class="va">oneInt</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/plot_interaction.html">plot_interaction</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"X"</span>, z <span class="op">=</span> <span class="st">"Z"</span>, y <span class="op">=</span> <span class="st">"Y"</span>, vals_z <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span>, model <span class="op">=</span> <span class="va">est1</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/plot_interaction.html">plot_interaction</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"X"</span>, z <span class="op">=</span> <span class="st">"Z"</span>, y <span class="op">=</span> <span class="st">"Y"</span>, vals_z <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span>, model <span class="op">=</span> <span class="va">est1</span><span class="op">)</span></span></code></pre></div>
 <p><img src="simple_slopes_files/figure-html/unnamed-chunk-2-1.png" width="700"></p>
 <p>If you want to see the numerical values of the simple slopes, you can
 use the <code><a href="../reference/simple_slopes.html">simple_slopes()</a></code> function:</p>
@@ -125,34 +125,33 @@ use the <code><a href="../reference/simple_slopes.html">simple_slopes()</a></cod
 <span><span class="st">"</span></span>
 <span></span>
 <span><span class="va">est1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m1</span>, data <span class="op">=</span> <span class="va">oneInt</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/simple_slopes.html">simple_slopes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"X"</span>, z <span class="op">=</span> <span class="st">"Z"</span>, y <span class="op">=</span> <span class="st">"Y"</span>, vals_z <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span>, model <span class="op">=</span> <span class="va">est1</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/simple_slopes.html">simple_slopes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"X"</span>, z <span class="op">=</span> <span class="st">"Z"</span>, y <span class="op">=</span> <span class="st">"Y"</span>, vals_z <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span>, model <span class="op">=</span> <span class="va">est1</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Difference test of Y~X|Z at Z = 0.000 and 1.008:</span></span>
+<span><span class="co">#&gt; Difference test of Y~X|Z at Z = -1.008 and 1.008:</span></span>
 <span><span class="co">#&gt; ┌────────────────────────────────────────────────────────────────────┐</span></span>
-<span><span class="co">#&gt; │  Diff: 0.708, std.error: 0.027, p.value: 0.000, ci: [0.655, 0.760] │</span></span>
+<span><span class="co">#&gt; │  Diff: 1.415, std.error: 0.054, p.value: 0.000, ci: [1.310, 1.521] │</span></span>
 <span><span class="co">#&gt; └────────────────────────────────────────────────────────────────────┘</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Effect of Y~X|Z given values of Z:</span></span>
-<span><span class="co">#&gt; ─────┬──────┬───────────┬─────────┬─────────┬──────────────</span></span>
-<span><span class="co">#&gt;  Y~X │    Z │ Std.Error │ z.value │ p.value │ Conf.Interval </span></span>
-<span><span class="co">#&gt; ═════╪══════╪═══════════╪═════════╪═════════╪══════════════</span></span>
-<span><span class="co">#&gt; 0.67 │ 0.00 │     0.027 │   25.38 │   0.000 │  [0.62, 0.73] </span></span>
-<span><span class="co">#&gt; 1.38 │ 1.01 │     0.038 │   36.34 │   0.000 │  [1.31, 1.46] </span></span>
+<span><span class="co">#&gt; ───────┬───────┬───────────┬─────────┬─────────┬──────────────</span></span>
+<span><span class="co">#&gt;    Y~X │     Z │ Std.Error │ z.value │ p.value │ Conf.Interval </span></span>
+<span><span class="co">#&gt; ═══════╪═══════╪═══════════╪═════════╪═════════╪══════════════</span></span>
+<span><span class="co">#&gt; -0.033 │ -1.01 │     0.038 │   -0.88 │   0.377 │ [-0.11, 0.04] </span></span>
+<span><span class="co">#&gt;  1.382 │  1.01 │     0.038 │   36.34 │   0.000 │ [ 1.31, 1.46] </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Predicted Y, given Z = 0:</span></span>
+<span><span class="co">#&gt; Predicted Y, given Z = -1.01:</span></span>
 <span><span class="co">#&gt; ──────┬─────────────┬───────────┬─────────┬─────────┬───────────────</span></span>
 <span><span class="co">#&gt;     X │ Predicted Y │ Std.Error │ z.value │ p.value │  Conf.Interval </span></span>
 <span><span class="co">#&gt; ══════╪═════════════╪═══════════╪═════════╪═════════╪═══════════════</span></span>
-<span><span class="co">#&gt; -2.97 │       -2.00 │     0.079 │  -25.38 │   0.000 │ [-2.16, -1.85] </span></span>
-<span><span class="co">#&gt; -1.98 │       -1.34 │     0.053 │  -25.38 │   0.000 │ [-1.44, -1.23] </span></span>
-<span><span class="co">#&gt; -0.99 │       -0.67 │     0.026 │  -25.38 │   0.000 │ [-0.72, -0.62] </span></span>
-<span><span class="co">#&gt;  0.00 │        0.00 │     0.000 │     NaN │     NaN │ [ 0.00,  0.00] </span></span>
-<span><span class="co">#&gt;  0.99 │        0.67 │     0.026 │   25.38 │   0.000 │ [ 0.62,  0.72] </span></span>
-<span><span class="co">#&gt;  1.98 │        1.34 │     0.053 │   25.38 │   0.000 │ [ 1.23,  1.44] </span></span>
-<span><span class="co">#&gt;  2.97 │        2.00 │     0.079 │   25.38 │   0.000 │ [ 1.85,  2.16] </span></span>
+<span><span class="co">#&gt; -2.97 │       -0.47 │     0.112 │   -4.17 │   0.000 │ [-0.69, -0.25] </span></span>
+<span><span class="co">#&gt; -1.98 │       -0.50 │     0.076 │   -6.55 │   0.000 │ [-0.65, -0.35] </span></span>
+<span><span class="co">#&gt; -0.99 │       -0.53 │     0.043 │  -12.33 │   0.000 │ [-0.62, -0.45] </span></span>
+<span><span class="co">#&gt;  0.00 │       -0.57 │     0.026 │  -21.61 │   0.000 │ [-0.62, -0.51] </span></span>
+<span><span class="co">#&gt;  0.99 │       -0.60 │     0.048 │  -12.56 │   0.000 │ [-0.69, -0.50] </span></span>
+<span><span class="co">#&gt;  1.98 │       -0.63 │     0.081 │   -7.76 │   0.000 │ [-0.79, -0.47] </span></span>
+<span><span class="co">#&gt;  2.97 │       -0.66 │     0.117 │   -5.67 │   0.000 │ [-0.89, -0.43] </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Predicted Y, given Z = 1.01:</span></span>
@@ -166,13 +165,25 @@ use the <code><a href="../reference/simple_slopes.html">simple_slopes()</a></cod
 <span><span class="co">#&gt;  0.99 │        1.93 │     0.042 │   45.91 │   0.000 │ [ 1.85,  2.02] </span></span>
 <span><span class="co">#&gt;  1.98 │        3.30 │     0.076 │   43.74 │   0.000 │ [ 3.16,  3.45] </span></span>
 <span><span class="co">#&gt;  2.97 │        4.67 │     0.112 │   41.84 │   0.000 │ [ 4.45,  4.89]</span></span></code></pre></div>
-<p>The <code><a href="../reference/simple_slopes.html">simple_slopes()</a></code> function returns a simple_slopes
-object, which is a <code>data.frame</code> with some additional
-attributes. It only has a single method (or technically, a generic
-function), <code>print.simple_slopes()</code>, which prints the simple
-slopes in a easy-to-read format. If you want to extract the simple
-slopes as a <code>data.frame</code>, you can use the
-<code><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame()</a></code> function:</p>
+<p>The <code><a href="../reference/simple_slopes.html">simple_slopes()</a></code> function returns a
+<code>simple_slopes</code> object. It only has two methods/generics:
+<code>print.simple_slopes()</code>, which prints the simple slopes in a
+easy-to-read format and <code>as.data.frame.simple_slopes()</code>. The
+<code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> method will not only print the predicted values,
+but also significance tests for the difference between the slope at the
+lowest value of <code>z</code> and the slope at the highest value of
+<code>z</code>, as well as significance tests for the slope of
+<code>x</code> at the different values of <code>vals_z</code>.</p>
+<p>In the example above, we can see that there is a significant
+difference between the slope at at <code>-1 * sd(Z)</code> and
+<code>+1 * sd(Z)</code>. Note that by default <code>vals_z</code> is
+rescaled by the mean and standard deviation of the variable, unless
+<code>rescale = FALSE</code> is set. This means that the values of
+<code>vals_z</code> are interpreted as standard deviations from the mean
+of <code>Z</code>.</p>
+<p>If you want to extract the simple slopes as a
+<code>data.frame</code>, you can use the <code><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame()</a></code>
+function:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">m1</span> <span class="op">&lt;-</span> <span class="st">"</span></span>
 <span><span class="st"># Outer Model</span></span>
