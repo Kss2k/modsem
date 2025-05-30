@@ -300,7 +300,7 @@ calc_se <- function(df, e, VCOV, se_type = "confidence") {
 printTable <- function(x) {
   if (!NROW(x)) return(NULL)
 
-  header <- paste(x[1, ], collapse = paste0(" ", V_LINE, " "))
+  header <- paste0(paste(x[1, ], collapse = paste0(" ", V_LINE, " ")), " ")
   header_vec <- unlist(stringr::str_split(header, ""))
   
   sep_thin_vec <- rep(H_LINE, nchar(header))
@@ -320,7 +320,7 @@ printTable <- function(x) {
 
   for (i in seq_len(nrow(x))) {
     str <- paste(x[i, ], collapse = paste0(" ", V_LINE, " "))
-    str <- paste0(V_LINE, str, V_LINE, "\n")
+    str <- paste0(V_LINE, str, " ", V_LINE, "\n")
     
     if (i == 1) {
       cat(sep_thin, str, sep_thick, sep = "")
