@@ -127,30 +127,45 @@ use the <code><a href="../reference/simple_slopes.html">simple_slopes()</a></cod
 <span><span class="va">est1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m1</span>, data <span class="op">=</span> <span class="va">oneInt</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/simple_slopes.html">simple_slopes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"X"</span>, z <span class="op">=</span> <span class="st">"Z"</span>, y <span class="op">=</span> <span class="st">"Y"</span>, vals_z <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span>, model <span class="op">=</span> <span class="va">est1</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Difference test of Y~X|Z at Z = 0.000 and 1.008:</span></span>
+<span><span class="co">#&gt; ┌────────────────────────────────────────────────────────────────────┐</span></span>
+<span><span class="co">#&gt; │  Diff: 0.708, std.error: 0.027, p.value: 0.000, ci: [0.655, 0.760] │</span></span>
+<span><span class="co">#&gt; └────────────────────────────────────────────────────────────────────┘</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Effect of Y~X|Z given values of Z:</span></span>
+<span><span class="co">#&gt; ─────┬──────┬───────────┬─────────┬─────────┬──────────────</span></span>
+<span><span class="co">#&gt;  Y~X │    Z │ Std.Error │ z.value │ p.value │ Conf.Interval </span></span>
+<span><span class="co">#&gt; ═════╪══════╪═══════════╪═════════╪═════════╪══════════════</span></span>
+<span><span class="co">#&gt; 0.67 │ 0.00 │     0.027 │   25.38 │   0.000 │  [0.62, 0.73] </span></span>
+<span><span class="co">#&gt; 1.38 │ 1.01 │     0.038 │   36.34 │   0.000 │  [1.31, 1.46] </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Predicted Y, given Z = 0:</span></span>
-<span><span class="co">#&gt; --------------------------------------------------------------------</span></span>
-<span><span class="co">#&gt;     X | Predicted Y | Std.Error | z.value | p.value |  Conf.Interval </span></span>
-<span><span class="co">#&gt; --------------------------------------------------------------------</span></span>
-<span><span class="co">#&gt; -2.97 |       -2.00 |     0.079 |     -25 |   0.000 | [-2.16, -1.85] </span></span>
-<span><span class="co">#&gt; -1.98 |       -1.34 |     0.053 |     -25 |   0.000 | [-1.44, -1.23] </span></span>
-<span><span class="co">#&gt; -0.99 |       -0.67 |     0.026 |     -25 |   0.000 | [-0.72, -0.62] </span></span>
-<span><span class="co">#&gt;  0.00 |        0.00 |     0.000 |     NaN |     NaN | [ 0.00,  0.00] </span></span>
-<span><span class="co">#&gt;  0.99 |        0.67 |     0.026 |      25 |   0.000 | [ 0.62,  0.72] </span></span>
-<span><span class="co">#&gt;  1.98 |        1.34 |     0.053 |      25 |   0.000 | [ 1.23,  1.44] </span></span>
-<span><span class="co">#&gt;  2.97 |        2.00 |     0.079 |      25 |   0.000 | [ 1.85,  2.16] </span></span>
+<span><span class="co">#&gt; ──────┬─────────────┬───────────┬─────────┬─────────┬───────────────</span></span>
+<span><span class="co">#&gt;     X │ Predicted Y │ Std.Error │ z.value │ p.value │  Conf.Interval </span></span>
+<span><span class="co">#&gt; ══════╪═════════════╪═══════════╪═════════╪═════════╪═══════════════</span></span>
+<span><span class="co">#&gt; -2.97 │       -2.00 │     0.079 │  -25.38 │   0.000 │ [-2.16, -1.85] </span></span>
+<span><span class="co">#&gt; -1.98 │       -1.34 │     0.053 │  -25.38 │   0.000 │ [-1.44, -1.23] </span></span>
+<span><span class="co">#&gt; -0.99 │       -0.67 │     0.026 │  -25.38 │   0.000 │ [-0.72, -0.62] </span></span>
+<span><span class="co">#&gt;  0.00 │        0.00 │     0.000 │     NaN │     NaN │ [ 0.00,  0.00] </span></span>
+<span><span class="co">#&gt;  0.99 │        0.67 │     0.026 │   25.38 │   0.000 │ [ 0.62,  0.72] </span></span>
+<span><span class="co">#&gt;  1.98 │        1.34 │     0.053 │   25.38 │   0.000 │ [ 1.23,  1.44] </span></span>
+<span><span class="co">#&gt;  2.97 │        2.00 │     0.079 │   25.38 │   0.000 │ [ 1.85,  2.16] </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Predicted Y, given Z = 1.01:</span></span>
-<span><span class="co">#&gt; --------------------------------------------------------------------</span></span>
-<span><span class="co">#&gt;     X | Predicted Y | Std.Error | z.value | p.value |  Conf.Interval </span></span>
-<span><span class="co">#&gt; --------------------------------------------------------------------</span></span>
-<span><span class="co">#&gt; -2.97 |       -3.54 |     0.120 |     -29 |   0.000 | [-3.78, -3.31] </span></span>
-<span><span class="co">#&gt; -1.98 |       -2.17 |     0.084 |     -26 |   0.000 | [-2.34, -2.01] </span></span>
-<span><span class="co">#&gt; -0.99 |       -0.80 |     0.049 |     -16 |   0.000 | [-0.90, -0.71] </span></span>
-<span><span class="co">#&gt;  0.00 |        0.57 |     0.026 |      22 |   0.000 | [ 0.51,  0.62] </span></span>
-<span><span class="co">#&gt;  0.99 |        1.93 |     0.042 |      46 |   0.000 | [ 1.85,  2.02] </span></span>
-<span><span class="co">#&gt;  1.98 |        3.30 |     0.076 |      44 |   0.000 | [ 3.16,  3.45] </span></span>
-<span><span class="co">#&gt;  2.97 |        4.67 |     0.112 |      42 |   0.000 | [ 4.45,  4.89]</span></span></code></pre></div>
+<span><span class="co">#&gt; ──────┬─────────────┬───────────┬─────────┬─────────┬───────────────</span></span>
+<span><span class="co">#&gt;     X │ Predicted Y │ Std.Error │ z.value │ p.value │  Conf.Interval </span></span>
+<span><span class="co">#&gt; ══════╪═════════════╪═══════════╪═════════╪═════════╪═══════════════</span></span>
+<span><span class="co">#&gt; -2.97 │       -3.54 │     0.120 │  -29.48 │   0.000 │ [-3.78, -3.31] </span></span>
+<span><span class="co">#&gt; -1.98 │       -2.17 │     0.084 │  -25.94 │   0.000 │ [-2.34, -2.01] </span></span>
+<span><span class="co">#&gt; -0.99 │       -0.80 │     0.049 │  -16.30 │   0.000 │ [-0.90, -0.71] </span></span>
+<span><span class="co">#&gt;  0.00 │        0.57 │     0.026 │   21.61 │   0.000 │ [ 0.51,  0.62] </span></span>
+<span><span class="co">#&gt;  0.99 │        1.93 │     0.042 │   45.91 │   0.000 │ [ 1.85,  2.02] </span></span>
+<span><span class="co">#&gt;  1.98 │        3.30 │     0.076 │   43.74 │   0.000 │ [ 3.16,  3.45] </span></span>
+<span><span class="co">#&gt;  2.97 │        4.67 │     0.112 │   41.84 │   0.000 │ [ 4.45,  4.89]</span></span></code></pre></div>
 <p>The <code><a href="../reference/simple_slopes.html">simple_slopes()</a></code> function returns a simple_slopes
 object, which is a <code>data.frame</code> with some additional
 attributes. It only has a single method (or technically, a generic
