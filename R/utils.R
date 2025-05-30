@@ -401,3 +401,10 @@ getParTableLabels <- function(parTable, labelCol="label") {
 
 
 CI_WIDTH <- qnorm(.975)
+
+
+padCharMatrix <- function(X, n=1) {
+  pad <- strrep(" ", n)
+  matrix(paste0(pad, X), nrow = nrow(X), ncol = ncol(X), 
+         dimnames = dimnames(X))
+}

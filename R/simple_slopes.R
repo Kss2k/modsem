@@ -8,7 +8,9 @@ RU_CORNER = "\u2510" # left upper corner
 RL_CORNER = "\u2518" # right lower corner
 H_DLINE = "\u2550" # horizontal double line
 F_DCROSS = "\u256a" # full double cross
-
+R_DCROSS = "\u2561" # right double cross
+L_DCROSS = "\u255e" # left double cross
+U_CROSS = "\u2534" # up cross
 
 #' Get the simple slopes of a SEM model
 #'
@@ -253,7 +255,7 @@ simple_slopes <- function(x,
   z_diff <- diff / std.error_diff
   p_diff <- 2 * stats::pnorm(-abs(z_diff))
 
-  sig.diff_min_max <- list(
+  sig.diff_min_max <- data.frame(
     min.z = min_z,
     max.z = max_z,
     diff = diff,
@@ -303,21 +305,29 @@ printTable <- function(x) {
   
   sep_thin_vec <- rep(H_LINE, nchar(header))
   sep_thin_vec[header_vec == V_LINE] <- D_CROSS
-  sep_thin <- paste0(paste0(sep_thin_vec, collapse=""), "\n")
+  sep_thin <- paste0(sep_thin_vec, collapse="")
+  sep_thin <- paste0(LU_CORNER, sep_thin, RU_CORNER, "\n")
 
   sep_thick_vec <- rep(H_DLINE, nchar(header))
   sep_thick_vec[header_vec == V_LINE] <- F_DCROSS
-  sep_thick <- paste0(paste0(sep_thick_vec, collapse=""), "\n")
+  sep_thick <- paste0(sep_thick_vec, collapse="")
+  sep_thick <- paste0(L_DCROSS, sep_thick, R_DCROSS, "\n")
+
+  sep_bottom_vec <- sep_thin_vec
+  sep_bottom_vec[header_vec == V_LINE] <- U_CROSS
+  sep_bottom <- paste0(sep_bottom_vec, collapse="")
+  sep_bottom <- paste0(LL_CORNER, sep_bottom, RL_CORNER, "\n")
 
   for (i in seq_len(nrow(x))) {
     str <- paste(x[i, ], collapse = paste0(" ", V_LINE, " "))
+    str <- paste0(V_LINE, str, V_LINE, "\n")
     
     if (i == 1) {
-      cat(sep_thin)
-      cat(str, "\n")
-      cat(sep_thick)
-    } else cat(str, "\n")
+      cat(sep_thin, str, sep_thick, sep = "")
+    } else cat(str)
   }
+
+  cat(sep_bottom)
 }
 
 
@@ -333,20 +343,27 @@ print.simple_slopes <- function(x, digits = 2, scientific.p = FALSE, ...) {
   var_y <- variables[[3]]
 
   # Difference test ----------------------------------------------------------
+  header <- c("Difference", "Std.Error",
+              "z.value", "p.value", "Conf.Interval")
+  ci.lower <- format(sig.diff_min_max$ci.lower, digits = digits, nsmall = digits)
+  ci.upper <- format(sig.diff_min_max$ci.upper, digits = digits, nsmall = digits)
+
+  X <- data.frame(
+    diff      = format(sig.diff_min_max$diff, digits = digits, nsmall = digits),
+    std.error = format(sig.diff_min_max$std.error, digits = digits, nsmall = digits),
+    z.value   = format(sig.diff_min_max$z.value, digits = digits, nsmall = digits),
+    p.value   = formatPval(sig.diff_min_max$p.value, scientific = scientific.p),
+    ci        = paste0("[", ci.lower, ", ", ci.upper, "]")
+  )
+  X1 <- matrix(header, nrow = 1)
+  X2 <- padCharMatrix(as.matrix(X), n=1) # pad atleast one space to the left
+  X <- apply(rbind(X1, X2), MARGIN = 2, format, digits = digits, justify = "right")
+
   cat(sprintf("\nDifference test of %s~%s|%s at %s = %.3f and %.3f:\n",
               var_y, var_x, var_z, var_z, sig.diff_min_max$min.z, sig.diff_min_max$max.z))
+  printTable(X)
+  cat("\n")
 
-  body <- sprintf("  Diff: %.3f, std.error: %.3f, p.value: %.3f, ci: [%.3f, %.3f] ",
-                  sig.diff_min_max$diff, sig.diff_min_max$std.error, sig.diff_min_max$p.value,
-                  sig.diff_min_max$ci.lower, sig.diff_min_max$ci.upper)
-   
-  line <- strrep(H_LINE, nchar(body))
-  body <- paste0(V_LINE, body, V_LINE, "\n")
-
-  topLine    <- paste0(LU_CORNER, line, RU_CORNER, "\n")
-  bottomLine <- paste0(LL_CORNER, line, RL_CORNER, "\n")
-
-  cat(topLine, body, bottomLine, "\n\n", sep="")
 
 
   # Slope test -----------------------------------------------------------------
@@ -363,12 +380,12 @@ print.simple_slopes <- function(x, digits = 2, scientific.p = FALSE, ...) {
     p.value   = formatPval(sig.slopes$p.value, scientific = scientific.p),
     ci        = paste0("[", ci.lower, ", ", ci.upper, "]")
   )
-  cat(sprintf("Effect of %s~%s|%s given values of %s:\n", 
-              var_y, var_x, var_z, var_z))
   
   X1 <- matrix(header, nrow = 1)
-  X2 <- as.matrix(X)
+  X2 <- padCharMatrix(as.matrix(X), n=1) # pad atleast one space to the left
   X <- apply(rbind(X1, X2), MARGIN = 2, format, digits = digits, justify = "right")
+  
+  cat(sprintf("Effect of %s~%s|%s given values of %s:\n", var_y, var_x, var_z, var_z))
   printTable(X)
   cat("\n")
 
@@ -389,7 +406,7 @@ print.simple_slopes <- function(x, digits = 2, scientific.p = FALSE, ...) {
                   ci        = paste0("[", ci.lower, ", ", ci.upper, "]"))
 
   X1 <- matrix(header, nrow = 1)
-  X2 <- as.matrix(X)
+  X2 <- padCharMatrix(as.matrix(X), n=1) # pad atleast one space to the left
 
   X <- apply(rbind(X1, X2), MARGIN = 2, format, digits = digits, justify = "right")
   
