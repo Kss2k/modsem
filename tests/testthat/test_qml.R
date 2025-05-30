@@ -6,6 +6,9 @@ X =~ x1 + x2 + x3
 Y =~ y1 + y2 + y3
 Z =~ z1 + z2 + z3
 Y ~ X + Z + a * X:Z
+
+X ~~ varX * X # check that no warning is thrown 
+              # (one should be thrown for LMS but not QML)
 '
 
 est1 <- modsem(m1, data = oneInt, convergence = 1e-2, method = "qml",

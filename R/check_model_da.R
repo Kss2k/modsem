@@ -1,6 +1,8 @@
 checkModel <- function(model, covModel = NULL, method = "lms") {
   checkCovModelVariables(covModel = covModel, modelXis = model$info$xis)
 
+  checkCovModelMatrices(covModel = covModel, method = method)
+
   checkZeroVariances(model = model, method = method)
 
   checkNodesLms(parTableMain = model$parTable,
@@ -12,10 +14,33 @@ checkModel <- function(model, covModel = NULL, method = "lms") {
 
   checkOverlappingIndicators(allIndsXis = model$info$allIndsXis,
                              allIndsEtas = model$info$allIndsEtas)
+
+  checkALabels(model$labelMatrices, method = method)
 }
 
 
-checkCovModelVariables <- function(covModel, modelXis) {
+
+checkALabels <- function(labelMatrices, method = "lms") {
+  if (method != "lms") return(NULL)
+
+  warnif(any(labelMatrices$A != ""), 
+         "Variances and covariances of exogenous variables aren't truely ",
+         "free parameters in the LMS approach. Using them in model constraints ",
+         "affecting the model estimation will likely not work as expected!\n\n",
+         "If the label is unused, or only used to compute custom parameters (using `:=`) ",
+         "which don't affect the model estimation, you can ignore this warning.\n"
+  )
+}
+
+
+checkCovModelMatrices <- function(covModel, method = "lms") {
+  if (is.null(covModel)) return(NULL) # nothing to check
+
+  checkALabels(covModel$labelMatrices, method = method)
+}
+
+
+checkCovModelVariables <- function(covModel, modelXis, method = "lms") {
   if (is.null(covModel$info)) return(NULL) # nothing to check
   covModelEtas <- covModel$info$etas
   covModelXis  <- covModel$info$xis

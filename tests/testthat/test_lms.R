@@ -12,7 +12,7 @@ m1 <- "
   Y ~ b * X:Z + 0.05 * X:X
   b == a * 1.2
 
-  coef := a * 2 + b^2
+  coef := sqrt(a * 2 + b^2)
 "
 
 est1 <- modsem(m1, oneInt, method = "lms", optimize = TRUE, verbose = TRUE,
@@ -22,6 +22,29 @@ print(summary(est1, adjusted.stat = TRUE))
 plot_surface(x = "X", z = "Z", y = "Y", model = est1)
 standardize_model(est1, monte.carlo=TRUE)
 standardize_model(est1, monte.carlo=FALSE)
+
+m1 <- "
+# Outer Model
+  X =~ x1
+  Z =~ z1 
+  x1 ~~ 0.1 * x1
+  Y =~ y1
+
+# Inner model
+  Y ~ a * X + a * Z
+  X ~~ varX * X 
+  Y ~~ Y
+  Y ~ b * X:Z + 0.05 * X:X
+  b == a * 1.2
+
+  coef := sqrt(a * 2 + b^2)
+"
+
+testthat::expect_warning(
+  modsem(m1, oneInt, method = "lms"),
+  regexp = "Variances and covariances .*"
+)
+
 
 # PROBLEM:
 #   I have no clue why, but changing the ordering of how the interaction terms 
