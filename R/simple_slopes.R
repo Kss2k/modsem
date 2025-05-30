@@ -370,8 +370,7 @@ print.simple_slopes <- function(x, digits = 2, scientific.p = FALSE, ...) {
   X2 <- as.matrix(X)
   X <- apply(rbind(X1, X2), MARGIN = 2, format, digits = digits, justify = "right")
   printTable(X)
-
-  cat("\n\n")
+  cat("\n")
 
   # Margins --------------------------------------------------------------------
   predictors <- variables[1:2]

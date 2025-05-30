@@ -46,7 +46,7 @@ m1 <- "
   Y ~ X + Z + X:Z
 "
 est1 <- modsem(m1, data = oneInt)
-plot_interaction(x = "X", z = "Z", y = "Y", vals_z = c(0, 1), model = est1)
+plot_interaction(x = "X", z = "Z", y = "Y", vals_z = c(-1, 1), model = est1)
 ```
 
 If you want to see the numerical values of the simple slopes, you can use the `simple_slopes()` function:
@@ -64,14 +64,24 @@ m1 <- "
 "
 
 est1 <- modsem(m1, data = oneInt)
-simple_slopes(x = "X", z = "Z", y = "Y", vals_z = c(0, 1), model = est1)
+simple_slopes(x = "X", z = "Z", y = "Y", vals_z = c(-1, 1), model = est1)
 ```
 
-The `simple_slopes()` function returns a simple_slopes object, which is a `data.frame`
-with some additional attributes. It only has a single method (or technically, a generic function),
-`print.simple_slopes()`, which prints the simple slopes in a easy-to-read format. If you want to 
-extract the simple slopes as a `data.frame`, you can use the `as.data.frame()` function:
+The `simple_slopes()` function returns a `simple_slopes` object. 
+It only has two methods/generics: 
+`print.simple_slopes()`, which prints the simple slopes in a easy-to-read format
+and `as.data.frame.simple_slopes()`. The `print()` method will not only 
+print the predicted values, but also significance tests for the difference between
+the slope at the lowest value of `z` and the slope at the highest value of `z`, 
+as well as significance tests for the slope of `x` at the 
+different values of `vals_z`. 
 
+In the example above, we can see that there is a significant 
+difference between the slope at at `-1 * sd(Z)` and `+1 * sd(Z)`. Note that
+by default `vals_z` is rescaled by the mean and standard deviation of the variable, unless `rescale = FALSE` is set.
+This means that the values of `vals_z` are interpreted as standard deviations from the mean of `Z`.
+
+If you want to extract the simple slopes as a `data.frame`, you can use the `as.data.frame()` function:
 
 ```{r}
 m1 <- "
