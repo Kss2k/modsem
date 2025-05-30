@@ -1,3 +1,15 @@
+# UTF-8 escaped characters for box drawing
+V_LINE = "\u2502" # vertical line
+H_LINE = "\u2500" # horizontal line
+D_CROSS = "\u252c" # down cross
+LU_CORNER = "\u250c" # left upper corner
+LL_CORNER = "\u2514" # left lower corner
+RU_CORNER = "\u2510" # left upper corner
+RL_CORNER = "\u2518" # right lower corner
+H_DLINE = "\u2550" # horizontal double line
+F_DCROSS = "\u256a" # full double cross
+
+
 #' Get the simple slopes of a SEM model
 #'
 #' This function calculates simple slopes (predicted values of the outcome variable)
@@ -175,13 +187,13 @@ simple_slopes <- function(x,
   label_beta_xz <- parTable[parTable$lhs == y & parTable$rhs %in% xz & parTable$op == "~", "label"]
   label_beta0_y <- parTable[parTable$lhs == y & parTable$op == "~1", "label"]
 
-  label_beta_x  <- ifelse(length(label_beta_x) == 0, NA, label_beta_x)
-  label_beta_z  <- ifelse(length(label_beta_z) == 0, NA, label_beta_z)
-  label_beta_xz <- ifelse(length(label_beta_xz) == 0, NA, label_beta_xz)
-  label_beta0_y <- ifelse(length(label_beta0_y) == 0, NA, label_beta0_y)
+  label_beta_x  <- ifelse(length(label_beta_x) == 0, "y~x", label_beta_x)
+  label_beta_z  <- ifelse(length(label_beta_z) == 0, "y~z", label_beta_z)
+  label_beta_xz <- ifelse(length(label_beta_xz) == 0, "y~xz", label_beta_xz)
+  label_beta0_y <- ifelse(length(label_beta0_y) == 0, "y~1", label_beta0_y)
 
   labels <- c(label_beta0_y, label_beta_x, label_beta_z, label_beta_xz)
-  VCOV   <- subsetVCOV(VCOV, labels)
+  VCOV   <- expandVCOV(VCOV, labels)
 
   mean_x <- getMean(x, parTable = parTable)
   mean_z <- getMean(z, parTable = parTable)
@@ -286,19 +298,19 @@ calc_se <- function(df, e, VCOV, se_type = "confidence") {
 printTable <- function(x) {
   if (!NROW(x)) return(NULL)
 
-  header <- paste(x[1, ], collapse = " │ ")
+  header <- paste(x[1, ], collapse = paste0(" ", V_LINE, " "))
   header_vec <- unlist(stringr::str_split(header, ""))
   
-  sep_thin_vec <- rep("─", nchar(header))
-  sep_thin_vec[header_vec == "│"] <- "┬"
+  sep_thin_vec <- rep(H_LINE, nchar(header))
+  sep_thin_vec[header_vec == V_LINE] <- D_CROSS
   sep_thin <- paste0(paste0(sep_thin_vec, collapse=""), "\n")
 
-  sep_thick_vec <- rep("═", nchar(header))
-  sep_thick_vec[header_vec == "│"] <- "╪"
+  sep_thick_vec <- rep(H_DLINE, nchar(header))
+  sep_thick_vec[header_vec == V_LINE] <- F_DCROSS
   sep_thick <- paste0(paste0(sep_thick_vec, collapse=""), "\n")
 
   for (i in seq_len(nrow(x))) {
-    str <- paste(x[i, ], collapse = " │ ")
+    str <- paste(x[i, ], collapse = paste0(" ", V_LINE, " "))
     
     if (i == 1) {
       cat(sep_thin)
@@ -328,11 +340,11 @@ print.simple_slopes <- function(x, digits = 2, scientific.p = FALSE, ...) {
                   sig.diff_min_max$diff, sig.diff_min_max$std.error, sig.diff_min_max$p.value,
                   sig.diff_min_max$ci.lower, sig.diff_min_max$ci.upper)
    
-  line <- strrep("─", nchar(body))
-  body <- paste0("│", body, "│\n")
+  line <- strrep(H_LINE, nchar(body))
+  body <- paste0(V_LINE, body, V_LINE, "\n")
 
-  topLine    <- paste0("┌", line, "┐\n")
-  bottomLine <- paste0("└", line, "┘\n")
+  topLine    <- paste0(LU_CORNER, line, RU_CORNER, "\n")
+  bottomLine <- paste0(LL_CORNER, line, RL_CORNER, "\n")
 
   cat(topLine, body, bottomLine, "\n\n", sep="")
 
@@ -391,20 +403,6 @@ print.simple_slopes <- function(x, digits = 2, scientific.p = FALSE, ...) {
     printTable(Z)
     cat("\n") 
   }
-}
-
-
-subsetVCOV <- function(VCOV, labels) {
-  vlabels <- colnames(VCOV)
-
-  noNa <- labels
-  noNa[is.na(noNa) | !noNa %in% vlabels] <- vlabels[1]
-
-  V <- VCOV[noNa, noNa]
-  V[is.na(labels), ] <- 0
-  V[, is.na(labels)] <- 0
-
-  V
 }
 
 
