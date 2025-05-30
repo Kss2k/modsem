@@ -205,11 +205,62 @@ simple_slopes <- function(x,
   df$ci.upper  <- df$predicted + ci.sig * df$std.error
   df$ci.lower  <- df$predicted - ci.sig * df$std.error
 
+  # significance test
+  k <- length(vals_z)
+  slopeLabels <- c(label_beta_x, label_beta_xz)
+  slopesVCOV <- VCOV[slopeLabels, slopeLabels]
+  slopes <- beta_x + vals_z * beta_xz
 
-  variable_names <- c(x = x, z = z, y = y)
-  attr(df, "variable_names") <- variable_names
-  class(df) <- c("simple_slopes", class(df))
-  df
+  d_beta_x <- rep(1, k) # d(beta_x)/d(beta_x) = 1
+  d_beta_xz <- vals_z # d(vals_z * beta_xz) / d(beta_xz) = vals_z
+  jacobian <- matrix(c(d_beta_x, d_beta_xz),
+                     nrow=k, ncol=2, byrow=FALSE)
+  slopesVCOV <- jacobian %*% slopesVCOV %*% t(jacobian) # delta method
+  std.error <- sqrt(diag(slopesVCOV))
+  z.value <- slopes / std.error
+
+  sig.slopes <- data.frame(
+    param = paste0(y, "~", x),
+    moderator = z,
+    slope.predictor = slopes, 
+    value.moderator = vals_z,
+    std.error = std.error,
+    z.value = z.value, 
+    p.value = 2 * stats::pnorm(-abs(z.value)),
+    ci.lower = slopes - ci.sig * std.error,
+    ci.upper = slopes + ci.sig * std.error
+  ) 
+
+  # significance test min/max
+  var_beta_xz <- VCOV[label_beta_xz, label_beta_xz]
+  min_z <- min(vals_z)
+  max_z <- max(vals_z)
+  diff <- max_z * beta_xz - min_z * beta_xz
+  grad_diff <- max_z - min_z # with respect to beta_xz
+  std.error_diff <- sqrt(grad_diff^2 * var_beta_xz) # delta method
+  z_diff <- diff / std.error_diff
+  p_diff <- 2 * stats::pnorm(-abs(z_diff))
+
+  sig.diff_min_max <- list(
+    min.z = min_z,
+    max.z = max_z,
+    diff = diff,
+    std.error = std.error_diff,
+    z.value = z_diff,
+    p.value = p_diff,
+    ci.lower = diff - ci.sig * std.error_diff,
+    ci.upper = diff + ci.sig * std.error_diff
+  )
+
+  structure(
+    list(
+      variable_names = c(x = x, z = z, y = y),
+      margins = df, 
+      sig.slopes = sig.slopes,
+      sig.diff_min_max = sig.diff_min_max
+    ), 
+    class = "simple_slopes"
+  )
 }
 
 
@@ -232,17 +283,27 @@ calc_se <- function(df, e, VCOV, se_type = "confidence") {
 
 
 
-printTable <- function(x, header = NULL) {
+printTable <- function(x) {
   if (!NROW(x)) return(NULL)
 
+  header <- paste(x[1, ], collapse = " │ ")
+  header_vec <- unlist(stringr::str_split(header, ""))
+  
+  sep_thin_vec <- rep("─", nchar(header))
+  sep_thin_vec[header_vec == "│"] <- "┬"
+  sep_thin <- paste0(paste0(sep_thin_vec, collapse=""), "\n")
+
+  sep_thick_vec <- rep("═", nchar(header))
+  sep_thick_vec[header_vec == "│"] <- "╪"
+  sep_thick <- paste0(paste0(sep_thick_vec, collapse=""), "\n")
+
   for (i in seq_len(nrow(x))) {
-    str <- paste(x[i, ], collapse = " | ")
+    str <- paste(x[i, ], collapse = " │ ")
     
     if (i == 1) {
-      sep <- paste0(strrep("-", nchar(str)), "\n")
-      cat(sep)
+      cat(sep_thin)
       cat(str, "\n")
-      cat(sep)
+      cat(sep_thick)
     } else cat(str, "\n")
   }
 }
@@ -250,20 +311,70 @@ printTable <- function(x, header = NULL) {
 
 #' @export
 print.simple_slopes <- function(x, digits = 2, scientific.p = FALSE, ...) {
+  variables  <- x$variable_names
+  margins    <- x$margins
+  sig.slopes <- x$sig.slopes
+  sig.diff_min_max <- x$sig.diff_min_max
+ 
+  var_x <- variables[[1]]
+  var_z <- variables[[2]]
+  var_y <- variables[[3]]
 
-  variables  <- attr(x, "variable_names")
+  # Difference test ----------------------------------------------------------
+  cat(sprintf("\nDifference test of %s~%s|%s at %s = %.3f and %.3f:\n",
+              var_y, var_x, var_z, var_z, sig.diff_min_max$min.z, sig.diff_min_max$max.z))
+
+  body <- sprintf("  Diff: %.3f, std.error: %.3f, p.value: %.3f, ci: [%.3f, %.3f] ",
+                  sig.diff_min_max$diff, sig.diff_min_max$std.error, sig.diff_min_max$p.value,
+                  sig.diff_min_max$ci.lower, sig.diff_min_max$ci.upper)
+   
+  line <- strrep("─", nchar(body))
+  body <- paste0("│", body, "│\n")
+
+  topLine    <- paste0("┌", line, "┐\n")
+  bottomLine <- paste0("└", line, "┘\n")
+
+  cat(topLine, body, bottomLine, "\n\n", sep="")
+
+
+  # Slope test -----------------------------------------------------------------
+  header <- c(sig.slopes$param[1], sig.slopes$moderator[1], "Std.Error",
+              "z.value", "p.value", "Conf.Interval")
+  ci.lower <- format(sig.slopes$ci.lower, digits = digits, nsmall = digits)
+  ci.upper <- format(sig.slopes$ci.upper, digits = digits, nsmall = digits)
+
+  X <- data.frame(
+    slope     = format(sig.slopes$slope.predictor, digits = digits, nsmall = digits),
+    val_z     = format(sig.slopes$value.moderator, digits = digits, nsmall = digits),
+    std.error = format(sig.slopes$std.error, digits = digits, nsmall = digits),
+    z.value   = format(sig.slopes$z.value, digits = digits, nsmall = digits),
+    p.value   = formatPval(sig.slopes$p.value, scientific = scientific.p),
+    ci        = paste0("[", ci.lower, ", ", ci.upper, "]")
+  )
+  cat(sprintf("Effect of %s~%s|%s given values of %s:\n", 
+              var_y, var_x, var_z, var_z))
+  
+  X1 <- matrix(header, nrow = 1)
+  X2 <- as.matrix(X)
+  X <- apply(rbind(X1, X2), MARGIN = 2, format, digits = digits, justify = "right")
+  printTable(X)
+
+  cat("\n\n")
+
+  # Margins --------------------------------------------------------------------
   predictors <- variables[1:2]
   outcome    <- variables[3]
-  header     <- c(predictors[1], sprintf("Predicted %s", outcome), "Std.Error", "z.value", "p.value", "Conf.Interval")
-  ci.lower   <- format(x$ci.lower, digits = digits)
-  ci.upper   <- format(x$ci.upper, digits = digits)
-  cat_z      <- as.factor(round(x$vals_z, digits))
+  header     <- c(predictors[1], sprintf("Predicted %s", outcome), "Std.Error", 
+                  "z.value", "p.value", "Conf.Interval")
+  ci.lower   <- format(margins$ci.lower, digits = digits, nsmall = digits)
+  ci.upper   <- format(margins$ci.upper, digits = digits, nsmall = digits)
+  cat_z      <- as.factor(round(margins$vals_z, digits))
 
-  X <- data.frame(vals_x    = format(x$vals_x, digits = digits),
-                  predicted = format(x$predicted, digits = digits),
-                  std.error = format(x$std.error, digits = digits),
-                  z.value   = format(x$z.value, digits = digits),
-                  p.value   = formatPval(x$p.value, scientific = scientific.p),
+  X <- data.frame(vals_x    = format(margins$vals_x, digits = digits, nsmall = digits),
+                  predicted = format(margins$predicted, digits = digits, nsmall = digits),
+                  std.error = format(margins$std.error, digits = digits, nsmall = digits),
+                  z.value   = format(margins$z.value, digits = digits, nsmall = digits),
+                  p.value   = formatPval(margins$p.value, scientific = scientific.p),
                   ci        = paste0("[", ci.lower, ", ", ci.upper, "]"))
 
   X1 <- matrix(header, nrow = 1)
@@ -277,7 +388,7 @@ print.simple_slopes <- function(x, digits = 2, scientific.p = FALSE, ...) {
     Z  <- rbind(Z1, Z2)
 
     printf("\nPredicted %s, given %s = %s:\n", outcome, predictors[2], z_i)
-    printTable(Z, header = header)
+    printTable(Z)
     cat("\n") 
   }
 }
@@ -294,4 +405,10 @@ subsetVCOV <- function(VCOV, labels) {
   V[, is.na(labels)] <- 0
 
   V
+}
+
+
+#' @export
+as.data.frame.simple_slopes <- function(x, ...) {
+  x$margins
 }
