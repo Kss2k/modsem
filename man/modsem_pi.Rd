@@ -24,6 +24,7 @@ modsem_pi(
   auto.center = "none",
   estimator = "ML",
   group = NULL,
+  cluster = NULL,
   run = TRUE,
   na.rm = FALSE,
   suppress.warnings.lavaan = FALSE,
@@ -76,6 +77,8 @@ manually in the generated syntax (e.g., \code{XZ =~ 1*x1z1}).'}
 \item{estimator}{estimator to use in \code{lavaan}}
 
 \item{group}{group variable for multigroup analysis}
+
+\item{cluster}{cluster variable for multilevel models}
 
 \item{run}{should the model be run via \code{lavaan}, if \code{FALSE} only modified syntax and data is returned}
 

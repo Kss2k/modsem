@@ -45,6 +45,8 @@
 #'
 #' @param group group variable for multigroup analysis
 #'
+#' @param cluster cluster variable for multilevel models
+#'
 #' @param run should the model be run via \code{lavaan}, if \code{FALSE} only modified syntax and data is returned
 #'
 #' @param na.rm should missing values be removed (case-wise)? Defaults to FALSE. If \code{TRUE}, missing values are removed case-wise.
@@ -140,6 +142,7 @@ modsem_pi <- function(model.syntax = NULL,
                       auto.center = "none",
                       estimator = "ML",
                       group = NULL,
+                      cluster = NULL,
                       run = TRUE,
                       na.rm = FALSE,
                       suppress.warnings.lavaan = FALSE,
@@ -147,6 +150,38 @@ modsem_pi <- function(model.syntax = NULL,
                       ...) {
   stopif(is.null(model.syntax), "No model syntax provided in modsem")
   stopif(is.null(data), "No data provided in modsem")
+
+  if (!is.null(cluster)) {
+    est <- modsemPICluster(
+      model.syntax = model.syntax, 
+      method = method,
+      data = data,
+      match = match,
+      standardize.data = standardize.data,
+      center.data = center.data,
+      first.loading.fixed = first.loading.fixed,
+      center.before = center.before,
+      center.after = center.after,
+      residuals.prods = residuals.prods,
+      residual.cov.syntax = residual.cov.syntax,
+      constrained.prod.mean = constrained.prod.mean,
+      constrained.loadings = constrained.loadings,
+      constrained.var = constrained.var,
+      constrained.res.cov.method = constrained.res.cov.method,
+      auto.scale = auto.scale,
+      auto.center = auto.center,
+      run = run,
+      estimator = estimator,
+      group = group,
+      cluster = cluster,
+      na.rm = na.rm,
+      suppress.warnings.match = suppress.warnings.match,
+      suppress.warnings.lavaan = suppress.warnings.lavaan,
+    )
+
+    return(est)
+  }
+
   if (!is.data.frame(data)) data <- as.data.frame(data)
 
   methodSettings <-
@@ -168,11 +203,14 @@ modsem_pi <- function(model.syntax = NULL,
                            suppress.warnings.match = suppress.warnings.match)
 
   # Data Processing  -----------------------------------------------------------
-  data          <- data[c(modelSpec$oVs, group)]
-  completeCases <- stats::complete.cases(data)
+  oVs        <- c(modelSpec$oVs, group)
+  missingOVs <- setdiff(oVs, colnames(data))
+  stopif(length(missingOVs), "Missing variables in data:\n", missingOVs)
   
+  completeCases <- stats::complete.cases(data[oVs])
+
   if (any(!completeCases) && (is.null(na.rm) || na.rm)) {
-    warnif(is.null(na.rm), "Removing missing values case-wise.")
+    warnif(is.null(na.rm), "Removing missing values list-wise.")
     data <- data[completeCases, ]
   }
 
@@ -538,4 +576,134 @@ extract_lavaan <- function(object) {
     stop2("object is not of class modsem_pi")
   }
   object$lavaan
+}
+
+
+modsemPICluster <- function(model.syntax = NULL,
+                            data = NULL,
+                            method = "dblcent",
+                            match = NULL,
+                            standardize.data = FALSE,
+                            center.data = FALSE,
+                            first.loading.fixed = FALSE,
+                            center.before = NULL,
+                            center.after = NULL,
+                            residuals.prods = NULL,
+                            residual.cov.syntax = NULL,
+                            constrained.prod.mean = NULL,
+                            constrained.loadings = NULL,
+                            constrained.var = NULL,
+                            constrained.res.cov.method = NULL,
+                            auto.scale = "none",
+                            auto.center = "none",
+                            estimator = "ML",
+                            group = NULL,
+                            cluster = NULL, 
+                            run = TRUE,
+                            na.rm = FALSE,
+                            suppress.warnings.lavaan = FALSE,
+                            suppress.warnings.match = FALSE,
+                            ...) {
+  stopif(na.rm, "`na.rm=TRUE` can currently not be paired with the `cluster` argument!")
+
+  levelPattern <- "level([:blank:]*):([:blank:]*)([A-z]|[0-9]+)"
+  levelHeaders <- unlist(stringr::str_extract_all(model.syntax, pattern=levelPattern))
+  syntaxBlocks <- unlist(stringr::str_split(model.syntax, pattern=levelPattern))
+
+  if (!length(levelHeaders)) levelHeaders <- ""
+  else                       syntaxBlocks <- syntaxBlocks[-1]
+
+  stopif(length(syntaxBlocks) != length(levelHeaders), "Different number of blocks than level headers!")
+
+  data$ROW_IDENTIFIER_ <- seq_len(nrow(data))
+  newSyntax <- ""
+  newData <- NULL
+
+  for (i in seq_along(syntaxBlocks)) {
+    syntaxBlock <- syntaxBlocks[[i]]
+    levelHeader <- levelHeaders[[i]]
+
+    if (!NROW(modsemify(syntaxBlock))) next
+
+    newBlockSyntax <- get_pi_syntax(
+      model.syntax = syntaxBlock, 
+      method = method,
+      match = match,
+      standardize.data = standardize.data,
+      center.data = center.data,
+      first.loading.fixed = first.loading.fixed,
+      center.before = center.before,
+      center.after = center.after,
+      residuals.prods = residuals.prods,
+      residual.cov.syntax = residual.cov.syntax,
+      constrained.prod.mean = constrained.prod.mean,
+      constrained.loadings = constrained.loadings,
+      constrained.var = constrained.var,
+      constrained.res.cov.method = constrained.res.cov.method,
+      auto.scale = auto.scale,
+      auto.center = auto.center,
+      suppress.warnings.match = suppress.warnings.match,
+    ) |> stringr::str_replace_all(pattern = "\n", replacement = "\n\t")
+
+
+    newBlockData <- get_pi_data(
+      model.syntax = syntaxBlock, 
+      data = data,
+      method = method,
+      match = match,
+      standardize.data = standardize.data,
+      center.data = center.data,
+      first.loading.fixed = first.loading.fixed,
+      center.before = center.before,
+      center.after = center.after,
+      residuals.prods = residuals.prods,
+      residual.cov.syntax = residual.cov.syntax,
+      constrained.prod.mean = constrained.prod.mean,
+      constrained.loadings = constrained.loadings,
+      constrained.var = constrained.var,
+      constrained.res.cov.method = constrained.res.cov.method,
+      auto.scale = auto.scale,
+      auto.center = auto.center,
+      suppress.warnings.match = suppress.warnings.match,
+      na.rm = FALSE,
+    )
+
+    if (is.null(newData)) {
+      newData <- newBlockData
+    } else {
+      newCols <- setdiff(colnames(newBlockData), colnames(newData))
+      newBlockData <- newBlockData[c("ROW_IDENTIFIER_", newCols)]
+      newData <- dplyr::left_join(newData, newBlockData, by = "ROW_IDENTIFIER_")
+    }
+
+    newSyntax <- paste(
+      newSyntax, 
+      levelHeader, "\t", # indent first row
+      newBlockSyntax,
+      sep = "\n"
+    )
+  }
+
+  modelSpec <- list(syntax = newSyntax, data = newData)
+  if (run) {
+    lavWrapper <- getWarningWrapper(silent = suppress.warnings.lavaan)
+    lavEst <- tryCatch({
+        lavWrapper(lavaan::sem(
+          newSyntax, newData, estimator = estimator,
+          group = group, cluster = cluster, ...
+        ))
+      },
+      error = function(cnd) {
+        warning2(capturePrint(cnd))
+        NULL
+      }
+    )
+
+    coefParTable <- tryCatch(lavaan::parameterEstimates(lavEst),
+                             error = function(cnd) NULL)
+    modelSpec$lavaan       <- lavEst
+    modelSpec$coefParTable <- coefParTable
+  }
+
+  structure(modelSpec, class = c("modsem_pi", "modsem"), method = method)
 }
