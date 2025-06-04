@@ -95,13 +95,13 @@ finiteGaussQuadrature <- function(a, b, m = 10, k = 1) {
 
 adaptiveGaussQuadrature <- function(fun, a = -7, b = 7, m.start = 4, m.max = 32, tol = 1e-6,
                                     k = 1, total.integral = NULL, ...) {
-  if (k == 0 || m == 0) {
+  if (k == 0 || m.max == 0) {
     return(list(
       integral = 0,
       n = matrix(0), 
       w = 1, 
       f = NA,
-      m = m,
+      m = 0,
       k = k
     ))
   }
