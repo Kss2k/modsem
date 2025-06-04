@@ -43,7 +43,8 @@ finiteGaussQuadrature <- function(a, b, m = 10) {
 
 
 
-adaptiveGaussQuadrature <- function(fun, a = -7, b = 7, m.start = 4, m.max = 32, tol = 1e-6, ...) {
+adaptiveGaussQuadrature <- function(fun, a = -7, b = 7, m.start = 4, m.max = 32, tol = 1e-6, 
+                                    total.integral = NULL, ...) {
   if (m.start >= m.max) {
     quad <- finiteGaussQuadrature(a, b, m.max)
     integral <- sum(quad$weights * fun(quad$nodes, ...))
@@ -57,8 +58,10 @@ adaptiveGaussQuadrature <- function(fun, a = -7, b = 7, m.start = 4, m.max = 32,
   integral.l <- sum(quad.l$weights * fun(quad.l$nodes, ...))
   integral.h <- sum(quad.h$weights * fun(quad.h$nodes, ...))
 
-  E <- abs(integral.h - integral.l) / abs(integral.h)
-  
+  if (is.null(total.integral)) total.integral <- integral.h
+
+  E <- abs(integral.h - integral.l) / abs(total.integral)
+ 
   # cat(sprintf("a: %f, b: %f, m.start: %d, m.max: %.f, E: %.6f\n", a, b, m.start, m.max, E))
   
   if (E < tol || m.start >= m.max) {
@@ -82,10 +85,14 @@ adaptiveGaussQuadrature <- function(fun, a = -7, b = 7, m.start = 4, m.max = 32,
     b_right <- c
   }
 
-  left <- adaptiveGaussQuadrature(fun, a_left, b_left, m.start + 1, round(m.max / 2), tol, ...)
+  left <- adaptiveGaussQuadrature(fun=fun, a=a_left, b=b_left, 
+                                  m.start=m.start + 1, m.max=round(m.max / 2), 
+                                  tol=tol, total.integral=total.integral, ...)
   
   left_m <- length(left$n)
-  right <- adaptiveGaussQuadrature(fun, a_right, b_right, m.start + 1, m.max - left_m, tol, ...)
+  right <- adaptiveGaussQuadrature(fun=fun, a=a_right, b=b_right, 
+                                   m.start=m.start + 1, m.max=m.max - left_m, 
+                                   tol=tol, total.integral=total.integral, ...)
 
   if (abs(sum(left$w) + sum(right$w) - pnorm(b) + pnorm(a)) > 1e-12)  {
     browser()

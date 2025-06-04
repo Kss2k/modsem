@@ -49,10 +49,10 @@ d <- data.frame(
 )
 
 
-# ggplot(d, aes(x = x, y = w, color = type)) +
-#   geom_point() +
-#   labs(x = "Nodes", y = "Weights", title = "Nodes and Weights for LMS") +
-#   theme_minimal()
+ggplot(d, aes(x = x, y = w, color = type)) +
+  geom_point() +
+  labs(x = "Nodes", y = "Weights", title = "Nodes and Weights for LMS") +
+  theme_minimal()
 
 
 ggplot(d, aes(x = x, y = p, color = type)) +
