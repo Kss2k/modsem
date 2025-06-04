@@ -29,34 +29,40 @@ tpb_uk <- "
 "
 
 devtools::load_all()
-est <- modsem(tpb_uk, data = TPB_UK, "lms", nodes=64)
-
+est <- modsem(tpb_uk, data = TPB_UK, "lms", nodes=32, max.iter=1000)
+est_a
+est_f
 library(ggplot2)
 
 quad_f <- model$quad
 quad_a <- quad
-quad_o <- order(quad_f$n)
-quad_a$n <- quad_f$n[quad_o]
-quad_a$w <- quad_f$w[quad_o]
+quad_o <- order(quad_a$n)
+quad_a$n <- quad_a$n[quad_o]
+quad_a$w <- quad_a$w[quad_o]
+quad_a$f <- quad_a$f[quad_o]
 
+posterior <- -quad_a$w * quad_a$f
+posterior <- posterior / sum(posterior)
 m <- quad_f$m
 
 d <- data.frame(
-  x = c(quad_f$n, quad_a$n),
-  w = c(quad_f$w, quad_a$w),
-  p = c(cumsum(quad_f$w), cumsum(quad_a$w)),
-  type = c(rep("fixed", m), rep("adaptive", m))
-)
-
+  x = c(quad_f$n, quad_a$n, quad_a$n),
+  w = c(quad_f$w, quad_a$w, posterior),
+  p = c(cumsum(quad_f$w), cumsum(quad_a$w), cumsum(posterior)),
+  type = c(rep("fixed", quad_f$m), rep("adaptive", quad_a$m),
+            rep("posterior", quad_a$m))
+) |> dplyr::filter(type != "posterior")
 
 ggplot(d, aes(x = x, y = w, color = type)) +
   geom_point() +
+  geom_line() + 
   labs(x = "Nodes", y = "Weights", title = "Nodes and Weights for LMS") +
   theme_minimal()
 
 
 ggplot(d, aes(x = x, y = p, color = type)) +
-  geom_point(position = position_dodge(width=0.1)) +
+  geom_point() + 
+  geom_line() +
   labs(x = "Nodes", y = "Weights", title = "Nodes and Weights for LMS") +
   theme_minimal()
 # Standardized estimates
