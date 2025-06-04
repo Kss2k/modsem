@@ -70,9 +70,8 @@ llSingleLms <- function(z, modFilled, data) {
   sum(dmvn(data, mean = mu, sigma = sigma, log = TRUE))
 }
 
-flatLogLikLms <- function(z, modFilled, data) {
-  z <- as.matrix(z)# * sqrt(2)
 
+flatLogLikLms <- function(z, modFilled, data) {
   vapply(seq_len(nrow(z)), FUN.VALUE = numeric(1L), FUN = function(i) {
     llSingleLms(z = z[i, , drop=FALSE], modFilled = modFilled, data = data)
   })
@@ -164,8 +163,8 @@ gradientLogLikLms <- function(theta, model, data, P, sign = -1, epsilon = 1e-4) 
 logLikLms_i <- function(theta, model, data, P, sign = -1, ...) {
   modFilled <- fillModel(model = model, theta = theta, method = "lms")
   k <- model$quad$k
-  V <- modFilled$quad$n
-  P <- P$P
+  V <- P$V
+
   # summed log probability of observing the data given the parameters
   # weighted my the posterior probability calculated in the E-step
   r <- lapplyMatrix(seq_len(nrow(V)), FUN = function(i) {
@@ -173,7 +172,7 @@ logLikLms_i <- function(theta, model, data, P, sign = -1, ...) {
       mean = muLmsCpp(model = modFilled, z = V[i, ]),
       sigma = sigmaLmsCpp(model = modFilled, z = V[i, ]),
       log = TRUE
-    ) * P[, i]
+    ) * P$P[, i]
   }, FUN.VALUE = numeric(nrow(data)))
 
   sign * apply(r, MARGIN = 1, FUN = sum)
