@@ -64,10 +64,29 @@ sigmaLms <- function(model, z1) { # for testing purposes
 }
 
 
+llSingleLms <- function(z, modFilled, data) {
+  mu <- muLmsCpp(model = modFilled, z = z)
+  sigma <- sigmaLmsCpp(model = modFilled, z = z)
+  sum(dmvn(data, mean = mu, sigma = sigma, log = TRUE))
+}
+
+flatLogLikLms <- function(z, modFilled, data) {
+  z <- as.matrix(z)# * sqrt(2)
+
+  vapply(seq_len(nrow(z)), FUN.VALUE = numeric(1L), FUN = function(i) {
+    llSingleLms(z = z[i, , drop=FALSE], modFilled = modFilled, data = data)
+  })
+}
+
+
 estepLms <- function(model, theta, data, ...) {
   modFilled <- fillModel(model = model, theta = theta, method = "lms")
   V <- modFilled$quad$n # matrix of node vectors m x k
   w <- modFilled$quad$w # weights
+
+  quad <- adaptiveGaussQuadrature(flatLogLikLms, a=-7, b=7, modFilled=modFilled, data=data,
+                                  m.start = 4, m.max = model$quad$m, tol = 1e-6)
+  quad$n <- quad$n # * sqrt(2)
   # the probability of each observation is derived as the sum of the probabilites
   # of observing the data given the parameters at each point in the k dimensional
   # space of the distribution of the non-linear latent variables. To approximate
@@ -75,6 +94,10 @@ estepLms <- function(model, theta, data, ...) {
   # corresponding probability (weight w) for each node appearing. I.e., whats the
   # probability of observing the data given the nodes, and what is the probability
   # of observing the given nodes (i.e., w). Sum the row probabilities = 1
+
+  V <- as.matrix(quad$n)
+  w <- quad$w
+
   P <- matrix(0, nrow = nrow(data), ncol = length(w))
 
   for (i in seq_along(w)) {
@@ -101,14 +124,14 @@ estepLms <- function(model, theta, data, ...) {
     tGamma[[i]] <- sum(p)
   }
 
-  list(P = P, mean = wMeans, cov = wCovs, tgamma = tGamma)
+  list(P = P, mean = wMeans, cov = wCovs, tgamma = tGamma, V = V)
 }
 
 
 logLikLms <- function(theta, model, data, P, sign = -1, ...) {
   modFilled <- fillModel(model = model, theta = theta, method = "lms")
   k <- model$quad$k
-  V <- modFilled$quad$n
+  V <- P$V
   n <- nrow(data)
   d <- ncol(data)
   # summed log probability of observing the data given the parameters
