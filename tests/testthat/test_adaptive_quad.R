@@ -31,26 +31,27 @@ lms2 <- modsem(tpb, TPB, method = "lms", nodes = 32, adaptive.quad=TRUE)
 summary(lms2)
 
 
-tpb_uk <- "
-# Outer Model (Based on Hagger et al., 2007)
- ATT =~ att3 + att2 + att1 + att4
- SN =~ sn4 + sn2 + sn3 + sn1
- PBC =~ pbc2 + pbc1 + pbc3 + pbc4
- INT =~ int2 + int1 + int3 + int4
- BEH =~ beh3 + beh2 + beh1 + beh4
+if (FALSE) { # To slow to bother running on GitHub
+  tpb_uk <- "
+  # Outer Model (Based on Hagger et al., 2007)
+     ATT =~ att3 + att2 + att1 + att4
+     SN =~ sn4 + sn2 + sn3 + sn1
+     PBC =~ pbc2 + pbc1 + pbc3 + pbc4
+     INT =~ int2 + int1 + int3 + int4
+     BEH =~ beh3 + beh2 + beh1 + beh4
 
-# Inner Model (Based on Steinmetz et al., 2011)
- # Causal Relationsships
- INT ~ ATT + SN + PBC
- BEH ~ INT + PBC
- BEH ~ INT:PBC
-"
+  # Inner Model (Based on Steinmetz et al., 2011)
+     INT ~ ATT + SN + PBC
+     BEH ~ INT + PBC
+     BEH ~ INT:PBC
+  "
 
-lms3 <- modsem(tpb_uk, data = TPB_UK, "lms", 
-               nodes=32, 
-               adaptive.quad=TRUE, 
-               quad.range=5)
+  lms3 <- modsem(tpb_uk, data = TPB_UK, "lms", 
+                 nodes=32, 
+                 adaptive.quad=TRUE, 
+                 quad.range=5)
 
+}
 
 # library(ggplot2)
 # 

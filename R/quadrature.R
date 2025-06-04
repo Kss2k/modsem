@@ -7,7 +7,20 @@ quadrature <- function(m, k,
                        a = -7, 
                        b = 7, 
                        m.start = 4, ...) {
-  if (k == 0 || m == 0) return(list(n = matrix(0), w = 1, k = 0, m = m))
+  if (k == 0 || m == 0) {
+    return(list(
+      n = matrix(0), 
+      w = 1, 
+      k = 0, 
+      m = m,
+      a = a, 
+      b = b, 
+      cut = cut,
+      m.start = m.start, 
+      adaptive = FALSE
+    ))
+  }
+
   singleDimGauss <- fastGHQuad::gaussHermiteData(m)
 
   nodes <- singleDimGauss$x
@@ -43,6 +56,16 @@ quadrature <- function(m, k,
 
 
 finiteGaussQuadrature <- function(a, b, m = 10, k = 1) {
+  if (k == 0 || m == 0) {
+    return(list(
+      nodes = matrix(0), 
+      weights = 1, 
+      intersects = matrix(0),
+      m = m,
+      k = k
+    ))
+  }
+
   stopif(k > 1, "Adaptive quadrature for k > 1 is not supported yet. Use fixed instead!")
 
   intervals <- (b - a) / (m)
@@ -72,6 +95,16 @@ finiteGaussQuadrature <- function(a, b, m = 10, k = 1) {
 
 adaptiveGaussQuadrature <- function(fun, a = -7, b = 7, m.start = 4, m.max = 32, tol = 1e-6,
                                     k = 1, total.integral = NULL, ...) {
+  if (k == 0 || m == 0) {
+    return(list(
+      integral = 0,
+      n = matrix(0), 
+      w = 1, 
+      f = NA,
+      m = m,
+      k = k
+    ))
+  }
   stopif(k > 1, "Adaptive quadrature for k > 1 is not supported yet. Use fixed instead!")
 
   if (m.start >= m.max) {
