@@ -151,8 +151,8 @@ adaptiveGaussQuadrature <- function(fun, a = -7, b = 7, m.start = 4, m.max = 32,
 
   c <- (a + b) / 2
 
-  Ea <- dnorm(a) * fun(as.matrix(a), ...)
-  Eb <- dnorm(b) * fun(as.matrix(b), ...)
+  Ea <- stats::dnorm(a) * fun(as.matrix(a), ...)
+  Eb <- stats::dnorm(b) * fun(as.matrix(b), ...)
 
   if (Ea < Eb) {
     a_left <- a

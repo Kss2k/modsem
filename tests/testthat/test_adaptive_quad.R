@@ -27,7 +27,8 @@ tpb <- '
   BEH ~ INT:PBC  
 '
 
-lms2 <- modsem(tpb, TPB, method = "lms", nodes = 32, adaptive.quad=TRUE)
+lms2 <- modsem(tpb, TPB, method = "lms", nodes = 32, adaptive.quad=TRUE, 
+               FIM="observed")
 summary(lms2)
 
 
@@ -47,10 +48,10 @@ if (FALSE) { # To slow to bother running on GitHub
   "
 
   lms3 <- modsem(tpb_uk, data = TPB_UK, "lms", 
-                 nodes=32, 
+                 nodes=32, FIM="observed",
                  adaptive.quad=TRUE, 
                  quad.range=5)
-
+  summary(lms3)
 }
 
 # library(ggplot2)
