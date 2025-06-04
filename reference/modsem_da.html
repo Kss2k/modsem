@@ -108,6 +108,7 @@ necessary syntax, and variables for the estimation of models with latent product
 <span>  start <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  epsilon <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  quad.range <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  adaptive.quad <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  n.threads <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -261,6 +262,11 @@ if the log-likelihood decreases for more than 30 iterations.</p></dd>
 Gaussian-Hermite Quadratures. By default <code>Inf</code>, such that <code>f(t)</code> is integrated from -Inf to Inf,
 but this will likely be inefficient and pointless at a large number of nodes. Nodes outside
 <code>+/- quad.range</code> will be ignored.</p></dd>
+
+
+<dt id="arg-adaptive-quad">adaptive.quad<a class="anchor" aria-label="anchor" href="#arg-adaptive-quad"></a></dt>
+<dd><p>should adaptive quadrature be used? If <code>TRUE</code>, the quadrature nodes will be adapted to the data.
+If <code>FALSE</code>, the quadrature nodes will be fixed. Default is <code>FALSE</code>.</p></dd>
 
 
 <dt id="arg-n-threads">n.threads<a class="anchor" aria-label="anchor" href="#arg-n-threads"></a></dt>
