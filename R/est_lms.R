@@ -72,12 +72,10 @@ emLms <- function(model,
 
     } else if (converged & !doEstep) {
       nFalseConvergence <- nFalseConvergence + 1
-      cat("\n")
-      warning2("FALSE convergence!")
       doEstep <- TRUE
 
     } else if (
-        doEstep && runningAverage(logLikChanges, n = 5) < 0 && iterations > 20 &&
+        doEstep && runningAverage(logLikChanges, n = 5) < 0 && iterations > max.iter/2 &&
         nNegativeLast(logLikChanges, n = nNegCheck) >= nNegCheck * pNegCheck
       ) {
 
