@@ -33,6 +33,11 @@ emLms <- function(model,
   run     <- TRUE
   doEstep <- TRUE
 
+  resetEStep <- -1
+  nFalseConvergence <- 0
+  nNegCheck <- 20
+  pNegCheck <- 0.5
+
   while(run) {
     logLikOld <- logLikNew
     thetaOld  <- thetaNew
@@ -61,26 +66,41 @@ emLms <- function(model,
       bestTheta  <- thetaOld
     }
 
-    if (abs(logLikOld - logLikNew) < convergence) run <- FALSE
-    if (iterations >= max.iter){
-      warning2("Maximum number of iterations was reached. ",
-              "EM algorithm might not have converged.")
-      run <- FALSE
-    }
+    converged <- abs(logLikOld - logLikNew) < convergence
 
-    if (doEstep && fix.estep && runningAverage(logLikChanges, n = 30) < 0 &&
-        nNegativeLast(logLikChanges, n = 30) >= 15 && iterations > 200) {
+    if (iterations >= max.iter || converged && (nFalseConvergence >= 3 || doEstep)) {
+      run <- FALSE
+
+    } else if (converged & !doEstep) {
+      nFalseConvergence <- nFalseConvergence + 1
+      cat("\n")
+      warning2("FALSE convergence!")
+      doEstep <- TRUE
+
+    } else if (
+        doEstep && runningAverage(logLikChanges, n = 5) < 0 && iterations > 20 &&
+        nNegativeLast(logLikChanges, n = nNegCheck) >= nNegCheck * pNegCheck
+      ) {
+
+      cat("\n")
+      warning2("EM algorithm is not converging. Might be at a saddle point!")
+
       doEstep  <- FALSE
       P        <- bestP
       thetaNew <- bestTheta
-
-      warning2("EM algorithm is not converging. ",
-               "Attempting to fix prior probabilities from E-step\n",
-               "you might want to increase the convergence (i.e., less strict) criterion (see 'help(modsem_da)')")
+      # resetEStep <- 20
     }
+
+    # if (resetEStep > 0) resetEStep <- resetEStep - 1
   }
 
+
   if (verbose) cat("\n")
+  
+  warnif(iterations >= max.iter, "Maximum number of iterations was reached. ",
+         "EM algorithm might not have converged.")
+
+  if (!doEstep) P <- estepLms(model = model, theta = thetaNew, data = data, ...)
 
   final <- mstepLms(model = model, P = P, data = data,
                     theta = thetaNew, max.step = max.step,

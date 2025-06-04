@@ -98,6 +98,11 @@ estepLms <- function(model, theta, data, ...) {
   V <- as.matrix(quad$n)
   w <- quad$w
 
+  # posterior <- -quad$w * quad$f
+  # posterior <- posterior / sum(posterior)
+
+  # w <- posterior
+
   P <- matrix(0, nrow = nrow(data), ncol = length(w))
 
   for (i in seq_along(w)) {
