@@ -81,27 +81,22 @@ flatLogLikLms <- function(z, modFilled, data) {
 
 estepLms <- function(model, theta, data, ...) {
   modFilled <- fillModel(model = model, theta = theta, method = "lms")
-  V <- modFilled$quad$n # matrix of node vectors m x k
-  w <- modFilled$quad$w # weights
 
-  quad <- adaptiveGaussQuadrature(flatLogLikLms, a=-7, b=7, modFilled=modFilled, data=data,
-                                  m.start = 4, m.max = model$quad$m, tol = 1e-6)
-  quad$n <- quad$n # * sqrt(2)
-  # the probability of each observation is derived as the sum of the probabilites
-  # of observing the data given the parameters at each point in the k dimensional
-  # space of the distribution of the non-linear latent variables. To approximate
-  # this we use individual nodes sampled from the k-dimensional space with a
-  # corresponding probability (weight w) for each node appearing. I.e., whats the
-  # probability of observing the data given the nodes, and what is the probability
-  # of observing the given nodes (i.e., w). Sum the row probabilities = 1
+  if (model$quad$adaptive) {
+    quad <- adaptiveGaussQuadrature(
+      flatLogLikLms, 
+      a=model$quad$a, 
+      b=model$quad$b, 
+      modFilled=modFilled, 
+      data=data,
+      m.start = model$quad$m.start, 
+      m.max = model$quad$m, 
+      tol = 1e-6
+    )
+  } else quad <- model$quad
 
   V <- as.matrix(quad$n)
   w <- quad$w
-
-  # posterior <- -quad$w * quad$f
-  # posterior <- posterior / sum(posterior)
-
-  # w <- posterior
 
   P <- matrix(0, nrow = nrow(data), ncol = length(w))
 

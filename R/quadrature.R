@@ -1,6 +1,12 @@
 # Calculate weights and node points for mixture functions via Gauss-Hermite
-# quadrature as defined in Klein & Moosbrugger (2000)
-quadrature <- function(m, k, cut = Inf) {
+# quadrature as defined in Klein & Moosbrugger (2000). Also stores information
+# regarding adaptive quadrature.
+quadrature <- function(m, k, 
+                       cut = Inf, 
+                       adaptive = FALSE, 
+                       a = -7, 
+                       b = 7, 
+                       m.start = 4, ...) {
   if (k == 0 || m == 0) return(list(n = matrix(0), w = 1, k = 0, m = m))
   singleDimGauss <- fastGHQuad::gaussHermiteData(m)
 
@@ -10,17 +16,35 @@ quadrature <- function(m, k, cut = Inf) {
   select <- abs(nodes) < cut
   nodes <- nodes[select]
   weights  <- weights[select]
-  m <- length(weights)
+  m <- if (!adaptive) length(weights) else m
 
   nodes <- lapply(seq_len(k), function(k) nodes) |>
     expand.grid() |> as.matrix()
   weights <- lapply(seq_len(k), function(k) weights) |>
     expand.grid() |> apply(MARGIN = 1, prod)
-  list(n = nodes * sqrt(2), w = weights * pi ^ (-k/2), k = k, m = m)
+
+  if (is.finite(cut)) {
+    a <- -cut
+    b <- cut
+  }
+
+  list(
+    n = nodes * sqrt(2), 
+    w = weights * pi ^ (-k/2), 
+    k = k, 
+    m = m,
+    a = a, 
+    b = b, 
+    cut = cut,
+    m.start = m.start, 
+    adaptive = adaptive
+  )
 }
 
 
 finiteGaussQuadrature <- function(a, b, m = 10, k = 1) {
+  stopif(k > 1, "Adaptive quadrature for k > 1 is not supported yet. Use fixed instead!")
+
   intervals <- (b - a) / (m)
   intersects <- (seq_len(m + 1) -1) * intervals + a
 
@@ -35,10 +59,8 @@ finiteGaussQuadrature <- function(a, b, m = 10, k = 1) {
     weights[[i]] <- stats::pnorm(x2) - stats::pnorm(x1) # Normal distribution CDF
   }
 
-  nodes <- lapply(seq_len(k), function(k) nodes) |>
-    expand.grid() |> as.matrix()
-  weights <- lapply(seq_len(k), function(k) weights) |>
-    expand.grid() |> apply(MARGIN = 1, prod)
+  # PUT CODE TO Integrate in k dimensions here...
+  nodes <- as.matrix(nodes)
 
   list(nodes = nodes, 
        weights = weights,
@@ -128,16 +150,3 @@ adaptiveGaussQuadrature <- function(fun, a = -7, b = 7, m.start = 4, m.max = 32,
     k = k
   )
 }
-
-
-q <- adaptiveGaussQuadrature(fun=\(x) dnorm(4*x) + 1, a = -7, b = 7, m.max=64)
-q <- adaptiveGaussQuadrature(fun=\(x) mvtnorm::dmvnorm(x, log=TRUE), a = -7, b = 7, m.max=64, k = 2)
-q <- adaptiveGaussQuadrature(fun=\(x) 1, a = -7, b = 7, m.max=64, k = 2)
-# plot(q$nodes, q$weights)
-# q$weights |> sum()
-# diff(sort(q$nodes))
-# 
-# o <- order(q$nodes)
-# nodes <- q$nodes[o]
-# weights <- q$weights[o]
-# plot(nodes, cumsum(weights))

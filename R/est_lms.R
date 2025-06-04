@@ -33,7 +33,6 @@ emLms <- function(model,
   run     <- TRUE
   doEstep <- TRUE
 
-  resetEStep <- -1
   nFalseConvergence <- 0
   nNegCheck <- 20
   pNegCheck <- 0.5
@@ -88,10 +87,7 @@ emLms <- function(model,
       doEstep  <- FALSE
       P        <- bestP
       thetaNew <- bestTheta
-      # resetEStep <- 20
     }
-
-    # if (resetEStep > 0) resetEStep <- resetEStep - 1
   }
 
 

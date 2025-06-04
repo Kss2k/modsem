@@ -23,6 +23,7 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    fix.estep = TRUE,
                    epsilon = 1e-4,
                    quad.range = Inf,
+                   adaptive.quad = FALSE,
                    n.threads = NULL),
         qml = list(verbose = interactive(),
                    optimize = TRUE,
@@ -47,7 +48,8 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    fix.estep = NULL,
                    epsilon = 1e-8,
                    quad.range = Inf,
-                   n.threads = NULL)
+                   n.threads = NULL,
+                   adaptive.quad = NULL)
     )
 
     if (is.null(args)) return(settings[method])
@@ -57,9 +59,7 @@ getMethodSettingsDA <- function(method, args = NULL) {
     isMissing <- vapply(args, FUN.VALUE = logical(1L), FUN = is.null)
     missingArgs <- settingNames[isMissing]
 
-    if  (!method %in% names(settings)) {
-        stop2("Unrecognized method")
-    }
+    stopif(!method %in% names(settings), "Unrecognized method")
 
     args.out <- c(settings[[method]][missingArgs], args[!isMissing])
 
@@ -71,6 +71,10 @@ getMethodSettingsDA <- function(method, args = NULL) {
       !args.out$standardize && args.out$mean.observed
     args.out$OFIM.hessian <-
       args.out$OFIM.hessian && !args.out$robust.se
+
+    if (args.out$adaptive.quad && is.infinite(args.out$quad.range)) {
+      args.out$quad.range <- 7
+    }
 
     args.out$n.threads <- setThreads(args.out$n.threads)
     args.out

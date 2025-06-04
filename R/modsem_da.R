@@ -93,6 +93,9 @@
 #' Gaussian-Hermite Quadratures. By default \code{Inf}, such that \code{f(t)} is integrated from -Inf to Inf,
 #' but this will likely be inefficient and pointless at a large number of nodes. Nodes outside
 #' \code{+/- quad.range} will be ignored.
+#' 
+#' @param adaptive.quad should adaptive quadrature be used? If \code{TRUE}, the quadrature nodes will be adapted to the data.
+#' If \code{FALSE}, the quadrature nodes will be fixed. Default is \code{FALSE}.
 #'
 #' @param n.threads number of cores to use for parallel processing. If \code{NULL}, it will use <= 2 threads.
 #' If an integer is specified, it will use that number of threads (e.g., \code{n.threads = 4} will use 4 threads).
@@ -188,6 +191,7 @@ modsem_da <- function(model.syntax = NULL,
                       start = NULL,
                       epsilon = NULL,
                       quad.range = NULL,
+                      adaptive.quad = NULL,
                       n.threads = NULL,
                       ...) {
   if (is.null(model.syntax)) {
@@ -231,6 +235,7 @@ modsem_da <- function(model.syntax = NULL,
           fix.estep = fix.estep,
           epsilon = epsilon,
           quad.range = quad.range,
+          adaptive.quad = adaptive.quad,
           n.threads = n.threads
         )
     )
@@ -251,7 +256,8 @@ modsem_da <- function(model.syntax = NULL,
     cov.syntax = cov.syntax,
     mean.observed = args$mean.observed,
     double = args$double,
-    quad.range = args$quad.range
+    quad.range = args$quad.range,
+    adaptive.quad = args$adaptive.quad
   )
 
   if (args$optimize) {

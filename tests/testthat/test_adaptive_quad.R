@@ -29,7 +29,7 @@ tpb_uk <- "
 "
 
 devtools::load_all()
-est <- modsem(tpb_uk, data = TPB_UK, "lms", nodes=32, max.iter=1000)
+est <- modsem(tpb_uk, data = TPB_UK, "lms", nodes=32, max.iter=1000, adaptive.quad=TRUE, quad.range=5)
 est_a
 est_f
 library(ggplot2)
