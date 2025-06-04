@@ -33,6 +33,7 @@ modsem_da(
   start = NULL,
   epsilon = NULL,
   quad.range = NULL,
+  adaptive.quad = NULL,
   n.threads = NULL,
   ...
 )
@@ -131,6 +132,9 @@ if the log-likelihood decreases for more than 30 iterations.}
 Gaussian-Hermite Quadratures. By default \code{Inf}, such that \code{f(t)} is integrated from -Inf to Inf,
 but this will likely be inefficient and pointless at a large number of nodes. Nodes outside
 \code{+/- quad.range} will be ignored.}
+
+\item{adaptive.quad}{should adaptive quadrature be used? If \code{TRUE}, the quadrature nodes will be adapted to the data.
+If \code{FALSE}, the quadrature nodes will be fixed. Default is \code{FALSE}.}
 
 \item{n.threads}{number of cores to use for parallel processing. If \code{NULL}, it will use <= 2 threads.
 If an integer is specified, it will use that number of threads (e.g., \code{n.threads = 4} will use 4 threads).
