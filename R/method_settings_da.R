@@ -20,11 +20,18 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    R.max = 1e5,
                    max.iter = 500,
                    max.step = 1,
-                   fix.estep = TRUE,
                    epsilon = 1e-4,
                    quad.range = Inf,
                    adaptive.quad = FALSE,
-                   n.threads = NULL),
+                   n.threads = NULL,
+                   algorithm = "EMA",
+                   em.control = list(
+                     epsilon_EM_SWITCH_ll = 1e-2, # 1e-3,
+                     epsilon_QN_SWITCH_ll = 1e-4, # 1e-6,
+                     epsilon_FS_SWITCH_ll = 1e-6, # 1e-9,
+                     epsilon_STOP_ll      = 1e-7  # 1e-12
+                   )
+                   ),
         qml = list(verbose = interactive(),
                    optimize = TRUE,
                    nodes = 0,
@@ -45,11 +52,13 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    R.max = 1e5,
                    max.iter = 500,
                    max.step = NULL,
-                   fix.estep = NULL,
                    epsilon = 1e-8,
                    quad.range = Inf,
                    n.threads = NULL,
-                   adaptive.quad = NULL)
+                   adaptive.quad = NULL,
+                   em.control = NULL,
+                   algorithm = NULL
+        )
     )
 
     if (is.null(args)) return(settings[method])

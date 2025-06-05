@@ -408,3 +408,12 @@ padCharMatrix <- function(X, n=1) {
   matrix(paste0(pad, X), nrow = nrow(X), ncol = ncol(X), 
          dimnames = dimnames(X))
 }
+
+
+timeExpr <- function(x) {
+  start <- Sys.time()
+  out <-x
+  end <- Sys.time()
+  print(end - start)
+  out
+}

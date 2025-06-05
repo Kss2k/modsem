@@ -82,9 +82,6 @@
 #'
 #' @param max.step maximum steps for the M-step in the EM algorithm (LMS).
 #'
-#' @param fix.estep if \code{TRUE}, the E-step will be fixed, and the prior probabilities will be set to the best prior probabilities,
-#' if the log-likelihood decreases for more than 30 iterations.
-#'
 #' @param start starting parameters.
 #'
 #' @param epsilon finite difference for numerical derivatives.
@@ -101,6 +98,14 @@
 #' If an integer is specified, it will use that number of threads (e.g., \code{n.threads = 4} will use 4 threads).
 #' If \code{"default"}, it will use the default number of threads (2).
 #' If \code{"max"}, it will use all available threads, \code{"min"} will use 1 thread.
+#'
+#' @param algorithm algorithm to use for the EM algorithm. Can be either \code{"EM"} or \code{"EMA"}. 
+#' \code{"EM"} is the standard EM algorithm. \code{"EMA"} is an
+#' accelerated EM procedure that uses Quasi-Newton and Fisher Scoring
+#' optimization steps when needed. 
+#' Default is \code{"EMA"}.
+#'
+#' @param em.control a list of control parameters for the EM algorithm. See \code{\link{default_settings_da}} for defaults.
 #'
 #' @param ... additional arguments to be passed to the estimation function.
 #'
@@ -187,12 +192,13 @@ modsem_da <- function(model.syntax = NULL,
                       R.max = NULL,
                       max.iter = NULL,
                       max.step = NULL,
-                      fix.estep = NULL,
                       start = NULL,
                       epsilon = NULL,
                       quad.range = NULL,
                       adaptive.quad = NULL,
                       n.threads = NULL,
+                      algorithm = NULL,
+                      em.control = NULL,
                       ...) {
   if (is.null(model.syntax)) {
     stop2("No model.syntax provided")
@@ -232,11 +238,12 @@ modsem_da <- function(model.syntax = NULL,
           R.max = R.max,
           max.iter = max.iter,
           max.step = max.step,
-          fix.estep = fix.estep,
           epsilon = epsilon,
           quad.range = quad.range,
           adaptive.quad = adaptive.quad,
-          n.threads = n.threads
+          n.threads = n.threads,
+          algorithm = algorithm,
+          em.control = em.control
         )
     )
 
@@ -309,8 +316,9 @@ modsem_da <- function(model.syntax = NULL,
       max.step = args$max.step,
       epsilon = args$epsilon,
       optimizer = args$optimizer,
-      fix.estep = args$fix.estep,
       R.max = args$R.max,
+      em.control = args$em.control,
+      algorithm = args$algorithm,
       ...
   )),
   error = function(e) {
