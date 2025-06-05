@@ -29,12 +29,13 @@ modsem_da(
   R.max = NULL,
   max.iter = NULL,
   max.step = NULL,
-  fix.estep = NULL,
   start = NULL,
   epsilon = NULL,
   quad.range = NULL,
   adaptive.quad = NULL,
   n.threads = NULL,
+  algorithm = NULL,
+  em.control = NULL,
   ...
 )
 }
@@ -121,9 +122,6 @@ fischer information matrix.}
 
 \item{max.step}{maximum steps for the M-step in the EM algorithm (LMS).}
 
-\item{fix.estep}{if \code{TRUE}, the E-step will be fixed, and the prior probabilities will be set to the best prior probabilities,
-if the log-likelihood decreases for more than 30 iterations.}
-
 \item{start}{starting parameters.}
 
 \item{epsilon}{finite difference for numerical derivatives.}
@@ -140,6 +138,14 @@ If \code{FALSE}, the quadrature nodes will be fixed. Default is \code{FALSE}.}
 If an integer is specified, it will use that number of threads (e.g., \code{n.threads = 4} will use 4 threads).
 If \code{"default"}, it will use the default number of threads (2).
 If \code{"max"}, it will use all available threads, \code{"min"} will use 1 thread.}
+
+\item{algorithm}{algorithm to use for the EM algorithm. Can be either \code{"EM"} or \code{"EMA"}. 
+\code{"EM"} is the standard EM algorithm. \code{"EMA"} is an
+accelerated EM procedure that uses Quasi-Newton and Fisher Scoring
+optimization steps when needed. 
+Default is \code{"EMA"}.}
+
+\item{em.control}{a list of control parameters for the EM algorithm. See \code{\link{default_settings_da}} for defaults.}
 
 \item{...}{additional arguments to be passed to the estimation function.}
 }

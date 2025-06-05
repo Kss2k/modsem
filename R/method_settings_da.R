@@ -26,10 +26,10 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    n.threads = NULL,
                    algorithm = "EMA",
                    em.control = list(
-                     epsilon_EM_SWITCH_ll = 1e-2, # 1e-3,
-                     epsilon_QN_SWITCH_ll = 1e-4, # 1e-6,
-                     epsilon_FS_SWITCH_ll = 1e-6, # 1e-9,
-                     epsilon_STOP_ll      = 1e-7  # 1e-12
+                     # epsilon_EM_SWITCH_ll = 1e-1, # 1e-3,
+                     # epsilon_QN_SWITCH_ll = 1e-2, # 1e-6,
+                     # epsilon_FS_SWITCH_ll = 1e-3, # 1e-9,
+                     # epsilon_STOP_ll      = 1e-4  # 1e-12
                    )
                    ),
         qml = list(verbose = interactive(),
