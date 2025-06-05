@@ -85,12 +85,21 @@ emLms <- function(model,
   tau4 <- if (is.null(em.control$tau4)) 1e-9 else em.control$tau4 # FS→stop if gradNorm < tau4
 
   # Initialization
-  logLikNew <- 0; logLikOld <- 0
+  logLikNew <- 0
+  logLikOld <- 0
+  warnedConvergence <- FALSE
   thetaNew  <- model$theta
-  bestLogLik <- -Inf; bestP <- NULL; bestTheta <- NULL;
-  logLikChanges <- NULL; logLiks <- NULL
-  qn_env <- new.env(parent = emptyenv()); qn_env$LBFGS_M <- 5
-  qn_env$s_list <- list(); qn_env$g_list <- list()
+  bestLogLik <- -Inf
+  bestP <- NULL 
+  bestTheta <- NULL
+  logLikChanges <- NULL
+  logLiks <- NULL
+
+  qn_env <- new.env(parent = emptyenv())
+  qn_env$LBFGS_M <- 5
+  qn_env$s_list <- list()
+  qn_env$g_list <- list()
+
   mode <- "EM"                # start in EM mode
   iterations <- 0
   run <- TRUE
@@ -110,6 +119,7 @@ emLms <- function(model,
       thetaNew <- unlist(mstep$par)
       logLikNew <- -mstep$objective
       iterations <- iterations + 1
+
     } else {
       # EMA: QN or FS update attempt
       # 2a. Compute gradient once
@@ -126,20 +136,25 @@ emLms <- function(model,
       if (exists("direction") && !is.null(direction)) {
         alpha <- 1; success <- FALSE
         refLogLik <- logLikOld
+
         while (alpha > 1e-5) {
           thetaTrial <- thetaOld + alpha * direction
           trialOK <- TRUE; logLikTrial <- NA
+
           tryCatch({
             P_trial <- estepLms(model = model, theta = thetaTrial, data = data, ...)
-            mres <- mstepLms(model = model, P = P_trial, data = data,
-                             theta = thetaTrial, max.step = 0,
-                             epsilon = epsilon, optimizer = optimizer,
-                             control = control, ...)
-            logLikTrial <- -mres$objective
+            logLikTrial <- logLikLms(theta = thetaTrial, model = model, P = P_trial, data = data)
+
           }, error = function(e) trialOK <<- FALSE)
-          if (trialOK && logLikTrial >= refLogLik) { success <- TRUE; break }
+
+          if (trialOK && logLikTrial >= refLogLik) { 
+            success <- TRUE
+            break 
+          }
+          
           alpha <- alpha / 2
         }
+
         if (success) {
           thetaNew <- thetaTrial; logLikNew <- logLikTrial
           iterations <- iterations + 1
@@ -147,9 +162,11 @@ emLms <- function(model,
           if (mode == "QN") {
             gradNew <- computeGradient(thetaNew, model, data, P_trial, epsilon)
             s_vec <- thetaNew - thetaOld; y_vec <- gradNew - grad
+
             if (sum(s_vec * y_vec) > 1e-8) {
               qn_env$s_list <- c(qn_env$s_list, list(s_vec))
               qn_env$g_list <- c(qn_env$g_list, list(y_vec))
+
               if (length(qn_env$s_list) > qn_env$LBFGS_M) {
                 qn_env$s_list <- qn_env$s_list[-1]
                 qn_env$g_list <- qn_env$g_list[-1]
@@ -204,8 +221,7 @@ emLms <- function(model,
     if (iterations >= max.iter || deltaLL < convergence || relDeltaLL < convergence.rel) break
 
     # 7. Warning if stuck
-    if (runningAverage(logLikChanges, n = 5) < 0 && iterations > max.iter/2 &&
-        nNegativeLast(logLikChanges, n = nNegCheck) >= nNegCheck * pNegCheck) {
+    if (runningAverage(logLikChanges, n = 10) < 0 && iterations > 100 && !warnedConvergence) {
 
       if (verbose) cat("\n")
       warning2(
@@ -213,7 +229,13 @@ emLms <- function(model,
         formatParameters(convergence, algorithm, max.step, quad.range, 
                          adaptive.quad) 
       )
-      break
+
+      if (max.step < 100) {
+        warning2("Increasing max.step...")
+        max.step <- 100
+      }
+      
+      warnedConvergence <- TRUE
     }
 
     # Record history
