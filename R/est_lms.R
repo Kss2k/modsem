@@ -41,14 +41,6 @@ computeFullIcom <- function(theta, model, data, P) {
   I_obs
 }
 
-# 4. Update status logging
-# updateStatusLog <- function(iterations, mode, logLikNew, deltaLL, deltaTheta, gradNorm, verbose = FALSE) {
-#   if (verbose) {
-#     clearConsoleLine()
-#     cat(sprintf("\rIter=%d Mode=%s LogLik=%.2f \u0394LL=%.2g \u0394\u03B8=%.2g ||\u2207\u2113||=%.2g", 
-#                 iterations, mode, logLikNew, deltaLL, deltaTheta, gradNorm))
-#   }
-# }
 
 updateStatusLog <- function(iterations, mode, logLikNew, deltaLL, relDeltaLL, verbose = FALSE) {
   if (verbose) {
@@ -78,7 +70,10 @@ emLms <- function(model,
                   epsilon = 1e-6,
                   optimizer = "nlminb",
                   R.max = 1e6,
+                  adaptive.quad = FALSE,
+                  quad.range = -Inf,
                   ...) {
+
   algorithm <- toupper(match.arg(algorithm))
   data <- model$data
   stopif(anyNA(data), "Remove or replace missing values from data")
@@ -183,13 +178,11 @@ emLms <- function(model,
       }
     }
 
-    # 3. Monitor progress
+
+    # Monitor progress
     deltaLL <- abs(logLikNew - logLikOld)
-    # deltaTheta <- sqrt(sum((thetaNew - thetaOld)^2))
-    # gradNorm <- sqrt(sum(computeGradient(thetaNew, model, data, P, epsilon)^2))
     relDeltaLL <- if (abs(logLikNew) > 0) deltaLL / abs(logLikNew) else deltaLL
 
-    # updateStatusLog(iterations, mode, logLikNew, deltaLL, relDeltaLL, gradNorm, verbose)
     updateStatusLog(iterations, mode, logLikNew, deltaLL, relDeltaLL, verbose)
 
     # 5. Mode-switch logic when EMA is active
@@ -213,7 +206,13 @@ emLms <- function(model,
     # 7. Warning if stuck
     if (runningAverage(logLikChanges, n = 5) < 0 && iterations > max.iter/2 &&
         nNegativeLast(logLikChanges, n = nNegCheck) >= nNegCheck * pNegCheck) {
-      warning("EM appears stuck: consider loosening `convergence` tolerance.")
+
+      if (verbose) cat("\n")
+      warning2(
+        "EM appears stuck: consider tweaking these parameters:\n",
+        formatParameters(convergence, algorithm, max.step, quad.range, 
+                         adaptive.quad) 
+      )
       break
     }
 
@@ -226,7 +225,10 @@ emLms <- function(model,
   }
 
   if (verbose) cat("\n")
-  warnif(iterations >= max.iter, "Maximum iterations reached. Consider a larger `convergence`.")
+  warnif(iterations >= max.iter, "Maximum iterations reached!\n",
+         "Consider a tweaking these parameters:\n", 
+         formatParameters(convergence, algorithm, max.step, 
+                          max.iter, quad.range, adaptive.quad))
 
   # Final E- and M-step for output
   P <- estepLms(model = model, theta = thetaNew, data = data, ...)

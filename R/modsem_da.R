@@ -319,6 +319,8 @@ modsem_da <- function(model.syntax = NULL,
       R.max = args$R.max,
       em.control = args$em.control,
       algorithm = args$algorithm,
+      adaptive.quad = args$adaptive.quad,
+      quad.range = args$quad.range,
       ...
   )),
   error = function(e) {

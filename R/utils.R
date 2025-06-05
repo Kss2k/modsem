@@ -417,3 +417,15 @@ timeExpr <- function(x) {
   print(end - start)
   out
 }
+
+
+formatParameters <- function(...) {
+  pad <- "  "
+
+  args <- as.character(substitute(list(...)))[-1]
+  names <- format(args, justify = "left")
+  values <- format(c(...), justify = "right")
+
+  paste0(sprintf("%s%s = %s\n", pad, names, values), 
+         collapse = "")
+}
