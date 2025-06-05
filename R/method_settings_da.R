@@ -25,7 +25,7 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    adaptive.quad = FALSE,
                    n.threads = NULL,
                    algorithm = "EM",
-                   em.control = list(),
+                   em.control = list()),
         qml = list(verbose = interactive(),
                    optimize = TRUE,
                    nodes = 0,
