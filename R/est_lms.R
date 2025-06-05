@@ -85,9 +85,9 @@ emLms <- function(model,
 
   # Default thresholds (can be overridden via em.control)
   tau1 <- if (is.null(em.control$tau1)) 1e-2 else em.control$tau1 # EM→QN if gradNorm < tau1
-  tau2 <- if (is.null(em.control$tau2)) 1e-5 else em.control$tau2 # EM→QN if relΔLL < tau2
-  tau3 <- if (is.null(em.control$tau3)) 1e-6 else em.control$tau3 # QN→FS if gradNorm < tau3
-  tau4 <- if (is.null(em.control$tau4)) 1e-7 else em.control$tau4 # FS→stop if gradNorm < tau4
+  tau2 <- if (is.null(em.control$tau2)) 1e-6 else em.control$tau2 # EM→QN if relΔLL < tau2
+  tau3 <- if (is.null(em.control$tau3)) 1e-8 else em.control$tau3 # QN→FS if gradNorm < tau3
+  tau4 <- if (is.null(em.control$tau4)) 1e-9 else em.control$tau4 # FS→stop if gradNorm < tau4
 
   # Initialization
   logLikNew <- 0; logLikOld <- 0
@@ -195,7 +195,7 @@ emLms <- function(model,
     # 5. Mode-switch logic when EMA is active
     if (algorithm == "EMA") {
       # if (mode == "EM" && (gradNorm < tau1 || relDeltaLL < tau2)) {
-      if (mode == "EM" && (relDeltaLL < tau2)) {
+      if (mode == "EM" && relDeltaLL < tau2) {
         mode <- "QN"
       } else if (mode == "QN" && relDeltaLL < tau3) {
         mode <- "FS"
