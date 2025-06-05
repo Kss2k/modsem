@@ -1,39 +1,23 @@
-## emLms with EMA (Quasi-Newton + Fisher Scoring)
-# This document outlines how to modify the existing emLms() function to implement
-# an EMA (accelerated EM) procedure that switches between: EM, Quasi-Newton (QN), and
-# Fisher Scoring (FS) steps based on convergence thresholds, using log-likelihood changes
-# rather than parameter changes as the convergence criterion.
+## emLms with optional EMA (Quasi-Newton + Fisher Scoring) acceleration
+# Adds `algorithm` argument: "EM" or "EMA" (case-insensitive), and
+# `em.control` list for thresholds (overridable).
 
-# 1. Define thresholds for switching modes and for final convergence
-epsilon_EM_SWITCH_ll <- 1e-3    # when logLik change falls below this, switch to QN
-epsilon_QN_SWITCH_ll <- 1e-6    # when logLik change falls below this, switch to FS
-epsilon_FS_SWITCH_ll <- 1e-9    # when logLik change falls below this, switch back or finish
-epsilon_STOP_ll      <- 1e-12   # final convergence threshold on logLik change
 
 # 2. Helper: compute observed-data gradient
-#    We assume gradientLogLikLms() already returns gradient of log-likelihood.
 computeGradient <- function(theta, model, data, P, epsilon) {
-  # gradientLogLikLms expects arguments: theta, model, P, sign, data, epsilon
-  # sign = +1 for gradient of log-likelihood
   gradientLogLikLms(theta = theta, model = model, P = P, sign = +1,
                     data = data, epsilon = epsilon)
 }
 
+
 # 3. L-BFGS two-loop recursion to approximate H * gradient
-#    This function is unchanged and does not rely on locked globals.
 lbfgs_two_loop <- function(grad, s_list, g_list) {
-  q <- grad
-  m <- length(s_list)
-  alpha <- numeric(m)
-  rho <- rep(NA, m)
-  # Compute rho_i = 1 / (y_i^T s_i)
+  q <- grad; m <- length(s_list)
+  alpha <- numeric(m); rho <- rep(NA, m)
   for (i in m:1) {
-    s_i <- s_list[[i]]; g_i <- g_list[[i]]
-    rho[i] <- 1 / sum(g_i * s_i)
-    alpha[i] <- rho[i] * sum(s_i * q)
-    q <- q - alpha[i] * g_i
+    s_i <- s_list[[i]]; g_i <- g_list[[i]]; rho[i] <- 1 / sum(g_i * s_i)
+    alpha[i] <- rho[i] * sum(s_i * q); q <- q - alpha[i] * g_i
   }
-  # Use initial H0 = (s_{m}^T y_{m})/(y_{m}^T y_{m}) * I
   if (m > 0) {
     last_s <- s_list[[m]]; last_g <- g_list[[m]]
     gamma0 <- sum(last_s * last_g) / sum(last_g * last_g)
@@ -41,37 +25,30 @@ lbfgs_two_loop <- function(grad, s_list, g_list) {
     gamma0 <- 1
   }
   r <- gamma0 * q
-  # Loop to compute final vector via two-loop recursion
   for (i in seq_len(m)) {
     s_i <- s_list[[i]]; g_i <- g_list[[i]]
     beta_i <- rho[i] * sum(g_i * r)
     r <- r + s_i * (alpha[i] - beta_i)
   }
-  return(r)
+
+  r
 }
 
-# 3a. Compute complete-data Fisher information via inverse Hessian
-#     of the observed-data log-likelihood (logLikLms).
-#     We use numDeriv::hessian to compute the Hessian and invert it.
+# 3a. Compute complete-data Fisher information via inverse Hessian (logLikLms)
 computeFullIcom <- function(theta, model, data, P) {
-  # logLikLms returns log-likelihood given theta, model, P, data
-  # We need the negative Hessian of logLikLms wrt theta
-  # Use numDeriv::hessian for numeric differentiation
-  if (!requireNamespace("numDeriv", quietly = TRUE)) {
-    stop("Package 'numDeriv' is required for computeFullIcom.")
-  }
-  f_loglik <- function(par) {
-    logLikLms(theta = par, model = model, P = P, data = data)
-  }
-  H <- numDeriv::hessian(func = f_loglik, x = theta)
+  fLogLik <- function(par) logLikLms(theta = par, model = model, P = P, data = data)
+  H <- fdHESS(pars=theta, fun=fLogLik)
   I_obs <- -H
-  # Add small ridge if not invertible
   diag(I_obs) <- diag(I_obs) + 1e-8
-  return(I_obs)
+
+  I_obs
 }
 
-# 4. Modified emLms with EMA logic using logLik-based convergence
+
+# 4. emLms with optional EMA acceleration and overridable thresholds
 emLms <- function(model,
+                  algorithm = c("EMA", "EM"),  # choose algorithm
+                  em.control = list(),             # list of threshold overrides
                   verbose = FALSE,
                   convergence = 1e-2,
                   max.iter = 500,
@@ -85,11 +62,21 @@ emLms <- function(model,
                   robust.se = FALSE,
                   epsilon = 1e-6,
                   optimizer = "nlminb",
-                  fix.estep = TRUE,
                   R.max = 1e6,
                   ...) {
+  algorithm <- toupper(match.arg(algorithm))
   data <- model$data
   stopif(anyNA(data), "Remove or replace missing values from data")
+
+  # Set default thresholds and override with em.control entries
+  thr <- list(
+    epsilon_EM_SWITCH_ll = 1e-3,
+    epsilon_QN_SWITCH_ll = 1e-6,
+    epsilon_FS_SWITCH_ll = 1e-9,
+    epsilon_STOP_ll      = 1e-12
+  )
+  # Override defaults
+  for (nm in intersect(names(em.control), names(thr))) thr[[nm]] <- em.control[[nm]]
 
   # Initialization
   logLikNew  <- 0; logLikOld  <- 0; iterations <- 0
@@ -97,92 +84,44 @@ emLms <- function(model,
   bestLogLik <- -Inf; bestP <- NULL; bestTheta <- NULL
   logLiks <- numeric(0); logLikChanges <- numeric(0)
 
-  # EMA mode flag: "EM", "QN", or "FS"
+  # Setup for EMA
   mode <- "EM"
-  # Create a local environment to store L-BFGS pairs
-  qn_env <- new.env(parent = emptyenv())
-  qn_env$LBFGS_M <- 5
-  qn_env$s_list <- list()
-  qn_env$g_list <- list()
-
-  # Flag for whether to run E-step
-  doEstep <- TRUE
+  qn_env <- new.env(parent = emptyenv()); qn_env$LBFGS_M <- 5
+  qn_env$s_list <- list(); qn_env$g_list <- list()
   nFalseConvergence <- 0; nNegCheck <- 20; pNegCheck <- 0.5
   run <- TRUE
+  warnedStuck <- FALSE
 
   while (run) {
-    logLikOld <- logLikNew
-    thetaOld  <- thetaNew
+    logLikOld <- logLikNew; thetaOld <- thetaNew
 
-    if (doEstep) {
-      P <- estepLms(model = model, theta = thetaOld, data = data, ...)
-    }
+    # Always run E-step
+    P <- estepLms(model = model, theta = thetaOld, data = data, ...)
 
-    if (mode == "EM") {
-      # Standard EM M-step
+    if (algorithm == "EM") {
+      # Plain EM
       mstep <- mstepLms(model = model, P = P, data = data, theta = thetaOld,
                         max.step = max.step, epsilon = epsilon,
                         optimizer = optimizer, control = control, ...)
-      logLikNew  <- -mstep$objective
-      thetaNew   <- unlist(mstep$par)
+      logLikNew  <- -mstep$objective; thetaNew <- unlist(mstep$par)
       iterations <- iterations + 1
 
-    } else if (mode == "QN") {
-      # Quasi-Newton step
-      grad <- computeGradient(thetaOld, model, data, P, epsilon)
-      if (length(qn_env$s_list) > 0) {
-        direction <- lbfgs_two_loop(-grad, qn_env$s_list, qn_env$g_list)
-      } else {
-        direction <- -grad
-      }
-      alpha <- 1; success <- FALSE
-      while (alpha > 1e-5) {
-        thetaTrial <- thetaOld + alpha * direction
-        trialOK <- TRUE; logLikTrial <- NA
-        tryCatch({
-          P_trial <- estepLms(model = model, theta = thetaTrial, data = data, ...)
-          mstep_res <- mstepLms(model = model, P = P_trial, data = data,
-                                theta = thetaTrial, max.step = 0,
-                                epsilon = epsilon, optimizer = optimizer,
-                                control = control, ...)
-          logLikTrial <- -mstep_res$objective
-        }, error = function(e) {
-          trialOK <<- FALSE
-        })
-        if (trialOK && logLikTrial >= logLikOld) { success <- TRUE; break }
-        alpha <- alpha / 2
-      }
-      if (!success) {
-        mode <- "EM"; thetaNew <- thetaOld; logLikNew <- logLikOld
-      } else {
-        thetaNew  <- thetaTrial; logLikNew <- logLikTrial
-        gradNew <- computeGradient(thetaNew, model, data, P_trial, epsilon)
-        s_vec <- thetaNew - thetaOld
-        y_vec <- gradNew - grad
-        if (sum(s_vec * y_vec) > 1e-8) {
-          qn_env$s_list <- c(qn_env$s_list, list(s_vec))
-          qn_env$g_list <- c(qn_env$g_list, list(y_vec))
-          if (length(qn_env$s_list) > qn_env$LBFGS_M) {
-            qn_env$s_list <- qn_env$s_list[-1]
-            qn_env$g_list <- qn_env$g_list[-1]
-          }
-        }
+    } else {
+      # EMA logic
+      if (mode == "EM") {
+        mstep <- mstepLms(model = model, P = P, data = data, theta = thetaOld,
+                          max.step = max.step, epsilon = epsilon,
+                          optimizer = optimizer, control = control, ...)
+        logLikNew  <- -mstep$objective; thetaNew <- unlist(mstep$par)
         iterations <- iterations + 1
-      }
 
-    } else if (mode == "FS") {
-      # Fisher Scoring step
-      I_com_mat <- computeFullIcom(thetaOld, model, data, P)
-      I_obs_approx <- I_com_mat + diag(length(thetaOld)) * 1e-8
-      grad <- computeGradient(thetaOld, model, data, P, epsilon)
-      direction <- tryCatch(solve(I_obs_approx, grad), error = function(e) NULL)
-      if (is.null(direction)) {
-        mode <- "EM"; thetaNew <- thetaOld; logLikNew <- logLikOld
-      } else {
+      } else if (mode == "QN") {
+        grad <- computeGradient(thetaOld, model, data, P, epsilon)
+        if (length(qn_env$s_list) > 0) direction <- lbfgs_two_loop(-grad, qn_env$s_list, qn_env$g_list)
+        else direction <- -grad
         alpha <- 1; success <- FALSE
         while (alpha > 1e-5) {
-          thetaTrial <- thetaOld + alpha * direction
-          trialOK <- TRUE; logLikTrial <- NA
+          thetaTrial <- thetaOld + alpha * direction; trialOK <- TRUE; logLikTrial <- NA
           tryCatch({
             P_trial <- estepLms(model = model, theta = thetaTrial, data = data, ...)
             mstep_res <- mstepLms(model = model, P = P_trial, data = data,
@@ -190,17 +129,54 @@ emLms <- function(model,
                                   epsilon = epsilon, optimizer = optimizer,
                                   control = control, ...)
             logLikTrial <- -mstep_res$objective
-          }, error = function(e) {
-            trialOK <<- FALSE
-          })
+          }, error = function(e) trialOK <<- FALSE)
           if (trialOK && logLikTrial >= logLikOld) { success <- TRUE; break }
           alpha <- alpha / 2
         }
         if (!success) {
-          mode <- "EM"; thetaNew <- thetaOld; logLikNew <- logLikOld
+          # Fall back to a plain EM step rather than stopping
+          mode <- "EM"
+          mstep <- mstepLms(model = model, P = P, data = data, theta = thetaOld,
+                            max.step = max.step, epsilon = epsilon,
+                            optimizer = optimizer, control = control, ...)
+          logLikNew <- -mstep$objective
+          thetaNew <- unlist(mstep$par)
+          iterations <- iterations + 1
         } else {
           thetaNew  <- thetaTrial; logLikNew <- logLikTrial
+          gradNew <- computeGradient(thetaNew, model, data, P_trial, epsilon)
+          s_vec <- thetaNew - thetaOld; y_vec <- gradNew - grad
+          if (sum(s_vec * y_vec) > 1e-8) {
+            qn_env$s_list <- c(qn_env$s_list, list(s_vec)); qn_env$g_list <- c(qn_env$g_list, list(y_vec))
+            if (length(qn_env$s_list) > qn_env$LBFGS_M) {
+              qn_env$s_list <- qn_env$s_list[-1]; qn_env$g_list <- qn_env$g_list[-1]
+            }
+          }
           iterations <- iterations + 1
+        }
+      } else if (mode == "FS") {
+        I_com_mat <- computeFullIcom(thetaOld, model, data, P)
+        I_obs_approx <- I_com_mat + diag(length(thetaOld)) * 1e-8
+        grad <- computeGradient(thetaOld, model, data, P, epsilon)
+        direction <- tryCatch(solve(I_obs_approx, grad), error = function(e) NULL)
+        if (is.null(direction)) { mode <- "EM"; thetaNew <- thetaOld; logLikNew <- logLikOld }
+        else {
+          alpha <- 1; success <- FALSE
+          while (alpha > 1e-5) {
+            thetaTrial <- thetaOld + alpha * direction; trialOK <- TRUE; logLikTrial <- NA
+            tryCatch({
+              P_trial <- estepLms(model = model, theta = thetaTrial, data = data, ...)
+              mstep_res <- mstepLms(model = model, P = P_trial, data = data,
+                                    theta = thetaTrial, max.step = 0,
+                                    epsilon = epsilon, optimizer = optimizer,
+                                    control = control, ...)
+              logLikTrial <- -mstep_res$objective
+            }, error = function(e) trialOK <<- FALSE)
+            if (trialOK && logLikTrial >= logLikOld) { success <- TRUE; break }
+            alpha <- alpha / 2
+          }
+          if (!success) { mode <- "EM"; thetaNew <- thetaOld; logLikNew <- logLikOld }
+          else { thetaNew  <- thetaTrial; logLikNew <- logLikTrial; iterations <- iterations + 1 }
         }
       }
     }
@@ -208,50 +184,45 @@ emLms <- function(model,
     # Record history
     logLiks <- c(logLiks, logLikNew)
     logLikChanges <- c(logLikChanges, logLikNew - logLikOld)
-    if (logLikNew > bestLogLik) {
-      bestLogLik <- logLikNew; bestP <- P; bestTheta <- thetaOld
-    }
+    if (logLikNew > bestLogLik) { bestLogLik <- logLikNew; bestP <- P; bestTheta <- thetaOld }
 
     # Compute logLik change and print
     deltaLL <- abs(logLikNew - logLikOld)
     if (verbose) {
       clearConsoleLine()
-      cat(sprintf("\rIter=%d Mode=%s LogLik=%.4f ΔLL=%.4g", iterations, mode, logLikNew, deltaLL))
+      cat(sprintf("\rIter=%d Mode=%s LogLik=%.4f \u0394LL=%.4g", iterations, mode, logLikNew, deltaLL))
     }
 
-    # Mode-switch logic based on logLik change
-    if (deltaLL < epsilon_STOP_ll) {
-      run <- FALSE
-    } else if (mode == "EM" && deltaLL < epsilon_EM_SWITCH_ll) {
-      mode <- "QN"
-    } else if (mode == "QN" && deltaLL < epsilon_QN_SWITCH_ll) {
-      mode <- "FS"
-    } else if (mode == "FS" && deltaLL < epsilon_FS_SWITCH_ll) {
-      mode <- "EM"
+    # EMA mode-switch logic (only if EMA selected)
+    if (algorithm == "EMA") {
+      if (deltaLL < thr$epsilon_STOP_ll) { run <- FALSE }
+      else if (mode == "EM" && deltaLL < thr$epsilon_EM_SWITCH_ll) { mode <- "QN" }
+      else if (mode == "QN" && deltaLL < thr$epsilon_QN_SWITCH_ll) { mode <- "FS" }
+      else if (mode == "FS" && deltaLL < thr$epsilon_FS_SWITCH_ll) { mode <- "EM" }
+    } else {
+      # Plain EM convergence check
+      if (deltaLL < convergence) run <- FALSE
     }
 
-    # Check for convergence or rescue logic using logLik
+    # Simplified rescue logic
     converged_ll <- abs(logLikOld - logLikNew) < convergence
-    if (iterations >= max.iter || (converged_ll && (nFalseConvergence >= 3 || doEstep))) {
+    if (iterations >= max.iter || (converged_ll && nFalseConvergence >= 3)) {
       run <- FALSE
-    } else if (converged_ll && !doEstep) {
+    } else if (converged_ll) {
       nFalseConvergence <- nFalseConvergence + 1
-      doEstep <- TRUE
     } else if (
-      doEstep && runningAverage(logLikChanges, n = 5) < 0 && iterations > max.iter/2 &&
-      nNegativeLast(logLikChanges, n = nNegCheck) >= nNegCheck * pNegCheck
+      runningAverage(logLikChanges, n = 5) < 0 && iterations > max.iter/2 &&
+      nNegativeLast(logLikChanges, n = nNegCheck) >= nNegCheck * pNegCheck &&
+      !warnedStuck
     ) {
-      cat("\n")
-      warning("EM algorithm is not converging. Might be at a saddle point!")
-      doEstep  <- FALSE
-      P        <- bestP
-      thetaNew <- bestTheta
+      warning2("EM algorithm appears stuck: consider using a larger `convergence` tolerance.")
+      warnedStuck <- TRUE
     }
-  }
 
+  }
   if (verbose) cat("\n")
   warnif(iterations >= max.iter, "Maximum iterations reached. EM might not have converged.")
-  if (!doEstep) P <- estepLms(model = model, theta = thetaNew, data = data, ...)
+  P <- estepLms(model = model, theta = thetaNew, data = data, ...)
 
   # Final M-step
   final <- mstepLms(model = model, P = P, data = data,
@@ -301,7 +272,7 @@ emLms <- function(model,
   out <- list(model     = finalModel,
               start.model = model,
               method    = "lms",
-              optimizer = paste0("EM-", optimizer),
+              optimizer = paste(algorithm, optimizer, sep="-"),
               data      = data,
               theta     = coefficients,
               coefs     = lavCoefs,
@@ -319,5 +290,3 @@ emLms <- function(model,
 
   out
 }
-
-# Note: computeFullIcom() must be implemented to compute complete-data Fisher information.
