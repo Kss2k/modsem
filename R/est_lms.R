@@ -143,7 +143,8 @@ emLms <- function(model,
 
           tryCatch({
             P_trial <- estepLms(model = model, theta = thetaTrial, data = data, ...)
-            logLikTrial <- logLikLms(theta = thetaTrial, model = model, P = P_trial, data = data)
+            logLikTrial <- logLikLms(theta = thetaTrial, model = model, P = P_trial, 
+                                     data = data, sign = 1)
 
           }, error = function(e) trialOK <<- FALSE)
 
