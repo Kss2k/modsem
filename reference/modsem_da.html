@@ -38,6 +38,7 @@ NOTE: Run default_settings_da to see default arguments.'></head><body>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/customizing.html">customizing interaction terms</a></li>
+    <li><a class="dropdown-item" href="../articles/estimation_lms.html">Estimation alternatives using the LMS approach</a></li>
     <li><a class="dropdown-item" href="../articles/fit_measures_da.html">fit measures for LMS and QML</a></li>
     <li><a class="dropdown-item" href="../articles/higher_order_interactions.html">higher order interactions</a></li>
     <li><a class="dropdown-item" href="../articles/interaction_two_etas.html">interaction effects between endogenous variables</a></li>
@@ -86,7 +87,8 @@ necessary syntax, and variables for the estimation of models with latent product
 <span>  verbose <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  optimize <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  nodes <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  convergence <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  convergence.abs <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  convergence.rel <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  optimizer <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  center.data <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  standardize.data <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -104,12 +106,13 @@ necessary syntax, and variables for the estimation of models with latent product
 <span>  R.max <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  max.iter <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  max.step <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  fix.estep <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  start <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  epsilon <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  quad.range <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  adaptive.quad <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  n.threads <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  algorithm <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  em.control <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -150,8 +153,18 @@ where data is non-normal, it might be better to use the <code>qml</code> approac
 numbers of nodes, you might want to change the <code>'quad.range'</code> argument.</p></dd>
 
 
-<dt id="arg-convergence">convergence<a class="anchor" aria-label="anchor" href="#arg-convergence"></a></dt>
-<dd><p>convergence criterion. Lower values give better estimates but slower computation.</p></dd>
+<dt id="arg-convergence-abs">convergence.abs<a class="anchor" aria-label="anchor" href="#arg-convergence-abs"></a></dt>
+<dd><p>Absolute convergence criterion.
+Lower values give better estimates but slower computation. Not relevant when
+using the QML approach. For the LMS approach the EM-algorithm stops whenever
+the relative or absolute convergence criterion is reached.</p></dd>
+
+
+<dt id="arg-convergence-rel">convergence.rel<a class="anchor" aria-label="anchor" href="#arg-convergence-rel"></a></dt>
+<dd><p>Relative convergence criterion.
+Lower values give better estimates but slower computation.
+For the LMS approach the EM-algorithm stops whenever
+the relative or absolute convergence criterion is reached.</p></dd>
 
 
 <dt id="arg-optimizer">optimizer<a class="anchor" aria-label="anchor" href="#arg-optimizer"></a></dt>
@@ -244,11 +257,6 @@ fischer information matrix.</p></dd>
 <dd><p>maximum steps for the M-step in the EM algorithm (LMS).</p></dd>
 
 
-<dt id="arg-fix-estep">fix.estep<a class="anchor" aria-label="anchor" href="#arg-fix-estep"></a></dt>
-<dd><p>if <code>TRUE</code>, the E-step will be fixed, and the prior probabilities will be set to the best prior probabilities,
-if the log-likelihood decreases for more than 30 iterations.</p></dd>
-
-
 <dt id="arg-start">start<a class="anchor" aria-label="anchor" href="#arg-start"></a></dt>
 <dd><p>starting parameters.</p></dd>
 
@@ -274,6 +282,17 @@ If <code>FALSE</code>, the quadrature nodes will be fixed. Default is <code>FALS
 If an integer is specified, it will use that number of threads (e.g., <code>n.threads = 4</code> will use 4 threads).
 If <code>"default"</code>, it will use the default number of threads (2).
 If <code>"max"</code>, it will use all available threads, <code>"min"</code> will use 1 thread.</p></dd>
+
+
+<dt id="arg-algorithm">algorithm<a class="anchor" aria-label="anchor" href="#arg-algorithm"></a></dt>
+<dd><p>algorithm to use for the EM algorithm. Can be either <code>"EM"</code> or <code>"EMA"</code>.
+<code>"EM"</code> is the standard EM algorithm. <code>"EMA"</code> is an
+accelerated EM procedure that uses Quasi-Newton and Fisher Scoring
+optimization steps when needed. Default is <code>"EM"</code>.</p></dd>
+
+
+<dt id="arg-em-control">em.control<a class="anchor" aria-label="anchor" href="#arg-em-control"></a></dt>
+<dd><p>a list of control parameters for the EM algorithm. See <code><a href="default_settings_da.html">default_settings_da</a></code> for defaults.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>

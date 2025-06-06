@@ -35,6 +35,7 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/customizing.html">customizing interaction terms</a></li>
+    <li><a class="dropdown-item" href="../articles/estimation_lms.html">Estimation alternatives using the LMS approach</a></li>
     <li><a class="dropdown-item" href="../articles/fit_measures_da.html">fit measures for LMS and QML</a></li>
     <li><a class="dropdown-item" href="../articles/higher_order_interactions.html">higher order interactions</a></li>
     <li><a class="dropdown-item" href="../articles/interaction_two_etas.html">interaction effects between endogenous variables</a></li>
@@ -159,10 +160,10 @@ in the interaction term.</p>
 <span><span class="co">#&gt;   Estimator                                         LMS</span></span>
 <span><span class="co">#&gt;   Optimization method                         EM-NLMINB</span></span>
 <span><span class="co">#&gt;   Number of observations                           2000</span></span>
-<span><span class="co">#&gt;   Number of iterations                               38</span></span>
-<span><span class="co">#&gt;   Loglikelihood                                -6632.86</span></span>
-<span><span class="co">#&gt;   Akaike (AIC)                                 13285.71</span></span>
-<span><span class="co">#&gt;   Bayesian (BIC)                               13341.72</span></span>
+<span><span class="co">#&gt;   Number of iterations                               23</span></span>
+<span><span class="co">#&gt;   Loglikelihood                                -6632.88</span></span>
+<span><span class="co">#&gt;   Akaike (AIC)                                 13285.75</span></span>
+<span><span class="co">#&gt;   Bayesian (BIC)                               13341.76</span></span>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; Numerical Integration:</span></span>
 <span><span class="co">#&gt;   Points of integration (per dim)                    24</span></span>
@@ -179,8 +180,8 @@ in the interaction term.</p>
 <span><span class="co">#&gt;   RMSEA                                             Inf</span></span>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; Comparative fit to H0 (no interaction effect)</span></span>
-<span><span class="co">#&gt;   Loglikelihood change                          2736.38</span></span>
-<span><span class="co">#&gt;   Difference test (D)                           5472.75</span></span>
+<span><span class="co">#&gt;   Loglikelihood change                          2736.36</span></span>
+<span><span class="co">#&gt;   Difference test (D)                           5472.71</span></span>
 <span><span class="co">#&gt;   Degrees of freedom (D)                              1</span></span>
 <span><span class="co">#&gt;   P-value (D)                                     0.000</span></span>
 <span><span class="co">#&gt;  </span></span>
@@ -193,7 +194,7 @@ in the interaction term.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Parameter Estimates:</span></span>
 <span><span class="co">#&gt;   Coefficients                           unstandardized</span></span>
-<span><span class="co">#&gt;   Information                                  expected</span></span>
+<span><span class="co">#&gt;   Information                                  observed</span></span>
 <span><span class="co">#&gt;   Standard errors                              standard</span></span>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; Latent Variables:</span></span>
@@ -208,15 +209,15 @@ in the interaction term.</p>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   Y ~ </span></span>
-<span><span class="co">#&gt;     X                0.663      0.032    20.54    0.000</span></span>
-<span><span class="co">#&gt;     Z                0.482      0.028    17.27    0.000</span></span>
-<span><span class="co">#&gt;     X:Z              0.586      0.025    23.72    0.000</span></span>
+<span><span class="co">#&gt;     X                0.663      0.031    21.30    0.000</span></span>
+<span><span class="co">#&gt;     Z                0.482      0.029    16.86    0.000</span></span>
+<span><span class="co">#&gt;     X:Z              0.586      0.025    23.44    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Intercepts:</span></span>
 <span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;     x1               1.023      0.025    41.00    0.000</span></span>
-<span><span class="co">#&gt;     z1               1.011      0.027    37.52    0.000</span></span>
-<span><span class="co">#&gt;     y1               1.057      0.022    47.89    0.000</span></span>
+<span><span class="co">#&gt;     x1               1.023      0.024    41.86    0.000</span></span>
+<span><span class="co">#&gt;     z1               1.012      0.024    41.53    0.000</span></span>
+<span><span class="co">#&gt;     y1               1.057      0.034    31.13    0.000</span></span>
 <span><span class="co">#&gt;     Y                0.000                             </span></span>
 <span><span class="co">#&gt;     X                0.000                             </span></span>
 <span><span class="co">#&gt;     Z                0.000                             </span></span>
@@ -224,16 +225,16 @@ in the interaction term.</p>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   X ~~ </span></span>
-<span><span class="co">#&gt;     Z                0.208      0.032     6.45    0.000</span></span>
+<span><span class="co">#&gt;     Z                0.208      0.026     7.98    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;     x1               0.100                             </span></span>
 <span><span class="co">#&gt;     z1               0.000                             </span></span>
 <span><span class="co">#&gt;     y1               0.000                             </span></span>
-<span><span class="co">#&gt;     X                1.028      0.039    26.39    0.000</span></span>
-<span><span class="co">#&gt;     Z                1.184      0.036    32.96    0.000</span></span>
-<span><span class="co">#&gt;     Y                1.323      0.042    31.36    0.000</span></span></code></pre></div>
+<span><span class="co">#&gt;     X                1.028      0.035    29.35    0.000</span></span>
+<span><span class="co">#&gt;     Z                1.184      0.037    31.64    0.000</span></span>
+<span><span class="co">#&gt;     Y                1.323      0.044    29.88    0.000</span></span></code></pre></div>
 <p>If you forget to specify a measurement error for the indicator of the
 first variable in the interaction term, you will receive an error
 message.</p>

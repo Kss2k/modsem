@@ -3,6 +3,7 @@ pkgdown: 2.1.1
 pkgdown_sha: ~
 articles:
   customizing: customizing.html
+  estimation_lms: estimation_lms.html
   fit_measures_da: fit_measures_da.html
   higher_order_interactions: higher_order_interactions.html
   interaction_two_etas: interaction_two_etas.html
@@ -14,4 +15,4 @@ articles:
   plot_interactions: plot_interactions.html
   quadratic: quadratic.html
   simple_slopes: simple_slopes.html
-last_built: 2025-06-04T16:43Z
+last_built: 2025-06-06T14:06Z
