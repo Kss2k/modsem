@@ -223,7 +223,7 @@ modsem_da <- function(model.syntax = NULL,
   }
 
   if ("convergence" %in% names(list(...))) {
-    convergence.rel <- additionalArgs$convergence
+    convergence.rel <- list(...)$convergence
     warning2("Argument 'convergence' is deprecated, use 'convergence.rel' instead.")
   }
 
