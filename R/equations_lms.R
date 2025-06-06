@@ -105,7 +105,9 @@ estepLms <- function(model, theta, data, ...) {
                    log = FALSE) * w[[i]]
   }
 
-  P <- P / rowSums(P)
+  density        <- rowSums(P)
+  observedLogLik <- sum(log(density))
+  P              <- P / density
   
   wMeans <- vector("list", length = length(w))
   wCovs  <- vector("list", length = length(w))
@@ -123,7 +125,8 @@ estepLms <- function(model, theta, data, ...) {
     tGamma[[i]] <- sum(p)
   }
 
-  list(P = P, mean = wMeans, cov = wCovs, tgamma = tGamma, V = V)
+  list(P = P, mean = wMeans, cov = wCovs, tgamma = tGamma, V = V, w = w, 
+       obsLL = observedLogLik)
 }
 
 
@@ -179,6 +182,27 @@ logLikLms_i <- function(theta, model, data, P, sign = -1, ...) {
 }
 
 
+obsLogLikLms <- function(theta, model, data, P, ...) {
+  modFilled <- fillModel(model = model, theta = theta, method = "lms")
+
+  V <- P$V
+  w <- P$w
+  N <- nrow(data)
+  m <- nrow(V)
+  px <- numeric(N)
+
+  for (i in seq_len(m)) {
+    z_i     <- V[i, ]
+    mu_i    <- muLmsCpp(  model = modFilled, z = z_i)
+    sigma_i <- sigmaLmsCpp(model = modFilled, z = z_i)
+    dens_i  <- dmvn(data, mean = mu_i, sigma = sigma_i, log = FALSE)
+    px <- px + w[i] * dens_i
+  }
+ 
+  sum(log(px))
+}
+
+
 # gradient function of logLikLms_i
 gradientLogLikLms_i <- function(theta, model, data, P, sign = -1, epsilon = 1e-4) {
   baseLL <- logLikLms_i(theta, model, data = data, P = P, sign = sign)
@@ -205,12 +229,14 @@ mstepLms <- function(theta, model, data, P,
 
   if (optimizer == "nlminb") {
     if (is.null(control$iter.max)) control$iter.max <- max.step
+    preObjective <- logLikLms(theta=theta, model=model, P=P, sign=1, data=data)
     est <- stats::nlminb(start = theta, objective = logLikLms, data = data,
                          model = model, P = P, gradient = gradient,
                          sign = -1,
                          upper = model$info$bounds$upper,
                          lower = model$info$bounds$lower, control = control,
                          ...) |> suppressWarnings()
+    postObjective <- logLikLms(theta=est$par, model=model, P=P, sign=1, data=data)
 
   } else if (optimizer == "L-BFGS-B") {
     if (is.null(control$maxit)) control$maxit <- max.step

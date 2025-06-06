@@ -73,7 +73,6 @@ emLms <- function(model,
                   adaptive.quad = FALSE,
                   quad.range = -Inf,
                   ...) {
-
   algorithm <- toupper(match.arg(algorithm))
   data <- model$data
   stopif(anyNA(data), "Remove or replace missing values from data")
@@ -85,15 +84,11 @@ emLms <- function(model,
   tau4 <- if (is.null(em.control$tau4)) 1e-9 else em.control$tau4 # FS→stop if gradNorm < tau4
 
   # Initialization
-  logLikNew <- 0
-  logLikOld <- 0
-  warnedConvergence <- FALSE
+  logLikNew <- -Inf
+  logLikOld <- -Inf
   thetaNew  <- model$theta
-  bestLogLik <- -Inf
-  bestP <- NULL 
-  bestTheta <- NULL
-  logLikChanges <- NULL
-  logLiks <- NULL
+  logLiks   <- NULL
+  direction <- NULL
 
   qn_env <- new.env(parent = emptyenv())
   qn_env$LBFGS_M <- 5
@@ -104,46 +99,78 @@ emLms <- function(model,
   iterations <- 0
   run <- TRUE
 
-  while (run) {
-    logLikOld <- logLikNew; thetaOld <- thetaNew
 
-    # 1. E-step
+  while (run) {
+    # New iteration
+    iterations <- iterations + 1
+    logLikOld <- logLikNew 
+    thetaOld <- thetaNew
+
+    # E-step
     P <- estepLms(model = model, theta = thetaOld, data = data, ...)
 
-    # 2. Decide update based on mode and algorithm
-    if (algorithm == "EM" || mode == "EM") {
-      # Plain EM M-step
-      mstep <- mstepLms(model = model, P = P, data = data, theta = thetaOld,
-                        max.step = max.step, epsilon = epsilon,
-                        optimizer = optimizer, control = control, ...)
-      thetaNew <- unlist(mstep$par)
-      logLikNew <- -mstep$objective
-      iterations <- iterations + 1
+    # Convergence Checking
+    logLikNew  <- P$obsLL
+    logLiks    <- c(logLiks, logLikNew)
+    deltaLL    <- logLikNew - logLikOld
+    relDeltaLL <- abs(deltaLL / logLikNew)
 
-    } else {
+    updateStatusLog(iterations, mode, logLikNew, deltaLL, relDeltaLL, verbose)
+
+    if (iterations >= max.iter || 
+        abs(deltaLL) < convergence ||
+        abs(relDeltaLL) < convergence.rel) break
+
+    if (deltaLL < 0) {
+      if (verbose) cat("\n")
+      warning2("Loglikelihood is increasing!")
+
+      if (max.step < 100) {
+        message("Increasing max.step...")
+        max.step <- 100
+      }
+    }
+
+    # Determine Mode
+    if (algorithm == "EMA") {
+      if      (mode == "EM" && abs(relDeltaLL) < tau2) mode <- "QN"
+      else if (mode == "QN" && abs(relDeltaLL) < tau3) mode <- "FS"
+      else if (mode == "FS" && abs(relDeltaLL) < tau4) run <- FALSE
+
+      # Log mode change if verbose
+      updateStatusLog(iterations, mode, logLikNew, deltaLL, relDeltaLL, verbose)
+    }
+
+
+    if (algorithm != "EM" && mode != "EM") {
       # EMA: QN or FS update attempt
-      # 2a. Compute gradient once
       grad <- computeGradient(thetaOld, model, data, P, epsilon)
+
       if (mode == "QN") {
-        direction <- if (length(qn_env$s_list) > 0) 
-          lbfgs_two_loop(-grad, qn_env$s_list, qn_env$g_list) else -grad
+        if (length(qn_env$s_list)) {
+          direction <- lbfgs_two_loop(-grad, qn_env$s_list, qn_env$g_list) 
+        } else direction <- -grad
+
       } else if (mode == "FS") {
-        I_obs <- computeFullIcom(thetaOld, model, data, P)
+        I_obs     <- computeFullIcom(thetaOld, model, data, P)
         direction <- tryCatch(solve(I_obs, grad), error = function(e) NULL)
+
       }
 
-      # 2b. Line search if a direction is available
-      if (exists("direction") && !is.null(direction)) {
-        alpha <- 1; success <- FALSE
-        refLogLik <- logLikOld
+      # Line search if a direction is available
+      if (!is.null(direction)) {
+        alpha     <- 1 
+        success   <- FALSE
+        refLogLik <- logLikLms(theta=thetaOld, model=model, P=P, data=data, sign=1)
 
         while (alpha > 1e-5) {
-          thetaTrial <- thetaOld + alpha * direction
-          trialOK <- TRUE; logLikTrial <- NA
+          thetaTrial  <- thetaOld + alpha * direction
+          trialOK     <- TRUE 
+          logLikTrial <- NA
 
           tryCatch({
-            P_trial <- estepLms(model = model, theta = thetaTrial, data = data, ...)
-            logLikTrial <- logLikLms(theta = thetaTrial, model = model, P = P_trial, 
+            # P_trial     <- estepLms(model = model, theta = thetaTrial, data = data, ...)
+            logLikTrial <- logLikLms(theta = thetaTrial, model = model, P = P, # P_trial, 
                                      data = data, sign = 1)
 
           }, error = function(e) trialOK <<- FALSE)
@@ -157,9 +184,9 @@ emLms <- function(model,
         }
 
         if (success) {
-          thetaNew <- thetaTrial; logLikNew <- logLikTrial
-          iterations <- iterations + 1
+          thetaNew <- thetaTrial
           # update BFGS memory if in QN mode
+
           if (mode == "QN") {
             gradNew <- computeGradient(thetaNew, model, data, P_trial, epsilon)
             s_vec <- thetaNew - thetaOld; y_vec <- gradNew - grad
@@ -174,77 +201,18 @@ emLms <- function(model,
               }
             }
           }
-        } else {
-          # Fallback to one EM step on failure
-          mode <- "EM"
-          mstep <- mstepLms(model = model, P = P, data = data, theta = thetaOld,
-                            max.step = max.step, epsilon = epsilon,
-                            optimizer = optimizer, control = control, ...)
-          thetaNew <- unlist(mstep$par)
-          logLikNew <- -mstep$objective
-          iterations <- iterations + 1
-        }
-      } else {
-        # No valid direction: fallback to EM
-        mode <- "EM"
-        mstep <- mstepLms(model = model, P = P, data = data, theta = thetaOld,
-                          max.step = max.step, epsilon = epsilon,
-                          optimizer = optimizer, control = control, ...)
-        thetaNew <- unlist(mstep$par)
-        logLikNew <- -mstep$objective
-        iterations <- iterations + 1
-      }
+        } else model <- "EM"
+      } else mode <- "EM"
+    }
+    
+    if (algorithm == "EM" || mode == "EM") {
+      # Plain EM M-step
+      mstep <- mstepLms(model = model, P = P, data = data, theta = thetaOld,
+                        max.step = max.step, epsilon = epsilon,
+                        optimizer = optimizer, control = control, ...)
+      thetaNew <- mstep$par
     }
 
-
-    # Monitor progress
-    deltaLL <- abs(logLikNew - logLikOld)
-    relDeltaLL <- if (abs(logLikNew) > 0) deltaLL / abs(logLikNew) else deltaLL
-
-    updateStatusLog(iterations, mode, logLikNew, deltaLL, relDeltaLL, verbose)
-
-    # 5. Mode-switch logic when EMA is active
-    if (algorithm == "EMA") {
-      # if (mode == "EM" && (gradNorm < tau1 || relDeltaLL < tau2)) {
-      if (mode == "EM" && relDeltaLL < tau2) {
-        mode <- "QN"
-      } else if (mode == "QN" && relDeltaLL < tau3) {
-        mode <- "FS"
-      } else if (mode == "FS" && relDeltaLL < tau4) {
-        run <- FALSE
-      }
-      # Log mode change if verbose
-      # updateStatusLog(iterations, mode, logLikNew, deltaLL, relDeltaLL, gradNorm, verbose)
-      updateStatusLog(iterations, mode, logLikNew, deltaLL, relDeltaLL, verbose)
-    }
-
-    # 6. Termination checks
-    if (iterations >= max.iter || deltaLL < convergence || relDeltaLL < convergence.rel) break
-
-    # 7. Warning if stuck
-    if (runningAverage(logLikChanges, n = 10) < 0 && iterations > 100 && !warnedConvergence) {
-
-      if (verbose) cat("\n")
-      warning2(
-        "EM appears stuck: consider tweaking these parameters:\n",
-        formatParameters(convergence, algorithm, max.step, quad.range, 
-                         adaptive.quad) 
-      )
-
-      if (max.step < 100) {
-        warning2("Increasing max.step...")
-        max.step <- 100
-      }
-      
-      warnedConvergence <- TRUE
-    }
-
-    # Record history
-    logLiks <- c(logLiks, logLikNew)
-    logLikChanges <- c(logLikChanges, logLikNew - logLikOld)
-    if (logLikNew > bestLogLik) {
-      bestLogLik <- logLikNew; bestP <- P; bestTheta <- thetaOld
-    }
   }
 
   if (verbose) cat("\n")
@@ -294,7 +262,7 @@ emLms <- function(model,
   parTable$ci.lower <- parTable$est - CI_WIDTH * parTable$std.error
   parTable$ci.upper <- parTable$est + CI_WIDTH * parTable$std.error
 
-  convergence_flag <- ifelse(iterations < max.iter & deltaLL >= convergence, TRUE, deltaLL < convergence)
+  convergence_flag <- ifelse(iterations < max.iter & abs(deltaLL) >= convergence, TRUE, abs(deltaLL) < convergence)
   out <- list(
     model         = finalModel,
     start.model   = model,
