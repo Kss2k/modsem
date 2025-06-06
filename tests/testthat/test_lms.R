@@ -162,6 +162,18 @@ modsem(tpb_uk, TPB_UK, method = "lms", nodes=32, max.iter=10, calc.se=FALSE)
 )
 
 
+m1 <- "
+# Outer Model
+  X =~ x1
+  Z =~ z1 
+  x1 ~~ 0.1 * x1
+  Y =~ y1
+
+# Inner model
+  Y ~ X + Z
+  Y ~ X:Z
+"
+
 testthat::expect_error(
   modsem(m1, oneInt, method = "lms", optimizer = "ssjj"),
   regexp = "*Model estimation failed!*"
