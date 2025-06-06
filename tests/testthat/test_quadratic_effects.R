@@ -25,9 +25,8 @@ CAREER =~ career1 + career2 + career3 + career4
 SC =~ academic1 + academic2 + academic3 + academic4 + academic5 + academic6
 CAREER ~ ENJ + SC + ENJ:ENJ + SC:SC + ENJ:SC
 '
-devtools::load_all()
-est_qml2 <- modsem(nlsemModel, data = jordan, method = "lms", adaptive.quad=TRUE,
-                   nodes = 15, mean.observed = FALSE, convergence.rel = 1e-2,
-                   quad.range = 5)
+
+est_qml2 <- modsem(nlsemModel, data = jordan, method = "qml", adaptive.quad=TRUE,
+                   nodes = 15, mean.observed = FALSE, convergence.rel = 1e-2)
 est_rca2 <- modsem(nlsemModel, data = jordan, method = "rca")
 est_dblcent2 <- modsem(nlsemModel, data = jordan, method = "dblcent")
