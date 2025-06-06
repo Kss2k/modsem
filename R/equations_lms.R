@@ -78,7 +78,7 @@ flatLogLikLms <- function(z, modFilled, data) {
 }
 
 
-estepLms <- function(model, theta, data, ...) {
+estepLms <- function(model, theta, data, last.integral = NULL, ...) {
   modFilled <- fillModel(model = model, theta = theta, method = "lms")
 
   if (model$quad$adaptive) {
@@ -91,7 +91,8 @@ estepLms <- function(model, theta, data, ...) {
       m.start = model$quad$m.start, 
       m.max = model$quad$m, 
       k = model$quad$k,
-      tol = 1e-6
+      tol = model$quad$adaptive.quad.tol,
+      total.integral = last.integral
     )
   } else quad <- model$quad
 
@@ -127,7 +128,7 @@ estepLms <- function(model, theta, data, ...) {
   }
 
   list(P = P, mean = wMeans, cov = wCovs, tgamma = tGamma, V = V, w = w, 
-       obsLL = observedLogLik)
+       obsLL = observedLogLik, integral.quad = quad$integral)
 }
 
 

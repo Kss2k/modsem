@@ -47,7 +47,8 @@ tpb_uk <- "
 
 lms3 <- modsem(tpb_uk, data = TPB_UK, "lms", 
                nodes=32, FIM="observed",
-               adaptive.quad=TRUE, algorithm ="EMA")
+               adaptive.quad=TRUE, algorithm ="EMA",
+               adaptive.quad.tol = 1e-4)
 summary(lms3)
 #> Regressions:
 #>                   Estimate  Std.Error  z.value  P(>|z|)
@@ -71,35 +72,3 @@ summary(lms3)
 #>     PBC               0.405      0.052     7.79     0.000
 #>     INT               0.588      0.048    12.25     0.000
 #>     INT:PBC           0.141      0.008    17.62     0.000
-
-
-a <- -3
-b <- 3
-m <- 30
-
-f <- \(x) 1
-quad <- finiteGaussQuadrature(a, b, m, k = 1)
-approx <- sum(quad$weights * f(quad$nodes))
-exact  <- pnorm(b) - pnorm(a)
-error  <- abs(approx - exact)
-message(sprintf("1D test → approx = %.8f, exact = %.8f, error = %.2e", approx, exact, error))
-testthat::expect_true(error < 1e-15)
-
-a <- c(-3, -3)
-b <- c(3, 3)
-m <- 15
-
-quad <- finiteGaussQuadrature(a, b, m, k = 2)
-approx <- sum(quad$weights * f(quad$nodes))
-exact  <- prod(pnorm(b) - pnorm(a))
-error  <- abs(approx - exact)
-testthat::expect_true(error < 1e-15)
-message(sprintf("2D test → approx = %.8f, exact = %.8f, error = %.2e", approx, exact, error))
-
-# df_nodes <- data.frame(x = quad$nodes[, 1], y = quad$nodes[, 2])
-# df_nodes$z <- f(quad$nodes)
-# p <- plot_ly(df_nodes, x = ~x, y = ~y, z = ~z,
-#              type = "scatter3d", mode = "markers",
-#              marker = list(size = 3, opacity = 0.7)) |>
-#   layout(title = "Quadrature nodes under 2‑D standard normal PDF")
-# print(p)

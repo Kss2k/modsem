@@ -38,6 +38,7 @@ and `adaptive.quad = TRUE` in the `modsem()` function. Additionally it is possib
 - `convergence.abs`: Absolute convergence criterion for the EM algorithm.
 - `nodes`: Number of nodes for numerical integration (default is 24). Increasing this number can improve the accuracy of the estimates, especially for complex models.
 - `quad.range`: Integration range for quadrature. Smaller ranges means that the integral is more focused.
+- `adaptive.quad.tol`: Relative tolerance for determining whether a sub-interval of the adaptive quadrature is accurate enough.
 
 Here we can see an example using the `TPB_UK` dataaset, which is more troublesome to
 estimate than the simulated `TPB` dataset.
@@ -66,6 +67,7 @@ fit <- modsem(tpb_uk,
               convergence.abs = 1e-4, # Relative convergence criterion
               convergence.rel = 1e-10, # Relative convergence criterion
               max.iter = 500, # Maximum number of iterations
-              max.step = 1) # Maximum number of steps in the maximization step
+              max.step = 1, # Maximum number of steps in the maximization step
+              adaptive.quad.tol = 1e-4) # Tolerance when building adaptive quadrature
 summary(fit)
 ```
