@@ -10,7 +10,7 @@ m1 <- '
   Y ~ X + Z + X:Z
 '
 
-lms1 <- modsem(m1, oneInt, method = "lms", adaptive.quad=TRUE)
+lms1 <- modsem(m1, oneInt, method = "lms", adaptive.quad=TRUE, optimize=TRUE)
 
 
 tpb <- ' 
@@ -27,33 +27,38 @@ tpb <- '
   BEH ~ INT:PBC  
 '
 
-lms2 <- modsem(tpb, TPB, method = "lms", nodes = 32, adaptive.quad=TRUE, 
-               FIM="observed")
+lms2 <- modsem(tpb, TPB, method = "lms", nodes = 32, adaptive.quad=TRUE)
 summary(lms2)
 
 
-if (FALSE) { # To slow to bother running on GitHub
-  tpb_uk <- "
-  # Outer Model (Based on Hagger et al., 2007)
-     ATT =~ att3 + att2 + att1 + att4
-     SN =~ sn4 + sn2 + sn3 + sn1
-     PBC =~ pbc2 + pbc1 + pbc3 + pbc4
-     INT =~ int2 + int1 + int3 + int4
-     BEH =~ beh3 + beh2 + beh1 + beh4
+tpb_uk <- "
+# Outer Model (Based on Hagger et al., 2007)
+  ATT =~ att3 + att2 + att1 + att4
+  SN =~ sn4 + sn2 + sn3 + sn1
+  PBC =~ pbc2 + pbc1 + pbc3 + pbc4
+  INT =~ int2 + int1 + int3 + int4
+  BEH =~ beh3 + beh2 + beh1 + beh4
 
-  # Inner Model (Based on Steinmetz et al., 2011)
-     INT ~ ATT + SN + PBC
-     BEH ~ INT + PBC
-     BEH ~ INT:PBC
-  "
+# Inner Model (Based on Steinmetz et al., 2011)
+  INT ~ ATT + SN + PBC
+  BEH ~ INT + PBC
+  BEH ~ INT:PBC
+"
 
-  lms3 <- modsem(tpb_uk, data = TPB_UK, "lms", 
-                 nodes=32, FIM="observed",
-                 adaptive.quad=TRUE, 
-                 quad.range=5)
-  summary(lms3)
-}
-
+lms3 <- modsem(tpb_uk, data = TPB_UK, "lms", 
+               nodes=32, FIM="observed",
+               adaptive.quad=TRUE, algorithm ="EMA")
+#> Regressions:
+#>                   Estimate  Std.Error  z.value  P(>|z|)
+#>   INT ~ 
+#>     PBC              1.042      0.037    28.01    0.000
+#>     ATT             -0.064      0.030    -2.13    0.034
+#>     SN               0.047      0.033     1.45    0.146
+#>   BEH ~ 
+#>     PBC              0.412      0.053     7.78    0.000
+#>     INT              0.594      0.049    12.12    0.000
+#>     PBC:INT          0.142      0.008    17.78    0.000
+summary(lms3)
 # library(ggplot2)
 # 
 # quad_f <- model$quad

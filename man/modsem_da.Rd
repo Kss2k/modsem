@@ -11,7 +11,8 @@ modsem_da(
   verbose = NULL,
   optimize = NULL,
   nodes = NULL,
-  convergence = NULL,
+  convergence.abs = NULL,
+  convergence.rel = NULL,
   optimizer = NULL,
   center.data = NULL,
   standardize.data = NULL,
@@ -60,7 +61,15 @@ the number of nodes should be at least 32, but practically (e.g., ordinal/skewed
 where data is non-normal, it might be better to use the \code{qml} approach instead. For large
 numbers of nodes, you might want to change the \code{'quad.range'} argument.}
 
-\item{convergence}{convergence criterion. Lower values give better estimates but slower computation.}
+\item{convergence.abs}{Absolute convergence criterion. 
+Lower values give better estimates but slower computation. Not relevant when
+using the QML approach. For the LMS approach the EM-algorithm stops whenever
+the relative or absolute convergence criterion is reached.}
+
+\item{convergence.rel}{Relative convergence criterion. 
+Lower values give better estimates but slower computation.
+For the LMS approach the EM-algorithm stops whenever
+the relative or absolute convergence criterion is reached.}
 
 \item{optimizer}{optimizer to use, can be either \code{"nlminb"} or \code{"L-BFGS-B"}. For LMS, \code{"nlminb"} is recommended.
 For QML, \code{"L-BFGS-B"} may be faster if there is a large number of iterations, but slower if there are few iterations.}

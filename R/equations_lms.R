@@ -182,37 +182,6 @@ logLikLms_i <- function(theta, model, data, P, sign = -1, ...) {
 }
 
 
-obsLogLikLms <- function(theta, model, data, P, ...) {
-  modFilled <- fillModel(model = model, theta = theta, method = "lms")
-
-  V <- P$V
-  w <- P$w
-  N <- nrow(data)
-  m <- nrow(V)
-  px <- numeric(N)
-
-  for (i in seq_len(m)) {
-    z_i     <- V[i, ]
-    mu_i    <- muLmsCpp(  model = modFilled, z = z_i)
-    sigma_i <- sigmaLmsCpp(model = modFilled, z = z_i)
-    dens_i  <- dmvn(data, mean = mu_i, sigma = sigma_i, log = FALSE)
-    px <- px + w[i] * dens_i
-  }
- 
-  sum(log(px))
-}
-
-
-# gradient function of logLikLms_i
-gradientLogLikLms_i <- function(theta, model, data, P, sign = -1, epsilon = 1e-4) {
-  baseLL <- logLikLms_i(theta, model, data = data, P = P, sign = sign)
-  lapplyMatrix(seq_along(theta), FUN = function(i) {
-    theta[[i]] <- theta[[i]] + epsilon
-    (logLikLms_i(theta, model, data = data, P = P, sign = sign) - baseLL) / epsilon
-  }, FUN.VALUE = numeric(nrow(data)))
-}
-
-
 # Maximization step of EM-algorithm (see Klein & Moosbrugger, 2000)
 mstepLms <- function(theta, model, data, P,
                      max.step,
