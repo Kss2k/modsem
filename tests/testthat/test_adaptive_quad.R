@@ -72,34 +72,34 @@ summary(lms3)
 #>     INT               0.588      0.048    12.25     0.000
 #>     INT:PBC           0.141      0.008    17.62     0.000
 
-# library(ggplot2)
-# 
-# quad_f <- model$quad
-# quad_a <- quad
-# quad_o <- order(quad_a$n)
-# quad_a$n <- quad_a$n[quad_o]
-# quad_a$w <- quad_a$w[quad_o]
-# quad_a$f <- quad_a$f[quad_o]
-# 
-# m <- quad_f$m
-# 
-# d <- data.frame(
-#   x = c(quad_f$n, quad_a$n, quad_a$n),
-#   w = c(quad_f$w, quad_a$w, posterior),
-#   p = c(cumsum(quad_f$w), cumsum(quad_a$w), cumsum(posterior)),
-#   type = c(rep("fixed", quad_f$m), rep("adaptive", quad_a$m),
-#             rep("posterior", quad_a$m))
-# ) |> dplyr::filter(type != "posterior")
-# 
-# ggplot(d, aes(x = x, y = w, color = type)) +
-#   geom_point() +
-#   geom_line() + 
-#   labs(x = "Nodes", y = "Weights", title = "Nodes and Weights for LMS") +
-#   theme_minimal()
-# 
-# 
-# ggplot(d, aes(x = x, y = p, color = type)) +
-#   geom_point() + 
-#   geom_line() +
-#   labs(x = "Nodes", y = "Weights", title = "Nodes and Weights for LMS") +
-#   theme_minimal()
+
+a <- -3
+b <- 3
+m <- 30
+
+f <- \(x) 1
+quad <- finiteGaussQuadrature(a, b, m, k = 1)
+approx <- sum(quad$weights * f(quad$nodes))
+exact  <- pnorm(b) - pnorm(a)
+error  <- abs(approx - exact)
+message(sprintf("1D test → approx = %.8f, exact = %.8f, error = %.2e", approx, exact, error))
+testthat::expect_true(error < 1e-15)
+
+a <- c(-3, -3)
+b <- c(3, 3)
+m <- 15
+
+quad <- finiteGaussQuadrature(a, b, m, k = 2)
+approx <- sum(quad$weights * f(quad$nodes))
+exact  <- prod(pnorm(b) - pnorm(a))
+error  <- abs(approx - exact)
+testthat::expect_true(error < 1e-15)
+message(sprintf("2D test → approx = %.8f, exact = %.8f, error = %.2e", approx, exact, error))
+
+# df_nodes <- data.frame(x = quad$nodes[, 1], y = quad$nodes[, 2])
+# df_nodes$z <- f(quad$nodes)
+# p <- plot_ly(df_nodes, x = ~x, y = ~y, z = ~z,
+#              type = "scatter3d", mode = "markers",
+#              marker = list(size = 3, opacity = 0.7)) |>
+#   layout(title = "Quadrature nodes under 2‑D standard normal PDF")
+# print(p)

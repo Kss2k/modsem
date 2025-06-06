@@ -84,12 +84,13 @@ estepLms <- function(model, theta, data, ...) {
   if (model$quad$adaptive) {
     quad <- adaptiveGaussQuadrature(
       flatLogLikLms, 
-      a=model$quad$a, 
-      b=model$quad$b, 
-      modFilled=modFilled, 
-      data=data,
+      a = model$quad$a, 
+      b = model$quad$b, 
+      modFilled = modFilled, 
+      data = data,
       m.start = model$quad$m.start, 
       m.max = model$quad$m, 
+      k = model$quad$k,
       tol = 1e-6
     )
   } else quad <- model$quad
