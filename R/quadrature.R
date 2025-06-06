@@ -143,57 +143,57 @@ adaptiveGaussQuadrature <- function(fun, a = -7, b = 7, m.start = 4, m.max = 32,
 
 
 # This function is a work in progress...
-laplaceAdaptiveQuadrature <- function(fun, init, L = 6, m = 12, tol = 1e-6, max.expand = 3, ...) {
-  stopifnot(is.numeric(init))
-  k <- length(init)
-
-  # --- 1. locate mode ------------------------------------------------------
-  nlogf <- function(theta) {
-    val <- fun(matrix(theta, nrow = 1L), ...)
-    if (val <= 0 || !is.finite(val)) return(Inf)
-    -log(val)
-  }
-  opt <- optim(init, nlogf, hessian = TRUE, control = list(fnscale = 1))
-  if (opt$convergence != 0)
-    warning("optim did not converge; result may be inaccurate")
-  mu <- opt$par
-
-  # --- 2. Hessian & covariance --------------------------------------------
-  H <- opt$hessian
-  if (is.null(H) || any(is.na(H)) || any(!is.finite(H))) {
-    H <- numDeriv::hessian(function(x) -log(fun(matrix(x, nrow = 1L), ...)), mu)
-  }
-  Sigma <- tryCatch(solve(H), error = function(e) {
-    warning("Hessian not invertible; using identity covariance")
-    diag(1, k)
-  })
-  sds <- sqrt(diag(Sigma))
-
-  # helper to compute integral on [a,b] for given L ------------------------
-  integrate_rect <- function(Lmult) {
-    a <- mu - Lmult * sds
-    b <- mu + Lmult * sds
-    quad <- finiteGaussQuadrature(a, b, m = m, k = k)
-    list(val = sum(quad$weights * fun(quad$nodes, ...)), quad = quad, a = a, b = b)
-  }
-
-  base <- integrate_rect(L)      # core region
-  total <- base$val
-  Lcurr <- L
-
-  # --- 3. expand region adaptively ----------------------------------------
-  for (step in seq_len(max.expand)) {
-    Lnext <- Lcurr * 1.5           # geometric expansion
-    outer <- integrate_rect(Lnext)
-    incr  <- outer$val - total
-    if (abs(incr) / abs(outer$val) < tol) {
-      total <- outer$val; base <- outer; break
-    }
-    total <- outer$val; Lcurr <- Lnext; base <- outer
-  }
-
-  with(base, {
-    list(integral = val, mu = mu, Sigma = Sigma, L = Lcurr, k = k,
-         a = a, b = b, n = quad$nodes, w = quad$weights)
-  })
-}
+# laplaceAdaptiveQuadrature <- function(fun, init, L = 6, m = 12, tol = 1e-6, max.expand = 3, ...) {
+#   stopifnot(is.numeric(init))
+#   k <- length(init)
+#
+#   # --- 1. locate mode ------------------------------------------------------
+#   nlogf <- function(theta) {
+#     val <- fun(matrix(theta, nrow = 1L), ...)
+#     if (val <= 0 || !is.finite(val)) return(Inf)
+#     -log(val)
+#   }
+#   opt <- optim(init, nlogf, hessian = TRUE, control = list(fnscale = 1))
+#   if (opt$convergence != 0)
+#     warning("optim did not converge; result may be inaccurate")
+#   mu <- opt$par
+#
+#   # --- 2. Hessian & covariance --------------------------------------------
+#   H <- opt$hessian
+#   if (is.null(H) || any(is.na(H)) || any(!is.finite(H))) {
+#     H <- numDeriv::hessian(function(x) -log(fun(matrix(x, nrow = 1L), ...)), mu)
+#   }
+#   Sigma <- tryCatch(solve(H), error = function(e) {
+#     warning("Hessian not invertible; using identity covariance")
+#     diag(1, k)
+#   })
+#   sds <- sqrt(diag(Sigma))
+#
+#   # helper to compute integral on [a,b] for given L ------------------------
+#   integrate_rect <- function(Lmult) {
+#     a <- mu - Lmult * sds
+#     b <- mu + Lmult * sds
+#     quad <- finiteGaussQuadrature(a, b, m = m, k = k)
+#     list(val = sum(quad$weights * fun(quad$nodes, ...)), quad = quad, a = a, b = b)
+#   }
+#
+#   base <- integrate_rect(L)      # core region
+#   total <- base$val
+#   Lcurr <- L
+#
+#   # --- 3. expand region adaptively ----------------------------------------
+#   for (step in seq_len(max.expand)) {
+#     Lnext <- Lcurr * 1.5           # geometric expansion
+#     outer <- integrate_rect(Lnext)
+#     incr  <- outer$val - total
+#     if (abs(incr) / abs(outer$val) < tol) {
+#       total <- outer$val; base <- outer; break
+#     }
+#     total <- outer$val; Lcurr <- Lnext; base <- outer
+#   }
+#
+#   with(base, {
+#     list(integral = val, mu = mu, Sigma = Sigma, L = Lcurr, k = k,
+#          a = a, b = b, n = quad$nodes, w = quad$weights)
+#   })
+# }
