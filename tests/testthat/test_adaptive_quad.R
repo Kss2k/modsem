@@ -48,6 +48,7 @@ tpb_uk <- "
 lms3 <- modsem(tpb_uk, data = TPB_UK, "lms", 
                nodes=32, FIM="observed",
                adaptive.quad=TRUE, algorithm ="EMA")
+summary(lms3)
 #> Regressions:
 #>                   Estimate  Std.Error  z.value  P(>|z|)
 #>   INT ~ 
@@ -58,7 +59,19 @@ lms3 <- modsem(tpb_uk, data = TPB_UK, "lms",
 #>     PBC              0.412      0.053     7.78    0.000
 #>     INT              0.594      0.049    12.12    0.000
 #>     PBC:INT          0.142      0.008    17.78    0.000
-summary(lms3)
+
+# Compared with Mplus
+#> Regressions:
+#>                    Estimate  Std.Error  z.value  Pr(>|z|)
+#>   INT ~   
+#>     ATT              -0.053      0.031    -1.71     0.089
+#>     SN               -0.065      0.024    -2.71     0.008
+#>     PBC               1.090      0.036    30.28     0.000
+#>   BEH ~   
+#>     PBC               0.405      0.052     7.79     0.000
+#>     INT               0.588      0.048    12.25     0.000
+#>     INT:PBC           0.141      0.008    17.62     0.000
+
 # library(ggplot2)
 # 
 # quad_f <- model$quad
