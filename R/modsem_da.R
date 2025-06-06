@@ -110,8 +110,7 @@
 #' @param algorithm algorithm to use for the EM algorithm. Can be either \code{"EM"} or \code{"EMA"}. 
 #' \code{"EM"} is the standard EM algorithm. \code{"EMA"} is an
 #' accelerated EM procedure that uses Quasi-Newton and Fisher Scoring
-#' optimization steps when needed. 
-#' Default is \code{"EMA"}.
+#' optimization steps when needed. Default is \code{"EM"}.
 #'
 #' @param em.control a list of control parameters for the EM algorithm. See \code{\link{default_settings_da}} for defaults.
 #'
