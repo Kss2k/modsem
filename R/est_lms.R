@@ -88,6 +88,7 @@ emLms <- function(model,
   thetaNew  <- model$theta
   logLiks   <- NULL
   direction <- NULL
+  last.integral <- NULL
 
   qn_env <- new.env(parent = emptyenv())
   qn_env$LBFGS_M <- 5
@@ -105,13 +106,15 @@ emLms <- function(model,
     thetaOld <- thetaNew
 
     # E-step
-    P <- estepLms(model = model, theta = thetaOld, data = data, ...)
+    P <- estepLms(model = model, theta = thetaOld, data = data, 
+                  last.integral = last.integral, ...)
 
     # Convergence Checking
     logLikNew  <- P$obsLL
     logLiks    <- c(logLiks, logLikNew)
     deltaLL    <- logLikNew - logLikOld
     relDeltaLL <- abs(deltaLL / logLikNew)
+    last.integral <- P$integral.quad # used in adaptive quadrature
 
     updateStatusLog(iterations, mode, logLikNew, deltaLL, relDeltaLL, verbose)
 
@@ -214,7 +217,6 @@ emLms <- function(model,
                         optimizer = optimizer, control = control, ...)
       thetaNew <- mstep$par
     }
-
   }
 
   if (verbose) cat("\n")

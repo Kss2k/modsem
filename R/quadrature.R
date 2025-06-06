@@ -6,7 +6,9 @@ quadrature <- function(m, k,
                        adaptive = FALSE, 
                        a = -7, 
                        b = 7, 
-                       m.start = 4, ...) {
+                       m.start = 4, 
+                       adaptive.quad.tol = 1e-4,
+                       ...) {
   if (k == 0 || m == 0) {
     return(list(
       n = matrix(0), 
@@ -50,7 +52,8 @@ quadrature <- function(m, k,
     b = b, 
     cut = cut,
     m.start = m.start, 
-    adaptive = adaptive
+    adaptive = adaptive,
+    adaptive.quad.tol = adaptive.quad.tol
   )
 }
 
@@ -93,14 +96,8 @@ finiteGaussQuadrature <- function(a, b, m = 10, k = 1) {
 
 adaptiveGaussQuadrature <- function(fun, a = -7, b = 7, m.start = 4, m.max = 32,
                                     tol = 1e-6, k = 1, total.integral = NULL, ...) {
-  # For k > 1 we revert to a fixed product rule with m.max nodes
-  if (k > 1) {
-    quad <- finiteGaussQuadrature(a = a, b = b, m = m.max, k = k)
-    return(list(integral = sum(quad$weights * fun(quad$nodes, ...)),
-                f = NULL, n = quad$nodes, w = quad$weights, m = m.max, k = k))
-  }
+  stopif(k > 1, "Adaptive quadrature not implemented for multiple dimensions!")
 
-  # --- original 1‑D adaptive routine --------------------------------------
   if (k == 0 || m.max == 0) {
     return(list(integral = 0, n = matrix(0), w = 1, f = NA, m = 0, k = k))
   }
@@ -118,21 +115,28 @@ adaptiveGaussQuadrature <- function(fun, a = -7, b = 7, m.start = 4, m.max = 32,
   f.h <- fun(quad.h$nodes, ...)
   integral.l <- sum(quad.l$weights * f.l)
   integral.h <- sum(quad.h$weights * f.h)
+
   if (is.null(total.integral)) total.integral <- integral.h
+
   E <- abs(integral.h - integral.l) / abs(total.integral)
+
   if (E < tol || m.start >= m.max) {
     return(list(integral = integral.l, f = f.l, n = quad.l$nodes, w = quad.l$weights, m = quad.l$m, k = k))
   }
+
   c_mid <- (a + b) / 2
   Ea <- dnorm(a) * fun(matrix(a), ...)
   Eb <- dnorm(b) * fun(matrix(b), ...)
+
   if (Ea < Eb) {
     a_left <- a; b_left <- c_mid; a_right <- c_mid; b_right <- b
   } else {
     a_left <- c_mid; b_left <- b; a_right <- a; b_right <- c_mid
   }
+
   left <- adaptiveGaussQuadrature(fun, a_left, b_left, m.start, round(m.max / 2), tol, 1, total.integral, ...)
   right <- adaptiveGaussQuadrature(fun, a_right, b_right, m.start, m.max - left$m, tol, 1, total.integral, ...)
+
   list(integral = left$integral + right$integral, f = c(left$f, right$f), m = left$m + right$m,
        n = rbind(left$n, right$n), w = c(left$w, right$w), k = k)
 }
