@@ -1,0 +1,70 @@
+---
+title: "Estimation alternatives using the LMS approach"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{LMS and QML approaches}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+EVAL_DEFAULT <- FALSE
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = EVAL_DEFAULT
+)
+```
+
+```{r setup}
+library(modsem)
+```
+
+# Accelerated EM and Adaptive Quadrature
+By default the LMS approach uses a standard Expectation-Maximization (EM) algorithm to estimate the model parameters, 
+along with a fixed quadrature. 
+
+However, it is possible to use an accelerated EM procedure (`"EMA"`) that uses Quasi-Newton and Fisher
+Scoring optimization steps when needed. It is also possible to use an adaptive quadrature 
+instead of a fixed quadrature. Using the EMA and adaptive quadrature might yield 
+estimates that are closer to results from `Mplus`.
+
+If the model struggles to converge, you can try using the accelerated EM procedure by setting `method = "EMA"`,
+and `adaptive.quad = TRUE` in the `modsem()` function. Additionally it is possible to tweak these parameters:
+
+- `max.iter`: Maximum number of iterations for the EM algorithm (default is 500).
+- `max.step`: Maximum number of steps used in the Maximization step of the EM algorithm (default is 1).
+- `convergence.rel`: Relative convergence criterion for the EM algorithm.
+- `convergence.abs`: Absolute convergence criterion for the EM algorithm.
+- `nodes`: Number of nodes for numerical integration (default is 24). Increasing this number can improve the accuracy of the estimates, especially for complex models.
+
+Here we can see an example using the `TPB_UK` dataaset, which is more troublesome to
+estimate than the simulated `TPB` dataset.
+
+```{r}
+tpb_uk <- "
+# Outer Model (Based on Hagger et al., 2007)
+  ATT =~ att3 + att2 + att1 + att4
+  SN =~ sn4 + sn2 + sn3 + sn1
+  PBC =~ pbc2 + pbc1 + pbc3 + pbc4
+  INT =~ int2 + int1 + int3 + int4
+  BEH =~ beh3 + beh2 + beh1 + beh4
+
+# Inner Model (Based on Steinmetz et al., 2011)
+  INT ~ ATT + SN + PBC
+  BEH ~ INT + PBC
+  BEH ~ INT:PBC
+"
+
+fit <- modsem(tpb_uk, 
+              data = TPB_UK, 
+              method = "lms", 
+              nodes = 32, # Number of nodes for numerical integration
+              adaptive.quad = TRUE, # Use adaptive quadrature
+              algorithm ="EMA", # Use accelerated EM algorithm
+              convergence.abs = 1e-4, # Relative convergence criterion
+              convergence.rel = 1e-10, # Relative convergence criterion
+              max.iter = 500, # Maximum number of iterations
+              max.step = 1) # Maximum number of steps in the maximization step
+summary(fit)
+```
