@@ -38,7 +38,7 @@ NOTE: Run default_settings_da to see default arguments.'></head><body>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/customizing.html">customizing interaction terms</a></li>
-    <li><a class="dropdown-item" href="../articles/estimation_lms.html">Estimation alternatives using the LMS approach</a></li>
+    <li><a class="dropdown-item" href="../articles/estimation_lms.html">estimation alternatives using the LMS approach</a></li>
     <li><a class="dropdown-item" href="../articles/fit_measures_da.html">fit measures for LMS and QML</a></li>
     <li><a class="dropdown-item" href="../articles/higher_order_interactions.html">higher order interactions</a></li>
     <li><a class="dropdown-item" href="../articles/interaction_two_etas.html">interaction effects between endogenous variables</a></li>
@@ -110,6 +110,7 @@ necessary syntax, and variables for the estimation of models with latent product
 <span>  epsilon <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  quad.range <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  adaptive.quad <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  adaptive.quad.tol <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  n.threads <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  algorithm <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  em.control <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -275,6 +276,10 @@ but this will likely be inefficient and pointless at a large number of nodes. No
 <dt id="arg-adaptive-quad">adaptive.quad<a class="anchor" aria-label="anchor" href="#arg-adaptive-quad"></a></dt>
 <dd><p>should adaptive quadrature be used? If <code>TRUE</code>, the quadrature nodes will be adapted to the data.
 If <code>FALSE</code>, the quadrature nodes will be fixed. Default is <code>FALSE</code>.</p></dd>
+
+
+<dt id="arg-adaptive-quad-tol">adaptive.quad.tol<a class="anchor" aria-label="anchor" href="#arg-adaptive-quad-tol"></a></dt>
+<dd><p>Relavtive tolerance for determining when the adaptive quadrature is accurate enough</p></dd>
 
 
 <dt id="arg-n-threads">n.threads<a class="anchor" aria-label="anchor" href="#arg-n-threads"></a></dt>
