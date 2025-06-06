@@ -50,11 +50,11 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    max.iter = 500,
                    max.step = NULL,
                    epsilon = 1e-8,
-                   quad.range = NULL,
-                   adaptive.quad = NULL,
-                   adaptive.quad.tol = NULL,
+                   quad.range = Inf,
+                   adaptive.quad = FALSE,
+                   adaptive.quad.tol = 1e-4,
                    n.threads = NULL,
-                   adaptive.quad = NULL,
+                   adaptive.quad = FALSE,
                    em.control = NULL,
                    algorithm = NULL
         )
