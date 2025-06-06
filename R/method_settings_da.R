@@ -81,7 +81,7 @@ getMethodSettingsDA <- function(method, args = NULL) {
       args.out$OFIM.hessian && !args.out$robust.se
 
     if (!is.null(args.out$adaptive.quad) && args.out$adaptive.quad && 
-        is.infinite(args.out$quad.range)) {
+        !is.null(args.out$quad.range) && is.infinite(args.out$quad.range)) {
       args.out$quad.range <- 7
     }
 
