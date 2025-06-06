@@ -16,7 +16,7 @@ m1 <- "
 "
 
 est1 <- modsem(m1, oneInt, method = "lms", optimize = TRUE, verbose = TRUE,
-               convergence = 1e-2, R.max = 50000)
+               convergence.abs = 1e-2, R.max = 50000)
 plot_interaction("X", "Z", "Y", "X:Z", -3:3, c(-0.5, 0.5), est1, standardized=TRUE)
 print(summary(est1, adjusted.stat = TRUE))
 plot_surface(x = "X", z = "Z", y = "Y", model = est1)
@@ -85,7 +85,7 @@ PBC ~ a * LATENT_VAR_ATT + SN
 '
 
 testthat::expect_warning({
-  est2 <- modsem(tpb, TPB, method = "lms", verbose = TRUE, convergence = 1, 
+  est2 <- modsem(tpb, TPB, method = "lms", verbose = TRUE, convergence.abs = 1, 
                  cov.syntax = covModel, nodes = 16, robust.se = TRUE)
 }, regexp = "It is recommended .* between endogenous variables .*")
 
@@ -125,7 +125,7 @@ tpb2 <- '
   BEH ~ INT:PBC  
 '
 
-testthat::expect_warning(modsem(tpb, TPB, method = "lms", convergence = 1000,
+testthat::expect_warning(modsem(tpb, TPB, method = "lms", convergence.abs = 1000,
                                 nodes = 16, calc.se = FALSE),
                          regexp = "It is recommended .* between exogenous and endogenous .*")
 
