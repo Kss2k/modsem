@@ -1,8 +1,8 @@
 ---
-title: "Estimation alternatives using the LMS approach"
+title: "estimation alternatives using the LMS approach"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{LMS and QML approaches}
+  %\VignetteIndexEntry{estimation alternatives using the LMS approach}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
