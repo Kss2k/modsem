@@ -140,12 +140,12 @@ calcOFIM_LMS <- function(model, theta, data, hessian = FALSE,
   P <- estepLms(model, theta = theta, data = data)
   if (hessian) {
     # negative hessian (sign = -1)
-    I <- fdHESS(pars = theta, fun = logLikLms, model = model,
+    I <- fdHESS(pars = theta, fun = obsLogLikLms, model = model,
                 data = data, P = P, sign = -1,
                 .relStep = .Machine$double.eps^(1/5))
     return(I)
   }
-  J <- gradientLogLikLms_i(theta, model = model, data = data,
+  J <- gradientObsLogLikLms_i(theta, model = model, data = data,
                            P = P, sign = 1, epsilon = epsilon)
   I <- matrix(0, nrow = length(theta), ncol = length(theta))
 
@@ -201,9 +201,9 @@ calcEFIM_LMS <- function(model, finalModel = NULL, theta, data, S = 100,
       sub <- n1:nn
     } else sub <- sample(R, N)
 
-    P <- estepLms(model = model, theta=theta, data = population[sub, ])
-    J <- gradientLogLikLms(theta = theta, model = model, data = population[sub, ],
-                                  P = P, sign = 1, epsilon = epsilon)
+    P <- estepLms(model = model, theta = theta, data = population[sub, ])
+    J <- gradientObsLogLikLms(theta = theta, model = model, data = population[sub, ],
+                              P = P, sign = 1, epsilon = epsilon)
 
     I <- I + J %*% t(J)
   }

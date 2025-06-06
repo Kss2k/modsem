@@ -1,5 +1,4 @@
-## emLms with optional EMA (Quasi-Newton + Fisher Scoring) acceleration
-# Simplified and cleaned logic: hybrid switching based on gradient norm and relative ΔLL.
+## emLms with optional EMA (Quasi-Newton + Fisher Scoring) acceleration Simplified and cleaned logic: hybrid switching based on gradient norm and relative ΔLL.
 
 # 1. Helper: compute observed-data gradient
 computeGradient <- function(theta, model, data, P, epsilon) {
@@ -56,7 +55,7 @@ emLms <- function(model,
                   algorithm = c("EMA", "EM"),    # "EM" or "EMA"
                   em.control = list(),              # overrides for tau thresholds
                   verbose = FALSE,
-                  convergence = 1e-2,
+                  convergence.abs = 1e-4,
                   convergence.rel = 1e-10,
                   max.iter = 500,
                   max.step = 1,
@@ -78,10 +77,10 @@ emLms <- function(model,
   stopif(anyNA(data), "Remove or replace missing values from data")
 
   # Default thresholds (can be overridden via em.control)
-  tau1 <- if (is.null(em.control$tau1)) 1e-2 else em.control$tau1 # EM→QN if gradNorm < tau1
-  tau2 <- if (is.null(em.control$tau2)) 1e-6 else em.control$tau2 # EM→QN if relΔLL < tau2
-  tau3 <- if (is.null(em.control$tau3)) 1e-8 else em.control$tau3 # QN→FS if gradNorm < tau3
-  tau4 <- if (is.null(em.control$tau4)) 1e-9 else em.control$tau4 # FS→stop if gradNorm < tau4
+  tau1 <- if (is.null(em.control$tau1)) 1e-2 else em.control$tau1 # EM->QN if gradNorm < tau1
+  tau2 <- if (is.null(em.control$tau2)) 1e-6 else em.control$tau2 # EM->QN if relΔLL < tau2
+  tau3 <- if (is.null(em.control$tau3)) 1e-8 else em.control$tau3 # QN->FS if gradNorm < tau3
+  tau4 <- if (is.null(em.control$tau4)) 1e-9 else em.control$tau4 # FS->stop if gradNorm < tau4
 
   # Initialization
   logLikNew <- -Inf
@@ -95,10 +94,9 @@ emLms <- function(model,
   qn_env$s_list <- list()
   qn_env$g_list <- list()
 
-  mode <- "EM"                # start in EM mode
+  mode <- "EM" # start in EM mode
   iterations <- 0
   run <- TRUE
-
 
   while (run) {
     # New iteration
@@ -118,7 +116,7 @@ emLms <- function(model,
     updateStatusLog(iterations, mode, logLikNew, deltaLL, relDeltaLL, verbose)
 
     if (iterations >= max.iter || 
-        abs(deltaLL) < convergence ||
+        abs(deltaLL) < convergence.abs ||
         abs(relDeltaLL) < convergence.rel) break
 
     if (deltaLL < 0) {
@@ -133,7 +131,7 @@ emLms <- function(model,
 
     # Determine Mode
     if (algorithm == "EMA") {
-      if      (mode == "EM" && abs(relDeltaLL) < tau2) mode <- "QN"
+      if      (mode == "EM" && abs(relDeltaLL) < 1e-4) mode <- "QN"
       else if (mode == "QN" && abs(relDeltaLL) < tau3) mode <- "FS"
       else if (mode == "FS" && abs(relDeltaLL) < tau4) run <- FALSE
 
@@ -144,7 +142,8 @@ emLms <- function(model,
 
     if (algorithm != "EM" && mode != "EM") {
       # EMA: QN or FS update attempt
-      grad <- computeGradient(thetaOld, model, data, P, epsilon)
+      grad <- computeGradient(theta = thetaOld, model = model, 
+                              data = data, P = P, epsilon = epsilon)
 
       if (mode == "QN") {
         if (length(qn_env$s_list)) {
@@ -152,7 +151,8 @@ emLms <- function(model,
         } else direction <- -grad
 
       } else if (mode == "FS") {
-        I_obs     <- computeFullIcom(thetaOld, model, data, P)
+        I_obs     <- computeFullIcom(theta = thetaOld, model = model, 
+                                     data = data, P = P)
         direction <- tryCatch(solve(I_obs, grad), error = function(e) NULL)
 
       }
@@ -161,21 +161,16 @@ emLms <- function(model,
       if (!is.null(direction)) {
         alpha     <- 1 
         success   <- FALSE
-        refLogLik <- logLikLms(theta=thetaOld, model=model, P=P, data=data, sign=1)
+        refLogLik <- logLikLms(theta = thetaOld, model = model, P = P, 
+                               data = data, sign = 1)
 
         while (alpha > 1e-5) {
           thetaTrial  <- thetaOld + alpha * direction
-          trialOK     <- TRUE 
-          logLikTrial <- NA
 
-          tryCatch({
-            # P_trial     <- estepLms(model = model, theta = thetaTrial, data = data, ...)
-            logLikTrial <- logLikLms(theta = thetaTrial, model = model, P = P, # P_trial, 
-                                     data = data, sign = 1)
+          logLikTrial <- logLikLms(theta = thetaTrial, model = model, P = P,
+                                   data = data, sign = 1)
 
-          }, error = function(e) trialOK <<- FALSE)
-
-          if (trialOK && logLikTrial >= refLogLik) { 
+          if (!is.na(logLikTrial) && logLikTrial >= refLogLik) { 
             success <- TRUE
             break 
           }
@@ -188,8 +183,11 @@ emLms <- function(model,
           # update BFGS memory if in QN mode
 
           if (mode == "QN") {
-            gradNew <- computeGradient(thetaNew, model, data, P_trial, epsilon)
-            s_vec <- thetaNew - thetaOld; y_vec <- gradNew - grad
+            gradNew <- computeGradient(theta = thetaNew, model = model, 
+                                       data = data, P = P, epsilon = epsilon)
+
+            s_vec <- thetaNew - thetaOld
+            y_vec <- gradNew - grad
 
             if (sum(s_vec * y_vec) > 1e-8) {
               qn_env$s_list <- c(qn_env$s_list, list(s_vec))
@@ -201,7 +199,8 @@ emLms <- function(model,
               }
             }
           }
-        } else model <- "EM"
+        } else mode <- "EM"
+
       } else mode <- "EM"
     }
     
@@ -218,8 +217,8 @@ emLms <- function(model,
   if (verbose) cat("\n")
   warnif(iterations >= max.iter, "Maximum iterations reached!\n",
          "Consider a tweaking these parameters:\n", 
-         formatParameters(convergence, algorithm, max.step, 
-                          max.iter, quad.range, adaptive.quad))
+         formatParameters(convergence.abs, convergence.rel, algorithm, 
+                          max.step, max.iter, quad.range, adaptive.quad))
 
   # Final E- and M-step for output
   P <- estepLms(model = model, theta = thetaNew, data = data, ...)
@@ -262,7 +261,8 @@ emLms <- function(model,
   parTable$ci.lower <- parTable$est - CI_WIDTH * parTable$std.error
   parTable$ci.upper <- parTable$est + CI_WIDTH * parTable$std.error
 
-  convergence_flag <- ifelse(iterations < max.iter & abs(deltaLL) >= convergence, TRUE, abs(deltaLL) < convergence)
+  convergence_flag <- iterations < max.iter
+
   out <- list(
     model         = finalModel,
     start.model   = model,

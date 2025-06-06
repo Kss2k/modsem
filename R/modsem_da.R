@@ -20,7 +20,15 @@
 #' where data is non-normal, it might be better to use the \code{qml} approach instead. For large
 #' numbers of nodes, you might want to change the \code{'quad.range'} argument.
 #'
-#' @param convergence convergence criterion. Lower values give better estimates but slower computation.
+#' @param convergence.abs Absolute convergence criterion. 
+#'   Lower values give better estimates but slower computation. Not relevant when
+#'   using the QML approach. For the LMS approach the EM-algorithm stops whenever
+#'   the relative or absolute convergence criterion is reached.
+#'
+#' @param convergence.rel Relative convergence criterion. 
+#'   Lower values give better estimates but slower computation.
+#'   For the LMS approach the EM-algorithm stops whenever
+#'   the relative or absolute convergence criterion is reached.
 #'
 #' @param optimizer optimizer to use, can be either \code{"nlminb"} or \code{"L-BFGS-B"}. For LMS, \code{"nlminb"} is recommended.
 #' For QML, \code{"L-BFGS-B"} may be faster if there is a large number of iterations, but slower if there are few iterations.
@@ -174,7 +182,8 @@ modsem_da <- function(model.syntax = NULL,
                       verbose = NULL,
                       optimize = NULL,
                       nodes = NULL,
-                      convergence = NULL,
+                      convergence.abs = NULL,
+                      convergence.rel = NULL,
                       optimizer = NULL,
                       center.data = NULL,
                       standardize.data = NULL,
@@ -221,7 +230,8 @@ modsem_da <- function(model.syntax = NULL,
           verbose = verbose,
           optimize = optimize,
           nodes = nodes,
-          convergence = convergence,
+          convergence.abs = convergence.abs,
+          convergence.rel = convergence.rel,
           optimizer = optimizer,
           center.data = center.data,
           standardize.data = standardize.data,
@@ -290,7 +300,7 @@ modsem_da <- function(model.syntax = NULL,
   est <- tryCatch(switch(method,
     "qml" = estQml(model,
       verbose = args$verbose,
-      convergence = args$convergence,
+      convergence = args$convergence.rel,
       calc.se = args$calc.se,
       FIM = args$FIM,
       EFIM.S = args$EFIM.S,
@@ -305,7 +315,8 @@ modsem_da <- function(model.syntax = NULL,
     ),
     "lms" = emLms(model,
       verbose = args$verbose,
-      convergence = args$convergence,
+      convergence.abs = args$convergence.abs,
+      convergence.rel = args$convergence.rel,
       calc.se = args$calc.se,
       FIM = args$FIM,
       EFIM.S = args$EFIM.S,
