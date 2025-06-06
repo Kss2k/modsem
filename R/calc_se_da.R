@@ -145,13 +145,14 @@ calcOFIM_LMS <- function(model, theta, data, hessian = FALSE,
                 .relStep = .Machine$double.eps^(1/5))
     return(I)
   }
+
   J <- gradientObsLogLikLms_i(theta, model = model, data = data,
                            P = P, sign = 1, epsilon = epsilon)
   I <- matrix(0, nrow = length(theta), ncol = length(theta))
 
   for (i in seq_len(N)) {
     J_i <- J[i,]
-    I <- I + J %*% t(J)
+    I <- I + J_i %*% t(J_i)
   }
 
   I
