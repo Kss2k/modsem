@@ -223,6 +223,11 @@ modsem_da <- function(model.syntax = NULL,
     data <- as.data.frame(data)
   }
 
+  if ("convergence" %in% names(list(...))) {
+    convergence.rel <- additionalArgs$convergence
+    warning2("Argument 'convergence' is deprecated, use 'convergence.rel' instead.")
+  }
+
   args <-
     getMethodSettingsDA(method,
       args =
