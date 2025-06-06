@@ -75,7 +75,7 @@ finiteGaussQuadrature <- function(a, b, m = 10, k = 1) {
       x1 <- intersects[[j]]
       x2 <- intersects[[j + 1L]]
       nodes1d[[j]]   <- (x1 + x2) / 2
-      weights1d[[j]] <- pnorm(x2) - pnorm(x1)
+      weights1d[[j]] <- stats::pnorm(x2) - stats::pnorm(x1)
     }
     list(nodes = nodes1d, weights = weights1d, intersects = intersects)
   }
@@ -125,8 +125,8 @@ adaptiveGaussQuadrature <- function(fun, a = -7, b = 7, m.start = 4, m.max = 32,
   }
 
   c_mid <- (a + b) / 2
-  Ea <- dnorm(a) * fun(matrix(a), ...)
-  Eb <- dnorm(b) * fun(matrix(b), ...)
+  Ea <- stats::dnorm(a) * fun(matrix(a), ...)
+  Eb <- stats::dnorm(b) * fun(matrix(b), ...)
 
   if (Ea < Eb) {
     a_left <- a; b_left <- c_mid; a_right <- c_mid; b_right <- b
