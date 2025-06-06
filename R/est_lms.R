@@ -131,12 +131,15 @@ emLms <- function(model,
 
     # Determine Mode
     if (algorithm == "EMA") {
+      previousMode <- mode
+
       if      (mode == "EM" && abs(relDeltaLL) < 1e-4) mode <- "QN"
       else if (mode == "QN" && abs(relDeltaLL) < tau3) mode <- "FS"
       else if (mode == "FS" && abs(relDeltaLL) < tau4) run <- FALSE
 
-      # Log mode change if verbose
-      updateStatusLog(iterations, mode, logLikNew, deltaLL, relDeltaLL, verbose)
+      if (mode != previousMode) { # Log mode change if verbose
+        updateStatusLog(iterations, mode, logLikNew, deltaLL, relDeltaLL, verbose)
+      }
     }
 
 
