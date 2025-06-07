@@ -88,11 +88,14 @@ estepLms <- function(model, theta, data, last.integral = NULL, ...) {
       b = model$quad$b, 
       modFilled = modFilled, 
       data = data,
-      m.start = model$quad$m.start, 
-      m.max = model$quad$m, 
+      # m.start = model$quad$m.start, 
+      # m.max = model$quad$m, 
+      m = model$quad$m,
       k = model$quad$k,
-      tol = model$quad$adaptive.quad.tol,
-      total.integral = last.integral
+      # tol = model$quad$adaptive.quad.tol,
+      rel.tol = model$quad$adaptive.quad.tol,
+      total.integral = last.integral,
+      type = "symmetric"
     )
   } else quad <- model$quad
 
