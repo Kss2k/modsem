@@ -200,14 +200,12 @@ mstepLms <- function(theta, model, data, P,
 
   if (optimizer == "nlminb") {
     if (is.null(control$iter.max)) control$iter.max <- max.step
-    preObjective <- logLikLms(theta=theta, model=model, P=P, sign=1, data=data)
     est <- stats::nlminb(start = theta, objective = logLikLms, data = data,
                          model = model, P = P, gradient = gradient,
                          sign = -1,
                          upper = model$info$bounds$upper,
                          lower = model$info$bounds$lower, control = control,
                          ...) |> suppressWarnings()
-    postObjective <- logLikLms(theta=est$par, model=model, P=P, sign=1, data=data)
 
   } else if (optimizer == "L-BFGS-B") {
     if (is.null(control$maxit)) control$maxit <- max.step
