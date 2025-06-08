@@ -228,3 +228,52 @@ mstepLms <- function(theta, model, data, P,
 
   est
 }
+
+
+example_adaptive_quad <- function() {
+library(numDeriv)      # for grad if you need it
+
+## -- prepare model skeleton & data ------------------------------------------
+model          <- readRDS("myModelSkeleton.rds")
+model$quad$k   <- 2L           # dimension of z1
+model$quad$m   <- 5L           # 5 nodes per dim
+model$quad$adaptive <- TRUE
+
+theta <- theta_start           # numeric vector
+data  <- myDataMatrix          # N × d
+
+## -- fixed GH grid reused inside loop ---------------------------------------
+gh  <- gh_rule_cpp(k = model$quad$k, m = model$quad$m)
+S   <- gh$S;  w_std <- gh$w
+
+for (iter in 1:200) {
+
+  ## E-step ------------------------------------------------------------------
+  cachePtr <- estep_cpp(fillModel(model, theta, "lms"),
+                        data, S, w_std)
+
+  ## optional monitoring
+  obsLL <- obs_loglik_from_cache(cachePtr)
+  cat(sprintf("iter %3d  obs-LL %.3f\n", iter, obsLL))
+
+  ## M-step ------------------------------------------------------------------
+  fn <- function(th, model, ptr)
+    -loglik_mstep_cpp(fillModel(model, th, "lms"), ptr)
+
+  opt <- optim(theta, fn, model = model, ptr = cachePtr,
+               method = "BFGS", control = list(reltol = 1e-8))
+
+  theta_new <- opt$par
+  free_cache(cachePtr)          # release memory of old grid
+
+  ## convergence check
+  if (max(abs(theta_new - theta)) < 1e-6) break
+  theta <- theta_new
+}
+
+## differentiable observed LL at final θ
+obsLL_final <- obs_loglik_cpp(fillModel(model, theta, "lms"), data, S, w_std)
+grad_final  <- grad(function(th)
+                      obs_loglik_cpp(fillModel(model, th, "lms"),
+                                     data, S, w_std), theta)
+}
