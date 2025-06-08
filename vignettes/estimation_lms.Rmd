@@ -25,8 +25,11 @@ By default the LMS approach uses a standard Expectation-Maximization (EM) algori
 along with a fixed quadrature. 
 
 However, it is possible to use an accelerated EM procedure (`"EMA"`) that uses Quasi-Newton and Fisher
-Scoring optimization steps when needed. It is also possible to use an adaptive quadrature 
-instead of a fixed quadrature. Using the EMA and adaptive quadrature might yield 
+Scoring optimization steps when needed. It is also possible to use a quasi-adaptive quadrature 
+instead of a fixed quadrature. Due to performance reasons, the adaptive quadrature does not fit an
+individual quadrature to each participant, but instead one for the entire sample (at each EM iteration), 
+based on the whole sample densities of the likelihood function. This usually means that more nodes are placed towards the
+center of the distribution, compared to a standard fixed Gauss-Hermite quadrature. Using the EMA and adaptive quadrature might yield 
 estimates that are closer to results from `Mplus`.
 
 If the model struggles to converge, you can try using the accelerated EM procedure by setting `method = "EMA"`,

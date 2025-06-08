@@ -78,12 +78,26 @@ flatLogLikLms <- function(z, modFilled, data) {
 }
 
 
+pdensitySingleLms <- function(z, modFilled, data) {
+  mu <- muLmsCpp(model = modFilled, z = z)
+  sigma <- sigmaLmsCpp(model = modFilled, z = z)
+  sum(dmvn(data, mean = mu, sigma = sigma))
+}
+
+
+pdensityLms <- function(z, modFilled, data) {
+  vapply(seq_len(nrow(z)), FUN.VALUE = numeric(1L), FUN = function(i) {
+    pdensitySingleLms(z = z[i, , drop=FALSE], modFilled = modFilled, data = data)
+  })
+}
+
+
 estepLms <- function(model, theta, data, last.integral = NULL, ...) {
   modFilled <- fillModel(model = model, theta = theta, method = "lms")
 
   if (model$quad$adaptive) {
     quad <- adaptiveGaussQuadrature(
-      flatLogLikLms, 
+      flatLogLikLms, # pdsenityLms should also be considered...
       a = model$quad$a, 
       b = model$quad$b, 
       modFilled = modFilled, 

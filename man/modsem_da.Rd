@@ -141,8 +141,10 @@ Gaussian-Hermite Quadratures. By default \code{Inf}, such that \code{f(t)} is in
 but this will likely be inefficient and pointless at a large number of nodes. Nodes outside
 \code{+/- quad.range} will be ignored.}
 
-\item{adaptive.quad}{should adaptive quadrature be used? If \code{TRUE}, the quadrature nodes will be adapted to the data.
-If \code{FALSE}, the quadrature nodes will be fixed. Default is \code{FALSE}.}
+\item{adaptive.quad}{should a quasi adaptive quadrature be used? If \code{TRUE}, the quadrature nodes will be adapted to the data.
+If \code{FALSE}, the quadrature nodes will be fixed. Default is \code{FALSE}. The adaptive quadrature does not fit an adaptive 
+quadrature to each participant, but instead tries to place more nodes where posterior distribution is highest. Compared with a 
+fixed Gauss Hermite quadrature this usually means that less nodes are placed at the tails of the distribution.}
 
 \item{adaptive.quad.tol}{Relavtive tolerance for determining when the adaptive quadrature is accurate enough}
 

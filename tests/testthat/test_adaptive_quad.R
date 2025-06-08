@@ -10,7 +10,8 @@ m1 <- '
   Y ~ X + Z + X:Z
 '
 
-lms1 <- modsem(m1, oneInt, method = "lms", adaptive.quad=TRUE, optimize=TRUE)
+lms1 <- modsem(m1, oneInt, method = "lms", adaptive.quad=TRUE, optimize=TRUE,
+               algorithm = "EMA")
 
 
 tpb <- ' 
@@ -27,7 +28,8 @@ tpb <- '
   BEH ~ INT:PBC  
 '
 
-lms2 <- modsem(tpb, TPB, method = "lms", nodes = 32, adaptive.quad=TRUE)
+lms2 <- modsem(tpb, TPB, method = "lms", nodes = 32, adaptive.quad=TRUE,
+               algorithm = "EMA")
 summary(lms2)
 
 
