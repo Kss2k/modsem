@@ -85,10 +85,15 @@
 quadrature.</p>
 <p>However, it is possible to use an accelerated EM procedure
 (<code>"EMA"</code>) that uses Quasi-Newton and Fisher Scoring
-optimization steps when needed. It is also possible to use an adaptive
-quadrature instead of a fixed quadrature. Using the EMA and adaptive
-quadrature might yield estimates that are closer to results from
-<code>Mplus</code>.</p>
+optimization steps when needed. It is also possible to use a
+quasi-adaptive quadrature instead of a fixed quadrature. Due to
+performance reasons, the adaptive quadrature does not fit an individual
+quadrature to each participant, but instead one for the entire sample
+(at each EM iteration), based on the whole sample densities of the
+likelihood function. This usually means that more nodes are placed
+towards the center of the distribution, compared to a standard fixed
+Gauss-Hermite quadrature. Using the EMA and adaptive quadrature might
+yield estimates that are closer to results from <code>Mplus</code>.</p>
 <p>If the model struggles to converge, you can try using the accelerated
 EM procedure by setting <code>method = "EMA"</code>, and
 <code>adaptive.quad = TRUE</code> in the <code><a href="../reference/modsem.html">modsem()</a></code> function.
