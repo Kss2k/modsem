@@ -64,49 +64,33 @@ sigmaLms <- function(model, z1) { # for testing purposes
 }
 
 
-llSingleLms <- function(z, modFilled, data) {
+meanDensitySingleLms <- function(z, modFilled, data) {
   mu <- muLmsCpp(model = modFilled, z = z)
   sigma <- sigmaLmsCpp(model = modFilled, z = z)
-  sum(dmvn(data, mean = mu, sigma = sigma, log = TRUE))
+  sum(dmvn(data, mean = mu, sigma = sigma)) # equivalent to using mean, but a bit more
+                                            # stable, as we are using floating points
 }
 
 
-flatLogLikLms <- function(z, modFilled, data) {
+meanDensityLms <- function(z, modFilled, data) {
   vapply(seq_len(nrow(z)), FUN.VALUE = numeric(1L), FUN = function(i) {
-    llSingleLms(z = z[i, , drop=FALSE], modFilled = modFilled, data = data)
+    meanDensitySingleLms(z = z[i, , drop=FALSE], modFilled = modFilled, data = data)
   })
 }
 
 
-pdensitySingleLms <- function(z, modFilled, data) {
-  mu <- muLmsCpp(model = modFilled, z = z)
-  sigma <- sigmaLmsCpp(model = modFilled, z = z)
-  sum(dmvn(data, mean = mu, sigma = sigma))
-}
-
-
-pdensityLms <- function(z, modFilled, data) {
-  vapply(seq_len(nrow(z)), FUN.VALUE = numeric(1L), FUN = function(i) {
-    pdensitySingleLms(z = z[i, , drop=FALSE], modFilled = modFilled, data = data)
-  })
-}
-
-
-estepLms <- function(model, theta, data, last.integral = NULL, ...) {
+estepLms <- function(model, theta, data, ...) {
   modFilled <- fillModel(model = model, theta = theta, method = "lms")
 
   if (model$quad$adaptive) {
     quad <- adaptiveGaussQuadrature(
-      pdsenityLms, #should also be considered...
+      meanDensityLms,
       a = model$quad$a, 
       b = model$quad$b, 
       modFilled = modFilled, 
       data = data,
-      m.start = model$quad$m.start, 
-      m.max = model$quad$m, 
-      k = model$quad$k,
-      tol = model$quad$adaptive.quad.tol,
-      total.integral = last.integral
+      m = model$quad$m, 
+      k = model$quad$k
     )
   } else quad <- model$quad
 

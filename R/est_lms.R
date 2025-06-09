@@ -88,7 +88,8 @@ emLms <- function(model,
   thetaNew  <- model$theta
   logLiks   <- NULL
   direction <- NULL
-  last.integral <- NULL
+  nNegDelta <- 0
+  atN_NegDeltaWarn <- if (model$quad$adaptive) 10 else 1 # not always increasing with adaptive quadrature
 
   qn_env <- new.env(parent = emptyenv())
   qn_env$LBFGS_M <- 5
@@ -106,15 +107,13 @@ emLms <- function(model,
     thetaOld <- thetaNew
 
     # E-step
-    P <- estepLms(model = model, theta = thetaOld, data = data, 
-                  last.integral = last.integral, ...)
+    P <- estepLms(model = model, theta = thetaOld, data = data, ...)
 
     # Convergence Checking
     logLikNew  <- P$obsLL
     logLiks    <- c(logLiks, logLikNew)
     deltaLL    <- logLikNew - logLikOld
     relDeltaLL <- abs(deltaLL / logLikNew)
-    last.integral <- P$integral.quad # used in adaptive quadrature
 
     updateStatusLog(iterations, mode, logLikNew, deltaLL, relDeltaLL, verbose)
 
@@ -122,15 +121,11 @@ emLms <- function(model,
         abs(deltaLL) < convergence.abs ||
         abs(relDeltaLL) < convergence.rel) break
 
-    if (deltaLL < 0) {
+    if (deltaLL < 0) nNegDelta <- nNegDelta + 1
+    if (deltaLL < 0 & nNegDelta == atN_NegDeltaWarn) {
       if (verbose) cat("\n")
       warning2("Loglikelihood is increasing!")
-
-      if (max.step < 100) {
-        message("Increasing max.step...")
-        max.step <- 100
-      }
-    }
+    } 
 
     # Determine Mode
     if (algorithm == "EMA") {

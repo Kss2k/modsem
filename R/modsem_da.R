@@ -104,8 +104,6 @@
 #' quadrature to each participant, but instead tries to place more nodes where posterior distribution is highest. Compared with a 
 #' fixed Gauss Hermite quadrature this usually means that less nodes are placed at the tails of the distribution.
 #'
-#' @param adaptive.quad.tol Relavtive tolerance for determining when the adaptive quadrature is accurate enough 
-#'
 #' @param n.threads number of cores to use for parallel processing. If \code{NULL}, it will use <= 2 threads.
 #' If an integer is specified, it will use that number of threads (e.g., \code{n.threads = 4} will use 4 threads).
 #' If \code{"default"}, it will use the default number of threads (2).
@@ -208,7 +206,6 @@ modsem_da <- function(model.syntax = NULL,
                       epsilon = NULL,
                       quad.range = NULL,
                       adaptive.quad = NULL,
-                      adaptive.quad.tol = NULL,
                       n.threads = NULL,
                       algorithm = NULL,
                       em.control = NULL,
@@ -260,7 +257,6 @@ modsem_da <- function(model.syntax = NULL,
           epsilon = epsilon,
           quad.range = quad.range,
           adaptive.quad = adaptive.quad,
-          adaptive.quad.tol = adaptive.quad.tol,
           n.threads = n.threads,
           algorithm = algorithm,
           em.control = em.control
@@ -285,7 +281,6 @@ modsem_da <- function(model.syntax = NULL,
     double = args$double,
     quad.range = args$quad.range,
     adaptive.quad = args$adaptive.quad,
-    adaptive.quad.tol = args$adaptive.quad.tol
   )
 
   if (args$optimize) {

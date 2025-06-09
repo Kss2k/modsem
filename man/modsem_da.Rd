@@ -34,7 +34,6 @@ modsem_da(
   epsilon = NULL,
   quad.range = NULL,
   adaptive.quad = NULL,
-  adaptive.quad.tol = NULL,
   n.threads = NULL,
   algorithm = NULL,
   em.control = NULL,
@@ -145,8 +144,6 @@ but this will likely be inefficient and pointless at a large number of nodes. No
 If \code{FALSE}, the quadrature nodes will be fixed. Default is \code{FALSE}. The adaptive quadrature does not fit an adaptive 
 quadrature to each participant, but instead tries to place more nodes where posterior distribution is highest. Compared with a 
 fixed Gauss Hermite quadrature this usually means that less nodes are placed at the tails of the distribution.}
-
-\item{adaptive.quad.tol}{Relavtive tolerance for determining when the adaptive quadrature is accurate enough}
 
 \item{n.threads}{number of cores to use for parallel processing. If \code{NULL}, it will use <= 2 threads.
 If an integer is specified, it will use that number of threads (e.g., \code{n.threads = 4} will use 4 threads).

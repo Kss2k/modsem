@@ -7,7 +7,6 @@ quadrature <- function(m, k,
                        a = -7, 
                        b = 7, 
                        m.start = 4, 
-                       adaptive.quad.tol = 1e-4,
                        ...) {
   if (k == 0 || m == 0) {
     return(list(
@@ -53,9 +52,7 @@ quadrature <- function(m, k,
     a = a, 
     b = b, 
     cut = cut,
-    m.start = m.start, 
-    adaptive = adaptive,
-    adaptive.quad.tol = adaptive.quad.tol
+    adaptive = adaptive
   )
 }
 
@@ -96,49 +93,80 @@ finiteGaussQuadrature <- function(a, b, m = 10, k = 1) {
 }
 
 
-adaptiveGaussQuadrature <- function(fun, a = -7, b = 7, m.start = 4, m.max = 32,
-                                    tol = 1e-6, k = 1, total.integral = NULL, ...) {
+adaptiveGaussQuadrature <- function(fun, a = -7, b = 7, m = 32,
+                                    k = 1, ...) {
   stopif(k > 1, "Adaptive quadrature not implemented for multiple dimensions!")
 
-  if (k == 0 || m.max == 0) {
+  if (k == 0 || m == 0) {
     return(list(integral = 0, n = matrix(0), w = 1, f = NA, m = 0, k = k))
   }
 
-  if (m.start >= m.max) {
-    quad <- finiteGaussQuadrature(a = a, b = b, m = m.max, k = k)
-    f <- fun(quad$nodes, ...)
-    integral <- sum(quad$weights * f)
-    return(list(integral = integral, f = f, n = quad$nodes, w = quad$weights, m = quad$m, k = k))
+  nsectors <- round(m / 2) # in the base case all sectors get two nodes each
+  step <- (b - a) / 12 
+  lower <- a + (seq_len(nsectors) - 1) * step
+  upper <- a + seq_len(nsectors) * step
+  
+  sectorsLow  <- vector("list", nsectors)
+  sectorsHigh <- vector("list", nsectors)
+
+  for (i in seq_len(nsectors)) {
+    low <- finiteGaussQuadrature(m = 1, a = lower[i], b = upper[i], k = k)
+    high <- finiteGaussQuadrature(m = 5, a = lower[i], b = upper[i], k = k)
+    
+    low$d <- fun(low$nodes, ...)
+    low$f <- low$weights * low$d
+    
+    high$d <- fun(high$nodes, ...)
+    high$f <- high$weights * high$d
+
+    sectorsLow[[i]]  <- low
+    sectorsHigh[[i]] <- high
   }
 
-  quad.l <- finiteGaussQuadrature(a = a, b = b, m = m.start, k = k)
-  quad.h <- finiteGaussQuadrature(a = a, b = b, m = m.start * 2, k = k)
-  f.l <- fun(quad.l$nodes, ...)
-  f.h <- fun(quad.h$nodes, ...)
-  integral.l <- sum(quad.l$weights * f.l)
-  integral.h <- sum(quad.h$weights * f.h)
 
-  if (is.null(total.integral)) total.integral <- integral.h
+  available <- m - nsectors
+  sector <- 1
+  while (available) {
+    maxdiff       <- NA
+    maxdiffSector <- NA
 
-  E <- abs(integral.h - integral.l) / abs(total.integral)
+    for (i in seq_len(nsectors)) {
+      high <- sectorsHigh[[i]]
+      low  <- sectorsLow[[i]]
 
-  if (E < tol || m.start >= m.max) {
-    return(list(integral = integral.l, f = f.l, n = quad.l$nodes, w = quad.l$weights, m = quad.l$m, k = k))
+      diff <- abs(sum(high$f) - sum(low$f))
+
+      if (is.na(maxdiff) || diff > maxdiff) {
+        maxdiff       <- diff
+        maxdiffSector <- i
+      }
+    }
+
+    stopif(is.na(maxdiff), "Unexpected NA in maxdiff!")
+
+    newM <- sectorsLow[[maxdiffSector]]$m + 1
+    newQ <- finiteGaussQuadrature(m = newM, k = k,
+                                  a = lower[maxdiffSector], 
+                                  b = upper[maxdiffSector])
+
+    newQ$d <- fun(newQ$nodes, ...)
+    newQ$f <- newQ$weights * newQ$d
+
+    sectorsLow[[maxdiffSector]] <- newQ
+    available <- available - 1
   }
 
-  c_mid <- (a + b) / 2
-  Ea <- stats::dnorm(a) * fun(matrix(a), ...)
-  Eb <- stats::dnorm(b) * fun(matrix(b), ...)
-
-  if (Ea < Eb) {
-    a_left <- a; b_left <- c_mid; a_right <- c_mid; b_right <- b
-  } else {
-    a_left <- c_mid; b_left <- b; a_right <- a; b_right <- c_mid
+  n <- NULL
+  w <- NULL
+  f <- NULL
+  d <- NULL
+  
+  for (quad in sectorsLow) {
+    n <- rbind(n, quad$nodes)
+    w <- c(w, quad$w)
+    f <- c(f, quad$f)
+    d <- c(d, quad$d)
   }
 
-  left <- adaptiveGaussQuadrature(fun, a_left, b_left, m.start, round(m.max / 2), tol, 1, total.integral, ...)
-  right <- adaptiveGaussQuadrature(fun, a_right, b_right, m.start, m.max - left$m, tol, 1, total.integral, ...)
-
-  list(integral = left$integral + right$integral, f = c(left$f, right$f), m = left$m + right$m,
-       n = rbind(left$n, right$n), w = c(left$w, right$w), k = k)
+  list(n = n, w = w, f = f, d = d, k = k, m = m)
 }
