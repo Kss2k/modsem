@@ -75,3 +75,10 @@ var_interactions.modsem_mplus <- function(object, ...) {
 standardized_estimates.modsem_mplus <- function(object, ...) {
   standardized_estimates.data.frame(parameter_estimates(object))
 }
+
+
+#' @export
+#' @importFrom stats nobs
+nobs.modsem_mplus <- function(object, ...) {
+  NROW(object$data)
+}
