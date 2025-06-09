@@ -97,7 +97,7 @@ estepLms <- function(model, theta, data, last.integral = NULL, ...) {
 
   if (model$quad$adaptive) {
     quad <- adaptiveGaussQuadrature(
-      flatLogLikLms, # pdsenityLms should also be considered...
+      pdsenityLms, #should also be considered...
       a = model$quad$a, 
       b = model$quad$b, 
       modFilled = modFilled, 
