@@ -102,10 +102,10 @@ adaptiveGaussQuadrature <- function(fun, a = -7, b = 7, m = 32,
   }
 
   nsectors <- round(m / 2) # in the base case all sectors get two nodes each
-  step <- (b - a) / 12 
+  step <- (b - a) / nsectors
   lower <- a + (seq_len(nsectors) - 1) * step
   upper <- a + seq_len(nsectors) * step
-  
+
   sectorsLow  <- vector("list", nsectors)
   sectorsHigh <- vector("list", nsectors)
 
