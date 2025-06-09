@@ -78,7 +78,7 @@ flatLogLikLms <- function(z, modFilled, data) {
 }
 
 
-estepLms <- function(model, theta, data, last.integral = NULL, ...) {
+estepLms2 <- function(model, theta, data, last.integral = NULL, ...) {
   modFilled <- fillModel(model = model, theta = theta, method = "lms")
 
   if (model$quad$adaptive) {
@@ -135,35 +135,35 @@ estepLms <- function(model, theta, data, last.integral = NULL, ...) {
 }
 
 
-logLikLms <- function(theta, model, data, P, sign = -1, ...) {
-  modFilled <- fillModel(model = model, theta = theta, method = "lms")
-  k <- model$quad$k
-  V <- P$V
-  n <- nrow(data)
-  d <- ncol(data)
-  # summed log probability of observing the data given the parameters
-  # weighted my the posterior probability calculated in the E-step
-  r <- vapply(seq_len(nrow(V)), FUN.VALUE = numeric(1L), FUN = function(i) {
-    if (P$tgamma[[i]] < .Machine$double.xmin) return(0)
-
-    totalDmvnWeightedCpp(mu=muLmsCpp(model=modFilled, z=V[i, ]),
-                         sigma=sigmaLmsCpp(model=modFilled, z=V[i, ]), 
-                         nu=P$mean[[i]], S=P$cov[[i]], tgamma=P$tgamma[[i]], 
-                         n = n, d = d)
-
-  })
-
-  
-  sign * sum(r)
-}
-
-
+# logLikLms <- function(theta, model, data, P, sign = -1, ...) {
+#   modFilled <- fillModel(model = model, theta = theta, method = "lms")
+#   k <- model$quad$k
+#   V <- P$V
+#   n <- nrow(data)
+#   d <- ncol(data)
+#   # summed log probability of observing the data given the parameters
+#   # weighted my the posterior probability calculated in the E-step
+#   r <- vapply(seq_len(nrow(V)), FUN.VALUE = numeric(1L), FUN = function(i) {
+#     if (P$tgamma[[i]] < .Machine$double.xmin) return(0)
+# 
+#     totalDmvnWeightedCpp(mu=muLmsCpp(model=modFilled, z=V[i, ]),
+#                          sigma=sigmaLmsCpp(model=modFilled, z=V[i, ]), 
+#                          nu=P$mean[[i]], S=P$cov[[i]], tgamma=P$tgamma[[i]], 
+#                          n = n, d = d)
+# 
+#   })
+# 
+#   
+#   sign * sum(r)
+# }
+# 
+# 
 gradientLogLikLms <- function(theta, model, data, P, sign = -1, epsilon = 1e-4) {
   baseLL <- logLikLms(theta, model = model, data = data, P = P, sign = sign)
-  vapply(seq_along(theta), FUN.VALUE = numeric(1L), FUN = function(i) {
+  parallel::mclapply(seq_along(theta), FUN = function(i) {
     theta[[i]] <- theta[[i]] + epsilon
     (logLikLms(theta, model = model, data = data, P = P, sign = sign) - baseLL) / epsilon
-  })
+  }, mc.cores = ThreadEnv$n.threads)
 }
 
 
@@ -203,14 +203,12 @@ mstepLms <- function(theta, model, data, P,
 
   if (optimizer == "nlminb") {
     if (is.null(control$iter.max)) control$iter.max <- max.step
-    preObjective <- logLikLms(theta=theta, model=model, P=P, sign=1, data=data)
     est <- stats::nlminb(start = theta, objective = logLikLms, data = data,
                          model = model, P = P, gradient = gradient,
                          sign = -1,
                          upper = model$info$bounds$upper,
                          lower = model$info$bounds$lower, control = control,
                          ...) |> suppressWarnings()
-    postObjective <- logLikLms(theta=est$par, model=model, P=P, sign=1, data=data)
 
   } else if (optimizer == "L-BFGS-B") {
     if (is.null(control$maxit)) control$maxit <- max.step
@@ -227,53 +225,4 @@ mstepLms <- function(theta, model, data, P,
   }
 
   est
-}
-
-
-example_adaptive_quad <- function() {
-library(numDeriv)      # for grad if you need it
-
-## -- prepare model skeleton & data ------------------------------------------
-model          <- readRDS("myModelSkeleton.rds")
-model$quad$k   <- 2L           # dimension of z1
-model$quad$m   <- 5L           # 5 nodes per dim
-model$quad$adaptive <- TRUE
-
-theta <- theta_start           # numeric vector
-data  <- myDataMatrix          # N × d
-
-## -- fixed GH grid reused inside loop ---------------------------------------
-gh  <- gh_rule_cpp(k = model$quad$k, m = model$quad$m)
-S   <- gh$S;  w_std <- gh$w
-
-for (iter in 1:200) {
-
-  ## E-step ------------------------------------------------------------------
-  cachePtr <- estep_cpp(fillModel(model, theta, "lms"),
-                        data, S, w_std)
-
-  ## optional monitoring
-  obsLL <- obs_loglik_from_cache(cachePtr)
-  cat(sprintf("iter %3d  obs-LL %.3f\n", iter, obsLL))
-
-  ## M-step ------------------------------------------------------------------
-  fn <- function(th, model, ptr)
-    -loglik_mstep_cpp(fillModel(model, th, "lms"), ptr)
-
-  opt <- optim(theta, fn, model = model, ptr = cachePtr,
-               method = "BFGS", control = list(reltol = 1e-8))
-
-  theta_new <- opt$par
-  free_cache(cachePtr)          # release memory of old grid
-
-  ## convergence check
-  if (max(abs(theta_new - theta)) < 1e-6) break
-  theta <- theta_new
-}
-
-## differentiable observed LL at final θ
-obsLL_final <- obs_loglik_cpp(fillModel(model, theta, "lms"), data, S, w_std)
-grad_final  <- grad(function(th)
-                      obs_loglik_cpp(fillModel(model, th, "lms"),
-                                     data, S, w_std), theta)
 }

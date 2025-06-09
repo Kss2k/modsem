@@ -40,6 +40,6 @@ gradientObsLogLikLms_i <- function(theta, model, data, P, sign = -1, epsilon = 1
 
   lapplyMatrix(seq_along(theta), FUN = function(i) {
     theta[[i]] <- theta[[i]] + epsilon
-    (logLikLms_i(theta, model, data = data, P = P, sign = sign) - baseLL) / epsilon
+    (obslogLikLms_i(theta, model, data = data, P = P, sign = sign) - baseLL) / epsilon
   }, FUN.VALUE = numeric(nrow(data)))
 }

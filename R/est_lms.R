@@ -126,10 +126,10 @@ emLms <- function(model,
       if (verbose) cat("\n")
       warning2("Loglikelihood is increasing!")
 
-      if (max.step < 100) {
-        message("Increasing max.step...")
-        max.step <- 100
-      }
+      # if (max.step < 100) {
+      #   message("Increasing max.step...")
+      #   max.step <- 100
+      # }
     }
 
     # Determine Mode

@@ -11,6 +11,43 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// QuadGrid2XPtr
+SEXP QuadGrid2XPtr(const Rcpp::List& quadR);
+RcppExport SEXP _modsem_QuadGrid2XPtr(SEXP quadRSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type quadR(quadRSEXP);
+    rcpp_result_gen = Rcpp::wrap(QuadGrid2XPtr(quadR));
+    return rcpp_result_gen;
+END_RCPP
+}
+// completeLogLikLmsCpp
+double completeLogLikLmsCpp(const Rcpp::List& modelR, const arma::mat& data, const SEXP xpCache);
+RcppExport SEXP _modsem_completeLogLikLmsCpp(SEXP modelRSEXP, SEXP dataSEXP, SEXP xpCacheSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type modelR(modelRSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type data(dataSEXP);
+    Rcpp::traits::input_parameter< const SEXP >::type xpCache(xpCacheSEXP);
+    rcpp_result_gen = Rcpp::wrap(completeLogLikLmsCpp(modelR, data, xpCache));
+    return rcpp_result_gen;
+END_RCPP
+}
+// obsLogLikLmsCpp
+double obsLogLikLmsCpp(const Rcpp::List& modelR, const arma::mat& data, const Rcpp::List& quadR);
+RcppExport SEXP _modsem_obsLogLikLmsCpp(SEXP modelRSEXP, SEXP dataSEXP, SEXP quadRSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type modelR(modelRSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type data(dataSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type quadR(quadRSEXP);
+    rcpp_result_gen = Rcpp::wrap(obsLogLikLmsCpp(modelR, data, quadR));
+    return rcpp_result_gen;
+END_RCPP
+}
 // calcSESimpleSlopes
 arma::vec calcSESimpleSlopes(arma::mat const& X, arma::mat const& V);
 RcppExport SEXP _modsem_calcSESimpleSlopes(SEXP XSEXP, SEXP VSEXP) {
@@ -179,6 +216,9 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_modsem_QuadGrid2XPtr", (DL_FUNC) &_modsem_QuadGrid2XPtr, 1},
+    {"_modsem_completeLogLikLmsCpp", (DL_FUNC) &_modsem_completeLogLikLmsCpp, 3},
+    {"_modsem_obsLogLikLmsCpp", (DL_FUNC) &_modsem_obsLogLikLmsCpp, 3},
     {"_modsem_calcSESimpleSlopes", (DL_FUNC) &_modsem_calcSESimpleSlopes, 2},
     {"_modsem_muLmsCpp", (DL_FUNC) &_modsem_muLmsCpp, 2},
     {"_modsem_sigmaLmsCpp", (DL_FUNC) &_modsem_sigmaLmsCpp, 2},
