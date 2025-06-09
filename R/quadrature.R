@@ -22,30 +22,32 @@ quadrature <- function(m, k,
       adaptive = FALSE
     ))
   }
-
-  singleDimGauss <- fastGHQuad::gaussHermiteData(m)
-
-  nodes <- singleDimGauss$x
-  weights <- singleDimGauss$w
-
-  select <- abs(nodes) < cut
-  nodes <- nodes[select]
-  weights  <- weights[select]
-  m <- if (!adaptive) length(weights) else m
-
-  nodes <- lapply(seq_len(k), function(k) nodes) |>
-    expand.grid() |> as.matrix()
-  weights <- lapply(seq_len(k), function(k) weights) |>
-    expand.grid() |> apply(MARGIN = 1, prod)
+  
 
   if (is.finite(cut)) {
     a <- -cut
     b <- cut
+    singleDimGauss <- finiteGaussQuadrature(m = m, k = k, a = -7, b = 7)
+    nodes <- singleDimGauss$nodes
+    weights <- singleDimGauss$weights
+
+  } else {
+    singleDimGauss <- fastGHQuad::gaussHermiteData(m)
+    nodes <- singleDimGauss$x
+    weights <- singleDimGauss$w
+
+    nodes <- lapply(seq_len(k), function(k) nodes) |>
+      expand.grid() |> as.matrix()
+    weights <- lapply(seq_len(k), function(k) weights) |>
+      expand.grid() |> apply(MARGIN = 1, prod)
+    
+    nodes <- sqrt(2) * nodes
+    weights <- weights * pi ^ (-k/2)
   }
 
   list(
-    n = nodes * sqrt(2), 
-    w = weights * pi ^ (-k/2), 
+    n = nodes,
+    w = weights,
     k = k, 
     m = m,
     a = a, 

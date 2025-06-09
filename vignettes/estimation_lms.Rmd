@@ -40,7 +40,7 @@ and `adaptive.quad = TRUE` in the `modsem()` function. Additionally it is possib
 - `convergence.rel`: Relative convergence criterion for the EM algorithm.
 - `convergence.abs`: Absolute convergence criterion for the EM algorithm.
 - `nodes`: Number of nodes for numerical integration (default is 24). Increasing this number can improve the accuracy of the estimates, especially for complex models.
-- `quad.range`: Integration range for quadrature. Smaller ranges means that the integral is more focused.
+- `quad.range`: Integration range for quadrature. Smaller ranges means that the integral is more focused. Applies to both fixed and quasi-adaptive quadratures.
 - `adaptive.quad.tol`: Relative tolerance for determining whether a sub-interval of the adaptive quadrature is accurate enough.
 
 Here we can see an example using the `TPB_UK` dataaset, which is more troublesome to
