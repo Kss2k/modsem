@@ -1,11 +1,12 @@
-#' Estimation latent interactions through mplus
+#' Estimation latent interactions through \code{Mplus}
 #'
 #' @param model.syntax lavaan/modsem syntax
 #' @param data dataset
-#' @param estimator estimator argument passed to mplus
-#' @param type type argument passed to mplus
-#' @param algorithm algorithm argument passed to mplus
-#' @param process process argument passed to mplus
+#' @param estimator estimator argument passed to \code{Mplus}
+#' @param type type argument passed to \code{Mplus}
+#' @param algorithm algorithm argument passed to \code{Mplus}
+#' @param process process argument passed to \code{Mplus}
+#' @param integration integration argument passed to \code{Mplus}
 #' @param ... arguments passed to other functions
 #'
 #' @return modsem_mplus object
@@ -32,8 +33,8 @@
 #' '
 #'
 #' \dontrun{
-#' estTpbMplus <- modsem_mplus(tpb, data = TPB)
-#' summary(estTpbMplus)
+#' est_mplus <- modsem_mplus(tpb, data = TPB)
+#' summary(est_mplus)
 #' }
 #'
 modsem_mplus <- function(model.syntax,
@@ -41,7 +42,8 @@ modsem_mplus <- function(model.syntax,
                          estimator = "ml",
                          type = "random",
                          algorithm = "integration",
-                         process = "8",
+                         process = 8,
+                         integration = 15,
                          ...) {
   parTable <- modsemify(model.syntax)
   indicators <- unique(parTable[parTable$op == "=~", "rhs", drop = TRUE])
@@ -52,12 +54,13 @@ modsem_mplus <- function(model.syntax,
   model <- MplusAutomation::mplusObject(
     TITLE = "Running Model via Mplus",
     usevariables = indicators,
-    ANALYSIS =
+    ANALYSIS = paste0(
       paste(paste("estimator =", estimator),
             paste("type =", type),
             paste("algorithm =", algorithm),
-            paste("process =", process, ";\n"),
-            sep = ";\n"),
+            paste("process =", process),
+            paste("integration = ", integration),
+            sep = ";\n"), ";\n"), # add final ";"
     MODEL = parTableToMplusModel(parTable, ...),
     rdata = data[indicators],
   )
@@ -121,7 +124,7 @@ modsem_mplus <- function(model.syntax,
   interceptNames <- grepl(patternIntercept, covStructMeasrRemoved$lhsOpRhs, perl = TRUE)
   interceptLhs <- stringr::str_split_i(covStructMeasrRemoved$lhsOpRhs[interceptNames],
                                   "<-", i = 1)
-  interceptModel <- data.frame(lhs = interceptLhs, op = "~", rhs = 1) |>
+  interceptModel <- data.frame(lhs = interceptLhs, op = "~1", rhs = "") |>
     cbind(covStructMeasrRemoved[interceptNames, c("est", "std.error", "p.value")])
 
   mplusParTable <- rbind(measModel, structModel, covVarModel, interceptModel)

@@ -2,7 +2,7 @@
 % Please edit documentation in R/modsem_mplus.R
 \name{modsem_mplus}
 \alias{modsem_mplus}
-\title{Estimation latent interactions through mplus}
+\title{Estimation latent interactions through \code{Mplus}}
 \usage{
 modsem_mplus(
   model.syntax,
@@ -10,7 +10,8 @@ modsem_mplus(
   estimator = "ml",
   type = "random",
   algorithm = "integration",
-  process = "8",
+  process = 8,
+  integration = 15,
   ...
 )
 }
@@ -19,13 +20,15 @@ modsem_mplus(
 
 \item{data}{dataset}
 
-\item{estimator}{estimator argument passed to mplus}
+\item{estimator}{estimator argument passed to \code{Mplus}}
 
-\item{type}{type argument passed to mplus}
+\item{type}{type argument passed to \code{Mplus}}
 
-\item{algorithm}{algorithm argument passed to mplus}
+\item{algorithm}{algorithm argument passed to \code{Mplus}}
 
-\item{process}{process argument passed to mplus}
+\item{process}{process argument passed to \code{Mplus}}
+
+\item{integration}{integration argument passed to \code{Mplus}}
 
 \item{...}{arguments passed to other functions}
 }
@@ -33,7 +36,7 @@ modsem_mplus(
 modsem_mplus object
 }
 \description{
-Estimation latent interactions through mplus
+Estimation latent interactions through \code{Mplus}
 }
 \examples{
 # Theory Of Planned Behavior
@@ -56,8 +59,8 @@ tpb <- '
 '
 
 \dontrun{
-estTpbMplus <- modsem_mplus(tpb, data = TPB)
-summary(estTpbMplus)
+est_mplus <- modsem_mplus(tpb, data = TPB)
+summary(est_mplus)
 }
 
 }
