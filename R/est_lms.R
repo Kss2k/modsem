@@ -77,10 +77,10 @@ emLms <- function(model,
   stopif(anyNA(data), "Remove or replace missing values from data")
 
   # Default thresholds (can be overridden via em.control)
-  tau1 <- if (is.null(em.control$tau1)) 1e-2 else em.control$tau1 # EM->QN if gradNorm < tau1
-  tau2 <- if (is.null(em.control$tau2)) 1e-6 else em.control$tau2 # EM->QN if relΔLL < tau2
-  tau3 <- if (is.null(em.control$tau3)) 1e-8 else em.control$tau3 # QN->FS if gradNorm < tau3
-  tau4 <- if (is.null(em.control$tau4)) 1e-9 else em.control$tau4 # FS->stop if gradNorm < tau4
+  tau  <- convergence.rel
+  tau1 <- if (is.null(em.control$tau1)) tau*1e6 else em.control$tau1 # EM->QN if relDeltaLL < tau1
+  tau2 <- if (is.null(em.control$tau2)) tau*1e2 else em.control$tau2 # QN->FS if relDeltaLL < tau2
+  tau3 <- if (is.null(em.control$tau3)) tau*1e1 else em.control$tau3 # FS->stop if relDeltaLL < tau3
 
   # Initialization
   logLikNew <- -Inf
@@ -136,9 +136,9 @@ emLms <- function(model,
     if (algorithm == "EMA") {
       previousMode <- mode
 
-      if      (mode == "EM" && abs(relDeltaLL) < 1e-4) mode <- "QN"
-      else if (mode == "QN" && abs(relDeltaLL) < tau3) mode <- "FS"
-      else if (mode == "FS" && abs(relDeltaLL) < tau4) run <- FALSE
+      if      (mode == "EM" && abs(relDeltaLL) < tau1) mode <- "QN"
+      else if (mode == "QN" && abs(relDeltaLL) < tau2) mode <- "FS"
+      else if (mode == "FS" && abs(relDeltaLL) < tau3) run <- FALSE
 
       if (mode != previousMode) { # Log mode change if verbose
         updateStatusLog(iterations, mode, logLikNew, deltaLL, relDeltaLL, verbose)
