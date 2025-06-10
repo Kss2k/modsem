@@ -34,6 +34,7 @@ modsem_da(
   epsilon = NULL,
   quad.range = NULL,
   adaptive.quad = NULL,
+  adaptive.frequency = NULL,
   n.threads = NULL,
   algorithm = NULL,
   em.control = NULL,
@@ -135,8 +136,8 @@ fischer information matrix.}
 
 \item{epsilon}{finite difference for numerical derivatives.}
 
-\item{quad.range}{range in z-scores to perform numerical integration in LMS using
-Gaussian-Hermite Quadratures. By default \code{Inf}, such that \code{f(t)} is integrated from -Inf to Inf,
+\item{quad.range}{range in z-scores to perform numerical integration in LMS using, 
+when using quasi-adaptive Gaussian-Hermite Quadratures. By default \code{Inf}, such that \code{f(t)} is integrated from -Inf to Inf,
 but this will likely be inefficient and pointless at a large number of nodes. Nodes outside
 \code{+/- quad.range} will be ignored.}
 
@@ -144,6 +145,9 @@ but this will likely be inefficient and pointless at a large number of nodes. No
 If \code{FALSE}, the quadrature nodes will be fixed. Default is \code{FALSE}. The adaptive quadrature does not fit an adaptive 
 quadrature to each participant, but instead tries to place more nodes where posterior distribution is highest. Compared with a 
 fixed Gauss Hermite quadrature this usually means that less nodes are placed at the tails of the distribution.}
+
+\item{adaptive.frequency}{How often should the quasi-adaptive quadrature be calculated? Defaults to 3, meaning 
+that it is recalculated every third EM-iteration.}
 
 \item{n.threads}{number of cores to use for parallel processing. If \code{NULL}, it will use <= 2 threads.
 If an integer is specified, it will use that number of threads (e.g., \code{n.threads = 4} will use 4 threads).

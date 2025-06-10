@@ -24,6 +24,7 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    epsilon = 1e-4,
                    quad.range = Inf,
                    adaptive.quad = FALSE,
+                   adaptive.frequency = 3,
                    n.threads = NULL,
                    algorithm = "EMA",
                    em.control = list()),
@@ -53,6 +54,7 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    adaptive.quad = FALSE,
                    n.threads = NULL,
                    adaptive.quad = FALSE,
+                   adaptive.frequency = NULL,
                    em.control = NULL,
                    algorithm = NULL
         )
@@ -77,11 +79,6 @@ getMethodSettingsDA <- function(method, args = NULL) {
       !args.out$standardize && args.out$mean.observed
     args.out$OFIM.hessian <-
       args.out$OFIM.hessian && !args.out$robust.se
-
-    if (!is.null(args.out$adaptive.quad) && args.out$adaptive.quad && 
-        !is.null(args.out$quad.range) && is.infinite(args.out$quad.range)) {
-      args.out$quad.range <- 7
-    }
 
     args.out$n.threads <- setThreads(args.out$n.threads)
     args.out

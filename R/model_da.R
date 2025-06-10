@@ -14,7 +14,8 @@ specifyModelDA <- function(syntax = NULL,
                            standardize.out = FALSE,
                            checkModel = TRUE,
                            quad.range = Inf,
-                           adaptive.quad = FALSE) {
+                           adaptive.quad = FALSE,
+                           adaptive.frequency = 3) {
   if (!is.null(syntax)) parTable <- modsemify(syntax)
   stopif(is.null(parTable), "No parTable found")
   
@@ -223,7 +224,8 @@ specifyModelDA <- function(syntax = NULL,
     omegaXiXi  = labelOmegaXiXi)
 
   k <- omegaAndSortedXis$k
-  quad <- quadrature(m, k, cut = quad.range, adaptive = adaptive.quad)
+  quad <- quadrature(m, k, quad.range = quad.range, adaptive = adaptive.quad, 
+                     adaptive.frequency = adaptive.frequency)
 
   model <- list(
     info = list(

@@ -21,12 +21,13 @@ library(modsem)
 ```
 
 # Accelerated EM and Adaptive Quadrature
-By default the LMS approach uses a standard Expectation-Maximization (EM) algorithm to estimate the model parameters, 
-along with a fixed quadrature. 
+By default (as of `v1.0.9`) the LMS approach uses an accelerated EM procedure (`"EMA"`) that uses Quasi-Newton and Fisher
+Scoring optimization steps when needed. If desireable, this can be switched to the standard Expectation-Maximization (EM)
+algorithm, by setting `algorithm = "EM"`.
 
-However, it is possible to use an accelerated EM procedure (`"EMA"`) that uses Quasi-Newton and Fisher
-Scoring optimization steps when needed. It is also possible to use a quasi-adaptive quadrature 
-instead of a fixed quadrature. Due to performance reasons, the adaptive quadrature does not fit an
+By default the LMS approach also uses a fixed Gauss-Hermite quadrature, to estimate a numerical 
+approximation of the log-likelihood. Instead of a fixed quadrature, it is possible to use a
+quasi-adaptive quadrature instead. Due to performance reasons, the adaptive quadrature does not fit an
 individual quadrature to each participant, but instead one for the entire sample (at each EM iteration), 
 based on the whole sample densities of the likelihood function. This usually means that more nodes are placed towards the
 center of the distribution, compared to a standard fixed Gauss-Hermite quadrature. Using the EMA and adaptive quadrature might yield 
@@ -41,6 +42,7 @@ and `adaptive.quad = TRUE` in the `modsem()` function. Additionally it is possib
 - `convergence.abs`: Absolute convergence criterion for the EM algorithm.
 - `nodes`: Number of nodes for numerical integration (default is 24). Increasing this number can improve the accuracy of the estimates, especially for complex models.
 - `quad.range`: Integration range for quadrature. Smaller ranges means that the integral is more focused. Applies to both fixed and quasi-adaptive quadratures.
+- `adaptive.frequency`: How often should the quasi-adaptive quadrature be calculated? Defaults to every third EM iteration.
 
 Here we can see an example using the `TPB_UK` dataaset, which is more troublesome to
 estimate than the simulated `TPB` dataset.
@@ -64,8 +66,9 @@ fit <- modsem(tpb_uk,
               data = TPB_UK, 
               method = "lms", 
               nodes = 32, # Number of nodes for numerical integration
-              adaptive.quad = TRUE, # Use adaptive quadrature
-              algorithm ="EMA", # Use accelerated EM algorithm
+              adaptive.quad = TRUE, # Use quasi-adaptive quadrature
+              adaptive.frequency = 3, # Update the quasi-adaptive quadrature every third EM-iteration
+              algorithm ="EMA", # Use accelerated EM algorithm (Default)
               convergence.abs = 1e-4, # Relative convergence criterion
               convergence.rel = 1e-10, # Relative convergence criterion
               max.iter = 500, # Maximum number of iterations

@@ -80,24 +80,30 @@ densityLms <- function(z, modFilled, data) {
 }
 
 
-estepLms <- function(model, theta, data, ...) {
+estepLms <- function(model, theta, data, lastQuad = NULL, recalcQuad = FALSE, ...) {
   modFilled <- fillModel(model = model, theta = theta, method = "lms")
 
-  if (model$quad$adaptive) {
+  if (model$quad$adaptive && (recalcQuad || is.null(lastQuad))) {
+    m <- model$quad$m
+    a <- model$quad$a
+    b <- model$quad$b
+    m <- model$quad$m
+    k <- model$quad$k
+
+    m.ceil <- if (!is.null(lastQuad)) lastQuad$m.ceil else round(m + m / 2)
+
     quad <- adaptiveGaussQuadrature(
-      fun = densityLms,
-      collapse = \(x) sum(log(rowSums(x))),
-      a = model$quad$a, 
-      b = model$quad$b, 
-      modFilled = modFilled, 
-      data = data,
-      m.ceil = 51,
-      m = model$quad$m, 
-      k = model$quad$k
+      fun = densityLms, collapse = \(x) sum(log(rowSums(x))),
+      modFilled = modFilled, data = data, a = a, b = b, m = m, 
+      k = k, m.ceil = m.ceil
     )
+
+  } else if (model$quad$adaptive) {
+    quad <- lastQuad
+
   } else quad <- model$quad
 
-  V <- as.matrix(quad$n)
+  V <- quad$n
   w <- quad$w
 
   P <- matrix(0, nrow = nrow(data), ncol = length(w))
@@ -129,7 +135,7 @@ estepLms <- function(model, theta, data, ...) {
   }
 
   list(P = P, mean = wMeans, cov = wCovs, tgamma = tGamma, V = V, w = w, 
-       obsLL = observedLogLik, integral.quad = quad$integral)
+       obsLL = observedLogLik, quad = quad)
 }
 
 

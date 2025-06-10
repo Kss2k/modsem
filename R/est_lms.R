@@ -88,8 +88,11 @@ emLms <- function(model,
   thetaNew  <- model$theta
   logLiks   <- NULL
   direction <- NULL
-  nNegDelta <- 0
-  atN_NegDeltaWarn <- if (model$quad$adaptive) 10 else 1 # not always increasing with adaptive quadrature
+  
+  # quadrature info
+  lastQuad     <- NULL
+  adaptiveQuad <- model$quad$adaptive
+  adaptiveFreq <- model$quad$adaptive.frequency
 
   qn_env <- new.env(parent = emptyenv())
   qn_env$LBFGS_M <- 5
@@ -103,11 +106,16 @@ emLms <- function(model,
   while (run) {
     # New iteration
     iterations <- iterations + 1
-    logLikOld <- logLikNew 
-    thetaOld <- thetaNew
+    logLikOld  <- logLikNew 
+    thetaOld   <- thetaNew
+    recalcQuad <- adaptiveQuad && iterations %% adaptiveFreq == 0
 
     # E-step
-    P <- estepLms(model = model, theta = thetaOld, data = data, ...)
+    P <- estepLms(model = model, theta = thetaOld, data = data, 
+                  lastQuad = lastQuad, recalcQuad = recalcQuad, ...)
+
+    # Update Quadrature Info
+    lastQuad <- P$quad
 
     # Convergence Checking
     logLikNew  <- P$obsLL
@@ -121,8 +129,7 @@ emLms <- function(model,
         abs(deltaLL) < convergence.abs ||
         abs(relDeltaLL) < convergence.rel) break
 
-    if (deltaLL < 0) nNegDelta <- nNegDelta + 1
-    if (deltaLL < 0 & nNegDelta == atN_NegDeltaWarn) {
+    if (deltaLL < 0) {
       if (verbose) cat("\n")
       warning2("Loglikelihood is increasing!")
     } 

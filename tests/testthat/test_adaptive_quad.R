@@ -54,13 +54,13 @@ summary(lms3)
 #> Regressions:
 #>                   Estimate  Std.Error  z.value  P(>|z|)
 #>   INT ~ 
-#>     PBC              1.036      0.036    28.45    0.000
-#>     ATT             -0.060      0.030    -2.04    0.041
-#>     SN               0.051      0.033     1.55    0.120
+#>     PBC              1.047      0.036    29.32    0.000
+#>     ATT             -0.067      0.029    -2.33    0.020
+#>     SN               0.052      0.031     1.67    0.096
 #>   BEH ~ 
-#>     PBC              0.398      0.052     7.62    0.000
-#>     INT              0.594      0.049    12.25    0.000
-#>     PBC:INT          0.141      0.008    17.66    0.000
+#>     PBC              0.418      0.053     7.92    0.000
+#>     INT              0.599      0.049    12.26    0.000
+#>     PBC:INT          0.142      0.008    17.82    0.000
 
 # Compared with Mplus
 #> Regressions:
@@ -73,3 +73,20 @@ summary(lms3)
 #>     PBC               0.405      0.052     7.79     0.000
 #>     INT               0.588      0.048    12.25     0.000
 #>     INT:PBC           0.141      0.008    17.62     0.000
+
+
+nlsem <- '
+ENJ =~ enjoy1 + enjoy2 + enjoy3 + enjoy4 + enjoy5
+CAREER =~ career1 + career2 + career3 + career4
+SC =~ academic1 + academic2 + academic3 + academic4 + academic5 + academic6
+CAREER ~ ENJ + SC + ENJ:ENJ + SC:SC + ENJ:SC
+'
+
+testthat::expect_warning({
+  # For such a small number of nodes it doesn't really matter if you use an 
+  # adaptive quadrature, as all the nodes bring some value
+  lms4 <- modsem(nlsem, data = jordan, method = "lms", 
+                 adaptive.quad=TRUE,
+                 nodes = 10, mean.observed = FALSE)
+}, regex = "It is recommended that you have at least 16 nodes.*")
+summary(lms4)
