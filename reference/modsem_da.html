@@ -110,6 +110,7 @@ necessary syntax, and variables for the estimation of models with latent product
 <span>  epsilon <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  quad.range <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  adaptive.quad <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  adaptive.frequency <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  n.threads <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  algorithm <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  em.control <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -266,8 +267,8 @@ fischer information matrix.</p></dd>
 
 
 <dt id="arg-quad-range">quad.range<a class="anchor" aria-label="anchor" href="#arg-quad-range"></a></dt>
-<dd><p>range in z-scores to perform numerical integration in LMS using
-Gaussian-Hermite Quadratures. By default <code>Inf</code>, such that <code>f(t)</code> is integrated from -Inf to Inf,
+<dd><p>range in z-scores to perform numerical integration in LMS using,
+when using quasi-adaptive Gaussian-Hermite Quadratures. By default <code>Inf</code>, such that <code>f(t)</code> is integrated from -Inf to Inf,
 but this will likely be inefficient and pointless at a large number of nodes. Nodes outside
 <code>+/- quad.range</code> will be ignored.</p></dd>
 
@@ -277,6 +278,11 @@ but this will likely be inefficient and pointless at a large number of nodes. No
 If <code>FALSE</code>, the quadrature nodes will be fixed. Default is <code>FALSE</code>. The adaptive quadrature does not fit an adaptive
 quadrature to each participant, but instead tries to place more nodes where posterior distribution is highest. Compared with a
 fixed Gauss Hermite quadrature this usually means that less nodes are placed at the tails of the distribution.</p></dd>
+
+
+<dt id="arg-adaptive-frequency">adaptive.frequency<a class="anchor" aria-label="anchor" href="#arg-adaptive-frequency"></a></dt>
+<dd><p>How often should the quasi-adaptive quadrature be calculated? Defaults to 3, meaning
+that it is recalculated every third EM-iteration.</p></dd>
 
 
 <dt id="arg-n-threads">n.threads<a class="anchor" aria-label="anchor" href="#arg-n-threads"></a></dt>
