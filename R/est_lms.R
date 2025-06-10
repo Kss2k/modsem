@@ -228,7 +228,8 @@ emLms <- function(model,
                           max.step, max.iter, quad.range, adaptive.quad))
 
   # Final E- and M-step for output
-  P <- estepLms(model = model, theta = thetaNew, data = data, ...)
+  P <- estepLms(model = model, theta = thetaNew, data = data, 
+                lastQuad = lastQuad, recalcQuad = FALSE, ...)
   final <- mstepLms(model = model, P = P, data = data,
                     theta = thetaNew, max.step = max.step,
                     epsilon = epsilon, optimizer = optimizer,
@@ -253,7 +254,7 @@ emLms <- function(model,
                     hessian = OFIM.hessian, calc.se = calc.se,
                     EFIM.parametric = EFIM.parametric, verbose = verbose,
                     FIM = FIM, robust.se = robust.se, epsilon = epsilon,
-                    R.max = R.max, NA__ = -999)
+                    R.max = R.max, NA__ = -999, P = P)
   SE <- calcSE_da(calc.se = calc.se, FIM$vcov, rawLabels = FIM$raw.labels,
                   NA__ = -999)
   modelSE <- getSE_Model(model, se = SE, method = "lms",

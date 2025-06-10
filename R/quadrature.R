@@ -62,7 +62,10 @@ adaptiveGaussQuadrature <- function(fun,
                                     m.ceil = m + m / 2,
                                     k = 1, 
                                     iter = 1,
-                                    iter.max = 20,
+                                    iter.max = 40,
+                                    node.max = 1000,
+                                    tol = 1e-12,
+                                    mdiff.tol = 2,
                                     ...) {
   if (k == 0 || m == 0) return(list(n = matrix(0), w = 1, f = NA, m = 1, k = 1))
 
@@ -82,11 +85,63 @@ adaptiveGaussQuadrature <- function(fun,
   quadn <- quadn[isValidNode, , drop = FALSE]
   quadf <- quadf[, isValidNode, drop = FALSE]
   quadw <- quadw[, isValidNode, drop = FALSE]
+  
+  # This doesn't seem to do anything usefull...
+  while (TRUE) {
+    integral.current <- collapse(quadf * quadw)
+    error            <- abs(integral.current - integral.full)
+    m.current        <- nrow(quadn)
+    min.contrib      <- NA 
+    min.index        <- NA
+    i                <- 1
+
+    if (error < tol * integral.full && m.current > m.start) break
+
+    
+    while (i < m.current) {
+      quadsub_n <- quadn[-i, , drop = FALSE]
+      quadsub_f <- quadf[, -i, drop = FALSE]
+      quadsub_w <- quadw[, -i, drop = FALSE]
+      
+      integral.sub <- collapse(quadsub_f * quadsub_w)
+      contrib <- abs(integral.current - integral.sub)
+
+      deleteNow  <- contrib < .Machine$double.xmin * 2
+      isValid    <- contrib < abs(tol * integral.full)
+      isSmallest <- is.na(min.contrib) || contrib < min.contrib
+
+      if (deleteNow) {
+        quadn <- quadsub_n
+        quadf <- quadsub_f
+        quadw <- quadsub_w
+        integral.current <- integral.sub
+
+        m.current <- m.current - 1
+        # do not increment i
+
+      } else if (isValid && isSmallest) {
+        min.contrib <- min(contrib)
+        min.index <- i
+        i <- i + 1
+
+      } else i <- i + 1
+    }
+
+    if (!is.na(min.contrib)) {
+      quadn <- quadn[-min.index, , drop = FALSE]
+      quadf <- quadf[, -min.index, drop = TRUE]
+      quadw <- quadw[, -min.index, drop = TRUE]
+    } else break
+  }
 
   diff.m <- round(nrow(quadn) ^ (1 / k)) - m
+ 
+  if (k > 1) new.ceil <- m.ceil - diff.m
+  else       new.ceil <- round(m.ceil - sign(diff.m) * diff.m ^ 2)
 
-  if (diff.m != 0 && iter < iter.max) {
-    new.ceil <- m.ceil - diff.m
+  reachedMaxNodes <- m.ceil > node.max && new.ceil >= m.ceil
+  if (abs(diff.m) > mdiff.tol && iter < iter.max && !reachedMaxNodes) {
+
     return(adaptiveGaussQuadrature(
       fun = fun, 
       collapse = collapse, 
@@ -96,6 +151,9 @@ adaptiveGaussQuadrature <- function(fun,
       m = m, 
       m.ceil = new.ceil, 
       iter = iter + 1,
+      tol = tol,
+      iter.max = iter.max,
+      node.max = node.max,
       ...
     ))
   }

@@ -87,6 +87,6 @@ testthat::expect_warning({
   # adaptive quadrature, as all the nodes bring some value
   lms4 <- modsem(nlsem, data = jordan, method = "lms", 
                  adaptive.quad=TRUE,
-                 nodes = 10, mean.observed = FALSE)
+                 nodes = 10, mean.observed = FALSE, adaptive.frequency=10)
 }, regex = "It is recommended that you have at least 16 nodes.*")
 summary(lms4)
