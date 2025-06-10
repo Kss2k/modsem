@@ -271,7 +271,7 @@ estMForNodesInRange <- function(k, a, b,
   }
 
   # Use uniroot for inversion
-  root <- uniroot(f, lower = lower, upper = upper, tol = tol)
+  root <- stats::uniroot(f, lower = lower, upper = upper, tol = tol)
 
   root$root
 }
