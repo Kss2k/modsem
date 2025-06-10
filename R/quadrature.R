@@ -86,58 +86,61 @@ adaptiveGaussQuadrature <- function(fun,
   quadf <- quadf[, isValidNode, drop = FALSE]
   quadw <- quadw[, isValidNode, drop = FALSE]
   
-  # This doesn't seem to do anything usefull...
-  while (TRUE) {
-    integral.current <- collapse(quadf * quadw)
-    error            <- abs(integral.current - integral.full)
-    m.current        <- nrow(quadn)
-    min.contrib      <- NA 
-    min.index        <- NA
-    i                <- 1
+  # before the loop, record the minimum allowed nodes
+  m.start <- nrow(quadn)
 
-    if (error < tol * integral.full && m.current > m.start) break
+  # vector of full-integral for thresholding
+  I.full <- integral.full
 
-    
-    while (i < m.current) {
-      quadsub_n <- quadn[-i, , drop = FALSE]
-      quadsub_f <- quadf[, -i, drop = FALSE]
-      quadsub_w <- quadw[, -i, drop = FALSE]
-      
-      integral.sub <- collapse(quadsub_f * quadsub_w)
-      contrib <- abs(integral.current - integral.sub)
+  repeat {
+    # current integral and error
+    I.cur <- collapse(quadf * quadw)
+    err   <- abs(I.cur - I.full)
+    m.cur <- nrow(quadn)
 
-      deleteNow  <- contrib < .Machine$double.xmin * 2
-      isValid    <- contrib < abs(tol * integral.full)
-      isSmallest <- is.na(min.contrib) || contrib < min.contrib
+    # if we're within tolerance or cannot drop below m.start, stop
+    if (err < tol * abs(I.full) || m.cur <= m.start) break
 
-      if (deleteNow) {
-        quadn <- quadsub_n
-        quadf <- quadsub_f
-        quadw <- quadsub_w
-        integral.current <- integral.sub
+    # compute per-node contributions in one pass:
+    # c[j] = contribution of node j to the integral
+    contributions <- apply(quadf * quadw, 2, collapse)
 
-        m.current <- m.current - 1
-        # do not increment i
+    # identify nodes trivially safe to remove
+    removable <- which(abs(contributions) < tol * abs(I.full))
 
-      } else if (isValid && isSmallest) {
-        min.contrib <- min(contrib)
-        min.index <- i
-        i <- i + 1
-
-      } else i <- i + 1
+    if (length(removable) > 0) {
+      # update everything by dropping them all at once
+      quadn <- quadn[-removable, , drop = FALSE]
+      quadf <- quadf[, -removable, drop = FALSE]
+      quadw <- quadw[, -removable, drop = FALSE]
+      # subtract their total from the current integral
+      I.cur  <- I.cur - sum(contributions[removable])
+      next
     }
 
-    if (!is.na(min.contrib)) {
-      quadn <- quadn[-min.index, , drop = FALSE]
-      quadf <- quadf[, -min.index, drop = TRUE]
-      quadw <- quadw[, -min.index, drop = TRUE]
-    } else break
+    # if no bulk‐removable nodes, try peeling off the single smallest
+    rank.idx <- order(abs(contributions))
+    for (j in rank.idx) {
+      if (m.cur <= m.start) break
+      # would removing j be acceptable?
+      if (abs(contributions[j]) < err) {
+        quadn <- quadn[-j, , drop = FALSE]
+        quadf <- quadf[, -j, drop = FALSE]
+        quadw <- quadw[, -j, drop = FALSE]
+        I.cur  <- I.cur - contributions[j]
+        m.cur  <- m.cur - 1
+        # update error and restart removal loop
+        err <- abs(I.cur - I.full)
+        break
+      }
+    }
+
+    # if no single removal was made, exit
+    if (err >= tol * abs(I.full)) break
   }
 
   diff.m <- round(nrow(quadn) ^ (1 / k)) - m
- 
-  if (k > 1) new.ceil <- m.ceil - diff.m
-  else       new.ceil <- round(m.ceil - sign(diff.m) * diff.m ^ 2)
+  new.ceil <- m.ceil - diff.m
 
   reachedMaxNodes <- m.ceil > node.max && new.ceil >= m.ceil
   if (abs(diff.m) > mdiff.tol && iter < iter.max && !reachedMaxNodes) {
