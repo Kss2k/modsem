@@ -86,9 +86,6 @@ adaptiveGaussQuadrature <- function(fun,
   quadf <- quadf[, isValidNode, drop = FALSE]
   quadw <- quadw[, isValidNode, drop = FALSE]
   
-  # before the loop, record the minimum allowed nodes
-  m.start <- nrow(quadn)
-
   # vector of full-integral for thresholding
   I.full <- integral.full
 
@@ -97,13 +94,18 @@ adaptiveGaussQuadrature <- function(fun,
     I.cur <- collapse(quadf * quadw)
     err   <- abs(I.cur - I.full)
     m.cur <- nrow(quadn)
+    m.start  <- m.cur
 
     # if we're within tolerance or cannot drop below m.start, stop
-    if (err < tol * abs(I.full) || m.cur <= m.start) break
+    if (err > tol * abs(I.full) || m.cur <= 2) break
 
     # compute per-node contributions in one pass:
     # c[j] = contribution of node j to the integral
-    contributions <- apply(quadf * quadw, 2, collapse)
+    contributions <- numeric(length=NCOL(quadf))
+    for (i in seq_len(NCOL(quadf))) {
+      I.sub <- collapse(quadf[, -i, drop=FALSE] * quadw[, -i, drop=FALSE])
+      contributions[[i]] <- abs(abs(I.sub) - abs(I.full))
+    }
 
     # identify nodes trivially safe to remove
     removable <- which(abs(contributions) < tol * abs(I.full))
@@ -121,7 +123,7 @@ adaptiveGaussQuadrature <- function(fun,
     # if no bulk‐removable nodes, try peeling off the single smallest
     rank.idx <- order(abs(contributions))
     for (j in rank.idx) {
-      if (m.cur <= m.start) break
+      if (m.cur <= 2) break
       # would removing j be acceptable?
       if (abs(contributions[j]) < err) {
         quadn <- quadn[-j, , drop = FALSE]
@@ -132,11 +134,11 @@ adaptiveGaussQuadrature <- function(fun,
         # update error and restart removal loop
         err <- abs(I.cur - I.full)
         break
-      }
+      } else break
     }
 
     # if no single removal was made, exit
-    if (err >= tol * abs(I.full)) break
+    if (err >= tol * abs(I.full) || m.cur == m.start) break
   }
 
   diff.m <- round(nrow(quadn) ^ (1 / k)) - m
