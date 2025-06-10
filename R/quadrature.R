@@ -89,7 +89,10 @@ adaptiveGaussQuadrature <- function(fun,
   # vector of full-integral for thresholding
   I.full <- integral.full
 
-  repeat {
+  # This loop is in practive quite superfluous... I've commented it out for now
+  # let's see how it works for a while
+
+  # repeat {
     # current integral and error
     I.cur <- collapse(quadf * quadw)
     err   <- abs(I.cur - I.full)
@@ -97,7 +100,7 @@ adaptiveGaussQuadrature <- function(fun,
     m.start  <- m.cur
 
     # if we're within tolerance or cannot drop below m.start, stop
-    if (err > tol * abs(I.full) || m.cur <= 2) break
+  #  if (err > tol * abs(I.full) || m.cur <= 2) break
 
     # compute per-node contributions in one pass:
     # c[j] = contribution of node j to the integral
@@ -117,39 +120,51 @@ adaptiveGaussQuadrature <- function(fun,
       quadw <- quadw[, -removable, drop = FALSE]
       # subtract their total from the current integral
       I.cur  <- I.cur - sum(contributions[removable])
-      next
+  #    next
     }
 
-    # This never does anything, might make it do something later
-    # I.e., this criterion is just as strict as `removable`
-    # so removable will remove any valid candidates...
+  #  # This never does anything, might make it do something later
+  #  # I.e., this criterion is just as strict as `removable`
+  #  # so removable will remove any valid candidates...
 
-    # if no bulk‐removable nodes, try peeling off the single smallest
-    # rank.idx <- order(abs(contributions))
-    # for (j in rank.idx) {
-    #   if (m.cur <= 2) break
-    #   # would removing j be acceptable?
-    #   if (abs(contributions[j]) < err) {
-    #     quadn <- quadn[-j, , drop = FALSE]
-    #     quadf <- quadf[, -j, drop = FALSE]
-    #     quadw <- quadw[, -j, drop = FALSE]
-    #     I.cur  <- I.cur - contributions[j]
-    #     m.cur  <- m.cur - 1
-    #     # update error and restart removal loop
-    #     err <- abs(I.cur - I.full)
-    #     break
-    #   } else break
-    # }
+  #  # if no bulk‐removable nodes, try peeling off the single smallest
+  #  # rank.idx <- order(abs(contributions))
+  #  # for (j in rank.idx) {
+  #  #   if (m.cur <= 2) break
+  #  #   # would removing j be acceptable?
+  #  #   if (abs(contributions[j]) < err) {
+  #  #     quadn <- quadn[-j, , drop = FALSE]
+  #  #     quadf <- quadf[, -j, drop = FALSE]
+  #  #     quadw <- quadw[, -j, drop = FALSE]
+  #  #     I.cur  <- I.cur - contributions[j]
+  #  #     m.cur  <- m.cur - 1
+  #  #     # update error and restart removal loop
+  #  #     err <- abs(I.cur - I.full)
+  #  #     break
+  #  #   } else break
+  #  # }
 
-    # if no single removal was made, exit
-    if (err >= tol * abs(I.full) || m.cur == m.start) break
-  }
+  #  # if no single removal was made, exit
+  #  if (err >= tol * abs(I.full) || m.cur == m.start) break
+  #}
 
+  lower  <- min(quadn)
+  upper <- max(quadn)
   diff.m <- round(nrow(quadn) ^ (1 / k)) - m
-  new.ceil <- m.ceil - diff.m
 
-  reachedMaxNodes <- m.ceil > node.max && new.ceil >= m.ceil
-  if (abs(diff.m) > mdiff.tol && iter < iter.max && !reachedMaxNodes) {
+  # Calculate next ceiling
+  if (abs(diff.m) > 2 * mdiff.tol) {
+    # If the difference is large, use a rough estimate
+    new.ceil <- round(estMForNodesInRange(k = m, a = lower, b = upper))
+
+    # else do a step change
+  } else new.ceil <- m.ceil - diff.m
+
+  OKMaxNodes <- m.ceil > node.max && new.ceil >= m.ceil
+  OKDiff <- abs(diff.m) <= mdiff.tol
+  OKIter <- iter < iter.max
+
+  if (!OKDiff && OKIter && !OKMaxNodes) {
 
     return(adaptiveGaussQuadrature(
       fun = fun, 
@@ -163,6 +178,7 @@ adaptiveGaussQuadrature <- function(fun,
       tol = tol,
       iter.max = iter.max,
       node.max = node.max,
+      mdiff.tol = mdiff.tol,
       ...
     ))
   }
@@ -185,4 +201,77 @@ adaptiveGaussQuadrature <- function(fun,
        iter     = iter,
        error    = error,
        integral = integral.reduced)
+}
+
+
+estGHNodesInRange <- function(m, a, b, scale = TRUE) {
+  stopif(!is.numeric(m) || length(m) != 1 || m <= 0,
+         "'m' must be a single positive number")
+  stopif(!is.numeric(a) || length(a) != 1 || !is.numeric(b) || length(b) != 1,
+         "'a' and 'b' must be numeric scalars")
+
+  if (scale) {
+    a <- a / sqrt(2)
+    b <- b / sqrt(2)
+  }
+  # Ensure interval is ordered
+  lo <- min(a, b)
+  hi <- max(a, b)
+
+  # Scaling factor from the semicircle law support
+  scale <- sqrt(2 * m)
+
+  # Normalize interval endpoints to t = x / sqrt(2m)
+  t_lo <- lo / scale
+  t_hi <- hi / scale
+
+  # Clamp to the theoretical support of the density, [-1, 1]
+  t_lo <- pmax(pmin(t_lo,  1), -1)
+  t_hi <- pmax(pmin(t_hi,  1), -1)
+
+  # Define the cumulative function F(t) = t*sqrt(1 - t^2) + arcsin(t)
+  F <- \(t) t * sqrt(pmax(0, 1 - t^2)) + asin(t)
+
+  (m / pi) * (F(t_hi) - F(t_lo))
+}
+
+
+estMForNodesInRange <- function(k, a, b,
+                                lower = 1,
+                                upper = NULL,
+                                tol = 1e-6,
+                                maxiter = 100,
+                                scale = TRUE) {
+  stopif(!is.numeric(k) || length(k) != 1 || k <= 0,
+         "'k' must be a single positive number")
+  stopif(!is.numeric(a) || length(a) != 1 || !is.numeric(b) || length(b) != 1,
+         "'a' and 'b' must be numeric scalars")
+
+  if (scale) {
+    a <- a / sqrt(2)
+    b <- b / sqrt(2)
+  }
+
+  # Ensure interval
+  lo <- min(a, b)
+  hi <- max(a, b)
+
+  # Define f(m) = estimate_gh_nodes(m) - k
+  f <- function(m) estGHNodesInRange(m, lo, hi, scale = FALSE) - k
+
+  # Determine upper bound if not provided by doubling
+  if (is.null(upper)) {
+    upper <- lower * 2
+    iter <- 0
+    while (f(upper) < 0 && iter < maxiter) {
+      upper <- upper * 2
+      iter <- iter + 1
+    }
+    stopif(f(upper) < 0, "Unable to bracket root: increase maxiter or provide a larger 'upper'.")
+  }
+
+  # Use uniroot for inversion
+  root <- uniroot(f, lower = lower, upper = upper, tol = tol)
+
+  root$root
 }

@@ -90,7 +90,9 @@ estepLms <- function(model, theta, data, lastQuad = NULL, recalcQuad = FALSE, ..
     m <- model$quad$m
     k <- model$quad$k
 
-    m.ceil <- if (!is.null(lastQuad)) lastQuad$m.ceil else if (k>1) m else 5*m
+    if (!is.null(lastQuad)) m.ceil <- lastQuad$m.ceil 
+    else if (k > 1) m.ceil <- m
+    else m.ceil <- round(estMForNodesInRange(m, a = -5, b = 5))
 
     quad <- adaptiveGaussQuadrature(
       fun = densityLms, collapse = \(x) sum(log(rowSums(x))),
