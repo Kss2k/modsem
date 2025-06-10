@@ -120,22 +120,26 @@ adaptiveGaussQuadrature <- function(fun,
       next
     }
 
+    # This never does anything, might make it do something later
+    # I.e., this criterion is just as strict as `removable`
+    # so removable will remove any valid candidates...
+
     # if no bulk‐removable nodes, try peeling off the single smallest
-    rank.idx <- order(abs(contributions))
-    for (j in rank.idx) {
-      if (m.cur <= 2) break
-      # would removing j be acceptable?
-      if (abs(contributions[j]) < err) {
-        quadn <- quadn[-j, , drop = FALSE]
-        quadf <- quadf[, -j, drop = FALSE]
-        quadw <- quadw[, -j, drop = FALSE]
-        I.cur  <- I.cur - contributions[j]
-        m.cur  <- m.cur - 1
-        # update error and restart removal loop
-        err <- abs(I.cur - I.full)
-        break
-      } else break
-    }
+    # rank.idx <- order(abs(contributions))
+    # for (j in rank.idx) {
+    #   if (m.cur <= 2) break
+    #   # would removing j be acceptable?
+    #   if (abs(contributions[j]) < err) {
+    #     quadn <- quadn[-j, , drop = FALSE]
+    #     quadf <- quadf[, -j, drop = FALSE]
+    #     quadw <- quadw[, -j, drop = FALSE]
+    #     I.cur  <- I.cur - contributions[j]
+    #     m.cur  <- m.cur - 1
+    #     # update error and restart removal loop
+    #     err <- abs(I.cur - I.full)
+    #     break
+    #   } else break
+    # }
 
     # if no single removal was made, exit
     if (err >= tol * abs(I.full) || m.cur == m.start) break
