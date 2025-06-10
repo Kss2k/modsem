@@ -64,17 +64,18 @@ sigmaLms <- function(model, z1) { # for testing purposes
 }
 
 
-meanDensitySingleLms <- function(z, modFilled, data) {
+densitySingleLms <- function(z, modFilled, data) {
   mu <- muLmsCpp(model = modFilled, z = z)
   sigma <- sigmaLmsCpp(model = modFilled, z = z)
-  sum(dmvn(data, mean = mu, sigma = sigma)) # equivalent to using mean, but a bit more
-                                            # stable, as we are using floating points
+  dmvn(data, mean = mu, sigma = sigma)
 }
 
 
-meanDensityLms <- function(z, modFilled, data) {
-  vapply(seq_len(nrow(z)), FUN.VALUE = numeric(1L), FUN = function(i) {
-    meanDensitySingleLms(z = z[i, , drop=FALSE], modFilled = modFilled, data = data)
+densityLms <- function(z, modFilled, data) {
+  if (is.null(dim(z))) z <- matrix(z, ncol = modFilled$quad$k)
+
+  lapplyMatrix(seq_len(nrow(z)), FUN.VALUE = numeric(NROW(data)), FUN = function(i) {
+    densitySingleLms(z = z[i, , drop=FALSE], modFilled = modFilled, data = data)
   })
 }
 
@@ -84,11 +85,13 @@ estepLms <- function(model, theta, data, ...) {
 
   if (model$quad$adaptive) {
     quad <- adaptiveGaussQuadrature(
-      meanDensityLms,
+      fun = densityLms,
+      collapse = \(x) sum(log(rowSums(x))),
       a = model$quad$a, 
       b = model$quad$b, 
       modFilled = modFilled, 
       data = data,
+      m.ceil = 51,
       m = model$quad$m, 
       k = model$quad$k
     )

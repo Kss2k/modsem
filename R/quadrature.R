@@ -4,10 +4,11 @@
 quadrature <- function(m, k, 
                        cut = Inf, 
                        adaptive = FALSE, 
-                       a = -7, 
-                       b = 7, 
                        m.start = 4, 
                        ...) {
+  a <- -cut
+  b <- cut
+
   if (k == 0 || m == 0) {
     return(list(
       n = matrix(0), 
@@ -24,9 +25,7 @@ quadrature <- function(m, k,
   
 
   if (is.finite(cut)) {
-    a <- -cut
-    b <- cut
-    singleDimGauss <- finiteGaussQuadrature(m = m, k = k, a = -7, b = 7)
+    singleDimGauss <- finiteGaussQuadrature(m = m, k = k, a = a, b = b)
     nodes <- singleDimGauss$nodes
     weights <- singleDimGauss$weights
 
@@ -93,80 +92,107 @@ finiteGaussQuadrature <- function(a, b, m = 10, k = 1) {
 }
 
 
-adaptiveGaussQuadrature <- function(fun, a = -7, b = 7, m = 32,
-                                    k = 1, ...) {
+collapseQuadratureSectors <- function(sectors, collapse = \(x) x) {
+  values <- NULL
+
+  for (quad in sectors) {
+    f <- quad$f
+    w <- matrix(quad$weights, ncol = length(quad$weights), nrow = NROW(f),
+                byrow = TRUE)
+
+    values <- cbind(values, w * f)
+  }
+
+  collapse(values)
+}
+
+
+adaptiveGaussQuadrature <- function(fun, 
+                                    collapse = \(x) x, # function to collapse the results, if 'relevant'
+                                    a = -7, 
+                                    b = 7, 
+                                    m = 32,
+                                    m.ceil = 150,
+                                    k = 1, 
+                                    tol = 1e-12, ...) {
   stopif(k > 1, "Adaptive quadrature not implemented for multiple dimensions!")
 
   if (k == 0 || m == 0) {
     return(list(integral = 0, n = matrix(0), w = 1, f = NA, m = 0, k = k))
   }
 
-  nsectors <- round(m / 2) # in the base case all sectors get two nodes each
-  step <- (b - a) / nsectors
-  lower <- a + (seq_len(nsectors) - 1) * step
-  upper <- a + seq_len(nsectors) * step
+  m.target <- m ^ k
 
-  sectorsLow  <- vector("list", nsectors)
-  sectorsHigh <- vector("list", nsectors)
+  quad <- quadrature(m = m.ceil, k = k)
+  quadn <- quad$n
+  quadf <- fun(quadn, ...)
+  quadw <- matrix(quad$w, ncol = length(quad$w), nrow = NROW(quadf), byrow = TRUE)
 
-  for (i in seq_len(nsectors)) {
-    low <- finiteGaussQuadrature(m = 1, a = lower[i], b = upper[i], k = k)
-    high <- finiteGaussQuadrature(m = 5, a = lower[i], b = upper[i], k = k)
-    
-    low$d <- fun(low$nodes, ...)
-    low$f <- low$weights * low$d
-    
-    high$d <- fun(high$nodes, ...)
-    high$f <- high$weights * high$d
+  integral        <- collapse(quadf * quadw)
 
-    sectorsLow[[i]]  <- low
-    sectorsHigh[[i]] <- high
-  }
+  zeroInfoNodes <- apply(quadw * quadf, MARGIN=2, FUN = \(x) sum(x) <= .Machine$double.xmin * 2)
 
+  quadn <- quadn[!zeroInfoNodes, , drop = FALSE]
+  quadf <- quadf[ , !zeroInfoNodes, drop = FALSE]
+  quadw <- quadw[ , !zeroInfoNodes, drop = FALSE]
+  
+  while (TRUE) {
+    integral.current <- collapse(quadf * quadw)
+    error <- abs(integral.current - integral)
+    m.current <- nrow(quadn)
 
-  available <- m - nsectors
-  sector <- 1
-  while (available) {
-    maxdiff       <- NA
-    maxdiffSector <- NA
+    if (error < tol * integral && m.current > m.start) break
 
-    for (i in seq_len(nsectors)) {
-      high <- sectorsHigh[[i]]
-      low  <- sectorsLow[[i]]
+    min.contrib <- NA 
+    min.index <- NA
 
-      diff <- abs(sum(high$f) - sum(low$f))
+    for (i in seq_len(m.current)) {
+      quadsub_n <- quadn[-i, , drop = FALSE]
+      quadsub_f <- quadf[-i, , drop = FALSE]
+      quadsub_w <- quadw[-i, , drop = FALSE]
 
-      if (is.na(maxdiff) || diff > maxdiff) {
-        maxdiff       <- diff
-        maxdiffSector <- i
+      contrib <- abs(integral.current - collapse(quadsub_f * quadsub_w))
+
+      isValid    <- contrib < tol * integral
+      isSmallest <- is.na(min.contrib) || contrib < min.contrib
+
+      if (isValid && isSmallest) {
+        min.contrib <- min(contrib)
+        min.index <- i
       }
     }
 
-    stopif(is.na(maxdiff), "Unexpected NA in maxdiff!")
+    if (is.na(min.index)) break
 
-    newM <- sectorsLow[[maxdiffSector]]$m + 1
-    newQ <- finiteGaussQuadrature(m = newM, k = k,
-                                  a = lower[maxdiffSector], 
-                                  b = upper[maxdiffSector])
-
-    newQ$d <- fun(newQ$nodes, ...)
-    newQ$f <- newQ$weights * newQ$d
-
-    sectorsLow[[maxdiffSector]] <- newQ
-    available <- available - 1
+    quadn <- quadn[-min.index, , drop = FALSE]
+    quadf <- quadf[, -min.index, drop = FALSE]
+    quadw <- quadw[, -min.index, drop = FALSE]
   }
 
-  n <- NULL
-  w <- NULL
-  f <- NULL
-  d <- NULL
-  
-  for (quad in sectorsLow) {
-    n <- rbind(n, quad$nodes)
-    w <- c(w, quad$w)
-    f <- c(f, quad$f)
-    d <- c(d, quad$d)
+
+  diff.m <- round(m.target - nrow(quadn)) ^ (1 / k)
+
+  if (abs(diff.m) > 5) {
+    new.ceil <- m.ceil + diff.m
+    return(adaptiveGaussQuadrature(
+      fun = fun, 
+      collapse = collapse, 
+      a = a, 
+      b = b, 
+      m = m, 
+      m.ceil = new.ceil, 
+      k = k, 
+      tol = tol, 
+      ...
+    ))
   }
 
-  list(n = n, w = w, f = f, d = d, k = k, m = m)
+  list(integral = integral.current, 
+       error = error,
+       n = quadn, 
+       w = quadw[1, , drop = TRUE], 
+       f = quadf, 
+       m = m.current ^ (1 / k), 
+       m.ceil = m.ceil,
+       k = k)
 }
