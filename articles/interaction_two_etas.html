@@ -164,10 +164,9 @@ argument in <code>modsem</code>:</p>
 <span><span class="co">#&gt; effects between endogenous variables in the lms approach 'nodes = 24'</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_lms</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Estimating baseline model (H0)</span></span>
-<span><span class="co">#&gt; Warning in stats::pchisq(D, df = df, lower.tail = FALSE, log.p = FALSE): NaNs</span></span>
-<span><span class="co">#&gt; produced</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; modsem (version 1.0.9):</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                         LMS</span></span>
 <span><span class="co">#&gt;   Optimization method                        EMA-NLMINB</span></span>
 <span><span class="co">#&gt;   Number of observations                           2000</span></span>
@@ -181,7 +180,7 @@ argument in <code>modsem</code>:</p>
 <span><span class="co">#&gt;   Dimensions                                          1</span></span>
 <span><span class="co">#&gt;   Total points of integration                        24</span></span>
 <span><span class="co">#&gt;  </span></span>
-<span><span class="co">#&gt; Fit Measures for H0:</span></span>
+<span><span class="co">#&gt; Fit Measures for Baseline Model (H0):</span></span>
 <span><span class="co">#&gt;   Loglikelihood                                  -26393</span></span>
 <span><span class="co">#&gt;   Akaike (AIC)                                 52892.45</span></span>
 <span><span class="co">#&gt;   Bayesian (BIC)                               53189.29</span></span>
@@ -190,19 +189,19 @@ argument in <code>modsem</code>:</p>
 <span><span class="co">#&gt;   P-value (Chi-square)                            0.897</span></span>
 <span><span class="co">#&gt;   RMSEA                                           0.000</span></span>
 <span><span class="co">#&gt;  </span></span>
-<span><span class="co">#&gt; Comparative fit to H0 (no interaction effect)</span></span>
-<span><span class="co">#&gt;   Loglikelihood change                         -2612.30</span></span>
-<span><span class="co">#&gt;   Difference test (D)                          -5224.60</span></span>
-<span><span class="co">#&gt;   Degrees of freedom (D)                             -1</span></span>
-<span><span class="co">#&gt;   P-value (D)                                       NaN</span></span>
+<span><span class="co">#&gt; Comparative Fit to H0 (LRT test):</span></span>
+<span><span class="co">#&gt;   Loglikelihood change                          2612.30</span></span>
+<span><span class="co">#&gt;   Difference test (D)                           5224.60</span></span>
+<span><span class="co">#&gt;   Degrees of freedom (D)                              1</span></span>
+<span><span class="co">#&gt;   P-value (D)                                     0.000</span></span>
 <span><span class="co">#&gt;  </span></span>
-<span><span class="co">#&gt; R-Squared:</span></span>
+<span><span class="co">#&gt; R-Squared Interaction Model (H1):</span></span>
 <span><span class="co">#&gt;   BEH                                             0.235</span></span>
 <span><span class="co">#&gt;   INT                                             0.364</span></span>
-<span><span class="co">#&gt; R-Squared Null-Model (H0):</span></span>
+<span><span class="co">#&gt; R-Squared Baseline Model (H0):</span></span>
 <span><span class="co">#&gt;   BEH                                             0.210</span></span>
 <span><span class="co">#&gt;   INT                                             0.367</span></span>
-<span><span class="co">#&gt; R-Squared Change:</span></span>
+<span><span class="co">#&gt; R-Squared Change (H1 - H0):</span></span>
 <span><span class="co">#&gt;   BEH                                             0.025</span></span>
 <span><span class="co">#&gt;   INT                                            -0.002</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -303,10 +302,9 @@ argument in <code>modsem</code>:</p>
 <span>                  method <span class="op">=</span> <span class="st">"qml"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_qml</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Estimating baseline model (H0)</span></span>
-<span><span class="co">#&gt; Warning in stats::pchisq(D, df = df, lower.tail = FALSE, log.p = FALSE): NaNs</span></span>
-<span><span class="co">#&gt; produced</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; modsem (version 1.0.9):</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                         QML</span></span>
 <span><span class="co">#&gt;   Optimization method                            NLMINB</span></span>
 <span><span class="co">#&gt;   Number of observations                           2000</span></span>
@@ -315,7 +313,7 @@ argument in <code>modsem</code>:</p>
 <span><span class="co">#&gt;   Akaike (AIC)                                 52829.04</span></span>
 <span><span class="co">#&gt;   Bayesian (BIC)                               53131.49</span></span>
 <span><span class="co">#&gt;  </span></span>
-<span><span class="co">#&gt; Fit Measures for H0:</span></span>
+<span><span class="co">#&gt; Fit Measures for Baseline Model (H0):</span></span>
 <span><span class="co">#&gt;   Loglikelihood                                  -26393</span></span>
 <span><span class="co">#&gt;   Akaike (AIC)                                 52892.45</span></span>
 <span><span class="co">#&gt;   Bayesian (BIC)                               53189.29</span></span>
@@ -324,19 +322,19 @@ argument in <code>modsem</code>:</p>
 <span><span class="co">#&gt;   P-value (Chi-square)                            0.897</span></span>
 <span><span class="co">#&gt;   RMSEA                                           0.000</span></span>
 <span><span class="co">#&gt;  </span></span>
-<span><span class="co">#&gt; Comparative fit to H0 (no interaction effect)</span></span>
-<span><span class="co">#&gt;   Loglikelihood change                           -32.70</span></span>
-<span><span class="co">#&gt;   Difference test (D)                            -65.41</span></span>
-<span><span class="co">#&gt;   Degrees of freedom (D)                             -1</span></span>
-<span><span class="co">#&gt;   P-value (D)                                       NaN</span></span>
+<span><span class="co">#&gt; Comparative Fit to H0 (LRT test):</span></span>
+<span><span class="co">#&gt;   Loglikelihood change                            32.70</span></span>
+<span><span class="co">#&gt;   Difference test (D)                             65.41</span></span>
+<span><span class="co">#&gt;   Degrees of freedom (D)                              1</span></span>
+<span><span class="co">#&gt;   P-value (D)                                     0.000</span></span>
 <span><span class="co">#&gt;  </span></span>
-<span><span class="co">#&gt; R-Squared:</span></span>
+<span><span class="co">#&gt; R-Squared Interaction Model (H1):</span></span>
 <span><span class="co">#&gt;   BEH                                             0.239</span></span>
 <span><span class="co">#&gt;   INT                                             0.370</span></span>
-<span><span class="co">#&gt; R-Squared Null-Model (H0):</span></span>
+<span><span class="co">#&gt; R-Squared Baseline Model (H0):</span></span>
 <span><span class="co">#&gt;   BEH                                             0.210</span></span>
 <span><span class="co">#&gt;   INT                                             0.367</span></span>
-<span><span class="co">#&gt; R-Squared Change:</span></span>
+<span><span class="co">#&gt; R-Squared Change (H1 - H0):</span></span>
 <span><span class="co">#&gt;   BEH                                             0.029</span></span>
 <span><span class="co">#&gt;   INT                                             0.003</span></span>
 <span><span class="co">#&gt; </span></span>
