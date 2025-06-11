@@ -175,8 +175,10 @@ emLms <- function(model,
         while (alpha > 1e-5) {
           thetaTrial  <- thetaOld + alpha * direction
 
-          logLikTrial <- logLikLms(theta = thetaTrial, model = model, P = P,
-                                   data = data, sign = 1)
+          logLikTrial <- suppressWarnings({
+            logLikLms(theta = thetaTrial, model = model, P = P,
+                      data = data, sign = 1)
+          })
 
           if (!is.na(logLikTrial) && logLikTrial >= refLogLik) { 
             success <- TRUE
