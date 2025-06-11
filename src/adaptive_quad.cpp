@@ -5,18 +5,40 @@
 #include <RcppArmadillo.h>
 #include <numeric>
 #include <cfloat>
+#include <limits>        // for quiet_NaN()
 // [[Rcpp::depends(RcppArmadillo)]]
 
+static const double log2pi = std::log(2.0 * M_PI);
+static const double kNaN   = std::numeric_limits<double>::quiet_NaN();
 
 inline double dmvnorm_fast(const arma::vec& x,
                            const arma::vec& mu,
                            const arma::mat& S) {
-  static const double log2pi = std::log(2.0 * M_PI);
-  arma::uword d = x.n_elem;
-  double sign, log_det; arma::log_det(log_det, sign, S);
-  arma::vec diff = x - mu;
-  double quad = arma::as_scalar(diff.t() * arma::inv(S) * diff);
-  return std::exp(-0.5 * (d * log2pi + log_det + quad));
+
+    // 1. Try a *fast* symmetric-positive-definite test.
+    //    If it fails, short-circuit to NaN.  No exception is thrown.
+    arma::mat L;
+    if (!arma::chol(L, S, "lower"))                 // false ⇒ S not SPD
+        return kNaN;
+
+    // 2. Everything is fine – proceed with the Cholesky-based evaluation.
+    const arma::uword d = x.n_elem;
+
+    const double log_det = 2.0 * arma::sum(log(L.diag()));  // log|S|
+
+    arma::vec diff = x - mu;
+
+    // Solve L * y = diff  →  y = L⁻¹ diff   (no explicit inverse)
+    arma::vec y = arma::solve(arma::trimatl(L), diff);
+
+    // Quadratic form  (x−μ)ᵀ S⁻¹ (x−μ)  =  yᵀ y
+    const double quad = arma::dot(y, y);
+
+    // 3. Catch any NaNs produced by sub-operations (paranoia guard)
+    if (!std::isfinite(log_det) || !std::isfinite(quad))
+        return kNaN;
+
+    return std::exp(-0.5 * (d * log2pi + log_det + quad));
 }
 
 
@@ -130,8 +152,12 @@ double completeLogLikLmsCpp(const Rcpp::List& modelR, const arma::mat& data, con
       const arma::rowvec z_ij = z_i.row(j);
       const arma::vec mu_ij = mod.mu(z_ij);
       const arma::mat sigma_ij = mod.sigma(z_ij); 
-  
-      ll += p_ij * std::log(dmvnorm_fast(y_i, mu_ij, sigma_ij));
+ 
+      const double ll_ij = std::log(dmvnorm_fast(y_i, mu_ij, sigma_ij));
+
+      if (std::isnan(ll_ij)) return kNaN;
+
+      ll += p_ij * ll_ij;
     }
   }
 

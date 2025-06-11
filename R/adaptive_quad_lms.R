@@ -40,25 +40,31 @@ gh_rule <- function(k, m = 5L) {
 
 aghq_adapt <- function(S, w, log_f,
                        tol = 1e-8, maxit = 50L, attempt_PD = TRUE) {
+
   k   <- ncol(S)
-  # 2a.  Posterior mode via optimisation of –log f
-  opt <- optim(rep(0, k), fn = function(z) -log_f(z), method = "BFGS",
-               hessian = TRUE, control = list(reltol = tol, maxit = maxit))
+
+  ## 1. Posterior mode
+  opt  <- optim(rep(0, k), fn = function(z) -log_f(z),
+                method = "BFGS", hessian = TRUE,
+                control = list(reltol = tol, maxit = maxit))
   zhat <- opt$par
   H    <- opt$hessian
 
-  # 2b.  Cholesky of (H^{-1} / 2)
+  ## 2. Covariance at the mode
   Sigma <- tryCatch(solve(H) / 2, error = function(e) NULL)
-  if (is.null(Sigma) && attempt_PD) {
-    # Numerical quirks: pull towards nearest PD matrix
+  if (is.null(Sigma) && attempt_PD)
     Sigma <- as.matrix(Matrix::nearPD(solve(H) / 2)$mat)
-  }
-  L  <- chol(Sigma, pivot = TRUE)
 
-  # 2c.  Transform nodes and weights
-  Z  <- sweep(S %*% t(L), 2L, zhat, `+`)        # M×k adaptive nodes
-  w_new <- as.numeric(w * det(L))               # length‑M  (sum != 1)
-  list(Z = Z, w = w_new)
+  L  <- chol(Sigma)
+
+  ## 3. Location–scale transform
+  Z  <- sweep(S %*% t(L), 2L, zhat, `+`)
+
+  ##    weight correction: exp((‖s‖² – ‖z‖²)/2)
+  log_phi_ratio <- 0.5 * (rowSums(S^2) - rowSums(Z^2))
+  w_new <- as.numeric(w * det(L) * exp(log_phi_ratio))
+
+  list(Z = Z, w = w_new)          # Σ w_new ≠ 1  – that’s fine
 }
 
 
@@ -68,14 +74,8 @@ estepLms <- function(model, theta, data, ...) {
   k         <- model$quad$k
   m         <- model$quad$m %||% 5L   # sensible default
 
-  if (adaptive) {
-    stdGH <- gh_rule(k, m)            # reused for all cases
-    S     <- stdGH$S
-    w_std <- stdGH$w
-  } else {
-    V     <- as.matrix(model$quad$n)
-    w_std <- model$quad$w
-  }
+  V     <- as.matrix(model$quad$n)
+  w_std <- model$quad$w
 
   N <- nrow(data)
   P_list <- vector("list", N)        # posterior weights per case
@@ -89,12 +89,11 @@ estepLms <- function(model, theta, data, ...) {
     if (adaptive) {
       # log f(y_i, z | θ)
       log_fzi <- function(z) {
-        mu    <- muLmsCpp   (model = modFilled, z = z)
-        sigma <- sigmaLmsCpp(model = modFilled, z = z)
-        mvtnorm::dmvnorm(data[i, ], mean = mu, sigma = sigma, log = TRUE) +
-          sum(dnorm(z, log = TRUE))                         # N(0, I) prior
+        mu    <- muLmsCpp(modFilled, z)
+        sigma <- sigmaLmsCpp(modFilled, z)
+        mvtnorm::dmvnorm(data[i, ], mu, sigma, log = TRUE)
       }
-      ad   <- aghq_adapt(S, w_std, log_fzi)
+      ad   <- aghq_adapt(V, w_std, log_fzi)
       Z_i  <- ad$Z
       w_i  <- ad$w
     } else {
@@ -105,10 +104,12 @@ estepLms <- function(model, theta, data, ...) {
     m_i <- nrow(Z_i)
     p_i <- numeric(m_i)
     for (j in seq_len(m_i)) {
-      mu_ij    <- muLmsCpp   (model = modFilled, z = Z_i[j, ])
-      sigma_ij <- sigmaLmsCpp(model = modFilled, z = Z_i[j, ])
-      p_i[j]   <- mvtnorm::dmvnorm(data[i, ], mean = mu_ij, sigma = sigma_ij) *
-                  w_i[j]
+      mu_ij    <- muLmsCpp(modFilled, Z_i[j, ])
+      sigma_ij <- sigmaLmsCpp(modFilled, Z_i[j, ])
+
+      phi_zj   <- mvtnorm::dmvnorm(Z_i[j, ], log = FALSE)  # standard normal
+      p_i[j]   <- mvtnorm::dmvnorm(data[i, ], mu_ij, sigma_ij) *
+        phi_zj * w_i[j]
     }
     density[i] <- sum(p_i)
     P_list[[i]] <- p_i / density[i]   # normalised posterior probs
