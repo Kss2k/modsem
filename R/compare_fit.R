@@ -1,10 +1,16 @@
 #' compare model fit for \code{modsem} models
 #'
 #' @param est_h0 object of class \code{\link{modsem_da}} or \code{\link{modsem_pi}} representing the
-#' null hypothesis model
+#' null hypothesis model (without interaction terms).
+#' 
 #' @param est_h1 object of class \code{\link{modsem_da}} or \code{\link{modsem_pi}} representing the
-#' @description Compare the fit of two models using the likelihood ratio test.
-#' \code{est_h0} representing the null
+#' alternative hypothesis model (with interaction terms).
+#' 
+#' @param ... additional arguments passed to the underlying comparison function. E.g., 
+#' for \code{modsem_pi} models, this can be used to pass arguments to \code{lavaan::lavTestLRT}.
+#' currently only used for \code{modsem_pi} models.
+#'
+#' @description Compare the fit of two models using the likelihood ratio test (LRT).
 #' hypothesis model, and \code{est_h1} the alternative hypothesis model. Importantly,
 #' the function assumes that \code{est_h0} does not have more free parameters
 #' (i.e., degrees of freedom) than \code{est_h1}.
@@ -47,7 +53,7 @@ compare_fit <- function(est_h1, est_h0, ...) {
 
 
 #' @export
-compare_fit.modsem_da <- function(est_h1, est_h0) {
+compare_fit.modsem_da <- function(est_h1, est_h0, ...) {
   stopif(!inherits(est_h1, "modsem_da") || !inherits(est_h0, "modsem_da"),
          "Both est_h1 and est_h0 must be of class 'modsem_da'.")
 

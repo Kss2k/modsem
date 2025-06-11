@@ -7,14 +7,18 @@
 compare_fit(est_h1, est_h0, ...)
 }
 \arguments{
-\item{est_h1}{object of class \code{\link{modsem_da}} or \code{\link{modsem_pi}} representing the}
+\item{est_h1}{object of class \code{\link{modsem_da}} or \code{\link{modsem_pi}} representing the
+alternative hypothesis model (with interaction terms).}
 
 \item{est_h0}{object of class \code{\link{modsem_da}} or \code{\link{modsem_pi}} representing the
-null hypothesis model}
+null hypothesis model (without interaction terms).}
+
+\item{...}{additional arguments passed to the underlying comparison function. E.g., 
+for \code{modsem_pi} models, this can be used to pass arguments to \code{lavaan::lavTestLRT}.
+currently only used for \code{modsem_pi} models.}
 }
 \description{
-Compare the fit of two models using the likelihood ratio test.
-\code{est_h0} representing the null
+Compare the fit of two models using the likelihood ratio test (LRT).
 hypothesis model, and \code{est_h1} the alternative hypothesis model. Importantly,
 the function assumes that \code{est_h0} does not have more free parameters
 (i.e., degrees of freedom) than \code{est_h1}.

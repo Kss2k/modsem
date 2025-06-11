@@ -83,7 +83,7 @@ print.summary_modsem_pi <- function(x, ...) {
   ci <- x$format$ci
 
   # Compute width for right justification based on lavaan output
-  lavcat <- capture.output(print(x$lavaan))
+  lavcat <- utils::capture.output(print(x$lavaan))
   width.out <- max(nchar(lavcat))
 
   # Helper for left/right align with indent of 2 spaces for names
