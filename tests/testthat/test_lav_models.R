@@ -97,7 +97,7 @@ plot_jn(x = "speed", z = "textual", y = "visual", model = estimates[[2]][["ca"]]
 plot_jn(x = "speed", z = "textual", y = "visual", model = estimates[[2]][["ca"]],
         max_z = 6)
 
-print(summary(estimates[[1]][["rca"]]))
+print(summary(estimates[[1]][["rca"]], H0=FALSE))
 print(estimates[[1]][["rca"]])
 
-testthat::expect_true(summary(estimates[[1]][["rca"]])$info$version != "??")
+testthat::expect_true(summary(estimates[[1]][["rca"]], H0=FALSE)$info$version != "??")

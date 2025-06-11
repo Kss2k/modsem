@@ -42,7 +42,16 @@
   ...
 )
 
-\method{summary}{modsem_pi}(object, ...)
+\method{summary}{modsem_pi}(
+  object,
+  H0 = TRUE,
+  r.squared = TRUE,
+  adjusted.stat = FALSE,
+  digits = 3,
+  scientific = FALSE,
+  ci = FALSE,
+  ...
+)
 }
 \arguments{
 \item{object}{modsem object to summarized}

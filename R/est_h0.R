@@ -88,7 +88,7 @@ estimate_h0.modsem_pi <- function(object, warn_no_interaction = TRUE, ...) {
   method     <- object$method
   syntax     <- input$syntax
   data       <- input$data
-  parTable   <- modsemify(syntax)
+  parTable   <- input$parTable
  
   # Get arguments
   lavArgs    <- input$lavArgs
@@ -100,21 +100,26 @@ estimate_h0.modsem_pi <- function(object, warn_no_interaction = TRUE, ...) {
   newArgNames <- intersect(names(argList), names(newArgList))
   argList[newArgNames] <- newArgList[newArgNames] 
 
-  tryCatch({
-    isInteractionTerm <- grepl(":", parTable$rhs)
-    # We don't want to remove the interaction term, since we want the baseline model
-    # to have the same variables as the original model (inluding the product indicators).
-    # However, we want to constrain the interaction terms to zero.
-    constrainedParTable <- parTable
-    constrainedParTable[isInteractionTerm, "mod"] <- "0"
+  if (!is.null(lavArgs$cluster)) {
+    warning2("Baseline model cannot (yet) be estimated with clustering!", .immediate. = FALSE)
+    return(NULL)
+  } 
 
-    if (!any(isInteractionTerm)) {
+  tryCatch({
+    if (!parTableHasInteraction(parTable)) {
       warnif(warn_no_interaction, 
              "No interaction terms found in the model. ",
              "The baseline model is identical to the original model, ",
              "and won't be estimated!")
       return(NULL)
     } 
+
+    isInteractionTerm <- grepl(":", parTable$rhs)
+    # We don't want to remove the interaction term, since we want the baseline model
+    # to have the same variables as the original model (inluding the product indicators).
+    # However, we want to constrain the interaction terms to zero.
+    constrainedParTable <- parTable
+    constrainedParTable[isInteractionTerm, "mod"] <- "0"
     
     syntax <- parTableToSyntax(constrainedParTable)
     argList <- c(
@@ -128,4 +133,9 @@ estimate_h0.modsem_pi <- function(object, warn_no_interaction = TRUE, ...) {
              "Error message: ", e$message)
     NULL
   })
+}
+
+
+parTableHasInteraction <- function(parTable) {
+  any(grepl(":", parTable$rhs) & parTable$mod != "0")
 }

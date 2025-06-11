@@ -98,13 +98,13 @@ summary.modsem_da <- function(object,
     
     out$nullModel <- est_h0
     if (is.null(est_h0)) {
-      warning2("Comparative fit to H0 will not be calculated.")
+      warning2("Comparative fit to H0 will not be calculated.", immediate. = FALSE)
       H0        <- FALSE
       out$D     <- NULL
       out$fitH0 <- NULL
 
     } else {
-      out$D     <- compare_fit(est_h0, object)
+      out$D     <- compare_fit(est_h1 = object, est_h0 = est_h0)
       out$fitH0 <- fit_modsem_da(est_h0)
     }
   } else {
@@ -144,7 +144,7 @@ print.summary_da <- function(x, digits = 3, ...) {
                                        covariances = x$format$covariances,
                                        intercepts = x$format$intercepts,
                                        variances = x$format$variances)
-  cat(paste0("\nmodsem (version ", PKG_INFO$version, "):\n"))
+  cat(paste0("\nmodsem (version ", PKG_INFO$version, "):\n\n"))
   names <- c("Estimator", "Optimization method", "Number of observations",
              "Number of iterations", "Loglikelihood",
              "Akaike (AIC)", "Bayesian (BIC)")
@@ -170,7 +170,7 @@ print.summary_da <- function(x, digits = 3, ...) {
   }
 
   if (!is.null(x$D)) {
-    cat("Fit Measures for H0:\n")
+    cat("Fit Measures for Baseline Model (H0):\n")
     names <- c("Loglikelihood", "Akaike (AIC)", "Bayesian (BIC)")
     values <- c(round(x$nullModel$logLik), round(x$fitH0$AIC, 2), round(x$fitH0$BIC, 2))
 
@@ -188,7 +188,7 @@ print.summary_da <- function(x, digits = 3, ...) {
     cat(allignLhsRhs(lhs = names, rhs = values, pad = "  ",
                      width.out = width.out), "\n")
 
-    cat("Comparative fit to H0 (no interaction effect)\n")
+    cat("Comparative Fit to H0:\n")
     names <- c("Loglikelihood change",
                "Difference test (D)",
                "Degrees of freedom (D)", "P-value (D)")
@@ -208,7 +208,7 @@ print.summary_da <- function(x, digits = 3, ...) {
     r.squared$Rsqr <-
       stringr::str_pad(r.squared$Rsqr, width = maxWidth, side = "left")
 
-    cat("R-Squared:\n")
+    cat("R-Squared Interaction Model (H1):\n")
     names <- r.squared$eta
     values <- character(length(names))
     for (i in seq_along(r.squared$eta)) {
@@ -224,7 +224,7 @@ print.summary_da <- function(x, digits = 3, ...) {
       r.squared$H0$Rsqr <-
         stringr::str_pad(r.squared$H0$Rsqr, width = maxWidth, side = "left")
 
-      cat("R-Squared Null-Model (H0):\n")
+      cat("R-Squared Baseline Model (H0):\n")
       names <- r.squared$H0$eta
       for (i in seq_along(names)) {
           values[[i]] <- formatNumeric(r.squared$H0$Rsqr[[i]], digits = 3)
@@ -235,7 +235,7 @@ print.summary_da <- function(x, digits = 3, ...) {
       # Calculate Change (using unformatted Rsquared)
       r.squared$H0$diff <-
         formatNumeric(x$r.squared$Rsqr - x$r.squared$H0$Rsqr, digits = 3)
-      cat("R-Squared Change:\n")
+      cat("R-Squared Change (H1 - H0):\n")
       for (i in seq_along(names)) {
         values[[i]] <- r.squared$H0$diff[[i]]
       }

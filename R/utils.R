@@ -1,10 +1,10 @@
-warning2 <- function(...) {
-  warning(..., call. = FALSE, immediate. = TRUE)
+warning2 <- function(..., call. = FALSE, immediate. = TRUE) {
+  warning(..., call. = call., immediate. = immediate.)
 }
 
 
-stop2 <- function(...) {
-  stop(..., call. = FALSE)
+stop2 <- function(..., call. = FALSE) {
+  stop(..., call. = call.)
 }
 
 

@@ -177,13 +177,11 @@ modsem_pi <- function(model.syntax = NULL,
       na.rm = na.rm,
       suppress.warnings.match = suppress.warnings.match,
       suppress.warnings.lavaan = suppress.warnings.lavaan,
+      ...
     )
 
     return(est)
   }
-
-  # Save these for later
-  input <- list(syntax = model.syntax, data = data)
 
   if (!is.data.frame(data)) data <- as.data.frame(data)
 
@@ -204,6 +202,9 @@ modsem_pi <- function(model.syntax = NULL,
   modelSpec <- parseLavaan(model.syntax, colnames(data),
                            match = methodSettings$match,
                            suppress.warnings.match = suppress.warnings.match)
+  
+  # Save these for later
+  input <- list(syntax = model.syntax, data = data, parTable = modelSpec$parTable)
 
   # Data Processing  -----------------------------------------------------------
   oVs        <- c(modelSpec$oVs, group)
