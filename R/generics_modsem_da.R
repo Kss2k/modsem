@@ -275,47 +275,6 @@ print.modsem_da <- function(x, digits = 3, ...) {
 }
 
 
-#' compare model fit for qml and lms models
-#'
-#' @param est_h0 object of class `modsem_da` representing the
-#' null hypothesis model
-#' @param est_h1 object of class `modsem_da` representing the
-#' @description Compare the fit of two models using the likelihood ratio test.
-#' `est_h0` representing the null
-#' hypothesis model, and `est_h1` the alternative hypothesis model. Importantly,
-#' the function assumes that `est_h0` does not have more free parameters
-#' (i.e., degrees of freedom) than `est_h1`.
-#' alternative hypothesis model
-#' @rdname compare_fit
-#' @export
-#' @examples
-#' \dontrun{
-#' m1 <- "
-#'  # Outer Model
-#'  X =~ x1 + x2 + x3
-#'  Y =~ y1 + y2 + y3
-#'  Z =~ z1 + z2 + z3
-#'
-#'  # Inner model
-#'  Y ~ X + Z + X:Z
-#' "
-#'
-#' est_h1 <- modsem(m1, oneInt, "lms")
-#' est_h0 <- estimate_h0(est_h1, calc.se=FALSE) # std.errors are not needed
-#' compare_fit(est_h0, est_h1)
-#' }
-#' @export
-compare_fit <- function(est_h0, est_h1) {
-  if (is.null(est_h0) || is.null(est_h1)) {
-    return(NULL)
-  }
-  df <- length(coef(est_h1, type = "free")) - length(coef(est_h0, type = "free"))
-  D <- -2 * (est_h0$logLik - est_h1$logLik)
-  p <- stats::pchisq(D, df = df, lower.tail = FALSE, log.p = FALSE)
-  list(D = D, df = df, p = p, llChange = est_h1$logLik - est_h0$logLik)
-}
-
-
 calcRsquared <- function(parTable) {
   parTable <- var_interactions.data.frame(parTable)
   etas     <- unique(parTable$lhs[parTable$op == "~"])

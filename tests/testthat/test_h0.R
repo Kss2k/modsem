@@ -9,8 +9,22 @@ m1 <- "
  Y ~ X + Z + X:Z
 "
 
+
+# modsem_da
 est_h1 <- modsem(m1, oneInt, "lms")
 est_h0 <- estimate_h0(est_h1, calc.se=FALSE) # std.errors are not needed
-compare_fit(est_h0, est_h1)
+compare_fit(est_h1 = est_h1, est_h0 = est_h0)
 
 modsem_inspect(est_h1, what="fit")
+
+
+# modsem_pi
+est_h1 <- modsem(m1, oneInt, method = "dblcent")
+est_h0 <- estimate_h0(est_h1, oneInt)
+
+compare_fit(est_h1 = est_h1, est_h0 = est_h0)
+
+est_h1 <- modsem(m1, oneInt, method = "ca")
+est_h0 <- estimate_h0(est_h1, oneInt)
+
+compare_fit(est_h1 = est_h1, est_h0 = est_h0)

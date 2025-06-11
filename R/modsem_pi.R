@@ -182,6 +182,9 @@ modsem_pi <- function(model.syntax = NULL,
     return(est)
   }
 
+  # Save these for later
+  input <- list(syntax = model.syntax, data = data)
+
   if (!is.data.frame(data)) data <- as.data.frame(data)
 
   methodSettings <-
@@ -244,10 +247,17 @@ modsem_pi <- function(model.syntax = NULL,
 
   newSyntax <- parTableToSyntax(parTable, removeColon = TRUE)
 
+  # Interaction model
   modelSpec$prodInds <- prodInds
   modelSpec$syntax   <- newSyntax
   modelSpec$data     <- newData
   modelSpec$parTable <- parTable
+  modelSpec$method   <- method
+
+  # Extra info saved for estimating baseline model
+  input$modsemArgs <- methodSettings
+  input$lavArgs    <- list(estimator = estimator, cluster = cluster, group = group, ...)
+  modelSpec$input  <- input
 
   if (run) {
     lavWrapper <- getWarningWrapper(silent = suppress.warnings.lavaan)

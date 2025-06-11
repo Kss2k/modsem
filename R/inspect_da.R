@@ -52,7 +52,7 @@ modsem_inspect_da <- function(model, what = "default") {
            list(
               fit.h0 = fit_modsem_da(h0, chisq = TRUE),
               fit.h1 = fit_modsem_da(model, chisq = FALSE),
-              comparative.fit = compare_fit(h0, model)
+              comparative.fit = compare_fit(est_h1 = model, est_h0 = h0)
            )
          },
          info[what])
