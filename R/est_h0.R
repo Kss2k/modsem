@@ -112,7 +112,14 @@ estimate_h0.modsem_pi <- function(object, warn_no_interaction = TRUE, ...) {
              "The baseline model is identical to the original model, ",
              "and won't be estimated!")
       return(NULL)
-    } 
+   
+    } else if (parTableHasHigherOrderInteraction(parTable)) {
+      warning2("Unable to estimate baseline model for models with higher-order interaction terms!",
+               immediate. = FALSE)
+      return(NULL)
+    }
+
+
 
     isInteractionTerm <- grepl(":", parTable$rhs)
     constrainedParTable <- parTable
@@ -152,4 +159,9 @@ estimate_h0.modsem_pi <- function(object, warn_no_interaction = TRUE, ...) {
 
 parTableHasInteraction <- function(parTable) {
   any(grepl(":", parTable$rhs) & parTable$mod != "0")
+}
+
+
+parTableHasHigherOrderInteraction <- function(parTable) {
+  any(grepl(":", parTable$rhs) & parTable$op == "=~")
 }
