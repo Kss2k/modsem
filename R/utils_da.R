@@ -429,7 +429,7 @@ getLabelVarXZ <- function(intTerm) {
   X    <- XZ[[1]]
   Z    <- XZ[[2]]
 
-  labelXZ <- paste0(X, Z, OP_REPLACEMENTS[[":"]], X, Z)
+  labelXZ <- paste0(X, OP_REPLACEMENTS[[":"]], Z)
   paste0(labelXZ, OP_REPLACEMENTS[["~~"]], labelXZ)
 }
 
