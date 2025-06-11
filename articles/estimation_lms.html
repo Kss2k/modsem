@@ -91,15 +91,18 @@ Instead of a fixed quadrature, it is possible to use a quasi-adaptive
 quadrature instead. Due to performance reasons, the adaptive quadrature
 does not fit an individual quadrature to each participant, but instead
 one for the entire sample (at each EM iteration), based on the whole
-sample densities of the likelihood function. This usually means that
-more nodes are placed towards the center of the distribution, compared
-to a standard fixed Gauss-Hermite quadrature. Using the EMA and adaptive
-quadrature might yield estimates that are closer to results from
-<code>Mplus</code>.</p>
-<p>If the model struggles to converge, you can try using the accelerated
-EM procedure by setting <code>method = "EMA"</code>, and
-<code>adaptive.quad = TRUE</code> in the <code><a href="../reference/modsem.html">modsem()</a></code> function.
-Additionally it is possible to tweak these parameters:</p>
+sample densities of the likelihood function. It essentially works by
+removing irrelevant nodes which don’t contribute to the integral, and
+increasing the number of nodes which actually contribute to the
+integral. This usually means that more nodes are placed towards the
+center of the distribution, compared to a standard fixed Gauss-Hermite
+quadrature. Using the EMA and adaptive quadrature might yield estimates
+that are closer to results from <code>Mplus</code>.</p>
+<p>If the model struggles to converge, you can try changing the EM
+procedure by setting <code>algorithm = "EMA"</code>, or
+<code>algorithm = "EM"</code>, and <code>adaptive.quad = TRUE</code> in
+the <code><a href="../reference/modsem.html">modsem()</a></code> function. Additionally it is possible to tweak
+these parameters:</p>
 <ul>
 <li>
 <code>max.iter</code>: Maximum number of iterations for the EM

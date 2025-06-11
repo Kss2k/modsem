@@ -316,9 +316,11 @@ exogenous variable, it is recommended to use at least 32 nodes for the
 <code>LMS</code> approach. You can also obtain robust standard errors by
 setting <code>robust.se = TRUE</code> in the <code><a href="../reference/modsem.html">modsem()</a></code>
 function.</p>
-<p><strong>Note</strong>: If you want the <code>LMS</code> approach to
-produce results as similar as possible to Mplus, you should increase the
-number of nodes (e.g., <code>nodes = 100</code>).</p>
+<p><strong>NOTE</strong>: If you want the <code>LMS</code> approach to
+produce results as similar as possible to <code>Mplus</code>, you should
+consider increasing the number of nodes using the <code>nodes</code>
+argument, and or using a quasi-adaptive quadrature by setting
+<code>adaptive.quad=TRUE</code>.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># ATT = Attitude</span></span>
 <span><span class="co"># PBC = Perceived Behavioral Control</span></span>
