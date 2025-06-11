@@ -41,7 +41,7 @@ summary.modsem_pi <- function(object,
 
   # Baseline (H0) model
   if (H0) {
-    est_h0 <- estimate_h0(object, ...)
+    est_h0 <- tryCatch(estimate_h0(object, ...), error = \(e) NULL)
     out$nullModel <- est_h0
     if (!is.null(est_h0)) {
       # Use compare_fit (modsem generic, which internally uses lavTestLRT/anova for modsem_pi)
