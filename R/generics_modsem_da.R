@@ -188,7 +188,7 @@ print.summary_da <- function(x, digits = 3, ...) {
     cat(allignLhsRhs(lhs = names, rhs = values, pad = "  ",
                      width.out = width.out), "\n")
 
-    cat("Comparative Fit to H0:\n")
+    cat("Comparative Fit to H0 (LRT test):\n")
     names <- c("Loglikelihood change",
                "Difference test (D)",
                "Degrees of freedom (D)", "P-value (D)")
