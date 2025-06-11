@@ -56,4 +56,4 @@ est2Qml <- modsem(m2, data = jordan, method = "qml")
 summary(est2Qml)
 ```
 
-**Note**: The other approaches (e.g., `LMS` and constrained methods) can also be used but may be slower depending on the number of interaction effects, especially for the `LMS` and constrained approaches.
+**NOTE**: The other approaches (e.g., `LMS` and constrained methods) can also be used but may be slower depending on the number of interaction effects, especially for the `LMS` and constrained approach.

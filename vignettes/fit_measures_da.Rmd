@@ -24,10 +24,10 @@ library(modsem)
 
 This vignette demonstrates how to evaluate and compare model fit for latent interaction models estimated via
 
-- **LMS** (Latent Moderated Structural Equations)
-- **QML** (Quasi-Maximum Likelihood)
+- The Latent Moderated Structural Equations (LMS) approach.
+- The Quasi-Maximum Likelihood (QML) approach.
 
-using the **modsem** package (v≥1.0.8). Because standard Chi-square statistics are not available under LMS/QML, we assess fit by:
+using the `modsem` package (v≥1.0.8). Because standard Chi-square statistics are not available under LMS/QML, we assess fit by:
 
 1. Examining fit indices for the baseline (no-interaction) model.
 2. Conducting a likelihood-ratio difference test to compare the baseline and interaction models (Klein & Moosbrugger, 2000; Klein & Múthen, 2007).
@@ -36,7 +36,7 @@ If the baseline model shows acceptable fit and adding the latent interaction sig
 
 # Example
 
-We define a model with three latent variables (X, Y, Z) and their interaction (X:Z):
+We define a model with three latent variables (`X`, `Y`, `Z`) and their interaction (`X:Z`):
 
 ```{r}
 m1 <- "
@@ -74,7 +74,7 @@ fit_modsem_da(est_h1, chisq = FALSE)
 Compare H0 vs. H1 using a log-likelihood ratio test:
 
 ```{r}
-compare_fit(est_h0, est_h1)
+compare_fit(est_h1 = est_h1, est_h0 = est_h0)
 ```
 
 A **significant** p-value indicates the latent interaction term significantly improves model fit.

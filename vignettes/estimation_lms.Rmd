@@ -29,12 +29,14 @@ By default the LMS approach also uses a fixed Gauss-Hermite quadrature, to estim
 approximation of the log-likelihood. Instead of a fixed quadrature, it is possible to use a
 quasi-adaptive quadrature instead. Due to performance reasons, the adaptive quadrature does not fit an
 individual quadrature to each participant, but instead one for the entire sample (at each EM iteration), 
-based on the whole sample densities of the likelihood function. This usually means that more nodes are placed towards the
-center of the distribution, compared to a standard fixed Gauss-Hermite quadrature. Using the EMA and adaptive quadrature might yield 
-estimates that are closer to results from `Mplus`.
+based on the whole sample densities of the likelihood function. It essentially works by 
+removing irrelevant nodes which don't contribute to the integral, and increasing the number of nodes 
+which actually contribute to the integral. This usually means that more nodes are placed towards the
+center of the distribution, compared to a standard fixed Gauss-Hermite quadrature.
+Using the EMA and adaptive quadrature might yield estimates that are closer to results from `Mplus`.
 
-If the model struggles to converge, you can try using the accelerated EM procedure by setting `method = "EMA"`,
-and `adaptive.quad = TRUE` in the `modsem()` function. Additionally it is possible to tweak these parameters:
+If the model struggles to converge, you can try changing the EM procedure by setting `algorithm = "EMA"`,
+or `algorithm = "EM"`, and `adaptive.quad = TRUE` in the `modsem()` function. Additionally it is possible to tweak these parameters:
 
 - `max.iter`: Maximum number of iterations for the EM algorithm (default is 500).
 - `max.step`: Maximum number of steps used in the Maximization step of the EM algorithm (default is 1).

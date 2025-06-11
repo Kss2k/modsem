@@ -58,7 +58,9 @@ Below is an example of a more complex model based on the theory of planned behav
 
 When there is an interaction effect between an endogenous and exogenous variable, it is recommended to use at least 32 nodes for the `LMS` approach. You can also obtain robust standard errors by setting `robust.se = TRUE` in the `modsem()` function.
 
-**Note**: If you want the `LMS` approach to produce results as similar as possible to Mplus, you should increase the number of nodes (e.g., `nodes = 100`).
+**NOTE**: If you want the `LMS` approach to produce results as similar as possible to `Mplus`, 
+you should consider increasing the number of nodes using the `nodes` argument, and or 
+using a quasi-adaptive quadrature by setting `adaptive.quad=TRUE`.
 
 ```{r}
 # ATT = Attitude
