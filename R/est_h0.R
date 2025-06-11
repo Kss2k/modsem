@@ -115,10 +115,24 @@ estimate_h0.modsem_pi <- function(object, warn_no_interaction = TRUE, ...) {
     } 
 
     isInteractionTerm <- grepl(":", parTable$rhs)
+    constrainedParTable <- parTable
+
+    # If there are any label modifiers, we must not remove them completely 
+    # from the model, as they might be used elsewhere in the model
+    preExistingMod <- constrainedParTable[isInteractionTerm, "mod"]
+    preExistingMod <- preExistingMod[preExistingMod != ""]
+    preExistingLab <- unique(preExistingMod[!canBeNumeric(preExistingMod)])
+
+    # Redine the labels as zero, if they exist
+    if (length(preExistingLab)) {
+      redefinedLabels <- data.frame(lhs = preExistingLab, op  = ":=", rhs = "0", 
+                                    mod = preExistingLab)
+      constrainedParTable <- rbind(redefinedLabels, constrainedParTable)
+    }
+    
     # We don't want to remove the interaction term, since we want the baseline model
     # to have the same variables as the original model (inluding the product indicators).
     # However, we want to constrain the interaction terms to zero.
-    constrainedParTable <- parTable
     constrainedParTable[isInteractionTerm, "mod"] <- "0"
     
     syntax <- parTableToSyntax(constrainedParTable)
