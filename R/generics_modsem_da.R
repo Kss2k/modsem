@@ -535,11 +535,11 @@ standardized_solution_COEFS <- function(object, monte.carlo = FALSE, mc.reps = 1
 
   for (xz in intTerms) {
     selectRows <- parTable$rhs == xz & parTable$op == "~"
-    label <- parTable[selectRows, "label"]
+    labels <- parTable[selectRows, "label"]
     labelVarXZ <- getLabelVarXZ(xz)
-    gamma <- COEFS[[label]] / sqrt(COEFS[[labelVarXZ]])
+    gamma <- COEFS[labels] / sqrt(COEFS[[labelVarXZ]])
 
-    COEFS[[label]] <- gamma 
+    COEFS[labels] <- gamma 
   }
 
   # recalculate custom parameters
@@ -547,9 +547,7 @@ standardized_solution_COEFS <- function(object, monte.carlo = FALSE, mc.reps = 1
   for (i in seq_len(NROW(constrExprs))) {
     row <- constrExprs[i, , drop=FALSE]
     label <- row$label
-
-    expr      <- parse(text=constrExprs[i, "rhs"])
-  
+    expr <- parse(text=constrExprs[i, "rhs"])
     newVals <- eval(expr, envir = COEFS)
   
     COEFS[[label]] <- newVals
