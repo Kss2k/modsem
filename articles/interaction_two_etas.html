@@ -164,6 +164,8 @@ argument in <code>modsem</code>:</p>
 <span><span class="co">#&gt; effects between endogenous variables in the lms approach 'nodes = 24'</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_lms</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Estimating baseline model (H0)</span></span>
+<span><span class="co">#&gt; Warning in stats::pchisq(D, df = df, lower.tail = FALSE, log.p = FALSE): NaNs</span></span>
+<span><span class="co">#&gt; produced</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; modsem (version 1.0.9):</span></span>
 <span><span class="co">#&gt;   Estimator                                         LMS</span></span>
@@ -189,10 +191,10 @@ argument in <code>modsem</code>:</p>
 <span><span class="co">#&gt;   RMSEA                                           0.000</span></span>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; Comparative fit to H0 (no interaction effect)</span></span>
-<span><span class="co">#&gt;   Loglikelihood change                          2612.30</span></span>
-<span><span class="co">#&gt;   Difference test (D)                           5224.60</span></span>
-<span><span class="co">#&gt;   Degrees of freedom (D)                              1</span></span>
-<span><span class="co">#&gt;   P-value (D)                                     0.000</span></span>
+<span><span class="co">#&gt;   Loglikelihood change                         -2612.30</span></span>
+<span><span class="co">#&gt;   Difference test (D)                          -5224.60</span></span>
+<span><span class="co">#&gt;   Degrees of freedom (D)                             -1</span></span>
+<span><span class="co">#&gt;   P-value (D)                                       NaN</span></span>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; R-Squared:</span></span>
 <span><span class="co">#&gt;   BEH                                             0.235</span></span>
@@ -301,6 +303,8 @@ argument in <code>modsem</code>:</p>
 <span>                  method <span class="op">=</span> <span class="st">"qml"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_qml</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Estimating baseline model (H0)</span></span>
+<span><span class="co">#&gt; Warning in stats::pchisq(D, df = df, lower.tail = FALSE, log.p = FALSE): NaNs</span></span>
+<span><span class="co">#&gt; produced</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; modsem (version 1.0.9):</span></span>
 <span><span class="co">#&gt;   Estimator                                         QML</span></span>
@@ -321,10 +325,10 @@ argument in <code>modsem</code>:</p>
 <span><span class="co">#&gt;   RMSEA                                           0.000</span></span>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; Comparative fit to H0 (no interaction effect)</span></span>
-<span><span class="co">#&gt;   Loglikelihood change                            32.70</span></span>
-<span><span class="co">#&gt;   Difference test (D)                             65.41</span></span>
-<span><span class="co">#&gt;   Degrees of freedom (D)                              1</span></span>
-<span><span class="co">#&gt;   P-value (D)                                     0.000</span></span>
+<span><span class="co">#&gt;   Loglikelihood change                           -32.70</span></span>
+<span><span class="co">#&gt;   Difference test (D)                            -65.41</span></span>
+<span><span class="co">#&gt;   Degrees of freedom (D)                             -1</span></span>
+<span><span class="co">#&gt;   P-value (D)                                       NaN</span></span>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; R-Squared:</span></span>
 <span><span class="co">#&gt;   BEH                                             0.239</span></span>

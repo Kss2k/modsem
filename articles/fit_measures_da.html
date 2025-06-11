@@ -315,17 +315,19 @@ test while ignoring the interaction terms in the model.</p>
 <p>Compare H0 vs. H1 using a log-likelihood ratio test:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/compare_fit.html">compare_fit</a></span><span class="op">(</span><span class="va">est_h0</span>, <span class="va">est_h1</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning in stats::pchisq(D, df = df, lower.tail = FALSE, log.p = FALSE): NaNs</span></span>
+<span><span class="co">#&gt; produced</span></span>
 <span><span class="co">#&gt; $D</span></span>
-<span><span class="co">#&gt; [1] 6288.394</span></span>
+<span><span class="co">#&gt; [1] -6288.394</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $df</span></span>
-<span><span class="co">#&gt; [1] 1</span></span>
+<span><span class="co">#&gt; [1] -1</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $p</span></span>
-<span><span class="co">#&gt; [1] 0</span></span>
+<span><span class="co">#&gt; [1] NaN</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $llChange</span></span>
-<span><span class="co">#&gt; [1] 3144.197</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] -3144.197</span></span></code></pre></div>
 <p>A <strong>significant</strong> p-value indicates the latent
 interaction term significantly improves model fit.</p>
 </div>

@@ -155,6 +155,8 @@ in the interaction term.</p>
 <span><span class="va">lms2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m2</span>, <span class="va">oneInt</span>, method <span class="op">=</span> <span class="st">"lms"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">lms2</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Estimating baseline model (H0)</span></span>
+<span><span class="co">#&gt; Warning in stats::pchisq(D, df = df, lower.tail = FALSE, log.p = FALSE): NaNs</span></span>
+<span><span class="co">#&gt; produced</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; modsem (version 1.0.9):</span></span>
 <span><span class="co">#&gt;   Estimator                                         LMS</span></span>
@@ -180,10 +182,10 @@ in the interaction term.</p>
 <span><span class="co">#&gt;   RMSEA                                             Inf</span></span>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; Comparative fit to H0 (no interaction effect)</span></span>
-<span><span class="co">#&gt;   Loglikelihood change                          2736.39</span></span>
-<span><span class="co">#&gt;   Difference test (D)                           5472.77</span></span>
-<span><span class="co">#&gt;   Degrees of freedom (D)                              1</span></span>
-<span><span class="co">#&gt;   P-value (D)                                     0.000</span></span>
+<span><span class="co">#&gt;   Loglikelihood change                         -2736.39</span></span>
+<span><span class="co">#&gt;   Difference test (D)                          -5472.77</span></span>
+<span><span class="co">#&gt;   Degrees of freedom (D)                             -1</span></span>
+<span><span class="co">#&gt;   P-value (D)                                       NaN</span></span>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; R-Squared:</span></span>
 <span><span class="co">#&gt;   Y                                               0.495</span></span>
@@ -283,6 +285,8 @@ specify a measurement error for moderating variables.</p>
 <span><span class="va">qml3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m3</span>, <span class="va">oneInt</span>, method <span class="op">=</span> <span class="st">"qml"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">qml3</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Estimating baseline model (H0)</span></span>
+<span><span class="co">#&gt; Warning in stats::pchisq(D, df = df, lower.tail = FALSE, log.p = FALSE): NaNs</span></span>
+<span><span class="co">#&gt; produced</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; modsem (version 1.0.9):</span></span>
 <span><span class="co">#&gt;   Estimator                                         QML</span></span>
@@ -303,10 +307,10 @@ specify a measurement error for moderating variables.</p>
 <span><span class="co">#&gt;   RMSEA                                             Inf</span></span>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; Comparative fit to H0 (no interaction effect)</span></span>
-<span><span class="co">#&gt;   Loglikelihood change                           252.17</span></span>
-<span><span class="co">#&gt;   Difference test (D)                            504.33</span></span>
-<span><span class="co">#&gt;   Degrees of freedom (D)                              1</span></span>
-<span><span class="co">#&gt;   P-value (D)                                     0.000</span></span>
+<span><span class="co">#&gt;   Loglikelihood change                          -252.17</span></span>
+<span><span class="co">#&gt;   Difference test (D)                           -504.33</span></span>
+<span><span class="co">#&gt;   Degrees of freedom (D)                             -1</span></span>
+<span><span class="co">#&gt;   P-value (D)                                       NaN</span></span>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; R-Squared:</span></span>
 <span><span class="co">#&gt;   Y                                               0.470</span></span>
