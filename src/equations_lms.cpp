@@ -195,7 +195,7 @@ double completeLogLikLmsCpp(Rcpp::List modelR, Rcpp::List P, Rcpp::List quad) {
   const int d = Rcpp::as<int>(info["ncol"]);
 
   double ll = 0;
-  for (int i = 0; i < Z.n_cols; i++) {
+  for (std::size_t i = 0; i < Z.n_cols; i++) {
     const double tgamma = Rcpp::as<double>(TGamma[i]);
     if (tgamma <= DBL_MIN) continue;
 
@@ -209,47 +209,4 @@ double completeLogLikLmsCpp(Rcpp::List modelR, Rcpp::List P, Rcpp::List quad) {
   }
 
   return ll;
-}
-
-
-// [[Rcpp::export]]
-double obsLogLikLmsCpp(Rcpp::List modelR, const arma::mat& data,
-    Rcpp::List quad) {
-    try {
-        const LMSModel model(modelR);
-
-        arma::mat Z = Rcpp::as<arma::mat>(quad["n"]).t();   // k × m (col-vectors)
-        arma::vec w = Rcpp::as<arma::vec>(quad["w"]);
-
-        std::size_t m = Z.n_cols, N = data.n_rows;
-        arma::vec log_px(N, arma::fill::value(-std::numeric_limits<double>::infinity()));
-
-        for (std::size_t j = 0; j < m; ++j) {
-
-            arma::vec z      = Z.col(j);
-            arma::vec mu     = model.mu(z);
-            arma::mat Sigma  = model.Sigma(z);
-
-            arma::mat L;
-            if (!arma::chol(L, Sigma, "lower"))
-                return NA_REAL; // non-SPD -> return NA
-
-            arma::vec log_dens = dmvnorm_log(data, mu, L) + std::log(w(j));
-
-            // log-sum-exp accumulation
-            for (std::size_t i = 0; i < N; ++i) {
-                double a = log_px(i), b = log_dens(i);
-                double M = (a > b) ? a : b;
-                log_px(i) = M + std::log(std::exp(a - M) + std::exp(b - M));
-                if (!std::isfinite(log_px(i))) return NA_REAL;   // guard overflow
-            }
-        }
-
-        double ll = arma::sum(log_px);
-        if (!std::isfinite(ll)) return NA_REAL;
-        return ll;
-    }
-    catch (...) {
-        return NA_REAL;        // any unexpected C++ exception -> NA
-    }
 }

@@ -10,7 +10,4 @@ arma::vec dmvnrm_arma_mc(arma::mat const &x,  arma::rowvec const &mean,
 double totalDmvnWeightedCpp(const arma::vec& mu, const arma::mat& sigma,
     const arma::vec& nu, const arma::mat& S, double tgamma, int n, int d);
 
-arma::vec dmvnorm_log(const arma::mat& X, const arma::vec& mu,
-    const arma::mat& L);
-
 #endif // !mvnorm_h
