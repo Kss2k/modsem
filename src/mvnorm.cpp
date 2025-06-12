@@ -99,3 +99,17 @@ double totalDmvnWeightedCpp(const arma::vec& mu,
 
   return log_likelihood;
 }
+
+
+arma::vec dmvnorm_log(const arma::mat& X,
+                             const arma::vec& mu,
+                             const arma::mat& L) {
+    arma::mat Z = (X.each_row() - mu.t()) *
+                  arma::inv(trimatu(L.t()));
+
+    arma::vec quad = arma::sum(arma::square(Z), 1); 
+    double logdet  = 2.0 * arma::sum(log(L.diag()));
+
+    double cst = -0.5 * ( X.n_cols * std::log(2.0 * M_PI) + logdet );
+    return cst - 0.5 * quad;                           
+}
