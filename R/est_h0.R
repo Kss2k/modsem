@@ -144,22 +144,20 @@ estimate_h0.modsem_pi <- function(object, warn_no_interaction = TRUE, ...) {
     constrainedParTable[isInteractionTerm, "mod"] <- "0"
     
     syntax <- parTableToSyntax(constrainedParTable)
-    argList <- c(
-        list(model = syntax, data = data, method = method), argList
-    )
+    argList <- c(list(model = syntax, data = data, method = method), argList)
     
     fit <- do.call(modsem_pi, args = argList)
 
-    if (is.null(fit)) {
-      warning2("Baseline model could not be estimated!", immediate. = FALSE)
+    if (is.null(extract_lavaan(fit))) {
+      warning2("`lavaan` failed when estimating the model!", immediate. = FALSE)
       return(NULL)
     }
 
     fit
   },
   error = function(e) {
-    warning2("Null model could not be estimated. ",
-             "Error message: ", e$message)
+    warning2("Baseline model could not be estimated: ", e$message, 
+             immediate. = FALSE)
     NULL
   })
 }
