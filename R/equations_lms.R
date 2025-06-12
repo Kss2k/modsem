@@ -150,12 +150,12 @@ obsLogLikLms_i <- function(theta, model, data, P, sign = 1, ...) {
     px <- px + w[i] * dens_i
   }
  
-  sum(sign * log(px))
+  sign * log(px)
 }
 
 
 # gradient function of logLikLms_i
-gradientObsLogLikLms_i <- function(theta, model, data, P, sign = -1, epsilon = 1e-4) {
+gradientObsLogLikLms_i <- function(theta, model, data, P, sign = 1, epsilon = 1e-4) {
   baseLL <- obsLogLikLms_i(theta, model, data = data, P = P, sign = sign)
 
   lapplyMatrix(seq_along(theta), FUN = function(i) {
