@@ -155,6 +155,7 @@ estimate_h0.modsem_pi <- function(object, warn_no_interaction = TRUE, ...) {
       return(NULL)
     }
 
+    fit
   },
   error = function(e) {
     warning2("Null model could not be estimated. ",
