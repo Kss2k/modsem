@@ -60,19 +60,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// obsLogLikLmsCpp
-double obsLogLikLmsCpp(Rcpp::List modelR, const arma::mat& data, Rcpp::List quad);
-RcppExport SEXP _modsem_obsLogLikLmsCpp(SEXP modelRSEXP, SEXP dataSEXP, SEXP quadSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::List >::type modelR(modelRSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type data(dataSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type quad(quadSEXP);
-    rcpp_result_gen = Rcpp::wrap(obsLogLikLmsCpp(modelR, data, quad));
-    return rcpp_result_gen;
-END_RCPP
-}
 // muQmlCpp
 arma::mat muQmlCpp(Rcpp::List m, int t);
 RcppExport SEXP _modsem_muQmlCpp(SEXP mSEXP, SEXP tSEXP) {
@@ -209,7 +196,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_modsem_muLmsCpp", (DL_FUNC) &_modsem_muLmsCpp, 2},
     {"_modsem_sigmaLmsCpp", (DL_FUNC) &_modsem_sigmaLmsCpp, 2},
     {"_modsem_completeLogLikLmsCpp", (DL_FUNC) &_modsem_completeLogLikLmsCpp, 3},
-    {"_modsem_obsLogLikLmsCpp", (DL_FUNC) &_modsem_obsLogLikLmsCpp, 3},
     {"_modsem_muQmlCpp", (DL_FUNC) &_modsem_muQmlCpp, 2},
     {"_modsem_sigmaQmlCpp", (DL_FUNC) &_modsem_sigmaQmlCpp, 2},
     {"_modsem_calcKronXi", (DL_FUNC) &_modsem_calcKronXi, 2},

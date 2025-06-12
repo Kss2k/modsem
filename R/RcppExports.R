@@ -17,10 +17,6 @@ completeLogLikLmsCpp <- function(modelR, P, quad) {
     .Call(`_modsem_completeLogLikLmsCpp`, modelR, P, quad)
 }
 
-obsLogLikLmsCpp <- function(modelR, data, quad) {
-    .Call(`_modsem_obsLogLikLmsCpp`, modelR, data, quad)
-}
-
 muQmlCpp <- function(m, t) {
     .Call(`_modsem_muQmlCpp`, m, t)
 }
