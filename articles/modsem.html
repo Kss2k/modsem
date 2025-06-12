@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">modsem</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.9</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.10</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -111,7 +111,7 @@ between two latent variables in <code>lavaan</code>.</p>
 <span></span>
 <span><span class="va">est1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m1</span>, <span class="va">oneInt</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est1</span><span class="op">)</span></span>
-<span><span class="co">#&gt; modsem (version 1.0.9, approach = dblcent):</span></span>
+<span><span class="co">#&gt; modsem (version 1.0.10, approach = dblcent):</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Interaction Model Fit Measures (H1):</span></span>
 <span><span class="co">#&gt;   Loglikelihood                              -26807.61 </span></span>
@@ -293,7 +293,7 @@ method. If you want to use another method, you can change it using the
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est1</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Estimating baseline model (H0)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (version 1.0.9):</span></span>
+<span><span class="co">#&gt; modsem (version 1.0.10):</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                         LMS</span></span>
 <span><span class="co">#&gt;   Optimization method                        EMA-NLMINB</span></span>
@@ -442,7 +442,7 @@ not recommended.</p>
 <code class="sourceCode R"><span><span class="co"># Using "pind" as the method (see Chapter 3)</span></span>
 <span><span class="va">est2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="st">'y1 ~ x1 + z1 + x1:z1'</span>, data <span class="op">=</span> <span class="va">oneInt</span>, method <span class="op">=</span> <span class="st">"pind"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; modsem (version 1.0.9, approach = pind):</span></span>
+<span><span class="co">#&gt; modsem (version 1.0.10, approach = pind):</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Interaction Model Fit Measures (H1):</span></span>
 <span><span class="co">#&gt;   Loglikelihood                               -3173.58 </span></span>
@@ -524,7 +524,7 @@ and observed variables.</p>
 <span></span>
 <span><span class="va">est3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m3</span>, <span class="va">oneInt</span>, method <span class="op">=</span> <span class="st">"pind"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est3</span><span class="op">)</span></span>
-<span><span class="co">#&gt; modsem (version 1.0.9, approach = pind):</span></span>
+<span><span class="co">#&gt; modsem (version 1.0.10, approach = pind):</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Interaction Model Fit Measures (H1):</span></span>
 <span><span class="co">#&gt;   Loglikelihood                              -20185.48 </span></span>
@@ -639,7 +639,7 @@ quadratic effects.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est4</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Estimating baseline model (H0)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (version 1.0.9):</span></span>
+<span><span class="co">#&gt; modsem (version 1.0.10):</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                         QML</span></span>
 <span><span class="co">#&gt;   Optimization method                            NLMINB</span></span>
@@ -764,7 +764,7 @@ quadratic effects.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_tpb_lms</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Estimating baseline model (H0)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (version 1.0.9):</span></span>
+<span><span class="co">#&gt; modsem (version 1.0.10):</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                         LMS</span></span>
 <span><span class="co">#&gt;   Optimization method                        EMA-NLMINB</span></span>
@@ -913,7 +913,7 @@ is a subset of the PISA 2006 dataset.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_jordan_qml</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Estimating baseline model (H0)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (version 1.0.9):</span></span>
+<span><span class="co">#&gt; modsem (version 1.0.10):</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                         QML</span></span>
 <span><span class="co">#&gt;   Optimization method                            NLMINB</span></span>
