@@ -1,85 +1,3 @@
-muLms <- function(model, z1) { # for testing purposes
-  matrices <- model$matrices
-  A <- matrices$A
-  Oxx <- matrices$omegaXiXi
-  Oex <- matrices$omegaEtaXi
-  Ie <- matrices$Ieta
-  lY <- matrices$lambdaY
-  lX <- matrices$lambdaX
-  tY <- matrices$tauY
-  tX <- matrices$tauX
-  Gx <- matrices$gammaXi
-  Ge <- matrices$gammaEta
-  a <- matrices$alpha
-  psi <- matrices$psi
-
-  k <- model$quad$k
-  zVec <- c(z1[0:k], rep(0, model$info$numXis - k))
-  kronZ <- kronecker(Ie, A %*% zVec)
-  if (ncol(Ie) == 1) Binv <- Ie else Binv <- solve(Ie - Ge - t(kronZ) %*% Oex)
-
-  muX <- tX + lX %*% A %*% zVec
-  muY <- tY +
-    lY %*% (Binv %*% (a +
-      Gx %*% A %*% zVec +
-      t(kronZ) %*% Oxx %*% A %*% zVec))
-  rbind(muX, muY)
-}
-
-
-sigmaLms <- function(model, z1) { # for testing purposes
-  matrices <- model$matrices
-  Oxx <- matrices$omegaXiXi
-  Oex <- matrices$omegaEtaXi
-  Ie <- matrices$Ieta
-  A <- matrices$A
-  lY <- matrices$lambdaY
-  lX <- matrices$lambdaX
-  Gx <- matrices$gammaXi
-  Ge <- matrices$gammaEta
-  dX <- matrices$thetaDelta
-  dY <- matrices$thetaEpsilon
-  psi <- matrices$psi
-  k <- model$quad$k
-  zVec <- c(z1[0:k], rep(0, model$info$numXis - k))
-  kronZ <- kronecker(Ie, A %*% zVec)
-  if (ncol(Ie) == 1) Binv <- Ie else Binv <- solve(Ie - Ge - t(kronZ) %*% Oex)
-
-  OI <- diag(1, model$info$numXis)
-  diag(OI) <- c(rep(0, k), rep(1, model$info$numXis - k))
-
-  Sxx <- lX %*% A %*% OI %*%
-    t(A) %*% t(lX) + dX
-  Sxy <- lX %*% A %*% OI %*%
-    t(Binv %*% (Gx %*% A + t(kronZ) %*% Oxx %*% A)) %*% t(lY)
-  Syy <- lY %*%
-    (Binv %*% (Gx %*% A + t(kronZ) %*% Oxx %*% A)) %*%
-    OI %*%
-    t(Binv %*% (Gx %*% A + t(kronZ) %*% Oxx %*% A)) %*% t(lY) +
-    lY %*% (Binv %*% psi %*% t(Binv)) %*% t(lY) + dY
-  rbind(
-    cbind(Sxx, Sxy),
-    cbind(t(Sxy), Syy)
-  )
-}
-
-
-densitySingleLms <- function(z, modFilled, data) {
-  mu <- muLmsCpp(model = modFilled, z = z)
-  sigma <- sigmaLmsCpp(model = modFilled, z = z)
-  dmvn(data, mean = mu, sigma = sigma)
-}
-
-
-densityLms <- function(z, modFilled, data) {
-  if (is.null(dim(z))) z <- matrix(z, ncol = modFilled$quad$k)
-
-  lapplyMatrix(seq_len(nrow(z)), FUN.VALUE = numeric(NROW(data)), FUN = function(i) {
-    densitySingleLms(z = z[i, , drop=FALSE], modFilled = modFilled, data = data)
-  })
-}
-
-
 estepLms <- function(model, theta, data, lastQuad = NULL, recalcQuad = FALSE, ...) {
   modFilled <- fillModel(model = model, theta = theta, method = "lms")
 
@@ -141,26 +59,53 @@ estepLms <- function(model, theta, data, lastQuad = NULL, recalcQuad = FALSE, ..
 }
 
 
-logLikLms <- function(theta, model, data, P, sign = -1, ...) {
+# Maximization step of EM-algorithm (see Klein & Moosbrugger, 2000)
+mstepLms <- function(theta, model, data, P,
+                     max.step,
+                     verbose = FALSE,
+                     control = list(),
+                     optimizer = "nlminb",
+                     optim.method = "L-BFGS-B",
+                     epsilon = 1e-6,
+                     ...) {
+
+  gradient <- function(theta) {
+    gradientLogLikLms(theta = theta, model = model, P = P, sign = -1,
+                      data = data, epsilon = epsilon)
+  }
+
+  objective <- function(theta) {
+    logLikLms(theta = theta, model = model, P = P, sign = -1)
+  }
+
+  if (optimizer == "nlminb") {
+    if (is.null(control$iter.max)) control$iter.max <- max.step
+    est <- stats::nlminb(start = theta, objective = objective, 
+                         gradient = gradient,
+                         upper = model$info$bounds$upper,
+                         lower = model$info$bounds$lower, control = control,
+                         ...) |> suppressWarnings()
+
+  } else if (optimizer == "L-BFGS-B") {
+    if (is.null(control$maxit)) control$maxit <- max.step
+    est <- stats::optim(par = theta, fn = objective, gr = gradient,
+                        method = optim.method, control = control,
+                        lower = model$info$bounds$lower,
+                        upper = model$info$bounds$upper, ...)
+
+    est$objective  <- est$value
+    est$iterations <- est$counts[["function"]]
+  } else {
+    stop2("Unrecognized optimizer, must be either 'nlminb' or 'L-BFGS-B'")
+  }
+
+  est
+}
+
+
+logLikLms <- function(theta, model, P, sign = -1, ...) {
   modFilled <- fillModel(model = model, theta = theta, method = "lms")
-  k <- model$quad$k
-  V <- P$V
-  n <- nrow(data)
-  d <- ncol(data)
-  # summed log probability of observing the data given the parameters
-  # weighted my the posterior probability calculated in the E-step
-  r <- vapply(seq_len(nrow(V)), FUN.VALUE = numeric(1L), FUN = function(i) {
-    if (P$tgamma[[i]] < .Machine$double.xmin) return(0)
-
-    totalDmvnWeightedCpp(mu=muLmsCpp(model=modFilled, z=V[i, ]),
-                         sigma=sigmaLmsCpp(model=modFilled, z=V[i, ]), 
-                         nu=P$mean[[i]], S=P$cov[[i]], tgamma=P$tgamma[[i]], 
-                         n = n, d = d)
-
-  })
-
-  
-  sign * sum(r)
+  sign * completeLogLikLmsCpp(modelR=modFilled, P=P, quad=P$quad)
 }
 
 
@@ -173,62 +118,66 @@ gradientLogLikLms <- function(theta, model, data, P, sign = -1, epsilon = 1e-4) 
 }
 
 
-# log likelihood for each observation -- not all
-logLikLms_i <- function(theta, model, data, P, sign = -1, ...) {
+obsLogLikLms <- function(theta, model, data, P, sign = 1, ...) {
+  sum(obsLogLikLms_i(theta, model = model, data = data, P = P, sign = sign))
+}
+
+
+gradientObsLogLikLms <- function(theta, model, data, P, sign = -1, epsilon = 1e-4) {
+  baseLL <- logLikLms(theta, model = model, data = data, P = P, sign = sign)
+
+  vapply(seq_along(theta), FUN.VALUE = numeric(1L), FUN = function(i) {
+    theta[[i]] <- theta[[i]] + epsilon
+    (obsLogLikLms(theta, model = model, data = data, P = P, sign = sign) - baseLL) / epsilon
+  })
+}
+
+
+obsLogLikLms_i <- function(theta, model, data, P, sign = 1, ...) {
   modFilled <- fillModel(model = model, theta = theta, method = "lms")
-  k <- model$quad$k
+
   V <- P$V
+  w <- P$w
+  N <- nrow(data)
+  m <- nrow(V)
+  px <- numeric(N)
 
-  # summed log probability of observing the data given the parameters
-  # weighted my the posterior probability calculated in the E-step
-  r <- lapplyMatrix(seq_len(nrow(V)), FUN = function(i) {
-    dmvn(data,
-      mean = muLmsCpp(model = modFilled, z = V[i, ]),
-      sigma = sigmaLmsCpp(model = modFilled, z = V[i, ]),
-      log = TRUE
-    ) * P$P[, i]
+  for (i in seq_len(m)) {
+    z_i     <- V[i, ]
+    mu_i    <- muLmsCpp(  model = modFilled, z = z_i)
+    sigma_i <- sigmaLmsCpp(model = modFilled, z = z_i)
+    dens_i  <- dmvn(data, mean = mu_i, sigma = sigma_i, log = FALSE)
+    px <- px + w[i] * dens_i
+  }
+ 
+  sum(sign * log(px))
+}
+
+
+# gradient function of logLikLms_i
+gradientObsLogLikLms_i <- function(theta, model, data, P, sign = -1, epsilon = 1e-4) {
+  baseLL <- logLikLms_i(theta, model, data = data, P = P, sign = sign)
+
+  lapplyMatrix(seq_along(theta), FUN = function(i) {
+    theta[[i]] <- theta[[i]] + epsilon
+    (logLikLms_i(theta, model, data = data, P = P, sign = sign) - baseLL) / epsilon
   }, FUN.VALUE = numeric(nrow(data)))
-
-  sign * apply(r, MARGIN = 1, FUN = sum)
 }
 
 
-# Maximization step of EM-algorithm (see Klein & Moosbrugger, 2000)
-mstepLms <- function(theta, model, data, P,
-                     max.step,
-                     verbose = FALSE,
-                     control = list(),
-                     optimizer = "nlminb",
-                     optim.method = "L-BFGS-B",
-                     epsilon = 1e-6,
-                     ...) {
-  gradient <- function(theta, model, data, P, sign) {
-    gradientLogLikLms(theta = theta, model = model, P = P, sign = sign,
-                      data = data, epsilon = epsilon)
-  }
-
-  if (optimizer == "nlminb") {
-    if (is.null(control$iter.max)) control$iter.max <- max.step
-    est <- stats::nlminb(start = theta, objective = logLikLms, data = data,
-                         model = model, P = P, gradient = gradient,
-                         sign = -1,
-                         upper = model$info$bounds$upper,
-                         lower = model$info$bounds$lower, control = control,
-                         ...) |> suppressWarnings()
-
-  } else if (optimizer == "L-BFGS-B") {
-    if (is.null(control$maxit)) control$maxit <- max.step
-    est <- stats::optim(par = theta, fn = logLikLms, data = data,
-                        model = model, P = P, gr = gradient,
-                        method = optimizer, control = control,
-                        sign = -1, lower = model$info$bounds$lower,
-                        upper = model$info$bounds$upper, ...)
-
-    est$objective  <- est$value
-    est$iterations <- est$counts[["function"]]
-  } else {
-    stop2("Unrecognized optimizer, must be either 'nlminb' or 'L-BFGS-B'")
-  }
-
-  est
+densitySingleLms <- function(z, modFilled, data) {
+  mu <- muLmsCpp(model = modFilled, z = z)
+  sigma <- sigmaLmsCpp(model = modFilled, z = z)
+  dmvn(data, mean = mu, sigma = sigma)
 }
+
+
+densityLms <- function(z, modFilled, data) {
+  if (is.null(dim(z))) z <- matrix(z, ncol = modFilled$quad$k)
+
+  lapplyMatrix(seq_len(nrow(z)), FUN.VALUE = numeric(NROW(data)), FUN = function(i) {
+    densitySingleLms(z = z[i, , drop=FALSE], modFilled = modFilled, data = data)
+  })
+}
+
+

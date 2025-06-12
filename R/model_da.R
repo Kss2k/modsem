@@ -230,6 +230,7 @@ specifyModelDA <- function(syntax = NULL,
   model <- list(
     info = list(
       N            = NROW(data),
+      ncol         = NCOL(data),
       xis          = xis,
       etas         = etas,
       numXis       = numXis,
