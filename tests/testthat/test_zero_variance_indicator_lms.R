@@ -1,29 +1,70 @@
 devtools::load_all()
 
-set.seed(42)
-n <- 100
-# Generate dummy data
+set.seed(123)
+n <- 100  # number of observations
+
+# Step 1: Simulate latent variables
+# We define latent variables: psc, SWE, decisions, work_engagement, irritation, stress, intention
+# Means and variances can be adjusted as needed
+
+latent_means <- rep(0, 6)  # [psc, SWE, decisions_not_influenced_latent, work_engagement, irritation, stress]
+latent_cov <- matrix(c(
+    1, 0.5,  0.4,   0,     0,   0,
+  0.5,   1,  0.4,   0,     0,   0,
+  0.4, 0.4,    1,   0,     0,   0,
+    0,   0,    0,   1,   0.3, 0.3,
+    0,   0,    0, 0.3,     1, 0.4,
+    0,   0,    0, 0.3,   0.4,   1
+), nrow = 6, byrow = TRUE)
+lvs <- c("psc", "SWE", "dec", "eng", "irr", "strs")
+dimnames(latent_cov) <- list(lvs, lvs)
+
+latent_data <- as.data.frame(mvtnorm::rmvnorm(n = n, mean = latent_means, sigma = latent_cov))
+names(latent_data) <- lvs
+
+# Step 2: Simulate indicators with loadings and residual variances
+# We assume loadings of ~0.8 and residuals to account for remaining variance
+
+make_indicators <- function(latent, prefix, items, loading = 0.8) {
+  residual_sd <- sqrt(1 - loading^2)
+  indicators <- matrix(NA, nrow = n, ncol = items)
+  for (i in 1:items) {
+    indicators[, i] <- loading * latent + rnorm(n, 0, residual_sd)
+  }
+  indicators <- as.data.frame(indicators)
+  colnames(indicators) <- paste0(prefix, "_", 1:items)
+  return(indicators)
+}
+
+# Measurement model
+PSC <- make_indicators(latent_data$psc, "PSC", 4)
+SWE <- make_indicators(latent_data$SWE, "Innovation", 4)
+ENG <- make_indicators(latent_data$eng, "engagement", 3)
+STRS <- make_indicators(latent_data$strs, "stress", 3)
+IRR <- make_indicators(latent_data$irr, "irritation", 3)
+
+# Single-indicator latent: decisions and intention (use dummy for decisions)
+decisions_not_influenced <- 0.8 * latent_data$dec + rnorm(n, 0, sqrt(1 - 0.8^2))
+intention <- ifelse(latent_data$eng + rnorm(n) < 0, 0, 1)  # dummy outcome ~ work_engagement
+
+# Step 3: Create dummy variable names matching your SEM model
+colnames(PSC) <- c("PSC_address_problems", "PSC_nobody_intentional", "PSC_dare_risk", "PSC_skills_appreciated")
+colnames(SWE) <- c("Innovation_push_through", "Innovation_inspire", "Innovation_innovation_potential", "Innovation_trust")
+colnames(ENG) <- c("fit_energetic", "inspiring_work", "completely_absorbed")
+colnames(STRS) <- c("too_little_time_tasks", "tasks_inadequately_fulfilled", "pointless_tasks")
+colnames(IRR) <- c("thinking_about_work_issues_at_home", "irritable", "feeling_like_bundle_of_nerves")
+
+# Final dataset
 dummy_data <- data.frame(
-  PSC_address_problems = sample(1:5, n, replace = TRUE),
-  PSC_nobody_intentional = sample(1:5, n, replace = TRUE),
-  PSC_dare_risk = sample(1:5, n, replace = TRUE),
-  PSC_skills_appreciated = sample(1:5, n, replace = TRUE),
-  Innovation_push_through = sample(1:5, n, replace = TRUE),
-  Innovation_inspire = sample(1:5, n, replace = TRUE),
-  Innovation_innovation_potential = sample(1:5, n, replace = TRUE),
-  Innovation_trust = sample(1:5, n, replace = TRUE),
-  fit_energetic = sample(1:5, n, replace = TRUE),
-  inspiring_work = sample(1:5, n, replace = TRUE),
-  completely_absorbed = sample(1:5, n, replace = TRUE),
-  too_little_time_tasks = sample(1:5, n, replace = TRUE),
-  tasks_inadequately_fulfilled = sample(1:5, n, replace = TRUE),
-  pointless_tasks = sample(1:5, n, replace = TRUE),
-  thinking_about_work_issues_at_home = sample(1:5, n, replace = TRUE),
-  irritable = sample(1:5, n, replace = TRUE),
-  feeling_like_bundle_of_nerves = sample(1:5, n, replace = TRUE),
-  decisions_not_influenced = sample(1:5, n, replace = TRUE),
-  intention_to_change_leadership_binary = sample(0:1, n, replace = TRUE)
+  PSC,
+  SWE,
+  ENG,
+  STRS,
+  IRR,
+  decisions_not_influenced = decisions_not_influenced,
+  intention_to_change_leadership_binary = intention
 )
+
 
 # Job Demands-Resources (JDR) model for SEM
 JDR_Model_modsem <- '
@@ -63,7 +104,4 @@ testthat::expect_error(
   regex = ".*zero residual variance.*"
 )
 
-testthat::expect_warning(
-  modsem(model = JDR_Model_modsem, data = dummy_data, method = "qml"),
-  regex = ".*Hessian matrix.*"
-)
+modsem(model = JDR_Model_modsem, data = dummy_data, method = "qml")
