@@ -43,7 +43,7 @@ summary.modsem_pi <- function(object,
   if (H0) {
     est_h0 <- tryCatch(estimate_h0(object, ...), error = \(e) NULL)
     out$nullModel <- est_h0
-    if (!is.null(est_h0)) {
+    if (!is.null(est_h0) && !is.null(extract_lavaan(est_h0))) {
       # Use compare_fit (modsem generic, which internally uses lavTestLRT/anova for modsem_pi)
       lrt <- compare_fit(object, est_h0)
       out$LRT <- lrt
@@ -83,8 +83,12 @@ print.summary_modsem_pi <- function(x, ...) {
   ci <- x$format$ci
 
   # Compute width for right justification based on lavaan output
-  lavcat <- utils::capture.output(print(x$lavaan))
-  width.out <- max(nchar(lavcat))
+  # lavaan always seems to use a width of 54 characters for the main 
+  # part of the first header, regardless of the widht of the coefficient 
+  # tables... So we don't need to compute it dynamically.
+  width.out <- 54
+  # lavcat <- utils::capture.output(print(x$lavaan))
+  # width.out <- max(nchar(lavcat))
 
   # Helper for left/right align with indent of 2 spaces for names
   align_lavaan <- function(lhs, rhs, width, indent = 2) {
