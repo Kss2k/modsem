@@ -156,11 +156,11 @@ obsLogLikLms_i <- function(theta, model, data, P, sign = 1, ...) {
 
 # gradient function of logLikLms_i
 gradientObsLogLikLms_i <- function(theta, model, data, P, sign = -1, epsilon = 1e-4) {
-  baseLL <- logLikLms_i(theta, model, data = data, P = P, sign = sign)
+  baseLL <- obsLogLikLms_i(theta, model, data = data, P = P, sign = sign)
 
   lapplyMatrix(seq_along(theta), FUN = function(i) {
     theta[[i]] <- theta[[i]] + epsilon
-    (logLikLms_i(theta, model, data = data, P = P, sign = sign) - baseLL) / epsilon
+    (obsLogLikLms_i(theta, model, data = data, P = P, sign = sign) - baseLL) / epsilon
   }, FUN.VALUE = numeric(nrow(data)))
 }
 
