@@ -39,6 +39,7 @@ ltri <- c(3.91, 3.46, 3.25, -0.86, -0.63, -0.83, 0.84, 1.04, 0.95, -0.11, -0.19,
           0.1, 8.2, 0.13, 0.64, 5389.66)
 
 
+set.seed(123)
 S <- matrix(NA, nrow=length(ovs), ncol=length(ovs))
 S[lower.tri(S, diag = TRUE)] <- ltri
 S[upper.tri(S)] <- t(S)[upper.tri(S)]
