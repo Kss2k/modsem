@@ -429,3 +429,9 @@ formatParameters <- function(...) {
   paste0(sprintf("%s%s = %s\n", pad, names, values), 
          collapse = "")
 }
+
+
+padString <- function(x, pad) {
+  s <- stringr::str_replace_all(x, pattern = "\n", replacement = paste0("\n", pad))
+  paste0(pad, s, "\n")
+}

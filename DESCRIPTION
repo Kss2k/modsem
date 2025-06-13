@@ -1,7 +1,7 @@
 Package: modsem
 Type: Package
 Title: Latent Interaction (and Moderation) Analysis in Structural Equation Models (SEM)
-Version: 1.0.10
+Version: 1.0.11
 Authors@R: 
     c(person(given = "Kjell", family = "Solem Slupphaug", 
              email = "slupphaugkjell@gmail.com", role = c("aut", "cre"),
