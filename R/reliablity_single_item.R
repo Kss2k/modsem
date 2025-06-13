@@ -106,7 +106,7 @@ relcorr_single_item <- function(syntax, data, choose = NULL, type = c("cr", "ca"
   lVs <- setdiff(lVs, ignore)
   inds <- getInds(parTableOuter)
   indsLVs <- getIndsLVs(parTableOuter, lVs = lVs)
-  R <- cov(data[inds])
+  R <- stats::cov(data[inds])
   k <- length(lVs)
   
   cfaSyntax <- parTableToSyntax(parTableOuter)
@@ -143,7 +143,7 @@ relcorr_single_item <- function(syntax, data, choose = NULL, type = c("cr", "ca"
     newInd     <- rowMeans(data[indsLV], na.rm = TRUE)
 
     newData[[newIndName]]    <- newInd
-    varNewInds[[newIndName]] <- var(newInd, na.rm = TRUE)
+    varNewInds[[newIndName]] <- stats::var(newInd, na.rm = TRUE)
   }
   
   rel <- rel.std * varNewInds
