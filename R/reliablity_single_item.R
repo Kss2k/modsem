@@ -184,7 +184,7 @@ print.modsem_relcorr <- function(x,...) {
   cat(padString(x$syntax, pad = indent))
 
   cat(paste0("Generated Items:\n"))
-  datastr <- capture.output(str(x$data[x$single.items]))
+  datastr <- utils::capture.output(utils::str(x$data[x$single.items]))
   cat(padString(datastr, pad = indent))
 }
 
