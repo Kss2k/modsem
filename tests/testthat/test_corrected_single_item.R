@@ -15,20 +15,7 @@ tpb_uk <- "
 "
 
 # Chronbach's Alpha ------------------------------------------------------------
-corrected <- relcorr_single_item(syntax = tpb_uk, data = TPB_UK, 
-                                 type="ca") # cr can be chosen
-print(corrected)
-syntax <- corrected$syntax
-data   <- corrected$data
-
-est_dca <- modsem(syntax, data = data, method = "dblcent")
-est_lms <- modsem(syntax, data = data, method="lms", nodes=32)
-
-# Construct Reliablity ---------------------------------------------------------
-corrected <- relcorr_single_item(syntax = tpb_uk, 
-                                 data = TPB_UK, 
-                                 type="cr", 
-                                 choose = c("BEH", "PBC")) # only perform one BEH and PBC
+corrected <- relcorr_single_item(syntax = tpb_uk, data = TPB_UK)
 print(corrected)
 syntax <- corrected$syntax
 data   <- corrected$data

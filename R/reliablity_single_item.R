@@ -1,30 +1,21 @@
-TYPENAMES <- list(ca =  "Chronbach's Alpha", cr = "Construct Reliability")
-
-
 #' Reliability‑Corrected Single‑Item SEM
 #'
 #' Replace (some of) the first‑order latent variables in a lavaan measurement
 #' model by **single composite indicators whose error variances are fixed from
-#' an external reliability coefficient** (Cronbach's \eqn{\alpha} or composite
-#' reliability \eqn{\rho_c}).  The function returns a modified lavaan model
+#' Cronbach's \eqn{\alpha}. The function returns a modified lavaan model
 #' syntax together with an augmented data set that contains the newly created
 #' composite variables, so that you can fit the full SEM in a single step.
 #'
-#' The resulting object can be fed directly into `modsem` or `lavaan::sem`
-#' by supplying `syntax = $syntax` and `data = $data`.
+#' The resulting object can be fed directly into \code{modsem} or \code{lavaan::sem}
+#' by supplying \code{syntax = $syntax} and \code{data = $data}.
 #'
 #' @param syntax A character string containing lavaan model syntax.  Must at
-#'   least include the measurement relations (`=~`).
-#' @param data A `data.frame`, `tibble` or object coercible to a data frame that
+#'   least include the measurement relations (\code{=~}).
+#' @param data A \code{data.frame}, \code{tibble} or object coercible to a data frame that
 #'   holds the raw observed indicators.
 #' @param choose *Optional.* Character vector with the names of the latent
 #'   variables you wish to replace by single indicators.  Defaults to **all**
 #'   first‑order latent variables in `syntax`.
-#' @param type Which reliability estimate to apply when splitting latent versus
-#'   error variance.  One of:  \describe{\item{"cr"}{Composite reliability (also
-#'   called construct reliability or Dillon‑Goldstein \eqn{\rho_c}; **default**)}
-#'   \item{"ca"}{Cronbach's \eqn{\alpha}}}  The argument is case‑insensitive and
-#'   partially matched.
 #'
 #' @return An object of S3 class `modsem_relcorr` (a named list) with elements:
 #' \describe{
@@ -35,7 +26,6 @@ TYPENAMES <- list(ca =  "Chronbach's Alpha", cr = "Construct Reliability")
 #'     variable).}
 #'   \item{`AVE`}{Named numeric vector with Average Variance Extracted values.}
 #'   \item{`lVs`}{Character vector of latent variables that were corrected.}
-#'   \item{`type`}{Reliability type actually used ("cr" or "ca").}}
 #'
 #' @examples
 #' \dontrun{
@@ -53,8 +43,7 @@ TYPENAMES <- list(ca =  "Chronbach's Alpha", cr = "Construct Reliability")
 #'  BEH ~ INT:PBC
 #' "
 #' 
-#' corrected <- relcorr_single_item(syntax = tpb_uk, data = TPB_UK, 
-#'                                  type="ca") # cr can be chosen
+#' corrected <- relcorr_single_item(syntax = tpb_uk, data = TPB_UK)
 #' print(corrected)
 #'
 #' syntax <- corrected$syntax
@@ -65,10 +54,7 @@ TYPENAMES <- list(ca =  "Chronbach's Alpha", cr = "Construct Reliability")
 #' }
 #'
 #' @export
-relcorr_single_item <- function(syntax, data, choose = NULL, type = c("cr", "ca")) {
-  type <- tolower(type)
-  type <- match.arg(type)
-  
+relcorr_single_item <- function(syntax, data, choose = NULL) {
   data <- as.data.frame(data)
 
   parTable      <- modsemify(syntax)
@@ -117,10 +103,7 @@ relcorr_single_item <- function(syntax, data, choose = NULL, type = c("cr", "ca"
   theta  <- stdSolution$theta
  
   avefunc <- \(lV) calcAVE(lV, theta.std = theta, lambda.std = lambda)
-
-  if (type == "ca") relfunc <- \(lV) calcChronbach(R = R, x = indsLVs[[lV]])
-  else if (type == "cr") relfunc <- \(lV) calcConstructRel(lambda, lV = lV)
-  else stop2("Unrecognized type: ", type)
+  relfunc <- \(lV) calcChronbach(R = R, x = indsLVs[[lV]])
 
   rel.std <- vapply(lVs, FUN.VALUE = numeric(1L), relfunc)
   AVE.std <- vapply(lVs, FUN.VALUE = numeric(1L), avefunc)
@@ -140,6 +123,7 @@ relcorr_single_item <- function(syntax, data, choose = NULL, type = c("cr", "ca"
   for (lV in lVs) {
     indsLV     <- indsLVs[[lV]]
     newIndName <- singleInds[[lV]]
+    X          <- as.matrix(data[indsLV])
     newInd     <- rowMeans(data[indsLV], na.rm = TRUE)
 
     newData[[newIndName]]    <- newInd
@@ -161,8 +145,7 @@ relcorr_single_item <- function(syntax, data, choose = NULL, type = c("cr", "ca"
   newSyntax <- parTableToSyntax(newParTable)
 
   out <- list(syntax = newSyntax, data = newData, parTable = newParTable, 
-              reliability = rel.std, AVE = AVE.std, lVs = lVs, type = type,
-              single.items = singleInds)
+              reliability = rel.std, AVE = AVE.std, lVs = lVs, single.items = singleInds)
 
   class(out) <- c("list", "modsem_relcorr")
 
@@ -190,7 +173,7 @@ print.modsem_relcorr <- function(x,...) {
     cat(paste0(indent, lV, sep, AVE, "\n"))
   }
 
-  cat(paste0("\n", TYPENAMES[[x$type]], ":\n"))
+  cat(paste0("\nChronbach's Alpha:\n"))
   for (i in seq_along(lVs)) {
     lV <- lVsf[[i]]
     rel <- rels[[i]]
