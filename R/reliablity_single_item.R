@@ -160,7 +160,7 @@ print.modsem_relcorr <- function(x,...) {
 
   lVs <- x$lVs
   lVsf <- format(paste0(lVs, ":"), justify = "left")
-  AVE_rel <- format(c(x$AVE, x$rel), digits = 3, nsmall = 2, justify = "right")
+  AVE_rel <- format(c(x$AVE, x$reliability), digits = 3, nsmall = 2, justify = "right")
 
   idxAVE <- seq_along(x$AVE)
   AVEs  <- AVE_rel[idxAVE]
