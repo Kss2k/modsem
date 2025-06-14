@@ -195,13 +195,13 @@ fillCovModel <- function(covModel, theta, thetaLabel, fillPhi = FALSE,
 
 
 fillNA_Matrix <- function(X, theta, pattern) {
-  X[is.na(X)] <- fetch(theta, pattern)
+  X[is.na(X) & !is.nan(X)] <- fetch(theta, pattern)
   X
 }
 
 
 fillSymmetric <- function(mat, values) {
-  mat[is.na(mat)] <- values
+  mat[is.na(mat) & !is.nan(mat)] <- values
   mat[upper.tri(mat)] <- t(mat)[upper.tri(mat)]
   mat
 }
@@ -246,7 +246,7 @@ calcPhiTheta <- function(theta, model, method) {
     matLab <- model$labelMatrices
   }
 
-  vals   <- as.vector(matEst$phi[is.na(matNA$A)])
+  vals   <- as.vector(matEst$phi[is.na(matNA$A) & !is.nan(matNA$A)])
   labels <- as.vector(matLab$A)
 
   if (any(labels != "")) {
@@ -258,4 +258,165 @@ calcPhiTheta <- function(theta, model, method) {
 
   theta[grepl("^A[0-9]+$", names(theta))] <- vals
   theta
+}
+
+
+LMS_BLOCKS = list(
+  lambdaX      = 0,
+  lambdaY      = 1,
+  tauX         = 2,
+  tauY         = 3,
+  thetaDelta   = 4,
+  thetaEpsilon = 5,
+  A            = 6,
+  psi          = 7,
+  alpha        = 8, 
+  beta0        = 9,
+  gammaXi      = 10,
+  gammaEta     = 11, 
+  omegaXiXi    = 12,
+  omegaEtaXi   = 13,
+  phi          = NA
+)
+
+
+getParamNamesMatrix <- function(mat, matname) {
+  if (is.character(mat)) {
+    c(mat)
+
+  } else {
+    M <- list()
+    M[[matname]] <- mat
+    names(unlist(M))
+  }
+}
+
+
+getParamLocationsMatrices <- function(matrices, isFree = is.na) {
+
+  locations <- data.frame(param = NULL, block = NULL, row = NULL, col = NULL)
+  for (blockname in names(matrices)) {
+    X <- matrices[[blockname]]
+    n <- nrow(X) 
+    m <- ncol(X)
+
+    if (!any(isFree(X))) next
+
+    params <- getParamNamesMatrix(mat = X, matname = blockname)
+    block  <- LMS_BLOCKS[[blockname]]
+    rowidx <- matrix(seq_len(n) - 1, nrow = n, ncol = m, byrow = FALSE)
+    colidx <- matrix(seq_len(m) - 1, nrow = n, ncol = m, byrow = TRUE)
+
+    params <- params[isFree(X)]
+    rowidx <- rowidx[isFree(X)]
+    colidx <- colidx[isFree(X)]
+
+    locationsBlock <- data.frame(
+      param = params,
+      block = block,
+      row   = rowidx,
+      col   = colidx
+    )
+
+    locations <- rbind(locations, locationsBlock)
+  }
+
+  locations
+}
+
+
+getGradientStruct <- function(model, theta) {
+  tryCatch(
+    getGradientStructSimple(model = model, theta = theta),
+    error = function(e) list(
+      locations   = NULL, 
+      Jacobian    = NULL,
+      nlinDerivs  = NULL,
+      evalTheta   = NULL,
+      hasCovModel = TRUE, # may not be true, but we should behave as if it is
+      isNonLinear = TRUE  # may not be true, but we should behave as if it is
+    )
+  )
+}
+
+
+getGradientStructSimple <- function(model, theta) {
+  hasCovModel <- !is.null(model$covModel$matrices)
+  parTable <- model$parTable
+
+  isConstraint <- parTable$op %in% CONSTRAINT_OPS
+  constraints  <- parTable[isConstraint, ]
+  restParTable <- parTable[!isConstraint, ]
+  constraints  <- constraints[constraints$lhs %in% restParTable$mod, ]
+
+  derivatives <- list()
+  for (i in seq_len(NROW(constraints))) {
+    constrVar <- constraints[i, "lhs"]
+    constrEq  <- constraints[i, "rhs"]
+
+    derivatives[[constrVar]] <- derivateConstraint(constrEq)
+  }
+
+  isLinear <- vapply(derivatives, FUN.VALUE = logical(1L), FUN = is.atomic)
+
+  linDerivs  <- derivatives[isLinear]
+  nlinDerivs <- derivatives[!isLinear]
+  evalTheta  <- \(theta) c(theta, calcThetaLabel(theta, constraints)) # This could be made a bit better
+
+  locations <- rbind(
+    getParamLocationsMatrices(model$matrices, isFree=is.na),
+    getParamLocationsMatrices(model$labelMatrices, isFree=\(x) x != "")
+  )
+
+  k <- nrow(locations)
+  m <- length(theta)
+
+  locations  <- locations[sample(k), ]
+  param.full <- locations$param
+  param.part <- names(theta)
+
+  order <- structure(seq_along(theta), names = param.part)
+  order <- order[param.full]
+  
+  locations  <- sort_by(locations, order)
+  param.full <- locations$param
+
+  Jacobian <- matrix(0, nrow = m, ncol = k,  
+                     dimnames = list(param.part, param.full))
+
+  for (par in param.full) {
+    match.full <- param.full == par
+    match.part <- param.part == par
+
+    Jacobian[match.part, match.full] <- 1
+  }
+
+  for (dep in names(linDerivs)) {
+    deriv <- linDerivs[[dep]]
+
+    for (indep in names(deriv)) {
+      match.full <- param.full == dep
+      match.part <- param.part == indep
+      Jacobian[match.part, match.full] <- deriv[[indep]]
+    }
+  }
+
+  list(
+    locations   = locations, 
+    Jacobian    = Jacobian,
+    nlinDerivs  = nlinDerivs,
+    evalTheta   = evalTheta,
+    hasCovModel = hasCovModel,
+    isNonLinear = length(nlinDerivs) > 1
+  )
+}
+
+
+derivateConstraint <- function(constr) {
+  f <- formula(paste0("~", constr))
+  eq <- Deriv::Deriv(f)
+
+  if (is.null(names(eq))) names(eq) <- all.vars(f)
+
+  eq
 }

@@ -17,8 +17,8 @@ completeLogLikLmsCpp <- function(modelR, P, quad) {
     .Call(`_modsem_completeLogLikLmsCpp`, modelR, P, quad)
 }
 
-gradLogLikLmsCpp <- function(modelR, P, block, row, col) {
-    .Call(`_modsem_gradLogLikLmsCpp`, modelR, P, block, row, col)
+gradLogLikLmsCpp <- function(modelR, P, block, row, col, eps = 1e-6) {
+    .Call(`_modsem_gradLogLikLmsCpp`, modelR, P, block, row, col, eps)
 }
 
 muQmlCpp <- function(m, t) {

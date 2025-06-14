@@ -211,272 +211,94 @@ double completeLogLikLmsCpp(Rcpp::List modelR, Rcpp::List P, Rcpp::List quad) {
   return ll;
 }
 
-
-struct Jacob { 
-  arma::vec dmu; 
-  arma::mat dSi; 
-};
-
-
-Jacob jac_beta0(const LMSModel& M,
-                const arma::vec& z,          // length k
-                std::size_t idx)             // which β₀ entry
+inline double
+logLikFromModel(const LMSModel&            M,
+                const arma::mat&           V,          // nodes × k   (quad$n)
+                const Rcpp::List&          Mean,       // P$mean
+                const Rcpp::List&          Cov,        // P$cov
+                const Rcpp::List&          TGamma,     // P$tgamma
+                const int                  n,          // # rows data
+                const int                  d)          // # manifests
 {
-    Jacob out;
+    const std::size_t J = V.n_rows;
+    double ll = 0.0;
 
-    // --------- dβ --------------------------------------------------
-    arma::vec d_z = arma::zeros<arma::vec>(M.beta0.n_elem);
-    d_z(idx) = 1.0;
+    for (std::size_t j = 0; j < J; ++j) {
 
-    // --------- μ part ---------------------------------------------
-    arma::vec muX = M.lX * d_z;
+        const double tg = Rcpp::as<double>(TGamma[j]);
+        if (tg <= DBL_MIN) continue;
 
-    arma::vec big_z = make_zvec(M.k, M.numXis, z);
-    arma::vec beta  = M.beta0 + M.A * big_z;
-    arma::mat kronZ = arma::kron(M.Ie, beta.t());
+        const arma::vec z   = V.row(j).t();
+        const arma::vec nu  = Rcpp::as<arma::vec>(Mean[j]);
+        const arma::mat S   = Rcpp::as<arma::mat>(Cov [j]);
 
-    arma::mat Binv =
-        (M.Ie.n_cols == 1) ? M.Ie
-                           : arma::inv(M.Ie - M.Ge - kronZ.t() * M.Oex);
+        const arma::vec mu  = M.mu   (z);
+        const arma::mat Sig = M.Sigma(z);
 
-    arma::vec muY = M.lY *
-        ( Binv * ( M.Gx * d_z + kronZ.t() * M.Oxx * d_z ) );
-
-    out.dmu = arma::join_cols(muX, muY);
-
-    // --------- Σ part (β₀ does not enter Σ) -----------------------
-    out.dSi.zeros(out.dmu.n_elem, out.dmu.n_elem);
-    return out;
-}
-
-
-Jacob jac_A(const LMSModel& M,
-            const arma::vec& z,        // length k
-            std::size_t      r,
-            std::size_t      c)
-{
-    Jacob out;
-
-    arma::vec zBig  = make_zvec(M.k, M.numXis, z);       // ξ vector
-    double    zc    = zBig(c);                           // z_c
-
-    // ---------------- dβ (= e_r * z_c) ----------------------------
-    arma::vec d_beta(M.beta0.n_elem, arma::fill::zeros);
-    d_beta(r) = zc;
-
-    arma::vec  beta   = M.beta0 + M.A * zBig;
-    arma::mat  kronZ  = arma::kron(M.Ie, beta);          // (Iη ⊗ β)
-    arma::mat  dKronZ = arma::kron(M.Ie, d_beta);        // derivative
-
-    // ---------------- B⁻¹ and its derivative ----------------------
-    arma::mat Binv =
-        (M.Ie.n_cols == 1)
-        ? M.Ie
-        : arma::inv(M.Ie - M.Ge - kronZ.t() * M.Oex);
-
-    arma::mat dBinv;
-    if (M.Ie.n_cols == 1) {
-        dBinv.zeros(Binv.n_rows, Binv.n_cols);           // scalar η
-    } else {
-        arma::mat dB =              //  dB  =  – (dKronZᵀ Ωηξ)
-            - dKronZ.t() * M.Oex;
-        dBinv = - Binv * dB * Binv;  //  dB⁻¹ = –B⁻¹ dB B⁻¹   (one minus!)
+        ll += totalDmvnWeightedCpp(mu, Sig, nu, S, tg, n, d);
     }
-
-    // ---------------- μ -part ------------------------------------
-    arma::vec muX = M.lX * d_beta;
-
-    arma::vec inner =
-        M.a + M.Gx * beta + kronZ.t() * M.Oxx * beta;
-
-    arma::vec dInner =
-        M.Gx * d_beta +
-        dKronZ.t() * M.Oxx * beta +
-        kronZ.t()   * M.Oxx * d_beta;
-
-    arma::vec muY =
-        M.lY * ( dBinv * inner + Binv * dInner );
-
-    out.dmu = arma::join_cols(muX, muY);
-
-    // ---------------- Σ -part ------------------------------------
-    unsigned p = M.tX.n_elem;
-    unsigned q = M.tY.n_elem;
-    out.dSi.zeros(p + q, p + q);
-
-    arma::mat Oi   = make_Oi(M.k, M.numXis);
-
-    // ----- dSxx ---------------------------------------------------
-    arma::mat Erc(M.A.n_rows, M.A.n_cols, arma::fill::zeros);
-    Erc(r, c) = 1.0;
-
-    arma::mat dSxx =
-        M.lX * ( Erc * Oi * M.A.t()
-               + M.A  * Oi * Erc.t() ) * M.lX.t();
-
-    // ----- Eta and dEta ------------------------------------------
-    arma::mat Eta  = Binv *
-        ( M.Gx * M.A + kronZ.t() * M.Oxx * M.A );
-
-    arma::mat dEta =
-        dBinv * ( M.Gx * M.A + kronZ.t() * M.Oxx * M.A ) +
-        Binv  * ( M.Gx * Erc +
-                  dKronZ.t() * M.Oxx * M.A +
-                  kronZ.t()   * M.Oxx * Erc );
-
-    // ----- dSxy ---------------------------------------------------
-    arma::mat dSxy =
-        M.lX * ( Erc * Oi * Eta.t()
-               + M.A  * Oi * dEta.t() ) * M.lY.t();
-
-    // ----- dSyy ---------------------------------------------------
-    arma::mat dSyy =
-        M.lY * ( dEta * Oi * Eta.t()
-               + Eta  * Oi * dEta.t() ) * M.lY.t() +
-        M.lY * ( dBinv * M.Psi * Binv.t()
-               + Binv  * M.Psi * dBinv.t() ) * M.lY.t();
-
-    // ----- assemble ------------------------------------------------
-    out.dSi.submat(0, 0,     p-1,   p-1)   = dSxx;
-    out.dSi.submat(0, p,     p-1,   p+q-1) = dSxy;
-    out.dSi.submat(p, 0,     p+q-1, p-1)   = dSxy.t();
-    out.dSi.submat(p, p,     p+q-1, p+q-1) = dSyy;
-
-    return out;
-}
-
-
-Jacob jac_lambdaX(const LMSModel& M,
-                  const arma::vec& z,
-                  std::size_t r,
-                  std::size_t c)
-{
-    Jacob out;
-    unsigned p = M.tX.n_elem;
-    unsigned q = M.tY.n_elem;
-
-    arma::vec big_z = make_zvec(M.k, M.numXis, z);
-    arma::vec beta  = M.beta0 + M.A * big_z;
-
-    // -------- μ part ----------------------------------------------
-    out.dmu.zeros(p + q);
-    out.dmu(r) = beta(c);                       // only X-part changes
-
-    // -------- Σ part ----------------------------------------------
-    arma::mat Oi   = make_Oi(M.k, M.numXis);
-    arma::mat Eta  =
-        ((M.Ie.n_cols == 1)
-         ? M.Ie
-         : arma::inv(M.Ie - arma::kron(M.Ie, beta.t()).t() * M.Oex)) *
-        ( M.Gx * M.A +
-          arma::kron(M.Ie, beta.t()).t() * M.Oxx * M.A );
-
-    arma::mat Erc(p, M.lX.n_cols, arma::fill::zeros);
-    Erc(r, c) = 1.0;
-
-    arma::mat dSxx =
-        Erc * M.A * Oi * M.A.t() * M.lX.t() +
-        M.lX * M.A * Oi * M.A.t() * Erc.t();
-
-    arma::mat dSxy =
-        Erc * ( M.A * Oi * Eta.t() ) * M.lY.t();
-
-    out.dSi.zeros(p + q, p + q);
-    out.dSi.submat(0, 0,   p-1, p-1)     = dSxx;
-    out.dSi.submat(0, p,   p-1, p+q-1)   = dSxy;
-    out.dSi.submat(p, 0,   p+q-1, p-1)   = dSxy.t();
-    // dSyy = 0 for λX
-    return out;
-}
-
-
-Jacob jac_tauX(const LMSModel& M,
-               std::size_t r)               // τX_r
-{
-    Jacob out;
-    unsigned p = M.tX.n_elem;
-    unsigned q = M.tY.n_elem;
-
-    out.dmu.zeros(p + q);
-    out.dmu(r) = 1.0;                        // only that X manifest
-    out.dSi.zeros(p + q, p + q);             // Σ unaffected
-    return out;
-}
-
-
-Jacob jac_tauY(const LMSModel& M,
-               std::size_t r)               // τY_r  (r over Y block!)
-{
-    Jacob out;
-    unsigned p = M.tX.n_elem;
-    unsigned q = M.tY.n_elem;
-
-    out.dmu.zeros(p + q);
-    out.dmu(p + r) = 1.0;                    // offset by X block
-    out.dSi.zeros(p + q, p + q);
-    return out;
+    return ll;
 }
 
 
 // [[Rcpp::export]]
-arma::vec gradLogLikLmsCpp(const Rcpp::List& modelR,
-                           const Rcpp::List& P,
-                           const arma::uvec& block,
+arma::vec gradLogLikLmsCpp(const Rcpp::List& modelR,      // *filled* model
+                           const Rcpp::List& P,           // E-step cache
+                           const arma::uvec& block,       // free-param blocks
                            const arma::uvec& row,
-                           const arma::uvec& col) {
-   const LMSModel M = LMSModel(modelR);
+                           const arma::uvec& col,
+                           double            eps = 1e-6) { 
+  const LMSModel Mbase(modelR);           // build C++ struct once
 
+  const arma::mat V       = Rcpp::as<arma::mat>(P["V"]);
+  const Rcpp::List Mean   = P["mean"];
+  const Rcpp::List Cov    = P["cov"];
+  const Rcpp::List TGamma = P["tgamma"];
 
-    // ---------- unpack EM sufficient statistics -------------------
-    Rcpp::List PMean = P["mean"];
-    Rcpp::List PCov = P["cov"];
-    Rcpp::List PTGamma = P["tgamma"];
+  const Rcpp::List info   = modelR["info"];
+  const int n             = Rcpp::as<int>(info["N"]);
+  const int d             = Rcpp::as<int>(info["ncol"]);
 
-    const arma::mat V = Rcpp::as<arma::mat>(P["V"]);
-    const std::size_t Mnodes = V.n_rows;
-    const std::size_t d = Rcpp::as<arma::vec>(PMean[0]).size();   // manifest dim
+  // base likelihood
+  double f0 = logLikFromModel(Mbase, V, Mean, Cov, TGamma, n, d);
 
-    arma::vec g_mu(d, arma::fill::zeros);
-    arma::mat G_Si(d, d, arma::fill::zeros);
+  // will mutate *one* entry of these matrices in place
+  LMSModel M = Mbase;                     // lightweight copy (pointers)
 
-    for (std::size_t j=0; j<Mnodes; ++j) {
+  const std::size_t nPar = block.n_elem;
+  arma::vec grad(nPar);
 
-        const arma::vec  nu = Rcpp::as<arma::vec>(PMean[j]);
-        const arma::mat  S  = Rcpp::as<arma::mat>(PCov[j]);
-        const double     tg = Rcpp::as<double>(PTGamma[j]);
+  for (std::size_t k = 0; k < nPar; ++k) {
 
-        arma::vec  mu     = M.mu(V.row(j).t());
-        arma::mat  Sig    = M.Sigma(V.row(j).t());
-        arma::mat  SigInv = arma::inv_sympd(Sig);
+    double* target = nullptr;
 
-        arma::vec r = nu - mu;
-
-        g_mu += tg * SigInv * r;
-
-        arma::mat Delta = S + tg * (r*r.t()) - tg * Sig;
-
-        G_Si += 0.5 * (SigInv * Delta * SigInv);
+    switch (block[k]) {
+      case 0:  target = &M.lX   (row[k], col[k]); break;
+      case 1:  target = &M.lY   (row[k], col[k]); break;
+      case 2:  target = &M.tX   (row[k], col[k]); break;
+      case 3:  target = &M.tY   (row[k], col[k]); break;
+      case 4:  target = &M.d    (row[k], col[k]); break;
+      case 5:  target = &M.e    (row[k], col[k]); break;
+      case 6:  target = &M.A    (row[k], col[k]); break;
+      case 7:  target = &M.Psi  (row[k], col[k]); break;
+      case 8:  target = &M.a    (row[k], col[k]); break;
+      case 9:  target = &M.beta0(row[k], col[k]); break;
+      case 10: target = &M.Gx   (row[k], col[k]); break;
+      case 11: target = &M.Ge   (row[k], col[k]); break;
+      case 12: target = &M.Oxx  (row[k], col[k]); break;
+      case 13: target = &M.Oex  (row[k], col[k]); break;
+      default: Rcpp::stop("unknown block");
     }
 
-    // ---------- chain-rule over free parameters -------------------
-    std::size_t t = block.n_elem;
-    arma::vec grad(t, arma::fill::zeros);
+    const double old = *target;
+    *target += eps;
 
-    for (std::size_t k = 0; k < t; ++k) {
+    const double f1 = logLikFromModel(M, V, Mean, Cov, TGamma, n, d);
 
-        Jacob J;
-        switch (block[k]) {
-          case 0:  J = jac_beta0   (M, V.row(0).t(), row[k]);                break;
-          case 1:  J = jac_A       (M, V.row(0).t(), row[k], col[k]);        break;
-          case 2:  J = jac_lambdaX (M, V.row(0).t(), row[k], col[k]);        break;
-          case 3:  J = jac_tauX    (M, row[k]);                              break;
-          case 4:  J = jac_tauY    (M, row[k]);                              break;
-          default: Rcpp::stop("unknown block code");
-        }
+    grad[k] = (f1 - f0) / eps;
 
-        grad[k] = arma::dot(g_mu, J.dmu) +
-                  arma::accu(G_Si % J.dSi);
-    }
+    *target = old;                         // restore for next param
+  }
 
-    return grad;
+  return grad;
 }

@@ -62,7 +62,7 @@ getConstrExprs <- function(parTable, parTableCov) {
 
 
 sortConstrExprs <- function(parTable) {
-  rows <- parTable[parTable$op %in% c("==", ">", "<", ":="), ]
+  rows <- parTable[parTable$op %in% CONSTRAINT_OPS, ]
   if (NROW(rows) == 0) return(NULL)
 
   labelled <- unique(parTable$mod[parTable$mod != ""])

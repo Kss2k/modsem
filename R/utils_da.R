@@ -6,6 +6,9 @@ OP_REPLACEMENTS <- c("~~" = "___COVARIANCE___",
 OP_REPLACEMENTS_INV <- structure(names(OP_REPLACEMENTS), names = OP_REPLACEMENTS)
 
 
+CONSTRAINT_OPS <- c("==", ">", "<", ":=")
+
+
 getFreeParams <- function(model) {
   model$freeParams
 }
