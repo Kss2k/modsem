@@ -21,7 +21,7 @@ getCharsLine <- function(line, i = 1) {
 
 getLines <- function(syntax) {
   operators <- c("=~", "<=", ">=", "==", ":=", "~~", "~", 
-                 "+", "*", "<-", "->", "<", ">")
+                 "+", "*", "<-", "->", "<", ">", "-")
   for (op in operators) {
     pattern <- paste0("\\", op, "\\s*[\n|;]")
     replace <- paste0(op, " ")
@@ -82,7 +82,7 @@ initializeToken <- function(char, pos, line) {
   } else if (grepl("[\\(\\)]", char)) {
     type <- "LavClosure"
     priority <- 2
-  } else if (grepl("[\\=\\~\\*\\+\\<\\>\\-\\,\\:\\^\\/]", char)) {
+  } else if (grepl("[\\=\\~\\*\\+\\<\\>\\,\\:\\^\\/-]", char)) {
     type <- "LavOperator"
     priority <- 0
   } else if (grepl("[[:alnum:]]", char)) {

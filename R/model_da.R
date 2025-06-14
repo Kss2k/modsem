@@ -258,12 +258,12 @@ specifyModelDA <- function(syntax = NULL,
   )
 
   model$constrExprs <- getConstrExprs(parTable, model$covModel$parTable)
-
   if (createTheta) {
     listTheta         <- createTheta(model)
     model             <- c(model, listTheta)
     model$freeParams  <- length(listTheta$theta)
     model$info$bounds <- getParamBounds(model, varParams=listTheta$diagFreeParams)
+    model$gradientStruct  <- getGradientStruct(model, theta = model$theta)
   }
 
   if (checkModel) 
