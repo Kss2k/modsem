@@ -1,4 +1,3 @@
-test <- function() {
 devtools::load_all()
 m1 <- "
 # Outer Model
@@ -19,7 +18,6 @@ m1 <- "
 
 est1 <- modsem(m1, oneInt, method = "lms", optimize = TRUE, verbose = TRUE,
                convergence.abs = 1e-2, R.max = 50000)
-}
 plot_interaction("X", "Z", "Y", "X:Z", -3:3, c(-0.5, 0.5), est1, standardized=TRUE)
 print(summary(est1, adjusted.stat = TRUE))
 plot_surface(x = "X", z = "Z", y = "Y", model = est1)

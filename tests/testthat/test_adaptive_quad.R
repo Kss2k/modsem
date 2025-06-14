@@ -1,4 +1,3 @@
-test1 <- function() {
 devtools::load_all()
 
 m1 <- '
@@ -13,7 +12,6 @@ m1 <- '
 
 lms1 <- modsem(m1, oneInt, method = "lms", adaptive.quad=TRUE, optimize=TRUE,
                algorithm = "EMA")
-}
 
 tpb <- ' 
 # Outer Model (Based on Hagger et al., 2007)
