@@ -1,3 +1,4 @@
+test1 <- function() {
 devtools::load_all()
 
 m1 <- '
@@ -7,12 +8,12 @@ m1 <- '
   Y =~ y1 + y2 + y3
 
 # Inner Model
-  Y ~ X + Z + X:Z
+  Y ~ a * X + a * Z + X:Z
 '
 
 lms1 <- modsem(m1, oneInt, method = "lms", adaptive.quad=TRUE, optimize=TRUE,
                algorithm = "EMA")
-
+}
 
 tpb <- ' 
 # Outer Model (Based on Hagger et al., 2007)
