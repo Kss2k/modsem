@@ -185,7 +185,7 @@ getTransformationsTheta <- function(model, theta, method) {
     theta <- theta[-seq_len(model$lenThetaLabel)]
   } else thetaLabel <- NULL
 
-  thetaLabel <- calcThetaLabel(thetaLabel, model$constrExprs)
+  thetaLabel <- suppressWarnings(calcThetaLabel(thetaLabel, model$constrExprs))
   c(thetaLabel, theta)
 }
 
