@@ -144,6 +144,15 @@ calcOFIM_LMS <- function(model, theta, data, hessian = FALSE,
     I <- fdHESS(pars = theta, fun = obsLogLikLms, model = model,
                 data = data, P = P, sign = -1,
                 .relStep = .Machine$double.eps^(1/5))
+
+    # Approximate the observed information matrix using the complete 
+    # information matrix. Not working yet...
+    # t <- length(theta)
+    # Ic <- calcHessFromGradient(gradientLogLikLms, theta = theta, model = model, 
+    #                            P = P, sign = -1, eps = epsilon, epsilon = epsilon)
+    # R <- calcJacobianEM(theta, model = model, data = data, lastQuad = P$quad)
+    # I <- t(Ip - R) %*% Ic %*% (Ip - R)
+
     return(I)
   }
 
@@ -306,4 +315,23 @@ getSE_Model <- function(model, se, method, n.additions) {
   model$lenThetaLabel <- model$lenThetaLabel + n.additions
   fillModel(replaceNonNaModelMatrices(model, value = -999),
             theta = se, method = method)
+}
+
+calcHessFromGradient <- function(gradFun, theta, eps = 1e-6, ...) {
+  p  <- length(theta)
+  H  <- matrix(NA_real_, p, p)
+  g0 <- gradFun(theta, ...)
+
+  for (j in seq_len(p)) {
+    th_j        <- theta
+    th_j[j]     <- th_j[j] + eps
+    g_fwd       <- gradFun(th_j, ...)
+    H[, j]      <- (g_fwd - g0) / eps
+  }
+
+  # enforce symmetry against numerical noise
+  H <- 0.5 * (H + t(H))
+
+  dimnames(H) <- list(names(theta), names(theta))
+  H
 }
