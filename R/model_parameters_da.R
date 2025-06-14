@@ -413,7 +413,7 @@ getGradientStructSimple <- function(model, theta) {
 
 
 derivateConstraint <- function(constr) {
-  f <- formula(paste0("~", constr))
+  f <- stats::formula(paste0("~", constr))
   eq <- Deriv::Deriv(f)
 
   if (is.null(names(eq))) names(eq) <- all.vars(f)
