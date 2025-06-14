@@ -1,12 +1,14 @@
 ## emLms with optional EMA (Quasi-Newton + Fisher Scoring) acceleration Simplified and cleaned logic: hybrid switching based on gradient norm and relative ΔLL.
 
-# 1. Helper: compute observed-data gradient
+
+# Compute complete-data gradient
 computeGradient <- function(theta, model, P, epsilon) {
   gradientLogLikLms(theta = theta, model = model, P = P, sign = -1,
                     epsilon = epsilon)
 }
 
-# 2. L-BFGS two-loop recursion to approximate H * gradient
+
+# L-BFGS two-loop recursion to approximate H * gradient
 lbfgs_two_loop <- function(grad, s_list, g_list) {
   q <- grad; m <- length(s_list)
   alpha <- numeric(m);
@@ -30,14 +32,16 @@ lbfgs_two_loop <- function(grad, s_list, g_list) {
   r
 }
 
-# 3. Compute complete-data Fisher information via inverse Hessian
-# (requires fdHESS or numDeriv)
-computeFullIcom <- function(theta, model, data, P) {
-  fLogLik <- function(par) logLikLms(theta = par, model = model, P = P)
-  H <- fdHESS(pars = theta, fun = fLogLik)
-  I_obs <- H
-  diag(I_obs) <- diag(I_obs) + 1e-8  # ensure invertibility
-  I_obs
+
+# Compute complete-data Fisher information via inverse Hessian
+computeFullIcom <- function(theta, model, data, P, epsilon) {
+  # fLogLik <- function(par) logLikLms(theta = par, model = model, P = P)
+  # Ic <- fdHESS(pars = theta, fun = fLogLik)
+
+  Ic <- calcHessFromGradient(gradientLogLikLms, theta = theta, model = model, 
+                             P = P, sign = -1, eps = epsilon, epsilon = epsilon)
+  diag(Ic) <- diag(Ic) + 1e-8  # ensure invertibility
+  Ic
 }
 
 
@@ -159,8 +163,9 @@ emLms <- function(model,
         } else direction <- -grad
 
       } else if (mode == "FS") {
-        I_obs     <- computeFullIcom(theta = thetaOld, model = model, P = P)
-        direction <- tryCatch(solve(I_obs, grad), error = function(e) NULL)
+        Ic     <- computeFullIcom(theta = thetaOld, model = model, P = P,
+                                  epsilon = epsilon)
+        direction <- tryCatch(solve(Ic, grad), error = function(e) NULL)
 
       }
 
@@ -292,3 +297,61 @@ emLms <- function(model,
   )
   out
 }
+
+
+# Should be possible to use these to get an approximation of the observed 
+# information matrix, using the complete information matrix, which would 
+# be more efficient...
+# oneEM <- function(theta,
+#                   model,
+#                   data,
+#                   lastQuad   = NULL,   # reuse quadrature grid if available
+#                   recalcQuad = FALSE,  # force grid update?
+#                   max.step   = 1,      # just one quasi-Newton step
+#                   optimizer  = "nlminb",
+#                   epsilon    = 1e-6,
+#                   ...) {
+# 
+#   Ptmp <- estepLms(model      = model,
+#                    theta      = theta,
+#                    data       = data,
+#                    lastQuad   = lastQuad,
+#                    recalcQuad = recalcQuad,
+#                    ...)
+# 
+#   mstep <- mstepLms(theta     = theta,
+#                     model     = model,
+#                     P         = Ptmp,
+#                     max.step  = max.step,   
+#                     optimizer = optimizer,
+#                     epsilon   = epsilon,
+#                     ...)
+# 
+#   mstep$par
+# }
+# 
+# 
+# calcJacobianEM <- function(theta_hat,
+#                           model,
+#                           data,
+#                           eps       = 1e-6,      # FD step
+#                           lastQuad  = NULL,      # reuse grid
+#                           parallel  = FALSE,     # set TRUE if you want
+#                           ...) {
+# 
+#   oneEM_wrap <- function(th) {
+#     oneEM(theta      = th,
+#           model      = model,
+#           data       = data,
+#           lastQuad   = lastQuad,
+#           recalcQuad = FALSE,   # never rebuild grid inside FD
+#           ...)                 # forward dots (epsilon, etc.)
+#   }
+# 
+#   R <- numDeriv::jacobian(func = oneEM_wrap, x = theta_hat,
+#                           method = "simple", method.args = list(eps = eps))
+# 
+#   colnames(R) <- rownames(R) <- names(theta_hat)
+# 
+#   R
+# }
