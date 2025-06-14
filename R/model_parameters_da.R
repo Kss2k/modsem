@@ -109,7 +109,7 @@ fillModel <- function(model, theta, fillPhi = FALSE, method = "lms") {
       thetaLabel <- theta[seq_len(model$lenThetaLabel)]
       theta <- theta[-seq_len(model$lenThetaLabel)]
     }
-    thetaLabel <- calcThetaLabel(thetaLabel, model$constrExprs)
+    thetaLabel <- suppressWarnings(calcThetaLabel(thetaLabel, model$constrExprs))
   }
 
   # cov model
@@ -361,7 +361,7 @@ getGradientStructSimple <- function(model, theta) {
 
   linDerivs  <- derivatives[isLinear]
   nlinDerivs <- derivatives[!isLinear]
-  evalTheta  <- \(theta) c(theta, calcThetaLabel(theta, constraints)) # This could be made a bit better
+  evalTheta  <- \(theta) c(theta, suppressWarnings(calcThetaLabel(theta, constraints))) # This could be made a bit better
 
   locations <- rbind(
     getParamLocationsMatrices(model$matrices, isFree=is.na),
