@@ -4,24 +4,18 @@
 \alias{relcorr_single_item}
 \title{Reliability‑Corrected Single‑Item SEM}
 \usage{
-relcorr_single_item(syntax, data, choose = NULL, type = c("cr", "ca"))
+relcorr_single_item(syntax, data, choose = NULL)
 }
 \arguments{
 \item{syntax}{A character string containing lavaan model syntax.  Must at
-least include the measurement relations (`=~`).}
+least include the measurement relations (\code{=~}).}
 
-\item{data}{A `data.frame`, `tibble` or object coercible to a data frame that
+\item{data}{A \code{data.frame}, \code{tibble} or object coercible to a data frame that
 holds the raw observed indicators.}
 
 \item{choose}{*Optional.* Character vector with the names of the latent
 variables you wish to replace by single indicators.  Defaults to **all**
 first‑order latent variables in `syntax`.}
-
-\item{type}{Which reliability estimate to apply when splitting latent versus
-error variance.  One of:  \describe{\item{"cr"}{Composite reliability (also
-called construct reliability or Dillon‑Goldstein \eqn{\rho_c}; **default**)}
-\item{"ca"}{Cronbach's \eqn{\alpha}}}  The argument is case‑insensitive and
-partially matched.}
 }
 \value{
 An object of S3 class `modsem_relcorr` (a named list) with elements:
@@ -33,19 +27,19 @@ An object of S3 class `modsem_relcorr` (a named list) with elements:
     variable).}
   \item{`AVE`}{Named numeric vector with Average Variance Extracted values.}
   \item{`lVs`}{Character vector of latent variables that were corrected.}
-  \item{`type`}{Reliability type actually used ("cr" or "ca").}}
+  \itme{`single.items`}{Character vector with names for the generated reliability corrected items}
+}
 }
 \description{
 Replace (some of) the first‑order latent variables in a lavaan measurement
 model by **single composite indicators whose error variances are fixed from
-an external reliability coefficient** (Cronbach's \eqn{\alpha} or composite
-reliability \eqn{\rho_c}).  The function returns a modified lavaan model
+Cronbach's \eqn{\alpha}. The function returns a modified lavaan model
 syntax together with an augmented data set that contains the newly created
 composite variables, so that you can fit the full SEM in a single step.
 }
 \details{
-The resulting object can be fed directly into `modsem` or `lavaan::sem`
-by supplying `syntax = $syntax` and `data = $data`.
+The resulting object can be fed directly into \code{modsem} or \code{lavaan::sem}
+by supplying \code{syntax = $syntax} and \code{data = $data}.
 }
 \examples{
 \dontrun{
@@ -63,8 +57,7 @@ tpb_uk <- "
  BEH ~ INT:PBC
 "
 
-corrected <- relcorr_single_item(syntax = tpb_uk, data = TPB_UK, 
-                                 type="ca") # cr can be chosen
+corrected <- relcorr_single_item(syntax = tpb_uk, data = TPB_UK)
 print(corrected)
 
 syntax <- corrected$syntax

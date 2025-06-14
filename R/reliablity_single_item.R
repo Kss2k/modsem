@@ -26,6 +26,8 @@
 #'     variable).}
 #'   \item{`AVE`}{Named numeric vector with Average Variance Extracted values.}
 #'   \item{`lVs`}{Character vector of latent variables that were corrected.}
+#'   \itme{`single.items`}{Character vector with names for the generated reliability corrected items}
+#' }
 #'
 #' @examples
 #' \dontrun{
