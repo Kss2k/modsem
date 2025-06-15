@@ -23,6 +23,12 @@ data   <- corrected$data
 est_dca <- modsem(syntax, data = data, method = "dblcent")
 est_lms <- modsem(syntax, data = data, method="lms", nodes=32)
 
+est_dca <- modsem(tpb_uk, data = TPB_UK, method = "dblcent", rcs = TRUE)
+est_lms <- modsem(tpb_uk, data = TPB_UK, method = "dblcent", rcs = TRUE)
+
+
+est_dca <- modsem(tpb_uk, data = TPB_UK, method = "dblcent", rcs = TRUE,
+                  rcs.choose = c("ATT", "SN", "PBC", "INT"))
 
 if (FALSE) {
 Data_C1 <- read.csv(file = '~/Downloads/Example_C1.csv')

@@ -38,6 +38,8 @@ modsem_da(
   n.threads = NULL,
   algorithm = NULL,
   em.control = NULL,
+  rcs = FALSE,
+  rcs.choose = NULL,
   ...
 )
 }
@@ -161,6 +163,13 @@ optimization steps when needed. Default is \code{"EM"}.}
 
 \item{em.control}{a list of control parameters for the EM algorithm. See \code{\link{default_settings_da}} for defaults.}
 
+\item{rcs}{Should latent variable indicators be replaced with reliablity-corrected
+single item indicators instead? See \code{\link{relcorr_single_item}}.}
+
+\item{rcs.choose}{Which latent variables should get their indicators replaced with
+reliablity-reliability corrected single items? Corresponds to the \code{choose} 
+argument in \code{\link{relcorr_single_item}}.}
+
 \item{...}{additional arguments to be passed to the estimation function.}
 }
 \value{
@@ -196,8 +205,8 @@ m1 <- "
 
 \dontrun{
 # QML Approach
-est1 <- modsem_da(m1, oneInt, method = "qml")
-summary(est1)
+est_qml <- modsem_da(m1, oneInt, method = "qml")
+summary(est_qml)
 
 # Theory Of Planned Behavior
 tpb <- "
@@ -219,7 +228,7 @@ tpb <- "
 "
 
 # LMS Approach
-estTpb <- modsem_da(tpb, data = TPB, method = lms, EFIM.S = 1000)
-summary(estTpb)
+est_lms <- modsem_da(tpb, data = TPB, method = lms)
+summary(est_lms)
 }
 }

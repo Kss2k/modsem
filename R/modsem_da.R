@@ -119,6 +119,13 @@
 #'
 #' @param em.control a list of control parameters for the EM algorithm. See \code{\link{default_settings_da}} for defaults.
 #'
+#' @param rcs Should latent variable indicators be replaced with reliablity-corrected
+#' single item indicators instead? See \code{\link{relcorr_single_item}}.
+#'
+#' @param rcs.choose Which latent variables should get their indicators replaced with
+#' reliablity-reliability corrected single items? Corresponds to the \code{choose} 
+#' argument in \code{\link{relcorr_single_item}}.
+#'
 #' @param ... additional arguments to be passed to the estimation function.
 #'
 #' @return \code{modsem_da} object
@@ -154,8 +161,8 @@
 #'
 #' \dontrun{
 #' # QML Approach
-#' est1 <- modsem_da(m1, oneInt, method = "qml")
-#' summary(est1)
+#' est_qml <- modsem_da(m1, oneInt, method = "qml")
+#' summary(est_qml)
 #'
 #' # Theory Of Planned Behavior
 #' tpb <- "
@@ -177,8 +184,8 @@
 #' "
 #'
 #' # LMS Approach
-#' estTpb <- modsem_da(tpb, data = TPB, method = lms, EFIM.S = 1000)
-#' summary(estTpb)
+#' est_lms <- modsem_da(tpb, data = TPB, method = lms)
+#' summary(est_lms)
 #' }
 modsem_da <- function(model.syntax = NULL,
                       data = NULL,
@@ -213,6 +220,8 @@ modsem_da <- function(model.syntax = NULL,
                       n.threads = NULL,
                       algorithm = NULL,
                       em.control = NULL,
+                      rcs = FALSE,
+                      rcs.choose = NULL,
                       ...) {
   if (is.null(model.syntax)) {
     stop2("No model.syntax provided")
@@ -226,6 +235,17 @@ modsem_da <- function(model.syntax = NULL,
     stop2("No data provided")
   } else if (!is.data.frame(data)) {
     data <- as.data.frame(data)
+  }
+
+  if (rcs) { # use reliability-correct single items?
+    corrected <- relcorr_single_item(
+      syntax = model.syntax, 
+      data = data,
+      choose = rcs.choose
+    )
+
+    model.syntax <- corrected$syntax
+    data         <- corrected$data
   }
 
   if ("convergence" %in% names(list(...))) {

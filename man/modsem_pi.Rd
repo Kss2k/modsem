@@ -29,6 +29,8 @@ modsem_pi(
   na.rm = FALSE,
   suppress.warnings.lavaan = FALSE,
   suppress.warnings.match = FALSE,
+  rcs = FALSE,
+  rcs.choose = NULL,
   ...
 )
 }
@@ -89,6 +91,13 @@ If \code{FALSE} they are not removed.}
 
 \item{suppress.warnings.match}{should warnings from \code{match} be suppressed?}
 
+\item{rcs}{Should latent variable indicators be replaced with reliablity-corrected
+single item indicators instead? See \code{\link{relcorr_single_item}}.}
+
+\item{rcs.choose}{Which latent variables should get their indicators replaced with
+reliablity-reliability corrected single items? Corresponds to the \code{choose} 
+argument in \code{\link{relcorr_single_item}}.}
+
 \item{...}{arguments passed to \code{lavaan::sem()}}
 }
 \value{
@@ -121,13 +130,13 @@ m1 <- '
 '
 
 # Double centering approach
-est1 <- modsem_pi(m1, oneInt)
-summary(est1)
+est <- modsem_pi(m1, oneInt)
+summary(est)
 
 \dontrun{
 # The Constrained Approach
-est1Constrained <- modsem_pi(m1, oneInt, method = "ca")
-summary(est1Constrained)
+est_ca <- modsem_pi(m1, oneInt, method = "ca")
+summary(est_ca)
 }
 
 # Theory Of Planned Behavior
@@ -150,12 +159,12 @@ tpb <- '
 '
 
 # Double centering approach
-estTpb <- modsem_pi(tpb, data = TPB)
-summary(estTpb)
+est_tpb <- modsem_pi(tpb, data = TPB)
+summary(est_tpb)
 
 \dontrun{
 # The Constrained Approach
-estTpbConstrained <- modsem_pi(tpb, data = TPB, method = "ca")
-summary(estTpbConstrained)
+est_tpb_ca <- modsem_pi(tpb, data = TPB, method = "ca")
+summary(est_tpb_ca)
 }
 }

@@ -27,7 +27,7 @@ An object of S3 class `modsem_relcorr` (a named list) with elements:
     variable).}
   \item{`AVE`}{Named numeric vector with Average Variance Extracted values.}
   \item{`lVs`}{Character vector of latent variables that were corrected.}
-  \itme{`single.items`}{Character vector with names for the generated reliability corrected items}
+  \item{`single.items`}{Character vector with names for the generated reliability corrected items}
 }
 }
 \description{

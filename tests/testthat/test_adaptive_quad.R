@@ -7,7 +7,7 @@ m1 <- '
   Y =~ y1 + y2 + y3
 
 # Inner Model
-  Y ~ a * X + a * Z + X:Z
+  Y ~ X + Z + X:Z
 '
 
 lms1 <- modsem(m1, oneInt, method = "lms", adaptive.quad=TRUE, optimize=TRUE,

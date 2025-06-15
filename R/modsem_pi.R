@@ -55,6 +55,13 @@
 #' @param suppress.warnings.lavaan should warnings from \code{lavaan} be suppressed?
 #' @param suppress.warnings.match should warnings from \code{match} be suppressed?
 #'
+#' @param rcs Should latent variable indicators be replaced with reliablity-corrected
+#' single item indicators instead? See \code{\link{relcorr_single_item}}.
+#'
+#' @param rcs.choose Which latent variables should get their indicators replaced with
+#' reliablity-reliability corrected single items? Corresponds to the \code{choose} 
+#' argument in \code{\link{relcorr_single_item}}.
+#'
 #' @param ... arguments passed to \code{lavaan::sem()}
 #'
 #' @return \code{modsem} object
@@ -86,13 +93,13 @@
 #' '
 #'
 #' # Double centering approach
-#' est1 <- modsem_pi(m1, oneInt)
-#' summary(est1)
+#' est <- modsem_pi(m1, oneInt)
+#' summary(est)
 #'
 #' \dontrun{
 #' # The Constrained Approach
-#' est1Constrained <- modsem_pi(m1, oneInt, method = "ca")
-#' summary(est1Constrained)
+#' est_ca <- modsem_pi(m1, oneInt, method = "ca")
+#' summary(est_ca)
 #' }
 #'
 #' # Theory Of Planned Behavior
@@ -115,13 +122,13 @@
 #' '
 #'
 #' # Double centering approach
-#' estTpb <- modsem_pi(tpb, data = TPB)
-#' summary(estTpb)
+#' est_tpb <- modsem_pi(tpb, data = TPB)
+#' summary(est_tpb)
 #'
 #' \dontrun{
 #' # The Constrained Approach
-#' estTpbConstrained <- modsem_pi(tpb, data = TPB, method = "ca")
-#' summary(estTpbConstrained)
+#' est_tpb_ca <- modsem_pi(tpb, data = TPB, method = "ca")
+#' summary(est_tpb_ca)
 #' }
 modsem_pi <- function(model.syntax = NULL,
                       data = NULL,
@@ -147,6 +154,8 @@ modsem_pi <- function(model.syntax = NULL,
                       na.rm = FALSE,
                       suppress.warnings.lavaan = FALSE,
                       suppress.warnings.match = FALSE,
+                      rcs = FALSE,
+                      rcs.choose = NULL,
                       ...) {
   stopif(is.null(model.syntax), "No model syntax provided in modsem")
   stopif(is.null(data), "No data provided in modsem")
@@ -177,10 +186,23 @@ modsem_pi <- function(model.syntax = NULL,
       na.rm = na.rm,
       suppress.warnings.match = suppress.warnings.match,
       suppress.warnings.lavaan = suppress.warnings.lavaan,
+      rcs = rcs,
+      rcs.choose = rcs.choose,
       ...
     )
 
     return(est)
+  }
+
+  if (rcs) { # use reliability-correct single items?
+    corrected <- relcorr_single_item(
+      syntax = model.syntax, 
+      data = data,
+      choose = rcs.choose
+    )
+
+    model.syntax <- corrected$syntax
+    data         <- corrected$data
   }
 
   if (!is.data.frame(data)) data <- as.data.frame(data)
@@ -614,6 +636,8 @@ modsemPICluster <- function(model.syntax = NULL,
                             na.rm = FALSE,
                             suppress.warnings.lavaan = FALSE,
                             suppress.warnings.match = FALSE,
+                            rcs = FALSE,
+                            rcs.choose = NULL,
                             ...) {
   stopif(na.rm, "`na.rm=TRUE` can currently not be paired with the `cluster` argument!")
 
@@ -654,6 +678,8 @@ modsemPICluster <- function(model.syntax = NULL,
       auto.scale = auto.scale,
       auto.center = auto.center,
       suppress.warnings.match = suppress.warnings.match,
+      rcs = rcs,
+      rcs.choose = rcs.choose
     ) |> stringr::str_replace_all(pattern = "\n", replacement = "\n\t")
 
 
@@ -677,6 +703,8 @@ modsemPICluster <- function(model.syntax = NULL,
       auto.center = auto.center,
       suppress.warnings.match = suppress.warnings.match,
       na.rm = FALSE,
+      rcs = rcs,
+      rcs.choose = rcs.choose
     )
 
     if (is.null(newData)) {
