@@ -15,3 +15,10 @@ getPackageVersion <- function(pkgname) {
 .onLoad <- function(libname, pkgname) {
   PKG_INFO$version <- getPackageVersion(pkgname)
 }
+
+
+.onAttach <- function(libname, pkgname) {
+  version <- getPackageVersion(pkgname)
+  message <- sprintf("This is %s (%s). Please report any bugs!", pkgname, version)
+  packageStartupMessage(message)
+}
