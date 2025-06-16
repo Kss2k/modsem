@@ -118,8 +118,8 @@ this will be extremely slow but should be more similar to \code{mplus}.}
 \strong{NOTE}: This number should likely be increased for better estimates (e.g., 1000), but it might drasticly increase computation time.}
 
 \item{OFIM.hessian}{Logical. If \code{TRUE} (default) standard errors are
-  based on the negative Hessian (observed Fisher information) evaluated
-  after the final EM step; if \code{FALSE} they come from the outer product
+  based on the negative Hessian (observed Fisher information).
+  If \code{FALSE} they come from the outer product
   of individual score vectors (OPG). For correctly specified models,
   these two matrices are asymptotically equivalent; yielding nearly identical
   standard errors in large samples. The Hessian usually shows smaller finite-sample
