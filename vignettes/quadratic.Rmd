@@ -38,7 +38,7 @@ Y ~ X + Z + Z:X + X:X
 '
 
 est1_lms <- modsem(m1, data = oneInt, method = "lms")
-summary(est1Lms)
+summary(est1_lms)
 ```
 
 In this example, we have a simple model with two quadratic effects and one interaction effect. We estimate the model using both the `QML` and double-centering approaches, with data from a subset of the PISA 2006 dataset.
