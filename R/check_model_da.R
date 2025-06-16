@@ -7,7 +7,8 @@ checkModel <- function(model, covModel = NULL, method = "lms") {
 
   checkNodesLms(parTableMain = model$parTable,
                 parTableCov  = covModel$parTable,
-                nodes = model$quad$m, method = method)
+                nodes = model$quad$m, method = method,
+                adaptive = model$quad$adaptive)
 
   checkOVsInStructuralModel(parTableMain = model$parTable,
                             parTableCov  = covModel$parTable)
@@ -93,9 +94,10 @@ checkNodesLms <- function(parTableMain,
                           parTableCov,
                           nodes,
                           method = "lms",
-                          minNodesXiXi = 16,
-                          minNodesXiEta = 32,
-                          minNodesEtaEta = 48) {
+                          adaptive = FALSE,
+                          minNodesXiXi   = if (!adaptive) 16 else 12,
+                          minNodesXiEta  = if (!adaptive) 32 else 24,
+                          minNodesEtaEta = if (!adaptive) 48 else 32) {
   if (method != "lms") return(NULL)
 
   parTable <- rbind(parTableMain, parTableCov)
