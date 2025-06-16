@@ -232,12 +232,20 @@ this will be extremely slow but should be more similar to <code>mplus</code>.</p
 
 
 <dt id="arg-ofim-hessian">OFIM.hessian<a class="anchor" aria-label="anchor" href="#arg-ofim-hessian"></a></dt>
-<dd><p>Logical. <code>TRUE</code> (default) returns standard errors
-from the observed Fisher information computed via the negative Hessian
-after the final EM iteration.  <code>FALSE</code> uses the outer-product-of-scores
-(OPG) instead.  With a correctly specified model the two coincide
-asymptotically; a large gap signals possible misspecification—use
-<code>robust.se = TRUE</code> to switch to the sandwich estimator in that case.</p></dd>
+<dd><p>Logical. If <code>TRUE</code> (default) standard errors are
+  based on the negative Hessian (observed Fisher information) evaluated
+  after the final EM step; if <code>FALSE</code> they come from the outer product
+  of individual score vectors (OPG). For correctly specified models,
+  these two matrices are asymptotically equivalent; yielding nearly identical
+  standard errors in large samples. The Hessian usually shows smaller finite-sample
+  variance (i.e., it's more consistent), and is therefore the default.</p>
+<p>Note, that the Hessian is not always positive definite, and is more computationally
+  expensive to calculate. The OPG should always be positive definite, and a lot
+  faster to compute. If the model is correctly specified, and the sample size is large,
+  then the two should yield similar results, and switching to the OPG can save a
+  lot of time. Note, that the required sample size depends on the complexity of the model.</p>
+<p>A large difference between Hessian and OPG suggests misspecification, and
+  <code>robust.se = TRUE</code> should be set to obtain sandwich (robust) standard errors.</p></dd>
 
 
 <dt id="arg-efim-parametric">EFIM.parametric<a class="anchor" aria-label="anchor" href="#arg-efim-parametric"></a></dt>
