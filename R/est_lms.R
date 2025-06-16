@@ -48,8 +48,8 @@ computeFullIcom <- function(theta, model, data, P, epsilon) {
 updateStatusLog <- function(iterations, mode, logLikNew, deltaLL, relDeltaLL, verbose = FALSE) {
   if (verbose) {
     clearConsoleLine()
-    cat(sprintf("\rIter=%d Mode=%s LogLik=%.2f \u0394LL=%.2g rel\u0394LL=%.2g",
-                iterations, mode, logLikNew, deltaLL, relDeltaLL))
+    printf("\rIter=%d Mode=%s LogLik=%.2f \u0394LL=%.2g rel\u0394LL=%.2g",
+           iterations, mode, logLikNew, deltaLL, relDeltaLL)
   }
 }
 

@@ -37,7 +37,7 @@ Z =~ z1 + z2 + z3
 Y ~ X + Z + Z:X + X:X
 '
 
-est1Lms <- modsem(m1, data = oneInt, method = "lms")
+est1_lms <- modsem(m1, data = oneInt, method = "lms")
 summary(est1Lms)
 ```
 
@@ -51,9 +51,30 @@ SC =~ academic1 + academic2 + academic3 + academic4 + academic5 + academic6
 CAREER ~ ENJ + SC + ENJ:ENJ + SC:SC + ENJ:SC
 '
 
-est2Dblcent <- modsem(m2, data = jordan)
-est2Qml <- modsem(m2, data = jordan, method = "qml")
-summary(est2Qml)
+est2_dca <- modsem(m2, data = jordan)
+est2_qml <- modsem(m2, data = jordan, method = "qml")
+summary(est2_qml)
 ```
 
-**NOTE**: The other approaches (e.g., `LMS` and constrained methods) can also be used but may be slower depending on the number of interaction effects, especially for the `LMS` and constrained approach.
+**NOTE**: We can also use the LMS approach to estimate this model, but it will be a lot 
+slower, since we have to integrate along both `ENJ` and `SC`. In the first example 
+it is sufficient to only integrate along `X`, but the addition of the `SC:SC` term
+means that we have to explicitly model `SC` as a moderator. This means that 
+we (by default) have to integrate along `24^2=576` nodes. This both affects the 
+the optimization process, but also dramatically affects the computation time of 
+the standard errors. To make the estimation process it is possible to reduce the number
+of quadrature nodes, and calculate standard errors using the outer product of the
+score function, instead of the negative of the hessian matrix. 
+
+```{r}
+m2 <- '
+ENJ =~ enjoy1 + enjoy2 + enjoy3 + enjoy4 + enjoy5
+CAREER =~ career1 + career2 + career3 + career4
+SC =~ academic1 + academic2 + academic3 + academic4 + academic5 + academic6
+CAREER ~ ENJ + SC + ENJ:ENJ + SC:SC + ENJ:SC
+'
+
+est2_lms <- modsem(m2, data = jordan, method = "lms", 
+                   nodes = 15, OFIM.hessian = FALSE)
+summary(est2_lms)
+```

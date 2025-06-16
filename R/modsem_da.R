@@ -73,7 +73,9 @@
 #' @param EFIM.S if the expected Fisher information matrix is computed, \code{EFIM.S} selects the number of Monte Carlo samples. Defaults to 100. 
 #' \strong{NOTE}: This number should likely be increased for better estimates (e.g., 1000-10000), but it might drasticly increase computation time.
 #'
-#' @param OFIM.hessian should the observed Fisher information be computed using the Hessian? If \code{FALSE}, it is computed using the gradient.
+#' @param OFIM.hessian should the observed Fisher information be computed using the Hessian? 
+#' If \code{FALSE}, it is computed using the outer product of the score function. The hessian 
+#' may yield more stable estimates, but is also a lot more expensive to calculate.
 #'
 #' @param EFIM.parametric should data for calculating the expected Fisher information matrix be
 #' simulated parametrically (simulated based on the assumptions and implied parameters

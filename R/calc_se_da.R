@@ -145,88 +145,65 @@ calcOFIM_LMS <- function(model, theta, data, hessian = FALSE,
                 data = data, P = P, sign = -1,
                 .relStep = .Machine$double.eps^(1/5))
 
-    # Approximate the observed information matrix using the complete 
-    # information matrix. Not working yet...
-    # t <- length(theta)
-    # Ic <- calcHessFromGradient(gradientLogLikLms, theta = theta, model = model, 
-    #                            P = P, sign = -1, eps = epsilon, epsilon = epsilon)
-    # R <- calcJacobianEM(theta, model = model, data = data, lastQuad = P$quad)
-    # I <- t(Ip - R) %*% Ic %*% (Ip - R)
-
     return(I)
   }
 
-  J <- gradientObsLogLikLms_i(theta, model = model, data = data,
+  S <- gradientObsLogLikLms_i(theta, model = model, data = data,
                               P = P, sign = 1, epsilon = epsilon)
-  I <- matrix(0, nrow = length(theta), ncol = length(theta))
-
-  for (i in seq_len(N)) {
-    J_i <- J[i,]
-    I <- I + J_i %*% t(J_i)
-  }
-
-  I
+  crossprod(S)
 }
 
 
-calcEFIM_LMS <- function(model, finalModel = NULL, theta, data, S = 100,
-                         parametric = TRUE, epsilon = 1e-6, verbose = FALSE,
-                         R.max = 1e6, P = NULL) {
-  lastQuad <- if (!is.null(P)) P$lastQuad else NULL
-  k <- length(theta)
+calcEFIM_LMS <- function(model, finalModel = NULL, theta, data,
+                         S         = 100,
+                         parametric = TRUE,
+                         epsilon    = 1e-6,
+                         verbose    = FALSE,
+                         R.max      = 1e6,
+                         P          = NULL) {
+  k <- length(theta)                       # number of free parameters
+  N <- nrow(data)
+  R <- min(R.max, N * S)
+  warnif(R.max <= N, "R.max is less than N!")
 
-  if (S <= k) {
-    warning2("`EFIM.S` is lower than the number of free parameters! Increasing `EFIM.S` to ", 2 * k)
-    S <- 2 * k
-  }
-
-  N      <- nrow(model$data)
-  R.ceil <- N * S > R.max
-  R      <- ifelse(R.ceil, yes = R.max, no = N * S) 
- 
-  if (R < N) {
-    warning2("Population size is smaller than sample size, please increase it using the `R.max` argument!")
-    R <- N
-  }
-  
   if (parametric) {
-    if (is.null(finalModel)) stop2("finalModel must be included in calcEFIM_LMS")
+    stopif(is.null(finalModel), "`finalModel` is needed when parametric = TRUE")
     parTable   <- modelToParTable(finalModel, method = "lms")
-    population <- tryCatch(
-      simulateDataParTable(parTable, N = R, colsOVs = colnames(data))$oV,
-      error = function(e) {
-        warning2("Unable to simulate data for EFIM, using stochastic sampling instead")
-        calcEFIM_LMS(model = model, theta = theta, data = data, S = S, 
-                     parametric = FALSE, epsilon = epsilon)
-      })
+    population <- simulateDataParTable(parTable, N = R,
+                                       colsOVs = colnames(data))$oV
+  } else {
+    population <- data[sample(nrow(data), R, replace = TRUE), , drop = FALSE]
+  }
 
-  } else population <- data[sample(R, N, replace = TRUE), ]
+  popEstep <- estepLms(model      = model,
+                       theta      = theta,
+                       data       = population,
+                       recalcQuad = TRUE,
+                       lastQuad   = if(!is.null(P)) P$quad else NULL)
+
+  J <- gradientObsLogLikLms_i(theta = theta,
+                              model = model,
+                              data  = population,
+                              P     = popEstep,
+                              sign  = +1,
+                              epsilon = epsilon)      # R × k matrix
 
   I <- matrix(0, nrow = k, ncol = k)
-
   for (i in seq_len(S)) {
-    if (verbose) printf("\rMonte-Carlo: Iteration = %d/%d", i, S)
+    if (R == N * S) {
+      # non-overlapping split
+      idx1 <- (i - 1) * N + 1
+      sub  <- idx1:(idx1 + N - 1)
+    } else {                    
+      sub <- sample(R, N)
+    }
 
-    if (!R.ceil) {
-      n1  <- (i - 1) * N + 1
-      nn  <- n1 + N - 1
-      sub <- n1:nn
-    } else sub <- sample(R, N)
-
-    P <- estepLms(model = model, theta = theta, data = population[sub, ], 
-                  recalcQuad = FALSE, lastQuad = lastQuad)
-    J <- gradientObsLogLikLms(theta = theta, model = model, data = population[sub, ],
-                              P = P, sign = 1, epsilon = epsilon)
-
-    I <- I + J %*% t(J)
-  }
-  
-  if (verbose) {
-    cat("\n")
-    if (S <= 100) message("Consider increasing the Monte-Carlo Monte-Carloiterations, using the `EFIM.S` argument!")
+    I <- I + crossprod(J[sub, , drop = FALSE])
   }
 
-  I / (S - k) # divide by degrees of freedom
+  if (verbose) cat("\n")
+
+  I / S
 }
 
 
@@ -241,37 +218,19 @@ calcOFIM_QML <- function(model, theta, data, hessian = FALSE,
     return(I)
   }
 
-  J <- gradientLogLikQml_i(theta, model = model, sign = 1, epsilon = epsilon)
-  I <- matrix(0, nrow = length(theta), ncol = length(theta))
-
-  for (i in seq_len(N)) {
-    J_i <- J[i,]
-    I <- I + J_i %*% t(J_i)
-  }
-
-  I
+  S <- gradientLogLikQml_i(theta, model = model, sign = 1, epsilon = epsilon)
+  crossprod(S)
 }
 
 
 calcEFIM_QML <- function(model, finalModel = NULL, theta, data, S = 100,
                          parametric = TRUE, epsilon = 1e-8, verbose = FALSE,
                          R.max = 1e6) {
-  k <- length(theta)
-  
-  if (S <= k) {
-    warning2("`EFIM.S` is lower than the number of free parameters! Increasing `EFIM.S` to ", 2 * k)
-    S <- 2 * k
-  }
+  k <- length(theta)                       # number of free parameters
+  N <- nrow(data)
+  R <- min(R.max, N * S)
+  warnif(R.max <= N, "R.max is less than N!")
 
-  N      <- nrow(model$data)
-  R.ceil <- N * S > R.max
-  R      <- ifelse(R.ceil, yes = R.max, no = N * S) 
-  
-  if (R < N) {
-    warning2("Population size is smaller than sample size, please increase it using the `R.max` argument!")
-    R <- N
-  }
-  
   if (parametric) {
     if (is.null(finalModel)) stop2("finalModel must be included in calcEFIM_QML")
     parTable <- modelToParTable(finalModel, method = "qml")
@@ -286,28 +245,25 @@ calcEFIM_QML <- function(model, finalModel = NULL, theta, data, S = 100,
 
   } else population <- data[sample(R, N, replace = TRUE), ]
 
+  J <- gradientLogLikQml(theta = theta, model = model, sign = +1, 
+                         epsilon = epsilon, data = population)
 
   I <- matrix(0, nrow = k, ncol = k)
   for (i in seq_len(S)) {
-    if (verbose) printf("\rMonte-Carlo: Iteration = %d/%d", i, S)
-   
-    if (!R.ceil) {
-      n1  <- (i - 1) * N + 1
-      nn  <- n1 + N - 1
-      sub <- n1:nn
-    } else sub <- sample(R, N)
+    if (R == N * S) {
+      # non-overlapping split
+      idx1 <- (i - 1) * N + 1
+      sub  <- idx1:(idx1 + N - 1)
+    } else {                    
+      sub <- sample(R, N)
+    }
 
-    J <- gradientLogLikQml(theta = theta, model = model, sign = 1, epsilon = epsilon,
-                           data = population[sub, ])
-    I <- I + J %*% t(J)
+    I <- I + crossprod(J[sub, , drop = FALSE])
   }
 
-  if (verbose) {
-    cat("\n")
-    if (S <= 100) message("Consider increasing the Monte-Carlo iterations, using the `EFIM.S` argument!")
-  }
+  if (verbose) cat("\n")
 
-  I / (S - k) # divide by degrees of freedom
+  I / S
 }
 
 
@@ -316,6 +272,7 @@ getSE_Model <- function(model, se, method, n.additions) {
   fillModel(replaceNonNaModelMatrices(model, value = -999),
             theta = se, method = method)
 }
+
 
 calcHessFromGradient <- function(gradFun, theta, eps = 1e-6, ...) {
   p  <- length(theta)
