@@ -71,22 +71,24 @@
 #' @param FIM should the Fisher information matrix be calculated using the observed or expected values? Must be either \code{"observed"} or \code{"expected"}.
 #'
 #' @param EFIM.S if the expected Fisher information matrix is computed, \code{EFIM.S} selects the number of Monte Carlo samples. Defaults to 100. 
-#' \strong{NOTE}: This number should likely be increased for better estimates (e.g., 1000-10000), but it might drasticly increase computation time.
+#'   \strong{NOTE}: This number should likely be increased for better estimates (e.g., 1000), but it might drasticly increase computation time.
 #'
-#' @param OFIM.hessian should the observed Fisher information be computed using the Hessian? 
-#' If \code{FALSE}, it is computed using the outer product of the score function. The hessian 
-#' may yield more stable estimates, but is also a lot more expensive to calculate.
+#' @param OFIM.hessian Logical. \code{TRUE} (default) returns standard errors
+#'   from the observed Fisher information computed via the negative Hessian
+#'   after the final EM iteration.  \code{FALSE} uses the outer-product-of-scores
+#'   (OPG) instead.  With a correctly specified model the two coincide
+#'   asymptotically; a large gap signals possible misspecification—use
+#'   \code{robust.se = TRUE} to switch to the sandwich estimator in that case.
 #'
 #' @param EFIM.parametric should data for calculating the expected Fisher information matrix be
-#' simulated parametrically (simulated based on the assumptions and implied parameters
-#' from the model), or non-parametrically (stochastically sampled)? If you believe that
-#' normality assumptions are violated, \code{EFIM.parametric = FALSE} might be the better option.
+#'   simulated parametrically (simulated based on the assumptions and implied parameters
+#'   from the model), or non-parametrically (stochastically sampled)? If you believe that
+#'   normality assumptions are violated, \code{EFIM.parametric = FALSE} might be the better option.
 #'
 #' @param R.max Maximum population size (not sample size) used in the calculated of the expected
 #' fischer information matrix.
 #'
-#' @param robust.se should robust standard errors be computed? Meant to be used for QML,
-#' can be unreliable with the LMS approach.
+#' @param robust.se should robust standard errors be computed, using the sandwich estimator?
 #'
 #' @param max.iter maximum number of iterations.
 #'

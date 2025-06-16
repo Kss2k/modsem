@@ -43,8 +43,8 @@ calcFIM_da <- function(model,
 
   if (robust.se) {
     warnif(hessian && FIM == "observed",
-           "'robust.se = TRUE' should not be paired with ",
-           "'EFIM.hessian = TRUE' && 'FIM = \"observed\"'")
+           "`robust.se = TRUE` should not be paired with ",
+           "`OFIM.hessian = TRUE` and `FIM = \"observed\"`")
     H <- calcHessian(model, theta = theta, data = data, method = method,
                      epsilon = epsilon, P = P)
     invH <- solveFIM(H, NA__ = NA__)
@@ -86,7 +86,7 @@ calcHessian <- function(model, theta, data, method = "lms",
   if (method == "lms") {
     if (is.null(P)) P <- estepLms(model, theta = theta, data = data)
     # negative hessian (sign = -1)
-    H <- fdHESS(pars = theta, fun = logLikLms, model = model,
+    H <- fdHESS(pars = theta, fun = obsLogLikLms, model = model,
                 data = data, P = P, sign = -1,
                 .relStep = .Machine$double.eps^(1/5))
 

@@ -115,17 +115,21 @@ this will be extremely slow but should be more similar to \code{mplus}.}
 \item{FIM}{should the Fisher information matrix be calculated using the observed or expected values? Must be either \code{"observed"} or \code{"expected"}.}
 
 \item{EFIM.S}{if the expected Fisher information matrix is computed, \code{EFIM.S} selects the number of Monte Carlo samples. Defaults to 100. 
-\strong{NOTE}: This number should likely be increased for better estimates (e.g., 1000-10000), but it might drasticly increase computation time.}
+\strong{NOTE}: This number should likely be increased for better estimates (e.g., 1000), but it might drasticly increase computation time.}
 
-\item{OFIM.hessian}{should the observed Fisher information be computed using the Hessian? If \code{FALSE}, it is computed using the gradient.}
+\item{OFIM.hessian}{Logical. \code{TRUE} (default) returns standard errors
+from the observed Fisher information computed via the negative Hessian
+after the final EM iteration.  \code{FALSE} uses the outer-product-of-scores
+(OPG) instead.  With a correctly specified model the two coincide
+asymptotically; a large gap signals possible misspecification—use
+\code{robust.se = TRUE} to switch to the sandwich estimator in that case.}
 
 \item{EFIM.parametric}{should data for calculating the expected Fisher information matrix be
 simulated parametrically (simulated based on the assumptions and implied parameters
 from the model), or non-parametrically (stochastically sampled)? If you believe that
 normality assumptions are violated, \code{EFIM.parametric = FALSE} might be the better option.}
 
-\item{robust.se}{should robust standard errors be computed? Meant to be used for QML,
-can be unreliable with the LMS approach.}
+\item{robust.se}{should robust standard errors be computed, using the sandwich estimator?}
 
 \item{R.max}{Maximum population size (not sample size) used in the calculated of the expected
 fischer information matrix.}
