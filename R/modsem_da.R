@@ -73,12 +73,22 @@
 #' @param EFIM.S if the expected Fisher information matrix is computed, \code{EFIM.S} selects the number of Monte Carlo samples. Defaults to 100. 
 #'   \strong{NOTE}: This number should likely be increased for better estimates (e.g., 1000), but it might drasticly increase computation time.
 #'
-#' @param OFIM.hessian Logical. \code{TRUE} (default) returns standard errors
-#'   from the observed Fisher information computed via the negative Hessian
-#'   after the final EM iteration.  \code{FALSE} uses the outer-product-of-scores
-#'   (OPG) instead.  With a correctly specified model the two coincide
-#'   asymptotically; a large gap signals possible misspecification—use
-#'   \code{robust.se = TRUE} to switch to the sandwich estimator in that case.
+#' @param OFIM.hessian Logical. If \code{TRUE} (default) standard errors are
+#'   based on the negative Hessian (observed Fisher information) evaluated
+#'   after the final EM step; if \code{FALSE} they come from the outer product
+#'   of individual score vectors (OPG). For correctly specified models,
+#'   these two matrices are asymptotically equivalent; yielding nearly identical
+#'   standard errors in large samples. The Hessian usually shows smaller finite-sample
+#'   variance (i.e., it's more consistent), and is therefore the default. 
+#'
+#'   Note, that the Hessian is not always positive definite, and is more computationally
+#'   expensive to calculate. The OPG should always be positive definite, and a lot 
+#'   faster to compute. If the model is correctly specified, and the sample size is large,
+#'   then the two should yield similar results, and switching to the OPG can save a 
+#'   lot of time. Note, that the required sample size depends on the complexity of the model.
+#'
+#'   A large difference between Hessian and OPG suggests misspecification, and 
+#'   \code{robust.se = TRUE} should be set to obtain sandwich (robust) standard errors.
 #'
 #' @param EFIM.parametric should data for calculating the expected Fisher information matrix be
 #'   simulated parametrically (simulated based on the assumptions and implied parameters
