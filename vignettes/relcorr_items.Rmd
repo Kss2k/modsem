@@ -1,0 +1,85 @@
+---
+title: "reliability-corrected single items"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{reliability-corrected single items}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+EVAL_DEFAULT <- FALSE
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = EVAL_DEFAULT
+)
+```
+
+```{r setup}
+library(modsem)
+```
+
+## Reliablity-Corrected Single Items
+
+If wanted, indicators for latent variables can be replaced with reliablity 
+corrected single items, using Chronbach's $\alpha$. This can either be done
+using the `relcorr_single_item` function, returning the altered model syntax 
+and data, or via the `rcs` argument in `modsem`. Here we can see an example
+using the `relcorr_single_item` function:
+
+```{r}
+tpb_uk <- "
+# Outer Model (Based on Hagger et al., 2007)
+ ATT =~ att3 + att2 + att1 + att4
+ SN =~ sn4 + sn2 + sn3 + sn1
+ PBC =~ pbc2 + pbc1 + pbc3 + pbc4
+ INT =~ int2 + int1 + int3 + int4
+ BEH =~ beh3 + beh2 + beh1 + beh4
+
+# Inner Model (Based on Steinmetz et al., 2011)
+ INT ~ ATT + SN + PBC
+ BEH ~ INT + PBC
+ BEH ~ INT:PBC
+"
+
+corrected <- relcorr_single_item(syntax = tpb_uk, data = TPB_UK)
+corrected
+```
+Here we can see that `relcorr_single_item` returns a new model syntax, and a 
+new `data.frame` containing the generated items. Additionally, it also 
+returns the Chronbach's $\alpha$ and *average variance extraced* (AVE) 
+for the different constructs in the model. The syntax and data can be 
+extracted using the `$` operator, and used to estimate the model.
+
+```{r}
+syntax <- corrected$syntax
+data   <- corrected$data
+
+est_dca <- modsem(syntax, data = data, method = "dblcent")
+est_lms <- modsem(syntax, data = data, method="lms", nodes=32)
+summary(est_lms)
+```
+
+Alternatively, it is possible to use the `rcs` argument in the `modsem` function
+to call `relcorr_single_item` before estimating the model.
+
+```{r}
+est_dca <- modsem(tpb_uk, data = TPB_UK, method = "dblcent", rcs = TRUE)
+est_lms <- modsem(tpb_uk, data = TPB_UK, method = "lms", rcs = TRUE)
+```
+
+# Choosing Variables
+If you don't want to use reliablity-corrected single items for all of the 
+latent variables in the model, you can use the `choose` argument in 
+`relcorr_single_item` (or`rcs.choose` in `modsem`) to select which 
+set of indicators to replace.
+
+```{r}
+relcorr_single_item(syntax = tpb_uk, data = TPB_UK, 
+                    choose = c("ATT", "SN", "PBC", "INT"))
+
+est_dca <- modsem(tpb_uk, data = TPB_UK, method = "dblcent", rcs = TRUE,
+                  rcs.choose = c("ATT", "SN", "PBC", "INT"))
+summary(est_dca)
+```
