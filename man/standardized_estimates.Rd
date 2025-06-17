@@ -28,7 +28,7 @@ be different from those using \code{lavaan}, since there the interaction term is
 actual latent variable in the model, with a standardized variance of 1. 
 
 \strong{NOTE} that the standardized coefficent will be placed in the \strong{\code{est}} column
-(\code{not \code{est.std}}) for all models, inluding those from \code{\link{modsem_pi}}. 
+(\strong{not \code{est.std}}) for all models, inluding those from \code{\link{modsem_pi}}. 
 This is different from the results from \code{lavaan::standardizedSolution} where the 
 standardized estimates are placed in the \code{est.std} column.
 }
