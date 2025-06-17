@@ -7,7 +7,7 @@
 standardized_estimates(object, ...)
 }
 \arguments{
-\item{object}{An object of class \code{modsem_da}, \code{modsem_mplus},
+\item{object}{An object of class \code{\link{modsem_da}}, \code{\link{modsem_mplus}},
 or a \code{parTable} of class \code{data.frame}}
 
 \item{...}{Additional arguments passed to other functions}
@@ -25,5 +25,10 @@ Assuming normality and zero-means, the variance is calculated as
 term to 1 would only be 'correct' if the correlation between \code{x} and \code{z} is zero.
 This means that the standardized estimates for the interaction term will
 be different from those using \code{lavaan}, since there the interaction term is an
-actual latent variable in the model, with a standardized variance of 1.
+actual latent variable in the model, with a standardized variance of 1. 
+
+\strong{NOTE} that the standardized coefficent will be placed in the \strong{\code{est}} column
+(\code{not \code{est.std}}) for all models, inluding those from \code{\link{modsem_pi}}. 
+This is different from the results from \code{lavaan::standardizedSolution} where the 
+standardized estimates are placed in the \code{est.std} column.
 }
