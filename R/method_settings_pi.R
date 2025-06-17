@@ -60,9 +60,7 @@ getMethodSettingsPI <- function(method, args) {
 
     isMissing <- vapply(args, FUN.VALUE = logical(1L), FUN = is.null)
     missingArgs <- settingNames[isMissing]
-    if  (!method %in% names(settings)) {
-        stop2("Unrecognized method")
-    }
+    stopif(!method %in% names(settings), "Unrecognized method")
     c(settings[[method]][missingArgs], args[!isMissing])
 }
 

@@ -83,8 +83,8 @@ emLms <- function(model,
   # Default thresholds (can be overridden via em.control)
   tau  <- convergence.rel
   tau1 <- if (is.null(em.control$tau1)) tau*1e6 else em.control$tau1 # EM->QN if relDeltaLL < tau1
-  tau2 <- if (is.null(em.control$tau2)) tau*1e2 else em.control$tau2 # QN->FS if relDeltaLL < tau2
-  tau3 <- if (is.null(em.control$tau3)) tau*1e1 else em.control$tau3 # FS->stop if relDeltaLL < tau3
+  tau2 <- if (is.null(em.control$tau2)) tau*1e1 else em.control$tau2 # QN->FS if relDeltaLL < tau2
+  tau3 <- if (is.null(em.control$tau3)) tau*2   else em.control$tau3 # FS->stop if relDeltaLL < tau3
 
   # Initialization
   logLikNew <- -Inf
@@ -125,7 +125,7 @@ emLms <- function(model,
     logLikNew  <- P$obsLL
     logLiks    <- c(logLiks, logLikNew)
     deltaLL    <- logLikNew - logLikOld
-    relDeltaLL <- abs(deltaLL / logLikNew)
+    relDeltaLL <- ifelse(is.finite(deltaLL), deltaLL / abs(logLikOld), Inf)
 
     updateStatusLog(iterations, mode, logLikNew, deltaLL, relDeltaLL, verbose)
 
@@ -142,11 +142,19 @@ emLms <- function(model,
     if (algorithm == "EMA") {
       previousMode <- mode
 
-      if      (mode == "EM" && abs(relDeltaLL) < tau1) mode <- "QN"
-      else if (mode == "QN" && abs(relDeltaLL) < tau2) mode <- "FS"
-      else if (mode == "FS" && abs(relDeltaLL) < tau3) run <- FALSE
+      dl <- abs(relDeltaLL)
+      mode <- switch(mode,
+        EM = if (dl < tau1) "QN",
+        QN = if (dl < tau2) "FS"   else if (dl >= tau1) "EM",
+        FS = if (dl < tau3) "STOP" else if (dl >= tau2) "QN",
+        NULL
+      )
+      mode <- ifelse(is.null(mode), yes = previousMode, no = mode)
 
-      if (mode != previousMode) { # Log mode change if verbose
+      if (mode == "STOP") {
+        run <- FALSE
+        break
+      } else if (mode != previousMode) { # Log mode change if verbose
         updateStatusLog(iterations, mode, logLikNew, deltaLL, relDeltaLL, verbose)
       }
     }
@@ -165,8 +173,7 @@ emLms <- function(model,
       } else if (mode == "FS") {
         Ic     <- computeFullIcom(theta = thetaOld, model = model, P = P,
                                   epsilon = epsilon)
-        direction <- tryCatch(solve(Ic, grad), error = function(e) NULL)
-
+        direction <- -tryCatch(solve(Ic, grad), error = function(e) NULL)
       }
 
       # Line search if a direction is available
