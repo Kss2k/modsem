@@ -62,7 +62,7 @@
 
 
 <dl><dt id="arg-object">object<a class="anchor" aria-label="anchor" href="#arg-object"></a></dt>
-<dd><p>An object of class <code>modsem_da</code>, <code>modsem_mplus</code>,
+<dd><p>An object of class <code><a href="modsem_da.html">modsem_da</a></code>, <code><a href="modsem_mplus.html">modsem_mplus</a></code>,
 or a <code>parTable</code> of class <code>data.frame</code></p></dd>
 
 
@@ -82,6 +82,10 @@ term to 1 would only be 'correct' if the correlation between <code>x</code> and 
 This means that the standardized estimates for the interaction term will
 be different from those using <code>lavaan</code>, since there the interaction term is an
 actual latent variable in the model, with a standardized variance of 1.</p>
+<p><strong>NOTE</strong> that the standardized coefficent will be placed in the <strong><code>est</code></strong> column
+(<code>not <code>est.std</code></code>) for all models, inluding those from <code><a href="modsem_pi.html">modsem_pi</a></code>.
+This is different from the results from <code><a href="https://rdrr.io/pkg/lavaan/man/standardizedSolution.html" class="external-link">lavaan::standardizedSolution</a></code> where the
+standardized estimates are placed in the <code>est.std</code> column.</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
