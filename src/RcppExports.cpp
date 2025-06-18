@@ -206,6 +206,20 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// tracePathsNumericCpp
+Rcpp::NumericVector tracePathsNumericCpp(Rcpp::CharacterVector x, Rcpp::CharacterVector y, Rcpp::DataFrame parTable, int maxlen);
+RcppExport SEXP _modsem_tracePathsNumericCpp(SEXP xSEXP, SEXP ySEXP, SEXP parTableSEXP, SEXP maxlenSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::CharacterVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< Rcpp::CharacterVector >::type y(ySEXP);
+    Rcpp::traits::input_parameter< Rcpp::DataFrame >::type parTable(parTableSEXP);
+    Rcpp::traits::input_parameter< int >::type maxlen(maxlenSEXP);
+    rcpp_result_gen = Rcpp::wrap(tracePathsNumericCpp(x, y, parTable, maxlen));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_modsem_calcSESimpleSlopes", (DL_FUNC) &_modsem_calcSESimpleSlopes, 2},
@@ -223,6 +237,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_modsem_rep_dmvnorm", (DL_FUNC) &_modsem_rep_dmvnorm, 4},
     {"_modsem_dmvnrm_arma_mc", (DL_FUNC) &_modsem_dmvnrm_arma_mc, 4},
     {"_modsem_totalDmvnWeightedCpp", (DL_FUNC) &_modsem_totalDmvnWeightedCpp, 7},
+    {"_modsem_tracePathsNumericCpp", (DL_FUNC) &_modsem_tracePathsNumericCpp, 4},
     {NULL, NULL, 0}
 };
 
