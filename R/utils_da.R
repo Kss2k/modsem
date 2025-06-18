@@ -468,5 +468,42 @@ var_interactions_COEFS <- function(parTable, COEFS) {
     COEFS[[labelVarXZ]] <- varXZ
   }
 
+  for (intTermXX in intTerms) {
+    # If we have both X:X and X:Z in the model, we must include the 
+    # covariance between X:X and X:Z
+    elemsXX <- stringr::str_split_fixed(intTermXX, ":", 2)
+    X1      <- elemsXX[[1]]
+    Z1      <- elemsXX[[2]]
+     
+    if (X1 != Z1) next
+
+    for (intTermXZ in intTerms) {
+      elemsXZ <- stringr::str_split_fixed(intTermXZ, ":", 2)
+      X2      <- elemsXZ[[1]]
+      Z2      <- elemsXZ[[2]]
+
+      if (X2 == Z2 || !any(elemsXX %in% elemsXZ)) next
+
+      X <- X1 
+      Z <- elemsXZ[elemsXZ != X]
+    
+      labelVarXZ <- getLabelVarXZ(intTermXZ)
+      labelVarXX <- getLabelVarXZ(intTermXX)
+
+      eqVarX  <- getCovEqExpr(x=X, y=X, parTable=parTable)
+      eqVarZ  <- getCovEqExpr(x=Z, y=Z, parTable=parTable)
+      eqCovXZ <- getCovEqExpr(x=X, y=Z, parTable=parTable)
+
+      varX <- eval(eqVarX, envir = COEFS)
+      varZ <- eval(eqVarZ, envir = COEFS)
+      covXZ <- eval(eqCovXZ, envir = COEFS)
+
+      covXZ_XX <- 2 * covXZ * varX
+      
+      covLabel <- paste0(labelVarXZ, OP_REPLACEMENTS[["~~"]], labelVarXX)
+      COEFS[[covLabel]] <- covXZ_XX
+    }
+  }
+
   COEFS
 }
