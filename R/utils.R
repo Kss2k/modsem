@@ -410,9 +410,9 @@ padCharMatrix <- function(X, n=1) {
 }
 
 
-timeExpr <- function(x) {
+timeExpr <- function(expr) {
   start <- Sys.time()
-  out <-x
+  out <- expr
   end <- Sys.time()
   print(end - start)
   out
@@ -434,4 +434,30 @@ formatParameters <- function(...) {
 padString <- function(x, pad) {
   s <- stringr::str_replace_all(x, pattern = "\n", replacement = paste0("\n", pad))
   paste0(pad, s, "\n")
+}
+
+
+getCoefsRows <- function(y, x, parTable) {
+  row <- parTable[parTable$lhs %in% y & 
+                  parTable$rhs %in% x & 
+                  parTable$op == "~", , drop = FALSE]
+}
+
+
+getCoefs <- function(y, x, parTable, col = "est") {
+  coefRows <- getCoefsRows(y, x, parTable)
+  coefs <- structure(coefRows[[col]], names = coefRows$rhs)
+  coefs[x]
+}
+
+
+parTableToEnv <- function(parTable, prefix = "") {
+  lhs <- parTable$lhs
+  rhs <- parTable$rhs
+  op <- stringr::str_replace_all(parTable$op, OP_REPLACEMENTS)
+
+  names <- paste0(prefix, lhs, op, rhs)
+  values <- structure(parTable$est, names = names)
+
+  list2env(values)
 }

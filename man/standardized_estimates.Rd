@@ -12,6 +12,10 @@ or a \code{parTable} of class \code{data.frame}}
 
 \item{...}{Additional arguments passed to other functions}
 }
+\value{
+A \code{data.frame} with the standardized estimates of the model parameters, in the 
+\code{est} column.
+}
 \description{
 Get standardized estimates
 }
@@ -20,6 +24,7 @@ For \code{modsem_da}, and \code{modsem_mplus} objects,
 the interaction term is not standardized such that \code{var(xz) = 1}.
 The interaction term is not an actual variable in the model, meaning that it does not
 have a variance. It must therefore be calculated from the other parameters in the model.
+
 Assuming normality and zero-means, the variance is calculated as
 \code{var(xz) = var(x) * var(z) + cov(x, z)^2}. Thus setting the variance of the interaction
 term to 1 would only be 'correct' if the correlation between \code{x} and \code{z} is zero.
@@ -27,8 +32,33 @@ This means that the standardized estimates for the interaction term will
 be different from those using \code{lavaan}, since there the interaction term is an
 actual latent variable in the model, with a standardized variance of 1. 
 
+In \code{\link{modsem_pi}} the interaction term is standardized such that \code{var(xz) = 1}.
+It is possible to apply a correction to the standardized estimates from 
+\code{\link{modsem_pi}}, by passing \code{correction = TRUE}.
+
 \strong{NOTE} that the standardized coefficent will be placed in the \strong{\code{est}} column
 (\strong{not \code{est.std}}) for all models, inluding those from \code{\link{modsem_pi}}. 
 This is different from the results from \code{lavaan::standardizedSolution} where the 
 standardized estimates are placed in the \code{est.std} column.
+}
+\examples{
+m1 <- '
+  # Outer Model
+  X =~ x1 + x2 + x3
+  Z =~ z1 + z2 + z3
+  Y =~ y1 + y2 + y3
+
+  # Inner Model
+  Y ~ X + Z + X:Z
+'
+# Double centering approach
+est_dca <- modsem(m1, oneInt)
+
+standardized_estimates(est_dca) # no correction
+# standardized_estimates(est_dca, correction = TRUE) # apply correction
+
+\dontrun{
+est_lms <- modsem(m1, oneInt, method = "lms")
+standardized_estimates(est_lms) # correction not relevant for lms
+}
 }

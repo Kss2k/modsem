@@ -194,10 +194,12 @@ parameter_estimates.modsem_pi <- function(object, ...) {
 
 
 #' @export
-standardized_estimates.modsem_pi <- function(object, est.std.name = "est", ...) {
-  parTable <- lavaan::standardizedSolution(object$lavaan, ...)
-  colnames(parTable)[colnames(parTable) == "est.std"] <- est.std.name
-  parTable
+standardized_estimates.modsem_pi <- function(object, correction = FALSE, ...) {
+  parTable.std <- lavaan::standardizedSolution(object$lavaan, ...)
+  colnames(parTable.std)[colnames(parTable.std) == "est.std"] <- "est"
+
+  if (correction) correctStdSolutionPI(object, parTable.std = parTable.std)
+  else parTable.std
 }
 
 
