@@ -25,7 +25,8 @@ parameter_estimates.modsem_da <- function(object, ...) {
 #' @param intercepts should intercepts be included in the output?
 #' If \code{standardized = TRUE} intercepts will by default be excluded. 
 #' @param variances print variances
-#' @param var.interaction if FALSE (default) variances for interaction terms will be removed (if present)
+#' @param var.interaction if FALSE variances for interaction terms will be removed 
+#' from the output
 #' @param ... additional arguments
 #' @rdname summary
 #' @export
@@ -68,16 +69,16 @@ summary.modsem_da <- function(object,
     parTable <- standardized_estimates(object, intercepts = intercepts, 
                                        monte.carlo = monte.carlo, mc.reps = mc.reps)
   } else {
-    parTable <- parameter_estimates(object)
+    parTable <- var_interactions(parameter_estimates(object))
   }
 
   if (!var.interaction) {
-    parTable <- removeInteractionVariances(parTable)
-  }
+    parTable.out <- removeInteractionVariances(parTable)
+  } else parTable.out <- parTable
 
   args <- object$args
   out <- list(
-    parTable       = parTable,
+    parTable       = parTable.out,
     data           = object$data,
     iterations     = object$iterations,
     logLik         = object$logLik,
@@ -275,8 +276,9 @@ print.modsem_da <- function(x, digits = 3, ...) {
 }
 
 
-calcRsquared <- function(parTable) {
-  parTable <- var_interactions.data.frame(parTable)
+calcRsquared <- function(parTable, recalc.vars = FALSE) {
+  if (recalc.vars) parTable <- var_interactions.data.frame(parTable)
+
   etas     <- unique(parTable$lhs[parTable$op == "~"])
 
   # Calculate Variances/R squared of Etas

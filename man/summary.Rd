@@ -88,7 +88,8 @@ and \code{standardized = TRUE}.}
 
 \item{variances}{print variances}
 
-\item{var.interaction}{if FALSE (default) variances for interaction terms will be removed (if present)}
+\item{var.interaction}{if FALSE variances for interaction terms will be removed 
+from the output}
 
 \item{...}{arguments passed to lavaan::summary()}
 
