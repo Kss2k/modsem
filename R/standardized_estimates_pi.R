@@ -52,7 +52,9 @@ correctStdSolutionPI <- function(object, parTable.std) {
                                                         # possible to standardize the terms correctly
 
     # Correctly standardized terms
-    b3Correct <- B3 * (prod(sds) / sdy)
+    b3Correct <- B3 * abs(prod(sds) / sdy) # in case some variances are negative
+                                           # we want to make sure we don't flip
+                                           # the sign...
     
     lcoefsCorrect <- lcoefsIncorrect
     rcoefsCorrect <- rcoefsIncorrect
