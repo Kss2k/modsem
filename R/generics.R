@@ -30,12 +30,9 @@ var_interactions.data.frame <- function(object, ...) {
 
   for (intTerm in intTerms) {
     # interaction term = XZ
-    # TO DO:
+    # TODO:
     #   I should also add covariances between X:Z and the other exogenous
     #   variables... (only relevant when mu(X) or mu(Z) != 0)
-    #   Let Y denote the other exogenous variables, and xz denote the variables in
-    #   the interaction term
-    #   S(X:Z, Y) = S(X:Z, xz) %*% inv(S(xz, xz)) %*% S(xz, Y) ??
     XZ   <- stringr::str_split_fixed(intTerm, ":", 2)
     X    <- XZ[[1]]
     Z    <- XZ[[2]]
@@ -57,15 +54,62 @@ var_interactions.data.frame <- function(object, ...) {
     # when X or Z is endogenous
     covX_XZ <- varX * muZ + muX * covXZ
     covZ_XZ <- varZ * muX + muZ * covXZ
-    newRow <- data.frame(lhs = c(intTerm, XZ[[1]], XZ[[2]]),
-                         op = rep("~~", 3),
-                         rhs = rep(intTerm, 3),
-                         label = "",
-                         est = c(varXZ, covX_XZ, covZ_XZ),
-                         std.error = NA, z.value = NA, p.value = NA,
-                         ci.lower = NA, ci.upper = NA)
-    parTable <- rbind(parTable, newRow)
+    newRows <- data.frame(lhs = c(intTerm, XZ[[1]], XZ[[2]]),
+                          op = rep("~~", 3),
+                          rhs = rep(intTerm, 3),
+                          label = "",
+                          est = c(varXZ, covX_XZ, covZ_XZ),
+                          std.error = NA, z.value = NA, p.value = NA,
+                          ci.lower = NA, ci.upper = NA)
+
+    if (XZ[[1]] == XZ[[2]]) newRows <- newRows[seq_len(2), ]
+
+    parTable <- rbind(parTable, newRows)
   }
+  
+
+  for (intTermXX in intTerms) {
+    # If we have both X:X and X:Z in the model, we must include the 
+    # covariance between X:X and X:Z
+    elemsXX <- stringr::str_split_fixed(intTermXX, ":", 2)
+    X1      <- elemsXX[[1]]
+    Z1      <- elemsXX[[2]]
+     
+    if (X1 != Z1) next
+
+    for (intTermXZ in intTerms) {
+      elemsXZ <- stringr::str_split_fixed(intTermXZ, ":", 2)
+      X2      <- elemsXZ[[1]]
+      Z2      <- elemsXZ[[2]]
+
+      if (X2 == Z2 || !any(elemsXX %in% elemsXZ)) next
+
+      X <- X1 
+      Z <- elemsXZ[elemsXZ != X]
+
+      muX  <- getMean(X, parTable)
+      muZ  <- getMean(Z, parTable)
+
+      lhs  <- c(X, Z)
+      rhs  <- c(X, X)
+
+      covs   <- calcCovParTable(lhs, rhs, parTable)
+      varX   <- covs[[1]]
+      covX_Z <- covs[[2]]
+
+      covXZ_XX <- 2 * covX_Z * (muX^2 + varX) + 2 * muX * muZ * varX
+      
+      newRow <- data.frame(lhs = intTermXZ,
+                           op = "~~",
+                           rhs = intTermXX,
+                           label = "",
+                           est = covXZ_XX,
+                           std.error = NA, z.value = NA, p.value = NA,
+                           ci.lower = NA, ci.upper = NA)
+      parTable <- rbind(parTable, newRow)
+    }
+  }
+
   parTable
 }
 
