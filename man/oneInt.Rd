@@ -5,5 +5,18 @@
 \alias{oneInt}
 \title{oneInt}
 \description{
-A simulated dataset with one interaction effect
+A simulated dataset based on the elementary interaction model.
+}
+\examples{
+
+m1 <- "
+# Outer Model
+  X =~ x1 + x2 + x3
+  Z =~ z1 + z2 + z3
+  Y =~ y1 + y2 + y3
+# Inner Model
+  Y ~ X + Z + X:Z
+"
+
+est <- modsem(m1, data = oneInt)
 }
