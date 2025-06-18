@@ -114,7 +114,7 @@ var_interactions.data.frame <- function(object, ...) {
 #' est_dca <- modsem(m1, oneInt)
 #'
 #' standardized_estimates(est_dca) # no correction
-#' # standardized_estimates(est_dca, correction = TRUE) # apply correction
+#' standardized_estimates(est_dca, correction = TRUE) # apply correction
 #'
 #' \dontrun{
 #' est_lms <- modsem(m1, oneInt, method = "lms")
