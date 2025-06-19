@@ -446,6 +446,12 @@ getCoefs <- function(y, x, parTable, col = "est") {
 }
 
 
+getCOEFS <- function(y, x, COEFS) {
+  labels <- paste0(y, OP_REPLACEMENTS[["~"]], x)
+  if (length(labels) == 1) COEFS[[labels]] else COEFS[labels]
+}
+
+
 parTableToEnv <- function(parTable, prefix = "") {
   lhs <- parTable$lhs
   rhs <- parTable$rhs
