@@ -126,17 +126,19 @@ standardized_solution_COEFS <- function(object,
   originalLabels <- parTable$label
   labels         <- getParTableLabels(parTable, labelCol="label")
   parTable$label <- labels
-  labels         <- unique(labels)
-
-  # parTable$est <- NULL # no longer needed
   parTable$std.error <- NA
-  
+
+  # Get vcov and coefs
   V     <- vcov(object)
   coefs <- structure(parTable$est, names = labels)
+ 
+  # Get unique labels, and legal names
+  labels     <- unique(labels)
+  legalNames <- stringr::str_replace_all(labels, OP_REPLACEMENTS)
+
+  # Subset and expand based on unique labels
   V     <- expandVCOV(V, labels=labels)
   coefs <- coefs[labels]
-
-  legalNames <- stringr::str_replace_all(labels, OP_REPLACEMENTS)
 
   if (monte.carlo) {
     COEFS <- as.data.frame(mvtnorm::rmvnorm(mc.reps, mean = coefs, sigma = V))
@@ -267,7 +269,7 @@ standardized_solution_COEFS <- function(object,
 
     COEFS[[label]] <- residual
   }
- 
+
   # Correct Scale of interaction terms
   COEFS <- correctStdSolutionCOEFS(
     parTable = parTable, # for generating equations
