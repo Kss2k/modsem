@@ -6,7 +6,9 @@ m1 <- "
   Z =~ z1 + z2 + z3
   Y =~ y1 + y2 + y3
 # Inner Model
-  Y ~ X + Z + X:Z
+  Y ~ X + Z + a * X:Z
+
+  c := a
 "
 
 est <- modsem(m1, data = oneInt)
@@ -14,6 +16,11 @@ parTable <- standardized_estimates(est)
 parTable <- standardized_estimates(est, correction = TRUE)
 varXZ <- parTable[parTable$lhs == "XZ" & parTable$rhs == "XZ", "est"]
 testthat::expect_true(varXZ > 1.02)
+
+a <- parTable[parTable$label == "a", "est"]
+c <- parTable[parTable$label == "c", "est"]
+
+testthat::expect_equal(a, c)
 
 m2 <- "
 # Outer Model

@@ -263,6 +263,15 @@ standardized_solution_COEFS <- function(object, monte.carlo = FALSE, mc.reps = 1
 
     COEFS[[label]] <- residual
   }
+  
+  # Correct Scale of interaction terms
+  COEFS <- correctStdSolutionCOEFS(
+    parTable = parTable, # for generating equations
+    COEFS.std = COEFS,
+    COEFS.ustd = COEFS.ustd,
+    variances = variances,
+    intTerms = intTerms
+  )
 
   # recalculate custom parameters
   constrExprs <- sortConstrExprsFinalPt(parTable)
@@ -341,21 +350,6 @@ standardized_solution_COEFS <- function(object, monte.carlo = FALSE, mc.reps = 1
   parTable$ci.lower <- parTable$est - CI_WIDTH * parTable$std.error
   parTable$ci.upper <- parTable$est + CI_WIDTH * parTable$std.error
 
-
-  # Correct Scale of interaction term
-  intTermsList <- structure(stringr::str_split(intTerms, ":"),
-                            names = intTerms)
-  parTable <- correctStdSolutionCOEFS(
-    parTable = parTable.ustd, 
-    parTable.std = parTable, 
-    intTerms = intTermsList, 
-    cols = c("est", "std.error")
-  )
-
-  # TODO: Scale vcov and coefs too!!
-  warning("vcov and coefs must be scaled!")
-  warning("Calculation of custom parameters after standardization is incorrect!")
-
   list(parTable  = parTable,
        coefs     = coefs, 
        vcov      = vcov,
@@ -367,16 +361,15 @@ correctStdSolutionCOEFS <- function(parTable,
                                     COEFS.std, 
                                     COEFS.ustd, 
                                     variances,
-                                    intTerms, 
-                                    cols = c("est", "se")) {
+                                    intTerms) { 
   getLabel <- \(lhs, op, rhs) paste0(lhs, OP_REPLACEMENTS[[op]], rhs)
 
   for (XZ in intTerms) {
-    elems <- stringr::str_split_fixed(intTerms[[XZ]], ":", 2)
+    elems <- stringr::str_split_fixed(XZ, ":", 2)
     X     <- elems[[1]]
     Z     <- elems[[2]]
 
-    vars  <- variances[c(X, Z)]
+    vars  <- as.data.frame(variances[c(X, Z)])
     sds   <- sqrt(vars)
 
     rowsXZ <- parTable[parTable$rhs == XZ & parTable$op == "~", , drop = FALSE]
@@ -389,13 +382,13 @@ correctStdSolutionCOEFS <- function(parTable,
     }
 
     # Find the relevant exogenous variables
-    struct <- parTable[parTable$lhs == y & parTable$op == "~", , drop = FALSE]
+    struct <- parTable[parTable$lhs == Y & parTable$op == "~", , drop = FALSE]
     xis    <- struct$rhs
 
     # Unstandardized terms
     varY  <- variances[[Y]]
     sdY   <- sqrt(varY)
-    B3    <- getCOEFS(y = Y, x = XZ, COEFS = COEFS.std)
+    B3    <- getCOEFS(y = Y, x = XZ, COEFS = COEFS.ustd)
 
     # Correlations
     combosXis <- getUniqueCombos(xis)
@@ -405,19 +398,19 @@ correctStdSolutionCOEFS <- function(parTable,
     lxis <- combosXis[[1]]
     rxis <- combosXis[[2]]
 
-    corrs <- matrix(NA, nrow = NROW(COEFS), ncol = length(lxis))
+    corrs <- matrix(NA, nrow = NROW(COEFS.std), ncol = length(lxis))
     for (i in seq_len(ncol(corrs))) {
       eqCorr <- getCovEqExpr(x = lxis[i], y = rxis[i], parTable = parTable)
       corrs[, i] <- eval(eqCorr, envir = COEFS.std)
     }
 
     # Incorrectly standardized terms
-    lcoefsIncorrect <- getCOEFS(x = lxis, y = y, COEFS = COEFS.std)
-    rcoefsIncorrect <- getCOEFS(x = rxis, y = y, COEFS = COEFS.std)
+    lcoefsIncorrect <- getCOEFS(x = lxis, y = Y, COEFS = COEFS.std)
+    rcoefsIncorrect <- getCOEFS(x = rxis, y = Y, COEFS = COEFS.std)
 
-    corrtermsIncorrect <- sum(2 * lcoefsIncorrect * rcoefsIncorrect * corrs)
+    corrtermsIncorrect <- rowSums(2 * lcoefsIncorrect * rcoefsIncorrect * corrs)
     
-    b3Incorrect <- getCoefs(y = y, x = XZ, parTable = parTable.std)
+    b3Incorrect <- getCOEFS(y = Y, x = XZ, COEFS.std)
     projVarY_XZ <- b3Incorrect ^ 2 + corrtermsIncorrect # this should be the same 
                                                         # for both the correctly, and
                                                         # incorrectly standardized terms
@@ -425,15 +418,16 @@ correctStdSolutionCOEFS <- function(parTable,
                                                         # possible to standardize the terms correctly
 
     # Correctly standardized terms
-    b3Correct <- B3 * abs(prod(sds) / sdy) # in case some variances are negative
+    rowProds <- apply(sds, MARGIN = 1, FUN = prod)
+    b3Correct <- B3 * abs(rowProds / sdY) # in case some variances are negative
                                            # we want to make sure we don't flip
                                            # the sign...
-    
+   
     lcoefsCorrect <- lcoefsIncorrect
     rcoefsCorrect <- rcoefsIncorrect
-    lcoefsCorrect[lxis == XZ] <- b3Correct
-    rcoefsCorrect[rxis == XZ] <- b3Correct
-    corrtermsCorrect <- sum(2 * lcoefsCorrect * rcoefsCorrect * corrs)
+    if (any(lxis == XZ)) lcoefsCorrect[lxis == XZ] <- b3Correct
+    if (any(rxis == XZ)) rcoefsCorrect[rxis == XZ] <- b3Correct
+    corrtermsCorrect <- rowSums(2 * lcoefsCorrect * rcoefsCorrect * corrs)
 
     # Calculate the correct standard deviation of the interaction term
     # Using the identity:
@@ -445,165 +439,25 @@ correctStdSolutionCOEFS <- function(parTable,
     denominator <- 2 * (b3Correct ^ 2)
     sdXZ <- numerator / denominator # correctly standardized sd(xz)
 
-    # Correct parTable
-    # We apply scaling factors to the parameters and the standard errors.
-    # In theory we should use the delta method to calculate the new standard errors
-    # but in practice it shouldn't really matter...
-    lequalY  <- parTable.std$lhs == y
-    requalXZ <- parTable.std$rhs == XZ
-    lequalXZ <- parTable.std$lhs == XZ
-    isCov    <- parTable.std$op == "~~"
-    isCoef   <- parTable.std$op == "~"
-
-    isCovTerm  <- xor(lequalXZ, requalXZ) & isCov
-    isCoefTerm <- lequalY & requalXZ & isCoef
-    isVarTerm  <- lequalXZ & requalXZ & isCov
-
     # Scaling factors
     scalefVar  <- (sdXZ^2) / 1
     scalefCoef <- b3Correct / b3Incorrect
     scalefCov  <- sdXZ
 
-    # Apply
-    parTable.std[isCovTerm, cols]  <- parTable.std[isCovTerm, cols]  * scalefCov
-    parTable.std[isCoefTerm, cols] <- parTable.std[isCoefTerm, cols] * scalefCoef
-    parTable.std[isVarTerm, cols]  <- parTable.std[isVarTerm, cols]  * scalefVar
+    lequalY  <- parTable$lhs == Y
+    requalXZ <- parTable$rhs == XZ
+    lequalXZ <- parTable$lhs == XZ
+    isCov    <- parTable$op == "~~"
+    isCoef   <- parTable$op == "~"
+
+    covTerms <- parTable$label[xor(lequalXZ, requalXZ) & isCov]
+    coefTerm <- parTable$label[lequalY & requalXZ & isCoef]
+    varTerm  <- parTable$label[lequalXZ & requalXZ & isCov]
+
+    COEFS.std[covTerms] <- COEFS.std[covTerms] * scalefCov
+    COEFS.std[coefTerm] <- COEFS.std[coefTerm] * scalefCoef
+    COEFS.std[varTerm]  <- COEFS.std[varTerm]  * scalefVar
   }
 
-  etas <- unique(parTable.std[parTable.std$op == "~", "lhs"])
-  varEtas <- calcVarParTable(etas, parTable.std)
-
-  warnif(
-    any(abs(varEtas - 1) > 1e-10), 
-    "Some variances are not equal to 1! ",
-    "This indicates that the solution was not standardized correctly!",
-    immediate. = FALSE
-  )
-
-  warning("Custom parameters must also be corrected in `correctStdSolution()`!")
-  attr(parTable.std, "var.etas") <- varEtas
-  parTable.std
+  COEFS.std
 }
-
-
-correctStdSolutionPI <- function(object, parTable.std) {
-  parTable <- parameter_estimates(object)
-  intTerms <- object$elementsInProdNames
-
-  correctStdSolution(parTable = parTable, parTable.std = parTable.std,
-                     cols = c("est", "se"))
-}
-
-
-correctStdSolution <- function(parTable, parTable.std, intTerms, cols = c("est", "se")) {
-  # Function for correcting the standardized solution for interaction terms
-  # lavaan standardizes the interaction term (X:Z) to have a variance of 1,
-  # which is not correct if cov(X, Z) != 0.
-  for (xz in names(intTerms)) {
-    elems <- intTerms[[xz]]
-    vars  <- calcVarParTable(elems, parTable)
-    sds   <- sqrt(vars)
-
-    rowsXZ <- parTable[parTable$rhs == xz & parTable$op == "~", , drop = FALSE]
-    y <- rowsXZ$lhs[[1]]
-
-    if (!length(y)) {
-      warning2("No endogenous variable found for interaction term '", xz, "'.",
-               immediate. = FALSE)
-      next
-    }
-
-    # Find the relevant exogenous variables
-    struct <- parTable[parTable$lhs == y & parTable$op == "~", , drop = FALSE]
-    xis    <- struct$rhs
-
-    # Unstandardized terms
-    vary  <- calcVarParTable(y, parTable)
-    sdy   <- sqrt(vary)
-    B3    <- getCoefs(y = y, x = xz, parTable = parTable)
-
-    # Correlations
-    combosXis <- getUniqueCombos(xis)
-    combosXis <- combosXis[combosXis[[1]] == xz |
-                           combosXis[[2]] == xz, , drop = FALSE]
-
-    lxis <- combosXis[[1]]
-    rxis <- combosXis[[2]]
-
-    corrs <- calcCovParTable(x = lxis, y = rxis, parTable = parTable.std)
-
-    # Incorrectly standardized terms
-    lcoefsIncorrect <- getCoefs(x = lxis, y = y, parTable = parTable.std)
-    rcoefsIncorrect <- getCoefs(x = rxis, y = y, parTable = parTable.std)
-
-    corrtermsIncorrect <- sum(2 * lcoefsIncorrect * rcoefsIncorrect * corrs)
-    
-    b3Incorrect <- getCoefs(y = y, x = xz, parTable = parTable.std)
-    projVarY_XZ <- b3Incorrect ^ 2 + corrtermsIncorrect # this should be the same 
-                                                        # for both the correctly, and
-                                                        # incorrectly standardized terms
-                                                        # and is the identity which makes it
-                                                        # possible to standardize the terms correctly
-
-    # Correctly standardized terms
-    b3Correct <- B3 * abs(prod(sds) / sdy) # in case some variances are negative
-                                           # we want to make sure we don't flip
-                                           # the sign...
-    
-    lcoefsCorrect <- lcoefsIncorrect
-    rcoefsCorrect <- rcoefsIncorrect
-    lcoefsCorrect[lxis == xz] <- b3Correct
-    rcoefsCorrect[rxis == xz] <- b3Correct
-    corrtermsCorrect <- sum(2 * lcoefsCorrect * rcoefsCorrect * corrs)
-
-    # Calculate the correct standard deviation of the interaction term
-    # Using the identity:
-    #   projVarY_XZ = b3Correct ^ 2 * sd(xz) ^ 2 + sd(xz) * corrterms
-    # Solve for sd(xz) using the quadratic formula:
-    #   sd(xz) = (- corrterms +/- sqrt(corrterms^2 + 4 * b3Correct ^ 2 * projVarY_XZ)) / 2 * b3Correct ^ 2
-    numerator <- -corrtermsCorrect + sign(projVarY_XZ) * 
-      sqrt(corrtermsCorrect^2 + 4 * (b3Correct ^ 2) * projVarY_XZ)
-    denominator <- 2 * (b3Correct ^ 2)
-    sdXZ <- numerator / denominator # correctly standardized sd(xz)
-
-    # Correct parTable
-    # We apply scaling factors to the parameters and the standard errors.
-    # In theory we should use the delta method to calculate the new standard errors
-    # but in practice it shouldn't really matter...
-    lequalY  <- parTable.std$lhs == y
-    requalXZ <- parTable.std$rhs == xz
-    lequalXZ <- parTable.std$lhs == xz
-    isCov    <- parTable.std$op == "~~"
-    isCoef   <- parTable.std$op == "~"
-
-    isCovTerm  <- xor(lequalXZ, requalXZ) & isCov
-    isCoefTerm <- lequalY & requalXZ & isCoef
-    isVarTerm  <- lequalXZ & requalXZ & isCov
-
-    # Scaling factors
-    scalefVar  <- (sdXZ^2) / 1
-    scalefCoef <- b3Correct / b3Incorrect
-    scalefCov  <- sdXZ
-
-    # Apply
-    parTable.std[isCovTerm, cols]  <- parTable.std[isCovTerm, cols]  * scalefCov
-    parTable.std[isCoefTerm, cols] <- parTable.std[isCoefTerm, cols] * scalefCoef
-    parTable.std[isVarTerm, cols]  <- parTable.std[isVarTerm, cols]  * scalefVar
-  }
-
-  etas <- unique(parTable.std[parTable.std$op == "~", "lhs"])
-  varEtas <- calcVarParTable(etas, parTable.std)
-
-  warnif(
-    any(abs(varEtas - 1) > 1e-10), 
-    "Some variances are not equal to 1! ",
-    "This indicates that the solution was not standardized correctly!",
-    immediate. = FALSE
-  )
-
-  warning("Custom parameters must also be corrected in `correctStdSolution()`!")
-  attr(parTable.std, "var.etas") <- varEtas
-  parTable.std
-}
-
-

@@ -1,8 +1,9 @@
 # Functions for tracing paths in SEMs, used both for calculating (co-)variances,
 # as well as calculating formulas for (co-)variances.
-prepParTable <- function(parTable, addCovPt = TRUE, maxlen = 100, paramCol = "mod") {
+prepParTable <- function(parTable, addCovPt = TRUE, maxlen = 100, paramCol = "mod", 
+                         removeColon = TRUE) {
   # Remove any potential ':' from the model
-  parTable <- lapplyDf(parTable, strRemovIfString, pattern = ":")
+  if (removeColon) parTable <- lapplyDf(parTable, strRemovIfString, pattern = ":")
   parTable <- parTable[c("lhs", "op", "rhs", paramCol)]
 
   # get relevant variables
@@ -87,8 +88,9 @@ cleanTracedPaths <- function(paths) {
 }
 
 
-generateSyntax <- function(x, y, pt, maxlen = 100, parenthesis = TRUE, paramCol = "mod",...) {
-  pt    <- prepParTable(pt, paramCol = paramCol, ...)
+generateSyntax <- function(x, y, pt, maxlen = 100, parenthesis = TRUE, paramCol = "mod",
+                           removeColon = TRUE, ...) {
+  pt    <- prepParTable(pt, paramCol = paramCol, removeColon = removeColon, ...)
   paths <- tracePathsRecursively(x = x, y = y, pt = pt, maxlen = maxlen, paramCol = paramCol)
 
   if (!length(paths)) return(NA)
@@ -170,6 +172,7 @@ trace_path <- function(pt, x, y, parenthesis = TRUE, missing.cov = FALSE,
 }
 
 
-getCovEqExpr <- function(x, y, parTable, paramCol = "label", ...) {
-  parse(text=trace_path(x = x, y = y, pt = parTable, paramCol = paramCol, ...))
+getCovEqExpr <- function(x, y, parTable, paramCol = "label", removeColon = FALSE, ...) {
+  parse(text=trace_path(x = x, y = y, pt = parTable, paramCol = paramCol, 
+                        removeColon = removeColon, ...))
 }
