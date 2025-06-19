@@ -16,6 +16,7 @@ parTable <- standardized_estimates(est)
 parTable <- standardized_estimates(est, correction = TRUE)
 varXZ <- parTable[parTable$lhs == "XZ" & parTable$rhs == "XZ", "est"]
 testthat::expect_true(varXZ > 1.02)
+testthat::expect_equal(unname(calcVarParTable("Y", parTable)), 1)
 
 a <- parTable[parTable$label == "a", "est"]
 c <- parTable[parTable$label == "c", "est"]
@@ -37,3 +38,4 @@ varXZ <- parTable[parTable$lhs == "XZ" & parTable$rhs == "XZ", "est"]
 varXX <- parTable[parTable$lhs == "XX" & parTable$rhs == "XX", "est"]
 testthat::expect_true(varXZ > 1.02)
 testthat::expect_true(varXX > 1.7)
+testthat::expect_equal(unname(calcVarParTable("Y", parTable)), 1)
