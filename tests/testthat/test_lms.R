@@ -179,3 +179,17 @@ testthat::expect_error(
   modsem(m1, oneInt, method = "lms", optimizer = "ssjj"),
   regexp = "*Model estimation failed!*"
 )
+
+m1 <- "
+# Outer Model
+  X =~ x1 + x2
+  Z =~ z1 + z2
+  Y =~ y1 + y2
+
+# Inner model
+  Y ~ X + Z + X:Z + X:X
+"
+
+est3 <- modsem(m1, oneInt, method = "lms")
+std <- standardized_estimates(est3)
+testthat::expect_equal(unname(calcVarParTable("Y", std)), 1)
