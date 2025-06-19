@@ -362,8 +362,6 @@ correctStdSolutionCOEFS <- function(parTable,
                                     COEFS.ustd, 
                                     variances,
                                     intTerms) { 
-  getLabel <- \(lhs, op, rhs) paste0(lhs, OP_REPLACEMENTS[[op]], rhs)
-
   for (XZ in intTerms) {
     elems <- stringr::str_split_fixed(XZ, ":", 2)
     X     <- elems[[1]]
@@ -388,7 +386,7 @@ correctStdSolutionCOEFS <- function(parTable,
     # Unstandardized terms
     varY  <- variances[[Y]]
     sdY   <- sqrt(varY)
-    B3    <- getCOEFS(y = Y, x = XZ, COEFS = COEFS.ustd)
+    B3    <- getCOEFS(y = Y, x = XZ, COEFS = COEFS.ustd, parTable = parTable)
 
     # Correlations
     combosXis <- getUniqueCombos(xis)
@@ -405,12 +403,12 @@ correctStdSolutionCOEFS <- function(parTable,
     }
 
     # Incorrectly standardized terms
-    lcoefsIncorrect <- getCOEFS(x = lxis, y = Y, COEFS = COEFS.std)
-    rcoefsIncorrect <- getCOEFS(x = rxis, y = Y, COEFS = COEFS.std)
+    lcoefsIncorrect <- getCOEFS(x = lxis, y = Y, COEFS = COEFS.std, parTable = parTable)
+    rcoefsIncorrect <- getCOEFS(x = rxis, y = Y, COEFS = COEFS.std, parTable = parTable)
 
     corrtermsIncorrect <- rowSums(2 * lcoefsIncorrect * rcoefsIncorrect * corrs)
     
-    b3Incorrect <- getCOEFS(y = Y, x = XZ, COEFS.std)
+    b3Incorrect <- getCOEFS(y = Y, x = XZ, COEFS = COEFS.std, parTable = parTable)
     projVarY_XZ <- b3Incorrect ^ 2 + corrtermsIncorrect # this should be the same 
                                                         # for both the correctly, and
                                                         # incorrectly standardized terms
