@@ -100,7 +100,11 @@ rescaleVCOV <- function(vcov, new_se) {
 }
 
 
-standardized_solution_COEFS <- function(object, monte.carlo = FALSE, mc.reps = 10000, tolerance.zero = 1e-10, seed = 123, 
+standardized_solution_COEFS <- function(object, 
+                                        monte.carlo = FALSE, 
+                                        mc.reps = 10000, 
+                                        tolerance.zero = 1e-10, 
+                                        seed = 123, 
                                         delta.epsilon = 1e-8, ...) {
   set.seed(seed)
 
@@ -109,7 +113,7 @@ standardized_solution_COEFS <- function(object, monte.carlo = FALSE, mc.reps = 1
   parTable <- parameter_estimates(object)
   parTable <- parTable[c("lhs", "op", "rhs", "label", "est", "std.error")]
   parTable <- centerInteraction(parTable) # re-estimate path-coefficients 
-                                          # when intercepts are zero
+  parTable <- parTable[parTable$op != "~1", ]# when intercepts are zero
   parTable <- var_interactions(removeInteractionVariances(parTable))
 
   lVs      <- getLVs(parTable)
@@ -263,7 +267,7 @@ standardized_solution_COEFS <- function(object, monte.carlo = FALSE, mc.reps = 1
 
     COEFS[[label]] <- residual
   }
-  
+ 
   # Correct Scale of interaction terms
   COEFS <- correctStdSolutionCOEFS(
     parTable = parTable, # for generating equations
@@ -399,7 +403,11 @@ correctStdSolutionCOEFS <- function(parTable,
     corrs <- matrix(NA, nrow = NROW(COEFS.std), ncol = length(lxis))
     for (i in seq_len(ncol(corrs))) {
       eqCorr <- getCovEqExpr(x = lxis[i], y = rxis[i], parTable = parTable)
-      corrs[, i] <- eval(eqCorr, envir = COEFS.std)
+
+      corr <- eval(eqCorr, envir = COEFS.std)
+      corr[is.na(corr)] <- 0 # in case there is no connection, it should be zero
+
+      corrs[, i] <- corr
     }
 
     # Incorrectly standardized terms
