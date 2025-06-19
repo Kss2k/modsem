@@ -446,10 +446,19 @@ getCoefs <- function(y, x, parTable, col = "est") {
 }
 
 
-getCOEFS <- function(y, x, COEFS) {
-  y <- stringr::str_replace_all(y, ":", OP_REPLACEMENTS[[":"]]) # should never happen...
-  x <- stringr::str_replace_all(x, ":", OP_REPLACEMENTS[[":"]])
-  labels <- paste0(y, OP_REPLACEMENTS[["~"]], x)
+getCOEFS <- function(y, x, COEFS, parTable = NULL) {
+  if (is.null(parTable)) {
+    y <- stringr::str_replace_all(y, ":", OP_REPLACEMENTS[[":"]])
+    x <- stringr::str_replace_all(x, ":", OP_REPLACEMENTS[[":"]])
+    labels <- paste0(y, OP_REPLACEMENTS[["~"]], x)
+
+  } else {
+    rows   <- getCoefsRows(y, x, parTable)
+    names  <- paste0(rows$lhs, rows$op, rows$rhs)
+    labels <- structure(rows$label, names = names)
+    labels <- labels[paste0(y, "~", x)]
+  }
+
   if (length(labels) == 1) COEFS[[labels]] else COEFS[labels]
 }
 
