@@ -36,4 +36,4 @@ m1 <- '
 est <- modsem(m1, oneIntMG, group = "group")
 standardized_estimates(est, correction = TRUE)
 standardized_estimates(est, correction = TRUE, std.errors = "delta")
-testthat::expect_warning(summary(est), regexp = ".*Using the first group.*")
+summary(est)

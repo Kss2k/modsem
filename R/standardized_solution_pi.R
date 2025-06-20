@@ -7,16 +7,26 @@ correctStdSolutionPI <- function(object, parTable.std, grouping = NULL) {
   cols <- c("est", "se", "ci.lower", "ci.upper")
   cols <- intersect(cols, names(parTable.std))
 
-  parTable     <- subsetByGrouping(parTable, grouping = grouping) # if NULL no subsetting
-  parTable.std <- subsetByGrouping(parTable.std, grouping = grouping) # if NULL no subsetting
-  if (!NROW(parTable) || !NROW(parTable.std)) return(NULL)
+  vcov <- modsem_inspect(object, what = "cov.all")
+  vcor <- modsem_inspect(object, what = "cor.all")
+
+  if (!is.null(grouping)) {
+    parTable     <- subsetByGrouping(parTable, grouping = grouping)
+    parTable.std <- subsetByGrouping(parTable.std, grouping = grouping)
+    if (!NROW(parTable) || !NROW(parTable.std)) return(NULL)
+
+    stopif(!"block" %in% names(grouping), "Missing information about `block`!\n")
+
+    vcov <- vcov[[grouping[["block"]]]]
+    vcor <- vcor[[grouping[["block"]]]]
+  } 
 
   stopif(!"est" %in% cols, 
          "The parTable must contain the 'est' column for the standardized solution.")
 
   for (xz in names(intTerms)) {
     elems <- intTerms[[xz]]
-    vars  <- calcVarParTable(elems, parTable)
+    vars  <- diag(vcov[elems, elems])
     sds   <- sqrt(vars)
 
     rowsXZ <- parTable[parTable$rhs == xz & parTable$op == "~", , drop = FALSE]
@@ -33,7 +43,7 @@ correctStdSolutionPI <- function(object, parTable.std, grouping = NULL) {
     xis    <- struct$rhs
 
     # Unstandardized terms
-    vary  <- calcVarParTable(y, parTable)
+    vary  <- vcov[y, y]
     sdy   <- sqrt(vary)
     B3    <- getCoefs(y = y, x = xz, parTable = parTable)
 
@@ -45,7 +55,8 @@ correctStdSolutionPI <- function(object, parTable.std, grouping = NULL) {
     lxis <- combosXis[[1]]
     rxis <- combosXis[[2]]
 
-    corrs <- calcCovParTable(x = lxis, y = rxis, parTable = parTable.std)
+    corrs <- vapply(seq_along(lxis), FUN.VALUE = numeric(1L), 
+                    FUN = \(i) vcor[lxis[i], rxis[i]])
 
     # Incorrectly standardized terms
     lcoefsIncorrect <- getCoefs(x = lxis, y = y, parTable = parTable.std)

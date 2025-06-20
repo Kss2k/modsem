@@ -265,9 +265,9 @@ standardized_estimates.modsem_pi <- function(object,
                                   est.std = "est")
 
   if (correction && std.errors == "rescale") {
+    parTable.std.naive <- uncorrected(object)
     correction <- function(object, grouping = NULL) {
-      parTable.std <- uncorrected(object)
-      correctStdSolutionPI(object, parTable.std = parTable.std, 
+      correctStdSolutionPI(object, parTable.std = parTable.std.naive, 
                            grouping = grouping)
     }
 
