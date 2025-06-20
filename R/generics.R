@@ -160,13 +160,17 @@ var_interactions.data.frame <- function(object, ...) {
 #' # Double centering approach
 #' est_dca <- modsem(m1, oneInt)
 #'
-#' standardized_estimates(est_dca) # no correction
-#' standardized_estimates(est_dca, correction = TRUE) # apply correction
+#' std1 <- standardized_estimates(est_dca) # no correction
+#' summary_partable(std1)
+#'
+#' std2 <- standardized_estimates(est_dca, correction = TRUE) # apply correction
+#' summarize_partable(std2)
 #'
 #' \dontrun{
 #' est_lms <- modsem(m1, oneInt, method = "lms")
 #' standardized_estimates(est_lms) # correction not relevant for lms
 #' }
+#'
 #' @export
 standardized_estimates <- function(object, ...) {
   UseMethod("standardized_estimates")

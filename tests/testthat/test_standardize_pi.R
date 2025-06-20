@@ -15,6 +15,8 @@ est <- modsem(m1, data = oneInt)
 parTable <- standardized_estimates(est)
 parTable <- standardized_estimates(est, correction = TRUE)
 parTable <- standardized_estimates(est, correction = TRUE, std.errors = "delta")
+summarize_partable(parTable)
+
 standardized_estimates(est, correction = TRUE, std.errors = "monte.carlo", mc.reps=10000)
 
 varXZ <- parTable[parTable$lhs == "XZ" & parTable$rhs == "XZ", "est"]

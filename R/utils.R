@@ -337,15 +337,15 @@ isRowInParTable <- function(row, pt, ignore = NULL) {
 }
 
 
-rename <- function(X, ...) {
+rename <- function(.X, ...) {
   newNames <- list(...)
   oldNames <- names(newNames)
 
   for (old in oldNames) {
-    names(X)[names(X) == old] <- newNames[[old]]
+    names(.X)[names(.X) == old] <- newNames[[old]]
   }
 
-  X
+  .X
 }
 
 

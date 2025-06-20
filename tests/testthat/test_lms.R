@@ -193,3 +193,4 @@ m1 <- "
 est3 <- modsem(m1, oneInt, method = "lms")
 std <- standardized_estimates(est3)
 testthat::expect_equal(unname(calcVarParTable("Y", std)), 1)
+summarize_partable(std)
