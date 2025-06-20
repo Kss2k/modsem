@@ -1,6 +1,6 @@
-#' Summarize a parameter table from a modsem model.
+#' Summarize a parameter table from a \code{modsem} model.
 #'
-#' @param parTable A parameter table, typically obtained from a modsem model 
+#' @param parTable A parameter table, typically obtained from a \code{\link{modsem}} model 
 #'  using \code{\link{parameter_estimates}} or \code{\link{standardized_estimates}}.
 #'
 #' @param scientific Logical, whether to print p-values in scientific notation.

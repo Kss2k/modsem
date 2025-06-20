@@ -2,7 +2,7 @@
 % Please edit documentation in R/summarize_partable.R
 \name{summarize_partable}
 \alias{summarize_partable}
-\title{Summarize a parameter table from a modsem model.}
+\title{Summarize a parameter table from a \code{modsem} model.}
 \usage{
 summarize_partable(
   parTable,
@@ -17,7 +17,7 @@ summarize_partable(
 )
 }
 \arguments{
-\item{parTable}{A parameter table, typically obtained from a modsem model 
+\item{parTable}{A parameter table, typically obtained from a \code{\link{modsem}} model 
 using \code{\link{parameter_estimates}} or \code{\link{standardized_estimates}}.}
 
 \item{scientific}{Logical, whether to print p-values in scientific notation.}
@@ -41,7 +41,7 @@ using \code{\link{parameter_estimates}} or \code{\link{standardized_estimates}}.
 A summary object containing the parameter table and additional information.
 }
 \description{
-Summarize a parameter table from a modsem model.
+Summarize a parameter table from a \code{modsem} model.
 }
 \examples{
 m1 <- '
