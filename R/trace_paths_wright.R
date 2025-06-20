@@ -116,16 +116,17 @@ trace_path <- function(pt,
                        y, 
                        parenthesis = TRUE, 
                        missing.cov = FALSE,
-                       measurement.model = FALSE, 
+                       measurement.model = TRUE, 
                        maxlen = 100, 
                        paramCol = "mod", 
                        ...) {
   pt <- pt[pt$op != "~1", ]
-
   if (measurement.model) pt <- redefineMeasurementModel(pt)
-  else                   pt <- pt[pt$op != "=~", ]
+  else                   pt <- pt[pt$op != "=~"]
   
-  if (missing.cov) pt <- addMissingCovariances(pt, paramCol = paramCol)
+
+  if (missing.cov) 
+    pt <- addMissingCovariances(pt, paramCol = paramCol)
 
   generateSyntax(x = x, y = y, pt = pt, maxlen = maxlen, 
                  parenthesis = parenthesis, paramCol = paramCol, ...)
