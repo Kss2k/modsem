@@ -69,3 +69,7 @@ tracePathsNumericCpp <- function(x, y, parTable, maxlen = 100L) {
     .Call(`_modsem_tracePathsNumericCpp`, x, y, parTable, maxlen)
 }
 
+tracePathsCharacterCpp <- function(x, y, parTable, paramCol = "mod", maxlen = 100L) {
+    .Call(`_modsem_tracePathsCharacterCpp`, x, y, parTable, paramCol, maxlen)
+}
+

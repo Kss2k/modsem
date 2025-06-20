@@ -77,29 +77,14 @@ standardizedSolutionCOEFS <- function(object,
   COEFS.ustd     <- COEFS
 
   # get variances
-  varianceEquations <- list()
-  variances <- list()
-
-  for (x in allInds) {
-    # get the variance equation for each variable
-    eqVarX <- getCovEqExpr(x=x, y=x, parTable=parTable, measurement.model=TRUE)
-    varianceEquations[[x]] <- eqVarX  
-    variances[[x]] <- eval(eqVarX, envir = COEFS)
-  }
-  
-  for (x in lVs) {
-    # get the variance equation for each variable
-    eqVarX <- getCovEqExpr(x=x, y=x, parTable=parTable)
-    varianceEquations[[x]] <- eqVarX  
-    variances[[x]] <- eval(eqVarX, envir = COEFS)
-  }
-
-  for (xz in intTerms) {
-    labelVarXZ <- getLabelVarXZ(xz)
-    eqVarXZ <- parse(text=labelVarXZ)
-    varianceEquations[[xz]] <- eqVarXZ
-    variances[[xz]] <- eval(eqVarXZ, envir = COEFS)
-  }
+  vars <- c(allInds, lVs, intTerms)
+  varianceEquations <- structure(getCovEqExprs(
+    x = vars, 
+    y = vars, 
+    parTable = parTable,
+    measurement.model = TRUE
+  ), names = vars)
+  variances <- lapply(varianceEquations, FUN = \(eq) eval(eq, envir = COEFS))
 
   # Factor Loadings
   lambda     <- NULL
@@ -310,10 +295,11 @@ correctStdSolutionCOEFS <- function(parTable,
     lxis <- combosXis[[1]]
     rxis <- combosXis[[2]]
 
+    eqCorrs <- getCovEqExprs(x = lxis, y = rxis, parTable = parTable)
     corrs <- matrix(NA, nrow = NROW(COEFS.std), ncol = length(lxis))
-    for (i in seq_len(ncol(corrs))) {
-      eqCorr <- getCovEqExpr(x = lxis[i], y = rxis[i], parTable = parTable)
 
+    for (i in seq_len(ncol(corrs))) {
+      eqCorr <- eqCorrs[[i]]
       corr <- eval(eqCorr, envir = COEFS.std)
       corr[is.na(corr)] <- 0 # in case there is no connection, it should be zero
 

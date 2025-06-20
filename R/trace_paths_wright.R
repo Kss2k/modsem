@@ -33,45 +33,6 @@ prepParTable <- function(parTable, addCovPt = TRUE, maxlen = 100, paramCol = "mo
 }
 
 
-tracePathsRecursively = function(x, y, pt, maxlen, currentPath = c(),
-                                 covCount = 0, from = "lhs", depth = 1, 
-                                 paramCol = "mod") {
-  if (depth > maxlen) {
-    warning2("Encountered a non-recursive model (infinite loop) when tracing paths")
-    return(NULL)
-  }
-
-  if (covCount > 1) return(NULL)
-  if (x == y && from == "rhs") return(list(currentPath))
-
-  branches <- pt[pt[[from]] == x, ]
-  if (NROW(branches) == 0) return(NULL)
-
-  paths <- list()
-  for (i in seq_len(nrow(branches))) {
-    branch       <- branches[i, ]
-    nextFrom     <- from
-    nextCovCount <- covCount
-    nextVar <- ifelse(from == "lhs", yes = branch$rhs, no = branch$lhs)
-
-    # reverse direction of travel if covariance (but not before selecting next variable)
-    if (branch$op == "~~") {
-      nextCovCount <- covCount + 1
-      nextFrom <- ifelse(from == "lhs", yes = "rhs", no = "lhs")
-    }
-
-    newPaths <- tracePathsRecursively(x = nextVar, y = y, pt = pt, maxlen = maxlen,
-                                      currentPath = c(currentPath, branch[[paramCol]]),
-                                      covCount = nextCovCount, from = nextFrom, 
-                                      depth = depth + 1, paramCol = paramCol)
-    paths <- c(paths, newPaths)
-
-  }
-
-  paths
-}
-
-
 cleanTracedPaths <- function(paths) {
   squaredExprs <- purrr::map_chr(paths, function(x) {
      reps <- as.data.frame(table(sort(x)))
@@ -85,18 +46,6 @@ cleanTracedPaths <- function(paths) {
                  true = paste(reps[[2]], reps[[1]], sep = " * "),
                  false = reps[[1]]) |>
   stringr::str_c(collapse = " + ")
-}
-
-
-generateSyntax <- function(x, y, pt, maxlen = 100, parenthesis = TRUE, paramCol = "mod",
-                           removeColon = TRUE, ...) {
-  pt    <- prepParTable(pt, paramCol = paramCol, removeColon = removeColon, ...)
-  paths <- tracePathsRecursively(x = x, y = y, pt = pt, maxlen = maxlen, paramCol = paramCol)
-
-  if (!length(paths)) return(NA)
-  cleaned <- cleanTracedPaths(paths)
-  if (parenthesis) cleaned <- paste0("(", cleaned, ")")
-  cleaned
 }
 
 
@@ -162,17 +111,41 @@ addMissingCovariances <- function(pt, paramCol = "mod") {
 #' '
 #' pt <- modsemify(m1)
 #' trace_path(pt, x = "Y", y = "Y", missing.cov = TRUE) # variance of Y
-trace_path <- function(pt, x, y, parenthesis = TRUE, missing.cov = FALSE,
-                       measurement.model = FALSE, maxlen = 100, 
-                       paramCol = "mod", ...) {
-  if (measurement.model) pt <- redefineMeasurementModel(pt)
-  if (missing.cov) pt <- addMissingCovariances(pt, paramCol = paramCol)
+trace_path <- function(pt, 
+                       x, 
+                       y, 
+                       parenthesis = TRUE, 
+                       missing.cov = FALSE,
+                       measurement.model = FALSE, 
+                       maxlen = 100, 
+                       paramCol = "mod", 
+                       ...) {
+  if (measurement.model) 
+    pt <- redefineMeasurementModel(pt)
+
+  if (missing.cov) 
+    pt <- addMissingCovariances(pt, paramCol = paramCol)
+
   generateSyntax(x = x, y = y, pt = pt, maxlen = maxlen, 
                  parenthesis = parenthesis, paramCol = paramCol, ...)
 }
 
 
-getCovEqExpr <- function(x, y, parTable, paramCol = "label", removeColon = FALSE, ...) {
-  parse(text=trace_path(x = x, y = y, pt = parTable, paramCol = paramCol, 
-                        removeColon = removeColon, ...))
+generateSyntax <- function(x, y, pt, maxlen = 100, parenthesis = TRUE, paramCol = "mod",
+                           removeColon = TRUE, ...) {
+  pt    <- prepParTable(pt, paramCol = paramCol, removeColon = removeColon, ...)
+  paths <- tracePathsCharacterCpp(x = x, y = y, parTable = pt, maxlen = maxlen, paramCol = paramCol)
+
+  clean <- \(path) if (length(path)) cleanTracedPaths(path) else NA_character_
+  cleaned <- vapply(paths, FUN.VALUE = character(1L), FUN = clean)
+
+  ifelse(!is.na(cleaned) & parenthesis, yes = paste0("(", cleaned, ")"), no = cleaned)
+}
+
+
+getCovEqExprs <- function(x, y, parTable, paramCol = "label", removeColon = FALSE, ...) {
+  paths <- trace_path(x = x, y = y, pt = parTable, paramCol = paramCol, 
+                      removeColon = removeColon, ...)
+  
+  lapply(paths, FUN = \(path) parse(text = path))
 }

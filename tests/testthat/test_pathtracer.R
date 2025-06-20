@@ -23,8 +23,15 @@ x4 ~~ x4
                 '
 )
 
-testthat::expect_equal(trace_path(m2, "x3", "x3"), "(x3~~x3 + x3~x4 ^ 2 * x4~~x4)")
-testthat::expect_equal(trace_path(m2, "x4", "x4"), "(x4~~x4)")
+testthat::expect_equal(
+  unname(trace_path(m2, "x3", "x3")), 
+  "(x3~~x3 + x3~x4 ^ 2 * x4~~x4)"
+)
+
+testthat::expect_equal(
+  unname(trace_path(m2, "x4", "x4")), 
+  "(x4~~x4)"
+)
                
 m3 <- modsemify('visual  =~ x1 + x2 + x3 
                 textual =~ x4 + x5 + x6
@@ -44,4 +51,7 @@ m4 <- modsemify('
    Y ~ X + Z + X:Z
 ')
 
-testthat::expect_equal(trace_path(m4, "X", "X", missing.cov = TRUE), "(X~~X)")
+testthat::expect_equal(
+  unname(trace_path(m4, "X", "X", missing.cov = TRUE)), 
+  "(X~~X)"
+)
