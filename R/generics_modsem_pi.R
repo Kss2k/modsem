@@ -57,6 +57,13 @@ summary.modsem_pi <- function(object,
   if (r.squared) tryCatch({
     # Get all R2
     r2_all <- modsem_inspect(object, "r2")
+    
+    if (is.list(r2_all)) {
+      warning2("Compartive fit is not implemented for multigroup models yet!\nUsing the first group...",
+               immediate. = FALSE)
+      r2_all <- r2_all[[1]]
+    }
+
     # Get latent variables
     lv_names <- lavaan::lavNames(extract_lavaan(object), type = "lv")
     # Get endogenous (on LHS of ~)
@@ -67,6 +74,8 @@ summary.modsem_pi <- function(object,
 
     if (H0 && !is.null(out$nullModel)) {
       r2_all_H0 <- modsem_inspect(out$nullModel, "r2")
+      if (is.list(r2_all_H0)) r2_all_H0 <- r2_all_H0[[1]]
+
       out$r.squared.H0 <- r2_all_H0[endo_lv]
       out$r.squared.diff <- out$r.squared - out$r.squared.H0
     }
@@ -228,7 +237,8 @@ parameter_estimates.modsem_pi <- function(object, colon.pi = FALSE, ...) {
 #'
 #' @param colon.pi Logical. If \code{TRUE}, the interaction terms in the output will be
 #' will be formatted using \code{:} to seperate the elements in the interaction term. Default
-#' is \code{FALSE}, using the default formatting from \code{lavaan}.
+#' is \code{FALSE}, using the default formatting from \code{lavaan}. Only relevant if
+#' \code{std.errors != "rescale"} and \code{correction == TRUE}.
 #'
 #' @param ... Additional arguments passed on to \code{lavaan::standardizedSolution()}.
 #'
@@ -239,25 +249,59 @@ standardized_estimates.modsem_pi <- function(object,
                                              mc.reps = 10000,
                                              colon.pi = FALSE, 
                                              ...) {
-  std.errors <- tolower(std.errors)
-  std.errors <- match.arg(std.errors)
+  std.errors  <- tolower(std.errors)
+  std.errors  <- match.arg(std.errors)
+  monte.carlo <- std.errors == "monte.carlo"
 
   uncorrected <- \(object) rename(lavaan::standardizedSolution(object$lavaan, ...), 
                                   est.std = "est")
 
   if (correction && std.errors == "rescale") {
-    parTable.std <- uncorrected(object)
-    parTable.std <- correctStdSolutionPI(object, parTable.std = parTable.std)
+    correction <- function(object, grouping = NULL) {
+      parTable.std <- uncorrected(object)
+      correctStdSolutionPI(object, parTable.std = parTable.std, 
+                           grouping = grouping)
+    }
 
   } else if (correction) {
-    monte.carlo <- std.errors == "monte.carlo"
-    solution <- standardizedSolutionCOEFS(object, monte.carlo = monte.carlo, 
-                                          mc.reps = mc.reps, ...) 
-    parTable.std <- solution$parTable
+    correction <- function(object, grouping = NULL) {
+      solution <- standardizedSolutionCOEFS(object, 
+                                            monte.carlo = monte.carlo, 
+                                            mc.reps = mc.reps, 
+                                            grouping = grouping, 
+                                            ...) 
+      solution$parTable
+    }
+
+  } else return(uncorrected(object))
   
-  } else {
-    parTable.std <- uncorrected(object)
-  }
+  parTable.ustd <- parameter_estimates(object)
+
+  groupingcols <- c("block", "group")
+  if (any(groupingcols %in% colnames(parTable.ustd))) {
+    groupingcols <- intersect(groupingcols, colnames(parTable.ustd))
+    categories   <- unique(parTable.ustd[groupingcols])
+    
+    parTable.std <- NULL
+    for (i in seq_len(NROW(categories))) {
+      grouping <- structure(unlist(categories[i, ]), names = groupingcols)
+      parTable.std_i <- correction(object, grouping = grouping)
+
+      if (is.null(parTable.std_i)) next
+
+      for (group in names(grouping))
+        parTable.std_i[[group]] <- grouping[[group]]
+
+      parTable.std <- rbind(parTable.std, parTable.std_i)
+    }
+    
+    colblock1 <- c("lhs", "op", "rhs")
+    colblock2 <- groupingcols
+    colblock3 <- setdiff(colnames(parTable.std), c(colblock1, colblock2))
+
+    parTable.std <- parTable.std[c(colblock1, colblock2, colblock3)]
+
+  } else parTable.std <- correction(object)
 
   if (!colon.pi) {
     rm <- \(x) stringr::str_remove_all(x, ":")

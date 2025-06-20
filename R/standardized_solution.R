@@ -3,13 +3,18 @@ standardizedSolutionCOEFS <- function(object,
                                       mc.reps = 10000, 
                                       tolerance.zero = 1e-10, 
                                       seed = 123, 
-                                      delta.epsilon = 1e-8, ...) {
+                                      delta.epsilon = 1e-8, 
+                                      grouping = NULL, 
+                                      ...) {
   set.seed(seed) # only relevant if monte.carlo is TRUE
 
   stopif(!inherits(object, c("modsem_da", "modsem_pi")), 
          "The model must be of class 'modsem_da' or 'modsem_pi'!")
 
   parTable <- parameter_estimates(object, colon.pi = TRUE)
+  parTable <- subsetByGrouping(parTable, grouping = grouping) # if NULL no subsetting
+
+  if (!NROW(parTable)) return(NULL)
 
   if (inherits(object, "modsem_da")) {
     parTable <- parTable[c("lhs", "op", "rhs", "label", "est", "std.error")]
@@ -26,8 +31,8 @@ standardizedSolutionCOEFS <- function(object,
 
   lVs      <- getLVs(parTable)
   intTerms <- getIntTerms(parTable)
-  etas     <- getSortedEtas(parTable, isLV = TRUE)
-  xis      <- getXis(parTable, etas = etas, isLV = TRUE)
+  etas     <- getSortedEtas(parTable, isLV = FALSE)
+  xis      <- getXis(parTable, etas = etas, isLV = FALSE)
   indsLVs  <- getIndsLVs(parTable, lVs)
   allInds  <- unique(unlist(indsLVs))
 
@@ -77,7 +82,7 @@ standardizedSolutionCOEFS <- function(object,
   COEFS.ustd     <- COEFS
 
   # get variances
-  vars <- c(allInds, lVs, intTerms)
+  vars <- unique(c(allInds, lVs, intTerms, xis, etas))
   varianceEquations <- structure(getCovEqExprs(
     x = vars, 
     y = vars, 

@@ -1,4 +1,4 @@
-correctStdSolutionPI <- function(object, parTable.std) {
+correctStdSolutionPI <- function(object, parTable.std, grouping = NULL) {
   # Function for correcting the standardized solution for interaction terms
   # lavaan standardizes the interaction term (X:Z) to have a variance of 1,
   # which is not correct if cov(X, Z) != 0.
@@ -6,6 +6,10 @@ correctStdSolutionPI <- function(object, parTable.std) {
   intTerms <- object$elementsInProdNames
   cols <- c("est", "se", "ci.lower", "ci.upper")
   cols <- intersect(cols, names(parTable.std))
+
+  parTable     <- subsetByGrouping(parTable, grouping = grouping) # if NULL no subsetting
+  parTable.std <- subsetByGrouping(parTable.std, grouping = grouping) # if NULL no subsetting
+  if (!NROW(parTable) || !NROW(parTable.std)) return(NULL)
 
   stopif(!"est" %in% cols, 
          "The parTable must contain the 'est' column for the standardized solution.")

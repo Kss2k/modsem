@@ -58,7 +58,8 @@ Ignored if \code{correction = FALSE}.}
 
 \item{colon.pi}{Logical. If \code{TRUE}, the interaction terms in the output will be
 will be formatted using \code{:} to seperate the elements in the interaction term. Default
-is \code{FALSE}, using the default formatting from \code{lavaan}.}
+is \code{FALSE}, using the default formatting from \code{lavaan}. Only relevant if
+\code{std.errors != "rescale"} and \code{correction == TRUE}.}
 }
 \value{
 A \code{data.frame} with standardized estimates in the \code{est} column.

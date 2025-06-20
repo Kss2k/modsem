@@ -22,6 +22,7 @@ calcCovParTable <- function(x, y, parTable, measurement.model = FALSE, maxlen = 
   stopif(length(x) != length(y), "x and y must be the same length")
 
   if (measurement.model) parTable <- redefineMeasurementModel(parTable)
+  parTable <- parTable[!parTable$op %in% c(":=", "~1", "=~"), ]
   parTable <- prepParTable(parTable[c("lhs", "op", "rhs", "est")], paramCol = "est")
 
   # covs <- structure(numeric(length(x)), names = paste0(x, "~~", y))
@@ -547,3 +548,8 @@ sortConstrExprsFinalPt <- function(parTable) {
 }
 
 
+subsetByGrouping <- function(df, grouping = NULL) {
+  if (is.null(grouping)) return(df)
+  grouping <- grouping[intersect(names(grouping), colnames(df))]
+  df[apply(df[names(grouping)], MARGIN = 1, FUN = \(x) all(x == grouping)), ]
+}

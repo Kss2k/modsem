@@ -72,7 +72,7 @@ estimate_h0.modsem_da <- function(object, warn_no_interaction = TRUE, ...) {
         list(model.syntax = syntax, data = data, method = method,
              cov.syntax = cov.syntax), argList
     )
-    
+
     do.call(modsem_da, args = argList)
   },
   error = function(e) {
@@ -85,6 +85,7 @@ estimate_h0.modsem_da <- function(object, warn_no_interaction = TRUE, ...) {
 
 #' @export
 estimate_h0.modsem_pi <- function(object, warn_no_interaction = TRUE, ...) {
+  pars       <- parameter_estimates(object)
   input      <- object$input
   method     <- object$method
   syntax     <- input$syntax
@@ -94,7 +95,7 @@ estimate_h0.modsem_pi <- function(object, warn_no_interaction = TRUE, ...) {
   # Get arguments
   lavArgs    <- input$lavArgs
   modsemArgs <- input$modsemArgs
-  lavArgs$meanstructure <- method %in% c("ca", "uca")
+  lavArgs$meanstructure <- any(pars$op == "~1")
   argList    <- c(modsemArgs, lavArgs)
 
   newArgList <- list(...) 
