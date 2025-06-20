@@ -171,7 +171,7 @@ print.summary_modsem_pi <- function(x, ...) {
   if (!is.null(x$r.squared)) {
     k <- x$ngroups
     if (k > 1) printH <- \(...) printf("Total R-Squared %s (%s):\n", ...)
-    else       printH <- \(...) printf("R-Squared %s:\n", ...)
+    else       printH <- \(...) printf("R-Squared %s (%s):\n", ...)
 
     printH("Interaction Model", "H1")
     for (i in seq_along(x$r.squared)) {
