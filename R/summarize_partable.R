@@ -47,6 +47,8 @@ summarize_partable <- function(parTable,
                                covariances = TRUE,
                                intercepts  = TRUE,
                                variances   = TRUE) {
+  if (!"label" %in% colnames(parTable)) parTable$label <- ""
+
   parTable <- rename(
     .X      = parTable,
     est.std = "est",
