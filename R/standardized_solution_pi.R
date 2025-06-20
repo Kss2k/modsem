@@ -4,7 +4,11 @@ correctStdSolutionPI <- function(object, parTable.std) {
   # which is not correct if cov(X, Z) != 0.
   parTable <- parameter_estimates(object)
   intTerms <- object$elementsInProdNames
-  cols <- c("est", "se")
+  cols <- c("est", "se", "ci.lower", "ci.upper")
+  cols <- intersect(cols, names(parTable.std))
+
+  stopif(!"est" %in% cols, 
+         "The parTable must contain the 'est' column for the standardized solution.")
 
   for (xz in names(intTerms)) {
     elems <- intTerms[[xz]]
