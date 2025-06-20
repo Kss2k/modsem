@@ -251,7 +251,8 @@ standardized_estimates.modsem_pi <- function(object,
 
   } else if (correction) {
     monte.carlo <- std.errors == "monte.carlo"
-    solution <- standardizedSolutionCOEFS(object, monte.carlo = monte.carlo, ...) 
+    solution <- standardizedSolutionCOEFS(object, monte.carlo = monte.carlo, 
+                                          mc.reps = mc.reps, ...) 
     parTable.std <- solution$parTable
   
   } else {

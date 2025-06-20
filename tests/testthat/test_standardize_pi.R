@@ -15,6 +15,7 @@ est <- modsem(m1, data = oneInt)
 parTable <- standardized_estimates(est)
 parTable <- standardized_estimates(est, correction = TRUE)
 parTable <- standardized_estimates(est, correction = TRUE, std.errors = "delta")
+standardized_estimates(est, correction = TRUE, std.errors = "monte.carlo", mc.reps=10000)
 
 varXZ <- parTable[parTable$lhs == "XZ" & parTable$rhs == "XZ", "est"]
 testthat::expect_true(varXZ > 1.02)
