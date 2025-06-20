@@ -146,7 +146,7 @@ simple_slopes <- function(x,
     xz <- stringr::str_remove_all(xz, ":")
 
   if (standardized) {
-    parTable <- standardized_estimates(model)
+    parTable <- standardized_estimates(model, correction = TRUE)
   } else parTable <- parameter_estimates(model)
 
   parTable <- getMissingLabels(parTable)

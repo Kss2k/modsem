@@ -213,7 +213,7 @@ plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3,
   }
 
   if (standardized) {
-    parTable <- standardized_estimates(model)
+    parTable <- standardized_estimates(model, correction = TRUE)
   } else parTable <- parameter_estimates(model)
   parTable <- getMissingLabels(parTable)
 
@@ -497,7 +497,7 @@ plot_surface <- function(x, z, y, xz = NULL, model,
   }
 
   if (standardized) {
-    parTable <- standardized_estimates(model)
+    parTable <- standardized_estimates(model, correction = TRUE)
   } else parTable <- parameter_estimates(model)
 
   if (isLavaanObject(model)) {
