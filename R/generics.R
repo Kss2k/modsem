@@ -2,6 +2,27 @@
 #'
 #' @param object An object of class \code{\link{modsem_pi}}, \code{\link{modsem_da}}, or \code{\link{modsem_mplus}}
 #' @param ... Additional arguments passed to other functions
+#'
+#' @examples
+#' m1 <- '
+#'   # Outer Model
+#'   X =~ x1 + x2 + x3
+#'   Z =~ z1 + z2 + z3
+#'   Y =~ y1 + y2 + y3
+#'
+#'   # Inner Model
+#'   Y ~ X + Z + X:Z
+#' '
+#' # Double centering approach
+#' est_dca <- modsem(m1, oneInt)
+#'
+#' pars <- parameter_estimates(est_dca) # no correction
+#' 
+#' # Pretty summary
+#' summarize_partable(pars)
+#'
+#' # Only print the data.frame
+#' pars
 #' @export
 parameter_estimates <- function(object, ...) {
   UseMethod("parameter_estimates")
@@ -161,7 +182,7 @@ var_interactions.data.frame <- function(object, ...) {
 #' est_dca <- modsem(m1, oneInt)
 #'
 #' std1 <- standardized_estimates(est_dca) # no correction
-#' summary_partable(std1)
+#' summarize_partable(std1)
 #'
 #' std2 <- standardized_estimates(est_dca, correction = TRUE) # apply correction
 #' summarize_partable(std2)

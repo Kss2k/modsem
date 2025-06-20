@@ -14,3 +14,24 @@ parameter_estimates(object, ...)
 \description{
 Extract parameterEstimates from an estimated model
 }
+\examples{
+m1 <- '
+  # Outer Model
+  X =~ x1 + x2 + x3
+  Z =~ z1 + z2 + z3
+  Y =~ y1 + y2 + y3
+
+  # Inner Model
+  Y ~ X + Z + X:Z
+'
+# Double centering approach
+est_dca <- modsem(m1, oneInt)
+
+pars <- parameter_estimates(est_dca) # no correction
+
+# Pretty summary
+summarize_partable(pars)
+
+# Only print the data.frame
+pars
+}

@@ -101,7 +101,7 @@ m1 <- '
 est_dca <- modsem(m1, oneInt)
 
 std1 <- standardized_estimates(est_dca) # no correction
-summary_partable(std1)
+summarize_partable(std1)
 
 std2 <- standardized_estimates(est_dca, correction = TRUE) # apply correction
 summarize_partable(std2)
