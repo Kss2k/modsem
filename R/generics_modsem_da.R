@@ -336,28 +336,22 @@ nobs.modsem_da <- function(object, ...) {
 }
 
 
-#' Get standardized estimates with Monte Carlo bootstrapped standard errors
+#' @describeIn standardized_estimates Method for `modsem_da` objects
 #'
-#' @param object An object of class \code{modsem_da}
-#' @param monte.carlo Should standard errors be calculated using Monte Carlo simulation. 
-#'   if \code{FALSE} the delta method is used instead. Default is \code{FALSE}.
-#' @param mc.reps Number of Monte Carlo repetitions
-#' @param tolerance.zero Tolerance for zero values. Standard errors smaller than this 
-#'   value will be set to NA.
-#' @param ... Additional arguments passed to other functions
-#' @details The interaction term is not standardized such that \code{var(xz) = 1}.
-#' The interaction term is not an actual variable in the model, meaning that it does not
-#' have a variance. It must therefore be calculated from the other parameters in the model.
-#' Assuming normality and zero-means, the variance is calculated as
-#' \code{var(xz) = var(x) * var(z) + cov(x, z)^2}. Thus setting the variance of the interaction
-#' term to 1 would only be 'correct' if the correlation between \code{x} and \code{z} is zero.
-#' This means that the standardized estimates for the interaction term will
-#' be different from those using \code{lavaan}, since there the interaction term is an
-#' actual latent variable in the model, with a standardized variance of 1.
+#' @param monte.carlo Logical. If \code{TRUE}, use Monte Carlo simulation to estimate
+#' standard errors; if \code{FALSE}, use the delta method (default).
+#' @param mc.reps Number of Monte Carlo repetitions. Default is 10000.
+#' @param tolerance.zero Threshold below which standard errors are set to \code{NA}.
+#'
 #' @export
-standardized_estimates.modsem_da <- function(object, monte.carlo = FALSE, mc.reps = 10000, tolerance.zero = 1e-10, ...) {
-  stdSolution <- standardized_solution_COEFS(
-    object, monte.carlo = monte.carlo, mc.reps = mc.reps, 
+standardized_estimates.modsem_da <- function(object, 
+                                             monte.carlo = FALSE, 
+                                             mc.reps = 10000, 
+                                             tolerance.zero = 1e-10, ...) {
+  stdSolution <- standardizedSolutionCOEFS(
+    object, 
+    monte.carlo = monte.carlo, 
+    mc.reps = mc.reps, 
     tolerance.zero = tolerance.zero, ...
   )
   

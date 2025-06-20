@@ -186,20 +186,85 @@ print.summary_modsem_pi <- function(x, ...) {
 }
 
 
-
 #' @export
-parameter_estimates.modsem_pi <- function(object, ...) {
-  lavaan::parameterEstimates(object$lavaan, ...)
+parameter_estimates.modsem_pi <- function(object, colon.pi = FALSE, ...) {
+  parTable <- lavaan::parameterEstimates(object$lavaan, ...)
+
+  if (colon.pi) {
+    elems <- object$elementsInProdNames
+
+    for (xz in names(elems)) {
+      xzColon <- paste0(elems[[xz]], collapse = ":")
+      parTable[parTable$rhs == xz, "rhs"] <- xzColon
+      parTable[parTable$lhs == xz, "lhs"] <- xzColon # shouldn't be necessary, but just in case
+                                                     # the user has done something weird...
+    }
+  }
+
+  parTable
 }
 
 
+#' @describeIn standardized_estimates Method for \code{modsem_pi} objects
+#'
+#' @param correction Logical. Whether to apply a correction to the standardized estimates
+#' of the interaction term. By default, \code{FALSE}, which standardizes the interaction term
+#' such that \code{var(xz) = 1}, consistent with \code{lavaan}'s treatment of latent interactions.
+#' If \code{TRUE}, the correction computes the interaction variance using the formula
+#' \code{var(xz) = var(x) * var(z) + cov(x, z)^2}, under the assumption of normality and
+#' zero-centered variables. This may provide more accurate standardization when \code{x}
+#' and \code{z} are correlated.
+#'
+#' @param std.errors Character string indicating the method used to compute standard errors
+#' when \code{correction = TRUE}. Options include:
+#' \describe{
+#'   \item{"rescale"}{Simply rescales the standard errors. Fastest option.}
+#'   \item{"delta"}{Uses the delta method to approximate standard errors.}
+#'   \item{"monte.carlo"}{Uses Monte Carlo simulation to estimate standard errors.}
+#' }
+#' Ignored if \code{correction = FALSE}.
+#'
+#' @param mc.reps Integer. Number of Monte Carlo replications to use if \code{std.errors = "monte.carlo"}.
+#'
+#' @param colon.pi Logical. If \code{TRUE}, the interaction terms in the output will be
+#' will be formatted using \code{:} to seperate the elements in the interaction term. Default
+#' is \code{FALSE}, using the default formatting from \code{lavaan}.
+#'
+#' @param ... Additional arguments passed on to \code{lavaan::standardizedSolution()}.
+#'
 #' @export
-standardized_estimates.modsem_pi <- function(object, correction = FALSE, ...) {
-  parTable.std <- lavaan::standardizedSolution(object$lavaan, ...)
-  colnames(parTable.std)[colnames(parTable.std) == "est.std"] <- "est"
+standardized_estimates.modsem_pi <- function(object, 
+                                             correction = FALSE, 
+                                             std.errors = c("rescale", "delta", "monte.carlo"),
+                                             mc.reps = 10000,
+                                             colon.pi = FALSE, 
+                                             ...) {
+  std.errors <- tolower(std.errors)
+  std.errors <- match.arg(std.errors)
 
-  if (correction) correctStdSolutionPI(object, parTable.std = parTable.std)
-  else parTable.std
+  uncorrected <- \(object) rename(lavaan::standardizedSolution(object$lavaan, ...), 
+                                  est.std = "est")
+
+  if (correction && std.errors == "rescale") {
+    parTable.std <- uncorrected(object)
+    parTable.std <- correctStdSolutionPI(object, parTable.std = parTable.std)
+
+  } else if (correction) {
+    monte.carlo <- std.errors == "monte.carlo"
+    solution <- standardizedSolutionCOEFS(object, monte.carlo = monte.carlo, ...) 
+    parTable.std <- solution$parTable
+  
+  } else {
+    parTable.std <- uncorrected(object)
+  }
+
+  if (!colon.pi) {
+    rm <- \(x) stringr::str_remove_all(x, ":")
+    parTable.std$rhs <- rm(parTable.std$rhs)
+    parTable.std$lhs <- rm(parTable.std$lhs)
+  }
+
+  parTable.std
 }
 
 
