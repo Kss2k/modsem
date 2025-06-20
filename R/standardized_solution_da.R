@@ -68,7 +68,7 @@
 standardize_model <- function(model, monte.carlo = FALSE, mc.reps = 10000, ...) {
   stopif(!inherits(model, "modsem_da"), "The model must be of class 'modsem_da'.")
 
-  solution <- standardized_solution_COEFS(model, monte.carlo = monte.carlo, mc.reps = mc.reps, ...)
+  solution <- standardizedSolutionCOEFS(model, monte.carlo = monte.carlo, mc.reps = mc.reps, ...)
 
   vcov <- solution$vcov
   coefs <- solution$coefs
@@ -100,21 +100,30 @@ rescaleVCOV <- function(vcov, new_se) {
 }
 
 
-standardized_solution_COEFS <- function(object, 
-                                        monte.carlo = FALSE, 
-                                        mc.reps = 10000, 
-                                        tolerance.zero = 1e-10, 
-                                        seed = 123, 
-                                        delta.epsilon = 1e-8, ...) {
-  set.seed(seed)
+standardizedSolutionCOEFS <- function(object, 
+                                      monte.carlo = FALSE, 
+                                      mc.reps = 10000, 
+                                      tolerance.zero = 1e-10, 
+                                      seed = 123, 
+                                      delta.epsilon = 1e-8, ...) {
+  set.seed(seed) # only relevant if monte.carlo is TRUE
 
-  stopif(!inherits(object, "modsem_da"), "The object must be of class 'modsem_da'.")
+  stopif(!inherits(object, c("modsem_da", "modsem_pi")), 
+         "The model must be of class 'modsem_da' or 'modsem_pi'!")
 
-  parTable <- parameter_estimates(object)
-  parTable <- parTable[c("lhs", "op", "rhs", "label", "est", "std.error")]
-  parTable <- centerInteraction(parTable) # re-estimate path-coefficients 
-  parTable <- parTable[parTable$op != "~1", ]# when intercepts are zero
-  parTable <- var_interactions(removeInteractionVariances(parTable))
+  parTable <- parameter_estimates(object, colon.pi = TRUE)
+
+  if (inherits(object, "modsem_da")) {
+    parTable <- parTable[c("lhs", "op", "rhs", "label", "est", "std.error")]
+    parTable <- centerInteraction(parTable) # re-estimate path-coefficients 
+    parTable <- parTable[parTable$op != "~1", ]# when intercepts are zero
+    parTable <- var_interactions(removeInteractionVariances(parTable))
+
+  } else { # modsem_pi
+    parTable <- parTable[c("lhs", "op", "rhs", "label", "est", "se")]
+    parTable <- rename(parTable, se = "std.error")
+    parTable <- parTable[parTable$op != "~1", ] # when intercepts are zero
+  }
 
   lVs      <- getLVs(parTable)
   intTerms <- getIntTerms(parTable)

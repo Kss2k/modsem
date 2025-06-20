@@ -14,6 +14,8 @@ m1 <- "
 est <- modsem(m1, data = oneInt)
 parTable <- standardized_estimates(est)
 parTable <- standardized_estimates(est, correction = TRUE)
+parTable <- standardized_estimates(est, correction = TRUE, std.errors = "delta")
+
 varXZ <- parTable[parTable$lhs == "XZ" & parTable$rhs == "XZ", "est"]
 testthat::expect_true(varXZ > 1.02)
 
@@ -33,6 +35,7 @@ m2 <- "
 
 est <- modsem(m2, data = oneInt)
 parTable <- standardized_estimates(est, correction = TRUE)
+parTable <- standardized_estimates(est, correction = TRUE, std.errors = "delta")
 varXZ <- parTable[parTable$lhs == "XZ" & parTable$rhs == "XZ", "est"]
 varXX <- parTable[parTable$lhs == "XX" & parTable$rhs == "XX", "est"]
 testthat::expect_true(varXZ > 1.02)

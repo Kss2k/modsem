@@ -114,35 +114,38 @@ var_interactions.data.frame <- function(object, ...) {
 }
 
 
-#' Get standardized estimates
+#' Get Standardized Estimates
+#'
+#' Computes standardized estimates of model parameters for various types of \code{\link{modsem}} objects.
 #'
 #' @param object An object of class \code{\link{modsem_da}}, \code{\link{modsem_mplus}},
-#' or a \code{parTable} of class \code{data.frame}
-#' @param ... Additional arguments passed to other functions
-#' @details For \code{modsem_da}, and \code{modsem_mplus} objects,
-#' the interaction term is not standardized such that \code{var(xz) = 1}.
-#' The interaction term is not an actual variable in the model, meaning that it does not
-#' have a variance. It must therefore be calculated from the other parameters in the model.
+#' \code{\link{modsem_pi}}, or a parameter table (\code{parTable}) of class \code{data.frame}.
+#' @param ... Additional arguments passed to underlying methods. See specific method
+#' documentation for supported arguments, including:
+#' \describe{
+#'   \item{\code{correction}}{(Logical) Applies only to \code{modsem_pi} objects. Whether to correct
+#'   standardized estimates for the interaction term by computing \code{var(xz)} based on
+#'   variances and covariance of \code{x} and \code{z}. Default is \code{FALSE}.}
+#'   \item{\code{std.errors}}{(Character) Specifies the method for computing standard errors when
+#'   \code{correction = TRUE}. Options are \code{"rescale"}, \code{"delta"}, and \code{"monte.carlo"}.
+#'   See method \code{standardized_estimates.modsem_pi()} for details.}
+#' }
 #'
-#' Assuming normality and zero-means, the variance is calculated as
-#' \code{var(xz) = var(x) * var(z) + cov(x, z)^2}. Thus setting the variance of the interaction
-#' term to 1 would only be 'correct' if the correlation between \code{x} and \code{z} is zero.
-#' This means that the standardized estimates for the interaction term will
-#' be different from those using \code{lavaan}, since there the interaction term is an
-#' actual latent variable in the model, with a standardized variance of 1. 
+#' @details
+#' For \code{modsem_da} and \code{modsem_mplus} objects, the interaction term is not a formal
+#' variable in the model and therefore lacks a defined variance. Under assumptions of normality
+#' and zero-mean variables, the interaction variance is estimated as:
+#' \deqn{var(xz) = var(x) * var(z) + cov(x, z)^2}
+#' This means the standardized estimate for the interaction differs from approaches like
+#' \code{lavaan}, which treats the interaction as a latent variable with unit variance.
 #'
-#' In \code{\link{modsem_pi}} the interaction term is standardized such that \code{var(xz) = 1}.
-#' It is possible to apply a correction to the standardized estimates from 
-#' \code{\link{modsem_pi}}, by passing \code{correction = TRUE}.
+#' For \code{modsem_pi} objects, the interaction term is standardized by default assuming
+#' \code{var(xz) = 1}, but this can be overridden using the \code{correction} argument.
 #'
-#' \strong{NOTE} that the standardized coefficent will be placed in the \strong{\code{est}} column
-#' (\strong{not \code{est.std}}) for all models, inluding those from \code{\link{modsem_pi}}. 
-#' This is different from the results from \code{lavaan::standardizedSolution} where the 
-#' standardized estimates are placed in the \code{est.std} column.
+#' \strong{NOTE:} Standardized estimates are always placed in the \strong{\code{est}} column,
+#' not \code{est.std}, regardless of model type.
 #'
-#' @return
-#' A \code{data.frame} with the standardized estimates of the model parameters, in the 
-#' \code{est} column.
+#' @return A \code{data.frame} with standardized estimates in the \code{est} column.
 #'
 #' @examples
 #' m1 <- '
