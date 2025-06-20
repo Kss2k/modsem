@@ -25,14 +25,6 @@ calcCovParTable <- function(x, y, parTable, measurement.model = FALSE, maxlen = 
   parTable <- parTable[!parTable$op %in% c(":=", "~1", "=~"), ]
   parTable <- prepParTable(parTable[c("lhs", "op", "rhs", "est")], paramCol = "est")
 
-  # covs <- structure(numeric(length(x)), names = paste0(x, "~~", y))
-  # for (i in seq_along(x)) {
-  #   paths <- tracePathsRecursively(x = x[i], y = y[i], pt = parTable, 
-  #                                  paramCol = "est", maxlen = maxlen)
-
-  #   covs[i] <- sum(vapply(paths, FUN.VALUE = numeric(1L), FUN = prod))
-  # }
-
   tracePathsNumericCpp(x = x, y = y, parTable = parTable)
 }
 

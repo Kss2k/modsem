@@ -246,3 +246,17 @@ redefineMeasurementModel <- function(parTable) {
   parTable$op  <- ifelse(parTable$op == "=~", yes = "~", no = parTable$op)
   parTable
 }
+
+
+getRsqrPI <- function(model) {
+  fit <- extract_lavaan(model)
+  r2  <- lavaan::lavInspect(fit, what = "r2")
+
+  if (!is.list(r2)) return(r2)
+
+  R2 <- as.data.frame(r2)
+  nobs <- lavaan::lavInspect(fit, what = "nobs")
+  ntotal <- sum(nobs)
+
+  apply(R2, MARGIN = 1, FUN = \(x) sum(x * nobs) / ntotal)
+}

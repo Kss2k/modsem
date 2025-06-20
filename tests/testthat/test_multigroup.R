@@ -21,12 +21,10 @@ modsemEst <- lavaan::parameterEstimates(fit_modsem$lavaan)
 modsemEst[is.na(modsemEst)] <- -999
 testthat::expect_equal(lavaanEst, modsemEst)
 
-
 set.seed(123)
 oneIntMG <- oneInt
 oneIntMG$group <- sample(c("G1", "G2"), nrow(oneInt), replace = TRUE)
 
-devtools::load_all()
 m1 <- '
   X =~ x1 + x2 + x3
   Z =~ z1 + z2 + z3

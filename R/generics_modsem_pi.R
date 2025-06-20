@@ -18,19 +18,22 @@ summary.modsem_pi <- function(object,
                               scientific = FALSE,
                               ci = FALSE,
                               ...) {
-  out <- list()
-  out$lavaan <- lavaan::summary(extract_lavaan(object), ...)
-  out$info <- list(version = PKG_INFO$version, approach = attributes(object)$method)
-  out$fit <- lavaan::fitMeasures(extract_lavaan(object))
-  out$logLik <- lavaan::fitMeasures(extract_lavaan(object), "logl")
-  out$N <- lavaan::nobs(extract_lavaan(object))
-  out$format <- list(digits = digits, scientific = scientific, adjusted.stat = adjusted.stat, ci = ci)
+  out         <- list()
+  out$lavaan  <- lavaan::summary(extract_lavaan(object), ...)
+  out$info    <- list(version = PKG_INFO$version, approach = attributes(object)$method)
+  out$fit     <- lavaan::fitMeasures(extract_lavaan(object))
+  out$logLik  <- lavaan::fitMeasures(extract_lavaan(object), what = "logl")
+  out$N       <- lavaan::nobs(extract_lavaan(object))
+  out$format  <- list(digits = digits, scientific = scientific, adjusted.stat = adjusted.stat, ci = ci)
+  out$ngroups <- lavaan::lavInspect(extract_lavaan(object), what = "ngroups")
 
   # Check for interaction effect in the model
   parTable <- parameter_estimates(object)
   hasInteraction <- parTableHasInteraction(object$input$parTable)
 
   out$hasInteraction <- hasInteraction
+
+  etas <- getEtas(parTable, isLV = FALSE)
 
   # If no interaction effect, skip H0, r.squared, and warn if H0 requested
   if (!hasInteraction) {
@@ -54,29 +57,14 @@ summary.modsem_pi <- function(object,
   }, error = \(e) warning2("Baseline model could not be estimated: ", e$message, immediate. = FALSE))
 
   # R-squared for latent endogenous variables only
-  if (r.squared) tryCatch({
-    # Get all R2
-    r2_all <- modsem_inspect(object, "r2")
-    
-    if (is.list(r2_all)) {
-      warning2("Compartive fit is not implemented for multigroup models yet!\nUsing the first group...",
-               immediate. = FALSE)
-      r2_all <- r2_all[[1]]
-    }
-
-    # Get latent variables
-    lv_names <- lavaan::lavNames(extract_lavaan(object), type = "lv")
-    # Get endogenous (on LHS of ~)
-    reg_table <- parameter_estimates(object)
-    endo_lhs <- unique(reg_table$lhs[reg_table$op == "~"])
-    endo_lv <- intersect(lv_names, endo_lhs)
-    out$r.squared <- r2_all[endo_lv]
+  if (r.squared & length(etas)) tryCatch({
+    r2All <- getRsqrPI(object)
+    out$r.squared <- r2All[etas]
 
     if (H0 && !is.null(out$nullModel)) {
-      r2_all_H0 <- modsem_inspect(out$nullModel, "r2")
-      if (is.list(r2_all_H0)) r2_all_H0 <- r2_all_H0[[1]]
+      r2AllH0 <- getRsqrPI(out$nullModel)
 
-      out$r.squared.H0 <- r2_all_H0[endo_lv]
+      out$r.squared.H0   <- r2AllH0[etas]
       out$r.squared.diff <- out$r.squared - out$r.squared.H0
     }
   }, error = \(e) warning2("R-squared could not be computed: ", e$message, immediate. = FALSE))
@@ -121,7 +109,11 @@ print.summary_modsem_pi <- function(x, ...) {
   # Interaction Model Fit Measures (H1)
   cat("\nInteraction Model Fit Measures (H1):\n")
   fit <- x$fit
-  namesH1 <- c("Loglikelihood", "Akaike (AIC)", "Bayesian (BIC)", "Chi-square", "Degrees of Freedom", "P-value (Chi-square)", "RMSEA")
+  namesH1 <- c("Loglikelihood", "Akaike (AIC)", 
+               "Bayesian (BIC)", "Chi-square", 
+               "Degrees of Freedom", 
+               "P-value (Chi-square)", "RMSEA")
+
   valuesH1 <- c(
     formatC(x$logLik, digits = 2, format = "f"),
     formatC(fit["aic"], digits = 2, format = "f"),
@@ -146,7 +138,8 @@ print.summary_modsem_pi <- function(x, ...) {
       formatC(fitH0["bic"], digits = 2, format = "f"),
       formatC(fitH0["chisq"], digits = 2, format = "f"),
       as.character(fitH0["df"]),
-      formatC(fitH0["pvalue"], digits = digits, format = if (scientific) "e" else "f"),
+      formatC(fitH0["pvalue"], digits = digits, 
+              format = if (scientific) "e" else "f"),
       formatC(fitH0["rmsea"], digits = 3, format = "f")
     )
     for(i in seq_along(namesH1)) {
@@ -162,29 +155,44 @@ print.summary_modsem_pi <- function(x, ...) {
     if (nrow(lrt) > 1) {
       lrt_row <- lrt[2, ]
       cat(align_lavaan("Chi-square diff", 
-                       formatC(lrt_row[["Chisq diff"]], digits = 3, format = "f"), width.out), "\n")
+                       formatC(lrt_row[["Chisq diff"]], digits = 3, format = "f"), 
+                       width.out), "\n")
       cat(align_lavaan("Degrees of freedom diff", 
                        as.character(lrt_row[["Df diff"]]), width.out), "\n")
       cat(align_lavaan("P-value (LRT)", 
-                       formatC(lrt_row[["Pr(>Chisq)"]], digits = digits, format = if (scientific) "e" else "f"), width.out), "\n")
+                       formatC(lrt_row[["Pr(>Chisq)"]], digits = digits, 
+                               format = if (scientific) "e" else "f"), 
+                       width.out), "\n")
     }
     cat("\n")
   }
 
   # R-Squared
   if (!is.null(x$r.squared)) {
-    cat("R-Squared Interaction Model (H1):\n")
+    k <- x$ngroups
+    if (k > 1) printH <- \(...) printf("Total R-Squared %s (%s):\n", ...)
+    else       printH <- \(...) printf("R-Squared %s:\n", ...)
+
+    printH("Interaction Model", "H1")
     for (i in seq_along(x$r.squared)) {
-      cat(align_lavaan(names(x$r.squared)[i], formatC(x$r.squared[i], digits = 3, format = "f"), width.out), "\n")
+      cat(align_lavaan(names(x$r.squared)[i], 
+                       formatC(x$r.squared[i], digits = 3, format = "f"), 
+                       width.out), "\n")
     }
+
     if (!is.null(x$r.squared.H0)) {
-      cat("R-Squared Baseline Model (H0):\n")
+      printH("Baseline Model", "H0")
       for (i in seq_along(x$r.squared.H0)) {
-        cat(align_lavaan(names(x$r.squared.H0)[i], formatC(x$r.squared.H0[i], digits = 3, format = "f"), width.out), "\n")
+        cat(align_lavaan(names(x$r.squared.H0)[i], 
+                         formatC(x$r.squared.H0[i], digits = 3, format = "f"), 
+                         width.out), "\n")
       }
-      cat("R-Squared Change (H1 - H0):\n")
+
+      printH("Change", "H1 - H0")
       for (i in seq_along(x$r.squared.diff)) {
-        cat(align_lavaan(names(x$r.squared.diff)[i], formatC(x$r.squared.diff[i], digits = 3, format = "f"), width.out), "\n")
+        cat(align_lavaan(names(x$r.squared.diff)[i], 
+                         formatC(x$r.squared.diff[i], digits = 3, format = "f"), 
+                         width.out), "\n")
       }
     }
     cat("\n")
