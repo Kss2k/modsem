@@ -191,35 +191,6 @@ logSumExp2 <- function(a, b) {
 }
 
 
-obsLogLikLms <- function(theta, model, data, P, sign = 1, ...) {
-  modFilled <- fillModel(model = model, theta = theta, method = "lms")
-
-  V      <- P$V                       # m × q design for latent states
-  w      <- P$w                       # length-m mixture weights  (must be >0, sum(w)=1)
-  log_w  <- log(w)                    # log-weights once; cheap
-  m      <- nrow(V)
-
-  ## ---------- initialise per-individual mixture log-densities with comp. 1 -----
-  z1        <- V[1, ]
-  log_px    <- log_w[1] + dmvn(data,
-                               mean   = muLmsCpp(  modFilled, z = z1),
-                               sigma  = sigmaLmsCpp(modFilled, z = z1),
-                               log    = TRUE)      
-
-  if (m > 1) {
-    for (i in 2:m) {
-      z_i      <- V[i, ]
-      log_comp <- log_w[i] + dmvn(data,
-                                  mean   = muLmsCpp(  modFilled, z = z_i),
-                                  sigma  = sigmaLmsCpp(modFilled, z = z_i),
-                                  log    = TRUE)   # length N
-      log_px   <- logSumExp2(log_px, log_comp)     # update mixture density
-    }
-  }
-
-  ## ---------- collapse to a single scalar --------------------------------------
-  sign * sum(log_px)                  # total log-likelihood
-}
 
 obsLogLikLms_i <- function(theta, model, data, P, sign = 1, ...) {
   modFilled <- fillModel(model = model, theta = theta, method = "lms")
@@ -250,6 +221,40 @@ gradientObsLogLikLms_i <- function(theta, model, data, P, sign = 1, epsilon = 1e
     theta[[i]] <- theta[[i]] + epsilon
     (obsLogLikLms_i(theta, model, data = data, P = P, sign = sign) - baseLL) / epsilon
   }, FUN.VALUE = numeric(nrow(data)))
+}
+
+obsLogLikLms <- function(theta, model, data, P, sign = 1, ...) {
+  modFilled <- fillModel(model = model, theta = theta, method = "lms")
+
+  V <- P$V     # latent states
+  w <- P$w     # mixture weights
+
+  N <- nrow(data)
+  d <- ncol(data)
+
+  # Precompute sufficient statistics
+  nu <- colMeans(data)
+  X_centered <- sweep(data, 2, nu)
+  S <- crossprod(X_centered)  # Equivalent to: t(X_centered) %*% X_centered
+
+  log_w <- log(w)
+  m <- nrow(V)
+  log_comp <- numeric(m)
+
+  for (i in seq_len(m)) {
+    z_i     <- V[i, ]
+    mu_i    <- muLmsCpp(modFilled, z = z_i)
+    sigma_i <- sigmaLmsCpp(modFilled, z = z_i)
+
+    # Approximate total log-likelihood for component i
+    logL_i <- totalLogDmvn(mu = mu_i, sigma = sigma_i, nu = nu, S = S, n = N, d = d)
+    log_comp[i] <- log_w[i] + (logL_i / N)  # log average likelihood over individuals
+  }
+
+  # Combine components via logSumExp then scale back to total log-likelihood
+  total_loglik <- N * logSumExp(log_comp)
+
+  sign * total_loglik
 }
 
 
