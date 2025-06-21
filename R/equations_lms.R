@@ -169,7 +169,7 @@ complicatedGradientLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1
 }
 
 
-obsLogLikLms <- function(theta, model, data, P, sign = 1, ...) {
+obsLogLikLmsOld <- function(theta, model, data, P, sign = 1, ...) {
   sum(obsLogLikLms_i(theta, model = model, data = data, P = P, sign = sign))
 }
 
@@ -183,6 +183,43 @@ gradientObsLogLikLms <- function(theta, model, data, P, sign = -1, epsilon = 1e-
   })
 }
 
+
+logSumExp2 <- function(a, b) {
+  ## a, b are numeric vectors of the same length
+  m <- pmax(a, b)                     # element-wise max
+  m + log(exp(a - m) + exp(b - m))    # stable log(exp(a)+exp(b))
+}
+
+
+obsLogLikLms <- function(theta, model, data, P, sign = 1, ...) {
+  modFilled <- fillModel(model = model, theta = theta, method = "lms")
+
+  V      <- P$V                       # m × q design for latent states
+  w      <- P$w                       # length-m mixture weights  (must be >0, sum(w)=1)
+  log_w  <- log(w)                    # log-weights once; cheap
+  m      <- nrow(V)
+
+  ## ---------- initialise per-individual mixture log-densities with comp. 1 -----
+  z1        <- V[1, ]
+  log_px    <- log_w[1] + dmvn(data,
+                               mean   = muLmsCpp(  modFilled, z = z1),
+                               sigma  = sigmaLmsCpp(modFilled, z = z1),
+                               log    = TRUE)      
+
+  if (m > 1) {
+    for (i in 2:m) {
+      z_i      <- V[i, ]
+      log_comp <- log_w[i] + dmvn(data,
+                                  mean   = muLmsCpp(  modFilled, z = z_i),
+                                  sigma  = sigmaLmsCpp(modFilled, z = z_i),
+                                  log    = TRUE)   # length N
+      log_px   <- logSumExp2(log_px, log_comp)     # update mixture density
+    }
+  }
+
+  ## ---------- collapse to a single scalar --------------------------------------
+  sign * sum(log_px)                  # total log-likelihood
+}
 
 obsLogLikLms_i <- function(theta, model, data, P, sign = 1, ...) {
   modFilled <- fillModel(model = model, theta = theta, method = "lms")
