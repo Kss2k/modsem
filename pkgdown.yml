@@ -9,6 +9,7 @@ articles:
   interaction_two_etas: interaction_two_etas.html
   lavaan: lavaan.html
   lms_qml: lms_qml.html
+  meanstructure_lms_qml: meanstructure_lms_qml.html
   methods: methods.html
   modsem: modsem.html
   observed_lms_qml: observed_lms_qml.html
@@ -16,4 +17,4 @@ articles:
   quadratic: quadratic.html
   relcorr_items: relcorr_items.html
   simple_slopes: simple_slopes.html
-last_built: 2025-06-20T20:39Z
+last_built: 2025-06-21T11:27Z
