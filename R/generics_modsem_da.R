@@ -68,8 +68,13 @@ summary.modsem_da <- function(object,
   if (standardized) {
     parTable <- standardized_estimates(object, intercepts = intercepts, 
                                        monte.carlo = monte.carlo, mc.reps = mc.reps)
+    parTableR2 <- parTable
+
   } else {
-    parTable <- var_interactions(parameter_estimates(object))
+    parTable   <- parameter_estimates(object)
+    parTableR2 <- var_interactions(centerInteraction(parTable)) # easier to calculate 
+                                                                # R-squared when 
+                                                                # interactions are mean centeredd
   }
 
   if (!var.interaction) {
@@ -113,8 +118,8 @@ summary.modsem_da <- function(object,
   }
 
   if (r.squared) {
-    out$r.squared <- calcRsquared(parTable)
-    if (H0) out$r.squared$H0 <- calcRsquared(est_h0$parTable)
+    out$r.squared <- calcRsquared(parTableR2)
+    if (H0) out$r.squared$H0 <- calcRsquared(est_h0$parTable) # no need to center interactions
   } else out$r.squared <- NULL
 
   out$format <- list(

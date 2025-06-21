@@ -263,7 +263,7 @@ getMean <- function(x, parTable) {
   gamma <- parTable[parTable$lhs == x & parTable$op == "~", , drop = FALSE]
 
   if (NROW(gamma) == 0) return(meanY)
-  for (i in NROW(gamma)) {
+  for (i in seq_len(NROW(gamma))) {
     meanX <- getMean(gamma[i, "rhs"], parTable = parTable)
     meanY <- meanY + gamma[i, "est"] * meanX
   }
@@ -293,8 +293,8 @@ centerInteraction <- function(parTable) {
 
     gammaXZ <- rows[i, "est"]
     gamma <- parTable[parTable$lhs == Y & parTable$op == "~", , drop = FALSE]
-    gammaX <- gamma[gamma$rhs == X, "est"] + gammaXZ * meanZ
 
+    gammaX <- gamma[gamma$rhs == X, "est"] + gammaXZ * meanZ
     gammaZ <- gamma[gamma$rhs == Z, "est"] + gammaXZ * meanX
 
     parTable[parTable$lhs == Y & parTable$op == "~" &
@@ -302,8 +302,11 @@ centerInteraction <- function(parTable) {
 
     parTable[parTable$lhs == Y & parTable$op == "~" &
              parTable$rhs == Z, "est"] <- gammaZ
+
   }
 
+  innerVars <- unique(unlist(parTable[parTable$op == "~", c("rhs", "lhs")]))
+  parTable[parTable$lhs %in% innerVars & parTable$op == "~1", "est"] <- 0
   parTable
 }
 
