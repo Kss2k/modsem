@@ -169,7 +169,7 @@ complicatedGradientLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1
 }
 
 
-obsLogLikLms <- function(theta, model, data, P, sign = 1, ...) {
+obsLogLikLmsOld <- function(theta, model, data, P, sign = 1, ...) {
   sum(obsLogLikLms_i(theta, model = model, data = data, P = P, sign = sign))
 }
 
@@ -182,6 +182,14 @@ gradientObsLogLikLms <- function(theta, model, data, P, sign = -1, epsilon = 1e-
     (obsLogLikLms(theta, model = model, data = data, P = P, sign = sign) - baseLL) / epsilon
   })
 }
+
+
+logSumExp2 <- function(a, b) {
+  ## a, b are numeric vectors of the same length
+  m <- pmax(a, b)                     # element-wise max
+  m + log(exp(a - m) + exp(b - m))    # stable log(exp(a)+exp(b))
+}
+
 
 
 obsLogLikLms_i <- function(theta, model, data, P, sign = 1, ...) {
@@ -213,6 +221,40 @@ gradientObsLogLikLms_i <- function(theta, model, data, P, sign = 1, epsilon = 1e
     theta[[i]] <- theta[[i]] + epsilon
     (obsLogLikLms_i(theta, model, data = data, P = P, sign = sign) - baseLL) / epsilon
   }, FUN.VALUE = numeric(nrow(data)))
+}
+
+obsLogLikLms <- function(theta, model, data, P, sign = 1, ...) {
+  modFilled <- fillModel(model = model, theta = theta, method = "lms")
+
+  V <- P$V     # latent states
+  w <- P$w     # mixture weights
+
+  N <- nrow(data)
+  d <- ncol(data)
+
+  # Precompute sufficient statistics
+  nu <- colMeans(data)
+  X_centered <- sweep(data, 2, nu)
+  S <- crossprod(X_centered)  # Equivalent to: t(X_centered) %*% X_centered
+
+  log_w <- log(w)
+  m <- nrow(V)
+  log_comp <- numeric(m)
+
+  for (i in seq_len(m)) {
+    z_i     <- V[i, ]
+    mu_i    <- muLmsCpp(modFilled, z = z_i)
+    sigma_i <- sigmaLmsCpp(modFilled, z = z_i)
+
+    # Approximate total log-likelihood for component i
+    logL_i <- totalLogDmvn(mu = mu_i, sigma = sigma_i, nu = nu, S = S, n = N, d = d)
+    log_comp[i] <- log_w[i] + (logL_i / N)  # log average likelihood over individuals
+  }
+
+  # Combine components via logSumExp then scale back to total log-likelihood
+  total_loglik <- N * logSumExp(log_comp)
+
+  sign * total_loglik
 }
 
 
