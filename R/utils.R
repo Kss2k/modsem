@@ -147,6 +147,16 @@ getHigherOrderLVs <- function(parTable) {
 }
 
 
+isHigherOrderParTable <- function(parTable) {
+  length(getHigherOrderLVs(parTable)) > 0
+}
+
+
+isClustered <- function(object) {
+  length(modsem_inspect(object, what = "cluster")) > 0
+}
+
+
 getIndsLVs <- function(parTable, lVs) {
   measrExprs <- parTable[parTable$op == "=~" & parTable$lhs %in% lVs, ]
   stopif(!NROW(measrExprs), "No measurement expressions found, for", lVs)

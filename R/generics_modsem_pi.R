@@ -270,6 +270,7 @@ standardized_estimates.modsem_pi <- function(object,
   uncorrected <- \(object) rename(lavaan::standardizedSolution(object$lavaan, ...), 
                                   est.std = "est")
 
+
   if (correction && std.errors == "rescale") {
     parTable.std.naive <- uncorrected(object)
     correction <- function(object, grouping = NULL) {
@@ -290,6 +291,16 @@ standardized_estimates.modsem_pi <- function(object,
   } else return(uncorrected(object))
   
   parTable.ustd <- parameter_estimates(object)
+ 
+  hiorder <- isHigherOrderParTable(parTable.ustd)
+  cluster <- isClustered(object)
+  rescale <- std.errors == "rescale"
+
+  stopif(hiorder && !rescale, 'Correction of higher-order models are ',
+         'not supported at all with `std.errors = "rescale"`!')
+  stopif(cluster, "Correction of clustered (multilevel) models is not supported!")
+  warnif(hiorder && rescale, "Correction of higher-order models will likely not work!",
+         immediate. = FALSE)
 
   groupingcols <- c("block", "group")
   if (any(groupingcols %in% colnames(parTable.ustd))) {

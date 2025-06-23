@@ -33,6 +33,12 @@ testthat::expect_error(modsem(tpb, TPB_2SO, method = "lms"),
 testthat::expect_error(modsem(tpb, TPB_2SO, method = "qml"),
                        regexp = "Higher-order latent variables are not supported in the lms and qml approaches.")
 
+standardized_estimates(est_ca)
+testthat::expect_error(
+  standardized_estimates(est_ca, correction = TRUE, std.error = "delta"),
+  regexp = "Correction of higher-order .*"
+)
+
 # example 2
 tpb <- '
   # First order constructs

@@ -87,3 +87,6 @@ sim_data <- cbind(data, X_ind, Z_ind, Y_ind)
 # Check structure
 fit <- modsem(m2, data=sim_data, cluster="cluster")
 testthat::expect_warning(summary(fit), regexp = "Comparative fit.*")
+standardized_estimates(fit)
+testthat::expect_error(standardized_estimates(fit, correction = TRUE),
+                       regexp = "Correction of clustered .*not supported!")
