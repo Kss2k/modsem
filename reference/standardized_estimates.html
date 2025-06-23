@@ -107,10 +107,15 @@ standard errors; if <code>FALSE</code>, use the delta method (default).</p></dd>
 <dd><p>Logical. Whether to apply a correction to the standardized estimates
 of the interaction term. By default, <code>FALSE</code>, which standardizes the interaction term
 such that <code>var(xz) = 1</code>, consistent with <code>lavaan</code>'s treatment of latent interactions.
-If <code>TRUE</code>, the correction computes the interaction variance using the formula
-<code>var(xz) = var(x) * var(z) + cov(x, z)^2</code>, under the assumption of normality and
-zero-centered variables. This may provide more accurate standardization when <code>x</code>
-and <code>z</code> are correlated.</p></dd>
+This is usually wrong, as it does not account for the fact that the interaction term
+is a product of two variables, which means that the variance of the interaction term
+of standardized variables (usually) is not equal to 1.</p>
+<p>Hence the scale of the interaction effect changes, such that
+the standardized interaction term does not correspond to one (standardized) unit
+change in the moderating variables. If <code>TRUE</code> a correction is applied, by
+computing the interaction term $b3$ = $B3 sd(x) sd(z)sd(y)$ (where
+$B3$ is the unstandardized interaction term), and solving for $sd(xz)$, which
+is used to correct the variance of the interaction term, and its covariances.</p></dd>
 
 
 <dt id="arg-std-errors">std.errors<a class="anchor" aria-label="anchor" href="#arg-std-errors"></a></dt>
