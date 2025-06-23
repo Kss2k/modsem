@@ -10,7 +10,7 @@ trace_path(
   y,
   parenthesis = TRUE,
   missing.cov = FALSE,
-  measurement.model = FALSE,
+  measurement.model = TRUE,
   maxlen = 100,
   paramCol = "mod",
   ...
