@@ -2,7 +2,7 @@
 title: "non-centered interaction terms (LMS and QML)"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{LMS and QML approaches}
+  %\VignetteIndexEntry{non-centered interaction terms (LMS and QML)}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

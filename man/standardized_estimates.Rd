@@ -41,7 +41,7 @@ standard errors; if \code{FALSE}, use the delta method (default).}
 
 \item{correction}{Logical. Whether to apply a correction to the standardized estimates
 of the interaction term. By default, \code{FALSE}, which standardizes the interaction term
-such that \code{var(xz) = 1}, consistent with \code{lavaan}'s treatment of latent interactions.
+such that \eqn{\sigma^2(XZ) = 1}, consistent with \code{lavaan}'s treatment of latent interactions.
 This is usually wrong, as it does not account for the fact that the interaction term
 is a product of two variables, which means that the variance of the interaction term
 of standardized variables (usually) is not equal to 1. 
@@ -49,8 +49,8 @@ of standardized variables (usually) is not equal to 1.
 Hence the scale of the interaction effect changes, such that 
 the standardized interaction term does not correspond to one (standardized) unit 
 change in the moderating variables. If \code{TRUE} a correction is applied, by 
-computing the interaction term $b3$ = $\frac{B3 sd(x) sd(z)}{sd(y)}$ (where 
-$B3$ is the unstandardized interaction term), and solving for $sd(xz)$, which 
+computing the interaction term \eqn{b_3 = \frac{B_3 \sigma(X) \sigma(Z)}{\sigma(Y)}} (where 
+\eqn{B_3} is the unstandardized coefficient for the interaction term), and solving for \eqn{\sigma(XZ)}, which 
 is used to correct the variance of the interaction term, and its covariances.}
 
 \item{std.errors}{Character string indicating the method used to compute standard errors
