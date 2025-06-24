@@ -73,3 +73,25 @@ varXz1 <- parTable[parTable$lhs == "Xz1" & parTable$rhs == "Xz1", "est"]
 testthat::expect_true(varXz1 > 2)
 testthat::expect_equal(varz1, 1)
 testthat::expect_equal(unname(calcVarParTable("Y", parTable)), 1)
+
+
+m4 <- "
+# Outer Model
+  X =~ x1 + x2 + x3
+# Inner Model
+  y1 ~ X + z1 + a * X:z1
+
+  c := a
+"
+
+est <- modsem(m4, data = oneInt, method = "pind")
+parTable <- standardized_estimates(est)
+parTable <- standardized_estimates(est, correction = TRUE)
+parTable <- standardized_estimates(est, correction = TRUE, std.errors = "delta")
+summarize_partable(parTable)
+
+varz1 <- parTable[parTable$lhs == "z1" & parTable$rhs == "z1", "est"]
+varXz1 <- parTable[parTable$lhs == "Xz1" & parTable$rhs == "Xz1", "est"]
+testthat::expect_true(varXz1 > 2)
+testthat::expect_equal(varz1, 1)
+testthat::expect_equal(unname(calcVarParTable("y1", parTable)), 1)
