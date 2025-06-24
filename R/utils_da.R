@@ -441,8 +441,9 @@ getLabelVarXZ <- function(intTerm) {
 }
 
 
-intTermsAffectLV <- function(lV, parTable) {
+intTermsAffectLV <- function(lV, parTable, etas = NULL) {
   if (grepl(":", lV)) return(TRUE)
+  else if (!lV %in% parTable[parTable$op == "~", "lhs"]) return(FALSE)
 
   gamma <- parTable[parTable$lhs == lV & parTable$op == "~", , drop = FALSE]
 

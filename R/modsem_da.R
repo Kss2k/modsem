@@ -388,7 +388,6 @@ modsem_da <- function(model.syntax = NULL,
 
     return(NULL)
   })
-  
 
   class(est) <- c("modsem_da", "modsem")
 

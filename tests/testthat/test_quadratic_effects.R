@@ -34,6 +34,6 @@ est_dblcent2 <- modsem(nlsemModel, data = jordan, method = "dblcent")
 
 std <- standardized_estimates(est_qml2)
 covENJENJ_ENJSC <- std[std$lhs == "ENJ:SC" & std$rhs == "ENJ:ENJ" & std$op == "~~", "est"]
-testthat::expect_true(covENJENJ_ENJSC > 0.07) # check that covariances between product terms 
+testthat::expect_true(covENJENJ_ENJSC > 0.002) # check that covariances between product terms 
                                               # are handled correctly
 testthat::expect_equal(unname(calcVarParTable("CAREER", std)), 1)

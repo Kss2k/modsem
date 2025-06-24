@@ -26,6 +26,7 @@ estQml <- function(model,
   emptyModel <- getEmptyModel(parTable = model$parTable,
                               cov.syntax = model$cov.syntax,
                               parTableCovModel = model$covModel$parTable,
+                              mean.observed = model$info$mean.observed,
                               method = "qml")
   finalModel$matricesNA <- emptyModel$matrices
   finalModel$covModelNA <- emptyModel$covModel
