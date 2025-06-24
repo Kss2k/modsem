@@ -117,16 +117,14 @@ specifyModelDA <- function(syntax = NULL,
 
   # mean etas
   listAlpha <- constructAlpha(etas, parTable = parTable,
-                              auto.constraints = auto.constraints,
-                              mean.observed = mean.observed) # E[mu(eta)] != 0 if 
-  alpha      <- listAlpha$numeric                            # mean.observed is False
+                              mean.observed = mean.observed) 
+  alpha      <- listAlpha$numeric                            
   labelAlpha <- listAlpha$label
 
   # mean xis
   listBeta0 <- constructAlpha(xis, parTable = parTable,
-                              auto.constraints = auto.constraints,
-                              mean.observed = TRUE) # only relevant for etas
-  beta0      <- listBeta0$numeric                   # E[mu(xi)] = 0, regardless
+                              mean.observed = mean.observed)
+  beta0      <- listBeta0$numeric                   
   labelBeta0 <- listBeta0$label
 
   # quadratic terms
@@ -229,21 +227,22 @@ specifyModelDA <- function(syntax = NULL,
 
   model <- list(
     info = list(
-      N            = NROW(data),
-      ncol         = NCOL(data),
-      xis          = xis,
-      etas         = etas,
-      numXis       = numXis,
-      numEtas      = numEtas,
-      indsXis      = indsXis,
-      indsEtas     = indsEtas,
-      allIndsXis   = allIndsXis,
-      allIndsEtas  = allIndsEtas,
-      varsInts     = varsInts,
-      latentEtas   = latentEtas,
-      scalingInds  = scalingInds,
-      kOmegaEta    = getK_NA(omegaEtaXi, labelOmegaEtaXi),
-      nonLinearXis = nonLinearXis,
+      N             = NROW(data),
+      ncol          = NCOL(data),
+      xis           = xis,
+      etas          = etas,
+      numXis        = numXis,
+      numEtas       = numEtas,
+      indsXis       = indsXis,
+      indsEtas      = indsEtas,
+      allIndsXis    = allIndsXis,
+      allIndsEtas   = allIndsEtas,
+      varsInts      = varsInts,
+      latentEtas    = latentEtas,
+      scalingInds   = scalingInds,
+      kOmegaEta     = getK_NA(omegaEtaXi, labelOmegaEtaXi),
+      nonLinearXis  = nonLinearXis,
+      mean.observed = mean.observed,
       lavOptimizerSyntaxAdditions = lavOptimizerSyntaxAdditions
     ),
 

@@ -221,7 +221,7 @@ constructA <- function(xis, method = "lms", cov.syntax = NULL,
 constructAlpha <- function(etas, parTable, auto.constraints = TRUE,
                            mean.observed = TRUE) {
   numEtas <- length(etas)
-  default <- if (auto.constraints && mean.observed) 0 else NA
+  default <- if (mean.observed) 0 else NA
 
   alpha <- matrix(default, nrow = numEtas, ncol = 1,
                   dimnames = list(etas, "1"))
