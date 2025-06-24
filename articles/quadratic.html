@@ -180,9 +180,6 @@ effects.</p>
 <span><span class="co">#&gt;     y1               1.041      0.037   28.055    0.000</span></span>
 <span><span class="co">#&gt;     y2               1.223      0.030   40.696    0.000</span></span>
 <span><span class="co">#&gt;     y3               0.957      0.034   28.474    0.000</span></span>
-<span><span class="co">#&gt;     Y                0.000                             </span></span>
-<span><span class="co">#&gt;     X                0.000                             </span></span>
-<span><span class="co">#&gt;     Z                0.000                             </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
@@ -305,9 +302,6 @@ subset of the PISA 2006 dataset.</p>
 <span><span class="co">#&gt;     career2         -0.005      0.014   -0.324    0.746</span></span>
 <span><span class="co">#&gt;     career3         -0.004      0.014   -0.274    0.784</span></span>
 <span><span class="co">#&gt;     career4         -0.004      0.014   -0.282    0.778</span></span>
-<span><span class="co">#&gt;     CAREER           0.000                             </span></span>
-<span><span class="co">#&gt;     ENJ              0.000                             </span></span>
-<span><span class="co">#&gt;     SC               0.000                             </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
@@ -345,7 +339,9 @@ optimization process, but also dramatically affects the computation time
 of the standard errors. To make the estimation process it is possible to
 reduce the number of quadrature nodes, and calculate standard errors
 using the outer product of the score function, instead of the negative
-of the hessian matrix.</p>
+of the hessian matrix. Additionally, we can also pass
+<code>mean.observed = FALSE</code>, constraining the intercepts of the
+indicators to zero.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">m2</span> <span class="op">&lt;-</span> <span class="st">'</span></span>
 <span><span class="st">ENJ =~ enjoy1 + enjoy2 + enjoy3 + enjoy4 + enjoy5</span></span>
@@ -355,7 +351,8 @@ of the hessian matrix.</p>
 <span><span class="st">'</span></span>
 <span></span>
 <span><span class="va">est2_lms</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m2</span>, data <span class="op">=</span> <span class="va">jordan</span>, method <span class="op">=</span> <span class="st">"lms"</span>, </span>
-<span>                   nodes <span class="op">=</span> <span class="fl">15</span>, OFIM.hessian <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span>                   nodes <span class="op">=</span> <span class="fl">15</span>, OFIM.hessian <span class="op">=</span> <span class="cn">FALSE</span>, </span>
+<span>                   mean.observed <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning: It is recommended that you have at least 16 nodes for interaction</span></span>
 <span><span class="co">#&gt; effects between exogenous variables in the lms approach 'nodes = 15'</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est2_lms</span><span class="op">)</span></span>
@@ -366,10 +363,10 @@ of the hessian matrix.</p>
 <span><span class="co">#&gt;   Estimator                                         LMS</span></span>
 <span><span class="co">#&gt;   Optimization method                        EMA-NLMINB</span></span>
 <span><span class="co">#&gt;   Number of observations                           6038</span></span>
-<span><span class="co">#&gt;   Number of iterations                               46</span></span>
-<span><span class="co">#&gt;   Loglikelihood                              -100031.35</span></span>
-<span><span class="co">#&gt;   Akaike (AIC)                                200164.69</span></span>
-<span><span class="co">#&gt;   Bayesian (BIC)                              200506.69</span></span>
+<span><span class="co">#&gt;   Number of iterations                               51</span></span>
+<span><span class="co">#&gt;   Loglikelihood                              -100036.82</span></span>
+<span><span class="co">#&gt;   Akaike (AIC)                                200147.64</span></span>
+<span><span class="co">#&gt;   Bayesian (BIC)                              200395.75</span></span>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; Numerical Integration:</span></span>
 <span><span class="co">#&gt;   Points of integration (per dim)                    15</span></span>
@@ -378,17 +375,17 @@ of the hessian matrix.</p>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; Fit Measures for Baseline Model (H0):</span></span>
 <span><span class="co">#&gt;   Loglikelihood                                 -110521</span></span>
-<span><span class="co">#&gt;   Akaike (AIC)                                221138.58</span></span>
-<span><span class="co">#&gt;   Bayesian (BIC)                              221460.46</span></span>
+<span><span class="co">#&gt;   Akaike (AIC)                                221108.58</span></span>
+<span><span class="co">#&gt;   Bayesian (BIC)                              221329.87</span></span>
 <span><span class="co">#&gt;   Chi-square                                    1016.34</span></span>
 <span><span class="co">#&gt;   Degrees of Freedom (Chi-square)                    87</span></span>
 <span><span class="co">#&gt;   P-value (Chi-square)                            0.000</span></span>
 <span><span class="co">#&gt;   RMSEA                                           0.042</span></span>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; Comparative Fit to H0 (LRT test):</span></span>
-<span><span class="co">#&gt;   Loglikelihood change                         10489.94</span></span>
-<span><span class="co">#&gt;   Difference test (D)                          20979.89</span></span>
-<span><span class="co">#&gt;   Degrees of freedom (D)                              3</span></span>
+<span><span class="co">#&gt;   Loglikelihood change                         10484.47</span></span>
+<span><span class="co">#&gt;   Difference test (D)                          20968.94</span></span>
+<span><span class="co">#&gt;   Degrees of freedom (D)                              4</span></span>
 <span><span class="co">#&gt;   P-value (D)                                     0.000</span></span>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; R-Squared Interaction Model (H1):</span></span>
@@ -407,78 +404,61 @@ of the hessian matrix.</p>
 <span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   ENJ =~ </span></span>
 <span><span class="co">#&gt;     enjoy1           1.000                             </span></span>
-<span><span class="co">#&gt;     enjoy2           1.002      0.022   45.453    0.000</span></span>
-<span><span class="co">#&gt;     enjoy3           0.895      0.021   41.920    0.000</span></span>
-<span><span class="co">#&gt;     enjoy4           0.997      0.020   48.865    0.000</span></span>
-<span><span class="co">#&gt;     enjoy5           1.047      0.020   51.196    0.000</span></span>
+<span><span class="co">#&gt;     enjoy2           1.002      0.021   47.917    0.000</span></span>
+<span><span class="co">#&gt;     enjoy3           0.895      0.020   45.290    0.000</span></span>
+<span><span class="co">#&gt;     enjoy4           0.997      0.019   52.613    0.000</span></span>
+<span><span class="co">#&gt;     enjoy5           1.047      0.019   55.454    0.000</span></span>
 <span><span class="co">#&gt;   SC =~ </span></span>
 <span><span class="co">#&gt;     academic1        1.000                             </span></span>
-<span><span class="co">#&gt;     academic2        1.105      0.029   37.941    0.000</span></span>
-<span><span class="co">#&gt;     academic3        1.236      0.031   40.421    0.000</span></span>
-<span><span class="co">#&gt;     academic4        1.255      0.030   41.565    0.000</span></span>
-<span><span class="co">#&gt;     academic5        1.115      0.029   38.682    0.000</span></span>
-<span><span class="co">#&gt;     academic6        1.199      0.030   40.657    0.000</span></span>
+<span><span class="co">#&gt;     academic2        1.105      0.028   39.155    0.000</span></span>
+<span><span class="co">#&gt;     academic3        1.236      0.029   43.117    0.000</span></span>
+<span><span class="co">#&gt;     academic4        1.255      0.029   44.024    0.000</span></span>
+<span><span class="co">#&gt;     academic5        1.115      0.027   40.605    0.000</span></span>
+<span><span class="co">#&gt;     academic6        1.199      0.028   42.786    0.000</span></span>
 <span><span class="co">#&gt;   CAREER =~ </span></span>
 <span><span class="co">#&gt;     career1          1.000                             </span></span>
-<span><span class="co">#&gt;     career2          1.040      0.020   51.854    0.000</span></span>
-<span><span class="co">#&gt;     career3          0.952      0.020   47.776    0.000</span></span>
-<span><span class="co">#&gt;     career4          0.818      0.019   42.668    0.000</span></span>
+<span><span class="co">#&gt;     career2          1.040      0.019   54.673    0.000</span></span>
+<span><span class="co">#&gt;     career3          0.952      0.019   49.620    0.000</span></span>
+<span><span class="co">#&gt;     career4          0.818      0.017   47.318    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   CAREER ~ </span></span>
-<span><span class="co">#&gt;     ENJ              0.525      0.021   24.484    0.000</span></span>
-<span><span class="co">#&gt;     SC               0.465      0.024   19.204    0.000</span></span>
-<span><span class="co">#&gt;     ENJ:ENJ          0.026      0.018    1.452    0.147</span></span>
+<span><span class="co">#&gt;     ENJ              0.525      0.021   24.881    0.000</span></span>
+<span><span class="co">#&gt;     SC               0.465      0.024   19.423    0.000</span></span>
+<span><span class="co">#&gt;     ENJ:ENJ          0.025      0.018    1.437    0.151</span></span>
 <span><span class="co">#&gt;     ENJ:SC          -0.050      0.029   -1.715    0.086</span></span>
-<span><span class="co">#&gt;     SC:SC            0.003      0.023    0.120    0.905</span></span>
+<span><span class="co">#&gt;     SC:SC            0.003      0.023    0.113    0.910</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Intercepts:</span></span>
 <span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;     enjoy1          -0.009      0.015   -0.615    0.538</span></span>
-<span><span class="co">#&gt;     enjoy2          -0.009      0.015   -0.605    0.545</span></span>
-<span><span class="co">#&gt;     enjoy3          -0.008      0.015   -0.547    0.584</span></span>
-<span><span class="co">#&gt;     enjoy4          -0.009      0.016   -0.577    0.564</span></span>
-<span><span class="co">#&gt;     enjoy5          -0.009      0.015   -0.607    0.544</span></span>
-<span><span class="co">#&gt;     academic1       -0.004      0.014   -0.306    0.759</span></span>
-<span><span class="co">#&gt;     academic2       -0.005      0.014   -0.339    0.735</span></span>
-<span><span class="co">#&gt;     academic3       -0.006      0.014   -0.393    0.694</span></span>
-<span><span class="co">#&gt;     academic4       -0.005      0.014   -0.385    0.700</span></span>
-<span><span class="co">#&gt;     academic5       -0.005      0.014   -0.364    0.716</span></span>
-<span><span class="co">#&gt;     academic6       -0.004      0.015   -0.296    0.767</span></span>
-<span><span class="co">#&gt;     career1         -0.010      0.017   -0.548    0.584</span></span>
-<span><span class="co">#&gt;     career2         -0.011      0.017   -0.621    0.534</span></span>
-<span><span class="co">#&gt;     career3         -0.009      0.016   -0.574    0.566</span></span>
-<span><span class="co">#&gt;     career4         -0.009      0.017   -0.510    0.610</span></span>
-<span><span class="co">#&gt;     CAREER           0.000                             </span></span>
-<span><span class="co">#&gt;     ENJ              0.000                             </span></span>
-<span><span class="co">#&gt;     SC               0.000                             </span></span>
+<span><span class="co">#&gt;     CAREER          -0.004      0.013   -0.277    0.782</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   ENJ ~~ </span></span>
-<span><span class="co">#&gt;     SC               0.213      0.008   28.118    0.000</span></span>
+<span><span class="co">#&gt;     SC               0.213      0.007   29.509    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                   Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;     enjoy1           0.488      0.009   54.454    0.000</span></span>
-<span><span class="co">#&gt;     enjoy2           0.489      0.009   53.545    0.000</span></span>
-<span><span class="co">#&gt;     enjoy3           0.595      0.012   49.848    0.000</span></span>
-<span><span class="co">#&gt;     enjoy4           0.490      0.009   54.069    0.000</span></span>
-<span><span class="co">#&gt;     enjoy5           0.444      0.009   49.584    0.000</span></span>
-<span><span class="co">#&gt;     academic1        0.645      0.013   51.296    0.000</span></span>
-<span><span class="co">#&gt;     academic2        0.566      0.010   54.180    0.000</span></span>
-<span><span class="co">#&gt;     academic3        0.473      0.009   50.199    0.000</span></span>
-<span><span class="co">#&gt;     academic4        0.455      0.009   48.767    0.000</span></span>
-<span><span class="co">#&gt;     academic5        0.565      0.011   53.733    0.000</span></span>
-<span><span class="co">#&gt;     academic6        0.502      0.010   50.929    0.000</span></span>
-<span><span class="co">#&gt;     career1          0.373      0.008   46.081    0.000</span></span>
-<span><span class="co">#&gt;     career2          0.327      0.007   45.522    0.000</span></span>
-<span><span class="co">#&gt;     career3          0.436      0.010   45.496    0.000</span></span>
-<span><span class="co">#&gt;     career4          0.576      0.011   50.824    0.000</span></span>
-<span><span class="co">#&gt;     ENJ              0.490      0.015   31.732    0.000</span></span>
-<span><span class="co">#&gt;     SC               0.336      0.013   25.198    0.000</span></span>
-<span><span class="co">#&gt;     CAREER           0.301      0.011   28.408    0.000</span></span></code></pre></div>
+<span><span class="co">#&gt;     enjoy1           0.488      0.009   56.029    0.000</span></span>
+<span><span class="co">#&gt;     enjoy2           0.490      0.009   55.913    0.000</span></span>
+<span><span class="co">#&gt;     enjoy3           0.595      0.011   53.584    0.000</span></span>
+<span><span class="co">#&gt;     enjoy4           0.490      0.009   56.846    0.000</span></span>
+<span><span class="co">#&gt;     enjoy5           0.444      0.009   50.759    0.000</span></span>
+<span><span class="co">#&gt;     academic1        0.645      0.012   52.068    0.000</span></span>
+<span><span class="co">#&gt;     academic2        0.566      0.010   55.059    0.000</span></span>
+<span><span class="co">#&gt;     academic3        0.473      0.009   50.901    0.000</span></span>
+<span><span class="co">#&gt;     academic4        0.455      0.009   49.260    0.000</span></span>
+<span><span class="co">#&gt;     academic5        0.565      0.010   55.869    0.000</span></span>
+<span><span class="co">#&gt;     academic6        0.502      0.010   52.330    0.000</span></span>
+<span><span class="co">#&gt;     career1          0.373      0.008   46.727    0.000</span></span>
+<span><span class="co">#&gt;     career2          0.328      0.007   45.884    0.000</span></span>
+<span><span class="co">#&gt;     career3          0.436      0.009   46.215    0.000</span></span>
+<span><span class="co">#&gt;     career4          0.576      0.011   54.848    0.000</span></span>
+<span><span class="co">#&gt;     ENJ              0.490      0.014   34.422    0.000</span></span>
+<span><span class="co">#&gt;     SC               0.336      0.013   26.607    0.000</span></span>
+<span><span class="co">#&gt;     CAREER           0.301      0.010   29.673    0.000</span></span></code></pre></div>
 </div>
   </main>
 </div>
