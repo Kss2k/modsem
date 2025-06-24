@@ -221,9 +221,18 @@ constructA <- function(xis, method = "lms", cov.syntax = NULL,
 constructAlpha <- function(etas, parTable, auto.constraints = TRUE,
                            mean.observed = TRUE) {
   numEtas <- length(etas)
-  if (auto.constraints && mean.observed) default <- 0 else default <- NA
+  default <- if (auto.constraints && mean.observed) 0 else NA
+
   alpha <- matrix(default, nrow = numEtas, ncol = 1,
                   dimnames = list(etas, "1"))
+
+  if (!mean.observed) {
+    for (i in seq_len(numEtas)) {
+      eta <- etas[[i]]
+      fill <- if (intTermsAffectLV(eta, parTable)) NA else 0
+      alpha[eta, 1] <- fill
+    } 
+  }
 
   setMatrixConstraints(X = alpha, parTable = parTable, op = "~1",
                        RHS = "", LHS = etas, type = "lhs",
