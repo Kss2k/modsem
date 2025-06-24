@@ -216,7 +216,7 @@ getLabelIntTerms <- function(varsInInt, eta, intTerms) {
 
 
 getEmptyModel <- function(parTable, cov.syntax, parTableCovModel,
-                          method = "lms") {
+                          mean.observed = TRUE, method = "lms") {
   parTable$mod <- ""
   parTable <- removeConstraintExpressions(parTable)
 
@@ -225,11 +225,15 @@ getEmptyModel <- function(parTable, cov.syntax, parTableCovModel,
     parTableCovModel <- removeConstraintExpressions(parTableCovModel)
   }
 
-  specifyModelDA(parTable = parTable, method = method,
-                 cov.syntax = cov.syntax,
-                 parTableCovModel = parTableCovModel,
-                 auto.constraints = FALSE, createTheta = FALSE,
-                 checkModel = FALSE)
+  specifyModelDA(
+    parTable         = parTable, method = method,
+    cov.syntax       = cov.syntax,
+    parTableCovModel = parTableCovModel,
+    mean.observed    = mean.observed,
+    auto.constraints = FALSE, 
+    createTheta      = FALSE,
+    checkModel       = FALSE
+  )
 }
 
 
@@ -434,4 +438,20 @@ getLabelVarXZ <- function(intTerm) {
 
   labelXZ <- paste0(X, OP_REPLACEMENTS[[":"]], Z)
   paste0(labelXZ, OP_REPLACEMENTS[["~~"]], labelXZ)
+}
+
+
+intTermsAffectLV <- function(lV, parTable) {
+  if (grepl(":", lV)) return(TRUE)
+
+  gamma <- parTable[parTable$lhs == lV & parTable$op == "~", , drop = FALSE]
+
+  if (NROW(gamma) == 0) return(FALSE)
+
+  for (i in seq_len(NROW(gamma))) {
+    rhs <- gamma$rhs[i]
+    if (intTermsAffectLV(rhs, parTable)) return(TRUE)
+  }
+
+  FALSE
 }

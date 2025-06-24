@@ -118,15 +118,15 @@ specifyModelDA <- function(syntax = NULL,
   # mean etas
   listAlpha <- constructAlpha(etas, parTable = parTable,
                               auto.constraints = auto.constraints,
-                              mean.observed = mean.observed)
-  alpha      <- listAlpha$numeric
+                              mean.observed = mean.observed) # E[mu(eta)] != 0 if 
+  alpha      <- listAlpha$numeric                            # mean.observed is False
   labelAlpha <- listAlpha$label
 
   # mean xis
   listBeta0 <- constructAlpha(xis, parTable = parTable,
                               auto.constraints = auto.constraints,
-                              mean.observed = mean.observed)
-  beta0      <- listBeta0$numeric
+                              mean.observed = TRUE) # only relevant for etas
+  beta0      <- listBeta0$numeric                   # E[mu(xi)] = 0, regardless
   labelBeta0 <- listBeta0$label
 
   # quadratic terms
@@ -300,7 +300,7 @@ matrixToParTable <- function(matrixNA, matrixEst, matrixSE, matrixLabel,
 interceptsToParTable <- function(matrixNA, matrixEst, matrixSE, matrixLabel) {
   parTable <- matrixToParTable(matrixNA, matrixEst, matrixSE, matrixLabel,
                                op = "~1", rowsLhs = TRUE)
-  parTable$rhs <- ""
+  if (!is.null(parTable)) parTable$rhs <- ""
   parTable
 }
 

@@ -79,6 +79,8 @@ getMethodSettingsDA <- function(method, args = NULL) {
       !args.out$standardize && args.out$mean.observed
     args.out$OFIM.hessian <-
       args.out$OFIM.hessian && !args.out$robust.se
+    args.out$center.data <- !args.out$standardize.data &&
+      !args.out$mean.observed
 
     args.out$n.threads <- setThreads(args.out$n.threads)
     args.out

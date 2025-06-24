@@ -307,6 +307,7 @@ modsem_da <- function(model.syntax = NULL,
   if (args$center.data) {
     data <- lapplyDf(data, FUN = function(x) x - mean(x, na.rm = TRUE))
   }
+
   if (args$standardize.data) {
     data <- lapplyDf(data, FUN = scaleIfNumeric, scaleFactor = FALSE)
   }
