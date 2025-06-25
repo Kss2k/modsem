@@ -40,7 +40,7 @@ estepLms <- function(model, theta, data, lastQuad = NULL, recalcQuad = FALSE, ..
   
   wMeans <- vector("list", length = length(w))
   wCovs  <- vector("list", length = length(w))
-  tGamma <- vector("list", length = length(w))
+  tGamma <- vector("numeric", length = length(w))
 
   for (i in seq_along(w)) {
     p    <- P[, i]
@@ -123,7 +123,7 @@ gradientAllLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-6,
   if (hasCovModel) gradient <- \(...) complicatedGradientAllLogLikLms(..., FOBJECTIVE = FOBJECTIVE)
   else             gradient <- \(...) simpleGradientAllLogLikLms(..., FGRAD = FGRAD)
 
-  gradient(theta = theta, model = model, P = P, sign = sign, epsilon = epsilon)
+  c(gradient(theta = theta, model = model, P = P, sign = sign, epsilon = epsilon))
 }
 
 
@@ -176,7 +176,13 @@ simpleGradientAllLogLikLms <- function(theta, model, P, data, sign = -1, epsilon
     }
   }
 
-  c(sign * Jacobian %*% grad)
+  sign * Jacobian %*% grad
+}
+
+
+simpleHessianLms <- function(theta, model, P, data, sign = -1, epsilon = 1e-6) {
+  FGRAD <- \(...) hessianObsLogLikLms(..., data = data)
+  simpleGradientAllLogLikLms(theta, model, P, data, sign = -1, epsilon = 1e-6, FGRAD = FGRAD)
 }
 
 

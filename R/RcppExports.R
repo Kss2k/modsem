@@ -13,12 +13,12 @@ sigmaLmsCpp <- function(model, z) {
     .Call(`_modsem_sigmaLmsCpp`, model, z)
 }
 
-completeLogLikLmsCpp <- function(modelR, P, quad) {
-    .Call(`_modsem_completeLogLikLmsCpp`, modelR, P, quad)
-}
-
 gradLogLikLmsCpp <- function(modelR, P, block, row, col, eps = 1e-6) {
     .Call(`_modsem_gradLogLikLmsCpp`, modelR, P, block, row, col, eps)
+}
+
+completeLogLikLmsCpp <- function(modelR, P, quad) {
+    .Call(`_modsem_completeLogLikLmsCpp`, modelR, P, quad)
 }
 
 gradObsLogLikLmsCpp <- function(modelR, data, P, block, row, col, eps = 1e-6, ncores = 1L) {
@@ -27,6 +27,10 @@ gradObsLogLikLmsCpp <- function(modelR, data, P, block, row, col, eps = 1e-6, nc
 
 observedLogLikLmsCpp <- function(modelR, data, P, ncores = 1L) {
     .Call(`_modsem_observedLogLikLmsCpp`, modelR, data, P, ncores)
+}
+
+hessianObsLogLikLms <- function(modelR, data, P, block, row, col, eps = 1e-6, ncores = 1L) {
+    .Call(`_modsem_hessianObsLogLikLms`, modelR, data, P, block, row, col, eps, ncores)
 }
 
 muQmlCpp <- function(m, t) {

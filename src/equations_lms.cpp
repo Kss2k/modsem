@@ -181,55 +181,97 @@ struct LMSModel {
 };
 
 
-// [[Rcpp::export]]
-double completeLogLikLmsCpp(Rcpp::List modelR, Rcpp::List P, Rcpp::List quad) {
-  const LMSModel model = LMSModel(modelR);
-  const arma::mat Z = Rcpp::as<arma::mat>(quad["n"]).t(); // transpose so we can use column order vectors
 
-  Rcpp::List info   = modelR["info"];
-  Rcpp::List TGamma = P["tgamma"];
-  Rcpp::List Means  = P["mean"];
-  Rcpp::List Covs   = P["cov"];
-
-  const int n = Rcpp::as<int>(info["N"]);
-  const int d = Rcpp::as<int>(info["ncol"]);
-
-  double ll = 0;
-  for (std::size_t i = 0; i < Z.n_cols; i++) {
-    const double tgamma = Rcpp::as<double>(TGamma[i]);
-    if (tgamma <= DBL_MIN) continue;
-
-    const arma::vec z = Z.col(i);
-    const arma::vec nu = Rcpp::as<arma::vec>(Means[i]);
-    const arma::mat S = Rcpp::as<arma::mat>(Covs[i]);
-    const arma::mat mu = model.mu(z);
-    const arma::mat Sigma = model.Sigma(z);
-
-    ll += totalDmvnWeightedCpp(mu, Sigma, nu, S, tgamma, n, d);
-  }
-
-  return ll;
+inline std::vector<arma::vec> as_vec_of_vec(const Rcpp::List& L) {
+    const std::size_t J = L.size();
+    std::vector<arma::vec> out;
+    out.reserve(J);
+    for (std::size_t j = 0; j < J; ++j)
+        out.emplace_back( Rcpp::as<arma::vec>(L[j]) );
+    return out;
 }
 
 
-inline double completeLogLikFromModel(const LMSModel&            M,
-                                      const arma::mat&           V,          // nodes × k   (quad$n)
-                                      const Rcpp::List&          Mean,       // P$mean
-                                      const Rcpp::List&          Cov,        // P$cov
-                                      const Rcpp::List&          TGamma,     // P$tgamma
-                                      const int                  n,          // # rows data
-                                      const int                  d) {
+inline std::vector<arma::mat> as_vec_of_mat(const Rcpp::List& L) {
+    const std::size_t J = L.size();
+    std::vector<arma::mat> out;
+    out.reserve(J);
+    for (std::size_t j = 0; j < J; ++j)
+        out.emplace_back( Rcpp::as<arma::mat>(L[j]) );
+    return out;
+}
+
+
+inline double& lms_param(LMSModel& M, std::size_t blk,
+          std::size_t r, std::size_t c) {
+  switch (blk) {
+    case 0 : return  M.lX   (r,c);
+    case 1 : return  M.lY   (r,c);
+    case 2 : return  M.tX   (r,c);
+    case 3 : return  M.tY   (r,c);
+    case 4 : return  M.d    (r,c);
+    case 5 : return  M.e    (r,c);
+    case 6 : return  M.A    (r,c);
+    case 7 : return  M.Psi  (r,c);
+    case 8 : return  M.a    (r,c);
+    case 9 : return  M.beta0(r,c);
+    case 10: return  M.Gx   (r,c);
+    case 11: return  M.Ge   (r,c);
+    case 12: return  M.Oxx  (r,c);
+    case 13: return  M.Oex  (r,c);
+    default: Rcpp::stop("unknown block id");
+  }
+}
+
+
+template< class F >
+arma::vec gradientFD(LMSModel&         M,       
+                     F&&               logLik,  
+                     const arma::uvec& block,
+                     const arma::uvec& row,
+                     const arma::uvec& col,
+                     const double      eps = 1e-6) {
+  const std::size_t p = block.n_elem;
+  arma::vec grad(p);
+
+  const double f0 = logLik(M);
+
+  for (std::size_t k = 0; k < p; ++k) {
+
+    double& ti   = lms_param(M, block[k], row[k], col[k]);
+    const double old = ti;
+
+    ti += eps;                  
+    const double f1 = logLik(M);
+
+    grad[k] = (f1 - f0) / eps;
+
+    ti = old;
+  }
+
+  return grad;
+}
+
+
+inline double
+completeLogLikFromModel(const LMSModel&                 M,
+                        const arma::mat&                V,          // J × k
+                        const arma::vec&                TGamma,     // length J
+                        const std::vector<arma::vec>&   Mean,       // length J
+                        const std::vector<arma::mat>&   Cov,        // length J
+                        const int                       n,
+                        const int                       d) {
     const std::size_t J = V.n_rows;
     double ll = 0.0;
 
     for (std::size_t j = 0; j < J; ++j) {
 
-        const double tg = Rcpp::as<double>(TGamma[j]);
+        const double tg = TGamma[j];
         if (tg <= DBL_MIN) continue;
 
-        const arma::vec z   = V.row(j).t();
-        const arma::vec nu  = Rcpp::as<arma::vec>(Mean[j]);
-        const arma::mat S   = Rcpp::as<arma::mat>(Cov [j]);
+        const arma::vec& z  = V.row(j).t();   // view – no copy
+        const arma::vec& nu = Mean[j];
+        const arma::mat& S  = Cov [j];
 
         const arma::vec mu  = M.mu   (z);
         const arma::mat Sig = M.Sigma(z);
@@ -241,70 +283,51 @@ inline double completeLogLikFromModel(const LMSModel&            M,
 
 
 // [[Rcpp::export]]
-arma::vec gradLogLikLmsCpp(const Rcpp::List& modelR,      // *filled* model
-                           const Rcpp::List& P,           // E-step cache
-                           const arma::uvec& block,       // free-param blocks
+arma::vec gradLogLikLmsCpp(const Rcpp::List& modelR,
+                           const Rcpp::List& P,
+                           const arma::uvec& block,
                            const arma::uvec& row,
                            const arma::uvec& col,
-                           double            eps = 1e-6) { 
-  const LMSModel Mbase(modelR);           // build C++ struct once
+                           double            eps = 1e-6) {
+    LMSModel M(modelR);
 
-  const arma::mat V       = Rcpp::as<arma::mat>(P["V"]);
-  const Rcpp::List Mean   = P["mean"];
-  const Rcpp::List Cov    = P["cov"];
-  const Rcpp::List TGamma = P["tgamma"];
+    const arma::mat  V       = Rcpp::as<arma::mat>(P["V"]);
+    const arma::vec  tgamma  = Rcpp::as<arma::vec>(P["tgamma"]);
+    const auto       Mean    = as_vec_of_vec(P["mean"]);
+    const auto       Cov     = as_vec_of_mat(P["cov"]);
+
+    const Rcpp::List info   = modelR["info"];
+    const int n             = Rcpp::as<int>(info["N"]);
+    const int d             = Rcpp::as<int>(info["ncol"]);
+
+    auto comp_ll = [&](LMSModel& mod) -> double {
+        return completeLogLikFromModel(mod, V, tgamma, Mean, Cov, n, d);
+    };
+
+    return gradientFD(M, comp_ll, block, row, col, eps);
+}
+
+
+// [[Rcpp::export]]
+double completeLogLikLmsCpp(Rcpp::List modelR, Rcpp::List P, Rcpp::List quad) {
+  const LMSModel model = LMSModel(modelR);
+  const arma::mat Z = Rcpp::as<arma::mat>(quad["n"]).t(); // transpose so we can use column order vectors
+
+  const arma::mat  V       = Rcpp::as<arma::mat>(P["V"]);
+  const arma::vec  tgamma  = Rcpp::as<arma::vec>(P["tgamma"]);
+  const auto       Mean    = as_vec_of_vec(P["mean"]);
+  const auto       Cov     = as_vec_of_mat(P["cov"]);
 
   const Rcpp::List info   = modelR["info"];
   const int n             = Rcpp::as<int>(info["N"]);
   const int d             = Rcpp::as<int>(info["ncol"]);
 
-  // base likelihood
-  double f0 = completeLogLikFromModel(Mbase, V, Mean, Cov, TGamma, n, d);
-
-  // will mutate *one* entry of these matrices in place
-  LMSModel M = Mbase;                     // lightweight copy (pointers)
-
-  const std::size_t nPar = block.n_elem;
-  arma::vec grad(nPar);
-
-  for (std::size_t k = 0; k < nPar; ++k) {
-
-    double* target = nullptr;
-
-    switch (block[k]) {
-      case 0:  target = &M.lX   (row[k], col[k]); break;
-      case 1:  target = &M.lY   (row[k], col[k]); break;
-      case 2:  target = &M.tX   (row[k], col[k]); break;
-      case 3:  target = &M.tY   (row[k], col[k]); break;
-      case 4:  target = &M.d    (row[k], col[k]); break;
-      case 5:  target = &M.e    (row[k], col[k]); break;
-      case 6:  target = &M.A    (row[k], col[k]); break;
-      case 7:  target = &M.Psi  (row[k], col[k]); break;
-      case 8:  target = &M.a    (row[k], col[k]); break;
-      case 9:  target = &M.beta0(row[k], col[k]); break;
-      case 10: target = &M.Gx   (row[k], col[k]); break;
-      case 11: target = &M.Ge   (row[k], col[k]); break;
-      case 12: target = &M.Oxx  (row[k], col[k]); break;
-      case 13: target = &M.Oex  (row[k], col[k]); break;
-      default: Rcpp::stop("unknown block");
-    }
-
-    const double old = *target;
-    *target += eps;
-
-    const double f1 = completeLogLikFromModel(M, V, Mean, Cov, TGamma, n, d);
-
-    grad[k] = (f1 - f0) / eps;
-
-    *target = old;                         // restore for next param
-  }
-
-  return grad;
+  return completeLogLikFromModel(model, V, tgamma, Mean, Cov, n, d);
 }
 
 
 inline double observedLogLikFromModel(const LMSModel&            M,
-                                      const arma::mat&           V,          // nodes × k   (quad$n)
+                                      const arma::mat&           V,
                                       const arma::vec&           w, 
                                       const arma::mat&        data,
                                       const int ncores = 1) {
@@ -326,61 +349,24 @@ inline double observedLogLikFromModel(const LMSModel&            M,
 
 
 // [[Rcpp::export]]
-arma::vec gradObsLogLikLmsCpp(const Rcpp::List& modelR,      // *filled* model
-                              const arma::mat&  data,      // observed data
-                              const Rcpp::List& P,           // E-step cache
-                              const arma::uvec& block,       // free-param blocks
+arma::vec gradObsLogLikLmsCpp(const Rcpp::List& modelR,
+                              const arma::mat&  data,
+                              const Rcpp::List& P,
+                              const arma::uvec& block,
                               const arma::uvec& row,
                               const arma::uvec& col,
-                              const double eps = 1e-6, 
-                              const int ncores = 1) { 
-  const LMSModel Mbase(modelR);           // build C++ struct once
+                              double            eps   = 1e-6,
+                              int               ncores= 1) {
+  LMSModel M(modelR);
 
-  const arma::mat V       = Rcpp::as<arma::mat>(P["V"]);
-  const arma::vec w       = Rcpp::as<arma::vec>(P["w"]);
+  const arma::mat V = Rcpp::as<arma::mat>(P["V"]);
+  const arma::vec w = Rcpp::as<arma::vec>(P["w"]);
 
-  // base likelihood
-  double f0 = observedLogLikFromModel(Mbase, V, w, data, ncores);
+  auto obs_ll = [&](LMSModel& mod) -> double {
+    return observedLogLikFromModel(mod, V, w, data, ncores);
+  };
 
-  // will mutate *one* entry of these matrices in place
-  LMSModel M = Mbase;                     // lightweight copy (pointers)
-
-  const std::size_t nPar = block.n_elem;
-  arma::vec grad(nPar);
-
-  for (std::size_t k = 0; k < nPar; ++k) {
-
-    double* target = nullptr;
-
-    switch (block[k]) {
-      case 0:  target = &M.lX   (row[k], col[k]); break;
-      case 1:  target = &M.lY   (row[k], col[k]); break;
-      case 2:  target = &M.tX   (row[k], col[k]); break;
-      case 3:  target = &M.tY   (row[k], col[k]); break;
-      case 4:  target = &M.d    (row[k], col[k]); break;
-      case 5:  target = &M.e    (row[k], col[k]); break;
-      case 6:  target = &M.A    (row[k], col[k]); break;
-      case 7:  target = &M.Psi  (row[k], col[k]); break;
-      case 8:  target = &M.a    (row[k], col[k]); break;
-      case 9:  target = &M.beta0(row[k], col[k]); break;
-      case 10: target = &M.Gx   (row[k], col[k]); break;
-      case 11: target = &M.Ge   (row[k], col[k]); break;
-      case 12: target = &M.Oxx  (row[k], col[k]); break;
-      case 13: target = &M.Oex  (row[k], col[k]); break;
-      default: Rcpp::stop("unknown block");
-    }
-
-    const double old = *target;
-    *target += eps;
-
-    const double f1 = observedLogLikFromModel(M, V, w, data, ncores);
-
-    grad[k] = (f1 - f0) / eps;
-
-    *target = old;                         // restore for next param
-  }
-
-  return grad;
+  return gradientFD(M, obs_ll, block, row, col, eps);
 }
 
 
@@ -392,4 +378,76 @@ double observedLogLikLmsCpp(Rcpp::List modelR, arma::mat data, Rcpp::List P, con
   const arma::vec w       = Rcpp::as<arma::vec>(P["w"]);
 
   return observedLogLikFromModel(M, V, w, data, ncores);
+}
+
+
+template< class F >
+arma::mat hessianFD(LMSModel&               M,      // single object
+                    F&&                      logLik, // LMSModel& → double
+                    const arma::uvec&        block,
+                    const arma::uvec&        row,
+                    const arma::uvec&        col,
+                    const double             eps = 1e-6) {
+    const std::size_t p = block.n_elem;
+    arma::mat H(p, p, arma::fill::zeros);
+
+    const double f0 = logLik(M);               // baseline once
+
+    arma::vec f1(p, arma::fill::none);
+
+    for (std::size_t i = 0; i < p; ++i) {
+        double& ti = lms_param(M, block[i], row[i], col[i]);
+        ti += eps;
+        f1[i] = logLik(M);
+        ti -= eps;                             // restore
+    }
+
+    const double eps2 = eps * eps;
+
+    for (std::size_t i = 0; i < p; ++i) {
+        double& ti = lms_param(M, block[i], row[i], col[i]);
+        ti += 2 * eps;
+        const double f2i = logLik(M);
+        ti -= 2 * eps;                         // restore
+        H(i,i) = (f2i - 2.0 * f1[i] + f0) / eps2;
+    }
+
+    for (std::size_t i = 0; i < p; ++i) {
+        double& ti = lms_param(M, block[i], row[i], col[i]);
+        ti += eps;                             // keep i bumped once
+
+        for (std::size_t j = i + 1; j < p; ++j) {
+            double& tj = lms_param(M, block[j], row[j], col[j]);
+            tj += eps;
+            const double fij = logLik(M);
+            tj -= eps;
+
+            const double hij = (fij - f1[i] - f1[j] + f0) / eps2;
+            H(i,j) = H(j,i) = hij;
+        }
+        ti -= eps;                             // restore i
+    }
+    return H;
+}
+
+
+// [[Rcpp::export]]
+arma::mat hessianObsLogLikLms(const Rcpp::List& modelR,
+                              const arma::mat&  data,
+                              const Rcpp::List& P,
+                              const arma::uvec& block,
+                              const arma::uvec& row,
+                              const arma::uvec& col,
+                              double            eps    = 1e-6,
+                              int               ncores = 1) {
+    LMSModel M(modelR);
+
+    const arma::mat V = Rcpp::as<arma::mat>(P["V"]);
+    const arma::vec w = Rcpp::as<arma::vec>(P["w"]);
+
+    auto obs_ll = [&](LMSModel& mod) -> double {
+        return observedLogLikFromModel(mod, V, w, data, ncores);
+    };
+
+    return hessianFD(M, obs_ll, block, row, col, eps);
 }

@@ -47,19 +47,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// completeLogLikLmsCpp
-double completeLogLikLmsCpp(Rcpp::List modelR, Rcpp::List P, Rcpp::List quad);
-RcppExport SEXP _modsem_completeLogLikLmsCpp(SEXP modelRSEXP, SEXP PSEXP, SEXP quadSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::List >::type modelR(modelRSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type P(PSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type quad(quadSEXP);
-    rcpp_result_gen = Rcpp::wrap(completeLogLikLmsCpp(modelR, P, quad));
-    return rcpp_result_gen;
-END_RCPP
-}
 // gradLogLikLmsCpp
 arma::vec gradLogLikLmsCpp(const Rcpp::List& modelR, const Rcpp::List& P, const arma::uvec& block, const arma::uvec& row, const arma::uvec& col, double eps);
 RcppExport SEXP _modsem_gradLogLikLmsCpp(SEXP modelRSEXP, SEXP PSEXP, SEXP blockSEXP, SEXP rowSEXP, SEXP colSEXP, SEXP epsSEXP) {
@@ -76,8 +63,21 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// completeLogLikLmsCpp
+double completeLogLikLmsCpp(Rcpp::List modelR, Rcpp::List P, Rcpp::List quad);
+RcppExport SEXP _modsem_completeLogLikLmsCpp(SEXP modelRSEXP, SEXP PSEXP, SEXP quadSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::List >::type modelR(modelRSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type P(PSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type quad(quadSEXP);
+    rcpp_result_gen = Rcpp::wrap(completeLogLikLmsCpp(modelR, P, quad));
+    return rcpp_result_gen;
+END_RCPP
+}
 // gradObsLogLikLmsCpp
-arma::vec gradObsLogLikLmsCpp(const Rcpp::List& modelR, const arma::mat& data, const Rcpp::List& P, const arma::uvec& block, const arma::uvec& row, const arma::uvec& col, const double eps, const int ncores);
+arma::vec gradObsLogLikLmsCpp(const Rcpp::List& modelR, const arma::mat& data, const Rcpp::List& P, const arma::uvec& block, const arma::uvec& row, const arma::uvec& col, double eps, int ncores);
 RcppExport SEXP _modsem_gradObsLogLikLmsCpp(SEXP modelRSEXP, SEXP dataSEXP, SEXP PSEXP, SEXP blockSEXP, SEXP rowSEXP, SEXP colSEXP, SEXP epsSEXP, SEXP ncoresSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -88,8 +88,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const arma::uvec& >::type block(blockSEXP);
     Rcpp::traits::input_parameter< const arma::uvec& >::type row(rowSEXP);
     Rcpp::traits::input_parameter< const arma::uvec& >::type col(colSEXP);
-    Rcpp::traits::input_parameter< const double >::type eps(epsSEXP);
-    Rcpp::traits::input_parameter< const int >::type ncores(ncoresSEXP);
+    Rcpp::traits::input_parameter< double >::type eps(epsSEXP);
+    Rcpp::traits::input_parameter< int >::type ncores(ncoresSEXP);
     rcpp_result_gen = Rcpp::wrap(gradObsLogLikLmsCpp(modelR, data, P, block, row, col, eps, ncores));
     return rcpp_result_gen;
 END_RCPP
@@ -105,6 +105,24 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< Rcpp::List >::type P(PSEXP);
     Rcpp::traits::input_parameter< const int >::type ncores(ncoresSEXP);
     rcpp_result_gen = Rcpp::wrap(observedLogLikLmsCpp(modelR, data, P, ncores));
+    return rcpp_result_gen;
+END_RCPP
+}
+// hessianObsLogLikLms
+arma::mat hessianObsLogLikLms(const Rcpp::List& modelR, const arma::mat& data, const Rcpp::List& P, const arma::uvec& block, const arma::uvec& row, const arma::uvec& col, double eps, int ncores);
+RcppExport SEXP _modsem_hessianObsLogLikLms(SEXP modelRSEXP, SEXP dataSEXP, SEXP PSEXP, SEXP blockSEXP, SEXP rowSEXP, SEXP colSEXP, SEXP epsSEXP, SEXP ncoresSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type modelR(modelRSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type data(dataSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type P(PSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type block(blockSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type row(rowSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type col(colSEXP);
+    Rcpp::traits::input_parameter< double >::type eps(epsSEXP);
+    Rcpp::traits::input_parameter< int >::type ncores(ncoresSEXP);
+    rcpp_result_gen = Rcpp::wrap(hessianObsLogLikLms(modelR, data, P, block, row, col, eps, ncores));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -288,10 +306,11 @@ static const R_CallMethodDef CallEntries[] = {
     {"_modsem_calcSESimpleSlopes", (DL_FUNC) &_modsem_calcSESimpleSlopes, 2},
     {"_modsem_muLmsCpp", (DL_FUNC) &_modsem_muLmsCpp, 2},
     {"_modsem_sigmaLmsCpp", (DL_FUNC) &_modsem_sigmaLmsCpp, 2},
-    {"_modsem_completeLogLikLmsCpp", (DL_FUNC) &_modsem_completeLogLikLmsCpp, 3},
     {"_modsem_gradLogLikLmsCpp", (DL_FUNC) &_modsem_gradLogLikLmsCpp, 6},
+    {"_modsem_completeLogLikLmsCpp", (DL_FUNC) &_modsem_completeLogLikLmsCpp, 3},
     {"_modsem_gradObsLogLikLmsCpp", (DL_FUNC) &_modsem_gradObsLogLikLmsCpp, 8},
     {"_modsem_observedLogLikLmsCpp", (DL_FUNC) &_modsem_observedLogLikLmsCpp, 4},
+    {"_modsem_hessianObsLogLikLms", (DL_FUNC) &_modsem_hessianObsLogLikLms, 8},
     {"_modsem_muQmlCpp", (DL_FUNC) &_modsem_muQmlCpp, 2},
     {"_modsem_sigmaQmlCpp", (DL_FUNC) &_modsem_sigmaQmlCpp, 2},
     {"_modsem_calcKronXi", (DL_FUNC) &_modsem_calcKronXi, 2},
