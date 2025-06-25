@@ -238,6 +238,22 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// dmvnfast
+arma::vec dmvnfast(arma::mat X, arma::vec mu, arma::mat sigma, const bool log, const int ncores, const bool isChol);
+RcppExport SEXP _modsem_dmvnfast(SEXP XSEXP, SEXP muSEXP, SEXP sigmaSEXP, SEXP logSEXP, SEXP ncoresSEXP, SEXP isCholSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type mu(muSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type sigma(sigmaSEXP);
+    Rcpp::traits::input_parameter< const bool >::type log(logSEXP);
+    Rcpp::traits::input_parameter< const int >::type ncores(ncoresSEXP);
+    Rcpp::traits::input_parameter< const bool >::type isChol(isCholSEXP);
+    rcpp_result_gen = Rcpp::wrap(dmvnfast(X, mu, sigma, log, ncores, isChol));
+    return rcpp_result_gen;
+END_RCPP
+}
 // tracePathsNumericCpp
 Rcpp::NumericVector tracePathsNumericCpp(Rcpp::CharacterVector x, Rcpp::CharacterVector y, Rcpp::DataFrame parTable, int maxlen);
 RcppExport SEXP _modsem_tracePathsNumericCpp(SEXP xSEXP, SEXP ySEXP, SEXP parTableSEXP, SEXP maxlenSEXP) {
@@ -286,6 +302,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_modsem_rep_dmvnorm", (DL_FUNC) &_modsem_rep_dmvnorm, 4},
     {"_modsem_dmvnrm_arma_mc", (DL_FUNC) &_modsem_dmvnrm_arma_mc, 4},
     {"_modsem_totalDmvnWeightedCpp", (DL_FUNC) &_modsem_totalDmvnWeightedCpp, 7},
+    {"_modsem_dmvnfast", (DL_FUNC) &_modsem_dmvnfast, 6},
     {"_modsem_tracePathsNumericCpp", (DL_FUNC) &_modsem_tracePathsNumericCpp, 4},
     {"_modsem_tracePathsCharacterCpp", (DL_FUNC) &_modsem_tracePathsCharacterCpp, 5},
     {NULL, NULL, 0}

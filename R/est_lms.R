@@ -118,11 +118,22 @@ emLms <- function(model,
     P <- estepLms(model = model, theta = thetaOld, data = data, 
                   lastQuad = lastQuad, recalcQuad = recalcQuad, ...)
 
-    # browser()
-    # bench <- rbenchmark::benchmark(
-    #   gradientObsLogLikLms(thetaNew, model, data, P),
-    #   colSums(gradientObsLogLikLms_i(thetaNew, model, data, P))
-    # )
+    Sigma <- cov(data)
+    mu <- apply(data, 2, mean)
+    browser()
+    bench.m <- rbenchmark::benchmark(
+      dmvnfast(X = data, mu = mu, sigma = Sigma, log = FALSE, ncores = ThreadEnv$n.threads, isChol = FALSE),
+      dmvn(data, mu, Sigma, log = FALSE)
+    )
+    browser()
+    bench.o <- rbenchmark::benchmark(
+      obsLogLikLms(thetaNew, model, data, P),
+      sum(obsLogLikLms_i(thetaNew, model, data, P))
+    )
+    bench.g <- rbenchmark::benchmark(
+      gradientObsLogLikLms(thetaNew, model, data, P),
+      colSums(gradientObsLogLikLms_i(thetaNew, model, data, P))
+    )
     # Update Quadrature Info
     lastQuad <- P$quad
 

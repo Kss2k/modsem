@@ -101,8 +101,9 @@ double totalDmvnWeightedCpp(const arma::vec& mu,
 }
 
 
+// [[Rcpp::export]]
 arma::vec dmvnfast(arma::mat X,  
-                   arma::mat mu,  
+                   arma::vec mu,  
                    arma::mat sigma, 
                    const bool log,
                    const int ncores,
@@ -113,8 +114,6 @@ arma::vec dmvnfast(arma::mat X,
   // Copyright (C) 2014 Matteo Fasiolo  matteo.fasiolo@gmail.com
   
   try{
-    double df = -1.0;
-    
     if(ncores == 0) stop("ncores has to be positive.");
     if (X.n_cols != mu.n_elem) Rcpp::stop("X.n_cols != mu.n_elem"); 
     if (X.n_cols != sigma.n_cols) Rcpp::stop("X.n_cols != sigma.n_cols"); 
@@ -138,7 +137,7 @@ arma::vec dmvnfast(arma::mat X,
     else cholDec = sigma;
     
     // Dropping the dimensionality of the output vector
-    const arma::vec out = dmvtInt( X, mu, cholDec, log, df, ncores);
+    const arma::vec out = dmvnInt( X, mu, cholDec, log, ncores);
     
     #ifdef _OPENMP
     omp_set_num_threads(ncores_0);
@@ -157,51 +156,21 @@ arma::vec dmvnfast(arma::mat X,
 }
 
 
-arma::vec dmvtInt( arma::mat X, arma::vec mu, arma::mat cholDec, bool log, double df, unsigned int ncores) {
+arma::vec dmvnInt( arma::mat X, arma::vec mu, arma::mat cholDec, bool log, unsigned int ncores) {
   using namespace arma;
   
   unsigned int d = X.n_cols;
   
   vec out = mahaInt(X, mu, cholDec, ncores, true);
   
-  if( df <= 0.0 ){ // Multivariate normal density OR ...
-    
-    out = - 0.5 * out - ( (d / 2.0) * std::log(2.0 * M_PI) + sum(arma::log(cholDec.diag())) );
-    
-  } else { // ... multivariate Student-t density
-    
-  #ifdef _OPENMP
-  #pragma omp parallel num_threads(ncores) if(ncores > 1)
-  {
-  #endif
+  out = - 0.5 * out - ( (d / 2.0) * std::log(2.0 * M_PI) + sum(arma::log(cholDec.diag())) );
   
-  uint32_t ii;  
-  uint32_t n = X.n_rows;  
-  double logDet = sum(arma::log(cholDec.diag())); 
-  double c = lgamma((d + df)/2.0) - (lgamma(df/2.0) + logDet + d/2.0 * std::log(M_PI * df));
-
-  #ifdef _OPENMP
-  #pragma omp for schedule(static)
-  #endif
-  for(ii = 0; ii < n; ii++) {
-     out.at(ii) = c - 0.5 * (df + d) * log1p(out.at(ii)/df);
-  }
-    
-  #ifdef _OPENMP
-  }
-  #endif
-    
-  }
+  if (!log) out = exp(out);
   
-  if (log == false) out = exp(out);
-  
-  return( out );
+  return out;
 }
 
 
-/* 
- *  Internal C++ function for Mahalanobis distance
-*/
 arma::vec mahaInt(arma::mat & X,  
                   arma::vec & mu,  
                   arma::mat & sigma,

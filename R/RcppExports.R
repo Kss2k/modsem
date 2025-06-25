@@ -73,6 +73,10 @@ totalDmvnWeightedCpp <- function(mu, sigma, nu, S, tgamma, n, d) {
     .Call(`_modsem_totalDmvnWeightedCpp`, mu, sigma, nu, S, tgamma, n, d)
 }
 
+dmvnfast <- function(X, mu, sigma, log, ncores, isChol) {
+    .Call(`_modsem_dmvnfast`, X, mu, sigma, log, ncores, isChol)
+}
+
 tracePathsNumericCpp <- function(x, y, parTable, maxlen = 100L) {
     .Call(`_modsem_tracePathsNumericCpp`, x, y, parTable, maxlen)
 }
