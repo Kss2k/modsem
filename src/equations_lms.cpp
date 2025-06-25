@@ -211,15 +211,14 @@ double completeLogLikLmsCpp(Rcpp::List modelR, Rcpp::List P, Rcpp::List quad) {
   return ll;
 }
 
-inline double
-logLikFromModel(const LMSModel&            M,
-                const arma::mat&           V,          // nodes × k   (quad$n)
-                const Rcpp::List&          Mean,       // P$mean
-                const Rcpp::List&          Cov,        // P$cov
-                const Rcpp::List&          TGamma,     // P$tgamma
-                const int                  n,          // # rows data
-                const int                  d)          // # manifests
-{
+
+inline double completeLogLikFromModel(const LMSModel&            M,
+                                      const arma::mat&           V,          // nodes × k   (quad$n)
+                                      const Rcpp::List&          Mean,       // P$mean
+                                      const Rcpp::List&          Cov,        // P$cov
+                                      const Rcpp::List&          TGamma,     // P$tgamma
+                                      const int                  n,          // # rows data
+                                      const int                  d) {
     const std::size_t J = V.n_rows;
     double ll = 0.0;
 
@@ -260,7 +259,7 @@ arma::vec gradLogLikLmsCpp(const Rcpp::List& modelR,      // *filled* model
   const int d             = Rcpp::as<int>(info["ncol"]);
 
   // base likelihood
-  double f0 = logLikFromModel(Mbase, V, Mean, Cov, TGamma, n, d);
+  double f0 = completeLogLikFromModel(Mbase, V, Mean, Cov, TGamma, n, d);
 
   // will mutate *one* entry of these matrices in place
   LMSModel M = Mbase;                     // lightweight copy (pointers)
@@ -293,7 +292,90 @@ arma::vec gradLogLikLmsCpp(const Rcpp::List& modelR,      // *filled* model
     const double old = *target;
     *target += eps;
 
-    const double f1 = logLikFromModel(M, V, Mean, Cov, TGamma, n, d);
+    const double f1 = completeLogLikFromModel(M, V, Mean, Cov, TGamma, n, d);
+
+    grad[k] = (f1 - f0) / eps;
+
+    *target = old;                         // restore for next param
+  }
+
+  return grad;
+}
+
+
+inline double observedLogLikFromModel(const LMSModel&            M,
+                                      const arma::mat&           V,          // nodes × k   (quad$n)
+                                      const arma::vec&           w, 
+                                      const arma::mat&        data,
+                                      const int ncores = 1) {
+    const std::size_t n = V.n_rows;
+    double ll = 0.0;
+
+    arma::vec w_log = arma::log(w);
+    for (std::size_t i = 0; i < n; ++i) {
+        if (w[i] <= DBL_MIN) continue;
+
+        const arma::vec z   = V.row(i).t();
+        const arma::vec mu  = M.mu   (z);
+        const arma::mat Sig = M.Sigma(z);
+
+        ll += arma::accu(dmvnfast(data, mu, Sig, true, ncores, false) + w_log[i]);
+    }
+
+    return ll;
+}
+
+
+// [[Rcpp::export]]
+arma::vec gradObsLogLikLmsCpp(const Rcpp::List& modelR,      // *filled* model
+                              const arma::mat&  data,      // observed data
+                              const Rcpp::List& P,           // E-step cache
+                              const arma::uvec& block,       // free-param blocks
+                              const arma::uvec& row,
+                              const arma::uvec& col,
+                              double            eps = 1e-6) { 
+  const LMSModel Mbase(modelR);           // build C++ struct once
+
+  const arma::mat V       = Rcpp::as<arma::mat>(P["V"]);
+  const arma::vec w       = Rcpp::as<arma::vec>(P["w"]);
+
+  const Rcpp::List info   = modelR["info"];
+
+  // base likelihood
+  double f0 = observedLogLikFromModel(Mbase, V, w, data);
+
+  // will mutate *one* entry of these matrices in place
+  LMSModel M = Mbase;                     // lightweight copy (pointers)
+
+  const std::size_t nPar = block.n_elem;
+  arma::vec grad(nPar);
+
+  for (std::size_t k = 0; k < nPar; ++k) {
+
+    double* target = nullptr;
+
+    switch (block[k]) {
+      case 0:  target = &M.lX   (row[k], col[k]); break;
+      case 1:  target = &M.lY   (row[k], col[k]); break;
+      case 2:  target = &M.tX   (row[k], col[k]); break;
+      case 3:  target = &M.tY   (row[k], col[k]); break;
+      case 4:  target = &M.d    (row[k], col[k]); break;
+      case 5:  target = &M.e    (row[k], col[k]); break;
+      case 6:  target = &M.A    (row[k], col[k]); break;
+      case 7:  target = &M.Psi  (row[k], col[k]); break;
+      case 8:  target = &M.a    (row[k], col[k]); break;
+      case 9:  target = &M.beta0(row[k], col[k]); break;
+      case 10: target = &M.Gx   (row[k], col[k]); break;
+      case 11: target = &M.Ge   (row[k], col[k]); break;
+      case 12: target = &M.Oxx  (row[k], col[k]); break;
+      case 13: target = &M.Oex  (row[k], col[k]); break;
+      default: Rcpp::stop("unknown block");
+    }
+
+    const double old = *target;
+    *target += eps;
+
+    const double f1 = observedLogLikFromModel(M, V, w, data);
 
     grad[k] = (f1 - f0) / eps;
 

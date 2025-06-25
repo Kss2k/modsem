@@ -21,6 +21,10 @@ gradLogLikLmsCpp <- function(modelR, P, block, row, col, eps = 1e-6) {
     .Call(`_modsem_gradLogLikLmsCpp`, modelR, P, block, row, col, eps)
 }
 
+gradObsLogLikLmsCpp <- function(modelR, data, P, block, row, col, eps = 1e-6) {
+    .Call(`_modsem_gradObsLogLikLmsCpp`, modelR, data, P, block, row, col, eps)
+}
+
 muQmlCpp <- function(m, t) {
     .Call(`_modsem_muQmlCpp`, m, t)
 }

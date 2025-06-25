@@ -76,6 +76,23 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// gradObsLogLikLmsCpp
+arma::vec gradObsLogLikLmsCpp(const Rcpp::List& modelR, const arma::mat& data, const Rcpp::List& P, const arma::uvec& block, const arma::uvec& row, const arma::uvec& col, double eps);
+RcppExport SEXP _modsem_gradObsLogLikLmsCpp(SEXP modelRSEXP, SEXP dataSEXP, SEXP PSEXP, SEXP blockSEXP, SEXP rowSEXP, SEXP colSEXP, SEXP epsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type modelR(modelRSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type data(dataSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type P(PSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type block(blockSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type row(rowSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type col(colSEXP);
+    Rcpp::traits::input_parameter< double >::type eps(epsSEXP);
+    rcpp_result_gen = Rcpp::wrap(gradObsLogLikLmsCpp(modelR, data, P, block, row, col, eps));
+    return rcpp_result_gen;
+END_RCPP
+}
 // muQmlCpp
 arma::mat muQmlCpp(Rcpp::List m, int t);
 RcppExport SEXP _modsem_muQmlCpp(SEXP mSEXP, SEXP tSEXP) {
@@ -242,6 +259,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_modsem_sigmaLmsCpp", (DL_FUNC) &_modsem_sigmaLmsCpp, 2},
     {"_modsem_completeLogLikLmsCpp", (DL_FUNC) &_modsem_completeLogLikLmsCpp, 3},
     {"_modsem_gradLogLikLmsCpp", (DL_FUNC) &_modsem_gradLogLikLmsCpp, 6},
+    {"_modsem_gradObsLogLikLmsCpp", (DL_FUNC) &_modsem_gradObsLogLikLmsCpp, 7},
     {"_modsem_muQmlCpp", (DL_FUNC) &_modsem_muQmlCpp, 2},
     {"_modsem_sigmaQmlCpp", (DL_FUNC) &_modsem_sigmaQmlCpp, 2},
     {"_modsem_calcKronXi", (DL_FUNC) &_modsem_calcKronXi, 2},
