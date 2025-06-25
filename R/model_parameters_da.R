@@ -328,20 +328,38 @@ getParamLocationsMatrices <- function(matrices, isFree = is.na) {
 getGradientStruct <- function(model, theta) {
   tryCatch(
     getGradientStructSimple(model = model, theta = theta),
-    error = function(e) list(
-      locations   = NULL, 
-      Jacobian    = NULL,
-      nlinDerivs  = NULL,
-      evalTheta   = NULL,
-      hasCovModel = TRUE, # may not be true, but we should behave as if it is
-      isNonLinear = TRUE  # may not be true, but we should behave as if it is
-    )
+    error = function(e) {
+      warning2("Failed to compute gradient structure: ", e$message)
+      
+      list(
+        locations   = NULL, 
+        Jacobian    = NULL,
+        nlinDerivs  = NULL,
+        evalTheta   = NULL,
+        hasCovModel = TRUE, # may not be true, but we should behave as if it is
+        isNonLinear = TRUE  # may not be true, but we should behave as if it is
+      )
+    }
   )
 }
 
 
 getGradientStructSimple <- function(model, theta) {
   hasCovModel <- !is.null(model$covModel$matrices)
+
+  if (hasCovModel) {
+    out <- list(
+      locations   = NULL, 
+      Jacobian    = NULL,
+      nlinDerivs  = NULL,
+      evalTheta   = NULL,
+      hasCovModel = TRUE, 
+      isNonLinear = TRUE  # may not be true, but we should behave as if it is
+    )
+
+    return(out)
+  }
+
   parTable <- model$parTable
 
   isConstraint <- parTable$op %in% CONSTRAINT_OPS
@@ -375,10 +393,10 @@ getGradientStructSimple <- function(model, theta) {
   param.full <- locations$param
   param.part <- names(theta)
 
-  order <- structure(seq_along(theta), names = param.part)
-  order <- order[param.full]
+  ordering <- structure(seq_along(theta), names = param.part)
+  ordering <- ordering[param.full]
   
-  locations  <- sort_by(locations, order)
+  locations  <- locations[order(ordering), ]
   param.full <- locations$param
 
   Jacobian <- matrix(0, nrow = m, ncol = k,  
