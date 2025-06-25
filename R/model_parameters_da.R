@@ -293,7 +293,7 @@ getParamNamesMatrix <- function(mat, matname) {
 
 
 getParamLocationsMatrices <- function(matrices, isFree = is.na) {
-
+  matrices <- matrices[intersect(names(matrices), names(LMS_BLOCKS))]
   locations <- data.frame(param = NULL, block = NULL, row = NULL, col = NULL)
   for (blockname in names(matrices)) {
     X <- matrices[[blockname]]
