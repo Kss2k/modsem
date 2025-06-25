@@ -3,7 +3,7 @@
 
 # Compute complete-data gradient
 computeGradient <- function(theta, model, P, epsilon) {
-  gradientLogLikLms(theta = theta, model = model, P = P, sign = -1,
+  gradientCompLogLikLms(theta = theta, model = model, P = P, sign = -1,
                     epsilon = epsilon)
 }
 
@@ -35,10 +35,10 @@ lbfgs_two_loop <- function(grad, s_list, g_list) {
 
 # Compute complete-data Fisher information via inverse Hessian
 computeFullIcom <- function(theta, model, data, P, epsilon) {
-  # fLogLik <- function(par) logLikLms(theta = par, model = model, P = P)
+  # fLogLik <- function(par) compLogLikLms(theta = par, model = model, P = P)
   # Ic <- fdHESS(pars = theta, fun = fLogLik)
 
-  Ic <- calcHessFromGradient(gradientLogLikLms, theta = theta, model = model, 
+  Ic <- calcHessFromGradient(gradientCompLogLikLms, theta = theta, model = model, 
                              P = P, sign = -1, eps = epsilon, epsilon = epsilon)
   diag(Ic) <- diag(Ic) + 1e-8  # ensure invertibility
   Ic
@@ -118,22 +118,6 @@ emLms <- function(model,
     P <- estepLms(model = model, theta = thetaOld, data = data, 
                   lastQuad = lastQuad, recalcQuad = recalcQuad, ...)
 
-    Sigma <- cov(data)
-    mu <- apply(data, 2, mean)
-    browser()
-    bench.m <- rbenchmark::benchmark(
-      dmvnfast(X = data, mu = mu, sigma = Sigma, log = FALSE, ncores = ThreadEnv$n.threads, isChol = FALSE),
-      dmvn(data, mu, Sigma, log = FALSE)
-    )
-    browser()
-    bench.o <- rbenchmark::benchmark(
-      obsLogLikLms(thetaNew, model, data, P),
-      sum(obsLogLikLms_i(thetaNew, model, data, P))
-    )
-    bench.g <- rbenchmark::benchmark(
-      gradientObsLogLikLms(thetaNew, model, data, P),
-      colSums(gradientObsLogLikLms_i(thetaNew, model, data, P))
-    )
     # Update Quadrature Info
     lastQuad <- P$quad
 
@@ -196,13 +180,13 @@ emLms <- function(model,
       if (!is.null(direction)) {
         alpha     <- 1 
         success   <- FALSE
-        refLogLik <- logLikLms(theta = thetaOld, model = model, P = P, sign = 1)
+        refLogLik <- compLogLikLms(theta = thetaOld, model = model, P = P, sign = 1)
 
         while (alpha > 1e-5) {
           thetaTrial  <- thetaOld + alpha * direction
 
           logLikTrial <- suppressWarnings({
-            logLikLms(theta = thetaTrial, model = model, P = P, sign = 1)
+            compLogLikLms(theta = thetaTrial, model = model, P = P, sign = 1)
           })
 
           if (!is.na(logLikTrial) && logLikTrial >= refLogLik) { 
