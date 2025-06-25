@@ -101,7 +101,7 @@ double totalDmvnWeightedCpp(const arma::vec& mu,
 }
 
 
-arma::mat dmvnfast(arma::mat X,  
+arma::vec dmvnfast(arma::mat X,  
                    arma::mat mu,  
                    arma::mat sigma, 
                    const bool log,
@@ -138,7 +138,7 @@ arma::mat dmvnfast(arma::mat X,
     else cholDec = sigma;
     
     // Dropping the dimensionality of the output vector
-    const arma::mat out = dmvtInt( X, mu, cholDec, log, df, ncores);
+    const arma::vec out = dmvtInt( X, mu, cholDec, log, df, ncores);
     
     #ifdef _OPENMP
     omp_set_num_threads(ncores_0);

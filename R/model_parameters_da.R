@@ -389,7 +389,6 @@ getGradientStructSimple <- function(model, theta) {
   k <- nrow(locations)
   m <- length(theta)
 
-  locations  <- locations[sample(k), ]
   param.full <- locations$param
   param.part <- names(theta)
 
