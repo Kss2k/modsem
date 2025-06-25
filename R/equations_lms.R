@@ -74,7 +74,7 @@ mstepLms <- function(theta, model, P,
   }
 
   objective <- function(theta) {
-    logLikLms(theta = theta, model = model, P = P, sign = -1, epsilon = epsilon)
+    compLogLikLms(theta = theta, model = model, P = P, sign = -1, epsilon = epsilon)
   }
 
   if (optimizer == "nlminb") {
@@ -102,7 +102,7 @@ mstepLms <- function(theta, model, P,
 }
 
 
-logLikLms <- function(theta, model, P, sign = -1, ...) {
+compLogLikLms <- function(theta, model, P, sign = -1, ...) {
   tryCatch({
     modFilled <- fillModel(model = model, theta = theta, method = "lms")
     sign * completeLogLikLmsCpp(modelR=modFilled, P=P, quad=P$quad)
@@ -112,7 +112,7 @@ logLikLms <- function(theta, model, P, sign = -1, ...) {
 
 gradientLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-6) {
   gradientAllLogLikLms(theta = theta, model = model, P = P, sign = sign, 
-                       epsilon = epsilon, FGRAD = logLikLms, FOBJECTIVE = gradLogLikLmsCpp)
+                       epsilon = epsilon, FGRAD = compLogLikLms, FOBJECTIVE = gradLogLikLmsCpp)
 }
 
 
@@ -227,7 +227,7 @@ obsLogLikLms_i <- function(theta, model, data, P, sign = 1, ...) {
 }
 
 
-# gradient function of logLikLms_i
+# gradient function of obsLogLikLms_i
 gradientObsLogLikLms_i <- function(theta, model, data, P, sign = 1, epsilon = 1e-4) {
   baseLL <- obsLogLikLms_i(theta, model, data = data, P = P, sign = sign)
 
@@ -252,5 +252,3 @@ densityLms <- function(z, modFilled, data) {
     densitySingleLms(z = z[i, , drop=FALSE], modFilled = modFilled, data = data)
   })
 }
-
-
