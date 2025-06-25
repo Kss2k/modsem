@@ -69,7 +69,7 @@ mstepLms <- function(theta, model, P,
                      epsilon = 1e-6,
                      ...) {
   gradient <- function(theta) {
-    gradientLogLikLms(theta = theta, model = model, P = P, sign = -1,
+    gradientCompLogLikLms(theta = theta, model = model, P = P, sign = -1,
                       epsilon = epsilon)
   }
 
@@ -110,9 +110,9 @@ compLogLikLms <- function(theta, model, P, sign = -1, ...) {
 }
 
 
-gradientLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-6) {
+gradientCompLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-6) {
   gradientAllLogLikLms(theta = theta, model = model, P = P, sign = sign, 
-                       epsilon = epsilon, FGRAD = compLogLikLms, FOBJECTIVE = gradLogLikLmsCpp)
+                       epsilon = epsilon, FGRAD = gradLogLikLmsCpp, FOBJECTIVE = compLogLikLms)
 }
 
 
@@ -121,10 +121,9 @@ gradientAllLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-6,
   hasCovModel <- model$gradientStruct$hasCovModel
 
   if (hasCovModel) gradient <- \(...) complicatedGradientAllLogLikLms(..., FOBJECTIVE = FOBJECTIVE)
-  else             gradient <- simpleGradientAllLogLikLms
+  else             gradient <- \(...) simpleGradientAllLogLikLms(..., FGRAD = FGRAD)
 
-  gradient(theta = theta, model = model, P = P, sign = sign, epsilon = epsilon, 
-           FGRAD = FGRAD)
+  gradient(theta = theta, model = model, P = P, sign = sign, epsilon = epsilon)
 }
 
 

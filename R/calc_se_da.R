@@ -86,9 +86,12 @@ calcHessian <- function(model, theta, data, method = "lms",
   if (method == "lms") {
     if (is.null(P)) P <- estepLms(model, theta = theta, data = data)
     # negative hessian (sign = -1)
-    H <- fdHESS(pars = theta, fun = obsLogLikLms, model = model,
-                data = data, P = P, sign = -1,
-                .relStep = .Machine$double.eps^(1/5))
+    # H <- fdHESS(pars = theta, fun = obsLogLikLms, model = model,
+    #             data = data, P = P, sign = -1,
+    #             .relStep = .Machine$double.eps^(1/5))
+    f <- \(theta) gradientObsLogLikLms(theta = theta, model = model, data = data,
+                                       P = P, sign = -1, eps = epsilon)
+    H <- calcHessFromGradient(gradFun = f, theta = theta, eps = epsilon)
 
   } else if (method == "qml") {
     # negative hessian (sign = -1)
@@ -141,9 +144,8 @@ calcOFIM_LMS <- function(model, theta, data, hessian = FALSE,
   N <- nrow(data)
   if (hessian) {
     # negative hessian (sign = -1)
-    I <- fdHESS(pars = theta, fun = obsLogLikLms, model = model,
-                data = data, P = P, sign = -1,
-                .relStep = .Machine$double.eps^(1/5))
+    I <- calcHessian(model, theta = theta, data = data, 
+                     method = "lms", epsilon = epsilon, P = P)
 
     return(I)
   }
