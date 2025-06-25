@@ -8,7 +8,7 @@
 #endif
 
 #include <RcppArmadillo.h>
-#include <boost/random/normal_distribution.hpp>
+
 
 void inplace_tri_mat_mult(arma::rowvec &x, arma::mat const &trimat);
 
