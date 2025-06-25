@@ -111,65 +111,35 @@ logLikLms <- function(theta, model, P, sign = -1, ...) {
 
 
 gradientLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-6) {
+  gradientAllLogLikLms(theta = theta, model = model, P = P, sign = sign, 
+                       epsilon = epsilon, FGRAD = logLikLms, FOBJECTIVE = gradLogLikLmsCpp)
+}
+
+
+gradientAllLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-6,
+                                 FGRAD, FOBJECTIVE) {
   hasCovModel <- model$gradientStruct$hasCovModel
 
-  if (hasCovModel) gradient <- complicatedGradientLogLikLms
-  else             gradient <- simpleGradientLogLikLms
+  if (hasCovModel) gradient <- \(...) complicatedGradientAllLogLikLms(..., FOBJECTIVE = FOBJECTIVE)
+  else             gradient <- simpleGradientAllLogLikLms
 
-  gradient(theta = theta, model = model, P = P, sign = sign, epsilon = epsilon)
+  gradient(theta = theta, model = model, P = P, sign = sign, epsilon = epsilon, 
+           FGRAD = FGRAD)
 }
 
 
-simpleGradientLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-6) {
-  # simple gradient which should work if constraints are well-behaved functions 
-  # which can be derivated by Deriv::Deriv, and there is no covModel
-  modelR     <- fillModel(model=model, theta=theta, method="lms")
-  locations  <- model$gradientStruct$locations
-  Jacobian   <- model$gradientStruct$Jacobian
-  nlinDerivs <- model$gradientStruct$nlinDerivs
-
-  block     <- locations$block
-  row       <- locations$row
-  col       <- locations$col
-  param     <- locations$param
-
-  grad <- gradLogLikLmsCpp(modelR, P = P, block = block, 
-                           row = row, col = col, eps=epsilon)
-  # grad <- structure(c(grad), names = param)
-
-  if (length(nlinDerivs)) {
-    evalTheta  <- model$gradientStruct$evalTheta
-    param.full <- colnames(Jacobian)
-    param.part <- rownames(Jacobian)
-    THETA      <- list2env(as.list(evalTheta(theta)))
-
-    for (dep in names(nlinDerivs)) {
-      derivs <- eval(expr = nlinDerivs[[dep]], envir = THETA)
-
-      for (indep in names(derivs)) {
-        match.full <- param.full == dep
-        match.part <- param.part == indep
-        Jacobian[match.part, match.full] <- derivs[[indep]]
-      }
-    }
-  }
-
-  c(sign * Jacobian %*% grad)
-}
-
-
-complicatedGradientLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-4) {
+complicatedGradientAllLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-4, FOBJECTIVE) {
   # when we cannot simplify gradient using simpleGradientLogLikLms, we use 
   # good old forward difference...
-  baseLL <- logLikLms(theta, model = model, P = P, sign = sign)
+  baseLL <- FOBJECTIVE(theta, model = model, P = P, sign = sign)
   vapply(seq_along(theta), FUN.VALUE = numeric(1L), FUN = function(i) {
     theta[[i]] <- theta[[i]] + epsilon
-    (logLikLms(theta, model = model, P = P, sign = sign) - baseLL) / epsilon
+    (FOBJECTIVE(theta, model = model, P = P, sign = sign) - baseLL) / epsilon
   })
 }
 
 
-simpleGradientObsLogLikLms <- function(theta, model, P, data, sign = -1, epsilon = 1e-6) {
+simpleGradientAllLogLikLms <- function(theta, model, P, data, sign = -1, epsilon = 1e-6, FGRAD) {
   # simple gradient which should work if constraints are well-behaved functions 
   # which can be derivated by Deriv::Deriv, and there is no covModel
   modelR     <- fillModel(model=model, theta=theta, method="lms")
@@ -182,8 +152,12 @@ simpleGradientObsLogLikLms <- function(theta, model, P, data, sign = -1, epsilon
   col       <- locations$col
   param     <- locations$param
 
-  grad <- gradObsLogLikLmsCpp(modelR, data = data, P = P, block = block, 
-                              row = row, col = col, eps=epsilon)
+  grad <- FGRAD(modelR = modelR, 
+                P = P, 
+                block = block, 
+                row = row, 
+                col = col, 
+                eps=epsilon)
   # grad <- structure(c(grad), names = param)
 
   if (length(nlinDerivs)) {
@@ -208,17 +182,27 @@ simpleGradientObsLogLikLms <- function(theta, model, P, data, sign = -1, epsilon
 
 
 obsLogLikLms <- function(theta, model, data, P, sign = 1, ...) {
-  sum(obsLogLikLms_i(theta, model = model, data = data, P = P, sign = sign))
+  modFilled <- fillModel(model = model, theta = theta, method = "lms")
+  ll <- observedLogLikLmsCpp(modFilled, data = data, P = P, ncores = ThreadEnv$n.threads)
+  ll * sign
 }
 
 
-gradientObsLogLikLms <- function(theta, model, data, P, sign = -1, epsilon = 1e-4) {
-  baseLL <- logLikLms(theta, model = model, data = data, P = P, sign = sign)
+gradientObsLogLikLms <- function(theta, model, data, P, sign = 1, epsilon = 1e-6) {
+  ncores <- ThreadEnv$n.threads
 
-  vapply(seq_along(theta), FUN.VALUE = numeric(1L), FUN = function(i) {
-    theta[[i]] <- theta[[i]] + epsilon
-    (obsLogLikLms(theta, model = model, data = data, P = P, sign = sign) - baseLL) / epsilon
-  })
+  FGRAD <- function(modelR, P, block, row, col, eps) {
+    gradObsLogLikLmsCpp(modelR = modelR, data = data, P = P,
+                        block = block, row = row, col = col,
+                        eps = eps, ncores = ncores)
+  }
+
+  FOBJECTIVE <- function(theta, model, P, sign) {
+    obsLogLikLms(theta = theta, model = model, data = data, P = P, sign = sign)
+  }
+
+  gradientAllLogLikLms(theta = theta, model = model, P = P, sign = sign, 
+                       epsilon = epsilon, FGRAD = FGRAD, FOBJECTIVE = FOBJECTIVE)
 }
 
 

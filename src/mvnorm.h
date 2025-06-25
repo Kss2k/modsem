@@ -22,7 +22,7 @@ double totalDmvnWeightedCpp(const arma::vec& mu, const arma::mat& sigma,
 
 arma::vec mahaInt(arma::mat & X, arma::vec & mu, arma::mat & sigma, unsigned int ncores, bool isChol);
 arma::vec dmvtInt( arma::mat X, arma::vec mu, arma::mat cholDec, bool log, double df, unsigned int ncores);
-arma::mat dmvnfast(arma::mat X,  arma::mat mu,  arma::mat sigma, const bool log, const int ncores, const bool isChol);
+arma::vec dmvnfast(arma::mat X,  arma::mat mu,  arma::mat sigma, const bool log, const int ncores, const bool isChol);
 
 
 #endif // !mvnorm_h
