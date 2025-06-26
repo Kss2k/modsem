@@ -253,10 +253,10 @@ densityLms <- function(z, modFilled, data) {
 
 
 hessianAllLogLikLms <- function(theta, model, P, sign = -1,
-                                 FHESS, FOBJECTIVE, .relStep = Machine$double.eps ^ (1/3)) {
+                                 FHESS, FOBJECTIVE, .relStep = Machine$double.eps ^ (1/5)) {
   hasCovModel <- model$gradientStruct$hasCovModel
 
-  if (hasCovModel) hessian <- \(...) complicatedHessianAllLogLikLms(..., FOBJECTIVE = FOBJECTIVE)
+  if (hasCovModel) hessian <- \(...) complicatedHessianAllLogLikLms(..., FOBJECTIVE = FOBJECTIVE, .relStep = .relStep)
   else             hessian <- \(...) simpleHessianAllLogLikLms(..., FHESS = FHESS, .relStep = .relStep)
 
   hessian(theta = theta, model = model, P = P, sign = sign)
@@ -264,7 +264,7 @@ hessianAllLogLikLms <- function(theta, model, P, sign = -1,
 
 
 compHessianAllLogLikLms <- function(theta, model, P, data, sign = -1, 
-                                    .relStep = .Machine$double.eps ^ (1/3), 
+                                    .relStep = .Machine$double.eps ^ (1/5), 
                                     FOBJECTIVE) {
   nlme::fdHess(pars = theta, FOBJECTIVE, model = model, P = P, 
                data = data, sign = sign, .relStep = .relStep)
@@ -272,7 +272,7 @@ compHessianAllLogLikLms <- function(theta, model, P, data, sign = -1,
 
 
 simpleHessianAllLogLikLms <- function(theta, model, P, data, sign = -1, 
-                                      .relStep = .Machine$double.eps ^ (1/3), 
+                                      .relStep = .Machine$double.eps ^ (1/5), 
                                       FHESS) {
   # simple gradient which should work if constraints are well-behaved functions 
   # which can be derivated by Deriv::Deriv, and there is no covModel
@@ -328,13 +328,15 @@ simpleHessianAllLogLikLms <- function(theta, model, P, data, sign = -1,
 }
 
 
-complicatedHessianAllLogLikLms <- function(theta, model, P, sign = -1, FOBJECTIVE) {
-  nlme::fdHess(pars = theta, fun = FOBJECTIVE, model = model, P = P, sign = sign)$Hessian
+complicatedHessianAllLogLikLms <- function(theta, model, P, sign = -1, FOBJECTIVE, 
+                                           .relStep = .Machine$double.eps ^ (1/5)) {
+  nlme::fdHess(pars = theta, fun = FOBJECTIVE, model = model, P = P, sign = sign,
+               .relStep = .relStep)$Hessian
 }
 
 
 hessianObsLogLikLms <- function(theta, model, data, P, sign = -1, 
-                                .relStep = .Machine$double.eps ^ (1/3)) {
+                                .relStep = .Machine$double.eps ^ (1/5)) {
 
   FHESS <- function(modelR, P, block, row, col, eps, .relStep) {
     hessObsLogLikLmsCpp(modelR = modelR, data = data, P = P,
@@ -354,7 +356,7 @@ hessianObsLogLikLms <- function(theta, model, data, P, sign = -1,
 
 
 hessianCompLogLikLms <- function(theta, model, P, sign = -1, 
-                                 .relStep = .Machine$double.eps ^ (1/3)) {
+                                 .relStep = .Machine$double.eps ^ (1/5)) {
 
   FHESS <- function(modelR, P, block, row, col, eps, .relStep) {
     hessCompLogLikLmsCpp(modelR = modelR, P = P,

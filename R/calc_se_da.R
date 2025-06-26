@@ -87,12 +87,12 @@ calcHessian <- function(model, theta, data, method = "lms",
     if (is.null(P)) P <- estepLms(model, theta = theta, data = data)
     # negative hessian (sign = -1)
     H <- hessianObsLogLikLms(model = model, data = data, P = P, theta = theta,  sign = -1,
-                             .relStep = .Machine$double.eps^(1/4))
+                             .relStep = .Machine$double.eps^(1/5))
 
   } else if (method == "qml") {
     # negative hessian (sign = -1)
     H <- fdHESS(pars = theta, fun = logLikQml, model = model, sign = -1,
-                .relStep = .Machine$double.eps^(1/4))
+                .relStep = .Machine$double.eps^(1/5))
   }
 
   H
