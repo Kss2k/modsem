@@ -95,6 +95,12 @@ calcHessian <- function(model, theta, data, method = "lms",
     #                                    P = P, sign = -1, eps = epsilon)
     # H <- calcHessFromGradient(gradFun = f, theta = theta, eps = epsilon)
 
+    # I assumed this would be faster, but using nlme::fdHess seems faster than
+    # using the gradient function...
+    # f <- \(theta) gradientObsLogLikLms(theta = theta, model = model, data = data,
+    #                                    P = P, sign = -1, eps = epsilon)
+    # H <- calcHessFromGradient(gradFun = f, theta = theta, eps = epsilon)
+
   } else if (method == "qml") {
     # negative hessian (sign = -1)
     H <- fdHESS(pars = theta, fun = logLikQml, model = model, sign = -1,
