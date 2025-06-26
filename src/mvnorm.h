@@ -8,12 +8,43 @@
 #endif
 
 #include <RcppArmadillo.h>
+// [[Rcpp::plugins(openmp)]]
+
+
+struct ThreadSetter {
+  int old_threads;
+
+  explicit ThreadSetter(int ncores) {
+    #ifdef _OPENMP
+      if (ncores <= 0) Rcpp::stop("ncores must be positive");
+      old_threads = omp_get_max_threads();          // much simpler
+      omp_set_num_threads(ncores);
+
+    #else
+      if (ncores != 1)
+        Rcpp::warning("OpenMP not enabled; running single-threaded");
+      
+      old_threads = 1;
+    #endif
+  }
+
+  ~ThreadSetter() {
+    #ifdef _OPENMP
+        omp_set_num_threads(old_threads);
+    #endif
+  }
+};
 
 
 void inplace_tri_mat_mult(arma::rowvec &x, arma::mat const &trimat);
 
-arma::vec dmvnrm_arma_mc(arma::mat const &x,  arma::rowvec const &mean,  
-    arma::mat const &sigma, bool const logd);
+arma::vec dmvnrm_arma_mc(const arma::mat &x, const arma::rowvec &mean,
+                         const arma::mat &sigma, const bool log, 
+                         const int ncores);
+
+arma::vec rep_dmvnorm(const arma::mat &x, const arma::mat &expected,
+                      const arma::mat &sigma, const int t,
+                      const int);
 
 double totalDmvnWeightedCpp(const arma::vec& mu, const arma::mat& sigma,
     const arma::vec& nu, const arma::mat& S, double tgamma, int n, int d);

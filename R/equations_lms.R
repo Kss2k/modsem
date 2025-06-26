@@ -180,12 +180,6 @@ simpleGradientAllLogLikLms <- function(theta, model, P, data, sign = -1, epsilon
 }
 
 
-simpleHessianLms <- function(theta, model, P, data, sign = -1, epsilon = 1e-6) {
-  FGRAD <- \(...) hessianObsLogLikLms(..., data = data)
-  simpleGradientAllLogLikLms(theta, model, P, data, sign = -1, epsilon = 1e-6, FGRAD = FGRAD)
-}
-
-
 obsLogLikLms <- function(theta, model, data, P, sign = 1, ...) {
   modFilled <- fillModel(model = model, theta = theta, method = "lms")
   ll <- observedLogLikLmsCpp(modFilled, data = data, P = P, ncores = ThreadEnv$n.threads)

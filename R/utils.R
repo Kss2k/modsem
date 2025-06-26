@@ -416,7 +416,7 @@ timeExpr <- function(expr) {
   out <- expr
   end <- Sys.time()
   print(end - start)
-  out
+  invisible(out)
 }
 
 

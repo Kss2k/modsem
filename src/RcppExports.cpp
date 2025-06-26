@@ -108,82 +108,83 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// hessianObsLogLikLms
-arma::mat hessianObsLogLikLms(const Rcpp::List& modelR, const arma::mat& data, const Rcpp::List& P, const arma::uvec& block, const arma::uvec& row, const arma::uvec& col, double eps, int ncores);
-RcppExport SEXP _modsem_hessianObsLogLikLms(SEXP modelRSEXP, SEXP dataSEXP, SEXP PSEXP, SEXP blockSEXP, SEXP rowSEXP, SEXP colSEXP, SEXP epsSEXP, SEXP ncoresSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Rcpp::List& >::type modelR(modelRSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type data(dataSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::List& >::type P(PSEXP);
-    Rcpp::traits::input_parameter< const arma::uvec& >::type block(blockSEXP);
-    Rcpp::traits::input_parameter< const arma::uvec& >::type row(rowSEXP);
-    Rcpp::traits::input_parameter< const arma::uvec& >::type col(colSEXP);
-    Rcpp::traits::input_parameter< double >::type eps(epsSEXP);
-    Rcpp::traits::input_parameter< int >::type ncores(ncoresSEXP);
-    rcpp_result_gen = Rcpp::wrap(hessianObsLogLikLms(modelR, data, P, block, row, col, eps, ncores));
-    return rcpp_result_gen;
-END_RCPP
-}
 // muQmlCpp
-arma::mat muQmlCpp(Rcpp::List m, int t);
-RcppExport SEXP _modsem_muQmlCpp(SEXP mSEXP, SEXP tSEXP) {
+arma::mat muQmlCpp(Rcpp::List m, int t, int ncores);
+RcppExport SEXP _modsem_muQmlCpp(SEXP mSEXP, SEXP tSEXP, SEXP ncoresSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< Rcpp::List >::type m(mSEXP);
     Rcpp::traits::input_parameter< int >::type t(tSEXP);
-    rcpp_result_gen = Rcpp::wrap(muQmlCpp(m, t));
+    Rcpp::traits::input_parameter< int >::type ncores(ncoresSEXP);
+    rcpp_result_gen = Rcpp::wrap(muQmlCpp(m, t, ncores));
     return rcpp_result_gen;
 END_RCPP
 }
 // sigmaQmlCpp
-arma::mat sigmaQmlCpp(Rcpp::List m, int t);
-RcppExport SEXP _modsem_sigmaQmlCpp(SEXP mSEXP, SEXP tSEXP) {
+arma::mat sigmaQmlCpp(Rcpp::List m, int t, int ncores);
+RcppExport SEXP _modsem_sigmaQmlCpp(SEXP mSEXP, SEXP tSEXP, SEXP ncoresSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< Rcpp::List >::type m(mSEXP);
     Rcpp::traits::input_parameter< int >::type t(tSEXP);
-    rcpp_result_gen = Rcpp::wrap(sigmaQmlCpp(m, t));
+    Rcpp::traits::input_parameter< int >::type ncores(ncoresSEXP);
+    rcpp_result_gen = Rcpp::wrap(sigmaQmlCpp(m, t, ncores));
     return rcpp_result_gen;
 END_RCPP
 }
 // calcKronXi
-arma::mat calcKronXi(Rcpp::List m, int t);
-RcppExport SEXP _modsem_calcKronXi(SEXP mSEXP, SEXP tSEXP) {
+arma::mat calcKronXi(Rcpp::List m, int t, int ncores);
+RcppExport SEXP _modsem_calcKronXi(SEXP mSEXP, SEXP tSEXP, SEXP ncoresSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< Rcpp::List >::type m(mSEXP);
     Rcpp::traits::input_parameter< int >::type t(tSEXP);
-    rcpp_result_gen = Rcpp::wrap(calcKronXi(m, t));
+    Rcpp::traits::input_parameter< int >::type ncores(ncoresSEXP);
+    rcpp_result_gen = Rcpp::wrap(calcKronXi(m, t, ncores));
     return rcpp_result_gen;
 END_RCPP
 }
 // calcBinvCpp
-arma::mat calcBinvCpp(Rcpp::List m, int t);
-RcppExport SEXP _modsem_calcBinvCpp(SEXP mSEXP, SEXP tSEXP) {
+arma::mat calcBinvCpp(Rcpp::List m, int t, int ncores);
+RcppExport SEXP _modsem_calcBinvCpp(SEXP mSEXP, SEXP tSEXP, SEXP ncoresSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< Rcpp::List >::type m(mSEXP);
     Rcpp::traits::input_parameter< int >::type t(tSEXP);
-    rcpp_result_gen = Rcpp::wrap(calcBinvCpp(m, t));
+    Rcpp::traits::input_parameter< int >::type ncores(ncoresSEXP);
+    rcpp_result_gen = Rcpp::wrap(calcBinvCpp(m, t, ncores));
+    return rcpp_result_gen;
+END_RCPP
+}
+// logNormalPdf
+arma::vec logNormalPdf(const arma::mat& X, const arma::mat& mu, const arma::vec& sigmaDiag, int ncores);
+RcppExport SEXP _modsem_logNormalPdf(SEXP XSEXP, SEXP muSEXP, SEXP sigmaDiagSEXP, SEXP ncoresSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::mat& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type mu(muSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type sigmaDiag(sigmaDiagSEXP);
+    Rcpp::traits::input_parameter< int >::type ncores(ncoresSEXP);
+    rcpp_result_gen = Rcpp::wrap(logNormalPdf(X, mu, sigmaDiag, ncores));
     return rcpp_result_gen;
 END_RCPP
 }
 // dnormCpp
-arma::vec dnormCpp(const arma::vec& x, const arma::vec& mu, const arma::vec& sigma);
-RcppExport SEXP _modsem_dnormCpp(SEXP xSEXP, SEXP muSEXP, SEXP sigmaSEXP) {
+arma::vec dnormCpp(const arma::vec& x, const arma::vec& mu, const arma::vec& sigma, int ncores);
+RcppExport SEXP _modsem_dnormCpp(SEXP xSEXP, SEXP muSEXP, SEXP sigmaSEXP, SEXP ncoresSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::vec& >::type x(xSEXP);
     Rcpp::traits::input_parameter< const arma::vec& >::type mu(muSEXP);
     Rcpp::traits::input_parameter< const arma::vec& >::type sigma(sigmaSEXP);
-    rcpp_result_gen = Rcpp::wrap(dnormCpp(x, mu, sigma));
+    Rcpp::traits::input_parameter< int >::type ncores(ncoresSEXP);
+    rcpp_result_gen = Rcpp::wrap(dnormCpp(x, mu, sigma, ncores));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -211,9 +212,24 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// dmvnrm_arma_mc
+arma::vec dmvnrm_arma_mc(const arma::mat& x, const arma::rowvec& mean, const arma::mat& sigma, const bool log, const int ncores);
+RcppExport SEXP _modsem_dmvnrm_arma_mc(SEXP xSEXP, SEXP meanSEXP, SEXP sigmaSEXP, SEXP logSEXP, SEXP ncoresSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::mat& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const arma::rowvec& >::type mean(meanSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type sigma(sigmaSEXP);
+    Rcpp::traits::input_parameter< const bool >::type log(logSEXP);
+    Rcpp::traits::input_parameter< const int >::type ncores(ncoresSEXP);
+    rcpp_result_gen = Rcpp::wrap(dmvnrm_arma_mc(x, mean, sigma, log, ncores));
+    return rcpp_result_gen;
+END_RCPP
+}
 // rep_dmvnorm
-arma::vec rep_dmvnorm(const arma::mat& x, const arma::mat& expected, const arma::mat& sigma, const int t);
-RcppExport SEXP _modsem_rep_dmvnorm(SEXP xSEXP, SEXP expectedSEXP, SEXP sigmaSEXP, SEXP tSEXP) {
+arma::vec rep_dmvnorm(const arma::mat& x, const arma::mat& expected, const arma::mat& sigma, const int t, const int ncores);
+RcppExport SEXP _modsem_rep_dmvnorm(SEXP xSEXP, SEXP expectedSEXP, SEXP sigmaSEXP, SEXP tSEXP, SEXP ncoresSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -221,21 +237,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const arma::mat& >::type expected(expectedSEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type sigma(sigmaSEXP);
     Rcpp::traits::input_parameter< const int >::type t(tSEXP);
-    rcpp_result_gen = Rcpp::wrap(rep_dmvnorm(x, expected, sigma, t));
-    return rcpp_result_gen;
-END_RCPP
-}
-// dmvnrm_arma_mc
-arma::vec dmvnrm_arma_mc(arma::mat const& x, arma::rowvec const& mean, arma::mat const& sigma, bool const logd);
-RcppExport SEXP _modsem_dmvnrm_arma_mc(SEXP xSEXP, SEXP meanSEXP, SEXP sigmaSEXP, SEXP logdSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::mat const& >::type x(xSEXP);
-    Rcpp::traits::input_parameter< arma::rowvec const& >::type mean(meanSEXP);
-    Rcpp::traits::input_parameter< arma::mat const& >::type sigma(sigmaSEXP);
-    Rcpp::traits::input_parameter< bool const >::type logd(logdSEXP);
-    rcpp_result_gen = Rcpp::wrap(dmvnrm_arma_mc(x, mean, sigma, logd));
+    Rcpp::traits::input_parameter< const int >::type ncores(ncoresSEXP);
+    rcpp_result_gen = Rcpp::wrap(rep_dmvnorm(x, expected, sigma, t, ncores));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -310,16 +313,16 @@ static const R_CallMethodDef CallEntries[] = {
     {"_modsem_completeLogLikLmsCpp", (DL_FUNC) &_modsem_completeLogLikLmsCpp, 3},
     {"_modsem_gradObsLogLikLmsCpp", (DL_FUNC) &_modsem_gradObsLogLikLmsCpp, 8},
     {"_modsem_observedLogLikLmsCpp", (DL_FUNC) &_modsem_observedLogLikLmsCpp, 4},
-    {"_modsem_hessianObsLogLikLms", (DL_FUNC) &_modsem_hessianObsLogLikLms, 8},
-    {"_modsem_muQmlCpp", (DL_FUNC) &_modsem_muQmlCpp, 2},
-    {"_modsem_sigmaQmlCpp", (DL_FUNC) &_modsem_sigmaQmlCpp, 2},
-    {"_modsem_calcKronXi", (DL_FUNC) &_modsem_calcKronXi, 2},
-    {"_modsem_calcBinvCpp", (DL_FUNC) &_modsem_calcBinvCpp, 2},
-    {"_modsem_dnormCpp", (DL_FUNC) &_modsem_dnormCpp, 3},
+    {"_modsem_muQmlCpp", (DL_FUNC) &_modsem_muQmlCpp, 3},
+    {"_modsem_sigmaQmlCpp", (DL_FUNC) &_modsem_sigmaQmlCpp, 3},
+    {"_modsem_calcKronXi", (DL_FUNC) &_modsem_calcKronXi, 3},
+    {"_modsem_calcBinvCpp", (DL_FUNC) &_modsem_calcBinvCpp, 3},
+    {"_modsem_logNormalPdf", (DL_FUNC) &_modsem_logNormalPdf, 4},
+    {"_modsem_dnormCpp", (DL_FUNC) &_modsem_dnormCpp, 4},
     {"_modsem_varZCpp", (DL_FUNC) &_modsem_varZCpp, 3},
     {"_modsem_multiplyIndicatorsCpp", (DL_FUNC) &_modsem_multiplyIndicatorsCpp, 1},
-    {"_modsem_rep_dmvnorm", (DL_FUNC) &_modsem_rep_dmvnorm, 4},
-    {"_modsem_dmvnrm_arma_mc", (DL_FUNC) &_modsem_dmvnrm_arma_mc, 4},
+    {"_modsem_dmvnrm_arma_mc", (DL_FUNC) &_modsem_dmvnrm_arma_mc, 5},
+    {"_modsem_rep_dmvnorm", (DL_FUNC) &_modsem_rep_dmvnorm, 5},
     {"_modsem_totalDmvnWeightedCpp", (DL_FUNC) &_modsem_totalDmvnWeightedCpp, 7},
     {"_modsem_dmvnfast", (DL_FUNC) &_modsem_dmvnfast, 6},
     {"_modsem_tracePathsNumericCpp", (DL_FUNC) &_modsem_tracePathsNumericCpp, 4},

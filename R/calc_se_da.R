@@ -94,7 +94,6 @@ calcHessian <- function(model, theta, data, method = "lms",
     # f <- \(theta) gradientObsLogLikLms(theta = theta, model = model, data = data,
     #                                    P = P, sign = -1, eps = epsilon)
     # H <- calcHessFromGradient(gradFun = f, theta = theta, eps = epsilon)
-    # H <- simpleHessianLms(theta = theta, model = model, P = P, data = data, sign = -1, epsilon = epsilon)
 
   } else if (method == "qml") {
     # negative hessian (sign = -1)

@@ -29,28 +29,28 @@ observedLogLikLmsCpp <- function(modelR, data, P, ncores = 1L) {
     .Call(`_modsem_observedLogLikLmsCpp`, modelR, data, P, ncores)
 }
 
-hessianObsLogLikLms <- function(modelR, data, P, block, row, col, eps = 1e-6, ncores = 1L) {
-    .Call(`_modsem_hessianObsLogLikLms`, modelR, data, P, block, row, col, eps, ncores)
+muQmlCpp <- function(m, t, ncores = 1L) {
+    .Call(`_modsem_muQmlCpp`, m, t, ncores)
 }
 
-muQmlCpp <- function(m, t) {
-    .Call(`_modsem_muQmlCpp`, m, t)
+sigmaQmlCpp <- function(m, t, ncores = 1L) {
+    .Call(`_modsem_sigmaQmlCpp`, m, t, ncores)
 }
 
-sigmaQmlCpp <- function(m, t) {
-    .Call(`_modsem_sigmaQmlCpp`, m, t)
+calcKronXi <- function(m, t, ncores = 1L) {
+    .Call(`_modsem_calcKronXi`, m, t, ncores)
 }
 
-calcKronXi <- function(m, t) {
-    .Call(`_modsem_calcKronXi`, m, t)
+calcBinvCpp <- function(m, t, ncores = 1L) {
+    .Call(`_modsem_calcBinvCpp`, m, t, ncores)
 }
 
-calcBinvCpp <- function(m, t) {
-    .Call(`_modsem_calcBinvCpp`, m, t)
+logNormalPdf <- function(X, mu, sigmaDiag, ncores = 1L) {
+    .Call(`_modsem_logNormalPdf`, X, mu, sigmaDiag, ncores)
 }
 
-dnormCpp <- function(x, mu, sigma) {
-    .Call(`_modsem_dnormCpp`, x, mu, sigma)
+dnormCpp <- function(x, mu, sigma, ncores = 1L) {
+    .Call(`_modsem_dnormCpp`, x, mu, sigma, ncores)
 }
 
 varZCpp <- function(Omega, Sigma1, numEta) {
@@ -65,12 +65,12 @@ multiplyIndicatorsCpp <- function(df) {
     .Call(`_modsem_multiplyIndicatorsCpp`, df)
 }
 
-rep_dmvnorm <- function(x, expected, sigma, t) {
-    .Call(`_modsem_rep_dmvnorm`, x, expected, sigma, t)
+dmvnrm_arma_mc <- function(x, mean, sigma, log = TRUE, ncores = 1L) {
+    .Call(`_modsem_dmvnrm_arma_mc`, x, mean, sigma, log, ncores)
 }
 
-dmvnrm_arma_mc <- function(x, mean, sigma, logd = TRUE) {
-    .Call(`_modsem_dmvnrm_arma_mc`, x, mean, sigma, logd)
+rep_dmvnorm <- function(x, expected, sigma, t, ncores = 1L) {
+    .Call(`_modsem_rep_dmvnorm`, x, expected, sigma, t, ncores)
 }
 
 totalDmvnWeightedCpp <- function(mu, sigma, nu, S, tgamma, n, d) {
