@@ -86,8 +86,14 @@ calcHessian <- function(model, theta, data, method = "lms",
   if (method == "lms") {
     if (is.null(P)) P <- estepLms(model, theta = theta, data = data)
     # negative hessian (sign = -1)
-    H <- hessianObsLogLikLms(model = model, data = data, P = P, theta = theta,  sign = -1,
-                             .relStep = .Machine$double.eps^(1/5))
+    fH <- \(model) hessianObsLogLikLms(model = model, data = data, P = P, theta = theta,  sign = -1,
+                                       .relStep = .Machine$double.eps^(1/5))
+
+    H <- tryCatch(fH(model), error = function(e) {
+      warning2("Optimized calculation of Hessian failed, attempting to switch!")
+      model$gradientStruct$hasCovModel <- TRUE
+      fH(model)
+    })
 
   } else if (method == "qml") {
     # negative hessian (sign = -1)
