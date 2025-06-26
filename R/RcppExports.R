@@ -29,6 +29,14 @@ observedLogLikLmsCpp <- function(modelR, data, P, ncores = 1L) {
     .Call(`_modsem_observedLogLikLmsCpp`, modelR, data, P, ncores)
 }
 
+hessObsLogLikLmsCpp <- function(modelR, data, P, block, row, col, relStep = 1e-6, minAbs = 0.0, ncores = 1L) {
+    .Call(`_modsem_hessObsLogLikLmsCpp`, modelR, data, P, block, row, col, relStep, minAbs, ncores)
+}
+
+hessCompLogLikLmsCpp <- function(modelR, P, block, row, col, relStep = 1e-6, minAbs = 0.0, ncores = 1L) {
+    .Call(`_modsem_hessCompLogLikLmsCpp`, modelR, P, block, row, col, relStep, minAbs, ncores)
+}
+
 muQmlCpp <- function(m, t, ncores = 1L) {
     .Call(`_modsem_muQmlCpp`, m, t, ncores)
 }

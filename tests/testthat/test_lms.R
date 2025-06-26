@@ -7,11 +7,12 @@ m1 <- "
   Y =~ y1
 
 # Inner model
-  Y ~ a * X + a2 * Z
   Y ~~ Y
-  Y ~ b * X:Z + 0.05 * X:X
-  b == a * 1.2
 
+  Y ~ a * X + c * Z + b * X:Z
+
+  a == b ^ 2 + 0.01 * c
+  
   a2 := sqrt(a - 0.0001)^2
   coef := sqrt(a * 2 + b^2)
 "

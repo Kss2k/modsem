@@ -2,6 +2,7 @@
 #include "lms.h"
 #include "mvnorm.h"
 #include <float.h>
+#include <cmath>
 
 // [[Rcpp::depends(RcppArmadillo)]]
 
@@ -378,4 +379,177 @@ double observedLogLikLmsCpp(Rcpp::List modelR, arma::mat data, Rcpp::List P, con
   const arma::vec w       = Rcpp::as<arma::vec>(P["w"]);
 
   return observedLogLikFromModel(M, V, w, data, ncores);
+}
+
+
+inline arma::vec get_params(const LMSModel& M,
+                            const arma::uvec& block,
+                            const arma::uvec& row,
+                            const arma::uvec& col) {
+    const std::size_t p = block.n_elem;
+    arma::vec pars(p);
+    for (std::size_t k = 0; k < p; ++k)
+        pars[k] = lms_param(const_cast<LMSModel&>(M),
+                            block[k], row[k], col[k]);
+    return pars;
+}
+
+
+inline void set_params(LMSModel&      M,
+                       const arma::uvec& block,
+                       const arma::uvec& row,
+                       const arma::uvec& col,
+                       const arma::vec&  vals) {
+    const std::size_t p = block.n_elem;
+    for (std::size_t k = 0; k < p; ++k)
+        lms_param(M, block[k], row[k], col[k]) = vals[k];
+}
+
+
+template< class F >
+Rcpp::List fdHessCpp(LMSModel&         M,        
+                     F&&               fun,      
+                     const arma::uvec& block,
+                     const arma::uvec& row,
+                     const arma::uvec& col,
+                     double            relStep   = 1e-6,
+                     double            minAbsPar = 0.0) {
+    const std::size_t p = block.n_elem;
+    const arma::vec   base = get_params(M, block, row, col);     
+    const arma::vec   incr =
+        arma::max(arma::abs(base),
+                  arma::vec(p).fill(minAbsPar)) * relStep;
+
+    //  build Koschal displacement matrix 
+    std::vector< arma::vec > disp;
+    disp.emplace_back(arma::zeros<arma::vec>(p));          // origin
+    for (std::size_t i = 0; i < p; ++i) {                  //  +e_i / –e_i
+        arma::vec v = arma::zeros<arma::vec>(p);
+        v[i] = 1;  disp.push_back(v);
+        v[i] = -1; disp.push_back(v);
+    }
+    for (std::size_t i = 0; i < p - 1; ++i)                //  +e_i+e_j  (i<j)
+        for (std::size_t j = i + 1; j < p; ++j) {
+            arma::vec v = arma::zeros<arma::vec>(p);
+            v[i] = v[j] = 1;
+            disp.push_back(v);
+        }
+    const std::size_t m = disp.size();                     // total design points
+
+    //  evaluate fun at every design point 
+    arma::vec y(m);
+    for (std::size_t k = 0; k < m; ++k) {
+        set_params(M, block, row, col, base + disp[k] % incr);
+        y[k] = fun(M);
+    }
+    set_params(M, block, row, col, base);                  // restore θ₀
+
+    //  build design matrix X 
+    const std::size_t q = 1 + 2*p + (p*(p-1))/2;           // # β‐coeffs
+    arma::mat X(m, q, arma::fill::ones);
+    std::size_t col_id = 1;
+
+    // linear terms
+    for (std::size_t j = 0; j < p; ++j, ++col_id)
+        for (std::size_t k = 0; k < m; ++k)
+            X(k, col_id) = disp[k][j];
+
+    // squares
+    for (std::size_t j = 0; j < p; ++j, ++col_id)
+        for (std::size_t k = 0; k < m; ++k)
+            X(k, col_id) = std::pow(disp[k][j], 2);
+
+    // cross terms
+    for (std::size_t i = 0; i < p - 1; ++i)
+        for (std::size_t j = i + 1; j < p; ++j, ++col_id)
+            for (std::size_t k = 0; k < m; ++k)
+                X(k, col_id) = disp[k][i] * disp[k][j];
+
+    //  “frac” scaling (identical to nlme) 
+    arma::vec frac(q, arma::fill::ones);
+    for (std::size_t j = 0; j < p; ++j)              frac[1 + j]     = incr[j];
+    for (std::size_t j = 0; j < p; ++j)              frac[1 + p + j] = incr[j] * incr[j];
+    col_id = 1 + 2*p;
+    for (std::size_t i = 0; i < p - 1; ++i)
+        for (std::size_t j = i + 1; j < p; ++j, ++col_id)
+            frac[col_id] = incr[i] * incr[j];
+
+    //  solve for polynomial coefficients 
+    arma::vec coef = arma::solve(X, y) / frac;
+
+    //  gradient (first‐order coefs) 
+    arma::vec grad = coef.subvec(1, p);
+
+    //  Hessian 
+    arma::mat Hess(p, p, arma::fill::zeros);
+
+    // diagonal:  2 * c_i
+    for (std::size_t j = 0; j < p; ++j)
+        Hess(j, j) = 2.0 * coef[1 + p + j];
+
+    // off‐diagonal:  d_ij
+    col_id = 1 + 2*p;
+    for (std::size_t i = 0; i < p - 1; ++i)
+        for (std::size_t j = i + 1; j < p; ++j, ++col_id) {
+            Hess(i, j) = coef[col_id];
+            Hess(j, i) = coef[col_id];
+        }
+
+    //  return exactly like nlme::fdHess() 
+    return Rcpp::List::create(
+        Rcpp::Named("mean")     = coef[0],
+        Rcpp::Named("gradient") = grad,
+        Rcpp::Named("Hessian")  = Hess
+    );
+}
+
+
+// [[Rcpp::export]]
+Rcpp::List hessObsLogLikLmsCpp(const Rcpp::List& modelR,
+                                 const arma::mat&  data,
+                                 const Rcpp::List& P,
+                                 const arma::uvec& block,
+                                 const arma::uvec& row,
+                                 const arma::uvec& col,
+                                 double            relStep = 1e-6,
+                                 double            minAbs  = 0.0,
+                                 int               ncores  = 1) {
+    LMSModel M(modelR);
+
+    const arma::mat V = Rcpp::as<arma::mat>(P["V"]);
+    const arma::vec w = Rcpp::as<arma::vec>(P["w"]);
+
+    auto obs_ll = [&](LMSModel& mod) -> double {
+        return observedLogLikFromModel(mod, V, w, data, ncores);
+    };
+
+    return fdHessCpp(M, obs_ll, block, row, col, relStep, minAbs);
+}
+
+
+// [[Rcpp::export]]
+Rcpp::List hessCompLogLikLmsCpp(const Rcpp::List& modelR,
+                                const Rcpp::List& P,
+                                const arma::uvec& block,
+                                const arma::uvec& row,
+                                const arma::uvec& col,
+                                double            relStep = 1e-6,
+                                double            minAbs  = 0.0,
+                                int               ncores  = 1) {
+  LMSModel M(modelR);
+
+  const arma::mat  V       = Rcpp::as<arma::mat>(P["V"]);
+  const arma::vec  tgamma  = Rcpp::as<arma::vec>(P["tgamma"]);
+  const auto       Mean    = as_vec_of_vec(P["mean"]);
+  const auto       Cov     = as_vec_of_mat(P["cov"]);
+
+  const Rcpp::List info   = modelR["info"];
+  const int n             = Rcpp::as<int>(info["N"]);
+  const int d             = Rcpp::as<int>(info["ncol"]);
+
+  auto comp_ll = [&](LMSModel& mod) -> double {
+    return completeLogLikFromModel(mod, V, tgamma, Mean, Cov, n, d);
+  };
+
+  return fdHessCpp(M, comp_ll, block, row, col, relStep, minAbs);
 }
