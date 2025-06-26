@@ -220,7 +220,7 @@ getEmptyModel <- function(parTable, cov.syntax, parTableCovModel,
   parTable$mod <- ""
   parTable <- removeConstraintExpressions(parTable)
 
-  if (!is.null(parTableCovModel)) {
+  if (NROW(parTableCovModel)) {
     parTableCovModel$mod <- ""
     parTableCovModel <- removeConstraintExpressions(parTableCovModel)
   }

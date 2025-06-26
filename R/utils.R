@@ -482,7 +482,7 @@ parTableToEnv <- function(parTable, prefix = "") {
 
 
 getConstrExprs <- function(parTable, parTableCov) {
-  parTable <- rbind(parTable, parTableCov)
+  parTable <- unique(rbind(parTable, parTableCov))
   rows <- sortConstrExprs(parTable)
   if (is.null(rows)) return(NULL)
 

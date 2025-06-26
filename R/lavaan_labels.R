@@ -48,13 +48,11 @@ createLavLabelsCov <- function(matrices, subset) {
   if (is.null(matrices)) return(NULL)
 
   phi      <- createLabelsMatrix(matrices$phi, op = "~~")
-  A        <- createLabelsMatrix(matrices$A, op = "~~")
   psi      <- createLabelsMatrix(matrices$psi, op = "~~")
   gammaXi  <- createLabelsMatrix(matrices$gammaXi, op = "~", first = "rows")
   gammaEta <- createLabelsMatrix(matrices$gammaEta, op = "~", first = "rows")
 
   labels <- c("phi" = phi,
-              "A" = A,
               "psi" = psi,
               "gammaXi" = gammaXi,
               "gammaEta" = gammaEta)
@@ -72,7 +70,7 @@ createLabelsMatrix <- function(X, op = "~", first = "cols") {
   getLabel <- switch(first, cols = function(col, row) paste0(col, op, row),
                      rows = function(col, row) paste0(row, op, col))
 
-  for (i in seq_len(ncol(X))) for (j in seq_len(nrow(X))) {
+  for (i in seq_len(NCOL(X))) for (j in seq_len(NROW(X))) {
     labels <- c(labels, getLabel(col = cols[[i]], row = rows[[j]]))
   }
 

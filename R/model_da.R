@@ -161,7 +161,8 @@ specifyModelDA <- function(syntax = NULL,
   subThetaEpsilon <- constructSubThetaEpsilon(indsEtas, thetaEpsilon,
                                               scalingInds, method = method)
 
-  covModel <- covModel(cov.syntax, method = method, parTable = parTableCovModel)
+  covModel <- covModel(cov.syntax, method = method, parTable = parTableCovModel,
+                       xis.main = xis, parTable.main = parTable)
 
   # list of matrices
   matrices <- list(
@@ -273,7 +274,12 @@ specifyModelDA <- function(syntax = NULL,
 
 
 matrixToParTable <- function(matrixNA, matrixEst, matrixSE, matrixLabel,
-                             op = "=~", rowsLhs = TRUE) {
+                             op = "=~", rowsLhs = TRUE, symmetric = FALSE) {
+  if (symmetric) {
+    matrixNA[upper.tri(matrixNA)]       <- 0
+    matrixLabel[upper.tri(matrixLabel)] <- ""
+  }
+
   if (!rowsLhs) {
     matrixNA    <- t(matrixNA)
     matrixEst   <- t(matrixEst)
@@ -413,16 +419,16 @@ mainModelToParTable <- function(finalModel, method = "lms") {
                               matricesEst$thetaDelta,
                               matricesSE$thetaDelta,
                               matricesLabel$thetaDelta,
-                              op = "~~",
-                              rowsLhs = TRUE)
+                              op = "~~", rowsLhs = TRUE,
+                              symmetric = TRUE)
   parTable <- rbind(parTable, newRows)
 
   newRows <- matrixToParTable(matricesNA$thetaEpsilon,
                               matricesEst$thetaEpsilon,
                               matricesSE$thetaEpsilon,
                               matricesLabel$thetaEpsilon,
-                              op = "~~",
-                              rowsLhs = TRUE)
+                              op = "~~", rowsLhs = TRUE,
+                              symmetric = TRUE)
   parTable <- rbind(parTable, newRows)
 
   # (Co) variances Structural Model
@@ -443,7 +449,8 @@ mainModelToParTable <- function(finalModel, method = "lms") {
                               phiSE,
                               phiLabel,
                               op = "~~",
-                              rowsLhs = FALSE)
+                              rowsLhs = FALSE,
+                              symmetric = TRUE)
   parTable <- rbind(parTable, newRows)
 
   newRows <- matrixToParTable(matricesNA$psi,
@@ -451,7 +458,8 @@ mainModelToParTable <- function(finalModel, method = "lms") {
                               matricesSE$psi,
                               matricesLabel$psi,
                               op = "~~",
-                              rowsLhs = FALSE)
+                              rowsLhs = FALSE,
+                              symmetric = TRUE)
   parTable <- rbind(parTable, newRows)
 
   parTable <- lapplyDf(parTable, FUN = function(x) replace(x, x == -999, NA))

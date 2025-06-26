@@ -67,15 +67,10 @@ optimizeStartingParamsDA <- function(model) {
   if (!is.null(matricesCov)) {
     PsiCovModel <- findEstimatesParTable(matricesCov$psi, parTable, op = "~~")
     PhiCovModel <- findEstimatesParTable(matricesCov$phi, parTable, op = "~~")
-    ACovModel <- findEstimatesParTable(matricesCov$A, parTable, op = "~~")
-    ACovModel[upper.tri(ACovModel)] <- t(ACovModel[lower.tri(ACovModel)])
-    ACovModel <- t(tryCatch(chol(ACovModel), error = function(x)
-                            diag(ncol(ACovModel))))
     GammaEtaCovModel <- findEstimatesParTable(matricesCov$gammaEta, parTable, op = "~")
     GammaXiCovModel <- findEstimatesParTable(matricesCov$gammaXi, parTable, op = "~")
 
     thetaCov <- unlist(list(PhiCovModel[is.na(matricesCov$phi)],
-                            ACovModel[is.na(matricesCov$A)],
                             PsiCovModel[is.na(matricesCov$psi)],
                             GammaXiCovModel[is.na(matricesCov$gammaXi)],
                             GammaEtaCovModel[is.na(matricesCov$gammaEta)]))
