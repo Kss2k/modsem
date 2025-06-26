@@ -14,7 +14,6 @@ tpb_uk <- "
  BEH ~ INT:PBC
 "
 
-# Chronbach's Alpha ------------------------------------------------------------
 corrected <- relcorr_single_item(syntax = tpb_uk, data = TPB_UK)
 print(corrected)
 syntax <- corrected$syntax
@@ -25,7 +24,6 @@ est_lms <- modsem(syntax, data = data, method="lms", nodes=32)
 
 est_dca <- modsem(tpb_uk, data = TPB_UK, method = "dblcent", rcs = TRUE)
 est_lms <- modsem(tpb_uk, data = TPB_UK, method = "lms", nodes = 32, rcs = TRUE)
-
 
 est_dca <- modsem(tpb_uk, data = TPB_UK, method = "dblcent", rcs = TRUE,
                   rcs.choose = c("ATT", "SN", "PBC", "INT"))
