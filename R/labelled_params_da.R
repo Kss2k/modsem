@@ -2,9 +2,12 @@ createThetaLabel <- function(labelMatrices, labelMatricesCov,
                               constrExprs, start = NULL) {
   matrices <- c(labelMatrices, labelMatricesCov)
   labels <- lapply(matrices, FUN = function(x) {
+    if (NCOL(x) == 0 || NROW(x) == 0) return(NULL)
+
     select <- apply(x, MARGIN = 2, FUN = function(z)
                     !canBeNumeric(z, includeNA = TRUE))
-    as.vector(x[select]) }) |> unlist() |> unique()
+    as.vector(x[select]) 
+  }) |> unlist() |> unique()
 
   if (!is.null(constrExprs)) {
     labels <- labels[!labels %in% constrExprs$fixedParams]
@@ -69,6 +72,7 @@ getVarsExpr <- function(expr) {
 
 
 removeConstraintExpressions <- function(parTable) {
+  if (!NROW(parTable)) return(parTable)
   parTable[!parTable$op %in% c("==", "<", ">", ":="), ]
 }
 

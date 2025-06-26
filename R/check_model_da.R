@@ -1,8 +1,6 @@
 checkModel <- function(model, covModel = NULL, method = "lms") {
   checkCovModelVariables(covModel = covModel, modelXis = model$info$xis)
 
-  checkCovModelMatrices(covModel = covModel, method = method)
-
   checkZeroVariances(model = model, method = method)
 
   checkNodesLms(parTableMain = model$parTable,
@@ -16,28 +14,25 @@ checkModel <- function(model, covModel = NULL, method = "lms") {
   checkOverlappingIndicators(allIndsXis = model$info$allIndsXis,
                              allIndsEtas = model$info$allIndsEtas)
 
-  checkALabels(model$labelMatrices, method = method)
+  checkAConstraints(model = model, covModel = covModel, method = method)
 }
 
 
+checkAConstraints <- function(model, covModel, method = "lms") {
+  if (method != "lms" || !is.null(covModel$matrices)) return(NULL)
 
-checkALabels <- function(labelMatrices, method = "lms") {
-  if (method != "lms") return(NULL)
+  An <- model$matrices$A
+  Al <- model$labelMatrices$A
 
-  warnif(any(labelMatrices$A != ""), 
+  warnif(any(Al != "") || !all(is.na(An[lower.tri(An)])), 
          "Variances and covariances of exogenous variables aren't truely ",
          "free parameters in the LMS approach. Using them in model constraints ",
          "affecting the model estimation will likely not work as expected!\n\n",
          "If the label is unused, or only used to compute custom parameters (using `:=`) ",
-         "which don't affect the model estimation, you can ignore this warning.\n"
+         "which don't affect the model estimation, you can ignore this warning.\n\n",
+         'To fix this you can pass an empty model to `cov.syntax`, for example: \n',
+         '    `modsem(my_model, data = my_data, method = "lms", cov.syntax = "")`\n'
   )
-}
-
-
-checkCovModelMatrices <- function(covModel, method = "lms") {
-  if (is.null(covModel)) return(NULL) # nothing to check
-
-  checkALabels(covModel$labelMatrices, method = method)
 }
 
 

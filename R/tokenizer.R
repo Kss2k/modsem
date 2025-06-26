@@ -69,6 +69,11 @@ createTokensLine <- function(line, i = 1,
 
 
 initializeToken <- function(char, pos, line) {
+  nextChar <- if (pos + 1 <= length(line)) line[[pos + 1]] else ""
+
+  nextCharIsAlpha <- grepl("[[:alpha:]\\.]", nextChar)
+  nextCharIsNum   <- grepl("[[:digit:]]", nextChar)
+
   # optimaly this should be a switch
   if (grepl("#", char)) {
     type  <- "LavComment"
@@ -76,7 +81,7 @@ initializeToken <- function(char, pos, line) {
   } else if (grepl("\\s+", char)) {
     type <- "LavBlank"
     priority <- 999
-  } else if (grepl("[[:alpha:]_.]", char)) {
+  } else if (grepl("[[:alpha:]_]", char) || (char == "." & nextCharIsAlpha)) {
     type <- "LavName"
     priority <- 10
   } else if (grepl("[\\(\\)]", char)) {
@@ -85,7 +90,7 @@ initializeToken <- function(char, pos, line) {
   } else if (grepl("[\\=\\~\\*\\+\\<\\>\\,\\:\\^\\/-]", char)) {
     type <- "LavOperator"
     priority <- 0
-  } else if (grepl("[[:alnum:]]", char)) {
+  } else if (grepl("[[:alnum:]]", char) || (char == "." & nextCharIsNum)) {
     type <- "LavNumeric"
     priority <- 10
   } else if (grepl('\\"' , char)) {
@@ -96,6 +101,7 @@ initializeToken <- function(char, pos, line) {
          " pos ", pos, "\n",
          highlightError(line, pos = pos))
   }
+
   structure(char,
             pos = pos,
             lineNumber = attr(line, "lineNumber"),

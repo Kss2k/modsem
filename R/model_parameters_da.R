@@ -73,13 +73,11 @@ createThetaCovModel <- function(covModel, start = NULL) {
   M <- covModel$matrices
 
   phi      <- as.vector(M$phi)
-  A        <- as.vector(M$A)
   psi      <- as.vector(M$psi)
   alpha    <- as.vector(M$alpha)
   gammaXi  <- as.vector(M$gammaXi)
   gammaEta <- as.vector(M$gammaEta)
   thetaCov <- c("phi" = phi,
-                "A" = A,
                 "psi" = psi,
                 "gammaXi" = gammaXi,
                 "gammaEta" = gammaEta)
@@ -120,8 +118,7 @@ fillModel <- function(model, theta, fillPhi = FALSE, method = "lms") {
     thetaMain <- theta[-seq_len(model$lenThetaCov)]
   }
 
-  model$covModel <- fillCovModel(model$covModel, thetaCov, thetaLabel,
-                                 fillPhi = fillPhi, method = method)
+  model$covModel <- fillCovModel(model$covModel, thetaCov, thetaLabel)
   model$matrices <- fillMainModel(model, thetaMain, thetaLabel,
                                   fillPhi = fillPhi, method = method)
   model
@@ -167,8 +164,7 @@ fillMainModel <- function(model, theta, thetaLabel, fillPhi = FALSE,
 }
 
 
-fillCovModel <- function(covModel, theta, thetaLabel, fillPhi = FALSE,
-                         method = "lms") {
+fillCovModel <- function(covModel, theta, thetaLabel) {
   if (is.null(names(theta))) names(theta) <- names(covModel$theta)
   if (is.null(covModel$matrices)) return(covModel)
   M <- covModel$matrices
@@ -180,14 +176,7 @@ fillCovModel <- function(covModel, theta, thetaLabel, fillPhi = FALSE,
   M$psi      <- fillSymmetric(M$psi, fetch(theta, "^psi"))
   M$gammaEta <- fillNA_Matrix(M$gammaEta, theta = theta, pattern = "^gammaEta")
   M$gammaXi  <- fillNA_Matrix(M$gammaXi, theta = theta, pattern = "^gammaXi")
-
-  if (method == "lms") {
-    M$A <- fillNA_Matrix(M$A, theta = theta, pattern = "^A[0-9]+")
-  } else if (method == "qml") {
-    M$phi <- fillSymmetric(M$phi, fetch(theta, "^phi"))
-  }
-
-  if (fillPhi) M$phi <- M$A %*% t(M$A)
+  M$phi <- fillSymmetric(M$phi, fetch(theta, "^phi"))
 
   covModel$matrices <- M
   covModel

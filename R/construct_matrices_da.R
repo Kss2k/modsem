@@ -1,5 +1,6 @@
 # Functions for constructing matrices for LMS and QML.
-# Last updated: 06.06.2024
+EMPTY_MATSTRUCT <- list(numeric = matrix(0), label = matrix(""))
+
 setMatrixConstraints <- function(X, parTable, op, RHS, LHS, type, nonFreeParams) {
   fillConstExprs(X, parTable = parTable, op = op, RHS = RHS, LHS = LHS,
                  type = type, nonFreeParams = nonFreeParams) |>
@@ -8,6 +9,8 @@ setMatrixConstraints <- function(X, parTable, op, RHS, LHS, type, nonFreeParams)
 
 
 fillConstExprs <- function(X, parTable, op, RHS, LHS, type, nonFreeParams = TRUE) {
+  if (!NROW(parTable)) return(X)
+
   constExprs <- parTable[parTable$op == op &
                          parTable$rhs %in% RHS &
                          parTable$lhs %in% LHS &
@@ -30,6 +33,9 @@ fillConstExprs <- function(X, parTable, op, RHS, LHS, type, nonFreeParams = TRUE
 fillDynExprs <- function(X, parTable, op, RHS, LHS, type) {
   # dynamic exprs need a corresponding matrix of labels
   labelX <- as.character.matrix(X, empty = TRUE)
+
+  if (!NROW(parTable)) return(list(numeric = X, label = labelX))
+
   dynamicExprs <- parTable[parTable$op == op &
                            parTable$rhs %in% RHS &
                            parTable$lhs %in% LHS &
@@ -168,6 +174,7 @@ constructTheta <- function(lVs, indsLVs, parTable, auto.constraints = TRUE) {
 
 
 constructGamma <- function(DVs, IVs, parTable) {
+  if (!length(DVs)) return(EMPTY_MATSTRUCT)
   exprsGamma <- parTable[parTable$op == "~" & !grepl(":", parTable$rhs), ]
   numDVs <- length(DVs)
   numIVs <- length(IVs)
@@ -179,6 +186,8 @@ constructGamma <- function(DVs, IVs, parTable) {
 
 
 constructPsi <- function(etas, parTable) {
+  if (!length(etas)) return(EMPTY_MATSTRUCT)
+
   numEtas   <- length(etas)
   psi       <- matrix(0, nrow = numEtas, ncol = numEtas,
                       dimnames = list(etas, etas))
@@ -192,6 +201,8 @@ constructPsi <- function(etas, parTable) {
 
 constructPhi <- function(xis, method = "lms", cov.syntax = NULL,
                          parTable) {
+  if (!length(xis)) return(EMPTY_MATSTRUCT)
+
   numXis <- length(xis)
   phi    <- matrix(0, nrow = numXis, ncol = numXis,
                    dimnames = list(xis, xis))
@@ -206,6 +217,8 @@ constructPhi <- function(xis, method = "lms", cov.syntax = NULL,
 
 constructA <- function(xis, method = "lms", cov.syntax = NULL,
                        parTable) {
+  if (!length(xis)) return(EMPTY_MATSTRUCT)
+
   numXis <- length(xis)
   A      <- matrix(0, nrow = numXis, ncol = numXis,
                    dimnames = list(xis, xis))
@@ -220,6 +233,8 @@ constructA <- function(xis, method = "lms", cov.syntax = NULL,
 
 constructAlpha <- function(etas, parTable, auto.constraints = TRUE,
                            mean.observed = TRUE) {
+  if (!length(etas)) return(EMPTY_MATSTRUCT)
+
   numEtas <- length(etas)
   default <- if (mean.observed) 0 else NA
 

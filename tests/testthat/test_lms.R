@@ -42,10 +42,14 @@ m1 <- "
 "
 
 testthat::expect_warning(
-  modsem(m1, oneInt, method = "lms"),
+  modsem(m1, oneInt, method = "lms")
+  ,
   regexp = "Variances and covariances .*"
 )
 
+testthat::expect_no_warning(
+  modsem(m1, oneInt, method = "lms", cov.syntax = "")
+)
 
 # PROBLEM:
 #   I have no clue why, but changing the ordering of how the interaction terms 
@@ -194,3 +198,21 @@ est3 <- modsem(m1, oneInt, method = "lms")
 std <- standardized_estimates(est3)
 testthat::expect_equal(unname(calcVarParTable("Y", std)), 1)
 summarize_partable(std)
+
+
+m1 <- "
+# Outer Model
+  X =~ x1 + x2
+  Z =~ z1 + z2
+  .Y =~ y1 + y2
+
+# Inner model
+  .Y ~ X + Z + X:Z
+
+  X~~ a*X + b*Z
+
+  a == 1
+  b == .2
+"
+
+modsem(m1, oneInt, method = "lms", cov.syntax = "")
