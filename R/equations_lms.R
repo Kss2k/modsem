@@ -157,7 +157,6 @@ simpleGradientAllLogLikLms <- function(theta, model, P, data, sign = -1, epsilon
                 row = row, 
                 col = col, 
                 eps=epsilon)
-  # grad <- structure(c(grad), names = param)
 
   if (length(nlinDerivs)) {
     evalTheta  <- model$gradientStruct$evalTheta
@@ -166,12 +165,14 @@ simpleGradientAllLogLikLms <- function(theta, model, P, data, sign = -1, epsilon
     THETA      <- list2env(as.list(evalTheta(theta)))
 
     for (dep in names(nlinDerivs)) {
-      derivs <- eval(expr = nlinDerivs[[dep]], envir = THETA)
+      derivs  <- nlinDerivs[[dep]]
 
       for (indep in names(derivs)) {
+        deriv <- eval(expr = derivs[[indep]], envir = THETA)
+
         match.full <- param.full == dep
         match.part <- param.part == indep
-        Jacobian[match.part, match.full] <- derivs[[indep]]
+        Jacobian[match.part, match.full] <- deriv
       }
     }
   }
@@ -188,12 +189,10 @@ obsLogLikLms <- function(theta, model, data, P, sign = 1, ...) {
 
 
 gradientObsLogLikLms <- function(theta, model, data, P, sign = 1, epsilon = 1e-6) {
-  ncores <- ThreadEnv$n.threads
-
   FGRAD <- function(modelR, P, block, row, col, eps) {
     gradObsLogLikLmsCpp(modelR = modelR, data = data, P = P,
                         block = block, row = row, col = col,
-                        eps = eps, ncores = ncores)
+                        eps = eps, ncores = ThreadEnv$n.threads)
   }
 
   FOBJECTIVE <- function(theta, model, P, sign) {
@@ -250,4 +249,124 @@ densityLms <- function(z, modFilled, data) {
   lapplyMatrix(seq_len(nrow(z)), FUN.VALUE = numeric(NROW(data)), FUN = function(i) {
     densitySingleLms(z = z[i, , drop=FALSE], modFilled = modFilled, data = data)
   })
+}
+
+
+hessianAllLogLikLms <- function(theta, model, P, sign = -1,
+                                 FHESS, FOBJECTIVE, .relStep = Machine$double.eps ^ (1/3)) {
+  hasCovModel <- model$gradientStruct$hasCovModel
+
+  if (hasCovModel) hessian <- \(...) complicatedHessianAllLogLikLms(..., FOBJECTIVE = FOBJECTIVE)
+  else             hessian <- \(...) simpleHessianAllLogLikLms(..., FHESS = FHESS, .relStep = .relStep)
+
+  hessian(theta = theta, model = model, P = P, sign = sign)
+}
+
+
+compHessianAllLogLikLms <- function(theta, model, P, data, sign = -1, 
+                                    .relStep = .Machine$double.eps ^ (1/3), 
+                                    FOBJECTIVE) {
+  nlme::fdHess(pars = theta, FOBJECTIVE, model = model, P = P, 
+               data = data, sign = sign, .relStep = .relStep)
+}
+
+
+simpleHessianAllLogLikLms <- function(theta, model, P, data, sign = -1, 
+                                      .relStep = .Machine$double.eps ^ (1/3), 
+                                      FHESS) {
+  # simple gradient which should work if constraints are well-behaved functions 
+  # which can be derivated by Deriv::Deriv, and there is no covModel
+  modelR      <- fillModel(model=model, theta=theta, method="lms")
+  locations   <- model$gradientStruct$locations
+  Jacobian    <- model$gradientStruct$Jacobian
+  Jacobian2   <- model$gradientStruct$Jacobian2
+  nlinDerivs  <- model$gradientStruct$nlinDerivs
+  nlinDerivs2 <- model$gradientStruct$nlinDerivs2
+
+  block     <- locations$block
+  row       <- locations$row
+  col       <- locations$col
+  param     <- locations$param
+
+  HESS <- FHESS(modelR = modelR, 
+                P = P, 
+                block = block, 
+                row = row, 
+                col = col, 
+                .relStep = .relStep)
+
+  H    <- HESS$Hessian
+  grad <- HESS$gradient
+
+  if (length(nlinDerivs)) {
+    evalTheta  <- model$gradientStruct$evalTheta
+    param.full <- colnames(Jacobian)
+    param.part <- rownames(Jacobian)
+    THETA      <- list2env(as.list(evalTheta(theta)))
+
+    for (dep in names(nlinDerivs)) {
+      derivs1 <- nlinDerivs[[dep]]
+      derivs2 <- nlinDerivs2[[dep]]
+
+      for (indep in names(derivs1)) {
+        deriv1 <- eval(expr = derivs1[[indep]], envir = THETA)
+        deriv2 <- eval(expr = derivs2[[indep]], envir = THETA)
+
+        match.full <- param.full == dep
+        match.part <- param.part == indep
+
+        Jacobian[match.part, match.full] <- deriv1
+        Jacobian2[match.part, match.full] <- deriv2
+      }
+    }
+  }
+
+  term1 <- Jacobian %*% H %*% t(Jacobian)          
+  term2 <- diag(drop(Jacobian2 %*% grad), nrow = nrow(Jacobian))
+
+  sign * (term1 + term2)
+}
+
+
+complicatedHessianAllLogLikLms <- function(theta, model, P, sign = -1, FOBJECTIVE) {
+  nlme::fdHess(pars = theta, fun = FOBJECTIVE, model = model, P = P, sign = sign)$Hessian
+}
+
+
+hessianObsLogLikLms <- function(theta, model, data, P, sign = -1, 
+                                .relStep = .Machine$double.eps ^ (1/3)) {
+
+  FHESS <- function(modelR, P, block, row, col, eps, .relStep) {
+    hessObsLogLikLmsCpp(modelR = modelR, data = data, P = P,
+                        block = block, row = row, col = col,
+                        relStep = .relStep, minAbs = 0.0,
+                        ncores = ThreadEnv$n.threads)
+  }
+
+  FOBJECTIVE <- function(theta, model, P, sign) {
+    obsLogLikLms(theta = theta, model = model, data = data, P = P, sign = sign)
+  }
+
+  hessianAllLogLikLms(theta = theta, model = model, P = P, sign = sign, 
+                      FHESS = FHESS, FOBJECTIVE = FOBJECTIVE,
+                      .relStep = .relStep)
+}
+
+
+hessianCompLogLikLms <- function(theta, model, P, sign = -1, 
+                                 .relStep = .Machine$double.eps ^ (1/3)) {
+
+  FHESS <- function(modelR, P, block, row, col, eps, .relStep) {
+    hessCompLogLikLmsCpp(modelR = modelR, P = P,
+                         block = block, row = row, col = col,
+                         relStep = .relStep, minAbs = 0.0,
+                         ncores = ThreadEnv$n.threads)
+  }
+
+  FOBJECTIVE <- function(theta, model, P, sign) {
+    compLogLikLms(theta = theta, model = model, P = P, sign = sign)
+  }
+
+  hessianAllLogLikLms(theta = theta, model = model, P = P, sign = sign, 
+                      FHESS = FHESS, FOBJECTIVE = FOBJECTIVE, .relStep = .relStep)
 }

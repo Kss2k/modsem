@@ -357,18 +357,21 @@ getGradientStructSimple <- function(model, theta) {
   constraints  <- constraints[constraints$lhs %in% restParTable$mod, ]
 
   derivatives <- list()
+  derivatives2 <- list()
   for (i in seq_len(NROW(constraints))) {
     constrVar <- constraints[i, "lhs"]
     constrEq  <- constraints[i, "rhs"]
 
     derivatives[[constrVar]] <- derivateConstraint(constrEq)
+    derivatives2[[constrVar]] <- secondDerivateConstraint(constrEq)
   }
 
   isLinear <- vapply(derivatives, FUN.VALUE = logical(1L), FUN = is.atomic)
 
-  linDerivs  <- derivatives[isLinear]
-  nlinDerivs <- derivatives[!isLinear]
-  evalTheta  <- \(theta) c(theta, suppressWarnings(calcThetaLabel(theta, constraints))) # This could be made a bit better
+  linDerivs   <- derivatives[isLinear]
+  nlinDerivs  <- derivatives[!isLinear]
+  nlinDerivs2 <- derivatives2[!isLinear]
+  evalTheta   <- \(theta) c(theta, suppressWarnings(calcThetaLabel(theta, constraints))) # This could be made a bit better
 
   locations <- rbind(
     getParamLocationsMatrices(model$matrices, isFree=is.na),
@@ -389,6 +392,7 @@ getGradientStructSimple <- function(model, theta) {
 
   Jacobian <- matrix(0, nrow = m, ncol = k,  
                      dimnames = list(param.part, param.full))
+  Jacobian2 <- Jacobian
 
   for (par in param.full) {
     match.full <- param.full == par
@@ -410,7 +414,9 @@ getGradientStructSimple <- function(model, theta) {
   list(
     locations   = locations, 
     Jacobian    = Jacobian,
+    Jacobian2   = Jacobian2,
     nlinDerivs  = nlinDerivs,
+    nlinDerivs2  = nlinDerivs2,
     evalTheta   = evalTheta,
     hasCovModel = hasCovModel,
     isNonLinear = length(nlinDerivs) > 1
@@ -420,9 +426,30 @@ getGradientStructSimple <- function(model, theta) {
 
 derivateConstraint <- function(constr) {
   f <- stats::formula(paste0("~", constr))
-  eq <- Deriv::Deriv(f)
+  eq <- Deriv::Deriv(f, combine = "list")
 
-  if (is.null(names(eq))) names(eq) <- all.vars(f)
+  if (is.null(names(eq))) {
+    names(eq) <- all.vars(f)
+  } else {
+    eq <- as.list(eq)[-1]
+  }
 
   eq
+}
+
+
+secondDerivateConstraint <- function(constr) {
+  f <- stats::formula(paste0("~", constr))
+  eq <- Deriv::Deriv(f, nderiv = 2, combine = "list")
+
+  out <- list()
+  if (is.null(names(eq))) {
+    names(eq) <- all.vars(f)
+  } else {
+    for (indep in all.vars(f)) {
+      out[[indep]] <- eq[[indep]][[indep]]
+    }
+  }
+
+  out
 }

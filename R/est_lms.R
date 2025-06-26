@@ -34,12 +34,11 @@ lbfgs_two_loop <- function(grad, s_list, g_list) {
 
 
 # Compute complete-data Fisher information via inverse Hessian
-computeFullIcom <- function(theta, model, data, P, epsilon) {
+computeFullIcom <- function(theta, model, data, P) {
   # fLogLik <- function(par) compLogLikLms(theta = par, model = model, P = P)
   # Ic <- fdHESS(pars = theta, fun = fLogLik)
 
-  Ic <- calcHessFromGradient(gradientCompLogLikLms, theta = theta, model = model, 
-                             P = P, sign = -1, eps = epsilon, epsilon = epsilon)
+  Ic <- hessianCompLogLikLms(theta = theta, model = model, P = P, sign = -1)
   diag(Ic) <- diag(Ic) + 1e-8  # ensure invertibility
   Ic
 }
@@ -107,6 +106,8 @@ emLms <- function(model,
   iterations <- 0
   run <- TRUE
 
+  testSimpleGradient <- !model$gradientStruct$hasCovModel
+
   while (run) {
     # New iteration
     iterations <- iterations + 1
@@ -117,6 +118,18 @@ emLms <- function(model,
     # E-step
     P <- estepLms(model = model, theta = thetaOld, data = data, 
                   lastQuad = lastQuad, recalcQuad = recalcQuad, ...)
+
+    if (testSimpleGradient) {
+      tryCatch({
+        gradientCompLogLikLms(theta = thetaNew, model = model, P = P)
+      }, error = \(e) {
+        warning2("Optimized computation of gradient failed! Attempting to switch gradient type!")
+        model$gradientStruct$hasCovModel <<- TRUE
+        model$gradientStruct$isNonLinear <<- TRUE
+      })
+
+      testSimpleGradient <- FALSE
+    }
 
     # Update Quadrature Info
     lastQuad <- P$quad
@@ -171,8 +184,7 @@ emLms <- function(model,
         } else direction <- -grad
 
       } else if (mode == "FS") {
-        Ic     <- computeFullIcom(theta = thetaOld, model = model, P = P,
-                                  epsilon = epsilon)
+        Ic     <- computeFullIcom(theta = thetaOld, model = model, P = P)
         direction <- -tryCatch(solve(Ic, grad), error = function(e) NULL)
       }
 

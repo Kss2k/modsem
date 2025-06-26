@@ -24,7 +24,7 @@ est_dca <- modsem(syntax, data = data, method = "dblcent")
 est_lms <- modsem(syntax, data = data, method="lms", nodes=32)
 
 est_dca <- modsem(tpb_uk, data = TPB_UK, method = "dblcent", rcs = TRUE)
-est_lms <- modsem(tpb_uk, data = TPB_UK, method = "dblcent", rcs = TRUE)
+est_lms <- modsem(tpb_uk, data = TPB_UK, method = "lms", nodes = 32, rcs = TRUE)
 
 
 est_dca <- modsem(tpb_uk, data = TPB_UK, method = "dblcent", rcs = TRUE,
