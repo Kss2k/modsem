@@ -558,3 +558,8 @@ subsetByGrouping <- function(df, grouping = NULL) {
   grouping <- grouping[intersect(names(grouping), colnames(df))]
   df[apply(df[names(grouping)], MARGIN = 1, FUN = \(x) all(x == grouping)), ]
 }
+
+
+GINV <- function(X) {
+  structure(MASS::ginv(X), dimnames = dimnames(X))
+}

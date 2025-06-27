@@ -362,3 +362,51 @@ standardized_estimates.modsem_da <- function(object,
   
   stdSolution$parTable
 }
+
+
+#' @describeIn modsem_predict 
+#' Computes (optionally standardised) factor scores via the
+#'   regression method using the baseline model unless \code{H0 = FALSE}.
+#'
+#' @param object \code{\link{modsem_da}} object
+#' @param standardized Logical. If \code{TRUE}, return standardized factor scores.
+#' @param H0 Logical. If \code{TRUE} (default), use the baseline model to compute factor scores.
+#'   If \code{FALSE}, use the model specified in \code{object}. Using \code{H0 = FALSE} is not recommended!
+#' @export
+modsem_predict.modsem_da <- function(object, standardized = FALSE, H0 = TRUE) {
+  modelH1 <- object 
+
+  if (H0) {
+    modelH0 <- estimate_h0(modelH1, calc.se = FALSE, warn_no_interaction = FALSE, 
+                           verbose = FALSE)
+  
+    if (is.null(modelH0)) modelH0 <- modelH1
+  } else modelH0 <- modelH1
+
+  fitH0      <- fit_modsem_da(modelH0, chisq = TRUE)
+  parTableH1 <- parameter_estimates(modelH1)
+  parTableH0 <- parameter_estimates(modelH0)
+
+  lVs   <- getLVs(parTableH1)
+  sigma <- fitH0$sigma.expected
+
+  sigma.inv <- GINV(sigma)
+  lambda    <- getLambdaParTable(parTableH0, rows = colnames(sigma), cols = lVs)
+  X         <- apply(as.matrix(modelH0$data), MARGIN = 2, FUN = \(x) x - mean(x, na.rm = TRUE))
+  X         <- X[, colnames(sigma), drop = FALSE]
+
+  FSC <- GINV(t(lambda) %*% sigma.inv %*% lambda) %*% (t(lambda) %*% sigma.inv)
+
+  alpha <- matrix(getMeans(lVs, parTable = parTableH1), 
+                  nrow = nrow(X), ncol = length(lVs), byrow = TRUE)
+
+  Y <- X %*% t(FSC) + alpha
+
+  if (standardized) {
+    mu <- \(x) mean(x, na.rm = TRUE)
+    s  <- \(x) sd(x, na.rm = TRUE)
+    Y  <- apply(Y, MARGIN = 2, FUN = \(y) (y - mu(y)) / s(y))
+  }
+
+  Y
+}

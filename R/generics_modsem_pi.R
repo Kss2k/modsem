@@ -376,3 +376,10 @@ print.modsem_pi <- function(x, ...) {
   printModsemPIHeader(attributes(x)$method)
   print(x$lavaan)
 }
+
+
+#' @describeIn modsem_predict 
+#' @export
+modsem_predict.modsem_pi <- function(object, ...) {
+  lavaan::predict(extract_lavaan(object), ...)
+}

@@ -456,3 +456,22 @@ intTermsAffectLV <- function(lV, parTable, etas = NULL) {
 
   FALSE
 }
+
+
+getLambdaParTable <- function(parTable, rows = NULL, cols = NULL) {
+  lVs <- getLVs(parTable)
+
+  indsLVs <- getIndsLVs(parTable, lVs = lVs)
+  allInds <- unique(unlist(indsLVs))
+
+  lambda <- matrix(0, nrow = length(allInds), ncol = length(lVs),
+                   dimnames = list(allInds, lVs))
+  for (lV in lVs) for (ind in indsLVs[[lV]]) {
+    lambda[ind, lV] <- parTable[parTable$lhs == lV & parTable$rhs == ind, "est"]
+  }
+
+  if (is.null(rows)) rows <- rownames(lambda)
+  if (is.null(cols)) cols <- colnames(lambda)
+
+  lambda <- lambda[rows, cols, drop = FALSE]
+}
