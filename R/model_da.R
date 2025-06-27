@@ -15,7 +15,8 @@ specifyModelDA <- function(syntax = NULL,
                            checkModel = TRUE,
                            quad.range = Inf,
                            adaptive.quad = FALSE,
-                           adaptive.frequency = 3) {
+                           adaptive.frequency = 3,
+                           impute.na = FALSE) {
   if (!is.null(syntax)) parTable <- modsemify(syntax)
   stopif(is.null(parTable), "No parTable found")
   
@@ -52,7 +53,7 @@ specifyModelDA <- function(syntax = NULL,
   numAllIndsXis <- length(allIndsXis)
 
   # clean data
-  data <- cleanAndSortData(data, allIndsXis, allIndsEtas)
+  data <- cleanAndSortData(data, allIndsXis, allIndsEtas, impute.na = impute.na)
 
   # measurement model x
   listLambdaX <- constructLambda(xis, indsXis, parTable = parTable,

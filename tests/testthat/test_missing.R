@@ -10,8 +10,12 @@ m1 <- '
 '
 
 oneInt2 <- oneInt
-oneInt2[c(176, 176, 258, 1900),
-        c(1, 2, 3, 7)] <- NA
+
+set.seed(123)
+k <- 200
+I <- sample(nrow(oneInt2), k, replace = TRUE)
+J <- sample(ncol(oneInt2), k, replace = TRUE)
+for (k_i in seq_along(I)) oneInt2[I[k_i], J[k_i]] <- NA
 
 # double centering approach
 est <- modsem(m1, oneInt2)
@@ -32,3 +36,24 @@ testthat::expect_true(!any(is.na(est$data)))
 
 est <- modsem(m1, oneInt2, method = "rca", na.rm=FALSE)
 testthat::expect_true(any(is.na(est$data)))
+
+# lms
+testthat::expect_warning(
+  modsem(m1, oneInt2, method = "lms", impute.na = FALSE, convergence.abs = 1,
+         calc.se = FALSE),
+  regexp = "Removing.*Consider.*"
+)
+
+
+testthat::expect_message(
+  modsem(m1, oneInt2, method = "lms", impute.na = TRUE, convergence.abs = 1,
+         calc.se = FALSE),
+  regexp = "Imputing.*"
+)
+
+# qml
+testthat::expect_message(
+  modsem(m1, oneInt2, method = "qml", impute.na = TRUE, convergence.rel =1e-1,
+         calc.se = FALSE),
+  regexp = "Imputing.*"
+)

@@ -169,18 +169,35 @@ castDataNumericMatrix <- function(data) {
 }
 
 
-filterData <- function(data) {
+handleMissingData <- function(data, impute.na = FALSE) {
   completeCases <- stats::complete.cases(data)
-  if (any(!completeCases)) warning2("Removing missing values case-wise.")
-  data[completeCases, ]
+  anyMissing    <- any(!completeCases)
+
+  if (!anyMissing) return(data)
+
+  if (!impute.na) {
+    warning2("Removing missing values case-wise!\nConsider using `impute.na = TRUE`, or impute yourself!")
+
+    return(data[completeCases, ])
+
+  } else {
+    message("Imputing missing values. Consider imputing yourself!")
+
+    imp <- Amelia::amelia(data, m = 1, p2s = 0)
+    imp1 <- as.matrix(as.data.frame(imp[[1]]))
+    colnames(imp1) <- rownames(imp$mu)
+  
+    return(imp1)
+  }
 }
 
 
-cleanAndSortData <- function(data, allIndsXis, allIndsEtas) {
+cleanAndSortData <- function(data, allIndsXis, allIndsEtas, impute.na = FALSE) {
   if (is.null(data)) return(NULL)
   # sort Data before optimizing starting params
   sortData(data, allIndsXis,  allIndsEtas) |>
-    castDataNumericMatrix() |> filterData()
+    castDataNumericMatrix() |> 
+    handleMissingData(impute.na = impute.na)
 }
 
 
