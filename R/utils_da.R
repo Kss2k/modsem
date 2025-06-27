@@ -169,7 +169,7 @@ castDataNumericMatrix <- function(data) {
 }
 
 
-handleMissingData <- function(data, impute.na = FALSE) {
+handleMissingData <- function(data, impute.na = FALSE, seed = 123) {
   completeCases <- stats::complete.cases(data)
   anyMissing    <- any(!completeCases)
 
@@ -182,8 +182,9 @@ handleMissingData <- function(data, impute.na = FALSE) {
 
   } else {
     message("Imputing missing values. Consider imputing yourself!")
+    set.seed(seed)
 
-    imp <- Amelia::amelia(data, m = 1, p2s = 0)
+    imp  <- Amelia::amelia(data, m = 1, p2s = 0)
     imp1 <- as.matrix(as.data.frame(imp[[1]]))
     colnames(imp1) <- rownames(imp$mu)
   
