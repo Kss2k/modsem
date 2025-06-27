@@ -373,7 +373,7 @@ standardized_estimates.modsem_da <- function(object,
 #' @param H0 Logical. If \code{TRUE} (default), use the baseline model to compute factor scores.
 #'   If \code{FALSE}, use the model specified in \code{object}. Using \code{H0 = FALSE} is not recommended!
 #' @export
-modsem_predict.modsem_da <- function(object, standardized = FALSE, H0 = TRUE) {
+modsem_predict.modsem_da <- function(object, standardized = FALSE, H0 = TRUE, ...) {
   modelH1 <- object 
 
   if (H0) {
