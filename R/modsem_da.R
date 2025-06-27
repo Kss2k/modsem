@@ -13,12 +13,17 @@
 #' @param optimize should starting parameters be optimized
 #'
 #' @param nodes number of quadrature nodes (points of integration) used in \code{lms},
-#' increased number gives better estimates but slower computation. How many are needed depends on the complexity of the model.
-#' For simple models, somewhere between 16-24 nodes should be enough; for more complex models, higher numbers may be needed.
-#' For models where there is an interaction effect between an endogenous and exogenous variable,
-#' the number of nodes should be at least 32, but practically (e.g., ordinal/skewed data), more than 32 is recommended. In cases
-#' where data is non-normal, it might be better to use the \code{qml} approach instead. For large
-#' numbers of nodes, you might want to change the \code{'quad.range'} argument.
+#'   increased number gives better estimates but slower computation. How many are needed depends on the complexity of the model.
+#'   For simple models, somewhere between 16-24 nodes should be enough; for more complex models, higher numbers may be needed.
+#'   For models where there is an interaction effect between an endogenous and exogenous variable,
+#'   the number of nodes should be at least 32, but practically (e.g., ordinal/skewed data), more than 32 is recommended. In cases
+#'   where data is non-normal, it might be better to use the \code{qml} approach instead. 
+#'   You can also consider setting \code{adaptive.quad = TRUE}.
+#'
+#' @param impute.na Should missing values be imputed? If \code{FALSE} missing values
+#'   are removed case-wise. If \code{TRUE} values are imputed using \code{Amelia::amelia}.
+#'   Default is \code{FALSE}. If you want more fine-grained control over how the missing data 
+#'   is imputed, you should consider imputing it yourself.
 #'
 #' @param convergence.abs Absolute convergence criterion. 
 #'   Lower values give better estimates but slower computation. Not relevant when
@@ -207,6 +212,7 @@ modsem_da <- function(model.syntax = NULL,
                       verbose = NULL,
                       optimize = NULL,
                       nodes = NULL,
+                      impute.na = NULL,
                       convergence.abs = NULL,
                       convergence.rel = NULL,
                       optimizer = NULL,
@@ -298,7 +304,8 @@ modsem_da <- function(model.syntax = NULL,
           adaptive.frequency = adaptive.frequency,
           n.threads = n.threads,
           algorithm = algorithm,
-          em.control = em.control
+          em.control = em.control,
+          impute.na = impute.na
         )
     )
 
@@ -321,7 +328,8 @@ modsem_da <- function(model.syntax = NULL,
     double = args$double,
     quad.range = args$quad.range,
     adaptive.quad = args$adaptive.quad,
-    adaptive.frequency = args$adaptive.frequency
+    adaptive.frequency = args$adaptive.frequency,
+    impute.na = args$impute.na
   )
 
   if (args$optimize) {

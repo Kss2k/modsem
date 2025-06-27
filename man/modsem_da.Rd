@@ -11,6 +11,7 @@ modsem_da(
   verbose = NULL,
   optimize = NULL,
   nodes = NULL,
+  impute.na = NULL,
   convergence.abs = NULL,
   convergence.rel = NULL,
   optimizer = NULL,
@@ -61,8 +62,13 @@ increased number gives better estimates but slower computation. How many are nee
 For simple models, somewhere between 16-24 nodes should be enough; for more complex models, higher numbers may be needed.
 For models where there is an interaction effect between an endogenous and exogenous variable,
 the number of nodes should be at least 32, but practically (e.g., ordinal/skewed data), more than 32 is recommended. In cases
-where data is non-normal, it might be better to use the \code{qml} approach instead. For large
-numbers of nodes, you might want to change the \code{'quad.range'} argument.}
+where data is non-normal, it might be better to use the \code{qml} approach instead. 
+You can also consider setting \code{adaptive.quad = TRUE}.}
+
+\item{impute.na}{Should missing values be imputed? If \code{FALSE} missing values
+are removed case-wise. If \code{TRUE} values are imputed using \code{Amelia::amelia}.
+Default is \code{FALSE}. If you want more fine-grained control over how the missing data 
+is imputed, you should consider imputing it yourself.}
 
 \item{convergence.abs}{Absolute convergence criterion. 
 Lower values give better estimates but slower computation. Not relevant when
