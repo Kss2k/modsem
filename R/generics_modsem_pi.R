@@ -22,7 +22,6 @@ summary.modsem_pi <- function(object,
   out$lavaan  <- lavaan::summary(extract_lavaan(object), ...)
   out$info    <- list(version = PKG_INFO$version, approach = attributes(object)$method)
   out$fit     <- lavaan::fitMeasures(extract_lavaan(object))
-  out$logLik  <- lavaan::fitMeasures(extract_lavaan(object), what = "logl")
   out$N       <- lavaan::nobs(extract_lavaan(object))
   out$format  <- list(digits = digits, scientific = scientific, adjusted.stat = adjusted.stat, ci = ci)
   out$ngroups <- lavaan::lavInspect(extract_lavaan(object), what = "ngroups")
@@ -52,7 +51,6 @@ summary.modsem_pi <- function(object,
       lrt <- compare_fit(object, est_h0)
       out$LRT <- lrt
       out$fitH0 <- lavaan::fitMeasures(extract_lavaan(est_h0))
-      out$logLikH0 <- lavaan::fitMeasures(extract_lavaan(est_h0), "logl")
     }
   }, error = \(e) warning2("Baseline model could not be estimated: ", e$message, immediate. = FALSE))
 
@@ -115,7 +113,7 @@ print.summary_modsem_pi <- function(x, ...) {
                "P-value (Chi-square)", "RMSEA")
 
   valuesH1 <- c(
-    formatC(x$logLik, digits = 2, format = "f"),
+    formatC(fit["logl"], digits = 2, format = "f"),
     formatC(fit["aic"], digits = 2, format = "f"),
     formatC(fit["bic"], digits = 2, format = "f"),
     formatC(fit["chisq"], digits = 2, format = "f"),
@@ -133,7 +131,7 @@ print.summary_modsem_pi <- function(x, ...) {
     cat("Fit Measures for Baseline Model (H0):\n")
     fitH0 <- x$fitH0
     valuesH0 <- c(
-      formatC(x$logLikH0, digits = 2, format = "f"),
+      formatC(fitH0["logl"], digits = 2, format = "f"),
       formatC(fitH0["aic"], digits = 2, format = "f"),
       formatC(fitH0["bic"], digits = 2, format = "f"),
       formatC(fitH0["chisq"], digits = 2, format = "f"),
