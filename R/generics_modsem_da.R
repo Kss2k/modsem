@@ -404,7 +404,7 @@ modsem_predict.modsem_da <- function(object, standardized = FALSE, H0 = TRUE, ..
 
   if (standardized) {
     mu <- \(x) mean(x, na.rm = TRUE)
-    s  <- \(x) sd(x, na.rm = TRUE)
+    s  <- \(x) stats::sd(x, na.rm = TRUE)
     Y  <- apply(Y, MARGIN = 2, FUN = \(y) (y - mu(y)) / s(y))
   }
 
