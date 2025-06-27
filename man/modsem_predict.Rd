@@ -9,7 +9,7 @@
 \usage{
 modsem_predict(object, ...)
 
-\method{modsem_predict}{modsem_da}(object, standardized = FALSE, H0 = TRUE)
+\method{modsem_predict}{modsem_da}(object, standardized = FALSE, H0 = TRUE, ...)
 
 \method{modsem_predict}{modsem_pi}(object, ...)
 }
