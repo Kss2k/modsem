@@ -350,8 +350,11 @@ createIndProds <- function(relDf, indNames, data, centered = FALSE) {
 
 
 calculateResidualsDf <- function(dependentDf, independentNames, data) {
+  isComplete <- stats::complete.cases(data)
+
   # Using purrr::list_cbind() is more efficient than cbind()
   combinedData <- purrr::list_cbind(list(dependentDf, data))
+  combinedData <- combinedData[isComplete, ]
 
   # Getting the names of the dependent variables
   dependentNames <- colnames(dependentDf)
@@ -363,7 +366,7 @@ calculateResidualsDf <- function(dependentDf, independentNames, data) {
   colnames(resNoNA) <- dependentNames
 
   resNA <- dependentDf 
-  resNA[stats::complete.cases(data), ] <- resNoNA
+  resNA[isComplete, ] <- resNoNA
 
   resNA
 }
