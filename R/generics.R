@@ -400,3 +400,46 @@ modsem_coef <- function(object, ...) {
 modsem_nobs <- function(object, ...) {
   nobs(object, ...)
 }
+
+
+#' Predict From \code{modsem} Models
+#'
+#' A generic function (and corresponding methods) that produces predicted
+#' values or factor scores from \code{\link{modsem}} models.
+#'
+#' @param object An object of class \code{modsem_pi} or \code{modsem_da},
+#'   respectively.
+#' @param ... Further arguments passed to \code{lavaan::predict};
+#'   currently ignored by the \code{\link{modsem_da}} method.
+#'
+#' @return
+#' * For \code{\link{modsem_pi}}: whatever \code{lavaan::predict()}, which usually 
+#'   returns a matrix of factor scores.
+#' * For \code{\link{modsem_da}}: a numeric matrix \eqn{n \times p}, where \eqn{n} is the number of
+#'   (complete) observations in the dataset, and \eqn{p} the number of latent variables. Each
+#'   column contains either raw or standardised factor scores, depending on the
+#'   \code{standardized} argument.
+#'
+#' @examples
+#' m1 <- '
+#' # Outer Model
+#'   X =~ x1 + x2 + x3
+#'   Z =~ z1 + z2 + z3
+#'   Y =~ y1 + y2 + y3
+#' 
+#' # Inner Model
+#'   Y ~ X + Z + X:Z
+#' '
+#'
+#' est_dca <- modsem(m1, oneInt, method = "dblcent")
+#' modsem_predict(est_dca)
+#'
+#' \dontrun{
+#' est_lms <- modsem(m1, oneInt, method = "lms")
+#' modsem_predict(est_lms)
+#' }
+#'
+#' @export
+modsem_predict <- function(object, ...) {
+  UseMethod("modsem_predict")
+}

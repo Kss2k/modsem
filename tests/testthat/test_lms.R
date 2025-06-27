@@ -24,6 +24,7 @@ print(summary(est1, adjusted.stat = TRUE))
 plot_surface(x = "X", z = "Z", y = "Y", model = est1)
 standardize_model(est1, monte.carlo=TRUE)
 standardize_model(est1, monte.carlo=FALSE)
+modsem_predict(est1)
 
 m1 <- "
 # Outer Model
@@ -134,6 +135,7 @@ tpb2 <- '
 testthat::expect_warning(modsem(tpb, TPB, method = "lms", convergence.abs = 1000,
                                 nodes = 16, calc.se = FALSE),
                          regexp = "It is recommended .* between exogenous and endogenous .*")
+modsem_predict(est2)
 
 
 testthat::expect_true({
@@ -149,14 +151,14 @@ testthat::expect_true({
 })
 
 tpb_uk <- '
-# Outer Model (Based on Hagger et al., Citation2007)
+# Outer Model (Based on Hagger et al., 2007)
   ATT =~ att3 + att2 + att1 + att4
   SN =~ sn4 + sn2 + sn3 + sn1
   PBC =~ pbc2 + pbc1 + pbc3 + pbc4
   INT =~ int2 + int1 + int3 + int4
   BEH =~ beh3 + beh2 + beh1 + beh4
 
-# Inner Model (Based on Steinmetz et al., Citation2011)
+# Inner Model (Based on Steinmetz et al., 2011)
 # Causal Relationships
   INT ~ ATT + SN + PBC
   BEH ~ INT + PBC
