@@ -89,6 +89,7 @@ necessary syntax, and variables for the estimation of models with latent product
 <span>  verbose <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  optimize <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  nodes <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  impute.na <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  convergence.abs <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  convergence.rel <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  optimizer <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -154,8 +155,15 @@ increased number gives better estimates but slower computation. How many are nee
 For simple models, somewhere between 16-24 nodes should be enough; for more complex models, higher numbers may be needed.
 For models where there is an interaction effect between an endogenous and exogenous variable,
 the number of nodes should be at least 32, but practically (e.g., ordinal/skewed data), more than 32 is recommended. In cases
-where data is non-normal, it might be better to use the <code>qml</code> approach instead. For large
-numbers of nodes, you might want to change the <code>'quad.range'</code> argument.</p></dd>
+where data is non-normal, it might be better to use the <code>qml</code> approach instead.
+You can also consider setting <code>adaptive.quad = TRUE</code>.</p></dd>
+
+
+<dt id="arg-impute-na">impute.na<a class="anchor" aria-label="anchor" href="#arg-impute-na"></a></dt>
+<dd><p>Should missing values be imputed? If <code>FALSE</code> missing values
+are removed case-wise. If <code>TRUE</code> values are imputed using <code><a href="https://rdrr.io/pkg/Amelia/man/amelia.html" class="external-link">Amelia::amelia</a></code>.
+Default is <code>FALSE</code>. If you want more fine-grained control over how the missing data
+is imputed, you should consider imputing it yourself.</p></dd>
 
 
 <dt id="arg-convergence-abs">convergence.abs<a class="anchor" aria-label="anchor" href="#arg-convergence-abs"></a></dt>
