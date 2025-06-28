@@ -119,6 +119,7 @@ necessary syntax, and variables for the estimation of models with latent product
 <span>  em.control <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  rcs <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  rcs.choose <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  orthogonal.y <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -336,6 +337,13 @@ single item indicators instead? See <code><a href="relcorr_single_item.html">rel
 <dd><p>Which latent variables should get their indicators replaced with
 reliablity-reliability corrected single items? Corresponds to the <code>choose</code>
 argument in <code><a href="relcorr_single_item.html">relcorr_single_item</a></code>.</p></dd>
+
+
+<dt id="arg-orthogonal-y">orthogonal.y<a class="anchor" aria-label="anchor" href="#arg-orthogonal-y"></a></dt>
+<dd><p>If <code>TRUE</code>, all covariances among endogenous latent variables only are set to zero.
+If <code>FALSE</code> residual covariances are added between pure endogenous variables;
+those that are predicted by no other endogenous variable in the structural model.
+Default is <code>FALSE</code>.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
