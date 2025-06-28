@@ -256,7 +256,7 @@ densityLms <- function(z, modFilled, data) {
 
 
 hessianAllLogLikLms <- function(theta, model, P, sign = -1,
-                                 FHESS, FOBJECTIVE, .relStep = Machine$double.eps ^ (1/5)) {
+                                 FHESS, FOBJECTIVE, .relStep = .Machine$double.eps ^ (1/5)) {
   hasCovModel <- model$gradientStruct$hasCovModel
 
   if (hasCovModel) hessian <- \(...) complicatedHessianAllLogLikLms(..., FOBJECTIVE = FOBJECTIVE, .relStep = .relStep)
