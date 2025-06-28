@@ -104,4 +104,26 @@ testthat::expect_error(
   regex = ".*zero residual variance.*"
 )
 
-modsem(model = JDR_Model_modsem, data = dummy_data, method = "qml")
+est_qml <- modsem(model = JDR_Model_modsem, data = dummy_data, method = "qml")
+summary(est_qml)
+
+
+JDR_Model_linear <- '
+# Measurement model
+  PSC =~ PSC_address_problems + PSC_nobody_intentional + PSC_dare_risk + PSC_skills_appreciated  # social resource
+  SWE =~ Innovation_push_through + Innovation_inspire + Innovation_innovation_potential + Innovation_trust  # personal resource
+  WE =~ fit_energetic + inspiring_work + completely_absorbed
+  STRESS =~ too_little_time_tasks + tasks_inadequately_fulfilled + pointless_tasks
+  IRRITATE =~ thinking_about_work_issues_at_home + irritable + feeling_like_bundle_of_nerves  # Strain
+  NONINF =~ decisions_not_influenced  # Job Demands
+  INT =~ intention_to_change_leadership_binary  # Outcome
+
+# Structural model
+  WE ~ PSC + SWE + NONINF 
+  IRRITATE ~ PSC + SWE + NONINF 
+  STRESS ~ WE + IRRITATE 
+  INT ~ WE 
+'
+
+est_lin_lms <- modsem(JDR_Model_linear, dummy_data, "lms")
+testthat::expect_equal(est_lin_lms$iterations, 2)

@@ -16,7 +16,8 @@ specifyModelDA <- function(syntax = NULL,
                            quad.range = Inf,
                            adaptive.quad = FALSE,
                            adaptive.frequency = 3,
-                           impute.na = FALSE) {
+                           impute.na = FALSE,
+                           orthogonal.y = FALSE) {
   if (!is.null(syntax)) parTable <- modsemify(syntax)
   stopif(is.null(parTable), "No parTable found")
   
@@ -102,7 +103,7 @@ specifyModelDA <- function(syntax = NULL,
   labelGammaEta <- listGammaEta$label
 
   # covariance matrices
-  listPsi  <- constructPsi(etas, parTable = parTable)
+  listPsi  <- constructPsi(etas, parTable = parTable, orthogonal.y = orthogonal.y)
   psi      <- listPsi$numeric
   labelPsi <- listPsi$label
 

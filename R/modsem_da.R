@@ -145,6 +145,11 @@
 #' reliablity-reliability corrected single items? Corresponds to the \code{choose} 
 #' argument in \code{\link{relcorr_single_item}}.
 #'
+#' @param orthogonal.y If \code{TRUE}, all covariances among endogenous latent variables only are set to zero. 
+#'  If \code{FALSE} residual covariances are added between pure endogenous variables; 
+#'  those that are predicted by no other endogenous variable in the structural model.
+#'  Default is \code{FALSE}.
+#'
 #' @param ... additional arguments to be passed to the estimation function.
 #'
 #' @return \code{modsem_da} object
@@ -242,6 +247,7 @@ modsem_da <- function(model.syntax = NULL,
                       em.control = NULL,
                       rcs = FALSE,
                       rcs.choose = NULL,
+                      orthogonal.y = NULL,
                       ...) {
   if (is.null(model.syntax)) {
     stop2("No model.syntax provided")
@@ -305,7 +311,8 @@ modsem_da <- function(model.syntax = NULL,
           n.threads = n.threads,
           algorithm = algorithm,
           em.control = em.control,
-          impute.na = impute.na
+          impute.na = impute.na,
+          orthogonal.y = orthogonal.y
         )
     )
 
@@ -329,7 +336,8 @@ modsem_da <- function(model.syntax = NULL,
     quad.range = args$quad.range,
     adaptive.quad = args$adaptive.quad,
     adaptive.frequency = args$adaptive.frequency,
-    impute.na = args$impute.na
+    impute.na = args$impute.na,
+    orthogonal.y = args$orthogonal.y
   )
 
   if (args$optimize) {
