@@ -41,6 +41,7 @@ modsem_da(
   em.control = NULL,
   rcs = FALSE,
   rcs.choose = NULL,
+  orthogonal.y = NULL,
   ...
 )
 }
@@ -189,6 +190,11 @@ single item indicators instead? See \code{\link{relcorr_single_item}}.}
 \item{rcs.choose}{Which latent variables should get their indicators replaced with
 reliablity-reliability corrected single items? Corresponds to the \code{choose} 
 argument in \code{\link{relcorr_single_item}}.}
+
+\item{orthogonal.y}{If \code{TRUE}, all covariances among endogenous latent variables only are set to zero. 
+If \code{FALSE} residual covariances are added between pure endogenous variables; 
+those that are predicted by no other endogenous variable in the structural model.
+Default is \code{FALSE}.}
 
 \item{...}{additional arguments to be passed to the estimation function.}
 }
