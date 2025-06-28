@@ -150,12 +150,14 @@ simpleGradientAllLogLikLms <- function(theta, model, P, data, sign = -1, epsilon
   row       <- locations$row
   col       <- locations$col
   param     <- locations$param
+  symmetric <- locations$symmetric
 
   grad <- FGRAD(modelR = modelR, 
                 P = P, 
                 block = block, 
                 row = row, 
                 col = col, 
+                symmetric = symmetric,
                 eps=epsilon)
 
   if (length(nlinDerivs)) {
@@ -189,9 +191,10 @@ obsLogLikLms <- function(theta, model, data, P, sign = 1, ...) {
 
 
 gradientObsLogLikLms <- function(theta, model, data, P, sign = 1, epsilon = 1e-6) {
-  FGRAD <- function(modelR, P, block, row, col, eps) {
+  FGRAD <- function(modelR, P, block, row, col, symmetric, eps) {
     gradObsLogLikLmsCpp(modelR = modelR, data = data, P = P,
                         block = block, row = row, col = col,
+                        symmetric = symmetric,
                         eps = eps, ncores = ThreadEnv$n.threads)
   }
 
@@ -264,7 +267,7 @@ hessianAllLogLikLms <- function(theta, model, P, sign = -1,
 
 
 compHessianAllLogLikLms <- function(theta, model, P, data, sign = -1, 
-                                    .relStep = .Machine$double.eps ^ (1/5), 
+                                    .relStep = .Machine$double.eps ^ (1/6), 
                                     FOBJECTIVE) {
   nlme::fdHess(pars = theta, FOBJECTIVE, model = model, P = P, 
                data = data, sign = sign, .relStep = .relStep)
@@ -287,12 +290,14 @@ simpleHessianAllLogLikLms <- function(theta, model, P, data, sign = -1,
   row       <- locations$row
   col       <- locations$col
   param     <- locations$param
+  symmetric <- locations$symmetric
 
   HESS <- FHESS(modelR = modelR, 
                 P = P, 
                 block = block, 
                 row = row, 
                 col = col, 
+                symmetric = symmetric,
                 .relStep = .relStep)
 
   H    <- HESS$Hessian
@@ -338,9 +343,10 @@ complicatedHessianAllLogLikLms <- function(theta, model, P, sign = -1, FOBJECTIV
 hessianObsLogLikLms <- function(theta, model, data, P, sign = -1, 
                                 .relStep = .Machine$double.eps ^ (1/5)) {
 
-  FHESS <- function(modelR, P, block, row, col, eps, .relStep) {
+  FHESS <- function(modelR, P, block, row, col, symmetric, eps, .relStep) {
     hessObsLogLikLmsCpp(modelR = modelR, data = data, P = P,
                         block = block, row = row, col = col,
+                        symmetric = symmetric,
                         relStep = .relStep, minAbs = 0.0,
                         ncores = ThreadEnv$n.threads)
   }
@@ -358,9 +364,10 @@ hessianObsLogLikLms <- function(theta, model, data, P, sign = -1,
 hessianCompLogLikLms <- function(theta, model, P, sign = -1, 
                                  .relStep = .Machine$double.eps ^ (1/5)) {
 
-  FHESS <- function(modelR, P, block, row, col, eps, .relStep) {
+  FHESS <- function(modelR, P, block, row, col, symmetric, eps, .relStep) {
     hessCompLogLikLmsCpp(modelR = modelR, P = P,
                          block = block, row = row, col = col,
+                         symmetric = symmetric,
                          relStep = .relStep, minAbs = 0.0,
                          ncores = ThreadEnv$n.threads)
   }

@@ -510,3 +510,50 @@ getLambdaParTable <- function(parTable, rows = NULL, cols = NULL) {
 
   lambda <- lambda[rows, cols, drop = FALSE]
 }
+
+
+getLevelsParTable <- function(parTable) {
+  parTable$lhs <- stringr::str_remove_all(parTable$lhs, pattern = ":")
+  parTable$rhs <- stringr::str_remove_all(parTable$rhs, pattern = ":")
+
+  xis <- getXis(parTable, isLV = FALSE)
+  etas <- getEtas(parTable, isLV = FALSE)
+  vars <- c(xis, etas)
+
+  MAPPED <- list()
+
+  getLevelVarParTable <- function(x) {
+    if      (x %in% names(MAPPED)) return(MAPPED[[x]])
+    else if (x %in% xis) {
+      MAPPED[[x]] <<- 1L
+      return(MAPPED[[x]])
+    }
+
+    if (!x %in% etas) stop("Unexpected type of variable: ", x)
+
+    predictors <- parTable[parTable$op == "~" & parTable$lhs == x, , drop = FALSE]
+
+    if (!NROW(predictors)) {
+      MAPPED[[x]] <<- 1L
+      return(MAPPED[[x]])
+    }
+
+    maxlevel <- 0L
+    for (i in seq_len(NROW(predictors))) {
+      predictor <- predictors$rhs[i]
+      predlevel <- getLevelVarParTable(predictor)
+
+      if (predlevel > maxlevel) maxlevel <- predlevel
+    }
+
+    MAPPED[[x]] <<- maxlevel + 1L
+    MAPPED[[x]]
+  }
+
+  for (var in vars) {
+    if (var %in% names(MAPPED)) next
+    getLevelVarParTable(x = var)
+  }
+
+  MAPPED
+}

@@ -184,22 +184,22 @@ struct LMSModel {
 
 
 inline std::vector<arma::vec> as_vec_of_vec(const Rcpp::List& L) {
-    const std::size_t J = L.size();
-    std::vector<arma::vec> out;
-    out.reserve(J);
-    for (std::size_t j = 0; j < J; ++j)
-        out.emplace_back( Rcpp::as<arma::vec>(L[j]) );
-    return out;
+  const std::size_t J = L.size();
+  std::vector<arma::vec> out;
+  out.reserve(J);
+  for (std::size_t j = 0; j < J; ++j)
+    out.emplace_back( Rcpp::as<arma::vec>(L[j]) );
+  return out;
 }
 
 
 inline std::vector<arma::mat> as_vec_of_mat(const Rcpp::List& L) {
-    const std::size_t J = L.size();
-    std::vector<arma::mat> out;
-    out.reserve(J);
-    for (std::size_t j = 0; j < J; ++j)
-        out.emplace_back( Rcpp::as<arma::mat>(L[j]) );
-    return out;
+  const std::size_t J = L.size();
+  std::vector<arma::mat> out;
+  out.reserve(J);
+  for (std::size_t j = 0; j < J; ++j)
+    out.emplace_back( Rcpp::as<arma::mat>(L[j]) );
+  return out;
 }
 
 
@@ -231,23 +231,34 @@ arma::vec gradientFD(LMSModel&         M,
                      const arma::uvec& block,
                      const arma::uvec& row,
                      const arma::uvec& col,
+                     const arma::uvec& symmetric,
                      const double      eps = 1e-6) {
   const std::size_t p = block.n_elem;
   arma::vec grad(p);
 
   const double f0 = logLik(M);
 
+  
   for (std::size_t k = 0; k < p; ++k) {
+    double& ti  = lms_param(M, block[k], row[k], col[k]);
+    const  double oldi = ti;
 
-    double& ti   = lms_param(M, block[k], row[k], col[k]);
-    const double old = ti;
+    double* tj = nullptr;
+    double  oldj;
 
-    ti += eps;                  
+    if (symmetric[k] && row[k] != col[k]) {
+      tj   = &lms_param(M, block[k], col[k], row[k]);
+      oldj = *tj;
+    }
+
+    ti += eps;
+    if (tj) *tj += eps;
+
     const double f1 = logLik(M);
-
     grad[k] = (f1 - f0) / eps;
 
-    ti = old;
+    ti = oldi;
+    if (tj) *tj = oldj;
   }
 
   return grad;
@@ -262,24 +273,24 @@ completeLogLikFromModel(const LMSModel&                 M,
                         const std::vector<arma::mat>&   Cov,        // length J
                         const int                       n,
                         const int                       d) {
-    const std::size_t J = V.n_rows;
-    double ll = 0.0;
+  const std::size_t J = V.n_rows;
+  double ll = 0.0;
 
-    for (std::size_t j = 0; j < J; ++j) {
+  for (std::size_t j = 0; j < J; ++j) {
 
-        const double tg = TGamma[j];
-        if (tg <= DBL_MIN) continue;
+    const double tg = TGamma[j];
+    if (tg <= DBL_MIN) continue;
 
-        const arma::vec& z  = V.row(j).t();   // view – no copy
-        const arma::vec& nu = Mean[j];
-        const arma::mat& S  = Cov [j];
+    const arma::vec& z  = V.row(j).t();   // view – no copy
+    const arma::vec& nu = Mean[j];
+    const arma::mat& S  = Cov [j];
 
-        const arma::vec mu  = M.mu   (z);
-        const arma::mat Sig = M.Sigma(z);
+    const arma::vec mu  = M.mu   (z);
+    const arma::mat Sig = M.Sigma(z);
 
-        ll += totalDmvnWeightedCpp(mu, Sig, nu, S, tg, n, d);
-    }
-    return ll;
+    ll += totalDmvnWeightedCpp(mu, Sig, nu, S, tg, n, d);
+  }
+  return ll;
 }
 
 
@@ -289,23 +300,24 @@ arma::vec gradLogLikLmsCpp(const Rcpp::List& modelR,
                            const arma::uvec& block,
                            const arma::uvec& row,
                            const arma::uvec& col,
+                           const arma::uvec& symmetric,
                            double            eps = 1e-6) {
-    LMSModel M(modelR);
+  LMSModel M(modelR);
 
-    const arma::mat  V       = Rcpp::as<arma::mat>(P["V"]);
-    const arma::vec  tgamma  = Rcpp::as<arma::vec>(P["tgamma"]);
-    const auto       Mean    = as_vec_of_vec(P["mean"]);
-    const auto       Cov     = as_vec_of_mat(P["cov"]);
+  const arma::mat  V       = Rcpp::as<arma::mat>(P["V"]);
+  const arma::vec  tgamma  = Rcpp::as<arma::vec>(P["tgamma"]);
+  const auto       Mean    = as_vec_of_vec(P["mean"]);
+  const auto       Cov     = as_vec_of_mat(P["cov"]);
 
-    const Rcpp::List info   = modelR["info"];
-    const int n             = Rcpp::as<int>(info["N"]);
-    const int d             = Rcpp::as<int>(info["ncol"]);
+  const Rcpp::List info   = modelR["info"];
+  const int n             = Rcpp::as<int>(info["N"]);
+  const int d             = Rcpp::as<int>(info["ncol"]);
 
-    auto comp_ll = [&](LMSModel& mod) -> double {
-        return completeLogLikFromModel(mod, V, tgamma, Mean, Cov, n, d);
-    };
+  auto comp_ll = [&](LMSModel& mod) -> double {
+    return completeLogLikFromModel(mod, V, tgamma, Mean, Cov, n, d);
+  };
 
-    return gradientFD(M, comp_ll, block, row, col, eps);
+  return gradientFD(M, comp_ll, block, row, col, symmetric, eps);
 }
 
 
@@ -332,20 +344,20 @@ inline double observedLogLikFromModel(const LMSModel&            M,
                                       const arma::vec&           w, 
                                       const arma::mat&        data,
                                       const int ncores = 1) {
-    const std::size_t n = V.n_rows;
+  const std::size_t n = V.n_rows;
 
-    arma::vec density = arma::zeros<arma::vec>(data.n_rows);
-    for (std::size_t i = 0; i < n; ++i) {
-      if (w[i] <= DBL_MIN) continue;
+  arma::vec density = arma::zeros<arma::vec>(data.n_rows);
+  for (std::size_t i = 0; i < n; ++i) {
+    if (w[i] <= DBL_MIN) continue;
 
-      const arma::vec z   = V.row(i).t();
-      const arma::vec mu  = M.mu   (z);
-      const arma::mat Sig = M.Sigma(z);
+    const arma::vec z   = V.row(i).t();
+    const arma::vec mu  = M.mu   (z);
+    const arma::mat Sig = M.Sigma(z);
 
-      density += dmvnfast(data, mu, Sig, false, ncores, false) * w[i];
-    }
+    density += dmvnfast(data, mu, Sig, false, ncores, false) * w[i];
+  }
 
-    return arma::sum(arma::log(density));
+  return arma::sum(arma::log(density));
 }
 
 
@@ -356,6 +368,7 @@ arma::vec gradObsLogLikLmsCpp(const Rcpp::List& modelR,
                               const arma::uvec& block,
                               const arma::uvec& row,
                               const arma::uvec& col,
+                              const arma::uvec& symmetric,
                               double            eps   = 1e-6,
                               int               ncores= 1) {
   LMSModel M(modelR);
@@ -367,7 +380,7 @@ arma::vec gradObsLogLikLmsCpp(const Rcpp::List& modelR,
     return observedLogLikFromModel(mod, V, w, data, ncores);
   };
 
-  return gradientFD(M, obs_ll, block, row, col, eps);
+  return gradientFD(M, obs_ll, block, row, col, symmetric, eps);
 }
 
 
@@ -386,23 +399,30 @@ inline arma::vec get_params(const LMSModel& M,
                             const arma::uvec& block,
                             const arma::uvec& row,
                             const arma::uvec& col) {
-    const std::size_t p = block.n_elem;
-    arma::vec pars(p);
-    for (std::size_t k = 0; k < p; ++k)
-        pars[k] = lms_param(const_cast<LMSModel&>(M),
-                            block[k], row[k], col[k]);
-    return pars;
+  const std::size_t p = block.n_elem;
+  arma::vec pars(p);
+  for (std::size_t k = 0; k < p; ++k)
+    pars[k] = lms_param(const_cast<LMSModel&>(M),
+        block[k], row[k], col[k]);
+  return pars;
 }
 
 
-inline void set_params(LMSModel&      M,
+inline void set_params(LMSModel&         M,
                        const arma::uvec& block,
                        const arma::uvec& row,
                        const arma::uvec& col,
+                       const arma::uvec& symmetric,
                        const arma::vec&  vals) {
-    const std::size_t p = block.n_elem;
-    for (std::size_t k = 0; k < p; ++k)
-        lms_param(M, block[k], row[k], col[k]) = vals[k];
+  const std::size_t p = block.n_elem;
+
+  for (std::size_t k = 0; k < p; ++k) {
+    double& ti = lms_param(M, block[k], row[k], col[k]);
+    ti = vals[k];
+
+    if (symmetric[k] && row[k] != col[k])
+      lms_param(M, block[k], col[k], row[k]) = vals[k];
+  }
 }
 
 
@@ -412,6 +432,7 @@ Rcpp::List fdHessCpp(LMSModel&         M,
                      const arma::uvec& block,
                      const arma::uvec& row,
                      const arma::uvec& col,
+                     const arma::uvec& symmetric,
                      double            relStep   = 1e-6,
                      double            minAbsPar = 0.0) {
     const std::size_t p = block.n_elem;
@@ -439,10 +460,10 @@ Rcpp::List fdHessCpp(LMSModel&         M,
     //  evaluate fun at every design point 
     arma::vec y(m);
     for (std::size_t k = 0; k < m; ++k) {
-        set_params(M, block, row, col, base + disp[k] % incr);
+        set_params(M, block, row, col, symmetric, base + disp[k] % incr);
         y[k] = fun(M);
     }
-    set_params(M, block, row, col, base);                  // restore θ₀
+    set_params(M, block, row, col, symmetric, base);                  // restore θ₀
 
     //  build design matrix X 
     const std::size_t q = 1 + 2*p + (p*(p-1))/2;           // # β‐coeffs
@@ -511,6 +532,7 @@ Rcpp::List hessObsLogLikLmsCpp(const Rcpp::List& modelR,
                                  const arma::uvec& block,
                                  const arma::uvec& row,
                                  const arma::uvec& col,
+                                 const arma::uvec& symmetric,
                                  double            relStep = 1e-6,
                                  double            minAbs  = 0.0,
                                  int               ncores  = 1) {
@@ -523,7 +545,7 @@ Rcpp::List hessObsLogLikLmsCpp(const Rcpp::List& modelR,
         return observedLogLikFromModel(mod, V, w, data, ncores);
     };
 
-    return fdHessCpp(M, obs_ll, block, row, col, relStep, minAbs);
+    return fdHessCpp(M, obs_ll, block, row, col, symmetric, relStep, minAbs);
 }
 
 
@@ -533,6 +555,7 @@ Rcpp::List hessCompLogLikLmsCpp(const Rcpp::List& modelR,
                                 const arma::uvec& block,
                                 const arma::uvec& row,
                                 const arma::uvec& col,
+                                const arma::uvec& symmetric,
                                 double            relStep = 1e-6,
                                 double            minAbs  = 0.0,
                                 int               ncores  = 1) {
@@ -551,5 +574,5 @@ Rcpp::List hessCompLogLikLmsCpp(const Rcpp::List& modelR,
     return completeLogLikFromModel(mod, V, tgamma, Mean, Cov, n, d);
   };
 
-  return fdHessCpp(M, comp_ll, block, row, col, relStep, minAbs);
+  return fdHessCpp(M, comp_ll, block, row, col, symmetric, relStep, minAbs);
 }

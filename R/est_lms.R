@@ -172,7 +172,6 @@ emLms <- function(model,
       }
     }
 
-
     if (algorithm != "EM" && mode != "EM") {
       # EMA: QN or FS update attempt
       grad <- computeGradient(theta = thetaOld, model = model, 

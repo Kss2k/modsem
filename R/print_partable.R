@@ -5,8 +5,21 @@ header <- c("Variable", "op", "Variable", "Estimate",
 
 
 formatParTable <- function(parTable, digits = 3, scientific = FALSE,
-                           ci = FALSE, width = 14) {
+                           ci = FALSE, width = 14, padResiduals = TRUE) {
   parTable <- fillColsParTable(parTable)
+
+  if (padResiduals) {
+    etas <- getEtas(parTable, isLV = FALSE)
+    inds <- getInds(parTable)
+    resvars <- c(etas, inds)
+
+    isResVarCov <- parTable$op == "~~" & 
+      (parTable$rhs %in% resvars | parTable$lhs %in% resvars)
+
+    padVarCov <- ifelse(isResVarCov, yes = ".", no = " ")
+    parTable$lhs <- paste0(padVarCov, parTable$lhs) 
+    parTable$rhs <- paste0(padVarCov, parTable$rhs) 
+  }
 
   isStructOrMeasure <- parTable$op %in% c("~", "=~", "~~") &
     parTable$lhs != parTable$rhs
@@ -16,10 +29,10 @@ formatParTable <- function(parTable, digits = 3, scientific = FALSE,
   parTable[isLabel, "label"] <- ""
 
 
-  isResVar <- parTable$op == "~~" & parTable$lhs == parTable$rhs
-  parTable$lhs[parTable$op == "~1" | isResVar | isLabel] <-
-    pasteLabels(parTable$lhs[parTable$op == "~1" | isResVar | isLabel],
-                parTable$label[parTable$op == "~1" | isResVar | isLabel],
+  isVar <- parTable$op == "~~" & parTable$lhs == parTable$rhs
+  parTable$lhs[parTable$op == "~1" | isVar | isLabel] <-
+    pasteLabels(parTable$lhs[parTable$op == "~1" | isVar | isLabel],
+                parTable$label[parTable$op == "~1" | isVar | isLabel],
                 width = width)
   parTable$rhs[parTable$op != "~1"] <-
     pasteLabels(parTable$rhs[parTable$op != "~1"],
