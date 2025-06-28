@@ -97,10 +97,27 @@ totalLogDvmnW <- function(X, mu, sigma, nu, S, tgamma, n, d) {
 
 diagPartitionedMat <- function(X, Y) {
   if (is.null(X)) return(Y) else if (is.null(Y)) return(X)
+
+  if (is.null(dimnames(X)) && is.null(dimnames(Y))) {
+    rownames <- NULL
+    colnames <- NULL
+
+  } else if (is.null(dimnames(X))) {
+    rownames <- c(rep("", NROW(X)), rownames(Y))
+    colnames <- c(rep("", NCOL(X)), colnames(Y))
+
+  } else if (is.null(dimnames(Y))) {
+    rownames <- c(rownames(X), rep("", NROW(Y)))
+    colnames <- c(colnames(X), rep("", NCOL(Y)))
+
+  } else {
+    rownames <- c(rownames(X), rownames(Y))
+    colnames <- c(colnames(X), colnames(Y))
+  }
+
   structure(rbind(cbind(X, matrix(0, nrow = NROW(X), ncol = NCOL(Y))),
-               cbind(matrix(0, nrow = NROW(Y), ncol = NCOL(X)), Y)),
-            dimnames = list(c(rownames(X), rownames(Y)),
-                            c(colnames(X), colnames(Y))))
+                  cbind(matrix(0, nrow = NROW(Y), ncol = NCOL(X)), Y)),
+            dimnames = list(rownames, colnames))
 }
 
 
@@ -492,4 +509,51 @@ getLambdaParTable <- function(parTable, rows = NULL, cols = NULL) {
   if (is.null(cols)) cols <- colnames(lambda)
 
   lambda <- lambda[rows, cols, drop = FALSE]
+}
+
+
+getLevelsParTable <- function(parTable) {
+  parTable$lhs <- stringr::str_remove_all(parTable$lhs, pattern = ":")
+  parTable$rhs <- stringr::str_remove_all(parTable$rhs, pattern = ":")
+
+  xis <- getXis(parTable, isLV = FALSE)
+  etas <- getEtas(parTable, isLV = FALSE)
+  vars <- c(xis, etas)
+
+  MAPPED <- list()
+
+  getLevelVarParTable <- function(x) {
+    if      (x %in% names(MAPPED)) return(MAPPED[[x]])
+    else if (x %in% xis) {
+      MAPPED[[x]] <<- 1L
+      return(MAPPED[[x]])
+    }
+
+    if (!x %in% etas) stop("Unexpected type of variable: ", x)
+
+    predictors <- parTable[parTable$op == "~" & parTable$lhs == x, , drop = FALSE]
+
+    if (!NROW(predictors)) {
+      MAPPED[[x]] <<- 1L
+      return(MAPPED[[x]])
+    }
+
+    maxlevel <- 0L
+    for (i in seq_len(NROW(predictors))) {
+      predictor <- predictors$rhs[i]
+      predlevel <- getLevelVarParTable(predictor)
+
+      if (predlevel > maxlevel) maxlevel <- predlevel
+    }
+
+    MAPPED[[x]] <<- maxlevel + 1L
+    MAPPED[[x]]
+  }
+
+  for (var in vars) {
+    if (var %in% names(MAPPED)) next
+    getLevelVarParTable(x = var)
+  }
+
+  MAPPED
 }

@@ -269,6 +269,14 @@ LMS_BLOCKS = list(
 )
 
 
+SYMMETRIC_BLOCKS_LMS = c(
+  thetaDelta = 4, 
+  thetaEpsilon = 5,
+  psi = 7,
+  phi = NA
+)
+
+
 getParamNamesMatrix <- function(mat, matname) {
   if (is.character(mat)) {
     c(mat)
@@ -304,7 +312,8 @@ getParamLocationsMatrices <- function(matrices, isFree = is.na) {
       param = params,
       block = block,
       row   = rowidx,
-      col   = colidx
+      col   = colidx,
+      symmetric = as.integer(block %in% SYMMETRIC_BLOCKS_LMS)
     )
 
     locations <- rbind(locations, locationsBlock)

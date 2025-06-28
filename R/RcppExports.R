@@ -13,28 +13,28 @@ sigmaLmsCpp <- function(model, z) {
     .Call(`_modsem_sigmaLmsCpp`, model, z)
 }
 
-gradLogLikLmsCpp <- function(modelR, P, block, row, col, eps = 1e-6) {
-    .Call(`_modsem_gradLogLikLmsCpp`, modelR, P, block, row, col, eps)
+gradLogLikLmsCpp <- function(modelR, P, block, row, col, symmetric, eps = 1e-6) {
+    .Call(`_modsem_gradLogLikLmsCpp`, modelR, P, block, row, col, symmetric, eps)
 }
 
 completeLogLikLmsCpp <- function(modelR, P, quad) {
     .Call(`_modsem_completeLogLikLmsCpp`, modelR, P, quad)
 }
 
-gradObsLogLikLmsCpp <- function(modelR, data, P, block, row, col, eps = 1e-6, ncores = 1L) {
-    .Call(`_modsem_gradObsLogLikLmsCpp`, modelR, data, P, block, row, col, eps, ncores)
+gradObsLogLikLmsCpp <- function(modelR, data, P, block, row, col, symmetric, eps = 1e-6, ncores = 1L) {
+    .Call(`_modsem_gradObsLogLikLmsCpp`, modelR, data, P, block, row, col, symmetric, eps, ncores)
 }
 
 observedLogLikLmsCpp <- function(modelR, data, P, ncores = 1L) {
     .Call(`_modsem_observedLogLikLmsCpp`, modelR, data, P, ncores)
 }
 
-hessObsLogLikLmsCpp <- function(modelR, data, P, block, row, col, relStep = 1e-6, minAbs = 0.0, ncores = 1L) {
-    .Call(`_modsem_hessObsLogLikLmsCpp`, modelR, data, P, block, row, col, relStep, minAbs, ncores)
+hessObsLogLikLmsCpp <- function(modelR, data, P, block, row, col, symmetric, relStep = 1e-6, minAbs = 0.0, ncores = 1L) {
+    .Call(`_modsem_hessObsLogLikLmsCpp`, modelR, data, P, block, row, col, symmetric, relStep, minAbs, ncores)
 }
 
-hessCompLogLikLmsCpp <- function(modelR, P, block, row, col, relStep = 1e-6, minAbs = 0.0, ncores = 1L) {
-    .Call(`_modsem_hessCompLogLikLmsCpp`, modelR, P, block, row, col, relStep, minAbs, ncores)
+hessCompLogLikLmsCpp <- function(modelR, P, block, row, col, symmetric, relStep = 1e-6, minAbs = 0.0, ncores = 1L) {
+    .Call(`_modsem_hessCompLogLikLmsCpp`, modelR, P, block, row, col, symmetric, relStep, minAbs, ncores)
 }
 
 muQmlCpp <- function(m, t, ncores = 1L) {

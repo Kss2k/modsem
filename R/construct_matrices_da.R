@@ -193,6 +193,15 @@ constructPsi <- function(etas, parTable) {
                       dimnames = list(etas, etas))
   diag(psi) <- NA
 
+  # levels <- getLevelsParTable(parTable)
+  # for (i in seq_len(NROW(psi))) for (j in seq_len(i - 1)) {
+  #   eta_i <- etas[[i]]
+  #   eta_j <- etas[[j]]
+
+  #   sameLevel <- levels[[eta_i]] == levels[[eta_j]]
+  #   if (sameLevel) psi[i, j] <- NA
+  # }
+
   setMatrixConstraints(X = psi, parTable = parTable, op = "~~",
                        RHS = etas, LHS = etas, type = "symmetric",
                        nonFreeParams = FALSE)

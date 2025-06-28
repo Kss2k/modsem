@@ -32,7 +32,13 @@ arma::vec dmvnrm_arma_mc(const arma::mat &x,
   const uword d = x.n_cols;
 
   arma::vec out(n);
-  arma::mat rooti = arma::inv( arma::trimatu( arma::chol(sigma) ));
+  arma::mat L;
+  if (!arma::chol(L, sigma, "upper")) {
+    out.fill(arma::datum::nan);
+    return out;
+  }
+
+  arma::mat rooti = arma::inv(arma::trimatu(L));
   const double rootisum    = arma::sum(arma::log(rooti.diag()));
   const double constants   = -static_cast<double>(d) / 2.0 * log2pi;
   const double other_terms = rootisum + constants;
@@ -147,8 +153,14 @@ arma::vec dmvnfast(arma::mat X,
     
     // Calculate cholesky dec. unless sigma is alread a cholesky dec.
     arma::mat cholDec;
-    if (!isChol) cholDec = arma::chol(sigma);
-    else cholDec = sigma;
+    if (!isChol) {
+      if (!arma::chol(cholDec, sigma, "upper")) {
+        arma::vec out(X.n_rows);
+        out.fill(arma::datum::nan);
+        return out;
+      }
+
+    } else cholDec = sigma;
     
     // Dropping the dimensionality of the output vector
     const arma::vec out = dmvnInt( X, mu, cholDec, log, ncores);
@@ -199,10 +211,9 @@ arma::vec mahaInt(arma::mat & X,
                    
   // Calculate transposed cholesky dec. unless sigma is alread a cholesky dec.
   mat cholDec;
-  if( isChol == false ) {
+  if (!isChol) {
      cholDec = trimatl(chol(sigma).t());
-  }
-  else{
+  } else {
      cholDec = trimatl(sigma.t()); 
      if(any(cholDec.diag() <= 0.0))  Rcpp::stop("The supplied cholesky decomposition has values <= 0.0 on the main diagonal.");
   }

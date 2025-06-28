@@ -87,3 +87,43 @@ testthat::expect_warning(summary(est_tpb_lms), "Comparative fit to H0 will not b
 est_dupsn1_qml <- modsem(dupsn1, TPB, method = "qml", calc.se=FALSE)
 testthat::expect_true(est_dupsn1_qml$iterations == 1)
 testthat::expect_warning(summary(est_tpb_qml), "Comparative fit to H0 will not be calculated.")
+
+
+tpb <- ' 
+# Outer Model (Based on Hagger et al., 2007)
+  ATT =~ att1 + att2 + att3 + att4 + att5
+  SN =~ sn1 + sn2
+  PBC =~ pbc1 + pbc2 + pbc3
+  INT =~ int1 + int2 + int3
+  BEH =~ b1 + b2
+
+# Inner Model (Based on Steinmetz et al., 2011)
+  SN ~  ATT + PBC
+  INT ~ ATT + PBC
+  BEH ~ PBC 
+  
+  BEH ~~ INT + SN
+  SN ~~ INT
+'
+tpb_lms_2 <- modsem(tpb, TPB, method = "lms")
+testthat::expect_true(tpb_lms_2$iterations == 2)
+summary(tpb_lms_2, H0 = FALSE)
+
+
+tpb <- ' 
+# Outer Model (Based on Hagger et al., 2007)
+  ATT =~ att1 + att2 + att3 + att4 + att5
+  SN =~ sn1 + sn2
+  PBC =~ pbc1 + pbc2 + pbc3
+  INT =~ int1 + int2 + int3
+  BEH =~ b1 + b2
+
+# Inner Model (Based on Steinmetz et al., 2011)
+  INT ~ ATT + PBC + SN
+  BEH ~ PBC 
+
+  BEH ~~ INT
+'
+tpb_lms_3 <- modsem(tpb, TPB, method = "lms")
+testthat::expect_true(tpb_lms_3$iterations == 2)
+summary(tpb_lms_3, H0 = FALSE)
