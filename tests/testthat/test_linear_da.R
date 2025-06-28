@@ -101,9 +101,6 @@ tpb <- '
   SN ~  ATT + PBC
   INT ~ ATT + PBC
   BEH ~ PBC 
-  
-  BEH ~~ INT + SN
-  SN ~~ INT
 '
 tpb_lms_2 <- modsem(tpb, TPB, method = "lms")
 testthat::expect_true(tpb_lms_2$iterations == 2)
@@ -121,9 +118,11 @@ tpb <- '
 # Inner Model (Based on Steinmetz et al., 2011)
   INT ~ ATT + PBC + SN
   BEH ~ PBC 
-
-  BEH ~~ INT
 '
+
+library(lavaan)
+est_lav <- sem(tpb, TPB)
+summary(est_lav)
 tpb_lms_3 <- modsem(tpb, TPB, method = "lms")
 testthat::expect_true(tpb_lms_3$iterations == 2)
 summary(tpb_lms_3, H0 = FALSE)

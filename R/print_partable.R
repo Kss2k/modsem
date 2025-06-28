@@ -13,10 +13,13 @@ formatParTable <- function(parTable, digits = 3, scientific = FALSE,
     inds <- getInds(parTable)
     resvars <- c(etas, inds)
 
-    isResVarCov <- parTable$op == "~~" & 
-      (parTable$rhs %in% resvars | parTable$lhs %in% resvars)
+    isVarCovOrInt <- parTable$op == "~~" | parTable$op == "~1"
+    isResVarCovOrInt <- isVarCovOrInt & (parTable$rhs %in% resvars | 
+                                         parTable$lhs %in% resvars)
 
-    padVarCov <- ifelse(isResVarCov, yes = ".", no = " ")
+    padVarCov <- ifelse(isResVarCovOrInt, yes = ".", 
+                        no = ifelse(isVarCovOrInt, yes = " ", no = ""))
+
     parTable$lhs <- paste0(padVarCov, parTable$lhs) 
     parTable$rhs <- paste0(padVarCov, parTable$rhs) 
   }
@@ -24,7 +27,7 @@ formatParTable <- function(parTable, digits = 3, scientific = FALSE,
   isStructOrMeasure <- parTable$op %in% c("~", "=~", "~~") &
     parTable$lhs != parTable$rhs
   parTable$lhs[isStructOrMeasure] <-
-    paste(parTable$lhs[isStructOrMeasure], parTable$op[isStructOrMeasure])
+    paste(abbreviate(parTable$lhs[isStructOrMeasure], 12), parTable$op[isStructOrMeasure])
   isLabel  <- parTable$op == ":="
   parTable[isLabel, "label"] <- ""
 

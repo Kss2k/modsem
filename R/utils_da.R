@@ -520,7 +520,7 @@ getLevelsParTable <- function(parTable) {
   etas <- getEtas(parTable, isLV = FALSE)
   vars <- c(xis, etas)
 
-  MAPPED <- list()
+  MAPPED <- c()
 
   getLevelVarParTable <- function(x) {
     if      (x %in% names(MAPPED)) return(MAPPED[[x]])
@@ -556,4 +556,10 @@ getLevelsParTable <- function(parTable) {
   }
 
   MAPPED
+}
+
+
+isPureEta <- function(eta, parTable) {
+  predictors <- unique(parTable[parTable$op == "~", "rhs"])
+  !eta %in% predictors
 }

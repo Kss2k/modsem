@@ -28,7 +28,8 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    n.threads = NULL,
                    algorithm = "EMA",
                    em.control = list(),
-                   impute.na = FALSE
+                   impute.na = FALSE,
+                   orthogonal.y = FALSE
         ),
         qml = list(verbose = interactive(),
                    optimize = TRUE,
@@ -59,7 +60,8 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    adaptive.frequency = NULL,
                    em.control = NULL,
                    algorithm = NULL,
-                   impute.na = FALSE
+                   impute.na = FALSE,
+                   orthogonal.y = FALSE
         )
     )
 
