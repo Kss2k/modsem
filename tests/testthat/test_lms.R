@@ -218,4 +218,4 @@ m1 <- "
   b == .2
 "
 
-modsem(m1, oneInt, method = "lms", cov.syntax = "")
+summary(modsem(m1, oneInt, method = "lms", cov.syntax = ""))

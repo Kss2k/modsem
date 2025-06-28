@@ -97,10 +97,27 @@ totalLogDvmnW <- function(X, mu, sigma, nu, S, tgamma, n, d) {
 
 diagPartitionedMat <- function(X, Y) {
   if (is.null(X)) return(Y) else if (is.null(Y)) return(X)
+
+  if (is.null(dimnames(X)) && is.null(dimnames(Y))) {
+    rownames <- NULL
+    colnames <- NULL
+
+  } else if (is.null(dimnames(X))) {
+    rownames <- c(rep("", NROW(X)), rownames(Y))
+    colnames <- c(rep("", NCOL(X)), colnames(Y))
+
+  } else if (is.null(dimnames(Y))) {
+    rownames <- c(rownames(X), rep("", NROW(Y)))
+    colnames <- c(colnames(X), rep("", NCOL(Y)))
+
+  } else {
+    rownames <- c(rownames(X), rownames(Y))
+    colnames <- c(colnames(X), colnames(Y))
+  }
+
   structure(rbind(cbind(X, matrix(0, nrow = NROW(X), ncol = NCOL(Y))),
-               cbind(matrix(0, nrow = NROW(Y), ncol = NCOL(X)), Y)),
-            dimnames = list(c(rownames(X), rownames(Y)),
-                            c(colnames(X), colnames(Y))))
+                  cbind(matrix(0, nrow = NROW(Y), ncol = NCOL(X)), Y)),
+            dimnames = list(rownames, colnames))
 }
 
 
