@@ -62,43 +62,45 @@ modsem_mplus <- function(model.syntax,
             paste("integration = ", integration),
             sep = ";\n"), ";\n"), # add final ";"
     MODEL = parTableToMplusModel(parTable, ...),
+    OUTPUT = "TECH3;",
     rdata = data[indicators],
   )
   results <- MplusAutomation::mplusModeler(model,
                                            modelout = "mplusResults.inp",
                                            run = 1L)
   coefs <- MplusAutomation::extract.mplus.model(results)
-  coefsTable <- data.frame(lhsOpRhs = coefs@coef.names,
+  coefsTable <- data.frame(label = stringr::str_remove_all(coefs@coef.names, pattern = " "),
                            est = coefs@coef,
                            std.error = coefs@se,
                            p.value = coefs@pvalues)
+
   # Measurement Model
   indicatorsCaps <- stringr::str_to_upper(indicators)
   patternMeas <-
     paste0("(", stringr::str_c(indicatorsCaps, collapse = "|"), ")") |>
     paste0("<-(?!>|Intercept)")
-  measCoefNames <- grepl(patternMeas, coefsTable$lhsOpRhs, perl = TRUE)
+  measCoefNames <- grepl(patternMeas, coefsTable$label, perl = TRUE)
 
   # Mplus has lhs/rhs in reversed order for the measurement model,
     # compared to lavaan,
-  measRhs <- stringr::str_split_i(coefsTable$lhsOpRhs[measCoefNames],
+  measRhs <- stringr::str_split_i(coefsTable$label[measCoefNames],
                                   "<-", i = 1)
-  measLhs <- stringr::str_split_i(coefsTable$lhsOpRhs[measCoefNames],
+  measLhs <- stringr::str_split_i(coefsTable$label[measCoefNames],
                                   "<-", i = 2)
   measModel <- data.frame(lhs = measLhs, op = "=~", rhs = measRhs) |>
-    cbind(coefsTable[measCoefNames, c("est", "std.error", "p.value")])
+    cbind(coefsTable[measCoefNames, ])
 
   # Structural Model
   measrRemoved <- coefsTable[!measCoefNames, ]
   patternStruct <- "<-(?!>|Intercept)"
-  structCoefNames <- grepl(patternStruct, measrRemoved$lhsOpRhs, perl = TRUE)
+  structCoefNames <- grepl(patternStruct, measrRemoved$label, perl = TRUE)
 
-  structLhs <- stringr::str_split_i(measrRemoved$lhsOpRhs[structCoefNames],
+  structLhs <- stringr::str_split_i(measrRemoved$label[structCoefNames],
                                   "<-", i = 1)
-  structRhs <- stringr::str_split_i(measrRemoved$lhsOpRhs[structCoefNames],
+  structRhs <- stringr::str_split_i(measrRemoved$label[structCoefNames],
                                   "<-", i = 2)
   structModel <- data.frame(lhs = structLhs, op = "~", rhs = structRhs) |>
-    cbind(measrRemoved[structCoefNames, c("est", "std.error", "p.value")])
+    cbind(measrRemoved[structCoefNames, ])
 
   for (i in seq_along(intTerms)) {
     xzMplus <- intTermsMplus[[i]]
@@ -110,22 +112,22 @@ modsem_mplus <- function(model.syntax,
   # Variances and Covariances
   structMeasrRemoved <- measrRemoved[!structCoefNames, ]
   patternCovVar <- "<->"
-  covVarCoefNames <- grepl(patternCovVar, structMeasrRemoved$lhsOpRhs, perl = TRUE)
-  covVarLhs <- stringr::str_split_i(structMeasrRemoved$lhsOpRhs[covVarCoefNames],
+  covVarCoefNames <- grepl(patternCovVar, structMeasrRemoved$label, perl = TRUE)
+  covVarLhs <- stringr::str_split_i(structMeasrRemoved$label[covVarCoefNames],
                                   "<->", i = 1)
-  covVarRhs <- stringr::str_split_i(structMeasrRemoved$lhsOpRhs[covVarCoefNames],
+  covVarRhs <- stringr::str_split_i(structMeasrRemoved$label[covVarCoefNames],
                                   "<->", i = 2)
   covVarModel <- data.frame(lhs = covVarLhs, op = "~~", rhs = covVarRhs) |>
-    cbind(structMeasrRemoved[covVarCoefNames, c("est", "std.error", "p.value")])
+    cbind(structMeasrRemoved[covVarCoefNames, ])
 
   # Intercepts
   covStructMeasrRemoved <- structMeasrRemoved[!covVarCoefNames, ]
   patternIntercept <- "<-Intercept"
-  interceptNames <- grepl(patternIntercept, covStructMeasrRemoved$lhsOpRhs, perl = TRUE)
-  interceptLhs <- stringr::str_split_i(covStructMeasrRemoved$lhsOpRhs[interceptNames],
+  interceptNames <- grepl(patternIntercept, covStructMeasrRemoved$label, perl = TRUE)
+  interceptLhs <- stringr::str_split_i(covStructMeasrRemoved$label[interceptNames],
                                   "<-", i = 1)
   interceptModel <- data.frame(lhs = interceptLhs, op = "~1", rhs = "") |>
-    cbind(covStructMeasrRemoved[interceptNames, c("est", "std.error", "p.value")])
+    cbind(covStructMeasrRemoved[interceptNames, ])
 
   mplusParTable <- rbind(measModel, structModel, covVarModel, interceptModel)
   mplusParTable [c("lhs", "rhs")] <-
@@ -137,12 +139,22 @@ modsem_mplus <- function(model.syntax,
   mplusParTable$p.value[mplusParTable$p.value == 999] <- NA
   mplusParTable$z.value <- mplusParTable$est / mplusParTable$std.error
   mplusParTable$z.value[is.infinite(mplusParTable$z.value)] <- NA
-  mplusParTable$label <- ""
+
+  # coef and vcov
+  isfree <- coefsTable$p.value != 999
+  labels <- coefsTable$label[isfree]
+  coef <- structure(coefsTable$est[isfree], names = labels)
+  vcov <- MplusAutomation::get_tech3(results)$paramCov
+  vcov[upper.tri(vcov)] <- t(vcov)[upper.tri(vcov)]
+  dimnames(vcov) <- list(labels, labels)
 
   modelSpec <- list(parTable = mplusParTable,
                     model = results,
                     coefs = coefs,
-                    data = data)
+                    data = data, 
+                    coef = coef,
+                    vcov = vcov)
+
   structure(modelSpec,
             class = "modsem_mplus",
             method = "Mplus")
@@ -200,4 +212,16 @@ switchLavOpToMplus <- function(op) {
          "~~" = "WITH",
          ":" = "|",
          stop2("Operator not supported for use in Mplus: ", op, "\n"))
+}
+
+
+#' @export
+vcov.modsem_mplus <- function(object, ...) {
+  object$vcov
+}
+
+
+#' @export
+coef.modsem_mplus <- function(object, ...) {
+  object$coef
 }
