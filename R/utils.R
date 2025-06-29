@@ -500,7 +500,10 @@ sortConstrExprs <- function(parTable) {
   rows <- parTable[parTable$op %in% CONSTRAINT_OPS, ]
   if (NROW(rows) == 0) return(NULL)
 
-  labelled <- unique(parTable$mod[parTable$mod != ""])
+  labelled  <- unique(parTable$mod[parTable$mod != ""])
+  isDynamic <- !canBeNumeric(rows$rhs)
+
+  rows <- rows[isDynamic & !rows$op %in% BOUNDUARY_OPS, ] # not relevant
 
   if (!all(rows$lhs %in% labelled)) {
     stop2("Unknown labels in constraints: ", rows$lhs[!rows$lhs %in% labelled])
@@ -508,8 +511,8 @@ sortConstrExprs <- function(parTable) {
   } else if (length(unique(rows$lhs)) != length(rows$lhs)) {
     stop2("Duplicated labels in constraints:\n", capturePrint(table(rows$lhs)))
 
-  } else if (any(rows$op %in% c(">", "<"))) {
-    stop2("Constraints with '>' and '<' are not implemented yet")
+  } else if (any(rows$op %in% BOUNDUARY_OPS)) {
+    stop2("Dynamic constraints with ('<', '>') are not implemented yet!")
   }
 
   definedLabels <- labelled[!labelled %in% rows$lhs]

@@ -17,6 +17,7 @@ specifyModelDA <- function(syntax = NULL,
                            adaptive.quad = FALSE,
                            adaptive.frequency = 3,
                            impute.na = FALSE,
+                           orthogonal.x = FALSE,
                            orthogonal.y = FALSE) {
   if (!is.null(syntax)) parTable <- modsemify(syntax)
   stopif(is.null(parTable), "No parTable found")
@@ -108,12 +109,12 @@ specifyModelDA <- function(syntax = NULL,
   labelPsi <- listPsi$label
 
   listPhi <- constructPhi(xis, method = method, cov.syntax = cov.syntax,
-                          parTable = parTable)
+                          parTable = parTable, orthogonal.x = orthogonal.x)
   phi      <- listPhi$numeric
   labelPhi <- listPhi$label
 
   listA <- constructA(xis, method = method, cov.syntax = cov.syntax,
-                  parTable = parTable)
+                      parTable = parTable, orthogonal.x = orthogonal.x)
   A      <- listA$numeric
   labelA <- listA$label
 
@@ -264,7 +265,7 @@ specifyModelDA <- function(syntax = NULL,
     listTheta         <- createTheta(model)
     model             <- c(model, listTheta)
     model$freeParams  <- length(listTheta$theta)
-    model$info$bounds <- getParamBounds(model, varParams=listTheta$diagFreeParams)
+    model$info$bounds <- getParamBounds(model)
     model$gradientStruct  <- getGradientStruct(model, theta = model$theta)
   }
 

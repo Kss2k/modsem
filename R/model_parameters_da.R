@@ -196,11 +196,29 @@ fillSymmetric <- function(mat, values) {
 }
 
 
-# Set bounds for parameters to (0, Inf)
-getParamBounds <- function(model, lowest = 0, varParams=NULL) {
+getParamBounds <- function(model) {
   lower <- rep(-Inf, model$freeParams)
   upper <- rep(Inf, model$freeParams)
   names(lower) <- names(upper) <- names(model$theta)
+
+  parTable <- model$parTable
+  BOUNDS <- parTable[canBeNumeric(parTable$rhs) & parTable$op %in%
+                     BOUNDUARY_OPS, , drop = FALSE]
+  bound.param <- BOUNDS$lhs
+  bound.type  <- BOUNDS$op
+  bound.value <- as.numeric(BOUNDS$rhs)
+
+  upper.type    <- bound.type == "<"
+  lower.type <- bound.type == ">"
+
+  bound.upper <- structure(bound.value[upper.type], 
+                           names = bound.param[upper.type])
+  bound.lower <- structure(bound.value[lower.type],
+                           names = bound.param[lower.type])
+   
+  upper[names(bound.upper)] <- bound.upper
+  lower[names(bound.lower)] <- bound.lower
+
   list(lower = lower, upper = upper)
 }
 
@@ -359,6 +377,7 @@ getGradientStructSimple <- function(model, theta) {
   }
 
   parTable <- model$parTable
+  parTable <- parTable[!parTable$op %in% BOUNDUARY_OPS, , drop = FALSE] # not relevant
 
   isConstraint <- parTable$op %in% CONSTRAINT_OPS
   constraints  <- parTable[isConstraint, ]

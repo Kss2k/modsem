@@ -41,6 +41,7 @@ modsem_da(
   em.control = NULL,
   rcs = FALSE,
   rcs.choose = NULL,
+  orthogonal.x = NULL,
   orthogonal.y = NULL,
   ...
 )
@@ -87,28 +88,28 @@ For QML, \code{"L-BFGS-B"} may be faster if there is a large number of iteration
 \item{center.data}{should data be centered before fitting model}
 
 \item{standardize.data}{should data be scaled before fitting model, will be overridden by
-\code{standardize} if \code{standardize} is set to \code{TRUE}.
+  \code{standardize} if \code{standardize} is set to \code{TRUE}.
 
 \strong{NOTE}: It is recommended that you estimate the model normally and then standardize the output using
 \code{\link{standardize_model}} \code{\link{standardized_estimates}}, \code{summary(<modsem_da-object>, standardize=TRUE)}}
 
 \item{standardize.out}{should output be standardized (note will alter the relationships of
-parameter constraints since parameters are scaled unevenly, even if they
-have the same label). This does not alter the estimation of the model, only the
-output.
+  parameter constraints since parameters are scaled unevenly, even if they
+  have the same label). This does not alter the estimation of the model, only the
+  output.
 
 \strong{NOTE}: It is recommended that you estimate the model normally and then standardize the output using
 \code{\link{standardized_estimates}}.}
 
 \item{standardize}{will standardize the data before fitting the model, remove the mean
-structure of the observed variables, and standardize the output. Note that \code{standardize.data},
-\code{mean.observed}, and \code{standardize.out} will be overridden by \code{standardize} if \code{standardize} is set to \code{TRUE}.
+  structure of the observed variables, and standardize the output. Note that \code{standardize.data},
+  \code{mean.observed}, and \code{standardize.out} will be overridden by \code{standardize} if \code{standardize} is set to \code{TRUE}.
 
 \strong{NOTE}: It is recommended that you estimate the model normally and then standardize the output using
-\code{\link{standardized_estimates}}.}
+  \code{\link{standardized_estimates}}.}
 
 \item{mean.observed}{should the mean structure of the observed variables be estimated?
-This will be overridden by \code{standardize} if \code{standardize} is set to \code{TRUE}.
+  This will be overridden by \code{standardize} if \code{standardize} is set to \code{TRUE}.
 
 \strong{NOTE}: Not recommended unless you know what you are doing.}
 
@@ -172,7 +173,7 @@ fixed Gauss Hermite quadrature this usually means that less nodes are placed at 
 \item{adaptive.frequency}{How often should the quasi-adaptive quadrature be calculated? Defaults to 3, meaning 
 that it is recalculated every third EM-iteration.}
 
-\item{n.threads}{number of cores to use for parallel processing. If \code{NULL}, it will use <= 2 threads.
+\item{n.threads}{number of threads to use for parallel processing. If \code{NULL}, it will use <= 2 threads.
 If an integer is specified, it will use that number of threads (e.g., \code{n.threads = 4} will use 4 threads).
 If \code{"default"}, it will use the default number of threads (2).
 If \code{"max"}, it will use all available threads, \code{"min"} will use 1 thread.}
@@ -190,6 +191,9 @@ single item indicators instead? See \code{\link{relcorr_single_item}}.}
 \item{rcs.choose}{Which latent variables should get their indicators replaced with
 reliablity-reliability corrected single items? Corresponds to the \code{choose} 
 argument in \code{\link{relcorr_single_item}}.}
+
+\item{orthogonal.x}{If \code{TRUE}, all covariances among exogenous latent variables only are set to zero. 
+Default is \code{FALSE}.}
 
 \item{orthogonal.y}{If \code{TRUE}, all covariances among endogenous latent variables only are set to zero. 
 If \code{FALSE} residual covariances are added between pure endogenous variables; 

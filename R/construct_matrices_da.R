@@ -1,6 +1,7 @@
 # Functions for constructing matrices for LMS and QML.
 EMPTY_MATSTRUCT <- list(numeric = matrix(0), label = matrix(""))
 
+
 setMatrixConstraints <- function(X, parTable, op, RHS, LHS, type, nonFreeParams) {
   fillConstExprs(X, parTable = parTable, op = op, RHS = RHS, LHS = LHS,
                  type = type, nonFreeParams = nonFreeParams) |>
@@ -210,14 +211,17 @@ constructPsi <- function(etas, parTable, orthogonal.y = FALSE) {
 
 
 constructPhi <- function(xis, method = "lms", cov.syntax = NULL,
-                         parTable) {
+                         parTable, orthogonal.x = FALSE) {
   if (!length(xis)) return(EMPTY_MATSTRUCT)
 
   numXis <- length(xis)
   phi    <- matrix(0, nrow = numXis, ncol = numXis,
                    dimnames = list(xis, xis))
+
   if (method != "lms" && is.null(cov.syntax)) {
-    phi[lower.tri(phi, diag = TRUE)] <- NA
+    if (!orthogonal.x) phi[lower.tri(phi, diag = TRUE)] <- NA
+    else               diag(phi) <- NA
+
     setMatrixConstraints(X = phi, parTable = parTable, op = "~~",
                          RHS = xis, LHS = xis, type = "symmetric",
                          nonFreeParams = FALSE)
@@ -226,14 +230,16 @@ constructPhi <- function(xis, method = "lms", cov.syntax = NULL,
 
 
 constructA <- function(xis, method = "lms", cov.syntax = NULL,
-                       parTable) {
+                       parTable, orthogonal.x = FALSE) {
   if (!length(xis)) return(EMPTY_MATSTRUCT)
 
   numXis <- length(xis)
   A      <- matrix(0, nrow = numXis, ncol = numXis,
                    dimnames = list(xis, xis))
   if (method == "lms" && is.null(cov.syntax)) {
-    A[lower.tri(A, diag = TRUE)] <- NA
+    if (!orthogonal.x) A[lower.tri(A, diag = TRUE)] <- NA
+    else               diag(A) <- NA
+
     setMatrixConstraints(X = A, parTable = parTable, op = "~~",
                          RHS = xis, LHS = xis, type = "symmetric",
                          nonFreeParams = FALSE)
