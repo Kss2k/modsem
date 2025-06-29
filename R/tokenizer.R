@@ -162,6 +162,8 @@ fitsToken.LavOperator <- function(token, nextChar) {
          "==" = TRUE,
          "!=" = TRUE,
          ":=" = TRUE,
+         ">=" = TRUE,
+         "<=" = TRUE,
          FALSE)
 }
 

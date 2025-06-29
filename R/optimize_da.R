@@ -1,4 +1,6 @@
-optimizeStartingParamsDA <- function(model) {
+optimizeStartingParamsDA <- function(model, 
+                                     args = list(orthogonal.x = FALSE,
+                                                 orthogonal.y = FALSE)) {
   etas     <- model$info$etas
   indsEtas <- model$info$allIndsEtas
   xis      <- model$info$xis
@@ -9,13 +11,20 @@ optimizeStartingParamsDA <- function(model) {
   syntax <- paste(model$syntax, model$covModel$syntax,
                   model$info$lavOptimizerSyntaxAdditions,
                   sep = "\n")
-  parTable <- modsem_pi(syntax, data, method = "dblcent",
-                        meanstructure = TRUE,
-                        suppress.warnings.lavaan = TRUE)$coefParTable
-  if (is.null(parTable)) {
-    modsem_pi(syntax, data, method = "dblcent", meanstructure = TRUE)
-    stop2("lavaan failed")
-  }
+  estPI <- modsem_pi(
+    model.syntax = syntax, 
+    data = data, 
+    method = "dblcent",
+    meanstructure = TRUE,
+    orthogonal.x = args$orthogonal.x,
+    orthogonal.y = args$orthogonal.y,
+    suppress.warnings.lavaan = TRUE
+  )
+
+  parTable <- estPI$coefParTable
+  
+  stopif(is.null(parTable), "lavaan failed!")
+
   # Main Model
   matricesMain <- model$matrices
   LambdaX <- findEstimatesParTable(matricesMain$lambdaX, parTable, op = "=~",

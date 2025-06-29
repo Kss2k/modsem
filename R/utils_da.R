@@ -7,6 +7,7 @@ OP_REPLACEMENTS_INV <- structure(names(OP_REPLACEMENTS), names = OP_REPLACEMENTS
 
 
 CONSTRAINT_OPS <- c("==", ">", "<", ":=")
+BOUNDUARY_OPS <- c(">", "<")
 
 
 getFreeParams <- function(model) {

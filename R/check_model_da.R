@@ -24,7 +24,11 @@ checkAConstraints <- function(model, covModel, method = "lms") {
   An <- model$matrices$A
   Al <- model$labelMatrices$A
 
-  warnif(any(Al != "") || !all(is.na(An[lower.tri(An)])), 
+  isOKALabel <- all(Al == "")
+  isOKANumeric <- all(is.na(An[lower.tri(An, diag = TRUE)])) || 
+    (!any(is.na(An[lower.tri(An)])) && all(An[lower.tri(An)] == 0))
+
+  warnif(!isOKALabel || !isOKANumeric,
          "Variances and covariances of exogenous variables aren't truely ",
          "free parameters in the LMS approach. Using them in model constraints ",
          "affecting the model estimation will likely not work as expected!\n\n",

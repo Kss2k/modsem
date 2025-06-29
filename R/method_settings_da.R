@@ -29,6 +29,7 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    algorithm = "EMA",
                    em.control = list(),
                    impute.na = FALSE,
+                   orthogonal.x = FALSE,
                    orthogonal.y = FALSE
         ),
         qml = list(verbose = interactive(),
@@ -61,6 +62,7 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    em.control = NULL,
                    algorithm = NULL,
                    impute.na = FALSE,
+                   orthogonal.x = FALSE,
                    orthogonal.y = FALSE
         )
     )

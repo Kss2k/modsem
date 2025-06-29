@@ -5,8 +5,8 @@
 #' @param data dataframe
 #'
 #' @param method method to use:
-#' \code{"lms"} = latent model structural equations (not passed to \code{lavaan}).
-#' \code{"qml"} = quasi maximum likelihood estimation of latent model structural equations (not passed to \code{lavaan}).
+#'   \code{"lms"} = latent model structural equations (not passed to \code{lavaan}).
+#'   \code{"qml"} = quasi maximum likelihood estimation of latent model structural equations (not passed to \code{lavaan}).
 #'
 #' @param verbose should estimation progress be shown
 #'
@@ -36,35 +36,35 @@
 #'   the relative or absolute convergence criterion is reached.
 #'
 #' @param optimizer optimizer to use, can be either \code{"nlminb"} or \code{"L-BFGS-B"}. For LMS, \code{"nlminb"} is recommended.
-#' For QML, \code{"L-BFGS-B"} may be faster if there is a large number of iterations, but slower if there are few iterations.
+#'   For QML, \code{"L-BFGS-B"} may be faster if there is a large number of iterations, but slower if there are few iterations.
 #'
 #' @param center.data should data be centered before fitting model
 #'
 #' @param standardize.data should data be scaled before fitting model, will be overridden by
-#' \code{standardize} if \code{standardize} is set to \code{TRUE}.
+#'   \code{standardize} if \code{standardize} is set to \code{TRUE}.
 #'
 #' \strong{NOTE}: It is recommended that you estimate the model normally and then standardize the output using
 #' \code{\link{standardize_model}} \code{\link{standardized_estimates}}, \code{summary(<modsem_da-object>, standardize=TRUE)}
 #'
 #' @param standardize.out should output be standardized (note will alter the relationships of
-#' parameter constraints since parameters are scaled unevenly, even if they
-#' have the same label). This does not alter the estimation of the model, only the
-#' output.
+#'   parameter constraints since parameters are scaled unevenly, even if they
+#'   have the same label). This does not alter the estimation of the model, only the
+#'   output.
 #'
 #' \strong{NOTE}: It is recommended that you estimate the model normally and then standardize the output using
 #' \code{\link{standardized_estimates}}.
 #'
 #' @param mean.observed should the mean structure of the observed variables be estimated?
-#' This will be overridden by \code{standardize} if \code{standardize} is set to \code{TRUE}.
+#'   This will be overridden by \code{standardize} if \code{standardize} is set to \code{TRUE}.
 #'
 #' \strong{NOTE}: Not recommended unless you know what you are doing.
 #'
 #' @param standardize will standardize the data before fitting the model, remove the mean
-#' structure of the observed variables, and standardize the output. Note that \code{standardize.data},
-#' \code{mean.observed}, and \code{standardize.out} will be overridden by \code{standardize} if \code{standardize} is set to \code{TRUE}.
+#'   structure of the observed variables, and standardize the output. Note that \code{standardize.data},
+#'   \code{mean.observed}, and \code{standardize.out} will be overridden by \code{standardize} if \code{standardize} is set to \code{TRUE}.
 #'
 #' \strong{NOTE}: It is recommended that you estimate the model normally and then standardize the output using
-#' \code{\link{standardized_estimates}}.
+#'   \code{\link{standardized_estimates}}.
 #'
 #' @param double try to double the number of dimensions of integration used in LMS,
 #' this will be extremely slow but should be more similar to \code{mplus}.
@@ -101,7 +101,7 @@
 #'   normality assumptions are violated, \code{EFIM.parametric = FALSE} might be the better option.
 #'
 #' @param R.max Maximum population size (not sample size) used in the calculated of the expected
-#' fischer information matrix.
+#'   fischer information matrix.
 #'
 #' @param robust.se should robust standard errors be computed, using the sandwich estimator?
 #'
@@ -114,36 +114,44 @@
 #' @param epsilon finite difference for numerical derivatives.
 #'
 #' @param quad.range range in z-scores to perform numerical integration in LMS using, 
-#' when using quasi-adaptive Gaussian-Hermite Quadratures. By default \code{Inf}, such that \code{f(t)} is integrated from -Inf to Inf,
-#' but this will likely be inefficient and pointless at a large number of nodes. Nodes outside
-#' \code{+/- quad.range} will be ignored.
+#'   when using quasi-adaptive Gaussian-Hermite Quadratures. By default \code{Inf}, such that \code{f(t)} is integrated from -Inf to Inf,
+#'   but this will likely be inefficient and pointless at a large number of nodes. Nodes outside
+#'   \code{+/- quad.range} will be ignored.
 #' 
 #' @param adaptive.quad should a quasi adaptive quadrature be used? If \code{TRUE}, the quadrature nodes will be adapted to the data.
-#' If \code{FALSE}, the quadrature nodes will be fixed. Default is \code{FALSE}. The adaptive quadrature does not fit an adaptive 
-#' quadrature to each participant, but instead tries to place more nodes where posterior distribution is highest. Compared with a 
-#' fixed Gauss Hermite quadrature this usually means that less nodes are placed at the tails of the distribution.
+#'   If \code{FALSE}, the quadrature nodes will be fixed. Default is \code{FALSE}. The adaptive quadrature does not fit an adaptive 
+#'   quadrature to each participant, but instead tries to place more nodes where posterior distribution is highest. Compared with a 
+#'   fixed Gauss Hermite quadrature this usually means that less nodes are placed at the tails of the distribution.
 #'
 #' @param adaptive.frequency How often should the quasi-adaptive quadrature be calculated? Defaults to 3, meaning 
-#' that it is recalculated every third EM-iteration.
+#'   that it is recalculated every third EM-iteration.
 #'
-#' @param n.threads number of cores to use for parallel processing. If \code{NULL}, it will use <= 2 threads.
-#' If an integer is specified, it will use that number of threads (e.g., \code{n.threads = 4} will use 4 threads).
-#' If \code{"default"}, it will use the default number of threads (2).
-#' If \code{"max"}, it will use all available threads, \code{"min"} will use 1 thread.
+#' @param n.threads number of threads to use for parallel processing. If \code{NULL}, it will use <= 2 threads.
+#'   If an integer is specified, it will use that number of threads (e.g., \code{n.threads = 4} will use 4 threads).
+#'   If \code{"default"}, it will use the default number of threads (2).
+#'   If \code{"max"}, it will use all available threads, \code{"min"} will use 1 thread.
 #'
 #' @param algorithm algorithm to use for the EM algorithm. Can be either \code{"EM"} or \code{"EMA"}. 
-#' \code{"EM"} is the standard EM algorithm. \code{"EMA"} is an
-#' accelerated EM procedure that uses Quasi-Newton and Fisher Scoring
-#' optimization steps when needed. Default is \code{"EM"}.
+#'   \code{"EM"} is the standard EM algorithm. \code{"EMA"} is an
+#'   accelerated EM procedure that uses Quasi-Newton and Fisher Scoring
+#'   optimization steps when needed. Default is \code{"EM"}.
 #'
 #' @param em.control a list of control parameters for the EM algorithm. See \code{\link{default_settings_da}} for defaults.
 #'
 #' @param rcs Should latent variable indicators be replaced with reliablity-corrected
-#' single item indicators instead? See \code{\link{relcorr_single_item}}.
+#'   single item indicators instead? See \code{\link{relcorr_single_item}}.
 #'
 #' @param rcs.choose Which latent variables should get their indicators replaced with
-#' reliablity-reliability corrected single items? Corresponds to the \code{choose} 
-#' argument in \code{\link{relcorr_single_item}}.
+#'   reliablity-reliability corrected single items? Corresponds to the \code{choose} 
+#'   argument in \code{\link{relcorr_single_item}}.
+#'
+#' @param orthogonal.x If \code{TRUE}, all covariances among exogenous latent variables only are set to zero. 
+#'  Default is \code{FALSE}.
+#'
+#' @param orthogonal.y If \code{TRUE}, all covariances among endogenous latent variables only are set to zero. 
+#'  If \code{FALSE} residual covariances are added between pure endogenous variables; 
+#'  those that are predicted by no other endogenous variable in the structural model.
+#'  Default is \code{FALSE}.
 #'
 #' @param orthogonal.y If \code{TRUE}, all covariances among endogenous latent variables only are set to zero. 
 #'  If \code{FALSE} residual covariances are added between pure endogenous variables; 
@@ -247,6 +255,7 @@ modsem_da <- function(model.syntax = NULL,
                       em.control = NULL,
                       rcs = FALSE,
                       rcs.choose = NULL,
+                      orthogonal.x = NULL,
                       orthogonal.y = NULL,
                       ...) {
   if (is.null(model.syntax)) {
@@ -312,6 +321,7 @@ modsem_da <- function(model.syntax = NULL,
           algorithm = algorithm,
           em.control = em.control,
           impute.na = impute.na,
+          orthogonal.x = orthogonal.x,
           orthogonal.y = orthogonal.y
         )
     )
@@ -337,12 +347,13 @@ modsem_da <- function(model.syntax = NULL,
     adaptive.quad = args$adaptive.quad,
     adaptive.frequency = args$adaptive.frequency,
     impute.na = args$impute.na,
+    orthogonal.x = args$orthogonal.x,
     orthogonal.y = args$orthogonal.y
   )
 
   if (args$optimize) {
     model <- tryCatch(
-      optimizeStartingParamsDA(model),
+      optimizeStartingParamsDA(model, args = args),
       
       warning = function(w) {
         warning2("warning when optimizing starting parameters:\n", w)
