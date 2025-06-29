@@ -379,7 +379,7 @@ getGradientStructSimple <- function(model, theta) {
   parTable <- model$parTable
   parTable <- parTable[!parTable$op %in% BOUNDUARY_OPS, , drop = FALSE] # not relevant
 
-  isConstraint <- parTable$op %in% CONSTRAINT_OPS
+  isConstraint <- parTable$op %in% CONSTRAINT_OPS & !canBeNumeric(parTable$rhs)
   constraints  <- parTable[isConstraint, ]
   restParTable <- parTable[!isConstraint, ]
   constraints  <- constraints[constraints$lhs %in% restParTable$mod, ]

@@ -1,6 +1,8 @@
 optimizeStartingParamsDA <- function(model, 
                                      args = list(orthogonal.x = FALSE,
-                                                 orthogonal.y = FALSE)) {
+                                                 orthogonal.y = FALSE,
+                                                 auto.fix.first = TRUE,
+                                                 auto.fix.sinlge = TRUE)) {
   etas     <- model$info$etas
   indsEtas <- model$info$allIndsEtas
   xis      <- model$info$xis
@@ -18,6 +20,8 @@ optimizeStartingParamsDA <- function(model,
     meanstructure = TRUE,
     orthogonal.x = args$orthogonal.x,
     orthogonal.y = args$orthogonal.y,
+    auto.fix.first = args$auto.fix.first,
+    auto.fix.single = args$auto.fix.single,
     suppress.warnings.lavaan = TRUE
   )
 

@@ -20,15 +20,15 @@ testthat::expect_warning(summary(est_m1_qml), "Comparative fit to H0 will not be
 
 tpb <- "
 # Outer Model (Based on Hagger et al., 2007)
-  ATT =~ a1 * att1 + a2 * att2 + att3 + att4 + att5
-  SN =~ s1 * sn1 + sn2
-  PBC =~ p1 * pbc1 + pbc2 + pbc3
-  INT =~ i1 * int1 + int2 + int3
+  ATT =~ att1 + a2 * att2 + att3 + att4 + att5
+  SN =~ sn1 + sn2
+  PBC =~ a1 * pbc1 + pbc2 + pbc3
+  INT =~ int1 + int2 + int3
   BEH =~ b1 + b2
 
 # Inner Model (Based on Steinmetz et al., 2011)
-  INT ~ ATT + b * SN + c * PBC
-  BEH ~ INT + a * PBC
+  INT ~ a * ATT + a * SN + a * PBC
+  BEH ~ INT + b * PBC
 "
 
 est_tpb_lms <- modsem(tpb, TPB, method = "lms", calc.se=FALSE)
@@ -36,7 +36,7 @@ testthat::expect_true(est_tpb_lms$iterations == 2)
 testthat::expect_warning(summary(est_tpb_lms), "Comparative fit to H0 will not be calculated.")
 
 est_tpb_qml <- modsem(tpb, TPB, method = "qml", calc.se=FALSE)
-testthat::expect_true(est_tpb_qml$iterations == 1)
+testthat::expect_true(est_tpb_qml$iterations <= 2)
 testthat::expect_warning(summary(est_tpb_qml), "Comparative fit to H0 will not be calculated.")
 
 

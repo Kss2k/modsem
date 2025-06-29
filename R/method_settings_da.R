@@ -30,7 +30,9 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    em.control = list(),
                    impute.na = FALSE,
                    orthogonal.x = FALSE,
-                   orthogonal.y = FALSE
+                   orthogonal.y = FALSE,
+                   auto.fix.first = TRUE,
+                   auto.fix.single = TRUE
         ),
         qml = list(verbose = interactive(),
                    optimize = TRUE,
@@ -63,7 +65,9 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    algorithm = NULL,
                    impute.na = FALSE,
                    orthogonal.x = FALSE,
-                   orthogonal.y = FALSE
+                   orthogonal.y = FALSE,
+                   auto.fix.first = TRUE,
+                   auto.fix.single = TRUE
         )
     )
 

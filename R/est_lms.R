@@ -286,7 +286,7 @@ emLms <- function(model,
   finalModel$covModelSE <- modelSE$covModel
 
   parTable <- modelToParTable(finalModel, coefs = lavCoefs,
-                              se = SE, method = "lms")
+                              se = SE, method = "lms", calc.se = calc.se)
   parTable$z.value  <- parTable$est / parTable$std.error
   parTable$p.value  <- 2 * stats::pnorm(-abs(parTable$z.value))
   parTable$ci.lower <- parTable$est - CI_WIDTH * parTable$std.error

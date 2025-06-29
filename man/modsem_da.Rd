@@ -43,6 +43,8 @@ modsem_da(
   rcs.choose = NULL,
   orthogonal.x = NULL,
   orthogonal.y = NULL,
+  auto.fix.first = NULL,
+  auto.fix.single = NULL,
   ...
 )
 }
@@ -199,6 +201,19 @@ Default is \code{FALSE}.}
 If \code{FALSE} residual covariances are added between pure endogenous variables; 
 those that are predicted by no other endogenous variable in the structural model.
 Default is \code{FALSE}.}
+
+\item{auto.fix.first}{If \code{TRUE} the factor loading of the first indicator, for 
+a given latent variable is fixed to \code{1}. If \code{FALSE} no loadings are fixed
+(automatically). Note that that this might make it such that the model no longer is
+identified. Default is \code{TRUE}. \strong{NOTE} this behaviour is overridden 
+if the first loading is labelled, where it gets treated as a free parameter instead. This
+differs from the default behaviour in \code{lavaan}.}
+
+\item{auto.fix.single}{If \code{TRUE}, the residual variance of 
+an observed indicator is set to zero if it is the only indicator of a latent variable.
+If \code{FALSE} the residual variance is not fixed to zero, and treated as a free parameter
+of the model. Default if \code{TRUE}. \strong{NOTE} this behaviour is overridden 
+if the first loading is labelled, where it gets treated as a free parameter instead.}
 
 \item{...}{additional arguments to be passed to the estimation function.}
 }

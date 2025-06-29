@@ -96,12 +96,12 @@ notFilledLambda <- function(ind, lambda) {
 }
 
 
-constructLambda <- function(lVs, indsLVs, parTable, auto.constraints = TRUE) {
+constructLambda <- function(lVs, indsLVs, parTable, auto.fix.first = TRUE) {
   numLVs        <- length(lVs)
   indsLVs       <- indsLVs[lVs] # make sure it is sorted
   allIndsLVs    <- unique(unlist(indsLVs))
   numAllIndsLVs <- length(allIndsLVs)
-  firstVal      <- ifelse(auto.constraints, 1, NA)
+  firstVal      <- ifelse(auto.fix.first, 1, NA)
 
   lambda <- matrix(0, nrow = numAllIndsLVs, ncol = numLVs,
                    dimnames = list(allIndsLVs, lVs))
@@ -110,7 +110,7 @@ constructLambda <- function(lVs, indsLVs, parTable, auto.constraints = TRUE) {
     firstFilled <- FALSE
     for (ind in indsLVs[[lV]]) {
       # TODO: make this work when duplicates appear seperately in lambdaY and lambdaX
-      if (!firstFilled && auto.constraints && notFilledLambda(ind, lambda)) {
+      if (!firstFilled && auto.fix.first && notFilledLambda(ind, lambda)) {
         lambda[ind, lV] <- firstVal
         firstFilled <- TRUE
       } else lambda[ind, lV] <- NA
@@ -150,7 +150,7 @@ constructTau <- function(lVs, indsLVs, parTable, mean.observed = TRUE) {
 }
 
 
-constructTheta <- function(lVs, indsLVs, parTable, auto.constraints = TRUE) {
+constructTheta <- function(lVs, indsLVs, parTable, auto.fix.single = TRUE) {
   numLVs        <- length(lVs)
   indsLVs       <- indsLVs[lVs] # make sure it is sorted
   numIndsLVs    <- lapply(indsLVs, FUN = length)
@@ -161,7 +161,7 @@ constructTheta <- function(lVs, indsLVs, parTable, auto.constraints = TRUE) {
                   dimnames = list(allIndsLVs, allIndsLVs))
   diag(theta) <- NA
 
-  if (auto.constraints) {
+  if (auto.fix.single) {
     for (lV in lVs) { # set to 0 if there is only a single indicator
       if (numIndsLVs[[lV]] != 1) next
       theta[indsLVs[[lV]], indsLVs[[lV]]] <- 0
@@ -247,8 +247,7 @@ constructA <- function(xis, method = "lms", cov.syntax = NULL,
 }
 
 
-constructAlpha <- function(etas, parTable, auto.constraints = TRUE,
-                           mean.observed = TRUE) {
+constructAlpha <- function(etas, parTable, mean.observed = TRUE) {
   if (!length(etas)) return(EMPTY_MATSTRUCT)
 
   numEtas <- length(etas)

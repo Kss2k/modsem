@@ -266,7 +266,8 @@ getEmptyModel <- function(parTable, cov.syntax, parTableCovModel,
     cov.syntax       = cov.syntax,
     parTableCovModel = parTableCovModel,
     mean.observed    = mean.observed,
-    auto.constraints = FALSE, 
+    auto.fix.first   = FALSE,
+    auto.fix.single  = FALSE, 
     createTheta      = FALSE,
     checkModel       = FALSE
   )

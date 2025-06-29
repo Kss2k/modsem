@@ -158,6 +158,19 @@
 #'  those that are predicted by no other endogenous variable in the structural model.
 #'  Default is \code{FALSE}.
 #'
+#' @param auto.fix.first If \code{TRUE} the factor loading of the first indicator, for 
+#'  a given latent variable is fixed to \code{1}. If \code{FALSE} no loadings are fixed
+#'  (automatically). Note that that this might make it such that the model no longer is
+#'  identified. Default is \code{TRUE}. \strong{NOTE} this behaviour is overridden 
+#'  if the first loading is labelled, where it gets treated as a free parameter instead. This
+#'  differs from the default behaviour in \code{lavaan}.
+#'
+#' @param auto.fix.single If \code{TRUE}, the residual variance of 
+#'  an observed indicator is set to zero if it is the only indicator of a latent variable.
+#'  If \code{FALSE} the residual variance is not fixed to zero, and treated as a free parameter
+#'  of the model. Default if \code{TRUE}. \strong{NOTE} this behaviour is overridden 
+#'  if the first loading is labelled, where it gets treated as a free parameter instead. 
+#'
 #' @param ... additional arguments to be passed to the estimation function.
 #'
 #' @return \code{modsem_da} object
@@ -257,6 +270,8 @@ modsem_da <- function(model.syntax = NULL,
                       rcs.choose = NULL,
                       orthogonal.x = NULL,
                       orthogonal.y = NULL,
+                      auto.fix.first = NULL,
+                      auto.fix.single = NULL,
                       ...) {
   if (is.null(model.syntax)) {
     stop2("No model.syntax provided")
@@ -322,7 +337,9 @@ modsem_da <- function(model.syntax = NULL,
           em.control = em.control,
           impute.na = impute.na,
           orthogonal.x = orthogonal.x,
-          orthogonal.y = orthogonal.y
+          orthogonal.y = orthogonal.y,
+          auto.fix.first = auto.fix.first,
+          auto.fix.single = auto.fix.single
         )
     )
 
@@ -348,7 +365,9 @@ modsem_da <- function(model.syntax = NULL,
     adaptive.frequency = args$adaptive.frequency,
     impute.na = args$impute.na,
     orthogonal.x = args$orthogonal.x,
-    orthogonal.y = args$orthogonal.y
+    orthogonal.y = args$orthogonal.y,
+    auto.fix.first = args$auto.fix.first,
+    auto.fix.single = args$auto.fix.single
   )
 
   if (args$optimize) {

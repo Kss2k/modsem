@@ -7,7 +7,8 @@ specifyModelDA <- function(syntax = NULL,
                            double = FALSE,
                            parTable = NULL,
                            parTableCovModel = NULL,
-                           auto.constraints = TRUE,
+                           auto.fix.first = TRUE,
+                           auto.fix.single = TRUE,
                            createTheta = TRUE,
                            mean.observed = TRUE,
                            standardize.inp = FALSE,
@@ -59,7 +60,7 @@ specifyModelDA <- function(syntax = NULL,
 
   # measurement model x
   listLambdaX <- constructLambda(xis, indsXis, parTable = parTable,
-                                 auto.constraints = auto.constraints)
+                                 auto.fix.first = auto.fix.first)
   lambdaX      <- listLambdaX$numeric
   labelLambdaX <- listLambdaX$label
 
@@ -71,13 +72,13 @@ specifyModelDA <- function(syntax = NULL,
                                         listTauX$syntaxAdditions)
 
   listThetaDelta <- constructTheta(xis, indsXis, parTable = parTable,
-                                   auto.constraints = auto.constraints)
+                                   auto.fix.single = auto.fix.single)
   thetaDelta      <- listThetaDelta$numeric
   thetaLabelDelta <- listThetaDelta$label
 
   # measurement model y
   listLambdaY <- constructLambda(etas, indsEtas, parTable = parTable,
-                                 auto.constraints = auto.constraints)
+                                 auto.fix.first = auto.fix.first)
   lambdaY      <- listLambdaY$numeric
   labelLambdaY <- listLambdaY$label
 
@@ -89,7 +90,7 @@ specifyModelDA <- function(syntax = NULL,
                                         listTauY$syntaxAdditions)
 
   listThetaEpsilon <- constructTheta(etas, indsEtas, parTable = parTable,
-                                     auto.constraints = auto.constraints)
+                                     auto.fix.single = auto.fix.single)
   thetaEpsilon      <- listThetaEpsilon$numeric
   thetaLabelEpsilon <- listThetaEpsilon$label
 
@@ -489,7 +490,7 @@ customParamsToParTable <- function(model, coefs, se) {
 }
 
 
-modelToParTable <- function(model, coefs = NULL, se = NULL, method = "lms") {
+modelToParTable <- function(model, coefs = NULL, se = NULL, method = "lms", calc.se = TRUE) {
   parTable <- rbind(mainModelToParTable(model, method = method),
                     covModelToParTable(model, method = method))
 
@@ -507,5 +508,9 @@ modelToParTable <- function(model, coefs = NULL, se = NULL, method = "lms") {
     parTable[isLabelled & parTable$std.error == 0, "std.error"] <- NA
   }
 
+  if (!calc.se) parTable$std.error <- NA  # when std.errors are not computed, static constraints
+                                          # will get Non-NA std.errors, which is incorrect
+                                          # this is naturally corrected for when calculating the 
+                                          # std.errors, but not when calc.se == FALSE
   parTable
 }
