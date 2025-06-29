@@ -121,6 +121,8 @@ necessary syntax, and variables for the estimation of models with latent product
 <span>  rcs.choose <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  orthogonal.x <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  orthogonal.y <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  auto.fix.first <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  auto.fix.single <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -350,6 +352,23 @@ Default is <code>FALSE</code>.</p></dd>
 If <code>FALSE</code> residual covariances are added between pure endogenous variables;
 those that are predicted by no other endogenous variable in the structural model.
 Default is <code>FALSE</code>.</p></dd>
+
+
+<dt id="arg-auto-fix-first">auto.fix.first<a class="anchor" aria-label="anchor" href="#arg-auto-fix-first"></a></dt>
+<dd><p>If <code>TRUE</code> the factor loading of the first indicator, for
+a given latent variable is fixed to <code>1</code>. If <code>FALSE</code> no loadings are fixed
+(automatically). Note that that this might make it such that the model no longer is
+identified. Default is <code>TRUE</code>. <strong>NOTE</strong> this behaviour is overridden
+if the first loading is labelled, where it gets treated as a free parameter instead. This
+differs from the default behaviour in <code>lavaan</code>.</p></dd>
+
+
+<dt id="arg-auto-fix-single">auto.fix.single<a class="anchor" aria-label="anchor" href="#arg-auto-fix-single"></a></dt>
+<dd><p>If <code>TRUE</code>, the residual variance of
+an observed indicator is set to zero if it is the only indicator of a latent variable.
+If <code>FALSE</code> the residual variance is not fixed to zero, and treated as a free parameter
+of the model. Default if <code>TRUE</code>. <strong>NOTE</strong> this behaviour is overridden
+if the first loading is labelled, where it gets treated as a free parameter instead.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
