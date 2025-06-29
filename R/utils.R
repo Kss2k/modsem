@@ -500,10 +500,10 @@ sortConstrExprs <- function(parTable) {
   rows <- parTable[parTable$op %in% CONSTRAINT_OPS, ]
   if (NROW(rows) == 0) return(NULL)
 
-  labelled  <- unique(parTable$mod[parTable$mod != ""])
-  isDynamic <- !canBeNumeric(rows$rhs)
-
-  rows <- rows[isDynamic & !rows$op %in% BOUNDUARY_OPS, ] # not relevant
+  labelled <- unique(parTable$mod[parTable$mod != ""])
+  isConst  <- canBeNumeric(rows$rhs)
+  
+  rows <- rows[!(isConst & rows$op %in% BOUNDUARY_OPS), ] # not relevant
 
   if (!all(rows$lhs %in% labelled)) {
     stop2("Unknown labels in constraints: ", rows$lhs[!rows$lhs %in% labelled])

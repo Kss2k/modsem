@@ -22,9 +22,28 @@ est1 <- modsem(m1, oneInt, method = "lms", optimize = TRUE, verbose = TRUE,
 plot_interaction("X", "Z", "Y", "X:Z", -3:3, c(-0.5, 0.5), est1, standardized=TRUE)
 print(summary(est1, adjusted.stat = TRUE))
 plot_surface(x = "X", z = "Z", y = "Y", model = est1)
-standardize_model(est1, monte.carlo=TRUE)
-standardize_model(est1, monte.carlo=FALSE)
+std_est1_mc <- standardize_model(est1, monte.carlo=TRUE)
+std_est1_delta <- standardize_model(est1, monte.carlo=FALSE)
 modsem_predict(est1)
+
+# test constraints and custom parameters
+coefs <- coef(est1)
+a <- coefs[["a"]]
+b <- coefs[["b"]]
+c <- coefs[["c"]]
+testthat::expect_equal(a, b ^ 2 + 0.01 * c)
+
+test_coefs <- function(est) {
+  coefs <- coef(est)
+  a <- coefs[["a"]]
+  b <- coefs[["b"]]
+  c <- coefs[["coef"]]
+  testthat::expect_equal(c, sqrt(a * 2 + b^2))
+}
+
+test_coefs(est1)
+test_coefs(std_est1_delta)
+test_coefs(std_est1_mc)
 
 m1 <- "
 # Outer Model
@@ -100,10 +119,16 @@ ust_pt <- parameter_estimates(est2)
 std_pt <- standardized_estimates(est2, monte.carlo=FALSE)
 testthat::expect_true(all(is.na(ust_pt[ust_pt$label == "p1", "std.error"])))
 
+# Check constraints
 label <- "my_custom_parameter"
 u_est <- ust_pt[ust_pt$label == label, "est"]
 s_est <- std_pt[std_pt$label == label, "est"]
+u_a   <- unique(ust_pt[ust_pt$label == "a", "est"])
+s_a   <- unique(std_pt[std_pt$label == "a", "est"]) 
 expect_true(round(u_est, 5) < round(s_est, 5))
+testthat::expect_true(length(u_a) == 1 && length(s_a) == 1)
+testthat::expect_equal(u_est, 2 * u_a)
+testthat::expect_equal(s_est, 2 * s_a)
 
 plot_interaction(x = "INT", z = "PBC", y = "BEH", vals_z = c(-0.5, 0.5), model = est2)
 print(summary(est2))
@@ -210,12 +235,41 @@ m1 <- "
   .Y =~ y1 + y2
 
 # Inner model
-  .Y ~ X + Z + X:Z
+  .Y ~ c * X + Z + X:Z
 
   X~~ a*X + b*Z
 
   a == 1
   b == .2
+  c > 0.4
 "
 
-summary(modsem(m1, oneInt, method = "lms", cov.syntax = ""))
+est_m1 <- modsem(m1, oneInt, method = "lms", cov.syntax = "")
+coef_m1 <- coef(est_m1)
+summary(est_m1)
+
+# test constraints
+testthat::expect_equal(coef_m1[["a"]], 1)
+testthat::expect_equal(coef_m1[["b"]], .2)
+testthat::expect_equal(est_m1$model$info$bounds$lower[["c"]], 0.4)
+
+m2 <- "
+# Outer Model
+  X =~ x1 + x2
+  Z =~ z1 + z2
+  .Y =~ y1 + y2
+
+# Inner model
+  .Y ~ c * X + Z + X:Z
+
+  X~~ a*X + b*Z
+
+  a == 1
+  b == .2
+  c > a * 2
+"
+
+testthat::expect_error(
+  modsem(m2, oneInt, method = "lms", cov.syntax = ""),
+  regexp = "Dynamic constraints .*"
+)
