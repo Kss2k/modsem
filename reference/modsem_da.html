@@ -119,6 +119,7 @@ necessary syntax, and variables for the estimation of models with latent product
 <span>  em.control <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  rcs <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  rcs.choose <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  orthogonal.x <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  orthogonal.y <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -192,31 +193,31 @@ For QML, <code>"L-BFGS-B"</code> may be faster if there is a large number of ite
 
 <dt id="arg-standardize-data">standardize.data<a class="anchor" aria-label="anchor" href="#arg-standardize-data"></a></dt>
 <dd><p>should data be scaled before fitting model, will be overridden by
-<code>standardize</code> if <code>standardize</code> is set to <code>TRUE</code>.</p>
+  <code>standardize</code> if <code>standardize</code> is set to <code>TRUE</code>.</p>
 <p><strong>NOTE</strong>: It is recommended that you estimate the model normally and then standardize the output using
 <code><a href="standardize_model.html">standardize_model</a></code> <code><a href="standardized_estimates.html">standardized_estimates</a></code>, <code>summary(&lt;modsem_da-object&gt;, standardize=TRUE)</code></p></dd>
 
 
 <dt id="arg-standardize-out">standardize.out<a class="anchor" aria-label="anchor" href="#arg-standardize-out"></a></dt>
 <dd><p>should output be standardized (note will alter the relationships of
-parameter constraints since parameters are scaled unevenly, even if they
-have the same label). This does not alter the estimation of the model, only the
-output.</p>
+  parameter constraints since parameters are scaled unevenly, even if they
+  have the same label). This does not alter the estimation of the model, only the
+  output.</p>
 <p><strong>NOTE</strong>: It is recommended that you estimate the model normally and then standardize the output using
 <code><a href="standardized_estimates.html">standardized_estimates</a></code>.</p></dd>
 
 
 <dt id="arg-standardize">standardize<a class="anchor" aria-label="anchor" href="#arg-standardize"></a></dt>
 <dd><p>will standardize the data before fitting the model, remove the mean
-structure of the observed variables, and standardize the output. Note that <code>standardize.data</code>,
-<code>mean.observed</code>, and <code>standardize.out</code> will be overridden by <code>standardize</code> if <code>standardize</code> is set to <code>TRUE</code>.</p>
+  structure of the observed variables, and standardize the output. Note that <code>standardize.data</code>,
+  <code>mean.observed</code>, and <code>standardize.out</code> will be overridden by <code>standardize</code> if <code>standardize</code> is set to <code>TRUE</code>.</p>
 <p><strong>NOTE</strong>: It is recommended that you estimate the model normally and then standardize the output using
-<code><a href="standardized_estimates.html">standardized_estimates</a></code>.</p></dd>
+  <code><a href="standardized_estimates.html">standardized_estimates</a></code>.</p></dd>
 
 
 <dt id="arg-mean-observed">mean.observed<a class="anchor" aria-label="anchor" href="#arg-mean-observed"></a></dt>
 <dd><p>should the mean structure of the observed variables be estimated?
-This will be overridden by <code>standardize</code> if <code>standardize</code> is set to <code>TRUE</code>.</p>
+  This will be overridden by <code>standardize</code> if <code>standardize</code> is set to <code>TRUE</code>.</p>
 <p><strong>NOTE</strong>: Not recommended unless you know what you are doing.</p></dd>
 
 
@@ -311,7 +312,7 @@ that it is recalculated every third EM-iteration.</p></dd>
 
 
 <dt id="arg-n-threads">n.threads<a class="anchor" aria-label="anchor" href="#arg-n-threads"></a></dt>
-<dd><p>number of cores to use for parallel processing. If <code>NULL</code>, it will use &lt;= 2 threads.
+<dd><p>number of threads to use for parallel processing. If <code>NULL</code>, it will use &lt;= 2 threads.
 If an integer is specified, it will use that number of threads (e.g., <code>n.threads = 4</code> will use 4 threads).
 If <code>"default"</code>, it will use the default number of threads (2).
 If <code>"max"</code>, it will use all available threads, <code>"min"</code> will use 1 thread.</p></dd>
@@ -337,6 +338,11 @@ single item indicators instead? See <code><a href="relcorr_single_item.html">rel
 <dd><p>Which latent variables should get their indicators replaced with
 reliablity-reliability corrected single items? Corresponds to the <code>choose</code>
 argument in <code><a href="relcorr_single_item.html">relcorr_single_item</a></code>.</p></dd>
+
+
+<dt id="arg-orthogonal-x">orthogonal.x<a class="anchor" aria-label="anchor" href="#arg-orthogonal-x"></a></dt>
+<dd><p>If <code>TRUE</code>, all covariances among exogenous latent variables only are set to zero.
+Default is <code>FALSE</code>.</p></dd>
 
 
 <dt id="arg-orthogonal-y">orthogonal.y<a class="anchor" aria-label="anchor" href="#arg-orthogonal-y"></a></dt>
