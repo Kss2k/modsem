@@ -144,9 +144,23 @@ modsem_mplus <- function(model.syntax,
   isfree <- coefsTable$p.value != 999
   labels <- coefsTable$label[isfree]
   coef <- structure(coefsTable$est[isfree], names = labels)
-  vcov <- MplusAutomation::get_tech3(results)$paramCov
-  vcov[upper.tri(vcov)] <- t(vcov)[upper.tri(vcov)]
-  dimnames(vcov) <- list(labels, labels)
+
+  vcov <- tryCatch({
+    # vcov <- MplusAutomation::get_tech3(results)$paramCov
+    # `MplusAutomation::get_tech3` seems very unstable...
+    # I often get this error:
+    # `Error in get_results(x = results, element = "tech3"): could not find function "get_results"`
+    # `MplusAutomation::get_results` seems to work better...
+    vcov <- MplusAutomation::get_results(results, element = "tech3")$paramCov
+    vcov[upper.tri(vcov)] <- t(vcov)[upper.tri(vcov)]
+    dimnames(vcov) <- list(labels, labels)
+    vcov
+  }, error = function(e) {
+    warning2("Unable to retrive `tech3` from `Mplus` results\n",
+             "Message: ", e, immediate. = FALSE)
+    vcov <- matrix(NA, nrow = sum(isfree), ncol = sum(isfree), 
+                   dimnames = list(labels, labels))
+  })
 
   modelSpec <- list(parTable = mplusParTable,
                     model = results,
