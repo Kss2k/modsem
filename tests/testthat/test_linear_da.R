@@ -10,11 +10,11 @@ m1 <- "
 "
 
 est_m1_lms <- modsem(m1, oneInt, method = "lms", calc.se=FALSE)
-testthat::expect_true(est_m1_lms$iterations == 2) # lowest possible number of iterations for lms
+testthat::expect_true(est_m1_lms$iterations == 2L) # lowest possible number of iterations for lms
 testthat::expect_warning(summary(est_m1_lms), "Comparative fit to H0 will not be calculated.")
 
 est_m1_qml <- modsem(m1, oneInt, method = "qml", calc.se=FALSE)
-testthat::expect_true(est_m1_qml$iterations == 1) # lowest possible number of iterations for qml
+testthat::expect_true(est_m1_qml$iterations == 1L) # lowest possible number of iterations for qml
 testthat::expect_warning(summary(est_m1_qml), "Comparative fit to H0 will not be calculated.")
 
 
@@ -22,7 +22,7 @@ tpb <- "
 # Outer Model (Based on Hagger et al., 2007)
   ATT =~ att1 + a2 * att2 + att3 + att4 + att5
   SN =~ sn1 + sn2
-  PBC =~ a1 * pbc1 + pbc2 + pbc3
+  PBC =~ pbc1 + pbc2 + pbc3
   INT =~ int1 + int2 + int3
   BEH =~ b1 + b2
 
@@ -32,11 +32,11 @@ tpb <- "
 "
 
 est_tpb_lms <- modsem(tpb, TPB, method = "lms", calc.se=FALSE)
-testthat::expect_true(est_tpb_lms$iterations == 2)
+testthat::expect_true(est_tpb_lms$iterations == 2L)
 testthat::expect_warning(summary(est_tpb_lms), "Comparative fit to H0 will not be calculated.")
 
 est_tpb_qml <- modsem(tpb, TPB, method = "qml", calc.se=FALSE)
-testthat::expect_true(est_tpb_qml$iterations <= 2)
+testthat::expect_true(est_tpb_qml$iterations <= 1L)
 testthat::expect_warning(summary(est_tpb_qml), "Comparative fit to H0 will not be calculated.")
 
 
