@@ -290,13 +290,17 @@ getMeans <- function(x, parTable) {
 }
 
 
-centerInteraction <- function(parTable) {
+centerInteractions <- function(parTable) {
   rows <- getIntTermRows(parTable)
+  interactionVars <- character(0L)
+
   for (i in NROW(rows)) {
     Y <- rows[i, "lhs"]
     XZ <- unlist(stringr::str_split(rows[i, "rhs"], ":"))
     X <- XZ[[1]]
     Z <- XZ[[2]]
+    
+    interactionVars <- c(interactionVars, X, Z)
 
     meanX <- getMean(X, parTable)
     meanZ <- getMean(Z, parTable)
@@ -315,8 +319,7 @@ centerInteraction <- function(parTable) {
 
   }
 
-  innerVars <- unique(unlist(parTable[parTable$op == "~", c("rhs", "lhs")]))
-  parTable[parTable$lhs %in% innerVars & parTable$op == "~1", "est"] <- 0
+  parTable[parTable$lhs %in% interactionVars & parTable$op == "~1", "est"] <- 0
   parTable
 }
 

@@ -201,7 +201,7 @@ standardized_estimates <- function(object, ...) {
 #' @export
 standardized_estimates.data.frame <- function(object, intercepts = FALSE, ...) {
   parTable <- object[c("lhs", "op", "rhs", "label", "est", "std.error")]
-  parTable <- centerInteraction(parTable) # re-estimate path-coefficients 
+  parTable <- centerInteractions(parTable) # re-estimate path-coefficients 
                                           # when intercepts are zero
 
   if (!intercepts) {

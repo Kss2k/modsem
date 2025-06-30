@@ -18,7 +18,7 @@ standardizedSolutionCOEFS <- function(object,
 
   if (inherits(object, "modsem_da")) {
     parTable <- parTable[c("lhs", "op", "rhs", "label", "est", "std.error")]
-    parTable <- centerInteraction(parTable) # re-estimate path-coefficients 
+    parTable <- centerInteractions(parTable) # re-estimate path-coefficients 
     parTable <- parTable[parTable$op != "~1", ] # when intercepts are zero
     parTable <- var_interactions(removeInteractionVariances(parTable))
 

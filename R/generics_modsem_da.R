@@ -72,7 +72,7 @@ summary.modsem_da <- function(object,
 
   } else {
     parTable   <- parameter_estimates(object)
-    parTableR2 <- var_interactions(centerInteraction(parTable)) # easier to calculate 
+    parTableR2 <- var_interactions(centerInteractions(parTable)) # easier to calculate 
                                                                 # R-squared when 
                                                                 # interactions are mean centeredd
   }

@@ -20,12 +20,13 @@ fit_modsem_da <- function(model, chisq = TRUE) {
   logLik <- model$logLik
   O      <- stats::cov(model$data)
   mu     <- apply(model$data, 2, mean)
+  mu     <- matrix(mu, ncol = 1, dimnames = list(colnames(model$data), "~1"))
   N      <- NROW(model$data)
   p      <- NCOL(model$data)
   coef   <- coef(model, type = "free")
   k      <- length(coef)
   df     <- getDegreesOfFreedom(m = p, coef = coef)
-
+  
   expected.matrices <- model$expected.matrices
 
   matrices <- model$model$matrices
@@ -55,13 +56,13 @@ fit_modsem_da <- function(model, chisq = TRUE) {
     #            cbind(covXY, covY))
     E <- expected.matrices$sigma.ov
 
-    if (any(grepl("tau|alpha", names(coef)))) {
+    if (any(grepl("tau|alpha|beta", names(coef)))) {
       muHat <- expected.matrices$mu.ov
     } else muHat <- mu
 
     # Make sure the order of the rows and columns of E matches O
-    E <- E[rownames(O), colnames(O)]
-    muHat <- muHat[rownames(O), ]
+    E <- E[rownames(O), colnames(O), drop = FALSE]
+    muHat <- muHat[rownames(O), , drop = FALSE]
 
     chisqValue <- calcChiSqr(O = O, E = E, N = N, p = p, mu = mu, muHat = muHat)
     chisqP     <- stats::pchisq(chisqValue, df, lower.tail = FALSE)
