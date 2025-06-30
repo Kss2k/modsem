@@ -495,7 +495,7 @@ intTermsAffectLV <- function(lV, parTable, etas = NULL) {
 }
 
 
-getLambdaParTable <- function(parTable, rows = NULL, cols = NULL) {
+getLambdaParTable <- function(parTable, rows = NULL, cols = NULL, fill.missing = FALSE) {
   lVs <- getLVs(parTable)
 
   indsLVs <- getIndsLVs(parTable, lVs = lVs)
@@ -509,6 +509,23 @@ getLambdaParTable <- function(parTable, rows = NULL, cols = NULL) {
 
   if (is.null(rows)) rows <- rownames(lambda)
   if (is.null(cols)) cols <- colnames(lambda)
+
+  if (fill.missing) {
+    missingCols <- setdiff(cols, colnames(lambda))
+    missingRows <- setdiff(rows, rownames(lambda))
+  
+    if (length(missingCols)) {
+      newCols <- matrix(0, nrow = NROW(lambda), ncol = length(missingCols),
+                        dimnames = list(rownames(lambda), missingCols))
+      lambda <- cbind(lambda, newCols)
+    }
+  
+    if (length(missingRows) && fill.missing) {
+      newRows <- matrix(0, nrow = length(missingRows), ncol = NCOL(lambda),
+                        dimnames = list(missingRows, colnames(lambda)))
+      lambda <- rbind(lambda, newRows)
+    }
+  }
 
   lambda <- lambda[rows, cols, drop = FALSE]
 }
@@ -564,4 +581,126 @@ getLevelsParTable <- function(parTable) {
 isPureEta <- function(eta, parTable) {
   predictors <- unique(parTable[parTable$op == "~", "rhs"])
   !eta %in% predictors
+}
+
+
+calcExpectedMatricesDA <- function(parTable, xis = NULL, etas = NULL, intTerms = NULL) {
+  parTable <- removeInteractionVariances(parTable)
+  parTable <- centerInteraction(parTable) |> 
+    var_interactions() |> meanInteraction()
+
+  if (is.null(intTerms))
+    intTerms <- unique(parTable[grepl(":", parTable$rhs), "rhs"])
+  if (is.null(etas))
+    etas <- getEtas(parTable, isLV = TRUE)
+  if (is.null(xis))
+    xis  <- getXis(parTable, etas = etas, isLV = TRUE)
+
+  xis <- unique(c(xis, intTerms)) # treat int-terms as normal xis
+  lVs  <- c(xis, etas)
+
+  indsLV <- getIndsLVs(parTable, lVs = lVs)
+  inds <- unique(unlist(indsLV))
+
+  # Create lambda
+  lambda <- getLambdaParTable(parTable, rows = inds, cols = lVs, fill.missing = TRUE)
+
+  # Create Gamma
+  gammaXi <- matrix(0, nrow = length(etas), ncol = length(xis),
+                    dimnames = list(etas, xis))
+  gammaEta <- matrix(0, nrow = length(etas), ncol = length(etas),
+                     dimnames = list(etas, etas))
+
+  for (eta in etas) {
+    reg <- parTable[parTable$lhs == eta & parTable$op == "~", , drop = FALSE]
+
+    for (i in seq_len(NROW(reg))) {
+      predictor <- reg[i, "rhs"]
+      est       <- reg[i, "est"]
+      
+      if      (predictor %in% xis)  gammaXi[eta, predictor] <- est
+      else if (predictor %in% etas) gammaEta[eta, predictor] <- est                   
+      else warning("Unexpected type of predictor: ", predictor)
+    }
+  }
+
+  createCov <- function(vars) {
+    cov <- matrix(0, nrow = length(vars), ncol = length(vars),
+                  dimnames = list(vars, vars))
+    covRows <- parTable[parTable$op == "~~" & parTable$lhs %in% vars &
+                        parTable$rhs %in% vars, , drop = FALSE]
+    for (i in seq_len(NROW(covRows))) {
+      lhs <- covRows$lhs[i]
+      rhs <- covRows$rhs[i]
+      est <- covRows$est[i]
+
+      if (lhs %in% vars && rhs %in% vars) {
+        cov[lhs, rhs] <- cov[rhs, lhs] <- est
+      } else warning("Unexpected type of variable in covariance: ", lhs, " and ", rhs)
+    }
+
+    cov
+  }
+
+  psi   <- createCov(etas)
+  phi   <- createCov(xis)
+  theta <- createCov(inds)
+
+  createBeta <- function(var) {
+    beta <- matrix(0, nrow = length(var), ncol = 1,
+                   dimnames = list(var, "~1"))
+
+    betaRows <- parTable[parTable$op == "~1" & parTable$lhs %in% var, , drop = FALSE]
+    for (i in seq_len(NROW(betaRows))) {
+      lhs <- betaRows$lhs[i]
+      est <- betaRows$est[i]
+
+      if (lhs %in% var) {
+        beta[lhs, "~1"] <- est
+      } else warning("Unexpected type of variable in beta: ", lhs)
+    }
+
+    beta
+  }
+
+  alpha <- createBeta(etas)
+  beta0 <- createBeta(xis)
+  tau   <- createBeta(inds)
+
+  # Sigma ----------------------------------------------------------------------
+  Binv <- solve(diag(nrow(gammaEta)) - gammaEta)
+  covEtaEta <- Binv %*% (gammaXi %*% phi %*% t(gammaXi) + psi) %*% t(Binv)
+  covEtaXi <- Binv %*% gammaXi %*% phi
+  sigma.lv <- rbind(cbind(phi, t(covEtaXi)),
+                    cbind(covEtaXi, covEtaEta))
+  sigma.ov <- lambda %*% sigma.lv %*% t(lambda) + theta
+  
+  # lower left corner cov-lv-ov
+  sigma.lv.ov <- lambda %*% sigma.lv
+  sigma.ov.lv <- t(sigma.lv.ov)
+
+  sigma.all <- rbind(cbind(sigma.lv, sigma.ov.lv),
+                     cbind(sigma.lv.ov, sigma.ov))
+
+  # Mu -------------------------------------------------------------------------
+  mu.eta <- Binv %*% (alpha + gammaXi %*% beta0)
+  mu.lv  <- rbind(beta0, mu.eta)
+  mu.ov  <- tau + lambda %*% mu.lv
+  mu.all <- rbind(mu.lv, mu.ov)
+
+
+  list(
+    sigma.all = sigma.all, 
+    sigma.lv  = sigma.lv,
+    sigma.ov  = sigma.ov,
+    mu.all    = mu.all,
+    mu.lv     = mu.lv,
+    mu.ov     = mu.ov,
+    lambda    = lambda, 
+    gammaXi   = gammaXi, 
+    gammaEta  = gammaEta, 
+    psi       = psi, 
+    phi       = phi, 
+    theta     = theta
+  )
 }

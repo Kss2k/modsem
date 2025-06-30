@@ -168,30 +168,42 @@ postCheckModel <- function(model) {
   parTable <- model$parTable
 
   checkParTableEstimates(parTable)
-  checkVCOV(model$vcov, calc.se = model$args$calc.se)
+  checkVariances(model$expected.matrices)
+  checkVCOV(vcov(model, type = "free"), calc.se = model$args$calc.se)
 }
 
 
-checkParTableEstimates <- function(parTable, rel.diff.tol = 1000) {
+checkParTableEstimates <- function(parTable) {
   estimates <- parTable$est
-  variances <- parTable[parTable$op == "~~" & parTable$lhs == parTable$rhs, "est"]
 
   anyNonFinite <- any(is.na(estimates) | is.nan(estimates) | is.infinite(estimates))
   warnif(anyNonFinite, "Some parameters could not be computed (NA, NaN or Inf)!",
          immediate. = FALSE)
+}
 
-  anyNeg <- any(variances < 0)
-  warnif(anyNeg, "Some variances are negative!", immediate. = FALSE)
 
-  minVar <- min(variances, na.rm = TRUE) # should never be any NA, but just in case...
-  maxVar <- max(variances, na.rm = TRUE) 
-  relDiff <- maxVar / minVar
-  
-  warnif(
-    relDiff > rel.diff.tol,
-    sprintf("Some variances are (at least) a factor %i times larger than others", rel.diff.tol),
-    immediate. = FALSE
-  )
+checkVariances <- function(expected.matrices, rel.diff.tol = 1000) {
+  variances.lv <- diag(expected.matrices$sigma.lv)
+  variances.ov <- diag(expected.matrices$sigma.ov)
+
+  check <- function(variances, type) {
+    minVar <- min(variances, na.rm = TRUE) # should never be any NA, but just in case...
+    maxVar <- max(variances, na.rm = TRUE) 
+    relDiff <- maxVar / minVar
+
+    anyNeg <- any(variances < 0)
+    warnif(anyNeg, "Some estimated %s variances are negative!", immediate. = FALSE)
+    
+    warnif(
+      relDiff > rel.diff.tol,
+      sprintf("Some estimated %s variances are (at least) a factor %i times larger than others", 
+              type, rel.diff.tol),
+      immediate. = FALSE
+    )
+  }
+
+  check(variances.lv, type = "lv")
+  check(variances.ov, type = "ov")
 }
 
 

@@ -26,6 +26,8 @@ fit_modsem_da <- function(model, chisq = TRUE) {
   k      <- length(coef)
   df     <- getDegreesOfFreedom(m = p, coef = coef)
 
+  expected.matrices <- model$expected.matrices
+
   matrices <- model$model$matrices
   gammaXi  <- matrices$gammaXi
   gammaEta <- matrices$gammaEta
@@ -39,23 +41,27 @@ fit_modsem_da <- function(model, chisq = TRUE) {
   tauY     <- matrices$tauY
   alpha    <- matrices$alpha
   Ieta     <- matrices$Ieta
+  beta0    <- matrices$beta0
   Binv     <- solve(Ieta - gammaEta)
 
   if (chisq) {
-    covX  <- lambdaX %*% phi %*% t(lambdaX) + thetaX
-    covXY <- lambdaY %*% (Binv %*% gammaXi %*% phi) %*% t(lambdaX)
-    covY  <- lambdaY %*%
-      (Binv %*% (gammaXi %*% phi %*% t(gammaXi) + psi) %*% t(Binv)) %*%
-      t(lambdaY) + thetaY
+    # covX  <- lambdaX %*% phi %*% t(lambdaX) + thetaX
+    # covXY <- lambdaY %*% (Binv %*% gammaXi %*% phi) %*% t(lambdaX)
+    # covY  <- lambdaY %*%
+    #   (Binv %*% (gammaXi %*% phi %*% t(gammaXi) + psi) %*% t(Binv)) %*%
+    #   t(lambdaY) + thetaY
 
-    E <- rbind(cbind(covX, t(covXY)),
-               cbind(covXY, covY))
+    # E <- rbind(cbind(covX, t(covXY)),
+    #            cbind(covXY, covY))
+    E <- expected.matrices$sigma.ov
 
     if (any(grepl("tau|alpha", names(coef)))) {
-      muX   <- tauX
-      muY   <- tauY + lambdaY %*% Binv %*% alpha
-      muHat <- rbind(muX, muY)
+      muHat <- expected.matrices$mu.ov
     } else muHat <- mu
+
+    # Make sure the order of the rows and columns of E matches O
+    E <- E[rownames(O), colnames(O)]
+    muHat <- muHat[rownames(O), ]
 
     chisqValue <- calcChiSqr(O = O, E = E, N = N, p = p, mu = mu, muHat = muHat)
     chisqP     <- stats::pchisq(chisqValue, df, lower.tail = FALSE)
@@ -87,7 +93,15 @@ fit_modsem_da <- function(model, chisq = TRUE) {
     sigma.expected = E,
     mu.observed    = mu,
     mu.expected    = muHat,
+   
+    sigma.ov  = expected.matrices$sigma.ov,
+    sigma.lv  = expected.matrices$sigma.lv,
+    sigma.all = expected.matrices$sigma.all,
     
+    mu.lv  = expected.matrices$mu.lv,
+    mu.ov  = expected.matrices$mu.ov,
+    mu.all = expected.matrices$mu.all,
+
     chisq.value  = chisqValue, 
     chisq.pvalue = chisqP,
     chisq.df     = df,

@@ -295,24 +295,25 @@ emLms <- function(model,
   convergence_flag <- iterations < max.iter
 
   out <- list(
-    model         = finalModel,
-    start.model   = model,
-    method        = "lms",
-    optimizer     = paste(algorithm, optimizer, sep = "-"),
-    data          = data,
-    theta         = coefficients,
-    coefs         = lavCoefs,
-    parTable      = parTable,
+    model            = finalModel,
+    start.model      = model,
+    method           = "lms",
+    optimizer        = paste(algorithm, optimizer, sep = "-"),
+    data             = data,
+    theta            = coefficients,
+    coefs            = lavCoefs,
+    parTable         = parTable,
     originalParTable = model$parTable,
-    logLik        = -final$objective,
-    iterations    = iterations,
-    convergence   = convergence_flag,
-    type.se       = typeSE,
-    info.quad     = getInfoQuad(model$quad),
-    type.estimates = "unstandardized",
-    FIM           = FIM$FIM,
-    vcov          = FIM$vcov,
-    information   = FIM$type
+    logLik           = -final$objective,
+    iterations       = iterations,
+    convergence      = convergence_flag,
+    type.se          = typeSE,
+    info.quad        = getInfoQuad(model$quad),
+    type.estimates   = "unstandardized",
+    FIM              = FIM$FIM,
+    vcov             = FIM$vcov,
+    vcov.free        = FIM$vcov.sub,
+    information      = FIM$type
   )
   out
 }

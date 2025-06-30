@@ -321,6 +321,34 @@ centerInteraction <- function(parTable) {
 }
 
 
+meanInteraction <- function(parTable) {
+  intTerms <- unique(parTable[grepl(":", parTable$rhs), "rhs"])
+
+  # remove existing
+  parTable <- parTable[!(parTable$op == "~1" & parTable$lhs %in% intTerms), 
+                       , drop = FALSE]
+  
+  for (intTerm in intTerms) {
+    XZ <- unlist(stringr::str_split(intTerm, ":"))
+    X <- XZ[[1]]
+    Z <- XZ[[2]]
+ 
+    meanX <- getMean(X, parTable)
+    meanZ <- getMean(Z, parTable)
+    covXZ <- calcCovParTable(x = X, y = Z, parTable = parTable)
+    meanXZ <- meanX * meanZ + covXZ
+
+    newRow <- data.frame(lhs = intTerm, op = "~1", rhs = "",
+                         label = "", est = meanXZ, std.error = NA, 
+                         z.value = NA, p.value = NA,
+                         ci.lower = NA, ci.upper = NA)
+    parTable <- rbind(parTable, newRow)
+  }
+
+  parTable
+}
+
+
 getWarningWrapper <- function(silent = FALSE) { # function factory
   if (silent) return(suppressWarnings)
   function(x) x
