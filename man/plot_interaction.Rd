@@ -49,13 +49,13 @@ are also assumed to be in standardized units.}
 \code{\link{modsem_mplus}}, or possibly a \code{lavaan} object. Must be a fitted
 SEM model containing paths for \code{y ~ x + z + x:z}.}
 
-\item{alpha_se}{A numeric value in \([0, 1]\) specifying the transparency of
+\item{alpha_se}{A numeric value in \eqn{[0, 1]} specifying the transparency of
 the confidence/prediction interval ribbon. Default is \code{0.15}.}
 
 \item{digits}{An integer specifying the number of decimal places to which the
 moderator values (\code{z}) are rounded for labeling/grouping in the plot.}
 
-\item{ci_width}{A numeric value in \((0,1)\) indicating the coverage of the
+\item{ci_width}{A numeric value in \eqn{(0,1)} indicating the coverage of the
 confidence (or prediction) interval. The default is \code{0.95} for a 95\%
 interval.}
 

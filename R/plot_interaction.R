@@ -27,11 +27,11 @@
 #' @param model An object of class \code{\link{modsem_pi}}, \code{\link{modsem_da}}, 
 #'   \code{\link{modsem_mplus}}, or possibly a \code{lavaan} object. Must be a fitted
 #'   SEM model containing paths for \code{y ~ x + z + x:z}.
-#' @param alpha_se A numeric value in \([0, 1]\) specifying the transparency of
+#' @param alpha_se A numeric value in \eqn{[0, 1]} specifying the transparency of
 #'   the confidence/prediction interval ribbon. Default is \code{0.15}.
 #' @param digits An integer specifying the number of decimal places to which the
 #'   moderator values (\code{z}) are rounded for labeling/grouping in the plot.
-#' @param ci_width A numeric value in \((0,1)\) indicating the coverage of the
+#' @param ci_width A numeric value in \eqn{(0,1)} indicating the coverage of the
 #'   confidence (or prediction) interval. The default is \code{0.95} for a 95\%
 #'   interval.
 #' @param ci_type A character string specifying whether to compute
