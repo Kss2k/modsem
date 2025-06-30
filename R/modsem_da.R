@@ -435,12 +435,16 @@ modsem_da <- function(model.syntax = NULL,
     return(NULL)
   })
 
-  class(est) <- c("modsem_da", "modsem")
-
   # clean up
   resetThreads()
 
+  # Finalize the model object
   est$args <- args
-    
+  class(est) <- c("modsem_da", "modsem")
+
+  # Check the results 
+  postCheckModel(est)
+
+  # Return
   if (args$standardize.out) standardize_model(est) else est
 }

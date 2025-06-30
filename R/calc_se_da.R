@@ -105,9 +105,11 @@ calcHessian <- function(model, theta, data, method = "lms",
 }
 
 
-solveFIM <- function(H, NA__ = -999) {
-  tryCatch(solve(H),
+solveFIM <- function(H, NA__ = -999, use.ginv = FALSE) {
+  tryCatch(if (use.ginv) GINV(H) else solve(H),
            error = function(e) {
+             if (!use.ginv) return(solveFIM(H, NA__ = NA__, use.ginv = TRUE))
+
              H[TRUE] <- NA__
              H
            },
