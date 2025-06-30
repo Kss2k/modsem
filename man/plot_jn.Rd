@@ -37,7 +37,7 @@ plot_jn(
 
 \item{sig.level}{The significance level for the confidence intervals (default is 0.05).}
 
-\item{alpha}{alpha setting used in `ggplot` (i.e., the opposite of opacity)}
+\item{alpha}{alpha setting used in \code{ggplot} (i.e., the opposite of opacity)}
 
 \item{detail}{The number of generated data points to use for the plot (default is 1000). You can increase this value for smoother plots.}
 
