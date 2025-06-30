@@ -512,5 +512,7 @@ modelToParTable <- function(model, coefs = NULL, se = NULL, method = "lms", calc
                                           # will get Non-NA std.errors, which is incorrect
                                           # this is naturally corrected for when calculating the 
                                           # std.errors, but not when calc.se == FALSE
+  parTable[!is.na(parTable$std.error) &
+           parTable$std.error == -999, "std.error"] <- NA  # replace -999 with NA
   parTable
 }

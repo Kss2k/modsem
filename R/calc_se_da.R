@@ -123,16 +123,18 @@ calcSE_da <- function(calc.se = TRUE, vcov, rawLabels, NA__ = -999) {
   if (!calc.se) return(rep(NA__, length(rawLabels)))
   if (is.null(vcov)) {
     warning2("Fisher Information Matrix (FIM) was not calculated, ",
-             "unable to compute standard errors")
+             "unable to compute standard errors", immediate. = FALSE)
     return(rep(NA__, length(rawLabels)))
   }
 
   se <- suppressWarnings(sqrt(diag(vcov)))
 
   if (all(is.na(se))) {
-    warning2("SE's could not be computed, negative Hessian is singular.")
+    warning2("Standard errors could not be computed, negative Hessian is singular.",
+             immediate. = FALSE)
   } else if (any(is.nan(se))) {
-    warning2("SE's for some coefficients could not be computed.")
+    warning2("Standard errors for some coefficients could not be computed.",
+             immediate. = FALSE)
   }
 
   if (!is.null(names(se))) names(se) <- rawLabels
