@@ -1,4 +1,4 @@
-checkModel <- function(model, covModel = NULL, method = "lms") {
+preCheckModel <- function(model, covModel = NULL, method = "lms") {
   checkCovModelVariables(covModel = covModel, modelXis = model$info$xis)
 
   checkZeroVariances(model = model, method = method)
@@ -160,5 +160,63 @@ checkVarsIntsDA <- function(varsInts, lVs) {
            xz[!xz %in% lVs][[1]], "`!\n",
            "If it is an observed variable, please redefine it as a latent variable.\n",
            "See:\n  vignette(\"observed_lms_qml\", \"modsem\")")
+  }
+}
+
+
+postCheckModel <- function(model) {
+  parTable <- model$parTable
+
+  checkParTableEstimates(parTable)
+  checkVCOV(model$vcov, calc.se = model$args$calc.se)
+}
+
+
+checkParTableEstimates <- function(parTable, rel.diff.tol = 1000) {
+  estimates <- parTable$est
+  variances <- parTable[parTable$op == "~~" & parTable$lhs == parTable$rhs, "est"]
+
+  anyNonFinite <- any(is.na(estimates) | is.nan(estimates) | is.infinite(estimates))
+  warnif(anyNonFinite, "Some parameters could not be computed (NA, NaN or Inf)!",
+         immediate. = FALSE)
+
+  anyNeg <- any(variances < 0)
+  warnif(anyNeg, "Some variances are negative!", immediate. = FALSE)
+
+  minVar <- min(variances, na.rm = TRUE) # should never be any NA, but just in case...
+  maxVar <- max(variances, na.rm = TRUE) 
+  relDiff <- maxVar / minVar
+  
+  warnif(
+    relDiff > rel.diff.tol,
+    sprintf("Some variances are (at least) a factor %i times larger than others", rel.diff.tol),
+    immediate. = FALSE
+  )
+}
+
+
+checkVCOV <- function(vcov, calc.se = TRUE, tol.eigen = .Machine$double.eps ^ (3/4)) {
+  if (!calc.se) return(NULL) # checks not relevant
+
+  eigenvalues <- eigen(vcov, only.values = TRUE)$values 
+
+  if (all(is.na(eigenvalues))) {
+    warning2("Unable to compute eigenvalues of the variance-covariance matrix!")
+    return(NULL)
+  }
+
+  minval <- min(eigenvalues, na.rm = TRUE) # should never be any NA, but just in case...
+  if (minval < tol.eigen) {
+    warnif(minval >= 0, 
+           "The variance-covariance matrix of the estimated\n",
+           "parameters (vcov) does not appear to be positive\n",
+           sprintf("definite! The smallest eigenvalue (= %e) is close\n", minval),
+           "to zero. This may be a symptom that the model is\n",
+           "not identified.", immediate. = FALSE)
+    warnif(minval < 0,
+           "The variance-covariance matrix of the estimated parameters\n",
+           "(vcov) does not appear to be positive definite! The smallest\n",
+           sprintf("eigenvalue (= %e) is smaller than zero. This may\n", minval),
+           "be a symptom that the model is not identified.", immediate. = FALSE)
   }
 }
