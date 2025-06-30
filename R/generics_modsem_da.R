@@ -71,10 +71,13 @@ summary.modsem_da <- function(object,
     parTableR2 <- parTable
 
   } else {
+    # TODO:
+    # Don't calculate R^2 from parTableR2, just get it from `fit_modsem_da(object)$sigma.lv`
     parTable   <- parameter_estimates(object)
     parTableR2 <- var_interactions(centerInteractions(parTable)) # easier to calculate 
-                                                                # R-squared when 
-                                                                # interactions are mean centeredd
+                                                                 # R-squared when 
+                                                                 # interactions are mean centeredd
+
   }
 
   if (!var.interaction) {

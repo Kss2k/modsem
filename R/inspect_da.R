@@ -18,9 +18,8 @@ modsem_inspect_da <- function(model, what = "default") {
                all.coefficients  = model$coefs,
                free.coefficients = model$theta,
                partable          = model$parTable,
-               originalpartable  = model$originalParTable,
+               partable.input    = model$originalParTable,
                loglik            = model$logLik,
-               AIC               = model$AIC,
                iterations        = model$iterations,
                convergence       = model$convergence,
 
@@ -45,13 +44,18 @@ modsem_inspect_da <- function(model, what = "default") {
                                           matricesCovModel$psi),
                alpha = matrices$alpha,
 
-               sigma.ov  = expected.matrices$sigma.ov,
-               sigma.lv  = expected.matrices$sigma.lv,
-               sigma.all = expected.matrices$sigma.all,
+               cov.ov  = expected.matrices$sigma.ov,
+               cov.lv  = expected.matrices$sigma.lv,
+               cov.all = expected.matrices$sigma.all,
 
-               mu.lv  = expected.matrices$mu.lv,
-               mu.ov  = expected.matrices$mu.ov,
-               mu.all = expected.matrices$mu.all)
+               cor.ov  = cov2cor(expected.matrices$sigma.ov),
+               cor.lv  = cov2cor(expected.matrices$sigma.lv),
+               cor.all = cov2cor(expected.matrices$sigma.all),
+
+               mean.lv  = expected.matrices$mu.lv,
+               mean.ov  = expected.matrices$mu.ov,
+               mean.all = expected.matrices$mu.all
+  )
 
   switch(what,
          default = info[names(info) != "data"],

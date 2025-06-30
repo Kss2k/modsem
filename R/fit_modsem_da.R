@@ -15,7 +15,8 @@ fit_modsem_da <- function(model, chisq = TRUE) {
   warnif(any(grepl(":", parTable$rhs)) && chisq,
          "Chi-Square based fit-measures for LMS and QML ",
          "should be calculated for baseline model ",
-         "i.e., the model without the interaction effect")
+         "i.e., the model without the interaction effect",
+         immediate. = FALSE)
 
   logLik <- model$logLik
   O      <- stats::cov(model$data)
@@ -94,14 +95,6 @@ fit_modsem_da <- function(model, chisq = TRUE) {
     sigma.expected = E,
     mu.observed    = mu,
     mu.expected    = muHat,
-   
-    sigma.ov  = expected.matrices$sigma.ov,
-    sigma.lv  = expected.matrices$sigma.lv,
-    sigma.all = expected.matrices$sigma.all,
-    
-    mu.lv  = expected.matrices$mu.lv,
-    mu.ov  = expected.matrices$mu.ov,
-    mu.all = expected.matrices$mu.all,
 
     chisq.value  = chisqValue, 
     chisq.pvalue = chisqP,

@@ -586,8 +586,9 @@ isPureEta <- function(eta, parTable) {
 
 calcExpectedMatricesDA <- function(parTable, xis = NULL, etas = NULL, intTerms = NULL) {
   parTable <- removeInteractionVariances(parTable)
-  parTable <- centerInteractions(parTable) |> 
-    var_interactions() |> meanInteraction()
+  parTable <- centerInteractions(parTable, center.means = FALSE) |> 
+    var_interactions(ignore.means = TRUE) |> 
+    meanInteractions(ignore.means = TRUE)
 
   if (is.null(intTerms))
     intTerms <- unique(parTable[grepl(":", parTable$rhs), "rhs"])

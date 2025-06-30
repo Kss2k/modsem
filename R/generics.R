@@ -41,7 +41,7 @@ var_interactions <- function(object, ...) {
 
 
 #' @export
-var_interactions.data.frame <- function(object, ...) {
+var_interactions.data.frame <- function(object, ignore.means = FALSE, ...) {
   parTable <- removeInteractionVariances(fillColsParTable(object))
 
   intTerms <- unique(parTable[grepl(":", parTable$rhs) &
@@ -58,8 +58,8 @@ var_interactions.data.frame <- function(object, ...) {
     X    <- XZ[[1]]
     Z    <- XZ[[2]]
 
-    muX  <- getMean(X, parTable)
-    muZ  <- getMean(Z, parTable)
+    muX  <- if (!ignore.means) getMean(X, parTable) else 0
+    muZ  <- if (!ignore.means) getMean(Z, parTable) else 0
 
     lhs  <- c(X, Z, X)
     rhs  <- c(X, Z, Z)

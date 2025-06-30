@@ -290,7 +290,7 @@ getMeans <- function(x, parTable) {
 }
 
 
-centerInteractions <- function(parTable) {
+centerInteractions <- function(parTable, center.means = TRUE) {
   rows <- getIntTermRows(parTable)
   interactionVars <- character(0L)
 
@@ -319,12 +319,16 @@ centerInteractions <- function(parTable) {
 
   }
 
-  parTable[parTable$lhs %in% interactionVars & parTable$op == "~1", "est"] <- 0
+  if (center.means) {
+    innerVars <- unique(unlist(parTable[parTable$op == "~", c("rhs", "lhs")]))
+    parTable[parTable$lhs %in% innerVars & parTable$op == "~1", "est"] <- 0
+  }
+
   parTable
 }
 
 
-meanInteraction <- function(parTable) {
+meanInteractions <- function(parTable, ignore.means = FALSE) {
   intTerms <- unique(parTable[grepl(":", parTable$rhs), "rhs"])
 
   # remove existing
@@ -336,8 +340,9 @@ meanInteraction <- function(parTable) {
     X <- XZ[[1]]
     Z <- XZ[[2]]
  
-    meanX <- getMean(X, parTable)
-    meanZ <- getMean(Z, parTable)
+    meanX <- if (!ignore.means) getMean(X, parTable) else 0
+    meanZ <- if (!ignore.means) getMean(Z, parTable) else 0
+
     covXZ <- calcCovParTable(x = X, y = Z, parTable = parTable)
     meanXZ <- meanX * meanZ + covXZ
 
@@ -596,4 +601,12 @@ subsetByGrouping <- function(df, grouping = NULL) {
 
 GINV <- function(X) {
   structure(MASS::ginv(X), dimnames = dimnames(X))
+}
+
+
+cov2cor <- function(vcov) {
+  sd <- sqrt(abs(diag(vcov))) # use `abs()`, in case some variances are negative
+  
+  D <- diag(1 / sd)
+  structure(D %*% vcov %*% D, dimnames = dimnames(vcov))
 }
