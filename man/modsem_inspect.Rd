@@ -61,7 +61,7 @@ organised in several sections.  Keywords are \emph{case-sensitive}.
   \item{\code{"vcov.free"}}{Variance–covariance of free coefficients only.}
   \item{\code{"FIM"}}{Fisher information matrix.}
   \item{\code{"data"}}{Raw data used for estimation (can be large; excluded from \code{"default"})}
-  \item{\code{"coefficients"}}{(alias \code{"all.coefficients"}): All parameter values (free + fixed).}
+  \item{\code{"coefficients"}}{(alias \code{"all.coefficients"}): All parameter values (free + constrained).}
   \item{\code{"free.coefficients"}}{Free parameter values.}
   \item{\code{"loglik"}}{Maximum log-likelihood.}
   \item{\code{"iterations"}}{Optimiser iteration count.}
@@ -71,7 +71,7 @@ organised in several sections.  Keywords are \emph{case-sensitive}.
 \strong{Parameter tables:}  
 
 \describe{
-  \item{\code{"partable"}}{Expanded parameter table used internally.}
+  \item{\code{"partable"}}{Parameter table with estimated parameters.}
   \item{\code{"partable.input"}}{Parsed model syntax.}
 }
 
@@ -80,13 +80,13 @@ organised in several sections.  Keywords are \emph{case-sensitive}.
 \describe{
   \item{\code{"lambda"}}{\eqn{\Lambda} – Factor loadings.}
   \item{\code{"tau"}}{\eqn{\tau} – Intercepts for indicators.}
-  \item{\code{"theta"}}{\eqn{\Theta} – Residual (co-)variances for indicators.}
+  \item{\code{"theta"}}{\eqn{\Theta} – Residual (Co-)Variances for indicators.}
   \item{\code{"gamma_xi"}}{\eqn{\Gamma_{\xi}} – Structural coefficients between exogenous and endogenous variables.}
   \item{\code{"gamma_eta"}}{\eqn{\Gamma_{\eta}} – Structural coefficients between endogenous variables.}
   \item{\code{"omega_xi_xi"}}{\eqn{\Omega_{\xi\xi}} – Interaction effects between exogenous variables}
   \item{\code{"omega_eta_xi"}}{\eqn{\Omega_{\eta\xi}} – Interaction effects between exogenous and endogenous variables}
-  \item{\code{"phi"}}{\eqn{\Phi} – (co-)variances among exogenous variables.}
-  \item{\code{"psi"}}{\eqn{\Psi} – Residual (co-)variances among engoenous variables.}
+  \item{\code{"phi"}}{\eqn{\Phi} – (Co-)Variances among exogenous variables.}
+  \item{\code{"psi"}}{\eqn{\Psi} – ResiVual (co-)variances among engoenous variables.}
   \item{\code{"alpha"}}{\eqn{\alpha} – Intercepts for endogenous variables}
   \item{\code{"beta0"}}{\eqn{\beta_0} – Intercepts for exogenous variables}
 }
@@ -104,11 +104,22 @@ organised in several sections.  Keywords are \emph{case-sensitive}.
   \item{\code{"mean.all"}}{Joint mean vector.}
 }
 
+\strong{R-squared and standardized residual variances:}
+
+\describe{
+  \item{\code{"r2.all"}}{R-squared values for both observed (i.e., indicators) and latent endogenous variables.}
+  \item{\code{"r2.lv"}}{R-squared values for latent endogenous variables.}
+  \item{\code{"r2.ov"}}{R-squared values for observed (i.e., indicators) variables.}
+  \item{\code{"res.all"}}{Standardized residuals (i.e., \code{1 - R^2}) for both observed (i.e., indicators) and latent endogenous variables.}
+  \item{\code{"res.lv"}}{Standardized residuals (i.e., \code{1 - R^2}) for latent endogenous variables.}
+  \item{\code{"res.ov"}}{Standardized residuals (i.e., \code{1 - R^2}) for observed (i.e., indicators) variables.}
+}
+
 \strong{Interaction-specific caveats:}  
 
 \itemize{
   \item If the model contains an \emph{uncentred} latent interaction term it is centred
-    internally before any \code{cov*}, \code{cor.*}, or \code{mean.*} matrices are
+    internally before any \code{cov.*}, \code{cor.*}, or \code{mean.*} matrices are
     calculated.  
   \item These matrices should not be used to compute fit-statistics (e.g., 
     chi-square and RMSEA) is there is an interaction term in the model.

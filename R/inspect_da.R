@@ -55,7 +55,15 @@ modsem_inspect_da <- function(model, what = "default") {
 
                mean.lv  = expected.matrices$mu.lv,
                mean.ov  = expected.matrices$mu.ov,
-               mean.all = expected.matrices$mu.all
+               mean.all = expected.matrices$mu.all,
+
+               r2.all  = expected.matrices$r2.all,
+               r2.lv   = expected.matrices$r2.lv,
+               r2.ov   = expected.matrices$r2.ov,
+
+               res.all = expected.matrices$res.all,
+               res.lv  = expected.matrices$res.lv,
+               res.ov  = expected.matrices$res.ov
   )
 
   switch(what,

@@ -689,6 +689,19 @@ calcExpectedMatricesDA <- function(parTable, xis = NULL, etas = NULL, intTerms =
   mu.ov  <- tau + lambda %*% mu.lv
   mu.all <- rbind(mu.lv, mu.ov)
 
+  # Residuals and R^2 ----------------------------------------------------------
+  eta.all <- c(etas, inds)
+  var.eta.all <- diag(sigma.all[eta.all, eta.all, drop = FALSE])
+  res.eta.all <- c(diag(psi), diag(theta))
+
+  r2.all <- (var.eta.all - res.eta.all) / var.eta.all
+  r2.lv  <- r2.all[etas]
+  r2.ov  <- r2.all[inds]
+
+  res.all <- 1 - r2.all
+  res.lv  <- res.all[etas]
+  res.ov   <- res.all[inds]
+
   list(
     sigma.all = sigma.all, 
     sigma.lv  = sigma.lv,
@@ -696,6 +709,12 @@ calcExpectedMatricesDA <- function(parTable, xis = NULL, etas = NULL, intTerms =
     mu.all    = mu.all,
     mu.lv     = mu.lv,
     mu.ov     = mu.ov,
+    r2.all    = r2.all,
+    r2.lv     = r2.lv,
+    r2.ov     = r2.ov,
+    res.all   = res.all,
+    res.lv    = res.lv,
+    res.ov    = res.ov,
     lambda    = lambda, 
     gammaXi   = gammaXi, 
     gammaEta  = gammaEta, 
