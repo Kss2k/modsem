@@ -89,7 +89,7 @@ not \code{est.std}, regardless of model type.
 }
 \section{Methods (by class)}{
 \itemize{
-\item \code{standardized_estimates(modsem_da)}: Method for `modsem_da` objects
+\item \code{standardized_estimates(modsem_da)}: Method for \code{modsem_da} objects
 
 \item \code{standardized_estimates(modsem_pi)}: Method for \code{modsem_pi} objects
 

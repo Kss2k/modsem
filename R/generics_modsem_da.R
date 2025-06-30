@@ -325,10 +325,10 @@ var_interactions.modsem_da <- function(object, ...) {
 #' \strong{Presets} 
 #' 
 #' \describe{
-#'   \item{\code{"default"}} {Everything in \emph{Sample information}, \emph{Optimiser diagnostics}
+#'   \item{\code{"default"}}{Everything in \emph{Sample information}, \emph{Optimiser diagnostics}
 #'   \emph{Parameter tables}, \emph{Model matrices}, and \emph{Expected-moment matrices} except  
 #'   the raw \code{data} slot}
-#'   \item{\code{"all"}} {All items listed below, including \code{data}.}  
+#'   \item{\code{"all"}}{All items listed below, including \code{data}.}  
 #'   \item{\code{"matrices"}}{The model matrices.}  
 #'   \item{\code{"optim"}}{Only the items under \emph{Optimiser diagnostics}}.  
 #'   \item{\code{"fit"}}{A list with \code{fit.h0}, \code{fit.h1}, comparative.fit}
@@ -343,50 +343,50 @@ var_interactions.modsem_da <- function(object, ...) {
 #' \strong{Optimiser diagnostics:}  
 #' 
 #' \describe{
-#'   \item{\code{"vcov"}}             {Variance–covariance matrix of all coefficients.}
-#'   \item{\code{"vcov.free"}}        {Variance–covariance of free coefficients only.}
-#'   \item{\code{"FIM"}}              {Fisher information matrix.}
-#'   \item{\code{"data"}}             {Raw data used for estimation (can be large; excluded from \code{"default"})}
-#'   \item{\code{"coefficients"}}     {(alias \code{"all.coefficients"}): All parameter values (free + fixed).}
+#'   \item{\code{"vcov"}}{Variance–covariance matrix of all coefficients.}
+#'   \item{\code{"vcov.free"}}{Variance–covariance of free coefficients only.}
+#'   \item{\code{"FIM"}}{Fisher information matrix.}
+#'   \item{\code{"data"}}{Raw data used for estimation (can be large; excluded from \code{"default"})}
+#'   \item{\code{"coefficients"}}{(alias \code{"all.coefficients"}): All parameter values (free + fixed).}
 #'   \item{\code{"free.coefficients"}}{Free parameter values.}
-#'   \item{\code{"loglik"}}           {Maximum log-likelihood.}
-#'   \item{\code{"iterations"}}       {Optimiser iteration count.}
-#'   \item{\code{"convergence"}}      {\code{TRUE}/\code{FALSE} indicating whether the model converged.}
+#'   \item{\code{"loglik"}}{Maximum log-likelihood.}
+#'   \item{\code{"iterations"}}{Optimiser iteration count.}
+#'   \item{\code{"convergence"}}{\code{TRUE}/\code{FALSE} indicating whether the model converged.}
 #' }
 #' 
 #' \strong{Parameter tables:}  
 #' 
 #' \describe{
-#'   \item{\code{"partable"}}      {Expanded parameter table used internally.}
+#'   \item{\code{"partable"}}{Expanded parameter table used internally.}
 #'   \item{\code{"partable.input"}}{Parsed model syntax.}
 #' }
 #' 
 #' \strong{Model matrices:}
 #' 
 #' \describe{
-#'   \item{\code{"lambda"}}      {\eqn{\Lambda} – Factor loadings.}
-#'   \item{\code{"tau"}}         {\eqn{\tau} – Intercepts indicators.}
-#'   \item{\code{"theta"}}       {\eqn{\Theta} – Residuals indicators.}
-#'   \item{\code{"gamma_xi"}}    {\eqn{\Gamma_{\xi}} – Structural coefficients between \eqn{\xi} and \eqn{\eta}.}
-#'   \item{\code{"gamma_eta"}}   {\eqn{\Gamma_{\eta}} – Structural coefficients between \eqn{\xi} and \eqn{\eta}.}
-#'   \item{\code{"omega_xi_xi"}} {\eqn{\Omega_{\xi\xi}} – Interaction effects between exogenous variables}
+#'   \item{\code{"lambda"}}{\eqn{\Lambda} – Factor loadings.}
+#'   \item{\code{"tau"}}{\eqn{\tau} – Intercepts for indicators.}
+#'   \item{\code{"theta"}}{\eqn{\Theta} – Residual (co-)variances for indicators.}
+#'   \item{\code{"gamma_xi"}}{\eqn{\Gamma_{\xi}} – Structural coefficients between exogenous and endogenous variables.}
+#'   \item{\code{"gamma_eta"}}{\eqn{\Gamma_{\eta}} – Structural coefficients between endogenous variables.}
+#'   \item{\code{"omega_xi_xi"}}{\eqn{\Omega_{\xi\xi}} – Interaction effects between exogenous variables}
 #'   \item{\code{"omega_eta_xi"}}{\eqn{\Omega_{\eta\xi}} – Interaction effects between exogenous and endogenous variables}
-#'   \item{\code{"phi"}}         {\eqn{\Phi} – covariances among \eqn{\xi}.}
-#'   \item{\code{"psi"}}         {\eqn{\Psi} – residual covariances among \eqn{\eta}.}
-#'   \item{\code{"alpha"}}       {\eqn{\alpha} – Intercepts for endogenous variables}
-#'   \item{\code{"beta0"}}       {\eqn{\beta_0} – Intercepts for exogenous variables}
+#'   \item{\code{"phi"}}{\eqn{\Phi} – (co-)variances among exogenous variables.}
+#'   \item{\code{"psi"}}{\eqn{\Psi} – Residual (co-)variances among engoenous variables.}
+#'   \item{\code{"alpha"}}{\eqn{\alpha} – Intercepts for endogenous variables}
+#'   \item{\code{"beta0"}}{\eqn{\beta_0} – Intercepts for exogenous variables}
 #' }
 #' \strong{Model-implied matrices:}  
 #' 
 #' \describe{
-#'   \item{\code{"cov.ov"}}  {Model-implied covariance of observed variables.} 
-#'   \item{\code{"cov.lv"}}  {Model-implied covariance of latent variables.}
-#'   \item{\code{"cov.all"}} {Joint covariance of observed + latent variables.}
-#'   \item{\code{"cor.ov"}}  {Correlation counterpart of \code{"cov.ov"}.} 
-#'   \item{\code{"cor.lv"}}  {Correlation counterpart of \code{"cov.lv"}.}
-#'   \item{\code{"cor.all"}} {Correlation counterpart of \code{"cov.all"}.}
-#'   \item{\code{"mean.ov"}} {Expected means of observed variables.}
-#'   \item{\code{"mean.lv"}} {Expected means of latent variables.}
+#'   \item{\code{"cov.ov"}}{Model-implied covariance of observed variables.} 
+#'   \item{\code{"cov.lv"}}{Model-implied covariance of latent variables.}
+#'   \item{\code{"cov.all"}}{Joint covariance of observed + latent variables.}
+#'   \item{\code{"cor.ov"}}{Correlation counterpart of \code{"cov.ov"}.} 
+#'   \item{\code{"cor.lv"}}{Correlation counterpart of \code{"cov.lv"}.}
+#'   \item{\code{"cor.all"}}{Correlation counterpart of \code{"cov.all"}.}
+#'   \item{\code{"mean.ov"}}{Expected means of observed variables.}
+#'   \item{\code{"mean.lv"}}{Expected means of latent variables.}
 #'   \item{\code{"mean.all"}}{Joint mean vector.}
 #' }
 #' 
@@ -394,8 +394,8 @@ var_interactions.modsem_da <- function(object, ...) {
 #' 
 #' \itemize{
 #'   \item If the model contains an \emph{uncentred} latent interaction term it is centred
-#'     internally before any \code{cov.\emph{}, \code{cor.*}, or \code{mean.}} matrix is
-#'     formed.  
+#'     internally before any \code{cov*}, \code{cor.*}, or \code{mean.*} matrices are
+#'     calculated.  
 #'   \item These matrices should not be used to compute fit-statistics (e.g., 
 #'     chi-square and RMSEA) is there is an interaction term in the model.
 #' }
@@ -465,7 +465,7 @@ nobs.modsem_da <- function(object, ...) {
 }
 
 
-#' @describeIn standardized_estimates Method for `modsem_da` objects
+#' @describeIn standardized_estimates Method for \code{modsem_da} objects
 #'
 #' @param monte.carlo Logical. If \code{TRUE}, use Monte Carlo simulation to estimate
 #' standard errors; if \code{FALSE}, use the delta method (default).
