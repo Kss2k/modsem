@@ -12,7 +12,7 @@ modsem_inspect(object, what = NULL, ...)
 \arguments{
 \item{object}{A fitted object of class \code{"modsem_da"}.}
 
-\item{what}{Character scalar selecting what to return (see *Details*).
+\item{what}{Character scalar selecting what to return (see \emph{Details}).
 If \code{NULL} the value \code{"default"} is used.}
 
 \item{...}{Passed straight to \code{modsem_inspect_da()}.}
@@ -36,65 +36,83 @@ For \code{\link{modsem_pi}} objects, it is just a wrapper for \code{lavaan::lavI
 Below is a list of possible values for the \code{what} argument,
 organised in several sections.  Keywords are \emph{case-sensitive}.
 
-**Presets**  
-\code{"default"}: Everything in *Sample information*, *Optimiser diagnostics*,  
-*Parameter tables*, *Model matrices*, and *Expected-moment matrices* except  
-the raw \code{data} slot.  
-\code{"all"}:      All items listed below, including \code{data}.  
-\code{"matrices"}: Only the ten core model matrices.  
-\code{"optim"}:    Only the items under *Optimiser diagnostics*.  
-\code{"fit"}:      A three-element list with \code{fit.h0}, \code{fit.h1}, and  
-\code{comparative.fit}.  
+\strong{Presets} 
 
-**Sample information**  
-\code{"N"}: Number of analysed rows (integer).  
+\describe{
+  \item{\code{"default"}} {Everything in \emph{Sample information}, \emph{Optimiser diagnostics}
+  \emph{Parameter tables}, \emph{Model matrices}, and \emph{Expected-moment matrices} except  
+  the raw \code{data} slot}
+  \item{\code{"all"}} {All items listed below, including \code{data}.}  
+  \item{\code{"matrices"}}{The model matrices.}  
+  \item{\code{"optim"}}{Only the items under \emph{Optimiser diagnostics}}.  
+  \item{\code{"fit"}}{A list with \code{fit.h0}, \code{fit.h1}, comparative.fit}
+}
 
-**Optimiser diagnostics**  
-\code{"vcov"}: Variance–covariance matrix of all coefficients.  
-\code{"vcov.free"}: Variance–covariance of free coefficients only.  
-\code{"FIM"}: Observed Fisher information matrix.  
-\code{"data"}: Raw data used for estimation (can be large; excluded from
-\code{"default"}).  
-\code{"coefficients"} (alias \code{"all.coefficients"}): All parameter values
-(free + fixed).  
-\code{"free.coefficients"}: Free parameter values.  
-\code{"loglik"}: Maximum log-likelihood.  
-\code{"iterations"}: Optimiser iteration count.  
-\code{"convergence"}: Termination code (\code{0} = converged).  
+\strong{Sample information:}
 
-**Parameter tables**  
-\code{"partable"}: Expanded parameter table used internally.  
-\code{"partable.input"}: User-supplied parameter table before expansion.  
+\describe{
+\item{\code{"N"}}{Number of analysed rows (integer).}
+}
 
-**Model matrices** (returned block-diagonalised)  
-\code{"lambda"}: \eqn{\Lambda} – factor-loading matrix.  
-\code{"tau"}: \eqn{\tau} – intercept / threshold matrix.  
-\code{"theta"}: \eqn{\Theta} – indicator-error matrix.  
-\code{"gamma_xi"}: \eqn{\Gamma_{\xi}} – covariate → \eqn{\xi} paths.  
-\code{"gamma_eta"}: \eqn{\Gamma_{\eta}} – covariate → \eqn{\eta} paths.  
-\code{"omega_xi_xi"}: \eqn{\Omega_{\xi\xi}} – covariance of latent predictors \eqn{\xi}.  
-\code{"omega_eta_xi"}: \eqn{\Omega_{\eta\xi}} – covariances between \eqn{\eta} and \eqn{\xi}.  
-\code{"phi"}: \eqn{\Phi} – residual covariances among \eqn{\xi}.  
-\code{"psi"}: \eqn{\Psi} – residual covariances among \eqn{\eta}.  
-\code{"alpha"}: \eqn{\alpha} – latent-means vector.  
+\strong{Optimiser diagnostics:}  
 
-**Expected-moment matrices**  
-\code{"cov.ov"}:  Model-implied covariance of observed variables.  
-\code{"cov.lv"}:  Model-implied covariance of latent variables.  
-\code{"cov.all"}: Joint covariance of observed + latent variables.  
-\code{"cor.ov"}:  Correlation counterpart of \code{"cov.ov"}.  
-\code{"cor.lv"}:  Correlation counterpart of \code{"cov.lv"}.  
-\code{"cor.all"}: Correlation counterpart of \code{"cov.all"}.  
-\code{"mean.ov"}: Expected means / thresholds of observed variables.  
-\code{"mean.lv"}: Expected means of latent variables.  
-\code{"mean.all"}: Joint mean vector.  
+\describe{
+  \item{\code{"vcov"}}             {Variance–covariance matrix of all coefficients.}
+  \item{\code{"vcov.free"}}        {Variance–covariance of free coefficients only.}
+  \item{\code{"FIM"}}              {Fisher information matrix.}
+  \item{\code{"data"}}             {Raw data used for estimation (can be large; excluded from \code{"default"})}
+  \item{\code{"coefficients"}}     {(alias \code{"all.coefficients"}): All parameter values (free + fixed).}
+  \item{\code{"free.coefficients"}}{Free parameter values.}
+  \item{\code{"loglik"}}           {Maximum log-likelihood.}
+  \item{\code{"iterations"}}       {Optimiser iteration count.}
+  \item{\code{"convergence"}}      {\code{TRUE}/\code{FALSE} indicating whether the model converged.}
+}
 
-**Interaction-specific caveats**  
-- If the model contains an \emph{uncentred} latent interaction term it is centred
-  internally before any \code{cov.*}, \code{cor.*}, or \code{mean.*} matrix is
-  formed.  
-- These matrices should not be used to compute fit-statistics (e.g., 
-  chi-square and RMSEA) is there is an interaction term in the model.
+\strong{Parameter tables:}  
+
+\describe{
+  \item{\code{"partable"}}      {Expanded parameter table used internally.}
+  \item{\code{"partable.input"}}{Parsed model syntax.}
+}
+
+\strong{Model matrices:}
+
+\describe{
+  \item{\code{"lambda"}}      {\eqn{\Lambda} – Factor loadings.}
+  \item{\code{"tau"}}         {\eqn{\tau} – Intercepts indicators.}
+  \item{\code{"theta"}}       {\eqn{\Theta} – Residuals indicators.}
+  \item{\code{"gamma_xi"}}    {\eqn{\Gamma_{\xi}} – Structural coefficients between \eqn{\xi} and \eqn{\eta}.}
+  \item{\code{"gamma_eta"}}   {\eqn{\Gamma_{\eta}} – Structural coefficients between \eqn{\xi} and \eqn{\eta}.}
+  \item{\code{"omega_xi_xi"}} {\eqn{\Omega_{\xi\xi}} – Interaction effects between exogenous variables}
+  \item{\code{"omega_eta_xi"}}{\eqn{\Omega_{\eta\xi}} – Interaction effects between exogenous and endogenous variables}
+  \item{\code{"phi"}}         {\eqn{\Phi} – covariances among \eqn{\xi}.}
+  \item{\code{"psi"}}         {\eqn{\Psi} – residual covariances among \eqn{\eta}.}
+  \item{\code{"alpha"}}       {\eqn{\alpha} – Intercepts for endogenous variables}
+  \item{\code{"beta0"}}       {\eqn{\beta_0} – Intercepts for exogenous variables}
+}
+\strong{Model-implied matrices:}  
+
+\describe{
+  \item{\code{"cov.ov"}}  {Model-implied covariance of observed variables.} 
+  \item{\code{"cov.lv"}}  {Model-implied covariance of latent variables.}
+  \item{\code{"cov.all"}} {Joint covariance of observed + latent variables.}
+  \item{\code{"cor.ov"}}  {Correlation counterpart of \code{"cov.ov"}.} 
+  \item{\code{"cor.lv"}}  {Correlation counterpart of \code{"cov.lv"}.}
+  \item{\code{"cor.all"}} {Correlation counterpart of \code{"cov.all"}.}
+  \item{\code{"mean.ov"}} {Expected means of observed variables.}
+  \item{\code{"mean.lv"}} {Expected means of latent variables.}
+  \item{\code{"mean.all"}}{Joint mean vector.}
+}
+
+\strong{Interaction-specific caveats:}  
+
+\itemize{
+  \item If the model contains an \emph{uncentred} latent interaction term it is centred
+    internally before any \code{cov.\emph{}, \code{cor.*}, or \code{mean.}} matrix is
+    formed.  
+  \item These matrices should not be used to compute fit-statistics (e.g., 
+    chi-square and RMSEA) is there is an interaction term in the model.
+}
 }
 \section{Methods (by class)}{
 \itemize{

@@ -43,6 +43,7 @@ modsem_inspect_da <- function(model, what = "default") {
                psi   = diagPartitionedMat(matrices$psi,
                                           matricesCovModel$psi),
                alpha = matrices$alpha,
+               beta0 = matrices$beta0,
 
                cov.ov  = expected.matrices$sigma.ov,
                cov.lv  = expected.matrices$sigma.lv,
