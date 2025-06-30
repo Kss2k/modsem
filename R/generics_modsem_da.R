@@ -313,14 +313,21 @@ modsem_inspect.modsem_da <- function(object, what = NULL, ...) {
 
 #' @export
 #' @importFrom stats vcov
-vcov.modsem_da <- function(object, ...) {
-  modsem_inspect_da(object, what = "vcov")[[1]]
+vcov.modsem_da <- function(object, type = c("all", "free"), ...) {
+  type <- tolower(type)
+  type <- match.arg(type)
+
+  what <- ifelse(type == "all", yes = "vcov", no = "vcov.free")
+  modsem_inspect_da(object, what = what)[[1]]
 }
 
 
 #' @export
 #' @importFrom stats coefficients
-coefficients.modsem_da <- function(object, type = "all", ...) {
+coefficients.modsem_da <- function(object, type = c("all", "free"), ...) {
+  type <- tolower(type)
+  type <- match.arg(type)
+
   what <- ifelse(type == "all", yes = "all.coefficients",
                  no = "free.coefficients")
   modsem_inspect_da(object, what = what)[[1]]

@@ -79,6 +79,7 @@ estQml <- function(model,
               info.quad   = NULL,
               FIM         = FIM$FIM,
               vcov        = FIM$vcov,
+              vcov.free   = FIM$vcov.sub,
               information = FIM$type)
 
   out

@@ -6,10 +6,13 @@ inspectDA_Optim <- c("vcov", "FIM", "data", "coefficients",
                      "loglik", "iterations", "convergence")
 
 modsem_inspect_da <- function(model, what = "default") {
-  matrices <- model$model$matrices
-  matricesCovModel <- model$model$covModel$matrices
+  matrices          <- model$model$matrices
+  matricesCovModel  <- model$model$covModel$matrices
+  expected.matrices <- model$expected.matrices
+
   info <- list(N                 = NROW(model$data),
                vcov              = model$vcov,
+               vcov.free         = model$vcov.free,
                FIM               = model$FIM,
                data              = model$data,
                all.coefficients  = model$coefs,
@@ -27,20 +30,28 @@ modsem_inspect_da <- function(model, what = "default") {
                                                  matrices$tauY),
                theta        = diagPartitionedMat(matrices$thetaDelta,
                                                  matrices$thetaEpsilon),
-               gamma_xi     = diagPartitionedMat(matrices$gammaXi,
+               gamma.xi     = diagPartitionedMat(matrices$gammaXi,
                                                  matricesCovModel$gammaXi),
-               gamma_eta    = diagPartitionedMat(matrices$gammaEta,
+               gamma.eta    = diagPartitionedMat(matrices$gammaEta,
                                                  matricesCovModel$gammaEta),
-               omega_xi_xi  = diagPartitionedMat(matrices$omegaXiXi,
+               omega.xi.xi  = diagPartitionedMat(matrices$omegaXiXi,
                                                  matricesCovModel$omegaXiXi),
-               omega_eta_xi = diagPartitionedMat(matrices$omegaEtaXi,
+               omega.eta.xi = diagPartitionedMat(matrices$omegaEtaXi,
                                                  matricesCovModel$omegaEtaXi),
 
                phi   = diagPartitionedMat(matrices$phi,
                                           matricesCovModel$phi),
                psi   = diagPartitionedMat(matrices$psi,
                                           matricesCovModel$psi),
-               alpha = matrices$alpha)
+               alpha = matrices$alpha,
+
+               sigma.ov  = expected.matrices$sigma.ov,
+               sigma.lv  = expected.matrices$sigma.lv,
+               sigma.all = expected.matrices$sigma.all,
+
+               mu.lv  = expected.matrices$mu.lv,
+               mu.ov  = expected.matrices$mu.ov,
+               mu.all = expected.matrices$mu.all)
 
   switch(what,
          default = info[names(info) != "data"],

@@ -431,14 +431,22 @@ modsem_da <- function(model.syntax = NULL,
     message <- paste0("modsem [%s]: Model estimation failed!\n", 
                       "Message: %s")
     stop2(sprintf(message, method, e$message))
-
-    return(NULL)
   })
 
   # clean up
   resetThreads()
 
   # Finalize the model object
+  # Expected means and covariances
+  est$expected.matrices <- tryCatch(
+    calcExpectedMatricesDA(est$parTable, xis = model$info$xis, 
+                           etas = model$info$etas),
+    error = function(e) {
+      warning2("Failed to calculate expected matrices: ", e$message)
+      NULL
+    })
+
+  # Arguments
   est$args <- args
   class(est) <- c("modsem_da", "modsem")
 
