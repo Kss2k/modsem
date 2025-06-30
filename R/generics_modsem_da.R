@@ -372,7 +372,7 @@ var_interactions.modsem_da <- function(object, ...) {
 #'   \item{\code{"omega_xi_xi"}}{\eqn{\Omega_{\xi\xi}} – Interaction effects between exogenous variables}
 #'   \item{\code{"omega_eta_xi"}}{\eqn{\Omega_{\eta\xi}} – Interaction effects between exogenous and endogenous variables}
 #'   \item{\code{"phi"}}{\eqn{\Phi} – (Co-)Variances among exogenous variables.}
-#'   \item{\code{"psi"}}{\eqn{\Psi} – ResiVual (co-)variances among engoenous variables.}
+#'   \item{\code{"psi"}}{\eqn{\Psi} – Residual (co-)variances among engoenous variables.}
 #'   \item{\code{"alpha"}}{\eqn{\alpha} – Intercepts for endogenous variables}
 #'   \item{\code{"beta0"}}{\eqn{\beta_0} – Intercepts for exogenous variables}
 #' }
@@ -398,7 +398,7 @@ var_interactions.modsem_da <- function(object, ...) {
 #'   \item{\code{"r2.ov"}}{R-squared values for observed (i.e., indicators) variables.}
 #'   \item{\code{"res.all"}}{Standardized residuals (i.e., \code{1 - R^2}) for both observed (i.e., indicators) and latent endogenous variables.}
 #'   \item{\code{"res.lv"}}{Standardized residuals (i.e., \code{1 - R^2}) for latent endogenous variables.}
-#'   \item{\code{"res.ov"}}{Standardized residuals (i.e., \code{1 - R^2}) for observed (i.e., indicators) variables.}
+#'   \item{\code{"res.ov"}}{Standardized residuals (i.e., \code{1 - R^2}) for observed variables (i.e., indicators).}
 #' }
 #' 
 #' \strong{Interaction-specific caveats:}  
