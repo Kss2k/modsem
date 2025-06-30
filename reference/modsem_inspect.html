@@ -82,7 +82,7 @@ measures from a <code><a href="modsem_da.html">modsem_da</a></code> object.</p>
 
 
 <dt id="arg-what">what<a class="anchor" aria-label="anchor" href="#arg-what"></a></dt>
-<dd><p>Character scalar selecting what to return (see *Details*).
+<dd><p>Character scalar selecting what to return (see <em>Details</em>).
 If <code>NULL</code> the value <code>"default"</code> is used.</p></dd>
 
 
@@ -101,60 +101,138 @@ If <code>NULL</code> the value <code>"default"</code> is used.</p></dd>
  keywords for the <code>what</code> argument.</p>
 <p>Below is a list of possible values for the <code>what</code> argument,
 organised in several sections.  Keywords are <em>case-sensitive</em>.</p>
-<p>**Presets**
-<code>"default"</code>: Everything in *Sample information*, *Optimiser diagnostics*,
-*Parameter tables*, *Model matrices*, and *Expected-moment matrices* except
-the raw <code>data</code> slot.
-<code>"all"</code>:      All items listed below, including <code>data</code>.
-<code>"matrices"</code>: Only the ten core model matrices.
-<code>"optim"</code>:    Only the items under *Optimiser diagnostics*.
-<code>"fit"</code>:      A three-element list with <code>fit.h0</code>, <code>fit.h1</code>, and
-<code>comparative.fit</code>.</p>
-<p>**Sample information**
-<code>"N"</code>: Number of analysed rows (integer).</p>
-<p>**Optimiser diagnostics**
-<code>"vcov"</code>: Variance–covariance matrix of all coefficients.
-<code>"vcov.free"</code>: Variance–covariance of free coefficients only.
-<code>"FIM"</code>: Observed Fisher information matrix.
-<code>"data"</code>: Raw data used for estimation (can be large; excluded from
-<code>"default"</code>).
-<code>"coefficients"</code> (alias <code>"all.coefficients"</code>): All parameter values
-(free + fixed).
-<code>"free.coefficients"</code>: Free parameter values.
-<code>"loglik"</code>: Maximum log-likelihood.
-<code>"iterations"</code>: Optimiser iteration count.
-<code>"convergence"</code>: Termination code (<code>0</code> = converged).</p>
-<p>**Parameter tables**
-<code>"partable"</code>: Expanded parameter table used internally.
-<code>"partable.input"</code>: User-supplied parameter table before expansion.</p>
-<p>**Model matrices** (returned block-diagonalised)
-<code>"lambda"</code>: \(\Lambda\) – factor-loading matrix.
-<code>"tau"</code>: \(\tau\) – intercept / threshold matrix.
-<code>"theta"</code>: \(\Theta\) – indicator-error matrix.
-<code>"gamma_xi"</code>: \(\Gamma_{\xi}\) – covariate → \(\xi\) paths.
-<code>"gamma_eta"</code>: \(\Gamma_{\eta}\) – covariate → \(\eta\) paths.
-<code>"omega_xi_xi"</code>: \(\Omega_{\xi\xi}\) – covariance of latent predictors \(\xi\).
-<code>"omega_eta_xi"</code>: \(\Omega_{\eta\xi}\) – covariances between \(\eta\) and \(\xi\).
-<code>"phi"</code>: \(\Phi\) – residual covariances among \(\xi\).
-<code>"psi"</code>: \(\Psi\) – residual covariances among \(\eta\).
-<code>"alpha"</code>: \(\alpha\) – latent-means vector.</p>
-<p>**Expected-moment matrices**
-<code>"cov.ov"</code>:  Model-implied covariance of observed variables.
-<code>"cov.lv"</code>:  Model-implied covariance of latent variables.
-<code>"cov.all"</code>: Joint covariance of observed + latent variables.
-<code>"cor.ov"</code>:  Correlation counterpart of <code>"cov.ov"</code>.
-<code>"cor.lv"</code>:  Correlation counterpart of <code>"cov.lv"</code>.
-<code>"cor.all"</code>: Correlation counterpart of <code>"cov.all"</code>.
-<code>"mean.ov"</code>: Expected means / thresholds of observed variables.
-<code>"mean.lv"</code>: Expected means of latent variables.
-<code>"mean.all"</code>: Joint mean vector.</p>
-<p>**Interaction-specific caveats**
-- If the model contains an <em>uncentred</em> latent interaction term it is centred
-  internally before any <code>cov.*</code>, <code>cor.*</code>, or <code>mean.*</code> matrix is
-  formed.
-- These matrices should not be used to compute fit-statistics (e.g.,
-  chi-square and RMSEA) is there is an interaction term in the model.</p>
-    </div>
+<p><strong>Presets</strong></p>
+<dl><dt><code>"default"</code></dt>
+<dd><p></p></dd>
+Everything in <em>Sample information</em>, <em>Optimiser diagnostics</em>
+  <em>Parameter tables</em>, <em>Model matrices</em>, and <em>Expected-moment matrices</em> except
+  the raw <code>data</code> slot
+  <dt><code>"all"</code></dt>
+<dd><p></p></dd>
+All items listed below, including <code>data</code>.
+  <dt><code>"matrices"</code></dt>
+<dd><p>The model matrices.</p></dd>
+
+  <dt><code>"optim"</code></dt>
+<dd><p>Only the items under <em>Optimiser diagnostics</em></p></dd>
+.
+  <dt><code>"fit"</code></dt>
+<dd><p>A list with <code>fit.h0</code>, <code>fit.h1</code>, comparative.fit</p></dd>
+
+
+</dl><p><strong>Sample information:</strong></p>
+<dl><dt><code>"N"</code></dt>
+<dd><p>Number of analysed rows (integer).</p></dd>
+
+
+</dl><p><strong>Optimiser diagnostics:</strong></p>
+<dl><dt><code>"vcov"</code></dt>
+<dd><p></p></dd>
+Variance–covariance matrix of all coefficients.
+  <dt><code>"vcov.free"</code></dt>
+<dd><p></p></dd>
+Variance–covariance of free coefficients only.
+  <dt><code>"FIM"</code></dt>
+<dd><p></p></dd>
+Fisher information matrix.
+  <dt><code>"data"</code></dt>
+<dd><p></p></dd>
+Raw data used for estimation (can be large; excluded from <code>"default"</code>)
+  <dt><code>"coefficients"</code></dt>
+<dd><p></p></dd>
+(alias <code>"all.coefficients"</code>): All parameter values (free + fixed).
+  <dt><code>"free.coefficients"</code></dt>
+<dd><p>Free parameter values.</p></dd>
+
+  <dt><code>"loglik"</code></dt>
+<dd><p></p></dd>
+Maximum log-likelihood.
+  <dt><code>"iterations"</code></dt>
+<dd><p></p></dd>
+Optimiser iteration count.
+  <dt><code>"convergence"</code></dt>
+<dd><p></p></dd>
+<code>TRUE</code>/<code>FALSE</code> indicating whether the model converged.
+
+</dl><p><strong>Parameter tables:</strong></p>
+<dl><dt><code>"partable"</code></dt>
+<dd><p></p></dd>
+Expanded parameter table used internally.
+  <dt><code>"partable.input"</code></dt>
+<dd><p>Parsed model syntax.</p></dd>
+
+
+</dl><p><strong>Model matrices:</strong></p>
+<dl><dt><code>"lambda"</code></dt>
+<dd><p></p></dd>
+\(\Lambda\) – Factor loadings.
+  <dt><code>"tau"</code></dt>
+<dd><p></p></dd>
+\(\tau\) – Intercepts indicators.
+  <dt><code>"theta"</code></dt>
+<dd><p></p></dd>
+\(\Theta\) – Residuals indicators.
+  <dt><code>"gamma_xi"</code></dt>
+<dd><p></p></dd>
+\(\Gamma_{\xi}\) – Structural coefficients between \(\xi\) and \(\eta\).
+  <dt><code>"gamma_eta"</code></dt>
+<dd><p></p></dd>
+\(\Gamma_{\eta}\) – Structural coefficients between \(\xi\) and \(\eta\).
+  <dt><code>"omega_xi_xi"</code></dt>
+<dd><p></p></dd>
+\(\Omega_{\xi\xi}\) – Interaction effects between exogenous variables
+  <dt><code>"omega_eta_xi"</code></dt>
+<dd><p>\(\Omega_{\eta\xi}\) – Interaction effects between exogenous and endogenous variables</p></dd>
+
+  <dt><code>"phi"</code></dt>
+<dd><p></p></dd>
+\(\Phi\) – covariances among \(\xi\).
+  <dt><code>"psi"</code></dt>
+<dd><p></p></dd>
+\(\Psi\) – residual covariances among \(\eta\).
+  <dt><code>"alpha"</code></dt>
+<dd><p></p></dd>
+\(\alpha\) – Intercepts for endogenous variables
+  <dt><code>"beta0"</code></dt>
+<dd><p></p></dd>
+\(\beta_0\) – Intercepts for exogenous variables
+
+</dl><p><strong>Model-implied matrices:</strong></p>
+<dl><dt><code>"cov.ov"</code></dt>
+<dd><p></p></dd>
+Model-implied covariance of observed variables.
+  <dt><code>"cov.lv"</code></dt>
+<dd><p></p></dd>
+Model-implied covariance of latent variables.
+  <dt><code>"cov.all"</code></dt>
+<dd><p></p></dd>
+Joint covariance of observed + latent variables.
+  <dt><code>"cor.ov"</code></dt>
+<dd><p></p></dd>
+Correlation counterpart of <code>"cov.ov"</code>.
+  <dt><code>"cor.lv"</code></dt>
+<dd><p></p></dd>
+Correlation counterpart of <code>"cov.lv"</code>.
+  <dt><code>"cor.all"</code></dt>
+<dd><p></p></dd>
+Correlation counterpart of <code>"cov.all"</code>.
+  <dt><code>"mean.ov"</code></dt>
+<dd><p></p></dd>
+Expected means of observed variables.
+  <dt><code>"mean.lv"</code></dt>
+<dd><p></p></dd>
+Expected means of latent variables.
+  <dt><code>"mean.all"</code></dt>
+<dd><p>Joint mean vector.</p></dd>
+
+
+</dl><p><strong>Interaction-specific caveats:</strong></p>
+<ul><li><p>If the model contains an <em>uncentred</em> latent interaction term it is centred
+    internally before any <code>cov.<em></em>, <code>cor.*</code>, or <code>mean.</code></code> matrix is
+    formed.</p></li>
+<li><p>These matrices should not be used to compute fit-statistics (e.g.,
+    chi-square and RMSEA) is there is an interaction term in the model.</p></li>
+</ul></div>
     <div class="section level2">
     <h2 id="methods-by-class-">Methods (by class)<a class="anchor" aria-label="anchor" href="#methods-by-class-"></a></h2>
 
