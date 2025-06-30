@@ -586,7 +586,7 @@ isPureEta <- function(eta, parTable) {
 
 calcExpectedMatricesDA <- function(parTable, xis = NULL, etas = NULL, intTerms = NULL) {
   parTable <- removeInteractionVariances(parTable)
-  parTable <- centerInteraction(parTable) |> 
+  parTable <- centerInteractions(parTable) |> 
     var_interactions() |> meanInteraction()
 
   if (is.null(intTerms))
@@ -687,7 +687,6 @@ calcExpectedMatricesDA <- function(parTable, xis = NULL, etas = NULL, intTerms =
   mu.lv  <- rbind(beta0, mu.eta)
   mu.ov  <- tau + lambda %*% mu.lv
   mu.all <- rbind(mu.lv, mu.ov)
-
 
   list(
     sigma.all = sigma.all, 
