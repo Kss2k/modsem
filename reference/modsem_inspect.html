@@ -139,7 +139,7 @@ organised in several sections.  Keywords are <em>case-sensitive</em>.</p>
 <dd><p>Raw data used for estimation (can be large; excluded from <code>"default"</code>)</p></dd>
 
   <dt><code>"coefficients"</code></dt>
-<dd><p>(alias <code>"all.coefficients"</code>): All parameter values (free + fixed).</p></dd>
+<dd><p>(alias <code>"all.coefficients"</code>): All parameter values (free + constrained).</p></dd>
 
   <dt><code>"free.coefficients"</code></dt>
 <dd><p>Free parameter values.</p></dd>
@@ -156,7 +156,7 @@ organised in several sections.  Keywords are <em>case-sensitive</em>.</p>
 
 </dl><p><strong>Parameter tables:</strong></p>
 <dl><dt><code>"partable"</code></dt>
-<dd><p>Expanded parameter table used internally.</p></dd>
+<dd><p>Parameter table with estimated parameters.</p></dd>
 
   <dt><code>"partable.input"</code></dt>
 <dd><p>Parsed model syntax.</p></dd>
@@ -170,7 +170,7 @@ organised in several sections.  Keywords are <em>case-sensitive</em>.</p>
 <dd><p>\(\tau\) – Intercepts for indicators.</p></dd>
 
   <dt><code>"theta"</code></dt>
-<dd><p>\(\Theta\) – Residual (co-)variances for indicators.</p></dd>
+<dd><p>\(\Theta\) – Residual (Co-)Variances for indicators.</p></dd>
 
   <dt><code>"gamma_xi"</code></dt>
 <dd><p>\(\Gamma_{\xi}\) – Structural coefficients between exogenous and endogenous variables.</p></dd>
@@ -185,10 +185,10 @@ organised in several sections.  Keywords are <em>case-sensitive</em>.</p>
 <dd><p>\(\Omega_{\eta\xi}\) – Interaction effects between exogenous and endogenous variables</p></dd>
 
   <dt><code>"phi"</code></dt>
-<dd><p>\(\Phi\) – (co-)variances among exogenous variables.</p></dd>
+<dd><p>\(\Phi\) – (Co-)Variances among exogenous variables.</p></dd>
 
   <dt><code>"psi"</code></dt>
-<dd><p>\(\Psi\) – Residual (co-)variances among engoenous variables.</p></dd>
+<dd><p>\(\Psi\) – ResiVual (co-)variances among engoenous variables.</p></dd>
 
   <dt><code>"alpha"</code></dt>
 <dd><p>\(\alpha\) – Intercepts for endogenous variables</p></dd>
@@ -226,9 +226,29 @@ organised in several sections.  Keywords are <em>case-sensitive</em>.</p>
 <dd><p>Joint mean vector.</p></dd>
 
 
+</dl><p><strong>R-squared and standardized residual variances:</strong></p>
+<dl><dt><code>"r2.all"</code></dt>
+<dd><p>R-squared values for both observed (i.e., indicators) and latent endogenous variables.</p></dd>
+
+  <dt><code>"r2.lv"</code></dt>
+<dd><p>R-squared values for latent endogenous variables.</p></dd>
+
+  <dt><code>"r2.ov"</code></dt>
+<dd><p>R-squared values for observed (i.e., indicators) variables.</p></dd>
+
+  <dt><code>"res.all"</code></dt>
+<dd><p>Standardized residuals (i.e., <code>1 - R^2</code>) for both observed (i.e., indicators) and latent endogenous variables.</p></dd>
+
+  <dt><code>"res.lv"</code></dt>
+<dd><p>Standardized residuals (i.e., <code>1 - R^2</code>) for latent endogenous variables.</p></dd>
+
+  <dt><code>"res.ov"</code></dt>
+<dd><p>Standardized residuals (i.e., <code>1 - R^2</code>) for observed (i.e., indicators) variables.</p></dd>
+
+
 </dl><p><strong>Interaction-specific caveats:</strong></p>
 <ul><li><p>If the model contains an <em>uncentred</em> latent interaction term it is centred
-    internally before any <code>cov*</code>, <code>cor.*</code>, or <code>mean.*</code> matrices are
+    internally before any <code>cov.*</code>, <code>cor.*</code>, or <code>mean.*</code> matrices are
     calculated.</p></li>
 <li><p>These matrices should not be used to compute fit-statistics (e.g.,
     chi-square and RMSEA) is there is an interaction term in the model.</p></li>
