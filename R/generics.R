@@ -350,12 +350,11 @@ standardized_estimates.data.frame <- function(object, intercepts = FALSE, ...) {
 #' @param object fittet model to inspect
 #' @param what what to inspect
 #' @param ... Additional arguments passed to other functions
-#' @description function used to inspect fittet object. similar to `lavInspect()`
-#' argument 'what' decides what to inspect
-#' @details for `modsem_da`, and `modsem_lavaan`
-#' for `modsem_lavaan`, it is just a wrapper for `lavInspect()`
-#' for `modsem_da` and `` what can either be "all", "matrices", "optim",
-#' or just the name of what to extract.
+#' @description function used to inspect fittet object. similar to \code{lavaan::lavInspect}
+#' argument \code{what} decides what to inspect
+#' @details For \code{\link{modsem_pi}} objects, it is just a wrapper for \code{lavaan::lavInspect}.
+#'  For \code{\link{modsem_da}} objects an internal function is called, which takes different 
+#'  keywords for the \code{what} argument.
 #' @export
 modsem_inspect <- function(object, what = NULL, ...) {
   UseMethod("modsem_inspect")
