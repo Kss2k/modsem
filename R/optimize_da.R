@@ -43,7 +43,7 @@ optimizeStartingParamsDA <- function(model,
   Phi <- findEstimatesParTable(matricesMain$phi, parTable, op = "~~")
 
   A <- findEstimatesParTable(matricesMain$A, parTable, op = "~~")
-  A[upper.tri(A)] <- t(A[lower.tri(A)])
+  A[upper.tri(A)] <- t(A)[upper.tri(A)]
   A <- t(tryCatch(chol(A), error = function(x) diag(ncol(A))))
 
   beta0 <- findInterceptsParTable(matricesMain$beta0, parTable, fill = 0)

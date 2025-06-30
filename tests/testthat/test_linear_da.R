@@ -125,3 +125,24 @@ tpb <- '
 tpb_lms_3 <- modsem(tpb, TPB, method = "lms")
 testthat::expect_true(tpb_lms_3$iterations == 2)
 summary(tpb_lms_3, H0 = FALSE)
+
+
+tpb <- "
+# Outer Model (Based on Hagger et al., 2007)
+  ATT =~ att1 + a2 * att2 + att3 + att4 + att5
+  SN =~ sn1 + sn2
+  PBC =~ pbc1 + pbc2 + pbc3
+  INT =~ int1 + int2 + int3
+  BEH =~ b1 + b2
+
+# Inner Model (Based on Steinmetz et al., 2011)
+  INT ~ ATT + SN + PBC
+  BEH ~ INT + PBC + INT:PBC
+"
+
+syntax_pi <- get_pi_syntax(tpb, method = "dblcent")
+data_pi   <- get_pi_data(tpb, data = TPB, method = "dblcent")
+est_lms_pi <- modsem(syntax_pi, data_pi, method = "lms", calc.se = FALSE)
+est_qml_pi <- modsem(syntax_pi, data_pi, method = "qml", calc.se = FALSE)
+testthat::expect_true(est_lms_pi$iterations == 2)
+testthat::expect_true(est_qml_pi$iterations == 1)
