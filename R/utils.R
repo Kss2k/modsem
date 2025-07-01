@@ -158,6 +158,8 @@ isClustered <- function(object) {
 
 
 getIndsLVs <- function(parTable, lVs) {
+  if (!length(lVs)) return(NULL)
+
   measrExprs <- parTable[parTable$op == "=~" & parTable$lhs %in% lVs, ]
   stopif(!NROW(measrExprs), "No measurement expressions found, for", lVs)
   lapplyNamed(lVs, FUN = function(lV) measrExprs[measrExprs$lhs == lV, "rhs"],

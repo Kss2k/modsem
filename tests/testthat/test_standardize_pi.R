@@ -95,3 +95,21 @@ varXz1 <- parTable[parTable$lhs == "Xz1" & parTable$rhs == "Xz1", "est"]
 testthat::expect_true(varXz1 > 2)
 testthat::expect_equal(varz1, 1)
 testthat::expect_equal(unname(calcVarParTable("y1", parTable)), 1)
+
+
+m5 <- "
+  y1 ~ x1 + z1 + a * x1:z1
+  c := a
+"
+
+est <- modsem(m5, data = oneInt, method = "dblcent")
+parTable <- standardized_estimates(est)
+parTable <- standardized_estimates(est, correction = TRUE)
+parTable <- standardized_estimates(est, correction = TRUE, std.errors = "delta")
+summarize_partable(parTable)
+
+varz1 <- parTable[parTable$lhs == "z1" & parTable$rhs == "z1", "est"]
+varx1z1 <- parTable[parTable$lhs == "x1z1" & parTable$rhs == "x1z1", "est"]
+testthat::expect_true(varx1z1 > 1)
+testthat::expect_equal(varz1, 1)
+testthat::expect_equal(unname(calcVarParTable("y1", parTable)), 1)
