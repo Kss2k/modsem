@@ -340,7 +340,7 @@ var_interactions.modsem_da <- function(object, ...) {
 #' \item{\code{"N"}}{Number of analysed rows (integer).}
 #' }
 #'
-#' \stong{Parameter estimates and standard errors:}
+#' \strong{Parameter estimates and standard errors:}
 #' 
 #' \describe{
 #'   \item{\code{"coefficients.free"}}{Free parameter values.}
