@@ -18,6 +18,7 @@ fit_modsem_da <- function(model, chisq = TRUE) {
          "i.e., the model without the interaction effect",
          immediate. = FALSE)
 
+
   logLik <- model$logLik
   O      <- stats::cov(model$data)
   mu     <- apply(model$data, 2, mean)
@@ -26,7 +27,8 @@ fit_modsem_da <- function(model, chisq = TRUE) {
   p      <- NCOL(model$data)
   coef   <- coef(model, type = "free")
   k      <- length(coef)
-  df     <- getDegreesOfFreedom(m = p, coef = coef)
+  df     <- getDegreesOfFreedom(m = p, coef = coef, 
+                                nIntercepts = nFreeInterceptsDA(model))
   
   expected.matrices <- model$expected.matrices
 

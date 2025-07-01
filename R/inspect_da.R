@@ -8,6 +8,8 @@ inspectDA_Optim <- c("coefficients.free", "vcov.free", "information",
 
 
 modsem_inspect_da <- function(model, what = "default") {
+  stopif(!length(what), "`what` is of length zero!")
+
   matrices          <- model$model$matrices
   matricesCovModel  <- model$model$covModel$matrices
   expected.matrices <- model$expected.matrices
@@ -68,18 +70,29 @@ modsem_inspect_da <- function(model, what = "default") {
                res.ov  = expected.matrices$res.ov
   )
 
-  switch(what,
-         default = info[names(info) != "data"],
-         all = info,
-         matrices = info[inspectDA_Matrices],
-         optim = info[inspectDA_Optim],
-         fit = {
-           h0 <- estimate_h0(model, calc.se = FALSE)
-           list(
-              fit.h0 = fit_modsem_da(h0, chisq = TRUE),
-              fit.h1 = fit_modsem_da(model, chisq = FALSE),
-              comparative.fit = compare_fit(est_h1 = model, est_h0 = h0)
-           )
-         },
-         info[what])
+  FIT <- \() {
+    h0 <- estimate_h0(model, calc.se = FALSE)
+    list(
+      fit.h0 = fit_modsem_da(h0, chisq = TRUE),
+      fit.h1 = fit_modsem_da(model, chisq = FALSE),
+      comparative.fit = compare_fit(est_h1 = model, est_h0 = h0)
+    )
+  }
+
+  fields <- switch(
+    EXPR     = what,
+    default  = info[names(info) != "data"],
+    all      = info,
+    matrices = info[inspectDA_Matrices],
+    optim    = info[inspectDA_Optim],
+    fit      = FIT(),
+    if (length(what) == 1) info[[what]] else info[what]
+  )
+
+  nullvalues <- vapply(fields, FUN.VALUE = logical(1L), FUN = is.null)
+
+  warnif(any(nullvalues), "Some fields in `modsem_inspect()` could not be retrieved!",
+         immediate. = FALSE)
+
+  fields 
 }

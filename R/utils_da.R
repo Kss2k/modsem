@@ -419,11 +419,19 @@ nNegativeLast <- function(x, n = 10) {
 }
 
 
-getDegreesOfFreedom <- function(m, coef) {
+getDegreesOfFreedom <- function(m, coef, nIntercepts = 0L) {
   t <- (m * (m + 1)) / 2
   df <- t - length(coef)
-  nMeans <- sum(grepl("tau|alpha", names(coef)))
-  df + nMeans
+  df + nIntercepts
+}
+
+
+nFreeInterceptsDA <- function(model) {
+  parTable   <- getMissingLabels(parameter_estimates(model))
+  intercepts <- parTable$label[parTable$op == "~1"]
+  coefs <- coef(model, type = "free")
+  
+  sum(intercepts %in% names(coefs))
 }
 
 
@@ -722,4 +730,9 @@ calcExpectedMatricesDA <- function(parTable, xis = NULL, etas = NULL, intTerms =
     phi       = phi, 
     theta     = theta
   )
+}
+
+
+getInternalCoefsDA <- function(model) {
+  model$theta
 }

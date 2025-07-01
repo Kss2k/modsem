@@ -22,7 +22,8 @@ If \code{NULL} the value \code{"default"} is used.}
 \item{...}{Passed straight to \code{modsem_inspect_da()}.}
 }
 \value{
-A named list.
+A named list with the extracted information. If a single piece of information is returned,
+ it is returned as is; not as a named element in a list.
 }
 \description{
 function used to inspect fittet object. Similar to \code{lavaan::lavInspect}

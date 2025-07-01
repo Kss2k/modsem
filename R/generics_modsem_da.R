@@ -416,7 +416,8 @@ var_interactions.modsem_da <- function(object, ...) {
 #'   \item These matrices should not be used to compute fit-statistics (e.g., 
 #'     chi-square and RMSEA) if there is an interaction term in the model.
 #' }
-#' @return A named list.
+#' @return A named list with the extracted information. If a single piece of information is returned,
+#'  it is returned as is; not as a named element in a list.
 #' 
 #' @examples
 #' \dontrun{
@@ -452,7 +453,7 @@ vcov.modsem_da <- function(object, type = c("all", "free"), ...) {
   type <- match.arg(type)
 
   what <- ifelse(type == "all", yes = "vcov.all", no = "vcov.free")
-  modsem_inspect_da(object, what = what)[[1]]
+  modsem_inspect_da(object, what = what)
 }
 
 
@@ -464,7 +465,7 @@ coefficients.modsem_da <- function(object, type = c("all", "free"), ...) {
 
   what <- ifelse(type == "all", yes = "coefficients.all",
                  no = "coefficients.free")
-  modsem_inspect_da(object, what = what)[[1]]
+  modsem_inspect_da(object, what = what)
 }
 
 
@@ -542,7 +543,7 @@ modsem_predict.modsem_da <- function(object, standardized = FALSE, H0 = TRUE, ne
   parTableH0 <- parameter_estimates(modelH0)
 
   lVs   <- getLVs(parTableH1)
-  sigma <- modsem_inspect(modelH0)$cov.ov
+  sigma <- modsem_inspect(modelH0, what = "cov.ov")
 
   sigma.inv <- GINV(sigma)
   lambda    <- getLambdaParTable(parTableH0, rows = colnames(sigma), cols = lVs)

@@ -70,14 +70,30 @@ standardize_model <- function(model, monte.carlo = FALSE, mc.reps = 10000, ...) 
 
   solution <- standardizedSolutionCOEFS(model, monte.carlo = monte.carlo, mc.reps = mc.reps, ...)
 
-  vcov <- solution$vcov
-  coefs <- solution$coefs
+  coefs.all <- solution$coefs
+  vcov.all  <- solution$vcov
+
+  # It should be safe to use the same subset for both vcov.all and coefs.all
+  # but in case something has gone wrong, we create seperate masks
+  cnames.all <- names(coefs.all)
+  vnames.all <- rownames(vcov.all)
+  # intersect() shouldn't be neccessary, but just in case...
+  cnames.free <- intersect(cnames.all, names(coef(model, type = "free"))) 
+  vnames.free <- intersect(vnames.all, rownames(vcov(model, type = "free")))
+
+  coefs.free <- coefs.all[cnames.free]
+  vcov.free  <- vcov.all[vnames.free, vnames.free, drop = FALSE]
+
   parTable <- solution$parTable
 
   model$type.estimates <- "standardized"
   model$parTable       <- parTable
-  model$coefs          <- coefs
-  model$vcov           <- vcov
+
+  model$coefs.all      <- coefs.all
+  model$coefs.free     <- coefs.free
+
+  model$vcov.all       <- vcov.all
+  model$vcov.free      <- vcov.free
 
   model
 }
