@@ -81,10 +81,10 @@ organised in several sections.  Keywords are \emph{case-sensitive}.
   \item{\code{"lambda"}}{\eqn{\Lambda} – Factor loadings.}
   \item{\code{"tau"}}{\eqn{\tau} – Intercepts for indicators.}
   \item{\code{"theta"}}{\eqn{\Theta} – Residual (Co-)Variances for indicators.}
-  \item{\code{"gamma_xi"}}{\eqn{\Gamma_{\xi}} – Structural coefficients between exogenous and endogenous variables.}
-  \item{\code{"gamma_eta"}}{\eqn{\Gamma_{\eta}} – Structural coefficients between endogenous variables.}
-  \item{\code{"omega_xi_xi"}}{\eqn{\Omega_{\xi\xi}} – Interaction effects between exogenous variables}
-  \item{\code{"omega_eta_xi"}}{\eqn{\Omega_{\eta\xi}} – Interaction effects between exogenous and endogenous variables}
+  \item{\code{"gamma.xi"}}{\eqn{\Gamma_{\xi}} – Structural coefficients between exogenous and endogenous variables.}
+  \item{\code{"gamma.eta"}}{\eqn{\Gamma_{\eta}} – Structural coefficients between endogenous variables.}
+  \item{\code{"omega.xi.xi"}}{\eqn{\Omega_{\xi\xi}} – Interaction effects between exogenous variables}
+  \item{\code{"omega.eta.xi"}}{\eqn{\Omega_{\eta\xi}} – Interaction effects between exogenous and endogenous variables}
   \item{\code{"phi"}}{\eqn{\Phi} – (Co-)Variances among exogenous variables.}
   \item{\code{"psi"}}{\eqn{\Psi} – Residual (co-)variances among engoenous variables.}
   \item{\code{"alpha"}}{\eqn{\alpha} – Intercepts for endogenous variables}
