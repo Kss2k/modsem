@@ -39,7 +39,7 @@ estQml <- function(model,
                     EFIM.parametric = EFIM.parametric, verbose = verbose,
                     FIM = FIM, robust.se = robust.se, NA__ = -999,
                     epsilon = epsilon, R.max = R.max)
-  SE <- calcSE_da(calc.se = calc.se, FIM$vcov, rawLabels = FIM$raw.labels,
+  SE <- calcSE_da(calc.se = calc.se, FIM$vcov.all, rawLabels = FIM$raw.labels,
                   NA__ = -999)
   modelSE <- getSE_Model(model, se = SE, method = "qml",
                          n.additions = FIM$n.additions)
@@ -47,7 +47,7 @@ estQml <- function(model,
   finalModel$matricesSE <- modelSE$matrices
   finalModel$covModelSE <- modelSE$covModel
 
-  parTable <- modelToParTable(finalModel, coefs = lavCoefs,
+  parTable <- modelToParTable(finalModel, coefs = lavCoefs$all,
                               se = SE, method = "qml")
 
   parTable$z.value  <- parTable$est / parTable$std.error
@@ -59,13 +59,14 @@ estQml <- function(model,
          "Maximum number of iterations was reached, ",
          "model estimation might not have converged.")
 
-  out <- list(model     = finalModel,
-              method    = "qml",
-              optimizer = optimizer,
-              data      = model$data,
-              theta     = coefficients,
-              coefs     = lavCoefs,
-              parTable  = parTable,
+  out <- list(model      = finalModel,
+              method     = "qml",
+              optimizer  = optimizer,
+              data       = model$data,
+              theta      = coefficients,
+              coefs.all  = lavCoefs$all,
+              coefs.free = lavCoefs$free,
+              parTable   = parTable,
 
               originalParTable = model$parTable,
 
@@ -78,8 +79,8 @@ estQml <- function(model,
 
               info.quad   = NULL,
               FIM         = FIM$FIM,
-              vcov        = FIM$vcov,
-              vcov.free   = FIM$vcov.sub,
+              vcov.all    = FIM$vcov.all,
+              vcov.free   = FIM$vcov.free,
               information = FIM$type)
 
   out

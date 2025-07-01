@@ -337,6 +337,7 @@ standardized_estimates.modsem_pi <- function(object,
 
 
 #' @export
+#' @describeIn modsem_inspect Inspect a \code{\link{modsem_pi}} object
 modsem_inspect.modsem_pi <- function(object, what = NULL, ...) {
   if (is.null(what)) what <- "free"
   lavaan::lavInspect(object$lavaan, what = what, ...)
