@@ -1,9 +1,11 @@
-inspectDA_Matrices <- c("lambda", "tau", "theta", "gamma_xi",
-                        "gamma_eta", "omega_xi_xi",
-                        "omega_eta_xi", "phi", "psi", "alpha")
+inspectDA_Matrices <- c("lambda", "tau", "theta", "gamma.xi",
+                        "gamma.eta", "omega.xi.xi",
+                        "omega.eta.xi", "phi", "psi", "alpha", "beta0")
 
-inspectDA_Optim <- c("vcov", "FIM", "data", "coefficients",
+
+inspectDA_Optim <- c("coefficients.free", "vcov.free", "information", 
                      "loglik", "iterations", "convergence")
+
 
 modsem_inspect_da <- function(model, what = "default") {
   matrices          <- model$model$matrices
@@ -11,12 +13,12 @@ modsem_inspect_da <- function(model, what = "default") {
   expected.matrices <- model$expected.matrices
 
   info <- list(N                 = NROW(model$data),
-               vcov              = model$vcov,
+               vcov.all          = model$vcov.all,
                vcov.free         = model$vcov.free,
-               FIM               = model$FIM,
+               information       = model$FIM,
                data              = model$data,
-               all.coefficients  = model$coefs,
-               free.coefficients = model$theta,
+               coefficients.all  = model$coefs.all,
+               coefficients.free = model$coefs.free,
                partable          = model$parTable,
                partable.input    = model$originalParTable,
                loglik            = model$logLik,

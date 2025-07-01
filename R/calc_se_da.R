@@ -65,7 +65,7 @@ calcFIM_da <- function(model,
   dimnames(vcov.all) <- list(lavLabels, lavLabels)
   dimnames(I) <- dimnames(vcov) <- list(subLavLabels, subLavLabels)
 
-  list(FIM = I, vcov = vcov.all, vcov.sub = vcov, type = FIM,
+  list(FIM = I, vcov.all = vcov.all, vcov.free = vcov, type = FIM,
        raw.labels = rawLabels, n.additions = nAdditions)
 }
 

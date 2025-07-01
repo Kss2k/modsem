@@ -278,14 +278,15 @@ emLms <- function(model,
                     EFIM.parametric = EFIM.parametric, verbose = verbose,
                     FIM = FIM, robust.se = robust.se, epsilon = epsilon,
                     R.max = R.max, NA__ = -999, P = P)
-  SE <- calcSE_da(calc.se = calc.se, FIM$vcov, rawLabels = FIM$raw.labels,
+  SE <- calcSE_da(calc.se = calc.se, FIM$vcov.all, rawLabels = FIM$raw.labels,
                   NA__ = -999)
+
   modelSE <- getSE_Model(model, se = SE, method = "lms",
                          n.additions = FIM$n.additions)
   finalModel$matricesSE <- modelSE$matrices
   finalModel$covModelSE <- modelSE$covModel
 
-  parTable <- modelToParTable(finalModel, coefs = lavCoefs,
+  parTable <- modelToParTable(finalModel, coefs = lavCoefs$all,
                               se = SE, method = "lms", calc.se = calc.se)
   parTable$z.value  <- parTable$est / parTable$std.error
   parTable$p.value  <- 2 * stats::pnorm(-abs(parTable$z.value))
@@ -301,7 +302,8 @@ emLms <- function(model,
     optimizer        = paste(algorithm, optimizer, sep = "-"),
     data             = data,
     theta            = coefficients,
-    coefs            = lavCoefs,
+    coefs.all        = lavCoefs$all,
+    coefs.free       = lavCoefs$free,
     parTable         = parTable,
     originalParTable = model$parTable,
     logLik           = -final$objective,
@@ -311,8 +313,8 @@ emLms <- function(model,
     info.quad        = getInfoQuad(model$quad),
     type.estimates   = "unstandardized",
     FIM              = FIM$FIM,
-    vcov             = FIM$vcov,
-    vcov.free        = FIM$vcov.sub,
+    vcov.all         = FIM$vcov.all,
+    vcov.free        = FIM$vcov.free,
     information      = FIM$type
   )
   out

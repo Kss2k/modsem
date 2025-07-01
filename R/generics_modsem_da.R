@@ -339,17 +339,23 @@ var_interactions.modsem_da <- function(object, ...) {
 #' \describe{
 #' \item{\code{"N"}}{Number of analysed rows (integer).}
 #' }
+#'
+#' \stong{Parameter estimates and standard errors:}
+#' 
+#' \describe{
+#'   \item{\code{"coefficients.free"}}{Free parameter values.}
+#'   \item{\code{"coefficients.all"}}{Both free and constrained parameter values.}
+#'   \item{\code{"vcov.free"}}{Variance–covariance of free coefficients only.}
+#'   \item{\code{"vcov.all"}}{Variance–covariance of both free and constrained coefficients.}
+#' }
 #' 
 #' \strong{Optimiser diagnostics:}  
 #' 
 #' \describe{
-#'   \item{\code{"vcov"}}{Variance–covariance matrix of all coefficients.}
+#'   \item{\code{"coefficients.free"}}{Free parameter values.}
 #'   \item{\code{"vcov.free"}}{Variance–covariance of free coefficients only.}
-#'   \item{\code{"FIM"}}{Fisher information matrix.}
-#'   \item{\code{"data"}}{Raw data used for estimation (can be large; excluded from \code{"default"})}
-#'   \item{\code{"coefficients"}}{(alias \code{"all.coefficients"}): All parameter values (free + constrained).}
-#'   \item{\code{"free.coefficients"}}{Free parameter values.}
-#'   \item{\code{"loglik"}}{Maximum log-likelihood.}
+#'   \item{\code{"information"}}{Fisher information matrix.}
+#'   \item{\code{"loglik"}}{Log-likelihood.}
 #'   \item{\code{"iterations"}}{Optimiser iteration count.}
 #'   \item{\code{"convergence"}}{\code{TRUE}/\code{FALSE} indicating whether the model converged.}
 #' }
@@ -408,7 +414,7 @@ var_interactions.modsem_da <- function(object, ...) {
 #'     internally before any \code{cov.*}, \code{cor.*}, or \code{mean.*} matrices are
 #'     calculated.  
 #'   \item These matrices should not be used to compute fit-statistics (e.g., 
-#'     chi-square and RMSEA) is there is an interaction term in the model.
+#'     chi-square and RMSEA) if there is an interaction term in the model.
 #' }
 #' @return A named list.
 #' 
@@ -432,7 +438,7 @@ var_interactions.modsem_da <- function(object, ...) {
 #' }
 #' 
 #' @export
-#' @describeIn modsem_inspect Extract parts of a \code{modsem_da} fit
+#' @describeIn modsem_inspect Inspect a \code{\link{modsem_da}} object
 modsem_inspect.modsem_da <- function(object, what = NULL, ...) {
   if (is.null(what)) what <- "default"
   modsem_inspect_da(object, what = what, ...)
@@ -445,7 +451,7 @@ vcov.modsem_da <- function(object, type = c("all", "free"), ...) {
   type <- tolower(type)
   type <- match.arg(type)
 
-  what <- ifelse(type == "all", yes = "vcov", no = "vcov.free")
+  what <- ifelse(type == "all", yes = "vcov.all", no = "vcov.free")
   modsem_inspect_da(object, what = what)[[1]]
 }
 
@@ -456,8 +462,8 @@ coefficients.modsem_da <- function(object, type = c("all", "free"), ...) {
   type <- tolower(type)
   type <- match.arg(type)
 
-  what <- ifelse(type == "all", yes = "all.coefficients",
-                 no = "free.coefficients")
+  what <- ifelse(type == "all", yes = "coefficients.all",
+                 no = "coefficients.free")
   modsem_inspect_da(object, what = what)[[1]]
 }
 

@@ -350,7 +350,7 @@ standardized_estimates.data.frame <- function(object, intercepts = FALSE, ...) {
 #' @param object fittet model to inspect
 #' @param what what to inspect
 #' @param ... Additional arguments passed to other functions
-#' @description function used to inspect fittet object. similar to \code{lavaan::lavInspect}
+#' @description function used to inspect fittet object. Similar to \code{lavaan::lavInspect}
 #' argument \code{what} decides what to inspect
 #' @details For \code{\link{modsem_pi}} objects, it is just a wrapper for \code{lavaan::lavInspect}.
 #'  For \code{\link{modsem_da}} objects an internal function is called, which takes different 
