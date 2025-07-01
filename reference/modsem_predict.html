@@ -61,7 +61,14 @@ values or factor scores from <code><a href="modsem.html">modsem</a></code> model
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">modsem_predict</span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># S3 method for class 'modsem_da'</span></span>
-<span><span class="fu">modsem_predict</span><span class="op">(</span><span class="va">object</span>, standardized <span class="op">=</span> <span class="cn">FALSE</span>, H0 <span class="op">=</span> <span class="cn">TRUE</span>, <span class="va">...</span><span class="op">)</span></span>
+<span><span class="fu">modsem_predict</span><span class="op">(</span></span>
+<span>  <span class="va">object</span>,</span>
+<span>  standardized <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  H0 <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  newdata <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  center.data <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  <span class="va">...</span></span>
+<span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># S3 method for class 'modsem_pi'</span></span>
 <span><span class="fu">modsem_predict</span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
@@ -87,6 +94,14 @@ currently ignored by the <code><a href="modsem_da.html">modsem_da</a></code> met
 <dt id="arg-h-">H0<a class="anchor" aria-label="anchor" href="#arg-h-"></a></dt>
 <dd><p>Logical. If <code>TRUE</code> (default), use the baseline model to compute factor scores.
 If <code>FALSE</code>, use the model specified in <code>object</code>. Using <code>H0 = FALSE</code> is not recommended!</p></dd>
+
+
+<dt id="arg-newdata">newdata<a class="anchor" aria-label="anchor" href="#arg-newdata"></a></dt>
+<dd><p>Compute factor scores based on a different dataset, than the one used in the model estimation.</p></dd>
+
+
+<dt id="arg-center-data">center.data<a class="anchor" aria-label="anchor" href="#arg-center-data"></a></dt>
+<dd><p>Should data be centered before computing factor scores? Default is <code>TRUE</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">
