@@ -24,7 +24,9 @@ print(summary(est1, adjusted.stat = TRUE))
 plot_surface(x = "X", z = "Z", y = "Y", model = est1)
 std_est1_mc <- standardize_model(est1, monte.carlo=TRUE)
 std_est1_delta <- standardize_model(est1, monte.carlo=FALSE)
-modsem_predict(est1)
+mdata <- modsem_predict(est1, center.data = FALSE)
+ndata <- modsem_predict(est1, newdata = oneInt[1:100, ], center.data = FALSE)
+testthat::expect_true(all(mdata[1:100, ] == ndata))
 
 # test constraints and custom parameters
 coefs <- coef(est1)

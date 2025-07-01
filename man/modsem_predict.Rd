@@ -9,7 +9,14 @@
 \usage{
 modsem_predict(object, ...)
 
-\method{modsem_predict}{modsem_da}(object, standardized = FALSE, H0 = TRUE, ...)
+\method{modsem_predict}{modsem_da}(
+  object,
+  standardized = FALSE,
+  H0 = TRUE,
+  newdata = NULL,
+  center.data = TRUE,
+  ...
+)
 
 \method{modsem_predict}{modsem_pi}(object, ...)
 }
@@ -23,6 +30,10 @@ currently ignored by the \code{\link{modsem_da}} method.}
 
 \item{H0}{Logical. If \code{TRUE} (default), use the baseline model to compute factor scores.
 If \code{FALSE}, use the model specified in \code{object}. Using \code{H0 = FALSE} is not recommended!}
+
+\item{newdata}{Compute factor scores based on a different dataset, than the one used in the model estimation.}
+
+\item{center.data}{Should data be centered before computing factor scores? Default is \code{TRUE}.}
 }
 \value{
 * For \code{\link{modsem_pi}}: whatever \code{lavaan::predict()}, which usually 

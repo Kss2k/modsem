@@ -513,8 +513,11 @@ standardized_estimates.modsem_da <- function(object,
 #' @param standardized Logical. If \code{TRUE}, return standardized factor scores.
 #' @param H0 Logical. If \code{TRUE} (default), use the baseline model to compute factor scores.
 #'   If \code{FALSE}, use the model specified in \code{object}. Using \code{H0 = FALSE} is not recommended!
+#' @param newdata Compute factor scores based on a different dataset, than the one used in the model estimation.
+#' @param center.data Should data be centered before computing factor scores? Default is \code{TRUE}.
 #' @export
-modsem_predict.modsem_da <- function(object, standardized = FALSE, H0 = TRUE, ...) {
+modsem_predict.modsem_da <- function(object, standardized = FALSE, H0 = TRUE, newdata = NULL, 
+                                     center.data = TRUE, ...) {
   modelH1 <- object 
 
   if (H0) {
@@ -524,6 +527,17 @@ modsem_predict.modsem_da <- function(object, standardized = FALSE, H0 = TRUE, ..
     if (is.null(modelH0)) modelH0 <- modelH1
   } else modelH0 <- modelH1
 
+  if (!is.null(newdata)) {
+    cols <- colnames(modelH0$data)
+    cols.present <- cols %in% colnames(newdata)
+    stopif(!all(cols.present), "Missing cols in `newdata`:\n", cols[!cols.present])
+  
+    newdata <- as.matrix(newdata)[, cols]
+
+  } else newdata <- modelH0$data
+  
+  transform.x <- if (center.data) \(x) x - mean(x, na.rm = TRUE) else \(x) x
+
   parTableH1 <- parameter_estimates(modelH1)
   parTableH0 <- parameter_estimates(modelH0)
 
@@ -532,8 +546,9 @@ modsem_predict.modsem_da <- function(object, standardized = FALSE, H0 = TRUE, ..
 
   sigma.inv <- GINV(sigma)
   lambda    <- getLambdaParTable(parTableH0, rows = colnames(sigma), cols = lVs)
-  X         <- apply(as.matrix(modelH0$data), MARGIN = 2, FUN = \(x) x - mean(x, na.rm = TRUE))
-  X         <- X[, colnames(sigma), drop = FALSE]
+
+  X <- apply(as.matrix(newdata), MARGIN = 2, FUN = transform.x)
+  X <- X[, colnames(sigma), drop = FALSE]
 
   FSC <- GINV(t(lambda) %*% sigma.inv %*% lambda) %*% (t(lambda) %*% sigma.inv)
 
