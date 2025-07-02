@@ -41,7 +41,7 @@ checkAConstraints <- function(model, covModel, method = "lms") {
 
 
 checkCovModelVariables <- function(covModel, modelXis, method = "lms") {
-  if (is.null(covModel$info)) return(NULL) # nothing to check
+  if (is.null(covModel$matrices)) return(NULL) # nothing to check
   covModelEtas <- covModel$info$etas
   covModelXis  <- covModel$info$xis
 

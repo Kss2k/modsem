@@ -432,7 +432,21 @@ strRemovIfString <- function(x, pattern) {
 }
 
 
-getParTableLabels <- function(parTable, labelCol="label") {
+getParTableLabels <- function(parTable, labelCol="label", replace.dup = FALSE) {
+  if (replace.dup) {
+		labels <- unique(parTable[[labelCol]][parTable[[labelCol]] != ""])
+		
+		for (label in labels) {
+			match <- parTable[[labelCol]] == label
+			first <- which.max(match)
+			parTable[match, labelCol] <- ""
+			parTable[first, labelCol] <- label
+		}
+  }
+
+  custom <- parTable$op == ":="
+  parTable[custom, c("op", "rhs")] <- ""
+
   ifelse(parTable[[labelCol]] == "", 
          yes = paste0(parTable$lhs, parTable$op, parTable$rhs),
          no = parTable[[labelCol]])

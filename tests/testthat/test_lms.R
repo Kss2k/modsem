@@ -128,9 +128,13 @@ s_est <- std_pt[std_pt$label == label, "est"]
 u_a   <- unique(ust_pt[ust_pt$label == "a", "est"])
 s_a   <- unique(std_pt[std_pt$label == "a", "est"]) 
 expect_true(round(u_est, 5) < round(s_est, 5))
-testthat::expect_true(length(u_a) == 1 && length(s_a) == 1)
+testthat::expect_true(length(s_a) > 1)
+testthat::expect_true(length(u_a) == 1)
 testthat::expect_equal(u_est, 2 * u_a)
-testthat::expect_equal(s_est, 2 * s_a)
+testthat::expect_equal(s_est, 2 * s_a[1])
+testthat::expect_equal(
+  unname(calcVarParTable(c("PBC", "INT", "BEH"), std_pt)), rep(1, 3)
+)
 
 plot_interaction(x = "INT", z = "PBC", y = "BEH", vals_z = c(-0.5, 0.5), model = est2)
 print(summary(est2))

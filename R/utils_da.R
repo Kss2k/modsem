@@ -736,3 +736,15 @@ calcExpectedMatricesDA <- function(parTable, xis = NULL, etas = NULL, intTerms =
 getInternalCoefsDA <- function(model) {
   model$theta
 }
+
+
+getXisModelDA <- function(model) {
+  covModelEtas <- model$covModel$info$etas
+  allXis <- unique(c(model$info$xis, model$covModel$info$xis))
+  allXis[!allXis %in% covModelEtas]
+}
+
+
+getEtasModelDA <- function(model) {
+  unique(c(model$info$etas, model$covModel$info$etas))
+}

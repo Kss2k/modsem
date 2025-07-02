@@ -439,8 +439,11 @@ modsem_da <- function(model.syntax = NULL,
   # Finalize the model object
   # Expected means and covariances
   est$expected.matrices <- tryCatch(
-    calcExpectedMatricesDA(est$parTable, xis = model$info$xis, 
-                           etas = model$info$etas),
+    calcExpectedMatricesDA(
+      parTable = est$parTable, 
+      xis  = getXisModelDA(model), # taking both the main model and cov model into account
+      etas = getEtasModelDA(model)  # taking both the main model and cov model into account
+    ),
     error = function(e) {
       warning2("Failed to calculate expected matrices: ", e$message)
       NULL

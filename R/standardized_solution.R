@@ -38,6 +38,7 @@ standardizedSolutionCOEFS <- function(object,
 
   originalLabels <- parTable$label
   labels         <- getParTableLabels(parTable, labelCol="label")
+  labels.clean   <- getParTableLabels(parTable, labelCol="label", replace.dup = TRUE)
   parTable$label <- labels
   parTable$std.error <- NA
 
@@ -45,14 +46,23 @@ standardizedSolutionCOEFS <- function(object,
   V     <- vcov(object)
   coefs <- structure(parTable$est, names = labels)
  
-  # Get unique labels, and legal names
-  labels     <- unique(labels)
-  legalNames <- stringr::str_replace_all(labels, OP_REPLACEMENTS)
-
   # Subset and expand based on unique labels
-  V     <- expandVCOV(V, labels=labels)
-  coefs <- coefs[labels]
+  labels.u <- unique(labels)
+  V        <- expandVCOV(V, labels=labels.u)
+  coefs    <- coefs[labels.u]
 
+  # Replace labels with cleaned versions 
+  # E.g., if two parameters share the same label, we want to split them int two different labels
+  parTable$label <- labels.clean
+  legalNames     <- stringr::str_replace_all(labels.clean, OP_REPLACEMENTS)
+  paramMapping   <- structure(labels, names = legalNames)
+
+  V       <- V[labels, labels]
+  coefs   <- coefs[labels]
+
+  dimnames(V)  <- list(labels.clean, labels.clean)
+  names(coefs) <- labels.clean
+  
   if (monte.carlo) {
     COEFS <- as.data.frame(mvtnorm::rmvnorm(mc.reps, mean = coefs, sigma = V))
   } else { # delta method
@@ -243,16 +253,20 @@ standardizedSolutionCOEFS <- function(object,
   coefs <- coefs[params]
   vcov <- vcov[params, params]
 
-  cleanedParamLabels <- stringr::str_replace_all(params, OP_REPLACEMENTS_INV)
+  cleanedParamLabels <- paramMapping[params]
   names(coefs) <- cleanedParamLabels 
   colnames(vcov) <- rownames(vcov) <- cleanedParamLabels
 
   # Finalize parTable
-  parTable[!parTable$label %in% originalLabels, "label"] <- "" 
+  parTable$label    <- paramMapping[parTable$label]
   parTable$z.value  <- parTable$est / parTable$std.error
   parTable$p.value  <- 2 * stats::pnorm(-abs(parTable$z.value))
   parTable$ci.lower <- parTable$est - CI_WIDTH * parTable$std.error
   parTable$ci.upper <- parTable$est + CI_WIDTH * parTable$std.error
+
+  # Remove added labels
+  labelInOrig       <- parTable$label %in% originalLabels
+  parTable[!labelInOrig, "label"] <- "" 
 
   list(parTable  = parTable,
        coefs     = coefs, 

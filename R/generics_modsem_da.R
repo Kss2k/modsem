@@ -68,17 +68,7 @@ summary.modsem_da <- function(object,
   if (standardized) {
     parTable <- standardized_estimates(object, intercepts = intercepts, 
                                        monte.carlo = monte.carlo, mc.reps = mc.reps)
-    parTableR2 <- parTable
-
-  } else {
-    # TODO:
-    # Don't calculate R^2 from parTableR2, just get it from `fit_modsem_da(object)$sigma.lv`
-    parTable   <- parameter_estimates(object)
-    parTableR2 <- var_interactions(centerInteractions(parTable)) # easier to calculate 
-                                                                 # R-squared when 
-                                                                 # interactions are mean centeredd
-
-  }
+  } else parTable   <- parameter_estimates(object)
 
   if (!var.interaction) {
     parTable.out <- removeInteractionVariances(parTable)
@@ -121,8 +111,14 @@ summary.modsem_da <- function(object,
   }
 
   if (r.squared) {
-    out$r.squared <- calcRsquared(parTableR2)
-    if (H0) out$r.squared$H0 <- calcRsquared(est_h0$parTable) # no need to center interactions
+  	out$r.squared <- modsem_inspect(object, "r2.lv")
+
+    if (H0) {
+			r.squared.h0 <- modsem_inspect(est_h0, "r2.lv")
+			out$r.squared.h0 <- r.squared.h0[names(out$r.squared)] # should't be necessary
+			                                                       # but sort just in case...
+		} else out$r.squared.h0 <- NULL
+
   } else out$r.squared <- NULL
 
   out$format <- list(
@@ -211,45 +207,27 @@ print.summary_da <- function(x, digits = 3, ...) {
   }
 
   if (!is.null(x$r.squared)) {
-    r.squared <- x$r.squared
-    r.squared$Rsqr <- formatNumeric(r.squared$Rsqr, digits = 3)
-    maxWidth <- max(vapply(r.squared$Rsqr, FUN.VALUE = numeric(1), FUN = nchar))
-    r.squared$Rsqr <-
-      stringr::str_pad(r.squared$Rsqr, width = maxWidth, side = "left")
+    r.squared <- formatNumeric(x$r.squared, digits = 3)
+    names     <- names(r.squared)
 
     cat("R-Squared Interaction Model (H1):\n")
-    names <- r.squared$eta
-    values <- character(length(names))
-    for (i in seq_along(r.squared$eta)) {
-      values[[i]] <- r.squared$Rsqr[[i]]
-    }
-    cat(allignLhsRhs(lhs = names, rhs = values, pad = "  ",
-                     width.out = width.out))
+    cat(allignLhsRhs(lhs = names, rhs = r.squared, 
+										 pad = "  ", width.out = width.out))
 
-    if (!is.null(r.squared$H0)) {
-      r.squared$H0$Rsqr <- formatNumeric(r.squared$H0$Rsqr, digits = 3)
-      maxWidth <-
-        max(vapply(r.squared$H0$Rsqr, FUN.VALUE = numeric(1), FUN = nchar))
-      r.squared$H0$Rsqr <-
-        stringr::str_pad(r.squared$H0$Rsqr, width = maxWidth, side = "left")
-
-      cat("R-Squared Baseline Model (H0):\n")
-      names <- r.squared$H0$eta
-      for (i in seq_along(names)) {
-          values[[i]] <- formatNumeric(r.squared$H0$Rsqr[[i]], digits = 3)
-      }
-      cat(allignLhsRhs(lhs = names, rhs = values, pad = "  ",
+    if (!is.null(x$r.squared.h0)) {
+      r.squared.h0 <- formatNumeric(x$r.squared.h0, digits = 3)
+			names.h0     <- names(r.squared.h0)
+      
+			cat("R-Squared Baseline Model (H0):\n")
+      cat(allignLhsRhs(lhs = names.h0, rhs = r.squared.h0, pad = "  ",
                        width.out = width.out))
 
       # Calculate Change (using unformatted Rsquared)
-      r.squared$H0$diff <-
-        formatNumeric(x$r.squared$Rsqr - x$r.squared$H0$Rsqr, digits = 3)
+     	r.squared.diff <- formatNumeric(x$r.squared - x$r.squared.h0, digits = 3)
+			names.diff     <- names(r.squared.diff)
       cat("R-Squared Change (H1 - H0):\n")
-      for (i in seq_along(names)) {
-        values[[i]] <- r.squared$H0$diff[[i]]
-      }
-      cat(allignLhsRhs(lhs = names, rhs = values, pad = "  ",
-                       width.out = width.out))
+      cat(allignLhsRhs(lhs = names.diff, rhs = r.squared.diff, 
+											 pad = "  ", width.out = width.out))
     }
   }
 

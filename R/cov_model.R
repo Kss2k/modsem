@@ -7,7 +7,7 @@ covModel <- function(syntax = NULL, method = "lms", parTable = NULL,
                      xis.main = NULL, parTable.main = NULL) {
   if (is.null(parTable) && !is.null(syntax)) parTable <- modsemify(syntax)
   if (is.null(parTable)) {
-    return(list(matrices = NULL, freeParams = 0, info = NULL,
+    return(list(matrices = NULL, freeParams = 0, info = list(etas = NULL, xis = NULL),
                 theta = NULL, syntax = NULL, parTable = NULL))
   }
 
