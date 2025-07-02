@@ -2,12 +2,9 @@ standardizedSolutionCOEFS <- function(object,
                                       monte.carlo = FALSE,
                                       mc.reps = 10000,
                                       tolerance.zero = 1e-10,
-                                      seed = 123,
                                       delta.epsilon = 1e-8,
                                       grouping = NULL,
                                       ...) {
-  set.seed(seed) # only relevant if monte.carlo is TRUE
-
   stopif(!inherits(object, c("modsem_da", "modsem_pi")),
          "The model must be of class 'modsem_da' or 'modsem_pi'!")
 
