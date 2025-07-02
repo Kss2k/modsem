@@ -1,14 +1,14 @@
-standardizedSolutionCOEFS <- function(object, 
-                                      monte.carlo = FALSE, 
-                                      mc.reps = 10000, 
-                                      tolerance.zero = 1e-10, 
-                                      seed = 123, 
-                                      delta.epsilon = 1e-8, 
-                                      grouping = NULL, 
+standardizedSolutionCOEFS <- function(object,
+                                      monte.carlo = FALSE,
+                                      mc.reps = 10000,
+                                      tolerance.zero = 1e-10,
+                                      seed = 123,
+                                      delta.epsilon = 1e-8,
+                                      grouping = NULL,
                                       ...) {
   set.seed(seed) # only relevant if monte.carlo is TRUE
 
-  stopif(!inherits(object, c("modsem_da", "modsem_pi")), 
+  stopif(!inherits(object, c("modsem_da", "modsem_pi")),
          "The model must be of class 'modsem_da' or 'modsem_pi'!")
 
   parTable <- parameter_estimates(object, colon.pi = TRUE)
@@ -18,7 +18,7 @@ standardizedSolutionCOEFS <- function(object,
 
   if (inherits(object, "modsem_da")) {
     parTable <- parTable[c("lhs", "op", "rhs", "label", "est", "std.error")]
-    parTable <- centerInteractions(parTable) # re-estimate path-coefficients 
+    parTable <- centerInteractions(parTable) # re-estimate path-coefficients
     parTable <- parTable[parTable$op != "~1", ] # when intercepts are zero
     parTable <- var_interactions(removeInteractionVariances(parTable))
 
@@ -45,13 +45,20 @@ standardizedSolutionCOEFS <- function(object,
   # Get vcov and coefs
   V     <- vcov(object)
   coefs <- structure(parTable$est, names = labels)
- 
+
+  if (is.null(V)) { # calc.se == FALSE
+    k    <- length(coefs)
+    pars <- names(coefs)
+    V    <- matrix(0, nrow = k, ncol = k,
+                   dimnames = list(pars, pars))
+  }
+
   # Subset and expand based on unique labels
   labels.u <- unique(labels)
   V        <- expandVCOV(V, labels=labels.u)
   coefs    <- coefs[labels.u]
 
-  # Replace labels with cleaned versions 
+  # Replace labels with cleaned versions
   # E.g., if two parameters share the same label, we want to split them int two different labels
   parTable$label <- labels.clean
   legalNames     <- stringr::str_replace_all(labels.clean, OP_REPLACEMENTS)
@@ -62,7 +69,7 @@ standardizedSolutionCOEFS <- function(object,
 
   dimnames(V)  <- list(labels.clean, labels.clean)
   names(coefs) <- labels.clean
-  
+
   if (monte.carlo) {
     COEFS <- as.data.frame(mvtnorm::rmvnorm(mc.reps, mean = coefs, sigma = V))
   } else { # delta method
@@ -94,8 +101,8 @@ standardizedSolutionCOEFS <- function(object,
   # get variances
   vars <- unique(c(allInds, lVs, intTerms, xis, etas))
   varianceEquations <- structure(getCovEqExprs(
-    x = vars, 
-    y = vars, 
+    x = vars,
+    y = vars,
     parTable = parTable,
     measurement.model = TRUE
   ), names = vars)
@@ -133,13 +140,13 @@ standardizedSolutionCOEFS <- function(object,
       scalingCoef <- sqrt(variances[[xi]]) / sqrt(variances[[eta]])
       label       <- parTable[selectRows, "label"]
       gamma       <- COEFS[[label]] * scalingCoef
-      
+
       COEFS[[label]] <- gamma
     }
   }
 
   # (Co-) Variances of xis
-  selectCovXis <- parTable$op == "~~" & 
+  selectCovXis <- parTable$op == "~~" &
     (parTable$lhs %in% c(xis, intTerms) | parTable$lhs %in% c(xis, intTerms))
 
   covRowsXis <- parTable[selectCovXis, , drop = FALSE]
@@ -194,7 +201,7 @@ standardizedSolutionCOEFS <- function(object,
     label <- row$label
     expr <- parse(text=constrExprs[i, "rhs"])
     newVals <- eval(expr, envir = COEFS)
-  
+
     COEFS[[label]] <- newVals
   }
 
@@ -219,7 +226,7 @@ standardizedSolutionCOEFS <- function(object,
   # fill parTable
   std.errors <- suppressWarnings(sqrt(diag(vcov)))
   warnFunc <- function(type, row) {
-    warning2("Unable to calculate standardized ", type, " for: ", 
+    warning2("Unable to calculate standardized ", type, " for: ",
              paste0(row$lhs, row$op, row$rhs))
   }
 
@@ -235,7 +242,7 @@ standardizedSolutionCOEFS <- function(object,
 
     if (!label %in% names(std.errors)) {
       warnFunc("std.error", row)
-      se <- NA 
+      se <- NA
     } else se <- std.errors[[label]]
 
     parTable[i, "est"] <- est
@@ -243,7 +250,7 @@ standardizedSolutionCOEFS <- function(object,
   }
 
   # Fill in NA on zero-standard errors, and create vcov and coefs
-  parTable[!is.na(parTable$std.error) & 
+  parTable[!is.na(parTable$std.error) &
            abs(parTable$std.error) < tolerance.zero, "std.error"] <- NA
 
   isFree <- !is.na(parTable$std.error)
@@ -254,7 +261,7 @@ standardizedSolutionCOEFS <- function(object,
   vcov <- vcov[params, params]
 
   cleanedParamLabels <- paramMapping[params]
-  names(coefs) <- cleanedParamLabels 
+  names(coefs) <- cleanedParamLabels
   colnames(vcov) <- rownames(vcov) <- cleanedParamLabels
 
   # Finalize parTable
@@ -266,20 +273,20 @@ standardizedSolutionCOEFS <- function(object,
 
   # Remove added labels
   labelInOrig       <- parTable$label %in% originalLabels
-  parTable[!labelInOrig, "label"] <- "" 
+  parTable[!labelInOrig, "label"] <- ""
 
   list(parTable  = parTable,
-       coefs     = coefs, 
+       coefs     = coefs,
        vcov      = vcov,
        COEFS     = COEFS)
 }
 
 
-correctStdSolutionCOEFS <- function(parTable, 
-                                    COEFS.std, 
-                                    COEFS.ustd, 
+correctStdSolutionCOEFS <- function(parTable,
+                                    COEFS.std,
+                                    COEFS.ustd,
                                     variances,
-                                    intTerms) { 
+                                    intTerms) {
   for (XZ in intTerms) {
     elems <- stringr::str_split_fixed(XZ, ":", 2)
     X     <- elems[[1]]
@@ -330,9 +337,9 @@ correctStdSolutionCOEFS <- function(parTable,
     rcoefsIncorrect <- getCOEFS(x = rxis, y = Y, COEFS = COEFS.std, parTable = parTable)
 
     corrtermsIncorrect <- rowSums(2 * lcoefsIncorrect * rcoefsIncorrect * corrs)
-    
+
     b3Incorrect <- getCOEFS(y = Y, x = XZ, COEFS = COEFS.std, parTable = parTable)
-    projVarY_XZ <- b3Incorrect ^ 2 + corrtermsIncorrect # this should be the same 
+    projVarY_XZ <- b3Incorrect ^ 2 + corrtermsIncorrect # this should be the same
                                                         # for both the correctly, and
                                                         # incorrectly standardized terms
                                                         # and is the identity which makes it
@@ -343,7 +350,7 @@ correctStdSolutionCOEFS <- function(parTable,
     b3Correct <- B3 * abs(rowProds / sdY) # in case some variances are negative
                                            # we want to make sure we don't flip
                                            # the sign...
-   
+
     lcoefsCorrect <- lcoefsIncorrect
     rcoefsCorrect <- rcoefsIncorrect
     if (any(lxis == XZ)) lcoefsCorrect[lxis == XZ] <- b3Correct
@@ -355,7 +362,7 @@ correctStdSolutionCOEFS <- function(parTable,
     #   projVarY_XZ = b3Correct ^ 2 * sd(xz) ^ 2 + sd(xz) * corrterms
     # Solve for sd(xz) using the quadratic formula:
     #   sd(xz) = (- corrterms +/- sqrt(corrterms^2 + 4 * b3Correct ^ 2 * projVarY_XZ)) / 2 * b3Correct ^ 2
-    numerator <- -corrtermsCorrect + sign(projVarY_XZ) * 
+    numerator <- -corrtermsCorrect + sign(projVarY_XZ) *
       sqrt(corrtermsCorrect^2 + 4 * (b3Correct ^ 2) * projVarY_XZ)
     denominator <- 2 * (b3Correct ^ 2)
     sdXZ <- numerator / denominator # correctly standardized sd(xz)
