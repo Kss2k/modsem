@@ -255,6 +255,7 @@ print.summary_da <- function(x, digits = 3, ...) {
 #' @export
 print.modsem_da <- function(x, digits = 3, ...) {
   colorize({
+
   parTable         <- x$parTable
   parTable$p.value <- format.pval(parTable$p.value, digits = digits)
   names(parTable)  <- c("lhs", "op", "rhs", "label", "est", "std.error",
@@ -263,6 +264,7 @@ print.modsem_da <- function(x, digits = 3, ...) {
                 if (is.numeric(col)) round(col, digits) else col) |>
     as.data.frame()
   print(est)
+
   })
 }
 
