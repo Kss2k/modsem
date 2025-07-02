@@ -58,6 +58,8 @@ NUMERIC.N <- "(?<![A-Za-z0-9._-])(-[0-9]+(?:[.-][0-9]+)*(?:\\.[0-9]*)?(?:[eE][+-
 set_modsem_colors <- function(numeric.positive = "orange1",
                               numeric.negative = "orange1",
                               active = TRUE) {
+  MODSEM_COLORS$available <- grDevices::colors()
+
   colors <- c(numeric.positive, numeric.negative)
   
   if (!active || any(!colors %in% MODSEM_COLORS$available)) {
