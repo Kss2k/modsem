@@ -140,6 +140,8 @@ summary.modsem_da <- function(object,
 
 #' @export
 print.summary_da <- function(x, digits = 3, ...) {
+  colorize({
+
   width.out <- getWidthPrintedParTable(x$parTable,
                                        scientific = x$format$scientific,
                                        ci = x$format$ci,
@@ -177,7 +179,7 @@ print.summary_da <- function(x, digits = 3, ...) {
   if (!is.null(x$D)) {
     cat("Fit Measures for Baseline Model (H0):\n")
     names <- c("Loglikelihood", "Akaike (AIC)", "Bayesian (BIC)")
-    values <- c(round(x$nullModel$logLik), round(x$fitH0$AIC, 2), round(x$fitH0$BIC, 2))
+    values <- c(round(x$nullModel$logLik, 2), round(x$fitH0$AIC, 2), round(x$fitH0$BIC, 2))
 
     if (x$format$adjusted.stat) {
       names <- c(names, "Corrected Akaike (AICc)", "Adjusted Bayesian (aBIC)")
@@ -246,11 +248,13 @@ print.summary_da <- function(x, digits = 3, ...) {
                 covariances = x$format$covariances,
                 intercepts  = x$format$intercepts,
                 variances   = x$format$variances)
+  })
 }
 
 
 #' @export
 print.modsem_da <- function(x, digits = 3, ...) {
+  colorize({
   parTable         <- x$parTable
   parTable$p.value <- format.pval(parTable$p.value, digits = digits)
   names(parTable)  <- c("lhs", "op", "rhs", "label", "est", "std.error",
@@ -259,23 +263,7 @@ print.modsem_da <- function(x, digits = 3, ...) {
                 if (is.numeric(col)) round(col, digits) else col) |>
     as.data.frame()
   print(est)
-}
-
-
-calcRsquared <- function(parTable, recalc.vars = FALSE) {
-  if (recalc.vars) parTable <- var_interactions.data.frame(parTable)
-
-  etas     <- unique(parTable$lhs[parTable$op == "~"])
-
-  # Calculate Variances/R squared of Etas
-  residuals_df <- parTable[parTable$lhs %in% etas & 
-                           parTable$rhs == parTable$lhs, ]
-  residuals <- structure(residuals_df$est, names=residuals_df$lhs)[etas]
-  variances <- calcVarParTable(etas, parTable)
-  Rsqr <- 1 - residuals / variances
-
-  data.frame(eta = etas, variance = variances,
-             residual = residuals, Rsqr = Rsqr)
+  })
 }
 
 

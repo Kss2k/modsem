@@ -13,8 +13,10 @@ incrementIterations <- function(logLik) {
   change  <- getDiffTwoMax(logLiks)
 
   clearConsoleLine() # clear before printing
-  printf("\rEvaluations = %d, LogLik = %.2f, Change = %.3f", 
-         OptimizerInfoQML$eval, logLik, change)
+  printf("\rEvaluations = %s, LogLik = %s, Change = %s", 
+         colorFormatNum(OptimizerInfoQML$eval, f = "%d"), 
+         colorFormatNum(logLik, f = "%.2f"), 
+         colorFormatNum(change, f = "%.2f"))
   
   OptimizerInfoQML$eval    <- eval
   OptimizerInfoQML$logLiks <- logLiks
