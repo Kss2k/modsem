@@ -55,6 +55,7 @@ NUMERIC.N <- "(?<![A-Za-z0-9._-])(-[0-9]+(?:[.-][0-9]+)*(?:\\.[0-9]*)?(?:[eE][+-
 #' # Disable colors
 #' set_modsem_colors(active = FALSE)
 #' print(summary(est))
+#' @export
 set_modsem_colors <- function(numeric.positive = "orange1",
                               numeric.negative = "orange1",
                               active = TRUE) {
@@ -64,23 +65,8 @@ set_modsem_colors <- function(numeric.positive = "orange1",
   
   if (!active || any(!colors %in% MODSEM_COLORS$available)) {
     MODSEM_COLORS$active <- FALSE
-    return(FALSE)
-  }
-
-  MODSEM_COLORS$active <- TRUE
-  MODSEM_COLORS$numeric.positive <- numeric.positive
-  MODSEM_COLORS$numeric.negative <- numeric.negative
-  MODSEM_COLORS$f.numeric.positive <- cli::make_ansi_style(numeric.positive)
-  MODSEM_COLORS$f.numeric.negative <- cli::make_ansi_style(numeric.negative)
-
-  TRUE
-}
-set_modsem_colors <- function(numeric.positive = "orange1",
-                              numeric.negative = "orange1",
-                              active = TRUE) {
-  colors <- c(numeric.positive, numeric.negative)
-  if (!active || any(!colors %in% MODSEM_COLORS$available)) {
-    MODSEM_COLORS$active <- FALSE
+    MODSEM_COLORS$f.numeric.positive <- \(x) x
+    MODSEM_COLORS$f.numeric.negative <- \(x) x
     return(FALSE)
   }
 
