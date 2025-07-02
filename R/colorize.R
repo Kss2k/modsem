@@ -103,7 +103,7 @@ colorize <- function(expr,
                      append = "\n") {
   if (!MODSEM_COLORS$active) return(expr)
 
-  output <- stringr::str_c(capture.output(expr), collapse = "\n")
+  output <- stringr::str_c(utils::capture.output(expr), collapse = "\n")
 
   rep.numeric.p <- getColorizedASCII(numeric.positive)
   rep.numeric.n <- getColorizedASCII(numeric.negative)
