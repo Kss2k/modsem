@@ -16,7 +16,7 @@ incrementIterations <- function(logLik) {
   printf("\rEvaluations = %s, LogLik = %s, Change = %s", 
          colorFormatNum(OptimizerInfoQML$eval, f = "%d"), 
          colorFormatNum(logLik, f = "%.2f"), 
-         colorFormatNum(change, f = "%.2f"))
+         colorFormatNum(change, f = "%.2g"))
   
   OptimizerInfoQML$eval    <- eval
   OptimizerInfoQML$logLiks <- logLiks

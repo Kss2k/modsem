@@ -393,7 +393,7 @@ rename <- function(.X, ...) {
 }
 
 
-printf <- function(..., colorize = FALSE) {
+printf <- function(...) {
   cat(sprintf(...))
   utils::flush.console()
 }

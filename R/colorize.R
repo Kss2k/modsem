@@ -128,7 +128,7 @@ colorize <- function(expr,
 
 colorFormatNum <- function(x, f = "%f") {
   str <- sprintf(f, x)
-  if (sign(x) == 1) 
+  if (!is.na(x) & sign(x) == 1) 
     MODSEM_COLORS$f.numeric.positive(str)
   else 
     MODSEM_COLORS$f.numeric.negative(str)
