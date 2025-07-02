@@ -8,8 +8,8 @@ MODSEM_COLORS <- rlang::env(
 )
 
 
-NUMERIC.P <- "(?<![A-Za-z0-9._-])([0-9]+(?:\\.[0-9]*)?(?:[eE][+-]?[0-9]+)?)(?![A-Za-z0-9._])"
-NUMERIC.N <- "(?<![A-Za-z0-9._-])(-[0-9]+(?:\\.[0-9]*)?(?:[eE][+-]?[0-9]+)?)(?![A-Za-z0-9._])"
+NUMERIC.P <- "(?<![A-Za-z0-9._-])([0-9]+(?:[.-][0-9]+)*(?:\\.[0-9]*)?(?:[eE][+-]?[0-9]+)?)(?![A-Za-z])"
+NUMERIC.N <- "(?<![A-Za-z0-9._-])(-[0-9]+(?:[.-][0-9]+)*(?:\\.[0-9]*)?(?:[eE][+-]?[0-9]+)?)(?![A-Za-z])"
 
 
 #' Set Color Scheme for Numeric Highlighting in \code{\link{modsem}}
@@ -111,9 +111,13 @@ colorize <- function(expr,
   mapping <- c(rep.numeric.p, rep.numeric.n)
   names(mapping) <- c(NUMERIC.P, NUMERIC.N)
 
-  colorized <- stringr::str_replace_all(
-    string  = output,
-    pattern = mapping
+  colorized <- tryCatch(
+    stringr::str_replace_all(string  = output, pattern = mapping),
+    error = function(e) {
+      warning2("Colorization of output failed! Message:", e,
+               immediate. = FALSE)
+      output
+    }
   )
 
   cat(colorized, append)
