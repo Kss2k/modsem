@@ -49,24 +49,25 @@
   adjusted.stat = FALSE,
   digits = 3,
   scientific = FALSE,
-  ci = FALSE,
+  verbose = TRUE,
   ...
 )
 }
 \arguments{
 \item{object}{modsem object to summarized}
 
-\item{H0}{should a null model be estimated (used for comparison)}
+\item{H0}{Should the baseline model be estimated, and used to produce 
+comparative fit?}
 
-\item{verbose}{print progress for the estimation of null model}
+\item{verbose}{Should messages be printed?}
 
 \item{r.squared}{calculate R-squared}
 
 \item{adjusted.stat}{should sample size corrected/adjustes AIC and BIC be reported?}
 
-\item{digits}{number of digits to print}
+\item{digits}{Number of digits for printed numerical values}
 
-\item{scientific}{print p-values in scientific notation}
+\item{scientific}{Should scientific format be used for p-values?}
 
 \item{ci}{print confidence intervals}
 
