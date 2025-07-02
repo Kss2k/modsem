@@ -74,6 +74,7 @@ summary.modsem_pi <- function(object,
 
 #' @export
 print.summary_modsem_pi <- function(x, ...) {
+  colorize({
   digits <- x$format$digits
   scientific <- x$format$scientific
   adjusted.stat <- x$format$adjusted.stat
@@ -198,6 +199,8 @@ print.summary_modsem_pi <- function(x, ...) {
 
   # lavaan
   print(x$lavaan)
+
+  })
 }
 
 
@@ -374,8 +377,12 @@ nobs.modsem_pi <- function(object, ...) {
 
 #' @export
 print.modsem_pi <- function(x, ...) {
+  colorize({
+
   printModsemPIHeader(attributes(x)$method)
   print(x$lavaan)
+
+  })
 }
 
 
