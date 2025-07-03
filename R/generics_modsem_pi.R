@@ -89,10 +89,10 @@ print.summary_modsem_pi <- function(x, ...) {
   # Compute width for right justification based on lavaan output
   # lavaan always seems to use a width of 54 characters for the main 
   # part of the first header, regardless of the widht of the coefficient 
-  # tables... So we don't need to compute it dynamically.
-  width.out <- 54
-  # lavcat <- utils::capture.output(print(x$lavaan))
-  # width.out <- max(nchar(lavcat))
+  # tables... So we don't need to compute it dynamically??
+  lavcat <- utils::capture.output(print(x$lavaan))
+  ncheck <- 10 # Check only the header
+  width.out <- max(nchar(lavcat[seq_len(ncheck)]))
 
   # Helper for left/right align with indent of 2 spaces for names
   align_lavaan <- function(lhs, rhs, width, indent = 2) {

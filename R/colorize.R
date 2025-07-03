@@ -1,15 +1,31 @@
 MODSEM_COLORS <- rlang::env(
-  numeric.positive = "orange1",
-  numeric.negative = "tomato",
+  numeric.positive = NA,
+  numeric.negative = NA,
   active = FALSE,
   f.numeric.positive = \(x) x,
   f.numeric.negative = \(x) x,
-  available = grDevices::colors()
+  available = NULL
 )
 
 
 NUMERIC.P <- "(?<![A-Za-z0-9._-])([0-9]+(?:[.-][0-9]+)*(?:\\.[0-9]*)?(?:[eE][+-]?[0-9]+)?)(?![A-Za-z])"
 NUMERIC.N <- "(?<![A-Za-z0-9._-])(-[0-9]+(?:[.-][0-9]+)*(?:\\.[0-9]*)?(?:[eE][+-]?[0-9]+)?)(?![A-Za-z])"
+
+
+setAvailableColors <- function() {
+  MODSEM_COLORS$available <- grDevices::colors()
+}
+
+
+resetModsemColors <- function() {
+  MODSEM_COLORS$active             <- FALSE
+  MODSEM_COLORS$numeric.positive   <- NA
+  MODSEM_COLORS$numeric.negative   <- NA
+  MODSEM_COLORS$f.numeric.positive <- \(x) x
+  MODSEM_COLORS$f.numeric.negative <- \(x) x
+
+  setAvailableColors()
+}
 
 
 #' Set Color Scheme for Numeric Highlighting in \code{\link{modsem}}
@@ -45,7 +61,8 @@ NUMERIC.N <- "(?<![A-Za-z0-9._-])(-[0-9]+(?:[.-][0-9]+)*(?:\\.[0-9]*)?(?:[eE][+-
 #'
 #' est <- modsem(m1, data = oneInt)
 #' 
-#' # Summary with default colors
+#' # Activate Color Theme with default colors
+#' set_modsem_colors()
 #' print(summary(est))
 #'
 #' # Change colors
@@ -59,14 +76,13 @@ NUMERIC.N <- "(?<![A-Za-z0-9._-])(-[0-9]+(?:[.-][0-9]+)*(?:\\.[0-9]*)?(?:[eE][+-
 set_modsem_colors <- function(numeric.positive = "orange1",
                               numeric.negative = "orange1",
                               active = TRUE) {
-  MODSEM_COLORS$available <- grDevices::colors()
+  if (!length(MODSEM_COLORS$available))
+    setAvailableColors()
 
   colors <- c(numeric.positive, numeric.negative)
   
   if (!active || any(!colors %in% MODSEM_COLORS$available)) {
-    MODSEM_COLORS$active <- FALSE
-    MODSEM_COLORS$f.numeric.positive <- \(x) x
-    MODSEM_COLORS$f.numeric.negative <- \(x) x
+    resetModsemColors()
     return(FALSE)
   }
 
@@ -81,6 +97,7 @@ set_modsem_colors <- function(numeric.positive = "orange1",
 
 
 getColorizedASCII <- function(color) {
+  if (is.na(color)) return("\\0")
   as.character(cli::make_ansi_style(color)("\\0"))
 }
 
@@ -114,8 +131,6 @@ colorize <- function(expr,
 
 colorFormatNum <- function(x, f = "%f") {
   str <- sprintf(f, x)
-  if (!is.na(x) & sign(x) == 1) 
-    MODSEM_COLORS$f.numeric.positive(str)
-  else 
-    MODSEM_COLORS$f.numeric.negative(str)
+  if (!is.na(x) & sign(x) == 1) MODSEM_COLORS$f.numeric.positive(str)
+  else                          MODSEM_COLORS$f.numeric.negative(str)
 }

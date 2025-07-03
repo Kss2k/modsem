@@ -201,7 +201,7 @@ fillColsParTable <- function(parTable) {
   colNames <- c("lhs", "op", "rhs", "label", "est",
                 "std.error", "z.value", "p.value", "ci.lower", "ci.upper")
   parTable[colNames[!colNames %in% colnames(parTable)]] <- NA
-  parTable[colNames]
+  parTable #[colNames]
 }
 
 
@@ -625,4 +625,22 @@ cov2cor <- function(vcov) {
   
   D <- diag(1 / sd)
   structure(D %*% vcov %*% D, dimnames = dimnames(vcov))
+}
+
+
+leftJoin <- function(x, y, by = intersect(colnames(x), colnames(y))) {
+  ox <- "__orig_order_x__"
+  oy <- "__orig_order_y__"
+
+  x[[ox]] <- seq_len(nrow(x))
+  y[[oy]] <- seq_len(nrow(y))
+
+  # left join
+  joined <- merge(x, y, by = by, all.x = TRUE)
+
+  # order
+  ordered <- joined[order(joined[[ox]], joined[[oy]]), ]
+
+  # return
+  ordered[!colnames(ordered) %in% c(ox, oy)]
 }
