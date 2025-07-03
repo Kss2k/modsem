@@ -80,8 +80,6 @@ summary.modsem_pi <- function(object,
 
 #' @export
 print.summary_modsem_pi <- function(x, ...) {
-  colorize({
-
   digits <- x$format$digits
   scientific <- x$format$scientific
   adjusted.stat <- x$format$adjusted.stat
@@ -205,8 +203,6 @@ print.summary_modsem_pi <- function(x, ...) {
 
   # lavaan
   print(x$lavaan)
-
-  })
 }
 
 
@@ -276,7 +272,6 @@ standardized_estimates.modsem_pi <- function(object,
 
   uncorrected <- \(object) rename(lavaan::standardizedSolution(object$lavaan, ...), 
                                   est.std = "est")
-
 
   if (correction && std.errors == "rescale") {
     parTable.std.naive <- uncorrected(object)
@@ -383,12 +378,8 @@ nobs.modsem_pi <- function(object, ...) {
 
 #' @export
 print.modsem_pi <- function(x, ...) {
-  colorize({
-
   printModsemPIHeader(attributes(x)$method)
   print(x$lavaan)
-
-  })
 }
 
 

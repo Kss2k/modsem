@@ -407,7 +407,10 @@ clearConsoleLine <- function() {
 getDiffTwoMax <- function(x) {
   if (length(x) < 2) return(NA)
   y <- sort(x, decreasing = TRUE)
-  y[[1]] - y[[2]]
+  abs.diff <- y[[1]] - y[[2]]
+  rel.diff  <- (y[[1]] - y[[2]]) / y[[2]]
+
+  list(rel = rel.diff, abs = abs.diff)
 }
 
 

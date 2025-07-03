@@ -172,13 +172,13 @@ modsem_predict(est2)
 testthat::expect_true({
   parTable <- summary(est2, H0 = FALSE, standardized = TRUE,
                       intercepts = TRUE)$parTable
-  all(parTable[parTable$op == "~1", "est"] == 0)
+  all(is.na(parTable[parTable$op == "~1", "std.all"]))
 })
 
 
 testthat::expect_true({
   parTable <- summary(est2, H0 = FALSE, standardized = TRUE)$parTable
-  length(parTable[parTable$op == "~1", "est"]) == 0
+  all(is.na(parTable[parTable$op == "~1", "std.all"]))
 })
 
 tpb_uk <- '
