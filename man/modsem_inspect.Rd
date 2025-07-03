@@ -47,6 +47,9 @@ organised in several sections.  Keywords are \emph{case-sensitive}.
   \item{\code{"default"}}{Everything in \emph{Sample information}, \emph{Optimiser diagnostics}
   \emph{Parameter tables}, \emph{Model matrices}, and \emph{Expected-moment matrices} except  
   the raw \code{data} slot}
+  \item{\code{"coef"}}{Coefficients and variance-covariance matrix of both free and constrained parameters (same as \code{"coef.all"}).}  
+  \item{\code{"coef.all"}}{Coefficients and variance-covariance matrix of both free and constrained parameters (same as \code{"coef"}).}  
+  \item{\code{"coef.free"}}{Coefficients and variance-covariance matrix of the free parameters.}  
   \item{\code{"all"}}{All items listed below, including \code{data}.}  
   \item{\code{"matrices"}}{The model matrices.}  
   \item{\code{"optim"}}{Only the items under \emph{Optimiser diagnostics}}.  
