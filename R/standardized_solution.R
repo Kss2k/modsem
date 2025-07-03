@@ -272,7 +272,7 @@ standardizedSolutionCOEFS <- function(object,
   labelInOrig       <- parTable$label %in% originalLabels
   parTable[!labelInOrig, "label"] <- ""
 
-  list(parTable  = parTable,
+  list(parTable  = modsemParTable(parTable),
        coefs     = coefs,
        vcov      = vcov,
        COEFS     = COEFS)

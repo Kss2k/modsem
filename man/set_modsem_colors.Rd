@@ -46,7 +46,8 @@ m1 <- "
 
 est <- modsem(m1, data = oneInt)
 
-# Summary with default colors
+# Activate Color Theme with default colors
+set_modsem_colors()
 print(summary(est))
 
 # Change colors
