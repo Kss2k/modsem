@@ -59,16 +59,30 @@ summary.modsem_da <- function(object,
                               loadings = TRUE,
                               regressions = TRUE,
                               covariances = TRUE,
-                              intercepts = !standardized,
+                              intercepts = TRUE,
                               variances = TRUE,
                               var.interaction = FALSE,
                               ...) {
-  method <- object$method
+  method   <- object$method
+  parTable <- parameter_estimates(object)
 
   if (standardized) {
-    parTable <- standardized_estimates(object, intercepts = intercepts, 
-                                       monte.carlo = monte.carlo, mc.reps = mc.reps)
-  } else parTable   <- parameter_estimates(object)
+    std.col  <- "Std.all"
+    merge.by <- c("lhs", "op", "rhs")
+
+    parTable.std <- standardized_estimates(
+      object, 
+      intercepts = intercepts, 
+      monte.carlo = monte.carlo, 
+      mc.reps = mc.reps
+    )
+
+    parTable.std[[std.col]] <- parTable.std$est
+
+    parTable <- leftJoin(x  = parTable, 
+                         y  = parTable.std[c(merge.by, std.col)],
+                         by = merge.by)
+  } else std.col <- NULL
 
   if (!var.interaction) {
     parTable.out <- removeInteractionVariances(parTable)
@@ -130,7 +144,8 @@ summary.modsem_da <- function(object,
     regressions   = regressions,
     covariances   = covariances,
     intercepts    = intercepts,
-    variances     = variances
+    variances     = variances,
+    std.col       = std.col
   )
 
   class(out) <- "summary_da"
@@ -142,15 +157,16 @@ summary.modsem_da <- function(object,
 print.summary_da <- function(x, digits = 3, ...) {
   colorize({
 
-  width.out <- getWidthPrintedParTable(x$parTable,
+  width.out <- getWidthPrintedParTable(x$parTable, # We want the width without ci and std.col
                                        scientific = x$format$scientific,
-                                       ci = x$format$ci,
+                                       ci = FALSE, # x$format$ci,
                                        digits = x$format$digits,
                                        loadings = x$format$loadings,
                                        regressions = x$format$regressions,
                                        covariances = x$format$covariances,
                                        intercepts = x$format$intercepts,
-                                       variances = x$format$variances)
+                                       variances = x$format$variances,
+                                       std.col   = NULL) # x$format$std.col)
   cat(paste0("\nmodsem (version ", PKG_INFO$version, "):\n\n"))
   names <- c("Estimator", "Optimization method", "Number of observations",
              "Number of iterations", "Loglikelihood",
@@ -247,7 +263,8 @@ print.summary_da <- function(x, digits = 3, ...) {
                 regressions = x$format$regressions,
                 covariances = x$format$covariances,
                 intercepts  = x$format$intercepts,
-                variances   = x$format$variances)
+                variances   = x$format$variances,
+                std.col     = x$format$std.col)
   })
 }
 

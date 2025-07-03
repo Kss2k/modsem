@@ -10,8 +10,10 @@ m1 <- "
 "
 
 est <- modsem(m1, data = oneInt)
+print(summary(est)) # no colors
 
 # Summary with default colors
+set_modsem_colors()
 print(summary(est))
 
 # Change colors
@@ -20,4 +22,4 @@ print(summary(est))
 
 # Disable colors
 set_modsem_colors(active = FALSE)
-print(summary(est))
+print(summary(est, standardized = TRUE))

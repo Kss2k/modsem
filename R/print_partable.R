@@ -1,11 +1,12 @@
 colsOut <- c("lhs", "op", "rhs", "est", "std.error",
               "z.value", "p.value", "ci.lower", "ci.upper")
 header <- c("Variable", "op", "Variable", "Estimate",
-            "Std.Error", "z.value", "P(>|z|)", "CI.Lower", "CI.Upper")
+            "Std.Error", "z.value", "P(>|z|)", "ci.lower", "ci.upper")
 
 
 formatParTable <- function(parTable, digits = 3, scientific = FALSE,
-                           ci = FALSE, width = 14, padResiduals = TRUE) {
+                           ci = FALSE, width = 14, padResiduals = TRUE, 
+                           std.col = NULL) {
   parTable <- fillColsParTable(parTable)
 
   if (padResiduals) {
@@ -47,9 +48,16 @@ formatParTable <- function(parTable, digits = 3, scientific = FALSE,
   parTable$p.value <- formatPval(parTable$p.value, scientific = scientific)
 
   if (!ci) {
-    header <- header[!grepl("CI", header)]
-    colsOut <- colsOut[!grepl("ci", colsOut)]
+    ci.pattern <- "^ci\\.(lower|upper)$"
+    header  <- header[!grepl(ci.pattern, header)]
+    colsOut <- colsOut[!grepl(ci.pattern, colsOut)]
   }
+
+  if (!is.null(std.col)) {
+    header  <- c(header, std.col)
+    colsOut <- c(colsOut, std.col)
+  }
+
   parTable <- parTable[colsOut]
 
   for (i in seq_len(length(colsOut) - 3) + 3) { # skip first 3 (lhs, op, rhs)
@@ -75,11 +83,13 @@ printParTable <- function(parTable,
                           intercepts = TRUE,
                           variances = TRUE,
                           custom = TRUE,
+                          std.col = NULL,
                           padWidth = 2,
                           padWidthLhs = 2,
                           spacing = 2) {
   formatted <- formatParTable(parTable, digits = digits,
-                              ci = ci, scientific = scientific)
+                              ci = ci, scientific = scientific,
+                              std.col = std.col)
   fParTable <- formatted$parTable
   header <- formatted$header
   lhs <- unique(fParTable$lhs)
@@ -240,9 +250,16 @@ getWidthPrintedParTable <- function(parTable,
                                     variances   = TRUE,
                                     padWidth    = 2,
                                     padWidthLhs = 2,
-                                    spacing     = 2) {
-  formatted <- formatParTable(parTable, digits = digits,
-                              ci = ci, scientific = scientific)
+                                    spacing     = 2,
+                                    std.col     = NULL) {
+  formatted <- formatParTable(
+    parTable, 
+    digits = digits,
+    ci = ci, 
+    scientific = scientific,
+    std.col = std.col
+  )
+
   fParTable <- formatted$parTable
   header    <- formatted$header
   lhs       <- unique(fParTable$lhs)
