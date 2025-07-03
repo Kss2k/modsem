@@ -77,7 +77,7 @@ summary for modsem objects"></head><body>
 <span>  loadings <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  regressions <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  covariances <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  intercepts <span class="op">=</span> <span class="op">!</span><span class="va">standardized</span>,</span>
+<span>  intercepts <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  variances <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  var.interaction <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  <span class="va">...</span></span>
@@ -106,7 +106,7 @@ summary for modsem objects"></head><body>
 <span>  adjusted.stat <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  digits <span class="op">=</span> <span class="fl">3</span>,</span>
 <span>  scientific <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  ci <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -120,11 +120,12 @@ summary for modsem objects"></head><body>
 
 
 <dt id="arg-h-">H0<a class="anchor" aria-label="anchor" href="#arg-h-"></a></dt>
-<dd><p>should a null model be estimated (used for comparison)</p></dd>
+<dd><p>Should the baseline model be estimated, and used to produce
+comparative fit?</p></dd>
 
 
 <dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
-<dd><p>print progress for the estimation of null model</p></dd>
+<dd><p>Should messages be printed?</p></dd>
 
 
 <dt id="arg-r-squared">r.squared<a class="anchor" aria-label="anchor" href="#arg-r-squared"></a></dt>
@@ -136,11 +137,11 @@ summary for modsem objects"></head><body>
 
 
 <dt id="arg-digits">digits<a class="anchor" aria-label="anchor" href="#arg-digits"></a></dt>
-<dd><p>number of digits to print</p></dd>
+<dd><p>Number of digits for printed numerical values</p></dd>
 
 
 <dt id="arg-scientific">scientific<a class="anchor" aria-label="anchor" href="#arg-scientific"></a></dt>
-<dd><p>print p-values in scientific notation</p></dd>
+<dd><p>Should scientific format be used for p-values?</p></dd>
 
 
 <dt id="arg-ci">ci<a class="anchor" aria-label="anchor" href="#arg-ci"></a></dt>

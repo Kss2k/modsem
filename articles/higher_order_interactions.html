@@ -127,6 +127,7 @@ construct of <code>PC</code> (perceived control) and <code>PB</code>
 <span></span>
 <span><span class="va">est_ca</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">tpb</span>, data <span class="op">=</span> <span class="va">TPB_2SO</span>, method <span class="op">=</span> <span class="st">"ca"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_ca</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Estimating baseline model (H0)</span></span>
 <span><span class="co">#&gt; Warning: Unable to estimate baseline model for models with higher-order</span></span>
 <span><span class="co">#&gt; interaction terms!</span></span>
 <span><span class="co">#&gt; modsem (version 1.0.11, approach = ca):</span></span>
@@ -359,21 +360,22 @@ construct of <code>PC</code> (perceived control) and <code>PB</code>
 <span></span>
 <span><span class="va">est_dblcent</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">tpb</span>, data <span class="op">=</span> <span class="va">TPB_2SO</span>, method <span class="op">=</span> <span class="st">"dblcent"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_dblcent</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Estimating baseline model (H0)</span></span>
 <span><span class="co">#&gt; Warning: Unable to estimate baseline model for models with higher-order</span></span>
 <span><span class="co">#&gt; interaction terms!</span></span>
 <span><span class="co">#&gt; modsem (version 1.0.11, approach = dblcent):</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Interaction Model Fit Measures (H1):</span></span>
-<span><span class="co">#&gt;   Loglikelihood                              -67661.78 </span></span>
-<span><span class="co">#&gt;   Akaike (AIC)                               135695.56 </span></span>
-<span><span class="co">#&gt;   Bayesian (BIC)                             136737.33 </span></span>
-<span><span class="co">#&gt;   Chi-square                                  10052.30 </span></span>
-<span><span class="co">#&gt;   Degrees of Freedom                              1089 </span></span>
-<span><span class="co">#&gt;   P-value (Chi-square)                           0.000 </span></span>
-<span><span class="co">#&gt;   RMSEA                                          0.064 </span></span>
+<span><span class="co">#&gt;   Loglikelihood                               -67661.78 </span></span>
+<span><span class="co">#&gt;   Akaike (AIC)                                135695.56 </span></span>
+<span><span class="co">#&gt;   Bayesian (BIC)                              136737.33 </span></span>
+<span><span class="co">#&gt;   Chi-square                                   10052.30 </span></span>
+<span><span class="co">#&gt;   Degrees of Freedom                               1089 </span></span>
+<span><span class="co">#&gt;   P-value (Chi-square)                            0.000 </span></span>
+<span><span class="co">#&gt;   RMSEA                                           0.064 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; R-Squared Interaction Model (H1):</span></span>
-<span><span class="co">#&gt;   BEH                                            0.181 </span></span>
+<span><span class="co">#&gt;   BEH                                             0.181 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; lavaan 0.6-19 ended normally after 465 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -808,6 +810,7 @@ between the <code>INT</code> (higher order construct) and
 <span></span>
 <span><span class="va">est_ca</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">tpb</span>, data <span class="op">=</span> <span class="va">TPB_1SO</span>, method <span class="op">=</span> <span class="st">"ca"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_ca</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Estimating baseline model (H0)</span></span>
 <span><span class="co">#&gt; Warning: Unable to estimate baseline model for models with higher-order</span></span>
 <span><span class="co">#&gt; interaction terms!</span></span>
 <span><span class="co">#&gt; modsem (version 1.0.11, approach = ca):</span></span>
@@ -997,6 +1000,7 @@ between the <code>INT</code> (higher order construct) and
 <span></span>
 <span><span class="va">est_dblcent</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">tpb</span>, data <span class="op">=</span> <span class="va">TPB_1SO</span>, method <span class="op">=</span> <span class="st">"dblcent"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_dblcent</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Estimating baseline model (H0)</span></span>
 <span><span class="co">#&gt; Warning: Unable to estimate baseline model for models with higher-order</span></span>
 <span><span class="co">#&gt; interaction terms!</span></span>
 <span><span class="co">#&gt; modsem (version 1.0.11, approach = dblcent):</span></span>
