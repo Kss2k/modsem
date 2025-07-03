@@ -157,8 +157,6 @@ relcorr_single_item <- function(syntax, data, choose = NULL) {
 
 #' @export
 print.modsem_relcorr <- function(x,...) {
-  colorize({
-
   sep <- strrep(" ", 4)
   indent <- strrep(" ", 2)
 
@@ -190,8 +188,6 @@ print.modsem_relcorr <- function(x,...) {
   cat(paste0("Generated Items:\n"))
   datastr <- utils::capture.output(utils::str(x$data[x$single.items]))
   cat(padString(datastr, pad = indent))
-
-  })
 }
 
 

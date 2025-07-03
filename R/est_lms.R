@@ -47,13 +47,8 @@ computeFullIcom <- function(theta, model, data, P) {
 updateStatusLog <- function(iterations, mode, logLikNew, deltaLL, relDeltaLL, verbose = FALSE) {
   if (verbose) {
     clearConsoleLine()
-    # printf("\rIter=%d Mode=%s LogLik=%.2f \u0394LL=%.2g rel\u0394LL=%.2g",
-    printf("\rIter=%s Mode=%s LogLik=%s \u0394LL=%s rel\u0394LL=%s",
-           colorFormatNum(iterations, f = "%d"),
-           mode, 
-           colorFormatNum(logLikNew, f = "%.2f"), 
-           colorFormatNum(deltaLL, f = "%.2g"), 
-           colorFormatNum(relDeltaLL, f = "%.2g"))
+    printf("\rIter=%d Mode=%s LogLik=%.2f \u0394LL=%.2g rel\u0394LL=%.2g", 
+           iterations, mode, logLikNew, deltaLL, relDeltaLL)
   }
 }
 
@@ -61,7 +56,7 @@ updateStatusLog <- function(iterations, mode, logLikNew, deltaLL, relDeltaLL, ve
 # 5. emLms function
 emLms <- function(model,
                   algorithm = c("EMA", "EM"),    # "EM" or "EMA"
-                  em.control = list(),              # overrides for tau thresholds
+                  em.control = list(),           # overrides for tau thresholds
                   verbose = FALSE,
                   convergence.abs = 1e-4,
                   convergence.rel = 1e-10,

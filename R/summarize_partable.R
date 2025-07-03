@@ -102,8 +102,6 @@ summarize_partable <- function(parTable,
 
 #' @export
 print.modsem_partable_summary <- function(x, ...) {
-  colorize({
-
   printf("modsem (version %s)\n\n", PKG_INFO$version)
 
   pad <- "  "
@@ -126,6 +124,4 @@ print.modsem_partable_summary <- function(x, ...) {
     intercepts  = x$intercepts,
     variances   = x$variances
   )
-
-  })
 }

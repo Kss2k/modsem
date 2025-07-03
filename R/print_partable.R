@@ -28,7 +28,8 @@ formatParTable <- function(parTable, digits = 3, scientific = FALSE,
   isStructOrMeasure <- parTable$op %in% c("~", "=~", "~~") &
     parTable$lhs != parTable$rhs
   parTable$lhs[isStructOrMeasure] <-
-    paste(abbreviate(parTable$lhs[isStructOrMeasure], 12), parTable$op[isStructOrMeasure])
+    paste(abbreviate(parTable$lhs[isStructOrMeasure], 12, strict = TRUE), 
+          parTable$op[isStructOrMeasure])
   isLabel  <- parTable$op == ":="
   parTable[isLabel, "label"] <- ""
 
@@ -198,10 +199,11 @@ printRowsParTable <- function(lhs, rhs, padWidthLhs = 2,
 pasteLabels <- function(vars, labels, width = 14, widthVar = 7, widthLabel = 4) {
   pasted <- paste0(vars, " (", labels, ")")
   widths <- nchar(pasted)
+
   vars[widths > width] <-
-    abbreviate(vars[widths > width], minlength = widthVar)
+    abbreviate(vars[widths > width], minlength = widthVar, strict = TRUE)
   labels[widths > width] <-
-    abbreviate(labels[widths > width], minlength = widthLabel)
+    abbreviate(labels[widths > width], minlength = widthLabel, strict = TRUE)
   labels[labels != ""] <- paste0("(", labels[labels != ""], ")")
 
   for (i in seq_along(vars)) {

@@ -155,8 +155,6 @@ summary.modsem_da <- function(object,
 
 #' @export
 print.summary_da <- function(x, digits = 3, ...) {
-  colorize({
-
   width.out <- getWidthPrintedParTable(x$parTable, # We want the width without ci and std.col
                                        scientific = x$format$scientific,
                                        ci = FALSE, # x$format$ci,
@@ -265,14 +263,11 @@ print.summary_da <- function(x, digits = 3, ...) {
                 intercepts  = x$format$intercepts,
                 variances   = x$format$variances,
                 std.col     = x$format$std.col)
-  })
 }
 
 
 #' @export
 print.modsem_da <- function(x, digits = 3, ...) {
-  colorize({
-
   parTable         <- x$parTable
   parTable$p.value <- format.pval(parTable$p.value, digits = digits)
   names(parTable)  <- c("lhs", "op", "rhs", "label", "est", "std.error",
@@ -281,8 +276,6 @@ print.modsem_da <- function(x, digits = 3, ...) {
                 if (is.numeric(col)) round(col, digits) else col) |>
     as.data.frame()
   print(est)
-
-  })
 }
 
 

@@ -39,8 +39,6 @@ summary.modsem_mplus <- function(object,
 
 #' @export
 print.summary_mplus <- function(x, ...) {
-  colorize({
-
   cat("modsem: \nMethod =", attributes(x)$method, "\n")
   printParTable(x$parTable,
                 scientific = x$format$scientific,
@@ -51,7 +49,6 @@ print.summary_mplus <- function(x, ...) {
                 covariances = x$format$covariances,
                 intercepts = x$format$intercepts,
                 variances = x$format$variances)
-  })
 }
 
 

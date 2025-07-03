@@ -8,15 +8,15 @@ resetOptimizerInfoQML <- function() {
 
 
 incrementIterations <- function(logLik) {
-  eval    <- OptimizerInfoQML$eval + 1
-  logLiks <- c(OptimizerInfoQML$logLiks, logLik)
-  change  <- getDiffTwoMax(logLiks)
+  eval       <- OptimizerInfoQML$eval + 1
+  logLiks    <- c(OptimizerInfoQML$logLiks, logLik)
+  diffLL     <- getDiffTwoMax(logLiks)
+  deltaLL    <- diffLL$abs
+  relDeltaLL <- diffLL$rel
 
   clearConsoleLine() # clear before printing
-  printf("\rEvaluations = %s, LogLik = %s, Change = %s", 
-         colorFormatNum(OptimizerInfoQML$eval, f = "%d"), 
-         colorFormatNum(logLik, f = "%.2f"), 
-         colorFormatNum(change, f = "%.2g"))
+  printf("\rEval=%d LogLik=%.2f \u0394LL=%.2g rel\u0394LL=%.2g", 
+         eval, logLik, deltaLL, relDeltaLL)
   
   OptimizerInfoQML$eval    <- eval
   OptimizerInfoQML$logLiks <- logLiks

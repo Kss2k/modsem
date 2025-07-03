@@ -334,8 +334,6 @@ printTable <- function(x) {
 
 #' @export
 print.simple_slopes <- function(x, digits = 2, scientific.p = FALSE, ...) {
-  colorize({
-
   variables  <- x$variable_names
   margins    <- x$margins
   sig.slopes <- x$sig.slopes
@@ -422,8 +420,6 @@ print.simple_slopes <- function(x, digits = 2, scientific.p = FALSE, ...) {
     printTable(Z)
     cat("\n") 
   }
-
-  })
 }
 
 
