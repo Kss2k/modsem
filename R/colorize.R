@@ -8,8 +8,8 @@ MODSEM_COLORS <- rlang::env(
 )
 
 
-NUMERIC.P <- "(?<![A-Za-z0-9._-])([0-9]+(?:[.-][0-9]+)*(?:\\.[0-9]*)?(?:[eE][+-]?[0-9]+)?)(?![A-Za-z])"
-NUMERIC.N <- "(?<![A-Za-z0-9._-])(-[0-9]+(?:[.-][0-9]+)*(?:\\.[0-9]*)?(?:[eE][+-]?[0-9]+)?)(?![A-Za-z])"
+NUMERIC.P <- "(?<![A-Za-z0-9._-~])([0-9]+(?:[.-][0-9]+)*(?:\\.[0-9]*)?(?:[eE][+-]?[0-9]+)?)(?![A-Za-z])"
+NUMERIC.N <- "(?<![A-Za-z0-9._-~])(-[0-9]+(?:[.-][0-9]+)*(?:\\.[0-9]*)?(?:[eE][+-]?[0-9]+)?)(?![A-Za-z])"
 
 
 setAvailableColors <- function() {
@@ -131,6 +131,14 @@ colorize <- function(expr,
 
 colorFormatNum <- function(x, f = "%f") {
   str <- sprintf(f, x)
-  if (!is.na(x) & sign(x) == 1) MODSEM_COLORS$f.numeric.positive(str)
-  else                          MODSEM_COLORS$f.numeric.negative(str)
+  ifelse(!is.na(x) & x > 0,
+         yes = MODSEM_COLORS$f.numeric.positive(str),
+         no  = MODSEM_COLORS$f.numeric.negative(str))
+}
+
+
+colorNumeric <- function(x) {
+  ifelse (!is.na(x) & x > 0,
+          yes = MODSEM_COLORS$f.numeric.positive(x),
+          no  = MODSEM_COLORS$f.numeric.negative(x))
 }
