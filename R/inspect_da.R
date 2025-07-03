@@ -103,13 +103,15 @@ modsem_inspect_da <- function(model, what = "default") {
 
   } else {
     fields <- switch(
-      EXPR     = what,
-      coef     = info[c("vcov.all", "coefficients.all")],
-      default  = info[names(info) != "data"],
-      all      = info,
-      matrices = info[inspectDA_Matrices],
-      optim    = info[inspectDA_Optim],
-      fit      = FIT(),
+      EXPR      = what,
+      coef.all  = info[c("vcov.all", "coefficients.all")],
+      coef      = info[c("vcov.all", "coefficients.all")],
+      coef.free = info[c("vcov.free", "coefficients.free")],
+      default   = info[names(info) != "data"],
+      all       = info,
+      matrices  = info[inspectDA_Matrices],
+      optim     = info[inspectDA_Optim],
+      fit       = FIT(),
       info[[what]]
     )
   }
