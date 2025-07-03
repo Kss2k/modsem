@@ -47,8 +47,13 @@ computeFullIcom <- function(theta, model, data, P) {
 updateStatusLog <- function(iterations, mode, logLikNew, deltaLL, relDeltaLL, verbose = FALSE) {
   if (verbose) {
     clearConsoleLine()
-    printf("\rIter=%d Mode=%s LogLik=%.2f \u0394LL=%.2g rel\u0394LL=%.2g",
-           iterations, mode, logLikNew, deltaLL, relDeltaLL)
+    # printf("\rIter=%d Mode=%s LogLik=%.2f \u0394LL=%.2g rel\u0394LL=%.2g",
+    printf("\rIter=%s Mode=%s LogLik=%s \u0394LL=%s rel\u0394LL=%s",
+           colorFormatNum(iterations, f = "%d"),
+           mode, 
+           colorFormatNum(logLikNew, f = "%.2f"), 
+           colorFormatNum(deltaLL, f = "%.2g"), 
+           colorFormatNum(relDeltaLL, f = "%.2g"))
   }
 }
 
@@ -304,7 +309,7 @@ emLms <- function(model,
     theta            = coefficients,
     coefs.all        = lavCoefs$all,
     coefs.free       = lavCoefs$free,
-    parTable         = parTable,
+    parTable         = modsemParTable(parTable),
     originalParTable = model$parTable,
     logLik           = -final$objective,
     iterations       = iterations,

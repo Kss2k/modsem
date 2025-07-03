@@ -59,16 +59,30 @@ summary.modsem_da <- function(object,
                               loadings = TRUE,
                               regressions = TRUE,
                               covariances = TRUE,
-                              intercepts = !standardized,
+                              intercepts = TRUE,
                               variances = TRUE,
                               var.interaction = FALSE,
                               ...) {
-  method <- object$method
+  method   <- object$method
+  parTable <- parameter_estimates(object)
 
   if (standardized) {
-    parTable <- standardized_estimates(object, intercepts = intercepts, 
-                                       monte.carlo = monte.carlo, mc.reps = mc.reps)
-  } else parTable   <- parameter_estimates(object)
+    std.col  <- "Std.all"
+    merge.by <- c("lhs", "op", "rhs")
+
+    parTable.std <- standardized_estimates(
+      object, 
+      intercepts = intercepts, 
+      monte.carlo = monte.carlo, 
+      mc.reps = mc.reps
+    )
+
+    parTable.std[[std.col]] <- parTable.std$est
+
+    parTable <- leftJoin(x  = parTable, 
+                         y  = parTable.std[c(merge.by, std.col)],
+                         by = merge.by)
+  } else std.col <- NULL
 
   if (!var.interaction) {
     parTable.out <- removeInteractionVariances(parTable)
@@ -130,7 +144,8 @@ summary.modsem_da <- function(object,
     regressions   = regressions,
     covariances   = covariances,
     intercepts    = intercepts,
-    variances     = variances
+    variances     = variances,
+    std.col       = std.col
   )
 
   class(out) <- "summary_da"
@@ -140,15 +155,18 @@ summary.modsem_da <- function(object,
 
 #' @export
 print.summary_da <- function(x, digits = 3, ...) {
-  width.out <- getWidthPrintedParTable(x$parTable,
+  colorize({
+
+  width.out <- getWidthPrintedParTable(x$parTable, # We want the width without ci and std.col
                                        scientific = x$format$scientific,
-                                       ci = x$format$ci,
+                                       ci = FALSE, # x$format$ci,
                                        digits = x$format$digits,
                                        loadings = x$format$loadings,
                                        regressions = x$format$regressions,
                                        covariances = x$format$covariances,
                                        intercepts = x$format$intercepts,
-                                       variances = x$format$variances)
+                                       variances = x$format$variances,
+                                       std.col   = NULL) # x$format$std.col)
   cat(paste0("\nmodsem (version ", PKG_INFO$version, "):\n\n"))
   names <- c("Estimator", "Optimization method", "Number of observations",
              "Number of iterations", "Loglikelihood",
@@ -177,7 +195,7 @@ print.summary_da <- function(x, digits = 3, ...) {
   if (!is.null(x$D)) {
     cat("Fit Measures for Baseline Model (H0):\n")
     names <- c("Loglikelihood", "Akaike (AIC)", "Bayesian (BIC)")
-    values <- c(round(x$nullModel$logLik), round(x$fitH0$AIC, 2), round(x$fitH0$BIC, 2))
+    values <- c(round(x$nullModel$logLik, 2), round(x$fitH0$AIC, 2), round(x$fitH0$BIC, 2))
 
     if (x$format$adjusted.stat) {
       names <- c(names, "Corrected Akaike (AICc)", "Adjusted Bayesian (aBIC)")
@@ -245,12 +263,16 @@ print.summary_da <- function(x, digits = 3, ...) {
                 regressions = x$format$regressions,
                 covariances = x$format$covariances,
                 intercepts  = x$format$intercepts,
-                variances   = x$format$variances)
+                variances   = x$format$variances,
+                std.col     = x$format$std.col)
+  })
 }
 
 
 #' @export
 print.modsem_da <- function(x, digits = 3, ...) {
+  colorize({
+
   parTable         <- x$parTable
   parTable$p.value <- format.pval(parTable$p.value, digits = digits)
   names(parTable)  <- c("lhs", "op", "rhs", "label", "est", "std.error",
@@ -259,23 +281,8 @@ print.modsem_da <- function(x, digits = 3, ...) {
                 if (is.numeric(col)) round(col, digits) else col) |>
     as.data.frame()
   print(est)
-}
 
-
-calcRsquared <- function(parTable, recalc.vars = FALSE) {
-  if (recalc.vars) parTable <- var_interactions.data.frame(parTable)
-
-  etas     <- unique(parTable$lhs[parTable$op == "~"])
-
-  # Calculate Variances/R squared of Etas
-  residuals_df <- parTable[parTable$lhs %in% etas & 
-                           parTable$rhs == parTable$lhs, ]
-  residuals <- structure(residuals_df$est, names=residuals_df$lhs)[etas]
-  variances <- calcVarParTable(etas, parTable)
-  Rsqr <- 1 - residuals / variances
-
-  data.frame(eta = etas, variance = variances,
-             residual = residuals, Rsqr = Rsqr)
+  })
 }
 
 

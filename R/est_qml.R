@@ -66,7 +66,7 @@ estQml <- function(model,
               theta      = coefficients,
               coefs.all  = lavCoefs$all,
               coefs.free = lavCoefs$free,
-              parTable   = parTable,
+              parTable   = modsemParTable(parTable),
 
               originalParTable = model$parTable,
 

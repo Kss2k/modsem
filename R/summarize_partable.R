@@ -71,8 +71,6 @@ summarize_partable <- function(parTable,
     variances   = variances
   )
 
-  printf("modsem (version %s)\n\n", PKG_INFO$version)
-
   info.names <- c("Number of model parameters",
                   "Number of latent variables",
                   "Number of observed variables")
@@ -104,6 +102,10 @@ summarize_partable <- function(parTable,
 
 #' @export
 print.modsem_partable_summary <- function(x, ...) {
+  colorize({
+
+  printf("modsem (version %s)\n\n", PKG_INFO$version)
+
   pad <- "  "
 
   cat(allignLhsRhs(
@@ -124,4 +126,6 @@ print.modsem_partable_summary <- function(x, ...) {
     intercepts  = x$intercepts,
     variances   = x$variances
   )
+
+  })
 }

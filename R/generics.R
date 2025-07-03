@@ -131,7 +131,7 @@ var_interactions.data.frame <- function(object, ignore.means = FALSE, ...) {
     }
   }
 
-  parTable
+  modsemParTable(parTable)
 }
 
 
@@ -341,7 +341,7 @@ standardized_estimates.data.frame <- function(object, intercepts = FALSE, ...) {
   parTable$ci.lower <- parTable$est - CI_WIDTH * parTable$std.error
   parTable$ci.upper <- parTable$est + CI_WIDTH * parTable$std.error
 
-  parTable
+  modsemParTable(parTable)
 }
 
 

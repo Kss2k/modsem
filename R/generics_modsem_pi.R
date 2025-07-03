@@ -7,6 +7,11 @@ printModsemPIHeader <- function(approach) {
 #' summary for modsem objects
 #'
 #' @param object modsem object to summarized
+#' @param H0 Should the baseline model be estimated, and used to produce 
+#'  comparative fit?
+#' @param digits Number of digits for printed numerical values
+#' @param scientific Should scientific format be used for p-values?
+#' @param verbose Should messages be printed?
 #' @param ... arguments passed to lavaan::summary()
 #' @rdname summary
 #' @export
@@ -16,14 +21,14 @@ summary.modsem_pi <- function(object,
                               adjusted.stat = FALSE,
                               digits = 3,
                               scientific = FALSE,
-                              ci = FALSE,
+                              verbose = TRUE,
                               ...) {
   out         <- list()
   out$lavaan  <- lavaan::summary(extract_lavaan(object), ...)
   out$info    <- list(version = PKG_INFO$version, approach = attributes(object)$method)
   out$fit     <- lavaan::fitMeasures(extract_lavaan(object))
   out$N       <- lavaan::nobs(extract_lavaan(object))
-  out$format  <- list(digits = digits, scientific = scientific, adjusted.stat = adjusted.stat, ci = ci)
+  out$format  <- list(digits = digits, scientific = scientific, adjusted.stat = adjusted.stat)
   out$ngroups <- lavaan::lavInspect(extract_lavaan(object), what = "ngroups")
 
   # Check for interaction effect in the model
@@ -43,6 +48,7 @@ summary.modsem_pi <- function(object,
 
   # Baseline (H0) model
   if (H0) tryCatch({
+    if (verbose) cat("Estimating baseline model (H0)\n")
     est_h0 <- estimate_h0(object, ...)
     out$nullModel <- est_h0
 
@@ -74,18 +80,19 @@ summary.modsem_pi <- function(object,
 
 #' @export
 print.summary_modsem_pi <- function(x, ...) {
+  colorize({
+
   digits <- x$format$digits
   scientific <- x$format$scientific
   adjusted.stat <- x$format$adjusted.stat
-  ci <- x$format$ci
 
   # Compute width for right justification based on lavaan output
   # lavaan always seems to use a width of 54 characters for the main 
   # part of the first header, regardless of the widht of the coefficient 
-  # tables... So we don't need to compute it dynamically.
-  width.out <- 54
-  # lavcat <- utils::capture.output(print(x$lavaan))
-  # width.out <- max(nchar(lavcat))
+  # tables... So we don't need to compute it dynamically??
+  lavcat <- utils::capture.output(print(x$lavaan))
+  ncheck <- 10 # Check only the header
+  width.out <- max(nchar(lavcat[seq_len(ncheck)]))
 
   # Helper for left/right align with indent of 2 spaces for names
   align_lavaan <- function(lhs, rhs, width, indent = 2) {
@@ -198,6 +205,8 @@ print.summary_modsem_pi <- function(x, ...) {
 
   # lavaan
   print(x$lavaan)
+
+  })
 }
 
 
@@ -374,8 +383,12 @@ nobs.modsem_pi <- function(object, ...) {
 
 #' @export
 print.modsem_pi <- function(x, ...) {
+  colorize({
+
   printModsemPIHeader(attributes(x)$method)
   print(x$lavaan)
+
+  })
 }
 
 

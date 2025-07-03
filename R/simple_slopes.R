@@ -12,6 +12,7 @@ R_DCROSS = "\u2561" # right double cross
 L_DCROSS = "\u255e" # left double cross
 U_CROSS = "\u2534" # up cross
 
+
 #' Get the simple slopes of a SEM model
 #'
 #' This function calculates simple slopes (predicted values of the outcome variable)
@@ -333,6 +334,8 @@ printTable <- function(x) {
 
 #' @export
 print.simple_slopes <- function(x, digits = 2, scientific.p = FALSE, ...) {
+  colorize({
+
   variables  <- x$variable_names
   margins    <- x$margins
   sig.slopes <- x$sig.slopes
@@ -419,6 +422,8 @@ print.simple_slopes <- function(x, digits = 2, scientific.p = FALSE, ...) {
     printTable(Z)
     cat("\n") 
   }
+
+  })
 }
 
 

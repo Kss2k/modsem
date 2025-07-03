@@ -253,6 +253,7 @@ m1 <- "
 est_m1 <- modsem(m1, oneInt, method = "lms", cov.syntax = "")
 coef_m1 <- coef(est_m1)
 summary(est_m1)
+print(modsem_inspect(est_m1, what = c("vcov.all", "theta", "lambda", "psi", "information", "coefficients.all")))
 
 # test constraints
 testthat::expect_equal(coef_m1[["a"]], 1)
