@@ -2,7 +2,7 @@
 % Please edit documentation in R/colorize_output.R
 \name{set_modsem_colors}
 \alias{set_modsem_colors}
-\title{Define or disable the colour theme used by \code{modsem}}
+\title{Define or disable the color theme used by \code{modsem}}
 \usage{
 set_modsem_colors(
   positive = "green3",
@@ -17,26 +17,26 @@ set_modsem_colors(
 )
 }
 \arguments{
-\item{positive}{Colour of positive numbers.}
+\item{positive}{color of positive numbers.}
 
-\item{negative}{Colour of negative numbers.}
+\item{negative}{color of negative numbers.}
 
-\item{true}{Colour of \code{TRUE}.}
+\item{true}{color of \code{TRUE}.}
 
-\item{false}{Colour of \code{FALSE}.}
+\item{false}{color of \code{FALSE}.}
 
-\item{nan}{Colour of \code{NaN}.}
+\item{nan}{color of \code{NaN}.}
 
-\item{na}{Colour of \code{NA}.}
+\item{na}{color of \code{NA}.}
 
-\item{inf}{Colour of \code{-Inf} and \code{Inf}.}
+\item{inf}{color of \code{-Inf} and \code{Inf}.}
 
-\item{string}{Colour of quoted strings.}
+\item{string}{color of quoted strings.}
 
 \item{active}{Should color-theme be activated/deactived?}
 }
 \value{
-`TRUE` if colours are active afterwards, otherwise `FALSE`.
+`TRUE` if colors are active afterwards, otherwise `FALSE`.
 }
 \description{
 All arguments are optional; omitted ones fall back to the defaults below.

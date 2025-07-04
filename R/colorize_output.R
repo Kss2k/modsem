@@ -1,5 +1,5 @@
 MODSEM_COLORS <- rlang::env(
-  # user-configurable colour names
+  # user-configurable color names
   positive = NA_character_,
   negative = NA_character_,
   true     = NA_character_,
@@ -46,7 +46,7 @@ styleOrAsIs <- function(col) {
 
 
 getColorizedASCII <- function(col) {
-  if (is.na(col)) return("\\0") # no colour -> leave as-is
+  if (is.na(col)) return("\\0") # no color -> leave as-is
   as.character(cli::make_ansi_style(col)("\\0"))
 }
 
@@ -63,19 +63,19 @@ resetModsemColors <- function() {
 }
 
 
-#' Define or disable the colour theme used by \code{modsem}
+#' Define or disable the color theme used by \code{modsem}
 #'
 #' All arguments are optional; omitted ones fall back to the defaults below.
 #' Pass \code{active = FALSE} to turn highlighting off (and reset the palette).
 #'
-#' @param positive Colour of positive numbers.
-#' @param negative Colour of negative numbers.
-#' @param true Colour of \code{TRUE}.
-#' @param false Colour of \code{FALSE}.
-#' @param nan Colour of \code{NaN}.
-#' @param na Colour of \code{NA}.
-#' @param inf Colour of \code{-Inf} and \code{Inf}.
-#' @param string Colour of quoted strings.
+#' @param positive color of positive numbers.
+#' @param negative color of negative numbers.
+#' @param true color of \code{TRUE}.
+#' @param false color of \code{FALSE}.
+#' @param nan color of \code{NaN}.
+#' @param na color of \code{NA}.
+#' @param inf color of \code{-Inf} and \code{Inf}.
+#' @param string color of quoted strings.
 #' @param active Should color-theme be activated/deactived? 
 #'
 #' @examples
@@ -107,7 +107,7 @@ resetModsemColors <- function() {
 #' colorize_output(modsem_inspect(est_lms))
 #' }
 #'
-#' @return `TRUE` if colours are active afterwards, otherwise `FALSE`.
+#' @return `TRUE` if colors are active afterwards, otherwise `FALSE`.
 #' @export
 set_modsem_colors <- function(positive = "green3",
                               negative = positive,
@@ -149,17 +149,17 @@ set_modsem_colors <- function(positive = "green3",
   MODSEM_COLORS$active
 }
 
-#' Capture, colourise, and emit console text
+#' Capture, colorise, and emit console text
 #' @param expr Expression or object with output which should be colorized.
-#' @param positive Colour of positive numbers.
-#' @param negative Colour of negative numbers.
-#' @param true Colour of \code{TRUE}.
-#' @param false Colour of \code{FALSE}.
-#' @param nan Colour of \code{NaN}.
-#' @param na Colour of \code{NA}.
-#' @param inf Colour of \code{-Inf} and \code{Inf}.
-#' @param string Colour of quoted strings.
-#' @param append String appended after the coloured output (default `\\n`).
+#' @param positive color of positive numbers.
+#' @param negative color of negative numbers.
+#' @param true color of \code{TRUE}.
+#' @param false color of \code{FALSE}.
+#' @param nan color of \code{NaN}.
+#' @param na color of \code{NA}.
+#' @param inf color of \code{-Inf} and \code{Inf}.
+#' @param string color of quoted strings.
+#' @param append String appended after the colored output (default `\\n`).
 #' @return Invisibly returns the *plain* captured text.
 #'
 #' @examples
@@ -208,7 +208,7 @@ colorize_output <- function(expr,
     return(invisible())
   }
 
-  # build mapping only for active colours
+  # build mapping only for active colors
   mapping <- c()
   add <- function(pat, col) {
     if (!is.na(col)) mapping <<- c(mapping, stats::setNames(getColorizedASCII(col), pat))
@@ -223,14 +223,14 @@ colorize_output <- function(expr,
   add(PATTERN.Inf,    inf)
   add(PATTERN.String, string)
 
-  coloured <- tryCatch(
+  colored <- tryCatch(
     stringr::str_replace_all(out, mapping),
     error = function(e) {
-      warning("Colourization failed: ", conditionMessage(e), call. = FALSE)
+      warning("colorization failed: ", conditionMessage(e), call. = FALSE)
       out
     }
   )
 
-  cat(coloured, append)
+  cat(colored, append)
   invisible(out)
 }
