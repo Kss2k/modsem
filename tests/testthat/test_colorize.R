@@ -19,7 +19,12 @@ est <- modsem(m1, data = oneInt)
 colorize_output(summary(est))
 colorize_output(print(est))
 
-est_lms <- modsem(m1, data = oneInt, method = "lms")
-colorize_output(summary(est_lms))
+colorize_output(split = TRUE, {
+  # Get live (uncolored) output
+  # And print colored output at the end of execution
 
+  est_lms <- modsem(m1, data = oneInt, method = "lms")
+  summary(est_lms)
+}) 
+                
 colorize_output(modsem_inspect(est_lms))

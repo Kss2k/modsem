@@ -14,6 +14,7 @@ colorize_output(
   na = MODSEM_COLORS$na,
   inf = MODSEM_COLORS$inf,
   string = MODSEM_COLORS$string,
+  split = FALSE,
   append = "\\n"
 )
 }
@@ -36,6 +37,10 @@ colorize_output(
 
 \item{string}{color of quoted strings.}
 
+\item{split}{Should output be splitted? If \code{TRUE} the output is printed 
+normally (in real time) with no colorization, and the colored output is printed
+after the code has finished executing.}
+
 \item{append}{String appended after the colored output (default `\\n`).}
 }
 \value{
@@ -45,7 +50,6 @@ Invisibly returns the *plain* captured text.
 Capture, colorise, and emit console text
 }
 \examples{
-
 set_modsem_colors(positive = "green", 
                   negative = "red",
                   true = "green", 
@@ -66,10 +70,14 @@ colorize_output(summary(est))
 colorize_output(print(est))
 
 \dontrun{
-est_lms <- modsem(m1, data = oneInt, method = "lms")
+colorize_output(split = TRUE, {
+  # Get live (uncolored) output
+  # And print colored output at the end of execution
 
-colorize_output(summary(est_lms))
-
+  est_lms <- modsem(m1, data = oneInt, method = "lms")
+  summary(est_lms)
+}) 
+                
 colorize_output(modsem_inspect(est_lms))
 }
 }
