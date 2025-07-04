@@ -32,6 +32,8 @@ set_modsem_colors(
 \item{inf}{Colour of \code{-Inf} and \code{Inf}.}
 
 \item{string}{Colour of quoted strings.}
+
+\item{active}{Should color-theme be activated/deactived?}
 }
 \value{
 `TRUE` if colours are active afterwards, otherwise `FALSE`.
