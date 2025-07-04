@@ -14,7 +14,7 @@ modsem_inspect_da <- function(model, what = "default") {
   matricesCovModel  <- model$model$covModel$matrices
   expected.matrices <- model$expected.matrices
 
-  tau          <- rbind(matrices$tauX, matrices$tauY)
+
   lambda       <- diagPartitionedMat(matrices$lambdaX,
                                      matrices$lambdaY)
   theta        <- diagPartitionedMat(matrices$thetaDelta,
@@ -31,6 +31,12 @@ modsem_inspect_da <- function(model, what = "default") {
                                      matricesCovModel$phi)
   psi          <- diagPartitionedMat(matrices$psi,
                                      matricesCovModel$psi)
+  
+  tau          <- rbind(matrices$tauX, matrices$tauY)
+  alpha        <- matrices$alpha
+  beta0        <- matrices$beta0
+  
+  colnames(tau) <- colnames(alpha) <- colnames(beta0) <- "~1"
 
   cov.ov  <- expected.matrices$sigma.ov
   cov.lv  <- expected.matrices$sigma.lv
@@ -39,6 +45,7 @@ modsem_inspect_da <- function(model, what = "default") {
   cor.ov  <- cov2cor(cov.ov)
   cor.lv  <- cov2cor(cov.lv)
   cor.all <- cov2cor(cov.all)
+  
 
   info <- list(N                 = NROW(model$data),
                vcov.all          = modsemMatrix(model$vcov.all, symmetric = TRUE),
@@ -64,8 +71,8 @@ modsem_inspect_da <- function(model, what = "default") {
                phi   = modsemMatrix(phi, symmetric = TRUE), 
                psi   = modsemMatrix(psi, symmetric = TRUE), 
 
-               alpha = modsemMatrix(matrices$alpha),
-               beta0 = modsemMatrix(matrices$beta0),
+               alpha = modsemMatrix(alpha),
+               beta0 = modsemMatrix(beta0),
 
                cov.ov  = modsemMatrix(cov.ov, symmetric = TRUE),
                cov.lv  = modsemMatrix(cov.lv, symmetric = TRUE),
