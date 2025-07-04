@@ -43,7 +43,6 @@ All arguments are optional; omitted ones fall back to the defaults below.
 Pass \code{active = FALSE} to turn highlighting off (and reset the palette).
 }
 \examples{
-
 set_modsem_colors(positive = "green", 
                   negative = "red",
                   true = "green", 
@@ -64,11 +63,14 @@ colorize_output(summary(est))
 colorize_output(print(est))
 
 \dontrun{
-est_lms <- modsem(m1, data = oneInt, method = "lms")
+colorize_output(split = TRUE, {
+  # Get live (uncolored) output
+  # And print colored output at the end of execution
 
-colorize_output(summary(est_lms))
-
+  est_lms <- modsem(m1, data = oneInt, method = "lms")
+  summary(est_lms)
+}) 
+                
 colorize_output(modsem_inspect(est_lms))
 }
-
 }

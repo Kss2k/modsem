@@ -79,7 +79,6 @@ resetModsemColors <- function() {
 #' @param active Should color-theme be activated/deactived? 
 #'
 #' @examples
-#' 
 #' set_modsem_colors(positive = "green", 
 #'                   negative = "red",
 #'                   true = "green", 
@@ -100,13 +99,16 @@ resetModsemColors <- function() {
 #' colorize_output(print(est))
 #' 
 #' \dontrun{
-#' est_lms <- modsem(m1, data = oneInt, method = "lms")
-#'
-#' colorize_output(summary(est_lms))
+#' colorize_output(split = TRUE, {
+#'   # Get live (uncolored) output
+#'   # And print colored output at the end of execution
 #' 
+#'   est_lms <- modsem(m1, data = oneInt, method = "lms")
+#'   summary(est_lms)
+#' }) 
+#'                 
 #' colorize_output(modsem_inspect(est_lms))
 #' }
-#'
 #' @return `TRUE` if colors are active afterwards, otherwise `FALSE`.
 #' @export
 set_modsem_colors <- function(positive = "green3",
@@ -160,10 +162,12 @@ set_modsem_colors <- function(positive = "green3",
 #' @param inf color of \code{-Inf} and \code{Inf}.
 #' @param string color of quoted strings.
 #' @param append String appended after the colored output (default `\\n`).
+#' @param split Should output be splitted? If \code{TRUE} the output is printed 
+#'  normally (in real time) with no colorization, and the colored output is printed
+#'  after the code has finished executing.
 #' @return Invisibly returns the *plain* captured text.
 #'
 #' @examples
-#' 
 #' set_modsem_colors(positive = "green", 
 #'                   negative = "red",
 #'                   true = "green", 
@@ -184,10 +188,14 @@ set_modsem_colors <- function(positive = "green3",
 #' colorize_output(print(est))
 #' 
 #' \dontrun{
-#' est_lms <- modsem(m1, data = oneInt, method = "lms")
-#'
-#' colorize_output(summary(est_lms))
+#' colorize_output(split = TRUE, {
+#'   # Get live (uncolored) output
+#'   # And print colored output at the end of execution
 #' 
+#'   est_lms <- modsem(m1, data = oneInt, method = "lms")
+#'   summary(est_lms)
+#' }) 
+#'                 
 #' colorize_output(modsem_inspect(est_lms))
 #' }
 #' @export
@@ -200,8 +208,19 @@ colorize_output <- function(expr,
                             na       = MODSEM_COLORS$na,
                             inf      = MODSEM_COLORS$inf,
                             string   = MODSEM_COLORS$string,
+                            split    = FALSE, 
                             append = "\n") {
-  out <- stringr::str_c(utils::capture.output(expr), collapse = "\n")
+  getFinalLine  <- \(x) stringr::str_split(x, pattern = "\r")
+  getFinalLines <- \(x) vapply(getFinalLine(x), FUN = last,
+                               FUN.VALUE = character(1L))
+
+  lines <- utils::capture.output(expr, split = split)
+
+  # Handle "\r"
+  hasReplace <- grepl("\r", lines)
+  lines[hasReplace] <- getFinalLines(lines[hasReplace])
+
+  out <- stringr::str_c(lines, collapse = "\n")
 
   if (!MODSEM_COLORS$active) {
     cat(out, append)
