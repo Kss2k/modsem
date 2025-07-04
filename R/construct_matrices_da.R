@@ -131,7 +131,7 @@ constructTau <- function(lVs, indsLVs, parTable, mean.observed = TRUE) {
   lavOptimizerSyntaxAdditions <- ""
 
   tau <- matrix(default, nrow = numAllIndsLVs, ncol = 1,
-                dimnames = list(allIndsLVs, "1"))
+                dimnames = list(allIndsLVs, "~1"))
   for (lV in lVs) { # set first ind to 0, if lV has meanstructure
     subPT <- parTable[parTable$lhs == lV & parTable$op == "~1", ]
     if (NROW(subPT)) {
@@ -254,7 +254,7 @@ constructAlpha <- function(etas, parTable, mean.observed = TRUE) {
   default <- if (mean.observed) 0 else NA
 
   alpha <- matrix(default, nrow = numEtas, ncol = 1,
-                  dimnames = list(etas, "1"))
+                  dimnames = list(etas, "~1"))
 
   if (!mean.observed) {
     for (i in seq_len(numEtas)) {

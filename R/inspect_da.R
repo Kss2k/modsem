@@ -14,10 +14,9 @@ modsem_inspect_da <- function(model, what = "default") {
   matricesCovModel  <- model$model$covModel$matrices
   expected.matrices <- model$expected.matrices
 
+  tau          <- rbind(matrices$tauX, matrices$tauY)
   lambda       <- diagPartitionedMat(matrices$lambdaX,
                                      matrices$lambdaY)
-  tau          <- diagPartitionedMat(matrices$tauX,
-                                     matrices$tauY)
   theta        <- diagPartitionedMat(matrices$thetaDelta,
                                      matrices$thetaEpsilon)
   gamma.xi     <- diagPartitionedMat(matrices$gammaXi,
