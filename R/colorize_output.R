@@ -1,5 +1,5 @@
 MODSEM_COLORS <- rlang::env(
-  ## user-configurable colour names
+  # user-configurable colour names
   positive = NA_character_,
   negative = NA_character_,
   true     = NA_character_,
@@ -9,11 +9,11 @@ MODSEM_COLORS <- rlang::env(
   inf      = NA_character_,
   string   = NA_character_,
 
-  ## run-time flags & helpers
+  # run-time flags & helpers
   active   = FALSE,
   available = NULL,
 
-  ## pre-compiled styling functions (identity placeholders)
+  # pre-compiled styling functions (identity placeholders)
   f.positive = \(x) x,
   f.negative = \(x) x,
   f.true     = \(x) x,
@@ -46,7 +46,7 @@ styleOrAsIs <- function(col) {
 
 
 getColorizedASCII <- function(col) {
-  if (is.na(col)) return("\\0")            # no colour → leave as-is
+  if (is.na(col)) return("\\0") # no colour -> leave as-is
   as.character(cli::make_ansi_style(col)("\\0"))
 }
 
@@ -76,6 +76,7 @@ resetModsemColors <- function() {
 #' @param na Colour of \code{NA}.
 #' @param inf Colour of \code{-Inf} and \code{Inf}.
 #' @param string Colour of quoted strings.
+#' @param active Should color-theme be activated/deactived? 
 #'
 #' @examples
 #' 
