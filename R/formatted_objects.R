@@ -19,13 +19,27 @@ print.ModsemSymmetricMatrix <- function(x, digits = 3, sep = " ", ...) {
 
 
 #' @export
-print.ModsemMatrix <- function(x, digits = 3, sep = " ", ...) {
+print.ModsemMatrix <- function(x, digits = 3, shift = 0L, ...) {
   y <- matrix(formatNumeric(x, digits = digits), nrow = nrow(x), 
               ncol = ncol(x), dimnames = dimnames(x))
+
+  y <- unclass(y)
   # Remove NAs
   y[is.na(x)] <- ""
 
-  print(y, quote = FALSE)
+  if (!is.null(colnames(x))) {
+    colnames(y) <- abbreviate(colnames(x), minlength = digits + 3L)
+  }
+  if (shift > 0L) {
+    empty.string <- rep(strrep(x = " ", times = shift), times = nrow(x))
+
+    if (!is.null(rownames(x))) rownames(y) <- paste0(empty.string, rownames(x))
+    else                       rownames(y) <- empty.string
+  }
+
+  print(y, ..., quote = FALSE, right = TRUE)
+
+  invisible(x)
 }
 
 
