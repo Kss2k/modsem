@@ -68,7 +68,6 @@ resetModsemColors <- function() {
 #' All arguments are optional; omitted ones fall back to the defaults below.
 #' Pass \code{active = FALSE} to turn highlighting off (and reset the palette).
 #'
-#' @param expr Expression or object with output which should be colorized.
 #' @param positive Colour of positive numbers.
 #' @param negative Colour of negative numbers.
 #' @param true Colour of \code{TRUE}.
@@ -77,7 +76,6 @@ resetModsemColors <- function() {
 #' @param na Colour of \code{NA}.
 #' @param inf Colour of \code{-Inf} and \code{Inf}.
 #' @param string Colour of quoted strings.
-#' @param append String appended after the coloured output (default `\\n`).
 #'
 #' @examples
 #' 
@@ -123,7 +121,7 @@ set_modsem_colors <- function(positive = "green3",
 
   cols <- c(positive, negative, true, false, nan, na, inf, string)
   if (!active || any(!cols %in% MODSEM_COLORS$available)) {
-    reetModsemColors()
+    resetModsemColors()
     return(FALSE)
   }
 
@@ -209,10 +207,10 @@ colorize_output <- function(expr,
     return(invisible())
   }
 
-  ## build mapping only for active colours --------------------------------
+  # build mapping only for active colours
   mapping <- c()
   add <- function(pat, col) {
-    if (!is.na(col)) mapping <<- c(mapping, setNames(getColorizedASCII(col), pat))
+    if (!is.na(col)) mapping <<- c(mapping, stats::setNames(getColorizedASCII(col), pat))
   }
 
   add(PATTERN.pos,    positive)

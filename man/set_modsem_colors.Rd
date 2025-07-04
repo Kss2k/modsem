@@ -32,10 +32,6 @@ set_modsem_colors(
 \item{inf}{Colour of \code{-Inf} and \code{Inf}.}
 
 \item{string}{Colour of quoted strings.}
-
-\item{expr}{Expression or object with output which should be colorized.}
-
-\item{append}{String appended after the coloured output (default `\\n`).}
 }
 \value{
 `TRUE` if colours are active afterwards, otherwise `FALSE`.
