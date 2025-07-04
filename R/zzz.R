@@ -14,6 +14,7 @@ getPackageVersion <- function(pkgname) {
 
 .onLoad <- function(libname, pkgname) {
   PKG_INFO$version <- getPackageVersion(pkgname)
+  resetModsemColors()
 }
 
 
