@@ -74,15 +74,24 @@ A \code{data.frame} with standardized estimates in the \code{est} column.
 Computes standardized estimates of model parameters for various types of \code{\link{modsem}} objects.
 }
 \details{
+Standard errors can either be calculated using the delta method, or a monte.carlo simulation
+  (\code{monte.carlo} is not available for \code{\link{modsem_pi}} objects if \code{correction == FALSE}.).
+  \strong{NOTE} that the standard errors of the standardized paramters change the assumptions of the 
+  model, and will in most cases yield different z and p-values, compared to the unstandardized solution.
+  In almost all cases, significance testing should be based on the unstandardized solution. Since,
+  the standardization process changes the model assumptions, it also changes what the p-statistics measure.
+  I.e., the test statistics for the standardized and unstandardized solutions belong to different sets of 
+  hypothesis, which are not exactly equivalent to each other.
+
 For \code{modsem_da} and \code{modsem_mplus} objects, the interaction term is not a formal
-variable in the model and therefore lacks a defined variance. Under assumptions of normality
-and zero-mean variables, the interaction variance is estimated as:
-\deqn{var(xz) = var(x) * var(z) + cov(x, z)^2}
-This means the standardized estimate for the interaction differs from approaches like
-\code{lavaan}, which treats the interaction as a latent variable with unit variance.
+ variable in the model and therefore lacks a defined variance. Under assumptions of normality
+ and zero-mean variables, the interaction variance is estimated as:
+ \deqn{var(xz) = var(x) * var(z) + cov(x, z)^2}
+ This means the standardized estimate for the interaction differs from approaches like
+ \code{lavaan}, which treats the interaction as a latent variable with unit variance.
 
 For \code{modsem_pi} objects, the interaction term is standardized by default assuming
-\code{var(xz) = 1}, but this can be overridden using the \code{correction} argument.
+ \code{var(xz) = 1}, but this can be overridden using the \code{correction} argument.
 
 \strong{NOTE:} Standardized estimates are always placed in the \strong{\code{est}} column,
 not \code{est.std}, regardless of model type.
