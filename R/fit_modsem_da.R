@@ -27,8 +27,8 @@ fit_modsem_da <- function(model, chisq = TRUE) {
   p      <- NCOL(model$data)
   coef   <- coef(model, type = "free")
   k      <- length(coef)
-  df     <- getDegreesOfFreedom(m = p, coef = coef, 
-                                nIntercepts = nFreeInterceptsDA(model))
+  t      <- nFreeInterceptsDA(model)
+  df     <- getDegreesOfFreedom(m = p, coef = coef, nIntercepts = t)
   
   expected.matrices <- model$expected.matrices
 
@@ -59,7 +59,7 @@ fit_modsem_da <- function(model, chisq = TRUE) {
     #            cbind(covXY, covY))
     E <- expected.matrices$sigma.ov
 
-    if (any(grepl("tau|alpha|beta", names(coef)))) {
+    if (t) {
       muHat <- expected.matrices$mu.ov
     } else muHat <- mu
 
@@ -93,10 +93,10 @@ fit_modsem_da <- function(model, chisq = TRUE) {
   aBIC <- calcAdjBIC(logLik, k = k, N = N)
 
   list(
-    sigma.observed = O, 
-    sigma.expected = E,
-    mu.observed    = mu,
-    mu.expected    = muHat,
+    sigma.observed = modsemMatrix(O, symmetric = TRUE), 
+    sigma.expected = modsemMatrix(E, symmetric = TRUE),
+    mu.observed    = modsemMatrix(mu),
+    mu.expected    = modsemMatrix(muHat),
 
     chisq.value  = chisqValue, 
     chisq.pvalue = chisqP,
