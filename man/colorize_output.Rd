@@ -2,7 +2,7 @@
 % Please edit documentation in R/colorize_output.R
 \name{colorize_output}
 \alias{colorize_output}
-\title{Capture, colourise, and emit console text}
+\title{Capture, colorise, and emit console text}
 \usage{
 colorize_output(
   expr,
@@ -20,29 +20,29 @@ colorize_output(
 \arguments{
 \item{expr}{Expression or object with output which should be colorized.}
 
-\item{positive}{Colour of positive numbers.}
+\item{positive}{color of positive numbers.}
 
-\item{negative}{Colour of negative numbers.}
+\item{negative}{color of negative numbers.}
 
-\item{true}{Colour of \code{TRUE}.}
+\item{true}{color of \code{TRUE}.}
 
-\item{false}{Colour of \code{FALSE}.}
+\item{false}{color of \code{FALSE}.}
 
-\item{nan}{Colour of \code{NaN}.}
+\item{nan}{color of \code{NaN}.}
 
-\item{na}{Colour of \code{NA}.}
+\item{na}{color of \code{NA}.}
 
-\item{inf}{Colour of \code{-Inf} and \code{Inf}.}
+\item{inf}{color of \code{-Inf} and \code{Inf}.}
 
-\item{string}{Colour of quoted strings.}
+\item{string}{color of quoted strings.}
 
-\item{append}{String appended after the coloured output (default `\\n`).}
+\item{append}{String appended after the colored output (default `\\n`).}
 }
 \value{
 Invisibly returns the *plain* captured text.
 }
 \description{
-Capture, colourise, and emit console text
+Capture, colorise, and emit console text
 }
 \examples{
 
