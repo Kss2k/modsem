@@ -146,14 +146,22 @@ is <code>FALSE</code>, using the default formatting from <code>lavaan</code>. On
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>For <code>modsem_da</code> and <code>modsem_mplus</code> objects, the interaction term is not a formal
-variable in the model and therefore lacks a defined variance. Under assumptions of normality
-and zero-mean variables, the interaction variance is estimated as:
-$$var(xz) = var(x) * var(z) + cov(x, z)^2$$
-This means the standardized estimate for the interaction differs from approaches like
-<code>lavaan</code>, which treats the interaction as a latent variable with unit variance.</p>
+    <p>Standard errors can either be calculated using the delta method, or a monte.carlo simulation
+  (<code>monte.carlo</code> is not available for <code><a href="modsem_pi.html">modsem_pi</a></code> objects if <code>correction == FALSE</code>.).
+  <strong>NOTE</strong> that the standard errors of the standardized paramters change the assumptions of the
+  model, and will in most cases yield different z and p-values, compared to the unstandardized solution.
+  In almost all cases, significance testing should be based on the unstandardized solution. Since,
+  the standardization process changes the model assumptions, it also changes what the p-statistics measure.
+  I.e., the test statistics for the standardized and unstandardized solutions belong to different sets of
+  hypothesis, which are not exactly equivalent to each other.</p>
+<p>For <code>modsem_da</code> and <code>modsem_mplus</code> objects, the interaction term is not a formal
+ variable in the model and therefore lacks a defined variance. Under assumptions of normality
+ and zero-mean variables, the interaction variance is estimated as:
+ $$var(xz) = var(x) * var(z) + cov(x, z)^2$$
+ This means the standardized estimate for the interaction differs from approaches like
+ <code>lavaan</code>, which treats the interaction as a latent variable with unit variance.</p>
 <p>For <code>modsem_pi</code> objects, the interaction term is standardized by default assuming
-<code>var(xz) = 1</code>, but this can be overridden using the <code>correction</code> argument.</p>
+ <code>var(xz) = 1</code>, but this can be overridden using the <code>correction</code> argument.</p>
 <p><strong>NOTE:</strong> Standardized estimates are always placed in the <strong><code>est</code></strong> column,
 not <code>est.std</code>, regardless of model type.</p>
     </div>
