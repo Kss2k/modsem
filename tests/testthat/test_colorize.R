@@ -1,6 +1,6 @@
 devtools::load_all()
 
-avtive <- set_modsem_colors(positive = "red3", 
+active <- set_modsem_colors(positive = "red3", 
                             negative = "red3",
                             true = "darkgreen", 
                             false = "red3", 
