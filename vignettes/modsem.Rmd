@@ -65,17 +65,30 @@ summary(reg1)
 
 ### Using `modsem`
 
-When you have interactions between observed variables, it is generally recommended to use `method = "pind"`. Interaction effects with observed variables are not supported by the `LMS` and `QML` approaches. In some cases, you can define a latent variable with a single indicator to estimate the interaction effect between two observed variables in the `LMS` and `QML` approaches, but this is generally not recommended.
+`modsem` can also be used to to estimate interaction effects between observed variables.
+Interaction effects with observed variables are not supported by the `LMS` and `QML` approaches. 
+In most cases, you can define a latent variable with a single indicator to estimate the interaction 
+effect between two observed variables in the `LMS` and `QML` approaches.
 
 ```{r}
-# Using "pind" as the method (see Chapter 3)
-est2 <- modsem('y1 ~ x1 + z1 + x1:z1', data = oneInt, method = "pind")
+est2 <- modsem('y1 ~ x1 + z1 + x1:z1', data = oneInt, method = "dblcent")
 summary(est2)
 ```
 
 ## Interactions Between Latent and Observed Variables
 
-`modsem` also allows you to estimate interaction effects between latent and observed variables. To do so, simply join a latent and an observed variable with a colon (e.g., `'latent:observer'`). As with interactions between observed variables, it is generally recommended to use `method = "pind"` for estimating the effect between latent and observed variables.
+`modsem` also allows you to estimate interaction effects between latent and observed variables. 
+To do so, simply join a latent and an observed variable with a colon (e.g., `'latent:observed'`). 
+In most of the product indicator approaches the residuals of product indicators with common variables (e.g., `x1z1` and `x1z2`)
+are allowed to covary freely. This is problematic when there is an interaction term between an observed variable
+(or a latent variable with a single indicator) and a latent variables (with multiple indicators), since
+all of the product indicators share a common element. 
+
+In the example below, all the generated product indicators
+(`x1z1`, `x2z1` and `x3z1`) share `z1`. If all the indicator residuals of
+a latent variabel are allowed to covary freely, the model
+will (in general) be unidenfified. The simplest way to fix this issue, is to constrain the residual covariances
+to be zero, by using the `res.cov.method` argument.
 
 ```{r}
 m3 <- '
@@ -87,7 +100,7 @@ m3 <- '
   Y ~ X + z1 + X:z1 
 '
 
-est3 <- modsem(m3, oneInt, method = "pind")
+est3 <- modsem(m3, oneInt, method = "dblcent", res.cov.method = "none")
 summary(est3)
 ```
 
@@ -150,5 +163,3 @@ est_jordan <- modsem(m2, data = jordan)
 est_jordan_qml <- modsem(m2, data = jordan, method = "qml")
 summary(est_jordan_qml)
 ```
-
-**Note**: Other approaches also work but may be quite slow depending on the number of interaction effects, particularly for the `LMS` and constrained approaches.
