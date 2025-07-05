@@ -118,13 +118,13 @@ Pass <code>active = FALSE</code> to turn highlighting off (and reset the palette
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu">set_modsem_colors</span><span class="op">(</span>positive <span class="op">=</span> <span class="st">"magenta3"</span>, </span></span>
-<span class="r-in"><span>                  negative <span class="op">=</span> <span class="st">"firered"</span>,</span></span>
-<span class="r-in"><span>                  true <span class="op">=</span> <span class="st">"green"</span>, </span></span>
-<span class="r-in"><span>                  false <span class="op">=</span> <span class="st">"firered"</span>, </span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu">set_modsem_colors</span><span class="op">(</span>positive <span class="op">=</span> <span class="st">"red3"</span>, </span></span>
+<span class="r-in"><span>                  negative <span class="op">=</span> <span class="st">"red3"</span>,</span></span>
+<span class="r-in"><span>                  true <span class="op">=</span> <span class="st">"darkgreen"</span>, </span></span>
+<span class="r-in"><span>                  false <span class="op">=</span> <span class="st">"red3"</span>, </span></span>
 <span class="r-in"><span>                  na <span class="op">=</span> <span class="st">"purple"</span>,</span></span>
-<span class="r-in"><span>                  string <span class="op">=</span> <span class="st">"green"</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] FALSE</span>
+<span class="r-in"><span>                  string <span class="op">=</span> <span class="st">"darkgreen"</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] TRUE</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">m1</span> <span class="op">&lt;-</span> <span class="st">"</span></span></span>
 <span class="r-in"><span><span class="st"># Outer Model</span></span></span>
@@ -138,51 +138,51 @@ Pass <code>active = FALSE</code> to turn highlighting off (and reset the palette
 <span class="r-in"><span><span class="va">est</span> <span class="op">&lt;-</span> <span class="fu"><a href="modsem.html">modsem</a></span><span class="op">(</span><span class="va">m1</span>, data <span class="op">=</span> <span class="va">oneInt</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="colorize_output.html">colorize_output</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Estimating baseline model (H0)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> modsem (version 1.0.11, approach = dblcent):</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> modsem (version <span style="color: #D70000;">1.0.11</span>, approach = dblcent):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Interaction Model Fit Measures (H1):</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Loglikelihood                              -26807.61 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Akaike (AIC)                                53735.22 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Bayesian (BIC)                              54071.28 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Chi-square                                    122.92 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of Freedom                               111 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   P-value (Chi-square)                           0.207 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   RMSEA                                          0.007 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Loglikelihood                              <span style="color: #D70000;">-26807.61</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Akaike (AIC)                                <span style="color: #D70000;">53735.22</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Bayesian (BIC)                              <span style="color: #D70000;">54071.28</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Chi-square                                    <span style="color: #D70000;">122.92</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of Freedom                               <span style="color: #D70000;">111</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   P-value (Chi-square)                           <span style="color: #D70000;">0.207</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   RMSEA                                          <span style="color: #D70000;">0.007</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Fit Measures for Baseline Model (H0):</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Loglikelihood                              -27137.74 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Akaike (AIC)                                54393.48 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Bayesian (BIC)                              54723.93 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Chi-square                                    783.18 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of Freedom                               112 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   P-value (Chi-square)                           0.000 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   RMSEA                                          0.055 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Loglikelihood                              <span style="color: #D70000;">-27137.74</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Akaike (AIC)                                <span style="color: #D70000;">54393.48</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Bayesian (BIC)                              <span style="color: #D70000;">54723.93</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Chi-square                                    <span style="color: #D70000;">783.18</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of Freedom                               <span style="color: #D70000;">112</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   P-value (Chi-square)                           <span style="color: #D70000;">0.000</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   RMSEA                                          <span style="color: #D70000;">0.055</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Comparative Fit to H0 (LRT test):</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Chi-square diff                              660.257 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of freedom diff                            1 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   P-value (LRT)                                  0.000 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Chi-square diff                              <span style="color: #D70000;">660.257</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of freedom diff                            <span style="color: #D70000;">1</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   P-value (LRT)                                  <span style="color: #D70000;">0.000</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> R-Squared Interaction Model (H1):</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Y                                              0.602 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Y                                              <span style="color: #D70000;">0.602</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> R-Squared Baseline Model (H0):</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Y                                              0.397 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Y                                              <span style="color: #D70000;">0.397</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> R-Squared Change (H1 - H0):</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Y                                              0.204 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Y                                              <span style="color: #D70000;">0.204</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> lavaan 0.6-19 ended normally after 159 iterations</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> lavaan <span style="color: #D70000;">0.6-19</span> ended normally after <span style="color: #D70000;">159</span> iterations</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Estimator                                         ML</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Optimization method                           NLMINB</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Number of model parameters                        60</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Number of model parameters                        <span style="color: #D70000;">60</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Number of observations                          2000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Number of observations                          <span style="color: #D70000;">2000</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Model Test User Model:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                                                       </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Test statistic                               122.924</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of freedom                               111</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   P-value (Chi-square)                           0.207</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Test statistic                               <span style="color: #D70000;">122.924</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of freedom                               <span style="color: #D70000;">111</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   P-value (Chi-square)                           <span style="color: #D70000;">0.207</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Parameter Estimates:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
@@ -193,185 +193,185 @@ Pass <code>active = FALSE</code> to turn highlighting off (and reset the palette
 <span class="r-out co"><span class="r-pr">#&gt;</span> Latent Variables:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                    Estimate  Std.Err  z-value  P(&gt;|z|)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   X =~                                                </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x1                1.000                           </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x2                0.804    0.013   63.612    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x3                0.916    0.014   67.144    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     x1                <span style="color: #D70000;">1.000</span>                           </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     x2                <span style="color: #D70000;">0.804</span>    <span style="color: #D70000;">0.013</span>   <span style="color: #D70000;">63.612</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     x3                <span style="color: #D70000;">0.916</span>    <span style="color: #D70000;">0.014</span>   <span style="color: #D70000;">67.144</span>    <span style="color: #D70000;">0.000</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Z =~                                                </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z1                1.000                           </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z2                0.812    0.013   64.763    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z3                0.882    0.013   67.014    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     z1                <span style="color: #D70000;">1.000</span>                           </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     z2                <span style="color: #D70000;">0.812</span>    <span style="color: #D70000;">0.013</span>   <span style="color: #D70000;">64.763</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     z3                <span style="color: #D70000;">0.882</span>    <span style="color: #D70000;">0.013</span>   <span style="color: #D70000;">67.014</span>    <span style="color: #D70000;">0.000</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Y =~                                                </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y1                1.000                           </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y2                0.798    0.007  107.428    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y3                0.899    0.008  112.453    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     y1                <span style="color: #D70000;">1.000</span>                           </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     y2                <span style="color: #D70000;">0.798</span>    <span style="color: #D70000;">0.007</span>  <span style="color: #D70000;">107.428</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     y3                <span style="color: #D70000;">0.899</span>    <span style="color: #D70000;">0.008</span>  <span style="color: #D70000;">112.453</span>    <span style="color: #D70000;">0.000</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   XZ =~                                               </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x1z1              1.000                           </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x2z1              0.805    0.013   60.636    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x3z1              0.877    0.014   62.680    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x1z2              0.793    0.013   59.343    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x2z2              0.646    0.015   43.672    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x3z2              0.706    0.016   44.292    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x1z3              0.887    0.014   63.700    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x2z3              0.716    0.016   45.645    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x3z3              0.781    0.017   45.339    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     x1z1              <span style="color: #D70000;">1.000</span>                           </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     x2z1              <span style="color: #D70000;">0.805</span>    <span style="color: #D70000;">0.013</span>   <span style="color: #D70000;">60.636</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     x3z1              <span style="color: #D70000;">0.877</span>    <span style="color: #D70000;">0.014</span>   <span style="color: #D70000;">62.680</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     x1z2              <span style="color: #D70000;">0.793</span>    <span style="color: #D70000;">0.013</span>   <span style="color: #D70000;">59.343</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     x2z2              <span style="color: #D70000;">0.646</span>    <span style="color: #D70000;">0.015</span>   <span style="color: #D70000;">43.672</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     x3z2              <span style="color: #D70000;">0.706</span>    <span style="color: #D70000;">0.016</span>   <span style="color: #D70000;">44.292</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     x1z3              <span style="color: #D70000;">0.887</span>    <span style="color: #D70000;">0.014</span>   <span style="color: #D70000;">63.700</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     x2z3              <span style="color: #D70000;">0.716</span>    <span style="color: #D70000;">0.016</span>   <span style="color: #D70000;">45.645</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     x3z3              <span style="color: #D70000;">0.781</span>    <span style="color: #D70000;">0.017</span>   <span style="color: #D70000;">45.339</span>    <span style="color: #D70000;">0.000</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Regressions:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                    Estimate  Std.Err  z-value  P(&gt;|z|)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Y ~                                                 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     X                 0.675    0.027   25.379    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     Z                 0.561    0.026   21.606    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     XZ                0.702    0.027   26.360    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     X                 <span style="color: #D70000;">0.675</span>    <span style="color: #D70000;">0.027</span>   <span style="color: #D70000;">25.379</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     Z                 <span style="color: #D70000;">0.561</span>    <span style="color: #D70000;">0.026</span>   <span style="color: #D70000;">21.606</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     XZ                <span style="color: #D70000;">0.702</span>    <span style="color: #D70000;">0.027</span>   <span style="color: #D70000;">26.360</span>    <span style="color: #D70000;">0.000</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Covariances:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                    Estimate  Std.Err  z-value  P(&gt;|z|)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  .x1z1 ~~                                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2z2              0.000                           </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2z3              0.000                           </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3z2              0.000                           </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3z3              0.000                           </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2z2              <span style="color: #D70000;">0.000</span>                           </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2z3              <span style="color: #D70000;">0.000</span>                           </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3z2              <span style="color: #D70000;">0.000</span>                           </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3z3              <span style="color: #D70000;">0.000</span>                           </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  .x2z1 ~~                                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x1z2              0.000                           </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x1z2              <span style="color: #D70000;">0.000</span>                           </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  .x1z2 ~~                                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2z3              0.000                           </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2z3              <span style="color: #D70000;">0.000</span>                           </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  .x3z1 ~~                                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x1z2              0.000                           </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x1z2              <span style="color: #D70000;">0.000</span>                           </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  .x1z2 ~~                                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3z3              0.000                           </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3z3              <span style="color: #D70000;">0.000</span>                           </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  .x2z1 ~~                                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x1z3              0.000                           </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x1z3              <span style="color: #D70000;">0.000</span>                           </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  .x2z2 ~~                                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x1z3              0.000                           </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x1z3              <span style="color: #D70000;">0.000</span>                           </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  .x3z1 ~~                                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x1z3              0.000                           </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x1z3              <span style="color: #D70000;">0.000</span>                           </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  .x3z2 ~~                                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x1z3              0.000                           </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x1z3              <span style="color: #D70000;">0.000</span>                           </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  .x2z1 ~~                                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3z2              0.000                           </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3z3              0.000                           </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3z2              <span style="color: #D70000;">0.000</span>                           </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3z3              <span style="color: #D70000;">0.000</span>                           </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  .x3z1 ~~                                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2z2              0.000                           </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2z2              <span style="color: #D70000;">0.000</span>                           </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  .x2z2 ~~                                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3z3              0.000                           </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3z3              <span style="color: #D70000;">0.000</span>                           </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  .x3z1 ~~                                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2z3              0.000                           </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2z3              <span style="color: #D70000;">0.000</span>                           </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  .x3z2 ~~                                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2z3              0.000                           </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2z3              <span style="color: #D70000;">0.000</span>                           </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  .x1z1 ~~                                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x1z2              0.115    0.008   14.802    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x1z3              0.114    0.008   13.947    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2z1              0.125    0.008   16.095    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3z1              0.140    0.009   16.135    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x1z2              <span style="color: #D70000;">0.115</span>    <span style="color: #D70000;">0.008</span>   <span style="color: #D70000;">14.802</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x1z3              <span style="color: #D70000;">0.114</span>    <span style="color: #D70000;">0.008</span>   <span style="color: #D70000;">13.947</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2z1              <span style="color: #D70000;">0.125</span>    <span style="color: #D70000;">0.008</span>   <span style="color: #D70000;">16.095</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3z1              <span style="color: #D70000;">0.140</span>    <span style="color: #D70000;">0.009</span>   <span style="color: #D70000;">16.135</span>    <span style="color: #D70000;">0.000</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  .x1z2 ~~                                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x1z3              0.103    0.007   14.675    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2z2              0.128    0.006   20.850    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3z2              0.146    0.007   21.243    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x1z3              <span style="color: #D70000;">0.103</span>    <span style="color: #D70000;">0.007</span>   <span style="color: #D70000;">14.675</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2z2              <span style="color: #D70000;">0.128</span>    <span style="color: #D70000;">0.006</span>   <span style="color: #D70000;">20.850</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3z2              <span style="color: #D70000;">0.146</span>    <span style="color: #D70000;">0.007</span>   <span style="color: #D70000;">21.243</span>    <span style="color: #D70000;">0.000</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  .x1z3 ~~                                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2z3              0.116    0.007   17.818    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3z3              0.135    0.007   18.335    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2z3              <span style="color: #D70000;">0.116</span>    <span style="color: #D70000;">0.007</span>   <span style="color: #D70000;">17.818</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3z3              <span style="color: #D70000;">0.135</span>    <span style="color: #D70000;">0.007</span>   <span style="color: #D70000;">18.335</span>    <span style="color: #D70000;">0.000</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  .x2z1 ~~                                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2z2              0.135    0.006   20.905    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2z3              0.145    0.007   21.145    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3z1              0.114    0.007   16.058    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2z2              <span style="color: #D70000;">0.135</span>    <span style="color: #D70000;">0.006</span>   <span style="color: #D70000;">20.905</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2z3              <span style="color: #D70000;">0.145</span>    <span style="color: #D70000;">0.007</span>   <span style="color: #D70000;">21.145</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3z1              <span style="color: #D70000;">0.114</span>    <span style="color: #D70000;">0.007</span>   <span style="color: #D70000;">16.058</span>    <span style="color: #D70000;">0.000</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  .x2z2 ~~                                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2z3              0.117    0.006   20.419    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3z2              0.116    0.006   20.586    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2z3              <span style="color: #D70000;">0.117</span>    <span style="color: #D70000;">0.006</span>   <span style="color: #D70000;">20.419</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3z2              <span style="color: #D70000;">0.116</span>    <span style="color: #D70000;">0.006</span>   <span style="color: #D70000;">20.586</span>    <span style="color: #D70000;">0.000</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  .x2z3 ~~                                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3z3              0.109    0.006   18.059    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3z3              <span style="color: #D70000;">0.109</span>    <span style="color: #D70000;">0.006</span>   <span style="color: #D70000;">18.059</span>    <span style="color: #D70000;">0.000</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  .x3z1 ~~                                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3z2              0.138    0.007   19.331    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3z3              0.158    0.008   20.269    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3z2              <span style="color: #D70000;">0.138</span>    <span style="color: #D70000;">0.007</span>   <span style="color: #D70000;">19.331</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3z3              <span style="color: #D70000;">0.158</span>    <span style="color: #D70000;">0.008</span>   <span style="color: #D70000;">20.269</span>    <span style="color: #D70000;">0.000</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  .x3z2 ~~                                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3z3              0.131    0.007   19.958    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3z3              <span style="color: #D70000;">0.131</span>    <span style="color: #D70000;">0.007</span>   <span style="color: #D70000;">19.958</span>    <span style="color: #D70000;">0.000</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   X ~~                                                </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     Z                 0.201    0.024    8.271    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     XZ                0.016    0.025    0.628    0.530</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     Z                 <span style="color: #D70000;">0.201</span>    <span style="color: #D70000;">0.024</span>    <span style="color: #D70000;">8.271</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     XZ                <span style="color: #D70000;">0.016</span>    <span style="color: #D70000;">0.025</span>    <span style="color: #D70000;">0.628</span>    <span style="color: #D70000;">0.530</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Z ~~                                                </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     XZ                0.062    0.025    2.449    0.014</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     XZ                <span style="color: #D70000;">0.062</span>    <span style="color: #D70000;">0.025</span>    <span style="color: #D70000;">2.449</span>    <span style="color: #D70000;">0.014</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Variances:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                    Estimate  Std.Err  z-value  P(&gt;|z|)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x1                0.160    0.009   17.871    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2                0.162    0.007   22.969    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3                0.163    0.008   20.161    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .z1                0.168    0.009   18.143    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .z2                0.158    0.007   22.264    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .z3                0.158    0.008   20.389    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .y1                0.159    0.009   17.896    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .y2                0.154    0.007   22.640    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .y3                0.164    0.008   20.698    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x1z1              0.311    0.014   22.227    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2z1              0.292    0.011   27.287    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3z1              0.327    0.012   26.275    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x1z2              0.290    0.011   26.910    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2z2              0.239    0.008   29.770    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3z2              0.270    0.009   29.117    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x1z3              0.272    0.012   23.586    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2z3              0.245    0.009   27.979    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3z3              0.297    0.011   28.154    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     X                 0.981    0.036   26.895    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     Z                 1.016    0.038   26.856    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .Y                 0.990    0.038   25.926    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     XZ                1.045    0.044   24.004    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x1                <span style="color: #D70000;">0.160</span>    <span style="color: #D70000;">0.009</span>   <span style="color: #D70000;">17.871</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2                <span style="color: #D70000;">0.162</span>    <span style="color: #D70000;">0.007</span>   <span style="color: #D70000;">22.969</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3                <span style="color: #D70000;">0.163</span>    <span style="color: #D70000;">0.008</span>   <span style="color: #D70000;">20.161</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .z1                <span style="color: #D70000;">0.168</span>    <span style="color: #D70000;">0.009</span>   <span style="color: #D70000;">18.143</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .z2                <span style="color: #D70000;">0.158</span>    <span style="color: #D70000;">0.007</span>   <span style="color: #D70000;">22.264</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .z3                <span style="color: #D70000;">0.158</span>    <span style="color: #D70000;">0.008</span>   <span style="color: #D70000;">20.389</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .y1                <span style="color: #D70000;">0.159</span>    <span style="color: #D70000;">0.009</span>   <span style="color: #D70000;">17.896</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .y2                <span style="color: #D70000;">0.154</span>    <span style="color: #D70000;">0.007</span>   <span style="color: #D70000;">22.640</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .y3                <span style="color: #D70000;">0.164</span>    <span style="color: #D70000;">0.008</span>   <span style="color: #D70000;">20.698</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x1z1              <span style="color: #D70000;">0.311</span>    <span style="color: #D70000;">0.014</span>   <span style="color: #D70000;">22.227</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2z1              <span style="color: #D70000;">0.292</span>    <span style="color: #D70000;">0.011</span>   <span style="color: #D70000;">27.287</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3z1              <span style="color: #D70000;">0.327</span>    <span style="color: #D70000;">0.012</span>   <span style="color: #D70000;">26.275</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x1z2              <span style="color: #D70000;">0.290</span>    <span style="color: #D70000;">0.011</span>   <span style="color: #D70000;">26.910</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2z2              <span style="color: #D70000;">0.239</span>    <span style="color: #D70000;">0.008</span>   <span style="color: #D70000;">29.770</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3z2              <span style="color: #D70000;">0.270</span>    <span style="color: #D70000;">0.009</span>   <span style="color: #D70000;">29.117</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x1z3              <span style="color: #D70000;">0.272</span>    <span style="color: #D70000;">0.012</span>   <span style="color: #D70000;">23.586</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2z3              <span style="color: #D70000;">0.245</span>    <span style="color: #D70000;">0.009</span>   <span style="color: #D70000;">27.979</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3z3              <span style="color: #D70000;">0.297</span>    <span style="color: #D70000;">0.011</span>   <span style="color: #D70000;">28.154</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     X                 <span style="color: #D70000;">0.981</span>    <span style="color: #D70000;">0.036</span>   <span style="color: #D70000;">26.895</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     Z                 <span style="color: #D70000;">1.016</span>    <span style="color: #D70000;">0.038</span>   <span style="color: #D70000;">26.856</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .Y                 <span style="color: #D70000;">0.990</span>    <span style="color: #D70000;">0.038</span>   <span style="color: #D70000;">25.926</span>    <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     XZ                <span style="color: #D70000;">1.045</span>    <span style="color: #D70000;">0.044</span>   <span style="color: #D70000;">24.004</span>    <span style="color: #D70000;">0.000</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  </span>
 <span class="r-in"><span><span class="fu"><a href="colorize_output.html">colorize_output</a></span><span class="op">(</span><span class="va">est</span><span class="op">)</span> <span class="co"># same as colorize_output(print(est))</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> modsem (version 1.0.11, approach = dblcent):</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> lavaan 0.6-19 ended normally after 159 iterations</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> modsem (version <span style="color: #D70000;">1.0.11</span>, approach = dblcent):</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> lavaan <span style="color: #D70000;">0.6-19</span> ended normally after <span style="color: #D70000;">159</span> iterations</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Estimator                                         ML</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Optimization method                           NLMINB</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Number of model parameters                        60</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Number of model parameters                        <span style="color: #D70000;">60</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Number of observations                          2000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Number of observations                          <span style="color: #D70000;">2000</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Model Test User Model:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                                                       </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Test statistic                               122.924</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of freedom                               111</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   P-value (Chi-square)                           0.207</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Test statistic                               <span style="color: #D70000;">122.924</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of freedom                               <span style="color: #D70000;">111</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   P-value (Chi-square)                           <span style="color: #D70000;">0.207</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  </span>
 <span class="r-in"><span><span class="fu"><a href="colorize_output.html">colorize_output</a></span><span class="op">(</span><span class="fu"><a href="modsem_inspect.html">modsem_inspect</a></span><span class="op">(</span><span class="va">est</span>, what <span class="op">=</span> <span class="st">"coef"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $lambda</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>          X     Z     Y    XZ</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> x1   1.000 0.000 0.000 0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> x2   0.804 0.000 0.000 0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> x3   0.916 0.000 0.000 0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> z1   0.000 1.000 0.000 0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> z2   0.000 0.812 0.000 0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> z3   0.000 0.882 0.000 0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> y1   0.000 0.000 1.000 0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> y2   0.000 0.000 0.798 0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> y3   0.000 0.000 0.899 0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> x1z1 0.000 0.000 0.000 1.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> x2z1 0.000 0.000 0.000 0.805</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> x3z1 0.000 0.000 0.000 0.877</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> x1z2 0.000 0.000 0.000 0.793</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> x2z2 0.000 0.000 0.000 0.646</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> x3z2 0.000 0.000 0.000 0.706</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> x1z3 0.000 0.000 0.000 0.887</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> x2z3 0.000 0.000 0.000 0.716</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> x3z3 0.000 0.000 0.000 0.781</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> x1   <span style="color: #D70000;">1.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> x2   <span style="color: #D70000;">0.804</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> x3   <span style="color: #D70000;">0.916</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> z1   <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">1.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> z2   <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.812</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> z3   <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.882</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> y1   <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">1.000</span> <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> y2   <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.798</span> <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> y3   <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.899</span> <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> x1z1 <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">1.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> x2z1 <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.805</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> x3z1 <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.877</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> x1z2 <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.793</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> x2z2 <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.646</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> x3z2 <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.706</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> x1z3 <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.887</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> x2z3 <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.716</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> x3z3 <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.781</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $theta</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>         x1    x2    x3    z1    z2    z3    y1    y2    y3  x1z1  x2z1  x3z1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> x1   0.160                                                                  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> x2   0.000 0.162                                                            </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> x3   0.000 0.000 0.163                                                      </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> z1   0.000 0.000 0.000 0.168                                                </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> z2   0.000 0.000 0.000 0.000 0.158                                          </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> z3   0.000 0.000 0.000 0.000 0.000 0.158                                    </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> y1   0.000 0.000 0.000 0.000 0.000 0.000 0.159                              </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> y2   0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.154                        </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> y3   0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.164                  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> x1z1 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.311            </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> x2z1 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.125 0.292      </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> x3z1 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.140 0.114 0.327</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> x1z2 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.115 0.000 0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> x2z2 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.135 0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> x3z2 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.138</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> x1z3 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.114 0.000 0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> x2z3 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.145 0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> x3z3 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.158</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> x1   <span style="color: #D70000;">0.160</span>                                                                  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> x2   <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.162</span>                                                            </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> x3   <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.163</span>                                                      </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> z1   <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.168</span>                                                </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> z2   <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.158</span>                                          </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> z3   <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.158</span>                                    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> y1   <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.159</span>                              </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> y2   <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.154</span>                        </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> y3   <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.164</span>                  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> x1z1 <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.311</span>            </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> x2z1 <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.125</span> <span style="color: #D70000;">0.292</span>      </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> x3z1 <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.140</span> <span style="color: #D70000;">0.114</span> <span style="color: #D70000;">0.327</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> x1z2 <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.115</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> x2z2 <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.135</span> <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> x3z2 <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.138</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> x1z3 <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.114</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> x2z3 <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.145</span> <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> x3z3 <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.158</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>       x1z2  x2z2  x3z2  x1z3  x2z3  x3z3</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> x1                                      </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> x2                                      </span>
@@ -385,26 +385,26 @@ Pass <code>active = FALSE</code> to turn highlighting off (and reset the palette
 <span class="r-out co"><span class="r-pr">#&gt;</span> x1z1                                    </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> x2z1                                    </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> x3z1                                    </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> x1z2 0.290                              </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> x2z2 0.128 0.239                        </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> x3z2 0.146 0.116 0.270                  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> x1z3 0.103 0.000 0.000 0.272            </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> x2z3 0.000 0.117 0.000 0.116 0.245      </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> x3z3 0.000 0.000 0.131 0.135 0.109 0.297</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> x1z2 <span style="color: #D70000;">0.290</span>                              </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> x2z2 <span style="color: #D70000;">0.128</span> <span style="color: #D70000;">0.239</span>                        </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> x3z2 <span style="color: #D70000;">0.146</span> <span style="color: #D70000;">0.116</span> <span style="color: #D70000;">0.270</span>                  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> x1z3 <span style="color: #D70000;">0.103</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.272</span>            </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> x2z3 <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.117</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.116</span> <span style="color: #D70000;">0.245</span>      </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> x3z3 <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.131</span> <span style="color: #D70000;">0.135</span> <span style="color: #D70000;">0.109</span> <span style="color: #D70000;">0.297</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $psi</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>        X     Z     Y    XZ</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> X  0.981                  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Z  0.201 1.016            </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Y  0.000 0.000 0.990      </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> XZ 0.016 0.062 0.000 1.045</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> X  <span style="color: #D70000;">0.981</span>                  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Z  <span style="color: #D70000;">0.201</span> <span style="color: #D70000;">1.016</span>            </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Y  <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.990</span>      </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> XZ <span style="color: #D70000;">0.016</span> <span style="color: #D70000;">0.062</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">1.045</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $beta</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>        X     Z Y    XZ</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> X  0.000 0.000 0 0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Z  0.000 0.000 0 0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Y  0.675 0.561 0 0.702</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> XZ 0.000 0.000 0 0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> X  <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0</span> <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Z  <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0</span> <span style="color: #D70000;">0.000</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Y  <span style="color: #D70000;">0.675</span> <span style="color: #D70000;">0.561</span> <span style="color: #D70000;">0</span> <span style="color: #D70000;">0.702</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> XZ <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0.000</span> <span style="color: #D70000;">0</span> <span style="color: #D70000;">0.000</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  </span>
 <span class="r-in"><span></span></span>
