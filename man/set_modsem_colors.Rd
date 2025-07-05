@@ -43,12 +43,12 @@ All arguments are optional; omitted ones fall back to the defaults below.
 Pass \code{active = FALSE} to turn highlighting off (and reset the palette).
 }
 \examples{
-set_modsem_colors(positive = "magenta3", 
-                  negative = "firered",
-                  true = "green", 
-                  false = "firered", 
+set_modsem_colors(positive = "red3", 
+                  negative = "red3",
+                  true = "darkgreen", 
+                  false = "red3", 
                   na = "purple",
-                  string = "green")
+                  string = "darkgreen")
 
 m1 <- "
 # Outer Model

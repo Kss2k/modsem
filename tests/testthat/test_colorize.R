@@ -1,10 +1,13 @@
 devtools::load_all()
 
-set_modsem_colors(positive = "magenta3", 
-                  negative = "red",
-                  true = "green", 
-                  false = "red", 
-                  na = "purple")
+avtive <- set_modsem_colors(positive = "red3", 
+                            negative = "red3",
+                            true = "darkgreen", 
+                            false = "red3", 
+                            na = "purple",
+                            string = "darkgreen")
+
+testthat::expect_true(active)
 
 m1 <- "
 # Outer Model

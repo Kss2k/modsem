@@ -100,12 +100,12 @@ captureOutput <- function (expr, envir = parent.frame(), split = FALSE) {
 #' @param active Should color-theme be activated/deactived? 
 #'
 #' @examples
-#' set_modsem_colors(positive = "magenta3", 
-#'                   negative = "firered",
-#'                   true = "green", 
-#'                   false = "firered", 
+#' set_modsem_colors(positive = "red3", 
+#'                   negative = "red3",
+#'                   true = "darkgreen", 
+#'                   false = "red3", 
 #'                   na = "purple",
-#'                   string = "green")
+#'                   string = "darkgreen")
 #' 
 #' m1 <- "
 #' # Outer Model
@@ -191,12 +191,12 @@ set_modsem_colors <- function(positive = "green3",
 #' @return Invisibly returns the *plain* captured text.
 #'
 #' @examples
-#' set_modsem_colors(positive = "magenta3", 
-#'                   negative = "firered",
-#'                   true = "green", 
-#'                   false = "firered", 
+#' set_modsem_colors(positive = "red3", 
+#'                   negative = "red3",
+#'                   true = "darkgreen", 
+#'                   false = "red3", 
 #'                   na = "purple",
-#'                   string = "green")
+#'                   string = "darkgreen")
 #' 
 #' m1 <- "
 #' # Outer Model
@@ -249,7 +249,7 @@ colorize_output <- function(expr,
 
   if (!MODSEM_COLORS$active) {
     cat(out, append)
-    return(invisible())
+    return(invisible(out))
   }
 
   # build mapping only for active colors

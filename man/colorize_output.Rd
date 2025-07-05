@@ -50,12 +50,12 @@ Invisibly returns the *plain* captured text.
 Capture, colorise, and emit console text
 }
 \examples{
-set_modsem_colors(positive = "magenta3", 
-                  negative = "firered",
-                  true = "green", 
-                  false = "firered", 
+set_modsem_colors(positive = "red3", 
+                  negative = "red3",
+                  true = "darkgreen", 
+                  false = "red3", 
                   na = "purple",
-                  string = "green")
+                  string = "darkgreen")
 
 m1 <- "
 # Outer Model
