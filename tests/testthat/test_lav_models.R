@@ -104,7 +104,7 @@ testthat::expect_true(summary(estimates[[1]][["rca"]], H0=FALSE)$info$version !=
 
 
 m1 <- '
- X =~ x1# + x2 + x3
+ X =~ x1 + x2 + x3
  Y =~ y1 + y2 + y3
  Y ~ X + z1 + X:z1
 '
