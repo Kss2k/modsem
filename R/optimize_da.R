@@ -22,7 +22,8 @@ optimizeStartingParamsDA <- function(model,
     orthogonal.y = args$orthogonal.y,
     auto.fix.first = args$auto.fix.first,
     auto.fix.single = args$auto.fix.single,
-    suppress.warnings.lavaan = TRUE
+    suppress.warnings.lavaan = TRUE,
+    res.cov.method = "simple.safe"
   )
 
   parTable <- estPI$coefParTable

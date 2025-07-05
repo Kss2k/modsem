@@ -24,16 +24,20 @@ tpb <- "
   SN =~ sn1 + sn2
   PBC =~ pbc1 + pbc2 + pbc3
   INT =~ int1 + int2 + int3
-  BEH =~ b1 + b2
+  BEHAVIOUR_VARIABLE_LONG =~ b1 + b2
 
 # Inner Model (Based on Steinmetz et al., 2011)
   INT ~ a * ATT + a * SN + a * PBC
-  BEH ~ INT + b * PBC
+  BEHAVIOUR_VARIABLE_LONG ~ INT + b * PBC
+
+  INT ~~ HELLO_THERE * INT
+  BEHAVIOUR_VARIABLE_LONG ~~ HELLO_THERE2 * BEHAVIOUR_VARIABLE_LONG 
 "
 
-est_tpb_lms <- modsem(tpb, TPB, method = "lms", calc.se=FALSE)
+est_tpb_lms <- modsem(tpb, TPB, method = "lms", calc.se=TRUE)
 testthat::expect_true(est_tpb_lms$iterations == 2L)
 testthat::expect_warning(summary(est_tpb_lms), "Comparative fit to H0 will not be calculated.")
+print(summary(est_tpb_lms, H0 = FALSE, standardized = TRUE))
 
 est_tpb_qml <- modsem(tpb, TPB, method = "qml", calc.se=FALSE)
 testthat::expect_true(est_tpb_qml$iterations <= 1L)

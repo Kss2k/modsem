@@ -101,3 +101,22 @@ print(summary(estimates[[1]][["rca"]], H0=FALSE))
 print(estimates[[1]][["rca"]])
 
 testthat::expect_true(summary(estimates[[1]][["rca"]], H0=FALSE)$info$version != "??")
+
+
+m1 <- '
+ X =~ x1# + x2 + x3
+ Y =~ y1 + y2 + y3
+ Y ~ X + z1 + X:z1
+'
+
+testthat::expect_warning(
+  modsem(m1, oneInt), regexp = "All residual covariances .*"
+)
+
+testthat::expect_no_warning(
+ modsem(m1, oneInt, res.cov.method = "none")
+)
+
+testthat::expect_no_warning(
+ modsem(m1, oneInt, res.cov.method = "equality")
+)

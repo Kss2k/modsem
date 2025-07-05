@@ -72,7 +72,7 @@ captureOutput <- function (expr, envir = parent.frame(), split = FALSE) {
     
     on.exit(if (!is.null(file)) close(file))
 
-    capture.output(expr, file = file, split = split)
+    utils::capture.output(expr, file = file, split = split)
     
     res <- rawConnectionValue(file)
     close(file)

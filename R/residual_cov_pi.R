@@ -1,17 +1,17 @@
 getParTableResCov <- function(relDf, method, ...) {
   switch(method,
-         "simple" = getParTableResCov.simple(relDf),
-         "ca" = getParTableResCov.ca(relDf, ...),
-         "equality" = getParTableResCov.equality(relDf))
+         "simple"           = getParTableResCov.simple(relDf),
+         "simple.safe" = getParTableResCov.simple(relDf, safe = TRUE),
+         "ca"               = getParTableResCov.ca(relDf, ...),
+         "equality"         = getParTableResCov.equality(relDf))
 }
 
 
 
 # Simple -----------------------------------------------------------------------
-getParTableResCov.simple <- function(relDf) {
-  if (ncol(relDf) <= 1) {
-    return(NULL)
-  }
+getParTableResCov.simple <- function(relDf, safe = FALSE) {
+  if (ncol(relDf) <= 1) return(NULL)
+
   prodNames <- sort(colnames(relDf))
   uniqueCombinations <- getUniqueCombos(prodNames)
   # Now we want to specify the covariance based on shared inds
@@ -22,14 +22,22 @@ getParTableResCov.simple <- function(relDf) {
     indsProd2 <- unlist(relDf[uniqueCombinations[i, "V2"]])
     # Compare the Inds in prod1 and prod2, and convert to integer
     sharedValues <- as.integer(indsProd1 %in% indsProd2)
+    
     # Sum the values
     numberShared <- sum(sharedValues)
-    if (numberShared >= 1) {
-      isShared[[i]] <- TRUE
-    } else if (numberShared == 0) {
-      isShared[[i]] <- FALSE
-    }
+    if      (numberShared >= 1) isShared[[i]] <- TRUE
+    else if (numberShared == 0) isShared[[i]] <- FALSE
   }
+
+  if (safe && all(isShared))
+    return(NULL)
+
+  warnif(all(isShared),
+         "All residual covariances between product indicators were freed!\n",
+         "The model will likely not be identifiable! Please try passing:\n",
+         "  `res.cov.method = \"none\"` or `res.cov.method = \"equality\"`",
+         immediate. = FALSE)
+
   # Syntax for oblique covariances
   prodsSharingInds <- uniqueCombinations[isShared, c("V1", "V2")]
   if (nrow(prodsSharingInds) > 0) {
