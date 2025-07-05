@@ -97,7 +97,7 @@ Use <code><a href="default_settings_pi.html">default_settings_pi()</a></code> to
 <span>  constrained.prod.mean <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  constrained.loadings <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  constrained.var <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  constrained.res.cov.method <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  res.cov.method <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  auto.scale <span class="op">=</span> <span class="st">"none"</span>,</span>
 <span>  auto.center <span class="op">=</span> <span class="st">"none"</span>,</span>
 <span>  estimator <span class="op">=</span> <span class="st">"ML"</span>,</span>
@@ -153,7 +153,7 @@ manually in the generated syntax (e.g., <code>XZ =~ 1*x1z1</code>).'</p></dd>
 
 
 <dt id="arg-center-before">center.before<a class="anchor" aria-label="anchor" href="#arg-center-before"></a></dt>
-<dd><p>should indicators in products be centered before computing products (overwritten by <code>method</code>, if <code>method != NULL</code>)</p></dd>
+<dd><p>should indicators in products be centered before computing products.</p></dd>
 
 
 <dt id="arg-center-after">center.after<a class="anchor" aria-label="anchor" href="#arg-center-after"></a></dt>
@@ -161,27 +161,45 @@ manually in the generated syntax (e.g., <code>XZ =~ 1*x1z1</code>).'</p></dd>
 
 
 <dt id="arg-residuals-prods">residuals.prods<a class="anchor" aria-label="anchor" href="#arg-residuals-prods"></a></dt>
-<dd><p>should indicator products be centered using residuals (overwritten by <code>method</code>, if <code>method != NULL</code>)</p></dd>
+<dd><p>should indicator products be centered using residuals.</p></dd>
 
 
 <dt id="arg-residual-cov-syntax">residual.cov.syntax<a class="anchor" aria-label="anchor" href="#arg-residual-cov-syntax"></a></dt>
-<dd><p>should syntax for residual covariances be produced (overwritten by <code>method</code>, if <code>method != NULL</code>)</p></dd>
+<dd><p>should syntax for residual covariances be produced.</p></dd>
 
 
 <dt id="arg-constrained-prod-mean">constrained.prod.mean<a class="anchor" aria-label="anchor" href="#arg-constrained-prod-mean"></a></dt>
-<dd><p>should syntax for product mean be produced (overwritten by <code>method</code>, if <code>method != NULL</code>)</p></dd>
+<dd><p>should syntax for product mean be produced.</p></dd>
 
 
 <dt id="arg-constrained-loadings">constrained.loadings<a class="anchor" aria-label="anchor" href="#arg-constrained-loadings"></a></dt>
-<dd><p>should syntax for constrained loadings be produced (overwritten by <code>method</code>, if <code>method != NULL</code>)</p></dd>
+<dd><p>should syntax for constrained loadings be produced.</p></dd>
 
 
 <dt id="arg-constrained-var">constrained.var<a class="anchor" aria-label="anchor" href="#arg-constrained-var"></a></dt>
-<dd><p>should syntax for constrained variances be produced (overwritten by <code>method</code>, if <code>method != NULL</code>)</p></dd>
+<dd><p>should syntax for constrained variances be produced.</p></dd>
 
 
-<dt id="arg-constrained-res-cov-method">constrained.res.cov.method<a class="anchor" aria-label="anchor" href="#arg-constrained-res-cov-method"></a></dt>
-<dd><p>method for constraining residual covariances</p></dd>
+<dt id="arg-res-cov-method">res.cov.method<a class="anchor" aria-label="anchor" href="#arg-res-cov-method"></a></dt>
+<dd><p>method for constraining residual covariances. Options are</p><dl><dt>"simple"</dt>
+<dd><p>Residuals of product indicators with variables in common are allowed to covary freely. Defualt for most approches.</p></dd>
+
+  <dt>"ca"</dt>
+<dd><p>Residual covariances of product indicators are constrained according to the constrained approach.</p></dd>
+
+  <dt>"equality"</dt>
+<dd><p>Residuals of product indicators with variables in common are constrained to have equal covariances".
+                    Can be useful for models where the model is unidentifiable using <code>res.cov.method == "simple"</code>,
+                    (e.g., when there is an interaction between an observed and a latent variable).</p></dd>
+
+  <dt>"none"</dt>
+<dd><p>Residual covariances between product indicators are not specificed (i.e., constrained to zero).
+                Produces the same results as <code>constrained.cov.syntax = FALSE</code>.
+                Can be useful for models where the model is unidentifiable using <code>res.cov.method == "simple"</code>,
+                (e.g., when there is an interaction between an observed and a latent variable).</p></dd>
+
+
+</dl></dd>
 
 
 <dt id="arg-auto-scale">auto.scale<a class="anchor" aria-label="anchor" href="#arg-auto-scale"></a></dt>
