@@ -24,6 +24,7 @@ MODSEM_COLORS <- rlang::env(
   f.string   = \(x) x
 )
 
+
 PATTERN.pos    <- "(?<![-+A-Za-z0-9._~])([0-9]+(?:[.-][0-9]+)*(?:\\.[0-9]*)?(?:[eE][+-]?[0-9]+)?)(?![A-Za-z])"
 PATTERN.neg    <- "(?<![-+A-Za-z0-9._~])(-[0-9]+(?:[.-][0-9]+)*(?:\\.[0-9]*)?(?:[eE][+-]?[0-9]+)?)(?![A-Za-z])"
 PATTERN.TRUE   <- "(?<![A-Za-z0-9])TRUE(?![A-Za-z0-9])"
@@ -63,6 +64,26 @@ resetModsemColors <- function() {
 }
 
 
+captureOutput <- function (expr, envir = parent.frame(), split = FALSE) {
+  # Capture output using a raw connections, as it is exponentially faster 
+  # for large outputs
+  eval({
+    file <- rawConnection(raw(0L), open = "w")
+    
+    on.exit(if (!is.null(file)) close(file))
+
+    capture.output(expr, file = file, split = split)
+    
+    res <- rawConnectionValue(file)
+    close(file)
+    file <- NULL
+  
+    rawToChar(res)
+
+  }, envir = envir, enclos = envir)
+}
+
+
 #' Define or disable the color theme used by \code{modsem}
 #'
 #' All arguments are optional; omitted ones fall back to the defaults below.
@@ -79,11 +100,12 @@ resetModsemColors <- function() {
 #' @param active Should color-theme be activated/deactived? 
 #'
 #' @examples
-#' set_modsem_colors(positive = "green", 
-#'                   negative = "red",
+#' set_modsem_colors(positive = "magenta3", 
+#'                   negative = "firered",
 #'                   true = "green", 
-#'                   false = "red", 
-#'                   na = "purple")
+#'                   false = "firered", 
+#'                   na = "purple",
+#'                   string = "green")
 #' 
 #' m1 <- "
 #' # Outer Model
@@ -96,8 +118,9 @@ resetModsemColors <- function() {
 #' 
 #' est <- modsem(m1, data = oneInt)
 #' colorize_output(summary(est))
-#' colorize_output(print(est))
-#' 
+#' colorize_output(est) # same as colorize_output(print(est))
+#' colorize_output(modsem_inspect(est, what = "coef"))
+#'
 #' \dontrun{
 #' colorize_output(split = TRUE, {
 #'   # Get live (uncolored) output
@@ -114,10 +137,10 @@ resetModsemColors <- function() {
 set_modsem_colors <- function(positive = "green3",
                               negative = positive,
                               true     = "green3",
-                              false    = "tomato",
-                              nan      = "tomato",
-                              na       = "yellow3",
-                              inf      = "magenta",
+                              false    = "red",
+                              nan      = "purple",
+                              na       = "purple",
+                              inf      = "purple",
                               string   = "cyan",
                               active   = TRUE) {
   if (is.null(MODSEM_COLORS$available)) setAvailableColors()
@@ -168,11 +191,12 @@ set_modsem_colors <- function(positive = "green3",
 #' @return Invisibly returns the *plain* captured text.
 #'
 #' @examples
-#' set_modsem_colors(positive = "green", 
-#'                   negative = "red",
+#' set_modsem_colors(positive = "magenta3", 
+#'                   negative = "firered",
 #'                   true = "green", 
-#'                   false = "red", 
-#'                   na = "purple")
+#'                   false = "firered", 
+#'                   na = "purple",
+#'                   string = "green")
 #' 
 #' m1 <- "
 #' # Outer Model
@@ -185,8 +209,9 @@ set_modsem_colors <- function(positive = "green3",
 #' 
 #' est <- modsem(m1, data = oneInt)
 #' colorize_output(summary(est))
-#' colorize_output(print(est))
-#' 
+#' colorize_output(est) # same as colorize_output(print(est))
+#' colorize_output(modsem_inspect(est, what = "coef"))
+#'
 #' \dontrun{
 #' colorize_output(split = TRUE, {
 #'   # Get live (uncolored) output
@@ -214,7 +239,7 @@ colorize_output <- function(expr,
   getFinalLines <- \(x) vapply(getFinalLine(x), FUN = last,
                                FUN.VALUE = character(1L))
 
-  lines <- utils::capture.output(expr, split = split)
+  lines <- captureOutput(expr, split = split)
 
   # Handle "\r"
   hasReplace <- grepl("\r", lines)
@@ -230,7 +255,8 @@ colorize_output <- function(expr,
   # build mapping only for active colors
   mapping <- c()
   add <- function(pat, col) {
-    if (!is.na(col)) mapping <<- c(mapping, stats::setNames(getColorizedASCII(col), pat))
+    if (!is.na(col)) 
+      mapping <<- c(mapping, stats::setNames(getColorizedASCII(col), pat))
   }
 
   add(PATTERN.pos,    positive)

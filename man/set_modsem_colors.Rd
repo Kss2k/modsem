@@ -8,10 +8,10 @@ set_modsem_colors(
   positive = "green3",
   negative = positive,
   true = "green3",
-  false = "tomato",
-  nan = "tomato",
-  na = "yellow3",
-  inf = "magenta",
+  false = "red",
+  nan = "purple",
+  na = "purple",
+  inf = "purple",
   string = "cyan",
   active = TRUE
 )
@@ -43,11 +43,12 @@ All arguments are optional; omitted ones fall back to the defaults below.
 Pass \code{active = FALSE} to turn highlighting off (and reset the palette).
 }
 \examples{
-set_modsem_colors(positive = "green", 
-                  negative = "red",
+set_modsem_colors(positive = "magenta3", 
+                  negative = "firered",
                   true = "green", 
-                  false = "red", 
-                  na = "purple")
+                  false = "firered", 
+                  na = "purple",
+                  string = "green")
 
 m1 <- "
 # Outer Model
@@ -60,7 +61,8 @@ m1 <- "
 
 est <- modsem(m1, data = oneInt)
 colorize_output(summary(est))
-colorize_output(print(est))
+colorize_output(est) # same as colorize_output(print(est))
+colorize_output(modsem_inspect(est, what = "coef"))
 
 \dontrun{
 colorize_output(split = TRUE, {

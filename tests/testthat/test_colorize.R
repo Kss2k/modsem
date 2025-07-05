@@ -1,6 +1,6 @@
 devtools::load_all()
 
-set_modsem_colors(positive = "green", 
+set_modsem_colors(positive = "magenta3", 
                   negative = "red",
                   true = "green", 
                   false = "red", 
@@ -17,7 +17,11 @@ m1 <- "
 
 est <- modsem(m1, data = oneInt)
 colorize_output(summary(est))
+
 colorize_output(print(est))
+
+colorize_output(modsem_inspect(est, "coef"))
+
 
 colorize_output(split = TRUE, {
   # Get live (uncolored) output
