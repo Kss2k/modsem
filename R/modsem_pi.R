@@ -19,23 +19,34 @@
 #'   this already happens in \code{lavaan} by default. If \code{TRUE}, the first factor loading in the latent product is fixed to one.
 #'   manually in the generated syntax (e.g., \code{XZ =~ 1*x1z1}).'
 #'
-#' @param center.before should indicators in products be centered before computing products (overwritten by \code{method}, if \code{method != NULL})
+#' @param center.before should indicators in products be centered before computing products.
 #'
 #' @param center.after should indicator products be centered after they have been computed?
 #'
-#' @param residuals.prods should indicator products be centered using residuals (overwritten by \code{method}, if \code{method != NULL})
+#' @param residuals.prods should indicator products be centered using residuals.
 #'
-#' @param residual.cov.syntax should syntax for residual covariances be produced (overwritten by \code{method}, if \code{method != NULL})
+#' @param residual.cov.syntax should syntax for residual covariances be produced.
 #'
-#' @param constrained.prod.mean should syntax for product mean be produced (overwritten by \code{method}, if \code{method != NULL})
+#' @param constrained.prod.mean should syntax for product mean be produced.
 #'
 #' @param center.data should data be centered before fitting model
 #'
-#' @param constrained.loadings should syntax for constrained loadings be produced (overwritten by \code{method}, if \code{method != NULL})
+#' @param constrained.loadings should syntax for constrained loadings be produced.
 #'
-#' @param constrained.var should syntax for constrained variances be produced (overwritten by \code{method}, if \code{method != NULL})
+#' @param constrained.var should syntax for constrained variances be produced.
 #'
-#' @param constrained.res.cov.method method for constraining residual covariances
+#' @param res.cov.method method for constraining residual covariances. Options are
+#' \describe{
+#'   \item{"simple"}{Residuals of product indicators with variables in common are allowed to covary freely. Defualt for most approches.}
+#'   \item{"ca"}{Residual covariances of product indicators are constrained according to the constrained approach.}
+#'   \item{"equality"}{Residuals of product indicators with variables in common are constrained to have equal covariances".
+#'                     Can be useful for models where the model is unidentifiable using \code{res.cov.method == "simple"},
+#'                     (e.g., when there is an interaction between an observed and a latent variable).}
+#'   \item{"none"}{Residual covariances between product indicators are not specificed (i.e., constrained to zero). 
+#'                 Produces the same results as \code{constrained.cov.syntax = FALSE}.
+#'                 Can be useful for models where the model is unidentifiable using \code{res.cov.method == "simple"},
+#'                 (e.g., when there is an interaction between an observed and a latent variable).}
+#' }
 #'
 #' @param auto.scale methods which should be scaled automatically (usually not useful)
 #'
@@ -144,7 +155,7 @@ modsem_pi <- function(model.syntax = NULL,
                       constrained.prod.mean = NULL,
                       constrained.loadings = NULL,
                       constrained.var = NULL,
-                      constrained.res.cov.method = NULL,
+                      res.cov.method = NULL,
                       auto.scale = "none",
                       auto.center = "none",
                       estimator = "ML",
@@ -176,7 +187,7 @@ modsem_pi <- function(model.syntax = NULL,
       constrained.prod.mean = constrained.prod.mean,
       constrained.loadings = constrained.loadings,
       constrained.var = constrained.var,
-      constrained.res.cov.method = constrained.res.cov.method,
+      res.cov.method = res.cov.method,
       auto.scale = auto.scale,
       auto.center = auto.center,
       run = run,
@@ -216,7 +227,7 @@ modsem_pi <- function(model.syntax = NULL,
                              constrained.prod.mean = constrained.prod.mean,
                              constrained.loadings = constrained.loadings,
                              constrained.var = constrained.var,
-                             constrained.res.cov.method = constrained.res.cov.method,
+                             res.cov.method = res.cov.method,
                              first.loading.fixed = first.loading.fixed,
                              match = match))
 
@@ -262,7 +273,7 @@ modsem_pi <- function(model.syntax = NULL,
   # Genereating a new syntax with constraints and measurmentmodel
   parTable <- addSpecsParTable(modelSpec,
                                residual.cov.syntax = methodSettings$residual.cov.syntax,
-                               constrained.res.cov.method = methodSettings$constrained.res.cov.method,
+                               res.cov.method = methodSettings$res.cov.method,
                                constrained.prod.mean = methodSettings$constrained.prod.mean,
                                constrained.loadings = methodSettings$constrained.loadings,
                                constrained.var = methodSettings$constrained.var,
@@ -382,7 +393,7 @@ getResidualsFormula <- function(dependendtNames, indepNames) {
 
 addSpecsParTable <- function(modelSpec,
                              residual.cov.syntax = FALSE,
-                             constrained.res.cov.method = "equality",
+                             res.cov.method = "equality",
                              constrained.prod.mean = FALSE,
                              constrained.loadings = FALSE,
                              constrained.var = FALSE,
@@ -410,15 +421,15 @@ addSpecsParTable <- function(modelSpec,
   if (!is.logical(residual.cov.syntax)) {
     stop2("residual.cov.syntax is not FALSE or TRUE in generateSyntax")
 
-  } else if (residual.cov.syntax) {
+  } else if (residual.cov.syntax && res.cov.method != "none") {
     residualCovariances <- purrr::map(.x = relDfs, .f = getParTableResCov,
-                                      method = constrained.res.cov.method,
+                                      method = res.cov.method,
                                       pt = parTable)  |>
       purrr::list_rbind()
     parTable <- rbindParTable(parTable, residualCovariances)
   }
 
-  if (constrained.var) parTable <- specifyVarCov(parTable, relDfs)
+  if (constrained.var)      parTable <- specifyVarCov(parTable, relDfs)
   if (constrained.loadings) parTable <- specifyFactorLoadings(parTable, relDfs)
 
   if (constrained.prod.mean) {
@@ -629,7 +640,7 @@ modsemPICluster <- function(model.syntax = NULL,
                             constrained.prod.mean = NULL,
                             constrained.loadings = NULL,
                             constrained.var = NULL,
-                            constrained.res.cov.method = NULL,
+                            res.cov.method = NULL,
                             auto.scale = "none",
                             auto.center = "none",
                             estimator = "ML",
@@ -677,7 +688,7 @@ modsemPICluster <- function(model.syntax = NULL,
       constrained.prod.mean = constrained.prod.mean,
       constrained.loadings = constrained.loadings,
       constrained.var = constrained.var,
-      constrained.res.cov.method = constrained.res.cov.method,
+      res.cov.method = res.cov.method,
       auto.scale = auto.scale,
       auto.center = auto.center,
       suppress.warnings.match = suppress.warnings.match,
@@ -701,7 +712,7 @@ modsemPICluster <- function(model.syntax = NULL,
       constrained.prod.mean = constrained.prod.mean,
       constrained.loadings = constrained.loadings,
       constrained.var = constrained.var,
-      constrained.res.cov.method = constrained.res.cov.method,
+      res.cov.method = res.cov.method,
       auto.scale = auto.scale,
       auto.center = auto.center,
       suppress.warnings.match = suppress.warnings.match,

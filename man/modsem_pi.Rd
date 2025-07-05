@@ -19,7 +19,7 @@ modsem_pi(
   constrained.prod.mean = NULL,
   constrained.loadings = NULL,
   constrained.var = NULL,
-  constrained.res.cov.method = NULL,
+  res.cov.method = NULL,
   auto.scale = "none",
   auto.center = "none",
   estimator = "ML",
@@ -56,21 +56,32 @@ modsem_pi(
 this already happens in \code{lavaan} by default. If \code{TRUE}, the first factor loading in the latent product is fixed to one.
 manually in the generated syntax (e.g., \code{XZ =~ 1*x1z1}).'}
 
-\item{center.before}{should indicators in products be centered before computing products (overwritten by \code{method}, if \code{method != NULL})}
+\item{center.before}{should indicators in products be centered before computing products.}
 
 \item{center.after}{should indicator products be centered after they have been computed?}
 
-\item{residuals.prods}{should indicator products be centered using residuals (overwritten by \code{method}, if \code{method != NULL})}
+\item{residuals.prods}{should indicator products be centered using residuals.}
 
-\item{residual.cov.syntax}{should syntax for residual covariances be produced (overwritten by \code{method}, if \code{method != NULL})}
+\item{residual.cov.syntax}{should syntax for residual covariances be produced.}
 
-\item{constrained.prod.mean}{should syntax for product mean be produced (overwritten by \code{method}, if \code{method != NULL})}
+\item{constrained.prod.mean}{should syntax for product mean be produced.}
 
-\item{constrained.loadings}{should syntax for constrained loadings be produced (overwritten by \code{method}, if \code{method != NULL})}
+\item{constrained.loadings}{should syntax for constrained loadings be produced.}
 
-\item{constrained.var}{should syntax for constrained variances be produced (overwritten by \code{method}, if \code{method != NULL})}
+\item{constrained.var}{should syntax for constrained variances be produced.}
 
-\item{constrained.res.cov.method}{method for constraining residual covariances}
+\item{res.cov.method}{method for constraining residual covariances. Options are
+\describe{
+  \item{"simple"}{Residuals of product indicators with variables in common are allowed to covary freely. Defualt for most approches.}
+  \item{"ca"}{Residual covariances of product indicators are constrained according to the constrained approach.}
+  \item{"equality"}{Residuals of product indicators with variables in common are constrained to have equal covariances".
+                    Can be useful for models where the model is unidentifiable using \code{res.cov.method == "simple"},
+                    (e.g., when there is an interaction between an observed and a latent variable).}
+  \item{"none"}{Residual covariances between product indicators are not specificed (i.e., constrained to zero). 
+                Produces the same results as \code{constrained.cov.syntax = FALSE}.
+                Can be useful for models where the model is unidentifiable using \code{res.cov.method == "simple"},
+                (e.g., when there is an interaction between an observed and a latent variable).}
+}}
 
 \item{auto.scale}{methods which should be scaled automatically (usually not useful)}
 

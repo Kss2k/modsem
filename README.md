@@ -116,7 +116,7 @@ summary(est_tpb_qml, standardized = TRUE)
 ```
 ## Interactions between two observed variables
 ```R
-est2 <- modsem('y1 ~ x1 + z1 + x1:z1', data = oneInt, method = "pind")
+est2 <- modsem('y1 ~ x1 + z1 + x1:z1', data = oneInt, method = "dblcent")
 summary(est2)
 ```
 
@@ -128,9 +128,12 @@ m3 <- '
   Y =~ y1 + y2 + y3
   
   # Inner model
-  Y ~ X + z1 + X:z1 
+  Y ~ X + z1 + X:z1
 '
 
-est3 <- modsem(m3, oneInt, method = "pind")
+est3 <- modsem(m3, oneInt, method = "dblcent", 
+               res.cov.method = "none") # res.cov.method = "simple" will lead
+                                        # to an unidentifiable model. Instead we
+                                        # constrain them to zero
 summary(est3)
 ```
