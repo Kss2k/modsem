@@ -105,7 +105,7 @@ testthat::expect_error(
 )
 
 est_qml <- modsem(model = JDR_Model_modsem, data = dummy_data, method = "qml")
-summary(est_qml)
+print(summary(est_qml))
 
 
 JDR_Model_linear <- '
@@ -127,3 +127,4 @@ JDR_Model_linear <- '
 
 est_lin_lms <- modsem(JDR_Model_linear, dummy_data, "lms")
 testthat::expect_equal(est_lin_lms$iterations, 2)
+print(summary(est_lin_lms, H0 = FALSE))

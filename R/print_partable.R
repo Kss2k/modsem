@@ -37,7 +37,7 @@ formatParTable <- function(parTable,
   } else {
     lhsDouble <- paste(parTable$lhs[isDoubleCol], parTable$op[isDoubleCol])
   }
-  
+
   width <- max(width.min, maxchar(lhsDouble))
 
   lhsSingle <- pasteLabels(parTable$lhs[isSingleCol],
@@ -55,6 +55,7 @@ formatParTable <- function(parTable,
   parTable[isDoubleCol, "lhs"] <- ftext(lhsDouble)
   parTable[isDoubleCol, "rhs"] <- ftext(rhsDouble)
   parTable[isSingleCol, "lhs"] <- ftext(lhsSingle)
+  parTable[isSingleCol, "rhs"] <- ""
   
   if (pad.res) {
     etas    <- getEtas(parTable.in, isLV = FALSE)
