@@ -9,7 +9,7 @@ getParTableResCov <- function(relDf, method, ...) {
 
 
 # Simple -----------------------------------------------------------------------
-getParTableResCov.simple <- function(relDf, safe = FALSE) {
+getParTableResCov.simple <- function(relDf, safe = FALSE, explicit.zero = FALSE) {
   if (ncol(relDf) <= 1) return(NULL)
 
   prodNames <- sort(colnames(relDf))
@@ -38,28 +38,29 @@ getParTableResCov.simple <- function(relDf, safe = FALSE) {
          "  `res.cov.method = \"none\"` or `res.cov.method = \"equality\"`",
          immediate. = FALSE)
 
+  prodsSharingInds    <- uniqueCombinations[isShared, c("V1", "V2")]
+  prodsNotSharingInds <- uniqueCombinations[!isShared, c("V1", "V2")]
+  
   # Syntax for oblique covariances
-  prodsSharingInds <- uniqueCombinations[isShared, c("V1", "V2")]
   if (nrow(prodsSharingInds) > 0) {
     syntaxOblique <- apply(prodsSharingInds,
                            MARGIN = 1,
                            FUN = createParTableRow,
                            op = "~~") |>
       purrr::list_rbind()
-  } else {
-    syntaxOblique <- NULL
-  }
-  prodsNotSharingInds <- uniqueCombinations[!isShared, c("V1", "V2")]
-  if (nrow(prodsNotSharingInds) > 0) {
+
+  } else syntaxOblique <- NULL
+
+  if (explicit.zero && nrow(prodsNotSharingInds) > 0) {
     syntaxOrthogonal <- apply(prodsNotSharingInds,
                               MARGIN = 1,
                               FUN = createParTableRow,
                               op = "~~",
                               mod = "0") |>
       purrr::list_rbind()
-  } else {
-    syntaxOrthogonal <- NULL
-  }
+
+  } else syntaxOrthogonal <- NULL
+
   rbind(syntaxOrthogonal, syntaxOblique)
 }
 
