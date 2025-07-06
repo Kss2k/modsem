@@ -1,5 +1,6 @@
 # Functions for constructing matrices for LMS and QML.
-EMPTY_MATSTRUCT <- list(numeric = NULL, label = NULL)
+EMPTY_MATSTRUCT <- list(numeric = matrix(nrow = 0, ncol = 0), 
+                        label = matrix(nrow = 0, ncol = 0))
 
 
 setMatrixConstraints <- function(X, parTable, op, RHS, LHS, type, nonFreeParams) {

@@ -197,6 +197,8 @@ createParTableBranch <- function(syntaxTree) {
 #''
 #' modsemify(m1)
 modsemify <- function(syntax) {
+  if (is.null(syntax)) return(NULL)
+
   stopif(!is.character(syntax) && length(syntax) > 1,
          "Syntax is not a string og length 1")
   syntaxTrees <- createSyntaxTreesSyntax(syntax)

@@ -160,7 +160,7 @@ sortData <- function(data, allIndsXis, allIndsEtas) {
   missing <- inds[!inds %in% ovs]
 
   stopif(!all(inds %in% ovs), "Missing observed variables in data:\n  ",
-         missing)
+         paste(missing, collapse = ", "))
 
   data[c(allIndsXis, allIndsEtas)]
 }
@@ -196,17 +196,17 @@ handleMissingData <- function(data, impute.na = FALSE) {
   if (!anyMissing) return(data)
 
   if (!impute.na) {
-    warning2("Removing missing values case-wise!\nConsider using `impute.na = TRUE`, or impute yourself!")
+    warning2("Removing missing values case-wise!\n",
+             "Consider using `impute.na = TRUE`, or the `modsem_mimpute()` function!\n")
 
     return(data[completeCases, ])
 
   } else {
-    message("Imputing missing values. Consider imputing yourself!")
+    message("Imputing missing values. Consider using the `modsem_mimpute()` function!")
 
     imp  <- Amelia::amelia(data, m = 1, p2s = 0)
-    imp1 <- as.matrix(as.data.frame(imp[[1]]))
-    colnames(imp1) <- rownames(imp$mu)
-  
+    imp1 <- as.matrix(as.data.frame(imp$imputations[[1]]))
+
     return(imp1)
   }
 }

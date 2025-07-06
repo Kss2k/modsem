@@ -57,3 +57,20 @@ testthat::expect_message(
          calc.se = FALSE),
   regexp = "Imputing.*"
 )
+
+
+# test multiple imputation
+mimp_lms <- modsem_mimpute(m1, oneInt2, method = "lms", m = 5, cov.syntax = "")
+mimp_qml <- modsem_mimpute(m1, oneInt2, method = "qml", m = 5)
+
+print(summary(mimp_lms))
+summary(mimp_qml)
+
+testthat::expect_false(
+  mimp_lms$imputations$fitted[[1]]$logLik ==
+    mimp_lms$logLik
+)
+
+sd.uncorrected <- sqrt(diag(vcov(mimp_lms$imputations$fitted[[1]])))
+sd.corrected   <- sqrt(diag(vcov(mimp_lms)))
+testthat::expect_true(all(sd.corrected > sd.uncorrected))

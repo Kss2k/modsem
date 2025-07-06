@@ -17,7 +17,7 @@ createTheta <- function(model, start = NULL) {
                                    model$constrExprs)
   totalThetaLabel <- calcThetaLabel(thetaLabel, model$constrExprs)
 
-  M  <- model$matrices
+  M            <- model$matrices
   lambdaX      <- as.vector(M$lambdaX)
   lambdaY      <- as.vector(M$lambdaY)
   thetaDelta   <- as.vector(M$thetaDelta)

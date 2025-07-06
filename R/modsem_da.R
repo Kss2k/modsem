@@ -2,11 +2,13 @@
 #'
 #' @param model.syntax \code{lavaan} syntax
 #'
-#' @param data dataframe
+#' @param data A dataframe with observed variables used in the model.
 #'
 #' @param method method to use:
-#'   \code{"lms"} = latent model structural equations (not passed to \code{lavaan}).
-#'   \code{"qml"} = quasi maximum likelihood estimation of latent model structural equations (not passed to \code{lavaan}).
+#' \describe{
+#'   \item{\code{"lms"}}{latent model structural equations (not passed to \code{lavaan}).}
+#'   \item{\code{"qml"}}{quasi maximum likelihood estimation of latent model structural equations (not passed to \code{lavaan}).}
+#' }
 #'
 #' @param verbose should estimation progress be shown
 #'

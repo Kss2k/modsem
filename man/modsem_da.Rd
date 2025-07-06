@@ -51,11 +51,13 @@ modsem_da(
 \arguments{
 \item{model.syntax}{\code{lavaan} syntax}
 
-\item{data}{dataframe}
+\item{data}{A dataframe with observed variables used in the model.}
 
 \item{method}{method to use:
-\code{"lms"} = latent model structural equations (not passed to \code{lavaan}).
-\code{"qml"} = quasi maximum likelihood estimation of latent model structural equations (not passed to \code{lavaan}).}
+\describe{
+  \item{\code{"lms"}}{latent model structural equations (not passed to \code{lavaan}).}
+  \item{\code{"qml"}}{quasi maximum likelihood estimation of latent model structural equations (not passed to \code{lavaan}).}
+}}
 
 \item{verbose}{should estimation progress be shown}
 
