@@ -133,7 +133,7 @@ using <code><a href="parameter_estimates.html">parameter_estimates</a></code> or
 <span class="r-in"><span><span class="fu">summarize_partable</span><span class="op">(</span><span class="va">std</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> modsem (version 1.0.11)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Number of model parameters                         82</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Number of model parameters                         64</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Number of latent variables                          4</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Number of observed variables                       18</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  </span>
@@ -172,49 +172,31 @@ using <code><a href="parameter_estimates.html">parameter_estimates</a></code> or
 <span class="r-out co"><span class="r-pr">#&gt;</span> Covariances:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                   Estimate  Std.Error  z.value  P(&gt;|z|)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   .x1z1 ~~       </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     .x2z2            0.000      0.000                  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     .x2z3            0.000      0.000                  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     .x3z2            0.000      0.000                  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     .x3z3            0.000      0.000                  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     .x1z2            0.384      0.018   21.659    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     .x1z3            0.393      0.019   20.928    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     .x2z1            0.415      0.017   24.499    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     .x3z1            0.440      0.017   25.573    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   .x2z1 ~~       </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     .x1z2            0.000      0.000                  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     .x1z3            0.000      0.000                  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     .x3z2            0.000      0.000                  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     .x3z3            0.000      0.000                  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     .x2z2            0.510      0.014   35.404    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     .x2z3            0.542      0.014   38.238    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     .x3z1            0.370      0.016   22.694    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   .x1z2 ~~       </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     .x2z3            0.000      0.000                  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     .x3z3            0.000      0.000                  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     .x1z3            0.367      0.018   20.929    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     .x2z2            0.486      0.014   33.698    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     .x3z2            0.520      0.014   36.545    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   .x3z1 ~~       </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     .x1z2            0.000      0.000                  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     .x1z3            0.000      0.000                  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     .x2z2            0.000      0.000                  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     .x2z3            0.000      0.000                  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     .x3z2            0.464      0.015   30.577    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     .x3z3            0.507      0.015   34.430    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   .x2z2 ~~       </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     .x1z3            0.000      0.000                  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     .x3z3            0.000      0.000                  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     .x2z3            0.486      0.015   33.189    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     .x3z2            0.456      0.014   31.605    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   .x3z2 ~~       </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     .x1z3            0.000      0.000                  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     .x2z3            0.000      0.000                  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     .x3z3            0.464      0.015   31.361    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   .x1z3 ~~       </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     .x2z3            0.450      0.016   28.177    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     .x3z3            0.474      0.016   29.999    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   .x2z1 ~~       </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     .x2z2            0.510      0.014   35.404    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     .x2z3            0.542      0.014   38.238    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     .x3z1            0.370      0.016   22.694    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   .x2z2 ~~       </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     .x2z3            0.486      0.015   33.189    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     .x3z2            0.456      0.014   31.605    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   .x2z3 ~~       </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     .x3z3            0.404      0.015   26.242    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   .x3z1 ~~       </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     .x3z2            0.464      0.015   30.577    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     .x3z3            0.507      0.015   34.430    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   .x3z2 ~~       </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     .x3z3            0.464      0.015   31.361    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    X ~~          </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>      Z               0.201      0.023    8.786    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>      XZ              0.016      0.025    0.628    0.530</span>

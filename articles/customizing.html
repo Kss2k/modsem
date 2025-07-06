@@ -118,24 +118,6 @@ indicators) that are used as the indicators for your latent product.</p>
 <span><span class="co">#&gt; XZ =~ x1z3</span></span>
 <span><span class="co">#&gt; XZ =~ x2z3</span></span>
 <span><span class="co">#&gt; XZ =~ x3z3</span></span>
-<span><span class="co">#&gt; x1z1 ~~ 0*x2z2</span></span>
-<span><span class="co">#&gt; x1z1 ~~ 0*x2z3</span></span>
-<span><span class="co">#&gt; x1z1 ~~ 0*x3z2</span></span>
-<span><span class="co">#&gt; x1z1 ~~ 0*x3z3</span></span>
-<span><span class="co">#&gt; x1z2 ~~ 0*x2z1</span></span>
-<span><span class="co">#&gt; x1z2 ~~ 0*x2z3</span></span>
-<span><span class="co">#&gt; x1z2 ~~ 0*x3z1</span></span>
-<span><span class="co">#&gt; x1z2 ~~ 0*x3z3</span></span>
-<span><span class="co">#&gt; x1z3 ~~ 0*x2z1</span></span>
-<span><span class="co">#&gt; x1z3 ~~ 0*x2z2</span></span>
-<span><span class="co">#&gt; x1z3 ~~ 0*x3z1</span></span>
-<span><span class="co">#&gt; x1z3 ~~ 0*x3z2</span></span>
-<span><span class="co">#&gt; x2z1 ~~ 0*x3z2</span></span>
-<span><span class="co">#&gt; x2z1 ~~ 0*x3z3</span></span>
-<span><span class="co">#&gt; x2z2 ~~ 0*x3z1</span></span>
-<span><span class="co">#&gt; x2z2 ~~ 0*x3z3</span></span>
-<span><span class="co">#&gt; x2z3 ~~ 0*x3z1</span></span>
-<span><span class="co">#&gt; x2z3 ~~ 0*x3z2</span></span>
 <span><span class="co">#&gt; x1z1 ~~ x1z2</span></span>
 <span><span class="co">#&gt; x1z1 ~~ x1z3</span></span>
 <span><span class="co">#&gt; x1z1 ~~ x2z1</span></span>
@@ -196,6 +178,8 @@ use the <em>matching approach</em>, you would expect
 <span><span class="co">#&gt;   Degrees of Freedom                                14 </span></span>
 <span><span class="co">#&gt;   P-value (Chi-square)                           0.658 </span></span>
 <span><span class="co">#&gt;   RMSEA                                          0.000 </span></span>
+<span><span class="co">#&gt;   CFI                                            1.000 </span></span>
+<span><span class="co">#&gt;   SRMR                                           0.004 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fit Measures for Baseline Model (H0):</span></span>
 <span><span class="co">#&gt;   Loglikelihood                              -18602.38 </span></span>
@@ -205,6 +189,8 @@ use the <em>matching approach</em>, you would expect
 <span><span class="co">#&gt;   Degrees of Freedom                                15 </span></span>
 <span><span class="co">#&gt;   P-value (Chi-square)                           0.000 </span></span>
 <span><span class="co">#&gt;   RMSEA                                          0.141 </span></span>
+<span><span class="co">#&gt;   CFI                                            0.948 </span></span>
+<span><span class="co">#&gt;   SRMR                                           0.118 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Comparative Fit to H0 (LRT test):</span></span>
 <span><span class="co">#&gt;   Chi-square diff                              603.111 </span></span>
@@ -262,8 +248,6 @@ use the <em>matching approach</em>, you would expect
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                    Estimate  Std.Err  z-value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;  .x1z1 ~~                                             </span></span>
-<span><span class="co">#&gt;    .x2z2              0.000                           </span></span>
 <span><span class="co">#&gt;   X ~~                                                </span></span>
 <span><span class="co">#&gt;     Z                 0.202    0.025    8.182    0.000</span></span>
 <span><span class="co">#&gt;     XZ                0.003    0.026    0.119    0.905</span></span>
@@ -332,24 +316,6 @@ needs.</p>
 <span><span class="co">#&gt; XZ =~ x1z3</span></span>
 <span><span class="co">#&gt; XZ =~ x2z3</span></span>
 <span><span class="co">#&gt; XZ =~ x3z3</span></span>
-<span><span class="co">#&gt; x1z1 ~~ 0*x2z2</span></span>
-<span><span class="co">#&gt; x1z1 ~~ 0*x2z3</span></span>
-<span><span class="co">#&gt; x1z1 ~~ 0*x3z2</span></span>
-<span><span class="co">#&gt; x1z1 ~~ 0*x3z3</span></span>
-<span><span class="co">#&gt; x1z2 ~~ 0*x2z1</span></span>
-<span><span class="co">#&gt; x1z2 ~~ 0*x2z3</span></span>
-<span><span class="co">#&gt; x1z2 ~~ 0*x3z1</span></span>
-<span><span class="co">#&gt; x1z2 ~~ 0*x3z3</span></span>
-<span><span class="co">#&gt; x1z3 ~~ 0*x2z1</span></span>
-<span><span class="co">#&gt; x1z3 ~~ 0*x2z2</span></span>
-<span><span class="co">#&gt; x1z3 ~~ 0*x3z1</span></span>
-<span><span class="co">#&gt; x1z3 ~~ 0*x3z2</span></span>
-<span><span class="co">#&gt; x2z1 ~~ 0*x3z2</span></span>
-<span><span class="co">#&gt; x2z1 ~~ 0*x3z3</span></span>
-<span><span class="co">#&gt; x2z2 ~~ 0*x3z1</span></span>
-<span><span class="co">#&gt; x2z2 ~~ 0*x3z3</span></span>
-<span><span class="co">#&gt; x2z3 ~~ 0*x3z1</span></span>
-<span><span class="co">#&gt; x2z3 ~~ 0*x3z2</span></span>
 <span><span class="co">#&gt; x1z1 ~~ x1z2</span></span>
 <span><span class="co">#&gt; x1z1 ~~ x1z3</span></span>
 <span><span class="co">#&gt; x1z1 ~~ x2z1</span></span>
@@ -458,38 +424,6 @@ modify the the generated syntax and data.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                    Estimate  Std.Err  z-value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;  .x1z1 ~~                                             </span></span>
-<span><span class="co">#&gt;    .x2z2              0.000                           </span></span>
-<span><span class="co">#&gt;    .x2z3              0.000                           </span></span>
-<span><span class="co">#&gt;    .x3z2              0.000                           </span></span>
-<span><span class="co">#&gt;    .x3z3              0.000                           </span></span>
-<span><span class="co">#&gt;  .x2z1 ~~                                             </span></span>
-<span><span class="co">#&gt;    .x1z2              0.000                           </span></span>
-<span><span class="co">#&gt;  .x1z2 ~~                                             </span></span>
-<span><span class="co">#&gt;    .x2z3              0.000                           </span></span>
-<span><span class="co">#&gt;  .x3z1 ~~                                             </span></span>
-<span><span class="co">#&gt;    .x1z2              0.000                           </span></span>
-<span><span class="co">#&gt;  .x1z2 ~~                                             </span></span>
-<span><span class="co">#&gt;    .x3z3              0.000                           </span></span>
-<span><span class="co">#&gt;  .x2z1 ~~                                             </span></span>
-<span><span class="co">#&gt;    .x1z3              0.000                           </span></span>
-<span><span class="co">#&gt;  .x2z2 ~~                                             </span></span>
-<span><span class="co">#&gt;    .x1z3              0.000                           </span></span>
-<span><span class="co">#&gt;  .x3z1 ~~                                             </span></span>
-<span><span class="co">#&gt;    .x1z3              0.000                           </span></span>
-<span><span class="co">#&gt;  .x3z2 ~~                                             </span></span>
-<span><span class="co">#&gt;    .x1z3              0.000                           </span></span>
-<span><span class="co">#&gt;  .x2z1 ~~                                             </span></span>
-<span><span class="co">#&gt;    .x3z2              0.000                           </span></span>
-<span><span class="co">#&gt;    .x3z3              0.000                           </span></span>
-<span><span class="co">#&gt;  .x3z1 ~~                                             </span></span>
-<span><span class="co">#&gt;    .x2z2              0.000                           </span></span>
-<span><span class="co">#&gt;  .x2z2 ~~                                             </span></span>
-<span><span class="co">#&gt;    .x3z3              0.000                           </span></span>
-<span><span class="co">#&gt;  .x3z1 ~~                                             </span></span>
-<span><span class="co">#&gt;    .x2z3              0.000                           </span></span>
-<span><span class="co">#&gt;  .x3z2 ~~                                             </span></span>
-<span><span class="co">#&gt;    .x2z3              0.000                           </span></span>
 <span><span class="co">#&gt;  .x1z1 ~~                                             </span></span>
 <span><span class="co">#&gt;    .x1z2              0.115    0.008   14.802    0.000</span></span>
 <span><span class="co">#&gt;    .x1z3              0.114    0.008   13.947    0.000</span></span>
