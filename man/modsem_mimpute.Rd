@@ -35,7 +35,7 @@ but can also be (a lot) slower.}
   \item{\code{"simple"}}{Uncorrected standard errors are only calculated once, in the first imputation.
                          The standard errors are thereafter corrected using the distribution of the
                          estimated coefficients from the different imputations.}
-  \item{\code{"full"}}{Uncorrected standard errors are only calculated and aggregated for each imputation.
+  \item{\code{"full"}}{Uncorrected standard errors are calculated and aggregated for each imputation.
                        This can give more accurate results, but can be (a lot) slower.
                        The standard errors are thereafter corrected using the distribution of the
                        estimated coefficients from the different imputations.}
