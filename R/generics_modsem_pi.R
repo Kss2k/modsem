@@ -88,9 +88,10 @@ print.summary_modsem_pi <- function(x, ...) {
   # lavaan always seems to use a width of 54 characters for the main 
   # part of the first header, regardless of the widht of the coefficient 
   # tables... So we don't need to compute it dynamically??
-  lavcat <- utils::capture.output(print(x$lavaan))
-  ncheck <- 10 # Check only the header
-  width.out <- max(nchar(lavcat[seq_len(ncheck)]))
+  # lavcat <- utils::capture.output(print(x$lavaan))
+  # ncheck <- 10 # Check only the header
+  # width.out <- max(nchar(lavcat[seq_len(ncheck)]))
+  width.out <- 54
 
   # Helper for left/right align with indent of 2 spaces for names
   align_lavaan <- function(lhs, rhs, width, indent = 2) {
@@ -112,10 +113,15 @@ print.summary_modsem_pi <- function(x, ...) {
   # Interaction Model Fit Measures (H1)
   cat("\nInteraction Model Fit Measures (H1):\n")
   fit <- x$fit
-  namesH1 <- c("Loglikelihood", "Akaike (AIC)", 
-               "Bayesian (BIC)", "Chi-square", 
+  namesH1 <- c("Loglikelihood", 
+               "Akaike (AIC)", 
+               "Bayesian (BIC)", 
+               "Chi-square", 
                "Degrees of Freedom", 
-               "P-value (Chi-square)", "RMSEA")
+               "P-value (Chi-square)", 
+               "RMSEA",
+               "CFI",
+               "SRMR")
 
   valuesH1 <- c(
     formatC(fit["logl"], digits = 2, format = "f"),
@@ -124,7 +130,9 @@ print.summary_modsem_pi <- function(x, ...) {
     formatC(fit["chisq"], digits = 2, format = "f"),
     as.character(fit["df"]),
     formatC(fit["pvalue"], digits = digits, format = if (scientific) "e" else "f"),
-    formatC(fit["rmsea"], digits = 3, format = "f")
+    formatC(fit["rmsea"], digits = 3, format = "f"),
+    formatC(fit["cfi"], digits = 3, format = "f"),
+    formatC(fit["srmr"], digits = 3, format = "f")
   )
   for(i in seq_along(namesH1)) {
     cat(align_lavaan(namesH1[i], valuesH1[i], width.out), "\n")
@@ -143,7 +151,9 @@ print.summary_modsem_pi <- function(x, ...) {
       as.character(fitH0["df"]),
       formatC(fitH0["pvalue"], digits = digits, 
               format = if (scientific) "e" else "f"),
-      formatC(fitH0["rmsea"], digits = 3, format = "f")
+      formatC(fitH0["rmsea"], digits = 3, format = "f"),
+      formatC(fitH0["cfi"], digits = 3, format = "f"),
+      formatC(fitH0["srmr"], digits = 3, format = "f")
     )
     for(i in seq_along(namesH1)) {
       cat(align_lavaan(namesH1[i], valuesH0[i], width.out), "\n")
