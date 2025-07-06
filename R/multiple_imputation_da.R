@@ -114,7 +114,7 @@ modsem_mimput_modsem_da <- function(model.syntax,
   THETA <- NULL
 
   for (i in seq_len(m)) {
-    printedLines <- capture.output(split = TRUE, {
+    printedLines <- utils::capture.output(split = TRUE, {
       if (verbose) printf("Fitting imputation %d/%d...\n", i, m)
 
       if (is.null(calc.se))
