@@ -97,7 +97,9 @@ totalLogDvmnW <- function(X, mu, sigma, nu, S, tgamma, n, d) {
 
 
 diagPartitionedMat <- function(X, Y) {
-  if (is.null(X)) return(Y) else if (is.null(Y)) return(X)
+  isNULL <- \(x) is.null(x) || length(x) == 0
+
+  if (isNULL(X)) return(Y) else if (isNULL(Y)) return(X)
 
   if (is.null(dimnames(X)) && is.null(dimnames(Y))) {
     rownames <- NULL
