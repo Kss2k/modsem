@@ -1,48 +1,3 @@
-aggregateMatrices <- function(fits, type) {
-  switch(type,
-    main = {
-      matrices  <- fits[[1]]$model$matrices
-      names.num <- namesParMatrices
-    },
-    cov = {
-      matrices  <- fits[[1]]$model$covModel$matrices
-      names.num <- namesParMatricesCov
-    },
-    expected = {
-      matrices  <- fits[[1]]$expected.matrices
-      names.num <- names(matrices)
-    }
-  )
-
-  if (is.null(matrices) || !length(matrices))
-    return(matrices)
-
-  m <- length(fits)
-
-  for (i in seq_len(m)[-1]) {
-    fit_i      <- fits[[i]]
-    matrices_i <- switch(type,
-      main     = fit_i$model$matrices,
-      cov      = fit_i$model$covModel$matrices,
-      expected = fit_i$expected.matrices
-    )
-    matrices_i <- matrices_i[names(matrices_i) %in% names.num]
-
-    for (mat in names(matrices_i)) {
-      if (is.null(matrices_i[[mat]]) || !length(matrices_i[[mat]]))
-        next
-
-      matrices[[mat]] <- matrices[[mat]] + matrices_i[[mat]] 
-    }
-  }
-
-  for (mat in names.num)
-    matrices[[mat]] <- matrices[[mat]] / m
-
-  matrices
-}
-
-
 #' Estimate a \code{modsem} model using multiple imputation
 #'
 #' @param model.syntax \code{lavaan} syntax
@@ -159,99 +114,77 @@ modsem_mimput_modsem_da <- function(model.syntax,
   THETA <- NULL
 
   for (i in seq_len(m)) {
-    if (verbose) printf("Fitting imputation %d/%d...\n", i, m)
+    printedLines <- capture.output(split = TRUE, {
+      if (verbose) printf("Fitting imputation %d/%d...\n", i, m)
 
-    if (is.null(calc.se))
-      calc.se_i <- ifelse(se == "simple" && i > 1, yes = FALSE, no = TRUE)
-    else
-      calc.se_i <- calc.se
+      if (is.null(calc.se))
+        calc.se_i <- ifelse(se == "simple" && i > 1, yes = FALSE, no = TRUE)
+      else
+        calc.se_i <- calc.se
 
-    if (is.null(THETA)) {
-      optimize <- TRUE
-      start    <- NULL
-    } else {
-      optimize <- FALSE
-      start    <- apply(THETA, MARGIN = 2, FUN = mean, na.rm = TRUE) # na.rm should't be necessary, ever...
-    }
+      if (is.null(THETA)) {
+        optimize <- TRUE
+        start    <- NULL
+      } else {
+        optimize <- FALSE
+        start    <- apply(THETA, MARGIN = 2, FUN = mean, na.rm = TRUE) # na.rm should't be necessary, ever...
+      }
 
-    data_i <- as.data.frame(imputed$imputations[[i]])
+      data_i <- as.data.frame(imputed$imputations[[i]])
 
-    fit_i <- tryCatch(
-      modsem_da(
-        model.syntax = model.syntax,
-        data         = data_i,
-        method       = method,
-        cov.syntax   = cov.syntax,
-        start        = start,
-        verbose      = verbose,
-        optimize     = optimize,
-        calc.se      = calc.se_i,
-        ...
-      ), error = \(e) {print(e); NULL}
-    )
+      fit_i <- tryCatch(
+        modsem_da(
+          model.syntax = model.syntax,
+          data         = data_i,
+          method       = method,
+          cov.syntax   = cov.syntax,
+          start        = start,
+          verbose      = verbose,
+          optimize     = optimize,
+          calc.se      = calc.se_i,
+          ...
+        ), error = \(e) {print(e); NULL}
+      )
 
-    if (is.null(fit_i)) next
+      if (is.null(fit_i)) next
 
-    fits[[i]]      <- fit_i
-    COEF.ALL[[i]]  <- coef(fit_i, type = "all")
-    COEF.FREE[[i]] <- coef(fit_i, type = "free")
 
-    if (i > 1 && se == "simple") {
-      VCOV.ALL[[i]]  <- VCOV.ALL[[1]]
-      VCOV.FREE[[i]] <- VCOV.FREE[[1]]
+      fits[[i]]      <- fit_i
+      COEF.ALL[[i]]  <- coef(fit_i, type = "all")
+      COEF.FREE[[i]] <- coef(fit_i, type = "free")
 
-    } else if (calc.se_i) {
-      VCOV.ALL[[i]]  <- vcov(fit_i, type = "all")
-      VCOV.FREE[[i]] <- vcov(fit_i, type = "free")
+      if (i > 1 && se == "simple") {
+        VCOV.ALL[[i]]  <- VCOV.ALL[[1]]
+        VCOV.FREE[[i]] <- VCOV.FREE[[1]]
 
-    } else {
-      k.all  <- length(COEF.ALL[[i]])
-      k.free <- length(COEF.FREE[[i]])
-      d.all  <- names(COEF.ALL[[i]])
-      d.free <- names(COEF.FREE[[i]])
+      } else if (calc.se_i) {
+        VCOV.ALL[[i]]  <- vcov(fit_i, type = "all")
+        VCOV.FREE[[i]] <- vcov(fit_i, type = "free")
 
-      VCOV.ALL[[i]]  <- matrix(0, nrow = k.all, ncol = k.all, 
-                               dimnames = list(d.all, d.all))
-      VCOV.FREE[[i]] <- matrix(0, nrow = k.free, ncol = k.free, 
-                               dimnames = list(d.free, d.free))
-    }
+      } else {
+        k.all  <- length(COEF.ALL[[i]])
+        k.free <- length(COEF.FREE[[i]])
+        d.all  <- names(COEF.ALL[[i]])
+        d.free <- names(COEF.FREE[[i]])
 
-    THETA <- rbind(
-      THETA, 
-      matrix(fit_i$theta, nrow = 1, dimnames = list(NULL, names(fit_i$theta)))
-    )
-  }
-  
-  rubinPool <- function(coef.list, vcov.list) {
-    # Stack coefficients
-    THETA <- do.call(cbind, coef.list)
-    p     <- nrow(THETA)
+        VCOV.ALL[[i]]  <- matrix(0, nrow = k.all, ncol = k.all, 
+                                 dimnames = list(d.all, d.all))
+        VCOV.FREE[[i]] <- matrix(0, nrow = k.free, ncol = k.free, 
+                                 dimnames = list(d.free, d.free))
+      }
 
-    # Pooled point estimate
-    theta.bar <- rowMeans(THETA)
+      THETA <- rbind(
+        THETA, 
+        matrix(fit_i$theta, nrow = 1, dimnames = list(NULL, names(fit_i$theta)))
+      )
+    })
 
-    # Within-imputation covariance (W)
-    W <- Reduce("+", vcov.list) / m
-
-    # Between-imputation covariance (B)
-    THETAc <- sweep(THETA, 1, theta.bar, "-")
-    B      <- (THETAc %*% t(THETAc)) / (m - 1)
-
-    # Total Rubin-corrected covariance (T)
-    Tvcov  <- W + (1 + 1/m) * B
-
-    # Small-sample df
-    df <- (m - 1) * (1 + diag(W) / ((1 + 1/m) * diag(B)))^(-2)
-
-    list(theta.bar = theta.bar,
-         W         = W,
-         B         = B,
-         Tvcov     = Tvcov,
-         df        = df)
+    nprinted <- length(printedLines)
+    if (i < m) eraseConsoleLines(nprinted)
   }
 
   failed <- vapply(fits, FUN.VALUE = logical(1L), FUN = is.null)
-  
+ 
   if (any(failed)) {
     warning2(sprintf("Model estimation failed in %d out of %d impuations!", 
                      sum(failed), m), immediate. = FALSE)
@@ -311,4 +244,99 @@ modsem_mimput_modsem_da <- function(model.syntax,
   fit.out$imputations <- list(fitted = fits, data = imputed)
 
   fit.out
+}
+
+
+matrixMeans <- function(matrices, na.rm = TRUE) {
+  if (!length(matrices)) 
+    return(matrix(nrow=0, ncol=0))
+
+  # Take the mean of a list of n*p matrices
+  # With the option of ignoring missing values
+
+  flattened <- as.data.frame(lapply(matrices, FUN = c))
+  means <- rowMeans(flattened, na.rm = na.rm)
+
+  dims <- dimnames(matrices[[1]])
+  n    <- NROW(matrices[[1]])
+  p    <- NCOL(matrices[[1]])
+
+  matrix(means, nrow = n, ncol = p, dimnames = dims)
+}
+
+
+aggregateMatrices <- function(fits, type) {
+  switch(type,
+    main = {
+      matrices  <- fits[[1]]$model$matrices
+      names.num <- namesParMatrices
+    },
+    cov = {
+      matrices  <- fits[[1]]$model$covModel$matrices
+      names.num <- namesParMatricesCov
+    },
+    expected = {
+      matrices  <- fits[[1]]$expected.matrices
+      names.num <- names(matrices)
+    }
+  )
+
+  if (is.null(matrices) || !length(matrices))
+    return(matrices)
+
+  m <- length(fits)
+
+  for (i in seq_len(m)[-1]) {
+    fit_i      <- fits[[i]]
+    matrices_i <- switch(type,
+      main     = fit_i$model$matrices,
+      cov      = fit_i$model$covModel$matrices,
+      expected = fit_i$expected.matrices
+    )
+    matrices_i <- matrices_i[names(matrices_i) %in% names.num]
+
+    for (mat in names(matrices_i)) {
+      if (is.null(matrices_i[[mat]]) || !length(matrices_i[[mat]]))
+        next
+
+      matrices[[mat]] <- matrices[[mat]] + matrices_i[[mat]] 
+    }
+  }
+
+  for (mat in names.num)
+    matrices[[mat]] <- matrices[[mat]] / m
+
+  matrices
+}
+
+
+rubinPool <- function(coef.list, vcov.list) {
+  stopifnot(length(coef.list) == length(vcov.list))
+
+  m     <- length(coef.list)
+  THETA <- do.call(cbind, coef.list)
+  p     <- nrow(THETA)
+
+  # Pooled point estimate
+  theta.bar <- rowMeans(THETA, na.rm = TRUE) # na.rm shouldn't be necessary
+  # but just in case...
+
+  # Within-imputation covariance (W)
+  W <- matrixMeans(vcov.list, na.rm = TRUE)
+
+  # Between-imputation covariance (B)
+  THETAc <- sweep(THETA, 1, theta.bar, "-")
+  B      <- (THETAc %*% t(THETAc)) / (m - 1)
+
+  # Total Rubin-corrected covariance (T)
+  Tvcov  <- W + (1 + 1/m) * B
+
+  # Small-sample df
+  df <- (m - 1) * (1 + diag(W) / ((1 + 1/m) * diag(B)))^(-2)
+
+  list(theta.bar = theta.bar,
+       W         = W,
+       B         = B,
+       Tvcov     = Tvcov,
+       df        = df)
 }

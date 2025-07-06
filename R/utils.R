@@ -647,3 +647,11 @@ leftJoin <- function(x, y, by = intersect(colnames(x), colnames(y))) {
   # return
   ordered[!colnames(ordered) %in% c(ox, oy)]
 }
+
+
+eraseConsoleLines <- function(n = 1) {
+  if (n < 1) return(invisible())
+  seq <- paste0(rep("\033[1A\033[2K", n), collapse = "")
+  # bring cursor to start of the line we landed on
+  cat(seq, "\033[1G", sep = "")
+}
