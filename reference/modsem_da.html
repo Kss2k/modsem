@@ -136,13 +136,18 @@ necessary syntax, and variables for the estimation of models with latent product
 
 
 <dt id="arg-data">data<a class="anchor" aria-label="anchor" href="#arg-data"></a></dt>
-<dd><p>dataframe</p></dd>
+<dd><p>A dataframe with observed variables used in the model.</p></dd>
 
 
 <dt id="arg-method">method<a class="anchor" aria-label="anchor" href="#arg-method"></a></dt>
-<dd><p>method to use:
-<code>"lms"</code> = latent model structural equations (not passed to <code>lavaan</code>).
-<code>"qml"</code> = quasi maximum likelihood estimation of latent model structural equations (not passed to <code>lavaan</code>).</p></dd>
+<dd><p>method to use:</p><dl><dt><code>"lms"</code></dt>
+<dd><p>latent model structural equations (not passed to <code>lavaan</code>).</p></dd>
+
+  <dt><code>"qml"</code></dt>
+<dd><p>quasi maximum likelihood estimation of latent model structural equations (not passed to <code>lavaan</code>).</p></dd>
+
+
+</dl></dd>
 
 
 <dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
