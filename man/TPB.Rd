@@ -23,4 +23,5 @@ tpb <- "
 "
 
 est <- modsem(tpb, data = TPB)
+summary(est)
 }

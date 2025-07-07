@@ -67,11 +67,11 @@ m1 <- '
 '
 
 est_dca <- modsem(m1, oneInt, method = "dblcent")
-modsem_predict(est_dca)
+head(modsem_predict(est_dca))
 
 \dontrun{
 est_lms <- modsem(m1, oneInt, method = "lms")
-modsem_predict(est_lms)
+head(modsem_predict(est_lms))
 }
 
 }

@@ -31,4 +31,5 @@ tpb_uk <- "
 "
 
 est <- modsem(tpb_uk, data = TPB_UK)
+summary(est)
 }

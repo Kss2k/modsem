@@ -139,7 +139,7 @@ tpb <- "
   BEH ~ INT + PBC
   BEH ~ PBC:INT
 "
-est2 <- modsem(tpb, data = TPB, method = "lms")
+est2 <- modsem(tpb, data = TPB, method = "lms", nodes = 32)
 
 # Plot with custom Z values and a denser X grid
 plot_interaction(x = "INT", z = "PBC", y = "BEH",

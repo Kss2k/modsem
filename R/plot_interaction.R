@@ -104,7 +104,7 @@
 #'   BEH ~ INT + PBC
 #'   BEH ~ PBC:INT
 #' "
-#' est2 <- modsem(tpb, data = TPB, method = "lms")
+#' est2 <- modsem(tpb, data = TPB, method = "lms", nodes = 32)
 #'
 #' # Plot with custom Z values and a denser X grid
 #' plot_interaction(x = "INT", z = "PBC", y = "BEH",
@@ -446,11 +446,9 @@ plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3,
 #' interaction terms may have their separator (\code{:}) removed based on circumstances.
 #'
 #' @examples
-#' \dontrun{
 #' m1 <- "
 #' # Outer Model
-#'   X =~ x1
-#'   X =~ x2 + x3
+#'   X =~ x1 + x2 + x3
 #'   Z =~ z1 + z2 + z3
 #'   Y =~ y1 + y2 + y3
 #'
@@ -460,6 +458,7 @@ plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3,
 #' est1 <- modsem(m1, data = oneInt)
 #' plot_surface("X", "Z", "Y", model = est1)
 #'
+#' \dontrun{
 #' tpb <- "
 #' # Outer Model (Based on Hagger et al., 2007)
 #'   ATT =~ att1 + att2 + att3 + att4 + att5
@@ -467,18 +466,15 @@ plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3,
 #'   PBC =~ pbc1 + pbc2 + pbc3
 #'   INT =~ int1 + int2 + int3
 #'   BEH =~ b1 + b2
-#'
+#' 
 #' # Inner Model (Based on Steinmetz et al., 2011)
-#'   # Causal Relationsships
 #'   INT ~ ATT + SN + PBC
 #'   BEH ~ INT + PBC
-#'   # BEH ~ ATT:PBC
 #'   BEH ~ PBC:INT
-#'   # BEH ~ PBC:PBC
 #' "
-#'
-#' est2 <- modsem(tpb, TPB, method = "lms")
-#' plot_surface(x = "INT", z = "PBC", y = "BEH", model = est1)
+#' 
+#' est2 <- modsem(tpb, TPB, method = "lms", nodes = 32)
+#' plot_surface(x = "INT", z = "PBC", y = "BEH", model = est2)
 #' }
 #'
 #' @export

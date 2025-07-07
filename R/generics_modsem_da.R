@@ -215,7 +215,7 @@ print.summary_da <- function(x, digits = 3, ...) {
     names <- c("Loglikelihood change",
                "Difference test (D)",
                "Degrees of freedom (D)", "P-value (D)")
-    values <- c(formatNumeric(x$D$llChange, digits = 2),
+    values <- c(formatNumeric(x$D$diff.loglik, digits = 2),
                 formatNumeric(x$D$D, digits = 2),
                 x$D$df,
                 formatPval(x$D$p, scientific = x$format$scientific))

@@ -14,27 +14,25 @@
 #'
 #' @examples
 #' # Theory Of Planned Behavior
-#' tpb <- '
-#' # Outer Model (Based on Hagger et al., 2007)
-#'   ATT =~ att1 + att2 + att3 + att4 + att5
-#'   SN =~ sn1 + sn2
-#'   PBC =~ pbc1 + pbc2 + pbc3
-#'   INT =~ int1 + int2 + int3
-#'   BEH =~ b1 + b2
-#'
-#' # Inner Model (Based on Steinmetz et al., 2011)
-#'   # Covariances
-#'   ATT ~~ SN + PBC
-#'   PBC ~~ SN
-#'   # Causal Relationsships
-#'   INT ~ ATT + SN + PBC
-#'   BEH ~ INT + PBC
-#'   BEH ~ INT:PBC
+#' m1 <- '
+#' # Outer Model
+#'   X =~ x1 + x2
+#'   Z =~ z1 + z2
+#'   Y =~ y1 + y2 
+#' 
+#' # Inner model
+#'   Y ~ X + Z + X:Z
 #' '
 #'
 #' \dontrun{
-#' est_mplus <- modsem_mplus(tpb, data = TPB)
-#' summary(est_mplus)
+#' # Check if Mplus is installed
+#' run <- tryCatch({MplusAutomation::detectMplus(); TRUE},
+#'                 error = \(e) FALSE)
+#' 
+#' if (run) {
+#'   est_mplus <- modsem_mplus(m1, data = oneInt)
+#'   summary(est_mplus)
+#' }
 #' }
 #'
 modsem_mplus <- function(model.syntax,

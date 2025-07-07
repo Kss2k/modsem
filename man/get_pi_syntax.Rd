@@ -42,4 +42,5 @@ m1 <- '
 syntax <- get_pi_syntax(m1)
 data <- get_pi_data(m1, oneInt)
 est <- sem(syntax, data)
+summary(est)
 }

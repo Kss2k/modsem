@@ -5,11 +5,13 @@
 #' @param data dataframe
 #'
 #' @param method method to use:
-#' \code{"rca"} = residual centering approach (passed to \code{lavaan}),
-#' \code{"uca"} = unconstrained approach (passed to \code{lavaan}),
-#' \code{"dblcent"} = double centering approach (passed to \code{lavaan}),
-#' \code{"pind"} = prod ind approach, with no constraints or centering (passed to \code{lavaan}),
-#' \code{"custom"} = use parameters specified in the function call (passed to \code{lavaan})
+#' \describe{
+#'   \item{\code{"dblcent"}}{double centering approach (passed to \code{lavaan}).}
+#'   \item{\code{"ca"}}{Constrained approach (passed to \code{lavaan}).}
+#'   \item{\code{"rca"}}{residual centering approach (passed to \code{lavaan}).}
+#'   \item{\code{"uca"}}{unconstrained approach (passed to \code{lavaan}).}
+#'   \item{\code{"pind"}}{prod ind approach, with no constraints or centering (passed to \code{lavaan}).}
+#' }
 #'
 #' @param match should the product indicators be created by using the match-strategy
 #'
@@ -544,6 +546,7 @@ createParTableRow <- function(vecLhsRhs, op, mod = "") {
 #' syntax <- get_pi_syntax(m1)
 #' data <- get_pi_data(m1, oneInt)
 #' est <- sem(syntax, data)
+#' summary(est)
 get_pi_syntax <- function(model.syntax,
                           method = "dblcent",
                           match = FALSE,
@@ -591,6 +594,7 @@ get_pi_syntax <- function(model.syntax,
 #' syntax <- get_pi_syntax(m1)
 #' data <- get_pi_data(m1, oneInt)
 #' est <- sem(syntax, data)
+#' summary(est)
 get_pi_data <- function(model.syntax, data, method = "dblcent",
                         match = FALSE, ...) {
   modsem_pi(model.syntax, data = data, method = method, match = match,

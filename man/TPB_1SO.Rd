@@ -27,7 +27,10 @@ tpb <- '
 '
 
 \dontrun{
-est <- modsem(tpb, data = TPB_2SO, method = "ca")
-summary(est)
+est_ca <- modsem(tpb, data = TPB_1SO, method = "ca")
+summary(est_ca)
+
+est_dblcent  <- modsem(tpb, data = TPB_1SO, method = "dblcent")
+summary(est_dblcent)
 }
 }

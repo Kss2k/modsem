@@ -19,4 +19,5 @@ m1 <- "
 "
 
 est <- modsem(m1, data = oneInt)
+summary(est)
 }

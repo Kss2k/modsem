@@ -12,13 +12,16 @@ modsem(model.syntax = NULL, data = NULL, method = "dblcent", ...)
 \item{data}{dataframe}
 
 \item{method}{method to use:
-\code{"rca"} = residual centering approach (passed to \code{lavaan}),
-\code{"uca"} = unconstrained approach (passed to \code{lavaan}),
-\code{"dblcent"} = double centering approach (passed to \code{lavaan}),
-\code{"pind"} = prod ind approach, with no constraints or centering (passed to \code{lavaan}),
-\code{"lms"} = latent model structural equations (not passed to \code{lavaan}),
-\code{"qml"} = quasi maximum likelihood estimation of latent model structural equations (not passed to \code{lavaan}),
-\code{"custom"} = use parameters specified in the function call (passed to \code{lavaan}).}
+\describe{
+  \item{\code{"dblcent"}}{double centering approach (passed to \code{lavaan}).}
+  \item{\code{"ca"}}{Constrained approach (passed to \code{lavaan}).}
+  \item{\code{"rca"}}{residual centering approach (passed to \code{lavaan}).}
+  \item{\code{"uca"}}{unconstrained approach (passed to \code{lavaan}).}
+  \item{\code{"pind"}}{prod ind approach, with no constraints or centering (passed to \code{lavaan}).}
+  \item{\code{"lms"}}{latent model structural equations (not passed to \code{lavaan}).}
+  \item{\code{"qml"}}{quasi maximum likelihood estimation of latent model structural equations (not passed to \code{lavaan}).}
+  \item{\code{"custom"}}{use parameters specified in the function call (passed to \code{lavaan}).}
+}}
 
 \item{...}{arguments passed to other functions depending on the method (see \code{\link{modsem_pi}}, \code{\link{modsem_da}}, and \code{\link{modsem_mplus}})}
 }
@@ -28,11 +31,11 @@ modsem(model.syntax = NULL, data = NULL, method = "dblcent", ...)
 \description{
 \code{modsem()} is a function for estimating interaction effects between latent variables
 in structural equation models (SEMs).
-Methods for estimating interaction effects in SEMs can basically be split into
-two frameworks:
-1. Product Indicator-based approaches (\code{"dblcent"}, \code{"rca"}, \code{"uca"},
-\code{"ca"}, \code{"pind"})
-2. Distributionally based approaches (\code{"lms"}, \code{"qml"}).
+Methods for estimating interaction effects in SEMs can basically be split into two frameworks:
+\enumerate{
+  \item Product Indicator (PI) based approaches (\code{"dblcent"}, \code{"rca"}, \code{"uca"}, \code{"ca"}, \code{"pind"})
+  \item Distributionally (DA) based approaches (\code{"lms"}, \code{"qml"}).
+}
 
 For the product indicator-based approaches, \code{modsem()} is essentially a fancy wrapper for \code{lavaan::sem()} which generates the
 necessary syntax and variables for the estimation of models with latent product indicators.
@@ -67,7 +70,7 @@ est1_ca <- modsem(m1, oneInt, method = "ca")
 summary(est1_ca)
 
 # LMS approach
-est1_lms <- modsem(m1, oneInt, method = "lms", EFIM.S=1000)
+est1_lms <- modsem(m1, oneInt, method = "lms")
 summary(est1_lms)
 
 # QML approach
@@ -100,7 +103,7 @@ est_tpb_ca <- modsem(tpb, data = TPB, method = "ca")
 summary(est_tpb_ca)
 
 # LMS approach
-est_tpb_lms <- modsem(tpb, data = TPB, method = "lms")
+est_tpb_lms <- modsem(tpb, data = TPB, method = "lms", nodes = 32)
 summary(est_tpb_lms)
 
 # QML approach

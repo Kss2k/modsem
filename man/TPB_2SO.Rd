@@ -10,7 +10,7 @@ where INT is a higher order construct of ATT and SN, and PBC is a higher order
 construct of PC and PB.
 }
 \examples{
-tpb <- "
+tpb <- '
   # First order constructs
   ATT =~ att1 + att2 + att3
   SN  =~ sn1 + sn2 + sn3
@@ -24,10 +24,10 @@ tpb <- "
 
   # Higher order interaction
   INTxPBC =~ ATT:PC + ATT:PB + SN:PC + SN:PB
-
+  
   # Structural model
   BEH ~ PBC + INT + INTxPBC
-"
+'
 
 \dontrun{
 est <- modsem(tpb, data = TPB_2SO, method = "ca")

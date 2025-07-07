@@ -40,11 +40,13 @@ modsem_pi(
 \item{data}{dataframe}
 
 \item{method}{method to use:
-\code{"rca"} = residual centering approach (passed to \code{lavaan}),
-\code{"uca"} = unconstrained approach (passed to \code{lavaan}),
-\code{"dblcent"} = double centering approach (passed to \code{lavaan}),
-\code{"pind"} = prod ind approach, with no constraints or centering (passed to \code{lavaan}),
-\code{"custom"} = use parameters specified in the function call (passed to \code{lavaan})}
+\describe{
+  \item{\code{"dblcent"}}{double centering approach (passed to \code{lavaan}).}
+  \item{\code{"ca"}}{Constrained approach (passed to \code{lavaan}).}
+  \item{\code{"rca"}}{residual centering approach (passed to \code{lavaan}).}
+  \item{\code{"uca"}}{unconstrained approach (passed to \code{lavaan}).}
+  \item{\code{"pind"}}{prod ind approach, with no constraints or centering (passed to \code{lavaan}).}
+}}
 
 \item{match}{should the product indicators be created by using the match-strategy}
 

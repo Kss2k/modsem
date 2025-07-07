@@ -7,50 +7,23 @@
 \format{
 A data frame of fifteen variables and 6,038 observations:
 
-enjoy1
-indicator for enjoyment of science, item ST16Q01: I generally have fun when I am learning <broad science> topics.
-
-enjoy2
-indicator for enjoyment of science, item ST16Q02: I like reading about <broad science>.
-
-enjoy3
-indicator for enjoyment of science, item ST16Q03: I am happy doing <broad science> problems.
-
-enjoy4
-indicator for enjoyment of science, item ST16Q04: I enjoy acquiring new knowledge in <broad science>.
-
-enjoy5
-indicator for enjoyment of science, item ST16Q05: I am interested in learning about <broad science>.
-
-academic1
-indicator for academic self-concept in science, item ST37Q01: I can easily understand new ideas in <school science>.
-
-academic2
-indicator for academic self-concept in science, item ST37Q02: Learning advanced <school science> topics would be easy for me.
-
-academic3
-indicator for academic self-concept in science, item ST37Q03: I can usually give good answers to <test questions> on <school science> topics.
-
-academic4
-indicator for academic self-concept in science, item ST37Q04: I learn <school science> topics quickly.
-
-academic5
-indicator for academic self-concept in science, item ST37Q05: <School science> topics are easy for me.
-
-academic6
-indicator for academic self-concept in science, item ST37Q06: When I am being taught <school science>, I can understand the concepts very well.
-
-career1
-indicator for career aspirations in science, item ST29Q01: I would like to work in a career involving <broad science>.
-
-career2
-indicator for career aspirations in science, item ST29Q02: I would like to study <broad science> after <secondary school>.
-
-career3
-indicator for career aspirations in science, item ST29Q03: I would like to spend my life doing advanced <broad science>.
-
-career4
-indicator for career aspirations in science, item ST29Q04: I would like to work on <broad science> projects as an adult.
+\describe{
+\item{enjoy1}{indicator for enjoyment of science, item ST16Q01: I generally have fun when I am learning <broad science> topics.}
+\item{enjoy2}{indicator for enjoyment of science, item ST16Q02: I like reading about <broad science>.}
+\item{enjoy3}{indicator for enjoyment of science, item ST16Q03: I am happy doing <broad science> problems.}
+\item{enjoy4}{indicator for enjoyment of science, item ST16Q04: I enjoy acquiring new knowledge in <broad science>.}
+\item{enjoy5}{indicator for enjoyment of science, item ST16Q05: I am interested in learning about <broad science>.}
+\item{academic1}{indicator for academic self-concept in science, item ST37Q01: I can easily understand new ideas in <school science>.}
+\item{academic2}{indicator for academic self-concept in science, item ST37Q02: Learning advanced <school science> topics would be easy for me.}
+\item{academic3}{indicator for academic self-concept in science, item ST37Q03: I can usually give good answers to <test questions> on <school science> topics.}
+\item{academic4}{indicator for academic self-concept in science, item ST37Q04: I learn <school science> topics quickly.}
+\item{academic5}{indicator for academic self-concept in science, item ST37Q05: <School science> topics are easy for me.}
+\item{academic6}{indicator for academic self-concept in science, item ST37Q06: When I am being taught <school science>, I can understand the concepts very well.}
+\item{career1}{indicator for career aspirations in science, item ST29Q01: I would like to work in a career involving <broad science>.}
+\item{career2}{indicator for career aspirations in science, item ST29Q02: I would like to study <broad science> after <secondary school>.}
+\item{career3}{indicator for career aspirations in science, item ST29Q03: I would like to spend my life doing advanced <broad science>.}
+\item{career4}{indicator for career aspirations in science, item ST29Q04: I would like to work on <broad science> projects as an adult.}
+}
 }
 \source{
 This version of the dataset, as well as the description was gathered from the
@@ -79,6 +52,7 @@ m1 <- "
   CAREER ~ ENJ + SC + ENJ:ENJ + SC:SC + ENJ:SC
 "
 
-est <- modsem(m1, data = jordan)
+est <- modsem(m1, data = jordan, method = "qml")
+summary(est)
 }
 }

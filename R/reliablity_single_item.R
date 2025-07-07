@@ -53,6 +53,7 @@
 #' 
 #' est_dca <- modsem(syntax, data = data, method = "dblcent")
 #' est_lms <- modsem(syntax, data = data, method="lms", nodes=32)
+#' summary(est_lms)
 #' }
 #'
 #' @export

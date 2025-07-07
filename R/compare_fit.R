@@ -62,7 +62,7 @@ compare_fit.modsem_da <- function(est_h1, est_h0, ...) {
   df <- length(coef(est_h1, type = "free")) - length(coef(est_h0, type = "free"))
   D <- -2 * (est_h0$logLik - est_h1$logLik)
   p <- stats::pchisq(D, df = df, lower.tail = FALSE, log.p = FALSE)
-  list(D = D, df = df, p = p, llChange = est_h1$logLik - est_h0$logLik)
+  list(D = D, df = df, p = p, diff.loglik = est_h1$logLik - est_h0$logLik)
 }
 
 
