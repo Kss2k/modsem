@@ -71,7 +71,7 @@ relcorr_single_item <- function(syntax, data, choose = NULL) {
 
   if (length(higherOrderLVs)) {
     warning2("Higher order latent variables will be ignored when ",
-             "creating reliablity-corrected single items!")
+             "creating reliablity-corrected single items!", immediate. = FALSE)
     ignore <- c(ignore, higherOrderLVs)
   }
 
@@ -88,15 +88,22 @@ relcorr_single_item <- function(syntax, data, choose = NULL) {
   warnif(any(parTableOuter$mod != ""), 
          "Labels and modifiers in the measurement model used to create reliability ",
          "corrected single items will be ignored!\nThis may cause the model constraints ",
-         "in the structural model to break!")
-
+         "in the structural model to break!", immediate. = FALSE)
 
   lVs <- setdiff(lVs, ignore)
   inds <- getInds(parTableOuter)
   indsLVs <- getIndsLVs(parTableOuter, lVs = lVs)
-  R <- stats::cov(data[inds])
+  R <- stats::cov(data[inds], use = "pairwise.complete.obs")
   k <- length(lVs)
-  
+ 
+  indsInInner <- parTableInner$lhs %in% inds | parTableInner$rhs %in% inds
+  if (any(indsInInner)) {
+    warning2("Removing expressions containing indicators!\n",
+             capturePrint(parTableInner[indsInInner, c("lhs", "op", "rhs")]), 
+             immediate. = FALSE)
+    parTableInner <- parTableInner[!indsInInner, ]
+  }
+
   cfaSyntax <- parTableToSyntax(parTableOuter)
   cfa       <- lavaan::cfa(cfaSyntax, data = data)
 
