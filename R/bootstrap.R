@@ -10,15 +10,16 @@
 #' @param FUN  A function that returns the statistic of interest when applied to
 #'   a fitted model.  The function must accept a single argument, the model
 #'   object, and should ideally return a numeric vector; see Value.
-#' @param ...  Additional arguments forwarded to the method‑specific
-#'   implementation.
+#' @param ...  Additional arguments forwarded to \code{lavaan::bootstrapLavaan} 
+#'   for \code{\link{modsem_pi}} objects, or \code{\link{modsem_da}} for 
+#'   \code{\link{modsem_da}} objects.
 #'
 #' @return Depending on the return type of \code{fun} either
 #'   \describe{
 #'     \item{numeric}{A matrix with \code{R} rows (bootstrap replicates) and as
 #'       many columns as \code{length(fun(model))}.}
 #'     \item{other}{A list of length \code{R}; each element is the raw output of
-#'       \code{fun}. \strong{NOTE}: Only applies for \code{\link{modsem_da}} objects}
+#'       \code{FUN}. \strong{NOTE}: Only applies for \code{\link{modsem_da}} objects}
 #'   }
 #' @seealso \code{\link[lavaan]{bootstrapLavaan}}, \code{\link{modsem_pi}},
 #'   \code{\link{modsem_da}}
@@ -30,13 +31,6 @@ bootstrap_modsem <- function(model, FUN, ...) {
 
 #' @describeIn bootstrap_modsem Bootstrap a \code{modsem_pi} model by delegating
 #'   to \code{\link[lavaan]{bootstrapLavaan}}.
-#'
-#' @param FUN A function applied to every bootstrapped model.  Must obey the same
-#'   interface rules as \code{fun} in \code{bootstrap_modsem}.  (Upper‑case is
-#'   kept for historical reasons.)
-#' @param ... Additional arguments passed directly to
-#'   \code{\link[lavaan]{bootstrapLavaan}} (e.g., \code{R} for the number of
-#'   replicates).
 #'
 #' @details A thin wrapper around \code{lavaan::bootstrapLavaan()} that performs the
 #'   necessary book‑keeping so that \code{FUN} receives a fully‑featured
@@ -80,7 +74,6 @@ bootstrap_modsem.modsem_pi <- function(model, FUN, ...) {
 #' @param verbose Logical; print progress bar/output?
 #' @param calc.se Logical; compute standard errors for each replicate. Defaults to \code{FALSE}.
 #' @param optimize Logical; (re‑)optimise starting values for each replicate.
-#' @param ... Further arguments passed on to \code{\link{modsem_da}}.
 #'
 #' @details The function internally resamples the observed data (non‑parametric
 #'   case) or simulates from the estimated parameter table (parametric case),

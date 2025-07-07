@@ -25,11 +25,13 @@ bootstrap_modsem(model, FUN, ...)
 \arguments{
 \item{model}{A fitted \code{modsem} object.}
 
-\item{FUN}{A function applied to every bootstrapped model.  Must obey the same
-interface rules as \code{fun} in \code{bootstrap_modsem}.  (Upper‑case is
-kept for historical reasons.)}
+\item{FUN}{A function that returns the statistic of interest when applied to
+a fitted model.  The function must accept a single argument, the model
+object, and should ideally return a numeric vector; see Value.}
 
-\item{...}{Further arguments passed on to \code{\link{modsem_da}}.}
+\item{...}{Additional arguments forwarded to \code{lavaan::bootstrapLavaan} 
+for \code{\link{modsem_pi}} objects, or \code{\link{modsem_da}} for 
+\code{\link{modsem_da}} objects.}
 
 \item{R}{Integer; number of bootstrap replicates.}
 
@@ -49,7 +51,7 @@ Depending on the return type of \code{fun} either
     \item{numeric}{A matrix with \code{R} rows (bootstrap replicates) and as
       many columns as \code{length(fun(model))}.}
     \item{other}{A list of length \code{R}; each element is the raw output of
-      \code{fun}. \strong{NOTE}: Only applies for \code{\link{modsem_da}} objects}
+      \code{FUN}. \strong{NOTE}: Only applies for \code{\link{modsem_da}} objects}
   }
 }
 \description{
