@@ -95,13 +95,15 @@ methods exist for <code><a href="modsem_pi.html">modsem_pi</a></code> (productâ€
 
 
 <dt id="arg-fun">FUN<a class="anchor" aria-label="anchor" href="#arg-fun"></a></dt>
-<dd><p>A function applied to every bootstrapped model.  Must obey the same
-interface rules as <code>fun</code> in <code>bootstrap_modsem</code>.  (Upperâ€‘case is
-kept for historical reasons.)</p></dd>
+<dd><p>A function that returns the statistic of interest when applied to
+a fitted model.  The function must accept a single argument, the model
+object, and should ideally return a numeric vector; see Value.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
-<dd><p>Further arguments passed on to <code><a href="modsem_da.html">modsem_da</a></code>.</p></dd>
+<dd><p>Additional arguments forwarded to <code><a href="https://rdrr.io/pkg/lavaan/man/bootstrap.html" class="external-link">lavaan::bootstrapLavaan</a></code>
+for <code><a href="modsem_pi.html">modsem_pi</a></code> objects, or <code><a href="modsem_da.html">modsem_da</a></code> for
+<code><a href="modsem_da.html">modsem_da</a></code> objects.</p></dd>
 
 
 <dt id="arg-r">R<a class="anchor" aria-label="anchor" href="#arg-r"></a></dt>
@@ -136,7 +138,7 @@ kept for historical reasons.)</p></dd>
 
     <dt>other</dt>
 <dd><p>A list of length <code>R</code>; each element is the raw output of
-      <code>fun</code>. <strong>NOTE</strong>: Only applies for <code><a href="modsem_da.html">modsem_da</a></code> objects</p></dd>
+      <code>FUN</code>. <strong>NOTE</strong>: Only applies for <code><a href="modsem_da.html">modsem_da</a></code> objects</p></dd>
 
 
 </dl></div>
