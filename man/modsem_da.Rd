@@ -275,7 +275,7 @@ tpb <- "
 "
 
 # LMS Approach
-est_lms <- modsem_da(tpb, data = TPB, method = lms)
+est_lms <- modsem_da(tpb, data = TPB, method = "lms")
 summary(est_lms)
 }
 }
