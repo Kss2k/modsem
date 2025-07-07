@@ -28,8 +28,7 @@ print.ModsemMatrix <- function(x, digits = 3, shift = 0L, ...) {
   y[is.na(x)] <- ""
 
   if (!is.null(colnames(x))) {
-    colnames(y) <- abbreviate(colnames(x), minlength = digits + 3L)
-  }
+    colnames(y) <- abbreviate(colnames(x), minlength = digits + 3L) }
   if (shift > 0L) {
     empty.string <- rep(strrep(x = " ", times = shift), times = nrow(x))
 

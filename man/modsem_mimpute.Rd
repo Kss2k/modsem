@@ -9,7 +9,7 @@ modsem_mimpute(
   data,
   method = "lms",
   m = 25,
-  verbose = TRUE,
+  verbose = interactive(),
   se = c("simple", "full"),
   ...
 )

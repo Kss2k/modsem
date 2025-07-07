@@ -2,7 +2,7 @@
 % Please edit documentation in R/modsem_da.R
 \name{modsem_da}
 \alias{modsem_da}
-\title{Interaction between latent variables using lms and qml approaches}
+\title{Interaction between latent variables using LMS and QML approaches}
 \usage{
 modsem_da(
   model.syntax = NULL,

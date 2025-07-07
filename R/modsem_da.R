@@ -1,4 +1,4 @@
-#' Interaction between latent variables using lms and qml approaches
+#' Interaction between latent variables using LMS and QML approaches
 #'
 #' @param model.syntax \code{lavaan} syntax
 #'

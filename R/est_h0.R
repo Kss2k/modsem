@@ -44,6 +44,7 @@ estimate_h0 <- function(object, warn_no_interaction = TRUE, ...) {
 }
 
 
+#' @describeIn estimate_h0 Estimate baseline model for \code{\link{modsem_da}} objects
 #' @export
 estimate_h0.modsem_da <- function(object, warn_no_interaction = TRUE, ...) {
   argList    <- object$args
@@ -82,9 +83,15 @@ estimate_h0.modsem_da <- function(object, warn_no_interaction = TRUE, ...) {
   })
 }
 
-
+#' @describeIn estimate_h0 Estimate baseline model for \code{\link{modsem_pi}} objects
+#' @param reduced Should the baseline model be a reduced version of the model? 
+#'   if \code{TRUE} the product indicator and its indicators are kept in the model,
+#'   but the interaction coefficients are constrained to zero. If \code{FALSE}, the
+#'   interaction terms are removed completely from the model. Note that the models will no longer be 
+#'   nested, if the interaction terms are removed from the model completely.
 #' @export
-estimate_h0.modsem_pi <- function(object, warn_no_interaction = TRUE, ...) {
+estimate_h0.modsem_pi <- function(object, warn_no_interaction = TRUE, 
+                                  reduced = TRUE, ...) {
   pars       <- parameter_estimates(object)
   input      <- object$input
   method     <- object$method
@@ -142,11 +149,12 @@ estimate_h0.modsem_pi <- function(object, warn_no_interaction = TRUE, ...) {
     # However, we want to constrain the interaction terms to zero.
 
     isInteractionTerm <- grepl(":", constrainedParTable$rhs) # recompute as parTable might have changed
-    constrainedParTable[isInteractionTerm, "mod"] <- "0"
+    if (reduced) constrainedParTable[isInteractionTerm, "mod"] <- "0"
+    else         constrainedParTable <- constrainedParTable[!isInteractionTerm, ]
     
     syntax <- parTableToSyntax(constrainedParTable)
     argList <- c(list(model = syntax, data = data, method = method), argList)
-    
+
     fit <- do.call(modsem_pi, args = argList)
 
     if (is.null(extract_lavaan(fit))) {

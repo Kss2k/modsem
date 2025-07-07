@@ -2,9 +2,15 @@
 % Please edit documentation in R/est_h0.R
 \name{estimate_h0}
 \alias{estimate_h0}
+\alias{estimate_h0.modsem_da}
+\alias{estimate_h0.modsem_pi}
 \title{Estimate baseline model for \code{modsem} models}
 \usage{
 estimate_h0(object, warn_no_interaction = TRUE, ...)
+
+\method{estimate_h0}{modsem_da}(object, warn_no_interaction = TRUE, ...)
+
+\method{estimate_h0}{modsem_pi}(object, warn_no_interaction = TRUE, reduced = TRUE, ...)
 }
 \arguments{
 \item{object}{An object of class \code{\link{modsem_da}} or \code{\link{modsem_pi}}.}
@@ -13,11 +19,24 @@ estimate_h0(object, warn_no_interaction = TRUE, ...)
 
 \item{...}{Additional arguments passed to the `modsem_da` function, overriding
 the arguments in the original model.}
+
+\item{reduced}{Should the baseline model be a reduced version of the model? 
+if \code{TRUE} the product indicator and its indicators are kept in the model,
+but the interaction coefficients are constrained to zero. If \code{FALSE}, the
+interaction terms are removed completely from the model. Note that the models will no longer be 
+nested, if the interaction terms are removed from the model completely.}
 }
 \description{
 Estimates a baseline model (H0) from a given model (H1) and compares the fit of both models.
 The baseline model is estimated by removing all interaction terms from the model.
 }
+\section{Methods (by class)}{
+\itemize{
+\item \code{estimate_h0(modsem_da)}: Estimate baseline model for \code{\link{modsem_da}} objects
+
+\item \code{estimate_h0(modsem_pi)}: Estimate baseline model for \code{\link{modsem_pi}} objects
+
+}}
 \examples{
 \dontrun{
 m1 <- "

@@ -106,7 +106,9 @@ summary.modsem_da <- function(object,
   )
 
   if (H0) {
-    if (any(grepl(":", parTable$rhs))) cat("Estimating baseline model (H0)\n")
+    if (any(grepl(":", parTable$rhs)) && verbose) 
+      cat("Estimating baseline model (H0)\n")
+
     est_h0 <- estimate_h0(object, calc.se = FALSE, warn_no_interaction = FALSE)
     
     out$nullModel <- est_h0

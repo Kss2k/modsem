@@ -63,7 +63,7 @@ modsem_mimpute <- function(model.syntax,
                            data, 
                            method = "lms",
                            m = 25, 
-                           verbose = TRUE, 
+                           verbose = interactive(), 
                            se = c("simple", "full"),
                            ...) {
   stopif(!method %in% c("lms", "qml"), 
