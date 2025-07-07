@@ -58,7 +58,13 @@ The baseline model is estimated by removing all interaction terms from the model
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">estimate_h0</span><span class="op">(</span><span class="va">object</span>, warn_no_interaction <span class="op">=</span> <span class="cn">TRUE</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">estimate_h0</span><span class="op">(</span><span class="va">object</span>, warn_no_interaction <span class="op">=</span> <span class="cn">TRUE</span>, <span class="va">...</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># S3 method for class 'modsem_da'</span></span>
+<span><span class="fu">estimate_h0</span><span class="op">(</span><span class="va">object</span>, warn_no_interaction <span class="op">=</span> <span class="cn">TRUE</span>, <span class="va">...</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># S3 method for class 'modsem_pi'</span></span>
+<span><span class="fu">estimate_h0</span><span class="op">(</span><span class="va">object</span>, warn_no_interaction <span class="op">=</span> <span class="cn">TRUE</span>, reduced <span class="op">=</span> <span class="cn">TRUE</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -77,7 +83,21 @@ The baseline model is estimated by removing all interaction terms from the model
 <dd><p>Additional arguments passed to the `modsem_da` function, overriding
 the arguments in the original model.</p></dd>
 
+
+<dt id="arg-reduced">reduced<a class="anchor" aria-label="anchor" href="#arg-reduced"></a></dt>
+<dd><p>Should the baseline model be a reduced version of the model?
+if <code>TRUE</code> the product indicator and its indicators are kept in the model,
+but the interaction coefficients are constrained to zero. If <code>FALSE</code>, the
+interaction terms are removed completely from the model. Note that the models will no longer be
+nested, if the interaction terms are removed from the model completely.</p></dd>
+
 </dl></div>
+    <div class="section level2">
+    <h2 id="methods-by-class-">Methods (by class)<a class="anchor" aria-label="anchor" href="#methods-by-class-"></a></h2>
+
+<ul><li><p><code>estimate_h0(modsem_da)</code>: Estimate baseline model for <code><a href="modsem_da.html">modsem_da</a></code> objects</p></li>
+<li><p><code>estimate_h0(modsem_pi)</code>: Estimate baseline model for <code><a href="modsem_pi.html">modsem_pi</a></code> objects</p></li>
+</ul></div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
