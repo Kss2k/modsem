@@ -23,16 +23,16 @@
 #' @seealso \code{\link[lavaan]{bootstrapLavaan}}, \code{\link{modsem_pi}},
 #'   \code{\link{modsem_da}}
 #' @export
-modsem_bootstrap <- function(model, FUN, ...) {
-  UseMethod("modsem_bootstrap")
+bootstrap_modsem <- function(model, FUN, ...) {
+  UseMethod("bootstrap_modsem")
 }
 
 
-#' @describeIn modsem_bootstrap Bootstrap a \code{modsem_pi} model by delegating
+#' @describeIn bootstrap_modsem Bootstrap a \code{modsem_pi} model by delegating
 #'   to \code{\link[lavaan]{bootstrapLavaan}}.
 #'
 #' @param FUN A function applied to every bootstrapped model.  Must obey the same
-#'   interface rules as \code{fun} in \code{modsem_bootstrap}.  (Upper‑case is
+#'   interface rules as \code{fun} in \code{bootstrap_modsem}.  (Upper‑case is
 #'   kept for historical reasons.)
 #' @param ... Additional arguments passed directly to
 #'   \code{\link[lavaan]{bootstrapLavaan}} (e.g., \code{R} for the number of
@@ -54,10 +54,10 @@ modsem_bootstrap <- function(model, FUN, ...) {
 #' '
 #' 
 #' fit_pi <- modsem(m1, oneInt)
-#' modsem_bootstrap(fit_pi, FUN = coef, R = 10L)
+#' bootstrap_modsem(fit_pi, FUN = coef, R = 10L)
 #'
 #' @export
-modsem_bootstrap.modsem_pi <- function(model, FUN, ...) {
+bootstrap_modsem.modsem_pi <- function(model, FUN, ...) {
   wrapLavFit <- function(lavfit) {
     model$lavaan       <- lavfit
     model$coefParTable <- lavaan::parameterEstimates(lavfit)
@@ -71,7 +71,7 @@ modsem_bootstrap.modsem_pi <- function(model, FUN, ...) {
 }
 
 
-#' @describeIn modsem_bootstrap Parametric or non‑parametric bootstrap for
+#' @describeIn bootstrap_modsem Parametric or non‑parametric bootstrap for
 #'   \code{modsem_da} models.
 #'
 #' @param R Integer; number of bootstrap replicates.
@@ -99,10 +99,10 @@ modsem_bootstrap.modsem_pi <- function(model, FUN, ...) {
 #' 
 #' \dontrun{
 #' fit_lms <- modsem(m1, oneInt, method = "lms")
-#' modsem_bootstrap(fit_lms, FUN = coef, R = 10L)
+#' bootstrap_modsem(fit_lms, FUN = coef, R = 10L)
 #' }
 #' @export
-modsem_bootstrap.modsem_da <- function(model, 
+bootstrap_modsem.modsem_da <- function(model, 
                                        FUN = "coef", 
                                        R = 1000L, 
                                        P.max = 1e5,
