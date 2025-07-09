@@ -241,9 +241,18 @@ constructA <- function(xis, method = "lms", cov.syntax = NULL,
     if (!orthogonal.x) A[lower.tri(A, diag = TRUE)] <- NA
     else               diag(A) <- NA
 
-    setMatrixConstraints(X = A, parTable = parTable, op = "~~",
-                         RHS = xis, LHS = xis, type = "symmetric",
-                         nonFreeParams = FALSE)
+    A <- setMatrixConstraints(X = A, parTable = parTable, op = "~~",
+                              RHS = xis, LHS = xis, type = "symmetric",
+                              nonFreeParams = FALSE)
+   
+    if (!any(is.na(A$numeric))) {
+      Phi <- A$numeric
+      Phi[upper.tri(Phi)] <- t(Phi)[upper.tri(Phi)]
+      A$numeric <- t(chol(Phi))
+    }
+
+    A
+
   } else getEmptyPhi(phi = A)
 }
 
