@@ -25,7 +25,6 @@ modsem_inspect.lavaan <- function(object, what = "free", ...) {
 #'
 #' @export
 centered_estimates.lavaan <- function(object, 
-                                      correction = FALSE, 
                                       monte.carlo = FALSE,
                                       mc.reps = 10000,
                                       tolerance.zero = 1e-10,
@@ -63,7 +62,6 @@ centered_estimates.lavaan <- function(object,
 #'
 #' @export
 standardized_estimates.lavaan <- function(object, 
-                                          correction = FALSE, 
                                           monte.carlo = FALSE,
                                           mc.reps = 10000,
                                           tolerance.zero = 1e-10,

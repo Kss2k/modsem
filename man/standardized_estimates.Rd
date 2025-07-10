@@ -12,7 +12,6 @@ standardized_estimates(object, ...)
 
 \method{standardized_estimates}{lavaan}(
   object,
-  correction = FALSE,
   monte.carlo = FALSE,
   mc.reps = 10000,
   tolerance.zero = 1e-10,
@@ -42,6 +41,13 @@ standardized_estimates(object, ...)
 
 \item{...}{Additional arguments passed on to \code{lavaan::standardizedSolution()}.}
 
+\item{monte.carlo}{Logical. If \code{TRUE}, use Monte Carlo simulation to estimate
+standard errors; if \code{FALSE}, use the delta method (default).}
+
+\item{mc.reps}{Integer. Number of Monte Carlo replications to use if \code{std.errors = "monte.carlo"}.}
+
+\item{tolerance.zero}{Threshold below which standard errors are set to \code{NA}.}
+
 \item{correction}{Logical. Whether to apply a correction to the standardized estimates
 of the interaction term. By default, \code{FALSE}, which standardizes the interaction term
 such that \eqn{\sigma^2(XZ) = 1}, consistent with \code{lavaan}'s treatment of latent interactions.
@@ -55,13 +61,6 @@ change in the moderating variables. If \code{TRUE} a correction is applied, by
 computing the interaction term \eqn{b_3 = \frac{B_3 \sigma(X) \sigma(Z)}{\sigma(Y)}} (where 
 \eqn{B_3} is the unstandardized coefficient for the interaction term), and solving for \eqn{\sigma(XZ)}, which 
 is used to correct the variance of the interaction term, and its covariances.}
-
-\item{monte.carlo}{Logical. If \code{TRUE}, use Monte Carlo simulation to estimate
-standard errors; if \code{FALSE}, use the delta method (default).}
-
-\item{mc.reps}{Integer. Number of Monte Carlo replications to use if \code{std.errors = "monte.carlo"}.}
-
-\item{tolerance.zero}{Threshold below which standard errors are set to \code{NA}.}
 
 \item{std.errors}{Character string indicating the method used to compute standard errors
 when \code{correction = TRUE}. Options include:
