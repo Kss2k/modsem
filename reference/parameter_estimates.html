@@ -55,7 +55,19 @@
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">parameter_estimates</span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">parameter_estimates</span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># S3 method for class 'lavaan'</span></span>
+<span><span class="fu">parameter_estimates</span><span class="op">(</span><span class="va">object</span>, colon.pi <span class="op">=</span> <span class="cn">TRUE</span>, <span class="va">...</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># S3 method for class 'modsem_da'</span></span>
+<span><span class="fu">parameter_estimates</span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># S3 method for class 'modsem_mplus'</span></span>
+<span><span class="fu">parameter_estimates</span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># S3 method for class 'modsem_pi'</span></span>
+<span><span class="fu">parameter_estimates</span><span class="op">(</span><span class="va">object</span>, colon.pi <span class="op">=</span> <span class="cn">FALSE</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -69,7 +81,19 @@
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
 <dd><p>Additional arguments passed to other functions</p></dd>
 
+
+<dt id="arg-colon-pi">colon.pi<a class="anchor" aria-label="anchor" href="#arg-colon-pi"></a></dt>
+<dd><p>Should colons (<code>:</code>) be added to the interaction terms (E.g., `XZ` -&gt; `X:Z`)?</p></dd>
+
 </dl></div>
+    <div class="section level2">
+    <h2 id="methods-by-class-">Methods (by class)<a class="anchor" aria-label="anchor" href="#methods-by-class-"></a></h2>
+
+<ul><li><p><code>parameter_estimates(lavaan)</code>: Get parameter estimates of a <code>lavaan</code> object</p></li>
+<li><p><code>parameter_estimates(modsem_da)</code>: Get parameter estimates of a <code><a href="modsem_da.html">modsem_da</a></code> object</p></li>
+<li><p><code>parameter_estimates(modsem_mplus)</code>: Get parameter estimates of a <code><a href="modsem_mplus.html">modsem_mplus</a></code> object</p></li>
+<li><p><code>parameter_estimates(modsem_pi)</code>: Get parameter estimates of a <code><a href="modsem_pi.html">modsem_pi</a></code> object</p></li>
+</ul></div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>

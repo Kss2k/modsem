@@ -57,6 +57,15 @@
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">standardized_estimates</span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span></span>
 <span></span>
+<span><span class="co"># S3 method for class 'lavaan'</span></span>
+<span><span class="fu">standardized_estimates</span><span class="op">(</span></span>
+<span>  <span class="va">object</span>,</span>
+<span>  monte.carlo <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  mc.reps <span class="op">=</span> <span class="fl">10000</span>,</span>
+<span>  tolerance.zero <span class="op">=</span> <span class="fl">1e-10</span>,</span>
+<span>  <span class="va">...</span></span>
+<span><span class="op">)</span></span>
+<span></span>
 <span><span class="co"># S3 method for class 'modsem_da'</span></span>
 <span><span class="fu">standardized_estimates</span><span class="op">(</span></span>
 <span>  <span class="va">object</span>,</span>
@@ -168,7 +177,8 @@ not <code>est.std</code>, regardless of model type.</p>
     <div class="section level2">
     <h2 id="methods-by-class-">Methods (by class)<a class="anchor" aria-label="anchor" href="#methods-by-class-"></a></h2>
 
-<ul><li><p><code>standardized_estimates(modsem_da)</code>: Method for <code>modsem_da</code> objects</p></li>
+<ul><li><p><code>standardized_estimates(lavaan)</code>: Method for <code>lavaan</code> objects</p></li>
+<li><p><code>standardized_estimates(modsem_da)</code>: Method for <code>modsem_da</code> objects</p></li>
 <li><p><code>standardized_estimates(modsem_pi)</code>: Method for <code>modsem_pi</code> objects</p></li>
 </ul></div>
 
@@ -402,22 +412,22 @@ not <code>est.std</code>, regardless of model type.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 10   Y  ~   X       0.425     0.017  24.747       0    0.392    0.459</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 11   Y  ~   Z       0.369     0.018  20.723       0    0.334    0.403</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 12   Y  ~ X:Z       0.455     0.017  27.278       0    0.422    0.488</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 22  x1 ~~  x1       0.142     0.008  17.631       0    0.126    0.157</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 23  x2 ~~  x2       0.206     0.009  21.703       0    0.187    0.225</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 24  x3 ~~  x3       0.169     0.009  19.438       0    0.152    0.186</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 25  z1 ~~  z1       0.141     0.009  16.513       0    0.124    0.157</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 26  z2 ~~  z2       0.193     0.010  19.707       0    0.174    0.212</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 27  z3 ~~  z3       0.167     0.009  18.378       0    0.149    0.185</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 28  y1 ~~  y1       0.062     0.004  16.003       0    0.054    0.069</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 29  y2 ~~  y2       0.091     0.005  18.910       0    0.081    0.100</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 30  y3 ~~  y3       0.077     0.004  17.987       0    0.069    0.085</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 31   X ~~   X       1.000        NA      NA      NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 32   X ~~   Z       0.200     0.023   8.782       0    0.155    0.244</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 33   Z ~~   Z       1.000        NA      NA      NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 34   Y ~~   Y       0.405     0.016  25.039       0    0.374    0.437</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 13 X:Z ~~ X:Z       1.040     0.053  19.777       0    0.937    1.143</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 21   X ~~ X:Z       0.000        NA      NA      NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 35   Z ~~ X:Z       0.000        NA      NA      NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 13  x1 ~~  x1       0.142     0.008  17.631       0    0.126    0.157</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 14  x2 ~~  x2       0.206     0.009  21.703       0    0.187    0.225</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 15  x3 ~~  x3       0.169     0.009  19.438       0    0.152    0.186</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 16  z1 ~~  z1       0.141     0.009  16.513       0    0.124    0.157</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 17  z2 ~~  z2       0.193     0.010  19.707       0    0.174    0.212</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 18  z3 ~~  z3       0.167     0.009  18.378       0    0.149    0.185</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 19  y1 ~~  y1       0.062     0.004  16.003       0    0.054    0.069</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 20  y2 ~~  y2       0.091     0.005  18.910       0    0.081    0.100</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 21  y3 ~~  y3       0.077     0.004  17.987       0    0.069    0.085</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 22   X ~~   X       1.000        NA      NA      NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 23   X ~~   Z       0.200     0.023   8.782       0    0.155    0.244</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 24   Z ~~   Z       1.000        NA      NA      NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 25   Y ~~   Y       0.405     0.016  25.039       0    0.374    0.437</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 26 X:Z ~~ X:Z       1.040     0.053  19.777       0    0.937    1.143</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 27   X ~~ X:Z       0.000        NA      NA      NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 28   Z ~~ X:Z       0.000        NA      NA      NA       NA       NA</span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
