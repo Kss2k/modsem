@@ -10,7 +10,7 @@ isLavaanObject <- function(x) {
 
 
 #' @export
-#' @describeIn modsem_inspect Inspect a \code{\link{lavaan}} object
+#' @describeIn modsem_inspect Inspect a \code{lavaan} object
 modsem_inspect.lavaan <- function(object, what = "free", ...) {
   lavaan::lavInspect(object, what = what, ...)
 }
