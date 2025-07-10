@@ -7,8 +7,13 @@ transformedSolutionCOEFS <- function(object,
                                      center = TRUE,
                                      standardize = TRUE,
                                      ...) {
-  stopif(!inherits(object, c("modsem_da", "modsem_pi")),
-         "The model must be of class 'modsem_da' or 'modsem_pi'!")
+  stopif(!inherits(object, c("modsem_da", "modsem_pi", "lavaan")),
+         "The model must be of class `modsem_da`, `modsem_pi` or `lavaan`!")
+
+  if (inherits(object, "lavaan")) {
+    vcov <- lavaan::vcov # load vcov and coef from lavaan if dealing with a lavaan object
+    coef <- lavaan::coef
+  }
 
   parTable <- parameter_estimates(object, colon.pi = TRUE)
   parTable <- subsetByGrouping(parTable, grouping = grouping) # if NULL no subsetting
@@ -191,8 +196,7 @@ transformedSolutionCOEFS <- function(object,
     }
 
     # Correct Scale of interaction terms
-    COEFS <- correctStdSolutionCOEFS(
-                                     parTable = parTable, # for generating equations
+    COEFS <- correctStdSolutionCOEFS(parTable = parTable, # for generating equations
                                      COEFS.std = COEFS,
                                      COEFS.ustd = COEFS.ustd,
                                      variances = variances,
@@ -429,13 +433,130 @@ centeredSolutionCOEFS <- function(object,
                                   grouping = NULL,
                                   ...) {
   transformedSolutionCOEFS(
-    object = object,
-    monte.carlo = monte.carlo,
-    mc.reps = mc.reps,
+    object         = object,
+    monte.carlo    = monte.carlo,
+    mc.reps        = mc.reps,
     tolerance.zero = tolerance.zero,
-    delta.epsilon = delta.epsilon,
-    standardize = FALSE,
-    center = TRUE,
+    delta.epsilon  = delta.epsilon,
+    standardize    = FALSE,
+    center         = TRUE,
     ...
   )
+}
+
+
+getMeanFormula <- function(x, parTable, label.col = "label") {
+  stopif(length(x) > 1, "x must be a single string")
+
+  meanY <- getIntercept(x, parTable = parTable, col = label.col)
+  gamma <- parTable[parTable$lhs == x & parTable$op == "~", , drop = FALSE]
+
+  if (NROW(gamma) == 0) return(meanY)
+  for (i in seq_len(NROW(gamma))) {
+    meanX <- getMeanFormula(gamma[i, "rhs"], parTable = parTable)
+    meanY <- paste0("(", meanY, "+", gamma[i, label.col], "*", meanX, ")")
+  }
+
+  if (!length(meanY)) "0" else paste0("(", meanY, ")")
+}
+
+
+centerInteractionsCOEFS <- function(parTable, COEFS, center.means = TRUE,
+                                    label.col = "label") {
+  rows <- getIntTermRows(parTable)
+
+  for (i in seq_len(NROW(rows))) {
+    Y <- rows[i, "lhs"]
+    XZ <- unlist(stringr::str_split(rows[i, "rhs"], ":"))
+    X <- XZ[[1]]
+    Z <- XZ[[2]]
+    gamma <- parTable[parTable$lhs == Y & parTable$op == "~", , drop = FALSE]
+
+    formulaMeanX <- parse(text = getMeanFormula(X, parTable = parTable))
+    formulaMeanZ <- parse(text = getMeanFormula(Z, parTable = parTable))
+
+    labelGammaXZ <- rows[i, label.col]
+    labelGammaX  <- gamma[gamma$rhs == X, label.col] # length should always be 1, but just in case...
+    labelGammaZ  <- gamma[gamma$rhs == Z, label.col]
+
+    meanX   <- eval(formulaMeanX, envir = COEFS)
+    meanZ   <- eval(formulaMeanZ, envir = COEFS)
+    gammaXZ <- COEFS[[labelGammaXZ]]
+
+    if (length(labelGammaX) == 1) {
+      gammaX  <- COEFS[[labelGammaX]]
+      COEFS[[labelGammaX]]  <- gammaX + gammaXZ * meanZ
+    }
+
+    if (length(labelGammaZ) == 1) {
+      gammaZ  <- COEFS[[labelGammaZ]]
+      COEFS[[labelGammaZ]]  <- gammaZ + gammaXZ * meanX
+    }
+  }
+
+  if (center.means) {
+    innerVars <- unique(unlist(parTable[parTable$op == "~", c("rhs", "lhs")]))
+    interceptLabels <- parTable[parTable$lhs %in% innerVars & 
+                                parTable$op == "~1", label.col] 
+
+    for (label in interceptLabels)
+      COEFS[[label]] <- 0
+  }
+
+  COEFS
+}
+
+
+addTransformedEstimatesPT <- function(parTable, 
+                                      FUN, 
+                                      pass.parTable = TRUE, 
+                                      values.to = "transformed",
+                                      values.from = "est",
+                                      merge.by = c("lhs", "op", "rhs"),
+                                      ...) {
+    if (pass.parTable) parTable.transform <- FUN(parTable = parTable, ...)
+    else               parTable.transform <- FUN(...)
+
+    parTable.transform[[values.to]] <- parTable.transform[[values.from]]
+    parTable.transform <- parTable.transform[c(merge.by, values.to)]
+
+    leftJoin(left   = parTable, 
+             right  = parTable.transform,
+             by     = merge.by)
+}
+  
+
+applyTransformationByGrouping <- function(parTable, 
+                                          FUN, 
+                                          groupingcols = c("block", "group"),
+                                          ...) {
+  if (any(groupingcols %in% colnames(parTable))) {
+    groupingcols <- intersect(groupingcols, colnames(parTable))
+    categories   <- unique(parTable.ustd[groupingcols])
+
+    parTable.out <- NULL
+
+    for (i in seq_len(NROW(categories))) {
+      grouping       <- structure(unlist(categories[i, ]), 
+                                  names = groupingcols)
+      parTable.out_i <- FUN(..., grouping = grouping)
+
+      if (is.null(parTable.out_i)) 
+        next
+
+      for (group in names(grouping))
+        parTable.out_i[[group]] <- grouping[[group]]
+
+      parTable.out <- rbind(parTable.out, parTable.out_i)
+    }
+
+    colblock1 <- c("lhs", "op", "rhs")
+    colblock2 <- groupingcols
+    colblock3 <- setdiff(colnames(parTable.out), c(colblock1, colblock2))
+
+    parTable.out <- parTable.out[c(colblock1, colblock2, colblock3)]
+
+  } else parTable.out <- FUN(...)
+
+  parTable.out
 }

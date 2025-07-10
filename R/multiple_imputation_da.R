@@ -211,7 +211,7 @@ modsem_mimput_modsem_da <- function(model.syntax,
   parTable1   <- getMissingLabels(parTable1)
   parTableT   <- data.frame(label = names(coef.all), est.t = coef.all)
 
-  parTable    <- leftJoin(x = parTable1, y = parTableT, by = "label")
+  parTable    <- leftJoin(left = parTable1, right = parTableT, by = "label")
   match       <- !is.na(parTable$est.t)
 
   parTable$est[match] <- parTable$est.t[match]

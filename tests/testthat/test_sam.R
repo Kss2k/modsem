@@ -8,11 +8,12 @@ Y ~ X + Z + X:Z
 '
 
 testthat::expect_warning(
-  est <- lavaan::sam(m1, lapplyDf(oneInt, function(x) x - mean(x))),
+  est <- lavaan::sam(m1, oneInt),
   regex = "*switching to naive*"
 )
 
 summary(est)
+centered_estimates(est)
 
 plot_interaction(x = "X", z = "Z", y = "Y", xz = "X:Z",
                  vals_z = c(-0.5, 0.5), model = est)

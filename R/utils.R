@@ -284,22 +284,6 @@ getMean <- function(x, parTable) {
 }
 
 
-getMeanFormula <- function(x, parTable, label.col = "label") {
-  stopif(length(x) > 1, "x must be a single string")
-
-  meanY <- getIntercept(x, parTable = parTable, col = label.col)
-  gamma <- parTable[parTable$lhs == x & parTable$op == "~", , drop = FALSE]
-
-  if (NROW(gamma) == 0) return(meanY)
-  for (i in seq_len(NROW(gamma))) {
-    meanX <- getMeanFormula(gamma[i, "rhs"], parTable = parTable)
-    meanY <- paste0("(", meanY, "+", gamma[i, label.col], "*", meanX, ")")
-  }
-
-  if (!length(meanY)) "0" else paste0("(", meanY, ")")
-}
-
-
 getMeans <- function(x, parTable) {
   out <- vapply(x, FUN.VALUE = numeric(1L), FUN = function(x_i)
                 getMean(x_i, parTable = parTable))
@@ -340,51 +324,6 @@ centerInteractions <- function(parTable, center.means = TRUE) {
   }
 
   parTable
-}
-
-
-centerInteractionsCOEFS <- function(parTable, COEFS, center.means = TRUE,
-                                    label.col = "label") {
-  rows <- getIntTermRows(parTable)
-
-  for (i in seq_len(NROW(rows))) {
-    Y <- rows[i, "lhs"]
-    XZ <- unlist(stringr::str_split(rows[i, "rhs"], ":"))
-    X <- XZ[[1]]
-    Z <- XZ[[2]]
-    gamma <- parTable[parTable$lhs == Y & parTable$op == "~", , drop = FALSE]
-
-    formulaMeanX <- parse(text = getMeanFormula(X, parTable = parTable))
-    formulaMeanZ <- parse(text = getMeanFormula(Z, parTable = parTable))
-
-    labelGammaXZ <- rows[i, label.col]
-    labelGammaX  <- gamma[gamma$rhs == X, label.col] # length should always be 1, but just in case...
-    labelGammaZ  <- gamma[gamma$rhs == Z, label.col]
-
-    meanX   <- eval(formulaMeanX, envir = COEFS)
-    meanZ   <- eval(formulaMeanZ, envir = COEFS)
-    gammaXZ <- COEFS[[labelGammaXZ]]
-
-    if (length(labelGammaX) == 1) {
-      gammaX  <- COEFS[[labelGammaX]]
-      COEFS[[labelGammaX]]  <- gammaX + gammaXZ * meanZ
-    }
-
-    if (length(labelGammaZ) == 1) {
-      gammaZ  <- COEFS[[labelGammaZ]]
-      COEFS[[labelGammaZ]]  <- gammaZ + gammaXZ * meanX
-    }
-  }
-
-  if (center.means) {
-    innerVars <- unique(unlist(parTable[parTable$op == "~", c("rhs", "lhs")]))
-    interceptLabels <- parTable[parTable$lhs %in% innerVars & 
-                                parTable$op == "~1", label.col] 
-
-    for (label in interceptLabels) COEFS[[label]] <- 0
-  }
-
-  COEFS
 }
 
 
@@ -689,21 +628,21 @@ cov2cor <- function(vcov) {
 }
 
 
-leftJoin <- function(x, y, by = intersect(colnames(x), colnames(y))) {
-  ox <- "__orig_order_x__"
-  oy <- "__orig_order_y__"
+leftJoin <- function(left, right, by = intersect(colnames(left), colnames(right))) {
+  ol <- "__orig_order_right__"
+  or <- "__orig_order_left__"
 
-  x[[ox]] <- seq_len(nrow(x))
-  y[[oy]] <- seq_len(nrow(y))
+  left[[ol]] <- seq_len(nrow(left))
+  right[[or]] <- seq_len(nrow(right))
 
   # left join
-  joined <- merge(x, y, by = by, all.x = TRUE)
+  joined <- merge(left, right, by = by, all.x = TRUE)
 
   # order
-  ordered <- joined[order(joined[[ox]], joined[[oy]]), ]
+  ordered <- joined[order(joined[[ol]], joined[[or]]), ]
 
   # return
-  ordered[!colnames(ordered) %in% c(ox, oy)]
+  ordered[!colnames(ordered) %in% c(ol, or)]
 }
 
 
