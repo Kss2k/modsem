@@ -10,7 +10,10 @@ transformedSolutionCOEFS <- function(object,
   stopif(!inherits(object, c("modsem_da", "modsem_pi", "lavaan")),
          "The model must be of class `modsem_da`, `modsem_pi` or `lavaan`!")
 
-  if (inherits(object, "lavaan")) {
+  isLav <- inherits(object, "lavaan")
+  isDA  <- inherits(object, "modsem_da")
+
+  if (isLav) {
     vcov <- lavaan::vcov # load vcov and coef from lavaan if dealing with a lavaan object
     coef <- lavaan::coef
   }
@@ -28,11 +31,10 @@ transformedSolutionCOEFS <- function(object,
 
     parTable <- parTable[c("lhs", "op", "rhs", "label", "est", "se")]
     parTable <- rename(parTable, se = "std.error")
-    
   }
 
-  if (center && inherits(object, c("modsem_da", "lavaan"))) { # not relevant for modsem_pi
-    warnif(inherits(object, "lavaan"), "Replacing interaction (co-) ",
+  if (center && (isLav || isDA)) { # not relevant for modsem_pi
+    warnif(isLav, "Replacing interaction (co-)",
            "variances when centering the model!\n", immediate. = FALSE)
 
     parTable <- var_interactions(parTable, ignore.means = TRUE)
