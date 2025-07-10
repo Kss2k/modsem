@@ -11,7 +11,6 @@ centered_estimates(object, ...)
 
 \method{centered_estimates}{lavaan}(
   object,
-  correction = FALSE,
   monte.carlo = FALSE,
   mc.reps = 10000,
   tolerance.zero = 1e-10,

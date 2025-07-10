@@ -144,7 +144,7 @@ organised in several sections.  Keywords are \emph{case-sensitive}.
 }
 \section{Methods (by class)}{
 \itemize{
-\item \code{modsem_inspect(lavaan)}: Inspect a \code{\link{lavaan}} object
+\item \code{modsem_inspect(lavaan)}: Inspect a \code{lavaan} object
 
 \item \code{modsem_inspect(modsem_da)}: Inspect a \code{\link{modsem_da}} object
 
