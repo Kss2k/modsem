@@ -13,7 +13,7 @@ sam <- \(...) testthat::expect_warning(lavaan::sam(...),
 est <- sam(m1, oneInt)
 parameter_estimates(est)
 
-wrap <- \(expr) testthat::expect_warning(expr, regex = "Replacing.*")
+wrap <- \(expr) (testthat::expect_warning(expr, regex = "Replacing.*"))
 wrap(centered_estimates(est))
 wrap(standardized_estimates(est))
 
