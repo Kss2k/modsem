@@ -60,6 +60,7 @@ print.modsem_mplus <- function(x, ...) {
 
 
 #' @export
+#' @describeIn parameter_estimates Get parameter estimates of a \code{\link{modsem_mplus}} object
 parameter_estimates.modsem_mplus <- function(object, ...) {
   object$parTable
 }

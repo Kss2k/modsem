@@ -1,4 +1,5 @@
 #' @export
+#' @describeIn parameter_estimates Get parameter estimates of a \code{\link{modsem_da}} object
 parameter_estimates.modsem_da <- function(object, ...) {
   object$parTable
 }
