@@ -281,6 +281,9 @@ transformedSolutionCOEFS <- function(object,
   labelInOrig       <- parTable$label %in% originalLabels
   parTable[!labelInOrig, "label"] <- ""
 
+  # Reset index
+  rownames(parTable) <- NULL
+
   list(parTable  = modsemParTable(parTable),
        coefs     = coefs,
        vcov      = vcov,
@@ -431,7 +434,6 @@ centeredSolutionCOEFS <- function(object,
     mc.reps = mc.reps,
     tolerance.zero = tolerance.zero,
     delta.epsilon = delta.epsilon,
-    grouping = grouping,
     standardize = FALSE,
     center = TRUE,
     ...
