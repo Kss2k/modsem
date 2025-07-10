@@ -207,6 +207,40 @@ standardized_estimates <- function(object, ...) {
 }
 
 
+#' Get Centered Interaction Term Estimates
+#'
+#' Computes centered estimates of model parameters. This is relevant when there is an
+#'  interaction term in the model, as the simple main effects depend upon the mean structure
+#'  of the structural model. Currenlty only available for 
+#'  \code{\link{modsem_da}} objects, as it is not relevant for most PI approaches,
+#'  since the indicators are centered before computing the product terms.
+#'
+#' @param object An object of class \code{\link{modsem_da}}
+#' @param ... Additional arguments passed to underlying methods. See specific method
+#' documentation for supported arguments, including:
+#' @return A \code{data.frame} with centered estimates in the \code{est} column.
+#'
+#' @examples
+#' m1 <- '
+#'   # Outer Model
+#'   X =~ x1 + x2 + x3
+#'   Z =~ z1 + z2 + z3
+#'   Y =~ y1 + y2 + y3
+#'
+#'   # Inner Model
+#'   Y ~ X + Z + X:Z
+#' '
+#' \dontrun{
+#' est_lms <- modsem(m1, oneInt, method = "lms")
+#' centered_estimates(est_lms) 
+#' }
+#'
+#' @export
+centered_estimates <- function(object, ...) {
+  UseMethod("centered_estimates")
+}
+
+
 #' @export
 standardized_estimates.data.frame <- function(object, intercepts = FALSE, ...) {
   parTable <- object[c("lhs", "op", "rhs", "label", "est", "std.error")]

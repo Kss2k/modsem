@@ -250,10 +250,10 @@ isModsemObject <- function(x) {
 }
 
 
-getIntercept <- function(x, parTable) {
+getIntercept <- function(x, parTable, col = "est") {
   if (length(x) > 1) stop2("x must be a single string")
 
-  intercept <- parTable[parTable$lhs == x & parTable$op == "~1", "est"]
+  intercept <- parTable[parTable$lhs == x & parTable$op == "~1", col]
 
   if (length(intercept) == 0) return(0)
   intercept
@@ -284,6 +284,22 @@ getMean <- function(x, parTable) {
 }
 
 
+getMeanFormula <- function(x, parTable, label.col = "label") {
+  stopif(length(x) > 1, "x must be a single string")
+
+  meanY <- getIntercept(x, parTable = parTable, col = label.col)
+  gamma <- parTable[parTable$lhs == x & parTable$op == "~", , drop = FALSE]
+
+  if (NROW(gamma) == 0) return(meanY)
+  for (i in seq_len(NROW(gamma))) {
+    meanX <- getMeanFormula(gamma[i, "rhs"], parTable = parTable)
+    meanY <- paste0("(", meanY, "+", gamma[i, label.col], "*", meanX, ")")
+  }
+
+  paste0("(", meanY, ")")
+}
+
+
 getMeans <- function(x, parTable) {
   out <- vapply(x, FUN.VALUE = numeric(1L), FUN = function(x_i)
                 getMean(x_i, parTable = parTable))
@@ -294,7 +310,6 @@ getMeans <- function(x, parTable) {
 
 centerInteractions <- function(parTable, center.means = TRUE) {
   rows <- getIntTermRows(parTable)
-  interactionVars <- character(0L)
 
   for (i in NROW(rows)) {
     Y <- rows[i, "lhs"]
@@ -302,8 +317,6 @@ centerInteractions <- function(parTable, center.means = TRUE) {
     X <- XZ[[1]]
     Z <- XZ[[2]]
     
-    interactionVars <- c(interactionVars, X, Z)
-
     meanX <- getMean(X, parTable)
     meanZ <- getMean(Z, parTable)
 
@@ -327,6 +340,47 @@ centerInteractions <- function(parTable, center.means = TRUE) {
   }
 
   parTable
+}
+
+
+centerInteractionsCOEFS <- function(parTable, COEFS, center.means = TRUE,
+                                    label.col = "label") {
+  rows <- getIntTermRows(parTable)
+
+  for (i in NROW(rows)) {
+    Y <- rows[i, "lhs"]
+    XZ <- unlist(stringr::str_split(rows[i, "rhs"], ":"))
+    X <- XZ[[1]]
+    Z <- XZ[[2]]
+    gamma <- parTable[parTable$lhs == Y & parTable$op == "~", , drop = FALSE]
+
+    formulaMeanX <- parse(text = getMeanFormula(X, parTable = parTable))
+    formulaMeanZ <- parse(text = getMeanFormula(Z, parTable = parTable))
+
+    labelGammaXZ <- rows[i, label.col]
+    labelGammaX  <- gamma[gamma$rhs == X, label.col][1] # length should always be 1, but just in case...
+    labelGammaZ  <- gamma[gamma$rhs == Z, label.col][1]
+    
+    gammaXZ <- COEFS[[labelGammaXZ]]
+    gammaX  <- COEFS[[labelGammaX]]
+    gammaZ  <- COEFS[[labelGammaZ]]
+
+    meanX   <- eval(formulaMeanX, envir = COEFS)
+    meanZ   <- eval(formulaMeanZ, envir = COEFS)
+
+    COEFS[[labelGammaX]]  <- gammaX + gammaXZ * meanZ
+    COEFS[[labelGammaZ]]  <- gammaZ + gammaXZ * meanX
+  }
+
+  if (center.means) {
+    innerVars <- unique(unlist(parTable[parTable$op == "~", c("rhs", "lhs")]))
+    interceptLabels <- parTable[parTable$lhs %in% innerVars & 
+                                parTable$op == "~1", label.col] 
+
+    for (label in interceptLabels) COEFS[[label]] <- 0
+  }
+
+  COEFS
 }
 
 
