@@ -7,13 +7,15 @@ Z =~ z1 + z2 + z3
 Y ~ X + Z + X:Z
 '
 
-testthat::expect_warning(
-  est <- lavaan::sam(m1, oneInt),
-  regex = "*switching to naive*"
-)
+sam <- \(...) testthat::expect_warning(lavaan::sam(...),
+                                       regex = "*switching to naive*")
 
-summary(est)
-centered_estimates(est)
+est <- sam(m1, oneInt)
+parameter_estimates(est)
+
+wrap <- \(expr) testthat::expect_warning(expr, regex = "Replacing.*")
+wrap(centered_estimates(est))
+wrap(standardized_estimates(est))
 
 plot_interaction(x = "X", z = "Z", y = "Y", xz = "X:Z",
                  vals_z = c(-0.5, 0.5), model = est)

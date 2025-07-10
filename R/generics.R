@@ -212,8 +212,11 @@ standardized_estimates <- function(object, ...) {
 #' Computes centered estimates of model parameters. This is relevant when there is an
 #'  interaction term in the model, as the simple main effects depend upon the mean structure
 #'  of the structural model. Currenlty only available for 
-#'  \code{\link{modsem_da}} objects, as it is not relevant for most PI approaches,
+#'  \code{\link{modsem_da}} and \code{lavaan} object.
+#'  It is not relevant for the PI approaches (excluding the "pind" method, which is not recommended),
 #'  since the indicators are centered before computing the product terms.
+#'  The centering can be applied to observed variable interactions in \code{lavaan} models
+#'  and latent interactions estimated using the \code{sam} function.
 #'
 #' @param object An object of class \code{\link{modsem_da}}
 #' @param ... Additional arguments passed to underlying methods. See specific method
@@ -232,7 +235,7 @@ standardized_estimates <- function(object, ...) {
 #' '
 #' \dontrun{
 #' est_lms <- modsem(m1, oneInt, method = "lms")
-#' centered_estimates(est_lms) 
+#' centered_estimates(est_lms)
 #' }
 #'
 #' @export
