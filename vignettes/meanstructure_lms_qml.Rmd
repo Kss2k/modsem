@@ -60,5 +60,11 @@ centered, and we can see that the coefficients `BEH~PBC` and `BEH~INT` are
 rescaled once again.
 
 ```{r}
-summary(est, standardized = TRUE)
+summary(est, standardized = TRUE, centered = TRUE)
+```
+It is also possible to get the centered solution using the `centered_estimates()` function.
+Note, that `centered_estimates()` removes the mean structure of the model all together.
+
+```{r}
+centered_estimates(est)
 ```

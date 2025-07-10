@@ -17,6 +17,7 @@
   scientific = FALSE,
   ci = FALSE,
   standardized = FALSE,
+  centered = FALSE,
   monte.carlo = FALSE,
   mc.reps = 10000,
   loadings = TRUE,
@@ -72,6 +73,8 @@ comparative fit?}
 \item{ci}{print confidence intervals}
 
 \item{standardized}{print standardized estimates}
+
+\item{centered}{print mean centered estimates}
 
 \item{monte.carlo}{should Monte Carlo bootstrapped standard errors be used? Only 
 relevant if \code{standardized = TRUE}. If \code{FALSE} delta method is used instead.}

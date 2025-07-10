@@ -15,6 +15,7 @@ parameter_estimates.modsem_da <- function(object, ...) {
 #' @param scientific print p-values in scientific notation
 #' @param ci print confidence intervals
 #' @param standardized print standardized estimates
+#' @param centered print mean centered estimates
 #' @param monte.carlo should Monte Carlo bootstrapped standard errors be used? Only 
 #'   relevant if \code{standardized = TRUE}. If \code{FALSE} delta method is used instead.
 #' @param mc.reps number of Monte Carlo repetitions. Only relevant if \code{monte.carlo = TRUE}, 
@@ -54,6 +55,7 @@ summary.modsem_da <- function(object,
                               scientific = FALSE,
                               ci = FALSE,
                               standardized = FALSE,
+                              centered = FALSE,
                               monte.carlo = FALSE,
                               mc.reps = 10000,
                               loadings = TRUE,
@@ -66,9 +68,12 @@ summary.modsem_da <- function(object,
   method   <- object$method
   parTable <- parameter_estimates(object)
 
+  transf.cols <- NULL
+  merge.by <- c("lhs", "op", "rhs")
+  
   if (standardized) {
     std.col  <- "Std.all"
-    merge.by <- c("lhs", "op", "rhs")
+    transf.cols <- c(transf.cols, std.col)
 
     parTable.std <- standardized_estimates(
       object, 
@@ -82,7 +87,25 @@ summary.modsem_da <- function(object,
     parTable <- leftJoin(x  = parTable, 
                          y  = parTable.std[c(merge.by, std.col)],
                          by = merge.by)
-  } else std.col <- NULL
+  }
+  
+  if (centered) {
+    cnt.col     <- "Cntr.lv"
+    transf.cols <- c(transf.cols, cnt.col)
+
+    parTable.cnt <- centered_estimates(
+      object, 
+      intercepts = intercepts, 
+      monte.carlo = monte.carlo, 
+      mc.reps = mc.reps
+    )
+
+    parTable.cnt[[cnt.col]] <- parTable.cnt$est
+
+    parTable <- leftJoin(x  = parTable, 
+                         y  = parTable.cnt[c(merge.by, cnt.col)],
+                         by = merge.by)
+  }
 
   if (!var.interaction) {
     parTable.out <- removeInteractionVariances(parTable)
@@ -147,7 +170,7 @@ summary.modsem_da <- function(object,
     covariances   = covariances,
     intercepts    = intercepts,
     variances     = variances,
-    std.col       = std.col
+    transf.cols   = transf.cols
   )
 
   class(out) <- "summary_da"
@@ -157,7 +180,7 @@ summary.modsem_da <- function(object,
 
 #' @export
 print.summary_da <- function(x, digits = 3, ...) {
-  width.out <- getWidthPrintedParTable(x$parTable, # We want the width without ci and std.col
+  width.out <- getWidthPrintedParTable(x$parTable, # We want the width without ci and extra cols
                                        scientific = x$format$scientific,
                                        ci = FALSE, # x$format$ci,
                                        digits = x$format$digits,
@@ -166,7 +189,7 @@ print.summary_da <- function(x, digits = 3, ...) {
                                        covariances = x$format$covariances,
                                        intercepts = x$format$intercepts,
                                        variances = x$format$variances,
-                                       std.col   = NULL) # x$format$std.col)
+                                       transf.cols = NULL)
   cat(paste0("\nmodsem (version ", PKG_INFO$version, "):\n\n"))
   names <- c("Estimator", "Optimization method", "Number of observations",
              "Number of iterations", "Loglikelihood",
@@ -264,7 +287,7 @@ print.summary_da <- function(x, digits = 3, ...) {
                 covariances = x$format$covariances,
                 intercepts  = x$format$intercepts,
                 variances   = x$format$variances,
-                std.col     = x$format$std.col)
+                transf.cols = x$format$transf.cols)
 }
 
 
@@ -487,6 +510,31 @@ standardized_estimates.modsem_da <- function(object,
   
   stdSolution$parTable
 }
+
+
+#' @describeIn centered_estimates Method for \code{modsem_da} objects
+#'
+#' @param monte.carlo Logical. If \code{TRUE}, use Monte Carlo simulation to estimate
+#' standard errors; if \code{FALSE}, use the delta method (default).
+#' @param mc.reps Number of Monte Carlo repetitions. Default is 10000.
+#' @param tolerance.zero Threshold below which standard errors are set to \code{NA}.
+#'
+#' @export
+centered_estimates.modsem_da <- function(object, 
+                                         monte.carlo = FALSE, 
+                                         mc.reps = 10000, 
+                                         tolerance.zero = 1e-10, ...) {
+
+  stdSolution <- centeredSolutionCOEFS(
+    object, 
+    monte.carlo = monte.carlo, 
+    mc.reps = mc.reps, 
+    tolerance.zero = tolerance.zero, ...
+  )
+  
+  stdSolution$parTable
+}
+
 
 
 #' @describeIn modsem_predict 

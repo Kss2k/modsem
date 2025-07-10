@@ -13,7 +13,7 @@ formatParTable <- function(parTable,
                            ci = FALSE, 
                            width.min = 14, 
                            pad.res = TRUE, 
-                           std.col = NULL, 
+                           transf.cols = NULL, 
                            shorten.lhs.header = FALSE) {
   parTable    <- fillColsParTable(parTable)
   parTable.in <- parTable # unformatted partable
@@ -79,9 +79,9 @@ formatParTable <- function(parTable,
     colsOut <- colsOut[!grepl(ci.pattern, colsOut)]
   }
 
-  if (!is.null(std.col)) {
-    header  <- c(header, std.col)
-    colsOut <- c(colsOut, std.col)
+  if (!is.null(transf.cols)) {
+    header  <- c(header, transf.cols)
+    colsOut <- c(colsOut, transf.cols)
   }
 
   parTable      <- parTable[colsOut]
@@ -116,13 +116,13 @@ printParTable <- function(parTable,
                           intercepts = TRUE,
                           variances = TRUE,
                           custom = TRUE,
-                          std.col = NULL,
+                          transf.cols = NULL,
                           padWidth = 2,
                           padWidthLhs = 2,
                           spacing = 2) {
   formatted <- formatParTable(parTable, digits = digits,
                               ci = ci, scientific = scientific,
-                              std.col = std.col)
+                              transf.cols = transf.cols)
   fParTable <- formatted$parTable
   header    <- formatted$header
   lhs       <- unique(fParTable$lhs)
@@ -320,13 +320,13 @@ getWidthPrintedParTable <- function(parTable,
                                     padWidth    = 2,
                                     padWidthLhs = 2,
                                     spacing     = 2,
-                                    std.col     = NULL) {
+                                    transf.cols = NULL) {
   formatted <- formatParTable(
     parTable, 
     digits = digits,
     ci = ci, 
     scientific = scientific,
-    std.col = std.col
+    transf.cols = transf.cols,
   )
 
   fParTable <- formatted$parTable
