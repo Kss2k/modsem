@@ -68,43 +68,35 @@ summary.modsem_da <- function(object,
   method   <- object$method
   parTable <- parameter_estimates(object)
 
-  transf.cols <- NULL
-  merge.by <- c("lhs", "op", "rhs")
-  
+  extra.cols <- NULL
   if (standardized) {
-    std.col  <- "Std.all"
-    transf.cols <- c(transf.cols, std.col)
+    std.col     <- "Std.all"
+    extra.cols <- c(extra.cols, std.col)
 
-    parTable.std <- standardized_estimates(
-      object, 
-      intercepts = intercepts, 
-      monte.carlo = monte.carlo, 
-      mc.reps = mc.reps
+    parTable <- addTransformedEstimatesPT(
+      parTable    = parTable,
+      values.from = "est",
+      values.to   = std.col,
+      FUN         = standardized_estimates,
+      object      = object,
+      monte.carlo = monte.carlo,
+      mc.reps     = mc.reps
     )
-
-    parTable.std[[std.col]] <- parTable.std$est
-
-    parTable <- leftJoin(x  = parTable, 
-                         y  = parTable.std[c(merge.by, std.col)],
-                         by = merge.by)
   }
   
   if (centered) {
-    cnt.col     <- "Cntr.lv"
-    transf.cols <- c(transf.cols, cnt.col)
+    cnt.col     <- "Cnt.all"
+    extra.cols <- c(extra.cols, cnt.col)
 
-    parTable.cnt <- centered_estimates(
-      object, 
-      intercepts = intercepts, 
-      monte.carlo = monte.carlo, 
-      mc.reps = mc.reps
+    parTable <- addTransformedEstimatesPT(
+      parTable    = parTable,
+      values.from = "est",
+      values.to   = cnt.col,
+      FUN         = centered_estimates,
+      object      = object,
+      monte.carlo = monte.carlo,
+      mc.reps     = mc.reps
     )
-
-    parTable.cnt[[cnt.col]] <- parTable.cnt$est
-
-    parTable <- leftJoin(x  = parTable, 
-                         y  = parTable.cnt[c(merge.by, cnt.col)],
-                         by = merge.by)
   }
 
   if (!var.interaction) {
@@ -170,7 +162,7 @@ summary.modsem_da <- function(object,
     covariances   = covariances,
     intercepts    = intercepts,
     variances     = variances,
-    transf.cols   = transf.cols
+    extra.cols    = extra.cols
   )
 
   class(out) <- "summary_da"
@@ -180,23 +172,41 @@ summary.modsem_da <- function(object,
 
 #' @export
 print.summary_da <- function(x, digits = 3, ...) {
-  width.out <- getWidthPrintedParTable(x$parTable, # We want the width without ci and extra cols
-                                       scientific = x$format$scientific,
-                                       ci = FALSE, # x$format$ci,
-                                       digits = x$format$digits,
-                                       loadings = x$format$loadings,
-                                       regressions = x$format$regressions,
-                                       covariances = x$format$covariances,
-                                       intercepts = x$format$intercepts,
-                                       variances = x$format$variances,
-                                       transf.cols = NULL)
+  # We want the width without ci and extra cols
+  width.out <- getWidthPrintedParTable(
+    parTable    = x$parTable, 
+    scientific  = x$format$scientific,
+    ci          = FALSE,
+    digits      = x$format$digits,
+    loadings    = x$format$loadings,
+    regressions = x$format$regressions,
+    covariances = x$format$covariances,
+    intercepts  = x$format$intercepts,
+    variances   = x$format$variances,
+    extra.cols  = NULL
+  )
+
   cat(paste0("\nmodsem (version ", PKG_INFO$version, "):\n\n"))
-  names <- c("Estimator", "Optimization method", "Number of observations",
-             "Number of iterations", "Loglikelihood",
-             "Akaike (AIC)", "Bayesian (BIC)")
-  values <- c(stringr::str_to_upper(c(x$method, x$optimizer)),
-              x$N, x$iterations, round(x$logLik, 2), round(x$fit$AIC, 2),
-              round(x$fit$BIC, 2))
+  
+  names <- c(
+    "Estimator", 
+    "Optimization method", 
+    "Number of observations",
+    "Number of iterations", 
+    "Loglikelihood",
+    "Akaike (AIC)", 
+    "Bayesian (BIC)"
+  )
+
+  values <- c(
+    stringr::str_to_upper(c(x$method, x$optimizer)),
+    x$N,
+    x$iterations,
+    round(x$logLik, 2),
+    round(x$fit$AIC, 2),
+    round(x$fit$BIC, 2)
+  )
+
   if (x$format$adjusted.stat) {
     names  <- c(names, "Corrected Akaike (AICc)", "Adjusted Bayesian (aBIC)")
     values <- c(values, round(x$fit$AICc, 2), round(x$fit$aBIC, 2))
@@ -287,7 +297,7 @@ print.summary_da <- function(x, digits = 3, ...) {
                 covariances = x$format$covariances,
                 intercepts  = x$format$intercepts,
                 variances   = x$format$variances,
-                transf.cols = x$format$transf.cols)
+                extra.cols  = x$format$extra.cols)
 }
 
 

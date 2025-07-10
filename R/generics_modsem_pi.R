@@ -285,18 +285,26 @@ standardized_estimates.modsem_pi <- function(object,
 
   if (correction && std.errors == "rescale") {
     parTable.std.naive <- uncorrected(object)
+
     correction <- function(object, grouping = NULL) {
-      correctStdSolutionPI(object, parTable.std = parTable.std.naive, 
-                           grouping = grouping)
+      correctStdSolutionPI(
+        object       = object, 
+        parTable.std = parTable.std.naive, 
+        grouping     = grouping
+      )
     }
 
   } else if (correction) {
     correction <- function(object, grouping = NULL) {
-      solution <- standardizedSolutionCOEFS(object, 
-                                            monte.carlo = monte.carlo, 
-                                            mc.reps = mc.reps, 
-                                            grouping = grouping, 
-                                            ...) 
+
+      solution <- standardizedSolutionCOEFS(
+        object      = object, 
+        monte.carlo = monte.carlo, 
+        mc.reps     = mc.reps, 
+        grouping    = grouping, 
+        ...
+      )
+
       solution$parTable
     }
 
@@ -314,32 +322,12 @@ standardized_estimates.modsem_pi <- function(object,
   warnif(hiorder && rescale, "Correction of higher-order models will likely not work!",
          immediate. = FALSE)
 
-  groupingcols <- c("block", "group")
-  if (any(groupingcols %in% colnames(parTable.ustd))) {
-    groupingcols <- intersect(groupingcols, colnames(parTable.ustd))
-    categories   <- unique(parTable.ustd[groupingcols])
+  parTable.std <- applyCorrectionByGrouping(
+    parTable = parTable.ustd,
+    FUN      = correction,
+    object   = object
+  )
     
-    parTable.std <- NULL
-    for (i in seq_len(NROW(categories))) {
-      grouping <- structure(unlist(categories[i, ]), names = groupingcols)
-      parTable.std_i <- correction(object, grouping = grouping)
-
-      if (is.null(parTable.std_i)) next
-
-      for (group in names(grouping))
-        parTable.std_i[[group]] <- grouping[[group]]
-
-      parTable.std <- rbind(parTable.std, parTable.std_i)
-    }
-    
-    colblock1 <- c("lhs", "op", "rhs")
-    colblock2 <- groupingcols
-    colblock3 <- setdiff(colnames(parTable.std), c(colblock1, colblock2))
-
-    parTable.std <- parTable.std[c(colblock1, colblock2, colblock3)]
-
-  } else parTable.std <- correction(object)
-
   if (!colon.pi) {
     rm <- \(x) stringr::str_remove_all(x, ":")
     parTable.std$rhs <- rm(parTable.std$rhs)
@@ -352,8 +340,7 @@ standardized_estimates.modsem_pi <- function(object,
 
 #' @export
 #' @describeIn modsem_inspect Inspect a \code{\link{modsem_pi}} object
-modsem_inspect.modsem_pi <- function(object, what = NULL, ...) {
-  if (is.null(what)) what <- "free"
+modsem_inspect.modsem_pi <- function(object, what = "free", ...) {
   lavaan::lavInspect(object$lavaan, what = what, ...)
 }
 
