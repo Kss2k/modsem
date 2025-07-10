@@ -22,12 +22,20 @@ transformedSolutionCOEFS <- function(object,
 
   if (inherits(object, "modsem_da")) {
     parTable <- parTable[c("lhs", "op", "rhs", "label", "est", "std.error")]
-    parTable <- var_interactions(parTable, ignore.means = TRUE)
 
-  } else { # modsem_pi
+  } else { # modsem_pi or lavaan
     if (!"label" %in% names(parTable)) parTable$label <- ""
+
     parTable <- parTable[c("lhs", "op", "rhs", "label", "est", "se")]
     parTable <- rename(parTable, se = "std.error")
+    
+  }
+
+  if (center && inherits(object, c("modsem_da", "lavaan"))) { # not relevant for modsem_pi
+    warnif(inherits(object, "lavaan"), "Replacing interaction (co-) ",
+           "variances when centering the model!\n", immediate. = FALSE)
+
+    parTable <- var_interactions(parTable, ignore.means = TRUE)
   }
 
   lVs      <- getLVs(parTable)
@@ -532,7 +540,7 @@ applyTransformationByGrouping <- function(parTable,
                                           ...) {
   if (any(groupingcols %in% colnames(parTable))) {
     groupingcols <- intersect(groupingcols, colnames(parTable))
-    categories   <- unique(parTable.ustd[groupingcols])
+    categories   <- unique(parTable[groupingcols])
 
     parTable.out <- NULL
 

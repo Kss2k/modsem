@@ -510,12 +510,14 @@ nobs.modsem_da <- function(object, ...) {
 standardized_estimates.modsem_da <- function(object, 
                                              monte.carlo = FALSE, 
                                              mc.reps = 10000, 
-                                             tolerance.zero = 1e-10, ...) {
+                                             tolerance.zero = 1e-10, 
+                                             ...) {
   stdSolution <- standardizedSolutionCOEFS(
     object, 
     monte.carlo = monte.carlo, 
     mc.reps = mc.reps, 
-    tolerance.zero = tolerance.zero, ...
+    tolerance.zero = tolerance.zero, 
+    ...
   )
   
   stdSolution$parTable

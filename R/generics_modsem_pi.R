@@ -301,7 +301,8 @@ standardized_estimates.modsem_pi <- function(object,
         object      = object, 
         monte.carlo = monte.carlo, 
         mc.reps     = mc.reps, 
-        grouping    = grouping, 
+        grouping    = grouping,
+        center      = FALSE,
         ...
       )
 
@@ -322,7 +323,7 @@ standardized_estimates.modsem_pi <- function(object,
   warnif(hiorder && rescale, "Correction of higher-order models will likely not work!",
          immediate. = FALSE)
 
-  parTable.std <- applyCorrectionByGrouping(
+  parTable.std <- applyTransformationByGrouping(
     parTable = parTable.ustd,
     FUN      = correction,
     object   = object

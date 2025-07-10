@@ -50,14 +50,14 @@ lms3 <- modsem(tpb_uk, data = TPB_UK, "lms",
 summary(lms3)
 #> Regressions:
 #>                   Estimate  Std.Error  z.value  P(>|z|)
-#>   INT ~ 
-#>     PBC              1.047      0.036    29.32    0.000
-#>     ATT             -0.067      0.029    -2.33    0.020
-#>     SN               0.052      0.031     1.67    0.096
-#>   BEH ~ 
-#>     PBC              0.418      0.053     7.92    0.000
-#>     INT              0.599      0.049    12.26    0.000
-#>     PBC:INT          0.142      0.008    17.82    0.000
+#>    INT ~         
+#>      PBC             1.037      0.036    28.46    0.000
+#>      ATT            -0.060      0.030    -2.04    0.041
+#>      SN              0.051      0.033     1.55    0.120
+#>    BEH ~         
+#>      PBC             0.398      0.052     7.63    0.000
+#>      INT             0.594      0.049    12.24    0.000
+#>      PBC:INT         0.141      0.008    17.66    0.000
 
 # Compared with Mplus
 #> Regressions:
