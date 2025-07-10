@@ -296,7 +296,7 @@ getMeanFormula <- function(x, parTable, label.col = "label") {
     meanY <- paste0("(", meanY, "+", gamma[i, label.col], "*", meanX, ")")
   }
 
-  paste0("(", meanY, ")")
+  if (!length(meanY)) "0" else paste0("(", meanY, ")")
 }
 
 
@@ -358,18 +358,22 @@ centerInteractionsCOEFS <- function(parTable, COEFS, center.means = TRUE,
     formulaMeanZ <- parse(text = getMeanFormula(Z, parTable = parTable))
 
     labelGammaXZ <- rows[i, label.col]
-    labelGammaX  <- gamma[gamma$rhs == X, label.col][1] # length should always be 1, but just in case...
-    labelGammaZ  <- gamma[gamma$rhs == Z, label.col][1]
-    
-    gammaXZ <- COEFS[[labelGammaXZ]]
-    gammaX  <- COEFS[[labelGammaX]]
-    gammaZ  <- COEFS[[labelGammaZ]]
+    labelGammaX  <- gamma[gamma$rhs == X, label.col] # length should always be 1, but just in case...
+    labelGammaZ  <- gamma[gamma$rhs == Z, label.col]
 
     meanX   <- eval(formulaMeanX, envir = COEFS)
     meanZ   <- eval(formulaMeanZ, envir = COEFS)
+    gammaXZ <- COEFS[[labelGammaXZ]]
 
-    COEFS[[labelGammaX]]  <- gammaX + gammaXZ * meanZ
-    COEFS[[labelGammaZ]]  <- gammaZ + gammaXZ * meanX
+    if (length(labelGammaX) == 1) {
+      gammaX  <- COEFS[[labelGammaX]]
+      COEFS[[labelGammaX]]  <- gammaX + gammaXZ * meanZ
+    }
+
+    if (length(labelGammaZ) == 1) {
+      gammaZ  <- COEFS[[labelGammaZ]]
+      COEFS[[labelGammaZ]]  <- gammaZ + gammaXZ * meanX
+    }
   }
 
   if (center.means) {
