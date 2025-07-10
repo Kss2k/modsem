@@ -311,7 +311,7 @@ getMeans <- function(x, parTable) {
 centerInteractions <- function(parTable, center.means = TRUE) {
   rows <- getIntTermRows(parTable)
 
-  for (i in NROW(rows)) {
+  for (i in seq_len(NROW(rows))) {
     Y <- rows[i, "lhs"]
     XZ <- unlist(stringr::str_split(rows[i, "rhs"], ":"))
     X <- XZ[[1]]
@@ -347,7 +347,7 @@ centerInteractionsCOEFS <- function(parTable, COEFS, center.means = TRUE,
                                     label.col = "label") {
   rows <- getIntTermRows(parTable)
 
-  for (i in NROW(rows)) {
+  for (i in seq_len(NROW(rows))) {
     Y <- rows[i, "lhs"]
     XZ <- unlist(stringr::str_split(rows[i, "rhs"], ":"))
     X <- XZ[[1]]
