@@ -10,8 +10,10 @@ m1 <- "
   Y ~ X + Z + X:Z
 "
 
-est <- twostep_da(m1, data = oneInt, method = "lms")
-summary(est)
+est_dca <- twostep(m1, data = oneInt, method = "dblcent")
+est_lms <- twostep(m1, data = oneInt, method = "lms")
+summary(est_dca)
+summary(est_lms)
 
 
 tpb <- "
@@ -26,8 +28,11 @@ tpb <- "
   INT ~ ATT + SN + PBC
   BEH ~ INT + PBC + INT:PBC
 "
-est_tpb <- twostep_da(tpb, data = TPB, method = "lms", nodes = 32)
-summary(est_tpb)
+
+tpb_lms <- twostep(tpb, data = TPB, method = "lms", nodes = 32)
+tpb_dca <- suppressWarnings(twostep(tpb, data = TPB, method = "dblcent"))
+summary(tpb_lms)
+suppressWarnings(summary(tpb_dca))
 
 
 tpb_uk <- "
@@ -45,7 +50,9 @@ tpb_uk <- "
  BEH ~ INT:PBC
 "
 
-est_lms <- twostep_da(tpb_uk, TPB_UK, method = "lms",
-                      nodes = 32, optimize = TRUE)
-est_qml <- twostep_da(tpb_uk, TPB_UK, method = "qml")
-summary(est_qml)
+uk_lms <- twostep(tpb_uk, TPB_UK, method = "lms", nodes = 32, adaptive.quad = TRUE)
+uk_qml <- twostep(tpb_uk, TPB_UK, method = "qml")
+uk_dblcent <- twostep(tpb_uk, TPB_UK, method = "dblcent")
+summary(uk_lms)
+summary(uk_dblcent)
+

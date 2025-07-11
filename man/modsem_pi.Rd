@@ -31,6 +31,7 @@ modsem_pi(
   suppress.warnings.match = FALSE,
   rcs = FALSE,
   rcs.choose = NULL,
+  LAVFUN = lavaan::sem,
   ...
 )
 }
@@ -42,7 +43,7 @@ modsem_pi(
 \item{method}{method to use:
 \describe{
   \item{\code{"dblcent"}}{double centering approach (passed to \code{lavaan}).}
-  \item{\code{"ca"}}{Constrained approach (passed to \code{lavaan}).}
+  \item{\code{"ca"}}{constrained approach (passed to \code{lavaan}).}
   \item{\code{"rca"}}{residual centering approach (passed to \code{lavaan}).}
   \item{\code{"uca"}}{unconstrained approach (passed to \code{lavaan}).}
   \item{\code{"pind"}}{prod ind approach, with no constraints or centering (passed to \code{lavaan}).}
@@ -111,7 +112,9 @@ single item indicators instead? See \code{\link{relcorr_single_item}}.}
 reliablity-reliability corrected single items? Corresponds to the \code{choose} 
 argument in \code{\link{relcorr_single_item}}.}
 
-\item{...}{arguments passed to \code{lavaan::sem()}}
+\item{LAVFUN}{Function used to estimate the model. Defaults to \code{lavaan::sem}.}
+
+\item{...}{arguments passed to \code{LAVFUN}}
 }
 \value{
 \code{modsem} object

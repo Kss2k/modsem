@@ -7,7 +7,7 @@
 #' @param method method to use:
 #' \describe{
 #'   \item{\code{"dblcent"}}{double centering approach (passed to \code{lavaan}).}
-#'   \item{\code{"ca"}}{Constrained approach (passed to \code{lavaan}).}
+#'   \item{\code{"ca"}}{constrained approach (passed to \code{lavaan}).}
 #'   \item{\code{"rca"}}{residual centering approach (passed to \code{lavaan}).}
 #'   \item{\code{"uca"}}{unconstrained approach (passed to \code{lavaan}).}
 #'   \item{\code{"pind"}}{prod ind approach, with no constraints or centering (passed to \code{lavaan}).}
@@ -75,7 +75,9 @@
 #' reliablity-reliability corrected single items? Corresponds to the \code{choose} 
 #' argument in \code{\link{relcorr_single_item}}.
 #'
-#' @param ... arguments passed to \code{lavaan::sem()}
+#' @param LAVFUN Function used to estimate the model. Defaults to \code{lavaan::sem}.
+#'
+#' @param ... arguments passed to \code{LAVFUN}
 #'
 #' @return \code{modsem} object
 #' @export
@@ -169,6 +171,7 @@ modsem_pi <- function(model.syntax = NULL,
                       suppress.warnings.match = FALSE,
                       rcs = FALSE,
                       rcs.choose = NULL,
+                      LAVFUN = lavaan::sem,
                       ...) {
   stopif(is.null(model.syntax), "No model syntax provided in modsem")
   stopif(is.null(data), "No data provided in modsem")
@@ -201,6 +204,7 @@ modsem_pi <- function(model.syntax = NULL,
       suppress.warnings.lavaan = suppress.warnings.lavaan,
       rcs = rcs,
       rcs.choose = rcs.choose,
+      LAVFUN = lavaan::sem,
       ...
     )
 
@@ -239,7 +243,8 @@ modsem_pi <- function(model.syntax = NULL,
                            suppress.warnings.match = suppress.warnings.match)
   
   # Save these for later
-  input <- list(syntax = model.syntax, data = data, parTable = modelSpec$parTable)
+  input <- list(syntax = model.syntax, data = data, 
+                parTable = modelSpec$parTable)
 
   # Data Processing  -----------------------------------------------------------
   oVs        <- c(modelSpec$oVs, group)
@@ -292,13 +297,14 @@ modsem_pi <- function(model.syntax = NULL,
 
   # Extra info saved for estimating baseline model
   input$modsemArgs <- methodSettings
-  input$lavArgs    <- list(estimator = estimator, cluster = cluster, group = group, ...)
+  input$lavArgs    <- list(estimator = estimator, cluster = cluster, group = group, 
+                           LAVFUN = LAVFUN, ...)
   modelSpec$input  <- input
 
   if (run) {
     lavWrapper <- getWarningWrapper(silent = suppress.warnings.lavaan)
-    lavEst <- tryCatch(lavaan::sem(newSyntax, newData, estimator = estimator,
-                                   group = group, ...) |> lavWrapper(),
+    lavEst <- tryCatch(LAVFUN(newSyntax, newData, estimator = estimator,
+                              group = group, ...) |> lavWrapper(),
                        error = function(cnd) {
                          warning2(capturePrint(cnd))
                          NULL
@@ -656,6 +662,7 @@ modsemPICluster <- function(model.syntax = NULL,
                             suppress.warnings.match = FALSE,
                             rcs = FALSE,
                             rcs.choose = NULL,
+                            LAVFUN = lavaan::sem,
                             ...) {
   stopif(na.rm, "`na.rm=TRUE` can currently not be paired with the `cluster` argument!")
 
@@ -745,7 +752,7 @@ modsemPICluster <- function(model.syntax = NULL,
   if (run) {
     lavWrapper <- getWarningWrapper(silent = suppress.warnings.lavaan)
     lavEst <- tryCatch({
-        lavWrapper(lavaan::sem(
+        lavWrapper(LAVFUN(
           newSyntax, newData, estimator = estimator,
           group = group, cluster = cluster, ...
         ))

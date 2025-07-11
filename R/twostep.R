@@ -1,7 +1,107 @@
-twostep_da <- function(syntax, data, method = "lms", zero.tol = 1e-12,
-                       fix.cov.xis = TRUE, ...) {
+#' Estimate interaction effects in structural equation models (SEMs) using a twostep procedure
+#'
+#' @param model.syntax \code{lavaan} syntax
+#'
+#' @param data dataframe
+#'
+#' @param method method to use:
+#' \describe{
+#'   \item{\code{"dblcent"}}{double centering approach (passed to \code{lavaan}).}
+#'   \item{\code{"ca"}}{constrained approach (passed to \code{lavaan}).}
+#'   \item{\code{"rca"}}{residual centering approach (passed to \code{lavaan}).}
+#'   \item{\code{"uca"}}{unconstrained approach (passed to \code{lavaan}).}
+#'   \item{\code{"pind"}}{prod ind approach, with no constraints or centering (passed to \code{lavaan}).}
+#'   \item{\code{"lms"}}{latent model structural equations (not passed to \code{lavaan}).}
+#'   \item{\code{"qml"}}{quasi maximum likelihood estimation of latent model structural equations (not passed to \code{lavaan}).}
+#'   \item{\code{"custom"}}{use parameters specified in the function call (passed to \code{lavaan}).}
+#' }
+#'
+#' @param ... arguments passed to other functions depending on the method (see \code{\link{modsem_pi}}, \code{\link{modsem_da}}, and \code{\link{modsem_mplus}})
+#'
+#' @return \code{modsem} object with class \code{\link{modsem_pi}} or \code{\link{modsem_da}}.
+#'
+#' @export
+#' @description
+#' Estimate an interaction model using a twostep procedure. For the PI approaches, the \code{lavaan::sam} function
+#'   is used to optimize the models, instead of \code{lavaan::sem}. Note that the product indicators are still used,
+#'   and not the newly developed SAM approach to estimate latent interactions. For the DA approaches (LMS and QML)
+#'   the measurement model is estimated using a CFA (\code{lavaan::cfa}). The structural model is estimated using
+#'   \code{\link{modsem_da}}, where the estimates in the measurement model are fixed, based on the CFA estimates.
+#'   Note that standard errors are uncorrected (i.e., naive), and do not account for the uncertainty in the CFA estimates.
+#'   \strong{NOTE, that this is an experimental feature!}.
+#'
+#' @examples
+#' library(modsem)
+#' m1 <- '
+#'   # Outer Model
+#'   X =~ x1 + x2 +x3
+#'   Y =~ y1 + y2 + y3
+#'   Z =~ z1 + z2 + z3
+#'
+#'   # Inner model
+#'   Y ~ X + Z + X:Z
+#' '
+#'
+#' est_dblcent <- twostep(m1, oneInt, method = "dblcent")
+#' summary(est_dblcent)
+#'
+#' \dontrun{
+#' est_lms <- modsem(m1, oneInt, method = "lms")
+#' summary(est_lms)
+#'
+#' est_qml <- modsem(m1, oneInt, method = "qml")
+#' summary(est_qml)
+#' }
+#' 
+#' tpb_uk <- "
+#' # Outer Model (Based on Hagger et al., 2007)
+#'  ATT =~ att3 + att2 + att1 + att4
+#'  SN =~ sn4 + sn2 + sn3 + sn1
+#'  PBC =~ pbc2 + pbc1 + pbc3 + pbc4
+#'  INT =~ int2 + int1 + int3 + int4
+#'  BEH =~ beh3 + beh2 + beh1 + beh4
+#' 
+#' # Inner Model (Based on Steinmetz et al., 2011)
+#'  # Causal Relationsships
+#'  INT ~ ATT + SN + PBC
+#'  BEH ~ INT + PBC
+#'  BEH ~ INT:PBC
+#' "
+#' 
+#' uk_dblcent <- twostep(tpb_uk, TPB_UK, method = "dblcent")
+#' summary(uk_dblcent)
+#'
+#' \dontrun{
+#'   uk_lms <- twostep(tpb_uk, TPB_UK, method = "lms", nodes = 32, adaptive.quad = TRUE)
+#'   uk_qml <- twostep(tpb_uk, TPB_UK, method = "qml")
+#'   summary(uk_lms)
+#' }
+#' @export
+twostep <- function(model.syntax, data, method = "lms", ...) {
+  if (method %in% PI_METHODS)      twostepfun <- twostepPI
+  else if (method %in% DA_METHODS) twostepfun <- twostepDA
+  else stop2("Unsupported method: ", method)
+
+  twostepfun(
+     model.syntax = model.syntax,
+     data         = data,
+     method       = method,
+     ...
+  )
+}
+
+
+twostepPI <- function(..., LAVFUN = NULL) { # capture LAVFUN arg
+  modsem_pi(..., LAVFUN = lavaan::sam)
+}
+
+
+twostepDA <- function(model.syntax, data, method = "lms", zero.tol = 1e-12,
+                      fix.cov.xis = TRUE, ...) {
+  stopif(!method %in% DA_METHODS, "Unsupported method: ", method)
+
   data <- as.data.frame(data)
-  parTable      <- modsemify(syntax)
+  parTable      <- modsemify(model.syntax)
   parTableOuter <- parTable[parTable$op == "=~", ]
   parTableInner <- parTable[parTable$op != "=~", ]
 
@@ -17,6 +117,11 @@ twostep_da <- function(syntax, data, method = "lms", zero.tol = 1e-12,
   parTableCFA <- parTableCFA[!(parTableCFA$op == "~~" &
                                parTableCFA$lhs %in% fixCovVars |
                                parTableCFA$rhs %in% fixCovVars), ]
+
+  # Remove latent intercepts which are zero
+  parTableCFA <- parTableCFA[!(parTableCFA$op == "~1" &
+                               parTableCFA$lhs %in% lvs &
+                               abs(parTableCFA$est) < zero.tol), ]
 
   parTableOuterFixed <- data.frame(
     lhs = parTableCFA$lhs,
@@ -34,9 +139,16 @@ twostep_da <- function(syntax, data, method = "lms", zero.tol = 1e-12,
       mod = ""
     )
   } else parTableCustom <- NULL
- 
+
+  isNonLinEta <- vapply(
+    X = etas, 
+    FUN.VALUE = logical(1L),
+    FUN = intTermsAffectLV,
+    parTable = parTable
+  )
+
   etaIntercepts <- data.frame(
-    lhs = etas,
+    lhs = etas[isNonLinEta],
     op = "~1",
     rhs = "",
     mod = ""
@@ -104,13 +216,13 @@ twostep_da <- function(syntax, data, method = "lms", zero.tol = 1e-12,
 
   diff.pars <- setdiff(colnames(vcov.11), colnames(vcov.22))
   vcov.11   <- vcov.11[diff.pars, diff.pars]
-  vcov.all  <- diagPartionedMat(X = vcov.11, Y = vcov.22)
+  vcov.all  <- diagPartitionedMat(X = vcov.11, Y = vcov.22)
 
   # Get coef 
   coef.1 <- lavaan::coef(cfa)
   coef.2 <- coef(fit, type = "all")
   
-  diff.pars <- setdiff(names(coef.1), names(coef.22))
+  diff.pars <- setdiff(names(coef.1), names(coef.2))
   coef.1    <- coef.1[diff.pars]
   coef.all  <- c(coef.1, coef.2)
  
