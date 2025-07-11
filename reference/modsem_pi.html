@@ -109,6 +109,7 @@ Use <code><a href="default_settings_pi.html">default_settings_pi()</a></code> to
 <span>  suppress.warnings.match <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  rcs <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  rcs.choose <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  LAVFUN <span class="op">=</span> <span class="fu">lavaan</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/lavaan/man/sem.html" class="external-link">sem</a></span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -130,7 +131,7 @@ Use <code><a href="default_settings_pi.html">default_settings_pi()</a></code> to
 <dd><p>double centering approach (passed to <code>lavaan</code>).</p></dd>
 
   <dt><code>"ca"</code></dt>
-<dd><p>Constrained approach (passed to <code>lavaan</code>).</p></dd>
+<dd><p>constrained approach (passed to <code>lavaan</code>).</p></dd>
 
   <dt><code>"rca"</code></dt>
 <dd><p>residual centering approach (passed to <code>lavaan</code>).</p></dd>
@@ -261,8 +262,12 @@ reliablity-reliability corrected single items? Corresponds to the <code>choose</
 argument in <code><a href="relcorr_single_item.html">relcorr_single_item</a></code>.</p></dd>
 
 
+<dt id="arg-lavfun">LAVFUN<a class="anchor" aria-label="anchor" href="#arg-lavfun"></a></dt>
+<dd><p>Function used to estimate the model. Defaults to <code><a href="https://rdrr.io/pkg/lavaan/man/sem.html" class="external-link">lavaan::sem</a></code>.</p></dd>
+
+
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
-<dd><p>arguments passed to <code><a href="https://rdrr.io/pkg/lavaan/man/sem.html" class="external-link">lavaan::sem()</a></code></p></dd>
+<dd><p>arguments passed to <code>LAVFUN</code></p></dd>
 
 </dl></div>
     <div class="section level2">
