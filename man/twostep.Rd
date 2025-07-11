@@ -23,7 +23,7 @@ twostep(model.syntax, data, method = "lms", ...)
   \item{\code{"custom"}}{use parameters specified in the function call (passed to \code{lavaan}).}
 }}
 
-\item{...}{arguments passed to other functions depending on the method (see \code{\link{modsem_pi}}, \code{\link{modsem_da}}, and \code{\link{modsem_mplus}})}
+\item{...}{arguments passed to other functions depending on the method (see \code{\link{modsem_pi}} and \code{\link{modsem_da}})}
 }
 \value{
 \code{modsem} object with class \code{\link{modsem_pi}} or \code{\link{modsem_da}}.
@@ -35,7 +35,7 @@ Estimate an interaction model using a twostep procedure. For the PI approaches, 
   the measurement model is estimated using a CFA (\code{lavaan::cfa}). The structural model is estimated using
   \code{\link{modsem_da}}, where the estimates in the measurement model are fixed, based on the CFA estimates.
   Note that standard errors are uncorrected (i.e., naive), and do not account for the uncertainty in the CFA estimates.
-  \strong{NOTE, that this is an experimental feature!}.
+  \strong{NOTE, this is an experimental feature!}
 }
 \examples{
 library(modsem)
@@ -53,10 +53,10 @@ est_dblcent <- twostep(m1, oneInt, method = "dblcent")
 summary(est_dblcent)
 
 \dontrun{
-est_lms <- modsem(m1, oneInt, method = "lms")
+est_lms <- twostep(m1, oneInt, method = "lms")
 summary(est_lms)
 
-est_qml <- modsem(m1, oneInt, method = "qml")
+est_qml <- twostep(m1, oneInt, method = "qml")
 summary(est_qml)
 }
 
@@ -79,8 +79,9 @@ uk_dblcent <- twostep(tpb_uk, TPB_UK, method = "dblcent")
 summary(uk_dblcent)
 
 \dontrun{
-  uk_lms <- twostep(tpb_uk, TPB_UK, method = "lms", nodes = 32, adaptive.quad = TRUE)
   uk_qml <- twostep(tpb_uk, TPB_UK, method = "qml")
+
+  uk_lms <- twostep(tpb_uk, TPB_UK, method = "lms", nodes = 32, adaptive.quad = TRUE)
   summary(uk_lms)
 }
 }

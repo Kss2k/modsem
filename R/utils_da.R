@@ -431,7 +431,7 @@ nFreeInterceptsDA <- function(model) {
   parTable   <- getMissingLabels(parameter_estimates(model))
   intercepts <- parTable$label[parTable$op == "~1"]
   coefs <- coef(model, type = "free")
-  
+
   sum(intercepts %in% names(coefs))
 }
 
