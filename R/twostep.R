@@ -81,11 +81,7 @@ twostep_da <- function(syntax, data, method = "lms", zero.tol = 1e-12,
     parTableCFA, parTableCFACov[covrows, ]
   )
 
-  parTable.out <- leftJoin(
-    x = estParTable,
-    y = parTableCFA,
-    by = c("lhs", "op", "rhs")
-  )
+  parTable.out <- leftJoin(left  = estParTable, right = parTableCFA)
 
   parTable.out$std.error <- ifelse(
     is.na(parTable.out$std.error) & !is.na(parTable.out$se.cfa),
@@ -99,6 +95,28 @@ twostep_da <- function(syntax, data, method = "lms", zero.tol = 1e-12,
   parTable.out$ci.upper <- parTable.out$est + CI_WIDTH * parTable.out$std.error
 
   fit$parTable <- parTable.out
+
+  parTabelLabelled <- getMissingLabels(parTable.out)
+
+  # Get vcov
+  vcov.11 <- lavaan::vcov(cfa)
+  vcov.22 <- vcov(fit, type = "all")
+
+  diff.pars <- setdiff(colnames(vcov.11), colnames(vcov.22))
+  vcov.11   <- vcov.11[diff.pars, diff.pars]
+  vcov.all  <- diagPartionedMat(X = vcov.11, Y = vcov.22)
+
+  # Get coef 
+  coef.1 <- lavaan::coef(cfa)
+  coef.2 <- coef(fit, type = "all")
+  
+  diff.pars <- setdiff(names(coef.1), names(coef.22))
+  coef.1    <- coef.1[diff.pars]
+  coef.all  <- c(coef.1, coef.2)
+ 
+  # Add to fit
+  fit$vcov.all  <- vcov.all
+  fit$coefs.all <- coef.all
 
   fit
 }
