@@ -420,10 +420,21 @@ nNegativeLast <- function(x, n = 10) {
 }
 
 
-getDegreesOfFreedom <- function(m, coef, nIntercepts = 0L) {
-  t <- (m * (m + 1)) / 2
-  df <- t - length(coef)
-  df + nIntercepts
+getDegreesOfFreedom <- function(p, coef, mean.structure = TRUE) {
+  fm <- \(c) (p * (p + c)) / 2 
+
+  # c = 1 for a model without a meanstructure
+  # c = 3 for a model with meanstructure
+  # Without meanstructure:
+  #   m = p * (p + 1) / 2
+  # With meanstructure 
+  #   m = p * (p + 1) / 2 + p
+  #     = (p * (p + 1) + p) / 2
+  #     = p * (1 + p + 1 + 1) / 2
+  #     = p * (p + 3) / 2
+
+  m <- ifelse(mean.structure, yes = fm(3), no = fm(1))
+  m - length(coef)
 }
 
 

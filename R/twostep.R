@@ -148,12 +148,14 @@ twostepDA <- function(model.syntax, data, method = "lms", zero.tol = 1e-12,
     parTable = parTable
   )
 
-  etaIntercepts <- data.frame(
-    lhs = etas[isNonLinEta],
-    op = "~1",
-    rhs = "",
-    mod = ""
-  )
+  if (any(isNonLinEta)) {
+    etaIntercepts <- data.frame(
+      lhs = etas[isNonLinEta],
+      op = "~1",
+      rhs = "",
+      mod = ""
+    )
+  } else etaIntercepts <- NULL
 
   parTableTwoStep <- rbind(
     parTableCustom,
@@ -230,6 +232,8 @@ twostepDA <- function(model.syntax, data, method = "lms", zero.tol = 1e-12,
   # Add to fit
   fit$vcov.all  <- vcov.all
   fit$coefs.all <- coef.all
+
+  fit$twostep.spec <- twostep.spec
 
   fit
 }

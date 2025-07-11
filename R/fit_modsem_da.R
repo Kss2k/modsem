@@ -19,6 +19,8 @@ fit_modsem_da <- function(model, chisq = TRUE) {
          immediate. = FALSE)
 
 
+  t      <- nFreeInterceptsDA(model)
+  mean.s <- model$args$mean.observed || t > 0
   logLik <- model$logLik
   O      <- stats::cov(model$data)
   mu     <- apply(model$data, 2, mean)
@@ -27,9 +29,8 @@ fit_modsem_da <- function(model, chisq = TRUE) {
   p      <- NCOL(model$data)
   coef   <- coef(model, type = "free")
   k      <- length(coef)
-  t      <- nFreeInterceptsDA(model)
-  df     <- getDegreesOfFreedom(m = p, coef = coef, nIntercepts = t)
-  
+  df     <- getDegreesOfFreedom(p = p, coef = coef, mean.structure = mean.s)
+ 
   expected.matrices <- model$expected.matrices
 
   matrices <- model$model$matrices
@@ -49,17 +50,9 @@ fit_modsem_da <- function(model, chisq = TRUE) {
   Binv     <- solve(Ieta - gammaEta)
 
   if (chisq) {
-    # covX  <- lambdaX %*% phi %*% t(lambdaX) + thetaX
-    # covXY <- lambdaY %*% (Binv %*% gammaXi %*% phi) %*% t(lambdaX)
-    # covY  <- lambdaY %*%
-    #   (Binv %*% (gammaXi %*% phi %*% t(gammaXi) + psi) %*% t(Binv)) %*%
-    #   t(lambdaY) + thetaY
-
-    # E <- rbind(cbind(covX, t(covXY)),
-    #            cbind(covXY, covY))
     E <- expected.matrices$sigma.ov
 
-    if (t) {
+    if (mean.s) {
       muHat <- expected.matrices$mu.ov
     } else muHat <- mu
 
