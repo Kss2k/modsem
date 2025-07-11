@@ -70,7 +70,7 @@ addVariances <- function(pt) {
 addCovariances <- function(pt) {
   # Add covariances for exogenous variables if missing
   pt       <- stripColonsParTable(pt)
-  latents  <- getLVs(pt)
+  latents  <- geXis(pt, isLV = TRUE)
   if (length(latents) == 0) return(pt)
 
   higherOrder <- getHigherOrderLVs(pt)
