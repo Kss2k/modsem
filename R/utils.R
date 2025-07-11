@@ -652,3 +652,8 @@ eraseConsoleLines <- function(n = 1) {
   # bring cursor to start of the line we landed on
   cat(seq, "\033[1G", sep = "")
 }
+
+
+tryFormatC <- function(..., .onfail = "NA") {
+  tryCatch(formatC(...), error = \(e) .onfail)
+}

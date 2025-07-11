@@ -1,3 +1,8 @@
+PI_METHODS   = c("rca", "uca", "dblcent", "pind", "ca", "custom")
+DA_METHODS   = c("lms", "qml")
+MPLUS_METHOD = "mplus"
+
+
 #' Estimate interaction effects in structural equation models (SEMs)
 #'
 #' @param model.syntax \code{lavaan} syntax
@@ -7,13 +12,14 @@
 #' @param method method to use:
 #' \describe{
 #'   \item{\code{"dblcent"}}{double centering approach (passed to \code{lavaan}).}
-#'   \item{\code{"ca"}}{Constrained approach (passed to \code{lavaan}).}
+#'   \item{\code{"ca"}}{constrained approach (passed to \code{lavaan}).}
 #'   \item{\code{"rca"}}{residual centering approach (passed to \code{lavaan}).}
 #'   \item{\code{"uca"}}{unconstrained approach (passed to \code{lavaan}).}
 #'   \item{\code{"pind"}}{prod ind approach, with no constraints or centering (passed to \code{lavaan}).}
 #'   \item{\code{"lms"}}{latent model structural equations (not passed to \code{lavaan}).}
 #'   \item{\code{"qml"}}{quasi maximum likelihood estimation of latent model structural equations (not passed to \code{lavaan}).}
 #'   \item{\code{"custom"}}{use parameters specified in the function call (passed to \code{lavaan}).}
+#'   \item{\code{"mplus"}}{estimate model through \code{Mplus}.}
 #' }
 #'
 #' @param ... arguments passed to other functions depending on the method (see \code{\link{modsem_pi}}, \code{\link{modsem_da}}, and \code{\link{modsem_mplus}})
@@ -121,11 +127,11 @@ modsem <- function(model.syntax = NULL,
     data <- as.data.frame(data)
   }
 
-  if (method %in% c("rca", "uca", "dblcent", "pind", "ca", "custom")) {
+  if (method %in% PI_METHODS) {
     modsem_pi(model.syntax, data = data, method = method, ...)
-  } else if (method %in% c("lms", "qml")) {
+  } else if (method %in% DA_METHODS) {
     modsem_da(model.syntax, data = data, method = method, ...)
-  } else if (method == "mplus") {
+  } else if (method == MPLUS_METHOD) {
     modsem_mplus(model.syntax, data = data, ...)
   } else {
     stop2("Method not recognized")

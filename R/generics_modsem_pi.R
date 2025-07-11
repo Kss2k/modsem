@@ -26,7 +26,7 @@ summary.modsem_pi <- function(object,
   out         <- list()
   out$lavaan  <- lavaan::summary(extract_lavaan(object), ...)
   out$info    <- list(version = PKG_INFO$version, approach = attributes(object)$method)
-  out$fit     <- lavaan::fitMeasures(extract_lavaan(object))
+  out$fit     <- tryCatch(lavaan::fitMeasures(extract_lavaan(object)), error = \(e) NA)
   out$N       <- lavaan::nobs(extract_lavaan(object))
   out$format  <- list(digits = digits, scientific = scientific, adjusted.stat = adjusted.stat)
   out$ngroups <- lavaan::lavInspect(extract_lavaan(object), what = "ngroups")
@@ -56,7 +56,7 @@ summary.modsem_pi <- function(object,
       # Use compare_fit (modsem generic, which internally uses lavTestLRT/anova for modsem_pi)
       lrt <- compare_fit(object, est_h0)
       out$LRT <- lrt
-      out$fitH0 <- lavaan::fitMeasures(extract_lavaan(est_h0))
+      out$fitH0 <- tryCatch(lavaan::fitMeasures(extract_lavaan(est_h0)), error = \(e) NA)
     }
   }, error = \(e) warning2("Baseline model could not be estimated: ", e$message, immediate. = FALSE))
 
@@ -124,15 +124,15 @@ print.summary_modsem_pi <- function(x, ...) {
                "SRMR")
 
   valuesH1 <- c(
-    formatC(fit["logl"], digits = 2, format = "f"),
-    formatC(fit["aic"], digits = 2, format = "f"),
-    formatC(fit["bic"], digits = 2, format = "f"),
-    formatC(fit["chisq"], digits = 2, format = "f"),
-    as.character(fit["df"]),
-    formatC(fit["pvalue"], digits = digits, format = if (scientific) "e" else "f"),
-    formatC(fit["rmsea"], digits = 3, format = "f"),
-    formatC(fit["cfi"], digits = 3, format = "f"),
-    formatC(fit["srmr"], digits = 3, format = "f")
+    tryFormatC(fit["logl"], digits = 2, format = "f"),
+    tryFormatC(fit["aic"], digits = 2, format = "f"),
+    tryFormatC(fit["bic"], digits = 2, format = "f"),
+    tryFormatC(fit["chisq"], digits = 2, format = "f"),
+    ifelse(is.na(fit["df"]), yes = "NA", no = as.character(fit["df"])),
+    tryFormatC(fit["pvalue"], digits = digits, format = if (scientific) "e" else "f"),
+    tryFormatC(fit["rmsea"], digits = 3, format = "f"),
+    tryFormatC(fit["cfi"], digits = 3, format = "f"),
+    tryFormatC(fit["srmr"], digits = 3, format = "f")
   )
   for(i in seq_along(namesH1)) {
     cat(align_lavaan(namesH1[i], valuesH1[i], width.out), "\n")
@@ -144,16 +144,16 @@ print.summary_modsem_pi <- function(x, ...) {
     cat("Fit Measures for Baseline Model (H0):\n")
     fitH0 <- x$fitH0
     valuesH0 <- c(
-      formatC(fitH0["logl"], digits = 2, format = "f"),
-      formatC(fitH0["aic"], digits = 2, format = "f"),
-      formatC(fitH0["bic"], digits = 2, format = "f"),
-      formatC(fitH0["chisq"], digits = 2, format = "f"),
-      as.character(fitH0["df"]),
-      formatC(fitH0["pvalue"], digits = digits, 
+      tryFormatC(fitH0["logl"], digits = 2, format = "f"),
+      tryFormatC(fitH0["aic"], digits = 2, format = "f"),
+      tryFormatC(fitH0["bic"], digits = 2, format = "f"),
+      tryFormatC(fitH0["chisq"], digits = 2, format = "f"),
+      ifelse(is.na(fitH0["df"]), yes = "NA", no = as.character(fitH0["df"])),
+      tryFormatC(fitH0["pvalue"], digits = digits, 
               format = if (scientific) "e" else "f"),
-      formatC(fitH0["rmsea"], digits = 3, format = "f"),
-      formatC(fitH0["cfi"], digits = 3, format = "f"),
-      formatC(fitH0["srmr"], digits = 3, format = "f")
+      tryFormatC(fitH0["rmsea"], digits = 3, format = "f"),
+      tryFormatC(fitH0["cfi"], digits = 3, format = "f"),
+      tryFormatC(fitH0["srmr"], digits = 3, format = "f")
     )
     for(i in seq_along(namesH1)) {
       cat(align_lavaan(namesH1[i], valuesH0[i], width.out), "\n")
@@ -168,12 +168,12 @@ print.summary_modsem_pi <- function(x, ...) {
     if (nrow(lrt) > 1) {
       lrt_row <- lrt[2, ]
       cat(align_lavaan("Chi-square diff", 
-                       formatC(lrt_row[["Chisq diff"]], digits = 3, format = "f"), 
+                       tryFormatC(lrt_row[["Chisq diff"]], digits = 3, format = "f"), 
                        width.out), "\n")
       cat(align_lavaan("Degrees of freedom diff", 
                        as.character(lrt_row[["Df diff"]]), width.out), "\n")
       cat(align_lavaan("P-value (LRT)", 
-                       formatC(lrt_row[["Pr(>Chisq)"]], digits = digits, 
+                       tryFormatC(lrt_row[["Pr(>Chisq)"]], digits = digits, 
                                format = if (scientific) "e" else "f"), 
                        width.out), "\n")
     }
@@ -189,7 +189,7 @@ print.summary_modsem_pi <- function(x, ...) {
     printH("Interaction Model", "H1")
     for (i in seq_along(x$r.squared)) {
       cat(align_lavaan(names(x$r.squared)[i], 
-                       formatC(x$r.squared[i], digits = 3, format = "f"), 
+                       tryFormatC(x$r.squared[i], digits = 3, format = "f"), 
                        width.out), "\n")
     }
 
@@ -197,14 +197,14 @@ print.summary_modsem_pi <- function(x, ...) {
       printH("Baseline Model", "H0")
       for (i in seq_along(x$r.squared.H0)) {
         cat(align_lavaan(names(x$r.squared.H0)[i], 
-                         formatC(x$r.squared.H0[i], digits = 3, format = "f"), 
+                         tryFormatC(x$r.squared.H0[i], digits = 3, format = "f"), 
                          width.out), "\n")
       }
 
       printH("Change", "H1 - H0")
       for (i in seq_along(x$r.squared.diff)) {
         cat(align_lavaan(names(x$r.squared.diff)[i], 
-                         formatC(x$r.squared.diff[i], digits = 3, format = "f"), 
+                         tryFormatC(x$r.squared.diff[i], digits = 3, format = "f"), 
                          width.out), "\n")
       }
     }
