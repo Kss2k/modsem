@@ -53,7 +53,6 @@ updateStatusLog <- function(iterations, mode, logLikNew, deltaLL, relDeltaLL, ve
 }
 
 
-# 5. emLms function
 emLms <- function(model,
                   algorithm = c("EMA", "EM"),    # "EM" or "EMA"
                   em.control = list(),           # overrides for tau thresholds

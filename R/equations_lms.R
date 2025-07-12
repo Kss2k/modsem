@@ -18,21 +18,25 @@ estepLms <- function(model, theta, data, lastQuad = NULL, recalcQuad = FALSE, ..
       k = k, m.ceil = m.ceil
     )
 
-  } else if (model$quad$adaptive) {
-    quad <- lastQuad
+    P <- quad$W * quad$F # P is already calculated
+    V <- quad$n
+    w <- quad$w
 
-  } else quad <- model$quad
+  } else {
+    quad <- if (model$quad$adaptive) lastQuad else model$quad
+    V    <- quad$n
+    w    <- quad$w
+  
+    P <- matrix(0, nrow = nrow(data), ncol = length(w))
 
-  V <- quad$n
-  w <- quad$w
+    for (i in seq_along(w)) {
+      P[, i] <- dmvn(data, mean = muLmsCpp(model = modFilled, z = V[i, ]),
+                     sigma = sigmaLmsCpp(model = modFilled, z = V[i, ]),
+                     log = FALSE) * w[[i]]
+    }
+  } 
 
-  P <- matrix(0, nrow = nrow(data), ncol = length(w))
 
-  for (i in seq_along(w)) {
-    P[, i] <- dmvn(data, mean = muLmsCpp(model = modFilled, z = V[i, ]),
-                   sigma = sigmaLmsCpp(model = modFilled, z = V[i, ]),
-                   log = FALSE) * w[[i]]
-  }
 
   density        <- rowSums(P)
   observedLogLik <- sum(log(density))
