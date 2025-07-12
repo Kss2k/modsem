@@ -69,39 +69,35 @@ addVariances <- function(pt) {
 
 addCovariances <- function(pt) {
   # Add covariances for exogenous variables if missing
-  pt       <- stripColonsParTable(pt)
-  latents  <- getLVs(pt)
-  if (length(latents) == 0) return(pt)
+  pt  <- stripColonsParTable(pt)
+  xis <- getXis(pt, isLV = FALSE, checkAny = FALSE)
+  
+  if (!length(xis))
+    return(pt)
 
-  higherOrder <- getHigherOrderLVs(pt)
-  firstOrder  <- latents[!latents %in% higherOrder]
+  indicators   <- unique(pt[pt$op == "=~", "rhs"])
+  isLowerOrder <- xis %in% indicators
 
-  if (length(higherOrder)) { # then we should not touch the first order covariances
-    combosHO <- getUniqueCombos(higherOrder)
-    ptHO     <- pt[pt$lhs %in% higherOrder & pt$rhs %in% higherOrder, ]
-    combosHO$connected <- !is.na(apply(combosHO, MARGIN = 1, function(xy)
-                                       trace_path(ptHO, xy[[1]], xy[[2]])))
-    toBeSpecified <- combosHO[!combosHO$connected, c("V1", "V2")]
-    if (nrow(toBeSpecified)) {
-      newRows <- apply(toBeSpecified[c("V1", "V2")],
-                       MARGIN = 1,
-                       FUN = function(x) createParTableRow(x, op = "~~")) |>
-        purrr::list_rbind()
-      pt <- rbind(pt, newRows)
-    }
-  } else {
-    combosFO <- getUniqueCombos(firstOrder)
-    ptFO     <- pt[pt$lhs %in% firstOrder & pt$rhs %in% firstOrder, ]
-    combosFO$connected <- !is.na(apply(combosFO, MARGIN = 1, function(xy)
-                                       trace_path(ptFO, xy[[1]], xy[[2]])))
-    toBeSpecified <- combosFO[!combosFO$connected, c("V1", "V2")]
-    if (nrow(toBeSpecified)) {
-      newRows <- apply(toBeSpecified[c("V1", "V2")],
-                       MARGIN = 1,
-                       FUN = function(x) createParTableRow(x, op = "~~")) |>
-        purrr::list_rbind()
-      pt <- rbind(pt, newRows)
-    }
+  if (all(isLowerOrder))
+    return(pt)
+
+  xis <- xis[!isLowerOrder] # we don't want to add any residual covariances
+                            # only full covariances
+  
+  combos <- getUniqueCombos(xis)
+
+  isSpecified <- \(x, y) any(pt$op == "~~" & ((pt$rhs == x & pt$lhs == y) | 
+                                              (pt$rhs == y & pt$lhs == x)))
+
+  for (i in seq_len(NROW(combos))) {
+    xi1 <- combos[i, "V1"]
+    xi2 <- combos[i, "V2"]
+
+    if (isSpecified(x = xi1, y = xi2))
+      next
+
+    newRow <- createParTableRow(c(xi1, xi2), op = "~~")
+    pt <- rbind(pt, newRow)
   }
 
   pt
