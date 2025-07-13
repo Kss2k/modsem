@@ -117,7 +117,7 @@ printParTable <- function(parTable,
                           variances = TRUE,
                           custom = TRUE,
                           extra.cols = NULL,
-                          padWidth = 2,
+                          padWidth = 1, # we already pad lhs/rhs with "."/" "
                           padWidthLhs = 2,
                           spacing = 2) {
   formatted <- formatParTable(parTable, digits = digits,
