@@ -762,19 +762,23 @@ getEtasModelDA <- function(model) {
 }
 
 
-splitParTableEtas <- function(parTable, parTableCov = NULL, splitEtas, allEtas) {
+splitParTableEtas <- function(parTable, parTableCov = NULL, splitEtas, allEtas,
+                              nonLinearEtas = NULL) {
   if (!length(splitEtas) || !NROW(parTable))
     return(list(parTable = parTable, parTableCov = parTableCov))
 
   for (eta in splitEtas) {
     isReg <- parTable$lhs == eta & parTable$op == "~"
     isCov <- (parTable$lhs == eta | parTable$rhs == eta) & parTable$op == "~~"
-    parTableEta <- parTable[isReg | isCov, ]
+    isLinear <- !parTable$lhs %in% nonLinearEtas & 
+                !parTable$rhs %in% nonLinearEtas
+   
+    parTableEta <- parTable[isReg | isCov & isLinear, ]
 
     vars <- unique(c(parTableEta$rhs, parTableEta$lhs))
     downstreamEtas <- vars[vars != eta & vars %in% allEtas]
    
-    parTable    <- parTable[!(isReg | isCov), ]
+    parTable    <- parTable[!(isReg | isCov & isLinear), ]
     parTableCov <- rbind(parTableCov, parTableEta)
 
     split <- splitParTableEtas(parTable = parTable,
@@ -782,7 +786,7 @@ splitParTableEtas <- function(parTable, parTableCov = NULL, splitEtas, allEtas) 
                                splitEtas = downstreamEtas,
                                allEtas = allEtas)
 
-    parTable <- split$main
+    parTable    <- split$parTable
     parTableCov <- split$parTableCov
   }
 
@@ -799,24 +803,26 @@ splitParTable <- function(parTable) {
   intVars  <- unique(unlist(stringr::str_split(intTerms, pattern = ":")))
   etas    <- getEtas(parTable)
 
-  intVarEtas <- intVars[intVars %in% etas]
-
   if (!length(intTerms))
     return(empty)
 
   isNonLinear <- vapply(
-    X = intVarEtas, 
+    X = etas, 
     FUN.VALUE = logical(1L),
     FUN = intTermsAffectLV,
     parTable = parTable
   )
 
-  etasCovModel <- intVarEtas[!isNonLinear]
+  nonLinearEtas <- etas[isNonLinear]
+  linearEtas    <- etas[!isNonLinear]
+  etasCovModel  <- intVars[intVars %in% linearEtas]
 
   if (!length(etasCovModel))
     return(empty)
- 
+
   splitParTableEtas(
-    parTable = parTable, allEtas = etas, splitEtas = etasCovModel
+    parTable = parTable, allEtas = etas, 
+    splitEtas = etasCovModel,
+    nonLinearEtas = nonLinearEtas
   )
 }

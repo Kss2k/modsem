@@ -34,21 +34,21 @@ createTheta <- function(model, start = NULL) {
   omegaXiXi    <- as.vector(M$omegaXiXi)
   omegaEtaXi   <- as.vector(M$omegaEtaXi)
 
-  allModelValues <- c("lambdaX" = lambdaX,
-                      "lambdaY" = lambdaY,
-                      "tauX" = tauX,
-                      "tauY" = tauY,
-                      "thetaDelta" = thetaDelta,
+  allModelValues <- c("lambdaX"      = lambdaX,
+                      "lambdaY"      = lambdaY,
+                      "tauX"         = tauX,
+                      "tauY"         = tauY,
+                      "thetaDelta"   = thetaDelta,
                       "thetaEpsilon" = thetaEpsilon,
-                      "phi" = phi,
-                      "A" = A,
-                      "psi" = psi,
-                      "alpha" = alpha,
-                      "beta0" = beta0,
-                      "gammaXi" = gammaXi,
-                      "gammaEta" = gammaEta,
-                      "omegaXiXi" = omegaXiXi,
-                      "omegaEtaXi" = omegaEtaXi)
+                      "phi"          = phi,
+                      "A"            = A,
+                      "psi"          = psi,
+                      "alpha"        = alpha,
+                      "beta0"        = beta0,
+                      "gammaXi"      = gammaXi,
+                      "gammaEta"     = gammaEta,
+                      "omegaXiXi"    = omegaXiXi,
+                      "omegaEtaXi"   = omegaEtaXi)
 
   lavLabelsMain <- createLavLabels(M, subset = is.na(allModelValues),
                                    etas = etas)
