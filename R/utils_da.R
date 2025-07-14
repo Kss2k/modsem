@@ -782,7 +782,7 @@ splitParTableEtas <- function(parTable, parTableCov = NULL, splitEtas, allEtas) 
                                splitEtas = downstreamEtas,
                                allEtas = allEtas)
 
-    parTable <- split$parTable
+    parTable <- split$main
     parTableCov <- split$parTableCov
   }
 
@@ -792,7 +792,7 @@ splitParTableEtas <- function(parTable, parTableCov = NULL, splitEtas, allEtas) 
 
 splitParTable <- function(parTable) {
   intTerms <- getIntTerms(parTable)
-  empty <- list(main = parTable, cov = NULL)
+  empty <- list(parTable = parTable, parTableCov = NULL)
   if (!length(intTerms))
     return(empty)
   
