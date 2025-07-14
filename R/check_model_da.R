@@ -1,4 +1,6 @@
 preCheckModel <- function(model, covModel = NULL, method = "lms") {
+  hasCovModel <- !is.null(model$covModel$matrices)
+
   checkCovModelVariables(covModel = covModel, modelXis = model$info$xis)
 
   checkZeroVariances(model = model, method = method)
@@ -15,6 +17,11 @@ preCheckModel <- function(model, covModel = NULL, method = "lms") {
                              allIndsEtas = model$info$allIndsEtas)
 
   checkAConstraints(model = model, covModel = covModel, method = method)
+
+  checkCovEtaXi(parTable = model$parTable, canBeCausedByCovModel = hasCovModel)
+  checkCovEtaXi(parTable = model$covModel$parTable, canBeCausedByCovModel = FALSE)
+
+  checkOmegaEtaXi(model = model, method = method)
 }
 
 
@@ -125,6 +132,52 @@ checkNodesLms <- function(parTableMain,
   warnif(!nodesEtaEta_ok, "It is recommended that you have at least ",
          minNodesEtaEta, " nodes for interaction effects between endogenous ",
          "variables in the lms approach 'nodes = ", nodes, "'")
+}
+
+
+checkCovEtaXi <- function(parTable, canBeCausedByCovModel = FALSE) {
+  if (!NROW(parTable)) 
+    return(NULL)
+
+  etas <- getEtas(parTable, checkAny = FALSE, isLV = FALSE)
+  xis  <- getXis(parTable, checkAny = FALSE, isLV = FALSE, etas = etas)
+
+  isCov <- parTable$op == "~~"
+  lxi   <- parTable$lhs %in% xis
+  rxi   <- parTable$rhs %in% xis
+  leta  <- parTable$lhs %in% etas
+  reta  <- parTable$rhs %in% etas
+
+  problematicRows <- isCov & ((lxi & reta) | (leta & rxi))
+
+  if (canBeCausedByCovModel) {
+    msgcov <- paste0(
+      "\nThis may be because the model has been split into linear and non-linear parts!\n",
+      "You can try passing `auto.split.syntax=FALSE` and `cov.syntax=NULL`..."
+    ) 
+  } else msgcov <- ""
+
+  msg <- paste0(
+    "Covariances between exogenous and endogenous variables are not available,\n",
+    "and will be ignored! The problematic covariances are:\n",
+    capturePrint(parTable[problematicRows, ]),
+    msgcov
+  )
+
+  warnif(any(problematicRows), msg, immediate. = TRUE)
+}
+
+
+checkOmegaEtaXi <- function(model, method = "qml", zero.tol = 1e-10) {
+  if (method != "qml") return(NULL)
+
+  omegaEtaXi <- model$matrices$omegaEtaXi
+  problematic <- any(is.na(omegaEtaXi) | abs(omegaEtaXi) > zero.tol)
+
+  warnif(problematic, 
+         "Interactions between exogenous and enodgenous variables in the QML\n",
+         "approach can be biased in some cases...\n",
+         "You can try passing `auto.split.syntax=FALSE` and `cov.syntax=NULL`...")
 }
 
 

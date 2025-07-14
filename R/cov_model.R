@@ -34,7 +34,6 @@ covModel <- function(syntax = NULL, method = "lms", parTable = NULL,
                               parTable.main$op %in% c(":=", "=="), , drop = FALSE]
   }
 
-  browser()
   # Gamma
   listGammaXi <- constructGamma(etas, xis, parTable = parTable)
   gammaXi <- listGammaXi$numeric

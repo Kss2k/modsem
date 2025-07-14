@@ -65,8 +65,7 @@ m1 <- "
 "
 
 testthat::expect_warning(
-  modsem(m1, oneInt, method = "lms")
-  ,
+  modsem(m1, oneInt, method = "lms") ,
   regexp = "Variances and covariances .*"
 )
 

@@ -45,6 +45,7 @@ modsem_da(
   orthogonal.y = NULL,
   auto.fix.first = NULL,
   auto.fix.single = NULL,
+  auto.split.syntax = NULL,
   ...
 )
 }
@@ -217,6 +218,16 @@ If \code{FALSE} the residual variance is not fixed to zero, and treated as a fre
 of the model. Default if \code{TRUE}. \strong{NOTE} this behaviour is overridden 
 if the first loading is labelled, where it gets treated as a free parameter instead.}
 
+\item{auto.split.syntax}{Should the model syntax automatically be split into a 
+linear and non-linear part? This is done by moving the structural model for 
+linear endogenous variables (used in interaction terms) into the \code{cov.syntax}
+argument. This can potentially allow interactions between two endogenous variables
+given that both are linear (i.e., not affected by interaction terms). This is 
+\code{FALSE} by default for the LMS approach.
+When using the QML approach interation effects between exogenous and endogenous 
+variables can in some cases be biased, if the model is not split beforehand. 
+The default is therefore \code{TRUE} for the QML approach.}
+
 \item{...}{additional arguments to be passed to the estimation function.}
 }
 \value{
@@ -265,10 +276,6 @@ tpb <- "
   BEH =~ b1 + b2
 
 # Inner Model (Based on Steinmetz et al., 2011)
-  # Covariances
-  ATT ~~ SN + PBC
-  PBC ~~ SN
-  # Causal Relationships
   INT ~ ATT + SN + PBC
   BEH ~ INT + PBC
   BEH ~ INT:PBC

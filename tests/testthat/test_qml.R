@@ -33,12 +33,17 @@ tpb <- '
   BEH ~ b * INT + PBC 
   INT ~ ATT + SN + a * PBC
   BEH ~ PBC:INT
+
+  INT ~~ BEH
   VERY_LONG_LABEL_THAT_SHOULD_BE_SHORTENED := a * b
 '
 
+testthat::expect_warning(
 est2 <- modsem(tpb, data = TPB, method = "qml", 
                robust.se = TRUE,
-               standardize = TRUE, convergence.rel = 1e-2)
+               standardize = TRUE, convergence.rel = 1e-2),
+regexp = "Covariances between exo.* and endo.*")
+
 print(summary(est2, H0 = FALSE))
 expect_warning(plot_jn(x = "INT", z = "PBC", y = "BEH", model = est2,
                        min_z = -1.5, max_z = -0.5),
