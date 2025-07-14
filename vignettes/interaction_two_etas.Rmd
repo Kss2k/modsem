@@ -86,3 +86,10 @@ est_qml <- modsem(tpb_nonlinear, data = TPB, cov.syntax = tpb_linear,
                   method = "qml")
 summary(est_qml)
 ```
+
+It is also possible to make `modsem` attempt to split up the model syntax automatically using the 
+`auto.split.syntax` argument:
+```{r}
+est_lms <- modsem(tpb, data = TPB, method = "lms", auto.split.syntax = TRUE)
+summary(est_lms)
+```
