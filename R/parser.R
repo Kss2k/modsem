@@ -209,6 +209,8 @@ modsemify <- function(syntax) {
 
 
 parTableToSyntax <- function(parTable, removeColon = FALSE) {
+  if (is.null(parTable)) return(NULL)
+
   intercepts <- parTable$op == "~1"
   parTable[intercepts, "rhs"] <- "1"
   parTable[intercepts, "op"]  <- "~"
