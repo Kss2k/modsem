@@ -19,9 +19,20 @@ specifyModelDA <- function(syntax = NULL,
                            adaptive.frequency = 3,
                            impute.na = FALSE,
                            orthogonal.x = FALSE,
-                           orthogonal.y = FALSE) {
+                           orthogonal.y = FALSE,
+                           auto.split.syntax = FALSE) {
   if (!is.null(syntax)) parTable <- modsemify(syntax)
   stopif(is.null(parTable), "No parTable found")
+
+  if (auto.split.syntax && is.null(parTableCovModel) && is.null(cov.syntax)) {
+    split <- splitParTable(parTable)
+
+    parTable         <- split$parTable
+    parTableCovModel <- split$parTableCov
+
+    syntax     <- parTableToSyntax(parTable)
+    cov.syntax <- parTableToSyntax(parTableCovModel)
+  }
   
   checkParTableDA(parTable)
   # additions to lavaan-syntax for optimizer

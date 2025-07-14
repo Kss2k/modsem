@@ -11,10 +11,14 @@ covModel <- function(syntax = NULL, method = "lms", parTable = NULL,
                 theta = NULL, syntax = NULL, parTable = NULL))
   }
 
+  parTable.full <- rbind(parTable.main, parTable)
+
   if (NROW(parTable) && any(parTable$op == "~")) {
     etas     <- getSortedEtas(parTable, isLV = FALSE, checkAny = TRUE)
     numEtas  <- length(etas)
     xis      <- getXis(parTable, checkAny = TRUE, isLV = FALSE)
+    xis      <- unique(c(xis, xis.main[!xis.main %in% etas]))
+                       
     numXis   <- length(xis)
     isSimple <- FALSE
   } else {
@@ -30,6 +34,7 @@ covModel <- function(syntax = NULL, method = "lms", parTable = NULL,
                               parTable.main$op %in% c(":=", "=="), , drop = FALSE]
   }
 
+  browser()
   # Gamma
   listGammaXi <- constructGamma(etas, xis, parTable = parTable)
   gammaXi <- listGammaXi$numeric
@@ -40,7 +45,8 @@ covModel <- function(syntax = NULL, method = "lms", parTable = NULL,
   labelGammaEta <- listGammaEta$label
 
   # covariance matrices
-  listPsi <- constructPsi(etas, parTable = parTable)
+  listPsi <- constructPsi(etas, parTable = parTable.full) # we need to the full parTable
+                                                          # to identify pure etas
   psi <- listPsi$numeric
   labelPsi <- listPsi$label
 

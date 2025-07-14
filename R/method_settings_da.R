@@ -32,7 +32,8 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    orthogonal.x = FALSE,
                    orthogonal.y = FALSE,
                    auto.fix.first = TRUE,
-                   auto.fix.single = TRUE
+                   auto.fix.single = TRUE,
+                   auto.split.syntax = FALSE
         ),
         qml = list(verbose = interactive(),
                    optimize = TRUE,
@@ -67,7 +68,8 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    orthogonal.x = FALSE,
                    orthogonal.y = FALSE,
                    auto.fix.first = TRUE,
-                   auto.fix.single = TRUE
+                   auto.fix.single = TRUE,
+                   auto.split.syntax = TRUE
         )
     )
 
