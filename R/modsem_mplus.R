@@ -160,12 +160,14 @@ modsem_mplus <- function(model.syntax,
                    dimnames = list(labels, labels))
   })
 
-  modelSpec <- list(parTable = mplusParTable,
-                    model = results,
-                    coefs = coefs,
-                    data = data, 
-                    coef = coef,
-                    vcov = vcov)
+  modelSpec <- list(
+    parTable = modsemParTable(mplusParTable),
+    model    = results,
+    coefs    = coefs,
+    data     = data, 
+    coef     = coef,
+    vcov     = vcov
+  )
 
   structure(modelSpec,
             class = "modsem_mplus",
