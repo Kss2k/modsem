@@ -123,6 +123,7 @@ necessary syntax, and variables for the estimation of models with latent product
 <span>  orthogonal.y <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  auto.fix.first <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  auto.fix.single <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  auto.split.syntax <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -376,6 +377,18 @@ of the model. Default if <code>TRUE</code>. <strong>NOTE</strong> this behaviour
 if the first loading is labelled, where it gets treated as a free parameter instead.</p></dd>
 
 
+<dt id="arg-auto-split-syntax">auto.split.syntax<a class="anchor" aria-label="anchor" href="#arg-auto-split-syntax"></a></dt>
+<dd><p>Should the model syntax automatically be split into a
+linear and non-linear part? This is done by moving the structural model for
+linear endogenous variables (used in interaction terms) into the <code>cov.syntax</code>
+argument. This can potentially allow interactions between two endogenous variables
+given that both are linear (i.e., not affected by interaction terms). This is
+<code>FALSE</code> by default for the LMS approach.
+When using the QML approach interation effects between exogenous and endogenous
+variables can in some cases be biased, if the model is not split beforehand.
+The default is therefore <code>TRUE</code> for the QML approach.</p></dd>
+
+
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
 <dd><p>additional arguments to be passed to the estimation function.</p></dd>
 
@@ -507,10 +520,6 @@ if the first loading is labelled, where it gets treated as a free parameter inst
 <span class="r-in"><span><span class="st">  BEH =~ b1 + b2</span></span></span>
 <span class="r-in"><span><span class="st"></span></span></span>
 <span class="r-in"><span><span class="st"># Inner Model (Based on Steinmetz et al., 2011)</span></span></span>
-<span class="r-in"><span><span class="st">  # Covariances</span></span></span>
-<span class="r-in"><span><span class="st">  ATT ~~ SN + PBC</span></span></span>
-<span class="r-in"><span><span class="st">  PBC ~~ SN</span></span></span>
-<span class="r-in"><span><span class="st">  # Causal Relationships</span></span></span>
 <span class="r-in"><span><span class="st">  INT ~ ATT + SN + PBC</span></span></span>
 <span class="r-in"><span><span class="st">  BEH ~ INT + PBC</span></span></span>
 <span class="r-in"><span><span class="st">  BEH ~ INT:PBC</span></span></span>
@@ -622,7 +631,7 @@ if the first loading is labelled, where it gets treated as a free parameter inst
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   PBC ~~        </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     ATT             0.658      0.026    25.64    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     SN              0.657      0.026    25.12    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     SN              0.657      0.026    25.13    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   ATT ~~        </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     SN              0.616      0.027    22.65    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
