@@ -274,6 +274,7 @@ modsem_da <- function(model.syntax = NULL,
                       orthogonal.y = NULL,
                       auto.fix.first = NULL,
                       auto.fix.single = NULL,
+                      auto.split.syntax = NULL,
                       ...) {
   if (is.null(model.syntax)) {
     stop2("No model.syntax provided")
@@ -341,7 +342,8 @@ modsem_da <- function(model.syntax = NULL,
           orthogonal.x = orthogonal.x,
           orthogonal.y = orthogonal.y,
           auto.fix.first = auto.fix.first,
-          auto.fix.single = auto.fix.single
+          auto.fix.single = auto.fix.single,
+          auto.split.syntax = auto.split.syntax
         )
     )
 
@@ -369,7 +371,8 @@ modsem_da <- function(model.syntax = NULL,
     orthogonal.x = args$orthogonal.x,
     orthogonal.y = args$orthogonal.y,
     auto.fix.first = args$auto.fix.first,
-    auto.fix.single = args$auto.fix.single
+    auto.fix.single = args$auto.fix.single,
+    auto.split.syntax = args$auto.split.syntax
   )
 
   if (args$optimize) {

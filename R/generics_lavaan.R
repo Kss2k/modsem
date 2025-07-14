@@ -97,7 +97,7 @@ transformEstimatesLavaan <- function(object,
                                      tolerance.zero = 1e-10,
                                      transformation) {
   parTable <- parameter_estimates(object)
- 
+  
   hiorder <- isHigherOrderParTable(parTable)
   cluster <- isClustered(object)
 

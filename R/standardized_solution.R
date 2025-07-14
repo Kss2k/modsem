@@ -23,11 +23,12 @@ transformedSolutionCOEFS <- function(object,
 
   if (!NROW(parTable)) return(NULL)
 
-  if (inherits(object, "modsem_da")) {
+  if (isDA) {
     parTable <- parTable[c("lhs", "op", "rhs", "label", "est", "std.error")]
 
   } else { # modsem_pi or lavaan
     if (!"label" %in% names(parTable)) parTable$label <- ""
+    if (!"se"    %in% names(parTable)) parTable$se    <- NA
 
     parTable <- parTable[c("lhs", "op", "rhs", "label", "est", "se")]
     parTable <- rename(parTable, se = "std.error")
@@ -54,7 +55,7 @@ transformedSolutionCOEFS <- function(object,
   parTable$std.error <- NA
 
   # Get vcov and coefs
-  V     <- vcov(object)
+  V     <- tryCatch(vcov(object), error = \(e) NULL)
   coefs <- structure(parTable$est, names = labels)
 
   if (is.null(V)) { # calc.se == FALSE
