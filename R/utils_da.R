@@ -760,3 +760,63 @@ getXisModelDA <- function(model) {
 getEtasModelDA <- function(model) {
   unique(c(model$info$etas, model$covModel$info$etas))
 }
+
+
+splitParTableEtas <- function(parTable, parTableCov = NULL, splitEtas, allEtas) {
+  if (!length(splitEtas) || !NROW(parTable))
+    return(list(parTable = parTable, parTableCov = parTableCov))
+
+  for (eta in splitEtas) {
+    isReg <- parTable$lhs == eta & parTable$op == "~"
+    isCov <- (parTable$lhs == eta | parTable$rhs == eta) & parTable$op == "~~"
+    parTableEta <- parTable[isReg | isCov, ]
+
+    vars <- unique(c(parTableEta$rhs, parTableEta$lhs))
+    downstreamEtas <- vars[vars != eta & vars %in% allEtas]
+   
+    parTable    <- parTable[!(isReg | isCov), ]
+    parTableCov <- rbind(parTableCov, parTableEta)
+
+    split <- splitParTableEtas(parTable = parTable,
+                               parTableCov = parTableCov,
+                               splitEtas = downstreamEtas,
+                               allEtas = allEtas)
+
+    parTable <- split$parTable
+    parTableCov <- split$parTableCov
+  }
+
+  list(parTable = parTable, parTableCov = parTableCov)
+}
+
+
+splitParTable <- function(parTable) {
+  intTerms <- getIntTerms(parTable)
+  empty <- list(main = parTable, cov = NULL)
+  if (!length(intTerms))
+    return(empty)
+  
+  intVars  <- unique(unlist(stringr::str_split(intTerms, pattern = ":")))
+  etas    <- getEtas(parTable)
+
+  intVarEtas <- intVars[intVars %in% etas]
+
+  if (!length(intTerms))
+    return(empty)
+
+  isNonLinear <- vapply(
+    X = intVarEtas, 
+    FUN.VALUE = logical(1L),
+    FUN = intTermsAffectLV,
+    parTable = parTable
+  )
+
+  etasCovModel <- intVarEtas[!isNonLinear]
+
+  if (!length(etasCovModel))
+    return(empty)
+ 
+  splitParTableEtas(
+    parTable = parTable, allEtas = etas, splitEtas = etasCovModel
+  )
+}
