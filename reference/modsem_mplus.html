@@ -61,8 +61,10 @@
 <span>  estimator <span class="op">=</span> <span class="st">"ml"</span>,</span>
 <span>  type <span class="op">=</span> <span class="st">"random"</span>,</span>
 <span>  algorithm <span class="op">=</span> <span class="st">"integration"</span>,</span>
-<span>  process <span class="op">=</span> <span class="fl">8</span>,</span>
+<span>  processors <span class="op">=</span> <span class="fl">2</span>,</span>
 <span>  integration <span class="op">=</span> <span class="fl">15</span>,</span>
+<span>  rcs <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  rcs.choose <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -91,12 +93,23 @@
 <dd><p>algorithm argument passed to <code>Mplus</code></p></dd>
 
 
-<dt id="arg-process">process<a class="anchor" aria-label="anchor" href="#arg-process"></a></dt>
-<dd><p>process argument passed to <code>Mplus</code></p></dd>
+<dt id="arg-processors">processors<a class="anchor" aria-label="anchor" href="#arg-processors"></a></dt>
+<dd><p>processors argument passed to <code>Mplus</code></p></dd>
 
 
 <dt id="arg-integration">integration<a class="anchor" aria-label="anchor" href="#arg-integration"></a></dt>
 <dd><p>integration argument passed to <code>Mplus</code></p></dd>
+
+
+<dt id="arg-rcs">rcs<a class="anchor" aria-label="anchor" href="#arg-rcs"></a></dt>
+<dd><p>Should latent variable indicators be replaced with reliablity-corrected
+single item indicators instead? See <code><a href="relcorr_single_item.html">relcorr_single_item</a></code>.</p></dd>
+
+
+<dt id="arg-rcs-choose">rcs.choose<a class="anchor" aria-label="anchor" href="#arg-rcs-choose"></a></dt>
+<dd><p>Which latent variables should get their indicators replaced with
+reliablity-reliability corrected single items? Corresponds to the <code>choose</code>
+argument in <code><a href="relcorr_single_item.html">relcorr_single_item</a></code>.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
