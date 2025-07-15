@@ -31,9 +31,15 @@ est_qml2 <- modsem(nlsemModel, data = jordan, method = "qml", adaptive.quad=TRUE
 est_rca2 <- modsem(nlsemModel, data = jordan, method = "rca")
 est_dblcent2 <- modsem(nlsemModel, data = jordan, method = "dblcent")
 
-
 std <- standardized_estimates(est_qml2)
-covENJENJ_ENJSC <- std[std$lhs == "ENJ:SC" & std$rhs == "ENJ:ENJ" & std$op == "~~", "est"]
+print(std)
+
+x <- "ENJ:ENJ"
+y <- "ENJ:SC"
+covENJENJ_ENJSC <- std[std$lhs %in% c(x, y) &
+                       std$rhs %in% c(x, y) &
+                       std$rhs != std$lhs &
+                       std$op == "~~", "est"]
 testthat::expect_true(covENJENJ_ENJSC > 1) # check that covariances between product terms 
-                                              # are handled correctly
+                                           # are handled correctly
 testthat::expect_equal(unname(calcVarParTable("CAREER", std)), 1)
