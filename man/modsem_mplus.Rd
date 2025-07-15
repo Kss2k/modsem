@@ -10,8 +10,10 @@ modsem_mplus(
   estimator = "ml",
   type = "random",
   algorithm = "integration",
-  process = 8,
+  processors = 2,
   integration = 15,
+  rcs = FALSE,
+  rcs.choose = NULL,
   ...
 )
 }
@@ -26,9 +28,16 @@ modsem_mplus(
 
 \item{algorithm}{algorithm argument passed to \code{Mplus}}
 
-\item{process}{process argument passed to \code{Mplus}}
+\item{processors}{processors argument passed to \code{Mplus}}
 
 \item{integration}{integration argument passed to \code{Mplus}}
+
+\item{rcs}{Should latent variable indicators be replaced with reliablity-corrected
+single item indicators instead? See \code{\link{relcorr_single_item}}.}
+
+\item{rcs.choose}{Which latent variables should get their indicators replaced with
+reliablity-reliability corrected single items? Corresponds to the \code{choose} 
+argument in \code{\link{relcorr_single_item}}.}
 
 \item{...}{arguments passed to other functions}
 }

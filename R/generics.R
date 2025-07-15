@@ -42,96 +42,79 @@ var_interactions <- function(object, ...) {
 
 #' @export
 var_interactions.data.frame <- function(object, ignore.means = FALSE, ...) {
-  parTable <- removeInteractionVariances(fillColsParTable(object))
 
-  intTerms <- unique(parTable[grepl(":", parTable$rhs) &
-                     parTable$op == "~", "rhs"])
+  # Preparation
+  PT <- removeInteractionVariances(fillColsParTable(object))
 
-  getLabel <- \(x, y) sprintf("%s~~%s", x, y)
+  ## interaction (and square) terms explicitly declared in the model
+  intTerms <- unique(PT$rhs[PT$op == "~" & grepl(":", PT$rhs)])
+  if (length(intTerms) == 0L)
+    return(modsemParTable(PT))                 # nothing to do
 
-  for (intTerm in intTerms) {
-    # interaction term = XZ
-    # TODO:
-    #   I should also add covariances between X:Z and the other exogenous
-    #   variables... (only relevant when mu(X) or mu(Z) != 0)
-    XZ   <- stringr::str_split_fixed(intTerm, ":", 2)
-    X    <- XZ[[1]]
-    Z    <- XZ[[2]]
+  # Gather first‑ and second‑order moments for the base variables --
+  vars <- sort(unique(unlist(strsplit(intTerms, ":", fixed = TRUE))))
 
-    muX  <- if (!ignore.means) getMean(X, parTable) else 0
-    muZ  <- if (!ignore.means) getMean(Z, parTable) else 0
+  if (ignore.means) mu <- stats::setNames(numeric(length(vars)), vars)
+  else              mu <-  sapply(vars, getMean, parTable = PT)
 
-    lhs  <- c(X, Z, X)
-    rhs  <- c(X, Z, Z)
+  getCov <- function(a, b) calcCovParTable(a, b, PT)
+  Sigma  <- outer(vars, vars, getCov)
+  dimnames(Sigma) <- list(vars, vars)
 
-    covs  <- calcCovParTable(lhs, rhs, parTable)
-    varX  <- covs[[getLabel(X, X)]]
-    varZ  <- covs[[getLabel(Z, Z)]]
-    covXZ <- covs[[getLabel(X, Z)]]
+  # Helper functions for the Gaussian fourth‑moment identity
+  cov_PX <- function(i, j, k)
+    mu[i] * Sigma[j, k] + mu[j] * Sigma[i, k]
 
-    varXZ <- varX * muZ ^ 2 + varZ * muX ^ 2 +
-      2 * muX * muZ * covXZ + varX * varZ + covXZ ^ 2
-    # needed if mu != 0, but not sure if this is completely correct
-    # when X or Z is endogenous
-    covX_XZ <- varX * muZ + muX * covXZ
-    covZ_XZ <- varZ * muX + muZ * covXZ
-    newRows <- data.frame(lhs = c(intTerm, XZ[[1]], XZ[[2]]),
-                          op = rep("~~", 3),
-                          rhs = rep(intTerm, 3),
-                          label = "",
-                          est = c(varXZ, covX_XZ, covZ_XZ),
-                          std.error = NA, z.value = NA, p.value = NA,
-                          ci.lower = NA, ci.upper = NA)
+  cov_PP <- function(i, j, k, l)
+    Sigma[i, k] * Sigma[j, l] + Sigma[i, l] * Sigma[j, k] +
+    mu[i] * mu[j] * Sigma[k, l] + mu[k] * mu[l] * Sigma[i, j] +
+    mu[i] * mu[k] * Sigma[j, l] + mu[j] * mu[k] * Sigma[i, l] +
+    mu[i] * mu[l] * Sigma[j, k] + mu[j] * mu[l] * Sigma[i, k]
 
-    if (XZ[[1]] == XZ[[2]]) newRows <- newRows[seq_len(2), ]
+  # Split product names once to avoid repetition
+  prodPairs  <- lapply(intTerms, function(s) sort(strsplit(s, ":", fixed = TRUE)[[1L]]))
+  names(prodPairs) <- intTerms                # keep original order/labels
 
-    parTable <- rbind(parTable, newRows)
-  }
-  
+  # Assemble rows to append
+  rows <- vector("list", 0L)
 
-  for (intTermXX in intTerms) {
-    # If we have both X:X and X:Z in the model, we must include the 
-    # covariance between X:X and X:Z
-    elemsXX <- stringr::str_split_fixed(intTermXX, ":", 2)
-    X1      <- elemsXX[[1]]
-    Z1      <- elemsXX[[2]]
-     
-    if (X1 != Z1) next
+  for (P in names(prodPairs)) {
 
-    for (intTermXZ in intTerms) {
-      elemsXZ <- stringr::str_split_fixed(intTermXZ, ":", 2)
-      X2      <- elemsXZ[[1]]
-      Z2      <- elemsXZ[[2]]
+    ij <- prodPairs[[P]];  i <- ij[1L];  j <- ij[2L]
 
-      if (X2 == Z2 || !any(elemsXX %in% elemsXZ)) next
+    ## variance of the product term itself
+    varP <- cov_PP(i, j, i, j)
+    rows[[length(rows) + 1L]] <-
+      data.frame(lhs = P, op = "~~", rhs = P, label = "",
+                 est = varP, std.error = NA, z.value = NA,
+                 p.value = NA, ci.lower = NA, ci.upper = NA)
 
-      X <- X1 
-      Z <- elemsXZ[elemsXZ != X]
-
-      muX  <- getMean(X, parTable)
-      muZ  <- getMean(Z, parTable)
-
-      lhs  <- c(X, Z)
-      rhs  <- c(X, X)
-
-      covs   <- calcCovParTable(lhs, rhs, parTable)
-      varX   <- covs[[1]]
-      covX_Z <- covs[[2]]
-
-      covXZ_XX <- 2 * covX_Z * (muX^2 + varX) + 2 * muX * muZ * varX
-      
-      newRow <- data.frame(lhs = intTermXZ,
-                           op = "~~",
-                           rhs = intTermXX,
-                           label = "",
-                           est = covXZ_XX,
-                           std.error = NA, z.value = NA, p.value = NA,
-                           ci.lower = NA, ci.upper = NA)
-      parTable <- rbind(parTable, newRow)
+    ## covariances with the *original* variables
+    for (k in vars) {
+      rows[[length(rows) + 1L]] <-
+        data.frame(lhs = k, op = "~~", rhs = P, label = "",
+                   est = cov_PX(i, j, k), std.error = NA, z.value = NA,
+                   p.value = NA, ci.lower = NA, ci.upper = NA)
     }
   }
 
-  modsemParTable(parTable)
+  # Covariances among the declared product terms
+  if (length(prodPairs) > 1L) {
+    comb <- utils::combn(names(prodPairs), 2L)
+    for (cc in seq_len(ncol(comb))) {
+      P1 <- comb[1L, cc];  P2 <- comb[2L, cc]
+      ij <- prodPairs[[P1]];  kl <- prodPairs[[P2]]
+      rows[[length(rows) + 1L]] <-
+        data.frame(lhs = P1, op = "~~", rhs = P2, label = "",
+                   est = cov_PP(ij[1L], ij[2L], kl[1L], kl[2L]),
+                   std.error = NA, z.value = NA,
+                   p.value = NA, ci.lower = NA, ci.upper = NA)
+    }
+  }
+
+  # Bind & return
+  PT <- rbind(PT, do.call(rbind, rows))
+  modsemParTable(PT)
 }
 
 
