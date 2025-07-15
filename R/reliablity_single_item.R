@@ -207,7 +207,7 @@ getSingleIndNames <- function(lVs) {
 calcChronbach <- function(R, x) {
   Rx <- R[x, x] 
   k <- length(x)
-  
+
   if (k == 1) return(1) # should be treated like an observed variable
 
   warnif(any(Rx < 0), "Some item covariances are negative! Consider ",
@@ -215,7 +215,7 @@ calcChronbach <- function(R, x) {
   
   Rx <- abs(Rx)
   varSum <- sum(diag(Rx))
-  covSum <- sum(diag(Rx[lower.tri(Rx)]))
+  covSum <- sum(Rx[lower.tri(Rx)])
 
   (k / (k - 1)) * (1 - varSum / (varSum + 2 * covSum))
 }

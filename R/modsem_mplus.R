@@ -5,8 +5,14 @@
 #' @param estimator estimator argument passed to \code{Mplus}
 #' @param type type argument passed to \code{Mplus}
 #' @param algorithm algorithm argument passed to \code{Mplus}
-#' @param process process argument passed to \code{Mplus}
+#' @param processors processors argument passed to \code{Mplus}
 #' @param integration integration argument passed to \code{Mplus}
+#' @param rcs Should latent variable indicators be replaced with reliablity-corrected
+#'   single item indicators instead? See \code{\link{relcorr_single_item}}.
+#'
+#' @param rcs.choose Which latent variables should get their indicators replaced with
+#'   reliablity-reliability corrected single items? Corresponds to the \code{choose} 
+#'   argument in \code{\link{relcorr_single_item}}.
 #' @param ... arguments passed to other functions
 #'
 #' @return modsem_mplus object
@@ -40,10 +46,48 @@ modsem_mplus <- function(model.syntax,
                          estimator = "ml",
                          type = "random",
                          algorithm = "integration",
-                         process = 8,
+                         processors = 2,
                          integration = 15,
+                         rcs = FALSE,
+                         rcs.choose = NULL,
                          ...) {
+  if (rcs) { # use reliability-correct single items?
+    corrected <- relcorr_single_item(
+      syntax = model.syntax, 
+      data   = data,
+      choose = rcs.choose
+    )
+
+    model.syntax <- corrected$syntax
+    data         <- corrected$data
+  }
+
   parTable <- modsemify(model.syntax)
+
+  # Abbreviate variable names
+  names <- unique(c(parTable$rhs, parTable$lhs))
+  names <- names[!grepl(":", names)]
+  abbreviated <- abbreviate(names, minlength = 8L, strict = TRUE)
+ 
+  # Abbreviate names in intTerms
+  intTerms <- unique(parTable$rhs[grepl(":", parTable$rhs)])
+  abbrevIntTerm <- function(xz)
+    paste0(abbreviated[stringr::str_split(xz, pattern = ":")[[1]]], collapse = ":")
+
+  newIntTerms <- vapply(intTerms, FUN.VALUE = character(1L), FUN = abbrevIntTerm)
+  names(newIntTerms) <- intTerms
+  abbreviated <- c(abbreviated, newIntTerms)
+
+  # Fix names in parTable
+  rmask <- parTable$rhs != ""
+  lmask <- parTable$lhs != ""
+  parTable$rhs[rmask] <- abbreviated[parTable$rhs[rmask]]
+  parTable$lhs[lmask] <- abbreviated[parTable$lhs[lmask]]
+  
+  # Fix names in data
+  dmask <- colnames(data) %in% names(abbreviated)
+  colnames(data)[dmask] <- abbreviated[colnames(data)[dmask]]
+
   indicators <- unique(parTable[parTable$op == "=~", "rhs", drop = TRUE])
   intTerms <- unique(getIntTermRows(parTable)$rhs)
   intTermsMplus <- stringr::str_remove_all(intTerms, ":") |>
@@ -56,13 +100,14 @@ modsem_mplus <- function(model.syntax,
       paste(paste("estimator =", estimator),
             paste("type =", type),
             paste("algorithm =", algorithm),
-            paste("process =", process),
+            paste("processors =", processors),
             paste("integration = ", integration),
             sep = ";\n"), ";\n"), # add final ";"
     MODEL = parTableToMplusModel(parTable, ...),
     OUTPUT = "TECH3;",
     rdata = data[indicators],
   )
+
   results <- MplusAutomation::mplusModeler(model,
                                            modelout = "mplusResults.inp",
                                            run = 1L)
@@ -175,33 +220,44 @@ modsem_mplus <- function(model.syntax,
 }
 
 
-parTableToMplusModel <- function(parTable, ignoreLabels = TRUE) {
+xwith <- function(elems) {
+  if (length(elems) <= 1) return(NULL)
+  lhs <- paste0(elems[[1]], elems[[2]])
+  rhs <- paste(elems[[1]], "XWITH", elems[[2]])
+
+  elems2 <- c(lhs, elems[-c(1, 2)])
+  
+  unique(rbind(
+   createParTableRow(c(lhs, rhs), op = ":"),
+   xwith(elems2)
+  ))
+}
+
+
+parTableToMplusModel <- function(parTable) {
   # INTERACTIONEXPRESSIOns
   interactions <- parTable[grepl(":", parTable$rhs), "rhs"]
   elemsInInts <- stringr::str_split(interactions, ":")
-  newRows <- lapply(elemsInInts,
-                    function(x) {
-                      if (length(x) != 2) {
-                        stop2("Number of variables in interaction must be two")
-                      }
-                      lhs <- paste0(x[[1]], x[[2]])
-                      rhs <- paste(x[[1]], "XWITH", x[[2]])
-                      createParTableRow(c(lhs, rhs), op = ":")
-                      }) |>
+  newRows <- lapply(elemsInInts, FUN = xwith) |>
     purrr::list_rbind()
   parTable <- rbind(parTable, newRows)
 
-  parTable$op <- replaceLavOpWithMplus(parTable$op)
-  out <- ""
-  if (ignoreLabels) parTable[["mod"]] <- ""
-  for (i in 1:nrow(parTable)) {
-    if (parTable[["mod"]][i] != "") {
-      warning2("Using labels in Mplus, was this intended?")
-      modifier <- paste0("* (", parTable[["mod"]][[i]],")")
+  # Identify variances
+  isVar <- parTable$op == "~~" & parTable$lhs == parTable$rhs
 
-    } else {
-      modifier <- ""
-    }
+  parTable$op <- replaceLavOpWithMplus(parTable$op)
+  parTable[isVar, c("op", "lhs")] <- ""
+
+  out <- ""
+  for (i in seq_len(nrow(parTable))) {
+    mod   <- parTable[["mod"]][i]
+    empty <- mod == ""
+    islab <- !canBeNumeric(mod)
+
+    if (!empty && islab)       modifier <- paste0(" (", mod,")")
+    else if (!empty && !islab) modifier <- paste0("@", mod)
+    else                       modifier <- ""
+
     line <- paste0(parTable[["lhs"]][[i]], " ",
                    parTable[["op"]][[i]], " ",
                    parTable[["rhs"]][[i]],
