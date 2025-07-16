@@ -212,6 +212,28 @@ modsem_pi <- function(model.syntax = NULL,
   }
 
   if (!is.data.frame(data)) data <- as.data.frame(data)
+ 
+  # Preprocessing
+  rcs.before <- rcs && method == "ca"
+  rcs.after  <- rcs && !rcs.before
+
+  if (rcs.before) { # use reliability-correct single items?
+    if (!is.null(rcs.choose))
+      rcs.choose <- rcs.choose[!grepl(":", rcs.choose)]
+
+    corrected <- relcorr_single_item(
+      syntax = model.syntax, 
+      data   = data,
+      choose = rcs.choose
+    )
+
+    model.syntax <- corrected$syntax
+    data         <- corrected$data
+
+  } else if (rcs.after) {
+    constrained.cov.syntax <- FALSE
+    res.cov.method         <- "none"
+  }
 
   methodSettings <-
     getMethodSettingsPI(method, args =
@@ -224,8 +246,6 @@ modsem_pi <- function(model.syntax = NULL,
                              constrained.var = constrained.var,
                              res.cov.method = res.cov.method,
                              first.loading.fixed = first.loading.fixed,
-                             rcs = rcs,
-                             rcs.choose = rcs.choose,
                              match = match))
   
   # Get the specifications of the model
@@ -237,7 +257,7 @@ modsem_pi <- function(model.syntax = NULL,
   input <- list(syntax = model.syntax, data = data, 
                 parTable = modelSpec$parTable)
 
-  # Data Processing  -----------------------------------------------------------
+  # Data Processing
   oVs        <- c(modelSpec$oVs, group)
   missingOVs <- setdiff(oVs, colnames(data))
   stopif(length(missingOVs), "Missing variables in data:\n", missingOVs)
@@ -292,9 +312,7 @@ modsem_pi <- function(model.syntax = NULL,
                            LAVFUN = LAVFUN, ...)
   modelSpec$input  <- input
   
-  if (methodSettings$rcs) { # use reliability-correct single items?
-    rcs.choose <- methodSettings$rcs.choose
-
+  if (rcs.after) { # use reliability-correct single items?
     if (!is.null(rcs.choose))
       rcs.choose <- stringr::str_remove_all(rcs.choose, pattern = ":")
 
