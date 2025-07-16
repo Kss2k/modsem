@@ -32,7 +32,7 @@ An object of S3 class `modsem_relcorr` (a named list) with elements:
 }
 \description{
 Replace (some of) the first‑order latent variables in a lavaan measurement
-model by **single composite indicators whose error variances are fixed from
+model by single composite indicators whose error variances are fixed from
 Cronbach's \eqn{\alpha}. The function returns a modified lavaan model
 syntax together with an augmented data set that contains the newly created
 composite variables, so that you can fit the full SEM in a single step.
