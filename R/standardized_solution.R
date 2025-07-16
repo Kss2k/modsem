@@ -38,6 +38,7 @@ transformedSolutionCOEFS <- function(object,
     warnif(isLav, "Replacing interaction (co-)",
            "variances when centering the model!\n", immediate. = FALSE)
 
+    if (isDA) parTable <- meanInteractions(parTable) # get means for interaction terms
     parTable <- var_interactions(parTable, ignore.means = TRUE)
   }
 

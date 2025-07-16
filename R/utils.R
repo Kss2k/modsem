@@ -293,6 +293,7 @@ getMeans <- function(x, parTable) {
 
 
 centerInteractions <- function(parTable, center.means = TRUE) {
+  parTable <- meanInteractions(parTable)
   rows <- getIntTermRows(parTable)
 
   for (i in seq_len(NROW(rows))) {
@@ -333,7 +334,12 @@ meanInteractions <- function(parTable, ignore.means = FALSE) {
   # remove existing
   parTable <- parTable[!(parTable$op == "~1" & parTable$lhs %in% intTerms), 
                        , drop = FALSE]
-  
+ 
+  present  <- colnames(parTable)
+  newcols  <- c("lhs", "op", "rhs", "label", "est")
+  newcols  <- intersect(newcols, present)
+  fillcols <- setdiff(present, newcols) 
+
   for (intTerm in intTerms) {
     XZ <- unlist(stringr::str_split(intTerm, ":"))
     X <- XZ[[1]]
@@ -346,9 +352,12 @@ meanInteractions <- function(parTable, ignore.means = FALSE) {
     meanXZ <- meanX * meanZ + covXZ
 
     newRow <- data.frame(lhs = intTerm, op = "~1", rhs = "",
-                         label = "", est = meanXZ, std.error = NA, 
-                         z.value = NA, p.value = NA,
-                         ci.lower = NA, ci.upper = NA)
+                         label = "", est = meanXZ)
+
+    # Get correct cols
+    newRow <- newRow[newcols]
+    newRow[fillcols] <- NA
+
     parTable <- rbind(parTable, newRow)
   }
 
