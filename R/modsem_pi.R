@@ -224,29 +224,10 @@ modsem_pi <- function(model.syntax = NULL,
                              constrained.var = constrained.var,
                              res.cov.method = res.cov.method,
                              first.loading.fixed = first.loading.fixed,
+                             rcs = rcs,
+                             rcs.choose = rcs.choose,
                              match = match))
   
-  if (rcs) { # use reliability-correct single items?
-    corrected <- relcorr_single_item(
-      syntax = model.syntax, 
-      data = data,
-      choose = rcs.choose
-    )
-
-    model.syntax <- corrected$syntax
-    data         <- corrected$data
-    
-    if (method != "ca") {
-      syntax.additions <- relcorr_pi_syntax(
-        corrected     = corrected, 
-        center.before = methodSettings$center.before
-      )$syntax
-
-      model.syntax <- paste(model.syntax, syntax.additions, sep = "\n")
-    }
-  }
-
-
   # Get the specifications of the model
   modelSpec <- parseLavaan(model.syntax, colnames(data),
                            match = methodSettings$match,
@@ -310,6 +291,22 @@ modsem_pi <- function(model.syntax = NULL,
   input$lavArgs    <- list(estimator = estimator, cluster = cluster, group = group, 
                            LAVFUN = LAVFUN, ...)
   modelSpec$input  <- input
+  
+  if (methodSettings$rcs) { # use reliability-correct single items?
+    rcs.choose <- methodSettings$rcs.choose
+
+    if (!is.null(rcs.choose))
+      rcs.choose <- stringr::str_remove_all(rcs.choose, pattern = ":")
+
+    corrected <- relcorr_single_item(
+      syntax = newSyntax, 
+      data   = newData,
+      choose = rcs.choose
+    )
+
+    newSyntax <- corrected$syntax
+    newData   <- corrected$data
+  }
 
   if (run) {
     lavWrapper <- getWarningWrapper(silent = suppress.warnings.lavaan)

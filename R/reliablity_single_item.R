@@ -67,7 +67,7 @@ relcorr_single_item <- function(syntax, data, choose = NULL) {
 
   higherOrderLVs <- getHigherOrderLVs(parTable)
   lVs            <- getLVs(parTable)
-  
+
   choose <- if (is.null(choose)) lVs else choose
   ignore <- setdiff(lVs, choose)
 
@@ -77,7 +77,8 @@ relcorr_single_item <- function(syntax, data, choose = NULL) {
     ignore <- c(ignore, higherOrderLVs)
   }
 
-  stopif(any(!choose %in% lVs), "Could not find latent variables:\n", choose)
+  stopif(any(!choose %in% lVs), "Could not find latent variables:\n", 
+         paste(choose[!choose %in% lVs], collapse = ", "))
 
   ignoreRows <- parTableOuter$lhs %in% ignore
 
@@ -242,93 +243,4 @@ calcAVE <- function(lambda.std, theta.std, lV) {
   theta.std <- diag(theta.std)[names(lambda.std)]
 
   sum(lambda.std) ^ 2 / (sum(lambda.std) ^ 2 + sum(1 - theta.std ^ 2))
-}
-
-
-relcorr_pi_syntax <- function(corrected, 
-                              use = "pairwise.complete.obs", 
-                              center.before = TRUE) {
-  intTerms     <- corrected$intTerms
-  # newParTable <- corrected$newParTable  # unused but retained for API compatibility
-  single.items <- corrected$single.items  # named: latent -> observed column
-  # cov.lv      <- corrected$cov.lv       # unused
-  reliability  <- corrected$reliability   # named: latent -> reliability (0..1)
-  data         <- corrected$data          # data.frame
-
-  newRows_list <- list()
-
-  for (intTerm in intTerms) {
-    elems <- stringr::str_split(intTerm, ":", simplify = TRUE)
-    elems <- elems[elems != ""]          # safety
-    k <- length(elems)
-
-
-    # observed column names for these latents
-    obs_names <- unname(unlist(single.items[elems], use.names = FALSE))
-
-
-    # pull the observed vectors
-    items <- lapply(obs_names, function(nm) data[[nm]])
-
-    # Create product
-    if (center.before) 
-      items <- lapply(items, FUN = \(x) x - mean(x, na.rm = TRUE))
-
-    prod    <- apply(as.data.frame(items), MARGIN = 1, FUN = prod)
-    prodvar <- stats::var(prod)
-
-    # individual reliabilities
-    ps <- unname(unlist(reliability[elems], use.names = FALSE))
-
-    # pairwise correlations
-    get_cor <- function(x, y) stats::cor(x, y, use = use)
-
-    if (k == 2) {
-      r12 <- get_cor(items[[1]], items[[2]])
-      if (is.na(r12) || anyNA(ps)) {
-        relprod <- NA_real_
-      } else {
-        relprod <- (ps[1] * ps[2] + r12^2) / (1 + r12^2)
-      }
-    } else if (k == 3) { # k == 3
-      r12 <- get_cor(items[[1]], items[[2]])
-      r13 <- get_cor(items[[1]], items[[3]])
-      r23 <- get_cor(items[[2]], items[[3]])
-
-      if (any(is.na(c(r12, r13, r23))) || anyNA(ps)) {
-        relprod <- NA_real_
-      } else {
-        p1 <- ps[1]; p2 <- ps[2]; p3 <- ps[3]
-        num <- p1 * p2 * p3 +
-               2 * p3 * r12^2 +
-               2 * p2 * r13^2 +
-               2 * p1 * r23^2 +
-               8 * r12 * r13 * r23
-        den <- 1 +
-               2 * r12^2 +
-               2 * r13^2 +
-               2 * r23^2 +
-               8 * r12 * r13 * r23
-        relprod <- num / den
-      } 
-    } else {
-      warning2("Reliability correction of product indicators is not ",
-               "implemented for 4-way (and above) interaction terms!",
-               immediate. = FALSE)
-      return(NULL)
-    }
-
-    res.std <- 1 - relprod
-    res     <- res.std * prodvar
-
-    item_name <- paste0(obs_names, collapse = ":")
-
-    newRows_list[[length(newRows_list) + 1]] <-
-      data.frame(lhs = item_name, op = "~~", rhs = item_name, mod = res)
-  }
-
-  newRows <- if (length(newRows_list)) do.call(rbind, newRows_list) else NULL
-  syntaxAdditions <- if (!is.null(newRows)) parTableToSyntax(newRows) else ""
-
-  list(rows = newRows, syntax = syntaxAdditions)
 }

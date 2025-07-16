@@ -10,7 +10,9 @@ getMethodSettingsPI <- function(method, args) {
             constrained.loadings = FALSE,
             constrained.var = FALSE,
             res.cov.method =  defaultResCov,
-            match = FALSE),
+            match = FALSE,
+            rcs = FALSE,
+            rcs.choose = NULL),
         uca  = list(
             center.before = TRUE,
             center.after = FALSE,
@@ -20,7 +22,9 @@ getMethodSettingsPI <- function(method, args) {
             constrained.loadings = FALSE,
             constrained.var = FALSE,
             res.cov.method =  defaultResCov,
-            match = FALSE),
+            match = FALSE,
+            rcs = FALSE,
+            rcs.choose = NULL),
         pind  = list(
             center.before = FALSE,
             center.after = FALSE,
@@ -30,7 +34,9 @@ getMethodSettingsPI <- function(method, args) {
             constrained.loadings = FALSE,
             constrained.var = FALSE,
             res.cov.method =  defaultResCov,
-            match = FALSE),
+            match = FALSE,
+            rcs = FALSE,
+            rcs.choose = NULL),
         dblcent  = list(
             center.before = TRUE,
             center.after = TRUE,
@@ -40,7 +46,9 @@ getMethodSettingsPI <- function(method, args) {
             constrained.loadings = FALSE,
             constrained.var = FALSE,
             res.cov.method =  defaultResCov,
-            match = FALSE),
+            match = FALSE,
+            rcs = FALSE,
+            rcs.choose = NULL),
         ca = list(
             center.before = TRUE,
             center.after = FALSE,
@@ -50,7 +58,9 @@ getMethodSettingsPI <- function(method, args) {
             constrained.loadings = TRUE,
             constrained.var = TRUE,
             res.cov.method =  "ca",
-            match = TRUE)
+            match = TRUE,
+            rcs = FALSE,
+            rcs.choose = NULL)
         )
 
     settingNames <- unique(unlist(lapply(settings, FUN = names)))
@@ -61,7 +71,13 @@ getMethodSettingsPI <- function(method, args) {
     isMissing <- vapply(args, FUN.VALUE = logical(1L), FUN = is.null)
     missingArgs <- settingNames[isMissing]
     stopif(!method %in% names(settings), "Unrecognized method")
-    c(settings[[method]][missingArgs], args[!isMissing])
+
+    settings.out <- c(settings[[method]][missingArgs], args[!isMissing])
+
+    # Post processing
+    if (settings.out$rcs) settings.out$res.cov.method <- "none"
+   
+    settings.out
 }
 
 

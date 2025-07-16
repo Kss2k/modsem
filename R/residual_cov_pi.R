@@ -1,9 +1,9 @@
 getParTableResCov <- function(relDf, method, ...) {
   switch(method,
-         "simple"           = getParTableResCov.simple(relDf),
+         "simple"      = getParTableResCov.simple(relDf),
          "simple.safe" = getParTableResCov.simple(relDf, safe = TRUE),
-         "ca"               = getParTableResCov.ca(relDf, ...),
-         "equality"         = getParTableResCov.equality(relDf))
+         "ca"          = getParTableResCov.ca(relDf, ...),
+         "equality"    = getParTableResCov.equality(relDf))
 }
 
 
