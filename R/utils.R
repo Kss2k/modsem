@@ -210,7 +210,7 @@ getUniqueCombos <- function(x, match = FALSE) {
   # Base case, x is 1 length long and there are no unique combos
   if (length(x) <= 1) return(NULL)
 
-  rest <- getUniqueCombos(x[-1], match = FALSE)
+  rest <- getUniqueCombos(x[-1], match = match)
   combos <- data.frame(V1 = rep(x[[1]], length(x) - 1),
                        V2 = x[-1])
   if (match) combos <- rbind(data.frame(V1 = x, V2 = x), combos)

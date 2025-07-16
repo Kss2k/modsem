@@ -211,17 +211,6 @@ modsem_pi <- function(model.syntax = NULL,
     return(est)
   }
 
-  if (rcs) { # use reliability-correct single items?
-    corrected <- relcorr_single_item(
-      syntax = model.syntax, 
-      data = data,
-      choose = rcs.choose
-    )
-
-    model.syntax <- corrected$syntax
-    data         <- corrected$data
-  }
-
   if (!is.data.frame(data)) data <- as.data.frame(data)
 
   methodSettings <-
@@ -236,6 +225,27 @@ modsem_pi <- function(model.syntax = NULL,
                              res.cov.method = res.cov.method,
                              first.loading.fixed = first.loading.fixed,
                              match = match))
+  
+  if (rcs) { # use reliability-correct single items?
+    corrected <- relcorr_single_item(
+      syntax = model.syntax, 
+      data = data,
+      choose = rcs.choose
+    )
+
+    model.syntax <- corrected$syntax
+    data         <- corrected$data
+    
+    if (method != "ca") {
+      syntax.additions <- relcorr_pi_syntax(
+        corrected     = corrected, 
+        center.before = methodSettings$center.before
+      )$syntax
+
+      model.syntax <- paste(model.syntax, syntax.additions, sep = "\n")
+    }
+  }
+
 
   # Get the specifications of the model
   modelSpec <- parseLavaan(model.syntax, colnames(data),
