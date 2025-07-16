@@ -156,8 +156,9 @@ relcorr_single_item <- function(syntax, data, choose = NULL) {
 
   newSyntax <- parTableToSyntax(newParTable)
 
-  out <- list(syntax = newSyntax, data = newData, parTable = newParTable, 
-              reliability = rel.std, AVE = AVE.std, lVs = lVs, single.items = singleInds,
+  out <- list(syntax = newSyntax, data = newData,
+              parTable = newParTable, reliability = rel.std,
+              AVE = AVE.std, lVs = lVs, single.items = singleInds,
               intTerms = intTerms, res = res, res.std = res.std)
 
   class(out) <- c("list", "modsem_relcorr")

@@ -70,8 +70,8 @@ estimate_h0.modsem_da <- function(object, warn_no_interaction = TRUE, ...) {
     
     syntax <- parTableToSyntax(strippedParTable)
     argList <- c(
-        list(model.syntax = syntax, data = data, method = method,
-             cov.syntax = cov.syntax), argList
+      list(model.syntax = syntax, data = data, method = method,
+           cov.syntax = cov.syntax), argList
     )
 
     do.call(modsem_da, args = argList)
@@ -82,6 +82,7 @@ estimate_h0.modsem_da <- function(object, warn_no_interaction = TRUE, ...) {
     NULL
   })
 }
+
 
 #' @describeIn estimate_h0 Estimate baseline model for \code{\link{modsem_pi}} objects
 #' @param reduced Should the baseline model be a reduced version of the model? 

@@ -1,85 +1,69 @@
 getMethodSettingsPI <- function(method, args) {
-    defaultResCov <- "simple"
-    settings <- list(
-        rca = list(
-            center.before = FALSE,
-            center.after = FALSE,
-            residuals.prods = TRUE,
-            residual.cov.syntax = TRUE,
-            constrained.prod.mean = FALSE,
-            constrained.loadings = FALSE,
-            constrained.var = FALSE,
-            res.cov.method =  defaultResCov,
-            match = FALSE,
-            rcs = FALSE,
-            rcs.choose = NULL),
-        uca  = list(
-            center.before = TRUE,
-            center.after = FALSE,
-            residuals.prods = FALSE,
-            residual.cov.syntax = TRUE,
-            constrained.prod.mean = TRUE,
-            constrained.loadings = FALSE,
-            constrained.var = FALSE,
-            res.cov.method =  defaultResCov,
-            match = FALSE,
-            rcs = FALSE,
-            rcs.choose = NULL),
-        pind  = list(
-            center.before = FALSE,
-            center.after = FALSE,
-            residuals.prods = FALSE,
-            residual.cov.syntax = FALSE,
-            constrained.prod.mean = FALSE,
-            constrained.loadings = FALSE,
-            constrained.var = FALSE,
-            res.cov.method =  defaultResCov,
-            match = FALSE,
-            rcs = FALSE,
-            rcs.choose = NULL),
-        dblcent  = list(
-            center.before = TRUE,
-            center.after = TRUE,
-            residuals.prods = FALSE,
-            residual.cov.syntax = TRUE,
-            constrained.prod.mean = FALSE,
-            constrained.loadings = FALSE,
-            constrained.var = FALSE,
-            res.cov.method =  defaultResCov,
-            match = FALSE,
-            rcs = FALSE,
-            rcs.choose = NULL),
-        ca = list(
-            center.before = TRUE,
-            center.after = FALSE,
-            residuals.prods = FALSE,
-            residual.cov.syntax = TRUE,
-            constrained.prod.mean = TRUE,
-            constrained.loadings = TRUE,
-            constrained.var = TRUE,
-            res.cov.method =  "ca",
-            match = TRUE,
-            rcs = FALSE,
-            rcs.choose = NULL)
-        )
+  defaultResCov <- "simple"
+  settings <- list(
+    rca = list(
+        center.before = FALSE,
+        center.after = FALSE,
+        residuals.prods = TRUE,
+        residual.cov.syntax = TRUE,
+        constrained.prod.mean = FALSE,
+        constrained.loadings = FALSE,
+        constrained.var = FALSE,
+        res.cov.method =  defaultResCov,
+        match = FALSE),
+    uca  = list(
+        center.before = TRUE,
+        center.after = FALSE,
+        residuals.prods = FALSE,
+        residual.cov.syntax = TRUE,
+        constrained.prod.mean = TRUE,
+        constrained.loadings = FALSE,
+        constrained.var = FALSE,
+        res.cov.method =  defaultResCov,
+        match = FALSE),
+    pind  = list(
+        center.before = FALSE,
+        center.after = FALSE,
+        residuals.prods = FALSE,
+        residual.cov.syntax = FALSE,
+        constrained.prod.mean = FALSE,
+        constrained.loadings = FALSE,
+        constrained.var = FALSE,
+        res.cov.method =  defaultResCov,
+        match = FALSE),
+    dblcent  = list(
+        center.before = TRUE,
+        center.after = TRUE,
+        residuals.prods = FALSE,
+        residual.cov.syntax = TRUE,
+        constrained.prod.mean = FALSE,
+        constrained.loadings = FALSE,
+        constrained.var = FALSE,
+        res.cov.method =  defaultResCov,
+        match = FALSE),
+    ca = list(
+        center.before = TRUE,
+        center.after = FALSE,
+        residuals.prods = FALSE,
+        residual.cov.syntax = TRUE,
+        constrained.prod.mean = TRUE,
+        constrained.loadings = TRUE,
+        constrained.var = TRUE,
+        res.cov.method =  "ca",
+        match = TRUE)
+    )
 
-    settingNames <- unique(unlist(lapply(settings, FUN = names)))
-    args <- args[settingNames]
+  settingNames <- unique(unlist(lapply(settings, FUN = names)))
+  args <- args[settingNames]
 
-    if (is.null(args)) return(settings[method])
+  if (is.null(args)) return(settings[method])
 
-    isMissing <- vapply(args, FUN.VALUE = logical(1L), FUN = is.null)
-    missingArgs <- settingNames[isMissing]
-    stopif(!method %in% names(settings), "Unrecognized method")
-
-    settings.out <- c(settings[[method]][missingArgs], args[!isMissing])
-
-    # Post processing
-    if (settings.out$rcs) settings.out$res.cov.method <- "none"
-   
-    settings.out
+  isMissing <- vapply(args, FUN.VALUE = logical(1L), FUN = is.null)
+  missingArgs <- settingNames[isMissing]
+  stopif(!method %in% names(settings), "Unrecognized method")
+  
+  c(settings[[method]][missingArgs], args[!isMissing])
 }
-
 
 
 #' default arguments for product indicator approaches
