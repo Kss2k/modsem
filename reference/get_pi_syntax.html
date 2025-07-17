@@ -58,7 +58,13 @@ latent interaction models using one of the product indicator approaches.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">get_pi_syntax</span><span class="op">(</span><span class="va">model.syntax</span>, method <span class="op">=</span> <span class="st">"dblcent"</span>, match <span class="op">=</span> <span class="cn">FALSE</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">get_pi_syntax</span><span class="op">(</span></span>
+<span>  <span class="va">model.syntax</span>,</span>
+<span>  method <span class="op">=</span> <span class="st">"dblcent"</span>,</span>
+<span>  match <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  data <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  <span class="va">...</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -80,6 +86,10 @@ latent interaction models using one of the product indicator approaches.</p>
 
 <dt id="arg-match">match<a class="anchor" aria-label="anchor" href="#arg-match"></a></dt>
 <dd><p>should the product indicators be created by using the match-strategy</p></dd>
+
+
+<dt id="arg-data">data<a class="anchor" aria-label="anchor" href="#arg-data"></a></dt>
+<dd><p>Optional. Dataset to use, usually not relevant.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
