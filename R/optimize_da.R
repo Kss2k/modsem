@@ -24,7 +24,8 @@ optimizeStartingParamsDA <- function(model,
     orthogonal.y    = args$orthogonal.y,
     auto.fix.first  = args$auto.fix.first,
     auto.fix.single = args$auto.fix.single,
-    res.cov.method  = "simple.safe",
+    res.cov.method  = "simple.no.warn",
+    res.cov.across  = TRUE,
     suppress.warnings.lavaan = TRUE
   )
 

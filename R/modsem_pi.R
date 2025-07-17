@@ -50,6 +50,13 @@
 #'                 (e.g., when there is an interaction between an observed and a latent variable).}
 #' }
 #'
+#' @param res.cov.across Should residual covariances be specified/freed across different interaction terms.
+#'   For example if you have two interaction terms \code{X:Z} and \code{X:W} the residuals of the 
+#'   generated product indicators \code{x1:z1} and \code{x1:w1} may be correlated. If \code{TRUE} 
+#'   residual covariances are allowed across different latent interaction terms. If \code{FALSE} 
+#'   residual covariances are only allowed between product indicators which belong to the same 
+#'   latent interaction term.
+#'
 #' @param auto.scale methods which should be scaled automatically (usually not useful)
 #'
 #' @param auto.center methods which should be centered automatically (usually not useful)
@@ -160,6 +167,7 @@ modsem_pi <- function(model.syntax = NULL,
                       constrained.loadings = NULL,
                       constrained.var = NULL,
                       res.cov.method = NULL,
+                      res.cov.across = NULL,
                       auto.scale = "none",
                       auto.center = "none",
                       estimator = "ML",
@@ -193,6 +201,7 @@ modsem_pi <- function(model.syntax = NULL,
       constrained.loadings = constrained.loadings,
       constrained.var = constrained.var,
       res.cov.method = res.cov.method,
+      res.cov.across = res.cov.across,
       auto.scale = auto.scale,
       auto.center = auto.center,
       run = run,
@@ -245,6 +254,7 @@ modsem_pi <- function(model.syntax = NULL,
                              constrained.loadings = constrained.loadings,
                              constrained.var = constrained.var,
                              res.cov.method = res.cov.method,
+                             res.cov.across = res.cov.across,
                              first.loading.fixed = first.loading.fixed,
                              match = match))
   
@@ -292,6 +302,7 @@ modsem_pi <- function(model.syntax = NULL,
   parTable <- addSpecsParTable(modelSpec,
                                residual.cov.syntax = methodSettings$residual.cov.syntax,
                                res.cov.method = methodSettings$res.cov.method,
+                               res.cov.across = methodSettings$res.cov.across,
                                constrained.prod.mean = methodSettings$constrained.prod.mean,
                                constrained.loadings = methodSettings$constrained.loadings,
                                constrained.var = methodSettings$constrained.var,
@@ -427,6 +438,7 @@ getResidualsFormula <- function(dependendtNames, indepNames) {
 addSpecsParTable <- function(modelSpec,
                              residual.cov.syntax = FALSE,
                              res.cov.method = "equality",
+                             res.cov.across = TRUE,
                              constrained.prod.mean = FALSE,
                              constrained.loadings = FALSE,
                              constrained.var = FALSE,
@@ -455,10 +467,29 @@ addSpecsParTable <- function(modelSpec,
     stop2("residual.cov.syntax is not FALSE or TRUE in generateSyntax")
 
   } else if (residual.cov.syntax && res.cov.method != "none") {
-    residualCovariances <- purrr::map(.x = relDfs, .f = getParTableResCov,
-                                      method = res.cov.method,
-                                      pt = parTable)  |>
-      purrr::list_rbind()
+    # Even if `res.cov.across == TRUE` we still want to run `getParTableResCov`
+    # for each latent interaction terms, due to some important checks, which 
+    # won't work properly when using a combined `relDf`. If checks fail
+    # we get `attr(relDf, "OK") == FALSE`
+    residualCovariancesList <- purrr::map(.x = relDfs, .f = getParTableResCov,
+                                          method = res.cov.method,
+                                          pt = parTable)
+    residualCovariances <- purrr::list_rbind(residualCovariancesList)
+
+    if (res.cov.across) {
+      # Get residual covariances across interaction terms
+      # E.g., 
+      # X:Z =~ x1:z1
+      # X:M =~ x1:m1
+      # x1:z1 ~~ x1:m1
+      isOK <- vapply(residualCovariancesList, FUN.VALUE = logical(1L), 
+                     FUN = \(rows) attr(rows, "OK"))
+      RelDf <- purrr::list_cbind(unname(relDfs[isOK]))
+      residualCovariances <- getParTableResCov(relDf = RelDf,
+                                               method = res.cov.method,
+                                               pt = parTable)
+    }
+
     parTable <- rbindParTable(parTable, residualCovariances)
   }
 
@@ -676,6 +707,7 @@ modsemPICluster <- function(model.syntax = NULL,
                             constrained.loadings = NULL,
                             constrained.var = NULL,
                             res.cov.method = NULL,
+                            res.cov.across = NULL,
                             auto.scale = "none",
                             auto.center = "none",
                             estimator = "ML",
@@ -725,6 +757,7 @@ modsemPICluster <- function(model.syntax = NULL,
       constrained.loadings = constrained.loadings,
       constrained.var = constrained.var,
       res.cov.method = res.cov.method,
+      res.cov.across = res.cov.across,
       auto.scale = auto.scale,
       auto.center = auto.center,
       suppress.warnings.match = suppress.warnings.match,
@@ -749,6 +782,7 @@ modsemPICluster <- function(model.syntax = NULL,
       constrained.loadings = constrained.loadings,
       constrained.var = constrained.var,
       res.cov.method = res.cov.method,
+      res.cov.across = res.cov.across,
       auto.scale = auto.scale,
       auto.center = auto.center,
       suppress.warnings.match = suppress.warnings.match,

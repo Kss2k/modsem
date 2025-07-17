@@ -387,7 +387,7 @@ modsem_da <- function(model.syntax = NULL,
       
       warning = function(w) {
         warning2("warning when optimizing starting parameters:\n", w)
-        suppressWarnings(optimizeStartingParamsDA(model))
+        suppressWarnings(optimizeStartingParamsDA(model, args = args))
       }, 
 
       error = function(e) {
