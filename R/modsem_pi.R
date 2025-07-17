@@ -15,6 +15,10 @@
 #'
 #' @param match should the product indicators be created by using the match-strategy
 #'
+#' @param match.recycle should the indicators be recycled when using the match-strategy? I.e., 
+#'   if one of the latent variables have fewer indicators than the other, some indicators
+#'   are recycled to match the latent variable with the most indicators.
+#'
 #' @param standardize.data should data be scaled before fitting model
 #'
 #' @param first.loading.fixed Should the first factor loading in the latent product be fixed to one? Defaults to \code{FALSE}, as 
@@ -159,6 +163,7 @@ modsem_pi <- function(model.syntax = NULL,
                       data = NULL,
                       method = "dblcent",
                       match = NULL,
+                      match.recycle = NULL,
                       standardize.data = FALSE,
                       center.data = FALSE,
                       first.loading.fixed = FALSE,
@@ -194,6 +199,7 @@ modsem_pi <- function(model.syntax = NULL,
       method = method,
       data = data,
       match = match,
+      match.recycle = match.recycle,
       standardize.data = standardize.data,
       center.data = center.data,
       first.loading.fixed = first.loading.fixed,
@@ -260,12 +266,14 @@ modsem_pi <- function(model.syntax = NULL,
                              res.cov.method = res.cov.method,
                              res.cov.across = res.cov.across,
                              first.loading.fixed = first.loading.fixed,
-                             match = match))
+                             match = match, 
+                             match.recycle = match.recycle))
   
   # Get the specifications of the model
   modelSpec <- parseLavaan(model.syntax, colnames(data),
                            match = methodSettings$match,
-                           suppress.warnings.match = suppress.warnings.match)
+                           suppress.warnings.match = suppress.warnings.match,
+                           match.recycle = match.recycle)
   
   # Save these for later
   input <- list(syntax = model.syntax, data = data, 
@@ -712,6 +720,7 @@ modsemPICluster <- function(model.syntax = NULL,
                             data = NULL,
                             method = "dblcent",
                             match = NULL,
+                            match.recycle = NULL,
                             standardize.data = FALSE,
                             center.data = FALSE,
                             first.loading.fixed = FALSE,
@@ -735,6 +744,7 @@ modsemPICluster <- function(model.syntax = NULL,
                             suppress.warnings.match = FALSE,
                             rcs = FALSE,
                             rcs.choose = NULL,
+                            rcs.res.cov.across = NULL,
                             LAVFUN = lavaan::sem,
                             ...) {
   stopif(na.rm, "`na.rm=TRUE` can currently not be paired with the `cluster` argument!")
@@ -762,6 +772,7 @@ modsemPICluster <- function(model.syntax = NULL,
       model.syntax = syntaxBlock, 
       method = method,
       match = match,
+      match.recycle = match.recycle,
       standardize.data = standardize.data,
       center.data = center.data,
       first.loading.fixed = first.loading.fixed,
@@ -778,15 +789,16 @@ modsemPICluster <- function(model.syntax = NULL,
       auto.center = auto.center,
       suppress.warnings.match = suppress.warnings.match,
       rcs = rcs,
-      rcs.choose = rcs.choose
+      rcs.choose = rcs.choose,
+      rcs.res.cov.across = rcs.res.cov.across
     ) |> stringr::str_replace_all(pattern = "\n", replacement = "\n\t")
-
 
     newBlockData <- get_pi_data(
       model.syntax = syntaxBlock, 
       data = data,
       method = method,
       match = match,
+      match.recycle = match.recycle,
       standardize.data = standardize.data,
       center.data = center.data,
       first.loading.fixed = first.loading.fixed,
@@ -804,7 +816,8 @@ modsemPICluster <- function(model.syntax = NULL,
       suppress.warnings.match = suppress.warnings.match,
       na.rm = FALSE,
       rcs = rcs,
-      rcs.choose = rcs.choose
+      rcs.choose = rcs.choose,
+      rcs.res.cov.across = rcs.res.cov.across
     )
 
     if (is.null(newData)) {

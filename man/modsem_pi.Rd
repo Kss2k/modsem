@@ -9,6 +9,7 @@ modsem_pi(
   data = NULL,
   method = "dblcent",
   match = NULL,
+  match.recycle = NULL,
   standardize.data = FALSE,
   center.data = FALSE,
   first.loading.fixed = FALSE,
@@ -52,6 +53,10 @@ modsem_pi(
 }}
 
 \item{match}{should the product indicators be created by using the match-strategy}
+
+\item{match.recycle}{should the indicators be recycled when using the match-strategy? I.e., 
+if one of the latent variables have fewer indicators than the other, some indicators
+are recycled to match the latent variable with the most indicators.}
 
 \item{standardize.data}{should data be scaled before fitting model}
 

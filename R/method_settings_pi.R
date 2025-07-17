@@ -11,7 +11,8 @@ getMethodSettingsPI <- function(method, args) {
         constrained.var = FALSE,
         res.cov.method = defaultResCov,
         res.cov.across = TRUE,
-        match = FALSE),
+        match = FALSE,
+        match.recycle = FALSE),
     uca  = list(
         center.before = TRUE,
         center.after = FALSE,
@@ -22,7 +23,8 @@ getMethodSettingsPI <- function(method, args) {
         constrained.var = FALSE,
         res.cov.method = defaultResCov,
         res.cov.across = TRUE,
-        match = FALSE),
+        match = FALSE,
+        match.recycle = FALSE),
     pind  = list(
         center.before = FALSE,
         center.after = FALSE,
@@ -33,7 +35,8 @@ getMethodSettingsPI <- function(method, args) {
         constrained.var = FALSE,
         res.cov.method = defaultResCov,
         res.cov.across = TRUE,
-        match = FALSE),
+        match = FALSE,
+        match.recycle = FALSE),
     dblcent  = list(
         center.before = TRUE,
         center.after = TRUE,
@@ -44,7 +47,8 @@ getMethodSettingsPI <- function(method, args) {
         constrained.var = FALSE,
         res.cov.method = defaultResCov,
         res.cov.across = TRUE,
-        match = FALSE),
+        match = FALSE,
+        match.recycle = FALSE),
     ca = list(
         center.before = TRUE,
         center.after = FALSE,
@@ -55,7 +59,8 @@ getMethodSettingsPI <- function(method, args) {
         constrained.var = TRUE,
         res.cov.method = "ca",
         res.cov.across = FALSE,
-        match = TRUE)
+        match = TRUE,
+        match.recycle = TRUE)
     )
 
   settingNames <- unique(unlist(lapply(settings, FUN = names)))

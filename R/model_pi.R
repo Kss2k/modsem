@@ -1,7 +1,8 @@
 parseLavaan <- function(model.syntax = NULL, 
                         variableNames = NULL, 
                         match = FALSE,
-                        suppress.warnings.match = FALSE) {
+                        suppress.warnings.match = FALSE,
+                        match.recycle = FALSE) {
   # Check if a model.syntax is provided, if not we should return an error
   if (is.null(model.syntax))
     stop2("No model.syntax provided")
@@ -47,7 +48,8 @@ parseLavaan <- function(model.syntax = NULL,
                   names = prodNamesCleaned)
 
     # Creating a relDF for prodTerms
-    relDfs <- lapply(indsInLatentProds, FUN = createRelDf, match = match,
+    relDfs <- lapply(indsInLatentProds, FUN = createRelDf, 
+                     match = match, match.recycle = match.recycle,
                      suppress.warnings.match = suppress.warnings.match)
 
     # Get a list with all the inds in each interactionterm
@@ -154,25 +156,35 @@ fixLatentNamesSyntax <- function(model.syntax, pattern) {
 }
 
 
-createRelDf <- function(indsProdTerm, match = FALSE, suppress.warnings.match = FALSE) {
+createRelDf <- function(indsProdTerm, 
+                        match = FALSE, 
+                        suppress.warnings.match = FALSE,
+                        match.recycle = TRUE) {
   if (match) {
     lengths <- vapply(indsProdTerm, FUN.VALUE = integer(1L),
                       FUN = length)
+
     if ((shortest <- min(lengths)) != (longest <- max(lengths))) {
       warnif(!suppress.warnings.match, "Unequal number of indicators for latent variables ",
-             "in product term, not all indicators will be used")
-      indsProdTerm <- lapply(indsProdTerm,
-                             FUN = function(x, shortest) x[seq_len(shortest)],
-                             shortest = shortest)
+             "in product term, some indicators will be recycled!")
+
+      if (match.recycle)
+        selector <- \(x) x[rep(seq_along(x), length.out = longest)]
+      else
+        selector <- \(x) x[seq_len(shortest)]
+
+      indsProdTerm <- lapply(X = indsProdTerm, FUN = selector)
     }
+
     relDf <- t(as.data.frame(indsProdTerm))
+
   } else if (!match) {
     allCombos <- t(expand.grid(indsProdTerm))
     relDf <- NULL
+    
     for (i in seq_len(ncol(allCombos))) {
-      if (!greplRowDf(allCombos[, i], relDf)) {
+      if (!greplRowDf(allCombos[, i], relDf)) 
         relDf <- cbind(relDf, allCombos[, i])
-      }
     }
   }
 

@@ -26,6 +26,9 @@ optimizeStartingParamsDA <- function(model,
     auto.fix.single = args$auto.fix.single,
     res.cov.method  = "simple.no.warn",
     res.cov.across  = TRUE,
+    match           = TRUE,
+    match.recycle   = TRUE,
+    suppress.warnings.match = TRUE,
     suppress.warnings.lavaan = TRUE
   )
 
