@@ -9,7 +9,8 @@ getMethodSettingsPI <- function(method, args) {
         constrained.prod.mean = FALSE,
         constrained.loadings = FALSE,
         constrained.var = FALSE,
-        res.cov.method =  defaultResCov,
+        res.cov.method = defaultResCov,
+        res.cov.across = TRUE,
         match = FALSE),
     uca  = list(
         center.before = TRUE,
@@ -19,7 +20,8 @@ getMethodSettingsPI <- function(method, args) {
         constrained.prod.mean = TRUE,
         constrained.loadings = FALSE,
         constrained.var = FALSE,
-        res.cov.method =  defaultResCov,
+        res.cov.method = defaultResCov,
+        res.cov.across = TRUE,
         match = FALSE),
     pind  = list(
         center.before = FALSE,
@@ -29,7 +31,8 @@ getMethodSettingsPI <- function(method, args) {
         constrained.prod.mean = FALSE,
         constrained.loadings = FALSE,
         constrained.var = FALSE,
-        res.cov.method =  defaultResCov,
+        res.cov.method = defaultResCov,
+        res.cov.across = TRUE,
         match = FALSE),
     dblcent  = list(
         center.before = TRUE,
@@ -39,7 +42,8 @@ getMethodSettingsPI <- function(method, args) {
         constrained.prod.mean = FALSE,
         constrained.loadings = FALSE,
         constrained.var = FALSE,
-        res.cov.method =  defaultResCov,
+        res.cov.method = defaultResCov,
+        res.cov.across = TRUE,
         match = FALSE),
     ca = list(
         center.before = TRUE,
@@ -49,7 +53,8 @@ getMethodSettingsPI <- function(method, args) {
         constrained.prod.mean = TRUE,
         constrained.loadings = TRUE,
         constrained.var = TRUE,
-        res.cov.method =  "ca",
+        res.cov.method = "ca",
+        res.cov.across = FALSE,
         match = TRUE)
     )
 

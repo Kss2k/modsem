@@ -20,6 +20,7 @@ modsem_pi(
   constrained.loadings = NULL,
   constrained.var = NULL,
   res.cov.method = NULL,
+  res.cov.across = NULL,
   auto.scale = "none",
   auto.center = "none",
   estimator = "ML",
@@ -85,6 +86,13 @@ manually in the generated syntax (e.g., \code{XZ =~ 1*x1z1}).'}
                 Can be useful for models where the model is unidentifiable using \code{res.cov.method == "simple"},
                 (e.g., when there is an interaction between an observed and a latent variable).}
 }}
+
+\item{res.cov.across}{Should residual covariances be specified/freed across different interaction terms.
+For example if you have two interaction terms \code{X:Z} and \code{X:W} the residuals of the 
+generated product indicators \code{x1:z1} and \code{x1:w1} may be correlated. If \code{TRUE} 
+residual covariances are allowed across different latent interaction terms. If \code{FALSE} 
+residual covariances are only allowed between product indicators which belong to the same 
+latent interaction term.}
 
 \item{auto.scale}{methods which should be scaled automatically (usually not useful)}
 

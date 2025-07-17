@@ -1,16 +1,22 @@
 getParTableResCov <- function(relDf, method, ...) {
   switch(method,
-         "simple"      = getParTableResCov.simple(relDf),
-         "simple.safe" = getParTableResCov.simple(relDf, safe = TRUE),
-         "ca"          = getParTableResCov.ca(relDf, ...),
-         "equality"    = getParTableResCov.equality(relDf))
+         "simple"         = getParTableResCov.simple(relDf),
+         "simple.no.warn" = suppressWarnings(getParTableResCov.simple(relDf)),
+         "ca"             = getParTableResCov.ca(relDf, ...),
+         "equality"       = getParTableResCov.equality(relDf))
 }
 
 
 
 # Simple -----------------------------------------------------------------------
-getParTableResCov.simple <- function(relDf, safe = FALSE, explicit.zero = FALSE) {
-  if (ncol(relDf) <= 1) return(NULL)
+getParTableResCov.simple <- function(relDf, explicit.zero = FALSE) {
+  EMPTY <- data.frame(lhs = NULL, op = NULL, rhs = NULL, mod = NULL)
+  attr(EMPTY, "OK") <- TRUE
+
+  if (ncol(relDf) <= 1) 
+    return(EMPTY)
+
+  OK <- TRUE
 
   prodNames <- sort(colnames(relDf))
   uniqueCombinations <- getUniqueCombos(prodNames)
@@ -29,14 +35,13 @@ getParTableResCov.simple <- function(relDf, safe = FALSE, explicit.zero = FALSE)
     else if (numberShared == 0) isShared[[i]] <- FALSE
   }
 
-  if (safe && all(isShared))
-    return(NULL)
-
-  warnif(all(isShared),
-         "All residual covariances between product indicators were freed!\n",
-         "The model will likely not be identifiable! Please try passing:\n",
-         "  `res.cov.method = \"none\"` or `res.cov.method = \"equality\"`",
-         immediate. = FALSE)
+  if (all(isShared)) {
+    warning2("All residual covariances between product indicators were freed!\n",
+             "The model will likely not be identifiable! Please try passing:\n",
+             "  `res.cov.method = \"none\"` or `res.cov.method = \"equality\"`",
+             immediate. = FALSE)
+    OK <- FALSE
+  }
 
   prodsSharingInds    <- uniqueCombinations[isShared, c("V1", "V2")]
   prodsNotSharingInds <- uniqueCombinations[!isShared, c("V1", "V2")]
@@ -61,7 +66,13 @@ getParTableResCov.simple <- function(relDf, safe = FALSE, explicit.zero = FALSE)
 
   } else syntaxOrthogonal <- NULL
 
-  rbind(syntaxOrthogonal, syntaxOblique)
+  out <- rbind(syntaxOrthogonal, syntaxOblique)
+  
+  if (is.null(out))
+    return(EMPTY)
+
+  attr(out, "OK") <- OK
+  out
 }
 
 
@@ -99,6 +110,8 @@ getParTableResCov.equality <- function(relDf, setToZero = FALSE) {
                     ) |>
     purrr::list_rbind()
   if (!setToZero) parTable <- parTable[parTable$mod != 0, ]
+  
+  attr(parTable, "OK") <- TRUE
   parTable
 }
 
