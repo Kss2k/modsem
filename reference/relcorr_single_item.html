@@ -85,33 +85,33 @@ holds the raw observed indicators.</p></dd>
 
 
 <dt id="arg-choose">choose<a class="anchor" aria-label="anchor" href="#arg-choose"></a></dt>
-<dd><p>*Optional.* Character vector with the names of the latent
-variables you wish to replace by single indicators.  Defaults to **all**
-first‑order latent variables in `syntax`.</p></dd>
+<dd><p><em>Optional.</em> Character vector with the names of the latent
+variables you wish to replace by single indicators.  Defaults to <strong>all</strong>
+first‑order latent variables in <code>syntax</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>An object of S3 class `modsem_relcorr` (a named list) with elements:</p><dl><dt>`syntax`</dt>
+    <p>An object of S3 class <code>modsem_relcorr</code> (a named list) with elements:</p><dl><dt><code>syntax</code></dt>
 <dd><p>Modified lavaan syntax string.</p></dd>
 
-  <dt>`data`</dt>
+  <dt><code>data</code></dt>
 <dd><p>Data frame with additional composite indicator columns.</p></dd>
 
-  <dt>`parTable`</dt>
+  <dt><code>parTable</code></dt>
 <dd><p>Parameter table corresponding to `syntax`.</p></dd>
 
-  <dt>`reliability`</dt>
+  <dt><code>reliability</code></dt>
 <dd><p>Named numeric vector of reliabilities (one per latent
     variable).</p></dd>
 
-  <dt>`AVE`</dt>
+  <dt><code>AVE</code></dt>
 <dd><p>Named numeric vector with Average Variance Extracted values.</p></dd>
 
-  <dt>`lVs`</dt>
+  <dt><code>lVs</code></dt>
 <dd><p>Character vector of latent variables that were corrected.</p></dd>
 
-  <dt>`single.items`</dt>
+  <dt><code>single.items</code></dt>
 <dd><p>Character vector with names for the generated reliability corrected items</p></dd>
 
 

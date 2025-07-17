@@ -162,7 +162,7 @@ Use <code><a href="default_settings_pi.html">default_settings_pi()</a></code> to
 <dt id="arg-first-loading-fixed">first.loading.fixed<a class="anchor" aria-label="anchor" href="#arg-first-loading-fixed"></a></dt>
 <dd><p>Should the first factor loading in the latent product be fixed to one? Defaults to <code>FALSE</code>, as
 this already happens in <code>lavaan</code> by default. If <code>TRUE</code>, the first factor loading in the latent product is fixed to one.
-manually in the generated syntax (e.g., <code>XZ =~ 1*x1z1</code>).'</p></dd>
+Manually in the generated syntax (e.g., <code>XZ =~ 1*x1z1</code>).'</p></dd>
 
 
 <dt id="arg-center-before">center.before<a class="anchor" aria-label="anchor" href="#arg-center-before"></a></dt>
@@ -268,8 +268,8 @@ single item indicators instead? See <code><a href="relcorr_single_item.html">rel
 
 <dt id="arg-rcs-choose">rcs.choose<a class="anchor" aria-label="anchor" href="#arg-rcs-choose"></a></dt>
 <dd><p>Which latent variables should get their indicators replaced with
-reliablity-reliability corrected single items? Corresponds to the <code>choose</code>
-argument in <code><a href="relcorr_single_item.html">relcorr_single_item</a></code>.</p></dd>
+reliability-corrected single items? It is passed to <code><a href="relcorr_single_item.html">relcorr_single_item</a></code>
+as the <code>choose</code> argument.</p></dd>
 
 
 <dt id="arg-lavfun">LAVFUN<a class="anchor" aria-label="anchor" href="#arg-lavfun"></a></dt>

@@ -107,34 +107,34 @@ for <code><a href="modsem_pi.html">modsem_pi</a></code> objects, or <code><a hre
 
 
 <dt id="arg-r">R<a class="anchor" aria-label="anchor" href="#arg-r"></a></dt>
-<dd><p>Integer; number of bootstrap replicates.</p></dd>
+<dd><p>number of bootstrap replicates.</p></dd>
 
 
 <dt id="arg-p-max">P.max<a class="anchor" aria-label="anchor" href="#arg-p-max"></a></dt>
-<dd><p>Integer; ceiling for the simulated population size.</p></dd>
+<dd><p>ceiling for the simulated population size.</p></dd>
 
 
 <dt id="arg-type">type<a class="anchor" aria-label="anchor" href="#arg-type"></a></dt>
-<dd><p>Character; bootstrap flavour, see Details.</p></dd>
+<dd><p>Bootstrap flavour, see Details.</p></dd>
 
 
 <dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
-<dd><p>Logical; print progress bar/output?</p></dd>
+<dd><p>Should progress information be printed to the console?</p></dd>
 
 
 <dt id="arg-calc-se">calc.se<a class="anchor" aria-label="anchor" href="#arg-calc-se"></a></dt>
-<dd><p>Logical; compute standard errors for each replicate. Defaults to <code>FALSE</code>.</p></dd>
+<dd><p>Should standard errors for each replicate. Defaults to <code>FALSE</code>.</p></dd>
 
 
 <dt id="arg-optimize">optimize<a class="anchor" aria-label="anchor" href="#arg-optimize"></a></dt>
-<dd><p>Logical; (re‑)optimise starting values for each replicate.</p></dd>
+<dd><p>Should starting values be re-optimized for each replicate. Defaults to <code>FALSE</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>Depending on the return type of <code>fun</code> either</p><dl><dt>numeric</dt>
+    <p>Depending on the return type of <code>FUN</code> either</p><dl><dt>numeric</dt>
 <dd><p>A matrix with <code>R</code> rows (bootstrap replicates) and as
-      many columns as <code>length(fun(model))</code>.</p></dd>
+      many columns as <code>length(FUN(model))</code>.</p></dd>
 
     <dt>other</dt>
 <dd><p>A list of length <code>R</code>; each element is the raw output of

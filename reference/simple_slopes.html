@@ -185,27 +185,27 @@ is attached for convenience.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p><strong>Computation Steps</strong>
-1. The function extracts parameter estimates (and, if necessary, their covariance
-   matrix) from the fitted SEM model (<code>model</code>).
-2. It identifies the coefficients for <code>x</code>, <code>z</code>, and <code>x:z</code> in the model's
-   parameter table, as well as the variance of <code>x</code>, <code>z</code>, and the residual.
-3. If <code>xz</code> is not provided, it will be constructed by combining <code>x</code> and
-   <code>z</code> with a colon (<code>":"</code>). In certain SEM software, the colon may be
-   removed or replaced internally; the function attempts to reconcile that.
-4. A grid of <code>x</code> and <code>z</code> values is created from <code>vals_x</code> and
-   <code>vals_z</code>. If <code>rescale = TRUE</code>, these values are transformed back into raw
-   metric units for display in the output.
-5. For each point in the grid, a predicted value of <code>y</code> is computed via
-   <code>(beta0 + beta_x * x + beta_z * z + beta_xz * x * z)</code> and, if included, a
-   mean offset.
-6. The standard error (<code>std.error</code>) is derived from the covariance matrix of
-   the relevant parameters, and if <code>ci_type = "prediction"</code>, adds the residual
-   variance.
-7. Confidence (or prediction) intervals are formed using <code>ci_width</code> (defaulting
-   to 95%). The result is a table-like data frame with predicted values, CIs,
-   standard errors, z-values, and p-values.</p>
-    </div>
+    <p><strong>Computation Steps</strong></p><ol><li><p>The function extracts parameter estimates (and, if necessary, their covariance
+         matrix) from the fitted SEM model (<code>model</code>).</p></li>
+<li><p>It identifies the coefficients for <code>x</code>, <code>z</code>, and <code>x:z</code> in the model's
+         parameter table, as well as the variance of <code>x</code>, <code>z</code> and the residual variance
+         of <code>y</code>.</p></li>
+<li><p>If <code>xz</code> is not provided, it will be constructed by combining <code>x</code> and
+         <code>z</code> with a colon (<code>":"</code>). Depending on the approach used to estimate the model,
+         the colon may be removed or replaced internally; the function attempts to reconcile that.</p></li>
+<li><p>A grid of <code>x</code> and <code>z</code> values is created from <code>vals_x</code> and
+        <code>vals_z</code>. If <code>rescale = TRUE</code>, these values are transformed back into raw
+        metric units for display in the output.</p></li>
+<li><p>For each point in the grid, a predicted value of <code>y</code> is computed via
+        <code>(beta0 + beta_x * x + beta_z * z + beta_xz * x * z)</code> and, if included, a
+        mean offset.</p></li>
+<li><p>The standard error (<code>std.error</code>) is derived from the covariance matrix of
+        the relevant parameters, and if <code>ci_type = "prediction"</code>, adds the residual
+        variance.</p></li>
+<li><p>Confidence (or prediction) intervals are formed using <code>ci_width</code> (defaulting
+        to 95%). The result is a table-like data frame with predicted values, CIs,
+        standard errors, z-values, and p-values.</p></li>
+</ol></div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>

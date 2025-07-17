@@ -142,10 +142,10 @@ necessary syntax, and variables for the estimation of models with latent product
 
 <dt id="arg-method">method<a class="anchor" aria-label="anchor" href="#arg-method"></a></dt>
 <dd><p>method to use:</p><dl><dt><code>"lms"</code></dt>
-<dd><p>latent model structural equations (not passed to <code>lavaan</code>).</p></dd>
+<dd><p>latent moderated structural equations (not passed to <code>lavaan</code>).</p></dd>
 
   <dt><code>"qml"</code></dt>
-<dd><p>quasi maximum likelihood estimation of latent model structural equations (not passed to <code>lavaan</code>).</p></dd>
+<dd><p>quasi maximum likelihood estimation (not passed to <code>lavaan</code>).</p></dd>
 
 
 </dl></dd>
@@ -201,9 +201,7 @@ For QML, <code>"L-BFGS-B"</code> may be faster if there is a large number of ite
 
 <dt id="arg-standardize-data">standardize.data<a class="anchor" aria-label="anchor" href="#arg-standardize-data"></a></dt>
 <dd><p>should data be scaled before fitting model, will be overridden by
-  <code>standardize</code> if <code>standardize</code> is set to <code>TRUE</code>.</p>
-<p><strong>NOTE</strong>: It is recommended that you estimate the model normally and then standardize the output using
-<code><a href="standardize_model.html">standardize_model</a></code> <code><a href="standardized_estimates.html">standardized_estimates</a></code>, <code>summary(&lt;modsem_da-object&gt;, standardize=TRUE)</code></p></dd>
+<code>standardize</code> if <code>standardize</code> is set to <code>TRUE</code>.</p></dd>
 
 
 <dt id="arg-standardize-out">standardize.out<a class="anchor" aria-label="anchor" href="#arg-standardize-out"></a></dt>
@@ -212,7 +210,7 @@ For QML, <code>"L-BFGS-B"</code> may be faster if there is a large number of ite
   have the same label). This does not alter the estimation of the model, only the
   output.</p>
 <p><strong>NOTE</strong>: It is recommended that you estimate the model normally and then standardize the output using
-<code><a href="standardized_estimates.html">standardized_estimates</a></code>.</p></dd>
+<code><a href="standardize_model.html">standardize_model</a></code>, <code><a href="standardized_estimates.html">standardized_estimates</a></code> or <code>summary(&lt;modsem_da-object&gt;, standardize=TRUE)</code>.</p></dd>
 
 
 <dt id="arg-standardize">standardize<a class="anchor" aria-label="anchor" href="#arg-standardize"></a></dt>
@@ -225,12 +223,13 @@ For QML, <code>"L-BFGS-B"</code> may be faster if there is a large number of ite
 
 <dt id="arg-mean-observed">mean.observed<a class="anchor" aria-label="anchor" href="#arg-mean-observed"></a></dt>
 <dd><p>should the mean structure of the observed variables be estimated?
-  This will be overridden by <code>standardize</code> if <code>standardize</code> is set to <code>TRUE</code>.</p>
+  This will be overridden by <code>standardize</code>, if <code>standardize</code> is set to <code>TRUE</code>.</p>
 <p><strong>NOTE</strong>: Not recommended unless you know what you are doing.</p></dd>
 
 
 <dt id="arg-cov-syntax">cov.syntax<a class="anchor" aria-label="anchor" href="#arg-cov-syntax"></a></dt>
-<dd><p>model syntax for implied covariance matrix (see <code><a href="../articles/interaction_two_etas.html">vignette("interaction_two_etas", "modsem")</a></code>)</p></dd>
+<dd><p>model syntax for implied covariance matrix of exogenous latent variables
+(see <code><a href="../articles/interaction_two_etas.html">vignette("interaction_two_etas", "modsem")</a></code>).</p></dd>
 
 
 <dt id="arg-double">double<a class="anchor" aria-label="anchor" href="#arg-double"></a></dt>
@@ -252,9 +251,9 @@ this will be extremely slow but should be more similar to <code>mplus</code>.</p
 
 
 <dt id="arg-ofim-hessian">OFIM.hessian<a class="anchor" aria-label="anchor" href="#arg-ofim-hessian"></a></dt>
-<dd><p>Logical. If <code>TRUE</code> (default) standard errors are
+<dd><p>Logical. If <code>TRUE</code> (default), standard errors are
   based on the negative Hessian (observed Fisher information).
-  If <code>FALSE</code> they come from the outer product
+  If <code>FALSE</code>, they come from the outer product
   of individual score vectors (OPG). For correctly specified models,
   these two matrices are asymptotically equivalent; yielding nearly identical
   standard errors in large samples. The Hessian usually shows smaller finite-sample
@@ -344,8 +343,8 @@ single item indicators instead? See <code><a href="relcorr_single_item.html">rel
 
 <dt id="arg-rcs-choose">rcs.choose<a class="anchor" aria-label="anchor" href="#arg-rcs-choose"></a></dt>
 <dd><p>Which latent variables should get their indicators replaced with
-reliablity-reliability corrected single items? Corresponds to the <code>choose</code>
-argument in <code><a href="relcorr_single_item.html">relcorr_single_item</a></code>.</p></dd>
+reliability-corrected single items? It is passed to <code><a href="relcorr_single_item.html">relcorr_single_item</a></code>
+as the <code>choose</code> argument.</p></dd>
 
 
 <dt id="arg-orthogonal-x">orthogonal.x<a class="anchor" aria-label="anchor" href="#arg-orthogonal-x"></a></dt>
@@ -373,7 +372,7 @@ differs from the default behaviour in <code>lavaan</code>.</p></dd>
 <dd><p>If <code>TRUE</code>, the residual variance of
 an observed indicator is set to zero if it is the only indicator of a latent variable.
 If <code>FALSE</code> the residual variance is not fixed to zero, and treated as a free parameter
-of the model. Default if <code>TRUE</code>. <strong>NOTE</strong> this behaviour is overridden
+of the model. Default is <code>TRUE</code>. <strong>NOTE</strong> this behaviour is overridden
 if the first loading is labelled, where it gets treated as a free parameter instead.</p></dd>
 
 
