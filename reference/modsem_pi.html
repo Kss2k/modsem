@@ -98,6 +98,7 @@ Use <code><a href="default_settings_pi.html">default_settings_pi()</a></code> to
 <span>  constrained.loadings <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  constrained.var <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  res.cov.method <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  res.cov.across <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  auto.scale <span class="op">=</span> <span class="st">"none"</span>,</span>
 <span>  auto.center <span class="op">=</span> <span class="st">"none"</span>,</span>
 <span>  estimator <span class="op">=</span> <span class="st">"ML"</span>,</span>
@@ -212,6 +213,15 @@ manually in the generated syntax (e.g., <code>XZ =~ 1*x1z1</code>).'</p></dd>
 
 
 </dl></dd>
+
+
+<dt id="arg-res-cov-across">res.cov.across<a class="anchor" aria-label="anchor" href="#arg-res-cov-across"></a></dt>
+<dd><p>Should residual covariances be specified/freed across different interaction terms.
+For example if you have two interaction terms <code>X:Z</code> and <code>X:W</code> the residuals of the
+generated product indicators <code>x1:z1</code> and <code>x1:w1</code> may be correlated. If <code>TRUE</code>
+residual covariances are allowed across different latent interaction terms. If <code>FALSE</code>
+residual covariances are only allowed between product indicators which belong to the same
+latent interaction term.</p></dd>
 
 
 <dt id="arg-auto-scale">auto.scale<a class="anchor" aria-label="anchor" href="#arg-auto-scale"></a></dt>
