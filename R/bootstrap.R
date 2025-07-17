@@ -14,10 +14,10 @@
 #'   for \code{\link{modsem_pi}} objects, or \code{\link{modsem_da}} for 
 #'   \code{\link{modsem_da}} objects.
 #'
-#' @return Depending on the return type of \code{fun} either
+#' @return Depending on the return type of \code{FUN} either
 #'   \describe{
 #'     \item{numeric}{A matrix with \code{R} rows (bootstrap replicates) and as
-#'       many columns as \code{length(fun(model))}.}
+#'       many columns as \code{length(FUN(model))}.}
 #'     \item{other}{A list of length \code{R}; each element is the raw output of
 #'       \code{FUN}. \strong{NOTE}: Only applies for \code{\link{modsem_da}} objects}
 #'   }
@@ -68,12 +68,12 @@ bootstrap_modsem.modsem_pi <- function(model, FUN, ...) {
 #' @describeIn bootstrap_modsem Parametric or non‑parametric bootstrap for
 #'   \code{modsem_da} models.
 #'
-#' @param R Integer; number of bootstrap replicates.
-#' @param P.max Integer; ceiling for the simulated population size.
-#' @param type Character; bootstrap flavour, see Details.
-#' @param verbose Logical; print progress bar/output?
-#' @param calc.se Logical; compute standard errors for each replicate. Defaults to \code{FALSE}.
-#' @param optimize Logical; (re‑)optimise starting values for each replicate.
+#' @param R number of bootstrap replicates.
+#' @param P.max ceiling for the simulated population size.
+#' @param type Bootstrap flavour, see Details.
+#' @param verbose Should progress information be printed to the console?
+#' @param calc.se Should standard errors for each replicate. Defaults to \code{FALSE}.
+#' @param optimize Should starting values be re-optimized for each replicate. Defaults to \code{FALSE}.
 #'
 #' @details The function internally resamples the observed data (non‑parametric
 #'   case) or simulates from the estimated parameter table (parametric case),

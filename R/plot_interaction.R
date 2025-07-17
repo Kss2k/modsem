@@ -153,7 +153,7 @@ plot_interaction <- function(x, z, y, xz = NULL, vals_x = seq(-3, 3, .001),
 #' @param model A fitted model object of class \code{modsem_da}, \code{modsem_mplus}, \code{modsem_pi}, or \code{lavaan}.
 #' @param min_z The minimum value of the moderator variable \code{z} to be used in the plot (default is -3). It is relative to the mean of z.
 #' @param max_z The maximum value of the moderator variable \code{z} to be used in the plot (default is 3). It is relative to the mean of z.
-#' @param sig.level The significance level for the confidence intervals (default is 0.05).
+#' @param sig.level The alpha-criterion for the confidence intervals (default is 0.05).
 #' @param alpha alpha setting used in \code{ggplot} (i.e., the opposite of opacity)
 #' @param detail The number of generated data points to use for the plot (default is 1000). You can increase this value for smoother plots.
 #' @param sd.line A thick black line showing \code{+/- sd.line * sd(z)}. NOTE: This line will be truncated by \code{min_z} and \code{max_z} if 

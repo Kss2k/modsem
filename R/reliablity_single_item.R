@@ -13,20 +13,20 @@
 #'   least include the measurement relations (\code{=~}).
 #' @param data A \code{data.frame}, \code{tibble} or object coercible to a data frame that
 #'   holds the raw observed indicators.
-#' @param choose *Optional.* Character vector with the names of the latent
-#'   variables you wish to replace by single indicators.  Defaults to **all**
-#'   first‑order latent variables in `syntax`.
+#' @param choose \emph{Optional.} Character vector with the names of the latent
+#'   variables you wish to replace by single indicators.  Defaults to \strong{all}
+#'   first‑order latent variables in \code{syntax}.
 #'
-#' @return An object of S3 class `modsem_relcorr` (a named list) with elements:
+#' @return An object of S3 class \code{modsem_relcorr} (a named list) with elements:
 #' \describe{
-#'   \item{`syntax`}{Modified lavaan syntax string.}
-#'   \item{`data`}{Data frame with additional composite indicator columns.}
-#'   \item{`parTable`}{Parameter table corresponding to `syntax`.}
-#'   \item{`reliability`}{Named numeric vector of reliabilities (one per latent
+#'   \item{\code{syntax}}{Modified lavaan syntax string.}
+#'   \item{\code{data}}{Data frame with additional composite indicator columns.}
+#'   \item{\code{parTable}}{Parameter table corresponding to `syntax`.}
+#'   \item{\code{reliability}}{Named numeric vector of reliabilities (one per latent
 #'     variable).}
-#'   \item{`AVE`}{Named numeric vector with Average Variance Extracted values.}
-#'   \item{`lVs`}{Character vector of latent variables that were corrected.}
-#'   \item{`single.items`}{Character vector with names for the generated reliability corrected items}
+#'   \item{\code{AVE}}{Named numeric vector with Average Variance Extracted values.}
+#'   \item{\code{lVs}}{Character vector of latent variables that were corrected.}
+#'   \item{\code{single.items}}{Character vector with names for the generated reliability corrected items}
 #' }
 #'
 #' @examples

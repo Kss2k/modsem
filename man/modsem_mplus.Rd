@@ -36,8 +36,8 @@ modsem_mplus(
 single item indicators instead? See \code{\link{relcorr_single_item}}.}
 
 \item{rcs.choose}{Which latent variables should get their indicators replaced with
-reliablity-reliability corrected single items? Corresponds to the \code{choose} 
-argument in \code{\link{relcorr_single_item}}.}
+reliability-corrected single items? It is passed to \code{\link{relcorr_single_item}}
+as the \code{choose} argument.}
 
 \item{...}{arguments passed to other functions}
 }

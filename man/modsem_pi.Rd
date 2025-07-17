@@ -58,7 +58,7 @@ modsem_pi(
 
 \item{first.loading.fixed}{Should the first factor loading in the latent product be fixed to one? Defaults to \code{FALSE}, as 
 this already happens in \code{lavaan} by default. If \code{TRUE}, the first factor loading in the latent product is fixed to one.
-manually in the generated syntax (e.g., \code{XZ =~ 1*x1z1}).'}
+Manually in the generated syntax (e.g., \code{XZ =~ 1*x1z1}).'}
 
 \item{center.before}{should indicators in products be centered before computing products.}
 
@@ -117,8 +117,8 @@ If \code{FALSE} they are not removed.}
 single item indicators instead? See \code{\link{relcorr_single_item}}.}
 
 \item{rcs.choose}{Which latent variables should get their indicators replaced with
-reliablity-reliability corrected single items? Corresponds to the \code{choose} 
-argument in \code{\link{relcorr_single_item}}.}
+reliability-corrected single items? It is passed to \code{\link{relcorr_single_item}}
+as the \code{choose} argument.}
 
 \item{LAVFUN}{Function used to estimate the model. Defaults to \code{lavaan::sem}.}
 

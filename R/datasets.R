@@ -121,8 +121,10 @@ NULL
 #' latent variable (ATT, SN, PBC, INT, BEH), from two time points (t1 and t2).
 #'
 #' @source
-#' Gathered from a replciation study of the original by Hagger et al. (2023).
-#' Obtained from https://doi.org/10.23668/psycharchives.12187
+#' Gathered from a replication study by Hagger et al. (2023).
+#' 
+#' Obtained from \url{https://doi.org/10.23668/psycharchives.12187}
+#'
 #' @examples
 #'
 #' tpb_uk <- "
@@ -153,7 +155,7 @@ NULL
 #' (Organisation for Economic Co-Operation and Development, 2009) where
 #' competencies of 15-year-old students in reading, mathematics, and science
 #' are assessed using nationally representative samples in 3-year cycles.
-#' In this eacademicample, data from the student background questionnaire from the
+#' In this example, data from the student background questionnaire from the
 #' Jordan sample of PISA 2006 were used. Only data of students with complete
 #' responses to all 15 items (N = 6,038) were considered.
 #'

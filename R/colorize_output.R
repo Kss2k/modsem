@@ -132,7 +132,7 @@ captureOutput <- function (expr, envir = parent.frame(), split = FALSE) {
 #'                 
 #' colorize_output(modsem_inspect(est_lms))
 #' }
-#' @return `TRUE` if colors are active afterwards, otherwise `FALSE`.
+#' @return \code{TRUE} if colors are active afterwards, otherwise \code{FALSE}.
 #' @export
 set_modsem_colors <- function(positive = "green3",
                               negative = positive,

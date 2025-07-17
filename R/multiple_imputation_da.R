@@ -6,8 +6,8 @@
 #'
 #' @param method Method to use:
 #' \describe{
-#'   \item{\code{"lms"}}{latent model structural equations (not passed to \code{lavaan}).}
-#'   \item{\code{"qml"}}{quasi maximum likelihood estimation of latent model structural equations (not passed to \code{lavaan}).}
+#'   \item{\code{"lms"}}{latent moderated structural equations (not passed to \code{lavaan}).}
+#'   \item{\code{"qml"}}{quasi maximum likelihood estimation (not passed to \code{lavaan}).}
 #' }
 #'
 #' @param m Number of imputations to perform. More imputations will yield better estimates

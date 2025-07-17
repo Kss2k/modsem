@@ -19,7 +19,7 @@
 #'
 #' @param first.loading.fixed Should the first factor loading in the latent product be fixed to one? Defaults to \code{FALSE}, as 
 #'   this already happens in \code{lavaan} by default. If \code{TRUE}, the first factor loading in the latent product is fixed to one.
-#'   manually in the generated syntax (e.g., \code{XZ =~ 1*x1z1}).'
+#'   Manually in the generated syntax (e.g., \code{XZ =~ 1*x1z1}).'
 #'
 #' @param center.before should indicators in products be centered before computing products.
 #'
@@ -76,11 +76,11 @@
 #' @param suppress.warnings.match should warnings from \code{match} be suppressed?
 #'
 #' @param rcs Should latent variable indicators be replaced with reliablity-corrected
-#' single item indicators instead? See \code{\link{relcorr_single_item}}.
+#'   single item indicators instead? See \code{\link{relcorr_single_item}}.
 #'
 #' @param rcs.choose Which latent variables should get their indicators replaced with
-#' reliablity-reliability corrected single items? Corresponds to the \code{choose} 
-#' argument in \code{\link{relcorr_single_item}}.
+#'   reliability-corrected single items? It is passed to \code{\link{relcorr_single_item}}
+#'   as the \code{choose} argument.
 #'
 #' @param LAVFUN Function used to estimate the model. Defaults to \code{lavaan::sem}.
 #'
@@ -591,7 +591,7 @@ createParTableRow <- function(vecLhsRhs, op, mod = "") {
 #' @export
 #' @description
 #' \code{get_pi_syntax()} is a function for creating the \code{lavaan} syntax used for estimating
-#' latent interaction models using one of the product indicators in \code{lavaan}.
+#' latent interaction models using one of the product indicator approaches.
 #'
 #' @examples
 #' library(modsem)
@@ -638,8 +638,8 @@ get_pi_syntax <- function(model.syntax,
 #' @return \code{data.frame}
 #' @export
 #' @description
-#' \code{get_pi_syntax()} is a function for creating the \code{lavaan} syntax used for estimating
-#' latent interaction models using one of the product indicators in \code{lavaan}.
+#' \code{get_pi_data()} is a function for creating a dataset with product indiactors used for estimating
+#' latent interaction models using one of the product indicator approaches.
 #'
 #' @examples
 #' library(modsem)

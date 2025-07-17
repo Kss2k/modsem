@@ -7,12 +7,14 @@
 #' @param algorithm algorithm argument passed to \code{Mplus}
 #' @param processors processors argument passed to \code{Mplus}
 #' @param integration integration argument passed to \code{Mplus}
+#'
 #' @param rcs Should latent variable indicators be replaced with reliablity-corrected
 #'   single item indicators instead? See \code{\link{relcorr_single_item}}.
 #'
 #' @param rcs.choose Which latent variables should get their indicators replaced with
-#'   reliablity-reliability corrected single items? Corresponds to the \code{choose} 
-#'   argument in \code{\link{relcorr_single_item}}.
+#'   reliability-corrected single items? It is passed to \code{\link{relcorr_single_item}}
+#'   as the \code{choose} argument.
+#'
 #' @param ... arguments passed to other functions
 #'
 #' @return modsem_mplus object

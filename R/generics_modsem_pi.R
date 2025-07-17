@@ -249,7 +249,7 @@ parameter_estimates.modsem_pi <- function(object, colon.pi = FALSE, ...) {
 #'
 #' Hence the scale of the interaction effect changes, such that 
 #' the standardized interaction term does not correspond to one (standardized) unit 
-#' change in the moderating variables. If \code{TRUE} a correction is applied, by 
+#' change in the moderating variables. If \code{TRUE}, a correction is applied by 
 #' computing the interaction term \eqn{b_3 = \frac{B_3 \sigma(X) \sigma(Z)}{\sigma(Y)}} (where 
 #' \eqn{B_3} is the unstandardized coefficient for the interaction term), and solving for \eqn{\sigma(XZ)}, which 
 #' is used to correct the variance of the interaction term, and its covariances.
@@ -268,7 +268,7 @@ parameter_estimates.modsem_pi <- function(object, colon.pi = FALSE, ...) {
 #' @param colon.pi Logical. If \code{TRUE}, the interaction terms in the output will be
 #' will be formatted using \code{:} to seperate the elements in the interaction term. Default
 #' is \code{FALSE}, using the default formatting from \code{lavaan}. Only relevant if
-#' \code{std.errors != "rescale"} and \code{correction == TRUE}.
+#' \code{std.errors != "rescale"} and \code{correction = TRUE}.
 #'
 #' @param ... Additional arguments passed on to \code{lavaan::standardizedSolution()}.
 #'

@@ -25,7 +25,7 @@ get_pi_syntax(model.syntax, method = "dblcent", match = FALSE, ...)
 }
 \description{
 \code{get_pi_syntax()} is a function for creating the \code{lavaan} syntax used for estimating
-latent interaction models using one of the product indicators in \code{lavaan}.
+latent interaction models using one of the product indicator approaches.
 }
 \examples{
 library(modsem)

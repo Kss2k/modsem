@@ -19,10 +19,9 @@ currently only used for \code{modsem_pi} models.}
 }
 \description{
 Compare the fit of two models using the likelihood ratio test (LRT).
-hypothesis model, and \code{est_h1} the alternative hypothesis model. Importantly,
-the function assumes that \code{est_h0} does not have more free parameters
-(i.e., degrees of freedom) than \code{est_h1}.
-alternative hypothesis model
+\code{est_h0} is the null hypothesis model, and \code{est_h1} the alternative hypothesis model. 
+Importantly, the function assumes that \code{est_h0} does not have more free parameters
+(i.e., degrees of freedom) than \code{est_h1} (the alternative hypothesis model).
 }
 \examples{
 \dontrun{

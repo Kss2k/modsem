@@ -36,7 +36,7 @@ set_modsem_colors(
 \item{active}{Should color-theme be activated/deactived?}
 }
 \value{
-`TRUE` if colors are active afterwards, otherwise `FALSE`.
+\code{TRUE} if colors are active afterwards, otherwise \code{FALSE}.
 }
 \description{
 All arguments are optional; omitted ones fall back to the defaults below.

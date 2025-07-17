@@ -6,8 +6,8 @@
 #'
 #' @param method method to use:
 #' \describe{
-#'   \item{\code{"lms"}}{latent model structural equations (not passed to \code{lavaan}).}
-#'   \item{\code{"qml"}}{quasi maximum likelihood estimation of latent model structural equations (not passed to \code{lavaan}).}
+#'   \item{\code{"lms"}}{latent moderated structural equations (not passed to \code{lavaan}).}
+#'   \item{\code{"qml"}}{quasi maximum likelihood estimation (not passed to \code{lavaan}).}
 #' }
 #'
 #' @param verbose should estimation progress be shown
@@ -45,19 +45,16 @@
 #' @param standardize.data should data be scaled before fitting model, will be overridden by
 #'   \code{standardize} if \code{standardize} is set to \code{TRUE}.
 #'
-#' \strong{NOTE}: It is recommended that you estimate the model normally and then standardize the output using
-#' \code{\link{standardize_model}} \code{\link{standardized_estimates}}, \code{summary(<modsem_da-object>, standardize=TRUE)}
-#'
 #' @param standardize.out should output be standardized (note will alter the relationships of
 #'   parameter constraints since parameters are scaled unevenly, even if they
 #'   have the same label). This does not alter the estimation of the model, only the
 #'   output.
 #'
 #' \strong{NOTE}: It is recommended that you estimate the model normally and then standardize the output using
-#' \code{\link{standardized_estimates}}.
+#' \code{\link{standardize_model}}, \code{\link{standardized_estimates}} or \code{summary(<modsem_da-object>, standardize=TRUE)}.
 #'
 #' @param mean.observed should the mean structure of the observed variables be estimated?
-#'   This will be overridden by \code{standardize} if \code{standardize} is set to \code{TRUE}.
+#'   This will be overridden by \code{standardize}, if \code{standardize} is set to \code{TRUE}.
 #'
 #' \strong{NOTE}: Not recommended unless you know what you are doing.
 #'
@@ -71,7 +68,8 @@
 #' @param double try to double the number of dimensions of integration used in LMS,
 #' this will be extremely slow but should be more similar to \code{mplus}.
 #'
-#' @param cov.syntax model syntax for implied covariance matrix (see \code{vignette("interaction_two_etas", "modsem")})
+#' @param cov.syntax model syntax for implied covariance matrix of exogenous latent variables
+#'  (see \code{vignette("interaction_two_etas", "modsem")}).
 #'
 #' @param calc.se should standard errors be computed? \strong{NOTE}: If \code{FALSE}, the information matrix will not be computed either.
 #'
@@ -80,9 +78,9 @@
 #' @param EFIM.S if the expected Fisher information matrix is computed, \code{EFIM.S} selects the number of Monte Carlo samples. Defaults to 100. 
 #'   \strong{NOTE}: This number should likely be increased for better estimates (e.g., 1000), but it might drasticly increase computation time.
 #'
-#' @param OFIM.hessian Logical. If \code{TRUE} (default) standard errors are
+#' @param OFIM.hessian Logical. If \code{TRUE} (default), standard errors are
 #'   based on the negative Hessian (observed Fisher information).
-#'   If \code{FALSE} they come from the outer product
+#'   If \code{FALSE}, they come from the outer product
 #'   of individual score vectors (OPG). For correctly specified models,
 #'   these two matrices are asymptotically equivalent; yielding nearly identical
 #'   standard errors in large samples. The Hessian usually shows smaller finite-sample
@@ -144,8 +142,8 @@
 #'   single item indicators instead? See \code{\link{relcorr_single_item}}.
 #'
 #' @param rcs.choose Which latent variables should get their indicators replaced with
-#'   reliablity-reliability corrected single items? Corresponds to the \code{choose} 
-#'   argument in \code{\link{relcorr_single_item}}.
+#'   reliability-corrected single items? It is passed to \code{\link{relcorr_single_item}}
+#'   as the \code{choose} argument.
 #'
 #' @param orthogonal.x If \code{TRUE}, all covariances among exogenous latent variables only are set to zero. 
 #'  Default is \code{FALSE}.
@@ -170,7 +168,7 @@
 #' @param auto.fix.single If \code{TRUE}, the residual variance of 
 #'  an observed indicator is set to zero if it is the only indicator of a latent variable.
 #'  If \code{FALSE} the residual variance is not fixed to zero, and treated as a free parameter
-#'  of the model. Default if \code{TRUE}. \strong{NOTE} this behaviour is overridden 
+#'  of the model. Default is \code{TRUE}. \strong{NOTE} this behaviour is overridden 
 #'  if the first loading is labelled, where it gets treated as a free parameter instead. 
 #'
 #' @param auto.split.syntax Should the model syntax automatically be split into a 

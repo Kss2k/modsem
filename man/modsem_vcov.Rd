@@ -7,12 +7,11 @@
 modsem_vcov(object, ...)
 }
 \arguments{
-\item{object}{fittet model to inspect}
+\item{object}{fitted model to inspect}
 
 \item{...}{additional arguments}
 }
 \description{
-wrapper for vcov, to be used with modsem::modsem_vcov, since
-vcov is not in the namespace of modsem, but stats
-since vcov is not in the namespace of modsem, but stats
+wrapper for \code{vcov}, to be used with \code{modsem::modsem_vcov}, since
+\code{vcov} is not in the namespace of \code{modsem}, but \code{stats}.
 }

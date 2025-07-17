@@ -97,25 +97,29 @@ effects or to see how the slope changes at different values of the moderator.
 }
 \details{
 \strong{Computation Steps}  
-1. The function extracts parameter estimates (and, if necessary, their covariance
-   matrix) from the fitted SEM model (\code{model}).  
-2. It identifies the coefficients for \code{x}, \code{z}, and \code{x:z} in the model's
-   parameter table, as well as the variance of \code{x}, \code{z}, and the residual.  
-3. If \code{xz} is not provided, it will be constructed by combining \code{x} and
-   \code{z} with a colon (\code{":"}). In certain SEM software, the colon may be
-   removed or replaced internally; the function attempts to reconcile that.  
-4. A grid of \code{x} and \code{z} values is created from \code{vals_x} and
-   \code{vals_z}. If \code{rescale = TRUE}, these values are transformed back into raw
-   metric units for display in the output.  
-5. For each point in the grid, a predicted value of \code{y} is computed via
-   \code{(beta0 + beta_x * x + beta_z * z + beta_xz * x * z)} and, if included, a
-   mean offset.  
-6. The standard error (\code{std.error}) is derived from the covariance matrix of
-   the relevant parameters, and if \code{ci_type = "prediction"}, adds the residual
-   variance.  
-7. Confidence (or prediction) intervals are formed using \code{ci_width} (defaulting
-   to 95\%). The result is a table-like data frame with predicted values, CIs,
-   standard errors, z-values, and p-values.
+\enumerate{
+   \item The function extracts parameter estimates (and, if necessary, their covariance
+         matrix) from the fitted SEM model (\code{model}).  
+   \item It identifies the coefficients for \code{x}, \code{z}, and \code{x:z} in the model's
+         parameter table, as well as the variance of \code{x}, \code{z} and the residual variance
+         of \code{y}.
+   \item If \code{xz} is not provided, it will be constructed by combining \code{x} and
+         \code{z} with a colon (\code{":"}). Depending on the approach used to estimate the model, 
+         the colon may be removed or replaced internally; the function attempts to reconcile that.  
+
+  \item A grid of \code{x} and \code{z} values is created from \code{vals_x} and
+        \code{vals_z}. If \code{rescale = TRUE}, these values are transformed back into raw
+        metric units for display in the output.  
+  \item For each point in the grid, a predicted value of \code{y} is computed via
+        \code{(beta0 + beta_x * x + beta_z * z + beta_xz * x * z)} and, if included, a
+        mean offset.  
+  \item The standard error (\code{std.error}) is derived from the covariance matrix of
+        the relevant parameters, and if \code{ci_type = "prediction"}, adds the residual
+        variance.  
+  \item Confidence (or prediction) intervals are formed using \code{ci_width} (defaulting
+        to 95\%). The result is a table-like data frame with predicted values, CIs,
+        standard errors, z-values, and p-values.  
+}
 }
 \examples{
 \dontrun{

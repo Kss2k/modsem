@@ -22,7 +22,7 @@ Description:
       The residual centering approach (Little et al., 2006).
       The double centering approach (Lin et al., 2010).
       The latent moderated structural equations (LMS) approach (Klein & Moosbrugger, 2000).
-      The quasi-maximum likelihood (QML) approach (Klein & Muthén, 2007) (temporarily unavailable)
+      The quasi-maximum likelihood (QML) approach (Klein & Muthén, 2007)
     The constrained- unconstrained, residual- and double centering- approaches
     are estimated via 'lavaan' (Rosseel, 2012), whilst the LMS- and QML- approaches
     are estimated via 'modsem' it self. Alternatively model can be

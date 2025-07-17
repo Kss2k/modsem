@@ -18,8 +18,8 @@ twostep(model.syntax, data, method = "lms", ...)
   \item{\code{"rca"}}{residual centering approach (passed to \code{lavaan}).}
   \item{\code{"uca"}}{unconstrained approach (passed to \code{lavaan}).}
   \item{\code{"pind"}}{prod ind approach, with no constraints or centering (passed to \code{lavaan}).}
-  \item{\code{"lms"}}{latent model structural equations (not passed to \code{lavaan}).}
-  \item{\code{"qml"}}{quasi maximum likelihood estimation of latent model structural equations (not passed to \code{lavaan}).}
+  \item{\code{"lms"}}{latent moderated structural equations (not passed to \code{lavaan}).}
+  \item{\code{"qml"}}{quasi maximum likelihood estimation (not passed to \code{lavaan}).}
   \item{\code{"custom"}}{use parameters specified in the function call (passed to \code{lavaan}).}
 }}
 

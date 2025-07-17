@@ -29,7 +29,7 @@ A named list with the extracted information. If a single piece of information is
  it is returned as is; not as a named element in a list.
 }
 \description{
-function used to inspect fittet object. Similar to \code{lavaan::lavInspect}
+function used to inspect fitted object. Similar to \code{lavaan::lavInspect}
 argument \code{what} decides what to inspect
 
 \code{modsem_inspect.modsem_da} Lets you

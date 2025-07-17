@@ -376,10 +376,10 @@ standardized_estimates.data.frame <- function(object, intercepts = FALSE, ...) {
 
 #' Inspect model information
 #'
-#' @param object fittet model to inspect
+#' @param object fitted model to inspect
 #' @param what what to inspect
 #' @param ... Additional arguments passed to other functions
-#' @description function used to inspect fittet object. Similar to \code{lavaan::lavInspect}
+#' @description function used to inspect fitted object. Similar to \code{lavaan::lavInspect}
 #' argument \code{what} decides what to inspect
 #' @details For \code{\link{modsem_pi}} objects, it is just a wrapper for \code{lavaan::lavInspect}.
 #'  For \code{\link{modsem_da}} objects an internal function is called, which takes different 
@@ -393,11 +393,10 @@ modsem_inspect <- function(object, what = NULL, ...) {
 
 #' Wrapper for vcov
 #'
-#' @param object fittet model to inspect
+#' @param object fitted model to inspect
 #' @param ... additional arguments
-#' @description wrapper for vcov, to be used with modsem::modsem_vcov, since
-#' vcov is not in the namespace of modsem, but stats
-#' since vcov is not in the namespace of modsem, but stats
+#' @description wrapper for \code{vcov}, to be used with \code{modsem::modsem_vcov}, since
+#' \code{vcov} is not in the namespace of \code{modsem}, but \code{stats}.
 #' @export
 modsem_vcov <- function(object, ...) {
   vcov(object, ...)
@@ -406,11 +405,10 @@ modsem_vcov <- function(object, ...) {
 
 #' Wrapper for coef
 #'
-#' @param object fittet model to inspect
+#' @param object fitted model to inspect
 #' @param ... additional arguments
-#' @description wrapper for coef, to be used with modsem::modsem_coef, since
-#' coef is not in the namespace of modsem, but stats
-#' since coef is not in the namespace of modsem, but stats
+#' @description wrapper for \code{coef}, to be used with \code{modsem::modsem_coef}, since
+#' \code{coef} is not in the namespace of \code{modsem}, but \code{stats}.
 #' @export
 modsem_coef <- function(object, ...) {
   coef(object, ...)
@@ -419,11 +417,10 @@ modsem_coef <- function(object, ...) {
 
 #' Wrapper for nobs
 #'
-#' @param object fittet model to inspect
+#' @param object fitted model to inspect
 #' @param ... additional arguments
-#' @description wrapper for nobs, to be used with modsem::modsem_nobs, since
-#' nobs is not in the namespace of modsem, but stats
-#' since nobs is not in the namespace of modsem, but stats
+#' @description wrapper for \code{nobs}, to be used with \code{modsem::modsem_nobs}, since
+#' \code{nobs} is not in the namespace of \code{modsem}, but \code{stats}.
 #' @export
 modsem_nobs <- function(object, ...) {
   nobs(object, ...)

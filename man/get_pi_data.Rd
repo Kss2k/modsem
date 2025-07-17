@@ -26,8 +26,8 @@ get_pi_data(model.syntax, data, method = "dblcent", match = FALSE, ...)
 \code{data.frame}
 }
 \description{
-\code{get_pi_syntax()} is a function for creating the \code{lavaan} syntax used for estimating
-latent interaction models using one of the product indicators in \code{lavaan}.
+\code{get_pi_data()} is a function for creating a dataset with product indiactors used for estimating
+latent interaction models using one of the product indicator approaches.
 }
 \examples{
 library(modsem)

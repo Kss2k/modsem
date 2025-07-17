@@ -33,23 +33,23 @@ object, and should ideally return a numeric vector; see Value.}
 for \code{\link{modsem_pi}} objects, or \code{\link{modsem_da}} for 
 \code{\link{modsem_da}} objects.}
 
-\item{R}{Integer; number of bootstrap replicates.}
+\item{R}{number of bootstrap replicates.}
 
-\item{P.max}{Integer; ceiling for the simulated population size.}
+\item{P.max}{ceiling for the simulated population size.}
 
-\item{type}{Character; bootstrap flavour, see Details.}
+\item{type}{Bootstrap flavour, see Details.}
 
-\item{verbose}{Logical; print progress bar/output?}
+\item{verbose}{Should progress information be printed to the console?}
 
-\item{calc.se}{Logical; compute standard errors for each replicate. Defaults to \code{FALSE}.}
+\item{calc.se}{Should standard errors for each replicate. Defaults to \code{FALSE}.}
 
-\item{optimize}{Logical; (re‑)optimise starting values for each replicate.}
+\item{optimize}{Should starting values be re-optimized for each replicate. Defaults to \code{FALSE}.}
 }
 \value{
-Depending on the return type of \code{fun} either
+Depending on the return type of \code{FUN} either
   \describe{
     \item{numeric}{A matrix with \code{R} rows (bootstrap replicates) and as
-      many columns as \code{length(fun(model))}.}
+      many columns as \code{length(FUN(model))}.}
     \item{other}{A list of length \code{R}; each element is the raw output of
       \code{FUN}. \strong{NOTE}: Only applies for \code{\link{modsem_da}} objects}
   }
