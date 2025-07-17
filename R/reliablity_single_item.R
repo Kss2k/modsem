@@ -77,8 +77,9 @@ relcorr_single_item <- function(syntax, data, choose = NULL) {
     ignore <- c(ignore, higherOrderLVs)
   }
 
-  stopif(any(!choose %in% lVs), "Could not find latent variables:\n", 
+  warnif(any(!choose %in% lVs), "Could not find latent variables:\n", 
          paste(choose[!choose %in% lVs], collapse = ", "))
+  choose <- choose[choose %in% lVs]
 
   ignoreRows <- parTableOuter$lhs %in% ignore
 
@@ -164,6 +165,53 @@ relcorr_single_item <- function(syntax, data, choose = NULL) {
   class(out) <- c("list", "modsem_relcorr")
 
   out
+}
+
+
+addResCovSyntaxRCS <- function(corrected, elemsInIntTerms) {
+  if (length(elemsInIntTerms) <= 1L)
+    return(corrected)
+
+  intTerms     <- names(elemsInIntTerms)
+  single.items <- corrected$single.items
+  constructs   <- names(single.items)
+  elemsInIntTerms <- elemsInIntTerms[intTerms %in% constructs]
+
+  if (length(elemsInIntTerms) <= 1L)
+    return(corrected)
+
+  newRows <- NULL
+  combosIntTerms <- getUniqueCombos(intTerms)
+  for (i in seq_len(NROW(combosIntTerms))) {
+    intTerm1 <- combosIntTerms[[1L]][[i]]
+    intTerm2 <- combosIntTerms[[2L]][[i]]
+
+    elems1 <- elemsInIntTerms[[intTerm1]]
+    elems2 <- elemsInIntTerms[[intTerm2]]
+
+    if (any(elems1 %in% elems2)) {
+      item1 <- single.items[[intTerm1]]
+      item2 <- single.items[[intTerm2]]
+
+      newRows <- rbind(
+        newRows,
+        createParTableRow(c(item1, item2), op = "~~")
+      )
+    }
+  }
+
+  if (!NROW(newRows)) 
+    return(corrected)
+
+  syntaxAdditions <- parTableToSyntax(newRows)
+
+  syntax   <- corrected$syntax
+  parTable <- corrected$parTable
+
+  corrected$syntax   <- paste(syntax, syntaxAdditions, sep = "\n")
+  corrected$parTable <- rbind(parTable, newRows)
+
+  corrected
 }
 
 

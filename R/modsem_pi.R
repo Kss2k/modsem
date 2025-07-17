@@ -57,6 +57,9 @@
 #'   residual covariances are only allowed between product indicators which belong to the same 
 #'   latent interaction term.
 #'
+#' @param rcs.res.cov.across Same as \code{res.cov.across} argument, but applied when 
+#'   \code{rcs = TRUE}. \strong{The resulting model might be unstable to estimate.}
+#'
 #' @param auto.scale methods which should be scaled automatically (usually not useful)
 #'
 #' @param auto.center methods which should be centered automatically (usually not useful)
@@ -179,6 +182,7 @@ modsem_pi <- function(model.syntax = NULL,
                       suppress.warnings.match = FALSE,
                       rcs = FALSE,
                       rcs.choose = NULL,
+                      rcs.res.cov.across = FALSE,
                       LAVFUN = lavaan::sem,
                       ...) {
   stopif(is.null(model.syntax), "No model syntax provided in modsem")
@@ -309,6 +313,25 @@ modsem_pi <- function(model.syntax = NULL,
                                firstFixed = first.loading.fixed)
 
   newSyntax <- parTableToSyntax(parTable, removeColon = TRUE)
+  
+  if (rcs.after) { # use reliability-correct single items?
+    if (!is.null(rcs.choose))
+      rcs.choose <- stringr::str_remove_all(rcs.choose, pattern = ":")
+
+    corrected <- relcorr_single_item(
+      syntax = newSyntax, 
+      data   = newData,
+      choose = rcs.choose
+    )
+   
+    if (rcs.res.cov.across) {
+      elemsxz   <- modelSpec$elementsInProdNames
+      corrected <- addResCovSyntaxRCS(corrected, elemsInIntTerms = elemsxz)
+    }
+
+    newSyntax <- corrected$syntax
+    newData   <- corrected$data
+  }
 
   # Interaction model
   modelSpec$prodInds <- prodInds
@@ -320,22 +343,8 @@ modsem_pi <- function(model.syntax = NULL,
   # Extra info saved for estimating baseline model
   input$modsemArgs <- methodSettings
   input$lavArgs    <- list(estimator = estimator, cluster = cluster, group = group, 
-                           LAVFUN = LAVFUN, ...)
+                           LAVFUN = LAVFUN, rcs = rcs.after, rcs.choose = rcs.choose, ...)
   modelSpec$input  <- input
-  
-  if (rcs.after) { # use reliability-correct single items?
-    if (!is.null(rcs.choose))
-      rcs.choose <- stringr::str_remove_all(rcs.choose, pattern = ":")
-
-    corrected <- relcorr_single_item(
-      syntax = newSyntax, 
-      data   = newData,
-      choose = rcs.choose
-    )
-
-    newSyntax <- corrected$syntax
-    newData   <- corrected$data
-  }
 
   if (run) {
     lavWrapper <- getWarningWrapper(silent = suppress.warnings.lavaan)
@@ -583,6 +592,8 @@ createParTableRow <- function(vecLhsRhs, op, mod = "") {
 #' \code{"pind"} = prod ind approach, with no constraints or centering,
 #' \code{"custom"} = use parameters specified in the function call
 #'
+#' @param data Optional. Dataset to use, usually not relevant.
+#'
 #' @param match should the product indicators be created by using the match-strategy
 #'
 #' @param ... arguments passed to other functions (e.g., \link{modsem_pi})
@@ -612,12 +623,17 @@ createParTableRow <- function(vecLhsRhs, op, mod = "") {
 get_pi_syntax <- function(model.syntax,
                           method = "dblcent",
                           match = FALSE,
+                          data = NULL,
                           ...) {
   oVs       <- getOVs(model.syntax = model.syntax)
-  emptyData <- as.data.frame(matrix(0, nrow = 1, ncol = length(oVs),
-                                    dimnames = list(NULL, oVs)))
+
+  if (is.null(data)) {
+    data <- as.data.frame(matrix(0, nrow = 1, ncol = length(oVs),
+                                 dimnames = list(NULL, oVs)))
+  }
+
   modsem_pi(model.syntax, method = method, match = match,
-            data = emptyData, run = FALSE, ...)$syntax
+            data = data, run = FALSE, ...)$syntax
 }
 
 

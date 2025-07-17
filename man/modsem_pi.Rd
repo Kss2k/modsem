@@ -32,6 +32,7 @@ modsem_pi(
   suppress.warnings.match = FALSE,
   rcs = FALSE,
   rcs.choose = NULL,
+  rcs.res.cov.across = FALSE,
   LAVFUN = lavaan::sem,
   ...
 )
@@ -119,6 +120,9 @@ single item indicators instead? See \code{\link{relcorr_single_item}}.}
 \item{rcs.choose}{Which latent variables should get their indicators replaced with
 reliability-corrected single items? It is passed to \code{\link{relcorr_single_item}}
 as the \code{choose} argument.}
+
+\item{rcs.res.cov.across}{Same as \code{res.cov.across} argument, but applied when 
+\code{rcs = TRUE}. \strong{The resulting model might be unstable to estimate.}}
 
 \item{LAVFUN}{Function used to estimate the model. Defaults to \code{lavaan::sem}.}
 

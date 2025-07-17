@@ -4,7 +4,13 @@
 \alias{get_pi_syntax}
 \title{Get \code{lavaan} syntax for product indicator approaches}
 \usage{
-get_pi_syntax(model.syntax, method = "dblcent", match = FALSE, ...)
+get_pi_syntax(
+  model.syntax,
+  method = "dblcent",
+  match = FALSE,
+  data = NULL,
+  ...
+)
 }
 \arguments{
 \item{model.syntax}{\code{lavaan} syntax}
@@ -17,6 +23,8 @@ get_pi_syntax(model.syntax, method = "dblcent", match = FALSE, ...)
 \code{"custom"} = use parameters specified in the function call}
 
 \item{match}{should the product indicators be created by using the match-strategy}
+
+\item{data}{Optional. Dataset to use, usually not relevant.}
 
 \item{...}{arguments passed to other functions (e.g., \link{modsem_pi})}
 }
