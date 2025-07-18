@@ -61,9 +61,6 @@
 #'   residual covariances are only allowed between product indicators which belong to the same 
 #'   latent interaction term.
 #'
-#' @param rcs.res.cov.across Same as \code{res.cov.across} argument, but applied when 
-#'   \code{rcs = TRUE}. \strong{The resulting model might be unstable to estimate.}
-#'
 #' @param auto.scale methods which should be scaled automatically (usually not useful)
 #'
 #' @param auto.center methods which should be centered automatically (usually not useful)
@@ -88,6 +85,17 @@
 #' @param rcs.choose Which latent variables should get their indicators replaced with
 #'   reliability-corrected single items? It is passed to \code{\link{relcorr_single_item}}
 #'   as the \code{choose} argument.
+#'
+#' @param rcs.res.cov.xz Should the residual (co-)variances of the product indicators
+#'   created from the reliability-corrected single items (created if \code{rcs = TRUE})
+#'   be specified and constrained before estimating the model? If \code{TRUE} the estimates
+#'   for the constraints are approximated using a monte carlo simulation (see the \code{rcs.mc.reps} argument).
+#'   If \code{FALSE} the residual variances are not specified, which usually mean that all 
+#'   are constrained to zero.
+#'
+#' @param rcs.mc.reps Sample size used in monte-carlo simulation, when approximating the
+#'   the estimates of the residual (co-)variances between the product indicators formed
+#'   by reliabiliyt-corrected single items (see the \code{rcs.res.cov.xz} argument).
 #'
 #' @param LAVFUN Function used to estimate the model. Defaults to \code{lavaan::sem}.
 #'
@@ -187,7 +195,8 @@ modsem_pi <- function(model.syntax = NULL,
                       suppress.warnings.match = FALSE,
                       rcs = FALSE,
                       rcs.choose = NULL,
-                      rcs.res.cov.across = FALSE,
+                      rcs.res.cov.xz = rcs,
+                      rcs.mc.reps = 3e4,
                       LAVFUN = lavaan::sem,
                       ...) {
   stopif(is.null(model.syntax), "No model syntax provided in modsem")
@@ -223,6 +232,7 @@ modsem_pi <- function(model.syntax = NULL,
       suppress.warnings.lavaan = suppress.warnings.lavaan,
       rcs = rcs,
       rcs.choose = rcs.choose,
+      rcs.mc.reps = rcs.mc.reps,
       LAVFUN = lavaan::sem,
       ...
     )
@@ -232,11 +242,7 @@ modsem_pi <- function(model.syntax = NULL,
 
   if (!is.data.frame(data)) data <- as.data.frame(data)
  
-  # Preprocessing
-  rcs.before <- rcs && method == "ca"
-  rcs.after  <- rcs && !rcs.before
-
-  if (rcs.before) { # use reliability-correct single items?
+  if (rcs) { # use reliability-correct single items?
     if (!is.null(rcs.choose))
       rcs.choose <- rcs.choose[!grepl(":", rcs.choose)]
 
@@ -249,9 +255,8 @@ modsem_pi <- function(model.syntax = NULL,
     model.syntax <- corrected$syntax
     data         <- corrected$data
 
-  } else if (rcs.after) {
-    constrained.cov.syntax <- FALSE
-    res.cov.method         <- "none"
+    if (rcs.res.cov.xz)
+      res.cov.across <- FALSE
   }
 
   methodSettings <-
@@ -321,24 +326,17 @@ modsem_pi <- function(model.syntax = NULL,
                                firstFixed = first.loading.fixed)
 
   newSyntax <- parTableToSyntax(parTable, removeColon = TRUE)
-  
-  if (rcs.after) { # use reliability-correct single items?
-    if (!is.null(rcs.choose))
-      rcs.choose <- stringr::str_remove_all(rcs.choose, pattern = ":")
+ 
+  if (rcs && rcs.res.cov.xz && method != "ca") { # Constrained Approach Should handle this it on its own...
 
-    corrected <- relcorr_single_item(
-      syntax = newSyntax, 
-      data   = newData,
-      choose = rcs.choose
+    elemsxz   <- modelSpec$elementsInProdNames
+    crossResCov <- simulateCrosssimulateCrossResCovRCS(
+      corrected = corrected,
+      elemsInIntTerms = elemsxz,
+      mc.reps = rcs.mc.reps
     )
-   
-    if (rcs.res.cov.across) {
-      elemsxz   <- modelSpec$elementsInProdNames
-      corrected <- addResCovSyntaxRCS(corrected, elemsInIntTerms = elemsxz)
-    }
 
-    newSyntax <- corrected$syntax
-    newData   <- corrected$data
+    newSyntax <- paste(newSyntax, crossResCov$syntax, sep = "\n")
   }
 
   # Interaction model
@@ -351,7 +349,10 @@ modsem_pi <- function(model.syntax = NULL,
   # Extra info saved for estimating baseline model
   input$modsemArgs <- methodSettings
   input$lavArgs    <- list(estimator = estimator, cluster = cluster, group = group, 
-                           LAVFUN = LAVFUN, rcs = rcs.after, rcs.choose = rcs.choose, ...)
+                           LAVFUN = LAVFUN, 
+                           rcs.res.cov.xz = rcs.res.cov.xz, 
+                           rcs.mc.reps = rcs.mc.reps,
+                           rcs.choose = rcs.choose, ...)
   modelSpec$input  <- input
 
   if (run) {
@@ -744,7 +745,8 @@ modsemPICluster <- function(model.syntax = NULL,
                             suppress.warnings.match = FALSE,
                             rcs = FALSE,
                             rcs.choose = NULL,
-                            rcs.res.cov.across = NULL,
+                            rcs.res.cov.xz = rcs,
+                            rcs.mc.reps = 3e4,
                             LAVFUN = lavaan::sem,
                             ...) {
   stopif(na.rm, "`na.rm=TRUE` can currently not be paired with the `cluster` argument!")
@@ -769,7 +771,8 @@ modsemPICluster <- function(model.syntax = NULL,
     if (!NROW(modsemify(syntaxBlock))) next
 
     newBlockSyntax <- get_pi_syntax(
-      model.syntax = syntaxBlock, 
+      model.syntax = syntaxBlock,
+      data = data,
       method = method,
       match = match,
       match.recycle = match.recycle,
@@ -790,7 +793,8 @@ modsemPICluster <- function(model.syntax = NULL,
       suppress.warnings.match = suppress.warnings.match,
       rcs = rcs,
       rcs.choose = rcs.choose,
-      rcs.res.cov.across = rcs.res.cov.across
+      rcs.res.cov.xz = rcs.res.cov.xz,
+      rcs.mc.reps = rcs.mc.reps,
     ) |> stringr::str_replace_all(pattern = "\n", replacement = "\n\t")
 
     newBlockData <- get_pi_data(
@@ -817,7 +821,8 @@ modsemPICluster <- function(model.syntax = NULL,
       na.rm = FALSE,
       rcs = rcs,
       rcs.choose = rcs.choose,
-      rcs.res.cov.across = rcs.res.cov.across
+      rcs.res.cov.xz = rcs.res.cov.xz,
+      rcs.mc.reps = rcs.mc.reps
     )
 
     if (is.null(newData)) {

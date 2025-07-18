@@ -33,7 +33,8 @@ modsem_pi(
   suppress.warnings.match = FALSE,
   rcs = FALSE,
   rcs.choose = NULL,
-  rcs.res.cov.across = FALSE,
+  rcs.res.cov.xz = rcs,
+  rcs.mc.reps = 30000,
   LAVFUN = lavaan::sem,
   ...
 )
@@ -126,8 +127,16 @@ single item indicators instead? See \code{\link{relcorr_single_item}}.}
 reliability-corrected single items? It is passed to \code{\link{relcorr_single_item}}
 as the \code{choose} argument.}
 
-\item{rcs.res.cov.across}{Same as \code{res.cov.across} argument, but applied when 
-\code{rcs = TRUE}. \strong{The resulting model might be unstable to estimate.}}
+\item{rcs.res.cov.xz}{Should the residual (co-)variances of the product indicators
+created from the reliability-corrected single items (created if \code{rcs = TRUE})
+be specified and constrained before estimating the model? If \code{TRUE} the estimates
+for the constraints are approximated using a monte carlo simulation (see the \code{rcs.mc.reps} argument).
+If \code{FALSE} the residual variances are not specified, which usually mean that all 
+are constrained to zero.}
+
+\item{rcs.mc.reps}{Sample size used in monte-carlo simulation, when approximating the
+the estimates of the residual (co-)variances between the product indicators formed
+by reliabiliyt-corrected single items (see the \code{rcs.res.cov.xz} argument).}
 
 \item{LAVFUN}{Function used to estimate the model. Defaults to \code{lavaan::sem}.}
 

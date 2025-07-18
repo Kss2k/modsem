@@ -111,6 +111,7 @@ relcorr_single_item <- function(syntax, data, choose = NULL) {
   cfaSyntax <- parTableToSyntax(parTableOuter)
   cfa       <- lavaan::cfa(cfaSyntax, data = data)
 
+  cov.lv      <- lavaan::lavInspect(cfa, "cov.lv")
   stdSolution <- lavaan::lavInspect(cfa, "std")
   lambda <- stdSolution$lambda 
   theta  <- stdSolution$theta
@@ -160,7 +161,8 @@ relcorr_single_item <- function(syntax, data, choose = NULL) {
   out <- list(syntax = newSyntax, data = newData,
               parTable = newParTable, reliability = rel.std,
               AVE = AVE.std, lVs = lVs, single.items = singleInds,
-              intTerms = intTerms, res = res, res.std = res.std)
+              intTerms = intTerms, residuals = res, res.std = res.std,
+              cov.lv = cov.lv)
 
   class(out) <- c("list", "modsem_relcorr")
 
@@ -168,50 +170,99 @@ relcorr_single_item <- function(syntax, data, choose = NULL) {
 }
 
 
-addResCovSyntaxRCS <- function(corrected, elemsInIntTerms) {
-  if (length(elemsInIntTerms) <= 1L)
-    return(corrected)
+simulateCrosssimulateCrossResCovRCS <- function(corrected, elemsInIntTerms, mc.reps = 3e4) {
+  EMPTY <- list(syntax = "", rows = NULL)
+  
+  if (!length(elemsInIntTerms))
+    return(EMPTY)
 
-  intTerms     <- names(elemsInIntTerms)
-  single.items <- corrected$single.items
-  constructs   <- names(single.items)
-  elemsInIntTerms <- elemsInIntTerms[intTerms %in% constructs]
+  intTerms        <- names(elemsInIntTerms)
+  single.items    <- corrected$single.items
+  residuals       <- corrected$residuals
+  constructs      <- names(single.items)
 
-  if (length(elemsInIntTerms) <= 1L)
-    return(corrected)
+  intTermIsRCS <- vapply(elemsInIntTerms, FUN.VALUE = logical(1L), 
+                         FUN = \(elems) all(elems %in% constructs))
+  elemsInIntTerms <- elemsInIntTerms[intTermIsRCS]
 
+  if (!length(elemsInIntTerms))
+    return(EMPTY)
+
+  Phi   <- corrected$cov.lv
+  Theta <- diag(residuals)
+  nm    <- names(residuals)
+  Phi   <- Phi[nm, nm]
+  dimnames(Theta) <- list(nm, nm)
+
+  XI  <- mvtnorm::rmvnorm(mc.reps, sigma = Phi)
+  EPS <- mvtnorm::rmvnorm(mc.reps, sigma = Theta)
+  Y   <- XI + EPS 
+
+  XI   <- as.data.frame(XI)
+  EPS  <- as.data.frame(EPS)
+  Y    <- as.data.frame(Y)
+
+  colnames(XI)  <- nm
+  colnames(EPS) <- nm
+  colnames(Y)   <- single.items[nm]
+ 
+  getres <- function(y, x) {
+    missing <- is.na(y) | is.na(x)
+
+    x.c <- x[!missing]
+    y.c <- y[!missing]
+   
+    epsilon <- stats::residuals(stats::lm(x.c ~ y.c))
+
+    out <- rep(NA, length(epsilon))
+    out[!missing] <- epsilon
+
+    out
+  }
+
+  # First fix residual variances
+  XZ.constructs <- list()
+  XZ.items      <- list()
+  XZ.residuals  <- list()
+
+  for (intTerm in intTerms) {
+    elems <- elemsInIntTerms[[intTerm]]
+    items <- single.items[elems]
+
+    xz.construct <- apply(XI[elems], MARGIN = 1, FUN = prod)
+    xz.item      <- apply(Y[items],  MARGIN = 1, FUN = prod)
+    xz.residual  <- getres(y = xz.item, x = xz.construct)
+
+    XZ.constructs[[intTerm]] <- xz.construct
+    XZ.items[[intTerm]]      <- xz.item
+
+    nameXZItem <- paste0(items, collapse = "")
+    XZ.residuals[[nameXZItem]] <- xz.residual
+  }
+
+  XZ.constructs <- as.data.frame(XZ.constructs)
+  XZ.items      <- as.data.frame(XZ.items)
+  XZ.residuals  <- as.data.frame(XZ.residuals)
+  
+  Epsilon <- stats::cov(XZ.residuals, use = "na.or.complete")
   newRows <- NULL
-  combosIntTerms <- getUniqueCombos(intTerms)
-  for (i in seq_len(NROW(combosIntTerms))) {
-    intTerm1 <- combosIntTerms[[1L]][[i]]
-    intTerm2 <- combosIntTerms[[2L]][[i]]
-
-    elems1 <- elemsInIntTerms[[intTerm1]]
-    elems2 <- elemsInIntTerms[[intTerm2]]
-
-    if (any(elems1 %in% elems2)) {
-      item1 <- single.items[[intTerm1]]
-      item2 <- single.items[[intTerm2]]
+ 
+  for (i in seq_len(NROW(Epsilon))) {
+    for (j in seq_len(i)) {
+      mod <- Epsilon[i, j]
+      lhs <- rownames(Epsilon)[[i]]
+      rhs <- colnames(Epsilon)[[j]]
 
       newRows <- rbind(
         newRows,
-        createParTableRow(c(item1, item2), op = "~~")
+        createParTableRow(c(lhs, rhs), op = "~~", mod = mod)
       )
     }
   }
 
-  if (!NROW(newRows)) 
-    return(corrected)
-
   syntaxAdditions <- parTableToSyntax(newRows)
 
-  syntax   <- corrected$syntax
-  parTable <- corrected$parTable
-
-  corrected$syntax   <- paste(syntax, syntaxAdditions, sep = "\n")
-  corrected$parTable <- rbind(parTable, newRows)
-
-  corrected
+  list(syntax = syntaxAdditions, rows = newRows)
 }
 
 
