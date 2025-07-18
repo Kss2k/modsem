@@ -109,12 +109,17 @@ getParTableResCov.simple <- function(relDf, explicit.zero = FALSE, include.singl
 
 
 
-# Rescovs with same indicator constrained to equality --------------------------
+# Rescovs with same indicator constrained to equality
 getParTableResCov.equality <- function(relDf, setToZero = FALSE) {
-  if (ncol(relDf) <= 1) {
-    return(NULL)
-  }
-  prodNames <- sort(colnames(relDf))
+  EMPTY <- data.frame(lhs = NULL, op = NULL, rhs = NULL, mod = NULL)
+  attr(EMPTY, "OK") <- TRUE
+
+  if (length(relDf) <= 1) 
+    return(EMPTY)
+
+  OK <- TRUE
+
+  prodNames <- sort(names(relDf))
   sharedMatrix <- matrix("", nrow = length(prodNames), ncol = length(prodNames),
                          dimnames = list(prodNames, prodNames))
   # Now we want to specify the covariance based on shared inds
@@ -143,7 +148,7 @@ getParTableResCov.equality <- function(relDf, setToZero = FALSE) {
     purrr::list_rbind()
   if (!setToZero) parTable <- parTable[parTable$mod != 0, ]
   
-  attr(parTable, "OK") <- TRUE
+  attr(parTable, "OK") <- OK
   parTable
 }
 
