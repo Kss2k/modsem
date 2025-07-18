@@ -80,8 +80,8 @@ latent variables in the model, you can use the `choose` argument in
 set of indicators to replace.
 
 ```{r}
-relcorr_single_item(syntax = tpb_uk_pi, data = TPB_UK_pi, 
-                    choose = c("ATT", "SN", "PBC", "INT", "INTPBC"))
+relcorr_single_item(syntax = tpb_uk, data = TPB_UK, 
+                    choose = c("ATT", "SN", "PBC", "INT"))
 
 est_dca <- modsem(tpb_uk, data = TPB_UK, method = "dblcent", rcs = TRUE,
                   rcs.choose = c("ATT", "SN", "PBC", "INT", "INT:PBC"))
