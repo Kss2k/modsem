@@ -32,7 +32,7 @@ getParTableResCov.simple <- function(relDf, explicit.zero = FALSE, include.singl
   if (include.single.inds) {
     allInds <- unique(unlist(relDf))
     relDf <- as.list(relDf)
-    relDf <- c(relDf, as.list(setNames(allInds, nm = allInds)))
+    relDf <- c(relDf, as.list(stats::setNames(allInds, nm = allInds)))
   }
 
   prodNames <- sort(names(relDf))
