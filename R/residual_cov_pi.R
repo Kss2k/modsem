@@ -3,13 +3,11 @@ getParTableResCov <- function(relDf,
                               pt = NULL,
                               explicit.zero = FALSE,
                               include.single.inds = FALSE,
-                              len.diff.ignore = 1L,
                               setToZero = FALSE) {
   simple <- \() 
     getParTableResCov.simple(relDf, 
                              explicit.zero = explicit.zero,
-                             include.single.inds = include.single.inds,
-                             len.diff.ignore = len.diff.ignore)
+                             include.single.inds = include.single.inds)
   switch(method,
     simple = simple(),
     simple.no.warn = suppressWarnings(simple()),
@@ -19,8 +17,7 @@ getParTableResCov <- function(relDf,
 }
 
 
-getParTableResCov.simple <- function(relDf, explicit.zero = FALSE, include.single.inds = FALSE,
-                                     len.diff.ignore = 1L) {
+getParTableResCov.simple <- function(relDf, explicit.zero = FALSE, include.single.inds = FALSE) {
   EMPTY <- data.frame(lhs = NULL, op = NULL, rhs = NULL, mod = NULL)
   attr(EMPTY, "OK") <- TRUE
 
@@ -51,17 +48,23 @@ getParTableResCov.simple <- function(relDf, explicit.zero = FALSE, include.singl
                                      
     # if there is a difference in number of elems in `len.diff.ignore` they should be ignored...
     # See the simulation results in `tests/testthat/test_three_way.R`
-    #> cov(x, z, w, xz, xw, zx, xzw)
-    #>        x    z    w     xz    xw     zw    xzw
-    #> x   1.20 0.70 0.80  0.000 0.000  0.000  1.280
-    #> z   0.70 1.80 0.60  0.000 0.000  0.000  1.860
-    #> w   0.80 0.60 1.40  0.000 0.000  0.000  0.960
-    #> xz  0.00 0.00 0.00  2.651 1.280  1.860 -0.001
-    #> xw  0.00 0.00 0.00  1.280 2.321  1.460  0.000
-    #> zw  0.00 0.00 0.00  1.860 1.460  2.880 -0.002
-    #> xzw 1.28 1.86 0.96 -0.001 0.000 -0.002  8.225
-    len.diff <- abs(length(indsProd2) - length(indsProd1))
-    ignore <- len.diff %in% len.diff.ignore
+    #> cov(x, z, w, xz, xw, zw, xm, zm, wm, xzw, xzm, xwm, zwm, xzwm)
+    #>         x    z    w   xz   xw   zw   xm   zm   wm   xzw  xzm  xwm  zwm  xzwm
+    #> x    1.20 0.70 0.80 0.00 0.00 0.00 0.00 0.00 0.00  1.84 0.64 1.04 0.78  0.00
+    #> z    0.70 1.80 0.60 0.00 0.00 0.00 0.00 0.00 0.00  2.28 0.78 0.78 1.44  0.00
+    #> w    0.80 0.60 1.40 0.00 0.00 0.00 0.00 0.00 0.00  1.94 0.78 1.24 1.14  0.00
+    #> xz   0.00 0.00 0.00 2.65 1.28 1.86 0.50 0.57 0.36  0.00 0.00 0.00 0.00  3.36
+    #> xw   0.00 0.00 0.00 1.28 2.32 1.46 0.88 0.54 0.76  0.00 0.00 0.00 0.00  3.25
+    #> zw   0.00 0.00 0.00 1.86 1.46 2.88 0.66 1.26 0.78  0.00 0.00 0.00 0.00  4.09
+    #> xm   0.00 0.00 0.00 0.50 0.88 0.66 2.44 1.46 1.72  0.00 0.00 0.00 0.00  4.54
+    #> zm   0.00 0.00 0.00 0.57 0.54 1.26 1.46 3.69 1.38  0.00 0.00 0.00 0.00  5.56
+    #> wm   0.00 0.00 0.00 0.36 0.76 0.78 1.72 1.38 3.16  0.00 0.00 0.00 0.00  4.96
+    #> xzw  1.84 2.28 1.94 0.00 0.00 0.00 0.00 0.00 0.00 10.25 3.91 3.88 4.56  0.01
+    #> xzm  0.64 0.78 0.78 0.00 0.00 0.00 0.00 0.00 0.00  3.91 6.98 4.69 5.79  0.01
+    #> xwm  1.04 0.78 1.24 0.00 0.00 0.00 0.00 0.00 0.00  3.88 4.69 7.67 5.42  0.00
+    #> zwm  0.78 1.44 1.14 0.00 0.00 0.00 0.00 0.00 0.00  4.56 5.79 5.42 8.90  0.00
+    #> xzwm 0.00 0.00 0.00 3.36 3.25 4.09 4.54 5.56 4.96  0.01 0.01 0.00 0.00 28.76
+    ignore <- length(indsProd1) %% 2 != length(indsProd2) %% 2
 
     if      (numberShared >= 1 && !ignore) isShared[[i]] <- TRUE
     else if (numberShared == 0 && !ignore) isShared[[i]] <- FALSE
