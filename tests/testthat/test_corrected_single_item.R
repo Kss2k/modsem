@@ -19,10 +19,12 @@ print(corrected)
 syntax <- corrected$syntax
 data   <- corrected$data
 
-est_dca <- modsem(syntax, data = data, method = "dblcent")
+est_dca <- modsem(syntax, data = data, method = "dblcent", 
+                  rcs.res.cov.xz = TRUE)
 est_lms <- modsem(syntax, data = data, method="lms", nodes=32)
 
-est_dca <- modsem(tpb_uk, data = TPB_UK, method = "dblcent", rcs = TRUE)
+est_dca <- modsem(tpb_uk, data = TPB_UK, method = "dblcent", rcs = TRUE,
+                  rcs.mc.reps = 3e4)
 est_lms <- modsem(tpb_uk, data = TPB_UK, method = "lms", nodes = 32, rcs = TRUE)
 summary(est_dca)
 summary(est_lms)

@@ -65,10 +65,6 @@ varZCpp <- function(Omega, Sigma1, numEta) {
     .Call(`_modsem_varZCpp`, Omega, Sigma1, numEta)
 }
 
-#' Multiply indicators 
-#' @param df A data DataFrame
-#' @return A NumericVector
-#' @export
 multiplyIndicatorsCpp <- function(df) {
     .Call(`_modsem_multiplyIndicatorsCpp`, df)
 }

@@ -32,6 +32,11 @@ parseLavaan <- function(model.syntax = NULL,
                                  FUN = splitProdName,
                                  pattern = ":",
                                  names = prodNamesCleaned)
+  prodLengths <- vapply(elementsInProds, FUN.VALUE = integer(1L), FUN = length)
+  
+  if (!length(prodLengths))
+    prodLengths <- 0L
+
   checkElementsInProds(elementsInProds, lVs=lVs, oVs=oVs)
   checkHigherOrderInteractions(elementsInProds, parTable=parTable)
 
@@ -78,7 +83,9 @@ parseLavaan <- function(model.syntax = NULL,
 
                     indsInLatentProds = indsInLatentProds,
                     latentProds       = names(indsInLatentProds),
-                    indProdNames      = indProdNames)
+                    indProdNames      = indProdNames,
+                    nways             = max(prodLengths)
+  )
   modelSpec
 }
 
