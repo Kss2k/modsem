@@ -170,7 +170,11 @@ relcorr_single_item <- function(syntax, data, choose = NULL) {
 }
 
 
-simulateCrosssimulateCrossResCovRCS <- function(corrected, elemsInIntTerms, mc.reps = 3e4) {
+simulateCrosssimulateCrossResCovRCS <- function(corrected, 
+                                                elemsInIntTerms, 
+                                                mc.reps = 3e4,
+                                                parTable,
+                                                include.normal.inds = FALSE) {
   EMPTY <- list(syntax = "", rows = NULL)
   
   if (!length(elemsInIntTerms))
@@ -198,14 +202,17 @@ simulateCrosssimulateCrossResCovRCS <- function(corrected, elemsInIntTerms, mc.r
   EPS <- mvtnorm::rmvnorm(mc.reps, sigma = Theta)
   Y   <- XI + EPS 
 
-  XI   <- as.data.frame(XI)
-  EPS  <- as.data.frame(EPS)
-  Y    <- as.data.frame(Y)
+  CONSTRUCTS <- as.data.frame(XI)
+  ITEMS      <- as.data.frame(Y)
 
-  colnames(XI)  <- nm
-  colnames(EPS) <- nm
-  colnames(Y)   <- single.items[nm]
- 
+  colnames(CONSTRUCTS) <- nm
+  colnames(ITEMS)      <- single.items[nm]
+
+  if (include.normal.inds) {
+    RESIDUALS  <- as.data.frame(EPS)
+    colnames(RESIDUALS)  <- single.items[nm]
+  } else RESIDUALS <- list()
+
   getres <- function(y, x) {
     missing <- is.na(y) | is.na(x)
 
@@ -220,38 +227,33 @@ simulateCrosssimulateCrossResCovRCS <- function(corrected, elemsInIntTerms, mc.r
     out
   }
 
-  # First fix residual variances
-  XZ.constructs <- list()
-  XZ.items      <- list()
-  XZ.residuals  <- list()
-
   for (intTerm in intTerms) {
-    elems <- elemsInIntTerms[[intTerm]]
-    items <- single.items[elems]
+    elems  <- elemsInIntTerms[[intTerm]]
+    items  <- single.items[elems]
+    nameXZ <- paste0(items, collapse = "")
 
-    xz.construct <- apply(XI[elems], MARGIN = 1, FUN = prod)
-    xz.item      <- apply(Y[items],  MARGIN = 1, FUN = prod)
+    xz.construct <- apply(CONSTRUCTS[elems], MARGIN = 1, FUN = prod)
+    xz.item      <- apply(ITEMS[items],  MARGIN = 1, FUN = prod)
     xz.residual  <- getres(y = xz.item, x = xz.construct)
 
-    XZ.constructs[[intTerm]] <- xz.construct
-    XZ.items[[intTerm]]      <- xz.item
-
-    nameXZItem <- paste0(items, collapse = "")
-    XZ.residuals[[nameXZItem]] <- xz.residual
+    CONSTRUCTS[[intTerm]] <- xz.construct
+    RESIDUALS[[nameXZ]]   <- xz.residual
+    ITEMS[[intTerm]]      <- xz.item
   }
 
-  XZ.constructs <- as.data.frame(XZ.constructs)
-  XZ.items      <- as.data.frame(XZ.items)
-  XZ.residuals  <- as.data.frame(XZ.residuals)
-  
-  Epsilon <- stats::cov(XZ.residuals, use = "na.or.complete")
+  Epsilon <- stats::cov(as.data.frame(RESIDUALS), use = "na.or.complete")
   newRows <- NULL
- 
+
   for (i in seq_len(NROW(Epsilon))) {
     for (j in seq_len(i)) {
       mod <- Epsilon[i, j]
       lhs <- rownames(Epsilon)[[i]]
       rhs <- colnames(Epsilon)[[j]]
+
+      matching <- parTable[((parTable$lhs == rhs & parTable$rhs == lhs) |
+                            (parTable$lhs == rhs & parTable$rhs == lhs)) & 
+                           parTable$op == "~~", ]
+      if (NROW(matching)) next
 
       newRows <- rbind(
         newRows,

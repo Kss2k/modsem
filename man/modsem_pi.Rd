@@ -34,7 +34,7 @@ modsem_pi(
   rcs = FALSE,
   rcs.choose = NULL,
   rcs.res.cov.xz = rcs,
-  rcs.mc.reps = 30000,
+  rcs.mc.reps = 1e+05,
   LAVFUN = lavaan::sem,
   ...
 )

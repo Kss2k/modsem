@@ -243,12 +243,12 @@ BEGIN_RCPP
 END_RCPP
 }
 // multiplyIndicatorsCpp
-NumericVector multiplyIndicatorsCpp(DataFrame df);
+Rcpp::NumericVector multiplyIndicatorsCpp(Rcpp::DataFrame df);
 RcppExport SEXP _modsem_multiplyIndicatorsCpp(SEXP dfSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< DataFrame >::type df(dfSEXP);
+    Rcpp::traits::input_parameter< Rcpp::DataFrame >::type df(dfSEXP);
     rcpp_result_gen = Rcpp::wrap(multiplyIndicatorsCpp(df));
     return rcpp_result_gen;
 END_RCPP

@@ -1,24 +1,41 @@
-getParTableResCov <- function(relDf, method, ...) {
+getParTableResCov <- function(relDf, 
+                              method, 
+                              pt = NULL,
+                              explicit.zero = FALSE,
+                              include.single.inds = FALSE,
+                              len.diff.ignore = 1L,
+                              setToZero = FALSE) {
+  simple <- \() 
+    getParTableResCov.simple(relDf, 
+                             explicit.zero = explicit.zero,
+                             include.single.inds = include.single.inds,
+                             len.diff.ignore = len.diff.ignore)
   switch(method,
-         "simple"         = getParTableResCov.simple(relDf),
-         "simple.no.warn" = suppressWarnings(getParTableResCov.simple(relDf)),
-         "ca"             = getParTableResCov.ca(relDf, ...),
-         "equality"       = getParTableResCov.equality(relDf))
+    simple = simple(),
+    simple.no.warn = suppressWarnings(simple()),
+    ca = getParTableResCov.ca(relDf, pt = pt),
+    equality = getParTableResCov.equality(relDf, setToZero = setToZero)
+  )
 }
 
 
-
-# Simple -----------------------------------------------------------------------
-getParTableResCov.simple <- function(relDf, explicit.zero = FALSE) {
+getParTableResCov.simple <- function(relDf, explicit.zero = FALSE, include.single.inds = FALSE,
+                                     len.diff.ignore = 1L) {
   EMPTY <- data.frame(lhs = NULL, op = NULL, rhs = NULL, mod = NULL)
   attr(EMPTY, "OK") <- TRUE
 
-  if (ncol(relDf) <= 1) 
+  if (length(relDf) <= 1) 
     return(EMPTY)
 
   OK <- TRUE
 
-  prodNames <- sort(colnames(relDf))
+  if (include.single.inds) {
+    allInds <- unique(unlist(relDf))
+    relDf <- as.list(relDf)
+    relDf <- c(relDf, as.list(setNames(allInds, nm = allInds)))
+  }
+
+  prodNames <- sort(names(relDf))
   uniqueCombinations <- getUniqueCombos(prodNames)
   # Now we want to specify the covariance based on shared inds
   isShared <- vector("logical", length = nrow(uniqueCombinations))
@@ -31,8 +48,23 @@ getParTableResCov.simple <- function(relDf, explicit.zero = FALSE) {
     
     # Sum the values
     numberShared <- sum(sharedValues)
-    if      (numberShared >= 1) isShared[[i]] <- TRUE
-    else if (numberShared == 0) isShared[[i]] <- FALSE
+                                     
+    # if there is a difference in number of elems in `len.diff.ignore` they should be ignored...
+    # See the simulation results in `tests/testthat/test_three_way.R`
+    #> cov(x, z, w, xz, xw, zx, xzw)
+    #>        x    z    w     xz    xw     zw    xzw
+    #> x   1.20 0.70 0.80  0.000 0.000  0.000  1.280
+    #> z   0.70 1.80 0.60  0.000 0.000  0.000  1.860
+    #> w   0.80 0.60 1.40  0.000 0.000  0.000  0.960
+    #> xz  0.00 0.00 0.00  2.651 1.280  1.860 -0.001
+    #> xw  0.00 0.00 0.00  1.280 2.321  1.460  0.000
+    #> zw  0.00 0.00 0.00  1.860 1.460  2.880 -0.002
+    #> xzw 1.28 1.86 0.96 -0.001 0.000 -0.002  8.225
+    len.diff <- abs(length(indsProd2) - length(indsProd1))
+    ignore <- len.diff %in% len.diff.ignore
+
+    if      (numberShared >= 1 && !ignore) isShared[[i]] <- TRUE
+    else if (numberShared == 0 && !ignore) isShared[[i]] <- FALSE
   }
 
   if (all(isShared)) {

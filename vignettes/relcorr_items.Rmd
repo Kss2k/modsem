@@ -56,31 +56,16 @@ extracted using the `$` operator, and used to estimate the model.
 syntax <- corrected$syntax
 data   <- corrected$data
 
-est_dca <- modsem(syntax, data = data, method = "dblcent")
+est_dca <- modsem(syntax, data = data, method = "dblcent", rcs.res.cov.xz = TRUE)
 est_lms <- modsem(syntax, data = data, method="lms", nodes=32)
 summary(est_lms)
 ```
 
-If you do it this way, there will however be no correction to the product indicator 
-when using one of the product indicator approaches.
-To fix this we could instead apply the correction to the generated syntax.
+The `rcs.res.cov.xz` argument should be used when using one of the PI approaches (excluding
+the constrained approach) to apply reliability corrections to the generated product
+indicators (created from reliability-corrected single-items) as well.
 
-```{r}
-library(lavaan)
-
-tpb_uk_pi <- get_pi_syntax(tpb_uk, method = "dblcent", 
-                           res.cov.method = "none") # residual covariances are irrelevant
-TPB_UK_pi <- get_pi_data(tpb_uk, data = TPB_UK, method = "dblcent")
-
-corrected <- relcorr_single_item(syntax = tpb_uk_pi, data = TPB_UK_pi)
-syntax <- corrected$syntax
-data   <- corrected$data
-
-est_dca <- sem(syntax, data = data)
-summary(est_dca)
-```
-
-The easiest approach howerver, is to use the `rcs` argument in the `modsem` function
+The easiest approach however, is to use the `rcs` argument in the `modsem` function
 to call `relcorr_single_item` before estimating the model.
 
 ```{r}

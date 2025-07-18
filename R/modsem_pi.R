@@ -196,11 +196,12 @@ modsem_pi <- function(model.syntax = NULL,
                       rcs = FALSE,
                       rcs.choose = NULL,
                       rcs.res.cov.xz = rcs,
-                      rcs.mc.reps = 3e4,
+                      rcs.mc.reps = 1e5,
                       LAVFUN = lavaan::sem,
                       ...) {
   stopif(is.null(model.syntax), "No model syntax provided in modsem")
   stopif(is.null(data), "No data provided in modsem")
+  stopif(!is.data.frame(data) && !is.matrix(data), "data must be a data.frame or matrix!")
 
   if (!is.null(cluster)) {
     est <- modsemPICluster(
@@ -333,7 +334,9 @@ modsem_pi <- function(model.syntax = NULL,
     crossResCov <- simulateCrosssimulateCrossResCovRCS(
       corrected = corrected,
       elemsInIntTerms = elemsxz,
-      mc.reps = rcs.mc.reps
+      mc.reps = rcs.mc.reps,
+      parTable = parTable,
+      include.normal.inds = modelSpec$nways > 2L
     )
 
     newSyntax <- paste(newSyntax, crossResCov$syntax, sep = "\n")
@@ -412,9 +415,13 @@ createIndProds <- function(relDf, indNames, data, centered = FALSE) {
     inds <- lapplyDf(inds, FUN = function(x) x - mean(x, na.rm = TRUE))
   }
 
-  prods <- lapplyNamed(varnames, FUN = function(varname, data, relDf)
-                       multiplyIndicatorsCpp(data[relDf[[varname]]]),
-                       data = inds, relDf = relDf, names = varnames)
+  prods <- lapplyNamed(
+    X = varnames, 
+    FUN = \(varname, data, relDf) multiplyIndicatorsCpp(data[relDf[[varname]]]),
+    data = inds, 
+    relDf = relDf, 
+    names = varnames
+  )
 
   # return as data.frame()
   structure(prods, row.names = seq_len(nrow(data)),
@@ -491,7 +498,8 @@ addSpecsParTable <- function(modelSpec,
     # we get `attr(relDf, "OK") == FALSE`
     residualCovariancesList <- purrr::map(.x = relDfs, .f = getParTableResCov,
                                           method = res.cov.method,
-                                          pt = parTable)
+                                          pt = parTable, 
+                                          include.single.inds = FALSE)
     residualCovariances <- purrr::list_rbind(residualCovariancesList)
 
     if (res.cov.across) {
@@ -502,10 +510,11 @@ addSpecsParTable <- function(modelSpec,
       # x1:z1 ~~ x1:m1
       isOK <- vapply(residualCovariancesList, FUN.VALUE = logical(1L), 
                      FUN = \(rows) attr(rows, "OK"))
-      RelDf <- purrr::list_cbind(unname(relDfs[isOK]))
-      residualCovariances <- getParTableResCov(relDf = RelDf,
+      RelList <- Reduce(lapply(unname(relDfs[isOK]), FUN = as.list), f = c)
+      residualCovariances <- getParTableResCov(relDf = RelList, # works with list as well
                                                method = res.cov.method,
-                                               pt = parTable)
+                                               pt = parTable, 
+                                               include.single.inds = TRUE)
     }
 
     parTable <- rbindParTable(parTable, residualCovariances)
@@ -746,7 +755,7 @@ modsemPICluster <- function(model.syntax = NULL,
                             rcs = FALSE,
                             rcs.choose = NULL,
                             rcs.res.cov.xz = rcs,
-                            rcs.mc.reps = 3e4,
+                            rcs.mc.reps = 1e5,
                             LAVFUN = lavaan::sem,
                             ...) {
   stopif(na.rm, "`na.rm=TRUE` can currently not be paired with the `cluster` argument!")
