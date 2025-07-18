@@ -5,10 +5,11 @@ library(mvtnorm)
 
 n <- 1e5
 Sigma <- matrix(c(
-  1.2, 0.7, 0.8,
-  0.7, 1.8, 0.6,
-  0.8, 0.6, 1.4
-), nrow = 3)
+  1.2, 0.7, 0.8, 0.2,
+  0.7, 1.8, 0.6, 0.3,
+  0.8, 0.6, 1.4, 0.6,
+  0.2, 0.3, 0.6, 2.0
+), nrow = 4)
 
 R <- 10L
 
@@ -21,13 +22,24 @@ for (i in seq_len(R)) {
   x <- center(XI[, 1])
   z <- center(XI[, 2])
   w <- center(XI[, 3])
+  m <- center(XI[, 4])
 
   xz <- x * z
   xw <- x * w
   zw <- z * w
-  xzw <- x * z * w # recurisve centering algorithm
+  xm <- x * m
+  zm <- z * m
+  wm <- w * m
 
-  Si <- cov(data.frame(x, z, w, xz, xw, zw, xzw))
+  xzw <- x * z * w # recurisve centering algorithm
+  xzm <- x * z * m
+  xwm <- x * w * m
+  zwm <- z * w * m
+  xzwm <- x * z * w * m
+
+  Si <- cov(data.frame(x, z, w, xz, xw, zw, 
+                       xm, zm, wm, xzw, xzm,
+                       xwm, zwm, xzwm))
 
   S <- S + Si
 }
