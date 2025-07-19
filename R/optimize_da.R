@@ -53,9 +53,9 @@ optimizeStartingParamsDA <- function(model,
 
   A <- findEstimatesParTable(matricesMain$A, parTable, op = "~~", fill = 0)
 
-  Psi[diag(Psi) < zero.diag.tol] <- 1
-  Phi[diag(Phi) < zero.diag.tol] <- 1
-  A[diag(A) < zero.diag.tol]     <- 1
+  Psi[Psi < zero.diag.tol & is.diag(Psi)] <- 1
+  Phi[Phi < zero.diag.tol & is.diag(Phi)] <- 1
+  A[A < zero.diag.tol & is.diag(A)]       <- 1
 
   A[upper.tri(A)] <- t(A)[upper.tri(A)]
   A <- t(tryCatch(chol(A), error = function(x) diag(ncol(A))))

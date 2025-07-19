@@ -666,3 +666,8 @@ eraseConsoleLines <- function(n = 1) {
 tryFormatC <- function(..., .onfail = "NA") {
   tryCatch(formatC(...), error = \(e) .onfail)
 }
+
+
+is.diag <- function(M, zero.tol = .Machine$double.eps) {
+  diag(NROW(M)) > zero.tol
+}

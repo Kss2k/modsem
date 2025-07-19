@@ -106,6 +106,8 @@ adaptiveGaussQuadrature <- function(fun,
   # identify nodes trivially safe to remove
   removable <- which(abs(contributions) < tol * abs(I.full))
 
+  stopif(length(removable) >= NROW(quadn), "Cannot remove all nodes!")
+
   if (length(removable) > 0) {
     # update everything by dropping them all at once
     quadn <- quadn[-removable, , drop = FALSE]
@@ -117,6 +119,7 @@ adaptiveGaussQuadrature <- function(fun,
 
   lower  <- min(quadn)
   upper <- max(quadn)
+
   diff.m <- round(nrow(quadn) ^ (1 / k)) - m
 
   # Calculate next ceiling
