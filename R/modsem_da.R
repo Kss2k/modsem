@@ -144,6 +144,10 @@
 #' @param rcs.choose Which latent variables should get their indicators replaced with
 #'   reliability-corrected single items? It is passed to \code{\link{relcorr_single_item}}
 #'   as the \code{choose} argument.
+#'   
+#' @param rcs.scale.corrected Should reliablity corrected items be scale-corrected? If \code{TRUE}
+#'   reliability-corrected single items are corrected for differences in factor loadings between
+#'   the items.
 #'
 #' @param orthogonal.x If \code{TRUE}, all covariances among exogenous latent variables only are set to zero. 
 #'  Default is \code{FALSE}.
@@ -274,6 +278,7 @@ modsem_da <- function(model.syntax = NULL,
                       em.control = NULL,
                       rcs = FALSE,
                       rcs.choose = NULL,
+                      rcs.scale.corrected = FALSE,
                       orthogonal.x = NULL,
                       orthogonal.y = NULL,
                       auto.fix.first = NULL,
@@ -296,9 +301,10 @@ modsem_da <- function(model.syntax = NULL,
 
   if (rcs) { # use reliability-correct single items?
     corrected <- relcorr_single_item(
-      syntax = model.syntax, 
-      data   = data,
-      choose = rcs.choose
+      syntax          = model.syntax, 
+      data            = data,
+      choose          = rcs.choose,
+      scale.corrected = rcs.scale.corrected
     )
 
     model.syntax <- corrected$syntax

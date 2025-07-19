@@ -11,11 +11,17 @@
 #'
 #' @param syntax A character string containing lavaan model syntax.  Must at
 #'   least include the measurement relations (\code{=~}).
+#'   
 #' @param data A \code{data.frame}, \code{tibble} or object coercible to a data frame that
 #'   holds the raw observed indicators.
+#'   
 #' @param choose \emph{Optional.} Character vector with the names of the latent
 #'   variables you wish to replace by single indicators.  Defaults to \strong{all}
 #'   first‑order latent variables in \code{syntax}.
+#'   
+#' @param scale.corrected Should reliability corrected items be scale-corrected? If \code{TRUE}
+#'   reliability-corrected single items are corrected for differences in factor loadings between
+#'   the items.
 #'
 #' @return An object of S3 class \code{modsem_relcorr} (a named list) with elements:
 #' \describe{
@@ -57,7 +63,7 @@
 #' }
 #'
 #' @export
-relcorr_single_item <- function(syntax, data, choose = NULL, scale.corrected = TRUE) {
+relcorr_single_item <- function(syntax, data, choose = NULL, scale.corrected = FALSE) {
   data <- as.data.frame(data)
 
   parTable      <- modsemify(syntax)

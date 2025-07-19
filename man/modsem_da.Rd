@@ -41,6 +41,7 @@ modsem_da(
   em.control = NULL,
   rcs = FALSE,
   rcs.choose = NULL,
+  rcs.scale.corrected = FALSE,
   orthogonal.x = NULL,
   orthogonal.y = NULL,
   auto.fix.first = NULL,
@@ -194,6 +195,10 @@ single item indicators instead? See \code{\link{relcorr_single_item}}.}
 \item{rcs.choose}{Which latent variables should get their indicators replaced with
 reliability-corrected single items? It is passed to \code{\link{relcorr_single_item}}
 as the \code{choose} argument.}
+
+\item{rcs.scale.corrected}{Should reliablity corrected items be scale-corrected? If \code{TRUE}
+reliability-corrected single items are corrected for differences in factor loadings between
+the items.}
 
 \item{orthogonal.x}{If \code{TRUE}, all covariances among exogenous latent variables only are set to zero. 
 Default is \code{FALSE}.}

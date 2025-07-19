@@ -4,7 +4,7 @@
 \alias{relcorr_single_item}
 \title{Reliability‑Corrected Single‑Item SEM}
 \usage{
-relcorr_single_item(syntax, data, choose = NULL)
+relcorr_single_item(syntax, data, choose = NULL, scale.corrected = FALSE)
 }
 \arguments{
 \item{syntax}{A character string containing lavaan model syntax.  Must at
@@ -16,6 +16,10 @@ holds the raw observed indicators.}
 \item{choose}{\emph{Optional.} Character vector with the names of the latent
 variables you wish to replace by single indicators.  Defaults to \strong{all}
 first‑order latent variables in \code{syntax}.}
+
+\item{scale.corrected}{Should reliability corrected items be scale-corrected? If \code{TRUE}
+reliability-corrected single items are corrected for differences in factor loadings between
+the items.}
 }
 \value{
 An object of S3 class \code{modsem_relcorr} (a named list) with elements:
