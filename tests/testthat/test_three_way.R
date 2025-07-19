@@ -99,11 +99,9 @@ model <- '
  #       2.2 * X:Z:W +
 '
 
-modsem:::timeExpr(
 est <- modsem(model, data, method = "dblcent")
-)
 summary(est, H0 = FALSE)
-#n = 100,000
+# n = 100,000
 #> Regressions:
 #>                     Estimate  Std.Err  z-value  P(>|z|)
 #>  Y ~                                                 
@@ -117,22 +115,22 @@ summary(est, H0 = FALSE)
 
 est <- modsem(model, data, method = "dblcent", match = TRUE)
 summary(est, H0 = FALSE)
-#n = 100,000
+# n = 10,000
 #> Regressions:
 #>                    Estimate  Std.Err  z-value  P(>|z|)
 #>   Y ~                                                 
-#>     X   (true: 1.2)   1.192    0.012   97.960    0.000
-#>     Z   (true: 0.4)   0.397    0.008   47.377    0.000
-#>     W   (true: 0.7)   0.699    0.011   65.709    0.000
-#>     XZ  (true: 1.2)   1.195    0.008  145.091    0.000
-#>     XW  (true: 0.7)   0.688    0.008   89.628    0.000
-#>     ZW  (true: 0.2)   0.178    0.008   21.835    0.000
-#>     XZW (true: 2.2)   2.176    0.004  486.566    0.000
-     
+#>     X   (true: 1.2)   1.186    0.012  101.886    0.000
+#>     Z   (true: 0.4)   0.411    0.008   50.541    0.000
+#>     W   (true: 0.7)   0.701    0.010   68.565    0.000
+#>     XZ  (true: 1.2)   1.193    0.008  147.196    0.000
+#>     XW  (true: 0.7)   0.678    0.008   90.412    0.000
+#>     ZW  (true: 0.2)   0.213    0.008   26.954    0.000
+#>     XZW (true: 2.2)   2.216    0.004  503.945    0.000
+
 est.rcs.1 <- modsem(model, data, method = "dblcent", rcs = TRUE,
                     rcs.scale.corrected = FALSE)
 summary(est.rcs.1, H0 = FALSE)
-#n = 100,000
+# n = 100,000
 #> Regressions:
 #>                    Estimate  Std.Err  z-value  P(>|z|)
 #>   Y ~                                                 
@@ -147,7 +145,7 @@ summary(est.rcs.1, H0 = FALSE)
 est.rcs.2 <- modsem(model, data, method = "dblcent", rcs = TRUE,
                     rcs.scale.corrected = TRUE)
 summary(est.rcs.2, H0 = FALSE)
-#n = 100,000
+# n = 100,000
 #> Regressions:
 #>                    Estimate  Std.Err  z-value  P(>|z|)
 #>   Y ~                                                 

@@ -126,6 +126,8 @@
 #' @param adaptive.frequency How often should the quasi-adaptive quadrature be calculated? Defaults to 3, meaning 
 #'   that it is recalculated every third EM-iteration.
 #'
+#' @param adaptive.quad.tol Relative error tolerance for quasi adaptive quadrature. Defaults to \code{1e-12}. 
+#'
 #' @param n.threads number of threads to use for parallel processing. If \code{NULL}, it will use <= 2 threads.
 #'   If an integer is specified, it will use that number of threads (e.g., \code{n.threads = 4} will use 4 threads).
 #'   If \code{"default"}, it will use the default number of threads (2).
@@ -273,6 +275,7 @@ modsem_da <- function(model.syntax = NULL,
                       quad.range = NULL,
                       adaptive.quad = NULL,
                       adaptive.frequency = NULL,
+                      adaptive.quad.tol = NULL,
                       n.threads = NULL,
                       algorithm = NULL,
                       em.control = NULL,
@@ -345,6 +348,7 @@ modsem_da <- function(model.syntax = NULL,
           quad.range         = quad.range,
           adaptive.quad      = adaptive.quad,
           adaptive.frequency = adaptive.frequency,
+          adaptive.quad.tol  = adaptive.quad.tol,
           n.threads          = n.threads,
           algorithm          = algorithm,
           em.control         = em.control,
@@ -386,18 +390,25 @@ modsem_da <- function(model.syntax = NULL,
   )
 
   if (args$optimize) {
-    model <- tryCatch(
-      optimizeStartingParamsDA(model, args = args),
-      
-      warning = function(w) {
-        warning2("warning when optimizing starting parameters:\n", w)
-        suppressWarnings(optimizeStartingParamsDA(model, args = args))
-      }, 
+    model <- tryCatch({
+      result <- purrr::quietly(optimizeStartingParamsDA)(model, args = args)
+      warnings <- result$warnings
 
-      error = function(e) {
-        warning2("unable to optimize starting parameters:\n", e)
-        model
-      })
+      if (length(warnings)) {
+        fwarnings <- paste0(
+          paste0(seq_along(warnings), ". ", warnings),
+          collapse = "\n"
+        )
+
+        warning2("warning when optimizing starting parameters:\n", fwarnings)
+      }
+
+      result$result
+
+    }, error = function(e) {
+      warning2("unable to optimize starting parameters:\n", e)
+      model
+    })
   }
 
   if (!is.null(start)) {
@@ -422,24 +433,25 @@ modsem_da <- function(model.syntax = NULL,
       ...
     ),
     "lms" = emLms(model,
-      verbose         = args$verbose,
-      convergence.abs = args$convergence.abs,
-      convergence.rel = args$convergence.rel,
-      calc.se         = args$calc.se,
-      FIM             = args$FIM,
-      EFIM.S          = args$EFIM.S,
-      OFIM.hessian    = args$OFIM.hessian,
-      EFIM.parametric = args$EFIM.parametric,
-      robust.se       = args$robust.se,
-      max.iter        = args$max.iter,
-      max.step        = args$max.step,
-      epsilon         = args$epsilon,
-      optimizer       = args$optimizer,
-      R.max           = args$R.max,
-      em.control      = args$em.control,
-      algorithm       = args$algorithm,
-      adaptive.quad   = args$adaptive.quad,
-      quad.range      = args$quad.range,
+      verbose           = args$verbose,
+      convergence.abs   = args$convergence.abs,
+      convergence.rel   = args$convergence.rel,
+      calc.se           = args$calc.se,
+      FIM               = args$FIM,
+      EFIM.S            = args$EFIM.S,
+      OFIM.hessian      = args$OFIM.hessian,
+      EFIM.parametric   = args$EFIM.parametric,
+      robust.se         = args$robust.se,
+      max.iter          = args$max.iter,
+      max.step          = args$max.step,
+      epsilon           = args$epsilon,
+      optimizer         = args$optimizer,
+      R.max             = args$R.max,
+      em.control        = args$em.control,
+      algorithm         = args$algorithm,
+      adaptive.quad     = args$adaptive.quad,
+      quad.range        = args$quad.range,
+      adaptive.quad.tol = args$adaptive.quad.tol,
       ...
   )),
   error = function(e) {

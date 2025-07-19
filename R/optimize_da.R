@@ -2,8 +2,7 @@ optimizeStartingParamsDA <- function(model,
                                      args = list(orthogonal.x = FALSE,
                                                  orthogonal.y = FALSE,
                                                  auto.fix.first = TRUE,
-                                                 auto.fix.sinlge = TRUE),
-                                     zero.diag.tol = 1e-10) {
+                                                 auto.fix.sinlge = TRUE)) {
   etas     <- model$info$etas
   indsEtas <- model$info$allIndsEtas
   xis      <- model$info$xis
@@ -53,12 +52,32 @@ optimizeStartingParamsDA <- function(model,
 
   A <- findEstimatesParTable(matricesMain$A, parTable, op = "~~", fill = 0)
 
-  Psi[diag(Psi) < zero.diag.tol] <- 1
-  Phi[diag(Phi) < zero.diag.tol] <- 1
-  A[diag(A) < zero.diag.tol]     <- 1
+  correctDiag <- function(M, fill = 1, tol = 0) {
+    M[M < tol & is.diag(M)] <- fill
+    M
+  }
+
+  # Check for negative diagonals
+  ThetaEpsilon <- correctDiag(ThetaEpsilon, tol = 0) # no negative values
+  ThetaDelta   <- correctDiag(ThetaDelta, tol = 0) # no negative values
+  Psi          <- correctDiag(Psi, tol = 0) # no negative values
+  Phi          <- correctDiag(Phi, tol = 0) # no negative values
+  A            <- correctDiag(A, tol = 0)
+
+  as.I <- function(M) { # If Phi/A is non-invertible we want I instead
+    I <- diag(NROW(M))
+    dimnames(I) <- dimnames(M)
+    I
+  }
+
+  if (!is.invertible(Phi))          Phi <- as.I(Phi)
+  # Residuals don't need to be invertible...
+  # if (!is.invertible(Psi))          Psi <- as.I(Psi)
+  # if (!is.invertible(ThetaEpsilon)) ThetaEpsilon <- as.I(ThetaEpsilon)
+  # if (!is.invertible(ThetaDelta))   ThetaDelta   <- as.I(ThetaDelta)
 
   A[upper.tri(A)] <- t(A)[upper.tri(A)]
-  A <- t(tryCatch(chol(A), error = function(x) diag(ncol(A))))
+  A <- t(tryCatch(chol(A), error = function(x) as.I(A)))
 
   beta0 <- findInterceptsParTable(matricesMain$beta0, parTable, fill = 0)
   alpha <- findInterceptsParTable(matricesMain$alpha, parTable, fill = 0)
@@ -97,9 +116,13 @@ optimizeStartingParamsDA <- function(model,
     
     GammaEtaCovModel <- findEstimatesParTable(matricesCov$gammaEta, parTable, op = "~", fill = 0)
     GammaXiCovModel <- findEstimatesParTable(matricesCov$gammaXi, parTable, op = "~", fill = 0)
-  
-    PsiCovModel[diag(PsiCovModel) < zero.diag.tol] <- 1
-    PhiCovModel[diag(PhiCovModel) < zero.diag.tol] <- 1
+ 
+    PhiCovModel <- correctDiag(PhiCovModel, tol = 0)
+    PsiCovModel <- correctDiag(PsiCovModel, tol = 0)
+
+    if (!is.invertible(PhiCovModel)) PhiCovModel <- as.I(PhiCovModel)
+    # Residuals don't need to be invertible...
+    # if (!is.invertible(PsiCovModel)) PsiCovModel <- as.I(PsiCovModel)
 
     thetaCov <- unlist(list(PhiCovModel[is.na(matricesCov$phi)],
                             PsiCovModel[is.na(matricesCov$psi)],

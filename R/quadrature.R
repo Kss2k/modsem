@@ -104,7 +104,19 @@ adaptiveGaussQuadrature <- function(fun,
   }
 
   # identify nodes trivially safe to remove
-  removable <- which(abs(contributions) < tol * abs(I.full))
+  contrib.rank <- order(abs(contributions))
+  cumulative   <- cumsum(contributions[contrib.rank])
+  is.removable <- abs(cumulative) < tol * abs(I.full)
+  
+  # reverse ordering of is.removable
+  is.removable <- is.removable[order(contrib.rank)]
+  removable    <- which(is.removable)
+
+  warnif(sum(contributions[removable]) > tol * abs(I.full),
+         "Something went wrong when pruning nodes:\n",
+         "More information than expected was lost!\n")
+  
+  stopif(length(removable) >= NROW(quadn), "Cannot remove all nodes!")
 
   if (length(removable) > 0) {
     # update everything by dropping them all at once
@@ -117,6 +129,7 @@ adaptiveGaussQuadrature <- function(fun,
 
   lower  <- min(quadn)
   upper <- max(quadn)
+
   diff.m <- round(nrow(quadn) ^ (1 / k)) - m
 
   # Calculate next ceiling

@@ -1,4 +1,5 @@
-estepLms <- function(model, theta, data, lastQuad = NULL, recalcQuad = FALSE, ...) {
+estepLms <- function(model, theta, data, lastQuad = NULL, recalcQuad = FALSE, 
+                     adaptive.quad.tol = 1e-12, ...) {
   modFilled <- fillModel(model = model, theta = theta, method = "lms")
 
   if (model$quad$adaptive && (recalcQuad || is.null(lastQuad))) {
@@ -12,11 +13,32 @@ estepLms <- function(model, theta, data, lastQuad = NULL, recalcQuad = FALSE, ..
     else if (k > 1) m.ceil <- m
     else m.ceil <- round(estMForNodesInRange(m, a = -5, b = 5))
 
-    quad <- adaptiveGaussQuadrature(
-      fun = densityLms, collapse = \(x) sum(log(rowSums(x))),
-      modFilled = modFilled, data = data, a = a, b = b, m = m, 
-      k = k, m.ceil = m.ceil
+
+    quad <- tryCatch({
+        adaptiveGaussQuadrature(
+          fun = densityLms, collapse = \(x) sum(log(rowSums(x))),
+          modFilled = modFilled, data = data, a = a, b = b, m = m, 
+          k = k, m.ceil = m.ceil, tol = adaptive.quad.tol,
+        )
+      }, error = function(e) {
+        warning2("Calculation of adaptive quadrature failed!\n", e, 
+                 immediate. = FALSE)
+        NULL
+      }
     )
+
+    if (is.null(quad)) {
+      estep.fixed <- estepLms(
+        model = model,
+        theta = theta,
+        data  = data,
+        lastQuad = if (!is.null(lastQuad)) lastQuad else model$quad,
+        recalcQuad = FALSE,
+        ...
+      )
+
+      return(estep.fixed)
+    }
 
     P <- quad$W * quad$F # P is already calculated
     V <- quad$n

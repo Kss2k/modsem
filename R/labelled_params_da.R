@@ -14,7 +14,7 @@ createThetaLabel <- function(labelMatrices, labelMatricesCov,
   }
 
   if (is.null(start)) {
-    start <- vapply(labels, FUN.VALUE = vector("numeric", 1L),
+    start <- vapply(labels, FUN.VALUE = numeric(1L),
                     FUN = function(x) stats::runif(1))
   }
 
