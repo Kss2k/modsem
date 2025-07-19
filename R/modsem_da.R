@@ -380,18 +380,25 @@ modsem_da <- function(model.syntax = NULL,
   )
 
   if (args$optimize) {
-    model <- tryCatch(
-      optimizeStartingParamsDA(model, args = args),
-      
-      warning = function(w) {
-        warning2("warning when optimizing starting parameters:\n", w)
-        suppressWarnings(optimizeStartingParamsDA(model, args = args))
-      }, 
+    model <- tryCatch({
+      result <- purrr::quietly(optimizeStartingParamsDA)(model, args = args)
+      warnings <- result$warnings 
 
-      error = function(e) {
-        warning2("unable to optimize starting parameters:\n", e)
-        model
-      })
+      if (length(warnings)) {
+        fwarnings <- paste0(
+          paste0(seq_along(warnings), ". ", warnings),
+          collapse = "\n"
+        )
+
+        warning2("warning when optimizing starting parameters:\n", fwarnings)
+      }
+
+      result$result
+
+    }, error = function(e) {
+      warning2("unable to optimize starting parameters:\n", e)
+      model
+    })
   }
 
   if (!is.null(start)) {

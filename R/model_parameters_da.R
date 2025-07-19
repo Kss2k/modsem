@@ -54,7 +54,8 @@ createTheta <- function(model, start = NULL) {
                                    etas = etas)
 
   thetaMain <- allModelValues[is.na(allModelValues)]
-  thetaMain <- fillThetaIfStartNULL(start = start, theta = thetaMain)
+  thetaMain <- fillThetaIfStartNULL(start = start, theta = thetaMain, 
+                                    lavlab = lavLabelsMain)
   theta     <- c(thetaLabel, thetaCov, thetaMain)
 
   allLabels <- names(c(totalThetaLabel, thetaCov, thetaMain))
@@ -84,16 +85,50 @@ createThetaCovModel <- function(covModel, start = NULL) {
 
   lavLabelsCov <- createLavLabelsCov(M, subset = is.na(thetaCov))
   thetaCov <- thetaCov[is.na(thetaCov)]
-  thetaCov <- fillThetaIfStartNULL(start = start, theta = thetaCov)
+  thetaCov <- fillThetaIfStartNULL(start = start, theta = thetaCov,
+                                   lavlab = lavLabelsCov)
 
   list(theta = thetaCov, lavLabels = lavLabelsCov)
 }
 
 
-fillThetaIfStartNULL <- function(start, theta) {
-  if (!is.null(start)) return(theta)
-  vapply(theta, FUN = function(x) stats::runif(1),
-         FUN.VALUE = vector("numeric", 1L))
+fillThetaIfStartNULL <- function(start, 
+                                 theta, 
+                                 lavlab = NULL, 
+                                 var = 1,
+                                 cov = 0, 
+                                 meas = 0.7, 
+                                 mean = 0,
+                                 reg = 0) {
+  if (!is.null(start)) {
+    return(theta)
+
+  } else if (!is.null(lavlab)) {
+    tryCatch({
+      OP <- "~~|=~|~1|~"
+      op <- stringr::str_extract(lavlab, pattern = OP)
+      lr <- stringr::str_split_fixed(lavlab, pattern = OP, n = 2)
+      
+      lhs <- lr[, 1]
+      rhs <- lr[, 2]
+      op[is.na(op)] <- "~"
+    
+      theta.filled                          <- theta
+      theta.filled[op == "~"]               <- reg
+      theta.filled[op == "=~"]              <- meas
+      theta.filled[op == "~1"]              <- mean
+      theta.filled[op == "~~" & lhs == rhs] <- var
+      theta.filled[op == "~~" & lhs != rhs] <- cov
+      theta.filled[is.na(theta.filled)]     <- reg
+
+      theta.filled
+    }, error = \(e) 
+        fillThetaIfStartNULL(start = start, theta = theta, lavlab = NULL)
+    )
+  } else {
+    vapply(theta, FUN = function(x) stats::runif(1),
+           FUN.VALUE = numeric(1L))
+  }
 }
 
 
