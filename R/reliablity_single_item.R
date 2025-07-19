@@ -57,7 +57,7 @@
 #' }
 #'
 #' @export
-relcorr_single_item <- function(syntax, data, choose = NULL) {
+relcorr_single_item <- function(syntax, data, choose = NULL, scale.corrected = TRUE) {
   data <- as.data.frame(data)
 
   parTable      <- modsemify(syntax)
@@ -134,18 +134,34 @@ relcorr_single_item <- function(syntax, data, choose = NULL) {
   varNewInds <- structure(numeric(length(lVs)), names=singleInds)
   newData <- data
 
-  for (lV in lVs) {
-    indsLV     <- indsLVs[[lV]]
-    newIndName <- singleInds[[lV]]
-    X          <- as.matrix(data[indsLV])
-    newInd     <- rowMeans(data[indsLV], na.rm = TRUE)
-
-    newData[[newIndName]]    <- newInd
-    varNewInds[[newIndName]] <- stats::var(newInd, na.rm = TRUE)
+  if (scale.corrected) {
+    res <- stats::setNames(numeric(length(lVs)), nm = lVs)
+    for (lV in lVs) {
+      LSAM       <- getLSAM_Item(parTable = parTable, lV = lV, data = data)
+      newIndName <- singleInds[[lV]]
+      newInd     <- LSAM$item
+      residual   <- LSAM$residual
+     
+       
+      newData[[newIndName]] <- newInd
+      res[[lV]] <- residual
+    }
+  } else {
+    for (lV in lVs) {
+      indsLV     <- indsLVs[[lV]]
+      newIndName <- singleInds[[lV]]
+      X          <- as.matrix(data[indsLV])
+      newInd     <- rowMeans(data[indsLV], na.rm = TRUE)
+      
+      newData[[newIndName]]    <- newInd
+      varNewInds[[newIndName]] <- stats::var(newInd, na.rm = TRUE)
+      
+    }
+    
+    rel <- rel.std * varNewInds
+    res <- res.std * varNewInds
   }
   
-  rel <- rel.std * varNewInds
-  res <- res.std * varNewInds
 
   lhs <- unname(c(lVs, singleInds))
   rhs <- unname(c(singleInds, singleInds))
@@ -167,6 +183,27 @@ relcorr_single_item <- function(syntax, data, choose = NULL) {
   class(out) <- c("list", "modsem_relcorr")
 
   out
+}
+
+
+getLSAM_Item <- function(parTable, lV, data) {
+  measr  <- parTable[parTable$lhs == lV & parTable$op == "=~", ]
+  inds   <- unique(measr$rhs)
+  rescov <- parTable[parTable$op == "~~" & 
+                     parTable$lhs %in% inds &
+                     parTable$rhs %in% inds, ]
+  
+  cfa.syntax <- parTableToSyntax(rbind(measr, rescov))
+  cfa <- lavaan::cfa(cfa.syntax, data = data)
+  matrices <- lavaan::lavInspect(cfa, what = "coef")
+  theta  <- diag(matrices$theta)
+  lambda <- as.vector(matrices$lambda)
+  
+  X <- as.matrix(data[, inds])
+  item <- rowSums(X) / sum(lambda)
+  residual <- sum(theta) / sum(lambda)^2
+
+  list(X = X, item = item, residual = residual, cfa = cfa) 
 }
 
 
