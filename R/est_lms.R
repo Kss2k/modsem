@@ -73,6 +73,7 @@ emLms <- function(model,
                   R.max = 1e6,
                   adaptive.quad = FALSE,
                   quad.range = -Inf,
+                  adaptive.quad.tol = 1e-12,
                   ...) {
   algorithm <- toupper(match.arg(algorithm))
   data <- model$data
@@ -116,7 +117,8 @@ emLms <- function(model,
 
     # E-step
     P <- estepLms(model = model, theta = thetaOld, data = data, 
-                  lastQuad = lastQuad, recalcQuad = recalcQuad, ...)
+                  lastQuad = lastQuad, recalcQuad = recalcQuad, 
+                  adaptive.quad.tol = adaptive.quad.tol, ...)
 
     if (testSimpleGradient) {
       tryCatch({
@@ -250,7 +252,8 @@ emLms <- function(model,
 
   # Final E- and M-step for output
   P <- estepLms(model = model, theta = thetaNew, data = data, 
-                lastQuad = lastQuad, recalcQuad = FALSE, ...)
+                lastQuad = lastQuad, recalcQuad = FALSE, 
+                adaptive.quad.tol = adaptive.quad.tol, ...) # adaptive.quad.tol doesn't matter (atm)
   final <- mstepLms(model = model, P = P, theta = thetaNew, 
                     max.step = max.step, epsilon = epsilon, 
                     optimizer = optimizer, verbose = verbose,

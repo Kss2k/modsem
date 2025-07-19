@@ -1,4 +1,5 @@
-estepLms <- function(model, theta, data, lastQuad = NULL, recalcQuad = FALSE, ...) {
+estepLms <- function(model, theta, data, lastQuad = NULL, recalcQuad = FALSE, 
+                     adaptive.quad.tol = 1e-12, ...) {
   modFilled <- fillModel(model = model, theta = theta, method = "lms")
 
   if (model$quad$adaptive && (recalcQuad || is.null(lastQuad))) {
@@ -17,7 +18,7 @@ estepLms <- function(model, theta, data, lastQuad = NULL, recalcQuad = FALSE, ..
         adaptiveGaussQuadrature(
           fun = densityLms, collapse = \(x) sum(log(rowSums(x))),
           modFilled = modFilled, data = data, a = a, b = b, m = m, 
-          k = k, m.ceil = m.ceil
+          k = k, m.ceil = m.ceil, tol = adaptive.quad.tol,
         )
       }, error = function(e) {
         warning2("Calculation of adaptive quadrature failed!\n", e, 

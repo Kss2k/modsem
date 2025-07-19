@@ -45,6 +45,7 @@ or `algorithm = "EM"`, and `adaptive.quad = TRUE` in the `modsem()` function. Ad
 - `nodes`: Number of nodes for numerical integration (default is 24). Increasing this number can improve the accuracy of the estimates, especially for complex models.
 - `quad.range`: Integration range for quadrature. Smaller ranges means that the integral is more focused. Applies to only when using a quasi-adaptive quadrature.
 - `adaptive.frequency`: How often should the quasi-adaptive quadrature be calculated? Defaults to every third EM iteration.
+- `adaptive.quad.tol`: Relative error tolerance when calculating the quasi-adaptive quadrature.
 
 Here we can see an example using the `TPB_UK` dataaset, which is more troublesome to
 estimate than the simulated `TPB` dataset.
@@ -70,6 +71,7 @@ fit <- modsem(tpb_uk,
               nodes = 32, # Number of nodes for numerical integration
               adaptive.quad = TRUE, # Use quasi-adaptive quadrature
               adaptive.frequency = 3, # Update the quasi-adaptive quadrature every third EM-iteration
+              adaptive.quad.tol = 1e-12, # Relative error tolerance for quasi-adaptive quad
               algorithm ="EMA", # Use accelerated EM algorithm (Default)
               convergence.abs = 1e-4, # Relative convergence criterion
               convergence.rel = 1e-10, # Relative convergence criterion

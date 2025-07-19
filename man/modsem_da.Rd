@@ -36,6 +36,7 @@ modsem_da(
   quad.range = NULL,
   adaptive.quad = NULL,
   adaptive.frequency = NULL,
+  adaptive.quad.tol = NULL,
   n.threads = NULL,
   algorithm = NULL,
   em.control = NULL,
@@ -175,6 +176,8 @@ fixed Gauss Hermite quadrature this usually means that less nodes are placed at 
 
 \item{adaptive.frequency}{How often should the quasi-adaptive quadrature be calculated? Defaults to 3, meaning 
 that it is recalculated every third EM-iteration.}
+
+\item{adaptive.quad.tol}{Relative error tolerance for quasi adaptive quadrature. Defaults to \code{1e-12}.}
 
 \item{n.threads}{number of threads to use for parallel processing. If \code{NULL}, it will use <= 2 threads.
 If an integer is specified, it will use that number of threads (e.g., \code{n.threads = 4} will use 4 threads).
