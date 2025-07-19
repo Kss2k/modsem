@@ -115,7 +115,7 @@ relcorr_single_item <- function(syntax, data, choose = NULL, scale.corrected = F
   }
 
   cfaSyntax <- parTableToSyntax(parTableOuter)
-  cfa       <- lavaan::cfa(cfaSyntax, data = data)
+  cfa       <- lavaan::cfa(cfaSyntax, data = data, se = "none")
 
   cov.lv      <- lavaan::lavInspect(cfa, "cov.lv")
   stdSolution <- lavaan::lavInspect(cfa, "std")
@@ -147,11 +147,11 @@ relcorr_single_item <- function(syntax, data, choose = NULL, scale.corrected = F
       newIndName <- singleInds[[lV]]
       newInd     <- LSAM$item
       residual   <- LSAM$residual
-     
        
       newData[[newIndName]] <- newInd
       res[[lV]] <- residual
     }
+
   } else {
     for (lV in lVs) {
       indsLV     <- indsLVs[[lV]]
@@ -200,7 +200,7 @@ getLSAM_Item <- function(parTable, lV, data) {
                      parTable$rhs %in% inds, ]
   
   cfa.syntax <- parTableToSyntax(rbind(measr, rescov))
-  cfa <- lavaan::cfa(cfa.syntax, data = data)
+  cfa <- lavaan::cfa(cfa.syntax, data = data, se = "none")
   matrices <- lavaan::lavInspect(cfa, what = "coef")
   theta  <- diag(matrices$theta)
   lambda <- as.vector(matrices$lambda)
