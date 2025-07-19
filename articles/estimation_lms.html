@@ -130,6 +130,9 @@ using a quasi-adaptive quadrature.</li>
 <li>
 <code>adaptive.frequency</code>: How often should the quasi-adaptive
 quadrature be calculated? Defaults to every third EM iteration.</li>
+<li>
+<code>adaptive.quad.tol</code>: Relative error tolerance when
+calculating the quasi-adaptive quadrature.</li>
 </ul>
 <p>Here we can see an example using the <code>TPB_UK</code> dataaset,
 which is more troublesome to estimate than the simulated
@@ -155,6 +158,7 @@ which is more troublesome to estimate than the simulated
 <span>              nodes <span class="op">=</span> <span class="fl">32</span>, <span class="co"># Number of nodes for numerical integration</span></span>
 <span>              adaptive.quad <span class="op">=</span> <span class="cn">TRUE</span>, <span class="co"># Use quasi-adaptive quadrature</span></span>
 <span>              adaptive.frequency <span class="op">=</span> <span class="fl">3</span>, <span class="co"># Update the quasi-adaptive quadrature every third EM-iteration</span></span>
+<span>              adaptive.quad.tol <span class="op">=</span> <span class="fl">1e-12</span>, <span class="co"># Relative error tolerance for quasi-adaptive quad</span></span>
 <span>              algorithm <span class="op">=</span><span class="st">"EMA"</span>, <span class="co"># Use accelerated EM algorithm (Default)</span></span>
 <span>              convergence.abs <span class="op">=</span> <span class="fl">1e-4</span>, <span class="co"># Relative convergence criterion</span></span>
 <span>              convergence.rel <span class="op">=</span> <span class="fl">1e-10</span>, <span class="co"># Relative convergence criterion</span></span>
@@ -167,10 +171,10 @@ which is more troublesome to estimate than the simulated
 <span><span class="co">#&gt;   Estimator                                         LMS</span></span>
 <span><span class="co">#&gt;   Optimization method                        EMA-NLMINB</span></span>
 <span><span class="co">#&gt;   Number of observations                           1169</span></span>
-<span><span class="co">#&gt;   Number of iterations                              123</span></span>
-<span><span class="co">#&gt;   Loglikelihood                               -33404.27</span></span>
-<span><span class="co">#&gt;   Akaike (AIC)                                 66946.54</span></span>
-<span><span class="co">#&gt;   Bayesian (BIC)                               67295.94</span></span>
+<span><span class="co">#&gt;   Number of iterations                              125</span></span>
+<span><span class="co">#&gt;   Loglikelihood                               -33404.28</span></span>
+<span><span class="co">#&gt;   Akaike (AIC)                                 66946.55</span></span>
+<span><span class="co">#&gt;   Bayesian (BIC)                               67295.96</span></span>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; Numerical Integration:</span></span>
 <span><span class="co">#&gt;   Points of integration (per dim)                    32</span></span>
@@ -187,8 +191,8 @@ which is more troublesome to estimate than the simulated
 <span><span class="co">#&gt;   RMSEA                                           0.168</span></span>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; Comparative Fit to H0 (LRT test):</span></span>
-<span><span class="co">#&gt;   Loglikelihood change                          2118.60</span></span>
-<span><span class="co">#&gt;   Difference test (D)                           4237.20</span></span>
+<span><span class="co">#&gt;   Loglikelihood change                          2118.59</span></span>
+<span><span class="co">#&gt;   Difference test (D)                           4237.19</span></span>
 <span><span class="co">#&gt;   Degrees of freedom (D)                              1</span></span>
 <span><span class="co">#&gt;   P-value (D)                                     0.000</span></span>
 <span><span class="co">#&gt;  </span></span>
@@ -213,7 +217,7 @@ which is more troublesome to estimate than the simulated
 <span><span class="co">#&gt;     pbc2            1.000                             </span></span>
 <span><span class="co">#&gt;     pbc1            0.859      0.021    41.34    0.000</span></span>
 <span><span class="co">#&gt;     pbc3            0.935      0.017    55.08    0.000</span></span>
-<span><span class="co">#&gt;     pbc4            0.818      0.021    39.85    0.000</span></span>
+<span><span class="co">#&gt;     pbc4            0.818      0.021    39.86    0.000</span></span>
 <span><span class="co">#&gt;   ATT =~        </span></span>
 <span><span class="co">#&gt;     att3            1.000                             </span></span>
 <span><span class="co">#&gt;     att2            0.965      0.011    86.35    0.000</span></span>
@@ -231,9 +235,9 @@ which is more troublesome to estimate than the simulated
 <span><span class="co">#&gt;     int4            0.992      0.009   104.58    0.000</span></span>
 <span><span class="co">#&gt;   BEH =~        </span></span>
 <span><span class="co">#&gt;     beh3            1.000                             </span></span>
-<span><span class="co">#&gt;     beh2            0.986      0.013    77.72    0.000</span></span>
+<span><span class="co">#&gt;     beh2            0.986      0.013    77.71    0.000</span></span>
 <span><span class="co">#&gt;     beh1            0.814      0.019    42.73    0.000</span></span>
-<span><span class="co">#&gt;     beh4            0.803      0.019    41.50    0.000</span></span>
+<span><span class="co">#&gt;     beh4            0.803      0.019    41.51    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
@@ -242,17 +246,17 @@ which is more troublesome to estimate than the simulated
 <span><span class="co">#&gt;     ATT            -0.060      0.030    -2.04    0.041</span></span>
 <span><span class="co">#&gt;     SN              0.051      0.033     1.55    0.121</span></span>
 <span><span class="co">#&gt;   BEH ~         </span></span>
-<span><span class="co">#&gt;     PBC             0.398      0.052     7.62    0.000</span></span>
+<span><span class="co">#&gt;     PBC             0.398      0.052     7.63    0.000</span></span>
 <span><span class="co">#&gt;     INT             0.594      0.049    12.25    0.000</span></span>
 <span><span class="co">#&gt;     PBC:INT         0.140      0.008    17.65    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Intercepts:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;    .pbc2            4.025      0.066    61.14    0.000</span></span>
+<span><span class="co">#&gt;    .pbc2            4.024      0.066    61.14    0.000</span></span>
 <span><span class="co">#&gt;    .pbc1            3.991      0.063    63.12    0.000</span></span>
 <span><span class="co">#&gt;    .pbc3            3.761      0.063    59.85    0.000</span></span>
 <span><span class="co">#&gt;    .pbc4            3.795      0.061    62.00    0.000</span></span>
-<span><span class="co">#&gt;    .att3            3.728      0.064    58.48    0.000</span></span>
+<span><span class="co">#&gt;    .att3            3.728      0.064    58.47    0.000</span></span>
 <span><span class="co">#&gt;    .att2            3.843      0.062    62.26    0.000</span></span>
 <span><span class="co">#&gt;    .att1            4.215      0.060    70.11    0.000</span></span>
 <span><span class="co">#&gt;    .att4            3.694      0.065    56.74    0.000</span></span>
@@ -262,12 +266,12 @@ which is more troublesome to estimate than the simulated
 <span><span class="co">#&gt;    .sn1             4.472      0.052    85.96    0.000</span></span>
 <span><span class="co">#&gt;    .int2            3.728      0.067    55.96    0.000</span></span>
 <span><span class="co">#&gt;    .int1            3.873      0.066    58.85    0.000</span></span>
-<span><span class="co">#&gt;    .int3            3.745      0.066    56.53    0.000</span></span>
-<span><span class="co">#&gt;    .int4            3.788      0.066    57.11    0.000</span></span>
+<span><span class="co">#&gt;    .int3            3.745      0.066    56.54    0.000</span></span>
+<span><span class="co">#&gt;    .int4            3.788      0.066    57.12    0.000</span></span>
 <span><span class="co">#&gt;    .beh3            2.663      0.076    34.96    0.000</span></span>
 <span><span class="co">#&gt;    .beh2            2.582      0.076    34.15    0.000</span></span>
 <span><span class="co">#&gt;    .beh1            2.543      0.073    35.05    0.000</span></span>
-<span><span class="co">#&gt;    .beh4            2.686      0.072    37.10    0.000</span></span>
+<span><span class="co">#&gt;    .beh4            2.685      0.072    37.10    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
@@ -282,10 +286,10 @@ which is more troublesome to estimate than the simulated
 <span><span class="co">#&gt;    .pbc2            0.701      0.042    16.69    0.000</span></span>
 <span><span class="co">#&gt;    .pbc1            1.455      0.069    21.00    0.000</span></span>
 <span><span class="co">#&gt;    .pbc3            0.802      0.043    18.62    0.000</span></span>
-<span><span class="co">#&gt;    .pbc4            1.458      0.069    21.28    0.000</span></span>
+<span><span class="co">#&gt;    .pbc4            1.458      0.068    21.28    0.000</span></span>
 <span><span class="co">#&gt;    .att3            0.296      0.023    12.81    0.000</span></span>
 <span><span class="co">#&gt;    .att2            0.306      0.022    13.81    0.000</span></span>
-<span><span class="co">#&gt;    .att1            1.285      0.057    22.58    0.000</span></span>
+<span><span class="co">#&gt;    .att1            1.286      0.057    22.58    0.000</span></span>
 <span><span class="co">#&gt;    .att4            1.584      0.071    22.42    0.000</span></span>
 <span><span class="co">#&gt;    .sn4             1.362      0.065    21.03    0.000</span></span>
 <span><span class="co">#&gt;    .sn2             0.491      0.032    15.39    0.000</span></span>
@@ -296,10 +300,10 @@ which is more troublesome to estimate than the simulated
 <span><span class="co">#&gt;    .int3            0.335      0.017    19.35    0.000</span></span>
 <span><span class="co">#&gt;    .int4            0.271      0.015    17.90    0.000</span></span>
 <span><span class="co">#&gt;    .beh3            0.456      0.030    15.26    0.000</span></span>
-<span><span class="co">#&gt;    .beh2            0.513      0.031    16.56    0.000</span></span>
+<span><span class="co">#&gt;    .beh2            0.513      0.031    16.55    0.000</span></span>
 <span><span class="co">#&gt;    .beh1            1.835      0.082    22.32    0.000</span></span>
-<span><span class="co">#&gt;    .beh4            1.915      0.085    22.42    0.000</span></span>
-<span><span class="co">#&gt;     PBC             4.362      0.209    20.83    0.000</span></span>
+<span><span class="co">#&gt;    .beh4            1.914      0.085    22.43    0.000</span></span>
+<span><span class="co">#&gt;     PBC             4.361      0.209    20.83    0.000</span></span>
 <span><span class="co">#&gt;     ATT             4.454      0.197    22.60    0.000</span></span>
 <span><span class="co">#&gt;     SN              1.718      0.119    14.49    0.000</span></span>
 <span><span class="co">#&gt;    .INT             0.507      0.038    13.27    0.000</span></span>
