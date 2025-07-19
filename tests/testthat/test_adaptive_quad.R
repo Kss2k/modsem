@@ -83,7 +83,7 @@ CAREER ~ ENJ + SC + ENJ:ENJ + SC:SC + ENJ:SC
 # adaptive quadrature, as all the nodes bring some value
 # no warning for low number of nodes here, when using adaptive quadrature
 lms4 <- modsem(nlsem, data = jordan, method = "lms", 
-               adaptive.quad=TRUE, calc.se=FALSE,
+               adaptive.quad=TRUE, OFIM.hessian = FALSE,
                nodes = 15, mean.observed = FALSE, adaptive.frequency=10)
 
 summary(lms4)

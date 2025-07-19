@@ -671,3 +671,11 @@ tryFormatC <- function(..., .onfail = "NA") {
 is.diag <- function(M, zero.tol = .Machine$double.eps) {
   diag(NROW(M)) > zero.tol
 }
+
+
+is.invertible <- function(M) {
+  tryCatch({
+    solve(M)
+    TRUE
+  }, error = \(e) FALSE)
+}
