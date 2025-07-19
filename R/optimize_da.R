@@ -71,9 +71,10 @@ optimizeStartingParamsDA <- function(model,
   }
 
   if (!is.invertible(Phi))          Phi <- as.I(Phi)
-  if (!is.invertible(Psi))          Psi <- as.I(Psi)
-  if (!is.invertible(ThetaEpsilon)) ThetaEpsilon <- as.I(ThetaEpsilon)
-  if (!is.invertible(ThetaDelta))   ThetaDelta   <- as.I(ThetaDelta)
+  # Residuals don't need to be invertible...
+  # if (!is.invertible(Psi))          Psi <- as.I(Psi)
+  # if (!is.invertible(ThetaEpsilon)) ThetaEpsilon <- as.I(ThetaEpsilon)
+  # if (!is.invertible(ThetaDelta))   ThetaDelta   <- as.I(ThetaDelta)
 
   A[upper.tri(A)] <- t(A)[upper.tri(A)]
   A <- t(tryCatch(chol(A), error = function(x) as.I(A)))
@@ -116,11 +117,12 @@ optimizeStartingParamsDA <- function(model,
     GammaEtaCovModel <- findEstimatesParTable(matricesCov$gammaEta, parTable, op = "~", fill = 0)
     GammaXiCovModel <- findEstimatesParTable(matricesCov$gammaXi, parTable, op = "~", fill = 0)
  
-    PsiCovModel <- correctDiag(PsiCovModel, tol = 0)
     PhiCovModel <- correctDiag(PhiCovModel, tol = 0)
+    PsiCovModel <- correctDiag(PsiCovModel, tol = 0)
 
     if (!is.invertible(PhiCovModel)) PhiCovModel <- as.I(PhiCovModel)
-    if (!is.invertible(PsiCovModel)) PsiCovModel <- as.I(PsiCovModel)
+    # Residuals don't need to be invertible...
+    # if (!is.invertible(PsiCovModel)) PsiCovModel <- as.I(PsiCovModel)
 
     thetaCov <- unlist(list(PhiCovModel[is.na(matricesCov$phi)],
                             PsiCovModel[is.na(matricesCov$psi)],
