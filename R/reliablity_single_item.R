@@ -23,6 +23,9 @@
 #'   reliability-corrected single items are corrected for differences in factor loadings between
 #'   the items.
 #'
+#' @param warn.lav Should warnings from \code{lavaan::cfa} be displayed? If \code{FALSE}, they
+#'   are suppressed.
+#'
 #' @return An object of S3 class \code{modsem_relcorr} (a named list) with elements:
 #' \describe{
 #'   \item{\code{syntax}}{Modified lavaan syntax string.}
@@ -63,11 +66,13 @@
 #' }
 #'
 #' @export
-relcorr_single_item <- function(syntax, data, choose = NULL, scale.corrected = FALSE) {
+relcorr_single_item <- function(syntax, data, choose = NULL, scale.corrected = FALSE,
+                                warn.lav = TRUE) {
   data <- as.data.frame(data)
 
   parTable      <- modsemify(syntax)
   intTerms      <- parTable$rhs[grepl(":", parTable$rhs)]
+
   parTableOuter <- parTable[parTable$op == "=~", ]
   parTableInner <- parTable[parTable$op != "=~", ]
 
@@ -105,7 +110,15 @@ relcorr_single_item <- function(syntax, data, choose = NULL, scale.corrected = F
   indsLVs <- getIndsLVs(parTableOuter, lVs = lVs)
   R <- stats::cov(data[inds], use = "pairwise.complete.obs")
   k <- length(lVs)
- 
+
+  # Add residual Covariances
+  rescovind <- parTableInner$lhs %in% inds & 
+               parTableInner$rhs %in% inds &
+               parTableInner$op == "~~"
+  parTableInner <- parTableInner[!rescovind, ]
+  parTableOuter <- rbind(parTableOuter, parTableInner[rescovind, ])
+
+  # Check if there are any indicators in the structural model
   indsInInner <- parTableInner$lhs %in% inds | parTableInner$rhs %in% inds
   if (any(indsInInner)) {
     warning2("Removing expressions containing indicators!\n",
@@ -114,8 +127,9 @@ relcorr_single_item <- function(syntax, data, choose = NULL, scale.corrected = F
     parTableInner <- parTableInner[!indsInInner, ]
   }
 
+  wrap      <- if (warn.lav) \(x) x else suppressWarnings
   cfaSyntax <- parTableToSyntax(parTableOuter)
-  cfa       <- lavaan::cfa(cfaSyntax, data = data, se = "none")
+  cfa       <- wrap(lavaan::cfa(cfaSyntax, data = data, se = "none"))
 
   cov.lv      <- lavaan::lavInspect(cfa, "cov.lv")
   stdSolution <- lavaan::lavInspect(cfa, "std")
@@ -130,7 +144,7 @@ relcorr_single_item <- function(syntax, data, choose = NULL, scale.corrected = F
   res.std <- 1 - rel.std
   singleInds <- getSingleIndNames(lVs)
 
-  rchar <- c(letters, 1:9)
+  rchar <- c(letters, seq_len(9))
   while(any(singleInds %in% colnames(data))) {
     # if matching names in data, add random characters, until there is no
     # match. Should in practive never be triggered
@@ -142,11 +156,14 @@ relcorr_single_item <- function(syntax, data, choose = NULL, scale.corrected = F
 
   if (scale.corrected) {
     res <- stats::setNames(numeric(length(lVs)), nm = lVs)
+
     for (lV in lVs) {
-      LSAM       <- getLSAM_Item(parTable = parTable, lV = lV, data = data)
+      ITEM <- getScaleCorrectedItem(parTable = parTable, lV = lV, 
+                                    data = data, cfa = cfa)
+
       newIndName <- singleInds[[lV]]
-      newInd     <- LSAM$item
-      residual   <- LSAM$residual
+      newInd     <- ITEM$item
+      residual   <- ITEM$residual
        
       newData[[newIndName]] <- newInd
       res[[lV]] <- residual
@@ -192,24 +209,20 @@ relcorr_single_item <- function(syntax, data, choose = NULL, scale.corrected = F
 }
 
 
-getLSAM_Item <- function(parTable, lV, data) {
+getScaleCorrectedItem <- function(parTable, lV, data, cfa) {
   measr  <- parTable[parTable$lhs == lV & parTable$op == "=~", ]
   inds   <- unique(measr$rhs)
-  rescov <- parTable[parTable$op == "~~" & 
-                     parTable$lhs %in% inds &
-                     parTable$rhs %in% inds, ]
-  
-  cfa.syntax <- parTableToSyntax(rbind(measr, rescov))
-  cfa <- lavaan::cfa(cfa.syntax, data = data, se = "none")
+
   matrices <- lavaan::lavInspect(cfa, what = "coef")
-  theta  <- diag(matrices$theta)
-  lambda <- as.vector(matrices$lambda)
+
+  theta  <- diag(matrices$theta[inds, inds])
+  lambda <- as.vector(matrices$lambda[inds, lV])
   
   X <- as.matrix(data[, inds])
   item <- rowSums(X) / sum(lambda)
   residual <- sum(theta) / sum(lambda)^2
 
-  list(X = X, item = item, residual = residual, cfa = cfa) 
+  list(X = X, item = item, residual = residual) 
 }
 
 

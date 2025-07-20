@@ -63,7 +63,8 @@ modsem_mplus <- function(model.syntax,
       syntax          = model.syntax, 
       data            = data,
       choose          = rcs.choose,
-      scale.corrected = rcs.scale.corrected
+      scale.corrected = rcs.scale.corrected,
+      warn.lav        = FALSE
     )
 
     model.syntax <- corrected$syntax

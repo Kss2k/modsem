@@ -4,7 +4,13 @@
 \alias{relcorr_single_item}
 \title{Reliability‑Corrected Single‑Item SEM}
 \usage{
-relcorr_single_item(syntax, data, choose = NULL, scale.corrected = FALSE)
+relcorr_single_item(
+  syntax,
+  data,
+  choose = NULL,
+  scale.corrected = FALSE,
+  warn.lav = TRUE
+)
 }
 \arguments{
 \item{syntax}{A character string containing lavaan model syntax.  Must at
@@ -20,6 +26,9 @@ first‑order latent variables in \code{syntax}.}
 \item{scale.corrected}{Should reliability corrected items be scale-corrected? If \code{TRUE}
 reliability-corrected single items are corrected for differences in factor loadings between
 the items.}
+
+\item{warn.lav}{Should warnings from \code{lavaan::cfa} be displayed? If \code{FALSE}, they
+are suppressed.}
 }
 \value{
 An object of S3 class \code{modsem_relcorr} (a named list) with elements:
