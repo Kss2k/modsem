@@ -215,12 +215,14 @@ getScaleCorrectedItem <- function(parTable, lV, data, cfa) {
 
   matrices <- lavaan::lavInspect(cfa, what = "coef")
 
-  theta  <- diag(matrices$theta[inds, inds])
+  theta  <- matrices$theta[inds, inds]
   lambda <- as.vector(matrices$lambda[inds, lV])
-  
-  X <- as.matrix(data[, inds])
+  I      <- rep(1, length(inds))
+
+  X    <- as.matrix(data[, inds])
   item <- rowSums(X) / sum(lambda)
-  residual <- sum(theta) / sum(lambda)^2
+
+  residual <- (t(I) %*% theta %*% I) / sum(lambda)^2 # variance of (e1 + e2 + ... + en)
 
   list(X = X, item = item, residual = residual) 
 }
