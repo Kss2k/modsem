@@ -4,9 +4,10 @@
 \alias{bootstrap_modsem}
 \alias{bootstrap_modsem.modsem_pi}
 \alias{bootstrap_modsem.modsem_da}
+\alias{bootstrap_modsem.function}
 \title{Bootstrap a modsem Model}
 \usage{
-bootstrap_modsem(model, FUN, ...)
+bootstrap_modsem(model = modsem, FUN, ...)
 
 \method{bootstrap_modsem}{modsem_pi}(model, FUN, ...)
 
@@ -21,9 +22,20 @@ bootstrap_modsem(model, FUN, ...)
   optimize = FALSE,
   ...
 )
+
+\method{bootstrap_modsem}{`function`}(
+  model = modsem,
+  FUN = "coef",
+  data,
+  R = 1000L,
+  verbose = interactive(),
+  FUN.args = list(),
+  ...
+)
 }
 \arguments{
-\item{model}{A fitted \code{modsem} object.}
+\item{model}{A fitted \code{modsem} object, or a function to be bootstrapped
+(e.g., \code{\link{modsem}}, \code{\link{modsem_da}} and \code{\link{modsem_pi}})}
 
 \item{FUN}{A function that returns the statistic of interest when applied to
 a fitted model.  The function must accept a single argument, the model
@@ -44,6 +56,10 @@ for \code{\link{modsem_pi}} objects, or \code{\link{modsem_da}} for
 \item{calc.se}{Should standard errors for each replicate. Defaults to \code{FALSE}.}
 
 \item{optimize}{Should starting values be re-optimized for each replicate. Defaults to \code{FALSE}.}
+
+\item{data}{Dataset to be resampled.}
+
+\item{FUN.args}{Arguments passed to \code{FUN}}
 }
 \value{
 Depending on the return type of \code{FUN} either
@@ -55,7 +71,7 @@ Depending on the return type of \code{FUN} either
   }
 }
 \description{
-A generic interface for parametric and non‑parametric bootstrap procedures
+A generic interface for parametric and non-parametric bootstrap procedures
 for structural equation models estimated with the \pkg{modsem} ecosystem.
 The function dispatches on the class of \code{model}; currently dedicated
 methods exist for \code{\link{modsem_pi}} (product‑indicator approach) and
@@ -67,18 +83,26 @@ A thin wrapper around \code{lavaan::bootstrapLavaan()} that performs the
   \code{modsem_pi} object—rather than a bare \code{lavaan} fit—at every
   iteration.
 
-The function internally resamples the observed data (non‑parametric
+The function internally resamples the observed data (non-parametric
   case) or simulates from the estimated parameter table (parametric case),
   feeds the sample to \code{\link{modsem_da}}, evaluates \code{FUN} on the
   refitted object and finally collates the results.
+
+This is a more general version of \code{boostrap_modsem} for 
+  bootstrapping \code{modsem} functions, not modsem objects. 
+  \code{model} is now a function to be boostrapped, and \code{...}
+  are now passed to the function (\code{model}), not \code{FUN}. To 
+  pass arguments to \code{FUN} use \code{FUN.args}.
 }
 \section{Methods (by class)}{
 \itemize{
 \item \code{bootstrap_modsem(modsem_pi)}: Bootstrap a \code{modsem_pi} model by delegating
 to \code{\link[lavaan]{bootstrapLavaan}}.
 
-\item \code{bootstrap_modsem(modsem_da)}: Parametric or non‑parametric bootstrap for
+\item \code{bootstrap_modsem(modsem_da)}: Parametric or non-parametric bootstrap for
 \code{modsem_da} models.
+
+\item \code{bootstrap_modsem(`function`)}: Non-parametric bootstrap of \code{modsem} functions
 
 }}
 \examples{
@@ -106,6 +130,36 @@ m1 <- '
 \dontrun{
 fit_lms <- modsem(m1, oneInt, method = "lms")
 bootstrap_modsem(fit_lms, FUN = coef, R = 10L)
+}
+
+tpb <- "
+# Outer Model (Based on Hagger et al., 2007)
+  ATT =~ att1 + att2 + att3 + att4 + att5
+  SN =~ sn1 + sn2
+  PBC =~ pbc1 + pbc2 + pbc3
+  INT =~ int1 + int2 + int3
+  BEH =~ b1 + b2
+
+# Inner Model (Based on Steinmetz et al., 2011)
+  INT ~ ATT + SN + PBC
+  BEH ~ INT + PBC + INT:PBC
+"
+
+\dontrun{
+boot <- bootstrap_modsem(model = modsem, 
+                         model.syntax = tpb, data = TPB,
+                         method = "dblcent", rcs = TRUE, 
+                         rcs.scale.corrected = TRUE,
+                         FUN = "coef")
+coef <- apply(boot, MARGIN = 2, FUN = mean, na.rm = TRUE)
+se   <- apply(boot, MARGIN = 2, FUN = sd, na.rm = TRUE)
+
+cat("Parameter Estimates:\n")
+print(coef)
+
+cat("Standard Errors: \n")
+print(se)
+
 }
 }
 \seealso{

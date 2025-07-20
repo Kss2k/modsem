@@ -28,3 +28,31 @@ summary(fit_da)
 
 bootstrap_modsem(fit_da, FUN = coef, R = 10L)
 
+tpb <- "
+# Outer Model (Based on Hagger et al., 2007)
+  ATT =~ att1 + att2 + att3 + att4 + att5
+  SN =~ sn1 + sn2
+  PBC =~ pbc1 + pbc2 + pbc3
+  INT =~ int1 + int2 + int3
+  BEH =~ b1 + b2
+
+# Inner Model (Based on Steinmetz et al., 2011)
+  INT ~ ATT + SN + PBC
+  BEH ~ INT + PBC + INT:PBC
+"
+
+boot <- bootstrap_modsem(model = modsem, 
+                         model.syntax = tpb, data = TPB,
+                         method = "dblcent", rcs = TRUE, 
+                         rcs.scale.corrected = TRUE,
+                         rcs.mc.reps = 10000,
+                         R = 10L,
+                         FUN = "coef")
+coef <- apply(boot, MARGIN = 2, FUN = mean, na.rm = TRUE)
+se   <- apply(boot, MARGIN = 2, FUN = sd, na.rm = TRUE)
+
+cat("Parameter Estimates:\n")
+print(coef)
+
+cat("Standard Errors: \n")
+print(se)
