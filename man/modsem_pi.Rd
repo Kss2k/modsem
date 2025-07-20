@@ -35,6 +35,7 @@ modsem_pi(
   rcs.choose = NULL,
   rcs.res.cov.xz = rcs,
   rcs.mc.reps = 1e+05,
+  rcs.scale.corrected = FALSE,
   LAVFUN = lavaan::sem,
   ...
 )
@@ -137,6 +138,10 @@ are constrained to zero.}
 \item{rcs.mc.reps}{Sample size used in monte-carlo simulation, when approximating the
 the estimates of the residual (co-)variances between the product indicators formed
 by reliabiliyt-corrected single items (see the \code{rcs.res.cov.xz} argument).}
+
+\item{rcs.scale.corrected}{Should reliablity corrected items be scale-corrected? If \code{TRUE}
+reliability-corrected single items are corrected for differences in factor loadings between
+the items.}
 
 \item{LAVFUN}{Function used to estimate the model. Defaults to \code{lavaan::sem}.}
 

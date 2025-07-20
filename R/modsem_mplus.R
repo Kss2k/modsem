@@ -14,6 +14,10 @@
 #' @param rcs.choose Which latent variables should get their indicators replaced with
 #'   reliability-corrected single items? It is passed to \code{\link{relcorr_single_item}}
 #'   as the \code{choose} argument.
+#'   
+#' @param rcs.scale.corrected Should reliability corrected items be scale-corrected? If \code{TRUE}
+#'   reliability-corrected single items are corrected for differences in factor loadings between
+#'   the items.
 #'
 #' @param ... arguments passed to other functions
 #'
@@ -52,12 +56,15 @@ modsem_mplus <- function(model.syntax,
                          integration = 15,
                          rcs = FALSE,
                          rcs.choose = NULL,
+                         rcs.scale.corrected = FALSE,
                          ...) {
   if (rcs) { # use reliability-correct single items?
     corrected <- relcorr_single_item(
-      syntax = model.syntax, 
-      data   = data,
-      choose = rcs.choose
+      syntax          = model.syntax, 
+      data            = data,
+      choose          = rcs.choose,
+      scale.corrected = rcs.scale.corrected,
+      warn.lav        = FALSE
     )
 
     model.syntax <- corrected$syntax

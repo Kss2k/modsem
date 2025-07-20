@@ -11,11 +11,20 @@
 #'
 #' @param syntax A character string containing lavaan model syntax.  Must at
 #'   least include the measurement relations (\code{=~}).
+#'   
 #' @param data A \code{data.frame}, \code{tibble} or object coercible to a data frame that
 #'   holds the raw observed indicators.
+#'   
 #' @param choose \emph{Optional.} Character vector with the names of the latent
 #'   variables you wish to replace by single indicators.  Defaults to \strong{all}
 #'   first‑order latent variables in \code{syntax}.
+#'   
+#' @param scale.corrected Should reliability corrected items be scale-corrected? If \code{TRUE}
+#'   reliability-corrected single items are corrected for differences in factor loadings between
+#'   the items.
+#'
+#' @param warn.lav Should warnings from \code{lavaan::cfa} be displayed? If \code{FALSE}, they
+#'   are suppressed.
 #'
 #' @return An object of S3 class \code{modsem_relcorr} (a named list) with elements:
 #' \describe{
@@ -57,11 +66,13 @@
 #' }
 #'
 #' @export
-relcorr_single_item <- function(syntax, data, choose = NULL) {
+relcorr_single_item <- function(syntax, data, choose = NULL, scale.corrected = FALSE,
+                                warn.lav = TRUE) {
   data <- as.data.frame(data)
 
   parTable      <- modsemify(syntax)
   intTerms      <- parTable$rhs[grepl(":", parTable$rhs)]
+
   parTableOuter <- parTable[parTable$op == "=~", ]
   parTableInner <- parTable[parTable$op != "=~", ]
 
@@ -99,7 +110,15 @@ relcorr_single_item <- function(syntax, data, choose = NULL) {
   indsLVs <- getIndsLVs(parTableOuter, lVs = lVs)
   R <- stats::cov(data[inds], use = "pairwise.complete.obs")
   k <- length(lVs)
- 
+
+  # Add residual Covariances
+  rescovind <- parTableInner$lhs %in% inds & 
+               parTableInner$rhs %in% inds &
+               parTableInner$op == "~~"
+  parTableInner <- parTableInner[!rescovind, ]
+  parTableOuter <- rbind(parTableOuter, parTableInner[rescovind, ])
+
+  # Check if there are any indicators in the structural model
   indsInInner <- parTableInner$lhs %in% inds | parTableInner$rhs %in% inds
   if (any(indsInInner)) {
     warning2("Removing expressions containing indicators!\n",
@@ -108,8 +127,9 @@ relcorr_single_item <- function(syntax, data, choose = NULL) {
     parTableInner <- parTableInner[!indsInInner, ]
   }
 
+  wrap      <- if (warn.lav) \(x) x else suppressWarnings
   cfaSyntax <- parTableToSyntax(parTableOuter)
-  cfa       <- lavaan::cfa(cfaSyntax, data = data)
+  cfa       <- wrap(lavaan::cfa(cfaSyntax, data = data, se = "none"))
 
   cov.lv      <- lavaan::lavInspect(cfa, "cov.lv")
   stdSolution <- lavaan::lavInspect(cfa, "std")
@@ -124,7 +144,7 @@ relcorr_single_item <- function(syntax, data, choose = NULL) {
   res.std <- 1 - rel.std
   singleInds <- getSingleIndNames(lVs)
 
-  rchar <- c(letters, 1:9)
+  rchar <- c(letters, seq_len(9))
   while(any(singleInds %in% colnames(data))) {
     # if matching names in data, add random characters, until there is no
     # match. Should in practive never be triggered
@@ -134,18 +154,37 @@ relcorr_single_item <- function(syntax, data, choose = NULL) {
   varNewInds <- structure(numeric(length(lVs)), names=singleInds)
   newData <- data
 
-  for (lV in lVs) {
-    indsLV     <- indsLVs[[lV]]
-    newIndName <- singleInds[[lV]]
-    X          <- as.matrix(data[indsLV])
-    newInd     <- rowMeans(data[indsLV], na.rm = TRUE)
+  if (scale.corrected) {
+    res <- stats::setNames(numeric(length(lVs)), nm = lVs)
 
-    newData[[newIndName]]    <- newInd
-    varNewInds[[newIndName]] <- stats::var(newInd, na.rm = TRUE)
+    for (lV in lVs) {
+      ITEM <- getScaleCorrectedItem(parTable = parTable, lV = lV, 
+                                    data = data, cfa = cfa)
+
+      newIndName <- singleInds[[lV]]
+      newInd     <- ITEM$item
+      residual   <- ITEM$residual
+       
+      newData[[newIndName]] <- newInd
+      res[[lV]] <- residual
+    }
+
+  } else {
+    for (lV in lVs) {
+      indsLV     <- indsLVs[[lV]]
+      newIndName <- singleInds[[lV]]
+      X          <- as.matrix(data[indsLV])
+      newInd     <- rowMeans(data[indsLV], na.rm = TRUE)
+      
+      newData[[newIndName]]    <- newInd
+      varNewInds[[newIndName]] <- stats::var(newInd, na.rm = TRUE)
+      
+    }
+    
+    rel <- rel.std * varNewInds
+    res <- res.std * varNewInds
   }
   
-  rel <- rel.std * varNewInds
-  res <- res.std * varNewInds
 
   lhs <- unname(c(lVs, singleInds))
   rhs <- unname(c(singleInds, singleInds))
@@ -167,6 +206,23 @@ relcorr_single_item <- function(syntax, data, choose = NULL) {
   class(out) <- c("list", "modsem_relcorr")
 
   out
+}
+
+
+getScaleCorrectedItem <- function(parTable, lV, data, cfa) {
+  measr  <- parTable[parTable$lhs == lV & parTable$op == "=~", ]
+  inds   <- unique(measr$rhs)
+
+  matrices <- lavaan::lavInspect(cfa, what = "coef")
+
+  theta  <- diag(matrices$theta[inds, inds])
+  lambda <- as.vector(matrices$lambda[inds, lV])
+  
+  X <- as.matrix(data[, inds])
+  item <- rowSums(X) / sum(lambda)
+  residual <- sum(theta) / sum(lambda)^2
+
+  list(X = X, item = item, residual = residual) 
 }
 
 

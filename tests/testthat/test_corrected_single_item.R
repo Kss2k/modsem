@@ -14,7 +14,8 @@ tpb_uk <- "
  BEH ~ INT:PBC
 "
 
-corrected <- relcorr_single_item(syntax = tpb_uk, data = TPB_UK)
+corrected <- relcorr_single_item(syntax = tpb_uk, data = TPB_UK, 
+                                 scale.corrected = TRUE)
 print(corrected)
 syntax <- corrected$syntax
 data   <- corrected$data

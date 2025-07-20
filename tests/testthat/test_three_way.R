@@ -101,6 +101,20 @@ model <- '
 
 est <- modsem(model, data, method = "dblcent")
 summary(est, H0 = FALSE)
+# n = 100,000
+#> Regressions:
+#>                     Estimate  Std.Err  z-value  P(>|z|)
+#>  Y ~                                                 
+#>    X     (true: 1.2)   1.199    0.012  103.820    0.000
+#>    Z     (true: 0.4)   0.383    0.008   46.859    0.000
+#>    W     (true: 0.7)   0.699    0.010   68.139    0.000
+#>    XZ    (true: 1.2)   1.181    0.008  145.896    0.000
+#>    XW    (true: 0.7)   0.710    0.007   95.378    0.000
+#>    ZW    (true: 0.2)   0.199    0.008   25.132    0.000
+#>    XZW   (true: 2.2)   2.198    0.005  486.690    0.000
+
+est <- modsem(model, data, method = "dblcent", match = TRUE)
+summary(est, H0 = FALSE)
 # n = 10,000
 #> Regressions:
 #>                    Estimate  Std.Err  z-value  P(>|z|)
@@ -112,31 +126,33 @@ summary(est, H0 = FALSE)
 #>     XW  (true: 0.7)   0.678    0.008   90.412    0.000
 #>     ZW  (true: 0.2)   0.213    0.008   26.954    0.000
 #>     XZW (true: 2.2)   2.216    0.004  503.945    0.000
-est <- modsem(model, data, method = "dblcent", match = TRUE)
-summary(est, H0 = FALSE)
+
+est.rcs.1 <- modsem(model, data, method = "dblcent", rcs = TRUE,
+                    rcs.scale.corrected = FALSE)
+summary(est.rcs.1, H0 = FALSE)
+# n = 100,000
 #> Regressions:
 #>                    Estimate  Std.Err  z-value  P(>|z|)
 #>   Y ~                                                 
-#>     X   (true: 1.2)   1.192    0.012   97.960    0.000
-#>     Z   (true: 0.4)   0.397    0.008   47.377    0.000
-#>     W   (true: 0.7)   0.699    0.011   65.709    0.000
-#>     XZ  (true: 1.2)   1.195    0.008  145.091    0.000
-#>     XW  (true: 0.7)   0.688    0.008   89.628    0.000
-#>     ZW  (true: 0.2)   0.178    0.008   21.835    0.000
-#>     XZW (true: 2.2)   2.176    0.004  486.566    0.000
+#>     X   (true: 1.2)   0.987    0.013   77.095    0.000
+#>     Z   (true: 0.4)   0.010    0.010    1.058    0.290
+#>     W   (true: 0.7)   0.349    0.012   29.759    0.000
+#>     XZ  (true: 1.2)   1.340    0.010  134.033    0.000
+#>     XW  (true: 0.7)   0.819    0.009   88.521    0.000
+#>     ZW  (true: 0.2)   0.226    0.010   22.749    0.000
+#>     XZW (true: 2.2)   3.076    0.007  458.627    0.000
 
-
-est <- modsem(model, data, method = "dblcent", rcs = TRUE)
-summary(est, H0 = FALSE)
-
-
+est.rcs.2 <- modsem(model, data, method = "dblcent", rcs = TRUE,
+                    rcs.scale.corrected = TRUE)
+summary(est.rcs.2, H0 = FALSE)
+# n = 100,000
 #> Regressions:
 #>                    Estimate  Std.Err  z-value  P(>|z|)
 #>   Y ~                                                 
-#>     X   (true: 1.2)   0.979    0.013   76.464    0.000
-#>     Z   (true: 0.4)   0.069    0.009    7.280    0.000
-#>     W   (true: 0.7)   0.384    0.012   33.288    0.000
-#>     XZ  (true: 1.2)   1.388    0.010  142.664    0.000
-#>     XW  (true: 0.7)   0.770    0.009   84.243    0.000
-#>     ZW  (true: 0.2)   0.220    0.010   22.208    0.000
-#>     XZW (true: 2.2)   3.032    0.006  486.156    0.000
+#>     X   (true: 1.2)   1.140    0.011   99.303    0.000
+#>     Z   (true: 0.4)   0.257    0.008   30.394    0.000
+#>     W   (true: 0.7)   0.570    0.010   54.834    0.000
+#>     XZ  (true: 1.2)   1.157    0.008  148.849    0.000
+#>     XW  (true: 0.7)   0.702    0.007   96.244    0.000
+#>     ZW  (true: 0.2)   0.215    0.008   27.781    0.000
+#>     XZW (true: 2.2)   2.228    0.004  539.335    0.000

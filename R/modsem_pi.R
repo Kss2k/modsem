@@ -97,6 +97,10 @@
 #'   the estimates of the residual (co-)variances between the product indicators formed
 #'   by reliabiliyt-corrected single items (see the \code{rcs.res.cov.xz} argument).
 #'
+#' @param rcs.scale.corrected Should reliablity corrected items be scale-corrected? If \code{TRUE}
+#'   reliability-corrected single items are corrected for differences in factor loadings between
+#'   the items.
+#' 
 #' @param LAVFUN Function used to estimate the model. Defaults to \code{lavaan::sem}.
 #'
 #' @param ... arguments passed to \code{LAVFUN}
@@ -197,6 +201,7 @@ modsem_pi <- function(model.syntax = NULL,
                       rcs.choose = NULL,
                       rcs.res.cov.xz = rcs,
                       rcs.mc.reps = 1e5,
+                      rcs.scale.corrected = FALSE,
                       LAVFUN = lavaan::sem,
                       ...) {
   stopif(is.null(model.syntax), "No model syntax provided in modsem")
@@ -234,6 +239,7 @@ modsem_pi <- function(model.syntax = NULL,
       rcs = rcs,
       rcs.choose = rcs.choose,
       rcs.mc.reps = rcs.mc.reps,
+      rcs.scale.corrected = rcs.scale.corrected,
       LAVFUN = lavaan::sem,
       ...
     )
@@ -248,9 +254,11 @@ modsem_pi <- function(model.syntax = NULL,
       rcs.choose <- rcs.choose[!grepl(":", rcs.choose)]
 
     corrected <- relcorr_single_item(
-      syntax = model.syntax, 
-      data   = data,
-      choose = rcs.choose
+      syntax          = model.syntax, 
+      data            = data,
+      choose          = rcs.choose,
+      scale.corrected = rcs.scale.corrected,
+      warn.lav        = FALSE
     )
 
     model.syntax <- corrected$syntax
@@ -756,6 +764,7 @@ modsemPICluster <- function(model.syntax = NULL,
                             rcs.choose = NULL,
                             rcs.res.cov.xz = rcs,
                             rcs.mc.reps = 1e5,
+                            rcs.scale.corrected = FALSE,
                             LAVFUN = lavaan::sem,
                             ...) {
   stopif(na.rm, "`na.rm=TRUE` can currently not be paired with the `cluster` argument!")
@@ -804,6 +813,7 @@ modsemPICluster <- function(model.syntax = NULL,
       rcs.choose = rcs.choose,
       rcs.res.cov.xz = rcs.res.cov.xz,
       rcs.mc.reps = rcs.mc.reps,
+      rcs.scale.corrected = rcs.scale.corrected
     ) |> stringr::str_replace_all(pattern = "\n", replacement = "\n\t")
 
     newBlockData <- get_pi_data(
@@ -831,7 +841,8 @@ modsemPICluster <- function(model.syntax = NULL,
       rcs = rcs,
       rcs.choose = rcs.choose,
       rcs.res.cov.xz = rcs.res.cov.xz,
-      rcs.mc.reps = rcs.mc.reps
+      rcs.mc.reps = rcs.mc.reps,
+      rcs.scale.corrected = rcs.scale.corrected
     )
 
     if (is.null(newData)) {

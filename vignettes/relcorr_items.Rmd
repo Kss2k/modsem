@@ -56,14 +56,10 @@ extracted using the `$` operator, and used to estimate the model.
 syntax <- corrected$syntax
 data   <- corrected$data
 
-est_dca <- modsem(syntax, data = data, method = "dblcent", rcs.res.cov.xz = TRUE)
+est_dca <- modsem(syntax, data = data, method = "dblcent")
 est_lms <- modsem(syntax, data = data, method="lms", nodes=32)
 summary(est_lms)
 ```
-
-The `rcs.res.cov.xz` argument should be used when using one of the PI approaches (excluding
-the constrained approach) to apply reliability corrections to the generated product
-indicators (created from reliability-corrected single-items) as well.
 
 The easiest approach however, is to use the `rcs` argument in the `modsem` function
 to call `relcorr_single_item` before estimating the model.
