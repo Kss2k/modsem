@@ -25,6 +25,9 @@ If you have issues installing the package on `macOS`, you might need to install 
 A `C++` compiler is also required, but should be installed by default on most systems.
 See the [R for macOs](https://cran.r-project.org/bin/macosx/tools/) page for more information.
 
+If you're using `Windows`, consider installing [`OpenBLAS in R for Windows`](https://github.com/david-cortes/R-openblas-in-windows) 
+for better perfmance.
+
 # Methods/Approaches
 
 There are a number of approaches for estimating interaction effects in SEM. 
