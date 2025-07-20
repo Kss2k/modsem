@@ -65,6 +65,7 @@
 <span>  integration <span class="op">=</span> <span class="fl">15</span>,</span>
 <span>  rcs <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  rcs.choose <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  rcs.scale.corrected <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -110,6 +111,12 @@ single item indicators instead? See <code><a href="relcorr_single_item.html">rel
 <dd><p>Which latent variables should get their indicators replaced with
 reliability-corrected single items? It is passed to <code><a href="relcorr_single_item.html">relcorr_single_item</a></code>
 as the <code>choose</code> argument.</p></dd>
+
+
+<dt id="arg-rcs-scale-corrected">rcs.scale.corrected<a class="anchor" aria-label="anchor" href="#arg-rcs-scale-corrected"></a></dt>
+<dd><p>Should reliability corrected items be scale-corrected? If <code>TRUE</code>
+reliability-corrected single items are corrected for differences in factor loadings between
+the items.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>

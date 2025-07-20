@@ -67,7 +67,13 @@ composite variables, so that you can fit the full SEM in a single step.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">relcorr_single_item</span><span class="op">(</span><span class="va">syntax</span>, <span class="va">data</span>, choose <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">relcorr_single_item</span><span class="op">(</span></span>
+<span>  <span class="va">syntax</span>,</span>
+<span>  <span class="va">data</span>,</span>
+<span>  choose <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  scale.corrected <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  warn.lav <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -88,6 +94,17 @@ holds the raw observed indicators.</p></dd>
 <dd><p><em>Optional.</em> Character vector with the names of the latent
 variables you wish to replace by single indicators.  Defaults to <strong>all</strong>
 first‑order latent variables in <code>syntax</code>.</p></dd>
+
+
+<dt id="arg-scale-corrected">scale.corrected<a class="anchor" aria-label="anchor" href="#arg-scale-corrected"></a></dt>
+<dd><p>Should reliability corrected items be scale-corrected? If <code>TRUE</code>
+reliability-corrected single items are corrected for differences in factor loadings between
+the items.</p></dd>
+
+
+<dt id="arg-warn-lav">warn.lav<a class="anchor" aria-label="anchor" href="#arg-warn-lav"></a></dt>
+<dd><p>Should warnings from <code><a href="https://rdrr.io/pkg/lavaan/man/cfa.html" class="external-link">lavaan::cfa</a></code> be displayed? If <code>FALSE</code>, they
+are suppressed.</p></dd>
 
 </dl></div>
     <div class="section level2">
