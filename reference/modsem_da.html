@@ -120,7 +120,7 @@ necessary syntax, and variables for the estimation of models with latent product
 <span>  em.control <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  rcs <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  rcs.choose <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  rcs.scale.corrected <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  rcs.scale.corrected <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  orthogonal.x <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  orthogonal.y <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  auto.fix.first <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -343,7 +343,7 @@ optimization steps when needed. Default is <code>"EM"</code>.</p></dd>
 
 
 <dt id="arg-rcs">rcs<a class="anchor" aria-label="anchor" href="#arg-rcs"></a></dt>
-<dd><p>Should latent variable indicators be replaced with reliablity-corrected
+<dd><p>Should latent variable indicators be replaced with reliability-corrected
 single item indicators instead? See <code><a href="relcorr_single_item.html">relcorr_single_item</a></code>.</p></dd>
 
 
@@ -354,9 +354,9 @@ as the <code>choose</code> argument.</p></dd>
 
 
 <dt id="arg-rcs-scale-corrected">rcs.scale.corrected<a class="anchor" aria-label="anchor" href="#arg-rcs-scale-corrected"></a></dt>
-<dd><p>Should reliablity corrected items be scale-corrected? If <code>TRUE</code>
+<dd><p>Should reliability-corrected items be scale-corrected? If <code>TRUE</code>
 reliability-corrected single items are corrected for differences in factor loadings between
-the items.</p></dd>
+the items. Default is <code>TRUE</code>.</p></dd>
 
 
 <dt id="arg-orthogonal-x">orthogonal.x<a class="anchor" aria-label="anchor" href="#arg-orthogonal-x"></a></dt>

@@ -71,7 +71,7 @@ composite variables, so that you can fit the full SEM in a single step.</p>
 <span>  <span class="va">syntax</span>,</span>
 <span>  <span class="va">data</span>,</span>
 <span>  choose <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  scale.corrected <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  scale.corrected <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  warn.lav <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -97,9 +97,9 @@ first‑order latent variables in <code>syntax</code>.</p></dd>
 
 
 <dt id="arg-scale-corrected">scale.corrected<a class="anchor" aria-label="anchor" href="#arg-scale-corrected"></a></dt>
-<dd><p>Should reliability corrected items be scale-corrected? If <code>TRUE</code>
+<dd><p>Should reliability-corrected items be scale-corrected? If <code>TRUE</code>
 reliability-corrected single items are corrected for differences in factor loadings between
-the items.</p></dd>
+the items. Default is <code>TRUE</code>.</p></dd>
 
 
 <dt id="arg-warn-lav">warn.lav<a class="anchor" aria-label="anchor" href="#arg-warn-lav"></a></dt>
@@ -184,19 +184,19 @@ by supplying <code>syntax = $syntax</code> and <code>data = $data</code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   PBC =~ 1*composite_PBC_</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   INT =~ 1*composite_INT_</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   BEH =~ 1*composite_BEH_</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   composite_ATT_ ~~ 0.230703252252833*composite_ATT_</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   composite_SN_ ~~ 0.219569422798239*composite_SN_</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   composite_PBC_ ~~ 0.269459429965901*composite_PBC_</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   composite_INT_ ~~ 0.0783705643995773*composite_INT_</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   composite_BEH_ ~~ 0.276556964349188*composite_BEH_</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   composite_ATT_ ~~ 0.261238305705924*composite_ATT_</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   composite_SN_ ~~ 0.168932578899161*composite_SN_</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   composite_PBC_ ~~ 0.339024670490075*composite_PBC_</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   composite_INT_ ~~ 0.0800211390420975*composite_INT_</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   composite_BEH_ ~~ 0.36503257276914*composite_BEH_</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Generated Items:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   'data.frame':	1169 obs. of  5 variables:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     $ composite_ATT_: num  5.5 5 2 5.5 4.5 1 1 1 4.25 6.25 ...</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     $ composite_SN_ : num  6.5 4.75 3.5 6.5 5.25 3 2.25 4 4.5 6 ...</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     $ composite_PBC_: num  4 4.5 1.75 5.75 5.5 1 1 1 5 5.75 ...</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     $ composite_INT_: num  4 4.5 1 5.25 5.25 1 1 1 5 5 ...</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     $ composite_BEH_: num  1 3.75 1.25 2.75 5.25 1 1 1 2.5 5.5 ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     $ composite_ATT_: num  6.03 5.49 2.19 6.03 4.94 ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     $ composite_SN_ : num  5.57 4.07 3 5.57 4.5 ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     $ composite_PBC_: num  4.44 5 1.94 6.39 6.11 ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     $ composite_INT_: num  4.06 4.56 1.01 5.32 5.32 ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     $ composite_BEH_: num  1.11 4.17 1.39 3.06 5.84 ...</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">syntax</span> <span class="op">&lt;-</span> <span class="va">corrected</span><span class="op">$</span><span class="va">syntax</span></span></span>
 <span class="r-in"><span><span class="va">data</span>   <span class="op">&lt;-</span> <span class="va">corrected</span><span class="op">$</span><span class="va">data</span></span></span>
@@ -210,10 +210,10 @@ by supplying <code>syntax = $syntax</code> and <code>data = $data</code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Estimator                                         LMS</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Optimization method                        EMA-NLMINB</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Number of observations                           1169</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Number of iterations                              101</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Loglikelihood                                -7275.51</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Akaike (AIC)                                 14589.02</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Bayesian (BIC)                               14685.24</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Number of iterations                              103</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Loglikelihood                                -7467.84</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Akaike (AIC)                                 14973.67</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Bayesian (BIC)                               15069.89</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Numerical Integration:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Points of integration (per dim)                    32</span>
@@ -221,26 +221,26 @@ by supplying <code>syntax = $syntax</code> and <code>data = $data</code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Total points of integration                        32</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Fit Measures for Baseline Model (H0):</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Loglikelihood                                -9352.47</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Akaike (AIC)                                 18740.95</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Bayesian (BIC)                                18832.1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Chi-square                                      34.76</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Loglikelihood                                -9543.07</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Akaike (AIC)                                 19122.14</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Bayesian (BIC)                               19213.29</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Chi-square                                      34.39</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of Freedom (Chi-square)                     2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   P-value (Chi-square)                            0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   RMSEA                                           0.118</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Comparative Fit to H0 (LRT test):</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Loglikelihood change                          2076.96</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Difference test (D)                           4153.92</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Loglikelihood change                          2075.23</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Difference test (D)                           4150.46</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of freedom (D)                              1</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   P-value (D)                                     0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> R-Squared Interaction Model (H1):</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   INT                                             0.855</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   BEH                                             0.933</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   INT                                             0.857</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   BEH                                             0.937</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> R-Squared Baseline Model (H0):</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   INT                                             0.856</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   BEH                                             0.869</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   INT                                             0.858</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   BEH                                             0.873</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> R-Squared Change (H1 - H0):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   INT                                            -0.001</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   BEH                                             0.064</span>
@@ -266,42 +266,42 @@ by supplying <code>syntax = $syntax</code> and <code>data = $data</code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Regressions:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   INT ~         </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC             1.078      0.050   21.492    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     ATT            -0.018      0.046   -0.385    0.700</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     SN              0.013      0.031    0.424    0.672</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC             0.991      0.046   21.712    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     ATT            -0.022      0.042   -0.528    0.597</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     SN              0.015      0.037    0.390    0.697</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   BEH ~         </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC             0.718      0.045   15.989    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     INT             0.285      0.038    7.468    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC:INT         0.149      0.008   18.006    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC             0.726      0.045   16.005    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     INT             0.307      0.042    7.262    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC:INT         0.148      0.008   18.024    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Intercepts:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .cmpst_PBC_      3.893      0.057   67.735    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .cmpst_ATT_      3.870      0.058   66.992    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .compst_SN_      4.430      0.048   93.181    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .cmpst_INT_      3.784      0.065   58.509    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .cmpst_BEH_      2.602      0.069   37.640    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .cmpst_PBC_      4.323      0.064   67.722    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .cmpst_ATT_      4.246      0.063   66.982    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .compst_SN_      3.797      0.041   93.173    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .cmpst_INT_      3.835      0.066   58.497    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .cmpst_BEH_      2.891      0.077   37.603    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Covariances:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   PBC ~~        </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     ATT             3.253      0.148   22.000    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     SN              2.132      0.112   19.013    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     ATT             3.964      0.180   21.998    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     SN              2.028      0.107   19.004    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   ATT ~~        </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     SN              2.028      0.111   18.263    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     SN              1.907      0.104   18.262    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Variances:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .cmpst_PBC_      0.269                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .cmpst_ATT_      0.231                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .compst_SN_      0.220                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .cmpst_INT_      0.078                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .cmpst_BEH_      0.277                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC             3.595      0.160   22.509    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     ATT             3.673      0.161   22.753    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     SN              2.423      0.109   22.167    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .INT             0.696      0.045   15.541    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .BEH             0.325      0.031   10.387    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .cmpst_PBC_      0.339                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .cmpst_ATT_      0.261                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .compst_SN_      0.169                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .cmpst_INT_      0.080                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .cmpst_BEH_      0.365                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC             4.427      0.197   22.473    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     ATT             4.438      0.194   22.837    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     SN              1.773      0.080   22.071    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .INT             0.709      0.046   15.353    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .BEH             0.376      0.039    9.694    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>
