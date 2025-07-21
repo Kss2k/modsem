@@ -19,9 +19,9 @@
 #'   variables you wish to replace by single indicators.  Defaults to \strong{all}
 #'   first‑order latent variables in \code{syntax}.
 #'   
-#' @param scale.corrected Should reliability corrected items be scale-corrected? If \code{TRUE}
+#' @param scale.corrected Should reliability-corrected items be scale-corrected? If \code{TRUE}
 #'   reliability-corrected single items are corrected for differences in factor loadings between
-#'   the items.
+#'   the items. Default is \code{TRUE}.
 #'
 #' @param warn.lav Should warnings from \code{lavaan::cfa} be displayed? If \code{FALSE}, they
 #'   are suppressed.
@@ -66,7 +66,10 @@
 #' }
 #'
 #' @export
-relcorr_single_item <- function(syntax, data, choose = NULL, scale.corrected = FALSE,
+relcorr_single_item <- function(syntax, 
+                                data, 
+                                choose = NULL, 
+                                scale.corrected = TRUE,
                                 warn.lav = TRUE) {
   data <- as.data.frame(data)
 

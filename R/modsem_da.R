@@ -140,16 +140,16 @@
 #'
 #' @param em.control a list of control parameters for the EM algorithm. See \code{\link{default_settings_da}} for defaults.
 #'
-#' @param rcs Should latent variable indicators be replaced with reliablity-corrected
+#' @param rcs Should latent variable indicators be replaced with reliability-corrected
 #'   single item indicators instead? See \code{\link{relcorr_single_item}}.
 #'
 #' @param rcs.choose Which latent variables should get their indicators replaced with
 #'   reliability-corrected single items? It is passed to \code{\link{relcorr_single_item}}
 #'   as the \code{choose} argument.
 #'   
-#' @param rcs.scale.corrected Should reliablity corrected items be scale-corrected? If \code{TRUE}
+#' @param rcs.scale.corrected Should reliability-corrected items be scale-corrected? If \code{TRUE}
 #'   reliability-corrected single items are corrected for differences in factor loadings between
-#'   the items.
+#'   the items. Default is \code{TRUE}.
 #'
 #' @param orthogonal.x If \code{TRUE}, all covariances among exogenous latent variables only are set to zero. 
 #'  Default is \code{FALSE}.
@@ -281,7 +281,7 @@ modsem_da <- function(model.syntax = NULL,
                       em.control = NULL,
                       rcs = FALSE,
                       rcs.choose = NULL,
-                      rcs.scale.corrected = FALSE,
+                      rcs.scale.corrected = TRUE,
                       orthogonal.x = NULL,
                       orthogonal.y = NULL,
                       auto.fix.first = NULL,

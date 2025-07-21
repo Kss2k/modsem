@@ -8,7 +8,7 @@ relcorr_single_item(
   syntax,
   data,
   choose = NULL,
-  scale.corrected = FALSE,
+  scale.corrected = TRUE,
   warn.lav = TRUE
 )
 }
@@ -23,9 +23,9 @@ holds the raw observed indicators.}
 variables you wish to replace by single indicators.  Defaults to \strong{all}
 first‑order latent variables in \code{syntax}.}
 
-\item{scale.corrected}{Should reliability corrected items be scale-corrected? If \code{TRUE}
+\item{scale.corrected}{Should reliability-corrected items be scale-corrected? If \code{TRUE}
 reliability-corrected single items are corrected for differences in factor loadings between
-the items.}
+the items. Default is \code{TRUE}.}
 
 \item{warn.lav}{Should warnings from \code{lavaan::cfa} be displayed? If \code{FALSE}, they
 are suppressed.}

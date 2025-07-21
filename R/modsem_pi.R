@@ -79,7 +79,7 @@
 #' @param suppress.warnings.lavaan should warnings from \code{lavaan} be suppressed?
 #' @param suppress.warnings.match should warnings from \code{match} be suppressed?
 #'
-#' @param rcs Should latent variable indicators be replaced with reliablity-corrected
+#' @param rcs Should latent variable indicators be replaced with reliability-corrected
 #'   single item indicators instead? See \code{\link{relcorr_single_item}}.
 #'
 #' @param rcs.choose Which latent variables should get their indicators replaced with
@@ -97,9 +97,9 @@
 #'   the estimates of the residual (co-)variances between the product indicators formed
 #'   by reliabiliyt-corrected single items (see the \code{rcs.res.cov.xz} argument).
 #'
-#' @param rcs.scale.corrected Should reliablity corrected items be scale-corrected? If \code{TRUE}
+#' @param rcs.scale.corrected Should reliability corrected items be scale-corrected? If \code{TRUE}
 #'   reliability-corrected single items are corrected for differences in factor loadings between
-#'   the items.
+#'   the items. Default is \code{TRUE}.
 #' 
 #' @param LAVFUN Function used to estimate the model. Defaults to \code{lavaan::sem}.
 #'
@@ -201,7 +201,7 @@ modsem_pi <- function(model.syntax = NULL,
                       rcs.choose = NULL,
                       rcs.res.cov.xz = rcs,
                       rcs.mc.reps = 1e5,
-                      rcs.scale.corrected = FALSE,
+                      rcs.scale.corrected = TRUE,
                       LAVFUN = lavaan::sem,
                       ...) {
   stopif(is.null(model.syntax), "No model syntax provided in modsem")

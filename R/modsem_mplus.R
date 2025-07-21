@@ -8,16 +8,16 @@
 #' @param processors processors argument passed to \code{Mplus}
 #' @param integration integration argument passed to \code{Mplus}
 #'
-#' @param rcs Should latent variable indicators be replaced with reliablity-corrected
+#' @param rcs Should latent variable indicators be replaced with reliability-corrected
 #'   single item indicators instead? See \code{\link{relcorr_single_item}}.
 #'
 #' @param rcs.choose Which latent variables should get their indicators replaced with
 #'   reliability-corrected single items? It is passed to \code{\link{relcorr_single_item}}
 #'   as the \code{choose} argument.
 #'   
-#' @param rcs.scale.corrected Should reliability corrected items be scale-corrected? If \code{TRUE}
+#' @param rcs.scale.corrected Should reliability-corrected items be scale-corrected? If \code{TRUE}
 #'   reliability-corrected single items are corrected for differences in factor loadings between
-#'   the items.
+#'   the items. Default is \code{TRUE}.
 #'
 #' @param ... arguments passed to other functions
 #'
@@ -56,7 +56,7 @@ modsem_mplus <- function(model.syntax,
                          integration = 15,
                          rcs = FALSE,
                          rcs.choose = NULL,
-                         rcs.scale.corrected = FALSE,
+                         rcs.scale.corrected = TRUE,
                          ...) {
   if (rcs) { # use reliability-correct single items?
     corrected <- relcorr_single_item(

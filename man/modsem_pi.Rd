@@ -35,7 +35,7 @@ modsem_pi(
   rcs.choose = NULL,
   rcs.res.cov.xz = rcs,
   rcs.mc.reps = 1e+05,
-  rcs.scale.corrected = FALSE,
+  rcs.scale.corrected = TRUE,
   LAVFUN = lavaan::sem,
   ...
 )
@@ -121,7 +121,7 @@ If \code{FALSE} they are not removed.}
 
 \item{suppress.warnings.match}{should warnings from \code{match} be suppressed?}
 
-\item{rcs}{Should latent variable indicators be replaced with reliablity-corrected
+\item{rcs}{Should latent variable indicators be replaced with reliability-corrected
 single item indicators instead? See \code{\link{relcorr_single_item}}.}
 
 \item{rcs.choose}{Which latent variables should get their indicators replaced with
@@ -139,9 +139,9 @@ are constrained to zero.}
 the estimates of the residual (co-)variances between the product indicators formed
 by reliabiliyt-corrected single items (see the \code{rcs.res.cov.xz} argument).}
 
-\item{rcs.scale.corrected}{Should reliablity corrected items be scale-corrected? If \code{TRUE}
+\item{rcs.scale.corrected}{Should reliability corrected items be scale-corrected? If \code{TRUE}
 reliability-corrected single items are corrected for differences in factor loadings between
-the items.}
+the items. Default is \code{TRUE}.}
 
 \item{LAVFUN}{Function used to estimate the model. Defaults to \code{lavaan::sem}.}
 

@@ -14,7 +14,7 @@ modsem_mplus(
   integration = 15,
   rcs = FALSE,
   rcs.choose = NULL,
-  rcs.scale.corrected = FALSE,
+  rcs.scale.corrected = TRUE,
   ...
 )
 }
@@ -33,16 +33,16 @@ modsem_mplus(
 
 \item{integration}{integration argument passed to \code{Mplus}}
 
-\item{rcs}{Should latent variable indicators be replaced with reliablity-corrected
+\item{rcs}{Should latent variable indicators be replaced with reliability-corrected
 single item indicators instead? See \code{\link{relcorr_single_item}}.}
 
 \item{rcs.choose}{Which latent variables should get their indicators replaced with
 reliability-corrected single items? It is passed to \code{\link{relcorr_single_item}}
 as the \code{choose} argument.}
 
-\item{rcs.scale.corrected}{Should reliability corrected items be scale-corrected? If \code{TRUE}
+\item{rcs.scale.corrected}{Should reliability-corrected items be scale-corrected? If \code{TRUE}
 reliability-corrected single items are corrected for differences in factor loadings between
-the items.}
+the items. Default is \code{TRUE}.}
 
 \item{...}{arguments passed to other functions}
 }
