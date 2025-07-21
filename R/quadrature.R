@@ -60,26 +60,84 @@ adaptiveGaussQuadrature <- function(fun,
                                     b = 7, 
                                     m = 32,
                                     m.ceil = m + m / 2,
-                                    k = 1, 
-                                    iter = 1,
+                                    k = 1,
                                     iter.max = 10,
                                     node.max = 1000,
                                     tol = 1e-12,
                                     mdiff.tol = 2,
                                     ...) {
   if (k == 0 || m == 0) return(list(n = matrix(0), w = 1, f = NA, m = 1, k = 1))
+  
+  if (k <= 1) {
+    out <- adaptiveGaussQuadratureK(
+      fun = fun, collapse = collapse,
+      a = a, b = b, m = m, m.ceil = m.ceil,
+      k = 1, K = k, iter = 1, iter.max = iter.max,
+      node.max = node.max, tol = tol, 
+      mdiff.tol = mdiff.tol, ...
+    )
+
+    return(out)
+  }
+
+  a      <- rep(a, length.out = k)
+  b      <- rep(b, length.out = k)
+  m.ceil <- rep(m.ceil, length.out = k)
+
+  NODES     <- vector("list", k)
+  WEIGHTS   <- vector("list", k)
+  new.ceils <- integer(k)
+
+  for (i in seq_len(k)) {
+    QUAD <- adaptiveGaussQuadratureK(
+      fun = fun, collapse = collapse,
+      a = a[i], b = b[i], m = m, m.ceil = m.ceil[i],
+      k = i, K = k, iter = 1, iter.max = iter.max,
+      node.max = node.max, tol = tol, 
+      mdiff.tol = mdiff.tol, ...
+    )
+
+    NODES[[i]]     <- QUAD$n[, i]
+    WEIGHTS[[i]]   <- QUAD$w
+    new.ceils[[i]] <- QUAD$m.ceil
+  }
+
+  quadn <- as.matrix(expand.grid(NODES))
+  quadw <- apply(expand.grid(WEIGHTS), MARGIN = 1, prod)
+  quadf <- fun(quadn, ...)
+  quadW <- matrix(quadw, nrow = nrow(quadf), ncol = length(quadw), byrow = TRUE)
+
+  list(n = quadn,
+       w = quadw,
+       W = quadW,
+       F = quadf,
+       m.ceil = new.ceils)
+}
+
+
+adaptiveGaussQuadratureK <- function(fun, 
+                                     collapse = \(x) x, # function to collapse the results, if 'relevant'
+                                     a = -7, 
+                                     b = 7, 
+                                     m = 32,
+                                     m.ceil = m + m / 2,
+                                     k = 1,
+                                     K = 1,
+                                     iter = 1,
+                                     iter.max = 10,
+                                     node.max = 1000,
+                                     tol = 1e-12,
+                                     mdiff.tol = 2,
+                                     ...) {
+  if (k == 0 || m == 0) return(list(n = matrix(0), w = 1, f = NA, m = 1, k = 1))
 
   quad  <- quadrature(m = m.ceil, k = 1)
 
-  if (k > 1) { # more computationally efficient/scalable
-    # quad$n <- matrix(rep(quad$n, k), ncol = k, nrow = NROW(quad$n))
-    # quad$w <- quad$w ^ k
-    quad$n <- rbind(cbind(quad$n, 0),
-                    cbind(0, quad$n))
-    quad$w <- c(quad$w, quad$w)
-  }
+  if (K > 1) { # more computationally efficient/scalable
+    quadn <- matrix(0, nrow = m.ceil, ncol = K)
+    quadn[,k] <- quad$n
+  } else quadn <- quad$n
   
-  quadn <- quad$n
   quadf <- fun(quadn, ...)
   quadw <- matrix(quad$w, ncol = length(quad$w), nrow = NROW(quadf), byrow = TRUE)
 
@@ -137,7 +195,7 @@ adaptiveGaussQuadrature <- function(fun,
   lower  <- min(quadn)
   upper <- max(quadn)
 
-  diff.m <- NROW(quadn)/k - m
+  diff.m <- NROW(quadn) - m
 
   # Calculate next ceiling
   if (abs(diff.m) > 2 * mdiff.tol) {
@@ -153,13 +211,14 @@ adaptiveGaussQuadrature <- function(fun,
 
   if (!converged && OKIter && OKNextCeil) {
 
-    return(adaptiveGaussQuadrature(
+    return(adaptiveGaussQuadratureK(
       fun = fun, 
       collapse = collapse, 
       a = a, 
       b = b, 
       k = k, 
-      m = m, 
+      K = K,
+      m = m,
       m.ceil = new.ceil, 
       iter = iter + 1,
       tol = tol,
@@ -173,19 +232,6 @@ adaptiveGaussQuadrature <- function(fun,
   warnif(iter >= iter.max, 
          "Maximum number of iterations reached when calculating adaptive quadrature!\n",
          "Try lowering the number of nodes, or increase `quad.range` argument!")
-
-  if (k > 1) {
-    quad  <- quadrature(m = m.ceil, k = 2)
-    quadn <- quad$n
-    quadw <- quad$w
-
-    outside <- apply(quadn, MARGIN = 1, FUN = \(x) any(x < lower | x > upper))
-    quadn <- quadn[!outside, , drop = FALSE]
-    quadw <- quadw[!outside]
-
-    quadf <- fun(quadn, ...)
-    quadw <- matrix(quadw, ncol = length(quadw), nrow = NROW(quadf), byrow = TRUE)
-  }
 
   # only need to calculate this before returning the final version
   integral.reduced <- collapse(quadf * quadw)
