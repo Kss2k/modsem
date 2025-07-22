@@ -263,7 +263,10 @@ in the <code>modsem</code> function to call
 <code>relcorr_single_item</code> before estimating the model.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">est_dca</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">tpb_uk</span>, data <span class="op">=</span> <span class="va">TPB_UK</span>, method <span class="op">=</span> <span class="st">"dblcent"</span>, rcs <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="va">est_lms</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">tpb_uk</span>, data <span class="op">=</span> <span class="va">TPB_UK</span>, method <span class="op">=</span> <span class="st">"lms"</span>, rcs <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">est_lms</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">tpb_uk</span>, data <span class="op">=</span> <span class="va">TPB_UK</span>, method <span class="op">=</span> <span class="st">"lms"</span>, rcs <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning: It is recommended that you have at least 32 nodes for interaction</span></span>
+<span><span class="co">#&gt; effects between exogenous and endogenous variables in the lms approach 'nodes =</span></span>
+<span><span class="co">#&gt; 24'</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="choosing-variables">Choosing Variables<a class="anchor" aria-label="anchor" href="#choosing-variables"></a>
