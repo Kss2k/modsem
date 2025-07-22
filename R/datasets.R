@@ -123,7 +123,7 @@ NULL
 #' @source
 #' Gathered from a replication study by Hagger et al. (2023).
 #' 
-#' Obtained from \url{https://doi.org/10.23668/psycharchives.12187}
+#' Obtained from \doi{10.23668/psycharchives.12187}
 #'
 #' @examples
 #'
