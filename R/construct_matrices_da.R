@@ -470,8 +470,8 @@ getScalingLambdaY <- function(lambdaY, indsEtas, etas, method = "qml") {
 sortXisConstructOmega <- function(xis, varsInts, etas, intTerms,
                                   method = "lms", double = FALSE) {
   checkVarsIntsDA(varsInts, lVs = c(etas, xis))
-  listSortedXis  <- sortXis(xis = xis, varsInts = varsInts, etas = etas,
-                            intTerms = intTerms, double = double)
+  listSortedXis <- sortXis(xis = xis, varsInts = varsInts, etas = etas,
+                           intTerms = intTerms, double = double)
   sortedXis    <- listSortedXis$sortedXis
   nonLinearXis <- listSortedXis$nonLinearXis
 
@@ -501,6 +501,7 @@ sortXis <- function(xis, varsInts, etas, intTerms, double) {
 
   sortedXis <- c(allVarsInInts, xis[!xis %in% allVarsInInts])
   nonLinearXis <- character(0L)
+  
   for (interaction in varsInts) {
     if (any(interaction %in% nonLinearXis) && !double ||
         all(interaction %in% nonLinearXis) && double) next # no need to add it again
@@ -509,7 +510,9 @@ sortXis <- function(xis, varsInts, etas, intTerms, double) {
     stopif(all(interaction %in% etas), "Interactions between two endogenous ",
            "variables are not allowed, see \nvignette(\"interaction_two_etas\", \"modsem\")")
 
-    choice <- unique(interaction[which(!interaction %in% etas)])
+    choice <- unique(interaction[which(!interaction %in% etas &
+                                       !interaction %in% nonLinearXis)])
+
     if (length(choice) > 1 && !double) {
       freq <- freqInIntTerms[choice, "freq"]
       choice <- choice[whichIsMax(freq)][[1]] # pick first if both are equal
