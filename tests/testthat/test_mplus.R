@@ -34,8 +34,10 @@ tpb <- "
   BEH ~ INT + PBC + INT:PBC
 "
 
-if (run) mplus_tpb <- modsem(tpb, data = TPB, method = "mplus", rcs = TRUE)
-
+if (run) {
+  mplus_tpb <- modsem(tpb, data = TPB, method = "mplus", rcs = TRUE)
+  standardized_estimates(mplus_tpb, type = "stdyx")
+}
 
 tpb <- "
 # Outer Model (Based on Hagger et al., 2007)

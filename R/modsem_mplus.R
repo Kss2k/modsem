@@ -140,8 +140,8 @@ modsem_mplus <- function(model.syntax,
                                         indicators = indicators)
 
   # coef and vcov
-  isfree <- coefsTable$p.value != 999
-  labels <- coefsTable$label[isfree]
+  isfree <- coefsTable$pval != 999
+  labels <- stringr::str_remove_all(coefsTable$Label[isfree], pattern = " ")
   coefs  <- structure(coefsTable$est[isfree], names = labels)
 
   vcov <- tryCatch({
