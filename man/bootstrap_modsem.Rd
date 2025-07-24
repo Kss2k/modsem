@@ -150,7 +150,7 @@ boot <- bootstrap_modsem(model = modsem,
                          model.syntax = tpb, data = TPB,
                          method = "dblcent", rcs = TRUE, 
                          rcs.scale.corrected = TRUE,
-                         FUN = "coef")
+                         FUN = "coef", R = 50L) 
 coef <- apply(boot, MARGIN = 2, FUN = mean, na.rm = TRUE)
 se   <- apply(boot, MARGIN = 2, FUN = sd, na.rm = TRUE)
 
