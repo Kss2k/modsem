@@ -143,7 +143,7 @@ adaptiveGaussQuadratureK <- function(fun,
 
   integral.full <- collapse(quadf * quadw)
 
-  zeroInfoNodes <- apply(quadw * quadf, MARGIN=2, FUN = \(x) sum(x) <= .Machine$double.xmin * 2)
+  zeroInfoNodes <- apply(quadw * quadf, MARGIN=2, FUN = \(x) sum(x) <= .Machine$double.xmin)
   nodesOutside  <- apply(quadn, MARGIN = 1, FUN = \(x) any(x < a | x > b))
   isValidNode   <- !(zeroInfoNodes | nodesOutside)
 

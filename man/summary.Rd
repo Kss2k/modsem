@@ -32,7 +32,7 @@
 \method{summary}{modsem_mplus}(
   object,
   scientific = FALSE,
-  standardize = FALSE,
+  standardized = FALSE,
   ci = FALSE,
   digits = 3,
   loadings = TRUE,
@@ -72,7 +72,7 @@ comparative fit?}
 
 \item{ci}{print confidence intervals}
 
-\item{standardized}{print standardized estimates}
+\item{standardized}{standardize estimates}
 
 \item{centered}{print mean centered estimates}
 
@@ -96,8 +96,6 @@ and \code{standardized = TRUE}.}
 from the output}
 
 \item{...}{arguments passed to lavaan::summary()}
-
-\item{standardize}{standardize estimates}
 }
 \description{
 summary for modsem objects
