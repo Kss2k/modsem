@@ -75,6 +75,9 @@
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span>
 <span></span>
+<span><span class="co"># S3 method for class 'modsem_mplus'</span></span>
+<span><span class="fu">standardized_estimates</span><span class="op">(</span><span class="va">object</span>, type <span class="op">=</span> <span class="st">"stdyx"</span>, <span class="va">...</span><span class="op">)</span></span>
+<span></span>
 <span><span class="co"># S3 method for class 'modsem_pi'</span></span>
 <span><span class="fu">standardized_estimates</span><span class="op">(</span></span>
 <span>  <span class="va">object</span>,</span>
@@ -110,6 +113,10 @@ standard errors; if <code>FALSE</code>, use the delta method (default).</p></dd>
 
 <dt id="arg-tolerance-zero">tolerance.zero<a class="anchor" aria-label="anchor" href="#arg-tolerance-zero"></a></dt>
 <dd><p>Threshold below which standard errors are set to <code>NA</code>.</p></dd>
+
+
+<dt id="arg-type">type<a class="anchor" aria-label="anchor" href="#arg-type"></a></dt>
+<dd><p>Type of standardized estimates to retrieve. Can be one of: <code>"stdyx", "stdy", "std", "un"</code>.</p></dd>
 
 
 <dt id="arg-correction">correction<a class="anchor" aria-label="anchor" href="#arg-correction"></a></dt>
@@ -179,6 +186,7 @@ not <code>est.std</code>, regardless of model type.</p>
 
 <ul><li><p><code>standardized_estimates(lavaan)</code>: Method for <code>lavaan</code> objects</p></li>
 <li><p><code>standardized_estimates(modsem_da)</code>: Method for <code>modsem_da</code> objects</p></li>
+<li><p><code>standardized_estimates(modsem_mplus)</code>: Retrieve standardized estimates from <code><a href="modsem_mplus.html">modsem_mplus</a></code> object.</p></li>
 <li><p><code>standardized_estimates(modsem_pi)</code>: Method for <code>modsem_pi</code> objects</p></li>
 </ul></div>
 
