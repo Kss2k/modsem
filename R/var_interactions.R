@@ -124,7 +124,7 @@ varInteractionsMonteCarlo <- function(parTable, intTerms, ignore.means = FALSE, 
     XI[[intTerm]] <- multiplyIndicatorsCpp(XI[elems])
   }
 
-  Sigma.xz <- cov(XI)
+  Sigma.xz <- stats::cov(XI)
   isXZ <- \(x) x %in% intTerms
   isXi <- \(x) x %in% xis
   isOK <- \(x, z)  (isXZ(x) && isXi(z)) || (isXZ(z) && isXi(x))
