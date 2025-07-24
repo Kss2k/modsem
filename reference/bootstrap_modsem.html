@@ -344,7 +344,7 @@ to <code><a href="https://rdrr.io/pkg/lavaan/man/bootstrap.html" class="external
 <span class="r-in"><span>                         model.syntax <span class="op">=</span> <span class="va">tpb</span>, data <span class="op">=</span> <span class="va">TPB</span>,</span></span>
 <span class="r-in"><span>                         method <span class="op">=</span> <span class="st">"dblcent"</span>, rcs <span class="op">=</span> <span class="cn">TRUE</span>, </span></span>
 <span class="r-in"><span>                         rcs.scale.corrected <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
-<span class="r-in"><span>                         FUN <span class="op">=</span> <span class="st">"coef"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>                         FUN <span class="op">=</span> <span class="st">"coef"</span>, R <span class="op">=</span> <span class="fl">50L</span><span class="op">)</span> </span></span>
 <span class="r-in"><span><span class="va">coef</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span><span class="va">boot</span>, MARGIN <span class="op">=</span> <span class="fl">2</span>, FUN <span class="op">=</span> <span class="va">mean</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">se</span>   <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span><span class="va">boot</span>, MARGIN <span class="op">=</span> <span class="fl">2</span>, FUN <span class="op">=</span> <span class="va">sd</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
@@ -352,25 +352,25 @@ to <code><a href="https://rdrr.io/pkg/lavaan/man/bootstrap.html" class="external
 <span class="r-out co"><span class="r-pr">#&gt;</span> Parameter Estimates:</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">coef</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>        INT~ATT         INT~SN        INT~PBC        BEH~INT        BEH~PBC </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     0.21355519     0.17625531     0.21710382     0.18943361     0.22898572 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     0.21064177     0.17371320     0.21826009     0.19047476     0.22884408 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     BEH~INTPBC       ATT~~ATT         SN~~SN       PBC~~PBC       INT~~INT </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     0.20336938     0.99754989     0.98684728     0.96127940     0.48902043 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     0.20029927     1.00077490     0.98767221     0.95575485     0.48684160 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>       BEH~~BEH INTPBC~~INTPBC        ATT~~SN       ATT~~PBC    ATT~~INTPBC </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     0.45025841     1.00136848     0.62757842     0.67713341     0.08505076 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     0.45493022     0.98187014     0.62834518     0.67576214     0.08174600 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>        SN~~PBC     SN~~INTPBC    PBC~~INTPBC </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     0.67743622     0.05675458     0.08635358 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     0.67174267     0.05357099     0.08065211 </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Standard Errors: \n"</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Standard Errors: </span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">se</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>        INT~ATT         INT~SN        INT~PBC        BEH~INT        BEH~PBC </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     0.02616082     0.02604345     0.02929455     0.02303566     0.02135587 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     0.02179516     0.02874696     0.03060897     0.02590732     0.01933352 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     BEH~INTPBC       ATT~~ATT         SN~~SN       PBC~~PBC       INT~~INT </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     0.01892063     0.03815545     0.03785563     0.03639057     0.02012892 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     0.02245272     0.03847476     0.04044220     0.03699584     0.01935323 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>       BEH~~BEH INTPBC~~INTPBC        ATT~~SN       ATT~~PBC    ATT~~INTPBC </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     0.02454723     0.08776389     0.02783643     0.02944580     0.03248502 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     0.02626266     0.07504883     0.02947911     0.02879307     0.03194062 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>        SN~~PBC     SN~~INTPBC    PBC~~INTPBC </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     0.02847771     0.03066317     0.03650240 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     0.03039619     0.03055908     0.03852186 </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 </code></pre></div>
