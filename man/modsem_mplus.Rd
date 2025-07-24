@@ -15,6 +15,7 @@ modsem_mplus(
   rcs = FALSE,
   rcs.choose = NULL,
   rcs.scale.corrected = TRUE,
+  output.std = TRUE,
   ...
 )
 }
@@ -43,6 +44,8 @@ as the \code{choose} argument.}
 \item{rcs.scale.corrected}{Should reliability-corrected items be scale-corrected? If \code{TRUE}
 reliability-corrected single items are corrected for differences in factor loadings between
 the items. Default is \code{TRUE}.}
+
+\item{output.std}{Should \code{STANDARDIZED} be added to \code{OUTPUT}?}
 
 \item{...}{arguments passed to other functions}
 }
