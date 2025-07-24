@@ -16,6 +16,7 @@ run <- tryCatch({
 )
 if (run) {
   mplus <- modsem(m1, oneInt, method = "mplus", estimator = "MLR")
+  standardized_estimates(mplus, type = "modsem")
   print(summary(mplus))
   plot_interaction(x = "X", z = "Z", y = "Y", xz = "X:Z", vals_z = c(-0.5, 0.5), model = mplus)
 }
@@ -36,7 +37,8 @@ tpb <- "
 
 if (run) {
   mplus_tpb <- modsem(tpb, data = TPB, method = "mplus", rcs = TRUE)
-  standardized_estimates(mplus_tpb, type = "stdyx")
+  print(standardized_estimates(mplus_tpb, type = "modsem"))
+  print(standardized_estimates(mplus_tpb, type = "stdyx"))
 }
 
 tpb <- "
@@ -51,6 +53,7 @@ tpb <- "
 "
 
 if (run) {
-  mplus_tpb_3way <- modsem(tpb, data = TPB[1:250, ], method = "mplus", rcs = TRUE)
+  mplus_tpb_3way <- modsem(tpb, data = TPB[1:250, ], method = "mplus", rcs = TRUE,
+                           integration = 8)
   standardized_estimates(mplus_tpb_3way)
 }
