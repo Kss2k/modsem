@@ -7,11 +7,11 @@ transformedSolutionCOEFS <- function(object,
                                      center = TRUE,
                                      standardize = TRUE,
                                      ...) {
-  stopif(!inherits(object, c("modsem_da", "modsem_pi", "lavaan")),
-         "The model must be of class `modsem_da`, `modsem_pi` or `lavaan`!")
+  stopif(!inherits(object, c("modsem_da", "modsem_pi", "lavaan", "modsem_mplus")),
+         "The model must be of class `modsem_da`, `modsem_mplus`, `modsem_pi` or `lavaan`!")
 
   isLav <- inherits(object, "lavaan")
-  isDA  <- inherits(object, "modsem_da")
+  isDA  <- inherits(object, c("modsem_da", "modsem_mplus"))
 
   if (isLav) {
     vcov <- lavaan::vcov # load vcov and coef from lavaan if dealing with a lavaan object
@@ -39,7 +39,7 @@ transformedSolutionCOEFS <- function(object,
            "variances when centering the model!\n", immediate. = FALSE)
 
     if (isDA) parTable <- meanInteractions(parTable) # get means for interaction terms
-    parTable <- var_interactions(parTable, ignore.means = TRUE)
+    parTable <- var_interactions(parTable, ignore.means = TRUE, mc.reps = mc.reps)
   }
 
   lVs      <- getLVs(parTable)
@@ -212,8 +212,7 @@ transformedSolutionCOEFS <- function(object,
                                      COEFS.std = COEFS,
                                      COEFS.ustd = COEFS.ustd,
                                      variances = variances,
-                                     intTerms = intTerms
-    )
+                                     intTerms = intTerms)
 
   }
   # recalculate custom parameters
@@ -313,11 +312,9 @@ correctStdSolutionCOEFS <- function(parTable,
                                     variances,
                                     intTerms) {
   for (XZ in intTerms) {
-    elems <- stringr::str_split_fixed(XZ, ":", 2)
-    X     <- elems[[1]]
-    Z     <- elems[[2]]
+    elems <- stringr::str_split(XZ, pattern = ":")[[1L]]
 
-    vars  <- as.data.frame(variances[c(X, Z)])
+    vars  <- as.data.frame(variances[elems])
     sds   <- sqrt(vars)
 
     rowsXZ <- parTable[parTable$rhs == XZ & parTable$op == "~", , drop = FALSE]

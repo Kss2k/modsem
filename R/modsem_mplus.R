@@ -177,8 +177,9 @@ modsem_mplus <- function(model.syntax,
     coef     = coef,
     vcov     = vcov,
     std      = std,
-    info     = list(indicators = indicators,
-                    intTerms   = intTerms)
+    info     = list(indicators    = indicators,
+                    intTerms      = intTerms,
+                    intTermsMplus = intTermsMplus)
   )
 
   structure(modelSpec,
@@ -252,18 +253,6 @@ switchLavOpToMplus <- function(op) {
 }
 
 
-#' @export
-vcov.modsem_mplus <- function(object, ...) {
-  object$vcov
-}
-
-
-#' @export
-coef.modsem_mplus <- function(object, ...) {
-  object$coef
-}
-
-
 mplusTableToParTable <- function(coefsTable, 
                                  indicators, 
                                  intTerms, 
@@ -299,9 +288,11 @@ mplusTableToParTable <- function(coefsTable,
   structModel <- data.frame(lhs = structLhs, op = "~", rhs = structRhs) |>
     cbind(measrRemoved[structCoefNames, ])
 
+  nchars <- maxchar(c(structModel$rhs, structModel$lhs))
   for (i in seq_along(intTerms)) {
-    xzMplus <- intTermsMplus[[i]]
+    xzMplus  <- substr(intTermsMplus[[i]], start = 1, stop = nchars)
     xzModsem <- intTerms[[i]]
+
     structModel[structModel$rhs == xzMplus, "rhs"] <- xzModsem
     structModel[structModel$lhs == xzMplus, "lhs"] <- xzModsem
   }

@@ -1,8 +1,11 @@
-OP_REPLACEMENTS <- c("~~" = "___COVARIANCE___",
-                     "=~" = "___MEASUREMENT___",
-                     ":=" = "___CUSTOM___",
-                     "~"  = "___REGRESSION___",
-                     ":"  = "___INTERACTION___")
+OP_REPLACEMENTS <- c("~~"  = "___COVARIANCE___",
+                     "=~"  = "___MEASUREMENT___",
+                     ":="  = "___CUSTOM___",
+                     "~"   = "___REGRESSION___",
+                     ":"   = "___INTERACTION___",
+                     "<->" = "___MPLUS_COVARIANCE___",
+                     "<-"  = "___MPLUS_REGRESSION___")
+
 OP_REPLACEMENTS_INV <- structure(names(OP_REPLACEMENTS), names = OP_REPLACEMENTS)
 
 

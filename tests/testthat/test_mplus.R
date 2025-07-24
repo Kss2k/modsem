@@ -15,7 +15,7 @@ run <- tryCatch({
   error = function(e) FALSE
 )
 if (run) {
-  mplus <- modsem(m1, oneInt, method = "mplus")
+  mplus <- modsem(m1, oneInt, method = "mplus", estimator = "MLR")
   print(summary(mplus))
   plot_interaction(x = "X", z = "Z", y = "Y", xz = "X:Z", vals_z = c(-0.5, 0.5), model = mplus)
 }
@@ -45,7 +45,10 @@ tpb <- "
   BEH =~ b1 + b2
 
 # Inner Model (Based on Steinmetz et al., 2011)
-  BEH ~ INT + PBC + INT:PBC:SUBJECTIVE_NORMS + INT:PBC
+  BEH ~ INT + PBC + INT:PBC:SUBJECTIVE_NORMS + INT:PBC + SUBJECTIVE_NORMS
 "
 
-if (run) mplus_tpb_3way <- modsem(tpb, data = TPB, method = "mplus", rcs = TRUE)
+if (run) {
+  mplus_tpb_3way <- modsem(tpb, data = TPB[1:250, ], method = "mplus", rcs = TRUE)
+  standardized_estimates(mplus_tpb_3way)
+}
