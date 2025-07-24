@@ -19,6 +19,8 @@
 #'   reliability-corrected single items are corrected for differences in factor loadings between
 #'   the items. Default is \code{TRUE}.
 #'
+#' @param output.std Should \code{STANDARDIZED} be added to \code{OUTPUT}?
+#'
 #' @param ... arguments passed to other functions
 #'
 #' @return modsem_mplus object
@@ -57,6 +59,7 @@ modsem_mplus <- function(model.syntax,
                          rcs = FALSE,
                          rcs.choose = NULL,
                          rcs.scale.corrected = TRUE,
+                         output.std = TRUE,
                          ...) {
   if (rcs) { # use reliability-correct single items?
     corrected <- relcorr_single_item(
@@ -102,6 +105,16 @@ modsem_mplus <- function(model.syntax,
   intTermsMplus <- stringr::str_remove_all(intTerms, ":") |>
     stringr::str_to_upper()
 
+  # Set OUTPUT
+  OUTPUT <- "TECH3;"
+
+  getIntTermLength <- \(xz) length(stringr::str_split(xz, pattern = ":")[[1]])
+  kway <- max(0, vapply(intTerms, FUN.VALUE = integer(1L), FUN = getIntTermLength))
+  
+  if (output.std && kway <= 2)
+    OUTPUT <- paste(OUTPUT, "STANDARDIZED;", sep = "\n")
+
+  # Estimate model
   model <- MplusAutomation::mplusObject(
     TITLE = "Running Model via Mplus",
     usevariables = indicators,
@@ -113,7 +126,7 @@ modsem_mplus <- function(model.syntax,
             paste("integration = ", integration),
             sep = ";\n"), ";\n"), # add final ";"
     MODEL = parTableToMplusModel(parTable, ...),
-    OUTPUT = "TECH3;\nSTANDARDIZED;",
+    OUTPUT = OUTPUT,
     rdata = data[indicators],
   )
 
