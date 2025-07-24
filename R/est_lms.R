@@ -74,6 +74,7 @@ emLms <- function(model,
                   adaptive.quad = FALSE,
                   quad.range = -Inf,
                   adaptive.quad.tol = 1e-12,
+                  nodes = 24,
                   ...) {
   algorithm <- toupper(match.arg(algorithm))
   data <- model$data
@@ -247,8 +248,15 @@ emLms <- function(model,
   if (verbose) cat("\n")
   warnif(iterations >= max.iter, "Maximum iterations reached!\n",
          "Consider a tweaking these parameters:\n", 
-         formatParameters(convergence.abs, convergence.rel, algorithm, 
-                          max.step, max.iter, quad.range, adaptive.quad))
+         formatParameters(convergence.abs,
+                          convergence.rel,
+                          algorithm,
+                          max.step,
+                          max.iter,
+                          nodes,
+                          adaptive.quad,
+                          adaptive.quad.tol,
+                          quad.range))
 
   # Final E- and M-step for output
   P <- estepLms(model = model, theta = thetaNew, data = data, 

@@ -453,6 +453,7 @@ modsem_da <- function(model.syntax = NULL,
       adaptive.quad     = args$adaptive.quad,
       quad.range        = args$quad.range,
       adaptive.quad.tol = args$adaptive.quad.tol,
+      nodes             = args$nodes,
       ...
   )),
   error = function(e) {
