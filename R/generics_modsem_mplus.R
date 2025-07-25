@@ -123,5 +123,5 @@ vcov.modsem_mplus <- function(object, ...) {
 #' @export
 #' @importFrom stats coef
 coef.modsem_mplus <- function(object, ...) {
-  object$coef
+  object$coefs
 }
