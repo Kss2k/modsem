@@ -14,7 +14,7 @@
 #' @param rcs.choose Which latent variables should get their indicators replaced with
 #'   reliability-corrected single items? It is passed to \code{\link{relcorr_single_item}}
 #'   as the \code{choose} argument.
-#'   
+#'
 #' @param rcs.scale.corrected Should reliability-corrected items be scale-corrected? If \code{TRUE}
 #'   reliability-corrected single items are corrected for differences in factor loadings between
 #'   the items. Default is \code{TRUE}.
@@ -32,8 +32,8 @@
 #' # Outer Model
 #'   X =~ x1 + x2
 #'   Z =~ z1 + z2
-#'   Y =~ y1 + y2 
-#' 
+#'   Y =~ y1 + y2
+#'
 #' # Inner model
 #'   Y ~ X + Z + X:Z
 #' '
@@ -42,7 +42,7 @@
 #' # Check if Mplus is installed
 #' run <- tryCatch({MplusAutomation::detectMplus(); TRUE},
 #'                 error = \(e) FALSE)
-#' 
+#'
 #' if (run) {
 #'   est_mplus <- modsem_mplus(m1, data = oneInt)
 #'   summary(est_mplus)
@@ -63,7 +63,7 @@ modsem_mplus <- function(model.syntax,
                          ...) {
   if (rcs) { # use reliability-correct single items?
     corrected <- relcorr_single_item(
-      syntax          = model.syntax, 
+      syntax          = model.syntax,
       data            = data,
       choose          = rcs.choose,
       scale.corrected = rcs.scale.corrected,
@@ -80,7 +80,7 @@ modsem_mplus <- function(model.syntax,
   names <- unique(c(parTable$rhs, parTable$lhs))
   names <- names[!grepl(":", names)]
   abbreviated <- abbreviate(names, minlength = 8L, strict = TRUE)
- 
+
   # Abbreviate names in intTerms
   intTerms <- unique(parTable$rhs[grepl(":", parTable$rhs)])
   abbrevIntTerm <- function(xz)
@@ -95,7 +95,7 @@ modsem_mplus <- function(model.syntax,
   lmask <- parTable$lhs != ""
   parTable$rhs[rmask] <- abbreviated[parTable$rhs[rmask]]
   parTable$lhs[lmask] <- abbreviated[parTable$lhs[lmask]]
-  
+
   # Fix names in data
   dmask <- colnames(data) %in% names(abbreviated)
   colnames(data)[dmask] <- abbreviated[colnames(data)[dmask]]
@@ -110,7 +110,7 @@ modsem_mplus <- function(model.syntax,
 
   getIntTermLength <- \(xz) length(stringr::str_split(xz, pattern = ":")[[1]])
   kway <- max(0, vapply(intTerms, FUN.VALUE = integer(1L), FUN = getIntTermLength))
-  
+
   if (output.std && kway <= 2)
     OUTPUT <- paste(OUTPUT, "STANDARDIZED;", sep = "\n")
 
@@ -134,16 +134,16 @@ modsem_mplus <- function(model.syntax,
                                            modelout = "mplusResults.inp",
                                            run = 1L)
   coefsTable    <- coef(results)
-  mplusParTable <- mplusTableToParTable(coefsTable, 
-                                        intTerms = intTerms, 
+  mplusParTable <- mplusTableToParTable(coefsTable,
+                                        intTerms = intTerms,
                                         intTermsMplus = intTermsMplus,
                                         indicators = indicators)
 
   # coef and vcov
   TECH1 <- MplusAutomation::get_results(results, element = "tech1")
-  pars.tech1 <- getOrderedParameterLabelsMplus(mplusParTable, 
-                                               TECH1 = TECH1, 
-                                               intTerms = intTerms, 
+  pars.tech1 <- getOrderedParameterLabelsMplus(mplusParTable,
+                                               TECH1 = TECH1,
+                                               intTerms = intTerms,
                                                intTermsMplus = intTermsMplus)
   labels.tech1 <- names(pars.tech1)
 
@@ -168,10 +168,10 @@ modsem_mplus <- function(model.syntax,
              "Message: ", e, immediate. = FALSE)
 
     k <- length(pars.tech1)
-    vcov <- matrix(NA, nrow = k, ncol = k, 
+    vcov <- matrix(NA, nrow = k, ncol = k,
                    dimnames = list(labels.tech1, labels.tech1))
   })
-  
+
   std <- tryCatch({
     MplusAutomation::get_results(results, element = "standardized")
   }, error = function(e) {
@@ -183,7 +183,7 @@ modsem_mplus <- function(model.syntax,
   modelSpec <- list(
     parTable = mplusParTable,
     model    = results,
-    data     = data, 
+    data     = data,
     coefs    = modsemVector(coefs),
     vcov     = modsemMatrix(vcov, symmetric = TRUE),
     std      = std,
@@ -205,7 +205,7 @@ xwith <- function(elems) {
   rhs <- paste(elems[[1]], "XWITH", elems[[2]])
 
   elems2 <- c(lhs, elems[-c(1, 2)])
-  
+
   unique(rbind(
    createParTableRow(c(lhs, rhs), op = ":"),
    xwith(elems2)
@@ -264,11 +264,11 @@ switchLavOpToMplus <- function(op) {
 }
 
 
-mplusTableToParTable <- function(coefsTable, 
-                                 indicators, 
-                                 intTerms, 
+mplusTableToParTable <- function(coefsTable,
+                                 indicators,
+                                 intTerms,
                                  intTermsMplus) {
-  coefsTable <- rename(coefsTable, Label = "label", 
+  coefsTable <- rename(coefsTable, Label = "label",
                        se = "std.error", pval = "p.value")
   coefsTable$label <- stringr::str_remove_all(coefsTable$label, pattern = " ")
 
@@ -370,7 +370,7 @@ getOrderedParameterLabelsMplus <- function(parTable, TECH1, intTerms, intTermsMp
     cols <- colnames(M)
     for (i in seq_len(NROW(M))) for (j in seq_len(NCOL(M))) {
       id <- as.integer(M[i, j])
-      
+
       if (id <= 0L)
         next
 
@@ -391,7 +391,7 @@ getOrderedParameterLabelsMplus <- function(parTable, TECH1, intTerms, intTermsMp
 
     out
   }
-  
+
   getIntercept <- function(T) {
     vars <- colnames(T)
     T <- c(T)
@@ -399,10 +399,10 @@ getOrderedParameterLabelsMplus <- function(parTable, TECH1, intTerms, intTermsMp
 
     for (i in seq_along(T)) {
       id <- as.integer(T[i])
-      
+
       if (id <= 0L)
         next
-      
+
       lhs <- vars[i]
 
       label <- parTable[parTable$op == "~1" &
@@ -423,7 +423,7 @@ getOrderedParameterLabelsMplus <- function(parTable, TECH1, intTerms, intTermsMp
 
     for (i in seq_len(NROW(M))) for (j in seq_len(i)) {
       id <- as.integer(M[i, j])
-      
+
       if (id <= 0L)
         next
 
@@ -436,7 +436,7 @@ getOrderedParameterLabelsMplus <- function(parTable, TECH1, intTerms, intTermsMp
 
       out <- setLabel(out = out, label = label, id = id)
     }
-    
+
     out
   }
 
@@ -458,7 +458,7 @@ getOrderedParameterLabelsMplus <- function(parTable, TECH1, intTerms, intTermsMp
   )
 
   out <- out[!duplicated(out)] # unique() removes labels
-  
+
   sort(out)
 }
 

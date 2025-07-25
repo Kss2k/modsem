@@ -1,20 +1,20 @@
 devtools::load_all()
-models <- list(m1 = ' 
-               # latent variables 
-               ind60 =~ x1 + x2 + x3 
-               dem60 =~ y1 + y2 + y3 + y4 
-               dem65 =~ y5 + y6 + y7 + y8 
+models <- list(m1 = '
+               # latent variables
+               ind60 =~ x1 + x2 + x3
+               dem60 =~ y1 + y2 + y3 + y4
+               dem65 =~ y5 + y6 + y7 + y8
                # regressions
-               dem60 ~ ind60 
-               dem65 ~ ind60 + dem60 
-               # residual covariances 
+               dem60 ~ ind60
+               dem65 ~ ind60 + dem60
+               # residual covariances
                y1 ~~ y5
-               y2 ~~ y4 + y6 
-               y3 ~~ y7 
+               y2 ~~ y4 + y6
+               y3 ~~ y7
                y4 ~~ y8
                y6 ~~ y8
                ',
-               m3 = ' visual  =~ x1 + x2 + x3 
+               m3 = ' visual  =~ x1 + x2 + x3
                textual =~ x4 + x5 + x6
                speed   =~ x7 + x8 + x9 ',
                m4 = 'visual  =~ x1 + start(0.8)*x2 + start(1.2)*x3
@@ -39,14 +39,14 @@ models <- list(m1 = '
                x6 ~ 1
                x7 ~ 1
                x8 ~ 1
-               x9 ~ 1', 
+               x9 ~ 1',
                m7 = ' # direct effect
                Y ~ c*X
                # mediator
                M ~ a*X
                Y ~ b*M
                # indirect effect (a*b)
-               ab := a*b 
+               ab := a*b
                # total effect
                total := c + (a*b)
                '
@@ -60,10 +60,10 @@ Y <- 0.7*M + rnorm(100)
 d7 <- data.frame(X = X, Y = Y, M = M)
 
 data <- list(d1 = lavaan::PoliticalDemocracy,
-             d3 = lavaan::HolzingerSwineford1939, 
-             d4 = lavaan::HolzingerSwineford1939, 
-             d5 = lavaan::HolzingerSwineford1939, 
-             d6 = lavaan::HolzingerSwineford1939, 
+             d3 = lavaan::HolzingerSwineford1939,
+             d4 = lavaan::HolzingerSwineford1939,
+             d5 = lavaan::HolzingerSwineford1939,
+             d6 = lavaan::HolzingerSwineford1939,
              d7 = d7)
 
 
@@ -94,7 +94,7 @@ for (i in seq_along(estimates)) {
   },
   error = function(e) {
     est <- NA
-    warning("Error in modsem model ", i) 
+    warning("Error in modsem model ", i)
   },
   finally = {
     est

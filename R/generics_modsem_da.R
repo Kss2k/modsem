@@ -17,17 +17,17 @@ parameter_estimates.modsem_da <- function(object, ...) {
 #' @param ci print confidence intervals
 #' @param standardized print standardized estimates
 #' @param centered print mean centered estimates
-#' @param monte.carlo should Monte Carlo bootstrapped standard errors be used? Only 
+#' @param monte.carlo should Monte Carlo bootstrapped standard errors be used? Only
 #'   relevant if \code{standardized = TRUE}. If \code{FALSE} delta method is used instead.
-#' @param mc.reps number of Monte Carlo repetitions. Only relevant if \code{monte.carlo = TRUE}, 
+#' @param mc.reps number of Monte Carlo repetitions. Only relevant if \code{monte.carlo = TRUE},
 #'   and \code{standardized = TRUE}.
 #' @param loadings print loadings
 #' @param regressions print regressions
 #' @param covariances print covariances
 #' @param intercepts should intercepts be included in the output?
-#' If \code{standardized = TRUE} intercepts will by default be excluded. 
+#' If \code{standardized = TRUE} intercepts will by default be excluded.
 #' @param variances print variances
-#' @param var.interaction if FALSE variances for interaction terms will be removed 
+#' @param var.interaction if FALSE variances for interaction terms will be removed
 #' from the output
 #' @param ... additional arguments
 #' @rdname summary
@@ -84,7 +84,7 @@ summary.modsem_da <- function(object,
       mc.reps     = mc.reps
     )
   }
-  
+
   if (centered) {
     cnt.col     <- "Cnt.all"
     extra.cols <- c(extra.cols, cnt.col)
@@ -122,11 +122,11 @@ summary.modsem_da <- function(object,
   )
 
   if (H0) {
-    if (any(grepl(":", parTable$rhs)) && verbose) 
+    if (any(grepl(":", parTable$rhs)) && verbose)
       cat("Estimating baseline model (H0)\n")
 
     est_h0 <- estimate_h0(object, calc.se = FALSE, warn_no_interaction = FALSE)
-    
+
     out$nullModel <- est_h0
     if (is.null(est_h0)) {
       warning2("Comparative fit to H0 will not be calculated.", immediate. = FALSE)
@@ -175,7 +175,7 @@ summary.modsem_da <- function(object,
 print.summary_da <- function(x, digits = 3, ...) {
   # We want the width without ci and extra cols
   width.out <- getWidthPrintedParTable(
-    parTable    = x$parTable, 
+    parTable    = x$parTable,
     scientific  = x$format$scientific,
     ci          = FALSE,
     digits      = x$format$digits,
@@ -188,14 +188,14 @@ print.summary_da <- function(x, digits = 3, ...) {
   )
 
   cat(paste0("\nmodsem (version ", PKG_INFO$version, "):\n\n"))
-  
+
   names <- c(
-    "Estimator", 
-    "Optimization method", 
+    "Estimator",
+    "Optimization method",
     "Number of observations",
-    "Number of iterations", 
+    "Number of iterations",
     "Loglikelihood",
-    "Akaike (AIC)", 
+    "Akaike (AIC)",
     "Bayesian (BIC)"
   )
 
@@ -263,13 +263,13 @@ print.summary_da <- function(x, digits = 3, ...) {
     names     <- names(r.squared)
 
     cat("R-Squared Interaction Model (H1):\n")
-    cat(allignLhsRhs(lhs = names, rhs = r.squared, 
+    cat(allignLhsRhs(lhs = names, rhs = r.squared,
 										 pad = "  ", width.out = width.out))
 
     if (!is.null(x$r.squared.h0)) {
       r.squared.h0 <- formatNumeric(x$r.squared.h0, digits = 3)
 			names.h0     <- names(r.squared.h0)
-      
+
 			cat("R-Squared Baseline Model (H0):\n")
       cat(allignLhsRhs(lhs = names.h0, rhs = r.squared.h0, pad = "  ",
                        width.out = width.out))
@@ -278,7 +278,7 @@ print.summary_da <- function(x, digits = 3, ...) {
      	r.squared.diff <- formatNumeric(x$r.squared - x$r.squared.h0, digits = 3)
 			names.diff     <- names(r.squared.diff)
       cat("R-Squared Change (H1 - H0):\n")
-      cat(allignLhsRhs(lhs = names.diff, rhs = r.squared.diff, 
+      cat(allignLhsRhs(lhs = names.diff, rhs = r.squared.diff,
 											 pad = "  ", width.out = width.out))
     }
   }
@@ -322,52 +322,52 @@ var_interactions.modsem_da <- function(object, ...) {
 
 
 #' Inspect components of a \code{modsem_da} fit
-#' 
+#'
 #' \code{modsem_inspect.modsem_da} Lets you
 #' pull matrices, optimiser diagnostics, expected moments, or fit
 #' measures from a \code{\link{modsem_da}} object.
-#' 
+#'
 #' @param object A fitted object of class \code{"modsem_da"}.
 #' @param what   Character scalar selecting what to return (see \emph{Details}).
 #'               If \code{NULL} the value \code{"default"} is used.
 #' @param ...    Passed straight to \code{modsem_inspect_da()}.
-#' 
+#'
 #' @details
 #' Below is a list of possible values for the \code{what} argument,
 #' organised in several sections.  Keywords are \emph{case-sensitive}.
-#' 
-#' \strong{Presets} 
-#' 
+#'
+#' \strong{Presets}
+#'
 #' \describe{
 #'   \item{\code{"default"}}{Everything in \emph{Sample information}, \emph{Optimiser diagnostics}
-#'   \emph{Parameter tables}, \emph{Model matrices}, and \emph{Expected-moment matrices} except  
+#'   \emph{Parameter tables}, \emph{Model matrices}, and \emph{Expected-moment matrices} except
 #'   the raw \code{data} slot}
-#'   \item{\code{"coef"}}{Coefficients and variance-covariance matrix of both free and constrained parameters (same as \code{"coef.all"}).}  
-#'   \item{\code{"coef.all"}}{Coefficients and variance-covariance matrix of both free and constrained parameters (same as \code{"coef"}).}  
-#'   \item{\code{"coef.free"}}{Coefficients and variance-covariance matrix of the free parameters.}  
-#'   \item{\code{"all"}}{All items listed below, including \code{data}.}  
-#'   \item{\code{"matrices"}}{The model matrices.}  
-#'   \item{\code{"optim"}}{Only the items under \emph{Optimiser diagnostics}}.  
+#'   \item{\code{"coef"}}{Coefficients and variance-covariance matrix of both free and constrained parameters (same as \code{"coef.all"}).}
+#'   \item{\code{"coef.all"}}{Coefficients and variance-covariance matrix of both free and constrained parameters (same as \code{"coef"}).}
+#'   \item{\code{"coef.free"}}{Coefficients and variance-covariance matrix of the free parameters.}
+#'   \item{\code{"all"}}{All items listed below, including \code{data}.}
+#'   \item{\code{"matrices"}}{The model matrices.}
+#'   \item{\code{"optim"}}{Only the items under \emph{Optimiser diagnostics}}.
 #'   \item{\code{"fit"}}{A list with \code{fit.h0}, \code{fit.h1}, comparative.fit}
 #' }
-#' 
+#'
 #' \strong{Sample information:}
-#' 
+#'
 #' \describe{
 #' \item{\code{"N"}}{Number of analysed rows (integer).}
 #' }
 #'
 #' \strong{Parameter estimates and standard errors:}
-#' 
+#'
 #' \describe{
 #'   \item{\code{"coefficients.free"}}{Free parameter values.}
 #'   \item{\code{"coefficients.all"}}{Both free and constrained parameter values.}
 #'   \item{\code{"vcov.free"}}{Variance–covariance of free coefficients only.}
 #'   \item{\code{"vcov.all"}}{Variance–covariance of both free and constrained coefficients.}
 #' }
-#' 
-#' \strong{Optimiser diagnostics:}  
-#' 
+#'
+#' \strong{Optimiser diagnostics:}
+#'
 #' \describe{
 #'   \item{\code{"coefficients.free"}}{Free parameter values.}
 #'   \item{\code{"vcov.free"}}{Variance–covariance of free coefficients only.}
@@ -376,16 +376,16 @@ var_interactions.modsem_da <- function(object, ...) {
 #'   \item{\code{"iterations"}}{Optimiser iteration count.}
 #'   \item{\code{"convergence"}}{\code{TRUE}/\code{FALSE} indicating whether the model converged.}
 #' }
-#' 
-#' \strong{Parameter tables:}  
-#' 
+#'
+#' \strong{Parameter tables:}
+#'
 #' \describe{
 #'   \item{\code{"partable"}}{Parameter table with estimated parameters.}
 #'   \item{\code{"partable.input"}}{Parsed model syntax.}
 #' }
-#' 
+#'
 #' \strong{Model matrices:}
-#' 
+#'
 #' \describe{
 #'   \item{\code{"lambda"}}{\eqn{\Lambda} – Factor loadings.}
 #'   \item{\code{"tau"}}{\eqn{\tau} – Intercepts for indicators.}
@@ -399,13 +399,13 @@ var_interactions.modsem_da <- function(object, ...) {
 #'   \item{\code{"alpha"}}{\eqn{\alpha} – Intercepts for endogenous variables}
 #'   \item{\code{"beta0"}}{\eqn{\beta_0} – Intercepts for exogenous variables}
 #' }
-#' \strong{Model-implied matrices:}  
-#' 
+#' \strong{Model-implied matrices:}
+#'
 #' \describe{
-#'   \item{\code{"cov.ov"}}{Model-implied covariance of observed variables.} 
+#'   \item{\code{"cov.ov"}}{Model-implied covariance of observed variables.}
 #'   \item{\code{"cov.lv"}}{Model-implied covariance of latent variables.}
 #'   \item{\code{"cov.all"}}{Joint covariance of observed + latent variables.}
-#'   \item{\code{"cor.ov"}}{Correlation counterpart of \code{"cov.ov"}.} 
+#'   \item{\code{"cor.ov"}}{Correlation counterpart of \code{"cov.ov"}.}
 #'   \item{\code{"cor.lv"}}{Correlation counterpart of \code{"cov.lv"}.}
 #'   \item{\code{"cor.all"}}{Correlation counterpart of \code{"cov.all"}.}
 #'   \item{\code{"mean.ov"}}{Expected means of observed variables.}
@@ -423,19 +423,19 @@ var_interactions.modsem_da <- function(object, ...) {
 #'   \item{\code{"res.lv"}}{Standardized residuals (i.e., \code{1 - R^2}) for latent endogenous variables.}
 #'   \item{\code{"res.ov"}}{Standardized residuals (i.e., \code{1 - R^2}) for observed variables (i.e., indicators).}
 #' }
-#' 
-#' \strong{Interaction-specific caveats:}  
-#' 
+#'
+#' \strong{Interaction-specific caveats:}
+#'
 #' \itemize{
 #'   \item If the model contains an \emph{uncentred} latent interaction term it is centred
 #'     internally before any \code{cov.*}, \code{cor.*}, or \code{mean.*} matrices are
-#'     calculated.  
-#'   \item These matrices should not be used to compute fit-statistics (e.g., 
+#'     calculated.
+#'   \item These matrices should not be used to compute fit-statistics (e.g.,
 #'     chi-square and RMSEA) if there is an interaction term in the model.
 #' }
 #' @return A named list with the extracted information. If a single piece of information is returned,
 #'  it is returned as is; not as a named element in a list.
-#' 
+#'
 #' @examples
 #' \dontrun{
 #' m1 <- "
@@ -443,18 +443,18 @@ var_interactions.modsem_da <- function(object, ...) {
 #'  X =~ x1 + x2 + x3
 #'  Y =~ y1 + y2 + y3
 #'  Z =~ z1 + z2 + z3
-#' 
+#'
 #'  # Inner model
 #'  Y ~ X + Z + X:Z
 #' "
-#' 
+#'
 #' est <- modsem(m1, oneInt, "lms")
-#' 
+#'
 #' modsem_inspect(est) # everything except "data"
 #' modsem_inspect(est, what = "optim")
 #' modsem_inspect(est, what = "phi")
 #' }
-#' 
+#'
 #' @export
 #' @describeIn modsem_inspect Inspect a \code{\link{modsem_da}} object
 modsem_inspect.modsem_da <- function(object, what = NULL, ...) {
@@ -508,19 +508,19 @@ nobs.modsem_da <- function(object, ...) {
 #' @param tolerance.zero Threshold below which standard errors are set to \code{NA}.
 #'
 #' @export
-standardized_estimates.modsem_da <- function(object, 
-                                             monte.carlo = FALSE, 
-                                             mc.reps = 10000, 
-                                             tolerance.zero = 1e-10, 
+standardized_estimates.modsem_da <- function(object,
+                                             monte.carlo = FALSE,
+                                             mc.reps = 10000,
+                                             tolerance.zero = 1e-10,
                                              ...) {
   stdSolution <- standardizedSolutionCOEFS(
-    object, 
-    monte.carlo = monte.carlo, 
-    mc.reps = mc.reps, 
-    tolerance.zero = tolerance.zero, 
+    object,
+    monte.carlo = monte.carlo,
+    mc.reps = mc.reps,
+    tolerance.zero = tolerance.zero,
     ...
   )
-  
+
   stdSolution$parTable
 }
 
@@ -533,24 +533,24 @@ standardized_estimates.modsem_da <- function(object,
 #' @param tolerance.zero Threshold below which standard errors are set to \code{NA}.
 #'
 #' @export
-centered_estimates.modsem_da <- function(object, 
-                                         monte.carlo = FALSE, 
-                                         mc.reps = 10000, 
+centered_estimates.modsem_da <- function(object,
+                                         monte.carlo = FALSE,
+                                         mc.reps = 10000,
                                          tolerance.zero = 1e-10, ...) {
 
   stdSolution <- centeredSolutionCOEFS(
-    object, 
-    monte.carlo = monte.carlo, 
-    mc.reps = mc.reps, 
+    object,
+    monte.carlo = monte.carlo,
+    mc.reps = mc.reps,
     tolerance.zero = tolerance.zero, ...
   )
-  
+
   stdSolution$parTable
 }
 
 
 
-#' @describeIn modsem_predict 
+#' @describeIn modsem_predict
 #' Computes (optionally standardised) factor scores via the
 #'   regression method using the baseline model unless \code{H0 = FALSE}.
 #'
@@ -561,14 +561,14 @@ centered_estimates.modsem_da <- function(object,
 #' @param newdata Compute factor scores based on a different dataset, than the one used in the model estimation.
 #' @param center.data Should data be centered before computing factor scores? Default is \code{TRUE}.
 #' @export
-modsem_predict.modsem_da <- function(object, standardized = FALSE, H0 = TRUE, newdata = NULL, 
+modsem_predict.modsem_da <- function(object, standardized = FALSE, H0 = TRUE, newdata = NULL,
                                      center.data = TRUE, ...) {
-  modelH1 <- object 
+  modelH1 <- object
 
   if (H0) {
-    modelH0 <- estimate_h0(modelH1, calc.se = FALSE, warn_no_interaction = FALSE, 
+    modelH0 <- estimate_h0(modelH1, calc.se = FALSE, warn_no_interaction = FALSE,
                            verbose = FALSE)
-  
+
     if (is.null(modelH0)) modelH0 <- modelH1
   } else modelH0 <- modelH1
 
@@ -576,11 +576,11 @@ modsem_predict.modsem_da <- function(object, standardized = FALSE, H0 = TRUE, ne
     cols <- colnames(modelH0$data)
     cols.present <- cols %in% colnames(newdata)
     stopif(!all(cols.present), "Missing cols in `newdata`:\n", cols[!cols.present])
-  
+
     newdata <- as.matrix(newdata)[, cols]
 
   } else newdata <- modelH0$data
-  
+
   transform.x <- if (center.data) \(x) x - mean(x, na.rm = TRUE) else \(x) x
 
   parTableH1 <- parameter_estimates(modelH1)
@@ -597,7 +597,7 @@ modsem_predict.modsem_da <- function(object, standardized = FALSE, H0 = TRUE, ne
 
   FSC <- GINV(t(lambda) %*% sigma.inv %*% lambda) %*% (t(lambda) %*% sigma.inv)
 
-  alpha <- matrix(getMeans(lVs, parTable = parTableH1), 
+  alpha <- matrix(getMeans(lVs, parTable = parTableH1),
                   nrow = nrow(X), ncol = length(lVs), byrow = TRUE)
 
   Y <- X %*% t(FSC) + alpha

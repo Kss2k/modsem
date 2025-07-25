@@ -90,7 +90,7 @@ JDR_Model_modsem <- '
 # Structural model
   work_engagement ~ psc + SWE + decisions_not_influenced_latent
   irritation ~ psc + SWE + decisions_not_influenced_latent
-  stress ~ work_engagement + irritation 
+  stress ~ work_engagement + irritation
   intention_to_change_leadership_binary_latent ~ work_engagement
 
 # Interactions
@@ -119,10 +119,10 @@ JDR_Model_linear <- '
   INT =~ intention_to_change_leadership_binary  # Outcome
 
 # Structural model
-  WE ~ PSC + SWE + NONINF 
-  IRRITATE ~ PSC + SWE + NONINF 
-  STRESS ~ WE + IRRITATE 
-  INT ~ WE 
+  WE ~ PSC + SWE + NONINF
+  IRRITATE ~ PSC + SWE + NONINF
+  STRESS ~ WE + IRRITATE
+  INT ~ WE
 '
 
 est_lin_lms <- modsem(JDR_Model_linear, dummy_data, "lms")

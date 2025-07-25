@@ -61,8 +61,8 @@ To get fit measures for the baseline model you can use the `fit_modsem_da()` fun
 ```{r}
 fit_modsem_da(est_h0)
 ```
-It can also be used to get fit measures for the full model, but should be pared with 
-`chisq = FALSE` to avoid the Chi-square test. If it is set to `TRUE` it will 
+It can also be used to get fit measures for the full model, but should be pared with
+`chisq = FALSE` to avoid the Chi-square test. If it is set to `TRUE` it will
 calculate the Chi-square test while ignoring the interaction terms in the model.
 
 ```{r}
@@ -80,7 +80,7 @@ compare_fit(est_h1 = est_h1, est_h0 = est_h0)
 A **significant** p-value indicates the latent interaction term significantly improves model fit.
 
 # Inspecting Fit Indices
-For convenience, you can also use the `modsem_inspect()` function with 
+For convenience, you can also use the `modsem_inspect()` function with
 `what = "fit"` to get fit indices for both models, and comparative fit in one go.
 
 ```{r}
@@ -88,9 +88,9 @@ modsem_inspect(est_h1, what = "fit")
 ```
 
 # References
-    Klein, A., & Moosbrugger, H. (2000). 
+    Klein, A., & Moosbrugger, H. (2000).
       <doi:10.1007/BF02296338>.
       "Maximum likelihood estimation of latent interaction effects with the LMS method."
-    Klein, A. G., & Muthén, B. O. (2007). 
+    Klein, A. G., & Muthén, B. O. (2007).
       <doi:10.1080/00273170701710205>.
       "Quasi-maximum likelihood estimation of structural equation models with multiple interaction and quadratic effects."

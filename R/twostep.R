@@ -52,7 +52,7 @@
 #' est_qml <- twostep(m1, oneInt, method = "qml")
 #' summary(est_qml)
 #' }
-#' 
+#'
 #' tpb_uk <- "
 #' # Outer Model (Based on Hagger et al., 2007)
 #'  ATT =~ att3 + att2 + att1 + att4
@@ -60,14 +60,14 @@
 #'  PBC =~ pbc2 + pbc1 + pbc3 + pbc4
 #'  INT =~ int2 + int1 + int3 + int4
 #'  BEH =~ beh3 + beh2 + beh1 + beh4
-#' 
+#'
 #' # Inner Model (Based on Steinmetz et al., 2011)
 #'  # Causal Relationsships
 #'  INT ~ ATT + SN + PBC
 #'  BEH ~ INT + PBC
 #'  BEH ~ INT:PBC
 #' "
-#' 
+#'
 #' uk_dblcent <- twostep(tpb_uk, TPB_UK, method = "dblcent")
 #' summary(uk_dblcent)
 #'
@@ -142,7 +142,7 @@ twostepDA <- function(model.syntax, data, method = "lms", zero.tol = 1e-12,
   } else parTableCustom <- NULL
 
   isNonLinEta <- vapply(
-    X = etas, 
+    X = etas,
     FUN.VALUE = logical(1L),
     FUN = intTermsAffectLV,
     parTable = parTable
@@ -159,7 +159,7 @@ twostepDA <- function(model.syntax, data, method = "lms", zero.tol = 1e-12,
 
   parTableTwoStep <- rbind(
     parTableCustom,
-    parTableOuterFixed, 
+    parTableOuterFixed,
     parTableInner,
     etaIntercepts
   )
@@ -203,7 +203,7 @@ twostepDA <- function(model.syntax, data, method = "lms", zero.tol = 1e-12,
     yes = parTable.out$se.cfa,
     no  = parTable.out$std.error
   )
-  
+
   parTable.out$z.value  <- parTable.out$est / parTable.out$std.error
   parTable.out$p.value  <- 2 * stats::pnorm(-abs(parTable.out$z.value))
   parTable.out$ci.lower <- parTable.out$est - CI_WIDTH * parTable.out$std.error
@@ -221,14 +221,14 @@ twostepDA <- function(model.syntax, data, method = "lms", zero.tol = 1e-12,
   vcov.11   <- vcov.11[diff.pars, diff.pars]
   vcov.all  <- diagPartitionedMat(X = vcov.11, Y = vcov.22)
 
-  # Get coef 
+  # Get coef
   coef.1 <- lavaan::coef(cfa)
   coef.2 <- coef(fit, type = "all")
-  
+
   diff.pars <- setdiff(names(coef.1), names(coef.2))
   coef.1    <- coef.1[diff.pars]
   coef.all  <- c(coef.1, coef.2)
- 
+
   # Add to fit
   fit$vcov.all  <- vcov.all
   fit$coefs.all <- coef.all

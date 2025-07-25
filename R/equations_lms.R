@@ -1,4 +1,4 @@
-estepLms <- function(model, theta, data, lastQuad = NULL, recalcQuad = FALSE, 
+estepLms <- function(model, theta, data, lastQuad = NULL, recalcQuad = FALSE,
                      adaptive.quad.tol = 1e-12, ...) {
   modFilled <- fillModel(model = model, theta = theta, method = "lms")
 
@@ -9,7 +9,7 @@ estepLms <- function(model, theta, data, lastQuad = NULL, recalcQuad = FALSE,
     m <- model$quad$m
     k <- model$quad$k
 
-    if (!is.null(lastQuad)) m.ceil <- lastQuad$m.ceil 
+    if (!is.null(lastQuad)) m.ceil <- lastQuad$m.ceil
     else if (k > 1) m.ceil <- m
     else m.ceil <- round(estMForNodesInRange(m, a = -5, b = 5))
 
@@ -17,11 +17,11 @@ estepLms <- function(model, theta, data, lastQuad = NULL, recalcQuad = FALSE,
     quad <- tryCatch({
         adaptiveGaussQuadrature(
           fun = densityLms, collapse = \(x) sum(log(rowSums(x))),
-          modFilled = modFilled, data = data, a = a, b = b, m = m, 
+          modFilled = modFilled, data = data, a = a, b = b, m = m,
           k = k, m.ceil = m.ceil, tol = adaptive.quad.tol,
         )
       }, error = function(e) {
-        warning2("Calculation of adaptive quadrature failed!\n", e, 
+        warning2("Calculation of adaptive quadrature failed!\n", e,
                  immediate. = FALSE)
         NULL
       }
@@ -48,7 +48,7 @@ estepLms <- function(model, theta, data, lastQuad = NULL, recalcQuad = FALSE,
     quad <- if (model$quad$adaptive) lastQuad else model$quad
     V    <- quad$n
     w    <- quad$w
-  
+
     P <- matrix(0, nrow = nrow(data), ncol = length(w))
 
     for (i in seq_along(w)) {
@@ -56,14 +56,14 @@ estepLms <- function(model, theta, data, lastQuad = NULL, recalcQuad = FALSE,
                      sigma = sigmaLmsCpp(model = modFilled, z = V[i, ]),
                      log = FALSE) * w[[i]]
     }
-  } 
+  }
 
 
 
   density        <- rowSums(P)
   observedLogLik <- sum(log(density))
   P              <- P / density
-  
+
   wMeans <- vector("list", length = length(w))
   wCovs  <- vector("list", length = length(w))
   tGamma <- vector("numeric", length = length(w))
@@ -80,7 +80,7 @@ estepLms <- function(model, theta, data, lastQuad = NULL, recalcQuad = FALSE,
     tGamma[[i]] <- sum(p)
   }
 
-  list(P = P, mean = wMeans, cov = wCovs, tgamma = tGamma, V = V, w = w, 
+  list(P = P, mean = wMeans, cov = wCovs, tgamma = tGamma, V = V, w = w,
        obsLL = observedLogLik, quad = quad)
 }
 
@@ -105,7 +105,7 @@ mstepLms <- function(theta, model, P,
 
   if (optimizer == "nlminb") {
     if (is.null(control$iter.max)) control$iter.max <- max.step
-    est <- stats::nlminb(start = theta, objective = objective, 
+    est <- stats::nlminb(start = theta, objective = objective,
                          gradient = gradient,
                          upper = model$info$bounds$upper,
                          lower = model$info$bounds$lower, control = control,
@@ -137,7 +137,7 @@ compLogLikLms <- function(theta, model, P, sign = -1, ...) {
 
 
 gradientCompLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-6) {
-  gradientAllLogLikLms(theta = theta, model = model, P = P, sign = sign, 
+  gradientAllLogLikLms(theta = theta, model = model, P = P, sign = sign,
                        epsilon = epsilon, FGRAD = gradLogLikLmsCpp, FOBJECTIVE = compLogLikLms)
 }
 
@@ -154,7 +154,7 @@ gradientAllLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-6,
 
 
 complicatedGradientAllLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-4, FOBJECTIVE) {
-  # when we cannot simplify gradient using simpleGradientLogLikLms, we use 
+  # when we cannot simplify gradient using simpleGradientLogLikLms, we use
   # good old forward difference...
   baseLL <- FOBJECTIVE(theta, model = model, P = P, sign = sign)
   vapply(seq_along(theta), FUN.VALUE = numeric(1L), FUN = function(i) {
@@ -165,7 +165,7 @@ complicatedGradientAllLogLikLms <- function(theta, model, P, sign = -1, epsilon 
 
 
 simpleGradientAllLogLikLms <- function(theta, model, P, data, sign = -1, epsilon = 1e-6, FGRAD) {
-  # simple gradient which should work if constraints are well-behaved functions 
+  # simple gradient which should work if constraints are well-behaved functions
   # which can be derivated by Deriv::Deriv, and there is no covModel
   modelR     <- fillModel(model=model, theta=theta, method="lms")
   locations  <- model$gradientStruct$locations
@@ -178,11 +178,11 @@ simpleGradientAllLogLikLms <- function(theta, model, P, data, sign = -1, epsilon
   param     <- locations$param
   symmetric <- locations$symmetric
 
-  grad <- FGRAD(modelR = modelR, 
-                P = P, 
-                block = block, 
-                row = row, 
-                col = col, 
+  grad <- FGRAD(modelR = modelR,
+                P = P,
+                block = block,
+                row = row,
+                col = col,
                 symmetric = symmetric,
                 eps=epsilon)
 
@@ -228,7 +228,7 @@ gradientObsLogLikLms <- function(theta, model, data, P, sign = 1, epsilon = 1e-6
     obsLogLikLms(theta = theta, model = model, data = data, P = P, sign = sign)
   }
 
-  gradientAllLogLikLms(theta = theta, model = model, P = P, sign = sign, 
+  gradientAllLogLikLms(theta = theta, model = model, P = P, sign = sign,
                        epsilon = epsilon, FGRAD = FGRAD, FOBJECTIVE = FOBJECTIVE)
 }
 
@@ -249,7 +249,7 @@ obsLogLikLms_i <- function(theta, model, data, P, sign = 1, ...) {
     dens_i  <- dmvn(data, mean = mu_i, sigma = sigma_i, log = FALSE)
     px <- px + w[i] * dens_i
   }
- 
+
   sign * log(px)
 }
 
@@ -292,18 +292,18 @@ hessianAllLogLikLms <- function(theta, model, P, sign = -1,
 }
 
 
-compHessianAllLogLikLms <- function(theta, model, P, data, sign = -1, 
-                                    .relStep = .Machine$double.eps ^ (1/6), 
+compHessianAllLogLikLms <- function(theta, model, P, data, sign = -1,
+                                    .relStep = .Machine$double.eps ^ (1/6),
                                     FOBJECTIVE) {
-  nlme::fdHess(pars = theta, FOBJECTIVE, model = model, P = P, 
+  nlme::fdHess(pars = theta, FOBJECTIVE, model = model, P = P,
                data = data, sign = sign, .relStep = .relStep)
 }
 
 
-simpleHessianAllLogLikLms <- function(theta, model, P, data, sign = -1, 
-                                      .relStep = .Machine$double.eps ^ (1/5), 
+simpleHessianAllLogLikLms <- function(theta, model, P, data, sign = -1,
+                                      .relStep = .Machine$double.eps ^ (1/5),
                                       FHESS) {
-  # simple gradient which should work if constraints are well-behaved functions 
+  # simple gradient which should work if constraints are well-behaved functions
   # which can be derivated by Deriv::Deriv, and there is no covModel
   modelR      <- fillModel(model=model, theta=theta, method="lms")
   locations   <- model$gradientStruct$locations
@@ -318,11 +318,11 @@ simpleHessianAllLogLikLms <- function(theta, model, P, data, sign = -1,
   param     <- locations$param
   symmetric <- locations$symmetric
 
-  HESS <- FHESS(modelR = modelR, 
-                P = P, 
-                block = block, 
-                row = row, 
-                col = col, 
+  HESS <- FHESS(modelR = modelR,
+                P = P,
+                block = block,
+                row = row,
+                col = col,
                 symmetric = symmetric,
                 .relStep = .relStep)
 
@@ -352,21 +352,21 @@ simpleHessianAllLogLikLms <- function(theta, model, P, data, sign = -1,
     }
   }
 
-  term1 <- Jacobian %*% H %*% t(Jacobian)          
+  term1 <- Jacobian %*% H %*% t(Jacobian)
   term2 <- diag(drop(Jacobian2 %*% grad), nrow = nrow(Jacobian))
 
   sign * (term1 + term2)
 }
 
 
-complicatedHessianAllLogLikLms <- function(theta, model, P, sign = -1, FOBJECTIVE, 
+complicatedHessianAllLogLikLms <- function(theta, model, P, sign = -1, FOBJECTIVE,
                                            .relStep = .Machine$double.eps ^ (1/5)) {
   nlme::fdHess(pars = theta, fun = FOBJECTIVE, model = model, P = P, sign = sign,
                .relStep = .relStep)$Hessian
 }
 
 
-hessianObsLogLikLms <- function(theta, model, data, P, sign = -1, 
+hessianObsLogLikLms <- function(theta, model, data, P, sign = -1,
                                 .relStep = .Machine$double.eps ^ (1/5)) {
 
   FHESS <- function(modelR, P, block, row, col, symmetric, eps, .relStep) {
@@ -381,13 +381,13 @@ hessianObsLogLikLms <- function(theta, model, data, P, sign = -1,
     obsLogLikLms(theta = theta, model = model, data = data, P = P, sign = sign)
   }
 
-  hessianAllLogLikLms(theta = theta, model = model, P = P, sign = sign, 
+  hessianAllLogLikLms(theta = theta, model = model, P = P, sign = sign,
                       FHESS = FHESS, FOBJECTIVE = FOBJECTIVE,
                       .relStep = .relStep)
 }
 
 
-hessianCompLogLikLms <- function(theta, model, P, sign = -1, 
+hessianCompLogLikLms <- function(theta, model, P, sign = -1,
                                  .relStep = .Machine$double.eps ^ (1/5)) {
 
   FHESS <- function(modelR, P, block, row, col, symmetric, eps, .relStep) {
@@ -402,6 +402,6 @@ hessianCompLogLikLms <- function(theta, model, P, sign = -1,
     compLogLikLms(theta = theta, model = model, P = P, sign = sign)
   }
 
-  hessianAllLogLikLms(theta = theta, model = model, P = P, sign = sign, 
+  hessianAllLogLikLms(theta = theta, model = model, P = P, sign = sign,
                       FHESS = FHESS, FOBJECTIVE = FOBJECTIVE, .relStep = .relStep)
 }

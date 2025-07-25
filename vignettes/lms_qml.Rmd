@@ -58,8 +58,8 @@ Below is an example of a more complex model based on the theory of planned behav
 
 When there is an interaction effect between an endogenous and exogenous variable, it is recommended to use at least 32 nodes for the `LMS` approach. You can also obtain robust standard errors by setting `robust.se = TRUE` in the `modsem()` function.
 
-**NOTE**: If you want the `LMS` approach to produce results as similar as possible to `Mplus`, 
-you should consider increasing the number of nodes using the `nodes` argument, and or 
+**NOTE**: If you want the `LMS` approach to produce results as similar as possible to `Mplus`,
+you should consider increasing the number of nodes using the `nodes` argument, and or
 using a quasi-adaptive quadrature by setting `adaptive.quad=TRUE`.
 
 ```{r}
@@ -68,7 +68,7 @@ using a quasi-adaptive quadrature by setting `adaptive.quad=TRUE`.
 # INT = Intention
 # SN = Subjective Norms
 # BEH = Behavior
-tpb <- ' 
+tpb <- '
 # Outer Model (Based on Hagger et al., 2007)
   ATT =~ att1 + att2 + att3 + att4 + att5
   SN =~ sn1 + sn2
@@ -78,8 +78,8 @@ tpb <- '
 
 # Inner Model (Based on Steinmetz et al., 2011)
   INT ~ ATT + SN + PBC
-  BEH ~ INT + PBC 
-  BEH ~ INT:PBC  
+  BEH ~ INT + PBC
+  BEH ~ INT:PBC
 '
 
 lms2 <- modsem(tpb, TPB, method = "lms", nodes = 32)

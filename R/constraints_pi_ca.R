@@ -71,7 +71,7 @@ addCovariances <- function(pt) {
   # Add covariances for exogenous variables if missing
   pt  <- stripColonsParTable(pt)
   xis <- getXis(pt, isLV = FALSE, checkAny = FALSE)
-  
+
   if (!length(xis))
     return(pt)
 
@@ -83,10 +83,10 @@ addCovariances <- function(pt) {
 
   xis <- xis[!isLowerOrder] # we don't want to add any residual covariances
                             # only full covariances
-  
+
   combos <- getUniqueCombos(xis)
 
-  isSpecified <- \(x, y) any(pt$op == "~~" & ((pt$rhs == x & pt$lhs == y) | 
+  isSpecified <- \(x, y) any(pt$op == "~~" & ((pt$rhs == x & pt$lhs == y) |
                                               (pt$rhs == y & pt$lhs == x)))
 
   for (i in seq_len(NROW(combos))) {
@@ -177,7 +177,7 @@ specifyVarCovSingle <- function(parTable, relDf) {
     vapply(elemsInProdTerm, FUN.VALUE = vector("character", length = 1L),
            FUN = function(elem) createLabelCov(elem, latentProd)) # wrap in anonymous fun
                                                              # scope latentProd
-  
+
   labelsCovElemProd <- labelsCovElemProd[labelsCovElemProd %in% parTable$mod]
 
   if (length(labelsCovElemProd)) { # should not be added in higher order models

@@ -35,7 +35,7 @@ Despite these limitations, there is a workaround for both the `lms` and `qml` ap
 Let's consider the theory of planned behavior (TPB), where we wish to estimate the quadratic effect of `INT` on `BEH` (`INT:INT`). We can use the following model:
 
 ```{r}
-tpb <- ' 
+tpb <- '
 # Outer Model (Based on Hagger et al., 2007)
   ATT =~ att1 + att2 + att3 + att4 + att5
   SN =~ sn1 + sn2
@@ -45,7 +45,7 @@ tpb <- '
 
 # Inner Model (Based on Steinmetz et al., 2011)
   INT ~ ATT + SN + PBC
-  BEH ~ INT + PBC 
+  BEH ~ INT + PBC
   BEH ~ INT:INT
 '
 ```
@@ -61,7 +61,7 @@ tpb_linear <- 'INT ~ PBC + ATT + SN'
 We can then remove this part from the original model, giving us:
 
 ```{r}
-tpb_nonlinear <- ' 
+tpb_nonlinear <- '
 # Outer Model (Based on Hagger et al., 2007)
   ATT =~ att1 + att2 + att3 + att4 + att5
   SN =~ sn1 + sn2
@@ -70,7 +70,7 @@ tpb_nonlinear <- '
   BEH =~ b1 + b2
 
 # Inner Model (Based on Steinmetz et al., 2011)
-  BEH ~ INT + PBC 
+  BEH ~ INT + PBC
   BEH ~ INT:INT
 '
 ```
@@ -78,16 +78,16 @@ tpb_nonlinear <- '
 Now, we can estimate the non-linear model since `INT` is treated as an exogenous variable. However, this would not incorporate the structural model for `INT`. To address this, we can instruct `modsem` to replace the covariance matrix (`phi`) of (`INT`, `PBC`, `ATT`, `SN`) with the model-implied covariance matrix from the linear model while estimating both models simultaneously. To achieve this, we use the `cov.syntax` argument in `modsem`:
 
 ```{r}
-est_lms <- modsem(tpb_nonlinear, data = TPB, cov.syntax = tpb_linear, 
+est_lms <- modsem(tpb_nonlinear, data = TPB, cov.syntax = tpb_linear,
                   method = "lms")
 summary(est_lms)
 
-est_qml <- modsem(tpb_nonlinear, data = TPB, cov.syntax = tpb_linear, 
+est_qml <- modsem(tpb_nonlinear, data = TPB, cov.syntax = tpb_linear,
                   method = "qml")
 summary(est_qml)
 ```
 
-It is also possible to make `modsem` attempt to split up the model syntax automatically using the 
+It is also possible to make `modsem` attempt to split up the model syntax automatically using the
 `auto.split.syntax` argument:
 ```{r}
 est_lms <- modsem(tpb, data = TPB, method = "lms", auto.split.syntax = TRUE)

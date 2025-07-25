@@ -15,13 +15,13 @@
 #'
 #' @param match should the product indicators be created by using the match-strategy
 #'
-#' @param match.recycle should the indicators be recycled when using the match-strategy? I.e., 
+#' @param match.recycle should the indicators be recycled when using the match-strategy? I.e.,
 #'   if one of the latent variables have fewer indicators than the other, some indicators
 #'   are recycled to match the latent variable with the most indicators.
 #'
 #' @param standardize.data should data be scaled before fitting model
 #'
-#' @param first.loading.fixed Should the first factor loading in the latent product be fixed to one? Defaults to \code{FALSE}, as 
+#' @param first.loading.fixed Should the first factor loading in the latent product be fixed to one? Defaults to \code{FALSE}, as
 #'   this already happens in \code{lavaan} by default. If \code{TRUE}, the first factor loading in the latent product is fixed to one.
 #'   Manually in the generated syntax (e.g., \code{XZ =~ 1*x1z1}).'
 #'
@@ -48,17 +48,17 @@
 #'   \item{"equality"}{Residuals of product indicators with variables in common are constrained to have equal covariances".
 #'                     Can be useful for models where the model is unidentifiable using \code{res.cov.method == "simple"},
 #'                     (e.g., when there is an interaction between an observed and a latent variable).}
-#'   \item{"none"}{Residual covariances between product indicators are not specificed (i.e., constrained to zero). 
+#'   \item{"none"}{Residual covariances between product indicators are not specificed (i.e., constrained to zero).
 #'                 Produces the same results as \code{constrained.cov.syntax = FALSE}.
 #'                 Can be useful for models where the model is unidentifiable using \code{res.cov.method == "simple"},
 #'                 (e.g., when there is an interaction between an observed and a latent variable).}
 #' }
 #'
 #' @param res.cov.across Should residual covariances be specified/freed across different interaction terms.
-#'   For example if you have two interaction terms \code{X:Z} and \code{X:W} the residuals of the 
-#'   generated product indicators \code{x1:z1} and \code{x1:w1} may be correlated. If \code{TRUE} 
-#'   residual covariances are allowed across different latent interaction terms. If \code{FALSE} 
-#'   residual covariances are only allowed between product indicators which belong to the same 
+#'   For example if you have two interaction terms \code{X:Z} and \code{X:W} the residuals of the
+#'   generated product indicators \code{x1:z1} and \code{x1:w1} may be correlated. If \code{TRUE}
+#'   residual covariances are allowed across different latent interaction terms. If \code{FALSE}
+#'   residual covariances are only allowed between product indicators which belong to the same
 #'   latent interaction term.
 #'
 #' @param auto.scale methods which should be scaled automatically (usually not useful)
@@ -90,7 +90,7 @@
 #'   created from the reliability-corrected single items (created if \code{rcs = TRUE})
 #'   be specified and constrained before estimating the model? If \code{TRUE} the estimates
 #'   for the constraints are approximated using a monte carlo simulation (see the \code{rcs.mc.reps} argument).
-#'   If \code{FALSE} the residual variances are not specified, which usually mean that all 
+#'   If \code{FALSE} the residual variances are not specified, which usually mean that all
 #'   are constrained to zero.
 #'
 #' @param rcs.mc.reps Sample size used in monte-carlo simulation, when approximating the
@@ -100,7 +100,7 @@
 #' @param rcs.scale.corrected Should reliability corrected items be scale-corrected? If \code{TRUE}
 #'   reliability-corrected single items are corrected for differences in factor loadings between
 #'   the items. Default is \code{TRUE}.
-#' 
+#'
 #' @param LAVFUN Function used to estimate the model. Defaults to \code{lavaan::sem}.
 #'
 #' @param ... arguments passed to \code{LAVFUN}
@@ -210,7 +210,7 @@ modsem_pi <- function(model.syntax = NULL,
 
   if (!is.null(cluster)) {
     est <- modsemPICluster(
-      model.syntax = model.syntax, 
+      model.syntax = model.syntax,
       method = method,
       data = data,
       match = match,
@@ -248,13 +248,13 @@ modsem_pi <- function(model.syntax = NULL,
   }
 
   if (!is.data.frame(data)) data <- as.data.frame(data)
- 
+
   if (rcs) { # use reliability-correct single items?
     if (!is.null(rcs.choose))
       rcs.choose <- rcs.choose[!grepl(":", rcs.choose)]
 
     corrected <- relcorr_single_item(
-      syntax          = model.syntax, 
+      syntax          = model.syntax,
       data            = data,
       choose          = rcs.choose,
       scale.corrected = rcs.scale.corrected,
@@ -280,24 +280,24 @@ modsem_pi <- function(model.syntax = NULL,
                              res.cov.method = res.cov.method,
                              res.cov.across = res.cov.across,
                              first.loading.fixed = first.loading.fixed,
-                             match = match, 
+                             match = match,
                              match.recycle = match.recycle))
-  
+
   # Get the specifications of the model
   modelSpec <- parseLavaan(model.syntax, colnames(data),
                            match = methodSettings$match,
                            suppress.warnings.match = suppress.warnings.match,
                            match.recycle = match.recycle)
-  
+
   # Save these for later
-  input <- list(syntax = model.syntax, data = data, 
+  input <- list(syntax = model.syntax, data = data,
                 parTable = modelSpec$parTable)
 
   # Data Processing
   oVs        <- c(modelSpec$oVs, group)
   missingOVs <- setdiff(oVs, colnames(data))
   stopif(length(missingOVs), "Missing variables in data:\n", missingOVs)
-  
+
   completeCases <- stats::complete.cases(data[oVs])
 
   if (any(!completeCases) && (is.null(na.rm) || na.rm)) {
@@ -335,7 +335,7 @@ modsem_pi <- function(model.syntax = NULL,
                                firstFixed = first.loading.fixed)
 
   newSyntax <- parTableToSyntax(parTable, removeColon = TRUE)
- 
+
   if (rcs && rcs.res.cov.xz && method != "ca") { # Constrained Approach Should handle this it on its own...
 
     elemsxz   <- modelSpec$elementsInProdNames
@@ -359,9 +359,9 @@ modsem_pi <- function(model.syntax = NULL,
 
   # Extra info saved for estimating baseline model
   input$modsemArgs <- methodSettings
-  input$lavArgs    <- list(estimator = estimator, cluster = cluster, group = group, 
-                           LAVFUN = LAVFUN, 
-                           rcs.res.cov.xz = rcs.res.cov.xz, 
+  input$lavArgs    <- list(estimator = estimator, cluster = cluster, group = group,
+                           LAVFUN = LAVFUN,
+                           rcs.res.cov.xz = rcs.res.cov.xz,
                            rcs.mc.reps = rcs.mc.reps,
                            rcs.choose = rcs.choose, ...)
   modelSpec$input  <- input
@@ -424,10 +424,10 @@ createIndProds <- function(relDf, indNames, data, centered = FALSE) {
   }
 
   prods <- lapplyNamed(
-    X = varnames, 
+    X = varnames,
     FUN = \(varname, data, relDf) multiplyIndicatorsCpp(data[relDf[[varname]]]),
-    data = inds, 
-    relDf = relDf, 
+    data = inds,
+    relDf = relDf,
     names = varnames
   )
 
@@ -453,7 +453,7 @@ calculateResidualsDf <- function(dependentDf, independentNames, data) {
                                                       combinedData)))
   colnames(resNoNA) <- dependentNames
 
-  resNA <- dependentDf 
+  resNA <- dependentDf
   resNA[isComplete, ] <- resNoNA
 
   resNA
@@ -501,27 +501,27 @@ addSpecsParTable <- function(modelSpec,
 
   } else if (residual.cov.syntax && res.cov.method != "none") {
     # Even if `res.cov.across == TRUE` we still want to run `getParTableResCov`
-    # for each latent interaction terms, due to some important checks, which 
+    # for each latent interaction terms, due to some important checks, which
     # won't work properly when using a combined `relDf`. If checks fail
     # we get `attr(relDf, "OK") == FALSE`
     residualCovariancesList <- purrr::map(.x = relDfs, .f = getParTableResCov,
                                           method = res.cov.method,
-                                          pt = parTable, 
+                                          pt = parTable,
                                           include.single.inds = FALSE)
     residualCovariances <- purrr::list_rbind(residualCovariancesList)
 
     if (res.cov.across) {
       # Get residual covariances across interaction terms
-      # E.g., 
+      # E.g.,
       # X:Z =~ x1:z1
       # X:M =~ x1:m1
       # x1:z1 ~~ x1:m1
-      isOK <- vapply(residualCovariancesList, FUN.VALUE = logical(1L), 
+      isOK <- vapply(residualCovariancesList, FUN.VALUE = logical(1L),
                      FUN = \(rows) attr(rows, "OK"))
       RelList <- Reduce(lapply(unname(relDfs[isOK]), FUN = as.list), f = c)
       residualCovariances <- getParTableResCov(relDf = RelList, # works with list as well
                                                method = res.cov.method,
-                                               pt = parTable, 
+                                               pt = parTable,
                                                include.single.inds = TRUE)
     }
 
@@ -755,7 +755,7 @@ modsemPICluster <- function(model.syntax = NULL,
                             auto.center = "none",
                             estimator = "ML",
                             group = NULL,
-                            cluster = NULL, 
+                            cluster = NULL,
                             run = TRUE,
                             na.rm = FALSE,
                             suppress.warnings.lavaan = FALSE,
@@ -817,7 +817,7 @@ modsemPICluster <- function(model.syntax = NULL,
     ) |> stringr::str_replace_all(pattern = "\n", replacement = "\n\t")
 
     newBlockData <- get_pi_data(
-      model.syntax = syntaxBlock, 
+      model.syntax = syntaxBlock,
       data = data,
       method = method,
       match = match,
@@ -854,7 +854,7 @@ modsemPICluster <- function(model.syntax = NULL,
     }
 
     newSyntax <- paste(
-      newSyntax, 
+      newSyntax,
       levelHeader, "\t", # indent first row
       newBlockSyntax,
       sep = "\n"

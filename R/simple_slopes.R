@@ -62,29 +62,29 @@ U_CROSS = "\u2534" # up cross
 #'   helpers.
 #'
 #' @details
-#' \strong{Computation Steps}  
+#' \strong{Computation Steps}
 #' \enumerate{
 #'    \item The function extracts parameter estimates (and, if necessary, their covariance
-#'          matrix) from the fitted SEM model (\code{model}).  
+#'          matrix) from the fitted SEM model (\code{model}).
 #'    \item It identifies the coefficients for \code{x}, \code{z}, and \code{x:z} in the model's
 #'          parameter table, as well as the variance of \code{x}, \code{z} and the residual variance
 #'          of \code{y}.
 #'    \item If \code{xz} is not provided, it will be constructed by combining \code{x} and
-#'          \code{z} with a colon (\code{":"}). Depending on the approach used to estimate the model, 
-#'          the colon may be removed or replaced internally; the function attempts to reconcile that.  
+#'          \code{z} with a colon (\code{":"}). Depending on the approach used to estimate the model,
+#'          the colon may be removed or replaced internally; the function attempts to reconcile that.
 #'
 #'   \item A grid of \code{x} and \code{z} values is created from \code{vals_x} and
 #'         \code{vals_z}. If \code{rescale = TRUE}, these values are transformed back into raw
-#'         metric units for display in the output.  
+#'         metric units for display in the output.
 #'   \item For each point in the grid, a predicted value of \code{y} is computed via
 #'         \code{(beta0 + beta_x * x + beta_z * z + beta_xz * x * z)} and, if included, a
-#'         mean offset.  
+#'         mean offset.
 #'   \item The standard error (\code{std.error}) is derived from the covariance matrix of
 #'         the relevant parameters, and if \code{ci_type = "prediction"}, adds the residual
-#'         variance.  
+#'         variance.
 #'   \item Confidence (or prediction) intervals are formed using \code{ci_width} (defaulting
 #'         to 95\%). The result is a table-like data frame with predicted values, CIs,
-#'         standard errors, z-values, and p-values.  
+#'         standard errors, z-values, and p-values.
 #' }
 #'
 #' @return A \code{data.frame} (invisibly inheriting class \code{"simple_slopes"})
@@ -100,10 +100,10 @@ U_CROSS = "\u2534" # up cross
 #'         (or prediction) interval.
 #' }
 #' An attribute \code{"variable_names"} (list of \code{x}, \code{z}, \code{y})
-#' is attached for convenience. 
+#' is attached for convenience.
 #'
 #' @export
-#' 
+#'
 #' @examples
 #' \dontrun{
 #' library(modsem)
@@ -125,15 +125,15 @@ U_CROSS = "\u2534" # up cross
 #' # If the data or user wants unscaled values, set rescale = FALSE, etc.
 #' simple_slopes(x = "X", z = "Z", y = "Y", model = est1, rescale = FALSE)
 #' }
-simple_slopes <- function(x, 
-                          z, 
+simple_slopes <- function(x,
+                          z,
                           y,
                           xz = NULL,
                           model,
                           vals_x = -3:3,
                           vals_z = -1:1,
                           rescale = TRUE,
-                          ci_width = 0.95, 
+                          ci_width = 0.95,
                           ci_type = "confidence",
                           relative_h0 = TRUE,
                           standardized = FALSE,
@@ -147,7 +147,7 @@ simple_slopes <- function(x,
   xz <- c(xz, reverseIntTerm(xz))
 
   if (!inherits(model, c("modsem_da", "modsem_mplus")) &&
-      !isLavaanObject(model)) 
+      !isLavaanObject(model))
     xz <- stringr::str_remove_all(xz, ":")
 
   if (standardized) {
@@ -161,9 +161,9 @@ simple_slopes <- function(x,
     vcov <- lavaan::vcov
     nobs <- lavaan::nobs
     coef <- lavaan::coef
-  } 
-   
-  n     <- nobs(model) 
+  }
+
+  n     <- nobs(model)
   VCOV  <- vcov(model)
   coefs <- coef(model)
 
@@ -241,14 +241,14 @@ simple_slopes <- function(x,
   sig.slopes <- data.frame(
     param = paste0(y, "~", x),
     moderator = z,
-    slope.predictor = slopes, 
+    slope.predictor = slopes,
     value.moderator = vals_z,
     std.error = std.error,
-    z.value = z.value, 
+    z.value = z.value,
     p.value = 2 * stats::pnorm(-abs(z.value)),
     ci.lower = slopes - ci.sig * std.error,
     ci.upper = slopes + ci.sig * std.error
-  ) 
+  )
 
   # significance test min/max
   var_beta_xz <- VCOV[label_beta_xz, label_beta_xz]
@@ -274,19 +274,19 @@ simple_slopes <- function(x,
   structure(
     list(
       variable_names = c(x = x, z = z, y = y),
-      margins = df, 
+      margins = df,
       sig.slopes = sig.slopes,
       sig.diff_min_max = sig.diff_min_max
-    ), 
+    ),
     class = "simple_slopes"
   )
 }
 
 
 calc_se <- function(df, e, VCOV, se_type = "confidence") {
-  if (se_type == "prediction") 
+  if (se_type == "prediction")
     return(sqrt(rep(e, nrow(df))))
-  else if (se_type != "confidence") 
+  else if (se_type != "confidence")
     warning("se_type must be 'confidence' or 'prediction', using 'confidence'!")
 
   vals_x <- df$vals_x
@@ -307,7 +307,7 @@ printTable <- function(x) {
 
   header <- paste0(paste(x[1, ], collapse = paste0(" ", V_LINE, " ")), " ")
   header_vec <- unlist(stringr::str_split(header, ""))
-  
+
   sep_thin_vec <- rep(H_LINE, nchar(header))
   sep_thin_vec[header_vec == V_LINE] <- D_CROSS
   sep_thin <- paste0(sep_thin_vec, collapse="")
@@ -326,7 +326,7 @@ printTable <- function(x) {
   for (i in seq_len(nrow(x))) {
     str <- paste(x[i, ], collapse = paste0(" ", V_LINE, " "))
     str <- paste0(V_LINE, str, " ", V_LINE, "\n")
-    
+
     if (i == 1) {
       cat(sep_thin, str, sep_thick, sep = "")
     } else cat(str)
@@ -342,7 +342,7 @@ print.simple_slopes <- function(x, digits = 2, scientific.p = FALSE, ...) {
   margins    <- x$margins
   sig.slopes <- x$sig.slopes
   sig.diff_min_max <- x$sig.diff_min_max
- 
+
   var_x <- variables[[1]]
   var_z <- variables[[2]]
   var_y <- variables[[3]]
@@ -385,11 +385,11 @@ print.simple_slopes <- function(x, digits = 2, scientific.p = FALSE, ...) {
     p.value   = formatPval(sig.slopes$p.value, scientific = scientific.p),
     ci        = paste0("[", ci.lower, ", ", ci.upper, "]")
   )
-  
+
   X1 <- matrix(header, nrow = 1)
   X2 <- padCharMatrix(as.matrix(X), n=1) # pad atleast one space to the left
   X <- apply(rbind(X1, X2), MARGIN = 2, format, digits = digits, justify = "right")
-  
+
   cat(sprintf("Effect of %s~%s|%s given values of %s:\n", var_y, var_x, var_z, var_z))
   printTable(X)
   cat("\n")
@@ -397,7 +397,7 @@ print.simple_slopes <- function(x, digits = 2, scientific.p = FALSE, ...) {
   # Margins --------------------------------------------------------------------
   predictors <- variables[1:2]
   outcome    <- variables[3]
-  header     <- c(predictors[1], sprintf("Predicted %s", outcome), "Std.Error", 
+  header     <- c(predictors[1], sprintf("Predicted %s", outcome), "Std.Error",
                   "z.value", "p.value", "Conf.Interval")
   ci.lower   <- format(margins$ci.lower, digits = digits, nsmall = digits)
   ci.upper   <- format(margins$ci.upper, digits = digits, nsmall = digits)
@@ -414,7 +414,7 @@ print.simple_slopes <- function(x, digits = 2, scientific.p = FALSE, ...) {
   X2 <- padCharMatrix(as.matrix(X), n=1) # pad atleast one space to the left
 
   X <- apply(rbind(X1, X2), MARGIN = 2, format, digits = digits, justify = "right")
-  
+
   for (z_i in unique(cat_z)) {
     Z1 <- X[1, ]
     Z2 <- X[2:nrow(X),][cat_z == z_i,]
@@ -422,7 +422,7 @@ print.simple_slopes <- function(x, digits = 2, scientific.p = FALSE, ...) {
 
     printf("\nPredicted %s, given %s = %s:\n", outcome, predictors[2], z_i)
     printTable(Z)
-    cat("\n") 
+    cat("\n")
   }
 }
 

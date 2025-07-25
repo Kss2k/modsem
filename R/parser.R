@@ -8,10 +8,10 @@ evalToken.LavOperator <- function(token, lhs, rhs) {
   if (is.LavToken(rhs)) rhs <- list(rhs)
   if (is.LavToken(lhs)) lhs <- list(lhs)
 
-  stopif(!is.atomic(lhs) && is.LavOperator(lhs$op), "Unexpected operator ", 
+  stopif(!is.atomic(lhs) && is.LavOperator(lhs$op), "Unexpected operator ",
          highlightErrorToken(lhs$op))
 
-  stopif(!is.atomic(rhs) && is.LavOperator(rhs$op), "Unexpected operator ", 
+  stopif(!is.atomic(rhs) && is.LavOperator(rhs$op), "Unexpected operator ",
          highlightErrorToken(rhs$op))
 
   list(lhs = lhs, op = token, rhs = rhs)
@@ -26,7 +26,7 @@ evalToken.LavToken <- function(token, lhs, rhs) {
 
 #' @export
 evalToken.LavName <- function(token, lhs, rhs) {
-  stopif(is.LavToken(rhs), "Unexpected token ", 
+  stopif(is.LavToken(rhs), "Unexpected token ",
          highlightErrorToken(rhs))
   stopif(is.LavToken(lhs), "Unexpected token ",
          highlightErrorToken(lhs))
@@ -36,7 +36,7 @@ evalToken.LavName <- function(token, lhs, rhs) {
 
 #' @export
 evalToken.LavNumeric <- function(token, lhs, rhs) {
-  stopif(is.LavToken(rhs), "Unexpected token ", 
+  stopif(is.LavToken(rhs), "Unexpected token ",
          highlightErrorToken(rhs))
   stopif(is.LavToken(lhs), "Unexpected token ",
          highlightErrorToken(lhs))
@@ -48,10 +48,10 @@ evalToken.LavNumeric <- function(token, lhs, rhs) {
 evalToken.LavAdd <- function(token, lhs, rhs) {
   if (is.null(rhs)) {
     stop2("Expected token after `+` ", highlightErrorToken(token))
-  } else if (is.null(lhs)) { 
+  } else if (is.null(lhs)) {
     stop2("Expected token before `+` ", highlightErrorToken(token))
-  } 
-  
+  }
+
   if (is.LavToken(rhs)) {
     rhs <- list(rhs)
   }

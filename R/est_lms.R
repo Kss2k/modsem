@@ -47,7 +47,7 @@ computeFullIcom <- function(theta, model, data, P) {
 updateStatusLog <- function(iterations, mode, logLikNew, deltaLL, relDeltaLL, verbose = FALSE) {
   if (verbose) {
     clearConsoleLine()
-    printf("\rIter=%d Mode=%s LogLik=%.2f \u0394LL=%.2g rel\u0394LL=%.2g", 
+    printf("\rIter=%d Mode=%s LogLik=%.2f \u0394LL=%.2g rel\u0394LL=%.2g",
            iterations, mode, logLikNew, deltaLL, relDeltaLL)
   }
 }
@@ -92,7 +92,7 @@ emLms <- function(model,
   thetaNew  <- model$theta
   logLiks   <- NULL
   direction <- NULL
-  
+
   # quadrature info
   lastQuad     <- NULL
   adaptiveQuad <- model$quad$adaptive
@@ -112,13 +112,13 @@ emLms <- function(model,
   while (run) {
     # New iteration
     iterations <- iterations + 1
-    logLikOld  <- logLikNew 
+    logLikOld  <- logLikNew
     thetaOld   <- thetaNew
     recalcQuad <- adaptiveQuad && iterations %% adaptiveFreq == 0
 
     # E-step
-    P <- estepLms(model = model, theta = thetaOld, data = data, 
-                  lastQuad = lastQuad, recalcQuad = recalcQuad, 
+    P <- estepLms(model = model, theta = thetaOld, data = data,
+                  lastQuad = lastQuad, recalcQuad = recalcQuad,
                   adaptive.quad.tol = adaptive.quad.tol, ...)
 
     if (testSimpleGradient) {
@@ -144,14 +144,14 @@ emLms <- function(model,
 
     updateStatusLog(iterations, mode, logLikNew, deltaLL, relDeltaLL, verbose)
 
-    if (iterations >= max.iter || 
+    if (iterations >= max.iter ||
         abs(deltaLL) < convergence.abs ||
         abs(relDeltaLL) < convergence.rel) break
 
     if (deltaLL < 0) {
       if (verbose) cat("\n")
       warning2("Loglikelihood is increasing!")
-    } 
+    }
 
     # Determine Mode
     if (algorithm == "EMA") {
@@ -176,12 +176,12 @@ emLms <- function(model,
 
     if (algorithm != "EM" && mode != "EM") {
       # EMA: QN or FS update attempt
-      grad <- computeGradient(theta = thetaOld, model = model, 
+      grad <- computeGradient(theta = thetaOld, model = model,
                               P = P, epsilon = epsilon)
 
       if (mode == "QN") {
         if (length(qn_env$s_list)) {
-          direction <- lbfgs_two_loop(-grad, qn_env$s_list, qn_env$g_list) 
+          direction <- lbfgs_two_loop(-grad, qn_env$s_list, qn_env$g_list)
         } else direction <- -grad
 
       } else if (mode == "FS") {
@@ -191,7 +191,7 @@ emLms <- function(model,
 
       # Line search if a direction is available
       if (!is.null(direction)) {
-        alpha     <- 1 
+        alpha     <- 1
         success   <- FALSE
         refLogLik <- compLogLikLms(theta = thetaOld, model = model, P = P, sign = 1)
 
@@ -202,11 +202,11 @@ emLms <- function(model,
             compLogLikLms(theta = thetaTrial, model = model, P = P, sign = 1)
           })
 
-          if (!is.na(logLikTrial) && logLikTrial >= refLogLik) { 
+          if (!is.na(logLikTrial) && logLikTrial >= refLogLik) {
             success <- TRUE
-            break 
+            break
           }
-          
+
           alpha <- alpha / 2
         }
 
@@ -215,7 +215,7 @@ emLms <- function(model,
           # update BFGS memory if in QN mode
 
           if (mode == "QN") {
-            gradNew <- computeGradient(theta = thetaNew, model = model, 
+            gradNew <- computeGradient(theta = thetaNew, model = model,
                                        P = P, epsilon = epsilon)
 
             s_vec <- thetaNew - thetaOld
@@ -235,7 +235,7 @@ emLms <- function(model,
 
       } else mode <- "EM"
     }
-    
+
     if (algorithm == "EM" || mode == "EM") {
       # Plain EM M-step
       mstep <- mstepLms(model = model, P = P, theta = thetaOld,
@@ -247,7 +247,7 @@ emLms <- function(model,
 
   if (verbose) cat("\n")
   warnif(iterations >= max.iter, "Maximum iterations reached!\n",
-         "Consider a tweaking these parameters:\n", 
+         "Consider a tweaking these parameters:\n",
          formatParameters(convergence.abs,
                           convergence.rel,
                           algorithm,
@@ -259,11 +259,11 @@ emLms <- function(model,
                           quad.range))
 
   # Final E- and M-step for output
-  P <- estepLms(model = model, theta = thetaNew, data = data, 
-                lastQuad = lastQuad, recalcQuad = FALSE, 
+  P <- estepLms(model = model, theta = thetaNew, data = data,
+                lastQuad = lastQuad, recalcQuad = FALSE,
                 adaptive.quad.tol = adaptive.quad.tol, ...) # adaptive.quad.tol doesn't matter (atm)
-  final <- mstepLms(model = model, P = P, theta = thetaNew, 
-                    max.step = max.step, epsilon = epsilon, 
+  final <- mstepLms(model = model, P = P, theta = thetaNew,
+                    max.step = max.step, epsilon = epsilon,
                     optimizer = optimizer, verbose = verbose,
                     control = control, ...)
 

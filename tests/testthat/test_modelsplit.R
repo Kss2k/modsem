@@ -1,6 +1,6 @@
 devtools::load_all()
 
-tpb <- ' 
+tpb <- '
 # Outer Model (Based on Hagger et al., 2007)
   ATT =~ att1 + att2 + att3 + att4 + att5
   SN =~ sn1 + sn2
@@ -10,8 +10,8 @@ tpb <- '
 
 # Inner Model (Based on Steinmetz et al., 2011)
   INT ~ ATT + PBC + SN
-  BEH ~ INT + PBC 
-  BEH ~ INT:PBC  
+  BEH ~ INT + PBC
+  BEH ~ INT:PBC
 '
 
 splitm <- function(s) splitParTable(modsemify(s))
@@ -24,7 +24,7 @@ testthat::expect_warning(
 summary(est_qml)
 
 
-tpb2 <- ' 
+tpb2 <- '
 # Outer Model (Based on Hagger et al., 2007)
   ATT =~ att1 + att2 + att3 + att4 + att5
   SN =~ sn1 + sn2
@@ -35,7 +35,7 @@ tpb2 <- '
 
 # Inner Model (Based on Steinmetz et al., 2011)
   INT ~ ATT + PBC + SN
-  BEH ~ INT + PBC 
+  BEH ~ INT + PBC
   BEH ~ INT:PBC
   HAPPY ~ BEH:INT
 '
@@ -43,7 +43,7 @@ tpb2 <- '
 s2 <- splitm(tpb2)
 testthat::expect_true(unique(s2$parTableCov$lhs) == "INT")
 
-tpb3 <- ' 
+tpb3 <- '
 # Outer Model (Based on Hagger et al., 2007)
   ATT =~ att1 + att2 + att3 + att4 + att5
   SN =~ sn1 + sn2
@@ -54,7 +54,7 @@ tpb3 <- '
 
 # Inner Model (Based on Steinmetz et al., 2011)
   INT ~ ATT + PBC + SN
-  BEH ~ INT + PBC 
+  BEH ~ INT + PBC
   INT ~ SN:PBC
   HAPPY ~ BEH:INT
 '

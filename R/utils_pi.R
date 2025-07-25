@@ -157,7 +157,7 @@ defineUndefinedLabels <- function(parTable.x, parTable.y) {
   # parTable.x = original parTable without new constraints
   # parTable.y = altered parTable with new constraints (and new labels)
   # goal: make sure user-specified labels are not overwritten
-  
+
   parTable.o <- parTable.y # parTable out
   parTable.x <- stripColonsParTable(parTable.x)
   parTable.x <- rename(parTable.x, mod="mod.x")

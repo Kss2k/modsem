@@ -37,7 +37,7 @@ for (i in seq_len(R)) {
   zwm <- z * w * m
   xzwm <- x * z * w * m
 
-  Si <- cov(data.frame(x, z, w, xz, xw, zw, 
+  Si <- cov(data.frame(x, z, w, xz, xw, zw,
                        xm, zm, wm, xzw, xzm,
                        xwm, zwm, xzwm))
 
@@ -47,12 +47,12 @@ cat("\n")
 
 S <- S/R
 round(S, 2)
-  
+
 X <- XI[, 1]
 Z <- XI[, 2]
 W <- XI[, 3]
 
-Y <- 1.2 * X + 0.4 * Z + 0.7 * W + 
+Y <- 1.2 * X + 0.4 * Z + 0.7 * W +
   0.2 * W * Z +
   0.7 * W * X +
   1.2 * X * Z +
@@ -77,7 +77,7 @@ y1 <- createInd(Y, 1)
 y2 <- createInd(Y, 0.8)
 y3 <- createInd(Y, 0.9)
 
-data <- data.frame(x1, x2, x3, 
+data <- data.frame(x1, x2, x3,
                    z1, z2, z3,
                    w1, w2, w3,
                    y1, y2, y3)
@@ -104,7 +104,7 @@ summary(est, H0 = FALSE)
 # n = 100,000
 #> Regressions:
 #>                     Estimate  Std.Err  z-value  P(>|z|)
-#>  Y ~                                                 
+#>  Y ~
 #>    X     (true: 1.2)   1.199    0.012  103.820    0.000
 #>    Z     (true: 0.4)   0.383    0.008   46.859    0.000
 #>    W     (true: 0.7)   0.699    0.010   68.139    0.000
@@ -118,7 +118,7 @@ summary(est, H0 = FALSE)
 # n = 10,000
 #> Regressions:
 #>                    Estimate  Std.Err  z-value  P(>|z|)
-#>   Y ~                                                 
+#>   Y ~
 #>     X   (true: 1.2)   1.186    0.012  101.886    0.000
 #>     Z   (true: 0.4)   0.411    0.008   50.541    0.000
 #>     W   (true: 0.7)   0.701    0.010   68.565    0.000
@@ -133,7 +133,7 @@ summary(est.rcs.1, H0 = FALSE)
 # n = 100,000
 #> Regressions:
 #>                    Estimate  Std.Err  z-value  P(>|z|)
-#>   Y ~                                                 
+#>   Y ~
 #>     X   (true: 1.2)   0.987    0.013   77.095    0.000
 #>     Z   (true: 0.4)   0.010    0.010    1.058    0.290
 #>     W   (true: 0.7)   0.349    0.012   29.759    0.000
@@ -148,7 +148,7 @@ summary(est.rcs.2, H0 = FALSE)
 # n = 100,000
 #> Regressions:
 #>                    Estimate  Std.Err  z-value  P(>|z|)
-#>   Y ~                                                 
+#>   Y ~
 #>     X   (true: 1.2)   1.140    0.011   99.303    0.000
 #>     Z   (true: 0.4)   0.257    0.008   30.394    0.000
 #>     W   (true: 0.7)   0.570    0.010   54.834    0.000

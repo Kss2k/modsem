@@ -40,7 +40,7 @@ m_linear <- '
 lavaan::summary(lavaan::sem(m_linear, data))
 testthat::expect_no_warning({
   lms_linear_obl <- modsem(m_linear, data = data, method = "lms")
-  lms_linear_ort <- modsem(m_linear, data = data, method = "lms", 
+  lms_linear_ort <- modsem(m_linear, data = data, method = "lms",
                            orthogonal.x = TRUE, orthogonal.y = TRUE)
   qml_linear_obl <- modsem(m_linear, data = data, method = "qml")
   qml_linear_ort <- modsem(m_linear, data = data, method = "qml",
@@ -73,7 +73,7 @@ m_nlinear <- '
 
 testthat::expect_no_warning({
   lms_nlinear_obl <- modsem(m_nlinear, data = data, method = "lms")
-  lms_nlinear_ort <- modsem(m_nlinear, data = data, method = "lms", 
+  lms_nlinear_ort <- modsem(m_nlinear, data = data, method = "lms",
                            orthogonal.x = TRUE, orthogonal.y = TRUE)
   qml_nlinear_obl <- modsem(m_nlinear, data = data, method = "qml")
   qml_nlinear_ort <- modsem(m_nlinear, data = data, method = "qml",

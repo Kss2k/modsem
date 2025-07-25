@@ -19,8 +19,8 @@ knitr::opts_chunk$set(
 ```{r setup}
 library(modsem)
 ```
-If you're using one of the product indicator approaches, you might want to use some lavaan 
-functions on top of the estimated lavaan-object. 
+If you're using one of the product indicator approaches, you might want to use some lavaan
+functions on top of the estimated lavaan-object.
 To do so you can extract the lavaan-object using the `extract_lavaan()` function.
 
 ```{r}

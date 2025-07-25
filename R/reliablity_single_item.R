@@ -11,14 +11,14 @@
 #'
 #' @param syntax A character string containing lavaan model syntax.  Must at
 #'   least include the measurement relations (\code{=~}).
-#'   
+#'
 #' @param data A \code{data.frame}, \code{tibble} or object coercible to a data frame that
 #'   holds the raw observed indicators.
-#'   
+#'
 #' @param choose \emph{Optional.} Character vector with the names of the latent
 #'   variables you wish to replace by single indicators.  Defaults to \strong{all}
 #'   first‑order latent variables in \code{syntax}.
-#'   
+#'
 #' @param scale.corrected Should reliability-corrected items be scale-corrected? If \code{TRUE}
 #'   reliability-corrected single items are corrected for differences in factor loadings between
 #'   the items. Default is \code{TRUE}.
@@ -47,28 +47,28 @@
 #'  PBC =~ pbc2 + pbc1 + pbc3 + pbc4
 #'  INT =~ int2 + int1 + int3 + int4
 #'  BEH =~ beh3 + beh2 + beh1 + beh4
-#' 
+#'
 #' # Inner Model (Based on Steinmetz et al., 2011)
 #'  INT ~ ATT + SN + PBC
 #'  BEH ~ INT + PBC
 #'  BEH ~ INT:PBC
 #' "
-#' 
+#'
 #' corrected <- relcorr_single_item(syntax = tpb_uk, data = TPB_UK)
 #' print(corrected)
 #'
 #' syntax <- corrected$syntax
 #' data   <- corrected$data
-#' 
+#'
 #' est_dca <- modsem(syntax, data = data, method = "dblcent")
 #' est_lms <- modsem(syntax, data = data, method="lms", nodes=32)
 #' summary(est_lms)
 #' }
 #'
 #' @export
-relcorr_single_item <- function(syntax, 
-                                data, 
-                                choose = NULL, 
+relcorr_single_item <- function(syntax,
+                                data,
+                                choose = NULL,
                                 scale.corrected = TRUE,
                                 warn.lav = TRUE) {
   data <- as.data.frame(data)
@@ -91,7 +91,7 @@ relcorr_single_item <- function(syntax,
     ignore <- c(ignore, higherOrderLVs)
   }
 
-  warnif(any(!choose %in% lVs), "Could not find latent variables:\n", 
+  warnif(any(!choose %in% lVs), "Could not find latent variables:\n",
          paste(choose[!choose %in% lVs], collapse = ", "))
   choose <- choose[choose %in% lVs]
 
@@ -102,8 +102,8 @@ relcorr_single_item <- function(syntax,
 
   stopif(!NROW(parTableOuter), "Cannot ignore all latent variables when creating ",
          "reliability corrected items!")
- 
-  warnif(any(parTableOuter$mod != ""), 
+
+  warnif(any(parTableOuter$mod != ""),
          "Labels and modifiers in the measurement model used to create reliability ",
          "corrected single items will be ignored!\nThis may cause the model constraints ",
          "in the structural model to break!", immediate. = FALSE)
@@ -115,7 +115,7 @@ relcorr_single_item <- function(syntax,
   k <- length(lVs)
 
   # Add residual Covariances
-  rescovind <- parTableInner$lhs %in% inds & 
+  rescovind <- parTableInner$lhs %in% inds &
                parTableInner$rhs %in% inds &
                parTableInner$op == "~~"
   parTableInner <- parTableInner[!rescovind, ]
@@ -125,7 +125,7 @@ relcorr_single_item <- function(syntax,
   indsInInner <- parTableInner$lhs %in% inds | parTableInner$rhs %in% inds
   if (any(indsInInner)) {
     warning2("Removing expressions containing indicators!\n",
-             capturePrint(parTableInner[indsInInner, c("lhs", "op", "rhs")]), 
+             capturePrint(parTableInner[indsInInner, c("lhs", "op", "rhs")]),
              immediate. = FALSE)
     parTableInner <- parTableInner[!indsInInner, ]
   }
@@ -136,9 +136,9 @@ relcorr_single_item <- function(syntax,
 
   cov.lv      <- lavaan::lavInspect(cfa, "cov.lv")
   stdSolution <- lavaan::lavInspect(cfa, "std")
-  lambda <- stdSolution$lambda 
+  lambda <- stdSolution$lambda
   theta  <- stdSolution$theta
- 
+
   avefunc <- \(lV) calcAVE(lV, theta.std = theta, lambda.std = lambda)
   relfunc <- \(lV) calcChronbach(R = R, x = indsLVs[[lV]])
 
@@ -161,13 +161,13 @@ relcorr_single_item <- function(syntax,
     res <- stats::setNames(numeric(length(lVs)), nm = lVs)
 
     for (lV in lVs) {
-      ITEM <- getScaleCorrectedItem(parTable = parTable, lV = lV, 
+      ITEM <- getScaleCorrectedItem(parTable = parTable, lV = lV,
                                     data = data, cfa = cfa)
 
       newIndName <- singleInds[[lV]]
       newInd     <- ITEM$item
       residual   <- ITEM$residual
-       
+
       newData[[newIndName]] <- newInd
       res[[lV]] <- residual
     }
@@ -178,16 +178,16 @@ relcorr_single_item <- function(syntax,
       newIndName <- singleInds[[lV]]
       X          <- as.matrix(data[indsLV])
       newInd     <- rowMeans(data[indsLV], na.rm = TRUE)
-      
+
       newData[[newIndName]]    <- newInd
       varNewInds[[newIndName]] <- stats::var(newInd, na.rm = TRUE)
-      
+
     }
-    
+
     rel <- rel.std * varNewInds
     res <- res.std * varNewInds
   }
-  
+
 
   lhs <- unname(c(lVs, singleInds))
   rhs <- unname(c(singleInds, singleInds))
@@ -227,17 +227,17 @@ getScaleCorrectedItem <- function(parTable, lV, data, cfa) {
 
   residual <- (t(I) %*% theta %*% I) / sum(lambda)^2 # variance of (e1 + e2 + ... + en)
 
-  list(X = X, item = item, residual = residual) 
+  list(X = X, item = item, residual = residual)
 }
 
 
-simulateCrosssimulateCrossResCovRCS <- function(corrected, 
-                                                elemsInIntTerms, 
+simulateCrosssimulateCrossResCovRCS <- function(corrected,
+                                                elemsInIntTerms,
                                                 mc.reps = 3e4,
                                                 parTable,
                                                 include.normal.inds = FALSE) {
   EMPTY <- list(syntax = "", rows = NULL)
-  
+
   if (!length(elemsInIntTerms))
     return(EMPTY)
 
@@ -246,7 +246,7 @@ simulateCrosssimulateCrossResCovRCS <- function(corrected,
   residuals       <- corrected$residuals
   constructs      <- names(single.items)
 
-  intTermIsRCS <- vapply(elemsInIntTerms, FUN.VALUE = logical(1L), 
+  intTermIsRCS <- vapply(elemsInIntTerms, FUN.VALUE = logical(1L),
                          FUN = \(elems) all(elems %in% constructs))
   elemsInIntTerms <- elemsInIntTerms[intTermIsRCS]
 
@@ -261,7 +261,7 @@ simulateCrosssimulateCrossResCovRCS <- function(corrected,
 
   XI  <- mvtnorm::rmvnorm(mc.reps, sigma = Phi)
   EPS <- mvtnorm::rmvnorm(mc.reps, sigma = Theta)
-  Y   <- XI + EPS 
+  Y   <- XI + EPS
 
   CONSTRUCTS <- as.data.frame(XI)
   ITEMS      <- as.data.frame(Y)
@@ -279,7 +279,7 @@ simulateCrosssimulateCrossResCovRCS <- function(corrected,
 
     x.c <- x[!missing]
     y.c <- y[!missing]
-   
+
     epsilon <- stats::residuals(stats::lm(x.c ~ y.c))
 
     out <- rep(NA, length(epsilon))
@@ -312,7 +312,7 @@ simulateCrosssimulateCrossResCovRCS <- function(corrected,
       rhs <- colnames(Epsilon)[[j]]
 
       matching <- parTable[((parTable$lhs == rhs & parTable$rhs == lhs) |
-                            (parTable$lhs == rhs & parTable$rhs == lhs)) & 
+                            (parTable$lhs == rhs & parTable$rhs == lhs)) &
                            parTable$op == "~~", ]
       if (NROW(matching)) next
 
@@ -371,14 +371,14 @@ getSingleIndNames <- function(lVs) {
 
 
 calcChronbach <- function(R, x) {
-  Rx <- R[x, x] 
+  Rx <- R[x, x]
   k <- length(x)
 
   if (k == 1) return(1) # should be treated like an observed variable
 
   warnif(any(Rx < 0), "Some item covariances are negative! Consider ",
          "recoding your items!")
-  
+
   Rx <- abs(Rx)
   varSum <- sum(diag(Rx))
   covSum <- sum(Rx[lower.tri(Rx)])

@@ -11,7 +11,7 @@
 #' }
 #'
 #' @param m Number of imputations to perform. More imputations will yield better estimates
-#'   but can also be (a lot) slower. 
+#'   but can also be (a lot) slower.
 #'
 #' @param verbose Should progress be printed to the console?
 #'
@@ -24,30 +24,30 @@
 #'                        This can give more accurate results, but can be (a lot) slower.
 #'                        The standard errors are thereafter corrected using the distribution of the
 #'                        estimated coefficients from the different imputations.}
-#' }  
-#' 
+#' }
+#'
 #' @param ... Arguments passed to \code{\link{modsem}}.
 #'
 #' @details
-#'  \code{modsem_impute} is currently only available for the DA approaches 
+#'  \code{modsem_impute} is currently only available for the DA approaches
 #'  (LMS and QML). It performs multiple imputation using \code{Amelia::amelia}
 #'  and returns aggregated coefficients from the multiple imputations, along with
 #'  corrected standard errors.
 #'
 #' @examples
-#' 
+#'
 #' m1 <- '
 #'   # Outer Model
 #'   X =~ x1 + x2 +x3
 #'   Y =~ y1 + y2 + y3
 #'   Z =~ z1 + z2 + z3
-#' 
+#'
 #'   # Inner model
 #'   Y ~ X + Z + X:Z
 #' '
-#' 
+#'
 #' oneInt2 <- oneInt
-#' 
+#'
 #' set.seed(123)
 #' k <- 200
 #' I <- sample(nrow(oneInt2), k, replace = TRUE)
@@ -59,14 +59,14 @@
 #' summary(est)
 #' }
 #' @export
-modsem_mimpute <- function(model.syntax, 
-                           data, 
+modsem_mimpute <- function(model.syntax,
+                           data,
                            method = "lms",
-                           m = 25, 
-                           verbose = interactive(), 
+                           m = 25,
+                           verbose = interactive(),
                            se = c("simple", "full"),
                            ...) {
-  stopif(!method %in% c("lms", "qml"), 
+  stopif(!method %in% c("lms", "qml"),
          "Multiple imputation is only available for the LMS and QML approaches!")
 
   modsem_mimput_modsem_da(
@@ -94,10 +94,10 @@ modsem_mimput_modsem_da <- function(model.syntax,
 
   parTable <- rbind(modsemify(model.syntax), modsemify(cov.syntax))
   ovs      <- getOVs(parTable)
-  
+
   missing.cols <- !ovs %in% colnames(data)
-  stopif(any(missing.cols), 
-         "Variables missing from data:\n", 
+  stopif(any(missing.cols),
+         "Variables missing from data:\n",
          paste(ovs[missing.cols], sep = "\n"))
 
   data <- data[, ovs, drop = FALSE]
@@ -167,14 +167,14 @@ modsem_mimput_modsem_da <- function(model.syntax,
         d.all  <- names(COEF.ALL[[i]])
         d.free <- names(COEF.FREE[[i]])
 
-        VCOV.ALL[[i]]  <- matrix(0, nrow = k.all, ncol = k.all, 
+        VCOV.ALL[[i]]  <- matrix(0, nrow = k.all, ncol = k.all,
                                  dimnames = list(d.all, d.all))
-        VCOV.FREE[[i]] <- matrix(0, nrow = k.free, ncol = k.free, 
+        VCOV.FREE[[i]] <- matrix(0, nrow = k.free, ncol = k.free,
                                  dimnames = list(d.free, d.free))
       }
 
       THETA <- rbind(
-        THETA, 
+        THETA,
         matrix(fit_i$theta, nrow = 1, dimnames = list(NULL, names(fit_i$theta)))
       )
     })
@@ -184,9 +184,9 @@ modsem_mimput_modsem_da <- function(model.syntax,
   }
 
   failed <- vapply(fits, FUN.VALUE = logical(1L), FUN = is.null)
- 
+
   if (any(failed)) {
-    warning2(sprintf("Model estimation failed in %d out of %d impuations!", 
+    warning2(sprintf("Model estimation failed in %d out of %d impuations!",
                      sum(failed), m), immediate. = FALSE)
 
     fits      <- fits[!failed]
@@ -202,7 +202,7 @@ modsem_mimput_modsem_da <- function(model.syntax,
 
   coef.all  <- pool.all$theta.bar
   vcov.all  <- pool.all$Tvcov
-  
+
   coef.free <- pool.free$theta.bar
   vcov.free <- pool.free$Tvcov
 
@@ -222,14 +222,14 @@ modsem_mimput_modsem_da <- function(model.syntax,
   covMatrices <- aggregateMatrices(fits, type = "cov")
   expected.matrices <- aggregateMatrices(fits, type = "expected")
 
-  getScalarFit <- function(fit, field) 
+  getScalarFit <- function(fit, field)
     vapply(fits, FUN.VALUE = numeric(1L), \(fit) fit[[field]])
 
   fit.out <- fits[[1]]
   fit.out$coefs.all      <- coef.all
   fit.out$coefs.free     <- coef.free
   fit.out$vcov.all       <- vcov.all
-  fit.out$vcov.free      <- vcov.free 
+  fit.out$vcov.free      <- vcov.free
   fit.out$parTable       <- parTable
   fit.out$information    <- sprintf("Rubin-corrected (m=%d)", m)
   fit.out$FIM            <- solve(vcov.free)
@@ -248,7 +248,7 @@ modsem_mimput_modsem_da <- function(model.syntax,
 
 
 matrixMeans <- function(matrices, na.rm = TRUE) {
-  if (!length(matrices)) 
+  if (!length(matrices))
     return(matrix(nrow=0, ncol=0))
 
   # Take the mean of a list of n*p matrices
@@ -299,7 +299,7 @@ aggregateMatrices <- function(fits, type) {
       if (is.null(matrices_i[[mat]]) || !length(matrices_i[[mat]]))
         next
 
-      matrices[[mat]] <- matrices[[mat]] + matrices_i[[mat]] 
+      matrices[[mat]] <- matrices[[mat]] + matrices_i[[mat]]
     }
   }
 

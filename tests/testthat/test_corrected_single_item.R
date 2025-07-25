@@ -14,13 +14,13 @@ tpb_uk <- "
  BEH ~ INT:PBC
 "
 
-corrected <- relcorr_single_item(syntax = tpb_uk, data = TPB_UK, 
+corrected <- relcorr_single_item(syntax = tpb_uk, data = TPB_UK,
                                  scale.corrected = TRUE)
 print(corrected)
 syntax <- corrected$syntax
 data   <- corrected$data
 
-est_dca <- modsem(syntax, data = data, method = "dblcent", 
+est_dca <- modsem(syntax, data = data, method = "dblcent",
                   rcs.res.cov.xz = TRUE)
 est_lms <- modsem(syntax, data = data, method="lms", nodes=32)
 
@@ -37,7 +37,7 @@ est_ca <- modsem(tpb_uk, data = TPB_UK, method = "ca", rcs = TRUE)
 if (FALSE) {
 Data_C1 <- read.csv(file = '~/Downloads/Example_C1.csv')
 
-# Specify the measurement model (Example.C1.Model.Measure) 
+# Specify the measurement model (Example.C1.Model.Measure)
 Example.C1.Model.Measure <- '
   JDemand =~ JobD1 + JobD2 + JobD3
   JResource =~ JobRes1+ JobRes2 + JobRes3 + JobRes4 + JobRes5 + JobRes6
@@ -64,7 +64,7 @@ print(corrected)
 #>   EStability:     0.781
 #>   Openness:       0.778
 #>   Performance:    0.658
-#> 
+#>
 #> Construct Reliability:
 #>   JDemand:        0.732
 #>   JResource:      0.735
@@ -72,7 +72,7 @@ print(corrected)
 #>   EStability:     0.737
 #>   Openness:       0.705
 #>   Performance:    0.697
-#> 
+#>
 #> Generated Syntax:
 #>   Performance ~ a1*JResource
 #>   Performance ~ HomeSick
@@ -96,7 +96,7 @@ print(corrected)
 #>   composite_EStability_ ~~ 0.254605663714866*composite_EStability_
 #>   composite_Openness_ ~~ 0.287668887959575*composite_Openness_
 #>   composite_Performance_ ~~ 0.0705913680595234*composite_Performance_
-#>   
+#>
 #> Generated Items:
 #>   'data.frame': 422 obs. of  6 variables:
 #>     $ composite_JDemand_    : num  2.67 3.33 2.33 2.67 4 ...

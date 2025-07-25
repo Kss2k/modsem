@@ -22,7 +22,7 @@ library(modsem)
 
 # The Basic Syntax
 
-`modsem` introduces a new feature to the `lavaan` syntax—the semicolon operator (`:`). The semicolon operator works the same way as in the `lm()` function. To specify an interaction effect between two variables, you join them by `Var1:Var2`. 
+`modsem` introduces a new feature to the `lavaan` syntax—the semicolon operator (`:`). The semicolon operator works the same way as in the `lm()` function. To specify an interaction effect between two variables, you join them by `Var1:Var2`.
 
 Models can be estimated using one of the product indicator approaches (`"ca"`, `"rca"`, `"dblcent"`, `"pind"`) or by using the latent moderated structural equations approach (`"lms"`) or the quasi maximum likelihood approach (`"qml"`). The product indicator approaches are estimated via `lavaan`, while the `lms` and `qml` approaches are estimated via `modsem` itself.
 
@@ -36,9 +36,9 @@ m1 <- '
   X =~ x1 + x2 + x3
   Y =~ y1 + y2 + y3
   Z =~ z1 + z2 + z3
-  
+
   # Inner Model
-  Y ~ X + Z + X:Z 
+  Y ~ X + Z + X:Z
 '
 
 est1 <- modsem(m1, oneInt)
@@ -66,8 +66,8 @@ summary(reg1)
 ### Using `modsem`
 
 `modsem` can also be used to to estimate interaction effects between observed variables.
-Interaction effects with observed variables are not supported by the `LMS` and `QML` approaches. 
-In most cases, you can define a latent variable with a single indicator to estimate the interaction 
+Interaction effects with observed variables are not supported by the `LMS` and `QML` approaches.
+In most cases, you can define a latent variable with a single indicator to estimate the interaction
 effect between two observed variables in the `LMS` and `QML` approaches.
 
 ```{r}
@@ -77,12 +77,12 @@ summary(est2)
 
 ## Interactions Between Latent and Observed Variables
 
-`modsem` also allows you to estimate interaction effects between latent and observed variables. 
-To do so, simply join a latent and an observed variable with a colon (e.g., `'latent:observed'`). 
+`modsem` also allows you to estimate interaction effects between latent and observed variables.
+To do so, simply join a latent and an observed variable with a colon (e.g., `'latent:observed'`).
 In most of the product indicator approaches the residuals of product indicators with common variables (e.g., `x1z1` and `x1z2`)
 are allowed to covary freely. This is problematic when there is an interaction term between an observed variable
 (or a latent variable with a single indicator) and a latent variables (with multiple indicators), since
-all of the product indicators share a common element. 
+all of the product indicators share a common element.
 
 In the example below, all the generated product indicators
 (`x1z1`, `x2z1` and `x3z1`) share `z1`. If all the indicator residuals of
@@ -95,9 +95,9 @@ m3 <- '
   # Outer Model
   X =~ x1 + x2 + x3
   Y =~ y1 + y2 + y3
-  
+
   # Inner Model
-  Y ~ X + z1 + X:z1 
+  Y ~ X + z1 + X:z1
 '
 
 est3 <- modsem(m3, oneInt, method = "dblcent", res.cov.method = "none")
@@ -128,7 +128,7 @@ summary(est4)
 Here is a more complex example using the theory of planned behavior (TPB) model.
 
 ```{r}
-tpb <- ' 
+tpb <- '
 # Outer Model (Based on Hagger et al., 2007)
   ATT =~ att1 + att2 + att3 + att4 + att5
   SN =~ sn1 + sn2
@@ -138,7 +138,7 @@ tpb <- '
 
 # Inner Model (Based on Steinmetz et al., 2011)
   INT ~ ATT + SN + PBC
-  BEH ~ INT + PBC + INT:PBC  
+  BEH ~ INT + PBC + INT:PBC
 '
 
 # The double-centering approach

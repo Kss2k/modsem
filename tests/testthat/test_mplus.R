@@ -3,7 +3,7 @@ m1 <- '
 # Outer Model
   X =~ x1 + x2
   Z =~ z1 + z2
-  Y =~ y1 + y2 
+  Y =~ y1 + y2
 
 # Inner model
   Y ~ X + Z + X:Z
@@ -44,7 +44,7 @@ if (run) {
 
 tpb <- "
 # Outer Model (Based on Hagger et al., 2007)
-  SUBJECTIVE_NORMS =~ sn1 + sn2 
+  SUBJECTIVE_NORMS =~ sn1 + sn2
   PBC =~ pbc1 + pbc2 + pbc3
   INT =~ int1 + int2 + int3
   BEH =~ b1 + b2

@@ -19,26 +19,26 @@ knitr::opts_chunk$set(
 ```{r setup}
 library(modsem)
 ```
-There are a number of approaches for estimating interaction effects in SEM. 
+There are a number of approaches for estimating interaction effects in SEM.
 In `modsem()`, the `method = "method"` argument allows you to choose which to use.
-Different approaches can be categorized into two groups: 
+Different approaches can be categorized into two groups:
 Product Indicator (PI) and Distribution Analytic (DA) approaches.
 
 ## Product Indicator (PI) Approaches:
 - `"ca"` = constrained approach (Algina & Moulder, 2001)
-    - Note that constraints can become quite complicated for complex models, 
+    - Note that constraints can become quite complicated for complex models,
       particularly when there is an interaction including enodgenous variables.
-      The method can therefore be quite slow. 
+      The method can therefore be quite slow.
 - `"uca"` = unconstrained approach (Marsh, 2004)
 - `"rca"` = residual centering approach (Little et al., 2006)
 - `"dblcent"` = double centering approach (Marsh., 2013)
-  - default 
+  - default
 - `"pind"` = basic product indicator approach (not recommended)
 
 ## Distribution Analytic (DA) Approaches
 - `"lms"` = The Latent Moderated Structural equations (LMS) approach, see the [vignette](https://modsem.org/articles/lms_qml.html)
 - `"qml"` = The Quasi Maximum Likelihood (QML) approach, see the [vignette](https://modsem.org/articles/lms_qml.html)
-- `"mplus"` 
+- `"mplus"`
   - estimates model through Mplus, if it is installed
 
 ```{r, eval = FALSE}
@@ -50,7 +50,7 @@ Y =~ y1 + y2 + y3
 Z =~ z1 + z2 + z3
 
 # Inner model
-Y ~ X + Z + X:Z 
+Y ~ X + Z + X:Z
 '
 
 # Product Indicator Approaches

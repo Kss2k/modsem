@@ -2,16 +2,16 @@
 #'
 #' @param est_h0 object of class \code{\link{modsem_da}} or \code{\link{modsem_pi}} representing the
 #' null hypothesis model (without interaction terms).
-#' 
+#'
 #' @param est_h1 object of class \code{\link{modsem_da}} or \code{\link{modsem_pi}} representing the
 #' alternative hypothesis model (with interaction terms).
-#' 
-#' @param ... additional arguments passed to the underlying comparison function. E.g., 
+#'
+#' @param ... additional arguments passed to the underlying comparison function. E.g.,
 #' for \code{modsem_pi} models, this can be used to pass arguments to \code{lavaan::lavTestLRT}.
 #' currently only used for \code{modsem_pi} models.
 #'
 #' @description Compare the fit of two models using the likelihood ratio test (LRT).
-#' \code{est_h0} is the null hypothesis model, and \code{est_h1} the alternative hypothesis model. 
+#' \code{est_h0} is the null hypothesis model, and \code{est_h1} the alternative hypothesis model.
 #' Importantly, the function assumes that \code{est_h0} does not have more free parameters
 #' (i.e., degrees of freedom) than \code{est_h1} (the alternative hypothesis model).
 #' @rdname compare_fit
@@ -36,13 +36,13 @@
 #' # Double centering approach
 #' est_h1 <- modsem(m1, oneInt, method = "dblcent")
 #' est_h0 <- estimate_h0(est_h1, oneInt)
-#' 
+#'
 #' compare_fit(est_h1 = est_h1, est_h0 = est_h0)
-#' 
+#'
 #' # Constrained approach
 #' est_h1 <- modsem(m1, oneInt, method = "ca")
 #' est_h0 <- estimate_h0(est_h1, oneInt)
-#' 
+#'
 #' compare_fit(est_h1 = est_h1, est_h0 = est_h0)
 #' }
 #' @export

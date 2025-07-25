@@ -6,7 +6,7 @@ m1 <- '
   X =~ x1 + x2 +x3
   Y =~ y1 + y2 + y3
   Z =~ z1 + z2 + z3
-  
+
   # Inner model
   Y ~ X + Z + X:Z + x1
 '
@@ -22,7 +22,7 @@ m2 <- '
   X =~ x1 + x2 +x3
   Y =~ y1 + y2 + y3
   Z =~ z1 + z2 + z3
-  
+
   # Inner model
   Y ~ X + Z + X:Z + jk
 '
@@ -38,7 +38,7 @@ m3 <- '
   X =~ x1 + x2 +x3
   Y =~ y1 + y2 + y3
   Z =~ z1 + z2 + z3 + jk
-  
+
   # Inner model
   Y ~ X + Z + X:Z
 '
@@ -54,7 +54,7 @@ m4 <- '
   X =~ x1 + x2 +x3
   Y =~ y1 + y2 + y3
   Z =~ z1 + z2 + z3 + y1
-  
+
   # Inner model
   Y ~ X + Z + X:Z
 '
@@ -81,6 +81,6 @@ tpb_cov <- "
   INT ~ ATT + b * SN + c * PBC
 "
 
-expect_error(modsem(tpb_main, data = TPB, method = "lms", 
+expect_error(modsem(tpb_main, data = TPB, method = "lms",
                     calc.se=FALSE, cov.syntax = tpb_cov),
              regexp = "All latent variables in the cov-model must be an exogenous variable in the main model")

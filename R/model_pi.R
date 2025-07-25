@@ -1,5 +1,5 @@
-parseLavaan <- function(model.syntax = NULL, 
-                        variableNames = NULL, 
+parseLavaan <- function(model.syntax = NULL,
+                        variableNames = NULL,
                         match = FALSE,
                         suppress.warnings.match = FALSE,
                         match.recycle = FALSE) {
@@ -33,7 +33,7 @@ parseLavaan <- function(model.syntax = NULL,
                                  pattern = ":",
                                  names = prodNamesCleaned)
   prodLengths <- vapply(elementsInProds, FUN.VALUE = integer(1L), FUN = length)
-  
+
   if (!length(prodLengths))
     prodLengths <- 0L
 
@@ -53,7 +53,7 @@ parseLavaan <- function(model.syntax = NULL,
                   names = prodNamesCleaned)
 
     # Creating a relDF for prodTerms
-    relDfs <- lapply(indsInLatentProds, FUN = createRelDf, 
+    relDfs <- lapply(indsInLatentProds, FUN = createRelDf,
                      match = match, match.recycle = match.recycle,
                      suppress.warnings.match = suppress.warnings.match)
 
@@ -163,8 +163,8 @@ fixLatentNamesSyntax <- function(model.syntax, pattern) {
 }
 
 
-createRelDf <- function(indsProdTerm, 
-                        match = FALSE, 
+createRelDf <- function(indsProdTerm,
+                        match = FALSE,
                         suppress.warnings.match = FALSE,
                         match.recycle = TRUE) {
   if (match) {
@@ -188,9 +188,9 @@ createRelDf <- function(indsProdTerm,
   } else if (!match) {
     allCombos <- t(expand.grid(indsProdTerm))
     relDf <- NULL
-    
+
     for (i in seq_len(ncol(allCombos))) {
-      if (!greplRowDf(allCombos[, i], relDf)) 
+      if (!greplRowDf(allCombos[, i], relDf))
         relDf <- cbind(relDf, allCombos[, i])
     }
   }

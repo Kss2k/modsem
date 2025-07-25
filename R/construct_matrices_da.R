@@ -1,5 +1,5 @@
 # Functions for constructing matrices for LMS and QML.
-EMPTY_MATSTRUCT <- list(numeric = matrix(nrow = 0, ncol = 0), 
+EMPTY_MATSTRUCT <- list(numeric = matrix(nrow = 0, ncol = 0),
                         label = matrix(nrow = 0, ncol = 0))
 
 
@@ -244,7 +244,7 @@ constructA <- function(xis, method = "lms", cov.syntax = NULL,
     A <- setMatrixConstraints(X = A, parTable = parTable, op = "~~",
                               RHS = xis, LHS = xis, type = "symmetric",
                               nonFreeParams = FALSE)
-   
+
     if (!any(is.na(A$numeric))) {
       Phi <- A$numeric
       Phi[upper.tri(Phi)] <- t(Phi)[upper.tri(Phi)]
@@ -271,7 +271,7 @@ constructAlpha <- function(etas, parTable, mean.observed = TRUE) {
       eta <- etas[[i]]
       fill <- if (intTermsAffectLV(eta, parTable)) NA else 0
       alpha[eta, 1] <- fill
-    } 
+    }
   }
 
   setMatrixConstraints(X = alpha, parTable = parTable, op = "~1",
@@ -486,8 +486,8 @@ sortXisConstructOmega <- function(xis, varsInts, etas, intTerms,
                                     varsInts = varsInts,
                                     intTerms = intTerms)
 
-  list(sortedXis = sortedXis, nonLinearXis = nonLinearXis, 
-       omegaXiXi = omegaXiXi, omegaEtaXi = omegaEtaXi, 
+  list(sortedXis = sortedXis, nonLinearXis = nonLinearXis,
+       omegaXiXi = omegaXiXi, omegaEtaXi = omegaEtaXi,
        k = length(nonLinearXis))
 }
 
@@ -501,7 +501,7 @@ sortXis <- function(xis, varsInts, etas, intTerms, double) {
 
   sortedXis <- c(allVarsInInts, xis[!xis %in% allVarsInInts])
   nonLinearXis <- character(0L)
-  
+
   for (interaction in varsInts) {
     if (any(interaction %in% nonLinearXis) && !double ||
         all(interaction %in% nonLinearXis) && double) next # no need to add it again

@@ -27,7 +27,7 @@ tpb <- "
   BEH ~ INT + PBC + INT:PBC
 "
 
-est <- modsem(tpb, data = TPB, method = "lms", mean.observed = FALSE, 
+est <- modsem(tpb, data = TPB, method = "lms", mean.observed = FALSE,
               nodes = 32)
 summary(est)
 
@@ -47,6 +47,6 @@ tpb_uk <- "
  BEH ~ INT:PBC
 "
 
-est <- modsem(tpb_uk, data = TPB_UK, method = "lms", mean.observed = FALSE, 
+est <- modsem(tpb_uk, data = TPB_UK, method = "lms", mean.observed = FALSE,
               nodes = 32)
 summary(est)

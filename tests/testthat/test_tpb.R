@@ -1,5 +1,5 @@
 devtools::load_all()
-tpb <- ' 
+tpb <- '
 # Outer Model (Based on Hagger et al., 2007)
   ATT =~ att1 + att2 + att3 + att4 + att5
   SN =~ sn1 + sn2
@@ -10,10 +10,10 @@ tpb <- '
 # Inner Model (Based on Steinmetz et al., 2011)
   # Covariances
   ATT ~~ SN + PBC
-  PBC ~~ SN 
+  PBC ~~ SN
   # Causal Relationsships
   INT ~ a * ATT + b * SN + c * PBC
-  BEH ~ INT + PBC 
+  BEH ~ INT + PBC
   BEH ~ d * INT:PBC
 
   a_b := a * b * d # check that labels arent overwritten without redefining

@@ -27,8 +27,8 @@ Interaction effects can be plotted using the included `plot_interaction()` funct
 - The x-variable is plotted on the x-axis.
 - The y-variable is plotted on the y-axis.
 - The z-variable determines at which points the effect of x on y is plotted.
-  
-The function will also plot the 95% confidence interval for the interaction effect. 
+
+The function will also plot the 95% confidence interval for the interaction effect.
 Note that the `vals_z` argument (as well as the values of `x`) are scaled by the
 mean and standard deviation of the variables. Unless the `rescale` argument is set to `FALSE`.
 
@@ -74,21 +74,21 @@ plot_interaction(x = "INT", z = "PBC", y = "BEH",
 
 # Plotting Johnson-Neyman Regions
 
-The `plot_jn()` function can be used to plot Johnson-Neyman regions for a given interaction effect. 
-This function takes a fitted model object, the names of the two variables that are interacting, 
+The `plot_jn()` function can be used to plot Johnson-Neyman regions for a given interaction effect.
+This function takes a fitted model object, the names of the two variables that are interacting,
 and the name of the interaction effect. The function will plot the Johnson-Neyman regions for the interaction effect.
 
 The `plot_jn()` function will also plot the 95% confidence interval for the interaction effect.
 
 `x` is the name of the x-variable, `z` is the name of the z-variable, and `y` is the name of the y-variable.
-`model` is the fitted model object. The argument `min_z` and `max_z` are used to specify the range of values for the 
+`model` is the fitted model object. The argument `min_z` and `max_z` are used to specify the range of values for the
 moderating variable.
 
 Here is an example using the `ca` approach in the Holzinger-Swineford (1939) dataset:
 
 ```{r}
-m1 <-  ' 
-  visual  =~ x1 + x2 + x3 
+m1 <-  '
+  visual  =~ x1 + x2 + x3
   textual =~ x4 + x5 + x6
   speed   =~ x7 + x8 + x9
 
@@ -116,7 +116,7 @@ tpb <- "
 "
 
 est2 <- modsem(tpb, TPB, method = "qml")
-plot_jn(x = "INT", z = "PBC", y = "BEH", model = est2, 
+plot_jn(x = "INT", z = "PBC", y = "BEH", model = est2,
         min_z = -1.5, max_z = -0.5)
 ```
 

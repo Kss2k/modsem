@@ -30,7 +30,7 @@ fit_modsem_da <- function(model, chisq = TRUE) {
   coef   <- coef(model, type = "free")
   k      <- length(coef)
   df     <- getDegreesOfFreedom(p = p, coef = coef, mean.structure = mean.s)
- 
+
   expected.matrices <- model$expected.matrices
 
   matrices <- model$model$matrices
@@ -71,11 +71,11 @@ fit_modsem_da <- function(model, chisq = TRUE) {
     df         <- NULL
     muHat      <- NULL
     RMSEA      <- list(
-      RMSEA          = NULL, 
-      RMSEA.lower    = NULL, 
-      RMSEA.upper    = NULL, 
+      RMSEA          = NULL,
+      RMSEA.lower    = NULL,
+      RMSEA.upper    = NULL,
       RMSEA.ci.level = NULL,
-      RMSEA.pvalue   = NULL, 
+      RMSEA.pvalue   = NULL,
       RMSEA.close.h0 = NULL
     )
   }
@@ -86,25 +86,25 @@ fit_modsem_da <- function(model, chisq = TRUE) {
   aBIC <- calcAdjBIC(logLik, k = k, N = N)
 
   list(
-    sigma.observed = modsemMatrix(O, symmetric = TRUE), 
+    sigma.observed = modsemMatrix(O, symmetric = TRUE),
     sigma.expected = modsemMatrix(E, symmetric = TRUE),
     mu.observed    = modsemMatrix(mu),
     mu.expected    = modsemMatrix(muHat),
 
-    chisq.value  = chisqValue, 
+    chisq.value  = chisqValue,
     chisq.pvalue = chisqP,
     chisq.df     = df,
 
     AIC  = AIC,
     AICc = AICc,
     BIC  = BIC,
-    aBIC = aBIC, 
+    aBIC = aBIC,
 
     RMSEA          = RMSEA$rmsea,
     RMSEA.lower    = RMSEA$lower,
     RMSEA.upper    = RMSEA$upper,
     RMSEA.ci.level = RMSEA$ci.level,
-    RMSEA.pvalue   = RMSEA$pvalue, 
+    RMSEA.pvalue   = RMSEA$pvalue,
     RMSEA.close.h0 = RMSEA$close.h0
   )
 }
@@ -144,7 +144,7 @@ calcRMSEA <- function(chi.sq, df, N, ci.level = 0.90, close.h0=0.05) {
   rmseaHat    <- fRMSEA(point)
   rmseaPvalue <- 1 - stats::pchisq(chi.sq, df=df, ncp=df*(N-1)*close.h0^2)
 
-  list(rmsea = rmseaHat, lower = rmseaLower, upper = rmseaUpper, 
+  list(rmsea = rmseaHat, lower = rmseaLower, upper = rmseaUpper,
        ci.level = ci.level, pvalue = rmseaPvalue, close.h0 = close.h0)
 }
 

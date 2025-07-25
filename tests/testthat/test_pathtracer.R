@@ -2,17 +2,17 @@ devtools::load_all()
 
 m1 <- modsemify(
                 '
-y1 ~ x1 
+y1 ~ x1
 x1 ~ x2
-x2 ~ x3 
+x2 ~ x3
 x3 ~ x1
                 '
 )
-testthat::expect_warning(trace_path(m1, "x1", "x1"), 
+testthat::expect_warning(trace_path(m1, "x1", "x1"),
                          "non-recursive model \\(infinite loop\\)")
 m2 <- modsemify(
                 '
-y1 ~ x1 
+y1 ~ x1
 x1 ~ x2
 x2 ~ x3
 x3 ~ x4
@@ -24,16 +24,16 @@ x4 ~~ x4
 )
 
 testthat::expect_equal(
-  unname(trace_path(m2, "x3", "x3")), 
+  unname(trace_path(m2, "x3", "x3")),
   "(x3~~x3 + x3~x4 ^ 2 * x4~~x4)"
 )
 
 testthat::expect_equal(
-  unname(trace_path(m2, "x4", "x4")), 
+  unname(trace_path(m2, "x4", "x4")),
   "(x4~~x4)"
 )
-               
-m3 <- modsemify('visual  =~ x1 + x2 + x3 
+
+m3 <- modsemify('visual  =~ x1 + x2 + x3
                 textual =~ x4 + x5 + x6
                 speed   =~ x7 + x8 + x9
                 visual  ~ speed + textual + speed:textual')
@@ -52,6 +52,6 @@ m4 <- modsemify('
 ')
 
 testthat::expect_equal(
-  unname(trace_path(m4, "X", "X", missing.cov = TRUE)), 
+  unname(trace_path(m4, "X", "X", missing.cov = TRUE)),
   "(X~~X)"
 )

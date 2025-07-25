@@ -20,7 +20,7 @@ print.ModsemSymmetricMatrix <- function(x, digits = 3, sep = " ", ...) {
 
 #' @export
 print.ModsemMatrix <- function(x, digits = 3, shift = 0L, ...) {
-  y <- matrix(formatNumeric(x, digits = digits), nrow = nrow(x), 
+  y <- matrix(formatNumeric(x, digits = digits), nrow = nrow(x),
               ncol = ncol(x), dimnames = dimnames(x))
 
   y <- unclass(y)

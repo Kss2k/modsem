@@ -21,12 +21,12 @@ library(modsem)
 ```
 
 # Non-centered interaction terms
-Using the LMS and QML approaches it is possible to estimate interaction terms where the 
-means of the latent variables are not centered (i.e., they have non-zero means). 
+Using the LMS and QML approaches it is possible to estimate interaction terms where the
+means of the latent variables are not centered (i.e., they have non-zero means).
 
 Here we can see an example using the `TPB` dataset:
 ```{r}
-tpb <- ' 
+tpb <- '
 # Outer Model (Based on Hagger et al., 2007)
   ATT =~ att1 + att2 + att3 + att4 + att5
   SN =~ sn1 + sn2
@@ -36,7 +36,7 @@ tpb <- '
 
 # Inner Model (Based on Steinmetz et al., 2011)
   INT ~ ATT + SN + PBC
-  BEH ~ INT + PBC 
+  BEH ~ INT + PBC
   BEH ~ INT:PBC
 
 # Adding Latent Intercepts
@@ -51,12 +51,12 @@ est <- modsem(tpb, TPB, method = "lms", nodes = 32)
 summary(est)
 ```
 
-Comparing this to the estimates we get when `PBC` and `INT` have zero means, 
+Comparing this to the estimates we get when `PBC` and `INT` have zero means,
 we see that the coefficients `BEH~PBC` and `BEH~INT` are drastically changed.
-This is not a bug, and is a function of the interaction effect rescaling the 
+This is not a bug, and is a function of the interaction effect rescaling the
 coefficients, when not centered at zero. When using the `standardized_estimates`
-function, or `summary(est, standardized = TRUE)` the interaction effect is 
-centered, and we can see that the coefficients `BEH~PBC` and `BEH~INT` are 
+function, or `summary(est, standardized = TRUE)` the interaction effect is
+centered, and we can see that the coefficients `BEH~PBC` and `BEH~INT` are
 rescaled once again.
 
 ```{r}
