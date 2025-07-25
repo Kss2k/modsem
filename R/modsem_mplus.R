@@ -106,7 +106,7 @@ modsem_mplus <- function(model.syntax,
     stringr::str_to_upper()
 
   # Set OUTPUT
-  OUTPUT <- "TECH3;"
+  OUTPUT <- "TECH1;\nTECH3;"
 
   getIntTermLength <- \(xz) length(stringr::str_split(xz, pattern = ":")[[1]])
   kway <- max(0, vapply(intTerms, FUN.VALUE = integer(1L), FUN = getIntTermLength))
@@ -140,9 +140,17 @@ modsem_mplus <- function(model.syntax,
                                         indicators = indicators)
 
   # coef and vcov
+  TECH1 <- MplusAutomation::get_results(results, element = "tech1")
+  pars.tech1 <- getOrderedParameterLabelsMplus(mplusParTable, 
+                                               TECH1 = TECH1, 
+                                               intTerms = intTerms, 
+                                               intTermsMplus = intTermsMplus)
+  labels.tech1 <- names(pars.tech1)
+
   isfree <- coefsTable$pval != 999
   labels <- stringr::str_remove_all(coefsTable$Label[isfree], pattern = " ")
   coefs  <- structure(coefsTable$est[isfree], names = labels)
+  coefs  <- coefs[labels.tech1[labels.tech1 %in% labels]]
 
   vcov <- tryCatch({
     # vcov <- MplusAutomation::get_tech3(results)$paramCov
@@ -152,13 +160,16 @@ modsem_mplus <- function(model.syntax,
     # `MplusAutomation::get_results` seems to work better...
     vcov <- MplusAutomation::get_results(results, element = "tech3")$paramCov
     vcov[upper.tri(vcov)] <- t(vcov)[upper.tri(vcov)]
-    dimnames(vcov) <- list(labels, labels)
+    dimnames(vcov) <- list(labels.tech1, labels.tech1)
     vcov
+
   }, error = function(e) {
     warning2("Unable to retrive `tech3` from `Mplus` results\n",
              "Message: ", e, immediate. = FALSE)
-    vcov <- matrix(NA, nrow = sum(isfree), ncol = sum(isfree), 
-                   dimnames = list(labels, labels))
+
+    k <- length(pars.tech1)
+    vcov <- matrix(NA, nrow = k, ncol = k, 
+                   dimnames = list(labels.tech1, labels.tech1))
   })
   
   std <- tryCatch({
@@ -172,14 +183,14 @@ modsem_mplus <- function(model.syntax,
   modelSpec <- list(
     parTable = mplusParTable,
     model    = results,
-    coefs    = coefs,
     data     = data, 
-    coef     = coef,
-    vcov     = vcov,
+    coefs    = modsemVector(coefs),
+    vcov     = modsemMatrix(vcov, symmetric = TRUE),
     std      = std,
     info     = list(indicators    = indicators,
                     intTerms      = intTerms,
-                    intTermsMplus = intTermsMplus)
+                    intTermsMplus = intTermsMplus,
+                    pars.tech1    = pars.tech1)
   )
 
   structure(modelSpec,
@@ -257,8 +268,8 @@ mplusTableToParTable <- function(coefsTable,
                                  indicators, 
                                  intTerms, 
                                  intTermsMplus) {
-  coefsTable <- rename(coefsTable, Label = "label", se = "std.error",
-                       pval = "p.value")
+  coefsTable <- rename(coefsTable, Label = "label", 
+                       se = "std.error", pval = "p.value")
   coefsTable$label <- stringr::str_remove_all(coefsTable$label, pattern = " ")
 
   indicatorsCaps <- stringr::str_to_upper(indicators)
@@ -288,9 +299,9 @@ mplusTableToParTable <- function(coefsTable,
   structModel <- data.frame(lhs = structLhs, op = "~", rhs = structRhs) |>
     cbind(measrRemoved[structCoefNames, ])
 
-  nchars <- maxchar(c(structModel$rhs, structModel$lhs))
+  maxCharMplus <- maxchar(c(structModel$rhs, structModel$lhs))
   for (i in seq_along(intTerms)) {
-    xzMplus  <- substr(intTermsMplus[[i]], start = 1, stop = nchars)
+    xzMplus  <- substr(intTermsMplus[[i]], start = 1, stop = maxCharMplus)
     xzModsem <- intTerms[[i]]
 
     structModel[structModel$rhs == xzMplus, "rhs"] <- xzModsem
@@ -330,3 +341,124 @@ mplusTableToParTable <- function(coefsTable,
 
   modsemParTable(mplusParTable)
 }
+
+
+getOrderedParameterLabelsMplus <- function(parTable, TECH1, intTerms, intTermsMplus) {
+  spec   <- TECH1$parameterSpecification
+  nu     <- spec$nu
+  alpha  <- spec$alpha
+  lambda <- spec$lambda
+  beta   <- spec$beta
+  psi    <- spec$psi
+  theta  <- spec$theta
+
+  setLabel <- function(out, label, id) {
+    if (!length(label)) {
+      warning2("Unable to find label for parameter ", id, "!",
+               immediate. = FALSE)
+      out[as.character(id)] <- id
+
+    } else out[label] <- id
+
+    out
+  }
+
+  getReg <- function(M, row.lhs = TRUE, op = "~") {
+    out <- c()
+
+    rows <- rownames(M)
+    cols <- colnames(M)
+    for (i in seq_len(NROW(M))) for (j in seq_len(NCOL(M))) {
+      id <- as.integer(M[i, j])
+      
+      if (id <= 0L)
+        next
+
+      if (row.lhs) {
+        lhs <- rows[i]
+        rhs <- cols[j]
+      } else {
+        lhs <- cols[j]
+        rhs <- rows[i]
+      }
+
+      label <- parTable[parTable$op == op &
+                        parTable$lhs == lhs &
+                        parTable$rhs == rhs, "label"]
+
+      out <- setLabel(out = out, label = label, id = id)
+    }
+
+    out
+  }
+  
+  getIntercept <- function(T) {
+    vars <- colnames(T)
+    T <- c(T)
+    out <- c()
+
+    for (i in seq_along(T)) {
+      id <- as.integer(T[i])
+      
+      if (id <= 0L)
+        next
+      
+      lhs <- vars[i]
+
+      label <- parTable[parTable$op == "~1" &
+                        parTable$lhs == lhs, "label"]
+
+      out <- setLabel(out = out, label = label, id = id)
+    }
+
+    out
+  }
+
+
+  getCovariance <- function(M, op = "~~") {
+    out <- c()
+
+    rows <- rownames(M)
+    cols <- colnames(M)
+
+    for (i in seq_len(NROW(M))) for (j in seq_len(i)) {
+      id <- as.integer(M[i, j])
+      
+      if (id <= 0L)
+        next
+
+      lhs <- cols[i]
+      rhs <- rows[j]
+
+      label <- parTable[parTable$op == op &
+                        ((parTable$lhs == lhs & parTable$rhs == rhs) |
+                         (parTable$lhs == rhs & parTable$rhs == lhs)), "label"]
+
+      out <- setLabel(out = out, label = label, id = id)
+    }
+    
+    out
+  }
+
+  for (i in seq_along(intTerms)) {
+    xzMplus  <- substr(intTermsMplus[[i]], start = 1L, stop = 8L)
+    xzModsem <- intTerms[[i]]
+
+    parTable[parTable$lhs == xzModsem, "lhs"] <-  xzMplus
+    parTable[parTable$rhs == xzModsem, "rhs"] <-  xzMplus
+  }
+
+  out <- c(
+    getIntercept(nu),
+    getIntercept(alpha),
+    getReg(lambda, row.lhs = FALSE, op = "=~"),
+    getReg(beta, row.lhs = TRUE, op = "~"),
+    getCovariance(psi),
+    getCovariance(theta)
+  )
+
+  out <- out[!duplicated(out)] # unique() removes labels
+  
+  sort(out)
+}
+
