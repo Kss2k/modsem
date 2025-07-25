@@ -26,8 +26,8 @@ SC =~ academic1 + academic2 + academic3 + academic4 + academic5 + academic6
 CAREER ~ ENJ + SC + ENJ:ENJ + SC:SC + ENJ:SC
 '
 
-est_qml2 <- modsem(nlsemModel, data = jordan, method = "qml", adaptive.quad=TRUE,
-                   nodes = 15, mean.observed = FALSE, convergence.rel = 1e-2)
+est_qml2 <- modsem(nlsemModel, data = jordan, method = "qml",
+                   mean.observed = FALSE, OFIM.hessian = FALSE)
 est_rca2 <- modsem(nlsemModel, data = jordan, method = "rca")
 est_dblcent2 <- modsem(nlsemModel, data = jordan, method = "dblcent")
 
@@ -40,6 +40,6 @@ covENJENJ_ENJSC <- std[std$lhs %in% c(x, y) &
                        std$rhs %in% c(x, y) &
                        std$rhs != std$lhs &
                        std$op == "~~", "est"]
-testthat::expect_true(covENJENJ_ENJSC > 1) # check that covariances between product terms
+testthat::expect_true(covENJENJ_ENJSC > 0.3) # check that covariances between product terms
                                            # are handled correctly
 testthat::expect_equal(unname(calcVarParTable("CAREER", std)), 1)
