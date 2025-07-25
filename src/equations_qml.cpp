@@ -190,35 +190,25 @@ arma::mat calcBinvCpp(Rcpp::List m, int t, int ncores = 1) {
 
 
 // [[Rcpp::export]]
-arma::vec logNormalPdf(const arma::mat& X,
-                       const arma::mat& mu,
-                       const arma::vec& sigmaDiag,
-                       int ncores = 1) {
+arma::vec dnormCpp(const arma::vec& x, const arma::vec& mu, const arma::vec& sigma, 
+                   int ncores = 1) {
   ThreadSetter ts(ncores);
 
   const double log2pi = std::log(2.0 * M_PI);
-  arma::vec out(X.n_rows, arma::fill::none);
+  arma::vec out(x.n_rows, arma::fill::none);
 
   #ifdef _OPENMP
   #pragma omp parallel for if(ncores>1) schedule(static)
   #endif
-  for (arma::uword i = 0; i < X.n_rows; ++i) {
-    double acc = 0.0;
-    for (arma::uword j = 0; j < X.n_cols; ++j) {
-      double diff = X(i, j) - mu(i, j);
-      double sd   = sigmaDiag(j);
-      acc += -0.5 * log2pi - std::log(sd) - 0.5 * (diff * diff) / (sd * sd);
-    }
-    out(i) = acc;
+
+  for (arma::uword i = 0; i < x.n_rows; ++i) {
+    double diff = x(i) - mu(i);
+    double sd   = sigma(i);
+
+    out(i) = -0.5 * log2pi - std::log(sd) - 0.5 * (diff * diff) / (sd * sd);
   }
+
   return out;
-}
-
-
-// [[Rcpp::export]]
-arma::vec dnormCpp(const arma::vec& x, const arma::vec& mu, const arma::vec& sigma, 
-                   int ncores = 1) {
-  return logNormalPdf(x, mu, sigma, ncores);
 }
 
 

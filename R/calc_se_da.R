@@ -89,16 +89,21 @@ calcHessian <- function(model, theta, data, method = "lms",
     fH <- \(model) hessianObsLogLikLms(model = model, data = data, P = P, theta = theta,  sign = -1,
                                        .relStep = .Machine$double.eps^(1/5))
 
-    H <- tryCatch(fH(model), error = function(e) {
+    H <- tryCatch(suppressWarnings(fH(model)), error = function(e) {
       warning2("Optimized calculation of Hessian failed, attempting to switch!")
       model$gradientStruct$hasCovModel <- TRUE
-      fH(model)
+
+      suppressWarnings(fH(model))
     })
 
   } else if (method == "qml") {
     # negative hessian (sign = -1)
-    H <- fdHESS(pars = theta, fun = logLikQml, model = model, sign = -1,
-                .relStep = .Machine$double.eps^(1/5))
+    suppressWarnings({
+
+    H <- fdHESS(pars = theta, fun = logLikQml, model = model,
+                sign = -1, .relStep = .Machine$double.eps^(1/5))
+
+    })
   }
 
   H
@@ -156,8 +161,12 @@ calcOFIM_LMS <- function(model, theta, data, hessian = FALSE,
     return(I)
   }
 
+  suppressWarnings({
+
   S <- gradientObsLogLikLms_i(theta, model = model, data = data,
                               P = P, sign = 1, epsilon = epsilon)
+  })
+
   crossprod(S)
 }
 
@@ -189,12 +198,15 @@ calcEFIM_LMS <- function(model, finalModel = NULL, theta, data,
                        recalcQuad = TRUE,
                        lastQuad   = if(!is.null(P)) P$quad else NULL)
 
+  suppressWarnings({
+
   J <- gradientObsLogLikLms_i(theta = theta,
                               model = model,
                               data  = population,
                               P     = popEstep,
                               sign  = +1,
                               epsilon = epsilon)      # R × k matrix
+  })
 
   I <- matrix(0, nrow = k, ncol = k)
   for (i in seq_len(S)) {
@@ -221,12 +233,18 @@ calcOFIM_QML <- function(model, theta, data, hessian = FALSE,
 
   if (hessian) {
     # negative hessian (sign = -1)
-    I <- fdHESS(pars = theta, fun = logLikQml, model = model,
-                sign = -1, .relStep = .Machine$double.eps^(1/5))
+    I <- calcHessian(model = model, theta = theta, data = data,
+                     method = "qml", epsilon = epsilon)
+
     return(I)
   }
 
+  suppressWarnings({
+
   S <- gradientLogLikQml_i(theta, model = model, sign = 1, epsilon = epsilon)
+
+  })
+
   crossprod(S)
 }
 
@@ -253,8 +271,13 @@ calcEFIM_QML <- function(model, finalModel = NULL, theta, data, S = 100,
 
   } else population <- data[sample(R, N, replace = TRUE), ]
 
+
+  suppressWarnings({
+
   J <- gradientLogLikQml(theta = theta, model = model, sign = +1,
                          epsilon = epsilon, data = population)
+
+  })
 
   I <- matrix(0, nrow = k, ncol = k)
   for (i in seq_len(S)) {
