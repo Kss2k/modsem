@@ -53,10 +53,6 @@ calcBinvCpp <- function(m, t, ncores = 1L) {
     .Call(`_modsem_calcBinvCpp`, m, t, ncores)
 }
 
-logNormalPdf <- function(X, mu, sigmaDiag, ncores = 1L) {
-    .Call(`_modsem_logNormalPdf`, X, mu, sigmaDiag, ncores)
-}
-
 dnormCpp <- function(x, mu, sigma, ncores = 1L) {
     .Call(`_modsem_dnormCpp`, x, mu, sigma, ncores)
 }

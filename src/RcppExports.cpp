@@ -201,20 +201,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// logNormalPdf
-arma::vec logNormalPdf(const arma::mat& X, const arma::mat& mu, const arma::vec& sigmaDiag, int ncores);
-RcppExport SEXP _modsem_logNormalPdf(SEXP XSEXP, SEXP muSEXP, SEXP sigmaDiagSEXP, SEXP ncoresSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const arma::mat& >::type X(XSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type mu(muSEXP);
-    Rcpp::traits::input_parameter< const arma::vec& >::type sigmaDiag(sigmaDiagSEXP);
-    Rcpp::traits::input_parameter< int >::type ncores(ncoresSEXP);
-    rcpp_result_gen = Rcpp::wrap(logNormalPdf(X, mu, sigmaDiag, ncores));
-    return rcpp_result_gen;
-END_RCPP
-}
 // dnormCpp
 arma::vec dnormCpp(const arma::vec& x, const arma::vec& mu, const arma::vec& sigma, int ncores);
 RcppExport SEXP _modsem_dnormCpp(SEXP xSEXP, SEXP muSEXP, SEXP sigmaSEXP, SEXP ncoresSEXP) {
@@ -360,7 +346,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_modsem_sigmaQmlCpp", (DL_FUNC) &_modsem_sigmaQmlCpp, 3},
     {"_modsem_calcKronXi", (DL_FUNC) &_modsem_calcKronXi, 3},
     {"_modsem_calcBinvCpp", (DL_FUNC) &_modsem_calcBinvCpp, 3},
-    {"_modsem_logNormalPdf", (DL_FUNC) &_modsem_logNormalPdf, 4},
     {"_modsem_dnormCpp", (DL_FUNC) &_modsem_dnormCpp, 4},
     {"_modsem_varZCpp", (DL_FUNC) &_modsem_varZCpp, 3},
     {"_modsem_multiplyIndicatorsCpp", (DL_FUNC) &_modsem_multiplyIndicatorsCpp, 1},
