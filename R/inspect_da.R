@@ -3,7 +3,7 @@ inspectDA_Matrices <- c("lambda", "tau", "theta", "gamma.xi",
                         "omega.eta.xi", "phi", "psi", "alpha", "beta0")
 
 
-inspectDA_Optim <- c("coefficients.free", "vcov.free", "information", 
+inspectDA_Optim <- c("coefficients.free", "vcov.free", "information",
                      "loglik", "iterations", "convergence")
 
 
@@ -31,11 +31,11 @@ modsem_inspect_da <- function(model, what = "default") {
                                      matricesCovModel$phi)
   psi          <- diagPartitionedMat(matrices$psi,
                                      matricesCovModel$psi)
-  
+
   tau          <- rbind(matrices$tauX, matrices$tauY)
   alpha        <- matrices$alpha
   beta0        <- matrices$beta0
-  
+
   colnames(tau) <- colnames(alpha) <- colnames(beta0) <- "~1"
 
   cov.ov  <- expected.matrices$sigma.ov
@@ -45,7 +45,7 @@ modsem_inspect_da <- function(model, what = "default") {
   cor.ov  <- cov2cor(cov.ov)
   cor.lv  <- cov2cor(cov.lv)
   cor.all <- cov2cor(cov.all)
-  
+
 
   info <- list(N                 = NROW(model$data),
                vcov.all          = modsemMatrix(model$vcov.all, symmetric = TRUE),
@@ -60,16 +60,16 @@ modsem_inspect_da <- function(model, what = "default") {
                iterations        = model$iterations,
                convergence       = model$convergence,
 
-               lambda       = modsemMatrix(lambda), 
-               tau          = modsemMatrix(tau), 
+               lambda       = modsemMatrix(lambda),
+               tau          = modsemMatrix(tau),
                theta        = modsemMatrix(theta, symmetric = TRUE),
-               gamma.xi     = modsemMatrix(gamma.xi), 
-               gamma.eta    = modsemMatrix(gamma.eta), 
-               omega.xi.xi  = modsemMatrix(omega.xi.xi), 
-               omega.eta.xi = modsemMatrix(omega.eta.xi), 
+               gamma.xi     = modsemMatrix(gamma.xi),
+               gamma.eta    = modsemMatrix(gamma.eta),
+               omega.xi.xi  = modsemMatrix(omega.xi.xi),
+               omega.eta.xi = modsemMatrix(omega.eta.xi),
 
-               phi   = modsemMatrix(phi, symmetric = TRUE), 
-               psi   = modsemMatrix(psi, symmetric = TRUE), 
+               phi   = modsemMatrix(phi, symmetric = TRUE),
+               psi   = modsemMatrix(psi, symmetric = TRUE),
 
                alpha = modsemMatrix(alpha),
                beta0 = modsemMatrix(beta0),
@@ -127,5 +127,5 @@ modsem_inspect_da <- function(model, what = "default") {
   warnif(any(nullvalues), "Some fields in `modsem_inspect()` could not be retrieved!",
          immediate. = FALSE)
 
-  fields 
+  fields
 }

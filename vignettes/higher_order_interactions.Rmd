@@ -21,7 +21,7 @@ library(modsem)
 ```
 
 As of yet, the `modsem` package does not support using the interaction operator `:` between two higher order constructs.
-However, you can still attempt to estimate the interaction effect between two higher order constructs by specifying the interaction term in 
+However, you can still attempt to estimate the interaction effect between two higher order constructs by specifying the interaction term in
 models using the product indicator approaches (higher order constructs are not supported at all in the `lms` and `qml` approaches yet).
 The `modsem` package will then attempt to estimate the interaction effect between the two higher order constructs.
 
@@ -32,9 +32,9 @@ will likely need to experiment with different approaches to find one that works.
 As well as experiment with adding constraints to the model.
 
 In `modsem` there are two datasets which are variants of the Theory of Planned Behaviour (`TPB`) dataset.
-The `TPB_2SO` contains two second order constructs, 
-`INT` (intention) which is a second order construct of `ATT` (attitude) and `SN` (subjective norm), 
-and `PBC` (perceived behavioural control) which is a second order construct of 
+The `TPB_2SO` contains two second order constructs,
+`INT` (intention) which is a second order construct of `ATT` (attitude) and `SN` (subjective norm),
+and `PBC` (perceived behavioural control) which is a second order construct of
 `PC` (perceived control) and `PB` (perceived behaviour).
 
 ```{r}
@@ -52,7 +52,7 @@ tpb <- '
 
   # Higher order interaction
   INTxPBC =~ ATT:PC + ATT:PB + SN:PC + SN:PB
-  
+
   # Structural model
   BEH ~ PBC + INT + INTxPBC
 '
@@ -81,7 +81,7 @@ tpb <- '
 
   # Higher order interaction
   INTxPBC =~ ATT:PBC + SN:PBC + PBC:PBC
-  
+
   # Structural model
   BEH ~ PBC + INT + INTxPBC
 '

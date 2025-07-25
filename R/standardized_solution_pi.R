@@ -19,9 +19,9 @@ correctStdSolutionPI <- function(object, parTable.std, grouping = NULL) {
 
     vcov <- vcov[[grouping[["block"]]]]
     vcor <- vcor[[grouping[["block"]]]]
-  } 
+  }
 
-  stopif(!"est" %in% cols, 
+  stopif(!"est" %in% cols,
          "The parTable must contain the 'est' column for the standardized solution.")
 
   for (xz in names(intTerms)) {
@@ -55,7 +55,7 @@ correctStdSolutionPI <- function(object, parTable.std, grouping = NULL) {
     lxis <- combosXis[[1]]
     rxis <- combosXis[[2]]
 
-    corrs <- vapply(seq_along(lxis), FUN.VALUE = numeric(1L), 
+    corrs <- vapply(seq_along(lxis), FUN.VALUE = numeric(1L),
                     FUN = \(i) vcor[lxis[i], rxis[i]])
 
     # Incorrectly standardized terms
@@ -63,9 +63,9 @@ correctStdSolutionPI <- function(object, parTable.std, grouping = NULL) {
     rcoefsIncorrect <- getCoefs(x = rxis, y = y, parTable = parTable.std)
 
     corrtermsIncorrect <- sum(2 * lcoefsIncorrect * rcoefsIncorrect * corrs)
-    
+
     b3Incorrect <- getCoefs(y = y, x = xz, parTable = parTable.std)
-    projVarY_XZ <- b3Incorrect ^ 2 + corrtermsIncorrect # this should be the same 
+    projVarY_XZ <- b3Incorrect ^ 2 + corrtermsIncorrect # this should be the same
                                                         # for both the correctly, and
                                                         # incorrectly standardized terms
                                                         # and is the identity which makes it
@@ -75,7 +75,7 @@ correctStdSolutionPI <- function(object, parTable.std, grouping = NULL) {
     b3Correct <- B3 * abs(prod(sds) / sdy) # in case some variances are negative
                                            # we want to make sure we don't flip
                                            # the sign...
-    
+
     lcoefsCorrect <- lcoefsIncorrect
     rcoefsCorrect <- rcoefsIncorrect
     lcoefsCorrect[lxis == xz] <- b3Correct
@@ -87,7 +87,7 @@ correctStdSolutionPI <- function(object, parTable.std, grouping = NULL) {
     #   projVarY_XZ = b3Correct ^ 2 * sd(xz) ^ 2 + sd(xz) * corrterms
     # Solve for sd(xz) using the quadratic formula:
     #   sd(xz) = (- corrterms +/- sqrt(corrterms^2 + 4 * b3Correct ^ 2 * projVarY_XZ)) / 2 * b3Correct ^ 2
-    numerator <- -corrtermsCorrect + sign(projVarY_XZ) * 
+    numerator <- -corrtermsCorrect + sign(projVarY_XZ) *
       sqrt(corrtermsCorrect^2 + 4 * (b3Correct ^ 2) * projVarY_XZ)
     denominator <- 2 * (b3Correct ^ 2)
     sdXZ <- numerator / denominator # correctly standardized sd(xz)
@@ -131,13 +131,13 @@ correctStdSolutionPI <- function(object, parTable.std, grouping = NULL) {
 
     expr      <- parse(text=constrExprs[i, "rhs"])
     labelList <- parTableLabelsToList(parTable.std) # must be updated for each iteration
-  
+
     oldVal <- row$est
     newVal <- tryCatch(eval(expr, envir = labelList), error = errorWarning)
 
     ratio  <- newVal / oldVal
     values <- row[ , cols]
-   
+
     row[, cols] <- values * ratio
 
     parTable.std <- rbind(parTable.std, row)
@@ -147,7 +147,7 @@ correctStdSolutionPI <- function(object, parTable.std, grouping = NULL) {
   varEtas <- calcVarParTable(etas, parTable.std)
 
   warnif(
-    any(abs(varEtas - 1) > 1e-10), 
+    any(abs(varEtas - 1) > 1e-10),
     "Some variances are not equal to 1! ",
     "This indicates that the solution was not standardized correctly!",
     immediate. = FALSE

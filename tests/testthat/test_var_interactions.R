@@ -58,7 +58,7 @@ expected[TRUE] <- NA
 for (x in colnames(observed)) {
   for (y in rownames(observed)) {
     match <- pt.var[pt.var$op == "~~" & pt.var$lhs == x & pt.var$rhs == y, "est"]
-    
+
     if (length(match))
       expected[y, x] <- expected[x, y] <- match
   }

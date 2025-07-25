@@ -65,19 +65,19 @@ resetModsemColors <- function() {
 
 
 captureOutput <- function (expr, envir = parent.frame(), split = FALSE) {
-  # Capture output using a raw connections, as it is exponentially faster 
+  # Capture output using a raw connections, as it is exponentially faster
   # for large outputs
   eval({
     file <- rawConnection(raw(0L), open = "w")
-    
+
     on.exit(if (!is.null(file)) close(file))
 
     utils::capture.output(expr, file = file, split = split)
-    
+
     res <- rawConnectionValue(file)
     close(file)
     file <- NULL
-  
+
     rawToChar(res)
 
   }, envir = envir, enclos = envir)
@@ -97,16 +97,16 @@ captureOutput <- function (expr, envir = parent.frame(), split = FALSE) {
 #' @param na color of \code{NA}.
 #' @param inf color of \code{-Inf} and \code{Inf}.
 #' @param string color of quoted strings.
-#' @param active Should color-theme be activated/deactived? 
+#' @param active Should color-theme be activated/deactived?
 #'
 #' @examples
-#' set_modsem_colors(positive = "red3", 
+#' set_modsem_colors(positive = "red3",
 #'                   negative = "red3",
-#'                   true = "darkgreen", 
-#'                   false = "red3", 
+#'                   true = "darkgreen",
+#'                   false = "red3",
 #'                   na = "purple",
 #'                   string = "darkgreen")
-#' 
+#'
 #' m1 <- "
 #' # Outer Model
 #'   X =~ x1 + x2 + x3
@@ -115,7 +115,7 @@ captureOutput <- function (expr, envir = parent.frame(), split = FALSE) {
 #' # Inner Model
 #'   Y ~ X + Z + X:Z
 #' "
-#' 
+#'
 #' est <- modsem(m1, data = oneInt)
 #' colorize_output(summary(est))
 #' colorize_output(est) # same as colorize_output(print(est))
@@ -125,11 +125,11 @@ captureOutput <- function (expr, envir = parent.frame(), split = FALSE) {
 #' colorize_output(split = TRUE, {
 #'   # Get live (uncolored) output
 #'   # And print colored output at the end of execution
-#' 
+#'
 #'   est_lms <- modsem(m1, data = oneInt, method = "lms")
 #'   summary(est_lms)
-#' }) 
-#'                 
+#' })
+#'
 #' colorize_output(modsem_inspect(est_lms))
 #' }
 #' @return \code{TRUE} if colors are active afterwards, otherwise \code{FALSE}.
@@ -185,19 +185,19 @@ set_modsem_colors <- function(positive = "green3",
 #' @param inf color of \code{-Inf} and \code{Inf}.
 #' @param string color of quoted strings.
 #' @param append String appended after the colored output (default `\\n`).
-#' @param split Should output be splitted? If \code{TRUE} the output is printed 
+#' @param split Should output be splitted? If \code{TRUE} the output is printed
 #'  normally (in real time) with no colorization, and the colored output is printed
 #'  after the code has finished executing.
 #' @return Invisibly returns the *plain* captured text.
 #'
 #' @examples
-#' set_modsem_colors(positive = "red3", 
+#' set_modsem_colors(positive = "red3",
 #'                   negative = "red3",
-#'                   true = "darkgreen", 
-#'                   false = "red3", 
+#'                   true = "darkgreen",
+#'                   false = "red3",
 #'                   na = "purple",
 #'                   string = "darkgreen")
-#' 
+#'
 #' m1 <- "
 #' # Outer Model
 #'   X =~ x1 + x2 + x3
@@ -206,7 +206,7 @@ set_modsem_colors <- function(positive = "green3",
 #' # Inner Model
 #'   Y ~ X + Z + X:Z
 #' "
-#' 
+#'
 #' est <- modsem(m1, data = oneInt)
 #' colorize_output(summary(est))
 #' colorize_output(est) # same as colorize_output(print(est))
@@ -216,11 +216,11 @@ set_modsem_colors <- function(positive = "green3",
 #' colorize_output(split = TRUE, {
 #'   # Get live (uncolored) output
 #'   # And print colored output at the end of execution
-#' 
+#'
 #'   est_lms <- modsem(m1, data = oneInt, method = "lms")
 #'   summary(est_lms)
-#' }) 
-#'                 
+#' })
+#'
 #' colorize_output(modsem_inspect(est_lms))
 #' }
 #' @export
@@ -233,7 +233,7 @@ colorize_output <- function(expr,
                             na       = MODSEM_COLORS$na,
                             inf      = MODSEM_COLORS$inf,
                             string   = MODSEM_COLORS$string,
-                            split    = FALSE, 
+                            split    = FALSE,
                             append = "\n") {
   getFinalLine  <- \(x) stringr::str_split(x, pattern = "\r")
   getFinalLines <- \(x) vapply(getFinalLine(x), FUN = last,
@@ -255,7 +255,7 @@ colorize_output <- function(expr,
   # build mapping only for active colors
   mapping <- c()
   add <- function(pat, col) {
-    if (!is.na(col)) 
+    if (!is.na(col))
       mapping <<- c(mapping, stats::setNames(getColorizedASCII(col), pat))
   }
 

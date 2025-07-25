@@ -23,8 +23,8 @@ calcFIM_da <- function(model,
        switch(FIM,
           observed = calcOFIM_LMS(model, theta = theta, data = data,
                                   epsilon = epsilon, hessian = hessian, P = P),
-          expected = calcEFIM_LMS(model, finalModel = finalModel, theta = theta, 
-                                  data = data, epsilon = epsilon, S = EFIM.S, 
+          expected = calcEFIM_LMS(model, finalModel = finalModel, theta = theta,
+                                  data = data, epsilon = epsilon, S = EFIM.S,
                                   parametric = EFIM.parametric, verbose = verbose,
                                   R.max = R.max, P = P),
           stop2("FIM must be either expected or observed")),
@@ -32,7 +32,7 @@ calcFIM_da <- function(model,
        switch(FIM,
           observed = calcOFIM_QML(model, theta = theta, data = data,
                                   hessian = hessian, epsilon = epsilon),
-          expected = calcEFIM_QML(model, finalModel = finalModel, theta = theta, 
+          expected = calcEFIM_QML(model, finalModel = finalModel, theta = theta,
                                   data = data, epsilon = epsilon, S = EFIM.S,
                                   parametric = EFIM.parametric, verbose = verbose,
                                   R.max = R.max),
@@ -75,7 +75,7 @@ fdHESS <- function(pars, ...) {
     nlme::fdHess(pars = pars, ...)$Hessian,
     error = function(e) {
       warning2("Calculation of Hessian matrix failed...\n  ", e$message)
-      matrix(NA, nrow = length(pars), ncol = length(pars)) 
+      matrix(NA, nrow = length(pars), ncol = length(pars))
     }
   )
 }
@@ -150,7 +150,7 @@ calcOFIM_LMS <- function(model, theta, data, hessian = FALSE,
   N <- nrow(data)
   if (hessian) {
     # negative hessian (sign = -1)
-    I <- calcHessian(model, theta = theta, data = data, 
+    I <- calcHessian(model, theta = theta, data = data,
                      method = "lms", epsilon = epsilon, P = P)
 
     return(I)
@@ -202,7 +202,7 @@ calcEFIM_LMS <- function(model, finalModel = NULL, theta, data,
       # non-overlapping split
       idx1 <- (i - 1) * N + 1
       sub  <- idx1:(idx1 + N - 1)
-    } else {                    
+    } else {
       sub <- sample(R, N)
     }
 
@@ -246,14 +246,14 @@ calcEFIM_QML <- function(model, finalModel = NULL, theta, data, S = 100,
       simulateDataParTable(parTable, N = R, colsOVs = colnames(data))$oV,
       error = function(e) {
         warning2("Unable to simulate data for EFIM, using stochastic sampling instead")
-        calcEFIM_QML(model = model, theta = theta, data = data, S = S, 
+        calcEFIM_QML(model = model, theta = theta, data = data, S = S,
                      parametric = FALSE, epsilon = epsilon)
       }
     )
 
   } else population <- data[sample(R, N, replace = TRUE), ]
 
-  J <- gradientLogLikQml(theta = theta, model = model, sign = +1, 
+  J <- gradientLogLikQml(theta = theta, model = model, sign = +1,
                          epsilon = epsilon, data = population)
 
   I <- matrix(0, nrow = k, ncol = k)
@@ -262,7 +262,7 @@ calcEFIM_QML <- function(model, finalModel = NULL, theta, data, S = 100,
       # non-overlapping split
       idx1 <- (i - 1) * N + 1
       sub  <- idx1:(idx1 + N - 1)
-    } else {                    
+    } else {
       sub <- sample(R, N)
     }
 

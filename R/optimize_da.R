@@ -1,4 +1,4 @@
-optimizeStartingParamsDA <- function(model, 
+optimizeStartingParamsDA <- function(model,
                                      args = list(orthogonal.x = FALSE,
                                                  orthogonal.y = FALSE,
                                                  auto.fix.first = TRUE,
@@ -15,8 +15,8 @@ optimizeStartingParamsDA <- function(model,
                   sep = "\n")
 
   estPI <- modsem_pi(
-    model.syntax    = syntax, 
-    data            = data, 
+    model.syntax    = syntax,
+    data            = data,
     method          = "dblcent",
     meanstructure   = TRUE,
     orthogonal.x    = args$orthogonal.x,
@@ -32,7 +32,7 @@ optimizeStartingParamsDA <- function(model,
   )
 
   parTable <- parameter_estimates(estPI, colon.pi = TRUE)
- 
+
   stopif(is.null(parTable), "lavaan failed!")
 
   # Main Model
@@ -42,9 +42,9 @@ optimizeStartingParamsDA <- function(model,
   LambdaY <- findEstimatesParTable(matricesMain$lambdaY, parTable, op = "=~",
                                    rows_lhs = FALSE, fill = 0.7)
 
-  ThetaEpsilon <- findEstimatesParTable(matricesMain$thetaEpsilon, parTable, 
+  ThetaEpsilon <- findEstimatesParTable(matricesMain$thetaEpsilon, parTable,
                                         op = "~~", fill = 0.2)
-  ThetaDelta   <- findEstimatesParTable(matricesMain$thetaDelta, parTable, 
+  ThetaDelta   <- findEstimatesParTable(matricesMain$thetaDelta, parTable,
                                         op = "~~", fill = 0.2)
 
   Psi <- findEstimatesParTable(matricesMain$psi, parTable, op = "~~", fill = 0)
@@ -113,10 +113,10 @@ optimizeStartingParamsDA <- function(model,
   if (!is.null(matricesCov)) {
     PsiCovModel <- findEstimatesParTable(matricesCov$psi, parTable, op = "~~", fill = 0)
     PhiCovModel <- findEstimatesParTable(matricesCov$phi, parTable, op = "~~", fill = 0)
-    
+
     GammaEtaCovModel <- findEstimatesParTable(matricesCov$gammaEta, parTable, op = "~", fill = 0)
     GammaXiCovModel <- findEstimatesParTable(matricesCov$gammaXi, parTable, op = "~", fill = 0)
- 
+
     PhiCovModel <- correctDiag(PhiCovModel, tol = 0)
     PsiCovModel <- correctDiag(PsiCovModel, tol = 0)
 
@@ -238,7 +238,7 @@ parameterEstimatesLavSAM <- function(syntax, data, ...) {
   lVs <- getLVs(parTable)
 
   getCFARows <- function(pt) {
-    pt[pt$op == "=~" | 
+    pt[pt$op == "=~" |
        pt$op == "~1" |
       (pt$op == "~~" & !pt$lhs %in% lVs & !pt$rhs %in% lVs), ]
   }

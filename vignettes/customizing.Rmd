@@ -30,7 +30,7 @@ Y =~ y1 + y2 + y3
 Z =~ z1 + z2 + z3
 
 # Inner model
-Y ~ X + Z + X:Z 
+Y ~ X + Z + X:Z
 '
 
 est1 <- modsem(m1, oneInt)
@@ -53,7 +53,7 @@ Y =~ y1 + y2
 Z =~ z1 + z2
 
 # Inner model
-Y ~ X + Z + X:Z 
+Y ~ X + Z + X:Z
 '
 
 est2 <- modsem(m2, oneInt, match = TRUE)
@@ -62,7 +62,7 @@ summary(est2)
 
 ## More Complicated Models
 
-If you want even more control, you can use the `get_pi_syntax()` and `get_pi_data()` functions to extract the modified syntax and data from `modsem()`, allowing you to modify them as needed. This can be particularly useful in cases where you want to estimate a model using a feature in `lavaan` that isn't available in `modsem()`. 
+If you want even more control, you can use the `get_pi_syntax()` and `get_pi_data()` functions to extract the modified syntax and data from `modsem()`, allowing you to modify them as needed. This can be particularly useful in cases where you want to estimate a model using a feature in `lavaan` that isn't available in `modsem()`.
 
 For example, the syntax for ordered and multigroup models (as of now) isn't as flexible in `modsem()` as it is in `lavaan`. You can modify the auto-generated syntax (along with the altered dataset) from `modsem()` to suit your needs.
 
@@ -74,7 +74,7 @@ Y =~ y1 + y2 + y3
 Z =~ z1 + z2 + z3
 
 # Inner model
-Y ~ X + Z + X:Z 
+Y ~ X + Z + X:Z
 '
 syntax <- get_pi_syntax(m3)
 cat(syntax)
@@ -85,14 +85,14 @@ data <- get_pi_data(m3, oneInt)
 head(data)
 ```
 
-The generated syntax and data can then be used to estimate a model using `lavaan`, giving the 
-user more control over arguments passed onto `lavaan::sem()`, and potentially the ability to 
+The generated syntax and data can then be used to estimate a model using `lavaan`, giving the
+user more control over arguments passed onto `lavaan::sem()`, and potentially the ability to
 modify the the generated syntax and data.
 
 ```{r}
 library(lavaan)
-fit <- sem(syntax, data = data, fixed.x = FALSE, 
-           std.lv = TRUE, auto.fix.first = TRUE, 
+fit <- sem(syntax, data = data, fixed.x = FALSE,
+           std.lv = TRUE, auto.fix.first = TRUE,
            auto.var = TRUE, auto.cov.lv.x = TRUE)
 summary(fit)
 ```

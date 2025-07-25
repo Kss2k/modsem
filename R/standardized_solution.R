@@ -505,8 +505,8 @@ centerInteractionsCOEFS <- function(parTable, COEFS, center.means = TRUE,
 
   if (center.means) {
     innerVars <- unique(unlist(parTable[parTable$op == "~", c("rhs", "lhs")]))
-    interceptLabels <- parTable[parTable$lhs %in% innerVars & 
-                                parTable$op == "~1", label.col] 
+    interceptLabels <- parTable[parTable$lhs %in% innerVars &
+                                parTable$op == "~1", label.col]
 
     for (label in interceptLabels)
       COEFS[[label]] <- 0
@@ -516,9 +516,9 @@ centerInteractionsCOEFS <- function(parTable, COEFS, center.means = TRUE,
 }
 
 
-addTransformedEstimatesPT <- function(parTable, 
-                                      FUN, 
-                                      pass.parTable = TRUE, 
+addTransformedEstimatesPT <- function(parTable,
+                                      FUN,
+                                      pass.parTable = TRUE,
                                       values.to = "transformed",
                                       values.from = "est",
                                       merge.by = c("lhs", "op", "rhs"),
@@ -529,14 +529,14 @@ addTransformedEstimatesPT <- function(parTable,
     parTable.transform[[values.to]] <- parTable.transform[[values.from]]
     parTable.transform <- parTable.transform[c(merge.by, values.to)]
 
-    leftJoin(left   = parTable, 
+    leftJoin(left   = parTable,
              right  = parTable.transform,
              by     = merge.by)
 }
-  
 
-applyTransformationByGrouping <- function(parTable, 
-                                          FUN, 
+
+applyTransformationByGrouping <- function(parTable,
+                                          FUN,
                                           groupingcols = c("block", "group"),
                                           ...) {
   if (any(groupingcols %in% colnames(parTable))) {
@@ -546,11 +546,11 @@ applyTransformationByGrouping <- function(parTable,
     parTable.out <- NULL
 
     for (i in seq_len(NROW(categories))) {
-      grouping       <- structure(unlist(categories[i, ]), 
+      grouping       <- structure(unlist(categories[i, ]),
                                   names = groupingcols)
       parTable.out_i <- FUN(..., grouping = grouping)
 
-      if (is.null(parTable.out_i)) 
+      if (is.null(parTable.out_i))
         next
 
       for (group in names(grouping))

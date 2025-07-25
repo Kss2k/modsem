@@ -24,7 +24,7 @@
 #'   separate regression lines. Each distinct value in \code{vals_z} defines a separate
 #'   group (plotted with a different color). If \code{rescale=TRUE}, these values
 #'   are also assumed to be in standardized units.
-#' @param model An object of class \code{\link{modsem_pi}}, \code{\link{modsem_da}}, 
+#' @param model An object of class \code{\link{modsem_pi}}, \code{\link{modsem_da}},
 #'   \code{\link{modsem_mplus}}, or possibly a \code{lavaan} object. Must be a fitted
 #'   SEM model containing paths for \code{y ~ x + z + x:z}.
 #' @param alpha_se A numeric value in \eqn{[0, 1]} specifying the transparency of
@@ -114,11 +114,11 @@
 #'                  model = est2)
 #' }
 plot_interaction <- function(x, z, y, xz = NULL, vals_x = seq(-3, 3, .001),
-                             vals_z, model, alpha_se = 0.15, digits = 2, 
-                             ci_width = 0.95, ci_type = "confidence", rescale = TRUE, 
+                             vals_z, model, alpha_se = 0.15, digits = 2,
+                             ci_width = 0.95, ci_type = "confidence", rescale = TRUE,
                              standardized = FALSE, ...) {
-  slopes <- simple_slopes(x = x, z = z, y = y, model = model, vals_x = vals_x, vals_z = vals_z, 
-                          rescale = rescale, ci_width = ci_width, ci_type = ci_type, 
+  slopes <- simple_slopes(x = x, z = z, y = y, model = model, vals_x = vals_x, vals_z = vals_z,
+                          rescale = rescale, ci_width = ci_width, ci_type = ci_type,
                           standardized = standardized, ...)
   df <- as.data.frame(slopes)
   df$cat_z <- as.factor(round(df$vals_z, digits))
@@ -136,8 +136,8 @@ plot_interaction <- function(x, z, y, xz = NULL, vals_x = seq(-3, 3, .001),
     ggplot2::geom_smooth(method = "lm", formula = "y ~ x", se = FALSE) +
     ggplot2::geom_ribbon(ggplot2::aes(ymin = ci.lower, ymax = ci.upper, fill = cat_z),
                          alpha = alpha_se, linewidth = 0, linetype = "blank") +
-    ggplot2::labs(x = x, y = y, colour = z, fill = z) + 
-    ggplot2::ggtitle(sprintf("Marginal Effects of %s on %s, Given %s", x, y, z)) + 
+    ggplot2::labs(x = x, y = y, colour = z, fill = z) +
+    ggplot2::ggtitle(sprintf("Marginal Effects of %s on %s, Given %s", x, y, z)) +
     ggplot2::theme_bw()
 }
 
@@ -156,7 +156,7 @@ plot_interaction <- function(x, z, y, xz = NULL, vals_x = seq(-3, 3, .001),
 #' @param sig.level The alpha-criterion for the confidence intervals (default is 0.05).
 #' @param alpha alpha setting used in \code{ggplot} (i.e., the opposite of opacity)
 #' @param detail The number of generated data points to use for the plot (default is 1000). You can increase this value for smoother plots.
-#' @param sd.line A thick black line showing \code{+/- sd.line * sd(z)}. NOTE: This line will be truncated by \code{min_z} and \code{max_z} if 
+#' @param sd.line A thick black line showing \code{+/- sd.line * sd(z)}. NOTE: This line will be truncated by \code{min_z} and \code{max_z} if
 #' the sd.line falls outside of \code{[min_z, max_z]}.
 #' @param standardized Should coefficients be standardized beforehand?
 #' @param ... Additional arguments (currently not used).
@@ -179,21 +179,21 @@ plot_interaction <- function(x, z, y, xz = NULL, vals_x = seq(-3, 3, .001),
 #' \dontrun{
 #' library(modsem)
 #'
-#' m1 <-  ' 
-#'   visual  =~ x1 + x2 + x3 
+#' m1 <-  '
+#'   visual  =~ x1 + x2 + x3
 #'   textual =~ x4 + x5 + x6
 #'   speed   =~ x7 + x8 + x9
-#' 
+#'
 #'   visual ~ speed + textual + speed:textual
 #' '
-#' 
+#'
 #' est <- modsem(m1, data = lavaan::HolzingerSwineford1939, method = "ca")
 #' plot_jn(x = "speed", z = "textual", y = "visual", model = est, max_z = 6)
 #' }
 #' @importFrom ggplot2 ggplot aes geom_line geom_ribbon geom_vline annotate scale_fill_manual labs theme_minimal
 #' @export
-plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3, 
-                    sig.level = 0.05, alpha = 0.2, detail = 1000, 
+plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3,
+                    sig.level = 0.05, alpha = 0.2, detail = 1000,
                     sd.line = 2, standardized = FALSE, ...) {
   # Check if model is a valid object
   stopif(!inherits(model, c("modsem_da", "modsem_mplus", "modsem_pi", "lavaan")),
@@ -205,7 +205,7 @@ plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3,
   if (!inherits(model, c("modsem_da", "modsem_mplus")) && !inherits(model, "lavaan")) {
     xz <- stringr::str_remove_all(xz, ":")
   }
-    
+
   if (inherits(model, "lavaan")) {
     vcov <- lavaan::vcov
     coef <- lavaan::coef
@@ -245,7 +245,7 @@ plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3,
   npar <- length(coef(model))
 
   df_resid <- nobs - npar
-  
+
   if (df_resid < 1) {
     warning2("Degrees of freedom for residuals must be greater than 0. ",
              "The model may have fewer observations than parameters.\n",
@@ -295,7 +295,7 @@ plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3,
 
   z_range <- seq(min_z, max_z, length.out = detail)
 
-  # if not defined here (as opposed to only in the dataframe) we will get 
+  # if not defined here (as opposed to only in the dataframe) we will get
   # some bogus notes in the R CMD check
   slope         <- beta_x + beta_xz * z_range
   SE_slope      <- sqrt(var_beta_x + z_range ^ 2 * var_beta_xz + 2 * z_range * cov_beta_x_beta_xz)
@@ -328,11 +328,11 @@ plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3,
       upper_nsig   = upper_nsig,
       lower_nsig   = lower_nsig,
       Significance = significance,
-      # Really f***ing ugly, but works... (if not the line will sometimes be 
+      # Really f***ing ugly, but works... (if not the line will sometimes be
       # on color...)
       line_segments = line_segments
   )
-  
+
   # get info for thick line segment
   x_start <- mean_z - sd.line * sd_z
   x_end   <- mean_z + sd.line * sd_z
@@ -350,7 +350,7 @@ plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3,
   y_start     <- y_end <- 0
   hline_label <- sprintf("+/- %s SDs of %s", sd.line, z)
 
-  data_hline <- data.frame(x_start = x_start, x_end = x_end, 
+  data_hline <- data.frame(x_start = x_start, x_end = x_end,
                            y_start = y_start, y_end = y_end,
                            hline_label = hline_label)
 
@@ -363,12 +363,12 @@ plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3,
     ggplot2::geom_ribbon(ggplot2::aes(ymin = lower_nsig, ymax = upper_nsig, fill = "n.s."), alpha = alpha) +
     ggplot2::geom_ribbon(ggplot2::aes(ymin = lower_sig, ymax = upper_sig, fill = sprintf("p < %s", sig.level)), alpha = alpha) +
     ggplot2::labs(x = z, y = paste("Slope of", x, "on", y)) +
-    ggplot2::geom_hline(yintercept = 0, color="black", linewidth = 0.5) + 
+    ggplot2::geom_hline(yintercept = 0, color="black", linewidth = 0.5) +
     suppressWarnings(ggplot2::geom_segment(
-        mapping = aes(x = x_start, xend = x_end, y = y_start, yend = y_end, 
-                      color = hline_label, fill = hline_label), 
+        mapping = aes(x = x_start, xend = x_end, y = y_start, yend = y_end,
+                      color = hline_label, fill = hline_label),
         data = data_hline, linewidth = 1.5)
-    ) + 
+    ) +
     ggplot2::ggtitle("Johnson-Neyman Plot") +
     ggplot2::scale_fill_manual(name = "", values = values, breaks = breaks) +
     ggplot2::scale_color_manual(name = "", values = values, breaks = breaks) +
@@ -466,22 +466,22 @@ plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3,
 #'   PBC =~ pbc1 + pbc2 + pbc3
 #'   INT =~ int1 + int2 + int3
 #'   BEH =~ b1 + b2
-#' 
+#'
 #' # Inner Model (Based on Steinmetz et al., 2011)
 #'   INT ~ ATT + SN + PBC
 #'   BEH ~ INT + PBC
 #'   BEH ~ PBC:INT
 #' "
-#' 
+#'
 #' est2 <- modsem(tpb, TPB, method = "lms", nodes = 32)
 #' plot_surface(x = "INT", z = "PBC", y = "BEH", model = est2)
 #' }
 #'
 #' @export
-plot_surface <- function(x, z, y, xz = NULL, model, 
-                         min_x = -3, max_x = 3, 
+plot_surface <- function(x, z, y, xz = NULL, model,
+                         min_x = -3, max_x = 3,
                          min_z = -3, max_z = 3,
-                         standardized = FALSE, 
+                         standardized = FALSE,
                          detail = 1e-2, ...) {
   stopif(!isModsemObject(model) && !isLavaanObject(model), "model must be of class ",
          "'modsem_pi', 'modsem_da', 'modsem_mplus' or 'lavaan'")

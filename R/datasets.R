@@ -57,21 +57,21 @@ NULL
 #'   SN  =~ sn1 + sn2 + sn3
 #'   PBC =~ pbc1 + pbc2 + pbc3
 #'   BEH =~ b1 + b2
-#' 
+#'
 #'   # Higher order constructs
 #'   INT =~ ATT + PBC + SN
-#' 
+#'
 #'   # Higher order interaction
 #'   INTxPBC =~ ATT:PBC + SN:PBC + PBC:PBC
-#'   
+#'
 #'   # Structural model
 #'   BEH ~ PBC + INT + INTxPBC
 #' '
-#' 
+#'
 #' \dontrun{
 #' est_ca <- modsem(tpb, data = TPB_1SO, method = "ca")
 #' summary(est_ca)
-#' 
+#'
 #' est_dblcent  <- modsem(tpb, data = TPB_1SO, method = "dblcent")
 #' summary(est_dblcent)
 #' }
@@ -93,18 +93,18 @@ NULL
 #'   PB =~ pb1 + pb2 + pb3
 #'   PC =~ pc1 + pc2 + pc3
 #'   BEH =~ b1 + b2
-#' 
+#'
 #'   # Higher order constructs
 #'   INT =~ ATT + SN
 #'   PBC =~ PC + PB
-#' 
+#'
 #'   # Higher order interaction
 #'   INTxPBC =~ ATT:PC + ATT:PB + SN:PC + SN:PB
-#'   
+#'
 #'   # Structural model
 #'   BEH ~ PBC + INT + INTxPBC
 #' '
-#' 
+#'
 #' \dontrun{
 #' est <- modsem(tpb, data = TPB_2SO, method = "ca")
 #' summary(est)
@@ -122,7 +122,7 @@ NULL
 #'
 #' @source
 #' Gathered from a replication study by Hagger et al. (2023).
-#' 
+#'
 #' Obtained from \doi{10.23668/psycharchives.12187}
 #'
 #' @examples

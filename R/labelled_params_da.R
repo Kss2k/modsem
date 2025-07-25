@@ -6,7 +6,7 @@ createThetaLabel <- function(labelMatrices, labelMatricesCov,
 
     select <- apply(x, MARGIN = 2, FUN = function(z)
                     !canBeNumeric(z, includeNA = TRUE))
-    as.vector(x[select]) 
+    as.vector(x[select])
   }) |> unlist() |> unique()
 
   if (!is.null(constrExprs)) {

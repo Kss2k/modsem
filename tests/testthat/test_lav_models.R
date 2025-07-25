@@ -1,22 +1,22 @@
 devtools::load_all()
 set.seed(123)
-models <- list(m1 = ' 
-               # latent variables 
-               ind60 =~ x1 + x2 + x3 
-               dem60 =~ y1 + y2 + y3 + y4 
-               dem65 =~ y5 + y6 + y7 + y8 
+models <- list(m1 = '
+               # latent variables
+               ind60 =~ x1 + x2 + x3
+               dem60 =~ y1 + y2 + y3 + y4
+               dem65 =~ y5 + y6 + y7 + y8
                # regressions
-               dem60 ~ ind60 
-               dem65 ~ ind60 + dem60 
+               dem60 ~ ind60
+               dem65 ~ ind60 + dem60
                dem65 ~ ind60:dem60
-               # residual covariances 
+               # residual covariances
                y1 ~~ y5
-               y2 ~~ y4 + y6 
-               y3 ~~ y7 
+               y2 ~~ y4 + y6
+               y3 ~~ y7
                y4 ~~ y8
                y6 ~~ y8
                ',
-               m3 = ' visual  =~ x1 + x2 + x3 
+               m3 = ' visual  =~ x1 + x2 + x3
                textual =~ x4 + x5 + x6
                speed   =~ x7 + x8 + x9
                visual ~ speed + textual + speed:textual',
@@ -46,15 +46,15 @@ models <- list(m1 = '
                x7 ~ 1
                x8 ~ 1
                x9 ~ 1'
-               
+
 )
 
 
 
 data <- list(d1 = lavaan::PoliticalDemocracy,
-             d3 = lavaan::HolzingerSwineford1939, 
-             d4 = lavaan::HolzingerSwineford1939, 
-             d5 = lavaan::HolzingerSwineford1939, 
+             d3 = lavaan::HolzingerSwineford1939,
+             d4 = lavaan::HolzingerSwineford1939,
+             d5 = lavaan::HolzingerSwineford1939,
              d6 = lavaan::HolzingerSwineford1939)
 
 nativeMethods <- allNativeMethods[allNativeMethods != "pind"]
@@ -80,12 +80,12 @@ testthat::expect_warning({
   }
 }, regexp = ".*Replacing `start.*`.* in.*") # make this more informative later
 
-# testing plot function 
-plot_interaction(x = "ind60", z = "dem60", y = "dem65", xz = "ind60:dem60", 
+# testing plot function
+plot_interaction(x = "ind60", z = "dem60", y = "dem65", xz = "ind60:dem60",
                  vals_z = c(-0.5, 0.5), model = estimates[[1]][["rca"]])
-plot_interaction(x = "ind60", z = "dem60", y = "dem65", xz = "ind60:dem60", 
+plot_interaction(x = "ind60", z = "dem60", y = "dem65", xz = "ind60:dem60",
                  vals_z = c(-0.5, 0.5), model = estimates[[1]][["rca"]], standardized=TRUE)
-plot_interaction(x = "speed", z = "textual", y = "visual", 
+plot_interaction(x = "speed", z = "textual", y = "visual",
                  vals_z = c(-0.5, 0.5), model = estimates[[2]][["ca"]])
 
 testthat::expect_warning(

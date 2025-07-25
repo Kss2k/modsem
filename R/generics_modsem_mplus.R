@@ -24,7 +24,7 @@ summary.modsem_mplus <- function(object,
                                  intercepts = TRUE,
                                  variances = TRUE,
                                  ...) {
-  if (standardized) 
+  if (standardized)
     object$parTable <- standardized_estimates(object)
 
   object$format <- list(digits = digits,
@@ -90,7 +90,7 @@ standardized_estimates.modsem_mplus <- function(object, type = "stdyx", mc.reps 
         intTermsMplus = object$info$intTermsMplus,
         indicators    = object$info$indicators
       )
-    }, error = \(e) 
+    }, error = \(e)
         standardized_estimates.modsem_mplus(object, type = "modsem")
     )
 
@@ -100,7 +100,7 @@ standardized_estimates.modsem_mplus <- function(object, type = "stdyx", mc.reps 
       mc.reps = mc.reps,
       ...
     )
-    
+
     stdSolution$parTable
   }
 }

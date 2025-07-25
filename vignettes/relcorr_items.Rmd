@@ -22,9 +22,9 @@ library(modsem)
 
 ## Reliablity-Corrected Single Items
 
-If wanted, indicators for latent variables can be replaced with reliablity 
+If wanted, indicators for latent variables can be replaced with reliablity
 corrected single items, using Chronbach's $\alpha$. This can either be done
-using the `relcorr_single_item` function, returning the altered model syntax 
+using the `relcorr_single_item` function, returning the altered model syntax
 and data, or via the `rcs` argument in `modsem`. Here we can see an example
 using the `relcorr_single_item` function:
 
@@ -46,10 +46,10 @@ tpb_uk <- "
 corrected <- relcorr_single_item(syntax = tpb_uk, data = TPB_UK)
 corrected
 ```
-Here we can see that `relcorr_single_item` returns a new model syntax, and a 
-new `data.frame` containing the generated items. Additionally, it also 
-returns the Chronbach's $\alpha$ and *average variance extraced* (AVE) 
-for the different constructs in the model. The syntax and data can be 
+Here we can see that `relcorr_single_item` returns a new model syntax, and a
+new `data.frame` containing the generated items. Additionally, it also
+returns the Chronbach's $\alpha$ and *average variance extraced* (AVE)
+for the different constructs in the model. The syntax and data can be
 extracted using the `$` operator, and used to estimate the model.
 
 ```{r}
@@ -70,13 +70,13 @@ est_lms <- modsem(tpb_uk, data = TPB_UK, method = "lms", rcs = TRUE)
 ```
 
 # Choosing Variables
-If you don't want to use reliablity-corrected single items for all of the 
-latent variables in the model, you can use the `choose` argument in 
-`relcorr_single_item` (or`rcs.choose` in `modsem`) to select which 
+If you don't want to use reliablity-corrected single items for all of the
+latent variables in the model, you can use the `choose` argument in
+`relcorr_single_item` (or`rcs.choose` in `modsem`) to select which
 set of indicators to replace.
 
 ```{r}
-relcorr_single_item(syntax = tpb_uk, data = TPB_UK, 
+relcorr_single_item(syntax = tpb_uk, data = TPB_UK,
                     choose = c("ATT", "SN", "PBC", "INT"))
 
 est_dca <- modsem(tpb_uk, data = TPB_UK, method = "dblcent", rcs = TRUE,

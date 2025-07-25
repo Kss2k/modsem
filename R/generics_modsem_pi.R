@@ -7,7 +7,7 @@ printModsemPIHeader <- function(approach) {
 #' summary for modsem objects
 #'
 #' @param object modsem object to summarized
-#' @param H0 Should the baseline model be estimated, and used to produce 
+#' @param H0 Should the baseline model be estimated, and used to produce
 #'  comparative fit?
 #' @param digits Number of digits for printed numerical values
 #' @param scientific Should scientific format be used for p-values?
@@ -85,8 +85,8 @@ print.summary_modsem_pi <- function(x, ...) {
   adjusted.stat <- x$format$adjusted.stat
 
   # Compute width for right justification based on lavaan output
-  # lavaan always seems to use a width of 54 characters for the main 
-  # part of the first header, regardless of the widht of the coefficient 
+  # lavaan always seems to use a width of 54 characters for the main
+  # part of the first header, regardless of the widht of the coefficient
   # tables... So we don't need to compute it dynamically??
   # lavcat <- utils::capture.output(print(x$lavaan))
   # ncheck <- 10 # Check only the header
@@ -113,12 +113,12 @@ print.summary_modsem_pi <- function(x, ...) {
   # Interaction Model Fit Measures (H1)
   cat("\nInteraction Model Fit Measures (H1):\n")
   fit <- x$fit
-  namesH1 <- c("Loglikelihood", 
-               "Akaike (AIC)", 
-               "Bayesian (BIC)", 
-               "Chi-square", 
-               "Degrees of Freedom", 
-               "P-value (Chi-square)", 
+  namesH1 <- c("Loglikelihood",
+               "Akaike (AIC)",
+               "Bayesian (BIC)",
+               "Chi-square",
+               "Degrees of Freedom",
+               "P-value (Chi-square)",
                "RMSEA",
                "CFI",
                "SRMR")
@@ -139,7 +139,7 @@ print.summary_modsem_pi <- function(x, ...) {
   }
   cat("\n")
 
-  # Baseline Model (H0) 
+  # Baseline Model (H0)
   if (!is.null(x$fitH0)) {
     cat("Fit Measures for Baseline Model (H0):\n")
     fitH0 <- x$fitH0
@@ -149,7 +149,7 @@ print.summary_modsem_pi <- function(x, ...) {
       tryFormatC(fitH0["bic"], digits = 2, format = "f"),
       tryFormatC(fitH0["chisq"], digits = 2, format = "f"),
       ifelse(is.na(fitH0["df"]), yes = "NA", no = as.character(fitH0["df"])),
-      tryFormatC(fitH0["pvalue"], digits = digits, 
+      tryFormatC(fitH0["pvalue"], digits = digits,
               format = if (scientific) "e" else "f"),
       tryFormatC(fitH0["rmsea"], digits = 3, format = "f"),
       tryFormatC(fitH0["cfi"], digits = 3, format = "f"),
@@ -167,14 +167,14 @@ print.summary_modsem_pi <- function(x, ...) {
     lrt <- x$LRT
     if (nrow(lrt) > 1) {
       lrt_row <- lrt[2, ]
-      cat(align_lavaan("Chi-square diff", 
-                       tryFormatC(lrt_row[["Chisq diff"]], digits = 3, format = "f"), 
+      cat(align_lavaan("Chi-square diff",
+                       tryFormatC(lrt_row[["Chisq diff"]], digits = 3, format = "f"),
                        width.out), "\n")
-      cat(align_lavaan("Degrees of freedom diff", 
+      cat(align_lavaan("Degrees of freedom diff",
                        as.character(lrt_row[["Df diff"]]), width.out), "\n")
-      cat(align_lavaan("P-value (LRT)", 
-                       tryFormatC(lrt_row[["Pr(>Chisq)"]], digits = digits, 
-                               format = if (scientific) "e" else "f"), 
+      cat(align_lavaan("P-value (LRT)",
+                       tryFormatC(lrt_row[["Pr(>Chisq)"]], digits = digits,
+                               format = if (scientific) "e" else "f"),
                        width.out), "\n")
     }
     cat("\n")
@@ -188,23 +188,23 @@ print.summary_modsem_pi <- function(x, ...) {
 
     printH("Interaction Model", "H1")
     for (i in seq_along(x$r.squared)) {
-      cat(align_lavaan(names(x$r.squared)[i], 
-                       tryFormatC(x$r.squared[i], digits = 3, format = "f"), 
+      cat(align_lavaan(names(x$r.squared)[i],
+                       tryFormatC(x$r.squared[i], digits = 3, format = "f"),
                        width.out), "\n")
     }
 
     if (!is.null(x$r.squared.H0)) {
       printH("Baseline Model", "H0")
       for (i in seq_along(x$r.squared.H0)) {
-        cat(align_lavaan(names(x$r.squared.H0)[i], 
-                         tryFormatC(x$r.squared.H0[i], digits = 3, format = "f"), 
+        cat(align_lavaan(names(x$r.squared.H0)[i],
+                         tryFormatC(x$r.squared.H0[i], digits = 3, format = "f"),
                          width.out), "\n")
       }
 
       printH("Change", "H1 - H0")
       for (i in seq_along(x$r.squared.diff)) {
-        cat(align_lavaan(names(x$r.squared.diff)[i], 
-                         tryFormatC(x$r.squared.diff[i], digits = 3, format = "f"), 
+        cat(align_lavaan(names(x$r.squared.diff)[i],
+                         tryFormatC(x$r.squared.diff[i], digits = 3, format = "f"),
                          width.out), "\n")
       }
     }
@@ -245,15 +245,15 @@ parameter_estimates.modsem_pi <- function(object, colon.pi = FALSE, ...) {
 #' such that \eqn{\sigma^2(XZ) = 1}, consistent with \code{lavaan}'s treatment of latent interactions.
 #' This is usually wrong, as it does not account for the fact that the interaction term
 #' is a product of two variables, which means that the variance of the interaction term
-#' of standardized variables (usually) is not equal to 1. 
+#' of standardized variables (usually) is not equal to 1.
 #'
-#' Hence the scale of the interaction effect changes, such that 
-#' the standardized interaction term does not correspond to one (standardized) unit 
-#' change in the moderating variables. If \code{TRUE}, a correction is applied by 
-#' computing the interaction term \eqn{b_3 = \frac{B_3 \sigma(X) \sigma(Z)}{\sigma(Y)}} (where 
-#' \eqn{B_3} is the unstandardized coefficient for the interaction term), and solving for \eqn{\sigma(XZ)}, which 
+#' Hence the scale of the interaction effect changes, such that
+#' the standardized interaction term does not correspond to one (standardized) unit
+#' change in the moderating variables. If \code{TRUE}, a correction is applied by
+#' computing the interaction term \eqn{b_3 = \frac{B_3 \sigma(X) \sigma(Z)}{\sigma(Y)}} (where
+#' \eqn{B_3} is the unstandardized coefficient for the interaction term), and solving for \eqn{\sigma(XZ)}, which
 #' is used to correct the variance of the interaction term, and its covariances.
-#' 
+#'
 #' @param std.errors Character string indicating the method used to compute standard errors
 #' when \code{correction = TRUE}. Options include:
 #' \describe{
@@ -273,17 +273,17 @@ parameter_estimates.modsem_pi <- function(object, colon.pi = FALSE, ...) {
 #' @param ... Additional arguments passed on to \code{lavaan::standardizedSolution()}.
 #'
 #' @export
-standardized_estimates.modsem_pi <- function(object, 
-                                             correction = FALSE, 
+standardized_estimates.modsem_pi <- function(object,
+                                             correction = FALSE,
                                              std.errors = c("rescale", "delta", "monte.carlo"),
                                              mc.reps = 10000,
-                                             colon.pi = FALSE, 
+                                             colon.pi = FALSE,
                                              ...) {
   std.errors  <- tolower(std.errors)
   std.errors  <- match.arg(std.errors)
   monte.carlo <- std.errors == "monte.carlo"
 
-  uncorrected <- \(object) rename(lavaan::standardizedSolution(object$lavaan, ...), 
+  uncorrected <- \(object) rename(lavaan::standardizedSolution(object$lavaan, ...),
                                   est.std = "est")
 
   if (correction && std.errors == "rescale") {
@@ -291,8 +291,8 @@ standardized_estimates.modsem_pi <- function(object,
 
     correction <- function(object, grouping = NULL) {
       correctStdSolutionPI(
-        object       = object, 
-        parTable.std = parTable.std.naive, 
+        object       = object,
+        parTable.std = parTable.std.naive,
         grouping     = grouping
       )
     }
@@ -301,9 +301,9 @@ standardized_estimates.modsem_pi <- function(object,
     correction <- function(object, grouping = NULL) {
 
       solution <- standardizedSolutionCOEFS(
-        object      = object, 
-        monte.carlo = monte.carlo, 
-        mc.reps     = mc.reps, 
+        object      = object,
+        monte.carlo = monte.carlo,
+        mc.reps     = mc.reps,
         grouping    = grouping,
         center      = FALSE,
         ...
@@ -313,9 +313,9 @@ standardized_estimates.modsem_pi <- function(object,
     }
 
   } else return(uncorrected(object))
-  
+
   parTable.ustd <- parameter_estimates(object)
- 
+
   hiorder <- isHigherOrderParTable(parTable.ustd)
   cluster <- isClustered(object)
   rescale <- std.errors == "rescale"
@@ -331,7 +331,7 @@ standardized_estimates.modsem_pi <- function(object,
     FUN      = correction,
     object   = object
   )
-    
+
   if (!colon.pi) {
     rm <- \(x) stringr::str_remove_all(x, ":")
     parTable.std$rhs <- rm(parTable.std$rhs)
@@ -384,7 +384,7 @@ print.modsem_pi <- function(x, ...) {
 }
 
 
-#' @describeIn modsem_predict 
+#' @describeIn modsem_predict
 #' @export
 modsem_predict.modsem_pi <- function(object, ...) {
   lavaan::predict(extract_lavaan(object), ...)

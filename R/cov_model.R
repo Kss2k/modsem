@@ -3,7 +3,7 @@
 # as you can split the model into a non-linear, and linear part. allowing
 # you to use (normally distributed) endogenous variables as non-normal
 # as of now the mean-structure is excluded
-covModel <- function(syntax = NULL, method = "lms", parTable = NULL, 
+covModel <- function(syntax = NULL, method = "lms", parTable = NULL,
                      xis.main = NULL, parTable.main = NULL) {
   if (is.null(parTable) && !is.null(syntax)) parTable <- modsemify(syntax)
   if (is.null(parTable)) {
@@ -18,7 +18,7 @@ covModel <- function(syntax = NULL, method = "lms", parTable = NULL,
     numEtas  <- length(etas)
     xis      <- getXis(parTable, checkAny = TRUE, isLV = FALSE)
     xis      <- unique(c(xis, xis.main[!xis.main %in% etas]))
-                       
+
     numXis   <- length(xis)
     isSimple <- FALSE
   } else {
@@ -145,7 +145,7 @@ covModelToParTable <- function(model, method = "lms") {
                                 op = "~",
                                 rowsLhs = TRUE)
     parTable <- rbind(parTable, newRows)
-    
+
     newRows <- matrixToParTable(matricesNA$psi,
                                 matricesEst$psi,
                                 matricesSE$psi,

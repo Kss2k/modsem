@@ -33,7 +33,7 @@ specifyModelDA <- function(syntax = NULL,
     syntax     <- parTableToSyntax(parTable)
     cov.syntax <- parTableToSyntax(parTableCovModel)
   }
-  
+
   checkParTableDA(parTable)
   # additions to lavaan-syntax for optimizer
   lavOptimizerSyntaxAdditions <- ""
@@ -54,7 +54,7 @@ specifyModelDA <- function(syntax = NULL,
   allVarsInInts <- unique(unlist(varsInts))
   xis           <- getXis(parTable, checkAny = TRUE)
   numXis        <- length(xis)
-  
+
   omegaAndSortedXis <- sortXisConstructOmega(xis, varsInts, etas, intTerms,
                                              method = method, double = double)
   xis <- omegaAndSortedXis$sortedXis # get sorted xis according to interaction terms
@@ -132,14 +132,14 @@ specifyModelDA <- function(syntax = NULL,
 
   # mean etas
   listAlpha <- constructAlpha(etas, parTable = parTable,
-                              mean.observed = mean.observed) 
-  alpha      <- listAlpha$numeric                            
+                              mean.observed = mean.observed)
+  alpha      <- listAlpha$numeric
   labelAlpha <- listAlpha$label
 
   # mean xis
   listBeta0 <- constructAlpha(xis, parTable = parTable,
                               mean.observed = mean.observed)
-  beta0      <- listBeta0$numeric                   
+  beta0      <- listBeta0$numeric
   labelBeta0 <- listBeta0$label
 
   # quadratic terms
@@ -238,7 +238,7 @@ specifyModelDA <- function(syntax = NULL,
     omegaXiXi  = labelOmegaXiXi)
 
   k <- omegaAndSortedXis$k
-  quad <- quadrature(m, k, quad.range = quad.range, adaptive = adaptive.quad, 
+  quad <- quadrature(m, k, quad.range = quad.range, adaptive = adaptive.quad,
                      adaptive.frequency = adaptive.frequency)
 
   model <- list(
@@ -281,7 +281,7 @@ specifyModelDA <- function(syntax = NULL,
     model$gradientStruct  <- getGradientStruct(model, theta = model$theta)
   }
 
-  if (checkModel) 
+  if (checkModel)
     preCheckModel(model = model, covModel = covModel, method = method)
 
   model
@@ -521,7 +521,7 @@ modelToParTable <- function(model, coefs = NULL, se = NULL, method = "lms", calc
 
   if (!calc.se) parTable$std.error <- NA  # when std.errors are not computed, static constraints
                                           # will get Non-NA std.errors, which is incorrect
-                                          # this is naturally corrected for when calculating the 
+                                          # this is naturally corrected for when calculating the
                                           # std.errors, but not when calc.se == FALSE
   parTable[!is.na(parTable$std.error) &
            parTable$std.error == -999, "std.error"] <- NA  # replace -999 with NA

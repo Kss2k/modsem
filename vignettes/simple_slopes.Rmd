@@ -27,8 +27,8 @@ Simple slope effects can be plotted using the included `plot_interaction()` func
 - The x-variable is plotted on the x-axis.
 - The y-variable is plotted on the y-axis.
 - The z-variable determines at which points the effect of x on y is plotted.
-  
-The function will also plot the 95% confidence interval for the interaction effect. 
+
+The function will also plot the 95% confidence interval for the interaction effect.
 Note that the `vals_z` argument (as well as the values of `x`) are scaled by the
 mean and standard deviation of the variables. Unless the `rescale` argument is set to `FALSE`.
 
@@ -67,16 +67,16 @@ est1 <- modsem(m1, data = oneInt)
 simple_slopes(x = "X", z = "Z", y = "Y", vals_z = c(-1, 1), model = est1)
 ```
 
-The `simple_slopes()` function returns a `simple_slopes` object. 
-It only has two methods/generics: 
+The `simple_slopes()` function returns a `simple_slopes` object.
+It only has two methods/generics:
 `print.simple_slopes()`, which prints the simple slopes in a easy-to-read format
-and `as.data.frame.simple_slopes()`. The `print()` method will not only 
+and `as.data.frame.simple_slopes()`. The `print()` method will not only
 print the predicted values, but also significance tests for the difference between
-the slope at the lowest value of `z` and the slope at the highest value of `z`, 
-as well as significance tests for the slope of `x` at the 
-different values of `vals_z`. 
+the slope at the lowest value of `z` and the slope at the highest value of `z`,
+as well as significance tests for the slope of `x` at the
+different values of `vals_z`.
 
-In the example above, we can see that there is a significant 
+In the example above, we can see that there is a significant
 difference between the slope at at `-1 * sd(Z)` and `+1 * sd(Z)`. Note that
 by default `vals_z` is rescaled by the mean and standard deviation of the variable, unless `rescale = FALSE` is set.
 This means that the values of `vals_z` are interpreted as standard deviations from the mean of `Z`.
@@ -96,7 +96,7 @@ m1 <- "
 "
 
 est1 <- modsem(m1, data = oneInt)
-slopes <- simple_slopes(x = "X", z = "Z", y = "Y", 
+slopes <- simple_slopes(x = "X", z = "Z", y = "Y",
                         vals_z = c(0, 1), model = est1)
 as.data.frame(slopes)
 ```

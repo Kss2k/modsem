@@ -31,7 +31,7 @@ tpb <- "
   BEHAVIOUR_VARIABLE_LONG ~ INT + b * PBC
 
   INT ~~ HELLO_THERE * INT
-  BEHAVIOUR_VARIABLE_LONG ~~ HELLO_THERE2 * BEHAVIOUR_VARIABLE_LONG 
+  BEHAVIOUR_VARIABLE_LONG ~~ HELLO_THERE2 * BEHAVIOUR_VARIABLE_LONG
 "
 
 est_tpb_lms <- modsem(tpb, TPB, method = "lms", calc.se=TRUE)
@@ -60,12 +60,12 @@ tpb_cov <- "
   INT ~ ATT + b * SN + c * PBC
 "
 
-est_split_lms <- modsem(tpb_main, data = TPB, method = "lms", 
+est_split_lms <- modsem(tpb_main, data = TPB, method = "lms",
                            calc.se=FALSE, cov.syntax = tpb_cov)
 testthat::expect_true(est_split_lms$iterations == 2)
 testthat::expect_warning(summary(est_split_lms), "Comparative fit to H0 will not be calculated.")
 
-est_split_qml <- modsem(tpb_main, data = TPB, method = "qml", 
+est_split_qml <- modsem(tpb_main, data = TPB, method = "qml",
                            calc.se=FALSE, cov.syntax = tpb_cov)
 testthat::expect_true(est_split_qml$iterations == 1)
 testthat::expect_warning(summary(est_split_qml), "Comparative fit to H0 will not be calculated.")
@@ -93,7 +93,7 @@ testthat::expect_true(est_dupsn1_qml$iterations == 1)
 testthat::expect_warning(summary(est_tpb_qml), "Comparative fit to H0 will not be calculated.")
 
 
-tpb <- ' 
+tpb <- '
 # Outer Model (Based on Hagger et al., 2007)
   ATT =~ att1 + att2 + att3 + att4 + att5
   SN =~ sn1 + sn2
@@ -104,14 +104,14 @@ tpb <- '
 # Inner Model (Based on Steinmetz et al., 2011)
   SN ~  ATT + PBC
   INT ~ ATT + PBC
-  BEH ~ PBC 
+  BEH ~ PBC
 '
 tpb_lms_2 <- modsem(tpb, TPB, method = "lms")
 testthat::expect_true(tpb_lms_2$iterations == 2)
 summary(tpb_lms_2, H0 = FALSE)
 
 
-tpb <- ' 
+tpb <- '
 # Outer Model (Based on Hagger et al., 2007)
   ATT =~ att1 + att2 + att3 + att4 + att5
   SN =~ sn1 + sn2
@@ -123,7 +123,7 @@ tpb <- '
 
 # Inner Model (Based on Steinmetz et al., 2011)
   INT ~ ATT + PBC + SN
-  BEH ~ PBC 
+  BEH ~ PBC
 '
 
 tpb_lms_3 <- modsem(tpb, TPB, method = "lms")

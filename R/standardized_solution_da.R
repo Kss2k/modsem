@@ -18,10 +18,10 @@
 #'
 #' @param mc.reps Number of Monte Carlo replications. Default is 10,000.
 #'   Ignored if \code{monte.carlo = FALSE}.
-#' 
+#'
 #' @param ... Arguments passed on to other functions
 #'
-#' @return The same object (returned invisibly) with three slots overwritten  
+#' @return The same object (returned invisibly) with three slots overwritten
 #' \describe{
 #'   \item{\code{$parTable}}{Parameter table whose columns \code{est} and \code{std.error}
 #'         now hold standardized estimates and their (delta-method)
@@ -31,14 +31,14 @@
 #'         variable has mean 0 by definition.}
 #'   \item{\code{$vcov}}{Variance–covariance matrix corresponding to the updated
 #'         coefficient vector.  Rows/columns for intercepts are dropped, and
-#'         the sub-matrix associated with rescaled parameters is adjusted 
+#'         the sub-matrix associated with rescaled parameters is adjusted
 #'         so that its diagonal equals the squared standardized standard errors.}
 #' }
 #' The object keeps its class attributes, allowing seamless use by downstream
 #' S3 methods such as \code{summary()}, \code{coef()}, or \code{vcov()}.
 #'
 #' Because the function merely transforms existing estimates, \emph{parameter
-#' constraints imposed through shared labels remain satisfied}. 
+#' constraints imposed through shared labels remain satisfied}.
 #'
 #' @seealso
 #' \describe{
@@ -61,7 +61,7 @@
 #'
 #' # Compare unstandardized vs. standardized summaries
 #' summary(fit)  # unstandardized
-#' summary(sfit) # standardized 
+#' summary(sfit) # standardized
 #' }
 #'
 #' @export
@@ -78,7 +78,7 @@ standardize_model <- function(model, monte.carlo = FALSE, mc.reps = 10000, ...) 
   cnames.all <- names(coefs.all)
   vnames.all <- rownames(vcov.all)
   # intersect() shouldn't be neccessary, but just in case...
-  cnames.free <- intersect(cnames.all, names(coef(model, type = "free"))) 
+  cnames.free <- intersect(cnames.all, names(coef(model, type = "free")))
   vnames.free <- intersect(vnames.all, rownames(vcov(model, type = "free")))
 
   coefs.free <- coefs.all[cnames.free]

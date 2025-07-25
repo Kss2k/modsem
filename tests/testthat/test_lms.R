@@ -2,7 +2,7 @@ devtools::load_all()
 m1 <- "
 # Outer Model
   X =~ x1
-  Z =~ z1 
+  Z =~ z1
   x1 ~~ 0.1 * x1
   Y =~ y1
 
@@ -12,7 +12,7 @@ m1 <- "
   Y ~ a * X + c * Z + b * X:Z
 
   a == b ^ 2 + 0.01 * c
-  
+
   a2 := sqrt(a - 0.0001)^2
   coef := sqrt(a * 2 + b^2)
 "
@@ -50,13 +50,13 @@ test_coefs(std_est1_mc)
 m1 <- "
 # Outer Model
   X =~ x1
-  Z =~ z1 
+  Z =~ z1
   x1 ~~ 0.1 * x1
   Y =~ y1
 
 # Inner model
   Y ~ a * X + a * Z
-  X ~~ varX * X 
+  X ~~ varX * X
   Y ~~ Y
   Y ~ b * X:Z + 0.05 * X:X
   b == a * 1.2
@@ -74,14 +74,14 @@ testthat::expect_no_warning(
 )
 
 # PROBLEM:
-#   I have no clue why, but changing the ordering of how the interaction terms 
-#   are specified, ends up changing the number of iterations (and results ever 
-#   so slightly) -- even though the matrices are exactly the same. This can be 
-#   seen through the fact that the starting loglikelihoods are the same (if optimized) 
+#   I have no clue why, but changing the ordering of how the interaction terms
+#   are specified, ends up changing the number of iterations (and results ever
+#   so slightly) -- even though the matrices are exactly the same. This can be
+#   seen through the fact that the starting loglikelihoods are the same (if optimized)
 #   indicating that the matrices are the same (i.e,. produce the same results, when
-#   given the same values). 
-# ANSWER: 
-#   slightly different results from lavaan, giving slightly different 
+#   given the same values).
+# ANSWER:
+#   slightly different results from lavaan, giving slightly different
 #   starting parameters
 tpb <- "
 # Outer Model (Based on Hagger et al., 2007)
@@ -94,7 +94,7 @@ tpb <- "
 # Inner Model (Based on Steinmetz et al., 2011)
   # Covariances
   LATENT_VAR_ATT ~~ SN + PBC
-  PBC ~~ SN 
+  PBC ~~ SN
   # Causal Relationsships
   INT ~ gamma_int_att * LATENT_VAR_ATT + b * SN + b * PBC
   BEH ~ 0.2 * INT + a * PBC
@@ -102,7 +102,7 @@ tpb <- "
   gamma_int_att == a
   p1 == 1 + 0.1
   a2 == 1
-  s1 == 1 
+  s1 == 1
   i1 == 1
   my_custom_parameter := a * 2
 "
@@ -112,7 +112,7 @@ PBC ~ a * LATENT_VAR_ATT + SN
 '
 
 testthat::expect_warning({
-  est2 <- modsem(tpb, TPB, method = "lms", verbose = TRUE, convergence.abs = 1, 
+  est2 <- modsem(tpb, TPB, method = "lms", verbose = TRUE, convergence.abs = 1,
                  cov.syntax = covModel, nodes = 16, robust.se = TRUE)
 }, regexp = "It is recommended .* between endogenous variables .*")
 
@@ -125,7 +125,7 @@ label <- "my_custom_parameter"
 u_est <- ust_pt[ust_pt$label == label, "est"]
 s_est <- std_pt[std_pt$label == label, "est"]
 u_a   <- unique(ust_pt[ust_pt$label == "a", "est"])
-s_a   <- unique(std_pt[std_pt$label == "a", "est"]) 
+s_a   <- unique(std_pt[std_pt$label == "a", "est"])
 expect_true(round(u_est, 5) < round(s_est, 5))
 testthat::expect_true(length(s_a) > 1)
 testthat::expect_true(length(u_a) == 1)
@@ -144,7 +144,7 @@ print(coef(est2))
 coefficients(est2)
 cat("Number of observations using 'nobs()':", nobs(est2), "\n")
 
-tpb2 <- ' 
+tpb2 <- '
 # Outer Model (Based on Hagger et al., 2007)
   ATT =~ att1 + att2 + att3 + att4 + att5
   SN =~ sn1 + sn2
@@ -155,11 +155,11 @@ tpb2 <- '
 # Inner Model (Based on Steinmetz et al., 2011)
   # Covariances
   ATT ~~ SN + PBC
-  PBC ~~ SN 
+  PBC ~~ SN
   # Causal Relationsships
   INT ~ a * ATT + b * SN + c * PBC
-  BEH ~ INT + PBC 
-  BEH ~ INT:PBC  
+  BEH ~ INT + PBC
+  BEH ~ INT:PBC
 '
 
 testthat::expect_warning(modsem(tpb, TPB, method = "lms", convergence.abs = 1000,
@@ -203,7 +203,7 @@ modsem(tpb_uk, TPB_UK, method = "lms", nodes=32, max.iter=10, calc.se=FALSE)
 m1 <- "
 # Outer Model
   X =~ x1
-  Z =~ z1 
+  Z =~ z1
   x1 ~~ 0.1 * x1
   Y =~ y1
 

@@ -12,7 +12,7 @@ names(ests) <- methods
 
 for (method in methods) {
   if (method == "lms") {
-    ests[[method]] <- modsem(m1, data = oneInt, method = method, 
+    ests[[method]] <- modsem(m1, data = oneInt, method = method,
                              convergence.abs = 1e-3)
   } else {
     ests[[method]] <- modsem(m1, data = oneInt, method = method)
@@ -40,6 +40,6 @@ covENJENJ_ENJSC <- std[std$lhs %in% c(x, y) &
                        std$rhs %in% c(x, y) &
                        std$rhs != std$lhs &
                        std$op == "~~", "est"]
-testthat::expect_true(covENJENJ_ENJSC > 1) # check that covariances between product terms 
+testthat::expect_true(covENJENJ_ENJSC > 1) # check that covariances between product terms
                                            # are handled correctly
 testthat::expect_equal(unname(calcVarParTable("CAREER", std)), 1)

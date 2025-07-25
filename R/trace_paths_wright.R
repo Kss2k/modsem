@@ -1,6 +1,6 @@
 # Functions for tracing paths in SEMs, used both for calculating (co-)variances,
 # as well as calculating formulas for (co-)variances.
-prepParTable <- function(parTable, addCovPt = TRUE, maxlen = 100, paramCol = "mod", 
+prepParTable <- function(parTable, addCovPt = TRUE, maxlen = 100, paramCol = "mod",
                          removeColon = TRUE) {
   # Remove any potential ':' from the model
   if (removeColon) parTable <- lapplyDf(parTable, strRemovIfString, pattern = ":")
@@ -10,7 +10,7 @@ prepParTable <- function(parTable, addCovPt = TRUE, maxlen = 100, paramCol = "mo
   structuralVars <- parTable[parTable$op == "~", c("lhs", "rhs")] |>
     unlist() |> c(getLVs(parTable)) |> unique()
 
-  parTable <- parTable[(parTable$lhs %in% structuralVars & 
+  parTable <- parTable[(parTable$lhs %in% structuralVars &
                        parTable$rhs %in% structuralVars) |
                        parTable$op == "~~", ]
   # redefine higher order (i.e.,`=~` -> `~`)
@@ -111,24 +111,24 @@ addMissingCovariances <- function(pt, paramCol = "mod") {
 #' '
 #' pt <- modsemify(m1)
 #' trace_path(pt, x = "Y", y = "Y", missing.cov = TRUE) # variance of Y
-trace_path <- function(pt, 
-                       x, 
-                       y, 
-                       parenthesis = TRUE, 
+trace_path <- function(pt,
+                       x,
+                       y,
+                       parenthesis = TRUE,
                        missing.cov = FALSE,
-                       measurement.model = TRUE, 
-                       maxlen = 100, 
-                       paramCol = "mod", 
+                       measurement.model = TRUE,
+                       maxlen = 100,
+                       paramCol = "mod",
                        ...) {
   pt <- pt[pt$op != "~1", ]
   if (measurement.model) pt <- redefineMeasurementModel(pt)
   else                   pt <- pt[pt$op != "=~"]
-  
 
-  if (missing.cov) 
+
+  if (missing.cov)
     pt <- addMissingCovariances(pt, paramCol = paramCol)
 
-  generateSyntax(x = x, y = y, pt = pt, maxlen = maxlen, 
+  generateSyntax(x = x, y = y, pt = pt, maxlen = maxlen,
                  parenthesis = parenthesis, paramCol = paramCol, ...)
 }
 
@@ -146,8 +146,8 @@ generateSyntax <- function(x, y, pt, maxlen = 100, parenthesis = TRUE, paramCol 
 
 
 getCovEqExprs <- function(x, y, parTable, paramCol = "label", removeColon = FALSE, ...) {
-  paths <- trace_path(x = x, y = y, pt = parTable, paramCol = paramCol, 
+  paths <- trace_path(x = x, y = y, pt = parTable, paramCol = paramCol,
                       removeColon = removeColon, ...)
-  
+
   lapply(paths, FUN = \(path) parse(text = path))
 }

@@ -10,7 +10,7 @@ tpb1 <- '
 
 # Inner Model (Based on Steinmetz et al., 2011)
   INT ~ ATT + SN + PBC
-  BEH ~ INT + PBC 
+  BEH ~ INT + PBC
   BEH ~ INT:pbc1
 '
 
@@ -27,7 +27,7 @@ tpb2 <- '
 
 # Inner Model (Based on Steinmetz et al., 2011)
   INT ~ ATT + SN + PBC
-  BEH ~ INT + PBC 
+  BEH ~ INT + PBC
   BEH ~ INT:PBC2
 '
 

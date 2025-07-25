@@ -1,5 +1,5 @@
 #' @export
-var_interactions.data.frame <- function(object, ignore.means = FALSE, 
+var_interactions.data.frame <- function(object, ignore.means = FALSE,
                                         monte.carlo = FALSE, mc.reps = 1e6, ...) {
 
   # Preparation
@@ -120,7 +120,7 @@ varInteractionsMonteCarlo <- function(parTable, intTerms, ignore.means = FALSE, 
 
   for (intTerm in intTerms) {
     elems <- stringr::str_split(intTerm, pattern = ":")[[1L]]
-    
+
     XI[[intTerm]] <- multiplyIndicatorsCpp(XI[elems])
   }
 
@@ -133,7 +133,7 @@ varInteractionsMonteCarlo <- function(parTable, intTerms, ignore.means = FALSE, 
     x   <- rownames(Sigma.xz)[[i]]
     z   <- colnames(Sigma.xz)[[j]]
     est <- Sigma.xz[x, z]
-    
+
     if (!isOK(x, z))
       next
 

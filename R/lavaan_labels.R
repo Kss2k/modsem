@@ -94,8 +94,8 @@ createLabelsOmega <- function(X) {
 getLavCoefs <- function(model, theta, method) {
   fullTheta <- getTransformationsTheta(model, theta, method)
   isFree    <- names(fullTheta) %in% names(theta)
-  
+
   names(fullTheta) <- model$lavLabels
-  
+
   list(all = fullTheta, free = fullTheta[isFree])
 }

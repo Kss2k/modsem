@@ -1,11 +1,11 @@
-getParTableResCov <- function(relDf, 
-                              method, 
+getParTableResCov <- function(relDf,
+                              method,
                               pt = NULL,
                               explicit.zero = FALSE,
                               include.single.inds = FALSE,
                               setToZero = FALSE) {
-  simple <- \() 
-    getParTableResCov.simple(relDf, 
+  simple <- \()
+    getParTableResCov.simple(relDf,
                              explicit.zero = explicit.zero,
                              include.single.inds = include.single.inds)
   switch(method,
@@ -21,7 +21,7 @@ getParTableResCov.simple <- function(relDf, explicit.zero = FALSE, include.singl
   EMPTY <- data.frame(lhs = NULL, op = NULL, rhs = NULL, mod = NULL)
   attr(EMPTY, "OK") <- TRUE
 
-  if (length(relDf) <= 1) 
+  if (length(relDf) <= 1)
     return(EMPTY)
 
   OK <- TRUE
@@ -42,10 +42,10 @@ getParTableResCov.simple <- function(relDf, explicit.zero = FALSE, include.singl
     indsProd2 <- unlist(relDf[uniqueCombinations[i, "V2"]])
     # Compare the Inds in prod1 and prod2, and convert to integer
     sharedValues <- as.integer(indsProd1 %in% indsProd2)
-    
+
     # Sum the values
     numberShared <- sum(sharedValues)
-                                     
+
     # if there is a difference in number of elems in `len.diff.ignore` they should be ignored...
     # See the simulation results in `tests/testthat/test_three_way.R`
     #> cov(x, z, w, xz, xw, zw, xm, zm, wm, xzw, xzm, xwm, zwm, xzwm)
@@ -80,7 +80,7 @@ getParTableResCov.simple <- function(relDf, explicit.zero = FALSE, include.singl
 
   prodsSharingInds    <- uniqueCombinations[isShared, c("V1", "V2")]
   prodsNotSharingInds <- uniqueCombinations[!isShared, c("V1", "V2")]
-  
+
   # Syntax for oblique covariances
   if (nrow(prodsSharingInds) > 0) {
     syntaxOblique <- apply(prodsSharingInds,
@@ -102,7 +102,7 @@ getParTableResCov.simple <- function(relDf, explicit.zero = FALSE, include.singl
   } else syntaxOrthogonal <- NULL
 
   out <- rbind(syntaxOrthogonal, syntaxOblique)
-  
+
   if (is.null(out))
     return(EMPTY)
 
@@ -117,7 +117,7 @@ getParTableResCov.equality <- function(relDf, setToZero = FALSE) {
   EMPTY <- data.frame(lhs = NULL, op = NULL, rhs = NULL, mod = NULL)
   attr(EMPTY, "OK") <- TRUE
 
-  if (length(relDf) <= 1) 
+  if (length(relDf) <= 1)
     return(EMPTY)
 
   OK <- TRUE
@@ -150,7 +150,7 @@ getParTableResCov.equality <- function(relDf, setToZero = FALSE) {
                     ) |>
     purrr::list_rbind()
   if (!setToZero) parTable <- parTable[parTable$mod != 0, ]
-  
+
   attr(parTable, "OK") <- OK
   parTable
 }

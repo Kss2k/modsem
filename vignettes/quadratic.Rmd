@@ -56,12 +56,12 @@ est2_qml <- modsem(m2, data = jordan, method = "qml")
 summary(est2_qml)
 ```
 
-**NOTE**: We can also use the LMS approach to estimate this model, but it will be a lot 
-slower, since we have to integrate along both `ENJ` and `SC`. In the first example 
+**NOTE**: We can also use the LMS approach to estimate this model, but it will be a lot
+slower, since we have to integrate along both `ENJ` and `SC`. In the first example
 it is sufficient to only integrate along `X`, but the addition of the `SC:SC` term
-means that we have to explicitly model `SC` as a moderator. This means that 
-we (by default) have to integrate along `24^2=576` nodes. This both affects the 
-the optimization process, but also dramatically affects the computation time of 
+means that we have to explicitly model `SC` as a moderator. This means that
+we (by default) have to integrate along `24^2=576` nodes. This both affects the
+the optimization process, but also dramatically affects the computation time of
 the standard errors. To make the estimation process it is possible to reduce the number
 of quadrature nodes, and calculate standard errors using the outer product of the
 score function, instead of the negative of the hessian matrix. Additionally, we can
@@ -75,8 +75,8 @@ SC =~ academic1 + academic2 + academic3 + academic4 + academic5 + academic6
 CAREER ~ ENJ + SC + ENJ:ENJ + SC:SC + ENJ:SC
 '
 
-est2_lms <- modsem(m2, data = jordan, method = "lms", 
-                   nodes = 15, OFIM.hessian = FALSE, 
+est2_lms <- modsem(m2, data = jordan, method = "lms",
+                   nodes = 15, OFIM.hessian = FALSE,
                    mean.observed = FALSE)
 summary(est2_lms)
 ```

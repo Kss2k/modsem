@@ -1,9 +1,9 @@
 # Calculate weights and node points for mixture functions via Gauss-Hermite
 # quadrature as defined in Klein & Moosbrugger (2000). Also stores information
 # regarding adaptive quadrature.
-quadrature <- function(m, k, 
-                       adaptive = FALSE, 
-                       quad.range = Inf, 
+quadrature <- function(m, k,
+                       adaptive = FALSE,
+                       quad.range = Inf,
                        adaptive.frequency = 3,
                        ...) {
   if (quad.range < 0) {
@@ -16,12 +16,12 @@ quadrature <- function(m, k,
 
   if (k == 0 || m == 0) {
     return(list(
-      n = matrix(0), 
-      w = 1, 
-      k = 0, 
+      n = matrix(0),
+      w = 1,
+      k = 0,
       m = m,
-      a = a, 
-      b = b, 
+      a = a,
+      b = b,
       adaptive = FALSE,
       quad.range = quad.range,
       adaptive.frequency = adaptive.frequency
@@ -43,10 +43,10 @@ quadrature <- function(m, k,
   list(
     n = nodes,
     w = weights,
-    k = k, 
+    k = k,
     m = m,
-    a = a, 
-    b = b, 
+    a = a,
+    b = b,
     quad.range = quad.range,
     adaptive = adaptive,
     adaptive.frequency = adaptive.frequency
@@ -54,10 +54,10 @@ quadrature <- function(m, k,
 }
 
 
-adaptiveGaussQuadrature <- function(fun, 
+adaptiveGaussQuadrature <- function(fun,
                                     collapse = \(x) x, # function to collapse the results, if 'relevant'
-                                    a = -7, 
-                                    b = 7, 
+                                    a = -7,
+                                    b = 7,
                                     m = 32,
                                     m.ceil = m + m / 2,
                                     k = 1,
@@ -67,13 +67,13 @@ adaptiveGaussQuadrature <- function(fun,
                                     mdiff.tol = 2,
                                     ...) {
   if (k == 0 || m == 0) return(list(n = matrix(0), w = 1, f = NA, m = 1, k = 1))
-  
+
   if (k <= 1) {
     out <- adaptiveGaussQuadratureK(
       fun = fun, collapse = collapse,
       a = a, b = b, m = m, m.ceil = m.ceil,
       k = 1, K = k, iter = 1, iter.max = iter.max,
-      node.max = node.max, tol = tol, 
+      node.max = node.max, tol = tol,
       mdiff.tol = mdiff.tol, ...
     )
 
@@ -93,7 +93,7 @@ adaptiveGaussQuadrature <- function(fun,
       fun = fun, collapse = collapse,
       a = a[i], b = b[i], m = m, m.ceil = m.ceil[i],
       k = i, K = k, iter = 1, iter.max = iter.max,
-      node.max = node.max, tol = tol, 
+      node.max = node.max, tol = tol,
       mdiff.tol = mdiff.tol, ...
     )
 
@@ -115,10 +115,10 @@ adaptiveGaussQuadrature <- function(fun,
 }
 
 
-adaptiveGaussQuadratureK <- function(fun, 
+adaptiveGaussQuadratureK <- function(fun,
                                      collapse = \(x) x, # function to collapse the results, if 'relevant'
-                                     a = -7, 
-                                     b = 7, 
+                                     a = -7,
+                                     b = 7,
                                      m = 32,
                                      m.ceil = m + m / 2,
                                      k = 1,
@@ -137,7 +137,7 @@ adaptiveGaussQuadratureK <- function(fun,
     quadn <- matrix(0, nrow = m.ceil, ncol = K)
     quadn[,k] <- quad$n
   } else quadn <- quad$n
-  
+
   quadf <- fun(quadn, ...)
   quadw <- matrix(quad$w, ncol = length(quad$w), nrow = NROW(quadf), byrow = TRUE)
 
@@ -150,7 +150,7 @@ adaptiveGaussQuadratureK <- function(fun,
   quadn <- quadn[isValidNode, , drop = FALSE]
   quadf <- quadf[, isValidNode, drop = FALSE]
   quadw <- quadw[, isValidNode, drop = FALSE]
-  
+
   # vector of full-integral for thresholding
   I.full <- integral.full
 
@@ -172,7 +172,7 @@ adaptiveGaussQuadratureK <- function(fun,
   contrib.rank <- order(abs(contributions))
   cumulative   <- cumsum(contributions[contrib.rank])
   is.removable <- abs(cumulative) < tol * abs(I.full)
-  
+
   # reverse ordering of is.removable
   is.removable <- is.removable[order(contrib.rank)]
   removable    <- which(is.removable)
@@ -180,7 +180,7 @@ adaptiveGaussQuadratureK <- function(fun,
   warnif(sum(contributions[removable]) > tol * abs(I.full),
          "Something went wrong when pruning nodes:\n",
          "More information than expected was lost!\n")
-  
+
   stopif(length(removable) >= NROW(quadn), "Cannot remove all nodes!")
 
   if (length(removable) > 0) {
@@ -212,14 +212,14 @@ adaptiveGaussQuadratureK <- function(fun,
   if (!converged && OKIter && OKNextCeil) {
 
     return(adaptiveGaussQuadratureK(
-      fun = fun, 
-      collapse = collapse, 
-      a = a, 
-      b = b, 
-      k = k, 
+      fun = fun,
+      collapse = collapse,
+      a = a,
+      b = b,
+      k = k,
       K = K,
       m = m,
-      m.ceil = new.ceil, 
+      m.ceil = new.ceil,
       iter = iter + 1,
       tol = tol,
       iter.max = iter.max,
@@ -229,7 +229,7 @@ adaptiveGaussQuadratureK <- function(fun,
     ))
   }
 
-  warnif(iter >= iter.max, 
+  warnif(iter >= iter.max,
          "Maximum number of iterations reached when calculating adaptive quadrature!\n",
          "Try lowering the number of nodes, or increase `quad.range` argument!")
 
@@ -237,12 +237,12 @@ adaptiveGaussQuadratureK <- function(fun,
   integral.reduced <- collapse(quadf * quadw)
   error <- integral.reduced - integral.full
 
-  list(n = quadn, 
-       w = quadw[1, , drop = TRUE], 
+  list(n = quadn,
+       w = quadw[1, , drop = TRUE],
        W = quadw,
-       F = quadf, 
-       k = k, 
-       m = nrow(quadn) ^ (1 / k), 
+       F = quadf,
+       k = k,
+       m = nrow(quadn) ^ (1 / k),
 
        m.ceil   = m.ceil,
        iter     = iter,

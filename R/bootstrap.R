@@ -11,8 +11,8 @@
 #' @param FUN  A function that returns the statistic of interest when applied to
 #'   a fitted model.  The function must accept a single argument, the model
 #'   object, and should ideally return a numeric vector; see Value.
-#' @param ...  Additional arguments forwarded to \code{lavaan::bootstrapLavaan} 
-#'   for \code{\link{modsem_pi}} objects, or \code{\link{modsem_da}} for 
+#' @param ...  Additional arguments forwarded to \code{lavaan::bootstrapLavaan}
+#'   for \code{\link{modsem_pi}} objects, or \code{\link{modsem_da}} for
 #'   \code{\link{modsem_da}} objects.
 #'
 #' @return Depending on the return type of \code{FUN} either
@@ -44,10 +44,10 @@ bootstrap_modsem <- function(model = modsem, FUN, ...) {
 #'   X =~ x1 + x2
 #'   Z =~ z1 + z2
 #'   Y =~ y1 + y2
-#' 
+#'
 #'   Y ~ X + Z + X:Z
 #' '
-#' 
+#'
 #' fit_pi <- modsem(m1, oneInt)
 #' bootstrap_modsem(fit_pi, FUN = coef, R = 10L)
 #'
@@ -87,22 +87,22 @@ bootstrap_modsem.modsem_pi <- function(model, FUN, ...) {
 #'   X =~ x1 + x2
 #'   Z =~ z1 + z2
 #'   Y =~ y1 + y2
-#' 
+#'
 #'   Y ~ X + Z + X:Z
 #' '
-#' 
+#'
 #' \dontrun{
 #' fit_lms <- modsem(m1, oneInt, method = "lms")
 #' bootstrap_modsem(fit_lms, FUN = coef, R = 10L)
 #' }
 #' @export
-bootstrap_modsem.modsem_da <- function(model, 
-                                       FUN = "coef", 
-                                       R = 1000L, 
+bootstrap_modsem.modsem_da <- function(model,
+                                       FUN = "coef",
+                                       R = 1000L,
                                        P.max = 1e5,
-                                       type = c("nonparametric", "parameteric"), 
+                                       type = c("nonparametric", "parameteric"),
                                        verbose = interactive(),
-                                       calc.se = FALSE, 
+                                       calc.se = FALSE,
                                        optimize = FALSE,
                                        ...) {
   type <- tolower(type)
@@ -134,14 +134,14 @@ bootstrap_modsem.modsem_da <- function(model,
     argList$optimize     <- FALSE
   } else {
     argList$start        <- NULL
-    argList$optimize     <- TRUE 
+    argList$optimize     <- TRUE
   }
 
   f0 <- FUN(model)
   FUN.VEC <- is.vector(f0) || inherits(f0, "ModsemVector")
 
   if (FUN.VEC) {
-    out <- matrix(NA, nrow = R, ncol = length(f0), 
+    out <- matrix(NA, nrow = R, ncol = length(f0),
                   dimnames = list(NULL, names(f0)))
 
   } else out <- vector("list", length = R)
@@ -186,10 +186,10 @@ bootstrap_modsem.modsem_da <- function(model,
 #' @param data Dataset to be resampled.
 #' @param FUN.args Arguments passed to \code{FUN}
 #'
-#' @details This is a more general version of \code{boostrap_modsem} for 
-#'   bootstrapping \code{modsem} functions, not modsem objects. 
+#' @details This is a more general version of \code{boostrap_modsem} for
+#'   bootstrapping \code{modsem} functions, not modsem objects.
 #'   \code{model} is now a function to be boostrapped, and \code{...}
-#'   are now passed to the function (\code{model}), not \code{FUN}. To 
+#'   are now passed to the function (\code{model}), not \code{FUN}. To
 #'   pass arguments to \code{FUN} use \code{FUN.args}.
 #'
 #' @examples
@@ -201,18 +201,18 @@ bootstrap_modsem.modsem_da <- function(model,
 #'   PBC =~ pbc1 + pbc2 + pbc3
 #'   INT =~ int1 + int2 + int3
 #'   BEH =~ b1 + b2
-#' 
+#'
 #' # Inner Model (Based on Steinmetz et al., 2011)
 #'   INT ~ ATT + SN + PBC
 #'   BEH ~ INT + PBC + INT:PBC
 #' "
-#' 
+#'
 #' \dontrun{
-#' boot <- bootstrap_modsem(model = modsem, 
+#' boot <- bootstrap_modsem(model = modsem,
 #'                          model.syntax = tpb, data = TPB,
-#'                          method = "dblcent", rcs = TRUE, 
+#'                          method = "dblcent", rcs = TRUE,
 #'                          rcs.scale.corrected = TRUE,
-#'                          FUN = "coef", R = 50L) 
+#'                          FUN = "coef", R = 50L)
 #' coef <- apply(boot, MARGIN = 2, FUN = mean, na.rm = TRUE)
 #' se   <- apply(boot, MARGIN = 2, FUN = sd, na.rm = TRUE)
 #'
@@ -224,10 +224,10 @@ bootstrap_modsem.modsem_da <- function(model,
 #'
 #' }
 #' @export
-bootstrap_modsem.function <- function(model = modsem, 
-                                      FUN = "coef", 
-                                      data, 
-                                      R = 1000L, 
+bootstrap_modsem.function <- function(model = modsem,
+                                      FUN = "coef",
+                                      data,
+                                      R = 1000L,
                                       verbose = interactive(),
                                       FUN.args = list(),
                                       ...) {
@@ -237,7 +237,7 @@ bootstrap_modsem.function <- function(model = modsem,
   args <- list(...)
   data <- as.data.frame(data)
   N    <- NROW(data)
-  
+
   ERROR <- \(e) {warning2(e, immediate. = FALSE); NULL}
 
   for (i in seq_len(R)) {

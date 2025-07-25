@@ -32,7 +32,7 @@ checkAConstraints <- function(model, covModel, method = "lms") {
   Al <- model$labelMatrices$A
 
   isOKALabel <- all(Al == "")
-  isOKANumeric <- all(is.na(An[lower.tri(An, diag = TRUE)])) || 
+  isOKANumeric <- all(is.na(An[lower.tri(An, diag = TRUE)])) ||
                  !any(is.na(An[lower.tri(An)]))
 
   warnif(!isOKALabel || !isOKANumeric,
@@ -63,11 +63,11 @@ checkCovModelVariables <- function(covModel, modelXis, method = "lms") {
 
 checkZeroVariances <- function(model, method = "lms") {
   if (method != "lms") return(NULL)
-  
+
   nonLinearXis <- model$info$nonLinearXis
   inds <- model$info$indsXis[nonLinearXis]
 
-  thetaDelta <- model$matrices$thetaDelta 
+  thetaDelta <- model$matrices$thetaDelta
 
   message <- paste(
       "The variance of a moderating variable of integration",
@@ -136,7 +136,7 @@ checkNodesLms <- function(parTableMain,
 
 
 checkCovEtaXi <- function(parTable, canBeCausedByCovModel = FALSE) {
-  if (!NROW(parTable)) 
+  if (!NROW(parTable))
     return(NULL)
 
   etas <- getEtas(parTable, checkAny = FALSE, isLV = FALSE)
@@ -154,7 +154,7 @@ checkCovEtaXi <- function(parTable, canBeCausedByCovModel = FALSE) {
     msgcov <- paste0(
       "\nThis may be because the model has been split into linear and non-linear parts!\n",
       "You can try passing `auto.split.syntax=FALSE` and `cov.syntax=NULL`..."
-    ) 
+    )
   } else msgcov <- ""
 
   msg <- paste0(
@@ -174,7 +174,7 @@ checkOmegaEtaXi <- function(model, method = "qml", zero.tol = 1e-10) {
   omegaEtaXi <- model$matrices$omegaEtaXi
   problematic <- any(is.na(omegaEtaXi) | abs(omegaEtaXi) > zero.tol)
 
-  warnif(problematic, 
+  warnif(problematic,
          "Interactions between exogenous and enodgenous variables in the QML\n",
          "approach can be biased in some cases...\n",
          "You can try passing `auto.split.syntax=FALSE` and `cov.syntax=NULL`...")
@@ -241,15 +241,15 @@ checkVariances <- function(expected.matrices, rel.diff.tol = 1000) {
 
   check <- function(variances, type) {
     minVar <- min(variances, na.rm = TRUE) # should never be any NA, but just in case...
-    maxVar <- max(variances, na.rm = TRUE) 
+    maxVar <- max(variances, na.rm = TRUE)
     relDiff <- maxVar / minVar
 
     anyNeg <- any(variances < 0)
     warnif(anyNeg, "Some estimated %s variances are negative!", immediate. = FALSE)
-    
+
     warnif(
       relDiff > rel.diff.tol,
-      sprintf("Some estimated %s variances are (at least) a factor %i times larger than others", 
+      sprintf("Some estimated %s variances are (at least) a factor %i times larger than others",
               type, rel.diff.tol),
       immediate. = FALSE
     )
@@ -263,7 +263,7 @@ checkVariances <- function(expected.matrices, rel.diff.tol = 1000) {
 checkVCOV <- function(vcov, calc.se = TRUE, tol.eigen = .Machine$double.eps ^ (3/4)) {
   if (!calc.se) return(NULL) # checks not relevant
 
-  eigenvalues <- eigen(vcov, only.values = TRUE)$values 
+  eigenvalues <- eigen(vcov, only.values = TRUE)$values
 
   if (all(is.na(eigenvalues))) {
     warning2("Unable to compute eigenvalues of the variance-covariance matrix!")
@@ -272,7 +272,7 @@ checkVCOV <- function(vcov, calc.se = TRUE, tol.eigen = .Machine$double.eps ^ (3
 
   minval <- min(eigenvalues, na.rm = TRUE) # should never be any NA, but just in case...
   if (minval < tol.eigen) {
-    warnif(minval >= 0, 
+    warnif(minval >= 0,
            "The variance-covariance matrix of the estimated\n",
            "parameters (vcov) does not appear to be positive\n",
            sprintf("definite! The smallest eigenvalue (= %e) is close\n", minval),

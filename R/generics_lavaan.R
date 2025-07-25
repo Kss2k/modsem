@@ -25,7 +25,7 @@ modsem_inspect.lavaan <- function(object, what = "free", ...) {
 #' @param tolerance.zero Threshold below which standard errors are set to \code{NA}.
 #'
 #' @export
-centered_estimates.lavaan <- function(object, 
+centered_estimates.lavaan <- function(object,
                                       monte.carlo = FALSE,
                                       mc.reps = 10000,
                                       tolerance.zero = 1e-10,
@@ -34,12 +34,12 @@ centered_estimates.lavaan <- function(object,
   centering <- function(object, grouping = NULL) {
 
     solution <- centeredSolutionCOEFS(
-      object      = object, 
-      monte.carlo = monte.carlo, 
-      mc.reps     = mc.reps, 
-      grouping    = grouping, 
+      object      = object,
+      monte.carlo = monte.carlo,
+      mc.reps     = mc.reps,
+      grouping    = grouping,
       ...
-    ) 
+    )
 
     solution$parTable
   }
@@ -62,7 +62,7 @@ centered_estimates.lavaan <- function(object,
 #' @param tolerance.zero Threshold below which standard errors are set to \code{NA}.
 #'
 #' @export
-standardized_estimates.lavaan <- function(object, 
+standardized_estimates.lavaan <- function(object,
                                           monte.carlo = FALSE,
                                           mc.reps = 10000,
                                           tolerance.zero = 1e-10,
@@ -71,12 +71,12 @@ standardized_estimates.lavaan <- function(object,
   standardization <- function(object, grouping = NULL) {
 
     solution <- standardizedSolutionCOEFS(
-      object      = object, 
-      monte.carlo = monte.carlo, 
-      mc.reps     = mc.reps, 
-      grouping    = grouping, 
+      object      = object,
+      monte.carlo = monte.carlo,
+      mc.reps     = mc.reps,
+      grouping    = grouping,
       ...
-    ) 
+    )
 
     solution$parTable
   }
@@ -86,18 +86,18 @@ standardized_estimates.lavaan <- function(object,
     monte.carlo    = monte.carlo,
     mc.reps        = mc.reps,
     tolerance.zero = tolerance.zero,
-    transformation = standardization 
+    transformation = standardization
   )
 }
 
 
-transformEstimatesLavaan <- function(object, 
+transformEstimatesLavaan <- function(object,
                                      monte.carlo = FALSE,
                                      mc.reps = 10000,
                                      tolerance.zero = 1e-10,
                                      transformation) {
   parTable <- parameter_estimates(object)
-  
+
   hiorder <- isHigherOrderParTable(parTable)
   cluster <- isClustered(object)
 
@@ -107,6 +107,6 @@ transformEstimatesLavaan <- function(object,
   applyTransformationByGrouping(
     parTable = parTable,
     FUN      = transformation,
-    object   = object 
+    object   = object
   )
 }

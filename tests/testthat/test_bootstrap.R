@@ -41,9 +41,9 @@ tpb <- "
   BEH ~ INT + PBC + INT:PBC
 "
 
-boot <- bootstrap_modsem(model = modsem, 
+boot <- bootstrap_modsem(model = modsem,
                          model.syntax = tpb, data = TPB,
-                         method = "dblcent", rcs = TRUE, 
+                         method = "dblcent", rcs = TRUE,
                          rcs.scale.corrected = TRUE,
                          rcs.mc.reps = 10000,
                          R = 10L,

@@ -12,7 +12,7 @@ m1 <- "
   y1 ~~ 10000*y1
 "
 
-testthat::expect_warning(modsem(m1, oneInt, method = "lms", calc.se=FALSE), 
+testthat::expect_warning(modsem(m1, oneInt, method = "lms", calc.se=FALSE),
                          regexp = "Some estimated ov variances.*")
 
 m2 <- "
@@ -27,7 +27,7 @@ m2 <- "
   Y ~~ 10000*Y
 "
 
-testthat::expect_warning(modsem(m2, oneInt, method = "lms", calc.se=FALSE), 
+testthat::expect_warning(modsem(m2, oneInt, method = "lms", calc.se=FALSE),
                          regexp = "Some estimated lv variances.*")
 
 m3 <- "

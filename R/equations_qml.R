@@ -15,9 +15,9 @@ incrementIterations <- function(logLik) {
   relDeltaLL <- diffLL$rel
 
   clearConsoleLine() # clear before printing
-  printf("\rEval=%d LogLik=%.2f \u0394LL=%.2g rel\u0394LL=%.2g", 
+  printf("\rEval=%d LogLik=%.2f \u0394LL=%.2g rel\u0394LL=%.2g",
          eval, logLik, deltaLL, relDeltaLL)
-  
+
   OptimizerInfoQML$eval    <- eval
   OptimizerInfoQML$logLiks <- logLiks
 }
@@ -112,9 +112,9 @@ probf2 <- function(matrices, normalInds, sigma, sum=FALSE) {
 
 
 probf3 <- function(matrices, nonNormalInds, expected, sigma, t, numEta, sum = FALSE) {
-  if (numEta == 1) 
+  if (numEta == 1)
     p <- dnormCpp(matrices$y[, 1], mu = expected, sigma = sqrt(sigma), ncores = ThreadEnv$n.threads)
-  else 
+  else
     p <- rep_dmvnorm(matrices$y[, nonNormalInds], expected = expected,
                      sigma = sigma, t = t, ncores = ThreadEnv$n.threads)
   if (sum) sum(p) else p
@@ -176,7 +176,7 @@ mstepQml <- function(model,
     est <- stats::nlminb(start = theta, objective = logLikQml, model = model,
                          gradient = gradient, sign = -1, verbose = verbose,
                          upper = model$info$bounds$upper,
-                         lower = model$info$bounds$lower, 
+                         lower = model$info$bounds$lower,
                          control = control, ...) |> suppressWarnings()
 
   } else if (optimizer == "L-BFGS-B") {
