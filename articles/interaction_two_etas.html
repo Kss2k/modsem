@@ -114,7 +114,7 @@ exogenous—provided that it can be expressed in a linear model.</p>
 estimate the quadratic effect of <code>INT</code> on <code>BEH</code>
 (<code>INT:INT</code>). We can use the following model:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">tpb</span> <span class="op">&lt;-</span> <span class="st">' </span></span>
+<code class="sourceCode R"><span><span class="va">tpb</span> <span class="op">&lt;-</span> <span class="st">'</span></span>
 <span><span class="st"># Outer Model (Based on Hagger et al., 2007)</span></span>
 <span><span class="st">  ATT =~ att1 + att2 + att3 + att4 + att5</span></span>
 <span><span class="st">  SN =~ sn1 + sn2</span></span>
@@ -124,7 +124,7 @@ estimate the quadratic effect of <code>INT</code> on <code>BEH</code>
 <span><span class="st"></span></span>
 <span><span class="st"># Inner Model (Based on Steinmetz et al., 2011)</span></span>
 <span><span class="st">  INT ~ ATT + SN + PBC</span></span>
-<span><span class="st">  BEH ~ INT + PBC </span></span>
+<span><span class="st">  BEH ~ INT + PBC</span></span>
 <span><span class="st">  BEH ~ INT:INT</span></span>
 <span><span class="st">'</span></span></code></pre></div>
 <p>Since <code>INT</code> is an endogenous variable, its quadratic term
@@ -139,7 +139,7 @@ in a linear model since it is not affected by any interaction terms:</p>
 <code class="sourceCode R"><span><span class="va">tpb_linear</span> <span class="op">&lt;-</span> <span class="st">'INT ~ PBC + ATT + SN'</span></span></code></pre></div>
 <p>We can then remove this part from the original model, giving us:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">tpb_nonlinear</span> <span class="op">&lt;-</span> <span class="st">' </span></span>
+<code class="sourceCode R"><span><span class="va">tpb_nonlinear</span> <span class="op">&lt;-</span> <span class="st">'</span></span>
 <span><span class="st"># Outer Model (Based on Hagger et al., 2007)</span></span>
 <span><span class="st">  ATT =~ att1 + att2 + att3 + att4 + att5</span></span>
 <span><span class="st">  SN =~ sn1 + sn2</span></span>
@@ -148,7 +148,7 @@ in a linear model since it is not affected by any interaction terms:</p>
 <span><span class="st">  BEH =~ b1 + b2</span></span>
 <span><span class="st"></span></span>
 <span><span class="st"># Inner Model (Based on Steinmetz et al., 2011)</span></span>
-<span><span class="st">  BEH ~ INT + PBC </span></span>
+<span><span class="st">  BEH ~ INT + PBC</span></span>
 <span><span class="st">  BEH ~ INT:INT</span></span>
 <span><span class="st">'</span></span></code></pre></div>
 <p>Now, we can estimate the non-linear model since <code>INT</code> is
@@ -161,7 +161,7 @@ matrix from the linear model while estimating both models
 simultaneously. To achieve this, we use the <code>cov.syntax</code>
 argument in <code>modsem</code>:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">est_lms</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">tpb_nonlinear</span>, data <span class="op">=</span> <span class="va">TPB</span>, cov.syntax <span class="op">=</span> <span class="va">tpb_linear</span>, </span>
+<code class="sourceCode R"><span><span class="va">est_lms</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">tpb_nonlinear</span>, data <span class="op">=</span> <span class="va">TPB</span>, cov.syntax <span class="op">=</span> <span class="va">tpb_linear</span>,</span>
 <span>                  method <span class="op">=</span> <span class="st">"lms"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning: It is recommended that you have at least 32 nodes for interaction</span></span>
 <span><span class="co">#&gt; effects between endogenous variables in the lms approach 'nodes = 24'</span></span>
@@ -295,7 +295,7 @@ argument in <code>modsem</code>:</p>
 <span><span class="co">#&gt;     ATT             0.997      0.037    26.96    0.000</span></span>
 <span><span class="co">#&gt;     SN              0.987      0.039    25.25    0.000</span></span>
 <span></span>
-<span><span class="va">est_qml</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">tpb_nonlinear</span>, data <span class="op">=</span> <span class="va">TPB</span>, cov.syntax <span class="op">=</span> <span class="va">tpb_linear</span>, </span>
+<span><span class="va">est_qml</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">tpb_nonlinear</span>, data <span class="op">=</span> <span class="va">TPB</span>, cov.syntax <span class="op">=</span> <span class="va">tpb_linear</span>,</span>
 <span>                  method <span class="op">=</span> <span class="st">"qml"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_qml</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>

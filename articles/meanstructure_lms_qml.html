@@ -88,7 +88,7 @@ interaction terms where the means of the latent variables are not
 centered (i.e., they have non-zero means).</p>
 <p>Here we can see an example using the <code>TPB</code> dataset:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">tpb</span> <span class="op">&lt;-</span> <span class="st">' </span></span>
+<code class="sourceCode R"><span><span class="va">tpb</span> <span class="op">&lt;-</span> <span class="st">'</span></span>
 <span><span class="st"># Outer Model (Based on Hagger et al., 2007)</span></span>
 <span><span class="st">  ATT =~ att1 + att2 + att3 + att4 + att5</span></span>
 <span><span class="st">  SN =~ sn1 + sn2</span></span>
@@ -98,7 +98,7 @@ centered (i.e., they have non-zero means).</p>
 <span><span class="st"></span></span>
 <span><span class="st"># Inner Model (Based on Steinmetz et al., 2011)</span></span>
 <span><span class="st">  INT ~ ATT + SN + PBC</span></span>
-<span><span class="st">  BEH ~ INT + PBC </span></span>
+<span><span class="st">  BEH ~ INT + PBC</span></span>
 <span><span class="st">  BEH ~ INT:PBC</span></span>
 <span><span class="st"></span></span>
 <span><span class="st"># Adding Latent Intercepts</span></span>

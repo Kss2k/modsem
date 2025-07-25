@@ -92,7 +92,7 @@ indicators) that are used as the indicators for your latent product.</p>
 <span><span class="st">Z =~ z1 + z2 + z3</span></span>
 <span><span class="st"></span></span>
 <span><span class="st"># Inner model</span></span>
-<span><span class="st">Y ~ X + Z + X:Z </span></span>
+<span><span class="st">Y ~ X + Z + X:Z</span></span>
 <span><span class="st">'</span></span>
 <span></span>
 <span><span class="va">est1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m1</span>, <span class="va">oneInt</span><span class="op">)</span></span>
@@ -162,7 +162,7 @@ use the <em>matching approach</em>, you would expect
 <span><span class="st">Z =~ z1 + z2</span></span>
 <span><span class="st"></span></span>
 <span><span class="st"># Inner model</span></span>
-<span><span class="st">Y ~ X + Z + X:Z </span></span>
+<span><span class="st">Y ~ X + Z + X:Z</span></span>
 <span><span class="st">'</span></span>
 <span></span>
 <span><span class="va">est2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m2</span>, <span class="va">oneInt</span>, match <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
@@ -291,7 +291,7 @@ needs.</p>
 <span><span class="st">Z =~ z1 + z2 + z3</span></span>
 <span><span class="st"></span></span>
 <span><span class="st"># Inner model</span></span>
-<span><span class="st">Y ~ X + Z + X:Z </span></span>
+<span><span class="st">Y ~ X + Z + X:Z</span></span>
 <span><span class="st">'</span></span>
 <span><span class="va">syntax</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_pi_syntax.html">get_pi_syntax</a></span><span class="op">(</span><span class="va">m3</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="va">syntax</span><span class="op">)</span></span>
@@ -366,8 +366,8 @@ modify the the generated syntax and data.</p>
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://lavaan.ugent.be" class="external-link">lavaan</a></span><span class="op">)</span></span>
 <span><span class="co">#&gt; This is lavaan 0.6-19</span></span>
 <span><span class="co">#&gt; lavaan is FREE software! Please report any bugs.</span></span>
-<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/lavaan/man/sem.html" class="external-link">sem</a></span><span class="op">(</span><span class="va">syntax</span>, data <span class="op">=</span> <span class="va">data</span>, fixed.x <span class="op">=</span> <span class="cn">FALSE</span>, </span>
-<span>           std.lv <span class="op">=</span> <span class="cn">TRUE</span>, auto.fix.first <span class="op">=</span> <span class="cn">TRUE</span>, </span>
+<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/lavaan/man/sem.html" class="external-link">sem</a></span><span class="op">(</span><span class="va">syntax</span>, data <span class="op">=</span> <span class="va">data</span>, fixed.x <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>           std.lv <span class="op">=</span> <span class="cn">TRUE</span>, auto.fix.first <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>           auto.var <span class="op">=</span> <span class="cn">TRUE</span>, auto.cov.lv.x <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
 <span><span class="co">#&gt; lavaan 0.6-19 ended normally after 200 iterations</span></span>
