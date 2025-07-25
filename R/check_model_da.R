@@ -238,17 +238,20 @@ checkParTableEstimates <- function(parTable) {
 checkVariances <- function(expected.matrices, rel.diff.tol = 1000) {
   variances.lv <- diag(expected.matrices$sigma.lv)
   variances.ov <- diag(expected.matrices$sigma.ov)
+  residuals.lv <- expected.matrices$res.lv
+  residuals.ov <- expected.matrices$res.ov
 
-  check <- function(variances, type) {
+  check <- function(variances, type, rel.check = TRUE) {
     minVar <- min(variances, na.rm = TRUE) # should never be any NA, but just in case...
     maxVar <- max(variances, na.rm = TRUE)
     relDiff <- maxVar / minVar
 
     anyNeg <- any(variances < 0)
-    warnif(anyNeg, "Some estimated %s variances are negative!", immediate. = FALSE)
+    warnif(anyNeg, sprintf("Some estimated %s variances are negative!", type),
+           immediate. = FALSE)
 
     warnif(
-      relDiff > rel.diff.tol,
+      relDiff > rel.diff.tol && rel.check,
       sprintf("Some estimated %s variances are (at least) a factor %i times larger than others",
               type, rel.diff.tol),
       immediate. = FALSE
@@ -257,6 +260,8 @@ checkVariances <- function(expected.matrices, rel.diff.tol = 1000) {
 
   check(variances.lv, type = "lv")
   check(variances.ov, type = "ov")
+  check(residuals.lv, type = "residual lv", rel.check = FALSE)
+  check(residuals.ov, type = "residual ov", rel.check = FALSE)
 }
 
 
