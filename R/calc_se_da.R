@@ -271,6 +271,7 @@ calcEFIM_QML <- function(model, finalModel = NULL, theta, data, S = 100,
 
   } else population <- data[sample(R, N, replace = TRUE), ]
 
+
   suppressWarnings({
 
   J <- gradientLogLikQml(theta = theta, model = model, sign = +1,
