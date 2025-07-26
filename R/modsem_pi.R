@@ -287,7 +287,7 @@ modsem_pi <- function(model.syntax = NULL,
   modelSpec <- parseLavaan(model.syntax, colnames(data),
                            match = methodSettings$match,
                            suppress.warnings.match = suppress.warnings.match,
-                           match.recycle = match.recycle)
+                           match.recycle = methodSettings$match.recycle)
 
   # Save these for later
   input <- list(syntax = model.syntax, data = data,
