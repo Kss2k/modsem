@@ -90,39 +90,45 @@ arma::mat sigmaQmlCpp(Rcpp::List m, int t, int ncores = 1) {
   const int lastColSigma = numEta - 1,
             lastColKOxx  = numXi * numEta - 1;
 
+  const arma::mat omegaXiXi2T = omegaXiXi + transposeOmega(omegaXiXi, numEta); // omega + omega'
+
   if (Binv.n_rows > static_cast<unsigned>(numEta)) {
     #ifdef _OPENMP
     #pragma omp parallel for if(ncores>1) schedule(static)
     #endif
     for (int i = 0; i < t; ++i) {
-      int firstRow = i * numEta, lastRow = (i + 1) * numEta - 1;
+      const int firstRow = i * numEta, lastRow = (i + 1) * numEta - 1;
+      const arma::mat kronXi_t = kronXi.submat(firstRow, 0, lastRow, lastColKOxx);
+      const arma::mat Binv_t   = Binv  .submat(firstRow, 0, lastRow, lastColSigma);
+      const arma::mat Sigma2 = Binv_t * psi * Binv_t.t() + Sigma2Theta;
 
-      arma::mat kronXi_t = kronXi.submat(firstRow, 0, lastRow, lastColKOxx);
-      arma::mat Binv_t   = Binv  .submat(firstRow, 0, lastRow, lastColSigma);
+      const arma::mat BinvGammaXi2Omega =
+        Binv_t * (gammaXi + kronXi_t * (omegaXiXi + omegaXiXi2T));
 
-      arma::mat Sigma2 = Binv_t * psi * Binv_t.t() + Sigma2Theta;
       sigmaE.submat(firstRow, 0, lastRow, lastColSigma) =
-        ( Binv_t * (gammaXi + 2 * kronXi_t * omegaXiXi) ) * Sigma1 *
-        ( Binv_t * (gammaXi + 2 * kronXi_t * omegaXiXi) ).t()
-        + Sigma2 + Binv_t * varZ * Binv_t.t();
+        BinvGammaXi2Omega * Sigma1 * BinvGammaXi2Omega.t() +
+        Sigma2 + Binv_t * varZ * Binv_t.t();
     }
+
   } else {                 // Binv is common to all time points
-    varZ       = Binv * varZ * Binv.t();
+    varZ = Binv * varZ * Binv.t();
     arma::mat Sigma2 = Binv * psi * Binv.t() + Sigma2Theta;
+
     #ifdef _OPENMP
     #pragma omp parallel for if(ncores>1) schedule(static)
     #endif
     for (int i = 0; i < t; ++i) {
-      int firstRow = i * numEta, lastRow = (i + 1) * numEta - 1;
-
-      arma::mat kronXi_t = kronXi.submat(firstRow, 0, lastRow, lastColKOxx);
-
+      const int firstRow = i * numEta, lastRow = (i + 1) * numEta - 1;
+      const arma::mat kronXi_t = kronXi.submat(firstRow, 0, lastRow, lastColKOxx);
+      const arma::mat BinvGammaXi2Omega = 
+        Binv * (gammaXi + kronXi_t * (omegaXiXi + omegaXiXi2T));
+      
       sigmaE.submat(firstRow, 0, lastRow, lastColSigma) =
-        ( Binv * (gammaXi + 2 * kronXi_t * omegaXiXi) ) * Sigma1 *
-        ( Binv * (gammaXi + 2 * kronXi_t * omegaXiXi) ).t()
-        + Sigma2 + varZ;
+        BinvGammaXi2Omega * Sigma1 * BinvGammaXi2Omega.t() +
+        Sigma2 + varZ;
     }
   }
+
   return sigmaE;
 }
 
@@ -255,4 +261,23 @@ arma::vec traceOmegaSigma1(const arma::mat OmegaSigma1, const int numEta) {
     } 
   }
   return trace;
+}
+
+
+arma::mat transposeOmega(const arma::mat Omega, const int numEta) {
+  if (numEta <= 1) return Omega.t();
+
+  int subRows = Omega.n_rows / numEta;
+  arma::mat OmegaT(Omega.n_rows, Omega.n_cols, arma::fill::zeros);
+
+  for (int i = 0; i < numEta; i++) {
+    const int ri = i * subRows;
+    const int ci = 0;
+    const int rk = (i + 1) * subRows - 1;
+    const int ck = Omega.n_cols - 1;
+
+    OmegaT.submat(ri, ci, rk, ck) = Omega.submat(ri, ci, rk, ck).t();
+  }
+
+  return OmegaT;
 }
