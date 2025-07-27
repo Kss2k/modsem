@@ -103,7 +103,7 @@ arma::mat sigmaQmlCpp(Rcpp::List m, int t, int ncores = 1) {
       const arma::mat Sigma2 = Binv_t * psi * Binv_t.t() + Sigma2Theta;
 
       const arma::mat BinvGammaXi2Omega =
-        Binv_t * (gammaXi + kronXi_t * (omegaXiXi + omegaXiXi2T));
+        Binv_t * gammaXi + kronXi_t * omegaXiXi2T;
 
       sigmaE.submat(firstRow, 0, lastRow, lastColSigma) =
         BinvGammaXi2Omega * Sigma1 * BinvGammaXi2Omega.t() +
@@ -121,7 +121,7 @@ arma::mat sigmaQmlCpp(Rcpp::List m, int t, int ncores = 1) {
       const int firstRow = i * numEta, lastRow = (i + 1) * numEta - 1;
       const arma::mat kronXi_t = kronXi.submat(firstRow, 0, lastRow, lastColKOxx);
       const arma::mat BinvGammaXi2Omega = 
-        Binv * (gammaXi + kronXi_t * (omegaXiXi + omegaXiXi2T));
+        Binv * gammaXi + kronXi_t * omegaXiXi2T;
       
       sigmaE.submat(firstRow, 0, lastRow, lastColSigma) =
         BinvGammaXi2Omega * Sigma1 * BinvGammaXi2Omega.t() +
