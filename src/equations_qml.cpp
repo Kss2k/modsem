@@ -95,17 +95,19 @@ arma::mat sigmaQmlCpp(Rcpp::List m, int t, int ncores = 1) {
     #pragma omp parallel for if(ncores>1) schedule(static)
     #endif
     for (int i = 0; i < t; ++i) {
-      int firstRow = i * numEta, lastRow = (i + 1) * numEta - 1;
+      const int firstRow = i * numEta, lastRow = (i + 1) * numEta - 1;
+      const arma::mat kronXi_t = kronXi.submat(firstRow, 0, lastRow, lastColKOxx);
+      const arma::mat Binv_t   = Binv  .submat(firstRow, 0, lastRow, lastColSigma);
+      const arma::mat Sigma2 = Binv_t * psi * Binv_t.t() + Sigma2Theta;
 
-      arma::mat kronXi_t = kronXi.submat(firstRow, 0, lastRow, lastColKOxx);
-      arma::mat Binv_t   = Binv  .submat(firstRow, 0, lastRow, lastColSigma);
+      const arma::mat BinvGammaXi2Omega =
+        Binv_t * (gammaXi + kronXi_t * (omegaXiXi + omegaXiXi.t()));
 
-      arma::mat Sigma2 = Binv_t * psi * Binv_t.t() + Sigma2Theta;
       sigmaE.submat(firstRow, 0, lastRow, lastColSigma) =
-        ( Binv_t * (gammaXi + 2 * kronXi_t * omegaXiXi) ) * Sigma1 *
-        ( Binv_t * (gammaXi + 2 * kronXi_t * omegaXiXi) ).t()
-        + Sigma2 + Binv_t * varZ * Binv_t.t();
+        BinvGammaXi2Omega * Sigma1 * BinvGammaXi2Omega.t() +
+        Sigma2 + Binv_t * varZ * Binv_t.t();
     }
+
   } else {                 // Binv is common to all time points
     varZ       = Binv * varZ * Binv.t();
     arma::mat Sigma2 = Binv * psi * Binv.t() + Sigma2Theta;
@@ -113,14 +115,15 @@ arma::mat sigmaQmlCpp(Rcpp::List m, int t, int ncores = 1) {
     #pragma omp parallel for if(ncores>1) schedule(static)
     #endif
     for (int i = 0; i < t; ++i) {
-      int firstRow = i * numEta, lastRow = (i + 1) * numEta - 1;
+      const int firstRow = i * numEta, lastRow = (i + 1) * numEta - 1;
 
-      arma::mat kronXi_t = kronXi.submat(firstRow, 0, lastRow, lastColKOxx);
-
+      const arma::mat kronXi_t = kronXi.submat(firstRow, 0, lastRow, lastColKOxx);
+      const arma::mat BinvGammaXi2Omega = 
+        Binv * (gammaXi + kronXi_t * (omegaXiXi + omegaXiXi.t()));
+      
       sigmaE.submat(firstRow, 0, lastRow, lastColSigma) =
-        ( Binv * (gammaXi + 2 * kronXi_t * omegaXiXi) ) * Sigma1 *
-        ( Binv * (gammaXi + 2 * kronXi_t * omegaXiXi) ).t()
-        + Sigma2 + varZ;
+        BinvGammaXi2Omega * Sigma1 * BinvGammaXi2Omega.t() +
+        Sigma2 + varZ;
     }
   }
   return sigmaE;
