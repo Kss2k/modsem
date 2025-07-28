@@ -502,8 +502,8 @@ customParamsToParTable <- function(model, coefs, se) {
 
 
 modelToParTable <- function(model, coefs = NULL, se = NULL, method = "lms", calc.se = TRUE) {
-  parTable <- rbind(mainModelToParTable(model, method = method),
-                    covModelToParTable(model, method = method))
+  parTable <- rbind(covModelToParTable(model, method = method),
+                    mainModelToParTable(model, method = method))
 
   if (!is.null(coefs) && !is.null(se) && !is.null(names(se))) {
     parTable <- rbind(parTable, customParamsToParTable(model, coefs, se))
