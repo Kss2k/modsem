@@ -755,13 +755,13 @@ getInternalCoefsDA <- function(model) {
 
 getXisModelDA <- function(model) {
   covModelEtas <- model$covModel$info$etas
-  allXis <- unique(c(model$info$xis, model$covModel$info$xis))
+  allXis <- unique(c(model$covModel$info$xis, model$info$xis))
   allXis[!allXis %in% covModelEtas]
 }
 
 
 getEtasModelDA <- function(model) {
-  unique(c(model$info$etas, model$covModel$info$etas))
+  unique(c(model$covModel$info$etas, model$info$etas))
 }
 
 
@@ -828,4 +828,35 @@ splitParTable <- function(parTable) {
     splitEtas = etasCovModel,
     nonLinearEtas = nonLinearEtas
   )
+}
+
+
+sortParTableDA <- function(parTable, model) {
+  xis      <- getXisModelDA(model)
+  etas     <- getEtasModelDA(model)
+  indsXis  <- model$info$allIndsXis
+  indsEtas <- model$info$allIndsEtas
+  opOrder <- c("=~", "~", "~1", "~~", ":=")
+  varOrder <- unique(c(indsXis, indsEtas, xis, etas))
+
+  getScore <- function(x, order.by) {
+    order.by <- unique(c(order.by, x)) # ensure that all of x is in order.by
+    mapping  <- stats::setNames(seq_along(order.by), nm = order.by)
+    score    <- mapping[x]
+
+    if (length(score) != length(x)) {
+      warning2("Sorting of parameter estimates failed!\n",
+               immediate. = FALSE)
+
+      return(seq_along(x))
+    }
+
+    score
+  }
+
+  scoreLhs <- getScore(x = parTable$lhs, order.by = varOrder)
+  scoreOp  <- getScore(x = parTable$op,  order.by = opOrder)
+  scoreRhs <- getScore(x = parTable$rhs, order.by = varOrder)
+
+  parTable[order(scoreOp, scoreLhs, scoreRhs), , drop = FALSE]
 }

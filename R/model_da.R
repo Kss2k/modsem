@@ -325,16 +325,26 @@ interceptsToParTable <- function(matrixNA, matrixEst, matrixSE, matrixLabel) {
 }
 
 
-omegaToParTable <- function(omegaNA, omegaEst, omegaSE, omegaLabel) {
+omegaToParTable <- function(omegaNA, omegaEst, omegaSE, omegaLabel, parTable.in = NULL) {
   rows <- rownames(omegaEst)
   cols <- colnames(omegaEst)
+
+  C <- \(x, y) sprintf("%s:%s", x, y)
+  getIntTerm <- function(lhs, rhs) {
+    xz <- C(lhs, rhs)
+    zx <- C(rhs, lhs)
+
+    if (is.null(parTable.in))         xz
+    else if (xz %in% parTable.in$rhs) xz
+    else                              zx
+  }
 
   parTable <- NULL
   for (row in rows) for (col in cols) {
     if (!is.na(omegaNA[row, col]) && omegaLabel[row, col] == "") next
     eta     <- getEtaRowLabelOmega(row)
     x       <- getXiRowLabelOmega(row)
-    intTerm <- paste0(x, ":", col)
+    intTerm <- getIntTerm(lhs = x, rhs = col)
 
     newRow <- data.frame(lhs = eta, op = "~", rhs = intTerm,
                          label = omegaLabel[row, col], est = omegaEst[row, col],
@@ -350,6 +360,7 @@ mainModelToParTable <- function(finalModel, method = "lms") {
   matricesSE    <- finalModel$matricesSE
   matricesNA    <- finalModel$matricesNA
   matricesLabel <- finalModel$labelMatrices
+  parTable.in   <- finalModel$parTable
 
   if (is.null(matricesSE)) matricesSE <- matricesNA
 
@@ -395,13 +406,15 @@ mainModelToParTable <- function(finalModel, method = "lms") {
   newRows <- omegaToParTable(matricesNA$omegaXiXi,
                              matricesEst$omegaXiXi,
                              matricesSE$omegaXiXi,
-                             matricesLabel$omegaXiXi)
+                             matricesLabel$omegaXiXi,
+                             parTable.in = parTable.in)
   parTable <- rbind(parTable, newRows)
 
   newRows <- omegaToParTable(matricesNA$omegaEtaXi,
                              matricesEst$omegaEtaXi,
                              matricesSE$omegaEtaXi,
-                             matricesLabel$omegaEtaXi)
+                             matricesLabel$omegaEtaXi,
+                             parTable.in = parTable.in)
   parTable <- rbind(parTable, newRows)
 
   # Intercepts
@@ -525,5 +538,7 @@ modelToParTable <- function(model, coefs = NULL, se = NULL, method = "lms", calc
                                           # std.errors, but not when calc.se == FALSE
   parTable[!is.na(parTable$std.error) &
            parTable$std.error == -999, "std.error"] <- NA  # replace -999 with NA
-  parTable
+
+  # Sort parTable before returning
+  sortParTableDA(parTable = parTable, model = model)
 }
