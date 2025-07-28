@@ -208,12 +208,12 @@ constructs in the model. The syntax and data can be extracted using the
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; Latent Variables:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;   PBC =~        </span></span>
-<span><span class="co">#&gt;     cmpst_PBC_      1.000                             </span></span>
 <span><span class="co">#&gt;   ATT =~        </span></span>
 <span><span class="co">#&gt;     cmpst_ATT_      1.000                             </span></span>
 <span><span class="co">#&gt;   SN =~         </span></span>
 <span><span class="co">#&gt;     compst_SN_      1.000                             </span></span>
+<span><span class="co">#&gt;   PBC =~        </span></span>
+<span><span class="co">#&gt;     cmpst_PBC_      1.000                             </span></span>
 <span><span class="co">#&gt;   INT =~        </span></span>
 <span><span class="co">#&gt;     cmpst_INT_      1.000                             </span></span>
 <span><span class="co">#&gt;   BEH =~        </span></span>
@@ -222,13 +222,13 @@ constructs in the model. The syntax and data can be extracted using the
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   INT ~         </span></span>
-<span><span class="co">#&gt;     PBC             0.991      0.046   21.712    0.000</span></span>
 <span><span class="co">#&gt;     ATT            -0.022      0.042   -0.528    0.597</span></span>
 <span><span class="co">#&gt;     SN              0.015      0.037    0.390    0.697</span></span>
+<span><span class="co">#&gt;     PBC             0.991      0.046   21.712    0.000</span></span>
 <span><span class="co">#&gt;   BEH ~         </span></span>
 <span><span class="co">#&gt;     PBC             0.726      0.045   16.005    0.000</span></span>
 <span><span class="co">#&gt;     INT             0.307      0.042    7.262    0.000</span></span>
-<span><span class="co">#&gt;     PBC:INT         0.148      0.008   18.024    0.000</span></span>
+<span><span class="co">#&gt;     INT:PBC         0.148      0.008   18.024    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Intercepts:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
@@ -240,11 +240,11 @@ constructs in the model. The syntax and data can be extracted using the
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
+<span><span class="co">#&gt;   ATT ~~        </span></span>
+<span><span class="co">#&gt;     SN              1.907      0.104   18.262    0.000</span></span>
 <span><span class="co">#&gt;   PBC ~~        </span></span>
 <span><span class="co">#&gt;     ATT             3.964      0.180   21.998    0.000</span></span>
 <span><span class="co">#&gt;     SN              2.028      0.107   19.004    0.000</span></span>
-<span><span class="co">#&gt;   ATT ~~        </span></span>
-<span><span class="co">#&gt;     SN              1.907      0.104   18.262    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
@@ -253,9 +253,9 @@ constructs in the model. The syntax and data can be extracted using the
 <span><span class="co">#&gt;    .compst_SN_      0.169                             </span></span>
 <span><span class="co">#&gt;    .cmpst_INT_      0.080                             </span></span>
 <span><span class="co">#&gt;    .cmpst_BEH_      0.365                             </span></span>
-<span><span class="co">#&gt;     PBC             4.427      0.197   22.473    0.000</span></span>
 <span><span class="co">#&gt;     ATT             4.438      0.194   22.837    0.000</span></span>
 <span><span class="co">#&gt;     SN              1.773      0.080   22.071    0.000</span></span>
+<span><span class="co">#&gt;     PBC             4.427      0.197   22.473    0.000</span></span>
 <span><span class="co">#&gt;    .INT             0.709      0.046   15.353    0.000</span></span>
 <span><span class="co">#&gt;    .BEH             0.376      0.039    9.694    0.000</span></span></code></pre></div>
 <p>The easiest approach however, is to use the <code>rcs</code> argument

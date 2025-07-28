@@ -588,10 +588,6 @@ The default is therefore <code>TRUE</code> for the QML approach.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Latent Variables:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   PBC =~        </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     pbc1            1.000                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     pbc2            0.912      0.013    69.44    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     pbc3            0.801      0.012    66.07    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   ATT =~        </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     att1            1.000                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     att2            0.878      0.012    71.56    0.000</span>
@@ -601,6 +597,10 @@ The default is therefore <code>TRUE</code> for the QML approach.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   SN =~         </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     sn1             1.000                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     sn2             0.888      0.017    52.60    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   PBC =~        </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     pbc1            1.000                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     pbc2            0.912      0.013    69.44    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     pbc3            0.801      0.012    66.07    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   INT =~        </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     int1            1.000                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     int2            0.913      0.015    59.06    0.000</span>
@@ -612,13 +612,13 @@ The default is therefore <code>TRUE</code> for the QML approach.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Regressions:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   INT ~         </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC             0.217      0.030     7.34    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     ATT             0.213      0.026     8.17    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     SN              0.176      0.028     6.39    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC             0.217      0.030     7.34    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   BEH ~         </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     PBC             0.233      0.022    10.41    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     INT             0.190      0.025     7.70    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC:INT         0.205      0.018    11.31    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     INT:PBC         0.205      0.018    11.31    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Intercepts:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
@@ -640,11 +640,11 @@ The default is therefore <code>TRUE</code> for the QML approach.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Covariances:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   ATT ~~        </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     SN              0.629      0.029    21.90    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   PBC ~~        </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     ATT             0.678      0.029    23.64    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     SN              0.677      0.029    23.25    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   ATT ~~        </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     SN              0.629      0.029    21.90    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Variances:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
@@ -663,9 +663,9 @@ The default is therefore <code>TRUE</code> for the QML approach.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .int3            0.168      0.007    23.55    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .b1              0.186      0.018    10.12    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .b2              0.135      0.017     8.14    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC             0.962      0.035    27.16    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     ATT             0.998      0.037    27.10    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     SN              0.987      0.039    25.38    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC             0.962      0.035    27.16    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .INT             0.491      0.020    24.65    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .BEH             0.455      0.023    20.14    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>

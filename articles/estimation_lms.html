@@ -213,11 +213,6 @@ which is more troublesome to estimate than the simulated
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; Latent Variables:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;   PBC =~        </span></span>
-<span><span class="co">#&gt;     pbc2            1.000                             </span></span>
-<span><span class="co">#&gt;     pbc1            0.859      0.021    41.34    0.000</span></span>
-<span><span class="co">#&gt;     pbc3            0.935      0.017    55.08    0.000</span></span>
-<span><span class="co">#&gt;     pbc4            0.818      0.021    39.86    0.000</span></span>
 <span><span class="co">#&gt;   ATT =~        </span></span>
 <span><span class="co">#&gt;     att3            1.000                             </span></span>
 <span><span class="co">#&gt;     att2            0.965      0.011    86.35    0.000</span></span>
@@ -228,6 +223,11 @@ which is more troublesome to estimate than the simulated
 <span><span class="co">#&gt;     sn2             1.313      0.041    32.30    0.000</span></span>
 <span><span class="co">#&gt;     sn3             1.350      0.041    32.72    0.000</span></span>
 <span><span class="co">#&gt;     sn1             1.000      0.038    26.61    0.000</span></span>
+<span><span class="co">#&gt;   PBC =~        </span></span>
+<span><span class="co">#&gt;     pbc2            1.000                             </span></span>
+<span><span class="co">#&gt;     pbc1            0.859      0.021    41.34    0.000</span></span>
+<span><span class="co">#&gt;     pbc3            0.935      0.017    55.08    0.000</span></span>
+<span><span class="co">#&gt;     pbc4            0.818      0.021    39.86    0.000</span></span>
 <span><span class="co">#&gt;   INT =~        </span></span>
 <span><span class="co">#&gt;     int2            1.000                             </span></span>
 <span><span class="co">#&gt;     int1            0.970      0.011    92.13    0.000</span></span>
@@ -242,13 +242,13 @@ which is more troublesome to estimate than the simulated
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   INT ~         </span></span>
-<span><span class="co">#&gt;     PBC             1.037      0.036    28.45    0.000</span></span>
 <span><span class="co">#&gt;     ATT            -0.060      0.030    -2.04    0.041</span></span>
 <span><span class="co">#&gt;     SN              0.051      0.033     1.55    0.121</span></span>
+<span><span class="co">#&gt;     PBC             1.037      0.036    28.45    0.000</span></span>
 <span><span class="co">#&gt;   BEH ~         </span></span>
 <span><span class="co">#&gt;     PBC             0.398      0.052     7.63    0.000</span></span>
 <span><span class="co">#&gt;     INT             0.594      0.049    12.25    0.000</span></span>
-<span><span class="co">#&gt;     PBC:INT         0.140      0.008    17.65    0.000</span></span>
+<span><span class="co">#&gt;     INT:PBC         0.140      0.008    17.65    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Intercepts:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
@@ -275,11 +275,11 @@ which is more troublesome to estimate than the simulated
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
+<span><span class="co">#&gt;   ATT ~~        </span></span>
+<span><span class="co">#&gt;     SN              1.681      0.110    15.30    0.000</span></span>
 <span><span class="co">#&gt;   PBC ~~        </span></span>
 <span><span class="co">#&gt;     ATT             3.679      0.177    20.80    0.000</span></span>
 <span><span class="co">#&gt;     SN              1.937      0.117    16.60    0.000</span></span>
-<span><span class="co">#&gt;   ATT ~~        </span></span>
-<span><span class="co">#&gt;     SN              1.681      0.110    15.30    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
@@ -303,9 +303,9 @@ which is more troublesome to estimate than the simulated
 <span><span class="co">#&gt;    .beh2            0.513      0.031    16.55    0.000</span></span>
 <span><span class="co">#&gt;    .beh1            1.835      0.082    22.32    0.000</span></span>
 <span><span class="co">#&gt;    .beh4            1.914      0.085    22.43    0.000</span></span>
-<span><span class="co">#&gt;     PBC             4.361      0.209    20.83    0.000</span></span>
 <span><span class="co">#&gt;     ATT             4.454      0.197    22.60    0.000</span></span>
 <span><span class="co">#&gt;     SN              1.718      0.119    14.49    0.000</span></span>
+<span><span class="co">#&gt;     PBC             4.361      0.209    20.83    0.000</span></span>
 <span><span class="co">#&gt;    .INT             0.507      0.038    13.27    0.000</span></span>
 <span><span class="co">#&gt;    .BEH             0.449      0.034    13.24    0.000</span></span></code></pre></div>
 </div>

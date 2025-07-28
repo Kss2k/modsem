@@ -401,10 +401,6 @@ argument, and or using a quasi-adaptive quadrature by setting
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; Latent Variables:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;   PBC =~        </span></span>
-<span><span class="co">#&gt;     pbc1            1.000                             </span></span>
-<span><span class="co">#&gt;     pbc2            0.912      0.013    69.46    0.000</span></span>
-<span><span class="co">#&gt;     pbc3            0.801      0.012    66.09    0.000</span></span>
 <span><span class="co">#&gt;   ATT =~        </span></span>
 <span><span class="co">#&gt;     att1            1.000                             </span></span>
 <span><span class="co">#&gt;     att2            0.878      0.012    71.56    0.000</span></span>
@@ -414,6 +410,10 @@ argument, and or using a quasi-adaptive quadrature by setting
 <span><span class="co">#&gt;   SN =~         </span></span>
 <span><span class="co">#&gt;     sn1             1.000                             </span></span>
 <span><span class="co">#&gt;     sn2             0.888      0.017    52.60    0.000</span></span>
+<span><span class="co">#&gt;   PBC =~        </span></span>
+<span><span class="co">#&gt;     pbc1            1.000                             </span></span>
+<span><span class="co">#&gt;     pbc2            0.912      0.013    69.46    0.000</span></span>
+<span><span class="co">#&gt;     pbc3            0.801      0.012    66.09    0.000</span></span>
 <span><span class="co">#&gt;   INT =~        </span></span>
 <span><span class="co">#&gt;     int1            1.000                             </span></span>
 <span><span class="co">#&gt;     int2            0.913      0.015    59.06    0.000</span></span>
@@ -425,13 +425,13 @@ argument, and or using a quasi-adaptive quadrature by setting
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   INT ~         </span></span>
-<span><span class="co">#&gt;     PBC             0.217      0.030     7.35    0.000</span></span>
 <span><span class="co">#&gt;     ATT             0.213      0.026     8.16    0.000</span></span>
 <span><span class="co">#&gt;     SN              0.176      0.028     6.38    0.000</span></span>
+<span><span class="co">#&gt;     PBC             0.217      0.030     7.35    0.000</span></span>
 <span><span class="co">#&gt;   BEH ~         </span></span>
 <span><span class="co">#&gt;     PBC             0.232      0.022    10.41    0.000</span></span>
 <span><span class="co">#&gt;     INT             0.190      0.025     7.68    0.000</span></span>
-<span><span class="co">#&gt;     PBC:INT         0.205      0.018    11.31    0.000</span></span>
+<span><span class="co">#&gt;     INT:PBC         0.205      0.018    11.31    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Intercepts:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
@@ -453,11 +453,11 @@ argument, and or using a quasi-adaptive quadrature by setting
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
+<span><span class="co">#&gt;   ATT ~~        </span></span>
+<span><span class="co">#&gt;     SN              0.629      0.029    21.95    0.000</span></span>
 <span><span class="co">#&gt;   PBC ~~        </span></span>
 <span><span class="co">#&gt;     ATT             0.678      0.029    23.74    0.000</span></span>
 <span><span class="co">#&gt;     SN              0.677      0.029    23.36    0.000</span></span>
-<span><span class="co">#&gt;   ATT ~~        </span></span>
-<span><span class="co">#&gt;     SN              0.629      0.029    21.95    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
@@ -476,9 +476,9 @@ argument, and or using a quasi-adaptive quadrature by setting
 <span><span class="co">#&gt;    .int3            0.168      0.007    23.55    0.000</span></span>
 <span><span class="co">#&gt;    .b1              0.186      0.018    10.12    0.000</span></span>
 <span><span class="co">#&gt;    .b2              0.135      0.017     8.14    0.000</span></span>
-<span><span class="co">#&gt;     PBC             0.962      0.035    27.31    0.000</span></span>
 <span><span class="co">#&gt;     ATT             0.998      0.037    27.14    0.000</span></span>
 <span><span class="co">#&gt;     SN              0.987      0.039    25.41    0.000</span></span>
+<span><span class="co">#&gt;     PBC             0.962      0.035    27.31    0.000</span></span>
 <span><span class="co">#&gt;    .INT             0.491      0.020    24.65    0.000</span></span>
 <span><span class="co">#&gt;    .BEH             0.455      0.023    20.14    0.000</span></span>
 <span></span>
@@ -511,14 +511,14 @@ argument, and or using a quasi-adaptive quadrature by setting
 <span><span class="co">#&gt;   P-value (D)                                     0.000</span></span>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; R-Squared Interaction Model (H1):</span></span>
-<span><span class="co">#&gt;   BEH                                             0.263</span></span>
 <span><span class="co">#&gt;   INT                                             0.366</span></span>
+<span><span class="co">#&gt;   BEH                                             0.263</span></span>
 <span><span class="co">#&gt; R-Squared Baseline Model (H0):</span></span>
-<span><span class="co">#&gt;   BEH                                             0.210</span></span>
 <span><span class="co">#&gt;   INT                                             0.367</span></span>
+<span><span class="co">#&gt;   BEH                                             0.210</span></span>
 <span><span class="co">#&gt; R-Squared Change (H1 - H0):</span></span>
-<span><span class="co">#&gt;   BEH                                             0.053</span></span>
 <span><span class="co">#&gt;   INT                                             0.000</span></span>
+<span><span class="co">#&gt;   BEH                                             0.053</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Parameter Estimates:</span></span>
 <span><span class="co">#&gt;   Coefficients                             standardized</span></span>
@@ -527,10 +527,6 @@ argument, and or using a quasi-adaptive quadrature by setting
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; Latent Variables:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)  Std.all</span></span>
-<span><span class="co">#&gt;   INT =~        </span></span>
-<span><span class="co">#&gt;     int1            1.000                                 0.912</span></span>
-<span><span class="co">#&gt;     int2            0.913      0.015    59.05    0.000    0.895</span></span>
-<span><span class="co">#&gt;     int3            0.807      0.014    55.73    0.000    0.867</span></span>
 <span><span class="co">#&gt;   ATT =~        </span></span>
 <span><span class="co">#&gt;     att1            1.000                                 0.925</span></span>
 <span><span class="co">#&gt;     att2            0.878      0.012    71.56    0.000    0.915</span></span>
@@ -544,6 +540,10 @@ argument, and or using a quasi-adaptive quadrature by setting
 <span><span class="co">#&gt;     pbc1            1.000                                 0.933</span></span>
 <span><span class="co">#&gt;     pbc2            0.912      0.013    69.47    0.000    0.913</span></span>
 <span><span class="co">#&gt;     pbc3            0.801      0.012    66.10    0.000    0.894</span></span>
+<span><span class="co">#&gt;   INT =~        </span></span>
+<span><span class="co">#&gt;     int1            1.000                                 0.912</span></span>
+<span><span class="co">#&gt;     int2            0.913      0.015    59.05    0.000    0.895</span></span>
+<span><span class="co">#&gt;     int3            0.807      0.014    55.73    0.000    0.867</span></span>
 <span><span class="co">#&gt;   BEH =~        </span></span>
 <span><span class="co">#&gt;     b1              1.000                                 0.877</span></span>
 <span><span class="co">#&gt;     b2              0.960      0.030    31.75    0.000    0.899</span></span>
@@ -555,8 +555,8 @@ argument, and or using a quasi-adaptive quadrature by setting
 <span><span class="co">#&gt;     SN              0.176      0.028     6.39    0.000    0.199</span></span>
 <span><span class="co">#&gt;     PBC             0.217      0.030     7.35    0.000    0.242</span></span>
 <span><span class="co">#&gt;   BEH ~         </span></span>
-<span><span class="co">#&gt;     INT             0.189      0.025     7.68    0.000    0.212</span></span>
 <span><span class="co">#&gt;     PBC             0.232      0.022    10.41    0.000    0.290</span></span>
+<span><span class="co">#&gt;     INT             0.189      0.025     7.68    0.000    0.212</span></span>
 <span><span class="co">#&gt;     INT:PBC         0.205      0.018    11.31    0.000    0.225</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Intercepts:</span></span>
@@ -587,10 +587,6 @@ argument, and or using a quasi-adaptive quadrature by setting
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)  Std.all</span></span>
-<span><span class="co">#&gt;    .INT             0.491      0.020    24.64    0.000    0.634</span></span>
-<span><span class="co">#&gt;     ATT             0.998      0.037    26.93    0.000    1.000</span></span>
-<span><span class="co">#&gt;     SN              0.988      0.039    25.22    0.000    1.000</span></span>
-<span><span class="co">#&gt;     PBC             0.963      0.036    27.07    0.000    1.000</span></span>
 <span><span class="co">#&gt;    .int1            0.157      0.009    18.11    0.000    0.168</span></span>
 <span><span class="co">#&gt;    .int2            0.160      0.008    20.41    0.000    0.199</span></span>
 <span><span class="co">#&gt;    .int3            0.168      0.007    23.55    0.000    0.249</span></span>
@@ -606,6 +602,10 @@ argument, and or using a quasi-adaptive quadrature by setting
 <span><span class="co">#&gt;    .pbc3            0.155      0.006    23.89    0.000    0.201</span></span>
 <span><span class="co">#&gt;    .b1              0.186      0.018    10.12    0.000    0.231</span></span>
 <span><span class="co">#&gt;    .b2              0.135      0.017     8.13    0.000    0.192</span></span>
+<span><span class="co">#&gt;     ATT             0.998      0.037    26.93    0.000    1.000</span></span>
+<span><span class="co">#&gt;     SN              0.988      0.039    25.22    0.000    1.000</span></span>
+<span><span class="co">#&gt;     PBC             0.963      0.036    27.07    0.000    1.000</span></span>
+<span><span class="co">#&gt;    .INT             0.491      0.020    24.64    0.000    0.634</span></span>
 <span><span class="co">#&gt;    .BEH             0.455      0.023    20.14    0.000    0.737</span></span></code></pre></div>
 </div>
 </div>

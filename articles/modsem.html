@@ -688,7 +688,7 @@ quadratic effects.</p>
 <span><span class="co">#&gt;     X               0.673      0.031   21.659    0.000</span></span>
 <span><span class="co">#&gt;     Z               0.569      0.030   18.724    0.000</span></span>
 <span><span class="co">#&gt;     X:X            -0.004      0.021   -0.208    0.835</span></span>
-<span><span class="co">#&gt;     X:Z             0.720      0.029   24.863    0.000</span></span>
+<span><span class="co">#&gt;     Z:X             0.720      0.029   24.863    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Intercepts:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
@@ -798,10 +798,6 @@ quadratic effects.</p>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; Latent Variables:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;   PBC =~        </span></span>
-<span><span class="co">#&gt;     pbc1            1.000                             </span></span>
-<span><span class="co">#&gt;     pbc2            0.912      0.013    69.44    0.000</span></span>
-<span><span class="co">#&gt;     pbc3            0.801      0.012    66.07    0.000</span></span>
 <span><span class="co">#&gt;   ATT =~        </span></span>
 <span><span class="co">#&gt;     att1            1.000                             </span></span>
 <span><span class="co">#&gt;     att2            0.878      0.012    71.56    0.000</span></span>
@@ -811,6 +807,10 @@ quadratic effects.</p>
 <span><span class="co">#&gt;   SN =~         </span></span>
 <span><span class="co">#&gt;     sn1             1.000                             </span></span>
 <span><span class="co">#&gt;     sn2             0.888      0.017    52.60    0.000</span></span>
+<span><span class="co">#&gt;   PBC =~        </span></span>
+<span><span class="co">#&gt;     pbc1            1.000                             </span></span>
+<span><span class="co">#&gt;     pbc2            0.912      0.013    69.44    0.000</span></span>
+<span><span class="co">#&gt;     pbc3            0.801      0.012    66.07    0.000</span></span>
 <span><span class="co">#&gt;   INT =~        </span></span>
 <span><span class="co">#&gt;     int1            1.000                             </span></span>
 <span><span class="co">#&gt;     int2            0.913      0.015    59.06    0.000</span></span>
@@ -822,13 +822,13 @@ quadratic effects.</p>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   INT ~         </span></span>
-<span><span class="co">#&gt;     PBC             0.217      0.030     7.34    0.000</span></span>
 <span><span class="co">#&gt;     ATT             0.213      0.026     8.17    0.000</span></span>
 <span><span class="co">#&gt;     SN              0.176      0.028     6.39    0.000</span></span>
+<span><span class="co">#&gt;     PBC             0.217      0.030     7.34    0.000</span></span>
 <span><span class="co">#&gt;   BEH ~         </span></span>
 <span><span class="co">#&gt;     PBC             0.233      0.022    10.41    0.000</span></span>
 <span><span class="co">#&gt;     INT             0.190      0.025     7.70    0.000</span></span>
-<span><span class="co">#&gt;     PBC:INT         0.205      0.018    11.31    0.000</span></span>
+<span><span class="co">#&gt;     INT:PBC         0.205      0.018    11.31    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Intercepts:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
@@ -850,11 +850,11 @@ quadratic effects.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
+<span><span class="co">#&gt;   ATT ~~        </span></span>
+<span><span class="co">#&gt;     SN              0.629      0.029    21.90    0.000</span></span>
 <span><span class="co">#&gt;   PBC ~~        </span></span>
 <span><span class="co">#&gt;     ATT             0.678      0.029    23.64    0.000</span></span>
 <span><span class="co">#&gt;     SN              0.677      0.029    23.25    0.000</span></span>
-<span><span class="co">#&gt;   ATT ~~        </span></span>
-<span><span class="co">#&gt;     SN              0.629      0.029    21.90    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
@@ -873,9 +873,9 @@ quadratic effects.</p>
 <span><span class="co">#&gt;    .int3            0.168      0.007    23.55    0.000</span></span>
 <span><span class="co">#&gt;    .b1              0.186      0.018    10.12    0.000</span></span>
 <span><span class="co">#&gt;    .b2              0.135      0.017     8.14    0.000</span></span>
-<span><span class="co">#&gt;     PBC             0.962      0.035    27.16    0.000</span></span>
 <span><span class="co">#&gt;     ATT             0.998      0.037    27.10    0.000</span></span>
 <span><span class="co">#&gt;     SN              0.987      0.039    25.38    0.000</span></span>
+<span><span class="co">#&gt;     PBC             0.962      0.035    27.16    0.000</span></span>
 <span><span class="co">#&gt;    .INT             0.491      0.020    24.65    0.000</span></span>
 <span><span class="co">#&gt;    .BEH             0.455      0.023    20.14    0.000</span></span></code></pre></div>
 <p>Here is an example that includes two quadratic effects and one
