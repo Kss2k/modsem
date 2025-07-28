@@ -832,10 +832,21 @@ splitParTable <- function(parTable) {
 
 
 sortParTableDA <- function(parTable, model) {
-  xis      <- getXisModelDA(model)
-  etas     <- getEtasModelDA(model)
+  parTable.input <- model$parTable
+
+  etas <- getEtasModelDA(model)
+
+  # xis <- getXisModelDA(model)
+  # we don't want xis as they are sorted in the model
+  # xis in the model are sorted to fit `OmegaXiXi`
+  # and `OmegaEtaXi`, which doesn't match the sorting
+  # in the model.syntax input. Instead we use getXis() on
+  # parTable.input
+
+  xis      <- getXis(parTable.input, checkAny = FALSE, etas = etas)
   indsXis  <- model$info$allIndsXis
   indsEtas <- model$info$allIndsEtas
+
   opOrder <- c("=~", "~", "~1", "~~", ":=")
   varOrder <- unique(c(indsXis, indsEtas, xis, etas))
 
