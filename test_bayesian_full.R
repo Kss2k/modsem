@@ -451,7 +451,8 @@ specifyModelSTAN <- function(syntax = NULL,
 
 
 stan_data <- specifyModelSTAN(model.syntax, data = oneInt)
-stan_model <- stan_model(model_code = stan.syntax)
+# stan_model <- stan_model(model_code = stan.syntax)
+stan_model <- stan_model("interaction.stan")
 
 fit <- sampling(
   object = stan_model,
@@ -462,9 +463,9 @@ fit <- sampling(
 )
 
 summary(fit, c("gamma"))
+summary(fit, c("omega"))
 stan_rhat(fit)
-stan_trace(fit, "beta_X")
-stan_trace(fit, "beta_XZ")
-stan_trace(fit, "beta_Z")
+stan_trace(fit, "omega")
+stan_trace(fit, "gamma")
 
 
