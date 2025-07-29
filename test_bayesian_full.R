@@ -10,20 +10,21 @@ stan.syntax <- "
 // All nine indicator intercepts τ are now free.
 
 functions {
-  vector getIthProduct(int i, int K, int N, int N_INT, matrix OMEGA, matrix ETA) {
+  vector getIthProduct(int i, int N_LVS, int N, matrix PRODUCTS, matrix ETA) {
 
     vector[N] product = rep_vector(0, N);
 
     int firstFound = 0;
-    for (j in 1:N_INT) {
+    for (j in 1:N_LVS) {
 
-      if (OMEGA[i, j]) {
+      if (PRODUCTS[i, j]) {
 
         if (!firstFound) {
-          product = ETA[, i];
+          product = ETA[, j];
+          firstFound = 1;
 
         } else {
-          product = product .* ETA[, i];
+          product = product .* ETA[, j];
         }
       }
     }
@@ -114,14 +115,16 @@ transformed parameters {
   {
     // Fill Lambda
     int k = 1;
-    for (i in 1:K) {
+    for (j in 1:N_LVS) {
       real filledFirst = 0;
 
-      for (j in 1:N_LVS) {
+      for (i in 1:K) {
         real fill = LAMBDA[i, j];
 
         if (fill && !filledFirst) {
           Lambda[i, j] = 1;
+          filledFirst = 1;
+
         } else if (fill) {
           Lambda[i, j] = lambda[k];
           k = k + 1;
@@ -169,11 +172,7 @@ transformed parameters {
     k = 1;
     for (i in 1:K) {
 
-      for (j in 1:i) {
-        if (j >= i) {
-          continue;
-        }
-      
+      for (j in 1:(i-1)) {
         real fill = THETA[i, j];
       
         if (fill) {
@@ -195,15 +194,11 @@ transformed parameters {
       }
     }
     
-    // Fill Off-Diagonal Theta
+    // Fill Off-Diagonal Psi
     k = 1;
     for (i in 1:N_LVS) {
 
-      for (j in 1:i) {
-        if (j >= i) {
-          continue;
-        }
-      
+      for (j in 1:(i-1)) {
         real fill = PSI[i, j];
       
         if (fill) {
@@ -245,16 +240,18 @@ transformed parameters {
   }
 
   for (i in 1:N_ETAS) {
+    int idx = N_XIS + i;
+
     for (j in 1:N_LVS) {
       if (GAMMA[i, j]) {
-        ETA[, i] = ETA[, i] + GAMMA[i, j] * ETA[, j];
+        ETA[, idx] = ETA[, idx] + Gamma[i, j] * ETA[, j];
       }
     }
   
     for (j in 1:N_INT) {
       if (OMEGA[i, j]) {
-        ETA[, i] = 
-          ETA[, i] + OMEGA[i, j] * getIthProduct(j, K, N, N_INT, OMEGA, ETA);
+        ETA[, idx] = 
+          ETA[, idx] + Omega[i, j] * getIthProduct(j, N_LVS, N, PRODUCTS, ETA);
       }
     }
   }
@@ -264,6 +261,32 @@ transformed parameters {
   for (i in 1:K) {
     X[, i] = Tau[i] + X[, i];
   }
+
+  // DEBUGGING
+  // print(\"Omega\");
+  // print(Omega);
+  // print(\"Gamma\");
+  // print(Gamma);
+  // print(\"Lambda\");
+  // print(Lambda);
+  // print(\"PRODUCTS\");
+  // print(PRODUCTS);
+  // print(\"Theta\");
+  // print(Theta);
+  // print(\"Psi\");
+  // print(Psi);
+
+  // print(\"head(ETA)\");
+  // print(ETA[1:5, ]);
+  // 
+  // print(\"head(XI)\");
+  // print(XI[1:5, ]);
+  // 
+  // print(\"head(X)\");
+  // print(X[1:5, ]);
+
+  // print(\"head(XZ)\");
+  // print(getIthProduct(1, N_LVS, N, PRODUCTS, ETA)[1:5]);
 }
 
 model {
@@ -274,14 +297,14 @@ model {
   {
     row_vector[N_LVS] alpha_row = to_row_vector(Alpha);   // convert mean
     for (n in 1:N) {
-      to_row_vector(XI[n]) ~ multi_normal(alpha_row, Psi);
+      XI[n] ~ multi_normal(alpha_row, Psi);
     }
   } 
 
   {
     matrix[N, K] mu = X;                 // expected scores (built in TP block)
     for (n in 1:N) {
-      to_row_vector(Y[n]) ~ multi_normal(to_row_vector(mu[n]), Theta);
+      Y[n] ~ multi_normal(to_row_vector(mu[n]), Theta);
     }
   }
 }
@@ -438,7 +461,7 @@ fit <- sampling(
   warmup = 1000
 )
 
-summary(fit, c("beta_X", "beta_Z", "beta_XZ"))
+summary(fit, c("gamma"))
 stan_rhat(fit)
 stan_trace(fit, "beta_X")
 stan_trace(fit, "beta_XZ")
