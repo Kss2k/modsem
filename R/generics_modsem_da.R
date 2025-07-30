@@ -550,7 +550,8 @@ centered_estimates.modsem_da <- function(object,
 
 
 
-#' @describeIn modsem_predict
+#' @describeIn modsem_predict Predict From \code{modsem} Models
+#'
 #' Computes (optionally standardised) factor scores via the
 #'   regression method using the baseline model unless \code{H0 = FALSE}.
 #'

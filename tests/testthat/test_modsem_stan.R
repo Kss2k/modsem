@@ -16,20 +16,14 @@ m1 <- '
 
 compiled_model <- compile_stan_model(m1)
 
-fit <- modsem_stan(compiled_model = stan_model, 
-                   data = oneInt)
-
-summary(fit, c("gamma"))
-summary(fit, c("omega"))
-stan_rhat(fit)
-stan_trace(fit, "omega")
-stan_trace(fit, "gamma")
-
-
+fit <- modsem_stan(compiled_model = compiled_model, 
+                   data = oneInt, iter = 4000)
+summary(fit)
+standardized_estimates(fit)
 set.seed(29723234)
 
 
-n <- 500
+n <- 2000
 Sigma <- matrix(c(
   1.2, 0.7, 0.8,
   0.7, 1.8, 0.6,
@@ -88,18 +82,16 @@ m.3way <- '
  #       2.2 * X:Z:W +
 '
 
-stan_data.3way <- specifyModelSTAN(m.3way, data = data.3way)
-
-fit.3way <- sampling(
-  object = stan_model,
-  data   = stan_data.3way,
+# Compile a STAN model based on the lavaan syntax to save 
+# time when re-estimating the model,
+# I.e., we don't want to compile each iteraction of the simulation
+compiled_model_3way <- compile_stan_model(m.3way)
+fit.3way <- modsem_stan(
+  compiled_model = compiled_model_3way,
+  data   = data.3way,
   chains = 2,
-  iter   = 4000,
-  warmup = 2500
+  iter   = 4000
 )
 
-summary(fit.3way, c("gamma"))
-summary(fit.3way, c("omega"))
-stan_rhat(fit.3way)
-stan_trace(fit.3way, "omega")
-stan_trace(fit.3way, "gamma")
+standardized_estimates(fit.3way)
+parameter_estimates(fit.3way)

@@ -39,7 +39,13 @@ generated quantities {
 }
 "
 
-compile_stan_model <- function(model.syntax) {
+
+#' Compile \code{STAN} model based on a \code{lavaan} model
+#'
+#' @param model.syntax \code{lavaan} syntax.
+#' @param compile Should compilation be performed? If \code{FALSE} only the \code{STAN}
+#'   is generated, and not compiled.
+compile_stan_model <- function(model.syntax, compile = TRUE) {
   message("Compiling STAN model...")
 
   parTable <- modsemify(model.syntax)
@@ -190,6 +196,7 @@ compile_stan_model <- function(model.syntax) {
   } 
 
   STAN_COMPUTED_COVARIANCES <- function(vars) {
+    vars   <- stringr::str_replace_all(vars, pattern = ":", replacement = "__XWITH__")
     combos <- getUniqueCombos(vars)
     generated_quantities <- NULL
 
@@ -201,6 +208,21 @@ compile_stan_model <- function(model.syntax) {
         generated_quantities,
         sprintf("real %s__COVARIANCE__%s = cov_vector(%s, %s);",
                 lhs, rhs, lhs, rhs)
+      )
+    }
+
+    list(generated_quantities = collapse(generated_quantities))
+  }
+  
+  STAN_COMPUTED_VARIANCES <- function(vars) {
+    vars   <- stringr::str_replace_all(vars, pattern = ":", replacement = "__XWITH__")
+    generated_quantities <- NULL
+
+    for (var in vars) {
+      generated_quantities <- c(
+        generated_quantities,
+        sprintf("real %s__COVARIANCE__%s = cov_vector(%s, %s);",
+                var, var, var, var)
       )
     }
 
@@ -246,7 +268,8 @@ compile_stan_model <- function(model.syntax) {
   for (eta in etas) add2block(STAN_PAR_ETA, eta = eta)
 
   add2block(STAN_COMPUTED_PRODUCTS, intTerms = intTerms)
-  add2block(STAN_COMPUTED_COVARIANCES, vars = xis) 
+  add2block(STAN_COMPUTED_COVARIANCES, vars = c(xis, intTerms))
+  add2block(STAN_COMPUTED_VARIANCES, vars = intTerms)
   # add2block(STAN_COMPUTED_COVARIANCES, vars = etas) # These should be residual variances...
   
   stanModelSyntax <- sprintf(STAN_SYNTAX_BLOCKS,
@@ -254,8 +277,11 @@ compile_stan_model <- function(model.syntax) {
                              TRANSFORMED_PARAMETERS, 
                              MODEL, GENERATED_QUANTITIES)
 
+  if (compile) stanModel <- rstan::stan_model(model_code = stanModelSyntax)
+  else         stanModel <- NULL
+
   list(syntax = stanModelSyntax,
-       stan_model = rstan::stan_model(model_code = stanModelSyntax),
+       stan_model = stanModel,
        info = list(lVs = lVs,
                    xis = xis,
                    etas = etas,

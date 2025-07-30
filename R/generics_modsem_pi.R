@@ -384,7 +384,7 @@ print.modsem_pi <- function(x, ...) {
 }
 
 
-#' @describeIn modsem_predict
+#' @describeIn modsem_predict Predict From \code{modsem} Models
 #' @export
 modsem_predict.modsem_pi <- function(object, ...) {
   lavaan::predict(extract_lavaan(object), ...)
