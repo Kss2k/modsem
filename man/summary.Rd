@@ -57,7 +57,7 @@
 \arguments{
 \item{object}{modsem object to summarized}
 
-\item{H0}{Should the baseline model be estimated, and used to produce 
+\item{H0}{Should the baseline model be estimated, and used to produce
 comparative fit?}
 
 \item{verbose}{Should messages be printed?}
@@ -76,10 +76,10 @@ comparative fit?}
 
 \item{centered}{print mean centered estimates}
 
-\item{monte.carlo}{should Monte Carlo bootstrapped standard errors be used? Only 
+\item{monte.carlo}{should Monte Carlo bootstrapped standard errors be used? Only
 relevant if \code{standardized = TRUE}. If \code{FALSE} delta method is used instead.}
 
-\item{mc.reps}{number of Monte Carlo repetitions. Only relevant if \code{monte.carlo = TRUE}, 
+\item{mc.reps}{number of Monte Carlo repetitions. Only relevant if \code{monte.carlo = TRUE},
 and \code{standardized = TRUE}.}
 
 \item{loadings}{print loadings}
@@ -92,7 +92,7 @@ and \code{standardized = TRUE}.}
 
 \item{variances}{print variances}
 
-\item{var.interaction}{if FALSE variances for interaction terms will be removed 
+\item{var.interaction}{if FALSE variances for interaction terms will be removed
 from the output}
 
 \item{...}{arguments passed to lavaan::summary()}

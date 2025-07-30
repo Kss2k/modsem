@@ -1,3 +1,9 @@
+devtools::load_all()
+library(rstan)
+rstan_options(auto_write = TRUE)      # cache compiled models
+options(mc.cores = parallel::detectCores()) 
+
+
 stan.syntax <- '
 // sem_latent_interaction.stan (updated)
 // SEM with three latent factors (X, Z, Y) and latent interaction X×Z → Y
@@ -415,4 +421,250 @@ stan_trace(fit, "beta_X")
 stan_trace(fit, "beta_XZ")
 stan_trace(fit, "beta_Z")
 
+
+
+stan.syntax.3way <- '
+// sem_latent_interaction.stan (updated)
+// SEM with three latent factors (X, Z, Y) and latent interaction X×Z → Y
+// Identification: first loading fixed to 1; *latent means constrained to 0*.
+// All nine indicator intercepts τ are now free.
+
+functions {
+  // empirical covariance helper (for generated quantities)
+  real cov_vector(vector a, vector b) {
+    return (dot_self(a - mean(a)))/(num_elements(a)-1);
+  }
+}
+
+data {
+  int<lower=1> N;                       // sample size
+  matrix[N, 12] Y;                       // observed indicators (x1–x3, z1–z3, y1–y3)
+}
+
+parameters {
+  //--------------------------------------
+  // Measurement part
+  //--------------------------------------
+  vector[2] lambda_x;                   // loadings: x2, x3
+  vector[2] lambda_z;                   // loadings: z2, z3
+  vector[2] lambda_w;                   // loadings: w2, w3
+  vector[2] lambda_y;                   // loadings: y2, y3
+
+  vector[12] tau;                        // ALL indicator intercepts free
+  vector<lower=0>[12] sigma_e;           // residual SDs
+
+  //--------------------------------------
+  // Latent part
+  //--------------------------------------
+  real<lower=0> sigma_X;
+  real<lower=0> sigma_Z;
+  real<lower=0> sigma_W;
+  real<lower=0> sigma_Y;
+
+  real beta_X;                          // structural slopes
+  real beta_Z;
+  real beta_W;
+  real beta_XZ;
+  real beta_XW;
+  real beta_ZW;
+  real beta_XZW;
+
+  vector[N] X;                          // person‑level latent scores
+  vector[N] Z;
+  vector[N] W;
+  vector[N] Y_lat;                      // endogenous latent Y
+}
+
+transformed parameters {
+  vector[N] XZ = X .* Z;                // latent interaction term
+  vector[N] XW = X .* W;                // latent interaction term
+  vector[N] ZW = Z .* W;                // latent interaction term
+  vector[N] XZW = X .* ZW;                // latent interaction term
+}
+
+model {
+  //--------------------------------------
+  // Priors
+  //--------------------------------------
+  // lambda_x ~ normal(1, 1);
+  // lambda_z ~ normal(1, 1);
+  // lambda_y ~ normal(1, 1);
+
+  // tau      ~ normal(0, 2);
+
+  // sigma_X  ~ exponential(1);
+  // sigma_Z  ~ exponential(1);
+  // sigma_Y  ~ exponential(1);
+  // sigma_e  ~ exponential(1);
+
+  // beta_X   ~ normal(0, 1);
+  // beta_Z   ~ normal(0, 1);
+  // beta_XZ  ~ normal(0, 1);
+
+  //--------------------------------------
+  // Latent variable distributions (means fixed to 0)
+  //--------------------------------------
+  X     ~ normal(0, sigma_X);
+  Z     ~ normal(0, sigma_Z);
+  W     ~ normal(0, sigma_W);
+  Y_lat ~ normal(beta_X * X + 
+                 beta_Z * Z +
+                 beta_W * W +
+                 beta_XZ * XZ +
+                 beta_XW * XW +
+                 beta_ZW * ZW +
+                 beta_XZW * XZW, 
+                 sigma_Y);
+
+  //--------------------------------------
+  // Measurement model
+  //--------------------------------------
+    // X indicators
+  Y[,1] ~ normal(tau[1] + X,                    sigma_e[1]);   // x1 (λ fixed = 1)
+  Y[,2] ~ normal(tau[2] + lambda_x[1] * X,      sigma_e[2]);   // x2
+  Y[,3] ~ normal(tau[3] + lambda_x[2] * X,      sigma_e[3]);   // x3
+
+  // Z indicators
+  Y[,4] ~ normal(tau[4] + Z,                    sigma_e[4]);   // z1 (λ fixed = 1)
+  Y[,5] ~ normal(tau[5] + lambda_z[1] * Z,      sigma_e[5]);   // z2
+  Y[,6] ~ normal(tau[6] + lambda_z[2] * Z,      sigma_e[6]);   // z3
+
+  // W indicators
+  Y[,7] ~ normal(tau[7] + W,                sigma_e[7]);   // y1 (λ fixed = 1)
+  Y[,8] ~ normal(tau[8] + lambda_w[1] * W,  sigma_e[8]);   // y2
+  Y[,9] ~ normal(tau[9] + lambda_w[2] * W,  sigma_e[9]);   // y3
+
+  // Y indicators
+  Y[,10] ~ normal(tau[10] + Y_lat,                sigma_e[10]);   // y1 (λ fixed = 1)
+  Y[,11] ~ normal(tau[11] + lambda_y[1] * Y_lat[n],  sigma_e[11]);   // y2
+  Y[,12] ~ normal(tau[12] + lambda_y[2] * Y_lat[n],  sigma_e[12]);   // y3
+}
+
+generated quantities {
+  real cov_XZ = cov_vector(X, Z);
+  real cov_XW = cov_vector(X, W);
+  real cov_ZW = cov_vector(Z, W);
+}
+'
+
+
+model <- rstan::stan_model(model_code = stan.syntax)
+Y <- oneInt[c("x1", "x2", "x3",
+              "z1", "z2", "z3",
+              "y1", "y2", "y3")]
+stan_data <- list(
+  N = nrow(Y),
+  Y = Y 
+)
+
+fit <- sampling(
+  object = model,
+  data   = stan_data,
+  chains = 2,
+  iter   = 2000,
+  warmup = 1000
+)
+
+summary(fit, c("beta_X", "beta_Z", "beta_XZ"))
+stan_rhat(fit)
+stan_trace(fit, "beta_X")
+stan_trace(fit, "beta_XZ")
+stan_trace(fit, "beta_Z")
+
+
+set.seed(29723234)
+
+n <- 2000
+Sigma <- matrix(c(
+  1.2, 0.7, 0.8,
+  0.7, 1.8, 0.6,
+  0.8, 0.6, 1.4
+), nrow = 3)
+
+
+XI <- rmvnorm(n, sigma = Sigma)
+
+X <- XI[, 1]
+Z <- XI[, 2]
+W <- XI[, 3]
+
+Y <- 1.2 * X + 0.4 * Z + 0.7 * W +
+  0.2 * W * Z +
+  0.7 * W * X +
+  1.2 * X * Z +
+  2.2 * X * Z * W + rnorm(n, sd = sqrt(2))
+
+createInd <- \(x, lambda, epsilon = 0.2) lambda * x + rnorm(n, sd = sqrt(epsilon))
+
+
+x1 <- createInd(X, 1)
+x2 <- createInd(X, 0.8)
+x3 <- createInd(X, 0.9)
+
+z1 <- createInd(Z, 1)
+z2 <- createInd(Z, 0.8)
+z3 <- createInd(Z, 0.9)
+
+w1 <- createInd(W, 1)
+w2 <- createInd(W, 0.8)
+w3 <- createInd(W, 0.9)
+
+y1 <- createInd(Y, 1)
+y2 <- createInd(Y, 0.8)
+y3 <- createInd(Y, 0.9)
+
+data.3way <- data.frame(x1, x2, x3,
+                        z1, z2, z3,
+                        w1, w2, w3,
+                        y1, y2, y3)
+m.3way <- '
+ X =~ x1 + x2 + x3
+ Z =~ z1 + z2 + z3
+ W =~ w1 + w2 + w3
+ Y =~ y1 + y2 + y3
+
+ Y ~ X + Z + W + X:Z + X:W + Z:W + X:Z:W
+ # True values are
+ #   Y ~ 1.2 *     X +
+ #       0.4 *     Z +
+ #       0.7 *     W +
+ #       1.2 *   X:Z +
+ #       0.7 *   X:W +
+ #       0.2 *   Z:W +
+ #       2.2 * X:Z:W +
+'
+
+
+model <- rstan::stan_model(model_code = stan.syntax.3way)
+Y <- data.3way[c("x1", "x2", "x3",
+                 "z1", "z2", "z3",
+                 "w1", "w2", "w3",
+                 "y1", "y2", "y3")]
+stan_data <- list(
+  N = nrow(Y),
+  Y = Y 
+)
+
+fit <- sampling(
+  object = model,
+  data   = stan_data,
+  chains = 2,
+  iter   = 5000,
+  warmup = 3000
+)
+
+beta <- c("beta_X", "beta_Z", "beta_W",
+          "beta_XZ", "beta_XW", "beta_ZW",
+          "beta_XZW")
+lambda <- c("lambda_x", "lambda_z",
+            "lambda_w", "lambda_y")
+sigma_e <- c("sigma_e")
+sigma <- c("sigma_X", "sigma_Z", "sigma_W", "sigma_Y")
+tau  <- c("tau")
+pars <- c(lambda, beta, sigma, sigma_e, tau)
+summary(fit, pars)
+stan_rhat(fit)
+stan_trace(fit, pars)
+stan_trace(fit, "beta_XZ")
+stan_trace(fit, "beta_Z")
 

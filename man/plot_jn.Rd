@@ -41,7 +41,7 @@ plot_jn(
 
 \item{detail}{The number of generated data points to use for the plot (default is 1000). You can increase this value for smoother plots.}
 
-\item{sd.line}{A thick black line showing \code{+/- sd.line * sd(z)}. NOTE: This line will be truncated by \code{min_z} and \code{max_z} if 
+\item{sd.line}{A thick black line showing \code{+/- sd.line * sd(z)}. NOTE: This line will be truncated by \code{min_z} and \code{max_z} if
 the sd.line falls outside of \code{[min_z, max_z]}.}
 
 \item{standardized}{Should coefficients be standardized beforehand?}
@@ -72,8 +72,8 @@ The plot displays:
 \dontrun{
 library(modsem)
 
-m1 <-  ' 
-  visual  =~ x1 + x2 + x3 
+m1 <-  '
+  visual  =~ x1 + x2 + x3
   textual =~ x4 + x5 + x6
   speed   =~ x7 + x8 + x9
 
