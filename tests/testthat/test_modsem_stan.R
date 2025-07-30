@@ -36,7 +36,6 @@ Sigma <- matrix(c(
   0.8, 0.6, 1.4
 ), nrow = 3)
 
-
 XI <- rmvnorm(n, sigma = Sigma)
 
 X <- XI[, 1]
