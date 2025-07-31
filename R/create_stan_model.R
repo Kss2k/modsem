@@ -26,18 +26,6 @@ parameters {
 transformed parameters {
 %s
 
-// print(\"L_Omega)\");
-// print(L_Omega);
-// print(\"sqrtD_Phi\");
-// print(sqrtD_Phi);
-// print(\"L_Sigma)\");
-// print(L_Sigma);
-// print(\"head(X)\");
-// print(X[1:5]);
-// print(\"head(Z)\");
-// print(Z[1:5]);
-// print(\"head(X__XWITH__Z)\");
-// print(X__XWITH__Z[1:5]);
 }
 
 model {
@@ -163,10 +151,11 @@ STAN_PAR_XIS <- function(xis) {
     parXiMat   <- sprintf("matrix[N, %d] XI_Matrix;", k)
 
     # transformed parameters {}
-    tparLSigma   <- sprintf("matrix[%d, %d] L_Sigma = diag_pre_multiply(sqrtD_Phi, L_Omega);", k, k)
-    tparSigma   <- sprintf("matrix[%d, %d] SIGMA_XI = L_Sigma * L_Sigma';", k, k)
-    tparMuXi    <- sprintf("row_vector[%d] MU_XI = rep_row_vector(1, %d);", k, k)
-    # tparXi       <- sprintf("matrix[N, %d] XI_Matrix = Z_XI_Matrix * L_Sigma';", k)
+    tparLSigma    <- sprintf("matrix[%d, %d] L_Sigma = diag_pre_multiply(sqrtD_Phi, L_Omega);", k, k)
+    tparMuXi      <- sprintf("row_vector[%d] MU_XI = rep_row_vector(0, %d);", k, k)
+    tparXiArr     <- sprintf("array[N] vector[%d] XI_Array;", k)
+    tparXiArrFill <- "for (i in 1:N) {XI_Array[i] = (XI_Matrix[i, ])';}"
+    tparXi       <- sprintf("matrix[N, %d] XI_Matrix = Z_XI_Matrix * L_Sigma';", k)
 
     xiVectors <- NULL
     for (i in seq_along(xis)) {
@@ -180,11 +169,12 @@ STAN_PAR_XIS <- function(xis) {
     # model {}
     modLOmega <- sprintf("L_Omega ~ lkj_corr_cholesky(1);")
     # modZXiMat <- "to_vector(Z_XI_Matrix) ~ normal(0, 1);"
-    modXiMat <- "for (n in 1:N) {XI_Matrix[n,] ~ multi_normal(MU_XI, SIGMA_XI);}"
+    # modXiMat <- "for (n in 1:N) {XI_Matrix[n,] ~ multi_normal_cholesky(MU_XI, L_Sigma);}"
+    modXiArr <- "XI_Array ~ multi_normal_cholesky(MU_XI, L_Sigma);"
 
     parameters  <- collapse(parLOmega, parSqrtDPhi, parXiMat)
-    tparameters <- collapse(tparLSigma, tparSigma, tparXiVectors, tparMuXi)
-    model       <- collapse(modLOmega, modXiMat)
+    tparameters <- collapse(tparLSigma, tparXiVectors, tparMuXi, tparXiArr, tparXiArrFill)
+    model       <- collapse(modLOmega, modXiArr)
 
     list(parameters = parameters, transformed_parameters = tparameters,
          model = model)
