@@ -26,6 +26,18 @@ parameters {
 transformed parameters {
 %s
 
+// print(\"L_Omega)\");
+// print(L_Omega);
+// print(\"sqrtD_Phi\");
+// print(sqrtD_Phi);
+// print(\"L_Sigma)\");
+// print(L_Sigma);
+// print(\"head(X)\");
+// print(X[1:5]);
+// print(\"head(Z)\");
+// print(Z[1:5]);
+// print(\"head(X__XWITH__Z)\");
+// print(X__XWITH__Z[1:5]);
 }
 
 model {
@@ -141,20 +153,43 @@ compile_stan_model <- function(model.syntax, compile = TRUE) {
     list(parameters = parameters, model = model, data = data)
   }
 
+STAN_PAR_XIS <- function(xis) {
+    k <- length(xis)
 
-  STAN_PAR_XI <- function(xi) {
     # parameters {}
-    labSD <- sprintf("%s__COVARIANCE__%s", xi, xi)
-    parValues <- sprintf("vector[N] %s;", xi)
-    parSD  <- sprintf("real<lower=0> %s;", labSD)
+    parLOmega   <- sprintf("cholesky_factor_corr[%d] L_Omega;", k)
+    parSqrtDPhi <- sprintf("vector<lower=0>[%d] sqrtD_Phi;", k)
+    # parZXiMat   <- sprintf("matrix[N, %d] Z_XI_Matrix;", k)
+    parXiMat   <- sprintf("matrix[N, %d] XI_Matrix;", k)
+
+    # transformed parameters {}
+    tparLSigma   <- sprintf("matrix[%d, %d] L_Sigma = diag_pre_multiply(sqrtD_Phi, L_Omega);", k, k)
+    tparSigma   <- sprintf("matrix[%d, %d] SIGMA_XI = L_Sigma * L_Sigma';", k, k)
+    tparMuXi    <- sprintf("row_vector[%d] MU_XI = rep_row_vector(1, %d);", k, k)
+    # tparXi       <- sprintf("matrix[N, %d] XI_Matrix = Z_XI_Matrix * L_Sigma';", k)
+
+    xiVectors <- NULL
+    for (i in seq_along(xis)) {
+      name     <- xis[[i]]
+      xiVector <- sprintf("vector[N] %s = col(XI_Matrix, %d);", name, i)
+      xiVectors <- c(xiVectors, xiVector)
+    }
+
+    tparXiVectors <- collapse(xiVectors)
 
     # model {}
-    modXi <- sprintf("%s ~ normal(0, %s);", xi, labSD)
+    modLOmega <- sprintf("L_Omega ~ lkj_corr_cholesky(1);")
+    # modZXiMat <- "to_vector(Z_XI_Matrix) ~ normal(0, 1);"
+    modXiMat <- "for (n in 1:N) {XI_Matrix[n,] ~ multi_normal(MU_XI, SIGMA_XI);}"
 
-    parameters <- collapse(parValues, parSD)
+    parameters  <- collapse(parLOmega, parSqrtDPhi, parXiMat)
+    tparameters <- collapse(tparLSigma, tparSigma, tparXiVectors, tparMuXi)
+    model       <- collapse(modLOmega, modXiMat)
 
-    list(parameters = parameters, model = modXi)
+    list(parameters = parameters, transformed_parameters = tparameters,
+         model = model)
   }
+
   
   STAN_PAR_ETA <- function(eta) {
     indeps <- unique(parTable[parTable$lhs == eta & parTable$op == "~", "rhs"])
@@ -178,6 +213,7 @@ compile_stan_model <- function(model.syntax, compile = TRUE) {
     list(parameters = parameters, model = modEta)
   }
 
+
   STAN_COMPUTED_PRODUCTS <- function(intTerms) {
     transformed_parameters <- NULL
 
@@ -193,7 +229,8 @@ compile_stan_model <- function(model.syntax, compile = TRUE) {
     }
 
     list(transformed_parameters = collapse(transformed_parameters))
-  } 
+  }
+
 
   STAN_COMPUTED_COVARIANCES <- function(vars) {
     vars   <- stringr::str_replace_all(vars, pattern = ":", replacement = "__XWITH__")
@@ -214,6 +251,7 @@ compile_stan_model <- function(model.syntax, compile = TRUE) {
     list(generated_quantities = collapse(generated_quantities))
   }
   
+
   STAN_COMPUTED_VARIANCES <- function(vars) {
     vars   <- stringr::str_replace_all(vars, pattern = ":", replacement = "__XWITH__")
     generated_quantities <- NULL
@@ -228,6 +266,7 @@ compile_stan_model <- function(model.syntax, compile = TRUE) {
 
     list(generated_quantities = collapse(generated_quantities))
   }
+
 
   add2block <- function(FUN, ...) {
     blocks <- FUN(...)
@@ -264,13 +303,12 @@ compile_stan_model <- function(model.syntax, compile = TRUE) {
 
 
   for (lV in lVs)   add2block(STAN_INDS_LV, lV = lV)
-  for (xi in xis)   add2block(STAN_PAR_XI, xi = xi)
   for (eta in etas) add2block(STAN_PAR_ETA, eta = eta)
 
+  add2block(STAN_PAR_XIS, xis = xis)
   add2block(STAN_COMPUTED_PRODUCTS, intTerms = intTerms)
   add2block(STAN_COMPUTED_COVARIANCES, vars = c(xis, intTerms))
-  add2block(STAN_COMPUTED_VARIANCES, vars = intTerms)
-  # add2block(STAN_COMPUTED_COVARIANCES, vars = etas) # These should be residual variances...
+  add2block(STAN_COMPUTED_VARIANCES, vars = c(xis, intTerms))
   
   stanModelSyntax <- sprintf(STAN_SYNTAX_BLOCKS,
                              FUNCTIONS, DATA, PARAMETERS, 

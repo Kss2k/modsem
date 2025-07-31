@@ -38,6 +38,7 @@ modsem_stan <- function(model.syntax = NULL,
 
   lVs     <- compiled_model$info$lVs
   indsLVs <- compiled_model$info$indsLVs
+  inds    <- unique(unlist(indsLVs))
 
   stan_data <- get_stan_data(compiled_model = compiled_model, data = data)
 
@@ -63,7 +64,7 @@ modsem_stan <- function(model.syntax = NULL,
   lhs <- lr[, 1]
   rhs <- lr[, 2]
 
-  isSD <- lhs == rhs & op == "~~" & !grepl(":", lhs) & !grepl(":", rhs)
+  isSD <- lhs == rhs & op == "~~" & (lhs %in% inds | rhs %in% inds)
   samples[, isSD] <- samples[, isSD]^2
 
   coefs <- apply(samples, MARGIN = 2, FUN = mean)
