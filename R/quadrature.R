@@ -66,7 +66,11 @@ adaptiveGaussQuadrature <- function(fun,
                                     tol = 1e-12,
                                     mdiff.tol = 2,
                                     ...) {
-  if (k == 0 || m == 0) return(list(n = matrix(0), w = 1, f = NA, m = 1, k = 1))
+  if (k == 0 || m == 0)
+    return(list(n = matrix(0), w = 1, f = NA, m = 1, k = 1))
+
+  stopif(tol >= 1 || tol < 0,
+         "`adaptive.quad.tol` must be in the boundary `[0, 1)`")
 
   if (k <= 1) {
     out <- adaptiveGaussQuadratureK(
@@ -129,7 +133,11 @@ adaptiveGaussQuadratureK <- function(fun,
                                      tol = 1e-12,
                                      mdiff.tol = 2,
                                      ...) {
-  if (k == 0 || m == 0) return(list(n = matrix(0), w = 1, f = NA, m = 1, k = 1))
+  if (k == 0 || m == 0)
+    return(list(n = matrix(0), w = 1, f = NA, m = 1, k = 1))
+
+  if (is.null(m.ceil) || is.na(m.ceil) || m.ceil <= 0)
+    m.ceil <- round(estMForNodesInRange(m, a = -5, b = 5))
 
   quad  <- quadrature(m = m.ceil, k = 1)
 
@@ -192,7 +200,7 @@ adaptiveGaussQuadratureK <- function(fun,
     I.cur  <- I.cur - sum(contributions[removable])
   }
 
-  lower  <- min(quadn)
+  lower <- min(quadn)
   upper <- max(quadn)
 
   diff.m <- NROW(quadn) - m
