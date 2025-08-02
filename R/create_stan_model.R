@@ -141,7 +141,7 @@ compile_stan_model <- function(model.syntax, compile = TRUE) {
     list(parameters = parameters, model = model, data = data)
   }
 
-STAN_PAR_XIS <- function(xis) {
+  STAN_PAR_XIS <- function(xis) {
     k <- length(xis)
 
     # parameters {}
