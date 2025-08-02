@@ -28,7 +28,7 @@ m1 <- '
 # and is therefore done once, such that the compiled
 # STAN code can be reused for the same model syntax later
 compiled_model.2way <- compile_stan_model(m1)
-cat(compiled_model$syntax)
+cat(compiled_model.2way$syntax)
 
 # Fit the model based on the compiled STAN code
 fit.2way <- modsem_stan(compiled_model = compiled_model.2way, 
@@ -116,10 +116,10 @@ compiled_model.3way <- compile_stan_model(m.3way)
 
 # Fit the model based on the compiled STAN code
 fit.3way <- modsem_stan(
-  compiled_model = compiled_model_3way,
+  compiled_model = compiled_model.3way,
   data   = data.3way,
   chains = 2,
-  iter   = 4000 # More iterations should yield more stable estimates
+  iter   = 6000 # More iterations should yield more stable estimates
 )
 #> Regressions:
 #>                  Estimate  Std.Error  z.value  P(>|z|)
