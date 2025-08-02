@@ -44,12 +44,14 @@ modsem_stan <- function(model.syntax = NULL,
 
   stan_data <- get_stan_data(compiled_model = compiled_model, data = data)
 
-  message("Sampling STAN model...")
-  fit <- rstan::sampling(object = compiled_model$stan_model,
-                         data   = stan_data,
-                         chains = chains,
-                         iter   = iter,
-                         warmup = warmup,
+  message("Sampling Stan model...")
+  fit <- rstan::sampling(object  = compiled_model$stan_model,
+                         data    = stan_data,
+                         chains  = chains,
+                         iter    = iter,
+                         warmup  = warmup,
+                         pars    = compiled_model$info$exclude.pars,
+                         include = FALSE,
                          ...)
 
   samples <- as.matrix(fit)

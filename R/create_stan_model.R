@@ -46,7 +46,7 @@ generated quantities {
 #' @param compile Should compilation be performed? If \code{FALSE} only the \code{STAN}
 #'   is generated, and not compiled.
 compile_stan_model <- function(model.syntax, compile = TRUE) {
-  message("Compiling STAN model...")
+  message("Compiling Stan model...")
 
   parTable <- modsemify(model.syntax)
 
@@ -111,6 +111,7 @@ compile_stan_model <- function(model.syntax, compile = TRUE) {
   TRANSFORMED_PARAMETERS <- NULL
   MODEL <- NULL
   GENERATED_QUANTITIES <- NULL
+  EXCLUDE.PARS <- NULL
 
 
   STAN_INDS_LV <- function(lV) {
@@ -176,6 +177,8 @@ compile_stan_model <- function(model.syntax, compile = TRUE) {
     tparameters <- collapse(tparLSigma, tparXiVectors, tparMuXi, tparXiArr, tparXiArrFill)
     model       <- collapse(modLOmega, modXiArr)
 
+    EXCLUDE.PARS <<- c(EXCLUDE.PARS, "XI_Array", "XI_Matrix", xis)
+
     list(parameters = parameters, transformed_parameters = tparameters,
          model = model)
   }
@@ -200,6 +203,8 @@ compile_stan_model <- function(model.syntax, compile = TRUE) {
 
     parameters <- collapse(parValues, parSD, parBeta)
 
+    EXCLUDE.PARS <<- c(EXCLUDE.PARS, eta)
+
     list(parameters = parameters, model = modEta)
   }
 
@@ -216,6 +221,8 @@ compile_stan_model <- function(model.syntax, compile = TRUE) {
         transformed_parameters,
         sprintf("vector[N] %s = %s;", nameIntTerm, prodEq)
       )
+
+      EXCLUDE.PARS <<- c(EXCLUDE.PARS, nameIntTerm)
     }
 
     list(transformed_parameters = collapse(transformed_parameters))
@@ -315,7 +322,8 @@ compile_stan_model <- function(model.syntax, compile = TRUE) {
                    etas = etas,
                    indsLVs = indsLVs,
                    allIndsXis = allIndsXis,
-                   allIndsEtas = allIndsEtas))
+                   allIndsEtas = allIndsEtas,
+                   exclude.pars = unique(EXCLUDE.PARS)))
 }
 
 
