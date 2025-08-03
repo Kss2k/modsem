@@ -9,7 +9,7 @@ static double const log2pi = std::log(2.0 * M_PI);
 
 void inplace_tri_mat_mult(arma::rowvec &x, arma::mat const &trimat){
   arma::uword const n = trimat.n_cols;
-  
+
   for(unsigned j = n; j-- > 0;){
     double tmp(0.);
     for(unsigned i = 0; i <= j; ++i)
@@ -75,6 +75,7 @@ arma::vec rep_dmvnorm(const arma::mat &x,
   #pragma omp parallel for if(ncores>1) schedule(static) default(none)          \
           shared(out, x, expected, sigma, t, p)
   #endif
+
   for (int i = 0; i < t; ++i) {
     int r0 = i * p, r1 = (i + 1) * p - 1;
     arma::mat sigma_i = sigma.submat(r0, 0, r1, p - 1);
@@ -82,6 +83,7 @@ arma::vec rep_dmvnorm(const arma::mat &x,
     // inner call runs single‑threaded to avoid nested OpenMP regions
     out(i) = dmvnrm_arma_mc(x.row(i), expected.row(i), sigma_i, true, 1)(0);
   }
+
   return out;
 }
 
@@ -122,23 +124,23 @@ double totalDmvnWeightedCpp(const arma::vec& mu,
 
 
 // [[Rcpp::export]]
-arma::vec dmvnfast(arma::mat X,  
-                   arma::vec mu,  
-                   arma::mat sigma, 
+arma::vec dmvnfast(arma::mat X,
+                   arma::vec mu,
+                   arma::mat sigma,
                    const bool log,
                    const int ncores,
-                   const bool isChol) { 
+                   const bool isChol) {
   using namespace Rcpp;
   // Code is copied from mvnfast package
   // I want to call it directly from C++, not from R
   // Copyright (C) 2014 Matteo Fasiolo  matteo.fasiolo@gmail.com
-  
+
   try{
     if(ncores == 0) stop("ncores has to be positive.");
-    if (X.n_cols != mu.n_elem) Rcpp::stop("X.n_cols != mu.n_elem"); 
-    if (X.n_cols != sigma.n_cols) Rcpp::stop("X.n_cols != sigma.n_cols"); 
-    if (sigma.n_rows != sigma.n_cols) Rcpp::stop("sigma.n_rows != sigma.n_cols"); 
-    
+    if (X.n_cols != mu.n_elem) Rcpp::stop("X.n_cols != mu.n_elem");
+    if (X.n_cols != sigma.n_cols) Rcpp::stop("X.n_cols != sigma.n_cols");
+    if (sigma.n_rows != sigma.n_cols) Rcpp::stop("sigma.n_rows != sigma.n_cols");
+
     // Here we set the number of OMP threads, but before we save the original
     // number of threads, so we can re-set before returning.
     int ncores_0;
@@ -150,7 +152,7 @@ arma::vec dmvnfast(arma::mat X,
     }
     omp_set_num_threads(ncores);
     #endif
-    
+
     // Calculate cholesky dec. unless sigma is alread a cholesky dec.
     arma::mat cholDec;
     if (!isChol) {
@@ -161,16 +163,16 @@ arma::vec dmvnfast(arma::mat X,
       }
 
     } else cholDec = sigma;
-    
+
     // Dropping the dimensionality of the output vector
     const arma::vec out = dmvnInt( X, mu, cholDec, log, ncores);
-    
+
     #ifdef _OPENMP
     omp_set_num_threads(ncores_0);
     #endif
-    
+
     return out;
-    
+
   } catch( std::exception& __ex__){
     forward_exception_to_r(__ex__);
 
@@ -184,58 +186,58 @@ arma::vec dmvnfast(arma::mat X,
 
 arma::vec dmvnInt( arma::mat X, arma::vec mu, arma::mat cholDec, bool log, unsigned int ncores) {
   using namespace arma;
-  
+
   unsigned int d = X.n_cols;
-  
+
   vec out = mahaInt(X, mu, cholDec, ncores, true);
-  
+
   out = - 0.5 * out - ( (d / 2.0) * std::log(2.0 * M_PI) + sum(arma::log(cholDec.diag())) );
-  
+
   if (!log) out = exp(out);
-  
+
   return out;
 }
 
 
-arma::vec mahaInt(arma::mat & X,  
-                  arma::vec & mu,  
+arma::vec mahaInt(arma::mat & X,
+                  arma::vec & mu,
                   arma::mat & sigma,
                   const unsigned int ncores,
                   const bool isChol = false) {
   using namespace arma;
-  
-  // Some sanity checks 
+
+  // Some sanity checks
   if(ncores == 0) Rcpp::stop("ncores has to be positive.");
   if(mu.n_elem != sigma.n_cols) Rcpp::stop("The mean vector has a different dimensions from the covariance matrix.");
   if(X.n_cols != sigma.n_cols)  Rcpp::stop("The number of columns of X is different from the dimension of the covariance matrix.");
-                   
+
   // Calculate transposed cholesky dec. unless sigma is alread a cholesky dec.
   mat cholDec;
   if (!isChol) {
      cholDec = trimatl(chol(sigma).t());
   } else {
-     cholDec = trimatl(sigma.t()); 
+     cholDec = trimatl(sigma.t());
      if(any(cholDec.diag() <= 0.0))  Rcpp::stop("The supplied cholesky decomposition has values <= 0.0 on the main diagonal.");
   }
-  
+
   vec D = cholDec.diag();
-    
+
   vec out(X.n_rows);
-  
+
   #ifdef _OPENMP
-  #pragma omp parallel num_threads(ncores) if(ncores > 1)                       
+  #pragma omp parallel num_threads(ncores) if(ncores > 1)
   {
   #endif
-  
+
   // Declaring some private variables
   uint32_t d = X.n_cols;
   uint32_t n = X.n_rows;
-  
-  vec tmp(d);  
-    
+
+  vec tmp(d);
+
   double acc;
-  uint32_t icol, irow, ii;  
-  
+  uint32_t icol, irow, ii;
+
   // For each of the "n" random vectors, forwardsolve the corresponding linear system.
   // Forwardsolve because I'm using the lower triangle Cholesky.
   #ifdef _OPENMP
@@ -243,22 +245,22 @@ arma::vec mahaInt(arma::mat & X,
   #endif
   for(icol = 0; icol < n; icol++)
   {
-        
+
     for(irow = 0; irow < d; irow++)
     {
      acc = 0.0;
-     
+
      for(ii = 0; ii < irow; ii++) acc += tmp.at(ii) * cholDec.at(irow, ii);
-     
+
      tmp.at(irow) = ( X.at(icol, irow) - mu.at(irow) - acc ) / D.at(irow);
     }
-    
-    out.at(icol) = sum(square(tmp)); 
+
+    out.at(icol) = sum(square(tmp));
   }
-  
+
   #ifdef _OPENMP
   }
   #endif
-    
+
   return out;
 }
