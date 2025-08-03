@@ -1,3 +1,9 @@
+STAN_LAVAAN_MODELS <- rlang::env(
+  syntaxes = NULL,
+  compiled = NULL
+)
+
+
 STAN_OPERATOR_LABELS <- c(
   "__INTERCEPT" = "~1",
   "__REGRESSION__" = "~",
@@ -45,9 +51,9 @@ generated quantities {
 #' @param model.syntax \code{lavaan} syntax.
 #' @param compile Should compilation be performed? If \code{FALSE} only the \code{STAN}
 #'   is generated, and not compiled.
-compile_stan_model <- function(model.syntax, compile = TRUE) {
-  message("Compiling Stan model...")
-
+#' @param force Should compilation of previously compiled models be forced?
+#' @export
+compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE) {
   parTable <- modsemify(model.syntax)
 
   # endogenous variables (etas)model
@@ -298,7 +304,6 @@ compile_stan_model <- function(model.syntax, compile = TRUE) {
     }
   }
 
-
   for (lV in lVs)   add2block(STAN_INDS_LV, lV = lV)
   for (eta in etas) add2block(STAN_PAR_ETA, eta = eta)
 
@@ -312,8 +317,27 @@ compile_stan_model <- function(model.syntax, compile = TRUE) {
                              TRANSFORMED_PARAMETERS, 
                              MODEL, GENERATED_QUANTITIES)
 
-  if (compile) stanModel <- rstan::stan_model(model_code = stanModelSyntax)
-  else         stanModel <- NULL
+  SYNTAXES <- STAN_LAVAAN_MODELS$syntaxes
+  COMPILED <- STAN_LAVAAN_MODELS$compiled
+  match    <- STAN_LAVAAN_MODELS$syntaxes == model.syntax
+
+  if (compile && any(match) && !force) {
+    message("Reusing compiled Stan model...")
+    stanModel <- last(COMPILED[match]) # if a duplicate somehow appears, pick last/newest match
+  
+  } else if (compile) {
+    message("Compiling Stan model...")
+
+    stanModel <- rstan::stan_model(model_code = stanModelSyntax)
+
+    SYNTAXES <- c(SYNTAXES, model.syntax)
+    COMPILED <- c(COMPILED, stanModel)
+
+    STAN_LAVAAN_MODELS$syntaxes <- SYNTAXES
+    STAN_LAVAAN_MODELS$compiled <- COMPILED 
+
+  } else stanModel <- NULL
+
 
   list(syntax = stanModelSyntax,
        stan_model = stanModel,
@@ -327,7 +351,7 @@ compile_stan_model <- function(model.syntax, compile = TRUE) {
 }
 
 
-get_stan_data <- function(compiled_model, data, impute.na = FALSE) {
+getStanData <- function(compiled_model, data, impute.na = FALSE) {
   lVs         <- compiled_model$info$lVs
   indsLVs     <- compiled_model$info$indsLVs
   allIndsXis  <- compiled_model$info$allIndsXis
@@ -346,128 +370,3 @@ get_stan_data <- function(compiled_model, data, impute.na = FALSE) {
 
   stan_data
 }
-
-
-EXAMPLE_STAN_SYNTAX_3WAY <- '
-// sem_latent_interaction.stan (updated)
-// SEM with three latent factors (X, Z, Y) and latent interaction X×Z → Y
-// Identification: first loading fixed to 1; *latent means constrained to 0*.
-// All nine indicator intercepts τ are now free.
-
-functions {
-  // empirical covariance helper (for generated quantities)
-  real cov_vector(vector a, vector b) {
-    return (dot_self(a - mean(a)))/(num_elements(a)-1);
-  }
-}
-
-data {
-  int<lower=1> N;                       // sample size
-  matrix[N, 12] Y;                       // observed indicators (x1–x3, z1–z3, y1–y3)
-}
-
-parameters {
-  //--------------------------------------
-  // Measurement part
-  //--------------------------------------
-  vector[2] lambda_x;                   // loadings: x2, x3
-  vector[2] lambda_z;                   // loadings: z2, z3
-  vector[2] lambda_w;                   // loadings: w2, w3
-  vector[2] lambda_y;                   // loadings: y2, y3
-
-  vector[12] tau;                        // ALL indicator intercepts free
-  vector<lower=0>[12] sigma_e;           // residual SDs
-
-  //--------------------------------------
-  // Latent part
-  //--------------------------------------
-  real<lower=0> sigma_X;
-  real<lower=0> sigma_Z;
-  real<lower=0> sigma_W;
-  real<lower=0> sigma_Y;
-
-  real beta_X;                          // structural slopes
-  real beta_Z;
-  real beta_W;
-  real beta_XZ;
-  real beta_XW;
-  real beta_ZW;
-  real beta_XZW;
-
-  vector[N] X;                          // person‑level latent scores
-  vector[N] Z;
-  vector[N] W;
-  vector[N] Y_lat;                      // endogenous latent Y
-}
-
-transformed parameters {
-  vector[N] XZ = X .* Z;                // latent interaction term
-  vector[N] XW = X .* W;                // latent interaction term
-  vector[N] ZW = Z .* W;                // latent interaction term
-  vector[N] XZW = X .* ZW;                // latent interaction term
-}
-
-model {
-  //--------------------------------------
-  // Priors
-  //--------------------------------------
-  // lambda_x ~ normal(1, 1);
-  // lambda_z ~ normal(1, 1);
-  // lambda_y ~ normal(1, 1);
-
-  // tau      ~ normal(0, 2);
-
-  // sigma_X  ~ exponential(1);
-  // sigma_Z  ~ exponential(1);
-  // sigma_Y  ~ exponential(1);
-  // sigma_e  ~ exponential(1);
-
-  // beta_X   ~ normal(0, 1);
-  // beta_Z   ~ normal(0, 1);
-  // beta_XZ  ~ normal(0, 1);
-
-  //--------------------------------------
-  // Latent variable distributions (means fixed to 0)
-  //--------------------------------------
-  X     ~ normal(0, sigma_X);
-  Z     ~ normal(0, sigma_Z);
-  W     ~ normal(0, sigma_W);
-  Y_lat ~ normal(beta_X * X + 
-                 beta_Z * Z +
-                 beta_W * W +
-                 beta_XZ * XZ +
-                 beta_XW * XW +
-                 beta_ZW * ZW +
-                 beta_XZW * XZW, 
-                 sigma_Y);
-
-  //--------------------------------------
-  // Measurement model
-  //--------------------------------------
-    // X indicators
-  Y[,1] ~ normal(tau[1] + X,                    sigma_e[1]);   // x1 (λ fixed = 1)
-  Y[,2] ~ normal(tau[2] + lambda_x[1] * X,      sigma_e[2]);   // x2
-  Y[,3] ~ normal(tau[3] + lambda_x[2] * X,      sigma_e[3]);   // x3
-
-  // Z indicators
-  Y[,4] ~ normal(tau[4] + Z,                    sigma_e[4]);   // z1 (λ fixed = 1)
-  Y[,5] ~ normal(tau[5] + lambda_z[1] * Z,      sigma_e[5]);   // z2
-  Y[,6] ~ normal(tau[6] + lambda_z[2] * Z,      sigma_e[6]);   // z3
-
-  // W indicators
-  Y[,7] ~ normal(tau[7] + W,                sigma_e[7]);   // y1 (λ fixed = 1)
-  Y[,8] ~ normal(tau[8] + lambda_w[1] * W,  sigma_e[8]);   // y2
-  Y[,9] ~ normal(tau[9] + lambda_w[2] * W,  sigma_e[9]);   // y3
-
-  // Y indicators
-  Y[,10] ~ normal(tau[10] + Y_lat,                sigma_e[10]);   // y1 (λ fixed = 1)
-  Y[,11] ~ normal(tau[11] + lambda_y[1] * Y_lat,  sigma_e[11]);   // y2
-  Y[,12] ~ normal(tau[12] + lambda_y[2] * Y_lat,  sigma_e[12]);   // y3
-}
-
-generated quantities {
-  real cov_XZ = cov_vector(X, Z);
-  real cov_XW = cov_vector(X, W);
-  real cov_ZW = cov_vector(Z, W);
-}
-'

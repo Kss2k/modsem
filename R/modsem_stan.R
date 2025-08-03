@@ -22,6 +22,7 @@
 #' default is \code{iter/2}.
 #' 
 #' @param ... Arguments passed to \code{stan::sampling}.
+#' @export
 modsem_stan <- function(model.syntax = NULL,
                         data = NULL,
                         compiled_model = NULL,
@@ -42,7 +43,7 @@ modsem_stan <- function(model.syntax = NULL,
   etas    <- compiled_model$info$etas
   deps    <- c(inds, etas)
 
-  stan_data <- get_stan_data(compiled_model = compiled_model, data = data)
+  stan_data <- getStanData(compiled_model = compiled_model, data = data)
 
   message("Sampling Stan model...")
   fit <- rstan::sampling(object  = compiled_model$stan_model,
@@ -53,13 +54,16 @@ modsem_stan <- function(model.syntax = NULL,
                          pars    = compiled_model$info$exclude.pars,
                          include = FALSE,
                          ...)
+  diagnostics <- rstan::summary(fit)$summary
 
-  samples <- as.matrix(fit)
-  samples <- samples[, !grepl("\\[[0-9]+\\]", colnames(samples))]
-  
-  pars <- stringr::str_replace_all(colnames(samples), STAN_OPERATOR_LABELS)
+  samples     <- as.matrix(fit)
+  samples     <- samples[, !grepl("\\[[0-9]+\\]", colnames(samples))]
+  diagnostics <- diagnostics[colnames(samples), , drop = FALSE]
+
+  cleanPars <- \(pars) stringr::str_replace_all(pars, STAN_OPERATOR_LABELS)
+  pars <- cleanPars(colnames(samples))
   colnames(samples) <- pars
- 
+
   OP <- "~~|=~|~1|~"
   op <- stringr::str_extract(pars, pattern = OP)
   op[is.na(op)] <- ":="
@@ -73,19 +77,23 @@ modsem_stan <- function(model.syntax = NULL,
 
   coefs <- apply(samples, MARGIN = 2, FUN = mean)
   vcov  <- cov(samples)
+  rhat  <- diagnostics[, "Rhat"]
+  neff  <- diagnostics[, "n_eff"]
 
   se <- sqrt(diag(vcov))
   parTable <- data.frame(
     lhs = lhs, op = op, rhs = rhs, est = coefs, std.error = se,
     z.value = coefs / se, p.value = 2 * stats::pnorm(-abs(coefs / se)),
-    ci.lower = coefs - CI_WIDTH * se, ci.upper = coefs + CI_WIDTH * se
+    ci.lower = coefs - CI_WIDTH * se, # We could replace these with the
+    ci.upper = coefs + CI_WIDTH * se, # observed 5% and 95% quantiles
+    R.hat     = rhat, n.eff = neff
   )
 
   parTable <- rbind(
       data.frame(lhs = lVs, op  = "=~",
                  rhs = sapply(lVs, FUN = \(lV) indsLVs[[lV]][[1L]]),
                  est = 1, std.error = NA, z.value = NA, p.value = NA, 
-                 ci.lower = NA, ci.upper = NA),
+                 ci.lower = NA, ci.upper = NA, R.hat = NA, n.eff = NA),
       parTable
   )
 
@@ -99,7 +107,6 @@ modsem_stan <- function(model.syntax = NULL,
               vcov = vcov,
               samples = samples)
 
-
   class(out) <- "modsem_stan"
 
   out
@@ -108,7 +115,9 @@ modsem_stan <- function(model.syntax = NULL,
 
 #' @export
 summary.modsem_stan <- function(object, ...) {
-  summarize_partable(object$parTable)
+  parTable <- object$parTable
+  parTable$n.eff <- as.character(round(parTable$n.eff)) # print as integer, not float
+  summarize_partable(parTable)
 }
 
 

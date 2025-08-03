@@ -4,13 +4,15 @@
 \alias{compile_stan_model}
 \title{Compile \code{STAN} model based on a \code{lavaan} model}
 \usage{
-compile_stan_model(model.syntax, compile = TRUE)
+compile_stan_model(model.syntax, compile = TRUE, force = FALSE)
 }
 \arguments{
 \item{model.syntax}{\code{lavaan} syntax.}
 
 \item{compile}{Should compilation be performed? If \code{FALSE} only the \code{STAN}
 is generated, and not compiled.}
+
+\item{force}{Should compilation of previously compiled models be forced?}
 }
 \description{
 Compile \code{STAN} model based on a \code{lavaan} model

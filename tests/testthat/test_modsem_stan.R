@@ -1,5 +1,5 @@
-devtools::load_all()
-
+# devtools::load_all()
+library(modsem)
 library(mvtnorm)
 library(rstan)
 
@@ -10,7 +10,6 @@ options(mc.cores = parallel::detectCores())
 # We're essentially specifying the models as
 # Bayesian models with flat priors for the model
 # parameters, mimicking ML-estimation
-
 
 # ------------------------------------------------------------------------------
 # Two-way Interaction
@@ -27,6 +26,7 @@ m1 <- '
 # First we compile the STAN model, this can be slow
 # and is therefore done once, such that the compiled
 # STAN code can be reused for the same model syntax later
+compiled_model.2way <- compile_stan_model(m1)
 compiled_model.2way <- compile_stan_model(m1)
 cat(compiled_model.2way$syntax)
 
@@ -49,7 +49,7 @@ parameter_estimates(fit.2way)
 # Simulate data
 
 set.seed(29723234)
-n <- 500
+n <- 1400
 Sigma <- matrix(c(
   1.2, 0.7, 0.8,
   0.7, 1.8, 0.6,
@@ -119,7 +119,7 @@ fit.3way <- modsem_stan(
   compiled_model = compiled_model.3way,
   data   = data.3way,
   chains = 2,
-  iter   = 6000 # More iterations should yield more stable estimates
+  iter   = 10000 # More iterations should yield more stable estimates
 )
 #> Regressions:
 #>                  Estimate  Std.Error  z.value  P(>|z|)
