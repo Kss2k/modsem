@@ -338,7 +338,7 @@ getWidthPrintedParTable <- function(parTable,
   space <- stringr::str_dup(" ", spacing)
 
   fStrHeader <- stringr::str_c(header[-(1:3)], collapse = space)
-  formattedHeader <- paste0(pad, fStrHeader, "\n")
+  formattedHeader <- paste0(pad, fStrHeader)
   nchar(formattedHeader)
 }
 
