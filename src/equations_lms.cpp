@@ -10,28 +10,29 @@
 // Deprecated will remove soon...
 // [[Rcpp::export]]
 arma::vec muLmsCpp(Rcpp::List model, arma::vec z) {
-  Rcpp::List matrices = model["matrices"];
-  Rcpp::List info = model["info"];
-  Rcpp::List quad = model["quad"];
-  int numXis = Rcpp::as<int>(info["numXis"]);
-  int k = Rcpp::as<int>(quad["k"]);
-  arma::mat A = Rcpp::as<arma::mat>(matrices["A"]);
-  arma::mat Oxx = Rcpp::as<arma::mat>(matrices["omegaXiXi"]);
-  arma::mat Oex = Rcpp::as<arma::mat>(matrices["omegaEtaXi"]);
-  arma::mat Ie = Rcpp::as<arma::mat>(matrices["Ieta"]);
-  arma::mat lY = Rcpp::as<arma::mat>(matrices["lambdaY"]);
-  arma::mat lX = Rcpp::as<arma::mat>(matrices["lambdaX"]);
-  arma::mat tY = Rcpp::as<arma::mat>(matrices["tauY"]);
-  arma::mat tX = Rcpp::as<arma::mat>(matrices["tauX"]);
-  arma::mat Gx = Rcpp::as<arma::mat>(matrices["gammaXi"]);
-  arma::mat Ge = Rcpp::as<arma::mat>(matrices["gammaEta"]);
-  arma::mat a = Rcpp::as<arma::mat>(matrices["alpha"]);
-  arma::mat beta0 = Rcpp::as<arma::mat>(matrices["beta0"]);
+  const Rcpp::List matrices = model["matrices"];
+  const Rcpp::List info = model["info"];
+  const Rcpp::List quad = model["quad"];
+  const int numXis = Rcpp::as<int>(info["numXis"]);
+  const int k = Rcpp::as<int>(quad["k"]);
+  const arma::mat A = Rcpp::as<arma::mat>(matrices["A"]);
+  const arma::mat Oxx = Rcpp::as<arma::mat>(matrices["omegaXiXi"]);
+  const arma::mat Oex = Rcpp::as<arma::mat>(matrices["omegaEtaXi"]);
+  const arma::mat Ie = Rcpp::as<arma::mat>(matrices["Ieta"]);
+  const arma::mat lY = Rcpp::as<arma::mat>(matrices["lambdaY"]);
+  const arma::mat lX = Rcpp::as<arma::mat>(matrices["lambdaX"]);
+  const arma::mat tY = Rcpp::as<arma::mat>(matrices["tauY"]);
+  const arma::mat tX = Rcpp::as<arma::mat>(matrices["tauX"]);
+  const arma::mat Gx = Rcpp::as<arma::mat>(matrices["gammaXi"]);
+  const arma::mat Ge = Rcpp::as<arma::mat>(matrices["gammaEta"]);
+  const arma::mat a = Rcpp::as<arma::mat>(matrices["alpha"]);
+  const arma::mat beta0 = Rcpp::as<arma::mat>(matrices["beta0"]);
 
   arma::vec zVec;
   if (k > 0) zVec = arma::join_cols(z, arma::zeros<arma::vec>(numXis - k));
-  else zVec = arma::zeros<arma::vec>(numXis);
-  arma::mat kronZ = arma::kron(Ie, beta0 + A * zVec);
+  else       zVec = arma::zeros<arma::vec>(numXis);
+
+  const arma::mat kronZ = arma::kron(Ie, beta0 + A * zVec);
 
   arma::mat Binv;
   if (Ie.n_cols == 1) {
@@ -39,11 +40,13 @@ arma::vec muLmsCpp(Rcpp::List model, arma::vec z) {
   } else {
     Binv = arma::inv(Ie - Ge - kronZ.t() * Oex);
   }
-  arma::vec muX = tX + lX * (beta0 + A * zVec);
-  arma::vec muY = tY + 
-    lY * (Binv * (a + 
-          Gx * (beta0 + A * zVec) + 
+
+  const arma::vec muX = tX + lX * (beta0 + A * zVec);
+  const arma::vec muY = tY +
+    lY * (Binv * (a +
+          Gx * (beta0 + A * zVec) +
           kronZ.t() * Oxx * (beta0 + A * zVec)));
+
   return arma::join_cols(muX, muY);
 }
 
@@ -51,31 +54,32 @@ arma::vec muLmsCpp(Rcpp::List model, arma::vec z) {
 // Deprecated will remove soon...
 // [[Rcpp::export]]
 arma::mat sigmaLmsCpp(Rcpp::List model, arma::vec z) {
-  Rcpp::List matrices = model["matrices"];
-  Rcpp::List info = model["info"];
-  Rcpp::List quad = model["quad"];
-  int numXis = Rcpp::as<int>(info["numXis"]);
-  int k = Rcpp::as<int>(quad["k"]);
-  arma::mat A = Rcpp::as<arma::mat>(matrices["A"]);
-  arma::mat Oxx = Rcpp::as<arma::mat>(matrices["omegaXiXi"]);
-  arma::mat Oex = Rcpp::as<arma::mat>(matrices["omegaEtaXi"]);
-  arma::mat Ie = Rcpp::as<arma::mat>(matrices["Ieta"]);
-  arma::mat lY = Rcpp::as<arma::mat>(matrices["lambdaY"]);
-  arma::mat lX = Rcpp::as<arma::mat>(matrices["lambdaX"]);
-  arma::mat tY = Rcpp::as<arma::mat>(matrices["tauY"]);
-  arma::mat tX = Rcpp::as<arma::mat>(matrices["tauX"]);
-  arma::mat Gx = Rcpp::as<arma::mat>(matrices["gammaXi"]);
-  arma::mat Ge = Rcpp::as<arma::mat>(matrices["gammaEta"]);
-  arma::mat a = Rcpp::as<arma::mat>(matrices["alpha"]);
-  arma::mat beta0 = Rcpp::as<arma::mat>(matrices["beta0"]);
-  arma::mat Psi = Rcpp::as<arma::mat>(matrices["psi"]); 
-  arma::mat d = Rcpp::as<arma::mat>(matrices["thetaDelta"]);
-  arma::mat e = Rcpp::as<arma::mat>(matrices["thetaEpsilon"]);
+  const Rcpp::List matrices = model["matrices"];
+  const Rcpp::List info = model["info"];
+  const Rcpp::List quad = model["quad"];
+  const int numXis = Rcpp::as<int>(info["numXis"]);
+  const int k = Rcpp::as<int>(quad["k"]);
+  const arma::mat A = Rcpp::as<arma::mat>(matrices["A"]);
+  const arma::mat Oxx = Rcpp::as<arma::mat>(matrices["omegaXiXi"]);
+  const arma::mat Oex = Rcpp::as<arma::mat>(matrices["omegaEtaXi"]);
+  const arma::mat Ie = Rcpp::as<arma::mat>(matrices["Ieta"]);
+  const arma::mat lY = Rcpp::as<arma::mat>(matrices["lambdaY"]);
+  const arma::mat lX = Rcpp::as<arma::mat>(matrices["lambdaX"]);
+  const arma::mat tY = Rcpp::as<arma::mat>(matrices["tauY"]);
+  const arma::mat tX = Rcpp::as<arma::mat>(matrices["tauX"]);
+  const arma::mat Gx = Rcpp::as<arma::mat>(matrices["gammaXi"]);
+  const arma::mat Ge = Rcpp::as<arma::mat>(matrices["gammaEta"]);
+  const arma::mat a = Rcpp::as<arma::mat>(matrices["alpha"]);
+  const arma::mat beta0 = Rcpp::as<arma::mat>(matrices["beta0"]);
+  const arma::mat Psi = Rcpp::as<arma::mat>(matrices["psi"]);
+  const arma::mat d = Rcpp::as<arma::mat>(matrices["thetaDelta"]);
+  const arma::mat e = Rcpp::as<arma::mat>(matrices["thetaEpsilon"]);
 
   arma::vec zVec;
   if (k > 0) zVec = arma::join_cols(z, arma::zeros<arma::vec>(numXis - k));
-  else zVec = arma::zeros<arma::vec>(numXis);
-  arma::mat kronZ = arma::kron(Ie, beta0 + A * zVec);
+  else       zVec = arma::zeros<arma::vec>(numXis);
+
+  const arma::mat kronZ = arma::kron(Ie, beta0 + A * zVec);
 
   arma::mat Binv;
   if (Ie.n_cols == 1) {
@@ -86,11 +90,13 @@ arma::mat sigmaLmsCpp(Rcpp::List model, arma::vec z) {
 
   arma::mat Oi = arma::eye<arma::mat>(numXis, numXis);
   Oi.diag() = arma::join_cols(arma::zeros<arma::vec>(k), arma::ones<arma::vec>(numXis - k));
-  arma::mat Sxx = lX * A * Oi * A.t() * lX.t() + d;
-  arma::mat Eta = Binv * (Gx * A + kronZ.t() * Oxx * A);
-  arma::mat Sxy = lX * (A * Oi * Eta.t()) * lY.t();
-  arma::mat Syy = lY * Eta * Oi * Eta.t() * lY.t() + 
+
+  const arma::mat Sxx = lX * A * Oi * A.t() * lX.t() + d;
+  const arma::mat Eta = Binv * (Gx * A + kronZ.t() * Oxx * A);
+  const arma::mat Sxy = lX * (A * Oi * Eta.t()) * lY.t();
+  const arma::mat Syy = lY * Eta * Oi * Eta.t() * lY.t() +
     lY * (Binv * Psi * Binv.t()) * lY.t() + e;
+
   return arma::join_cols(arma::join_rows(Sxx, Sxy), arma::join_rows(Sxy.t(), Syy));
 }
 
@@ -98,13 +104,14 @@ arma::mat sigmaLmsCpp(Rcpp::List model, arma::vec z) {
 inline arma::mat make_Oi(unsigned k, unsigned numXis) {
   arma::mat Oi = arma::eye<arma::mat>(numXis, numXis);
   Oi.diag() = arma::join_cols(arma::zeros<arma::vec>(k), arma::ones<arma::vec>(numXis - k));
+
   return Oi;
 }
 
 
 inline arma::vec make_zvec(unsigned k, unsigned numXis, const arma::vec& z) {
   if (k > 0) return arma::join_cols(z, arma::zeros<arma::vec>(numXis - k));
-  else return arma::zeros<arma::vec>(numXis);
+  else       return arma::zeros<arma::vec>(numXis);
 }
 
 
@@ -142,40 +149,40 @@ struct LMSModel {
   }
 
   arma::vec mu(const arma::vec& z) const {
-    arma::vec zVec = make_zvec(k, numXis, z);
-    arma::mat kronZ = arma::kron(Ie, beta0 + A * zVec);
+    const arma::vec zVec = make_zvec(k, numXis, z);
+    const arma::mat kronZ = arma::kron(Ie, beta0 + A * zVec);
 
     arma::mat Binv;
     if (Ie.n_cols == 1) Binv = arma::mat(Ie);
-    else Binv = arma::inv(Ie - Ge - kronZ.t() * Oex);
+    else                Binv = arma::inv(Ie - Ge - kronZ.t() * Oex);
 
-    arma::vec muX = tX + lX * (beta0 + A * zVec);
-    arma::vec muY = tY + 
-      lY * (Binv * (a + 
-            Gx * (beta0 + A * zVec) + 
+    const arma::vec muX = tX + lX * (beta0 + A * zVec);
+    const arma::vec muY = tY +
+      lY * (Binv * (a +
+            Gx * (beta0 + A * zVec) +
             kronZ.t() * Oxx * (beta0 + A * zVec)));
+
     return arma::join_cols(muX, muY);
   }
 
 
   arma::mat Sigma(const arma::vec& z) const {
-    arma::vec zVec = make_zvec(k, numXis, z);
-
-    arma::mat kronZ = arma::kron(Ie, beta0 + A * zVec);
+    const arma::vec zVec  = make_zvec(k, numXis, z);
+    const arma::mat kronZ = arma::kron(Ie, beta0 + A * zVec);
 
     arma::mat Binv;
     if (Ie.n_cols == 1) Binv = arma::mat(Ie);
-    else Binv = arma::inv(Ie - Ge - kronZ.t() * Oex);
+    else                Binv = arma::inv(Ie - Ge - kronZ.t() * Oex);
 
-    arma::mat Oi = make_Oi(k, numXis);
-    arma::mat Sxx = lX * A * Oi * A.t() * lX.t() + d;
-    arma::mat Eta = Binv * (Gx * A + kronZ.t() * Oxx * A);
-    arma::mat Sxy = lX * (A * Oi * Eta.t()) * lY.t();
-    arma::mat Syy = lY * Eta * Oi * Eta.t() * lY.t() + 
+    const arma::mat Oi = make_Oi(k, numXis);
+    const arma::mat Sxx = lX * A * Oi * A.t() * lX.t() + d;
+    const arma::mat Eta = Binv * (Gx * A + kronZ.t() * Oxx * A);
+    const arma::mat Sxy = lX * (A * Oi * Eta.t()) * lY.t();
+    const arma::mat Syy = lY * Eta * Oi * Eta.t() * lY.t() +
       lY * (Binv * Psi * Binv.t()) * lY.t() + e;
 
     return arma::join_cols(
-        arma::join_rows(Sxx, Sxy), 
+        arma::join_rows(Sxx, Sxy),
         arma::join_rows(Sxy.t(), Syy)
         );
   }
@@ -187,8 +194,10 @@ inline std::vector<arma::vec> as_vec_of_vec(const Rcpp::List& L) {
   const std::size_t J = L.size();
   std::vector<arma::vec> out;
   out.reserve(J);
+
   for (std::size_t j = 0; j < J; ++j)
     out.emplace_back( Rcpp::as<arma::vec>(L[j]) );
+
   return out;
 }
 
@@ -197,8 +206,10 @@ inline std::vector<arma::mat> as_vec_of_mat(const Rcpp::List& L) {
   const std::size_t J = L.size();
   std::vector<arma::mat> out;
   out.reserve(J);
+
   for (std::size_t j = 0; j < J; ++j)
     out.emplace_back( Rcpp::as<arma::mat>(L[j]) );
+
   return out;
 }
 
@@ -226,8 +237,8 @@ inline double& lms_param(LMSModel& M, std::size_t blk,
 
 
 template< class F >
-arma::vec gradientFD(LMSModel&         M,       
-                     F&&               logLik,  
+arma::vec gradientFD(LMSModel&         M,
+                     F&&               logLik,
                      const arma::uvec& block,
                      const arma::uvec& row,
                      const arma::uvec& col,
@@ -238,7 +249,6 @@ arma::vec gradientFD(LMSModel&         M,
 
   const double f0 = logLik(M);
 
-  
   for (std::size_t k = 0; k < p; ++k) {
     double& ti  = lms_param(M, block[k], row[k], col[k]);
     const  double oldi = ti;
@@ -341,7 +351,7 @@ double completeLogLikLmsCpp(Rcpp::List modelR, Rcpp::List P, Rcpp::List quad) {
 
 inline double observedLogLikFromModel(const LMSModel&            M,
                                       const arma::mat&           V,
-                                      const arma::vec&           w, 
+                                      const arma::vec&           w,
                                       const arma::mat&        data,
                                       const int ncores = 1) {
   const std::size_t n = V.n_rows;
@@ -427,8 +437,8 @@ inline void set_params(LMSModel&         M,
 
 
 template< class F >
-Rcpp::List fdHessCpp(LMSModel&         M,        
-                     F&&               fun,      
+Rcpp::List fdHessCpp(LMSModel&         M,
+                     F&&               fun,
                      const arma::uvec& block,
                      const arma::uvec& row,
                      const arma::uvec& col,
@@ -436,12 +446,12 @@ Rcpp::List fdHessCpp(LMSModel&         M,
                      double            relStep   = 1e-6,
                      double            minAbsPar = 0.0) {
     const std::size_t p = block.n_elem;
-    const arma::vec   base = get_params(M, block, row, col);     
+    const arma::vec   base = get_params(M, block, row, col);
     const arma::vec   incr =
         arma::max(arma::abs(base),
                   arma::vec(p).fill(minAbsPar)) * relStep;
 
-    //  build Koschal displacement matrix 
+    //  build Koschal displacement matrix
     std::vector< arma::vec > disp;
     disp.emplace_back(arma::zeros<arma::vec>(p));          // origin
     for (std::size_t i = 0; i < p; ++i) {                  //  +e_i / –e_i
@@ -457,7 +467,7 @@ Rcpp::List fdHessCpp(LMSModel&         M,
         }
     const std::size_t m = disp.size();                     // total design points
 
-    //  evaluate fun at every design point 
+    //  evaluate fun at every design point
     arma::vec y(m);
     for (std::size_t k = 0; k < m; ++k) {
         set_params(M, block, row, col, symmetric, base + disp[k] % incr);
@@ -465,7 +475,7 @@ Rcpp::List fdHessCpp(LMSModel&         M,
     }
     set_params(M, block, row, col, symmetric, base);                  // restore θ₀
 
-    //  build design matrix X 
+    //  build design matrix X
     const std::size_t q = 1 + 2*p + (p*(p-1))/2;           // # β‐coeffs
     arma::mat X(m, q, arma::fill::ones);
     std::size_t col_id = 1;
@@ -486,7 +496,7 @@ Rcpp::List fdHessCpp(LMSModel&         M,
             for (std::size_t k = 0; k < m; ++k)
                 X(k, col_id) = disp[k][i] * disp[k][j];
 
-    //  “frac” scaling (identical to nlme) 
+    //  “frac” scaling (identical to nlme)
     arma::vec frac(q, arma::fill::ones);
     for (std::size_t j = 0; j < p; ++j)              frac[1 + j]     = incr[j];
     for (std::size_t j = 0; j < p; ++j)              frac[1 + p + j] = incr[j] * incr[j];
@@ -495,13 +505,13 @@ Rcpp::List fdHessCpp(LMSModel&         M,
         for (std::size_t j = i + 1; j < p; ++j, ++col_id)
             frac[col_id] = incr[i] * incr[j];
 
-    //  solve for polynomial coefficients 
+    //  solve for polynomial coefficients
     arma::vec coef = arma::solve(X, y) / frac;
 
-    //  gradient (first‐order coefs) 
+    //  gradient (first‐order coefs)
     arma::vec grad = coef.subvec(1, p);
 
-    //  Hessian 
+    //  Hessian
     arma::mat Hess(p, p, arma::fill::zeros);
 
     // diagonal:  2 * c_i
@@ -516,7 +526,7 @@ Rcpp::List fdHessCpp(LMSModel&         M,
             Hess(j, i) = coef[col_id];
         }
 
-    //  return exactly like nlme::fdHess() 
+    //  return exactly like nlme::fdHess()
     return Rcpp::List::create(
         Rcpp::Named("mean")     = coef[0],
         Rcpp::Named("gradient") = grad,
