@@ -16,7 +16,7 @@ incrementIterations <- function(logLik) {
 
   clearConsoleLine() # clear before printing
   printf("\rEval=%d LogLik=%.2f \u0394LL=%.2g rel\u0394LL=%.2g",
-         eval, logLik, deltaLL, relDeltaLL)
+         eval, logLik, abs(deltaLL), abs(relDeltaLL))
 
   OptimizerInfoQML$eval    <- eval
   OptimizerInfoQML$logLiks <- logLiks
