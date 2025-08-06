@@ -21,7 +21,7 @@ Ignored if \code{monte.carlo = FALSE}.}
 \item{...}{Arguments passed on to other functions}
 }
 \value{
-The same object (returned invisibly) with three slots overwritten  
+The same object (returned invisibly) with three slots overwritten
 \describe{
   \item{\code{$parTable}}{Parameter table whose columns \code{est} and \code{std.error}
         now hold standardized estimates and their (delta-method)
@@ -31,7 +31,7 @@ The same object (returned invisibly) with three slots overwritten
         variable has mean 0 by definition.}
   \item{\code{$vcov}}{Variance–covariance matrix corresponding to the updated
         coefficient vector.  Rows/columns for intercepts are dropped, and
-        the sub-matrix associated with rescaled parameters is adjusted 
+        the sub-matrix associated with rescaled parameters is adjusted
         so that its diagonal equals the squared standardized standard errors.}
 }
 The object keeps its class attributes, allowing seamless use by downstream
@@ -63,7 +63,7 @@ sfit <- standardize_model(fit, monte.carlo = TRUE)
 
 # Compare unstandardized vs. standardized summaries
 summary(fit)  # unstandardized
-summary(sfit) # standardized 
+summary(sfit) # standardized
 }
 
 }

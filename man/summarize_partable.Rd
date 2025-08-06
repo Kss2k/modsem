@@ -17,7 +17,7 @@ summarize_partable(
 )
 }
 \arguments{
-\item{parTable}{A parameter table, typically obtained from a \code{\link{modsem}} model 
+\item{parTable}{A parameter table, typically obtained from a \code{\link{modsem}} model
 using \code{\link{parameter_estimates}} or \code{\link{standardized_estimates}}.}
 
 \item{scientific}{Logical, whether to print p-values in scientific notation.}

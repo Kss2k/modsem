@@ -41,8 +41,8 @@ bootstrap_modsem(model = modsem, FUN, ...)
 a fitted model.  The function must accept a single argument, the model
 object, and should ideally return a numeric vector; see Value.}
 
-\item{...}{Additional arguments forwarded to \code{lavaan::bootstrapLavaan} 
-for \code{\link{modsem_pi}} objects, or \code{\link{modsem_da}} for 
+\item{...}{Additional arguments forwarded to \code{lavaan::bootstrapLavaan}
+for \code{\link{modsem_pi}} objects, or \code{\link{modsem_da}} for
 \code{\link{modsem_da}} objects.}
 
 \item{R}{number of bootstrap replicates.}
@@ -88,10 +88,10 @@ The function internally resamples the observed data (non-parametric
   feeds the sample to \code{\link{modsem_da}}, evaluates \code{FUN} on the
   refitted object and finally collates the results.
 
-This is a more general version of \code{boostrap_modsem} for 
-  bootstrapping \code{modsem} functions, not modsem objects. 
+This is a more general version of \code{boostrap_modsem} for
+  bootstrapping \code{modsem} functions, not modsem objects.
   \code{model} is now a function to be boostrapped, and \code{...}
-  are now passed to the function (\code{model}), not \code{FUN}. To 
+  are now passed to the function (\code{model}), not \code{FUN}. To
   pass arguments to \code{FUN} use \code{FUN.args}.
 }
 \section{Methods (by class)}{
@@ -146,11 +146,11 @@ tpb <- "
 "
 
 \dontrun{
-boot <- bootstrap_modsem(model = modsem, 
+boot <- bootstrap_modsem(model = modsem,
                          model.syntax = tpb, data = TPB,
-                         method = "dblcent", rcs = TRUE, 
+                         method = "dblcent", rcs = TRUE,
                          rcs.scale.corrected = TRUE,
-                         FUN = "coef", R = 50L) 
+                         FUN = "coef", R = 50L)
 coef <- apply(boot, MARGIN = 2, FUN = mean, na.rm = TRUE)
 se   <- apply(boot, MARGIN = 2, FUN = sd, na.rm = TRUE)
 

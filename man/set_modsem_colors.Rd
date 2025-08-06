@@ -43,10 +43,10 @@ All arguments are optional; omitted ones fall back to the defaults below.
 Pass \code{active = FALSE} to turn highlighting off (and reset the palette).
 }
 \examples{
-set_modsem_colors(positive = "red3", 
+set_modsem_colors(positive = "red3",
                   negative = "red3",
-                  true = "darkgreen", 
-                  false = "red3", 
+                  true = "darkgreen",
+                  false = "red3",
                   na = "purple",
                   string = "darkgreen")
 
@@ -71,8 +71,8 @@ colorize_output(split = TRUE, {
 
   est_lms <- modsem(m1, data = oneInt, method = "lms")
   summary(est_lms)
-}) 
-                
+})
+
 colorize_output(modsem_inspect(est_lms))
 }
 }

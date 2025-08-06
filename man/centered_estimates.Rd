@@ -44,7 +44,7 @@ A \code{data.frame} with centered estimates in the \code{est} column.
 \description{
 Computes centered estimates of model parameters. This is relevant when there is an
  interaction term in the model, as the simple main effects depend upon the mean structure
- of the structural model. Currenlty only available for 
+ of the structural model. Currenlty only available for
  \code{\link{modsem_da}} and \code{lavaan} object.
  It is not relevant for the PI approaches (excluding the "pind" method, which is not recommended),
  since the indicators are centered before computing the product terms.

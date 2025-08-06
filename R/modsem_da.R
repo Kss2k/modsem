@@ -140,6 +140,9 @@
 #'
 #' @param em.control a list of control parameters for the EM algorithm. See \code{\link{default_settings_da}} for defaults.
 #'
+#' @param ordered Variables to be treated as ordered. Ordered (ordinal) variables are scale-corrected to adjust for 
+#'   unequal intervals before model estimation, using an ordered CFA.
+#'
 #' @param rcs Should latent variable indicators be replaced with reliability-corrected
 #'   single item indicators instead? See \code{\link{relcorr_single_item}}.
 #'
@@ -279,6 +282,7 @@ modsem_da <- function(model.syntax = NULL,
                       n.threads = NULL,
                       algorithm = NULL,
                       em.control = NULL,
+                      ordered = NULL,
                       rcs = FALSE,
                       rcs.choose = NULL,
                       rcs.scale.corrected = TRUE,
@@ -294,6 +298,14 @@ modsem_da <- function(model.syntax = NULL,
     stop2("The provided model syntax is not a string!")
   } else if (length(model.syntax) > 1) {
     stop2("The provided model syntax is not of length 1")
+  }
+
+  if (length(ordered) || any(sapply(data, FUN = is.ordered))) {
+    data <- correctScaleOrdered(
+      model.syntax = model.syntax,
+      data         = data,
+      ordered      = ordered
+    )
   }
 
   if (is.null(data)) {

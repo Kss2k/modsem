@@ -38,24 +38,24 @@ measures from a \code{\link{modsem_da}} object.
 }
 \details{
 For \code{\link{modsem_pi}} objects, it is just a wrapper for \code{lavaan::lavInspect}.
- For \code{\link{modsem_da}} objects an internal function is called, which takes different 
+ For \code{\link{modsem_da}} objects an internal function is called, which takes different
  keywords for the \code{what} argument.
 
 Below is a list of possible values for the \code{what} argument,
 organised in several sections.  Keywords are \emph{case-sensitive}.
 
-\strong{Presets} 
+\strong{Presets}
 
 \describe{
   \item{\code{"default"}}{Everything in \emph{Sample information}, \emph{Optimiser diagnostics}
-  \emph{Parameter tables}, \emph{Model matrices}, and \emph{Expected-moment matrices} except  
+  \emph{Parameter tables}, \emph{Model matrices}, and \emph{Expected-moment matrices} except
   the raw \code{data} slot}
-  \item{\code{"coef"}}{Coefficients and variance-covariance matrix of both free and constrained parameters (same as \code{"coef.all"}).}  
-  \item{\code{"coef.all"}}{Coefficients and variance-covariance matrix of both free and constrained parameters (same as \code{"coef"}).}  
-  \item{\code{"coef.free"}}{Coefficients and variance-covariance matrix of the free parameters.}  
-  \item{\code{"all"}}{All items listed below, including \code{data}.}  
-  \item{\code{"matrices"}}{The model matrices.}  
-  \item{\code{"optim"}}{Only the items under \emph{Optimiser diagnostics}}.  
+  \item{\code{"coef"}}{Coefficients and variance-covariance matrix of both free and constrained parameters (same as \code{"coef.all"}).}
+  \item{\code{"coef.all"}}{Coefficients and variance-covariance matrix of both free and constrained parameters (same as \code{"coef"}).}
+  \item{\code{"coef.free"}}{Coefficients and variance-covariance matrix of the free parameters.}
+  \item{\code{"all"}}{All items listed below, including \code{data}.}
+  \item{\code{"matrices"}}{The model matrices.}
+  \item{\code{"optim"}}{Only the items under \emph{Optimiser diagnostics}}.
   \item{\code{"fit"}}{A list with \code{fit.h0}, \code{fit.h1}, comparative.fit}
 }
 
@@ -74,7 +74,7 @@ organised in several sections.  Keywords are \emph{case-sensitive}.
   \item{\code{"vcov.all"}}{Variance–covariance of both free and constrained coefficients.}
 }
 
-\strong{Optimiser diagnostics:}  
+\strong{Optimiser diagnostics:}
 
 \describe{
   \item{\code{"coefficients.free"}}{Free parameter values.}
@@ -85,7 +85,7 @@ organised in several sections.  Keywords are \emph{case-sensitive}.
   \item{\code{"convergence"}}{\code{TRUE}/\code{FALSE} indicating whether the model converged.}
 }
 
-\strong{Parameter tables:}  
+\strong{Parameter tables:}
 
 \describe{
   \item{\code{"partable"}}{Parameter table with estimated parameters.}
@@ -107,13 +107,13 @@ organised in several sections.  Keywords are \emph{case-sensitive}.
   \item{\code{"alpha"}}{\eqn{\alpha} – Intercepts for endogenous variables}
   \item{\code{"beta0"}}{\eqn{\beta_0} – Intercepts for exogenous variables}
 }
-\strong{Model-implied matrices:}  
+\strong{Model-implied matrices:}
 
 \describe{
-  \item{\code{"cov.ov"}}{Model-implied covariance of observed variables.} 
+  \item{\code{"cov.ov"}}{Model-implied covariance of observed variables.}
   \item{\code{"cov.lv"}}{Model-implied covariance of latent variables.}
   \item{\code{"cov.all"}}{Joint covariance of observed + latent variables.}
-  \item{\code{"cor.ov"}}{Correlation counterpart of \code{"cov.ov"}.} 
+  \item{\code{"cor.ov"}}{Correlation counterpart of \code{"cov.ov"}.}
   \item{\code{"cor.lv"}}{Correlation counterpart of \code{"cov.lv"}.}
   \item{\code{"cor.all"}}{Correlation counterpart of \code{"cov.all"}.}
   \item{\code{"mean.ov"}}{Expected means of observed variables.}
@@ -132,13 +132,13 @@ organised in several sections.  Keywords are \emph{case-sensitive}.
   \item{\code{"res.ov"}}{Standardized residuals (i.e., \code{1 - R^2}) for observed variables (i.e., indicators).}
 }
 
-\strong{Interaction-specific caveats:}  
+\strong{Interaction-specific caveats:}
 
 \itemize{
   \item If the model contains an \emph{uncentred} latent interaction term it is centred
     internally before any \code{cov.*}, \code{cor.*}, or \code{mean.*} matrices are
-    calculated.  
-  \item These matrices should not be used to compute fit-statistics (e.g., 
+    calculated.
+  \item These matrices should not be used to compute fit-statistics (e.g.,
     chi-square and RMSEA) if there is an interaction term in the model.
 }
 }

@@ -21,7 +21,7 @@ tpb <- '
 
   # Higher order interaction
   INTxPBC =~ ATT:PBC + SN:PBC + PBC:PBC
-  
+
   # Structural model
   BEH ~ PBC + INT + INTxPBC
 '

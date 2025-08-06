@@ -40,6 +40,7 @@ modsem_da(
   n.threads = NULL,
   algorithm = NULL,
   em.control = NULL,
+  ordered = NULL,
   rcs = FALSE,
   rcs.choose = NULL,
   rcs.scale.corrected = TRUE,
@@ -71,20 +72,20 @@ increased number gives better estimates but slower computation. How many are nee
 For simple models, somewhere between 16-24 nodes should be enough; for more complex models, higher numbers may be needed.
 For models where there is an interaction effect between an endogenous and exogenous variable,
 the number of nodes should be at least 32, but practically (e.g., ordinal/skewed data), more than 32 is recommended. In cases
-where data is non-normal, it might be better to use the \code{qml} approach instead. 
+where data is non-normal, it might be better to use the \code{qml} approach instead.
 You can also consider setting \code{adaptive.quad = TRUE}.}
 
 \item{impute.na}{Should missing values be imputed? If \code{FALSE} missing values
 are removed case-wise. If \code{TRUE} values are imputed using \code{Amelia::amelia}.
-Default is \code{FALSE}. If you want more fine-grained control over how the missing data 
+Default is \code{FALSE}. If you want more fine-grained control over how the missing data
 is imputed, you should consider imputing it yourself.}
 
-\item{convergence.abs}{Absolute convergence criterion. 
+\item{convergence.abs}{Absolute convergence criterion.
 Lower values give better estimates but slower computation. Not relevant when
 using the QML approach. For the LMS approach the EM-algorithm stops whenever
 the relative or absolute convergence criterion is reached.}
 
-\item{convergence.rel}{Relative convergence criterion. 
+\item{convergence.rel}{Relative convergence criterion.
 Lower values give better estimates but slower computation.
 For the LMS approach the EM-algorithm stops whenever
 the relative or absolute convergence criterion is reached.}
@@ -127,7 +128,7 @@ this will be extremely slow but should be more similar to \code{mplus}.}
 
 \item{FIM}{should the Fisher information matrix be calculated using the observed or expected values? Must be either \code{"observed"} or \code{"expected"}.}
 
-\item{EFIM.S}{if the expected Fisher information matrix is computed, \code{EFIM.S} selects the number of Monte Carlo samples. Defaults to 100. 
+\item{EFIM.S}{if the expected Fisher information matrix is computed, \code{EFIM.S} selects the number of Monte Carlo samples. Defaults to 100.
 \strong{NOTE}: This number should likely be increased for better estimates (e.g., 1000), but it might drasticly increase computation time.}
 
 \item{OFIM.hessian}{Logical. If \code{TRUE} (default), standard errors are
@@ -136,15 +137,15 @@ this will be extremely slow but should be more similar to \code{mplus}.}
   of individual score vectors (OPG). For correctly specified models,
   these two matrices are asymptotically equivalent; yielding nearly identical
   standard errors in large samples. The Hessian usually shows smaller finite-sample
-  variance (i.e., it's more consistent), and is therefore the default. 
+  variance (i.e., it's more consistent), and is therefore the default.
 
   Note, that the Hessian is not always positive definite, and is more computationally
-  expensive to calculate. The OPG should always be positive definite, and a lot 
+  expensive to calculate. The OPG should always be positive definite, and a lot
   faster to compute. If the model is correctly specified, and the sample size is large,
-  then the two should yield similar results, and switching to the OPG can save a 
+  then the two should yield similar results, and switching to the OPG can save a
   lot of time. Note, that the required sample size depends on the complexity of the model.
 
-  A large difference between Hessian and OPG suggests misspecification, and 
+  A large difference between Hessian and OPG suggests misspecification, and
   \code{robust.se = TRUE} should be set to obtain sandwich (robust) standard errors.}
 
 \item{EFIM.parametric}{should data for calculating the expected Fisher information matrix be
@@ -165,17 +166,17 @@ fischer information matrix.}
 
 \item{epsilon}{finite difference for numerical derivatives.}
 
-\item{quad.range}{range in z-scores to perform numerical integration in LMS using, 
+\item{quad.range}{range in z-scores to perform numerical integration in LMS using,
 when using quasi-adaptive Gaussian-Hermite Quadratures. By default \code{Inf}, such that \code{f(t)} is integrated from -Inf to Inf,
 but this will likely be inefficient and pointless at a large number of nodes. Nodes outside
 \code{+/- quad.range} will be ignored.}
 
 \item{adaptive.quad}{should a quasi adaptive quadrature be used? If \code{TRUE}, the quadrature nodes will be adapted to the data.
-If \code{FALSE}, the quadrature nodes will be fixed. Default is \code{FALSE}. The adaptive quadrature does not fit an adaptive 
-quadrature to each participant, but instead tries to place more nodes where posterior distribution is highest. Compared with a 
+If \code{FALSE}, the quadrature nodes will be fixed. Default is \code{FALSE}. The adaptive quadrature does not fit an adaptive
+quadrature to each participant, but instead tries to place more nodes where posterior distribution is highest. Compared with a
 fixed Gauss Hermite quadrature this usually means that less nodes are placed at the tails of the distribution.}
 
-\item{adaptive.frequency}{How often should the quasi-adaptive quadrature be calculated? Defaults to 3, meaning 
+\item{adaptive.frequency}{How often should the quasi-adaptive quadrature be calculated? Defaults to 3, meaning
 that it is recalculated every third EM-iteration.}
 
 \item{adaptive.quad.tol}{Relative error tolerance for quasi adaptive quadrature. Defaults to \code{1e-12}.}
@@ -185,12 +186,15 @@ If an integer is specified, it will use that number of threads (e.g., \code{n.th
 If \code{"default"}, it will use the default number of threads (2).
 If \code{"max"}, it will use all available threads, \code{"min"} will use 1 thread.}
 
-\item{algorithm}{algorithm to use for the EM algorithm. Can be either \code{"EM"} or \code{"EMA"}. 
+\item{algorithm}{algorithm to use for the EM algorithm. Can be either \code{"EM"} or \code{"EMA"}.
 \code{"EM"} is the standard EM algorithm. \code{"EMA"} is an
 accelerated EM procedure that uses Quasi-Newton and Fisher Scoring
 optimization steps when needed. Default is \code{"EM"}.}
 
 \item{em.control}{a list of control parameters for the EM algorithm. See \code{\link{default_settings_da}} for defaults.}
+
+\item{ordered}{Variables to be treated as ordered. Ordered (ordinal) variables are scale-corrected to adjust for 
+unequal intervals before model estimation, using an ordered CFA.}
 
 \item{rcs}{Should latent variable indicators be replaced with reliability-corrected
 single item indicators instead? See \code{\link{relcorr_single_item}}.}
@@ -203,35 +207,35 @@ as the \code{choose} argument.}
 reliability-corrected single items are corrected for differences in factor loadings between
 the items. Default is \code{TRUE}.}
 
-\item{orthogonal.x}{If \code{TRUE}, all covariances among exogenous latent variables only are set to zero. 
+\item{orthogonal.x}{If \code{TRUE}, all covariances among exogenous latent variables only are set to zero.
 Default is \code{FALSE}.}
 
-\item{orthogonal.y}{If \code{TRUE}, all covariances among endogenous latent variables only are set to zero. 
-If \code{FALSE} residual covariances are added between pure endogenous variables; 
+\item{orthogonal.y}{If \code{TRUE}, all covariances among endogenous latent variables only are set to zero.
+If \code{FALSE} residual covariances are added between pure endogenous variables;
 those that are predicted by no other endogenous variable in the structural model.
 Default is \code{FALSE}.}
 
-\item{auto.fix.first}{If \code{TRUE} the factor loading of the first indicator, for 
+\item{auto.fix.first}{If \code{TRUE} the factor loading of the first indicator, for
 a given latent variable is fixed to \code{1}. If \code{FALSE} no loadings are fixed
 (automatically). Note that that this might make it such that the model no longer is
-identified. Default is \code{TRUE}. \strong{NOTE} this behaviour is overridden 
+identified. Default is \code{TRUE}. \strong{NOTE} this behaviour is overridden
 if the first loading is labelled, where it gets treated as a free parameter instead. This
 differs from the default behaviour in \code{lavaan}.}
 
-\item{auto.fix.single}{If \code{TRUE}, the residual variance of 
+\item{auto.fix.single}{If \code{TRUE}, the residual variance of
 an observed indicator is set to zero if it is the only indicator of a latent variable.
 If \code{FALSE} the residual variance is not fixed to zero, and treated as a free parameter
-of the model. Default is \code{TRUE}. \strong{NOTE} this behaviour is overridden 
+of the model. Default is \code{TRUE}. \strong{NOTE} this behaviour is overridden
 if the first loading is labelled, where it gets treated as a free parameter instead.}
 
-\item{auto.split.syntax}{Should the model syntax automatically be split into a 
-linear and non-linear part? This is done by moving the structural model for 
+\item{auto.split.syntax}{Should the model syntax automatically be split into a
+linear and non-linear part? This is done by moving the structural model for
 linear endogenous variables (used in interaction terms) into the \code{cov.syntax}
 argument. This can potentially allow interactions between two endogenous variables
-given that both are linear (i.e., not affected by interaction terms). This is 
+given that both are linear (i.e., not affected by interaction terms). This is
 \code{FALSE} by default for the LMS approach.
-When using the QML approach interation effects between exogenous and endogenous 
-variables can in some cases be biased, if the model is not split beforehand. 
+When using the QML approach interation effects between exogenous and endogenous
+variables can in some cases be biased, if the model is not split beforehand.
 The default is therefore \code{TRUE} for the QML approach.}
 
 \item{...}{additional arguments to be passed to the estimation function.}
