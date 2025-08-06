@@ -128,7 +128,7 @@ modsemOrderedScaleCorrection <- function(model.syntax,
         ...
       )
 
-      sim <- modsem:::simulateDataParTable(
+      sim <- simulateDataParTable(
         parTable = parameter_estimates(fit.naive),
         N        = N
       )
