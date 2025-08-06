@@ -301,11 +301,54 @@ modsem_da <- function(model.syntax = NULL,
   }
 
   if (length(ordered) || any(sapply(data, FUN = is.ordered))) {
-    data <- correctScaleOrdered(
-      model.syntax = model.syntax,
-      data         = data,
-      ordered      = ordered
-    )
+    out <- modsemOrderedScaleCorrection(
+       model.syntax        = model.syntax,
+       data                = data,
+       method              = method,
+       verbose             = verbose,
+       optimize            = optimize,
+       nodes               = nodes,
+       impute.na           = impute.na,
+       convergence.abs     = convergence.abs,
+       convergence.rel     = convergence.rel,
+       optimizer           = optimizer,
+       center.data         = center.data,
+       standardize.data    = standardize.data,
+       standardize.out     = standardize.out,
+       standardize         = standardize,
+       mean.observed       = mean.observed,
+       cov.syntax          = cov.syntax,
+       double              = double,
+       calc.se             = calc.se,
+       FIM                 = FIM,
+       EFIM.S              = EFIM.S,
+       OFIM.hessian        = OFIM.hessian,
+       EFIM.parametric     = EFIM.parametric,
+       robust.se           = robust.se,
+       R.max               = R.max,
+       max.iter            = max.iter,
+       max.step            = max.step,
+       start               = start,
+       epsilon             = epsilon,
+       quad.range          = quad.range,
+       adaptive.quad       = adaptive.quad,
+       adaptive.frequency  = adaptive.frequency,
+       adaptive.quad.tol   = adaptive.quad.tol,
+       n.threads           = n.threads,
+       algorithm           = algorithm,
+       em.control          = em.control,
+       ordered             = ordered,
+       rcs                 = rcs,
+       rcs.choose          = rcs.choose,
+       rcs.scale.corrected = rcs.scale.corrected,
+       orthogonal.x        = orthogonal.x,
+       orthogonal.y        = orthogonal.y,
+       auto.fix.first      = auto.fix.first,
+       auto.fix.single     = auto.fix.single,
+       auto.split.syntax   = auto.split.syntax,
+       ...)
+
+    return(out)
   }
 
   if (is.null(data)) {
