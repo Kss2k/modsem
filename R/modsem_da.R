@@ -143,6 +143,9 @@
 #' @param ordered Variables to be treated as ordered. Ordered (ordinal) variables are scale-corrected to adjust for 
 #'   unequal intervals before model estimation, using an ordered CFA.
 #'
+#' @param ordered.boot Number of bootstraps used to estimate the underlying continuous distribution of the
+#'   ordinal variables.
+#'
 #' @param rcs Should latent variable indicators be replaced with reliability-corrected
 #'   single item indicators instead? See \code{\link{relcorr_single_item}}.
 #'
@@ -283,6 +286,7 @@ modsem_da <- function(model.syntax = NULL,
                       algorithm = NULL,
                       em.control = NULL,
                       ordered = NULL,
+                      ordered.boot = 5,
                       rcs = FALSE,
                       rcs.choose = NULL,
                       rcs.scale.corrected = TRUE,
@@ -306,6 +310,7 @@ modsem_da <- function(model.syntax = NULL,
        data                = data,
        method              = method,
        verbose             = verbose,
+       R                   = ordered.boot,
        optimize            = optimize,
        nodes               = nodes,
        impute.na           = impute.na,

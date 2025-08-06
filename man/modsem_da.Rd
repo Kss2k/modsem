@@ -41,6 +41,7 @@ modsem_da(
   algorithm = NULL,
   em.control = NULL,
   ordered = NULL,
+  ordered.boot = 5,
   rcs = FALSE,
   rcs.choose = NULL,
   rcs.scale.corrected = TRUE,
@@ -195,6 +196,9 @@ optimization steps when needed. Default is \code{"EM"}.}
 
 \item{ordered}{Variables to be treated as ordered. Ordered (ordinal) variables are scale-corrected to adjust for 
 unequal intervals before model estimation, using an ordered CFA.}
+
+\item{ordered.boot}{Number of bootstraps used to estimate the underlying continuous distribution of the
+ordinal variables.}
 
 \item{rcs}{Should latent variable indicators be replaced with reliability-corrected
 single item indicators instead? See \code{\link{relcorr_single_item}}.}
