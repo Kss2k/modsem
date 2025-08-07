@@ -339,14 +339,14 @@ densityLms <- function(z, modFilled, data) {
 }
 
 
-hessianAllLogLikLms <- function(theta, model, P, sign = -1,
-                                 FHESS, FOBJECTIVE, .relStep = .Machine$double.eps ^ (1/5)) {
+hessianAllLogLikLms <- function(theta, model, P, data, sign = -1,
+                                FHESS, FOBJECTIVE, .relStep = .Machine$double.eps ^ (1/5)) {
   hasCovModel <- model$gradientStruct$hasCovModel
 
   if (hasCovModel) hessian <- \(...) complicatedHessianAllLogLikLms(..., FOBJECTIVE = FOBJECTIVE, .relStep = .relStep)
   else             hessian <- \(...) simpleHessianAllLogLikLms(..., FHESS = FHESS, .relStep = .relStep)
 
-  hessian(theta = theta, model = model, P = P, sign = sign)
+  hessian(theta = theta, model = model, P = P, data = data, sign = sign)
 }
 
 
@@ -384,6 +384,7 @@ simpleHessianAllLogLikLms <- function(theta, model, P, data, sign = -1,
                 colidxR = data$colidx0,
                 n = data$n.pattern,
                 d = data$d.pattern,
+                npatterns = data$p,
                 symmetric = symmetric,
                 .relStep = .relStep)
 
@@ -430,11 +431,12 @@ complicatedHessianAllLogLikLms <- function(theta, model, P, sign = -1, FOBJECTIV
 hessianObsLogLikLms <- function(theta, model, data, P, sign = -1,
                                 .relStep = .Machine$double.eps ^ (1/5)) {
 
-  FHESS <- function(modelR, P, block, row, col, symmetric, eps, .relStep, ...) {
-    hessObsLogLikLmsCpp(modelR = modelR, data = data, P = P,
+  FHESS <- function(modelR, P, block, row, col, symmetric, eps, .relStep, colidxR, n, 
+                    npatterns, ...) {
+    hessObsLogLikLmsCpp(modelR = modelR, data = data$data.split, P = P,
                         block = block, row = row, col = col,
-                        symmetric = symmetric, 
-                        colidxR = data$colidx0, n = data$n.pattern,
+                        symmetric = symmetric, npatterns = npatterns,
+                        colidxR = colidxR, n = n,
                         relStep = .relStep, minAbs = 0.0,
                         ncores = ThreadEnv$n.threads)
   }
@@ -444,7 +446,7 @@ hessianObsLogLikLms <- function(theta, model, data, P, sign = -1,
   }
 
   hessianAllLogLikLms(theta = theta, model = model, P = P, sign = sign,
-                      FHESS = FHESS, FOBJECTIVE = FOBJECTIVE,
+                      data = data, FHESS = FHESS, FOBJECTIVE = FOBJECTIVE,
                       .relStep = .relStep)
 }
 
@@ -452,11 +454,12 @@ hessianObsLogLikLms <- function(theta, model, data, P, sign = -1,
 hessianCompLogLikLms <- function(theta, model, P, data, sign = -1,
                                  .relStep = .Machine$double.eps ^ (1/5)) {
 
-  FHESS <- function(modelR, P, block, row, col, symmetric, eps, .relStep) {
-    hessCompLogLikLmsCpp(modelR = modelR, P = P,
-                         block = block, row = row, col = col,
-                         symmetric = symmetric,
-                         relStep = .relStep, minAbs = 0.0,
+  FHESS <- function(modelR, P, block, row, col, symmetric, eps, .relStep, colidxR, 
+                    n, d, npatterns) {
+    hessCompLogLikLmsCpp(modelR = modelR, P = P, block = block, 
+                         row = row, col = col, symmetric = symmetric,
+                         colidxR = colidxR, n = n, d = d, relStep = .relStep,
+                         npatterns = npatterns, minAbs = 0.0, 
                          ncores = ThreadEnv$n.threads)
   }
 
@@ -464,6 +467,6 @@ hessianCompLogLikLms <- function(theta, model, P, data, sign = -1,
     compLogLikLms(theta = theta, model = model, P = P, data = data, sign = sign)
   }
 
-  hessianAllLogLikLms(theta = theta, model = model, P = P, sign = sign,
+  hessianAllLogLikLms(theta = theta, model = model, P = P, data = data, sign = sign,
                       FHESS = FHESS, FOBJECTIVE = FOBJECTIVE, .relStep = .relStep)
 }

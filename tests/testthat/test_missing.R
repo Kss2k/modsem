@@ -17,6 +17,7 @@ k <- 200
 I <- sample(nrow(oneInt2), k, replace = TRUE)
 J <- sample(ncol(oneInt2), k, replace = TRUE)
 for (k_i in seq_along(I)) oneInt2[I[k_i], J[k_i]] <- NA
+fiml_lms <- modsem(m1, oneInt2, method = "lms", missing = "fiml")
 
 # double centering approach
 est <- modsem(m1, oneInt2)
