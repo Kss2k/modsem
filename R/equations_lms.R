@@ -113,32 +113,6 @@ mstepLms <- function(theta, model, P, data,
                           data = data, epsilon = epsilon)
   }
 
-  if (FALSE) {
-
-  i <- 2
-  data <- list(
-    ids = data$ids[i],
-    rowidx = data$rowidx[i],
-    colidx = data$colidx[i],
-    colidx0 = data$colidx0[i],
-    data.split = data$data.split[i],
-    n.pattern = data$n.pattern[i],
-    d.pattern    = data$d.pattern[i],
-    p            = 1
-  )
-
-  P <- list(
-    tgamma = lapply(P$tgamma, FUN = \(x) x[i]),
-    mean = lapply(P$mean, FUN = \(x) x[i]),
-    cov = lapply(P$cov, FUN = \(x) x[i]),
-    V = P$V,
-    w = P$w,
-    quad = P$quad,
-    P = P$P
-  )
-
-  }
-
   objective <- function(theta) {
     compLogLikLms(theta = theta, model = model, P = P, sign = -1, data = data, 
                   epsilon = epsilon)

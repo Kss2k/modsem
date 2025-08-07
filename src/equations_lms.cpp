@@ -358,7 +358,6 @@ inline double observedLogLikFromModel(const LMSModel&  M,
   const std::size_t Q = V.n_rows;
 
   arma::vec density = arma::zeros<arma::vec>(arma::sum(n));
-  int offset = 0;
 
   for (std::size_t i = 0; i < Q; ++i) {
     if (w[i] <= DBL_MIN) continue;
@@ -366,16 +365,18 @@ inline double observedLogLikFromModel(const LMSModel&  M,
     const arma::vec z   = V.row(i).t();
     const arma::vec mu  = M.mu   (z);
     const arma::mat Sig = M.Sigma(z);
-
+  
+    int offset = 0L;
     for (int j = 0; j < npatterns; j++) {
-      const int end = offset + n[j];
-      offset = end;
+      const int end = offset + n[j] - 1L;
 
       density.subvec(offset, end) += 
         dmvnfast(data[j], 
                  mu.elem(colidx[j]), 
                  Sig.submat(colidx[j], colidx[j]), 
                  false, ncores, false) * w[i];
+      
+      offset = end + 1L;
     }
   }
 
