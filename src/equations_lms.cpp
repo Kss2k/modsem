@@ -275,31 +275,35 @@ arma::vec gradientFD(LMSModel&         M,
 }
 
 
-inline double
-completeLogLikFromModel(const LMSModel&                 M,
-                        const arma::mat&                V,          // J × k
-                        const arma::vec&                TGamma,     // length J
-                        const std::vector<arma::vec>&   Mean,       // length J
-                        const std::vector<arma::mat>&   Cov,        // length J
-                        const int                       n,
-                        const int                       d) {
+inline double completeLogLikFromModel(
+    const LMSModel&                 M,
+    const arma::mat&                V,          // J × k
+    const arma::vec&                TGamma,     // length J
+    const std::vector<std::vector<arma::vec>>&            MeanPatterns,
+    const std::vector<std::vector<arma::vec<arma::mat>>&   CovPatterns,
+    const int                       n,
+    const int                       d) {
+
   const std::size_t J = V.n_rows;
   double ll = 0.0;
 
-  for (std::size_t j = 0; j < J; ++j) {
+  for (std::size_t j = 0; j < J; j++) {
 
     const double tg = TGamma[j];
     if (tg <= DBL_MIN) continue;
 
     const arma::vec& z  = V.row(j).t();   // view – no copy
-    const arma::vec& nu = Mean[j];
-    const arma::mat& S  = Cov [j];
-
     const arma::vec mu  = M.mu   (z);
     const arma::mat Sig = M.Sigma(z);
 
-    ll += totalDmvnWeightedCpp(mu, Sig, nu, S, tg, n, d);
+    for (int i = 0; i < npatterns; i++) {
+      const arma::vec& nu = Mean[i][j];
+      const arma::mat& S  = Cov [i][j];
+
+      ll += totalDmvnWeightedCpp(mu, Sig, nu, S, tg, n, d);
+    }
   }
+
   return ll;
 }
 
@@ -349,11 +353,12 @@ double completeLogLikLmsCpp(Rcpp::List modelR, Rcpp::List P, Rcpp::List quad) {
 }
 
 
-inline double observedLogLikFromModel(const LMSModel&            M,
-                                      const arma::mat&           V,
-                                      const arma::vec&           w,
-                                      const arma::mat&        data,
-                                      const int ncores = 1) {
+inline double observedLogLikFromModel(const LMSModel&  M,
+                                      const arma::mat& V,
+                                      const arma::vec& w,
+                                      const arma::mat& data,
+                                      const int        npatterns = 1,
+                                      const int        ncores = 1) {
   const std::size_t n = V.n_rows;
 
   arma::vec density = arma::zeros<arma::vec>(data.n_rows);
@@ -368,6 +373,37 @@ inline double observedLogLikFromModel(const LMSModel&            M,
   }
 
   return arma::sum(arma::log(density));
+}
+inline double completeLogLikFromModel(
+    const LMSModel&                 M,
+    const arma::mat&                V,          // J × k
+    const arma::vec&                TGamma,     // length J
+    const std::vector<std::vector<arma::vec>>&            MeanPatterns,
+    const std::vector<std::vector<arma::vec<arma::mat>>&   CovPatterns,
+    const int                       n,
+    const int                       d) {
+
+  const std::size_t J = V.n_rows;
+  double ll = 0.0;
+
+  for (std::size_t j = 0; j < J; j++) {
+
+    const double tg = TGamma[j];
+    if (tg <= DBL_MIN) continue;
+
+    const arma::vec& z  = V.row(j).t();   // view – no copy
+    const arma::vec mu  = M.mu   (z);
+    const arma::mat Sig = M.Sigma(z);
+
+    for (int i = 0; i < npatterns; i++) {
+      const arma::vec& nu = Mean[i][j];
+      const arma::mat& S  = Cov [i][j];
+
+      ll += totalDmvnWeightedCpp(mu, Sig, nu, S, tg, n, d);
+    }
+  }
+
+  return ll;
 }
 
 

@@ -871,3 +871,43 @@ sortParTableDA <- function(parTable, model) {
 
   parTable[order(scoreOp, scoreLhs, scoreRhs), , drop = FALSE]
 }
+
+
+patternizeMissingDataFIML <- function(data) {
+  # if we are not using fiml, the missing data should already have been removed...
+  Y   <- as.matrix(data)
+  obs <- !is.na(Y)
+
+  patterns <- unique(obs, MARING = 2)
+
+  # remove patterns where all are missing
+  allMissing <- apply(patterns, MARGIN = 1, FUN = \(x) all(is.na(x)))
+  patterns <- patterns[!allMissing, , drop = FALSE]
+
+  ids <- seq_len(NROW(patterns))
+  n   <- NROW(Y)
+  k   <- NCOL(Y)
+
+  row.indices <- vector("list", length = NROW(ids))
+  col.indices <- vector("list", length = NROW(ids))
+  data.split  <- vector("list", length = NROW(ids))
+
+  for (id in ids) {
+    mask  <- matrix(patterns[id, ], nrow = n, ncol = k, byrow = TRUE)
+    match <- apply(obs == mask, MARGIN = 1, FUN = all)
+    ridx  <- which(match)
+    cidx  <- which(patterns[id, ])
+
+    row.indices[[id]] <- ridx
+    col.indices[[id]] <- cidx
+    data.split[[id]]  <- Y[ridx, cidx]
+  }
+
+  list(
+    id = id, 
+    row.indices = row.indices,
+    col.indices = col.indices,
+    patterns    = patterns,
+    data.split  = data.split
+  )
+}
