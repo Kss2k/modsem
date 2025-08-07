@@ -107,12 +107,12 @@ summary.modsem_da <- function(object,
   args <- object$args
   out <- list(
     parTable       = parTable.out,
-    data           = object$data,
+    data           = object$data$data.full,
     iterations     = object$iterations,
     logLik         = object$logLik,
     fit            = fit_modsem_da(object, chisq = FALSE),
     D              = NULL,
-    N              = NROW(object$data),
+    N              = NROW(object$data$data.full),
     method         = method,
     optimizer      = object$optimizer,
     quad           = object$info.quad,
@@ -573,13 +573,13 @@ modsem_predict.modsem_da <- function(object, standardized = FALSE, H0 = TRUE, ne
   } else modelH0 <- modelH1
 
   if (!is.null(newdata)) {
-    cols <- colnames(modelH0$data)
+    cols <- colnames(modelH0$data$data.full)
     cols.present <- cols %in% colnames(newdata)
     stopif(!all(cols.present), "Missing cols in `newdata`:\n", cols[!cols.present])
 
     newdata <- as.matrix(newdata)[, cols]
 
-  } else newdata <- modelH0$data
+  } else newdata <- modelH0$data$data.full
 
   transform.x <- if (center.data) \(x) x - mean(x, na.rm = TRUE) else \(x) x
 
