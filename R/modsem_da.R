@@ -141,7 +141,10 @@
 #' @param em.control a list of control parameters for the EM algorithm. See \code{\link{default_settings_da}} for defaults.
 #'
 #' @param ordered Variables to be treated as ordered. Ordered (ordinal) variables are scale-corrected to adjust for 
-#'   unequal intervals before model estimation, using an ordered CFA.
+#'   unequal intervals before model estimation, by estimating the distributions of the underlying continuous response variables. 
+#'   The distributions of the response variables are estimated using a combination of bootstrapping and Monte Carlo simulations.
+#'   For small differences in the spacing of the intervals, the point estimates should be unbiased. The standard errors may be
+#'   underestimated though. Using robust standard errors may make the estimates of the standard errors more accurate.
 #'
 #' @param ordered.boot Number of bootstraps used to estimate the underlying continuous distribution of the
 #'   ordinal variables.
