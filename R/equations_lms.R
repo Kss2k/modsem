@@ -282,8 +282,8 @@ obsLogLikLms_i <- function(theta, model, data, P, sign = 1, ...) {
 
       end <- offset + n.pattern - 1L
       dens_i[offset:end] <- dmvn(data$data.split[[id]], 
-                                 mean = mu[colidx], 
-                                 sigma = sigma[colidx, colidx],
+                                 mean = mu_i[colidx],
+                                 sigma = sigma_i[colidx, colidx],
                                  log = FALSE)
       offset <- end + 1L
     }
@@ -302,7 +302,7 @@ gradientObsLogLikLms_i <- function(theta, model, data, P, sign = 1, epsilon = 1e
   lapplyMatrix(seq_along(theta), FUN = function(i) {
     theta[[i]] <- theta[[i]] + epsilon
     (obsLogLikLms_i(theta, model, data = data, P = P, sign = sign) - baseLL) / epsilon
-  }, FUN.VALUE = numeric(nrow(data)))
+  }, FUN.VALUE = numeric(data$n))
 }
 
 
