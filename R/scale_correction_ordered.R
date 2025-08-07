@@ -63,36 +63,46 @@ modsemOrderedScaleCorrection <- function(model.syntax,
   cols <- colnames(data)
   cols.ordered <- cols[cols %in% ordered | sapply(data, is.ordered)]
 
-  for (col in cols.ordered)
-    data[[col]] <- as.integer(as.ordered(data[[col]]))
+  MU <- stats::setNames(vector("list", length(cols.ordered)), nm = cols.ordered)
 
-  rescaleOrderedVariable <- function(name, data, sim.ov) {
+  for (col in cols.ordered) {
+    data[[col]] <- as.integer(as.ordered(data[[col]]))
+    MU[[col]]   <- vector("list", length(unique(data[[col]])))
+  }
+
+  rescaleOrderedVariable <- function(name, data, sim.ov, k = 200, eps = 1e-3) {
     n <- NROW(data)
     N <- NROW(sim.ov)
 
     x <- as.integer(as.ordered(data[[name]]))
     y <- sim.ov[, name]
     y <- (y - mean(y)) / sd(y) # standardize
-    y <- round(y, 1)
+    t <- c(-Inf, seq(min(y) + eps, max(y) - eps, length.out = k), Inf)
+    z <- cut(y, breaks = t, ordered_result = TRUE)
 
-    exp.densities <- table(y) / N
+    exp.densities <- table(z) / N
     exp.cdf <- cumsum(exp.densities)
 
     obs.densities <- table(x) / n
     obs.cdf <- cumsum(obs.densities)
 
+    z              <- as.integer(z) # more convenient in the loop
+    names(exp.cdf) <- seq_len(length(exp.cdf))
+
     out <- rep(NA, n)
     for (i in seq_along(obs.cdf)) {
-      quantile <- obs.cdf[i]
-      match   <- exp.cdf[exp.cdf <= quantile]
-      exp.cdf <- exp.cdf[exp.cdf > quantile]
+      quantile  <- obs.cdf[i]
+      match.idx <- exp.cdf <= quantile
+      match.cdf <- exp.cdf[match.idx]
+      exp.cdf   <- exp.cdf[!match.idx]
 
-      match.values <- as.numeric(names(match))
-
+      match.values <- as.integer(names(match.cdf))
       lower <- match.values[1L]
       upper <- last(match.values)
 
-      mu <- mean(y[y >= lower & y <= upper])
+      mu_i <- mean(y[z >= lower & z <= upper])
+      MU[[name]][[i]] <<- c(MU[[name]][[i]], mu_i)
+      mu <- mean(MU[[name]][[i]])
 
       out[!is.na(x) & x == i] <- mu 
     }
