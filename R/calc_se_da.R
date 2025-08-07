@@ -90,7 +90,7 @@ calcHessian <- function(model, theta, data, method = "lms",
                                        .relStep = .Machine$double.eps^(1/5))
 
     H <- tryCatch(suppressWarnings(fH(model)), error = function(e) {
-      warning2("Optimized calculation of Hessian failed, attempting to switch!")
+      warning2("Optimized calculation of Hessian failed, attempting to switch!\n", e)
       model$gradientStruct$hasCovModel <- TRUE
 
       suppressWarnings(fH(model))

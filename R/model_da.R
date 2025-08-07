@@ -17,7 +17,7 @@ specifyModelDA <- function(syntax = NULL,
                            quad.range = Inf,
                            adaptive.quad = FALSE,
                            adaptive.frequency = 3,
-                           impute.na = FALSE,
+                           missing = FALSE,
                            orthogonal.x = FALSE,
                            orthogonal.y = FALSE,
                            auto.split.syntax = FALSE) {
@@ -67,7 +67,7 @@ specifyModelDA <- function(syntax = NULL,
   numAllIndsXis <- length(allIndsXis)
 
   # clean data
-  data <- cleanAndSortData(data, allIndsXis, allIndsEtas, impute.na = impute.na)
+  data.cleaned <- prepDataModsemDA(data, allIndsXis, allIndsEtas, missing = missing)
 
   # measurement model x
   listLambdaX <- constructLambda(xis, indsXis, parTable = parTable,
@@ -167,7 +167,7 @@ specifyModelDA <- function(syntax = NULL,
   selectSubSigma2ThetaEpsilon <-
     getSelectSubSigma2ThetaEpsilon(fullSigma2ThetaEpsilon, latentEtas = latentEtas,
                                    method = method)
-  fullU <- constructFullU(fullL2 = fullL2, N = NROW(data), etas = etas, method = method)
+  fullU <- constructFullU(fullL2 = fullL2, N = data.cleaned$n, etas = etas, method = method)
 
   scalingInds <- getScalingInds(indsEtas, R = emptyR, latentEtas = latentEtas,
                                 method = method)
@@ -243,8 +243,8 @@ specifyModelDA <- function(syntax = NULL,
 
   model <- list(
     info = list(
-      N             = NROW(data),
-      ncol          = NCOL(data),
+      N             = data.cleaned$n,
+      ncol          = data.cleaned$k,
       xis           = xis,
       etas          = etas,
       numXis        = numXis,
@@ -262,7 +262,8 @@ specifyModelDA <- function(syntax = NULL,
       lavOptimizerSyntaxAdditions = lavOptimizerSyntaxAdditions
     ),
 
-    data          = data,
+    data          = data.cleaned,
+    data.raw      = data,
     quad          = quad,
     matrices      = matrices,
     labelMatrices = labelMatrices,

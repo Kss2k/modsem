@@ -192,35 +192,101 @@ castDataNumericMatrix <- function(data) {
 }
 
 
-handleMissingData <- function(data, impute.na = FALSE) {
+patternizeMissingDataFIML <- function(data) {
+  # if we are not using fiml, the missing data should already have been removed...
+  Y   <- as.matrix(data)
+  obs <- !is.na(Y)
+
+  patterns <- unique(obs, MARING = 2)
+
+  # remove patterns where all are missing
+  allMissing <- apply(patterns, MARGIN = 1, FUN = \(x) all(is.na(x)))
+  patterns <- patterns[!allMissing, , drop = FALSE]
+
+  # patterns <- patterns[2, , drop = FALSE]
+  # data <- data[!complete.cases(data), ]
+
+  ids <- seq_len(NROW(patterns))
+  n   <- NROW(Y)
+  k   <- NCOL(Y)
+
+  rowidx <- vector("list", length = NROW(ids))
+  colidx <- vector("list", length = NROW(ids))
+  data.split  <- vector("list", length = NROW(ids))
+  n.pattern  <- numeric(NROW(ids))
+  d.pattern  <- numeric(NROW(ids))
+
+  for (id in ids) {
+    mask  <- matrix(patterns[id, ], nrow = n, ncol = k, byrow = TRUE)
+    match <- apply(obs == mask, MARGIN = 1, FUN = all)
+    ridx  <- which(match)
+    cidx  <- which(patterns[id, ])
+
+    rowidx[[id]] <- ridx
+    colidx[[id]] <- cidx
+    data.split[[id]] <- Y[ridx, cidx, drop = FALSE]
+    n.pattern[[id]] <- sum(match)
+    d.pattern[[id]] <- length(cidx)
+  }
+
+  list(
+    ids        = ids, 
+    rowidx     = rowidx,
+    colidx     = colidx,
+    colidx0    = lapply(colidx, FUN = \(idx) idx - 1),
+    patterns   = patterns,
+    data.split = data.split,
+    n.pattern  = n.pattern,
+    d.pattern  = d.pattern,
+    n          = NROW(data),
+    k          = NCOL(data),
+    p          = length(ids),
+    data.full  = data
+  )
+}
+
+
+handleMissingData <- function(data, missing = "complete") {
   completeCases <- stats::complete.cases(data)
   anyMissing    <- any(!completeCases)
 
   if (!anyMissing) return(data)
 
-  if (!impute.na) {
-    warning2("Removing missing values case-wise!\n",
-             "Consider using `impute.na = TRUE`, or the `modsem_mimpute()` function!\n")
+  switch(tolower(missing),
+    complete = {
+      warning2("Removing missing values case-wise!\n",
+               "Consider using `impute.na = TRUE`, or the `modsem_mimpute()` function!\n")
 
-    return(data[completeCases, ])
+      return(data[completeCases, ])
+    },
+  
+    impute = {
+      message("Imputing missing values. Consider using the `modsem_mimpute()` function!")
 
-  } else {
-    message("Imputing missing values. Consider using the `modsem_mimpute()` function!")
+      imp  <- Amelia::amelia(data, m = 1, p2s = 0)
+      imp1 <- as.matrix(as.data.frame(imp$imputations[[1]]))
 
-    imp  <- Amelia::amelia(data, m = 1, p2s = 0)
-    imp1 <- as.matrix(as.data.frame(imp$imputations[[1]]))
+      return(imp1)
+    },
 
-    return(imp1)
-  }
+    fiml = { # do nothing
+      return(data)
+
+    },
+
+    stop2(sprintf("Unrecognized value for `missing`: `%s`", missing))
+  )
 }
 
 
-cleanAndSortData <- function(data, allIndsXis, allIndsEtas, impute.na = FALSE) {
+prepDataModsemDA <- function(data, allIndsXis, allIndsEtas, missing = "complete") {
   if (is.null(data)) return(NULL)
   # sort Data before optimizing starting params
+  
   sortData(data, allIndsXis,  allIndsEtas) |>
     castDataNumericMatrix() |>
-    handleMissingData(impute.na = impute.na)
+    handleMissingData(missing = missing) |>
+    patternizeMissingDataFIML()
 }
 
 
@@ -870,44 +936,4 @@ sortParTableDA <- function(parTable, model) {
   scoreRhs <- getScore(x = parTable$rhs, order.by = varOrder)
 
   parTable[order(scoreOp, scoreLhs, scoreRhs), , drop = FALSE]
-}
-
-
-patternizeMissingDataFIML <- function(data) {
-  # if we are not using fiml, the missing data should already have been removed...
-  Y   <- as.matrix(data)
-  obs <- !is.na(Y)
-
-  patterns <- unique(obs, MARING = 2)
-
-  # remove patterns where all are missing
-  allMissing <- apply(patterns, MARGIN = 1, FUN = \(x) all(is.na(x)))
-  patterns <- patterns[!allMissing, , drop = FALSE]
-
-  ids <- seq_len(NROW(patterns))
-  n   <- NROW(Y)
-  k   <- NCOL(Y)
-
-  row.indices <- vector("list", length = NROW(ids))
-  col.indices <- vector("list", length = NROW(ids))
-  data.split  <- vector("list", length = NROW(ids))
-
-  for (id in ids) {
-    mask  <- matrix(patterns[id, ], nrow = n, ncol = k, byrow = TRUE)
-    match <- apply(obs == mask, MARGIN = 1, FUN = all)
-    ridx  <- which(match)
-    cidx  <- which(patterns[id, ])
-
-    row.indices[[id]] <- ridx
-    col.indices[[id]] <- cidx
-    data.split[[id]]  <- Y[ridx, cidx]
-  }
-
-  list(
-    id = id, 
-    row.indices = row.indices,
-    col.indices = col.indices,
-    patterns    = patterns,
-    data.split  = data.split
-  )
 }

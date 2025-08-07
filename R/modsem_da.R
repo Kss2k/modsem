@@ -22,10 +22,10 @@
 #'   where data is non-normal, it might be better to use the \code{qml} approach instead.
 #'   You can also consider setting \code{adaptive.quad = TRUE}.
 #'
-#' @param impute.na Should missing values be imputed? If \code{FALSE} missing values
-#'   are removed case-wise. If \code{TRUE} values are imputed using \code{Amelia::amelia}.
-#'   Default is \code{FALSE}. If you want more fine-grained control over how the missing data
-#'   is imputed, you should consider imputing it yourself.
+#' @param missing How should missing values be handled? If \code{"complete"} (default) missing values
+#'   are removed case-wise. If \code{impute} values are imputed using \code{Amelia::amelia}. 
+#'   If \code{"fiml"}, full information maximum likelihood (FIML) is used. FIML can be (very)
+#'   computationally intensive.
 #'
 #' @param convergence.abs Absolute convergence criterion.
 #'   Lower values give better estimates but slower computation. Not relevant when
@@ -259,7 +259,7 @@ modsem_da <- function(model.syntax = NULL,
                       verbose = NULL,
                       optimize = NULL,
                       nodes = NULL,
-                      impute.na = NULL,
+                      missing = NULL,
                       convergence.abs = NULL,
                       convergence.rel = NULL,
                       optimizer = NULL,
@@ -316,7 +316,7 @@ modsem_da <- function(model.syntax = NULL,
        R                   = ordered.boot,
        optimize            = optimize,
        nodes               = nodes,
-       impute.na           = impute.na,
+       missing           = missing,
        convergence.abs     = convergence.abs,
        convergence.rel     = convergence.rel,
        optimizer           = optimizer,
@@ -416,7 +416,7 @@ modsem_da <- function(model.syntax = NULL,
           n.threads          = n.threads,
           algorithm          = algorithm,
           em.control         = em.control,
-          impute.na          = impute.na,
+          missing            = missing,
           orthogonal.x       = orthogonal.x,
           orthogonal.y       = orthogonal.y,
           auto.fix.first     = auto.fix.first,
@@ -445,7 +445,7 @@ modsem_da <- function(model.syntax = NULL,
     quad.range         = args$quad.range,
     adaptive.quad      = args$adaptive.quad,
     adaptive.frequency = args$adaptive.frequency,
-    impute.na          = args$impute.na,
+    missing            = args$missing,
     orthogonal.x       = args$orthogonal.x,
     orthogonal.y       = args$orthogonal.y,
     auto.fix.first     = args$auto.fix.first,
