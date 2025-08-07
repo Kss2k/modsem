@@ -128,7 +128,7 @@ print.modsem_stan <- function(x, ...) {
 
 
 #' @export
-parameter_estimates <- function(object, ...) {
+parameter_estimates.modsem_stan <- function(object, ...) {
   object$parTable
 }
 

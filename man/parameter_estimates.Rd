@@ -11,13 +11,13 @@
 \usage{
 parameter_estimates(object, ...)
 
-parameter_estimates.lavaan(object, colon.pi = TRUE, ...)
+\method{parameter_estimates}{lavaan}(object, colon.pi = TRUE, ...)
 
-parameter_estimates.modsem_da(object, ...)
+\method{parameter_estimates}{modsem_da}(object, ...)
 
-parameter_estimates.modsem_mplus(object, ...)
+\method{parameter_estimates}{modsem_mplus}(object, ...)
 
-parameter_estimates.modsem_pi(object, colon.pi = FALSE, ...)
+\method{parameter_estimates}{modsem_pi}(object, colon.pi = FALSE, ...)
 }
 \arguments{
 \item{object}{An object of class \code{\link{modsem_pi}}, \code{\link{modsem_da}}, or \code{\link{modsem_mplus}}}
@@ -29,15 +29,15 @@ parameter_estimates.modsem_pi(object, colon.pi = FALSE, ...)
 \description{
 Extract parameterEstimates from an estimated model
 }
-\section{Functions}{
+\section{Methods (by class)}{
 \itemize{
-\item \code{parameter_estimates.lavaan()}: Get parameter estimates of a \code{lavaan} object
+\item \code{parameter_estimates(lavaan)}: Get parameter estimates of a \code{lavaan} object
 
-\item \code{parameter_estimates.modsem_da()}: Get parameter estimates of a \code{\link{modsem_da}} object
+\item \code{parameter_estimates(modsem_da)}: Get parameter estimates of a \code{\link{modsem_da}} object
 
-\item \code{parameter_estimates.modsem_mplus()}: Get parameter estimates of a \code{\link{modsem_mplus}} object
+\item \code{parameter_estimates(modsem_mplus)}: Get parameter estimates of a \code{\link{modsem_mplus}} object
 
-\item \code{parameter_estimates.modsem_pi()}: Get parameter estimates of a \code{\link{modsem_pi}} object
+\item \code{parameter_estimates(modsem_pi)}: Get parameter estimates of a \code{\link{modsem_pi}} object
 
 }}
 \examples{
