@@ -45,7 +45,7 @@ separate regression lines. Each distinct value in \code{vals_z} defines a separa
 group (plotted with a different color). If \code{rescale=TRUE}, these values
 are also assumed to be in standardized units.}
 
-\item{model}{An object of class \code{\link{modsem_pi}}, \code{\link{modsem_da}}, 
+\item{model}{An object of class \code{\link{modsem_pi}}, \code{\link{modsem_da}},
 \code{\link{modsem_mplus}}, or possibly a \code{lavaan} object. Must be a fitted
 SEM model containing paths for \code{y ~ x + z + x:z}.}
 

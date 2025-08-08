@@ -106,19 +106,21 @@ summary.modsem_da <- function(object,
 
   args <- object$args
   out <- list(
-    parTable       = parTable.out,
-    data           = object$data,
-    iterations     = object$iterations,
-    logLik         = object$logLik,
-    fit            = fit_modsem_da(object, chisq = FALSE),
-    D              = NULL,
-    N              = NROW(object$data),
-    method         = method,
-    optimizer      = object$optimizer,
-    quad           = object$info.quad,
-    type.se        = object$type.se,
-    type.estimates = ifelse(standardized, "standardized", object$type.estimates),
-    information    = object$information
+    parTable        = parTable.out,
+    data            = object$data$data.full,
+    iterations      = object$iterations,
+    logLik          = object$logLik,
+    fit             = fit_modsem_da(object, chisq = FALSE),
+    D               = NULL,
+    N               = NROW(object$data$data.full),
+    method          = method,
+    optimizer       = object$optimizer,
+    quad            = object$info.quad,
+    type.se         = object$type.se,
+    type.estimates  = ifelse(standardized, "standardized", object$type.estimates),
+    information     = object$information,
+    n.fiml.patterns = length(object$data$ids),
+    is.fiml         = object$data$is.fiml
   )
 
   if (H0) {
@@ -194,6 +196,7 @@ print.summary_da <- function(x, digits = 3, ...) {
     "Optimization method",
     "Number of observations",
     "Number of iterations",
+    "Number of missing patterns",
     "Loglikelihood",
     "Akaike (AIC)",
     "Bayesian (BIC)"
@@ -203,10 +206,17 @@ print.summary_da <- function(x, digits = 3, ...) {
     stringr::str_to_upper(c(x$method, x$optimizer)),
     x$N,
     x$iterations,
+    x$n.fiml.patterns,
     round(x$logLik, 2),
     round(x$fit$AIC, 2),
     round(x$fit$BIC, 2)
   )
+
+  if (!x$is.fiml) {
+    fieldFIML <- grepl("Number of missing patterns", names)
+    names  <- names[!fieldFIML]
+    values <- values[!fieldFIML]
+  }
 
   if (x$format$adjusted.stat) {
     names  <- c(names, "Corrected Akaike (AICc)", "Adjusted Bayesian (aBIC)")
@@ -573,13 +583,13 @@ modsem_predict.modsem_da <- function(object, standardized = FALSE, H0 = TRUE, ne
   } else modelH0 <- modelH1
 
   if (!is.null(newdata)) {
-    cols <- colnames(modelH0$data)
+    cols <- colnames(modelH0$data$data.full)
     cols.present <- cols %in% colnames(newdata)
     stopif(!all(cols.present), "Missing cols in `newdata`:\n", cols[!cols.present])
 
     newdata <- as.matrix(newdata)[, cols]
 
-  } else newdata <- modelH0$data
+  } else newdata <- modelH0$data$data.full
 
   transform.x <- if (center.data) \(x) x - mean(x, na.rm = TRUE) else \(x) x
 

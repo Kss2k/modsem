@@ -19,14 +19,15 @@ fit_modsem_da <- function(model, chisq = TRUE) {
          immediate. = FALSE)
 
 
+  data   <- model$data$data.full
   t      <- nFreeInterceptsDA(model)
   mean.s <- model$args$mean.observed || t > 0
   logLik <- model$logLik
-  O      <- stats::cov(model$data)
-  mu     <- apply(model$data, 2, mean)
-  mu     <- matrix(mu, ncol = 1, dimnames = list(colnames(model$data), "~1"))
-  N      <- NROW(model$data)
-  p      <- NCOL(model$data)
+  O      <- stats::cov(data, use = "pairwise.complete.obs")
+  mu     <- apply(data, 2, mean, na.rm = TRUE)
+  mu     <- matrix(mu, ncol = 1, dimnames = list(colnames(data), "~1"))
+  N      <- NROW(data)
+  p      <- NCOL(data)
   coef   <- coef(model, type = "free")
   k      <- length(coef)
   df     <- getDegreesOfFreedom(p = p, coef = coef, mean.structure = mean.s)

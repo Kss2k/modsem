@@ -56,7 +56,7 @@ modsem_pi(
 
 \item{match}{should the product indicators be created by using the match-strategy}
 
-\item{match.recycle}{should the indicators be recycled when using the match-strategy? I.e., 
+\item{match.recycle}{should the indicators be recycled when using the match-strategy? I.e.,
 if one of the latent variables have fewer indicators than the other, some indicators
 are recycled to match the latent variable with the most indicators.}
 
@@ -64,7 +64,7 @@ are recycled to match the latent variable with the most indicators.}
 
 \item{center.data}{should data be centered before fitting model}
 
-\item{first.loading.fixed}{Should the first factor loading in the latent product be fixed to one? Defaults to \code{FALSE}, as 
+\item{first.loading.fixed}{Should the first factor loading in the latent product be fixed to one? Defaults to \code{FALSE}, as
 this already happens in \code{lavaan} by default. If \code{TRUE}, the first factor loading in the latent product is fixed to one.
 Manually in the generated syntax (e.g., \code{XZ =~ 1*x1z1}).'}
 
@@ -89,17 +89,17 @@ Manually in the generated syntax (e.g., \code{XZ =~ 1*x1z1}).'}
   \item{"equality"}{Residuals of product indicators with variables in common are constrained to have equal covariances".
                     Can be useful for models where the model is unidentifiable using \code{res.cov.method == "simple"},
                     (e.g., when there is an interaction between an observed and a latent variable).}
-  \item{"none"}{Residual covariances between product indicators are not specificed (i.e., constrained to zero). 
+  \item{"none"}{Residual covariances between product indicators are not specificed (i.e., constrained to zero).
                 Produces the same results as \code{constrained.cov.syntax = FALSE}.
                 Can be useful for models where the model is unidentifiable using \code{res.cov.method == "simple"},
                 (e.g., when there is an interaction between an observed and a latent variable).}
 }}
 
 \item{res.cov.across}{Should residual covariances be specified/freed across different interaction terms.
-For example if you have two interaction terms \code{X:Z} and \code{X:W} the residuals of the 
-generated product indicators \code{x1:z1} and \code{x1:w1} may be correlated. If \code{TRUE} 
-residual covariances are allowed across different latent interaction terms. If \code{FALSE} 
-residual covariances are only allowed between product indicators which belong to the same 
+For example if you have two interaction terms \code{X:Z} and \code{X:W} the residuals of the
+generated product indicators \code{x1:z1} and \code{x1:w1} may be correlated. If \code{TRUE}
+residual covariances are allowed across different latent interaction terms. If \code{FALSE}
+residual covariances are only allowed between product indicators which belong to the same
 latent interaction term.}
 
 \item{auto.scale}{methods which should be scaled automatically (usually not useful)}
@@ -132,7 +132,7 @@ as the \code{choose} argument.}
 created from the reliability-corrected single items (created if \code{rcs = TRUE})
 be specified and constrained before estimating the model? If \code{TRUE} the estimates
 for the constraints are approximated using a monte carlo simulation (see the \code{rcs.mc.reps} argument).
-If \code{FALSE} the residual variances are not specified, which usually mean that all 
+If \code{FALSE} the residual variances are not specified, which usually mean that all
 are constrained to zero.}
 
 \item{rcs.mc.reps}{Sample size used in monte-carlo simulation, when approximating the

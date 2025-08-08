@@ -36,7 +36,7 @@ If \code{FALSE}, use the model specified in \code{object}. Using \code{H0 = FALS
 \item{center.data}{Should data be centered before computing factor scores? Default is \code{TRUE}.}
 }
 \value{
-* For \code{\link{modsem_pi}}: whatever \code{lavaan::predict()}, which usually 
+* For \code{\link{modsem_pi}}: whatever \code{lavaan::predict()}, which usually
   returns a matrix of factor scores.
 * For \code{\link{modsem_da}}: a numeric matrix \eqn{n \times p}, where \eqn{n} is the number of
   (complete) observations in the dataset, and \eqn{p} the number of latent variables. Each
@@ -52,7 +52,7 @@ values or factor scores from \code{\link{modsem}} models.
 \item \code{modsem_predict(modsem_da)}: Computes (optionally standardised) factor scores via the
 regression method using the baseline model unless \code{H0 = FALSE}.
 
-\item \code{modsem_predict(modsem_pi)}: 
+\item \code{modsem_predict(modsem_pi)}: Wrapper for \code{lavaan::predict}
 
 }}
 \examples{

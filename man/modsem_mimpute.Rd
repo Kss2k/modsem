@@ -47,7 +47,7 @@ but can also be (a lot) slower.}
 Estimate a \code{modsem} model using multiple imputation
 }
 \details{
-\code{modsem_impute} is currently only available for the DA approaches 
+\code{modsem_impute} is currently only available for the DA approaches
  (LMS and QML). It performs multiple imputation using \code{Amelia::amelia}
  and returns aggregated coefficients from the multiple imputations, along with
  corrected standard errors.

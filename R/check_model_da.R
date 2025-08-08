@@ -1,4 +1,4 @@
-preCheckModel <- function(model, covModel = NULL, method = "lms") {
+preCheckModel <- function(model, covModel = NULL, method = "lms", missing = "complete") {
   hasCovModel <- !is.null(model$covModel$matrices)
 
   checkCovModelVariables(covModel = covModel, modelXis = model$info$xis)
@@ -22,6 +22,8 @@ preCheckModel <- function(model, covModel = NULL, method = "lms") {
   checkCovEtaXi(parTable = model$covModel$parTable, canBeCausedByCovModel = FALSE)
 
   checkOmegaEtaXi(model = model, method = method)
+
+  checkMissingMethod(method = method, missing = missing)
 }
 
 
@@ -190,6 +192,15 @@ checkOVsInStructuralModel <- function(parTableMain, parTableCov) {
          "Observed variables are not allowed in the structural model in LMS/QML directly. ",
          "Please redefine them as latent.\nSee:\n",
          "  vignette(\"observed_lms_qml\", \"modsem\")")
+}
+
+
+checkMissingMethod <- function(method, missing) {
+  method  <- tolower(method)
+  missing <- tolower(missing)
+
+  stopif(method == "qml" && missing == "fiml",
+         "Using FIML with QML is not available (yet), use LMS instead!")
 }
 
 

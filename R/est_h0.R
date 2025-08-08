@@ -49,7 +49,7 @@ estimate_h0 <- function(object, warn_no_interaction = TRUE, ...) {
 estimate_h0.modsem_da <- function(object, warn_no_interaction = TRUE, ...) {
   argList    <- object$args
   parTable   <- object$originalParTable
-  data       <- object$data
+  data       <- object$data$data.full
   method     <- object$method
   cov.syntax <- object$model$covModel$syntax
 

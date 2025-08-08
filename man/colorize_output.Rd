@@ -37,7 +37,7 @@ colorize_output(
 
 \item{string}{color of quoted strings.}
 
-\item{split}{Should output be splitted? If \code{TRUE} the output is printed 
+\item{split}{Should output be splitted? If \code{TRUE} the output is printed
 normally (in real time) with no colorization, and the colored output is printed
 after the code has finished executing.}
 
@@ -50,10 +50,10 @@ Invisibly returns the *plain* captured text.
 Capture, colorise, and emit console text
 }
 \examples{
-set_modsem_colors(positive = "red3", 
+set_modsem_colors(positive = "red3",
                   negative = "red3",
-                  true = "darkgreen", 
-                  false = "red3", 
+                  true = "darkgreen",
+                  false = "red3",
                   na = "purple",
                   string = "darkgreen")
 
@@ -78,8 +78,8 @@ colorize_output(split = TRUE, {
 
   est_lms <- modsem(m1, data = oneInt, method = "lms")
   summary(est_lms)
-}) 
-                
+})
+
 colorize_output(modsem_inspect(est_lms))
 }
 }

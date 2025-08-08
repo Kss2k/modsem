@@ -27,7 +27,7 @@ standardized_estimates(object, ...)
   ...
 )
 
-\method{standardized_estimates}{modsem_mplus}(object, type = "stdyx", ...)
+\method{standardized_estimates}{modsem_mplus}(object, type = "stdyx", mc.reps = 1e+06, ...)
 
 \method{standardized_estimates}{modsem_pi}(
   object,
@@ -51,20 +51,20 @@ standard errors; if \code{FALSE}, use the delta method (default).}
 
 \item{tolerance.zero}{Threshold below which standard errors are set to \code{NA}.}
 
-\item{type}{Type of standardized estimates to retrieve. Can be one of: \code{"stdyx", "stdy", "std", "un"}.}
+\item{type}{Type of standardized estimates to retrieve. Can be one of: \code{"stdyx", "stdy", "std", "un", "modsem"}.}
 
 \item{correction}{Logical. Whether to apply a correction to the standardized estimates
 of the interaction term. By default, \code{FALSE}, which standardizes the interaction term
 such that \eqn{\sigma^2(XZ) = 1}, consistent with \code{lavaan}'s treatment of latent interactions.
 This is usually wrong, as it does not account for the fact that the interaction term
 is a product of two variables, which means that the variance of the interaction term
-of standardized variables (usually) is not equal to 1. 
+of standardized variables (usually) is not equal to 1.
 
-Hence the scale of the interaction effect changes, such that 
-the standardized interaction term does not correspond to one (standardized) unit 
-change in the moderating variables. If \code{TRUE}, a correction is applied by 
-computing the interaction term \eqn{b_3 = \frac{B_3 \sigma(X) \sigma(Z)}{\sigma(Y)}} (where 
-\eqn{B_3} is the unstandardized coefficient for the interaction term), and solving for \eqn{\sigma(XZ)}, which 
+Hence the scale of the interaction effect changes, such that
+the standardized interaction term does not correspond to one (standardized) unit
+change in the moderating variables. If \code{TRUE}, a correction is applied by
+computing the interaction term \eqn{b_3 = \frac{B_3 \sigma(X) \sigma(Z)}{\sigma(Y)}} (where
+\eqn{B_3} is the unstandardized coefficient for the interaction term), and solving for \eqn{\sigma(XZ)}, which
 is used to correct the variance of the interaction term, and its covariances.}
 
 \item{std.errors}{Character string indicating the method used to compute standard errors
@@ -90,11 +90,11 @@ Computes standardized estimates of model parameters for various types of \code{\
 \details{
 Standard errors can either be calculated using the delta method, or a monte.carlo simulation
   (\code{monte.carlo} is not available for \code{\link{modsem_pi}} objects if \code{correction == FALSE}.).
-  \strong{NOTE} that the standard errors of the standardized paramters change the assumptions of the 
+  \strong{NOTE} that the standard errors of the standardized paramters change the assumptions of the
   model, and will in most cases yield different z and p-values, compared to the unstandardized solution.
   In almost all cases, significance testing should be based on the unstandardized solution. Since,
   the standardization process changes the model assumptions, it also changes what the p-statistics measure.
-  I.e., the test statistics for the standardized and unstandardized solutions belong to different sets of 
+  I.e., the test statistics for the standardized and unstandardized solutions belong to different sets of
   hypothesis, which are not exactly equivalent to each other.
 
 For \code{modsem_da} and \code{modsem_mplus} objects, the interaction term is not a formal
