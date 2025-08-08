@@ -441,7 +441,7 @@ getScalingInds <- function(indsEtas, R, latentEtas, method = "qml") {
 }
 
 
-selectThetaEpsilon <- function(indsEtas, thetaEpsilon, scalingInds,
+selectThetaEpsilon1 <- function(indsEtas, thetaEpsilon, scalingInds,
                                 method = "qml") {
   if (method != "qml") return(NULL)
   selectThetaEpsilon <- as.logical.matrix(thetaEpsilon)
@@ -451,12 +451,43 @@ selectThetaEpsilon <- function(indsEtas, thetaEpsilon, scalingInds,
 }
 
 
-constructSubThetaEpsilon <- function(indsEtas, thetaEpsilon, scalingInds,
-                                     method = "qml") {
+selectThetaEpsilon2 <- function(indsEtas, thetaEpsilon, scalingInds,
+                                method = "qml") {
+  if (method != "qml") return(NULL)
+  selectThetaEpsilon <- as.logical.matrix(thetaEpsilon)
+  selectThetaEpsilon[TRUE] <- FALSE
+
+  allScalingInds <- vapply(indsEtas, FUN.VALUE = character(1L), FUN = \(x) x[1L])
+  nonLatentScalingInds <- allScalingInds[!allScalingInds %in% scalingInds]
+
+  diag(selectThetaEpsilon)[nonLatentScalingInds] <- TRUE
+  selectThetaEpsilon
+}
+
+
+constructSubThetaEpsilon1 <- function(indsEtas, thetaEpsilon, scalingInds,
+                                      method = "qml") {
   if (method != "qml") return(NULL)
   subThetaEpsilon <- matrix(0, nrow = length(scalingInds),
                             ncol = length(scalingInds),
                             dimnames = list(scalingInds, scalingInds))
+  diag(subThetaEpsilon) <- NA
+  subThetaEpsilon
+}
+
+
+constructSubThetaEpsilon2 <- function(indsEtas, thetaEpsilon, scalingInds,
+                                      method = "qml") {
+  if (method != "qml") return(NULL)
+
+  allScalingInds <- vapply(indsEtas, FUN.VALUE = character(1L), FUN = \(x) x[1L])
+  nonLatentScalingInds <- allScalingInds[!allScalingInds %in% scalingInds]
+
+  subThetaEpsilon <- matrix(0, nrow = length(nonLatentScalingInds),
+                            ncol = length(nonLatentScalingInds),
+                            dimnames = list(nonLatentScalingInds,
+                                            nonLatentScalingInds))
+
   diag(subThetaEpsilon) <- NA
   subThetaEpsilon
 }

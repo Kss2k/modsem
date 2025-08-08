@@ -171,10 +171,16 @@ specifyModelDA <- function(syntax = NULL,
 
   scalingInds <- getScalingInds(indsEtas, R = emptyR, latentEtas = latentEtas,
                                 method = method)
-  selectThetaEpsilon <- selectThetaEpsilon(lambdaY, thetaEpsilon,
-                                           scalingInds, method = method)
-  subThetaEpsilon <- constructSubThetaEpsilon(indsEtas, thetaEpsilon,
-                                              scalingInds, method = method)
+
+  # 1 = truly latent variables, 2 = latent variables with single indicators
+  selectThetaEpsilon1 <- selectThetaEpsilon1(indsEtas, thetaEpsilon,
+                                             scalingInds, method = method)
+  selectThetaEpsilon2 <- selectThetaEpsilon2(indsEtas, thetaEpsilon,
+                                             scalingInds, method = method)
+  subThetaEpsilon1 <- constructSubThetaEpsilon1(indsEtas, thetaEpsilon,
+                                                scalingInds, method = method)
+  subThetaEpsilon2 <- constructSubThetaEpsilon2(indsEtas, thetaEpsilon,
+                                                scalingInds, method = method)
 
   covModel <- covModel(cov.syntax, method = method, parTable = parTableCovModel,
                        xis.main = xis, parTable.main = parTable)
@@ -198,9 +204,10 @@ specifyModelDA <- function(syntax = NULL,
     omegaEtaXi   = omegaEtaXi,
     omegaXiXi    = omegaXiXi,
 
-    selectScalingY     = selectScalingY,
-    selectThetaEpsilon = selectThetaEpsilon,
-    selectBetaRows     = selectBetaRows,
+    selectScalingY      = selectScalingY,
+    selectThetaEpsilon1 = selectThetaEpsilon1,
+    selectThetaEpsilon2 = selectThetaEpsilon2,
+    selectBetaRows      = selectBetaRows,
 
     emptyR = emptyR,
     fullR  = fullR,
@@ -216,7 +223,8 @@ specifyModelDA <- function(syntax = NULL,
     colsR = colnames(emptyR),
     rowsR = rownames(emptyR),
 
-    subThetaEpsilon = subThetaEpsilon)
+    subThetaEpsilon1 = subThetaEpsilon1,
+    subThetaEpsilon2 = subThetaEpsilon2)
 
   labelMatrices <- list(
     lambdaX      = labelLambdaX,
