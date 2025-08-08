@@ -40,21 +40,21 @@ testthat::expect_true(any(is.na(est$data)))
 
 # lms
 testthat::expect_warning(
-  modsem(m1, oneInt2, method = "lms", impute.na = FALSE, convergence.abs = 1,
+  modsem(m1, oneInt2, method = "lms", missing = "complete", convergence.abs = 1,
          calc.se = FALSE),
   regexp = "Removing.*Consider.*"
 )
 
 
 testthat::expect_message(
-  modsem(m1, oneInt2, method = "lms", impute.na = TRUE, convergence.abs = 1,
+  modsem(m1, oneInt2, method = "lms", missing = "impute", convergence.abs = 1,
          calc.se = FALSE),
   regexp = "Imputing.*"
 )
 
 # qml
 testthat::expect_message(
-  modsem(m1, oneInt2, method = "qml", impute.na = TRUE, convergence.rel =1e-1,
+  modsem(m1, oneInt2, method = "qml", missing = "impute", convergence.rel =1e-1,
          calc.se = FALSE),
   regexp = "Imputing.*"
 )
