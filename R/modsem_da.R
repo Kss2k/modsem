@@ -22,10 +22,10 @@
 #'   where data is non-normal, it might be better to use the \code{qml} approach instead.
 #'   You can also consider setting \code{adaptive.quad = TRUE}.
 #'
-#' @param impute.na Should missing values be imputed? If \code{FALSE} missing values
-#'   are removed case-wise. If \code{TRUE} values are imputed using \code{Amelia::amelia}.
-#'   Default is \code{FALSE}. If you want more fine-grained control over how the missing data
-#'   is imputed, you should consider imputing it yourself.
+#' @param missing How should missing values be handled? If \code{"complete"} (default) missing values
+#'   are removed case-wise. If \code{impute} values are imputed using \code{Amelia::amelia}. 
+#'   If \code{"fiml"}, full information maximum likelihood (FIML) is used. FIML can be (very)
+#'   computationally intensive.
 #'
 #' @param convergence.abs Absolute convergence criterion.
 #'   Lower values give better estimates but slower computation. Not relevant when
@@ -140,6 +140,15 @@
 #'
 #' @param em.control a list of control parameters for the EM algorithm. See \code{\link{default_settings_da}} for defaults.
 #'
+#' @param ordered Variables to be treated as ordered. Ordered (ordinal) variables are scale-corrected to adjust for 
+#'   unequal intervals before model estimation, by estimating the distributions of the underlying continuous response variables. 
+#'   The distributions of the response variables are estimated using a combination of bootstrapping and Monte Carlo simulations.
+#'   For small differences in the spacing of the intervals, the point estimates should be unbiased. The standard errors may be
+#'   underestimated though. Using robust standard errors may make the estimates of the standard errors more accurate.
+#'
+#' @param ordered.boot Number of bootstraps used to estimate the underlying continuous distribution of the
+#'   ordinal variables.
+#'
 #' @param rcs Should latent variable indicators be replaced with reliability-corrected
 #'   single item indicators instead? See \code{\link{relcorr_single_item}}.
 #'
@@ -250,7 +259,7 @@ modsem_da <- function(model.syntax = NULL,
                       verbose = NULL,
                       optimize = NULL,
                       nodes = NULL,
-                      impute.na = NULL,
+                      missing = NULL,
                       convergence.abs = NULL,
                       convergence.rel = NULL,
                       optimizer = NULL,
@@ -279,6 +288,8 @@ modsem_da <- function(model.syntax = NULL,
                       n.threads = NULL,
                       algorithm = NULL,
                       em.control = NULL,
+                      ordered = NULL,
+                      ordered.boot = 5,
                       rcs = FALSE,
                       rcs.choose = NULL,
                       rcs.scale.corrected = TRUE,
@@ -294,6 +305,58 @@ modsem_da <- function(model.syntax = NULL,
     stop2("The provided model syntax is not a string!")
   } else if (length(model.syntax) > 1) {
     stop2("The provided model syntax is not of length 1")
+  }
+
+  if (length(ordered) || any(sapply(data, FUN = is.ordered))) {
+    out <- modsemOrderedScaleCorrection(
+       model.syntax        = model.syntax,
+       data                = data,
+       method              = method,
+       verbose             = verbose,
+       R                   = ordered.boot,
+       optimize            = optimize,
+       nodes               = nodes,
+       missing             = missing,
+       convergence.abs     = convergence.abs,
+       convergence.rel     = convergence.rel,
+       optimizer           = optimizer,
+       center.data         = center.data,
+       standardize.data    = standardize.data,
+       standardize.out     = standardize.out,
+       standardize         = standardize,
+       mean.observed       = mean.observed,
+       cov.syntax          = cov.syntax,
+       double              = double,
+       calc.se             = calc.se,
+       FIM                 = FIM,
+       EFIM.S              = EFIM.S,
+       OFIM.hessian        = OFIM.hessian,
+       EFIM.parametric     = EFIM.parametric,
+       robust.se           = robust.se,
+       R.max               = R.max,
+       max.iter            = max.iter,
+       max.step            = max.step,
+       start               = start,
+       epsilon             = epsilon,
+       quad.range          = quad.range,
+       adaptive.quad       = adaptive.quad,
+       adaptive.frequency  = adaptive.frequency,
+       adaptive.quad.tol   = adaptive.quad.tol,
+       n.threads           = n.threads,
+       algorithm           = algorithm,
+       em.control          = em.control,
+       ordered             = ordered,
+       rcs                 = rcs,
+       rcs.choose          = rcs.choose,
+       rcs.scale.corrected = rcs.scale.corrected,
+       orthogonal.x        = orthogonal.x,
+       orthogonal.y        = orthogonal.y,
+       auto.fix.first      = auto.fix.first,
+       auto.fix.single     = auto.fix.single,
+       auto.split.syntax   = auto.split.syntax,
+       ...)
+
+    return(out)
   }
 
   if (is.null(data)) {
@@ -353,7 +416,7 @@ modsem_da <- function(model.syntax = NULL,
           n.threads          = n.threads,
           algorithm          = algorithm,
           em.control         = em.control,
-          impute.na          = impute.na,
+          missing            = missing,
           orthogonal.x       = orthogonal.x,
           orthogonal.y       = orthogonal.y,
           auto.fix.first     = auto.fix.first,
@@ -382,7 +445,7 @@ modsem_da <- function(model.syntax = NULL,
     quad.range         = args$quad.range,
     adaptive.quad      = args$adaptive.quad,
     adaptive.frequency = args$adaptive.frequency,
-    impute.na          = args$impute.na,
+    missing            = args$missing,
     orthogonal.x       = args$orthogonal.x,
     orthogonal.y       = args$orthogonal.y,
     auto.fix.first     = args$auto.fix.first,

@@ -54,7 +54,7 @@ values or factor scores from \code{\link{modsem}} models.
 Computes (optionally standardised) factor scores via the
   regression method using the baseline model unless \code{H0 = FALSE}.
 
-\item \code{modsem_predict(modsem_pi)}: Predict From \code{modsem} Models
+\item \code{modsem_predict(modsem_pi)}: Wrapper for \code{lavaan::predict}
 
 }}
 \examples{

@@ -47,11 +47,11 @@ modsem_inspect_da <- function(model, what = "default") {
   cor.all <- cov2cor(cov.all)
 
 
-  info <- list(N                 = NROW(model$data),
+  info <- list(N                 = NROW(model$data$data.full),
                vcov.all          = modsemMatrix(model$vcov.all, symmetric = TRUE),
                vcov.free         = modsemMatrix(model$vcov.free, symmetric = TRUE),
                information       = modsemMatrix(model$FIM, symmetric = TRUE),
-               data              = model$data,
+               data              = model$data$data.full,
                coefficients.all  = modsemVector(model$coefs.all),
                coefficients.free = modsemVector(model$coefs.free),
                partable          = modsemParTable(model$parTable),

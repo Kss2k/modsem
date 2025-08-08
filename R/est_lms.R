@@ -2,9 +2,9 @@
 
 
 # Compute complete-data gradient
-computeGradient <- function(theta, model, P, epsilon) {
+computeGradient <- function(theta, model, P, data, epsilon) {
   gradientCompLogLikLms(theta = theta, model = model, P = P, sign = -1,
-                    epsilon = epsilon)
+                        epsilon = epsilon, data = data)
 }
 
 
@@ -123,7 +123,7 @@ emLms <- function(model,
 
     if (testSimpleGradient) {
       tryCatch({
-        gradientCompLogLikLms(theta = thetaNew, model = model, P = P)
+        gradientCompLogLikLms(theta = thetaNew, model = model, P = P, data = data)
       }, error = \(e) {
         warning2("Optimized computation of gradient failed! Attempting to switch gradient type!")
         model$gradientStruct$hasCovModel <<- TRUE
@@ -176,7 +176,7 @@ emLms <- function(model,
 
     if (algorithm != "EM" && mode != "EM") {
       # EMA: QN or FS update attempt
-      grad <- computeGradient(theta = thetaOld, model = model,
+      grad <- computeGradient(theta = thetaOld, model = model, data = data,
                               P = P, epsilon = epsilon)
 
       if (mode == "QN") {
@@ -193,13 +193,15 @@ emLms <- function(model,
       if (!is.null(direction)) {
         alpha     <- 1
         success   <- FALSE
-        refLogLik <- compLogLikLms(theta = thetaOld, model = model, P = P, sign = 1)
+        refLogLik <- compLogLikLms(theta = thetaOld, model = model, P = P,
+                                   data = data, sign = 1)
 
         while (alpha > 1e-5) {
           thetaTrial  <- thetaOld + alpha * direction
 
           logLikTrial <- suppressWarnings({
-            compLogLikLms(theta = thetaTrial, model = model, P = P, sign = 1)
+            compLogLikLms(theta = thetaTrial, model = model, P = P, data = data,
+                          sign = 1)
           })
 
           if (!is.na(logLikTrial) && logLikTrial >= refLogLik) {
@@ -216,7 +218,7 @@ emLms <- function(model,
 
           if (mode == "QN") {
             gradNew <- computeGradient(theta = thetaNew, model = model,
-                                       P = P, epsilon = epsilon)
+                                       data = data, P = P, epsilon = epsilon)
 
             s_vec <- thetaNew - thetaOld
             y_vec <- gradNew - grad
@@ -240,7 +242,7 @@ emLms <- function(model,
       # Plain EM M-step
       mstep <- mstepLms(model = model, P = P, theta = thetaOld,
                         max.step = max.step, epsilon = epsilon,
-                        optimizer = optimizer, control = control, ...)
+                        data = data, optimizer = optimizer, control = control, ...)
       thetaNew <- mstep$par
     }
   }
@@ -265,7 +267,7 @@ emLms <- function(model,
   final <- mstepLms(model = model, P = P, theta = thetaNew,
                     max.step = max.step, epsilon = epsilon,
                     optimizer = optimizer, verbose = verbose,
-                    control = control, ...)
+                    control = control, data = data, ...)
 
   coefficients <- final$par
   lavCoefs     <- getLavCoefs(model = model, theta = coefficients, method = "lms")

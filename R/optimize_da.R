@@ -8,7 +8,7 @@ optimizeStartingParamsDA <- function(model,
   xis      <- model$info$xis
   numXis   <- model$info$numXis
   indsXis  <- model$info$allIndsXis
-  data     <- model$data
+  data     <- model$data.raw
 
   syntax <- paste(model$syntax, model$covModel$syntax,
                   model$info$lavOptimizerSyntaxAdditions,
