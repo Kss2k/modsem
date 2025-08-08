@@ -30,7 +30,7 @@ modsemOrderedScaleCorrection <- function(model.syntax,
 
     x <- as.integer(as.ordered(data[[name]]))
     y <- sim.ov[, name]
-    y <- (y - mean(y)) / sd(y) # standardize
+    y <- (y - mean(y)) / stats::sd(y) # standardize
     t <- c(-Inf, seq(min(y) + eps, max(y) - eps, length.out = k), Inf)
     z <- cut(y, breaks = t, ordered_result = TRUE)
 

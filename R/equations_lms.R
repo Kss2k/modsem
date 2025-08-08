@@ -232,7 +232,7 @@ simpleGradientAllLogLikLms <- function(theta, model, P, data, sign = -1, epsilon
 
 obsLogLikLms <- function(theta, model, data, P, sign = 1, ...) {
   modFilled <- fillModel(model = model, theta = theta, method = "lms")
-  ll <- observedLogLikLmsCpp(modFilled, data = data$data.split, P = P,
+  ll <- observedLogLikLmsCpp(modFilled, dataR = data$data.split, P = P,
                              colidxR = data$colidx0, n = data$n.pattern,
                              npatterns = data$p, ncores = ThreadEnv$n.threads)
   ll * sign
@@ -241,7 +241,7 @@ obsLogLikLms <- function(theta, model, data, P, sign = 1, ...) {
 
 gradientObsLogLikLms <- function(theta, model, data, P, sign = 1, epsilon = 1e-6) {
   FGRAD <- function(modelR, P, block, row, col, symmetric, colidxR, npatterns, eps, ...) {
-    gradObsLogLikLmsCpp(modelR = modelR, data = data$data.split, P = P,
+    gradObsLogLikLmsCpp(modelR = modelR, dataR = data$data.split, P = P,
                         block = block, row = row, col = col,
                         symmetric = symmetric, colidxR = colidxR,
                         npatterns = npatterns, eps = eps, 
@@ -433,7 +433,7 @@ hessianObsLogLikLms <- function(theta, model, data, P, sign = -1,
 
   FHESS <- function(modelR, P, block, row, col, symmetric, eps, .relStep, colidxR, n, 
                     npatterns, ...) {
-    hessObsLogLikLmsCpp(modelR = modelR, data = data$data.split, P = P,
+    hessObsLogLikLmsCpp(modelR = modelR, dataR = data$data.split, P = P,
                         block = block, row = row, col = col,
                         symmetric = symmetric, npatterns = npatterns,
                         colidxR = colidxR, n = n,
