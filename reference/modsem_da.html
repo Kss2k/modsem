@@ -118,6 +118,8 @@ necessary syntax, and variables for the estimation of models with latent product
 <span>  n.threads <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  algorithm <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  em.control <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  ordered <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  ordered.boot <span class="op">=</span> <span class="fl">5</span>,</span>
 <span>  rcs <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  rcs.choose <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  rcs.scale.corrected <span class="op">=</span> <span class="cn">TRUE</span>,</span>
@@ -340,6 +342,19 @@ optimization steps when needed. Default is <code>"EM"</code>.</p></dd>
 
 <dt id="arg-em-control">em.control<a class="anchor" aria-label="anchor" href="#arg-em-control"></a></dt>
 <dd><p>a list of control parameters for the EM algorithm. See <code><a href="default_settings_da.html">default_settings_da</a></code> for defaults.</p></dd>
+
+
+<dt id="arg-ordered">ordered<a class="anchor" aria-label="anchor" href="#arg-ordered"></a></dt>
+<dd><p>Variables to be treated as ordered. Ordered (ordinal) variables are scale-corrected to adjust for
+unequal intervals before model estimation, by estimating the distributions of the underlying continuous response variables.
+The distributions of the response variables are estimated using a combination of bootstrapping and Monte Carlo simulations.
+For small differences in the spacing of the intervals, the point estimates should be unbiased. The standard errors may be
+underestimated though. Using robust standard errors may make the estimates of the standard errors more accurate.</p></dd>
+
+
+<dt id="arg-ordered-boot">ordered.boot<a class="anchor" aria-label="anchor" href="#arg-ordered-boot"></a></dt>
+<dd><p>Number of bootstraps used to estimate the underlying continuous distribution of the
+ordinal variables.</p></dd>
 
 
 <dt id="arg-rcs">rcs<a class="anchor" aria-label="anchor" href="#arg-rcs"></a></dt>

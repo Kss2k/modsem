@@ -340,11 +340,11 @@ to <code><a href="https://rdrr.io/pkg/lavaan/man/bootstrap.html" class="external
 <span class="r-in"><span><span class="st">"</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># \dontrun{</span></span></span>
-<span class="r-in"><span><span class="va">boot</span> <span class="op">&lt;-</span> <span class="fu">bootstrap_modsem</span><span class="op">(</span>model <span class="op">=</span> <span class="va">modsem</span>, </span></span>
+<span class="r-in"><span><span class="va">boot</span> <span class="op">&lt;-</span> <span class="fu">bootstrap_modsem</span><span class="op">(</span>model <span class="op">=</span> <span class="va">modsem</span>,</span></span>
 <span class="r-in"><span>                         model.syntax <span class="op">=</span> <span class="va">tpb</span>, data <span class="op">=</span> <span class="va">TPB</span>,</span></span>
-<span class="r-in"><span>                         method <span class="op">=</span> <span class="st">"dblcent"</span>, rcs <span class="op">=</span> <span class="cn">TRUE</span>, </span></span>
+<span class="r-in"><span>                         method <span class="op">=</span> <span class="st">"dblcent"</span>, rcs <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
 <span class="r-in"><span>                         rcs.scale.corrected <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
-<span class="r-in"><span>                         FUN <span class="op">=</span> <span class="st">"coef"</span>, R <span class="op">=</span> <span class="fl">50L</span><span class="op">)</span> </span></span>
+<span class="r-in"><span>                         FUN <span class="op">=</span> <span class="st">"coef"</span>, R <span class="op">=</span> <span class="fl">50L</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">coef</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span><span class="va">boot</span>, MARGIN <span class="op">=</span> <span class="fl">2</span>, FUN <span class="op">=</span> <span class="va">mean</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">se</span>   <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span><span class="va">boot</span>, MARGIN <span class="op">=</span> <span class="fl">2</span>, FUN <span class="op">=</span> <span class="va">sd</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
