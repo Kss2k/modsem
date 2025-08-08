@@ -258,7 +258,7 @@ handleMissingData <- function(data, missing = "complete") {
   switch(tolower(missing),
     complete = {
       warning2("Removing missing values case-wise!\n",
-               "Consider using `impute.na = TRUE`, or the `modsem_mimpute()` function!\n")
+               "Consider using `missing=\"fiml\"`, `missing=\"impute\"`, or the `modsem_mimpute()` function!\n")
 
       return(data[completeCases, ])
     },
