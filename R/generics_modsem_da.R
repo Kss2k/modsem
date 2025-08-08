@@ -214,7 +214,7 @@ print.summary_da <- function(x, digits = 3, ...) {
 
   if (!x$is.fiml) {
     fieldFIML <- grepl("Number of missing patterns", names)
-    names  <- names[!fieldFiml]
+    names  <- names[!fieldFIML]
     values <- values[!fieldFIML]
   }
 
