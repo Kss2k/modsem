@@ -11,7 +11,7 @@ modsem_da(
   verbose = NULL,
   optimize = NULL,
   nodes = NULL,
-  impute.na = NULL,
+  missing = NULL,
   convergence.abs = NULL,
   convergence.rel = NULL,
   optimizer = NULL,
@@ -41,6 +41,7 @@ modsem_da(
   algorithm = NULL,
   em.control = NULL,
   ordered = NULL,
+  cluster = NULL,
   ordered.boot = 5,
   rcs = FALSE,
   rcs.choose = NULL,
@@ -76,10 +77,10 @@ the number of nodes should be at least 32, but practically (e.g., ordinal/skewed
 where data is non-normal, it might be better to use the \code{qml} approach instead.
 You can also consider setting \code{adaptive.quad = TRUE}.}
 
-\item{impute.na}{Should missing values be imputed? If \code{FALSE} missing values
-are removed case-wise. If \code{TRUE} values are imputed using \code{Amelia::amelia}.
-Default is \code{FALSE}. If you want more fine-grained control over how the missing data
-is imputed, you should consider imputing it yourself.}
+\item{missing}{How should missing values be handled? If \code{"complete"} (default) missing values
+are removed case-wise. If \code{impute} values are imputed using \code{Amelia::amelia}. 
+If \code{"fiml"}, full information maximum likelihood (FIML) is used. FIML can be (very)
+computationally intensive.}
 
 \item{convergence.abs}{Absolute convergence criterion.
 Lower values give better estimates but slower computation. Not relevant when
@@ -199,6 +200,9 @@ unequal intervals before model estimation, by estimating the distributions of th
 The distributions of the response variables are estimated using a combination of bootstrapping and Monte Carlo simulations.
 For small differences in the spacing of the intervals, the point estimates should be unbiased. The standard errors may be
 underestimated though. Using robust standard errors may make the estimates of the standard errors more accurate.}
+
+\item{cluster}{Clusters used to compute standard errors robust to non-indepence of observations. Must be paired with
+\code{robust.se = TRUE}.}
 
 \item{ordered.boot}{Number of bootstraps used to estimate the underlying continuous distribution of the
 ordinal variables.}
