@@ -41,6 +41,17 @@ logLikQml <- function(theta, model, sum = TRUE, sign = -1, verbose = FALSE) {
   m$x <- centerIndicators(m$x, tau = m$tauX)
   m$y <- centerIndicators(m$y, tau = m$tauY)
 
+  # Fill in residual variances for latent etas with only a single indicator
+  # only needed if the resiudal variances are non-zero
+  if (any(m$selectThetaEpsilon2)) {
+    m$subThetaEpsilon2[is.na(m$subThetaEpsilon2)] <-
+      m$thetaEpsilon[m$selectThetaEpsilon2]
+
+    selectRows <- apply(m$selectSubSigma2ThetaEpsilon, MARGIN = 1, FUN = \(x) all(!x))
+    selectCols <- apply(m$selectSubSigma2ThetaEpsilon, MARGIN = 2, FUN = \(x) all(!x))
+    m$fullSigma2ThetaEpsilon[selectRows, selectCols] <- m$subThetaEpsilon2
+  }
+
   t <- NROW(m$x)
   if (!is.null(m$emptyR)) {
     m$R <- m$emptyR
@@ -49,16 +60,16 @@ logLikQml <- function(theta, model, sum = TRUE, sign = -1, verbose = FALSE) {
     m$u <- m$y %*% t(m$fullR)
     m$fullU[, m$colsU] <- m$u
     m$Beta <- m$lambdaY[m$selectBetaRows, latentEtas]
-    m$subThetaEpsilon <- m$subThetaEpsilon
-    m$subThetaEpsilon[is.na(m$subThetaEpsilon)] <-
-      m$thetaEpsilon[m$selectThetaEpsilon]
+
+    m$subThetaEpsilon1[is.na(m$subThetaEpsilon1)] <-
+      m$thetaEpsilon[m$selectThetaEpsilon1]
 
     m$RER <- m$R %*% m$thetaEpsilon[m$colsR, m$colsR] %*% t(m$R)
     invRER <- solve(m$RER)
-    m$L2 <- -m$subThetaEpsilon %*% t(m$Beta) %*% invRER
+    m$L2 <- -m$subThetaEpsilon1 %*% t(m$Beta) %*% invRER
     m$fullL2[m$selectSubL2] <- m$L2
 
-    m$Sigma2ThetaEpsilon <- m$subThetaEpsilon - m$subThetaEpsilon ^ 2 %*%
+    m$Sigma2ThetaEpsilon <- m$subThetaEpsilon1 - m$subThetaEpsilon1 ^ 2 %*%
       t(m$Beta) %*% invRER %*% m$Beta
 
     m$fullSigma2ThetaEpsilon[m$selectSubSigma2ThetaEpsilon] <-
