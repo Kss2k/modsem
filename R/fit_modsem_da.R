@@ -25,7 +25,7 @@ fit_modsem_da <- function(model, chisq = TRUE) {
   logLik <- model$logLik
   O      <- stats::cov(data, use = "pairwise.complete.obs")
   mu     <- apply(data, 2, mean, na.rm = TRUE)
-  mu     <- matrix(mu, ncol = 1, dimnames = list(colnames(model), "~1"))
+  mu     <- matrix(mu, ncol = 1, dimnames = list(colnames(data), "~1"))
   N      <- NROW(data)
   p      <- NCOL(data)
   coef   <- coef(model, type = "free")

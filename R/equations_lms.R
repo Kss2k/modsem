@@ -421,10 +421,10 @@ simpleHessianAllLogLikLms <- function(theta, model, P, data, sign = -1,
 }
 
 
-complicatedHessianAllLogLikLms <- function(theta, model, P, sign = -1, FOBJECTIVE,
+complicatedHessianAllLogLikLms <- function(theta, model, P, data, sign = -1, FOBJECTIVE,
                                            .relStep = .Machine$double.eps ^ (1/5)) {
   nlme::fdHess(pars = theta, fun = FOBJECTIVE, model = model, P = P, sign = sign,
-               .relStep = .relStep)$Hessian
+               .relStep = .relStep, data = data)$Hessian
 }
 
 
@@ -441,8 +441,8 @@ hessianObsLogLikLms <- function(theta, model, data, P, sign = -1,
                         ncores = ThreadEnv$n.threads)
   }
 
-  FOBJECTIVE <- function(theta, model, P, sign, ...) {
-    obsLogLikLms(theta = theta, model = model, data = data, P = P, sign = sign)
+  FOBJECTIVE <- function(theta, model, P, sign, data, ...) {
+    obsLogLikLms(theta = theta, model = model, P = P, data = data, sign = sign)
   }
 
   hessianAllLogLikLms(theta = theta, model = model, P = P, sign = sign,
