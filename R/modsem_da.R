@@ -149,6 +149,9 @@
 #' @param ordered.boot Number of bootstraps used to estimate the underlying continuous distribution of the
 #'   ordinal variables.
 #'
+#' @param cluster Clusters used to compute standard errors robust to non-indepence of observations. Must be paired with
+#'   \code{robust.se = TRUE}.
+#'
 #' @param rcs Should latent variable indicators be replaced with reliability-corrected
 #'   single item indicators instead? See \code{\link{relcorr_single_item}}.
 #'
@@ -289,6 +292,7 @@ modsem_da <- function(model.syntax = NULL,
                       algorithm = NULL,
                       em.control = NULL,
                       ordered = NULL,
+                      cluster = NULL,
                       ordered.boot = 5,
                       rcs = FALSE,
                       rcs.choose = NULL,
@@ -346,6 +350,7 @@ modsem_da <- function(model.syntax = NULL,
        algorithm           = algorithm,
        em.control          = em.control,
        ordered             = ordered,
+       cluster             = cluster,
        rcs                 = rcs,
        rcs.choose          = rcs.choose,
        rcs.scale.corrected = rcs.scale.corrected,
@@ -450,7 +455,8 @@ modsem_da <- function(model.syntax = NULL,
     orthogonal.y       = args$orthogonal.y,
     auto.fix.first     = args$auto.fix.first,
     auto.fix.single    = args$auto.fix.single,
-    auto.split.syntax  = args$auto.split.syntax
+    auto.split.syntax  = args$auto.split.syntax,
+    cluster            = cluster
   )
 
   if (args$optimize) {

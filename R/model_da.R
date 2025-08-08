@@ -20,7 +20,8 @@ specifyModelDA <- function(syntax = NULL,
                            missing = FALSE,
                            orthogonal.x = FALSE,
                            orthogonal.y = FALSE,
-                           auto.split.syntax = FALSE) {
+                           auto.split.syntax = FALSE,
+                           cluster = NULL) {
   if (!is.null(syntax)) parTable <- modsemify(syntax)
   stopif(is.null(parTable), "No parTable found")
 
@@ -67,7 +68,8 @@ specifyModelDA <- function(syntax = NULL,
   numAllIndsXis <- length(allIndsXis)
 
   # clean data
-  data.cleaned <- prepDataModsemDA(data, allIndsXis, allIndsEtas, missing = missing)
+  data.cleaned <- prepDataModsemDA(data, allIndsXis, allIndsEtas,
+                                   missing = missing, cluster = cluster)
 
   # measurement model x
   listLambdaX <- constructLambda(xis, indsXis, parTable = parTable,

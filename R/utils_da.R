@@ -194,6 +194,8 @@ castDataNumericMatrix <- function(data) {
 
 patternizeMissingDataFIML <- function(data) {
   # if we are not using fiml, the missing data should already have been removed...
+  CLUSTER <- attr(data, "cluster")
+
   Y   <- as.matrix(data)
   obs <- !is.na(Y)
 
@@ -244,37 +246,47 @@ patternizeMissingDataFIML <- function(data) {
     k          = NCOL(data),
     p          = length(ids),
     data.full  = data,
-    is.fiml    = length(ids) > 1L
+    is.fiml    = length(ids) > 1L,
+    cluster    = CLUSTER
   )
 }
 
 
-handleMissingData <- function(data, missing = "complete") {
+handleMissingData <- function(data, missing = "complete", CLUSTER = NULL) {
   completeCases <- stats::complete.cases(data)
   anyMissing    <- any(!completeCases)
 
-  if (!anyMissing) return(data)
+  if (!anyMissing){
+    attr(data, "cluster") <- CLUSTER
+    return(data)
+  }
 
   switch(tolower(missing),
     complete = {
       warning2("Removing missing values case-wise!\n",
                "Consider using `impute.na = TRUE`, or the `modsem_mimpute()` function!\n")
 
-      return(data[completeCases, ])
+      out <- data[completeCases, ]
+      attr(out, "cluster") <- CLUSTER
+      
+      return(out)
     },
   
     impute = {
       message("Imputing missing values. Consider using the `modsem_mimpute()` function!")
 
       imp  <- Amelia::amelia(data, m = 1, p2s = 0)
+
       imp1 <- as.matrix(as.data.frame(imp$imputations[[1]]))
+      attr(imp1, "cluster") <- CLUSTER
 
       return(imp1)
     },
 
     fiml = { # do nothing
+      attr(data, "cluster") <- CLUSTER
+      
       return(data)
-
     },
 
     stop2(sprintf("Unrecognized value for `missing`: `%s`", missing))
@@ -282,14 +294,22 @@ handleMissingData <- function(data, missing = "complete") {
 }
 
 
-prepDataModsemDA <- function(data, allIndsXis, allIndsEtas, missing = "complete") {
+prepDataModsemDA <- function(data, allIndsXis, allIndsEtas, missing = "complete",
+                             cluster = NULL) {
+  
   if (is.null(data) || !NROW(data)) 
-    return(list(data.full = NULL, n = 0, k = 0, p = 0))
-  # sort Data before optimizing starting params
+    return(list(data.full = NULL, n = 0, k = 0, p = 0, cluster = NULL))
+
+  if (!is.null(cluster)) {
+    stopif(length(cluster) > 1L, "`cluster` must be a single variable!")
+
+    CLUSTER <- as.factor(data[, cluster])
+
+  } else CLUSTER <- NULL
   
   sortData(data, allIndsXis,  allIndsEtas) |>
     castDataNumericMatrix() |>
-    handleMissingData(missing = missing) |>
+    handleMissingData(missing = missing, CLUSTER = CLUSTER) |>
     patternizeMissingDataFIML()
 }
 

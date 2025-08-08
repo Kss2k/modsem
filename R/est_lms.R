@@ -75,6 +75,7 @@ emLms <- function(model,
                   quad.range = -Inf,
                   adaptive.quad.tol = 1e-12,
                   nodes = 24,
+                  cr1s = TRUE,
                   ...) {
   algorithm <- toupper(match.arg(algorithm))
   data <- model$data
@@ -289,7 +290,7 @@ emLms <- function(model,
                     hessian = OFIM.hessian, calc.se = calc.se,
                     EFIM.parametric = EFIM.parametric, verbose = verbose,
                     FIM = FIM, robust.se = robust.se, epsilon = epsilon,
-                    R.max = R.max, NA__ = -999, P = P)
+                    cr1s = cr1s, R.max = R.max, NA__ = -999, P = P)
   SE <- calcSE_da(calc.se = calc.se, FIM$vcov.all, rawLabels = FIM$raw.labels,
                   NA__ = -999)
 
