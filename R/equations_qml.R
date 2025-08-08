@@ -36,8 +36,8 @@ logLikQml <- function(theta, model, sum = TRUE, sign = -1, verbose = FALSE) {
   m$kOmegaEta <- kOmegaEta
 
   m$tauX      <- m$tauX + m$lambdaX %*% m$beta0
-  m$x <- model$data[, model$info$allIndsXis, drop = FALSE]
-  m$y <- model$data[, model$info$allIndsEtas, drop = FALSE]
+  m$x <- model$data$data.full[, model$info$allIndsXis, drop = FALSE]
+  m$y <- model$data$data.full[, model$info$allIndsEtas, drop = FALSE]
   m$x <- centerIndicators(m$x, tau = m$tauX)
   m$y <- centerIndicators(m$y, tau = m$tauY)
 
@@ -150,7 +150,7 @@ gradientLogLikQml_i <- function(theta, model, sign = -1, epsilon = 1e-8) {
   lapplyMatrix(seq_along(theta), FUN = function(i) {
     theta[[i]] <- theta[[i]] + epsilon
     (logLikQml_i(theta, model, sign = sign) - baseLL) / epsilon
-  }, FUN.VALUE = numeric(nrow(model$data)))
+  }, FUN.VALUE = numeric(model$data$n))
 }
 
 

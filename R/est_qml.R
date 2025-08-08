@@ -19,8 +19,8 @@ estQml <- function(model,
 
   coefficients <- final$par
   lavCoefs     <- getLavCoefs(model = model, theta = coefficients, method = "lms")
-  finalModel      <- fillModel(model, coefficients)
-  info            <- model$info
+  finalModel   <- fillModel(model, coefficients)
+  info         <- model$info
 
   finalModel <- fillModel(model, coefficients, method = "qml")
   emptyModel <- getEmptyModel(parTable = model$parTable,

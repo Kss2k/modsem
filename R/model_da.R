@@ -283,7 +283,8 @@ specifyModelDA <- function(syntax = NULL,
   }
 
   if (checkModel)
-    preCheckModel(model = model, covModel = covModel, method = method)
+    preCheckModel(model = model, covModel = covModel, method = method,
+                  missing = missing)
 
   model
 }

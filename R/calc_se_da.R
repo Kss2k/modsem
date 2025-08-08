@@ -179,19 +179,25 @@ calcEFIM_LMS <- function(model, finalModel = NULL, theta, data,
                          R.max      = 1e6,
                          P          = NULL) {
   k <- length(theta)                       # number of free parameters
-  N <- nrow(data)
+  N <- data$n
   R <- min(R.max, N * S)
   warnif(R.max <= N, "R.max is less than N!")
 
+  ovs <- colnames(data$data.full)
+
   if (parametric) {
-    stopif(is.null(finalModel), "`finalModel` is needed when parametric = TRUE")
+    stopif(is.null(finalModel), "finalModel must be included in calcEFIM_LMS")
+
     parTable   <- modelToParTable(finalModel, method = "lms")
-    population <- simulateDataParTable(parTable, N = R,
-                                       colsOVs = colnames(data))$oV
+    population <- simulateDataParTable(parTable, N = R, colsOVs = ovs)$oV
+
   } else {
-    population <- data[sample(nrow(data), R, replace = TRUE), , drop = FALSE]
+    population <- data$data.full[sample(data$n, R, replace = TRUE), , drop = FALSE]
+
   }
 
+  population <- patternizeMissingDataFIML(population)
+  
   popEstep <- estepLms(model      = model,
                        theta      = theta,
                        data       = population,
@@ -229,7 +235,7 @@ calcEFIM_LMS <- function(model, finalModel = NULL, theta, data,
 
 calcOFIM_QML <- function(model, theta, data, hessian = FALSE,
                          epsilon = 1e-8) {
-  N <- nrow(model$data)
+  N <- model$data$n
 
   if (hessian) {
     # negative hessian (sign = -1)
@@ -253,15 +259,19 @@ calcEFIM_QML <- function(model, finalModel = NULL, theta, data, S = 100,
                          parametric = TRUE, epsilon = 1e-8, verbose = FALSE,
                          R.max = 1e6) {
   k <- length(theta)                       # number of free parameters
-  N <- nrow(data)
+  N <- data$n
   R <- min(R.max, N * S)
   warnif(R.max <= N, "R.max is less than N!")
 
+  ovs <- colnames(data$data.full)
+
   if (parametric) {
-    if (is.null(finalModel)) stop2("finalModel must be included in calcEFIM_QML")
+    stopif(is.null(finalModel), "finalModel must be included in calcEFIM_QML")
+
     parTable <- modelToParTable(finalModel, method = "qml")
     population <- tryCatch(
-      simulateDataParTable(parTable, N = R, colsOVs = colnames(data))$oV,
+      simulateDataParTable(parTable, N = R, colsOVs = ovs)$oV,
+
       error = function(e) {
         warning2("Unable to simulate data for EFIM, using stochastic sampling instead")
         calcEFIM_QML(model = model, theta = theta, data = data, S = S,
@@ -269,8 +279,9 @@ calcEFIM_QML <- function(model, finalModel = NULL, theta, data, S = 100,
       }
     )
 
-  } else population <- data[sample(R, N, replace = TRUE), ]
+  } else population <- data$data.full[sample(R, N, replace = TRUE), ]
 
+  population <- patternizeMissingDataFIML(population)
 
   suppressWarnings({
 

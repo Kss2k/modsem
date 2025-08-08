@@ -197,14 +197,16 @@ patternizeMissingDataFIML <- function(data) {
   Y   <- as.matrix(data)
   obs <- !is.na(Y)
 
+  colMissingAll <- apply(obs, MARGIN = 2, FUN = \(x) !any(x))
+  stopif(any(colMissingAll),
+         "Please remove variables with only missing values:\n  ",
+         paste0(colnames(obs)[colMissingAll], collapse = ", "))
+
   patterns <- unique(obs, MARING = 2)
 
   # remove patterns where all are missing
   allMissing <- apply(patterns, MARGIN = 1, FUN = \(x) all(is.na(x)))
   patterns <- patterns[!allMissing, , drop = FALSE]
-
-  # patterns <- patterns[2, , drop = FALSE]
-  # data <- data[!complete.cases(data), ]
 
   ids <- seq_len(NROW(patterns))
   n   <- NROW(Y)
@@ -230,7 +232,7 @@ patternizeMissingDataFIML <- function(data) {
   }
 
   list(
-    ids        = ids, 
+    ids        = ids,
     rowidx     = rowidx,
     colidx     = colidx,
     colidx0    = lapply(colidx, FUN = \(idx) idx - 1),
@@ -241,7 +243,8 @@ patternizeMissingDataFIML <- function(data) {
     n          = NROW(data),
     k          = NCOL(data),
     p          = length(ids),
-    data.full  = data
+    data.full  = data,
+    is.fiml    = length(ids) > 1L
   )
 }
 
@@ -280,7 +283,8 @@ handleMissingData <- function(data, missing = "complete") {
 
 
 prepDataModsemDA <- function(data, allIndsXis, allIndsEtas, missing = "complete") {
-  if (is.null(data)) return(NULL)
+  if (is.null(data) || !NROW(data)) 
+    return(list(data.full = NULL, n = 0, k = 0, p = 0))
   # sort Data before optimizing starting params
   
   sortData(data, allIndsXis,  allIndsEtas) |>
@@ -332,7 +336,8 @@ getEmptyModel <- function(parTable, cov.syntax, parTableCovModel,
   }
 
   specifyModelDA(
-    parTable         = parTable, method = method,
+    parTable         = parTable,
+    method           = method,
     cov.syntax       = cov.syntax,
     parTableCovModel = parTableCovModel,
     mean.observed    = mean.observed,

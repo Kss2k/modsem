@@ -17,7 +17,6 @@ k <- 200
 I <- sample(nrow(oneInt2), k, replace = TRUE)
 J <- sample(ncol(oneInt2), k, replace = TRUE)
 for (k_i in seq_along(I)) oneInt2[I[k_i], J[k_i]] <- NA
-fiml_lms <- modsem(m1, oneInt2, method = "lms", missing = "fiml")
 
 # double centering approach
 est <- modsem(m1, oneInt2)
@@ -76,3 +75,15 @@ testthat::expect_false(
 sd.uncorrected <- sqrt(diag(vcov(mimp_lms$imputations$fitted[[1]])))
 sd.corrected   <- sqrt(diag(vcov(mimp_lms)))
 testthat::expect_true(all(sd.corrected > sd.uncorrected))
+
+# test fiml
+fiml_lms <- modsem(m1, oneInt2, method = "lms", missing = "fiml")
+
+testthat::expect_error(modsem(m1, oneInt2, method = "qml", missing = "fiml") ,
+                       regexp = "Using FIML with QML is not available.*yet.*")
+
+oneInt3 <- oneInt2
+oneInt3$x1 <- NA
+oneInt3$y2 <- NA
+testthat::expect_error(modsem(m1, oneInt3, method = "lms", missing = "fiml"),
+                       regexp = "Please remove .*x1.*y2")
