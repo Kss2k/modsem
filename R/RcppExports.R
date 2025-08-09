@@ -65,6 +65,10 @@ multiplyIndicatorsCpp <- function(df) {
     .Call(`_modsem_multiplyIndicatorsCpp`, df)
 }
 
+checkOpenMP_Cpp <- function() {
+    .Call(`_modsem_checkOpenMP_Cpp`)
+}
+
 dmvnrm_arma_mc <- function(x, mean, sigma, log = TRUE, ncores = 1L) {
     .Call(`_modsem_dmvnrm_arma_mc`, x, mean, sigma, log, ncores)
 }

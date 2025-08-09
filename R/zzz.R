@@ -21,5 +21,14 @@ getPackageVersion <- function(pkgname) {
 .onAttach <- function(libname, pkgname) {
   version <- getPackageVersion(pkgname)
   message <- sprintf("This is %s (%s). Please report any bugs!", pkgname, version)
+
+  openMP_Enabled <- checkOpenMP_Cpp()
+
+  if (!openMP_Enabled) {
+    message <- paste0(message, "\n",
+                     "OpenMP is not available! Multi-threading will not work properly!")
+  }
+
+
   packageStartupMessage(message)
 }

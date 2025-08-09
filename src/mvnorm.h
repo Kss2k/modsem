@@ -28,8 +28,6 @@ struct ThreadSetter {
       old_threads_mp = omp_get_max_threads();
       omp_set_num_threads(ncores);
     #else
-      if (ncores != 1)
-        Rcpp::warning("OpenMP not enabled; running single-threaded");
       old_threads_mp = 1;
     #endif
 
