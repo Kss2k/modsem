@@ -1,8 +1,10 @@
 devtools::load_all()
 
 OK_OpenMP <- checkOpenMP_Cpp()
-startupMessages <- purrr::quietly(devtools::load_all)()$messages[-1L]
-startupMessage <- paste0("    ", startupMessages, collapse = "\n")
+startupMessage <- purrr::quietly(devtools::load_all)()$messages[-1L]
+startupMessage <- stringr::str_split(startupMessage, pattern = "\n")[[1L]] |>
+  (\(x) (x[x != ""]))() |>
+  stringr::str_pad(width = 4) |> paste0(collapse = "\n")
 
 
 printSessionInfo <- function() {
@@ -11,16 +13,19 @@ printSessionInfo <- function() {
   info$openmp <- if (OK_OpenMP) "AVAILABLE" else "NOT AVAILABLE"
 
   show <- (sapply(info, FUN = length) == 1L) & names(info) != "locale"
-  rhs <- names(info[show])
-  lhs <- unlist(info[show])
+  lhs <- names(info[show])
+  rhs <- unlist(info[show])
 
-  # cut paths
-  largePath <- stringr::str_count(rhs, pattern = "/") > 3L
-  browser()
+  # cut large paths
+  isLargePath <- stringr::str_count(rhs, pattern = "/") > 2L
   getstem <- \(path, i) stringr::str_split_i(path, pattern = "/", i = i)
-  rhs[ispath] <- paste0(
 
-    stringr::str_split_i(rhs[ispath], pattern = "/", i = -1)
+  largePaths <- rhs[isLargePath]
+  rhs[isLargePath] <- paste(
+    "...",
+    # getstem(largePaths, -2L),
+    getstem(largePaths, -1L),
+    sep = "/"
   )
 
   flhs <- format(lhs, justify = "left")
@@ -41,9 +46,9 @@ printSessionInfo <- function() {
 
   cat(sep1)
   cat("STARTUP MESSAGE:\n")
-  cat(startupMessage)
+  cat(startupMessage, "\n")
 
-  cat(sep1, "\n")
+  cat(sep2, "\n")
 }
 
 printSessionInfo()
