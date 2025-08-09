@@ -2,11 +2,12 @@
 #'
 #' @param model.syntax lavaan/modsem syntax
 #' @param data dataset
-#' @param estimator estimator argument passed to \code{Mplus}
-#' @param type type argument passed to \code{Mplus}
-#' @param algorithm algorithm argument passed to \code{Mplus}
-#' @param processors processors argument passed to \code{Mplus}
-#' @param integration integration argument passed to \code{Mplus}
+#' @param estimator estimator argument passed to \code{Mplus}.
+#' @param type type argument passed to \code{Mplus}.
+#' @param cluster cluster argument passed to \code{Mplus}.
+#' @param algorithm algorithm argument passed to \code{Mplus}.
+#' @param processors processors argument passed to \code{Mplus}.
+#' @param integration integration argument passed to \code{Mplus}.
 #'
 #' @param rcs Should latent variable indicators be replaced with reliability-corrected
 #'   single item indicators instead? See \code{\link{relcorr_single_item}}.
@@ -53,6 +54,7 @@ modsem_mplus <- function(model.syntax,
                          data,
                          estimator = "ml",
                          type = "random",
+                         cluster = NULL,
                          algorithm = "integration",
                          processors = 2,
                          integration = 15,
@@ -114,10 +116,17 @@ modsem_mplus <- function(model.syntax,
   if (output.std && kway <= 2)
     OUTPUT <- paste(OUTPUT, "STANDARDIZED;", sep = "\n")
 
+  # Cluster
+  if (!is.null(cluster)) {
+    VARIABLE <- sprintf("CLUSTER = %s;", cluster)
+
+  } else VARIABLE <- NULL
+
   # Estimate model
   model <- MplusAutomation::mplusObject(
     TITLE = "Running Model via Mplus",
-    usevariables = indicators,
+    VARIABLE = VARIABLE,
+    usevariables = c(cluster, indicators),
     ANALYSIS = paste0(
       paste(paste("estimator =", estimator),
             paste("type =", type),
@@ -127,7 +136,7 @@ modsem_mplus <- function(model.syntax,
             sep = ";\n"), ";\n"), # add final ";"
     MODEL = parTableToMplusModel(parTable, ...),
     OUTPUT = OUTPUT,
-    rdata = data[indicators],
+    rdata = data[c(cluster, indicators)],
   )
 
   results <- MplusAutomation::mplusModeler(model,
