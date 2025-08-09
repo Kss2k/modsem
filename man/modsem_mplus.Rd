@@ -9,6 +9,7 @@ modsem_mplus(
   data,
   estimator = "ml",
   type = "random",
+  cluster = NULL,
   algorithm = "integration",
   processors = 2,
   integration = 15,
@@ -24,15 +25,17 @@ modsem_mplus(
 
 \item{data}{dataset}
 
-\item{estimator}{estimator argument passed to \code{Mplus}}
+\item{estimator}{estimator argument passed to \code{Mplus}.}
 
-\item{type}{type argument passed to \code{Mplus}}
+\item{type}{type argument passed to \code{Mplus}.}
 
-\item{algorithm}{algorithm argument passed to \code{Mplus}}
+\item{cluster}{cluster argument passed to \code{Mplus}.}
 
-\item{processors}{processors argument passed to \code{Mplus}}
+\item{algorithm}{algorithm argument passed to \code{Mplus}.}
 
-\item{integration}{integration argument passed to \code{Mplus}}
+\item{processors}{processors argument passed to \code{Mplus}.}
+
+\item{integration}{integration argument passed to \code{Mplus}.}
 
 \item{rcs}{Should latent variable indicators be replaced with reliability-corrected
 single item indicators instead? See \code{\link{relcorr_single_item}}.}
