@@ -29,6 +29,5 @@ getPackageVersion <- function(pkgname) {
                      "OpenMP is not available! Multi-threading will not work properly!")
   }
 
-
   packageStartupMessage(message)
 }
