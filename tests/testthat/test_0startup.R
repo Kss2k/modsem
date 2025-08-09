@@ -17,13 +17,14 @@ printSessionInfo <- function() {
   rhs <- unlist(info[show])
 
   # cut large paths
-  isLargePath <- stringr::str_count(rhs, pattern = "/") > 2L
+  isLargePath <- stringr::str_count(rhs, pattern = "/") > 3L
   getstem <- \(path, i) stringr::str_split_i(path, pattern = "/", i = i)
 
   largePaths <- rhs[isLargePath]
   rhs[isLargePath] <- paste(
     "...",
-    # getstem(largePaths, -2L),
+    getstem(largePaths, -3L),
+    getstem(largePaths, -2L),
     getstem(largePaths, -1L),
     sep = "/"
   )
