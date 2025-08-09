@@ -11,7 +11,7 @@ static double const log2pi = std::log(2.0 * M_PI);
 bool checkOpenMP_Cpp() {
   #ifdef _OPENMP
     return true;
-  #elif
+  #else
     return false;
   #endif
 }
