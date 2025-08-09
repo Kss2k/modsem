@@ -89,7 +89,7 @@ necessary syntax, and variables for the estimation of models with latent product
 <span>  verbose <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  optimize <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  nodes <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  impute.na <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  missing <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  convergence.abs <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  convergence.rel <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  optimizer <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -120,6 +120,8 @@ necessary syntax, and variables for the estimation of models with latent product
 <span>  em.control <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  ordered <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  ordered.boot <span class="op">=</span> <span class="fl">5</span>,</span>
+<span>  cluster <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  cr1s <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  rcs <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  rcs.choose <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  rcs.scale.corrected <span class="op">=</span> <span class="cn">TRUE</span>,</span>
@@ -173,11 +175,11 @@ where data is non-normal, it might be better to use the <code>qml</code> approac
 You can also consider setting <code>adaptive.quad = TRUE</code>.</p></dd>
 
 
-<dt id="arg-impute-na">impute.na<a class="anchor" aria-label="anchor" href="#arg-impute-na"></a></dt>
-<dd><p>Should missing values be imputed? If <code>FALSE</code> missing values
-are removed case-wise. If <code>TRUE</code> values are imputed using <code><a href="https://rdrr.io/pkg/Amelia/man/amelia.html" class="external-link">Amelia::amelia</a></code>.
-Default is <code>FALSE</code>. If you want more fine-grained control over how the missing data
-is imputed, you should consider imputing it yourself.</p></dd>
+<dt id="arg-missing">missing<a class="anchor" aria-label="anchor" href="#arg-missing"></a></dt>
+<dd><p>How should missing values be handled? If <code>"complete"</code> (default) missing values
+are removed case-wise. If <code>impute</code> values are imputed using <code><a href="https://rdrr.io/pkg/Amelia/man/amelia.html" class="external-link">Amelia::amelia</a></code>.
+If <code>"fiml"</code>, full information maximum likelihood (FIML) is used. FIML can be (very)
+computationally intensive.</p></dd>
 
 
 <dt id="arg-convergence-abs">convergence.abs<a class="anchor" aria-label="anchor" href="#arg-convergence-abs"></a></dt>
@@ -355,6 +357,22 @@ underestimated though. Using robust standard errors may make the estimates of th
 <dt id="arg-ordered-boot">ordered.boot<a class="anchor" aria-label="anchor" href="#arg-ordered-boot"></a></dt>
 <dd><p>Number of bootstraps used to estimate the underlying continuous distribution of the
 ordinal variables.</p></dd>
+
+
+<dt id="arg-cluster">cluster<a class="anchor" aria-label="anchor" href="#arg-cluster"></a></dt>
+<dd><p>Clusters used to compute standard errors robust to non-indepence of observations. Must be paired with
+<code>robust.se = TRUE</code>.</p></dd>
+
+
+<dt id="arg-cr-s">cr1s<a class="anchor" aria-label="anchor" href="#arg-cr-s"></a></dt>
+<dd><p>Logical; if <code>TRUE</code>, apply the CR1S small-sample correction factor
+to the cluster-robust variance estimator. The CR1S factor is
+\((G / (G - 1)) \cdot ((N - 1) / (N - q))\), where \(G\) is the number of
+clusters, \(N\) is the total number of observations, and \(q\) is the number
+of free parameters. This adjustment inflates standard errors to reduce the
+small-sample downward bias present in the basic cluster-robust (CR0) estimator,
+especially when \(G\) is small. If <code>FALSE</code>, the unadjusted CR0 estimator
+is used. Defaults to <code>TRUE</code>. Only relevant if <code>cluster</code> is specified.</p></dd>
 
 
 <dt id="arg-rcs">rcs<a class="anchor" aria-label="anchor" href="#arg-rcs"></a></dt>
