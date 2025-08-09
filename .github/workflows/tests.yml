@@ -1,19 +1,16 @@
-name: Tests (Ubuntu-latest)
+name: Tests (multi-OS)
 
 on:
   push:
-    branches:
-      - main
-      - test-workflow
+    branches: [ main, test-workflow ]
   pull_request:
-    branches:
-      - main
-      - test-workflow
+    branches: [ main, test-workflow ]
 
 jobs:
-  Run-Tests:
+  # Linux job: keep using your custom container image
+  Run-Tests-Linux:
+    name: linux (container)
     runs-on: ubuntu-latest
-
     container:
       image: ghcr.io/kss2k/container-modsem:latest
 
@@ -22,5 +19,61 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run tests
+        shell: Rscript {0}
+        env:
+          _R_CHECK_LENGTH_1_CONDITION_: "TRUE"
+          _R_CHECK_LENGTH_1_LOGIC2_: "TRUE"
         run: |
-          Rscript -e 'options(warnPartialMatchDollar = TRUE); Sys.setenv("_R_CHECK_LENGTH_1_CONDITION_" = "TRUE", "_R_CHECK_LENGTH_1_LOGIC2_" = "TRUE"); pkgbuild::compile_dll(force=TRUE, debug=FALSE); devtools::test(stop_on_failure = TRUE)'
+          options(warnPartialMatchDollar = TRUE)
+          pkgbuild::compile_dll(force = TRUE, debug = FALSE)
+          devtools::test(stop_on_failure = TRUE)
+
+  # Native jobs: macOS + Windows (no container)
+  Run-Tests-Native:
+    name: ${{ matrix.os }} (R ${{ matrix.r }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ macos-latest, windows-latest ]
+        r: [ 'release' ]
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      # Install R for the platform; on Windows, this also provisions Rtools
+      - name: Set up R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: ${{ matrix.r }}
+          use-public-rspm: true
+          rtools: true
+
+      # Restore/install R package dependencies declared in DESCRIPTION (and cache them)
+      - name: Install deps
+        uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          # ensure devtools/pkgbuild are present even if not in Imports/Suggests
+          extra-packages: |
+            any::devtools
+            any::pkgbuild
+          # choose a conservative target so compiled deps are present for testing
+          needs: test
+
+      # Build any native code in the package (if applicable)
+      - name: Compile package sources
+        shell: Rscript {0}
+        run: |
+          options(warnPartialMatchDollar = TRUE)
+          pkgbuild::compile_dll(force = TRUE, debug = FALSE)
+
+      # Run your testthat tests with the same strictness flags you had
+      - name: Run tests
+        shell: Rscript {0}
+        env:
+          _R_CHECK_LENGTH_1_CONDITION_: "TRUE"
+          _R_CHECK_LENGTH_1_LOGIC2_: "TRUE"
+        run: |
+          options(warnPartialMatchDollar = TRUE)
+          devtools::test(stop_on_failure = TRUE)
