@@ -261,6 +261,16 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// checkOpenMP_Cpp
+bool checkOpenMP_Cpp();
+RcppExport SEXP _modsem_checkOpenMP_Cpp() {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    rcpp_result_gen = Rcpp::wrap(checkOpenMP_Cpp());
+    return rcpp_result_gen;
+END_RCPP
+}
 // dmvnrm_arma_mc
 arma::vec dmvnrm_arma_mc(const arma::mat& x, const arma::rowvec& mean, const arma::mat& sigma, const bool log, const int ncores);
 RcppExport SEXP _modsem_dmvnrm_arma_mc(SEXP xSEXP, SEXP meanSEXP, SEXP sigmaSEXP, SEXP logSEXP, SEXP ncoresSEXP) {
@@ -371,6 +381,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_modsem_dnormCpp", (DL_FUNC) &_modsem_dnormCpp, 4},
     {"_modsem_varZCpp", (DL_FUNC) &_modsem_varZCpp, 3},
     {"_modsem_multiplyIndicatorsCpp", (DL_FUNC) &_modsem_multiplyIndicatorsCpp, 1},
+    {"_modsem_checkOpenMP_Cpp", (DL_FUNC) &_modsem_checkOpenMP_Cpp, 0},
     {"_modsem_dmvnrm_arma_mc", (DL_FUNC) &_modsem_dmvnrm_arma_mc, 5},
     {"_modsem_rep_dmvnorm", (DL_FUNC) &_modsem_rep_dmvnorm, 5},
     {"_modsem_totalDmvnWeightedCpp", (DL_FUNC) &_modsem_totalDmvnWeightedCpp, 7},

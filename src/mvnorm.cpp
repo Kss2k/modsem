@@ -7,6 +7,16 @@
 static double const log2pi = std::log(2.0 * M_PI);
 
 
+// [[Rcpp::export]]
+bool checkOpenMP_Cpp() {
+  #ifdef _OPENMP
+    return true;
+  #elif
+    return false;
+  #endif
+}
+
+
 void inplace_tri_mat_mult(arma::rowvec &x, arma::mat const &trimat){
   arma::uword const n = trimat.n_cols;
 
