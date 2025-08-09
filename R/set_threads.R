@@ -33,7 +33,10 @@ resetThreads <- function() {
 
 getDefaultThreads <- function() {
   defaultCRAN <- 2
-  getThreadsN(defaultCRAN)
+  mc.cores    <- options("mc.cores")[[1L]]
+  default     <- if (!is.null(mc.cores)) mc.cores else defaultCRAN
+
+  getThreadsN(default)
 }
 
 
