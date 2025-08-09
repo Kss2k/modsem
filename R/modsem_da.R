@@ -152,6 +152,15 @@
 #' @param cluster Clusters used to compute standard errors robust to non-indepence of observations. Must be paired with
 #'   \code{robust.se = TRUE}.
 #'
+#' @param cr1s Logical; if \code{TRUE}, apply the CR1S small-sample correction factor
+#'   to the cluster-robust variance estimator. The CR1S factor is
+#'   \eqn{(G / (G - 1)) \cdot ((N - 1) / (N - q))}, where \eqn{G} is the number of
+#'   clusters, \eqn{N} is the total number of observations, and \eqn{q} is the number
+#'   of free parameters. This adjustment inflates standard errors to reduce the
+#'   small-sample downward bias present in the basic cluster-robust (CR0) estimator,
+#'   especially when \eqn{G} is small. If \code{FALSE}, the unadjusted CR0 estimator
+#'   is used. Defaults to \code{TRUE}. Only relevant if \code{cluster} is specified.
+#'
 #' @param rcs Should latent variable indicators be replaced with reliability-corrected
 #'   single item indicators instead? See \code{\link{relcorr_single_item}}.
 #'
@@ -292,8 +301,9 @@ modsem_da <- function(model.syntax = NULL,
                       algorithm = NULL,
                       em.control = NULL,
                       ordered = NULL,
-                      cluster = NULL,
                       ordered.boot = 5,
+                      cluster = NULL,
+                      cr1s = FALSE,
                       rcs = FALSE,
                       rcs.choose = NULL,
                       rcs.scale.corrected = TRUE,
@@ -351,6 +361,7 @@ modsem_da <- function(model.syntax = NULL,
        em.control          = em.control,
        ordered             = ordered,
        cluster             = cluster,
+       cr1s                = cr1s,
        rcs                 = rcs,
        rcs.choose          = rcs.choose,
        rcs.scale.corrected = rcs.scale.corrected,
@@ -426,7 +437,8 @@ modsem_da <- function(model.syntax = NULL,
           orthogonal.y       = orthogonal.y,
           auto.fix.first     = auto.fix.first,
           auto.fix.single    = auto.fix.single,
-          auto.split.syntax  = auto.split.syntax
+          auto.split.syntax  = auto.split.syntax,
+          cr1s               = cr1s
         )
     )
 
@@ -487,7 +499,7 @@ modsem_da <- function(model.syntax = NULL,
   }
 
   est <- tryCatch(switch(method,
-    "qml" = estQml(model,
+    qml = estQml(model,
       verbose         = args$verbose,
       convergence     = args$convergence.rel,
       calc.se         = args$calc.se,
@@ -500,9 +512,10 @@ modsem_da <- function(model.syntax = NULL,
       epsilon         = args$epsilon,
       optimizer       = args$optimizer,
       R.max           = args$R.max,
+      cr1s            = args$cr1s,
       ...
     ),
-    "lms" = emLms(model,
+    lms = emLms(model,
       verbose           = args$verbose,
       convergence.abs   = args$convergence.abs,
       convergence.rel   = args$convergence.rel,
@@ -523,6 +536,7 @@ modsem_da <- function(model.syntax = NULL,
       quad.range        = args$quad.range,
       adaptive.quad.tol = args$adaptive.quad.tol,
       nodes             = args$nodes,
+      cr1s              = args$cr1s,
       ...
   )),
   error = function(e) {

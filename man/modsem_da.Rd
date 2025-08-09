@@ -41,8 +41,9 @@ modsem_da(
   algorithm = NULL,
   em.control = NULL,
   ordered = NULL,
-  cluster = NULL,
   ordered.boot = 5,
+  cluster = NULL,
+  cr1s = FALSE,
   rcs = FALSE,
   rcs.choose = NULL,
   rcs.scale.corrected = TRUE,
@@ -201,11 +202,20 @@ The distributions of the response variables are estimated using a combination of
 For small differences in the spacing of the intervals, the point estimates should be unbiased. The standard errors may be
 underestimated though. Using robust standard errors may make the estimates of the standard errors more accurate.}
 
+\item{ordered.boot}{Number of bootstraps used to estimate the underlying continuous distribution of the
+ordinal variables.}
+
 \item{cluster}{Clusters used to compute standard errors robust to non-indepence of observations. Must be paired with
 \code{robust.se = TRUE}.}
 
-\item{ordered.boot}{Number of bootstraps used to estimate the underlying continuous distribution of the
-ordinal variables.}
+\item{cr1s}{Logical; if \code{TRUE}, apply the CR1S small-sample correction factor
+to the cluster-robust variance estimator. The CR1S factor is
+\eqn{(G / (G - 1)) \cdot ((N - 1) / (N - q))}, where \eqn{G} is the number of
+clusters, \eqn{N} is the total number of observations, and \eqn{q} is the number
+of free parameters. This adjustment inflates standard errors to reduce the
+small-sample downward bias present in the basic cluster-robust (CR0) estimator,
+especially when \eqn{G} is small. If \code{FALSE}, the unadjusted CR0 estimator
+is used. Defaults to \code{TRUE}. Only relevant if \code{cluster} is specified.}
 
 \item{rcs}{Should latent variable indicators be replaced with reliability-corrected
 single item indicators instead? See \code{\link{relcorr_single_item}}.}
