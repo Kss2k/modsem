@@ -167,7 +167,6 @@ struct LMSModel {
     return arma::join_cols(muX, muY);
   }
 
-
   arma::mat Sigma(const arma::vec& z) const {
     const arma::vec zVec  = make_zvec(k, numXis, z);
     const arma::mat kronZ = arma::kron(Ie, beta0 + A * zVec);
@@ -187,6 +186,28 @@ struct LMSModel {
         arma::join_rows(Sxx, Sxy),
         arma::join_rows(Sxy.t(), Syy)
         );
+  }
+
+  LMSModel thread_clone() const {
+    LMSModel c = *this;    // shallow for everything (fast)
+                           // Deep-copy ONLY what set_params()/lms_param can modify:
+    c.A     = arma::mat(A);
+    c.Oxx   = arma::mat(Oxx);
+    c.Oex   = arma::mat(Oex);
+    c.Ie    = arma::mat(Ie);
+    c.lY    = arma::mat(lY);
+    c.lX    = arma::mat(lX);
+    c.tY    = arma::mat(tY);
+    c.tX    = arma::mat(tX);
+    c.Gx    = arma::mat(Gx);
+    c.Ge    = arma::mat(Ge);
+    c.a     = arma::mat(a);
+    c.beta0 = arma::mat(beta0);
+    c.Psi   = arma::mat(Psi);
+    c.d     = arma::mat(d);
+    c.e     = arma::mat(e);
+
+    return c;
   }
 };
 
@@ -213,39 +234,53 @@ inline double& lms_param(LMSModel& M, std::size_t blk,
 }
 
 
-template< class F >
+template<class F>
 arma::vec gradientFD(LMSModel&         M,
                      F&&               logLik,
                      const arma::uvec& block,
                      const arma::uvec& row,
                      const arma::uvec& col,
                      const arma::uvec& symmetric,
-                     const double      eps = 1e-6) {
+                     const double      eps = 1e-6,
+                     const int         ncores = 1L) {
+  ThreadSetter ts(ncores, 1L);
+
   const std::size_t p = block.n_elem;
   arma::vec grad(p);
 
+  // Baseline likelihood on the original (unmodified) model:
   const double f0 = logLik(M);
 
+  // Parallelize over coordinates. Each iteration creates its own model copy.
+  // NOTE: We mark logLik firstprivate so each thread gets its own copy of the functor/lambda.
+  // We only read from M to construct the thread-local copy, so sharing M is OK.
+  #pragma omp parallel for default(none) \
+      shared(M, block, row, col, symmetric, eps, grad, f0, p) \
+      firstprivate(logLik) \
+      schedule(static)
   for (std::size_t k = 0; k < p; ++k) {
-    double& ti  = lms_param(M, block[k], row[k], col[k]);
-    const  double oldi = ti;
+    // Thread-local model instance
+    LMSModel Mc = M.thread_clone();
 
-    double* tj = nullptr;
-    double  oldj;
+    // Access the parameter(s) to perturb in the *local* model:
+    double& ti   = lms_param(Mc, block[k], row[k], col[k]);
+    double* tj   = nullptr;
 
     if (symmetric[k] && row[k] != col[k]) {
-      tj   = &lms_param(M, block[k], col[k], row[k]);
-      oldj = *tj;
+      tj = &lms_param(Mc, block[k], col[k], row[k]); // symmetric partner
     }
 
+    // Forward finite difference step
     ti += eps;
     if (tj) *tj += eps;
 
-    const double f1 = logLik(M);
+    // Evaluate on the perturbed *local* model
+    const double f1 = logLik(Mc);
+
+    // Gradient component
     grad[k] = (f1 - f0) / eps;
 
-    ti = oldi;
-    if (tj) *tj = oldj;
+    // No need to restore: Mc is thread-local and will be destroyed here.
   }
 
   return grad;
@@ -278,11 +313,11 @@ inline double completeLogLikFromModel(
       const arma::vec& nu = MeanPatterns[j][i];
       const arma::mat& S  = CovPatterns [j][i];
       const double tg = TGamma[j][i];
-    
+
       if (tg <= DBL_MIN) continue;
 
       ll += totalDmvnWeightedCpp(
-        mu.elem(colidx[i]), 
+        mu.elem(colidx[i]),
         Sig.submat(colidx[i], colidx[i]),
         nu, S, tg, n[i], d[i]);
     }
@@ -293,38 +328,7 @@ inline double completeLogLikFromModel(
 
 
 // [[Rcpp::export]]
-arma::vec gradLogLikLmsCpp(const Rcpp::List& modelR,
-                           const Rcpp::List& P,
-                           const arma::uvec& block,
-                           const arma::uvec& row,
-                           const arma::uvec& col,
-                           const arma::uvec& symmetric,
-                           const Rcpp::List& colidxR, 
-                           const arma::uvec& n,
-                           const arma::uvec& d,
-                           const int         npatterns = 1,
-                           const double      eps = 1e-6) {
-  LMSModel M(modelR);
-
-  const arma::mat V       = Rcpp::as<arma::mat>(P["V"]);
-  const auto      TGamma  = as_vec_of_vec(P["tgamma"]);
-  const auto      Mean    = as_vec_of_vec_of_vec(P["mean"]);
-  const auto      Cov     = as_vec_of_vec_of_mat(P["cov"]);
-  const auto      colidx  = as_vec_of_uvec(colidxR);
-
-  const Rcpp::List info   = modelR["info"];
-
-  auto comp_ll = [&](LMSModel& mod) -> double {
-    return completeLogLikFromModel(mod, V, TGamma, Mean, Cov, 
-                                   colidx, n, d, npatterns);
-  };
-
-  return gradientFD(M, comp_ll, block, row, col, symmetric, eps);
-}
-
-
-// [[Rcpp::export]]
-double completeLogLikLmsCpp(const Rcpp::List& modelR, 
+double completeLogLikLmsCpp(const Rcpp::List& modelR,
                             const Rcpp::List& P,
                             const Rcpp::List& quad,
                             const Rcpp::List& colidxR,
@@ -342,9 +346,43 @@ double completeLogLikLmsCpp(const Rcpp::List& modelR,
 
   const Rcpp::List info   = modelR["info"];
 
-  return completeLogLikFromModel(model, V, TGamma, Mean, Cov, 
+  return completeLogLikFromModel(model, V, TGamma, Mean, Cov,
                                  colidx, n, d, npatterns);
 }
+
+
+// [[Rcpp::export]]
+arma::vec gradLogLikLmsCpp(const Rcpp::List& modelR,
+                           const Rcpp::List& P,
+                           const arma::uvec& block,
+                           const arma::uvec& row,
+                           const arma::uvec& col,
+                           const arma::uvec& symmetric,
+                           const Rcpp::List& colidxR,
+                           const arma::uvec& n,
+                           const arma::uvec& d,
+                           const int         npatterns = 1,
+                           const double      eps = 1e-6,
+                           const int         ncores = 1L) {
+  LMSModel M(modelR);
+
+  const arma::mat V       = Rcpp::as<arma::mat>(P["V"]);
+  const auto      TGamma  = as_vec_of_vec(P["tgamma"]);
+  const auto      Mean    = as_vec_of_vec_of_vec(P["mean"]);
+  const auto      Cov     = as_vec_of_vec_of_mat(P["cov"]);
+  const auto      colidx  = as_vec_of_uvec(colidxR);
+
+  const Rcpp::List info   = modelR["info"];
+
+  auto comp_ll = [&](LMSModel& mod) -> double {
+    return completeLogLikFromModel(mod, V, TGamma, Mean, Cov,
+                                   colidx, n, d, npatterns);
+  };
+
+  return gradientFD(M, comp_ll, block, row, col, symmetric, eps, ncores);
+}
+
+
 
 
 inline double observedLogLikFromModel(const LMSModel&  M,
@@ -365,17 +403,17 @@ inline double observedLogLikFromModel(const LMSModel&  M,
     const arma::vec z   = V.row(i).t();
     const arma::vec mu  = M.mu   (z);
     const arma::mat Sig = M.Sigma(z);
-  
+
     int offset = 0L;
     for (int j = 0; j < npatterns; j++) {
       const int end = offset + n[j] - 1L;
 
-      density.subvec(offset, end) += 
-        dmvnfast(data[j], 
-                 mu.elem(colidx[j]), 
-                 Sig.submat(colidx[j], colidx[j]), 
+      density.subvec(offset, end) +=
+        dmvnfast(data[j],
+                 mu.elem(colidx[j]),
+                 Sig.submat(colidx[j], colidx[j]),
                  false, ncores, false) * w[i];
-      
+
       offset = end + 1L;
     }
   }
@@ -395,8 +433,8 @@ arma::vec gradObsLogLikLmsCpp(const Rcpp::List& modelR,
                               const arma::uvec& symmetric,
                               const arma::uvec& n,
                               const double      eps       = 1e-6,
-                              const int         npatterns = 1,
-                              const int         ncores    = 1) {
+                              const int         npatterns = 1L,
+                              const int         ncores    = 1L) {
   LMSModel M(modelR);
 
   const arma::mat V = Rcpp::as<arma::mat>(P["V"]);
@@ -405,10 +443,10 @@ arma::vec gradObsLogLikLmsCpp(const Rcpp::List& modelR,
   const auto data   = as_vec_of_mat(dataR);
 
   auto obs_ll = [&](LMSModel& mod) -> double {
-    return observedLogLikFromModel(mod, V, w, data, colidx, n, npatterns, ncores);
+    return observedLogLikFromModel(mod, V, w, data, colidx, n, npatterns, 1L); // single-threaded
   };
 
-  return gradientFD(M, obs_ll, block, row, col, symmetric, eps);
+  return gradientFD(M, obs_ll, block, row, col, symmetric, eps, ncores); // multi-thread here instead
 }
 
 
@@ -418,8 +456,8 @@ double observedLogLikLmsCpp(const Rcpp::List& modelR,
                             const Rcpp::List& colidxR,
                             const Rcpp::List& P,
                             const arma::uvec& n,
-                            const int npatterns = 1,
-                            const int ncores = 1) {
+                            const int npatterns = 1L,
+                            const int ncores = 1L) {
   const LMSModel M = LMSModel(modelR);
 
   const arma::mat V = Rcpp::as<arma::mat>(P["V"]);
@@ -462,102 +500,116 @@ inline void set_params(LMSModel&         M,
 }
 
 
-template< class F >
+template<class F>
 Rcpp::List fdHessCpp(LMSModel&         M,
                      F&&               fun,
                      const arma::uvec& block,
                      const arma::uvec& row,
                      const arma::uvec& col,
                      const arma::uvec& symmetric,
-                     double            relStep   = 1e-6,
-                     double            minAbsPar = 0.0) {
-    const std::size_t p = block.n_elem;
-    const arma::vec   base = get_params(M, block, row, col);
-    const arma::vec   incr =
-        arma::max(arma::abs(base),
-                  arma::vec(p).fill(minAbsPar)) * relStep;
+                     const double      relStep   = 1e-6,
+                     const double      minAbsPar = 0.0,
+                     const int         ncores    = 1L) {
+  ThreadSetter ts(ncores, 1L);
 
-    //  build Koschal displacement matrix
-    std::vector< arma::vec > disp;
-    disp.emplace_back(arma::zeros<arma::vec>(p));          // origin
-    for (std::size_t i = 0; i < p; ++i) {                  //  +e_i / –e_i
-        arma::vec v = arma::zeros<arma::vec>(p);
-        v[i] = 1;  disp.push_back(v);
-        v[i] = -1; disp.push_back(v);
+  const std::size_t p = block.n_elem;
+
+  // Baseline parameter vector and FD step sizes
+  const arma::vec base = get_params(M, block, row, col);
+  const arma::vec incr =
+    arma::max(arma::abs(base), arma::vec(p).fill(minAbsPar)) * relStep;
+
+  // Build Koschal displacement matrix (read-only afterwards)
+  std::vector< arma::vec > disp;
+  disp.reserve(1 + 2*p + (p*(p-1))/2); // rough lower bound
+  disp.emplace_back(arma::zeros<arma::vec>(p));          // origin
+  for (std::size_t i = 0; i < p; ++i) {                  // +e_i / –e_i
+    arma::vec v = arma::zeros<arma::vec>(p);
+    v[i] = 1;  disp.push_back(v);
+    v[i] = -1; disp.push_back(v);
+  }
+  for (std::size_t i = 0; i < p - 1; ++i)                // +e_i + e_j (i<j)
+    for (std::size_t j = i + 1; j < p; ++j) {
+      arma::vec v = arma::zeros<arma::vec>(p);
+      v[i] = v[j] = 1;
+      disp.push_back(v);
     }
-    for (std::size_t i = 0; i < p - 1; ++i)                //  +e_i+e_j  (i<j)
-        for (std::size_t j = i + 1; j < p; ++j) {
-            arma::vec v = arma::zeros<arma::vec>(p);
-            v[i] = v[j] = 1;
-            disp.push_back(v);
-        }
-    const std::size_t m = disp.size();                     // total design points
+  const std::size_t m = disp.size();
 
-    //  evaluate fun at every design point
-    arma::vec y(m);
-    for (std::size_t k = 0; k < m; ++k) {
-        set_params(M, block, row, col, symmetric, base + disp[k] % incr);
-        y[k] = fun(M);
+  // Evaluate fun at every design point (parallel)
+  arma::vec y(m);
+
+#pragma omp parallel for default(none) \
+  shared(M, disp, m, block, row, col, symmetric, base, incr, y) \
+  firstprivate(fun) schedule(static)
+  for (std::size_t k = 0; k < m; ++k) {
+    // If you have LMSModel::shallow_clone(), prefer it:
+    LMSModel Mc = M.thread_clone();
+
+    // θ = base + disp[k] % incr
+    set_params(Mc, block, row, col, symmetric, base + disp[k] % incr);
+
+    // Evaluate on local model
+    y[k] = fun(Mc);
+    // No restore needed (Mc is thread-local)
+  }
+
+  // Restore θ₀ on the original model (serial, for callers expecting M unchanged)
+  set_params(M, block, row, col, symmetric, base);
+
+  // Build design matrix X (serial; cheap vs evals; BLAS may thread this)
+  const std::size_t q = 1 + 2*p + (p*(p-1))/2;
+  arma::mat X(m, q, arma::fill::ones);
+  std::size_t col_id = 1;
+
+  // linear terms
+  for (std::size_t j = 0; j < p; ++j, ++col_id)
+    for (std::size_t k = 0; k < m; ++k)
+      X(k, col_id) = disp[k][j];
+
+  // squares
+  for (std::size_t j = 0; j < p; ++j, ++col_id)
+    for (std::size_t k = 0; k < m; ++k)
+      X(k, col_id) = std::pow(disp[k][j], 2);
+
+  // cross terms
+  for (std::size_t i = 0; i < p - 1; ++i)
+    for (std::size_t j = i + 1; j < p; ++j, ++col_id)
+      for (std::size_t k = 0; k < m; ++k)
+        X(k, col_id) = disp[k][i] * disp[k][j];
+
+  // “frac” scaling (nlme-compatible)
+  arma::vec frac(q, arma::fill::ones);
+  for (std::size_t j = 0; j < p; ++j)              frac[1 + j]     = incr[j];
+  for (std::size_t j = 0; j < p; ++j)              frac[1 + p + j] = incr[j] * incr[j];
+  col_id = 1 + 2*p;
+  for (std::size_t i = 0; i < p - 1; ++i)
+    for (std::size_t j = i + 1; j < p; ++j, ++col_id)
+      frac[col_id] = incr[i] * incr[j];
+
+  // Solve for polynomial coefficients
+  arma::vec coef = arma::solve(X, y) / frac;
+
+  // Gradient (first-order coefs)
+  arma::vec grad = coef.subvec(1, p);
+
+  // Hessian
+  arma::mat Hess(p, p, arma::fill::zeros);
+  for (std::size_t j = 0; j < p; ++j)               // diagonal: 2 * c_j
+    Hess(j, j) = 2.0 * coef[1 + p + j];
+
+  col_id = 1 + 2*p;                                 // off-diagonal: d_ij
+  for (std::size_t i = 0; i < p - 1; ++i)
+    for (std::size_t j = i + 1; j < p; ++j, ++col_id) {
+      Hess(i, j) = coef[col_id];
+      Hess(j, i) = coef[col_id];
     }
-    set_params(M, block, row, col, symmetric, base);                  // restore θ₀
 
-    //  build design matrix X
-    const std::size_t q = 1 + 2*p + (p*(p-1))/2;           // # β‐coeffs
-    arma::mat X(m, q, arma::fill::ones);
-    std::size_t col_id = 1;
-
-    // linear terms
-    for (std::size_t j = 0; j < p; ++j, ++col_id)
-        for (std::size_t k = 0; k < m; ++k)
-            X(k, col_id) = disp[k][j];
-
-    // squares
-    for (std::size_t j = 0; j < p; ++j, ++col_id)
-        for (std::size_t k = 0; k < m; ++k)
-            X(k, col_id) = std::pow(disp[k][j], 2);
-
-    // cross terms
-    for (std::size_t i = 0; i < p - 1; ++i)
-        for (std::size_t j = i + 1; j < p; ++j, ++col_id)
-            for (std::size_t k = 0; k < m; ++k)
-                X(k, col_id) = disp[k][i] * disp[k][j];
-
-    //  “frac” scaling (identical to nlme)
-    arma::vec frac(q, arma::fill::ones);
-    for (std::size_t j = 0; j < p; ++j)              frac[1 + j]     = incr[j];
-    for (std::size_t j = 0; j < p; ++j)              frac[1 + p + j] = incr[j] * incr[j];
-    col_id = 1 + 2*p;
-    for (std::size_t i = 0; i < p - 1; ++i)
-        for (std::size_t j = i + 1; j < p; ++j, ++col_id)
-            frac[col_id] = incr[i] * incr[j];
-
-    //  solve for polynomial coefficients
-    arma::vec coef = arma::solve(X, y) / frac;
-
-    //  gradient (first‐order coefs)
-    arma::vec grad = coef.subvec(1, p);
-
-    //  Hessian
-    arma::mat Hess(p, p, arma::fill::zeros);
-
-    // diagonal:  2 * c_i
-    for (std::size_t j = 0; j < p; ++j)
-        Hess(j, j) = 2.0 * coef[1 + p + j];
-
-    // off‐diagonal:  d_ij
-    col_id = 1 + 2*p;
-    for (std::size_t i = 0; i < p - 1; ++i)
-        for (std::size_t j = i + 1; j < p; ++j, ++col_id) {
-            Hess(i, j) = coef[col_id];
-            Hess(j, i) = coef[col_id];
-        }
-
-    //  return exactly like nlme::fdHess()
-    return Rcpp::List::create(
-        Rcpp::Named("mean")     = coef[0],
-        Rcpp::Named("gradient") = grad,
-        Rcpp::Named("Hessian")  = Hess
-    );
+  return Rcpp::List::create(
+      Rcpp::Named("mean")     = coef[0],
+      Rcpp::Named("gradient") = grad,
+      Rcpp::Named("Hessian")  = Hess
+      );
 }
 
 
@@ -571,10 +623,10 @@ Rcpp::List hessObsLogLikLmsCpp(const Rcpp::List& modelR,
                                const arma::uvec& symmetric,
                                const Rcpp::List& colidxR,
                                const arma::uvec& n,
-                               const int         npatterns = 1,
+                               const int         npatterns = 1L,
                                const double      relStep = 1e-6,
                                const double      minAbs  = 0.0,
-                               const int         ncores  = 1) {
+                               const int         ncores  = 1L) {
     LMSModel M(modelR);
 
     const arma::mat V = Rcpp::as<arma::mat>(P["V"]);
@@ -584,10 +636,11 @@ Rcpp::List hessObsLogLikLmsCpp(const Rcpp::List& modelR,
 
     auto obs_ll = [&](LMSModel& mod) -> double {
         return observedLogLikFromModel(mod, V, w, data, colidx,
-                                       n, npatterns, ncores);
+                                       n, npatterns, 1L); // single-threaded
     };
 
-    return fdHessCpp(M, obs_ll, block, row, col, symmetric, relStep, minAbs);
+    return fdHessCpp(M, obs_ll, block, row, col, symmetric,
+        relStep, minAbs, ncores); // multi-threaded
 }
 
 
@@ -604,7 +657,7 @@ Rcpp::List hessCompLogLikLmsCpp(const Rcpp::List& modelR,
                                 const int         npatterns = 1,
                                 const double      relStep   = 1e-6,
                                 const double      minAbs    = 0.0,
-                                const int         ncores    = 1) {
+                                const int         ncores    = 1L) {
   LMSModel M(modelR);
 
   const arma::mat  V       = Rcpp::as<arma::mat>(P["V"]);
@@ -616,9 +669,10 @@ Rcpp::List hessCompLogLikLmsCpp(const Rcpp::List& modelR,
   const Rcpp::List info   = modelR["info"];
 
   auto comp_ll = [&](LMSModel& mod) -> double {
-    return completeLogLikFromModel(mod, V, TGamma, Mean, Cov, 
-                                   colidx, n, d, npatterns);
+    return completeLogLikFromModel(mod, V, TGamma, Mean, Cov,
+                                   colidx, n, d, npatterns); // single-threaded
   };
 
-  return fdHessCpp(M, comp_ll, block, row, col, symmetric, relStep, minAbs);
+  return fdHessCpp(M, comp_ll, block, row, col, symmetric,
+      relStep, minAbs, ncores); // multi-threaded
 }
