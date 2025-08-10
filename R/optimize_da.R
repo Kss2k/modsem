@@ -15,6 +15,7 @@ optimizeStartingParamsDA <- function(model,
                   model$info$lavOptimizerSyntaxAdditions,
                   sep = "\n")
 
+  acceptable.missing <- c("listwise", "ml", "direct", "fiml")
   if (grepl(":", syntax) && missing %in% c("ml", "fiml", "direct")) {
     # It is not worth the extra compute to use fiml (if fiml is set)
     # for getting good starting estiamtes for the model, for non-linear models.
@@ -23,7 +24,7 @@ optimizeStartingParamsDA <- function(model,
     # exact same, and product indicators aren't an issue. Thus
     # we will save time.
     missing <- "listwise"
-  } else if (missing %in% c("casewise", "complete")) missing <- "listwise"
+  } else if (!missing %in% acceptable.missing) missing <- "listwise"
 
   estPI <- modsem_pi(
     model.syntax    = syntax,
