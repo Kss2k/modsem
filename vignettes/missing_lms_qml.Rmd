@@ -1,0 +1,76 @@
+---
+title: "Missing data in the LMS and QML approaches"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Missing data in the LMS and QML approaches}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+EVAL_DEFAULT <- FALSE
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = EVAL_DEFAULT
+)
+```
+
+```{r setup}
+library(modsem)
+```
+
+# Options for Handling Missing Values
+By default, missing values for both the LMS and QML are removed list-wise
+(`missing="complete"`), such that only complete observations are kept.
+It is also possible to set `missing="impute"` to impute missing values, 
+or to use the `modsem_mimpute()` function to perform multiple imputation.
+For the LMS approach it is also possible to use
+*Full Information Maximum Likelihood* (FIML)
+
+## Full Information Maximum Likelihood (FIML)
+
+If you're using the LMS approach, it is possible to estimate your model using 
+*Full Information Maximum Likelihood* (FIML), by setting `missing="fiml"`. Here
+is an example, where we generate some missing data using the `oneInt` dataset.
+
+```{r}
+set.seed(2834027) # set seed for reproducibility
+n.missing <- 200L # generate 200 missing values
+oneInt2 <- as.matrix(oneInt)
+oneInt2[sample(length(oneInt2), n.missing)] <- NA
+
+m1 <- '
+# Outer Model
+  X =~ x1 + x2 + x3
+  Z =~ z1 + z2 + z3
+  Y =~ y1 + y2 + y3
+
+# Inner Model
+  Y ~ X + Z + X:Z
+'
+
+lms_fiml <- modsem(m1, oneInt2, method = "lms", missing = "fiml")
+summary(lms_fiml)
+```
+
+## (Multiple) Imputation
+
+If you're using the QML approach it is not possible (yet) to use FIML, and FIML
+can also be very computationally intensive when using the LMS approach. Another
+option is to use (multiple) imputation.
+
+If `missing="impute"` is set, single imputation is performed.
+
+```{r}
+qml_impute <- modsem(m1, oneInt2, method = "qml", missing = "impute")
+summary(qml_impute)
+```
+
+A better option than single imputation, is multiple imputation, which can be
+performed both for the LMS and QML approaches, using the `modsem_mimpute()` function.
+
+```{r}
+lms_mimpute <- modsem_mimpute(m1, oneInt2, method = "lms")
+summary(lms_mimpute)
+```
