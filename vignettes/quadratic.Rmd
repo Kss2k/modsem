@@ -63,8 +63,7 @@ means that we have to explicitly model `SC` as a moderator. This means that
 we (by default) have to integrate along `24^2=576` nodes. This both affects the
 the optimization process, but also dramatically affects the computation time of
 the standard errors. To make the estimation process it is possible to reduce the number
-of quadrature nodes, and calculate standard errors using the outer product of the
-score function, instead of the negative of the hessian matrix. Additionally, we can
+of quadrature nodes. Additionally, we can
 also pass `mean.observed = FALSE`, constraining the intercepts of the indicators to zero.
 
 ```{r}
@@ -76,7 +75,6 @@ CAREER ~ ENJ + SC + ENJ:ENJ + SC:SC + ENJ:SC
 '
 
 est2_lms <- modsem(m2, data = jordan, method = "lms",
-                   nodes = 15, OFIM.hessian = FALSE,
-                   mean.observed = FALSE)
+                   nodes = 15, mean.observed = FALSE)
 summary(est2_lms)
 ```

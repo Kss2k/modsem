@@ -23,7 +23,7 @@ optimizeStartingParamsDA <- function(model,
     # exact same, and product indicators aren't an issue. Thus
     # we will save time.
     missing <- "listwise"
-  }
+  } else if (missing %in% c("casewise", "complete")) missing <- "listwise"
 
   estPI <- modsem_pi(
     model.syntax    = syntax,
@@ -55,6 +55,8 @@ optimizeStartingParamsDA <- function(model,
       return(matNumeric)
 
     labels <- c(matLabel[matLabel != ""])
+    labels <- labels[labels %in% names(thetaLabel)]
+
     for (label in labels)
       matNumeric[matLabel == label] <- thetaLabel[[label]]
 

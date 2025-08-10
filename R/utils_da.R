@@ -969,3 +969,12 @@ sortParTableDA <- function(parTable, model) {
 
   parTable[order(scoreOp, scoreLhs, scoreRhs), , drop = FALSE]
 }
+
+
+updateStatusLog <- function(iterations, mode, logLikNew, deltaLL, relDeltaLL, verbose = FALSE) {
+  if (verbose) {
+    clearConsoleLine()
+    printf("\rIter=%d Mode=%s LogLik=%.2f \u0394LL=%.2g rel\u0394LL=%.2g",
+           iterations, mode, logLikNew, deltaLL, relDeltaLL)
+  }
+}
