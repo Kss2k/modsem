@@ -269,15 +269,18 @@ method. If you want to use another method, you can change it using the
 <code class="sourceCode R"><span><span class="va">est1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m1</span>, <span class="va">oneInt</span>, method <span class="op">=</span> <span class="st">"lms"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est1</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (version 1.0.12):</span></span>
+<span><span class="co">#&gt; modsem (1.0.12) ended normally after 43 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                        LMS</span></span>
 <span><span class="co">#&gt;   Optimization method                       EMA-NLMINB</span></span>
+<span><span class="co">#&gt;   Number of model parameters                        31</span></span>
+<span><span class="co">#&gt;                                                       </span></span>
 <span><span class="co">#&gt;   Number of observations                          2000</span></span>
-<span><span class="co">#&gt;   Number of iterations                              46</span></span>
-<span><span class="co">#&gt;   Loglikelihood                               -17493.6</span></span>
-<span><span class="co">#&gt;   Akaike (AIC)                                35049.21</span></span>
-<span><span class="co">#&gt;   Bayesian (BIC)                              35222.84</span></span>
+<span><span class="co">#&gt;  </span></span>
+<span><span class="co">#&gt; Loglikelihood and Information Criteria:</span></span>
+<span><span class="co">#&gt;   Loglikelihood                              -17493.60</span></span>
+<span><span class="co">#&gt;   Akaike (AIC)                                35049.20</span></span>
+<span><span class="co">#&gt;   Bayesian (BIC)                              35222.83</span></span>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; Numerical Integration:</span></span>
 <span><span class="co">#&gt;   Points of integration (per dim)                   24</span></span>
@@ -295,7 +298,7 @@ method. If you want to use another method, you can change it using the
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; Comparative Fit to H0 (LRT test):</span></span>
 <span><span class="co">#&gt;   Loglikelihood change                          338.27</span></span>
-<span><span class="co">#&gt;   Difference test (D)                           676.54</span></span>
+<span><span class="co">#&gt;   Difference test (D)                           676.55</span></span>
 <span><span class="co">#&gt;   Degrees of freedom (D)                             1</span></span>
 <span><span class="co">#&gt;   P-value (D)                                    0.000</span></span>
 <span><span class="co">#&gt;  </span></span>
@@ -315,34 +318,34 @@ method. If you want to use another method, you can change it using the
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   X =~          </span></span>
 <span><span class="co">#&gt;     x1              1.000                             </span></span>
-<span><span class="co">#&gt;     x2              0.803      0.013    63.91    0.000</span></span>
-<span><span class="co">#&gt;     x3              0.914      0.013    67.73    0.000</span></span>
+<span><span class="co">#&gt;     x2              0.804      0.013    63.81    0.000</span></span>
+<span><span class="co">#&gt;     x3              0.914      0.014    67.60    0.000</span></span>
 <span><span class="co">#&gt;   Z =~          </span></span>
 <span><span class="co">#&gt;     z1              1.000                             </span></span>
-<span><span class="co">#&gt;     z2              0.810      0.012    65.09    0.000</span></span>
-<span><span class="co">#&gt;     z3              0.881      0.013    67.62    0.000</span></span>
+<span><span class="co">#&gt;     z2              0.810      0.012    65.08    0.000</span></span>
+<span><span class="co">#&gt;     z3              0.881      0.013    67.61    0.000</span></span>
 <span><span class="co">#&gt;   Y =~          </span></span>
 <span><span class="co">#&gt;     y1              1.000                             </span></span>
 <span><span class="co">#&gt;     y2              0.798      0.007   107.55    0.000</span></span>
-<span><span class="co">#&gt;     y3              0.899      0.008   112.58    0.000</span></span>
+<span><span class="co">#&gt;     y3              0.899      0.008   112.57    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   Y ~           </span></span>
-<span><span class="co">#&gt;     X               0.672      0.031    21.66    0.000</span></span>
-<span><span class="co">#&gt;     Z               0.570      0.030    18.75    0.000</span></span>
-<span><span class="co">#&gt;     X:Z             0.718      0.028    25.84    0.000</span></span>
+<span><span class="co">#&gt;     X               0.674      0.031    21.69    0.000</span></span>
+<span><span class="co">#&gt;     Z               0.570      0.030    18.74    0.000</span></span>
+<span><span class="co">#&gt;     X:Z             0.718      0.028    25.83    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Intercepts:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;    .x1              1.024      0.024    42.85    0.000</span></span>
-<span><span class="co">#&gt;    .x2              1.217      0.020    60.92    0.000</span></span>
-<span><span class="co">#&gt;    .x3              0.921      0.022    41.45    0.000</span></span>
-<span><span class="co">#&gt;    .z1              1.011      0.024    41.54    0.000</span></span>
-<span><span class="co">#&gt;    .z2              1.205      0.020    59.24    0.000</span></span>
-<span><span class="co">#&gt;    .z3              0.915      0.022    42.03    0.000</span></span>
-<span><span class="co">#&gt;    .y1              1.037      0.033    31.40    0.000</span></span>
-<span><span class="co">#&gt;    .y2              1.220      0.027    45.42    0.000</span></span>
+<span><span class="co">#&gt;    .x1              1.023      0.024    42.81    0.000</span></span>
+<span><span class="co">#&gt;    .x2              1.216      0.020    60.88    0.000</span></span>
+<span><span class="co">#&gt;    .x3              0.920      0.022    41.41    0.000</span></span>
+<span><span class="co">#&gt;    .z1              1.012      0.024    41.59    0.000</span></span>
+<span><span class="co">#&gt;    .z2              1.206      0.020    59.28    0.000</span></span>
+<span><span class="co">#&gt;    .z3              0.916      0.022    42.07    0.000</span></span>
+<span><span class="co">#&gt;    .y1              1.037      0.033    31.39    0.000</span></span>
+<span><span class="co">#&gt;    .y2              1.220      0.027    45.41    0.000</span></span>
 <span><span class="co">#&gt;    .y3              0.954      0.030    31.80    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
@@ -354,16 +357,16 @@ method. If you want to use another method, you can change it using the
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;    .x1              0.158      0.009    18.17    0.000</span></span>
 <span><span class="co">#&gt;    .x2              0.162      0.007    23.16    0.000</span></span>
-<span><span class="co">#&gt;    .x3              0.164      0.008    20.76    0.000</span></span>
+<span><span class="co">#&gt;    .x3              0.165      0.008    20.75    0.000</span></span>
 <span><span class="co">#&gt;    .z1              0.167      0.009    18.50    0.000</span></span>
 <span><span class="co">#&gt;    .z2              0.160      0.007    22.68    0.000</span></span>
 <span><span class="co">#&gt;    .z3              0.158      0.008    20.78    0.000</span></span>
 <span><span class="co">#&gt;    .y1              0.160      0.009    18.01    0.000</span></span>
-<span><span class="co">#&gt;    .y2              0.154      0.007    22.69    0.000</span></span>
+<span><span class="co">#&gt;    .y2              0.154      0.007    22.68    0.000</span></span>
 <span><span class="co">#&gt;    .y3              0.164      0.008    20.68    0.000</span></span>
-<span><span class="co">#&gt;     X               0.981      0.036    27.04    0.000</span></span>
-<span><span class="co">#&gt;     Z               1.018      0.038    26.93    0.000</span></span>
-<span><span class="co">#&gt;    .Y               0.980      0.038    25.94    0.000</span></span></code></pre></div>
+<span><span class="co">#&gt;     X               0.981      0.036    26.97    0.000</span></span>
+<span><span class="co">#&gt;     Z               1.017      0.038    26.93    0.000</span></span>
+<span><span class="co">#&gt;    .Y               0.980      0.038    25.93    0.000</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="interactions-between-two-observed-variables">Interactions Between Two Observed Variables<a class="anchor" aria-label="anchor" href="#interactions-between-two-observed-variables"></a>
@@ -631,12 +634,15 @@ quadratic effects.</p>
 <span><span class="va">est4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m4</span>, <span class="va">oneInt</span>, method <span class="op">=</span> <span class="st">"qml"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est4</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (version 1.0.12):</span></span>
+<span><span class="co">#&gt; modsem (1.0.12) ended normally after 117 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                        QML</span></span>
 <span><span class="co">#&gt;   Optimization method                           NLMINB</span></span>
+<span><span class="co">#&gt;   Number of model parameters                        32</span></span>
+<span><span class="co">#&gt;                                                       </span></span>
 <span><span class="co">#&gt;   Number of observations                          2000</span></span>
-<span><span class="co">#&gt;   Number of iterations                             117</span></span>
+<span><span class="co">#&gt;  </span></span>
+<span><span class="co">#&gt; Loglikelihood and Information Criteria:</span></span>
 <span><span class="co">#&gt;   Loglikelihood                              -17493.63</span></span>
 <span><span class="co">#&gt;   Akaike (AIC)                                35051.26</span></span>
 <span><span class="co">#&gt;   Bayesian (BIC)                              35230.49</span></span>
@@ -752,14 +758,17 @@ quadratic effects.</p>
 <span><span class="co">#&gt; 24'</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_tpb_lms</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (version 1.0.12):</span></span>
+<span><span class="co">#&gt; modsem (1.0.12) ended normally after 27 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                        LMS</span></span>
 <span><span class="co">#&gt;   Optimization method                       EMA-NLMINB</span></span>
+<span><span class="co">#&gt;   Number of model parameters                        54</span></span>
+<span><span class="co">#&gt;                                                       </span></span>
 <span><span class="co">#&gt;   Number of observations                          2000</span></span>
-<span><span class="co">#&gt;   Number of iterations                              28</span></span>
-<span><span class="co">#&gt;   Loglikelihood                               -26326.1</span></span>
-<span><span class="co">#&gt;   Akaike (AIC)                                 52760.2</span></span>
+<span><span class="co">#&gt;  </span></span>
+<span><span class="co">#&gt; Loglikelihood and Information Criteria:</span></span>
+<span><span class="co">#&gt;   Loglikelihood                              -26326.10</span></span>
+<span><span class="co">#&gt;   Akaike (AIC)                                52760.20</span></span>
 <span><span class="co">#&gt;   Bayesian (BIC)                              53062.65</span></span>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; Numerical Integration:</span></span>
@@ -801,61 +810,61 @@ quadratic effects.</p>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   ATT =~        </span></span>
 <span><span class="co">#&gt;     att1            1.000                             </span></span>
-<span><span class="co">#&gt;     att2            0.878      0.012    71.56    0.000</span></span>
+<span><span class="co">#&gt;     att2            0.878      0.012    71.57    0.000</span></span>
 <span><span class="co">#&gt;     att3            0.789      0.012    66.38    0.000</span></span>
 <span><span class="co">#&gt;     att4            0.695      0.011    61.00    0.000</span></span>
-<span><span class="co">#&gt;     att5            0.887      0.013    70.85    0.000</span></span>
+<span><span class="co">#&gt;     att5            0.887      0.013    70.86    0.000</span></span>
 <span><span class="co">#&gt;   SN =~         </span></span>
 <span><span class="co">#&gt;     sn1             1.000                             </span></span>
 <span><span class="co">#&gt;     sn2             0.888      0.017    52.60    0.000</span></span>
 <span><span class="co">#&gt;   PBC =~        </span></span>
 <span><span class="co">#&gt;     pbc1            1.000                             </span></span>
-<span><span class="co">#&gt;     pbc2            0.912      0.013    69.44    0.000</span></span>
-<span><span class="co">#&gt;     pbc3            0.801      0.012    66.07    0.000</span></span>
+<span><span class="co">#&gt;     pbc2            0.912      0.013    69.34    0.000</span></span>
+<span><span class="co">#&gt;     pbc3            0.801      0.012    65.98    0.000</span></span>
 <span><span class="co">#&gt;   INT =~        </span></span>
 <span><span class="co">#&gt;     int1            1.000                             </span></span>
 <span><span class="co">#&gt;     int2            0.913      0.015    59.06    0.000</span></span>
 <span><span class="co">#&gt;     int3            0.807      0.014    55.74    0.000</span></span>
 <span><span class="co">#&gt;   BEH =~        </span></span>
 <span><span class="co">#&gt;     b1              1.000                             </span></span>
-<span><span class="co">#&gt;     b2              0.960      0.030    31.76    0.000</span></span>
+<span><span class="co">#&gt;     b2              0.961      0.030    31.75    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   INT ~         </span></span>
 <span><span class="co">#&gt;     ATT             0.213      0.026     8.17    0.000</span></span>
-<span><span class="co">#&gt;     SN              0.176      0.028     6.39    0.000</span></span>
+<span><span class="co">#&gt;     SN              0.177      0.028     6.39    0.000</span></span>
 <span><span class="co">#&gt;     PBC             0.217      0.030     7.34    0.000</span></span>
 <span><span class="co">#&gt;   BEH ~         </span></span>
 <span><span class="co">#&gt;     PBC             0.233      0.022    10.41    0.000</span></span>
-<span><span class="co">#&gt;     INT             0.190      0.025     7.70    0.000</span></span>
+<span><span class="co">#&gt;     INT             0.190      0.025     7.69    0.000</span></span>
 <span><span class="co">#&gt;     INT:PBC         0.205      0.018    11.31    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Intercepts:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;    .pbc1            1.000      0.024    42.36    0.000</span></span>
-<span><span class="co">#&gt;    .pbc2            0.987      0.022    44.88    0.000</span></span>
-<span><span class="co">#&gt;    .pbc3            0.993      0.020    50.38    0.000</span></span>
-<span><span class="co">#&gt;    .att1            1.015      0.024    41.97    0.000</span></span>
-<span><span class="co">#&gt;    .att2            1.008      0.021    46.93    0.000</span></span>
-<span><span class="co">#&gt;    .att3            1.017      0.020    51.41    0.000</span></span>
-<span><span class="co">#&gt;    .att4            0.999      0.018    55.61    0.000</span></span>
-<span><span class="co">#&gt;    .att5            0.993      0.022    45.63    0.000</span></span>
+<span><span class="co">#&gt;    .pbc1            0.999      0.024    42.33    0.000</span></span>
+<span><span class="co">#&gt;    .pbc2            0.986      0.022    44.84    0.000</span></span>
+<span><span class="co">#&gt;    .pbc3            0.992      0.020    50.35    0.000</span></span>
+<span><span class="co">#&gt;    .att1            1.015      0.024    41.99    0.000</span></span>
+<span><span class="co">#&gt;    .att2            1.008      0.021    46.95    0.000</span></span>
+<span><span class="co">#&gt;    .att3            1.017      0.020    51.43    0.000</span></span>
+<span><span class="co">#&gt;    .att4            1.000      0.018    55.63    0.000</span></span>
+<span><span class="co">#&gt;    .att5            0.993      0.022    45.66    0.000</span></span>
 <span><span class="co">#&gt;    .sn1             1.007      0.024    41.64    0.000</span></span>
 <span><span class="co">#&gt;    .sn2             1.011      0.022    46.68    0.000</span></span>
-<span><span class="co">#&gt;    .int1            1.014      0.022    46.94    0.000</span></span>
-<span><span class="co">#&gt;    .int2            1.013      0.020    50.38    0.000</span></span>
-<span><span class="co">#&gt;    .int3            1.006      0.018    54.78    0.000</span></span>
-<span><span class="co">#&gt;    .b1              1.002      0.021    46.99    0.000</span></span>
-<span><span class="co">#&gt;    .b2              1.020      0.020    51.07    0.000</span></span>
+<span><span class="co">#&gt;    .int1            1.014      0.022    46.95    0.000</span></span>
+<span><span class="co">#&gt;    .int2            1.013      0.020    50.39    0.000</span></span>
+<span><span class="co">#&gt;    .int3            1.006      0.018    54.79    0.000</span></span>
+<span><span class="co">#&gt;    .b1              1.001      0.021    46.97    0.000</span></span>
+<span><span class="co">#&gt;    .b2              1.019      0.020    51.04    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   ATT ~~        </span></span>
 <span><span class="co">#&gt;     SN              0.629      0.029    21.90    0.000</span></span>
 <span><span class="co">#&gt;   PBC ~~        </span></span>
-<span><span class="co">#&gt;     ATT             0.678      0.029    23.64    0.000</span></span>
-<span><span class="co">#&gt;     SN              0.677      0.029    23.25    0.000</span></span>
+<span><span class="co">#&gt;     ATT             0.677      0.029    23.62    0.000</span></span>
+<span><span class="co">#&gt;     SN              0.677      0.029    23.23    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
@@ -872,11 +881,11 @@ quadratic effects.</p>
 <span><span class="co">#&gt;    .int1            0.157      0.009    18.11    0.000</span></span>
 <span><span class="co">#&gt;    .int2            0.160      0.008    20.41    0.000</span></span>
 <span><span class="co">#&gt;    .int3            0.168      0.007    23.55    0.000</span></span>
-<span><span class="co">#&gt;    .b1              0.186      0.018    10.12    0.000</span></span>
-<span><span class="co">#&gt;    .b2              0.135      0.017     8.14    0.000</span></span>
-<span><span class="co">#&gt;     ATT             0.998      0.037    27.10    0.000</span></span>
+<span><span class="co">#&gt;    .b1              0.186      0.018    10.13    0.000</span></span>
+<span><span class="co">#&gt;    .b2              0.135      0.017     8.12    0.000</span></span>
+<span><span class="co">#&gt;     ATT             0.998      0.037    27.11    0.000</span></span>
 <span><span class="co">#&gt;     SN              0.987      0.039    25.38    0.000</span></span>
-<span><span class="co">#&gt;     PBC             0.962      0.035    27.16    0.000</span></span>
+<span><span class="co">#&gt;     PBC             0.961      0.035    27.09    0.000</span></span>
 <span><span class="co">#&gt;    .INT             0.491      0.020    24.65    0.000</span></span>
 <span><span class="co">#&gt;    .BEH             0.455      0.023    20.14    0.000</span></span></code></pre></div>
 <p>Here is an example that includes two quadratic effects and one
@@ -894,12 +903,15 @@ is a subset of the PISA 2006 dataset.</p>
 <span><span class="va">est_jordan_qml</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m2</span>, data <span class="op">=</span> <span class="va">jordan</span>, method <span class="op">=</span> <span class="st">"qml"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_jordan_qml</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (version 1.0.12):</span></span>
+<span><span class="co">#&gt; modsem (1.0.12) ended normally after 59 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                        QML</span></span>
 <span><span class="co">#&gt;   Optimization method                           NLMINB</span></span>
+<span><span class="co">#&gt;   Number of model parameters                        51</span></span>
+<span><span class="co">#&gt;                                                       </span></span>
 <span><span class="co">#&gt;   Number of observations                          6038</span></span>
-<span><span class="co">#&gt;   Number of iterations                              59</span></span>
+<span><span class="co">#&gt;  </span></span>
+<span><span class="co">#&gt; Loglikelihood and Information Criteria:</span></span>
 <span><span class="co">#&gt;   Loglikelihood                             -110519.99</span></span>
 <span><span class="co">#&gt;   Akaike (AIC)                               221141.99</span></span>
 <span><span class="co">#&gt;   Bayesian (BIC)                             221483.98</span></span>

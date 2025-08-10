@@ -104,15 +104,18 @@ effects.</p>
 <span><span class="va">est1_lms</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m1</span>, data <span class="op">=</span> <span class="va">oneInt</span>, method <span class="op">=</span> <span class="st">"lms"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est1_lms</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (version 1.0.12):</span></span>
+<span><span class="co">#&gt; modsem (1.0.12) ended normally after 43 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                        LMS</span></span>
 <span><span class="co">#&gt;   Optimization method                       EMA-NLMINB</span></span>
+<span><span class="co">#&gt;   Number of model parameters                        32</span></span>
+<span><span class="co">#&gt;                                                       </span></span>
 <span><span class="co">#&gt;   Number of observations                          2000</span></span>
-<span><span class="co">#&gt;   Number of iterations                              45</span></span>
+<span><span class="co">#&gt;  </span></span>
+<span><span class="co">#&gt; Loglikelihood and Information Criteria:</span></span>
 <span><span class="co">#&gt;   Loglikelihood                              -17493.58</span></span>
 <span><span class="co">#&gt;   Akaike (AIC)                                35051.17</span></span>
-<span><span class="co">#&gt;   Bayesian (BIC)                               35230.4</span></span>
+<span><span class="co">#&gt;   Bayesian (BIC)                              35230.39</span></span>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; Numerical Integration:</span></span>
 <span><span class="co">#&gt;   Points of integration (per dim)                   24</span></span>
@@ -150,56 +153,56 @@ effects.</p>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   X =~          </span></span>
 <span><span class="co">#&gt;     x1              1.000                             </span></span>
-<span><span class="co">#&gt;     x2              0.803      0.013   63.914    0.000</span></span>
-<span><span class="co">#&gt;     x3              0.914      0.013   67.731    0.000</span></span>
+<span><span class="co">#&gt;     x2              0.804      0.013   63.803    0.000</span></span>
+<span><span class="co">#&gt;     x3              0.914      0.014   67.603    0.000</span></span>
 <span><span class="co">#&gt;   Z =~          </span></span>
 <span><span class="co">#&gt;     z1              1.000                             </span></span>
-<span><span class="co">#&gt;     z2              0.810      0.012   65.089    0.000</span></span>
-<span><span class="co">#&gt;     z3              0.881      0.013   67.618    0.000</span></span>
+<span><span class="co">#&gt;     z2              0.810      0.012   65.081    0.000</span></span>
+<span><span class="co">#&gt;     z3              0.881      0.013   67.606    0.000</span></span>
 <span><span class="co">#&gt;   Y =~          </span></span>
 <span><span class="co">#&gt;     y1              1.000                             </span></span>
-<span><span class="co">#&gt;     y2              0.798      0.007  107.546    0.000</span></span>
-<span><span class="co">#&gt;     y3              0.899      0.008  112.580    0.000</span></span>
+<span><span class="co">#&gt;     y2              0.798      0.007  107.549    0.000</span></span>
+<span><span class="co">#&gt;     y3              0.899      0.008  112.586    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   Y ~           </span></span>
-<span><span class="co">#&gt;     X               0.673      0.031   21.649    0.000</span></span>
-<span><span class="co">#&gt;     Z               0.570      0.030   18.739    0.000</span></span>
-<span><span class="co">#&gt;     X:X            -0.004      0.021   -0.193    0.847</span></span>
-<span><span class="co">#&gt;     Z:X             0.719      0.029   24.853    0.000</span></span>
+<span><span class="co">#&gt;     X               0.673      0.031   21.661    0.000</span></span>
+<span><span class="co">#&gt;     Z               0.570      0.030   18.725    0.000</span></span>
+<span><span class="co">#&gt;     X:X            -0.004      0.021   -0.166    0.868</span></span>
+<span><span class="co">#&gt;     Z:X             0.720      0.029   24.855    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Intercepts:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;    .x1              1.024      0.024   42.847    0.000</span></span>
-<span><span class="co">#&gt;    .x2              1.217      0.020   60.917    0.000</span></span>
-<span><span class="co">#&gt;    .x3              0.921      0.022   41.444    0.000</span></span>
-<span><span class="co">#&gt;    .z1              1.011      0.024   41.562    0.000</span></span>
-<span><span class="co">#&gt;    .z2              1.206      0.020   59.260    0.000</span></span>
-<span><span class="co">#&gt;    .z3              0.916      0.022   42.052    0.000</span></span>
-<span><span class="co">#&gt;    .y1              1.041      0.038   27.471    0.000</span></span>
-<span><span class="co">#&gt;    .y2              1.223      0.031   39.874    0.000</span></span>
-<span><span class="co">#&gt;    .y3              0.957      0.034   27.890    0.000</span></span>
+<span><span class="co">#&gt;    .x1              1.023      0.024   42.809    0.000</span></span>
+<span><span class="co">#&gt;    .x2              1.216      0.020   60.878    0.000</span></span>
+<span><span class="co">#&gt;    .x3              0.920      0.022   41.401    0.000</span></span>
+<span><span class="co">#&gt;    .z1              1.011      0.024   41.572    0.000</span></span>
+<span><span class="co">#&gt;    .z2              1.206      0.020   59.264    0.000</span></span>
+<span><span class="co">#&gt;    .z3              0.916      0.022   42.059    0.000</span></span>
+<span><span class="co">#&gt;    .y1              1.039      0.038   27.446    0.000</span></span>
+<span><span class="co">#&gt;    .y2              1.222      0.031   39.858    0.000</span></span>
+<span><span class="co">#&gt;    .y3              0.956      0.034   27.867    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   X ~~          </span></span>
-<span><span class="co">#&gt;     Z               0.200      0.024    8.247    0.000</span></span>
+<span><span class="co">#&gt;     Z               0.200      0.024    8.239    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;    .x1              0.158      0.009   18.167    0.000</span></span>
-<span><span class="co">#&gt;    .x2              0.162      0.007   23.160    0.000</span></span>
-<span><span class="co">#&gt;    .x3              0.164      0.008   20.761    0.000</span></span>
-<span><span class="co">#&gt;    .z1              0.167      0.009   18.507    0.000</span></span>
-<span><span class="co">#&gt;    .z2              0.160      0.007   22.682    0.000</span></span>
-<span><span class="co">#&gt;    .z3              0.158      0.008   20.781    0.000</span></span>
+<span><span class="co">#&gt;    .x1              0.158      0.009   18.175    0.000</span></span>
+<span><span class="co">#&gt;    .x2              0.162      0.007   23.157    0.000</span></span>
+<span><span class="co">#&gt;    .x3              0.164      0.008   20.756    0.000</span></span>
+<span><span class="co">#&gt;    .z1              0.167      0.009   18.510    0.000</span></span>
+<span><span class="co">#&gt;    .z2              0.160      0.007   22.680    0.000</span></span>
+<span><span class="co">#&gt;    .z3              0.158      0.008   20.780    0.000</span></span>
 <span><span class="co">#&gt;    .y1              0.160      0.009   18.012    0.000</span></span>
 <span><span class="co">#&gt;    .y2              0.154      0.007   22.686    0.000</span></span>
 <span><span class="co">#&gt;    .y3              0.164      0.008   20.682    0.000</span></span>
-<span><span class="co">#&gt;     X               0.981      0.036   27.037    0.000</span></span>
-<span><span class="co">#&gt;     Z               1.017      0.038   26.933    0.000</span></span>
-<span><span class="co">#&gt;    .Y               0.980      0.038   25.926    0.000</span></span></code></pre></div>
+<span><span class="co">#&gt;     X               0.981      0.036   26.970    0.000</span></span>
+<span><span class="co">#&gt;     Z               1.017      0.038   26.930    0.000</span></span>
+<span><span class="co">#&gt;    .Y               0.979      0.038   25.933    0.000</span></span></code></pre></div>
 <p>In this example, we have a simple model with two quadratic effects
 and one interaction effect. We estimate the model using both the
 <code>QML</code> and double-centering approaches, with data from a
@@ -216,12 +219,15 @@ subset of the PISA 2006 dataset.</p>
 <span><span class="va">est2_qml</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m2</span>, data <span class="op">=</span> <span class="va">jordan</span>, method <span class="op">=</span> <span class="st">"qml"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est2_qml</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (version 1.0.12):</span></span>
+<span><span class="co">#&gt; modsem (1.0.12) ended normally after 59 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                        QML</span></span>
 <span><span class="co">#&gt;   Optimization method                           NLMINB</span></span>
+<span><span class="co">#&gt;   Number of model parameters                        51</span></span>
+<span><span class="co">#&gt;                                                       </span></span>
 <span><span class="co">#&gt;   Number of observations                          6038</span></span>
-<span><span class="co">#&gt;   Number of iterations                              59</span></span>
+<span><span class="co">#&gt;  </span></span>
+<span><span class="co">#&gt; Loglikelihood and Information Criteria:</span></span>
 <span><span class="co">#&gt;   Loglikelihood                             -110519.99</span></span>
 <span><span class="co">#&gt;   Akaike (AIC)                               221141.99</span></span>
 <span><span class="co">#&gt;   Bayesian (BIC)                             221483.98</span></span>
@@ -335,9 +341,7 @@ of the <code>SC:SC</code> term means that we have to explicitly model
 integrate along <code>24^2=576</code> nodes. This both affects the the
 optimization process, but also dramatically affects the computation time
 of the standard errors. To make the estimation process it is possible to
-reduce the number of quadrature nodes, and calculate standard errors
-using the outer product of the score function, instead of the negative
-of the hessian matrix. Additionally, we can also pass
+reduce the number of quadrature nodes. Additionally, we can also pass
 <code>mean.observed = FALSE</code>, constraining the intercepts of the
 indicators to zero.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
@@ -349,16 +353,18 @@ indicators to zero.</p>
 <span><span class="st">'</span></span>
 <span></span>
 <span><span class="va">est2_lms</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m2</span>, data <span class="op">=</span> <span class="va">jordan</span>, method <span class="op">=</span> <span class="st">"lms"</span>,</span>
-<span>                   nodes <span class="op">=</span> <span class="fl">15</span>, OFIM.hessian <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>                   mean.observed <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span>                   nodes <span class="op">=</span> <span class="fl">15</span>, mean.observed <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est2_lms</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (version 1.0.12):</span></span>
+<span><span class="co">#&gt; modsem (1.0.12) ended normally after 29 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                        LMS</span></span>
 <span><span class="co">#&gt;   Optimization method                       EMA-NLMINB</span></span>
+<span><span class="co">#&gt;   Number of model parameters                        37</span></span>
+<span><span class="co">#&gt;                                                       </span></span>
 <span><span class="co">#&gt;   Number of observations                          6038</span></span>
-<span><span class="co">#&gt;   Number of iterations                              40</span></span>
+<span><span class="co">#&gt;  </span></span>
+<span><span class="co">#&gt; Loglikelihood and Information Criteria:</span></span>
 <span><span class="co">#&gt;   Loglikelihood                             -110520.02</span></span>
 <span><span class="co">#&gt;   Akaike (AIC)                               221114.03</span></span>
 <span><span class="co">#&gt;   Bayesian (BIC)                             221362.15</span></span>
@@ -384,7 +390,7 @@ indicators to zero.</p>
 <span><span class="co">#&gt;   P-value (D)                                    0.636</span></span>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; R-Squared Interaction Model (H1):</span></span>
-<span><span class="co">#&gt;   CAREER                                         0.511</span></span>
+<span><span class="co">#&gt;   CAREER                                         0.512</span></span>
 <span><span class="co">#&gt; R-Squared Baseline Model (H0):</span></span>
 <span><span class="co">#&gt;   CAREER                                         0.510</span></span>
 <span><span class="co">#&gt; R-Squared Change (H1 - H0):</span></span>
@@ -399,61 +405,61 @@ indicators to zero.</p>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   ENJ =~        </span></span>
 <span><span class="co">#&gt;     enjoy1          1.000                             </span></span>
-<span><span class="co">#&gt;     enjoy2          1.002      0.021   48.192    0.000</span></span>
-<span><span class="co">#&gt;     enjoy3          0.894      0.020   45.410    0.000</span></span>
-<span><span class="co">#&gt;     enjoy4          0.998      0.019   53.046    0.000</span></span>
-<span><span class="co">#&gt;     enjoy5          1.047      0.019   55.763    0.000</span></span>
+<span><span class="co">#&gt;     enjoy2          1.002      0.020   50.365    0.000</span></span>
+<span><span class="co">#&gt;     enjoy3          0.894      0.021   43.526    0.000</span></span>
+<span><span class="co">#&gt;     enjoy4          0.999      0.021   48.001    0.000</span></span>
+<span><span class="co">#&gt;     enjoy5          1.047      0.021   50.164    0.000</span></span>
 <span><span class="co">#&gt;   SC =~         </span></span>
 <span><span class="co">#&gt;     academic1       1.000                             </span></span>
-<span><span class="co">#&gt;     academic2       1.105      0.028   39.155    0.000</span></span>
-<span><span class="co">#&gt;     academic3       1.236      0.029   43.133    0.000</span></span>
-<span><span class="co">#&gt;     academic4       1.255      0.029   44.014    0.000</span></span>
-<span><span class="co">#&gt;     academic5       1.115      0.027   40.610    0.000</span></span>
-<span><span class="co">#&gt;     academic6       1.200      0.028   42.810    0.000</span></span>
+<span><span class="co">#&gt;     academic2       1.105      0.029   38.542    0.000</span></span>
+<span><span class="co">#&gt;     academic3       1.236      0.030   41.219    0.000</span></span>
+<span><span class="co">#&gt;     academic4       1.255      0.030   41.311    0.000</span></span>
+<span><span class="co">#&gt;     academic5       1.115      0.029   38.241    0.000</span></span>
+<span><span class="co">#&gt;     academic6       1.200      0.030   39.882    0.000</span></span>
 <span><span class="co">#&gt;   CAREER =~     </span></span>
 <span><span class="co">#&gt;     career1         1.000                             </span></span>
-<span><span class="co">#&gt;     career2         1.040      0.019   54.673    0.000</span></span>
-<span><span class="co">#&gt;     career3         0.952      0.019   49.628    0.000</span></span>
-<span><span class="co">#&gt;     career4         0.818      0.017   47.319    0.000</span></span>
+<span><span class="co">#&gt;     career2         1.040      0.016   65.197    0.000</span></span>
+<span><span class="co">#&gt;     career3         0.952      0.016   57.849    0.000</span></span>
+<span><span class="co">#&gt;     career4         0.818      0.017   48.366    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   CAREER ~      </span></span>
-<span><span class="co">#&gt;     ENJ             0.524      0.021   24.966    0.000</span></span>
-<span><span class="co">#&gt;     SC              0.465      0.024   19.453    0.000</span></span>
-<span><span class="co">#&gt;     ENJ:ENJ         0.027      0.018    1.517    0.129</span></span>
-<span><span class="co">#&gt;     ENJ:SC         -0.047      0.029   -1.629    0.103</span></span>
-<span><span class="co">#&gt;     SC:SC           0.002      0.023    0.068    0.946</span></span>
+<span><span class="co">#&gt;     ENJ             0.525      0.020   26.394    0.000</span></span>
+<span><span class="co">#&gt;     SC              0.465      0.023   20.101    0.000</span></span>
+<span><span class="co">#&gt;     ENJ:ENJ         0.027      0.021    1.270    0.204</span></span>
+<span><span class="co">#&gt;     ENJ:SC         -0.047      0.044   -1.061    0.289</span></span>
+<span><span class="co">#&gt;     SC:SC           0.001      0.034    0.035    0.972</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Intercepts:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;    .CAREER         -0.004      0.013   -0.305    0.760</span></span>
+<span><span class="co">#&gt;    .CAREER         -0.004      0.014   -0.289    0.773</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   ENJ ~~        </span></span>
-<span><span class="co">#&gt;     SC              0.216      0.007   29.348    0.000</span></span>
+<span><span class="co">#&gt;     SC              0.216      0.009   25.374    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;    .enjoy1          0.487      0.009   56.165    0.000</span></span>
-<span><span class="co">#&gt;    .enjoy2          0.488      0.009   55.992    0.000</span></span>
-<span><span class="co">#&gt;    .enjoy3          0.596      0.011   53.609    0.000</span></span>
-<span><span class="co">#&gt;    .enjoy4          0.488      0.009   57.046    0.000</span></span>
-<span><span class="co">#&gt;    .enjoy5          0.442      0.009   50.866    0.000</span></span>
-<span><span class="co">#&gt;    .academic1       0.645      0.012   52.066    0.000</span></span>
-<span><span class="co">#&gt;    .academic2       0.566      0.010   55.056    0.000</span></span>
-<span><span class="co">#&gt;    .academic3       0.473      0.009   50.900    0.000</span></span>
-<span><span class="co">#&gt;    .academic4       0.455      0.009   49.260    0.000</span></span>
-<span><span class="co">#&gt;    .academic5       0.565      0.010   55.870    0.000</span></span>
-<span><span class="co">#&gt;    .academic6       0.502      0.010   52.327    0.000</span></span>
-<span><span class="co">#&gt;    .career1         0.373      0.008   46.719    0.000</span></span>
-<span><span class="co">#&gt;    .career2         0.328      0.007   45.887    0.000</span></span>
-<span><span class="co">#&gt;    .career3         0.436      0.009   46.209    0.000</span></span>
-<span><span class="co">#&gt;    .career4         0.576      0.011   54.853    0.000</span></span>
-<span><span class="co">#&gt;     ENJ             0.498      0.015   34.257    0.000</span></span>
-<span><span class="co">#&gt;     SC              0.337      0.013   26.594    0.000</span></span>
-<span><span class="co">#&gt;    .CAREER          0.302      0.010   29.690    0.000</span></span></code></pre></div>
+<span><span class="co">#&gt;    .enjoy1          0.487      0.011   44.352    0.000</span></span>
+<span><span class="co">#&gt;    .enjoy2          0.488      0.011   44.395    0.000</span></span>
+<span><span class="co">#&gt;    .enjoy3          0.595      0.012   48.227    0.000</span></span>
+<span><span class="co">#&gt;    .enjoy4          0.488      0.011   44.631    0.000</span></span>
+<span><span class="co">#&gt;    .enjoy5          0.442      0.010   42.530    0.000</span></span>
+<span><span class="co">#&gt;    .academic1       0.645      0.013   49.799    0.000</span></span>
+<span><span class="co">#&gt;    .academic2       0.566      0.012   47.870    0.000</span></span>
+<span><span class="co">#&gt;    .academic3       0.473      0.011   44.310    0.000</span></span>
+<span><span class="co">#&gt;    .academic4       0.455      0.010   43.586    0.000</span></span>
+<span><span class="co">#&gt;    .academic5       0.565      0.012   47.683    0.000</span></span>
+<span><span class="co">#&gt;    .academic6       0.502      0.011   45.432    0.000</span></span>
+<span><span class="co">#&gt;    .career1         0.373      0.009   40.398    0.000</span></span>
+<span><span class="co">#&gt;    .career2         0.328      0.009   37.023    0.000</span></span>
+<span><span class="co">#&gt;    .career3         0.436      0.010   43.283    0.000</span></span>
+<span><span class="co">#&gt;    .career4         0.576      0.012   48.380    0.000</span></span>
+<span><span class="co">#&gt;     ENJ             0.497      0.017   29.563    0.000</span></span>
+<span><span class="co">#&gt;     SC              0.337      0.015   22.809    0.000</span></span>
+<span><span class="co">#&gt;    .CAREER          0.302      0.010   29.738    0.000</span></span></code></pre></div>
 </div>
   </main>
 </div>
