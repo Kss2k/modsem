@@ -22,15 +22,15 @@ library(modsem)
 
 # Options for Handling Missing Values
 By default, missing values for both the LMS and QML are removed list-wise
-(`missing="complete"`), such that only complete observations are kept.
-It is also possible to set `missing="impute"` to impute missing values, 
+(`missing="listwise"`), such that only complete observations are kept.
+It is also possible to set `missing="impute"` to impute missing values,
 or to use the `modsem_mimpute()` function to perform multiple imputation.
 For the LMS approach it is also possible to use
 *Full Information Maximum Likelihood* (FIML)
 
 ## Full Information Maximum Likelihood (FIML)
 
-If you're using the LMS approach, it is possible to estimate your model using 
+If you're using the LMS approach, it is possible to estimate your model using
 *Full Information Maximum Likelihood* (FIML), by setting `missing="fiml"`. Here
 is an example, where we generate some missing data using the `oneInt` dataset.
 

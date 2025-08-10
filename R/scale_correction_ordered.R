@@ -8,7 +8,7 @@ modsemOrderedScaleCorrection <- function(model.syntax,
                                          verbose = interactive(),
                                          ...) {
   message("Scale correcting ordinal variables. ",
-          "This is an experimental feature!\n", 
+          "This is an experimental feature!\n",
           "See `help(modsem_da)` for more information.")
 
   if (is.null(verbose))
@@ -55,10 +55,15 @@ modsemOrderedScaleCorrection <- function(model.syntax,
       upper <- last(match.values)
 
       mu_i <- mean(y[z >= lower & z <= upper])
-      MU[[name]][[i]] <<- c(MU[[name]][[i]], mu_i)
-      mu <- mean(MU[[name]][[i]])
+      mu_k <- c(MU[[name]][[i]], mu_i)
 
-      out[!is.na(x) & x == i] <- mu 
+      MU[[name]][[i]] <<- mu_k
+
+      k   <- length(mu_k)
+      q20 <- floor(k / 5)
+      mu  <- mean(mu_k[seq_len(k) > q20]) # drop first 20 percent
+
+      out[!is.na(x) & x == i] <- mu
     }
 
     out
@@ -68,7 +73,7 @@ modsemOrderedScaleCorrection <- function(model.syntax,
     data.y <- data
 
     for (col in cols.ordered)
-      data.y[[col]] <- rescaleOrderedVariable(name = col, data = data, 
+      data.y[[col]] <- rescaleOrderedVariable(name = col, data = data,
                                               sim.ov = sim.ov)
 
     data.y
@@ -105,9 +110,9 @@ modsemOrderedScaleCorrection <- function(model.syntax,
   }
 
   modsem(
-    model.syntax = model.syntax, 
+    model.syntax = model.syntax,
     method       = method,
-    data         = data.y, 
+    data         = data.y,
     calc.se      = calc.se,
     verbose      = verbose,
     ...

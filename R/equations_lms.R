@@ -109,8 +109,8 @@ mstepLms <- function(theta, model, P, data,
                      epsilon = 1e-6,
                      ...) {
   gradient <- function(theta) {
-    gradientCompLogLikLms(theta = theta, model = model, P = P, sign = -1,
-                          data = data, epsilon = epsilon)
+    grad <- gradientCompLogLikLms(theta = theta, model = model, P = P, sign = -1,
+                                  data = data, epsilon = epsilon)
   }
 
   objective <- function(theta) {
@@ -242,11 +242,11 @@ obsLogLikLms <- function(theta, model, data, P, sign = 1, ...) {
 
 gradientObsLogLikLms <- function(theta, model, data, P, sign = 1, epsilon = 1e-6) {
   FGRAD <- function(modelR, P, block, row, col, symmetric, colidxR, npatterns,
-                    eps, ncores, ...) {
+                    eps, ncores, n, ...) {
     gradObsLogLikLmsCpp(modelR = modelR, dataR = data$data.split, P = P,
                         block = block, row = row, col = col,
                         symmetric = symmetric, colidxR = colidxR,
-                        npatterns = npatterns, eps = eps,
+                        n = n, npatterns = npatterns, eps = eps,
                         ncores = ncores)
   }
 
@@ -257,7 +257,8 @@ gradientObsLogLikLms <- function(theta, model, data, P, sign = 1, epsilon = 1e-6
   }
 
   gradientAllLogLikLms(theta = theta, model = model, P = P, sign = sign,
-                       epsilon = epsilon, FGRAD = FGRAD, FOBJECTIVE = FOBJECTIVE)
+                       epsilon = epsilon, data = data,
+                       FGRAD = FGRAD, FOBJECTIVE = FOBJECTIVE)
 }
 
 

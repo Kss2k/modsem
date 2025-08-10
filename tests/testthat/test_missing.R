@@ -78,6 +78,8 @@ testthat::expect_true(all(sd.corrected > sd.uncorrected))
 
 # test fiml
 fiml_lms <- modsem(m1, oneInt2, method = "lms", missing = "fiml")
+fiml_h0  <- estimate_h0(fiml_lms, calc.se = FALSE)
+testthat::expect_true(fiml_h0$iterations == 2L)
 
 testthat::expect_error(modsem(m1, oneInt2, method = "qml", missing = "fiml") ,
                        regexp = "Using FIML with QML is not available.*yet.*")
@@ -85,5 +87,10 @@ testthat::expect_error(modsem(m1, oneInt2, method = "qml", missing = "fiml") ,
 oneInt3 <- oneInt2
 oneInt3$x1 <- NA
 oneInt3$y2 <- NA
-testthat::expect_error(modsem(m1, oneInt3, method = "lms", missing = "fiml"),
-                       regexp = "Please remove .*x1.*y2")
+
+missing.options <- c("fiml", "ml", "direct", "casewise", "listwise",
+                     "impute", "complete")
+for (missing in missing.options) {
+  testthat::expect_error(modsem(m1, oneInt3, method = "lms", missing = "fiml"),
+                         regexp = "Please remove .*x1.*y2")
+}

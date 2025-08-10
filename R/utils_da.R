@@ -252,52 +252,59 @@ patternizeMissingDataFIML <- function(data) {
 }
 
 
-handleMissingData <- function(data, missing = "complete", CLUSTER = NULL) {
+handleMissingData <- function(data, missing = "listwise", CLUSTER = NULL) {
+  missing       <- tolower(missing)
   completeCases <- stats::complete.cases(data)
   anyMissing    <- any(!completeCases)
+  allMissing    <- all(!completeCases)
 
   if (!anyMissing){
     attr(data, "cluster") <- CLUSTER
     return(data)
+
+  } else if (allMissing) {
+    missingAllCol <- apply(data, MARGIN = 2, FUN = \(x) all(is.na(x)))
+    colsMissing   <- colnames(data)[missingAllCol]
+
+    stop2("Please remove variables with only missing values:\n  ",
+          paste0(colsMissing, collapse = ", "))
   }
 
-  switch(tolower(missing),
-    complete = {
-      warning2("Removing missing values case-wise!\n",
-               "Consider using `missing=\"fiml\"`, `missing=\"impute\"`, or the `modsem_mimpute()` function!\n")
+  if (missing %in% c("listwise", "casewise", "complete")) {
+    warning2("Removing missing values list-wise!\n",
+             "Consider using `missing=\"fiml\"`, `missing=\"impute\"`, ",
+             "or the `modsem_mimpute()` function!\n")
 
-      out <- data[completeCases, ]
-      attr(out, "cluster") <- CLUSTER
-      
-      return(out)
-    },
-  
-    impute = {
-      message("Imputing missing values. Consider using the `modsem_mimpute()` function!")
+    out <- data[completeCases, ]
+    attr(out, "cluster") <- CLUSTER
 
-      imp  <- Amelia::amelia(data, m = 1, p2s = 0)
+    return(out)
 
-      imp1 <- as.matrix(as.data.frame(imp$imputations[[1]]))
-      attr(imp1, "cluster") <- CLUSTER
+  } else if (missing == "impute") {
+    message("Imputing missing values. Consider using the `modsem_mimpute()` function!")
 
-      return(imp1)
-    },
+    imp  <- Amelia::amelia(data, m = 1, p2s = 0)
 
-    fiml = { # do nothing
-      attr(data, "cluster") <- CLUSTER
-      
-      return(data)
-    },
+    imp1 <- as.matrix(as.data.frame(imp$imputations[[1]]))
+    attr(imp1, "cluster") <- CLUSTER
 
+    return(imp1)
+
+  } else if (missing %in% c("fiml", "ml", "direct")) {
+    attr(data, "cluster") <- CLUSTER
+
+    return(data)
+
+  } else {
     stop2(sprintf("Unrecognized value for `missing`: `%s`", missing))
-  )
+  }
 }
 
 
-prepDataModsemDA <- function(data, allIndsXis, allIndsEtas, missing = "complete",
+prepDataModsemDA <- function(data, allIndsXis, allIndsEtas, missing = "listwise",
                              cluster = NULL) {
-  
-  if (is.null(data) || !NROW(data)) 
+
+  if (is.null(data) || !NROW(data))
     return(list(data.full = NULL, n = 0, k = 0, p = 0, cluster = NULL))
 
   if (!is.null(cluster)) {
@@ -306,7 +313,7 @@ prepDataModsemDA <- function(data, allIndsXis, allIndsEtas, missing = "complete"
     CLUSTER <- as.factor(data[, cluster])
 
   } else CLUSTER <- NULL
-  
+
   sortData(data, allIndsXis,  allIndsEtas) |>
     castDataNumericMatrix() |>
     handleMissingData(missing = missing, CLUSTER = CLUSTER) |>
