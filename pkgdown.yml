@@ -11,10 +11,11 @@ articles:
   lms_qml: lms_qml.html
   meanstructure_lms_qml: meanstructure_lms_qml.html
   methods: methods.html
+  missing_lms_qml: missing_lms_qml.html
   modsem: modsem.html
   observed_lms_qml: observed_lms_qml.html
   plot_interactions: plot_interactions.html
   quadratic: quadratic.html
   relcorr_items: relcorr_items.html
   simple_slopes: simple_slopes.html
-last_built: 2025-08-09T16:44Z
+last_built: 2025-08-10T12:22Z
