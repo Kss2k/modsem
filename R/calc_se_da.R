@@ -91,8 +91,8 @@ calcHessian <- function(model, theta, data, method = "lms",
   if (method == "lms") {
     if (is.null(P)) P <- estepLms(model, theta = theta, data = data)
     # negative hessian (sign = -1)
-    fH <- \(model) hessianObsLogLikLms(model = model, data = data, P = P, theta = theta,  sign = -1,
-                                       .relStep = .Machine$double.eps^(1/5))
+    fH <- \(model) observedInfoFromLouisLms(model = model, theta = theta,
+                                            data = data, P = P)$I.obs
 
     H <- tryCatch(suppressWarnings(fH(model)), error = function(e) {
       warning2("Optimized calculation of Hessian failed, attempting to switch!\n", e)
@@ -269,25 +269,60 @@ calcEFIM_LMS <- function(model, finalModel = NULL, theta, data,
 }
 
 
-calcOFIM_QML <- function(model, theta, data, hessian = FALSE,
-                         epsilon = 1e-8) {
-  N <- model$data$n
+calcEFIM_QML <- function(model, finalModel = NULL, theta, data, S = 100,
+                         parametric = TRUE, epsilon = 1e-8, verbose = FALSE,
+                         R.max = 1e6) {
+  k <- length(theta)                       # number of free parameters
+  N <- data$n
+  R <- min(R.max, N * S)
+  warnif(R.max <= N, "R.max is less than N!")
 
-  if (hessian) {
-    # negative hessian (sign = -1)
-    I <- calcHessian(model = model, theta = theta, data = data,
-                     method = "qml", epsilon = epsilon)
+  ovs <- colnames(data$data.full)
 
-    return(I)
+  if (parametric) {
+    stopif(is.null(finalModel), "finalModel must be included in calcEFIM_QML")
+
+    parTable <- modelToParTable(finalModel, method = "qml")
+    population <- tryCatch(
+      simulateDataParTable(parTable, N = R, colsOVs = ovs)$oV,
+
+      error = function(e) {
+        warning2("Unable to simulate data for EFIM, using stochastic sampling instead")
+        calcEFIM_QML(model = model, theta = theta, data = data, S = S,
+                     parametric = FALSE, epsilon = epsilon)
+      }
+    )
+
+  } else population <- data$data.full[sample(N, R, replace = TRUE), ]
+
+  model$data <- patternizeMissingDataFIML(population)
+
+  if (!is.null(model$matrices$fullU)) {
+    fullU <- model$matrices$fullU
+    model$matrices$fullU <- fullU[rep(seq_len(N), length.out = R), , drop = FALSE]
   }
 
   suppressWarnings({
-
-  S <- gradientLogLikQml_i(theta, model = model, sign = 1, epsilon = epsilon)
-
+    J <- gradientLogLikQml_i(theta = theta, model = model, sign = +1,
+                             epsilon = epsilon)
   })
 
-  crossprod(S)
+  I <- matrix(0, nrow = k, ncol = k)
+  for (i in seq_len(S)) {
+    if (R == N * S) {
+      # non-overlapping split
+      idx1 <- (i - 1) * N + 1
+      sub  <- idx1:(idx1 + N - 1)
+    } else {
+      sub <- sample(R, N)
+    }
+
+    I <- I + crossprod(J[sub, , drop = FALSE])
+  }
+
+  if (verbose) cat("\n")
+
+  I / S
 }
 
 

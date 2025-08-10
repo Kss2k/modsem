@@ -212,7 +212,7 @@ m1 <- "
   Y ~ X:Z
 "
 
-testthat::expect_error(
+testthat::expect_warning(
   modsem(m1, oneInt, method = "lms", optimizer = "ssjj"),
   regexp = "*Model estimation failed!*"
 )

@@ -120,7 +120,9 @@ summary.modsem_da <- function(object,
     type.estimates  = ifelse(standardized, "standardized", object$type.estimates),
     information     = object$information,
     n.fiml.patterns = length(object$data$ids),
-    is.fiml         = object$data$is.fiml
+    is.fiml         = object$data$is.fiml,
+    npar            = length(coef(object, type = "free")),
+    convergence.msg = object$convergence.msg
   )
 
   if (H0) {
@@ -189,27 +191,24 @@ print.summary_da <- function(x, digits = 3, ...) {
     extra.cols  = NULL
   )
 
-  cat(paste0("\nmodsem (version ", PKG_INFO$version, "):\n\n"))
+  printf(x$convergence.msg)
 
+  # Convergence and Model Info -------------------------------------------------
   names <- c(
     "Estimator",
     "Optimization method",
+    "Number of model parameters",
+    "", # blank line
     "Number of observations",
-    "Number of iterations",
-    "Number of missing patterns",
-    "Loglikelihood",
-    "Akaike (AIC)",
-    "Bayesian (BIC)"
+    "Number of missing patterns"
   )
 
   values <- c(
     stringr::str_to_upper(c(x$method, x$optimizer)),
+    x$npar,
+    "", # blank line
     x$N,
-    x$iterations,
-    x$n.fiml.patterns,
-    round(x$logLik, 2),
-    round(x$fit$AIC, 2),
-    round(x$fit$BIC, 2)
+    x$n.fiml.patterns
   )
 
   if (!x$is.fiml) {
@@ -218,14 +217,33 @@ print.summary_da <- function(x, digits = 3, ...) {
     values <- values[!fieldFIML]
   }
 
-  if (x$format$adjusted.stat) {
-    names  <- c(names, "Corrected Akaike (AICc)", "Adjusted Bayesian (aBIC)")
-    values <- c(values, round(x$fit$AICc, 2), round(x$fit$aBIC, 2))
-  }
-
   cat(allignLhsRhs(lhs = names, rhs = values, pad = "  ",
                    width.out = width.out), "\n")
 
+  # Criterion/LogLik -----------------------------------------------------------
+  names <- c(
+    "Loglikelihood",
+    "Akaike (AIC)",
+    "Bayesian (BIC)"
+  )
+
+  values <- c(
+    formatNumeric(x$logLik,  digits = 2),
+    formatNumeric(x$fit$AIC, digits = 2),
+    formatNumeric(x$fit$BIC, digits = 2)
+  )
+
+  if (x$format$adjusted.stat) {
+    names  <- c(names, "Corrected Akaike (AICc)", "Adjusted Bayesian (aBIC)")
+    values <- c(values, formatNumeric(x$fit$AICc, digits = 2),
+                formatNumeric(x$fit$aBIC, digits = 2))
+  }
+
+  cat("Loglikelihood and Information Criteria:\n")
+  cat(allignLhsRhs(lhs = names, rhs = values, pad = "  ",
+                   width.out = width.out), "\n")
+
+  # Intergration ---------------------------------------------------------------
   if (!is.null(x$quad)) {
     cat("Numerical Integration:\n")
     names <- c("Points of integration (per dim)", "Dimensions",
@@ -236,6 +254,7 @@ print.summary_da <- function(x, digits = 3, ...) {
 
   }
 
+  # Comparative fit ------------------------------------------------------------
   if (!is.null(x$D)) {
     cat("Fit Measures for Baseline Model (H0):\n")
     names <- c("Loglikelihood", "Akaike (AIC)", "Bayesian (BIC)")
@@ -268,6 +287,7 @@ print.summary_da <- function(x, digits = 3, ...) {
 
   }
 
+  # R2 -------------------------------------------------------------------------
   if (!is.null(x$r.squared)) {
     r.squared <- formatNumeric(x$r.squared, digits = 3)
     names     <- names(r.squared)
@@ -293,6 +313,7 @@ print.summary_da <- function(x, digits = 3, ...) {
     }
   }
 
+  # Parameters -----------------------------------------------------------------
   cat("\nParameter Estimates:\n")
   names <- c("Coefficients", "Information", "Standard errors")
   values <- c(x$type.estimates, x$information, x$type.se)
@@ -321,6 +342,8 @@ print.modsem_da <- function(x, digits = 3, ...) {
   est <- lapply(parTable, FUN = function(col)
                 if (is.numeric(col)) round(col, digits) else col) |>
     as.data.frame()
+
+  cat(x$convergence.msg)
   print(est)
 }
 

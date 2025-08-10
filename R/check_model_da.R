@@ -277,7 +277,7 @@ checkVariances <- function(expected.matrices, rel.diff.tol = 1000) {
 
 
 checkVCOV <- function(vcov, calc.se = TRUE, tol.eigen = .Machine$double.eps ^ (3/4)) {
-  if (!calc.se) return(NULL) # checks not relevant
+  if (!calc.se || is.null(vcov)) return(NULL) # checks not relevant
 
   eigenvalues <- eigen(vcov, only.values = TRUE)$values
 

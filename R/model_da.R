@@ -554,3 +554,130 @@ modelToParTable <- function(model, coefs = NULL, se = NULL, method = "lms", calc
   # Sort parTable before returning
   sortParTableDA(parTable = parTable, model = model)
 }
+
+
+finalizeModelEstimatesDA <- function(model,
+                                     theta,
+                                     method = c("lms","qml"),
+                                     data,
+                                     logLik,
+                                     iterations,
+                                     converged,
+                                     optimizer,
+                                     # SE / FIM controls
+                                     calc.se = TRUE,
+                                     FIM = "observed",
+                                     OFIM.hessian = FALSE,
+                                     EFIM.S = 3e4,
+                                     EFIM.parametric = TRUE,
+                                     robust.se = FALSE,
+                                     epsilon = 1e-6,
+                                     cr1s = TRUE,
+                                     R.max = 1e6,
+                                     verbose = FALSE,
+                                     # method-specific extras
+                                     P = NULL,                 # only used by LMS
+                                     includeStartModel = FALSE,
+                                     startModel = NULL) {
+
+  method <- match.arg(method)
+  NA__ <- -999
+
+  # coefficients and filled model
+  lavCoefs <- getLavCoefs(model = model, theta = theta, method = method)
+  # (fillPhi is relevant for LMS, harmless for QML when ignored)
+  finalModel <- fillModel(model, theta, fillPhi = (method == "lms"), method = method)
+
+  # keep NA "skeletons" for printing and SE attachment
+  emptyModel <- getEmptyModel(parTable = model$parTable,
+                              cov.syntax = model$cov.syntax,
+                              parTableCovModel = model$covModel$parTable,
+                              mean.observed = model$info$mean.observed,
+                              method = method)
+  finalModel$matricesNA <- emptyModel$matrices
+  finalModel$covModelNA <- emptyModel$covModel
+
+  # information matrix + SE
+  typeSE <- if (!calc.se) "none" else if (robust.se) "robust" else "standard"
+
+  fim.args <- list(model = model,
+                   finalModel = finalModel,
+                   theta = theta,
+                   data = data,
+                   method = method,
+                   EFIM.S = EFIM.S,
+                   hessian = OFIM.hessian,
+                   calc.se = calc.se,
+                   EFIM.parametric = EFIM.parametric,
+                   verbose = verbose,
+                   FIM = FIM,
+                   robust.se = robust.se,
+                   epsilon = epsilon,
+                   cr1s = cr1s,
+                   R.max = R.max,
+                   NA__ = NA__)
+
+  # only LMS uses the conditional P; QML ignores it
+  if (!is.null(P) && method == "lms") fim.args$P <- P
+
+  FIMo <- do.call(calcFIM_da, fim.args)
+
+  SE <- calcSE_da(calc.se = calc.se,
+                  FIMo$vcov.all,
+                  rawLabels = FIMo$raw.labels,
+                  NA__ = NA__)
+
+  modelSE <- getSE_Model(model, se = SE, method = method,
+                         n.additions = FIMo$n.additions)
+  finalModel$matricesSE <- modelSE$matrices
+  finalModel$covModelSE <- modelSE$covModel
+
+  parTable <- modelToParTable(finalModel,
+                              coefs = lavCoefs$all,
+                              se = SE,
+                              method = method,
+                              calc.se = calc.se)
+  parTable$z.value  <- parTable$est / parTable$std.error
+  parTable$p.value  <- 2 * stats::pnorm(-abs(parTable$z.value))
+  parTable$ci.lower <- parTable$est - CI_WIDTH * parTable$std.error
+  parTable$ci.upper <- parTable$est + CI_WIDTH * parTable$std.error
+
+  # convergence message
+  pattern <- if (isTRUE(converged)) {
+    "\nmodsem (%s) ended normally after %d iterations\n\n"
+  } else {
+    paste0(
+      "modsem (%s) did NOT end normally after %d iterations\n",
+      "** WARNING ** Estimates below are most likely unreliable\n"
+    )
+  }
+  convergence.message <- sprintf(pattern, PKG_INFO$version, iterations)
+
+  out <- list(
+    model            = finalModel,
+    method           = method,
+    optimizer        = optimizer,
+    data             = data,
+    theta            = theta,
+    coefs.all        = lavCoefs$all,
+    coefs.free       = lavCoefs$free,
+    parTable         = modsemParTable(parTable),
+    originalParTable = model$parTable,
+    logLik           = logLik,
+    iterations       = iterations,
+    convergence      = isTRUE(converged),
+    convergence.msg  = convergence.message,
+    type.se          = typeSE,
+    type.estimates   = "unstandardized",
+    info.quad        = if (method == "lms") getInfoQuad(model$quad) else NULL,
+    FIM              = FIMo$FIM,
+    vcov.all         = FIMo$vcov.all,
+    vcov.free        = FIMo$vcov.free,
+    information      = FIMo$type
+  )
+
+  if (isTRUE(includeStartModel))
+    out$start.model <- startModel
+
+  out
+}

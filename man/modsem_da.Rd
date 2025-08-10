@@ -78,10 +78,11 @@ the number of nodes should be at least 32, but practically (e.g., ordinal/skewed
 where data is non-normal, it might be better to use the \code{qml} approach instead.
 You can also consider setting \code{adaptive.quad = TRUE}.}
 
-\item{missing}{How should missing values be handled? If \code{"complete"} (default) missing values
-are removed case-wise. If \code{impute} values are imputed using \code{Amelia::amelia}. 
-If \code{"fiml"}, full information maximum likelihood (FIML) is used. FIML can be (very)
-computationally intensive.}
+\item{missing}{How should missing values be handled? If \code{"listwise"} (default) missing values
+are removed list-wise (alias: \code{"complete"} or \code{"casewise"}).
+If \code{impute} values are imputed using \code{Amelia::amelia}.
+If \code{"fiml"} (alias: \code{"ml"} or \code{"direct"}), full information maximum
+likelihood (FIML) is used. FIML can be (very) computationally intensive.}
 
 \item{convergence.abs}{Absolute convergence criterion.
 Lower values give better estimates but slower computation. Not relevant when
@@ -196,8 +197,8 @@ optimization steps when needed. Default is \code{"EM"}.}
 
 \item{em.control}{a list of control parameters for the EM algorithm. See \code{\link{default_settings_da}} for defaults.}
 
-\item{ordered}{Variables to be treated as ordered. Ordered (ordinal) variables are scale-corrected to adjust for 
-unequal intervals before model estimation, by estimating the distributions of the underlying continuous response variables. 
+\item{ordered}{Variables to be treated as ordered. Ordered (ordinal) variables are scale-corrected to adjust for
+unequal intervals before model estimation, by estimating the distributions of the underlying continuous response variables.
 The distributions of the response variables are estimated using a combination of bootstrapping and Monte Carlo simulations.
 For small differences in the spacing of the intervals, the point estimates should be unbiased. The standard errors may be
 underestimated though. Using robust standard errors may make the estimates of the standard errors more accurate.}

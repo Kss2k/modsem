@@ -13,76 +13,66 @@ estQml <- function(model,
                    R.max = 1e6,
                    cr1s = TRUE,
                    ...) {
-  startTheta <- model$theta
-  final <- mstepQml(model = model, theta = startTheta, max.iter = max.iter,
-                    convergence = convergence, epsilon = epsilon,
-                    verbose = verbose, optimizer = optimizer, ...)
+  data <- model$data
 
-  coefficients <- final$par
-  lavCoefs     <- getLavCoefs(model = model, theta = coefficients, method = "lms")
-  finalModel   <- fillModel(model, coefficients)
-  info         <- model$info
+  tryCatch({
 
-  finalModel <- fillModel(model, coefficients, method = "qml")
-  emptyModel <- getEmptyModel(parTable = model$parTable,
-                              cov.syntax = model$cov.syntax,
-                              parTableCovModel = model$covModel$parTable,
-                              mean.observed = model$info$mean.observed,
-                              method = "qml")
-  finalModel$matricesNA <- emptyModel$matrices
-  finalModel$covModelNA <- emptyModel$covModel
+    startTheta <- model$theta
+    final <- mstepQml(model = model, theta = startTheta, max.iter = max.iter,
+                      convergence = convergence, epsilon = epsilon,
+                      verbose = verbose, optimizer = optimizer, ...)
 
-  # Caclulate information matrix (I) and standard errors (SE)
-  typeSE <- ifelse(!calc.se, "none", ifelse(robust.se, "robust", "standard"))
-  FIM <- calcFIM_da(model = model, finalModel = finalModel, theta = coefficients,
-                    data = model$data, method = "qml", EFIM.S = EFIM.S,
-                    hessian = OFIM.hessian, calc.se = calc.se,
-                    EFIM.parametric = EFIM.parametric, verbose = verbose,
-                    FIM = FIM, robust.se = robust.se, NA__ = -999,
-                    epsilon = epsilon, cr1s = cr1s, R.max = R.max)
-  SE <- calcSE_da(calc.se = calc.se, FIM$vcov.all, rawLabels = FIM$raw.labels,
-                  NA__ = -999)
-  modelSE <- getSE_Model(model, se = SE, method = "qml",
-                         n.additions = FIM$n.additions)
+    finalizeModelEstimatesDA(
+      model             = model,
+      theta             = final$par,
+      method            = "qml",
+      data              = data,
+      logLik            = -final$objective,
+      iterations        = final$iterations,
+      converged         = (final$convergence == 0L) &&
+                          (final$iterations <= max.iter),
+      optimizer         = optimizer,
+      calc.se           = calc.se,
+      FIM               = FIM,
+      OFIM.hessian      = OFIM.hessian,
+      EFIM.S            = EFIM.S,
+      EFIM.parametric   = EFIM.parametric,
+      robust.se         = robust.se,
+      epsilon           = epsilon,
+      cr1s              = cr1s,
+      R.max             = R.max,
+      verbose           = verbose,
+      includeStartModel = TRUE,
+      startModel        = model
+    )
 
-  finalModel$matricesSE <- modelSE$matrices
-  finalModel$covModelSE <- modelSE$covModel
+  }, error = function(e) {
+    warning2(paste0(
+      "Model estimation failed, returning starting values!\n",
+      "Message: ", conditionMessage(e)
+    ))
 
-  parTable <- modelToParTable(finalModel, coefs = lavCoefs$all,
-                              se = SE, method = "qml")
-
-  parTable$z.value  <- parTable$est / parTable$std.error
-  parTable$p.value  <- 2 * stats::pnorm(-abs(parTable$z.value))
-  parTable$ci.lower <- parTable$est - CI_WIDTH * parTable$std.error
-  parTable$ci.upper <- parTable$est + CI_WIDTH * parTable$std.error
-
-  warnif(final$iterations >= max.iter,
-         "Maximum number of iterations was reached, ",
-         "model estimation might not have converged.")
-
-  out <- list(model      = finalModel,
-              method     = "qml",
-              optimizer  = optimizer,
-              data       = model$data,
-              theta      = coefficients,
-              coefs.all  = lavCoefs$all,
-              coefs.free = lavCoefs$free,
-              parTable   = modsemParTable(parTable),
-
-              originalParTable = model$parTable,
-
-              logLik      = -final$objective,
-              iterations  = final$iterations,
-              convergence = final$convergence,
-              type.se     = typeSE,
-
-              type.estimates = "unstandardized",
-
-              info.quad   = NULL,
-              FIM         = FIM$FIM,
-              vcov.all    = FIM$vcov.all,
-              vcov.free   = FIM$vcov.free,
-              information = FIM$type)
-
-  out
+    finalizeModelEstimatesDA(
+      model             = model,
+      theta             = model$theta,   # start values
+      method            = "qml",
+      data              = data,
+      logLik            = NA_real_,      # best-effort; unknown here
+      iterations        = 0L,
+      converged         = FALSE,
+      optimizer         = optimizer,
+      calc.se           = FALSE,         # <- ensure no SEs
+      FIM               = FIM,
+      OFIM.hessian      = OFIM.hessian,
+      EFIM.S            = EFIM.S,
+      EFIM.parametric   = EFIM.parametric,
+      robust.se         = robust.se,
+      epsilon           = epsilon,
+      cr1s              = cr1s,
+      R.max             = R.max,
+      verbose           = verbose,
+      includeStartModel = TRUE,
+      startModel        = model
+    )
+  })
 }
