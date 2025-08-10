@@ -4,7 +4,7 @@ getMethodSettingsDA <- function(method, args = NULL) {
         lms = list(verbose = interactive(),
                    optimize = TRUE,
                    nodes = 24,
-                   convergence.abs = 1e-5,
+                   convergence.abs = 1e-4,
                    convergence.rel = 1e-10,
                    optimizer = "nlminb",
                    center.data = FALSE,
