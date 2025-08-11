@@ -6,6 +6,8 @@ modsemOrderedScaleCorrection <- function(model.syntax,
                                          R = 5,
                                          N = 1e5, # 100,000
                                          verbose = interactive(),
+                                         optimize = TRUE,
+                                         start = NULL,
                                          ...) {
   message("Scale correcting ordinal variables. ",
           "This is an experimental feature!\n",
@@ -84,9 +86,15 @@ modsemOrderedScaleCorrection <- function(model.syntax,
 
   data.x <- data
   data.y <- data
+  THETA  <- NULL
   for (r in seq_len(R)) {
     printedLines <- utils::capture.output(split = TRUE, {
       if (verbose) printf("Bootstrapping scale-correction %d/%d...\n", r, R)
+     
+      if (!is.null(THETA)) {
+        optimize <- FALSE
+        start    <- apply(THETA, MARGIN = 2, FUN = mean, na.rm = TRUE) # na.rm should't be necessary, ever...
+      }
 
       fit.naive <- modsem(
         model.syntax = model.syntax,
@@ -94,6 +102,8 @@ modsemOrderedScaleCorrection <- function(model.syntax,
         method       = method,
         calc.se      = FALSE,
         verbose      = verbose,
+        optimize     = optimize,
+        start        = start,
         ...
       )
 
@@ -104,6 +114,14 @@ modsemOrderedScaleCorrection <- function(model.syntax,
 
       data.y <- rescaleOrderedData(data = data.x, sim.ov = sim$oV)
     })
+    
+    if (r > 1L) { # skip first set of estimates, as they are biased
+      THETA <- rbind(
+        THETA,
+        matrix(fit.naive$theta, nrow = 1,
+               dimnames = list(NULL, names(fit.naive$theta)))
+      )
+    }
 
     nprinted <- length(printedLines)
     eraseConsoleLines(nprinted)
@@ -115,6 +133,8 @@ modsemOrderedScaleCorrection <- function(model.syntax,
     data         = data.y,
     calc.se      = calc.se,
     verbose      = verbose,
+    start        = start,
+    optimize     = FALSE,
     ...
   )
 }
