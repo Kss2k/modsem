@@ -100,7 +100,6 @@ getMethodSettingsDA <- function(method, args = NULL) {
     args.out$center.data <- !args.out$standardize.data &&
       !args.out$mean.observed
 
-    args.out$n.threads <- setThreads(args.out$n.threads)
     args.out
 }
 
