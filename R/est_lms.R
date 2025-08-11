@@ -72,10 +72,29 @@ emLms <- function(model,
                   fs.jitter.mult = sqrt(.Machine$double.eps),
                   ...) {
 
-  algorithm <- toupper(match.arg(algorithm))
-  fs.matrix <- match.arg(fs.matrix)
+  algorithm    <- toupper(match.arg(algorithm))
+  fs.matrix    <- match.arg(fs.matrix)
   fs.fd.scheme <- match.arg(fs.fd.scheme)
-  data <- model$data
+
+  data         <- model$data
+  theta.lower  <- model$info$bounds$lower
+  theta.upper  <- model$info$bounds$upper
+  bounds.all   <- c(theta.lower, theta.upper)
+
+  if (all(is.infinite(bounds.all))) {
+    boundedTheta <- \(x) x # don't do anything
+
+  } else {
+    boundedTheta <- function(theta) {
+      underflow <- theta < theta.lower
+      overflow  <- theta > theta.upper
+
+      theta[underflow] <- theta.lower[underflow]
+      theta[overflow]  <- theta.upper[overflow]
+
+      theta
+    }
+  }
 
   tryCatch({
     tau  <- convergence.rel
@@ -209,7 +228,7 @@ emLms <- function(model,
           refQ      <- compLogLikLms(thetaOld, model, P, data, sign = 1)
 
           while (alpha > 1e-5) {
-            thetaTrial  <- thetaOld + alpha * direction
+            thetaTrial  <- boundedTheta(thetaOld + alpha * direction)
             llQTrial    <- suppressWarnings(compLogLikLms(thetaTrial,  model, P, data, sign = 1))
             ok <- !is.na(llQTrial) && (llQTrial >= refQ)
             if (ok) { success <- TRUE; break }
