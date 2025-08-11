@@ -82,7 +82,7 @@ emLms <- function(model,
   bounds.all   <- c(theta.lower, theta.upper)
 
   if (all(is.infinite(bounds.all))) {
-    boundedTheta <- \(x) x # don't do anything
+    boundedTheta <- \(theta) theta # don't do anything
 
   } else {
     boundedTheta <- function(theta) {

@@ -5,7 +5,7 @@ ThreadEnv <- rlang::env(n.threads  = NULL,
 
 blas_set_num_threads <- function(n, .default = 1L) {
   tryCatch(
-    RhpcBLASctl::blas_set_num_threads(n),
+    purrr::quietly(RhpcBLASctl::blas_set_num_threads)(n),
     error = function(e) {
       warning2("Could not set threads for OpenBLAS!\nMessage: ",
                conditionMessage(e))
@@ -18,7 +18,7 @@ blas_set_num_threads <- function(n, .default = 1L) {
 
 blas_get_num_procs <- function(.default = 1L) {
   tryCatch(
-    RhpcBLASctl::blas_get_num_procs(),
+    purrr::quietly(RhpcBLASctl::blas_get_num_procs)(),
     error = function(e) {
       warning2("Could not get processors for OpenBLAS!\nMessage: ",
                conditionMessage(e))
