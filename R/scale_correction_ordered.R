@@ -140,7 +140,7 @@ modsemOrderedScaleCorrection <- function(model.syntax,
     N        = N
   )
 
-  data.y <- rescaleOrderedData_sim(data = data.x, sim.ov = sim0$oV, smooth_eps = smooth_eps)
+  data.y <- rescaleOrderedData(data = data.x, sim.ov = sim0$oV, smooth_eps = smooth_eps)
 
   prev.theta  <- NULL
   prev.data.y <- data.y

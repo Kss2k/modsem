@@ -62,6 +62,7 @@ modsem_mplus <- function(model.syntax,
                          rcs.choose = NULL,
                          rcs.scale.corrected = TRUE,
                          output.std = TRUE,
+                         ordered = NULL,
                          ...) {
   if (rcs) { # use reliability-correct single items?
     corrected <- relcorr_single_item(
@@ -120,7 +121,15 @@ modsem_mplus <- function(model.syntax,
   if (!is.null(cluster)) {
     VARIABLE <- sprintf("CLUSTER = %s;", cluster)
 
-  } else VARIABLE <- NULL
+  } else VARIABLE <- ""
+
+  if (!is.null(ordered)) {
+    VARIABLE <- paste(
+      VARIABLE,
+      sprintf("CATEGORICAL ARE %s;", paste0(ordered, collapse = " ")),
+      sep = "\n"
+    )
+  }
 
   # Estimate model
   model <- MplusAutomation::mplusObject(
@@ -298,7 +307,7 @@ mplusTableToParTable <- function(coefsTable,
 
   # Structural Model
   measrRemoved <- coefsTable[!measCoefNames, ]
-  patternStruct <- "<-(?!>|Intercept)"
+  patternStruct <- "<-(?!>|Intercept|Thresholds)"
   structCoefNames <- grepl(patternStruct, measrRemoved$label, perl = TRUE)
 
   structLhs <- stringr::str_split_i(measrRemoved$label[structCoefNames],
@@ -334,8 +343,21 @@ mplusTableToParTable <- function(coefsTable,
   interceptNames <- grepl(patternIntercept, covStructMeasrRemoved$label, perl = TRUE)
   interceptLhs <- stringr::str_split_i(covStructMeasrRemoved$label[interceptNames],
                                        "<-", i = 1)
-  interceptModel <- data.frame(lhs = interceptLhs, op = "~1", rhs = "") |>
-    cbind(covStructMeasrRemoved[interceptNames, ])
+  if (length(interceptLhs)) {
+    interceptModel <- data.frame(lhs = interceptLhs, op = "~1", rhs = "") |>
+      cbind(covStructMeasrRemoved[interceptNames, ])
+  } else interceptModel <- NULL
+  
+  # Thresholds
+  covStructMeasrRemoved <- structMeasrRemoved[!covVarCoefNames, ]
+  patternIntercept <- "<-Intercept"
+  interceptNames <- grepl(patternIntercept, covStructMeasrRemoved$label, perl = TRUE)
+  interceptLhs <- stringr::str_split_i(covStructMeasrRemoved$label[interceptNames],
+                                       "<-", i = 1)
+  if (length(interceptLhs)) {
+    interceptModel <- data.frame(lhs = interceptLhs, op = "~1", rhs = "") |>
+      cbind(covStructMeasrRemoved[interceptNames, ])
+  } else interceptModel <- NULL
 
   mplusParTable <- rbind(measModel, structModel, covVarModel, interceptModel)
   mplusParTable [c("lhs", "rhs")] <-
