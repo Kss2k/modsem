@@ -556,6 +556,19 @@ modelToParTable <- function(model, coefs = NULL, se = NULL, method = "lms", calc
 }
 
 
+getConvergenceMessage <- function(converged, iterations) {
+  pattern <- if (isTRUE(converged)) {
+    "\nmodsem (%s) ended normally after %d iterations\n\n"
+  } else {
+    paste0(
+           "modsem (%s) did NOT end normally after %d iterations\n",
+           "** WARNING ** Estimates below are most likely unreliable\n"
+    )
+  }
+  sprintf(pattern, PKG_INFO$version, iterations)
+}
+
+
 finalizeModelEstimatesDA <- function(model,
                                      theta,
                                      method = c("lms","qml"),
@@ -642,16 +655,6 @@ finalizeModelEstimatesDA <- function(model,
   parTable$ci.lower <- parTable$est - CI_WIDTH * parTable$std.error
   parTable$ci.upper <- parTable$est + CI_WIDTH * parTable$std.error
 
-  # convergence message
-  pattern <- if (isTRUE(converged)) {
-    "\nmodsem (%s) ended normally after %d iterations\n\n"
-  } else {
-    paste0(
-      "modsem (%s) did NOT end normally after %d iterations\n",
-      "** WARNING ** Estimates below are most likely unreliable\n"
-    )
-  }
-  convergence.message <- sprintf(pattern, PKG_INFO$version, iterations)
 
   out <- list(
     model            = finalModel,
@@ -666,7 +669,7 @@ finalizeModelEstimatesDA <- function(model,
     logLik           = logLik,
     iterations       = iterations,
     convergence      = isTRUE(converged),
-    convergence.msg  = convergence.message,
+    convergence.msg  = getConvergenceMessage(converged, iterations),
     type.se          = typeSE,
     type.estimates   = "unstandardized",
     info.quad        = if (method == "lms") getInfoQuad(model$quad) else NULL,

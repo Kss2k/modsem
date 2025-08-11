@@ -243,7 +243,7 @@ arma::vec gradientFD(LMSModel&         M,
                      const arma::uvec& symmetric,
                      const double      eps = 1e-6,
                      const int         ncores = 1L) {
-  ThreadSetter ts(ncores, 1L);
+  ThreadSetter ts(ncores);
 
   const std::size_t p = block.n_elem;
   arma::vec grad(p);
@@ -510,7 +510,7 @@ Rcpp::List fdHessCpp(LMSModel&         M,
                      const double      relStep   = 1e-6,
                      const double      minAbsPar = 0.0,
                      const int         ncores    = 1L) {
-  ThreadSetter ts(ncores, 1L);
+  ThreadSetter ts(ncores);
 
   const std::size_t p = block.n_elem;
 

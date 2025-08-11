@@ -499,6 +499,16 @@ modsem_da <- function(model.syntax = NULL,
     model$theta <- start
   }
 
+  # We want to limit the number of threads available to OpenBLAS.
+  # Depending on the OpenBLAS version, it might not be compatible with
+  # OpenMP. If `n.blas > 1L` you might end up getting this message:
+  #> OpenBLAS Warning : Detect OpenMP Loop and this application may hang.
+  #>                    Please rebuild the library with USE_OPENMP=1 option.
+  # We don't want to restrict OpenBLAS in any other setttings in other settings,
+  # e.g., lavaan::sem, so we reset after the model has been estimated.
+  setThreads(n = args$n.threads, n.blas = 1L)
+  on.exit(resetThreads()) # clean up at end of function
+
   est <- tryCatch(switch(method,
     qml = estQml(model,
       verbose         = args$verbose,
@@ -546,9 +556,6 @@ modsem_da <- function(model.syntax = NULL,
                       "Message: %s")
     stop2(sprintf(message, method, e$message))
   })
-
-  # clean up
-  resetThreads()
 
   # Finalize the model object
   # Expected means and covariances
