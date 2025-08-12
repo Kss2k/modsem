@@ -3,12 +3,178 @@ modsemOrderedScaleCorrection <- function(model.syntax,
                                          method = "lms",
                                          ordered = NULL,
                                          calc.se = TRUE,
+                                         R = 50,
+                                         warmup = 15,
+                                         N = 1e5, # 100,000
+                                         verbose = interactive(),
+                                         optimize = TRUE,
+                                         start = NULL,
+                                         lambda = 1,
+                                         ordered.tol = 1e-6,
+                                         ...) {
+  message("Scale correcting ordinal variables. ",
+          "This is an experimental feature!\n",
+          "See `help(modsem_da)` for more information.")
+
+  if (is.null(verbose))
+    verbose <- TRUE # default
+
+  cols <- colnames(data)
+  cols.ordered <- cols[cols %in% ordered | sapply(data, is.ordered)]
+
+  rescaleOrderedVariable <- function(name, data, sim.ov,
+                                     smooth_eps = 0,
+                                     eps_expand = 1e-12) {
+    x <- as.integer(as.ordered(data[[name]]))
+    y <- sim.ov[, name]
+
+    # standardize for scale stability (no distributional assumption)
+    y_mean <- mean(y, na.rm = TRUE)
+    y_sd   <- stats::sd(y,  na.rm = TRUE)
+    if (!is.finite(y_sd) || y_sd == 0) y_sd <- 1
+    y <- (y - y_mean) / y_sd
+
+    # observed category proportions (optional Laplace smoothing)
+    tab <- as.numeric(table(x))
+    K   <- length(tab)
+    n   <- sum(tab)
+    if (smooth_eps > 0) {
+      p_obs <- (tab + smooth_eps) / (n + K * smooth_eps)
+    } else {
+      p_obs <- tab / n
+    }
+
+    # empirical CDF from data; quantile cutpoints on simulated y
+    cdf_obs <- c(0, cumsum(p_obs))
+    q <- stats::quantile(y, probs = cdf_obs, names = FALSE, type = 7)
+
+    # compute conditional means in each [q[i], q[i+1]) (last bin inclusive)
+    mu <- numeric(K)
+    for (i in seq_len(K)) {
+      lo <- q[i]
+      hi <- q[i + 1]
+
+      # left-closed/right-open, last bin inclusive
+      if (i < K) {
+        idx <- (y >= lo & y < hi)
+      } else {
+        idx <- (y >= lo & y <= hi)
+      }
+
+      # guard for degenerate bins (ties / finite-N quantile artifacts)
+      if (!any(idx)) {
+        # expand a hair around the cutpoints to catch ties
+        if (i < K) {
+          idx <- (y >= (lo - eps_expand) & y < (hi + eps_expand))
+        } else {
+          idx <- (y >= (lo - eps_expand) & y <= (hi + eps_expand))
+        }
+        # still empty? fallback to midpoint
+        if (!any(idx)) mu[i] <- 0.5 * (lo + hi)
+      }
+
+      if (any(idx)) mu[i] <- mean(y[idx])
+    }
+
+    # exact centering to remove residual drift (weighted by observed category probs)
+    mu <- mu - sum(p_obs * mu, na.rm = TRUE)
+
+    # map each observed category to its conditional mean
+    out <- rep(NA_real_, length(x))
+    for (i in seq_len(K)) out[x == i] <- mu[i]
+    out
+  }
+
+  rescaleOrderedData <- function(data, sim.ov) {
+    data.y <- data
+
+    for (col in cols.ordered)
+      data.y[[col]] <- rescaleOrderedVariable(name = col, data = data,
+                                              sim.ov = sim.ov)
+
+    data.y
+  }
+
+
+  ERROR <- \(e) {warning2(e, immediate. = FALSE); NULL}
+
+  data.x <- data
+  data.y <- data
+
+  prev.theta <- NULL
+  for (r in seq_len(R)) {
+    printedLines <- utils::capture.output(split = TRUE, {
+      if (verbose) printf("Bootstrapping scale-correction %d/%d...\n", r, R)
+
+      fit.naive <- modsem(
+        model.syntax = model.syntax,
+        data         = data.y,
+        method       = method,
+        calc.se      = FALSE,
+        verbose      = verbose,
+        optimize     = if (is.null(prev.theta) || r <= 3L) optimize else FALSE,
+        start        = if (is.null(prev.theta) || r <= 3L) start else prev.theta,
+        ...
+      )
+
+      new.theta <- fit.naive$theta
+
+      sim <- simulateDataParTable(
+        parTable = parameter_estimates(fit.naive),
+        N        = N
+      )
+
+      data.y.new <- rescaleOrderedData(data = data.x, sim.ov = sim$oV)
+
+      # damping to promote contraction
+      lambda.i <- if (r > warmup) lambda/sqrt(r - warmup) else 1 # no mixing before warmup
+      for (c in cols.ordered)
+        data.y[[c]] <- (1 - lambda.i) * data.y[[c]] + lambda.i * data.y.new[[c]]
+
+      if (!is.null(prev.theta)) {
+        eucdist   <- \(x) sqrt(c(t(x) %*% x))
+        normalize <- \(x) x / eucdist(x)
+
+        epsilon <- normalize(prev.theta) - normalize(new.theta)
+        # normalize
+
+        delta <- eucdist(epsilon)
+        if (r > warmup & delta <= ordered.tol) {
+          break
+        }
+      }
+
+      prev.theta <- new.theta
+    })
+
+    nprinted <- length(printedLines)
+    eraseConsoleLines(nprinted)
+  }
+
+  modsem(
+    model.syntax = model.syntax,
+    method       = method,
+    data         = data.y,
+    calc.se      = calc.se,
+    verbose      = verbose,
+    start        = new.theta,
+    optimize     = FALSE,
+    ...
+  )
+}
+
+
+modsemOrderedScaleCorrectionNew <- function(model.syntax,
+                                         data,
+                                         method = "lms",
+                                         ordered = NULL,
+                                         calc.se = TRUE,
                                          # convergence controls
                                          R = 50,
                                          tol = 1e-4,                 # stopping tolerance
                                          tol_kind = c("theta","data"),
                                          patience = 3,               # need 'patience' consecutive passes under tol
-                                         lambda = 0.9,               # damping in (0,1]
+                                         lambda = 0.6,               # damping in (0,1]
                                          # simulation controls
                                          N = 1e6,
                                          smooth_eps = 0,             # e.g. 0.5 for Laplace smoothing of category probs
