@@ -40,7 +40,7 @@
     <li><a class="dropdown-item" href="../articles/lms_qml.html">LMS and QML approaches</a></li>
     <li><a class="dropdown-item" href="../articles/meanstructure_lms_qml.html">non-centered interaction terms (LMS and QML)</a></li>
     <li><a class="dropdown-item" href="../articles/methods.html">methods</a></li>
-    <li><a class="dropdown-item" href="../articles/missing_lms_qml.html">Missing data in the LMS and QML approaches</a></li>
+    <li><a class="dropdown-item" href="../articles/missing_lms_qml.html">missing data in the LMS and QML approaches</a></li>
     <li><a class="dropdown-item" href="../articles/observed_lms_qml.html">observed variables in the LMS- and QML approach</a></li>
     <li><a class="dropdown-item" href="../articles/plot_interactions.html">plotting interaction effects</a></li>
     <li><a class="dropdown-item" href="../articles/quadratic.html">quadratic effects</a></li>
@@ -289,56 +289,56 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   X =~          </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     x1              1.000                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x2              0.804      0.013    63.47    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x3              0.916      0.014    67.01    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     x2              0.804      0.013   63.471    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     x3              0.916      0.014   67.011    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Z =~          </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     z1              1.000                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z2              0.811      0.013    64.62    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z3              0.882      0.013    67.00    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     z2              0.811      0.013   64.623    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     z3              0.882      0.013   67.005    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Y =~          </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     y1              1.000                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y2              0.798      0.007   107.62    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y3              0.898      0.008   112.18    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     y2              0.798      0.007  107.625    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     y3              0.898      0.008  112.184    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Regressions:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Y ~           </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     X               0.674      0.026    25.86    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     Z               0.570      0.026    22.21    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     X:Z             0.719      0.026    27.19    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     X               0.674      0.026   25.859    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     Z               0.570      0.026   22.209    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     X:Z             0.719      0.026   27.192    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Intercepts:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x1              1.023      0.024    42.83    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2              1.215      0.020    60.91    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3              0.919      0.022    41.42    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .z1              1.011      0.024    41.56    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .z2              1.206      0.020    59.26    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .z3              0.916      0.022    42.05    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .y1              1.180      0.036    32.45    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .y2              1.335      0.029    45.26    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .y3              1.083      0.033    32.83    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .Y              -0.144      0.024    -5.88    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x1              1.023      0.024   42.827    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2              1.215      0.020   60.907    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3              0.919      0.022   41.421    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .z1              1.011      0.024   41.562    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .z2              1.206      0.020   59.256    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .z3              0.916      0.022   42.049    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .y1              1.180      0.036   32.446    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .y2              1.335      0.029   45.255    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .y3              1.083      0.033   32.833    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .Y              -0.144      0.024   -5.877    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Covariances:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   X ~~          </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     Z               0.201      0.024     8.27    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     Z               0.201      0.024    8.271    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Variances:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x1              0.160      0.009    17.72    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2              0.162      0.007    22.91    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3              0.162      0.008    20.01    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .z1              0.168      0.009    18.09    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .z2              0.159      0.007    22.27    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .z3              0.157      0.008    20.25    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .y1              0.155      0.009    17.25    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .y2              0.155      0.007    22.47    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .y3              0.167      0.008    20.66    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     X               0.981      0.036    26.88    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     Z               1.016      0.038    26.85    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .Y               0.982      0.037    26.83    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x1              0.160      0.009   17.721    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2              0.162      0.007   22.912    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3              0.162      0.008   20.010    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .z1              0.168      0.009   18.087    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .z2              0.159      0.007   22.272    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .z3              0.157      0.008   20.253    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .y1              0.155      0.009   17.245    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .y2              0.155      0.007   22.466    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .y3              0.167      0.008   20.658    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     X               0.981      0.036   26.884    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     Z               1.016      0.038   26.846    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .Y               0.982      0.037   26.834    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">est_qml</span> <span class="op">&lt;-</span> <span class="fu">twostep</span><span class="op">(</span><span class="va">m1</span>, <span class="va">oneInt</span>, method <span class="op">=</span> <span class="st">"qml"</span><span class="op">)</span></span></span>
@@ -388,56 +388,56 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   X =~          </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     x1              1.000                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x2              0.804      0.013    63.47    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x3              0.916      0.014    67.01    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     x2              0.804      0.013   63.471    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     x3              0.916      0.014   67.011    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Z =~          </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     z1              1.000                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z2              0.811      0.013    64.62    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z3              0.882      0.013    67.00    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     z2              0.811      0.013   64.623    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     z3              0.882      0.013   67.005    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Y =~          </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     y1              1.000                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y2              0.798      0.007   107.62    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y3              0.898      0.008   112.18    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     y2              0.798      0.007  107.625    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     y3              0.898      0.008  112.184    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Regressions:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Y ~           </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     X               0.674      0.026    25.87    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     Z               0.570      0.026    22.22    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     X:Z             0.720      0.026    27.20    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     X               0.674      0.026   25.868    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     Z               0.570      0.026   22.216    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     X:Z             0.720      0.026   27.200    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Intercepts:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x1              1.023      0.024    42.83    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2              1.215      0.020    60.91    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3              0.919      0.022    41.42    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .z1              1.011      0.024    41.56    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .z2              1.206      0.020    59.26    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .z3              0.916      0.022    42.05    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .y1              1.180      0.036    32.45    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .y2              1.335      0.029    45.26    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .y3              1.083      0.033    32.83    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .Y              -0.144      0.024    -5.87    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x1              1.023      0.024   42.827    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2              1.215      0.020   60.907    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3              0.919      0.022   41.421    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .z1              1.011      0.024   41.562    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .z2              1.206      0.020   59.256    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .z3              0.916      0.022   42.049    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .y1              1.180      0.036   32.446    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .y2              1.335      0.029   45.255    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .y3              1.083      0.033   32.833    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .Y              -0.144      0.024   -5.873    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Covariances:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   X ~~          </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     Z               0.201      0.024     8.27    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     Z               0.201      0.024    8.271    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Variances:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x1              0.160      0.009    17.72    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2              0.162      0.007    22.91    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3              0.162      0.008    20.01    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .z1              0.168      0.009    18.09    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .z2              0.159      0.007    22.27    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .z3              0.157      0.008    20.25    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .y1              0.155      0.009    17.25    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .y2              0.155      0.007    22.47    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .y3              0.167      0.008    20.66    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     X               0.981      0.036    26.88    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     Z               1.016      0.038    26.85    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .Y               0.982      0.037    26.81    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x1              0.160      0.009   17.721    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2              0.162      0.007   22.912    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3              0.162      0.008   20.010    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .z1              0.168      0.009   18.087    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .z2              0.159      0.007   22.272    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .z3              0.157      0.008   20.253    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .y1              0.155      0.009   17.245    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .y2              0.155      0.007   22.466    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .y3              0.167      0.008   20.658    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     X               0.981      0.036   26.884    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     Z               1.016      0.038   26.846    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .Y               0.982      0.037   26.811    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>
@@ -625,100 +625,100 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   ATT =~        </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     att3            1.000                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     att2            0.964      0.011    84.97    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     att1            0.812      0.017    47.13    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     att4            0.869      0.019    45.69    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     att2            0.964      0.011   84.974    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     att1            0.812      0.017   47.128    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     att4            0.869      0.019   45.694    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   SN =~         </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     sn4             1.000                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     sn2             1.314      0.039    33.49    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     sn3             1.352      0.040    34.14    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     sn1             1.000      0.039    25.87    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     sn2             1.314      0.039   33.493    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     sn3             1.352      0.040   34.142    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     sn1             1.000      0.039   25.867    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   PBC =~        </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     pbc2            1.000                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     pbc1            0.853      0.020    42.45    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     pbc3            0.936      0.017    55.72    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     pbc4            0.813      0.020    40.99    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     pbc1            0.853      0.020   42.452    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     pbc3            0.936      0.017   55.716    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     pbc4            0.813      0.020   40.990    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   INT =~        </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     int2            1.000                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     int1            0.970      0.011    92.00    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     int3            0.984      0.010    98.96    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     int4            0.992      0.009   104.92    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     int1            0.970      0.011   92.005    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     int3            0.984      0.010   98.963    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     int4            0.992      0.009  104.919    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   BEH =~        </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     beh3            1.000                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     beh2            0.983      0.013    76.14    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     beh1            0.812      0.019    43.19    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     beh4            0.802      0.019    42.04    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     beh2            0.983      0.013   76.139    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     beh1            0.812      0.019   43.185    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     beh4            0.802      0.019   42.038    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Regressions:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   INT ~         </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     ATT            -0.047      0.025    -1.86    0.062</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     SN              0.047      0.031     1.52    0.130</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC             1.024      0.030    34.67    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     ATT            -0.047      0.025   -1.864    0.062</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     SN              0.047      0.031    1.516    0.130</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC             1.024      0.030   34.675    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   BEH ~         </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC             0.386      0.049     7.85    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     INT             0.604      0.046    13.21    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     INT:PBC         0.140      0.008    18.04    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC             0.386      0.049    7.849    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     INT             0.604      0.046   13.205    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     INT:PBC         0.140      0.008   18.043    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Intercepts:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .pbc2            4.019      0.066    61.07    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .pbc1            3.986      0.063    63.04    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .pbc3            3.755      0.063    59.77    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .pbc4            3.790      0.061    61.93    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .att3            3.723      0.064    58.41    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .att2            3.838      0.062    62.19    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .att1            4.210      0.060    70.04    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .att4            3.689      0.065    56.67    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .sn4             4.500      0.051    87.68    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .sn2             4.348      0.054    80.00    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .sn3             4.388      0.055    80.11    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .sn1             4.470      0.052    85.91    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .int2            3.722      0.067    55.89    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .int1            3.867      0.066    58.78    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .int3            3.739      0.066    56.46    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .int4            3.783      0.066    57.04    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .beh3            3.275      0.071    46.41    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .beh2            3.186      0.070    45.49    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .beh1            3.041      0.068    44.78    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .beh4            3.177      0.068    46.84    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .BEH            -0.616      0.042   -14.66    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .pbc2            4.019      0.066   61.072    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .pbc1            3.986      0.063   63.043    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .pbc3            3.755      0.063   59.773    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .pbc4            3.790      0.061   61.927    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .att3            3.723      0.064   58.406    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .att2            3.838      0.062   62.185    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .att1            4.210      0.060   70.042    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .att4            3.689      0.065   56.670    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .sn4             4.500      0.051   87.680    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .sn2             4.348      0.054   79.997    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .sn3             4.388      0.055   80.107    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .sn1             4.470      0.052   85.908    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .int2            3.722      0.067   55.889    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .int1            3.867      0.066   58.777    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .int3            3.739      0.066   56.460    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .int4            3.783      0.066   57.036    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .beh3            3.275      0.071   46.415    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .beh2            3.186      0.070   45.493    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .beh1            3.041      0.068   44.782    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .beh4            3.177      0.068   46.843    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .BEH            -0.616      0.042  -14.656    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Covariances:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   ATT ~~        </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     SN              1.679      0.107    15.62    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     SN              1.679      0.107   15.622    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   PBC ~~        </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     ATT             3.664      0.177    20.68    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     SN              1.956      0.116    16.88    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     ATT             3.664      0.177   20.682    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     SN              1.956      0.116   16.882    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Variances:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .pbc2            0.672      0.038    17.72    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .pbc1            1.480      0.067    22.16    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .pbc3            0.769      0.040    19.34    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .pbc4            1.477      0.066    22.34    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .att3            0.292      0.024    11.98    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .att2            0.309      0.024    13.11    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .att1            1.286      0.057    22.57    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .att4            1.585      0.070    22.68    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .sn4             1.365      0.061    22.43    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .sn2             0.494      0.034    14.37    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .sn3             0.371      0.033    11.36    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .sn1             1.449      0.064    22.53    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .int2            0.234      0.014    17.08    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .int1            0.408      0.020    20.39    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .int3            0.331      0.017    19.34    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .int4            0.272      0.015    18.17    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .beh3            0.439      0.031    14.26    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .beh2            0.530      0.033    16.13    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .beh1            1.841      0.081    22.70    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .beh4            1.913      0.084    22.80    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     ATT             4.458      0.197    22.60    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     SN              1.714      0.116    14.73    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC             4.390      0.209    20.99    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .INT             0.508      0.036    14.06    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .BEH             0.456      0.032    14.34    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .pbc2            0.672      0.038   17.721    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .pbc1            1.480      0.067   22.161    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .pbc3            0.769      0.040   19.338    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .pbc4            1.477      0.066   22.345    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .att3            0.292      0.024   11.979    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .att2            0.309      0.024   13.111    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .att1            1.286      0.057   22.565    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .att4            1.585      0.070   22.679    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .sn4             1.365      0.061   22.430    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .sn2             0.494      0.034   14.369    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .sn3             0.371      0.033   11.362    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .sn1             1.449      0.064   22.533    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .int2            0.234      0.014   17.084    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .int1            0.408      0.020   20.388    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .int3            0.331      0.017   19.338    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .int4            0.272      0.015   18.173    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .beh3            0.439      0.031   14.256    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .beh2            0.530      0.033   16.128    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .beh1            1.841      0.081   22.704    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .beh4            1.913      0.084   22.795    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     ATT             4.458      0.197   22.602    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     SN              1.714      0.116   14.726    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC             4.390      0.209   20.993    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .INT             0.508      0.036   14.063    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .BEH             0.456      0.032   14.337    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 </code></pre></div>
