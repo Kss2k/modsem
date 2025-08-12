@@ -94,9 +94,9 @@ formatParTable <- function(parTable,
       parTable[[col]] <- round(parTable[[col]], digits)
 
     maxWidth        <- maxchar(c(header[[col]], parTable[[col]]))
-    parTable[[col]] <- format(parTable[[col]], width = maxWidth,
-                              digits = digits, justify = "right",
-                              scientific=FALSE)
+    parTable[[col]] <- formatNumeric(parTable[[col]], width = maxWidth,
+                                     digits = digits, justify = "right",
+                                     scientific=FALSE)
 
     parTable[[col]] <- stringr::str_replace_all(parTable[[col]], "NA", "  ")
     header[[col]]   <- format(header[[col]], width = maxWidth, justify = "right")

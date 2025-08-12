@@ -75,6 +75,7 @@ modsem_mimpute <- function(model.syntax,
     method = method,
     m = m,
     verbose = verbose,
+    se = se,
     ...
   )
 }
@@ -206,6 +207,7 @@ modsem_mimput_modsem_da <- function(model.syntax,
   coef.free <- pool.free$theta.bar
   vcov.free <- pool.free$Tvcov
 
+  # Re-do parameter estimates
   parTable1   <- parameter_estimates(fits[[1]])
   orig.labels <- parTable1$label
   parTable1   <- getMissingLabels(parTable1)
@@ -221,6 +223,8 @@ modsem_mimput_modsem_da <- function(model.syntax,
   parTable$est.t       <- NULL
   parTable$std.error.t <- NULL
   parTable$label[!parTable$label %in% orig.labels] <- ""
+  parTable <- parTable[c("lhs", "op", "rhs", "label", "est", "std.error")] # remove z-statistics
+  parTable <- addZStatsParTable(parTable)
   rownames(parTable) <- NULL # reset
 
   matrices    <- aggregateMatrices(fits, type = "main")
