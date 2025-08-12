@@ -302,7 +302,7 @@ modsem_da <- function(model.syntax = NULL,
                       algorithm = NULL,
                       em.control = NULL,
                       ordered = NULL,
-                      ordered.boot = 5,
+                      ordered.boot = 50,
                       cluster = NULL,
                       cr1s = FALSE,
                       rcs = FALSE,
@@ -324,6 +324,7 @@ modsem_da <- function(model.syntax = NULL,
 
   if (length(ordered) || any(sapply(data, FUN = is.ordered))) {
     out <- modsemOrderedScaleCorrection(
+       type                = "rubin",
        model.syntax        = model.syntax,
        data                = data,
        method              = method,

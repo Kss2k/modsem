@@ -1,73 +1,37 @@
-modsemOrderedScaleCorrection <- function(model.syntax,
-                                         data,
-                                         method = "lms",
-                                         ordered = NULL,
-                                         calc.se = TRUE,
-                                         R = 5,
-                                         N = 1e5, # 100,000
-                                         verbose = interactive(),
-                                         ...) {
+modsemOrderedScaleCorrection <- function(..., type = c("simple", "rubin")) {
+  type <- tolower(type)
+  type <- match.arg(type)
+  
   message("Scale correcting ordinal variables. ",
           "This is an experimental feature!\n",
           "See `help(modsem_da)` for more information.")
 
+  switch(type,
+         simple = modsemOrderedScaleCorrectionSimple(...),
+         rubin  = modsemOrderedScaleCorrectionRubin(...),
+         stop2("Unrecognized type: ", type))
+}
+
+
+modsemOrderedScaleCorrectionSimple <- function(model.syntax,
+                                               data,
+                                               method = "lms",
+                                               ordered = NULL,
+                                               calc.se = TRUE,
+                                               R = 50,
+                                               warmup = 15,
+                                               N = 1e5, # 100,000
+                                               verbose = interactive(),
+                                               optimize = TRUE,
+                                               start = NULL,
+                                               lambda = 1,
+                                               ordered.tol = 1e-6,
+                                               ...) {
   if (is.null(verbose))
     verbose <- TRUE # default
 
   cols <- colnames(data)
   cols.ordered <- cols[cols %in% ordered | sapply(data, is.ordered)]
-
-  MU <- stats::setNames(vector("list", length(cols.ordered)), nm = cols.ordered)
-
-  for (col in cols.ordered) {
-    data[[col]] <- as.integer(as.ordered(data[[col]]))
-    MU[[col]]   <- vector("list", length(unique(data[[col]])))
-  }
-
-  rescaleOrderedVariable <- function(name, data, sim.ov, k = 200, eps = 1e-3) {
-    n <- NROW(data)
-    N <- NROW(sim.ov)
-
-    x <- as.integer(as.ordered(data[[name]]))
-    y <- sim.ov[, name]
-    y <- (y - mean(y)) / stats::sd(y) # standardize
-    t <- c(-Inf, seq(min(y) + eps, max(y) - eps, length.out = k), Inf)
-    z <- cut(y, breaks = t, ordered_result = TRUE)
-
-    exp.densities <- table(z) / N
-    exp.cdf <- cumsum(exp.densities)
-
-    obs.densities <- table(x) / n
-    obs.cdf <- cumsum(obs.densities)
-
-    z              <- as.integer(z) # more convenient in the loop
-    names(exp.cdf) <- seq_len(length(exp.cdf))
-
-    out <- rep(NA, n)
-    for (i in seq_along(obs.cdf)) {
-      quantile  <- obs.cdf[i]
-      match.idx <- exp.cdf <= quantile
-      match.cdf <- exp.cdf[match.idx]
-      exp.cdf   <- exp.cdf[!match.idx]
-
-      match.values <- as.integer(names(match.cdf))
-      lower <- match.values[1L]
-      upper <- last(match.values)
-
-      mu_i <- mean(y[z >= lower & z <= upper])
-      mu_k <- c(MU[[name]][[i]], mu_i)
-
-      MU[[name]][[i]] <<- mu_k
-
-      k   <- length(mu_k)
-      q20 <- floor(k / 5)
-      mu  <- mean(mu_k[seq_len(k) > q20]) # drop first 20 percent
-
-      out[!is.na(x) & x == i] <- mu
-    }
-
-    out
-  }
 
   rescaleOrderedData <- function(data, sim.ov) {
     data.y <- data
@@ -79,11 +43,12 @@ modsemOrderedScaleCorrection <- function(model.syntax,
     data.y
   }
 
-
   ERROR <- \(e) {warning2(e, immediate. = FALSE); NULL}
 
   data.x <- data
   data.y <- data
+
+  prev.theta <- NULL
   for (r in seq_len(R)) {
     printedLines <- utils::capture.output(split = TRUE, {
       if (verbose) printf("Bootstrapping scale-correction %d/%d...\n", r, R)
@@ -94,15 +59,39 @@ modsemOrderedScaleCorrection <- function(model.syntax,
         method       = method,
         calc.se      = FALSE,
         verbose      = verbose,
+        optimize     = if (is.null(prev.theta) || r <= 3L) optimize else FALSE,
+        start        = if (is.null(prev.theta) || r <= 3L) start else prev.theta,
         ...
       )
+
+      new.theta <- fit.naive$theta
 
       sim <- simulateDataParTable(
         parTable = parameter_estimates(fit.naive),
         N        = N
       )
 
-      data.y <- rescaleOrderedData(data = data.x, sim.ov = sim$oV)
+      data.y.new <- rescaleOrderedData(data = data.x, sim.ov = sim$oV)
+
+      # damping to promote contraction
+      lambda.i <- if (r > warmup) lambda/sqrt(r - warmup) else 1 # no mixing before warmup
+      for (c in cols.ordered)
+        data.y[[c]] <- (1 - lambda.i) * data.y[[c]] + lambda.i * data.y.new[[c]]
+
+      if (!is.null(prev.theta)) {
+        eucdist   <- \(x) sqrt(c(t(x) %*% x))
+        normalize <- \(x) x / eucdist(x)
+
+        epsilon <- normalize(prev.theta) - normalize(new.theta)
+        # normalize
+
+        delta <- eucdist(epsilon)
+        if (r > warmup & delta <= ordered.tol) {
+          break
+        }
+      }
+
+      prev.theta <- new.theta
     })
 
     nprinted <- length(printedLines)
@@ -115,6 +104,215 @@ modsemOrderedScaleCorrection <- function(model.syntax,
     data         = data.y,
     calc.se      = calc.se,
     verbose      = verbose,
+    start        = new.theta,
+    optimize     = FALSE,
     ...
   )
+}
+
+
+modsemOrderedScaleCorrectionRubin <- function(model.syntax,
+                                              data,
+                                              method = "lms",
+                                              ordered = NULL,
+                                              calc.se = TRUE,
+                                              R = 50,
+                                              warmup = floor(R / 2L),
+                                              verbose = interactive(),
+                                              optimize = TRUE,
+                                              start = NULL,
+                                              lambda = 1,
+                                              ordered.tol = 1e-6,
+                                              ...) {
+  if (is.null(verbose))
+    verbose <- TRUE # default
+
+  cols <- colnames(data)
+  cols.ordered <- cols[cols %in% ordered | sapply(data, is.ordered)]
+
+  rescaleOrderedData <- function(data, sim.ov) {
+    data.y <- data
+
+    for (col in cols.ordered)
+      data.y[[col]] <- rescaleOrderedVariable(name = col, data = data,
+                                              sim.ov = sim.ov)
+
+    data.y
+  }
+
+  ERROR <- \(e) {warning2(e, immediate. = FALSE); NULL}
+
+  data.x <- data
+  data.y <- data
+
+  prev.theta <- NULL
+  COEF.ALL  <- vector("list", length = warmup - 1L)
+  COEF.FREE <- vector("list", length = warmup - 1L)
+
+  for (r in seq_len(R)) {
+    printedLines <- utils::capture.output(split = TRUE, {
+      if (verbose) printf("Bootstrapping scale-correction %d/%d...\n", r, R)
+
+      fit.naive <- modsem(
+        model.syntax = model.syntax,
+        data         = data.y,
+        method       = method,
+        calc.se      = FALSE,
+        verbose      = verbose,
+        optimize     = if (is.null(prev.theta) || r <= 3L) optimize else FALSE,
+        start        = if (is.null(prev.theta) || r <= 3L) start else prev.theta,
+        ...
+      )
+
+      new.theta <- fit.naive$theta
+
+      sim <- simulateDataParTable(
+        parTable = parameter_estimates(fit.naive),
+        N        = NROW(data.y)
+      )
+
+      data.y.new <- rescaleOrderedData(data = data.x, sim.ov = sim$oV)
+
+      # damping to promote contraction
+      lambda.i <- if (r > warmup) lambda/sqrt(r - warmup) else 1 # no mixing before warmup
+      for (c in cols.ordered)
+        data.y[[c]] <- (1 - lambda.i) * data.y[[c]] + lambda.i * data.y.new[[c]]
+
+      if (!is.null(prev.theta)) {
+        eucdist   <- \(x) sqrt(c(t(x) %*% x))
+        normalize <- \(x) x / eucdist(x)
+
+        epsilon <- normalize(prev.theta) - normalize(new.theta)
+        # normalize
+
+        delta <- eucdist(epsilon)
+        if (r > warmup & delta <= ordered.tol) {
+          break
+        }
+      }
+
+      if (r > 1L && r <= warmup) { # accumulate to correct std-errors
+        COEF.ALL[[r-1L]]  <- coef(fit.naive, type = "all")
+        COEF.FREE[[r-1L]] <- coef(fit.naive, type = "free")
+      }
+
+      prev.theta <- new.theta
+    })
+
+    nprinted <- length(printedLines)
+    eraseConsoleLines(nprinted)
+  }
+
+  fit.final <- modsem(
+    model.syntax = model.syntax,
+    method       = method,
+    data         = data.y,
+    calc.se      = calc.se,
+    verbose      = verbose,
+    start        = new.theta,
+    optimize     = FALSE,
+    ...
+  )
+
+  vcov.naive.all  <- vcov(fit.final, type = "all") # final fit, but naive vcov
+  vcov.naive.free <- vcov(fit.final, type = "free")
+
+  VCOV.ALL  <- vector("list", length = warmup - 1L)
+  VCOV.FREE <- vector("list", length = warmup - 1L)
+
+  for (i in seq_len(warmup - 1L)) {
+    VCOV.ALL[[i]]  <- vcov.naive.all
+    VCOV.FREE[[i]] <- vcov.naive.free
+  }
+
+  pool.all  <- rubinPool(COEF.ALL,  VCOV.ALL)
+  pool.free <- rubinPool(COEF.FREE, VCOV.FREE)
+
+  vcov.all  <- pool.all$Tvcov # naive vcov adjusted for variance in coefs
+  vcov.free <- pool.free$Tvcov
+
+  fit.final$vcov.all  <- vcov.all
+  fit.final$vcov.free <- vcov.free
+  fit.final$FIM       <- solve(vcov.free)
+
+  parTable1   <- parameter_estimates(fit.final)
+  orig.labels <- parTable1$label
+  parTable1   <- getMissingLabels(parTable1)
+  parTableT   <- data.frame(label = colnames(vcov.all),
+                            std.error.t = sqrt(diag(vcov.all)))
+
+  parTable <- leftJoin(left = parTable1, right = parTableT, by = "label")
+  match    <- !is.na(parTable$std.error.t)
+
+  parTable$std.error[match] <- parTable$std.error.t[match]
+  parTable$std.error.t <- NULL
+  parTable$label[!parTable$label %in% orig.labels] <- ""
+
+  fit.final$parTable <- parTable
+
+  fit.final
+}
+
+
+rescaleOrderedVariable <- function(name, data, sim.ov,
+                                   smooth_eps = 0,
+                                   eps_expand = 1e-12) {
+  x <- as.integer(as.ordered(data[[name]]))
+  y <- sim.ov[, name]
+
+  # standardize for scale stability (no distributional assumption)
+  y_mean <- mean(y, na.rm = TRUE)
+  y_sd   <- stats::sd(y,  na.rm = TRUE)
+  if (!is.finite(y_sd) || y_sd == 0) y_sd <- 1
+  y <- (y - y_mean) / y_sd
+
+  # observed category proportions (optional Laplace smoothing)
+  tab <- as.numeric(table(x))
+  K   <- length(tab)
+  n   <- sum(tab)
+  if (smooth_eps > 0) {
+    p_obs <- (tab + smooth_eps) / (n + K * smooth_eps)
+  } else {
+    p_obs <- tab / n
+  }
+
+  # empirical CDF from data; quantile cutpoints on simulated y
+  cdf_obs <- c(0, cumsum(p_obs))
+  q <- stats::quantile(y, probs = cdf_obs, names = FALSE, type = 7)
+
+  # compute conditional means in each [q[i], q[i+1]) (last bin inclusive)
+  mu <- numeric(K)
+  for (i in seq_len(K)) {
+    lo <- q[i]
+    hi <- q[i + 1]
+
+    # left-closed/right-open, last bin inclusive
+    if (i < K) {
+      idx <- (y >= lo & y < hi)
+    } else {
+      idx <- (y >= lo & y <= hi)
+    }
+
+    # guard for degenerate bins (ties / finite-N quantile artifacts)
+    if (!any(idx)) {
+      # expand a hair around the cutpoints to catch ties
+      if (i < K) {
+        idx <- (y >= (lo - eps_expand) & y < (hi + eps_expand))
+      } else {
+        idx <- (y >= (lo - eps_expand) & y <= (hi + eps_expand))
+      }
+      # still empty? fallback to midpoint
+      if (!any(idx)) mu[i] <- 0.5 * (lo + hi)
+    }
+
+    if (any(idx)) mu[i] <- mean(y[idx])
+  }
+
+  # exact centering to remove residual drift (weighted by observed category probs)
+  mu <- mu - sum(p_obs * mu, na.rm = TRUE)
+
+  # map each observed category to its conditional mean
+  out <- rep(NA_real_, length(x))
+  for (i in seq_len(K)) out[x == i] <- mu[i]
+  out
 }
