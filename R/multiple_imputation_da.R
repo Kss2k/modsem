@@ -209,14 +209,19 @@ modsem_mimput_modsem_da <- function(model.syntax,
   parTable1   <- parameter_estimates(fits[[1]])
   orig.labels <- parTable1$label
   parTable1   <- getMissingLabels(parTable1)
-  parTableT   <- data.frame(label = names(coef.all), est.t = coef.all)
+  parTableT   <- data.frame(label = names(coef.all),
+                            est.t = coef.all,
+                            std.error.t = sqrt(diag(vcov.all)))
 
   parTable    <- leftJoin(left = parTable1, right = parTableT, by = "label")
   match       <- !is.na(parTable$est.t)
 
-  parTable$est[match] <- parTable$est.t[match]
-  parTable$est.t      <- NULL
+  parTable$est[match]       <- parTable$est.t[match]
+  parTable$std.error[match] <- parTable$std.error.t[match]
+  parTable$est.t       <- NULL
+  parTable$std.error.t <- NULL
   parTable$label[!parTable$label %in% orig.labels] <- ""
+  rownames(parTable) <- NULL # reset
 
   matrices    <- aggregateMatrices(fits, type = "main")
   covMatrices <- aggregateMatrices(fits, type = "cov")

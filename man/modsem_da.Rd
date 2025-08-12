@@ -41,7 +41,7 @@ modsem_da(
   algorithm = NULL,
   em.control = NULL,
   ordered = NULL,
-  ordered.boot = 5,
+  ordered.boot = 50,
   cluster = NULL,
   cr1s = FALSE,
   rcs = FALSE,

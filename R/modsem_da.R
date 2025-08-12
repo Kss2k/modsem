@@ -324,6 +324,7 @@ modsem_da <- function(model.syntax = NULL,
 
   if (length(ordered) || any(sapply(data, FUN = is.ordered))) {
     out <- modsemOrderedScaleCorrection(
+       type                = "rubin",
        model.syntax        = model.syntax,
        data                = data,
        method              = method,
