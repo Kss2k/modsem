@@ -108,11 +108,9 @@ mstepLms <- function(theta, model, P, data,
                      optim.method = "L-BFGS-B",
                      epsilon = 1e-6,
                      ...) {
-  grad <- NULL # store gradient
   gradient <- function(theta) {
-    grad <<- gradientCompLogLikLms(theta = theta, model = model, P = P, sign = -1,
-                                  data = data, epsilon = epsilon)
-    grad
+    gradientCompLogLikLms(theta = theta, model = model, P = P, sign = -1,
+                          data = data, epsilon = epsilon)
   }
 
   objective <- function(theta) {
@@ -141,7 +139,6 @@ mstepLms <- function(theta, model, P, data,
     stop2("Unrecognized optimizer, must be either 'nlminb' or 'L-BFGS-B'")
   }
 
-  est$grad <- grad
   est
 }
 
