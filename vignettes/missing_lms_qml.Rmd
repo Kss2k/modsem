@@ -1,8 +1,8 @@
 ---
-title: "Missing data in the LMS and QML approaches"
+title: "missing data in the LMS and QML approaches"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Missing data in the LMS and QML approaches}
+  %\VignetteIndexEntry{missing data in the LMS and QML approaches}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

@@ -187,7 +187,7 @@ adaptiveGaussQuadratureK <- function(fun,
 
   warnif(sum(contributions[removable]) > tol * abs(I.full),
          "Something went wrong when pruning nodes:\n",
-         "More information than expected was lost!\n")
+         "More information than expected was lost!\n", .newline = TRUE)
 
   stopif(length(removable) >= NROW(quadn), "Cannot remove all nodes!")
 
@@ -238,8 +238,11 @@ adaptiveGaussQuadratureK <- function(fun,
   }
 
   warnif(iter >= iter.max,
-         "Maximum number of iterations reached when calculating adaptive quadrature!\n",
-         "Try lowering the number of nodes, or increase `quad.range` argument!")
+         "Max iterations reached fitting quasi-adaptive quadrature...\n",
+         sprintf("Iter %d, total: %d, target: %d, kept: %d, discarded: %d",
+                 iter, m.ceil, m, NROW(quadn), m.ceil - NROW(quadn)),
+         .newline = TRUE)
+
 
   # only need to calculate this before returning the final version
   integral.reduced <- collapse(quadf * quadw)

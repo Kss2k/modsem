@@ -127,12 +127,15 @@ diagPartitionedMat <- function(X, Y) {
 }
 
 
-formatNumeric <- function(x, digits = 3) {
+formatNumeric <- function(x, digits = 3, scientific = FALSE,
+                          justify = "right", width = NULL) {
   if (is.numeric(x)) {
     format(round(x, digits), nsmall = digits, digits = digits,
-           trim = FALSE, justify = "right")
+           trim = FALSE, justify = justify, scientific = scientific,
+           width = width)
   } else {
-    format(x, trim = FALSE, justify = "right")
+    format(x, trim = FALSE, justify = justify, scientific = scientific,
+           width = width)
   }
 }
 

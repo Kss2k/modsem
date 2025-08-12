@@ -13,7 +13,8 @@ stopif <- function(cond, ...) {
 }
 
 
-warnif <- function(cond, ...) {
+warnif <- function(cond, ..., .newline = FALSE) {
+  if (cond && .newline) cat("\n")
   if (cond) warning2(...)
 }
 

@@ -650,11 +650,7 @@ finalizeModelEstimatesDA <- function(model,
                               se = SE,
                               method = method,
                               calc.se = calc.se)
-  parTable$z.value  <- parTable$est / parTable$std.error
-  parTable$p.value  <- 2 * stats::pnorm(-abs(parTable$z.value))
-  parTable$ci.lower <- parTable$est - CI_WIDTH * parTable$std.error
-  parTable$ci.upper <- parTable$est + CI_WIDTH * parTable$std.error
-
+  parTable <- addZStatsParTable(parTable)
 
   out <- list(
     model            = finalModel,
@@ -683,4 +679,16 @@ finalizeModelEstimatesDA <- function(model,
     out$start.model <- startModel
 
   out
+}
+
+
+addZStatsParTable <- function(parTable, se.col = "std.error", est.col = "est",
+                              z.col = "z.value", p.col = "p.value",
+                              ci.l = "ci.lower", ci.u = "ci.upper") {
+  parTable[[z.col]] <- parTable[[est.col]] / parTable[[se.col]]
+  parTable[[p.col]] <- 2 * stats::pnorm(-abs(parTable[[z.col]]))
+  parTable[[ci.l]]  <- parTable[[est.col]] - CI_WIDTH * parTable[[se.col]]
+  parTable[[ci.u]]  <- parTable[[est.col]] + CI_WIDTH * parTable[[se.col]]
+
+  parTable
 }
