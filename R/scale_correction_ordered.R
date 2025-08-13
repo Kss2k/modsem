@@ -1,7 +1,7 @@
 modsemOrderedScaleCorrection <- function(..., type = c("simple", "rubin")) {
   type <- tolower(type)
   type <- match.arg(type)
-  
+
   message("Scale correcting ordinal variables. ",
           "This is an experimental feature!\n",
           "See `help(modsem_da)` for more information.")
@@ -18,8 +18,8 @@ modsemOrderedScaleCorrectionSimple <- function(model.syntax,
                                                method = "lms",
                                                ordered = NULL,
                                                calc.se = TRUE,
-                                               R = 50,
-                                               warmup = 15,
+                                               R = 50L,
+                                               warmup = floor(R / 2L),
                                                N = 1e5, # 100,000
                                                verbose = interactive(),
                                                optimize = TRUE,
@@ -74,28 +74,29 @@ modsemOrderedScaleCorrectionSimple <- function(model.syntax,
       data.y.new <- rescaleOrderedData(data = data.x, sim.ov = sim$oV)
 
       # damping to promote contraction
-      lambda.i <- if (r > warmup) lambda/sqrt(r - warmup) else 1 # no mixing before warmup
+      lambda.i <- if (r > warmup) lambda/(r - warmup) else 1 # no mixing before warmup
       for (c in cols.ordered)
         data.y[[c]] <- (1 - lambda.i) * data.y[[c]] + lambda.i * data.y.new[[c]]
-
-      if (!is.null(prev.theta)) {
-        eucdist   <- \(x) sqrt(c(t(x) %*% x))
-        normalize <- \(x) x / eucdist(x)
-
-        epsilon <- normalize(prev.theta) - normalize(new.theta)
-        # normalize
-
-        delta <- eucdist(epsilon)
-        if (r > warmup & delta <= ordered.tol) {
-          break
-        }
-      }
-
-      prev.theta <- new.theta
     })
 
     nprinted <- length(printedLines)
     eraseConsoleLines(nprinted)
+
+    if (!is.null(prev.theta)) {
+      eucdist   <- \(x) sqrt(c(t(x) %*% x))
+      normalize <- \(x) x / eucdist(x)
+
+      epsilon <- normalize(prev.theta) - normalize(new.theta)
+
+      delta <- eucdist(epsilon)
+      if (r > warmup & delta <= ordered.tol) {
+        printf("Scale correction converged (iter = %d, warmup = %d, tau = %.2g)\n",
+               r, warmup, delta)
+        break
+      }
+    }
+
+    prev.theta <- new.theta
   }
 
   modsem(
@@ -174,7 +175,7 @@ modsemOrderedScaleCorrectionRubin <- function(model.syntax,
       data.y.new <- rescaleOrderedData(data = data.x, sim.ov = sim$oV)
 
       # damping to promote contraction
-      lambda.i <- if (r > warmup) lambda/sqrt(r - warmup) else 1 # no mixing before warmup
+      lambda.i <- if (r > warmup) lambda/(r - warmup) else 1 # no mixing before warmup
       for (c in cols.ordered)
         data.y[[c]] <- (1 - lambda.i) * data.y[[c]] + lambda.i * data.y.new[[c]]
 
