@@ -36,17 +36,25 @@ modsemOrderedScaleCorrectionSimple <- function(model.syntax,
   rescaleOrderedData <- function(data, sim.ov) {
     data.y <- data
 
-    for (col in cols.ordered)
-      data.y[[col]] <- rescaleOrderedVariable(name = col, data = data,
-                                              sim.ov = sim.ov)
+    thresholds <- stats::setNames(vector("list", length(cols.ordered)),
+                                  nm = cols.ordered)
+    for (col in cols.ordered) {
+      scaling <- rescaleOrderedVariable(name = col, data = data, sim.ov = sim.ov)
+      data.y[[col]]     <- scaling$values
+      thresholds[[col]] <- scaling$thresholds
+    }
 
-    data.y
+    list(data = data.y, thresholds = thresholds)
   }
 
   ERROR <- \(e) {warning2(e, immediate. = FALSE); NULL}
 
   data.x <- data
   data.y <- data
+  data.y[cols.ordered] <- lapply(data.y[cols.ordered], FUN = as.integer)
+
+  thresholds <- stats::setNames(lapply(cols.ordered,  FUN = \(x) 0),
+                                nm = cols.ordered)
 
   prev.theta <- NULL
   for (r in seq_len(R)) {
@@ -71,12 +79,18 @@ modsemOrderedScaleCorrectionSimple <- function(model.syntax,
         N        = N
       )
 
-      data.y.new <- rescaleOrderedData(data = data.x, sim.ov = sim$oV)
+      rescaled <- rescaleOrderedData(data = data.x, sim.ov = sim$oV)
+      data.y.new     <- rescaled$data
+      thresholds.new <- rescaled$thresholds
 
       # damping to promote contraction
       lambda.i <- if (r > warmup) lambda/(r - warmup) else 1 # no mixing before warmup
-      for (c in cols.ordered)
-        data.y[[c]] <- (1 - lambda.i) * data.y[[c]] + lambda.i * data.y.new[[c]]
+      for (c in cols.ordered) {
+        data.y[[c]]     <- (1 - lambda.i) * data.y[[c]] +
+                                lambda.i  * data.y.new[[c]]
+        thresholds[[c]] <- (1 - lambda.i) * thresholds.new[[c]] +
+                                lambda.i  * thresholds.new[[c]]
+      }
     })
 
     nprinted <- length(printedLines)
@@ -99,7 +113,7 @@ modsemOrderedScaleCorrectionSimple <- function(model.syntax,
     prev.theta <- new.theta
   }
 
-  modsem(
+  out <- modsem(
     model.syntax = model.syntax,
     method       = method,
     data         = data.y,
@@ -109,6 +123,28 @@ modsemOrderedScaleCorrectionSimple <- function(model.syntax,
     optimize     = FALSE,
     ...
   )
+
+  parTable <- parameter_estimates(out)
+  na.cols <- setdiff(colnames(parTable), c("lhs", "op", "rhs", "est", "label"))
+
+  for (col in cols.ordered) {
+    t <- thresholds[[col]]
+    t <- t[is.finite(t)]
+
+    newRows <- data.frame(lhs = col,
+                          op  = "|",
+                          rhs = paste0("t", seq_along(t)),
+                          est = t, label = "")
+    newRows[na.cols] <- NA
+
+    parTable <- rbind(parTable, newRows)
+  }
+
+  out$parTable <- sortParTableDA(parTable, model = out$model)
+  out$args$optimize <- optimize # restore input arguments
+  out$args$start    <- start
+
+  out
 }
 
 
@@ -134,22 +170,29 @@ modsemOrderedScaleCorrectionRubin <- function(model.syntax,
   rescaleOrderedData <- function(data, sim.ov) {
     data.y <- data
 
-    for (col in cols.ordered)
-      data.y[[col]] <- rescaleOrderedVariable(name = col, data = data,
-                                              sim.ov = sim.ov)
+    thresholds <- stats::setNames(vector("list", length(cols.ordered)),
+                                  nm = cols.ordered)
+    for (col in cols.ordered) {
+      scaling <- rescaleOrderedVariable(name = col, data = data, sim.ov = sim.ov)
+      data.y[[col]]     <- scaling$values
+      thresholds[[col]] <- scaling$thresholds
+    }
 
-    data.y
+    list(data = data.y, thresholds = thresholds)
   }
 
   ERROR <- \(e) {warning2(e, immediate. = FALSE); NULL}
 
   data.x <- data
   data.y <- data
+  data.y[cols.ordered] <- lapply(data.y[cols.ordered], FUN = as.integer)
 
   prev.theta <- NULL
   COEF.ALL  <- vector("list", length = warmup - 1L)
   COEF.FREE <- vector("list", length = warmup - 1L)
 
+  thresholds <- stats::setNames(lapply(cols.ordered,  FUN = \(x) 0),
+                                nm = cols.ordered)
   for (r in seq_len(R)) {
     printedLines <- utils::capture.output(split = TRUE, {
       if (verbose) printf("Bootstrapping scale-correction %d/%d...\n", r, R)
@@ -172,12 +215,18 @@ modsemOrderedScaleCorrectionRubin <- function(model.syntax,
         N        = NROW(data.y)
       )
 
-      data.y.new <- rescaleOrderedData(data = data.x, sim.ov = sim$oV)
+      rescaled <- rescaleOrderedData(data = data.x, sim.ov = sim$oV)
+      data.y.new     <- rescaled$data
+      thresholds.new <- rescaled$thresholds
 
       # damping to promote contraction
       lambda.i <- if (r > warmup) lambda/(r - warmup) else 1 # no mixing before warmup
-      for (c in cols.ordered)
-        data.y[[c]] <- (1 - lambda.i) * data.y[[c]] + lambda.i * data.y.new[[c]]
+      for (c in cols.ordered) {
+        data.y[[c]]     <- (1 - lambda.i) * data.y[[c]] +
+                                lambda.i  * data.y.new[[c]]
+        thresholds[[c]] <- (1 - lambda.i) * thresholds.new[[c]] +
+                                lambda.i  * thresholds.new[[c]]
+      }
 
       if (!is.null(prev.theta)) {
         eucdist   <- \(x) sqrt(c(t(x) %*% x))
@@ -249,7 +298,24 @@ modsemOrderedScaleCorrectionRubin <- function(model.syntax,
   parTable$std.error.t <- NULL
   parTable$label[!parTable$label %in% orig.labels] <- ""
 
-  fit.final$parTable <- parTable
+  na.cols <- setdiff(colnames(parTable), c("lhs", "op", "rhs", "est", "label"))
+
+  for (col in cols.ordered) {
+    t <- thresholds[[col]]
+    t <- t[is.finite(t)]
+
+    newRows <- data.frame(lhs = col,
+                          op  = "|",
+                          rhs = paste0("t", seq_along(t)),
+                          est = t, label = "")
+    newRows[na.cols] <- NA
+
+    parTable <- rbind(parTable, newRows)
+  }
+
+  fit.final$parTable <- sortParTableDA(parTable, model = fit.final$model)
+  fit.final$args$optimize <- optimize # restore input arguments
+  fit.final$args$start    <- start
 
   fit.final
 }
@@ -258,8 +324,9 @@ modsemOrderedScaleCorrectionRubin <- function(model.syntax,
 rescaleOrderedVariable <- function(name, data, sim.ov,
                                    smooth_eps = 0,
                                    eps_expand = 1e-12) {
-  x <- as.integer(as.ordered(data[[name]]))
-  y <- sim.ov[, name]
+  x   <- as.ordered(data[[name]])
+  x.i <- as.integer(x)
+  y   <- sim.ov[, name]
 
   # standardize for scale stability (no distributional assumption)
   y_mean <- mean(y, na.rm = TRUE)
@@ -278,8 +345,9 @@ rescaleOrderedVariable <- function(name, data, sim.ov,
   }
 
   # empirical CDF from data; quantile cutpoints on simulated y
-  cdf_obs <- c(0, cumsum(p_obs))
+  cdf_obs <- cumsum(p_obs[-length(p_obs)]) # drop last, we know that it sums to 1
   q <- stats::quantile(y, probs = cdf_obs, names = FALSE, type = 7)
+  q <- c(-Inf, q, Inf) # [0, ..., last(p_obs)]
 
   # compute conditional means in each [q[i], q[i+1]) (last bin inclusive)
   mu <- numeric(K)
@@ -313,7 +381,9 @@ rescaleOrderedVariable <- function(name, data, sim.ov,
   mu <- mu - sum(p_obs * mu, na.rm = TRUE)
 
   # map each observed category to its conditional mean
-  out <- rep(NA_real_, length(x))
-  for (i in seq_len(K)) out[x == i] <- mu[i]
-  out
+  x.out <- rep(NA_real_, length(x))
+  for (i in seq_len(K))
+    x.out[x.i == i] <- mu[i]
+
+  list(values = x.out, thresholds = q)
 }
