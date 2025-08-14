@@ -324,12 +324,11 @@ modsem_da <- function(model.syntax = NULL,
 
   if (length(ordered) || any(sapply(data, FUN = is.ordered))) {
     out <- modsemOrderedScaleCorrection(
-       type                = "simple",
        model.syntax        = model.syntax,
        data                = data,
        method              = method,
        verbose             = verbose,
-       R                   = ordered.boot,
+       iter                = ordered.boot,
        optimize            = optimize,
        nodes               = nodes,
        missing             = missing,
