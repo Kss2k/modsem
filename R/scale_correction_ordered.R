@@ -253,7 +253,7 @@ modsemOrderedScaleCorrection <- function(model.syntax,
 
   # restore passed arguments
   fit.out$args$optimize <- optimize
-  fit.out$args$start    <- start
+  fit.out$args$start    <- NULL
 
   fit.out
 }
