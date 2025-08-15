@@ -251,6 +251,10 @@ modsemOrderedScaleCorrection <- function(model.syntax,
 
   fit.out$imputations <- list(fitted = fits, data = imputed)
 
+  # restore passed arguments
+  fit.out$args$optimize <- optimize
+  fit.out$args$start    <- start
+
   fit.out
 }
 
