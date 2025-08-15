@@ -14,9 +14,9 @@ modsemOrderedScaleCorrection <- function(model.syntax,
                                          se = "simple",
                                          standardize.data = NULL, # override
                                          ...) {
-  message("Sampling continuous values for ordinal variables...\n",
-          "This is an experimental feature, ",
-          "see `help(modsem_da)` for more information!")
+  message("Sampling values for ordered variables, ",
+          "this is an experimental feature!\n",
+          "Consider increasing the `ordered.iter` and `ordered.warmup` arguments!")
 
   standardize <- \(x) (x - mean(x, na.rm = TRUE)) / sd(x, na.rm = TRUE)
 
@@ -36,7 +36,7 @@ modsemOrderedScaleCorrection <- function(model.syntax,
   thresholds <- stats::setNames(lapply(cols.ordered,  FUN = \(x) 0),
                                 nm = cols.ordered)
 
-  stopif(iter <= warmup, "`ordered.boot` must be larger than `ordered.warmup`!")
+  stopif(iter <= warmup, "`ordered.iter` must be larger than `ordered.warmup`!")
 
   iter.keep <- max(1L, floor(iter - warmup))
   COEF.ALL  <- vector("list", length = iter.keep)

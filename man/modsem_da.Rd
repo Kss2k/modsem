@@ -42,7 +42,7 @@ modsem_da(
   em.control = NULL,
   ordered = NULL,
   ordered.iter = 75L,
-  ordered.warmup = 25L,
+  ordered.warmup = floor(ordered.iter/3L),
   cluster = NULL,
   cr1s = FALSE,
   rcs = FALSE,
@@ -204,10 +204,12 @@ Monte-Carlo sampling, and multiple imputation. It should yield more consistent,
 and less biased results, compared to when ordinal variables are treated as continuous.}
 
 \item{ordered.iter}{Number of sampling iterations used to sample the underlying continuous distribution of the
-ordinal variables.}
+ordinal variables. The default is set to \code{75}, but should likely be
+increased to yield more consistent estimates.}
 
 \item{ordered.warmup}{Number of sampling iterations in the warmup phase. These are discarded when estimating
-the final model parameters.}
+the final model parameters. The default is set to \code{ordered.iter / 3L}.
+In some cases it might be suitable to use a higher ratio (e.g., \code{ordered.iter / 2L}).}
 
 \item{cluster}{Clusters used to compute standard errors robust to non-indepence of observations. Must be paired with
 \code{robust.se = TRUE}.}
