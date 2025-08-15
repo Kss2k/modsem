@@ -3,8 +3,8 @@ modsemOrderedScaleCorrection <- function(model.syntax,
                                          method = "lms",
                                          ordered = NULL,
                                          calc.se = TRUE,
-                                         iter = 50L,
-                                         warmup = floor(iter / 2L),
+                                         iter = 75L,
+                                         warmup = 25L,
                                          N = max(NROW(data), 1e5), # 100,000
                                          verbose = interactive(),
                                          optimize = TRUE,
@@ -25,62 +25,7 @@ modsemOrderedScaleCorrection <- function(model.syntax,
 
   cols <- colnames(data)
   cols.ordered <- cols[cols %in% ordered | sapply(data, is.ordered)]
-
-  rescaleOrderedData <- function(data, sim.ov) {
-
-    sim.cat  <- as.data.frame(sim.ov)
-    data.cat <- as.data.frame(data)
-    data.cat[cols.ordered] <- lapply(data.cat[cols.ordered], as.integer)
-    data.cont <- data.cat
-    data.cont[cols.ordered] <- NA_real_
-
-    sim.cat <- sim.cat[colnames(data.cat)] # ensure correct order
-    sim.std <- lapplyDf(sim.cat, FUN = standardize)
-
-    thresholds <- stats::setNames(vector("list", length(cols.ordered)),
-                                  nm = cols.ordered)
-    univarEst <- stats::setNames(vector("list", length(cols.ordered)),
-                                   nm = cols.ordered)
-    for (col in cols.ordered) {
-      scaling <- rescaleOrderedVariable(name = col, data = data.cat, sim.ov = sim.ov)
-
-      univarEst[[col]]  <- scaling$values # univariate mean-estimates
-      thresholds[[col]] <- scaling$thresholds
-      sim.cat[[col]]    <- cut(sim.std[[col]], breaks = scaling$thresholds,
-                               ordered_result = TRUE, labels = FALSE)
-    }
-
-    univarEst <- as.data.frame(univarEst)
-
-    # right now this will work best if all variables are categorical
-    # Optimally we would want to use information from numerical variables
-    # as well...
-    combostring <- \(...) paste(..., sep = "-")
-    combos.obs  <- do.call(combostring, data.cat[cols.ordered])
-    combos.sim  <- do.call(combostring, sim.cat[cols.ordered])
-    combos.both <- intersect(combos.obs, combos.sim)
-
-    multivarEst <- univarEst # replace univariate estimates with multi-variate ones
-                             # where possible
-
-    for (combo in combos.both) {
-      obs.mask <- combos.obs == combo
-      sim.mask <- combos.sim == combo
-
-      # mu <- sim.agg[sim.agg$.combo__ == combo, cols.ordered, drop = FALSE]
-      k <- sum(obs.mask)
-      m <- sum(sim.mask)
-      M <- sample(m, k, replace = TRUE)
-
-      multivarEst[obs.mask, cols.ordered] <-
-        sim.std[sim.mask, cols.ordered, drop = FALSE][M, , drop = FALSE]
-    }
-
-    out <- as.data.frame(data)
-    out[cols.ordered] <- multivarEst
-
-    list(data = out, thresholds = thresholds)
-  }
+  cols.cont    <- cols[!(cols %in% cols.ordered) & vapply(data, is.numeric, TRUE)]
 
   ERROR <- \(e) {warning2(e, immediate. = FALSE); NULL}
 
@@ -136,16 +81,16 @@ modsemOrderedScaleCorrection <- function(model.syntax,
 
       fit_i <- tryCatch(
         modsem_da(
-          model.syntax = model.syntax,
-          data         = data_i,
-          method       = method,
-          start        = start,
-          verbose      = verbose,
-          optimize     = optimize,
-          calc.se      = calc.se_i,
+          model.syntax     = model.syntax,
+          data             = data_i,
+          method           = method,
+          start            = start,
+          verbose          = verbose,
+          optimize         = optimize,
+          calc.se          = calc.se_i,
           standardize.data = TRUE,
           ...
-        ), error = \(e) {cat("\n");print(e); NULL}
+        ), error = \(e) {cat("\n"); print(e); NULL}
       )
 
       if (is.null(fit_i)) next
@@ -154,12 +99,14 @@ modsemOrderedScaleCorrection <- function(model.syntax,
 
       if (is.null(PARS) || mode == "warmup") {
         PARS <- pars_i
+
       } else {
         ll <- as.numeric(fit_i$logLik)
 
         if (!is.finite(ll)) {
           # skip weighting when logLik is NA/Inf
           w <- 0
+
         } else {
           # if we have a new maximum, rescale cumulative weight to the new baseline
           if (ll > maxLL_run) {
@@ -169,6 +116,7 @@ modsemOrderedScaleCorrection <- function(model.syntax,
             }
             maxLL_run <- ll
           }
+
           # softmax-style weight in (0, 1], peaked at current best
           w <- exp((ll - maxLL_run) / lambda)
         }
@@ -185,7 +133,9 @@ modsemOrderedScaleCorrection <- function(model.syntax,
         N        = N
       )
 
-      rescaled   <- rescaleOrderedData(data = data.x, sim.ov = sim_i$oV)
+      rescaled   <- rescaleOrderedData(data = data.x, sim.ov = sim_i$oV,
+                                       cols.ordered = cols.ordered,
+                                       cols.cont = cols.cont)
       data_i     <- rescaled$data
       thresholds <- rescaled$thresholds
 
@@ -434,4 +384,131 @@ addThresholdsVcov <- function(vcov, thresholds) {
   }
 
   vcov
+}
+
+
+rescaleOrderedData <- function(data, sim.ov, cols.ordered, cols.cont) {
+  if (!length(cols.ordered)) # nothing to do
+    return(cols.ordered)
+
+  if (length(cols.cont)) {
+    obsContScaled <- scale(as.matrix(data[, cols.cont, drop = FALSE]))
+    contCenter <- attr(obsContScaled, "scaled:center")
+    contScale  <- attr(obsContScaled, "scaled:scale")
+    use.kNN <- TRUE
+    kNN_k   <- 25L
+  } else {
+    obsContScaled <- NULL
+    contCenter <- contScale <- numeric(0L)
+    use.kNN <- FALSE
+    kNN_k   <- 0L
+  }
+
+  # ensure column order consistent with data
+  sim.mat <- as.data.frame(sim.ov)[, colnames(data), drop = FALSE]
+
+  # make a full output copy right away, so continuous vars are preserved
+  out <- as.data.frame(data, stringsAsFactors = FALSE)
+
+  data.cat <- as.data.frame(data)
+  data.cat[cols.ordered] <- lapply(data.cat[cols.ordered], as.integer)
+
+  # thresholds + univariate conditional means for each ordered variable
+  NamedList  <- \(nm) stats::setNames(vector("list", length(nm)), nm = nm)
+  thresholds <- NamedList(cols.ordered)
+  univarEst  <- NamedList(cols.ordered)
+
+  std1 <- function(v) {
+    mu    <- mean(v, na.rm = TRUE)
+    sigma <- stats::sd(v, na.rm = TRUE)
+
+    if (!is.finite(sigma) || sigma == 0)
+      sigma <- 1
+
+    (v - mu) / sigma
+  }
+
+  # standardized versions of the ordered cols in sim (these are the values we copy)
+  sim.std.ord <- lapplyNamed(cols.ordered, \(col) std1(sim.mat[[col]]),
+                             names = cols.ordered)
+  sim.std.ord <- as.data.frame(sim.std.ord)
+
+  sim.cat <- sim.mat
+  for (col in cols.ordered) {
+    scaling <- rescaleOrderedVariable(name = col, data = data.cat, sim.ov = sim.mat)
+    univarEst[[col]]  <- scaling$values
+    thresholds[[col]] <- scaling$thresholds
+
+    # categories via findInterval for speed (on standardized scale)
+    sim.cat[[col]] <- findInterval(sim.std.ord[[col]],
+                                   vec = scaling$thresholds,
+                                   left.open = TRUE, rightmost.closed = TRUE)
+  }
+
+  # start with the univariate estimates for ordered variables only
+  multivarEst <- as.data.frame(univarEst)
+
+  # ordered-combo keys
+  obs.code <- interaction(data.cat[cols.ordered], drop = TRUE, lex.order = TRUE)
+  sim.code <- interaction(sim.cat[cols.ordered],  drop = TRUE, lex.order = TRUE)
+  combos.both <- intersect(levels(obs.code), levels(sim.code))
+
+  # pre-split indices
+  obs.splits <- split(seq_len(nrow(data.cat)), obs.code, drop = TRUE)
+  sim.splits <- split(seq_len(nrow(sim.cat)),  sim.code, drop = TRUE)
+
+  # precompute standardized continuous block for sim (to match observed)
+  if (length(cols.cont)) {
+    X <- as.matrix(sim.mat[, cols.cont, drop = FALSE])
+
+    simContScaled <- as.matrix(
+      sweep(sweep(X, 2, contCenter, "-"), 2, contScale, "/")
+    )
+  }
+
+  for (combo in combos.both) {
+    oi <- obs.splits[[combo]]
+    si <- sim.splits[[combo]]
+    if (!length(oi) || !length(si)) next
+
+    # kNN within combo using continuous variables (if available)
+    # I.e., if there are continuous variables available we also want
+    # to incorporate their information, when sampling continuous values
+    # for the ordinal variables
+    if (use.kNN && length(cols.cont)) {
+      Oc <- obsContScaled[oi, , drop = FALSE]
+      Sc <- simContScaled[si, , drop = FALSE]
+
+      if (ncol(Oc) && nrow(Sc)) {
+        k_eff <- max(1L, min(kNN_k, nrow(Sc)))
+        picked <- integer(length(oi))
+
+        nn <- RANN::nn2(Sc, Oc, k = k_eff, searchtype = "standard")
+        for (r in seq_along(oi)) {
+          nei <- nn$nn.idx[r, seq_len(k_eff)]
+          d   <- nn$nn.dists[r, seq_len(k_eff)]
+          w   <- 1 / pmax(d, 1e-8)  # inverse-distance weights
+          picked[r] <- si[ nei[ sample.int(k_eff, 1L, prob = w) ] ]
+        }
+
+        # write replacements for ordered columns only
+        multivarEst[oi, cols.ordered] <- sim.std.ord[picked, cols.ordered, drop = FALSE]
+        next
+      }
+    }
+
+    # fallback: uniform within combo
+    k <- length(oi)
+    m <- length(si)
+    M <- si[sample.int(m, k, replace = (m < k))]
+    multivarEst[oi, cols.ordered] <- sim.std.ord[M, cols.ordered, drop = FALSE]
+  }
+
+  # Put the multivariate ordered replacements back onto a FULL data frame.
+  out[cols.ordered] <- multivarEst[cols.ordered]
+
+  # preserve original column order & types for continuous vars
+  out <- out[, colnames(data), drop = FALSE]
+
+  list(data = out, thresholds = thresholds)
 }
