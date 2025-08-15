@@ -18,7 +18,7 @@ modsemOrderedScaleCorrection <- function(model.syntax,
           "this is an experimental feature!\n",
           "Consider increasing the `ordered.iter` and `ordered.warmup` arguments!")
 
-  standardize <- \(x) (x - mean(x, na.rm = TRUE)) / sd(x, na.rm = TRUE)
+  standardize <- \(x) (x - mean(x, na.rm = TRUE)) / stats::sd(x, na.rm = TRUE)
 
   if (is.null(verbose))
     verbose <- TRUE # default
