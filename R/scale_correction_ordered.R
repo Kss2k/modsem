@@ -5,7 +5,7 @@ modsemOrderedScaleCorrection <- function(model.syntax,
                                          calc.se = TRUE,
                                          iter = 50L,
                                          warmup = floor(iter / 2L),
-                                         N = 1e5, # 500,000
+                                         N = max(NROW(data), 1e5), # 100,000
                                          verbose = interactive(),
                                          optimize = TRUE,
                                          start = NULL,
@@ -14,9 +14,9 @@ modsemOrderedScaleCorrection <- function(model.syntax,
                                          se = "simple",
                                          standardize.data = NULL, # override
                                          ...) {
-  message("Bootstrapping continuous values for ordinal variables...\n",
-          "This is an experimental feature!\n",
-          "See `help(modsem_da)` for more information.")
+  message("Sampling continuous values for ordinal variables...\n",
+          "This is an experimental feature, ",
+          "see `help(modsem_da)` for more information!")
 
   standardize <- \(x) (x - mean(x, na.rm = TRUE)) / sd(x, na.rm = TRUE)
 
@@ -63,18 +63,6 @@ modsemOrderedScaleCorrection <- function(model.syntax,
     multivarEst <- univarEst # replace univariate estimates with multi-variate ones
                              # where possible
 
-    # sim.agg <- as.data.frame(sim.std)[cols.ordered] |>
-    #   dplyr::mutate(.combo__ = combos.sim) |> # pick a weird name
-    #   dplyr::filter(.combo__ %in% combos.both) |>
-    #   dplyr::group_by_at(".combo__") |>
-    #   dplyr::summarize_at(.vars = cols.ordered, .funs = mean)
-    #
-    # sim.agg.n <- as.data.frame(sim.std)[cols.ordered] |>
-    #   dplyr::mutate(.combo__ = combos.sim) |> # pick a weird name
-    #   dplyr::filter(.combo__ %in% combos.both) |>
-    #   dplyr::group_by_at(".combo__") |>
-    #   dplyr::summarize(n = dplyr::n())
-
     for (combo in combos.both) {
       obs.mask <- combos.obs == combo
       sim.mask <- combos.sim == combo
@@ -88,7 +76,10 @@ modsemOrderedScaleCorrection <- function(model.syntax,
         sim.std[sim.mask, cols.ordered, drop = FALSE][M, , drop = FALSE]
     }
 
-    list(data = multivarEst, thresholds = thresholds)
+    out <- as.data.frame(data)
+    out[cols.ordered] <- multivarEst
+
+    list(data = out, thresholds = thresholds)
   }
 
   ERROR <- \(e) {warning2(e, immediate. = FALSE); NULL}
@@ -117,6 +108,9 @@ modsemOrderedScaleCorrection <- function(model.syntax,
                                  FUN = \(x) standardize(as.integer(x)))
 
   PARS <- NULL
+  W         <- 0            # cumulative weight
+  maxLL_run <- -Inf
+
   for (i in seq_len(iter)) {
     printedLines <- utils::capture.output(split = TRUE, {
       j <- i - warmup
@@ -156,22 +150,38 @@ modsemOrderedScaleCorrection <- function(model.syntax,
 
       if (is.null(fit_i)) next
 
-      # pars_i <- parameter_estimates(fit_i)
+      pars_i <- parameter_estimates(fit_i)
 
-      # if (is.null(PARS) || mode == "warmup") {
-      #   PARS <- pars_i
-      # } else { # get more an more stable estimates of the true parameter values
-      #   lambda <- (1 / j)
-      #   PARS$est <- (1 - lambda) * PARS$est + lambda * pars_i$est
-      # }
+      if (is.null(PARS) || mode == "warmup") {
+        PARS <- pars_i
+      } else {
+        ll <- as.numeric(fit_i$logLik)
 
-      # sim_i <- simulateDataParTable(
-      #   parTable = PARS,
-      #   N        = N
-      # )
+        if (!is.finite(ll)) {
+          # skip weighting when logLik is NA/Inf
+          w <- 0
+        } else {
+          # if we have a new maximum, rescale cumulative weight to the new baseline
+          if (ll > maxLL_run) {
+            if (is.finite(maxLL_run)) {
+              scale <- exp((maxLL_run - ll) / lambda)  # < 1
+              W <- W * scale
+            }
+            maxLL_run <- ll
+          }
+          # softmax-style weight in (0, 1], peaked at current best
+          w <- exp((ll - maxLL_run) / lambda)
+        }
+
+        # online likelihood-weighted average update
+        if (w > 0) {
+          W <- W + w
+          PARS$est <- PARS$est + (w / W) * (pars_i$est - PARS$est)
+        }
+      }
 
       sim_i <- simulateDataParTable(
-        parTable = parameter_estimates(fit_i),
+        parTable = PARS,
         N        = N
       )
 
@@ -320,7 +330,10 @@ rescaleOrderedVariable <- function(name, data, sim.ov,
 
   # empirical CDF from data; quantile cutpoints on simulated y
   cdf_obs <- cumsum(p_obs[-length(p_obs)]) # drop last, we know that it sums to 1
-  q <- stats::quantile(y, probs = cdf_obs, names = FALSE, type = 7)
+  y.sample <- y[sample(NROW(sim.ov), NROW(data))] # sample y to get appropriate sampling
+                                                  # variation of thresholds
+  q <- stats::quantile(y.sample,
+                       probs = cdf_obs, names = FALSE, type = 7)
   q <- c(-Inf, q, Inf) # [0, ..., last(p_obs)]
 
   # compute conditional means in each [q[i], q[i+1]) (last bin inclusive)
