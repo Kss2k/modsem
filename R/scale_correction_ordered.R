@@ -5,7 +5,8 @@ modsemOrderedScaleCorrection <- function(model.syntax,
                                          calc.se = TRUE,
                                          iter = 75L,
                                          warmup = 25L,
-                                         N = max(NROW(data), 1e4), # 10,000 initally
+                                         N.start = max(NROW(data), 1e4), # 10,000 initally
+                                         N.max   = max(NROW(data), 1e6), # 1,000,000
                                          target.coverage = 0.7,
                                          lambda = 1,
                                          se = "simple",
@@ -50,14 +51,14 @@ modsemOrderedScaleCorrection <- function(model.syntax,
   fits      <- vector("list", length = iter.keep)
   imputed   <- vector("list", length = iter.keep)
 
-  THETA <- NULL
-
   data_i <- data
   data_i[cols.ordered] <- lapply(data_i[cols.ordered],
                                  FUN = \(x) standardize(as.integer(x)))
 
-  PARS <- NULL
-  W         <- 0            # cumulative weight
+  THETA     <- NULL
+  PARS      <- NULL
+  N         <- N.start
+  W         <- 0       # cumulative weight
   maxLL_run <- -Inf
 
   for (i in seq_len(iter)) {
@@ -143,7 +144,7 @@ modsemOrderedScaleCorrection <- function(model.syntax,
                                        cols.cont = cols.cont)
       coverage   <- rescaled$coverage
       n.scalef   <- target.coverage / coverage
-      N          <- min(1e6, floor(n.scalef * N))
+      N          <- min(N.max, floor(n.scalef * N))
       data_i     <- rescaled$data
       thresholds <- rescaled$thresholds
 
