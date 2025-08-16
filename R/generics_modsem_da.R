@@ -140,7 +140,7 @@ summary.modsem_da <- function(object,
 
     } else {
       out$D     <- compare_fit(est_h1 = object, est_h0 = est_h0)
-      out$fitH0 <- fit_modsem_da(est_h0, robust = robust)
+      out$fitH0 <- fit_modsem_da(est_h0)
     }
   } else {
     out$D <- NULL
