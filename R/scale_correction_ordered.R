@@ -5,7 +5,8 @@ modsemOrderedScaleCorrection <- function(model.syntax,
                                          calc.se = TRUE,
                                          iter = 75L,
                                          warmup = 25L,
-                                         N = max(NROW(data), 1e5), # 100,000
+                                         N = max(NROW(data), 1e4), # 10,000 initally
+                                         target.coverage = 0.7,
                                          lambda = 1,
                                          se = "simple",
                                          ordered.standardize.data = TRUE,
@@ -140,6 +141,9 @@ modsemOrderedScaleCorrection <- function(model.syntax,
       rescaled   <- rescaleOrderedData(data = data.x, sim.ov = sim_i$oV,
                                        cols.ordered = cols.ordered,
                                        cols.cont = cols.cont)
+      coverage   <- rescaled$coverage
+      n.scalef   <- target.coverage / coverage
+      N          <- min(1e6, floor(n.scalef * N))
       data_i     <- rescaled$data
       thresholds <- rescaled$thresholds
 
@@ -460,6 +464,11 @@ rescaleOrderedData <- function(data, sim.ov, cols.ordered, cols.cont) {
   obs.code <- interaction(data.cat[cols.ordered], drop = TRUE, lex.order = TRUE)
   sim.code <- interaction(sim.cat[cols.ordered],  drop = TRUE, lex.order = TRUE)
   combos.both <- intersect(levels(obs.code), levels(sim.code))
+  combos.miss <- setdiff(levels(obs.code), levels(sim.code))
+
+  denominator <- length(levels(obs.code))
+  numerator   <- denominator - length(combos.miss)
+  coverage <- numerator / denominator
 
   # pre-split indices
   obs.splits <- split(seq_len(nrow(data.cat)), obs.code, drop = TRUE)
@@ -518,5 +527,5 @@ rescaleOrderedData <- function(data, sim.ov, cols.ordered, cols.cont) {
   # preserve original column order & types for continuous vars
   out <- out[, colnames(data), drop = FALSE]
 
-  list(data = out, thresholds = thresholds)
+  list(data = out, thresholds = thresholds, coverage = coverage)
 }
