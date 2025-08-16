@@ -41,7 +41,8 @@ modsem_da(
   algorithm = NULL,
   em.control = NULL,
   ordered = NULL,
-  ordered.boot = 50,
+  ordered.iter = 75L,
+  ordered.warmup = floor(ordered.iter/3L),
   cluster = NULL,
   cr1s = FALSE,
   rcs = FALSE,
@@ -197,14 +198,18 @@ optimization steps when needed. Default is \code{"EM"}.}
 
 \item{em.control}{a list of control parameters for the EM algorithm. See \code{\link{default_settings_da}} for defaults.}
 
-\item{ordered}{Variables to be treated as ordered. Ordered (ordinal) variables are scale-corrected to adjust for
-unequal intervals before model estimation, by estimating the distributions of the underlying continuous response variables.
-The distributions of the response variables are estimated using a combination of bootstrapping and Monte Carlo simulations.
-For small differences in the spacing of the intervals, the point estimates should be unbiased. The standard errors may be
-underestimated though. Using robust standard errors may make the estimates of the standard errors more accurate.}
+\item{ordered}{Variables to be treated as ordered. The distributions of the
+continuous response variables are estimated using a combination of Markow-Chain
+Monte-Carlo sampling, and multiple imputation. It should yield more consistent,
+and less biased results, compared to when ordinal variables are treated as continuous.}
 
-\item{ordered.boot}{Number of bootstraps used to estimate the underlying continuous distribution of the
-ordinal variables.}
+\item{ordered.iter}{Number of sampling iterations used to sample the underlying continuous distribution of the
+ordinal variables. The default is set to \code{75}, but should likely be
+increased to yield more consistent estimates.}
+
+\item{ordered.warmup}{Number of sampling iterations in the warmup phase. These are discarded when estimating
+the final model parameters. The default is set to \code{ordered.iter / 3L}.
+In some cases it might be suitable to use a higher ratio (e.g., \code{ordered.iter / 2L}).}
 
 \item{cluster}{Clusters used to compute standard errors robust to non-indepence of observations. Must be paired with
 \code{robust.se = TRUE}.}

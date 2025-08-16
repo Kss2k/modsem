@@ -24,12 +24,14 @@ formatParTable <- function(parTable,
   isReg    <- parTable$op == "~"
   isIntr   <- parTable$op == "~1" # Intercept
   isMeasr  <- parTable$op == "=~"
+  isThrs   <- parTable$op == "|"
 
   parTable[isCustom, "label"] <- ""
+  parTable[isThrs, "lhs"] <- paste0(parTable[isThrs, "lhs"], "|",
+                                    parTable[isThrs, "rhs"])
 
   isDoubleCol <- isReg  | isCov | isMeasr # Should output have double columns?
-  isSingleCol <- isIntr | isVar | isCustom
-
+  isSingleCol <- isIntr | isVar | isCustom | isThrs
 
   if (shorten.lhs.header) {
     lhsDouble <- paste(shorten(parTable$lhs[isDoubleCol], n = width - 2L),
@@ -115,6 +117,7 @@ printParTable <- function(parTable,
                           covariances = TRUE,
                           intercepts = TRUE,
                           variances = TRUE,
+                          thresholds = TRUE,
                           custom = TRUE,
                           extra.cols = NULL,
                           padWidth = 1, # we already pad lhs/rhs with "."/" "
@@ -181,6 +184,19 @@ printParTable <- function(parTable,
 
     printParTableDouble(
       parTableCovariances,
+      padWidth = padWidth,
+      padWidthLhs = padWidthLhs,
+      spacing = spacing
+    )
+  }
+
+  # Thresholds
+  parTableThresholds <- fParTable[parTable$op == "|", ]
+  if (thresholds && NROW(parTableThresholds) > 0) {
+    cat("\nThresholds:\n", formattedHeader)
+
+    printParTableSingle(
+      parTableThresholds,
       padWidth = padWidth,
       padWidthLhs = padWidthLhs,
       spacing = spacing

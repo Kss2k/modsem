@@ -4,7 +4,8 @@ OP_REPLACEMENTS <- c("~~"  = "___COVARIANCE___",
                      "~"   = "___REGRESSION___",
                      ":"   = "___INTERACTION___",
                      "<->" = "___MPLUS_COVARIANCE___",
-                     "<-"  = "___MPLUS_REGRESSION___")
+                     "<-"  = "___MPLUS_REGRESSION___",
+                     "\\|" = "___THRESHOLD___")
 
 OP_REPLACEMENTS_INV <- structure(names(OP_REPLACEMENTS), names = OP_REPLACEMENTS)
 
@@ -948,7 +949,7 @@ sortParTableDA <- function(parTable, model) {
   indsXis  <- model$info$allIndsXis
   indsEtas <- model$info$allIndsEtas
 
-  opOrder <- c("=~", "~", "~1", "~~", ":=")
+  opOrder <- c("=~", "~", "~1", "~~", "|", ":=")
   varOrder <- unique(c(indsXis, indsEtas, xis, etas))
 
   getScore <- function(x, order.by) {
