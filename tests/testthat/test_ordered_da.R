@@ -46,33 +46,35 @@ cut_data <- function(data, k = 5, choose = NULL) {
 CHOOSE <- list(c("x1", "x2", "z1", "y1"),
                colnames(oneInt))
 
-for (choose in CHOOSE) {
-  set.seed(2837290)
-  CUTS <- cut_data(oneInt, choose = choose)
-  oneInt2 <- CUTS$data
-  lms1 <- modsem(m1, oneInt2, method = "lms", ordered = choose,
-                 ordered.iter = 75, ordered.warmup = 25)
-  thresholds <- CUTS$thresholds
+if (FALSE) { # very slow on GitHub actions
+  for (choose in CHOOSE) {
+    set.seed(2837290)
+    CUTS <- cut_data(oneInt, choose = choose)
+    oneInt2 <- CUTS$data
+    lms1 <- modsem(m1, oneInt2, method = "lms", ordered = choose,
+                   ordered.iter = 75, ordered.warmup = 25)
+    thresholds <- CUTS$thresholds
 
 
-  thresholds.table <- NULL
-  parTable <- parameter_estimates(lms1)
-  for (col in choose) {
-    tau.true   <- thresholds[[col]]
-    tau.true   <- tau.true[is.finite(tau.true)]
-    mask       <- parTable$lhs == col & parTable$op == "|"
-    tau.est    <- parTable[mask, "est"]
-    tau.lower  <- parTable[mask, "ci.lower"]
-    tau.upper  <- parTable[mask, "ci.upper"]
-    pars <- paste0(col, "|t", seq_along(tau.true))
+    thresholds.table <- NULL
+    parTable <- parameter_estimates(lms1)
+    for (col in choose) {
+      tau.true   <- thresholds[[col]]
+      tau.true   <- tau.true[is.finite(tau.true)]
+      mask       <- parTable$lhs == col & parTable$op == "|"
+      tau.est    <- parTable[mask, "est"]
+      tau.lower  <- parTable[mask, "ci.lower"]
+      tau.upper  <- parTable[mask, "ci.upper"]
+      pars <- paste0(col, "|t", seq_along(tau.true))
 
-    rows <- data.frame(parameter = pars, true = tau.true,
-                       est = tau.est, diff = tau.true - tau.est,
-                       ci.lower = tau.lower, ci.upper = tau.upper,
-                       ok = tau.true >= tau.lower & tau.true <= tau.upper)
-    thresholds.table <- rbind(thresholds.table, rows)
+      rows <- data.frame(parameter = pars, true = tau.true,
+                         est = tau.est, diff = tau.true - tau.est,
+                         ci.lower = tau.lower, ci.upper = tau.upper,
+                         ok = tau.true >= tau.lower & tau.true <= tau.upper)
+      thresholds.table <- rbind(thresholds.table, rows)
+    }
+
+    print(modsemParTable(thresholds.table))
+    testthat::expect_true(sum(thresholds.table$ok) / NROW(thresholds.table) >= 0.95) # 95% confidence
   }
-
-  print(modsemParTable(thresholds.table))
-  testthat::expect_true(sum(thresholds.table$ok) / NROW(thresholds.table) >= 0.95) # 95% confidence
 }

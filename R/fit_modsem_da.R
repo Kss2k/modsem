@@ -18,7 +18,6 @@ fit_modsem_da <- function(model, chisq = TRUE) {
          "i.e., the model without the interaction effect",
          immediate. = FALSE)
 
-
   data   <- model$data$data.full
   t      <- nFreeInterceptsDA(model)
   mean.s <- model$args$mean.observed || t > 0
@@ -33,44 +32,32 @@ fit_modsem_da <- function(model, chisq = TRUE) {
   df     <- getDegreesOfFreedom(p = p, coef = coef, mean.structure = mean.s)
 
   expected.matrices <- model$expected.matrices
-
-  matrices <- model$model$matrices
-  gammaXi  <- matrices$gammaXi
-  gammaEta <- matrices$gammaEta
-  phi      <- matrices$phi
-  psi      <- matrices$psi
-  lambdaX  <- matrices$lambdaX
-  lambdaY  <- matrices$lambdaY
-  thetaY   <- matrices$thetaEpsilon
-  thetaX   <- matrices$thetaDelta
-  tauX     <- matrices$tauX
-  tauY     <- matrices$tauY
-  alpha    <- matrices$alpha
-  Ieta     <- matrices$Ieta
-  beta0    <- matrices$beta0
-  Binv     <- solve(Ieta - gammaEta)
+  matrices <- modsem_inspect(model, what = "matrices")
 
   if (chisq) {
     E <- expected.matrices$sigma.ov
 
     if (mean.s) {
-      muHat <- expected.matrices$mu.ov
-    } else muHat <- mu
+      mu.hat <- expected.matrices$mu.ov
+    } else mu.hat <- mu
 
     # Make sure the order of the rows and columns of E matches O
     E <- E[rownames(O), colnames(O), drop = FALSE]
-    muHat <- muHat[rownames(O), , drop = FALSE]
+    mu.hat <- mu.hat[rownames(O), , drop = FALSE]
 
-    chisqValue <- calcChiSqr(O = O, E = E, N = N, p = p, mu = mu, muHat = muHat)
+    chisqValue <- calcChiSqr(O = O, E = E, N = N, p = p, mu = mu, mu.hat = mu.hat)
     chisqP     <- stats::pchisq(chisqValue, df, lower.tail = FALSE)
     RMSEA      <- calcRMSEA(chisqValue, df, N)
+    SRMR       <- calcSRMR_Mplus(S = O, M = mu, Sigma.hat = E, Mu.hat = mu.hat,
+                                 mean.structure = mean.s)
 
   } else {
     E          <- NULL
     chisqValue <- NULL
     chisqP     <- NULL
     df         <- NULL
-    muHat      <- NULL
+    mu.hat     <- NULL
+    SRMR       <- NULL
     RMSEA      <- list(
       RMSEA          = NULL,
       RMSEA.lower    = NULL,
@@ -90,7 +77,7 @@ fit_modsem_da <- function(model, chisq = TRUE) {
     sigma.observed = modsemMatrix(O, symmetric = TRUE),
     sigma.expected = modsemMatrix(E, symmetric = TRUE),
     mu.observed    = modsemMatrix(mu),
-    mu.expected    = modsemMatrix(muHat),
+    mu.expected    = modsemMatrix(mu.hat),
 
     chisq.value  = chisqValue,
     chisq.pvalue = chisqP,
@@ -100,6 +87,7 @@ fit_modsem_da <- function(model, chisq = TRUE) {
     AICc = AICc,
     BIC  = BIC,
     aBIC = aBIC,
+    SRMR = SRMR,
 
     RMSEA          = RMSEA$rmsea,
     RMSEA.lower    = RMSEA$lower,
@@ -111,8 +99,8 @@ fit_modsem_da <- function(model, chisq = TRUE) {
 }
 
 
-calcChiSqr <- function(O, E, N, p, mu, muHat) {
-  diff_mu <- mu - muHat
+calcChiSqr <- function(O, E, N, p, mu, mu.hat) {
+  diff_mu <- mu - mu.hat
   Einv    <- solve(E)
   as.vector(
     (N - 1) * (t(diff_mu) %*% Einv %*% diff_mu +
@@ -168,4 +156,38 @@ calcBIC <- function(logLik, k, N) {
 
 calcAdjBIC <- function(logLik, k, N) {
   log((N + 2) / 24) * k - 2 * logLik
+}
+
+
+calcSRMR_Mplus <- function(S, M, Sigma.hat, Mu.hat, mean.structure = TRUE) {
+  # Bollen approach: simply using cov2cor ('correlation residuals')
+  S.cor <- cov2cor(S)
+  Sigma.cor <- cov2cor(Sigma.hat)
+  R.cor <- (S.cor - Sigma.cor)
+  nvar  <- NCOL(Sigma.cor)
+
+  # meanstructure
+  if (mean.structure) {
+    # standardized residual mean vector
+    R.cor.mean <- M / sqrt(diag(S)) - Mu.hat / sqrt(diag(Sigma.hat))
+
+    e <- nvar * (nvar + 1) / 2 + nvar
+    srmr.mplus <-
+      sqrt((sum(R.cor[lower.tri(R.cor, diag = FALSE)]^2) +
+            sum(R.cor.mean^2) +
+            sum(((diag(S) - diag(Sigma.hat)) / diag(S))^2)) / e)
+
+    e <- nvar * (nvar + 1) / 2
+    srmr.mplus.nomean <-
+      sqrt((sum(R.cor[lower.tri(R.cor, diag = FALSE)]^2) +
+            sum(((diag(S) - diag(Sigma.hat)) / diag(S))^2)) / e)
+  } else {
+    e <- nvar * (nvar + 1) / 2
+    srmr.mplus.nomean <- srmr.mplus <-
+      sqrt((sum(R.cor[lower.tri(R.cor, diag = FALSE)]^2) +
+            sum(((diag(S) - diag(Sigma.hat)) / diag(S))^2)) / e)
+  }
+
+  attr(srmr.mplus, "nomean") <- srmr.mplus.nomean
+  srmr.mplus
 }
