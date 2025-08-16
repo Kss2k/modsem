@@ -145,6 +145,7 @@ modsemOrderedScaleCorrection <- function(model.syntax,
       coverage   <- rescaled$coverage
       n.scalef   <- target.coverage / coverage
       N          <- min(N.max, floor(n.scalef * N))
+      N          <- max(N, NROW(data)) # we don't want N to be lower than the number of observations
       data_i     <- rescaled$data
       thresholds <- rescaled$thresholds
 
