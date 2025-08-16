@@ -6,13 +6,16 @@ modsemOrderedScaleCorrection <- function(model.syntax,
                                          iter = 75L,
                                          warmup = 25L,
                                          N = max(NROW(data), 1e5), # 100,000
+                                         lambda = 1,
+                                         se = "simple",
+                                         ordered.standardize.data = TRUE,
+                                         ordered.mean.observed = FALSE,
+                                         # Capture args
                                          verbose = interactive(),
                                          optimize = TRUE,
                                          start = NULL,
-                                         lambda = 1,
-                                         ordered.tol = 1e-6,
-                                         se = "simple",
-                                         standardize.data = NULL, # override
+                                         standardize.data = NULL,
+                                         mean.observed    = NULL,
                                          ...) {
   message("Sampling values for ordered variables, ",
           "this is an experimental feature!\n",
@@ -88,7 +91,8 @@ modsemOrderedScaleCorrection <- function(model.syntax,
           verbose          = verbose,
           optimize         = optimize,
           calc.se          = calc.se_i,
-          standardize.data = TRUE,
+          standardize.data = ordered.standardize.data,
+          mean.observed    = ordered.mean.observed,
           ...
         ), error = \(e) {cat("\n"); print(e); NULL}
       )
