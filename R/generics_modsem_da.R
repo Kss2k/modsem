@@ -266,11 +266,12 @@ print.summary_da <- function(x, digits = 3, ...) {
     }
 
     names <- c(names, "Chi-square", "Degrees of Freedom (Chi-square)",
-               "P-value (Chi-square)", "RMSEA")
+               "P-value (Chi-square)", "RMSEA", "SRMR")
     values <- c(values, formatNumeric(x$fitH0$chisq.value, digits = 2),
                 x$fitH0$chisq.df,
                 formatPval(x$fitH0$chisq.pvalue, scientific = x$format$scientific),
-                formatNumeric(x$fitH0$RMSEA, digits = 3))
+                formatNumeric(x$fitH0$RMSEA, digits = 3),
+                formatNumeric(x$fitH0$SRMR, digits = 3))
     cat(allignLhsRhs(lhs = names, rhs = values, pad = "  ",
                      width.out = width.out), "\n")
 
