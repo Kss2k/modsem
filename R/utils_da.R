@@ -971,7 +971,10 @@ sortParTableDA <- function(parTable, model) {
   scoreOp  <- getScore(x = parTable$op,  order.by = opOrder)
   scoreRhs <- getScore(x = parTable$rhs, order.by = varOrder)
 
-  parTable[order(scoreOp, scoreLhs, scoreRhs), , drop = FALSE]
+  out <- parTable[order(scoreOp, scoreLhs, scoreRhs), , drop = FALSE]
+  rownames(out) <- NULL
+
+  out
 }
 
 
