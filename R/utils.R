@@ -13,7 +13,8 @@ stopif <- function(cond, ...) {
 }
 
 
-warnif <- function(cond, ...) {
+warnif <- function(cond, ..., .newline = FALSE) {
+  if (cond && .newline) cat("\n")
   if (cond) warning2(...)
 }
 
@@ -630,6 +631,9 @@ GINV <- function(X) {
 
 
 cov2cor <- function(vcov) {
+  if (is.null(vcov))
+    return(NULL)
+
   sd <- sqrt(abs(diag(vcov))) # use `abs()`, in case some variances are negative
 
   D <- diag(1 / sd)

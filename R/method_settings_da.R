@@ -1,4 +1,5 @@
 getMethodSettingsDA <- function(method, args = NULL) {
+
     settings <- list(
         lms = list(verbose = interactive(),
                    optimize = TRUE,
@@ -29,12 +30,13 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    n.threads = NULL,
                    algorithm = "EMA",
                    em.control = list(),
-                   missing = "complete",
+                   missing = "listwise",
                    orthogonal.x = FALSE,
                    orthogonal.y = FALSE,
                    auto.fix.first = TRUE,
                    auto.fix.single = TRUE,
-                   auto.split.syntax = FALSE
+                   auto.split.syntax = FALSE,
+                   cr1s = FALSE
         ),
         qml = list(verbose = interactive(),
                    optimize = TRUE,
@@ -66,12 +68,13 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    adaptive.frequency = NULL,
                    em.control = NULL,
                    algorithm = NULL,
-                   missing = "complete",
+                   missing = "listwise",
                    orthogonal.x = FALSE,
                    orthogonal.y = FALSE,
                    auto.fix.first = TRUE,
                    auto.fix.single = TRUE,
-                   auto.split.syntax = TRUE
+                   auto.split.syntax = TRUE,
+                   cr1s = FALSE
         )
     )
 
@@ -97,7 +100,6 @@ getMethodSettingsDA <- function(method, args = NULL) {
     args.out$center.data <- !args.out$standardize.data &&
       !args.out$mean.observed
 
-    args.out$n.threads <- setThreads(args.out$n.threads)
     args.out
 }
 

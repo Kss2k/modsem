@@ -112,7 +112,7 @@ transformedSolutionCOEFS <- function(object,
   # Center interactions
   if (center) {
     COEFS <- centerInteractionsCOEFS(parTable, COEFS = COEFS) # re-estimate path-coefficients
-    parTable <- parTable[parTable$op != "~1", ]
+    parTable <- parTable[!parTable$op %in% c("~1", "|"), ]
   }
 
   # Unstandardized copies

@@ -114,7 +114,7 @@ mstepLms <- function(theta, model, P, data,
   }
 
   objective <- function(theta) {
-    compLogLikLms(theta = theta, model = model, P = P, sign = -1, data = data, 
+    compLogLikLms(theta = theta, model = model, P = P, sign = -1, data = data,
                   epsilon = epsilon)
   }
 
@@ -195,17 +195,18 @@ simpleGradientAllLogLikLms <- function(theta, model, P, data, sign = -1, epsilon
   param     <- locations$param
   symmetric <- locations$symmetric
 
-  grad <- FGRAD(modelR = modelR,
-                P = P,
-                block = block,
-                row = row,
-                col = col,
+  grad <- FGRAD(modelR    = modelR,
+                P         = P,
+                block     = block,
+                row       = row,
+                col       = col,
                 symmetric = symmetric,
-                colidxR = data$colidx0,
+                colidxR   = data$colidx0,
                 npatterns = data$p,
-                n = data$n.pattern,
-                d = data$d.pattern,
-                eps=epsilon)
+                n         = data$n.pattern,
+                d         = data$d.pattern,
+                eps       = epsilon,
+                ncores    = ThreadEnv$n.threads)
 
   if (length(nlinDerivs)) {
     evalTheta  <- model$gradientStruct$evalTheta
@@ -240,21 +241,24 @@ obsLogLikLms <- function(theta, model, data, P, sign = 1, ...) {
 
 
 gradientObsLogLikLms <- function(theta, model, data, P, sign = 1, epsilon = 1e-6) {
-  FGRAD <- function(modelR, P, block, row, col, symmetric, colidxR, npatterns, eps, ...) {
+  FGRAD <- function(modelR, P, block, row, col, symmetric, colidxR, npatterns,
+                    eps, ncores, n, ...) {
     gradObsLogLikLmsCpp(modelR = modelR, dataR = data$data.split, P = P,
                         block = block, row = row, col = col,
                         symmetric = symmetric, colidxR = colidxR,
-                        npatterns = npatterns, eps = eps, 
-                        ncores = ThreadEnv$n.threads)
+                        n = n, npatterns = npatterns, eps = eps,
+                        ncores = ncores)
   }
 
   FOBJECTIVE <- function(theta, model, P, colidxR, npatterns, sign, ...) {
     obsLogLikLms(theta = theta, model = model, data = data$data.split,
-                 P = P, colidxR = colidxR, npatterns = npatterns, sign = sign)
+                 P = P, colidxR = colidxR, npatterns = npatterns,
+                 sign = sign)
   }
 
   gradientAllLogLikLms(theta = theta, model = model, P = P, sign = sign,
-                       epsilon = epsilon, FGRAD = FGRAD, FOBJECTIVE = FOBJECTIVE)
+                       epsilon = epsilon, data = data,
+                       FGRAD = FGRAD, FOBJECTIVE = FOBJECTIVE)
 }
 
 
@@ -281,7 +285,7 @@ obsLogLikLms_i <- function(theta, model, data, P, sign = 1, ...) {
       dataid <- data$data.split[[id]]
 
       end <- offset + n.pattern - 1L
-      dens_i[offset:end] <- dmvn(data$data.split[[id]], 
+      dens_i[offset:end] <- dmvn(data$data.split[[id]],
                                  mean = mu_i[colidx],
                                  sigma = sigma_i[colidx, colidx],
                                  log = FALSE)
@@ -315,13 +319,13 @@ densitySingleLms <- function(z, modFilled, data) {
   offset <- 1L
   for (id in data$ids) { # go along patterns
     n.pattern <- data$n.pattern[[id]]
-    
+
     colidx <- data$colidx[[id]]
     dataid <- data$data.split[[id]]
-   
+
     end <- offset + n.pattern - 1L
-    density[offset:end] <- dmvn(data$data.split[[id]], 
-                                mean = mu[colidx], 
+    density[offset:end] <- dmvn(data$data.split[[id]],
+                                mean = mu[colidx],
                                 sigma = sigma[colidx, colidx])
     offset <- end + 1L
   }
@@ -376,17 +380,18 @@ simpleHessianAllLogLikLms <- function(theta, model, P, data, sign = -1,
   param     <- locations$param
   symmetric <- locations$symmetric
 
-  HESS <- FHESS(modelR = modelR,
-                P = P,
-                block = block,
-                row = row,
-                col = col,
-                colidxR = data$colidx0,
-                n = data$n.pattern,
-                d = data$d.pattern,
+  HESS <- FHESS(modelR    = modelR,
+                P         = P,
+                block     = block,
+                row       = row,
+                col       = col,
+                colidxR   = data$colidx0,
+                n         = data$n.pattern,
+                d         = data$d.pattern,
                 npatterns = data$p,
                 symmetric = symmetric,
-                .relStep = .relStep)
+                .relStep  = .relStep,
+                ncores    = ThreadEnv$n.threads)
 
   H    <- HESS$Hessian
   grad <- HESS$gradient
@@ -431,14 +436,13 @@ complicatedHessianAllLogLikLms <- function(theta, model, P, data, sign = -1, FOB
 hessianObsLogLikLms <- function(theta, model, data, P, sign = -1,
                                 .relStep = .Machine$double.eps ^ (1/5)) {
 
-  FHESS <- function(modelR, P, block, row, col, symmetric, eps, .relStep, colidxR, n, 
-                    npatterns, ...) {
+  FHESS <- function(modelR, P, block, row, col, symmetric, eps, .relStep, colidxR, n,
+                    npatterns, ncores, ...) {
     hessObsLogLikLmsCpp(modelR = modelR, dataR = data$data.split, P = P,
                         block = block, row = row, col = col,
                         symmetric = symmetric, npatterns = npatterns,
-                        colidxR = colidxR, n = n,
-                        relStep = .relStep, minAbs = 0.0,
-                        ncores = ThreadEnv$n.threads)
+                        colidxR = colidxR, n = n, relStep = .relStep,
+                        minAbs = 0.0, ncores = ncores)
   }
 
   FOBJECTIVE <- function(theta, model, P, sign, data, ...) {
@@ -454,13 +458,12 @@ hessianObsLogLikLms <- function(theta, model, data, P, sign = -1,
 hessianCompLogLikLms <- function(theta, model, P, data, sign = -1,
                                  .relStep = .Machine$double.eps ^ (1/5)) {
 
-  FHESS <- function(modelR, P, block, row, col, symmetric, eps, .relStep, colidxR, 
-                    n, d, npatterns) {
-    hessCompLogLikLmsCpp(modelR = modelR, P = P, block = block, 
+  FHESS <- function(modelR, P, block, row, col, symmetric, eps, .relStep, colidxR,
+                    n, d, npatterns, ncores) {
+    hessCompLogLikLmsCpp(modelR = modelR, P = P, block = block,
                          row = row, col = col, symmetric = symmetric,
                          colidxR = colidxR, n = n, d = d, relStep = .relStep,
-                         npatterns = npatterns, minAbs = 0.0, 
-                         ncores = ThreadEnv$n.threads)
+                         npatterns = npatterns, minAbs = 0.0, ncores = ncores)
   }
 
   FOBJECTIVE <- function(theta, model, P, data, sign) {
@@ -469,4 +472,117 @@ hessianCompLogLikLms <- function(theta, model, P, data, sign = -1,
 
   hessianAllLogLikLms(theta = theta, model = model, P = P, data = data, sign = sign,
                       FHESS = FHESS, FOBJECTIVE = FOBJECTIVE, .relStep = .relStep)
+}
+
+
+.logdensAllObsNode <- function(theta, model, data, z) {
+  modFilled <- fillModel(model = model, theta = theta, method = "lms")
+  # densitySingleLms returns densities for all rows at given z (not log)
+  dens <- densitySingleLms(z = z, modFilled = modFilled, data = data)
+  # guard against underflow/zeros
+  log(pmax(dens, .Machine$double.xmin))
+}
+
+
+# per-node, per-observation complete-data score via finite difference
+# Returns an n x p matrix S_j with row i = s_{ij}^T = grad_theta log p(y_i, z_j | theta)
+.completeScoresNodeFD <- function(theta, model, data, z,
+                                  epsilon = 1e-6, scheme = c("forward","central")) {
+  scheme <- match.arg(scheme)
+  p <- length(theta)
+  n <- data$n
+  S <- matrix(0.0, nrow = n, ncol = p)
+  if (scheme == "forward") {
+    f0 <- .logdensAllObsNode(theta, model, data, z)
+    for (k in seq_len(p)) {
+      th1 <- theta; th1[k] <- th1[k] + epsilon
+      f1 <- .logdensAllObsNode(th1, model, data, z)
+      S[, k] <- (f1 - f0) / epsilon
+    }
+  } else { # central
+    for (k in seq_len(p)) {
+      thp <- theta; thp[k] <- thp[k] + epsilon
+      thm <- theta; thm[k] <- thm[k] - epsilon
+      fp <- .logdensAllObsNode(thp, model, data, z)
+      fm <- .logdensAllObsNode(thm, model, data, z)
+      S[, k] <- (fp - fm) / (2*epsilon)
+    }
+  }
+  dimnames(S) <- list(NULL, names(theta))
+  S
+}
+
+# I_obs = I_com - I_mis using Louis' identity
+observedInfoFromLouisLms <- function(model,
+                                     theta,
+                                     data,
+                                     P = NULL,
+                                     recompute.P = is.null(P),
+                                     adaptive.quad.tol = 1e-12,
+                                     fd.epsilon = 1e-6,
+                                     fd.scheme = c("forward","central"),
+                                     symmetrize = TRUE,
+                                     jitter = 0.0,
+                                     ...) {
+  fd.scheme <- match.arg(fd.scheme)
+
+  # E-step (if needed)
+  if (recompute.P) {
+    P <- estepLms(model = model, theta = theta, data = data,
+                  lastQuad = NULL, recalcQuad = FALSE,
+                  adaptive.quad.tol = adaptive.quad.tol, ...)
+  }
+
+  # labels and sizes
+  p <- length(theta)
+  n <- data$n
+  J <- length(P$w)             # number of quadrature nodes
+  lbl <- names(theta)
+
+  # Complete Information
+  Icom <- hessianCompLogLikLms(theta = theta, model = model, P = P, data = data,
+                               sign = -1)
+
+  # Imis = sum_i ( E[s_ij s_ij^T] - E[s_ij]E[s_ij]^T ), expectations over j with weights r_ij = P$P[i,j]
+  # Accumulate efficiently:
+  #   total_M = sum_j S_j^T diag(r_.j) S_j, where S_j is n x p score matrix at node j
+  #   Sbar (n x p) = sum_j r_.j * S_j  -> then sum_i sbar_i sbar_i^T = t(Sbar) %*% Sbar
+  total_M <- matrix(0.0, p, p, dimnames = list(lbl, lbl))
+  Sbar    <- matrix(0.0, n, p)   # will hold per-observation E[s_ij]; no need to keep per-i outer products
+
+  for (j in seq_len(J)) {
+    z_j <- P$V[j, , drop = FALSE]       # node
+    S_j <- .completeScoresNodeFD(theta, model, data, z_j,
+                                       epsilon = fd.epsilon, scheme = fd.scheme)  # n x p
+    r_j <- P$P[, j]                     # length-n weights (posterior r_ij)
+
+    # total_M += t( S_j * sqrt(r_j) ) %*% ( S_j * sqrt(r_j) )
+    # (avoid forming diag(r_j) explicitly)
+    Rhalf <- sqrt(pmax(r_j, 0))
+    X <- S_j * Rhalf       # row-wise scaling
+    total_M <- total_M + crossprod(X)   # t(X) %*% X  -> p x p
+
+    # Sbar += r_j * S_j   (row-wise scaling)
+    Sbar <- Sbar + (S_j * r_j)
+  }
+
+  sbar_outer <- crossprod(Sbar) # sum_i sbar_i sbar_i^T  -> p x p
+  Imis <- total_M - sbar_outer
+
+  # Louis Identity
+  Iobs <- Icom - Imis
+
+  # hygiene
+  if (symmetrize) {
+    sym <- function(A) 0.5*(A + t(A))
+    Icom <- sym(Icom); Imis <- sym(Imis); Iobs <- sym(Iobs)
+  }
+
+  if (jitter > 0) {
+    Icom <- Icom + diag(jitter, p)
+    Imis <- Imis + diag(jitter, p)
+    Iobs <- Iobs + diag(jitter, p)
+  }
+
+  list(I.obs = Iobs, I.com = Icom, I.mis = Imis, P = P)
 }

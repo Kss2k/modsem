@@ -212,7 +212,7 @@ m1 <- "
   Y ~ X:Z
 "
 
-testthat::expect_error(
+testthat::expect_warning(
   modsem(m1, oneInt, method = "lms", optimizer = "ssjj"),
   regexp = "*Model estimation failed!*"
 )
@@ -246,7 +246,7 @@ m1 <- "
 
   a == 1
   b == .2
-  c > 0.4
+  c > 0.7
 "
 
 est_m1 <- modsem(m1, oneInt, method = "lms", cov.syntax = "")
@@ -257,7 +257,8 @@ print(modsem_inspect(est_m1, what = c("vcov.all", "theta", "lambda", "psi", "inf
 # test constraints
 testthat::expect_equal(coef_m1[["a"]], 1)
 testthat::expect_equal(coef_m1[["b"]], .2)
-testthat::expect_equal(est_m1$model$info$bounds$lower[["c"]], 0.4)
+testthat::expect_equal(coef_m1[["c"]], .7)
+testthat::expect_equal(est_m1$model$info$bounds$lower[["c"]], 0.7)
 
 m2 <- "
 # Outer Model

@@ -90,3 +90,42 @@ testthat::expect_warning(summary(fit), regexp = "Comparative fit.*")
 standardized_estimates(fit)
 testthat::expect_error(standardized_estimates(fit, correction = TRUE),
                        regexp = "Correction of clustered .*not supported!")
+
+# Test robust std.errors
+mod <- '
+# X1-3 are Level 1 variables
+X1 =~ x1 
+X2 =~ x2
+X3 =~ x3
+
+# W1-2 are Level 2 variables
+W1 =~ w1
+W2 =~ w2
+
+fw =~ y1 + y2 + y3
+fw ~ X1 + X2 + X3 + W1 + W2
+'
+
+# Standard errors corrected for clustering
+fit.rc <- modsem(mod, lavaan::Demo.twolevel, method = "lms", cluster = "cluster", robust.se = TRUE)
+#> Regressions:
+#>                  Estimate  Std.Error  z.value  P(>|z|)
+#>   fw ~          
+#>     X1              0.517      0.027   19.224    0.000
+#>     X2              0.384      0.029   13.388    0.000
+#>     X3              0.174      0.026    6.677    0.000
+#>     W1              0.207      0.089    2.331    0.020
+#>     W2              0.158      0.075    2.111    0.035
+
+# Standard errors not corrected for clustering
+fit.r <- modsem(mod, lavaan::Demo.twolevel, method = "lms", robust.se = TRUE)
+#> Regressions:
+#>                  Estimate  Std.Error  z.value  P(>|z|)
+#>   fw ~          
+#>     X1              0.517      0.029   18.068    0.000
+#>     X2              0.384      0.028   13.520    0.000
+#>     X3              0.174      0.028    6.286    0.000
+#>     W1              0.207      0.031    6.737    0.000
+#>     W2              0.158      0.029    5.455    0.000
+
+fit.c <- modsem(mod, lavaan::Demo.twolevel, method = "lms", cluster = "cluster", robust.se = FALSE)

@@ -22,10 +22,11 @@
 #'   where data is non-normal, it might be better to use the \code{qml} approach instead.
 #'   You can also consider setting \code{adaptive.quad = TRUE}.
 #'
-#' @param missing How should missing values be handled? If \code{"complete"} (default) missing values
-#'   are removed case-wise. If \code{impute} values are imputed using \code{Amelia::amelia}. 
-#'   If \code{"fiml"}, full information maximum likelihood (FIML) is used. FIML can be (very)
-#'   computationally intensive.
+#' @param missing How should missing values be handled? If \code{"listwise"} (default) missing values
+#'   are removed list-wise (alias: \code{"complete"} or \code{"casewise"}).
+#'   If \code{impute} values are imputed using \code{Amelia::amelia}.
+#'   If \code{"fiml"} (alias: \code{"ml"} or \code{"direct"}), full information maximum
+#'   likelihood (FIML) is used. FIML can be (very) computationally intensive.
 #'
 #' @param convergence.abs Absolute convergence criterion.
 #'   Lower values give better estimates but slower computation. Not relevant when
@@ -140,14 +141,30 @@
 #'
 #' @param em.control a list of control parameters for the EM algorithm. See \code{\link{default_settings_da}} for defaults.
 #'
-#' @param ordered Variables to be treated as ordered. Ordered (ordinal) variables are scale-corrected to adjust for 
-#'   unequal intervals before model estimation, by estimating the distributions of the underlying continuous response variables. 
-#'   The distributions of the response variables are estimated using a combination of bootstrapping and Monte Carlo simulations.
-#'   For small differences in the spacing of the intervals, the point estimates should be unbiased. The standard errors may be
-#'   underestimated though. Using robust standard errors may make the estimates of the standard errors more accurate.
+#' @param ordered Variables to be treated as ordered. The distributions of the
+#'   continuous response variables are estimated using a combination of Markow-Chain
+#'   Monte-Carlo sampling, and multiple imputation. It should yield more consistent,
+#'   and less biased results, compared to when ordinal variables are treated as continuous.
 #'
-#' @param ordered.boot Number of bootstraps used to estimate the underlying continuous distribution of the
-#'   ordinal variables.
+#' @param ordered.iter Number of sampling iterations used to sample the underlying continuous distribution of the
+#'   ordinal variables. The default is set to \code{75}, but should likely be
+#'   increased to yield more consistent estimates.
+#'
+#' @param ordered.warmup Number of sampling iterations in the warmup phase. These are discarded when estimating
+#'   the final model parameters. The default is set to \code{ordered.iter / 3L}.
+#'   In some cases it might be suitable to use a higher ratio (e.g., \code{ordered.iter / 2L}).
+#'
+#' @param cluster Clusters used to compute standard errors robust to non-indepence of observations. Must be paired with
+#'   \code{robust.se = TRUE}.
+#'
+#' @param cr1s Logical; if \code{TRUE}, apply the CR1S small-sample correction factor
+#'   to the cluster-robust variance estimator. The CR1S factor is
+#'   \eqn{(G / (G - 1)) \cdot ((N - 1) / (N - q))}, where \eqn{G} is the number of
+#'   clusters, \eqn{N} is the total number of observations, and \eqn{q} is the number
+#'   of free parameters. This adjustment inflates standard errors to reduce the
+#'   small-sample downward bias present in the basic cluster-robust (CR0) estimator,
+#'   especially when \eqn{G} is small. If \code{FALSE}, the unadjusted CR0 estimator
+#'   is used. Defaults to \code{TRUE}. Only relevant if \code{cluster} is specified.
 #'
 #' @param rcs Should latent variable indicators be replaced with reliability-corrected
 #'   single item indicators instead? See \code{\link{relcorr_single_item}}.
@@ -289,7 +306,10 @@ modsem_da <- function(model.syntax = NULL,
                       algorithm = NULL,
                       em.control = NULL,
                       ordered = NULL,
-                      ordered.boot = 5,
+                      ordered.iter = 75L,
+                      ordered.warmup = floor(ordered.iter / 3L),
+                      cluster = NULL,
+                      cr1s = FALSE,
                       rcs = FALSE,
                       rcs.choose = NULL,
                       rcs.scale.corrected = TRUE,
@@ -313,7 +333,8 @@ modsem_da <- function(model.syntax = NULL,
        data                = data,
        method              = method,
        verbose             = verbose,
-       R                   = ordered.boot,
+       iter                = ordered.iter,
+       warmup              = ordered.warmup,
        optimize            = optimize,
        nodes               = nodes,
        missing             = missing,
@@ -346,6 +367,8 @@ modsem_da <- function(model.syntax = NULL,
        algorithm           = algorithm,
        em.control          = em.control,
        ordered             = ordered,
+       cluster             = cluster,
+       cr1s                = cr1s,
        rcs                 = rcs,
        rcs.choose          = rcs.choose,
        rcs.scale.corrected = rcs.scale.corrected,
@@ -421,7 +444,8 @@ modsem_da <- function(model.syntax = NULL,
           orthogonal.y       = orthogonal.y,
           auto.fix.first     = auto.fix.first,
           auto.fix.single    = auto.fix.single,
-          auto.split.syntax  = auto.split.syntax
+          auto.split.syntax  = auto.split.syntax,
+          cr1s               = cr1s
         )
     )
 
@@ -450,7 +474,8 @@ modsem_da <- function(model.syntax = NULL,
     orthogonal.y       = args$orthogonal.y,
     auto.fix.first     = args$auto.fix.first,
     auto.fix.single    = args$auto.fix.single,
-    auto.split.syntax  = args$auto.split.syntax
+    auto.split.syntax  = args$auto.split.syntax,
+    cluster            = cluster
   )
 
   if (args$optimize) {
@@ -480,8 +505,18 @@ modsem_da <- function(model.syntax = NULL,
     model$theta <- start
   }
 
+  # We want to limit the number of threads available to OpenBLAS.
+  # Depending on the OpenBLAS version, it might not be compatible with
+  # OpenMP. If `n.blas > 1L` you might end up getting this message:
+  #> OpenBLAS Warning : Detect OpenMP Loop and this application may hang.
+  #>                    Please rebuild the library with USE_OPENMP=1 option.
+  # We don't want to restrict OpenBLAS in any other setttings in other settings,
+  # e.g., lavaan::sem, so we reset after the model has been estimated.
+  setThreads(n = args$n.threads, n.blas = 1L)
+  on.exit(resetThreads()) # clean up at end of function
+
   est <- tryCatch(switch(method,
-    "qml" = estQml(model,
+    qml = estQml(model,
       verbose         = args$verbose,
       convergence     = args$convergence.rel,
       calc.se         = args$calc.se,
@@ -494,9 +529,10 @@ modsem_da <- function(model.syntax = NULL,
       epsilon         = args$epsilon,
       optimizer       = args$optimizer,
       R.max           = args$R.max,
+      cr1s            = args$cr1s,
       ...
     ),
-    "lms" = emLms(model,
+    lms = emLms(model,
       verbose           = args$verbose,
       convergence.abs   = args$convergence.abs,
       convergence.rel   = args$convergence.rel,
@@ -517,6 +553,7 @@ modsem_da <- function(model.syntax = NULL,
       quad.range        = args$quad.range,
       adaptive.quad.tol = args$adaptive.quad.tol,
       nodes             = args$nodes,
+      cr1s              = args$cr1s,
       ...
   )),
   error = function(e) {
@@ -525,9 +562,6 @@ modsem_da <- function(model.syntax = NULL,
                       "Message: %s")
     stop2(sprintf(message, method, e$message))
   })
-
-  # clean up
-  resetThreads()
 
   # Finalize the model object
   # Expected means and covariances

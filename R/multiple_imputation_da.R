@@ -75,6 +75,7 @@ modsem_mimpute <- function(model.syntax,
     method = method,
     m = m,
     verbose = verbose,
+    se = se,
     ...
   )
 }
@@ -206,37 +207,48 @@ modsem_mimput_modsem_da <- function(model.syntax,
   coef.free <- pool.free$theta.bar
   vcov.free <- pool.free$Tvcov
 
+  # Re-do parameter estimates
   parTable1   <- parameter_estimates(fits[[1]])
   orig.labels <- parTable1$label
   parTable1   <- getMissingLabels(parTable1)
-  parTableT   <- data.frame(label = names(coef.all), est.t = coef.all)
+  parTableT   <- data.frame(label = names(coef.all),
+                            est.t = coef.all,
+                            std.error.t = sqrt(diag(vcov.all)))
 
   parTable    <- leftJoin(left = parTable1, right = parTableT, by = "label")
   match       <- !is.na(parTable$est.t)
 
-  parTable$est[match] <- parTable$est.t[match]
-  parTable$est.t      <- NULL
+  parTable$est[match]       <- parTable$est.t[match]
+  parTable$std.error[match] <- parTable$std.error.t[match]
+  parTable$est.t       <- NULL
+  parTable$std.error.t <- NULL
   parTable$label[!parTable$label %in% orig.labels] <- ""
+  parTable <- parTable[c("lhs", "op", "rhs", "label", "est", "std.error")] # remove z-statistics
+  parTable <- addZStatsParTable(parTable)
+  rownames(parTable) <- NULL # reset
 
   matrices    <- aggregateMatrices(fits, type = "main")
   covMatrices <- aggregateMatrices(fits, type = "cov")
   expected.matrices <- aggregateMatrices(fits, type = "expected")
 
-  getScalarFit <- function(fit, field)
-    vapply(fits, FUN.VALUE = numeric(1L), \(fit) fit[[field]])
+  getScalarFit <- function(fit, field, dtype = numeric)
+    vapply(fits, FUN.VALUE = dtype(1L), \(fit) fit[[field]])
 
   fit.out <- fits[[1]]
-  fit.out$coefs.all      <- coef.all
-  fit.out$coefs.free     <- coef.free
-  fit.out$vcov.all       <- vcov.all
-  fit.out$vcov.free      <- vcov.free
-  fit.out$parTable       <- parTable
-  fit.out$information    <- sprintf("Rubin-corrected (m=%d)", m)
-  fit.out$FIM            <- solve(vcov.free)
-  fit.out$theta          <- apply(THETA, MARGIN = 2, FUN = mean, na.rm = TRUE)
-  fit.out$iterations     <- sum(getScalarFit(fits, field = "iterations"))
-  fit.out$logLik         <- mean(getScalarFit(fits, field = "logLik"))
-
+  fit.out$coefs.all       <- coef.all
+  fit.out$coefs.free      <- coef.free
+  fit.out$vcov.all        <- vcov.all
+  fit.out$vcov.free       <- vcov.free
+  fit.out$parTable        <- parTable
+  fit.out$information     <- sprintf("Rubin-corrected (m=%d)", m)
+  fit.out$FIM             <- solve(vcov.free)
+  fit.out$theta           <- apply(THETA, MARGIN = 2, FUN = mean, na.rm = TRUE)
+  fit.out$iterations      <- sum(getScalarFit(fits, field = "iterations"))
+  fit.out$logLik          <- mean(getScalarFit(fits, field = "logLik"))
+  fit.out$convergence     <- all(getScalarFit(fits, field = "convergence",
+                                              dtype = logical))
+  fit.out$convergence.msg <- getConvergenceMessage(fit.out$convergence,
+                                                   fit.out$iterations)
   fit.out$model$matrices          <- matrices
   fit.out$model$covModel$matrices <- covMatrices
   fit.out$expected.matrices       <- expected.matrices

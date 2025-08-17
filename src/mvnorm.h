@@ -10,27 +10,25 @@
 #include <RcppArmadillo.h>
 // [[Rcpp::plugins(openmp)]]
 
-
 struct ThreadSetter {
-  int old_threads;
+  int old_threads_mp = 1;
 
-  explicit ThreadSetter(int ncores) {
+  explicit ThreadSetter(const int ncores) {
+    // OpenMP
     #ifdef _OPENMP
-      if (ncores <= 0) Rcpp::stop("ncores must be positive");
-      old_threads = omp_get_max_threads();          // much simpler
-      omp_set_num_threads(ncores);
+      if (ncores <= 0)
+        Rcpp::stop("ncores must be positive");
 
+      old_threads_mp = omp_get_max_threads();
+      omp_set_num_threads(ncores);
     #else
-      if (ncores != 1)
-        Rcpp::warning("OpenMP not enabled; running single-threaded");
-      
-      old_threads = 1;
+      old_threads_mp = 1;
     #endif
   }
 
   ~ThreadSetter() {
     #ifdef _OPENMP
-        omp_set_num_threads(old_threads);
+      omp_set_num_threads(old_threads_mp);
     #endif
   }
 };

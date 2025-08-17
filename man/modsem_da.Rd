@@ -41,7 +41,10 @@ modsem_da(
   algorithm = NULL,
   em.control = NULL,
   ordered = NULL,
-  ordered.boot = 5,
+  ordered.iter = 75L,
+  ordered.warmup = floor(ordered.iter/3L),
+  cluster = NULL,
+  cr1s = FALSE,
   rcs = FALSE,
   rcs.choose = NULL,
   rcs.scale.corrected = TRUE,
@@ -76,10 +79,11 @@ the number of nodes should be at least 32, but practically (e.g., ordinal/skewed
 where data is non-normal, it might be better to use the \code{qml} approach instead.
 You can also consider setting \code{adaptive.quad = TRUE}.}
 
-\item{missing}{How should missing values be handled? If \code{"complete"} (default) missing values
-are removed case-wise. If \code{impute} values are imputed using \code{Amelia::amelia}. 
-If \code{"fiml"}, full information maximum likelihood (FIML) is used. FIML can be (very)
-computationally intensive.}
+\item{missing}{How should missing values be handled? If \code{"listwise"} (default) missing values
+are removed list-wise (alias: \code{"complete"} or \code{"casewise"}).
+If \code{impute} values are imputed using \code{Amelia::amelia}.
+If \code{"fiml"} (alias: \code{"ml"} or \code{"direct"}), full information maximum
+likelihood (FIML) is used. FIML can be (very) computationally intensive.}
 
 \item{convergence.abs}{Absolute convergence criterion.
 Lower values give better estimates but slower computation. Not relevant when
@@ -194,14 +198,30 @@ optimization steps when needed. Default is \code{"EM"}.}
 
 \item{em.control}{a list of control parameters for the EM algorithm. See \code{\link{default_settings_da}} for defaults.}
 
-\item{ordered}{Variables to be treated as ordered. Ordered (ordinal) variables are scale-corrected to adjust for 
-unequal intervals before model estimation, by estimating the distributions of the underlying continuous response variables. 
-The distributions of the response variables are estimated using a combination of bootstrapping and Monte Carlo simulations.
-For small differences in the spacing of the intervals, the point estimates should be unbiased. The standard errors may be
-underestimated though. Using robust standard errors may make the estimates of the standard errors more accurate.}
+\item{ordered}{Variables to be treated as ordered. The distributions of the
+continuous response variables are estimated using a combination of Markow-Chain
+Monte-Carlo sampling, and multiple imputation. It should yield more consistent,
+and less biased results, compared to when ordinal variables are treated as continuous.}
 
-\item{ordered.boot}{Number of bootstraps used to estimate the underlying continuous distribution of the
-ordinal variables.}
+\item{ordered.iter}{Number of sampling iterations used to sample the underlying continuous distribution of the
+ordinal variables. The default is set to \code{75}, but should likely be
+increased to yield more consistent estimates.}
+
+\item{ordered.warmup}{Number of sampling iterations in the warmup phase. These are discarded when estimating
+the final model parameters. The default is set to \code{ordered.iter / 3L}.
+In some cases it might be suitable to use a higher ratio (e.g., \code{ordered.iter / 2L}).}
+
+\item{cluster}{Clusters used to compute standard errors robust to non-indepence of observations. Must be paired with
+\code{robust.se = TRUE}.}
+
+\item{cr1s}{Logical; if \code{TRUE}, apply the CR1S small-sample correction factor
+to the cluster-robust variance estimator. The CR1S factor is
+\eqn{(G / (G - 1)) \cdot ((N - 1) / (N - q))}, where \eqn{G} is the number of
+clusters, \eqn{N} is the total number of observations, and \eqn{q} is the number
+of free parameters. This adjustment inflates standard errors to reduce the
+small-sample downward bias present in the basic cluster-robust (CR0) estimator,
+especially when \eqn{G} is small. If \code{FALSE}, the unadjusted CR0 estimator
+is used. Defaults to \code{TRUE}. Only relevant if \code{cluster} is specified.}
 
 \item{rcs}{Should latent variable indicators be replaced with reliability-corrected
 single item indicators instead? See \code{\link{relcorr_single_item}}.}
