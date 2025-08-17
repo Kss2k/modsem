@@ -1,5 +1,4 @@
-# devtools::load_all()
-library(modsem)
+devtools::load_all()
 library(mvtnorm)
 library(rstan)
 

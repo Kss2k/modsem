@@ -351,14 +351,15 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE) {
 }
 
 
-getStanData <- function(compiled_model, data, impute.na = FALSE) {
+getStanData <- function(compiled_model, data, missing = "listwise") {
   lVs         <- compiled_model$info$lVs
   indsLVs     <- compiled_model$info$indsLVs
   allIndsXis  <- compiled_model$info$allIndsXis
   allIndsEtas <- compiled_model$info$allIndsEtas
 
   # clean data
-  INDICATORS <- cleanAndSortData(data, allIndsXis, allIndsEtas, impute.na = impute.na)
+  INDICATORS <- prepDataModsemDA(data, allIndsXis, allIndsEtas,
+                                 missing = missing)$data.full
 
   stan_data <- list(N = nrow(data))
 
