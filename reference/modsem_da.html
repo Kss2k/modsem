@@ -120,7 +120,8 @@ necessary syntax, and variables for the estimation of models with latent product
 <span>  algorithm <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  em.control <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  ordered <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  ordered.boot <span class="op">=</span> <span class="fl">50</span>,</span>
+<span>  ordered.iter <span class="op">=</span> <span class="fl">75L</span>,</span>
+<span>  ordered.warmup <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">floor</a></span><span class="op">(</span><span class="va">ordered.iter</span><span class="op">/</span><span class="fl">3L</span><span class="op">)</span>,</span>
 <span>  cluster <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  cr1s <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  rcs <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -349,16 +350,22 @@ optimization steps when needed. Default is <code>"EM"</code>.</p></dd>
 
 
 <dt id="arg-ordered">ordered<a class="anchor" aria-label="anchor" href="#arg-ordered"></a></dt>
-<dd><p>Variables to be treated as ordered. Ordered (ordinal) variables are scale-corrected to adjust for
-unequal intervals before model estimation, by estimating the distributions of the underlying continuous response variables.
-The distributions of the response variables are estimated using a combination of bootstrapping and Monte Carlo simulations.
-For small differences in the spacing of the intervals, the point estimates should be unbiased. The standard errors may be
-underestimated though. Using robust standard errors may make the estimates of the standard errors more accurate.</p></dd>
+<dd><p>Variables to be treated as ordered. The distributions of the
+continuous response variables are estimated using a combination of Markow-Chain
+Monte-Carlo sampling, and multiple imputation. It should yield more consistent,
+and less biased results, compared to when ordinal variables are treated as continuous.</p></dd>
 
 
-<dt id="arg-ordered-boot">ordered.boot<a class="anchor" aria-label="anchor" href="#arg-ordered-boot"></a></dt>
-<dd><p>Number of bootstraps used to estimate the underlying continuous distribution of the
-ordinal variables.</p></dd>
+<dt id="arg-ordered-iter">ordered.iter<a class="anchor" aria-label="anchor" href="#arg-ordered-iter"></a></dt>
+<dd><p>Number of sampling iterations used to sample the underlying continuous distribution of the
+ordinal variables. The default is set to <code>75</code>, but should likely be
+increased to yield more consistent estimates.</p></dd>
+
+
+<dt id="arg-ordered-warmup">ordered.warmup<a class="anchor" aria-label="anchor" href="#arg-ordered-warmup"></a></dt>
+<dd><p>Number of sampling iterations in the warmup phase. These are discarded when estimating
+the final model parameters. The default is set to <code>ordered.iter / 3L</code>.
+In some cases it might be suitable to use a higher ratio (e.g., <code>ordered.iter / 2L</code>).</p></dd>
 
 
 <dt id="arg-cluster">cluster<a class="anchor" aria-label="anchor" href="#arg-cluster"></a></dt>
@@ -485,6 +492,7 @@ The default is therefore <code>TRUE</code> for the QML approach.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of Freedom (Chi-square)                   24</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   P-value (Chi-square)                           0.826</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   RMSEA                                          0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   SRMR                                           0.005</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Comparative Fit to H0 (LRT test):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Loglikelihood change                          338.23</span>
@@ -605,6 +613,7 @@ The default is therefore <code>TRUE</code> for the QML approach.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of Freedom (Chi-square)                   82</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   P-value (Chi-square)                           0.897</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   RMSEA                                          0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   SRMR                                           0.007</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Comparative Fit to H0 (LRT test):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Loglikelihood change                           67.12</span>
