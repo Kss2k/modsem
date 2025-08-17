@@ -255,26 +255,6 @@ rescaleOrderedVariable <- function(name, data, sim.ov,
 }
 
 
-addThresholdsParTable <- function(parTable, coef.t, vcov.t) {
-  na.cols <- setdiff(colnames(parTable), c("lhs", "op", "rhs", "est", "label"))
-
-  for (col in names(thresholds)) {
-    t <- thresholds[[col]]
-    t <- t[is.finite(t)]
-
-    newRows <- data.frame(lhs = col,
-                          op  = "|",
-                          rhs = paste0("t", seq_along(t)),
-                          est = t, label = "")
-    newRows[na.cols] <- NA
-
-    parTable <- rbind(parTable, newRows)
-  }
-
-  parTable
-}
-
-
 rescaleOrderedData <- function(data, sim.ov, cols.ordered, cols.cont,
                                thresholds.vcov = FALSE, ...) {
   if (!length(cols.ordered)) # nothing to do
