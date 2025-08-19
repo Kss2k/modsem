@@ -203,6 +203,7 @@ patternizeMissingDataFIML <- function(data) {
   Y   <- as.matrix(data)
   obs <- !is.na(Y)
 
+  rowMissingAll <- apply(obs, MARGIN = 1, FUN = \(x) !any(x))
   colMissingAll <- apply(obs, MARGIN = 2, FUN = \(x) !any(x))
   stopif(any(colMissingAll),
          "Please remove variables with only missing values:\n  ",
@@ -210,9 +211,11 @@ patternizeMissingDataFIML <- function(data) {
 
   patterns <- unique(obs, MARING = 2)
 
-  # remove patterns where all are missing
-  allMissing <- apply(patterns, MARGIN = 1, FUN = \(x) all(is.na(x)))
-  patterns <- patterns[!allMissing, , drop = FALSE]
+  if (any(rowMissingAll)) { # remove patterns where all are missing
+    # This shouldn't really happen, as it should be handled already in
+    # `handleMissingData()`. Regardless, we should handle it if it ever happens
+    return(patternizeMissingDataFIML(data[!rowMissingAll, , drop = FALSE]))
+  }
 
   ids <- seq_len(NROW(patterns))
   n   <- NROW(Y)
@@ -297,6 +300,9 @@ handleMissingData <- function(data, missing = "listwise", CLUSTER = NULL) {
   } else if (missing %in% c("fiml", "ml", "direct")) {
     attr(data, "cluster") <- CLUSTER
 
+    rowMissingAll <- apply(data, MARGIN = 1, FUN = \(x) all(is.na(x)))
+    data          <- data[!rowMissingAll, , drop = FALSE] # we've already know that
+                                                          # all(rowMissingAll) != TRUE
     return(data)
 
   } else {
