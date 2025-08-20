@@ -159,7 +159,6 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE,
     inds <- indsLVs[[lV]]
     k <- length(inds)
 
-
     parLines   <- character()
     modelLines <- character()
     quantLines <- character()
@@ -668,7 +667,7 @@ getStanData <- function(compiled_model, data, missing = "listwise", ordered = NU
     K     <- as.integer(max(x_int))
 
     stan_data[[sprintf("ORD_INDICATOR_%s", ind)]] <- x_int
-    stan_data[[sprintf("K_%s", ind)]]          <- K
+    stan_data[[sprintf("K_%s", ind)]]             <- K
   }
 
   stan_data

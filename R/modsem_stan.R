@@ -125,6 +125,7 @@ modsem_stan <- function(model.syntax = NULL,
   diagnostics <- diagnostics[namesSamplesRaw, , drop = FALSE]
   coefs <- apply(samples, MARGIN = 2, FUN = mean)
   vcov  <- cov(samples)
+  diagnostics <- diagnostics[colnames(samples), , drop = FALSE]
   rhat  <- diagnostics[, "Rhat"]
   neff  <- diagnostics[, "n_eff"]
 
@@ -149,7 +150,6 @@ modsem_stan <- function(model.syntax = NULL,
     R.hat = rhat, n.eff = neff,
     row.names = NULL
   )
-
 
   parTable <- tryCatch(sortParTableStan(parTable, compiled_model$info$parTable),
                        error = \(e) parTable)
