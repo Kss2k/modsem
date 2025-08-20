@@ -11,7 +11,7 @@ STAN_OPERATOR_LABELS <- c(
   "__MEASUREMENT__" = "=~",
   "__XWITH__" = ":"
 )
-  
+
 
 STAN_SYNTAX_BLOCKS <- "
 functions {
@@ -53,7 +53,19 @@ generated quantities {
 #'   is generated, and not compiled.
 #' @param force Should compilation of previously compiled models be forced?
 #' @export
-compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE) {
+compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE,
+                               ordered = NULL) {
+  if (is.null(ordered))
+    ordered <- character(0)
+
+  if (length(ordered)) {
+    model.syntax <- paste(
+      model.syntax,
+      sprintf("#ORDERED %s", paste0(ordered, collapse = " ")),
+      sep = "\n"
+    )
+  }
+
   parTable <- modsemify(model.syntax)
 
   # endogenous variables (etas)model
@@ -124,28 +136,80 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE) {
     inds <- indsLVs[[lV]]
     k <- length(inds)
 
-    # data {}
+    # --- data {}: keep the matrix for legacy pipelines (cols unused if ordinal)
     dataInds <- sprintf("matrix[N, %d] INDICATORS_%s;", k, lV)
 
-    # parameters {}
+    # We will accumulate code per-indicator to allow mixing ordinal/continuous.
+    par_lines   <- character()
+    model_lines <- character()
+    data_lines  <- dataInds
+
+    # Names for parameters that exist irrespective of ordinal/continuous
+    # Intercepts:
     labTau <- sprintf("%s__INTERCEPT", inds)
-    labResSD <- sprintf("%s__COVARIANCE__%s", inds, inds)
-    labLambda <- sprintf("%s__MEASUREMENT__%s", lV, inds[-1]) # first loading is constrained
+    par_lines <- c(par_lines, sprintf("real %s;", labTau))
 
-    parTau    <- sprintf("real %s;", labTau)
-    parResSD  <- sprintf("real<lower=0> %s;", labResSD)
-    parLambda <- sprintf("real %s;", labLambda)
+    # Loadings: first is fixed to 1 by construction; free for the rest
+    # (we keep your original labels X__MEASUREMENT__x2 etc.)
+    free_inds  <- inds[-1]
+    labLambda  <- if (length(free_inds)) sprintf("%s__MEASUREMENT__%s", lV, free_inds) else character(0)
+    if (length(labLambda)) {
+      par_lines <- c(par_lines, sprintf("real %s;", labLambda))
+    }
 
-    # model {}
-    idx <- seq_along(inds)
-    modInd <- sprintf("INDICATORS_%s[,%d] ~ normal(%s + %s * %s, %s);", 
-                      lV, idx, labTau, c("1", labLambda), lV, labResSD)
+    # Residual SDs (continuous-only) and ordinal cutpoints (ordinal-only) will be added in the loop
 
-    parameters <- collapse(parTau, parResSD, parLambda)
-    model      <- collapse(modInd)
-    data       <- collapse(dataInds)
+    for (j in seq_along(inds)) {
+      ind <- inds[j]
+      # loading term: first indicator fixed to 1, others use their free parameter
+      loading_term <- if (j == 1L) "1" else sprintf("%s__MEASUREMENT__%s", lV, ind)
 
-    list(parameters = parameters, model = model, data = data)
+      if (ind %in% ordered) {
+        # ---- ORDINAL INDICATOR ----
+        # data: category count + integer responses
+        data_lines <- paste0(
+          data_lines, "\n",
+          sprintf("int<lower=2> K_%s;", ind), "\n",
+          sprintf("int<lower=1, upper=K_%s> INDICATORS_%s[N];", ind, ind)
+        )
+
+        # parameters: NO residual SD; add cutpoints
+        par_lines <- c(
+          par_lines,
+          sprintf("ordered[K_%s - 1] %s__CUTPOINTS;", ind, ind)
+        )
+
+        # model: cumulative logit with linear predictor
+        model_lines <- c(
+          model_lines,
+          sprintf("{"),
+          sprintf("  vector[N] eta_%s = %s__INTERCEPT + %s * %s;", ind, ind, loading_term, lV),
+          sprintf("  INDICATORS_%s ~ ordered_logistic(eta_%s, %s__CUTPOINTS);", ind, ind, ind),
+          sprintf("}")
+        )
+
+      } else {
+        # ---- CONTINUOUS INDICATOR ----
+        # parameters: residual SD present
+        par_lines <- c(
+          par_lines,
+          sprintf("real<lower=0> %s__COVARIANCE__%s;", ind, ind)
+        )
+
+        # model: Gaussian measurement eq.
+        model_lines <- c(
+          model_lines,
+          sprintf("INDICATORS_%s[,%d] ~ normal(%s__INTERCEPT + %s * %s, %s__COVARIANCE__%s);",
+                  lV, j, ind, loading_term, lV, ind, ind)
+        )
+      }
+    }
+
+    list(
+      parameters = collapse(par_lines),
+      model      = collapse(model_lines),
+      data       = collapse(data_lines)
+    )
   }
 
   STAN_PAR_XIS <- function(xis) {
@@ -189,14 +253,14 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE) {
          model = model)
   }
 
-  
+
   STAN_PAR_ETA <- function(eta) {
     indeps <- unique(parTable[parTable$lhs == eta & parTable$op == "~", "rhs"])
-    indeps <- stringr::str_replace_all(indeps, pattern = ":", 
+    indeps <- stringr::str_replace_all(indeps, pattern = ":",
                                        replacement = "__XWITH__")
 
     # parameters {}
-    labBeta <- sprintf("%s__REGRESSION__%s", eta, indeps) 
+    labBeta <- sprintf("%s__REGRESSION__%s", eta, indeps)
     labSD <- sprintf("%s__COVARIANCE__%s", eta, eta)
 
     parBeta   <- sprintf("real %s;", labBeta)
@@ -253,7 +317,7 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE) {
 
     list(generated_quantities = collapse(generated_quantities))
   }
-  
+
 
   STAN_COMPUTED_VARIANCES <- function(vars) {
     vars   <- stringr::str_replace_all(vars, pattern = ":", replacement = "__XWITH__")
@@ -288,7 +352,7 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE) {
              parameters = {
                PARAMETERS <<- collapse(PARAMETERS, block)
              },
-             
+
              transformed_parameters = {
                TRANSFORMED_PARAMETERS <<- collapse(TRANSFORMED_PARAMETERS, block)
              },
@@ -311,10 +375,10 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE) {
   add2block(STAN_COMPUTED_PRODUCTS, intTerms = intTerms)
   add2block(STAN_COMPUTED_COVARIANCES, vars = c(xis, intTerms))
   add2block(STAN_COMPUTED_VARIANCES, vars = c(xis, intTerms))
-  
+
   stanModelSyntax <- sprintf(STAN_SYNTAX_BLOCKS,
-                             FUNCTIONS, DATA, PARAMETERS, 
-                             TRANSFORMED_PARAMETERS, 
+                             FUNCTIONS, DATA, PARAMETERS,
+                             TRANSFORMED_PARAMETERS,
                              MODEL, GENERATED_QUANTITIES)
 
   SYNTAXES <- STAN_LAVAAN_MODELS$syntaxes
@@ -324,7 +388,7 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE) {
   if (compile && any(match) && !force) {
     message("Reusing compiled Stan model...")
     stanModel <- last(COMPILED[match]) # if a duplicate somehow appears, pick last/newest match
-  
+
   } else if (compile) {
     message("Compiling Stan model...")
 
@@ -334,7 +398,7 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE) {
     COMPILED <- c(COMPILED, stanModel)
 
     STAN_LAVAAN_MODELS$syntaxes <- SYNTAXES
-    STAN_LAVAAN_MODELS$compiled <- COMPILED 
+    STAN_LAVAAN_MODELS$compiled <- COMPILED
 
   } else stanModel <- NULL
 
@@ -351,22 +415,60 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE) {
 }
 
 
-getStanData <- function(compiled_model, data, missing = "listwise") {
+getStanData <- function(compiled_model, data, missing = "listwise", ordered = NULL) {
+  if (is.null(ordered)) ordered <- character(0)
+
   lVs         <- compiled_model$info$lVs
   indsLVs     <- compiled_model$info$indsLVs
   allIndsXis  <- compiled_model$info$allIndsXis
   allIndsEtas <- compiled_model$info$allIndsEtas
 
-  # clean data
+  # 1) Pre-coerce requested ordinal columns in the raw data
+  #    (safe even if columns are already numeric; ensures stable ordering)
+  for (col in ordered) {
+    if (!col %in% names(data)) {
+      stop("`ordered` indicator '", col, "' not found in data.")
+    }
+    data[[col]] <- as.integer(as.ordered(data[[col]]))
+  }
+
+  # 2) Run your existing missing-data preparation (listwise or otherwise)
   INDICATORS <- prepDataModsemDA(data, allIndsXis, allIndsEtas,
                                  missing = missing)$data.full
 
-  stan_data <- list(N = nrow(data))
+  stan_data <- list(N = nrow(INDICATORS))
 
+  # 3) Emit the latent-specific indicator matrices (unchanged)
   for (lV in lVs) {
     name <- sprintf("INDICATORS_%s", lV)
     inds <- indsLVs[[lV]]
-    stan_data[[name]] = INDICATORS[, inds, drop = FALSE]
+    if (!all(inds %in% colnames(INDICATORS))) {
+      missing_cols <- paste(setdiff(inds, colnames(INDICATORS)), collapse = ", ")
+      stop("Indicators missing from prepared data for latent '", lV, "': ", missing_cols)
+    }
+    stan_data[[name]] <- as.matrix(INDICATORS[, inds, drop = FALSE])
+  }
+
+  # 4) For each ordered indicator, add integer vector 1..K and K
+  remap_to_consecutive <- function(x) {
+    # x should be atomic, no NAs expected after listwise handling
+    u <- sort(unique(x))
+    # Create a 1..K mapping even if labels were not consecutive (e.g., 0/2/5)
+    map <- setNames(seq_along(u), as.character(u))
+    as.integer(unname(map[as.character(x)]))
+  }
+
+  for (ind in ordered) {
+    if (!ind %in% colnames(INDICATORS)) {
+      stop("`ordered` indicator '", ind, "' not found after preprocessing.")
+    }
+    x_raw <- INDICATORS[, ind]
+    # Ensure integer 1..K coding regardless of original labels
+    x_int <- remap_to_consecutive(x_raw)
+    K     <- as.integer(max(x_int))
+
+    stan_data[[sprintf("INDICATORS_%s", ind)]] <- x_int
+    stan_data[[sprintf("K_%s", ind)]]          <- K
   }
 
   stan_data
@@ -400,7 +502,7 @@ functions {
       }
     }
 
-    return product; 
+    return product;
   }
 }
 
@@ -425,7 +527,7 @@ data {
 
   int<lower=0> N_FREE_LAMBDA;     // sum(abs(LAMBDA))
   int<lower=0> N_FREE_GAMMA;      // sum(abs(GAMMA))
-  int<lower=0> N_FREE_OMEGA; 
+  int<lower=0> N_FREE_OMEGA;
 
   int<lower=0> N_FREE_DIAG_THETA;  // sum(abs(diag(THETA)))
   int<lower=0> N_FREE_LOWER_THETA; // sum(abs(THETA[is.lower(THETA)]))
@@ -447,7 +549,7 @@ parameters {
   vector[N_FREE_TAU] tau;
   vector<lower=0>[N_FREE_DIAG_THETA] theta_d;
   vector[N_FREE_LOWER_THETA] theta_l;
- 
+
   // Structural model
   vector[N_FREE_GAMMA] gamma;
   vector[N_FREE_ALPHA] alpha;
@@ -473,7 +575,7 @@ transformed parameters {
   matrix[K, K]                 Theta; // Structure of indicator covariances
   vector[K]                    Tau;   // Structure of indicator intercepts
   vector[N_LVS]                Alpha; // Structure of LV intercepts
-  
+
   // Fill Matrices
   Lambda = rep_matrix(0, K, N_LVS);
   Gamma  = rep_matrix(0, N_ETAS, N_LVS);
@@ -514,7 +616,7 @@ transformed parameters {
         }
       }
     }
-    
+
     // Fill OMEGA
     k = 1;
     for (i in 1:N_ETAS) {
@@ -538,14 +640,14 @@ transformed parameters {
         k = k + 1;
       }
     }
-    
+
     // Fill Off-Diagonal Theta
     k = 1;
     for (i in 1:K) {
 
       for (j in 1:(i-1)) {
         real fill = THETA[i, j];
-      
+
         if (fill) {
           Theta[i, j] = theta_l[k];
           Theta[j, i] = theta_l[k];
@@ -564,14 +666,14 @@ transformed parameters {
         k = k + 1;
       }
     }
-    
+
     // Fill Off-Diagonal Psi
     k = 1;
     for (i in 1:N_LVS) {
 
       for (j in 1:(i-1)) {
         real fill = PSI[i, j];
-      
+
         if (fill) {
           Psi[i, j] = psi_l[k];
           Psi[j, i] = psi_l[k];
@@ -589,7 +691,7 @@ transformed parameters {
         k = k + 1;
       }
     }
-    
+
     // Fill Tau
     k = 1;
     for (i in 1:K) {
@@ -618,10 +720,10 @@ transformed parameters {
         ETA[, idx] = ETA[, idx] + Gamma[i, j] * ETA[, j];
       }
     }
-  
+
     for (j in 1:N_INT) {
       if (OMEGA[i, j]) {
-        ETA[, idx] = 
+        ETA[, idx] =
           ETA[, idx] + Omega[i, j] * getIthProduct(j, N_LVS, N, PRODUCTS, ETA);
       }
     }
@@ -649,10 +751,10 @@ transformed parameters {
 
   // print(\"head(ETA)\");
   // print(ETA[1:5, ]);
-  // 
+  //
   // print(\"head(XI)\");
   // print(XI[1:5, ]);
-  // 
+  //
   // print(\"head(X)\");
   // print(X[1:5, ]);
 
@@ -679,7 +781,7 @@ model {
   // No priors (yet)
 
   marginalXI ~ multi_normal(marginalMeanXI, Psi);
-  marginalY  ~ multi_normal(marginalMeanY, Theta); 
+  marginalY  ~ multi_normal(marginalMeanY, Theta);
 }
 
 "
@@ -760,7 +862,7 @@ specifyModelSTAN <- function(syntax = NULL,
   listOmega <- constructGamma(etas, intTerms, parTable = parTable)
   OMEGA <- listOmega$numeric
   OMEGA[is.na(OMEGA)] <- 1
-  
+
   listPsi  <- constructPsi(etas, parTable = parTable, orthogonal.y = orthogonal.y)
   psi      <- listPsi$numeric
 
@@ -786,7 +888,7 @@ specifyModelSTAN <- function(syntax = NULL,
        N_ETAS = numEtas,
        N_LVS  = numLVs,
        N_INT  = numInts,
-  
+
        LAMBDA   = LAMBDA,
        GAMMA    = GAMMA,
        OMEGA    = OMEGA,
@@ -820,12 +922,12 @@ specifyModelSTAN <- function(syntax = NULL,
 #   X =~ x1 + x2 + x3
 #   Z =~ z1 + z2 + z3
 #   Y =~ y1 + y2 + y3
-# 
+#
 #   Y ~ X + Z + X:Z
 # '
 # stan_data <- specifyModelSTAN(model.syntax, data = oneInt)
 # stan_model <- stan_model(model_code = STAN_MODEL_GENERAL)
-# 
+#
 # fit <- sampling(
 #   object = stan_model,
 #   data   = stan_data,
@@ -833,7 +935,7 @@ specifyModelSTAN <- function(syntax = NULL,
 #   iter   = 2000,
 #   warmup = 1000
 # )
-# 
+#
 # summary(fit, c("gamma"))
 # summary(fit, c("omega"))
 # summary(fit, c("Psi"))
