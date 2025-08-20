@@ -60,7 +60,6 @@ LinkingTo: Rcpp, RcppArmadillo
 Imports: Rcpp, purrr, stringr, lavaan, rlang, MplusAutomation, nlme, dplyr, 
   mvnfast, stats, fastGHQuad, mvtnorm, ggplot2, parallel, plotly, Deriv, MASS, Amelia,
   grDevices, cli, RhpcBLASctl
->>>>>>> main
 Depends: 
     R (>= 4.1.0)
 URL: https://modsem.org
