@@ -101,6 +101,14 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE,
   allInds <- c(allIndsXis, allIndsEtas)
   numAllInds <- length(allInds)
 
+  # NEW: normalize and precompute ordinal sets
+  if (is.null(ordered)) ordered <- character(0)
+  ord_set <- unique(ordered)
+  is_all_ordinal_lv <- vapply(lVs, function(lv) {
+    inds <- indsLVs[[lv]]
+    length(inds) > 0 && all(inds %in% ord_set)
+  }, logical(1))
+
   collapse <- function(..., sep = "\n") {
     args <- list(...)
     do.call(
@@ -136,67 +144,51 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE,
     inds <- indsLVs[[lV]]
     k <- length(inds)
 
-    # --- data {}: keep the matrix for legacy pipelines (cols unused if ordinal)
+    # Keep the legacy matrix (harmless for ordinal cols)
     dataInds <- sprintf("matrix[N, %d] INDICATORS_%s;", k, lV)
 
-    # We will accumulate code per-indicator to allow mixing ordinal/continuous.
     par_lines   <- character()
     model_lines <- character()
     data_lines  <- dataInds
 
-    # Names for parameters that exist irrespective of ordinal/continuous
-    # Intercepts:
-    labTau <- sprintf("%s__INTERCEPT", inds)
-    par_lines <- c(par_lines, sprintf("real %s;", labTau))
-
-    # Loadings: first is fixed to 1 by construction; free for the rest
-    # (we keep your original labels X__MEASUREMENT__x2 etc.)
-    free_inds  <- inds[-1]
-    labLambda  <- if (length(free_inds)) sprintf("%s__MEASUREMENT__%s", lV, free_inds) else character(0)
-    if (length(labLambda)) {
-      par_lines <- c(par_lines, sprintf("real %s;", labLambda))
+    # Intercepts: ONLY for continuous indicators
+    cont_inds <- inds[!inds %in% ord_set]
+    if (length(cont_inds)) {
+      par_lines <- c(par_lines, sprintf("real %s__INTERCEPT;", cont_inds))
     }
+    # NOTE: no intercepts for ordinal items
 
-    # Residual SDs (continuous-only) and ordinal cutpoints (ordinal-only) will be added in the loop
+    # Loadings: first fixed to 1; free for the rest (all items share this rule)
+    if (k > 1L) {
+      free_inds <- inds[-1L]
+      if (length(free_inds)) {
+        par_lines <- c(par_lines, sprintf("real %s__MEASUREMENT__%s;", lV, free_inds))
+      }
+    }
 
     for (j in seq_along(inds)) {
       ind <- inds[j]
       # loading term: first indicator fixed to 1, others use their free parameter
       loading_term <- if (j == 1L) "1" else sprintf("%s__MEASUREMENT__%s", lV, ind)
 
-      if (ind %in% ordered) {
-        # ---- ORDINAL INDICATOR ----
-        # data: category count + integer responses
+      if (ind %in% ord_set) {
+        # -------- ORDINAL INDICATOR (NO intercept) --------
         data_lines <- paste0(
           data_lines, "\n",
           sprintf("int<lower=2> K_%s;", ind), "\n",
           sprintf("int<lower=1, upper=K_%s> INDICATORS_%s[N];", ind, ind)
         )
-
-        # parameters: NO residual SD; add cutpoints
-        par_lines <- c(
-          par_lines,
-          sprintf("ordered[K_%s - 1] %s__CUTPOINTS;", ind, ind)
-        )
-
-        # model: cumulative logit with linear predictor
+        par_lines <- c(par_lines, sprintf("ordered[K_%s - 1] %s__CUTPOINTS;", ind, ind))
         model_lines <- c(
           model_lines,
-          sprintf("{"),
-          sprintf("  vector[N] eta_%s = %s__INTERCEPT + %s * %s;", ind, ind, loading_term, lV),
+          "{",
+          sprintf("  vector[N] eta_%s = %s * %s;", ind, loading_term, lV),
           sprintf("  INDICATORS_%s ~ ordered_logistic(eta_%s, %s__CUTPOINTS);", ind, ind, ind),
-          sprintf("}")
+          "}"
         )
-
       } else {
-        # ---- CONTINUOUS INDICATOR ----
-        # parameters: residual SD present
-        par_lines <- c(
-          par_lines,
-          sprintf("real<lower=0> %s__COVARIANCE__%s;", ind, ind)
-        )
-
-        # model: Gaussian measurement eq.
+        # -------- CONTINUOUS INDICATOR --------
+        par_lines <- c(par_lines, sprintf("real<lower=0> %s__COVARIANCE__%s;", ind, ind))
         model_lines <- c(
           model_lines,
           sprintf("INDICATORS_%s[,%d] ~ normal(%s__INTERCEPT + %s * %s, %s__COVARIANCE__%s);",
@@ -215,18 +207,43 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE,
   STAN_PAR_XIS <- function(xis) {
     k <- length(xis)
 
-    # parameters {}
+    # Identify which xi's are all-ordinal
+    fix_idx <- which(vapply(xis, function(lv) is_all_ordinal_lv[lv], logical(1)))
+    free_idx <- setdiff(seq_len(k), fix_idx)
+
     parLOmega   <- sprintf("cholesky_factor_corr[%d] L_Omega;", k)
-    parSqrtDPhi <- sprintf("vector<lower=0>[%d] sqrtD_Phi;", k)
-    # parZXiMat   <- sprintf("matrix[N, %d] Z_XI_Matrix;", k)
+
+    parSqrtDPhi <- if (length(free_idx) > 0L) {
+      sprintf("vector<lower=0>[%d] sqrtD_Phi_free;", length(free_idx))
+    } else {
+      NULL
+    }
     parXiMat   <- sprintf("matrix[N, %d] XI_Matrix;", k)
 
-    # transformed parameters {}
+    # transformed parameters: rebuild sqrtD_Phi with fixed 1's at fix_idx
+    tparBuildSqrt <- c(
+      sprintf("vector[%d] sqrtD_Phi;", k),
+      " {",
+      if (length(free_idx) > 0L) "  int c = 1;" else NULL,
+      if (length(seq_len(k)) > 0L) {
+        paste0(
+          vapply(seq_len(k), function(i) {
+            if (i %in% fix_idx) {
+              sprintf("  sqrtD_Phi[%d] = 1;", i)
+            } else {
+              sprintf("  sqrtD_Phi[%d] = sqrtD_Phi_free[c]; c += 1;", i)
+            }
+          }, character(1L)),
+          collapse = "\n"
+        )
+      } else NULL,
+      " }"
+    )
+
     tparLSigma    <- sprintf("matrix[%d, %d] L_Sigma = diag_pre_multiply(sqrtD_Phi, L_Omega);", k, k)
     tparMuXi      <- sprintf("row_vector[%d] MU_XI = rep_row_vector(0, %d);", k, k)
     tparXiArr     <- sprintf("array[N] vector[%d] XI_Array;", k)
     tparXiArrFill <- "for (i in 1:N) {XI_Array[i] = (XI_Matrix[i, ])';}"
-    tparXi       <- sprintf("matrix[N, %d] XI_Matrix = Z_XI_Matrix * L_Sigma';", k)
 
     xiVectors <- NULL
     for (i in seq_along(xis)) {
@@ -234,44 +251,48 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE,
       xiVector <- sprintf("vector[N] %s = col(XI_Matrix, %d);", name, i)
       xiVectors <- c(xiVectors, xiVector)
     }
-
     tparXiVectors <- collapse(xiVectors)
 
-    # model {}
-    modLOmega <- sprintf("L_Omega ~ lkj_corr_cholesky(1);")
-    # modZXiMat <- "to_vector(Z_XI_Matrix) ~ normal(0, 1);"
-    # modXiMat <- "for (n in 1:N) {XI_Matrix[n,] ~ multi_normal_cholesky(MU_XI, L_Sigma);}"
-    modXiArr <- "XI_Array ~ multi_normal_cholesky(MU_XI, L_Sigma);"
+    modLOmega <- "L_Omega ~ lkj_corr_cholesky(1);"
+    modXiArr  <- "XI_Array ~ multi_normal_cholesky(MU_XI, L_Sigma);"
 
-    parameters  <- collapse(parLOmega, parSqrtDPhi, parXiMat)
-    tparameters <- collapse(tparLSigma, tparXiVectors, tparMuXi, tparXiArr, tparXiArrFill)
-    model       <- collapse(modLOmega, modXiArr)
+    parameters  <- collapse(c(parLOmega, parSqrtDPhi, parXiMat))
+    tparameters <- collapse(c(tparBuildSqrt, tparLSigma, tparXiVectors, tparMuXi, tparXiArr, tparXiArrFill))
+    model       <- collapse(c(modLOmega, modXiArr))
 
     EXCLUDE.PARS <<- c(EXCLUDE.PARS, "XI_Array", "XI_Matrix", xis)
 
-    list(parameters = parameters, transformed_parameters = tparameters,
-         model = model)
+    list(parameters = parameters, transformed_parameters = tparameters, model = model)
   }
 
 
   STAN_PAR_ETA <- function(eta) {
     indeps <- unique(parTable[parTable$lhs == eta & parTable$op == "~", "rhs"])
-    indeps <- stringr::str_replace_all(indeps, pattern = ":",
-                                       replacement = "__XWITH__")
+    indeps <- stringr::str_replace_all(indeps, pattern = ":", replacement = "__XWITH__")
 
     # parameters {}
     labBeta <- sprintf("%s__REGRESSION__%s", eta, indeps)
-    labSD <- sprintf("%s__COVARIANCE__%s", eta, eta)
 
-    parBeta   <- sprintf("real %s;", labBeta)
+    # Is this latent all-ordinal?
+    all_ord <- is_all_ordinal_lv[eta]
+
+    parBeta   <- if (length(labBeta)) sprintf("real %s;", labBeta) else NULL
     parValues <- sprintf("vector[N] %s;", eta)
-    parSD  <- sprintf("real<lower=0> %s;", labSD)
 
-    # model {}
-    projEta <- collapse(sprintf("%s * %s", labBeta, indeps), sep = " + ")
-    modEta <- sprintf("%s ~ normal(%s, %s);", eta, projEta, labSD)
+    if (all_ord) {
+      # FIX scale: no SD parameter; use 1 in the likelihood
+      parSD <- NULL
+      projEta <- if (length(indeps)) collapse(sprintf("%s * %s", labBeta, indeps), sep = " + ") else "0"
+      modEta <- sprintf("%s ~ normal(%s, 1);", eta, projEta)
+    } else {
+      # Original: estimate disturbance SD
+      labSD <- sprintf("%s__COVARIANCE__%s", eta, eta)
+      parSD <- sprintf("real<lower=0> %s;", labSD)
+      projEta <- if (length(indeps)) collapse(sprintf("%s * %s", labBeta, indeps), sep = " + ") else "0"
+      modEta <- sprintf("%s ~ normal(%s, %s);", eta, projEta, labSD)
+    }
 
-    parameters <- collapse(parValues, parSD, parBeta)
+    parameters <- collapse(c(parValues, parSD, parBeta))
 
     EXCLUDE.PARS <<- c(EXCLUDE.PARS, eta)
 
