@@ -659,8 +659,11 @@ leftJoin <- function(left, right, by = intersect(colnames(left), colnames(right)
 }
 
 
-eraseConsoleLines <- function(n = 1) {
-  if (n < 1 || !interactive()) return(invisible())
+eraseConsoleLines <- function(n = 1L) {
+  if (n < 1L || !interactive() || !.isOnUnix())
+    return(invisible()) # if we're not in interactive mode, or on UNIX
+                        # there is not point
+
   seq <- paste0(rep("\033[1A\033[2K", n), collapse = "")
   # bring cursor to start of the line we landed on
   cat(seq, "\033[1G", sep = "")
@@ -682,4 +685,10 @@ is.invertible <- function(M) {
     solve(M)
     TRUE
   }, error = \(e) FALSE)
+}
+
+
+.isOnUnix <- function(.onFail = FALSE) {
+  tryCatch(tolower(.Platform$OS.type) == "unix",
+           error = \(e) .onFail)
 }

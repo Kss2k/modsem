@@ -5,28 +5,29 @@ modsemOrderedScaleCorrection <- function(model.syntax,
                                          calc.se = TRUE,
                                          iter = 75L,
                                          warmup = 25L,
-                                         N.start = max(NROW(data), 1e4), # 10,000 initally
-                                         N.max   = max(NROW(data), 1e6), # 1,000,000
-                                         target.coverage = 0.7,
-                                         lambda = 1,
+                                         N = max(NROW(data), 1e5), # 10,000 initally
                                          se = "simple",
-                                         ordered.standardize.data = TRUE,
+                                         diff.theta.tol = 1e-10,
                                          ordered.mean.observed = FALSE,
                                          # Capture args
                                          verbose = interactive(),
                                          optimize = TRUE,
                                          start = NULL,
-                                         standardize.data = NULL,
-                                         mean.observed    = NULL,
+                                         mean.observed = NULL,
+                                         scaling.factor.int = NULL,
                                          ...) {
-  message("Sampling values for ordered variables, ",
-          "this is an experimental feature!\n",
-          "Consider increasing the `ordered.iter` and `ordered.warmup` arguments!")
+  message("Correcting scale of ordered variables...\n",
+          "This is an experimental feature, ",
+          "see `help(modsem_da)` for more information!")
 
   standardize <- \(x) (x - mean(x, na.rm = TRUE)) / stats::sd(x, na.rm = TRUE)
 
   if (is.null(verbose))
     verbose <- TRUE # default
+
+  parTable.in <- modsemify(model.syntax)
+  xis <- getXis(parTable.in, checkAny = FALSE)
+  inds.xis <- unique(unlist(getIndsLVs(parTable.in, lVs = xis)))
 
   cols <- colnames(data)
   cols.ordered <- cols[cols %in% ordered | sapply(data, is.ordered)]
@@ -38,28 +39,15 @@ modsemOrderedScaleCorrection <- function(model.syntax,
   data.y <- data
   data.y[cols.ordered] <- lapply(data.y[cols.ordered], FUN = as.integer)
 
-  thresholds <- stats::setNames(lapply(cols.ordered,  FUN = \(x) 0),
-                                nm = cols.ordered)
-
   stopif(iter <= warmup, "`ordered.iter` must be larger than `ordered.warmup`!")
 
   iter.keep <- max(1L, floor(iter - warmup))
-  COEF.ALL  <- vector("list", length = iter.keep)
-  COEF.FREE <- vector("list", length = iter.keep)
-  VCOV.ALL  <- vector("list", length = iter.keep)
-  VCOV.FREE <- vector("list", length = iter.keep)
-  fits      <- vector("list", length = iter.keep)
-  imputed   <- vector("list", length = iter.keep)
 
   data_i <- data
   data_i[cols.ordered] <- lapply(data_i[cols.ordered],
                                  FUN = \(x) standardize(as.integer(x)))
-
-  THETA     <- NULL
-  PARS      <- NULL
-  N         <- N.start
-  W         <- 0       # cumulative weight
-  maxLL_run <- -Inf
+  thresholds <- NULL
+  theta_i    <- NULL
 
   for (i in seq_len(iter)) {
     printedLines <- utils::capture.output(split = TRUE, {
@@ -69,209 +57,137 @@ modsemOrderedScaleCorrection <- function(model.syntax,
       if (verbose)
         printf("Iterations %d/%d [%s]...\n", i, iter, mode)
 
-      if (is.null(calc.se))
-        calc.se_i <- ifelse(j < 1L || (se == "simple" && j > 1L), yes = FALSE, no = TRUE)
-      else
-        calc.se_i <- calc.se
-
-      if (is.null(THETA)) {
-        optimize <- TRUE
-        start    <- NULL
+      if (is.null(theta_i)) {
+        optimize_i <- TRUE
+        start_i    <- NULL
       } else {
-        optimize <- FALSE
-        start    <- apply(THETA, MARGIN = 2, FUN = mean, na.rm = TRUE) # na.rm should't be necessary, ever...
+        optimize_i <- FALSE
+        start_i   <- theta_i
       }
-
-      if (j > 0L) imputed[[j]] <- data_i
 
       fit_i <- tryCatch(
         modsem_da(
           model.syntax     = model.syntax,
           data             = data_i,
           method           = method,
-          start            = start,
+          start            = start_i,
           verbose          = verbose,
-          optimize         = optimize,
-          calc.se          = calc.se_i,
-          standardize.data = ordered.standardize.data,
+          optimize         = optimize_i,
+          calc.se          = FALSE,
           mean.observed    = ordered.mean.observed,
           ...
         ), error = \(e) {cat("\n"); print(e); NULL}
       )
 
-      if (is.null(fit_i)) next
+      stopif(is.null(fit_i), "Model estimation failed!")
 
-      pars_i <- parameter_estimates(fit_i)
+      theta_k <- theta_i
+      theta_i <- fit_i$theta
 
-      if (is.null(PARS) || mode == "warmup") {
-        PARS <- pars_i
+      pars <- parameter_estimates(fit_i)
 
-      } else {
-        ll <- as.numeric(fit_i$logLik)
-
-        if (!is.finite(ll)) {
-          # skip weighting when logLik is NA/Inf
-          w <- 0
-
-        } else {
-          # if we have a new maximum, rescale cumulative weight to the new baseline
-          if (ll > maxLL_run) {
-            if (is.finite(maxLL_run)) {
-              scale <- exp((maxLL_run - ll) / lambda)  # < 1
-              W <- W * scale
-            }
-            maxLL_run <- ll
-          }
-
-          # softmax-style weight in (0, 1], peaked at current best
-          w <- exp((ll - maxLL_run) / lambda)
-        }
-
-        # online likelihood-weighted average update
-        if (w > 0) {
-          W <- W + w
-          PARS$est <- PARS$est + (w / W) * (pars_i$est - PARS$est)
-        }
+      if (!is.null(scaling.factor.int)) {
+        # bias represents the degree to which the coefficient is
+        # over/under estimated. we use it to get a scaling factor
+        is.int <- grepl(":", pars$rhs)
+        pars[is.int, "est"] <- scaling.factor.int * pars[is.int, "est"]
       }
 
       sim_i <- simulateDataParTable(
-        parTable = PARS,
+        parTable = pars,
         N        = N
       )
 
-      rescaled   <- rescaleOrderedData(data = data.x, sim.ov = sim_i$oV,
-                                       cols.ordered = cols.ordered,
-                                       cols.cont = cols.cont)
-      coverage   <- rescaled$coverage
-      n.scalef   <- target.coverage / coverage
-      N          <- min(N.max, floor(n.scalef * N))
-      N          <- max(N, NROW(data)) # we don't want N to be lower than the number of observations
-      data_i     <- rescaled$data
-      thresholds <- rescaled$thresholds
+      rescaled <- rescaleOrderedData(data = data.x,
+                                     sim.ov = sim_i$oV,
+                                     cols.ordered = cols.ordered,
+                                     cols.cont = cols.cont,
+                                     linear.ovs = inds.xis)
 
-      THETA <- rbind(
-        THETA,
-        matrix(fit_i$theta, nrow = 1, dimnames = list(NULL, names(fit_i$theta)))
-      )
+      if (j >= 1L && !is.null(thresholds) && !is.null(data_i)) {
+        data_j   <- rescaled$data
+        lambda_j <- 1 / j
+        lambda_i <- 1 - lambda_j
 
-      if (j >= 1L) {
-        fits[[j]]      <- fit_i
-        COEF.FREE[[j]] <- coef(fit_i, type = "free")
-        COEF.ALL[[j]]  <- addThresholdsCoef(coef(fit_i, type = "all"),
-                                            thresholds = thresholds)
+        for (col in cols.ordered)
+          data_i[[col]] <- lambda_i * data_i[[col]] + lambda_j * data_j[[col]]
 
-        if (j > 1L && se == "simple") {
-          VCOV.ALL[[j]]  <- VCOV.ALL[[1]]
-          VCOV.FREE[[j]] <- VCOV.FREE[[1]]
-
-        } else if (calc.se_i) {
-          VCOV.FREE[[j]]  <- vcov(fit_i, type = "free")
-          VCOV.ALL[[j]] <- addThresholdsVcov(vcov(fit_i, type = "all"),
-                                              thresholds = thresholds)
-
-        } else {
-          k.all  <- length(COEF.ALL[[j]]) + length(unlist(thresholds))
-          k.free <- length(COEF.FREE[[j]])
-          d.all  <- c(names(COEF.ALL[[j]]), getLabelsThresholds(thresholds))
-          d.free <- names(COEF.FREE[[j]])
-
-          VCOV.ALL[[j]]  <- matrix(0, nrow = k.all, ncol = k.all,
-                                   dimnames = list(d.all, d.all))
-          VCOV.FREE[[j]] <- matrix(0, nrow = k.free, ncol = k.free,
-                                   dimnames = list(d.free, d.free))
-        }
+      } else {
+        data_i     <- rescaled$data
+        thresholds <- rescaled$thresholds
       }
     })
 
     nprinted <- length(printedLines)
     if (i < iter) eraseConsoleLines(nprinted)
+
+    epsilon    <- theta_i - theta_k
+    diff.theta <- mean(abs(epsilon))
+
+    if (diff.theta <= diff.theta.tol && j > 1L) {
+      printf("Solution converged (iter = %d, warmup = %d, diff = %.2g)\n",
+             i, warmup, diff.theta)
+
+      break
+    }
   }
 
-  failed <- vapply(fits, FUN.VALUE = logical(1L), FUN = is.null)
+  fit.out <- modsem_da(model.syntax     = model.syntax,
+                       data             = data_i,
+                       method           = method,
+                       start            = theta_i,
+                       verbose          = verbose,
+                       optimize         = FALSE,
+                       calc.se          = calc.se,
+                       mean.observed    = ordered.mean.observed,
+                       ...)
 
-  if (any(failed)) {
-    warning2(sprintf("Model estimation failed in %d out of %d impuations!",
-                     sum(failed), R), immediate. = FALSE)
+  rescaled <- rescaleOrderedData(data = data.x,
+                                 sim.ov = sim_i$oV,
+                                 cols.ordered = cols.ordered,
+                                 cols.cont = cols.cont,
+                                 linear.ovs = inds.xis,
+                                 thresholds.vcov = TRUE)
 
-    fits      <- fits[!failed]
-    COEF.ALL  <- COEF.ALL[!failed]
-    COEF.FREE <- COEF.FREE[!failed]
-    VCOV.ALL  <- VCOV.ALL[!failed]
-    VCOV.FREE <- VCOV.FREE[!failed]
-    R         <- sum(!failed)
+  vcov.t <- NULL
+  coef.t <- NULL
+  for (col in cols.ordered) {
+    vcov.t <- diagPartitionedMat(vcov.t, rescaled$vcov[[col]])
+    coef.t <- c(coef.t, rescaled$thresholds[[col]])
   }
 
-  pool.all  <- rubinPool(COEF.ALL,  VCOV.ALL)
-  pool.free <- rubinPool(COEF.FREE, VCOV.FREE)
+  parTable <- fit.out$parTable
+  cols.t <- c("lhs", "op", "rhs", "label", "est", "std.error")
+  cols.m <- setdiff(colnames(parTable), cols.t)
 
-  coef.all  <- pool.all$theta.bar
-  vcov.all  <- pool.all$Tvcov
+  lhs.t = stringr::str_split_i(names(coef.t), pattern = "\\|", i = 1L)
+  rhs.t = stringr::str_split_i(names(coef.t), pattern = "\\|", i = 2L)
 
-  coef.free <- pool.free$theta.bar
-  vcov.free <- pool.free$Tvcov
+  parTable.t <- data.frame(lhs = lhs.t, op = "|", rhs = rhs.t, label = "",
+                           est = coef.t, std.error = sqrt(diag(vcov.t)))
+  parTable.t[cols.m] <- NA
+  parTable.t <- addZStatsParTable(parTable.t)
 
-  # Re-do parameter estimates
-  parTable1   <- addThresholdsParTable(parameter_estimates(fits[[1]]),
-                                       thresholds = thresholds)
-  orig.labels <- parTable1$label
-  parTable1   <- getMissingLabels(parTable1)
-  parTableT   <- data.frame(label = names(coef.all),
-                            est.t = coef.all,
-                            std.error.t = sqrt(diag(vcov.all)))
+  parTable <- sortParTableDA(rbind(parTable, parTable.t), model = fit.out$model)
 
-  parTable    <- leftJoin(left = parTable1, right = parTableT, by = "label")
-  match       <- !is.na(parTable$est.t)
-
-  parTable$est[match]       <- parTable$est.t[match]
-  parTable$std.error[match] <- parTable$std.error.t[match]
-  parTable$est.t       <- NULL
-  parTable$std.error.t <- NULL
-  parTable$label[!parTable$label %in% orig.labels] <- ""
-  parTable <- parTable[c("lhs", "op", "rhs", "label", "est", "std.error")] # remove z-statistics
-  parTable <- addZStatsParTable(parTable)
-
-
-  parTable <- modsemParTable(sortParTableDA(parTable, model = fits[[1L]]$model))
-
-  matrices    <- aggregateMatrices(fits, type = "main")
-  covMatrices <- aggregateMatrices(fits, type = "cov")
-  expected.matrices <- aggregateMatrices(fits, type = "expected")
-
-  getScalarFit <- function(fit, field, dtype = numeric)
-    vapply(fits, FUN.VALUE = dtype(1L), \(fit) fit[[field]])
-
-  fit.out <- fits[[1]]
-  fit.out$coefs.all       <- coef.all
-  fit.out$coefs.free      <- coef.free
-  fit.out$vcov.all        <- vcov.all
-  fit.out$vcov.free       <- vcov.free
-  fit.out$parTable        <- parTable
-  fit.out$information     <- sprintf("Rubin-corrected (m=%d)", iter.keep)
-  fit.out$FIM             <- solve(vcov.free)
-  fit.out$theta           <- apply(THETA, MARGIN = 2, FUN = mean, na.rm = TRUE)
-  fit.out$iterations      <- sum(getScalarFit(fits, field = "iterations"))
-  fit.out$logLik          <- mean(getScalarFit(fits, field = "logLik"))
-  fit.out$convergence     <- all(getScalarFit(fits, field = "convergence",
-                                              dtype = logical))
-  fit.out$convergence.msg <- getConvergenceMessage(fit.out$convergence,
-                                                   fit.out$iterations)
-  fit.out$model$matrices          <- matrices
-  fit.out$model$covModel$matrices <- covMatrices
-  fit.out$expected.matrices       <- expected.matrices
-
-  fit.out$imputations <- list(fitted = fits, data = imputed)
-
-  # restore passed arguments
+  fit.out$coef.all <- c(fit.out$coef.all, coef.t)
+  fit.out$vcov.all <- diagPartitionedMat(fit.out$vcov.all, vcov.t)
+  fit.out$parTable <- parTable
   fit.out$args$optimize <- optimize
-  fit.out$args$start    <- NULL
+  fit.out$args$start    <- start
 
   fit.out
 }
 
 
-rescaleOrderedVariable <- function(name, data, sim.ov,
-                                   smooth_eps = 0,
-                                   eps_expand = 1e-12) {
+rescaleOrderedVariableMonteCarlo <- function(name,
+                                             data,
+                                             sim.ov,
+                                             smooth_eps = 0,
+                                             eps_expand = 1e-12,
+                                             standardize = TRUE,
+                                             thresholds.vcov = FALSE,
+                                             vcov.boot = 250) {
   x   <- as.ordered(data[[name]])
   x.i <- as.integer(x)
   y   <- sim.ov[, name]
@@ -294,10 +210,7 @@ rescaleOrderedVariable <- function(name, data, sim.ov,
 
   # empirical CDF from data; quantile cutpoints on simulated y
   cdf_obs <- cumsum(p_obs[-length(p_obs)]) # drop last, we know that it sums to 1
-  y.sample <- y[sample(NROW(sim.ov), NROW(data))] # sample y to get appropriate sampling
-                                                  # variation of thresholds
-  q <- stats::quantile(y.sample,
-                       probs = cdf_obs, names = FALSE, type = 7)
+  q <- stats::quantile(y, probs = cdf_obs, names = FALSE, type = 7)
   q <- c(-Inf, q, Inf) # [0, ..., last(p_obs)]
 
   # compute conditional means in each [q[i], q[i+1]) (last bin inclusive)
@@ -328,6 +241,22 @@ rescaleOrderedVariable <- function(name, data, sim.ov,
     if (any(idx)) mu[i] <- mean(y[idx])
   }
 
+  if (thresholds.vcov) {
+    Q <- matrix(NA_real_, nrow = vcov.boot, ncol = length(cdf_obs),
+                dimnames = list(NULL, paste0(name, "|t", seq_along(cdf_obs))))
+
+    for (i in seq_len(vcov.boot)) {
+      N <- length(y)
+      n <- length(x)
+
+      replace  <- N <= 5L * n
+      y.sample <- y[sample(N, n, replace = replace)]
+      Q[i, ] <- stats::quantile(y.sample, probs = cdf_obs, names = FALSE, type = 7)
+    }
+
+    vcov <- stats::cov(Q)
+  } else vcov <- NULL
+
   # exact centering to remove residual drift (weighted by observed category probs)
   mu <- mu - sum(p_obs * mu, na.rm = TRUE)
 
@@ -336,87 +265,119 @@ rescaleOrderedVariable <- function(name, data, sim.ov,
   for (i in seq_len(K))
     x.out[x.i == i] <- mu[i]
 
-  list(values = x.out, thresholds = q)
+  if (standardize)
+    x.out <- std1(x.out)
+
+  labels.t <- paste0(name, "|t", seq_len(sum(is.finite(q))))
+  thresholds <- stats::setNames(q[is.finite(q)], labels.t)
+
+  list(values = x.out, thresholds = thresholds, vcov = vcov)
 }
 
 
-addThresholdsParTable <- function(parTable, thresholds) {
-  na.cols <- setdiff(colnames(parTable), c("lhs", "op", "rhs", "est", "label"))
+rescaleOrderedVariableAnalytic <- function(name,
+                                           data,
+                                           sim.ov = NULL, # ignored
+                                           smooth_eps = 0,
+                                           standardize = TRUE,
+                                           thresholds.vcov = FALSE,
+                                           vcov.method = c("delta", "bootstrap"),
+                                           vcov.boot = 250) {
+  vcov.method <- match.arg(vcov.method)
 
-  for (col in names(thresholds)) {
-    t <- thresholds[[col]]
-    t <- t[is.finite(t)]
+  x   <- as.ordered(data[[name]])
+  x.i <- as.integer(x)
 
-    newRows <- data.frame(lhs = col,
-                          op  = "|",
-                          rhs = paste0("t", seq_along(t)),
-                          est = t, label = "")
-    newRows[na.cols] <- NA
+  # observed category proportions (optional Laplace smoothing)
+  tab <- as.numeric(table(x))
+  K   <- length(tab)
+  n   <- sum(tab)
+  if (K < 2) stop("Need at least 2 ordered categories for '", name, "'.")
 
-    parTable <- rbind(parTable, newRows)
+  if (smooth_eps > 0) {
+    p_hat <- (tab + smooth_eps) / (n + K * smooth_eps)
+  } else {
+    p_hat <- tab / n
   }
 
-  parTable
-}
+  # cumulative probs for interior thresholds (K-1 of them)
+  C <- cumsum(p_hat)[-K]  # drop last; sums to 1
+  # numeric guards
+  eps <- .Machine$double.eps^0.5
+  C <- pmin(pmax(C, eps), 1 - eps)
 
+  # thresholds on standard-normal scale
+  t_int <- stats::qnorm(C)                 # length K-1
+  q     <- c(-Inf, t_int, Inf)             # length K+1 for interval bounds
 
-addThresholdsCoef <- function(coef, thresholds) {
-  for (col in names(thresholds)) {
-    t <- thresholds[[col]]
-    t <- t[is.finite(t)]
+  # truncated-normal means for each category interval (a_i, b_i]
+  # mu_i = (phi(a_i) - phi(b_i)) / (Phi(b_i) - Phi(a_i))
+  a <- q[1:K]
+  b <- q[2:(K+1)]
+  Phi_a <- stats::pnorm(a)
+  Phi_b <- stats::pnorm(b)
+  phi_a <- stats::dnorm(a)
+  phi_b <- stats::dnorm(b)
+  denom <- pmax(Phi_b - Phi_a, eps)
+  mu    <- (phi_a - phi_b) / denom
 
-    names(t) <- paste0(col, "|t", seq_along(t))
-    coef <- c(coef, t)
+  # exact centering to remove small drift from smoothing/finite-n
+  mu <- mu - sum(p_hat * mu)
+
+  # map each observed category to its conditional mean
+  x.out <- rep(NA_real_, length(x.i))
+  for (i in seq_len(K)) x.out[x.i == i] <- mu[i]
+
+  # optional standardization of the mapped scores (sample standardization)
+  if (standardize)
+    x.out <- std1(x.out)
+
+  # labels for interior thresholds
+  labels.t   <- paste0(name, "|t", seq_len(K - 1))
+  thresholds <- stats::setNames(t_int, labels.t)
+
+  vcov <- NULL
+  if (thresholds.vcov && vcov.method == "delta") {
+    # Delta method for t = qnorm(C), where C are cumulative probs from multinomial
+    # Multinomial covariance of cell proportions: Var(p) = (diag(p) - pp^T)/n
+    # Let C_j = sum_{i<=j} p_i, j=1..K-1.
+    # J_p->C is lower-triangular with ones:
+    J_pc <- matrix(0, nrow = K - 1, ncol = K)
+    for (j in 1:(K - 1)) J_pc[j, 1:j] <- 1
+
+    V_p  <- (diag(p_hat) - tcrossprod(p_hat, p_hat)) / n  # K x K
+    V_C  <- J_pc %*% V_p %*% t(J_pc)                      # (K-1) x (K-1)
+
+    # t = qnorm(C); dt/dC = 1 / dnorm(t) evaluated at t
+    D_tC <- diag(1 / pmax(stats::dnorm(t_int), eps), nrow = K - 1)
+    V_t  <- D_tC %*% V_C %*% D_tC
+
+    colnames(V_t) <- rownames(V_t) <- labels.t
+    vcov <- V_t
+
+  } else if (thresholds.vcov && vcov.method == "bootstrap") {
+    Q <- matrix(NA_real_, nrow = vcov.boot, ncol = K - 1,
+                dimnames = list(NULL, labels.t))
+    for (b_ix in seq_len(vcov.boot)) {
+      # parametric bootstrap from Multinomial(n, p_hat)
+      counts_b <- as.numeric(stats::rmultinom(1, size = n, prob = p_hat))
+      p_b      <- counts_b / n
+      C_b      <- cumsum(p_b)[-K]
+      C_b      <- pmin(pmax(C_b, eps), 1 - eps)
+      Q[b_ix,] <- stats::qnorm(C_b)
+    }
+    vcov <- stats::cov(Q)
   }
 
-  coef
+  list(values = x.out, thresholds = thresholds, vcov = vcov)
 }
 
 
-getLabelsThresholds <- function(thresholds) {
-  labels <- NULL
-  for (col in names(thresholds)) {
-    t <- thresholds[[col]]
-    t <- t[is.finite(t)]
-
-    labels <- c(labels, paste0(col, "|t", seq_along(t)))
-  }
-
-  labels
-}
-
-
-addThresholdsVcov <- function(vcov, thresholds) {
-  for (col in names(thresholds)) {
-    t <- thresholds[[col]]
-    t <- t[is.finite(t)]
-    k <- length(t)
-
-    lab    <- paste0(col, "|t", seq_along(t))
-    vcov.t <- matrix(0, nrow = k, ncol = k, dimnames = list(lab, lab))
-    vcov   <- diagPartitionedMat(vcov, vcov.t)
-  }
-
-  vcov
-}
-
-
-rescaleOrderedData <- function(data, sim.ov, cols.ordered, cols.cont) {
+rescaleOrderedData <- function(data, sim.ov, cols.ordered, cols.cont,
+                               thresholds.vcov = FALSE, linear.ovs = NULL,
+                               ...) {
   if (!length(cols.ordered)) # nothing to do
     return(cols.ordered)
-
-  if (length(cols.cont)) {
-    obsContScaled <- scale(as.matrix(data[, cols.cont, drop = FALSE]))
-    contCenter <- attr(obsContScaled, "scaled:center")
-    contScale  <- attr(obsContScaled, "scaled:scale")
-    use.kNN <- TRUE
-    kNN_k   <- 25L
-  } else {
-    obsContScaled <- NULL
-    contCenter <- contScale <- numeric(0L)
-    use.kNN <- FALSE
-    kNN_k   <- 0L
-  }
 
   # ensure column order consistent with data
   sim.mat <- as.data.frame(sim.ov)[, colnames(data), drop = FALSE]
@@ -429,105 +390,40 @@ rescaleOrderedData <- function(data, sim.ov, cols.ordered, cols.cont) {
 
   # thresholds + univariate conditional means for each ordered variable
   NamedList  <- \(nm) stats::setNames(vector("list", length(nm)), nm = nm)
-  thresholds <- NamedList(cols.ordered)
-  univarEst  <- NamedList(cols.ordered)
-
-  std1 <- function(v) {
-    mu    <- mean(v, na.rm = TRUE)
-    sigma <- stats::sd(v, na.rm = TRUE)
-
-    if (!is.finite(sigma) || sigma == 0)
-      sigma <- 1
-
-    (v - mu) / sigma
-  }
+  thresholds     <- NamedList(cols.ordered)
+  univarEst      <- NamedList(cols.ordered)
+  thresholdsVcov <- NamedList(cols.ordered)
 
   # standardized versions of the ordered cols in sim (these are the values we copy)
   sim.std.ord <- lapplyNamed(cols.ordered, \(col) std1(sim.mat[[col]]),
                              names = cols.ordered)
   sim.std.ord <- as.data.frame(sim.std.ord)
 
-  sim.cat <- sim.mat
   for (col in cols.ordered) {
-    scaling <- rescaleOrderedVariable(name = col, data = data.cat, sim.ov = sim.mat)
-    univarEst[[col]]  <- scaling$values
-    thresholds[[col]] <- scaling$thresholds
+    if (col %in% linear.ovs) .f <- rescaleOrderedVariableAnalytic
+    else                     .f <- rescaleOrderedVariableMonteCarlo
 
-    # categories via findInterval for speed (on standardized scale)
-    sim.cat[[col]] <- findInterval(sim.std.ord[[col]],
-                                   vec = scaling$thresholds,
-                                   left.open = TRUE, rightmost.closed = TRUE)
+    scaling <- .f(name = col, data = data.cat, sim.ov = sim.mat,
+                  thresholds.vcov = thresholds.vcov, ...)
+    univarEst[[col]]      <- scaling$values
+    thresholds[[col]]     <- scaling$thresholds
+    thresholdsVcov[[col]] <- scaling$vcov
   }
 
-  # start with the univariate estimates for ordered variables only
-  multivarEst <- as.data.frame(univarEst)
-
-  # ordered-combo keys
-  obs.code <- interaction(data.cat[cols.ordered], drop = TRUE, lex.order = TRUE)
-  sim.code <- interaction(sim.cat[cols.ordered],  drop = TRUE, lex.order = TRUE)
-  combos.both <- intersect(levels(obs.code), levels(sim.code))
-  combos.miss <- setdiff(levels(obs.code), levels(sim.code))
-
-  denominator <- length(levels(obs.code))
-  numerator   <- denominator - length(combos.miss)
-  coverage <- numerator / denominator
-
-  # pre-split indices
-  obs.splits <- split(seq_len(nrow(data.cat)), obs.code, drop = TRUE)
-  sim.splits <- split(seq_len(nrow(sim.cat)),  sim.code, drop = TRUE)
-
-  # precompute standardized continuous block for sim (to match observed)
-  if (length(cols.cont)) {
-    X <- as.matrix(sim.mat[, cols.cont, drop = FALSE])
-
-    simContScaled <- as.matrix(
-      sweep(sweep(X, 2, contCenter, "-"), 2, contScale, "/")
-    )
-  }
-
-  for (combo in combos.both) {
-    oi <- obs.splits[[combo]]
-    si <- sim.splits[[combo]]
-    if (!length(oi) || !length(si)) next
-
-    # kNN within combo using continuous variables (if available)
-    # I.e., if there are continuous variables available we also want
-    # to incorporate their information, when sampling continuous values
-    # for the ordinal variables
-    if (use.kNN && length(cols.cont)) {
-      Oc <- obsContScaled[oi, , drop = FALSE]
-      Sc <- simContScaled[si, , drop = FALSE]
-
-      if (ncol(Oc) && nrow(Sc)) {
-        k_eff <- max(1L, min(kNN_k, nrow(Sc)))
-        picked <- integer(length(oi))
-
-        nn <- RANN::nn2(Sc, Oc, k = k_eff, searchtype = "standard")
-        for (r in seq_along(oi)) {
-          nei <- nn$nn.idx[r, seq_len(k_eff)]
-          d   <- nn$nn.dists[r, seq_len(k_eff)]
-          w   <- 1 / pmax(d, 1e-8)  # inverse-distance weights
-          picked[r] <- si[ nei[ sample.int(k_eff, 1L, prob = w) ] ]
-        }
-
-        # write replacements for ordered columns only
-        multivarEst[oi, cols.ordered] <- sim.std.ord[picked, cols.ordered, drop = FALSE]
-        next
-      }
-    }
-
-    # fallback: uniform within combo
-    k <- length(oi)
-    m <- length(si)
-    M <- si[sample.int(m, k, replace = (m < k))]
-    multivarEst[oi, cols.ordered] <- sim.std.ord[M, cols.ordered, drop = FALSE]
-  }
-
-  # Put the multivariate ordered replacements back onto a FULL data frame.
-  out[cols.ordered] <- multivarEst[cols.ordered]
-
+  out[cols.ordered] <- as.data.frame(univarEst)[cols.ordered]
   # preserve original column order & types for continuous vars
   out <- out[, colnames(data), drop = FALSE]
 
-  list(data = out, thresholds = thresholds, coverage = coverage)
+  list(data = out, thresholds = thresholds, vcov = thresholdsVcov)
+}
+
+
+std1 <- function(v) {
+  mu    <- mean(v, na.rm = TRUE)
+  sigma <- stats::sd(v, na.rm = TRUE)
+
+  if (!is.finite(sigma) || sigma == 0)
+    sigma <- 1
+
+  (v - mu) / sigma
 }
