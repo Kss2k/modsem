@@ -99,8 +99,8 @@ modsem_stan <- function(model.syntax = NULL,
   noncutRhs <- lr[, 2]
 
   # Square residual SDs (variances) for deps (as before)
-  isSD <- noncutLhs == noncutRhs & noncutOp == "~~~"
-  if (any(isSD)) samples[, match(noncutRaw[isSD], par_names_raw)] <- samples[, match(noncutRaw[isSD], par_names_raw)]^2
+  # isSD <- noncutLhs == noncutRhs & noncutOp == "~~~"
+  # if (any(isSD)) samples[, match(noncutRaw[isSD], par_names_raw)] <- samples[, match(noncutRaw[isSD], par_names_raw)]^2
 
   # Combine back the label pieces for all params (cutpoints first or interleaved – order does not matter)
   allLhs <- c(cutLhs, noncutLhs)

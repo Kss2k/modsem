@@ -8,7 +8,7 @@ STAN_OPERATOR_LABELS <- c(
   "__INTERCEPT" = "~1",
   "__REGRESSION__" = "~",
   "__COVARIANCE__" = "~~",
-  "__STDDEV__"     = "~~~",
+  # "__STDDEV__"     = "~~~",
   "__MEASUREMENT__" = "=~",
   "__XWITH__" = ":"
 )
@@ -211,8 +211,9 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE,
         parResSDInd  <- sprintf("real<lower=0> %s__STDDEV__%s;", ind, ind)
         tparResSDInd <- NULL
       }
+
       tparResVarInd <- sprintf(
-        "real %s__STDDEV__%s = %s__COVARIANCE__%s^2;",
+        "real %s__COVARIANCE__%s = %s__STDDEV__%s^2;",
         ind, ind, ind, ind
       )
 
@@ -232,7 +233,8 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE,
         tparLines,
         tparTauInd,
         tparLambdaInd,
-        tparResSDInd
+        tparResSDInd,
+        tparResVarInd
       )
 
       modelLines <- c(
@@ -357,23 +359,23 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE,
   # Non-centered parameterization
   # STAN_PAR_XIS <- function(xis) {
   #   k <- length(xis)
-  # 
+  #
   #   # Identify which xi's are all-ordinal (variance fixed to 1)
   #   fix_idx  <- which(vapply(xis, function(lv) is_allOrdinal_lv[lv], logical(1)))
   #   free_idx <- setdiff(seq_len(k), fix_idx)
-  # 
+  #
   #   # ---------------- parameters ----------------
   #   parLOmega <- sprintf("cholesky_factor_corr[%d] L_Omega;", k)
-  # 
+  #
   #   if (length(free_idx) > 0L) {
   #     parSqrtDPhi <- sprintf("vector<lower=0>[%d] sqrtD_Phi_free;", length(free_idx))
   #   } else {
   #     parSqrtDPhi <- NULL
   #   }
-  # 
+  #
   #   # Non-centered: matrix of standard normals (N x k)
   #   parZ <- sprintf("matrix[N, %d] z_XI;", k)
-  # 
+  #
   #   # ---------------- transformed parameters ----------------
   #   # Rebuild sqrtD_Phi with fixed 1's at fix_idx
   #   tparBuildSqrt <- c(
@@ -394,30 +396,30 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE,
   #     } else NULL,
   #     "}"
   #   )
-  # 
+  #
   #   tparLSigma <- sprintf("matrix[%d, %d] L_Sigma = diag_pre_multiply(sqrtD_Phi, L_Omega);", k, k)
-  # 
+  #
   #   # Row-vector mean (0 by default). Change if you want non-zero LV means.
   #   tparMuXi <- sprintf("row_vector[%d] MU_XI = rep_row_vector(0, %d);", k, k)
-  # 
+  #
   #   # Build XI_Matrix in one vectorised statement:
   #   # each row: MU_XI + z_i * L_Sigma'
   #   tparXiMatDecl <- sprintf("matrix[N, %d] XI_Matrix;", k)
   #   tparXiMatFill <- "XI_Matrix = rep_matrix(MU_XI, N) + z_XI * L_Sigma';"
-  # 
+  #
   #   # Also expose named column vectors (X, Z, ...) for downstream code
   #   xiVectors <- NULL
   #   for (i in seq_along(xis)) {
   #     xiVectors <- c(xiVectors, sprintf("vector[N] %s = col(XI_Matrix, %d);", xis[[i]], i))
   #   }
   #   tparXiVectors <- collapse(xiVectors)
-  # 
+  #
   #   # ---------------- model ----------------
   #   modLOmega <- "L_Omega ~ lkj_corr_cholesky(1);"
   #   # Non-centered prior: standard normals (vectorised via to_vector)
   #   modZ      <- "to_vector(z_XI) ~ std_normal();"
   #   # (Optionally add a weak prior for sqrtD_Phi_free if desired.)
-  # 
+  #
   #   parameters  <- collapse(c(parLOmega, parSqrtDPhi, parZ))
   #   transformed <- collapse(c(
   #     tparBuildSqrt, tparLSigma, tparMuXi,
@@ -425,10 +427,10 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE,
   #     tparXiVectors
   #   ))
   #   model <- collapse(c(modLOmega, modZ))
-  # 
+  #
   #   # Hide internals if you use an exclusion mechanism
   #   EXCLUDE.PARS <<- c(EXCLUDE.PARS, "z_XI", "XI_Matrix", xis)
-  # 
+  #
   #   list(
   #     parameters = parameters,
   #     transformed_parameters = transformed,
