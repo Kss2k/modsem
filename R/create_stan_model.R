@@ -54,7 +54,10 @@ generated quantities {
 #' @param force Should compilation of previously compiled models be forced?
 #' @export
 compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE,
-                               ordered = NULL) {
+                               ordered = NULL, ordered.link = c("logit", "probit")) {
+  ordered.link <- tolower(ordered.link)
+  ordered.link <- match.arg(ordered.link)
+
   if (is.null(ordered))
     ordered <- character(0)
 
@@ -64,6 +67,14 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE,
       sprintf("#ORDERED %s", paste0(ordered, collapse = " ")),
       sep = "\n"
     )
+  }
+
+  if (ordered.link == "probit") {
+    resSDFormulaInd <- "1"
+    orderedLinkFun  <- "ordered_probit"
+  } else if (ordered.link == "logit") {
+    resSDFormulaInd <- "sqrt((pi()^2)/3)"
+    orderedLinkFun  <- "ordered_logistic"
   }
 
   parTable <- modsemify(model.syntax)
@@ -139,68 +150,69 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE,
   GENERATED_QUANTITIES <- NULL
   EXCLUDE.PARS <- NULL
 
-
   STAN_INDS_LV <- function(lV) {
     inds <- indsLVs[[lV]]
     k <- length(inds)
 
-    # Keep the legacy matrix (harmless for ordinal cols)
     dataInds <- sprintf("matrix[N, %d] INDICATORS_%s;", k, lV)
 
     par_lines   <- character()
     model_lines <- character()
     data_lines  <- dataInds
+    tpar_lines  <- character()   # <-- NEW: collect derived variances here
 
-    # Intercepts: ONLY for continuous indicators
+    # Intercepts only for continuous indicators
     cont_inds <- inds[!inds %in% ord_set]
-    if (length(cont_inds)) {
-      par_lines <- c(par_lines, sprintf("real %s__INTERCEPT;", cont_inds))
-    }
-    # NOTE: no intercepts for ordinal items
+    ord_inds  <- inds[inds %in% ord_set]
+    inds      <- c(cont_inds, ord_inds) # sort by continuous first
+    if (length(cont_inds)) par_lines <- c(par_lines, sprintf("real %s__INTERCEPT;", cont_inds))
 
-    # Loadings: first fixed to 1; free for the rest (all items share this rule)
-    if (k > 1L) {
-      free_inds <- inds[-1L]
-      if (length(free_inds)) {
-        par_lines <- c(par_lines, sprintf("real %s__MEASUREMENT__%s;", lV, free_inds))
-      }
-    }
+    # Loadings (first fixed)
+    if (length(cont_inds) > 1L) free_inds <- c(cont_inds[-1L], ord_inds)
+    else                        free_inds <- ord_inds
+    if (length(free_inds)) par_lines <- c(par_lines, sprintf("real<lower=0> %s__MEASUREMENT__%s;", lV, free_inds))
 
     for (j in seq_along(inds)) {
-      ind <- inds[j]
-      # loading term: first indicator fixed to 1, others use their free parameter
-      loading_term <- if (j == 1L) "1" else sprintf("%s__MEASUREMENT__%s", lV, ind)
+      ind <- inds[j] # inds is sorted such that cotinuous indicators are first
+      loading_term <- if (j == 1L && !ind %in% ord_set) "1" else sprintf("%s__MEASUREMENT__%s", lV, ind)
 
       if (ind %in% ord_set) {
-        # -------- ORDINAL INDICATOR (NO intercept) --------
-        data_lines <- paste0(
-          data_lines, "\n",
-          sprintf("int<lower=2> K_%s;", ind), "\n",
-          sprintf("int<lower=1, upper=K_%s> INDICATORS_%s[N];", ind, ind)
+        # ---- ORDINAL (no intercept) ----
+        data_lines <- paste0(data_lines, "\n",
+                             sprintf("int<lower=2> K_%s;", ind), "\n",
+                             sprintf("int<lower=1, upper=K_%s> INDICATORS_%s[N];", ind, ind)
         )
         par_lines <- c(par_lines, sprintf("ordered[K_%s - 1] %s__CUTPOINTS;", ind, ind))
         model_lines <- c(
           model_lines,
           "{",
           sprintf("  vector[N] eta_%s = %s * %s;", ind, loading_term, lV),
-          sprintf("  INDICATORS_%s ~ ordered_logistic(eta_%s, %s__CUTPOINTS);", ind, ind, ind),
+          sprintf("  INDICATORS_%s ~ %s(eta_%s, %s__CUTPOINTS);", ind, orderedLinkFun, ind, ind),
           "}"
         )
+        # ---- Derived residual std-dev for ordinal indicator (logit link) ----
+        tpar_lines <- c(
+            tpar_lines,
+            sprintf("real %s__COVARIANCE__%s = %s;", ind, ind, resSDFormulaInd)
+        )
+        # For probit, replace RHS with "1".
       } else {
-        # -------- CONTINUOUS INDICATOR --------
+        # ---- CONTINUOUS ----
         par_lines <- c(par_lines, sprintf("real<lower=0> %s__COVARIANCE__%s;", ind, ind))
         model_lines <- c(
-          model_lines,
-          sprintf("INDICATORS_%s[,%d] ~ normal(%s__INTERCEPT + %s * %s, %s__COVARIANCE__%s);",
-                  lV, j, ind, loading_term, lV, ind, ind)
+                         model_lines,
+                         sprintf("INDICATORS_%s[,%d] ~ normal(%s__INTERCEPT + %s * %s, %s__COVARIANCE__%s);",
+                                 lV, j, ind, loading_term, lV, ind, ind)
         )
+        # Do NOT add a transformed-parameters alias here—name already used by the parameter.
       }
     }
 
     list(
-      parameters = collapse(par_lines),
-      model      = collapse(model_lines),
-      data       = collapse(data_lines)
+         parameters = collapse(par_lines),
+         model      = collapse(model_lines),
+         data       = collapse(data_lines),
+         transformed_parameters = collapse(tpar_lines)  # <-- NEW
     )
   }
 
@@ -265,40 +277,43 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE,
     list(parameters = parameters, transformed_parameters = tparameters, model = model)
   }
 
-
   STAN_PAR_ETA <- function(eta) {
     indeps <- unique(parTable[parTable$lhs == eta & parTable$op == "~", "rhs"])
-    indeps <- stringr::str_replace_all(indeps, pattern = ":", replacement = "__XWITH__")
+    indeps <- stringr::str_replace_all(indeps, ":", "__XWITH__")
 
-    # parameters {}
     labBeta <- sprintf("%s__REGRESSION__%s", eta, indeps)
-
-    # Is this latent all-ordinal?
     all_ord <- is_all_ordinal_lv[eta]
 
     parBeta   <- if (length(labBeta)) sprintf("real %s;", labBeta) else NULL
     parValues <- sprintf("vector[N] %s;", eta)
 
+    tpar_lines <- NULL  # <-- NEW
+
     if (all_ord) {
-      # FIX scale: no SD parameter; use 1 in the likelihood
+      # FIXED disturbance SD = 1
       parSD <- NULL
       projEta <- if (length(indeps)) collapse(sprintf("%s * %s", labBeta, indeps), sep = " + ") else "0"
       modEta <- sprintf("%s ~ normal(%s, 1);", eta, projEta)
+
+      # Expose the fixed residual variance under the usual name
+      tpar_lines <- sprintf("real %s__COVARIANCE__%s = 1;", eta, eta)  # <-- NEW
     } else {
-      # Original: estimate disturbance SD
+      # Free disturbance SD (parameter remains as before)
       labSD <- sprintf("%s__COVARIANCE__%s", eta, eta)
       parSD <- sprintf("real<lower=0> %s;", labSD)
       projEta <- if (length(indeps)) collapse(sprintf("%s * %s", labBeta, indeps), sep = " + ") else "0"
       modEta <- sprintf("%s ~ normal(%s, %s);", eta, projEta, labSD)
     }
 
-    parameters <- collapse(c(parValues, parSD, parBeta))
-
+    parameters  <- collapse(c(parValues, parSD, parBeta))
     EXCLUDE.PARS <<- c(EXCLUDE.PARS, eta)
 
-    list(parameters = parameters, model = modEta)
+    list(
+         parameters = parameters,
+         model = modEta,
+         transformed_parameters = collapse(tpar_lines)  # <-- NEW (may be NULL)
+    )
   }
-
 
   STAN_COMPUTED_PRODUCTS <- function(intTerms) {
     transformed_parameters <- NULL

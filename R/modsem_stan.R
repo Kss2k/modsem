@@ -58,6 +58,8 @@ modsem_stan <- function(model.syntax = NULL,
                          warmup  = warmup,
                          pars    = compiled_model$info$exclude.pars,
                          include = FALSE,
+                         # adapt_delta = 0.95,
+                         # max_treedepth = 12,
                          ...)
 
   diagnostics <- rstan::summary(fit)$summary
