@@ -78,42 +78,53 @@ modsem_stan <- function(model.syntax = NULL,
   par_names_raw <- colnames(samples)
 
   is_cut <- grepl("__CUTPOINTS\\[[0-9]+\\]$", par_names_raw)
-  cut_raw <- par_names_raw[is_cut]
+  cutRaw <- par_names_raw[is_cut]
 
   # Extract lhs (indicator) and threshold index
-  cut_lhs <- sub("__CUTPOINTS\\[[0-9]+\\]$", "", cut_raw)
-  cut_k   <- as.integer(sub("^.*__CUTPOINTS\\[([0-9]+)\\]$", "\\1", cut_raw))
-  cut_rhs <- paste0("t", cut_k)
-  cut_op  <- rep("|", length(cut_raw))
+  cutLhs <- sub("__CUTPOINTS\\[[0-9]+\\]$", "", cutRaw)
+  cut_k   <- as.integer(sub("^.*__CUTPOINTS\\[([0-9]+)\\]$", "\\1", cutRaw))
+  cutRhs <- if (length(cut_k)) paste0("t", cut_k) else NULL
+  cutOp  <- rep("|", length(cutRaw))
 
   # Non-cutpoint parameters
-  noncut_raw <- par_names_raw[!is_cut]
-  noncut_clean <- cleanPars(noncut_raw)
+  noncutRaw <- par_names_raw[!is_cut]
+  noncutClean <- cleanPars(noncutRaw)
 
-  OP <- "~~|=~|~1|~"  # lavaan operators we already produce
-  noncut_op <- stringr::str_extract(noncut_clean, pattern = OP)
-  noncut_op[is.na(noncut_op)] <- ":="  # fall-back for any derived labels
+  OP <- "~~~|~~|=~|~1|~"  # lavaan operators we already produce
+  noncutOp <- stringr::str_extract(noncutClean, pattern = OP)
+  noncutOp[is.na(noncutOp)] <- ":="
 
-  lr <- stringr::str_split_fixed(noncut_clean, pattern = OP, n = 2)
-  noncut_lhs <- lr[, 1]
-  noncut_rhs <- lr[, 2]
+  lr <- stringr::str_split_fixed(noncutClean, pattern = OP, n = 2)
+  noncutLhs <- lr[, 1]
+  noncutRhs <- lr[, 2]
 
   # Square residual SDs (variances) for deps (as before)
-  isSD <- noncut_lhs == noncut_rhs & noncut_op == "~~" & (noncut_lhs %in% deps | noncut_rhs %in% deps)
-  if (any(isSD)) samples[, match(noncut_raw[isSD], par_names_raw)] <- samples[, match(noncut_raw[isSD], par_names_raw)]^2
+  isSD <- noncutLhs == noncutRhs & noncutOp == "~~~"
+  if (any(isSD)) samples[, match(noncutRaw[isSD], par_names_raw)] <- samples[, match(noncutRaw[isSD], par_names_raw)]^2
 
   # Combine back the label pieces for all params (cutpoints first or interleaved – order does not matter)
-  all_lhs <- c(cut_lhs, noncut_lhs)
-  all_op  <- c(cut_op,  noncut_op)
-  all_rhs <- c(cut_rhs, noncut_rhs)
+  allLhs <- c(cutLhs, noncutLhs)
+  allOp  <- c(cutOp,  noncutOp)
+  allRhs <- c(cutRhs, noncutRhs)
+  allOp[allOp == "~~~"] <- "~~"
 
   # Reorder samples consistently with the combined vectors
-  samples <- samples[, c(cut_raw, noncut_raw), drop = FALSE]
+  samples <- samples[, c(cutRaw, noncutRaw), drop = FALSE]
+
+  # Remove :=
+  keep   <- allOp != ":="
+  lhs <- allLhs[keep]
+  op  <- allOp[keep]
+  rhs <- allRhs[keep]
+
+  samples           <- samples[, keep, drop = FALSE]
+  namesSamplesRaw   <- colnames(samples)
+  colnames(samples) <- paste0(lhs, op, rhs)
 
   # Summaries
+  diagnostics <- diagnostics[namesSamplesRaw, , drop = FALSE]
   coefs <- apply(samples, MARGIN = 2, FUN = mean)
   vcov  <- cov(samples)
-  diagnostics <- diagnostics[colnames(samples), , drop = FALSE]
   rhat  <- diagnostics[, "Rhat"]
   neff  <- diagnostics[, "n_eff"]
 
@@ -121,29 +132,28 @@ modsem_stan <- function(model.syntax = NULL,
   pars_clean_for_table <- cleanPars(colnames(samples))  # human-friendly labels where relevant
 
   se <- sqrt(diag(vcov))
+
+  # handle NaNs and zero SEs
+  se.zero <- se <= .Machine$double.eps
+  se  [se.zero]                <- NA
+  rhat[se.zero | is.nan(rhat)] <- NA
+  neff[se.zero | is.nan(neff)] <- NA
+
   parTable <- data.frame(
-    lhs = all_lhs, op = all_op, rhs = all_rhs,
+    lhs = lhs, op = op, rhs = rhs,
     est = coefs, std.error = se,
-    z.value = coefs / se, p.value = 2 * stats::pnorm(-abs(coefs / se)),
+    z.value = coefs / se,
+    p.value = 2 * stats::pnorm(-abs(coefs / se)),
     ci.lower = coefs - CI_WIDTH * se,
     ci.upper = coefs + CI_WIDTH * se,
     R.hat = rhat, n.eff = neff,
     row.names = NULL
   )
 
-  # Add fixed first-loading rows (as before)
-  parTable <- rbind(
-    data.frame(lhs = lVs, op  = "=~",
-               rhs = vapply(lVs, FUN = \(lV) indsLVs[[lV]][[1L]], FUN.VALUE = character(1)),
-               est = 1, std.error = NA, z.value = NA, p.value = NA,
-               ci.lower = NA, ci.upper = NA, R.hat = NA, n.eff = NA),
-    parTable
-  )
 
-  # Nice ordering: put thresholds with other measurement items if you like; otherwise keep default
-  parTable <- parTable[order(parTable$op), ]
-  rownames(parTable) <- NULL
-  parTable <- modsemParTable(parTable[parTable$op != ":=", , drop = FALSE])
+  parTable <- tryCatch(sortParTableStan(parTable, compiled_model$info$parTable),
+                       error = \(e) parTable)
+  parTable <- modsemParTable(parTable)
 
   out <- list(
     fit = fit,
@@ -152,6 +162,7 @@ modsem_stan <- function(model.syntax = NULL,
     vcov = vcov,
     samples = samples
   )
+
   class(out) <- "modsem_stan"
   out
 }
@@ -206,4 +217,40 @@ vcov.modsem_stan <- function(object, ...) {
 #' @importFrom stats coef
 coef.modsem_stan <- function(object, ...) {
   object$coefs
+}
+
+
+sortParTableStan <- function(parTable, parTable.input) {
+  etas <- getSortedEtas(parTable.input, isLV = TRUE)
+  xis  <- getXis(parTable.input, checkAny = FALSE, etas = etas, isLV = TRUE)
+
+  indsXis  <- unlist(getIndsLVs(parTable.input, lVs = xis))
+  indsEtas <- unlist(getIndsLVs(parTable.input, lVs = etas))
+
+  opOrder <- c("=~", "~", "~1", "~~", "|", ":=")
+  varOrder <- unique(c(indsXis, indsEtas, xis, etas))
+
+  getScore <- function(x, order.by) {
+    order.by <- unique(c(order.by, x)) # ensure that all of x is in order.by
+    mapping  <- stats::setNames(seq_along(order.by), nm = order.by)
+    score    <- mapping[x]
+
+    if (length(score) != length(x)) {
+      warning2("Sorting of parameter estimates failed!\n",
+               immediate. = FALSE)
+
+      return(seq_along(x))
+    }
+
+    score
+  }
+
+  scoreLhs <- getScore(x = parTable$lhs, order.by = varOrder)
+  scoreOp  <- getScore(x = parTable$op,  order.by = opOrder)
+  scoreRhs <- getScore(x = parTable$rhs, order.by = varOrder)
+
+  out <- parTable[order(scoreOp, scoreLhs, scoreRhs), , drop = FALSE]
+  rownames(out) <- NULL
+
+  out
 }
