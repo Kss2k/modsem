@@ -8,10 +8,11 @@ STAN_OPERATOR_LABELS <- c(
   "__INTERCEPT" = "~1",
   "__REGRESSION__" = "~",
   "__COVARIANCE__" = "~~",
+  # "__STDDEV__"     = "~~~",
   "__MEASUREMENT__" = "=~",
   "__XWITH__" = ":"
 )
-  
+
 
 STAN_SYNTAX_BLOCKS <- "
 functions {
@@ -53,7 +54,32 @@ generated quantities {
 #'   is generated, and not compiled.
 #' @param force Should compilation of previously compiled models be forced?
 #' @export
-compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE) {
+compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE,
+                               ordered = NULL, ordered.link = c("logit", "probit")) {
+  ordered.link <- tolower(ordered.link)
+  ordered.link <- match.arg(ordered.link)
+
+  if (is.null(ordered))
+    ordered <- character(0)
+
+  if (length(ordered)) {
+    model.syntax <- paste(
+      model.syntax,
+      sprintf("#ORDERED %s", paste0(ordered, collapse = " ")),
+      sep = "\n"
+    )
+  }
+
+  if (ordered.link == "probit") {
+    resVarFormulaInd <- "1"
+    resSDFormulaInd  <- "1"
+    orderedLinkFun   <- "ordered_probit"
+  } else if (ordered.link == "logit") {
+    resVarFormulaInd <- "(pi()^2)/3"
+    resSDFormulaInd  <- sprintf("sqrt(%s)", resVarFormulaInd)
+    orderedLinkFun   <- "ordered_logistic"
+  }
+
   parTable <- modsemify(model.syntax)
 
   # endogenous variables (etas)model
@@ -89,6 +115,14 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE) {
   allInds <- c(allIndsXis, allIndsEtas)
   numAllInds <- length(allInds)
 
+  # NEW: normalize and precompute ordinal sets
+  if (is.null(ordered)) ordered <- character(0)
+  ord_set <- unique(ordered)
+  is_allOrdinal_lv <- vapply(lVs, function(lv) {
+    inds <- indsLVs[[lv]]
+    length(inds) > 0 && all(inds %in% ord_set)
+  }, logical(1))
+
   collapse <- function(..., sep = "\n") {
     args <- list(...)
     do.call(
@@ -112,6 +146,8 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE) {
     }
   "
 
+  getMod <- \(lhs, op, rhs) getModParTable(lhs, op, rhs, parTable = parTable)
+
   DATA <- "int<lower=1> N;  // sample size"
   PARAMETERS <- NULL
   TRANSFORMED_PARAMETERS <- NULL
@@ -119,50 +155,186 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE) {
   GENERATED_QUANTITIES <- NULL
   EXCLUDE.PARS <- NULL
 
-
   STAN_INDS_LV <- function(lV) {
     inds <- indsLVs[[lV]]
     k <- length(inds)
 
-    # data {}
-    dataInds <- sprintf("matrix[N, %d] INDICATORS_%s;", k, lV)
 
-    # parameters {}
-    labTau <- sprintf("%s__INTERCEPT", inds)
-    labResSD <- sprintf("%s__COVARIANCE__%s", inds, inds)
-    labLambda <- sprintf("%s__MEASUREMENT__%s", lV, inds[-1]) # first loading is constrained
+    parLines   <- character()
+    modelLines <- character()
+    quantLines <- character()
+    dataInds   <- sprintf("matrix[N, %d] INDICATORS_%s;", length(inds), lV)
+    dataLines  <- dataInds
+    tparLines  <- character()
 
-    parTau    <- sprintf("real %s;", labTau)
-    parResSD  <- sprintf("real<lower=0> %s;", labResSD)
-    parLambda <- sprintf("real %s;", labLambda)
+    # Intercepts only for continuous indicators
+    contInds <- inds[!inds %in% ord_set]
+    ordInds  <- inds[inds %in% ord_set]
 
-    # model {}
-    idx <- seq_along(inds)
-    modInd <- sprintf("INDICATORS_%s[,%d] ~ normal(%s + %s * %s, %s);", 
-                      lV, idx, labTau, c("1", labLambda), lV, labResSD)
+    fixContVar <- length(contInds) + length(ordInds) <= 1L
 
-    parameters <- collapse(parTau, parResSD, parLambda)
-    model      <- collapse(modInd)
-    data       <- collapse(dataInds)
+    for (i in seq_along(contInds)) {
+      ind             <- contInds[[i]]
+      parInterceptInd <- sprintf("real %s__INTERCEPT;", ind)
+      parLambdaInd    <- sprintf("real %s__MEASUREMENT__%s;", ind, ind)
 
-    list(parameters = parameters, model = model, data = data)
+      modTauInd    <- getMod(lhs = ind, op = "~1", rhs = "")
+      modLambdaInd <- getMod(lhs = lV,  op = "=~", rhs = ind)
+      modVarInd    <- getMod(lhs = ind, op = "~~", rhs = ind)
+
+      fixTauInd     <- !is.na(modTauInd)
+      fixLambdaInd  <- !is.na(modLambdaInd) || i == 1L
+      fixContVarInd <- !is.na(modVarInd) || fixContVar
+
+      if (fixTauInd) {
+        parTauInd  <- NULL
+        tparTauInd <- sprintf("real %s__INTERCEPT = %s;", ind, modTauInd)
+      } else {
+        parTauInd  <- sprintf("real %s__INTERCEPT;", ind)
+        tparTauInd <- NULL
+      }
+
+      if (fixLambdaInd) {
+        mod           <- if (!is.na(modLambdaInd)) modLambdaInd else "1"
+        parLambdaInd  <- NULL
+        tparLambdaInd <- sprintf("real %s__MEASUREMENT__%s = %s;", lV, ind, mod)
+      } else {
+        parLambdaInd  <- sprintf("real %s__MEASUREMENT__%s;", lV, ind)
+        tparLambdaInd <- NULL
+      }
+
+      if (fixContVarInd) {
+        mod        <- if (!is.na(modVarInd)) modVarInd else "0"
+        parResSDInd  <- NULL
+        tparResSDInd <- sprintf("real %s__STDDEV__%s = sqrt(%s);", ind, ind, mod)
+      } else {
+        parResSDInd  <- sprintf("real<lower=0> %s__STDDEV__%s;", ind, ind)
+        tparResSDInd <- NULL
+      }
+
+      tparResVarInd <- sprintf(
+        "real %s__COVARIANCE__%s = %s__STDDEV__%s^2;",
+        ind, ind, ind, ind
+      )
+
+      modMeasrInd <- sprintf(
+        "INDICATORS_%s[,%d] ~ normal(%s__INTERCEPT + %s__MEASUREMENT__%s * %s, %s__STDDEV__%s);",
+        lV, i, ind, lV, ind, lV, ind, ind
+      )
+
+      parLines <- c(
+        parLines,
+        parTauInd,
+        parLambdaInd,
+        parResSDInd
+      )
+
+      tparLines <- c(
+        tparLines,
+        tparTauInd,
+        tparLambdaInd,
+        tparResSDInd,
+        tparResVarInd
+      )
+
+      modelLines <- c(
+        modelLines,
+        modMeasrInd
+      )
+    }
+
+    for (j in seq_along(ordInds)) {
+      ind <- ordInds[[j]]
+
+      if (TRUE)    parLambdaInd  <- sprintf("real<lower=0> %s__UMEASUREMENT__%s;", lV, ind)
+      else         parLambdaInd  <- sprintf("real %s__UMEASUREMENT__%s;", lV, ind)
+
+      dataK_Ind     <- sprintf("int<lower=2> K_%s;", ind)
+      dataInd       <- sprintf("int<lower=1, upper=K_%s> ORD_INDICATOR_%s[N];", ind, ind)
+      parCutInd     <- sprintf("ordered[K_%s - 1] %s__UCUTPOINTS;", ind, ind)
+      responseInd   <- sprintf("vector[N] LV_RESPONSE_%s_ = %s__UMEASUREMENT__%s * %s;", ind, lV, ind, lV)
+      likelihoodInd <- sprintf("ORD_INDICATOR_%s ~ %s(LV_RESPONSE_%s_, %s__UCUTPOINTS);",
+                               ind, orderedLinkFun, ind, ind)
+      modMeasrInd <- sprintf("{\n  %s\n  %s\n}", responseInd, likelihoodInd)
+
+      quantTotalVarInd <- sprintf(
+        "real TOTAL_VAR_%s_ = (%s__UMEASUREMENT__%s ^ 2) * cov_vector(%s, %s) + %s;",
+        ind, lV, ind, lV, lV, resVarFormulaInd
+      )
+
+      quantStdCutPoints <- sprintf(
+        "ordered[K_%s - 1] %s__CUTPOINTS = %s__UCUTPOINTS / sqrt(TOTAL_VAR_%s_);",
+        ind, ind, ind, ind
+      )
+
+      quantLambdaInd <- sprintf(
+        "real %s__MEASUREMENT__%s = %s__UMEASUREMENT__%s / sqrt(TOTAL_VAR_%s_);",
+        lV, ind, lV, ind, ind
+      )
+
+      quantResVarInd <- sprintf(
+        "real %s__COVARIANCE__%s = %s / TOTAL_VAR_%s_;",
+        ind, ind, resVarFormulaInd, ind
+      )
+
+      dataLines  <- c(dataLines, dataK_Ind, dataInd)
+      parLines   <- c(parLines, parLambdaInd, parCutInd)
+      quantLines <- c(quantLines, quantTotalVarInd, quantStdCutPoints,
+                      quantResVarInd, quantLambdaInd)
+      modelLines <- c(modelLines, modMeasrInd)
+    }
+
+    list(
+         parameters = collapse(parLines),
+         model      = collapse(modelLines),
+         data       = collapse(dataLines),
+         transformed_parameters = collapse(tparLines),
+         generated_quantities = collapse(quantLines)
+    )
   }
 
+  # Centered parameterization
   STAN_PAR_XIS <- function(xis) {
     k <- length(xis)
 
-    # parameters {}
+    # Identify which xi's are all-ordinal
+    fix_idx <- which(vapply(xis, function(lv) is_allOrdinal_lv[lv], logical(1)))
+    free_idx <- setdiff(seq_len(k), fix_idx)
+
     parLOmega   <- sprintf("cholesky_factor_corr[%d] L_Omega;", k)
-    parSqrtDPhi <- sprintf("vector<lower=0>[%d] sqrtD_Phi;", k)
-    # parZXiMat   <- sprintf("matrix[N, %d] Z_XI_Matrix;", k)
+
+    if (length(free_idx) > 0L) {
+      parSqrtDPhi <- sprintf("vector<lower=0>[%d] sqrtD_Phi_free;", length(free_idx))
+    } else {
+      parSqrtDPhi <- NULL
+    }
+
     parXiMat   <- sprintf("matrix[N, %d] XI_Matrix;", k)
 
-    # transformed parameters {}
+    # transformed parameters: rebuild sqrtD_Phi with fixed 1's at fix_idx
+    tparBuildSqrt <- c(
+      sprintf("vector[%d] sqrtD_Phi;", k),
+      " {",
+      if (length(free_idx) > 0L) "  int c = 1;" else NULL,
+      if (length(seq_len(k)) > 0L) {
+        paste0(
+          vapply(seq_len(k), function(i) {
+            if (i %in% fix_idx) {
+              sprintf("  sqrtD_Phi[%d] = 1;", i)
+            } else {
+              sprintf("  sqrtD_Phi[%d] = sqrtD_Phi_free[c]; c += 1;", i)
+            }
+          }, character(1L)),
+          collapse = "\n"
+        )
+      } else NULL,
+      " }"
+    )
+
     tparLSigma    <- sprintf("matrix[%d, %d] L_Sigma = diag_pre_multiply(sqrtD_Phi, L_Omega);", k, k)
     tparMuXi      <- sprintf("row_vector[%d] MU_XI = rep_row_vector(0, %d);", k, k)
     tparXiArr     <- sprintf("array[N] vector[%d] XI_Array;", k)
     tparXiArrFill <- "for (i in 1:N) {XI_Array[i] = (XI_Matrix[i, ])';}"
-    tparXi       <- sprintf("matrix[N, %d] XI_Matrix = Z_XI_Matrix * L_Sigma';", k)
 
     xiVectors <- NULL
     for (i in seq_along(xis)) {
@@ -170,50 +342,141 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE) {
       xiVector <- sprintf("vector[N] %s = col(XI_Matrix, %d);", name, i)
       xiVectors <- c(xiVectors, xiVector)
     }
-
     tparXiVectors <- collapse(xiVectors)
 
-    # model {}
-    modLOmega <- sprintf("L_Omega ~ lkj_corr_cholesky(1);")
-    # modZXiMat <- "to_vector(Z_XI_Matrix) ~ normal(0, 1);"
-    # modXiMat <- "for (n in 1:N) {XI_Matrix[n,] ~ multi_normal_cholesky(MU_XI, L_Sigma);}"
-    modXiArr <- "XI_Array ~ multi_normal_cholesky(MU_XI, L_Sigma);"
+    modLOmega <- "L_Omega ~ lkj_corr_cholesky(1);"
+    modXiArr  <- "XI_Array ~ multi_normal_cholesky(MU_XI, L_Sigma);"
 
-    parameters  <- collapse(parLOmega, parSqrtDPhi, parXiMat)
-    tparameters <- collapse(tparLSigma, tparXiVectors, tparMuXi, tparXiArr, tparXiArrFill)
-    model       <- collapse(modLOmega, modXiArr)
+    parameters  <- collapse(c(parLOmega, parSqrtDPhi, parXiMat))
+    tparameters <- collapse(c(tparBuildSqrt, tparLSigma, tparXiVectors, tparMuXi, tparXiArr, tparXiArrFill))
+    model       <- collapse(c(modLOmega, modXiArr))
 
     EXCLUDE.PARS <<- c(EXCLUDE.PARS, "XI_Array", "XI_Matrix", xis)
 
-    list(parameters = parameters, transformed_parameters = tparameters,
-         model = model)
+    list(parameters = parameters, transformed_parameters = tparameters, model = model)
   }
 
-  
+  # Non-centered parameterization
+  # STAN_PAR_XIS <- function(xis) {
+  #   k <- length(xis)
+  #
+  #   # Identify which xi's are all-ordinal (variance fixed to 1)
+  #   fix_idx  <- which(vapply(xis, function(lv) is_allOrdinal_lv[lv], logical(1)))
+  #   free_idx <- setdiff(seq_len(k), fix_idx)
+  #
+  #   # ---------------- parameters ----------------
+  #   parLOmega <- sprintf("cholesky_factor_corr[%d] L_Omega;", k)
+  #
+  #   if (length(free_idx) > 0L) {
+  #     parSqrtDPhi <- sprintf("vector<lower=0>[%d] sqrtD_Phi_free;", length(free_idx))
+  #   } else {
+  #     parSqrtDPhi <- NULL
+  #   }
+  #
+  #   # Non-centered: matrix of standard normals (N x k)
+  #   parZ <- sprintf("matrix[N, %d] z_XI;", k)
+  #
+  #   # ---------------- transformed parameters ----------------
+  #   # Rebuild sqrtD_Phi with fixed 1's at fix_idx
+  #   tparBuildSqrt <- c(
+  #     sprintf("vector[%d] sqrtD_Phi;", k),
+  #     "{",
+  #     if (length(free_idx) > 0L) "  int c = 1;" else NULL,
+  #     if (k > 0L) {
+  #       paste0(
+  #         vapply(seq_len(k), function(i) {
+  #           if (i %in% fix_idx) {
+  #             sprintf("  sqrtD_Phi[%d] = 1;", i)
+  #           } else {
+  #             sprintf("  sqrtD_Phi[%d] = sqrtD_Phi_free[c]; c += 1;", i)
+  #           }
+  #         }, character(1L)),
+  #         collapse = "\n"
+  #       )
+  #     } else NULL,
+  #     "}"
+  #   )
+  #
+  #   tparLSigma <- sprintf("matrix[%d, %d] L_Sigma = diag_pre_multiply(sqrtD_Phi, L_Omega);", k, k)
+  #
+  #   # Row-vector mean (0 by default). Change if you want non-zero LV means.
+  #   tparMuXi <- sprintf("row_vector[%d] MU_XI = rep_row_vector(0, %d);", k, k)
+  #
+  #   # Build XI_Matrix in one vectorised statement:
+  #   # each row: MU_XI + z_i * L_Sigma'
+  #   tparXiMatDecl <- sprintf("matrix[N, %d] XI_Matrix;", k)
+  #   tparXiMatFill <- "XI_Matrix = rep_matrix(MU_XI, N) + z_XI * L_Sigma';"
+  #
+  #   # Also expose named column vectors (X, Z, ...) for downstream code
+  #   xiVectors <- NULL
+  #   for (i in seq_along(xis)) {
+  #     xiVectors <- c(xiVectors, sprintf("vector[N] %s = col(XI_Matrix, %d);", xis[[i]], i))
+  #   }
+  #   tparXiVectors <- collapse(xiVectors)
+  #
+  #   # ---------------- model ----------------
+  #   modLOmega <- "L_Omega ~ lkj_corr_cholesky(1);"
+  #   # Non-centered prior: standard normals (vectorised via to_vector)
+  #   modZ      <- "to_vector(z_XI) ~ std_normal();"
+  #   # (Optionally add a weak prior for sqrtD_Phi_free if desired.)
+  #
+  #   parameters  <- collapse(c(parLOmega, parSqrtDPhi, parZ))
+  #   transformed <- collapse(c(
+  #     tparBuildSqrt, tparLSigma, tparMuXi,
+  #     tparXiMatDecl, tparXiMatFill,
+  #     tparXiVectors
+  #   ))
+  #   model <- collapse(c(modLOmega, modZ))
+  #
+  #   # Hide internals if you use an exclusion mechanism
+  #   EXCLUDE.PARS <<- c(EXCLUDE.PARS, "z_XI", "XI_Matrix", xis)
+  #
+  #   list(
+  #     parameters = parameters,
+  #     transformed_parameters = transformed,
+  #     model = model
+  #   )
+  # }
+
   STAN_PAR_ETA <- function(eta) {
     indeps <- unique(parTable[parTable$lhs == eta & parTable$op == "~", "rhs"])
-    indeps <- stringr::str_replace_all(indeps, pattern = ":", 
-                                       replacement = "__XWITH__")
+    indeps <- stringr::str_replace_all(indeps, ":", "__XWITH__")
 
-    # parameters {}
-    labBeta <- sprintf("%s__REGRESSION__%s", eta, indeps) 
-    labSD <- sprintf("%s__COVARIANCE__%s", eta, eta)
+    labBeta <- sprintf("%s__REGRESSION__%s", eta, indeps)
+    allOrd <- is_allOrdinal_lv[eta]
 
-    parBeta   <- sprintf("real %s;", labBeta)
+    parBeta   <- if (length(labBeta)) sprintf("real %s;", labBeta) else NULL
     parValues <- sprintf("vector[N] %s;", eta)
-    parSD  <- sprintf("real<lower=0> %s;", labSD)
 
-    # model {}
-    projEta <- collapse(sprintf("%s * %s", labBeta, indeps), sep = " + ")
-    modEta <- sprintf("%s ~ normal(%s, %s);", eta, projEta, labSD)
+    tparLines <- NULL
 
-    parameters <- collapse(parValues, parSD, parBeta)
+    if (allOrd) {
+      # FIXED disturbance SD = 1
+      parSD <- NULL
+      projEta <- if (length(indeps)) collapse(sprintf("%s * %s", labBeta, indeps), sep = " + ") else "0"
+      modEta <- sprintf("%s ~ normal(%s, 1);", eta, projEta)
 
+      # Expose the fixed residual variance under the usual name
+      tparLines <- sprintf("real %s__COVARIANCE__%s = 1;", eta, eta)
+
+    } else {
+      # Free disturbance SD (parameter remains as before)
+      labSD <- sprintf("%s__STDDEV__%s", eta, eta)
+      parSD <- sprintf("real<lower=0> %s;", labSD)
+      tparLines <- sprintf("real %s__COVARIANCE__%s = %s^2;", eta, eta, labSD)
+      projEta <- if (length(indeps)) collapse(sprintf("%s * %s", labBeta, indeps), sep = " + ") else "0"
+      modEta <- sprintf("%s ~ normal(%s, %s);", eta, projEta, labSD)
+    }
+
+    parameters  <- collapse(c(parValues, parSD, parBeta))
     EXCLUDE.PARS <<- c(EXCLUDE.PARS, eta)
 
-    list(parameters = parameters, model = modEta)
+    list(
+         parameters = parameters,
+         model = modEta,
+         transformed_parameters = collapse(tparLines)
+    )
   }
-
 
   STAN_COMPUTED_PRODUCTS <- function(intTerms) {
     transformed_parameters <- NULL
@@ -253,7 +516,7 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE) {
 
     list(generated_quantities = collapse(generated_quantities))
   }
-  
+
 
   STAN_COMPUTED_VARIANCES <- function(vars) {
     vars   <- stringr::str_replace_all(vars, pattern = ":", replacement = "__XWITH__")
@@ -288,7 +551,7 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE) {
              parameters = {
                PARAMETERS <<- collapse(PARAMETERS, block)
              },
-             
+
              transformed_parameters = {
                TRANSFORMED_PARAMETERS <<- collapse(TRANSFORMED_PARAMETERS, block)
              },
@@ -311,10 +574,10 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE) {
   add2block(STAN_COMPUTED_PRODUCTS, intTerms = intTerms)
   add2block(STAN_COMPUTED_COVARIANCES, vars = c(xis, intTerms))
   add2block(STAN_COMPUTED_VARIANCES, vars = c(xis, intTerms))
-  
+
   stanModelSyntax <- sprintf(STAN_SYNTAX_BLOCKS,
-                             FUNCTIONS, DATA, PARAMETERS, 
-                             TRANSFORMED_PARAMETERS, 
+                             FUNCTIONS, DATA, PARAMETERS,
+                             TRANSFORMED_PARAMETERS,
                              MODEL, GENERATED_QUANTITIES)
 
   SYNTAXES <- STAN_LAVAAN_MODELS$syntaxes
@@ -324,7 +587,7 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE) {
   if (compile && any(match) && !force) {
     message("Reusing compiled Stan model...")
     stanModel <- last(COMPILED[match]) # if a duplicate somehow appears, pick last/newest match
-  
+
   } else if (compile) {
     message("Compiling Stan model...")
 
@@ -334,7 +597,7 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE) {
     COMPILED <- c(COMPILED, stanModel)
 
     STAN_LAVAAN_MODELS$syntaxes <- SYNTAXES
-    STAN_LAVAAN_MODELS$compiled <- COMPILED 
+    STAN_LAVAAN_MODELS$compiled <- COMPILED
 
   } else stanModel <- NULL
 
@@ -347,26 +610,65 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE) {
                    indsLVs = indsLVs,
                    allIndsXis = allIndsXis,
                    allIndsEtas = allIndsEtas,
-                   exclude.pars = unique(EXCLUDE.PARS)))
+                   exclude.pars = unique(EXCLUDE.PARS),
+                   parTable = parTable))
 }
 
 
-getStanData <- function(compiled_model, data, missing = "listwise") {
+getStanData <- function(compiled_model, data, missing = "listwise", ordered = NULL) {
+  if (is.null(ordered)) ordered <- character(0)
+
   lVs         <- compiled_model$info$lVs
   indsLVs     <- compiled_model$info$indsLVs
   allIndsXis  <- compiled_model$info$allIndsXis
   allIndsEtas <- compiled_model$info$allIndsEtas
 
-  # clean data
+  # 1) Pre-coerce requested ordinal columns in the raw data
+  #    (safe even if columns are already numeric; ensures stable ordering)
+  for (col in ordered) {
+    if (!col %in% names(data)) {
+      stop("`ordered` indicator '", col, "' not found in data.")
+    }
+    data[[col]] <- as.integer(as.ordered(data[[col]]))
+  }
+
+  # 2) Run your existing missing-data preparation (listwise or otherwise)
   INDICATORS <- prepDataModsemDA(data, allIndsXis, allIndsEtas,
                                  missing = missing)$data.full
 
-  stan_data <- list(N = nrow(data))
+  stan_data <- list(N = nrow(INDICATORS))
 
+  # 3) Emit the latent-specific indicator matrices (unchanged)
   for (lV in lVs) {
     name <- sprintf("INDICATORS_%s", lV)
     inds <- indsLVs[[lV]]
-    stan_data[[name]] = INDICATORS[, inds, drop = FALSE]
+    if (!all(inds %in% colnames(INDICATORS))) {
+      missing_cols <- paste(setdiff(inds, colnames(INDICATORS)), collapse = ", ")
+      stop("Indicators missing from prepared data for latent '", lV, "': ", missing_cols)
+    }
+    stan_data[[name]] <- as.matrix(INDICATORS[, inds, drop = FALSE])
+  }
+
+  # 4) For each ordered indicator, add integer vector 1..K and K
+  remap_to_consecutive <- function(x) {
+    # x should be atomic, no NAs expected after listwise handling
+    u <- sort(unique(x))
+    # Create a 1..K mapping even if labels were not consecutive (e.g., 0/2/5)
+    map <- setNames(seq_along(u), as.character(u))
+    as.integer(unname(map[as.character(x)]))
+  }
+
+  for (ind in ordered) {
+    if (!ind %in% colnames(INDICATORS)) {
+      stop("`ordered` indicator '", ind, "' not found after preprocessing.")
+    }
+    x_raw <- INDICATORS[, ind]
+    # Ensure integer 1..K coding regardless of original labels
+    x_int <- remap_to_consecutive(x_raw)
+    K     <- as.integer(max(x_int))
+
+    stan_data[[sprintf("ORD_INDICATOR_%s", ind)]] <- x_int
+    stan_data[[sprintf("K_%s", ind)]]          <- K
   }
 
   stan_data
@@ -400,7 +702,7 @@ functions {
       }
     }
 
-    return product; 
+    return product;
   }
 }
 
@@ -425,7 +727,7 @@ data {
 
   int<lower=0> N_FREE_LAMBDA;     // sum(abs(LAMBDA))
   int<lower=0> N_FREE_GAMMA;      // sum(abs(GAMMA))
-  int<lower=0> N_FREE_OMEGA; 
+  int<lower=0> N_FREE_OMEGA;
 
   int<lower=0> N_FREE_DIAG_THETA;  // sum(abs(diag(THETA)))
   int<lower=0> N_FREE_LOWER_THETA; // sum(abs(THETA[is.lower(THETA)]))
@@ -447,7 +749,7 @@ parameters {
   vector[N_FREE_TAU] tau;
   vector<lower=0>[N_FREE_DIAG_THETA] theta_d;
   vector[N_FREE_LOWER_THETA] theta_l;
- 
+
   // Structural model
   vector[N_FREE_GAMMA] gamma;
   vector[N_FREE_ALPHA] alpha;
@@ -473,7 +775,7 @@ transformed parameters {
   matrix[K, K]                 Theta; // Structure of indicator covariances
   vector[K]                    Tau;   // Structure of indicator intercepts
   vector[N_LVS]                Alpha; // Structure of LV intercepts
-  
+
   // Fill Matrices
   Lambda = rep_matrix(0, K, N_LVS);
   Gamma  = rep_matrix(0, N_ETAS, N_LVS);
@@ -514,7 +816,7 @@ transformed parameters {
         }
       }
     }
-    
+
     // Fill OMEGA
     k = 1;
     for (i in 1:N_ETAS) {
@@ -538,14 +840,14 @@ transformed parameters {
         k = k + 1;
       }
     }
-    
+
     // Fill Off-Diagonal Theta
     k = 1;
     for (i in 1:K) {
 
       for (j in 1:(i-1)) {
         real fill = THETA[i, j];
-      
+
         if (fill) {
           Theta[i, j] = theta_l[k];
           Theta[j, i] = theta_l[k];
@@ -564,14 +866,14 @@ transformed parameters {
         k = k + 1;
       }
     }
-    
+
     // Fill Off-Diagonal Psi
     k = 1;
     for (i in 1:N_LVS) {
 
       for (j in 1:(i-1)) {
         real fill = PSI[i, j];
-      
+
         if (fill) {
           Psi[i, j] = psi_l[k];
           Psi[j, i] = psi_l[k];
@@ -589,7 +891,7 @@ transformed parameters {
         k = k + 1;
       }
     }
-    
+
     // Fill Tau
     k = 1;
     for (i in 1:K) {
@@ -618,10 +920,10 @@ transformed parameters {
         ETA[, idx] = ETA[, idx] + Gamma[i, j] * ETA[, j];
       }
     }
-  
+
     for (j in 1:N_INT) {
       if (OMEGA[i, j]) {
-        ETA[, idx] = 
+        ETA[, idx] =
           ETA[, idx] + Omega[i, j] * getIthProduct(j, N_LVS, N, PRODUCTS, ETA);
       }
     }
@@ -649,10 +951,10 @@ transformed parameters {
 
   // print(\"head(ETA)\");
   // print(ETA[1:5, ]);
-  // 
+  //
   // print(\"head(XI)\");
   // print(XI[1:5, ]);
-  // 
+  //
   // print(\"head(X)\");
   // print(X[1:5, ]);
 
@@ -679,7 +981,7 @@ model {
   // No priors (yet)
 
   marginalXI ~ multi_normal(marginalMeanXI, Psi);
-  marginalY  ~ multi_normal(marginalMeanY, Theta); 
+  marginalY  ~ multi_normal(marginalMeanY, Theta);
 }
 
 "
@@ -760,7 +1062,7 @@ specifyModelSTAN <- function(syntax = NULL,
   listOmega <- constructGamma(etas, intTerms, parTable = parTable)
   OMEGA <- listOmega$numeric
   OMEGA[is.na(OMEGA)] <- 1
-  
+
   listPsi  <- constructPsi(etas, parTable = parTable, orthogonal.y = orthogonal.y)
   psi      <- listPsi$numeric
 
@@ -786,7 +1088,7 @@ specifyModelSTAN <- function(syntax = NULL,
        N_ETAS = numEtas,
        N_LVS  = numLVs,
        N_INT  = numInts,
-  
+
        LAMBDA   = LAMBDA,
        GAMMA    = GAMMA,
        OMEGA    = OMEGA,
@@ -815,17 +1117,34 @@ specifyModelSTAN <- function(syntax = NULL,
   )
 }
 
+
+getModParTable <- function(lhs, op, rhs, parTable, .default = NA) {
+  parTable[parTable$mod == "", "mod"] <- .default
+
+  if (op == "~~") {
+    out <- parTable[((parTable$lhs == lhs & parTable$rhs == rhs) |
+                     (parTable$lhs == rhs & parTable$rhs == lhs)) &
+                    parTable$op == op, "mod"]
+  } else {
+    out <- parTable[parTable$lhs == lhs & parTable$rhs == rhs &
+                    parTable$op == op, "mod"]
+  }
+
+  if (!length(out)) .default else out
+}
+
+
 ## Example
 # model.syntax <- '
 #   X =~ x1 + x2 + x3
 #   Z =~ z1 + z2 + z3
 #   Y =~ y1 + y2 + y3
-# 
+#
 #   Y ~ X + Z + X:Z
 # '
 # stan_data <- specifyModelSTAN(model.syntax, data = oneInt)
 # stan_model <- stan_model(model_code = STAN_MODEL_GENERAL)
-# 
+#
 # fit <- sampling(
 #   object = stan_model,
 #   data   = stan_data,
@@ -833,7 +1152,7 @@ specifyModelSTAN <- function(syntax = NULL,
 #   iter   = 2000,
 #   warmup = 1000
 # )
-# 
+#
 # summary(fit, c("gamma"))
 # summary(fit, c("omega"))
 # summary(fit, c("Psi"))
