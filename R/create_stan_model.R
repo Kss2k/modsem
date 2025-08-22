@@ -55,9 +55,14 @@ generated quantities {
 #' @param force Should compilation of previously compiled models be forced?
 #' @export
 compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE,
-                               ordered = NULL, ordered.link = c("logit", "probit")) {
+                               ordered = NULL,
+                               ordered.link = c("logit", "probit"),
+                               parameterization = c("centered", "non-centered")) {
   ordered.link <- tolower(ordered.link)
   ordered.link <- match.arg(ordered.link)
+  
+  parameterization <- tolower(parameterization)
+  parameterization <- match.arg(parameterization)
 
   if (is.null(ordered))
     ordered <- character(0)
@@ -293,7 +298,7 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE,
   }
 
   # Centered parameterization
-  STAN_PAR_XIS <- function(xis) {
+  STAN_PAR_XIS_C <- function(xis) {
     k <- length(xis)
 
     # Identify which xi's are all-ordinal
@@ -356,86 +361,90 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE,
   }
 
   # Non-centered parameterization
-  # STAN_PAR_XIS <- function(xis) {
-  #   k <- length(xis)
-  #
-  #   # Identify which xi's are all-ordinal (variance fixed to 1)
-  #   fix_idx  <- which(vapply(xis, function(lv) is_allOrdinal_lv[lv], logical(1)))
-  #   free_idx <- setdiff(seq_len(k), fix_idx)
-  #
-  #   # ---------------- parameters ----------------
-  #   parLOmega <- sprintf("cholesky_factor_corr[%d] L_Omega;", k)
-  #
-  #   if (length(free_idx) > 0L) {
-  #     parSqrtDPhi <- sprintf("vector<lower=0>[%d] sqrtD_Phi_free;", length(free_idx))
-  #   } else {
-  #     parSqrtDPhi <- NULL
-  #   }
-  #
-  #   # Non-centered: matrix of standard normals (N x k)
-  #   parZ <- sprintf("matrix[N, %d] z_XI;", k)
-  #
-  #   # ---------------- transformed parameters ----------------
-  #   # Rebuild sqrtD_Phi with fixed 1's at fix_idx
-  #   tparBuildSqrt <- c(
-  #     sprintf("vector[%d] sqrtD_Phi;", k),
-  #     "{",
-  #     if (length(free_idx) > 0L) "  int c = 1;" else NULL,
-  #     if (k > 0L) {
-  #       paste0(
-  #         vapply(seq_len(k), function(i) {
-  #           if (i %in% fix_idx) {
-  #             sprintf("  sqrtD_Phi[%d] = 1;", i)
-  #           } else {
-  #             sprintf("  sqrtD_Phi[%d] = sqrtD_Phi_free[c]; c += 1;", i)
-  #           }
-  #         }, character(1L)),
-  #         collapse = "\n"
-  #       )
-  #     } else NULL,
-  #     "}"
-  #   )
-  #
-  #   tparLSigma <- sprintf("matrix[%d, %d] L_Sigma = diag_pre_multiply(sqrtD_Phi, L_Omega);", k, k)
-  #
-  #   # Row-vector mean (0 by default). Change if you want non-zero LV means.
-  #   tparMuXi <- sprintf("row_vector[%d] MU_XI = rep_row_vector(0, %d);", k, k)
-  #
-  #   # Build XI_Matrix in one vectorised statement:
-  #   # each row: MU_XI + z_i * L_Sigma'
-  #   tparXiMatDecl <- sprintf("matrix[N, %d] XI_Matrix;", k)
-  #   tparXiMatFill <- "XI_Matrix = rep_matrix(MU_XI, N) + z_XI * L_Sigma';"
-  #
-  #   # Also expose named column vectors (X, Z, ...) for downstream code
-  #   xiVectors <- NULL
-  #   for (i in seq_along(xis)) {
-  #     xiVectors <- c(xiVectors, sprintf("vector[N] %s = col(XI_Matrix, %d);", xis[[i]], i))
-  #   }
-  #   tparXiVectors <- collapse(xiVectors)
-  #
-  #   # ---------------- model ----------------
-  #   modLOmega <- "L_Omega ~ lkj_corr_cholesky(1);"
-  #   # Non-centered prior: standard normals (vectorised via to_vector)
-  #   modZ      <- "to_vector(z_XI) ~ std_normal();"
-  #   # (Optionally add a weak prior for sqrtD_Phi_free if desired.)
-  #
-  #   parameters  <- collapse(c(parLOmega, parSqrtDPhi, parZ))
-  #   transformed <- collapse(c(
-  #     tparBuildSqrt, tparLSigma, tparMuXi,
-  #     tparXiMatDecl, tparXiMatFill,
-  #     tparXiVectors
-  #   ))
-  #   model <- collapse(c(modLOmega, modZ))
-  #
-  #   # Hide internals if you use an exclusion mechanism
-  #   EXCLUDE.PARS <<- c(EXCLUDE.PARS, "z_XI", "XI_Matrix", xis)
-  #
-  #   list(
-  #     parameters = parameters,
-  #     transformed_parameters = transformed,
-  #     model = model
-  #   )
-  # }
+  STAN_PAR_XIS_NC <- function(xis) {
+    k <- length(xis)
+  
+    # Identify which xi's are all-ordinal (variance fixed to 1)
+    fix_idx  <- which(vapply(xis, function(lv) is_allOrdinal_lv[lv], logical(1)))
+    free_idx <- setdiff(seq_len(k), fix_idx)
+  
+    # ---------------- parameters ----------------
+    parLOmega <- sprintf("cholesky_factor_corr[%d] L_Omega;", k)
+  
+    if (length(free_idx) > 0L) {
+      parSqrtDPhi <- sprintf("vector<lower=0>[%d] sqrtD_Phi_free;", length(free_idx))
+    } else {
+      parSqrtDPhi <- NULL
+    }
+  
+    # Non-centered: matrix of standard normals (N x k)
+    parZ <- sprintf("matrix[N, %d] z_XI;", k)
+  
+    # ---------------- transformed parameters ----------------
+    # Rebuild sqrtD_Phi with fixed 1's at fix_idx
+    tparBuildSqrt <- c(
+      sprintf("vector[%d] sqrtD_Phi;", k),
+      "{",
+      if (length(free_idx) > 0L) "  int c = 1;" else NULL,
+      if (k > 0L) {
+        paste0(
+          vapply(seq_len(k), function(i) {
+            if (i %in% fix_idx) {
+              sprintf("  sqrtD_Phi[%d] = 1;", i)
+            } else {
+              sprintf("  sqrtD_Phi[%d] = sqrtD_Phi_free[c]; c += 1;", i)
+            }
+          }, character(1L)),
+          collapse = "\n"
+        )
+      } else NULL,
+      "}"
+    )
+  
+    tparLSigma <- sprintf("matrix[%d, %d] L_Sigma = diag_pre_multiply(sqrtD_Phi, L_Omega);", k, k)
+  
+    # Row-vector mean (0 by default). Change if you want non-zero LV means.
+    tparMuXi <- sprintf("row_vector[%d] MU_XI = rep_row_vector(0, %d);", k, k)
+  
+    # Build XI_Matrix in one vectorised statement:
+    # each row: MU_XI + z_i * L_Sigma'
+    tparXiMatDecl <- sprintf("matrix[N, %d] XI_Matrix;", k)
+    tparXiMatFill <- "XI_Matrix = rep_matrix(MU_XI, N) + z_XI * L_Sigma';"
+  
+    # Also expose named column vectors (X, Z, ...) for downstream code
+    xiVectors <- NULL
+    for (i in seq_along(xis)) {
+      xiVectors <- c(xiVectors, sprintf("vector[N] %s = col(XI_Matrix, %d);", xis[[i]], i))
+    }
+    tparXiVectors <- collapse(xiVectors)
+  
+    # ---------------- model ----------------
+    modLOmega <- "L_Omega ~ lkj_corr_cholesky(1);"
+    # Non-centered prior: standard normals (vectorised via to_vector)
+    modZ      <- "to_vector(z_XI) ~ std_normal();"
+    # (Optionally add a weak prior for sqrtD_Phi_free if desired.)
+  
+    parameters  <- collapse(c(parLOmega, parSqrtDPhi, parZ))
+    transformed <- collapse(c(
+      tparBuildSqrt, tparLSigma, tparMuXi,
+      tparXiMatDecl, tparXiMatFill,
+      tparXiVectors
+    ))
+    model <- collapse(c(modLOmega, modZ))
+  
+    # Hide internals if you use an exclusion mechanism
+    EXCLUDE.PARS <<- c(EXCLUDE.PARS, "z_XI", "XI_Matrix", xis)
+  
+    list(
+      parameters = parameters,
+      transformed_parameters = transformed,
+      model = model
+    )
+  }
+
+  if      (parameterization == "centered")     STAN_PAR_XIS <- STAN_PAR_XIS_C
+  else if (parameterization == "non-centered") STAN_PAR_XIS <- STAN_PAR_XIS_NC
+  else stop2("Unrecognized value for `parameterization`: ", parameterization)
 
   STAN_PAR_ETA <- function(eta) {
     indeps <- unique(parTable[parTable$lhs == eta & parTable$op == "~", "rhs"])

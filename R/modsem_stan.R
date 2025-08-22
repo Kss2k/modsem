@@ -30,12 +30,17 @@ modsem_stan <- function(model.syntax = NULL,
                         iter = 2000,
                         warmup = iter / 2,
                         ordered = NULL,
+                        ordered.link = "logit",
+                        parameterization = "centered",
                         ...) {
   if (is.null(compiled_model)) {
     stopif(is.null(model.syntax),
            "One of `model.syntax` or `compiled_model` has to be provided!")
     # pass ordered through so codegen knows which indicators are ordinal
-    compiled_model <- compile_stan_model(model.syntax, ordered = ordered)
+    compiled_model <- compile_stan_model(model.syntax,
+                                         ordered = ordered,
+                                         ordered.link = ordered.link,
+                                         parameterization = parameterization)
   } else {
     # normalize ordered for downstream data prep even when compiled_model is provided
     if (is.null(ordered)) ordered <- character(0)
@@ -48,7 +53,9 @@ modsem_stan <- function(model.syntax = NULL,
   deps    <- c(inds, etas)
 
   # IMPORTANT: pass ordered to the data builder so it supplies INDICATORS_<ind> and K_<ind>
-  stan_data <- getStanData(compiled_model = compiled_model, data = data, ordered = ordered)
+  stan_data <- getStanData(compiled_model = compiled_model,
+                           data = data,
+                           ordered = ordered)
 
   message("Sampling Stan model...")
   fit <- rstan::sampling(object  = compiled_model$stan_model,
@@ -58,8 +65,9 @@ modsem_stan <- function(model.syntax = NULL,
                          warmup  = warmup,
                          pars    = compiled_model$info$exclude.pars,
                          include = FALSE,
-                         # adapt_delta = 0.95,
-                         # max_treedepth = 12,
+                         init = 0,
+                         control = list(adapt_delta = 0.95,
+                                        max_treedepth = 12),
                          ...)
 
   diagnostics <- rstan::summary(fit)$summary
@@ -125,12 +133,8 @@ modsem_stan <- function(model.syntax = NULL,
   diagnostics <- diagnostics[namesSamplesRaw, , drop = FALSE]
   coefs <- apply(samples, MARGIN = 2, FUN = mean)
   vcov  <- cov(samples)
-  diagnostics <- diagnostics[colnames(samples), , drop = FALSE]
   rhat  <- diagnostics[, "Rhat"]
   neff  <- diagnostics[, "n_eff"]
-
-  # Build parTable (lavaan-like), including thresholds
-  pars_clean_for_table <- cleanPars(colnames(samples))  # human-friendly labels where relevant
 
   se <- sqrt(diag(vcov))
 
