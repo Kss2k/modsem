@@ -175,9 +175,14 @@ constructTheta <- function(lVs, indsLVs, parTable, auto.fix.single = TRUE) {
 }
 
 
-constructGamma <- function(DVs, IVs, parTable) {
+constructGamma <- function(DVs, IVs, parTable, ignore.xz = TRUE) {
   if (!length(DVs)) return(EMPTY_MATSTRUCT)
-  exprsGamma <- parTable[parTable$op == "~" & !grepl(":", parTable$rhs), ]
+  
+  cond <- parTable$op == "~"
+  if (!ignore.xz) 
+    cond <- cond & !grepl(":", parTable$rhs)
+
+  exprsGamma <- parTable[, ]
   numDVs <- length(DVs)
   numIVs <- length(IVs)
   gamma  <- matrix(0, nrow = numDVs, ncol = numIVs, dimnames = list(DVs, IVs))
