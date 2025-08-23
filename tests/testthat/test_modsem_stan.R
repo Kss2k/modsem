@@ -122,14 +122,7 @@ if (TEST_STAN) {
   fit.3way <- modsem_stan(compiled_model = compiled_model.3way,
                           data   = data.3way,
                           chains = 2,
-                          iter   = 10000 # More iterations should yield more stable estimates
-  
-  fit.3way <- modsem_stan(model.syntax = m.3way,
-                          data   = data.3way,
-                          rcs    = TRUE,
-                          chains = 2,
-                          iter   = 10000 # More iterations should yield more stable estimates
-  )
+                          iter   = 10000) # More iterations should yield more stable estimates
   #> Regressions:
   #>                  Estimate  Std.Error  z.value  P(>|z|)
   #>   Y ~           
@@ -144,6 +137,22 @@ if (TEST_STAN) {
   summary(fit.3way)
   standardized_estimates(fit.3way)
   parameter_estimates(fit.3way)
+  
+  fit.3way.rcs <- modsem_stan(model.syntax = m.3way,
+                              data   = data.3way,
+                              rcs    = TRUE,
+                              chains = 2,
+                              iter   = 10000)
+  #> Regressions: (n = 1400)
+  #>                  Estimate  Std.Error  z.value  P(>|z|)  R.hat  n.eff
+  #>   Y ~           
+  #>     X               1.269      0.094   13.448    0.000  1.015    342
+  #>     Z               0.432      0.070    6.167    0.000  1.013    351
+  #>     W               0.749      0.070   10.757    0.000  1.007    753
+  #>     X:Z             1.300      0.096   13.509    0.000  1.008    536
+  #>     X:W             0.753      0.105    7.198    0.000  1.011    511
+  #>     Z:W             0.265      0.091    2.896    0.004  1.013    319
+  #>     X:Z:W           2.229      0.054   40.929    0.000  1.000   7409
 
 
   # ------------------------------------------------------------------------------
