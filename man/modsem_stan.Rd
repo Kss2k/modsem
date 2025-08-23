@@ -11,6 +11,12 @@ modsem_stan(
   chains = 2,
   iter = 2000,
   warmup = iter/2,
+  ordered = NULL,
+  ordered.link = "logit",
+  parameterization = "centered",
+  rcs = FALSE,
+  rcs.choose = NULL,
+  rcs.scale.corrected = TRUE,
   ...
 )
 }
@@ -19,7 +25,7 @@ modsem_stan(
 
 \item{data}{A dataframe with observed variables used in the model.}
 
-\item{compiled_model}{Compiled model from \code{\link{compile_stan_model}}. Saves time if the 
+\item{compiled_model}{Compiled model from \code{\link{compile_stan_model}}. Saves time if the
 same \code{model.syntax} has to be reused multiple times.}
 
 \item{chains}{A positive integer specifying the number of Markov chains.
@@ -35,6 +41,23 @@ iterations for which adaptation is run (and hence these
 warmup samples should not be used for inference). The number
 of warmup iterations should be smaller than \code{iter} and the
 default is \code{iter/2}.}
+
+\item{ordered}{Ordered (i.e., ordinal) variables.}
+
+\item{ordered.link}{Link function to be used for ordered variables.}
+
+\item{parameterization}{What parameterization to use? Default is \code{"centered"}.}
+
+\item{rcs}{Should latent variable indicators be replaced with reliability-corrected
+single item indicators instead? See \code{\link{relcorr_single_item}}.}
+
+\item{rcs.choose}{Which latent variables should get their indicators replaced with
+reliability-corrected single items? It is passed to \code{\link{relcorr_single_item}}
+as the \code{choose} argument.}
+
+\item{rcs.scale.corrected}{Should reliability-corrected items be scale-corrected? If \code{TRUE}
+reliability-corrected single items are corrected for differences in factor loadings between
+the items. Default is \code{TRUE}.}
 
 \item{...}{Arguments passed to \code{stan::sampling}.}
 }
