@@ -8,17 +8,27 @@ m1 <- '
   Y =~ y1 + y2 + y3
 
 # Inner Model
-  Y ~ X + Z + X:Z
+  Y ~ X + Z #+ X:Z
 
-x1 ~~ 1*x1
-x2 ~~ 1*x2
-x3 ~~ 1*x3
-z1 ~~ 1*z1
-z2 ~~ 1*z2
-z3 ~~ 1*z3
-y1 ~~ 1*y1
-y2 ~~ 1*y2
-y3 ~~ 1*y3
+x1 ~~ 0*x1
+x2 ~~ 0*x2
+x3 ~~ 0*x3
+z1 ~~ 0*z1
+z2 ~~ 0*z2
+z3 ~~ 0*z3
+y1 ~~ 0*y1
+y2 ~~ 0*y2
+y3 ~~ 0*y3
+
+x1 ~ 0*1
+x2 ~ 0*1
+x3 ~ 0*1
+z1 ~ 0*1
+z2 ~ 0*1
+z3 ~ 0*1
+y1 ~ 0*1
+y2 ~ 0*1
+y3 ~ 0*1
 '
 
 
@@ -64,7 +74,7 @@ choose <- colnames(oneInt)
   lms1 <- modsem(m1, oneInt2, method = "lms",
                  ordered.x = c("x1", "x2", "x3", "z1", "z2", "z3"),
                  ordered.y = c("y1", "y2", "y3"),
-                 ordered.iter = 75, ordered.warmup = 20)
+                 ordered.iter = 75, ordered.warmup = 20, adaptive.quad = FALSE)
   thresholds <- CUTS$thresholds
 
 

@@ -42,16 +42,26 @@ estepLms <- function(model, theta, data, lastQuad = NULL, recalcQuad = FALSE,
     quad <- if (model$quad$adaptive) lastQuad else model$quad
     V    <- quad$n
     w    <- quad$w
-    W    <- matrix(w, nrow = data$n, ncol = length(w), byrow = TRUE) # n x J
-    P    <- W * densityLms(V, modFilled = modFilled, data = data)    # n x J
+
+    # compute log-densities per node, then stabilise with row-wise max (log-sum-exp)
+    J <- nrow(V)
+    LD <- matrix(NA_real_, nrow = data$n, ncol = J)
+    for (j in seq_len(J)) {
+      LD[, j] <- log(pmax(densitySingleLms(V[j, , drop = FALSE], modFilled = modFilled, data = data),
+                          .Machine$double.xmin))
+    }
+    row_max <- apply(LD, 1L, max)
+    LDs <- sweep(LD, 1L, row_max, "-")
+    W    <- matrix(w, nrow = data$n, ncol = J, byrow = TRUE)
+    P    <- W * exp(LDs)  # scaled posteriors (missing exp(row_max) factor)
   }
 
   # ---------------------------
   # Normalize posteriors
   # ---------------------------
-  density        <- pmax(rowSums(P), .Machine$double.xmin)
-  observedLogLik <- sum(log(density))
-  P              <- P / density  # each row sums to 1
+  density        <- rowSums(P)
+  observedLogLik <- if (exists("row_max")) sum(log(density) + row_max) else sum(log(pmax(density, .Machine$double.xmin)))
+  P              <- P / pmax(density, .Machine$double.xmin)
 
   # ---------------------------
   # Precompute names & masks
@@ -387,26 +397,148 @@ gradientObsLogLikLms_i <- function(theta, model, data, P, sign = 1, epsilon = 1e
 
 
 densitySingleLms <- function(z, modFilled, data) {
-  mu <- muLmsCpp(model = modFilled, z = z)
-  sigma <- sigmaLmsCpp(model = modFilled, z = z)
+  # Node-specific implied mean/cov for underlying continuous responses (X*, Y*)
+  mu_all  <- muLmsCpp(model = modFilled, z = z)
+  Sig_all <- sigmaLmsCpp(model = modFilled, z = z)
 
-  density <- numeric(data$n)
+  allX <- modFilled$info$allIndsXis
+  allY <- modFilled$info$allIndsEtas
+  nm_all <- c(allX, allY)
 
+  names(mu_all) <- nm_all
+  rownames(Sig_all) <- colnames(Sig_all) <- nm_all
+
+  # ordinal metadata + thresholds
+  ordX_idx <- modFilled$info$ordinalX_idx
+  ordY_idx <- modFilled$info$ordinalY_idx
+  thrX <- modFilled$matrices$thresholdsX; if (is.null(thrX)) thrX <- list()
+  thrY <- modFilled$matrices$thresholdsY; if (is.null(thrY)) thrY <- list()
+
+  out <- numeric(data$n)
   offset <- 1L
-  for (id in data$ids) { # go along patterns
+
+  for (id in data$ids) {
     n.pattern <- data$n.pattern[[id]]
+    Xid       <- data$data.split[[id]]              # n_i x q_i
+    cols      <- colnames(Xid)
+    q_i       <- ncol(Xid)
 
-    colidx <- data$colidx[[id]]
-    dataid <- data$data.split[[id]]
+    # masks for this pattern
+    ordX_mask <- if (length(ordX_idx)) (cols %in% names(ordX_idx)[ordX_idx]) else rep(FALSE, q_i)
+    ordY_mask <- if (length(ordY_idx)) (cols %in% names(ordY_idx)[ordY_idx]) else rep(FALSE, q_i)
+    ord_mask  <- ordX_mask | ordY_mask
 
-    end <- offset + n.pattern - 1L
-    density[offset:end] <- dmvn(data$data.split[[id]],
-                                mean = mu[colidx],
-                                sigma = sigma[colidx, colidx])
-    offset <- end + 1L
+    c_cols <- cols[!ord_mask]
+    o_cols <- cols[ ord_mask]
+
+    # --- continuous joint log-density per row (vectorized) -------------------
+    if (length(c_cols)) {
+      mu_c  <- mu_all[c_cols]
+      Sig_cc <- .jitter_pd(Sig_all[c_cols, c_cols, drop = FALSE])
+      ld_cont <- dmvn(Xid[, c_cols, drop = FALSE], mean = mu_c, sigma = Sig_cc, log = TRUE)
+    } else {
+      ld_cont <- rep(0, n.pattern)
+    }
+
+    # --- ordinal part: joint rectangle probability conditional on y_c --------
+    if (!length(o_cols)) {
+      # no ordinals in this pattern
+      out[offset:(offset + n.pattern - 1L)] <- exp(ld_cont)
+      offset <- offset + n.pattern
+      next
+    }
+
+    mu_o  <- mu_all[o_cols]
+    Sig_oo <- Sig_all[o_cols, o_cols, drop = FALSE]
+
+    # Precompute conditional pieces once per pattern
+    if (length(c_cols)) {
+      Sig_oc <- Sig_all[o_cols, c_cols, drop = FALSE]
+      Sig_co <- Sig_all[c_cols, o_cols, drop = FALSE]
+      Sig_cc <- .jitter_pd(Sig_all[c_cols, c_cols, drop = FALSE])
+      Sig_cc_inv <- tryCatch(solve(Sig_cc), error = function(e) MASS::ginv(Sig_cc))
+      A <- Sig_oc %*% Sig_cc_inv                     # |o| x |c|
+      Sig_o_given_c <- .jitter_pd(Sig_oo - A %*% Sig_co)
+    } else {
+      A <- NULL
+      Sig_o_given_c <- .jitter_pd(Sig_oo)
+    }
+
+    # Build lower/upper bounds matrices for all rows at once
+    L <- matrix(-Inf, n.pattern, length(o_cols), dimnames = list(NULL, o_cols))
+    U <- matrix( Inf, n.pattern, length(o_cols), dimnames = list(NULL, o_cols))
+    is_x_ord <- o_cols %in% names(ordX_idx)[ordX_idx]
+
+    for (j in seq_along(o_cols)) {
+      nm <- o_cols[j]
+      y <- as.integer(Xid[, nm])
+      y[is.na(y)] <- 1L  # treat NA as fully open interval (-Inf, Inf) by setting to first, then overriding below
+      y[y == 0L] <- 1L
+
+      # thresholds source
+      tau <- if (is_x_ord[j]) thrX[[nm]] else thrY[[nm]]
+      if (is.null(tau)) tau <- numeric(0L)
+
+      # number of categories = length(tau)+1
+      # lower: -Inf if cat==1 else tau[cat-1]
+      idx_lower <- pmax.int(y - 1L, 0L)
+      has_lower <- idx_lower > 0L
+      L[has_lower, j] <- tau[idx_lower[has_lower]]
+
+      # upper:  Inf if cat==K else tau[cat]
+      K <- length(tau) + 1L
+      idx_upper <- pmin.int(y, length(tau))
+      has_upper <- y <= length(tau)
+      U[has_upper, j] <- tau[idx_upper[has_upper]]
+      # NA rows (if any) remain (-Inf, +Inf)
+    }
+
+    # Evaluate rectangle probabilities
+    ld_ord <- numeric(n.pattern)
+
+    if (!length(c_cols)) {
+      # mean is same for all rows: mu_o, Sig_o_given_c
+      # group identical category patterns to avoid repeated pmvnorm calls
+      key <- apply(cbind(L, U), 1L, function(r) paste(format(r, digits = 6), collapse = "|"))
+      idx <- split(seq_len(n.pattern), key)
+
+      val <- numeric(length(idx))
+      k <- 1L
+      for (g in idx) {
+        pr <- mvtnorm::pmvnorm(lower = L[g[1L], ], upper = U[g[1L], ],
+                               mean = as.numeric(mu_o), sigma = Sig_o_given_c,
+                               algorithm = mvtnorm::GenzBretz(maxpts = 2500, abseps = 1e-8, releps = 0))
+        pr <- as.numeric(pr)
+        pr <- pmin(pmax(pr, .Machine$double.xmin), 1)
+        val[k] <- log(pr)
+        k <- k + 1L
+      }
+      # map back
+      k <- 1L
+      for (g in idx) {
+        ld_ord[g] <- val[k]; k <- k + 1L
+      }
+    } else {
+      # mu_{o|c} differs per row
+      delta <- sweep(Xid[, c_cols, drop = FALSE], 2L, mu_all[c_cols], "-")   # n_i x |c|
+      mu_rows <- tcrossprod(as.matrix(delta), t(A)) + matrix(rep(as.numeric(mu_o), each = n.pattern),
+                                                             n.pattern, length(o_cols))
+      # loop rows (pmvnorm is not vectorized in mean)
+      for (r in seq_len(n.pattern)) {
+        pr <- mvtnorm::pmvnorm(lower = L[r, ], upper = U[r, ],
+                               mean  = mu_rows[r, ], sigma = Sig_o_given_c,
+                               algorithm = mvtnorm::GenzBretz(maxpts = 2500, abseps = 1e-8, releps = 0))
+        pr <- as.numeric(pr)
+        pr <- pmin(pmax(pr, .Machine$double.xmin), 1)
+        ld_ord[r] <- log(pr)
+      }
+    }
+
+    out[offset:(offset + n.pattern - 1L)] <- exp(ld_cont + ld_ord)
+    offset <- offset + n.pattern
   }
 
-  density
+  out
 }
 
 
@@ -755,4 +887,20 @@ observedInfoFromLouisLms <- function(model,
   }
 
   list(mean = m, var = v)
+}
+
+
+# robust log{Phi(b) - Phi(a)} (vectorised)
+.log_pnorm_diff <- function(a, b) {
+  lb <- pnorm(b, log.p = TRUE); la <- pnorm(a, log.p = TRUE)
+  u <- pmax(lb, la); v <- pmin(lb, la)
+  u + log1p(-exp(v - u))
+}
+
+# add tiny jitter to ensure PD
+.jitter_pd <- function(S, eps = 1e-8) {
+  # if already PD, return
+  ev <- tryCatch(eigen(S, symmetric = TRUE, only.values = TRUE)$values, error = function(e) NULL)
+  if (!is.null(ev) && min(ev) > 0) return(S)
+  S + diag(eps, nrow(S))
 }
