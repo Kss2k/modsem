@@ -175,8 +175,8 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE,
     tparLines  <- character()
 
     # Intercepts only for continuous indicators
-    contInds <- inds[!inds %in% ord_set]
-    ordInds  <- inds[inds %in% ord_set]
+    contInds <- inds[!inds %in% ordSet]
+    ordInds  <- inds[inds %in% ordSet]
 
     fixContVar <- length(contInds) + length(ordInds) <= 1L
 
