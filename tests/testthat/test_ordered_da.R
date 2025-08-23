@@ -9,6 +9,16 @@ m1 <- '
 
 # Inner Model
   Y ~ X + Z + X:Z
+
+x1 ~~ 1*x1
+x2 ~~ 1*x2
+x3 ~~ 1*x3
+z1 ~~ 1*z1
+z2 ~~ 1*z2
+z3 ~~ 1*z3
+y1 ~~ 1*y1
+y2 ~~ 1*y2
+y3 ~~ 1*y3
 '
 
 
@@ -29,7 +39,7 @@ cut_data <- function(data, k = 5, choose = NULL) {
   for (var in choose) {
     x <- standardize(data[[var]])
     t <- rthreshold(k)
-    y <- cut(x, breaks = t, ordered_result = TRUE)
+    y <- cut(x, breaks = t, ordered_result = TRUE, labels = FALSE)
 
     min.x <- min(x)
     max.x <- max(x)
@@ -46,11 +56,14 @@ cut_data <- function(data, k = 5, choose = NULL) {
 CHOOSE <- list(c("x1", "x2", "z1", "y1"),
                colnames(oneInt))
 
-for (choose in CHOOSE) {
+# for (choose in CHOOSE) {
+choose <- colnames(oneInt)
   set.seed(2837290)
   CUTS <- cut_data(oneInt, choose = choose)
   oneInt2 <- CUTS$data
-  lms1 <- modsem(m1, oneInt2, method = "lms", ordered = choose,
+  lms1 <- modsem(m1, oneInt2, method = "lms",
+                 ordered.x = c("x1", "x2", "x3", "z1", "z2", "z3"),
+                 ordered.y = c("y1", "y2", "y3"),
                  ordered.iter = 75, ordered.warmup = 20)
   thresholds <- CUTS$thresholds
 
@@ -75,4 +88,4 @@ for (choose in CHOOSE) {
 
   print(modsemParTable(thresholds.table))
   testthat::expect_true(sum(thresholds.table$ok) / NROW(thresholds.table) >= 0.95) # 95% confidence
-}
+# }

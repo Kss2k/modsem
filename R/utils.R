@@ -692,3 +692,6 @@ is.invertible <- function(M) {
   tryCatch(tolower(.Platform$OS.type) == "unix",
            error = \(e) .onFail)
 }
+
+
+`%||%` <- function(x, y) if (!is.null(x)) x else y

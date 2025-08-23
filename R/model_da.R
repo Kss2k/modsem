@@ -21,7 +21,12 @@ specifyModelDA <- function(syntax = NULL,
                            orthogonal.x = FALSE,
                            orthogonal.y = FALSE,
                            auto.split.syntax = FALSE,
+                           # NEW: ordered indicators (X and Y)
+                           ordered = NULL,     # kept for backward compat; aliases ordered.x
+                           ordered.x = NULL,   # preferred arg for X
+                           ordered.y = NULL,   # preferred arg for Y
                            cluster = NULL) {
+
   if (!is.null(syntax)) parTable <- modsemify(syntax)
   stopif(is.null(parTable), "No parTable found")
 
@@ -36,20 +41,18 @@ specifyModelDA <- function(syntax = NULL,
   }
 
   checkParTableDA(parTable)
-  # additions to lavaan-syntax for optimizer
   lavOptimizerSyntaxAdditions <- ""
 
-  # endogenous variables (etas)model
+  # endogenous variables (etas)
   etas    <- getSortedEtas(parTable, isLV = TRUE, checkAny = TRUE)
   numEtas <- length(etas)
 
   indsEtas    <- getIndsLVs(parTable, etas)
-  numIndsEtas <- vapply(indsEtas, FUN.VALUE = vector("integer", 1L),
-                        FUN = length)
+  numIndsEtas <- vapply(indsEtas, FUN.VALUE = vector("integer", 1L), FUN = length)
   allIndsEtas    <- unique(unlist(indsEtas))
   numAllIndsEtas <- length(allIndsEtas)
 
-  # exogenouts variables (xis) and interaction terms
+  # exogenous variables (xis) and interaction terms
   intTerms      <- getIntTermRows(parTable)
   varsInts      <- getVarsInts(intTerms)
   allVarsInInts <- unique(unlist(varsInts))
@@ -58,18 +61,37 @@ specifyModelDA <- function(syntax = NULL,
 
   omegaAndSortedXis <- sortXisConstructOmega(xis, varsInts, etas, intTerms,
                                              method = method, double = double)
-  xis <- omegaAndSortedXis$sortedXis # get sorted xis according to interaction terms
+  xis <- omegaAndSortedXis$sortedXis
   nonLinearXis <- omegaAndSortedXis$nonLinearXis
 
   indsXis    <- getIndsLVs(parTable, xis)
-  numIndsXis <- vapply(indsXis, FUN.VALUE = vector("integer", 1L),
-                       FUN = length)
+  numIndsXis <- vapply(indsXis, FUN.VALUE = vector("integer", 1L), FUN = length)
   allIndsXis    <- unique(unlist(indsXis))
   numAllIndsXis <- length(allIndsXis)
 
   # clean data
   data.cleaned <- prepDataModsemDA(data, allIndsXis, allIndsEtas,
                                    missing = missing, cluster = cluster)
+
+  # ---------- NEW: ordinal indicators & thresholds ----------
+  # resolve ordered sets for X and Y
+  ordX_in  <- if (!is.null(ordered.x)) ordered.x else ordered
+  ordX     <- .getOrdinalX(indsXis, ordered = ordX_in)
+  ordinalX_names <- ordX$names
+
+  ordY     <- .getOrdinalY(indsEtas, ordered = ordered.y)
+  ordinalY_names <- ordY$names
+
+  thresholdsX <- if (length(ordinalX_names)) {
+    rawX <- data[, unique(unlist(indsXis)), drop = FALSE]
+    .initThresholdsFromData(rawX, ordinalX_names)
+  } else list()
+
+  thresholdsY <- if (length(ordinalY_names)) {
+    rawY <- data[, unique(unlist(indsEtas)), drop = FALSE]
+    .initThresholdsFromData(rawY, ordinalY_names)
+  } else list()
+  # ----------------------------------------------------------
 
   # measurement model x
   listLambdaX <- constructLambda(xis, indsXis, parTable = parTable,
@@ -107,8 +129,21 @@ specifyModelDA <- function(syntax = NULL,
   thetaEpsilon      <- listThetaEpsilon$numeric
   thetaLabelEpsilon <- listThetaEpsilon$label
 
+  # -------- NEW: apply ordinal identification constraints --------
+  if (length(ordinalX_names)) {
+    fixX <- .applyOrdinalConstraintsToX(tauX, thetaDelta, ordinalX_names)
+    tauX        <- fixX$tauX
+    thetaDelta  <- fixX$thetaDelta
+  }
+  if (length(ordinalY_names)) {
+    fixY <- .applyOrdinalConstraintsToY(tauY, thetaEpsilon, ordinalY_names)
+    tauY          <- fixY$tauY
+    thetaEpsilon  <- fixY$thetaEpsilon
+  }
+  # ---------------------------------------------------------------
+
   # structural model
-  Ieta         <- diag(numEtas) # used for (B^-1 = (Ieta - gammaEta)^-1)
+  Ieta         <- diag(numEtas)
   listGammaXi  <- constructGamma(etas, xis, parTable = parTable)
   gammaXi      <- listGammaXi$numeric
   labelGammaXi <- listGammaXi$label
@@ -132,13 +167,12 @@ specifyModelDA <- function(syntax = NULL,
   A      <- listA$numeric
   labelA <- listA$label
 
-  # mean etas
+  # mean etas / xis
   listAlpha <- constructAlpha(etas, parTable = parTable,
                               mean.observed = mean.observed)
   alpha      <- listAlpha$numeric
   labelAlpha <- listAlpha$label
 
-  # mean xis
   listBeta0 <- constructAlpha(xis, parTable = parTable,
                               mean.observed = mean.observed)
   beta0      <- listBeta0$numeric
@@ -175,14 +209,10 @@ specifyModelDA <- function(syntax = NULL,
                                 method = method)
 
   # 1 = truly latent variables, 2 = latent variables with single indicators
-  selectThetaEpsilon1 <- selectThetaEpsilon1(indsEtas, thetaEpsilon,
-                                             scalingInds, method = method)
-  selectThetaEpsilon2 <- selectThetaEpsilon2(indsEtas, thetaEpsilon,
-                                             scalingInds, method = method)
-  subThetaEpsilon1 <- constructSubThetaEpsilon1(indsEtas, thetaEpsilon,
-                                                scalingInds, method = method)
-  subThetaEpsilon2 <- constructSubThetaEpsilon2(indsEtas, thetaEpsilon,
-                                                scalingInds, method = method)
+  selectThetaEpsilon1 <- selectThetaEpsilon1(indsEtas, thetaEpsilon, scalingInds, method = method)
+  selectThetaEpsilon2 <- selectThetaEpsilon2(indsEtas, thetaEpsilon, scalingInds, method = method)
+  subThetaEpsilon1 <- constructSubThetaEpsilon1(indsEtas, thetaEpsilon, scalingInds, method = method)
+  subThetaEpsilon2 <- constructSubThetaEpsilon2(indsEtas, thetaEpsilon, scalingInds, method = method)
 
   covModel <- covModel(cov.syntax, method = method, parTable = parTableCovModel,
                        xis.main = xis, parTable.main = parTable)
@@ -226,7 +256,12 @@ specifyModelDA <- function(syntax = NULL,
     rowsR = rownames(emptyR),
 
     subThetaEpsilon1 = subThetaEpsilon1,
-    subThetaEpsilon2 = subThetaEpsilon2)
+    subThetaEpsilon2 = subThetaEpsilon2,
+
+    # NEW: thresholds containers
+    thresholdsX = thresholdsX,
+    thresholdsY = thresholdsY
+  )
 
   labelMatrices <- list(
     lambdaX      = labelLambdaX,
@@ -245,10 +280,12 @@ specifyModelDA <- function(syntax = NULL,
     beta0 = labelBeta0,
 
     omegaEtaXi = labelOmegaEtaXi,
-    omegaXiXi  = labelOmegaXiXi)
+    omegaXiXi  = labelOmegaXiXi
+  )
 
   k <- omegaAndSortedXis$k
-  quad <- quadrature(m, k, quad.range = quad.range, adaptive = adaptive.quad,
+  quad <- quadrature(m, k, quad.range = quad.range,
+                     adaptive = adaptive.quad,
                      adaptive.frequency = adaptive.frequency)
 
   model <- list(
@@ -269,7 +306,13 @@ specifyModelDA <- function(syntax = NULL,
       kOmegaEta     = getK_NA(omegaEtaXi, labelOmegaEtaXi),
       nonLinearXis  = nonLinearXis,
       mean.observed = mean.observed,
-      lavOptimizerSyntaxAdditions = lavOptimizerSyntaxAdditions
+      lavOptimizerSyntaxAdditions = lavOptimizerSyntaxAdditions,
+
+      # NEW: ordinal metadata
+      ordinalX       = ordinalX_names,
+      ordinalY       = ordinalY_names,
+      ordinalX_idx   = setNames(allIndsXis %in% ordinalX_names, allIndsXis),
+      ordinalY_idx   = setNames(allIndsEtas %in% ordinalY_names, allIndsEtas)
     ),
 
     data          = data.cleaned,
@@ -284,6 +327,7 @@ specifyModelDA <- function(syntax = NULL,
   )
 
   model$constrExprs <- getConstrExprs(parTable, model$covModel$parTable)
+
   if (createTheta) {
     listTheta         <- createTheta(model)
     model             <- c(model, listTheta)
@@ -691,4 +735,68 @@ addZStatsParTable <- function(parTable, se.col = "std.error", est.col = "est",
   parTable[[ci.u]]  <- parTable[[est.col]] + CI_WIDTH * parTable[[se.col]]
 
   parTable
+}
+
+
+# Return list(names=<ordinal obs names>, mask=<named logical vector for all observed>)
+.getOrdinalX <- function(indsXis, ordered) {
+  ordered <- if (is.null(ordered)) character(0) else as.character(ordered)
+  allX <- unique(unlist(indsXis))
+  isOrd <- setNames(allX %in% ordered, allX)
+  list(names = names(isOrd)[isOrd], mask = isOrd)
+}
+
+.getOrdinalY <- function(indsEtas, ordered) {
+  ordered <- if (is.null(ordered)) character(0) else as.character(ordered)
+  allY <- unique(unlist(indsEtas))
+  isOrd <- setNames(allY %in% ordered, allY)
+  list(names = names(isOrd)[isOrd], mask = isOrd)
+}
+
+# Initialize thresholds from empirical cumulative proportions (probit)
+.initThresholdsFromData <- function(dataBlock, ordNames) {
+  thr <- list()
+  for (nm in ordNames) {
+    x <- as.integer(dataBlock[, nm])
+    x <- x[is.finite(x)]
+    if (!length(x)) next
+    if (min(x) == 0L) x <- x + 1L
+    C <- max(x)
+    if (C < 2L) next
+    p <- vapply(1:(C-1L), function(c) mean(x <= c), 0.0)
+    p <- pmin(pmax(p, 1e-4), 1 - 1e-4)
+    thr[[nm]] <- stats::qnorm(p)
+  }
+  thr
+}
+
+# Apply identification constraints for ordinal observed indicators:
+#  - intercepts = 0 (tau rows)
+#  - residual variances (diag) = 1 (theta diag)
+.applyOrdinalConstraintsToX <- function(tauX, thetaDelta, ordinal_names) {
+  if (!is.null(tauX) && length(ordinal_names)) {
+    r <- rownames(tauX)
+    hit <- intersect(ordinal_names, r)
+    if (length(hit)) tauX[hit, ] <- 0
+  }
+  if (!is.null(thetaDelta) && length(ordinal_names)) {
+    dn <- rownames(thetaDelta)
+    hit <- intersect(ordinal_names, dn)
+    if (length(hit)) for (nm in hit) thetaDelta[nm, nm] <- 1
+  }
+  list(tauX = tauX, thetaDelta = thetaDelta)
+}
+
+.applyOrdinalConstraintsToY <- function(tauY, thetaEpsilon, ordinal_names) {
+  if (!is.null(tauY) && length(ordinal_names)) {
+    r <- rownames(tauY)
+    hit <- intersect(ordinal_names, r)
+    if (length(hit)) tauY[hit, ] <- 0
+  }
+  if (!is.null(thetaEpsilon) && length(ordinal_names)) {
+    dn <- rownames(thetaEpsilon)
+    hit <- intersect(ordinal_names, dn)
+    if (length(hit)) for (nm in hit) thetaEpsilon[nm, nm] <- 1
+  }
+  list(tauY = tauY, thetaEpsilon = thetaEpsilon)
 }

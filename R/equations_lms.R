@@ -1,94 +1,170 @@
 estepLms <- function(model, theta, data, lastQuad = NULL, recalcQuad = FALSE,
                      adaptive.quad.tol = 1e-12, ...) {
+
+  # Fill model once (we'll reuse for mu at each node)
   modFilled <- fillModel(model = model, theta = theta, method = "lms")
 
+  # ---------------------------
+  # Quadrature weights/nodes
+  # ---------------------------
   if (model$quad$adaptive && (recalcQuad || is.null(lastQuad))) {
     m <- model$quad$m
     a <- model$quad$a
     b <- model$quad$b
-    m <- model$quad$m
     k <- model$quad$k
 
     if (!is.null(lastQuad)) m.ceil <- lastQuad$m.ceil
     else if (k > 1) m.ceil <- m
     else m.ceil <- round(estMForNodesInRange(m, a = -5, b = 5))
 
-
     quad <- tryCatch({
-        adaptiveGaussQuadrature(
-          fun = densityLms, collapse = \(x) sum(log(rowSums(x))),
-          modFilled = modFilled, data = data, a = a, b = b, m = m,
-          k = k, m.ceil = m.ceil, tol = adaptive.quad.tol,
-        )
-      }, error = function(e) {
-        warning2("Calculation of adaptive quadrature failed!\n", e,
-                 immediate. = FALSE)
-        NULL
-      }
-    )
+      adaptiveGaussQuadrature(
+        fun = densityLms, collapse = \(x) sum(log(rowSums(x))),
+        modFilled = modFilled, data = data, a = a, b = b, m = m,
+        k = k, m.ceil = m.ceil, tol = adaptive.quad.tol
+      )
+    }, error = function(e) {
+      warning2("Calculation of adaptive quadrature failed!\n", e, immediate. = FALSE)
+      NULL
+    })
 
     if (is.null(quad)) {
-      estep.fixed <- estepLms(
-        model = model,
-        theta = theta,
-        data  = data,
-        lastQuad = if (!is.null(lastQuad)) lastQuad else model$quad,
-        recalcQuad = FALSE,
-        ...
-      )
-
-      return(estep.fixed)
+      return(estepLms(model = model, theta = theta, data = data,
+                      lastQuad = if (!is.null(lastQuad)) lastQuad else model$quad,
+                      recalcQuad = FALSE, ...))
     }
 
-    P <- quad$W * quad$F # P is already calculated
-    V <- quad$n
-    w <- quad$w
-
+    # Posterior numerators already computed (quad$W * quad$F)
+    P <- quad$W * quad$F          # n x J
+    V <- quad$n                   # J x k (nodes)
+    w <- quad$w                   # length J
   } else {
     quad <- if (model$quad$adaptive) lastQuad else model$quad
     V    <- quad$n
     w    <- quad$w
-    W    <- matrix(w, nrow = data$n, ncol = length(w), byrow = TRUE)
-    P    <- W * densityLms(V, modFilled = modFilled, data = data)
+    W    <- matrix(w, nrow = data$n, ncol = length(w), byrow = TRUE) # n x J
+    P    <- W * densityLms(V, modFilled = modFilled, data = data)    # n x J
   }
 
-
-
-  density        <- rowSums(P)
+  # ---------------------------
+  # Normalize posteriors
+  # ---------------------------
+  density        <- pmax(rowSums(P), .Machine$double.xmin)
   observedLogLik <- sum(log(density))
-  P              <- P / density
+  P              <- P / density  # each row sums to 1
 
-  wMeans <- vector("list", length = length(w))
-  wCovs  <- vector("list", length = length(w))
-  tGamma <- vector("list", length = length(w))
+  # ---------------------------
+  # Precompute names & masks
+  # ---------------------------
+  allX <- model$info$allIndsXis
+  allY <- model$info$allIndsEtas
+  pX   <- length(allX)
 
-  for (i in seq_along(w)) {
-    p <- P[, i]
-    tGamma[[i]] <- sum(p)
+  ordX_idx <- model$info$ordinalX_idx %||% setNames(rep(FALSE, length(allX)), allX)
+  ordY_idx <- model$info$ordinalY_idx %||% setNames(rep(FALSE, length(allY)), allY)
 
-    offset <- 1L
+  thrX <- model$matrices$thresholdsX %||% list()
+  thrY <- model$matrices$thresholdsY %||% list()
 
+  # ---------------------------
+  # Allocate outputs
+  # ---------------------------
+  J <- length(w)
+  wMeans <- vector("list", J)
+  wCovs  <- vector("list", J)
+  tGamma <- vector("list", J)
+
+  # ---------------------------
+  # Loop over nodes
+  # ---------------------------
+  for (i in seq_len(J)) {
+    p_ij <- P[, i]                 # length n posterior for node i
+    tGamma[[i]] <- sum(p_ij)       # overall weight at this node (across all obs)
+
+    # node-specific implied means (for all observed: X followed by Y)
+    z_i    <- V[i, , drop = FALSE]
+    mu_all <- as.numeric(muLmsCpp(modFilled, as.numeric(z_i)))  # length = pX + pY
+    muX    <- setNames(mu_all[seq_len(pX)], allX)
+    muY    <- setNames(mu_all[seq_along(allY) + pX], allY)
+
+    # per-pattern containers
     wMeans[[i]] <- vector("list", length = length(data$ids))
-    wCovs[[i]]  <- vector("list", length = length(data$ids))
+    wCovs [[i]] <- vector("list", length = length(data$ids))
     tGamma[[i]] <- numeric(length = length(data$ids))
 
-    # wmean <- colSums(data$data.full * p, na.rm = TRUE) / sum(p)
-    for (j in data$ids) {
-      n.pattern <- data$n.pattern[[j]]
+    offset <- 1L
+    for (jj in seq_along(data$ids)) {
+      id        <- data$ids[[jj]]
+      n.pattern <- data$n.pattern[[id]]
       end       <- offset + n.pattern - 1L
 
-      data.id <- data$data.split[[j]]
-      colidx  <- data$colidx[[j]]
+      data.id <- data$data.split[[id]]         # n_i x q_i matrix (observed, by pattern)
+      cols    <- colnames(data.id)
+      pj      <- p_ij[offset:end]              # length n_i
 
-      pj   <- p[offset:end]
-      # wm   <- wmean[colidx]
-      wm   <- colSums(data.id * pj) / sum(pj)
-      X    <- data.id - matrix(wm, nrow=nrow(data.id), ncol=ncol(data.id), byrow=TRUE)
-      wcov <- t(X) %*% (X * pj)
+      # build effective means and per-row var adds
+      eff    <- data.id
+      addVar <- matrix(0, nrow = nrow(eff), ncol = ncol(eff))
+      colnames(addVar) <- cols
 
-      wMeans[[i]][[j]] <- wm
-      wCovs[[i]][[j]]  <- wcov
-      tGamma[[i]][[j]] <- sum(pj)
+      # masks for this pattern's columns
+      ordX_cols <- names(ordX_idx)[ordX_idx]
+      ordX_mask <- cols %in% ordX_cols
+      ordY_cols <- names(ordY_idx)[ordY_idx]
+      ordY_mask <- cols %in% ordY_cols
+
+      # ----- ORDINAL X -----
+      if (any(ordX_mask, na.rm = TRUE)) {
+        for (nm in cols[ordX_mask]) {
+          xcat <- as.integer(eff[, nm])
+          if (min(xcat, na.rm = TRUE) == 0L) xcat <- xcat + 1L
+          C <- max(xcat, na.rm = TRUE)
+          tau <- thrX[[nm]]
+          if (is.null(tau) || length(tau) != (C - 1L))
+            stop(sprintf("Thresholds for ordinal X '%s' missing/wrong length.", nm))
+          mu_k <- muX[[nm]]
+          tL <- c(-Inf, tau); tU <- c(tau, Inf)
+          a <- tL[xcat] - mu_k
+          b <- tU[xcat] - mu_k
+          tm <- .trunc_moments_std(a, b)
+          eff[, nm]    <- mu_k + tm$mean
+          addVar[, nm] <- tm$var
+        }
+      }
+
+      # ----- ORDINAL Y -----
+      if (any(ordY_mask, na.rm = TRUE)) {
+        for (nm in cols[ordY_mask]) {
+          ycat <- as.integer(eff[, nm])
+          if (min(ycat, na.rm = TRUE) == 0L) ycat <- ycat + 1L
+          C <- max(ycat, na.rm = TRUE)
+          tau <- thrY[[nm]]
+          if (is.null(tau) || length(tau) != (C - 1L))
+            stop(sprintf("Thresholds for ordinal Y '%s' missing/wrong length.", nm))
+          mu_k <- muY[[nm]]
+          tL <- c(-Inf, tau); tU <- c(tau, Inf)
+          a <- tL[ycat] - mu_k
+          b <- tU[ycat] - mu_k
+          tm <- .trunc_moments_std(a, b)
+          eff[, nm]    <- mu_k + tm$mean
+          addVar[, nm] <- tm$var
+        }
+      }
+
+      # weighted mean and covariance for this pattern at node i
+      wsum <- sum(pj)
+      wm   <- colSums(eff * pj) / wsum
+      Xc   <- sweep(eff, 2, wm, "-")
+      wcov <- t(Xc) %*% (Xc * pj)
+
+      # add truncated-normal within-row variances on the diagonal
+      if (any(ordX_mask, na.rm = TRUE) || any(ordY_mask, na.rm = TRUE)) {
+        diag(wcov) <- diag(wcov) + colSums(addVar * pj)
+      }
+
+      wMeans[[i]][[jj]] <- wm
+      wCovs [[i]][[jj]] <- wcov
+      tGamma[[i]][[jj]] <- wsum
 
       offset <- end + 1L
     }
@@ -585,4 +661,98 @@ observedInfoFromLouisLms <- function(model,
   }
 
   list(I.obs = Iobs, I.com = Icom, I.mis = Imis, P = P)
+}
+
+
+# Robust truncated standard-normal moments for interval (a, b).
+# Vectorised over a,b. Handles +/-Inf cleanly and is stable in the tails.
+.trunc_moments_std <- function(a, b) {
+  stopifnot(length(a) == length(b))
+  n <- length(a)
+
+  # Guard against accidental a >= b due to threshold ties; jitter minimally
+  bad <- !(a < b)
+  if (any(bad)) {
+    bump <- 1e-10
+    b[bad] <- a[bad] + bump
+  }
+
+  # helpers
+  logPhi <- function(x, lower = TRUE) pnorm(x, log.p = TRUE, lower.tail = lower)
+  phi    <- function(x) dnorm(x)
+  # log(exp(u) - exp(v)) for u >= v
+  logspace_sub <- function(u, v) {
+    out <- u + log1p(-exp(v - u))
+    # when u==v, result is log(0) = -Inf; that's fine (will clamp later)
+    out
+  }
+
+  # Cases: both finite, a=-Inf, b=+Inf, both infinite
+  is_minf <- is.infinite(a) & a < 0
+  is_pinf <- is.infinite(b) & b > 0
+  both_inf <- is_minf & is_pinf
+  mid <- !(is_minf | is_pinf)         # both finite
+  left <- is_minf & !is_pinf          # (-Inf, b]
+  right <- !is_minf & is_pinf         # [a, +Inf)
+
+  # Allocate outputs
+  m <- numeric(n)
+  v <- numeric(n)
+
+  # -------- both infinite: (-Inf, +Inf) -> standard normal --------
+  if (any(both_inf)) {
+    m[both_inf] <- 0
+    v[both_inf] <- 1
+  }
+
+  # -------- finite a,b: use log-space for Z --------
+  if (any(mid)) {
+    ai <- a[mid]; bi <- b[mid]
+    # Z = Phi(b) - Phi(a) in log-space
+    lPhi_b <- logPhi(bi, lower = TRUE)
+    lPhi_a <- logPhi(ai, lower = TRUE)
+    # For valid intervals, Phi(b) >= Phi(a). Still be defensive:
+    swap <- lPhi_b < lPhi_a
+    tmp  <- lPhi_b; lPhi_b[swap] <- lPhi_a[swap]; lPhi_a[swap] <- tmp
+
+    logZ <- logspace_sub(lPhi_b, lPhi_a)
+    Z    <- pmax(exp(logZ), .Machine$double.xmin)
+
+    phia <- phi(ai); phib <- phi(bi)
+    mi   <- (phia - phib) / Z
+    vi   <- 1 + (ai * phia - bi * phib) / Z - mi^2
+
+    m[mid] <- mi
+    v[mid] <- pmax(vi, 1e-12)
+  }
+
+  # -------- left-open: (-Inf, b] --------
+  if (any(left)) {
+    bi <- b[left]
+    # Z = Phi(b); use logPhi to remain stable in far left tail
+    lZ  <- logPhi(bi, lower = TRUE)
+    Z   <- pmax(exp(lZ), .Machine$double.xmin)
+    phib <- phi(bi)
+    mi   <- - phib / Z                    # -(phi(b)/Phi(b))
+    vi   <- 1 - (bi * phib) / Z - mi^2    # 1 + (0 - b*phi(b))/Z - m^2
+
+    m[left] <- mi
+    v[left] <- pmax(vi, 1e-12)
+  }
+
+  # -------- right-open: [a, +Inf) --------
+  if (any(right)) {
+    ai <- a[right]
+    # Z = 1 - Phi(a); compute with upper-tail log CDF for stability
+    lZ  <- logPhi(ai, lower = FALSE)
+    Z   <- pmax(exp(lZ), .Machine$double.xmin)
+    phia <- phi(ai)
+    mi   <-  phia / Z                     #  phi(a)/(1-Phi(a))
+    vi   <- 1 + (ai * phia) / Z - mi^2    # 1 + (a*phi(a) - 0)/Z - m^2
+
+    m[right] <- mi
+    v[right] <- pmax(vi, 1e-12)
+  }
+
+  list(mean = m, var = v)
 }
