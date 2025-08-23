@@ -53,6 +53,8 @@ generated quantities {
 #' @param compile Should compilation be performed? If \code{FALSE} only the \code{STAN}
 #'   is generated, and not compiled.
 #' @param force Should compilation of previously compiled models be forced?
+#' @param ordered Ordered (i.e., ordinal) variables.
+#' @param ordered.link Link function to be used for ordered variables.
 #' @export
 compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE,
                                ordered = NULL, ordered.link = c("logit", "probit")) {
@@ -117,10 +119,10 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE,
 
   # NEW: normalize and precompute ordinal sets
   if (is.null(ordered)) ordered <- character(0)
-  ord_set <- unique(ordered)
+  ordSet <- unique(ordered)
   is_allOrdinal_lv <- vapply(lVs, function(lv) {
     inds <- indsLVs[[lv]]
-    length(inds) > 0 && all(inds %in% ord_set)
+    length(inds) > 0 && all(inds %in% ordSet)
   }, logical(1))
 
   collapse <- function(..., sep = "\n") {
@@ -168,8 +170,8 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE,
     tparLines  <- character()
 
     # Intercepts only for continuous indicators
-    contInds <- inds[!inds %in% ord_set]
-    ordInds  <- inds[inds %in% ord_set]
+    contInds <- inds[!inds %in% ordSet]
+    ordInds  <- inds[inds %in% ordSet]
 
     fixContVar <- length(contInds) + length(ordInds) <= 1L
 
@@ -650,11 +652,11 @@ getStanData <- function(compiled_model, data, missing = "listwise", ordered = NU
   }
 
   # 4) For each ordered indicator, add integer vector 1..K and K
-  remap_to_consecutive <- function(x) {
+  remap2consecutive <- function(x) {
     # x should be atomic, no NAs expected after listwise handling
     u <- sort(unique(x))
     # Create a 1..K mapping even if labels were not consecutive (e.g., 0/2/5)
-    map <- setNames(seq_along(u), as.character(u))
+    map <- stats::setNames(seq_along(u), as.character(u))
     as.integer(unname(map[as.character(x)]))
   }
 
@@ -664,7 +666,7 @@ getStanData <- function(compiled_model, data, missing = "listwise", ordered = NU
     }
     x_raw <- INDICATORS[, ind]
     # Ensure integer 1..K coding regardless of original labels
-    x_int <- remap_to_consecutive(x_raw)
+    x_int <- remap2consecutive(x_raw)
     K     <- as.integer(max(x_int))
 
     stan_data[[sprintf("ORD_INDICATOR_%s", ind)]] <- x_int
@@ -678,9 +680,9 @@ getStanData <- function(compiled_model, data, missing = "listwise", ordered = NU
 # General Stan Model for estimating SEMs with interaction terms
 STAN_MODEL_GENERAL <- "
 // sem_latent_interaction.stan (updated)
-// SEM with three latent factors (X, Z, Y) and latent interaction X×Z → Y
+// SEM with three latent factors (X, Z, Y) and latent interaction X*Z -> Y
 // Identification: first loading fixed to 1; *latent means constrained to 0*.
-// All nine indicator intercepts τ are now free.
+// All nine indicator intercepts tau are now free.
 
 functions {
   vector getIthProduct(int i, int N_LVS, int N, matrix PRODUCTS, matrix ETA) {
@@ -1032,8 +1034,7 @@ specifyModelSTAN <- function(syntax = NULL,
   numAllInds <- length(allInds)
 
   # clean data
-  data <- cleanAndSortData(data, allIndsXis, allIndsEtas, impute.na = impute.na)
-
+  data <- prepDataModsemDA(data, allIndsXis, allIndsEtas)$data.full
 
   # measurement model x
   listLambda <- constructLambda(lVs, indsLVs, parTable = parTable,

@@ -119,9 +119,14 @@ if (TEST_STAN) {
   compiled_model.3way <- compile_stan_model(m.3way)
 
   # Fit the model based on the compiled STAN code
-  fit.3way <- modsem_stan(
-                          compiled_model = compiled_model.3way,
+  fit.3way <- modsem_stan(compiled_model = compiled_model.3way,
                           data   = data.3way,
+                          chains = 2,
+                          iter   = 10000 # More iterations should yield more stable estimates
+  
+  fit.3way <- modsem_stan(model.syntax = m.3way,
+                          data   = data.3way,
+                          rcs    = TRUE,
                           chains = 2,
                           iter   = 10000 # More iterations should yield more stable estimates
   )
@@ -215,4 +220,25 @@ if (TEST_STAN) {
 
   print(modsemParTable(thresholds.table))
   testthat::expect_true(sum(thresholds.table$ok) / NROW(thresholds.table) >= 0.95) # 95% confidence
+
+  # ----------------------------------------------------------------------------
+  # Reliability corrected single items
+  # ----------------------------------------------------------------------------
+
+  m1 <- '
+  X =~ x1 + x2 + x3
+  Z =~ z1 + z2 + z3
+  Y =~ y1 + y2 + y3
+
+  Y ~ X + Z + X:Z
+  '
+
+  # First we compile the STAN model, this can be slow
+  # and is therefore done once, such that the compiled
+  # STAN code can be reused for the same model syntax later
+  # Fit the model based on the compiled STAN code
+  fit.2way <- modsem_stan(model.syntax = m1, rcs = TRUE,
+                          data = oneInt, iter = 2000, chains = 2)
+  # We can get a summary
+  summary(fit.2way)
 }

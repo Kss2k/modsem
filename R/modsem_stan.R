@@ -21,7 +21,21 @@
 #' of warmup iterations should be smaller than \code{iter} and the
 #' default is \code{iter/2}.
 #'
+#' @param ordered Ordered (i.e., ordinal) variables.
+#'
+#' @param rcs Should latent variable indicators be replaced with reliability-corrected
+#'   single item indicators instead? See \code{\link{relcorr_single_item}}.
+#'
+#' @param rcs.choose Which latent variables should get their indicators replaced with
+#'   reliability-corrected single items? It is passed to \code{\link{relcorr_single_item}}
+#'   as the \code{choose} argument.
+#'
+#' @param rcs.scale.corrected Should reliability-corrected items be scale-corrected? If \code{TRUE}
+#'   reliability-corrected single items are corrected for differences in factor loadings between
+#'   the items. Default is \code{TRUE}.
+#'
 #' @param ... Arguments passed to \code{stan::sampling}.
+#'
 #' @export
 modsem_stan <- function(model.syntax = NULL,
                         data = NULL,
@@ -30,14 +44,35 @@ modsem_stan <- function(model.syntax = NULL,
                         iter = 2000,
                         warmup = iter / 2,
                         ordered = NULL,
+                        rcs = FALSE,
+                        rcs.choose = NULL,
+                        rcs.scale.corrected = TRUE,
                         ...) {
-  if (is.null(compiled_model)) {
+  if (rcs) { # use reliability-correct single items?
+    corrected <- relcorr_single_item(
+      syntax          = model.syntax,
+      data            = data,
+      choose          = rcs.choose,
+      scale.corrected = rcs.scale.corrected,
+      warn.lav        = FALSE
+    )
+
+    model.syntax <- corrected$syntax
+    data         <- corrected$data
+  }
+
+  stopif(is.null(model.syntax) && rcs,
+         "`model.syntax` argument is needed when `rcs=TRUE`!")
+
+  if (is.null(compiled_model) || rcs) {
     stopif(is.null(model.syntax),
            "One of `model.syntax` or `compiled_model` has to be provided!")
     # pass ordered through so codegen knows which indicators are ordinal
     compiled_model <- compile_stan_model(model.syntax, ordered = ordered)
+  
   } else {
-    # normalize ordered for downstream data prep even when compiled_model is provided
+    # normalize ordered for downstream data
+    # prep even when compiled_model is provided
     if (is.null(ordered)) ordered <- character(0)
   }
 
@@ -124,7 +159,7 @@ modsem_stan <- function(model.syntax = NULL,
   # Summaries
   diagnostics <- diagnostics[namesSamplesRaw, , drop = FALSE]
   coefs <- apply(samples, MARGIN = 2, FUN = mean)
-  vcov  <- cov(samples)
+  vcov  <- stats::cov(samples)
   rhat  <- diagnostics[, "Rhat"]
   neff  <- diagnostics[, "n_eff"]
 

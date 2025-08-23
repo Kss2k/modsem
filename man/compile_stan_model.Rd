@@ -4,7 +4,13 @@
 \alias{compile_stan_model}
 \title{Compile \code{STAN} model based on a \code{lavaan} model}
 \usage{
-compile_stan_model(model.syntax, compile = TRUE, force = FALSE)
+compile_stan_model(
+  model.syntax,
+  compile = TRUE,
+  force = FALSE,
+  ordered = NULL,
+  ordered.link = c("logit", "probit")
+)
 }
 \arguments{
 \item{model.syntax}{\code{lavaan} syntax.}
@@ -13,6 +19,10 @@ compile_stan_model(model.syntax, compile = TRUE, force = FALSE)
 is generated, and not compiled.}
 
 \item{force}{Should compilation of previously compiled models be forced?}
+
+\item{ordered}{Ordered (i.e., ordinal) variables.}
+
+\item{ordered.link}{Link function to be used for ordered variables.}
 }
 \description{
 Compile \code{STAN} model based on a \code{lavaan} model
