@@ -417,7 +417,8 @@ getGradientStructSimple <- function(model, theta) {
   isConstraint <- parTable$op %in% CONSTRAINT_OPS & !canBeNumeric(parTable$rhs)
   constraints  <- parTable[isConstraint, ]
   restParTable <- parTable[!isConstraint, ]
-  constraints  <- constraints[constraints$lhs %in% restParTable$mod, ]
+  # TODO: find better way of removing unecessary constraints
+  # constraints  <- constraints[constraints$lhs %in% restParTable$mod, ]
 
   derivatives <- list()
   derivatives2 <- list()
