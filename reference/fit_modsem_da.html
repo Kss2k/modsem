@@ -62,7 +62,7 @@ for the baseline model, i.e., the model without the interaction effect</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">fit_modsem_da</span><span class="op">(</span><span class="va">model</span>, chisq <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">fit_modsem_da</span><span class="op">(</span><span class="va">model</span>, chisq <span class="op">=</span> <span class="cn">TRUE</span>, lav.fit <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -78,6 +78,13 @@ the interaction model likely has a good RMSEA as well.</p></dd>
 
 <dt id="arg-chisq">chisq<a class="anchor" aria-label="anchor" href="#arg-chisq"></a></dt>
 <dd><p>should Chi-Square based fit-measures be calculated?</p></dd>
+
+
+<dt id="arg-lav-fit">lav.fit<a class="anchor" aria-label="anchor" href="#arg-lav-fit"></a></dt>
+<dd><p>Should fit indices from the <code>lavaan</code> model used to optimize
+the starting parameters be included (if available)? This is usually only approprioate
+for linear models (i.e., no interaction effects), where the parameter estimates
+for LMS and QML are equivalent to ML estimates from lavaan.</p></dd>
 
 </dl></div>
 

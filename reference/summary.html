@@ -68,6 +68,7 @@ summary for modsem objects"></head><body>
 <span>  H0 <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/interactive.html" class="external-link">interactive</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  r.squared <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  fit <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  adjusted.stat <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  digits <span class="op">=</span> <span class="fl">3</span>,</span>
 <span>  scientific <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -131,11 +132,15 @@ comparative fit?</p></dd>
 
 
 <dt id="arg-r-squared">r.squared<a class="anchor" aria-label="anchor" href="#arg-r-squared"></a></dt>
-<dd><p>calculate R-squared</p></dd>
+<dd><p>Calculate R-squared.</p></dd>
+
+
+<dt id="arg-fit">fit<a class="anchor" aria-label="anchor" href="#arg-fit"></a></dt>
+<dd><p>Print additional fit measures.</p></dd>
 
 
 <dt id="arg-adjusted-stat">adjusted.stat<a class="anchor" aria-label="anchor" href="#arg-adjusted-stat"></a></dt>
-<dd><p>should sample size corrected/adjustes AIC and BIC be reported?</p></dd>
+<dd><p>Should sample size corrected/adjustes AIC and BIC be reported?</p></dd>
 
 
 <dt id="arg-digits">digits<a class="anchor" aria-label="anchor" href="#arg-digits"></a></dt>
@@ -155,16 +160,16 @@ comparative fit?</p></dd>
 
 
 <dt id="arg-centered">centered<a class="anchor" aria-label="anchor" href="#arg-centered"></a></dt>
-<dd><p>print mean centered estimates</p></dd>
+<dd><p>Print mean centered estimates.</p></dd>
 
 
 <dt id="arg-monte-carlo">monte.carlo<a class="anchor" aria-label="anchor" href="#arg-monte-carlo"></a></dt>
-<dd><p>should Monte Carlo bootstrapped standard errors be used? Only
+<dd><p>Should Monte Carlo bootstrapped standard errors be used? Only
 relevant if <code>standardized = TRUE</code>. If <code>FALSE</code> delta method is used instead.</p></dd>
 
 
 <dt id="arg-mc-reps">mc.reps<a class="anchor" aria-label="anchor" href="#arg-mc-reps"></a></dt>
-<dd><p>number of Monte Carlo repetitions. Only relevant if <code>monte.carlo = TRUE</code>,
+<dd><p>Number of Monte Carlo repetitions. Only relevant if <code>monte.carlo = TRUE</code>,
 and <code>standardized = TRUE</code>.</p></dd>
 
 
@@ -189,8 +194,8 @@ and <code>standardized = TRUE</code>.</p></dd>
 
 
 <dt id="arg-var-interaction">var.interaction<a class="anchor" aria-label="anchor" href="#arg-var-interaction"></a></dt>
-<dd><p>if FALSE variances for interaction terms will be removed
-from the output</p></dd>
+<dd><p>If FALSE variances for interaction terms will be removed
+from the output.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
