@@ -414,7 +414,7 @@ getGradientStructSimple <- function(model, theta) {
   parTable <- model$parTable
   parTable <- parTable[!parTable$op %in% BOUNDUARY_OPS, , drop = FALSE] # not relevant
 
-  customParams <- parTable[parTable$op == ":=", , drop = FALSE]
+  customParams <- parTable[parTable$op %in% c(":=", "=="), drop = FALSE]
   for (i in seq_len(NROW(customParams))) {
     row <- customParams[i, , drop = FALSE]
     eq  <- sprintf("(%s)", row$rhs)
