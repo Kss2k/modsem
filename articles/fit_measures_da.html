@@ -133,6 +133,9 @@ be deemed well-fitting.</p>
 <code><a href="../reference/fit_modsem_da.html">fit_modsem_da()</a></code> function.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/fit_modsem_da.html">fit_modsem_da</a></span><span class="op">(</span><span class="va">est_h0</span><span class="op">)</span></span>
+<span><span class="co">#&gt; $lav.fit</span></span>
+<span><span class="co">#&gt; NULL</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sigma.observed</span></span>
 <span><span class="co">#&gt;       x1    x2    x3    z1    z2    z3    y1    y2    y3</span></span>
 <span><span class="co">#&gt; x1 1.141                                                </span></span>
@@ -230,6 +233,9 @@ test. If it is set to <code>TRUE</code> it will calculate the Chi-square
 test while ignoring the interaction terms in the model.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/fit_modsem_da.html">fit_modsem_da</a></span><span class="op">(</span><span class="va">est_h1</span>, chisq <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; $lav.fit</span></span>
+<span><span class="co">#&gt; NULL</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $sigma.observed</span></span>
 <span><span class="co">#&gt;       x1    x2    x3    z1    z2    z3    y1    y2    y3</span></span>
 <span><span class="co">#&gt; x1 1.141                                                </span></span>
@@ -331,6 +337,9 @@ models, and comparative fit in one go.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/modsem_inspect.html">modsem_inspect</a></span><span class="op">(</span><span class="va">est_h1</span>, what <span class="op">=</span> <span class="st">"fit"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; $fit.h0</span></span>
+<span><span class="co">#&gt; $fit.h0$lav.fit</span></span>
+<span><span class="co">#&gt; NULL</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $fit.h0$sigma.observed</span></span>
 <span><span class="co">#&gt;       x1    x2    x3    z1    z2    z3    y1    y2    y3</span></span>
 <span><span class="co">#&gt; x1 1.141                                                </span></span>
@@ -425,6 +434,9 @@ models, and comparative fit in one go.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $fit.h1</span></span>
+<span><span class="co">#&gt; $fit.h1$lav.fit</span></span>
+<span><span class="co">#&gt; NULL</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $fit.h1$sigma.observed</span></span>
 <span><span class="co">#&gt;       x1    x2    x3    z1    z2    z3    y1    y2    y3</span></span>
 <span><span class="co">#&gt; x1 1.141                                                </span></span>
