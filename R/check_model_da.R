@@ -39,12 +39,10 @@ checkAConstraints <- function(model, covModel, method = "lms") {
 
   warnif(!isOKALabel || !isOKANumeric,
          "Variances and covariances of exogenous variables aren't truely ",
-         "free parameters in the LMS approach. Using them in model constraints ",
-         "affecting the model estimation will likely not work as expected!\n\n",
-         "If the label is unused, or only used to compute custom parameters (using `:=`) ",
-         "which don't affect the model estimation, you can ignore this warning.\n\n",
+         "free parameters in the LMS approach.\n\n",
+         "Using them in model constraints will likely not work as intended!\n\n",
          'To fix this you can pass an empty model to `cov.syntax`, for example: \n',
-         '    `modsem(my_model, data = my_data, method = "lms", cov.syntax = "")`\n'
+         '    `modsem(my_model, data = my_data, method = "lms", cov.syntax = "")`'
   )
 }
 
