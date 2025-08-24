@@ -51,6 +51,7 @@ summary.modsem_da <- function(object,
                               H0 = TRUE,
                               verbose = interactive(),
                               r.squared = TRUE,
+                              fit = FALSE,
                               adjusted.stat = FALSE,
                               digits = 3,
                               scientific = FALSE,
@@ -140,7 +141,7 @@ summary.modsem_da <- function(object,
 
     } else {
       out$D     <- compare_fit(est_h1 = object, est_h0 = est_h0)
-      out$fitH0 <- fit_modsem_da(est_h0)
+      out$fitH0 <- fit_modsem_da(est_h0, lav.fit = TRUE)
     }
   } else {
     out$D <- NULL
@@ -167,7 +168,9 @@ summary.modsem_da <- function(object,
     covariances   = covariances,
     intercepts    = intercepts,
     variances     = variances,
-    extra.cols    = extra.cols
+    extra.cols    = extra.cols,
+    extra.fit     = fit,
+    scaled.stat   = object$args$robust.se
   )
 
   class(out) <- "summary_da"
@@ -256,24 +259,85 @@ print.summary_da <- function(x, digits = 3, ...) {
 
   # Comparative fit ------------------------------------------------------------
   if (!is.null(x$D)) {
+    lav.fit.h0 <- x$fitH0$lav.fit
+    fnull      <- \(x) if (is.null(x)) NA else x
+
     cat("Fit Measures for Baseline Model (H0):\n")
-    names <- c("Loglikelihood", "Akaike (AIC)", "Bayesian (BIC)")
-    values <- c(round(x$nullModel$logLik, 2), round(x$fitH0$AIC, 2), round(x$fitH0$BIC, 2))
+
+    names <- c("", "Chi-square", "Degrees of Freedom (Chi-square)",
+               "P-value (Chi-square)")
+    values <- c("Standard",
+                formatNumeric(x$fitH0$chisq.value, digits = 2),
+                x$fitH0$chisq.df,
+                formatPval(x$fitH0$chisq.pvalue, scientific = x$format$scientific))
+
+    if (x$format$scaled.stat) {
+      chisq.s <- fnull(lav.fit.h0[["chisq.scaled"]])
+      df.s    <- fnull(lav.fit.h0[["df.scaled"]])
+      pval.s  <- fnull(lav.fit.h0[["pvalue.scaled"]])
+      scale.f <- fnull(lav.fit.h0[["chisq.scaling.factor"]])
+      values.scaled <- c("Scaled",
+                         formatNumeric(chisq.s, digits = 2),
+                         round(df.s),
+                         formatPval(pval.s, scientific = x$format$scientific),
+                         formatNumeric(scale.f, digits = 3),
+                         rep("", 2))
+      values <- c(values, rep("", 3))
+      names <- c(names, "Scaling correction factor",
+                 "  Yuan-Bentler correction (Mplus variant)", "")
+
+    } else values.scaled <- NULL
+
+
+    names <- c(names, "RMSEA")
+    values <- c(values, formatNumeric(x$fitH0$RMSEA, digits = 3))
+
+    if (!is.null(values.scaled)) {
+      rmsea.s <- fnull(lav.fit.h0[["rmsea.scaled"]])
+      values.scaled <- c(values.scaled, formatNumeric(rmsea.s, digits = 3))
+    }
+
+    if (x$format$extra.fit) {
+      names  <- c(names, "CFI", "TLI", "SRMR")
+      srmr <- x$fitH0$SRMR
+      cfi  <- fnull(lav.fit.h0[["cfi"]])
+      tli  <- fnull(lav.fit.h0[["tli"]])
+      values <- c(values,
+                  formatNumeric(cfi, digits = 3),
+                  formatNumeric(tli, digits = 3),
+                  formatNumeric(srmr, digits = 3))
+
+      if (!is.null(values.scaled)) {
+        cfi.s <- fnull(lav.fit.h0[["cfi.scaled"]])
+        tli.s <- fnull(lav.fit.h0[["tli.scaled"]])
+        values.scaled <- c(values.scaled,
+                           formatNumeric(cfi.s, digits = 3),
+                           formatNumeric(tli.s, digits = 3),
+                           "")
+      }
+    }
+
+    names <- c(names, "", "Loglikelihood", "Akaike (AIC)", "Bayesian (BIC)")
+    values <- c(values, "",
+                formatNumeric(x$nullModel$logLik, digits = 2),
+                formatNumeric(x$fitH0$AIC, digits = 2),
+                formatNumeric(x$fitH0$BIC, digits = 2))
+
+    if (!is.null(values.scaled))
+      values.scaled <- c(values.scaled, rep("", 4))
 
     if (x$format$adjusted.stat) {
       names <- c(names, "Corrected Akaike (AICc)", "Adjusted Bayesian (aBIC)")
-      values <- c(values, round(x$fitH0$AICc, 2), round(x$fitH0$aBIC, 2))
+      values <- c(values,
+                  formatNumeric(x$fitH0$AICc, digits = 2),
+                  formatNumeric(x$fitH0$aBIC, digits = 2))
+
+      if (!is.null(values.scaled))
+        values.scaled <- c(values.scaled, rep("", 2))
     }
 
-    names <- c(names, "Chi-square", "Degrees of Freedom (Chi-square)",
-               "P-value (Chi-square)", "RMSEA", "SRMR")
-    values <- c(values, formatNumeric(x$fitH0$chisq.value, digits = 2),
-                x$fitH0$chisq.df,
-                formatPval(x$fitH0$chisq.pvalue, scientific = x$format$scientific),
-                formatNumeric(x$fitH0$RMSEA, digits = 3),
-                formatNumeric(x$fitH0$SRMR, digits = 3))
     cat(allignLhsRhs(lhs = names, rhs = values, pad = "  ",
-                     width.out = width.out), "\n")
+                     width.out = width.out, rhs.scaled = values.scaled), "\n")
 
     cat("Comparative Fit to H0 (LRT test):\n")
     names <- c("Loglikelihood change",

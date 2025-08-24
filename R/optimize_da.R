@@ -2,7 +2,8 @@ optimizeStartingParamsDA <- function(model,
                                      args = list(orthogonal.x = FALSE,
                                                  orthogonal.y = FALSE,
                                                  auto.fix.first = TRUE,
-                                                 auto.fix.sinlge = TRUE)) {
+                                                 auto.fix.sinlge = TRUE,
+                                                 robust.se = FALSE)) {
   etas     <- model$info$etas
   indsEtas <- model$info$allIndsEtas
   xis      <- model$info$xis
@@ -11,12 +12,15 @@ optimizeStartingParamsDA <- function(model,
   data     <- model$data.raw
   missing  <- tolower(args$missing)
 
+  robust.se       <- args$robust.se
+  has.interaction <- model$info$has.interaction
+
   syntax <- paste(model$syntax, model$covModel$syntax,
                   model$info$lavOptimizerSyntaxAdditions,
                   sep = "\n")
 
   acceptable.missing <- c("listwise", "ml", "direct", "fiml")
-  if (grepl(":", syntax) && missing %in% c("ml", "fiml", "direct")) {
+  if (has.interaction && missing %in% c("ml", "fiml", "direct")) {
     # It is not worth the extra compute to use fiml (if fiml is set)
     # for getting good starting estiamtes for the model, for non-linear models.
     # FIML can be very slow if there are a lot of product indicators.
@@ -26,10 +30,17 @@ optimizeStartingParamsDA <- function(model,
     missing <- "listwise"
   } else if (!missing %in% acceptable.missing) missing <- "listwise"
 
+  if (!has.interaction && robust.se) {
+    estimator <- "MLR"
+
+    # Not worth the extra compute for non-linear models
+  } else estimator <- "ML"
+
   estPI <- modsem_pi(
     model.syntax    = syntax,
     data            = data,
     method          = "dblcent",
+    estimator       = estimator,
     meanstructure   = TRUE,
     orthogonal.x    = args$orthogonal.x,
     orthogonal.y    = args$orthogonal.y,
@@ -188,6 +199,7 @@ optimizeStartingParamsDA <- function(model,
     model$theta <- theta
   }
 
+  model$lavaan.fit <- extract_lavaan(estPI)
   model
 }
 

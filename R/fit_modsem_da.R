@@ -4,13 +4,21 @@
 #' @description Calculates chi-sq test and p-value, as well as RMSEA for
 #' the LMS and QML models. Note that the Chi-Square based fit measures should be calculated
 #' for the baseline model, i.e., the model without the interaction effect
+#'
 #' @param model fitted model. Thereafter, you can use 'compare_fit()'
 #' to assess the comparative fit of the models. If the interaction effect makes
 #' the model better, and e.g., the RMSEA is good for the baseline model,
 #' the interaction model likely has a good RMSEA as well.
+#'
 #' @param chisq should Chi-Square based fit-measures be calculated?
+#'
+#' @param lav.fit Should fit indices from the \code{lavaan} model used to optimize
+#'   the starting parameters be included (if available)? This is usually only approprioate
+#'   for linear models (i.e., no interaction effects), where the parameter estimates
+#'   for LMS and QML are equivalent to ML estimates from lavaan.
+#'
 #' @export
-fit_modsem_da <- function(model, chisq = TRUE) {
+fit_modsem_da <- function(model, chisq = TRUE, lav.fit = FALSE) {
   parTable <- model$parTable
   warnif(any(grepl(":", parTable$rhs)) && chisq,
          "Chi-Square based fit-measures for LMS and QML ",
@@ -73,7 +81,21 @@ fit_modsem_da <- function(model, chisq = TRUE) {
   BIC  <- calcBIC(logLik, k = k, N = N)
   aBIC <- calcAdjBIC(logLik, k = k, N = N)
 
+  if (lav.fit) {
+    lavfit <- tryCatch(
+      lavaan::fitMeasures(model$model$lavaan.fit),
+      error = function(e) {
+        warning2("Unable to retrieve fit measures for lavaan model!\n",
+                 "Message: ", conditionMessage(e), immediate. = FALSE)
+        NULL
+      }
+    )
+  } else lavfit <- NULL
+
+
   list(
+    lav.fit = lavfit,
+
     sigma.observed = modsemMatrix(O, symmetric = TRUE),
     sigma.expected = modsemMatrix(E, symmetric = TRUE),
     mu.observed    = modsemMatrix(mu),
