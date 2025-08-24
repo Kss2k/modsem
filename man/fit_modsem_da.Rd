@@ -4,7 +4,7 @@
 \alias{fit_modsem_da}
 \title{Fit measures for QML and LMS models}
 \usage{
-fit_modsem_da(model, chisq = TRUE)
+fit_modsem_da(model, chisq = TRUE, lav.fit = FALSE)
 }
 \arguments{
 \item{model}{fitted model. Thereafter, you can use 'compare_fit()'
@@ -13,6 +13,11 @@ the model better, and e.g., the RMSEA is good for the baseline model,
 the interaction model likely has a good RMSEA as well.}
 
 \item{chisq}{should Chi-Square based fit-measures be calculated?}
+
+\item{lav.fit}{Should fit indices from the \code{lavaan} model used to optimize
+the starting parameters be included (if available)? This is usually only approprioate
+for linear models (i.e., no interaction effects), where the parameter estimates
+for LMS and QML are equivalent to ML estimates from lavaan.}
 }
 \description{
 Calculates chi-sq test and p-value, as well as RMSEA for

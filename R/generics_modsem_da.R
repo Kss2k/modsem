@@ -7,29 +7,30 @@ parameter_estimates.modsem_da <- function(object, ...) {
 
 #' summary for modsem objects
 #'
-#' @param object modsem object to summarized
-#' @param H0 should a null model be estimated (used for comparison)
-#' @param verbose print progress for the estimation of null model
-#' @param r.squared calculate R-squared
-#' @param adjusted.stat should sample size corrected/adjustes AIC and BIC be reported?
-#' @param digits number of digits to print
-#' @param scientific print p-values in scientific notation
-#' @param ci print confidence intervals
-#' @param standardized print standardized estimates
-#' @param centered print mean centered estimates
-#' @param monte.carlo should Monte Carlo bootstrapped standard errors be used? Only
+#' @param object modsem object to summarized.
+#' @param H0 Should a null model be estimated (used for comparison).
+#' @param verbose Print progress for the estimation of null model.
+#' @param r.squared Calculate R-squared.
+#' @param fit Print additional fit measures.
+#' @param adjusted.stat Should sample size corrected/adjustes AIC and BIC be reported?
+#' @param digits Number of digits to print.
+#' @param scientific Print p-values in scientific notation.
+#' @param ci Print confidence intervals.
+#' @param standardized Print standardized estimates.
+#' @param centered Print mean centered estimates.
+#' @param monte.carlo Should Monte Carlo bootstrapped standard errors be used? Only
 #'   relevant if \code{standardized = TRUE}. If \code{FALSE} delta method is used instead.
-#' @param mc.reps number of Monte Carlo repetitions. Only relevant if \code{monte.carlo = TRUE},
+#' @param mc.reps Number of Monte Carlo repetitions. Only relevant if \code{monte.carlo = TRUE},
 #'   and \code{standardized = TRUE}.
-#' @param loadings print loadings
-#' @param regressions print regressions
-#' @param covariances print covariances
-#' @param intercepts should intercepts be included in the output?
+#' @param loadings Print loadings.
+#' @param regressions Print regressions.
+#' @param covariances Print covariances.
+#' @param intercepts Should intercepts be included in the output?
 #' If \code{standardized = TRUE} intercepts will by default be excluded.
-#' @param variances print variances
-#' @param var.interaction if FALSE variances for interaction terms will be removed
-#' from the output
-#' @param ... additional arguments
+#' @param variances Print variances.
+#' @param var.interaction If FALSE variances for interaction terms will be removed
+#' from the output.
+#' @param ... Additional arguments.
 #' @rdname summary
 #' @export
 #' @examples

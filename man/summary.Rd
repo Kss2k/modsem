@@ -12,6 +12,7 @@
   H0 = TRUE,
   verbose = interactive(),
   r.squared = TRUE,
+  fit = FALSE,
   adjusted.stat = FALSE,
   digits = 3,
   scientific = FALSE,
@@ -62,9 +63,11 @@ comparative fit?}
 
 \item{verbose}{Should messages be printed?}
 
-\item{r.squared}{calculate R-squared}
+\item{r.squared}{Calculate R-squared.}
 
-\item{adjusted.stat}{should sample size corrected/adjustes AIC and BIC be reported?}
+\item{fit}{Print additional fit measures.}
+
+\item{adjusted.stat}{Should sample size corrected/adjustes AIC and BIC be reported?}
 
 \item{digits}{Number of digits for printed numerical values}
 
@@ -74,12 +77,12 @@ comparative fit?}
 
 \item{standardized}{standardize estimates}
 
-\item{centered}{print mean centered estimates}
+\item{centered}{Print mean centered estimates.}
 
-\item{monte.carlo}{should Monte Carlo bootstrapped standard errors be used? Only
+\item{monte.carlo}{Should Monte Carlo bootstrapped standard errors be used? Only
 relevant if \code{standardized = TRUE}. If \code{FALSE} delta method is used instead.}
 
-\item{mc.reps}{number of Monte Carlo repetitions. Only relevant if \code{monte.carlo = TRUE},
+\item{mc.reps}{Number of Monte Carlo repetitions. Only relevant if \code{monte.carlo = TRUE},
 and \code{standardized = TRUE}.}
 
 \item{loadings}{print loadings}
@@ -92,8 +95,8 @@ and \code{standardized = TRUE}.}
 
 \item{variances}{print variances}
 
-\item{var.interaction}{if FALSE variances for interaction terms will be removed
-from the output}
+\item{var.interaction}{If FALSE variances for interaction terms will be removed
+from the output.}
 
 \item{...}{arguments passed to lavaan::summary()}
 }
