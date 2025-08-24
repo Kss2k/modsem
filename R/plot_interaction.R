@@ -155,17 +155,47 @@ plot_interaction <- function(x, z, y, xz = NULL, vals_x = seq(-3, 3, .001),
 #' @param max_z The maximum value of the moderator variable \code{z} to be used in the plot (default is 3). It is relative to the mean of z.
 #' @param sig.level The alpha-criterion for the confidence intervals (default is 0.05).
 #' @param alpha alpha setting used in \code{ggplot} (i.e., the opposite of opacity)
-#' @param detail The number of generated data points to use for the plot (default is 1000).
-#' @param sd.line A thick black line showing \code{+/- sd.line * sd(z)} (truncated by \code{min_z}/\code{max_z}).
+#' @param detail The number of generated data points to use for the plot (default is 1000). You can increase this value for smoother plots.
+#' @param sd.line A thick black line showing \code{+/- sd.line * sd(z)}. NOTE: This line will be truncated by \code{min_z} and \code{max_z} if
+#' the sd.line falls outside of \code{[min_z, max_z]}.
 #' @param standardized Should coefficients be standardized beforehand?
 #' @param ... Additional arguments (currently not used).
+#'
 #' @return A \code{ggplot} object showing the interaction plot with regions of significance.
+#' @details
+#' The function calculates the simple slopes of the predictor variable \code{x} on the outcome variable \code{y} at different levels of the moderator variable \code{z}. It uses the Johnson-Neyman technique to identify the regions of \code{z} where the effect of \code{x} on \code{y} is statistically significant.
+#'
+#' It extracts the necessary coefficients and variance-covariance information from the fitted model object. The function then computes the critical t-value and solves the quadratic equation derived from the t-statistic equation to find the Johnson-Neyman points.
+#'
+#' The plot displays:
+#' \itemize{
+#'   \item The estimated simple slopes across the range of \code{z}.
+#'   \item Confidence intervals around the slopes.
+#'   \item Regions where the effect is significant (shaded areas).
+#'   \item Vertical dashed lines indicating the Johnson-Neyman points.
+#'   \item Text annotations providing the exact values of the Johnson-Neyman points.
+#' }
+#'
+#' @examples
+#' \dontrun{
+#' library(modsem)
+#'
+#' m1 <-  '
+#'   visual  =~ x1 + x2 + x3
+#'   textual =~ x4 + x5 + x6
+#'   speed   =~ x7 + x8 + x9
+#'
+#'   visual ~ speed + textual + speed:textual
+#' '
+#'
+#' est <- modsem(m1, data = lavaan::HolzingerSwineford1939, method = "ca")
+#' plot_jn(x = "speed", z = "textual", y = "visual", model = est, max_z = 6)
+#' }
 #' @export
 plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3,
                     sig.level = 0.05, alpha = 0.2, detail = 1000,
                     sd.line = 2, standardized = FALSE, ...) {
 
-  # Model/tools
   stopif(!inherits(model, c("modsem_da", "modsem_mplus", "modsem_pi", "lavaan")),
          "model must be of class 'modsem_pi', 'modsem_da', 'modsem_mplus', or 'lavaan'")
 
@@ -188,13 +218,13 @@ plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3,
   }
   parTable <- getMissingLabels(parTable)
 
-  # Moderator range
+  # z mean/sd and plotting window
   mean_z <- getMean(z, parTable = parTable)
   sd_z   <- sqrt(calcCovParTable(x = z, y = z, parTable = parTable))
   min_z  <- min_z + mean_z
   max_z  <- max_z + mean_z
 
-  # Coefs/VCOV
+  # coefficients
   beta_x  <- parTable[parTable$lhs == y & parTable$rhs == x   & parTable$op == "~", "est"]
   beta_xz <- parTable[parTable$lhs == y & parTable$rhs %in% xz & parTable$op == "~", "est"]
   stopif(length(beta_x)  == 0, "Coefficient for x not found in model")
@@ -219,17 +249,16 @@ plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3,
 
   t_crit <- stats::qt(1 - sig.level / 2, df_resid)
 
-  # Johnson–Neyman equation A z^2 + B z + C = 0
+  # Johnson–Neyman roots
   A <- beta_xz^2 - t_crit^2 * var_beta_xz
   B <- 2 * beta_x * beta_xz - 2 * t_crit^2 * cov_beta_x_beta_xz
   C <- beta_x^2 - t_crit^2 * var_beta_x
-
   disc <- B^2 - 4 * A * C
+
   significant_everywhere <- FALSE
   if (A == 0) {
     if (B != 0) {
-      z_jn <- -C / B
-      z_lower <- z_jn; z_upper <- z_jn
+      z_jn <- -C / B; z_lower <- z_jn; z_upper <- z_jn
     } else {
       message("No regions where the effect transitions between significant and non-significant.")
       significant_everywhere <- TRUE
@@ -238,15 +267,14 @@ plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3,
     message("No regions where the effect transitions between significant and non-significant.")
     significant_everywhere <- TRUE
   } else if (disc == 0) {
-    z_jn <- -B / (2 * A)
-    z_lower <- z_jn; z_upper <- z_jn
+    z_jn <- -B / (2 * A); z_lower <- z_jn; z_upper <- z_jn
   } else {
     z1 <- (-B + sqrt(disc)) / (2 * A)
     z2 <- (-B - sqrt(disc)) / (2 * A)
     z_lower <- min(z1, z2); z_upper <- max(z1, z2)
   }
 
-  # Slopes, SEs, p-values over the plotting grid
+  # grid and simple slopes
   z_range  <- seq(min_z, max_z, length.out = detail)
   slope    <- beta_x + beta_xz * z_range
   SE_slope <- sqrt(var_beta_x + z_range^2 * var_beta_xz + 2 * z_range * cov_beta_x_beta_xz)
@@ -256,51 +284,27 @@ plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3,
 
   lower_all <- slope - t_crit * SE_slope
   upper_all <- slope + t_crit * SE_slope
-  lower_sig <- ifelse(significant,  lower_all, NA_real_)
-  upper_sig <- ifelse(significant,  upper_all, NA_real_)
-  lower_nsig <- ifelse(!significant, lower_all, NA_real_)
-  upper_nsig <- ifelse(!significant, upper_all, NA_real_)
 
   siglabel <- sprintf("p < %s", sig.level)
   significance_chr <- ifelse(significant, siglabel, "n.s.")
-  line_segments <- cumsum(c(0, diff(as.integer(significant)) != 0))
+  Significance <- factor(significance_chr, levels = c(siglabel, "n.s."))
+
+  # split into contiguous runs to avoid polygon bleed
+  run_id <- cumsum(c(0, diff(as.integer(significant)) != 0))
 
   df_plot <- data.frame(
     z = z_range,
-    slope = slope,
-    SE = SE_slope,
-    t = t_value,
-    p = p_value,
-    significant = significant,
-    upper_all = upper_all,
-    lower_all = lower_all,
-    upper_sig = upper_sig,
-    lower_sig = lower_sig,
-    upper_nsig = upper_nsig,
-    lower_nsig = lower_nsig,
-    Significance = significance_chr,
-    line_segments = line_segments
-  )
-
-  # Defensive coercions
-  df_plot <- transform(
-    df_plot,
     slope = as.numeric(slope),
-    upper_all = as.numeric(upper_all),
     lower_all = as.numeric(lower_all),
-    upper_sig = as.numeric(upper_sig),
-    lower_sig = as.numeric(lower_sig),
-    upper_nsig = as.numeric(upper_nsig),
-    lower_nsig = as.numeric(lower_nsig)
+    upper_all = as.numeric(upper_all),
+    significant = significant,
+    Significance = Significance,
+    run_id = run_id
   )
-
-  # Stable legend even if all points are n.s.
-  df_plot$Significance <- factor(df_plot$Significance, levels = c(siglabel, "n.s."))
 
   # SD-band segment
-  mean_z_local <- mean_z # just to make intent explicit
-  x_start <- mean_z_local - sd.line * sd_z
-  x_end   <- mean_z_local + sd.line * sd_z
+  x_start <- mean_z - sd.line * sd_z
+  x_end   <- mean_z + sd.line * sd_z
   if (x_start < min_z && x_end > max_z) {
     warning2("Truncating SD-range on the right and left!")
   } else if (x_start < min_z) {
@@ -312,37 +316,28 @@ plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3,
   x_end   <- min(x_end, max_z)
   y_start <- y_end <- 0
   hline_label <- sprintf("+/- %s SDs of %s", sd.line, z)
-  data_hline <- data.frame(x_start = x_start, x_end = x_end,
-                           y_start = y_start, y_end = y_end,
-                           hline_label = hline_label)
+  data_hline <- data.frame(x_start, x_end, y_start, y_end, hline_label)
 
-  # Scales/legend
+  # unified legend for colour/fill
   breaks <- c(siglabel, "n.s.", hline_label)
   values <- structure(c("cyan3", "red", "black"), names = breaks)
 
   y_range <- range(c(df_plot$lower_all, df_plot$upper_all, 0), na.rm = TRUE)
   if (!all(is.finite(y_range))) y_range <- c(-1, 1)
 
-  # Plot
+  # plot
   p <- ggplot2::ggplot(df_plot, ggplot2::aes(x = z, y = slope)) +
+    # single ribbon, split into runs; fill follows Significance
+    ggplot2::geom_ribbon(
+      ggplot2::aes(ymin = lower_all, ymax = upper_all,
+                   fill = Significance, group = run_id),
+      alpha = alpha, na.rm = TRUE
+    ) +
+    # line coloured by Significance, also split into runs for color change
     ggplot2::geom_line(
-      ggplot2::aes(color = Significance, group = line_segments),
+      ggplot2::aes(color = Significance, group = run_id),
       linewidth = 1, na.rm = TRUE
     ) +
-    {
-      has_nsig <- any(is.finite(df_plot$lower_nsig) & is.finite(df_plot$upper_nsig))
-      if (has_nsig) ggplot2::geom_ribbon(
-        ggplot2::aes(ymin = lower_nsig, ymax = upper_nsig, fill = "n.s."),
-        alpha = alpha, na.rm = TRUE
-      ) else ggplot2::geom_blank()
-    } +
-    {
-      has_sig <- any(is.finite(df_plot$lower_sig) & is.finite(df_plot$upper_sig))
-      if (has_sig) ggplot2::geom_ribbon(
-        ggplot2::aes(ymin = lower_sig, ymax = upper_sig, fill = siglabel),
-        alpha = alpha, na.rm = TRUE
-      ) else ggplot2::geom_blank()
-    } +
     ggplot2::geom_hline(yintercept = 0, color = "black", linewidth = 0.5) +
     suppressWarnings(
       ggplot2::geom_segment(
@@ -352,7 +347,6 @@ plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3,
       )
     ) +
     ggplot2::ggtitle("Johnson-Neyman Plot") +
-    # SINGLE, COMBINED LEGEND FOR colour & fill
     ggplot2::scale_discrete_manual(
       aesthetics = c("colour", "fill"),
       name = "",
@@ -364,28 +358,27 @@ plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3,
     ggplot2::labs(x = z, y = paste("Slope of", x, "on", y)) +
     ggplot2::theme_minimal()
 
-  # JN annotations only if there's a transition within the window
+  # only show JN lines if there is a transition in the plotted window
   has_transition_in_window <- any(diff(as.integer(df_plot$significant)) != 0, na.rm = TRUE)
-
   if (!significant_everywhere && has_transition_in_window) {
     top_y <- suppressWarnings(max(df_plot$slope[is.finite(df_plot$slope)], na.rm = TRUE))
     if (!is.finite(top_y)) top_y <- y_range[2]
 
     if (exists("z_jn")) {
-      if (is.finite(z_jn) && z_jn >= min_z && z_jn <= max_z && is.finite(top_y)) {
+      if (is.finite(z_jn) && z_jn >= min_z && z_jn <= max_z) {
         p <- p + ggplot2::geom_vline(xintercept = z_jn, linetype = "dashed", color = "red") +
           ggplot2::annotate("text", x = z_jn, y = top_y,
                             label = paste("JN point:", round(z_jn, 2)),
                             hjust = -0.1, vjust = 1, color = "black")
       }
     } else {
-      if (is.finite(z_lower) && z_lower >= min_z && z_lower <= max_z && is.finite(top_y)) {
+      if (is.finite(z_lower) && z_lower >= min_z && z_lower <= max_z) {
         p <- p + ggplot2::geom_vline(xintercept = z_lower, linetype = "dashed", color = "red") +
           ggplot2::annotate("text", x = z_lower, y = top_y,
                             label = paste("JN point:", round(z_lower, 2)),
                             hjust = -0.1, vjust = 1, color = "black")
       }
-      if (is.finite(z_upper) && z_upper >= min_z && z_upper <= max_z && is.finite(top_y)) {
+      if (is.finite(z_upper) && z_upper >= min_z && z_upper <= max_z) {
         p <- p + ggplot2::geom_vline(xintercept = z_upper, linetype = "dashed", color = "red") +
           ggplot2::annotate("text", x = z_upper, y = top_y,
                             label = paste("JN point:", round(z_upper, 2)),

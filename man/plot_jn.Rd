@@ -39,9 +39,10 @@ plot_jn(
 
 \item{alpha}{alpha setting used in \code{ggplot} (i.e., the opposite of opacity)}
 
-\item{detail}{The number of generated data points to use for the plot (default is 1000).}
+\item{detail}{The number of generated data points to use for the plot (default is 1000). You can increase this value for smoother plots.}
 
-\item{sd.line}{A thick black line showing \code{+/- sd.line * sd(z)} (truncated by \code{min_z}/\code{max_z}).}
+\item{sd.line}{A thick black line showing \code{+/- sd.line * sd(z)}. NOTE: This line will be truncated by \code{min_z} and \code{max_z} if
+the sd.line falls outside of \code{[min_z, max_z]}.}
 
 \item{standardized}{Should coefficients be standardized beforehand?}
 
@@ -52,4 +53,34 @@ A \code{ggplot} object showing the interaction plot with regions of significance
 }
 \description{
 This function plots the simple slopes of an interaction effect across different values of a moderator variable using the Johnson-Neyman technique. It identifies regions where the effect of the predictor on the outcome is statistically significant.
+}
+\details{
+The function calculates the simple slopes of the predictor variable \code{x} on the outcome variable \code{y} at different levels of the moderator variable \code{z}. It uses the Johnson-Neyman technique to identify the regions of \code{z} where the effect of \code{x} on \code{y} is statistically significant.
+
+It extracts the necessary coefficients and variance-covariance information from the fitted model object. The function then computes the critical t-value and solves the quadratic equation derived from the t-statistic equation to find the Johnson-Neyman points.
+
+The plot displays:
+\itemize{
+  \item The estimated simple slopes across the range of \code{z}.
+  \item Confidence intervals around the slopes.
+  \item Regions where the effect is significant (shaded areas).
+  \item Vertical dashed lines indicating the Johnson-Neyman points.
+  \item Text annotations providing the exact values of the Johnson-Neyman points.
+}
+}
+\examples{
+\dontrun{
+library(modsem)
+
+m1 <-  '
+  visual  =~ x1 + x2 + x3
+  textual =~ x4 + x5 + x6
+  speed   =~ x7 + x8 + x9
+
+  visual ~ speed + textual + speed:textual
+'
+
+est <- modsem(m1, data = lavaan::HolzingerSwineford1939, method = "ca")
+plot_jn(x = "speed", z = "textual", y = "visual", model = est, max_z = 6)
+}
 }
