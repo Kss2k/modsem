@@ -414,11 +414,23 @@ getGradientStructSimple <- function(model, theta) {
   parTable <- model$parTable
   parTable <- parTable[!parTable$op %in% BOUNDUARY_OPS, , drop = FALSE] # not relevant
 
+  customParams <- parTable[parTable$op == ":=", , drop = FALSE]
+  for (i in seq_len(NROW(customParams))) {
+    row <- customParams[i, , drop = FALSE]
+    eq  <- sprintf("(%s)", row$rhs)
+    pattern <- sprintf("(?<![A-z_\\.])%s(?![A-z_\\.])", row$lhs)
+
+    mask <- parTable$op %in% CONSTRAINT_OPS
+    parTable$rhs[mask] <- stringr::str_replace_all(
+      parTable$rhs[mask], pattern = pattern, replacement = eq
+    )
+  }
+
   isConstraint <- parTable$op %in% CONSTRAINT_OPS & !canBeNumeric(parTable$rhs)
   constraints  <- parTable[isConstraint, ]
   restParTable <- parTable[!isConstraint, ]
   # TODO: find better way of removing unecessary constraints
-  # constraints  <- constraints[constraints$lhs %in% restParTable$mod, ]
+  constraints  <- constraints[constraints$lhs %in% restParTable$mod, ]
 
   derivatives <- list()
   derivatives2 <- list()
@@ -435,7 +447,7 @@ getGradientStructSimple <- function(model, theta) {
   linDerivs   <- derivatives[isLinear]
   nlinDerivs  <- derivatives[!isLinear]
   nlinDerivs2 <- derivatives2[!isLinear]
-  evalTheta   <- \(theta) c(theta, suppressWarnings(calcThetaLabel(theta, constraints))) # This could be made a bit better
+  evalTheta   <- \(theta) c(theta, suppressWarnings(calcThetaLabel(theta, model$constrExprs))) # This could be made a bit better
 
   locations <- rbind(
     getParamLocationsMatrices(model$matrices, isFree=is.na),
@@ -490,9 +502,16 @@ getGradientStructSimple <- function(model, theta) {
 
 derivateConstraint <- function(constr) {
   f <- stats::formula(paste0("~", constr))
-  eq <- Deriv::Deriv(f, combine = "list")
+  eq <- Deriv::Deriv(f, combine = "list", cache.exp = FALSE)
 
-  if (is.null(names(eq))) {
+  vars <- all.vars(f)
+  k    <- length(vars)
+
+  if (k == 0) return(NULL)
+
+  if (is.null(names(eq)) && k == 1L) {
+    eq <- stats::setNames(list(eq), nm = vars)
+  } else if (is.null(names(eq))) {
     names(eq) <- all.vars(f)
   } else {
     eq <- as.list(eq)[-1]
@@ -504,16 +523,26 @@ derivateConstraint <- function(constr) {
 
 secondDerivateConstraint <- function(constr) {
   f <- stats::formula(paste0("~", constr))
-  eq <- Deriv::Deriv(f, nderiv = 2, combine = "list")
+  eq <- Deriv::Deriv(f, nderiv = 2, combine = "list", cache.exp = FALSE)
+
+  vars <- all.vars(f)
+  k    <- length(vars)
+
+  if (k == 0) return(NULL)
 
   out <- list()
-  if (is.null(names(eq))) {
+  if (is.null(names(eq)) && k == 1L) {
+    eq <- stats::setNames(list(eq), nm = vars)
+    return(eq)
+
+  } else if (is.null(names(eq))) {
     names(eq) <- all.vars(f)
+    return(eq)
+
   } else {
     for (indep in all.vars(f)) {
       out[[indep]] <- eq[[indep]][[indep]]
     }
+    return(out)
   }
-
-  out
 }
