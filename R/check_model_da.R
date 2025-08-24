@@ -67,7 +67,8 @@ checkZeroVariances <- function(model, method = "lms") {
   nonLinearXis <- model$info$nonLinearXis
   inds <- model$info$indsXis[nonLinearXis]
 
-  thetaDelta <- model$matrices$thetaDelta
+  thetaDelta    <- model$matrices$thetaDelta
+  thetaDeltaLab <- model$labelMatrices$thetaDelta
 
   message <- paste(
       "The variance of a moderating variable of integration",
@@ -85,8 +86,9 @@ checkZeroVariances <- function(model, method = "lms") {
   error <- FALSE
   for (lv in nonLinearXis) for (ind in inds[[lv]]) {
     est <- thetaDelta[ind, ind]
+    lab <- thetaDeltaLab[ind, ind]
 
-    if (!is.na(est) && est == 0) {
+    if (!is.na(est) && est == 0 && lab == "") {
       error <- TRUE
       message <- paste(message, m1(ind), sep = "\n")
     }

@@ -435,7 +435,7 @@ getGradientStructSimple <- function(model, theta) {
   linDerivs   <- derivatives[isLinear]
   nlinDerivs  <- derivatives[!isLinear]
   nlinDerivs2 <- derivatives2[!isLinear]
-  evalTheta   <- \(theta) c(theta, suppressWarnings(calcThetaLabel(theta, constraints))) # This could be made a bit better
+  evalTheta   <- \(theta) c(theta, suppressWarnings(calcThetaLabel(theta, model$constrExprs))) # This could be made a bit better
 
   locations <- rbind(
     getParamLocationsMatrices(model$matrices, isFree=is.na),
@@ -490,9 +490,14 @@ getGradientStructSimple <- function(model, theta) {
 
 derivateConstraint <- function(constr) {
   f <- stats::formula(paste0("~", constr))
-  eq <- Deriv::Deriv(f, combine = "list")
+  eq <- Deriv::Deriv(f, combine = "list", cache.exp = FALSE)
 
-  if (is.null(names(eq))) {
+  vars <- all.vars(f)
+  k    <- length(vars)
+
+  if (is.null(names(eq)) && k == 1L) {
+    eq <- stats::setNames(list(eq), nm = vars)
+  } else if (is.null(names(eq))) {
     names(eq) <- all.vars(f)
   } else {
     eq <- as.list(eq)[-1]
@@ -504,7 +509,7 @@ derivateConstraint <- function(constr) {
 
 secondDerivateConstraint <- function(constr) {
   f <- stats::formula(paste0("~", constr))
-  eq <- Deriv::Deriv(f, nderiv = 2, combine = "list")
+  eq <- Deriv::Deriv(f, nderiv = 2, combine = "list", cache.exp = FALSE)
 
   out <- list()
   if (is.null(names(eq))) {
