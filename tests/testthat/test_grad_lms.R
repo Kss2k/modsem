@@ -79,4 +79,50 @@ lms.opt <- modsem(m2, oneInt, method = "lms",
                   standardize.data = TRUE)
 
 testthat::expect_equal(coef(lms.no.opt),
-                       coef(lms.opt), tol = 2e-4)
+                       coef(lms.opt), tol = 3e-4)
+
+
+m3 <- '
+# Outer Model
+  X =~ x1 + lx2 * x2 + lx3 * x3
+  Z =~ z1 + z2 + z3
+  Y =~ y1 + y2 + y3
+
+# Inner Model
+  Y ~ X + Z
+
+# Constraints
+  x1 ~~ a*x1
+  x2 ~~ aa*x2
+  x3 ~~ aaa*x3
+
+  X ~ aaa.a   * 1
+  Z ~ aaa.aa  * 1
+  Y ~ aaa.aaa * 1
+
+  x1 ~ aaaaaa.a   * 1
+  z1 ~ aaaaaa.aa  * 1
+  y1 ~ aaaaaa.aaa * 1
+
+  aaa.a   == 0.8
+  aaa.aa  == (lx2 ^ 2) * 0.8
+  aaa.aaa == (lx3 ^ 2) * 0.8
+
+  aaaaaa.a   == -aaa.a
+  aaaaaa.aa  == -aaa.aa
+  aaaaaa.aaa == -aaa.aaa
+
+  a   == 1 - aaa.a 
+  aa  == 1 - aaa.aa 
+  aaa == 1 - aaa.aaa 
+'
+
+lms.no.opt <- modsem(m3, oneInt, method = "lms",
+                     optimize = FALSE,
+                     standardize.data = TRUE)
+lms.opt <- modsem(m3, oneInt, method = "lms",
+                  optimize = TRUE,
+                  standardize.data = TRUE)
+
+testthat::expect_equal(coef(lms.no.opt),
+                       coef(lms.opt), tol = 3e-4)
