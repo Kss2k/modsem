@@ -307,7 +307,6 @@ modsem_da <- function(model.syntax = NULL,
                       algorithm = NULL,
                       em.control = NULL,
                       ordered = NULL,
-                      ordered.v2 = FALSE,
                       ordered.iter = 100L,
                       ordered.warmup = 25L,
                       cluster = NULL,
@@ -330,9 +329,7 @@ modsem_da <- function(model.syntax = NULL,
   }
 
   if (length(ordered) || any(sapply(data, FUN = is.ordered))) {
-    if (ordered.v2) .f <- modsemOrderedScaleCorrectionV2
-    else            .f <- modsemOrderedScaleCorrection
-    out <- .f(
+    out <- modsemOrderedScaleCorrection(
        model.syntax        = model.syntax,
        data                = data,
        method              = method,

@@ -1,21 +1,32 @@
-modsemOrderedScaleCorrection <- function(model.syntax,
-                                         data,
-                                         method = "lms",
-                                         ordered = NULL,
-                                         calc.se = TRUE,
-                                         iter = 75L,
-                                         warmup = 25L,
-                                         N = max(NROW(data), 1e5), # 10,000 initally
-                                         se = "simple",
-                                         diff.theta.tol = 1e-10,
-                                         ordered.mean.observed = FALSE,
-                                         # Capture args
-                                         verbose = interactive(),
-                                         optimize = TRUE,
-                                         start = NULL,
-                                         mean.observed = NULL,
-                                         scaling.factor.int = NULL,
-                                         ...) {
+modsemOrderedScaleCorrection <- function(..., ordered.v2 = TRUE) {
+  # v2 seems to be the best. Left here for testing purposes
+  # The user can pass the `ordered.v2` argument to `modsem_da`
+  # without it being publicly exposed as an option
+  if (ordered.v2) FUN <- modsemOrderedScaleCorrectionV2
+  else            FUN <- modsemOrderedScaleCorrectionV1
+
+  FUN(...)
+}
+
+
+modsemOrderedScaleCorrectionV1 <- function(model.syntax,
+                                           data,
+                                           method = "lms",
+                                           ordered = NULL,
+                                           calc.se = TRUE,
+                                           iter = 75L,
+                                           warmup = 25L,
+                                           N = max(NROW(data), 1e5), # 10,000 initally
+                                           se = "simple",
+                                           diff.theta.tol = 1e-10,
+                                           ordered.mean.observed = FALSE,
+                                           # Capture args
+                                           verbose = interactive(),
+                                           optimize = TRUE,
+                                           start = NULL,
+                                           mean.observed = NULL,
+                                           scaling.factor.int = NULL,
+                                           ...) {
   message("Correcting scale of ordered variables...\n",
           "This is an experimental feature, ",
           "see `help(modsem_da)` for more information!")

@@ -41,7 +41,6 @@ modsem_da(
   algorithm = NULL,
   em.control = NULL,
   ordered = NULL,
-  ordered.v2 = FALSE,
   ordered.iter = 100L,
   ordered.warmup = 25L,
   cluster = NULL,
