@@ -427,3 +427,348 @@ std1 <- function(v) {
 
   (v - mu) / sigma
 }
+
+
+modsemOrderedScaleCorrectionV2 <- function(model.syntax,
+                                         data,
+                                         method = "lms",
+                                         ordered = NULL,
+                                         calc.se = TRUE,
+                                         iter = 75L,
+                                         warmup = 25L,
+                                         N = max(NROW(data), 1e5),
+                                         se = "simple",
+                                         diff.theta.tol = 1e-10,
+                                         ordered.mean.observed = FALSE,
+                                         verbose = interactive(),
+                                         optimize = TRUE,
+                                         start = NULL,
+                                         mean.observed = NULL,
+                                         scaling.factor.int = NULL,
+                                         ...) {
+
+  message("Correcting scale of ordered variables via ordered-probit CE for endogenous indicators...")
+
+  standardize <- \(x) (x - mean(x, na.rm = TRUE)) / stats::sd(x, na.rm = TRUE)
+  if (is.null(verbose)) verbose <- TRUE
+
+  parTable.in <- modsemify(model.syntax)
+  xis <- getXis(parTable.in, checkAny = FALSE)
+
+  inds <- getInds(parTable.in)
+  parTable.cfa <- parTable.in[parTable.in$op == "=~" |
+                              (parTable.in$lhs %in% inds &
+                               parTable.in$rhs %in% inds), ,
+                              drop = FALSE]
+  syntax.cfa <- parTableToSyntax(parTable.cfa)
+  fit.cfa    <- lavaan::cfa(syntax.cfa, data = data, ordered = ordered)
+  fscores <- as.data.frame(lavaan::lavPredict(fit.cfa))
+
+  cols <- colnames(data)
+  cols.ordered <- cols[cols %in% ordered | sapply(data, is.ordered)]
+  cols.cont    <- cols[!(cols %in% cols.ordered) & vapply(data, is.numeric, TRUE)]
+
+  stopif(iter <= warmup, "`ordered.iter` must be larger than `ordered.warmup`!")
+  iter.keep <- max(1L, floor(iter - warmup))
+
+  data.x <- data
+  data_i <- data
+  data_i[cols.ordered] <- lapply(data_i[cols.ordered], \(x) standardize(as.integer(x)))
+
+  thresholds <- NULL
+  theta_i    <- NULL
+  last_rescale <- NULL
+
+  for (i in seq_len(iter)) {
+    printedLines <- utils::capture.output(split = TRUE, {
+      j <- i - warmup
+      mode <- if (j <= 0) "warmup" else "sampling"
+
+      if (verbose) printf("Iterations %d/%d [%s]...\n", i, iter, mode)
+
+      optimize_i <- is.null(theta_i)
+      start_i    <- if (is.null(theta_i)) NULL else theta_i
+
+      fit_i <- tryCatch(
+        modsem_da(
+          model.syntax     = model.syntax,
+          data             = data_i,
+          method           = method,
+          start            = start_i,
+          verbose          = verbose,
+          optimize         = optimize_i,
+          calc.se          = FALSE,
+          mean.observed    = ordered.mean.observed,
+          ...
+        ), error = \(e) {cat("\n"); print(e); NULL}
+      )
+      stopif(is.null(fit_i), "Model estimation failed!")
+
+      theta_k <- theta_i
+      theta_i <- fit_i$theta
+
+      pars <- parameter_estimates(fit_i)
+      if (!is.null(scaling.factor.int)) {
+        is.int <- grepl(":", pars$rhs)
+        pars[is.int, "est"] <- scaling.factor.int * pars[is.int, "est"]
+      }
+
+      # -------- Alternative A: ordered-probit CE rescaling ----------
+
+      rescaled <- rescaleOrderedData_OP(
+        data          = data.x,
+        cols.ordered  = cols.ordered,
+        parTable.in   = parTable.in,
+        fscores    = fscores,
+        thresholds.vcov = FALSE
+      )
+
+      last_rescale <- rescaled  # remember thresholds from last pass
+
+      if (j >= 1L && !is.null(thresholds) && !is.null(data_i)) {
+        data_j   <- rescaled$data
+        lambda_j <- 1 / j
+        lambda_i <- 1 - lambda_j
+        for (col in cols.ordered)
+          data_i[[col]] <- lambda_i * data_i[[col]] + lambda_j * data_j[[col]]
+      } else {
+        data_i     <- rescaled$data
+        thresholds <- rescaled$thresholds
+      }
+      # -------------------------------------------------------------
+
+      if (!is.null(theta_k)) {
+        epsilon    <- theta_i - theta_k
+        diff.theta <- mean(abs(epsilon))
+        if (diff.theta <= diff.theta.tol && j > 1L) {
+          printf("Solution converged (iter = %d, warmup = %d, diff = %.2g)\n",
+                 i, warmup, diff.theta)
+          break
+          # break naturally after capture
+        }
+      }
+    })
+
+    nprinted <- length(printedLines)
+    if (i < iter) eraseConsoleLines(nprinted)
+  }
+
+  fit.out <- modsem_da(model.syntax     = model.syntax,
+                       data             = data_i,
+                       method           = method,
+                       start            = theta_i,
+                       verbose          = verbose,
+                       optimize         = FALSE,
+                       calc.se          = calc.se,
+                       mean.observed    = ordered.mean.observed,
+                       ...)
+
+  # Use the last pass' thresholds (probit for endogenous; analytic for others)
+  rescaled <- last_rescale
+  vcov.t <- NULL
+  coef.t <- NULL
+  for (col in cols.ordered) {
+    if (!is.null(rescaled$vcov[[col]]) && length(rescaled$vcov[[col]])) {
+      vcov.t <- diagPartitionedMat(vcov.t, rescaled$vcov[[col]])
+    }
+    if (!is.null(rescaled$thresholds[[col]]) && length(rescaled$thresholds[[col]])) {
+      coef.t <- c(coef.t, rescaled$thresholds[[col]])
+    }
+  }
+
+  parTable <- fit.out$parTable
+  cols.t <- c("lhs", "op", "rhs", "label", "est", "std.error")
+  cols.m <- setdiff(colnames(parTable), cols.t)
+
+  if (length(coef.t)) {
+    lhs.t <- stringr::str_split_i(names(coef.t), pattern = "\\|", i = 1L)
+    rhs.t <- stringr::str_split_i(names(coef.t), pattern = "\\|", i = 2L)
+    parTable.t <- data.frame(lhs = lhs.t, op = "|", rhs = rhs.t, label = "",
+                             est = coef.t,
+                             std.error = if (!is.null(vcov.t)) sqrt(diag(vcov.t)) else NA_real_)
+    parTable.t[cols.m] <- NA
+    parTable.t <- addZStatsParTable(parTable.t)
+    parTable <- sortParTableDA(rbind(parTable, parTable.t), model = fit.out$model)
+    fit.out$coef.all <- c(fit.out$coef.all, coef.t)
+    if (!is.null(vcov.t)) fit.out$vcov.all <- diagPartitionedMat(fit.out$vcov.all, vcov.t)
+  }
+
+  fit.out$parTable <- parTable
+  fit.out$args$optimize <- optimize
+  fit.out$args$start    <- start
+  fit.out
+}
+
+
+# Closed-form CE for ordered-probit (vectorized)
+# y: integer categories 1..K, eta: linear predictor, tau: interior thresholds (length K-1)
+ce_oprobit <- function(y, eta, tau, eps = 1e-12) {
+  K <- max(y, na.rm = TRUE)
+  a <- c(-Inf, tau)[y]
+  b <- c(tau,  Inf)[y]
+  al <- a - eta
+  bl <- b - eta
+  num <- stats::dnorm(al) - stats::dnorm(bl)
+  den <- pmax(stats::pnorm(bl) - stats::pnorm(al), eps)
+  eta + num / den
+}
+
+impute_with_oprobit <- function(y_ord, X, standardize_out = TRUE, weights = NULL) {
+  # y_ord: integer/ordered factor of categories (1..K)
+  # X    : data.frame/matrix of predictors (already includes interactions if desired)
+  # weights: optional nonnegative case weights for the CE aggregation within categories
+  
+  # 1) Fit ordered probit (no explicit intercept; thresholds capture location)
+  y_fac <- if (is.factor(y_ord) || is.ordered(y_ord)) y_ord else factor(y_ord, ordered = TRUE)
+  df    <- as.data.frame(X)
+  fit   <- suppressWarnings(MASS::polr(y_fac ~ ., data = df, method = "probit", Hess = FALSE))
+  
+  # Extract pieces
+  beta <- stats::coef(fit)            # slope coefficients
+  tau  <- as.numeric(fit$zeta)        # interior thresholds (K-1)
+  K    <- length(levels(y_fac))
+  yint <- as.integer(y_fac)
+  
+  # 2) Linear predictor eta_i = x_i' beta
+  Xmm  <- model.matrix(~ . , data = df)[, names(beta), drop = FALSE]
+  eta  <- as.numeric(Xmm %*% beta)
+  sigma <- 1.0                         # homoskedastic probit here
+  
+  # 3) Compute conditional latent means m_ij for all i,j
+  # Bounds a_j, b_j with a_1=-Inf, b_K=+Inf
+  a <- c(-Inf, tau)
+  b <- c(tau,  Inf)
+  n <- length(eta)
+  m <- matrix(NA_real_, nrow = n, ncol = K)
+  
+  # truncated-normal mean:
+  # E[y* | a<y*<=b, eta, sigma] = eta + sigma * {phi((a-eta)/sigma) - phi((b-eta)/sigma)} /
+  #                                           {Phi((b-eta)/sigma) - Phi((a-eta)/sigma)}
+  eps <- 1e-12
+  for (j in seq_len(K)) {
+    alpha <- (a[j] - eta) / sigma
+    betaJ <- (b[j] - eta) / sigma
+    numer <- dnorm(alpha) - dnorm(betaJ)
+    denom <- pnorm(betaJ) - pnorm(alpha)
+    denom <- pmax(denom, eps)
+    m[, j] <- eta + sigma * (numer / denom)
+  }
+  colnames(m) <- levels(y_fac)
+  
+  # 4) Aggregate to ONE CE per category: average over *observed* members of that category
+  if (is.null(weights)) {
+    w <- rep(1, n)
+  } else {
+    if (length(weights) != n) stop("weights must have length nrow(X).")
+    w <- as.numeric(weights)
+  }
+  
+  mu <- numeric(K)
+  for (j in seq_len(K)) {
+    idx <- which(yint == j)
+    if (length(idx) == 0L) {
+      # Fallback: if a category is unobserved, use population-weighted average
+      pj <- pnorm((b[j] - eta)/sigma) - pnorm((a[j] - eta)/sigma)
+      mu[j] <- sum(m[, j] * pj * w) / max(sum(pj * w), eps)
+    } else {
+      wj <- w[idx]
+      mu[j] <- sum(m[idx, j] * wj) / sum(wj)
+    }
+  }
+  names(mu) <- levels(y_fac)
+  
+  # 5) Impute: replace each observed category with its CE constant
+  y_ce <- mu[yint]
+  
+  # 6) Optional standardization of the imputed series to mean 0, sd 1
+  if (isTRUE(standardize_out)) {
+    s <- stats::sd(y_ce)
+    if (is.finite(s) && s > 0) {
+      y_ce <- (y_ce - mean(y_ce)) / s
+    } else {
+      warning("Standardization skipped: zero or non-finite sd.")
+    }
+  }
+
+  list(
+    values      = y_ce,   # imputed vector: one constant per observed category
+    mu_per_cat  = mu,     # the category constants (on probit scale)
+    tau         = tau,    # probit thresholds
+    eta         = eta,    # linear predictor (for reference)
+    fit         = fit     # the polr fit (in case you want to inspect)
+  )
+}
+
+# Build X for a given endogenous latent's indicator:
+# includes the latent's composite itself + all structural RHS terms for that latent, with ':' expanded as products
+.build_X_for_indicator <- function(latent, rhs_terms, fscores) {
+  X <- list()  # don't include latent self
+  if (length(rhs_terms)) {
+    for (trm in rhs_terms) {
+      if (grepl(":", trm, fixed = TRUE)) {
+        parts <- strsplit(trm, ":", fixed = TRUE)[[1]]
+        stopifnot(all(parts %in% colnames(fscores)))
+        X[[trm]] <- Reduce(`*`, lapply(parts, function(p) fscores[[p]]))
+      } else {
+        stopifnot(trm %in% colnames(fscores))
+        X[[trm]] <- fscores[[trm]]
+      }
+    }
+  }
+
+  X <- as.data.frame(X)
+  # drop duplicate columns if any (name collisions)
+  X[, !duplicated(names(X)), drop = FALSE]
+}
+
+# Hybrid rescaler:
+# - For ordered indicators of ENDOGENOUS latents: ordered-probit CE using fscores + interactions
+# - For other ordered indicators: analytic (normal) mapping
+rescaleOrderedData_OP <- function(data, cols.ordered, parTable.in, fscores,
+                                  thresholds.vcov = FALSE, ...) {
+  if (!length(cols.ordered)) return(list(data = data, thresholds = list(), vcov = list()))
+
+  out <- as.data.frame(data, stringsAsFactors = FALSE)
+  data.cat <- as.data.frame(data)
+  data.cat[cols.ordered] <- lapply(data.cat[cols.ordered], as.integer)
+
+  # maps: indicator -> latent (from loadings)
+  meas <- subset(parTable.in, op == "=~")
+  ind2lat <- stats::setNames(as.character(meas$lhs), meas$rhs)
+
+  # structural terms per endogenous latent
+  struc <- subset(parTable.in, op == "~")
+  rhs_by_lat <- tapply(struc$rhs, struc$lhs, c, simplify = FALSE)
+
+  etas <- getEtas(parTable.in, checkAny = FALSE)
+  ordered_endog <- intersect(cols.ordered, names(ind2lat)[ind2lat %in% etas])
+
+  thresholds <- vector("list", length(cols.ordered)); names(thresholds) <- cols.ordered
+  vcovs      <- vector("list", length(cols.ordered)); names(vcovs)      <- cols.ordered
+
+  for (col in cols.ordered) {
+    if (col %in% ordered_endog) {
+      # indicator belongs to an endogenous latent -> ordered-probit CE
+      latent <- ind2lat[[col]]
+      rhs_terms <- rhs_by_lat[[latent]]; if (is.null(rhs_terms)) rhs_terms <- character(0)
+      X <- .build_X_for_indicator(latent, rhs_terms, fscores)
+      imp <- impute_with_oprobit(y_ord = data[[col]], X = X, standardize_out = TRUE)
+      out[[col]] <- imp$values
+      # give names to thresholds like "col|t1", "col|t2", ...
+      if (length(imp$tau)) {
+        tn <- paste0(col, "|t", seq_along(imp$tau))
+        thresholds[[col]] <- stats::setNames(imp$tau, tn)
+      } else thresholds[[col]] <- numeric(0)
+      vcovs[[col]] <- NULL  # lightweight: no vcov for probit thresholds here
+    } else {
+      # exogenous or non-endogenous ordered indicator -> analytic normal mapping
+      ana <- rescaleOrderedVariableAnalytic(name = col, data = data.cat,
+                                            thresholds.vcov = thresholds.vcov, ...)
+      out[[col]]      <- ana$values
+      thresholds[[col]] <- ana$thresholds
+      vcovs[[col]]      <- ana$vcov
+    }
+  }
+
+  list(data = out, thresholds = thresholds, vcov = vcovs)
+}
