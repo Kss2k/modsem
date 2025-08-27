@@ -463,7 +463,7 @@ modsemOrderedScaleCorrectionV2 <- function(model.syntax,
   syntax.cfa <- parTableToSyntax(parTable.cfa)
   printf("Estimating factor scores...\n")
   fit.cfa    <- lavaan::cfa(syntax.cfa, data = data, ordered = ordered)
-  fscores <- as.data.frame(lavaan::lavPredict(fit.cfa))
+  fscores <- as.data.frame(lavaan::lavPredict(fit.cfa, se = "none"))
 
   cols <- colnames(data)
   cols.ordered <- cols[cols %in% ordered | sapply(data, is.ordered)]
