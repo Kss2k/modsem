@@ -1,4 +1,8 @@
 modsemOrderedScaleCorrection <- function(..., ordered.v2 = TRUE) {
+  message("Correcting scale of ordered variables...\n",
+          "This is an experimental feature, ",
+          "see `help(modsem_da)` for more information!")
+
   # v2 seems to be the best. Left here for testing purposes
   # The user can pass the `ordered.v2` argument to `modsem_da`
   # without it being publicly exposed as an option
@@ -27,10 +31,6 @@ modsemOrderedScaleCorrectionV1 <- function(model.syntax,
                                            mean.observed = NULL,
                                            scaling.factor.int = NULL,
                                            ...) {
-  message("Correcting scale of ordered variables...\n",
-          "This is an experimental feature, ",
-          "see `help(modsem_da)` for more information!")
-
   standardize <- \(x) (x - mean(x, na.rm = TRUE)) / stats::sd(x, na.rm = TRUE)
 
   if (is.null(verbose))
@@ -457,9 +457,6 @@ modsemOrderedScaleCorrectionV2 <- function(model.syntax,
                                          mean.observed = NULL,
                                          scaling.factor.int = NULL,
                                          ...) {
-
-  message("Correcting scale of ordered variables via ordered-probit regression...")
-
   standardize <- \(x) (x - mean(x, na.rm = TRUE)) / stats::sd(x, na.rm = TRUE)
   if (is.null(verbose)) verbose <- TRUE
 
