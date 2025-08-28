@@ -468,8 +468,10 @@ modsemOrderedScaleCorrectionV2 <- function(model.syntax,
                               (parTable.in$lhs %in% inds &
                                parTable.in$rhs %in% inds), ,
                               drop = FALSE]
+
+  if (verbose) printf("Estimating factor scores...\n")
+
   syntax.cfa <- parTableToSyntax(parTable.cfa)
-  printf("Estimating factor scores...\n")
   fit.cfa    <- lavaan::cfa(syntax.cfa, data = data, ordered = ordered)
   fscores <- as.data.frame(lavaan::lavPredict(fit.cfa, se = "none"))
 
