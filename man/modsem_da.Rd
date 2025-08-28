@@ -200,9 +200,11 @@ optimization steps when needed. Default is \code{"EM"}.}
 
 \item{ordered}{Variables to be treated as ordered. The scale of the ordinal variables
 is scaled to correct for unequal intervals. The underlying continous distributions
-are estimated using a Monte-Carlo bootstrap approach. The ordinal values are replaced with
-the expected values for each interval. Using \code{ordered=TRUE} should yield estimates
-which are more robust to unequal intervals in ordinal variables. I.e., the estimates
+are estimated analytically for indicators of exogenous variables, and using an ordered
+probit regression for indicators of endogenous variables. Factor scores are used as
+independent variables the ordered probit regressions. Interaction effects between
+the factor scores are included in the probit regression, if applicable.
+The estimates are more robust to unequal intervals in ordinal variables. I.e., the estimates
 should be more consistent, and less biased.}
 
 \item{ordered.iter}{Maximum number of sampling iterations used to sample the underlying continuous distribution of the
