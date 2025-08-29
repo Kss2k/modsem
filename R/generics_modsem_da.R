@@ -7,29 +7,30 @@ parameter_estimates.modsem_da <- function(object, ...) {
 
 #' summary for modsem objects
 #'
-#' @param object modsem object to summarized
-#' @param H0 should a null model be estimated (used for comparison)
-#' @param verbose print progress for the estimation of null model
-#' @param r.squared calculate R-squared
-#' @param adjusted.stat should sample size corrected/adjustes AIC and BIC be reported?
-#' @param digits number of digits to print
-#' @param scientific print p-values in scientific notation
-#' @param ci print confidence intervals
-#' @param standardized print standardized estimates
-#' @param centered print mean centered estimates
-#' @param monte.carlo should Monte Carlo bootstrapped standard errors be used? Only
+#' @param object modsem object to summarized.
+#' @param H0 Should a null model be estimated (used for comparison).
+#' @param verbose Print progress for the estimation of null model.
+#' @param r.squared Calculate R-squared.
+#' @param fit Print additional fit measures.
+#' @param adjusted.stat Should sample size corrected/adjustes AIC and BIC be reported?
+#' @param digits Number of digits to print.
+#' @param scientific Print p-values in scientific notation.
+#' @param ci Print confidence intervals.
+#' @param standardized Print standardized estimates.
+#' @param centered Print mean centered estimates.
+#' @param monte.carlo Should Monte Carlo bootstrapped standard errors be used? Only
 #'   relevant if \code{standardized = TRUE}. If \code{FALSE} delta method is used instead.
-#' @param mc.reps number of Monte Carlo repetitions. Only relevant if \code{monte.carlo = TRUE},
+#' @param mc.reps Number of Monte Carlo repetitions. Only relevant if \code{monte.carlo = TRUE},
 #'   and \code{standardized = TRUE}.
-#' @param loadings print loadings
-#' @param regressions print regressions
-#' @param covariances print covariances
-#' @param intercepts should intercepts be included in the output?
+#' @param loadings Print loadings.
+#' @param regressions Print regressions.
+#' @param covariances Print covariances.
+#' @param intercepts Should intercepts be included in the output?
 #' If \code{standardized = TRUE} intercepts will by default be excluded.
-#' @param variances print variances
-#' @param var.interaction if FALSE variances for interaction terms will be removed
-#' from the output
-#' @param ... additional arguments
+#' @param variances Print variances.
+#' @param var.interaction If FALSE variances for interaction terms will be removed
+#' from the output.
+#' @param ... Additional arguments.
 #' @rdname summary
 #' @export
 #' @examples
@@ -51,6 +52,7 @@ summary.modsem_da <- function(object,
                               H0 = TRUE,
                               verbose = interactive(),
                               r.squared = TRUE,
+                              fit = FALSE,
                               adjusted.stat = FALSE,
                               digits = 3,
                               scientific = FALSE,
@@ -140,7 +142,7 @@ summary.modsem_da <- function(object,
 
     } else {
       out$D     <- compare_fit(est_h1 = object, est_h0 = est_h0)
-      out$fitH0 <- fit_modsem_da(est_h0)
+      out$fitH0 <- fit_modsem_da(est_h0, lav.fit = TRUE)
     }
   } else {
     out$D <- NULL
@@ -167,7 +169,9 @@ summary.modsem_da <- function(object,
     covariances   = covariances,
     intercepts    = intercepts,
     variances     = variances,
-    extra.cols    = extra.cols
+    extra.cols    = extra.cols,
+    extra.fit     = fit,
+    scaled.stat   = object$args$robust.se
   )
 
   class(out) <- "summary_da"
@@ -256,24 +260,85 @@ print.summary_da <- function(x, digits = 3, ...) {
 
   # Comparative fit ------------------------------------------------------------
   if (!is.null(x$D)) {
+    lav.fit.h0 <- x$fitH0$lav.fit
+    fnull      <- \(x) if (is.null(x)) NA else x
+
     cat("Fit Measures for Baseline Model (H0):\n")
-    names <- c("Loglikelihood", "Akaike (AIC)", "Bayesian (BIC)")
-    values <- c(round(x$nullModel$logLik, 2), round(x$fitH0$AIC, 2), round(x$fitH0$BIC, 2))
+
+    names <- c("", "Chi-square", "Degrees of Freedom (Chi-square)",
+               "P-value (Chi-square)")
+    values <- c("Standard",
+                formatNumeric(x$fitH0$chisq.value, digits = 2),
+                x$fitH0$chisq.df,
+                formatPval(x$fitH0$chisq.pvalue, scientific = x$format$scientific))
+
+    if (x$format$scaled.stat) {
+      chisq.s <- fnull(lav.fit.h0[["chisq.scaled"]])
+      df.s    <- fnull(lav.fit.h0[["df.scaled"]])
+      pval.s  <- fnull(lav.fit.h0[["pvalue.scaled"]])
+      scale.f <- fnull(lav.fit.h0[["chisq.scaling.factor"]])
+      values.scaled <- c("Scaled",
+                         formatNumeric(chisq.s, digits = 2),
+                         round(df.s),
+                         formatPval(pval.s, scientific = x$format$scientific),
+                         formatNumeric(scale.f, digits = 3),
+                         rep("", 2))
+      values <- c(values, rep("", 3))
+      names <- c(names, "Scaling correction factor",
+                 "  Yuan-Bentler correction (Mplus variant)", "")
+
+    } else values.scaled <- NULL
+
+
+    names <- c(names, "RMSEA")
+    values <- c(values, formatNumeric(x$fitH0$RMSEA, digits = 3))
+
+    if (!is.null(values.scaled)) {
+      rmsea.s <- fnull(lav.fit.h0[["rmsea.scaled"]])
+      values.scaled <- c(values.scaled, formatNumeric(rmsea.s, digits = 3))
+    }
+
+    if (x$format$extra.fit) {
+      names  <- c(names, "CFI", "TLI", "SRMR")
+      srmr <- x$fitH0$SRMR
+      cfi  <- fnull(lav.fit.h0[["cfi"]])
+      tli  <- fnull(lav.fit.h0[["tli"]])
+      values <- c(values,
+                  formatNumeric(cfi, digits = 3),
+                  formatNumeric(tli, digits = 3),
+                  formatNumeric(srmr, digits = 3))
+
+      if (!is.null(values.scaled)) {
+        cfi.s <- fnull(lav.fit.h0[["cfi.scaled"]])
+        tli.s <- fnull(lav.fit.h0[["tli.scaled"]])
+        values.scaled <- c(values.scaled,
+                           formatNumeric(cfi.s, digits = 3),
+                           formatNumeric(tli.s, digits = 3),
+                           "")
+      }
+    }
+
+    names <- c(names, "", "Loglikelihood", "Akaike (AIC)", "Bayesian (BIC)")
+    values <- c(values, "",
+                formatNumeric(x$nullModel$logLik, digits = 2),
+                formatNumeric(x$fitH0$AIC, digits = 2),
+                formatNumeric(x$fitH0$BIC, digits = 2))
+
+    if (!is.null(values.scaled))
+      values.scaled <- c(values.scaled, rep("", 4))
 
     if (x$format$adjusted.stat) {
       names <- c(names, "Corrected Akaike (AICc)", "Adjusted Bayesian (aBIC)")
-      values <- c(values, round(x$fitH0$AICc, 2), round(x$fitH0$aBIC, 2))
+      values <- c(values,
+                  formatNumeric(x$fitH0$AICc, digits = 2),
+                  formatNumeric(x$fitH0$aBIC, digits = 2))
+
+      if (!is.null(values.scaled))
+        values.scaled <- c(values.scaled, rep("", 2))
     }
 
-    names <- c(names, "Chi-square", "Degrees of Freedom (Chi-square)",
-               "P-value (Chi-square)", "RMSEA", "SRMR")
-    values <- c(values, formatNumeric(x$fitH0$chisq.value, digits = 2),
-                x$fitH0$chisq.df,
-                formatPval(x$fitH0$chisq.pvalue, scientific = x$format$scientific),
-                formatNumeric(x$fitH0$RMSEA, digits = 3),
-                formatNumeric(x$fitH0$SRMR, digits = 3))
     cat(allignLhsRhs(lhs = names, rhs = values, pad = "  ",
-                     width.out = width.out), "\n")
+                     width.out = width.out, rhs.scaled = values.scaled), "\n")
 
     cat("Comparative Fit to H0 (LRT test):\n")
     names <- c("Loglikelihood change",

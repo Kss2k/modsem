@@ -39,12 +39,10 @@ checkAConstraints <- function(model, covModel, method = "lms") {
 
   warnif(!isOKALabel || !isOKANumeric,
          "Variances and covariances of exogenous variables aren't truely ",
-         "free parameters in the LMS approach. Using them in model constraints ",
-         "affecting the model estimation will likely not work as expected!\n\n",
-         "If the label is unused, or only used to compute custom parameters (using `:=`) ",
-         "which don't affect the model estimation, you can ignore this warning.\n\n",
+         "free parameters in the LMS approach.\n\n",
+         "Using them in model constraints will likely not work as intended!\n\n",
          'To fix this you can pass an empty model to `cov.syntax`, for example: \n',
-         '    `modsem(my_model, data = my_data, method = "lms", cov.syntax = "")`\n'
+         '    `modsem(my_model, data = my_data, method = "lms", cov.syntax = "")`'
   )
 }
 
@@ -69,7 +67,8 @@ checkZeroVariances <- function(model, method = "lms") {
   nonLinearXis <- model$info$nonLinearXis
   inds <- model$info$indsXis[nonLinearXis]
 
-  thetaDelta <- model$matrices$thetaDelta
+  thetaDelta    <- model$matrices$thetaDelta
+  thetaDeltaLab <- model$labelMatrices$thetaDelta
 
   message <- paste(
       "The variance of a moderating variable of integration",
@@ -87,8 +86,9 @@ checkZeroVariances <- function(model, method = "lms") {
   error <- FALSE
   for (lv in nonLinearXis) for (ind in inds[[lv]]) {
     est <- thetaDelta[ind, ind]
+    lab <- thetaDeltaLab[ind, ind]
 
-    if (!is.na(est) && est == 0) {
+    if (!is.na(est) && est == 0 && lab == "") {
       error <- TRUE
       message <- paste(message, m1(ind), sep = "\n")
     }
@@ -290,11 +290,10 @@ checkVCOV <- function(vcov, calc.se = TRUE, tol.eigen = .Machine$double.eps ^ (3
   minval <- min(eigenvalues, na.rm = TRUE) # should never be any NA, but just in case...
   if (minval < tol.eigen) {
     warnif(minval >= 0,
-           "The variance-covariance matrix of the estimated\n",
-           "parameters (vcov) does not appear to be positive\n",
-           sprintf("definite! The smallest eigenvalue (= %e) is close\n", minval),
-           "to zero. This may be a symptom that the model is\n",
-           "not identified.", immediate. = FALSE)
+           "The variance-covariance matrix of the estimated parameters\n",
+           "(vcov) does not appear to be positive definite! The smallest\n",
+           sprintf("eigenvalue (= %e) is close to zero. This may\n", minval),
+           "be a symptom that the model is not identified.", immediate. = FALSE)
     warnif(minval < 0,
            "The variance-covariance matrix of the estimated parameters\n",
            "(vcov) does not appear to be positive definite! The smallest\n",

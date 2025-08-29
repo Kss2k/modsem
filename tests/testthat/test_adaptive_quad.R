@@ -45,9 +45,9 @@ tpb_uk <- "
 "
 
 lms3 <- modsem(tpb_uk, data = TPB_UK, "lms",
-               nodes=32, FIM="observed",
+               nodes=32, FIM="observed", robust.se = TRUE,
                adaptive.quad=TRUE, algorithm ="EMA")
-summary(lms3)
+print(summary(lms3))
 #> Regressions:
 #>                   Estimate  Std.Error  z.value  P(>|z|)
 #>    INT ~

@@ -269,6 +269,7 @@ specifyModelDA <- function(syntax = NULL,
       kOmegaEta     = getK_NA(omegaEtaXi, labelOmegaEtaXi),
       nonLinearXis  = nonLinearXis,
       mean.observed = mean.observed,
+      has.interaction = NROW(intTerms) > 0L,
       lavOptimizerSyntaxAdditions = lavOptimizerSyntaxAdditions
     ),
 
@@ -280,7 +281,8 @@ specifyModelDA <- function(syntax = NULL,
     syntax        = syntax,
     cov.syntax    = cov.syntax,
     parTable      = parTable,
-    covModel      = covModel
+    covModel      = covModel,
+    lavaan.fit    = NULL
   )
 
   model$constrExprs <- getConstrExprs(parTable, model$covModel$parTable)

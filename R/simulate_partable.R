@@ -45,7 +45,7 @@ simulateDataParTable <- function(parTable, N, colsOVs = NULL, colsLVs = NULL) {
 
     structExprsEta <- parTable[parTable$lhs == eta & parTable$op == "~", ,
                                drop = FALSE]
-    alpha <- parTable[parTable$lhs == eta & parTable$op == "~", "est"]
+    alpha <- parTable[parTable$lhs == eta & parTable$op == "~1", "est"]
     if (NROW(alpha) == 0) alpha <- 0
 
     y <- rep(alpha, length = N)

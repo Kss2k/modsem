@@ -300,7 +300,7 @@ pasteLabels <- function(vars, labels, width = 14) {
 }
 
 
-allignLhsRhs <- function(lhs, rhs, pad = "", width.out = 50) {
+allignLhsRhs <- function(lhs, rhs, pad = "", width.out = 50, rhs.scaled = NULL) {
   if (length(lhs) != length(rhs)) {
     warning("lhs and rhs must have the same length")
     if (length(lhs) > length(rhs)) lhs <- rhs[seq_along(lhs)]
@@ -309,14 +309,25 @@ allignLhsRhs <- function(lhs, rhs, pad = "", width.out = 50) {
 
   out <- ""
   width.out <- width.out - nchar(pad)
+
+  if (!is.null(rhs.scaled))
+    rhs.scaled <- format(rhs.scaled, justify = "right")
+
   for (i in seq_along(lhs)) {
     ncharLhs <- nchar(lhs[[i]])
     ncharRhs <- nchar(rhs[[i]])
 
     sep  <- stringr::str_dup(" ", max(0, width.out - ncharLhs - ncharRhs))
-    line <- paste0(pad, lhs[[i]], sep, rhs[[i]], "\n")
+    line <- paste0(pad, lhs[[i]], sep, rhs[[i]])
+
+    if (!is.null(rhs.scaled))
+      line <- paste0(line, pad, rhs.scaled[[i]], "\n")
+    else
+      line <- paste0(line, "\n")
+
     out  <- paste0(out, line)
   }
+
   out
 }
 
