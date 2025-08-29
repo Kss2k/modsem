@@ -290,11 +290,10 @@ checkVCOV <- function(vcov, calc.se = TRUE, tol.eigen = .Machine$double.eps ^ (3
   minval <- min(eigenvalues, na.rm = TRUE) # should never be any NA, but just in case...
   if (minval < tol.eigen) {
     warnif(minval >= 0,
-           "The variance-covariance matrix of the estimated\n",
-           "parameters (vcov) does not appear to be positive\n",
-           sprintf("definite! The smallest eigenvalue (= %e) is close\n", minval),
-           "to zero. This may be a symptom that the model is\n",
-           "not identified.", immediate. = FALSE)
+           "The variance-covariance matrix of the estimated parameters\n",
+           "(vcov) does not appear to be positive definite! The smallest\n",
+           sprintf("eigenvalue (= %e) is close to zero. This may\n", minval),
+           "be a symptom that the model is not identified.", immediate. = FALSE)
     warnif(minval < 0,
            "The variance-covariance matrix of the estimated parameters\n",
            "(vcov) does not appear to be positive definite! The smallest\n",
