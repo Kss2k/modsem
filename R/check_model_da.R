@@ -233,6 +233,7 @@ postCheckModel <- function(model) {
 
   checkParTableEstimates(parTable)
   checkVariances(model$expected.matrices)
+  checkCovMatrices(model$expected.matrices)
   checkVCOV(vcov(model, type = "free"), calc.se = model$args$calc.se)
 }
 
@@ -276,6 +277,26 @@ checkVariances <- function(expected.matrices, rel.diff.tol = 1000) {
 }
 
 
+checkCovMatrices <- function(expected.matrices) {
+  cov.lv <- expected.matrices$sigma.lv
+  cov.ov <- expected.matrices$sigma.ov
+
+  check <- function(cov, type) {
+    ok <- isPositiveDefinite(cov)
+    type.long <- switch(type, lv = "latent variables", ov = "observed variables")
+
+    warnif(
+      !ok,
+      sprintf("Covariance matrix of %s is not positive definite!\n", type.long),
+      sprintf("Use `modsem_inspect(fit, \"cov.%s\")` to investigate.", type)
+    )
+  }
+
+  check(cov.lv, type = "lv")
+  check(cov.ov, type = "ov")
+}
+
+
 checkVCOV <- function(vcov, calc.se = TRUE, tol.eigen = .Machine$double.eps ^ (3/4)) {
   if (!calc.se || is.null(vcov)) return(NULL) # checks not relevant
 
@@ -300,4 +321,15 @@ checkVCOV <- function(vcov, calc.se = TRUE, tol.eigen = .Machine$double.eps ^ (3
            sprintf("eigenvalue (= %e) is smaller than zero. This may\n", minval),
            "be a symptom that the model is not identified.", immediate. = FALSE)
   }
+}
+
+
+isPositiveDefinite <- function(X, tol.eigen = .Machine$double.eps ^ (3/4)) {
+  if (is.null(X) || !isSymmetric(X))
+    return(FALSE)
+
+  eigenvalues <- tryCatch(eigen(X, only.values = TRUE)$values,
+                          error = \(e) rep(NA, min(1L, NCOL(X))))
+
+  !any(is.na(eigenvalues)) & !any(eigenvalues <= tol.eigen)
 }
