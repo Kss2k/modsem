@@ -99,6 +99,7 @@ modsem_mplus <- function(model.syntax,
   parTable$lhs[lmask] <- abbreviated[parTable$lhs[lmask]]
 
   # Fix names in data
+  data  <- as.data.frame(data)
   dmask <- colnames(data) %in% names(abbreviated)
   colnames(data)[dmask] <- abbreviated[colnames(data)[dmask]]
 
@@ -122,11 +123,13 @@ modsem_mplus <- function(model.syntax,
 
   } else VARIABLE <- NULL
 
+  usevariables <- intersect(c(cluster, indicators), colnames(data))
+
   # Estimate model
   model <- MplusAutomation::mplusObject(
     TITLE = "Running Model via Mplus",
     VARIABLE = VARIABLE,
-    usevariables = c(cluster, indicators),
+    usevariables = usevariables,
     ANALYSIS = paste0(
       paste(paste("estimator =", estimator),
             paste("type =", type),
@@ -136,7 +139,7 @@ modsem_mplus <- function(model.syntax,
             sep = ";\n"), ";\n"), # add final ";"
     MODEL = parTableToMplusModel(parTable, ...),
     OUTPUT = OUTPUT,
-    rdata = data[c(cluster, indicators)],
+    rdata = data[usevariables],
   )
 
   results <- MplusAutomation::mplusModeler(model,
