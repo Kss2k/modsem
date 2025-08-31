@@ -375,7 +375,7 @@ getOrderedParameterLabelsMplus <- function(parTable, TECH1, intTerms, intTermsMp
     out
   }
 
-  getReg <- function(M, row.lhs = TRUE, op = "~") {
+  getReg <- function(M, row.lhs = TRUE, op = "~", try.op = NULL) {
     out <- c()
 
     rows <- rownames(M)
@@ -397,6 +397,14 @@ getOrderedParameterLabelsMplus <- function(parTable, TECH1, intTerms, intTermsMp
       label <- parTable[parTable$op == op &
                         parTable$lhs == lhs &
                         parTable$rhs == rhs, "label"]
+
+      if (!length(label) && !is.null(try.op)) {
+        # can either be =~, or ~, either way we must also
+        # switch from order of lhs and rhs
+        label <- parTable[parTable$op == try.op &
+                          parTable$lhs == rhs &
+                          parTable$rhs == lhs, "label"]
+      }
 
       out <- setLabel(out = out, label = label, id = id)
     }
@@ -464,7 +472,7 @@ getOrderedParameterLabelsMplus <- function(parTable, TECH1, intTerms, intTermsMp
     getIntercept(nu),
     getIntercept(alpha),
     getReg(lambda, row.lhs = FALSE, op = "=~"),
-    getReg(beta, row.lhs = TRUE, op = "~"),
+    getReg(beta, row.lhs = TRUE, op = "~", try.op = "=~"), # include "=~" for higher order models
     getCovariance(psi),
     getCovariance(theta)
   )
