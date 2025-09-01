@@ -214,8 +214,8 @@ checkOverlappingIndicators <- function(allIndsXis, allIndsEtas) {
 
 checkParTableDA <- function(parTable, method = "lms") {
   stopif(isHigherOrderParTable(parTable) && method == "qml",
-         "Higher-order latent variables are not supported with ´method=\"qml\"´.\n",
-         "Try using ´method=\"lms\"´ or ´rcs=TRUE´")
+         "Higher-order latent variables are not supported with `method=\"qml\"`.\n",
+         "Try using `method=\"lms\"` or `rcs=TRUE`")
 }
 
 
