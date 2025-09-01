@@ -18,7 +18,7 @@ transformedSolutionCOEFS <- function(object,
     coef <- lavaan::coef
   }
 
-  parTable <- parameter_estimates(object, colon.pi = TRUE)
+  parTable <- parameter_estimates(object, colon.pi = TRUE, high.order.as.measr = FALSE)
   parTable <- subsetByGrouping(parTable, grouping = grouping) # if NULL no subsetting
 
   if (!NROW(parTable)) return(NULL)
@@ -295,6 +295,13 @@ transformedSolutionCOEFS <- function(object,
   # Remove added labels
   labelInOrig       <- parTable$label %in% originalLabels
   parTable[!labelInOrig, "label"] <- ""
+
+  if (isDA) {
+    indsHigherOrderLVs <- object$model$info$indsHigherOrderLVs
+    parTable <- higherOrderStruct2Measr(parTable = parTable,
+                                        indsHigherOrderLVs = indsHigherOrderLVs)
+    parTable <- sortParTableDA(parTable, model = object$model)
+  }
 
   # Reset index
   rownames(parTable) <- NULL

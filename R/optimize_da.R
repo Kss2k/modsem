@@ -82,6 +82,9 @@ optimizeStartingParamsDA <- function(model,
 
   stopif(is.null(parTable), "lavaan failed!")
 
+  if (isHigherOrderParTable(parTable))
+    parTable <- higherOrderMeasr2Struct(parTable)
+
   # labelled parameters
   thetaLabel <- getLabeledParamsLavaan(parTable, model$constrExprs$fixedParams)
 
@@ -321,6 +324,10 @@ parameterEstimatesLavSAM <- function(syntax,
                                      suppress.warnings.lavaan = TRUE,
                                      ...) {
   parTable <- modsemify(syntax)
+  higherOrderLVs <- getHigherOrderLVs(parTable)
+  isHigherOrder  <- length(higherOrderLVs) > 0L
+  lowerOrderInds <- unlist(getIndsLVs(parTable, lVs = higherOrderLVs,
+                                      isOV = FALSE))
 
   if (suppress.warnings.lavaan) wrapper <- suppressWarnings
   else                          wrapper <- \(x) x # do nothing
@@ -347,15 +354,24 @@ parameterEstimatesLavSAM <- function(syntax,
   lVs <- getLVs(parTable)
 
   getCFARows <- function(pt) {
-    pt[pt$op == "=~" |
-       pt$op == "~1" |
-      (pt$op == "~~" & !pt$lhs %in% lVs & !pt$rhs %in% lVs), ]
+    rhs <- pt$rhs
+    lhs <- pt$lhs
+    op  <- pt$op
+
+    cond1 <- op == "=~"
+    cond2 <- op == "~1"
+    cond3 <- op == "~~" & !lhs %in% lVs & !rhs %in% lVs
+
+    # residual variances for higher order lvs are not returned from SAM
+    # estimates
+    cond4 <- op == "~~" & lhs %in% lowerOrderInds & rhs %in% lowerOrderInds
+
+    pt[cond1 | cond2 | cond3 | cond4, , drop = FALSE]
   }
 
   parTableOuter <- getCFARows(parTable)
 
   syntaxCFA <- parTableToSyntax(parTableOuter)
-  syntaxSAM <- parTableToSyntax(parTable)
 
   fitCFA <- wrapper(lavaan::cfa(
     model           = syntaxCFA,
@@ -370,9 +386,27 @@ parameterEstimatesLavSAM <- function(syntax,
     ...
   ))
 
-  fitSAM <- wrapper(lavaan::sam(
+  if (isHigherOrder) {
+    # use factor scores instead
+    # using `sam.method="fsr"` doesn't work for this purpose (yet)
+    # so we do it manually instead
+    dataSAM    <- lavaan::lavPredict(fitCFA)
+    structvars <- colnames(dataSAM)
+    parTableInner <- parTable[parTable$lhs %in% structvars &
+                              parTable$rhs %in% structvars &
+                              parTable$op != "=~", , drop = FALSE]
+    syntaxSAM <- parTableToSyntax(parTableInner)
+    SAMFUN    <- lavaan::sem
+
+  } else {
+    syntaxSAM <- parTableToSyntax(parTable)
+    dataSAM   <- data
+    SAMFUN    <- lavaan::sam
+  }
+
+  fitSAM <- wrapper(SAMFUN(
     model           = syntaxSAM,
-    data            = data,
+    data            = dataSAM,
     se              = "none",
     estimator       = estimator,
     missing         = missing,
@@ -380,6 +414,7 @@ parameterEstimatesLavSAM <- function(syntax,
     orthogonal.y    = orthogonal.y,
     auto.fix.first  = auto.fix.first,
     auto.fix.single = auto.fix.single,
+    ...
   ))
 
   measr  <- getCFARows(lavaan::parameterEstimates(fitCFA))

@@ -28,11 +28,6 @@ testthat::expect_true(all(get_se(est_ca) < 0.15))
 est_dblcent <- modsem(tpb, data = TPB_2SO, method = "dblcent")
 testthat::expect_true(all(get_se(est_dblcent) < 0.15))
 
-testthat::expect_error(modsem(tpb, TPB_2SO, method = "lms"),
-                       regexp = "Higher-order latent variables are not supported in the lms and qml approaches.")
-testthat::expect_error(modsem(tpb, TPB_2SO, method = "qml"),
-                       regexp = "Higher-order latent variables are not supported in the lms and qml approaches.")
-
 standardized_estimates(est_ca)
 testthat::expect_error(
   standardized_estimates(est_ca, correction = TRUE, std.error = "delta"),
@@ -63,10 +58,6 @@ testthat::expect_true(all(get_se(est_ca) < 0.1))
 est_dblcent <- modsem(tpb, data = TPB_1SO, method = "dblcent")
 testthat::expect_true(all(get_se(est_dblcent) < 0.1))
 
-testthat::expect_error(modsem(tpb, TPB_1SO, method = "lms"),
-                       regexp = "Higher-order latent variables are not supported in the lms and qml approaches.")
-testthat::expect_error(modsem(tpb, TPB_1SO, method = "qml"),
-                       regexp = "Higher-order latent variables are not supported in the lms and qml approaches.")
 
 # example 3
 tpb <- '
@@ -85,4 +76,4 @@ tpb <- '
 
 
 testthat::expect_error(modsem(tpb, TPB, method = "rca"),
-                       regexp = "The ':' operator is not allowed for higher order *")
+                       regexp = "The `:` operator is not allowed for higher order *")

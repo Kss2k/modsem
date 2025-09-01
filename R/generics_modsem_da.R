@@ -1,7 +1,19 @@
 #' @export
+#' @param high.order.as.measr Should higher order measurement model be
+#'   denoted with the \code{=~} operator? If \code{FALSE} the \code{~}
+#'   operator is used.
 #' @describeIn parameter_estimates Get parameter estimates of a \code{\link{modsem_da}} object
-parameter_estimates.modsem_da <- function(object, ...) {
-  object$parTable
+parameter_estimates.modsem_da <- function(object, high.order.as.measr = TRUE, ...) {
+  parTable <- object$parTable
+
+  if (high.order.as.measr) {
+    indsHigherOrderLVs <- object$model$info$indsHigherOrderLVs
+    parTable <- higherOrderStruct2Measr(parTable = parTable,
+                                        indsHigherOrderLVs = indsHigherOrderLVs)
+    parTable <- sortParTableDA(parTable, model = object$model)
+  }
+
+  parTable
 }
 
 

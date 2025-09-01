@@ -79,17 +79,17 @@ relcorr_single_item <- function(syntax,
   parTableOuter <- parTable[parTable$op == "=~", ]
   parTableInner <- parTable[parTable$op != "=~", ]
 
-  higherOrderLVs <- getHigherOrderLVs(parTable)
   lVs            <- getLVs(parTable)
+  allIndsLVs     <- getIndsLVs(parTable, lVs = lVs)
+  allInds        <- unique(unlist(allIndsLVs))
+  higherOrderLVs <- getHigherOrderLVs(parTable)
+  firstOrderLVs  <- setdiff(lVs, higherOrderLVs)
+
+  stopif(any(higherOrderLVs %in% allInds),
+         "Third order (or higher) latent variables are not allowed (yet)!")
 
   choose <- if (is.null(choose)) lVs else choose
   ignore <- setdiff(lVs, choose)
-
-  if (length(higherOrderLVs)) {
-    warning2("Higher order latent variables will be ignored when ",
-             "creating reliablity-corrected single items!", immediate. = FALSE)
-    ignore <- c(ignore, higherOrderLVs)
-  }
 
   warnif(any(!choose %in% lVs), "Could not find latent variables:\n",
          paste(choose[!choose %in% lVs], collapse = ", "))
@@ -108,9 +108,9 @@ relcorr_single_item <- function(syntax,
          "corrected single items will be ignored!\nThis may cause the model constraints ",
          "in the structural model to break!", immediate. = FALSE)
 
-  lVs <- setdiff(lVs, ignore)
-  inds <- getInds(parTableOuter)
+  lVs  <- setdiff(firstOrderLVs, ignore)
   indsLVs <- getIndsLVs(parTableOuter, lVs = lVs)
+  inds <- unlist(indsLVs)
   R <- stats::cov(data[inds], use = "pairwise.complete.obs")
   k <- length(lVs)
 
@@ -188,15 +188,64 @@ relcorr_single_item <- function(syntax,
     res <- res.std * varNewInds
   }
 
+  if (length(higherOrderLVs)) {
+    for (lV in intersect(lVs, allInds)) {
+      # If lV is an indicator for a higher order variable
+      # we add a correction to the residual, to account for
+      # measurement error on both levels
+      res[[lV]] <- res[[lV]] + getHigherOrderResidual(lV = lV, cfa = cfa)
+    }
+  }
 
-  lhs <- unname(c(lVs, singleInds))
-  rhs <- unname(c(singleInds, singleInds))
-  op  <- c(rep("=~", k), rep("~~", k))
-  mod <- unname(c(rep("1", k), res))
+  # first order lVs
+  newParTable <- parTableInner
+  firstOrder  <- !lVs %in% allInds
+  secondOrder <- lVs %in% allInds
 
-  newParTable <- rbind(
-    parTableInner, data.frame(lhs = lhs, op = op, rhs = rhs, mod = mod)
-  )
+  if (any(firstOrder)) {
+    lVs1        <- lVs[firstOrder]
+    singleInds1 <- singleInds[firstOrder]
+    k1          <- length(lVs1)
+    res1        <- res[firstOrder]
+
+    lhs <- unname(c(lVs1, singleInds1))
+    rhs <- unname(c(singleInds1, singleInds1))
+    op  <- c(rep("=~", k1), rep("~~", k1))
+    mod <- unname(c(rep("1", k1), res1))
+
+    newParTable <- rbind(
+      newParTable, data.frame(lhs = lhs, op = op, rhs = rhs, mod = mod)
+    )
+  }
+
+  if (any(secondOrder)) {
+    message(
+      "Correcting first order items/lVs for higher order measurement model!\n",
+      "Note that the first order LVs no longer can be used directly in the\n",
+      "structural model!"
+    )
+
+    lVs2        <- lVs[secondOrder]
+    singleInds2 <- singleInds[secondOrder]
+    k2          <- length(lVs2)
+    res2        <- res[secondOrder]
+
+    for (hlV in higherOrderLVs) {
+      lVs2h <- intersect(lVs2, allIndsLVs[[hlV]])
+      singleInds2h <- singleInds2[lVs2h]
+      res2h <- res2[lVs2h]
+      k2h   <- length(singleInds2h)
+
+      lhs <- unname(c(rep(hlV, k2h), singleInds2h))
+      rhs <- unname(c(singleInds2h, singleInds2h))
+      op  <- c(rep("=~", k2h), rep("~~", k2h))
+      mod <- unname(c(rep("", k2h), res2h))
+
+      newParTable <- rbind(
+        newParTable, data.frame(lhs = lhs, op = op, rhs = rhs, mod = mod)
+      )
+    }
+  }
 
   newSyntax <- parTableToSyntax(newParTable)
 
@@ -228,6 +277,20 @@ getScaleCorrectedItem <- function(parTable, lV, data, cfa) {
   residual <- (t(I) %*% theta %*% I) / sum(lambda)^2 # variance of (e1 + e2 + ... + en)
 
   list(X = X, item = item, residual = residual)
+}
+
+
+getHigherOrderResidual <- function(lV, cfa) {
+  parTable <- lavaan::parameterEstimates(cfa)
+  inds     <- getInds(parTable)
+
+  if (!lV %in% inds) return(0)
+
+  residual <- parTable[parTable$lhs == lV &
+                       parTable$op == "~~" &
+                       parTable$rhs == lV, "est"]
+
+  ifelse(!length(residual), yes = 0, no = residual[[1L]])
 }
 
 

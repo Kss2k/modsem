@@ -44,22 +44,41 @@ reverseIntTerm <- function(xz) {
 
 
 getEtas <- function(parTable, isLV = FALSE, checkAny = TRUE) {
-  cond <- parTable$op == "~"
-  if (isLV) {
-    lVs <- unique(parTable[parTable$op == "=~", "lhs"])
-    cond <- cond & parTable$lhs %in% lVs
-  }
+  lVs <- unique(parTable[parTable$op == "=~", "lhs"])
+  cond.lhs <- parTable$op == "~"
+  cond.rhs <- parTable$op == "=~" & parTable$rhs %in% lVs
 
-  etas <- unique(parTable[cond, "lhs"])
+  if (isLV) cond.lhs <- cond.lhs & parTable$lhs %in% lVs
+
+  etas.lhs <- parTable[cond.lhs, "lhs"]
+  etas.rhs <- parTable[cond.rhs, "rhs"]
+
+  etas <- unique(c(etas.lhs, etas.rhs))
   stopif(checkAny && !length(etas), "No etas found")
+
   etas
 }
 
 
 getSortedEtas <- function(parTable, isLV = FALSE, checkAny = TRUE) {
-  structExprs  <- parTable[parTable$op == "~", ]
   unsortedEtas <- getEtas(parTable, isLV = isLV, checkAny = checkAny)
-  sortedEtas   <- character(0L)
+
+  cond1 <- parTable$op == "~"
+  cond2 <- parTable$op == "=~" & parTable$rhs %in% unsortedEtas
+
+  structExprs <- parTable[cond1, , drop = FALSE]
+  measrExprs  <- parTable[cond2, , drop = FALSE]
+
+  if (NROW(measrExprs)) {
+    measr2struct <- measrExprs
+    measr2struct$lhs <- measrExprs$rhs
+    measr2struct$op  <- "~"
+    measr2struct$rhs <- measrExprs$lhs
+
+    structExprs <- rbind(structExprs, measr2struct)
+  }
+
+  sortedEtas  <- character(0L)
 
   while (length(sortedEtas) < length(unsortedEtas) && nrow(structExprs) > 0) {
     stopif(all(unique(structExprs$lhs) %in% structExprs$rhs), "Model is non-recursive")
@@ -144,7 +163,7 @@ getHigherOrderLVs <- function(parTable) {
     if (any(inds %in% lVs)) isHigherOrder[[lV]] <- TRUE
   }
 
-  lVs[isHigherOrder]
+  if (!any(isHigherOrder)) NULL else lVs[isHigherOrder]
 }
 
 
@@ -158,18 +177,21 @@ isClustered <- function(object) {
 }
 
 
-getIndsLVs <- function(parTable, lVs) {
+getIndsLVs <- function(parTable, lVs, isOV = FALSE, ovs = NULL) {
   if (!length(lVs)) return(NULL)
 
-  measrExprs <- parTable[parTable$op == "=~" & parTable$lhs %in% lVs, ]
-  stopif(!NROW(measrExprs), "No measurement expressions found, for", lVs)
-  lapplyNamed(lVs, FUN = function(lV) measrExprs[measrExprs$lhs == lV, "rhs"],
-              names = lVs)
+  measr <- parTable[parTable$op == "=~" & parTable$lhs %in% lVs, ]
+  stopif(!NROW(measr), "No measurement expressions found, for", lVs)
+
+  if (isOV) .f <- \(lV) measr[measr$lhs == lV & measr$rhs %in% ovs, "rhs"]
+  else      .f <- \(lV) measr[measr$lhs == lV, "rhs"]
+
+  lapplyNamed(lVs, FUN = .f, names = lVs)
 }
 
 
-getInds <- function(parTable) {
-  unique(unlist(getIndsLVs(parTable, lVs = getLVs(parTable))))
+getInds <- function(parTable, ...) {
+  unique(unlist(getIndsLVs(parTable, lVs = getLVs(parTable)), ...))
 }
 
 

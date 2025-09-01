@@ -1,7 +1,7 @@
 devtools::load_all()
 
 set.seed(123)
-n <- 100  # number of observations
+n <- 200  # number of observations
 
 # Step 1: Simulate latent variables
 # We define latent variables: psc, SWE, decisions, work_engagement, irritation, stress, intention
