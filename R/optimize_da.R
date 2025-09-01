@@ -82,6 +82,9 @@ optimizeStartingParamsDA <- function(model,
 
   stopif(is.null(parTable), "lavaan failed!")
 
+  if (isHigherOrderParTable(parTable))
+    parTable <- higherOrderMeasr2Struct(parTable)
+
   # labelled parameters
   thetaLabel <- getLabeledParamsLavaan(parTable, model$constrExprs$fixedParams)
 
@@ -321,6 +324,7 @@ parameterEstimatesLavSAM <- function(syntax,
                                      suppress.warnings.lavaan = TRUE,
                                      ...) {
   parTable <- modsemify(syntax)
+  isHigherOrder <- isHigherOrderParTable(parTable)
 
   if (suppress.warnings.lavaan) wrapper <- suppressWarnings
   else                          wrapper <- \(x) x # do nothing
@@ -343,9 +347,6 @@ parameterEstimatesLavSAM <- function(syntax,
                 parTable = lavaan::parameterEstimates(fitSEM)))
   }
 
-  stopif(isHigherOrderParTable(parTable),
-         "Unable to optimize starting parameters for higher order models!")
-
   # Get SAM structural model with measurement model from a CFA
   lVs <- getLVs(parTable)
 
@@ -358,7 +359,6 @@ parameterEstimatesLavSAM <- function(syntax,
   parTableOuter <- getCFARows(parTable)
 
   syntaxCFA <- parTableToSyntax(parTableOuter)
-  syntaxSAM <- parTableToSyntax(parTable)
 
   fitCFA <- wrapper(lavaan::cfa(
     model           = syntaxCFA,
@@ -373,9 +373,27 @@ parameterEstimatesLavSAM <- function(syntax,
     ...
   ))
 
-  fitSAM <- wrapper(lavaan::sam(
+  if (isHigherOrder) {
+    # use factor scores instead
+    # using `sam.method="fsr"` doesn't work for this purpose (yet)
+    # so we do it manually instead
+    dataSAM    <- lavaan::lavPredict(fitCFA)
+    structvars <- colnames(dataSAM)
+    parTableInner <- parTable[parTable$lhs %in% structvars &
+                              parTable$rhs %in% structvars &
+                              parTable$op != "=~", , drop = FALSE]
+    syntaxSAM <- parTableToSyntax(parTableInner)
+    SAMFUN    <- lavaan::sem
+
+  } else {
+    syntaxSAM <- parTableToSyntax(parTable)
+    dataSAM   <- data
+    SAMFUN    <- lavaan::sam
+  }
+
+  fitSAM <- wrapper(SAMFUN(
     model           = syntaxSAM,
-    data            = data,
+    data            = dataSAM,
     se              = "none",
     estimator       = estimator,
     missing         = missing,
@@ -383,6 +401,7 @@ parameterEstimatesLavSAM <- function(syntax,
     orthogonal.y    = orthogonal.y,
     auto.fix.first  = auto.fix.first,
     auto.fix.single = auto.fix.single,
+    ...
   ))
 
   measr  <- getCFARows(lavaan::parameterEstimates(fitCFA))

@@ -93,18 +93,16 @@ if (runMplus) {
   #>     LX:LZ  (LY<-)   0.499      0.020   24.950    0.000
 }
 
-testthat::expect_warning({
-  fit_lms <- modsem(sem.syntax, data = data, method = "lms")
-}, regexp = "Unable to optimize.*")
+fit_lms <- modsem(sem.syntax, data = data, method = "lms")
 standardized_estimates(fit_lms)
 
 summary(fit_lms)
 #> Regressions:
 #>                  Estimate  Std.Error  z.value  P(>|z|)
 #>   LY ~
-#>     LX              0.166      0.027    6.081    0.000
-#>     LZ              0.481      0.023   20.582    0.000
-#>     LX:LZ           0.498      0.020   24.608    0.000
+#>     LX              0.166      0.027    6.144    0.000
+#>     LZ              0.481      0.023   20.599    0.000
+#>     LX:LZ           0.499      0.020   24.606    0.000
 
 testthat::expect_error(modsem(sem.syntax, data = data, method = "qml"),
                        regexp = "Higher-order.*qml.*Try.*lms.*")

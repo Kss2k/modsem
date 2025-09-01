@@ -1019,3 +1019,26 @@ higherOrderStruct2Measr <- function(parTable, indsHigherOrderLVs) {
 
   parTable
 }
+
+
+higherOrderMeasr2Struct <- function(parTable) {
+  higherOrderLVs <- getHigherOrderLVs(parTable)
+
+  if (is.null(higherOrderLVs) || !length(higherOrderLVs))
+    return(parTable)
+
+  for (lVh in higherOrderLVs) {
+    mask <- parTable$lhs == lVh & parTable$op == "=~"
+
+    if (!any(mask)) next
+
+    lhs <- parTable[mask, "lhs"]
+    rhs <- parTable[mask, "rhs"]
+
+    parTable[mask, "lhs"] <- rhs
+    parTable[mask, "op"]  <- "~"
+    parTable[mask, "rhs"] <- lhs
+  }
+
+  parTable
+}
