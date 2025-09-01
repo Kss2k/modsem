@@ -113,7 +113,6 @@ calcSigmaXU <- function(matrices) {
 
 
 probf2 <- function(matrices, normalInds, sigma, sum=FALSE) {
-  browser()
   mu <- rep(0, ncol(sigma))
   X  <- cbind(matrices$x, matrices$u)[ , normalInds]
 
