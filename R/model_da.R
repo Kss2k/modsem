@@ -35,15 +35,20 @@ specifyModelDA <- function(syntax = NULL,
     cov.syntax <- parTableToSyntax(parTableCovModel)
   }
 
-  checkParTableDA(parTable)
+  checkParTableDA(parTable, method = method)
   # additions to lavaan-syntax for optimizer
   lavOptimizerSyntaxAdditions <- ""
+
+  # General Information
+  higherOrderLVs <- getHigherOrderLVs(parTable)
+  indsHigherOrderLVs <- getIndsLVs(parTable, lVs = higherOrderLVs, isOV = FALSE)
+  ovs <- getOVs(parTable)
 
   # endogenous variables (etas)model
   etas    <- getSortedEtas(parTable, isLV = TRUE, checkAny = TRUE)
   numEtas <- length(etas)
 
-  indsEtas    <- getIndsLVs(parTable, etas)
+  indsEtas    <- getIndsLVs(parTable, lVs = etas, isOV = TRUE, ovs = ovs)
   numIndsEtas <- vapply(indsEtas, FUN.VALUE = vector("integer", 1L),
                         FUN = length)
   allIndsEtas    <- unique(unlist(indsEtas))
@@ -61,7 +66,7 @@ specifyModelDA <- function(syntax = NULL,
   xis <- omegaAndSortedXis$sortedXis # get sorted xis according to interaction terms
   nonLinearXis <- omegaAndSortedXis$nonLinearXis
 
-  indsXis    <- getIndsLVs(parTable, xis)
+  indsXis    <- getIndsLVs(parTable, lVs = xis, isOV = TRUE, ovs = ovs)
   numIndsXis <- vapply(indsXis, FUN.VALUE = vector("integer", 1L),
                        FUN = length)
   allIndsXis    <- unique(unlist(indsXis))
@@ -109,11 +114,13 @@ specifyModelDA <- function(syntax = NULL,
 
   # structural model
   Ieta         <- diag(numEtas) # used for (B^-1 = (Ieta - gammaEta)^-1)
-  listGammaXi  <- constructGamma(etas, xis, parTable = parTable)
+  listGammaXi  <- constructGamma(etas, xis, parTable = parTable,
+                                 auto.fix.first = auto.fix.first)
   gammaXi      <- listGammaXi$numeric
   labelGammaXi <- listGammaXi$label
 
-  listGammaEta  <- constructGamma(etas, etas, parTable = parTable)
+  listGammaEta  <- constructGamma(etas, etas, parTable = parTable,
+                                  auto.fix.first = auto.fix.first)
   gammaEta      <- listGammaEta$numeric
   labelGammaEta <- listGammaEta$label
 
@@ -270,6 +277,7 @@ specifyModelDA <- function(syntax = NULL,
       nonLinearXis  = nonLinearXis,
       mean.observed = mean.observed,
       has.interaction = NROW(intTerms) > 0L,
+      indsHigherOrderLVs = indsHigherOrderLVs,
       lavOptimizerSyntaxAdditions = lavOptimizerSyntaxAdditions
     ),
 

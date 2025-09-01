@@ -343,6 +343,9 @@ parameterEstimatesLavSAM <- function(syntax,
                 parTable = lavaan::parameterEstimates(fitSEM)))
   }
 
+  stopif(isHigherOrderParTable(parTable),
+         "Unable to optimize starting parameters for higher order models!")
+
   # Get SAM structural model with measurement model from a CFA
   lVs <- getLVs(parTable)
 

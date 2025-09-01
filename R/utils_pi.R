@@ -225,6 +225,7 @@ checkHigherOrderInteractions <- function(elementsInProds, parTable) {
     stopif(any(xz %in% higherOrderLVs), "The ':' operator is not allowed ",
            "for higher order latent variables, please redefine the interaction term",
            "as a higher order latent variable using the '=~' operator.\n",
+           "You can also try using `method=\"lms\"´ or ´rcs=TRUE´\n",
            "Run 'vignette(\"higher_order_interactions\")' for more information")
   }
 }

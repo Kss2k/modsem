@@ -711,7 +711,8 @@ getLevelsParTable <- function(parTable) {
 
 isPureEta <- function(eta, parTable) {
   predictors <- unique(parTable[parTable$op == "~", "rhs"])
-  !eta %in% predictors
+  indicators <- unique(parTable[parTable$op == "=~", "rhs"])
+  !eta %in% c(predictors, indicators)
 }
 
 
@@ -942,7 +943,10 @@ splitParTable <- function(parTable) {
 sortParTableDA <- function(parTable, model) {
   parTable.input <- model$parTable
 
-  etas <- getEtasModelDA(model)
+  etas.input <- getEtas(parTable.input)
+  etas.model <- getEtasModelDA(model) # sorted to be lower-triangular in gammaEta
+                                      # and includes etas from cov-model
+  etas <- unique(c(etas.input, etas.model))
 
   # xis <- getXisModelDA(model)
   # we don't want xis as they are sorted in the model
@@ -990,4 +994,28 @@ updateStatusLog <- function(iterations, mode, logLikNew, deltaLL, relDeltaLL, ve
     printf("\rIter=%d Mode=%s LogLik=%.2f \u0394LL=%.2g rel\u0394LL=%.2g",
            iterations, mode, logLikNew, deltaLL, relDeltaLL)
   }
+}
+
+
+higherOrderStruct2Measr <- function(parTable, indsHigherOrderLVs) {
+  if (is.null(indsHigherOrderLVs) || !length(indsHigherOrderLVs))
+    return(parTable)
+
+  higherOrderLVs <- names(indsHigherOrderLVs)
+
+  for (lVh in higherOrderLVs) {
+    inds <- indsHigherOrderLVs[[lVh]]
+    mask <- parTable$rhs == lVh & parTable$op == "~" & parTable$lhs %in% inds
+
+    if (!any(mask)) next
+
+    lhs <- parTable[mask, "lhs"]
+    rhs <- parTable[mask, "rhs"]
+
+    parTable[mask, "lhs"] <- rhs
+    parTable[mask, "op"]  <- "=~"
+    parTable[mask, "rhs"] <- lhs
+  }
+
+  parTable
 }
