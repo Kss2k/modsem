@@ -324,7 +324,10 @@ parameterEstimatesLavSAM <- function(syntax,
                                      suppress.warnings.lavaan = TRUE,
                                      ...) {
   parTable <- modsemify(syntax)
-  isHigherOrder <- isHigherOrderParTable(parTable)
+  higherOrderLVs <- getHigherOrderLVs(parTable)
+  isHigherOrder  <- length(higherOrderLVs) > 0L
+  lowerOrderInds <- unlist(getIndsLVs(parTable, lVs = higherOrderLVs,
+                                      isOV = FALSE))
 
   if (suppress.warnings.lavaan) wrapper <- suppressWarnings
   else                          wrapper <- \(x) x # do nothing
@@ -351,9 +354,19 @@ parameterEstimatesLavSAM <- function(syntax,
   lVs <- getLVs(parTable)
 
   getCFARows <- function(pt) {
-    pt[pt$op == "=~" |
-       pt$op == "~1" |
-      (pt$op == "~~" & !pt$lhs %in% lVs & !pt$rhs %in% lVs), ]
+    rhs <- pt$rhs
+    lhs <- pt$lhs
+    op  <- pt$op
+
+    cond1 <- op == "=~"
+    cond2 <- op == "~1"
+    cond3 <- op == "~~" & !lhs %in% lVs & !rhs %in% lVs
+
+    # residual variances for higher order lvs are not returned from SAM
+    # estimates
+    cond4 <- op == "~~" & lhs %in% lowerOrderInds & rhs %in% lowerOrderInds
+
+    pt[cond1 | cond2 | cond3 | cond4, , drop = FALSE]
   }
 
   parTableOuter <- getCFARows(parTable)
