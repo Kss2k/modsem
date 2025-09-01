@@ -106,3 +106,40 @@ summary(fit_lms)
 
 testthat::expect_error(modsem(sem.syntax, data = data, method = "qml"),
                        regexp = "Higher-order.*qml.*Try.*lms.*")
+
+tpb <- '
+  # First order constructs
+  ATT =~ att1 + att2 + att3
+  SN  =~ sn1 + sn2 + sn3
+  PB =~ pb1 + pb2 + pb3
+  PC =~ pc1 + pc2 + pc3
+  BEH =~ b1 + b2
+
+  # Higher order constructs
+  INT =~ ATT + SN
+  PBC =~ PC + PB
+
+  # Structural model
+  BEH ~ PBC + INT + INT:PBC
+'
+
+est_lms2 <- modsem(tpb, data = TPB_2SO, method = "lms")
+standardized_estimates(est_lms2)
+
+# example 2
+tpb <- '
+  # First order constructs
+  ATT =~ att1 + att2 + att3
+  SN  =~ sn1 + sn2 + sn3
+  PBC =~ pbc1 + pbc2 + pbc3
+  BEH =~ b1 + b2
+
+  # Higher order constructs
+  INT =~ ATT + PBC + SN
+
+  # Structural model
+  BEH ~ PBC + INT + INT:PBC
+'
+
+est_lms3 <- modsem(tpb, data = TPB_1SO, method = "lms", nodes = 32)
+standardized_estimates(est_lms3)
