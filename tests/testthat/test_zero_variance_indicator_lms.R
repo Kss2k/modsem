@@ -106,6 +106,7 @@ testthat::expect_error(
 
 est_qml <- modsem(model = JDR_Model_modsem, data = dummy_data, method = "qml")
 print(summary(est_qml))
+print(diag(vcov(est_qml)))
 
 
 JDR_Model_linear <- '
