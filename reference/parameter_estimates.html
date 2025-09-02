@@ -59,16 +59,16 @@
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">parameter_estimates</span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># S3 method for class 'lavaan'</span></span>
-<span><span class="fu">parameter_estimates</span><span class="op">(</span><span class="va">object</span>, colon.pi <span class="op">=</span> <span class="cn">TRUE</span>, <span class="va">...</span><span class="op">)</span></span>
+<span><span class="fu">parameter_estimates</span><span class="op">(</span><span class="va">object</span>, colon.pi <span class="op">=</span> <span class="cn">TRUE</span>, high.order.as.measr <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># S3 method for class 'modsem_da'</span></span>
-<span><span class="fu">parameter_estimates</span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span></span>
+<span><span class="fu">parameter_estimates</span><span class="op">(</span><span class="va">object</span>, high.order.as.measr <span class="op">=</span> <span class="cn">TRUE</span>, <span class="va">...</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># S3 method for class 'modsem_mplus'</span></span>
 <span><span class="fu">parameter_estimates</span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># S3 method for class 'modsem_pi'</span></span>
-<span><span class="fu">parameter_estimates</span><span class="op">(</span><span class="va">object</span>, colon.pi <span class="op">=</span> <span class="cn">FALSE</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">parameter_estimates</span><span class="op">(</span><span class="va">object</span>, colon.pi <span class="op">=</span> <span class="cn">FALSE</span>, high.order.as.measr <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -85,6 +85,12 @@
 
 <dt id="arg-colon-pi">colon.pi<a class="anchor" aria-label="anchor" href="#arg-colon-pi"></a></dt>
 <dd><p>Should colons (<code>:</code>) be added to the interaction terms (E.g., `XZ` -&gt; `X:Z`)?</p></dd>
+
+
+<dt id="arg-high-order-as-measr">high.order.as.measr<a class="anchor" aria-label="anchor" href="#arg-high-order-as-measr"></a></dt>
+<dd><p>Should higher order measurement model be
+denoted with the <code>=~</code> operator? If <code>FALSE</code> the <code>~</code>
+operator is used.</p></dd>
 
 </dl></div>
     <div class="section level2">
