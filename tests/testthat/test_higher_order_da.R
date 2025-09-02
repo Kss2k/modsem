@@ -41,13 +41,18 @@ z2 <- 0.8 * Z1 + disturbance(0.2)
 z3 <- 1   * Z2 + disturbance(0.2)
 z4 <- 0.8 * Z2 + disturbance(0.2)
 
+Y1 <- 1   * Y + disturbance(0.2)
+Y2 <- 0.8 * Y + disturbance(0.2)
 
-y1 <- 1   * Y + disturbance(0.2)
-y2 <- 0.8 * Y + disturbance(0.2)
+y1 <- 1   * Y1 + disturbance(0.2)
+y2 <- 0.8 * Y1 + disturbance(0.2)
+
+y3 <- 1   * Y2 + disturbance(0.2)
+y4 <- 0.8 * Y2 + disturbance(0.2)
 
 data <- data.frame(x1, x2, x3, x4,
                    z1, z2, z3, z4,
-                   y1, y2)
+                   y1, y2, y3, y4)
 
 
 sem.syntax <- '
@@ -57,10 +62,12 @@ sem.syntax <- '
   LZ1 =~ z1 + z2
   LZ2 =~ z3 + z4
 
+  LY1 =~ y1 + y2
+  LY2 =~ y3 + y4
+
   LX =~ LX1 + LX2
   LZ =~ LZ1 + LZ2
-
-  LY =~ y1 + y2
+  LY =~ LY1 + LY2
 
   LY ~ LX + LZ + LX:LZ
 '
