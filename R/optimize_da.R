@@ -421,8 +421,12 @@ parameterEstimatesLavSAM <- function(syntax,
   struct <- suppressWarnings(centered_estimates(fitSAM))
 
   addlab <- \(pt) if (!"label" %in% colnames(pt)) {pt$label <- ""; pt} else pt
-  cols <- c("lhs", "op", "rhs", "label", "est")
+  cols.x <- c("lhs", "op", "rhs")
+  cols.y <- c("label", "est")
+  cols   <- c(cols.x, cols.y)
+
   parTableFull <- rbind(addlab(measr)[cols], addlab(struct)[cols])
+  parTableFull <- parTableFull[!duplicated(parTableFull[cols.x]), , drop = FALSE]
 
   list(fit = fitCFA, parTable = parTableFull)
 }
