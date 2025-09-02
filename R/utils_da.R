@@ -955,12 +955,21 @@ sortParTableDA <- function(parTable, model) {
   # in the model.syntax input. Instead we use getXis() on
   # parTable.input
 
-  xis      <- getXis(parTable.input, checkAny = FALSE, etas = etas)
-  indsXis  <- model$info$allIndsXis
-  indsEtas <- model$info$allIndsEtas
+  xis            <- getXis(parTable.input, checkAny = FALSE, etas = etas)
+  indsXis        <- model$info$allIndsXis
+  indsEtas       <- model$info$allIndsEtas
+  higherOrderLVs <- model$info$higherOrderLVs
+
+  isHigherOrderXi  <- xis  %in% higherOrderLVs
+  isHigherOrderEta <- etas %in% higherOrderLVs
+
+  xisLow   <- xis[!isHigherOrderXi]
+  xisHigh  <- xis[isHigherOrderXi]
+  etasLow  <- etas[!isHigherOrderEta]
+  etasHigh <- etas[isHigherOrderEta]
 
   opOrder <- c("=~", "~", "~1", "~~", "|", ":=")
-  varOrder <- unique(c(indsXis, indsEtas, xis, etas))
+  varOrder <- unique(c(indsXis, indsEtas, xisLow, etasLow, xisHigh, xisLow))
 
   getScore <- function(x, order.by) {
     order.by <- unique(c(order.by, x)) # ensure that all of x is in order.by

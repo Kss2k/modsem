@@ -276,8 +276,11 @@ specifyModelDA <- function(syntax = NULL,
       kOmegaEta     = getK_NA(omegaEtaXi, labelOmegaEtaXi),
       nonLinearXis  = nonLinearXis,
       mean.observed = mean.observed,
-      has.interaction = NROW(intTerms) > 0L,
+
+      has.interaction    = NROW(intTerms) > 0L,
+      higherOrderLVs     = higherOrderLVs,
       indsHigherOrderLVs = indsHigherOrderLVs,
+
       lavOptimizerSyntaxAdditions = lavOptimizerSyntaxAdditions
     ),
 

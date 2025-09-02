@@ -53,7 +53,7 @@ getEtas <- function(parTable, isLV = FALSE, checkAny = TRUE) {
   etas.lhs <- parTable[cond.lhs, "lhs"]
   etas.rhs <- parTable[cond.rhs, "rhs"]
 
-  etas <- unique(c(etas.lhs, etas.rhs))
+  etas <- unique(c(etas.rhs, etas.lhs))
   stopif(checkAny && !length(etas), "No etas found")
 
   etas
