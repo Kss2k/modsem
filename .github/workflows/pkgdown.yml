@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - lazy-vignettes
 
 jobs:
   push-to-gh-pages:
