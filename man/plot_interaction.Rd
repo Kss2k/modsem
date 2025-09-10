@@ -8,16 +8,16 @@ plot_interaction(
   x,
   z,
   y,
-  xz = NULL,
+  model,
   vals_x = seq(-3, 3, 0.001),
   vals_z,
-  model,
   alpha_se = 0.15,
   digits = 2,
   ci_width = 0.95,
   ci_type = "confidence",
   rescale = TRUE,
   standardized = FALSE,
+  xz = NULL,
   ...
 )
 }
@@ -28,11 +28,9 @@ plot_interaction(
 
 \item{y}{A character string specifying the outcome (dependent) variable.}
 
-\item{xz}{A character string specifying the interaction term (\code{x:z}).
-If \code{NULL}, the term is created automatically as \code{paste(x, z, sep = ":")}.
-Some SEM backends may handle the interaction term differently (for instance, by
-removing or modifying the colon), and this function attempts to reconcile that
-internally.}
+\item{model}{An object of class \code{\link{modsem_pi}}, \code{\link{modsem_da}},
+\code{\link{modsem_mplus}}, or possibly a \code{lavaan} object. Must be a fitted
+SEM model containing paths for \code{y ~ x + z + x:z}.}
 
 \item{vals_x}{A numeric vector of values at which to compute and plot the focal
 predictor \code{x}. The default is \code{seq(-3, 3, .001)}, which provides a
@@ -44,10 +42,6 @@ to the original metric in the internal computation of predicted means.}
 separate regression lines. Each distinct value in \code{vals_z} defines a separate
 group (plotted with a different color). If \code{rescale=TRUE}, these values
 are also assumed to be in standardized units.}
-
-\item{model}{An object of class \code{\link{modsem_pi}}, \code{\link{modsem_da}},
-\code{\link{modsem_mplus}}, or possibly a \code{lavaan} object. Must be a fitted
-SEM model containing paths for \code{y ~ x + z + x:z}.}
 
 \item{alpha_se}{A numeric value in \eqn{[0, 1]} specifying the transparency of
 the confidence/prediction interval ribbon. Default is \code{0.15}.}
@@ -69,6 +63,12 @@ before computing predictions. If \code{FALSE}, \code{vals_x} and \code{vals_z}
 are taken as raw-scale values directly.}
 
 \item{standardized}{Should coefficients be standardized beforehand?}
+
+\item{xz}{A character string specifying the interaction term (\code{x:z}).
+If \code{NULL}, the term is created automatically as \code{paste(x, z, sep = ":")}.
+Some SEM backends may handle the interaction term differently (for instance, by
+removing or modifying the colon), and this function attempts to reconcile that
+internally.}
 
 \item{...}{Additional arguments passed on to \code{\link{simple_slopes}}.}
 }

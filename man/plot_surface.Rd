@@ -8,7 +8,6 @@ plot_surface(
   x,
   z,
   y,
-  xz = NULL,
   model,
   min_x = -3,
   max_x = 3,
@@ -16,6 +15,7 @@ plot_surface(
   max_z = 3,
   standardized = FALSE,
   detail = 0.01,
+  xz = NULL,
   ...
 )
 }
@@ -25,9 +25,6 @@ plot_surface(
 \item{z}{A character string specifying the name of the second predictor variable.}
 
 \item{y}{A character string specifying the name of the outcome variable.}
-
-\item{xz}{Optional. A character string or vector specifying the interaction term between \code{x} and \code{z}.
-If \code{NULL}, the interaction term is constructed as \code{paste(x, z, sep = ":")} and adjusted for specific model classes.}
 
 \item{model}{A model object of class \code{\link{modsem_pi}}, \code{\link{modsem_da}}, \code{\link{modsem_mplus}}, or \code{lavaan}. The model should
 include paths for the predictors (\code{x}, \code{z}, and \code{xz}) to the outcome (\code{y}).}
@@ -44,6 +41,9 @@ include paths for the predictors (\code{x}, \code{z}, and \code{xz}) to the outc
 
 \item{detail}{Numeric. Step size for the grid of \code{x} and \code{z} values, determining the resolution of the surface.
 Smaller values increase plot resolution. Default is \code{1e-2}.}
+
+\item{xz}{Optional. A character string or vector specifying the interaction term between \code{x} and \code{z}.
+If \code{NULL}, the interaction term is constructed as \code{paste(x, z, sep = ":")} and adjusted for specific model classes.}
 
 \item{...}{Additional arguments passed to \code{plotly::plot_ly}.}
 }

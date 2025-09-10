@@ -10,11 +10,6 @@
 #' @param x A character string specifying the focal predictor (x-axis variable).
 #' @param z A character string specifying the moderator variable.
 #' @param y A character string specifying the outcome (dependent) variable.
-#' @param xz A character string specifying the interaction term (\code{x:z}).
-#'   If \code{NULL}, the term is created automatically as \code{paste(x, z, sep = ":")}.
-#'   Some SEM backends may handle the interaction term differently (for instance, by
-#'   removing or modifying the colon), and this function attempts to reconcile that
-#'   internally.
 #' @param vals_x A numeric vector of values at which to compute and plot the focal
 #'   predictor \code{x}. The default is \code{seq(-3, 3, .001)}, which provides a
 #'   relatively fine grid for smooth lines. If \code{rescale=TRUE}, these values
@@ -42,6 +37,11 @@
 #'   before computing predictions. If \code{FALSE}, \code{vals_x} and \code{vals_z}
 #'   are taken as raw-scale values directly.
 #' @param standardized Should coefficients be standardized beforehand?
+#' @param xz A character string specifying the interaction term (\code{x:z}).
+#'   If \code{NULL}, the term is created automatically as \code{paste(x, z, sep = ":")}.
+#'   Some SEM backends may handle the interaction term differently (for instance, by
+#'   removing or modifying the colon), and this function attempts to reconcile that
+#'   internally.
 #' @param ... Additional arguments passed on to \code{\link{simple_slopes}}.
 #'
 #' @details
@@ -113,10 +113,11 @@
 #'                  vals_z = c(-0.5, 0.5),
 #'                  model = est2)
 #' }
-plot_interaction <- function(x, z, y, xz = NULL, vals_x = seq(-3, 3, .001),
-                             vals_z, model, alpha_se = 0.15, digits = 2,
+plot_interaction <- function(x, z, y, model, vals_x = seq(-3, 3, .001),
+                             vals_z, alpha_se = 0.15, digits = 2,
                              ci_width = 0.95, ci_type = "confidence", rescale = TRUE,
-                             standardized = FALSE, ...) {
+                             standardized = FALSE, xz = NULL,
+                             ...) {
   slopes <- simple_slopes(x = x, z = z, y = y, model = model, vals_x = vals_x, vals_z = vals_z,
                           rescale = rescale, ci_width = ci_width, ci_type = ci_type,
                           standardized = standardized, ...)
@@ -133,7 +134,7 @@ plot_interaction <- function(x, z, y, xz = NULL, vals_x = seq(-3, 3, .001),
 
   # plotting margins
   ggplot2::ggplot(df, ggplot2::aes(x = vals_x, y = predicted, colour = cat_z, group = cat_z)) +
-    ggplot2::geom_smooth(method = "lm", formula = "y ~ x", se = FALSE) +
+    ggplot2::geom_line() +
     ggplot2::geom_ribbon(ggplot2::aes(ymin = ci.lower, ymax = ci.upper, fill = cat_z),
                          alpha = alpha_se, linewidth = 0, linetype = "blank") +
     ggplot2::labs(x = x, y = y, colour = z, fill = z) +
@@ -149,7 +150,6 @@ plot_interaction <- function(x, z, y, xz = NULL, vals_x = seq(-3, 3, .001),
 #' @param x The name of the predictor variable (as a character string).
 #' @param z The name of the moderator variable (as a character string).
 #' @param y The name of the outcome variable (as a character string).
-#' @param xz The name of the interaction term. If not specified, it will be created using \code{x} and \code{z}.
 #' @param model A fitted model object of class \code{modsem_da}, \code{modsem_mplus}, \code{modsem_pi}, or \code{lavaan}.
 #' @param min_z The minimum value of the moderator variable \code{z} to be used in the plot (default is -3). It is relative to the mean of z.
 #' @param max_z The maximum value of the moderator variable \code{z} to be used in the plot (default is 3). It is relative to the mean of z.
@@ -159,6 +159,7 @@ plot_interaction <- function(x, z, y, xz = NULL, vals_x = seq(-3, 3, .001),
 #' @param sd.line A thick black line showing \code{+/- sd.line * sd(z)}. NOTE: This line will be truncated by \code{min_z} and \code{max_z} if
 #' the sd.line falls outside of \code{[min_z, max_z]}.
 #' @param standardized Should coefficients be standardized beforehand?
+#' @param xz The name of the interaction term. If not specified, it will be created using \code{x} and \code{z}.
 #' @param ... Additional arguments (currently not used).
 #'
 #' @return A \code{ggplot} object showing the interaction plot with regions of significance.
@@ -192,9 +193,9 @@ plot_interaction <- function(x, z, y, xz = NULL, vals_x = seq(-3, 3, .001),
 #' plot_jn(x = "speed", z = "textual", y = "visual", model = est, max_z = 6)
 #' }
 #' @export
-plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3,
+plot_jn <- function(x, z, y, model, min_z = -3, max_z = 3,
                     sig.level = 0.05, alpha = 0.2, detail = 1000,
-                    sd.line = 2, standardized = FALSE, ...) {
+                    sd.line = 2, standardized = FALSE, xz = NULL, ...) {
 
   stopif(!inherits(model, c("modsem_da", "modsem_mplus", "modsem_pi", "lavaan")),
          "model must be of class 'modsem_pi', 'modsem_da', 'modsem_mplus', or 'lavaan'")
@@ -402,8 +403,6 @@ plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3,
 #' @param x A character string specifying the name of the first predictor variable.
 #' @param z A character string specifying the name of the second predictor variable.
 #' @param y A character string specifying the name of the outcome variable.
-#' @param xz Optional. A character string or vector specifying the interaction term between \code{x} and \code{z}.
-#'   If \code{NULL}, the interaction term is constructed as \code{paste(x, z, sep = ":")} and adjusted for specific model classes.
 #' @param model A model object of class \code{\link{modsem_pi}}, \code{\link{modsem_da}}, \code{\link{modsem_mplus}}, or \code{lavaan}. The model should
 #'   include paths for the predictors (\code{x}, \code{z}, and \code{xz}) to the outcome (\code{y}).
 #' @param min_x Numeric. Minimum value of \code{x} in z-scores. Default is -3.
@@ -413,6 +412,8 @@ plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3,
 #' @param standardized Should coefficients be standardized beforehand?
 #' @param detail Numeric. Step size for the grid of \code{x} and \code{z} values, determining the resolution of the surface.
 #'   Smaller values increase plot resolution. Default is \code{1e-2}.
+#' @param xz Optional. A character string or vector specifying the interaction term between \code{x} and \code{z}.
+#'   If \code{NULL}, the interaction term is constructed as \code{paste(x, z, sep = ":")} and adjusted for specific model classes.
 #' @param ... Additional arguments passed to \code{plotly::plot_ly}.
 #'
 #' @details
@@ -463,19 +464,30 @@ plot_jn <- function(x, z, y, xz = NULL, model, min_z = -3, max_z = 3,
 #' }
 #'
 #' @export
-plot_surface <- function(x, z, y, xz = NULL, model,
+plot_surface <- function(x, z, y, model,
                          min_x = -3, max_x = 3,
                          min_z = -3, max_z = 3,
                          standardized = FALSE,
-                         detail = 1e-2, ...) {
+                         detail = 1e-2,
+                         xz = NULL,
+                         ...) {
   stopif(!isModsemObject(model) && !isLavaanObject(model), "model must be of class ",
          "'modsem_pi', 'modsem_da', 'modsem_mplus' or 'lavaan'")
 
   if (is.null(xz)) xz <- paste(x, z, sep = ":")
   xz <- c(xz, reverseIntTerm(xz))
+
+  xx <- paste(x, x, sep = ":")
+  xx <- c(xx, reverseIntTerm)
+
+  zz <- paste(z, z, sep = ":")
+  zz <- c(zz, reverseIntTerm)
+
   if (!inherits(model, c("modsem_da", "modsem_mplus")) &&
       !isLavaanObject(model)) {
     xz <- stringr::str_remove_all(xz, ":")
+    xx <- stringr::str_remove_all(xx, ":")
+    zz <- stringr::str_remove_all(zz, ":")
   }
 
   if (standardized) {
@@ -507,13 +519,26 @@ plot_surface <- function(x, z, y, xz = NULL, model,
   stopif(!length(sd_z),    "variance of z not found in model")
   stopif(!length(gamma_xz), "coefficient for xz not found in model")
 
+  gamma_xx <- coefs[coefs$rhs %in% xx, "est"]
+  gamma_zz <- coefs[coefs$rhs %in% zz, "est"]
+
   # offset by mean
+  intercept_y <- getIntercept(y, parTable = parTable)
   mean_x <- getMean(x, parTable = parTable)
   mean_z <- getMean(z, parTable = parTable)
   vals_x <- sd_x * seq(min_x, max_x, by = detail) + mean_x
   vals_z <- sd_z * seq(min_z, max_z, by = detail) + mean_z
 
-  proj_y <- outer(vals_x, vals_z, \(x, z) gamma_x * x + gamma_z + z + z * x * gamma_xz)
+  calcExpectedY <- function(x, z) {
+    intercept_y +
+    gamma_x  * x +
+    gamma_z  * z +
+    gamma_xz * x * z +
+    gamma_xx * x ^ 2 +
+    gamma_zz * z ^ 2
+  }
+
+  proj_y <- outer(vals_x, vals_z, FUN = calcExpectedY)
 
   plotly::plot_ly(z = ~proj_y, x = ~vals_x, y = ~vals_z, type = "surface",
                   colorbar = list(title = y)) |>
