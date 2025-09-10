@@ -512,15 +512,18 @@ plot_surface <- function(x, z, y, model,
   gamma_z  <- coefs[coefs$rhs == z, "est"]
   sd_z     <- sqrt(calcCovParTable(z, z, parTable))
   gamma_xz <- coefs[coefs$rhs %in% xz, "est"]
+  gamma_xx <- coefs[coefs$rhs %in% xx, "est"]
+  gamma_zz <- coefs[coefs$rhs %in% zz, "est"]
 
   stopif(!length(gamma_x),  "coefficient for x not found in model")
   stopif(!length(sd_x),    "variance of x not found in model")
   stopif(!length(gamma_z),  "coefficient for z not found in model")
   stopif(!length(sd_z),    "variance of z not found in model")
-  stopif(!length(gamma_xz), "coefficient for xz not found in model")
+  warnif(!length(gamma_xz), "coefficient for xz not found in model")
 
-  gamma_xx <- coefs[coefs$rhs %in% xx, "est"]
-  gamma_zz <- coefs[coefs$rhs %in% zz, "est"]
+  if (!length(gamma_xz)) gamma_xz <- 0
+  if (!length(gamma_xx)) gamma_xx <- 0
+  if (!length(gamma_zz)) gamma_zz <- 0
 
   # offset by mean
   intercept_y <- getIntercept(y, parTable = parTable)
