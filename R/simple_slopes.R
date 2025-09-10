@@ -252,6 +252,12 @@ simple_slopes <- function(x,
     beta_zz * df$vals_z ^ 2 +
     beta_xz * df$vals_x * df$vals_z
 
+  df$std.error <- calc_se(df, e = res_y, VCOV = VCOV, se_type = ci_type)
+  df$z.value   <- (df$predicted - h0) / df$std.error # H0 = mean_y
+  df$p.value   <- 2 * stats::pnorm(-abs(df$z.value))
+  df$ci.upper  <- df$predicted + ci.sig * df$std.error
+  df$ci.lower  <- df$predicted - ci.sig * df$std.error
+
   # significance test of slopes (not margins)
   k <- length(vals_z)
   slopeLabels <- c(label_beta_x, label_beta_xz)
@@ -265,12 +271,6 @@ simple_slopes <- function(x,
   slopesVCOV <- jacobian %*% slopesVCOV %*% t(jacobian) # delta method
   std.error <- sqrt(diag(slopesVCOV))
   z.value <- slopes / std.error
-
-  df$std.error <- std.error
-  df$z.value   <- z.value
-  df$p.value   <- 2 * stats::pnorm(-abs(df$z.value))
-  df$ci.upper  <- df$predicted + ci.sig * std.error
-  df$ci.lower  <- df$predicted - ci.sig * std.error
 
   sig.slopes <- data.frame(
     param = paste0(y, "~", x),

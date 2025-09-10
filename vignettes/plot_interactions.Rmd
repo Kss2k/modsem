@@ -37,8 +37,7 @@ Here is a simple example using the double-centering approach:
 ```{r}
 m1 <- "
 # Outer Model
-  X =~ x1
-  X =~ x2 + x3
+  X =~ x1 + x2 + x3
   Z =~ z1 + z2 + z3
   Y =~ y1 + y2 + y3
 
