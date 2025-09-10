@@ -145,7 +145,7 @@ plot_surface(x = "INT", z = "PBC", y = "BEH", model = est2)
 ```
 
 # Quadratic Effects and Response Surface Models
-`modsem` also handles quadratic effects when plotting interaction using the `plot_interaction()`
+As of version `1.0.13`, `modsem` also handles quadratic effects when plotting interaction using the `plot_interaction()`
 and `plot_surface()` functions. Here we can see an example using some generated data for a
 model with two quadratic effects, and a single interaction effect. The model is equivalent
 to a typical response surface regression.
