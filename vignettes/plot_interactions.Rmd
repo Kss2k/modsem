@@ -219,7 +219,7 @@ data.sim <- data.frame(
 ## Fitting Model
 Here we fit the model using the QML approach.
 
-```{r}
+```{r, eval = EVAL_DEFAULT}
 model <- '
   X =~ x1 + x2 + x3
   Z =~ z1 + z2 + z3
@@ -234,13 +234,13 @@ est3 <- modsem(model, data = data.sim, method = "qml")
 ## 2D Plot
 Here we can see a two dimensional plot, where the slope of `X` no longer is constant
 at a given value of `Z`, since `X` has an interaction effect with itself.
-```{r}
+```{r, eval = EVAL_DEFAULT}
 plot_interaction(x = "X", z = "Z", y = "Y", model = est3, vals_z = c(-1, 0, 1))
 ```
 
 ## 3D (Response Surface) Plot
 Here we can see a three-dimensional surface plot.
 
-```{r}
+```{r, eval = EVAL_DEFAULT}
 plot_surface(x = "X", z = "Z", y = "Y", model = est3, vals_z = c(-1, 0, 1))
 ```
