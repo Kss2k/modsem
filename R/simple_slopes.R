@@ -144,13 +144,19 @@ simple_slopes <- function(x,
   if (is.null(xz))
     xz <- paste(x, z, sep = ":")
 
+  checkLength <- \(x, nm) stopif(length(x) != 1L, nm, " must be of length 1!")
+  checkLength(x,   "x")
+  checkLength(z,   "z")
+  checkLength(y,   "y")
+  checkLength(xz, "xz")
+
   xz <- c(xz, reverseIntTerm(xz))
 
   xx <- paste(x, x, sep = ":")
-  xx <- c(xx, reverseIntTerm)
+  xx <- c(xx, reverseIntTerm(xx))
 
   zz <- paste(z, z, sep = ":")
-  zz <- c(zz, reverseIntTerm)
+  zz <- c(zz, reverseIntTerm(zz))
 
   if (!inherits(model, c("modsem_da", "modsem_mplus")) &&
       !isLavaanObject(model)) {

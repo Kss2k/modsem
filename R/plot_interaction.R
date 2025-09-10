@@ -118,9 +118,9 @@ plot_interaction <- function(x, z, y, model, vals_x = seq(-3, 3, .001),
                              ci_width = 0.95, ci_type = "confidence", rescale = TRUE,
                              standardized = FALSE, xz = NULL,
                              ...) {
-  slopes <- simple_slopes(x = x, z = z, y = y, model = model, vals_x = vals_x, vals_z = vals_z,
-                          rescale = rescale, ci_width = ci_width, ci_type = ci_type,
-                          standardized = standardized, ...)
+  slopes <- simple_slopes(x = x, z = z, y = y, model = model, vals_x = vals_x,
+                          vals_z = vals_z, rescale = rescale, ci_width = ci_width,
+                          ci_type = ci_type, standardized = standardized, xz = xz, ...)
   df <- as.data.frame(slopes)
   df$cat_z <- as.factor(round(df$vals_z, digits))
 
@@ -200,8 +200,17 @@ plot_jn <- function(x, z, y, model, min_z = -3, max_z = 3,
   stopif(!inherits(model, c("modsem_da", "modsem_mplus", "modsem_pi", "lavaan")),
          "model must be of class 'modsem_pi', 'modsem_da', 'modsem_mplus', or 'lavaan'")
 
-  if (is.null(xz)) xz <- paste(x, z, sep = ":")
+  if (is.null(xz))
+    xz <- paste(x, z, sep = ":")
+
+  checkLength <- \(x, nm) stopif(length(x) != 1L, nm, " must be of length 1!")
+  checkLength(x,   "x")
+  checkLength(z,   "z")
+  checkLength(y,   "y")
+  checkLength(xz, "xz")
+
   xz <- c(xz, reverseIntTerm(xz))
+
   if (!inherits(model, c("modsem_da", "modsem_mplus")) && !inherits(model, "lavaan")) {
     xz <- stringr::str_remove_all(xz, ":")
   }
@@ -474,14 +483,22 @@ plot_surface <- function(x, z, y, model,
   stopif(!isModsemObject(model) && !isLavaanObject(model), "model must be of class ",
          "'modsem_pi', 'modsem_da', 'modsem_mplus' or 'lavaan'")
 
-  if (is.null(xz)) xz <- paste(x, z, sep = ":")
+  if (is.null(xz))
+    xz <- paste(x, z, sep = ":")
+
+  checkLength <- \(x, nm) stopif(length(x) != 1L, nm, " must be of length 1!")
+  checkLength(x,   "x")
+  checkLength(z,   "z")
+  checkLength(y,   "y")
+  checkLength(xz, "xz")
+
   xz <- c(xz, reverseIntTerm(xz))
 
   xx <- paste(x, x, sep = ":")
-  xx <- c(xx, reverseIntTerm)
+  xx <- c(xx, reverseIntTerm(xx))
 
   zz <- paste(z, z, sep = ":")
-  zz <- c(zz, reverseIntTerm)
+  zz <- c(zz, reverseIntTerm(zz))
 
   if (!inherits(model, c("modsem_da", "modsem_mplus")) &&
       !isLavaanObject(model)) {
@@ -504,7 +521,7 @@ plot_surface <- function(x, z, y, model,
     n <- nrow(model$data)
   }
 
-  lVs <- c(x, z, y, xz)
+  lVs <- c(x, z, y, xz, xx, zz)
   coefs <- parTable[parTable$op == "~" & parTable$rhs %in% lVs &
                     parTable$lhs == y, ]
   gamma_x  <- coefs[coefs$rhs == x, "est"]
