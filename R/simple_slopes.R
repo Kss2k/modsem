@@ -26,10 +26,6 @@ U_CROSS = "\u2534" # up cross
 #' @param x The name of the variable on the x-axis (focal predictor).
 #' @param z The name of the moderator variable.
 #' @param y The name of the outcome variable.
-#' @param xz The name of the interaction term (\code{x:z}). If \code{NULL}, it will
-#'   be created by combining \code{x} and \code{z} with a colon (e.g., \code{"x:z"}).
-#'   Some backends may remove or alter the colon symbol, so the function tries to
-#'   account for that internally.
 #' @param model An object of class \code{\link{modsem_pi}}, \code{\link{modsem_da}},
 #'   \code{\link{modsem_mplus}}, or a \code{lavaan} object. This should be a fitted SEM
 #'   model that includes paths for \code{y ~ x + z + x:z}.
@@ -57,6 +53,10 @@ U_CROSS = "\u2534" # up cross
 #'   predicted values (\code{predicted - h0}) assume \code{h0} is the model-estimated
 #'   mean of \code{y}. If \code{FALSE}, the null hypothesis is \code{h0 = 0}.
 #' @param standardized Should coefficients be standardized beforehand?
+#' @param xz The name of the interaction term (\code{x:z}). If \code{NULL}, it will
+#'   be created by combining \code{x} and \code{z} with a colon (e.g., \code{"x:z"}).
+#'   Some backends may remove or alter the colon symbol, so the function tries to
+#'   account for that internally.
 #'
 #' @param ... Additional arguments passed to lower-level functions or other internal
 #'   helpers.
@@ -128,7 +128,6 @@ U_CROSS = "\u2534" # up cross
 simple_slopes <- function(x,
                           z,
                           y,
-                          xz = NULL,
                           model,
                           vals_x = -3:3,
                           vals_z = -1:1,
@@ -137,6 +136,7 @@ simple_slopes <- function(x,
                           ci_type = "confidence",
                           relative_h0 = TRUE,
                           standardized = FALSE,
+                          xz = NULL,
                           ...) {
   stopif(!isModsemObject(model) && !isLavaanObject(model), "model must be of class ",
          "'modsem_pi', 'modsem_da', 'modsem_mplus' or 'lavaan'")
@@ -144,11 +144,26 @@ simple_slopes <- function(x,
   if (is.null(xz))
     xz <- paste(x, z, sep = ":")
 
+  checkLength <- \(x, nm) stopif(length(x) != 1L, nm, " must be of length 1!")
+  checkLength(x,   "x")
+  checkLength(z,   "z")
+  checkLength(y,   "y")
+  checkLength(xz, "xz")
+
   xz <- c(xz, reverseIntTerm(xz))
 
+  xx <- paste(x, x, sep = ":")
+  xx <- c(xx, reverseIntTerm(xx))
+
+  zz <- paste(z, z, sep = ":")
+  zz <- c(zz, reverseIntTerm(zz))
+
   if (!inherits(model, c("modsem_da", "modsem_mplus")) &&
-      !isLavaanObject(model))
+      !isLavaanObject(model)) {
     xz <- stringr::str_remove_all(xz, ":")
+    xx <- stringr::str_remove_all(xx, ":")
+    zz <- stringr::str_remove_all(zz, ":")
+  }
 
   if (standardized) {
     parTable <- standardized_estimates(model, correction = TRUE)
@@ -177,34 +192,45 @@ simple_slopes <- function(x,
   beta_x  <- parTable[parTable$lhs == y & parTable$rhs == x & parTable$op == "~", "est"]
   beta_z  <- parTable[parTable$lhs == y & parTable$rhs == z & parTable$op == "~", "est"]
   beta_xz <- parTable[parTable$lhs == y & parTable$rhs %in% xz & parTable$op == "~", "est"]
+  beta_xx <- parTable[parTable$lhs == y & parTable$rhs %in% xx & parTable$op == "~", "est"]
+  beta_zz <- parTable[parTable$lhs == y & parTable$rhs %in% zz & parTable$op == "~", "est"]
   beta0_y <- parTable[parTable$lhs == y & parTable$op == "~1", "est"]
   res_y   <- parTable[parTable$lhs == y & parTable$rhs == y & parTable$op == "~~", "est"]
 
   var_x   <- calcCovParTable(x, x, parTable)
   var_z   <- calcCovParTable(z, z, parTable)
 
-  stopif(length(var_x) == 0, "Variance for x not found in model")
-  stopif(length(var_z) == 0, "Variance for z not found in model")
+  stopif(is.na(var_x), "Variance for x not found in model")
+  stopif(is.na(var_z), "Variance for z not found in model")
   stopif(length(beta_x) == 0, "Coefficient for x not found in model")
   stopif(length(beta_z) == 0, "Coefficient for z not found in model")
-  stopif(length(beta_xz) == 0, "Coefficient for interaction term not found in model")
+  warnif(length(beta_xz) == 0, "Coefficient for interaction term not found in model")
+
+  if (!length(beta_xx)) beta_xx <- 0
+  if (!length(beta_xz)) beta_xz <- 0
+  if (!length(beta_zz)) beta_zz <- 0
 
   label_beta_x  <- parTable[parTable$lhs == y & parTable$rhs == x & parTable$op == "~", "label"]
   label_beta_z  <- parTable[parTable$lhs == y & parTable$rhs == z & parTable$op == "~", "label"]
   label_beta_xz <- parTable[parTable$lhs == y & parTable$rhs %in% xz & parTable$op == "~", "label"]
+  label_beta_xx <- parTable[parTable$lhs == y & parTable$rhs %in% xx & parTable$op == "~", "label"]
+  label_beta_zz <- parTable[parTable$lhs == y & parTable$rhs %in% zz & parTable$op == "~", "label"]
   label_beta0_y <- parTable[parTable$lhs == y & parTable$op == "~1", "label"]
 
   label_beta_x  <- ifelse(length(label_beta_x) == 0, "y~x", label_beta_x)
   label_beta_z  <- ifelse(length(label_beta_z) == 0, "y~z", label_beta_z)
   label_beta_xz <- ifelse(length(label_beta_xz) == 0, "y~xz", label_beta_xz)
+  label_beta_xx <- ifelse(length(label_beta_xx) == 0, "y~xx", label_beta_xx)
+  label_beta_zz <- ifelse(length(label_beta_zz) == 0, "y~zz", label_beta_zz)
   label_beta0_y <- ifelse(length(label_beta0_y) == 0, "y~1", label_beta0_y)
 
-  labels <- c(label_beta0_y, label_beta_x, label_beta_z, label_beta_xz)
+  labels <- c(label_beta0_y, label_beta_x, label_beta_z, label_beta_xz,
+              label_beta_xx, label_beta_zz)
   VCOV   <- expandVCOV(VCOV, labels)
 
   mean_x <- getMean(x, parTable = parTable)
   mean_z <- getMean(z, parTable = parTable)
-  mean_y <- getMean(y, parTable = parTable)
+  mean_y <- getIntercept(y, parTable = parTable)
   h0     <- if (relative_h0) mean_y else 0
 
   if (rescale) {
@@ -216,27 +242,35 @@ simple_slopes <- function(x,
   ci.sig <- stats::qnorm(1 - alpha / 2) # two-tailed
 
   # creating margins
-  df           <- structure(expand.grid(x = vals_x, z = vals_z), names= c("vals_x", "vals_z"))
-  df$predicted <- mean_y + beta_x * df$vals_x + beta_z * df$vals_z + df$vals_z * df$vals_x * beta_xz
-  df$std.error <- calc_se(df, e = res_y, VCOV = VCOV, se_type = ci_type)
-  df$z.value   <- (df$predicted - h0) / df$std.error # H0 = mean_y
-  df$p.value   <- 2 * stats::pnorm(-abs(df$z.value))
-  df$ci.upper  <- df$predicted + ci.sig * df$std.error
-  df$ci.lower  <- df$predicted - ci.sig * df$std.error
+  df <- structure(expand.grid(x = vals_x, z = vals_z), names= c("vals_x", "vals_z"))
 
-  # significance test
+  df$predicted <-
+    mean_y +
+    beta_x * df$vals_x +
+    beta_z * df$vals_z +
+    beta_xx * df$vals_x ^ 2 +
+    beta_zz * df$vals_z ^ 2 +
+    beta_xz * df$vals_x * df$vals_z
+
+  # significance test of slopes (not margins)
   k <- length(vals_z)
   slopeLabels <- c(label_beta_x, label_beta_xz)
   slopesVCOV <- VCOV[slopeLabels, slopeLabels]
   slopes <- beta_x + vals_z * beta_xz
 
-  d_beta_x <- rep(1, k) # d(beta_x)/d(beta_x) = 1
-  d_beta_xz <- vals_z # d(vals_z * beta_xz) / d(beta_xz) = vals_z
+  d_beta_x  <- rep(1, k) # d(beta_x)/d(beta_x) = 1
+  d_beta_xz <- vals_z    # d(vals_z * beta_xz) / d(beta_xz) = vals_z
   jacobian <- matrix(c(d_beta_x, d_beta_xz),
                      nrow=k, ncol=2, byrow=FALSE)
   slopesVCOV <- jacobian %*% slopesVCOV %*% t(jacobian) # delta method
   std.error <- sqrt(diag(slopesVCOV))
   z.value <- slopes / std.error
+
+  df$std.error <- std.error
+  df$z.value   <- z.value
+  df$p.value   <- 2 * stats::pnorm(-abs(df$z.value))
+  df$ci.upper  <- df$predicted + ci.sig * std.error
+  df$ci.lower  <- df$predicted - ci.sig * std.error
 
   sig.slopes <- data.frame(
     param = paste0(y, "~", x),
@@ -294,7 +328,7 @@ calc_se <- function(df, e, VCOV, se_type = "confidence") {
 
   n <- nrow(df)
   i <- rep(1, n)
-  X <- matrix(c(i, vals_x, vals_z, vals_x * vals_z), nrow=n)
+  X <- matrix(c(i, vals_x, vals_z, vals_x * vals_z, vals_x^2, vals_z^2), nrow=n)
   V <- calcSESimpleSlopes(X, VCOV)
 
   sqrt(as.vector(V))
@@ -368,8 +402,6 @@ print.simple_slopes <- function(x, digits = 2, scientific.p = FALSE, ...) {
               var_y, var_x, var_z, var_z, sig.diff_min_max$min.z, sig.diff_min_max$max.z))
   printTable(X)
   cat("\n")
-
-
 
   # Slope test -----------------------------------------------------------------
   header <- c(sig.slopes$param[1], sig.slopes$moderator[1], "Std.Error",
