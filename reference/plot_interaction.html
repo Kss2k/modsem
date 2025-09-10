@@ -75,16 +75,16 @@ multiple regression lines and confidence/prediction bands.</p>
 <span>  <span class="va">x</span>,</span>
 <span>  <span class="va">z</span>,</span>
 <span>  <span class="va">y</span>,</span>
-<span>  xz <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  <span class="va">model</span>,</span>
 <span>  vals_x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="op">-</span><span class="fl">3</span>, <span class="fl">3</span>, <span class="fl">0.001</span><span class="op">)</span>,</span>
 <span>  <span class="va">vals_z</span>,</span>
-<span>  <span class="va">model</span>,</span>
 <span>  alpha_se <span class="op">=</span> <span class="fl">0.15</span>,</span>
 <span>  digits <span class="op">=</span> <span class="fl">2</span>,</span>
 <span>  ci_width <span class="op">=</span> <span class="fl">0.95</span>,</span>
 <span>  ci_type <span class="op">=</span> <span class="st">"confidence"</span>,</span>
 <span>  rescale <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  standardized <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  xz <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -105,12 +105,10 @@ multiple regression lines and confidence/prediction bands.</p>
 <dd><p>A character string specifying the outcome (dependent) variable.</p></dd>
 
 
-<dt id="arg-xz">xz<a class="anchor" aria-label="anchor" href="#arg-xz"></a></dt>
-<dd><p>A character string specifying the interaction term (<code>x:z</code>).
-If <code>NULL</code>, the term is created automatically as <code>paste(x, z, sep = ":")</code>.
-Some SEM backends may handle the interaction term differently (for instance, by
-removing or modifying the colon), and this function attempts to reconcile that
-internally.</p></dd>
+<dt id="arg-model">model<a class="anchor" aria-label="anchor" href="#arg-model"></a></dt>
+<dd><p>An object of class <code><a href="modsem_pi.html">modsem_pi</a></code>, <code><a href="modsem_da.html">modsem_da</a></code>,
+<code><a href="modsem_mplus.html">modsem_mplus</a></code>, or possibly a <code>lavaan</code> object. Must be a fitted
+SEM model containing paths for <code>y ~ x + z + x:z</code>.</p></dd>
 
 
 <dt id="arg-vals-x">vals_x<a class="anchor" aria-label="anchor" href="#arg-vals-x"></a></dt>
@@ -126,12 +124,6 @@ to the original metric in the internal computation of predicted means.</p></dd>
 separate regression lines. Each distinct value in <code>vals_z</code> defines a separate
 group (plotted with a different color). If <code>rescale=TRUE</code>, these values
 are also assumed to be in standardized units.</p></dd>
-
-
-<dt id="arg-model">model<a class="anchor" aria-label="anchor" href="#arg-model"></a></dt>
-<dd><p>An object of class <code><a href="modsem_pi.html">modsem_pi</a></code>, <code><a href="modsem_da.html">modsem_da</a></code>,
-<code><a href="modsem_mplus.html">modsem_mplus</a></code>, or possibly a <code>lavaan</code> object. Must be a fitted
-SEM model containing paths for <code>y ~ x + z + x:z</code>.</p></dd>
 
 
 <dt id="arg-alpha-se">alpha_se<a class="anchor" aria-label="anchor" href="#arg-alpha-se"></a></dt>
@@ -165,6 +157,14 @@ are taken as raw-scale values directly.</p></dd>
 
 <dt id="arg-standardized">standardized<a class="anchor" aria-label="anchor" href="#arg-standardized"></a></dt>
 <dd><p>Should coefficients be standardized beforehand?</p></dd>
+
+
+<dt id="arg-xz">xz<a class="anchor" aria-label="anchor" href="#arg-xz"></a></dt>
+<dd><p>A character string specifying the interaction term (<code>x:z</code>).
+If <code>NULL</code>, the term is created automatically as <code>paste(x, z, sep = ":")</code>.
+Some SEM backends may handle the interaction term differently (for instance, by
+removing or modifying the colon), and this function attempts to reconcile that
+internally.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>

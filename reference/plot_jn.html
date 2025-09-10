@@ -60,7 +60,6 @@
 <span>  <span class="va">x</span>,</span>
 <span>  <span class="va">z</span>,</span>
 <span>  <span class="va">y</span>,</span>
-<span>  xz <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">model</span>,</span>
 <span>  min_z <span class="op">=</span> <span class="op">-</span><span class="fl">3</span>,</span>
 <span>  max_z <span class="op">=</span> <span class="fl">3</span>,</span>
@@ -69,6 +68,7 @@
 <span>  detail <span class="op">=</span> <span class="fl">1000</span>,</span>
 <span>  sd.line <span class="op">=</span> <span class="fl">2</span>,</span>
 <span>  standardized <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  xz <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -87,10 +87,6 @@
 
 <dt id="arg-y">y<a class="anchor" aria-label="anchor" href="#arg-y"></a></dt>
 <dd><p>The name of the outcome variable (as a character string).</p></dd>
-
-
-<dt id="arg-xz">xz<a class="anchor" aria-label="anchor" href="#arg-xz"></a></dt>
-<dd><p>The name of the interaction term. If not specified, it will be created using <code>x</code> and <code>z</code>.</p></dd>
 
 
 <dt id="arg-model">model<a class="anchor" aria-label="anchor" href="#arg-model"></a></dt>
@@ -124,6 +120,10 @@ the sd.line falls outside of <code>[min_z, max_z]</code>.</p></dd>
 
 <dt id="arg-standardized">standardized<a class="anchor" aria-label="anchor" href="#arg-standardized"></a></dt>
 <dd><p>Should coefficients be standardized beforehand?</p></dd>
+
+
+<dt id="arg-xz">xz<a class="anchor" aria-label="anchor" href="#arg-xz"></a></dt>
+<dd><p>The name of the interaction term. If not specified, it will be created using <code>x</code> and <code>z</code>.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
