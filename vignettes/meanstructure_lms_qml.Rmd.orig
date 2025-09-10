@@ -8,7 +8,7 @@ vignette: >
 ---
 
 ```{r, include = FALSE}
-EVAL_DEFAULT <- FALSE
+EVAL_DEFAULT <- TRUE
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
