@@ -28,6 +28,7 @@ jobs:
         run: |
           git clone https://github.com/kss2k/modsem
           cd modsem
+          git checkout lazy-vignettes
           git clone https://github.com/kss2k/modsem --branch pkgdown docs
           Rscript -e 'source("vignettes/compile_vignettes.R")' # compile vignettes
           Rscript -e 'pkgdown::build_site(preview = FALSE, run_dont_run = TRUE)'
