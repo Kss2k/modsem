@@ -7,7 +7,7 @@ combineLavLabels <- function(lavLabelsCov, lavLabelsMain, currentLabels) {
 }
 
 
-createLavLabels <- function(matrices, subset, etas) {
+createLavLabels <- function(matrices, subset, etas, parTable.in = NULL) {
   lambdaX      <- createLabelsMatrix(matrices$lambdaX, op = "=~")
   lambdaY      <- createLabelsMatrix(matrices$lambdaY, op = "=~")
   thetaDelta   <- createLabelsMatrix(matrices$thetaDelta, op = "~~")
@@ -21,8 +21,8 @@ createLavLabels <- function(matrices, subset, etas) {
   beta0        <- createLabelsMatrix(matrices$beta0, op = "~", first = "rows")
   gammaXi      <- createLabelsMatrix(matrices$gammaXi, op = "~", first = "rows")
   gammaEta     <- createLabelsMatrix(matrices$gammaEta, op = "~", first = "rows")
-  omegaXiXi    <- createLabelsOmega(matrices$omegaXiXi)
-  omegaEtaXi   <- createLabelsOmega(matrices$omegaEtaXi)
+  omegaXiXi    <- createLabelsOmega(matrices$omegaXiXi, parTable.in = parTable.in)
+  omegaEtaXi   <- createLabelsOmega(matrices$omegaEtaXi, parTable.in = parTable.in)
 
   labels <- c("lambdaX" = lambdaX,
               "lambdaY" = lambdaY,
@@ -78,13 +78,28 @@ createLabelsMatrix <- function(X, op = "~", first = "cols") {
 }
 
 
-createLabelsOmega <- function(X) {
+createLabelsOmega <- function(X, parTable.in = NULL) {
+  C <- \(x, y) sprintf("%s:%s", x, y)
+  getIntTerm <- function(lhs, rhs) {
+    xz <- C(lhs, rhs)
+    zx <- C(rhs, lhs)
+
+    if (is.null(parTable.in))         xz
+    else if (xz %in% parTable.in$rhs) xz
+    else                              zx
+  }
+
   rows   <- rownames(X)
   cols   <- colnames(X)
   labels <- character(0L)
 
   for (i in seq_len(ncol(X))) for (j in seq_len(nrow(X))) {
-    labels <- c(labels, paste0(rows[[j]], ":", cols[[i]]))
+    eta_i <- stringr::str_split_i(rows[[j]], pattern = "~", i = 1) # y~x -> y
+    lhs_i <- stringr::str_split_i(rows[[j]], pattern = "~", i = 2) # y~x -> x
+    rhs_i <- cols[[i]]
+    xz    <- getIntTerm(lhs_i, rhs_i)
+
+    labels <- c(labels, sprintf("%s~%s", eta_i, xz))
   }
 
   labels

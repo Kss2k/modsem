@@ -298,7 +298,7 @@ specifyModelDA <- function(syntax = NULL,
 
   model$constrExprs <- getConstrExprs(parTable, model$covModel$parTable)
   if (createTheta) {
-    listTheta         <- createTheta(model)
+    listTheta         <- createTheta(model, parTable.in = parTable)
     model             <- c(model, listTheta)
     model$freeParams  <- length(listTheta$theta)
     model$info$bounds <- getParamBounds(model)
