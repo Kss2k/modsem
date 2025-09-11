@@ -51,10 +51,9 @@ checkInputValidation <- function(x.default = "X",
     if (!par != "xz") { # xz is not validated the same way...
       argsWrong <- c(params, list(...))
       argsWrong[[par]] <- "I_DO_NOT_EXIST"
-      browser()
       testthat::expect_error(
          do.call(FUN, argsWrong),
-         regexp = sprintf("Unrecognized variable: %s\\!")
+         regexp = sprintf("Unrecognized variable: I_DO_NOT_EXIST\\!")
       )
     }
   }
