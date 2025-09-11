@@ -20,7 +20,7 @@ knitr::opts_chunk$set(
 library(modsem)
 ```
 
-# LMS approaches
+# LMS approach
 As of version `1.0.13`, the `modsem` function supports the estimation of higher order interaction effects.
 A general implementation is however only available with the LMS approach. Currently,
 estimation of higher order interaction effects using the QML approach is not available,
