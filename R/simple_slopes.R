@@ -141,14 +141,16 @@ simple_slopes <- function(x,
   stopif(!isModsemObject(model) && !isLavaanObject(model), "model must be of class ",
          "'modsem_pi', 'modsem_da', 'modsem_mplus' or 'lavaan'")
 
+  if (standardized) {
+    parTable <- standardized_estimates(model, correction = TRUE)
+  } else parTable <- parameter_estimates(model)
+
+  parTable <- getMissingLabels(parTable)
+
   if (is.null(xz))
     xz <- paste(x, z, sep = ":")
 
-  checkLength <- \(x, nm) stopif(length(x) != 1L, nm, " must be of length 1!")
-  checkLength(x,   "x")
-  checkLength(z,   "z")
-  checkLength(y,   "y")
-  checkLength(xz, "xz")
+  checkInputsSimpleSlopes(x = x, z = z, y = y, xz = xz, parTable = parTable)
 
   xz <- c(xz, reverseIntTerm(xz))
 
@@ -164,13 +166,6 @@ simple_slopes <- function(x,
     xx <- stringr::str_remove_all(xx, ":")
     zz <- stringr::str_remove_all(zz, ":")
   }
-
-  if (standardized) {
-    parTable <- standardized_estimates(model, correction = TRUE)
-  } else parTable <- parameter_estimates(model)
-
-  parTable <- getMissingLabels(parTable)
-
 
   if (isLavaanObject(model)) {
     vcov <- lavaan::vcov
@@ -462,4 +457,21 @@ print.simple_slopes <- function(x, digits = 2, scientific.p = FALSE, ...) {
 #' @export
 as.data.frame.simple_slopes <- function(x, ...) {
   x$margins
+}
+
+
+checkInputsSimpleSlopes <- function(..., parTable) {
+  varmask   <- parTable$op %in% c("=~", "~1", "~~", "~")
+  variables <- c(parTable[varmask, "lhs"], parTable[varmask, "rhs"])
+  variables <- unique(variables[variables != ""])
+
+  checkLength <- \(x, nm) stopif(length(x) != 1L, nm, " must be of length 1!")
+  checkExists <- \(x) stopif(!x %in% variables && !grepl(":", x),
+                             "Unrecognized variable: ", x, "!")
+
+  params <- list(...)
+  for (nm in names(params)) {
+    checkLength(x = params[[nm]], nm = nm)
+    checkExists(x = params[[nm]])
+  }
 }
