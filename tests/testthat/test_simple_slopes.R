@@ -19,13 +19,13 @@ plot_interaction(x = "X", z = "Z", y = "Y", xz = "X:Z",
                  vals_z = c(1, 0), model = est1, ci_type = "prediction")
 
 # check input length validation
-checkInputLengthValidation <- function(x.default = "X",
-                                       z.default = "Z",
-                                       y.default = "Y",
-                                       xz.default = NULL,
-                                       FUN = simple_slopes,
-                                       debug = FALSE,
-                                       ...) {
+checkInputValidation <- function(x.default = "X",
+                                 z.default = "Z",
+                                 y.default = "Y",
+                                 xz.default = NULL,
+                                 FUN = simple_slopes,
+                                 debug = FALSE,
+                                 ...) {
   params <- list(x  = x.default,
                  z  = z.default,
                  y  = y.default,
@@ -40,13 +40,23 @@ checkInputLengthValidation <- function(x.default = "X",
              ifelse(is.null(xz.default), yes = "NULL", no = xz.default))
     }
 
-    args <- c(params, list(...))
-    args[[par]] <- c(args[[par]], args[[par]])
+    argsLong <- c(params, list(...))
+    argsLong[[par]] <- c(argsLong[[par]], argsLong[[par]])
 
     testthat::expect_error(
-      do.call(FUN, args),
+      do.call(FUN, argsLong),
       regexp = sprintf("%s must be of length 1.*", par)
     )
+
+    if (!par != "xz") { # xz is not validated the same way...
+      argsWrong <- c(params, list(...))
+      argsWrong[[par]] <- "I_DO_NOT_EXIST"
+      browser()
+      testthat::expect_error(
+         do.call(FUN, argsWrong),
+         regexp = sprintf("Unrecognized variable: %s\\!")
+      )
+    }
   }
 }
 
@@ -63,6 +73,6 @@ for (i in seq_along(funcs)) {
     args_i <- c(args[[i]], list(FUN = FUN, debug = debug,
                                 xz.default = if (xz_null) NULL else "X:Z"))
 
-    do.call(checkInputLengthValidation, args_i)
+    do.call(checkInputValidation, args_i)
   }
 }

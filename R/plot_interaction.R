@@ -200,14 +200,16 @@ plot_jn <- function(x, z, y, model, min_z = -3, max_z = 3,
   stopif(!inherits(model, c("modsem_da", "modsem_mplus", "modsem_pi", "lavaan")),
          "model must be of class 'modsem_pi', 'modsem_da', 'modsem_mplus', or 'lavaan'")
 
+  if (standardized) {
+    parTable <- standardized_estimates(model, correction = TRUE)
+  } else parTable <- parameter_estimates(model)
+
+  parTable <- getMissingLabels(parTable)
+
   if (is.null(xz))
     xz <- paste(x, z, sep = ":")
 
-  checkLength <- \(x, nm) stopif(length(x) != 1L, nm, " must be of length 1!")
-  checkLength(x,   "x")
-  checkLength(z,   "z")
-  checkLength(y,   "y")
-  checkLength(xz, "xz")
+  checkInputsSimpleSlopes(x = x, z = z, y = y, xz = xz, parTable = parTable)
 
   xz <- c(xz, reverseIntTerm(xz))
 
@@ -220,13 +222,6 @@ plot_jn <- function(x, z, y, model, min_z = -3, max_z = 3,
     coef <- lavaan::coef
     nobs <- lavaan::nobs
   }
-
-  if (standardized) {
-    parTable <- standardized_estimates(model, correction = TRUE)
-  } else {
-    parTable <- parameter_estimates(model)
-  }
-  parTable <- getMissingLabels(parTable)
 
   # z mean/sd and plotting window
   mean_z <- getMean(z, parTable = parTable)
@@ -483,14 +478,14 @@ plot_surface <- function(x, z, y, model,
   stopif(!isModsemObject(model) && !isLavaanObject(model), "model must be of class ",
          "'modsem_pi', 'modsem_da', 'modsem_mplus' or 'lavaan'")
 
+  if (standardized) {
+    parTable <- standardized_estimates(model, correction = TRUE)
+  } else parTable <- parameter_estimates(model)
+
   if (is.null(xz))
     xz <- paste(x, z, sep = ":")
 
-  checkLength <- \(x, nm) stopif(length(x) != 1L, nm, " must be of length 1!")
-  checkLength(x,   "x")
-  checkLength(z,   "z")
-  checkLength(y,   "y")
-  checkLength(xz, "xz")
+  checkInputsSimpleSlopes(x = x, z = z, y = y, xz = xz, parTable = parTable)
 
   xz <- c(xz, reverseIntTerm(xz))
 
@@ -506,10 +501,6 @@ plot_surface <- function(x, z, y, model,
     xx <- stringr::str_remove_all(xx, ":")
     zz <- stringr::str_remove_all(zz, ":")
   }
-
-  if (standardized) {
-    parTable <- standardized_estimates(model, correction = TRUE)
-  } else parTable <- parameter_estimates(model)
 
   if (isLavaanObject(model)) {
     # this won't work for multigroup models
