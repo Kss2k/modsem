@@ -407,17 +407,69 @@ plot_jn <- function(x, z, y, model, min_z = -3, max_z = 3,
 #' @param x A character string specifying the name of the first predictor variable.
 #' @param z A character string specifying the name of the second predictor variable.
 #' @param y A character string specifying the name of the outcome variable.
+#'
 #' @param model A model object of class \code{\link{modsem_pi}}, \code{\link{modsem_da}}, \code{\link{modsem_mplus}}, or \code{lavaan}. The model should
 #'   include paths for the predictors (\code{x}, \code{z}, and \code{xz}) to the outcome (\code{y}).
+#'
 #' @param min_x Numeric. Minimum value of \code{x} in z-scores. Default is -3.
 #' @param max_x Numeric. Maximum value of \code{x} in z-scores. Default is 3.
 #' @param min_z Numeric. Minimum value of \code{z} in z-scores. Default is -3.
 #' @param max_z Numeric. Maximum value of \code{z} in z-scores. Default is 3.
+#'
 #' @param standardized Should coefficients be standardized beforehand?
+#'
 #' @param detail Numeric. Step size for the grid of \code{x} and \code{z} values, determining the resolution of the surface.
 #'   Smaller values increase plot resolution. Default is \code{1e-2}.
+#'
 #' @param xz Optional. A character string or vector specifying the interaction term between \code{x} and \code{z}.
 #'   If \code{NULL}, the interaction term is constructed as \code{paste(x, z, sep = ":")} and adjusted for specific model classes.
+#'
+#' @param colorscale Character or list. Colorscale used to color the surface.
+#'   - Default is \code{"Viridis"}, which matches the classic Plotly default.
+#'   - Can be a built-in palette name (e.g., \code{"Greys"}, \code{"Plasma"}, \code{"Turbo"}),
+#'     or a custom two-column list with numeric stops (\code{0}–\code{1}) and color codes.
+#'   Example custom scale: 
+#'   \code{list(c(0, "white"), c(1, "black"))} for a black-and-white gradient.
+#'
+#' @param reversescale Logical. If \code{TRUE}, reverses the color mapping so that
+#'   low values become high colors and vice versa.  
+#'   Default is \code{FALSE}.
+#'
+#' @param showscale Logical. If \code{TRUE}, displays the colorbar legend
+#'   alongside the plot.  
+#'   Default is \code{TRUE}.
+#'
+#' @param cmin Numeric or \code{NULL}. The minimum value for the colorscale mapping.
+#'   If \code{NULL}, the minimum of the data (\code{proj_y}) is used automatically.  
+#'   Use this to standardize the color range across multiple plots.
+#'
+#' @param cmax Numeric or \code{NULL}. The maximum value for the colorscale mapping.
+#'   If \code{NULL}, the maximum of the data (\code{proj_y}) is used automatically.  
+#'   Use this to standardize the color range across multiple plots.
+#'
+#' @param surface_opacity Numeric (0–1). Controls the opacity of the surface.
+#'   - \code{1} = fully opaque (default)
+#'   - \code{0} = fully transparent  
+#'   Useful when overlaying multiple surfaces or highlighting gridlines.
+#'
+#' @param grid Logical. If \code{TRUE}, draws gridlines (wireframe)
+#'   directly on the surface using Plotly's contour features.  
+#'   Default is \code{FALSE}.
+#'
+#' @param grid_nx Integer. Approximate number of gridlines to draw along the 
+#'   **x-axis** direction when \code{grid = TRUE}.  
+#'   Higher values create a denser grid.  
+#'   Default is \code{12}.
+#'
+#' @param grid_ny Integer. Approximate number of gridlines to draw along the 
+#'   **y-axis** direction when \code{grid = TRUE}.  
+#'   Higher values create a denser grid.  
+#'   Default is \code{12}.
+#'
+#' @param grid_color Character. Color of the gridlines drawn on the surface.
+#'   Must be a valid CSS color string, including \code{rgba()} for transparency.
+#'   - Default is \code{"rgba(0,0,0,0.45)"} (semi-transparent black).
+#'   Example: \code{"rgba(255,255,255,0.8)"} for semi-transparent white lines.
 #' @param ... Additional arguments passed to \code{plotly::plot_ly}.
 #'
 #' @details
@@ -469,12 +521,25 @@ plot_jn <- function(x, z, y, model, min_z = -3, max_z = 3,
 #'
 #' @export
 plot_surface <- function(x, z, y, model,
-                         min_x = -3, max_x = 3,
-                         min_z = -3, max_z = 3,
+                         min_x = -3,
+                         max_x = 3,
+                         min_z = -3,
+                         max_z = 3,
                          standardized = FALSE,
                          detail = 1e-2,
                          xz = NULL,
+                         colorscale = "Viridis",
+                         reversescale = FALSE,
+                         showscale = TRUE,
+                         cmin = NULL,
+                         cmax = NULL,
+                         surface_opacity = 1,
+                         grid = FALSE,
+                         grid_nx = 12,
+                         grid_ny = 12,
+                         grid_color = "rgba(0,0,0,0.45)",
                          ...) {
+
   stopif(!isModsemObject(model) && !isLavaanObject(model), "model must be of class ",
          "'modsem_pi', 'modsem_da', 'modsem_mplus' or 'lavaan'")
 
@@ -503,18 +568,15 @@ plot_surface <- function(x, z, y, model,
   }
 
   if (isLavaanObject(model)) {
-    # this won't work for multigroup models
     nobs <- unlist(model@Data@nobs)
     warnif(length(nobs) > 1, "plot_interaction is not intended for multigroup models")
     n <- nobs[[1]]
-
   } else {
     n <- nrow(model$data)
   }
 
   lVs <- c(x, z, y, xz, xx, zz)
-  coefs <- parTable[parTable$op == "~" & parTable$rhs %in% lVs &
-                    parTable$lhs == y, ]
+  coefs <- parTable[parTable$op == "~" & parTable$rhs %in% lVs & parTable$lhs == y, ]
   gamma_x  <- coefs[coefs$rhs == x, "est"]
   sd_x     <- sqrt(calcCovParTable(x, x, parTable))
   gamma_z  <- coefs[coefs$rhs == z, "est"]
@@ -542,21 +604,62 @@ plot_surface <- function(x, z, y, model,
 
   calcExpectedY <- function(x, z) {
     intercept_y +
-    gamma_x  * x +
-    gamma_z  * z +
-    gamma_xz * x * z +
-    gamma_xx * x ^ 2 +
-    gamma_zz * z ^ 2
+      gamma_x  * x +
+      gamma_z  * z +
+      gamma_xz * x * z +
+      gamma_xx * x ^ 2 +
+      gamma_zz * z ^ 2
   }
 
   proj_y <- outer(vals_x, vals_z, FUN = calcExpectedY)
 
-  plotly::plot_ly(z = ~proj_y, x = ~vals_x, y = ~vals_z, type = "surface",
-                  colorbar = list(title = y)) |>
-    plotly::layout(title = sprintf("Surface Plot of Interaction Effect between %s and %s, on %s", x, z, y),
-                   scene = list(xaxis = list(title = x),
-                                zaxis = list(title = y),
-                                yaxis = list(title = z)))
+  # ---- gridline setup: use surface-contours drawn along x and y ----
+  # We specify regular spacing by "size". Plotly draws these as lines on the surface.
+  nx <- max(1L, as.integer(grid_nx))
+  ny <- max(1L, as.integer(grid_ny))
+  size_x <- (max(vals_x) - min(vals_x)) / nx
+  size_y <- (max(vals_z) - min(vals_z)) / ny
+
+  contour_spec <- list(
+    x = if (grid) list(
+      show  = TRUE,
+      start = min(vals_x), end = max(vals_x), size = size_x,
+      color = grid_color
+    ) else list(show = FALSE),
+    y = if (grid) list(
+      show  = TRUE,
+      start = min(vals_z), end = max(vals_z), size = size_y,
+      color = grid_color
+    ) else list(show = FALSE),
+    z = list(show = FALSE)  # keep z-contours off unless desired later
+  )
+
+  plt <- plotly::plot_ly(
+    x = ~vals_x,
+    y = ~vals_z,
+    z = ~proj_y,
+    type = "surface",
+    surfacecolor = ~proj_y,     # Explicit color mapping
+    colorscale = colorscale,    # Now respected
+    reversescale = reversescale,
+    showscale = showscale,
+    opacity = surface_opacity,
+    contours = contour_spec,
+    colorbar = list(title = y),
+    cmin = cmin,
+    cmax = cmax,
+    ...
+  ) |>
+    plotly::layout(
+      title = sprintf("Surface Plot of Interaction Effect between %s and %s, on %s", x, z, y),
+      scene = list(
+        xaxis = list(title = x),
+        zaxis = list(title = y),
+        yaxis = list(title = z)
+      )
+    )
+
+  return(plt)
 }
 
 

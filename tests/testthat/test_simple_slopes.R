@@ -18,6 +18,7 @@ plot_interaction(x = "X", z = "Z", y = "Y",
 plot_interaction(x = "X", z = "Z", y = "Y", xz = "X:Z",
                  vals_z = c(1, 0), model = est1, ci_type = "prediction")
 
+plot_surface(x = "X", z = "Z", y = "Y", model = est1, colorscale = "Greys", grid = TRUE, grid_color = "black")
 # check input length validation
 checkInputValidation <- function(x.default = "X",
                                  z.default = "Z",
