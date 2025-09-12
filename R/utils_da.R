@@ -1051,3 +1051,30 @@ higherOrderMeasr2Struct <- function(parTable) {
 
   parTable
 }
+
+
+recalcInterceptsY <- function(parTable) {
+  # fix intercept for indicators of endogenous variables, based on means
+  # of interaction terms
+  parTable <- meanInteractions(parTable, ignore.means = TRUE)
+
+  for (eta in getEtas(parTable)) {
+    meta <- getMean(eta, parTable = parTable)
+    inds <- parTable[parTable$lhs == eta & parTable$op == "=~", "rhs"]
+    inds <- unique(inds)
+
+    for (ind in inds) {
+      cond <- parTable$lhs == ind & parTable$op == "~1"
+      lambda <- parTable[parTable$lhs == eta &
+                         parTable$op == "=~" &
+                         parTable$rhs == ind, "est"]
+
+      if (!length(lambda) || !any(cond))
+        next
+
+      parTable[cond, "est"] <- parTable[cond, "est"] - lambda * meta
+    }
+  }
+
+  parTable
+}
