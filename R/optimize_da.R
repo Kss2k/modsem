@@ -427,6 +427,7 @@ parameterEstimatesLavSAM <- function(syntax,
 
   parTableFull <- rbind(addlab(measr)[cols], addlab(struct)[cols])
   parTableFull <- parTableFull[!duplicated(parTableFull[cols.x]), , drop = FALSE]
+  parTableFull <- recalcInterceptsY(parTableFull)
 
   list(fit = fitCFA, parTable = parTableFull)
 }

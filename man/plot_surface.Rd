@@ -16,6 +16,16 @@ plot_surface(
   standardized = FALSE,
   detail = 0.01,
   xz = NULL,
+  colorscale = "Viridis",
+  reversescale = FALSE,
+  showscale = TRUE,
+  cmin = NULL,
+  cmax = NULL,
+  surface_opacity = 1,
+  grid = FALSE,
+  grid_nx = 12,
+  grid_ny = 12,
+  grid_color = "rgba(0,0,0,0.45)",
   ...
 )
 }
@@ -44,6 +54,53 @@ Smaller values increase plot resolution. Default is \code{1e-2}.}
 
 \item{xz}{Optional. A character string or vector specifying the interaction term between \code{x} and \code{z}.
 If \code{NULL}, the interaction term is constructed as \code{paste(x, z, sep = ":")} and adjusted for specific model classes.}
+
+\item{colorscale}{Character or list. Colorscale used to color the surface.
+- Default is \code{"Viridis"}, which matches the classic Plotly default.
+- Can be a built-in palette name (e.g., \code{"Greys"}, \code{"Plasma"}, \code{"Turbo"}),
+  or a custom two-column list with numeric stops (\code{0}–\code{1}) and color codes.
+Example custom scale: 
+\code{list(c(0, "white"), c(1, "black"))} for a black-and-white gradient.}
+
+\item{reversescale}{Logical. If \code{TRUE}, reverses the color mapping so that
+low values become high colors and vice versa.  
+Default is \code{FALSE}.}
+
+\item{showscale}{Logical. If \code{TRUE}, displays the colorbar legend
+alongside the plot.  
+Default is \code{TRUE}.}
+
+\item{cmin}{Numeric or \code{NULL}. The minimum value for the colorscale mapping.
+If \code{NULL}, the minimum of the data (\code{proj_y}) is used automatically.  
+Use this to standardize the color range across multiple plots.}
+
+\item{cmax}{Numeric or \code{NULL}. The maximum value for the colorscale mapping.
+If \code{NULL}, the maximum of the data (\code{proj_y}) is used automatically.  
+Use this to standardize the color range across multiple plots.}
+
+\item{surface_opacity}{Numeric (0–1). Controls the opacity of the surface.
+- \code{1} = fully opaque (default)
+- \code{0} = fully transparent  
+Useful when overlaying multiple surfaces or highlighting gridlines.}
+
+\item{grid}{Logical. If \code{TRUE}, draws gridlines (wireframe)
+directly on the surface using Plotly's contour features.  
+Default is \code{FALSE}.}
+
+\item{grid_nx}{Integer. Approximate number of gridlines to draw along the 
+**x-axis** direction when \code{grid = TRUE}.  
+Higher values create a denser grid.  
+Default is \code{12}.}
+
+\item{grid_ny}{Integer. Approximate number of gridlines to draw along the 
+**y-axis** direction when \code{grid = TRUE}.  
+Higher values create a denser grid.  
+Default is \code{12}.}
+
+\item{grid_color}{Character. Color of the gridlines drawn on the surface.
+Must be a valid CSS color string, including \code{rgba()} for transparency.
+- Default is \code{"rgba(0,0,0,0.45)"} (semi-transparent black).
+Example: \code{"rgba(255,255,255,0.8)"} for semi-transparent white lines.}
 
 \item{...}{Additional arguments passed to \code{plotly::plot_ly}.}
 }
