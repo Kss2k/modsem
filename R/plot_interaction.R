@@ -634,36 +634,43 @@ plot_surface <- function(x, z, y, model,
     z = list(show = FALSE)  # keep z-contours off unless desired later
   )
 
-  # plotly::plot_ly(
-  #   x = ~vals_x,
-  #   y = ~vals_z,
-  #   z = ~proj_y,
-  #   type = "surface",
-  #   surfacecolor = ~proj_y,
-  #   colorscale = colorscale,
-  #   reversescale = reversescale,
-  #   showscale = showscale,
-  #   opacity = surface_opacity,
-  #   # contours = contour_spec,
-  #   colorbar = list(title = y),
-  #   cmin = cmin,
-  #   cmax = cmax,
-  #   ...
-  # ) |>
-  #   plotly::layout(
-  #     title = sprintf("Surface Plot of Interaction Effect between %s and %s, on %s", x, z, y),
-  #     scene = list(
-  #       xaxis = list(title = x),
-  #       zaxis = list(title = y),
-  #       yaxis = list(title = z)
-  #     )
-  #   )
-  plotly::plot_ly(z = ~proj_y, x = ~vals_x, y = ~vals_z, type = "surface",
-                  colorbar = list(title = y)) |>
+  if (grid || tolower(colorscale) != "viridis") {
+    # for some reason this doesn't render with pkgdown
+    # this is a temporary workaround, until I figure out what
+    # is going on...
+    plotly::plot_ly(
+      x = ~vals_x,
+      y = ~vals_z,
+      z = ~proj_y,
+      type = "surface",
+      surfacecolor = ~proj_y,
+      colorscale = colorscale,
+      reversescale = reversescale,
+      showscale = showscale,
+      opacity = surface_opacity,
+      # contours = contour_spec,
+      colorbar = list(title = y),
+      cmin = cmin,
+      cmax = cmax,
+      ...
+    ) |>
+      plotly::layout(
+        title = sprintf("Surface Plot of Interaction Effect between %s and %s, on %s", x, z, y),
+        scene = list(
+          xaxis = list(title = x),
+          zaxis = list(title = y),
+          yaxis = list(title = z)
+        )
+      )
+
+  } else {
+    plotly::plot_ly(z = ~proj_y, x = ~vals_x, y = ~vals_z, type = "surface",
+                    colorbar = list(title = y)) |>
     plotly::layout(title = sprintf("Surface Plot of Interaction Effect between %s and %s, on %s", x, z, y),
                    scene = list(xaxis = list(title = x),
                                 zaxis = list(title = y),
                                 yaxis = list(title = z)))
+  }
 }
 
 
