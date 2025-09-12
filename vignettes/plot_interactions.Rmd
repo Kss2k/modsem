@@ -239,8 +239,9 @@ plot_interaction(x = "X", z = "Z", y = "Y", model = est3, vals_z = c(-1, 0, 1))
 ```
 
 ## 3D (Response Surface) Plot
-Here we can see a three-dimensional surface plot.
+Here we can see a three-dimensional surface plot, using a gray scale theme.
 
 ```{r, eval = EVAL_DEFAULT}
-plot_surface(x = "X", z = "Z", y = "Y", model = est3, vals_z = c(-1, 0, 1))
+plot_surface(x = "X", z = "Z", y = "Y", model = est3,
+             colorscale = "Greys", grid = TRUE) # change theme
 ```
