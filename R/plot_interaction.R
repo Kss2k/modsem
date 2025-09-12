@@ -428,42 +428,42 @@ plot_jn <- function(x, z, y, model, min_z = -3, max_z = 3,
 #'   - Default is \code{"Viridis"}, which matches the classic Plotly default.
 #'   - Can be a built-in palette name (e.g., \code{"Greys"}, \code{"Plasma"}, \code{"Turbo"}),
 #'     or a custom two-column list with numeric stops (\code{0}–\code{1}) and color codes.
-#'   Example custom scale: 
+#'   Example custom scale:
 #'   \code{list(c(0, "white"), c(1, "black"))} for a black-and-white gradient.
 #'
 #' @param reversescale Logical. If \code{TRUE}, reverses the color mapping so that
-#'   low values become high colors and vice versa.  
+#'   low values become high colors and vice versa.
 #'   Default is \code{FALSE}.
 #'
 #' @param showscale Logical. If \code{TRUE}, displays the colorbar legend
-#'   alongside the plot.  
+#'   alongside the plot.
 #'   Default is \code{TRUE}.
 #'
 #' @param cmin Numeric or \code{NULL}. The minimum value for the colorscale mapping.
-#'   If \code{NULL}, the minimum of the data (\code{proj_y}) is used automatically.  
+#'   If \code{NULL}, the minimum of the data (\code{proj_y}) is used automatically.
 #'   Use this to standardize the color range across multiple plots.
 #'
 #' @param cmax Numeric or \code{NULL}. The maximum value for the colorscale mapping.
-#'   If \code{NULL}, the maximum of the data (\code{proj_y}) is used automatically.  
+#'   If \code{NULL}, the maximum of the data (\code{proj_y}) is used automatically.
 #'   Use this to standardize the color range across multiple plots.
 #'
 #' @param surface_opacity Numeric (0–1). Controls the opacity of the surface.
 #'   - \code{1} = fully opaque (default)
-#'   - \code{0} = fully transparent  
+#'   - \code{0} = fully transparent
 #'   Useful when overlaying multiple surfaces or highlighting gridlines.
 #'
 #' @param grid Logical. If \code{TRUE}, draws gridlines (wireframe)
-#'   directly on the surface using Plotly's contour features.  
+#'   directly on the surface using Plotly's contour features.
 #'   Default is \code{FALSE}.
 #'
-#' @param grid_nx Integer. Approximate number of gridlines to draw along the 
-#'   **x-axis** direction when \code{grid = TRUE}.  
-#'   Higher values create a denser grid.  
+#' @param grid_nx Integer. Approximate number of gridlines to draw along the
+#'   **x-axis** direction when \code{grid = TRUE}.
+#'   Higher values create a denser grid.
 #'   Default is \code{12}.
 #'
-#' @param grid_ny Integer. Approximate number of gridlines to draw along the 
-#'   **y-axis** direction when \code{grid = TRUE}.  
-#'   Higher values create a denser grid.  
+#' @param grid_ny Integer. Approximate number of gridlines to draw along the
+#'   **y-axis** direction when \code{grid = TRUE}.
+#'   Higher values create a denser grid.
 #'   Default is \code{12}.
 #'
 #' @param grid_color Character. Color of the gridlines drawn on the surface.
@@ -634,13 +634,13 @@ plot_surface <- function(x, z, y, model,
     z = list(show = FALSE)  # keep z-contours off unless desired later
   )
 
-  plt <- plotly::plot_ly(
+  plotly::plot_ly(
     x = ~vals_x,
     y = ~vals_z,
     z = ~proj_y,
     type = "surface",
-    surfacecolor = ~proj_y,     # Explicit color mapping
-    colorscale = colorscale,    # Now respected
+    surfacecolor = ~proj_y,
+    colorscale = colorscale,
     reversescale = reversescale,
     showscale = showscale,
     opacity = surface_opacity,
@@ -658,8 +658,6 @@ plot_surface <- function(x, z, y, model,
         yaxis = list(title = z)
       )
     )
-
-  return(plt)
 }
 
 
