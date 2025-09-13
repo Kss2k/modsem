@@ -120,6 +120,7 @@ tpb <- '
   BEH =~ b1 + b2
 
   att4 ~~ att5
+  att4 ~~ int1
 
 # Inner Model (Based on Steinmetz et al., 2011)
   INT ~ ATT + PBC + SN

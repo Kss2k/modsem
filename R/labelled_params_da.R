@@ -40,12 +40,23 @@ fillMatricesLabels <- function(matrices, labelMatrices, thetaLabel,
                                constraintExprs = NULL) {
   if (is.null(thetaLabel)) return(matrices)
   labels <- names(thetaLabel)
-  purrr::map2(.x = matrices, .y = labelMatrices, .f = function(M, L) {
-    lapply(labels, FUN = function(label) {
-      M[L == label] <<- thetaLabel[[label]]
-    })
+
+  isOK  <- \(M, lM) all(dim(M) > 0L) && !all(lM == "")
+  valid <- unlist(purrr::map2(.x = matrices, .y = labelMatrices, .f = isOK))
+
+  if (!any(valid))
+    return(matrices)
+
+  fill <- function(M, L) {
+    lapply(labels, FUN = \(label) M[L == label] <<- thetaLabel[[label]])
     M
-  })
+  }
+
+  matrices[valid] <- purrr::map2(
+    .x = matrices[valid], .y = labelMatrices[valid], .f = fill
+  )
+
+  matrices
 }
 
 

@@ -75,7 +75,7 @@ arma::mat sigmaLmsCpp(Rcpp::List model, arma::vec z) {
   const arma::mat beta0 = Rcpp::as<arma::mat>(matrices["beta0"]);
   const arma::mat Psi = Rcpp::as<arma::mat>(matrices["psi"]);
   const arma::mat d = Rcpp::as<arma::mat>(matrices["thetaDelta"]);
-  const arma::mat e = Rcpp::as<arma::mat>(matrices["thetaEpsilon"]);
+  // const arma::mat e = Rcpp::as<arma::mat>(matrices["thetaEpsilon"]);
 
   arma::vec zVec;
   if (k > 0) zVec = arma::join_cols(z, arma::zeros<arma::vec>(numXis - k));
@@ -93,13 +93,16 @@ arma::mat sigmaLmsCpp(Rcpp::List model, arma::vec z) {
   arma::mat Oi = arma::eye<arma::mat>(numXis, numXis);
   Oi.diag() = arma::join_cols(arma::zeros<arma::vec>(k), arma::ones<arma::vec>(numXis - k));
 
-  const arma::mat Sxx = lX * A * Oi * A.t() * lX.t() + d;
+  const arma::mat Sxx = lX * A * Oi * A.t() * lX.t();
   const arma::mat Eta = Binv * (Gx * A + kronZ.t() * Oxx * A);
   const arma::mat Sxy = lX * (A * Oi * Eta.t()) * lY.t();
   const arma::mat Syy = lY * Eta * Oi * Eta.t() * lY.t() +
-    lY * (Binv * Psi * Binv.t()) * lY.t() + e;
+    lY * (Binv * Psi * Binv.t()) * lY.t();
 
-  return arma::join_cols(arma::join_rows(Sxx, Sxy), arma::join_rows(Sxy.t(), Syy));
+  return arma::join_cols(
+    arma::join_rows(Sxx, Sxy),
+    arma::join_rows(Sxy.t(), Syy)
+  ) + d;
 }
 
 
@@ -176,16 +179,16 @@ struct LMSModel {
     else                Binv = arma::inv(Ie - Ge - kronZ.t() * Oex);
 
     const arma::mat Oi = make_Oi(k, numXis);
-    const arma::mat Sxx = lX * A * Oi * A.t() * lX.t() + d;
+    const arma::mat Sxx = lX * A * Oi * A.t() * lX.t();
     const arma::mat Eta = Binv * (Gx * A + kronZ.t() * Oxx * A);
     const arma::mat Sxy = lX * (A * Oi * Eta.t()) * lY.t();
     const arma::mat Syy = lY * Eta * Oi * Eta.t() * lY.t() +
-      lY * (Binv * Psi * Binv.t()) * lY.t() + e;
+      lY * (Binv * Psi * Binv.t()) * lY.t();
 
     return arma::join_cols(
         arma::join_rows(Sxx, Sxy),
         arma::join_rows(Sxy.t(), Syy)
-        );
+        ) + d;
   }
 
   LMSModel thread_clone() const {
