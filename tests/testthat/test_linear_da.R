@@ -132,6 +132,12 @@ testthat::expect_true(tpb_lms_3$iterations == 2)
 summary(tpb_lms_3, H0 = FALSE)
 
 
+testthat::expect_error(
+  modsem(tpb, TPB, method = "qml"),
+  regexp = "Residual covariances between .* endogenous .* exogenous .*qml.*"
+)
+
+
 tpb <- "
 # Outer Model (Based on Hagger et al., 2007)
   ATT =~ att1 + a2 * att2 + att3 + att4 + att5

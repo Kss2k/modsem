@@ -89,6 +89,9 @@ specifyModelDA <- function(syntax = NULL,
   lavOptimizerSyntaxAdditions <- paste0(lavOptimizerSyntaxAdditions,
                                         listTauX$syntaxAdditions)
 
+  checkResCovX_Y(parTable = parTable, allIndsXis = allIndsXis,
+                 allIndsEtas = allIndsEtas, method = method)
+
   if (method == "qml") {
     listThetaDelta <- constructTheta(xis, indsXis, parTable = parTable,
                                      auto.fix.single = auto.fix.single)

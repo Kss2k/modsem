@@ -219,6 +219,20 @@ checkParTableDA <- function(parTable, method = "lms") {
 }
 
 
+checkResCovX_Y <- function(parTable, allIndsXis, allIndsEtas, method = "lms") {
+  if (method == "lms") return(NULL)
+
+  cond1 <- parTable$op == "~~"
+  cond2 <- parTable$lhs %in% allIndsXis & parTable$rhs %in% allIndsEtas
+  cond3 <- parTable$lhs %in% allIndsEtas & parTable$rhs %in% allIndsXis
+
+  stopif(any(cond1 & (cond2 | cond3)) && method == "qml",
+         "Residual covariances between indicators of endogenous lvs, and \n",
+         "indicators of exogenous lvs are not allowed with `method=\"qml\"`.\n",
+         "Try using `method=\"lms\"` instead!")
+}
+
+
 checkVarsIntsDA <- function(varsInts, lVs) {
   for (xz in varsInts) {
     stopif(!all(xz %in% lVs), "Element in product term is not a latent variable: `",
