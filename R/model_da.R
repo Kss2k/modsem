@@ -89,8 +89,18 @@ specifyModelDA <- function(syntax = NULL,
   lavOptimizerSyntaxAdditions <- paste0(lavOptimizerSyntaxAdditions,
                                         listTauX$syntaxAdditions)
 
-  listThetaDelta <- constructTheta(xis, indsXis, parTable = parTable,
-                                   auto.fix.single = auto.fix.single)
+  checkResCovX_Y(parTable = parTable, allIndsXis = allIndsXis,
+                 allIndsEtas = allIndsEtas, method = method)
+
+  if (method == "qml") {
+    listThetaDelta <- constructTheta(xis, indsXis, parTable = parTable,
+                                     auto.fix.single = auto.fix.single)
+  } else {
+    listThetaDelta <- constructTheta(c(xis, etas), c(indsXis, indsEtas),
+                                     parTable = parTable,
+                                     auto.fix.single = auto.fix.single)
+  }
+
   thetaDelta      <- listThetaDelta$numeric
   thetaLabelDelta <- listThetaDelta$label
 
@@ -107,8 +117,14 @@ specifyModelDA <- function(syntax = NULL,
   lavOptimizerSyntaxAdditions <- paste0(lavOptimizerSyntaxAdditions,
                                         listTauY$syntaxAdditions)
 
-  listThetaEpsilon <- constructTheta(etas, indsEtas, parTable = parTable,
-                                     auto.fix.single = auto.fix.single)
+  if (method == "qml") {
+    listThetaEpsilon <- constructTheta(etas, indsEtas, parTable = parTable,
+                                       auto.fix.single = auto.fix.single)
+  } else {
+    listThetaEpsilon <- constructTheta(NULL, NULL, parTable = parTable,
+                                       auto.fix.single = auto.fix.single)
+  }
+
   thetaEpsilon      <- listThetaEpsilon$numeric
   thetaLabelEpsilon <- listThetaEpsilon$label
 

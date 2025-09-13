@@ -19,14 +19,14 @@ install.packages("modsem")
 install.packages("devtools")
 devtools::install_github("kss2k/modsem", build_vignettes = TRUE)
 ```
-
-**Note**: The package needs to be compiled from source on `macOS` and `Linux`.
+**Note**: The package needs to be compiled from source on `macOS` (if installing via `GitHub`) and `Linux`.
 If you have issues installing the package on `macOS`, you might need to install the `gfortran` compiler.
 A `C++` compiler is also required, but should be installed by default on most systems.
 See the [R for macOs](https://cran.r-project.org/bin/macosx/tools/) page for more information.
 
 If you're using `Windows`, consider installing [`OpenBLAS in R for Windows`](https://github.com/david-cortes/R-openblas-in-windows) 
-for better perfmance.
+for better perfmance. If you're using a `Linux` distribution, consider installing
+the [`ropenblas` package](https://CRAN.R-project.org/package=ropenblas)
 
 # Methods/Approaches
 
