@@ -103,7 +103,7 @@ relcorr_single_item <- function(syntax,
   stopif(!NROW(parTableOuter), "Cannot ignore all latent variables when creating ",
          "reliability corrected items!")
 
-  warnif(any(parTableOuter$mod != ""),
+  warnif(any(!canBeNumeric(parTableOuter$mod, includeNA = TRUE)),
          "Labels and modifiers in the measurement model used to create reliability ",
          "corrected single items will be ignored!\nThis may cause the model constraints ",
          "in the structural model to break!", immediate. = FALSE)
@@ -118,8 +118,8 @@ relcorr_single_item <- function(syntax,
   rescovind <- parTableInner$lhs %in% inds &
                parTableInner$rhs %in% inds &
                parTableInner$op == "~~"
-  parTableInner <- parTableInner[!rescovind, ]
   parTableOuter <- rbind(parTableOuter, parTableInner[rescovind, ])
+  parTableInner <- parTableInner[!rescovind, ]
 
   # Check if there are any indicators in the structural model
   indsInInner <- parTableInner$lhs %in% inds | parTableInner$rhs %in% inds
@@ -149,8 +149,6 @@ relcorr_single_item <- function(syntax,
 
   rchar <- c(letters, seq_len(9))
   while(any(singleInds %in% colnames(data))) {
-    # if matching names in data, add random characters, until there is no
-    # match. Should in practive never be triggered
     singleInds <- paste0(singleInds, sample(rchar, length(singleInds)))
   }
 
@@ -181,7 +179,6 @@ relcorr_single_item <- function(syntax,
 
       newData[[newIndName]]    <- newInd
       varNewInds[[newIndName]] <- stats::var(newInd, na.rm = TRUE)
-
     }
 
     rel <- rel.std * varNewInds
@@ -190,12 +187,14 @@ relcorr_single_item <- function(syntax,
 
   if (length(higherOrderLVs)) {
     for (lV in intersect(lVs, allInds)) {
-      # If lV is an indicator for a higher order variable
-      # we add a correction to the residual, to account for
-      # measurement error on both levels
       res[[lV]] <- res[[lV]] + getHigherOrderResidual(lV = lV, cfa = cfa)
     }
   }
+
+  resCovMat <- getCompositeRVCOV(lVs = lVs, parTable = parTable, cfa = cfa,
+                                 scale.corrected = scale.corrected)
+  # Ensure diagonals match the already computed residual variances
+  diag(resCovMat) <- as.numeric(res[lVs])
 
   # first order lVs
   newParTable <- parTableInner
@@ -206,7 +205,7 @@ relcorr_single_item <- function(syntax,
     lVs1        <- lVs[firstOrder]
     singleInds1 <- singleInds[firstOrder]
     k1          <- length(lVs1)
-    res1        <- res[firstOrder]
+    res1        <- format(res[firstOrder], scientific = FALSE)
 
     lhs <- unname(c(lVs1, singleInds1))
     rhs <- unname(c(singleInds1, singleInds1))
@@ -233,7 +232,7 @@ relcorr_single_item <- function(syntax,
     for (hlV in higherOrderLVs) {
       lVs2h <- intersect(lVs2, allIndsLVs[[hlV]])
       singleInds2h <- singleInds2[lVs2h]
-      res2h <- res2[lVs2h]
+      res2h <- format(res2[lVs2h], scientific = FALSE)
       k2h   <- length(singleInds2h)
 
       lhs <- unname(c(rep(hlV, k2h), singleInds2h))
@@ -247,13 +246,38 @@ relcorr_single_item <- function(syntax,
     }
   }
 
+  if (length(lVs)) {
+    lvPairs <- utils::combn(lVs, 2, simplify = FALSE)
+
+    addRows <- lapply(lvPairs, function(pair) {
+      lv_i <- pair[1]
+      lv_j <- pair[2]
+      val  <- resCovMat[lv_i, lv_j]
+
+      if (abs(val) < 1e-12)
+        return(NULL)
+
+      data.frame(
+        lhs = unname(singleInds[[lv_i]]),
+        op  = "~~",
+        rhs = unname(singleInds[[lv_j]]),
+        mod = format(unname(val), scientific=FALSE)
+      )
+    })
+
+    newRows <- do.call(rbind, Filter(Negate(is.null), addRows))
+
+    if (!is.null(addRows) && NROW(newRows))
+      newParTable <- rbind(newParTable, newRows)
+  }
+
   newSyntax <- parTableToSyntax(newParTable)
 
   out <- list(syntax = newSyntax, data = newData,
               parTable = newParTable, reliability = rel.std,
               AVE = AVE.std, lVs = lVs, single.items = singleInds,
               intTerms = intTerms, residuals = res, res.std = res.std,
-              cov.lv = cov.lv)
+              cov.lv = cov.lv, residual_covariances = resCovMat)
 
   class(out) <- c("list", "modsem_relcorr")
 
@@ -274,9 +298,9 @@ getScaleCorrectedItem <- function(parTable, lV, data, cfa) {
   X    <- as.matrix(data[, inds])
   item <- rowSums(X) / sum(lambda)
 
-  residual <- (t(I) %*% theta %*% I) / sum(lambda)^2 # variance of (e1 + e2 + ... + en)
+  residual <- (t(I) %*% theta %*% I) / sum(lambda)^2
 
-  list(X = X, item = item, residual = residual)
+  list(X = X, item = as.numeric(item), residual = as.numeric(residual))
 }
 
 
@@ -370,7 +394,7 @@ simulateCrosssimulateCrossResCovRCS <- function(corrected,
 
   for (i in seq_len(NROW(Epsilon))) {
     for (j in seq_len(i)) {
-      mod <- Epsilon[i, j]
+      mod <- format(Epsilon[i, j], scientific = FALSE)
       lhs <- rownames(Epsilon)[[i]]
       rhs <- colnames(Epsilon)[[j]]
 
@@ -469,4 +493,50 @@ calcAVE <- function(lambda.std, theta.std, lV) {
   theta.std <- diag(theta.std)[names(lambda.std)]
 
   sum(lambda.std) ^ 2 / (sum(lambda.std) ^ 2 + sum(1 - theta.std ^ 2))
+}
+
+
+getCompositeDenominator <- function(lV, parTable, cfa, scale.corrected) {
+  measr   <- parTable[parTable$lhs == lV & parTable$op == "=~", ]
+  inds    <- unique(measr$rhs)
+  mats    <- lavaan::lavInspect(cfa, what = "coef")
+  if (scale.corrected) {
+    sum(as.vector(mats$lambda[inds, lV]))
+  } else {
+    length(inds)  # rowMeans: divide sum by k
+  }
+}
+
+
+getCompositeRVCOV <- function(lVs, parTable, cfa, scale.corrected) {
+  # Build Theta blocks and denominators
+  mats   <- lavaan::lavInspect(cfa, what = "coef")
+  thetaF <- mats$theta
+
+  # item lists per LV
+  item_list <- lapply(lVs, function(lv)
+    unique(parTable[parTable$lhs == lv & parTable$op == "=~", "rhs"])
+  )
+  names(item_list) <- lVs
+
+  # denominators D_f
+  denom <- vapply(lVs, function(lv)
+    getCompositeDenominator(lv, parTable, cfa, scale.corrected),
+    numeric(1)
+  )
+
+  p <- length(lVs)
+  resCov <- matrix(0, p, p, dimnames = list(lVs, lVs))
+
+  for (i in seq_len(p)) {
+    Ii <- item_list[[i]]
+    for (j in i:p) {
+      Ij <- item_list[[j]]
+      block_sum <- sum(thetaF[Ii, Ij, drop = FALSE])
+      val <- block_sum / (denom[i] * denom[j])
+      resCov[i, j] <- val
+      resCov[j, i] <- val
+    }
+  }
+  resCov
 }
