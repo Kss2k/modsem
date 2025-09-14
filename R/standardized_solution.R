@@ -11,21 +11,22 @@ transformedSolutionCOEFS <- function(object,
          "The model must be of class `modsem_da`, `modsem_mplus`, `modsem_pi`, `modsem_stan` or `lavaan`!")
 
   isLav     <- inherits(object, "lavaan")
-  isStan    <- inherits(object, "modsem_stan")
+  isLav   <- inherits(object, "lavaan")
+  isDA    <- inherits(object, "modsem_da")
+  isMplus <- inherits(object, "modsem_mplus")
   isLavStan <- isLav || isStan
-  isDA      <- inherits(object, c("modsem_da", "modsem_mplus"))
 
   if (isLavStan) {
     vcov <- lavaan::vcov # load vcov and coef from lavaan if dealing with a lavaan object
     coef <- lavaan::coef
   }
 
-  parTable <- parameter_estimates(object, colon.pi = TRUE)
+  parTable <- parameter_estimates(object, colon.pi = TRUE, high.order.as.measr = FALSE)
   parTable <- subsetByGrouping(parTable, grouping = grouping) # if NULL no subsetting
 
   if (!NROW(parTable)) return(NULL)
 
-  if (isDA) {
+  if (isDA || isMplus) {
     parTable <- parTable[c("lhs", "op", "rhs", "label", "est", "std.error")]
 
   } else { # modsem_pi or lavaan
@@ -36,11 +37,13 @@ transformedSolutionCOEFS <- function(object,
     parTable <- rename(parTable, se = "std.error")
   }
 
-  if (center && (isLav || isDA)) { # not relevant for modsem_pi and modsem_stan
-    warnif(isLavStan, "Replacing interaction (co-)",
+  if (center && (isLav || isDA || isMplus)) { # not relevant for modsem_pi
+    warnif(isLav, "Replacing interaction (co-)",
            "variances when centering the model!\n", immediate. = FALSE)
 
-    if (isDA) parTable <- meanInteractions(parTable) # get means for interaction terms
+    if (isDA || isMplus)
+      parTable <- meanInteractions(parTable) # get means for interaction terms
+
     parTable <- var_interactions(parTable, ignore.means = TRUE, mc.reps = mc.reps)
   }
 
@@ -297,6 +300,13 @@ transformedSolutionCOEFS <- function(object,
   # Remove added labels
   labelInOrig       <- parTable$label %in% originalLabels
   parTable[!labelInOrig, "label"] <- ""
+
+  if (isDA) {
+    indsHigherOrderLVs <- object$model$info$indsHigherOrderLVs
+    parTable <- higherOrderStruct2Measr(parTable = parTable,
+                                        indsHigherOrderLVs = indsHigherOrderLVs)
+    parTable <- sortParTableDA(parTable, model = object$model)
+  }
 
   # Reset index
   rownames(parTable) <- NULL

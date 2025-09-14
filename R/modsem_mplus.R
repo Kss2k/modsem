@@ -99,6 +99,7 @@ modsem_mplus <- function(model.syntax,
   parTable$lhs[lmask] <- abbreviated[parTable$lhs[lmask]]
 
   # Fix names in data
+  data  <- as.data.frame(data)
   dmask <- colnames(data) %in% names(abbreviated)
   colnames(data)[dmask] <- abbreviated[colnames(data)[dmask]]
 
@@ -122,11 +123,13 @@ modsem_mplus <- function(model.syntax,
 
   } else VARIABLE <- NULL
 
+  usevariables <- intersect(c(cluster, indicators), colnames(data))
+
   # Estimate model
   model <- MplusAutomation::mplusObject(
     TITLE = "Running Model via Mplus",
     VARIABLE = VARIABLE,
-    usevariables = c(cluster, indicators),
+    usevariables = usevariables,
     ANALYSIS = paste0(
       paste(paste("estimator =", estimator),
             paste("type =", type),
@@ -136,7 +139,7 @@ modsem_mplus <- function(model.syntax,
             sep = ";\n"), ";\n"), # add final ";"
     MODEL = parTableToMplusModel(parTable, ...),
     OUTPUT = OUTPUT,
-    rdata = data[c(cluster, indicators)],
+    rdata = data[usevariables],
   )
 
   results <- MplusAutomation::mplusModeler(model,
@@ -372,7 +375,7 @@ getOrderedParameterLabelsMplus <- function(parTable, TECH1, intTerms, intTermsMp
     out
   }
 
-  getReg <- function(M, row.lhs = TRUE, op = "~") {
+  getReg <- function(M, row.lhs = TRUE, op = "~", try.op = NULL) {
     out <- c()
 
     rows <- rownames(M)
@@ -394,6 +397,14 @@ getOrderedParameterLabelsMplus <- function(parTable, TECH1, intTerms, intTermsMp
       label <- parTable[parTable$op == op &
                         parTable$lhs == lhs &
                         parTable$rhs == rhs, "label"]
+
+      if (!length(label) && !is.null(try.op)) {
+        # can either be =~, or ~, either way we must also
+        # switch from order of lhs and rhs
+        label <- parTable[parTable$op == try.op &
+                          parTable$lhs == rhs &
+                          parTable$rhs == lhs, "label"]
+      }
 
       out <- setLabel(out = out, label = label, id = id)
     }
@@ -461,7 +472,7 @@ getOrderedParameterLabelsMplus <- function(parTable, TECH1, intTerms, intTermsMp
     getIntercept(nu),
     getIntercept(alpha),
     getReg(lambda, row.lhs = FALSE, op = "=~"),
-    getReg(beta, row.lhs = TRUE, op = "~"),
+    getReg(beta, row.lhs = TRUE, op = "~", try.op = "=~"), # include "=~" for higher order models
     getCovariance(psi),
     getCovariance(theta)
   )

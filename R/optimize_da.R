@@ -3,7 +3,11 @@ optimizeStartingParamsDA <- function(model,
                                                  orthogonal.y = FALSE,
                                                  auto.fix.first = TRUE,
                                                  auto.fix.sinlge = TRUE,
-                                                 robust.se = FALSE)) {
+                                                 robust.se = FALSE),
+                                     engine = c("pi", "sam")) {
+  engine <- tolower(engine)
+  engine <- match.arg(engine)
+
   etas     <- model$info$etas
   indsEtas <- model$info$allIndsEtas
   xis      <- model$info$xis
@@ -36,28 +40,50 @@ optimizeStartingParamsDA <- function(model,
     # Not worth the extra compute for non-linear models
   } else estimator <- "ML"
 
-  estPI <- modsem_pi(
-    model.syntax    = syntax,
-    data            = data,
-    method          = "dblcent",
-    estimator       = estimator,
-    meanstructure   = TRUE,
-    orthogonal.x    = args$orthogonal.x,
-    orthogonal.y    = args$orthogonal.y,
-    auto.fix.first  = args$auto.fix.first,
-    auto.fix.single = args$auto.fix.single,
-    res.cov.method  = "simple.no.warn",
-    res.cov.across  = TRUE,
-    match           = TRUE,
-    match.recycle   = TRUE,
-    missing         = missing,
-    suppress.warnings.match = TRUE,
-    suppress.warnings.lavaan = TRUE
-  )
+  if (engine == "pi") {
+    estPI <- modsem_pi(
+      model.syntax    = syntax,
+      data            = data,
+      method          = "dblcent",
+      estimator       = estimator,
+      meanstructure   = TRUE,
+      orthogonal.x    = args$orthogonal.x,
+      orthogonal.y    = args$orthogonal.y,
+      auto.fix.first  = args$auto.fix.first,
+      auto.fix.single = args$auto.fix.single,
+      res.cov.method  = "simple.no.warn",
+      res.cov.across  = TRUE,
+      match           = TRUE,
+      match.recycle   = TRUE,
+      missing         = missing,
+      suppress.warnings.match = TRUE,
+      suppress.warnings.lavaan = TRUE
+    )
+    parTable   <- parameter_estimates(estPI, colon.pi = TRUE)
+    lavaan.fit <- extract_lavaan(estPI)
 
-  parTable <- parameter_estimates(estPI, colon.pi = TRUE)
+  } else if (engine == "sam") {
+    fitSAM   <- parameterEstimatesLavSAM(
+      syntax          = syntax,
+      data            = data,
+      estimator       = estimator,
+      missing         = missing,
+      meanstructure   = TRUE,
+      orthogonal.x    = args$orthogonal.x,
+      orthogonal.y    = args$orthogonal.y,
+      auto.fix.first  = args$auto.fix.first,
+      auto.fix.single = args$auto.fix.single,
+      suppress.warnings.lavaan = TRUE,
+    )
+
+    parTable   <- fitSAM$parTable
+    lavaan.fit <- fitSAM$fit
+  }
 
   stopif(is.null(parTable), "lavaan failed!")
+
+  if (isHigherOrderParTable(parTable))
+    parTable <- higherOrderMeasr2Struct(parTable)
 
   # labelled parameters
   thetaLabel <- getLabeledParamsLavaan(parTable, model$constrExprs$fixedParams)
@@ -199,7 +225,7 @@ optimizeStartingParamsDA <- function(model,
     model$theta <- theta
   }
 
-  model$lavaan.fit <- extract_lavaan(estPI)
+  model$lavaan.fit <- lavaan.fit
   model
 }
 
@@ -286,35 +312,122 @@ sortParTable <- function(parTable, lhs, op, rhs) {
 }
 
 
-parameterEstimatesLavSAM <- function(syntax, data, ...) {
+parameterEstimatesLavSAM <- function(syntax,
+                                     data,
+                                     estimator       = "ml",
+                                     missing         = "listwise",
+                                     meanstructure   = TRUE,
+                                     orthogonal.x    = FALSE,
+                                     orthogonal.y    = FALSE,
+                                     auto.fix.first  = TRUE,
+                                     auto.fix.single = TRUE,
+                                     suppress.warnings.lavaan = TRUE,
+                                     ...) {
   parTable <- modsemify(syntax)
+  higherOrderLVs <- getHigherOrderLVs(parTable)
+  isHigherOrder  <- length(higherOrderLVs) > 0L
+  lowerOrderInds <- unlist(getIndsLVs(parTable, lVs = higherOrderLVs,
+                                      isOV = FALSE))
+
+  if (suppress.warnings.lavaan) wrapper <- suppressWarnings
+  else                          wrapper <- \(x) x # do nothing
 
   if (!any(grepl(":", parTable$rhs) | grepl(":", parTable$lhs))) {
-    fitSEM <- lavaan::sem(syntax, data = data, meanstructure = TRUE, ...)
-    return(lavaan::parameterEstimates(fitSEM))
+    fitSEM <- wrapper(lavaan::sem(
+      model           = syntax,
+      data            = data,
+      meanstructure   = meanstructure,
+      estimator       = estimator,
+      missing         = missing,
+      orthogonal.x    = orthogonal.x,
+      orthogonal.y    = orthogonal.y,
+      auto.fix.first  = auto.fix.first,
+      auto.fix.single = auto.fix.single,
+      ...
+    ))
+
+    return(list(fit = fitSEM,
+                parTable = lavaan::parameterEstimates(fitSEM)))
   }
 
   # Get SAM structural model with measurement model from a CFA
   lVs <- getLVs(parTable)
 
   getCFARows <- function(pt) {
-    pt[pt$op == "=~" |
-       pt$op == "~1" |
-      (pt$op == "~~" & !pt$lhs %in% lVs & !pt$rhs %in% lVs), ]
+    rhs <- pt$rhs
+    lhs <- pt$lhs
+    op  <- pt$op
+
+    cond1 <- op == "=~"
+    cond2 <- op == "~1"
+    cond3 <- op == "~~" & !lhs %in% lVs & !rhs %in% lVs
+
+    # residual variances for higher order lvs are not returned from SAM
+    # estimates
+    cond4 <- op == "~~" & lhs %in% lowerOrderInds & rhs %in% lowerOrderInds
+
+    pt[cond1 | cond2 | cond3 | cond4, , drop = FALSE]
   }
 
   parTableOuter <- getCFARows(parTable)
 
   syntaxCFA <- parTableToSyntax(parTableOuter)
-  syntaxSAM <- parTableToSyntax(parTable)
 
-  fitCFA <- suppressWarnings(lavaan::cfa(syntaxCFA, data = data, meanstructure = TRUE))
-  fitSAM <- suppressWarnings(lavaan::sam(syntaxSAM, data = data, se = "none"))
+  fitCFA <- wrapper(lavaan::cfa(
+    model           = syntaxCFA,
+    data            = data,
+    meanstructure   = meanstructure,
+    estimator       = estimator,
+    missing         = missing,
+    orthogonal.x    = orthogonal.x,
+    orthogonal.y    = orthogonal.y,
+    auto.fix.first  = auto.fix.first,
+    auto.fix.single = auto.fix.single,
+    ...
+  ))
+
+  if (isHigherOrder) {
+    # use factor scores instead
+    # using `sam.method="fsr"` doesn't work for this purpose (yet)
+    # so we do it manually instead
+    dataSAM    <- lavaan::lavPredict(fitCFA)
+    structvars <- colnames(dataSAM)
+    parTableInner <- parTable[parTable$lhs %in% structvars &
+                              parTable$rhs %in% structvars &
+                              parTable$op != "=~", , drop = FALSE]
+    syntaxSAM <- parTableToSyntax(parTableInner)
+    SAMFUN    <- lavaan::sem
+
+  } else {
+    syntaxSAM <- parTableToSyntax(parTable)
+    dataSAM   <- data
+    SAMFUN    <- lavaan::sam
+  }
+
+  fitSAM <- wrapper(SAMFUN(
+    model           = syntaxSAM,
+    data            = dataSAM,
+    se              = "none",
+    estimator       = estimator,
+    missing         = missing,
+    orthogonal.x    = orthogonal.x,
+    orthogonal.y    = orthogonal.y,
+    auto.fix.first  = auto.fix.first,
+    auto.fix.single = auto.fix.single,
+    ...
+  ))
 
   measr  <- getCFARows(lavaan::parameterEstimates(fitCFA))
   struct <- suppressWarnings(centered_estimates(fitSAM))
 
   addlab <- \(pt) if (!"label" %in% colnames(pt)) {pt$label <- ""; pt} else pt
-  cols <- c("lhs", "op", "rhs", "label", "est")
-  rbind(addlab(measr)[cols], addlab(struct)[cols])
+  cols.x <- c("lhs", "op", "rhs")
+  cols.y <- c("label", "est")
+  cols   <- c(cols.x, cols.y)
+
+  parTableFull <- rbind(addlab(measr)[cols], addlab(struct)[cols])
+  parTableFull <- parTableFull[!duplicated(parTableFull[cols.x]), , drop = FALSE]
+  parTableFull <- recalcInterceptsY(parTableFull)
+
+  list(fit = fitCFA, parTable = parTableFull)
 }

@@ -8,7 +8,6 @@ simple_slopes(
   x,
   z,
   y,
-  xz = NULL,
   model,
   vals_x = -3:3,
   vals_z = -1:1,
@@ -17,6 +16,7 @@ simple_slopes(
   ci_type = "confidence",
   relative_h0 = TRUE,
   standardized = FALSE,
+  xz = NULL,
   ...
 )
 }
@@ -26,11 +26,6 @@ simple_slopes(
 \item{z}{The name of the moderator variable.}
 
 \item{y}{The name of the outcome variable.}
-
-\item{xz}{The name of the interaction term (\code{x:z}). If \code{NULL}, it will
-be created by combining \code{x} and \code{z} with a colon (e.g., \code{"x:z"}).
-Some backends may remove or alter the colon symbol, so the function tries to
-account for that internally.}
 
 \item{model}{An object of class \code{\link{modsem_pi}}, \code{\link{modsem_da}},
 \code{\link{modsem_mplus}}, or a \code{lavaan} object. This should be a fitted SEM
@@ -66,6 +61,11 @@ predicted values (\code{predicted - h0}) assume \code{h0} is the model-estimated
 mean of \code{y}. If \code{FALSE}, the null hypothesis is \code{h0 = 0}.}
 
 \item{standardized}{Should coefficients be standardized beforehand?}
+
+\item{xz}{The name of the interaction term (\code{x:z}). If \code{NULL}, it will
+be created by combining \code{x} and \code{z} with a colon (e.g., \code{"x:z"}).
+Some backends may remove or alter the colon symbol, so the function tries to
+account for that internally.}
 
 \item{...}{Additional arguments passed to lower-level functions or other internal
 helpers.}

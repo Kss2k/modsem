@@ -222,10 +222,11 @@ warnReplacingLabel <- function(old, new, parTable.row) {
 checkHigherOrderInteractions <- function(elementsInProds, parTable) {
   higherOrderLVs <- getHigherOrderLVs(parTable)
   for (xz in elementsInProds) {
-    stopif(any(xz %in% higherOrderLVs), "The ':' operator is not allowed ",
+    stopif(any(xz %in% higherOrderLVs), "The `:` operator is not allowed ",
            "for higher order latent variables, please redefine the interaction term",
-           "as a higher order latent variable using the '=~' operator.\n",
-           "Run 'vignette(\"higher_order_interactions\")' for more information")
+           "as a higher order latent variable using the `=~` operator.\n",
+           "You can also try using `method=\"lms\"` or `rcs=TRUE`\n",
+           "Run `vignette(\"higher_order_interactions\")` for more information")
   }
 }
 

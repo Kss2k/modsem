@@ -220,7 +220,9 @@ print.summary_modsem_pi <- function(x, ...) {
 #' @describeIn parameter_estimates Get parameter estimates of a \code{\link{modsem_pi}} object
 #' @param colon.pi Should colons (\code{:}) be added to the interaction terms (E.g., `XZ` -> `X:Z`)?
 #' @export
-parameter_estimates.modsem_pi <- function(object, colon.pi = FALSE, ...) {
+parameter_estimates.modsem_pi <- function(object, colon.pi = FALSE,
+                                          high.order.as.measr = NULL, # capture argument
+                                          ...) {
   parTable <- lavaan::parameterEstimates(object$lavaan, ...)
 
   if (colon.pi) {

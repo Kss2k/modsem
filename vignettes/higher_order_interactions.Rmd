@@ -20,33 +20,89 @@ knitr::opts_chunk$set(
 library(modsem)
 ```
 
-As of yet, the `modsem` package does not support using the interaction operator `:` between two higher order constructs.
-However, you can still attempt to estimate the interaction effect between two higher order constructs by specifying the interaction term in
-models using the product indicator approaches (higher order constructs are not supported at all in the `lms` and `qml` approaches yet).
-The `modsem` package will then attempt to estimate the interaction effect between the two higher order constructs.
+# LMS approach
+As of version `1.0.13`, the `modsem` function supports the estimation of higher order interaction effects.
+A general implementation is however only available with the LMS approach. Currently,
+estimation of higher order interaction effects using the QML approach is not available,
+and only partially available for the product indicator approaches (i.e., `modsem_pi()`).
 
-# Interaction between two higher order constructs
-**WARNING:** Please note that the literature on higher order
-interactions in product indicator approaches is virtually non-existant, and you
-will likely need to experiment with different approaches to find one that works.
-As well as experiment with adding constraints to the model.
-
+## Interaction between two higher order latent variables
 In `modsem` there are two datasets which are variants of the Theory of Planned Behaviour (`TPB`) dataset.
-The `TPB_2SO` contains two second order constructs,
-`INT` (intention) which is a second order construct of `ATT` (attitude) and `SN` (subjective norm),
-and `PBC` (perceived behavioural control) which is a second order construct of
+The `TPB_2SO` contains two second order latent variables,
+`INT` (intention) which is a second order latent variable of `ATT` (attitude) and `SN` (subjective norm),
+and `PBC` (perceived behavioural control) which is a second order latent variable of
 `PC` (perceived control) and `PB` (perceived behaviour).
 
 ```{r}
-tpb <- '
-  # First order constructs
+tpb_2so <- '
+  # First order latent variables
   ATT =~ att1 + att2 + att3
   SN  =~ sn1 + sn2 + sn3
   PB =~ pb1 + pb2 + pb3
   PC =~ pc1 + pc2 + pc3
   BEH =~ b1 + b2
 
-  # Higher order constructs
+  # Higher order latent variables
+  INT =~ ATT + SN
+  PBC =~ PC + PB
+
+  # Structural model
+  BEH ~ PBC + INT + INT:PBC
+'
+
+est_lms_2so <- modsem(tpb_2so, data = TPB_2SO, method = "lms")
+summary(est_lms_2so)
+```
+
+## Interaction between a first order and a higher order latent variable 
+In the `TPB_1SO` dataset, the `INT` latent variable is a second order latent variable of `ATT`, `SN` and `PBC`.
+In this example, we will estimate the interaction effect between the `INT` (higher order latent variable) and `PBC` (first order latent variable).
+
+```{r}
+tpb_1so <- '
+  # First order latent variables
+  ATT =~ att1 + att2 + att3
+  SN  =~ sn1 + sn2 + sn3
+  PBC =~ pbc1 + pbc2 + pbc3
+  BEH =~ b1 + b2
+
+  # Higher order latent variables
+  INT =~ ATT + PBC + SN
+
+  # Structural model
+  BEH ~ PBC + INT + INT:PBC
+'
+
+est_lms_1so <- modsem(tpb_1so, data = TPB_1SO, method = "lms", nodes = 32)
+summary(est_lms_1so)
+```
+
+
+# Product Indicator Approaches
+As of yet, the `modsem` package does not support using the interaction operator `:` between two higher order latent variables,
+when using one of the product indicator approaches (i.e., using `modsem_pi()`).
+However, you can still attempt to estimate the interaction effect between two higher order latent variables by specifying the interaction term in
+models using the product indicator approaches.
+
+## Interaction between two higher order latent variables
+**WARNING:** Please note that the literature on higher order
+interactions in product indicator approaches is virtually non-existant, and you
+will likely need to experiment with different approaches to find one that works.
+As well as experiment with adding constraints to the model.
+
+Here we see the same example as for the LMS approach, where ther is an interaction
+effect between two higher order latent variables.
+
+```{r}
+tpb_2so <- '
+  # First order latent variables
+  ATT =~ att1 + att2 + att3
+  SN  =~ sn1 + sn2 + sn3
+  PB =~ pb1 + pb2 + pb3
+  PC =~ pc1 + pc2 + pc3
+  BEH =~ b1 + b2
+
+  # Higher order latent variables
   INT =~ ATT + SN
   PBC =~ PC + PB
 
@@ -57,26 +113,26 @@ tpb <- '
   BEH ~ PBC + INT + INTxPBC
 '
 
-est_ca <- modsem(tpb, data = TPB_2SO, method = "ca")
+est_ca <- modsem(tpb_2so, data = TPB_2SO, method = "ca")
 summary(est_ca)
 
-est_dblcent <- modsem(tpb, data = TPB_2SO, method = "dblcent")
+est_dblcent <- modsem(tpb_2so, data = TPB_2SO, method = "dblcent")
 summary(est_dblcent)
 ```
 
-# Interaction between a first order and a higher order construct
-In the `TPB_1SO` dataset, the `INT` construct is a second order construct of `ATT`, `SN` and `PBC`.
-In this example, we will estimate the interaction between the `INT` (higher order construct) and `PBC` (first order construct).
+## Interaction between a first order and a higher order latent variable 
+Here we see the same example as for the LMS approach, where ther is an interaction
+effect between a higher order latent variable, and a first order latent variable.
 
 ```{r}
-tpb <- '
-  # First order constructs
+tpb_1so <- '
+  # First order latent variables
   ATT =~ att1 + att2 + att3
   SN  =~ sn1 + sn2 + sn3
   PBC =~ pbc1 + pbc2 + pbc3
   BEH =~ b1 + b2
 
-  # Higher order constructs
+  # Higher order latent variables
   INT =~ ATT + PBC + SN
 
   # Higher order interaction
@@ -86,9 +142,9 @@ tpb <- '
   BEH ~ PBC + INT + INTxPBC
 '
 
-est_ca <- modsem(tpb, data = TPB_1SO, method = "ca")
+est_ca <- modsem(tpb_1so, data = TPB_1SO, method = "ca")
 summary(est_ca)
 
-est_dblcent  <- modsem(tpb, data = TPB_1SO, method = "dblcent")
+est_dblcent  <- modsem(tpb_1so, data = TPB_1SO, method = "dblcent")
 summary(est_dblcent)
 ```

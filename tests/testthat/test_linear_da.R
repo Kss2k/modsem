@@ -120,6 +120,7 @@ tpb <- '
   BEH =~ b1 + b2
 
   att4 ~~ att5
+  att4 ~~ int1
 
 # Inner Model (Based on Steinmetz et al., 2011)
   INT ~ ATT + PBC + SN
@@ -129,6 +130,12 @@ tpb <- '
 tpb_lms_3 <- modsem(tpb, TPB, method = "lms")
 testthat::expect_true(tpb_lms_3$iterations == 2)
 summary(tpb_lms_3, H0 = FALSE)
+
+
+testthat::expect_error(
+  modsem(tpb, TPB, method = "qml"),
+  regexp = "Residual covariances between .* endogenous .* exogenous .*qml.*"
+)
 
 
 tpb <- "

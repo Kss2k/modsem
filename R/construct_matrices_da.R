@@ -13,7 +13,7 @@ setMatrixConstraints <- function(X, parTable, op, RHS, LHS, type, nonFreeParams)
 fillConstExprs <- function(X, parTable, op, RHS, LHS, type, nonFreeParams = TRUE) {
   if (!NROW(parTable)) return(X)
 
-  constExprs <- parTable[parTable$op == op &
+  constExprs <- parTable[parTable$op %in% op &
                          parTable$rhs %in% RHS &
                          parTable$lhs %in% LHS &
                          canBeNumeric(parTable$mod, includeNA = !nonFreeParams), ]
@@ -38,7 +38,7 @@ fillDynExprs <- function(X, parTable, op, RHS, LHS, type) {
 
   if (!NROW(parTable)) return(list(numeric = X, label = labelX))
 
-  dynamicExprs <- parTable[parTable$op == op &
+  dynamicExprs <- parTable[parTable$op %in% op &
                            parTable$rhs %in% RHS &
                            parTable$lhs %in% LHS &
                            !canBeNumeric(parTable$mod,
@@ -175,20 +175,43 @@ constructTheta <- function(lVs, indsLVs, parTable, auto.fix.single = TRUE) {
 }
 
 
-constructGamma <- function(DVs, IVs, parTable, ignore.xz = TRUE) {
+constructGamma <- function(DVs, IVs, parTable, auto.fix.first = TRUE) {
   if (!length(DVs)) return(EMPTY_MATSTRUCT)
-  
-  cond <- parTable$op == "~"
-  if (!ignore.xz) 
-    cond <- cond & !grepl(":", parTable$rhs)
 
-  exprsGamma <- parTable[, ]
+  notInt <- !grepl(":", parTable$rhs)
+  exprsGamma1 <- parTable[parTable$op == "~" & notInt & parTable$lhs %in% DVs &
+                          parTable$rhs %in% IVs, , drop = FALSE]
+  exprsGamma2 <- parTable[parTable$op == "=~" & notInt & parTable$rhs %in% DVs &
+                          parTable$lhs %in% IVs, , drop = FALSE]
+
+  if (NROW(exprsGamma2)) {
+    exprsGamma3 <- exprsGamma2
+    exprsGamma3$lhs <- exprsGamma2$rhs
+    exprsGamma3$op  <- "~"
+    exprsGamma3$rhs <- exprsGamma2$lhs
+  } else exprsGamma3 <- NULL
+
+  exprsGamma <- rbind(exprsGamma1, exprsGamma3)
+
   numDVs <- length(DVs)
   numIVs <- length(IVs)
   gamma  <- matrix(0, nrow = numDVs, ncol = numIVs, dimnames = list(DVs, IVs))
 
-  setMatrixConstraints(X = gamma, parTable = exprsGamma, op = "~", RHS = IVs,
-                       LHS = DVs, type = "lhs", nonFreeParams = FALSE)
+  gamma <- setMatrixConstraints(X = gamma, parTable = exprsGamma, op = c("~", "=~"),
+                                RHS = IVs, LHS = DVs, type = "lhs",
+                                nonFreeParams = FALSE)
+
+  higherOrderLVs <- unique(exprsGamma2[exprsGamma2$op == "=~", "lhs"])
+  for (lVh in higherOrderLVs) {
+    firstFilled <- FALSE
+    inds <- exprsGamma2[exprsGamma2$op == "=~" &
+                        exprsGamma2$lhs == lVh, "rhs"]
+    ind1 <- inds[[1L]]
+
+    if (auto.fix.first) gamma$numeric[ind1, lVh] <- 1
+  }
+
+  gamma
 }
 
 

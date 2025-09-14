@@ -6,7 +6,7 @@ namesParMatrices <- c("lambdaX", "lambdaY", "gammaXi", "gammaEta",
 namesParMatricesCov <- c("gammaXi", "gammaEta", "A", "psi", "phi")
 
 
-createTheta <- function(model, start = NULL) {
+createTheta <- function(model, start = NULL, parTable.in = NULL) {
   etas <- model$info$etas
 
   listThetaCov <- createThetaCovModel(model$covModel)
@@ -51,7 +51,7 @@ createTheta <- function(model, start = NULL) {
                       "omegaEtaXi"   = omegaEtaXi)
 
   lavLabelsMain <- createLavLabels(M, subset = is.na(allModelValues),
-                                   etas = etas)
+                                   etas = etas, parTable.in = parTable.in)
 
   thetaMain <- allModelValues[is.na(allModelValues)]
   thetaMain <- fillThetaIfStartNULL(start = start, theta = thetaMain,

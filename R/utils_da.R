@@ -711,7 +711,8 @@ getLevelsParTable <- function(parTable) {
 
 isPureEta <- function(eta, parTable) {
   predictors <- unique(parTable[parTable$op == "~", "rhs"])
-  !eta %in% predictors
+  indicators <- unique(parTable[parTable$op == "=~", "rhs"])
+  !eta %in% c(predictors, indicators)
 }
 
 
@@ -942,7 +943,10 @@ splitParTable <- function(parTable) {
 sortParTableDA <- function(parTable, model) {
   parTable.input <- model$parTable
 
-  etas <- getEtasModelDA(model)
+  etas.input <- getEtas(parTable.input)
+  etas.model <- getEtasModelDA(model) # sorted to be lower-triangular in gammaEta
+                                      # and includes etas from cov-model
+  etas <- unique(c(etas.input, etas.model))
 
   # xis <- getXisModelDA(model)
   # we don't want xis as they are sorted in the model
@@ -951,12 +955,21 @@ sortParTableDA <- function(parTable, model) {
   # in the model.syntax input. Instead we use getXis() on
   # parTable.input
 
-  xis      <- getXis(parTable.input, checkAny = FALSE, etas = etas)
-  indsXis  <- model$info$allIndsXis
-  indsEtas <- model$info$allIndsEtas
+  xis            <- getXis(parTable.input, checkAny = FALSE, etas = etas)
+  indsXis        <- model$info$allIndsXis
+  indsEtas       <- model$info$allIndsEtas
+  higherOrderLVs <- model$info$higherOrderLVs
+
+  isHigherOrderXi  <- xis  %in% higherOrderLVs
+  isHigherOrderEta <- etas %in% higherOrderLVs
+
+  xisLow   <- xis[!isHigherOrderXi]
+  xisHigh  <- xis[isHigherOrderXi]
+  etasLow  <- etas[!isHigherOrderEta]
+  etasHigh <- etas[isHigherOrderEta]
 
   opOrder <- c("=~", "~", "~1", "~~", "|", ":=")
-  varOrder <- unique(c(indsXis, indsEtas, xis, etas))
+  varOrder <- unique(c(indsXis, indsEtas, xisLow, etasLow, xisHigh, xisLow))
 
   getScore <- function(x, order.by) {
     order.by <- unique(c(order.by, x)) # ensure that all of x is in order.by
@@ -990,4 +1003,78 @@ updateStatusLog <- function(iterations, mode, logLikNew, deltaLL, relDeltaLL, ve
     printf("\rIter=%d Mode=%s LogLik=%.2f \u0394LL=%.2g rel\u0394LL=%.2g",
            iterations, mode, logLikNew, deltaLL, relDeltaLL)
   }
+}
+
+
+higherOrderStruct2Measr <- function(parTable, indsHigherOrderLVs) {
+  if (is.null(indsHigherOrderLVs) || !length(indsHigherOrderLVs))
+    return(parTable)
+
+  higherOrderLVs <- names(indsHigherOrderLVs)
+
+  for (lVh in higherOrderLVs) {
+    inds <- indsHigherOrderLVs[[lVh]]
+    mask <- parTable$rhs == lVh & parTable$op == "~" & parTable$lhs %in% inds
+
+    if (!any(mask)) next
+
+    lhs <- parTable[mask, "lhs"]
+    rhs <- parTable[mask, "rhs"]
+
+    parTable[mask, "lhs"] <- rhs
+    parTable[mask, "op"]  <- "=~"
+    parTable[mask, "rhs"] <- lhs
+  }
+
+  parTable
+}
+
+
+higherOrderMeasr2Struct <- function(parTable) {
+  higherOrderLVs <- getHigherOrderLVs(parTable)
+
+  if (is.null(higherOrderLVs) || !length(higherOrderLVs))
+    return(parTable)
+
+  for (lVh in higherOrderLVs) {
+    mask <- parTable$lhs == lVh & parTable$op == "=~"
+
+    if (!any(mask)) next
+
+    lhs <- parTable[mask, "lhs"]
+    rhs <- parTable[mask, "rhs"]
+
+    parTable[mask, "lhs"] <- rhs
+    parTable[mask, "op"]  <- "~"
+    parTable[mask, "rhs"] <- lhs
+  }
+
+  parTable
+}
+
+
+recalcInterceptsY <- function(parTable) {
+  # fix intercept for indicators of endogenous variables, based on means
+  # of interaction terms
+  parTable <- meanInteractions(parTable, ignore.means = TRUE)
+
+  for (eta in getEtas(parTable)) {
+    meta <- getMean(eta, parTable = parTable)
+    inds <- parTable[parTable$lhs == eta & parTable$op == "=~", "rhs"]
+    inds <- unique(inds)
+
+    for (ind in inds) {
+      cond <- parTable$lhs == ind & parTable$op == "~1"
+      lambda <- parTable[parTable$lhs == eta &
+                         parTable$op == "=~" &
+                         parTable$rhs == ind, "est"]
+
+      if (!length(lambda) || !any(cond))
+        next
+
+      parTable[cond, "est"] <- parTable[cond, "est"] - lambda * meta
+    }
+  }
+
+  parTable
 }

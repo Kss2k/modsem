@@ -8,7 +8,6 @@ plot_jn(
   x,
   z,
   y,
-  xz = NULL,
   model,
   min_z = -3,
   max_z = 3,
@@ -17,6 +16,7 @@ plot_jn(
   detail = 1000,
   sd.line = 2,
   standardized = FALSE,
+  xz = NULL,
   ...
 )
 }
@@ -26,8 +26,6 @@ plot_jn(
 \item{z}{The name of the moderator variable (as a character string).}
 
 \item{y}{The name of the outcome variable (as a character string).}
-
-\item{xz}{The name of the interaction term. If not specified, it will be created using \code{x} and \code{z}.}
 
 \item{model}{A fitted model object of class \code{modsem_da}, \code{modsem_mplus}, \code{modsem_pi}, or \code{lavaan}.}
 
@@ -45,6 +43,8 @@ plot_jn(
 the sd.line falls outside of \code{[min_z, max_z]}.}
 
 \item{standardized}{Should coefficients be standardized beforehand?}
+
+\item{xz}{The name of the interaction term. If not specified, it will be created using \code{x} and \code{z}.}
 
 \item{...}{Additional arguments (currently not used).}
 }
