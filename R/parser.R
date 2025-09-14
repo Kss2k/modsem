@@ -70,6 +70,15 @@ evalToken.LavModify <- function(token, lhs, rhs) {
 
 
 #' @export
+evalToken.LavSubtract <- function(token, lhs, rhs) {
+  out <- paste0(token, rhs)
+  attributes(out) <- attributes(rhs)
+
+  out
+}
+
+
+#' @export
 evalToken.LavBlank <- function(token, lhs, rhs) {
   NULL
 }
