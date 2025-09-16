@@ -139,7 +139,7 @@ relcorr_single_item <- function(syntax,
   lambda <- stdSolution$lambda
   theta  <- stdSolution$theta
 
-  avefunc <- \(lV) calcAVE(lV, theta.std = theta, lambda.std = lambda)
+  avefunc <- \(lV) calcAVE(lV, lambda.std = lambda)
   relfunc <- \(lV) calcChronbach(R = R, x = indsLVs[[lV]])
 
   rel.std <- vapply(lVs, FUN.VALUE = numeric(1L), relfunc)
@@ -485,14 +485,13 @@ calcConstructRel <- function(lambda.std, lV) {
 }
 
 
-calcAVE <- function(lambda.std, theta.std, lV) {
+calcAVE <- function(lambda.std, lV) {
   inds <- rownames(lambda.std)
 
   lambda.std <- structure(lambda.std[, lV, drop=TRUE], names = inds)
   lambda.std <- lambda.std[lambda.std != 0]
-  theta.std <- diag(theta.std)[names(lambda.std)]
 
-  sum(lambda.std) ^ 2 / (sum(lambda.std) ^ 2 + sum(1 - theta.std ^ 2))
+  sum(lambda.std ^ 2) / length(lambda.std)
 }
 
 

@@ -635,9 +635,8 @@ plot_surface <- function(x, z, y, model,
   )
 
   if (grid || tolower(colorscale) != "viridis") {
-    # for some reason this doesn't render with pkgdown
-    # this is a temporary workaround, until I figure out what
-    # is going on...
+    # for some reason this doesn't render with pkgdown this is a 
+    # temporary workaround, until I figure out what is going on...
     plotly::plot_ly(
       x = ~vals_x,
       y = ~vals_z,
@@ -648,7 +647,7 @@ plot_surface <- function(x, z, y, model,
       reversescale = reversescale,
       showscale = showscale,
       opacity = surface_opacity,
-      # contours = contour_spec,
+      contours = contour_spec,
       colorbar = list(title = y),
       cmin = cmin,
       cmax = cmax,
