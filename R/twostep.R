@@ -128,7 +128,7 @@ twostepDA <- function(model.syntax, data, method = "lms", zero.tol = 1e-12,
     lhs = parTableCFA$lhs,
     op = parTableCFA$op,
     rhs = parTableCFA$rhs,
-    mod = as.character(parTableCFA$est)
+    mod = format(parTableCFA$est, scientific = FALSE)
   )
 
   if ("label" %in% names(parTableCFA)) {
