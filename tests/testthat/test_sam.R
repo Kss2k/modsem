@@ -1,4 +1,5 @@
 devtools::load_all()
+library(lavaan)
 
 m1 <- '
 X =~ x1 + x2 + x3
@@ -6,9 +7,6 @@ Y =~ y1 + y2 + y3
 Z =~ z1 + z2 + z3
 Y ~ X + Z + X:Z
 '
-
-sam <- \(...) testthat::expect_warning(lavaan::sam(...),
-                                       regex = "*switching to naive*")
 
 est <- sam(m1, oneInt)
 parameter_estimates(est)
