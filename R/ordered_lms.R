@@ -410,11 +410,18 @@ ordered_lms <- function(model, data, ordered = NULL, tol = 1e-9,
   theta0 <- NULL
 
   for (i in seq_len(MAX_ITER)) {
+    printf("==================================================================\n")
     printf("Iteration %d...\n", i)
-    fit_sam <- lavaan::sam(model, data = Y)
-    centered_estimates(fit_sam)
+    printf("------------------------------------------------------------------\n")
+    printf("DATA:\n")
+    print(head(Y))
+    printf("------------------------------------------------------------------\n")
     fit <- modsem(model, data = Y, method = "lms", ...)
     Y <- getExpectedOrdinalValues(data = data, fit = fit, ordered = ordered, tol = tol)
+    printf("------------------------------------------------------------------\n")
+    printf("ESTIMATES:\n")
+    print(standardized_estimates(fit))
+    printf("------------------------------------------------------------------\n")
     Y[, ordered] <- apply(Y[, ordered], MARGIN = 2, FUN = std1)
 
     theta1 <- standardized_estimates(fit)$est

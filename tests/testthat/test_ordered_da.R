@@ -42,6 +42,11 @@ cut_data <- function(data, k = 5, choose = NULL) {
 }
 
 
+set.seed(2837290)
+choose <- colnames(oneInt)
+CUTS <- cut_data(oneInt, choose = choose)
+oneInt2 <- CUTS$data
+lms1 <- ordered_lms(m1, oneInt2, method = "lms", ordered = choose)
 
 CHOOSE <- list(c("x1", "x2", "z1", "y1"),
                colnames(oneInt))
