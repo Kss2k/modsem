@@ -73,80 +73,107 @@ getExpectedOrdinalValues <- function(data,
   trunc_mean_1d <- function(m, s, a, b) {
     s <- max(s, 1e-12)
     alpha <- (a - m)/s; beta <- (b - m)/s
+    # clamp extreme alphas/betas to avoid underflow in tails
+    alpha <- pmax(alpha, -1e2); beta <- pmin(beta, 1e2)
     Z <- pnorm(beta) - pnorm(alpha)
-    if (!is.finite(Z) || Z <= 0) return(m) # fallback
+    if (!is.finite(Z) || Z <= 0) return(pmin(pmax(m, a), b))  # fallback to clipped m
     m + s * (dnorm(alpha) - dnorm(beta)) / Z
   }
 
   # (b) Conditional Gaussian for scalar j given the rest r, under node t
-  mvnorm_cond_scalar <- function(mu, Sigma, idx_j, idx_r, x_r) {
+  mvnorm_cond_scalar <- function(mu, Sigma, idx_j, idx_r, x_r, ridge = 1e-8) {
+    # Partition
     S_rr <- Sigma[idx_r, idx_r, drop = FALSE]
-    S_jr <- Sigma[idx_j, idx_r, drop = FALSE]
-    S_rj <- Sigma[idx_r, idx_j, drop = FALSE]
-    S_jj <- Sigma[idx_j, idx_j, drop = FALSE]
+    S_jr <- Sigma[idx_j, idx_r, drop = FALSE]  # 1 x R
+    S_rj <- Sigma[idx_r, idx_j, drop = FALSE]  # R x 1
+    S_jj <- Sigma[idx_j, idx_j, drop = FALSE]  # 1 x 1
 
-    # Cholesky solve for stability
-    # (add tiny ridge if needed)
-    diag(S_rr) <- pmax(diag(S_rr), 1e-10)
+    # Stabilize S_rr
+    diag(S_rr) <- pmax(diag(S_rr), 0)
+    S_rr <- S_rr + diag(ridge, nrow(S_rr), ncol(S_rr))
+
+    # Cholesky solve: v = S_rr^{-1} (x_r - mu_r)
     L <- chol(S_rr)
-    diff <- x_r - mu[idx_r]
-    # A' = S_jr * S_rr^{-1}; compute via solves
-    A   <- backsolve(L, t(S_jr), upper.tri = TRUE)
-    A   <- backsolve(t(L), A, upper.tri = FALSE)
+    diff_r <- x_r - mu[idx_r]
+    v <- backsolve(L, forwardsolve(t(L), diff_r))  # S_rr^{-1} * diff
 
-    m   <- as.numeric(mu[idx_j] + crossprod(A, diff))
-    s2  <- as.numeric(S_jj - crossprod(A, S_rj))
-    c(m = m, s = sqrt(pmax(1e-12, s2)))
+    # m = mu_j + S_jr v
+    m <- as.numeric(mu[idx_j] + as.numeric(S_jr %*% v))
+
+    # s2 = S_jj - S_jr S_rr^{-1} S_rj
+    # Compute u = S_rr^{-1} S_rj via solves (reuse the same Cholesky)
+    u <- backsolve(L, forwardsolve(t(L), S_rj))
+    s2 <- as.numeric(S_jj - as.numeric(S_jr %*% u))
+    s2 <- max(s2, 1e-12)
+
+    c(m = m, s = sqrt(s2))
   }
 
   # (c) Per-row deterministic E-step for all ordinal columns
   expected_ordinals_row <- function(x_row) {
     cur <- x_row
 
+    # initialize ordinals at interval midpoints before any sweep
+    for (j_local in seq_along(o.idx)) {
+      j <- o.idx[j_local]
+      colname <- o.cols[j_local]
+      catj <- as.integer(x_row[j])
+      tau  <- c(-Inf, thresholds[[colname]], Inf)
+      a <- tau[catj]; b <- tau[catj + 1L]
+      # midpoint ignoring infinities -> use 0 if both inf, or finite bound if one side inf
+      if (is.finite(a) && is.finite(b)) {
+        cur[j] <- 0.5 * (a + b)
+      } else if (is.infinite(a) && is.finite(b)) {
+        cur[j] <- b - 1.0  # a bit inside
+      } else if (is.finite(a) && is.infinite(b)) {
+        cur[j] <- a + 1.0
+      } else {
+        cur[j] <- 0
+      }
+    }
+
     for (it in seq_len(num_iter)) {
       for (j_local in seq_along(o.idx)) {
         j <- o.idx[j_local]
         colname <- o.cols[j_local]
 
-        # Observed category 1..K and thresholds (add -Inf, +Inf)
         catj <- as.integer(x_row[j])
         tau  <- c(-Inf, thresholds[[colname]], Inf)
         a <- tau[catj]; b <- tau[catj + 1L]
-        if (!is.finite(a) && !is.finite(b)) { next } # degenerate, skip
 
         idx_j <- j
         idx_r <- setdiff(seq_len(p), j)
 
-        # Node posteriors (up to a constant) and node-wise E[c_j | r, y_j, t]
         log_post <- numeric(k)
         E_j_t    <- numeric(k)
 
         for (t in seq_len(k)) {
           mu_t <- MU[[t]]; S_t <- SIGMA[[t]]
+          cs   <- mvnorm_cond_scalar(mu_t, S_t, idx_j, idx_r, cur[idx_r])
+          m_j  <- cs["m"]; s_j <- cs["s"]
 
-          # Conditional for c_j | r under node t (treat cur[idx_r] as "observed")
-          cs  <- mvnorm_cond_scalar(mu_t, S_t, idx_j, idx_r, cur[idx_r])
-          m_j <- cs["m"]; s_j <- cs["s"]
+          # --- guard: if m_j flies far outside the interval, cap softly ---
+          if (is.finite(a) && m_j < a) m_j <- max(m_j, a - 8 * s_j)
+          if (is.finite(b) && m_j > b) m_j <- min(m_j, b + 8 * s_j)
 
-          # Univariate interval prob for this ordinal under node t
           pij <- pnorm((b - m_j)/s_j) - pnorm((a - m_j)/s_j)
           pij <- max(pij, 1e-300)
 
-          # Conditional density of r given node t: N(cur_r | mu_r, S_rr)
           S_rr <- S_t[idx_r, idx_r, drop = FALSE]
-          diag(S_rr) <- pmax(diag(S_rr), 1e-10)
+          diag(S_rr) <- pmax(diag(S_rr), 0)
+          S_rr <- S_rr + diag(1e-8, nrow(S_rr), ncol(S_rr))
           ll_r <- mvtnorm::dmvnorm(cur[idx_r], mean = mu_t[idx_r], sigma = S_rr, log = TRUE)
 
           log_post[t] <- log(w[t]) + ll_r + log(pij)
           E_j_t[t]    <- trunc_mean_1d(m_j, s_j, a, b)
         }
 
-        # Normalize weights and mix
         m  <- max(log_post)
         wt <- exp(log_post - m); wt <- wt / sum(wt)
         cur[j] <- sum(wt * E_j_t)
       }
     }
+
     cur[o.idx]
   }
 
