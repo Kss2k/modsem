@@ -303,7 +303,8 @@ checkCovMatrices <- function(expected.matrices) {
     warnif(
       !ok,
       sprintf("Covariance matrix of %s is not positive definite!\n", type.long),
-      sprintf("Use `modsem_inspect(fit, \"cov.%s\")` to investigate.", type)
+      sprintf("Use `modsem_inspect(fit, \"cov.%s\")` to investigate.", type),
+      immediate. = FALSE
     )
   }
 
