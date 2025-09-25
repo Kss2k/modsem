@@ -507,12 +507,12 @@ centerInteractionsCOEFS <- function(parTable, COEFS, center.means = TRUE,
 
     if (length(labelGammaX) == 1) {
       gammaX  <- COEFS[[labelGammaX]]
-      COEFS[[labelGammaX]]  <- gammaX + gammaXZ * meanZ
+      COEFS[[labelGammaX]] <- gammaX + gammaXZ * meanZ
     }
 
     if (length(labelGammaZ) == 1) {
       gammaZ  <- COEFS[[labelGammaZ]]
-      COEFS[[labelGammaZ]]  <- gammaZ + gammaXZ * meanX
+      COEFS[[labelGammaZ]] <- gammaZ + gammaXZ * meanX
     }
   }
 
