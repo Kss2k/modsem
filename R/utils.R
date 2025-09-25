@@ -325,21 +325,23 @@ centerInteractions <- function(parTable, center.means = TRUE) {
     X <- XZ[[1]]
     Z <- XZ[[2]]
 
-    meanX <- getMean(X, parTable)
-    meanZ <- getMean(Z, parTable)
-
+    meanX   <- getMean(X, parTable)
+    meanZ   <- getMean(Z, parTable)
     gammaXZ <- rows[i, "est"]
-    gamma <- parTable[parTable$lhs == Y & parTable$op == "~", , drop = FALSE]
 
-    gammaX <- gamma[gamma$rhs == X, "est"] + gammaXZ * meanZ
-    gammaZ <- gamma[gamma$rhs == Z, "est"] + gammaXZ * meanX
+    isStructY    <- parTable$lhs == Y & parTable$op == "~"
+    isStructRowX <- parTable$rhs == X & isStructY
+    isStructRowZ <- parTable$rhs == Z & isStructY
 
-    parTable[parTable$lhs == Y & parTable$op == "~" &
-             parTable$rhs == X, "est"] <- gammaX
+    if (any(isStructRowX)) {
+      gammaX <- parTable[isStructRowX, "est"] + gammaXZ * meanZ
+      parTable[isStructRowX, "est"] <- gammaX
+    }
 
-    parTable[parTable$lhs == Y & parTable$op == "~" &
-             parTable$rhs == Z, "est"] <- gammaZ
-
+    if (any(isStructRowZ)) {
+      gammaZ <- parTable[isStructRowZ, "est"] + gammaXZ * meanX
+      parTable[isStructRowZ, "est"] <- gammaZ
+    }
   }
 
   if (center.means) {
