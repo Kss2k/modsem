@@ -104,7 +104,7 @@ effects.</p>
 <span><span class="va">est1_lms</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m1</span>, data <span class="op">=</span> <span class="va">oneInt</span>, method <span class="op">=</span> <span class="st">"lms"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est1_lms</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (1.0.13) ended normally after 16 iterations</span></span>
+<span><span class="co">#&gt; modsem (1.0.13) ended normally after 49 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                        LMS</span></span>
 <span><span class="co">#&gt;   Optimization method                       EMA-NLMINB</span></span>
@@ -114,8 +114,8 @@ effects.</p>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; Loglikelihood and Information Criteria:</span></span>
 <span><span class="co">#&gt;   Loglikelihood                              -17493.58</span></span>
-<span><span class="co">#&gt;   Akaike (AIC)                                35051.16</span></span>
-<span><span class="co">#&gt;   Bayesian (BIC)                              35230.39</span></span>
+<span><span class="co">#&gt;   Akaike (AIC)                                35051.17</span></span>
+<span><span class="co">#&gt;   Bayesian (BIC)                              35230.40</span></span>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; Numerical Integration:</span></span>
 <span><span class="co">#&gt;   Points of integration (per dim)                   24</span></span>
@@ -135,7 +135,7 @@ effects.</p>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; Comparative Fit to H0 (LRT test):</span></span>
 <span><span class="co">#&gt;   Loglikelihood change                          338.29</span></span>
-<span><span class="co">#&gt;   Difference test (D)                           676.59</span></span>
+<span><span class="co">#&gt;   Difference test (D)                           676.58</span></span>
 <span><span class="co">#&gt;   Degrees of freedom (D)                             2</span></span>
 <span><span class="co">#&gt;   P-value (D)                                    0.000</span></span>
 <span><span class="co">#&gt;  </span></span>
@@ -155,56 +155,56 @@ effects.</p>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   X =~          </span></span>
 <span><span class="co">#&gt;     x1              1.000                             </span></span>
-<span><span class="co">#&gt;     x2              0.803      0.013   63.813    0.000</span></span>
-<span><span class="co">#&gt;     x3              0.914      0.014   67.614    0.000</span></span>
+<span><span class="co">#&gt;     x2              0.803      0.013   63.817    0.000</span></span>
+<span><span class="co">#&gt;     x3              0.914      0.014   67.616    0.000</span></span>
 <span><span class="co">#&gt;   Z =~          </span></span>
 <span><span class="co">#&gt;     z1              1.000                             </span></span>
-<span><span class="co">#&gt;     z2              0.810      0.012   65.087    0.000</span></span>
-<span><span class="co">#&gt;     z3              0.881      0.013   67.616    0.000</span></span>
+<span><span class="co">#&gt;     z2              0.810      0.012   65.092    0.000</span></span>
+<span><span class="co">#&gt;     z3              0.881      0.013   67.621    0.000</span></span>
 <span><span class="co">#&gt;   Y =~          </span></span>
 <span><span class="co">#&gt;     y1              1.000                             </span></span>
-<span><span class="co">#&gt;     y2              0.798      0.007  107.545    0.000</span></span>
-<span><span class="co">#&gt;     y3              0.899      0.008  112.580    0.000</span></span>
+<span><span class="co">#&gt;     y2              0.798      0.007  107.538    0.000</span></span>
+<span><span class="co">#&gt;     y3              0.899      0.008  112.564    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   Y ~           </span></span>
-<span><span class="co">#&gt;     X               0.672      0.031   21.633    0.000</span></span>
-<span><span class="co">#&gt;     Z               0.568      0.030   18.688    0.000</span></span>
-<span><span class="co">#&gt;     X:X            -0.004      0.021   -0.197    0.844</span></span>
-<span><span class="co">#&gt;     Z:X             0.720      0.029   24.856    0.000</span></span>
+<span><span class="co">#&gt;     X               0.672      0.031   21.621    0.000</span></span>
+<span><span class="co">#&gt;     Z               0.568      0.030   18.663    0.000</span></span>
+<span><span class="co">#&gt;     X:X            -0.004      0.021   -0.195    0.845</span></span>
+<span><span class="co">#&gt;     Z:X             0.720      0.029   24.863    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Intercepts:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;    .x1              1.022      0.024   42.767    0.000</span></span>
-<span><span class="co">#&gt;    .x2              1.215      0.020   60.836    0.000</span></span>
-<span><span class="co">#&gt;    .x3              0.919      0.022   41.363    0.000</span></span>
-<span><span class="co">#&gt;    .z1              1.011      0.024   41.540    0.000</span></span>
-<span><span class="co">#&gt;    .z2              1.205      0.020   59.236    0.000</span></span>
-<span><span class="co">#&gt;    .z3              0.915      0.022   42.027    0.000</span></span>
-<span><span class="co">#&gt;    .y1              1.039      0.038   27.453    0.000</span></span>
-<span><span class="co">#&gt;    .y2              1.222      0.031   39.867    0.000</span></span>
-<span><span class="co">#&gt;    .y3              0.956      0.034   27.873    0.000</span></span>
+<span><span class="co">#&gt;    .x1              1.021      0.024   42.731    0.000</span></span>
+<span><span class="co">#&gt;    .x2              1.214      0.020   60.805    0.000</span></span>
+<span><span class="co">#&gt;    .x3              0.918      0.022   41.328    0.000</span></span>
+<span><span class="co">#&gt;    .z1              1.010      0.024   41.515    0.000</span></span>
+<span><span class="co">#&gt;    .z2              1.205      0.020   59.214    0.000</span></span>
+<span><span class="co">#&gt;    .z3              0.915      0.022   42.005    0.000</span></span>
+<span><span class="co">#&gt;    .y1              1.038      0.038   27.432    0.000</span></span>
+<span><span class="co">#&gt;    .y2              1.221      0.031   39.847    0.000</span></span>
+<span><span class="co">#&gt;    .y3              0.955      0.034   27.850    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   X ~~          </span></span>
-<span><span class="co">#&gt;     Z               0.200      0.024    8.242    0.000</span></span>
+<span><span class="co">#&gt;     Z               0.200      0.024    8.240    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;    .x1              0.158      0.009   18.170    0.000</span></span>
-<span><span class="co">#&gt;    .x2              0.162      0.007   23.156    0.000</span></span>
-<span><span class="co">#&gt;    .x3              0.164      0.008   20.758    0.000</span></span>
-<span><span class="co">#&gt;    .z1              0.167      0.009   18.509    0.000</span></span>
+<span><span class="co">#&gt;    .x1              0.158      0.009   18.171    0.000</span></span>
+<span><span class="co">#&gt;    .x2              0.162      0.007   23.157    0.000</span></span>
+<span><span class="co">#&gt;    .x3              0.164      0.008   20.759    0.000</span></span>
+<span><span class="co">#&gt;    .z1              0.167      0.009   18.507    0.000</span></span>
 <span><span class="co">#&gt;    .z2              0.160      0.007   22.683    0.000</span></span>
-<span><span class="co">#&gt;    .z3              0.158      0.008   20.780    0.000</span></span>
+<span><span class="co">#&gt;    .z3              0.158      0.008   20.781    0.000</span></span>
 <span><span class="co">#&gt;    .y1              0.160      0.009   18.012    0.000</span></span>
-<span><span class="co">#&gt;    .y2              0.154      0.007   22.686    0.000</span></span>
-<span><span class="co">#&gt;    .y3              0.164      0.008   20.682    0.000</span></span>
-<span><span class="co">#&gt;     X               0.981      0.036   26.974    0.000</span></span>
-<span><span class="co">#&gt;     Z               1.017      0.038   26.932    0.000</span></span>
-<span><span class="co">#&gt;    .Y               0.980      0.038   25.929    0.000</span></span></code></pre></div>
+<span><span class="co">#&gt;    .y2              0.154      0.007   22.684    0.000</span></span>
+<span><span class="co">#&gt;    .y3              0.164      0.008   20.680    0.000</span></span>
+<span><span class="co">#&gt;     X               0.981      0.036   26.976    0.000</span></span>
+<span><span class="co">#&gt;     Z               1.018      0.038   26.932    0.000</span></span>
+<span><span class="co">#&gt;    .Y               0.979      0.038   25.933    0.000</span></span></code></pre></div>
 <p>In this example, we have a simple model with two quadratic effects
 and one interaction effect. We estimate the model using both the
 <code>QML</code> and double-centering approaches, with data from a
@@ -219,14 +219,13 @@ subset of the PISA 2006 dataset.</p>
 <span></span>
 <span><span class="va">est2_dca</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m2</span>, data <span class="op">=</span> <span class="va">jordan</span><span class="op">)</span></span>
 <span><span class="va">est2_qml</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m2</span>, data <span class="op">=</span> <span class="va">jordan</span>, method <span class="op">=</span> <span class="st">"qml"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: Standard errors for some coefficients could not be computed.</span></span>
 <span><span class="co">#&gt; Warning: The variance-covariance matrix of the estimated parameters</span></span>
 <span><span class="co">#&gt; (vcov) does not appear to be positive definite! The smallest</span></span>
-<span><span class="co">#&gt; eigenvalue (= -1.376667e-04) is smaller than zero. This may</span></span>
+<span><span class="co">#&gt; eigenvalue (= -5.150872e-05) is smaller than zero. This may</span></span>
 <span><span class="co">#&gt; be a symptom that the model is not identified.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est2_qml</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (1.0.13) ended normally after 61 iterations</span></span>
+<span><span class="co">#&gt; modsem (1.0.13) ended normally after 60 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                        QML</span></span>
 <span><span class="co">#&gt;   Optimization method                           NLMINB</span></span>
@@ -274,73 +273,73 @@ subset of the PISA 2006 dataset.</p>
 <span><span class="co">#&gt;     enjoy1          1.000                             </span></span>
 <span><span class="co">#&gt;     enjoy2          1.002      0.020   50.577    0.000</span></span>
 <span><span class="co">#&gt;     enjoy3          0.894      0.020   43.667    0.000</span></span>
-<span><span class="co">#&gt;     enjoy4          0.999      0.021   48.222    0.000</span></span>
+<span><span class="co">#&gt;     enjoy4          0.999      0.021   48.223    0.000</span></span>
 <span><span class="co">#&gt;     enjoy5          1.047      0.021   50.394    0.000</span></span>
 <span><span class="co">#&gt;   SC =~         </span></span>
 <span><span class="co">#&gt;     academic1       1.000                             </span></span>
-<span><span class="co">#&gt;     academic2       1.104      0.028   38.946    0.000</span></span>
-<span><span class="co">#&gt;     academic3       1.235      0.030   41.721    0.000</span></span>
-<span><span class="co">#&gt;     academic4       1.254      0.030   41.830    0.000</span></span>
-<span><span class="co">#&gt;     academic5       1.113      0.029   38.649    0.000</span></span>
-<span><span class="co">#&gt;     academic6       1.198      0.030   40.358    0.000</span></span>
+<span><span class="co">#&gt;     academic2       1.104      0.028   38.944    0.000</span></span>
+<span><span class="co">#&gt;     academic3       1.235      0.030   41.718    0.000</span></span>
+<span><span class="co">#&gt;     academic4       1.254      0.030   41.827    0.000</span></span>
+<span><span class="co">#&gt;     academic5       1.113      0.029   38.647    0.000</span></span>
+<span><span class="co">#&gt;     academic6       1.198      0.030   40.356    0.000</span></span>
 <span><span class="co">#&gt;   CAREER =~     </span></span>
 <span><span class="co">#&gt;     career1         1.000                             </span></span>
-<span><span class="co">#&gt;     career2         1.040      0.016   65.181    0.000</span></span>
-<span><span class="co">#&gt;     career3         0.952      0.016   57.840    0.000</span></span>
+<span><span class="co">#&gt;     career2         1.040      0.016   65.182    0.000</span></span>
+<span><span class="co">#&gt;     career3         0.952      0.016   57.842    0.000</span></span>
 <span><span class="co">#&gt;     career4         0.818      0.017   48.360    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   CAREER ~      </span></span>
-<span><span class="co">#&gt;     ENJ             0.526      0.020   26.311    0.000</span></span>
-<span><span class="co">#&gt;     SC              0.465      0.023   20.126    0.000</span></span>
-<span><span class="co">#&gt;     ENJ:ENJ         0.029      0.021    1.374    0.169</span></span>
-<span><span class="co">#&gt;     ENJ:SC         -0.046      0.043   -1.092    0.275</span></span>
-<span><span class="co">#&gt;     SC:SC           0.002      0.033    0.050    0.960</span></span>
+<span><span class="co">#&gt;     ENJ             0.526      0.020   26.312    0.000</span></span>
+<span><span class="co">#&gt;     SC              0.465      0.023   20.130    0.000</span></span>
+<span><span class="co">#&gt;     ENJ:ENJ         0.029      0.021    1.376    0.169</span></span>
+<span><span class="co">#&gt;     ENJ:SC         -0.046      0.042   -1.096    0.273</span></span>
+<span><span class="co">#&gt;     SC:SC           0.002      0.032    0.050    0.960</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Intercepts:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;    .enjoy1          0.000      0.010   -0.022    0.982</span></span>
-<span><span class="co">#&gt;    .enjoy2          0.000                             </span></span>
-<span><span class="co">#&gt;    .enjoy3          0.000      0.011   -0.039    0.969</span></span>
-<span><span class="co">#&gt;    .enjoy4          0.000                             </span></span>
-<span><span class="co">#&gt;    .enjoy5          0.000      0.010    0.021    0.983</span></span>
-<span><span class="co">#&gt;    .academic1       0.000      0.010   -0.023    0.982</span></span>
-<span><span class="co">#&gt;    .academic2       0.000      0.009   -0.025    0.980</span></span>
-<span><span class="co">#&gt;    .academic3      -0.001      0.011   -0.049    0.961</span></span>
-<span><span class="co">#&gt;    .academic4       0.000      0.010   -0.036    0.971</span></span>
+<span><span class="co">#&gt;    .enjoy1          0.000      0.008   -0.029    0.977</span></span>
+<span><span class="co">#&gt;    .enjoy2          0.000      0.002    0.017    0.986</span></span>
+<span><span class="co">#&gt;    .enjoy3          0.000      0.010   -0.043    0.966</span></span>
+<span><span class="co">#&gt;    .enjoy4          0.000      0.002   -0.015    0.988</span></span>
+<span><span class="co">#&gt;    .enjoy5          0.000      0.008    0.025    0.980</span></span>
+<span><span class="co">#&gt;    .academic1       0.000      0.009   -0.027    0.978</span></span>
+<span><span class="co">#&gt;    .academic2       0.000      0.008   -0.027    0.978</span></span>
+<span><span class="co">#&gt;    .academic3      -0.001      0.010   -0.057    0.955</span></span>
+<span><span class="co">#&gt;    .academic4       0.000      0.010   -0.037    0.971</span></span>
 <span><span class="co">#&gt;    .academic5      -0.001      0.011   -0.070    0.944</span></span>
-<span><span class="co">#&gt;    .academic6       0.001      0.010    0.056    0.956</span></span>
-<span><span class="co">#&gt;    .career1        -0.005      0.015   -0.318    0.750</span></span>
-<span><span class="co">#&gt;    .career2        -0.006      0.015   -0.370    0.711</span></span>
-<span><span class="co">#&gt;    .career3        -0.005      0.015   -0.323    0.747</span></span>
-<span><span class="co">#&gt;    .career4        -0.005      0.014   -0.329    0.742</span></span>
+<span><span class="co">#&gt;    .academic6       0.001      0.010    0.060    0.952</span></span>
+<span><span class="co">#&gt;    .career1        -0.005      0.015   -0.328    0.743</span></span>
+<span><span class="co">#&gt;    .career2        -0.006      0.015   -0.383    0.702</span></span>
+<span><span class="co">#&gt;    .career3        -0.005      0.015   -0.333    0.739</span></span>
+<span><span class="co">#&gt;    .career4        -0.005      0.014   -0.339    0.735</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   ENJ ~~        </span></span>
-<span><span class="co">#&gt;     SC              0.218      0.009   25.478    0.000</span></span>
+<span><span class="co">#&gt;     SC              0.218      0.009   25.476    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;    .enjoy1          0.487      0.011   44.350    0.000</span></span>
-<span><span class="co">#&gt;    .enjoy2          0.489      0.011   44.420    0.000</span></span>
-<span><span class="co">#&gt;    .enjoy3          0.596      0.012   48.234    0.000</span></span>
-<span><span class="co">#&gt;    .enjoy4          0.488      0.011   44.569    0.000</span></span>
+<span><span class="co">#&gt;    .enjoy1          0.487      0.011   44.348    0.000</span></span>
+<span><span class="co">#&gt;    .enjoy2          0.489      0.011   44.422    0.000</span></span>
+<span><span class="co">#&gt;    .enjoy3          0.596      0.012   48.237    0.000</span></span>
+<span><span class="co">#&gt;    .enjoy4          0.488      0.011   44.568    0.000</span></span>
 <span><span class="co">#&gt;    .enjoy5          0.442      0.010   42.478    0.000</span></span>
-<span><span class="co">#&gt;    .academic1       0.644      0.013   49.811    0.000</span></span>
-<span><span class="co">#&gt;    .academic2       0.566      0.012   47.864    0.000</span></span>
+<span><span class="co">#&gt;    .academic1       0.645      0.013   49.810    0.000</span></span>
+<span><span class="co">#&gt;    .academic2       0.566      0.012   47.863    0.000</span></span>
 <span><span class="co">#&gt;    .academic3       0.473      0.011   44.319    0.000</span></span>
 <span><span class="co">#&gt;    .academic4       0.455      0.010   43.582    0.000</span></span>
-<span><span class="co">#&gt;    .academic5       0.565      0.012   47.687    0.000</span></span>
-<span><span class="co">#&gt;    .academic6       0.502      0.011   45.440    0.000</span></span>
+<span><span class="co">#&gt;    .academic5       0.565      0.012   47.686    0.000</span></span>
+<span><span class="co">#&gt;    .academic6       0.502      0.011   45.441    0.000</span></span>
 <span><span class="co">#&gt;    .career1         0.373      0.009   40.396    0.000</span></span>
-<span><span class="co">#&gt;    .career2         0.328      0.009   37.016    0.000</span></span>
-<span><span class="co">#&gt;    .career3         0.436      0.010   43.273    0.000</span></span>
+<span><span class="co">#&gt;    .career2         0.328      0.009   37.017    0.000</span></span>
+<span><span class="co">#&gt;    .career3         0.436      0.010   43.276    0.000</span></span>
 <span><span class="co">#&gt;    .career4         0.576      0.012   48.375    0.000</span></span>
 <span><span class="co">#&gt;     ENJ             0.500      0.017   29.547    0.000</span></span>
-<span><span class="co">#&gt;     SC              0.338      0.015   23.194    0.000</span></span>
-<span><span class="co">#&gt;    .CAREER          0.302      0.010   29.725    0.000</span></span></code></pre></div>
+<span><span class="co">#&gt;     SC              0.338      0.015   23.192    0.000</span></span>
+<span><span class="co">#&gt;    .CAREER          0.302      0.010   29.726    0.000</span></span></code></pre></div>
 <p><strong>NOTE</strong>: We can also use the LMS approach to estimate
 this model, but it will be a lot slower, since we have to integrate
 along both <code>ENJ</code> and <code>SC</code>. In the first example it
