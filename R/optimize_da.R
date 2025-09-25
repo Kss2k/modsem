@@ -326,6 +326,7 @@ parameterEstimatesLavSAM <- function(syntax,
   parTable <- modsemify(syntax)
   higherOrderLVs <- getHigherOrderLVs(parTable)
   isHigherOrder  <- length(higherOrderLVs) > 0L
+  isNonCentered  <- isNonCenteredParTable(parTable)
   lowerOrderInds <- unlist(getIndsLVs(parTable, lVs = higherOrderLVs,
                                       isOV = FALSE))
 
@@ -386,12 +387,19 @@ parameterEstimatesLavSAM <- function(syntax,
     ...
   ))
 
-  if (isHigherOrder) {
+  if (isHigherOrder || isNonCentered) {
     # use factor scores instead
     # using `sam.method="fsr"` doesn't work for this purpose (yet)
     # so we do it manually instead
-    dataSAM    <- lavaan::lavPredict(fitCFA)
-    structvars <- colnames(dataSAM)
+    dataSAM <- tryCatch(lavaan::lavPredict(fitCFA, transform = TRUE),
+                        error = \(e) lavaan::lavPredict(fitCFA))
+
+    structvars <- unique(c(
+      colnames(dataSAM),
+      parTable[grepl(":", parTable$lhs), "lhs"],
+      parTable[grepl(":", parTable$rhs), "rhs"]
+    ))
+
     parTableInner <- parTable[parTable$lhs %in% structvars &
                               parTable$rhs %in% structvars &
                               parTable$op != "=~", , drop = FALSE]
@@ -418,7 +426,7 @@ parameterEstimatesLavSAM <- function(syntax,
   ))
 
   measr  <- getCFARows(lavaan::parameterEstimates(fitCFA))
-  struct <- suppressWarnings(centered_estimates(fitSAM))
+  struct <- lavaan::parameterEstimates(fitSAM)
 
   addlab <- \(pt) if (!"label" %in% colnames(pt)) {pt$label <- ""; pt} else pt
   cols.x <- c("lhs", "op", "rhs")
@@ -427,7 +435,21 @@ parameterEstimatesLavSAM <- function(syntax,
 
   parTableFull <- rbind(addlab(measr)[cols], addlab(struct)[cols])
   parTableFull <- parTableFull[!duplicated(parTableFull[cols.x]), , drop = FALSE]
-  parTableFull <- recalcInterceptsY(parTableFull)
+
+  # if (!isNonCentered && !isHigherOrder) # if latent mean structure is not included
+    parTableFull <- recalcInterceptsY(parTableFull)
 
   list(fit = fitCFA, parTable = parTableFull)
+}
+
+
+isNonCenteredParTable <- function(parTable, tol = 1e-10) {
+  intTerms <- unique(parTable[grepl(":", parTable$rhs), "rhs"])
+  intVars  <- unique(unlist(stringr::str_split(intTerms, pattern = ":")))
+
+  parTableProto <- parTable[parTable$op %in% c("~", "~1"), , drop = FALSE]
+  parTableProto$est <- 1
+  means <- getMeans(intVars, parTableProto)
+
+  any(abs(means) > tol)
 }

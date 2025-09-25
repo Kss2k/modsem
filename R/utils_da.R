@@ -1056,12 +1056,28 @@ higherOrderMeasr2Struct <- function(parTable) {
 recalcInterceptsY <- function(parTable) {
   # fix intercept for indicators of endogenous variables, based on means
   # of interaction terms
-  parTable <- meanInteractions(parTable, ignore.means = TRUE)
+  # intercepts are from a linear (CFA) model, combined with a non-linear SAM
+  # structural model. We want the mean structure to be coherent with those
+  # from a full non-linear model
+  nlin.intercepts <- grepl(":", parTable$lhs) & parTable$op == "~1"
+  parTable.nlin <- meanInteractions(parTable, ignore.means = TRUE)
+  parTable.lin  <- parTable[!nlin.intercepts, , drop = FALSE] # remove non linear intercepts
+                                                              # from the SAM structural model
 
   for (eta in getEtas(parTable)) {
-    meta <- getMean(eta, parTable = parTable)
+    meta.lin  <- getMean(eta, parTable = parTable.lin)
+    meta.nlin <- getMean(eta, parTable = parTable.nlin)
+
     inds <- parTable[parTable$lhs == eta & parTable$op == "=~", "rhs"]
     inds <- unique(inds)
+
+    ieta <- getIntercept(eta, parTable)
+
+    if (ieta != 0) {
+      cond <- parTable$op == "~1" & parTable$lhs == eta
+      parTable[cond, "est"] <- parTable[cond, "est"] - (meta.nlin - meta.lin) # correct for the difference
+      meta.lin  <- getMean(eta, parTable = parTable.nlin) # update for the rest of the code
+    }
 
     for (ind in inds) {
       cond <- parTable$lhs == ind & parTable$op == "~1"
@@ -1072,7 +1088,10 @@ recalcInterceptsY <- function(parTable) {
       if (!length(lambda) || !any(cond))
         next
 
-      parTable[cond, "est"] <- parTable[cond, "est"] - lambda * meta
+      intercept <- parTable[cond, "est"]
+      mu.lin  <- intercept + lambda * meta.lin
+      mu.nlin <- intercept + lambda * meta.nlin
+      parTable[cond, "est"] <- intercept - (mu.nlin - mu.lin) # correct for the difference
     }
   }
 
