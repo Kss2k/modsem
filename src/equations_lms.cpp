@@ -1,3 +1,4 @@
+
 #include <RcppArmadillo.h>
 #include <float.h>
 #include <cmath>
@@ -35,13 +36,28 @@ arma::vec muLmsCpp(Rcpp::List model, arma::vec z) {
   else       zVec = arma::zeros<arma::vec>(numXis);
 
   const arma::mat kronZ = arma::kron(Ie, beta0 + A * zVec);
+  const arma::mat kronZc = arma::kron(Ie, A * zVec);
   const arma::mat Binv = arma::inv(Ie - Ge - kronZ.t() * Oex);
 
+  Rcpp::Rcout << "\nIe\n" << Ie << "\n";
+  Rcpp::Rcout << "\nbeta0\n" << beta0 << "\n";
+  Rcpp::Rcout << "\nOxx\n" << Oxx << "\n";
+  Rcpp::Rcout << "\nGx\n" << Gx << "\n";
+  const arma::mat T1 = arma::kron(Ie, beta0.t()) * Oxx;
+  const arma::mat T2 = arma::reshape((Oxx * beta0).t(), Gx.n_cols, Gx.n_rows).t();
+  Rcpp::Rcout << "\nT1\n" << T1 << "\n";
+  Rcpp::Rcout << "\nT2\n" << T2 << "\n";
+  
+  const arma::mat Gx_ = Gx + T1 + T2;
+  const arma::mat tY_ = tY + lY * Binv * Gx * beta0;
+
+  Rcpp::Rcout << "\nGx_\n" << Gx_ << "\n";
+  
   const arma::vec muX = tX + lX * (beta0 + A * zVec);
-  const arma::vec muY = tY +
+  const arma::vec muY = tY_ +
     lY * (Binv * (a +
-          Gx * (beta0 + A * zVec) +
-          kronZ.t() * Oxx * (beta0 + A * zVec)));
+          Gx_ * (A * zVec) +
+          kronZc.t() * Oxx * (A * zVec)));
 
   return arma::join_cols(muX, muY);
 }
@@ -76,13 +92,19 @@ arma::mat sigmaLmsCpp(Rcpp::List model, arma::vec z) {
   else       zVec = arma::zeros<arma::vec>(numXis);
 
   const arma::mat kronZ = arma::kron(Ie, beta0 + A * zVec);
+  const arma::mat kronZc = arma::kron(Ie, A * zVec);
   const arma::mat Binv = arma::inv(Ie - Ge - kronZ.t() * Oex);
+
+  const arma::mat T1 = arma::kron(Ie, beta0.t()) * Oxx;
+  const arma::mat T2 = arma::reshape((Oxx * beta0).t(), Gx.n_cols, Gx.n_rows).t();
+  
+  const arma::mat Gx_ = Gx + T1 + T2;
 
   arma::mat Oi = arma::eye<arma::mat>(numXis, numXis);
   Oi.diag() = arma::join_cols(arma::zeros<arma::vec>(k), arma::ones<arma::vec>(numXis - k));
-
+  
   const arma::mat Sxx = lX * A * Oi * A.t() * lX.t();
-  const arma::mat Eta = Binv * (Gx * A + kronZ.t() * Oxx * A);
+  const arma::mat Eta = Binv * (Gx_ * A + kronZc.t() * Oxx * A);
   const arma::mat Sxy = lX * (A * Oi * Eta.t()) * lY.t();
   const arma::mat Syy = lY * Eta * Oi * Eta.t() * lY.t() +
     lY * (Binv * Psi * Binv.t()) * lY.t();
@@ -143,14 +165,22 @@ struct LMSModel {
 
   arma::vec mu(const arma::vec& z) const {
     const arma::vec zVec = make_zvec(k, numXis, z);
+
     const arma::mat kronZ = arma::kron(Ie, beta0 + A * zVec);
+    const arma::mat kronZc = arma::kron(Ie, A * zVec);
     const arma::mat Binv = arma::inv(Ie - Ge - kronZ.t() * Oex);
 
+    const arma::mat T1 = arma::kron(Ie, beta0.t()) * Oxx;
+    const arma::mat T2 = arma::reshape((Oxx * beta0).t(), Gx.n_cols, Gx.n_rows).t();
+
+    const arma::mat Gx_ = Gx + T1 + T2;
+    const arma::mat tY_ = tY + lY * Binv * Gx_ * beta0;
+
     const arma::vec muX = tX + lX * (beta0 + A * zVec);
-    const arma::vec muY = tY +
+    const arma::vec muY = tY_ +
       lY * (Binv * (a +
-            Gx * (beta0 + A * zVec) +
-            kronZ.t() * Oxx * (beta0 + A * zVec)));
+            Gx_ * (A * zVec) +
+            kronZc.t() * Oxx * (A * zVec)));
 
     return arma::join_cols(muX, muY);
   }
@@ -158,11 +188,17 @@ struct LMSModel {
   arma::mat Sigma(const arma::vec& z) const {
     const arma::vec zVec  = make_zvec(k, numXis, z);
     const arma::mat kronZ = arma::kron(Ie, beta0 + A * zVec);
+    const arma::mat kronZc = arma::kron(Ie, A * zVec);
     const arma::mat Binv = arma::inv(Ie - Ge - kronZ.t() * Oex);
+    
+    const arma::mat T1 = arma::kron(Ie, beta0.t()) * Oxx;
+    const arma::mat T2 = arma::reshape((Oxx * beta0).t(), Gx.n_cols, Gx.n_rows).t();
+
+    const arma::mat Gx_ = Gx + T1 + T2;
 
     const arma::mat Oi = make_Oi(k, numXis);
     const arma::mat Sxx = lX * A * Oi * A.t() * lX.t();
-    const arma::mat Eta = Binv * (Gx * A + kronZ.t() * Oxx * A);
+    const arma::mat Eta = Binv * (Gx_ * A + kronZc.t() * Oxx * A);
     const arma::mat Sxy = lX * (A * Oi * Eta.t()) * lY.t();
     const arma::mat Syy = lY * Eta * Oi * Eta.t() * lY.t() +
       lY * (Binv * Psi * Binv.t()) * lY.t();
