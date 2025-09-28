@@ -405,7 +405,7 @@ ordered_lms <- function(model, data, ordered = NULL, tol = 1e-9,
   data.int[ordered] <- lapply(data.int, FUN = as.integer)
   
   Y <- data.int
-  Y[ordered] <- lapply(Y, FUN = std1)
+  Y <- apply(Y, MARGIN = 2, FUN = std1)
  
   theta0 <- NULL
 
@@ -422,7 +422,7 @@ ordered_lms <- function(model, data, ordered = NULL, tol = 1e-9,
     printf("ESTIMATES:\n")
     print(standardized_estimates(fit))
     printf("------------------------------------------------------------------\n")
-    Y[, ordered] <- apply(Y[, ordered], MARGIN = 2, FUN = std1)
+    Y <- apply(Y, MARGIN = 2, FUN = std1)
 
     theta1 <- standardized_estimates(fit)$est
 
