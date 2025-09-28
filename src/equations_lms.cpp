@@ -35,13 +35,7 @@ arma::vec muLmsCpp(Rcpp::List model, arma::vec z) {
   else       zVec = arma::zeros<arma::vec>(numXis);
 
   const arma::mat kronZ = arma::kron(Ie, beta0 + A * zVec);
-
-  arma::mat Binv;
-  if (Ie.n_cols == 1) {
-    Binv = arma::mat(Ie);
-  } else {
-    Binv = arma::inv(Ie - Ge - kronZ.t() * Oex);
-  }
+  const arma::mat Binv = arma::inv(Ie - Ge - kronZ.t() * Oex);
 
   const arma::vec muX = tX + lX * (beta0 + A * zVec);
   const arma::vec muY = tY +
@@ -82,13 +76,7 @@ arma::mat sigmaLmsCpp(Rcpp::List model, arma::vec z) {
   else       zVec = arma::zeros<arma::vec>(numXis);
 
   const arma::mat kronZ = arma::kron(Ie, beta0 + A * zVec);
-
-  arma::mat Binv;
-  if (Ie.n_cols == 1) {
-    Binv = arma::mat(Ie);
-  } else {
-    Binv = arma::inv(Ie - Ge - kronZ.t() * Oex);
-  }
+  const arma::mat Binv = arma::inv(Ie - Ge - kronZ.t() * Oex);
 
   arma::mat Oi = arma::eye<arma::mat>(numXis, numXis);
   Oi.diag() = arma::join_cols(arma::zeros<arma::vec>(k), arma::ones<arma::vec>(numXis - k));
@@ -156,10 +144,7 @@ struct LMSModel {
   arma::vec mu(const arma::vec& z) const {
     const arma::vec zVec = make_zvec(k, numXis, z);
     const arma::mat kronZ = arma::kron(Ie, beta0 + A * zVec);
-
-    arma::mat Binv;
-    if (Ie.n_cols == 1) Binv = arma::mat(Ie);
-    else                Binv = arma::inv(Ie - Ge - kronZ.t() * Oex);
+    const arma::mat Binv = arma::inv(Ie - Ge - kronZ.t() * Oex);
 
     const arma::vec muX = tX + lX * (beta0 + A * zVec);
     const arma::vec muY = tY +
@@ -173,10 +158,7 @@ struct LMSModel {
   arma::mat Sigma(const arma::vec& z) const {
     const arma::vec zVec  = make_zvec(k, numXis, z);
     const arma::mat kronZ = arma::kron(Ie, beta0 + A * zVec);
-
-    arma::mat Binv;
-    if (Ie.n_cols == 1) Binv = arma::mat(Ie);
-    else                Binv = arma::inv(Ie - Ge - kronZ.t() * Oex);
+    const arma::mat Binv = arma::inv(Ie - Ge - kronZ.t() * Oex);
 
     const arma::mat Oi = make_Oi(k, numXis);
     const arma::mat Sxx = lX * A * Oi * A.t() * lX.t();
