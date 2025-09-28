@@ -730,3 +730,15 @@ isNonCenteredParTable <- function(parTable, tol = 1e-10) {
   means <- getMeans(intVars, parTableProto)
   any(abs(means) > tol)
 }
+
+
+hasIntTermVariances <- function(parTable) {
+  # To pass the function, we need (at least) variances for all of the
+  # interaction terms. Optimally we also have covariances
+  intTerms <- unique(parTable[grepl(":", parTable$rhs), "rhs"])
+
+  hasVariance <- \(xz)
+    any(parTable$lhs == xz & parTable$rhs == xz & parTable$op == "~~")
+
+  all(vapply(intTerms, FUN.VALUE = logical(1L), FUN = hasVariance))
+}
