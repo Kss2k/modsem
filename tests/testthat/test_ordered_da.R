@@ -55,7 +55,7 @@ m2 <- '
 # Inner Model
   Y ~ X + Z# + X:Z
 '
-lms1 <- ordered_lms(m2, oneInt2, method = "lms", ordered = choose)
+lms1 <- ordered_lms(m1, oneInt2, method = "lms", ordered = choose)
 
 CHOOSE <- list(c("x1", "x2", "z1", "y1"),
                colnames(oneInt))
