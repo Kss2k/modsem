@@ -11,9 +11,8 @@ Y ~ X + Z + X:Z
 est <- sam(m1, oneInt)
 parameter_estimates(est)
 
-wrap <- \(expr) (testthat::expect_warning(expr, regex = "Replacing.*"))
-wrap(centered_estimates(est))
-wrap(standardized_estimates(est))
+centered_estimates(est)
+standardized_estimates(est)
 
 plot_interaction(x = "X", z = "Z", y = "Y", xz = "X:Z",
                  vals_z = c(-0.5, 0.5), model = est)

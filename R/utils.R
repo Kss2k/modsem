@@ -716,3 +716,17 @@ is.invertible <- function(M) {
   tryCatch(tolower(.Platform$OS.type) == "unix",
            error = \(e) .onFail)
 }
+
+
+isNonCenteredParTable <- function(parTable, tol = 1e-10) {
+  intTerms <- unique(parTable[grepl(":", parTable$rhs), "rhs"])
+  intVars  <- unique(unlist(stringr::str_split(intTerms, pattern = ":")))
+
+  parTableProto <- parTable[parTable$op %in% c("~", "~1"), , drop = FALSE]
+
+  if (!"est" %in% colnames(parTableProto))
+    parTableProto$est <- 1
+
+  means <- getMeans(intVars, parTableProto)
+  any(abs(means) > tol)
+}

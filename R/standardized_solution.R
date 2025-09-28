@@ -35,7 +35,7 @@ transformedSolutionCOEFS <- function(object,
     parTable <- rename(parTable, se = "std.error")
   }
 
-  if (center && (isLav || isDA || isMplus)) { # not relevant for modsem_pi
+  if (center && isNonCenteredParTable(parTable) && (isLav || isDA || isMplus)) { # not relevant for modsem_pi
     warnif(isLav, "Replacing interaction (co-)",
            "variances when centering the model!\n", immediate. = FALSE)
 
