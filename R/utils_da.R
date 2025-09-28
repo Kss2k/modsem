@@ -716,11 +716,22 @@ isPureEta <- function(eta, parTable) {
 }
 
 
-calcExpectedMatricesDA <- function(parTable, xis = NULL, etas = NULL, intTerms = NULL) {
+getCoefMatricesDA <- function(parTable,
+                              xis = NULL,
+                              etas = NULL,
+                              intTerms = NULL,
+                              centered = TRUE) {
+
   parTable <- removeInteractionVariances(parTable)
-  parTable <- centerInteractions(parTable, center.means = FALSE) |>
-    var_interactions(ignore.means = TRUE) |>
-    meanInteractions(ignore.means = TRUE)
+
+  if (centered) {
+    parTable <- centerInteractions(parTable, center.means = FALSE) |>
+      var_interactions(ignore.means = TRUE) |>
+      meanInteractions(ignore.means = TRUE)
+  } else {
+    parTable <- var_interactions(parTable, ignore.means = FALSE) |>
+      meanInteractions(ignore.means = FALSE)
+  }
 
   if (is.null(intTerms))
     intTerms <- unique(parTable[grepl(":", parTable$rhs), "rhs"])
@@ -800,8 +811,38 @@ calcExpectedMatricesDA <- function(parTable, xis = NULL, etas = NULL, intTerms =
   beta0 <- createBeta(xis)
   tau   <- createBeta(inds)
 
-  # Sigma ----------------------------------------------------------------------
   Binv <- solve(diag(nrow(gammaEta)) - gammaEta)
+
+  list(gammaXi = gammaXi, gammaEta = gammaEta, Binv = Binv, psi = psi,
+       phi = phi, theta = theta, alpha = alpha, beta0 = beta0, tau = tau,
+       lambda = lambda, inds = inds, xis = xis, etas = etas, lVs = lVs)
+}
+
+
+calcExpectedMatricesDA <- function(parTable, xis = NULL, etas = NULL, intTerms = NULL) {
+  matricesCentered <- getCoefMatricesDA(parTable, xis = xis, etas = etas,
+                                        intTerms = intTerms, centered = TRUE)
+  matricesNonCentered <- getCoefMatricesDA(parTable, xis = xis, etas = etas,
+                                           intTerms = intTerms, centered = FALSE)
+
+  lVs  <- matricesCentered$lVs
+  xis  <- matricesCentered$xis
+  etas <- matricesCentered$etas
+  inds <- matricesCentered$inds
+
+  # Sigma ----------------------------------------------------------------------
+  # Uses centered solution
+  gammaXi  <- matricesCentered$gammaXi
+  gammaEta <- matricesCentered$gammaEta
+  phi      <- matricesCentered$phi
+  psi      <- matricesCentered$psi
+  Binv     <- matricesCentered$Binv
+  tau      <- matricesCentered$tau
+  lambda   <- matricesCentered$lambda
+  alpha    <- matricesCentered$alpha
+  beta0    <- matricesCentered$beta0
+  theta    <- matricesCentered$theta
+
   covEtaEta <- Binv %*% (gammaXi %*% phi %*% t(gammaXi) + psi) %*% t(Binv)
   covEtaXi <- Binv %*% gammaXi %*% phi
   sigma.lv <- rbind(cbind(phi, t(covEtaXi)),
@@ -815,13 +856,8 @@ calcExpectedMatricesDA <- function(parTable, xis = NULL, etas = NULL, intTerms =
   sigma.all <- rbind(cbind(sigma.lv, sigma.ov.lv),
                      cbind(sigma.lv.ov, sigma.ov))
 
-  # Mu -------------------------------------------------------------------------
-  mu.eta <- Binv %*% (alpha + gammaXi %*% beta0)
-  mu.lv  <- rbind(beta0, mu.eta)
-  mu.ov  <- tau + lambda %*% mu.lv
-  mu.all <- rbind(mu.lv, mu.ov)
-
   # Residuals and R^2 ----------------------------------------------------------
+  # Uses centered solution
   eta.all <- c(etas, inds)
   var.eta.all <- diag(sigma.all[eta.all, eta.all, drop = FALSE])
   res.eta.all <- c(diag(psi), diag(theta))
@@ -832,7 +868,24 @@ calcExpectedMatricesDA <- function(parTable, xis = NULL, etas = NULL, intTerms =
 
   res.all <- 1 - r2.all
   res.lv  <- res.all[etas]
-  res.ov   <- res.all[inds]
+  res.ov  <- res.all[inds]
+
+  # Mu -------------------------------------------------------------------------
+  # Uses uncentered solution
+  gammaXiNc  <- matricesNonCentered$gammaXi
+  gammaEtaNc <- matricesNonCentered$gammaEta
+  phiNc      <- matricesNonCentered$phi
+  psiNc      <- matricesNonCentered$psi
+  BinvNc     <- matricesNonCentered$Binv
+  tauNc      <- matricesNonCentered$tau
+  lambdaNc   <- matricesNonCentered$lambda
+  alphaNc    <- matricesNonCentered$alpha
+  beta0Nc    <- matricesNonCentered$beta0
+
+  mu.eta <- BinvNc %*% (alphaNc + gammaXiNc %*% beta0Nc)
+  mu.lv  <- rbind(beta0Nc, mu.eta)
+  mu.ov  <- tauNc + lambdaNc %*% mu.lv
+  mu.all <- rbind(mu.lv, mu.ov)
 
   list(
     sigma.all = sigma.all,
