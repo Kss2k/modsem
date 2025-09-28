@@ -38,14 +38,20 @@ transformedSolutionCOEFS <- function(object,
     parTable <- rename(parTable, se = "std.error")
   }
 
-  if (center && isNonCenteredParTable(parTable) && (isLav || isDA || isMplus)) { # not relevant for modsem_pi
-    warnif(isLav, "Replacing interaction (co-)",
-           "variances when centering the model!\n", immediate. = FALSE)
-
+  if (center && (isLav || isDA || isMplus)) { # not relevant for modsem_pi
     if (isDA || isMplus)
       parTable <- meanInteractions(parTable) # get means for interaction terms
 
-    parTable <- var_interactions(parTable, ignore.means = TRUE, mc.reps = mc.reps)
+    # if we had to center the solution, we have to replace the existing variances
+    # if we're using LMS/QML/Mplus there aren't any variances
+    isNonCentered <- isNonCenteredParTable(parTable)
+    missingVars   <- !hasIntTermVariances(parTable)
+    addVariances  <- (isNonCentered && isLav) || isMplus || isDA || missingVars
+
+    if (addVariances) {
+      warnif(isLav, "Replacing interaction (co-)", "variances when centering the model!\n", immediate. = FALSE)
+      parTable <- var_interactions(parTable, ignore.means = TRUE, mc.reps = mc.reps)
+    }
   }
 
   lVs      <- getLVs(parTable)
