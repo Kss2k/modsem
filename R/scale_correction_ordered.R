@@ -508,16 +508,40 @@ modsemOrderedScaleCorrectionV2 <- function(model.syntax,
     target.var <- diag(lavaan::lavInspect(fit.cfa, what = "cov.lv"))
 
     # get reliabilites
-    getrel <- function(nm.lv) {
-      nm <- paste0(".fscore_", nm.lv)
-      data[nm] <- fscores[, nm.lv]
-      syntax <- paste0(cfa.syntax, "\n", nm.lv, "~~", nm)
-      fit <- lavaan::cfa(syntax, data = data)
-      R   <- lavaan::lavInspect(fit, what = "cor.all")
-      R[nm, nm.lv]
+    .solve_sym <- function(S) {
+      # Assume symmetric positive-definite; fall back to solve if needed
+      S <- (S + t(S)) / 2
+      out <- tryCatch(chol2inv(chol(S)), error = function(e) NULL)
+      if (is.null(out)) solve(S)
+      else out
     }
 
-    rel <- vapply(lvs.ordered, FUN.VALUE = numeric(1L), FUN = getrel)
+    getrel <- function(fit.cfa, keep = NULL) {
+      # Extract model-implied (underlying response) matrices
+      mats   <- lavaan::lavInspect(fit.cfa, "coef")
+      LAMBDA <- mats$lambda   # p x m
+      THETA  <- mats$theta    # p x p
+      PHI    <- lavaan::lavInspect(fit.cfa, "cov.lv")  # m x m
+
+      # Implied observed (underlying continuous) covariance
+      SIGMA  <- LAMBDA %*% PHI %*% t(LAMBDA) + THETA   # p x p
+
+      # ML/Regression (BLP) weights
+      W      <- PHI %*% t(LAMBDA) %*% .solve_sym(SIGMA)  # m x p
+
+      # Score variance and true-part variance in scores
+      A <- W %*% SIGMA %*% t(W)                       # Var(\hat f)
+      C <- W %*% (LAMBDA %*% PHI %*% t(LAMBDA)) %*% t(W)
+
+      rho <- diag(C) / diag(A)                        # squared determinacy
+      names(rho) <- colnames(LAMBDA)
+
+      if (!is.null(keep)) rho <- rho[keep]
+      rho
+    }
+
+    # Compute reliabilities for the ordered-factor block (in correct order)
+    rel <- getrel(fit.cfa, keep = lvs.ordered)
 
     # clean fscore values
     isOutlierRow <- \(row) any(is.na(row) | abs(row) >= 7 * sqrt(target.var))
@@ -562,10 +586,12 @@ modsemOrderedScaleCorrectionV2 <- function(model.syntax,
                   pars.cfa[cols])
 
     std.est <- standardized_estimates(fitNew)
-    theta1  <- std.est$est
+    theta.rows <- !std.est$op %in% c("=~", "~1")
+    theta1  <- std.est$est[theta.rows]
+   
     print(std.est)
 
-    if (!is.null(theta0) && mean(abs(theta1 - theta0)) > diff.theta.tol) {
+    if (!is.null(theta0) && mean(abs(theta1 - theta0)) < diff.theta.tol) {
       printf("Solution converged!")
       break
     } else theta0 <- theta1
