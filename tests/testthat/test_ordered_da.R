@@ -30,6 +30,7 @@ cut_data <- function(data, k = 5, choose = NULL) {
     x <- standardize(data[[var]])
     t <- rthreshold(k)
     y <- cut(x, breaks = t, ordered_result = TRUE)
+    y <- as.ordered(as.integer(y)) # levels[2, 3, 4, ...] -> levels[1, 2, 3, ...]
 
     min.x <- min(x)
     max.x <- max(x)
@@ -43,8 +44,8 @@ cut_data <- function(data, k = 5, choose = NULL) {
 
 
 
-CHOOSE <- list(c("x1", "x2", "z1", "y1"),
-               colnames(oneInt))
+CHOOSE <- list(colnames(oneInt),
+               c("x1", "x2", "z1", "y1"))
 
 for (choose in CHOOSE) {
   set.seed(2837290)

@@ -456,45 +456,143 @@ modsemOrderedScaleCorrectionV2 <- function(model.syntax,
                                          start = NULL,
                                          mean.observed = NULL,
                                          scaling.factor.int = NULL,
+                                         ordered.max.iter = 100,
                                          ...) {
   standardize <- \(x) (x - mean(x, na.rm = TRUE)) / stats::sd(x, na.rm = TRUE)
   if (is.null(verbose)) verbose <- TRUE
 
   parTable.in <- modsemify(model.syntax)
-  xis <- getXis(parTable.in, checkAny = FALSE)
+  ovs     <- getOVs(parTable.in)
+  xis     <- getXis(parTable.in, checkAny = FALSE)
+  lVs     <- getLVs(parTable.in)
+  indsLVs <- getIndsLVs(parTable.in, lVs = lVs)
+  indsXis <- unique(unlist(indsLVs[xis]))
 
-  inds <- getInds(parTable.in)
-  parTable.cfa <- parTable.in[parTable.in$op == "=~" |
-                              (parTable.in$lhs %in% inds &
-                               parTable.in$rhs %in% inds), ,
-                              drop = FALSE]
 
-  if (verbose) printf("Estimating factor scores...\n")
+  data <- as.data.frame(data)[ovs]
+  if (length(ordered))
+    data[ordered] <- lapply(data[ordered], FUN = as.ordered)
 
-  syntax.cfa <- parTableToSyntax(parTable.cfa)
-  fit.cfa    <- lavaan::cfa(syntax.cfa, data = data, ordered = ordered)
-  fscores <- as.data.frame(lavaan::lavPredict(fit.cfa, se = "none"))
+  ovIsOrdered <- vapply(data, FUN.VALUE = logical(1L), FUN = is.ordered)
+  ovs.ordered <- colnames(data)[ovIsOrdered]
+  ovs.cont    <- colnames(data)[!ovIsOrdered]
 
-  cols <- colnames(data)
-  cols.ordered <- cols[cols %in% ordered | sapply(data, is.ordered)]
-  cols.cont    <- cols[!(cols %in% cols.ordered) & vapply(data, is.numeric, TRUE)]
+  lvIsOrdered <- vapply(lVs, FUN.VALUE = logical(1L),
+                        FUN = \(lv) any(indsLVs[[lv]] %in% ovs.ordered))
+  lvs.ordered <- lVs[lvIsOrdered]
 
-  ordinalize <- function(x) {
-    if   (is.ordered(x)) return(as.ordered(as.integer(x))) # re-order levels, e.g., [2, 3, 4] -> [1, 2, 3]
-    else                 return(as.ordered(x))
+
+  cfa.inds <- unique(unlist(indsLVs[lvs.ordered]))
+
+  orderedRows <- 
+    (parTable.in$lhs %in% lvs.ordered & parTable.in$op == "=~") |
+    (parTable.in$rhs %in% cfa.inds & parTable.in$rhs %in% cfa.inds)
+
+  cfa.rows <- parTable.in[orderedRows, , drop = FALSE]
+
+  cfa.syntax <- parTableToSyntax(cfa.rows)
+
+  threshold.constraints <- NULL
+  theta0 <- NULL
+
+  for (i in seq_len(ordered.max.iter)) {
+    printf("Iter %d...\n", i)
+    if (!is.null(threshold.constraints))
+      cfa.syntax_i <- paste0(cfa.syntax, "\n", threshold.constraints)
+    else
+      cfa.syntax_i <- cfa.syntax
+
+    fit.cfa <- lavaan::cfa(cfa.syntax_i, data = data, ordered = ovs.ordered)
+    predicted <- lavaan::lavPredict(fit.cfa, method = "ML", append.data = TRUE)
+    fscores <- predicted[, lvs.ordered] # correct order
+    target.var <- diag(lavaan::lavInspect(fit.cfa, what = "cov.lv"))
+
+    # get reliabilites
+    getrel <- function(nm.lv) {
+      nm <- paste0(".fscore_", nm.lv)
+      data[nm] <- fscores[, nm.lv]
+      syntax <- paste0(cfa.syntax, "\n", nm.lv, "~~", nm)
+      fit <- lavaan::cfa(syntax, data = data)
+      R   <- lavaan::lavInspect(fit, what = "cor.all")
+      R[nm, nm.lv]
+    }
+
+    rel <- vapply(lvs.ordered, FUN.VALUE = numeric(1L), FUN = getrel)
+
+    # clean fscore values
+    isOutlierRow <- \(row) any(is.na(row) | abs(row) >= 7 * sqrt(target.var))
+    remove <- apply(fscores - apply(fscores, MARGIN = 2, FUN = mean, na.rm = TRUE),
+                    MARGIN = 1, FUN = isOutlierRow)
+    fscores <- fscores[!remove, , drop = FALSE]
+
+    var.current <- apply(fscores, MARGIN = 2, FUN = stats::var, na.rm = TRUE)
+    res.var <- (1 - rel) * var.current
+    proj.var <- var.current - res.var
+
+    item.names <- paste0("fscores_", lvs.ordered)
+
+    collapse <- \(s) paste0(s, collapse = "\n")
+    newData <- predicted[!remove, , drop = FALSE]
+    rename.cols <- colnames(newData) %in% lvs.ordered
+    colnames(newData)[rename.cols] <- paste0("fscores_", colnames(newData)[rename.cols])
+
+    newSyntax <- paste(
+       parTableToSyntax(parTable.in[!orderedRows, ]),
+       collapse(sprintf("%s=~%s", lvs.ordered, item.names)),
+       collapse(sprintf("%s~~%s*%s", item.names,
+                        format(res.var, scientific=FALSE),
+                        item.names)),
+       "\n",
+       sep = "\n", collapse = "\n"
+    )
+
+    fitNew <- modsem(newSyntax, data = newData, method = method, ...)
+
+    pars.struct <- parameter_estimates(fitNew)
+    pars.struct <- subset(pars.struct, !lhs %in% item.names & !rhs %in% item.names)
+    pars.struct <- subset(pars.struct, !lhs %in% item.names & !rhs %in% item.names)
+    pars.cfa <- lavaan::parameterEstimates(fit.cfa)
+    pars.cfa <- subset(pars.cfa,
+                       (lhs %in% lvs.ordered & op == "=~") |
+                         (rhs %in% cfa.inds & rhs %in% cfa.inds & op == "~~")
+    )
+
+    cols <- c("lhs", "op", "rhs", "est")
+    pars <- rbind(pars.struct[cols],
+                  pars.cfa[cols])
+
+    std.est <- standardized_estimates(fitNew)
+    theta1  <- std.est$est
+    print(std.est)
+
+    if (!is.null(theta0) && mean(abs(theta1 - theta0)) > diff.theta.tol) {
+      printf("Solution converged!")
+      break
+    } else theta0 <- theta1
+
+    sim_i <- simulateDataParTable(
+      parTable = pars,
+      N        = N
+    )
+
+    rescaled <- rescaleOrderedData(data = data,
+                                   sim.ov = sim_i$oV,
+                                   cols.ordered = ovs.ordered,
+                                   cols.cont = ovs.cont,
+                                   linear.ovs = indsXis)
+    thresholds <- rescaled$thresholds
+    threshold.constraints <- ""
+    for (x in names(thresholds)) {
+      tau <- unname(thresholds[[x]])
+      threshold.constraints <- paste0(
+        threshold.constraints, "\n",
+        collapse(sprintf("%s|%s*t%s", x, format(tau, scientific = FALSE),
+                         seq_along(tau)))
+      )
+    }
   }
 
-  data.x <- data
-  data.x[cols.ordered] <- lapply(data.x[cols.ordered], FUN = ordinalize)
-
-  rescaled <- rescaleOrderedData_OP(
-    data            = data.x,
-    cols.ordered    = cols.ordered,
-    parTable.in     = parTable.in,
-    fscores         = fscores,
-    thresholds.vcov = TRUE
-  )
-
+  return(fitNew)
   fit.out <- modsem_da(model.syntax     = model.syntax,
                        data             = rescaled$data,
                        method           = method,
