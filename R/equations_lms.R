@@ -54,16 +54,16 @@ estepLms <- function(model, theta, data, lastQuad = NULL, recalcQuad = FALSE,
 
   density        <- rowSums(P)
 
-  if (model$info$estimator == "pml") {
-    warning("F***ing with some stuff on line 58!")
-    ldensity <- log(density)
-    observedLogLik <- sum(ldensity[is.finite(ldensity)])
-    P <- P / density
-    P[TRUE] <- 1
-  } else {
+  # if (model$info$estimator == "pml") {
+  #   warning("F***ing with some stuff on line 58!")
+  #   ldensity <- log(density)
+  #   observedLogLik <- sum(ldensity[is.finite(ldensity)])
+  #   P <- P / density
+  #   P[TRUE] <- 1
+  # } else {
     observedLogLik <- sum(log(density))
     P              <- P / density
-  }
+  # }
 
   wMeans <- vector("list", length = length(w))
   wCovs  <- vector("list", length = length(w))
@@ -331,49 +331,87 @@ gradientObsLogLikLms_i <- function(theta, model, data, P, sign = 1, epsilon = 1e
 }
 
 
-densitySingleLms <- function(z, modFilled, data) {
-  estimator <- tolower(modFilled$info$estimator)
-
-  mu <- muLmsCpp(model = modFilled, z = z)
-  sigma <- sigmaLmsCpp(model = modFilled, z = z)
-
-  density <- numeric(data$n)
-
-  offset <- 1L
-  for (id in data$ids) { # go along patterns
-    n.pattern <- data$n.pattern[[id]]
-
-    colidx <- data$colidx[[id]]
-    dataid <- data$data.split[[id]]
-
-    end <- offset + n.pattern - 1L
-
-    if (estimator == "ml") {
-      density[offset:end] <- dmvn(data$data.split[[id]],
-                                  mean = mu[colidx],
-                                  sigma = sigma[colidx, colidx])
-
-    } else if (estimator == "pml") {
-      density[offset:end] <- exp(probPML(data$data.split[[id]],
-                                         mu = mu[colidx],
-                                         Sigma = sigma[colidx, colidx],
-                                         isOrderedEnum = modFilled$info$isOrderedEnum,
-                                         thresholds = modFilled$matrices$thresholds)
-      )
-    }
-    offset <- end + 1L
-  }
-
-  density
-}
-
-
+# Returns an n x V matrix of log-likelihoods:
+# - ML:   full MVN log-densities per node (dmvn(..., log=TRUE))
+# - PML:  pairwise composite *log*-likelihoods per node (probPML returns logs)
 densityLms <- function(z, modFilled, data) {
   if (is.null(dim(z))) z <- matrix(z, ncol = modFilled$quad$k)
 
+  # lapplyMatrix should combine the returned numeric vectors column-wise
   lapplyMatrix(seq_len(nrow(z)), FUN.VALUE = numeric(data$n), FUN = function(i) {
-    densitySingleLms(z = z[i, , drop=FALSE], modFilled = modFilled, data = data)
+    densitySingleLms(z = z[i, , drop = FALSE], modFilled = modFilled, data = data)
   })
+}
+
+
+densitySingleLms <- function(z, modFilled, data) {
+  # NOTE: we read the same field name you used previously (‘info’).
+  estimator <- tolower(modFilled$info$estimator)
+
+  mu    <- muLmsCpp(model = modFilled, z = z)      # length p
+  Sigma <- sigmaLmsCpp(model = modFilled, z = z)   # p x p
+
+  # This function returns a length-n *log*-likelihood vector
+  out_log <- numeric(data$n)
+
+  offset <- 1L
+  for (id in data$ids) {  # iterate missingness patterns
+    n.pattern <- data$n.pattern[[id]]
+    end       <- offset + n.pattern - 1L
+
+    colidx <- data$colidx[[id]]
+    Xid    <- data$data.split[[id]]               # n_id x p_id
+
+    if (estimator == "ml") {
+      # Full multivariate normal, LOG scale
+      out_log[offset:end] <-
+        dmvn(
+          Xid,
+          mean  = mu[colidx],
+          sigma = Sigma[colidx, colidx, drop = FALSE],
+          log   = TRUE
+        )
+
+    } else if (estimator == "pml") {
+      # Pairwise composite, LOG scale via your Rcpp probPML
+      # probPML signature (Rcpp): (data, mu, Sigma, isOrderedEnum, thresholds)
+      # - isOrderedEnum: pass as integer (0=continuous, >0 = row index into thresholds)
+      # - thresholds:    matrix; rows aligned with those indices
+      isOrd <- as.integer(modFilled$info$isOrderedEnum[colidx])
+
+      # thresholds may be stored as a list; coerce to a numeric matrix with rows aligned
+      thr <- modFilled$matrices$thresholds
+      if (is.list(thr)) {
+        # Build a ragged-to-matrix map: pack each cutpoint vector in a row,
+        # padding with NA at the right — probPML only uses finite entries.
+        maxK <- max(vapply(thr, length, 1L))
+        thrM <- matrix(NA_real_, nrow = length(thr), ncol = maxK)
+        for (r in seq_along(thr)) {
+          kr <- length(thr[[r]])
+          if (kr > 0) thrM[r, seq_len(kr)] <- thr[[r]]
+        }
+        thr <- thrM
+      } else {
+        thr <- as.matrix(thr)
+      }
+
+      out_log[offset:end] <-
+        probPML(
+          data        = as.matrix(Xid),
+          mu          = mu[colidx],
+          Sigma       = Sigma[colidx, colidx, drop = FALSE],
+          isOrderedEnum = isOrd,
+          thresholds    = thr
+        )
+
+    } else {
+      stop("Unknown estimator '", estimator, "'. Expected 'ml' or 'pml'.")
+    }
+
+    offset <- end + 1L
+  }
+
+  out_log
 }
 
 

@@ -148,6 +148,11 @@ emLms <- function(model,
       lastQuad <- P$quad
 
       logLikNew  <- P$obsLL
+
+      warning("F***ing with some stuff on line 152!")
+      logLikNew <- compLogLikLms(theta = thetaNew, model = model, P = P, sign = 1,
+                                 data = data, epsilon = epsilon)
+
       deltaLL    <- logLikNew - logLikOld
       deltaLL    <- if (is.na(deltaLL)) Inf else deltaLL
       relDeltaLL <- if (is.finite(logLikOld)) deltaLL / abs(logLikOld) else Inf
