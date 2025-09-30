@@ -13,8 +13,8 @@ sigmaLmsCpp <- function(model, z) {
     .Call(`_modsem_sigmaLmsCpp`, model, z)
 }
 
-completeLogLikLmsCpp <- function(modelR, P, quad, colidxR, n, d, npatterns = 1L) {
-    .Call(`_modsem_completeLogLikLmsCpp`, modelR, P, quad, colidxR, n, d, npatterns)
+completeLogLikLmsCpp <- function(modelR, dataR, P, quad, colidxR, n, d, PML = FALSE, npatterns = 1L) {
+    .Call(`_modsem_completeLogLikLmsCpp`, modelR, dataR, P, quad, colidxR, n, d, PML, npatterns)
 }
 
 gradLogLikLmsCpp <- function(modelR, P, block, row, col, symmetric, colidxR, n, d, npatterns = 1L, eps = 1e-6, ncores = 1L) {
@@ -95,6 +95,10 @@ foc_vec_arma <- function(xj, r, mj, mk, Sjj, Skk, Sjk, tau_k) {
 
 foo_vec_arma <- function(r, s, mj, mk, Sjj, Skk, Sjk, tau_j, tau_k) {
     .Call(`_modsem_foo_vec_arma`, r, s, mj, mk, Sjj, Skk, Sjk, tau_j, tau_k)
+}
+
+probPML <- function(data, mu, Sigma, isOrderedEnum, thresholds) {
+    .Call(`_modsem_probPML`, data, mu, Sigma, isOrderedEnum, thresholds)
 }
 
 tracePathsNumericCpp <- function(x, y, parTable, maxlen = 100L) {

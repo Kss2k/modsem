@@ -4,6 +4,7 @@
 #include <limits>
 using namespace Rcpp;
 
+
 // utilities
 static inline double sqr(double x){ return x*x; }
 static const double INV_SQRT2   = 0.70710678118654752440;   // 1/sqrt(2)
@@ -38,8 +39,7 @@ static inline double Phi(double z){
   return 0.5 * std::erfc(-z * INV_SQRT2);
 }
 
-// bivariate Φ2(a,b;ρ)
-// Genz-style quadrature + conditional fallback near |ρ|≈1
+// bivariate Φ2(a,b;ρ) — Genz-style quadrature + conditional fallback
 static double Phi2(double a, double b, double rho){
   if (rho <= -1.0) rho = -0.999999999999;
   if (rho >=  1.0) rho =  0.999999999999;
@@ -53,7 +53,6 @@ static double Phi2(double a, double b, double rho){
       double s = std::sqrt(std::max(1.0 - rho*rho, 1e-16));
       return Phi((b - rho * x) / s);
     };
-    // integrate x in [L,a], L chosen deep enough in the lower tail
     double L = std::min(a, -8.0);
     static const double xi[10] = {
       0.14887433898163122, 0.4333953941292472, 0.6794095682990244,
@@ -76,7 +75,6 @@ static double Phi2(double a, double b, double rho){
     return acc * half;
   }
 
-  // Genz quadrature on theta in [0, asin(rho)]
   double asr = std::asin(rho);
   static const double xg[6] = {
     0.1252334085114692, 0.3678314989981802, 0.5873179542866175,
@@ -188,7 +186,6 @@ static inline double foo_scalar(unsigned r, unsigned s,
 }
 
 // vectorized arma interfaces
-
 // [[Rcpp::export]]
 arma::vec fcc_vec_arma(const arma::vec& xj, const arma::vec& xk,
                        const arma::vec& mj, const arma::vec& mk,
@@ -259,5 +256,88 @@ arma::vec foo_vec_arma(const arma::uvec& r, const arma::uvec& s,
                         bcast(Sjj,i), bcast(Skk,i), bcast(Sjk,i),
                         tau_j, tau_k);
   }
+  return out;
+}
+
+
+// [[Rcpp::export]]
+arma::vec probPML(
+    const arma::mat data,
+    const arma::vec mu,
+    const arma::mat Sigma,
+    const arma::uvec isOrderedEnum,
+    const std::vector<arma::vec> thresholds
+    ) {
+
+  const arma::uword N = data.n_rows;
+  const arma::uword P = data.n_cols;
+
+  arma::vec out(N, arma::fill::ones);
+
+  // cache columns split by type
+  std::vector<arma::vec>  ccols(P); // continuous columns
+  std::vector<arma::uvec> ocols(P); // ordinal (category indices, 1..K)
+  for (arma::uword i = 0; i < P; ++i) {
+    if (isOrderedEnum[i])
+      ocols[i] = arma::conv_to<arma::uvec>::from( data.col(i) );
+    else
+      ccols[i] = data.col(i);
+  }
+
+  const double eps_prob = 1e-300; // tiny floor
+
+  // iterate unordered pairs
+  for (arma::uword j = 1; j < P; ++j) {
+    for (arma::uword i = 0; i < j; ++i) {
+      const unsigned oi = static_cast<unsigned>(isOrderedEnum[i]);
+      const unsigned oj = static_cast<unsigned>(isOrderedEnum[j]);
+
+      // scalars for this pair (broadcast into vec length 1)
+      arma::vec mi(1); mi[0] = mu[i];
+      arma::vec mj(1); mj[0] = mu[j];
+      arma::vec Sii(1); Sii[0] = Sigma(i,i);
+      arma::vec Sjj(1); Sjj[0] = Sigma(j,j);
+      arma::vec Sij(1); Sij[0] = Sigma(i,j);
+
+      arma::vec term(N, arma::fill::zeros);
+
+      if (oi && oj) {
+        // OO
+        const arma::uvec& r = ocols[i];
+        const arma::uvec& s = ocols[j];
+        const arma::vec& tau_i = thresholds.at(oi-1);
+        const arma::vec& tau_j = thresholds.at(oj-1);
+        term = foo_vec_arma(r, s, mi, mj, Sii, Sjj, Sij, tau_i, tau_j);
+
+      } else if (oi && !oj) {
+        // OC: i ordinal, j continuous
+        const arma::uvec& r = ocols[i];
+        const arma::vec&   x = ccols[j];
+        const arma::vec& tau_i = thresholds.at(oi-1);
+        term = foc_vec_arma(x, r, mj, mi, Sjj, Sii, Sij, tau_i);
+
+      } else if (!oi && oj) {
+        // CO: i continuous, j ordinal
+        const arma::vec&   x = ccols[i];
+        const arma::uvec& s  = ocols[j];
+        const arma::vec& tau_j = thresholds.at(oj-1);
+        term = foc_vec_arma(x, s, mi, mj, Sii, Sjj, Sij, tau_j);
+
+      } else {
+        // CC
+        const arma::vec& x = ccols[i];
+        const arma::vec& y = ccols[j];
+        term = fcc_vec_arma(x, y, mi, mj, Sii, Sjj, Sij);
+      }
+
+      // replace non-finite/small with floor and multiply into out
+      for (arma::uword t = 0; t < N; ++t) {
+        double v = term[t];
+        if (!std::isfinite(v) || v <= 0.0) v = eps_prob;
+        out[t] *= v;
+      }
+    }
+  }
+
   return out;
 }

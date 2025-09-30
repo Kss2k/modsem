@@ -3,8 +3,10 @@
 #include <cmath>
 
 #include "lms.h"
+#include "pml.h"
 #include "utils.h"
 #include "mvnorm.h"
+#include <vector>
 
 // [[Rcpp::depends(RcppArmadillo)]]
 
@@ -108,9 +110,20 @@ inline arma::vec make_zvec(unsigned k, unsigned numXis, const arma::vec& z) {
 }
 
 
+
+// Helper (assumed available in your TU)
+extern arma::vec make_zvec(unsigned k, unsigned numXis, const arma::vec& z);
+extern arma::mat make_Oi(unsigned k, unsigned numXis);
+
+
 struct LMSModel {
   arma::mat A, Oxx, Oex, Ie, lY, lX, tY, tX, Gx, Ge,
     a, beta0, Psi, d, e;
+
+  // thresholds[v] is an arma::vec containing (-Inf, ..., +Inf) for variable v
+  std::vector<arma::vec> thresholds;
+  arma::uvec isOrderedEnum; // if 0 variable is continuous, else idx in thesholds
+
   unsigned  k       = 0;
   unsigned  numXis  = 0;
 
@@ -123,22 +136,46 @@ struct LMSModel {
     k       = Rcpp::as<unsigned>(quad["k"]);
     numXis  = Rcpp::as<unsigned>(info["numXis"]);
 
-    // one-liners, no loops
-    A      = Rcpp::as<arma::mat>(matrices["A"]);
-    Oxx    = Rcpp::as<arma::mat>(matrices["omegaXiXi"]);
-    Oex    = Rcpp::as<arma::mat>(matrices["omegaEtaXi"]);
-    Ie     = Rcpp::as<arma::mat>(matrices["Ieta"]);
-    lY     = Rcpp::as<arma::mat>(matrices["lambdaY"]);
-    lX     = Rcpp::as<arma::mat>(matrices["lambdaX"]);
-    tY     = Rcpp::as<arma::mat>(matrices["tauY"]);
-    tX     = Rcpp::as<arma::mat>(matrices["tauX"]);
-    Gx     = Rcpp::as<arma::mat>(matrices["gammaXi"]);
-    Ge     = Rcpp::as<arma::mat>(matrices["gammaEta"]);
-    a      = Rcpp::as<arma::mat>(matrices["alpha"]);
-    beta0  = Rcpp::as<arma::mat>(matrices["beta0"]);
-    Psi    = Rcpp::as<arma::mat>(matrices["psi"]);
-    d      = Rcpp::as<arma::mat>(matrices["thetaDelta"]);
-    e      = Rcpp::as<arma::mat>(matrices["thetaEpsilon"]);
+    A       = Rcpp::as<arma::mat>(matrices["A"]);
+    Oxx     = Rcpp::as<arma::mat>(matrices["omegaXiXi"]);
+    Oex     = Rcpp::as<arma::mat>(matrices["omegaEtaXi"]);
+    Ie      = Rcpp::as<arma::mat>(matrices["Ieta"]);
+    lY      = Rcpp::as<arma::mat>(matrices["lambdaY"]);
+    lX      = Rcpp::as<arma::mat>(matrices["lambdaX"]);
+    tY      = Rcpp::as<arma::mat>(matrices["tauY"]);
+    tX      = Rcpp::as<arma::mat>(matrices["tauX"]);
+    Gx      = Rcpp::as<arma::mat>(matrices["gammaXi"]);
+    Ge      = Rcpp::as<arma::mat>(matrices["gammaEta"]);
+    a       = Rcpp::as<arma::mat>(matrices["alpha"]);
+    beta0   = Rcpp::as<arma::mat>(matrices["beta0"]);
+    Psi     = Rcpp::as<arma::mat>(matrices["psi"]);
+    d       = Rcpp::as<arma::mat>(matrices["thetaDelta"]);
+    e       = Rcpp::as<arma::mat>(matrices["thetaEpsilon"]);
+
+    isOrderedEnum = Rcpp::as<arma::uvec>(info["isOrderedEnum"]);
+
+    const Rcpp::List thrList = matrices["thresholds"];
+    const int L = thrList.size();
+    thresholds.clear();
+
+    if (L > 0L) {
+      thresholds.reserve(L);
+
+      for (int i = 0L; i < L; ++i) {
+        Rcpp::RObject el = thrList[i];
+        if (el.isNULL()) {
+          thresholds.emplace_back(); // empty vec for non-ordinal variable
+        } else {
+          thresholds.emplace_back(Rcpp::as<arma::vec>(el));
+        }
+      }
+    }
+
+  }
+
+  // Accessor (throws std::out_of_range if idx is invalid)
+  const arma::vec& get_thresholds(std::size_t idx) const {
+    return thresholds.at(idx);
   }
 
   arma::vec mu(const arma::vec& z) const {
@@ -174,8 +211,9 @@ struct LMSModel {
   }
 
   LMSModel thread_clone() const {
-    LMSModel c = *this;    // shallow for everything (fast)
-                           // Deep-copy ONLY what set_params()/lms_param can modify:
+    LMSModel c = *this;    // shallow copy baseline
+
+    // Deep-copy matrices that can be modified downstream
     c.A     = arma::mat(A);
     c.Oxx   = arma::mat(Oxx);
     c.Oex   = arma::mat(Oex);
@@ -191,6 +229,11 @@ struct LMSModel {
     c.Psi   = arma::mat(Psi);
     c.d     = arma::mat(d);
     c.e     = arma::mat(e);
+
+    // Deep-copy NEW thresholds vector<arma::vec>
+    c.thresholds.clear();
+    c.thresholds.reserve(thresholds.size());
+    for (const auto& v : thresholds) c.thresholds.emplace_back(arma::vec(v));
 
     return c;
   }
@@ -275,64 +318,142 @@ arma::vec gradientFD(LMSModel&         M,
 inline double completeLogLikFromModel(
     const LMSModel&  M,
     const arma::mat& V,
+    const arma::mat& P,
     const std::vector<arma::vec>& TGamma,
     const std::vector<std::vector<arma::vec>>& MeanPatterns,
     const std::vector<std::vector<arma::mat>>& CovPatterns,
     const std::vector<arma::uvec>& colidx,
-    const arma::uvec n,
-    const arma::uvec d,
-    const int npatterns = 1) {
+    const arma::uvec& n,
+    const arma::uvec& d,
+    const std::vector<arma::mat>& data,
+    const bool PML = false,
+    const int npatterns = 1,
+    const int ncores = 1) 
+{
+  if (!PML) {
+    // Standard ML
+    return completeLogLikFromModelML(
+              M, V, TGamma,
+              MeanPatterns, CovPatterns,
+              colidx, n, d,
+              npatterns);
+  } else {
+    // Pseudo-ML
+    return completeLogLikFromModelPML(
+              M, V, P, data,
+              colidx, n,
+              npatterns, ncores);
+  }
+}
 
+
+inline double completeLogLikFromModelML(
+    const LMSModel&  M,
+    const arma::mat& V,
+    const std::vector<arma::vec>& TGamma,
+    const std::vector<std::vector<arma::vec>>& MeanPatterns,
+    const std::vector<std::vector<arma::mat>>& CovPatterns,
+    const std::vector<arma::uvec>& colidx,
+    const arma::uvec& n,
+    const arma::uvec& d,
+    const int npatterns) 
+{
   const std::size_t J = V.n_rows;
   double ll = 0.0;
 
   for (std::size_t j = 0; j < J; j++) {
-
     if (arma::sum(TGamma[j]) <= DBL_MIN) continue;
 
-    const arma::vec& z  = V.row(j).t();   // view – no copy
-    const arma::vec mu  = M.mu   (z);
+    const arma::vec z  = V.row(j).t();   // view
+    const arma::vec mu = M.mu(z);
     const arma::mat Sig = M.Sigma(z);
 
     for (int i = 0; i < npatterns; i++) {
       const arma::vec& nu = MeanPatterns[j][i];
-      const arma::mat& S  = CovPatterns [j][i];
-      const double tg = TGamma[j][i];
-
+      const arma::mat& S  = CovPatterns[j][i];
+      const double tg     = TGamma[j][i];
       if (tg <= DBL_MIN) continue;
 
       ll += totalDmvnWeightedCpp(
-        mu.elem(colidx[i]),
-        Sig.submat(colidx[i], colidx[i]),
-        nu, S, tg, n[i], d[i]);
+               mu.elem(colidx[i]),
+               Sig.submat(colidx[i], colidx[i]),
+               nu, S, tg, n[i], d[i]);
     }
   }
+  return ll;
+}
 
+
+inline double completeLogLikFromModelPML(
+    const LMSModel&  M,
+    const arma::mat& V,
+    const arma::mat& P,
+    const std::vector<arma::mat>& data,
+    const std::vector<arma::uvec>& colidx,
+    const arma::uvec& n,
+    const int npatterns,
+    const int ncores) {
+  const std::size_t Q = V.n_rows;
+  double ll = 0.0;
+
+  for (std::size_t i = 0; i < Q; ++i) {
+    // use row sum as a guard
+    if (arma::sum(P.col(i)) <= DBL_MIN) continue;
+
+    const arma::vec z   = V.row(i).t();
+    const arma::vec mu  = M.mu(z);
+    const arma::mat Sig = M.Sigma(z);
+
+    for (int j = 0; j < npatterns; j++) {
+      arma::vec probs = probPML(data[j],
+                                mu.elem(colidx[j]),
+                                Sig.submat(colidx[j], colidx[j]),
+                                M.isOrderedEnum,
+                                M.thresholds);
+      // weight pattern j for quadrature point i
+      ll += arma::sum(P(j,i) * arma::log(probs));
+    }
+  }
   return ll;
 }
 
 
 // [[Rcpp::export]]
 double completeLogLikLmsCpp(const Rcpp::List& modelR,
+                            const Rcpp::List& dataR,
                             const Rcpp::List& P,
                             const Rcpp::List& quad,
                             const Rcpp::List& colidxR,
                             const arma::uvec& n,
                             const arma::uvec& d,
-                            const int npatterns = 1) {
+                            const bool PML = false,
+                            const int npatterns = 1,
+                            const int ncores = 1) 
+{
   const LMSModel model = LMSModel(modelR);
-  const arma::mat Z = Rcpp::as<arma::mat>(quad["n"]).t(); // transpose so we can use column order vectors
 
   const arma::mat V       = Rcpp::as<arma::mat>(P["V"]);
-  const auto      TGamma  = as_vec_of_vec(P["tgamma"]);
-  const auto      Mean    = as_vec_of_vec_of_vec(P["mean"]);
-  const auto      Cov     = as_vec_of_vec_of_mat(P["cov"]);
-  const auto      colidx  = as_vec_of_uvec(colidxR);
+  const arma::mat Pmat    = Rcpp::as<arma::mat>(P["P"]);
+  const auto TGamma       = as_vec_of_vec(P["tgamma"]);
+  const auto Mean         = as_vec_of_vec_of_vec(P["mean"]);
+  const auto Cov          = as_vec_of_vec_of_mat(P["cov"]);
+  const auto colidx       = as_vec_of_uvec(colidxR);
+  const std::vector<arma::mat> data = as_vec_of_mat(dataR);
 
-  const Rcpp::List info   = modelR["info"];
-
-  return completeLogLikFromModel(model, V, TGamma, Mean, Cov,
-                                 colidx, n, d, npatterns);
+  return completeLogLikFromModel(
+      model,
+      V,
+      Pmat,
+      TGamma,
+      Mean,
+      Cov,
+      colidx,
+      n,
+      d,
+      data,
+      PML,
+      npatterns,
+      ncores);
 }
 
 
@@ -405,6 +526,47 @@ inline double observedLogLikFromModel(const LMSModel&  M,
 
   return arma::sum(arma::log(density));
 }
+
+
+inline double observedLogLikFromModelPML(
+    const LMSModel&  M,
+    const arma::mat& V,
+    const arma::vec& w,
+    const std::vector<arma::mat>& data,
+    const std::vector<arma::uvec>& colidx,
+    const arma::uvec n,
+    const int npatterns = 1,
+    const int ncores = 1) {
+  const std::size_t Q = V.n_rows;
+
+  arma::vec density = arma::zeros<arma::vec>(arma::sum(n));
+
+  for (std::size_t i = 0; i < Q; ++i) {
+    if (w[i] <= DBL_MIN) continue;
+
+    const arma::vec z   = V.row(i).t();
+    const arma::vec mu  = M.mu   (z);
+    const arma::mat Sig = M.Sigma(z);
+
+    int offset = 0L;
+    for (int j = 0; j < npatterns; j++) {
+      const int end = offset + n[j] - 1L;
+
+      density.subvec(offset, end) +=
+        probPML(data[j],
+                mu.elem(colidx[j]),
+                Sig.submat(colidx[j], colidx[j]),
+                M.isOrderedEnum,
+                M.thresholds) * w[i];
+
+      offset = end + 1L;
+    }
+  }
+
+  return arma::sum(arma::log(density));
+}
+
+
 
 
 // [[Rcpp::export]]

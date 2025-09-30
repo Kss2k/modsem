@@ -48,19 +48,21 @@ BEGIN_RCPP
 END_RCPP
 }
 // completeLogLikLmsCpp
-double completeLogLikLmsCpp(const Rcpp::List& modelR, const Rcpp::List& P, const Rcpp::List& quad, const Rcpp::List& colidxR, const arma::uvec& n, const arma::uvec& d, const int npatterns);
-RcppExport SEXP _modsem_completeLogLikLmsCpp(SEXP modelRSEXP, SEXP PSEXP, SEXP quadSEXP, SEXP colidxRSEXP, SEXP nSEXP, SEXP dSEXP, SEXP npatternsSEXP) {
+double completeLogLikLmsCpp(const Rcpp::List& modelR, const Rcpp::List& dataR, const Rcpp::List& P, const Rcpp::List& quad, const Rcpp::List& colidxR, const arma::uvec& n, const arma::uvec& d, const bool PML, const int npatterns);
+RcppExport SEXP _modsem_completeLogLikLmsCpp(SEXP modelRSEXP, SEXP dataRSEXP, SEXP PSEXP, SEXP quadSEXP, SEXP colidxRSEXP, SEXP nSEXP, SEXP dSEXP, SEXP PMLSEXP, SEXP npatternsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::List& >::type modelR(modelRSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type dataR(dataRSEXP);
     Rcpp::traits::input_parameter< const Rcpp::List& >::type P(PSEXP);
     Rcpp::traits::input_parameter< const Rcpp::List& >::type quad(quadSEXP);
     Rcpp::traits::input_parameter< const Rcpp::List& >::type colidxR(colidxRSEXP);
     Rcpp::traits::input_parameter< const arma::uvec& >::type n(nSEXP);
     Rcpp::traits::input_parameter< const arma::uvec& >::type d(dSEXP);
+    Rcpp::traits::input_parameter< const bool >::type PML(PMLSEXP);
     Rcpp::traits::input_parameter< const int >::type npatterns(npatternsSEXP);
-    rcpp_result_gen = Rcpp::wrap(completeLogLikLmsCpp(modelR, P, quad, colidxR, n, d, npatterns));
+    rcpp_result_gen = Rcpp::wrap(completeLogLikLmsCpp(modelR, dataR, P, quad, colidxR, n, d, PML, npatterns));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -388,6 +390,21 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// probPML
+arma::vec probPML(const arma::mat data, const arma::vec mu, const arma::mat Sigma, const arma::uvec isOrderedEnum, const std::vector<arma::vec> thresholds);
+RcppExport SEXP _modsem_probPML(SEXP dataSEXP, SEXP muSEXP, SEXP SigmaSEXP, SEXP isOrderedEnumSEXP, SEXP thresholdsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::mat >::type data(dataSEXP);
+    Rcpp::traits::input_parameter< const arma::vec >::type mu(muSEXP);
+    Rcpp::traits::input_parameter< const arma::mat >::type Sigma(SigmaSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec >::type isOrderedEnum(isOrderedEnumSEXP);
+    Rcpp::traits::input_parameter< const std::vector<arma::vec> >::type thresholds(thresholdsSEXP);
+    rcpp_result_gen = Rcpp::wrap(probPML(data, mu, Sigma, isOrderedEnum, thresholds));
+    return rcpp_result_gen;
+END_RCPP
+}
 // tracePathsNumericCpp
 Rcpp::NumericVector tracePathsNumericCpp(Rcpp::CharacterVector x, Rcpp::CharacterVector y, Rcpp::DataFrame parTable, int maxlen);
 RcppExport SEXP _modsem_tracePathsNumericCpp(SEXP xSEXP, SEXP ySEXP, SEXP parTableSEXP, SEXP maxlenSEXP) {
@@ -422,7 +439,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_modsem_calcSESimpleSlopes", (DL_FUNC) &_modsem_calcSESimpleSlopes, 2},
     {"_modsem_muLmsCpp", (DL_FUNC) &_modsem_muLmsCpp, 2},
     {"_modsem_sigmaLmsCpp", (DL_FUNC) &_modsem_sigmaLmsCpp, 2},
-    {"_modsem_completeLogLikLmsCpp", (DL_FUNC) &_modsem_completeLogLikLmsCpp, 7},
+    {"_modsem_completeLogLikLmsCpp", (DL_FUNC) &_modsem_completeLogLikLmsCpp, 9},
     {"_modsem_gradLogLikLmsCpp", (DL_FUNC) &_modsem_gradLogLikLmsCpp, 12},
     {"_modsem_gradObsLogLikLmsCpp", (DL_FUNC) &_modsem_gradObsLogLikLmsCpp, 12},
     {"_modsem_observedLogLikLmsCpp", (DL_FUNC) &_modsem_observedLogLikLmsCpp, 7},
@@ -443,6 +460,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_modsem_fcc_vec_arma", (DL_FUNC) &_modsem_fcc_vec_arma, 7},
     {"_modsem_foc_vec_arma", (DL_FUNC) &_modsem_foc_vec_arma, 8},
     {"_modsem_foo_vec_arma", (DL_FUNC) &_modsem_foo_vec_arma, 9},
+    {"_modsem_probPML", (DL_FUNC) &_modsem_probPML, 5},
     {"_modsem_tracePathsNumericCpp", (DL_FUNC) &_modsem_tracePathsNumericCpp, 4},
     {"_modsem_tracePathsCharacterCpp", (DL_FUNC) &_modsem_tracePathsCharacterCpp, 5},
     {NULL, NULL, 0}
