@@ -15,6 +15,7 @@ optimizeStartingParamsDA <- function(model,
   indsXis  <- model$info$allIndsXis
   data     <- model$data.raw
   missing  <- tolower(args$missing)
+  ordered  <- model$info$ordered
 
   robust.se       <- args$robust.se
   has.interaction <- model$info$has.interaction
@@ -84,6 +85,9 @@ optimizeStartingParamsDA <- function(model,
 
   if (isHigherOrderParTable(parTable))
     parTable <- higherOrderMeasr2Struct(parTable)
+
+  if (length(ordered))
+    parTable <- getStartThresholds(parTable = parTable, data = data, ordered = ordered)
 
   # labelled parameters
   thetaLabel <- getLabeledParamsLavaan(parTable, model$constrExprs$fixedParams)
@@ -175,6 +179,8 @@ optimizeStartingParamsDA <- function(model,
                                                 parTable = parTable, fill = 0)
   tauX <- findInterceptsParTable(matricesMain$tauX, parTable, fill = 0)
   tauY <- findInterceptsParTable(matricesMain$tauY, parTable, fill = 0)
+ 
+  thresholds  <- findEstimatesParTable(matricesMain$thresholds, parTable, op = "|", fill = 0)
 
   thetaMain <- unlist(list(LambdaX[is.na(matricesMain$lambdaX)],
                            LambdaY[is.na(matricesMain$lambdaY)],
@@ -190,7 +196,8 @@ optimizeStartingParamsDA <- function(model,
                            GammaXi[is.na(matricesMain$gammaXi)],
                            GammaEta[is.na(matricesMain$gammaEta)],
                            OmegaXiXi[is.na(matricesMain$omegaXiXi)],
-                           OmegaEtaXi[is.na(matricesMain$omegaEtaXi)]))
+                           OmegaEtaXi[is.na(matricesMain$omegaEtaXi)],
+                           thresholds[is.na(matricesMain$thresholds)]))
 
   # Cov Model
   matricesCov      <- model$covModel$matrices
@@ -436,8 +443,31 @@ parameterEstimatesLavSAM <- function(syntax,
   parTableFull <- rbind(addlab(measr)[cols], addlab(struct)[cols])
   parTableFull <- parTableFull[!duplicated(parTableFull[cols.x]), , drop = FALSE]
 
-  # if (!isNonCentered && !isHigherOrder) # if latent mean structure is not included
-    parTableFull <- recalcInterceptsY(parTableFull)
+  parTableFull <- recalcInterceptsY(parTableFull)
 
   list(fit = fitCFA, parTable = parTableFull)
+}
+
+
+getStartThresholds <- function(parTable, ordered, data) {
+  if (!length(ordered)) return(parTable)
+
+  cols <- c("lhs", "op", "rhs", "est")
+  naCols <- setdiff(colnames(parTable), cols)
+  for (col in ordered) {
+    freq <- table(data[[col]])
+    dens <- cumsum(freq) / sum(freq)
+    tau  <- qnorm(dens[-length(dens)]) # drop last, as it just sums to 1
+
+    newRows <- data.frame(
+      lhs = col, op = "|",
+      rhs = paste0("t", seq_along(tau)),
+      est = tau
+    )
+
+    newRows[naCols] <- NA
+    parTable <- rbind(parTable, newRows)
+  }
+   
+  parTable
 }

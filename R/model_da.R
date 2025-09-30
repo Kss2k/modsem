@@ -85,7 +85,7 @@ specifyModelDA <- function(syntax = NULL,
   labelLambdaX <- listLambdaX$label
 
   listTauX <- constructTau(xis, indsXis, parTable = parTable,
-                           mean.observed = mean.observed)
+                           mean.observed = mean.observed, ordered = ordered)
   tauX      <- listTauX$numeric
   labelTauX <- listTauX$label
   lavOptimizerSyntaxAdditions <- paste0(lavOptimizerSyntaxAdditions,
@@ -115,7 +115,7 @@ specifyModelDA <- function(syntax = NULL,
   labelLambdaY <- listLambdaY$label
 
   listTauY <- constructTau(etas, indsEtas, parTable = parTable,
-                           mean.observed = mean.observed)
+                           mean.observed = mean.observed, ordered = ordered)
   tauY      <- listTauY$numeric
   labelTauY <- listTauY$label
   lavOptimizerSyntaxAdditions <- paste0(lavOptimizerSyntaxAdditions,
@@ -310,6 +310,7 @@ specifyModelDA <- function(syntax = NULL,
       nonLinearXis  = nonLinearXis,
       mean.observed = mean.observed,
       isOrderedEnum = isOrderedEnum,
+      ordered       = ordered,
       estimator     = tolower(estimator),
 
       has.interaction    = NROW(intTerms) > 0L,

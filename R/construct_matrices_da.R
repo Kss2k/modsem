@@ -124,7 +124,7 @@ constructLambda <- function(lVs, indsLVs, parTable, auto.fix.first = TRUE) {
 }
 
 
-constructTau <- function(lVs, indsLVs, parTable, mean.observed = TRUE) {
+constructTau <- function(lVs, indsLVs, parTable, mean.observed = TRUE, ordered = NULL) {
   indsLVs       <- indsLVs[lVs] # make sure it is sorted
   allIndsLVs    <- unique(unlist(indsLVs))
   numAllIndsLVs <- length(allIndsLVs)
@@ -143,6 +143,8 @@ constructTau <- function(lVs, indsLVs, parTable, mean.observed = TRUE) {
                                 syntax = lavOptimizerSyntaxAdditions)
     }
   }
+
+  tau[allIndsLVs %in% ordered, 1L] <- 0
 
   c(setMatrixConstraints(X = tau, parTable = parTable, op = "~1",
                          RHS = "", LHS = allIndsLVs, type = "lhs",

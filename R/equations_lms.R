@@ -55,8 +55,11 @@ estepLms <- function(model, theta, data, lastQuad = NULL, recalcQuad = FALSE,
   density        <- rowSums(P)
 
   if (model$info$estimator == "pml") {
+    warning("F***ing with some stuff on line 58!")
     ldensity <- log(density)
     observedLogLik <- sum(ldensity[is.finite(ldensity)])
+    P <- P / density
+    P[TRUE] <- 1
   } else {
     observedLogLik <- sum(log(density))
     P              <- P / density
@@ -122,6 +125,8 @@ mstepLms <- function(theta, model, P, data,
                   epsilon = epsilon)
   }
 
+  warning("F***ing with some stuff on line 128!")
+  gradient <- NULL
   if (optimizer == "nlminb") {
     if (is.null(control$iter.max)) control$iter.max <- max.step
     est <- stats::nlminb(start = theta, objective = objective,
@@ -353,7 +358,8 @@ densitySingleLms <- function(z, modFilled, data) {
                                          mu = mu[colidx],
                                          Sigma = sigma[colidx, colidx],
                                          isOrderedEnum = modFilled$info$isOrderedEnum,
-                                         thresholds = modFilled$matrices$thresholds))
+                                         thresholds = modFilled$matrices$thresholds)
+      )
     }
     offset <- end + 1L
   }

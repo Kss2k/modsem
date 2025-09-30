@@ -439,6 +439,7 @@ modsem_da <- function(model.syntax = NULL,
   if (args$optimize) {
     model <- tryCatch({
       .optimize <- purrr::quietly(optimizeStartingParamsDA)
+      # .optimize <- optimizeStartingParamsDA
       result    <- .optimize(model, args = args, engine = "sam")
       warnings  <- result$warnings
 
