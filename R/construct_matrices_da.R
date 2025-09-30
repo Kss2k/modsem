@@ -151,7 +151,8 @@ constructTau <- function(lVs, indsLVs, parTable, mean.observed = TRUE) {
 }
 
 
-constructTheta <- function(lVs, indsLVs, parTable, auto.fix.single = TRUE) {
+constructTheta <- function(lVs, indsLVs, parTable, auto.fix.single = TRUE,
+                           ordered = NULL) {
   numLVs        <- length(lVs)
   indsLVs       <- indsLVs[lVs] # make sure it is sorted
   numIndsLVs    <- lapply(indsLVs, FUN = length)
@@ -168,6 +169,8 @@ constructTheta <- function(lVs, indsLVs, parTable, auto.fix.single = TRUE) {
       theta[indsLVs[[lV]], indsLVs[[lV]]] <- 0
     }
   }
+
+  diag(theta)[allIndsLVs %in% ordered] <- 1
 
   setMatrixConstraints(X = theta, parTable = parTable, op = "~~",
                        RHS = allIndsLVs, LHS = allIndsLVs, type = "symmetric",
@@ -649,4 +652,39 @@ constructOmegaXiXi <- function(xis, etas, sortedXis, nonLinearXis,
 labelRowsOmega <- function(X, eta) {
   rownames(X) <- paste0(eta, "~", rownames(X))
   X
+}
+
+
+constructThresholds <- function(ordered, parTable, data, method = "lms", estimator = "ML") {
+  stopif(!(tolower(method) == "lms" && tolower(estimator) == "pml"),
+         "Ordered variables are only allowed with `method=\"lms\" and `estimator=\"pml\"`")
+
+  if (!length(ordered))
+    return(EMPTY_MATSTRUCT)
+
+  numeric <- stats::setNames(vector("list", length(ordered)), ordered)
+  label   <- stats::setNames(vector("list", length(ordered)), ordered)
+
+  RHS <- unique(parTable[parTable$op == "|", "rhs"])
+
+  max.k <- 0L
+  for (col in ordered) {
+    k   <- length(unique(data[, col]))
+    tau <- matrix(NA, nrow = k, ncol = 1)
+
+    if (k > max.k) max.k <- k
+
+    TAU <- setMatrixConstraints(X = tau, parTable = parTable, op = "|",
+                                RHS = RHS, LHS = ordered, type = "lhs",
+                                nonFreeParams = FALSE)
+    numeric[[col]] <- as.vector(TAU$numeric) 
+    label[[col]]   <- as.vector(TAU$label) 
+  }
+
+  nm.t <- paste0("t", seq_len(max.k))
+  pad <- \(x, val) stats::setNames(c(x, rep(val, max.k - length(x))), nm = nm.t)
+  numericMat <- do.call("rbind", lapply(numeric, FUN = pad, val = 0))
+  labelMat   <- do.call("rbind", lapply(label, FUN = pad, val = ""))
+
+  list(numeric = numericMat, label = labelMat)
 }

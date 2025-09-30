@@ -4,13 +4,18 @@
 #include <limits>
 using namespace Rcpp;
 
-
-// utilities
+// ===================== utilities =====================
 static inline double sqr(double x){ return x*x; }
 static const double INV_SQRT2   = 0.70710678118654752440;   // 1/sqrt(2)
 static const double INV_SQRT2PI = 0.39894228040143267794;   // 1/sqrt(2*pi)
 static const double PI          = 3.14159265358979323846;
 static const double NaN         = std::numeric_limits<double>::quiet_NaN();
+
+// small clamp to keep log() well-defined
+static inline double log_clamp(double x, double eps=1e-300){
+  if (!std::isfinite(x) || x <= 0.0) x = eps;
+  return std::log(x);
+}
 
 static inline R_xlen_t max_len(std::initializer_list<R_xlen_t> L){
   R_xlen_t m = 1;
@@ -29,7 +34,7 @@ static inline unsigned bcast(const arma::uvec& v, R_xlen_t i){
   return (v.n_elem == 1) ? v[0] : v[i];
 }
 
-// univariate φ, Φ
+// ===================== univariate φ, Φ =====================
 static inline double dnorm_c(double x, double mu, double sigma){
   double z = (x - mu) / sigma;
   return INV_SQRT2PI * std::exp(-0.5 * z * z) / sigma;
@@ -39,7 +44,8 @@ static inline double Phi(double z){
   return 0.5 * std::erfc(-z * INV_SQRT2);
 }
 
-// bivariate Φ2(a,b;ρ) — Genz-style quadrature + conditional fallback
+// ===================== bivariate Φ2(a,b;ρ) =====================
+// Genz-style quadrature + conditional fallback near |ρ|≈1
 static double Phi2(double a, double b, double rho){
   if (rho <= -1.0) rho = -0.999999999999;
   if (rho >=  1.0) rho =  0.999999999999;
@@ -66,8 +72,7 @@ static double Phi2(double a, double b, double rho){
       0.2955242247147529, 0.2692667193099963, 0.2190863625159820,
       0.1494513491505806, 0.0666713443086881
     };
-    double mid = 0.5*(a+L), half = 0.5*(a-L);
-    double acc = 0.0;
+    double mid = 0.5*(a+L), half = 0.5*(a-L), acc = 0.0;
     for (int i=0;i<10;++i){
       double x = mid + half*xi[i];
       acc += wi[i] * condPhi(x) * dnorm_c(x, 0.0, 1.0);
@@ -75,6 +80,7 @@ static double Phi2(double a, double b, double rho){
     return acc * half;
   }
 
+  // Genz quadrature on theta in [0, asin(rho)]
   double asr = std::asin(rho);
   static const double xg[6] = {
     0.1252334085114692, 0.3678314989981802, 0.5873179542866175,
@@ -116,7 +122,7 @@ static double Phi2(double a, double b, double rho){
   return result;
 }
 
-// scalar fcc / foc / foo
+// ===================== scalar building blocks =====================
 static inline double fcc_scalar(double xj, double xk,
                                 double mj, double mk,
                                 double Sjj, double Skk, double Sjk){
@@ -185,7 +191,9 @@ static inline double foo_scalar(unsigned r, unsigned s,
   return out;
 }
 
-// vectorized arma interfaces
+// ===================== vectorized arma wrappers (prob scale) =====================
+// (We will take logs in the final function for stability.)
+
 // [[Rcpp::export]]
 arma::vec fcc_vec_arma(const arma::vec& xj, const arma::vec& xk,
                        const arma::vec& mj, const arma::vec& mk,
@@ -259,20 +267,21 @@ arma::vec foo_vec_arma(const arma::uvec& r, const arma::uvec& s,
   return out;
 }
 
+// ===================== log-domain PML (requested) =====================
 
 // [[Rcpp::export]]
 arma::vec probPML(
-    const arma::mat data,
-    const arma::vec mu,
-    const arma::mat Sigma,
-    const arma::uvec isOrderedEnum,
-    const std::vector<arma::vec> thresholds
+    const arma::mat& data,                 // (N x P)
+    const arma::vec& mu,                   // length P
+    const arma::mat& Sigma,                // (P x P)
+    const arma::uvec& isOrderedEnum,       // length P; 0=cont, >0=1-based thr idx
+    const arma::mat& thresholds
     ) {
 
   const arma::uword N = data.n_rows;
   const arma::uword P = data.n_cols;
 
-  arma::vec out(N, arma::fill::ones);
+  arma::vec out_log(N, arma::fill::zeros);  // sum of logs over pairs
 
   // cache columns split by type
   std::vector<arma::vec>  ccols(P); // continuous columns
@@ -284,60 +293,58 @@ arma::vec probPML(
       ccols[i] = data.col(i);
   }
 
-  const double eps_prob = 1e-300; // tiny floor
-
   // iterate unordered pairs
   for (arma::uword j = 1; j < P; ++j) {
     for (arma::uword i = 0; i < j; ++i) {
+
       const unsigned oi = static_cast<unsigned>(isOrderedEnum[i]);
       const unsigned oj = static_cast<unsigned>(isOrderedEnum[j]);
 
-      // scalars for this pair (broadcast into vec length 1)
+      // pair-specific constants (broadcasted as length-1 arma::vec)
       arma::vec mi(1); mi[0] = mu[i];
       arma::vec mj(1); mj[0] = mu[j];
       arma::vec Sii(1); Sii[0] = Sigma(i,i);
       arma::vec Sjj(1); Sjj[0] = Sigma(j,j);
       arma::vec Sij(1); Sij[0] = Sigma(i,j);
 
-      arma::vec term(N, arma::fill::zeros);
+      arma::vec term_prob(N, arma::fill::zeros);
 
       if (oi && oj) {
         // OO
         const arma::uvec& r = ocols[i];
         const arma::uvec& s = ocols[j];
-        const arma::vec& tau_i = thresholds.at(oi-1);
-        const arma::vec& tau_j = thresholds.at(oj-1);
-        term = foo_vec_arma(r, s, mi, mj, Sii, Sjj, Sij, tau_i, tau_j);
+        const arma::vec& tau_i = thresholds.row(oi-1).t();
+        const arma::vec& tau_j = thresholds.row(oj-1).t();
+        term_prob = foo_vec_arma(r, s, mi, mj, Sii, Sjj, Sij, tau_i, tau_j);
 
       } else if (oi && !oj) {
         // OC: i ordinal, j continuous
         const arma::uvec& r = ocols[i];
         const arma::vec&   x = ccols[j];
-        const arma::vec& tau_i = thresholds.at(oi-1);
-        term = foc_vec_arma(x, r, mj, mi, Sjj, Sii, Sij, tau_i);
+        const arma::vec& tau_i = thresholds.row(oi-1).t();
+        // foc expects (x_cont, r_ord, mj, mk, Sjj, Skk, Sjk, tau_k)
+        term_prob = foc_vec_arma(x, r, mj, mi, Sjj, Sii, Sij, tau_i);
 
       } else if (!oi && oj) {
         // CO: i continuous, j ordinal
         const arma::vec&   x = ccols[i];
         const arma::uvec& s  = ocols[j];
-        const arma::vec& tau_j = thresholds.at(oj-1);
-        term = foc_vec_arma(x, s, mi, mj, Sii, Sjj, Sij, tau_j);
+        const arma::vec& tau_j = thresholds.row(oj-1).t();
+        term_prob = foc_vec_arma(x, s, mi, mj, Sii, Sjj, Sij, tau_j);
 
       } else {
         // CC
         const arma::vec& x = ccols[i];
         const arma::vec& y = ccols[j];
-        term = fcc_vec_arma(x, y, mi, mj, Sii, Sjj, Sij);
+        term_prob = fcc_vec_arma(x, y, mi, mj, Sii, Sjj, Sij);
       }
 
-      // replace non-finite/small with floor and multiply into out
+      // accumulate logs safely
       for (arma::uword t = 0; t < N; ++t) {
-        double v = term[t];
-        if (!std::isfinite(v) || v <= 0.0) v = eps_prob;
-        out[t] *= v;
+        out_log[t] += log_clamp(term_prob[t]);
       }
     }
   }
 
-  return out;
+  return out_log;
 }

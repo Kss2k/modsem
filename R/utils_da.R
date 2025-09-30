@@ -363,7 +363,8 @@ getLabelIntTerms <- function(varsInInt, eta, intTerms) {
 
 
 getEmptyModel <- function(parTable, cov.syntax, parTableCovModel,
-                          mean.observed = TRUE, method = "lms") {
+                          mean.observed = TRUE, method = "lms",
+                          estimator = "ml") {
   parTable$mod <- ""
   parTable <- removeConstraintExpressions(parTable)
 
@@ -381,7 +382,8 @@ getEmptyModel <- function(parTable, cov.syntax, parTableCovModel,
     auto.fix.first   = FALSE,
     auto.fix.single  = FALSE,
     createTheta      = FALSE,
-    checkModel       = FALSE
+    checkModel       = FALSE,
+    estimator        = estimator
   )
 }
 

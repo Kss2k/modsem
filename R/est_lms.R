@@ -70,6 +70,7 @@ emLms <- function(model,
                   fs.fd.scheme = c("forward","central"),
                   fs.fd.epsilon = 1e-6,
                   fs.jitter.mult = sqrt(.Machine$double.eps),
+                  estimator = "ml",
                   ...) {
 
   algorithm    <- toupper(match.arg(algorithm))
@@ -148,6 +149,7 @@ emLms <- function(model,
 
       logLikNew  <- P$obsLL
       deltaLL    <- logLikNew - logLikOld
+      deltaLL    <- if (is.na(deltaLL)) Inf else deltaLL
       relDeltaLL <- if (is.finite(logLikOld)) deltaLL / abs(logLikOld) else Inf
 
       updateStatusLog(iterations, mode, logLikNew, deltaLL, relDeltaLL, verbose)
@@ -306,7 +308,8 @@ emLms <- function(model,
       verbose           = verbose,
       P                 = P,
       includeStartModel = TRUE,
-      startModel        = model
+      startModel        = model,
+      estimator         = estimator
     )
 
   }, error = function(e) {

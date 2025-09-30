@@ -16,10 +16,10 @@ arma::vec foo_vec_arma(const arma::uvec& r, const arma::uvec& s,
                        const arma::vec& Sjj, const arma::vec& Skk, const arma::vec& Sjk,
                        const arma::vec& tau_j, const arma::vec& tau_k);
 
-arma::vec probPML(const arma::mat data,
-                  const arma::vec mu,
-                  const arma::mat Sigma,
-                  const arma::uvec isOrderedEnum,
-                  const std::vector<arma::vec> thresholds);
+arma::vec probPML(const arma::mat& data,
+                  const arma::vec& mu,
+                  const arma::mat& Sigma,
+                  const arma::uvec& isOrderedEnum,
+                  const arma::mat& thresholds);
 
 #endif

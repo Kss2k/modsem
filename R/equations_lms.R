@@ -18,7 +18,7 @@ estepLms <- function(model, theta, data, lastQuad = NULL, recalcQuad = FALSE,
         adaptiveGaussQuadrature(
           fun = densityLms, collapse = \(x) sum(log(rowSums(x))),
           modFilled = modFilled, data = data, a = a, b = b, m = m,
-          k = k, m.ceil = m.ceil, tol = adaptive.quad.tol,
+          k = k, m.ceil = m.ceil, tol = adaptive.quad.tol
         )
       }, error = function(e) {
         warning2("Calculation of adaptive quadrature failed!\n", e,
@@ -52,11 +52,15 @@ estepLms <- function(model, theta, data, lastQuad = NULL, recalcQuad = FALSE,
     P    <- W * densityLms(V, modFilled = modFilled, data = data)
   }
 
-
-
   density        <- rowSums(P)
-  observedLogLik <- sum(log(density))
-  P              <- P / density
+
+  if (model$info$estimator == "pml") {
+    ldensity <- log(density)
+    observedLogLik <- sum(ldensity[is.finite(ldensity)])
+  } else {
+    observedLogLik <- sum(log(density))
+    P              <- P / density
+  }
 
   wMeans <- vector("list", length = length(w))
   wCovs  <- vector("list", length = length(w))
@@ -144,16 +148,28 @@ mstepLms <- function(theta, model, P, data,
 
 
 compLogLikLms <- function(theta, model, P, data, sign = -1, ...) {
-  tryCatch({
+  # tryCatch({
     modFilled <- fillModel(model = model, theta = theta, method = "lms")
-    sign * completeLogLikLmsCpp(modelR=modFilled, P=P, quad=P$quad,
+    sign * completeLogLikLmsCpp(modelR=modFilled, dataR = data$data.split, P=P, quad=P$quad,
                                 colidxR = data$colidx0, n = data$n.pattern,
                                 d = data$d.pattern, npatterns = data$p)
-  }, error = \(e) NA)
+  # }, error = \(e) NA)
 }
 
 
 gradientCompLogLikLms <- function(theta, model, P, data, sign = -1, epsilon = 1e-6) {
+  FGRAD <- function(modelR, P, block, row, col, symmetric, colidxR, npatterns,
+                    eps, ncores, n, ...) {
+    gradLogLikLmsCpp(modelR = modelR, dataR = dataR, P = P, 
+                     block = block, row = row, col = col,
+                     symmetric = symmetric, colidxR = colidxR,
+                     n = n,
+                     d = d,
+                     npatterns = npatterns,
+                     eps = eps,
+                     ncores = ncores);
+  }
+
   gradientAllLogLikLms(theta = theta, model = model, P = P, sign = sign, data = data,
                        epsilon = epsilon, FGRAD = gradLogLikLmsCpp, FOBJECTIVE = compLogLikLms)
 }
@@ -311,6 +327,8 @@ gradientObsLogLikLms_i <- function(theta, model, data, P, sign = 1, epsilon = 1e
 
 
 densitySingleLms <- function(z, modFilled, data) {
+  estimator <- tolower(modFilled$info$estimator)
+
   mu <- muLmsCpp(model = modFilled, z = z)
   sigma <- sigmaLmsCpp(model = modFilled, z = z)
 
@@ -324,9 +342,19 @@ densitySingleLms <- function(z, modFilled, data) {
     dataid <- data$data.split[[id]]
 
     end <- offset + n.pattern - 1L
-    density[offset:end] <- dmvn(data$data.split[[id]],
-                                mean = mu[colidx],
-                                sigma = sigma[colidx, colidx])
+
+    if (estimator == "ml") {
+      density[offset:end] <- dmvn(data$data.split[[id]],
+                                  mean = mu[colidx],
+                                  sigma = sigma[colidx, colidx])
+
+    } else if (estimator == "pml") {
+      density[offset:end] <- exp(probPML(data$data.split[[id]],
+                                         mu = mu[colidx],
+                                         Sigma = sigma[colidx, colidx],
+                                         isOrderedEnum = modFilled$info$isOrderedEnum,
+                                         thresholds = modFilled$matrices$thresholds))
+    }
     offset <- end + 1L
   }
 

@@ -319,6 +319,7 @@ modsem_da <- function(model.syntax = NULL,
                       auto.fix.first = NULL,
                       auto.fix.single = NULL,
                       auto.split.syntax = NULL,
+                      estimator = NULL,
                       ...) {
   if (is.null(model.syntax)) {
     stop2("No model.syntax provided")
@@ -328,65 +329,18 @@ modsem_da <- function(model.syntax = NULL,
     stop2("The provided model syntax is not of length 1")
   }
 
-  if (length(ordered) || any(sapply(data, FUN = is.ordered))) {
-    out <- modsemOrderedScaleCorrection(
-       model.syntax        = model.syntax,
-       data                = data,
-       method              = method,
-       verbose             = verbose,
-       iter                = ordered.iter,
-       warmup              = ordered.warmup,
-       optimize            = optimize,
-       nodes               = nodes,
-       missing             = missing,
-       convergence.abs     = convergence.abs,
-       convergence.rel     = convergence.rel,
-       optimizer           = optimizer,
-       center.data         = center.data,
-       standardize.data    = standardize.data,
-       standardize.out     = standardize.out,
-       standardize         = standardize,
-       mean.observed       = mean.observed,
-       cov.syntax          = cov.syntax,
-       double              = double,
-       calc.se             = calc.se,
-       FIM                 = FIM,
-       EFIM.S              = EFIM.S,
-       OFIM.hessian        = OFIM.hessian,
-       EFIM.parametric     = EFIM.parametric,
-       robust.se           = robust.se,
-       R.max               = R.max,
-       max.iter            = max.iter,
-       max.step            = max.step,
-       start               = start,
-       epsilon             = epsilon,
-       quad.range          = quad.range,
-       adaptive.quad       = adaptive.quad,
-       adaptive.frequency  = adaptive.frequency,
-       adaptive.quad.tol   = adaptive.quad.tol,
-       n.threads           = n.threads,
-       algorithm           = algorithm,
-       em.control          = em.control,
-       ordered             = ordered,
-       cluster             = cluster,
-       cr1s                = cr1s,
-       rcs                 = rcs,
-       rcs.choose          = rcs.choose,
-       rcs.scale.corrected = rcs.scale.corrected,
-       orthogonal.x        = orthogonal.x,
-       orthogonal.y        = orthogonal.y,
-       auto.fix.first      = auto.fix.first,
-       auto.fix.single     = auto.fix.single,
-       auto.split.syntax   = auto.split.syntax,
-       ...)
-
-    return(out)
-  }
-
   if (is.null(data)) {
     stop2("No data provided")
   } else if (!is.data.frame(data)) {
     data <- as.data.frame(data)
+  }
+  
+  ordered.cols <- colnames(data)[sapply(data, FUN = is.ordered)]
+  ordered      <- union(ordered, ordered.cols)
+
+  if (length(ordered)) {
+    reOrder <- \(x) as.integer(as.ordered(as.integer(x))) # levels:[2, 3, 4] -> levels:[1, 2, 3]
+    data[ordered] <- lapply(data[ordered], reOrder)
   }
 
   if (rcs) { # use reliability-correct single items?
@@ -446,7 +400,8 @@ modsem_da <- function(model.syntax = NULL,
           auto.fix.first     = auto.fix.first,
           auto.fix.single    = auto.fix.single,
           auto.split.syntax  = auto.split.syntax,
-          cr1s               = cr1s
+          cr1s               = cr1s,
+          estimator          = estimator
         )
     )
 
@@ -476,7 +431,9 @@ modsem_da <- function(model.syntax = NULL,
     auto.fix.first     = args$auto.fix.first,
     auto.fix.single    = args$auto.fix.single,
     auto.split.syntax  = args$auto.split.syntax,
-    cluster            = cluster
+    cluster            = cluster,
+    ordered            = ordered,
+    estimator          = args$estimator
   )
 
   if (args$optimize) {
@@ -556,6 +513,7 @@ modsem_da <- function(model.syntax = NULL,
       adaptive.quad.tol = args$adaptive.quad.tol,
       nodes             = args$nodes,
       cr1s              = args$cr1s,
+      estimator         = args$estimator,
       ...
   )),
   error = function(e) {

@@ -21,7 +21,9 @@ specifyModelDA <- function(syntax = NULL,
                            orthogonal.x = FALSE,
                            orthogonal.y = FALSE,
                            auto.split.syntax = FALSE,
-                           cluster = NULL) {
+                           cluster = NULL,
+                           ordered = NULL,
+                           estimator = "ML") {
   if (!is.null(syntax)) parTable <- modsemify(syntax)
   stopif(is.null(parTable), "No parTable found")
 
@@ -94,11 +96,13 @@ specifyModelDA <- function(syntax = NULL,
 
   if (method == "qml") {
     listThetaDelta <- constructTheta(xis, indsXis, parTable = parTable,
-                                     auto.fix.single = auto.fix.single)
+                                     auto.fix.single = auto.fix.single,
+                                     ordered = ordered)
   } else {
     listThetaDelta <- constructTheta(c(xis, etas), c(indsXis, indsEtas),
                                      parTable = parTable,
-                                     auto.fix.single = auto.fix.single)
+                                     auto.fix.single = auto.fix.single,
+                                     ordered = ordered)
   }
 
   thetaDelta      <- listThetaDelta$numeric
@@ -119,10 +123,12 @@ specifyModelDA <- function(syntax = NULL,
 
   if (method == "qml") {
     listThetaEpsilon <- constructTheta(etas, indsEtas, parTable = parTable,
-                                       auto.fix.single = auto.fix.single)
+                                       auto.fix.single = auto.fix.single,
+                                       ordered = ordered)
   } else {
     listThetaEpsilon <- constructTheta(NULL, NULL, parTable = parTable,
-                                       auto.fix.single = auto.fix.single)
+                                       auto.fix.single = auto.fix.single,
+                                       ordered = ordered)
   }
 
   thetaEpsilon      <- listThetaEpsilon$numeric
@@ -166,6 +172,15 @@ specifyModelDA <- function(syntax = NULL,
                               mean.observed = mean.observed)
   beta0      <- listBeta0$numeric
   labelBeta0 <- listBeta0$label
+
+  listThresholds <- constructThresholds(ordered, parTable = parTable, data = data,
+                                        method = method, estimator = estimator)
+  thresholds      <- listThresholds$numeric
+  labelThresholds <- listThresholds$label
+  allInds         <- c(allIndsXis, allIndsEtas)
+  isOrdered       <- allInds %in% ordered
+  isOrderedEnum   <- stats::setNames(integer(length(allInds)), nm = allInds)
+  isOrderedEnum[isOrdered] <- seq_len(sum(isOrdered))
 
   # quadratic terms
   listOmegaEtaXi  <- omegaAndSortedXis$omegaEtaXi
@@ -228,6 +243,7 @@ specifyModelDA <- function(syntax = NULL,
     beta0        = beta0,
     omegaEtaXi   = omegaEtaXi,
     omegaXiXi    = omegaXiXi,
+    thresholds   = thresholds,
 
     selectScalingY      = selectScalingY,
     selectThetaEpsilon1 = selectThetaEpsilon1,
@@ -258,6 +274,7 @@ specifyModelDA <- function(syntax = NULL,
     gammaEta     = labelGammaEta,
     thetaDelta   = thetaLabelDelta,
     thetaEpsilon = thetaLabelEpsilon,
+    thresholds   = labelThresholds,
 
     phi   = labelPhi,
     A     = labelA,
@@ -292,6 +309,8 @@ specifyModelDA <- function(syntax = NULL,
       kOmegaEta     = getK_NA(omegaEtaXi, labelOmegaEtaXi),
       nonLinearXis  = nonLinearXis,
       mean.observed = mean.observed,
+      isOrderedEnum = isOrderedEnum,
+      estimator     = tolower(estimator),
 
       has.interaction    = NROW(intTerms) > 0L,
       higherOrderLVs     = higherOrderLVs,
@@ -620,7 +639,8 @@ finalizeModelEstimatesDA <- function(model,
                                      # method-specific extras
                                      P = NULL,                 # only used by LMS
                                      includeStartModel = FALSE,
-                                     startModel = NULL) {
+                                     startModel = NULL,
+                                     estimator = "ml") {
 
   method <- match.arg(method)
   NA__ <- -999
@@ -635,7 +655,7 @@ finalizeModelEstimatesDA <- function(model,
                               cov.syntax = model$cov.syntax,
                               parTableCovModel = model$covModel$parTable,
                               mean.observed = model$info$mean.observed,
-                              method = method)
+                              method = method, estimator = estimator)
   finalModel$matricesNA <- emptyModel$matrices
   finalModel$covModelNA <- emptyModel$covModel
 

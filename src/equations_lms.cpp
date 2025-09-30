@@ -1,12 +1,13 @@
 #include <RcppArmadillo.h>
 #include <float.h>
 #include <cmath>
+#include <vector>
+#include <string>
 
 #include "lms.h"
 #include "pml.h"
 #include "utils.h"
 #include "mvnorm.h"
-#include <vector>
 
 // [[Rcpp::depends(RcppArmadillo)]]
 
@@ -118,23 +119,24 @@ extern arma::mat make_Oi(unsigned k, unsigned numXis);
 
 struct LMSModel {
   arma::mat A, Oxx, Oex, Ie, lY, lX, tY, tX, Gx, Ge,
-    a, beta0, Psi, d, e;
+    a, beta0, Psi, d, e, thr;
 
-  // thresholds[v] is an arma::vec containing (-Inf, ..., +Inf) for variable v
-  std::vector<arma::vec> thresholds;
   arma::uvec isOrderedEnum; // if 0 variable is continuous, else idx in thesholds
 
   unsigned  k       = 0;
   unsigned  numXis  = 0;
 
-  explicit LMSModel(const Rcpp::List& modFilled) {
+  double pml;
 
+  explicit LMSModel(const Rcpp::List& modFilled) {
     Rcpp::List matrices = modFilled["matrices"];
     Rcpp::List info     = modFilled["info"];
     Rcpp::List quad     = modFilled["quad"];
 
     k       = Rcpp::as<unsigned>(quad["k"]);
     numXis  = Rcpp::as<unsigned>(info["numXis"]);
+    
+    pml = Rcpp::as<std::string>(info["estimator"]) == "pml";
 
     A       = Rcpp::as<arma::mat>(matrices["A"]);
     Oxx     = Rcpp::as<arma::mat>(matrices["omegaXiXi"]);
@@ -151,31 +153,10 @@ struct LMSModel {
     Psi     = Rcpp::as<arma::mat>(matrices["psi"]);
     d       = Rcpp::as<arma::mat>(matrices["thetaDelta"]);
     e       = Rcpp::as<arma::mat>(matrices["thetaEpsilon"]);
+    thr     = Rcpp::as<arma::mat>(matrices["thresholds"]);
 
     isOrderedEnum = Rcpp::as<arma::uvec>(info["isOrderedEnum"]);
 
-    const Rcpp::List thrList = matrices["thresholds"];
-    const int L = thrList.size();
-    thresholds.clear();
-
-    if (L > 0L) {
-      thresholds.reserve(L);
-
-      for (int i = 0L; i < L; ++i) {
-        Rcpp::RObject el = thrList[i];
-        if (el.isNULL()) {
-          thresholds.emplace_back(); // empty vec for non-ordinal variable
-        } else {
-          thresholds.emplace_back(Rcpp::as<arma::vec>(el));
-        }
-      }
-    }
-
-  }
-
-  // Accessor (throws std::out_of_range if idx is invalid)
-  const arma::vec& get_thresholds(std::size_t idx) const {
-    return thresholds.at(idx);
   }
 
   arma::vec mu(const arma::vec& z) const {
@@ -229,11 +210,7 @@ struct LMSModel {
     c.Psi   = arma::mat(Psi);
     c.d     = arma::mat(d);
     c.e     = arma::mat(e);
-
-    // Deep-copy NEW thresholds vector<arma::vec>
-    c.thresholds.clear();
-    c.thresholds.reserve(thresholds.size());
-    for (const auto& v : thresholds) c.thresholds.emplace_back(arma::vec(v));
+    c.thr   = arma::mat(thr);
 
     return c;
   }
@@ -257,6 +234,7 @@ inline double& lms_param(LMSModel& M, std::size_t blk,
     case 11: return  M.Ge   (r,c);
     case 12: return  M.Oxx  (r,c);
     case 13: return  M.Oex  (r,c);
+    case 14: return  M.thr  (r,c);
     default: Rcpp::stop("unknown block id");
   }
 }
@@ -312,38 +290,6 @@ arma::vec gradientFD(LMSModel&         M,
   }
 
   return grad;
-}
-
-
-inline double completeLogLikFromModel(
-    const LMSModel&  M,
-    const arma::mat& V,
-    const arma::mat& P,
-    const std::vector<arma::vec>& TGamma,
-    const std::vector<std::vector<arma::vec>>& MeanPatterns,
-    const std::vector<std::vector<arma::mat>>& CovPatterns,
-    const std::vector<arma::uvec>& colidx,
-    const arma::uvec& n,
-    const arma::uvec& d,
-    const std::vector<arma::mat>& data,
-    const bool PML = false,
-    const int npatterns = 1,
-    const int ncores = 1) 
-{
-  if (!PML) {
-    // Standard ML
-    return completeLogLikFromModelML(
-              M, V, TGamma,
-              MeanPatterns, CovPatterns,
-              colidx, n, d,
-              npatterns);
-  } else {
-    // Pseudo-ML
-    return completeLogLikFromModelPML(
-              M, V, P, data,
-              colidx, n,
-              npatterns, ncores);
-  }
 }
 
 
@@ -409,13 +355,46 @@ inline double completeLogLikFromModelPML(
                                 mu.elem(colidx[j]),
                                 Sig.submat(colidx[j], colidx[j]),
                                 M.isOrderedEnum,
-                                M.thresholds);
+                                M.thr);
       // weight pattern j for quadrature point i
-      ll += arma::sum(P(j,i) * arma::log(probs));
+      ll += arma::sum(P(j,i) * probs);
     }
   }
   return ll;
 }
+
+
+inline double completeLogLikFromModel(
+    const LMSModel&  M,
+    const arma::mat& V,
+    const arma::mat& P,
+    const std::vector<arma::vec>& TGamma,
+    const std::vector<std::vector<arma::vec>>& MeanPatterns,
+    const std::vector<std::vector<arma::mat>>& CovPatterns,
+    const std::vector<arma::uvec>& colidx,
+    const arma::uvec& n,
+    const arma::uvec& d,
+    const std::vector<arma::mat>& data,
+    const int npatterns = 1,
+    const int ncores = 1) 
+{
+  if (!M.pml) {
+    // Standard ML
+    return completeLogLikFromModelML(
+              M, V, TGamma,
+              MeanPatterns, CovPatterns,
+              colidx, n, d,
+              npatterns);
+  } else {
+    // Pseudo-ML
+    return completeLogLikFromModelPML(
+              M, V, P, data,
+              colidx, n,
+              npatterns, ncores);
+  }
+}
+
+
 
 
 // [[Rcpp::export]]
@@ -426,10 +405,8 @@ double completeLogLikLmsCpp(const Rcpp::List& modelR,
                             const Rcpp::List& colidxR,
                             const arma::uvec& n,
                             const arma::uvec& d,
-                            const bool PML = false,
                             const int npatterns = 1,
-                            const int ncores = 1) 
-{
+                            const int ncores = 1) {
   const LMSModel model = LMSModel(modelR);
 
   const arma::mat V       = Rcpp::as<arma::mat>(P["V"]);
@@ -441,24 +418,16 @@ double completeLogLikLmsCpp(const Rcpp::List& modelR,
   const std::vector<arma::mat> data = as_vec_of_mat(dataR);
 
   return completeLogLikFromModel(
-      model,
-      V,
-      Pmat,
-      TGamma,
-      Mean,
-      Cov,
-      colidx,
-      n,
-      d,
-      data,
-      PML,
-      npatterns,
-      ncores);
+      model, V, Pmat, TGamma,
+      Mean, Cov, colidx, n,
+      d, data, npatterns, ncores
+  );
 }
 
 
 // [[Rcpp::export]]
 arma::vec gradLogLikLmsCpp(const Rcpp::List& modelR,
+                           const Rcpp::List& dataR,
                            const Rcpp::List& P,
                            const arma::uvec& block,
                            const arma::uvec& row,
@@ -473,16 +442,19 @@ arma::vec gradLogLikLmsCpp(const Rcpp::List& modelR,
   LMSModel M(modelR);
 
   const arma::mat V       = Rcpp::as<arma::mat>(P["V"]);
+  const arma::mat Pmat    = Rcpp::as<arma::mat>(P["Pmat"]);
   const auto      TGamma  = as_vec_of_vec(P["tgamma"]);
   const auto      Mean    = as_vec_of_vec_of_vec(P["mean"]);
   const auto      Cov     = as_vec_of_vec_of_mat(P["cov"]);
   const auto      colidx  = as_vec_of_uvec(colidxR);
-
+  const auto      data    = as_vec_of_mat(dataR);
   const Rcpp::List info   = modelR["info"];
 
   auto comp_ll = [&](LMSModel& mod) -> double {
-    return completeLogLikFromModel(mod, V, TGamma, Mean, Cov,
-                                   colidx, n, d, npatterns);
+    return completeLogLikFromModel(
+        M, V, Pmat, TGamma,
+        Mean, Cov, colidx, n,
+        d, data, npatterns, ncores);
   };
 
   return gradientFD(M, comp_ll, block, row, col, symmetric, eps, ncores);
@@ -553,11 +525,11 @@ inline double observedLogLikFromModelPML(
       const int end = offset + n[j] - 1L;
 
       density.subvec(offset, end) +=
-        probPML(data[j],
-                mu.elem(colidx[j]),
-                Sig.submat(colidx[j], colidx[j]),
-                M.isOrderedEnum,
-                M.thresholds) * w[i];
+        arma::exp(probPML(data[j],
+              mu.elem(colidx[j]),
+              Sig.submat(colidx[j], colidx[j]),
+              M.isOrderedEnum,
+              M.thr)) * w[i];
 
       offset = end + 1L;
     }
@@ -793,6 +765,7 @@ Rcpp::List hessObsLogLikLmsCpp(const Rcpp::List& modelR,
 
 // [[Rcpp::export]]
 Rcpp::List hessCompLogLikLmsCpp(const Rcpp::List& modelR,
+                                const Rcpp::List& dataR,
                                 const Rcpp::List& P,
                                 const arma::uvec& block,
                                 const arma::uvec& row,
@@ -808,16 +781,20 @@ Rcpp::List hessCompLogLikLmsCpp(const Rcpp::List& modelR,
   LMSModel M(modelR);
 
   const arma::mat  V       = Rcpp::as<arma::mat>(P["V"]);
+  const arma::mat  Pmat    = Rcpp::as<arma::mat>(P["Pmat"]);
   const auto       TGamma  = as_vec_of_vec(P["tgamma"]);
   const auto       Mean    = as_vec_of_vec_of_vec(P["mean"]);
   const auto       Cov     = as_vec_of_vec_of_mat(P["cov"]);
   const auto       colidx  = as_vec_of_uvec(colidxR);
+  const auto       data    = as_vec_of_mat(dataR);
 
   const Rcpp::List info   = modelR["info"];
 
   auto comp_ll = [&](LMSModel& mod) -> double {
-    return completeLogLikFromModel(mod, V, TGamma, Mean, Cov,
-                                   colidx, n, d, npatterns); // single-threaded
+    return completeLogLikFromModel(
+        M, V, Pmat, TGamma,
+        Mean, Cov, colidx, n,
+        d, data, npatterns, 1L); // single threaded
   };
 
   return fdHessCpp(M, comp_ll, block, row, col, symmetric,

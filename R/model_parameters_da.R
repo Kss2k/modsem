@@ -33,6 +33,7 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
   gammaEta     <- as.vector(M$gammaEta)
   omegaXiXi    <- as.vector(M$omegaXiXi)
   omegaEtaXi   <- as.vector(M$omegaEtaXi)
+  thresholds   <- as.vector(M$thresholds)
 
   allModelValues <- c("lambdaX"      = lambdaX,
                       "lambdaY"      = lambdaY,
@@ -48,7 +49,8 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
                       "gammaXi"      = gammaXi,
                       "gammaEta"     = gammaEta,
                       "omegaXiXi"    = omegaXiXi,
-                      "omegaEtaXi"   = omegaEtaXi)
+                      "omegaEtaXi"   = omegaEtaXi,
+                      "thresholds"   = thresholds)
 
   lavLabelsMain <- createLavLabels(M, subset = is.na(allModelValues),
                                    etas = etas, parTable.in = parTable.in)
@@ -105,7 +107,7 @@ fillThetaIfStartNULL <- function(start,
 
   } else if (!is.null(lavlab)) {
     tryCatch({
-      OP <- "~~|=~|~1|~"
+      OP <- "~~|=~|~1|~|(\\|)"
       op <- stringr::str_extract(lavlab, pattern = OP)
       lr <- stringr::str_split_fixed(lavlab, pattern = OP, n = 2)
 
@@ -120,6 +122,11 @@ fillThetaIfStartNULL <- function(start,
       theta.filled[op == "~~" & lhs == rhs] <- var
       theta.filled[op == "~~" & lhs != rhs] <- cov
       theta.filled[is.na(theta.filled)]     <- reg
+
+      for (var in unique(lhs[op=="|"])) {
+        cond <- op=="|" & lhs==var
+        theta.filled[cond] <- seq(-2.5, 2.5, length.out = sum(cond))
+      }
 
       theta.filled
     }, error = \(e)
@@ -193,6 +200,7 @@ fillMainModel <- function(model, theta, thetaLabel, fillPhi = FALSE,
   M$gammaXi      <- fillNA_Matrix(M$gammaXi, theta = theta, pattern = "^gammaXi")
   M$omegaXiXi    <- fillNA_Matrix(M$omegaXiXi, theta = theta, pattern = "^omegaXiXi")
   M$omegaEtaXi   <- fillNA_Matrix(M$omegaEtaXi, theta = theta, pattern = "^omegaEtaXi")
+  M$thresholds   <- fillNA_Matrix(M$thresholds, theta = theta, pattern = "^thresholds")
 
   if (fillPhi) M$phi <- M$A %*% t(M$A)
   M
@@ -318,6 +326,7 @@ LMS_BLOCKS = list(
   gammaEta     = 11,
   omegaXiXi    = 12,
   omegaEtaXi   = 13,
+  thresholds   = 14,
   phi          = NA
 )
 
