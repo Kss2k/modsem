@@ -85,6 +85,18 @@ dmvnfast <- function(X, mu, sigma, log, ncores, isChol) {
     .Call(`_modsem_dmvnfast`, X, mu, sigma, log, ncores, isChol)
 }
 
+fcc_vec_arma <- function(xj, xk, mj, mk, Sjj, Skk, Sjk) {
+    .Call(`_modsem_fcc_vec_arma`, xj, xk, mj, mk, Sjj, Skk, Sjk)
+}
+
+foc_vec_arma <- function(xj, r, mj, mk, Sjj, Skk, Sjk, tau_k) {
+    .Call(`_modsem_foc_vec_arma`, xj, r, mj, mk, Sjj, Skk, Sjk, tau_k)
+}
+
+foo_vec_arma <- function(r, s, mj, mk, Sjj, Skk, Sjk, tau_j, tau_k) {
+    .Call(`_modsem_foo_vec_arma`, r, s, mj, mk, Sjj, Skk, Sjk, tau_j, tau_k)
+}
+
 tracePathsNumericCpp <- function(x, y, parTable, maxlen = 100L) {
     .Call(`_modsem_tracePathsNumericCpp`, x, y, parTable, maxlen)
 }

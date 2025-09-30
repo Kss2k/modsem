@@ -334,6 +334,60 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// fcc_vec_arma
+arma::vec fcc_vec_arma(const arma::vec& xj, const arma::vec& xk, const arma::vec& mj, const arma::vec& mk, const arma::vec& Sjj, const arma::vec& Skk, const arma::vec& Sjk);
+RcppExport SEXP _modsem_fcc_vec_arma(SEXP xjSEXP, SEXP xkSEXP, SEXP mjSEXP, SEXP mkSEXP, SEXP SjjSEXP, SEXP SkkSEXP, SEXP SjkSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::vec& >::type xj(xjSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type xk(xkSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type mj(mjSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type mk(mkSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type Sjj(SjjSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type Skk(SkkSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type Sjk(SjkSEXP);
+    rcpp_result_gen = Rcpp::wrap(fcc_vec_arma(xj, xk, mj, mk, Sjj, Skk, Sjk));
+    return rcpp_result_gen;
+END_RCPP
+}
+// foc_vec_arma
+arma::vec foc_vec_arma(const arma::vec& xj, const arma::uvec& r, const arma::vec& mj, const arma::vec& mk, const arma::vec& Sjj, const arma::vec& Skk, const arma::vec& Sjk, const arma::vec& tau_k);
+RcppExport SEXP _modsem_foc_vec_arma(SEXP xjSEXP, SEXP rSEXP, SEXP mjSEXP, SEXP mkSEXP, SEXP SjjSEXP, SEXP SkkSEXP, SEXP SjkSEXP, SEXP tau_kSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::vec& >::type xj(xjSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type r(rSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type mj(mjSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type mk(mkSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type Sjj(SjjSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type Skk(SkkSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type Sjk(SjkSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type tau_k(tau_kSEXP);
+    rcpp_result_gen = Rcpp::wrap(foc_vec_arma(xj, r, mj, mk, Sjj, Skk, Sjk, tau_k));
+    return rcpp_result_gen;
+END_RCPP
+}
+// foo_vec_arma
+arma::vec foo_vec_arma(const arma::uvec& r, const arma::uvec& s, const arma::vec& mj, const arma::vec& mk, const arma::vec& Sjj, const arma::vec& Skk, const arma::vec& Sjk, const arma::vec& tau_j, const arma::vec& tau_k);
+RcppExport SEXP _modsem_foo_vec_arma(SEXP rSEXP, SEXP sSEXP, SEXP mjSEXP, SEXP mkSEXP, SEXP SjjSEXP, SEXP SkkSEXP, SEXP SjkSEXP, SEXP tau_jSEXP, SEXP tau_kSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::uvec& >::type r(rSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type s(sSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type mj(mjSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type mk(mkSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type Sjj(SjjSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type Skk(SkkSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type Sjk(SjkSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type tau_j(tau_jSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type tau_k(tau_kSEXP);
+    rcpp_result_gen = Rcpp::wrap(foo_vec_arma(r, s, mj, mk, Sjj, Skk, Sjk, tau_j, tau_k));
+    return rcpp_result_gen;
+END_RCPP
+}
 // tracePathsNumericCpp
 Rcpp::NumericVector tracePathsNumericCpp(Rcpp::CharacterVector x, Rcpp::CharacterVector y, Rcpp::DataFrame parTable, int maxlen);
 RcppExport SEXP _modsem_tracePathsNumericCpp(SEXP xSEXP, SEXP ySEXP, SEXP parTableSEXP, SEXP maxlenSEXP) {
@@ -386,6 +440,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_modsem_rep_dmvnorm", (DL_FUNC) &_modsem_rep_dmvnorm, 5},
     {"_modsem_totalDmvnWeightedCpp", (DL_FUNC) &_modsem_totalDmvnWeightedCpp, 7},
     {"_modsem_dmvnfast", (DL_FUNC) &_modsem_dmvnfast, 6},
+    {"_modsem_fcc_vec_arma", (DL_FUNC) &_modsem_fcc_vec_arma, 7},
+    {"_modsem_foc_vec_arma", (DL_FUNC) &_modsem_foc_vec_arma, 8},
+    {"_modsem_foo_vec_arma", (DL_FUNC) &_modsem_foo_vec_arma, 9},
     {"_modsem_tracePathsNumericCpp", (DL_FUNC) &_modsem_tracePathsNumericCpp, 4},
     {"_modsem_tracePathsCharacterCpp", (DL_FUNC) &_modsem_tracePathsCharacterCpp, 5},
     {NULL, NULL, 0}
