@@ -53,17 +53,8 @@ estepLms <- function(model, theta, data, lastQuad = NULL, recalcQuad = FALSE,
   }
 
   density        <- rowSums(P)
-
-  # if (model$info$estimator == "pml") {
-  #   warning("F***ing with some stuff on line 58!")
-  #   ldensity <- log(density)
-  #   observedLogLik <- sum(ldensity[is.finite(ldensity)])
-  #   P <- P / density
-  #   P[TRUE] <- 1
-  # } else {
-    observedLogLik <- sum(log(density))
-    P              <- P / density
-  # }
+  observedLogLik <- sum(log(density))
+  P              <- P / density
 
   wMeans <- vector("list", length = length(w))
   wCovs  <- vector("list", length = length(w))
@@ -125,8 +116,21 @@ mstepLms <- function(theta, model, P, data,
                   epsilon = epsilon)
   }
 
-  warning("F***ing with some stuff on line 128!")
-  gradient <- NULL
+  gradient2 <- function(theta) {
+    theta0 <- theta
+    f0 <- objective(theta0)
+    eps <- 1e-4
+    grad <- numeric(length(theta0))
+    for (i in seq_along(theta0)) {
+      theta1 <- theta0
+      theta1[i] <- theta0[i] + eps
+      
+      f1 <- objective(theta1)
+      grad[i] <- (f1 - f0) / eps
+    }
+    grad
+  }
+
   if (optimizer == "nlminb") {
     if (is.null(control$iter.max)) control$iter.max <- max.step
     est <- stats::nlminb(start = theta, objective = objective,
@@ -395,6 +399,7 @@ densitySingleLms <- function(z, modFilled, data) {
         thr <- as.matrix(thr)
       }
 
+      probPMLr(z = z, modFilled = modFilled, data = data)
       out_log[offset:end] <-
         probPML(
           data        = as.matrix(Xid),
@@ -532,7 +537,7 @@ hessianCompLogLikLms <- function(theta, model, P, data, sign = -1,
 
   FHESS <- function(modelR, P, block, row, col, symmetric, eps, .relStep, colidxR,
                     n, d, npatterns, ncores) {
-    hessCompLogLikLmsCpp(modelR = modelR, P = P, block = block,
+    hessCompLogLikLmsCpp(modelR = modelR, dataR = data$data.split, P = P, block = block,
                          row = row, col = col, symmetric = symmetric,
                          colidxR = colidxR, n = n, d = d, relStep = .relStep,
                          npatterns = npatterns, minAbs = 0.0, ncores = ncores)
@@ -657,4 +662,47 @@ observedInfoFromLouisLms <- function(model,
   }
 
   list(I.obs = Iobs, I.com = Icom, I.mis = Imis, P = P)
+}
+
+
+probPMLr <- function(z, modFilled, data) {
+  M <- modFilled$matrices
+  T <- M$thresholds
+
+ 
+  X <- data$data.split[[1L]]
+  
+  n <-NROW(X)
+  p <- NCOL(X)
+  ldensity <- rep(0, n)
+  getlower <- \(t, i) sapply(t, \(ti) T[i, ti])
+  getupper <- \(t, i) sapply(t, \(ti) T[i, ti+1L])
+  PMVNORM <- function(lower.r, upper.r, lower.v, upper.v, mean, Sigma) {
+    lower <- cbind(lower.r, lower.v)
+    upper <- cbind(upper.r, upper.v)
+
+    log(vapply(
+      seq_along(lower.r), FUN.VALUE = numeric(1L), FUN = \(i)
+      mvtnorm::pmvnorm(lower=lower[i, ], upper=upper[i, ], mean = mean, sigma = Sigma)
+    ))
+  }
+  
+  mu    <- as.vector(muLmsCpp(model = modFilled, z = z))      # length p
+  Sigma <- sigmaLmsCpp(model = modFilled, z = z)   # p x p
+  for (i in seq_len(p)) for (j in seq_len(i - 1)) {
+    r <- as.integer(X[, i])
+    v <- as.integer(X[, j])
+    lower.r <- getlower(r, i)
+    lower.v <- getlower(v, j)
+    upper.r <- getupper(r, i)
+    upper.v <- getupper(v, j)
+
+    if (any(lower.r > upper.r)) browser()
+    ldensity_ij <- PMVNORM(lower.r, upper.r, lower.v, upper.v, mu[c(i, j)], Sigma[c(i, j), c(i, j)])
+    ldensity <- ldensity + ldensity_ij
+  }
+
+  ldensity2 <- probPML(cbind(r, v), mu = mu[c(i,j)],
+                       Sigma = Sigma[c(i,j), c(i,j)], isOrderedEnum = c(1, 2), thresholds = TAU))
+  ldensity
 }

@@ -74,6 +74,10 @@ specifyModelDA <- function(syntax = NULL,
   allIndsXis    <- unique(unlist(indsXis))
   numAllIndsXis <- length(allIndsXis)
 
+  # sort ordered
+  allInds <- c(allIndsXis, allIndsEtas)
+  ordered <- allInds[allInds %in% ordered]
+
   # clean data
   data.cleaned <- prepDataModsemDA(data, allIndsXis, allIndsEtas,
                                    missing = missing, cluster = cluster)

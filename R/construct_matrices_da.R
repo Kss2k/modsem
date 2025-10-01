@@ -685,7 +685,7 @@ constructThresholds <- function(ordered, parTable, data, method = "lms", estimat
 
   nm.t <- c("negInf", paste0("t", seq_len(max.k)), "posInf")
   pad <- \(x, val, l, h)
-   stats::setNames(c(l, x, rep(val, max.k - length(x)), h), nm = nm.t)
+   stats::setNames(c(l, x, h, rep(val, max.k - length(x))), nm = nm.t)
 
   numericMat <- do.call("rbind", lapply(numeric, FUN = pad, val = 0, l = -Inf, h = Inf))
   labelMat   <- do.call("rbind", lapply(label, FUN = pad, val = "", l = "", h = ""))

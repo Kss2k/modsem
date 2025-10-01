@@ -452,9 +452,10 @@ arma::vec gradLogLikLmsCpp(const Rcpp::List& modelR,
 
   auto comp_ll = [&](LMSModel& mod) -> double {
     return completeLogLikFromModel(
-        M, V, Pmat, TGamma,
+        mod, V, Pmat, TGamma,
         Mean, Cov, colidx, n,
-        d, data, npatterns, ncores);
+        d, data, npatterns, ncores
+    );
   };
 
   return gradientFD(M, comp_ll, block, row, col, symmetric, eps, ncores);
@@ -792,9 +793,10 @@ Rcpp::List hessCompLogLikLmsCpp(const Rcpp::List& modelR,
 
   auto comp_ll = [&](LMSModel& mod) -> double {
     return completeLogLikFromModel(
-        M, V, Pmat, TGamma,
+        mod, V, Pmat, TGamma,
         Mean, Cov, colidx, n,
-        d, data, npatterns, 1L); // single threaded
+        d, data, npatterns, 1L
+    ); // single threaded
   };
 
   return fdHessCpp(M, comp_ll, block, row, col, symmetric,

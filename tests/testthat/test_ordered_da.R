@@ -3,12 +3,12 @@ library(lavaan)
 
 m1 <- '
 # Outer Model
-  X =~ x1 + x2 + x3
-  Z =~ z1 + z2 + z3
-  Y =~ y1 + y2 + y3
+  X =~ x1 + x2 # + x3
+  Z =~ z1 + z2 # + z3
+  Y =~ y1 + y2 # + y3
 
 # Inner Model
-  Y ~ X + Z #+ X:Z
+  Y ~ X + Z # + X:Z
 '
 
 
@@ -42,8 +42,8 @@ cut_data <- function(data, k = 5, choose = NULL) {
 }
 
 set.seed(2837290)
-choose <- c("x1", "x2", "z1", "z2", "y1" , "y2")
-choose <- colnames(oneInt)
+ovs <- getOVs(modsemify(m1))
+choose <- intersect(colnames(oneInt), ovs)
 CUTS <- cut_data(oneInt, choose = choose)
 oneInt2 <- CUTS$data
 m2 <- '
@@ -66,11 +66,12 @@ m2 <- '
   y3 ~~ 0.090*y3                          
 '
 lms2 <- modsem(m1, oneInt2, method = "lms", ordered = choose, estimator = "PML",
-               optimize = TRUE)
+               optimize = TRUE, n.threads = 7)
 lms3 <- modsem(m1, oneInt2, method = "lms", ordered = choose, estimator = "PML",
                optimize = FALSE, start = lms2$theta, convergence.rel = 1e-17, n.threads = 5)
 lms4 <- modsem(m1, oneInt2, method = "lms", ordered = choose, estimator = "PML",
                optimize = FALSE, start = lms2$theta, convergence.rel = 1e-17, n.threads = 5)
+
 reOrder <- \(x) as.ordered(as.integer(x))
 oneInt3 <- oneInt2
 oneInt3[choose] <- lapply(oneInt2[choose], reOrder)
@@ -129,7 +130,7 @@ rho <- cor.m[2, 1]
 x <- 1
 y <- 1
 
-cov.xy / (sqrt(var.x) * sqrt(var.y))
+# cov.xy / (sqrt(var.x) * sqrt(var.y))
 sd.x <- sqrt(var.x)
 sd.y <- sqrt(var.y)
 lavaan:::pbinorm(lower.x = tau.x[1] / sd.x, upper.x = tau.x[2] / sd.x,
