@@ -349,16 +349,21 @@ inline double completeLogLikFromModelPML(
     const arma::vec z   = V.row(i).t();
     const arma::vec mu  = M.mu(z);
     const arma::mat Sig = M.Sigma(z);
+    
+    arma::vec probs = arma::zeros<arma::vec>(P.n_rows);
 
+    int offset = 0L;
     for (int j = 0; j < npatterns; j++) {
-      arma::vec probs = probPML_Fast(data[j],
-                                mu.elem(colidx[j]),
-                                Sig.submat(colidx[j], colidx[j]),
-                                M.isOrderedEnum,
-                                M.thr);
-      // weight pattern j for quadrature point i
-      ll += arma::sum(P(j,i) * probs);
+      const int end = offset + n[j] - 1L;
+      probs.subvec(offset, end) = probPML_Fast(data[j],
+          mu.elem(colidx[j]),
+          Sig.submat(colidx[j], colidx[j]),
+          M.isOrderedEnum,
+          M.thr);
+      offset = end + 1L;
     }
+      
+    ll += arma::sum(P.col(i) % probs);
   }
   return ll;
 }
