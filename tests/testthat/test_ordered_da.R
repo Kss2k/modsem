@@ -1,5 +1,5 @@
 devtools::load_all()
-
+library(lavaan)
 
 m1 <- '
 # Outer Model
@@ -8,7 +8,7 @@ m1 <- '
   Y =~ y1 + y2 + y3
 
 # Inner Model
-  Y ~ X + Z + X:Z
+  Y ~ X + Z #+ X:Z
 '
 
 
@@ -41,6 +41,38 @@ cut_data <- function(data, k = 5, choose = NULL) {
   list(data = data, thresholds = thresholds)
 }
 
+choose <- colnames(oneInt)
+CUTS <- cut_data(oneInt, choose = choose)
+oneInt2 <- CUTS$data
+m2 <- '
+# Outer Model
+  X =~ x1 + x2 + x3
+  Z =~ z1 + z2 + z3
+  Y =~ y1 + y2 + y3
+
+# Inner Model
+  Y ~ X + Z #+ X:Z
+
+  x1 ~~ 0.128*x1
+  x2 ~~ 0.209*x2
+  x3 ~~ 0.187*x3                          
+  z1 ~~ 0.134*z1                          
+  z2 ~~ 0.191*z2                          
+  z3 ~~ 0.169*z3                          
+  y1 ~~ 0.049*y1                          
+  y2 ~~ 0.085*y2                          
+  y3 ~~ 0.090*y3                          
+'
+lms2 <- modsem(m1, oneInt2, method = "lms", ordered = choose, estimator = "PML",
+               optimize = TRUE, convergence.rel = 1e-17)
+lms3 <- modsem(m1, oneInt2, method = "lms", ordered = choose, estimator = "PML",
+               optimize = FALSE, start = lms2$theta, convergence.rel = 1e-17, n.threads = 5)
+reOrder <- \(x) as.ordered(as.integer(x))
+oneInt3 <- oneInt2
+oneInt3[choose] <- lapply(oneInt2[choose], reOrder)
+fit_lav <- sem(m1, oneInt3, estimator = "PML")
+#   lms1 <- modsem(m1, oneInt2, method = "lms", ordered = choose,
+#                  ordered.iter = 75, ordered.warmup = 20)
 
 
 CHOOSE <- list(c("x1", "x2", "z1", "y1"),
@@ -50,8 +82,10 @@ for (choose in CHOOSE) {
   set.seed(2837290)
   CUTS <- cut_data(oneInt, choose = choose)
   oneInt2 <- CUTS$data
-  lms1 <- modsem(m1, oneInt2, method = "lms", ordered = choose,
-                 ordered.iter = 75, ordered.warmup = 20)
+  lms1 <- modsem(m1, oneInt2, method = "lms", ordered = choose, estimator = "PML",
+                 optimize = TRUE)
+#   ,
+#                  ordered.iter = 75, ordered.warmup = 20)
   thresholds <- CUTS$thresholds
 
 
@@ -76,3 +110,26 @@ for (choose in CHOOSE) {
   print(modsemParTable(thresholds.table))
   testthat::expect_true(sum(thresholds.table$ok) / NROW(thresholds.table) >= 0.95) # 95% confidence
 }
+
+# Compare internals
+tau.x <- c(-1.5, -0.8)
+tau.y <- c(-0.9, 0.1)
+
+
+var.x <- 1.2
+var.y <- 1.4
+cov.xy <- 0.8
+cov.m <- matrix(c(var.x, cov.xy, cov.xy, var.y), nrow=2)
+cor.m <- cov2cor(cov.m)
+rho <- cor.m[2, 1]
+x <- 1
+y <- 1
+
+
+lavaan:::pbinorm(lower.x = tau.x[1], upper.x = tau.x[2],
+                 lower.y = tau.y[1], upper.y = tau.y[2],
+                 rho = rho)
+
+X <- matrix(c(x, y), nrow = 1, ncol = 2)
+TAU <- matrix(c(tau.x, tau.y), nrow = 2, byrow = TRUE)
+exp(probPML(X, mu = c(0, 0), Sigma = cov.m, isOrderedEnum = c(1, 2), thresholds = TAU))

@@ -153,30 +153,30 @@ mstepLms <- function(theta, model, P, data,
 
 
 compLogLikLms <- function(theta, model, P, data, sign = -1, ...) {
-  # tryCatch({
+  tryCatch({
     modFilled <- fillModel(model = model, theta = theta, method = "lms")
     sign * completeLogLikLmsCpp(modelR=modFilled, dataR = data$data.split, P=P, quad=P$quad,
                                 colidxR = data$colidx0, n = data$n.pattern,
                                 d = data$d.pattern, npatterns = data$p)
-  # }, error = \(e) NA)
+  }, error = \(e) NA)
 }
 
 
 gradientCompLogLikLms <- function(theta, model, P, data, sign = -1, epsilon = 1e-6) {
   FGRAD <- function(modelR, P, block, row, col, symmetric, colidxR, npatterns,
                     eps, ncores, n, ...) {
-    gradLogLikLmsCpp(modelR = modelR, dataR = dataR, P = P, 
+    gradLogLikLmsCpp(modelR = modelR, dataR = data$data.split, P = P, 
                      block = block, row = row, col = col,
                      symmetric = symmetric, colidxR = colidxR,
                      n = n,
-                     d = d,
+                     d = data$d.pattern,
                      npatterns = npatterns,
                      eps = eps,
-                     ncores = ncores);
+                     ncores = ncores)
   }
 
   gradientAllLogLikLms(theta = theta, model = model, P = P, sign = sign, data = data,
-                       epsilon = epsilon, FGRAD = gradLogLikLmsCpp, FOBJECTIVE = compLogLikLms)
+                       epsilon = epsilon, FGRAD = FGRAD, FOBJECTIVE = compLogLikLms)
 }
 
 

@@ -138,7 +138,8 @@ emLms <- function(model,
         tryCatch({
           gradientCompLogLikLms(theta = thetaNew, model = model, P = P, data = data)
         }, error = \(e) {
-          warning2("Optimized computation of gradient failed! Switching gradient type.")
+          warning2("Optimized computation of gradient failed! Switching gradient type.\n",
+                   "Message:\n", conditionMessage(e))
           model$gradientStruct$hasCovModel <<- TRUE
           model$gradientStruct$isNonLinear <<- TRUE
         })

@@ -442,7 +442,7 @@ arma::vec gradLogLikLmsCpp(const Rcpp::List& modelR,
   LMSModel M(modelR);
 
   const arma::mat V       = Rcpp::as<arma::mat>(P["V"]);
-  const arma::mat Pmat    = Rcpp::as<arma::mat>(P["Pmat"]);
+  const arma::mat Pmat    = Rcpp::as<arma::mat>(P["P"]);
   const auto      TGamma  = as_vec_of_vec(P["tgamma"]);
   const auto      Mean    = as_vec_of_vec_of_vec(P["mean"]);
   const auto      Cov     = as_vec_of_vec_of_mat(P["cov"]);
@@ -781,7 +781,7 @@ Rcpp::List hessCompLogLikLmsCpp(const Rcpp::List& modelR,
   LMSModel M(modelR);
 
   const arma::mat  V       = Rcpp::as<arma::mat>(P["V"]);
-  const arma::mat  Pmat    = Rcpp::as<arma::mat>(P["Pmat"]);
+  const arma::mat  Pmat    = Rcpp::as<arma::mat>(P["P"]);
   const auto       TGamma  = as_vec_of_vec(P["tgamma"]);
   const auto       Mean    = as_vec_of_vec_of_vec(P["mean"]);
   const auto       Cov     = as_vec_of_vec_of_mat(P["cov"]);

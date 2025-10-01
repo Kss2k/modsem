@@ -179,6 +179,13 @@ static inline double foo_scalar(unsigned r, unsigned s,
   double aj_hi = (tau_j[r]   - mj) / sdj;
   double ak_lo = (tau_k[s-1] - mk) / sdk;
   double ak_hi = (tau_k[s]   - mk) / sdk;
+  
+  // if (r == 1) {
+  //   Rcpp::Rcout << "r = 1, aj_lo = " << aj_lo << "aj_hi = " << aj_hi << "\n";
+  // }
+  // if (r == 6) {
+  //   Rcpp::Rcout << "r = 6, aj_lo = " << aj_lo << "aj_hi = " << aj_hi << "\n";
+  // }
 
   double F_hh = Phi2(aj_hi, ak_hi, rho);
   double F_lh = Phi2(aj_lo, ak_hi, rho);

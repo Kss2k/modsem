@@ -671,7 +671,7 @@ constructThresholds <- function(ordered, parTable, data, method = "lms", estimat
 
   max.k <- 0L
   for (col in ordered) {
-    k   <- length(unique(data[, col]))
+    k   <- length(unique(data[, col])) - 1L
     tau <- matrix(NA, nrow = k, ncol = 1)
 
     if (k > max.k) max.k <- k
@@ -679,14 +679,16 @@ constructThresholds <- function(ordered, parTable, data, method = "lms", estimat
     TAU <- setMatrixConstraints(X = tau, parTable = parTable, op = "|",
                                 RHS = RHS, LHS = ordered, type = "lhs",
                                 nonFreeParams = FALSE)
-    numeric[[col]] <- as.vector(TAU$numeric) 
-    label[[col]]   <- as.vector(TAU$label) 
+    numeric[[col]] <- as.vector(TAU$numeric)
+    label[[col]]   <- as.vector(TAU$label)
   }
 
-  nm.t <- paste0("t", seq_len(max.k))
-  pad <- \(x, val) stats::setNames(c(x, rep(val, max.k - length(x))), nm = nm.t)
-  numericMat <- do.call("rbind", lapply(numeric, FUN = pad, val = 0))
-  labelMat   <- do.call("rbind", lapply(label, FUN = pad, val = ""))
+  nm.t <- c("negInf", paste0("t", seq_len(max.k)), "posInf")
+  pad <- \(x, val, l, h)
+   stats::setNames(c(l, x, rep(val, max.k - length(x)), h), nm = nm.t)
+
+  numericMat <- do.call("rbind", lapply(numeric, FUN = pad, val = 0, l = -Inf, h = Inf))
+  labelMat   <- do.call("rbind", lapply(label, FUN = pad, val = "", l = "", h = ""))
 
   list(numeric = numericMat, label = labelMat)
 }
