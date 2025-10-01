@@ -66,7 +66,7 @@ m2 <- '
   y3 ~~ 0.090*y3                          
 '
 lms2 <- modsem(m1, oneInt2, method = "lms", ordered = choose, estimator = "PML",
-               optimize = TRUE, n.threads = 7)
+               optimize = TRUE, n.threads = 7, cov.syntax = "")
 lms3 <- modsem(m1, oneInt2, method = "lms", ordered = choose, estimator = "PML",
                optimize = FALSE, start = lms2$theta, convergence.rel = 1e-17, n.threads = 5)
 lms4 <- modsem(m1, oneInt2, method = "lms", ordered = choose, estimator = "PML",
@@ -117,8 +117,8 @@ for (choose in CHOOSE) {
 }
 
 # Compare internals
-tau.x <- c(-1.5, -0.8)
-tau.y <- c(-0.9, 0.1)
+tau.x <- c(-100, -1.5, -0.8)
+tau.y <- c(-100, -0.9, 0.1)
 
 
 var.x <- 1.2

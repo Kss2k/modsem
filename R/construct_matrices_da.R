@@ -687,7 +687,10 @@ constructThresholds <- function(ordered, parTable, data, method = "lms", estimat
   pad <- \(x, val, l, h)
    stats::setNames(c(l, x, h, rep(val, max.k - length(x))), nm = nm.t)
 
-  numericMat <- do.call("rbind", lapply(numeric, FUN = pad, val = 0, l = -Inf, h = Inf))
+  ninf <- -sqrt(.Machine$double.xmax) # Using actuall (+/-) Inf doesn't work well with Fortran
+  pinf <-  sqrt(.Machine$double.xmax)
+
+  numericMat <- do.call("rbind", lapply(numeric, FUN = pad, val = 0, l = ninf, h = pinf))
   labelMat   <- do.call("rbind", lapply(label, FUN = pad, val = "", l = "", h = ""))
 
   list(numeric = numericMat, label = labelMat)

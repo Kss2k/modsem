@@ -349,7 +349,6 @@ densityLms <- function(z, modFilled, data) {
 
 
 densitySingleLms <- function(z, modFilled, data) {
-  # NOTE: we read the same field name you used previously (‘info’).
   estimator <- tolower(modFilled$info$estimator)
 
   mu    <- muLmsCpp(model = modFilled, z = z)      # length p
@@ -373,7 +372,7 @@ densitySingleLms <- function(z, modFilled, data) {
           Xid,
           mean  = mu[colidx],
           sigma = Sigma[colidx, colidx, drop = FALSE],
-          log   = TRUE
+          log   = FALSE
         )
 
     } else if (estimator == "pml") {
@@ -383,31 +382,14 @@ densitySingleLms <- function(z, modFilled, data) {
       # - thresholds:    matrix; rows aligned with those indices
       isOrd <- as.integer(modFilled$info$isOrderedEnum[colidx])
 
-      # thresholds may be stored as a list; coerce to a numeric matrix with rows aligned
-      thr <- modFilled$matrices$thresholds
-      if (is.list(thr)) {
-        # Build a ragged-to-matrix map: pack each cutpoint vector in a row,
-        # padding with NA at the right — probPML only uses finite entries.
-        maxK <- max(vapply(thr, length, 1L))
-        thrM <- matrix(NA_real_, nrow = length(thr), ncol = maxK)
-        for (r in seq_along(thr)) {
-          kr <- length(thr[[r]])
-          if (kr > 0) thrM[r, seq_len(kr)] <- thr[[r]]
-        }
-        thr <- thrM
-      } else {
-        thr <- as.matrix(thr)
-      }
-
-      probPMLr(z = z, modFilled = modFilled, data = data)
       out_log[offset:end] <-
-        probPML(
-          data        = as.matrix(Xid),
-          mu          = mu[colidx],
-          Sigma       = Sigma[colidx, colidx, drop = FALSE],
+        exp(probPML(
+          data          = as.matrix(Xid),
+          mu            = mu[colidx],
+          Sigma         = Sigma[colidx, colidx, drop = FALSE],
           isOrderedEnum = isOrd,
-          thresholds    = thr
-        )
+          thresholds    = modFilled$matrices$thresholds
+        ))
 
     } else {
       stop("Unknown estimator '", estimator, "'. Expected 'ml' or 'pml'.")
@@ -702,7 +684,10 @@ probPMLr <- function(z, modFilled, data) {
     ldensity <- ldensity + ldensity_ij
   }
 
-  ldensity2 <- probPML(cbind(r, v), mu = mu[c(i,j)],
-                       Sigma = Sigma[c(i,j), c(i,j)], isOrderedEnum = c(1, 2), thresholds = TAU))
+  ldensity_ij2 <- probPML(cbind(r, v), mu = mu[c(i,j)],
+                          Sigma = Sigma[c(i,j), c(i,j)], isOrderedEnum = c(i, j), thresholds = T)
+  ldensity2 <- probPML(as.matrix(X), mu = mu, Sigma = Sigma, isOrderedEnum = modFilled$info$isOrderedEnum,
+                       thresholds = T)
+
   ldensity
 }
