@@ -161,7 +161,7 @@ emLms <- function(model,
 
       if (iterations >= max.iter || converged.em) break
 
-      if (deltaLL < -1e-8) {
+      if (deltaLL < -1e-8 && model$info$estimator != "pml") {
         if (verbose) cat("\n")
         warning2(sprintf("Loglikelihood decreased by %.2g", deltaLL))
       }

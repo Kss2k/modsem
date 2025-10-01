@@ -351,7 +351,7 @@ inline double completeLogLikFromModelPML(
     const arma::mat Sig = M.Sigma(z);
 
     for (int j = 0; j < npatterns; j++) {
-      arma::vec probs = probPML(data[j],
+      arma::vec probs = probPML_Fast(data[j],
                                 mu.elem(colidx[j]),
                                 Sig.submat(colidx[j], colidx[j]),
                                 M.isOrderedEnum,
@@ -526,7 +526,7 @@ inline double observedLogLikFromModelPML(
       const int end = offset + n[j] - 1L;
 
       density.subvec(offset, end) +=
-        arma::exp(probPML(data[j],
+        arma::exp(probPML_Fast(data[j],
               mu.elem(colidx[j]),
               Sig.submat(colidx[j], colidx[j]),
               M.isOrderedEnum,

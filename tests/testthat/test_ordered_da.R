@@ -8,7 +8,7 @@ m1 <- '
   Y =~ y1 + y2 # + y3
 
 # Inner Model
-  Y ~ X + Z # + X:Z
+  Y ~ X + Z + X:Z
 '
 
 
@@ -46,39 +46,9 @@ ovs <- getOVs(modsemify(m1))
 choose <- intersect(colnames(oneInt), ovs)
 CUTS <- cut_data(oneInt, choose = choose)
 oneInt2 <- CUTS$data
-m2 <- '
-# Outer Model
-  X =~ x1 + x2 + x3
-  Z =~ z1 + z2 + z3
-  Y =~ y1 + y2 + y3
-
-# Inner Model
-  Y ~ X + Z #+ X:Z
-
-  x1 ~~ 0.128*x1
-  x2 ~~ 0.209*x2
-  x3 ~~ 0.187*x3                          
-  z1 ~~ 0.134*z1                          
-  z2 ~~ 0.191*z2                          
-  z3 ~~ 0.169*z3                          
-  y1 ~~ 0.049*y1                          
-  y2 ~~ 0.085*y2                          
-  y3 ~~ 0.090*y3                          
-'
 lms2 <- modsem(m1, oneInt2, method = "lms", ordered = choose, estimator = "PML",
-               optimize = TRUE, n.threads = 7, cov.syntax = "")
-lms3 <- modsem(m1, oneInt2, method = "lms", ordered = choose, estimator = "PML",
-               optimize = FALSE, start = lms2$theta, convergence.rel = 1e-17, n.threads = 5)
-lms4 <- modsem(m1, oneInt2, method = "lms", ordered = choose, estimator = "PML",
-               optimize = FALSE, start = lms2$theta, convergence.rel = 1e-17, n.threads = 5)
-
-reOrder <- \(x) as.ordered(as.integer(x))
-oneInt3 <- oneInt2
-oneInt3[choose] <- lapply(oneInt2[choose], reOrder)
-fit_lav <- sem(m1, oneInt3, estimator = "PML")
-#   lms1 <- modsem(m1, oneInt2, method = "lms", ordered = choose,
-#                  ordered.iter = 75, ordered.warmup = 20)
-
+               optimize = TRUE, n.threads = 7, robust.se = TRUE,
+               adaptive.quad = TRUE, nodes = 16, adaptive.frequency = 20)
 
 CHOOSE <- list(c("x1", "x2", "z1", "y1"),
                colnames(oneInt))
@@ -117,8 +87,8 @@ for (choose in CHOOSE) {
 }
 
 # Compare internals
-tau.x <- c(-100, -1.5, -0.8)
-tau.y <- c(-100, -0.9, 0.1)
+TAU.X <- c(-100, -1.5, -0.8)
+TAU.Y <- c(-100, -0.9, 0.1)
 
 
 var.x <- 1.2
@@ -127,8 +97,11 @@ cov.xy <- 0.8
 cov.m <- matrix(c(var.x, cov.xy, cov.xy, var.y), nrow=2)
 cor.m <- cov2cor(cov.m)
 rho <- cor.m[2, 1]
-x <- 1
-y <- 1
+x <- 2
+y <- 2
+
+tau.x <- TAU.X[x:(x+1L)]
+tau.y <- TAU.Y[y:(y+1L)]
 
 # cov.xy / (sqrt(var.x) * sqrt(var.y))
 sd.x <- sqrt(var.x)
@@ -137,6 +110,11 @@ lavaan:::pbinorm(lower.x = tau.x[1] / sd.x, upper.x = tau.x[2] / sd.x,
                  lower.y = tau.y[1] / sd.y, upper.y = tau.y[2] / sd.y,
                  rho = rho)
 
-X <- matrix(c(x, y), nrow = 1, ncol = 2)
+X <- matrix(c(1, 1), nrow = 1, ncol = 2)
 TAU <- matrix(c(tau.x, tau.y), nrow = 2, byrow = TRUE)
-exp(probPML(X, mu = c(0, 0), Sigma = cov.m, isOrderedEnum = c(1, 2), thresholds = TAU))
+
+c<-1.4
+exp(probPML(X, mu = c(0, 0)+c, Sigma = cov.m, isOrderedEnum = c(1, 2), thresholds = TAU))
+exp(probPML_Fast(X, mu = c(0, 0), Sigma = cov.m, isOrderedEnum = c(1, 2), thresholds = TAU))
+
+

@@ -407,6 +407,23 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// probPML_Fast
+arma::vec probPML_Fast(const arma::mat& data, const arma::vec& mu, const arma::mat& Sigma, const arma::uvec& isOrderedEnum, const arma::mat& thresholds, const double rho_zero_tol, const double rho_small);
+RcppExport SEXP _modsem_probPML_Fast(SEXP dataSEXP, SEXP muSEXP, SEXP SigmaSEXP, SEXP isOrderedEnumSEXP, SEXP thresholdsSEXP, SEXP rho_zero_tolSEXP, SEXP rho_smallSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::mat& >::type data(dataSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type mu(muSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type Sigma(SigmaSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type isOrderedEnum(isOrderedEnumSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type thresholds(thresholdsSEXP);
+    Rcpp::traits::input_parameter< const double >::type rho_zero_tol(rho_zero_tolSEXP);
+    Rcpp::traits::input_parameter< const double >::type rho_small(rho_smallSEXP);
+    rcpp_result_gen = Rcpp::wrap(probPML_Fast(data, mu, Sigma, isOrderedEnum, thresholds, rho_zero_tol, rho_small));
+    return rcpp_result_gen;
+END_RCPP
+}
 // tracePathsNumericCpp
 Rcpp::NumericVector tracePathsNumericCpp(Rcpp::CharacterVector x, Rcpp::CharacterVector y, Rcpp::DataFrame parTable, int maxlen);
 RcppExport SEXP _modsem_tracePathsNumericCpp(SEXP xSEXP, SEXP ySEXP, SEXP parTableSEXP, SEXP maxlenSEXP) {
@@ -463,6 +480,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_modsem_foc_vec_arma", (DL_FUNC) &_modsem_foc_vec_arma, 8},
     {"_modsem_foo_vec_arma", (DL_FUNC) &_modsem_foo_vec_arma, 9},
     {"_modsem_probPML", (DL_FUNC) &_modsem_probPML, 5},
+    {"_modsem_probPML_Fast", (DL_FUNC) &_modsem_probPML_Fast, 7},
     {"_modsem_tracePathsNumericCpp", (DL_FUNC) &_modsem_tracePathsNumericCpp, 4},
     {"_modsem_tracePathsCharacterCpp", (DL_FUNC) &_modsem_tracePathsCharacterCpp, 5},
     {NULL, NULL, 0}

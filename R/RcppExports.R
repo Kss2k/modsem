@@ -101,6 +101,10 @@ probPML <- function(data, mu, Sigma, isOrderedEnum, thresholds) {
     .Call(`_modsem_probPML`, data, mu, Sigma, isOrderedEnum, thresholds)
 }
 
+probPML_Fast <- function(data, mu, Sigma, isOrderedEnum, thresholds, rho_zero_tol = 0.0, rho_small = 0.30) {
+    .Call(`_modsem_probPML_Fast`, data, mu, Sigma, isOrderedEnum, thresholds, rho_zero_tol, rho_small)
+}
+
 tracePathsNumericCpp <- function(x, y, parTable, maxlen = 100L) {
     .Call(`_modsem_tracePathsNumericCpp`, x, y, parTable, maxlen)
 }

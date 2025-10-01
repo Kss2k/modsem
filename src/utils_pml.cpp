@@ -331,4 +331,278 @@ arma::vec probPML(
 }
 
 
+// ===================== FAST PML BLOCK (append-only) =====================
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
+// ---- vectorized Φ for arma::vec ----
+static inline arma::vec Phi_vec(const arma::vec& x){
+  arma::vec y = x;
+  y.transform([](double v){
+    return 0.5 * std::erfc(-v / std::sqrt(2.0));
+  });
+  return y;
+}
+
+// ---- standard normal pdf φ (scalar) ----
+static inline double phi_scalar(double z){
+  static const double INV_SQRT2PI = 0.39894228040143267794;
+  return INV_SQRT2PI * std::exp(-0.5 * z * z);
+}
+
+// ---- small-|rho| approx: Φ2(a,b;ρ) ≈ Φ(a)Φ(b) + ρ φ(a)φ(b) ----
+static inline double Phi2_small_rho(double a, double b, double rho){
+#if defined(__cpp_lib_fma) || (defined(__GNUC__) && !defined(__clang__))
+  return std::fma(rho, phi_scalar(a) * phi_scalar(b),
+                  0.5 * std::erfc(-a / std::sqrt(2.0)) *
+                  0.5 * std::erfc(-b / std::sqrt(2.0)));
+#else
+  return (0.5 * std::erfc(-a / std::sqrt(2.0))) *
+         (0.5 * std::erfc(-b / std::sqrt(2.0))) +
+         rho * phi_scalar(a) * phi_scalar(b);
+#endif
+}
+
+// ---- vectorized safe log (keeps log well-defined) ----
+static inline arma::vec safe_log_fast(const arma::vec& v, double eps = 1e-300){
+  arma::vec out(v.n_elem);
+  out.fill(std::log(eps));
+  arma::uvec ok = arma::find(v > 0.0);     // (NaN, <=0) -> log(eps)
+  if (!ok.is_empty()) out.elem(ok) = arma::log(v.elem(ok));
+  return out;
+}
+
+// ---- OO rectangle prob with fast paths (ρ=0, small |ρ|), fallback to pbivnorm ----
+// Inputs are *standardized* bounds: a_lo = (τ_j[r-1]-m_j)/sd_j, etc.
+// rho_zero_tol = 0.0 uses exact independence for ρ==0 (your design).
+static arma::vec rect_prob_OO_fast(
+    const arma::vec& a_lo, const arma::vec& a_hi,
+    const arma::vec& b_lo, const arma::vec& b_hi,
+    const double rho,
+    const double rho_zero_tol = 0.0,
+    const double rho_small    = 0.30
+){
+  const arma::uword N = a_lo.n_elem;
+  arma::vec out(N, arma::fill::zeros);
+
+  const double ar = std::fabs(rho);
+
+  // ρ = 0 (or effectively 0) -> product of univariate interval probs
+  if (ar <= rho_zero_tol){
+    arma::vec Aj = Phi_vec(a_hi) - Phi_vec(a_lo);
+    arma::vec Bk = Phi_vec(b_hi) - Phi_vec(b_lo);
+    out = Aj % Bk;
+    out.elem(arma::find_nonfinite(out)).zeros();
+    out = arma::clamp(out, 0.0, 1.0);
+    return out;
+  }
+
+  // Small |ρ| -> 1st-order inclusion–exclusion on corners
+  if (ar <= rho_small){
+    arma::vec F_hh(N), F_lh(N), F_hl(N), F_ll(N);
+    for (arma::uword t=0; t<N; ++t){
+      F_hh[t] = Phi2_small_rho(a_hi[t], b_hi[t], rho);
+      F_lh[t] = Phi2_small_rho(a_lo[t], b_hi[t], rho);
+      F_hl[t] = Phi2_small_rho(a_hi[t], b_lo[t], rho);
+      F_ll[t] = Phi2_small_rho(a_lo[t], b_lo[t], rho);
+    }
+    out = F_hh - F_lh - F_hl + F_ll;
+    out.elem(arma::find_nonfinite(out)).zeros();
+    out = arma::clamp(out, 0.0, 1.0);
+    return out;
+  }
+
+  // Fallback: accurate batched call via pbivnorm (like foo_vec_arma)
+  const int len = static_cast<int>(4 * N);
+  std::vector<double> UPA(len), UPB(len), COR(len), PROB(len, 0.0);
+
+  for (arma::uword t = 0; t < N; ++t){
+    // (hh, lh, hl, ll)
+    UPA[4*t+0] = a_hi[t]; UPB[4*t+0] = b_hi[t]; COR[4*t+0] = rho;
+    UPA[4*t+1] = a_lo[t]; UPB[4*t+1] = b_hi[t]; COR[4*t+1] = rho;
+    UPA[4*t+2] = a_hi[t]; UPB[4*t+2] = b_lo[t]; COR[4*t+2] = rho;
+    UPA[4*t+3] = a_lo[t]; UPB[4*t+3] = b_lo[t]; COR[4*t+3] = rho;
+  }
+
+  double LOWER[2] = {0.0, 0.0};
+  int    INFIN[2] = {0, 0};
+  int    LEN      = len;
+  F77_NAME(pbivnorm)(PROB.data(), LOWER, UPA.data(), UPB.data(), INFIN, COR.data(), &LEN);
+
+  for (arma::uword t = 0; t < N; ++t){
+    double val = PROB[4*t+0] - PROB[4*t+1] - PROB[4*t+2] + PROB[4*t+3];
+    if (!std::isfinite(val)) val = 0.0;
+    if (val < 0.0) val = 0.0;
+    if (val > 1.0) val = 1.0;
+    out[t] = val;
+  }
+  return out;
+}
+
+// ---- New fast composite log-likelihood entry point ----
+// [[Rcpp::export]]
+arma::vec probPML_Fast(
+    const arma::mat& data,                 // (N x P)
+    const arma::vec& mu,                   // length P
+    const arma::mat& Sigma,                // (P x P)
+    const arma::uvec& isOrderedEnum,       // length P; 0=cont, >0 = 1-based row index into thresholds
+    const arma::mat& thresholds,           // rows index by isOrderedEnum>0; columns are inner cuts
+    const double rho_zero_tol = 0.0,       // treat exactly-zero correlations as independent
+    const double rho_small    = 0.30       // small-|rho| region for OO fast approx
+){
+  const arma::uword N = data.n_rows;
+  const arma::uword P = data.n_cols;
+
+  arma::vec out_log(N, arma::fill::zeros);
+
+  // Split columns once
+  std::vector<arma::vec>  ccols(P); // continuous cols (double)
+  std::vector<arma::uvec> ocols(P); // ordinal cols (1..K indices)
+  for (arma::uword j = 0; j < P; ++j) {
+    if (isOrderedEnum[j]) {
+      ocols[j] = arma::conv_to<arma::uvec>::from(data.col(j));
+    } else {
+      ccols[j] = data.col(j);
+    }
+  }
+
+  // Pairwise accumulation
+  for (arma::uword j = 1; j < P; ++j) {
+    const bool oj = (isOrderedEnum[j] != 0u);
+    const double mj = mu[j];
+    const double Sjj = Sigma(j,j);
+
+    for (arma::uword i = 0; i < j; ++i) {
+      const bool oi = (isOrderedEnum[i] != 0u);
+
+      const double mi  = mu[i];
+      const double Sii = Sigma(i,i);
+      const double Sij = Sigma(i,j);
+
+      arma::vec term_prob(N, arma::fill::zeros);
+
+      if (oi && oj) {
+        // ---- Ordinal-Ordinal ----
+        const arma::uvec& r = ocols[i];
+        const arma::uvec& s = ocols[j];
+
+        const arma::vec tau_i = thresholds.row(isOrderedEnum[i]-1).t();
+        const arma::vec tau_j = thresholds.row(isOrderedEnum[j]-1).t();
+
+        const double sd_i = std::sqrt(Sii);
+        const double sd_j = std::sqrt(Sjj);
+        double rho = Sij / (sd_i * sd_j);
+        if (!std::isfinite(rho)) rho = 0.0;
+        if (rho >  1.0 - 1e-12) rho =  1.0 - 1e-12;
+        if (rho < -1.0 + 1e-12) rho = -1.0 + 1e-12;
+
+        arma::vec a_lo(N), a_hi(N), b_lo(N), b_hi(N);
+        a_lo.fill(0.0); a_hi.fill(0.0);
+        b_lo.fill(0.0); b_hi.fill(0.0);
+
+        for (arma::uword t = 0; t < N; ++t){
+          unsigned rr = r[t], ss = s[t];
+          if (rr == 0u || rr >= tau_i.n_elem || ss == 0u || ss >= tau_j.n_elem) {
+            // invalid categories -> probability 0; keep zeros
+            continue;
+          }
+          a_lo[t] = (tau_i[rr-1] - mi) / sd_i;
+          a_hi[t] = (tau_i[rr]   - mi) / sd_i;
+          b_lo[t] = (tau_j[ss-1] - mj) / sd_j;
+          b_hi[t] = (tau_j[ss]   - mj) / sd_j;
+        }
+
+        term_prob = rect_prob_OO_fast(a_lo, a_hi, b_lo, b_hi, rho, rho_zero_tol, rho_small);
+      }
+      else if (oi && !oj) {
+        // ---- Ordinal-Continuous (OC) ----
+        const arma::uvec& r  = ocols[i];
+        const arma::vec&  xj = ccols[j];
+        const arma::vec tau_i = thresholds.row(isOrderedEnum[i]-1).t();
+
+        // Independence if |Sij| ~ 0
+        if (std::fabs(Sij) <= rho_zero_tol * std::sqrt(Sii * Sjj)) {
+          const double sdi = std::sqrt(Sii);
+          const double sdj = std::sqrt(Sjj);
+          arma::vec pr(N, arma::fill::zeros);
+          for (arma::uword t=0; t<N; ++t){
+            unsigned rr = r[t];
+            if (rr == 0u || rr >= tau_i.n_elem) { pr[t] = 0.0; continue; }
+            double up = (tau_i[rr]   - mi) / sdi;
+            double lo = (tau_i[rr-1] - mi) / sdi;
+            double pv = 0.5 * std::erfc(-up / std::sqrt(2.0)) - 0.5 * std::erfc(-lo / std::sqrt(2.0));
+            pr[t] = (pv > 0.0 ? pv : 0.0);
+          }
+          arma::vec dx = (xj - mj) / sdj;
+          arma::vec dens_xj = (1.0 / std::sqrt(2.0 * M_PI)) * arma::exp(-0.5 * arma::square(dx)) / sdj;
+          term_prob = pr % dens_xj;
+        } else {
+          // fall back to your optimized kernel
+          arma::vec mjv(1); mjv[0] = mj;
+          arma::vec miv(1); miv[0] = mi;
+          arma::vec Sjjv(1); Sjjv[0] = Sjj;
+          arma::vec Siiv(1); Siiv[0] = Sii;
+          arma::vec Sijv(1); Sijv[0] = Sij;
+          term_prob = foc_vec_arma(xj, r, mjv, miv, Sjjv, Siiv, Sijv, tau_i);
+        }
+      }
+      else if (!oi && oj) {
+        // ---- Continuous-Ordinal (CO) ----
+        const arma::vec&  xi = ccols[i];
+        const arma::uvec& s  = ocols[j];
+        const arma::vec tau_j = thresholds.row(isOrderedEnum[j]-1).t();
+
+        if (std::fabs(Sij) <= rho_zero_tol * std::sqrt(Sii * Sjj)) {
+          const double sdi = std::sqrt(Sii);
+          const double sdj = std::sqrt(Sjj);
+          arma::vec pr(N, arma::fill::zeros);
+          for (arma::uword t=0; t<N; ++t){
+            unsigned ss = s[t];
+            if (ss == 0u || ss >= tau_j.n_elem) { pr[t] = 0.0; continue; }
+            double up = (tau_j[ss]   - mj) / sdj;
+            double lo = (tau_j[ss-1] - mj) / sdj;
+            double pv = 0.5 * std::erfc(-up / std::sqrt(2.0)) - 0.5 * std::erfc(-lo / std::sqrt(2.0));
+            pr[t] = (pv > 0.0 ? pv : 0.0);
+          }
+          arma::vec dx = (xi - mi) / sdi;
+          arma::vec dens_xi = (1.0 / std::sqrt(2.0 * M_PI)) * arma::exp(-0.5 * arma::square(dx)) / sdi;
+          term_prob = pr % dens_xi;
+        } else {
+          arma::vec miv(1); miv[0] = mi;
+          arma::vec mjv(1); mjv[0] = mj;
+          arma::vec Siiv(1); Siiv[0] = Sii;
+          arma::vec Sjjv(1); Sjjv[0] = Sjj;
+          arma::vec Sijv(1); Sijv[0] = Sij;
+          term_prob = foc_vec_arma(xi, s, miv, mjv, Siiv, Sjjv, Sijv, tau_j);
+        }
+      }
+      else {
+        // ---- Continuous-Continuous (CC) ----
+        const arma::vec& x = ccols[i];
+        const arma::vec& y = ccols[j];
+        if (Sij == 0.0) {
+          const double sdi = std::sqrt(Sii);
+          const double sdj = std::sqrt(Sjj);
+          arma::vec di = (x - mi) / sdi;
+          arma::vec dj = (y - mj) / sdj;
+          arma::vec fi = (1.0 / std::sqrt(2.0 * M_PI)) * arma::exp(-0.5 * arma::square(di)) / sdi;
+          arma::vec fj = (1.0 / std::sqrt(2.0 * M_PI)) * arma::exp(-0.5 * arma::square(dj)) / sdj;
+          term_prob = fi % fj;
+        } else {
+          arma::vec miv(1); miv[0] = mi;
+          arma::vec mjv(1); mjv[0] = mj;
+          arma::vec Siiv(1); Siiv[0] = Sii;
+          arma::vec Sjjv(1); Sjjv[0] = Sjj;
+          arma::vec Sijv(1); Sijv[0] = Sij;
+          term_prob = fcc_vec_arma(x, y, miv, mjv, Siiv, Sjjv, Sijv);
+        }
+      }
+
+      // Accumulate in log-domain
+      out_log += safe_log_fast(term_prob);
+    }
+  }
+
+  return out_log;
+}

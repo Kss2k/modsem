@@ -22,4 +22,12 @@ arma::vec probPML(const arma::mat& data,
                   const arma::uvec& isOrderedEnum,
                   const arma::mat& thresholds);
 
+arma::vec probPML_Fast(const arma::mat& data,
+                       const arma::vec& mu,
+                       const arma::mat& Sigma,
+                       const arma::uvec& isOrderedEnum,
+                       const arma::mat& thresholds,
+                       const double rho_zero_tol = 0.0,
+                       const double rho_small    = 0.30);
+
 #endif

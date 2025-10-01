@@ -337,7 +337,7 @@ gradientObsLogLikLms_i <- function(theta, model, data, P, sign = 1, epsilon = 1e
 
 # Returns an n x V matrix of log-likelihoods:
 # - ML:   full MVN log-densities per node (dmvn(..., log=TRUE))
-# - PML:  pairwise composite *log*-likelihoods per node (probPML returns logs)
+# - PML:  pairwise composite *log*-likelihoods per node (probPML_Fast returns logs)
 densityLms <- function(z, modFilled, data) {
   if (is.null(dim(z))) z <- matrix(z, ncol = modFilled$quad$k)
 
@@ -376,14 +376,14 @@ densitySingleLms <- function(z, modFilled, data) {
         )
 
     } else if (estimator == "pml") {
-      # Pairwise composite, LOG scale via your Rcpp probPML
-      # probPML signature (Rcpp): (data, mu, Sigma, isOrderedEnum, thresholds)
+      # Pairwise composite, LOG scale via your Rcpp probPML_Fast
+      # probPML_Fast signature (Rcpp): (data, mu, Sigma, isOrderedEnum, thresholds)
       # - isOrderedEnum: pass as integer (0=continuous, >0 = row index into thresholds)
       # - thresholds:    matrix; rows aligned with those indices
       isOrd <- as.integer(modFilled$info$isOrderedEnum[colidx])
 
       out_log[offset:end] <-
-        exp(probPML(
+        exp(probPML_Fast(
           data          = as.matrix(Xid),
           mu            = mu[colidx],
           Sigma         = Sigma[colidx, colidx, drop = FALSE],
@@ -684,9 +684,9 @@ probPMLr <- function(z, modFilled, data) {
     ldensity <- ldensity + ldensity_ij
   }
 
-  ldensity_ij2 <- probPML(cbind(r, v), mu = mu[c(i,j)],
+  ldensity_ij2 <- probPML_Fast(cbind(r, v), mu = mu[c(i,j)],
                           Sigma = Sigma[c(i,j), c(i,j)], isOrderedEnum = c(i, j), thresholds = T)
-  ldensity2 <- probPML(as.matrix(X), mu = mu, Sigma = Sigma, isOrderedEnum = modFilled$info$isOrderedEnum,
+  ldensity2 <- probPML_Fast(as.matrix(X), mu = mu, Sigma = Sigma, isOrderedEnum = modFilled$info$isOrderedEnum,
                        thresholds = T)
 
   ldensity
