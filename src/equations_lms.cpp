@@ -486,6 +486,190 @@ inline void set_params(LMSModel&         M,
 
 
 template<class F>
+Rcpp::List fdHessQuadraticFit(LMSModel&         M,
+                                F&&               fun,
+                                const arma::uvec& block,
+                                const arma::uvec& row,
+                                const arma::uvec& col,
+                                const arma::uvec& symmetric,
+                                const arma::vec&  base,
+                                const arma::vec&  incr,
+                                const int         ncores) {
+  const std::size_t p = block.n_elem;
+
+  // Build Koschal displacement matrix
+  std::vector< arma::vec > disp;
+  disp.reserve(1 + 2*p + (p*(p-1))/2);
+  disp.emplace_back(arma::zeros<arma::vec>(p));
+  for (std::size_t i = 0; i < p; ++i) {
+    arma::vec v = arma::zeros<arma::vec>(p);
+    v[i] =  1; disp.push_back(v);
+    v[i] = -1; disp.push_back(v);
+  }
+  for (std::size_t i = 0; i < p-1; ++i)
+    for (std::size_t j = i+1; j < p; ++j) {
+      arma::vec v = arma::zeros<arma::vec>(p);
+      v[i] = v[j] = 1;
+      disp.push_back(v);
+    }
+  const std::size_t m = disp.size();
+
+  // Evaluate fun at all design points (parallel)
+  arma::vec y(m);
+#pragma omp parallel for default(none) \
+  shared(M, disp, m, block, row, col, symmetric, base, incr, y) \
+  firstprivate(fun) schedule(static)
+  for (std::size_t k = 0; k < m; ++k) {
+    LMSModel Mc = M.thread_clone();
+    set_params(Mc, block, row, col, symmetric, base + disp[k] % incr);
+    y[k] = fun(Mc);
+  }
+
+  // Restore baseline
+  set_params(M, block, row, col, symmetric, base);
+
+  // Build design matrix
+  const std::size_t q = 1 + 2*p + (p*(p-1))/2;
+  arma::mat X(m, q, arma::fill::ones);
+  std::size_t col_id = 1;
+  for (std::size_t j = 0; j < p; ++j, ++col_id)
+    for (std::size_t k = 0; k < m; ++k)
+      X(k, col_id) = disp[k][j];
+  for (std::size_t j = 0; j < p; ++j, ++col_id)
+    for (std::size_t k = 0; k < m; ++k)
+      X(k, col_id) = std::pow(disp[k][j], 2);
+  for (std::size_t i = 0; i < p-1; ++i)
+    for (std::size_t j = i+1; j < p; ++j, ++col_id)
+      for (std::size_t k = 0; k < m; ++k)
+        X(k, col_id) = disp[k][i] * disp[k][j];
+
+  // frac scaling
+  arma::vec frac(q, arma::fill::ones);
+  for (std::size_t j = 0; j < p; ++j)              frac[1 + j]     = incr[j];
+  for (std::size_t j = 0; j < p; ++j)              frac[1 + p + j] = incr[j]*incr[j];
+  col_id = 1 + 2*p;
+  for (std::size_t i = 0; i < p-1; ++i)
+    for (std::size_t j = i+1; j < p; ++j, ++col_id)
+      frac[col_id] = incr[i] * incr[j];
+
+  arma::vec coef = arma::solve(X, y) / frac;
+
+  arma::vec grad = coef.subvec(1, p);
+  arma::mat Hess(p, p, arma::fill::zeros);
+  for (std::size_t j = 0; j < p; ++j)
+    Hess(j, j) = 2.0 * coef[1 + p + j];
+  col_id = 1 + 2*p;
+  for (std::size_t i = 0; i < p-1; ++i)
+    for (std::size_t j = i+1; j < p; ++j, ++col_id) {
+      Hess(i,j) = coef[col_id];
+      Hess(j,i) = coef[col_id];
+    }
+
+  return Rcpp::List::create(
+    Rcpp::Named("mean")     = coef[0],
+    Rcpp::Named("gradient") = grad,
+    Rcpp::Named("Hessian")  = Hess
+  );
+}
+
+
+template<class F>
+Rcpp::List fdHessFullFd(LMSModel&         M,
+                          F&&               fun,
+                          const arma::uvec& block,
+                          const arma::uvec& row,
+                          const arma::uvec& col,
+                          const arma::uvec& symmetric,
+                          const arma::vec&  base,
+                          const arma::vec&  incr,
+                          const int         ncores) {
+  const std::size_t p = block.n_elem;
+  const std::size_t npairs = (p>1) ? (p*(p-1))/2 : 0;
+  const std::size_t m = 1 + 2*p + 4*npairs;
+
+  // Index helper for pairs
+  auto pair_index = [p](std::size_t i, std::size_t j) -> std::size_t {
+    return (i*(2*p - i - 1))/2 + (j - i - 1);
+  };
+
+  // Build displacements
+  std::vector< arma::vec > disp;
+  disp.reserve(m);
+  disp.emplace_back(arma::zeros<arma::vec>(p)); // origin
+  const std::size_t idx0 = 0;
+
+  std::vector<std::size_t> idx_ip(p), idx_im(p);
+  for (std::size_t i=0; i<p; ++i) {
+    arma::vec v = arma::zeros<arma::vec>(p);
+    v[i]= 1; idx_ip[i]=disp.size(); disp.push_back(v);
+    v[i]=-1; idx_im[i]=disp.size(); disp.push_back(v);
+  }
+
+  std::vector<std::size_t> idx_pp(npairs), idx_pm(npairs),
+                           idx_mp(npairs), idx_mm(npairs);
+  if (p>1) {
+    for (std::size_t i=0; i<p-1; ++i)
+      for (std::size_t j=i+1; j<p; ++j) {
+        std::size_t k = pair_index(i,j);
+        arma::vec v = arma::zeros<arma::vec>(p);
+        v[i]= 1; v[j]= 1; idx_pp[k]=disp.size(); disp.push_back(v);
+        v[i]= 1; v[j]=-1; idx_pm[k]=disp.size(); disp.push_back(v);
+        v[i]=-1; v[j]= 1; idx_mp[k]=disp.size(); disp.push_back(v);
+        v[i]=-1; v[j]=-1; idx_mm[k]=disp.size(); disp.push_back(v);
+      }
+  }
+
+  // Evaluate fun (parallel)
+  arma::vec y(disp.size());
+#pragma omp parallel for default(none) \
+  shared(M, disp, block, row, col, symmetric, base, incr, y) \
+  firstprivate(fun) schedule(static)
+  for (std::size_t k=0; k<disp.size(); ++k) {
+    LMSModel Mc = M.thread_clone();
+    set_params(Mc, block, row, col, symmetric, base + disp[k] % incr);
+    y[k] = fun(Mc);
+  }
+  set_params(M, block, row, col, symmetric, base);
+
+  // Assemble gradient/Hessian
+  arma::vec grad(p, arma::fill::zeros);
+  arma::mat Hess(p, p, arma::fill::zeros);
+  const double f0 = y[idx0];
+
+  for (std::size_t i=0; i<p; ++i) {
+    double hi = incr[i];
+    double f_ip = y[idx_ip[i]];
+    double f_im = y[idx_im[i]];
+    grad[i]  = (f_ip - f_im) / (2.0*hi);
+    Hess(i,i)= (f_ip + f_im - 2.0*f0) / (hi*hi);
+  }
+
+  if (p>1) {
+    for (std::size_t i=0; i<p-1; ++i) {
+      double hi = incr[i];
+      for (std::size_t j=i+1; j<p; ++j) {
+        double hj = incr[j];
+        std::size_t k = pair_index(i,j);
+        double fpp=y[idx_pp[k]], fpm=y[idx_pm[k]],
+               fmp=y[idx_mp[k]], fmm=y[idx_mm[k]];
+        double hij = (fpp - fpm - fmp + fmm) / (4.0*hi*hj);
+        Hess(i,j)=hij; Hess(j,i)=hij;
+      }
+    }
+  }
+
+  return Rcpp::List::create(
+    Rcpp::Named("mean")     = f0,
+    Rcpp::Named("gradient") = grad,
+    Rcpp::Named("Hessian")  = Hess
+  );
+}
+
+
+// ======================================================
+// Dispatcher
+// ======================================================
+template<class F>
 Rcpp::List fdHessCpp(LMSModel&         M,
                      F&&               fun,
                      const arma::uvec& block,
@@ -498,103 +682,26 @@ Rcpp::List fdHessCpp(LMSModel&         M,
   ThreadSetter ts(ncores);
 
   const std::size_t p = block.n_elem;
-
-  // Baseline parameter vector and FD step sizes
   const arma::vec base = get_params(M, block, row, col);
   const arma::vec incr =
-    arma::max(arma::abs(base), arma::vec(p).fill(minAbsPar)) * relStep;
+      arma::max(arma::abs(base), arma::vec(p).fill(minAbsPar)) * relStep;
 
-  // Build Koschal displacement matrix (read-only afterwards)
-  std::vector< arma::vec > disp;
-  disp.reserve(1 + 2*p + (p*(p-1))/2); // rough lower bound
-  disp.emplace_back(arma::zeros<arma::vec>(p));          // origin
-  for (std::size_t i = 0; i < p; ++i) {                  // +e_i / –e_i
-    arma::vec v = arma::zeros<arma::vec>(p);
-    v[i] = 1;  disp.push_back(v);
-    v[i] = -1; disp.push_back(v);
-  }
-  for (std::size_t i = 0; i < p - 1; ++i)                // +e_i + e_j (i<j)
-    for (std::size_t j = i + 1; j < p; ++j) {
-      arma::vec v = arma::zeros<arma::vec>(p);
-      v[i] = v[j] = 1;
-      disp.push_back(v);
-    }
-  const std::size_t m = disp.size();
+  // Switching heuristics
+  constexpr std::size_t P_SWITCH        = 120;
+  constexpr std::size_t MEM_LIMIT_BYTES = 3ull << 30;
 
-  // Evaluate fun at every design point (parallel)
-  arma::vec y(m);
+  auto m_ls = 1 + 2*p + (p*(p-1))/2;
+  auto bytes_X = (unsigned long long)m_ls * (unsigned long long)m_ls *
+                 (unsigned long long)sizeof(double);
 
-#pragma omp parallel for default(none) \
-  shared(M, disp, m, block, row, col, symmetric, base, incr, y) \
-  firstprivate(fun) schedule(static)
-  for (std::size_t k = 0; k < m; ++k) {
-    // If you have LMSModel::shallow_clone(), prefer it:
-    LMSModel Mc = M.thread_clone();
+  bool useFullFd = (p >= P_SWITCH) || (bytes_X > MEM_LIMIT_BYTES);
 
-    // θ = base + disp[k] % incr
-    set_params(Mc, block, row, col, symmetric, base + disp[k] % incr);
-
-    // Evaluate on local model
-    y[k] = fun(Mc);
-    // No restore needed (Mc is thread-local)
-  }
-
-  // Restore θ₀ on the original model (serial, for callers expecting M unchanged)
-  set_params(M, block, row, col, symmetric, base);
-
-  // Build design matrix X (serial; cheap vs evals; BLAS may thread this)
-  const std::size_t q = 1 + 2*p + (p*(p-1))/2;
-  arma::mat X(m, q, arma::fill::ones);
-  std::size_t col_id = 1;
-
-  // linear terms
-  for (std::size_t j = 0; j < p; ++j, ++col_id)
-    for (std::size_t k = 0; k < m; ++k)
-      X(k, col_id) = disp[k][j];
-
-  // squares
-  for (std::size_t j = 0; j < p; ++j, ++col_id)
-    for (std::size_t k = 0; k < m; ++k)
-      X(k, col_id) = std::pow(disp[k][j], 2);
-
-  // cross terms
-  for (std::size_t i = 0; i < p - 1; ++i)
-    for (std::size_t j = i + 1; j < p; ++j, ++col_id)
-      for (std::size_t k = 0; k < m; ++k)
-        X(k, col_id) = disp[k][i] * disp[k][j];
-
-  // “frac” scaling (nlme-compatible)
-  arma::vec frac(q, arma::fill::ones);
-  for (std::size_t j = 0; j < p; ++j)              frac[1 + j]     = incr[j];
-  for (std::size_t j = 0; j < p; ++j)              frac[1 + p + j] = incr[j] * incr[j];
-  col_id = 1 + 2*p;
-  for (std::size_t i = 0; i < p - 1; ++i)
-    for (std::size_t j = i + 1; j < p; ++j, ++col_id)
-      frac[col_id] = incr[i] * incr[j];
-
-  // Solve for polynomial coefficients
-  arma::vec coef = arma::solve(X, y) / frac;
-
-  // Gradient (first-order coefs)
-  arma::vec grad = coef.subvec(1, p);
-
-  // Hessian
-  arma::mat Hess(p, p, arma::fill::zeros);
-  for (std::size_t j = 0; j < p; ++j)               // diagonal: 2 * c_j
-    Hess(j, j) = 2.0 * coef[1 + p + j];
-
-  col_id = 1 + 2*p;                                 // off-diagonal: d_ij
-  for (std::size_t i = 0; i < p - 1; ++i)
-    for (std::size_t j = i + 1; j < p; ++j, ++col_id) {
-      Hess(i, j) = coef[col_id];
-      Hess(j, i) = coef[col_id];
-    }
-
-  return Rcpp::List::create(
-      Rcpp::Named("mean")     = coef[0],
-      Rcpp::Named("gradient") = grad,
-      Rcpp::Named("Hessian")  = Hess
-      );
+  if (!useFullFd)
+    return fdHessQuadraticFit(M, std::forward<F>(fun), block, row, col,
+        symmetric, base, incr, ncores);
+  else
+    return fdHessFullFd(M, std::forward<F>(fun), block, row, col,
+        symmetric, base, incr, ncores);
 }
 
 
