@@ -127,6 +127,7 @@ bootstrap_modsem.modsem_da <- function(model,
   argList$calc.se      <- calc.se
   argList$verbose      <- verbose
   argList$model.syntax <- model$model$syntax
+  argList$cov.syntax   <- model$model$covModel$syntax
   argList$method       <- model$method
 
   if (!optimize) {
@@ -137,7 +138,7 @@ bootstrap_modsem.modsem_da <- function(model,
     argList$optimize     <- TRUE
   }
 
-  f0 <- FUN(model)
+  f0 <- do.call(FUN, args = list(model))
   FUN.VEC <- is.vector(f0) || inherits(f0, "ModsemVector")
 
   if (FUN.VEC) {
