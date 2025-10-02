@@ -3,9 +3,9 @@ library(lavaan)
 
 m1 <- '
 # Outer Model
-  X =~ x1 + x2 # + x3
-  Z =~ z1 + z2 # + z3
-  Y =~ y1 + y2 # + y3
+  X =~ x1 + x2 + x3
+  Z =~ z1 + z2 + z3
+  Y =~ y1 + y2 + y3
 
 # Inner Model
   Y ~ X + Z + X:Z
@@ -48,7 +48,7 @@ CUTS <- cut_data(oneInt, choose = choose)
 oneInt2 <- CUTS$data
 lms2 <- modsem(m1, oneInt2, method = "lms", ordered = choose, estimator = "PML",
                optimize = TRUE, n.threads = 10, robust.se = TRUE,
-               adaptive.quad = TRUE, nodes = 16, adaptive.frequency = 20)
+               adaptive.quad = TRUE, nodes = 16, adaptive.frequency = 20, calc.se = FALSE)
 
 CHOOSE <- list(c("x1", "x2", "z1", "y1"),
                colnames(oneInt))
