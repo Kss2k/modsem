@@ -658,7 +658,7 @@ labelRowsOmega <- function(X, eta) {
 
 
 constructThresholds <- function(ordered, parTable, data, method = "lms", estimator = "ML") {
-  stopif(!(tolower(method) == "lms" && tolower(estimator) == "pml"),
+  stopif(length(ordered) && !(tolower(method) == "lms" && tolower(estimator) == "pml"),
          "Ordered variables are only allowed with `method=\"lms\" and `estimator=\"pml\"`")
 
   if (!length(ordered))

@@ -165,21 +165,6 @@ mstepLms <- function(theta, model, P, data,
                   epsilon = epsilon)
   }
 
-  gradient2 <- function(theta) {
-    theta0 <- theta
-    f0 <- objective(theta0)
-    eps <- 1e-4
-    grad <- numeric(length(theta0))
-    for (i in seq_along(theta0)) {
-      theta1 <- theta0
-      theta1[i] <- theta0[i] + eps
-      
-      f1 <- objective(theta1)
-      grad[i] <- (f1 - f0) / eps
-    }
-    grad
-  }
-
   if (optimizer == "nlminb") {
     if (is.null(control$iter.max)) control$iter.max <- max.step
     est <- stats::nlminb(start = theta, objective = objective,
@@ -817,3 +802,36 @@ probPMLr <- function(z, modFilled, data) {
   }
   out
 }
+
+
+obsLogLikLmsPML <- function(theta, model, data, P, sign = 1, ...) {
+  modFilled <- fillModel(model = model, theta = theta, method = "lms")
+  ll <- observedLogLikLmsPMLCpp(modFilled, dataR = data$data.split, P = P,
+                                colidxR = data$colidx0, n = data$n.pattern,
+                                npatterns = data$p, ncores = ThreadEnv$n.threads)
+  ll * sign
+}
+
+
+gradientObsLogLikLms <- function(theta, model, data, P, sign = 1, epsilon = 1e-6) {
+  FGRAD <- function(modelR, P, block, row, col, symmetric, colidxR, npatterns,
+                    eps, ncores, n, ...) {
+    gradObsLogLikLmsCpp(modelR = modelR, dataR = data$data.split, P = P,
+                        block = block, row = row, col = col,
+                        symmetric = symmetric, colidxR = colidxR,
+                        n = n, npatterns = npatterns, eps = eps,
+                        ncores = ncores)
+  }
+
+  FOBJECTIVE <- function(theta, model, P, colidxR, npatterns, sign, ...) {
+    obsLogLikLms(theta = theta, model = model, data = data$data.split,
+                 P = P, colidxR = colidxR, npatterns = npatterns,
+                 sign = sign)
+  }
+
+  gradientAllLogLikLms(theta = theta, model = model, P = P, sign = sign,
+                       epsilon = epsilon, data = data,
+                       FGRAD = FGRAD, FOBJECTIVE = FOBJECTIVE)
+}
+
+

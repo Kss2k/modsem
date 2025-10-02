@@ -352,3 +352,211 @@ emLms <- function(model,
     )
   })
 }
+
+
+computeGradientPML <- function(theta, model, P, data, epsilon) {
+  gradientObsLogLikLmsPML(theta = theta, model = model, P = P,
+                          sign = -1, epsilon = epsilon, data = data)
+}
+
+
+pmlLms <- function(model,
+                   verbose = FALSE,
+                   convergence.abs = 1e-4,
+                   convergence.rel = 1e-10,
+                   max.iter = 500,
+                   max.step = 1,
+                   control = list(),
+                   calc.se = TRUE,
+                   FIM = "observed",
+                   OFIM.hessian = FALSE,
+                   EFIM.S = 3e4,
+                   EFIM.parametric = TRUE,
+                   robust.se = FALSE,
+                   epsilon = 1e-6,
+                   optimizer = "nlminb",
+                   R.max = 1e6,
+                   adaptive.quad = FALSE,
+                   quad.range = -Inf,
+                   adaptive.quad.tol = 1e-12,
+                   nodes = 24,
+                   cr1s = TRUE,
+                   estimator = "pml",
+                   ...) {
+  data         <- model$data
+  theta.lower  <- model$info$bounds$lower
+  theta.upper  <- model$info$bounds$upper
+  bounds.all   <- c(theta.lower, theta.upper)
+
+  if (all(is.infinite(bounds.all))) {
+    boundedTheta <- \(theta) theta # don't do anything
+
+  } else {
+    boundedTheta <- function(theta) {
+      underflow <- theta < theta.lower
+      overflow  <- theta > theta.upper
+
+      theta[underflow] <- theta.lower[underflow]
+      theta[overflow]  <- theta.upper[overflow]
+
+      theta
+    }
+  }
+
+  quad <- model$quad
+  P <- list(V = quad$n, w = quad$w)
+
+  tryCatch({
+    logLikNew <- -Inf
+    logLikOld <- -Inf
+    thetaNew  <- model$theta
+    direction <- NULL
+
+    qn_env <- new.env(parent = emptyenv())
+    qn_env$LBFGS_M <- 5
+    qn_env$s_list <- list()
+    qn_env$y_list <- list()
+
+    iterations <- 0L
+    run <- TRUE
+
+    testSimpleGradient <- !model$gradientStruct$hasCovModel
+
+    while (run) {
+      iterations <- iterations + 1L
+      logLikOld  <- logLikNew
+      thetaOld   <- thetaNew
+
+      if (testSimpleGradient) {
+        tryCatch({
+          gradientObsLogLikLmsPML(theta = thetaNew, model = model, P = P, data = data)
+        }, error = \(e) {
+          warning2("Optimized computation of gradient failed! Switching gradient type.\n",
+                   "Message:\n", conditionMessage(e))
+          model$gradientStruct$hasCovModel <<- TRUE
+          model$gradientStruct$isNonLinear <<- TRUE
+        })
+        testSimpleGradient <- FALSE
+      }
+      grad <- computeGradientPML(theta = thetaOld, model = model, data = data, P = P, epsilon = epsilon)
+
+      direction <- if (length(qn_env$s_list)) {
+        lbfgs_two_loop(-grad, qn_env$s_list, qn_env$y_list)
+      } else -grad
+
+      # line search on observed LL (and weakly on Q)
+      alpha     <- 1
+      success   <- FALSE
+      refll     <- obsLogLikLmsPML(theta = thetaOld, model = model, P = P, data = data, sign = 1)
+
+      while (alpha > 1e-5) {
+        thetaTrial  <- boundedTheta(thetaOld + alpha * direction)
+        llTrial    <- suppressWarnings(obsLogLikLmsPML(theta = thetaTrial,
+                                                        model = model, P = P,
+                                                        data = data, sign = 1))
+        ok <- !is.na(llTrial) && (llTrial >= refll)
+        if (ok) { success <- TRUE; break }
+        alpha <- alpha / 2
+      }
+
+      if (success) {
+        thetaNew <- thetaTrial
+        logLikNew <- llTrial
+        gradNew <- computeGradientPML(theta = thetaNew, model = model, data = data,
+                                      P = P, epsilon = epsilon)
+
+        s_vec <- thetaNew - thetaOld
+        y_vec <- gradNew - grad
+        if (sum(s_vec * y_vec) > 1e-8) {
+          qn_env$s_list <- c(qn_env$s_list, list(s_vec))
+          qn_env$y_list <- c(qn_env$y_list, list(y_vec))
+          if (length(qn_env$s_list) > qn_env$LBFGS_M) {
+            qn_env$s_list <- qn_env$s_list[-1]
+            qn_env$y_list <- qn_env$y_list[-1]
+          }
+        }
+      }
+
+      stopif(is.na(logLikNew), "Model estimation failed!")
+
+      deltaLL    <- logLikNew - logLikOld
+      deltaLL    <- if (is.na(deltaLL)) Inf else deltaLL
+      relDeltaLL <- if (is.finite(logLikOld)) deltaLL / abs(logLikOld) else Inf
+
+      updateStatusLog(iterations, "PML", logLikNew, deltaLL, relDeltaLL, verbose)
+
+      converged <- (abs(deltaLL) < convergence.abs) ||
+        (abs(relDeltaLL) < convergence.rel)
+
+      if (iterations >= max.iter || converged) break
+
+      if (deltaLL < -1e-8) {
+        if (verbose) cat("\n")
+        warning2(sprintf("Loglikelihood decreased by %.2g", deltaLL))
+      }
+    } # while
+
+    if (verbose) cat("\n")
+    warnif(iterations >= max.iter, "Maximum iterations reached!\n",
+           "Consider tweaking these parameters:\n",
+           formatParameters(convergence.abs, convergence.rel, algorithm,
+                            max.step, max.iter, nodes, adaptive.quad,
+                            adaptive.quad.tol, quad.range))
+
+    finalizeModelEstimatesDA(
+      model             = model,
+      theta             = thetaNew,
+      method            = "lms",
+      data              = data,
+      logLik            = logLikNew,
+      iterations        = iterations,
+      converged         = iterations < max.iter,
+      optimizer         = paste("PML", optimizer, sep = "-"),
+      calc.se           = calc.se,
+      FIM               = FIM,
+      OFIM.hessian      = OFIM.hessian,
+      EFIM.S            = EFIM.S,
+      EFIM.parametric   = EFIM.parametric,
+      robust.se         = robust.se,
+      epsilon           = epsilon,
+      cr1s              = cr1s,
+      R.max             = R.max,
+      verbose           = verbose,
+      P                 = P,
+      includeStartModel = TRUE,
+      startModel        = model,
+      estimator         = estimator
+    )
+
+  }, error = function(e) {
+    if (verbose) cat("\n")
+    warning2(paste0(
+      "Model estimation failed, returning starting values!\n",
+      "Message: ", conditionMessage(e)
+    ))
+
+    finalizeModelEstimatesDA(
+      model             = model,
+      theta             = model$theta,
+      method            = "lms",
+      data              = data,
+      logLik            = -Inf,
+      iterations        = 0L,
+      converged         = FALSE,
+      optimizer         = paste(algorithm, optimizer, sep = "-"),
+      calc.se           = FALSE,
+      FIM               = FIM,
+      OFIM.hessian      = OFIM.hessian,
+      EFIM.S            = EFIM.S,
+      EFIM.parametric   = EFIM.parametric,
+      robust.se         = robust.se,
+      epsilon           = epsilon,
+      cr1s              = cr1s,
+      R.max             = R.max,
+      verbose           = verbose,
+      P                 = P0,
+      includeStartModel = TRUE,
+      startModel        = model
+    )
+  })
+}
