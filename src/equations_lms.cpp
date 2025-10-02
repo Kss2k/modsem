@@ -9,7 +9,7 @@
 #include "utils.h"
 #include "mvnorm.h"
 
-// [[Rcpp::depends(RcppArmadillo)]]
+// [[Rcpp::depends( RcppArmadillo)]]
 
 
 // Deprecated will remove soon...
@@ -293,7 +293,7 @@ arma::vec gradientFD(LMSModel&         M,
 }
 
 
-inline double completeLogLikFromModelML(
+inline double completeLogLikFromModel(
     const LMSModel&  M,
     const arma::mat& V,
     const std::vector<arma::vec>& TGamma,
@@ -330,81 +330,8 @@ inline double completeLogLikFromModelML(
 }
 
 
-inline double completeLogLikFromModelPML(
-    const LMSModel&  M,
-    const arma::mat& V,
-    const arma::mat& P,
-    const std::vector<arma::mat>& data,
-    const std::vector<arma::uvec>& colidx,
-    const arma::uvec& n,
-    const int npatterns,
-    const int ncores) {
-  const std::size_t Q = V.n_rows;
-  double ll = 0.0;
-
-  for (std::size_t i = 0; i < Q; ++i) {
-    // use row sum as a guard
-    if (arma::sum(P.col(i)) <= DBL_MIN) continue;
-
-    const arma::vec z   = V.row(i).t();
-    const arma::vec mu  = M.mu(z);
-    const arma::mat Sig = M.Sigma(z);
-    
-    arma::vec probs = arma::zeros<arma::vec>(P.n_rows);
-
-    int offset = 0L;
-    for (int j = 0; j < npatterns; j++) {
-      const int end = offset + n[j] - 1L;
-      probs.subvec(offset, end) = probPML_Fast(data[j],
-          mu.elem(colidx[j]),
-          Sig.submat(colidx[j], colidx[j]),
-          M.isOrderedEnum,
-          M.thr);
-      offset = end + 1L;
-    }
-      
-    ll += arma::sum(P.col(i) % probs);
-  }
-  return ll;
-}
-
-
-inline double completeLogLikFromModel(
-    const LMSModel&  M,
-    const arma::mat& V,
-    const arma::mat& P,
-    const std::vector<arma::vec>& TGamma,
-    const std::vector<std::vector<arma::vec>>& MeanPatterns,
-    const std::vector<std::vector<arma::mat>>& CovPatterns,
-    const std::vector<arma::uvec>& colidx,
-    const arma::uvec& n,
-    const arma::uvec& d,
-    const std::vector<arma::mat>& data,
-    const int npatterns = 1,
-    const int ncores = 1) 
-{
-  if (!M.pml) {
-    // Standard ML
-    return completeLogLikFromModelML(
-              M, V, TGamma,
-              MeanPatterns, CovPatterns,
-              colidx, n, d,
-              npatterns);
-  } else {
-    // Pseudo-ML
-    return completeLogLikFromModelPML(
-              M, V, P, data,
-              colidx, n,
-              npatterns, ncores);
-  }
-}
-
-
-
-
 // [[Rcpp::export]]
 double completeLogLikLmsCpp(const Rcpp::List& modelR,
-                            const Rcpp::List& dataR,
                             const Rcpp::List& P,
                             const Rcpp::List& quad,
                             const Rcpp::List& colidxR,
@@ -420,19 +347,17 @@ double completeLogLikLmsCpp(const Rcpp::List& modelR,
   const auto Mean         = as_vec_of_vec_of_vec(P["mean"]);
   const auto Cov          = as_vec_of_vec_of_mat(P["cov"]);
   const auto colidx       = as_vec_of_uvec(colidxR);
-  const std::vector<arma::mat> data = as_vec_of_mat(dataR);
 
   return completeLogLikFromModel(
-      model, V, Pmat, TGamma,
+      mo, V, TGamma,
       Mean, Cov, colidx, n,
-      d, data, npatterns, ncores
+      d, npatterns, ncores
   );
 }
 
 
 // [[Rcpp::export]]
 arma::vec gradLogLikLmsCpp(const Rcpp::List& modelR,
-                           const Rcpp::List& dataR,
                            const Rcpp::List& P,
                            const arma::uvec& block,
                            const arma::uvec& row,
@@ -452,14 +377,13 @@ arma::vec gradLogLikLmsCpp(const Rcpp::List& modelR,
   const auto      Mean    = as_vec_of_vec_of_vec(P["mean"]);
   const auto      Cov     = as_vec_of_vec_of_mat(P["cov"]);
   const auto      colidx  = as_vec_of_uvec(colidxR);
-  const auto      data    = as_vec_of_mat(dataR);
   const Rcpp::List info   = modelR["info"];
 
   auto comp_ll = [&](LMSModel& mod) -> double {
     return completeLogLikFromModel(
-        mod, V, Pmat, TGamma,
+        mod, V, TGamma,
         Mean, Cov, colidx, n,
-        d, data, npatterns, ncores
+        d, npatterns, ncores
     );
   };
 
@@ -504,47 +428,6 @@ inline double observedLogLikFromModel(const LMSModel&  M,
 
   return arma::sum(arma::log(density));
 }
-
-
-inline double observedLogLikFromModelPML(
-    const LMSModel&  M,
-    const arma::mat& V,
-    const arma::vec& w,
-    const std::vector<arma::mat>& data,
-    const std::vector<arma::uvec>& colidx,
-    const arma::uvec n,
-    const int npatterns = 1,
-    const int ncores = 1) {
-  const std::size_t Q = V.n_rows;
-
-  arma::vec density = arma::zeros<arma::vec>(arma::sum(n));
-
-  for (std::size_t i = 0; i < Q; ++i) {
-    if (w[i] <= DBL_MIN) continue;
-
-    const arma::vec z   = V.row(i).t();
-    const arma::vec mu  = M.mu   (z);
-    const arma::mat Sig = M.Sigma(z);
-
-    int offset = 0L;
-    for (int j = 0; j < npatterns; j++) {
-      const int end = offset + n[j] - 1L;
-
-      density.subvec(offset, end) +=
-        arma::exp(probPML_Fast(data[j],
-              mu.elem(colidx[j]),
-              Sig.submat(colidx[j], colidx[j]),
-              M.isOrderedEnum,
-              M.thr)) * w[i];
-
-      offset = end + 1L;
-    }
-  }
-
-  return arma::sum(arma::log(density));
-}
-
-
 
 
 // [[Rcpp::export]]
@@ -806,4 +689,432 @@ Rcpp::List hessCompLogLikLmsCpp(const Rcpp::List& modelR,
 
   return fdHessCpp(M, comp_ll, block, row, col, symmetric,
       relStep, minAbs, ncores); // multi-threaded
+}
+
+// Forward decl from your pml TU:
+arma::vec totalLogOrdPairs(
+    const arma::uvec& r, const arma::uvec& s,
+    const arma::vec& mj, const arma::vec& mk,
+    const arma::vec& Sjj, const arma::vec& Skk, const arma::vec& Sjk,
+    const arma::vec& tau_j, const arma::vec& tau_k);
+
+// Compute pairwise composite *log*-likelihood for one component from counts
+// - mu_sub, Sig_sub: restricted to this pattern's variables
+// - isOrd_sub: length p_j (>0 for all)
+// - thresholds: full threshold matrix
+// - pcs: precomputed counts/grids for this pattern
+static inline double
+pairwise_LL_from_counts_single(
+    const arma::vec& mu_sub,
+    const arma::mat& Sig_sub,
+    const arma::uvec& isOrd_sub,
+    const arma::mat& thresholds,
+    const std::vector<PairCount>& pcs)
+{
+  double ll = 0.0;
+  for (const auto& pc : pcs) {
+    const arma::uword r = pc.r_local, s = pc.s_local;
+
+    // Scalars as length-1 vectors for broadcasting in totalLogOrdPairs
+    arma::vec mi(1), mj(1), Sii(1), Sjj(1), Sij(1);
+    mi[0] = mu_sub[r];  mj[0] = mu_sub[s];
+    Sii[0] = Sig_sub(r,r);  Sjj[0] = Sig_sub(s,s);  Sij[0] = Sig_sub(r,s);
+
+    // thresholds rows
+    const arma::vec tau_r = thresholds.row(isOrd_sub[r]-1u).t();
+    const arma::vec tau_s = thresholds.row(isOrd_sub[s]-1u).t();
+
+    // Probabilities for all cells (vector length = K_r*K_s), via one batched call
+    arma::vec p_cells = totalLogOrdPairs(pc.rgrid, pc.sgrid, mi, mj, Sii, Sjj, Sij, tau_r, tau_s);
+
+    // Accumulate: sum_{a,b} C[a,b] * log p[a,b]
+    // We flattened C in column-major order to match rgrid/sgrid.
+    arma::vec counts_vec = arma::conv_to<arma::vec>::from(arma::vectorise(pc.C)); // same order
+    // stable/safe log to avoid -Inf * 0; your safe_log_fast works too
+    arma::vec logp = arma::log(arma::clamp(p_cells, 1e-300, 1.0));
+    ll += arma::dot(counts_vec, logp);
+  }
+  return ll;
+}
+
+
+// stable elementwise log-sum-exp for two equally-sized matrices
+inline arma::mat elem_logsumexp(const arma::mat& A, const arma::mat& B) {
+  arma::mat M = arma::max(A, B);
+  return M + arma::log(arma::exp(A - M) + arma::exp(B - M));
+}
+
+// row-wise log-sum-exp for a (L x Q) matrix
+inline arma::vec row_logsumexp(const arma::mat& M) {
+  arma::vec m = arma::max(M, 1);                     // L x 1
+  arma::mat tmp = M.each_col() - m;
+  return m + arma::log(arma::sum(arma::exp(tmp), 1));
+}
+
+// safe log of probabilities (clamps to keep finite)
+inline arma::vec safe_log_vec(const arma::vec& v, double eps = 1e-300) {
+  arma::vec out(v.n_elem, arma::fill::value(std::log(eps)));
+  arma::uvec ok = arma::find(v > 0.0);
+  if (!ok.is_empty()) out.elem(ok) = arma::log(v.elem(ok));
+  return out;
+}
+
+// ---------- Pair-count container (per pattern, per pair) ----------
+struct PairCount {
+  arma::uword r_local, s_local;  // local indices (0-based) in this pattern
+  arma::uword K_r, K_s;
+  arma::umat  C;                 // K_r x K_s counts
+  arma::uvec  rgrid, sgrid;      // flattened (column-major) 1..K indices, length K_r*K_s
+};
+
+// Precompute counts for all pairs in one ordinal pattern
+static inline std::vector<PairCount>
+precompute_pair_counts(const arma::mat& Xj,
+                       const arma::uvec& isOrd_sub,
+                       const arma::mat& thresholds)
+{
+  const arma::uword p_j = Xj.n_cols;
+  const arma::uword n_j = Xj.n_rows;
+  std::vector<PairCount> out;
+  if (p_j < 2u || n_j == 0u) return out;
+
+  // If thresholds have fixed width across rows, K can be thresholds.n_cols-1.
+  // If they’re ragged, swap to row-wise length-1.
+  auto get_K = [&](arma::uword ord_row_1based) -> arma::uword {
+    (void)thresholds; // silence unused if you change logic
+    return static_cast<arma::uword>(thresholds.n_cols - 1u);
+  };
+
+  // Tabulate counts for each pair
+  for (arma::uword r = 0; r < p_j; ++r) {
+    for (arma::uword s = r + 1u; s < p_j; ++s) {
+      const arma::uword Kr = get_K(isOrd_sub[r]);
+      const arma::uword Ks = get_K(isOrd_sub[s]);
+
+      arma::umat C(Kr, Ks, arma::fill::zeros);
+      arma::uvec rcat = arma::conv_to<arma::uvec>::from(Xj.col(r));
+      arma::uvec scat = arma::conv_to<arma::uvec>::from(Xj.col(s));
+
+      for (arma::uword t = 0; t < n_j; ++t) {
+        arma::uword rr = rcat[t], ss = scat[t];
+        if (rr >= 1u && rr <= Kr && ss >= 1u && ss <= Ks) C(rr-1u, ss-1u)++;
+      }
+
+      // Build grids in column-major (to match arma::vectorise(C))
+      arma::uvec rgrid(Kr*Ks), sgrid(Kr*Ks);
+      arma::uword k = 0;
+      for (arma::uword ss = 1; ss <= Ks; ++ss)
+        for (arma::uword rr = 1; rr <= Kr; ++rr, ++k) {
+          rgrid[k] = rr;
+          sgrid[k] = ss;
+        }
+
+      PairCount pc;
+      pc.r_local = r; pc.s_local = s;
+      pc.K_r = Kr; pc.K_s = Ks;
+      pc.C = std::move(C);
+      pc.rgrid = std::move(rgrid);
+      pc.sgrid = std::move(sgrid);
+      out.emplace_back(std::move(pc));
+    }
+  }
+  return out;
+}
+
+
+inline arma::vec safe_log_local(const arma::vec& v, double eps = 1e-300) {
+  arma::vec out(v.n_elem, arma::fill::value(std::log(eps)));
+  arma::uvec ok = arma::find(v > 0.0);
+  if (!ok.is_empty()) out.elem(ok) = arma::log(v.elem(ok));
+  return out;
+}
+
+
+// Returns (n_j x npairs_j) matrix of *log* pairwise contributions for one component.
+// - Continuous–Continuous (CC): log bivariate normal density
+// - Ordinal–Continuous (OC/CO): log [ φ(x_cont) * Pr(interval | x_cont) ]
+// - Ordinal–Ordinal (OO): log rectangle probability
+inline arma::mat log_bvns_for_component(
+    const arma::mat& Dj,            // n_j x p_j data for pattern j
+    const arma::vec& mu_sub,        // length p_j
+    const arma::mat& Sig_sub,       // p_j x p_j
+    const arma::uvec& isOrd_sub,    // length p_j (0=cont, >0=row index in thresholds)
+    const arma::mat& thresholds,    // thresholds matrix (rows indexed by isOrderedEnum-1)
+    const int /*ncores*/ = 1
+) {
+  const arma::uword n_j = Dj.n_rows;
+  const arma::uword p_j = Dj.n_cols;
+
+  if (p_j < 2u || n_j == 0u)
+    return arma::mat(n_j, 0u, arma::fill::zeros);
+
+  const arma::uword npairs = p_j * (p_j - 1u) / 2u;
+  arma::mat out(n_j, npairs);
+
+  // Split columns once (so we can reuse categorized vs continuous storage)
+  std::vector<arma::vec>  ccols(p_j);
+  std::vector<arma::uvec> ocols(p_j);
+  for (arma::uword j = 0; j < p_j; ++j) {
+    if (isOrd_sub[j]) {
+      ocols[j] = arma::conv_to<arma::uvec>::from(Dj.col(j));
+    } else {
+      ccols[j] = Dj.col(j);
+    }
+  }
+
+  arma::uword col = 0u;
+  for (arma::uword r = 0; r < p_j; ++r) {
+    for (arma::uword s = r + 1u; s < p_j; ++s, ++col) {
+      const bool ord_r = (isOrd_sub[r] != 0u);
+      const bool ord_s = (isOrd_sub[s] != 0u);
+
+      // Pull scalars/vectors in the shape expected by your kernels
+      arma::vec mi(1), mj(1), Sii(1), Sjj(1), Sij(1);
+      mi[0] = mu_sub[r]; mj[0] = mu_sub[s];
+      Sii[0] = Sig_sub(r, r); Sjj[0] = Sig_sub(s, s); Sij[0] = Sig_sub(r, s);
+
+      arma::vec prob_or_dens(n_j, arma::fill::zeros);
+
+      if (!ord_r && !ord_s) {
+        // CC
+        const arma::vec& xr = ccols[r];
+        const arma::vec& xs = ccols[s];
+        prob_or_dens = fcc_vec_arma(xr, xs, mi, mj, Sii, Sjj, Sij); // density
+      }
+      else if (ord_r && !ord_s) {
+        // OC: (ordinal r, continuous s) -> foc(x_cont = xs, r_ord = r, ...; tau_r)
+        const arma::uvec& rr = ocols[r];
+        const arma::vec&  xs = ccols[s];
+        const arma::vec tau_r = thresholds.row(isOrd_sub[r] - 1u).t();
+        // foc: (xj, r, mj, mk, Sjj, Skk, Sjk, tau_k)
+        // map: xj=xs, r=rr, mj=mj (mean of xj/cont s), mk=mi (mean of ord r),
+        //      Sjj=Sjj(s,s), Skk=Sii(r,r), Sjk=Sij(r,s)
+        prob_or_dens = foc_vec_arma(xs, rr, mj, mi, Sjj, Sii, Sij, tau_r);
+      }
+      else if (!ord_r && ord_s) {
+        // CO: symmetric -> foc(x_cont = xr, r_ord = s; tau_s)
+        const arma::vec&  xr = ccols[r];
+        const arma::uvec& ss = ocols[s];
+        const arma::vec tau_s = thresholds.row(isOrd_sub[s] - 1u).t();
+        // map: xj=xr, r=ss, mj=mi, mk=mj, Sjj=Sii, Skk=Sjj, Sjk=Sij
+        prob_or_dens = foc_vec_arma(xr, ss, mi, mj, Sii, Sjj, Sij, tau_s);
+      }
+      else {
+        // OO
+        const arma::uvec& rr = ocols[r];
+        const arma::uvec& ss = ocols[s];
+        const arma::vec tau_r = thresholds.row(isOrd_sub[r] - 1u).t();
+        const arma::vec tau_s = thresholds.row(isOrd_sub[s] - 1u).t();
+        prob_or_dens = foo_vec_arma(rr, ss, mi, mj, Sii, Sjj, Sij, tau_r, tau_s); // probability
+      }
+
+      // Store *log* contribution, safely (0 -> log(eps))
+      out.col(col) = safe_log_local(prob_or_dens);
+    }
+  }
+
+  return out;  // n_j x npairs (LOG scale)
+}
+
+
+
+// Mixture sits *inside* each pair: for each pair do log-sum-exp over components,
+// then sum across pairs and observations.
+inline double observedLogLikFromModelPML(
+    const LMSModel&  M,
+    const arma::mat& V,
+    const arma::vec& w,
+    const std::vector<arma::mat>& data,
+    const std::vector<arma::uvec>& colidx,
+    const arma::uvec n,
+    const int npatterns = 1,
+    const int ncores    = 1)
+{
+  const std::size_t Q = V.n_rows;
+  double ll = 0.0;
+
+  // --- Fast exit if all weights ~0
+  if (arma::sum(w) <= DBL_MIN) return -std::numeric_limits<double>::infinity();
+
+  for (int j = 0; j < npatterns; ++j) {
+    const arma::mat& Dj   = data[j];          // n_j x p_j
+    const arma::uvec& idx = colidx[j];        // p_j indices into full vector
+    const arma::uvec  isOrd_sub = M.isOrderedEnum.elem(idx);
+
+    const arma::uword n_j = Dj.n_rows;
+    const arma::uword p_j = Dj.n_cols;
+    if (p_j < 2u || n_j == 0u) continue;
+
+    const bool all_ordinal = arma::all(isOrd_sub != 0u);
+
+    // ======================= ALL-ORDINAL (COUNT-AGGREGATED) =======================
+    if (all_ordinal) {
+      // Precompute counts for this pattern (cheap; you can cache externally if desired)
+      const std::vector<PairCount> pcs = precompute_pair_counts(Dj, isOrd_sub, M.thr);
+
+      // Precompute mu_sub and Sig_sub for each component (subset once per q)
+      std::vector<arma::vec> mu_sub_Q; mu_sub_Q.reserve(Q);
+      std::vector<arma::mat> Sig_sub_Q; Sig_sub_Q.reserve(Q);
+
+      mu_sub_Q.resize(Q);
+      Sig_sub_Q.resize(Q);
+
+      for (std::size_t q = 0; q < Q; ++q) {
+        if (w[q] <= DBL_MIN) continue;
+        const arma::vec z   = V.row(q).t();
+        const arma::vec mu  = M.mu(z);
+        const arma::mat Sig = M.Sigma(z);
+        mu_sub_Q[q]  = mu.elem(idx);
+        Sig_sub_Q[q] = Sig.submat(idx, idx);
+      }
+
+      // For each pair, form mixture inside the pair at the cell level
+      for (const auto& pc : pcs) {
+        const arma::uword r = pc.r_local, s = pc.s_local;
+
+        // Build a (L x Q) matrix of log(w_q * p_q(cell))
+        const arma::uword L = pc.rgrid.n_elem;
+        arma::mat LW(L, Q, arma::fill::value(-std::numeric_limits<double>::infinity()));
+
+        for (std::size_t q = 0; q < Q; ++q) {
+          if (w[q] <= DBL_MIN) continue;
+
+          const arma::vec& mu_sub  = mu_sub_Q[q];
+          const arma::mat& Sig_sub = Sig_sub_Q[q];
+
+          // Scalars as length-1 vectors (your totalLogOrdPairs broadcasts them)
+          arma::vec mi(1), mj(1), Sii(1), Sjj(1), Sij(1);
+          mi[0] = mu_sub[r];  mj[0] = mu_sub[s];
+          Sii[0] = Sig_sub(r,r);  Sjj[0] = Sig_sub(s,s);  Sij[0] = Sig_sub(r,s);
+
+          const arma::vec tau_r = M.thr.row(isOrd_sub[r]-1u).t();
+          const arma::vec tau_s = M.thr.row(isOrd_sub[s]-1u).t();
+
+          arma::vec pq = totalLogOrdPairs(pc.rgrid, pc.sgrid, mi, mj, Sii, Sjj, Sij, tau_r, tau_s); // length L
+
+          // log(w_q * p_q(cell)) with clamp for stability
+          LW.col(q) = std::log(std::max(w[q], DBL_MIN)) + safe_log_vec(pq);
+        }
+
+        // Mixture per cell: logsumexp across q (length L)
+        arma::vec logmix = row_logsumexp(LW);
+
+        // Accumulate counts * logmix
+        arma::vec counts_vec = arma::conv_to<arma::vec>::from(arma::vectorise(pc.C)); // (L x 1)
+        ll += arma::dot(counts_vec, logmix);
+      }
+
+      continue; // next pattern
+    }
+
+    // ======================= GENERAL PATH (mixed/continuous) ======================
+    // (Your earlier vectorized per-row path with mixture-inside-the-pair)
+    bool first = true;
+    arma::mat logmix_j; // (n_j x npairs)
+
+    for (std::size_t q = 0; q < Q; ++q) {
+      if (w[q] <= DBL_MIN) continue;
+
+      const arma::vec z   = V.row(q).t();
+      const arma::vec mu  = M.mu(z);
+      const arma::mat Sig = M.Sigma(z);
+
+      arma::vec  mu_sub  = mu.elem(idx);
+      arma::mat  Sig_sub = Sig.submat(idx, idx);
+
+      // n_j x npairs: per-pair LOG contributions under component q
+      arma::mat Lq = log_bvns_for_component(Dj, mu_sub, Sig_sub, isOrd_sub, M.thr, ncores);
+      Lq += std::log(std::max(w[q], DBL_MIN)); // add log weight
+
+      if (first) { logmix_j = Lq; first = false; }
+      else       { logmix_j = elem_logsumexp(logmix_j, Lq); }
+    }
+
+    if (!first) {
+      arma::vec cl_obs = arma::sum(logmix_j, 1); // sum over pairs
+      ll += arma::sum(cl_obs);
+    } else {
+      // all weights ~0 -> degenerate; keep ll as-is or add a guard if you prefer
+    }
+  }
+
+  return ll;
+}
+
+
+// [[Rcpp::export]]
+double observedLogLikLmsPMLCpp(const Rcpp::List& modelR,
+    const Rcpp::List& dataR,
+    const Rcpp::List& colidxR,
+    const Rcpp::List& P,
+    const arma::uvec& n,
+    const int npatterns = 1L,
+    const int ncores = 1L) {
+  const LMSModel M = LMSModel(modelR);
+
+  const arma::mat V = Rcpp::as<arma::mat>(P["V"]);
+  const arma::vec w = Rcpp::as<arma::vec>(P["w"]);
+  const auto colidx = as_vec_of_uvec(colidxR);
+  const auto data   = as_vec_of_mat(dataR);
+
+  return observedLogLikFromModelPML(M, V, w, data, colidx, n, npatterns, ncores);
+}
+
+
+// [[Rcpp::export]]
+arma::vec gradObsLogLikLmsPMLCpp(const Rcpp::List& modelR,
+                                 const Rcpp::List& dataR,
+                                 const Rcpp::List& colidxR,
+                                 const Rcpp::List& P,
+                                 const arma::uvec& block,
+                                 const arma::uvec& row,
+                                 const arma::uvec& col,
+                                 const arma::uvec& symmetric,
+                                 const arma::uvec& n,
+                                 const double      eps       = 1e-6,
+                                 const int         npatterns = 1L,
+                                 const int         ncores    = 1L) {
+  LMSModel M(modelR);
+
+  const arma::mat V = Rcpp::as<arma::mat>(P["V"]);
+  const arma::vec w = Rcpp::as<arma::vec>(P["w"]);
+  const auto colidx = as_vec_of_uvec(colidxR);
+  const auto data   = as_vec_of_mat(dataR);
+
+  auto obs_ll = [&](LMSModel& mod) -> double {
+    return observedLogLikFromModel(mod, V, w, data, colidx, n, npatterns, 1L); // single-threaded
+  };
+
+  return gradientFD(M, obs_ll, block, row, col, symmetric, eps, ncores); // multi-thread here instead
+}
+
+
+// [[Rcpp::export]]
+Rcpp::List hessObsLogLikLmsPMLCpp(const Rcpp::List& modelR,
+                                 const Rcpp::List& dataR,
+                                 const Rcpp::List& P,
+                                 const arma::uvec& block,
+                                 const arma::uvec& row,
+                                 const arma::uvec& col,
+                                 const arma::uvec& symmetric,
+                                 const Rcpp::List& colidxR,
+                                 const arma::uvec& n,
+                                 const int         npatterns = 1L,
+                                 const double      relStep = 1e-6,
+                                 const double      minAbs  = 0.0,
+                                 const int         ncores  = 1L) {
+    LMSModel M(modelR);
+
+    const arma::mat V = Rcpp::as<arma::mat>(P["V"]);
+    const arma::vec w = Rcpp::as<arma::vec>(P["w"]);
+    const auto colidx = as_vec_of_uvec(colidxR);
+    const auto data   = as_vec_of_mat(dataR);
+
+    auto obs_ll = [&](LMSModel& mod) -> double {
+        return observedLogLikFromModelPML(mod, V, w, data, colidx,
+                                       n, npatterns, 1L); // single-threaded
+    };
+
+    return fdHessCpp(M, obs_ll, block, row, col, symmetric,
+        relStep, minAbs, ncores); // multi-threaded
 }

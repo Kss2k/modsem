@@ -2,60 +2,112 @@ estepLms <- function(model, theta, data, lastQuad = NULL, recalcQuad = FALSE,
                      adaptive.quad.tol = 1e-12, ...) {
   modFilled <- fillModel(model = model, theta = theta, method = "lms")
 
+  ## --- Quadrature setup (unchanged) ---
   if (model$quad$adaptive && (recalcQuad || is.null(lastQuad))) {
-    m <- model$quad$m
-    a <- model$quad$a
-    b <- model$quad$b
-    m <- model$quad$m
-    k <- model$quad$k
-
+    m <- model$quad$m; a <- model$quad$a; b <- model$quad$b; k <- model$quad$k
     if (!is.null(lastQuad)) m.ceil <- lastQuad$m.ceil
     else if (k > 1) m.ceil <- m
     else m.ceil <- round(estMForNodesInRange(m, a = -5, b = 5))
 
-
     quad <- tryCatch({
-        adaptiveGaussQuadrature(
-          fun = densityLms, collapse = \(x) sum(log(rowSums(x))),
-          modFilled = modFilled, data = data, a = a, b = b, m = m,
-          k = k, m.ceil = m.ceil, tol = adaptive.quad.tol
-        )
-      }, error = function(e) {
-        warning2("Calculation of adaptive quadrature failed!\n", e,
-                 immediate. = FALSE)
-        NULL
-      }
-    )
+      adaptiveGaussQuadrature(
+        fun = densityLms,                                     # OK for ML; unused for PML below
+        collapse = \(x) sum(log(rowSums(x))),                 # idem
+        modFilled = modFilled, data = data, a = a, b = b,
+        m = m, k = k, m.ceil = m.ceil, tol = adaptive.quad.tol
+      )
+    }, error = function(e) {
+      warning2("Calculation of adaptive quadrature failed!\n", e, immediate. = FALSE)
+      NULL
+    })
 
     if (is.null(quad)) {
-      estep.fixed <- estepLms(
-        model = model,
-        theta = theta,
-        data  = data,
-        lastQuad = if (!is.null(lastQuad)) lastQuad else model$quad,
-        recalcQuad = FALSE,
-        ...
-      )
-
-      return(estep.fixed)
+      return(estepLms(model, theta, data, lastQuad = if (!is.null(lastQuad)) lastQuad else model$quad,
+                      recalcQuad = FALSE, ...))
     }
-
-    P <- quad$W * quad$F # P is already calculated
-    V <- quad$n
-    w <- quad$w
-
+    V <- quad$n; w <- quad$w
   } else {
     quad <- if (model$quad$adaptive) lastQuad else model$quad
     V    <- quad$n
     w    <- quad$w
-    W    <- matrix(w, nrow = data$n, ncol = length(w), byrow = TRUE)
-    P    <- W * densityLms(V, modFilled = modFilled, data = data)
   }
 
+  estimator <- tolower(modFilled$info$estimator)
+
+  ## ================= PML BRANCH (pair-level responsibilities) =================
+  if (estimator == "pml") {
+    Q <- nrow(V)
+
+    # For each node q: list over patterns of (n_j x npairs_j) log-densities
+    log_list_per_q <- vector("list", Q)
+    for (q in seq_len(Q)) {
+      zq <- V[q, , drop = FALSE]
+      log_list_per_q[[q]] <- .pairwise_logdens_node(z = zq, modFilled = modFilled, data = data)
+    }
+
+    # Stack by *columns* (pair-major) within each pattern, then concatenate patterns.
+    # This matches C++ 'vectorise(Lq, dim=0)' used in completeLogLikFromModelPML.
+    stack_by_pattern <- function(L_list) {
+      unlist(lapply(L_list, function(M) as.vector(M)), use.names = FALSE)
+    }
+
+    # Build a big R_total x Q matrix of log f^{(q)}_{pair}(y)
+    L_big <- do.call(
+      cbind,
+      lapply(log_list_per_q, stack_by_pattern)
+    )  # rows: (pattern blocks), each block = c(vec(L_{pair1}), vec(L_{pair2}), ...)
+
+    # Add log quadrature weights inside the pair mixture
+    LW <- sweep(L_big, 2L, log(w), FUN = "+")
+
+    # Row-wise log-sum-exp across q gives the observed composite loglik contributions
+    log_row_sum <- .rowLogSumExps(LW)
+    obsLL <- sum(log_row_sum)
+
+    # Pair-level responsibilities (R_total x Q)
+    R_big <- exp(LW - log_row_sum)
+
+    # Return a P list that C++ knows how to consume:
+    # - P$P is the pair-level responsibilities (R_total x Q)
+    # - P$V, P$w, P$quad as usual
+    # - keep placeholders for ML fields to avoid breaking existing wrappers
+
+    getEmptyList <- \(x) 
+      lapply(seq_along(data$ids), FUN = \(j) x)
+    getEmptyListList <- \(x) 
+      lapply(seq_along(data$ids), FUN = \(j) lapply(seq_len(Q), FUN = \(i) x))
+
+    Pout <- list(
+      P    = R_big,
+      V    = V,
+      w    = w,
+      quad = quad,
+      mean = getEmptyListList(0),
+      cov = getEmptyListList(matrix(0)),
+      tgamma = getEmptyList(0)
+    )
+
+    return(list(
+      P     = R_big,
+      mean  = Pout$mean,     # not used by PML C++ path
+      cov   = Pout$cov,      # idem
+      tgamma= Pout$tgamma,   # idem
+      V     = V,
+      w     = w,
+      obsLL = obsLL,
+      quad  = quad
+  ))
+}
+
+  ## ================= ML BRANCH (unchanged) ===================================
+  # Your original ML E-step (observation-level responsibilities) stays as-is:
+  W <- matrix(w, nrow = data$n, ncol = length(w), byrow = TRUE)
+  P  <- W * densityLms(V, modFilled = modFilled, data = data)  # n x Q
   density        <- rowSums(P)
   observedLogLik <- sum(log(density))
   P              <- P / density
 
+  # (Your weighted means/covs code unchanged)
   wMeans <- vector("list", length = length(w))
   wCovs  <- vector("list", length = length(w))
   tGamma <- vector("list", length = length(w))
@@ -65,12 +117,10 @@ estepLms <- function(model, theta, data, lastQuad = NULL, recalcQuad = FALSE,
     tGamma[[i]] <- sum(p)
 
     offset <- 1L
-
     wMeans[[i]] <- vector("list", length = length(data$ids))
     wCovs[[i]]  <- vector("list", length = length(data$ids))
     tGamma[[i]] <- numeric(length = length(data$ids))
 
-    # wmean <- colSums(data$data.full * p, na.rm = TRUE) / sum(p)
     for (j in data$ids) {
       n.pattern <- data$n.pattern[[j]]
       end       <- offset + n.pattern - 1L
@@ -79,7 +129,6 @@ estepLms <- function(model, theta, data, lastQuad = NULL, recalcQuad = FALSE,
       colidx  <- data$colidx[[j]]
 
       pj   <- p[offset:end]
-      # wm   <- wmean[colidx]
       wm   <- colSums(data.id * pj) / sum(pj)
       X    <- data.id - matrix(wm, nrow=nrow(data.id), ncol=ncol(data.id), byrow=TRUE)
       wcov <- t(X) %*% (X * pj)
@@ -92,8 +141,8 @@ estepLms <- function(model, theta, data, lastQuad = NULL, recalcQuad = FALSE,
     }
   }
 
-  list(P = P, mean = wMeans, cov = wCovs, tgamma = tGamma, V = V, w = w,
-       obsLL = observedLogLik, quad = quad)
+  list(P = P, V = V, w = w, quad = quad,
+       mean = wMeans, cov = wCovs, tgamma = tGamma, obsLL = observedLogLik)
 }
 
 
@@ -157,12 +206,12 @@ mstepLms <- function(theta, model, P, data,
 
 
 compLogLikLms <- function(theta, model, P, data, sign = -1, ...) {
-  tryCatch({
+  # tryCatch({
     modFilled <- fillModel(model = model, theta = theta, method = "lms")
     sign * completeLogLikLmsCpp(modelR=modFilled, dataR = data$data.split, P=P, quad=P$quad,
                                 colidxR = data$colidx0, n = data$n.pattern,
                                 d = data$d.pattern, npatterns = data$p)
-  }, error = \(e) NA)
+  # }, error = \(e) NA)
 }
 
 
@@ -690,4 +739,81 @@ probPMLr <- function(z, modFilled, data) {
                        thresholds = T)
 
   ldensity
+}
+
+
+# Enumerate column pairs r<s for a p-column block; returns a 2xK matrix (combn order)
+.pair_index_mat <- function(p) utils::combn(p, 2, simplify = TRUE)
+
+# row-wise log-sum-exp for a numeric matrix
+.rowLogSumExps <- function(M) {
+  # M: R x Q
+  m <- matrixStats::rowMaxs(M)                 # length R
+  m + log(rowSums(exp(M - m)))
+}
+
+# Compute per-observation log bivariate density for a TWO-COLUMN matrix under mean & 2x2 Sigma.
+# Handles continuous or ordinal (via your probPML_Fast for 2 columns).
+# - X2: n x 2 (numeric or integer categories if ordinal)
+# - mu2: length-2 numeric
+# - Sig2: 2x2 numeric
+# - isOrd2: length-2 integer flags (0=cont, >0=ordinal id into thresholds)
+# - thresholds: your thresholds matrix
+.log_bvn_pair <- function(X2, mu2, Sig2, isOrd2, thresholds) {
+  ord_any <- any(isOrd2 != 0L)
+  if (!ord_any) {
+    # continuous-continuous -> log N2(x; mu2, Sig2) for each row
+    mvtnorm::dmvnorm(X2, mean = mu2, sigma = Sig2, log = TRUE)
+  } else {
+    # ordinal/ordinal or mixed -> rectangle prob (log) using your fast routine
+    # probPML_Fast returns *log* prob for a matrix when given isOrderedEnum != 0
+    as.numeric(probPML_Fast(
+      data          = as.matrix(X2),
+      mu            = mu2,
+      Sigma         = Sig2,
+      isOrderedEnum = as.integer(isOrd2),
+      thresholds    = thresholds
+    ))
+  }
+}
+
+
+# Returns a list over patterns j; each entry is an n_j x npairs_j matrix of *log* bivariate densities
+# under the given node z.
+.pairwise_logdens_node <- function(z, modFilled, data) {
+  mu    <- muLmsCpp(   model = modFilled, z = z)
+  Sigma <- sigmaLmsCpp(model = modFilled, z = z)
+  Tmat  <- modFilled$matrices$thresholds
+
+  out <- vector("list", length(data$ids))
+
+  for (jj in seq_along(data$ids)) {
+    id     <- data$ids[[jj]]
+    Xj     <- data$data.split[[id]]      # n_j x p_j
+    idx    <- data$colidx[[id]]          # indices into (X,Y)
+    isOrd  <- as.integer(modFilled$info$isOrderedEnum[idx])
+    n_j    <- NROW(Xj)
+    p_j    <- NCOL(Xj)
+    if (p_j < 2L || n_j == 0L) { out[[jj]] <- matrix(0, n_j, 0); next }
+
+    pairs  <- .pair_index_mat(p_j)       # 2 x npairs
+    npairs <- NCOL(pairs)
+    Lj     <- matrix(NA_real_, n_j, npairs)
+
+    # subset mean/cov for this pattern once
+    mu_sub  <- mu[idx]
+    Sig_sub <- Sigma[idx, idx, drop = FALSE]
+
+    for (k in seq_len(npairs)) {
+      r <- pairs[1L, k]; s <- pairs[2L, k]         # local (1..p_j)
+      glob <- idx[c(r, s)]
+      mu2  <- mu_sub[c(r, s)]
+      Sig2 <- Sig_sub[c(r, s), c(r, s), drop = FALSE]
+      X2   <- Xj[, c(r, s), drop = FALSE]
+      is2  <- isOrd[c(r, s)]
+      Lj[, k] <- .log_bvn_pair(X2, mu2, Sig2, is2, Tmat)  # length n_j
+    }
+    out[[jj]] <- Lj  # n_j x npairs
+  }
+  out
 }

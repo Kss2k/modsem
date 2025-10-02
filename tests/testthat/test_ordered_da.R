@@ -47,7 +47,7 @@ choose <- intersect(colnames(oneInt), ovs)
 CUTS <- cut_data(oneInt, choose = choose)
 oneInt2 <- CUTS$data
 lms2 <- modsem(m1, oneInt2, method = "lms", ordered = choose, estimator = "PML",
-               optimize = TRUE, n.threads = 7, robust.se = TRUE,
+               optimize = TRUE, n.threads = 10, robust.se = TRUE,
                adaptive.quad = TRUE, nodes = 16, adaptive.frequency = 20)
 
 CHOOSE <- list(c("x1", "x2", "z1", "y1"),
