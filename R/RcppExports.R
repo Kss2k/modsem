@@ -37,16 +37,20 @@ hessCompLogLikLmsCpp <- function(modelR, dataR, P, block, row, col, symmetric, c
     .Call(`_modsem_hessCompLogLikLmsCpp`, modelR, dataR, P, block, row, col, symmetric, colidxR, n, d, npatterns, relStep, minAbs, ncores)
 }
 
-observedLogLikLmsPMLCpp <- function(modelR, dataR, colidxR, P, n, npatterns = 1L, ncores = 1L) {
-    .Call(`_modsem_observedLogLikLmsPMLCpp`, modelR, dataR, colidxR, P, n, npatterns, ncores)
+buildPCS_Xptr <- function(dataR, colidxR, isOrderedEnum, thresholds) {
+    .Call(`_modsem_buildPCS_Xptr`, dataR, colidxR, isOrderedEnum, thresholds)
 }
 
-gradObsLogLikLmsPMLCpp <- function(modelR, dataR, colidxR, P, block, row, col, symmetric, n, eps = 1e-6, npatterns = 1L, ncores = 1L) {
-    .Call(`_modsem_gradObsLogLikLmsPMLCpp`, modelR, dataR, colidxR, P, block, row, col, symmetric, n, eps, npatterns, ncores)
+observedLogLikLmsPMLCpp <- function(modelR, dataR, colidxR, P, pcs_xptr, n, npatterns = 1L, ncores = 1L) {
+    .Call(`_modsem_observedLogLikLmsPMLCpp`, modelR, dataR, colidxR, P, pcs_xptr, n, npatterns, ncores)
 }
 
-hessObsLogLikLmsPMLCpp <- function(modelR, dataR, P, block, row, col, symmetric, colidxR, n, npatterns = 1L, relStep = 1e-6, minAbs = 0.0, ncores = 1L) {
-    .Call(`_modsem_hessObsLogLikLmsPMLCpp`, modelR, dataR, P, block, row, col, symmetric, colidxR, n, npatterns, relStep, minAbs, ncores)
+gradObsLogLikLmsPMLCpp <- function(modelR, dataR, colidxR, P, pcs_xptr, block, row, col, symmetric, n, eps = 1e-6, npatterns = 1L, ncores = 1L) {
+    .Call(`_modsem_gradObsLogLikLmsPMLCpp`, modelR, dataR, colidxR, P, pcs_xptr, block, row, col, symmetric, n, eps, npatterns, ncores)
+}
+
+hessObsLogLikLmsPMLCpp <- function(modelR, dataR, colidxR, P, pcs_xptr, block, row, col, symmetric, n, npatterns = 1L, relStep = 1e-6, minAbs = 0.0, ncores = 1L) {
+    .Call(`_modsem_hessObsLogLikLmsPMLCpp`, modelR, dataR, colidxR, P, pcs_xptr, block, row, col, symmetric, n, npatterns, relStep, minAbs, ncores)
 }
 
 muQmlCpp <- function(m, t, ncores = 1L) {
