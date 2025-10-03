@@ -48,7 +48,7 @@ CUTS <- cut_data(oneInt, choose = choose)
 oneInt2 <- CUTS$data
 lms2 <- modsem(m1, oneInt2, method = "lms", ordered = choose, estimator = "PML",
                optimize = TRUE, n.threads = 10, robust.se = TRUE,
-               adaptive.quad = TRUE, nodes = 16, adaptive.frequency = 20, calc.se = FALSE)
+               adaptive.quad = TRUE, nodes = 32, convergence.abs = 1e-16, convergence.rel = 0, calc.se = FALSE)
 
 CHOOSE <- list(c("x1", "x2", "z1", "y1"),
                colnames(oneInt))

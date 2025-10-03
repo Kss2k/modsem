@@ -382,29 +382,41 @@ pmlLms <- function(model,
                    nodes = 24,
                    cr1s = TRUE,
                    estimator = "pml",
+                   # --- NEW stochastic fallback knobs ---
+                   sgd.use = TRUE,
+                   sgd.alpha0 = 1e-2,
+                   sgd.beta1  = 0.9,
+                   sgd.beta2  = 0.999,
+                   sgd.eps    = 1e-8,
+                   sgd.noise0 = 1e-3,     # initial noise scale
+                   sgd.attempts = 3,      # attempts per failure
+                   sgd.backoff  = 0.5,    # shrink factor if not improved
+                   algorithm = "PML",
                    ...) {
+
   data         <- model$data
   theta.lower  <- model$info$bounds$lower
   theta.upper  <- model$info$bounds$upper
   bounds.all   <- c(theta.lower, theta.upper)
 
   if (all(is.infinite(bounds.all))) {
-    boundedTheta <- \(theta) theta # don't do anything
-
+    boundedTheta <- \(theta) theta
   } else {
     boundedTheta <- function(theta) {
-      underflow <- theta < theta.lower
-      overflow  <- theta > theta.upper
-
-      theta[underflow] <- theta.lower[underflow]
-      theta[overflow]  <- theta.upper[overflow]
-
+      theta <- pmax(theta, theta.lower)
+      theta <- pmin(theta, theta.upper)
       theta
     }
   }
 
   quad <- model$quad
   P <- list(V = quad$n, w = quad$w)
+
+  # small helpers
+  vec_norm <- function(x) sqrt(sum(x * x))
+  cap_step <- function(dx, cap) {
+    n <- vec_norm(dx); if (n > cap && n > 0) dx <- dx * (cap / n); dx
+  }
 
   tryCatch({
     logLikNew <- -Inf
@@ -416,6 +428,12 @@ pmlLms <- function(model,
     qn_env$LBFGS_M <- 5
     qn_env$s_list <- list()
     qn_env$y_list <- list()
+
+    # --- NEW: Adam state for stochastic fallback ---
+    sgd_env <- new.env(parent = emptyenv())
+    sgd_env$t <- 0L
+    sgd_env$m <- rep(0, length(thetaNew))
+    sgd_env$v <- rep(0, length(thetaNew))
 
     iterations <- 0L
     run <- TRUE
@@ -438,6 +456,7 @@ pmlLms <- function(model,
         })
         testSimpleGradient <- FALSE
       }
+
       grad <- computeGradientPML(theta = thetaOld, model = model, data = data, P = P, epsilon = epsilon)
 
       direction <- if (length(qn_env$s_list)) {
@@ -460,7 +479,7 @@ pmlLms <- function(model,
       }
 
       if (success) {
-        thetaNew <- thetaTrial
+        thetaNew  <- thetaTrial
         logLikNew <- llTrial
         gradNew <- computeGradientPML(theta = thetaNew, model = model, data = data,
                                       P = P, epsilon = epsilon)
@@ -475,6 +494,52 @@ pmlLms <- function(model,
             qn_env$y_list <- qn_env$y_list[-1]
           }
         }
+
+      } else {
+        # -------------------------------
+        # MONOTONE stochastic fallback
+        # -------------------------------
+        updateStatusLog(iterations, "PML-STOCHASTIC", logLikNew, deltaLL, relDeltaLL, verbose)
+
+        # Only accept steps that DO NOT DECREASE the LL.
+        # Try a few noisy gradient steps with shrinking step size.
+        grad <- computeGradientPML(theta = thetaNew, model = model, data = data,
+                                   P = P, epsilon = epsilon)
+
+        refll <- refll  # current value at thetaOld
+        improved   <- FALSE
+
+        nsample <- 5
+
+        while (nsample > 0) {
+          # noisy gradient
+          choose <- order(grad)[seq_len(nsample)]
+          nsample <- nsample - 1L
+
+          g_tilde <- numeric(length(grad))
+          g_tilde[choose] <- 1
+          
+          alpha <- 1
+
+          cat("\n")
+          while (alpha > 1e-5) {
+            thetaTrial  <- boundedTheta(thetaOld + alpha * g_tilde)
+            llTrial    <- suppressWarnings(obsLogLikLmsPML(theta = thetaTrial,
+                                                           model = model, P = P,
+                                                           data = data, sign = 1))
+            printf("| Trying nsample = %d, alpha = %.2g, ll = %.3f, dll = %.2g\n", nsample+1L, alpha, llTrial, llTrial - refll)
+            ok <- !is.na(llTrial) && (llTrial >= refll)
+            if (ok) { improved <- TRUE; break }
+            alpha <- alpha / 2
+          }
+
+          if (improved) break
+        }
+
+        if (improved) {
+          thetaNew  <- thetaTrial
+          logLikNew <- llTrial
+        }
       }
 
       stopif(is.na(logLikNew), "Model estimation failed!")
@@ -482,6 +547,16 @@ pmlLms <- function(model,
       deltaLL    <- logLikNew - logLikOld
       deltaLL    <- if (is.na(deltaLL)) Inf else deltaLL
       relDeltaLL <- if (is.finite(logLikOld)) deltaLL / abs(logLikOld) else Inf
+
+      # hard guard: never report a decrease
+      if (is.finite(logLikOld) && logLikNew + 1e-12 < logLikOld) {
+        thetaNew  <- thetaOld
+        logLikNew <- logLikOld
+        deltaLL   <- 0
+        relDeltaLL <- 0
+        # clear LBFGS memory; next iter will recompute dir
+        qn_env$s_list <- list(); qn_env$y_list <- list()
+      }
 
       updateStatusLog(iterations, "PML", logLikNew, deltaLL, relDeltaLL, verbose)
 
@@ -496,6 +571,11 @@ pmlLms <- function(model,
       }
     } # while
 
+    gradNew <- computeGradientPML(theta = thetaNew, model = model, data = data,
+                                  P = P, epsilon = epsilon)
+    H <- hessianObsLogLikLmsPML(theta = thetaNew, model = model, data = data,
+                                P = P)
+    browser()
     if (verbose) cat("\n")
     warnif(iterations >= max.iter, "Maximum iterations reached!\n",
            "Consider tweaking these parameters:\n",
@@ -554,7 +634,7 @@ pmlLms <- function(model,
       cr1s              = cr1s,
       R.max             = R.max,
       verbose           = verbose,
-      P                 = P0,
+      P                 = list(),
       includeStartModel = TRUE,
       startModel        = model
     )
