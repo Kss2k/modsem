@@ -383,7 +383,7 @@ getOrderedParameterLabelsMplus <- function(parTable, TECH1, intTerms, intTermsMp
     for (i in seq_len(NROW(M))) for (j in seq_len(NCOL(M))) {
       id <- as.integer(M[i, j])
 
-      if (id <= 0L)
+      if (is.na(id) || id <= 0L)
         next
 
       if (row.lhs) {
@@ -420,7 +420,7 @@ getOrderedParameterLabelsMplus <- function(parTable, TECH1, intTerms, intTermsMp
     for (i in seq_along(T)) {
       id <- as.integer(T[i])
 
-      if (id <= 0L)
+      if (is.na(id) || id <= 0L)
         next
 
       lhs <- vars[i]
@@ -444,7 +444,7 @@ getOrderedParameterLabelsMplus <- function(parTable, TECH1, intTerms, intTermsMp
     for (i in seq_len(NROW(M))) for (j in seq_len(i)) {
       id <- as.integer(M[i, j])
 
-      if (id <= 0L)
+      if (is.na(id) || id <= 0L)
         next
 
       lhs <- cols[i]
