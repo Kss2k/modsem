@@ -26,7 +26,8 @@ bootstrap_modsem(fit_pi, FUN = rsqr_diff, R = 10)
 fit_da <- modsem(m1, oneInt, method = "lms")
 summary(fit_da)
 
-bootstrap_modsem(fit_da, FUN = coef, R = 10L)
+bootstrap_modsem(fit_da, FUN = coef, R = 10L, type = "parametric")
+bootstrap_modsem(fit_da, FUN = coef, R = 10L, type = "nonparametric")
 
 tpb <- "
 # Outer Model (Based on Hagger et al., 2007)
