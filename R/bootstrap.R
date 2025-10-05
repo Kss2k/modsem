@@ -100,7 +100,7 @@ bootstrap_modsem.modsem_da <- function(model,
                                        FUN = "coef",
                                        R = 1000L,
                                        P.max = 1e5,
-                                       type = c("nonparametric", "parameteric"),
+                                       type = c("nonparametric", "parametric"),
                                        verbose = interactive(),
                                        calc.se = FALSE,
                                        optimize = FALSE,
@@ -111,8 +111,7 @@ bootstrap_modsem.modsem_da <- function(model,
   data.mat <- modsem_inspect(model, what = "data")
   data     <- as.data.frame(data.mat)
   ovs      <- colnames(data)
-  N        <- nrow(data)
-  P.ceil   <- P.max < N * R
+  N        <- NROW(data)
   P        <- min(P.max, N * R)
   parTable <- parameter_estimates(model)
 
@@ -124,7 +123,7 @@ bootstrap_modsem.modsem_da <- function(model,
          "cluster bootstrap is only available with `type=\"nonparametric\"`!")
 
   population <- switch(type,
-    parameteric   = simulateDataParTable(parTable, N = P, colsOVs = ovs)$oV,
+    parametric   = simulateDataParTable(parTable, N = P, colsOVs = ovs)$oV,
     nonparametric = data,
     stop2("Unrecognized type!\n")
   )
@@ -159,7 +158,7 @@ bootstrap_modsem.modsem_da <- function(model,
     printedLines <- utils::capture.output(split = TRUE, {
       if (verbose) printf("Bootstrap %d/%d...\n", i, R)
 
-      sample_i  <- resample(population, cluster = cluster)
+      sample_i  <- resample(population, n.out = N, cluster = cluster)
       argList_i <- c(argList, list(data = sample_i))
 
       fit_i <- tryCatch(
@@ -258,7 +257,7 @@ bootstrap_modsem.function <- function(model = modsem,
     printedLines <- utils::capture.output(split = TRUE, {
       if (verbose) printf("Bootstrap %d/%d...\n", i, R)
 
-      sample_i  <- resample(data, cluster = data[[cluster.boot]])
+      sample_i  <- resample(data, n.out = NROW(data), cluster = data[[cluster.boot]])
       argList_i <- c(list(data = sample_i), args)
 
       fit_i <- tryCatch(
@@ -294,11 +293,11 @@ bootstrap_modsem.function <- function(model = modsem,
 }
 
 
-resample <- function(df, cluster = NULL, replace = TRUE) {
+resample <- function(df, n.out = NROW(df), cluster = NULL, replace = TRUE) {
   df.orig   <- as.data.frame(df)
 
   if (is.null(cluster)) {
-    idx <- sample(NROW(df.orig), NROW(df.orig), replace = replace)
+    idx <- sample(NROW(df.orig), size = n.out, replace = replace)
     return(df.orig[idx, , drop = FALSE])
   }
 
