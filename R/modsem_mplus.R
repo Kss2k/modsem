@@ -80,8 +80,17 @@ modsem_mplus <- function(model.syntax,
 
   # Abbreviate variable names
   names <- unique(c(parTable$rhs, parTable$lhs))
-  names <- names[!grepl(":", names)]
-  abbreviated <- abbreviate(names, minlength = 8L, strict = TRUE)
+  names.xz   <- names[grepl(":", names)]
+  names.nlin <- unique(unlist(stringr::str_split(names.xz, pattern = ":")))
+
+  names     <- names[!grepl(":", names)]
+  names.lin <- setdiff(names, names.nlin)
+
+  # we need some part of both x and z to be available in the intTerm name
+  # so variables in int terms must be less than width = 8
+  abbreviated.lin  <- abbreviate(names.lin, minlength = 8L, strict = TRUE)
+  abbreviated.nlin <- abbreviate(names.nlin, minlength = 6L, strict = TRUE)
+  abbreviated <- c(abbreviated.lin, abbreviated.nlin)
 
   # Abbreviate names in intTerms
   intTerms <- unique(parTable$rhs[grepl(":", parTable$rhs)])
