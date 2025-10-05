@@ -108,7 +108,8 @@ bootstrap_modsem.modsem_da <- function(model,
   type <- tolower(type)
   type <- match.arg(type)
 
-  data     <- as.data.frame(modsem_inspect(model, what = "data"))
+  data.mat <- modsem_inspect(model, what = "data")
+  data     <- as.data.frame(data.mat)
   ovs      <- colnames(data)
   N        <- nrow(data)
   P.ceil   <- P.max < N * R
@@ -117,9 +118,14 @@ bootstrap_modsem.modsem_da <- function(model,
 
   warnif(P.max <= N, "`P.max` is less than `N`!")
 
+  cluster <- attr(data.mat, "cluster")
+
+  stopif(!is.null(cluster) && type != "nonparametric",
+         "cluster bootstrap is only available with `type=\"nonparametric\"`!")
+
   population <- switch(type,
-    parameteric    = simulateDataParTable(parTable, N = P, colsOVs = ovs)$oV,
-    nonparametric = data[sample(nrow(data), P, replace = TRUE), ],
+    parameteric   = simulateDataParTable(parTable, N = P, colsOVs = ovs)$oV,
+    nonparametric = data,
     stop2("Unrecognized type!\n")
   )
 
@@ -153,7 +159,7 @@ bootstrap_modsem.modsem_da <- function(model,
     printedLines <- utils::capture.output(split = TRUE, {
       if (verbose) printf("Bootstrap %d/%d...\n", i, R)
 
-      sample_i  <- population[sample(P, N), ]
+      sample_i  <- resample(population, cluster = cluster)
       argList_i <- c(argList, list(data = sample_i))
 
       fit_i <- tryCatch(
@@ -186,6 +192,7 @@ bootstrap_modsem.modsem_da <- function(model,
 #' @param verbose Should progress information be printed to the console?
 #' @param data Dataset to be resampled.
 #' @param FUN.args Arguments passed to \code{FUN}
+#' @param cluster.boot Variable to cluster bootstrapping by
 #'
 #' @details This is a more general version of \code{boostrap_modsem} for
 #'   bootstrapping \code{modsem} functions, not modsem objects.
@@ -231,6 +238,7 @@ bootstrap_modsem.function <- function(model = modsem,
                                       R = 1000L,
                                       verbose = interactive(),
                                       FUN.args = list(),
+                                      cluster.boot = NULL,
                                       ...) {
   MODELFUN <- model # rename for convenience
 
@@ -241,11 +249,16 @@ bootstrap_modsem.function <- function(model = modsem,
 
   ERROR <- \(e) {warning2(e, immediate. = FALSE); NULL}
 
+  if (!is.null(cluster.boot)) {
+    stopif(length(cluster.boot) > 1L, "`cluster.boot` must be of length 1!")
+    stopif(!cluster.boot %in% colnames(data), "`cluster.boot` must be a column in `data`!")
+  }
+
   for (i in seq_len(R)) {
     printedLines <- utils::capture.output(split = TRUE, {
       if (verbose) printf("Bootstrap %d/%d...\n", i, R)
 
-      sample_i  <- data[sample(N, N, replace = TRUE), ]
+      sample_i  <- resample(data, cluster = data[[cluster.boot]])
       argList_i <- c(list(data = sample_i), args)
 
       fit_i <- tryCatch(
@@ -278,4 +291,25 @@ bootstrap_modsem.function <- function(model = modsem,
   }
 
   out
+}
+
+
+resample <- function(df, cluster = NULL, replace = TRUE) {
+  df.orig   <- as.data.frame(df)
+
+  if (is.null(cluster)) {
+    idx <- sample(NROW(df.orig), NROW(df.orig), replace = replace)
+    return(df.orig[idx, , drop = FALSE])
+  }
+
+  stopif(length(cluster) != NROW(df.orig), "Cluster must be of same lenght as data!")
+
+  clusters <- unique(cluster)
+  G <- length(clusters)
+
+  clusters.sample <- sample(clusters, size = G, replace = replace)
+
+  purrr::list_rbind(
+    lapply(clusters.sample, FUN = \(ci) df.orig[cluster==ci, , drop=FALSE])
+  )
 }
