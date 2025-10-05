@@ -251,13 +251,15 @@ bootstrap_modsem.function <- function(model = modsem,
   if (!is.null(cluster.boot)) {
     stopif(length(cluster.boot) > 1L, "`cluster.boot` must be of length 1!")
     stopif(!cluster.boot %in% colnames(data), "`cluster.boot` must be a column in `data`!")
-  }
+    cluster.values <- data[[cluster.boot]]
+
+  } else cluster.values <- NULL
 
   for (i in seq_len(R)) {
     printedLines <- utils::capture.output(split = TRUE, {
       if (verbose) printf("Bootstrap %d/%d...\n", i, R)
 
-      sample_i  <- resample(data, n.out = NROW(data), cluster = data[[cluster.boot]])
+      sample_i  <- resample(data, n.out = NROW(data), cluster = cluster.values)
       argList_i <- c(list(data = sample_i), args)
 
       fit_i <- tryCatch(
