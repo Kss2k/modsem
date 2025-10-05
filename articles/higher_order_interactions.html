@@ -119,10 +119,6 @@ latent variable of <code>PC</code> (perceived control) and
 <span><span class="st">'</span></span>
 <span></span>
 <span><span class="va">est_lms_2so</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">tpb_2so</span>, data <span class="op">=</span> <span class="va">TPB_2SO</span>, method <span class="op">=</span> <span class="st">"lms"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: warning when optimizing starting parameters:</span></span>
-<span><span class="co">#&gt; 1. lavaan-&gt;FUN():  </span></span>
-<span><span class="co">#&gt;    could not invert (co)variance matrix of factor scores; returning original </span></span>
-<span><span class="co">#&gt;    factor scores.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_lms_2so</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; modsem (1.0.13) ended normally after 76 iterations</span></span>
@@ -290,10 +286,6 @@ variable) and <code>PBC</code> (first order latent variable).</p>
 <span><span class="st">'</span></span>
 <span></span>
 <span><span class="va">est_lms_1so</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">tpb_1so</span>, data <span class="op">=</span> <span class="va">TPB_1SO</span>, method <span class="op">=</span> <span class="st">"lms"</span>, nodes <span class="op">=</span> <span class="fl">32</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: warning when optimizing starting parameters:</span></span>
-<span><span class="co">#&gt; 1. lavaan-&gt;FUN():  </span></span>
-<span><span class="co">#&gt;    could not invert (co)variance matrix of factor scores; returning original </span></span>
-<span><span class="co">#&gt;    factor scores.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_lms_1so</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; modsem (1.0.13) ended normally after 37 iterations</span></span>
@@ -484,7 +476,7 @@ an interaction effect between two higher order latent variables.</p>
 <span><span class="co">#&gt;   SNPB                                           0.481 </span></span>
 <span><span class="co">#&gt;   BEH                                            0.165 </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; lavaan 0.6-19 ended normally after 628 iterations</span></span>
+<span><span class="co">#&gt; lavaan 0.6-20 ended normally after 628 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                         ML</span></span>
 <span><span class="co">#&gt;   Optimization method                           NLMINB</span></span>
@@ -662,41 +654,6 @@ an interaction effect between two higher order latent variables.</p>
 <span><span class="co">#&gt;    .s1 (Vr_sn1pb1)    0.291    0.009   32.171    0.000</span></span>
 <span><span class="co">#&gt;    .s2 (Vr_sn2pb2)    0.288    0.008   37.329    0.000</span></span>
 <span><span class="co">#&gt;    .s3 (Vr_sn3pb3)    0.214    0.005   40.765    0.000</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Constraints:</span></span>
-<span><span class="co">#&gt;                                                |Slack|</span></span>
-<span><span class="co">#&gt;     V_ATTPC-((_ATT_INT^2*V_INT+V_ATT)*(_PC_PB    0.000</span></span>
-<span><span class="co">#&gt;     V_11-(_1_ATT^2*(_ATT_INT^2*V_INT+V_ATT)*V    0.000</span></span>
-<span><span class="co">#&gt;     V_22-(_2_ATT^2*(_ATT_INT^2*V_INT+V_ATT)*V    0.000</span></span>
-<span><span class="co">#&gt;     V_33-(_3_ATT^2*(_ATT_INT^2*V_INT+V_ATT)*V    0.000</span></span>
-<span><span class="co">#&gt;     V_ATTPB-((_ATT_INT^2*V_INT+V_ATT)*(_PB_PB    0.000</span></span>
-<span><span class="co">#&gt;     V_11-(_1_ATT^2*(_ATT_INT^2*V_INT+V_ATT)*V    0.000</span></span>
-<span><span class="co">#&gt;     V_22-(_2_ATT^2*(_ATT_INT^2*V_INT+V_ATT)*V    0.000</span></span>
-<span><span class="co">#&gt;     V_33-(_3_ATT^2*(_ATT_INT^2*V_INT+V_ATT)*V    0.000</span></span>
-<span><span class="co">#&gt;     V_SNPC-((_SN_INT^2*V_INT+V_SN)*(_PC_PBC^2    0.000</span></span>
-<span><span class="co">#&gt;     V_11-(_1_SN^2*(_SN_INT^2*V_INT+V_SN)*V_1+    0.000</span></span>
-<span><span class="co">#&gt;     V_22-(_2_SN^2*(_SN_INT^2*V_INT+V_SN)*V_2+    0.000</span></span>
-<span><span class="co">#&gt;     V_33-(_3_SN^2*(_SN_INT^2*V_INT+V_SN)*V_3+    0.000</span></span>
-<span><span class="co">#&gt;     V_SNPB-((_SN_INT^2*V_INT+V_SN)*(_PB_PBC^2    0.000</span></span>
-<span><span class="co">#&gt;     V_11-(_1_SN^2*(_SN_INT^2*V_INT+V_SN)*V_1+    0.000</span></span>
-<span><span class="co">#&gt;     V_22-(_2_SN^2*(_SN_INT^2*V_INT+V_SN)*V_2+    0.000</span></span>
-<span><span class="co">#&gt;     V_33-(_3_SN^2*(_SN_INT^2*V_INT+V_SN)*V_3+    0.000</span></span>
-<span><span class="co">#&gt;     lmbd_tt1pc1_ATTPC-(lmbd_tt1_ATT*lmb_1_PC)    0.000</span></span>
-<span><span class="co">#&gt;     lmbd_tt2pc2_ATTPC-(lmbd_tt2_ATT*lmb_2_PC)    0.000</span></span>
-<span><span class="co">#&gt;     lmbd_tt3pc3_ATTPC-(lmbd_tt3_ATT*lmb_3_PC)    0.000</span></span>
-<span><span class="co">#&gt;     lmbd_tt1pb1_ATTPB-(lmbd_tt1_ATT*lmb_1_PB)    0.000</span></span>
-<span><span class="co">#&gt;     lmbd_tt2pb2_ATTPB-(lmbd_tt2_ATT*lmb_2_PB)    0.000</span></span>
-<span><span class="co">#&gt;     lmbd_tt3pb3_ATTPB-(lmbd_tt3_ATT*lmb_3_PB)    0.000</span></span>
-<span><span class="co">#&gt;     lmbd_sn1pc1_SNPC-(lmbd_sn1_SN*lmbd_p1_PC)    0.000</span></span>
-<span><span class="co">#&gt;     lmbd_sn2pc2_SNPC-(lmbd_sn2_SN*lmbd_p2_PC)    0.000</span></span>
-<span><span class="co">#&gt;     lmbd_sn3pc3_SNPC-(lmbd_sn3_SN*lmbd_p3_PC)    0.000</span></span>
-<span><span class="co">#&gt;     lmbd_sn1pb1_SNPB-(lmbd_sn1_SN*lmbd_p1_PB)    0.000</span></span>
-<span><span class="co">#&gt;     lmbd_sn2pb2_SNPB-(lmbd_sn2_SN*lmbd_p2_PB)    0.000</span></span>
-<span><span class="co">#&gt;     lmbd_sn3pb3_SNPB-(lmbd_sn3_SN*lmbd_p3_PB)    0.000</span></span>
-<span><span class="co">#&gt;     Mn_ATTPC-((Cv_INT_PBC*l_ATT_INT*_PC_PBC))    0.000</span></span>
-<span><span class="co">#&gt;     Mn_ATTPB-((Cv_INT_PBC*l_ATT_INT*_PB_PBC))    0.000</span></span>
-<span><span class="co">#&gt;     Mn_SNPC-((Cv_INT_PBC*lmb_PC_PBC*_SN_INT))    0.000</span></span>
-<span><span class="co">#&gt;     Mn_SNPB-((Cv_INT_PBC*lmb_PB_PBC*_SN_INT))    0.000</span></span>
 <span></span>
 <span><span class="va">est_dblcent</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">tpb_2so</span>, data <span class="op">=</span> <span class="va">TPB_2SO</span>, method <span class="op">=</span> <span class="st">"dblcent"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_dblcent</span><span class="op">)</span></span>
@@ -727,7 +684,7 @@ an interaction effect between two higher order latent variables.</p>
 <span><span class="co">#&gt;   SNPB                                           0.532 </span></span>
 <span><span class="co">#&gt;   BEH                                            0.182 </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; lavaan 0.6-19 ended normally after 728 iterations</span></span>
+<span><span class="co">#&gt; lavaan 0.6-20 ended normally after 728 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                         ML</span></span>
 <span><span class="co">#&gt;   Optimization method                           NLMINB</span></span>
@@ -1230,7 +1187,7 @@ first order latent variable.</p>
 <span><span class="co">#&gt;   PBCPBC                                         0.703 </span></span>
 <span><span class="co">#&gt;   BEH                                            0.232 </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; lavaan 0.6-19 ended normally after 446 iterations</span></span>
+<span><span class="co">#&gt; lavaan 0.6-20 ended normally after 446 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                         ML</span></span>
 <span><span class="co">#&gt;   Optimization method                           NLMINB</span></span>
@@ -1373,33 +1330,6 @@ first order latent variable.</p>
 <span><span class="co">#&gt;    .pbc11 (Vr_p11)    0.423    0.015   28.080    0.000</span></span>
 <span><span class="co">#&gt;    .pbc22 (Vr_p22)    0.432    0.013   33.193    0.000</span></span>
 <span><span class="co">#&gt;    .pbc33 (Vr_p33)    0.334    0.009   35.936    0.000</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Constraints:</span></span>
-<span><span class="co">#&gt;                                                |Slack|</span></span>
-<span><span class="co">#&gt;     V_ATTPBC-((_ATT_INT^2*V_INT+V_ATT)*(_PBC_    0.000</span></span>
-<span><span class="co">#&gt;     V_11-(_1_ATT^2*(_ATT_INT^2*V_INT+V_ATT)*V    0.000</span></span>
-<span><span class="co">#&gt;     V_22-(_2_ATT^2*(_ATT_INT^2*V_INT+V_ATT)*V    0.000</span></span>
-<span><span class="co">#&gt;     V_33-(_3_ATT^2*(_ATT_INT^2*V_INT+V_ATT)*V    0.000</span></span>
-<span><span class="co">#&gt;     V_SNPBC-((_SN_INT^2*V_INT+V_SN)*(_PBC_INT    0.000</span></span>
-<span><span class="co">#&gt;     V_11-(_1_SN^2*(_SN_INT^2*V_INT+V_SN)*V_1+    0.000</span></span>
-<span><span class="co">#&gt;     V_22-(_2_SN^2*(_SN_INT^2*V_INT+V_SN)*V_2+    0.000</span></span>
-<span><span class="co">#&gt;     V_33-(_3_SN^2*(_SN_INT^2*V_INT+V_SN)*V_3+    0.000</span></span>
-<span><span class="co">#&gt;     V_PBCPBC-((_PBC_INT^2*V_INT+V_PBC)*(_PBC_    0.000</span></span>
-<span><span class="co">#&gt;     V_11-(_1_PBC^2*(_PBC_INT^2*V_INT+V_PBC)*V    0.000</span></span>
-<span><span class="co">#&gt;     V_22-(_2_PBC^2*(_PBC_INT^2*V_INT+V_PBC)*V    0.000</span></span>
-<span><span class="co">#&gt;     V_33-(_3_PBC^2*(_PBC_INT^2*V_INT+V_PBC)*V    0.000</span></span>
-<span><span class="co">#&gt;     lmbd_tt1pbc1_ATTPBC-(lmbd_tt1_ATT*_1_PBC)    0.000</span></span>
-<span><span class="co">#&gt;     lmbd_tt2pbc2_ATTPBC-(lmbd_tt2_ATT*_2_PBC)    0.000</span></span>
-<span><span class="co">#&gt;     lmbd_tt3pbc3_ATTPBC-(lmbd_tt3_ATT*_3_PBC)    0.000</span></span>
-<span><span class="co">#&gt;     lmbd_sn1pbc1_SNPBC-(lmbd_sn1_SN*lm_1_PBC)    0.000</span></span>
-<span><span class="co">#&gt;     lmbd_sn2pbc2_SNPBC-(lmbd_sn2_SN*lm_2_PBC)    0.000</span></span>
-<span><span class="co">#&gt;     lmbd_sn3pbc3_SNPBC-(lmbd_sn3_SN*lm_3_PBC)    0.000</span></span>
-<span><span class="co">#&gt;     lmbd_pbc1pbc1_PBCPBC-(lmbd_p1_PBC*_1_PBC)    0.000</span></span>
-<span><span class="co">#&gt;     lmbd_pbc2pbc2_PBCPBC-(lmbd_p2_PBC*_2_PBC)    0.000</span></span>
-<span><span class="co">#&gt;     lmbd_pbc3pbc3_PBCPBC-(lmbd_p3_PBC*_3_PBC)    0.000</span></span>
-<span><span class="co">#&gt;     Mn_ATTPBC-((lmbd_ATT_INT*_PBC_INT*V_INT))    0.000</span></span>
-<span><span class="co">#&gt;     Mn_SNPBC-((lmbd_PBC_INT*lm_SN_INT*V_INT))    0.000</span></span>
-<span><span class="co">#&gt;     Mn_PBCPBC-((lmbd_PBC_INT^2*Vr_INT+V_PBC))    0.000</span></span>
 <span></span>
 <span><span class="va">est_dblcent</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">tpb_1so</span>, data <span class="op">=</span> <span class="va">TPB_1SO</span>, method <span class="op">=</span> <span class="st">"dblcent"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_dblcent</span><span class="op">)</span></span>
@@ -1428,7 +1358,7 @@ first order latent variable.</p>
 <span><span class="co">#&gt;   PBCPBC                                         0.812 </span></span>
 <span><span class="co">#&gt;   BEH                                            0.276 </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; lavaan 0.6-19 ended normally after 583 iterations</span></span>
+<span><span class="co">#&gt; lavaan 0.6-20 ended normally after 583 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                         ML</span></span>
 <span><span class="co">#&gt;   Optimization method                           NLMINB</span></span>

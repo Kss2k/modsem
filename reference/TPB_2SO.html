@@ -112,7 +112,7 @@ construct of PC and PB.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   SNPB                                           0.481 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   BEH                                            0.165 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> lavaan 0.6-19 ended normally after 628 iterations</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> lavaan 0.6-20 ended normally after 628 iterations</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Estimator                                         ML</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Optimization method                           NLMINB</span>
@@ -290,41 +290,6 @@ construct of PC and PB.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .s1 (Vr_sn1pb1)    0.291    0.009   32.171    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .s2 (Vr_sn2pb2)    0.288    0.008   37.329    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .s3 (Vr_sn3pb3)    0.214    0.005   40.765    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Constraints:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                                                |Slack|</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     V_ATTPC-((V_ATT+V_INT*_ATT_INT^2)*(V_PBC*    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     V_11-(_1_ATT^2*(V_ATT+V_INT*_ATT_INT^2)*V    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     V_22-(_2_ATT^2*(V_ATT+V_INT*_ATT_INT^2)*V    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     V_33-(_3_ATT^2*(V_ATT+V_INT*_ATT_INT^2)*V    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     V_ATTPB-((V_ATT+V_INT*_ATT_INT^2)*(V_PB+V    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     V_11-(_1_ATT^2*(V_ATT+V_INT*_ATT_INT^2)*V    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     V_22-(_2_ATT^2*(V_ATT+V_INT*_ATT_INT^2)*V    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     V_33-(_3_ATT^2*(V_ATT+V_INT*_ATT_INT^2)*V    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     V_SNPC-((V_INT*_SN_INT^2+V_SN)*(V_PBC*_PC    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     V_11-(_1_SN^2*(V_INT*_SN_INT^2+V_SN)*V_1+    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     V_22-(_2_SN^2*(V_INT*_SN_INT^2+V_SN)*V_2+    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     V_33-(_3_SN^2*(V_INT*_SN_INT^2+V_SN)*V_3+    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     V_SNPB-((V_INT*_SN_INT^2+V_SN)*(V_PB+V_PB    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     V_11-(_1_SN^2*(V_INT*_SN_INT^2+V_SN)*V_1+    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     V_22-(_2_SN^2*(V_INT*_SN_INT^2+V_SN)*V_2+    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     V_33-(_3_SN^2*(V_INT*_SN_INT^2+V_SN)*V_3+    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     lmbd_tt1pc1_ATTPC-(lmbd_tt1_ATT*lmb_1_PC)    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     lmbd_tt2pc2_ATTPC-(lmbd_tt2_ATT*lmb_2_PC)    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     lmbd_tt3pc3_ATTPC-(lmbd_tt3_ATT*lmb_3_PC)    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     lmbd_tt1pb1_ATTPB-(lmbd_tt1_ATT*lmb_1_PB)    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     lmbd_tt2pb2_ATTPB-(lmbd_tt2_ATT*lmb_2_PB)    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     lmbd_tt3pb3_ATTPB-(lmbd_tt3_ATT*lmb_3_PB)    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     lmbd_sn1pc1_SNPC-(lmbd_sn1_SN*lmbd_p1_PC)    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     lmbd_sn2pc2_SNPC-(lmbd_sn2_SN*lmbd_p2_PC)    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     lmbd_sn3pc3_SNPC-(lmbd_sn3_SN*lmbd_p3_PC)    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     lmbd_sn1pb1_SNPB-(lmbd_sn1_SN*lmbd_p1_PB)    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     lmbd_sn2pb2_SNPB-(lmbd_sn2_SN*lmbd_p2_PB)    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     lmbd_sn3pb3_SNPB-(lmbd_sn3_SN*lmbd_p3_PB)    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     Mn_ATTPC-((Cv_INT_PBC*l_ATT_INT*_PC_PBC))    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     Mn_ATTPB-((Cv_INT_PBC*l_ATT_INT*_PB_PBC))    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     Mn_SNPC-((Cv_INT_PBC*lmb_PC_PBC*_SN_INT))    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     Mn_SNPB-((Cv_INT_PBC*lmb_PB_PBC*_SN_INT))    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 </code></pre></div>
