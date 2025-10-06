@@ -804,7 +804,7 @@ fitX2Cov <- function(X, S) {
   mu_X <- colMeans(X)
   X_centered <- sweep(X, 2, mu_X, FUN = "-")
 
-  Sigma_X <- cov(X)
+  Sigma_X <- stats::cov(X)
 
   # Check positive definiteness
   if (any(eigen(Sigma_X, symmetric = TRUE)$values <= 0)) {
