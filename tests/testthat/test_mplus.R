@@ -6,8 +6,14 @@ m1 <- '
   Y =~ y1 + y2
 
 # Inner model
-  Y ~ X + Z + X:Z
+  Y ~ b1 * X + b2 * Z + b3 * X:Z
+
+  ccoef := (b1 + b2 * b3) / 2
+  ccoef2 := b1 * b2
+
+  b1 == b2
 '
+
 run <- tryCatch({
     MplusAutomation::detectMplus()
     TRUE

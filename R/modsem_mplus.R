@@ -93,7 +93,7 @@ modsem_mplus <- function(model.syntax,
   abbreviated <- c(abbreviated, newIntTerms)
 
   # Fix names in parTable
-  rmask <- parTable$rhs != ""
+  rmask <- parTable$rhs != "" & !parTable$op %in% c(":=", "==", "<", ">")
   lmask <- parTable$lhs != ""
   parTable$rhs[rmask] <- abbreviated[parTable$rhs[rmask]]
   parTable$lhs[lmask] <- abbreviated[parTable$lhs[lmask]]
@@ -137,7 +137,8 @@ modsem_mplus <- function(model.syntax,
             paste("processors =", processors),
             paste("integration = ", integration),
             sep = ";\n"), ";\n"), # add final ";"
-    MODEL = parTableToMplusModel(parTable, ...),
+    MODEL = parTableToMplusModel(parTable, ignoreConstraints = TRUE, ...),
+    MODELCONSTRAINT = parTableToMplusModelConstraints(parTable, ...),
     OUTPUT = OUTPUT,
     rdata = data[usevariables],
   )
@@ -149,7 +150,8 @@ modsem_mplus <- function(model.syntax,
   mplusParTable <- mplusTableToParTable(coefsTable,
                                         intTerms = intTerms,
                                         intTermsMplus = intTermsMplus,
-                                        indicators = indicators)
+                                        indicators = indicators,
+                                        parTable.in = parTable)
 
   # coef and vcov
   TECH1 <- MplusAutomation::get_results(results, element = "tech1")
@@ -225,8 +227,13 @@ xwith <- function(elems) {
 }
 
 
-parTableToMplusModel <- function(parTable) {
-  # INTERACTIONEXPRESSIOns
+parTableToMplusModel <- function(parTable, ignoreConstraints = FALSE) {
+  if (ignoreConstraints) {
+    parTable <- parTable[!parTable$op %in% c(":=", "==", "<", ">"),
+                         , drop = FALSE]
+  }
+
+  # Interaction expressions
   interactions <- parTable[grepl(":", parTable$rhs), "rhs"]
   elemsInInts <- stringr::str_split(interactions, ":")
   newRows <- lapply(elemsInInts, FUN = xwith) |>
@@ -258,6 +265,29 @@ parTableToMplusModel <- function(parTable) {
   stringr::str_remove_all(out, ":")
 }
 
+parTableToMplusModelConstraints <- function(parTable) {
+  constraints <- parTable[parTable$op %in% c(":=", "==", "<", ">"),
+                          , drop = FALSE]
+
+  if (!NROW(constraints))
+    return(NULL)
+
+  out <- ""
+  for (i in seq_len(NROW(constraints))) {
+    lhs <- constraints$lhs[i]
+    op  <- constraints$op[i]
+    rhs <- constraints$rhs[i]
+
+    if (op == ":=")
+      out <- paste0(out, "NEW(", lhs, ");\n")
+
+    mop <- ifelse(op %in% c(":=", "=="), yes = "=", no = op)
+    out <- paste0(out, sprintf("%s %s %s;\n", lhs, mop, rhs))
+  }
+
+  out
+}
+
 
 replaceLavOpWithMplus <- function(op) {
   vapply(op,
@@ -279,7 +309,8 @@ switchLavOpToMplus <- function(op) {
 mplusTableToParTable <- function(coefsTable,
                                  indicators,
                                  intTerms,
-                                 intTermsMplus) {
+                                 intTermsMplus,
+                                 parTable.in = NULL) {
   coefsTable <- rename(coefsTable, Label = "label",
                        se = "std.error", pval = "p.value")
   coefsTable$label <- stringr::str_remove_all(coefsTable$label, pattern = " ")
@@ -300,7 +331,7 @@ mplusTableToParTable <- function(coefsTable,
     cbind(coefsTable[measCoefNames, ])
 
   # Structural Model
-  measrRemoved <- coefsTable[!measCoefNames, ]
+  measrRemoved <- coefsTable[!measCoefNames, , drop = FALSE]
   patternStruct <- "<-(?!>|Intercept)"
   structCoefNames <- grepl(patternStruct, measrRemoved$label, perl = TRUE)
 
@@ -321,7 +352,7 @@ mplusTableToParTable <- function(coefsTable,
   }
 
   # Variances and Covariances
-  structMeasrRemoved <- measrRemoved[!structCoefNames, ]
+  structMeasrRemoved <- measrRemoved[!structCoefNames, , drop = FALSE]
   patternCovVar <- "<->"
   covVarCoefNames <- grepl(patternCovVar, structMeasrRemoved$label, perl = TRUE)
   covVarLhs <- stringr::str_split_i(structMeasrRemoved$label[covVarCoefNames],
@@ -332,7 +363,7 @@ mplusTableToParTable <- function(coefsTable,
     cbind(structMeasrRemoved[covVarCoefNames, ])
 
   # Intercepts
-  covStructMeasrRemoved <- structMeasrRemoved[!covVarCoefNames, ]
+  covStructMeasrRemoved <- structMeasrRemoved[!covVarCoefNames, , drop = FALSE]
   patternIntercept <- "<-Intercept"
   interceptNames <- grepl(patternIntercept, covStructMeasrRemoved$label, perl = TRUE)
   interceptLhs <- stringr::str_split_i(covStructMeasrRemoved$label[interceptNames],
@@ -340,10 +371,49 @@ mplusTableToParTable <- function(coefsTable,
   interceptModel <- data.frame(lhs = interceptLhs, op = "~1", rhs = "") |>
     cbind(covStructMeasrRemoved[interceptNames, ])
 
-  mplusParTable <- rbind(measModel, structModel, covVarModel, interceptModel)
+  # Custom / Remaining
+  intCovStructMeasrRemoved <- covStructMeasrRemoved[!interceptNames, , drop = FALSE]
+
+  if (NROW(intCovStructMeasrRemoved)) {
+    customModel <- data.frame(lhs = intCovStructMeasrRemoved$label, op = ":=", rhs = "") |>
+      cbind(intCovStructMeasrRemoved)
+
+    if (!is.null(parTable.in)) {
+      lrCustom <- parTable.in[parTable.in$op == ":=", c("lhs", "rhs"), drop = FALSE]
+      lrCustom$lhs <- toupper(lrCustom$lhs)
+
+      notRhs   <- colnames(customModel) != "rhs"
+      customModel <- merge(x = customModel[notRhs],
+                           y = lrCustom, on = "lhs",
+                           all.x = TRUE, all.y = FALSE)
+    }
+
+  } else customModel <- NULL
+
+  # Combine
+  mplusParTable <- rbind(measModel, structModel, covVarModel, interceptModel,
+                         customModel)
   mplusParTable [c("lhs", "rhs")] <-
     lapplyDf(mplusParTable[c("lhs", "rhs")], function(x)
              stringr::str_remove_all(x, " "))
+
+  if (!is.null(parTable.in) && any(parTable.in$mod != "")) {
+    LABELS <- parTable.in[parTable.in$rhs != "", , drop = FALSE]
+    LABELS <- rename(LABELS[c("lhs", "op", "rhs", "mod")], mod = "label.lav")
+
+    mplusParTable$order <- seq_len(NROW(mplusParTable))
+    mplusParTable <- merge(x = mplusParTable,
+                           y = LABELS,
+                           on = c("lhs", "op", "rhs"),
+                           all.x = TRUE, all.y = FALSE)
+
+    match <- !is.na(mplusParTable$label.lav)
+    mplusParTable[match, "label"] <- mplusParTable[match, "label.lav"]
+
+    # clean up
+    mplusParTable <- mplusParTable[colnames(mplusParTable) != "label.lav"]
+    mplusParTable <- mplusParTable[order(mplusParTable$order), , drop = FALSE]
+  }
 
   mplusParTable$ci.lower <- mplusParTable$est - CI_WIDTH * mplusParTable$std.error
   mplusParTable$ci.upper <- mplusParTable$est + CI_WIDTH * mplusParTable$std.error
@@ -357,12 +427,20 @@ mplusTableToParTable <- function(coefsTable,
 
 getOrderedParameterLabelsMplus <- function(parTable, TECH1, intTerms, intTermsMplus) {
   spec   <- TECH1$parameterSpecification
-  nu     <- spec$nu
-  alpha  <- spec$alpha
-  lambda <- spec$lambda
-  beta   <- spec$beta
-  psi    <- spec$psi
-  theta  <- spec$theta
+
+  CPAR <- "THE.ADDITIONAL.PARAMETERS"
+  if (CPAR %in% names(spec)) custom <- spec[[CPAR]]$new_additional
+  else                       custom <- NULL
+
+  if ("X" %in% names(spec)) specX <- spec$X
+  else                      specX <- spec
+
+  nu     <- specX$nu
+  alpha  <- specX$alpha
+  lambda <- specX$lambda
+  beta   <- specX$beta
+  psi    <- specX$psi
+  theta  <- specX$theta
 
   setLabel <- function(out, label, id) {
     if (!length(label)) {
@@ -460,6 +538,32 @@ getOrderedParameterLabelsMplus <- function(parTable, TECH1, intTerms, intTermsMp
     out
   }
 
+  getCustom <- function(M, op = ":=") {
+    if (is.null(M) || NROW(M) == 0L) return(NULL)
+
+    # assumes M has nrows(M)
+    warnif(NROW(M) > 1L,
+           "Expected parameter matrix for additional pars\n",
+           "to have a single row!", immediate. = FALSE)
+
+    cols <- colnames(M)
+    out  <- c()
+
+    for (i in seq_len(NCOL(M))) {
+      id <- as.integer(M[1L, i])
+
+      if (is.na(id) || id <= 0L)
+        next
+
+      lhs <- cols[i]
+
+      label <- parTable[parTable$op == op & parTable$lhs == lhs, "lhs"]
+      out <- setLabel(out = out, label = label, id = id)
+    }
+
+    out
+  }
+
   for (i in seq_along(intTerms)) {
     xzMplus  <- substr(intTermsMplus[[i]], start = 1L, stop = 8L)
     xzModsem <- intTerms[[i]]
@@ -474,7 +578,8 @@ getOrderedParameterLabelsMplus <- function(parTable, TECH1, intTerms, intTermsMp
     getReg(lambda, row.lhs = FALSE, op = "=~"),
     getReg(beta, row.lhs = TRUE, op = "~", try.op = "=~"), # include "=~" for higher order models
     getCovariance(psi),
-    getCovariance(theta)
+    getCovariance(theta),
+    getCustom(custom)
   )
 
   out <- out[!duplicated(out)] # unique() removes labels
