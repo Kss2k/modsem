@@ -384,7 +384,7 @@ mplusTableToParTable <- function(coefsTable,
 
       notRhs   <- colnames(customModel) != "rhs"
       customModel <- merge(x = customModel[notRhs],
-                           y = lrCustom, on = "lhs",
+                           y = lrCustom, by = "lhs",
                            all.x = TRUE, all.y = FALSE)
     }
 
@@ -404,7 +404,7 @@ mplusTableToParTable <- function(coefsTable,
     mplusParTable$order <- seq_len(NROW(mplusParTable))
     mplusParTable <- merge(x = mplusParTable,
                            y = LABELS,
-                           on = c("lhs", "op", "rhs"),
+                           by = c("lhs", "op", "rhs"),
                            all.x = TRUE, all.y = FALSE)
 
     match <- !is.na(mplusParTable$label.lav)
