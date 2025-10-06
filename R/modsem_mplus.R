@@ -407,7 +407,7 @@ mplusTableToParTable <- function(coefsTable,
              stringr::str_remove_all(x, " "))
 
   if (!is.null(parTable.in) && any(parTable.in$mod != "")) {
-    LABELS <- parTable.in[parTable.in$rhs != "", , drop = FALSE]
+    LABELS <- parTable.in[parTable.in$mod != "", , drop = FALSE]
     LABELS <- rename(LABELS[c("lhs", "op", "rhs", "mod")], mod = "label.lav")
 
     mplusParTable$order <- seq_len(NROW(mplusParTable))
@@ -592,7 +592,6 @@ getOrderedParameterLabelsMplus <- function(parTable, TECH1, intTerms, intTermsMp
   )
 
   out <- out[!duplicated(out)] # unique() removes labels
-
   sort(out)
 }
 
