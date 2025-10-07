@@ -1,8 +1,6 @@
 name: GitHub Clone Count Update Everyday
 
 on:
-  push:
-    branches: [ main, cran-downloads ]
   schedule:
     - cron: "0 */24 * * *"
   workflow_dispatch:
