@@ -81,7 +81,9 @@ fw =~ y1 + y2 + y3
 fw ~ X1 + X2 + X3 + W1 + W2
 '
 
-# Standard errors corrected for clustering
-fit.rc <- modsem(mod, lavaan::Demo.twolevel, rcs = TRUE, method = "mplus",
-                 cluster = "cluster")
-summary(fit.rc)
+if (run) {
+  # Standard errors corrected for clustering
+  fit.rc <- modsem(mod, lavaan::Demo.twolevel, rcs = TRUE, method = "mplus",
+                   cluster = "cluster", estimator = "MLR")
+  summary(fit.rc)
+}
