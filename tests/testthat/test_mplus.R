@@ -6,8 +6,14 @@ m1 <- '
   Y =~ y1 + y2
 
 # Inner model
-  Y ~ X + Z + X:Z
+  Y ~ b1 * X + b2 * Z + b3 * X:Z
+
+  ccoef := (b1 + b2 * b3) / 2
+  ccoef2 := b1 * b2
+
+  b1 == b2
 '
+
 run <- tryCatch({
     MplusAutomation::detectMplus()
     TRUE
@@ -57,4 +63,27 @@ if (run) {
   mplus_tpb_3way <- modsem(tpb, data = TPB[1:250, ], method = "mplus", rcs = TRUE,
                            integration = 8)
   standardized_estimates(mplus_tpb_3way)
+}
+
+
+# Test robust std.errors
+mod <- '
+# X1-3 are Level 1 variables
+X1 =~ x1 
+X2 =~ x2
+X3 =~ x3
+
+# W1-2 are Level 2 variables
+W1 =~ w1
+W2 =~ w2
+
+fw =~ y1 + y2 + y3
+fw ~ X1 + X2 + X3 + W1 + W2
+'
+
+if (run) {
+  # Standard errors corrected for clustering
+  fit.rc <- modsem(mod, lavaan::Demo.twolevel, rcs = TRUE, method = "mplus",
+                   cluster = "cluster", estimator = "MLR")
+  summary(fit.rc)
 }
