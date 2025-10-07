@@ -3,8 +3,8 @@
 #' @param model.syntax lavaan/modsem syntax
 #' @param data dataset
 #' @param estimator estimator argument passed to \code{Mplus}.
-#' @param type type argument passed to \code{Mplus}.
 #' @param cluster cluster argument passed to \code{Mplus}.
+#' @param type type argument passed to \code{Mplus}.
 #' @param algorithm algorithm argument passed to \code{Mplus}.
 #' @param processors processors argument passed to \code{Mplus}.
 #' @param integration integration argument passed to \code{Mplus}.
@@ -53,8 +53,8 @@
 modsem_mplus <- function(model.syntax,
                          data,
                          estimator = "ml",
-                         type = "random",
                          cluster = NULL,
+                         type = ifelse(is.null(cluster), yes = "random", no = "complex"),
                          algorithm = "integration",
                          processors = 2,
                          integration = 15,

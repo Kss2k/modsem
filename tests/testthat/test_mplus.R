@@ -83,5 +83,5 @@ fw ~ X1 + X2 + X3 + W1 + W2
 
 # Standard errors corrected for clustering
 fit.rc <- modsem(mod, lavaan::Demo.twolevel, rcs = TRUE, method = "mplus",
-                 cluster = "cluster", type = "complex")
+                 cluster = "cluster")
 summary(fit.rc)

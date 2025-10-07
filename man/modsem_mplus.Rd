@@ -8,8 +8,8 @@ modsem_mplus(
   model.syntax,
   data,
   estimator = "ml",
-  type = "random",
   cluster = NULL,
+  type = ifelse(is.null(cluster), yes = "random", no = "complex"),
   algorithm = "integration",
   processors = 2,
   integration = 15,
@@ -27,9 +27,9 @@ modsem_mplus(
 
 \item{estimator}{estimator argument passed to \code{Mplus}.}
 
-\item{type}{type argument passed to \code{Mplus}.}
-
 \item{cluster}{cluster argument passed to \code{Mplus}.}
+
+\item{type}{type argument passed to \code{Mplus}.}
 
 \item{algorithm}{algorithm argument passed to \code{Mplus}.}
 
