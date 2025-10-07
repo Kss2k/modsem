@@ -4,6 +4,7 @@
 [![Tests](https://github.com/kss2k/modsem/actions/workflows/tests.yml/badge.svg)](https://github.com/kss2k/modsem/actions/workflows/tests.yml)
 [![CRAN](https://www.r-pkg.org/badges/version/modsem)](https://cran.r-project.org/package=modsem)
 [![PKGDOWN-Build](https://github.com/kss2k/modsem/actions/workflows/pkgdown.yml/badge.svg)](https://github.com/kss2k/modsem/actions/workflows/pkgdown.yml)
+[![](https://cranlogs.r-pkg.org/badges/grand-total/modsem)](https://cran.r-project.org/package=modsem)
 <!-- badges: end -->
 `modsem` is an `R`-package for estimating interaction (i.e., moderation) effects between latent variables
 in structural equation models (SEMs). See https://www.modsem.org for a tutorial.
