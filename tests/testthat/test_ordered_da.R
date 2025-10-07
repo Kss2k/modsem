@@ -50,8 +50,7 @@ for (choose in CHOOSE) {
   set.seed(2837290)
   CUTS <- cut_data(oneInt, choose = choose)
   oneInt2 <- CUTS$data
-  lms1 <- modsem(m1, oneInt2, method = "lms", ordered = choose,
-                 ordered.iter = 75, ordered.warmup = 20)
+  lms1 <- modsem(m1, oneInt2, method = "lms", ordered = choose)
   thresholds <- CUTS$thresholds
 
 

@@ -41,8 +41,7 @@ modsem_da(
   algorithm = NULL,
   em.control = NULL,
   ordered = NULL,
-  ordered.iter = 100L,
-  ordered.warmup = 25L,
+  ordered.probit.correction = FALSE,
   cluster = NULL,
   cr1s = FALSE,
   rcs = FALSE,
@@ -207,10 +206,9 @@ the factor scores are included in the probit regression, if applicable.
 The estimates are more robust to unequal intervals in ordinal variables. I.e., the estimates
 should be more consistent, and less biased.}
 
-\item{ordered.iter}{Maximum number of sampling iterations used to sample the underlying continuous distribution of the
-ordinal variables. The default is set to \code{100}.}
-
-\item{ordered.warmup}{Number of sampling iterations in the warmup phase.}
+\item{ordered.probit.correction}{Should ordered indicators be transformed such that they
+reproduce their (probit) polychoric correlation matrix? This can be useful for
+ordered variables with only a few categories, or for linear models.}
 
 \item{cluster}{Clusters used to compute standard errors robust to non-indepence of observations. Must be paired with
 \code{robust.se = TRUE}.}

@@ -150,10 +150,9 @@
 #'   The estimates are more robust to unequal intervals in ordinal variables. I.e., the estimates
 #'   should be more consistent, and less biased.
 #'
-#' @param ordered.iter Maximum number of sampling iterations used to sample the underlying continuous distribution of the
-#'   ordinal variables. The default is set to \code{100}.
-#'
-#' @param ordered.warmup Number of sampling iterations in the warmup phase.
+#' @param ordered.probit.correction Should ordered indicators be transformed such that they
+#'   reproduce their (probit) polychoric correlation matrix? This can be useful for
+#'   ordered variables with only a few categories, or for linear models.
 #'
 #' @param cluster Clusters used to compute standard errors robust to non-indepence of observations. Must be paired with
 #'   \code{robust.se = TRUE}.
@@ -307,8 +306,7 @@ modsem_da <- function(model.syntax = NULL,
                       algorithm = NULL,
                       em.control = NULL,
                       ordered = NULL,
-                      ordered.iter = 100L,
-                      ordered.warmup = 25L,
+                      ordered.probit.correction = FALSE,
                       cluster = NULL,
                       cr1s = FALSE,
                       rcs = FALSE,
@@ -334,8 +332,6 @@ modsem_da <- function(model.syntax = NULL,
        data                = data,
        method              = method,
        verbose             = verbose,
-       iter                = ordered.iter,
-       warmup              = ordered.warmup,
        optimize            = optimize,
        nodes               = nodes,
        missing             = missing,
@@ -368,6 +364,7 @@ modsem_da <- function(model.syntax = NULL,
        algorithm           = algorithm,
        em.control          = em.control,
        ordered             = ordered,
+       probit.correction   = ordered.probit.correction,
        cluster             = cluster,
        cr1s                = cr1s,
        rcs                 = rcs,

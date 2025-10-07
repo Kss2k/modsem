@@ -29,7 +29,7 @@ modsemOrderedScaleCorrectionV1 <- function(model.syntax,
                                            optimize = TRUE,
                                            start = NULL,
                                            mean.observed = NULL,
-                                           scaling.factor.int = NULL,
+                                           probit.correction = FALSE,
                                            ...) {
   standardize <- \(x) (x - mean(x, na.rm = TRUE)) / stats::sd(x, na.rm = TRUE)
 
@@ -103,13 +103,6 @@ modsemOrderedScaleCorrectionV1 <- function(model.syntax,
 
       pars <- parameter_estimates(fit_i)
 
-      if (!is.null(scaling.factor.int)) {
-        # bias represents the degree to which the coefficient is
-        # over/under estimated. we use it to get a scaling factor
-        is.int <- grepl(":", pars$rhs)
-        pars[is.int, "est"] <- scaling.factor.int * pars[is.int, "est"]
-      }
-
       sim_i <- simulateDataParTable(
         parTable = pars,
         N        = N
@@ -121,7 +114,8 @@ modsemOrderedScaleCorrectionV1 <- function(model.syntax,
                                      cols.cont = cols.cont,
                                      linear.ovs = inds.xis)
 
-      data_j <- fitX2Cov(X = rescaled$data, S = pcorr)
+      if (probit.correction) data_j <- fitX2Cov(X = rescaled$data, S = pcorr)
+      else                   data_j <- rescaled$data
 
       if (j >= 1L && !is.null(thresholds) && !is.null(data_i)) {
         lambda_j <- 1 / j
@@ -448,22 +442,22 @@ std1 <- function(v) {
 
 
 modsemOrderedScaleCorrectionV2 <- function(model.syntax,
-                                         data,
-                                         method = "lms",
-                                         ordered = NULL,
-                                         calc.se = TRUE,
-                                         iter = 75L,
-                                         warmup = 25L,
-                                         N = max(NROW(data), 1e5),
-                                         se = "simple",
-                                         diff.theta.tol = 1e-10,
-                                         ordered.mean.observed = FALSE,
-                                         verbose = interactive(),
-                                         optimize = TRUE,
-                                         start = NULL,
-                                         mean.observed = NULL,
-                                         scaling.factor.int = NULL,
-                                         ...) {
+                                           data,
+                                           method = "lms",
+                                           ordered = NULL,
+                                           calc.se = TRUE,
+                                           iter = 75L,
+                                           warmup = 25L,
+                                           N = max(NROW(data), 1e5),
+                                           se = "simple",
+                                           diff.theta.tol = 1e-10,
+                                           ordered.mean.observed = FALSE,
+                                           verbose = interactive(),
+                                           optimize = TRUE,
+                                           start = NULL,
+                                           mean.observed = NULL,
+                                           probit.correction = FALSE,
+                                           ...) {
   standardize <- \(x) (x - mean(x, na.rm = TRUE)) / stats::sd(x, na.rm = TRUE)
   if (is.null(verbose)) verbose <- TRUE
 
@@ -476,15 +470,14 @@ modsemOrderedScaleCorrectionV2 <- function(model.syntax,
                                parTable.in$rhs %in% inds), ,
                               drop = FALSE]
 
-  if (verbose) printf("Estimating factor scores...\n")
-
-  syntax.cfa <- parTableToSyntax(parTable.cfa)
-  fit.cfa    <- lavaan::cfa(syntax.cfa, data = data, ordered = ordered)
-  fscores <- as.data.frame(lavaan::lavPredict(fit.cfa, se = "none"))
-
   cols <- colnames(data)
   cols.ordered <- cols[cols %in% ordered | sapply(data, is.ordered)]
   cols.cont    <- cols[!(cols %in% cols.ordered) & vapply(data, is.numeric, TRUE)]
+  ncat <- vapply(cols.ordered, FUN.VALUE = numeric(1L), FUN = \(x) length(unique(data[[x]])))
+
+  warnif(any(ncat <= 2L) && !probit.correction,
+         "Some ordered variables only have two categories.\n",
+         "Consider passing `ordered.probit.correction=TRUE`")
 
   ordinalize <- function(x) {
     if   (is.ordered(x)) return(as.ordered(as.integer(x))) # re-order levels, e.g., [2, 3, 4] -> [1, 2, 3]
@@ -493,6 +486,11 @@ modsemOrderedScaleCorrectionV2 <- function(model.syntax,
 
   data.x <- data
   data.x[cols.ordered] <- lapply(data.x[cols.ordered], FUN = ordinalize)
+
+  if (verbose) printf("Estimating factor scores...\n")
+  syntax.cfa <- parTableToSyntax(parTable.cfa)
+  fit.cfa    <- lavaan::cfa(syntax.cfa, data = data.x, ordered = cols.ordered, se = "none")
+  fscores <- as.data.frame(lavaan::lavPredict(fit.cfa))
 
   rescaled <- rescaleOrderedData_OP(
     data            = data.x,
@@ -503,9 +501,11 @@ modsemOrderedScaleCorrectionV2 <- function(model.syntax,
   )
 
   pcorr <- polychor(vars = cols, data = data.x,
-                    thresholds = NULL, # rescaled$thresholds,
+                    thresholds = NULL,
                     ordered    = cols.ordered)
-  data.s <- fitX2Cov(X = rescaled$data, S = pcorr)
+
+  if (probit.correction) data.s <- fitX2Cov(X = rescaled$data, S = pcorr)
+  else                   data.s <- rescaled$data
 
   fit.out <- modsem_da(model.syntax     = model.syntax,
                        data             = data.s,
@@ -854,6 +854,6 @@ polychor <- function(vars, data, thresholds = NULL, ordered = NULL) {
     syntax <- paste(syntax, paste0(constr, collapse = "\n"), sep = "\n")
   }
 
-  lavaan::lavInspect(lavaan::sem(syntax, data, ordered = ordered),
+  lavaan::lavInspect(lavaan::sem(syntax, data, ordered = ordered, se = "none"),
                      what = "cov.ov")
 }
