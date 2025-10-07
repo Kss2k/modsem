@@ -120,8 +120,7 @@ necessary syntax, and variables for the estimation of models with latent product
 <span>  algorithm <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  em.control <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  ordered <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  ordered.iter <span class="op">=</span> <span class="fl">100L</span>,</span>
-<span>  ordered.warmup <span class="op">=</span> <span class="fl">25L</span>,</span>
+<span>  ordered.probit.correction <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  cluster <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  cr1s <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  rcs <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -360,13 +359,10 @@ The estimates are more robust to unequal intervals in ordinal variables. I.e., t
 should be more consistent, and less biased.</p></dd>
 
 
-<dt id="arg-ordered-iter">ordered.iter<a class="anchor" aria-label="anchor" href="#arg-ordered-iter"></a></dt>
-<dd><p>Maximum number of sampling iterations used to sample the underlying continuous distribution of the
-ordinal variables. The default is set to <code>100</code>.</p></dd>
-
-
-<dt id="arg-ordered-warmup">ordered.warmup<a class="anchor" aria-label="anchor" href="#arg-ordered-warmup"></a></dt>
-<dd><p>Number of sampling iterations in the warmup phase.</p></dd>
+<dt id="arg-ordered-probit-correction">ordered.probit.correction<a class="anchor" aria-label="anchor" href="#arg-ordered-probit-correction"></a></dt>
+<dd><p>Should ordered indicators be transformed such that they
+reproduce their (probit) polychoric correlation matrix? This can be useful for
+ordered variables with only a few categories, or for linear models.</p></dd>
 
 
 <dt id="arg-cluster">cluster<a class="anchor" aria-label="anchor" href="#arg-cluster"></a></dt>
