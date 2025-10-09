@@ -667,17 +667,17 @@ constructThresholds <- function(ordered, parTable, data, method = "lms", estimat
   numeric <- stats::setNames(vector("list", length(ordered)), ordered)
   label   <- stats::setNames(vector("list", length(ordered)), ordered)
 
-  RHS <- unique(parTable[parTable$op == "|", "rhs"])
-
   max.k <- 0L
   for (col in ordered) {
     k   <- length(unique(data[, col])) - 1L
-    tau <- matrix(NA, nrow = k, ncol = 1)
+    lab <- paste0("t", seq_len(k))
+    tau <- matrix(NA, nrow = k, ncol = 1,
+                  dimnames = list(lab, col))
 
     if (k > max.k) max.k <- k
 
     TAU <- setMatrixConstraints(X = tau, parTable = parTable, op = "|",
-                                RHS = RHS, LHS = ordered, type = "lhs",
+                                RHS = lab, LHS = col, type = "rhs",
                                 nonFreeParams = FALSE)
     numeric[[col]] <- as.vector(TAU$numeric)
     label[[col]]   <- as.vector(TAU$label)

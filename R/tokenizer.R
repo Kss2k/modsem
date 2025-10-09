@@ -87,7 +87,7 @@ initializeToken <- function(char, pos, line) {
   } else if (grepl("[\\(\\)]", char)) {
     type <- "LavClosure"
     priority <- 2
-  } else if (grepl("[\\=\\~\\*\\+\\<\\>\\,\\:\\^\\/-]", char)) {
+  } else if (grepl("[\\=\\~\\*\\+\\<\\>\\,\\:\\^\\/-]", char) || char == "|") { # Adding "|" to the regex breaks stuff...
     type <- "LavOperator"
     priority <- 0
   } else if (grepl("[[:alnum:]]", char) || (char == "." & nextCharIsNum)) {
@@ -214,6 +214,7 @@ assignSubClass.LavOperator <- function(token) {
           ":=" = {subClass <- "LavCustom";      priority <- 0},
           ","  = {subClass <- "LavSeperator";   priority <- 0},
           "-"  = {subClass <- "LavSubtract";    priority <- 3}, 
+          "|"  = {subClass <- "LavThresholds";  priority <- 0},
           stop2("Unrecognized operator: ", highlightErrorToken(token))
   )
   structure(token,
