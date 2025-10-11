@@ -41,8 +41,7 @@ modsem_da(
   algorithm = NULL,
   em.control = NULL,
   ordered = NULL,
-  ordered.iter = 100L,
-  ordered.warmup = 25L,
+  ordered.probit.correction = FALSE,
   cluster = NULL,
   cr1s = FALSE,
   rcs = FALSE,
@@ -198,8 +197,9 @@ optimization steps when needed. Default is \code{"EM"}.}
 
 \item{em.control}{a list of control parameters for the EM algorithm. See \code{\link{default_settings_da}} for defaults.}
 
-\item{ordered}{Variables to be treated as ordered. The scale of the ordinal variables
-is scaled to correct for unequal intervals. The underlying continous distributions
+\item{ordered}{Variables to be treated as ordered. Categories for ordered variables
+are scored, transforming them from ordinal scale to interval scale (\href{doi.org/10.1155/2014/304213}{Chen & Wang, 2014}).
+The underlying continous distributions
 are estimated analytically for indicators of exogenous variables, and using an ordered
 probit regression for indicators of endogenous variables. Factor scores are used as
 independent variables the ordered probit regressions. Interaction effects between
@@ -207,10 +207,9 @@ the factor scores are included in the probit regression, if applicable.
 The estimates are more robust to unequal intervals in ordinal variables. I.e., the estimates
 should be more consistent, and less biased.}
 
-\item{ordered.iter}{Maximum number of sampling iterations used to sample the underlying continuous distribution of the
-ordinal variables. The default is set to \code{100}.}
-
-\item{ordered.warmup}{Number of sampling iterations in the warmup phase.}
+\item{ordered.probit.correction}{Should ordered indicators be transformed such that they
+reproduce their (probit) polychoric correlation matrix? This can be useful for
+ordered variables with only a few categories, or for linear models.}
 
 \item{cluster}{Clusters used to compute standard errors robust to non-indepence of observations. Must be paired with
 \code{robust.se = TRUE}.}

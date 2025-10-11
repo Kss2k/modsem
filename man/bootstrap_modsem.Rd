@@ -16,7 +16,7 @@ bootstrap_modsem(model = modsem, FUN, ...)
   FUN = "coef",
   R = 1000L,
   P.max = 1e+05,
-  type = c("nonparametric", "parameteric"),
+  type = c("nonparametric", "parametric"),
   verbose = interactive(),
   calc.se = FALSE,
   optimize = FALSE,
@@ -30,6 +30,7 @@ bootstrap_modsem(model = modsem, FUN, ...)
   R = 1000L,
   verbose = interactive(),
   FUN.args = list(),
+  cluster.boot = NULL,
   ...
 )
 }
@@ -60,6 +61,8 @@ for \code{\link{modsem_pi}} objects, or \code{\link{modsem_da}} for
 \item{data}{Dataset to be resampled.}
 
 \item{FUN.args}{Arguments passed to \code{FUN}}
+
+\item{cluster.boot}{Variable to cluster bootstrapping by}
 }
 \value{
 Depending on the return type of \code{FUN} either

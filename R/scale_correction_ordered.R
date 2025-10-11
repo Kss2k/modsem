@@ -1,7 +1,6 @@
 modsemOrderedScaleCorrection <- function(..., ordered.v2 = TRUE) {
-  message("Correcting scale of ordered variables...\n",
-          "This is an experimental feature, ",
-          "see `help(modsem_da)` for more information!")
+  message("Transforming ordered variables to interval scale...\n",
+          "This is an experimental feature, see `help(modsem_da)` for more information!")
 
   # v2 seems to be the best. Left here for testing purposes
   # The user can pass the `ordered.v2` argument to `modsem_da`
@@ -29,7 +28,7 @@ modsemOrderedScaleCorrectionV1 <- function(model.syntax,
                                            optimize = TRUE,
                                            start = NULL,
                                            mean.observed = NULL,
-                                           scaling.factor.int = NULL,
+                                           probit.correction = FALSE,
                                            ...) {
   standardize <- \(x) (x - mean(x, na.rm = TRUE)) / stats::sd(x, na.rm = TRUE)
 
@@ -37,10 +36,12 @@ modsemOrderedScaleCorrectionV1 <- function(model.syntax,
     verbose <- TRUE # default
 
   parTable.in <- modsemify(model.syntax)
+  ovs <- getOVs(parTable.in)
   xis <- getXis(parTable.in, checkAny = FALSE)
   inds.xis <- unique(unlist(getIndsLVs(parTable.in, lVs = xis)))
 
-  cols <- colnames(data)
+  data <- as.data.frame(data)[ovs]
+  cols <- ovs
   cols.ordered <- cols[cols %in% ordered | sapply(data, is.ordered)]
   cols.cont    <- cols[!(cols %in% cols.ordered) & vapply(data, is.numeric, TRUE)]
 
@@ -59,6 +60,10 @@ modsemOrderedScaleCorrectionV1 <- function(model.syntax,
                                  FUN = \(x) standardize(as.integer(x)))
   thresholds <- NULL
   theta_i    <- NULL
+
+  pcorr <- polychor(vars = cols, data = data,
+                    thresholds = NULL, # rescaled$thresholds,
+                    ordered    = cols.ordered)
 
   for (i in seq_len(iter)) {
     printedLines <- utils::capture.output(split = TRUE, {
@@ -97,13 +102,6 @@ modsemOrderedScaleCorrectionV1 <- function(model.syntax,
 
       pars <- parameter_estimates(fit_i)
 
-      if (!is.null(scaling.factor.int)) {
-        # bias represents the degree to which the coefficient is
-        # over/under estimated. we use it to get a scaling factor
-        is.int <- grepl(":", pars$rhs)
-        pars[is.int, "est"] <- scaling.factor.int * pars[is.int, "est"]
-      }
-
       sim_i <- simulateDataParTable(
         parTable = pars,
         N        = N
@@ -115,8 +113,10 @@ modsemOrderedScaleCorrectionV1 <- function(model.syntax,
                                      cols.cont = cols.cont,
                                      linear.ovs = inds.xis)
 
+      if (probit.correction) data_j <- fitX2Cov(X = rescaled$data, S = pcorr)
+      else                   data_j <- rescaled$data
+
       if (j >= 1L && !is.null(thresholds) && !is.null(data_i)) {
-        data_j   <- rescaled$data
         lambda_j <- 1 / j
         lambda_i <- 1 - lambda_j
 
@@ -124,7 +124,7 @@ modsemOrderedScaleCorrectionV1 <- function(model.syntax,
           data_i[[col]] <- lambda_i * data_i[[col]] + lambda_j * data_j[[col]]
 
       } else {
-        data_i     <- rescaled$data
+        data_i     <- data_j
         thresholds <- rescaled$thresholds
       }
     })
@@ -441,22 +441,22 @@ std1 <- function(v) {
 
 
 modsemOrderedScaleCorrectionV2 <- function(model.syntax,
-                                         data,
-                                         method = "lms",
-                                         ordered = NULL,
-                                         calc.se = TRUE,
-                                         iter = 75L,
-                                         warmup = 25L,
-                                         N = max(NROW(data), 1e5),
-                                         se = "simple",
-                                         diff.theta.tol = 1e-10,
-                                         ordered.mean.observed = FALSE,
-                                         verbose = interactive(),
-                                         optimize = TRUE,
-                                         start = NULL,
-                                         mean.observed = NULL,
-                                         scaling.factor.int = NULL,
-                                         ...) {
+                                           data,
+                                           method = "lms",
+                                           ordered = NULL,
+                                           calc.se = TRUE,
+                                           iter = 75L,
+                                           warmup = 25L,
+                                           N = max(NROW(data), 1e5),
+                                           se = "simple",
+                                           diff.theta.tol = 1e-10,
+                                           ordered.mean.observed = FALSE,
+                                           verbose = interactive(),
+                                           optimize = TRUE,
+                                           start = NULL,
+                                           mean.observed = NULL,
+                                           probit.correction = FALSE,
+                                           ...) {
   standardize <- \(x) (x - mean(x, na.rm = TRUE)) / stats::sd(x, na.rm = TRUE)
   if (is.null(verbose)) verbose <- TRUE
 
@@ -469,15 +469,14 @@ modsemOrderedScaleCorrectionV2 <- function(model.syntax,
                                parTable.in$rhs %in% inds), ,
                               drop = FALSE]
 
-  if (verbose) printf("Estimating factor scores...\n")
-
-  syntax.cfa <- parTableToSyntax(parTable.cfa)
-  fit.cfa    <- lavaan::cfa(syntax.cfa, data = data, ordered = ordered)
-  fscores <- as.data.frame(lavaan::lavPredict(fit.cfa, se = "none"))
-
   cols <- colnames(data)
   cols.ordered <- cols[cols %in% ordered | sapply(data, is.ordered)]
   cols.cont    <- cols[!(cols %in% cols.ordered) & vapply(data, is.numeric, TRUE)]
+  ncat <- vapply(cols.ordered, FUN.VALUE = numeric(1L), FUN = \(x) length(unique(data[[x]])))
+
+  warnif(any(ncat <= 2L) && !probit.correction,
+         "Some ordered variables only have two categories.\n",
+         "Consider passing `ordered.probit.correction=TRUE`")
 
   ordinalize <- function(x) {
     if   (is.ordered(x)) return(as.ordered(as.integer(x))) # re-order levels, e.g., [2, 3, 4] -> [1, 2, 3]
@@ -487,6 +486,11 @@ modsemOrderedScaleCorrectionV2 <- function(model.syntax,
   data.x <- data
   data.x[cols.ordered] <- lapply(data.x[cols.ordered], FUN = ordinalize)
 
+  if (verbose) printf("Estimating factor scores...\n")
+  syntax.cfa <- parTableToSyntax(parTable.cfa)
+  fit.cfa    <- lavaan::cfa(syntax.cfa, data = data.x, ordered = cols.ordered, se = "none")
+  fscores <- as.data.frame(lavaan::lavPredict(fit.cfa))
+
   rescaled <- rescaleOrderedData_OP(
     data            = data.x,
     cols.ordered    = cols.ordered,
@@ -495,8 +499,15 @@ modsemOrderedScaleCorrectionV2 <- function(model.syntax,
     thresholds.vcov = TRUE
   )
 
+  pcorr <- polychor(vars = cols, data = data.x,
+                    thresholds = NULL,
+                    ordered    = cols.ordered)
+
+  if (probit.correction) data.s <- fitX2Cov(X = rescaled$data, S = pcorr)
+  else                   data.s <- rescaled$data
+
   fit.out <- modsem_da(model.syntax     = model.syntax,
-                       data             = rescaled$data,
+                       data             = data.s,
                        method           = method,
                        start            = start,
                        verbose          = verbose,
@@ -778,4 +789,70 @@ rescaleOrderedData_OP <- function(data, cols.ordered, parTable.in, fscores,
   }
 
   list(data = out, thresholds = thresholds, vcov = vcovs)
+}
+
+
+fitX2Cov <- function(X, S) {
+  X <- as.matrix(X)
+  n <- nrow(X)
+  p <- ncol(X)
+
+  stopif(!all(dim(S) == c(p, p)), "S must be a square matrix with dimensions equal to the number of columns in X")
+
+  # Compute sample mean and covariance of X
+  mu_X <- colMeans(X)
+  X_centered <- sweep(X, 2, mu_X, FUN = "-")
+
+  Sigma_X <- stats::cov(X)
+
+  # Check positive definiteness
+  if (any(eigen(Sigma_X, symmetric = TRUE)$values <= 0)) {
+    warning("Sample covariance matrix of X is not positive-definite. Consider regularization.")
+    return(X)
+  }
+  if (any(eigen(S, symmetric = TRUE)$values <= 0)) {
+    warning("Target covariance matrix S must be positive-definite.")
+    return(X)
+  }
+
+  # Matrix square root function using eigen-decomposition
+  matrix_sqrt <- function(M) {
+    eig <- eigen(M, symmetric = TRUE)
+    eig$vectors %*% diag(sqrt(eig$values)) %*% t(eig$vectors)
+  }
+
+  # Compute inverse square root of Sigma_X
+  Sigma_X_inv_sqrt <- solve(matrix_sqrt(Sigma_X))
+
+  # Compute square root of S
+  S_sqrt <- matrix_sqrt(S)
+
+  # Transformation matrix A
+  A <- Sigma_X_inv_sqrt %*% S_sqrt
+
+  # Transform the centered data
+  Y_centered <- X_centered %*% A
+
+  # Add target mean back
+  Y <- sweep(Y_centered, 2, mu_X, FUN = "+")
+
+  colnames(Y) <- colnames(X)
+  as.data.frame(Y)
+}
+
+
+polychor <- function(vars, data, thresholds = NULL, ordered = NULL) {
+  combos <- getUniqueCombos(vars, match = FALSE)
+  syntax <- paste0(sprintf("%s~~%s", combos$V1, combos$V2), collapse = "\n")
+
+  for (var in names(thresholds)) {
+    tau  <- thresholds[[var]]
+    ftau <- format(tau[is.finite(tau)], scientific = FALSE)
+
+    constr <- sprintf("%s|%s*t%d", var, ftau, seq_along(tau))
+    syntax <- paste(syntax, paste0(constr, collapse = "\n"), sep = "\n")
+  }
+
+  lavaan::lavInspect(lavaan::sem(syntax, data, ordered = ordered, se = "none"),
+                     what = "cov.ov")
 }
