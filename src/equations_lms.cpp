@@ -1,12 +1,252 @@
 #include <RcppArmadillo.h>
+#include <RcppEigen.h>
 #include <float.h>
 #include <cmath>
 
 #include "lms.h"
 #include "utils.h"
 #include "mvnorm.h"
+#include "lms_autodiff.h"
 
-// [[Rcpp::depends(RcppArmadillo)]]
+// [[Rcpp::depends(RcppArmadillo, RcppEigen)]]
+
+namespace {
+
+using modsem::lms::Model;
+using modsem::lms::CompleteData;
+using modsem::lms::ObservedData;
+
+inline Eigen::MatrixXd as_matrix(const Rcpp::RObject& obj) {
+  return Rcpp::as<Eigen::MatrixXd>(obj);
+}
+
+inline Eigen::VectorXd as_vector(const Rcpp::RObject& obj) {
+  Rcpp::NumericVector v(obj);
+  Eigen::VectorXd res(v.size());
+  for (R_xlen_t i = 0; i < v.size(); ++i) res[i] = v[i];
+  return res;
+}
+
+inline Eigen::VectorXi to_eigen(const arma::uvec& x) {
+  Eigen::VectorXi res(x.n_elem);
+  for (arma::uword i = 0; i < x.n_elem; ++i) res[i] = static_cast<int>(x[i]);
+  return res;
+}
+
+Model<double> build_model_eigen(const Rcpp::List& modelR) {
+  Model<double> M;
+
+  const Rcpp::List matrices = modelR["matrices"];
+  const Rcpp::List info     = modelR["info"];
+  const Rcpp::List quad     = modelR["quad"];
+
+  M.k      = Rcpp::as<unsigned>(quad["k"]);
+  M.numXis = Rcpp::as<unsigned>(info["numXis"]);
+
+  M.A     = as_matrix(matrices["A"]);
+  M.Oxx   = as_matrix(matrices["omegaXiXi"]);
+  M.Oex   = as_matrix(matrices["omegaEtaXi"]);
+  M.Ie    = as_matrix(matrices["Ieta"]);
+  M.lY    = as_matrix(matrices["lambdaY"]);
+  M.lX    = as_matrix(matrices["lambdaX"]);
+  M.tY    = as_vector(matrices["tauY"]);
+  M.tX    = as_vector(matrices["tauX"]);
+  M.Gx    = as_matrix(matrices["gammaXi"]);
+  M.Ge    = as_matrix(matrices["gammaEta"]);
+  M.a     = as_vector(matrices["alpha"]);
+  M.beta0 = as_vector(matrices["beta0"]);
+  M.Psi   = as_matrix(matrices["psi"]);
+  M.d     = as_matrix(matrices["thetaDelta"]);
+  M.e     = as_matrix(matrices["thetaEpsilon"]);
+
+  M.deriv_dim = 0;
+  return M;
+}
+
+CompleteData build_complete_data(const Rcpp::List& P,
+                                 const Rcpp::List& colidxR,
+                                 const arma::uvec& n,
+                                 const arma::uvec& d,
+                                 const int npatterns) {
+  CompleteData data;
+
+  data.V = as_matrix(P["V"]);
+  data.npatterns = npatterns;
+  data.n = to_eigen(n);
+  data.d = to_eigen(d);
+
+  {
+    Rcpp::List tgammaR = P["tgamma"];
+    data.tgamma.resize(tgammaR.size());
+    for (R_xlen_t j = 0; j < tgammaR.size(); ++j) {
+      Rcpp::NumericVector vec = tgammaR[j];
+      data.tgamma[j] = std::vector<double>(vec.begin(), vec.end());
+    }
+  }
+
+  {
+    Rcpp::List meanR = P["mean"];
+    data.mean.resize(meanR.size());
+    for (R_xlen_t j = 0; j < meanR.size(); ++j) {
+      Rcpp::List inner = meanR[j];
+      data.mean[j].reserve(inner.size());
+      for (R_xlen_t i = 0; i < inner.size(); ++i) {
+        data.mean[j].push_back(as_vector(inner[i]));
+      }
+    }
+  }
+
+  {
+    Rcpp::List covR = P["cov"];
+    data.cov.resize(covR.size());
+    for (R_xlen_t j = 0; j < covR.size(); ++j) {
+      Rcpp::List inner = covR[j];
+      data.cov[j].reserve(inner.size());
+      for (R_xlen_t i = 0; i < inner.size(); ++i) {
+        data.cov[j].push_back(as_matrix(inner[i]));
+      }
+    }
+  }
+
+  data.colidx.reserve(colidxR.size());
+  for (R_xlen_t i = 0; i < colidxR.size(); ++i) {
+    Rcpp::IntegerVector idx = colidxR[i];
+    Eigen::VectorXi cols(idx.size());
+    for (R_xlen_t j = 0; j < idx.size(); ++j) cols[j] = idx[j];
+    data.colidx.push_back(cols);
+  }
+
+  return data;
+}
+
+ObservedData build_observed_data(const Rcpp::List& dataR,
+                                 const Rcpp::List& colidxR,
+                                 const Rcpp::List& P,
+                                 const arma::uvec& n,
+                                 const int npatterns) {
+  ObservedData data;
+  data.V = as_matrix(P["V"]);
+  data.w = as_vector(P["w"]);
+  data.n = to_eigen(n);
+  data.npatterns = npatterns;
+
+  data.data.reserve(dataR.size());
+  for (R_xlen_t i = 0; i < dataR.size(); ++i) {
+    data.data.push_back(as_matrix(dataR[i]));
+  }
+
+  data.colidx.reserve(colidxR.size());
+  for (R_xlen_t i = 0; i < colidxR.size(); ++i) {
+    Rcpp::IntegerVector idx = colidxR[i];
+    Eigen::VectorXi cols(idx.size());
+    for (R_xlen_t j = 0; j < idx.size(); ++j) cols[j] = idx[j];
+    data.colidx.push_back(cols);
+  }
+
+  return data;
+}
+
+template<typename Scalar>
+Scalar& model_param(Model<Scalar>& M, std::size_t blk,
+                    std::size_t r, std::size_t c) {
+  switch (blk) {
+    case 0 : return M.lX   (r, c);
+    case 1 : return M.lY   (r, c);
+    case 2 : return M.tX   (r);
+    case 3 : return M.tY   (r);
+    case 4 : return M.d    (r, c);
+    case 5 : return M.e    (r, c);
+    case 6 : return M.A    (r, c);
+    case 7 : return M.Psi  (r, c);
+    case 8 : return M.a    (r);
+    case 9 : return M.beta0(r);
+    case 10: return M.Gx   (r, c);
+    case 11: return M.Ge   (r, c);
+    case 12: return M.Oxx  (r, c);
+    case 13: return M.Oex  (r, c);
+    default: Rcpp::stop("unknown block id");
+  }
+}
+
+template<typename Scalar>
+Scalar model_param(const Model<Scalar>& M, std::size_t blk,
+                   std::size_t r, std::size_t c) {
+  return model_param(const_cast<Model<Scalar>&>(M), blk, r, c);
+}
+
+template<typename Scalar>
+Eigen::Matrix<Scalar, Eigen::Dynamic, 1>
+get_params_eigen(const Model<Scalar>& M,
+                 const arma::uvec& block,
+                 const arma::uvec& row,
+                 const arma::uvec& col) {
+  const std::size_t p = block.n_elem;
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> pars(p);
+  for (std::size_t k = 0; k < p; ++k) {
+    pars(k) = model_param(M, block[k], row[k], col[k]);
+  }
+  return pars;
+}
+
+template<typename Scalar, typename ParamVec>
+void set_params_eigen(Model<Scalar>& M,
+                      const arma::uvec& block,
+                      const arma::uvec& row,
+                      const arma::uvec& col,
+                      const arma::uvec& symmetric,
+                      const ParamVec& vals) {
+  const std::size_t p = block.n_elem;
+  for (std::size_t k = 0; k < p; ++k) {
+    model_param(M, block[k], row[k], col[k]) = vals(k);
+    if (symmetric[k] && row[k] != col[k]) {
+      model_param(M, block[k], col[k], row[k]) = vals(k);
+    }
+  }
+}
+
+double second_derivative_complete(const Model<double>& base_model,
+                                  const CompleteData& data,
+                                  const arma::uvec& block,
+                                  const arma::uvec& row,
+                                  const arma::uvec& col,
+                                  const arma::uvec& symmetric,
+                                  const Eigen::Matrix<double, Eigen::Dynamic, 1>& theta0,
+                                  const Eigen::VectorXd& direction) {
+  const std::size_t p = block.n_elem;
+  Model<modsem::lms::Dual2> model_dual(base_model);
+  set_model_deriv_dim(model_dual, static_cast<Eigen::Index>(p));
+  Eigen::Matrix<modsem::lms::Dual2, Eigen::Dynamic, 1> theta(p);
+  for (std::size_t i = 0; i < p; ++i)
+    theta(i) = modsem::lms::Dual2(theta0(i), direction(i), 0.0);
+
+  set_params_eigen(model_dual, block, row, col, symmetric, theta);
+
+  const modsem::lms::Dual2 ll = modsem::lms::complete_loglik(model_dual, data);
+  return ll.d2;
+}
+
+double second_derivative_observed(const Model<double>& base_model,
+                                  const ObservedData& data,
+                                  const arma::uvec& block,
+                                  const arma::uvec& row,
+                                  const arma::uvec& col,
+                                  const arma::uvec& symmetric,
+                                  const Eigen::Matrix<double, Eigen::Dynamic, 1>& theta0,
+                                  const Eigen::VectorXd& direction) {
+  const std::size_t p = block.n_elem;
+  Model<modsem::lms::Dual2> model_dual(base_model);
+  set_model_deriv_dim(model_dual, static_cast<Eigen::Index>(p));
+  Eigen::Matrix<modsem::lms::Dual2, Eigen::Dynamic, 1> theta(p);
+  for (std::size_t i = 0; i < p; ++i)
+    theta(i) = modsem::lms::Dual2(theta0(i), direction(i), 0.0);
+
+  set_params_eigen(model_dual, block, row, col, symmetric, theta);
+
+  const modsem::lms::Dual2 ll = modsem::lms::observed_loglik(model_dual, data);
+  return ll.d2;
+}
+
+} // anonymous namespace
 
 
 // Deprecated will remove soon...
@@ -349,22 +589,36 @@ arma::vec gradLogLikLmsCpp(const Rcpp::List& modelR,
                            const int         npatterns = 1,
                            const double      eps = 1e-6,
                            const int         ncores = 1L) {
-  LMSModel M(modelR);
+  (void)eps;
+  (void)ncores;
 
-  const arma::mat V       = Rcpp::as<arma::mat>(P["V"]);
-  const auto      TGamma  = as_vec_of_vec(P["tgamma"]);
-  const auto      Mean    = as_vec_of_vec_of_vec(P["mean"]);
-  const auto      Cov     = as_vec_of_vec_of_mat(P["cov"]);
-  const auto      colidx  = as_vec_of_uvec(colidxR);
+  const Model<double> base_model = build_model_eigen(modelR);
+  const CompleteData data = build_complete_data(P, colidxR, n, d, npatterns);
 
-  const Rcpp::List info   = modelR["info"];
+  const std::size_t p = block.n_elem;
+  using Der1 = Eigen::Matrix<double, Eigen::Dynamic, 1>;
+  using AD1  = Eigen::AutoDiffScalar<Der1>;
 
-  auto comp_ll = [&](LMSModel& mod) -> double {
-    return completeLogLikFromModel(mod, V, TGamma, Mean, Cov,
-                                   colidx, n, d, npatterns);
-  };
+  Eigen::Matrix<double, Eigen::Dynamic, 1> base =
+    get_params_eigen(base_model, block, row, col);
 
-  return gradientFD(M, comp_ll, block, row, col, symmetric, eps, ncores);
+  Eigen::Matrix<AD1, Eigen::Dynamic, 1> theta(p);
+  for (std::size_t i = 0; i < p; ++i) {
+    theta(i).value() = base(i);
+    theta(i).derivatives() = Der1::Zero(p);
+    theta(i).derivatives()(i) = 1.0;
+  }
+
+  Model<AD1> model_ad(base_model);
+  set_model_deriv_dim(model_ad, static_cast<Eigen::Index>(p));
+  set_params_eigen(model_ad, block, row, col, symmetric, theta);
+
+  const AD1 ll = modsem::lms::complete_loglik(model_ad, data);
+
+  arma::vec grad(p);
+  const Der1& g = ll.derivatives();
+  for (std::size_t i = 0; i < p; ++i) grad[i] = g(i);
+  return grad;
 }
 
 
@@ -420,18 +674,36 @@ arma::vec gradObsLogLikLmsCpp(const Rcpp::List& modelR,
                               const double      eps       = 1e-6,
                               const int         npatterns = 1L,
                               const int         ncores    = 1L) {
-  LMSModel M(modelR);
+  (void)eps;
+  (void)ncores;
 
-  const arma::mat V = Rcpp::as<arma::mat>(P["V"]);
-  const arma::vec w = Rcpp::as<arma::vec>(P["w"]);
-  const auto colidx = as_vec_of_uvec(colidxR);
-  const auto data   = as_vec_of_mat(dataR);
+  const Model<double> base_model = build_model_eigen(modelR);
+  const ObservedData data = build_observed_data(dataR, colidxR, P, n, npatterns);
 
-  auto obs_ll = [&](LMSModel& mod) -> double {
-    return observedLogLikFromModel(mod, V, w, data, colidx, n, npatterns, 1L); // single-threaded
-  };
+  const std::size_t p = block.n_elem;
+  using Der1 = Eigen::Matrix<double, Eigen::Dynamic, 1>;
+  using AD1  = Eigen::AutoDiffScalar<Der1>;
 
-  return gradientFD(M, obs_ll, block, row, col, symmetric, eps, ncores); // multi-thread here instead
+  Eigen::Matrix<double, Eigen::Dynamic, 1> base =
+    get_params_eigen(base_model, block, row, col);
+
+  Eigen::Matrix<AD1, Eigen::Dynamic, 1> theta(p);
+  for (std::size_t i = 0; i < p; ++i) {
+    theta(i).value() = base(i);
+    theta(i).derivatives() = Der1::Zero(p);
+    theta(i).derivatives()(i) = 1.0;
+  }
+
+  Model<AD1> model_ad(base_model);
+  set_model_deriv_dim(model_ad, static_cast<Eigen::Index>(p));
+  set_params_eigen(model_ad, block, row, col, symmetric, theta);
+
+  const AD1 ll = modsem::lms::observed_loglik(model_ad, data);
+
+  arma::vec grad(p);
+  const Der1& g = ll.derivatives();
+  for (std::size_t i = 0; i < p; ++i) grad[i] = g(i);
+  return grad;
 }
 
 
@@ -719,20 +991,69 @@ Rcpp::List hessObsLogLikLmsCpp(const Rcpp::List& modelR,
                                const double      relStep = 1e-6,
                                const double      minAbs  = 0.0,
                                const int         ncores  = 1L) {
-    LMSModel M(modelR);
+  (void)relStep;
+  (void)minAbs;
+  (void)ncores;
 
-    const arma::mat V = Rcpp::as<arma::mat>(P["V"]);
-    const arma::vec w = Rcpp::as<arma::vec>(P["w"]);
-    const auto colidx = as_vec_of_uvec(colidxR);
-    const auto data   = as_vec_of_mat(dataR);
+  const Model<double> base_model = build_model_eigen(modelR);
+  const ObservedData data = build_observed_data(dataR, colidxR, P, n, npatterns);
 
-    auto obs_ll = [&](LMSModel& mod) -> double {
-        return observedLogLikFromModel(mod, V, w, data, colidx,
-                                       n, npatterns, 1L); // single-threaded
-    };
+  const std::size_t p = block.n_elem;
+  Eigen::Matrix<double, Eigen::Dynamic, 1> base =
+    get_params_eigen(base_model, block, row, col);
 
-    return fdHessCpp(M, obs_ll, block, row, col, symmetric,
-        relStep, minAbs, ncores); // multi-threaded
+  // Compute gradient via first-order AD
+  arma::vec grad(p);
+  {
+    using Der1 = Eigen::Matrix<double, Eigen::Dynamic, 1>;
+    using AD1  = Eigen::AutoDiffScalar<Der1>;
+    Eigen::Matrix<AD1, Eigen::Dynamic, 1> theta(p);
+    for (std::size_t i = 0; i < p; ++i) {
+      theta(i).value() = base(i);
+      theta(i).derivatives() = Der1::Zero(p);
+      theta(i).derivatives()(i) = 1.0;
+    }
+    Model<AD1> model_ad(base_model);
+    set_model_deriv_dim(model_ad, static_cast<Eigen::Index>(p));
+    set_params_eigen(model_ad, block, row, col, symmetric, theta);
+    const AD1 ll = modsem::lms::observed_loglik(model_ad, data);
+    const Der1& g = ll.derivatives();
+    for (std::size_t i = 0; i < p; ++i) grad[i] = g(i);
+  }
+
+  arma::mat Hess(p, p, arma::fill::zeros);
+  Eigen::VectorXd direction = Eigen::VectorXd::Zero(p);
+  Eigen::VectorXd diag(p);
+
+  for (std::size_t i = 0; i < p; ++i) {
+    direction.setZero();
+    direction(i) = 1.0;
+    const double d2 = second_derivative_observed(base_model, data,
+      block, row, col, symmetric, base, direction);
+    Hess(i, i) = d2;
+    diag(i) = d2;
+  }
+
+  for (std::size_t i = 0; i < p; ++i) {
+    for (std::size_t j = i + 1; j < p; ++j) {
+      direction.setZero();
+      direction(i) = 1.0;
+      direction(j) = 1.0;
+      const double d2 = second_derivative_observed(base_model, data,
+        block, row, col, symmetric, base, direction);
+      const double off = 0.5 * (d2 - diag(i) - diag(j));
+      Hess(i, j) = off;
+      Hess(j, i) = off;
+    }
+  }
+
+  const double value = modsem::lms::observed_loglik(base_model, data);
+
+  return Rcpp::List::create(
+    Rcpp::Named("mean")     = value,
+    Rcpp::Named("gradient") = grad,
+    Rcpp::Named("Hessian")  = Hess
+  );
 }
 
 
@@ -750,21 +1071,66 @@ Rcpp::List hessCompLogLikLmsCpp(const Rcpp::List& modelR,
                                 const double      relStep   = 1e-6,
                                 const double      minAbs    = 0.0,
                                 const int         ncores    = 1L) {
-  LMSModel M(modelR);
+  (void)relStep;
+  (void)minAbs;
+  (void)ncores;
 
-  const arma::mat  V       = Rcpp::as<arma::mat>(P["V"]);
-  const auto       TGamma  = as_vec_of_vec(P["tgamma"]);
-  const auto       Mean    = as_vec_of_vec_of_vec(P["mean"]);
-  const auto       Cov     = as_vec_of_vec_of_mat(P["cov"]);
-  const auto       colidx  = as_vec_of_uvec(colidxR);
+  const Model<double> base_model = build_model_eigen(modelR);
+  const CompleteData data = build_complete_data(P, colidxR, n, d, npatterns);
 
-  const Rcpp::List info   = modelR["info"];
+  const std::size_t p = block.n_elem;
+  Eigen::Matrix<double, Eigen::Dynamic, 1> base =
+    get_params_eigen(base_model, block, row, col);
 
-  auto comp_ll = [&](LMSModel& mod) -> double {
-    return completeLogLikFromModel(mod, V, TGamma, Mean, Cov,
-                                   colidx, n, d, npatterns); // single-threaded
-  };
+  arma::vec grad(p);
+  {
+    using Der1 = Eigen::Matrix<double, Eigen::Dynamic, 1>;
+    using AD1  = Eigen::AutoDiffScalar<Der1>;
+    Eigen::Matrix<AD1, Eigen::Dynamic, 1> theta(p);
+    for (std::size_t i = 0; i < p; ++i) {
+      theta(i).value() = base(i);
+      theta(i).derivatives() = Der1::Zero(p);
+      theta(i).derivatives()(i) = 1.0;
+    }
+    Model<AD1> model_ad(base_model);
+    set_model_deriv_dim(model_ad, static_cast<Eigen::Index>(p));
+    set_params_eigen(model_ad, block, row, col, symmetric, theta);
+    const AD1 ll = modsem::lms::complete_loglik(model_ad, data);
+    const Der1& g = ll.derivatives();
+    for (std::size_t i = 0; i < p; ++i) grad[i] = g(i);
+  }
 
-  return fdHessCpp(M, comp_ll, block, row, col, symmetric,
-      relStep, minAbs, ncores); // multi-threaded
+  arma::mat Hess(p, p, arma::fill::zeros);
+  Eigen::VectorXd direction = Eigen::VectorXd::Zero(p);
+  Eigen::VectorXd diag(p);
+
+  for (std::size_t i = 0; i < p; ++i) {
+    direction.setZero();
+    direction(i) = 1.0;
+    const double d2 = second_derivative_complete(base_model, data,
+      block, row, col, symmetric, base, direction);
+    Hess(i, i) = d2;
+    diag(i) = d2;
+  }
+
+  for (std::size_t i = 0; i < p; ++i) {
+    for (std::size_t j = i + 1; j < p; ++j) {
+      direction.setZero();
+      direction(i) = 1.0;
+      direction(j) = 1.0;
+      const double d2 = second_derivative_complete(base_model, data,
+        block, row, col, symmetric, base, direction);
+      const double off = 0.5 * (d2 - diag(i) - diag(j));
+      Hess(i, j) = off;
+      Hess(j, i) = off;
+    }
+  }
+
+  const double value = modsem::lms::complete_loglik(base_model, data);
+
+  return Rcpp::List::create(
+    Rcpp::Named("mean")     = value,
+    Rcpp::Named("gradient") = grad,
+    Rcpp::Named("Hessian")  = Hess
+  );
 }
