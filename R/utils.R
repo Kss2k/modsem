@@ -14,8 +14,9 @@ stopif <- function(cond, ...) {
 
 
 warnif <- function(cond, ..., .newline = FALSE) {
-  if (cond && .newline) cat("\n")
-  if (cond) warning2(...)
+  if (!isTRUE(cond)) return(invisible(NULL))
+  if (.newline) cat("\n")
+  warning2(...)
 }
 
 
@@ -586,7 +587,7 @@ sortConstrExprs <- function(parTable) {
   rows <- parTable[parTable$op %in% CONSTRAINT_OPS, ]
   if (NROW(rows) == 0) return(NULL)
 
-  labelled <- unique(parTable$mod[parTable$mod != ""])
+  labelled <- splitCLabels(parTable$mod[parTable$mod != ""])
   isConst  <- canBeNumeric(rows$rhs)
 
   rows <- rows[!(isConst & rows$op %in% BOUNDUARY_OPS), ] # not relevant
@@ -741,4 +742,20 @@ hasIntTermVariances <- function(parTable) {
     any(parTable$lhs == xz & parTable$rhs == xz & parTable$op == "~~")
 
   all(vapply(intTerms, FUN.VALUE = logical(1L), FUN = hasVariance))
+}
+splitCLabels <- function(labels) {
+  if (!length(labels)) return(character())
+
+  unlist(lapply(labels, function(label) {
+    label_trim <- trimws(label)
+    if (grepl("^c\\s*\\(", label_trim) && grepl("\\)$", label_trim)) {
+      inside <- substr(label_trim,
+                       start = regexpr("\\(", label_trim, perl = TRUE) + 1L,
+                       stop = nchar(label_trim) - 1L)
+      tokens <- trimws(strsplit(inside, ",", fixed = FALSE)[[1]])
+      tokens[tokens != ""]
+    } else {
+      label_trim
+    }
+  }), use.names = FALSE)
 }

@@ -107,6 +107,13 @@ createLabelsOmega <- function(X, parTable.in = NULL) {
 
 
 getLavCoefs <- function(model, theta, method) {
+  if (isMultiGroupModelDA(model)) {
+    fullTheta <- calcPhiTheta(theta, model, method)
+    isFree    <- names(fullTheta) %in% names(theta)
+    names(fullTheta) <- model$lavLabels
+    return(list(all = fullTheta, free = fullTheta[isFree]))
+  }
+
   fullTheta <- getTransformationsTheta(model, theta, method)
   isFree    <- names(fullTheta) %in% names(theta)
 

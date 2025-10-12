@@ -20,11 +20,12 @@
 #' @export
 fit_modsem_da <- function(model, chisq = TRUE, lav.fit = FALSE) {
   parTable <- model$parTable
-  warnif(any(grepl(":", parTable$rhs)) && chisq,
-         "Chi-Square based fit-measures for LMS and QML ",
-         "should be calculated for baseline model ",
-         "i.e., the model without the interaction effect",
-         immediate. = FALSE)
+  if (isTRUE(chisq) && any(grepl(":", parTable$rhs), na.rm = TRUE)) {
+    warning2("Chi-Square based fit-measures for LMS and QML ",
+             "should be calculated for baseline model ",
+             "i.e., the model without the interaction effect",
+             immediate. = FALSE)
+  }
 
   data   <- model$data$data.full
   t      <- nFreeInterceptsDA(model)

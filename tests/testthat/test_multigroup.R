@@ -33,7 +33,30 @@ m1 <- '
   Y ~ X + Z + X:Z
 '
 
-est <- modsem(m1, oneIntMG, group = "group")
+est <- modsem(m1, oneIntMG, method = "lms", group = "group")
+#> Iter=161 Mode=EM LogLik=-17477.99 ΔLL=3.2e-05 relΔLL=1.8e-09              
+#> 
+#> Warning: Model estimation failed, returning starting values!
+#> Message: replacement has length zero
+#> 
+#> Error: modsem [lms]: Model estimation failed!
+#> Message: replacement has length zero
+standardized_estimates(est, correction = TRUE)
+standardized_estimates(est, correction = TRUE, std.errors = "delta")
+summary(est)
+
+m2 <- '
+  X =~ x1 + lx2 * x2 + lx3 * x3
+  Z =~ z1 + z2 + z3
+  Y =~ y1 + y2 + y3
+
+  Y ~ c(a1, a2) * X + Z + X:Z
+
+  a1==a2
+'
+
+est <- modsem(m2, oneIntMG, method = "lms", group = "group")
+#> Error: Unknown labels in constraints: a1
 standardized_estimates(est, correction = TRUE)
 standardized_estimates(est, correction = TRUE, std.errors = "delta")
 summary(est)

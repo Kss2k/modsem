@@ -133,6 +133,18 @@ fillThetaIfStartNULL <- function(start,
 
 
 fillModel <- function(model, theta, fillPhi = FALSE, method = "lms") {
+  if (isMultiGroupModelDA(model)) {
+    submodels <- model$groupModels
+    filled <- vector("list", length = length(submodels))
+    for (g in seq_along(submodels)) {
+      submodel <- submodels[[g]]
+      theta_g  <- getThetaGroupDA(model, theta, g)
+      filled[[g]] <- fillModel(submodel, theta_g, fillPhi = fillPhi, method = method)
+    }
+    model$groupModels <- filled
+    return(model)
+  }
+
   if (is.null(names(theta))) names(theta) <- names(model$theta)
 
   # labeled parameters
@@ -219,13 +231,30 @@ fillCovModel <- function(covModel, theta, thetaLabel) {
 
 
 fillNA_Matrix <- function(X, theta, pattern) {
-  X[is.na(X) & !is.nan(X)] <- fetch(theta, pattern)
+  idx <- is.na(X) & !is.nan(X)
+  values <- fetch(theta, pattern)
+  if (length(values) && sum(idx) != length(values)) {
+    stop2("Mismatch when filling matrix for pattern `", pattern, "`: expected ",
+          sum(idx), " values but got ", length(values))
+  }
+  if (sum(idx) > 0 && length(values) == 0) {
+    stop2("No values found in theta vector for pattern `", pattern, "`.")
+  }
+  X[idx] <- values
   X
 }
 
 
 fillSymmetric <- function(mat, values) {
-  mat[is.na(mat) & !is.nan(mat)] <- values
+  idx <- is.na(mat) & !is.nan(mat)
+  if (sum(idx) > 0 && length(values) == 0) {
+    stop2("No values provided to fill symmetric matrix.")
+  }
+  if (length(values) && length(values) != sum(idx)) {
+    stop2("Mismatch when filling symmetric matrix: expected ", sum(idx),
+          " values but got ", length(values))
+  }
+  mat[idx] <- values
   mat[upper.tri(mat)] <- t(mat)[upper.tri(mat)]
   mat
 }
@@ -275,6 +304,11 @@ checkStartingParams <- function(start, model) {
 
 calcPhiTheta <- function(theta, model, method) {
   if (method != "lms") return(theta)
+
+  if (isMultiGroupModelDA(model)) {
+    return(calcPhiThetaMulti(theta, model, method))
+  }
+
   filledModel <- fillModel(theta = theta, model = model, method = method,
                            fillPhi = TRUE)
 
@@ -295,11 +329,38 @@ calcPhiTheta <- function(theta, model, method) {
     allVals <- as.vector(matEst$phi)
     labVals <- allVals[labels != ""]
     labels  <- labels[labels != ""]
+    missing <- setdiff(labels, names(theta))
+    if (length(missing)) {
+      stop2("Missing labelled parameters in theta vector: ", paste(missing, collapse = ", "))
+    }
     theta[labels] <- labVals
   }
 
   theta[grepl("^A[0-9]+$", names(theta))] <- vals
   theta
+}
+
+
+calcPhiThetaMulti <- function(theta, model, method) {
+  len_label <- if (!is.null(model$lenThetaLabel)) model$lenThetaLabel else 0L
+  theta_out <- theta
+
+  if (len_label > 0L) {
+    theta_label <- theta_out[seq_len(len_label)]
+    theta_label <- suppressWarnings(calcThetaLabel(theta_label, model$constrExprs))
+    theta_out[seq_len(len_label)] <- theta_label
+  }
+
+  submodels <- model$groupModels
+  for (g in seq_along(submodels)) {
+    submodel <- submodels[[g]]
+    theta_g <- getThetaGroupDA(model, theta_out, g)
+    theta_g_trans <- calcPhiTheta(theta_g, submodel, method)
+    global_names <- mapGroupThetaToGlobal(model, names(theta_g_trans), g)
+    theta_out[global_names] <- theta_g_trans
+  }
+
+  theta_out
 }
 
 

@@ -4,6 +4,11 @@
 #'
 #' @param data A dataframe with observed variables used in the model.
 #'
+#' @param group Optional grouping variable for multigroup models. Supply either
+#'   the name of a column in \code{data} or a vector with one value per row in
+#'   \code{data}. The column will be removed from the analysis data prior to
+#'   estimation.
+#'
 #' @param method method to use:
 #' \describe{
 #'   \item{\code{"lms"}}{latent moderated structural equations (not passed to \code{lavaan}).}
@@ -273,6 +278,7 @@
 #' }
 modsem_da <- function(model.syntax = NULL,
                       data = NULL,
+                      group = NULL,
                       method = "lms",
                       verbose = NULL,
                       optimize = NULL,
@@ -400,6 +406,9 @@ modsem_da <- function(model.syntax = NULL,
     data         <- corrected$data
   }
 
+  group.info <- prepareGroupDA(group = group, data = data)
+  data       <- group.info$data
+
   if ("convergence" %in% names(list(...))) {
     convergence.rel <- list(...)$convergence
     warning2("Argument 'convergence' is deprecated, use 'convergence.rel' instead.")
@@ -447,8 +456,17 @@ modsem_da <- function(model.syntax = NULL,
           cr1s               = cr1s
         )
     )
+  args$group.levels <- group.info$levels
+  args$group.var    <- group.info$group_var
+  args$n.groups     <- group.info$n_groups
 
   stopif(!method %in% c("lms", "qml"), "Method must be either 'lms' or 'qml'")
+
+  parTable <- modsemify(model.syntax)
+  group.info$parTable <- parTable
+  group_levels <- group.info$levels
+  if (is.null(group_levels)) group_levels <- ""
+  group.info$parTables <- splitParTableByGroup(parTable, group_levels = group_levels)
 
   if (args$center.data) {
     data <- lapplyDf(data, FUN = function(x) x - mean(x, na.rm = TRUE))
@@ -462,6 +480,7 @@ modsem_da <- function(model.syntax = NULL,
     data               = data,
     method             = method,
     m                  = args$nodes,
+    parTable           = parTable,
     cov.syntax         = cov.syntax,
     mean.observed      = args$mean.observed,
     double             = args$double,
@@ -474,8 +493,12 @@ modsem_da <- function(model.syntax = NULL,
     auto.fix.first     = args$auto.fix.first,
     auto.fix.single    = args$auto.fix.single,
     auto.split.syntax  = args$auto.split.syntax,
-    cluster            = cluster
+    cluster            = cluster,
+    group.info         = group.info
   )
+  model$group.info <- group.info
+  model$info$ngroups <- group.info$n_groups
+  model$info$group.levels <- group.info$levels
 
   if (args$optimize) {
     model <- tryCatch({
@@ -562,6 +585,8 @@ modsem_da <- function(model.syntax = NULL,
                       "Message: %s")
     stop2(sprintf(message, method, e$message))
   })
+
+  est$group.info <- group.info
 
   # Finalize the model object
   # Expected means and covariances

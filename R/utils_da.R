@@ -32,6 +32,228 @@ stripMatrices <- function(matrices, fill = -1) {
 }
 
 
+prepareGroupDA <- function(group, data) {
+  if (is.null(group)) {
+    return(list(
+      has_groups = FALSE,
+      group = NULL,
+      group_raw = NULL,
+      group_var = NULL,
+      levels = NULL,
+      n_groups = 1L,
+      indices = list(seq_len(NROW(data))),
+      data = data
+    ))
+  }
+
+  stopif(!is.data.frame(data), "`data` must be a data.frame when grouping is used.")
+  n <- NROW(data)
+  stopif(n == 0L, "Grouping requires non-empty data.")
+
+  group_raw <- NULL
+  group_var <- NULL
+
+  if (is.character(group) && length(group) == 1L) {
+    stopif(!group %in% names(data),
+           sprintf("Grouping variable '%s' not found in `data`.", group))
+    group_raw <- data[[group]]
+    data <- data[, setdiff(names(data), group), drop = FALSE]
+    group_var <- group
+  } else if (is.vector(group) && length(group) == n) {
+    group_raw <- group
+  } else if (is.factor(group) && length(group) == n) {
+    group_raw <- group
+  } else {
+    stop2("`group` must be either NULL, a column name in `data`, or a vector with one value per row.")
+  }
+
+  stopif(length(group_raw) != n, "Length of `group` must match the number of rows in `data`.")
+  stopif(any(is.na(group_raw)), "`group` cannot contain missing values.")
+
+  if (is.factor(group_raw)) {
+    group_factor <- droplevels(group_raw)
+  } else {
+    levels_order <- unique(group_raw)
+    group_factor <- factor(group_raw, levels = levels_order)
+  }
+
+  levels_group <- levels(group_factor)
+  n_groups <- length(levels_group)
+  indices <- split(seq_len(n), group_factor)
+
+  list(
+    has_groups = n_groups > 1L,
+    group = group_factor,
+    group_raw = group_raw,
+    group_var = group_var,
+    levels = levels_group,
+    n_groups = n_groups,
+    indices = indices,
+    data = data
+  )
+}
+
+
+expandGroupModifier <- function(mod, n_groups) {
+  if (n_groups <= 1L) {
+    return(rep(mod, n_groups))
+  }
+
+  if (length(mod) == 0L) {
+    return(rep("", n_groups))
+  }
+
+  if (is.na(mod)) {
+    return(rep(NA_character_, n_groups))
+  }
+
+  mod_trim <- trimws(mod)
+  if (!nzchar(mod_trim)) {
+    return(rep("", n_groups))
+  }
+
+  is_c_call <- grepl("^c\\s*\\(", mod_trim) && grepl("\\)$", mod_trim)
+  if (!is_c_call) {
+    return(rep(mod_trim, n_groups))
+  }
+
+  inside <- substr(mod_trim,
+                   start = regexpr("\\(", mod_trim, perl = TRUE) + 1L,
+                   stop = nchar(mod_trim) - 1L)
+  tokens <- strsplit(inside, ",", fixed = FALSE)[[1]]
+  tokens <- trimws(tokens)
+
+  if (!length(tokens)) {
+    tokens <- rep("", n_groups)
+  } else if (length(tokens) == 1L) {
+    tokens <- rep(tokens, n_groups)
+  } else {
+    stopif(length(tokens) != n_groups,
+           sprintf("Found %d modifiers but expected %d groups.", length(tokens), n_groups))
+  }
+
+  tokens
+}
+
+
+splitParTableByGroup <- function(parTable, group_levels) {
+  if (is.null(parTable)) return(NULL)
+  n_groups <- length(group_levels)
+
+  if (n_groups <= 1L) {
+    out <- list(parTable)
+    if (n_groups == 1L &&
+        length(group_levels) == 1L &&
+        nzchar(group_levels)) {
+      names(out) <- group_levels
+    }
+    return(out)
+  }
+
+  constraints <- parTable[parTable$op %in% CONSTRAINT_OPS, , drop = FALSE]
+  baseTable   <- parTable[!parTable$op %in% CONSTRAINT_OPS, , drop = FALSE]
+
+  template <- parTable[0, , drop = FALSE]
+  out <- rep(list(template), n_groups)
+  names(out) <- group_levels
+
+  has_mod <- "mod" %in% names(parTable)
+
+  for (i in seq_len(NROW(baseTable))) {
+    row <- baseTable[i, , drop = FALSE]
+    mods <- if (has_mod) expandGroupModifier(row$mod, n_groups)
+    for (g in seq_len(n_groups)) {
+      row_g <- row
+      if (has_mod) row_g$mod <- mods[[g]]
+      out[[g]] <- rbind(out[[g]], row_g)
+    }
+  }
+
+  if (NROW(constraints)) {
+    # constraints will be handled globally; no need to include per group
+    # but keep structure consistent by attaching empty data frames with same columns
+    out <- lapply(out, function(tbl) {
+      tbl
+    })
+  }
+
+  out
+}
+
+
+isMultiGroupModelDA <- function(model) {
+  isTRUE(model$info$ngroups > 1L) && !is.null(model$groupModels)
+}
+
+
+getThetaGroupDA <- function(model, theta, group) {
+  submodel <- model$groupModels[[group]]
+  len_label <- if (!is.null(submodel$lenThetaLabel)) submodel$lenThetaLabel else 0L
+  label_idx_sub <- if (len_label > 0L) seq_len(len_label) else integer()
+
+  theta_group <- numeric(length(submodel$theta))
+
+  if (len_label > 0L) {
+    label_map <- model$groupLabelIndices[[group]]
+    theta_group[label_idx_sub] <- theta[label_map]
+  }
+
+  group_idx <- model$groupParamIndices[[group]]
+  if (length(group_idx)) {
+    free_idx_sub <- if (len_label > 0L) {
+      seq_len(length(submodel$theta))[-label_idx_sub]
+    } else seq_len(length(submodel$theta))
+
+    theta_group[free_idx_sub] <- theta[group_idx]
+  }
+
+  names(theta_group) <- names(submodel$theta)
+  theta_group
+}
+
+
+mapGroupThetaToGlobal <- function(model, theta_names, group) {
+  if (!length(theta_names)) return(theta_names)
+
+  len_label <- if (!is.null(model$lenThetaLabel)) model$lenThetaLabel else 0L
+  label_names <- if (len_label > 0L) names(model$theta)[seq_len(len_label)] else character(0)
+
+  vapply(theta_names, FUN.VALUE = character(1L), FUN = function(name) {
+    if (name %in% label_names) name else paste0(name, ".g", group)
+  })
+}
+
+
+embedGroupMatrixDA <- function(target, model, group, mat) {
+  if (is.null(mat) || !length(mat)) return(target)
+
+  submodel <- model$groupModels[[group]]
+  len_label <- if (!is.null(submodel$lenThetaLabel)) submodel$lenThetaLabel else 0L
+  idx_sub <- seq_len(nrow(mat))
+  global_idx <- integer(length(idx_sub))
+
+  if (len_label > 0L) {
+    label_idx <- model$groupLabelIndices[[group]]
+    global_idx[seq_len(len_label)] <- label_idx
+  }
+
+  other_idx <- if (len_label < length(idx_sub)) {
+    seq(from = len_label + 1L, to = length(idx_sub))
+  } else integer()
+
+  if (length(other_idx)) {
+    global_idx[other_idx] <- model$groupParamIndices[[group]]
+  }
+
+  if (any(global_idx == 0L)) {
+    stop("Failed to map group matrix to global coordinates (internal error).")
+  }
+
+  target[global_idx, global_idx] <- target[global_idx, global_idx] + mat
+  target
+}
+
+
 removeInteractions <- function(model) {
   model$matrices$OmegaEtaXi[TRUE] <- 0
   model$matrices$OmegaXiXi[TRUE] <- 0

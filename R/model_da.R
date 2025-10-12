@@ -1,5 +1,5 @@
 # Functions
-specifyModelDA <- function(syntax = NULL,
+specifyModelDA_single <- function(syntax = NULL,
                            data = NULL,
                            method = "lms",
                            m = 16,
@@ -22,7 +22,7 @@ specifyModelDA <- function(syntax = NULL,
                            orthogonal.y = FALSE,
                            auto.split.syntax = FALSE,
                            cluster = NULL) {
-  if (!is.null(syntax)) parTable <- modsemify(syntax)
+  if (is.null(parTable) && !is.null(syntax)) parTable <- modsemify(syntax)
   stopif(is.null(parTable), "No parTable found")
 
   if (auto.split.syntax && is.null(parTableCovModel) && is.null(cov.syntax)) {
@@ -326,6 +326,287 @@ specifyModelDA <- function(syntax = NULL,
                   missing = missing)
 
   model
+}
+
+
+specifyModelDA <- function(..., group.info = NULL) {
+  dots <- list(...)
+
+  if (is.null(group.info) || !isTRUE(group.info$has_groups)) {
+    return(do.call(specifyModelDA_single, dots))
+  }
+
+  n_groups <- group.info$n_groups
+  stopif(n_groups < 1L, "Invalid grouping structure supplied.")
+
+  par_tables <- group.info$parTables
+  stopif(length(par_tables) != n_groups,
+         "Number of group-specific parameter tables does not match number of groups.")
+
+  data_full <- dots$data
+  stopif(is.null(data_full), "Data must be supplied when using multi-group LMS.")
+
+  submodels <- vector("list", length = n_groups)
+  names(submodels) <- group.info$levels
+
+  for (g in seq_len(n_groups)) {
+    args_g <- dots
+    args_g$data <- data_full[group.info$indices[[g]], , drop = FALSE]
+    args_g$parTable <- par_tables[[g]]
+    submodel_g <- do.call(specifyModelDA_single, args_g)
+    submodel_g$info$group <- group.info$levels[[g]]
+    submodel_g$info$ngroups <- 1L
+    submodels[[g]] <- submodel_g
+  }
+
+  label_names <- character(0)
+  theta_label <- numeric(0)
+  lav_label_common <- character(0)
+  bounds_common_lower <- numeric(0)
+  bounds_common_upper <- numeric(0)
+
+  for (g in seq_len(n_groups)) {
+    submodel <- submodels[[g]]
+    len_label_g <- if (!is.null(submodel$lenThetaLabel)) submodel$lenThetaLabel else 0L
+    if (len_label_g == 0L) next
+
+    labels_g <- names(submodel$theta)[seq_len(len_label_g)]
+    new_labels <- labels_g[!labels_g %in% label_names]
+    if (!length(new_labels)) next
+
+    idx_new <- match(new_labels, labels_g)
+    theta_label <- c(theta_label, submodel$theta[idx_new])
+    lav_label_common <- c(lav_label_common, submodel$lavLabels[idx_new])
+    bounds_common_lower <- c(bounds_common_lower, submodel$info$bounds$lower[idx_new])
+    bounds_common_upper <- c(bounds_common_upper, submodel$info$bounds$upper[idx_new])
+    label_names <- c(label_names, new_labels)
+  }
+
+  len_theta_label <- length(label_names)
+
+  global_theta <- theta_label
+  global_lav   <- lav_label_common
+  global_lower <- bounds_common_lower
+  global_upper <- bounds_common_upper
+
+  template <- submodels[[0 + 1]]
+
+  group_param_indices <- vector("list", length = n_groups)
+  names(group_param_indices) <- group.info$levels
+  group_label_indices <- vector("list", length = n_groups)
+  names(group_label_indices) <- group.info$levels
+
+  offset <- length(global_theta)
+
+  for (g in seq_len(n_groups)) {
+    submodel <- submodels[[g]]
+    theta_g <- submodel$theta
+    lav_g   <- submodel$lavLabels
+    lower_g <- submodel$info$bounds$lower
+    upper_g <- submodel$info$bounds$upper
+
+    len_label_g <- if (!is.null(submodel$lenThetaLabel)) submodel$lenThetaLabel else 0L
+    labels_g <- if (len_label_g > 0L) names(theta_g)[seq_len(len_label_g)] else character(0)
+    if (len_label_g > 0L) {
+      idx_label_global <- match(labels_g, label_names)
+      group_label_indices[[g]] <- idx_label_global
+    } else {
+      group_label_indices[[g]] <- integer()
+    }
+
+    free_mask <- !(names(theta_g) %in% label_names)
+    theta_g_main <- theta_g[free_mask]
+    lav_g_main   <- lav_g[free_mask]
+    lower_g_main <- lower_g[free_mask]
+    upper_g_main <- upper_g[free_mask]
+
+    if (!length(theta_g_main)) {
+      group_param_indices[[g]] <- integer()
+      next
+    }
+
+    suffix <- paste0(".g", g)
+    names(theta_g_main) <- paste0(names(theta_g_main), suffix)
+    lav_g_main <- paste0(lav_g_main, suffix)
+    names(lower_g_main) <- names(theta_g_main)
+    names(upper_g_main) <- names(theta_g_main)
+
+    global_theta <- c(global_theta, theta_g_main)
+    global_lav   <- c(global_lav, lav_g_main)
+    global_lower <- c(global_lower, lower_g_main)
+    global_upper <- c(global_upper, upper_g_main)
+
+    idx <- seq_along(theta_g_main) + offset
+    group_param_indices[[g]] <- idx
+    offset <- offset + length(theta_g_main)
+  }
+
+  label_positions <- if (len_theta_label > 0L) seq_len(len_theta_label) else integer()
+
+  combined_bounds <- list(
+    lower = structure(global_lower, names = names(global_theta)),
+    upper = structure(global_upper, names = names(global_theta))
+  )
+
+  template$theta <- global_theta
+  template$lavLabels <- global_lav
+  template$lenThetaLabel <- len_theta_label
+  template$lenThetaMain <- length(global_theta) - len_theta_label
+  template$freeParams <- length(global_theta)
+  template$info$bounds <- combined_bounds
+  template$groupModels <- submodels
+  template$groupParamIndices <- group_param_indices
+  template$groupLabelIndices <- group_label_indices
+  template$group.info <- group.info
+  template$info$ngroups <- n_groups
+  template$info$group.levels <- group.info$levels
+
+  template$originalParTable <- group.info$parTable
+  template$constrExprs <- getConstrExprs(group.info$parTable, NULL)
+  template$gradientStruct <- buildGlobalGradientStructDA(template)
+
+  template
+}
+
+
+buildGlobalGradientStructDA <- function(model) {
+  submodels <- model$groupModels
+  n_groups <- length(submodels)
+  if (!n_groups) stop2("No submodels present in multi-group model")
+
+  template <- submodels[[1]]
+
+  theta_names <- names(model$theta)
+  len_theta <- length(theta_names)
+  len_theta_label <- if (!is.null(model$lenThetaLabel)) model$lenThetaLabel else 0L
+  label_names <- if (len_theta_label > 0L) theta_names[seq_len(len_theta_label)] else character(0)
+
+  hasCov <- FALSE
+
+  # determine global column names
+  group_colnames <- vector("list", length = n_groups)
+  total_cols <- 0L
+  for (g in seq_len(n_groups)) {
+    GS <- submodels[[g]]$gradientStruct
+    if (is.null(GS) || is.null(GS$Jacobian)) stop2("Missing gradient structure in submodel ", g)
+    if (isTRUE(GS$hasCovModel)) hasCov <- TRUE
+
+    cols_g <- colnames(GS$Jacobian)
+    mapped_cols <- mapGroupThetaToGlobal(model, cols_g, g)
+    group_colnames[[g]] <- mapped_cols
+    total_cols <- total_cols + length(mapped_cols)
+  }
+
+  param_full <- unique(unlist(group_colnames, use.names = FALSE))
+  k <- length(param_full)
+
+  Jacobian <- matrix(0, nrow = len_theta, ncol = k,
+                     dimnames = list(theta_names, param_full))
+  Jacobian2 <- matrix(0, nrow = len_theta, ncol = k,
+                      dimnames = list(theta_names, param_full))
+
+  groupColumns <- vector("list", length = n_groups)
+
+  for (g in seq_len(n_groups)) {
+    submodel <- submodels[[g]]
+    GS <- submodel$gradientStruct
+    cols_g <- group_colnames[[g]]
+    idx_cols <- match(cols_g, param_full)
+    if (any(is.na(idx_cols))) {
+      missing_cols <- cols_g[is.na(idx_cols)]
+      stop2("Unable to align subgroup parameters with global parameter vector: ",
+            paste(missing_cols, collapse = ", "))
+    }
+    groupColumns[[g]] <- idx_cols
+
+    rows_local <- names(submodel$theta)
+    rows_global <- mapGroupThetaToGlobal(model, rows_local, g)
+    idx_rows <- match(rows_global, theta_names)
+    if (any(is.na(idx_rows))) {
+      missing_rows <- rows_global[is.na(idx_rows)]
+      stop2("Unable to align subgroup parameters with global theta vector: ",
+            paste(missing_rows, collapse = ", "))
+    }
+
+    Jacobian[idx_rows, idx_cols] <- Jacobian[idx_rows, idx_cols] + GS$Jacobian
+
+    if (!is.null(GS$Jacobian2)) {
+      Jacobian2[idx_rows, idx_cols] <- Jacobian2[idx_rows, idx_cols] + GS$Jacobian2
+    }
+  }
+
+  parTable <- model$originalParTable
+  parTable <- parTable[!parTable$op %in% BOUNDUARY_OPS, , drop = FALSE]
+
+  customParams <- parTable[parTable$op %in% c(":=", "=="), , drop = FALSE]
+  for (i in seq_len(NROW(customParams))) {
+    row <- customParams[i, , drop = FALSE]
+    eq  <- sprintf("(%s)", row$rhs)
+    pattern <- sprintf("(?<![A-z_\\.])%s(?![A-z_\\.])", row$lhs)
+
+    mask <- parTable$op %in% CONSTRAINT_OPS
+    parTable$rhs[mask] <- stringr::str_replace_all(
+      parTable$rhs[mask], pattern = pattern, replacement = eq
+    )
+  }
+
+  isConstraint <- parTable$op %in% CONSTRAINT_OPS & !canBeNumeric(parTable$rhs)
+  constraints  <- parTable[isConstraint, , drop = FALSE]
+
+  derivatives <- list()
+  derivatives2 <- list()
+  if (NROW(constraints)) {
+    for (i in seq_len(NROW(constraints))) {
+      constrVar <- constraints[i, "lhs"]
+      constrEq  <- constraints[i, "rhs"]
+
+      derivatives[[constrVar]]  <- derivateConstraint(constrEq)
+      derivatives2[[constrVar]] <- secondDerivateConstraint(constrEq)
+    }
+  }
+
+  isLinear <- vapply(derivatives, FUN.VALUE = logical(1L), FUN = is.atomic)
+  linDerivs   <- derivatives[isLinear]
+  nlinDerivs  <- derivatives[!isLinear]
+  nlinDerivs2 <- derivatives2[!isLinear]
+
+  if (length(linDerivs)) {
+    param_full_names <- colnames(Jacobian)
+    param_part_names <- rownames(Jacobian)
+
+    for (dep in names(linDerivs)) {
+      deriv <- linDerivs[[dep]]
+      for (indep in names(deriv)) {
+        match.full <- param_full_names == dep
+        match.part <- param_part_names == indep
+        if (any(match.full) && any(match.part)) {
+          Jacobian[match.part, match.full] <- deriv[[indep]]
+        }
+      }
+    }
+  }
+
+  evalTheta <- function(theta) {
+    if (len_theta_label) {
+      thetaLabel <- theta[seq_len(len_theta_label)]
+      thetaMain  <- theta[-seq_len(len_theta_label)]
+      thetaLabel <- suppressWarnings(calcThetaLabel(thetaLabel, model$constrExprs))
+      c(thetaLabel, thetaMain)
+    } else theta
+  }
+
+  list(
+    locations   = NULL,
+    Jacobian    = Jacobian,
+    Jacobian2   = Jacobian2,
+    nlinDerivs  = nlinDerivs,
+    nlinDerivs2 = nlinDerivs2,
+    evalTheta   = evalTheta,
+    hasCovModel = hasCov,
+    isNonLinear = length(nlinDerivs) > 0L,
+    param.full  = colnames(Jacobian),
+    groupColumns = groupColumns
+  )
 }
 
 
