@@ -1,27 +1,27 @@
 # Functions
 specifModelDA_Group <- function(syntax = NULL,
-                           data = NULL,
-                           method = "lms",
-                           m = 16,
-                           cov.syntax = NULL,
-                           double = FALSE,
-                           parTable = NULL,
-                           parTableCovModel = NULL,
-                           auto.fix.first = TRUE,
-                           auto.fix.single = TRUE,
-                           createTheta = TRUE,
-                           mean.observed = TRUE,
-                           standardize.inp = FALSE,
-                           standardize.out = FALSE,
-                           checkModel = TRUE,
-                           quad.range = Inf,
-                           adaptive.quad = FALSE,
-                           adaptive.frequency = 3,
-                           missing = FALSE,
-                           orthogonal.x = FALSE,
-                           orthogonal.y = FALSE,
-                           auto.split.syntax = FALSE,
-                           cluster = NULL) {
+                                data = NULL,
+                                method = "lms",
+                                m = 16,
+                                cov.syntax = NULL,
+                                double = FALSE,
+                                parTable = NULL,
+                                parTableCovModel = NULL,
+                                auto.fix.first = TRUE,
+                                auto.fix.single = TRUE,
+                                createTheta = TRUE,
+                                mean.observed = TRUE,
+                                standardize.inp = FALSE,
+                                standardize.out = FALSE,
+                                checkModel = TRUE,
+                                quad.range = Inf,
+                                adaptive.quad = FALSE,
+                                adaptive.frequency = 3,
+                                missing = FALSE,
+                                orthogonal.x = FALSE,
+                                orthogonal.y = FALSE,
+                                auto.split.syntax = FALSE,
+                                cluster = NULL) {
   if (is.null(parTable) && !is.null(syntax)) parTable <- modsemify(syntax)
   stopif(is.null(parTable), "No parTable found")
 
@@ -319,10 +319,6 @@ specifModelDA_Group <- function(syntax = NULL,
 specifyModelDA <- function(..., createTheta = TRUE, group.info = NULL) {
   dots <- list(...)
 
-  if (is.null(group.info) || !isTRUE(group.info$has_groups)) {
-    return(do.call(specifModelDA_Group, dots))
-  }
-
   n_groups <- group.info$n_groups
   stopif(n_groups < 1L, "Invalid grouping structure supplied.")
 
@@ -330,21 +326,24 @@ specifyModelDA <- function(..., createTheta = TRUE, group.info = NULL) {
   stopif(max(parTable$group) != n_groups,
          "Number of group-specific parameter tables does not match number of groups.")
 
-  data_full <- dots$data
-  stopif(is.null(data_full), "Data must be supplied when using multi-group LMS.")
+  data.full <- dots$data
+  stopif(is.null(data.full), "Data must be supplied!")
 
   submodels <- vector("list", length = n_groups)
   names(submodels) <- group.info$levelCres
 
   for (g in seq_len(n_groups)) {
     args_g <- dots
-    args_g$data <- data_full[group.info$indices[[g]], , drop = FALSE]
+    data_g <- data.full[group.info$indices[[g]], , drop = FALSE]
+
+    args_g$data <- data_g
     args_g$parTable <- parTable[parTable$group == g, , drop = FALSE]
 
     submodel_g <- do.call(specifModelDA_Group, args_g)
     submodel_g$info$group <- group.info$levels[[g]]
     submodel_g$info$ngroups <- 1L
-    submodels[[g]] <- submodel_g
+
+    submodels[[g]]   <- submodel_g
   }
 
   model <- list(models   = submodels,

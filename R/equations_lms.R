@@ -1,26 +1,38 @@
-estepLms <- function(model, theta, data, lastQuad = NULL, recalcQuad = FALSE,
+estepLms <- function(model, theta, lastQuad = NULL, recalcQuad = FALSE,
                      adaptive.quad.tol = 1e-12, ...) {
   modFilled <- fillModel(model = model, theta = theta, method = "lms")
-  browser()
+
+  P_GROUPS <- vector("list", length = model$info$n.groups)
+  for (g in seq_len(model$info$n.groups)) {
+    P_GROUPS[[g]] <- estepLmsGroup(
+      submodel = modFilled$models[[g]], lastQuad = lastQuad,
+      recalcQuad = recalcQuad, adaptive.quad.tol = adaptive.quad.tol, ...
+    )
+  }
+
+  P_GROUPS
 }
-estepLmsGroup <- function(submodel, data, lastQuad = NULL, recalcQuad = FALSE,
+
+
+estepLmsGroup <- function(submodel, lastQuad = NULL, recalcQuad = FALSE,
                           adaptive.quad.tol = 1e-12, ...) {
-  if (model$quad$adaptive && (recalcQuad || is.null(lastQuad))) {
-    m <- model$quad$m
-    a <- model$quad$a
-    b <- model$quad$b
-    m <- model$quad$m
-    k <- model$quad$k
+  data <- submodel$data
+
+  if (submodel$quad$adaptive && (recalcQuad || is.null(lastQuad))) {
+    m <- submodel$quad$m
+    a <- submodel$quad$a
+    b <- submodel$quad$b
+    m <- submodel$quad$m
+    k <- submodel$quad$k
 
     if (!is.null(lastQuad)) m.ceil <- lastQuad$m.ceil
     else if (k > 1) m.ceil <- m
     else m.ceil <- round(estMForNodesInRange(m, a = -5, b = 5))
 
-
     quad <- tryCatch({
         adaptiveGaussQuadrature(
           fun = densityLms, collapse = \(x) sum(log(rowSums(x))),
-          modFilled = modFilled, data = data, a = a, b = b, m = m,
+          modFilled = submodel, data = data, a = a, b = b, m = m,
           k = k, m.ceil = m.ceil, tol = adaptive.quad.tol,
         )
       }, error = function(e) {
@@ -32,10 +44,10 @@ estepLmsGroup <- function(submodel, data, lastQuad = NULL, recalcQuad = FALSE,
 
     if (is.null(quad)) {
       estep.fixed <- estepLms(
-        model = model,
+        submodel = submodel,
         theta = theta,
         data  = data,
-        lastQuad = if (!is.null(lastQuad)) lastQuad else model$quad,
+        lastQuad = if (!is.null(lastQuad)) lastQuad else submodel$quad,
         recalcQuad = FALSE,
         ...
       )
@@ -48,14 +60,12 @@ estepLmsGroup <- function(submodel, data, lastQuad = NULL, recalcQuad = FALSE,
     w <- quad$w
 
   } else {
-    quad <- if (model$quad$adaptive) lastQuad else model$quad
+    quad <- if (submodel$quad$adaptive) lastQuad else submodel$quad
     V    <- quad$n
     w    <- quad$w
     W    <- matrix(w, nrow = data$n, ncol = length(w), byrow = TRUE)
-    P    <- W * densityLms(V, modFilled = modFilled, data = data)
+    P    <- W * densityLms(V, modFilled = subModel, data = data)
   }
-
-
 
   density        <- rowSums(P)
   observedLogLik <- sum(log(density))
