@@ -95,27 +95,22 @@ prepareGroupDA <- function(group, data) {
 
 
 expandGroupModifier <- function(mod, n_groups) {
-  if (n_groups <= 1L) {
+  if (n_groups <= 1L)
     return(rep(mod, n_groups))
-  }
 
-  if (length(mod) == 0L) {
+  if (length(mod) == 0L || mod == "")
     return(rep("", n_groups))
-  }
 
-  if (is.na(mod)) {
+  if (is.na(mod))
     return(rep(NA_character_, n_groups))
-  }
 
   mod_trim <- trimws(mod)
-  if (!nzchar(mod_trim)) {
+  if (!nzchar(mod_trim))
     return(rep("", n_groups))
-  }
 
   is_c_call <- grepl("^c\\s*\\(", mod_trim) && grepl("\\)$", mod_trim)
-  if (!is_c_call) {
+  if (!is_c_call)
     return(rep(mod_trim, n_groups))
-  }
 
   inside <- substr(mod_trim,
                    start = regexpr("\\(", mod_trim, perl = TRUE) + 1L,
@@ -136,48 +131,44 @@ expandGroupModifier <- function(mod, n_groups) {
 }
 
 
-splitParTableByGroup <- function(parTable, group_levels) {
+expandGroupModifiers <- function(mod, n_groups) {
+  do.call(rbind, lapply(mod, FUN = expandGroupModifier, n_groups = n_groups))
+}
+
+
+expandParTableByGroup <- function(parTable, group_levels) {
   if (is.null(parTable)) return(NULL)
   n_groups <- length(group_levels)
 
   if (n_groups <= 1L) {
     out <- list(parTable)
-    if (n_groups == 1L &&
-        length(group_levels) == 1L &&
-        nzchar(group_levels)) {
+    if (n_groups == 1L && length(group_levels) == 1L && nzchar(group_levels))
       names(out) <- group_levels
-    }
+
     return(out)
   }
 
   constraints <- parTable[parTable$op %in% CONSTRAINT_OPS, , drop = FALSE]
   baseTable   <- parTable[!parTable$op %in% CONSTRAINT_OPS, , drop = FALSE]
 
-  template <- parTable[0, , drop = FALSE]
-  out <- rep(list(template), n_groups)
-  names(out) <- group_levels
+  MOD <- expandGroupModifiers(mod = baseTable$mod, n_groups = n_groups)
 
-  has_mod <- "mod" %in% names(parTable)
+  colsOut <- c("lhs", "op", "rhs", "group", "mod")
+  parTableFull <- NULL
+  for (i in seq_len(n_groups)) {
+    parTable_g       <- baseTable
+    parTable_g$mod   <- MOD[, i]
+    parTable_g$group <- i
 
-  for (i in seq_len(NROW(baseTable))) {
-    row <- baseTable[i, , drop = FALSE]
-    mods <- if (has_mod) expandGroupModifier(row$mod, n_groups)
-    for (g in seq_len(n_groups)) {
-      row_g <- row
-      if (has_mod) row_g$mod <- mods[[g]]
-      out[[g]] <- rbind(out[[g]], row_g)
-    }
+    parTable_g <- parTable_g[colsOut]
+    parTableFull <- rbind(parTableFull, parTable_g)
   }
 
-  if (NROW(constraints)) {
-    # constraints will be handled globally; no need to include per group
-    # but keep structure consistent by attaching empty data frames with same columns
-    out <- lapply(out, function(tbl) {
-      tbl
-    })
-  }
+  constraintsFull       <- constraints
+  constraintsFull$group <- 0L
+  constraintsFull       <- constraintsFull[colsOut]
 
-  out
+  rbind(parTableFull, constraintsFull)
 }
 
 

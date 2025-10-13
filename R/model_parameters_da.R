@@ -7,66 +7,127 @@ namesParMatricesCov <- c("gammaXi", "gammaEta", "A", "psi", "phi")
 
 
 createTheta <- function(model, start = NULL, parTable.in = NULL) {
-  etas <- model$info$etas
+  THETA_LAB  <- NULL
+  THETA_COV  <- NULL
+  THETA_MAIN <- NULL
+  LAV_LAB    <- NULL
 
-  listThetaCov <- createThetaCovModel(model$covModel)
-  thetaCov     <- listThetaCov$theta
-  lavLabelsCov <- listThetaCov$lavLabels
-  thetaLabel   <- createThetaLabel(model$labelMatrices,
-                                   model$covModel$labelMatrices,
-                                   model$constrExprs)
-  totalThetaLabel <- calcThetaLabel(thetaLabel, model$constrExprs)
+  LABELS_MAIN_GROUPS <- vector("list", length = model$info$n.groups)
+  LABELS_COV_GROUPS  <- vector("list", length = model$info$n.groups)
 
-  M            <- model$matrices
-  lambdaX      <- as.vector(M$lambdaX)
-  lambdaY      <- as.vector(M$lambdaY)
-  thetaDelta   <- as.vector(M$thetaDelta)
-  thetaEpsilon <- as.vector(M$thetaEpsilon)
-  phi          <- as.vector(M$phi)
-  A            <- as.vector(M$A)
-  psi          <- as.vector(M$psi)
-  tauX         <- as.vector(M$tauX)
-  tauY         <- as.vector(M$tauY)
-  alpha        <- as.vector(M$alpha)
-  beta0        <- as.vector(M$beta0)
-  gammaXi      <- as.vector(M$gammaXi)
-  gammaEta     <- as.vector(M$gammaEta)
-  omegaXiXi    <- as.vector(M$omegaXiXi)
-  omegaEtaXi   <- as.vector(M$omegaEtaXi)
+  unionByNames <- function(x, y) {
+    new <- setdiff(names(y), names(x))
+    if (length(new)) c(x, y[new]) else x
+  }
 
-  allModelValues <- c("lambdaX"      = lambdaX,
-                      "lambdaY"      = lambdaY,
-                      "tauX"         = tauX,
-                      "tauY"         = tauY,
-                      "thetaDelta"   = thetaDelta,
-                      "thetaEpsilon" = thetaEpsilon,
-                      "phi"          = phi,
-                      "A"            = A,
-                      "psi"          = psi,
-                      "alpha"        = alpha,
-                      "beta0"        = beta0,
-                      "gammaXi"      = gammaXi,
-                      "gammaEta"     = gammaEta,
-                      "omegaXiXi"    = omegaXiXi,
-                      "omegaEtaXi"   = omegaEtaXi)
+  for (g in seq_len(model$info$n.groups)) {
+    submodel <- model$models[[g]]
+    etas <- submodel$info$etas
 
-  lavLabelsMain <- createLavLabels(M, subset = is.na(allModelValues),
-                                   etas = etas, parTable.in = parTable.in)
+    listThetaCov <- createThetaCovModel(submodel$covModel)
+    thetaCov     <- listThetaCov$theta
+    lavLabelsCov <- listThetaCov$lavLabels
+    thetaLabel   <- createThetaLabel(submodel$labelMatrices,
+                                     submodel$covModel$labelMatrices,
+                                     model$constrExprs)
+    totalThetaLabel <- calcThetaLabel(thetaLabel, submodel$constrExprs)
 
-  thetaMain <- allModelValues[is.na(allModelValues)]
-  thetaMain <- fillThetaIfStartNULL(start = start, theta = thetaMain,
-                                    lavlab = lavLabelsMain)
-  theta     <- c(thetaLabel, thetaCov, thetaMain)
+    M            <- submodel$matrices
+    lambdaX      <- as.vector(M$lambdaX)
+    lambdaY      <- as.vector(M$lambdaY)
+    thetaDelta   <- as.vector(M$thetaDelta)
+    thetaEpsilon <- as.vector(M$thetaEpsilon)
+    phi          <- as.vector(M$phi)
+    A            <- as.vector(M$A)
+    psi          <- as.vector(M$psi)
+    tauX         <- as.vector(M$tauX)
+    tauY         <- as.vector(M$tauY)
+    alpha        <- as.vector(M$alpha)
+    beta0        <- as.vector(M$beta0)
+    gammaXi      <- as.vector(M$gammaXi)
+    gammaEta     <- as.vector(M$gammaEta)
+    omegaXiXi    <- as.vector(M$omegaXiXi)
+    omegaEtaXi   <- as.vector(M$omegaEtaXi)
 
-  allLabels <- names(c(totalThetaLabel, thetaCov, thetaMain))
-  lavLabels <- combineLavLabels(lavLabelsMain = lavLabelsMain,
-                                lavLabelsCov = lavLabelsCov,
-                                currentLabels = allLabels)
+    allModelValues <- c("lambdaX"      = lambdaX,
+                        "lambdaY"      = lambdaY,
+                        "tauX"         = tauX,
+                        "tauY"         = tauY,
+                        "thetaDelta"   = thetaDelta,
+                        "thetaEpsilon" = thetaEpsilon,
+                        "phi"          = phi,
+                        "A"            = A,
+                        "psi"          = psi,
+                        "alpha"        = alpha,
+                        "beta0"        = beta0,
+                        "gammaXi"      = gammaXi,
+                        "gammaEta"     = gammaEta,
+                        "omegaXiXi"    = omegaXiXi,
+                        "omegaEtaXi"   = omegaEtaXi)
 
-  list(theta = theta, lenThetaMain = length(thetaMain),
-       lenThetaLabel = length(thetaLabel),
-       totalLenThetaLabel = length(totalThetaLabel),
-       lenThetaCov = length(thetaCov), lavLabels = lavLabels)
+    lavLabelsMain <- createLavLabels(M, subset = is.na(allModelValues),
+                                     etas = etas, parTable.in = parTable.in)
+
+    thetaMain <- allModelValues[is.na(allModelValues)]
+    thetaMain <- fillThetaIfStartNULL(start = start, theta = thetaMain,
+                                      lavlab = lavLabelsMain)
+    theta     <- c(thetaLabel, thetaCov, thetaMain)
+
+    allLabels <- names(c(totalThetaLabel, thetaCov, thetaMain))
+    lavLabels <- combineLavLabels(lavLabelsMain = lavLabelsMain,
+                                  lavLabelsCov = lavLabelsCov,
+                                  currentLabels = allLabels,
+                                  g = g)
+
+    if (g > 1L) {
+      .newnames <- \(nm) sprintf("%s.g%d", nm, g)
+     
+      # thetaLabel is labelled across the submodels, so the names don't change!
+      names(theta)       <- .newnames(names(theta))
+      names(thetaCov)    <- .newnames(names(thetaCov))
+      names(thetaMain)   <- .newnames(names(thetaMain))
+    }
+
+    LABELS_MAIN_GROUPS[[g]] <- names(thetaMain)
+    LABELS_COV_GROUPS[[g]]  <- names(thetaCov)
+
+    THETA_LAB  <- unionByNames(THETA_LAB, thetaLabel)
+    THETA_COV  <- unionByNames(THETA_COV, thetaCov)
+    THETA_MAIN <- unionByNames(THETA_MAIN, thetaMain)
+    browser()
+    LAV_LAB    <- union(LAV_LAB, lavLabels)
+  }
+
+  THETA <- c(THETA_LAB, THETA_COV, THETA_MAIN)
+
+  SELECT_THETA_LAB  <- vector("list", length = model$info$n.groups)
+  SELECT_THETA_COV  <- vector("list", length = model$info$n.groups)
+  SELECT_THETA_MAIN <- vector("list", length = model$info$n.groups)
+  SELECT_THETA      <- vector("list", length = model$info$n.groups)
+
+  for (g in seq_len(model$info$n.groups)) {
+    labelsMain_g <- LABELS_MAIN_GROUPS[[g]]
+    labelsCov_g  <- LABELS_COV_GROUPS[[g]]
+
+    selectTL <- seq_along(THETA_LAB) # available to all sub models
+    selectTC <- which(names(THETA_COV) %in% labelsCov_g)
+    selectTM <- which(names(THETA_MAIN) %in% labelsMain_g)
+    
+    # The selections must be offset by their respective location THETA as a whole
+    # only selectTL doesn't need to be shifted, as it's at the start
+    selectTC <- selectTC + length(THETA_LAB)
+    selectTM <- selectTM + length(THETA_LAB) + length(THETA_COV)
+    
+    SELECT_THETA_LAB[[g]]  <- selectTL
+    SELECT_THETA_COV[[g]]  <- selectTC
+    SELECT_THETA_MAIN[[g]] <- selectTM
+  }
+  
+  list(theta = THETA,
+       SELECT_THETA_LAB = SELECT_THETA_LAB,
+       SELECT_THETA_COV = SELECT_THETA_COV,
+       SELECT_THETA_MAIN = SELECT_THETA_MAIN,
+       lavLabels = LAV_LAB)
 }
 
 

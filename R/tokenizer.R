@@ -45,7 +45,10 @@ createTokensLine <- function(line, i = 1,
   }
 
   if (length(listTokens) > 0 && is.MathOperator(last(listTokens))) {
-    token <- buildMathExprToken(line[i:length(line)], pos = i)
+    lastToken <- last(listTokens)
+    offset <- attr(lastToken, "pos") + nchar(lastToken)
+
+    token <- buildMathExprToken(line[offset:length(line)], pos = offset)
     return(appendToList(listTokens, token))
   }
 

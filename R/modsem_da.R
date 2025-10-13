@@ -462,11 +462,14 @@ modsem_da <- function(model.syntax = NULL,
 
   stopif(!method %in% c("lms", "qml"), "Method must be either 'lms' or 'qml'")
 
+  stopif(!is.null(cov.syntax) && args$n.groups > 1L,
+         "cov.syntax should not be specified manually in multigroup models!")
+
   parTable <- modsemify(model.syntax)
   group.info$parTable <- parTable
   group_levels <- group.info$levels
   if (is.null(group_levels)) group_levels <- ""
-  group.info$parTables <- splitParTableByGroup(parTable, group_levels = group_levels)
+  group.info$parTable <- expandParTableByGroup(parTable, group_levels = group_levels)
 
   if (args$center.data) {
     data <- lapplyDf(data, FUN = function(x) x - mean(x, na.rm = TRUE))

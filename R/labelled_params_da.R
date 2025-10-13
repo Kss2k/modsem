@@ -1,5 +1,5 @@
 createThetaLabel <- function(labelMatrices, labelMatricesCov,
-                              constrExprs, start = NULL) {
+                             constrExprs, start = NULL) {
   matrices <- c(labelMatrices, labelMatricesCov)
   labels <- lapply(matrices, FUN = function(x) {
     if (NCOL(x) == 0 || NROW(x) == 0) return(NULL)

@@ -1,4 +1,22 @@
 devtools::load_all()
+set.seed(123)
+oneIntMG <- oneInt
+oneIntMG$group <- sample(c("G1", "G2"), nrow(oneInt), replace = TRUE)
+
+
+m2 <- '
+  X =~ x1 + lx2 * x2 + lx3 * x3
+  Z =~ z1 + z2 + z3
+  Y =~ y1 + y2 + y3
+
+  Y ~ c(a1, a2) * X + Z + X:Z
+
+  a1==a2
+'
+
+est <- modsem(m2, oneIntMG, method = "lms", group = "group")
+
+
 HS.model <- ' visual  =~ x1 + x2 + x3
               textual =~ x4 + x5 + x6
               speed   =~ x7 + x8 + x9
