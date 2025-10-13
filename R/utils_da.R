@@ -141,15 +141,15 @@ expandParTableByGroup <- function(parTable, group_levels) {
   n_groups <- length(group_levels)
 
   if (n_groups <= 1L) {
-    out <- list(parTable)
-    if (n_groups == 1L && length(group_levels) == 1L && nzchar(group_levels))
-      names(out) <- group_levels
-
-    return(out)
+    if (!"mod" %in% names(parTable)) parTable$mod <- ""
+    parTable$group <- 1L
+    return(parTable[, c("lhs", "op", "rhs", "group", "mod")])
   }
 
   constraints <- parTable[parTable$op %in% CONSTRAINT_OPS, , drop = FALSE]
   baseTable   <- parTable[!parTable$op %in% CONSTRAINT_OPS, , drop = FALSE]
+
+  if (!"mod" %in% names(baseTable)) baseTable$mod <- ""
 
   MOD <- expandGroupModifiers(mod = baseTable$mod, n_groups = n_groups)
 
@@ -164,11 +164,19 @@ expandParTableByGroup <- function(parTable, group_levels) {
     parTableFull <- rbind(parTableFull, parTable_g)
   }
 
-  constraintsFull       <- constraints
-  constraintsFull$group <- 0L
-  constraintsFull       <- constraintsFull[colsOut]
+  if (NROW(constraints)) {
+    if (!"mod" %in% names(constraints)) constraints$mod <- ""
+    constraints$group <- 0L
+    constraints <- constraints[colsOut]
+  } else {
+    constraints <- data.frame(lhs = character(),
+                              op = character(),
+                              rhs = character(),
+                              group = integer(),
+                              mod = character())
+  }
 
-  rbind(parTableFull, constraintsFull)
+  rbind(parTableFull, constraints)
 }
 
 

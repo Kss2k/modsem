@@ -11,9 +11,12 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
   THETA_COV  <- NULL
   THETA_MAIN <- NULL
   LAV_LAB    <- NULL
+  n_groups   <- model$info$n.groups
+  if (is.null(n_groups)) n_groups <- model$info$ngroups
+  if (is.null(n_groups)) n_groups <- length(model$models)
 
-  LABELS_MAIN_GROUPS <- vector("list", length = model$info$n.groups)
-  LABELS_COV_GROUPS  <- vector("list", length = model$info$n.groups)
+  LABELS_MAIN_GROUPS <- vector("list", length = n_groups)
+  LABELS_COV_GROUPS  <- vector("list", length = n_groups)
 
   unionByNames <- function(x, y) {
     new <- setdiff(names(y), names(x))
@@ -21,7 +24,7 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
   }
 
   # The custom labels must all be added, before computing THETA_LAB_ALL
-  for (g in seq_len(model$info$n.groups)) {
+  for (g in seq_len(n_groups)) {
     submodel     <- model$models[[g]]
     thetaLabel_g <- createThetaLabel(submodel$labelMatrices,
                                      submodel$covModel$labelMatrices,
@@ -30,7 +33,7 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
   }
   THETA_LAB_ALL <- calcThetaLabel(THETA_LAB, model$params$constrExprs)
 
-  for (g in seq_len(model$info$n.groups)) {
+  for (g in seq_len(n_groups)) {
     submodel <- model$models[[g]]
     etas <- submodel$info$etas
 
@@ -92,8 +95,8 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
       names(thetaMain)   <- .newnames(names(thetaMain))
     }
 
-    LABELS_MAIN_GROUPS[[g]] <- names(thetaMain)
-    LABELS_COV_GROUPS[[g]]  <- names(thetaCov)
+    LABELS_MAIN_GROUPS[[g]] <- if (length(thetaMain)) names(thetaMain) else character(0)
+    LABELS_COV_GROUPS[[g]]  <- if (length(thetaCov)) names(thetaCov) else character(0)
 
     THETA_COV  <- unionByNames(THETA_COV, thetaCov)
     THETA_MAIN <- unionByNames(THETA_MAIN, thetaMain)
@@ -102,12 +105,11 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
 
   THETA <- c(THETA_LAB, THETA_COV, THETA_MAIN)
 
-  SELECT_THETA_LAB  <- vector("list", length = model$info$n.groups)
-  SELECT_THETA_COV  <- vector("list", length = model$info$n.groups)
-  SELECT_THETA_MAIN <- vector("list", length = model$info$n.groups)
-  SELECT_THETA      <- vector("list", length = model$info$n.groups)
+  SELECT_THETA_LAB  <- vector("list", length = n_groups)
+  SELECT_THETA_COV  <- vector("list", length = n_groups)
+  SELECT_THETA_MAIN <- vector("list", length = n_groups)
 
-  for (g in seq_len(model$info$n.groups)) {
+  for (g in seq_len(n_groups)) {
     labelsMain_g <- LABELS_MAIN_GROUPS[[g]]
     labelsCov_g  <- LABELS_COV_GROUPS[[g]]
 
@@ -125,12 +127,34 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
     SELECT_THETA_MAIN[[g]] <- selectTM
   }
   
-  list(theta = THETA,
-       freeParams = length(THETA),
-       SELECT_THETA_LAB = SELECT_THETA_LAB,
-       SELECT_THETA_COV = SELECT_THETA_COV,
-       SELECT_THETA_MAIN = SELECT_THETA_MAIN,
-       lavLabels = LAV_LAB)
+  lenThetaLabel       <- length(THETA_LAB)
+  totalThetaLabel     <- THETA_LAB_ALL
+  totalLenThetaLabel  <- if (is.null(totalThetaLabel)) 0L else length(totalThetaLabel)
+  lenThetaCov         <- length(THETA_COV)
+  lenThetaMain        <- length(THETA_MAIN)
+
+  groupLabelIndices <- vector("list", length = n_groups)
+  groupParamIndices <- vector("list", length = n_groups)
+
+  for (g in seq_len(n_groups)) {
+    groupLabelIndices[[g]] <- if (lenThetaLabel) seq_len(lenThetaLabel) else integer()
+    idx_cov  <- if (length(SELECT_THETA_COV[[g]])) SELECT_THETA_COV[[g]] else integer()
+    idx_main <- if (length(SELECT_THETA_MAIN[[g]])) SELECT_THETA_MAIN[[g]] else integer()
+    groupParamIndices[[g]] <- c(idx_cov, idx_main)
+  }
+
+  list(theta                = THETA,
+       freeParams           = length(THETA),
+       SELECT_THETA_LAB     = SELECT_THETA_LAB,
+       SELECT_THETA_COV     = SELECT_THETA_COV,
+       SELECT_THETA_MAIN    = SELECT_THETA_MAIN,
+       lavLabels            = LAV_LAB,
+       lenThetaLabel        = lenThetaLabel,
+       totalLenThetaLabel   = totalLenThetaLabel,
+       lenThetaCov          = lenThetaCov,
+       lenThetaMain         = lenThetaMain,
+       groupLabelIndices    = groupLabelIndices,
+       groupParamIndices    = groupParamIndices)
 }
 
 

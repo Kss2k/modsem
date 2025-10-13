@@ -264,7 +264,6 @@ emLms <- function(model,
         }
       }
 
-      browser()
       # EM M-step (plain or fallback)
       if (algorithm == "EM" || mode == "EM") {
         mstep <- mstepLms(model = model, P = P, theta = thetaOld,

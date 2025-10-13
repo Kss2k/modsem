@@ -116,15 +116,22 @@ getJacobianLabelledParams <- function(model, theta, method, epsilon = 1e-8) {
 
 
 getTransformationsTheta <- function(model, theta, method) {
-  theta <- calcPhiTheta(theta = theta, model = model, method = method)
-  if (!model$totalLenThetaLabel) return(theta)
-  if (model$lenThetaLabel) {
-    thetaLabel <- theta[seq_len(model$lenThetaLabel)]
-    theta <- theta[-seq_len(model$lenThetaLabel)]
-  } else thetaLabel <- NULL
+  theta_full <- calcPhiTheta(theta = theta, model = model, method = method)
 
-  thetaLabel <- suppressWarnings(calcThetaLabel(thetaLabel, model$constrExprs))
-  c(thetaLabel, theta)
+  len_label <- if (!is.null(model$lenThetaLabel)) model$lenThetaLabel else 0L
+  if (len_label <= 0L) return(theta_full)
+
+  constrExprs <- model$constrExprs
+  if (is.null(constrExprs) && !is.null(model$params$constrExprs)) {
+    constrExprs <- model$params$constrExprs
+  }
+
+  thetaLabel <- theta_full[seq_len(len_label)]
+  thetaRest  <- theta_full[-seq_len(len_label)]
+
+  thetaLabel <- suppressWarnings(calcThetaLabel(thetaLabel, constrExprs))
+
+  c(thetaLabel, thetaRest)
 }
 
 

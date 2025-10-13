@@ -19,12 +19,27 @@ calcFIM_da <- function(model,
                             raw.labels = names(theta), n.additions = 0))
   if (verbose) printf("Calculating standard errors (%s)\n", FIM)
 
+  collectCluster <- function(d) {
+    if (is.null(d)) return(NULL)
+
+    if (is.list(d) && !is.data.frame(d)) {
+      clusters <- lapply(d, function(x) x$cluster)
+      clusters <- clusters[lengths(clusters) > 0L]
+      if (!length(clusters)) return(NULL)
+      do.call(c, clusters)
+    } else {
+      d$cluster
+    }
+  }
+
+  cluster_vec <- if (robust.se) collectCluster(data) else NULL
+
   I <- switch(method,
      lms =
        switch(FIM,
           observed = calcOFIM_LMS(model, theta = theta, data = data,
                                   epsilon = epsilon, hessian = hessian, P = P,
-                                  robust.se = robust.se, cluster = data$cluster,
+                                  robust.se = robust.se, cluster = cluster_vec,
                                   cr1s = cr1s),
           expected = calcEFIM_LMS(model, finalModel = finalModel, theta = theta,
                                   data = data, epsilon = epsilon, S = EFIM.S,
@@ -35,7 +50,7 @@ calcFIM_da <- function(model,
        switch(FIM,
           observed = calcOFIM_QML(model, theta = theta, data = data,
                                   hessian = hessian, epsilon = epsilon,
-                                  robust.se = robust.se, cluster = data$cluster,
+                                  robust.se = robust.se, cluster = cluster_vec,
                                   cr1s = cr1s),
           expected = calcEFIM_QML(model, finalModel = finalModel, theta = theta,
                                   data = data, epsilon = epsilon, S = EFIM.S,
@@ -169,8 +184,8 @@ calcOFIM_LMS <- function(model, theta, data, hessian = FALSE,
 
   # S: N x k matrix of individual score contributions (OPG)
   S <- suppressWarnings(
-    gradientObsLogLikLms_i(theta, model = model, data = data,
-                           P = P, sign = +1, epsilon = epsilon)
+    gradientObsLogLikLms_i(theta, model = model, P = P, sign = +1,
+                           epsilon = epsilon, data = data)
   )
 
   if (!robust.se || is.null(cluster)) {
@@ -242,12 +257,12 @@ calcEFIM_LMS <- function(model, finalModel = NULL, theta, data,
 
   suppressWarnings({
 
-  J <- gradientObsLogLikLms_i(theta = theta,
-                              model = model,
-                              data  = population,
-                              P     = popEstep,
-                              sign  = +1,
-                              epsilon = epsilon)      # R × k matrix
+  J <- gradientObsLogLikLms_i(theta   = theta,
+                              model   = model,
+                              P       = popEstep,
+                              sign    = +1,
+                              epsilon = epsilon,
+                              data    = population)      # R × k matrix
   })
 
   I <- matrix(0, nrow = k, ncol = k)

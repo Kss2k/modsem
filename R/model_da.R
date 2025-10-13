@@ -323,7 +323,8 @@ specifyModelDA <- function(..., createTheta = TRUE, group.info = NULL) {
   stopif(n_groups < 1L, "Invalid grouping structure supplied.")
 
   parTable <- group.info$parTable
-  stopif(max(parTable$group) != n_groups,
+  group_col <- parTable[["group"]]
+  stopif(is.null(group_col) || max(group_col) != n_groups,
          "Number of group-specific parameter tables does not match number of groups.")
 
   data.full <- dots$data
@@ -349,10 +350,12 @@ specifyModelDA <- function(..., createTheta = TRUE, group.info = NULL) {
   model <- list(models   = submodels,
                 parTable = parTable,
                 info     = list(n.groups = n_groups),
+                groupModels = submodels,
                 params   = list())
 
   # Currenlty we assume covModel has an uniform structure
   model$params$constrExprs <- getConstrExprs(parTable, model$models[[1L]]$covModel$parTable)
+  model$constrExprs <- model$params$constrExprs
 
   if (createTheta) {
     params <- createTheta(model, parTable.in = parTable)
@@ -360,6 +363,13 @@ specifyModelDA <- function(..., createTheta = TRUE, group.info = NULL) {
 
     # TODO: Remove occurences of `model$theta`, and replace them with `model$params$theta`
     model$theta <- params$theta # an ugly design decision, that was made at the very start
+
+    model$lenThetaLabel      <- params$lenThetaLabel
+    model$totalLenThetaLabel <- params$totalLenThetaLabel
+    model$lenThetaCov        <- params$lenThetaCov
+    model$lenThetaMain       <- params$lenThetaMain
+    model$groupLabelIndices  <- params$groupLabelIndices
+    model$groupParamIndices  <- params$groupParamIndices
 
     model$params$bounds <- getParamBounds(model)
     model$params$gradientStruct <- getGradientStruct(model, theta = params$theta)
@@ -665,6 +675,7 @@ finalizeModelEstimatesDA <- function(model,
   method <- match.arg(method)
   NA__ <- -999
 
+  browser()
   # coefficients and filled model
   lavCoefs <- getLavCoefs(model = model, theta = theta, method = method)
   # (fillPhi is relevant for LMS, harmless for QML when ignored)

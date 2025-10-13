@@ -7,7 +7,7 @@ estepLms <- function(model, theta, lastQuad = NULL, recalcQuad = FALSE,
 
   for (g in seq_len(model$info$n.groups)) {
     P$P_GROUPS[[g]] <- estepLmsGroup(
-      submodel = modFilled$models[[g]], lastQuad = lastQuad,
+      submodel = modFilled$models[[g]], lastQuad = lastQuad[[g]],
       recalcQuad = recalcQuad, adaptive.quad.tol = adaptive.quad.tol, ...
     )
   }
@@ -18,6 +18,38 @@ estepLms <- function(model, theta, lastQuad = NULL, recalcQuad = FALSE,
   P
 }
 
+
+getDataListLms <- function(model, data = NULL) {
+  if (!is.null(data)) {
+    if (is.list(data) && !is.data.frame(data)) return(data)
+    return(list(data))
+  }
+  lapply(model$models, function(submodel) submodel$data)
+}
+
+
+getPosteriorListLms <- function(P, model) {
+  if (!is.null(P$P_GROUPS)) return(P$P_GROUPS)
+  if (model$info$n.groups <= 1L) return(list(P))
+  stop("Posterior probabilities are missing group information (internal error).")
+}
+
+
+getThetaOrderForGroup <- function(model, group) {
+  params <- model$params
+  order  <- integer()
+
+  if (length(params$SELECT_THETA_LAB) >= group && length(params$SELECT_THETA_LAB[[group]]))
+    order <- c(order, params$SELECT_THETA_LAB[[group]])
+
+  if (length(params$SELECT_THETA_COV) >= group && length(params$SELECT_THETA_COV[[group]]))
+    order <- c(order, params$SELECT_THETA_COV[[group]])
+
+  if (length(params$SELECT_THETA_MAIN) >= group && length(params$SELECT_THETA_MAIN[[group]]))
+    order <- c(order, params$SELECT_THETA_MAIN[[group]])
+
+  order
+}
 
 estepLmsGroup <- function(submodel, lastQuad = NULL, recalcQuad = FALSE,
                           adaptive.quad.tol = 1e-12, ...) {
@@ -69,7 +101,7 @@ estepLmsGroup <- function(submodel, lastQuad = NULL, recalcQuad = FALSE,
     V    <- quad$n
     w    <- quad$w
     W    <- matrix(w, nrow = data$n, ncol = length(w), byrow = TRUE)
-    P    <- W * densityLms(V, modFilled = subModel, data = data)
+    P    <- W * densityLms(V, modFilled = submodel, data = data)
   }
 
   density        <- rowSums(P)
@@ -166,11 +198,12 @@ compLogLikLms <- function(theta, model, P, sign = -1, ...) {
     modFilled <- fillModel(model = model, theta = theta, method = "lms")
 
     ll <- 0
-    for (submodel in modFilled$models) {
+    for (g in seq_len(model$info$n.groups)) {
+      submodel <- modFilled$models[[g]]
       data <- submodel$data
 
       ll <- ll + completeLogLikLmsCpp(
-        modelR=submodel, P=P$P_GROUPS[[g]], quad=P$quad,
+        modelR=submodel, P=P$P_GROUPS[[g]], quad=P$quad[[g]],
         colidxR = data$colidx0, n = data$n.pattern,
         d = data$d.pattern, npatterns = data$p
       )
@@ -232,7 +265,7 @@ simpleGradientAllLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-
     symmetric <- locations_g$symmetric
 
     grad_g <- FGRAD(modelR    = submodelR,
-                    P         = P[[g]],
+                    P         = P$P_GROUPS[[g]],
                     block     = block,
                     row       = row,
                     col       = col,
@@ -270,19 +303,36 @@ simpleGradientAllLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-
 }
 
 
-obsLogLikLms <- function(theta, model, data, P, sign = 1, ...) {
-  modFilled <- fillModel(model = model, theta = theta, method = "lms")
-  ll <- observedLogLikLmsCpp(modFilled, dataR = data$data.split, P = P,
-                             colidxR = data$colidx0, n = data$n.pattern,
-                             npatterns = data$p, ncores = ThreadEnv$n.threads)
-  ll * sign
+obsLogLikLms <- function(theta, model, P, sign = 1, data = NULL, ...) {
+  modFilled  <- fillModel(model = model, theta = theta, method = "lms")
+  data_list  <- getDataListLms(modFilled, data)
+  post_list  <- getPosteriorListLms(P, modFilled)
+
+  ll <- 0
+  for (g in seq_len(modFilled$info$n.groups)) {
+    submodel <- modFilled$models[[g]]
+    data_g   <- data_list[[g]]
+    P_g      <- post_list[[g]]
+
+    ll_g <- observedLogLikLmsCpp(submodel,
+                                 dataR = data_g$data.split,
+                                 colidxR = data_g$colidx0,
+                                 P = P_g,
+                                 n = data_g$n.pattern,
+                                 npatterns = data_g$p,
+                                 ncores = ThreadEnv$n.threads)
+    ll <- ll + ll_g
+  }
+
+  sign * ll
 }
 
 
-gradientObsLogLikLms <- function(theta, model, data, P, sign = 1, epsilon = 1e-6) {
+gradientObsLogLikLms <- function(theta, model, P, sign = 1, epsilon = 1e-6) {
   FGRAD <- function(modelR, P, block, row, col, symmetric, colidxR, npatterns,
                     eps, ncores, n, ...) {
-    gradObsLogLikLmsCpp(modelR = modelR, dataR = data$data.split, P = P,
+    dataR <- modelR$data
+    gradObsLogLikLmsCpp(modelR = modelR, dataR = dataR$data.split, P = P,
                         block = block, row = row, col = col,
                         symmetric = symmetric, colidxR = colidxR,
                         n = n, npatterns = npatterns, eps = eps,
@@ -290,20 +340,16 @@ gradientObsLogLikLms <- function(theta, model, data, P, sign = 1, epsilon = 1e-6
   }
 
   FOBJECTIVE <- function(theta, model, P, colidxR, npatterns, sign, ...) {
-    obsLogLikLms(theta = theta, model = model, data = data$data.split,
-                 P = P, colidxR = colidxR, npatterns = npatterns,
-                 sign = sign)
+    obsLogLikLms(theta = theta, model = model, P = P, sign = sign)
   }
 
   gradientAllLogLikLms(theta = theta, model = model, P = P, sign = sign,
-                       epsilon = epsilon, data = data,
+                       epsilon = epsilon,
                        FGRAD = FGRAD, FOBJECTIVE = FOBJECTIVE)
 }
 
 
-obsLogLikLms_i <- function(theta, model, data, P, sign = 1, ...) {
-  modFilled <- fillModel(model = model, theta = theta, method = "lms")
-
+obsLogLikLms_i_single <- function(submodel, data, P, sign = 1) {
   V <- P$V
   w <- P$w
   m <- nrow(V)
@@ -311,17 +357,15 @@ obsLogLikLms_i <- function(theta, model, data, P, sign = 1, ...) {
 
   for (i in seq_len(m)) {
     z_i     <- V[i, ]
-    mu_i    <- muLmsCpp(  model = modFilled, z = z_i)
-    sigma_i <- sigmaLmsCpp(model = modFilled, z = z_i)
+    mu_i    <- muLmsCpp(model = submodel, z = z_i)
+    sigma_i <- sigmaLmsCpp(model = submodel, z = z_i)
 
     dens_i <- numeric(data$n)
-
     offset <- 1L
-    for (id in data$ids) { # go along patterns
-      n.pattern <- data$n.pattern[[id]]
 
-      colidx <- data$colidx[[id]]
-      dataid <- data$data.split[[id]]
+    for (id in data$ids) {
+      n.pattern <- data$n.pattern[[id]]
+      colidx    <- data$colidx[[id]]
 
       end <- offset + n.pattern - 1L
       dens_i[offset:end] <- dmvn(data$data.split[[id]],
@@ -338,14 +382,36 @@ obsLogLikLms_i <- function(theta, model, data, P, sign = 1, ...) {
 }
 
 
+obsLogLikLms_i <- function(theta, model, P, sign = 1, data = NULL, ...) {
+  modFilled <- fillModel(model = model, theta = theta, method = "lms")
+  data_list <- getDataListLms(modFilled, data)
+  post_list <- getPosteriorListLms(P, modFilled)
+
+  contribs <- vector("list", length = modFilled$info$n.groups)
+
+  for (g in seq_len(modFilled$info$n.groups)) {
+    submodel <- modFilled$models[[g]]
+    data_g   <- data_list[[g]]
+    P_g      <- post_list[[g]]
+
+    contribs[[g]] <- obsLogLikLms_i_single(submodel, data_g, P_g, sign = sign)
+  }
+
+  unlist(contribs, use.names = FALSE)
+}
+
+
 # gradient function of obsLogLikLms_i
-gradientObsLogLikLms_i <- function(theta, model, data, P, sign = 1, epsilon = 1e-4) {
-  baseLL <- obsLogLikLms_i(theta, model, data = data, P = P, sign = sign)
+gradientObsLogLikLms_i <- function(theta, model, P, sign = 1, epsilon = 1e-4, data = NULL) {
+  data_list <- getDataListLms(model, data)
+  n_total   <- sum(vapply(data_list, function(d) d$n, numeric(1L)))
+
+  baseLL <- obsLogLikLms_i(theta, model, P = P, sign = sign, data = data_list)
 
   lapplyMatrix(seq_along(theta), FUN = function(i) {
     theta[[i]] <- theta[[i]] + epsilon
-    (obsLogLikLms_i(theta, model, data = data, P = P, sign = sign) - baseLL) / epsilon
-  }, FUN.VALUE = numeric(data$n))
+    (obsLogLikLms_i(theta, model, P = P, sign = sign, data = data_list) - baseLL) / epsilon
+  }, FUN.VALUE = numeric(n_total))
 }
 
 
@@ -472,12 +538,14 @@ complicatedHessianAllLogLikLms <- function(theta, model, P, data, sign = -1, FOB
 }
 
 
-hessianObsLogLikLms <- function(theta, model, data, P, sign = -1,
+hessianObsLogLikLms <- function(theta, model, P, sign = -1,
+                                data = NULL,
                                 .relStep = .Machine$double.eps ^ (1/5)) {
 
   FHESS <- function(modelR, P, block, row, col, symmetric, eps, .relStep, colidxR, n,
                     npatterns, ncores, ...) {
-    hessObsLogLikLmsCpp(modelR = modelR, dataR = data$data.split, P = P,
+    dataR <- modelR$data
+    hessObsLogLikLmsCpp(modelR = modelR, dataR = dataR$data.split, P = P,
                         block = block, row = row, col = col,
                         symmetric = symmetric, npatterns = npatterns,
                         colidxR = colidxR, n = n, relStep = .relStep,
@@ -485,7 +553,7 @@ hessianObsLogLikLms <- function(theta, model, data, P, sign = -1,
   }
 
   FOBJECTIVE <- function(theta, model, P, sign, data, ...) {
-    obsLogLikLms(theta = theta, model = model, P = P, data = data, sign = sign)
+    obsLogLikLms(theta = theta, model = model, P = P, sign = sign)
   }
 
   hessianAllLogLikLms(theta = theta, model = model, P = P, sign = sign,
@@ -514,10 +582,13 @@ hessianCompLogLikLms <- function(theta, model, P, data, sign = -1,
 }
 
 
-.logdensAllObsNode <- function(theta, model, data, z) {
+.logdensAllObsNode <- function(theta, model, data, z, group = NULL) {
   modFilled <- fillModel(model = model, theta = theta, method = "lms")
+  submodel <- if (!is.null(modFilled$models)) {
+    if (is.null(group)) modFilled$models[[1L]] else modFilled$models[[group]]
+  } else modFilled
   # densitySingleLms returns densities for all rows at given z (not log)
-  dens <- densitySingleLms(z = z, modFilled = modFilled, data = data)
+  dens <- densitySingleLms(z = z, modFilled = submodel, data = data)
   # guard against underflow/zeros
   log(pmax(dens, .Machine$double.xmin))
 }
@@ -526,24 +597,25 @@ hessianCompLogLikLms <- function(theta, model, P, data, sign = -1,
 # per-node, per-observation complete-data score via finite difference
 # Returns an n x p matrix S_j with row i = s_{ij}^T = grad_theta log p(y_i, z_j | theta)
 .completeScoresNodeFD <- function(theta, model, data, z,
-                                  epsilon = 1e-6, scheme = c("forward","central")) {
+                                  epsilon = 1e-6, scheme = c("forward","central"),
+                                  group = NULL) {
   scheme <- match.arg(scheme)
   p <- length(theta)
   n <- data$n
   S <- matrix(0.0, nrow = n, ncol = p)
   if (scheme == "forward") {
-    f0 <- .logdensAllObsNode(theta, model, data, z)
+    f0 <- .logdensAllObsNode(theta, model, data, z, group = group)
     for (k in seq_len(p)) {
       th1 <- theta; th1[k] <- th1[k] + epsilon
-      f1 <- .logdensAllObsNode(th1, model, data, z)
+      f1 <- .logdensAllObsNode(th1, model, data, z, group = group)
       S[, k] <- (f1 - f0) / epsilon
     }
   } else { # central
     for (k in seq_len(p)) {
       thp <- theta; thp[k] <- thp[k] + epsilon
       thm <- theta; thm[k] <- thm[k] - epsilon
-      fp <- .logdensAllObsNode(thp, model, data, z)
-      fm <- .logdensAllObsNode(thm, model, data, z)
+      fp <- .logdensAllObsNode(thp, model, data, z, group = group)
+      fm <- .logdensAllObsNode(thm, model, data, z, group = group)
       S[, k] <- (fp - fm) / (2*epsilon)
     }
   }
@@ -567,53 +639,53 @@ observedInfoFromLouisLms <- function(model,
 
   # E-step (if needed)
   if (recompute.P) {
-    P <- estepLms(model = model, theta = theta, data = data,
+    P <- estepLms(model = model, theta = theta,
                   lastQuad = NULL, recalcQuad = FALSE,
                   adaptive.quad.tol = adaptive.quad.tol, ...)
   }
 
-  # labels and sizes
-  p <- length(theta)
-  n <- data$n
-  J <- length(P$w)             # number of quadrature nodes
+  p   <- length(theta)
   lbl <- names(theta)
 
-  # Complete Information
-  Icom <- hessianCompLogLikLms(theta = theta, model = model, P = P, data = data,
-                               sign = -1)
+  data_list <- getDataListLms(model, data)
+  post_list <- getPosteriorListLms(P, model)
+  n_total   <- sum(vapply(data_list, function(d) d$n, numeric(1L)))
 
-  # Imis = sum_i ( E[s_ij s_ij^T] - E[s_ij]E[s_ij]^T ), expectations over j with weights r_ij = P$P[i,j]
-  # Accumulate efficiently:
-  #   total_M = sum_j S_j^T diag(r_.j) S_j, where S_j is n x p score matrix at node j
-  #   Sbar (n x p) = sum_j r_.j * S_j  -> then sum_i sbar_i sbar_i^T = t(Sbar) %*% Sbar
+  Icom <- hessianCompLogLikLms(theta = theta, model = model, P = P,
+                               data = data_list, sign = -1)
+
   total_M <- matrix(0.0, p, p, dimnames = list(lbl, lbl))
-  Sbar    <- matrix(0.0, n, p)   # will hold per-observation E[s_ij]; no need to keep per-i outer products
+  Sbar    <- matrix(0.0, n_total, p)
 
-  for (j in seq_len(J)) {
-    z_j <- P$V[j, , drop = FALSE]       # node
-    S_j <- .completeScoresNodeFD(theta, model, data, z_j,
-                                       epsilon = fd.epsilon, scheme = fd.scheme)  # n x p
-    r_j <- P$P[, j]                     # length-n weights (posterior r_ij)
+  row_offset <- 0L
+  for (g in seq_along(data_list)) {
+    data_g <- data_list[[g]]
+    P_g    <- post_list[[g]]
+    rows   <- seq_len(data_g$n) + row_offset
 
-    # total_M += t( S_j * sqrt(r_j) ) %*% ( S_j * sqrt(r_j) )
-    # (avoid forming diag(r_j) explicitly)
-    Rhalf <- sqrt(pmax(r_j, 0))
-    X <- S_j * Rhalf       # row-wise scaling
-    total_M <- total_M + crossprod(X)   # t(X) %*% X  -> p x p
+    Jg <- length(P_g$w)
+    for (j in seq_len(Jg)) {
+      z_j <- P_g$V[j, , drop = FALSE]
+      S_j <- .completeScoresNodeFD(theta, model, data_g, z_j,
+                                   epsilon = fd.epsilon, scheme = fd.scheme,
+                                   group = if (model$info$n.groups > 1L) g else NULL)
+      r_j <- P_g$P[, j]
 
-    # Sbar += r_j * S_j   (row-wise scaling)
-    Sbar <- Sbar + (S_j * r_j)
+      Rhalf <- sqrt(pmax(r_j, 0))
+      X <- S_j * Rhalf
+      total_M <- total_M + crossprod(X)
+      Sbar[rows, ] <- Sbar[rows, ] + (S_j * r_j)
+    }
+
+    row_offset <- row_offset + data_g$n
   }
 
-  sbar_outer <- crossprod(Sbar) # sum_i sbar_i sbar_i^T  -> p x p
+  sbar_outer <- crossprod(Sbar)
   Imis <- total_M - sbar_outer
-
-  # Louis Identity
   Iobs <- Icom - Imis
 
-  # hygiene
   if (symmetrize) {
-    sym <- function(A) 0.5*(A + t(A))
+    sym <- function(A) 0.5 * (A + t(A))
     Icom <- sym(Icom); Imis <- sym(Imis); Iobs <- sym(Iobs)
   }
 
