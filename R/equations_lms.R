@@ -2,15 +2,20 @@ estepLms <- function(model, theta, lastQuad = NULL, recalcQuad = FALSE,
                      adaptive.quad.tol = 1e-12, ...) {
   modFilled <- fillModel(model = model, theta = theta, method = "lms")
 
-  P_GROUPS <- vector("list", length = model$info$n.groups)
+  P <- list(P_GROUPS = vector("list", length = model$info$n.groups),
+            quad = NULL, obsLL = NULL)
+
   for (g in seq_len(model$info$n.groups)) {
-    P_GROUPS[[g]] <- estepLmsGroup(
+    P$P_GROUPS[[g]] <- estepLmsGroup(
       submodel = modFilled$models[[g]], lastQuad = lastQuad,
       recalcQuad = recalcQuad, adaptive.quad.tol = adaptive.quad.tol, ...
     )
   }
 
-  P_GROUPS
+  P$quad  <- lapply(P$P_GROUPS, FUN = \(P) P$quad)
+  P$obsLL <- sum(vapply(P$P_GROUPS, FUN.VALUE = numeric(1L), FUN = \(P) P$obsLL))
+
+  P
 }
 
 
@@ -165,7 +170,7 @@ compLogLikLms <- function(theta, model, P, sign = -1, ...) {
       data <- submodel$data
 
       ll <- ll + completeLogLikLmsCpp(
-        modelR=submodel, P=P, quad=P$quad,
+        modelR=submodel, P=P$P_GROUPS[[g]], quad=P$quad,
         colidxR = data$colidx0, n = data$n.pattern,
         d = data$d.pattern, npatterns = data$p
       )
@@ -260,7 +265,6 @@ simpleGradientAllLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-
       }
     }
   }
-  browser()
 
   sign * Jacobian %*% grad
 }
