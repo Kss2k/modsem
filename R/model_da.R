@@ -364,9 +364,9 @@ specifyModelDA <- function(..., createTheta = TRUE, group.info = NULL) {
 
     model$params$bounds <- getParamBounds(model)
     model$params$gradientStruct <- getGradientStruct(model, theta = params$theta)
-
-    model$params <- params
   }
+
+  model
 }
 
 

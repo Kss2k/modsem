@@ -197,41 +197,36 @@ fillThetaIfStartNULL <- function(start,
 
 
 fillModel <- function(model, theta, fillPhi = FALSE, method = "lms") {
-  if (isMultiGroupModelDA(model)) {
-    submodels <- model$groupModels
-    filled <- vector("list", length = length(submodels))
-    for (g in seq_along(submodels)) {
-      submodel <- submodels[[g]]
-      theta_g  <- getThetaGroupDA(model, theta, g)
-      filled[[g]] <- fillModel(submodel, theta_g, fillPhi = fillPhi, method = method)
-    }
-    model$groupModels <- filled
-    return(model)
-  }
+  params.utils <- model$params
 
-  if (is.null(names(theta))) names(theta) <- names(model$theta)
+  if (is.null(names(theta)))
+    names(theta) <- names(params.utils$theta)
 
   # labeled parameters
   thetaLabel <- NULL
-  if (model$totalLenThetaLabel > 0) {
-    if (model$lenThetaLabel > 0) {
-      thetaLabel <- theta[seq_len(model$lenThetaLabel)]
-      theta <- theta[-seq_len(model$lenThetaLabel)]
-    }
-    thetaLabel <- suppressWarnings(calcThetaLabel(thetaLabel, model$constrExprs))
+  
+  if (length(params.utils$SELECT_THETA_LAB)) {
+    thetaLabel <- theta[params.utils$SELECT_THETA_LAB[[1L]]] # same for all groups
+    thetaLabel <- suppressWarnings(calcThetaLabel(thetaLabel, params.utils$constrExprs))
   }
 
-  # cov model
-  thetaCov <- NULL
-  thetaMain <- theta
-  if (model$lenThetaCov > 0) {
-    thetaCov <- theta[seq_len(model$lenThetaCov)]
-    thetaMain <- theta[-seq_len(model$lenThetaCov)]
+  for (g in seq_len(model$info$n.groups)) {
+    submodel <- model$models[[g]]
+
+    # cov model
+    thetaCov <- NULL
+    if (length(params.utils$SELECT_THETA_COV[[g]]))
+      thetaCov <- theta[params.utils$SELECT_THETA_COV[[g]]]
+
+    thetaMain <- theta[params.utils$SELECT_THETA_MAIN[[g]]]
+
+    submodel$covModel <- fillCovModel(submodel$covModel, thetaCov, thetaLabel)
+    submodel$matrices <- fillMainModel(submodel, thetaMain, thetaLabel,
+                                       fillPhi = fillPhi, method = method)
+
+    model$models[[g]] <- submodel
   }
 
-  model$covModel <- fillCovModel(model$covModel, thetaCov, thetaLabel)
-  model$matrices <- fillMainModel(model, thetaMain, thetaLabel,
-                                  fillPhi = fillPhi, method = method)
   model
 }
 
@@ -251,7 +246,7 @@ fillMainModel <- function(model, theta, thetaLabel, fillPhi = FALSE,
   if (!is.null(model$covModel$matrices)) {
     M$phi <- M$A <- expectedCovModel(covModel, method = method, sortedXis = xis)
   } else if (method == "lms") {
-    M$A <- fillNA_Matrix(M$A, theta = theta, pattern = "^A[0-9]*$")
+    M$A <- fillNA_Matrix(M$A, theta = theta, pattern = "^A([0-9]*)")
   } else if (method == "qml") {
     M$phi <- fillSymmetric(M$phi, fetch(theta, "^phi"))
   }

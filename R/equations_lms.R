@@ -1,39 +1,10 @@
 estepLms <- function(model, theta, data, lastQuad = NULL, recalcQuad = FALSE,
                      adaptive.quad.tol = 1e-12, ...) {
-  if (isMultiGroupModelDA(model)) {
-    submodels <- model$groupModels
-    n_groups <- length(submodels)
-
-    lastQuad_list <- if (is.list(lastQuad)) lastQuad else vector("list", length = n_groups)
-    results <- vector("list", length = n_groups)
-    obsLL_total <- 0
-    quad_list <- vector("list", length = n_groups)
-
-    for (g in seq_len(n_groups)) {
-      submodel <- submodels[[g]]
-      theta_g <- getThetaGroupDA(model, theta, g)
-      lastQuad_g <- if (length(lastQuad_list) >= g) lastQuad_list[[g]] else NULL
-
-      res_g <- estepLms(submodel, theta_g, data = submodel$data, lastQuad = lastQuad_g,
-                        recalcQuad = recalcQuad, adaptive.quad.tol = adaptive.quad.tol, ...)
-
-      results[[g]] <- res_g
-      obsLL_total <- obsLL_total + res_g$obsLL
-      quad_list[[g]] <- res_g$quad
-    }
-
-    names(results) <- names(submodels)
-    names(quad_list) <- names(submodels)
-
-    return(list(
-      groups = results,
-      obsLL = obsLL_total,
-      quad = quad_list
-    ))
-  }
-
   modFilled <- fillModel(model = model, theta = theta, method = "lms")
-
+  browser()
+}
+estepLmsGroup <- function(submodel, data, lastQuad = NULL, recalcQuad = FALSE,
+                          adaptive.quad.tol = 1e-12, ...) {
   if (model$quad$adaptive && (recalcQuad || is.null(lastQuad))) {
     m <- model$quad$m
     a <- model$quad$a
