@@ -347,19 +347,23 @@ specifyModelDA <- function(..., createTheta = TRUE, group.info = NULL) {
     submodels[[g]] <- submodel_g
   }
 
-  model <- list(models = submodels,
-                info   = list(n.groups = n_groups),
-                params = NULL)
+  model <- list(models   = submodels,
+                parTable = parTable,
+                info     = list(n.groups = n_groups),
+                params   = list())
 
   # Currenlty we assume covModel has an uniform structure
   model$params$constrExprs <- getConstrExprs(parTable, model$models[[1L]]$covModel$parTable)
 
   if (createTheta) {
-    params            <- createTheta(model, parTable.in = parTable)
-    browser()
-    params$freeParams <- length(listTheta$theta)
-    params$bounds     <- getParamBounds(model)
-    params$gradientStruct <- getGradientStruct(model, theta = model$params$theta)
+    params <- createTheta(model, parTable.in = parTable)
+    model$params[names(params)] <- params
+
+    # TODO: Remove occurences of `model$theta`, and replace them with `model$params$theta`
+    model$theta <- params$theta # an ugly design decision, that was made at the very start
+
+    model$params$bounds <- getParamBounds(model)
+    model$params$gradientStruct <- getGradientStruct(model, theta = params$theta)
 
     model$params <- params
   }

@@ -20,6 +20,16 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
     if (length(new)) c(x, y[new]) else x
   }
 
+  # The custom labels must all be added, before computing THETA_LAB_ALL
+  for (g in seq_len(model$info$n.groups)) {
+    submodel     <- model$models[[g]]
+    thetaLabel_g <- createThetaLabel(submodel$labelMatrices,
+                                     submodel$covModel$labelMatrices,
+                                     model$params$constrExprs)
+    THETA_LAB <- unionByNames(THETA_LAB, thetaLabel_g)
+  }
+  THETA_LAB_ALL <- calcThetaLabel(THETA_LAB, model$params$constrExprs)
+
   for (g in seq_len(model$info$n.groups)) {
     submodel <- model$models[[g]]
     etas <- submodel$info$etas
@@ -27,10 +37,6 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
     listThetaCov <- createThetaCovModel(submodel$covModel)
     thetaCov     <- listThetaCov$theta
     lavLabelsCov <- listThetaCov$lavLabels
-    thetaLabel   <- createThetaLabel(submodel$labelMatrices,
-                                     submodel$covModel$labelMatrices,
-                                     model$constrExprs)
-    totalThetaLabel <- calcThetaLabel(thetaLabel, submodel$constrExprs)
 
     M            <- submodel$matrices
     lambdaX      <- as.vector(M$lambdaX)
@@ -71,9 +77,8 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
     thetaMain <- allModelValues[is.na(allModelValues)]
     thetaMain <- fillThetaIfStartNULL(start = start, theta = thetaMain,
                                       lavlab = lavLabelsMain)
-    theta     <- c(thetaLabel, thetaCov, thetaMain)
 
-    allLabels <- names(c(totalThetaLabel, thetaCov, thetaMain))
+    allLabels <- names(c(thetaCov, thetaMain))
     lavLabels <- combineLavLabels(lavLabelsMain = lavLabelsMain,
                                   lavLabelsCov = lavLabelsCov,
                                   currentLabels = allLabels,
@@ -83,7 +88,6 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
       .newnames <- \(nm) sprintf("%s.g%d", nm, g)
      
       # thetaLabel is labelled across the submodels, so the names don't change!
-      names(theta)       <- .newnames(names(theta))
       names(thetaCov)    <- .newnames(names(thetaCov))
       names(thetaMain)   <- .newnames(names(thetaMain))
     }
@@ -91,10 +95,8 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
     LABELS_MAIN_GROUPS[[g]] <- names(thetaMain)
     LABELS_COV_GROUPS[[g]]  <- names(thetaCov)
 
-    THETA_LAB  <- unionByNames(THETA_LAB, thetaLabel)
     THETA_COV  <- unionByNames(THETA_COV, thetaCov)
     THETA_MAIN <- unionByNames(THETA_MAIN, thetaMain)
-    browser()
     LAV_LAB    <- union(LAV_LAB, lavLabels)
   }
 
@@ -124,6 +126,7 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
   }
   
   list(theta = THETA,
+       freeParams = length(THETA),
        SELECT_THETA_LAB = SELECT_THETA_LAB,
        SELECT_THETA_COV = SELECT_THETA_COV,
        SELECT_THETA_MAIN = SELECT_THETA_MAIN,
@@ -322,8 +325,8 @@ fillSymmetric <- function(mat, values) {
 
 
 getParamBounds <- function(model) {
-  lower <- rep(-Inf, model$freeParams)
-  upper <- rep(Inf, model$freeParams)
+  lower <- rep(-Inf, model$params$freeParams)
+  upper <- rep(Inf, model$params$freeParams)
   names(lower) <- names(upper) <- names(model$theta)
 
   parTable <- model$parTable
@@ -464,7 +467,7 @@ getParamNamesMatrix <- function(mat, matname) {
 }
 
 
-getParamLocationsMatrices <- function(matrices, isFree = is.na) {
+getParamLocationsMatrices <- function(matrices, isFree = is.na, g = 1L, ignore.g.label = FALSE) {
   matrices <- matrices[intersect(names(matrices), names(LMS_BLOCKS))]
   locations <- data.frame(param = NULL, block = NULL, row = NULL, col = NULL)
   for (blockname in names(matrices)) {
@@ -483,8 +486,12 @@ getParamLocationsMatrices <- function(matrices, isFree = is.na) {
     rowidx <- rowidx[isFree(X)]
     colidx <- colidx[isFree(X)]
 
+    if (g > 1L && !ignore.g.label)
+      params <- sprintf("%s.g%d", params, g)
+
     locationsBlock <- data.frame(
       param = params,
+      group = g,
       block = block,
       row   = rowidx,
       col   = colidx,
@@ -564,17 +571,26 @@ getGradientStructSimple <- function(model, theta) {
     derivatives2[[constrVar]] <- secondDerivateConstraint(constrEq)
   }
 
-  isLinear <- vapply(derivatives, FUN.VALUE = logical(1L), FUN = is.atomic)
+  isLinear <- vapply(derivatives, FUN.VALUE = logical(1L),
+                     FUN = \(X) vapply(X, FUN.VALUE = logical(1L),
+                                       FUN = \(x) all(is.atomic(x))))
 
   linDerivs   <- derivatives[isLinear]
   nlinDerivs  <- derivatives[!isLinear]
   nlinDerivs2 <- derivatives2[!isLinear]
   evalTheta   <- \(theta) c(theta, suppressWarnings(calcThetaLabel(theta, model$constrExprs))) # This could be made a bit better
 
-  locations <- rbind(
-    getParamLocationsMatrices(model$matrices, isFree=is.na),
-    getParamLocationsMatrices(model$labelMatrices, isFree=\(x) x != "")
-  )
+  locations <- NULL
+  for (g in seq_len(model$info$n.groups)) {
+    submodel <- model$models[[g]]
+
+    locations <- rbind(
+       locations,
+       getParamLocationsMatrices(submodel$matrices, isFree = is.na, g = g),
+       getParamLocationsMatrices(submodel$labelMatrices, isFree = \(x) x != "",
+                                 g = g, ignore.g.label = TRUE) # labels don't change with g here
+    )
+  }
 
   k <- nrow(locations)
   m <- length(theta)
