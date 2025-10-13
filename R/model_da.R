@@ -355,7 +355,6 @@ specifyModelDA <- function(..., createTheta = TRUE, group.info = NULL) {
 
   # Currenlty we assume covModel has an uniform structure
   model$params$constrExprs <- getConstrExprs(parTable, model$models[[1L]]$covModel$parTable)
-  model$constrExprs <- model$params$constrExprs
 
   if (createTheta) {
     params <- createTheta(model, parTable.in = parTable)

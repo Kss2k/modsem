@@ -126,35 +126,13 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
     SELECT_THETA_COV[[g]]  <- selectTC
     SELECT_THETA_MAIN[[g]] <- selectTM
   }
-  
-  lenThetaLabel       <- length(THETA_LAB)
-  totalThetaLabel     <- THETA_LAB_ALL
-  totalLenThetaLabel  <- if (is.null(totalThetaLabel)) 0L else length(totalThetaLabel)
-  lenThetaCov         <- length(THETA_COV)
-  lenThetaMain        <- length(THETA_MAIN)
 
-  groupLabelIndices <- vector("list", length = n_groups)
-  groupParamIndices <- vector("list", length = n_groups)
-
-  for (g in seq_len(n_groups)) {
-    groupLabelIndices[[g]] <- if (lenThetaLabel) seq_len(lenThetaLabel) else integer()
-    idx_cov  <- if (length(SELECT_THETA_COV[[g]])) SELECT_THETA_COV[[g]] else integer()
-    idx_main <- if (length(SELECT_THETA_MAIN[[g]])) SELECT_THETA_MAIN[[g]] else integer()
-    groupParamIndices[[g]] <- c(idx_cov, idx_main)
-  }
-
-  list(theta                = THETA,
-       freeParams           = length(THETA),
-       SELECT_THETA_LAB     = SELECT_THETA_LAB,
-       SELECT_THETA_COV     = SELECT_THETA_COV,
-       SELECT_THETA_MAIN    = SELECT_THETA_MAIN,
-       lavLabels            = LAV_LAB,
-       lenThetaLabel        = lenThetaLabel,
-       totalLenThetaLabel   = totalLenThetaLabel,
-       lenThetaCov          = lenThetaCov,
-       lenThetaMain         = lenThetaMain,
-       groupLabelIndices    = groupLabelIndices,
-       groupParamIndices    = groupParamIndices)
+  list(theta             = THETA,
+       freeParams        = length(THETA),
+       SELECT_THETA_LAB  = SELECT_THETA_LAB,
+       SELECT_THETA_COV  = SELECT_THETA_COV,
+       SELECT_THETA_MAIN = SELECT_THETA_MAIN,
+       lavLabels         = LAV_LAB)
 }
 
 
@@ -388,62 +366,47 @@ checkStartingParams <- function(start, model) {
 calcPhiTheta <- function(theta, model, method) {
   if (method != "lms") return(theta)
 
-  if (isMultiGroupModelDA(model)) {
-    return(calcPhiThetaMulti(theta, model, method))
-  }
-
-  filledModel <- fillModel(theta = theta, model = model, method = method,
+  modFilled <- fillModel(theta = theta, model = model, method = method,
                            fillPhi = TRUE)
 
-  if (!is.null(model$covModel$matrices)) {
-    matEst <- filledModel$covModel$matrices
-    matLab <- model$covModel$labelMatrices
-    matNA  <- model$covModel$matrices
-  } else {
-    matEst <- filledModel$matrices
-    matNA  <- model$matrices
-    matLab <- model$labelMatrices
-  }
+  for (g in seq_len(model$info$n.groups)) {
+    select <- c(model$params$SELECT_THETA_LAB[[g]],
+                model$params$SELECT_THETA_COV[[g]],
+                model$params$SELECT_THETA_MAIN[[g]])
 
-  vals   <- as.vector(matEst$phi[is.na(matNA$A) & !is.nan(matNA$A)])
-  labels <- as.vector(matLab$A)
+    theta_g      <- theta[select]
+    submodFilled <- modFilled$models[[g]]
+    submodel     <- model$models[[g]]
 
-  if (any(labels != "")) {
-    allVals <- as.vector(matEst$phi)
-    labVals <- allVals[labels != ""]
-    labels  <- labels[labels != ""]
-    missing <- setdiff(labels, names(theta))
-    if (length(missing)) {
-      stop2("Missing labelled parameters in theta vector: ", paste(missing, collapse = ", "))
+    if (!is.null(submodel$covModel$matrices)) {
+      matEst <- submodFilled$covModel$matrices
+      matLab <- submodel$covModel$labelMatrices
+      matNA  <- submodel$covModel$matrices
+    } else {
+      matEst <- submodFilled$matrices
+      matNA  <- submodel$matrices
+      matLab <- submodel$labelMatrices
     }
-    theta[labels] <- labVals
+
+    vals   <- as.vector(matEst$phi[is.na(matNA$A) & !is.nan(matNA$A)])
+    labels <- as.vector(matLab$A)
+
+    if (any(labels != "")) {
+      allVals <- as.vector(matEst$phi)
+      labVals <- allVals[labels != ""]
+      labels  <- labels[labels != ""]
+      missing <- setdiff(labels, names(theta))
+      stopif(length(missing),
+             "Missing labelled parameters in theta vector: ",
+             paste(missing, collapse = ", "))
+      
+      theta[select][labels] <- labVals
+    }
+
+    theta[select][grepl("^A([0-9]*)", names(theta[select]))] <- vals
   }
 
-  theta[grepl("^A[0-9]+$", names(theta))] <- vals
   theta
-}
-
-
-calcPhiThetaMulti <- function(theta, model, method) {
-  len_label <- if (!is.null(model$lenThetaLabel)) model$lenThetaLabel else 0L
-  theta_out <- theta
-
-  if (len_label > 0L) {
-    theta_label <- theta_out[seq_len(len_label)]
-    theta_label <- suppressWarnings(calcThetaLabel(theta_label, model$constrExprs))
-    theta_out[seq_len(len_label)] <- theta_label
-  }
-
-  submodels <- model$groupModels
-  for (g in seq_along(submodels)) {
-    submodel <- submodels[[g]]
-    theta_g <- getThetaGroupDA(model, theta_out, g)
-    theta_g_trans <- calcPhiTheta(theta_g, submodel, method)
-    global_names <- mapGroupThetaToGlobal(model, names(theta_g_trans), g)
-    theta_out[global_names] <- theta_g_trans
-  }
-
-  theta_out
 }
 
 
