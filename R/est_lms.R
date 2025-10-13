@@ -107,8 +107,8 @@ emLms <- function(model,
     direction <- NULL
 
     lastQuad     <- NULL
-    adaptiveQuad <- model$quad$adaptive
-    adaptiveFreq <- model$quad$adaptive.frequency
+    adaptiveQuad <- model$models[[1L]]$quad$adaptive # fixed across groups
+    adaptiveFreq <- model$models[[1L]]$quad$adaptive.frequency
 
     qn_env <- new.env(parent = emptyenv())
     qn_env$LBFGS_M <- 5
@@ -119,7 +119,7 @@ emLms <- function(model,
     iterations <- 0L
     run <- TRUE
 
-    testSimpleGradient <- !model$gradientStruct$hasCovModel
+    testSimpleGradient <- !model$params$gradientStruct$hasCovModel
 
     while (run) {
       iterations <- iterations + 1L
@@ -136,7 +136,8 @@ emLms <- function(model,
         tryCatch({
           gradientCompLogLikLms(theta = thetaNew, model = model, P = P)
         }, error = \(e) {
-          warning2("Optimized computation of gradient failed! Switching gradient type.")
+          warning2("Optimized computation of gradient failed! Switching gradient type.\n",
+                   "Message: ", conditionMessage(e))
           model$gradientStruct$hasCovModel <<- TRUE
           model$gradientStruct$isNonLinear <<- TRUE
         })

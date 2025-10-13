@@ -112,82 +112,8 @@ estepLmsGroup <- function(submodel, lastQuad = NULL, recalcQuad = FALSE,
 }
 
 
-rawGradientGroupLms <- function(submodel, theta, P, data, epsilon) {
-  GS <- submodel$gradientStruct
-  if (is.null(GS$locations)) {
-    stop("Gradient structure for subgroup is not available; cannot compute raw gradient.")
-  }
-
-  modelR     <- fillModel(model = submodel, theta = theta, method = "lms")
-  locations  <- GS$locations
-
-  gradLogLikLmsCpp(modelR    = modelR,
-                   P         = P,
-                   block     = locations$block,
-                   row       = locations$row,
-                   col       = locations$col,
-                   symmetric = locations$symmetric,
-                   colidxR   = data$colidx0,
-                   npatterns = data$p,
-                   n         = data$n.pattern,
-                   d         = data$d.pattern,
-                   eps       = epsilon,
-                   ncores    = ThreadEnv$n.threads)
-}
-
-
-rawHessianGroupLms <- function(submodel, theta, P, data, .relStep) {
-  GS <- submodel$gradientStruct
-  if (is.null(GS$locations)) {
-    stop("Hessian structure for subgroup is not available; cannot compute raw Hessian.")
-  }
-
-  modelR     <- fillModel(model = submodel, theta = theta, method = "lms")
-  locations  <- GS$locations
-
-  hessCompLogLikLmsCpp(modelR = modelR,
-                       P = P,
-                       block = locations$block,
-                       row = locations$row,
-                       col = locations$col,
-                       symmetric = locations$symmetric,
-                       colidxR = data$colidx0,
-                       n = data$n.pattern,
-                       d = data$d.pattern,
-                       npatterns = data$p,
-                       relStep = .relStep,
-                       minAbs = 0.0,
-                       ncores = ThreadEnv$n.threads)
-}
-
-
-rawHessianObsGroupLms <- function(submodel, theta, P, data, .relStep) {
-  GS <- submodel$gradientStruct
-  if (is.null(GS$locations)) {
-    stop("Observed Hessian structure for subgroup is not available; cannot compute raw Hessian.")
-  }
-
-  modelR    <- fillModel(model = submodel, theta = theta, method = "lms")
-  locations <- GS$locations
-
-  hessObsLogLikLmsCpp(modelR = modelR,
-                      dataR = data$data.split,
-                      P = P,
-                      block = locations$block,
-                      row = locations$row,
-                      col = locations$col,
-                      symmetric = locations$symmetric,
-                      colidxR = data$colidx0,
-                      n = data$n.pattern,
-                      npatterns = data$p,
-                      relStep = .relStep,
-                      minAbs = 0.0,
-                      ncores = ThreadEnv$n.threads)
-}
-
-
 # Maximization step of EM-algorithm (see Klein & Moosbrugger, 2000)
-mstepLms <- function(theta, model, P, data,
+mstepLms <- function(theta, model, P,
                      max.step,
                      verbose = FALSE,
                      control = list(),
@@ -197,11 +123,11 @@ mstepLms <- function(theta, model, P, data,
                      ...) {
   gradient <- function(theta) {
     gradientCompLogLikLms(theta = theta, model = model, P = P, sign = -1,
-                          data = data, epsilon = epsilon)
+                          epsilon = epsilon)
   }
 
   objective <- function(theta) {
-    compLogLikLms(theta = theta, model = model, P = P, sign = -1, data = data,
+    compLogLikLms(theta = theta, model = model, P = P, sign = -1,
                   epsilon = epsilon)
   }
 
@@ -230,144 +156,95 @@ mstepLms <- function(theta, model, P, data,
 }
 
 
-compLogLikLms <- function(theta, model, P, data, sign = -1, ...) {
-  if (isMultiGroupModelDA(model)) {
-    submodels <- model$groupModels
-    P_groups <- P$groups
-    stopifnot(length(P_groups) == length(submodels))
-    total <- 0
-
-    for (g in seq_along(submodels)) {
-      submodel <- submodels[[g]]
-      theta_g <- getThetaGroupDA(model, theta, g)
-      P_g <- P_groups[[g]]
-      data_g <- submodel$data
-
-      total <- total + compLogLikLms(theta = theta_g, model = submodel,
-                                     P = P_g, data = data_g, sign = 1, ...)
-    }
-
-    return(sign * total)
-  }
-
+compLogLikLms <- function(theta, model, P, sign = -1, ...) {
   tryCatch({
     modFilled <- fillModel(model = model, theta = theta, method = "lms")
-    sign * completeLogLikLmsCpp(modelR=modFilled, P=P, quad=P$quad,
-                                colidxR = data$colidx0, n = data$n.pattern,
-                                d = data$d.pattern, npatterns = data$p)
+
+    ll <- 0
+    for (submodel in modFilled$models) {
+      data <- submodel$data
+
+      ll <- ll + completeLogLikLmsCpp(
+        modelR=submodel, P=P, quad=P$quad,
+        colidxR = data$colidx0, n = data$n.pattern,
+        d = data$d.pattern, npatterns = data$p
+      )
+    }
+
+    sign * ll
+
   }, error = \(e) NA)
 }
 
 
-gradientCompLogLikLms <- function(theta, model, P, data, sign = -1, epsilon = 1e-6) {
-  if (isMultiGroupModelDA(model)) {
-    GS <- model$gradientStruct
-    submodels <- model$groupModels
-    P_groups <- P$groups
-    stopifnot(length(P_groups) == length(submodels))
-
-    if (isTRUE(GS$hasCovModel)) {
-      return(complicatedGradientAllLogLikLms(theta = theta, model = model, P = P,
-                                             data = data, sign = sign, epsilon = epsilon,
-                                             FOBJECTIVE = compLogLikLms))
-    }
-
-    raw_grad <- numeric(length(GS$param.full))
-
-    for (g in seq_along(submodels)) {
-      submodel <- submodels[[g]]
-      theta_g  <- getThetaGroupDA(model, theta, g)
-      P_g      <- P_groups[[g]]
-      data_g   <- submodel$data
-
-      grad_g <- rawGradientGroupLms(submodel, theta_g, P_g, data_g, epsilon)
-      idx <- GS$groupColumns[[g]]
-      raw_grad[idx] <- raw_grad[idx] + grad_g
-    }
-
-    Jacobian <- GS$Jacobian
-    if (length(GS$nlinDerivs)) {
-      evalTheta  <- GS$evalTheta
-      param.full <- colnames(Jacobian)
-      param.part <- rownames(Jacobian)
-      THETA      <- list2env(as.list(evalTheta(theta)))
-
-      for (dep in names(GS$nlinDerivs)) {
-        derivs <- GS$nlinDerivs[[dep]]
-        for (indep in names(derivs)) {
-          deriv <- eval(expr = derivs[[indep]], envir = THETA)
-
-          match.full <- param.full == dep
-          match.part <- param.part == indep
-          if (any(match.full) && any(match.part)) {
-            Jacobian[match.part, match.full] <- deriv
-          }
-        }
-      }
-    }
-
-    grad_theta <- as.vector(Jacobian %*% raw_grad)
-    names(grad_theta) <- rownames(Jacobian)
-    return(sign * grad_theta)
-  }
-
-  gradientAllLogLikLms(theta = theta, model = model, P = P, sign = sign, data = data,
+gradientCompLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-6) {
+  gradientAllLogLikLms(theta = theta, model = model, P = P, sign = sign,
                        epsilon = epsilon, FGRAD = gradLogLikLmsCpp, FOBJECTIVE = compLogLikLms)
 }
 
 
-gradientAllLogLikLms <- function(theta, model, P, data, sign = -1, epsilon = 1e-6,
+gradientAllLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-6,
                                  FGRAD, FOBJECTIVE) {
-  hasCovModel <- model$gradientStruct$hasCovModel
+  hasCovModel <- model$params$gradientStruct$hasCovModel
 
   if (hasCovModel) gradient <- \(...) complicatedGradientAllLogLikLms(..., FOBJECTIVE = FOBJECTIVE)
   else             gradient <- \(...) simpleGradientAllLogLikLms(..., FGRAD = FGRAD)
 
-  c(gradient(theta = theta, model = model, P = P, data = data, sign = sign, epsilon = epsilon))
+  c(gradient(theta = theta, model = model, P = P, sign = sign, epsilon = epsilon))
 }
 
 
-complicatedGradientAllLogLikLms <- function(theta, model, P, data, sign = -1, epsilon = 1e-4, FOBJECTIVE) {
+complicatedGradientAllLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-4, FOBJECTIVE) {
   # when we cannot simplify gradient using simpleGradientLogLikLms, we use
   # good old forward difference...
-  baseLL <- FOBJECTIVE(theta, model = model, P = P, data = data, sign = sign)
+  baseLL <- FOBJECTIVE(theta, model = model, P = P, sign = sign)
   vapply(seq_along(theta), FUN.VALUE = numeric(1L), FUN = function(i) {
     theta[[i]] <- theta[[i]] + epsilon
-    (FOBJECTIVE(theta, model = model, P = P, data = data, sign = sign) - baseLL) / epsilon
+    (FOBJECTIVE(theta, model = model, P = P, sign = sign) - baseLL) / epsilon
   })
 }
 
 
-simpleGradientAllLogLikLms <- function(theta, model, P, data, sign = -1, epsilon = 1e-6, FGRAD) {
+simpleGradientAllLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-6, FGRAD) {
   # simple gradient which should work if constraints are well-behaved functions
   # which can be derivated by Deriv::Deriv, and there is no covModel
   modelR     <- fillModel(model=model, theta=theta, method="lms")
-  locations  <- model$gradientStruct$locations
-  Jacobian   <- model$gradientStruct$Jacobian
-  nlinDerivs <- model$gradientStruct$nlinDerivs
+  locations  <- model$params$gradientStruct$locations
+  Jacobian   <- model$params$gradientStruct$Jacobian
+  nlinDerivs <- model$params$gradientStruct$nlinDerivs
 
-  block     <- locations$block
-  row       <- locations$row
-  col       <- locations$col
-  param     <- locations$param
-  symmetric <- locations$symmetric
+  grad <- stats::setNames(numeric(NROW(locations)), nm = locations$param)
 
-  grad <- FGRAD(modelR    = modelR,
-                P         = P,
-                block     = block,
-                row       = row,
-                col       = col,
-                symmetric = symmetric,
-                colidxR   = data$colidx0,
-                npatterns = data$p,
-                n         = data$n.pattern,
-                d         = data$d.pattern,
-                eps       = epsilon,
-                ncores    = ThreadEnv$n.threads)
+  for (g in seq_len(modelR$info$n.groups)) {
+    submodelR   <- modelR$models[[g]]
+    locations_g <- locations[locations$group == g, , drop = FALSE]
+
+    data      <- submodelR$data
+    block     <- locations_g$block
+    row       <- locations_g$row
+    col       <- locations_g$col
+    param     <- locations_g$param
+    symmetric <- locations_g$symmetric
+
+    grad_g <- FGRAD(modelR    = submodelR,
+                    P         = P[[g]],
+                    block     = block,
+                    row       = row,
+                    col       = col,
+                    symmetric = symmetric,
+                    colidxR   = data$colidx0,
+                    npatterns = data$p,
+                    n         = data$n.pattern,
+                    d         = data$d.pattern,
+                    eps       = epsilon,
+                    ncores    = ThreadEnv$n.threads)
+
+    grad[locations_g$param] <- grad_g
+  }
 
   if (length(nlinDerivs)) {
-    evalTheta  <- model$gradientStruct$evalTheta
-    param.full <- colnames(Jacobian)
+    evalTheta  <- model$params$gradientStruct$evalTheta
+    param.full <- stringr::str_split_i(colnames(Jacobian), i = 1L) # non-unique
     param.part <- rownames(Jacobian)
     THETA      <- list2env(as.list(evalTheta(theta)))
 
@@ -383,6 +260,7 @@ simpleGradientAllLogLikLms <- function(theta, model, P, data, sign = -1, epsilon
       }
     }
   }
+  browser()
 
   sign * Jacobian %*% grad
 }
@@ -502,7 +380,7 @@ densityLms <- function(z, modFilled, data) {
 
 hessianAllLogLikLms <- function(theta, model, P, data, sign = -1,
                                 FHESS, FOBJECTIVE, .relStep = .Machine$double.eps ^ (1/5)) {
-  hasCovModel <- model$gradientStruct$hasCovModel
+  hasCovModel <- model$params$gradientStruct$hasCovModel
 
   if (hasCovModel) hessian <- \(...) complicatedHessianAllLogLikLms(..., FOBJECTIVE = FOBJECTIVE, .relStep = .relStep)
   else             hessian <- \(...) simpleHessianAllLogLikLms(..., FHESS = FHESS, .relStep = .relStep)
@@ -525,11 +403,11 @@ simpleHessianAllLogLikLms <- function(theta, model, P, data, sign = -1,
   # simple gradient which should work if constraints are well-behaved functions
   # which can be derivated by Deriv::Deriv, and there is no covModel
   modelR      <- fillModel(model=model, theta=theta, method="lms")
-  locations   <- model$gradientStruct$locations
-  Jacobian    <- model$gradientStruct$Jacobian
-  Jacobian2   <- model$gradientStruct$Jacobian2
-  nlinDerivs  <- model$gradientStruct$nlinDerivs
-  nlinDerivs2 <- model$gradientStruct$nlinDerivs2
+  locations   <- model$params$gradientStruct$locations
+  Jacobian    <- model$params$gradientStruct$Jacobian
+  Jacobian2   <- model$params$gradientStruct$Jacobian2
+  nlinDerivs  <- model$params$gradientStruct$nlinDerivs
+  nlinDerivs2 <- model$params$gradientStruct$nlinDerivs2
 
   block     <- locations$block
   row       <- locations$row
@@ -554,7 +432,7 @@ simpleHessianAllLogLikLms <- function(theta, model, P, data, sign = -1,
   grad <- HESS$gradient
 
   if (length(nlinDerivs)) {
-    evalTheta  <- model$gradientStruct$evalTheta
+    evalTheta  <- model$params$gradientStruct$evalTheta
     param.full <- colnames(Jacobian)
     param.part <- rownames(Jacobian)
     THETA      <- list2env(as.list(evalTheta(theta)))
@@ -592,68 +470,6 @@ complicatedHessianAllLogLikLms <- function(theta, model, P, data, sign = -1, FOB
 
 hessianObsLogLikLms <- function(theta, model, data, P, sign = -1,
                                 .relStep = .Machine$double.eps ^ (1/5)) {
-  if (isMultiGroupModelDA(model)) {
-    GS <- model$gradientStruct
-    if (isTRUE(GS$hasCovModel)) {
-      return(complicatedHessianAllLogLikLms(theta = theta, model = model, P = P,
-                                           data = data, sign = sign,
-                                           FOBJECTIVE = obsLogLikLms,
-                                           .relStep = .relStep))
-    }
-
-    submodels <- model$groupModels
-    P_groups  <- P$groups
-    stopifnot(length(P_groups) == length(submodels))
-
-    k <- length(GS$param.full)
-    raw_H <- matrix(0, k, k, dimnames = list(GS$param.full, GS$param.full))
-    raw_grad <- numeric(k)
-
-    for (g in seq_along(submodels)) {
-      submodel <- submodels[[g]]
-      theta_g  <- getThetaGroupDA(model, theta, g)
-      P_g      <- P_groups[[g]]
-      data_g   <- submodel$data
-
-      res <- rawHessianObsGroupLms(submodel, theta_g, P_g, data_g, .relStep)
-      idx <- GS$groupColumns[[g]]
-
-      raw_H[idx, idx] <- raw_H[idx, idx] + res$Hessian
-      raw_grad[idx]   <- raw_grad[idx] + res$gradient
-    }
-
-    Jacobian  <- GS$Jacobian
-    Jacobian2 <- GS$Jacobian2
-
-    if (length(GS$nlinDerivs)) {
-      evalTheta  <- GS$evalTheta
-      param.full <- colnames(Jacobian)
-      param.part <- rownames(Jacobian)
-      THETA      <- list2env(as.list(evalTheta(theta)))
-
-      for (dep in names(GS$nlinDerivs)) {
-        derivs1 <- GS$nlinDerivs[[dep]]
-        derivs2 <- GS$nlinDerivs2[[dep]]
-
-        for (indep in names(derivs1)) {
-          deriv1 <- eval(expr = derivs1[[indep]], envir = THETA)
-          deriv2 <- eval(expr = derivs2[[indep]], envir = THETA)
-
-          match.full <- param.full == dep
-          match.part <- param.part == indep
-          if (any(match.full) && any(match.part)) {
-            Jacobian[match.part, match.full]  <- deriv1
-            Jacobian2[match.part, match.full] <- deriv2
-          }
-        }
-      }
-    }
-
-    term1 <- Jacobian %*% raw_H %*% t(Jacobian)
-    term2 <- diag(drop(Jacobian2 %*% raw_grad), nrow = nrow(Jacobian))
-
-    return(sign * (term1 + term2))
-  }
 
   FHESS <- function(modelR, P, block, row, col, symmetric, eps, .relStep, colidxR, n,
                     npatterns, ncores, ...) {
@@ -676,68 +492,6 @@ hessianObsLogLikLms <- function(theta, model, data, P, sign = -1,
 
 hessianCompLogLikLms <- function(theta, model, P, data, sign = -1,
                                  .relStep = .Machine$double.eps ^ (1/5)) {
-  if (isMultiGroupModelDA(model)) {
-    GS <- model$gradientStruct
-    if (isTRUE(GS$hasCovModel)) {
-      return(complicatedHessianAllLogLikLms(theta = theta, model = model, P = P,
-                                           data = data, sign = sign,
-                                           FOBJECTIVE = compLogLikLms,
-                                           .relStep = .relStep))
-    }
-
-    submodels <- model$groupModels
-    P_groups  <- P$groups
-    stopifnot(length(P_groups) == length(submodels))
-
-    k <- length(GS$param.full)
-    raw_H <- matrix(0, k, k, dimnames = list(GS$param.full, GS$param.full))
-    raw_grad <- numeric(k)
-
-    for (g in seq_along(submodels)) {
-      submodel <- submodels[[g]]
-      theta_g  <- getThetaGroupDA(model, theta, g)
-      P_g      <- P_groups[[g]]
-      data_g   <- submodel$data
-
-      res <- rawHessianGroupLms(submodel, theta_g, P_g, data_g, .relStep)
-      idx <- GS$groupColumns[[g]]
-
-      raw_H[idx, idx] <- raw_H[idx, idx] + res$Hessian
-      raw_grad[idx]   <- raw_grad[idx] + res$gradient
-    }
-
-    Jacobian  <- GS$Jacobian
-    Jacobian2 <- GS$Jacobian2
-
-    if (length(GS$nlinDerivs)) {
-      evalTheta  <- GS$evalTheta
-      param.full <- colnames(Jacobian)
-      param.part <- rownames(Jacobian)
-      THETA      <- list2env(as.list(evalTheta(theta)))
-
-      for (dep in names(GS$nlinDerivs)) {
-        derivs1 <- GS$nlinDerivs[[dep]]
-        derivs2 <- GS$nlinDerivs2[[dep]]
-
-        for (indep in names(derivs1)) {
-          deriv1 <- eval(expr = derivs1[[indep]], envir = THETA)
-          deriv2 <- eval(expr = derivs2[[indep]], envir = THETA)
-
-          match.full <- param.full == dep
-          match.part <- param.part == indep
-          if (any(match.full) && any(match.part)) {
-            Jacobian[match.part, match.full]  <- deriv1
-            Jacobian2[match.part, match.full] <- deriv2
-          }
-        }
-      }
-    }
-
-    term1 <- Jacobian %*% raw_H %*% t(Jacobian)
-    term2 <- diag(drop(Jacobian2 %*% raw_grad), nrow = nrow(Jacobian))
-
-    return(sign * (term1 + term2))
-  }
 
   FHESS <- function(modelR, P, block, row, col, symmetric, eps, .relStep, colidxR,
                     n, d, npatterns, ncores) {
@@ -806,65 +560,6 @@ observedInfoFromLouisLms <- function(model,
                                      jitter = 0.0,
                                      ...) {
   fd.scheme <- match.arg(fd.scheme)
-
-  if (isMultiGroupModelDA(model)) {
-    if (recompute.P || is.null(P)) {
-      P <- estepLms(model = model, theta = theta, data = data,
-                    lastQuad = NULL, recalcQuad = FALSE,
-                    adaptive.quad.tol = adaptive.quad.tol, ...)
-    }
-
-    submodels <- model$groupModels
-    P_groups <- P$groups
-    stopifnot(length(P_groups) == length(submodels))
-
-    p <- length(theta)
-    lbl <- names(theta)
-    Iobs_total <- matrix(0, p, p, dimnames = list(lbl, lbl))
-    Icom_total <- matrix(0, p, p, dimnames = list(lbl, lbl))
-    Imis_total <- matrix(0, p, p, dimnames = list(lbl, lbl))
-
-    for (g in seq_along(submodels)) {
-      submodel <- submodels[[g]]
-      theta_g <- getThetaGroupDA(model, theta, g)
-      data_g <- submodel$data
-      P_g <- P_groups[[g]]
-
-      res_g <- observedInfoFromLouisLms(
-        model = submodel,
-        theta = theta_g,
-        data = data_g,
-        P = P_g,
-        recompute.P = FALSE,
-        adaptive.quad.tol = adaptive.quad.tol,
-        fd.epsilon = fd.epsilon,
-        fd.scheme = fd.scheme,
-        symmetrize = FALSE,
-        jitter = 0.0,
-        ...
-      )
-
-      Iobs_total <- embedGroupMatrixDA(Iobs_total, model, g, res_g$I.obs)
-      Icom_total <- embedGroupMatrixDA(Icom_total, model, g, res_g$I.com)
-      Imis_total <- embedGroupMatrixDA(Imis_total, model, g, res_g$I.mis)
-    }
-
-    if (symmetrize) {
-      sym <- function(A) 0.5 * (A + t(A))
-      Iobs_total <- sym(Iobs_total)
-      Icom_total <- sym(Icom_total)
-      Imis_total <- sym(Imis_total)
-    }
-
-    if (jitter > 0) {
-      diag_add <- diag(jitter, nrow = p)
-      Iobs_total <- Iobs_total + diag_add
-      Icom_total <- Icom_total + diag_add
-      Imis_total <- Imis_total + diag_add
-    }
-
-    return(list(I.obs = Iobs_total, I.com = Icom_total, I.mis = Imis_total, P = P))
-  }
 
   # E-step (if needed)
   if (recompute.P) {

@@ -620,12 +620,22 @@ getGradientStructSimple <- function(model, theta) {
     }
   }
 
+  # In multigroup models we can have duplicated labels, that doesn't work
+  # with out logic, so we must add some unique identifiers to the param.full
+  # We also pass param.full as is, to map back and forth.
+  addid <- \(nm) paste0(nm, "#", seq_along(nm))
+  colnames(Jacobian)  <- addid(colnames(Jacobian))
+  colnames(Jacobian2) <- addid(colnames(Jacobian2))
+
+  locations$param <- addid(locations$param)
+
   list(
+    param.full  = param.full,
     locations   = locations,
     Jacobian    = Jacobian,
     Jacobian2   = Jacobian2,
     nlinDerivs  = nlinDerivs,
-    nlinDerivs2  = nlinDerivs2,
+    nlinDerivs2 = nlinDerivs2,
     evalTheta   = evalTheta,
     hasCovModel = hasCovModel,
     isNonLinear = length(nlinDerivs) > 1
