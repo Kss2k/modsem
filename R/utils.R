@@ -470,7 +470,13 @@ stripColonsParTable <- function(parTable) {
 getMissingLabels <- function(parTable) {
   if (!"label" %in% colnames(parTable)) parTable$label <- ""
   missing <- is.na(parTable$label) | parTable$label == ""
+  group   <- parTable$group
+
   labels <- sprintf("%s%s%s", parTable$lhs, parTable$op, parTable$rhs)
+
+  if (any(group > 1L))
+    labels[group > 1L] <- paste0(labels[group > 1L], ".g", group[group > 1L])
+
   parTable[missing, "label"] <- labels[missing]
   parTable
 }

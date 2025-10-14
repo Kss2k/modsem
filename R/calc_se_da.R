@@ -77,7 +77,7 @@ calcFIM_da <- function(model,
                                      method = method)
 
   nAdditions   <- ncol(vcov.all) - ncol(vcov)
-  lavLabels    <- model$lavLabels
+  lavLabels    <- model$params$lavLabels
   subLavLabels <- lavLabels[colnames(vcov.all) %in% names(theta)]
   rawLabels    <- colnames(vcov.all)
   dimnames(vcov.all) <- list(lavLabels, lavLabels)
@@ -393,7 +393,24 @@ calcOFIM_QML <- function(model, theta, data, hessian = FALSE,
 
 
 getSE_Model <- function(model, se, method, n.additions) {
-  model$lenThetaLabel <- model$lenThetaLabel + n.additions
+  params <- model$params
+
+  for (g in seq_len(model$info$n.groups)) {
+    SELECT_THETA_LAB  <- params$SELECT_THETA_LAB[[g]]
+    SELECT_THETA_COV  <- params$SELECT_THETA_COV[[g]]
+    SELECT_THETA_MAIN <- params$SELECT_THETA_MAIN[[g]]
+
+    SELECT_THETA_LAB  <- seq_len(max(SELECT_THETA_LAB) + n.additions)
+    SELECT_THETA_COV  <- SELECT_THETA_COV  + n.additions
+    SELECT_THETA_MAIN <- SELECT_THETA_MAIN + n.additions
+
+    params$SELECT_THETA_LAB[[g]]  <- SELECT_THETA_LAB
+    params$SELECT_THETA_COV[[g]]  <- SELECT_THETA_COV
+    params$SELECT_THETA_MAIN[[g]] <- SELECT_THETA_MAIN
+  }
+
+  model$params <- params
+
   fillModel(replaceNonNaModelMatrices(model, value = -999),
             theta = se, method = method)
 }

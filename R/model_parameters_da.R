@@ -10,7 +10,7 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
   THETA_LAB  <- NULL
   THETA_COV  <- NULL
   THETA_MAIN <- NULL
-  LAV_LAB    <- NULL
+
   n.groups   <- model$info$n.groups
   if (is.null(n.groups)) n.groups <- model$info$n.groups
   if (is.null(n.groups)) n.groups <- length(model$models)
@@ -32,6 +32,7 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
     THETA_LAB <- unionByNames(THETA_LAB, thetaLabel_g)
   }
   THETA_LAB_ALL <- calcThetaLabel(THETA_LAB, model$params$constrExprs)
+  LAV_LAB       <- names(THETA_LAB_ALL)
 
   for (g in seq_len(n.groups)) {
     submodel <- model$models[[g]]

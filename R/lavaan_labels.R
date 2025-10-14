@@ -125,6 +125,7 @@ getLavCoefs <- function(model, theta, method) {
   }
 
   lavLabels <- model$params$lavLabels
+
   if (!is.null(lavLabels) && length(lavLabels) == length(fullTheta)) {
     names(fullTheta) <- lavLabels
   } else if (!is.null(fullNames)) {

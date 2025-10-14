@@ -317,7 +317,7 @@ gradientObsLogLikLms <- function(theta, model, P, sign = 1, epsilon = 1e-6) {
 }
 
 
-obsLogLikLms_i_single <- function(submodel, P, sign = 1) {
+obsLogLikLms_i_single <- function(submodel, data, P, sign = 1) {
   V <- P$V
   w <- P$w
   m <- nrow(V)
@@ -369,14 +369,53 @@ obsLogLikLms_i <- function(theta, model, P, sign = 1, ...) {
 
 # gradient function of obsLogLikLms_i
 gradientObsLogLikLms_i <- function(theta, model, P, sign = 1, epsilon = 1e-4) {
-  n_total   <- sum(vapply(model$models, function(sub) sub$data$n, numeric(1L)))
+  group_sizes <- vapply(model$models, function(sub) sub$data$n, numeric(1L))
+  n_total     <- sum(group_sizes)
+  p           <- length(theta)
 
   baseLL <- obsLogLikLms_i(theta, model, P = P, sign = sign)
 
-  lapplyMatrix(seq_along(theta), FUN = function(i) {
-    theta[[i]] <- theta[[i]] + epsilon
-    (obsLogLikLms_i(theta, model, P = P, sign = sign) - baseLL) / epsilon
-  }, FUN.VALUE = numeric(n_total))
+  offsets <- c(0L, cumsum(group_sizes))
+  rows_by_group <- lapply(seq_along(group_sizes), function(g) {
+    idx_start <- offsets[g] + 1L
+    idx_end   <- offsets[g + 1L]
+    seq.int(idx_start, idx_end)
+  })
+
+  base_by_group <- Map(function(rows) baseLL[rows], rows_by_group)
+
+  groups_by_param <- vector("list", length = p)
+  for (g in seq_along(group_sizes)) {
+    active_idx <- .activeThetaIndicesLms(model, g, p)
+    for (idx in active_idx) {
+      groups_by_param[[idx]] <- unique(c(groups_by_param[[idx]], g))
+    }
+  }
+
+  grad_mat <- matrix(0.0, nrow = n_total, ncol = p,
+                     dimnames = list(NULL, names(theta)))
+
+  for (idx in seq_len(p)) {
+    param_groups <- groups_by_param[[idx]]
+    if (!length(param_groups)) next
+
+    theta_pert <- theta
+    theta_pert[[idx]] <- theta_pert[[idx]] + epsilon
+
+    modFilled <- fillModel(model = model, theta = theta_pert, method = "lms")
+
+    for (g in param_groups) {
+      rows    <- rows_by_group[[g]]
+      submodel <- modFilled$models[[g]]
+      data_g   <- submodel$data
+      P_g      <- P$P_GROUPS[[g]]
+
+      ll_new <- obsLogLikLms_i_single(submodel, data_g, P_g, sign = sign)
+      grad_mat[rows, idx] <- (ll_new - base_by_group[[g]]) / epsilon
+    }
+  }
+
+  grad_mat
 }
 
 
@@ -573,6 +612,26 @@ hessianCompLogLikLms <- function(theta, model, P, sign = -1,
 }
 
 
+.activeThetaIndicesLms <- function(model, group, p) {
+  select_lab  <- model$params$SELECT_THETA_LAB[[group]]
+  select_cov  <- model$params$SELECT_THETA_COV[[group]]
+  select_main <- model$params$SELECT_THETA_MAIN[[group]]
+
+  if (is.null(select_lab) && is.null(select_cov) && is.null(select_main)) {
+    return(seq_len(p))
+  }
+
+  idx <- c(select_lab,
+           select_cov,
+           select_main)
+
+  idx <- sort(unique(as.integer(idx)))
+  idx <- idx[idx >= 1L & idx <= p]
+
+  if (length(idx)) idx else seq_len(p)
+}
+
+
 # per-node, per-observation complete-data score via finite difference
 # Returns an n x p matrix S_j with row i = s_{ij}^T = grad_theta log p(y_i, z_j | theta)
 .completeScoresNodeFD <- function(theta, model, data, z,
@@ -652,27 +711,6 @@ observedInfoFromLouisLms <- function(model,
   total_M <- matrix(0.0, p, p, dimnames = list(lbl, lbl))
   Sbar    <- matrix(0.0, n_total, p)
 
-  select_lab  <- model$params$SELECT_THETA_LAB
-  select_cov  <- model$params$SELECT_THETA_COV
-  select_main <- model$params$SELECT_THETA_MAIN
-
-  get_active_indices <- function(group) {
-    fetch_idx <- function(lst) {
-      if (!is.list(lst) || !length(lst)) return(integer())
-      if (group > length(lst)) return(integer())
-      idx <- lst[[group]]
-      if (is.null(idx)) integer() else idx
-    }
-
-    idx <- c(fetch_idx(select_lab),
-             fetch_idx(select_cov),
-             fetch_idx(select_main))
-    idx <- sort(unique(as.integer(idx)))
-    idx <- idx[idx >= 1L & idx <= p]
-
-    if (length(idx)) idx else seq_len(p)
-  }
-
   row_offset <- 0L
   for (g in seq_len(model$info$n.groups)) {
     submodel <- model$models[[g]]
@@ -680,7 +718,7 @@ observedInfoFromLouisLms <- function(model,
     P_g      <- P$P_GROUPS[[g]]
     rows     <- seq_len(data_g$n) + row_offset
 
-    active_idx <- get_active_indices(g)
+    active_idx <- .activeThetaIndicesLms(model, g, p)
     Jg <- length(P_g$w)
     for (j in seq_len(Jg)) {
       z_j <- P_g$V[j, , drop = FALSE]
