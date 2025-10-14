@@ -1,7 +1,6 @@
 calcFIM_da <- function(model,
                        finalModel,
                        theta,
-                       data = NULL,
                        method = "lms",
                        calc.se = TRUE,
                        FIM = "observed",
@@ -18,7 +17,7 @@ calcFIM_da <- function(model,
   if (!calc.se) return(list(FIM = NULL, vcov = NULL, vcov.sub = NULL, type = "none",
                             raw.labels = names(theta), n.additions = 0))
   if (verbose) printf("Calculating standard errors (%s)\n", FIM)
-
+  
   collectCluster <- function(d) {
     if (is.null(d)) return(NULL)
 
@@ -27,30 +26,29 @@ calcFIM_da <- function(model,
       clusters <- clusters[lengths(clusters) > 0L]
       if (!length(clusters)) return(NULL)
       do.call(c, clusters)
+
     } else {
       d$cluster
     }
   }
 
-  cluster_vec <- if (robust.se) collectCluster(data) else NULL
+  cluster.vec <- if (robust.se) collectCluster(data) else NULL
 
   I <- switch(method,
      lms =
        switch(FIM,
-          observed = calcOFIM_LMS(model, theta = theta, data = data,
-                                  epsilon = epsilon, hessian = hessian, P = P,
-                                  robust.se = robust.se, cluster = cluster_vec,
-                                  cr1s = cr1s),
+          observed = calcOFIM_LMS(model, theta = theta, epsilon = epsilon,
+                                  hessian = hessian, P = P, robust.se = robust.se,
+                                  cluster = cluster.vec, cr1s = cr1s),
           expected = calcEFIM_LMS(model, finalModel = finalModel, theta = theta,
-                                  data = data, epsilon = epsilon, S = EFIM.S,
-                                  parametric = EFIM.parametric, verbose = verbose,
-                                  R.max = R.max, P = P),
+                                  epsilon = epsilon, S = EFIM.S, parametric = EFIM.parametric,
+                                  verbose = verbose, R.max = R.max, P = P),
           stop2("FIM must be either expected or observed")),
      qml =
        switch(FIM,
           observed = calcOFIM_QML(model, theta = theta, data = data,
                                   hessian = hessian, epsilon = epsilon,
-                                  robust.se = robust.se, cluster = cluster_vec,
+                                  robust.se = robust.se, cluster = cluster.vec,
                                   cr1s = cr1s),
           expected = calcEFIM_QML(model, finalModel = finalModel, theta = theta,
                                   data = data, epsilon = epsilon, S = EFIM.S,
@@ -104,10 +102,10 @@ fdHESS <- function(pars, ...) {
 calcHessian <- function(model, theta, data, method = "lms",
                         epsilon = 1e-8, P = NULL) {
   if (method == "lms") {
-    if (is.null(P)) P <- estepLms(model, theta = theta, data = data)
+    if (is.null(P)) P <- estepLms(model, theta = theta)
     # negative hessian (sign = -1)
     fH <- \(model) observedInfoFromLouisLms(model = model, theta = theta,
-                                            data = data, P = P)$I.obs
+                                            P = P)$I.obs
 
     H <- tryCatch(suppressWarnings(fH(model)), error = function(e) {
       warning2("Optimized calculation of Hessian failed, attempting to switch!\n", e)
@@ -177,7 +175,8 @@ calcOFIM_LMS <- function(model, theta, data, hessian = FALSE,
 
   if (hessian) {
     # negative hessian (sign = -1)
-    I <- calcHessian(model, theta = theta, data = data,
+    browser()
+    I <- calcHessian(model, theta = theta,
                      method = "lms", epsilon = epsilon, P = P)
     return(I)
   }
@@ -185,7 +184,7 @@ calcOFIM_LMS <- function(model, theta, data, hessian = FALSE,
   # S: N x k matrix of individual score contributions (OPG)
   S <- suppressWarnings(
     gradientObsLogLikLms_i(theta, model = model, P = P, sign = +1,
-                           epsilon = epsilon, data = data)
+                           epsilon = epsilon)
   )
 
   if (!robust.se || is.null(cluster)) {
