@@ -1043,7 +1043,7 @@ getCoefMatricesDA <- function(parTable,
 
 calcExpectedMatricesDA <- function(parTable, xis = NULL, etas = NULL, intTerms = NULL) {
   lapply(
-    X = sort(unique(parTable$group)),
+    X = getGroupsParTable(parTable),
     FUN = function(g) {
       parTable_g <- parTable[parTable$group == g, , drop = FALSE]
       calcExpectedMatricesDA_Group(parTable_g, xis = xis, etas = etas, intTerms = intTerms)
@@ -1256,12 +1256,12 @@ sortParTableDA <- function(parTable, model) {
 
   opOrder <- c("=~", "~", "~1", "~~", "|", ":=")
   varOrder <- unique(c(indsXis, indsEtas, xisLow, etasLow, xisHigh, xisLow))
-  groupOrder <- sort(unique(parTable$group))
+  groupOrder <- c(getGroupsParTable(parTable), 0)
 
   getScore <- function(x, order.by) {
     order.by <- unique(c(order.by, x)) # ensure that all of x is in order.by
-    mapping  <- stats::setNames(seq_along(order.by), nm = order.by)
-    score    <- mapping[x]
+    mapping  <- stats::setNames(seq_along(order.by), nm = as.character(order.by))
+    score    <- mapping[as.character(x)]
 
     if (length(score) != length(x)) {
       warning2("Sorting of parameter estimates failed!\n",
@@ -1384,4 +1384,14 @@ recalcInterceptsY <- function(parTable) {
   }
 
   parTable
+}
+
+
+getGroupsParTable <- function(parTable) {
+  sort(unique(parTable$group[parTable$group > 0L]))
+}
+
+
+getZeroGroupParTable <- function(parTable) {
+  parTable[parTable$group <= 0L, , drop = FALSE]
 }

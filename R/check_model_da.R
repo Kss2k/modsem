@@ -246,7 +246,7 @@ checkVarsIntsDA <- function(varsInts, lVs) {
 postCheckModel <- function(model) {
   parTable <- model$parTable
 
-  for (g in seq_len(model$model$info$n.groups)) {
+  for (g in getGroupsParTable(parTable)) {
     submodel   <- model$models[[g]]
     parTable_g <- parTable[parTable$group == g, , drop = FALSE]
 

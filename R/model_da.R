@@ -614,17 +614,18 @@ customParamsToParTable <- function(model, coefs, se) {
   custom   <- parTable[parTable$op == ":=", ]
 
   if (!NROW(custom$lhs)) return(NULL)
-  parTable <- NULL
+
+  out <- NULL
   for (i in seq_len(NROW(custom))) {
     lhs <- custom[i, "lhs"]
     rhs <- custom[i, "rhs"]
 
-    newRow <- data.frame(lhs = lhs, op = ":=", rhs = rhs,
-                         label = lhs, est = coefs[[lhs]],
-                         std.error = se[[lhs]])
-    parTable <- rbind(parTable, newRow)
+    newRow <- data.frame(lhs = lhs, op = ":=", rhs = rhs, label = lhs,
+                         group = 0L, est = coefs[[lhs]], std.error = se[[lhs]])
+    out <- rbind(out, newRow)
   }
-  parTable
+
+  out 
 }
 
 
@@ -637,8 +638,6 @@ modelToParTable <- function(model, coefs = NULL, se = NULL, method = "lms", calc
   parTable <- parTable[colsOut]
 
   if (!is.null(coefs) && !is.null(se) && !is.null(names(se))) {
-    parTable <- rbind(parTable, customParamsToParTable(model, coefs, se))
-
     # this is ugly but should work...
     # due to how values are read from the matrices, std.errors are overwritten
     # by the custom parameter-values (e.g., 'X=~a*x1; a==1.2' results in a std.error of 1.2, when it should be 0)
@@ -763,6 +762,9 @@ finalizeModelEstimatesDA <- function(model,
 
     parTable <- rbind(parTable, parTable_g)
   }
+
+  parTable <- rbind(parTable,
+                    customParamsToParTable(model, coefs = lavCoefs$all, se = SE))
 
   parTable <- addZStatsParTable(parTable)
 

@@ -567,11 +567,15 @@ print.summary_da <- function(x, digits = 3, ...) {
   cat(allignLhsRhs(lhs = names, rhs = values, pad = "  ",
                    width.out = width.out), "\n")
 
-  for (g in sort(unique(x$parTable$group))) {
+  groups <- getGroupsParTable(x$parTable)
+  for (g in groups) {
     label <- tryCatch(x$group.labels[[g]], error = \(e) NA)
-
     printf("Group %d [%s]:\n\n", g, label)
-    printParTable(x$parTable[x$parTable$group == g, , drop = FALSE],
+
+    select <- x$parTable$group == g
+    if (g == max(groups)) select <- select | x$parTable$group == 0L
+
+    printParTable(x$parTable[select, , drop = FALSE],
                   scientific  = x$format$scientific,
                   ci          = x$format$ci,
                   digits      = x$format$digits,

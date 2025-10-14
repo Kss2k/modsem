@@ -357,14 +357,14 @@ centerInteractions <- function(parTable, center.means = TRUE) {
 meanInteractions <- function(parTable, ignore.means = FALSE) {
   out <- NULL
 
-  for (g in sort(unique(parTable$group))) {
+  for (g in getGroupsParTable(parTable)) {
     parTable_g <- parTable[parTable$group == g, , drop = FALSE]
     out <- rbind(out, meanInteractionsGroup(parTable_g,
                                             ignore.means = ignore.means,
                                             group = g))
   }
 
-  out
+  rbind(out, getZeroGroupParTable(parTable))
 }
 
 
