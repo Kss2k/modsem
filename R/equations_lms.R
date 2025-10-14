@@ -577,28 +577,48 @@ hessianCompLogLikLms <- function(theta, model, P, sign = -1,
 # Returns an n x p matrix S_j with row i = s_{ij}^T = grad_theta log p(y_i, z_j | theta)
 .completeScoresNodeFD <- function(theta, model, data, z,
                                   epsilon = 1e-6, scheme = c("forward","central"),
-                                  group = NULL) {
+                                  group = NULL, active = NULL) {
   scheme <- match.arg(scheme)
   p <- length(theta)
+
+  if (is.null(active)) {
+    active <- seq_len(p)
+  } else {
+    active <- unique(as.integer(active))
+    active <- active[active >= 1L & active <= p]
+  }
+
   n <- data$n
-  S <- matrix(0.0, nrow = n, ncol = p)
+  n_active <- length(active)
+
+  if (!n_active) {
+    return(matrix(0.0, nrow = n, ncol = 0L))
+  }
+
+  col_names <- names(theta)
+  if (!length(col_names)) col_names <- rep("", p)
+
+  S <- matrix(0.0, nrow = n, ncol = n_active,
+              dimnames = list(NULL, col_names[active]))
+
   if (scheme == "forward") {
     f0 <- .logdensAllObsNode(theta, model, data, z, group = group)
-    for (k in seq_len(p)) {
+    for (pos in seq_len(n_active)) {
+      k <- active[pos]
       th1 <- theta; th1[k] <- th1[k] + epsilon
       f1 <- .logdensAllObsNode(th1, model, data, z, group = group)
-      S[, k] <- (f1 - f0) / epsilon
+      S[, pos] <- (f1 - f0) / epsilon
     }
   } else { # central
-    for (k in seq_len(p)) {
+    for (pos in seq_len(n_active)) {
+      k <- active[pos]
       thp <- theta; thp[k] <- thp[k] + epsilon
       thm <- theta; thm[k] <- thm[k] - epsilon
       fp <- .logdensAllObsNode(thp, model, data, z, group = group)
       fm <- .logdensAllObsNode(thm, model, data, z, group = group)
-      S[, k] <- (fp - fm) / (2*epsilon)
+      S[, pos] <- (fp - fm) / (2 * epsilon)
     }
   }
-  dimnames(S) <- list(NULL, names(theta))
   S
 }
 
@@ -632,6 +652,27 @@ observedInfoFromLouisLms <- function(model,
   total_M <- matrix(0.0, p, p, dimnames = list(lbl, lbl))
   Sbar    <- matrix(0.0, n_total, p)
 
+  select_lab  <- model$params$SELECT_THETA_LAB
+  select_cov  <- model$params$SELECT_THETA_COV
+  select_main <- model$params$SELECT_THETA_MAIN
+
+  get_active_indices <- function(group) {
+    fetch_idx <- function(lst) {
+      if (!is.list(lst) || !length(lst)) return(integer())
+      if (group > length(lst)) return(integer())
+      idx <- lst[[group]]
+      if (is.null(idx)) integer() else idx
+    }
+
+    idx <- c(fetch_idx(select_lab),
+             fetch_idx(select_cov),
+             fetch_idx(select_main))
+    idx <- sort(unique(as.integer(idx)))
+    idx <- idx[idx >= 1L & idx <= p]
+
+    if (length(idx)) idx else seq_len(p)
+  }
+
   row_offset <- 0L
   for (g in seq_len(model$info$n.groups)) {
     submodel <- model$models[[g]]
@@ -639,18 +680,27 @@ observedInfoFromLouisLms <- function(model,
     P_g      <- P$P_GROUPS[[g]]
     rows     <- seq_len(data_g$n) + row_offset
 
+    active_idx <- get_active_indices(g)
     Jg <- length(P_g$w)
     for (j in seq_len(Jg)) {
       z_j <- P_g$V[j, , drop = FALSE]
       S_j <- .completeScoresNodeFD(theta, model, data_g, z_j,
                                    epsilon = fd.epsilon, scheme = fd.scheme,
-                                   group = if (model$info$n.groups > 1L) g else NULL)
+                                   group = if (model$info$n.groups > 1L) g else NULL,
+                                   active = active_idx)
       r_j <- P_g$P[, j]
 
       Rhalf <- sqrt(pmax(r_j, 0))
-      X <- S_j * Rhalf
-      total_M <- total_M + crossprod(X)
-      Sbar[rows, ] <- Sbar[rows, ] + (S_j * r_j)
+      if (NROW(S_j) && NCOL(S_j)) {
+        X <- S_j * Rhalf
+        block <- total_M[active_idx, active_idx, drop = FALSE]
+        block <- block + crossprod(X)
+        total_M[active_idx, active_idx] <- block
+
+        Sbar_block <- Sbar[rows, active_idx, drop = FALSE]
+        Sbar_block <- Sbar_block + (S_j * r_j)
+        Sbar[rows, active_idx] <- Sbar_block
+      }
     }
 
     row_offset <- row_offset + data_g$n
