@@ -82,6 +82,86 @@ summary.modsem_da <- function(object,
                               ...) {
   method   <- object$method
   parTable <- parameter_estimates(object)
+  finalModel <- object$model
+  groupModels <- finalModel$models
+
+  if (is.null(groupModels) || !length(groupModels))
+    groupModels <- list(list(data = object$data))
+
+  n.groups <- length(groupModels)
+  group.labels <- finalModel$info$group.levels
+  if (is.null(group.labels) || length(group.labels) != n.groups) {
+    model.names <- names(groupModels)
+    if (!is.null(model.names) && length(model.names) == n.groups &&
+        all(nzchar(model.names))) {
+      group.labels <- model.names
+    } else {
+      group.labels <- paste0("Group ", seq_len(n.groups))
+    }
+  }
+
+  normalize_r2 <- function(x) {
+    if (is.null(x)) return(NULL)
+    vec <- unclass(x)
+    nm  <- names(vec)
+    vec <- as.numeric(vec)
+    names(vec) <- nm
+    vec
+  }
+
+  aggregate_r2 <- function(r2, weights) {
+    if (is.null(r2)) return(NULL)
+    if (!is.list(r2)) return(normalize_r2(r2))
+    if (!length(r2)) return(NULL)
+    r2_names <- names(r2)
+    if (!is.null(names(weights)) &&
+        !is.null(r2_names) &&
+        length(r2_names) == length(r2) &&
+        all(r2_names %in% names(weights))) {
+      weights <- weights[r2_names]
+    } else {
+      weights <- weights[seq_len(length(r2))]
+    }
+    vars <- unique(unlist(lapply(r2, names)))
+    vars <- vars[!is.na(vars) & nzchar(vars)]
+    if (!length(vars)) return(NULL)
+    agg <- setNames(numeric(length(vars)), vars)
+    total_w <- sum(weights, na.rm = TRUE)
+    if (!is.finite(total_w) || total_w <= 0) {
+      total_w <- length(r2)
+      weights[] <- 1
+    }
+    for (i in seq_along(r2)) {
+      vec <- normalize_r2(r2[[i]])
+      if (is.null(vec) || !length(vec)) next
+      w <- weights[[i]]
+      if (!is.finite(w) || w < 0) w <- 0
+      agg[names(vec)] <- agg[names(vec)] + vec * w
+    }
+    agg / total_w
+  }
+
+  extract_n <- function(dat) {
+    if (is.null(dat)) return(0)
+    if (!is.null(dat$n)) return(dat$n)
+    if (!is.null(dat$data.full)) return(NROW(dat$data.full))
+    if (!is.null(dat$data)) return(NROW(dat$data))
+    0
+  }
+
+  extract_patterns <- function(dat) {
+    if (is.null(dat)) return(0L)
+    if (isTRUE(dat$is.fiml)) {
+      if (!is.null(dat$p)) return(dat$p)
+      if (!is.null(dat$ids)) return(length(dat$ids))
+      return(1L)
+    }
+    0L
+  }
+
+  group.Ns <- vapply(groupModels, function(sub) extract_n(sub$data), numeric(1L))
+  fiml.counts <- vapply(groupModels, function(sub) extract_patterns(sub$data), numeric(1L))
+  fiml.flags  <- fiml.counts > 0L
 
   extra.cols <- NULL
   if (standardized) {
@@ -121,20 +201,22 @@ summary.modsem_da <- function(object,
   args <- object$args
   out <- list(
     parTable        = parTable.out,
-    data            = object$data$data.full,
+    data            = NULL,
     iterations      = object$iterations,
     logLik          = object$logLik,
     fit             = fit_modsem_da(object, chisq = FALSE),
     D               = NULL,
-    N               = NROW(object$data$data.full),
+    N               = structure(group.Ns, names = group.labels),
+    N.total         = sum(group.Ns),
     method          = method,
     optimizer       = object$optimizer,
     quad            = object$info.quad,
     type.se         = object$type.se,
     type.estimates  = ifelse(standardized, "standardized", object$type.estimates),
     information     = object$information,
-    n.fiml.patterns = length(object$data$ids),
-    is.fiml         = object$data$is.fiml,
+    is.fiml         = any(fiml.flags),
+    n.fiml.patterns = structure(fiml.counts, names = group.labels),
+    group.labels    = group.labels,
     npar            = length(coef(object, type = "free")),
     convergence.msg = object$convergence.msg
   )
@@ -161,15 +243,21 @@ summary.modsem_da <- function(object,
   }
 
   if (r.squared) {
-  	out$r.squared <- modsem_inspect(object, "r2.lv")
+    r2.values <- modsem_inspect(object, "r2.lv")
+    out$r.squared <- aggregate_r2(r2.values, group.Ns)
 
     if (H0) {
-			r.squared.h0 <- modsem_inspect(est_h0, "r2.lv")
-			out$r.squared.h0 <- r.squared.h0[names(out$r.squared)] # should't be necessary
-			                                                       # but sort just in case...
-		} else out$r.squared.h0 <- NULL
+      r2.h0.values <- modsem_inspect(est_h0, "r2.lv")
+      out$r.squared.h0 <- aggregate_r2(r2.h0.values, group.Ns)
 
-  } else out$r.squared <- NULL
+    } else {
+      out$r.squared.h0 <- NULL
+    }
+
+  } else {
+    out$r.squared <- NULL
+    out$r.squared.h0 <- NULL
+  }
 
   out$format <- list(
     digits        = digits,
@@ -193,6 +281,21 @@ summary.modsem_da <- function(object,
 
 #' @export
 print.summary_da <- function(x, digits = 3, ...) {
+  format_value <- function(val, digits = 3, scientific = x$format$scientific) {
+    if (length(val) == 0 || all(is.na(val))) {
+      return("NA")
+    }
+    formatNumeric(val, digits = digits, scientific = scientific)
+  }
+
+  format_count <- function(val) {
+    if (length(val) == 0) return("NA")
+    num <- suppressWarnings(as.numeric(val))
+    out <- ifelse(is.na(num), "NA",
+                  formatC(round(num), format = "f", digits = 0, big.mark = ""))
+    out
+  }
+
   # We want the width without ci and extra cols
   width.out <- getWidthPrintedParTable(
     parTable    = x$parTable,
@@ -210,31 +313,79 @@ print.summary_da <- function(x, digits = 3, ...) {
   printf(x$convergence.msg)
 
   # Convergence and Model Info -------------------------------------------------
-  names <- c(
+  header.names <- c(
     "Estimator",
     "Optimization method",
-    "Number of model parameters",
-    "", # blank line
-    "Number of observations",
-    "Number of missing patterns"
+    "Number of model parameters"
   )
 
-  values <- c(
+  header.values <- c(
     stringr::str_to_upper(c(x$method, x$optimizer)),
-    x$npar,
-    "", # blank line
-    x$N,
-    x$n.fiml.patterns
+    x$npar
   )
 
-  if (!x$is.fiml) {
-    fieldFIML <- grepl("Number of missing patterns", names)
-    names  <- names[!fieldFIML]
-    values <- values[!fieldFIML]
+  cat(allignLhsRhs(lhs = header.names, rhs = header.values, pad = "  ",
+                   width.out = width.out))
+
+  n_obs_vec <- x$N
+  if (is.null(names(n_obs_vec)) || !any(nzchar(names(n_obs_vec)))) {
+    names(n_obs_vec) <- paste0("Group ", seq_along(n_obs_vec))
   }
 
-  cat(allignLhsRhs(lhs = names, rhs = values, pad = "  ",
-                   width.out = width.out), "\n")
+  total_n <- sum(n_obs_vec, na.rm = TRUE)
+  sample_lines <- allignLhsRhs(
+    lhs = "Number of observations",
+    rhs = format_count(total_n),
+    pad = "  ",
+    width.out = width.out
+  )
+
+  if (length(n_obs_vec) > 1) {
+    sample_lines <- paste0(sample_lines,
+                           allignLhsRhs(
+                             lhs = paste0("  ", names(n_obs_vec)),
+                             rhs = format_count(n_obs_vec),
+                             pad = "  ",
+                             width.out = width.out
+                           ))
+  }
+
+  if (isTRUE(x$is.fiml)) {
+    fiml_vec <- x$n.fiml.patterns
+    if (is.null(names(fiml_vec)) || !any(nzchar(names(fiml_vec)))) {
+      names(fiml_vec) <- paste0("Group ", seq_along(fiml_vec))
+    }
+    total_patterns <- sum(fiml_vec, na.rm = TRUE)
+    sample_lines <- paste0(sample_lines,
+                           allignLhsRhs(
+                             lhs = "Number of missing patterns",
+                             rhs = format_count(total_patterns),
+                             pad = "  ",
+                             width.out = width.out
+                           ))
+    if (length(fiml_vec) > 1) {
+      non_zero <- fiml_vec > 0
+      if (any(non_zero)) {
+        sample_lines <- paste0(sample_lines,
+                               allignLhsRhs(
+                                 lhs = paste0("  ", names(fiml_vec)[non_zero]),
+                                 rhs = format_count(fiml_vec[non_zero]),
+                                  pad = "  ",
+                                  width.out = width.out
+                                ))
+      }
+    } else if (length(fiml_vec) == 1 && fiml_vec[[1]] > 0) {
+      sample_lines <- paste0(sample_lines,
+                             allignLhsRhs(
+                               lhs = paste0("  ", names(fiml_vec)),
+                               rhs = format_count(fiml_vec),
+                               pad = "  ",
+                               width.out = width.out
+                             ))
+    }
+  }
+
+  cat(sample_lines)
 
   # Criterion/LogLik -----------------------------------------------------------
   names <- c(
@@ -244,15 +395,15 @@ print.summary_da <- function(x, digits = 3, ...) {
   )
 
   values <- c(
-    formatNumeric(x$logLik,  digits = 2),
-    formatNumeric(x$fit$AIC, digits = 2),
-    formatNumeric(x$fit$BIC, digits = 2)
+    format_value(x$logLik,  digits = 2),
+    format_value(x$fit$AIC, digits = 2),
+    format_value(x$fit$BIC, digits = 2)
   )
 
   if (x$format$adjusted.stat) {
     names  <- c(names, "Corrected Akaike (AICc)", "Adjusted Bayesian (aBIC)")
-    values <- c(values, formatNumeric(x$fit$AICc, digits = 2),
-                formatNumeric(x$fit$aBIC, digits = 2))
+    values <- c(values, format_value(x$fit$AICc, digits = 2),
+                format_value(x$fit$aBIC, digits = 2))
   }
 
   cat("Loglikelihood and Information Criteria:\n")
@@ -261,12 +412,19 @@ print.summary_da <- function(x, digits = 3, ...) {
 
   # Intergration ---------------------------------------------------------------
   if (!is.null(x$quad)) {
-    cat("Numerical Integration:\n")
-    names <- c("Points of integration (per dim)", "Dimensions",
-               "Total points of integration")
-    values <- c(x$quad$nodes.dim, x$quad$dim, x$quad$nodes.total)
-    cat(allignLhsRhs(lhs = names, rhs = values, pad = "  ",
-                     width.out = width.out), "\n")
+    nodes_dim <- x$quad$nodes.dim
+    dim_val <- x$quad$dim
+    nodes_total <- x$quad$nodes.total
+    if (length(nodes_dim) || length(dim_val) || length(nodes_total)) {
+      cat("Numerical Integration:\n")
+      names <- c("Points of integration (per dim)", "Dimensions",
+                 "Total points of integration")
+      values <- c(format_count(nodes_dim),
+                  format_count(dim_val),
+                  format_count(nodes_total))
+      cat(allignLhsRhs(lhs = names, rhs = values, pad = "  ",
+                       width.out = width.out), "\n")
+    }
 
   }
 
@@ -280,7 +438,7 @@ print.summary_da <- function(x, digits = 3, ...) {
     names <- c("", "Chi-square", "Degrees of Freedom (Chi-square)",
                "P-value (Chi-square)")
     values <- c("Standard",
-                formatNumeric(x$fitH0$chisq.value, digits = 2),
+                format_value(x$fitH0$chisq.value, digits = 2),
                 x$fitH0$chisq.df,
                 formatPval(x$fitH0$chisq.pvalue, scientific = x$format$scientific))
 
@@ -290,10 +448,10 @@ print.summary_da <- function(x, digits = 3, ...) {
       pval.s  <- fnull(lav.fit.h0[["pvalue.scaled"]])
       scale.f <- fnull(lav.fit.h0[["chisq.scaling.factor"]])
       values.scaled <- c("Scaled",
-                         formatNumeric(chisq.s, digits = 2),
+                         format_value(chisq.s, digits = 2),
                          round(df.s),
                          formatPval(pval.s, scientific = x$format$scientific),
-                         formatNumeric(scale.f, digits = 3),
+                         format_value(scale.f, digits = 3),
                          rep("", 2))
       values <- c(values, rep("", 3))
       names <- c(names, "Scaling correction factor",
@@ -303,11 +461,11 @@ print.summary_da <- function(x, digits = 3, ...) {
 
 
     names <- c(names, "RMSEA")
-    values <- c(values, formatNumeric(x$fitH0$RMSEA, digits = 3))
+    values <- c(values, format_value(x$fitH0$RMSEA, digits = 3))
 
     if (!is.null(values.scaled)) {
       rmsea.s <- fnull(lav.fit.h0[["rmsea.scaled"]])
-      values.scaled <- c(values.scaled, formatNumeric(rmsea.s, digits = 3))
+      values.scaled <- c(values.scaled, format_value(rmsea.s, digits = 3))
     }
 
     if (x$format$extra.fit) {
@@ -316,25 +474,25 @@ print.summary_da <- function(x, digits = 3, ...) {
       cfi  <- fnull(lav.fit.h0[["cfi"]])
       tli  <- fnull(lav.fit.h0[["tli"]])
       values <- c(values,
-                  formatNumeric(cfi, digits = 3),
-                  formatNumeric(tli, digits = 3),
-                  formatNumeric(srmr, digits = 3))
+                  format_value(cfi, digits = 3),
+                  format_value(tli, digits = 3),
+                  format_value(srmr, digits = 3))
 
       if (!is.null(values.scaled)) {
         cfi.s <- fnull(lav.fit.h0[["cfi.scaled"]])
         tli.s <- fnull(lav.fit.h0[["tli.scaled"]])
         values.scaled <- c(values.scaled,
-                           formatNumeric(cfi.s, digits = 3),
-                           formatNumeric(tli.s, digits = 3),
+                           format_value(cfi.s, digits = 3),
+                           format_value(tli.s, digits = 3),
                            "")
       }
     }
 
     names <- c(names, "", "Loglikelihood", "Akaike (AIC)", "Bayesian (BIC)")
     values <- c(values, "",
-                formatNumeric(x$nullModel$logLik, digits = 2),
-                formatNumeric(x$fitH0$AIC, digits = 2),
-                formatNumeric(x$fitH0$BIC, digits = 2))
+                format_value(x$nullModel$logLik, digits = 2),
+                format_value(x$fitH0$AIC, digits = 2),
+                format_value(x$fitH0$BIC, digits = 2))
 
     if (!is.null(values.scaled))
       values.scaled <- c(values.scaled, rep("", 4))
@@ -342,8 +500,8 @@ print.summary_da <- function(x, digits = 3, ...) {
     if (x$format$adjusted.stat) {
       names <- c(names, "Corrected Akaike (AICc)", "Adjusted Bayesian (aBIC)")
       values <- c(values,
-                  formatNumeric(x$fitH0$AICc, digits = 2),
-                  formatNumeric(x$fitH0$aBIC, digits = 2))
+                  format_value(x$fitH0$AICc, digits = 2),
+                  format_value(x$fitH0$aBIC, digits = 2))
 
       if (!is.null(values.scaled))
         values.scaled <- c(values.scaled, rep("", 2))
@@ -356,8 +514,8 @@ print.summary_da <- function(x, digits = 3, ...) {
     names <- c("Loglikelihood change",
                "Difference test (D)",
                "Degrees of freedom (D)", "P-value (D)")
-    values <- c(formatNumeric(x$D$diff.loglik, digits = 2),
-                formatNumeric(x$D$D, digits = 2),
+    values <- c(format_value(x$D$diff.loglik, digits = 2),
+                format_value(x$D$D, digits = 2),
                 x$D$df,
                 formatPval(x$D$p, scientific = x$format$scientific))
     cat(allignLhsRhs(lhs = names, rhs = values, pad = "  ",
@@ -367,27 +525,38 @@ print.summary_da <- function(x, digits = 3, ...) {
 
   # R2 -------------------------------------------------------------------------
   if (!is.null(x$r.squared)) {
-    r.squared <- formatNumeric(x$r.squared, digits = 3)
+    r.squared <- format_value(x$r.squared, digits = 3)
     names     <- names(r.squared)
 
-    cat("R-Squared Interaction Model (H1):\n")
+    label_h1 <- "R-Squared Interaction Model (H1)"
+    if (length(x$N) > 1) {
+      label_h1 <- paste0(label_h1, " (weighted)")
+    }
+    cat(label_h1, ":\n", sep = "")
     cat(allignLhsRhs(lhs = names, rhs = r.squared,
 										 pad = "  ", width.out = width.out))
 
     if (!is.null(x$r.squared.h0)) {
-      r.squared.h0 <- formatNumeric(x$r.squared.h0, digits = 3)
+      r.squared.h0 <- format_value(x$r.squared.h0, digits = 3)
 			names.h0     <- names(r.squared.h0)
 
-			cat("R-Squared Baseline Model (H0):\n")
+      label_h0 <- "R-Squared Baseline Model (H0)"
+      if (length(x$N) > 1) {
+      label_h0 <- paste0(label_h0, " (sample-size weighted across groups)")
+    }
+			cat(label_h0, ":\n", sep = "")
       cat(allignLhsRhs(lhs = names.h0, rhs = r.squared.h0, pad = "  ",
                        width.out = width.out))
 
       # Calculate Change (using unformatted Rsquared)
-     	r.squared.diff <- formatNumeric(x$r.squared - x$r.squared.h0, digits = 3)
-			names.diff     <- names(r.squared.diff)
-      cat("R-Squared Change (H1 - H0):\n")
-      cat(allignLhsRhs(lhs = names.diff, rhs = r.squared.diff,
-											 pad = "  ", width.out = width.out))
+      if (!is.null(x$r.squared) && !is.null(x$r.squared.h0)) {
+        r.squared.diff.raw <- x$r.squared - x$r.squared.h0
+        r.squared.diff <- format_value(r.squared.diff.raw, digits = 3)
+        names.diff     <- names(r.squared.diff)
+        cat("R-Squared Change (H1 - H0):\n")
+        cat(allignLhsRhs(lhs = names.diff, rhs = r.squared.diff,
+                         pad = "  ", width.out = width.out))
+      }
     }
   }
 
@@ -398,16 +567,21 @@ print.summary_da <- function(x, digits = 3, ...) {
   cat(allignLhsRhs(lhs = names, rhs = values, pad = "  ",
                    width.out = width.out), "\n")
 
-  printParTable(x$parTable,
-                scientific  = x$format$scientific,
-                ci          = x$format$ci,
-                digits      = x$format$digits,
-                loadings    = x$format$loadings,
-                regressions = x$format$regressions,
-                covariances = x$format$covariances,
-                intercepts  = x$format$intercepts,
-                variances   = x$format$variances,
-                extra.cols  = x$format$extra.cols)
+  for (g in sort(unique(x$parTable$group))) {
+    label <- tryCatch(x$group.labels[[g]], error = \(e) NA)
+
+    printf("Group %d [%s]:\n\n", g, label)
+    printParTable(x$parTable[x$parTable$group == g, , drop = FALSE],
+                  scientific  = x$format$scientific,
+                  ci          = x$format$ci,
+                  digits      = x$format$digits,
+                  loadings    = x$format$loadings,
+                  regressions = x$format$regressions,
+                  covariances = x$format$covariances,
+                  intercepts  = x$format$intercepts,
+                  variances   = x$format$variances,
+                  extra.cols  = x$format$extra.cols)
+  }
 }
 
 

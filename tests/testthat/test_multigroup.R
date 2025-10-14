@@ -15,6 +15,12 @@ m2 <- '
 '
 
 est <- modsem(m2, oneIntMG, method = "lms", group = "group")
+summary(est)
+#> Error in prettyNum(.Internal(format(x, trim, digits, nsmall, width, 3L, 
+#>  : 
+#>   invalid value 0 for 'digits' argument
+#> In addition: Warning message:
+#> Comparative fit to H0 will not be calculated. 
 
 
 HS.model <- ' visual  =~ x1 + x2 + x3
