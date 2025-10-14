@@ -312,6 +312,10 @@ specifModelDA_Group <- function(syntax = NULL,
     lavaan.fit    = NULL
   )
 
+  if (checkModel)
+    preCheckModel(model = model, covModel = covModel, method = method,
+                  missing = missing)
+  
   model
 }
 
@@ -698,7 +702,6 @@ finalizeModelEstimatesDA <- function(model,
   method <- match.arg(method)
   NA__ <- -999
 
-  browser()
   # coefficients and filled model
   lavCoefs <- getLavCoefs(model = model, theta = theta, method = method)
   # (fillPhi is relevant for LMS, harmless for QML when ignored)
@@ -743,7 +746,7 @@ finalizeModelEstimatesDA <- function(model,
                          n.additions = FIMo$n.additions)
 
   parTable <- NULL
-  for (g in model$info$n.groups) {
+  for (g in seq_len(model$info$n.groups)) {
     submodel <- finalModel$models[[g]]
 
     submodel$matricesSE <- modelSE$models[[g]]$matrices

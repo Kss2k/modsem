@@ -222,7 +222,7 @@ maxchar <- function(x) {
 
 
 fillColsParTable <- function(parTable) {
-  colNames <- c("lhs", "op", "rhs", "label", "est",
+  colNames <- c("lhs", "op", "rhs", "label", "group", "est",
                 "std.error", "z.value", "p.value", "ci.lower", "ci.upper")
   parTable[colNames[!colNames %in% colnames(parTable)]] <- NA
   parTable #[colNames]
@@ -355,6 +355,20 @@ centerInteractions <- function(parTable, center.means = TRUE) {
 
 
 meanInteractions <- function(parTable, ignore.means = FALSE) {
+  out <- NULL
+
+  for (g in sort(unique(parTable$group))) {
+    parTable_g <- parTable[parTable$group == g, , drop = FALSE]
+    out <- rbind(out, meanInteractionsGroup(parTable_g,
+                                            ignore.means = ignore.means,
+                                            group = g))
+  }
+
+  out
+}
+
+
+meanInteractionsGroup <- function(parTable, ignore.means = FALSE, group = 0L) {
   intTerms <- unique(parTable[grepl(":", parTable$rhs), "rhs"])
 
   # remove existing
@@ -362,7 +376,7 @@ meanInteractions <- function(parTable, ignore.means = FALSE) {
                        , drop = FALSE]
 
   present  <- colnames(parTable)
-  newcols  <- c("lhs", "op", "rhs", "label", "est")
+  newcols  <- c("lhs", "op", "rhs", "label", "group", "est")
   newcols  <- intersect(newcols, present)
   fillcols <- setdiff(present, newcols)
 
@@ -378,7 +392,7 @@ meanInteractions <- function(parTable, ignore.means = FALSE) {
     meanXZ <- meanX * meanZ + covXZ
 
     newRow <- data.frame(lhs = intTerm, op = "~1", rhs = "",
-                         label = "", est = meanXZ)
+                         label = "", est = meanXZ, group = group)
 
     # Get correct cols
     newRow <- newRow[newcols]

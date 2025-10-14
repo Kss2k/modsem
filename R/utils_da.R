@@ -1041,6 +1041,17 @@ getCoefMatricesDA <- function(parTable,
 
 
 calcExpectedMatricesDA <- function(parTable, xis = NULL, etas = NULL, intTerms = NULL) {
+  lapply(
+    X = sort(unique(parTable$group)),
+    FUN = function(g) {
+      parTable_g <- parTable[parTable$group == g, , drop = FALSE]
+      calcExpectedMatricesDA_Group(parTable_g, xis = xis, etas = etas, intTerms = intTerms)
+    }
+  )
+}
+
+
+calcExpectedMatricesDA_Group <- function(parTable, xis = NULL, etas = NULL, intTerms = NULL) {
   matricesCentered <- getCoefMatricesDA(parTable, xis = xis, etas = etas,
                                         intTerms = intTerms, centered = TRUE)
   matricesNonCentered <- getCoefMatricesDA(parTable, xis = xis, etas = etas,
@@ -1244,6 +1255,7 @@ sortParTableDA <- function(parTable, model) {
 
   opOrder <- c("=~", "~", "~1", "~~", "|", ":=")
   varOrder <- unique(c(indsXis, indsEtas, xisLow, etasLow, xisHigh, xisLow))
+  groupOrder <- sort(unique(parTable$group))
 
   getScore <- function(x, order.by) {
     order.by <- unique(c(order.by, x)) # ensure that all of x is in order.by
@@ -1260,11 +1272,12 @@ sortParTableDA <- function(parTable, model) {
     score
   }
 
-  scoreLhs <- getScore(x = parTable$lhs, order.by = varOrder)
-  scoreOp  <- getScore(x = parTable$op,  order.by = opOrder)
-  scoreRhs <- getScore(x = parTable$rhs, order.by = varOrder)
+  scoreGroup <- getScore(x = parTable$group, order.by = groupOrder)
+  scoreLhs   <- getScore(x = parTable$lhs, order.by = varOrder)
+  scoreOp    <- getScore(x = parTable$op,  order.by = opOrder)
+  scoreRhs   <- getScore(x = parTable$rhs, order.by = varOrder)
 
-  out <- parTable[order(scoreOp, scoreLhs, scoreRhs), , drop = FALSE]
+  out <- parTable[order(scoreGroup, scoreOp, scoreLhs, scoreRhs), , drop = FALSE]
   rownames(out) <- NULL
 
   out
