@@ -706,9 +706,6 @@ finalizeModelEstimatesDA <- function(model,
                               parTableCovModel = model$models[[1L]]$covModel$parTable,
                               mean.observed = model$info$mean.observed,
                               method = method)
-  finalModel$matricesNA <- emptyModel$matrices
-  finalModel$covModelNA <- emptyModel$covModel
-
   # information matrix + SE
   typeSE <- if (!calc.se) "none" else if (robust.se) "robust" else "standard"
 
@@ -741,14 +738,26 @@ finalizeModelEstimatesDA <- function(model,
 
   modelSE <- getSE_Model(model, se = SE, method = method,
                          n.additions = FIMo$n.additions)
-  finalModel$matricesSE <- modelSE$matrices
-  finalModel$covModelSE <- modelSE$covModel
 
-  parTable <- modelToParTable(finalModel,
-                              coefs = lavCoefs$all,
-                              se = SE,
-                              method = method,
-                              calc.se = calc.se)
+  parTable <- NULL
+  for (g in model$info$n.groups) {
+    submodel <- finalModel$models[[g]]
+
+    submodel$matricesSE <- modelSE$models[[g]]$matrices
+    submodel$covModelSE <- modelSE$models[[g]]$covModel
+    submodel$matricesNA <- emptyModel$models[[g]]$matrices
+    submodel$covModelNA <- emptyModel$models[[g]]$covModel
+
+    browser()
+    parTable_g <- modelToParTable(submodel,
+                                  coefs = lavCoefs$all,
+                                  se = SE,
+                                  method = method,
+                                  calc.se = calc.se)
+
+    parTable <- rbind(parTable, parTable_g)
+  }
+
   parTable <- addZStatsParTable(parTable)
 
   out <- list(
