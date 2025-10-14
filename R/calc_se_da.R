@@ -175,7 +175,6 @@ calcOFIM_LMS <- function(model, theta, data, hessian = FALSE,
 
   if (hessian) {
     # negative hessian (sign = -1)
-    browser()
     I <- calcHessian(model, theta = theta,
                      method = "lms", epsilon = epsilon, P = P)
     return(I)

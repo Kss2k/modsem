@@ -435,36 +435,50 @@ compHessianAllLogLikLms <- function(theta, model, P, sign = -1,
 simpleHessianAllLogLikLms <- function(theta, model, P, sign = -1,
                                       .relStep = .Machine$double.eps ^ (1/5),
                                       FHESS) {
-  # simple gradient which should work if constraints are well-behaved functions
+  # simple Hessian which should work if constraints are well-behaved functions
   # which can be derivated by Deriv::Deriv, and there is no covModel
-  modelR      <- fillModel(model=model, theta=theta, method="lms")
+  modelR      <- fillModel(model = model, theta = theta, method = "lms")
   locations   <- model$params$gradientStruct$locations
   Jacobian    <- model$params$gradientStruct$Jacobian
   Jacobian2   <- model$params$gradientStruct$Jacobian2
   nlinDerivs  <- model$params$gradientStruct$nlinDerivs
   nlinDerivs2 <- model$params$gradientStruct$nlinDerivs2
 
-  block     <- locations$block
-  row       <- locations$row
-  col       <- locations$col
-  param     <- locations$param
-  symmetric <- locations$symmetric
+  n.loc <- NROW(locations)
+  H <- matrix(0.0, nrow = n.loc, ncol = n.loc,
+              dimnames = list(locations$param, locations$param))
+  grad <- numeric(n.loc)
+  names(grad) <- locations$param
 
-  HESS <- FHESS(modelR    = modelR,
-                P         = P,
-                block     = block,
-                row       = row,
-                col       = col,
-                colidxR   = data$colidx0,
-                n         = data$n.pattern,
-                d         = data$d.pattern,
-                npatterns = data$p,
-                symmetric = symmetric,
-                .relStep  = .relStep,
-                ncores    = ThreadEnv$n.threads)
+  for (g in seq_len(modelR$info$n.groups)) {
+    locations_g <- locations[locations$group == g, , drop = FALSE]
+    if (!NROW(locations_g)) next
 
-  H    <- HESS$Hessian
-  grad <- HESS$gradient
+    submodelR <- modelR$models[[g]]
+    data_g    <- submodelR$data
+
+    HESS_g <- FHESS(modelR    = submodelR,
+                    P         = P$P_GROUPS[[g]],
+                    block     = locations_g$block,
+                    row       = locations_g$row,
+                    col       = locations_g$col,
+                    colidxR   = data_g$colidx0,
+                    n         = data_g$n.pattern,
+                    d         = data_g$d.pattern,
+                    npatterns = data_g$p,
+                    symmetric = locations_g$symmetric,
+                    .relStep  = .relStep,
+                    ncores    = ThreadEnv$n.threads)
+
+    H_g    <- HESS_g$Hessian
+    grad_g <- HESS_g$gradient
+
+    dimnames(H_g) <- list(locations_g$param, locations_g$param)
+    names(grad_g) <- locations_g$param
+
+    H[locations_g$param, locations_g$param] <- H[locations_g$param, locations_g$param] + H_g
+    grad[locations_g$param] <- grad[locations_g$param] + grad_g
+  }
 
   if (length(nlinDerivs)) {
     evalTheta  <- model$params$gradientStruct$evalTheta
@@ -599,7 +613,6 @@ observedInfoFromLouisLms <- function(model,
                                      symmetrize = TRUE,
                                      jitter = 0.0,
                                      ...) {
-  browser()
   fd.scheme <- match.arg(fd.scheme)
 
   # E-step (if needed)

@@ -586,8 +586,6 @@ modsem_da <- function(model.syntax = NULL,
     stop2(sprintf(message, method, e$message))
   })
 
-  est$group.info <- group.info
-
   # Finalize the model object
   # Expected means and covariances
   est$expected.matrices <- tryCatch(

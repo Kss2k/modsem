@@ -743,6 +743,8 @@ hasIntTermVariances <- function(parTable) {
 
   all(vapply(intTerms, FUN.VALUE = logical(1L), FUN = hasVariance))
 }
+
+
 splitCLabels <- function(labels) {
   if (!length(labels)) return(character())
 

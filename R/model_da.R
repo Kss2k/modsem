@@ -624,9 +624,13 @@ customParamsToParTable <- function(model, coefs, se) {
 }
 
 
-modelToParTable <- function(model, coefs = NULL, se = NULL, method = "lms", calc.se = TRUE) {
+modelToParTable <- function(model, coefs = NULL, se = NULL, method = "lms", calc.se = TRUE, group = 1L) {
   parTable <- rbind(covModelToParTable(model, method = method),
                     mainModelToParTable(model, method = method))
+
+  colsOut <- c("lhs", "op", "rhs", "label", "group", "est", "std.error")
+  parTable$group <- group
+  parTable <- parTable[colsOut]
 
   if (!is.null(coefs) && !is.null(se) && !is.null(names(se))) {
     parTable <- rbind(parTable, customParamsToParTable(model, coefs, se))
@@ -747,12 +751,12 @@ finalizeModelEstimatesDA <- function(model,
     submodel$matricesNA <- emptyModel$models[[g]]$matrices
     submodel$covModelNA <- emptyModel$models[[g]]$covModel
 
-    browser()
     parTable_g <- modelToParTable(submodel,
                                   coefs = lavCoefs$all,
                                   se = SE,
                                   method = method,
-                                  calc.se = calc.se)
+                                  calc.se = calc.se,
+                                  group = g)
 
     parTable <- rbind(parTable, parTable_g)
   }
