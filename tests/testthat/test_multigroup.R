@@ -36,7 +36,7 @@ fit_lavaan <- lavaan::sem(HS.model,
 # using modsem
 fit_modsem <- modsem(HS.model,
                      data = lavaan::HolzingerSwineford1939,
-                     group = "school", method = "lms", max.step = 50)
+                     group = "school", method = "lms", max.step = 1)
 
 
 lavaanEst <- lavaan::parameterEstimates(fit_lavaan)

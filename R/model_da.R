@@ -320,7 +320,7 @@ specifModelDA_Group <- function(syntax = NULL,
 }
 
 
-specifyModelDA <- function(..., group.info, createTheta = TRUE) {
+specifyModelDA <- function(..., data.raw = NULL, group.info, createTheta = TRUE) {
   args <- list(...)
 
   n.groups <- group.info$n.groups
@@ -352,6 +352,8 @@ specifyModelDA <- function(..., group.info, createTheta = TRUE) {
 
   model <- list(
     models   = submodels,
+    syntax   = args$syntax,
+    data.raw = data.raw,
     parTable = parTable,
     info     = list(
       n.groups      = n.groups,
@@ -381,7 +383,7 @@ specifyModelDA <- function(..., group.info, createTheta = TRUE) {
       lavOptimizerSyntaxAdditions = submodels[[1L]]$lavOptimizerSyntaxAdditions
     ),
 
-    params   = list()
+    params = list()
   )
 
   # Currenlty we assume covModel has an uniform structure

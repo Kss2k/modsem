@@ -53,29 +53,20 @@ prepareGroupDA <- function(group, data) {
   group_raw <- NULL
   group_var <- NULL
 
-  if (is.character(group) && length(group) == 1L) {
-    stopif(!group %in% names(data),
-           sprintf("Grouping variable '%s' not found in `data`.", group))
-    group_raw <- data[[group]]
-    data <- data[, setdiff(names(data), group), drop = FALSE]
-    group_var <- group
-  } else if (is.vector(group) && length(group) == n) {
-    group_raw <- group
-  } else if (is.factor(group) && length(group) == n) {
-    group_raw <- group
-  } else {
-    stop2("`group` must be either NULL, a column name in `data`, or a vector with one value per row.")
-  }
+  stopif(length(group) != 1L, "Grouping variable must be of length 1!")
+  stopif(!group %in% names(data),
+         sprintf("Grouping variable '%s' not found in `data`.", group))
+
+  group_raw <- data[[group]]
+  data <- data[, setdiff(names(data), group), drop = FALSE]
+  group_var <- group
 
   stopif(length(group_raw) != n, "Length of `group` must match the number of rows in `data`.")
   stopif(any(is.na(group_raw)), "`group` cannot contain missing values.")
 
-  if (is.factor(group_raw)) {
-    group_factor <- droplevels(group_raw)
-  } else {
-    levels_order <- unique(group_raw)
-    group_factor <- factor(group_raw, levels = levels_order)
-  }
+  group_raw <- as.character(group_raw) # match lavaan behaviour, ignore factor levels
+  levels_order <- unique(group_raw)
+  group_factor <- factor(group_raw, levels = levels_order)
 
   levels_group <- levels(group_factor)
   n.groups <- length(levels_group)
@@ -1342,6 +1333,18 @@ higherOrderMeasr2Struct <- function(parTable) {
 
 
 recalcInterceptsY <- function(parTable) {
+  out <- NULL
+
+  for (g in getGroupsParTable(parTable)) {
+    parTable_g <- parTable[parTable$group == g, , drop = FALSE]
+    out <- rbind(out, recalcInterceptsY_Group(parTable_g))  
+  }
+
+  rbind(out, getZeroGroupParTable(parTable))
+}
+
+
+recalcInterceptsY_Group <- function(parTable) {
   # fix intercept for indicators of endogenous variables, based on means
   # of interaction terms
   # intercepts are from a linear (CFA) model, combined with a non-linear SAM

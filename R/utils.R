@@ -748,8 +748,18 @@ isNonCenteredParTable <- function(parTable, tol = 1e-10) {
   if (!"est" %in% colnames(parTableProto))
     parTableProto$est <- 1
 
-  means <- getMeans(intVars, parTableProto)
-  any(abs(means) > tol)
+  if (!"group" %in% colnames(parTableProto))
+    parTableProto$group <- 1L
+
+  for (g in getGroupsParTable(parTableProto)) {
+    parTableProto_g <- parTableProto
+    means <- getMeans(intVars, parTableProto_g)
+
+    if (any(abs(means) > tol))
+      return(TRUE)
+  }
+
+  FALSE
 }
 
 

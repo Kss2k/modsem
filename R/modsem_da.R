@@ -406,9 +406,6 @@ modsem_da <- function(model.syntax = NULL,
     data         <- corrected$data
   }
 
-  group.info <- prepareGroupDA(group = group, data = data)
-  data       <- group.info$data
-
   if ("convergence" %in% names(list(...))) {
     convergence.rel <- list(...)$convergence
     warning2("Argument 'convergence' is deprecated, use 'convergence.rel' instead.")
@@ -456,6 +453,17 @@ modsem_da <- function(model.syntax = NULL,
           cr1s               = cr1s
         )
     )
+
+  if (args$center.data)
+    data <- lapplyDf(data, FUN = function(x) x - mean(x, na.rm = TRUE))
+
+  if (args$standardize.data)
+    data <- lapplyDf(data, FUN = scaleIfNumeric, scaleFactor = FALSE)
+
+  group.info <- prepareGroupDA(group = group, data = data)
+  data.input <- data
+  data       <- group.info$data
+
   args$group.levels <- group.info$levels
   args$group.var    <- group.info$group_var
   args$n.groups     <- group.info$n.groups
@@ -471,15 +479,8 @@ modsem_da <- function(model.syntax = NULL,
   if (is.null(group_levels)) group_levels <- ""
   group.info$parTable <- expandParTableByGroup(parTable, group_levels = group_levels)
 
-  if (args$center.data) {
-    data <- lapplyDf(data, FUN = function(x) x - mean(x, na.rm = TRUE))
-  }
-
-  if (args$standardize.data) {
-    data <- lapplyDf(data, FUN = scaleIfNumeric, scaleFactor = FALSE)
-  }
-
-  model <- specifyModelDA(model.syntax,
+  model <- specifyModelDA(
+    syntax             = model.syntax,
     data               = data,
     method             = method,
     m                  = args$nodes,
@@ -497,13 +498,15 @@ modsem_da <- function(model.syntax = NULL,
     auto.fix.single    = args$auto.fix.single,
     auto.split.syntax  = args$auto.split.syntax,
     cluster            = cluster,
-    group.info         = group.info
+    group.info         = group.info,
+    data.raw           = data.input
   )
 
   if (args$optimize) {
     model <- tryCatch({
       .optimize <- purrr::quietly(optimizeStartingParamsDA)
-      result    <- .optimize(model, args = args, engine = "sam")
+      #.optimize <- optimizeStartingParamsDA
+      result    <- .optimize(model, args = args, group = group, engine = "sam")
       warnings  <- result$warnings
 
       if (length(warnings)) {
