@@ -753,20 +753,18 @@ nNegativeLast <- function(x, n = 10) {
 
 
 getDegreesOfFreedom <- function(p, coef, mean.structure = TRUE) {
-  fm <- \(c) (p * (p + c)) / 2
+  if (!length(p)) return(NA_real_)
 
-  # c = 1 for a model without a meanstructure
-  # c = 3 for a model with meanstructure
-  # Without meanstructure:
-  #   m = p * (p + 1) / 2
-  # With meanstructure
-  #   m = p * (p + 1) / 2 + p
-  #     = (p * (p + 1) + p) / 2
-  #     = p * (1 + p + 1 + 1) / 2
-  #     = p * (p + 3) / 2
+  moments_per_group <- function(pp) {
+    if (mean.structure) {
+      pp * (pp + 3) / 2
+    } else {
+      pp * (pp + 1) / 2
+    }
+  }
 
-  m <- ifelse(mean.structure, yes = fm(3), no = fm(1))
-  m - length(coef)
+  m_total <- sum(vapply(p, moments_per_group, numeric(1L)))
+  m_total - length(coef)
 }
 
 

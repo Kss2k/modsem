@@ -27,60 +27,164 @@ fit_modsem_da <- function(model, chisq = TRUE, lav.fit = FALSE) {
              immediate. = FALSE)
   }
 
-  data   <- model$data$data.full
   t      <- nFreeInterceptsDA(model)
   mean.s <- model$args$mean.observed || t > 0
   logLik <- model$logLik
-  O      <- stats::cov(data, use = "pairwise.complete.obs")
-  mu     <- apply(data, 2, mean, na.rm = TRUE)
-  mu     <- matrix(mu, ncol = 1, dimnames = list(colnames(data), "~1"))
-  N      <- NROW(data)
-  p      <- NCOL(data)
   coef   <- coef(model, type = "free")
   k      <- length(coef)
-  df     <- getDegreesOfFreedom(p = p, coef = coef, mean.structure = mean.s)
 
-  expected.matrices <- model$expected.matrices
-  matrices <- modsem_inspect(model, what = "matrices")
+  finalModel <- model$model
+  submodels  <- if (!is.null(finalModel$models)) finalModel$models else list()
+  if (!length(submodels)) submodels <- list(list(data = model$data))
+
+  n.groups <- max(1L, length(submodels))
+  group.labels <- finalModel$info$group.levels
+  if (is.null(group.labels) || length(group.labels) != n.groups) {
+    group.labels <- paste0("Group", seq_len(n.groups))
+  }
+
+  expected.list <- model$expected.matrices
+  if (!is.list(expected.list) || length(expected.list) == 0) {
+    expected.list <- replicate(n.groups, expected.list, simplify = FALSE)
+  }
+  if (length(expected.list) < n.groups) {
+    expected.list <- c(expected.list,
+                       rep(list(NULL), n.groups - length(expected.list)))
+  }
+  expected.list <- expected.list[seq_len(n.groups)]
+
+  sample_cov_blocks <- vector("list", n.groups)
+  expected_cov_blocks <- vector("list", n.groups)
+  mu_obs_blocks <- vector("list", n.groups)
+  mu_exp_blocks <- vector("list", n.groups)
+
+  N_vec <- numeric(n.groups)
+  p_vec <- numeric(n.groups)
+  chisq_parts <- rep(NA_real_, n.groups)
+  srmr_weight_num <- 0
+  srmr_weight_den <- 0
+
+  for (g in seq_len(n.groups)) {
+    submodel <- submodels[[g]]
+    data_g   <- submodel$data
+
+    data_full <- data_g$data.full
+    if (is.null(data_full) || !NROW(data_full) || !NCOL(data_full)) {
+      next
+    }
+
+    data_full <- as.matrix(data_full)
+    N_g <- NROW(data_full)
+    p_g <- NCOL(data_full)
+
+    N_vec[g] <- N_g
+    p_vec[g] <- p_g
+
+    mu_g_vec <- apply(data_full, 2, mean, na.rm = TRUE)
+    mu_g <- matrix(mu_g_vec, ncol = 1,
+                   dimnames = list(colnames(data_full), "~1"))
+    O_g <- stats::cov(data_full, use = "pairwise.complete.obs")
+
+    expected_g <- expected.list[[g]]
+    E_g <- if (!is.null(expected_g) && !is.null(expected_g$sigma.ov)) expected_g$sigma.ov else NULL
+    mu_hat_g <- if (!is.null(expected_g) && !is.null(expected_g$mu.ov)) expected_g$mu.ov else NULL
+
+    if (!mean.s || is.null(mu_hat_g)) {
+      mu_hat_g <- mu_g
+    }
+
+    if (!is.null(E_g)) {
+      order_vars <- colnames(data_full)
+      E_g <- E_g[order_vars, order_vars, drop = FALSE]
+      mu_hat_g <- mu_hat_g[order_vars, , drop = FALSE]
+    }
+
+    prefix <- group.labels[[g]]
+    sample_cov_blocks[[g]] <- modsemMatrix(O_g, symmetric = TRUE)
+    mu_obs_blocks[[g]] <- modsemMatrix(mu_g)
+
+    if (!is.null(E_g)) {
+      expected_cov_blocks[[g]] <- modsemMatrix(E_g, symmetric = TRUE)
+      mu_exp_blocks[[g]] <- modsemMatrix(mu_hat_g)
+    } else {
+      expected_cov_blocks[[g]] <- NULL
+      mu_exp_blocks[[g]] <- NULL
+    }
+
+    if (chisq && !is.null(E_g)) {
+      chi_g <- tryCatch(
+        calcChiSqr(O = O_g, E = E_g, N = N_g, p = p_g, mu = mu_g, mu.hat = mu_hat_g),
+        error = function(e) {
+          warning2("Failed to compute chi-square contribution for group '",
+                   prefix, "': ", conditionMessage(e), immediate. = FALSE)
+          NA_real_
+        }
+      )
+      chisq_parts[g] <- chi_g
+
+      if (!is.na(chi_g)) {
+        srmr_g <- tryCatch(
+          calcSRMR_Mplus(S = O_g, M = mu_g, Sigma.hat = E_g, Mu.hat = mu_hat_g,
+                         mean.structure = mean.s),
+          error = function(e) NA_real_
+        )
+
+        if (!is.na(srmr_g)) {
+          weight <- max(N_g, 1)
+          srmr_weight_num <- srmr_weight_num + weight * srmr_g^2
+          srmr_weight_den <- srmr_weight_den + weight
+        }
+      }
+    }
+  }
+
+  names(sample_cov_blocks) <- group.labels
+  names(expected_cov_blocks) <- group.labels
+  names(mu_obs_blocks) <- group.labels
+  names(mu_exp_blocks) <- group.labels
+
+  N_total <- sum(N_vec)
+  df <- getDegreesOfFreedom(p = p_vec[p_vec > 0], coef = coef, mean.structure = mean.s)
 
   if (chisq) {
-    E <- expected.matrices$sigma.ov
-
-    if (mean.s) {
-      mu.hat <- expected.matrices$mu.ov
-    } else mu.hat <- mu
-
-    # Make sure the order of the rows and columns of E matches O
-    E <- E[rownames(O), colnames(O), drop = FALSE]
-    mu.hat <- mu.hat[rownames(O), , drop = FALSE]
-
-    chisqValue <- calcChiSqr(O = O, E = E, N = N, p = p, mu = mu, mu.hat = mu.hat)
-    chisqP     <- stats::pchisq(chisqValue, df, lower.tail = FALSE)
-    RMSEA      <- calcRMSEA(chisqValue, df, N)
-    SRMR       <- calcSRMR_Mplus(S = O, M = mu, Sigma.hat = E, Mu.hat = mu.hat,
-                                 mean.structure = mean.s)
-
+    if (all(!is.na(chisq_parts))) {
+      chisqValue <- sum(chisq_parts)
+      chisqP     <- if (!is.na(df) && df > 0) stats::pchisq(chisqValue, df, lower.tail = FALSE) else NA_real_
+      RMSEA      <- if (!is.na(df) && df > 0 && N_total > 0) {
+        calcRMSEA(chisqValue, df, N_total)
+      } else {
+        list(rmsea = NA_real_, lower = NA_real_, upper = NA_real_,
+             ci.level = NA_real_, pvalue = NA_real_, close.h0 = NA_real_)
+      }
+      SRMR       <- if (srmr_weight_den > 0) sqrt(srmr_weight_num / srmr_weight_den) else NA_real_
+    } else {
+      chisqValue <- NA_real_
+      chisqP     <- NA_real_
+      RMSEA      <- list(rmsea = NA_real_, lower = NA_real_, upper = NA_real_,
+                         ci.level = NA_real_, pvalue = NA_real_, close.h0 = NA_real_)
+      SRMR       <- NA_real_
+    }
   } else {
-    E          <- NULL
     chisqValue <- NULL
     chisqP     <- NULL
     df         <- NULL
-    mu.hat     <- NULL
+    sigma_expected <- NULL
+    mu_expected <- NULL
     SRMR       <- NULL
     RMSEA      <- list(
-      RMSEA          = NULL,
-      RMSEA.lower    = NULL,
-      RMSEA.upper    = NULL,
-      RMSEA.ci.level = NULL,
-      RMSEA.pvalue   = NULL,
-      RMSEA.close.h0 = NULL
+      rmsea = NULL,
+      lower = NULL,
+      upper = NULL,
+      ci.level = NULL,
+      pvalue = NULL,
+      close.h0 = NULL
     )
   }
 
   AIC  <- calcAIC(logLik, k = k)
-  AICc <- calcAdjAIC(logLik, k = k, N = N)
-  BIC  <- calcBIC(logLik, k = k, N = N)
-  aBIC <- calcAdjBIC(logLik, k = k, N = N)
+  AICc <- calcAdjAIC(logLik, k = k, N = N_total)
+  BIC  <- calcBIC(logLik, k = k, N = N_total)
+  aBIC <- calcAdjBIC(logLik, k = k, N = N_total)
 
   if (lav.fit) {
     lavfit <- tryCatch(
@@ -97,14 +201,15 @@ fit_modsem_da <- function(model, chisq = TRUE, lav.fit = FALSE) {
   list(
     lav.fit = lavfit,
 
-    sigma.observed = modsemMatrix(O, symmetric = TRUE),
-    sigma.expected = modsemMatrix(E, symmetric = TRUE),
-    mu.observed    = modsemMatrix(mu),
-    mu.expected    = modsemMatrix(mu.hat),
+    sigma.observed = sample_cov_blocks,
+    sigma.expected = expected_cov_blocks,
+    mu.observed    = mu_obs_blocks,
+    mu.expected    = mu_exp_blocks,
 
     chisq.value  = chisqValue,
     chisq.pvalue = chisqP,
     chisq.df     = df,
+    chisq.group  = stats::setNames(chisq_parts, group.labels),
 
     AIC  = AIC,
     AICc = AICc,
