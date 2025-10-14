@@ -1229,8 +1229,8 @@ sortParTableDA <- function(parTable, model) {
   parTable.input <- model$parTable
 
   etas.input <- getEtas(parTable.input)
-  etas.model <- getEtasModelDA(model) # sorted to be lower-triangular in gammaEta
-                                      # and includes etas from cov-model
+  etas.model <- getEtasModelDA(model$models[[1L]]) # sorted to be lower-triangular in gammaEta
+                                                   # and includes etas from cov-model
   etas <- unique(c(etas.input, etas.model))
 
   # xis <- getXisModelDA(model)

@@ -413,16 +413,8 @@ print.summary_da <- function(x, digits = 3, ...) {
 
 #' @export
 print.modsem_da <- function(x, digits = 3, ...) {
-  parTable         <- x$parTable
-  parTable$p.value <- format.pval(parTable$p.value, digits = digits)
-  names(parTable)  <- c("lhs", "op", "rhs", "label", "est", "std.error",
-                        "z.value", "p.value", "ci.lower", "ci.upper")
-  est <- lapply(parTable, FUN = function(col)
-                if (is.numeric(col)) round(col, digits) else col) |>
-    as.data.frame()
-
   cat(x$convergence.msg)
-  print(est)
+  print(parameter_estimates(x))
 }
 
 
