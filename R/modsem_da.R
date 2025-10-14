@@ -458,7 +458,7 @@ modsem_da <- function(model.syntax = NULL,
     )
   args$group.levels <- group.info$levels
   args$group.var    <- group.info$group_var
-  args$n.groups     <- group.info$n_groups
+  args$n.groups     <- group.info$n.groups
 
   stopif(!method %in% c("lms", "qml"), "Method must be either 'lms' or 'qml'")
 
@@ -499,9 +499,6 @@ modsem_da <- function(model.syntax = NULL,
     cluster            = cluster,
     group.info         = group.info
   )
-  model$group.info <- group.info
-  model$info$ngroups <- group.info$n_groups
-  model$info$group.levels <- group.info$levels
 
   if (args$optimize) {
     model <- tryCatch({

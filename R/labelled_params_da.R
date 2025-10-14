@@ -124,7 +124,6 @@ getTransformationsTheta <- function(model, theta, method) {
   if (!length(selectThetaLab))
     return(thetaFull)
 
-  browser()
   thetaLabel <- thetaFull[selectThetaLab]
   thetaRest  <- thetaFull[-selectThetaLab]
 

@@ -40,7 +40,7 @@ prepareGroupDA <- function(group, data) {
       group_raw = NULL,
       group_var = NULL,
       levels = NULL,
-      n_groups = 1L,
+      n.groups = 1L,
       indices = list(seq_len(NROW(data))),
       data = data
     ))
@@ -78,39 +78,39 @@ prepareGroupDA <- function(group, data) {
   }
 
   levels_group <- levels(group_factor)
-  n_groups <- length(levels_group)
+  n.groups <- length(levels_group)
   indices <- split(seq_len(n), group_factor)
 
   list(
-    has_groups = n_groups > 1L,
+    has_groups = n.groups > 1L,
     group = group_factor,
     group_raw = group_raw,
     group_var = group_var,
     levels = levels_group,
-    n_groups = n_groups,
+    n.groups = n.groups,
     indices = indices,
     data = data
   )
 }
 
 
-expandGroupModifier <- function(mod, n_groups) {
-  if (n_groups <= 1L)
-    return(rep(mod, n_groups))
+expandGroupModifier <- function(mod, n.groups) {
+  if (n.groups <= 1L)
+    return(rep(mod, n.groups))
 
   if (length(mod) == 0L || mod == "")
-    return(rep("", n_groups))
+    return(rep("", n.groups))
 
   if (is.na(mod))
-    return(rep(NA_character_, n_groups))
+    return(rep(NA_character_, n.groups))
 
   mod_trim <- trimws(mod)
   if (!nzchar(mod_trim))
-    return(rep("", n_groups))
+    return(rep("", n.groups))
 
   is_c_call <- grepl("^c\\s*\\(", mod_trim) && grepl("\\)$", mod_trim)
   if (!is_c_call)
-    return(rep(mod_trim, n_groups))
+    return(rep(mod_trim, n.groups))
 
   inside <- substr(mod_trim,
                    start = regexpr("\\(", mod_trim, perl = TRUE) + 1L,
@@ -119,28 +119,28 @@ expandGroupModifier <- function(mod, n_groups) {
   tokens <- trimws(tokens)
 
   if (!length(tokens)) {
-    tokens <- rep("", n_groups)
+    tokens <- rep("", n.groups)
   } else if (length(tokens) == 1L) {
-    tokens <- rep(tokens, n_groups)
+    tokens <- rep(tokens, n.groups)
   } else {
-    stopif(length(tokens) != n_groups,
-           sprintf("Found %d modifiers but expected %d groups.", length(tokens), n_groups))
+    stopif(length(tokens) != n.groups,
+           sprintf("Found %d modifiers but expected %d groups.", length(tokens), n.groups))
   }
 
   tokens
 }
 
 
-expandGroupModifiers <- function(mod, n_groups) {
-  do.call(rbind, lapply(mod, FUN = expandGroupModifier, n_groups = n_groups))
+expandGroupModifiers <- function(mod, n.groups) {
+  do.call(rbind, lapply(mod, FUN = expandGroupModifier, n.groups = n.groups))
 }
 
 
 expandParTableByGroup <- function(parTable, group_levels) {
   if (is.null(parTable)) return(NULL)
-  n_groups <- length(group_levels)
+  n.groups <- length(group_levels)
 
-  if (n_groups <= 1L) {
+  if (n.groups <= 1L) {
     if (!"mod" %in% names(parTable)) parTable$mod <- ""
     parTable$group <- 1L
     return(parTable[, c("lhs", "op", "rhs", "group", "mod")])
@@ -151,11 +151,11 @@ expandParTableByGroup <- function(parTable, group_levels) {
 
   if (!"mod" %in% names(baseTable)) baseTable$mod <- ""
 
-  MOD <- expandGroupModifiers(mod = baseTable$mod, n_groups = n_groups)
+  MOD <- expandGroupModifiers(mod = baseTable$mod, n.groups = n.groups)
 
   colsOut <- c("lhs", "op", "rhs", "group", "mod")
   parTableFull <- NULL
-  for (i in seq_len(n_groups)) {
+  for (i in seq_len(n.groups)) {
     parTable_g       <- baseTable
     parTable_g$mod   <- MOD[, i]
     parTable_g$group <- i
@@ -181,7 +181,7 @@ expandParTableByGroup <- function(parTable, group_levels) {
 
 
 isMultiGroupModelDA <- function(model) {
-  isTRUE(model$info$ngroups > 1L) && !is.null(model$groupModels)
+  isTRUE(model$info$ngroups > 1L) && length(model$models) > 1L
 }
 
 
@@ -583,10 +583,10 @@ getLabelIntTerms <- function(varsInInt, eta, intTerms) {
 }
 
 
-getEmptyModel <- function(parTable, cov.syntax, parTableCovModel,
+getEmptyModel <- function(group.info, cov.syntax, parTableCovModel,
                           mean.observed = TRUE, method = "lms") {
-  parTable$mod <- ""
-  parTable <- removeConstraintExpressions(parTable)
+  group.info$parTable$mod <- ""
+  group.info$parTable <- removeConstraintExpressions(group.info$parTable)
 
   if (NROW(parTableCovModel)) {
     parTableCovModel$mod <- ""
@@ -594,7 +594,7 @@ getEmptyModel <- function(parTable, cov.syntax, parTableCovModel,
   }
 
   specifyModelDA(
-    parTable         = parTable,
+    group.info       = group.info,
     method           = method,
     cov.syntax       = cov.syntax,
     parTableCovModel = parTableCovModel,

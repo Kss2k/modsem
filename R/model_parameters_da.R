@@ -11,12 +11,12 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
   THETA_COV  <- NULL
   THETA_MAIN <- NULL
   LAV_LAB    <- NULL
-  n_groups   <- model$info$n.groups
-  if (is.null(n_groups)) n_groups <- model$info$ngroups
-  if (is.null(n_groups)) n_groups <- length(model$models)
+  n.groups   <- model$info$n.groups
+  if (is.null(n.groups)) n.groups <- model$info$n.groups
+  if (is.null(n.groups)) n.groups <- length(model$models)
 
-  LABELS_MAIN_GROUPS <- vector("list", length = n_groups)
-  LABELS_COV_GROUPS  <- vector("list", length = n_groups)
+  LABELS_MAIN_GROUPS <- vector("list", length = n.groups)
+  LABELS_COV_GROUPS  <- vector("list", length = n.groups)
 
   unionByNames <- function(x, y) {
     new <- setdiff(names(y), names(x))
@@ -24,7 +24,7 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
   }
 
   # The custom labels must all be added, before computing THETA_LAB_ALL
-  for (g in seq_len(n_groups)) {
+  for (g in seq_len(n.groups)) {
     submodel     <- model$models[[g]]
     thetaLabel_g <- createThetaLabel(submodel$labelMatrices,
                                      submodel$covModel$labelMatrices,
@@ -33,7 +33,7 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
   }
   THETA_LAB_ALL <- calcThetaLabel(THETA_LAB, model$params$constrExprs)
 
-  for (g in seq_len(n_groups)) {
+  for (g in seq_len(n.groups)) {
     submodel <- model$models[[g]]
     etas <- submodel$info$etas
 
@@ -105,11 +105,11 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
 
   THETA <- c(THETA_LAB, THETA_COV, THETA_MAIN)
 
-  SELECT_THETA_LAB  <- vector("list", length = n_groups)
-  SELECT_THETA_COV  <- vector("list", length = n_groups)
-  SELECT_THETA_MAIN <- vector("list", length = n_groups)
+  SELECT_THETA_LAB  <- vector("list", length = n.groups)
+  SELECT_THETA_COV  <- vector("list", length = n.groups)
+  SELECT_THETA_MAIN <- vector("list", length = n.groups)
 
-  for (g in seq_len(n_groups)) {
+  for (g in seq_len(n.groups)) {
     labelsMain_g <- LABELS_MAIN_GROUPS[[g]]
     labelsCov_g  <- LABELS_COV_GROUPS[[g]]
 

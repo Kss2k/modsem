@@ -316,25 +316,24 @@ specifModelDA_Group <- function(syntax = NULL,
 }
 
 
-specifyModelDA <- function(..., createTheta = TRUE, group.info = NULL) {
-  dots <- list(...)
+specifyModelDA <- function(..., group.info, createTheta = TRUE) {
+  args <- list(...)
 
-  n_groups <- group.info$n_groups
-  stopif(n_groups < 1L, "Invalid grouping structure supplied.")
+  n.groups <- group.info$n.groups
+  stopif(n.groups < 1L, "Invalid grouping structure supplied.")
 
   parTable <- group.info$parTable
   group_col <- parTable[["group"]]
-  stopif(is.null(group_col) || max(group_col) != n_groups,
+  stopif(is.null(group_col) || max(group_col) != n.groups,
          "Number of group-specific parameter tables does not match number of groups.")
 
-  data.full <- dots$data
-  stopif(is.null(data.full), "Data must be supplied!")
+  data.full <- args$data
 
-  submodels <- vector("list", length = n_groups)
+  submodels <- vector("list", length = n.groups)
   names(submodels) <- group.info$levelCres
 
-  for (g in seq_len(n_groups)) {
-    args_g <- dots
+  for (g in seq_len(n.groups)) {
+    args_g <- args 
     data_g <- data.full[group.info$indices[[g]], , drop = FALSE]
 
     args_g$data <- data_g
@@ -342,16 +341,44 @@ specifyModelDA <- function(..., createTheta = TRUE, group.info = NULL) {
 
     submodel_g <- do.call(specifModelDA_Group, args_g)
     submodel_g$info$group <- group.info$levels[[g]]
-    submodel_g$info$ngroups <- 1L
+    submodel_g$info$n.groups <- 1L
 
     submodels[[g]]   <- submodel_g
   }
 
-  model <- list(models   = submodels,
-                parTable = parTable,
-                info     = list(n.groups = n_groups),
-                groupModels = submodels,
-                params   = list())
+  model <- list(
+    models   = submodels,
+    parTable = parTable,
+    info     = list(
+      n.groups      = n.groups,
+      group.levels  = group.info$levels,
+      group.info    = group.info,
+
+      # Constants across groups
+      xis           = submodels[[1L]]$info$xis,
+      etas          = submodels[[1L]]$info$etas,
+      numXis        = submodels[[1L]]$info$numXis,
+      numEtas       = submodels[[1L]]$info$numEtas,
+      indsXis       = submodels[[1L]]$info$indsXis,
+      indsEtas      = submodels[[1L]]$info$indsEtas,
+      allIndsXis    = submodels[[1L]]$info$allIndsXis,
+      allIndsEtas   = submodels[[1L]]$info$allIndsEtas,
+      varsInts      = submodels[[1L]]$info$varsInts,
+      latentEtas    = submodels[[1L]]$info$latentEtas,
+      scalingInds   = submodels[[1L]]$info$scalingInds,
+      kOmegaEta     = submodels[[1L]]$info$kOmegaEta,
+      nonLinearXis  = submodels[[1L]]$info$nonLinearXis,
+      mean.observed = submodels[[1L]]$info$mean.observed,
+
+      has.interaction    = submodels[[1L]]$info$has.interaction,
+      higherOrderLVs     = submodels[[1L]]$info$higherOrderLVs,
+      indsHigherOrderLVs = submodels[[1L]]$info$indsHigherOrderLVs,
+
+      lavOptimizerSyntaxAdditions = submodels[[1L]]$lavOptimizerSyntaxAdditions
+    ),
+
+    params   = list()
+  )
 
   # Currenlty we assume covModel has an uniform structure
   model$params$constrExprs <- getConstrExprs(parTable, model$models[[1L]]$covModel$parTable)
@@ -362,13 +389,6 @@ specifyModelDA <- function(..., createTheta = TRUE, group.info = NULL) {
 
     # TODO: Remove occurences of `model$theta`, and replace them with `model$params$theta`
     model$theta <- params$theta # an ugly design decision, that was made at the very start
-
-    model$lenThetaLabel      <- params$lenThetaLabel
-    model$totalLenThetaLabel <- params$totalLenThetaLabel
-    model$lenThetaCov        <- params$lenThetaCov
-    model$lenThetaMain       <- params$lenThetaMain
-    model$groupLabelIndices  <- params$groupLabelIndices
-    model$groupParamIndices  <- params$groupParamIndices
 
     model$params$bounds <- getParamBounds(model)
     model$params$gradientStruct <- getGradientStruct(model, theta = params$theta)
@@ -681,9 +701,9 @@ finalizeModelEstimatesDA <- function(model,
   finalModel <- fillModel(model, theta, fillPhi = (method == "lms"), method = method)
 
   # keep NA "skeletons" for printing and SE attachment
-  emptyModel <- getEmptyModel(parTable = model$parTable,
-                              cov.syntax = model$cov.syntax,
-                              parTableCovModel = model$covModel$parTable,
+  emptyModel <- getEmptyModel(group.info = model$info$group.info,
+                              cov.syntax = model$models[[1L]]$cov.syntax,
+                              parTableCovModel = model$models[[1L]]$covModel$parTable,
                               mean.observed = model$info$mean.observed,
                               method = method)
   finalModel$matricesNA <- emptyModel$matrices
