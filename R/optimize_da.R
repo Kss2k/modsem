@@ -456,8 +456,8 @@ parameterEstimatesLavSAM <- function(syntax,
   struct <- lavaan::parameterEstimates(fitSAM)
 
   addcol <- \(pt, col, val) if (!col %in% colnames(pt)) {pt[[col]] <- val; pt} else pt
-  cols.x <- c("lhs", "op", "rhs")
-  cols.y <- c("label", "group", "est")
+  cols.x <- c("lhs", "op", "rhs", "group")
+  cols.y <- c("label", "est")
   cols   <- c(cols.x, cols.y)
 
   measr  <- addcol(measr, col = "label", val = "")

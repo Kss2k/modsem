@@ -529,9 +529,8 @@ print.summary_da <- function(x, digits = 3, ...) {
     names     <- names(r.squared)
 
     label_h1 <- "R-Squared Interaction Model (H1)"
-    if (length(x$N) > 1) {
-      label_h1 <- paste0(label_h1, " (weighted)")
-    }
+    if (length(x$N) > 1) label_h1 <- paste0(label_h1, " (weighted)")
+
     cat(label_h1, ":\n", sep = "")
     cat(allignLhsRhs(lhs = names, rhs = r.squared,
 										 pad = "  ", width.out = width.out))
@@ -541,9 +540,8 @@ print.summary_da <- function(x, digits = 3, ...) {
 			names.h0     <- names(r.squared.h0)
 
       label_h0 <- "R-Squared Baseline Model (H0)"
-      if (length(x$N) > 1) {
-      label_h0 <- paste0(label_h0, " (sample-size weighted across groups)")
-    }
+      if (length(x$N) > 1) label_h0 <- paste0(label_h0, " (weighted)")
+
 			cat(label_h0, ":\n", sep = "")
       cat(allignLhsRhs(lhs = names.h0, rhs = r.squared.h0, pad = "  ",
                        width.out = width.out))

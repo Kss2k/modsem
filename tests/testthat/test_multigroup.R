@@ -14,7 +14,7 @@ m2 <- '
   a1==a2
 '
 
-est <- modsem(m2, oneIntMG, method = "qml", group = "group")
+est <- modsem(m2, oneIntMG, method = "qml", group = "group", robust.se = TRUE)
 summary(est)
 #> Error in prettyNum(.Internal(format(x, trim, digits, nsmall, width, 3L, 
 #>  : 
@@ -57,7 +57,10 @@ m1 <- '
   Y ~ X + Z + X:Z
 '
 
-est <- modsem(m1, oneIntMG, method = "lms", group = "group")
+est.mg <- modsem(m1, oneIntMG, method = "lms", group = "group", robust.se = TRUE)
+est.g1 <- modsem(m1, subset(oneIntMG, group == "G1"), method = "qml", robust.se = TRUE)
+est.g2 <- modsem(m1, subset(oneIntMG, group == "G2"), method = "qml", robust.se = TRUE)
+
 #> Iter=161 Mode=EM LogLik=-17477.99 ΔLL=3.2e-05 relΔLL=1.8e-09              
 #> 
 #> Warning: Model estimation failed, returning starting values!

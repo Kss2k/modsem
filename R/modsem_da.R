@@ -450,7 +450,8 @@ modsem_da <- function(model.syntax = NULL,
           auto.fix.first     = auto.fix.first,
           auto.fix.single    = auto.fix.single,
           auto.split.syntax  = auto.split.syntax,
-          cr1s               = cr1s
+          cr1s               = cr1s,
+          group              = group
         )
     )
 
@@ -464,19 +465,18 @@ modsem_da <- function(model.syntax = NULL,
   data.input <- data
   data       <- group.info$data
 
-  args$group.levels <- group.info$levels
-  args$group.var    <- group.info$group_var
-  args$n.groups     <- group.info$n.groups
-
   stopif(!method %in% c("lms", "qml"), "Method must be either 'lms' or 'qml'")
 
   stopif(!is.null(cov.syntax) && args$n.groups > 1L,
          "cov.syntax should not be specified manually in multigroup models!")
 
   parTable <- modsemify(model.syntax)
-  group.info$parTable <- parTable
+  group.info$parTable.orig <- parTable
+
   group_levels <- group.info$levels
   if (is.null(group_levels)) group_levels <- ""
+
+  group.info$group_levels <- group_levels 
   group.info$parTable <- expandParTableByGroup(parTable, group_levels = group_levels)
 
   model <- specifyModelDA(

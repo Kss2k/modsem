@@ -28,16 +28,16 @@ logLikQml <- function(theta, model, sum = TRUE, sign = -1, verbose = FALSE) {
 
   ll <- 0
   for (g in seq_len(model$info$n.groups))
-    ll <- ll + logLikQmlGroup(modelFilled$models[[g]], sum = sum)
+    ll <- ll + logLikQmlGroup(modelFilled$models[[g]], sum = sum, sign = sign)
   
   if (verbose)
-    incrementIterations(ll)
+    incrementIterations(sign * ll)
 
-  sign * ll
+  ll
 }
 
 
-logLikQmlGroup <- function(submodel, sum = TRUE) {
+logLikQmlGroup <- function(submodel, sum = TRUE, sign = -1) {
   numXi       <- submodel$info$numXis
   numEta      <- submodel$info$numEtas
   kOmegaEta   <- submodel$info$kOmegaEta
@@ -113,7 +113,7 @@ logLikQmlGroup <- function(submodel, sum = TRUE) {
 
   logLik <- (f2 + f3)
 
-  logLik
+  sign * logLik
 }
 
 
@@ -149,20 +149,35 @@ centerIndicators <- function(X, tau) {
 }
 
 
-gradientLogLikQml <- function(theta, model, epsilon = 1e-8, sign = -1, .f = logLikQml, ...) {
+gradientLogLikQml <- function(theta, model, epsilon = 1e-8, sign = -1, .f = logLikQmlGroup, sum = TRUE, ...) {
   params <- model$params
 
   SELECT_THETA_LAB  <- params$SELECT_THETA_LAB
   SELECT_THETA_COV  <- params$SELECT_THETA_COV
   SELECT_THETA_MAIN <- params$SELECT_THETA_MAIN
 
-  f0 <- .f(theta = theta, model = model, sign = sign, ...)
-  n  <- length(f0)
+  N <- vapply(model$models, FUN.VALUE = numeric(1L), FUN = \(sub) sub$data$n)
+  N.start <- c(1, cumsum(N)[-length(N)] + 1L)
+  N.end   <- cumsum(N)
+
+  if (sum) n <- 1L
+  else     n <- sum(N)
+
   k  <- length(theta)
 
-  grad <- matrix(0, n = k, ncol = n, dimnames = list(names(theta), NULL))
+  grad <- matrix(0, n = n, ncol = k, dimnames = list(NULL, names(theta)))
+
+  .fg <- function(theta, g) {
+    modFilled <- fillModel(theta = theta, model = model, method = "qml")
+    .f(submodel = modFilled$models[[g]], sign = sign, sum = sum, ...)
+  }
 
   for (g in seq_len(model$info$n.groups)) {
+    f0 <- .fg(theta = theta, g = g)
+
+    if (sum) J <- 1L 
+    else     J <- seq(N.start[[g]], N.end[[g]], by = 1L)
+
     indices <- c(
       SELECT_THETA_LAB[[g]],
       SELECT_THETA_COV[[g]],
@@ -173,12 +188,12 @@ gradientLogLikQml <- function(theta, model, epsilon = 1e-8, sign = -1, .f = logL
       theta_i <- theta
       theta_i[i] <- theta_i[i] + epsilon
 
-      fi <- .f(theta = theta_i, model = model, sign = sign, ...)
-      grad[i, ] <- grad[i, ] + (fi - f0) / epsilon
+      fi <- .fg(theta_i, g = g)
+      grad[J, i] <- grad[J, i] + (fi - f0) / epsilon
     }
   }
 
-  if (n == 1L) as.vector(grad) else t(grad)
+  if (n == 1L) as.vector(grad) else grad
 }
 
 
@@ -196,16 +211,14 @@ gradientLogLikQml_i <- function(theta, model, sign = -1, epsilon = 1e-8) {
 
 
 hessianLogLikQml <- function(theta, model, sign = -1, .relStep = .Machine$double.eps ^ (1/5),
-                             .f = logLikQml) {
+                             .f = logLikQmlGroup) {
   params <- model$params
 
   SELECT_THETA_LAB  <- params$SELECT_THETA_LAB
   SELECT_THETA_COV  <- params$SELECT_THETA_COV
   SELECT_THETA_MAIN <- params$SELECT_THETA_MAIN
 
-  f0 <- .f(theta = theta, model = model, sign = sign)
-  k  <- length(theta)
-
+  k <- length(theta)
   H <- matrix(0, n = k, ncol = k, dimnames = list(names(theta), names(theta)))
 
   for (g in seq_len(model$info$n.groups)) {
@@ -217,7 +230,8 @@ hessianLogLikQml <- function(theta, model, sign = -1, .relStep = .Machine$double
 
     .fg <- function(theta_g) {
       theta[indices] <- theta_g # local copy of theta
-      .f(theta = theta, model = model, sign = sign)
+      modFilled <- fillModel(theta = theta, model = model, method = "qml")
+      .f(submodel = modFilled$models[[g]], sign = sign, sum = TRUE)
     }
 
     theta_g <- theta[indices]

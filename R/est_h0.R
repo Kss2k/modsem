@@ -48,10 +48,10 @@ estimate_h0 <- function(object, warn_no_interaction = TRUE, ...) {
 #' @export
 estimate_h0.modsem_da <- function(object, warn_no_interaction = TRUE, ...) {
   argList    <- object$args
-  parTable   <- object$originalParTable
-  data       <- object$data$data.full
+  parTable   <- object$model$info$group.info$parTable.orig
+  data       <- object$model$data.raw
   method     <- object$method
-  cov.syntax <- object$model$covModel$syntax
+  cov.syntax <- object$model$models[[1L]]$covModel$syntax
 
   newArgList <- list(...)
   newArgNames <- intersect(names(argList), names(newArgList))

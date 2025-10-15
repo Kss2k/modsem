@@ -791,3 +791,8 @@ splitCLabels <- function(labels) {
     }
   }), use.names = FALSE)
 }
+
+
+MAX <- function(x) {
+  if (!length(x)) 0 else max(x, na.rm = TRUE)
+}

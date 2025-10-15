@@ -32,7 +32,8 @@ calcFIM_da <- function(model,
     }
   }
 
-  cluster.vec <- if (robust.se) collectCluster(data) else NULL
+  DATA <- lapply(model$models, FUN = \(sub) sub$data)
+  cluster.vec <- if (robust.se) collectCluster(DATA) else NULL
 
   I <- switch(method,
      lms =
@@ -398,7 +399,7 @@ getSE_Model <- function(model, se, method, n.additions) {
     SELECT_THETA_COV  <- params$SELECT_THETA_COV[[g]]
     SELECT_THETA_MAIN <- params$SELECT_THETA_MAIN[[g]]
 
-    SELECT_THETA_LAB  <- seq_len(max(SELECT_THETA_LAB) + n.additions)
+    SELECT_THETA_LAB  <- seq_len(MAX(SELECT_THETA_LAB) + n.additions)
     SELECT_THETA_COV  <- SELECT_THETA_COV  + n.additions
     SELECT_THETA_MAIN <- SELECT_THETA_MAIN + n.additions
 
