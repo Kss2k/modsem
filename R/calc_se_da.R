@@ -117,10 +117,8 @@ calcHessian <- function(model, theta, data, method = "lms",
   } else if (method == "qml") {
     # negative hessian (sign = -1)
     suppressWarnings({
-
-    H <- fdHESS(pars = theta, fun = logLikQml, model = model,
-                sign = -1, .relStep = .Machine$double.eps^(1/5))
-
+      H <- hessianLogLikQml(theta = theta, model = model,
+                            sign = -1, .relStep = .Machine$double.eps^(1/5))
     })
   }
 
@@ -344,7 +342,7 @@ calcOFIM_QML <- function(model, theta, data, hessian = FALSE,
                          robust.se = FALSE,
                          cluster   = NULL,
                          cr1s      = TRUE) {
-  N <- nrow(model$data)
+  N <- sum(vapply(model$models, FUN.VALUE = numeric(1L), FUN = \(sub) NROW(sub$data)))
 
   if (hessian) {
     # negative hessian (sign = -1)

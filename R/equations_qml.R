@@ -28,16 +28,16 @@ logLikQml <- function(theta, model, sum = TRUE, sign = -1, verbose = FALSE) {
 
   ll <- 0
   for (g in seq_len(model$info$n.groups))
-    ll <- ll + logLikQmlGroup(modelFilled$models[[g]], sum = sum, sign = sign)
+    ll <- ll + logLikQmlGroup(modelFilled$models[[g]], sum = sum)
   
   if (verbose)
     incrementIterations(ll)
 
-  ll
+  sign * ll
 }
 
 
-logLikQmlGroup <- function(submodel, sum = TRUE, sign = -1, verbose = FALSE) {
+logLikQmlGroup <- function(submodel, sum = TRUE) {
   numXi       <- submodel$info$numXis
   numEta      <- submodel$info$numEtas
   kOmegaEta   <- submodel$info$kOmegaEta
@@ -113,7 +113,7 @@ logLikQmlGroup <- function(submodel, sum = TRUE, sign = -1, verbose = FALSE) {
 
   logLik <- (f2 + f3)
 
-  sign * logLik
+  logLik
 }
 
 
@@ -173,7 +173,7 @@ gradientLogLikQml <- function(theta, model, epsilon = 1e-8, sign = -1, .f = logL
       theta_i <- theta
       theta_i[i] <- theta_i[i] + epsilon
 
-      fi <- .f(theta = theta_i, model = model, sign = sign)
+      fi <- .f(theta = theta_i, model = model, sign = sign, ...)
       grad[i, ] <- grad[i, ] + (fi - f0) / epsilon
     }
   }
@@ -192,6 +192,41 @@ logLikQml_i <- function(theta, model, sign = -1) {
 # gradient function of logLikQml_i
 gradientLogLikQml_i <- function(theta, model, sign = -1, epsilon = 1e-8) {
   gradientLogLikQml(theta = theta, model = model, sign = sign, epsilon = epsilon, sum = FALSE)
+}
+
+
+hessianLogLikQml <- function(theta, model, sign = -1, .relStep = .Machine$double.eps ^ (1/5),
+                             .f = logLikQml) {
+  params <- model$params
+
+  SELECT_THETA_LAB  <- params$SELECT_THETA_LAB
+  SELECT_THETA_COV  <- params$SELECT_THETA_COV
+  SELECT_THETA_MAIN <- params$SELECT_THETA_MAIN
+
+  f0 <- .f(theta = theta, model = model, sign = sign)
+  k  <- length(theta)
+
+  H <- matrix(0, n = k, ncol = k, dimnames = list(names(theta), names(theta)))
+
+  for (g in seq_len(model$info$n.groups)) {
+    indices <- c(
+      SELECT_THETA_LAB[[g]],
+      SELECT_THETA_COV[[g]],
+      SELECT_THETA_MAIN[[g]]
+    )
+
+    .fg <- function(theta_g) {
+      theta[indices] <- theta_g # local copy of theta
+      .f(theta = theta, model = model, sign = sign)
+    }
+
+    theta_g <- theta[indices]
+    Hg <- fdHESS(pars = theta_g, fun = .fg, .relStep = .Machine$double.eps^(1/5))
+
+    H[indices, indices] <- H[indices, indices] + Hg
+  }
+
+  H
 }
 
 
