@@ -120,3 +120,16 @@ testthat::expect_no_warning(
 testthat::expect_no_warning(
  modsem(m1, oneInt, res.cov.method = "equality")
 )
+
+m1 <- '
+  # Outer Model
+  X =~ x1 + x2 +x3
+  Y =~ NA*y1 + y*y1 + y*y2 + y*y3
+  Z =~ z1 + z2 + z3
+  Y ~~ 1*Y
+  # Inner model
+  Y ~ X + Z + X:Z
+'
+
+fit <- modsem(m1, oneInt, method = "dblcent")
+summary(fit)
