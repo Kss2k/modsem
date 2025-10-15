@@ -277,7 +277,7 @@ constructA <- function(xis, method = "lms", cov.syntax = NULL,
     if (!any(is.na(A$numeric))) {
       Phi <- A$numeric
       Phi[upper.tri(Phi)] <- t(Phi)[upper.tri(Phi)]
-      A$numeric <- t(chol(Phi))
+      A$numeric <- tryCatch(t(chol(Phi)), error = \(e) A$numeric)
     }
 
     A

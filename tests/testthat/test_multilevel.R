@@ -130,6 +130,11 @@ level: 1
   y2 ~1
   y3 ~1
 
+  X~~X
+  Z~~Z
+  Y~~Y
+  X~~Z
+
 level: 2 # random slopes + random intercepts
   Y ~ 1 + X + Z # + X:Z
 '
@@ -150,5 +155,4 @@ data <- sim_data(N = 2500, K = 20)
 #> Fixed Effects:
 #> (Intercept)            X            Z  
 #>     -0.1130       0.3351       0.4848  
-
-multilevel_lms(mlm.model, data = data, cluster = "cluster")
+fit.mlm <- multilevel_lms(mlm.model, data = data, cluster = "cluster", max.iter = 2000)
