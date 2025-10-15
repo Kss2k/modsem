@@ -14,7 +14,7 @@ m2 <- '
   a1==a2
 '
 
-est <- modsem(m2, oneIntMG, method = "lms", group = "group")
+est <- modsem(m2, oneIntMG, method = "qml", group = "group")
 summary(est)
 #> Error in prettyNum(.Internal(format(x, trim, digits, nsmall, width, 3L, 
 #>  : 
