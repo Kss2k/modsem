@@ -37,7 +37,8 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    auto.fix.single = TRUE,
                    auto.split.syntax = FALSE,
                    cr1s = FALSE,
-                   group = NULL
+                   group = NULL,
+                   multilevel.free.pars = FALSE
         ),
         qml = list(verbose = interactive(),
                    optimize = TRUE,
@@ -76,7 +77,8 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    auto.fix.single = TRUE,
                    auto.split.syntax = TRUE,
                    cr1s = FALSE,
-                   group = NULL
+                   group = NULL,
+                   multilevel.free.pars = FALSE
         )
     )
 

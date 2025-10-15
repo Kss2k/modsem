@@ -138,8 +138,9 @@ emLms <- function(model,
         }, error = \(e) {
           warning2("Optimized computation of gradient failed! Switching gradient type.\n",
                    "Message: ", conditionMessage(e))
-          model$gradientStruct$hasCovModel <<- TRUE
-          model$gradientStruct$isNonLinear <<- TRUE
+          model$params$gradientStruct$hasCovModel <<- TRUE
+          model$params$gradientStruct$isNonLinear <<- TRUE
+
         })
         testSimpleGradient <- FALSE
       }

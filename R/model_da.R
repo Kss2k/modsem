@@ -320,7 +320,7 @@ specifModelDA_Group <- function(syntax = NULL,
 }
 
 
-specifyModelDA <- function(..., data.raw = NULL, group.info, createTheta = TRUE) {
+specifyModelDA <- function(..., multilevel.free.pars = FALSE, data.raw = NULL, group.info, createTheta = TRUE) {
   args <- list(...)
 
   n.groups <- group.info$n.groups
@@ -356,6 +356,10 @@ specifyModelDA <- function(..., data.raw = NULL, group.info, createTheta = TRUE)
     data.raw = data.raw,
     parTable = parTable,
     info     = list(
+      # Multilevel
+      multilevel.free.pars = multilevel.free.pars,
+
+      # Multigroup
       n.groups      = n.groups,
       group.levels  = group.info$levels,
       group.info    = group.info,

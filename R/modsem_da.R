@@ -324,6 +324,7 @@ modsem_da <- function(model.syntax = NULL,
                       auto.fix.first = NULL,
                       auto.fix.single = NULL,
                       auto.split.syntax = NULL,
+                      multilevel.free.pars = NULL,
                       ...) {
   if (is.null(model.syntax)) {
     stop2("No model.syntax provided")
@@ -382,6 +383,7 @@ modsem_da <- function(model.syntax = NULL,
        auto.fix.first      = auto.fix.first,
        auto.fix.single     = auto.fix.single,
        auto.split.syntax   = auto.split.syntax,
+       multilevel.free.pars = multilevel.free.pars,
        ...)
 
     return(out)
@@ -451,7 +453,8 @@ modsem_da <- function(model.syntax = NULL,
           auto.fix.single    = auto.fix.single,
           auto.split.syntax  = auto.split.syntax,
           cr1s               = cr1s,
-          group              = group
+          group              = group,
+          multilevel.free.pars = multilevel.free.pars
         )
     )
 
@@ -499,7 +502,8 @@ modsem_da <- function(model.syntax = NULL,
     auto.split.syntax  = args$auto.split.syntax,
     cluster            = cluster,
     group.info         = group.info,
-    data.raw           = data.input
+    data.raw           = data.input,
+    multilevel.free.pars = args$multilevel.free.pars
   )
 
   if (args$optimize) {

@@ -15,6 +15,19 @@ estepLms <- function(model, theta, lastQuad = NULL, recalcQuad = FALSE,
   P$quad  <- lapply(P$P_GROUPS, FUN = \(P) P$quad)
   P$obsLL <- sum(vapply(P$P_GROUPS, FUN.VALUE = numeric(1L), FUN = \(P) P$obsLL))
 
+  if (model$info$multilevel.free.pars) {
+    SELECT_THETA_MAIN <- model$params$SELECT_THETA_MAIN # assumes the structure is fixed
+    THETA_MAIN <- do.call(rbind, lapply(SELECT_THETA_MAIN, FUN = \(idx) theta[idx]))
+
+    Mu    <- apply(THETA_MAIN, MARGIN = 2, FUN = mean)
+    Sigma <- stats::cov(THETA_MAIN)
+
+    P$multilevel$Mu <- Mu
+    P$multilevel$Sigma <- Sigma
+
+    P$obsLL <- P$obsLL + sum(dmvn(THETA_MAIN, mean = Mu, sigma = Sigma, log = TRUE))
+  }
+
   P
 }
 
@@ -177,6 +190,17 @@ compLogLikLms <- function(theta, model, P, sign = -1, ...) {
       )
     }
 
+
+    if (model$info$multilevel.free.pars) {
+      Sigma <- P$multilevel$Sigma
+      Mu    <- P$multilevel$Mu
+
+      SELECT_THETA_MAIN <- model$params$SELECT_THETA_MAIN # assumes the structure is fixed
+      THETA_MAIN <- do.call(rbind, lapply(SELECT_THETA_MAIN, FUN = \(idx) theta[idx]))
+
+      ll <- ll + sum(dmvn(THETA_MAIN, mean = Mu, sigma = Sigma, log = TRUE))
+    }
+
     sign * ll
 
   }, error = \(e) NA)
@@ -269,7 +293,40 @@ simpleGradientAllLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-
     }
   }
 
-  sign * Jacobian %*% grad
+  grad <- Jacobian %*% grad
+
+  grad.backup <- grad
+  if (model$info$multilevel.free.pars) {
+    Sigma <- P$multilevel$Sigma
+    Mu    <- P$multilevel$Mu
+    
+    SELECT_THETA_MAIN <- model$params$SELECT_THETA_MAIN # assumes the structure is fixed
+    
+    .f <- function(theta.free.g) {
+      dmvn(matrix(theta.free.g, nrow = 1L), mean = Mu, sigma = Sigma, log = TRUE)
+    }
+
+    # this can probably be vectorized
+    for (g in seq_len(model$info$n.groups)) {
+      theta.free.g <- theta[SELECT_THETA_MAIN[[g]]]
+      grad.theta.free.g <- numeric(length(theta.free.g))
+
+      f0 <- .f(theta.free.g)
+
+      for (i in seq_along(theta.free.g)) {
+        theta.free.gi <- theta.free.g
+        theta.free.gi[i] <- theta.free.gi[i] + epsilon
+     
+        fi <- .f(theta.free.gi)
+
+        grad.theta.free.g[i] <- (fi - f0) / epsilon
+      }
+
+      grad[SELECT_THETA_MAIN[[g]], ] <- grad[SELECT_THETA_MAIN[[g]], ] + grad.theta.free.g
+    }
+  }
+
+  sign * grad
 }
 
 
@@ -290,6 +347,16 @@ obsLogLikLms <- function(theta, model, P, sign = 1, ...) {
                                  npatterns = data_g$p,
                                  ncores = ThreadEnv$n.threads)
     ll <- ll + ll_g
+  }
+    
+  if (model$info$multilevel.free.pars) {
+    Sigma <- P$multilevel$Sigma
+    Mu    <- P$multilevel$Mu
+
+    SELECT_THETA_MAIN <- model$params$SELECT_THETA_MAIN # assumes the structure is fixed
+    THETA_MAIN <- do.call(rbind, lapply(SELECT_THETA_MAIN, FUN = \(idx) theta[idx]))
+
+    ll <- ll + sum(dmvn(THETA_MAIN, mean = Mu, sigma = Sigma, log = TRUE))
   }
 
   sign * ll
