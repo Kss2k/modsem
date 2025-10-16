@@ -145,8 +145,28 @@ simple_slopes <- function(x,
     parTable <- standardized_estimates(model, correction = TRUE)
   } else parTable <- parameter_estimates(model)
 
-  parTable <- getMissingLabels(parTable)
+  parTable <- getMissingLabels(getMissingGroups(parTable))
 
+  out <- list()
+  group.label <- tryCatch(modsem_inspect(model, what = "group.label"), error = \(e) NULL)
+
+  for (g in getGroupsParTable(parTable)) {
+    label      <- tryCatch(group.label[[g]], error = \(e) "NA")
+    parTable_g <- parTable[parTable$group == g, , drop = FALSE]
+
+    out[[label]] <- simpleSlopesGroup(
+      x = x, z = z, y = y, parTable = parTable_g, model = model, vals_x = vals_x,
+      vals_z = vals_z, rescale = rescale, ci_width = ci_width,
+      relative_h0 = relative_h0, xz = xz, ...
+    )
+  }
+
+  structure(out, class = "simple_slopes")
+}
+
+
+simpleSlopesGroup <- function(x, z, y, parTable, model, vals_x, vals_z, rescale,
+                              ci_width, ci_type, relative_h0, xz, ...) {
   if (is.null(xz))
     xz <- paste(x, z, sep = ":")
 
@@ -300,14 +320,11 @@ simple_slopes <- function(x,
     ci.upper = diff + ci.sig * std.error_diff
   )
 
-  structure(
-    list(
-      variable_names = c(x = x, z = z, y = y),
-      margins = df,
-      sig.slopes = sig.slopes,
-      sig.diff_min_max = sig.diff_min_max
-    ),
-    class = "simple_slopes"
+  list(
+    variable_names = c(x = x, z = z, y = y),
+    margins = df,
+    sig.slopes = sig.slopes,
+    sig.diff_min_max = sig.diff_min_max
   )
 }
 

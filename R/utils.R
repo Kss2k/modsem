@@ -802,3 +802,14 @@ splitCLabels <- function(labels) {
 MAX <- function(x) {
   if (!length(x)) 0 else max(x, na.rm = TRUE)
 }
+
+
+getMissingGroups <- function(parTable) {
+  if ("group" %in% colnames(parTable))
+    return(parTable)
+
+  parTable$group <- 1L
+  parTable[parTable$op %in% CONSTRAINT_OPS, "group"] <- 0L
+
+  parTable
+}

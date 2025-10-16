@@ -18,11 +18,11 @@ modsem_inspect_da <- function(model, what = "default") {
   group.names <- names(groupModels)
   if (!length(group.names) || any(!nzchar(group.names))) {
     level.names <- finalModel$info$group.levels
-    if (!is.null(level.names) && length(level.names) == n.groups) {
+
+    if (!is.null(level.names) && length(level.names) == n.groups)
       group.names <- level.names
-    } else {
+    else
       group.names <- paste0("Group", seq_len(n.groups))
-    }
   }
 
   expected.raw <- model$expected.matrices
@@ -197,6 +197,10 @@ modsem_inspect_da <- function(model, what = "default") {
                loglik            = model$logLik,
                iterations        = model$iterations,
                convergence       = model$convergence,
+
+               ngroups     = model$model$info$n.groups,
+               group       = model$model$args$group,
+               group.label = group.names,
 
                lambda       = lambda.val,
                tau          = tau.val,
