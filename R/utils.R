@@ -502,9 +502,15 @@ getParTableLabels <- function(parTable, labelCol="label", replace.dup = FALSE) {
   custom <- parTable$op == ":="
   parTable[custom, c("op", "rhs")] <- ""
 
-  ifelse(parTable[[labelCol]] == "",
-         yes = paste0(parTable$lhs, parTable$op, parTable$rhs),
-         no = parTable[[labelCol]])
+  group      <- parTable$group
+  new.labels <- paste0(parTable$lhs, parTable$op, parTable$rhs)
+
+  if (!is.null(group))
+    new.labels <- ifelse(group > 1L,
+                         yes = paste0(new.labels, ".g", group),
+                         no = new.labels)
+
+  ifelse(parTable[[labelCol]] == "", yes = new.labels, no = parTable[[labelCol]])
 }
 
 
