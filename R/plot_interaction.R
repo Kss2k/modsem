@@ -133,13 +133,20 @@ plot_interaction <- function(x, z, y, model, vals_x = seq(-3, 3, .001),
   ci.upper  <- df$ci.upper
 
   # plotting margins
-  ggplot2::ggplot(df, ggplot2::aes(x = vals_x, y = predicted, colour = cat_z, group = cat_z)) +
+  p <- ggplot2::ggplot(df, ggplot2::aes(x = vals_x, y = predicted, colour = cat_z, group = cat_z)) +
     ggplot2::geom_line() +
     ggplot2::geom_ribbon(ggplot2::aes(ymin = ci.lower, ymax = ci.upper, fill = cat_z),
                          alpha = alpha_se, linewidth = 0, linetype = "blank") +
     ggplot2::labs(x = x, y = y, colour = z, fill = z) +
     ggplot2::ggtitle(sprintf("Marginal Effects of %s on %s, Given %s", x, y, z)) +
     ggplot2::theme_bw()
+
+  if (length(unique(df$group)) > 1L) {
+    group <- NULL # stop R CMD check from complaining about `~group`
+    p <- p + ggplot2::facet_wrap(~group)
+  }
+
+  p
 }
 
 
