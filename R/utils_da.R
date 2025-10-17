@@ -371,16 +371,27 @@ getEmptyModel <- function(group.info, cov.syntax, parTableCovModel,
   group.info$parTable <- removeConstraintExpressions(group.info$parTable)
   group.info["data"]  <- list(data = NULL)
 
-  if (NROW(parTableCovModel)) {
+  if (!is.null(cov.syntax) && is.null(parTableCovModel)) {
+    parTableCovModelOrig <- modsemify(cov.syntax)
+    
+    parTableCovModel <- expandParTableByGroup(
+      parTableCovModelOrig, group.levels = group.info$group.levels
+    )
+
+    group.info$parTableCov.orig <- parTableCovModelOrig
+    group.info$parTableCov      <- parTableCovModel
+
+  } else if (NROW(parTableCovModel)) {
     parTableCovModel$mod <- ""
     parTableCovModel <- removeConstraintExpressions(parTableCovModel)
+
+    group.info$parTableCov <- parTableCovModel
   }
 
   specifyModelDA(
     group.info       = group.info,
     method           = method,
     cov.syntax       = cov.syntax,
-    parTableCovModel = parTableCovModel,
     mean.observed    = mean.observed,
     auto.fix.first   = FALSE,
     auto.fix.single  = FALSE,
@@ -1335,16 +1346,27 @@ expandParTableByGroup <- function(parTable, group.levels) {
 }
 
 
-getGroupInfo <- function(model.syntax, cov.syntax, data, group) {
+getGroupInfo <- function(model.syntax, cov.syntax, data, group,
+                         auto.split.syntax = FALSE) {
   group.info <- prepareDataGroupDA(group = group, data = data)
+
+  parTable    <- modsemify(model.syntax)
+  parTableCov <- modsemify(cov.syntax)
+
+  if (auto.split.syntax && is.null(parTableCov) && is.null(cov.syntax)) {
+    split <- splitParTable(parTable)
+
+    parTable    <- split$parTable
+    parTableCov <- split$parTableCov
+
+    syntax     <- parTableToSyntax(parTable)
+    cov.syntax <- parTableToSyntax(parTableCov)
+  }
 
   group.info$syntax     <- model.syntax
   group.info$cov.syntax <- cov.syntax
 
-  parTable <- modsemify(model.syntax)
-  group.info$parTable.orig <- parTable
-
-  parTableCov <- modsemify(cov.syntax)
+  group.info$parTable.orig    <- parTable
   group.info$parTableCov.orig <- parTableCov
 
   group.levels <- group.info$levels

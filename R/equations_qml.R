@@ -48,7 +48,7 @@ logLikQmlGroup <- function(submodel, sum = TRUE, sign = -1) {
   m$numXi     <- numXi
   m$kOmegaEta <- kOmegaEta
 
-  m$tauX      <- m$tauX + m$lambdaX %*% m$beta0
+  m$tauX <- m$tauX + m$lambdaX %*% m$beta0
   m$x <- submodel$data$data.full[, submodel$info$allIndsXis, drop = FALSE]
   m$y <- submodel$data$data.full[, submodel$info$allIndsEtas, drop = FALSE]
   m$x <- centerIndicators(m$x, tau = m$tauX)

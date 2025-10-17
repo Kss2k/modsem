@@ -462,10 +462,11 @@ modsem_da <- function(model.syntax = NULL,
     data <- lapplyDf(data, FUN = scaleIfNumeric, scaleFactor = FALSE)
 
   group.info <- getGroupInfo(
-    model.syntax = model.syntax,
-    cov.syntax   = cov.syntax,
-    data         = data,
-    group        = group
+    model.syntax       = model.syntax,
+    cov.syntax         = cov.syntax,
+    data               = data,
+    group              = group,
+    auto.split.syntax  = args$auto.split.syntax
   )
 
   stopif(!method %in% c("lms", "qml"), "Method must be either 'lms' or 'qml'")
@@ -484,7 +485,6 @@ modsem_da <- function(model.syntax = NULL,
     orthogonal.y       = args$orthogonal.y,
     auto.fix.first     = args$auto.fix.first,
     auto.fix.single    = args$auto.fix.single,
-    auto.split.syntax  = args$auto.split.syntax,
     cluster            = cluster
   )
 

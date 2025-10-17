@@ -813,3 +813,9 @@ getMissingGroups <- function(parTable) {
 
   parTable
 }
+
+
+addNamedNullField <- function(x, field) {
+  x[field] <- stats::setNames(list(field = NULL), nm = field)
+  x
+}

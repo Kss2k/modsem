@@ -20,20 +20,9 @@ specifModelDA_Group <- function(syntax = NULL,
                                 missing = "complete",
                                 orthogonal.x = FALSE,
                                 orthogonal.y = FALSE,
-                                auto.split.syntax = FALSE,
                                 cluster = NULL) {
   if (is.null(parTable) && !is.null(syntax)) parTable <- modsemify(syntax)
   stopif(is.null(parTable), "No parTable found")
-
-  if (auto.split.syntax && is.null(parTableCovModel) && is.null(cov.syntax)) {
-    split <- splitParTable(parTable)
-
-    parTable         <- split$parTable
-    parTableCovModel <- split$parTableCov
-
-    syntax     <- parTableToSyntax(parTable)
-    cov.syntax <- parTableToSyntax(parTableCovModel)
-  }
 
   checkParTableDA(parTable, method = method)
   # additions to lavaan-syntax for optimizer
@@ -44,7 +33,7 @@ specifModelDA_Group <- function(syntax = NULL,
   indsHigherOrderLVs <- getIndsLVs(parTable, lVs = higherOrderLVs, isOV = FALSE)
   ovs <- getOVs(parTable)
 
-  # endogenous variables (etas)model
+  # endogenous variables (etas)
   etas    <- getSortedEtas(parTable, isLV = TRUE, checkAny = TRUE)
   numEtas <- length(etas)
 
@@ -344,14 +333,14 @@ specifyModelDA <- function(..., group.info, createTheta = TRUE) {
     if (!is.null(group.info$data))
       args_g$data <- group.info$data[group.info$indices[[g]], , drop = FALSE]
     else
-      args_g["data"] <- list(data = NULL)
+      args_g <- addNamedNullField(args_g, field = "data")
 
     args_g$parTable <- parTable[parTable$group == g, , drop = FALSE]
 
     if (!is.null(parTableCov))
       args_g$parTableCovModel <- parTableCov[parTableCov$group == g, , drop = FALSE]
     else
-      args_g["parTableCovModel"] <- list(parTableCovModel = NULL)
+      args_g <- addNamedNullField(args_g, field = "parTableCovModel")
 
     submodel_g <- do.call(specifModelDA_Group, args_g)
     submodel_g$info$group <- group.info$levels[[g]]
