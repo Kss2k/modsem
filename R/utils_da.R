@@ -410,10 +410,14 @@ as.character.matrix <- function(x, empty = TRUE, ...) {
 
 
 replaceNonNaModelMatrices <- function(model, value = -999) {
-  model$matrices <- lapply(model$matrices, function(x) {
+  .fillna <- function(x) {
     x[!is.na(x)] <- value
     x
-  })
+  }
+
+  for (g in seq_along(model$models))
+    model$models[[g]]$matrices <- lapply(model$models[[g]]$matrices, FUN = .fillna)
+
   model
 }
 
