@@ -565,10 +565,14 @@ print.summary_da <- function(x, digits = 3, ...) {
   cat(allignLhsRhs(lhs = names, rhs = values, pad = "  ",
                    width.out = width.out), "\n")
 
-  groups <- getGroupsParTable(x$parTable)
+  groups  <- getGroupsParTable(x$parTable)
+  ngroups <- length(groups)
+
   for (g in groups) {
-    label <- tryCatch(x$group.labels[[g]], error = \(e) NA)
-    printf("Group %d [%s]:\n\n", g, label)
+    if (ngroups > 1L) {
+      label <- tryCatch(x$group.labels[[g]], error = \(e) NA)
+      printf("Group %d [%s]:\n\n", g, label)
+    }
 
     select <- x$parTable$group == g
     if (g == max(groups)) select <- select | x$parTable$group == 0L
