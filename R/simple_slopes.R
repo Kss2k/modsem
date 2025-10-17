@@ -151,12 +151,12 @@ simple_slopes <- function(x,
   group.label <- tryCatch(modsem_inspect(model, what = "group.label"), error = \(e) NULL)
 
   for (g in getGroupsParTable(parTable)) {
-    label      <- tryCatch(group.label[[g]], error = \(e) "NA")
+    label      <- tryCatch(group.label[[g]], error = \(e) as.character(g))
     parTable_g <- parTable[parTable$group == g, , drop = FALSE]
 
     out[[label]] <- simpleSlopesGroup(
       x = x, z = z, y = y, parTable = parTable_g, model = model, vals_x = vals_x,
-      vals_z = vals_z, rescale = rescale, ci_width = ci_width,
+      vals_z = vals_z, rescale = rescale, ci_width = ci_width, ci_type = ci_type,
       relative_h0 = relative_h0, xz = xz, ...
     )
   }
@@ -384,6 +384,21 @@ printTable <- function(x) {
 
 #' @export
 print.simple_slopes <- function(x, digits = 2, scientific.p = FALSE, ...) {
+  if (length(x) <= 1L)
+    return(printSimpleSlopesGroup(x = x[[1L]], digits = digits, scientific.p = scientific.p, ...))
+
+  for (g in names(x)) {
+    printf("%s\n", strrep(H_LINE, getOption("width")))
+    printf("  Group: %s\n", g)
+    printf("%s\n", strrep(H_DLINE, getOption("width")))
+    printSimpleSlopesGroup(x = x[[g]], digits = digits, scientific.p = scientific.p, ...)
+  }
+
+  invisible(x)
+}
+
+
+printSimpleSlopesGroup <- function(x, digits = 2, scientific.p = FALSE, ...) {
   variables  <- x$variable_names
   margins    <- x$margins
   sig.slopes <- x$sig.slopes
@@ -468,12 +483,20 @@ print.simple_slopes <- function(x, digits = 2, scientific.p = FALSE, ...) {
     printTable(Z)
     cat("\n")
   }
+
+  invisible(x)
 }
 
 
 #' @export
 as.data.frame.simple_slopes <- function(x, ...) {
-  x$margins
+  if (length(x) <= 1L)
+    return(x[[1L]]$margins)
+
+  purrr::list_rbind(
+    lapply(X = names(x), FUN = \(g)
+           cbind(x[[g]]$margins, data.frame(group = g)))
+  )
 }
 
 
