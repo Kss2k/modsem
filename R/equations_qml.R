@@ -265,8 +265,8 @@ mstepQml <- function(model,
 
     est <- stats::nlminb(start = theta, objective = logLikQml, model = model,
                          gradient = gradient, sign = -1, verbose = verbose,
-                         upper = model$info$bounds$upper,
-                         lower = model$info$bounds$lower,
+                         upper = model$params$bounds$upper,
+                         lower = model$params$bounds$lower,
                          control = control, ...) |> suppressWarnings()
 
   } else if (optimizer == "L-BFGS-B") {
@@ -275,6 +275,8 @@ mstepQml <- function(model,
 
     est <- stats::optim(par = theta, fn = logLikQml, model = model,
                         gr = gradient, method = optimizer, sign = -1,
+                        upper = model$params$bounds$upper,
+                        lower = model$params$bounds$lower,
                         control = control, ...)
 
     est$objective  <- est$value

@@ -76,8 +76,8 @@ emLms <- function(model,
   fs.matrix    <- match.arg(fs.matrix)
   fs.fd.scheme <- match.arg(fs.fd.scheme)
 
-  theta.lower  <- model$info$bounds$lower
-  theta.upper  <- model$info$bounds$upper
+  theta.lower  <- model$params$bounds$lower
+  theta.upper  <- model$params$bounds$upper
   bounds.all   <- c(theta.lower, theta.upper)
 
   if (all(is.infinite(bounds.all))) {

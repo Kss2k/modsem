@@ -140,16 +140,16 @@ mstepLms <- function(theta, model, P,
     if (is.null(control$iter.max)) control$iter.max <- max.step
     est <- stats::nlminb(start = theta, objective = objective,
                          gradient = gradient,
-                         upper = model$info$bounds$upper,
-                         lower = model$info$bounds$lower, control = control,
+                         upper = model$params$bounds$upper,
+                         lower = model$params$bounds$lower, control = control,
                          ...) |> suppressWarnings()
 
   } else if (optimizer == "L-BFGS-B") {
     if (is.null(control$maxit)) control$maxit <- max.step
     est <- stats::optim(par = theta, fn = objective, gr = gradient,
                         method = optim.method, control = control,
-                        lower = model$info$bounds$lower,
-                        upper = model$info$bounds$upper, ...)
+                        lower = model$params$bounds$lower,
+                        upper = model$params$bounds$upper, ...)
 
     est$objective  <- est$value
     est$iterations <- est$counts[["function"]]
