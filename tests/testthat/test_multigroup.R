@@ -16,6 +16,8 @@ m2 <- '
 
 est <- modsem(m2, oneIntMG, method = "qml", group = "group", robust.se = TRUE)
 summary(est)
+plot_jn(x = "X", z = "Z", y = "Y", model = est)
+plot_interaction(x = "X", z = "Z", y = "Y", model = est, vals_z = c(1, 0))
 #> Error in prettyNum(.Internal(format(x, trim, digits, nsmall, width, 3L, 
 #>  : 
 #>   invalid value 0 for 'digits' argument

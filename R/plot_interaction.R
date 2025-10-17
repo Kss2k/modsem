@@ -211,8 +211,30 @@ plot_jn <- function(x, z, y, model, min_z = -3, max_z = 3,
     parTable <- standardized_estimates(model, correction = TRUE)
   } else parTable <- parameter_estimates(model)
 
-  parTable <- getMissingLabels(parTable)
+  parTable <- getMissingGroups(getMissingLabels(parTable))
 
+  plots <- list()
+  for (g in getGroupsParTable(parTable)) {
+    parTable_g <- parTable[parTable$group == g, , drop = FALSE]
+
+    plots[[g]] <- plotJN_Group(
+      x = x, z = z, y = y, parTable = parTable_g, model = model,
+      min_z = min_z, max_z = max_z, sig.level = sig.level,
+      alpha = alpha, detail = detail, sd.line = sd.line,
+      standardized = standardized, xz = xz, ...
+    )
+  }
+
+  if (length(plots) <= 1L)
+    return(plots[[1L]])
+
+  group.label <- modsem_inspect(model, what = "group.label")
+  ggpubr::ggarrange(plotlist = plots, labels = group.label)
+}
+
+
+plotJN_Group <- function(x, z, y, parTable, model, min_z, max_z, sig.level, alpha,
+                         detail, sd.line, standardized, xz, ...) {
   if (is.null(xz))
     xz <- paste(x, z, sep = ":")
 
