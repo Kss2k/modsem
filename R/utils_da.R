@@ -32,218 +32,6 @@ stripMatrices <- function(matrices, fill = -1) {
 }
 
 
-prepareGroupDA <- function(group, data) {
-  if (is.null(group)) {
-    return(list(
-      has_groups = FALSE,
-      group = NULL,
-      group_raw = NULL,
-      group_var = NULL,
-      levels = NULL,
-      n.groups = 1L,
-      indices = list(seq_len(NROW(data))),
-      data = data
-    ))
-  }
-
-  stopif(!is.data.frame(data), "`data` must be a data.frame when grouping is used.")
-  n <- NROW(data)
-  stopif(n == 0L, "Grouping requires non-empty data.")
-
-  group_raw <- NULL
-  group_var <- NULL
-
-  stopif(length(group) != 1L, "Grouping variable must be of length 1!")
-  stopif(!group %in% names(data),
-         sprintf("Grouping variable '%s' not found in `data`.", group))
-
-  group_raw <- data[[group]]
-  data <- data[, setdiff(names(data), group), drop = FALSE]
-  group_var <- group
-
-  stopif(length(group_raw) != n, "Length of `group` must match the number of rows in `data`.")
-  stopif(any(is.na(group_raw)), "`group` cannot contain missing values.")
-
-  group_raw <- as.character(group_raw) # match lavaan behaviour, ignore factor levels
-  levels_order <- unique(group_raw)
-  group_factor <- factor(group_raw, levels = levels_order)
-
-  levels_group <- levels(group_factor)
-  n.groups <- length(levels_group)
-  indices <- split(seq_len(n), group_factor)
-
-  list(
-    has_groups = n.groups > 1L,
-    group = group_factor,
-    group_raw = group_raw,
-    group_var = group_var,
-    levels = levels_group,
-    n.groups = n.groups,
-    indices = indices,
-    data = data
-  )
-}
-
-
-expandGroupModifier <- function(mod, n.groups) {
-  if (n.groups <= 1L)
-    return(rep(mod, n.groups))
-
-  if (length(mod) == 0L || mod == "")
-    return(rep("", n.groups))
-
-  if (is.na(mod))
-    return(rep(NA_character_, n.groups))
-
-  mod_trim <- trimws(mod)
-  if (!nzchar(mod_trim))
-    return(rep("", n.groups))
-
-  is_c_call <- grepl("^c\\s*\\(", mod_trim) && grepl("\\)$", mod_trim)
-  if (!is_c_call)
-    return(rep(mod_trim, n.groups))
-
-  inside <- substr(mod_trim,
-                   start = regexpr("\\(", mod_trim, perl = TRUE) + 1L,
-                   stop = nchar(mod_trim) - 1L)
-  tokens <- strsplit(inside, ",", fixed = FALSE)[[1]]
-  tokens <- trimws(tokens)
-
-  if (!length(tokens)) {
-    tokens <- rep("", n.groups)
-  } else if (length(tokens) == 1L) {
-    tokens <- rep(tokens, n.groups)
-  } else {
-    stopif(length(tokens) != n.groups,
-           sprintf("Found %d modifiers but expected %d groups.", length(tokens), n.groups))
-  }
-
-  tokens
-}
-
-
-expandGroupModifiers <- function(mod, n.groups) {
-  do.call(rbind, lapply(mod, FUN = expandGroupModifier, n.groups = n.groups))
-}
-
-
-expandParTableByGroup <- function(parTable, group_levels) {
-  if (is.null(parTable)) return(NULL)
-  n.groups <- length(group_levels)
-
-  if (n.groups <= 1L) {
-    if (!"mod" %in% names(parTable)) parTable$mod <- ""
-    parTable$group <- 1L
-    return(parTable[, c("lhs", "op", "rhs", "group", "mod")])
-  }
-
-  constraints <- parTable[parTable$op %in% CONSTRAINT_OPS, , drop = FALSE]
-  baseTable   <- parTable[!parTable$op %in% CONSTRAINT_OPS, , drop = FALSE]
-
-  if (!"mod" %in% names(baseTable)) baseTable$mod <- ""
-
-  MOD <- expandGroupModifiers(mod = baseTable$mod, n.groups = n.groups)
-
-  colsOut <- c("lhs", "op", "rhs", "group", "mod")
-  parTableFull <- NULL
-  for (i in seq_len(n.groups)) {
-    parTable_g       <- baseTable
-    parTable_g$mod   <- MOD[, i]
-    parTable_g$group <- i
-
-    parTable_g <- parTable_g[colsOut]
-    parTableFull <- rbind(parTableFull, parTable_g)
-  }
-
-  if (NROW(constraints)) {
-    if (!"mod" %in% names(constraints)) constraints$mod <- ""
-    constraints$group <- 0L
-    constraints <- constraints[colsOut]
-  } else {
-    constraints <- data.frame(lhs = character(),
-                              op = character(),
-                              rhs = character(),
-                              group = integer(),
-                              mod = character())
-  }
-
-  rbind(parTableFull, constraints)
-}
-
-
-isMultiGroupModelDA <- function(model) {
-  isTRUE(model$info$ngroups > 1L) && length(model$models) > 1L
-}
-
-
-getThetaGroupDA <- function(model, theta, group) {
-  submodel <- model$groupModels[[group]]
-  len_label <- if (!is.null(submodel$lenThetaLabel)) submodel$lenThetaLabel else 0L
-  label_idx_sub <- if (len_label > 0L) seq_len(len_label) else integer()
-
-  theta_group <- numeric(length(submodel$theta))
-
-  if (len_label > 0L) {
-    label_map <- model$groupLabelIndices[[group]]
-    theta_group[label_idx_sub] <- theta[label_map]
-  }
-
-  group_idx <- model$groupParamIndices[[group]]
-  if (length(group_idx)) {
-    free_idx_sub <- if (len_label > 0L) {
-      seq_len(length(submodel$theta))[-label_idx_sub]
-    } else seq_len(length(submodel$theta))
-
-    theta_group[free_idx_sub] <- theta[group_idx]
-  }
-
-  names(theta_group) <- names(submodel$theta)
-  theta_group
-}
-
-
-mapGroupThetaToGlobal <- function(model, theta_names, group) {
-  if (!length(theta_names)) return(theta_names)
-
-  len_label <- if (!is.null(model$lenThetaLabel)) model$lenThetaLabel else 0L
-  label_names <- if (len_label > 0L) names(model$theta)[seq_len(len_label)] else character(0)
-
-  vapply(theta_names, FUN.VALUE = character(1L), FUN = function(name) {
-    if (name %in% label_names) name else paste0(name, ".g", group)
-  })
-}
-
-
-embedGroupMatrixDA <- function(target, model, group, mat) {
-  if (is.null(mat) || !length(mat)) return(target)
-
-  submodel <- model$groupModels[[group]]
-  len_label <- if (!is.null(submodel$lenThetaLabel)) submodel$lenThetaLabel else 0L
-  idx_sub <- seq_len(nrow(mat))
-  global_idx <- integer(length(idx_sub))
-
-  if (len_label > 0L) {
-    label_idx <- model$groupLabelIndices[[group]]
-    global_idx[seq_len(len_label)] <- label_idx
-  }
-
-  other_idx <- if (len_label < length(idx_sub)) {
-    seq(from = len_label + 1L, to = length(idx_sub))
-  } else integer()
-
-  if (length(other_idx)) {
-    global_idx[other_idx] <- model$groupParamIndices[[group]]
-  }
-
-  if (any(global_idx == 0L)) {
-    stop("Failed to map group matrix to global coordinates (internal error).")
-  }
-
-  target[global_idx, global_idx] <- target[global_idx, global_idx] + mat
-  target
-}
-
-
 removeInteractions <- function(model) {
   model$matrices$OmegaEtaXi[TRUE] <- 0
   model$matrices$OmegaXiXi[TRUE] <- 0
@@ -1397,4 +1185,173 @@ getGroupsParTable <- function(parTable) {
 
 getZeroGroupParTable <- function(parTable) {
   parTable[parTable$group <= 0L, , drop = FALSE]
+}
+
+
+prepareDataGroupDA <- function(group, data) {
+  if (is.null(group)) {
+    return(list(
+      has_groups = FALSE,
+      group = NULL,
+      group_raw = NULL,
+      group_var = NULL,
+      levels = NULL,
+      n.groups = 1L,
+      indices = list(seq_len(NROW(data))),
+      data = data,
+      data.raw = data
+    ))
+  }
+
+  data.raw <- data
+
+  stopif(!is.data.frame(data), "`data` must be a data.frame when grouping is used.")
+  n <- NROW(data)
+  stopif(n == 0L, "Grouping requires non-empty data.")
+
+  group_raw <- NULL
+  group_var <- NULL
+
+  stopif(length(group) != 1L, "Grouping variable must be of length 1!")
+  stopif(!group %in% names(data),
+         sprintf("Grouping variable '%s' not found in `data`.", group))
+
+  group_raw <- data[[group]]
+  data <- data[, setdiff(names(data), group), drop = FALSE]
+  group_var <- group
+
+  stopif(length(group_raw) != n, "Length of `group` must match the number of rows in `data`.")
+  stopif(any(is.na(group_raw)), "`group` cannot contain missing values.")
+
+  group_raw <- as.character(group_raw) # match lavaan behaviour, ignore factor levels
+  levels_order <- unique(group_raw)
+  group_factor <- factor(group_raw, levels = levels_order)
+
+  levels_group <- levels(group_factor)
+  n.groups <- length(levels_group)
+  indices <- split(seq_len(n), group_factor)
+
+  list(
+    has_groups = n.groups > 1L,
+    group = group_factor,
+    group_raw = group_raw,
+    group_var = group_var,
+    levels = levels_group,
+    n.groups = n.groups,
+    indices = indices,
+    data = data,
+    data.raw = data.raw
+  )
+}
+
+
+expandGroupModifier <- function(mod, n.groups) {
+  if (n.groups <= 1L)
+    return(rep(mod, n.groups))
+
+  if (length(mod) == 0L || mod == "")
+    return(rep("", n.groups))
+
+  if (is.na(mod))
+    return(rep(NA_character_, n.groups))
+
+  mod_trim <- trimws(mod)
+  if (!nzchar(mod_trim))
+    return(rep("", n.groups))
+
+  is_c_call <- grepl("^c\\s*\\(", mod_trim) && grepl("\\)$", mod_trim)
+  if (!is_c_call)
+    return(rep(mod_trim, n.groups))
+
+  inside <- substr(mod_trim,
+                   start = regexpr("\\(", mod_trim, perl = TRUE) + 1L,
+                   stop = nchar(mod_trim) - 1L)
+  tokens <- strsplit(inside, ",", fixed = FALSE)[[1]]
+  tokens <- trimws(tokens)
+
+  if (!length(tokens)) {
+    tokens <- rep("", n.groups)
+  } else if (length(tokens) == 1L) {
+    tokens <- rep(tokens, n.groups)
+  } else {
+    stopif(length(tokens) != n.groups,
+           sprintf("Found %d modifiers but expected %d groups.", length(tokens), n.groups))
+  }
+
+  tokens
+}
+
+
+expandGroupModifiers <- function(mod, n.groups) {
+  do.call(rbind, lapply(mod, FUN = expandGroupModifier, n.groups = n.groups))
+}
+
+
+expandParTableByGroup <- function(parTable, group.levels) {
+  if (!NROW(parTable))
+    return(parTable) # don't return NULL, as a zero-dim parTable has a special meaning
+                     # for cov models
+
+  n.groups <- length(group.levels)
+
+  if (n.groups <= 1L) {
+    if (!"mod" %in% names(parTable)) parTable$mod <- ""
+    parTable$group <- 1L
+    return(parTable[, c("lhs", "op", "rhs", "group", "mod")])
+  }
+
+  constraints <- parTable[parTable$op %in% CONSTRAINT_OPS, , drop = FALSE]
+  baseTable   <- parTable[!parTable$op %in% CONSTRAINT_OPS, , drop = FALSE]
+
+  if (!"mod" %in% names(baseTable)) baseTable$mod <- ""
+
+  MOD <- expandGroupModifiers(mod = baseTable$mod, n.groups = n.groups)
+
+  colsOut <- c("lhs", "op", "rhs", "group", "mod")
+  parTableFull <- NULL
+  for (i in seq_len(n.groups)) {
+    parTable_g       <- baseTable
+    parTable_g$mod   <- MOD[, i]
+    parTable_g$group <- i
+
+    parTable_g <- parTable_g[colsOut]
+    parTableFull <- rbind(parTableFull, parTable_g)
+  }
+
+  if (NROW(constraints)) {
+    if (!"mod" %in% names(constraints)) constraints$mod <- ""
+    constraints$group <- 0L
+    constraints <- constraints[colsOut]
+  } else {
+    constraints <- data.frame(lhs = character(),
+                              op = character(),
+                              rhs = character(),
+                              group = integer(),
+                              mod = character())
+  }
+
+  rbind(parTableFull, constraints)
+}
+
+
+getGroupInfo <- function(model.syntax, cov.syntax, data, group) {
+  group.info <- prepareDataGroupDA(group = group, data = data)
+
+  group.info$syntax     <- model.syntax
+  group.info$cov.syntax <- cov.syntax
+
+  parTable <- modsemify(model.syntax)
+  group.info$parTable.orig <- parTable
+
+  parTableCov <- modsemify(cov.syntax)
+  group.info$parTableCov.orig <- parTableCov
+
+  group.levels <- group.info$levels
+  if (is.null(group.levels)) group.levels <- ""
+
+  group.info$group.levels <- group.levels 
+  group.info$parTable    <- expandParTableByGroup(parTable, group.levels = group.levels)
+  group.info$parTableCov <- expandParTableByGroup(parTableCov, group.levels = group.levels)
+
+  group.info
 }

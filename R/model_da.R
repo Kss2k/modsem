@@ -320,28 +320,33 @@ specifModelDA_Group <- function(syntax = NULL,
 }
 
 
-specifyModelDA <- function(..., data.raw = NULL, group.info, createTheta = TRUE) {
+specifyModelDA <- function(..., group.info, createTheta = TRUE) {
   args <- list(...)
 
   n.groups <- group.info$n.groups
   stopif(n.groups < 1L, "Invalid grouping structure supplied.")
 
-  parTable <- group.info$parTable
-  group_col <- parTable[["group"]]
-  stopif(is.null(group_col) || max(group_col) != n.groups,
-         "Number of group-specific parameter tables does not match number of groups.")
+  parTable    <- group.info$parTable
+  parTableCov <- group.info$parTableCov
+  group.col   <- parTable$group
 
-  data.full <- args$data
+  stopif(is.null(group.col) || max(group.col) != n.groups,
+         "Number of group-specific parameter tables does not match number of groups.")
 
   submodels <- vector("list", length = n.groups)
   names(submodels) <- group.info$levelCres
 
   for (g in seq_len(n.groups)) {
     args_g <- args 
-    data_g <- data.full[group.info$indices[[g]], , drop = FALSE]
+    data_g <- group.info$data[group.info$indices[[g]], , drop = FALSE]
 
     args_g$data <- data_g
     args_g$parTable <- parTable[parTable$group == g, , drop = FALSE]
+
+    if (!is.null(parTableCov))
+      args_g$parTableCovModel <- parTableCov[parTableCov$group == g, , drop = FALSE]
+    else
+      args_g$parTableCovModel <- NULL
 
     submodel_g <- do.call(specifModelDA_Group, args_g)
     submodel_g$info$group <- group.info$levels[[g]]
@@ -353,7 +358,7 @@ specifyModelDA <- function(..., data.raw = NULL, group.info, createTheta = TRUE)
   model <- list(
     models   = submodels,
     syntax   = args$syntax,
-    data.raw = data.raw,
+    data.raw = group.info$data.raw,
     parTable = parTable,
     info     = list(
       n.groups      = n.groups,

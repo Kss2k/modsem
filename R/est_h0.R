@@ -48,18 +48,19 @@ estimate_h0 <- function(object, warn_no_interaction = TRUE, ...) {
 #' @export
 estimate_h0.modsem_da <- function(object, warn_no_interaction = TRUE, ...) {
   argList    <- object$args
-  parTable   <- object$model$info$group.info$parTable.orig
+  parTable   <- object$model$info$group.info$parTable
   data       <- object$model$data.raw
   method     <- object$method
-  cov.syntax <- object$model$models[[1L]]$covModel$syntax
+  cov.syntax <- object$model$info$group.info$cov.syntax
 
   newArgList <- list(...)
   newArgNames <- intersect(names(argList), names(newArgList))
   argList[newArgNames] <- newArgList[newArgNames]
 
   tryCatch({
-    # labels should probably be replaced instead...
+    # TODO: labels should probably be replaced instead...
     strippedParTable <- removeUnknownLabels(parTable[!grepl(":", parTable$rhs), ])
+    # TODO: Do something similar for cov.syntax
 
     if (NROW(strippedParTable) == NROW(parTable)) {
       warnif(warn_no_interaction, "No interaction terms found in the model. ",

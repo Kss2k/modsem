@@ -17,10 +17,13 @@ optimizeStartingParamsDA <- function(model,
   data     <- model$data.raw
   missing  <- tolower(args$missing)
 
+  syntax     <- model$info$group.info$syntax
+  cov.syntax <- model$info$group.info$cov.syntax
+
   robust.se       <- args$robust.se
   has.interaction <- model$info$has.interaction
 
-  syntax <- paste(model$syntax, model$models[[1L]]$covModel$syntax,
+  syntax <- paste(syntax, cov.syntax,
                   model$info$lavOptimizerSyntaxAdditions, sep = "\n")
 
   acceptable.missing <- c("listwise", "ml", "direct", "fiml")

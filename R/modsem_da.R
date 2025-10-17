@@ -461,31 +461,19 @@ modsem_da <- function(model.syntax = NULL,
   if (args$standardize.data)
     data <- lapplyDf(data, FUN = scaleIfNumeric, scaleFactor = FALSE)
 
-  group.info <- prepareGroupDA(group = group, data = data)
-  data.input <- data
-  data       <- group.info$data
+  group.info <- getGroupInfo(
+    model.syntax = model.syntax,
+    cov.syntax   = cov.syntax,
+    data         = data,
+    group        = group
+  )
 
   stopif(!method %in% c("lms", "qml"), "Method must be either 'lms' or 'qml'")
 
-  stopif(!is.null(cov.syntax) && args$n.groups > 1L,
-         "cov.syntax should not be specified manually in multigroup models!")
-
-  parTable <- modsemify(model.syntax)
-  group.info$parTable.orig <- parTable
-
-  group_levels <- group.info$levels
-  if (is.null(group_levels)) group_levels <- ""
-
-  group.info$group_levels <- group_levels 
-  group.info$parTable <- expandParTableByGroup(parTable, group_levels = group_levels)
-
   model <- specifyModelDA(
-    syntax             = model.syntax,
-    data               = data,
+    group.info         = group.info,
     method             = method,
     m                  = args$nodes,
-    parTable           = parTable,
-    cov.syntax         = cov.syntax,
     mean.observed      = args$mean.observed,
     double             = args$double,
     quad.range         = args$quad.range,
@@ -497,9 +485,7 @@ modsem_da <- function(model.syntax = NULL,
     auto.fix.first     = args$auto.fix.first,
     auto.fix.single    = args$auto.fix.single,
     auto.split.syntax  = args$auto.split.syntax,
-    cluster            = cluster,
-    group.info         = group.info,
-    data.raw           = data.input
+    cluster            = cluster
   )
 
   if (args$optimize) {
