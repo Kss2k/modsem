@@ -241,14 +241,15 @@ constructPsi <- function(etas, parTable, orthogonal.y = FALSE) {
 
 
 constructPhi <- function(xis, method = "lms", cov.syntax = NULL,
-                         parTable, orthogonal.x = FALSE) {
+                         parTable, parTableCovModel = NULL,
+                         orthogonal.x = FALSE) {
   if (!length(xis)) return(EMPTY_MATSTRUCT)
 
   numXis <- length(xis)
   phi    <- matrix(0, nrow = numXis, ncol = numXis,
                    dimnames = list(xis, xis))
 
-  if (method != "lms" && is.null(cov.syntax)) {
+  if (method != "lms" && is.null(cov.syntax) && is.null(parTableCovModel)) {
     if (!orthogonal.x) phi[lower.tri(phi, diag = TRUE)] <- NA
     else               diag(phi) <- NA
 

@@ -47,12 +47,11 @@ calcFIM_da <- function(model,
           stop2("FIM must be either expected or observed")),
      qml =
        switch(FIM,
-          observed = calcOFIM_QML(model, theta = theta, data = data,
-                                  hessian = hessian, epsilon = epsilon,
-                                  robust.se = robust.se, cluster = cluster.vec,
-                                  cr1s = cr1s),
+          observed = calcOFIM_QML(model, theta = theta, hessian = hessian,
+                                  epsilon = epsilon, robust.se = robust.se,
+                                  cluster = cluster.vec, cr1s = cr1s),
           expected = calcEFIM_QML(model, finalModel = finalModel, theta = theta,
-                                  data = data, epsilon = epsilon, S = EFIM.S,
+                                  epsilon = epsilon, S = EFIM.S,
                                   parametric = EFIM.parametric, verbose = verbose,
                                   R.max = R.max),
           stop2("FIM must be either expected or observed")),
@@ -284,6 +283,7 @@ calcEFIM_LMS <- function(model, finalModel = NULL, theta, data,
 calcEFIM_QML <- function(model, finalModel = NULL, theta, data, S = 100,
                          parametric = TRUE, epsilon = 1e-8, verbose = FALSE,
                          R.max = 1e6) {
+  stop("EFIM_QML not available in multigroup model yet!")
   k <- length(theta)                       # number of free parameters
   N <- data$n
   R <- min(R.max, N * S)
@@ -382,9 +382,8 @@ calcOFIM_QML <- function(model, theta, data, hessian = FALSE,
   # Optional CR1S small-sample correction
   if (isTRUE(cr1s)) {
     q <- ncol(S)
-    if (G > 1 && N > q) {
+    if (G > 1 && N > q)
       B <- B * (G / (G - 1)) * ((N - 1) / (N - q))
-    }
   }
 
   B

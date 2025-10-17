@@ -146,6 +146,7 @@ specifModelDA_Group <- function(syntax = NULL,
   labelPsi <- listPsi$label
 
   listPhi <- constructPhi(xis, method = method, cov.syntax = cov.syntax,
+                          parTableCovModel = parTableCovModel,
                           parTable = parTable, orthogonal.x = orthogonal.x)
   phi      <- listPhi$numeric
   labelPhi <- listPhi$label
