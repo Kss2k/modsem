@@ -554,9 +554,10 @@ getGradientStructSimple <- function(model, theta) {
     derivatives2[[constrVar]] <- secondDerivateConstraint(constrEq)
   }
 
-  isLinear <- vapply(derivatives, FUN.VALUE = logical(1L),
-                     FUN = \(X) vapply(X, FUN.VALUE = logical(1L),
-                                       FUN = \(x) all(is.atomic(x))))
+  isLinear <- vapply(
+    X = derivatives, FUN.VALUE = logical(1L),
+    FUN = \(X) all(vapply(X, FUN.VALUE = logical(1L), FUN = is.atomic))
+  )
 
   linDerivs   <- derivatives[isLinear]
   nlinDerivs  <- derivatives[!isLinear]

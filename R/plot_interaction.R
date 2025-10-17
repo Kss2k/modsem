@@ -590,8 +590,10 @@ plot_surface <- function(x, z, y, model,
              "You can choose which group to plot using the `group` argument.\n",
              "Plotting surface plot for the first group...",
              immediate. = FALSE)
-    group <- 1L
   }
+
+  if (is.null(group))
+    group <- 1L
 
   parTable <- parTable[parTable$group == group, , drop = FALSE]
 
