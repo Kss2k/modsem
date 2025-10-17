@@ -499,6 +499,10 @@ plotJN_Group <- function(x, z, y, parTable, model, min_z, max_z, sig.level, alph
 #'   Must be a valid CSS color string, including \code{rgba()} for transparency.
 #'   - Default is \code{"rgba(0,0,0,0.45)"} (semi-transparent black).
 #'   Example: \code{"rgba(255,255,255,0.8)"} for semi-transparent white lines.
+#'
+#' @param group Which group to create surface plot for. Only relevant for multigroup
+#'   models. Must be an integer index, representing the nth group.
+#'
 #' @param ... Additional arguments passed to \code{plotly::plot_ly}.
 #'
 #' @details
@@ -567,14 +571,29 @@ plot_surface <- function(x, z, y, model,
                          grid_nx = 12,
                          grid_ny = 12,
                          grid_color = "rgba(0,0,0,0.45)",
+                         group = NULL,
                          ...) {
 
   stopif(!isModsemObject(model) && !isLavaanObject(model), "model must be of class ",
          "'modsem_pi', 'modsem_da', 'modsem_mplus' or 'lavaan'")
 
-  if (standardized) {
+  if (standardized)
     parTable <- standardized_estimates(model, correction = TRUE)
-  } else parTable <- parameter_estimates(model)
+  else
+    parTable <- parameter_estimates(model)
+
+  parTable <- getMissingGroups(parTable)
+  groups   <- getGroupsParTable(parTable)
+
+  if (length(groups) > 1L && is.null(group)) {
+    warning2("Plotting of surface plots for multiple groups is not implemented yet!\n",
+             "You can choose which group to plot using the `group` argument.\n",
+             "Plotting surface plot for the first group...",
+             immediate. = FALSE)
+    group <- 1L
+  }
+
+  parTable <- parTable[parTable$group == group, , drop = FALSE]
 
   if (is.null(xz))
     xz <- paste(x, z, sep = ":")
