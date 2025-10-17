@@ -306,7 +306,7 @@ simpleGradientAllLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-
 
   if (length(nlinDerivs)) {
     evalTheta  <- model$params$gradientStruct$evalTheta
-    param.full <- stringr::str_split_i(colnames(Jacobian), i = 1L) # non-unique
+    param.full <- stringr::str_split_i(colnames(Jacobian), pattern = "#", i = 1L) # non-unique
     param.part <- rownames(Jacobian)
     THETA      <- list2env(as.list(evalTheta(theta)))
 
@@ -564,7 +564,7 @@ simpleHessianAllLogLikLms <- function(theta, model, P, sign = -1,
 
   if (length(nlinDerivs)) {
     evalTheta  <- model$params$gradientStruct$evalTheta
-    param.full <- colnames(Jacobian)
+    param.full <- stringr::str_split_i(colnames(Jacobian), pattern = "#", i = 1L) # non-unique
     param.part <- rownames(Jacobian)
     THETA      <- list2env(as.list(evalTheta(theta)))
 
