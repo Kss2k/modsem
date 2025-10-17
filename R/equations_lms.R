@@ -183,9 +183,26 @@ compLogLikLms <- function(theta, model, P, sign = -1, ...) {
 }
 
 
+compLogLikLmsGroup <- function(submodel, P, sign = -1, ...) {
+  tryCatch({
+    data <- submodel$data
+
+    ll <- completeLogLikLmsCpp(
+      modelR = submodel, P = P, quad = P$quad,
+      colidxR = data$colidx0, n = data$n.pattern,
+      d = data$d.pattern, npatterns = data$p
+    )
+
+    sign * ll
+
+  }, error = \(e) NA)
+}
+
+
+
 gradientCompLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-6) {
   gradientAllLogLikLms(theta = theta, model = model, P = P, sign = sign,
-                       epsilon = epsilon, FGRAD = gradLogLikLmsCpp, FOBJECTIVE = compLogLikLms)
+                       epsilon = epsilon, FGRAD = gradLogLikLmsCpp, FOBJECTIVE = compLogLikLmsGroup)
 }
 
 
@@ -200,14 +217,51 @@ gradientAllLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-6,
 }
 
 
-complicatedGradientAllLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-4, FOBJECTIVE) {
-  # when we cannot simplify gradient using simpleGradientLogLikLms, we use
-  # good old forward difference...
-  baseLL <- FOBJECTIVE(theta, model = model, P = P, sign = sign)
-  vapply(seq_along(theta), FUN.VALUE = numeric(1L), FUN = function(i) {
-    theta[[i]] <- theta[[i]] + epsilon
-    (FOBJECTIVE(theta, model = model, P = P, sign = sign) - baseLL) / epsilon
-  })
+complicatedGradientAllLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-4, FOBJECTIVE, sum = TRUE, ...) {
+  params <- model$params
+
+  SELECT_THETA_LAB  <- params$SELECT_THETA_LAB
+  SELECT_THETA_COV  <- params$SELECT_THETA_COV
+  SELECT_THETA_MAIN <- params$SELECT_THETA_MAIN
+
+  N <- vapply(model$models, FUN.VALUE = numeric(1L), FUN = \(sub) sub$data$n)
+  N.start <- c(1, cumsum(N)[-length(N)] + 1L)
+  N.end   <- cumsum(N)
+
+  if (sum) n <- 1L
+  else     n <- sum(N)
+
+  k  <- length(theta)
+
+  grad <- matrix(0, n = n, ncol = k, dimnames = list(NULL, names(theta)))
+
+  FOBJECTIVE_GROUP <- function(theta, g) {
+    modFilled <- fillModel(theta = theta, model = model, method = "lms")
+    FOBJECTIVE(submodel = modFilled$models[[g]], P = P$P_GROUPS[[g]], sign = sign, ...)
+  }
+
+  for (g in seq_len(model$info$n.groups)) {
+    f0 <- FOBJECTIVE_GROUP(theta = theta, g = g)
+
+    if (sum) J <- 1L 
+    else     J <- seq(N.start[[g]], N.end[[g]], by = 1L)
+
+    indices <- c(
+      SELECT_THETA_LAB[[g]],
+      SELECT_THETA_COV[[g]],
+      SELECT_THETA_MAIN[[g]]
+    )
+
+    for (i in indices) {
+      theta_i <- theta
+      theta_i[i] <- theta_i[i] + epsilon
+
+      fi <- FOBJECTIVE_GROUP(theta_i, g = g)
+      grad[J, i] <- grad[J, i] + (fi - f0) / epsilon
+    }
+  }
+
+  if (n == 1L) as.vector(grad) else grad
 }
 
 
@@ -296,6 +350,23 @@ obsLogLikLms <- function(theta, model, P, sign = 1, ...) {
 }
 
 
+obsLogLikLmsGroup <- function(submodel, P, sign = -1, ...) {
+  tryCatch({
+    data <- submodel$data
+
+    ll <- observedLogLikLmsCpp(submodel,
+                               dataR = data_g$data.split,
+                               colidxR = data_g$colidx0,
+                               P = P,
+                               n = data_g$n.pattern,
+                               npatterns = data_g$p,
+                               ncores = ThreadEnv$n.threads)
+    sign * ll
+
+  }, error = \(e) NA)
+}
+
+
 gradientObsLogLikLms <- function(theta, model, P, sign = 1, epsilon = 1e-6) {
   FGRAD <- function(modelR, P, block, row, col, symmetric, colidxR, npatterns,
                     eps, ncores, n, ...) {
@@ -308,7 +379,7 @@ gradientObsLogLikLms <- function(theta, model, P, sign = 1, epsilon = 1e-6) {
   }
 
   FOBJECTIVE <- function(theta, model, P, colidxR, npatterns, sign, ...) {
-    obsLogLikLms(theta = theta, model = model, P = P, sign = sign)
+    obsLogLikLmsGroup(theta = theta, model = model, P = P, sign = sign)
   }
 
   gradientAllLogLikLms(theta = theta, model = model, P = P, sign = sign,
@@ -317,10 +388,11 @@ gradientObsLogLikLms <- function(theta, model, P, sign = 1, epsilon = 1e-6) {
 }
 
 
-obsLogLikLms_i_single <- function(submodel, data, P, sign = 1) {
-  V <- P$V
-  w <- P$w
-  m <- nrow(V)
+obsLogLikLms_i_group <- function(submodel, data, P, sign = 1) {
+  data <- submodel$data
+  V  <- P$V
+  w  <- P$w
+  m  <- nrow(V)
   px <- numeric(data$n)
 
   for (i in seq_len(m)) {
@@ -350,72 +422,16 @@ obsLogLikLms_i_single <- function(submodel, data, P, sign = 1) {
 }
 
 
-obsLogLikLms_i <- function(theta, model, P, sign = 1, ...) {
-  modFilled <- fillModel(model = model, theta = theta, method = "lms")
-
-  contribs <- vector("list", length = modFilled$info$n.groups)
-
-  for (g in seq_len(modFilled$info$n.groups)) {
-    submodel <- modFilled$models[[g]]
-    data_g   <- submodel$data
-    P_g      <- P$P_GROUPS[[g]]
-
-    contribs[[g]] <- obsLogLikLms_i_single(submodel, data_g, P_g, sign = sign)
-  }
-
-  unlist(contribs, use.names = FALSE)
-}
-
-
 # gradient function of obsLogLikLms_i
 gradientObsLogLikLms_i <- function(theta, model, P, sign = 1, epsilon = 1e-4) {
-  group_sizes <- vapply(model$models, function(sub) sub$data$n, numeric(1L))
-  n_total     <- sum(group_sizes)
-  p           <- length(theta)
+  # FOBJECTIVE <- function(theta, submodel, P, sign, epsilon) {
+  #   obsLogLikLms_i_group(theta = theta, submodel = submodel, P = P,
+  #                        sign = sign, epsilon = epsilon)
+  # }
 
-  baseLL <- obsLogLikLms_i(theta, model, P = P, sign = sign)
-
-  offsets <- c(0L, cumsum(group_sizes))
-  rows_by_group <- lapply(seq_along(group_sizes), function(g) {
-    idx_start <- offsets[g] + 1L
-    idx_end   <- offsets[g + 1L]
-    seq.int(idx_start, idx_end)
-  })
-
-  base_by_group <- Map(function(rows) baseLL[rows], rows_by_group)
-
-  groups_by_param <- vector("list", length = p)
-  for (g in seq_along(group_sizes)) {
-    active_idx <- .activeThetaIndicesLms(model, g, p)
-    for (idx in active_idx) {
-      groups_by_param[[idx]] <- unique(c(groups_by_param[[idx]], g))
-    }
-  }
-
-  grad_mat <- matrix(0.0, nrow = n_total, ncol = p,
-                     dimnames = list(NULL, names(theta)))
-
-  for (idx in seq_len(p)) {
-    param_groups <- groups_by_param[[idx]]
-    if (!length(param_groups)) next
-
-    theta_pert <- theta
-    theta_pert[[idx]] <- theta_pert[[idx]] + epsilon
-
-    modFilled <- fillModel(model = model, theta = theta_pert, method = "lms")
-
-    for (g in param_groups) {
-      rows    <- rows_by_group[[g]]
-      submodel <- modFilled$models[[g]]
-      data_g   <- submodel$data
-      P_g      <- P$P_GROUPS[[g]]
-
-      ll_new <- obsLogLikLms_i_single(submodel, data_g, P_g, sign = sign)
-      grad_mat[rows, idx] <- (ll_new - base_by_group[[g]]) / epsilon
-    }
-  }
-
-  grad_mat
+  complicatedGradientAllLogLikLms(theta = theta, model = model, P = P,
+                                  sign = sign, epsilon = epsilon, sum = FALSE,
+                                  FOBJECTIVE = obsLogLikLms_i_group)
 }
 
 
@@ -463,11 +479,38 @@ hessianAllLogLikLms <- function(theta, model, P, sign = -1,
 }
 
 
-compHessianAllLogLikLms <- function(theta, model, P, sign = -1,
-                                    .relStep = .Machine$double.eps ^ (1/6),
-                                    FOBJECTIVE) {
-  nlme::fdHess(pars = theta, FOBJECTIVE, model = model, P = P,
-               sign = sign, .relStep = .relStep)
+complicatedHessianAllLogLikLms <- function(theta, model, P, sign = -1,
+                                          .relStep = .Machine$double.eps ^ (1/6),
+                                          FOBJECTIVE) {
+  params <- model$params
+
+  SELECT_THETA_LAB  <- params$SELECT_THETA_LAB
+  SELECT_THETA_COV  <- params$SELECT_THETA_COV
+  SELECT_THETA_MAIN <- params$SELECT_THETA_MAIN
+
+  k <- length(theta)
+  H <- matrix(0, n = k, ncol = k, dimnames = list(names(theta), names(theta)))
+
+  for (g in seq_len(model$info$n.groups)) {
+    indices <- c(
+      SELECT_THETA_LAB[[g]],
+      SELECT_THETA_COV[[g]],
+      SELECT_THETA_MAIN[[g]]
+    )
+
+    FOBJECTIVE_GROUP <- function(theta_g) {
+      theta[indices] <- theta_g # local copy of theta
+      modFilled <- fillModel(theta = theta, model = model, method = "lms")
+      FOBJECTIVE(submodel = modFilled$models[[g]], sign = sign, P = P$P_GROUPS[[g]])
+    }
+
+    theta_g <- theta[indices]
+    Hg <- fdHESS(pars = theta_g, fun = FOBJECTIVE_GROUP, .relStep = .Machine$double.eps^(1/5))
+
+    H[indices, indices] <- H[indices, indices] + Hg
+  }
+
+  H
 }
 
 
@@ -549,13 +592,6 @@ simpleHessianAllLogLikLms <- function(theta, model, P, sign = -1,
 }
 
 
-complicatedHessianAllLogLikLms <- function(theta, model, P, data, sign = -1, FOBJECTIVE,
-                                           .relStep = .Machine$double.eps ^ (1/5)) {
-  nlme::fdHess(pars = theta, fun = FOBJECTIVE, model = model, P = P, sign = sign,
-               .relStep = .relStep)$Hessian
-}
-
-
 hessianObsLogLikLms <- function(theta, model, P, sign = -1,
                                 data = NULL,
                                 .relStep = .Machine$double.eps ^ (1/5)) {
@@ -570,8 +606,8 @@ hessianObsLogLikLms <- function(theta, model, P, sign = -1,
                         minAbs = 0.0, ncores = ncores)
   }
 
-  FOBJECTIVE <- function(theta, model, P, sign, data, ...) {
-    obsLogLikLms(theta = theta, model = model, P = P, sign = sign)
+  FOBJECTIVE <- function(theta, submodel, P, sign, ...) {
+    obsLogLikLmsGroup(theta = theta, submodel = model, P = P, sign = sign)
   }
 
   hessianAllLogLikLms(theta = theta, model = model, P = P, sign = sign,
@@ -591,12 +627,9 @@ hessianCompLogLikLms <- function(theta, model, P, sign = -1,
                          npatterns = npatterns, minAbs = 0.0, ncores = ncores)
   }
 
-  FOBJECTIVE <- function(theta, model, P, data, sign) {
-    compLogLikLms(theta = theta, model = model, P = P, sign = sign)
-  }
-
   hessianAllLogLikLms(theta = theta, model = model, P = P, sign = sign,
-                      FHESS = FHESS, FOBJECTIVE = FOBJECTIVE, .relStep = .relStep)
+                      FHESS = FHESS, FOBJECTIVE = compLogLikLmsGroup,
+                      .relStep = .relStep)
 }
 
 

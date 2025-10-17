@@ -211,8 +211,8 @@ optimizeStartingParamsDA <- function(model,
                              OmegaEtaXi[is.na(matricesMain$omegaEtaXi)]))
 
     # Cov Model
-    matricesCov      <- model$covModel$matrices
-    labelMatricesCov <- model$covModel$labelMatrices
+    matricesCov      <- submodel$covModel$matrices
+    labelMatricesCov <- submodel$covModel$labelMatrices
 
     if (!is.null(matricesCov)) {
       PsiCovModel <- findEstimatesParTable(matricesCov$psi, parTable_g, op = "~~", fill = 0)

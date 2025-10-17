@@ -368,7 +368,7 @@ calcPhiTheta <- function(theta, model, method) {
   if (method != "lms") return(theta)
 
   modFilled <- fillModel(theta = theta, model = model, method = method,
-                           fillPhi = TRUE)
+                         fillPhi = TRUE)
 
   for (g in seq_len(model$info$n.groups)) {
     select <- c(model$params$SELECT_THETA_LAB[[g]],
@@ -508,7 +508,7 @@ getGradientStruct <- function(model, theta) {
 
 
 getGradientStructSimple <- function(model, theta) {
-  hasCovModel <- !is.null(model$covModel$matrices)
+  hasCovModel <- !is.null(model$models[[1L]]$covModel$matrices)
 
   if (hasCovModel) {
     out <- list(

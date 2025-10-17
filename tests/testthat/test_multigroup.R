@@ -14,7 +14,8 @@ m2 <- '
   a1==a2
 '
 
-est <- modsem(m2, oneIntMG, method = "qml", group = "group", robust.se = TRUE)
+est <- modsem(m2, oneIntMG, method = "lms", group = "group", robust.se = TRUE,
+              cov.syntax = "")
 summary(est)
 plot_jn(x = "X", z = "Z", y = "Y", model = est)
 plot_interaction(x = "X", z = "Z", y = "Y", model = est, vals_z = c(1, 0))
