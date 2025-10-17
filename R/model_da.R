@@ -17,7 +17,7 @@ specifModelDA_Group <- function(syntax = NULL,
                                 quad.range = Inf,
                                 adaptive.quad = FALSE,
                                 adaptive.frequency = 3,
-                                missing = FALSE,
+                                missing = "complete",
                                 orthogonal.x = FALSE,
                                 orthogonal.y = FALSE,
                                 auto.split.syntax = FALSE,
@@ -340,21 +340,24 @@ specifyModelDA <- function(..., group.info, createTheta = TRUE) {
 
   for (g in seq_len(n.groups)) {
     args_g <- args 
-    data_g <- group.info$data[group.info$indices[[g]], , drop = FALSE]
 
-    args_g$data <- data_g
+    if (!is.null(group.info$data))
+      args_g$data <- group.info$data[group.info$indices[[g]], , drop = FALSE]
+    else
+      args_g["data"] <- list(data = NULL)
+
     args_g$parTable <- parTable[parTable$group == g, , drop = FALSE]
 
     if (!is.null(parTableCov))
       args_g$parTableCovModel <- parTableCov[parTableCov$group == g, , drop = FALSE]
     else
-      args_g$parTableCovModel <- NULL
+      args_g["parTableCovModel"] <- list(parTableCovModel = NULL)
 
     submodel_g <- do.call(specifModelDA_Group, args_g)
     submodel_g$info$group <- group.info$levels[[g]]
     submodel_g$info$n.groups <- 1L
 
-    submodels[[g]]   <- submodel_g
+    submodels[[g]] <- submodel_g
   }
 
   model <- list(

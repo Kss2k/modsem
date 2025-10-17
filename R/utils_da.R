@@ -369,6 +369,7 @@ getEmptyModel <- function(group.info, cov.syntax, parTableCovModel,
                           mean.observed = TRUE, method = "lms") {
   group.info$parTable$mod <- ""
   group.info$parTable <- removeConstraintExpressions(group.info$parTable)
+  group.info["data"]  <- list(data = NULL)
 
   if (NROW(parTableCovModel)) {
     parTableCovModel$mod <- ""
