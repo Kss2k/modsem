@@ -352,8 +352,7 @@ createDoubleIntTerms <- function(x, z = NULL, sep = ":") {
 getFreeOrConstIntTerms <- function(varsInInt, eta, intTerms) {
   expr <- intTerms[intTerms$lhs == eta & intTerms$rhs %in%
                    createDoubleIntTerms(varsInInt), "mod"]
-  if (canBeNumeric(expr, includeNA = TRUE)) return(as.numeric(expr))
-  0
+  if (canBeNumeric(expr, includeNA = TRUE)) as.numeric(expr) else 0
 }
 
 

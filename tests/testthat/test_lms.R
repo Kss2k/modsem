@@ -280,3 +280,17 @@ testthat::expect_error(
   modsem(m2, oneInt, method = "lms", cov.syntax = ""),
   regexp = "Dynamic constraints .*"
 )
+
+
+m1 <- '
+  # Outer Model
+  X =~ x1 + x2 +x3
+  Y =~ NA*y1 + y2 + y3
+  Z =~ z1 + z2 + z3
+  Y ~~ 1*Y
+
+  # Inner model
+  Y ~ X + Z
+'
+
+summary(modsem(m1, oneInt, method = "lms"))

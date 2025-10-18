@@ -621,8 +621,9 @@ customParamsToParTable <- function(model, coefs, se) {
     lhs <- custom[i, "lhs"]
     rhs <- custom[i, "rhs"]
 
+    se <- tryCatch(se[[lhs]], error = \(e) NA)
     newRow <- data.frame(lhs = lhs, op = ":=", rhs = rhs, label = lhs,
-                         group = 0L, est = coefs[[lhs]], std.error = se[[lhs]])
+                         group = 0L, est = coefs[[lhs]], std.error = se)
     out <- rbind(out, newRow)
   }
 
@@ -738,7 +739,7 @@ finalizeModelEstimatesDA <- function(model,
   FIMo <- do.call(calcFIM_da, fim.args)
 
   SE <- calcSE_da(calc.se = calc.se,
-                  FIMo$vcov.all,
+                  vcov = FIMo$vcov.all,
                   rawLabels = FIMo$raw.labels,
                   NA__ = NA__)
 

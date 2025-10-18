@@ -855,41 +855,76 @@ modsem_predict.modsem_da <- function(object, standardized = FALSE, H0 = TRUE, ne
     if (is.null(modelH0)) modelH0 <- modelH1
   } else modelH0 <- modelH1
 
-  if (!is.null(newdata)) {
-    cols <- colnames(modelH0$data$data.full)
-    cols.present <- cols %in% colnames(newdata)
-    stopif(!all(cols.present), "Missing cols in `newdata`:\n", cols[!cols.present])
-
-    newdata <- as.matrix(newdata)[, cols]
-
-  } else newdata <- modelH0$data$data.full
-
   transform.x <- if (center.data) \(x) x - mean(x, na.rm = TRUE) else \(x) x
 
   parTableH1 <- parameter_estimates(modelH1)
   parTableH0 <- parameter_estimates(modelH0)
 
-  lVs   <- getLVs(parTableH1)
-  sigma <- modsem_inspect(modelH0, what = "cov.ov")
+  parTableH1 <- getMissingGroups(parTableH1)
+  parTableH0 <- getMissingGroups(parTableH0)
 
-  sigma.inv <- GINV(sigma)
-  lambda    <- getLambdaParTable(parTableH0, rows = colnames(sigma), cols = lVs)
+  groups <- getGroupsParTable(parTableH0)
+  mgroup <- length(groups) > 1L
+    
+  if (!is.null(newdata)) {
+    newdata <- as.data.frame(newdata)
+    cols  <- colnames(modelH0$model$models[[1L]]$data$data.full)
+    
+    cols.present <- cols %in% colnames(newdata)
+    stopif(!all(cols.present), "Missing cols in `newdata`:\n", cols[!cols.present])
 
-  X <- apply(as.matrix(newdata), MARGIN = 2, FUN = transform.x)
-  X <- X[, colnames(sigma), drop = FALSE]
+    group <- modsem_inspect(modelH0, what = "group")
 
-  FSC <- GINV(t(lambda) %*% sigma.inv %*% lambda) %*% (t(lambda) %*% sigma.inv)
+    if (!is.null(group)) {
+      group.values <- as.character(newdata$group)
+      group.levels <- modsem_inspect(modelH0, what = "group.label")
 
-  alpha <- matrix(getMeans(lVs, parTable = parTableH1),
-                  nrow = nrow(X), ncol = length(lVs), byrow = TRUE)
+      NEWDATA <- lapply(
+        X = group.levels,
+        FUN = \(g) as.matrix(newdata[newdata$group == g, , drop = FALSE])[, cols]
+      )
 
-  Y <- X %*% t(FSC) + alpha
+    } else {
+      NEWDATA <- list(as.matrix(newdata)[, cols])
+    }
 
-  if (standardized) {
-    mu <- \(x) mean(x, na.rm = TRUE)
-    s  <- \(x) stats::sd(x, na.rm = TRUE)
-    Y  <- apply(Y, MARGIN = 2, FUN = \(y) (y - mu(y)) / s(y))
+  } else {
+    NEWDATA <- lapply(modelH0$model$models,
+                      FUN = \(sub) sub$data$data.full)
   }
 
-  Y
+  SIGMA <- modsem_inspect(modelH0, what = "cov.ov")
+  out <- vector("list", length = length(groups))
+
+  for (g in groups) {
+    parTableH1g <- parTableH1[parTableH1$group == g, , drop = FALSE]
+    parTableH0g <- parTableH0[parTableH0$group == g, , drop = FALSE]
+
+    lVs   <- getLVs(parTableH1g)
+    sigma <- if (mgroup) SIGMA[[g]] else SIGMA
+
+    sigma.inv <- GINV(sigma)
+    lambda    <- getLambdaParTable(parTableH0g, rows = colnames(sigma), cols = lVs)
+
+    newdata_g <- NEWDATA[[g]]
+    X <- apply(as.matrix(newdata_g), MARGIN = 2, FUN = transform.x)
+    X <- X[, colnames(sigma), drop = FALSE]
+
+    FSC <- GINV(t(lambda) %*% sigma.inv %*% lambda) %*% (t(lambda) %*% sigma.inv)
+
+    alpha <- matrix(getMeans(lVs, parTable = parTableH1),
+                    nrow = nrow(X), ncol = length(lVs), byrow = TRUE)
+
+    Y <- X %*% t(FSC) + alpha
+
+    if (standardized) {
+      mu <- \(x) mean(x, na.rm = TRUE)
+      s  <- \(x) stats::sd(x, na.rm = TRUE)
+      Y  <- apply(Y, MARGIN = 2, FUN = \(y) (y - mu(y)) / s(y))
+    }
+
+    out[[g]] <- Y
+  }
+
+  if (mgroup) out else out[[1L]]
 }

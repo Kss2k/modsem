@@ -141,7 +141,9 @@ solveFIM <- function(H, NA__ = -999, use.ginv = FALSE) {
 
 
 calcSE_da <- function(calc.se = TRUE, vcov, rawLabels, NA__ = -999) {
-  if (!calc.se) return(rep(NA__, length(rawLabels)))
+  if (!calc.se)
+    return(stats::setNames(rep(NA__, length(rawLabels)), nm = rawLabels))
+
   if (is.null(vcov)) {
     warning2("Fisher Information Matrix (FIM) was not calculated, ",
              "unable to compute standard errors", immediate. = FALSE)
