@@ -7,9 +7,10 @@ transformedSolutionCOEFS <- function(object,
                                      center = TRUE,
                                      standardize = TRUE,
                                      ...) {
-  stopif(!inherits(object, c("modsem_da", "modsem_pi", "lavaan", "modsem_mplus")),
-         "The model must be of class `modsem_da`, `modsem_mplus`, `modsem_pi` or `lavaan`!")
+  stopif(!inherits(object, c("modsem_da", "modsem_pi", "lavaan", "modsem_mplus", "modsem_stan")),
+         "The model must be of class `modsem_da`, `modsem_mplus`, `modsem_pi`, `modsem_stan` or `lavaan`!")
 
+  isStan  <- inherits(object, "modsem_stan")
   isLav   <- inherits(object, "lavaan")
   isDA    <- inherits(object, "modsem_da")
   isMplus <- inherits(object, "modsem_mplus")
@@ -24,11 +25,13 @@ transformedSolutionCOEFS <- function(object,
 
   if (!NROW(parTable)) return(NULL)
 
-  if (isDA || isMplus) {
+  if (!"label" %in% names(parTable))
+    parTable$label <- ""
+
+  if (isDA || isMplus || isStan) {
     parTable <- parTable[c("lhs", "op", "rhs", "label", "est", "std.error")]
 
   } else { # modsem_pi or lavaan
-    if (!"label" %in% names(parTable)) parTable$label <- ""
     if (!"se"    %in% names(parTable)) parTable$se    <- NA
 
     parTable <- parTable[c("lhs", "op", "rhs", "label", "est", "se")]
