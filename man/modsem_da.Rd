@@ -7,6 +7,7 @@
 modsem_da(
   model.syntax = NULL,
   data = NULL,
+  group = NULL,
   method = "lms",
   verbose = NULL,
   optimize = NULL,
@@ -59,6 +60,11 @@ modsem_da(
 \item{model.syntax}{\code{lavaan} syntax}
 
 \item{data}{A dataframe with observed variables used in the model.}
+
+\item{group}{Optional grouping variable for multigroup models. Supply either
+the name of a column in \code{data} or a vector with one value per row in
+\code{data}. The column will be removed from the analysis data prior to
+estimation.}
 
 \item{method}{method to use:
 \describe{

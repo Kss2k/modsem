@@ -223,7 +223,7 @@ modsem_mimput_modsem_da <- function(model.syntax,
   parTable$est.t       <- NULL
   parTable$std.error.t <- NULL
   parTable$label[!parTable$label %in% orig.labels] <- ""
-  parTable <- parTable[c("lhs", "op", "rhs", "label", "est", "std.error")] # remove z-statistics
+  parTable <- parTable[c("lhs", "op", "rhs", "group", "label", "est", "std.error")] # remove z-statistics
   parTable <- addZStatsParTable(parTable)
   rownames(parTable) <- NULL # reset
 

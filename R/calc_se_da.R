@@ -1,7 +1,6 @@
 calcFIM_da <- function(model,
                        finalModel,
                        theta,
-                       data = NULL,
                        method = "lms",
                        calc.se = TRUE,
                        FIM = "observed",
@@ -18,27 +17,41 @@ calcFIM_da <- function(model,
   if (!calc.se) return(list(FIM = NULL, vcov = NULL, vcov.sub = NULL, type = "none",
                             raw.labels = names(theta), n.additions = 0))
   if (verbose) printf("Calculating standard errors (%s)\n", FIM)
+  
+  collectCluster <- function(d) {
+    if (is.null(d)) return(NULL)
+
+    if (is.list(d) && !is.data.frame(d)) {
+      clusters <- lapply(d, function(x) x$cluster)
+      clusters <- clusters[lengths(clusters) > 0L]
+      if (!length(clusters)) return(NULL)
+      do.call(c, clusters)
+
+    } else {
+      d$cluster
+    }
+  }
+
+  DATA <- lapply(model$models, FUN = \(sub) sub$data)
+  cluster.vec <- if (robust.se) collectCluster(DATA) else NULL
 
   I <- switch(method,
      lms =
        switch(FIM,
-          observed = calcOFIM_LMS(model, theta = theta, data = data,
-                                  epsilon = epsilon, hessian = hessian, P = P,
-                                  robust.se = robust.se, cluster = data$cluster,
-                                  cr1s = cr1s),
+          observed = calcOFIM_LMS(model, theta = theta, epsilon = epsilon,
+                                  hessian = hessian, P = P, robust.se = robust.se,
+                                  cluster = cluster.vec, cr1s = cr1s),
           expected = calcEFIM_LMS(model, finalModel = finalModel, theta = theta,
-                                  data = data, epsilon = epsilon, S = EFIM.S,
-                                  parametric = EFIM.parametric, verbose = verbose,
-                                  R.max = R.max, P = P),
+                                  epsilon = epsilon, S = EFIM.S, parametric = EFIM.parametric,
+                                  verbose = verbose, R.max = R.max, P = P),
           stop2("FIM must be either expected or observed")),
      qml =
        switch(FIM,
-          observed = calcOFIM_QML(model, theta = theta, data = data,
-                                  hessian = hessian, epsilon = epsilon,
-                                  robust.se = robust.se, cluster = data$cluster,
-                                  cr1s = cr1s),
+          observed = calcOFIM_QML(model, theta = theta, hessian = hessian,
+                                  epsilon = epsilon, robust.se = robust.se,
+                                  cluster = cluster.vec, cr1s = cr1s),
           expected = calcEFIM_QML(model, finalModel = finalModel, theta = theta,
-                                  data = data, epsilon = epsilon, S = EFIM.S,
+                                  epsilon = epsilon, S = EFIM.S,
                                   parametric = EFIM.parametric, verbose = verbose,
                                   R.max = R.max),
           stop2("FIM must be either expected or observed")),
@@ -64,7 +77,7 @@ calcFIM_da <- function(model,
                                      method = method)
 
   nAdditions   <- ncol(vcov.all) - ncol(vcov)
-  lavLabels    <- model$lavLabels
+  lavLabels    <- model$params$lavLabels
   subLavLabels <- lavLabels[colnames(vcov.all) %in% names(theta)]
   rawLabels    <- colnames(vcov.all)
   dimnames(vcov.all) <- list(lavLabels, lavLabels)
@@ -89,10 +102,10 @@ fdHESS <- function(pars, ...) {
 calcHessian <- function(model, theta, data, method = "lms",
                         epsilon = 1e-8, P = NULL) {
   if (method == "lms") {
-    if (is.null(P)) P <- estepLms(model, theta = theta, data = data)
+    if (is.null(P)) P <- estepLms(model, theta = theta)
     # negative hessian (sign = -1)
     fH <- \(model) observedInfoFromLouisLms(model = model, theta = theta,
-                                            data = data, P = P)$I.obs
+                                            P = P)$I.obs
 
     H <- tryCatch(suppressWarnings(fH(model)), error = function(e) {
       warning2("Optimized calculation of Hessian failed, attempting to switch!\n", e)
@@ -104,10 +117,8 @@ calcHessian <- function(model, theta, data, method = "lms",
   } else if (method == "qml") {
     # negative hessian (sign = -1)
     suppressWarnings({
-
-    H <- fdHESS(pars = theta, fun = logLikQml, model = model,
-                sign = -1, .relStep = .Machine$double.eps^(1/5))
-
+      H <- hessianLogLikQml(theta = theta, model = model,
+                            sign = -1, .relStep = .Machine$double.eps^(1/5))
     })
   }
 
@@ -130,7 +141,9 @@ solveFIM <- function(H, NA__ = -999, use.ginv = FALSE) {
 
 
 calcSE_da <- function(calc.se = TRUE, vcov, rawLabels, NA__ = -999) {
-  if (!calc.se) return(rep(NA__, length(rawLabels)))
+  if (!calc.se)
+    return(stats::setNames(rep(NA__, length(rawLabels)), nm = rawLabels))
+
   if (is.null(vcov)) {
     warning2("Fisher Information Matrix (FIM) was not calculated, ",
              "unable to compute standard errors", immediate. = FALSE)
@@ -162,15 +175,15 @@ calcOFIM_LMS <- function(model, theta, data, hessian = FALSE,
 
   if (hessian) {
     # negative hessian (sign = -1)
-    I <- calcHessian(model, theta = theta, data = data,
+    I <- calcHessian(model, theta = theta,
                      method = "lms", epsilon = epsilon, P = P)
     return(I)
   }
 
   # S: N x k matrix of individual score contributions (OPG)
   S <- suppressWarnings(
-    gradientObsLogLikLms_i(theta, model = model, data = data,
-                           P = P, sign = +1, epsilon = epsilon)
+    gradientObsLogLikLms_i(theta, model = model, P = P, sign = +1,
+                           epsilon = epsilon)
   )
 
   if (!robust.se || is.null(cluster)) {
@@ -225,28 +238,29 @@ calcEFIM_LMS <- function(model, finalModel = NULL, theta, data,
     stopif(is.null(finalModel), "finalModel must be included in calcEFIM_LMS")
 
     parTable   <- modelToParTable(finalModel, method = "lms")
-    population <- simulateDataParTable(parTable, N = R, colsOVs = ovs)$oV
+    POPULATION <- simulateDataParTable(parTable, N = R, colsOVs = ovs)$OV
 
-  } else {
-    population <- data$data.full[sample(data$n, R, replace = TRUE), , drop = FALSE]
+    for (g in seq_len(model$info$n.groups))
+      model$models[[g]]$data <- patternizeMissingDataFIML(POPULATION[[g]])
 
+  } else for (g in seq_len(model$info$n.groups)) {
+    data_g   <- model$models[[g]]$data$data.full
+
+    sample_g <- data_g[sample(NROW(data_g), R, replace = TRUE), , drop = FALSE]
+    model$models[[g]]$data <- patternizeMissingDataFIML(sample_g)
   }
-
-  population <- patternizeMissingDataFIML(population)
   
   popEstep <- estepLms(model      = model,
                        theta      = theta,
-                       data       = population,
                        recalcQuad = TRUE,
                        lastQuad   = if(!is.null(P)) P$quad else NULL)
 
   suppressWarnings({
 
-  J <- gradientObsLogLikLms_i(theta = theta,
-                              model = model,
-                              data  = population,
-                              P     = popEstep,
-                              sign  = +1,
+  J <- gradientObsLogLikLms_i(theta   = theta,
+                              model   = model,
+                              P       = popEstep,
+                              sign    = +1,
                               epsilon = epsilon)      # R × k matrix
   })
 
@@ -272,6 +286,7 @@ calcEFIM_LMS <- function(model, finalModel = NULL, theta, data,
 calcEFIM_QML <- function(model, finalModel = NULL, theta, data, S = 100,
                          parametric = TRUE, epsilon = 1e-8, verbose = FALSE,
                          R.max = 1e6) {
+  stop("EFIM_QML not available in multigroup model yet!")
   k <- length(theta)                       # number of free parameters
   N <- data$n
   R <- min(R.max, N * S)
@@ -279,27 +294,31 @@ calcEFIM_QML <- function(model, finalModel = NULL, theta, data, S = 100,
 
   ovs <- colnames(data$data.full)
 
+  model$data <- patternizeMissingDataFIML(population)
+
   if (parametric) {
     stopif(is.null(finalModel), "finalModel must be included in calcEFIM_QML")
 
-    parTable <- modelToParTable(finalModel, method = "qml")
-    population <- tryCatch(
-      simulateDataParTable(parTable, N = R, colsOVs = ovs)$oV,
+    parTable   <- modelToParTable(finalModel, method = "qml")
+    POPULATION <- simulateDataParTable(parTable, N = R, colsOVs = ovs)$OV
 
-      error = function(e) {
-        warning2("Unable to simulate data for EFIM, using stochastic sampling instead")
-        calcEFIM_QML(model = model, theta = theta, data = data, S = S,
-                     parametric = FALSE, epsilon = epsilon)
-      }
-    )
+    for (g in seq_len(model$info$n.groups))
+      model$models[[g]]$data <- patternizeMissingDataFIML(POPULATION[[g]])
 
-  } else population <- data$data.full[sample(N, R, replace = TRUE), ]
+  } else for (g in seq_len(model$info$n.groups)) {
+    data_g   <- model$models[[g]]$data$data.full
 
-  model$data <- patternizeMissingDataFIML(population)
+    sample_g <- data_g[sample(NROW(data_g), R, replace = TRUE), , drop = FALSE]
+    model$models[[g]]$data <- patternizeMissingDataFIML(sample_g)
+  }
 
-  if (!is.null(model$matrices$fullU)) {
-    fullU <- model$matrices$fullU
-    model$matrices$fullU <- fullU[rep(seq_len(N), length.out = R), , drop = FALSE]
+  for (g in seq_along(model$models)) {
+    if (!is.null(model$models[[g]]$matrices$fullU)) {
+      fullU    <- model$models[[g]]$matrices$fullU
+      fullU_New <- fullU[rep(seq_len(N), length.out = R), , drop = FALSE]
+
+      model$models[[g]]$matrices$fullU <- fullU_New
+    }
   }
 
   suppressWarnings({
@@ -331,7 +350,7 @@ calcOFIM_QML <- function(model, theta, data, hessian = FALSE,
                          robust.se = FALSE,
                          cluster   = NULL,
                          cr1s      = TRUE) {
-  N <- nrow(model$data)
+  N <- sum(vapply(model$models, FUN.VALUE = numeric(1L), FUN = \(sub) NROW(sub$data)))
 
   if (hessian) {
     # negative hessian (sign = -1)
@@ -370,9 +389,8 @@ calcOFIM_QML <- function(model, theta, data, hessian = FALSE,
   # Optional CR1S small-sample correction
   if (isTRUE(cr1s)) {
     q <- ncol(S)
-    if (G > 1 && N > q) {
+    if (G > 1 && N > q)
       B <- B * (G / (G - 1)) * ((N - 1) / (N - q))
-    }
   }
 
   B
@@ -380,7 +398,24 @@ calcOFIM_QML <- function(model, theta, data, hessian = FALSE,
 
 
 getSE_Model <- function(model, se, method, n.additions) {
-  model$lenThetaLabel <- model$lenThetaLabel + n.additions
+  params <- model$params
+
+  for (g in seq_len(model$info$n.groups)) {
+    SELECT_THETA_LAB  <- params$SELECT_THETA_LAB[[g]]
+    SELECT_THETA_COV  <- params$SELECT_THETA_COV[[g]]
+    SELECT_THETA_MAIN <- params$SELECT_THETA_MAIN[[g]]
+
+    SELECT_THETA_LAB  <- seq_len(MAX(SELECT_THETA_LAB) + n.additions)
+    SELECT_THETA_COV  <- SELECT_THETA_COV  + n.additions
+    SELECT_THETA_MAIN <- SELECT_THETA_MAIN + n.additions
+
+    params$SELECT_THETA_LAB[[g]]  <- SELECT_THETA_LAB
+    params$SELECT_THETA_COV[[g]]  <- SELECT_THETA_COV
+    params$SELECT_THETA_MAIN[[g]] <- SELECT_THETA_MAIN
+  }
+
+  model$params <- params
+
   fillModel(replaceNonNaModelMatrices(model, value = -999),
             theta = se, method = method)
 }

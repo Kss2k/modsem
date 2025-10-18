@@ -1,5 +1,5 @@
 createThetaLabel <- function(labelMatrices, labelMatricesCov,
-                              constrExprs, start = NULL) {
+                             constrExprs, start = NULL) {
   matrices <- c(labelMatrices, labelMatricesCov)
   labels <- lapply(matrices, FUN = function(x) {
     if (NCOL(x) == 0 || NROW(x) == 0) return(NULL)
@@ -116,15 +116,20 @@ getJacobianLabelledParams <- function(model, theta, method, epsilon = 1e-8) {
 
 
 getTransformationsTheta <- function(model, theta, method) {
-  theta <- calcPhiTheta(theta = theta, model = model, method = method)
-  if (!model$totalLenThetaLabel) return(theta)
-  if (model$lenThetaLabel) {
-    thetaLabel <- theta[seq_len(model$lenThetaLabel)]
-    theta <- theta[-seq_len(model$lenThetaLabel)]
-  } else thetaLabel <- NULL
+  thetaFull <- calcPhiTheta(theta = theta, model = model, method = method)
 
-  thetaLabel <- suppressWarnings(calcThetaLabel(thetaLabel, model$constrExprs))
-  c(thetaLabel, theta)
+  constrExprs    <- model$params$constrExprs
+  selectThetaLab <- model$params$SELECT_THETA_LAB[[1L]] # fixed across models
+
+  if (!length(selectThetaLab))
+    return(thetaFull)
+
+  thetaLabel <- thetaFull[selectThetaLab]
+  thetaRest  <- thetaFull[-selectThetaLab]
+
+  thetaLabel <- suppressWarnings(calcThetaLabel(thetaLabel, constrExprs))
+
+  c(thetaLabel, thetaRest)
 }
 
 

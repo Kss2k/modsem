@@ -4,6 +4,11 @@
 #'
 #' @param data A dataframe with observed variables used in the model.
 #'
+#' @param group Optional grouping variable for multigroup models. Supply either
+#'   the name of a column in \code{data} or a vector with one value per row in
+#'   \code{data}. The column will be removed from the analysis data prior to
+#'   estimation.
+#'
 #' @param method method to use:
 #' \describe{
 #'   \item{\code{"lms"}}{latent moderated structural equations (not passed to \code{lavaan}).}
@@ -273,6 +278,7 @@
 #' }
 modsem_da <- function(model.syntax = NULL,
                       data = NULL,
+                      group = NULL,
                       method = "lms",
                       verbose = NULL,
                       optimize = NULL,
@@ -444,25 +450,31 @@ modsem_da <- function(model.syntax = NULL,
           auto.fix.first     = auto.fix.first,
           auto.fix.single    = auto.fix.single,
           auto.split.syntax  = auto.split.syntax,
-          cr1s               = cr1s
+          cr1s               = cr1s,
+          group              = group
         )
     )
 
+  if (args$center.data)
+    data <- lapplyDf(data, FUN = function(x) x - mean(x, na.rm = TRUE))
+
+  if (args$standardize.data)
+    data <- lapplyDf(data, FUN = scaleIfNumeric, scaleFactor = FALSE)
+
+  group.info <- getGroupInfo(
+    model.syntax       = model.syntax,
+    cov.syntax         = cov.syntax,
+    data               = data,
+    group              = group,
+    auto.split.syntax  = args$auto.split.syntax
+  )
+
   stopif(!method %in% c("lms", "qml"), "Method must be either 'lms' or 'qml'")
 
-  if (args$center.data) {
-    data <- lapplyDf(data, FUN = function(x) x - mean(x, na.rm = TRUE))
-  }
-
-  if (args$standardize.data) {
-    data <- lapplyDf(data, FUN = scaleIfNumeric, scaleFactor = FALSE)
-  }
-
-  model <- specifyModelDA(model.syntax,
-    data               = data,
+  model <- specifyModelDA(
+    group.info         = group.info,
     method             = method,
     m                  = args$nodes,
-    cov.syntax         = cov.syntax,
     mean.observed      = args$mean.observed,
     double             = args$double,
     quad.range         = args$quad.range,
@@ -473,14 +485,14 @@ modsem_da <- function(model.syntax = NULL,
     orthogonal.y       = args$orthogonal.y,
     auto.fix.first     = args$auto.fix.first,
     auto.fix.single    = args$auto.fix.single,
-    auto.split.syntax  = args$auto.split.syntax,
     cluster            = cluster
   )
 
   if (args$optimize) {
     model <- tryCatch({
       .optimize <- purrr::quietly(optimizeStartingParamsDA)
-      result    <- .optimize(model, args = args, engine = "sam")
+      #.optimize <- optimizeStartingParamsDA
+      result    <- .optimize(model, args = args, group = group, engine = "sam")
       warnings  <- result$warnings
 
       if (length(warnings)) {
@@ -568,8 +580,8 @@ modsem_da <- function(model.syntax = NULL,
   est$expected.matrices <- tryCatch(
     calcExpectedMatricesDA(
       parTable = est$parTable,
-      xis  = getXisModelDA(model), # taking both the main model and cov model into account
-      etas = getEtasModelDA(model)  # taking both the main model and cov model into account
+      xis  = getXisModelDA(model$models[[1L]]), # taking both the main model and cov model into account
+      etas = getEtasModelDA(model$models[[1L]])  # taking both the main model and cov model into account
     ),
     error = function(e) {
       warning2("Failed to calculate expected matrices: ", e$message)
