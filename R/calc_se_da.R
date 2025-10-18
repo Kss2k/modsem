@@ -236,18 +236,20 @@ calcEFIM_LMS <- function(model, finalModel = NULL, theta, data,
     stopif(is.null(finalModel), "finalModel must be included in calcEFIM_LMS")
 
     parTable   <- modelToParTable(finalModel, method = "lms")
-    population <- simulateDataParTable(parTable, N = R, colsOVs = ovs)$oV
+    POPULATION <- simulateDataParTable(parTable, N = R, colsOVs = ovs)$OV
 
-  } else {
-    population <- data$data.full[sample(data$n, R, replace = TRUE), , drop = FALSE]
+    for (g in seq_len(model$info$n.groups))
+      model$models[[g]]$data <- patternizeMissingDataFIML(POPULATION[[g]])
 
+  } else for (g in seq_len(model$info$n.groups)) {
+    data_g   <- model$models[[g]]$data$data.full
+
+    sample_g <- data_g[sample(NROW(data_g), R, replace = TRUE), , drop = FALSE]
+    model$models[[g]]$data <- patternizeMissingDataFIML(sample_g)
   }
-
-  population <- patternizeMissingDataFIML(population)
   
   popEstep <- estepLms(model      = model,
                        theta      = theta,
-                       data       = population,
                        recalcQuad = TRUE,
                        lastQuad   = if(!is.null(P)) P$quad else NULL)
 
@@ -257,8 +259,7 @@ calcEFIM_LMS <- function(model, finalModel = NULL, theta, data,
                               model   = model,
                               P       = popEstep,
                               sign    = +1,
-                              epsilon = epsilon,
-                              data    = population)      # R × k matrix
+                              epsilon = epsilon)      # R × k matrix
   })
 
   I <- matrix(0, nrow = k, ncol = k)
@@ -291,27 +292,31 @@ calcEFIM_QML <- function(model, finalModel = NULL, theta, data, S = 100,
 
   ovs <- colnames(data$data.full)
 
+  model$data <- patternizeMissingDataFIML(population)
+
   if (parametric) {
     stopif(is.null(finalModel), "finalModel must be included in calcEFIM_QML")
 
-    parTable <- modelToParTable(finalModel, method = "qml")
-    population <- tryCatch(
-      simulateDataParTable(parTable, N = R, colsOVs = ovs)$oV,
+    parTable   <- modelToParTable(finalModel, method = "qml")
+    POPULATION <- simulateDataParTable(parTable, N = R, colsOVs = ovs)$OV
 
-      error = function(e) {
-        warning2("Unable to simulate data for EFIM, using stochastic sampling instead")
-        calcEFIM_QML(model = model, theta = theta, data = data, S = S,
-                     parametric = FALSE, epsilon = epsilon)
-      }
-    )
+    for (g in seq_len(model$info$n.groups))
+      model$models[[g]]$data <- patternizeMissingDataFIML(POPULATION[[g]])
 
-  } else population <- data$data.full[sample(N, R, replace = TRUE), ]
+  } else for (g in seq_len(model$info$n.groups)) {
+    data_g   <- model$models[[g]]$data$data.full
 
-  model$data <- patternizeMissingDataFIML(population)
+    sample_g <- data_g[sample(NROW(data_g), R, replace = TRUE), , drop = FALSE]
+    model$models[[g]]$data <- patternizeMissingDataFIML(sample_g)
+  }
 
-  if (!is.null(model$matrices$fullU)) {
-    fullU <- model$matrices$fullU
-    model$matrices$fullU <- fullU[rep(seq_len(N), length.out = R), , drop = FALSE]
+  for (g in seq_along(model$models)) {
+    if (!is.null(model$models[[g]]$matrices$fullU)) {
+      fullU    <- model$models[[g]]$matrices$fullU
+      fullU_New <- fullU[rep(seq_len(N), length.out = R), , drop = FALSE]
+
+      model$models[[g]]$matrices$fullU <- fullU_New
+    }
   }
 
   suppressWarnings({
