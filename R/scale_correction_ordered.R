@@ -522,7 +522,9 @@ modsemOrderedScaleCorrectionV2 <- function(model.syntax,
       data.sg <- fitX2Cov(X = data.sg, S = pcorr)
 
     data.sg <- as.data.frame(data.sg)
-    data.sg[[group]] <- g
+
+    if (!is.null(group))
+      data.sg[[group]] <- g
 
     data.s <- rbind(data.s, data.sg)
   }
