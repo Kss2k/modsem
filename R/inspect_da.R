@@ -126,8 +126,8 @@ modsem_inspect_da <- function(model, what = "default") {
 
     c(
       list(
-        N     = submodel$data$n,
-        data  = submodel$data$data.full,
+        N            = submodel$data$n,
+        data         = submodel$data$data.full,
         lambda       = modsemMatrix(lambda),
         tau          = modsemMatrix(tau),
         theta        = modsemMatrix(theta, symmetric = TRUE),
@@ -149,9 +149,10 @@ modsem_inspect_da <- function(model, what = "default") {
 
   collapseField <- function(field) {
     values <- lapply(group.payloads, `[[`, field)
-    if (!is.multi) {
+
+    if (!is.multi)
       return(values[[1]])
-    }
+
     names(values) <- group.names
     values
   }
@@ -265,8 +266,10 @@ modsem_inspect_da <- function(model, what = "default") {
   }
 
   nullvalues <- vapply(fields, FUN.VALUE = logical(1L), FUN = is.null)
+  okifnull   <- names(fields) %in% c("group", "group.label")
 
-  warnif(any(nullvalues), "Some fields in `modsem_inspect()` could not be retrieved!",
+  warnif(any(nullvalues & !okifnull),
+         "Some fields in `modsem_inspect()` could not be retrieved!",
          immediate. = FALSE)
 
   fields
