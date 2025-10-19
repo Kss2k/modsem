@@ -3,7 +3,8 @@ var_interactions.data.frame <- function(object, ignore.means = FALSE,
                                         monte.carlo = FALSE, mc.reps = 1e6, ...) {
 
   # Preparation
-  parTable <- removeInteractionVariances(fillColsParTable(object))
+  parTable <- getMissingGroups(object)
+  parTable <- removeInteractionVariances(fillColsParTable(parTable))
 
   ## interaction (and square) terms explicitly declared in the model
   out <- NULL
@@ -27,7 +28,6 @@ varInteractionsGroup <- function(parTable, ignore.means = FALSE,
 
   getIntTermLength <- \(xz) length(stringr::str_split(xz, pattern = ":")[[1L]])
   nway <- max(vapply(intTerms, FUN.VALUE = integer(1L), FUN = getIntTermLength))
-
 
   if (nway <= 2L && !monte.carlo) {
     varInteractionsAnalytic(
