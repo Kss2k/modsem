@@ -247,7 +247,8 @@ modsem_pi <- function(model.syntax = NULL,
     return(est)
   }
 
-  if (!is.data.frame(data)) data <- as.data.frame(data)
+  if (!is.data.frame(data))
+    data <- as.data.frame(data)
 
   if (rcs) { # use reliability-correct single items?
     if (!is.null(rcs.choose))
@@ -305,13 +306,13 @@ modsem_pi <- function(model.syntax = NULL,
     data <- data[completeCases, ]
   }
 
-  if (standardize.data || method %in% auto.scale) {
-    data <- lapplyDf(data, FUN = scaleIfNumeric, scaleFactor = FALSE)
-  }
+  cont.cols <- setdiff(colnames(data), c(cluster, group))
 
-  if (center.data || method %in% auto.center) {
-    data <- lapplyDf(data, FUN = function(x) x - mean(x, na.rm = TRUE))
-  }
+  if (args$center.data)
+    data[cont.cols] <- lapply(data[cont.cols], FUN = centerIfNumeric, scaleFactor = FALSE)
+
+  if (args$standardize.data)
+    data[cont.cols] <- lapply(data[cont.cols], FUN = scaleIfNumeric, scaleFactor = FALSE)
 
   prodInds <-
     createProdInds(modelSpec,

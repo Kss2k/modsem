@@ -373,6 +373,7 @@ modsem_da <- function(model.syntax = NULL,
        ordered             = ordered,
        probit.correction   = ordered.probit.correction,
        cluster             = cluster,
+       group               = group,
        cr1s                = cr1s,
        rcs                 = rcs,
        rcs.choose          = rcs.choose,
@@ -455,11 +456,13 @@ modsem_da <- function(model.syntax = NULL,
         )
     )
 
+  cont.cols <- setdiff(colnames(data), c(cluster, group))
+
   if (args$center.data)
-    data <- lapplyDf(data, FUN = function(x) x - mean(x, na.rm = TRUE))
+    data[cont.cols] <- lapply(data[cont.cols], FUN = centerIfNumeric, scaleFactor = FALSE)
 
   if (args$standardize.data)
-    data <- lapplyDf(data, FUN = scaleIfNumeric, scaleFactor = FALSE)
+    data[cont.cols] <- lapply(data[cont.cols], FUN = scaleIfNumeric, scaleFactor = FALSE)
 
   group.info <- getGroupInfo(
     model.syntax       = model.syntax,

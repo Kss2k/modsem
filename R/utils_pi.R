@@ -28,12 +28,30 @@ scaleIfNumeric <- function(x, scaleFactor = TRUE) {
     warning2("x in scaleIfNumeric was NULL")
     return(NULL)
   }
-  if (scaleFactor == TRUE & is.factor(x)) {
+
+  if (scaleFactor & is.factor(x))
     x <- as.numeric(x)
+
+  if (is.numeric(x)) y <- (x - mean(x, na.rm = TRUE)) / stats::sd(x, na.rm = TRUE)
+  else               y <- x 
+
+  y
+}
+
+
+centerIfNumeric <- function(x, scaleFactor = TRUE) {
+  if (is.null(x)) {
+    warning2("x in centerIfNumeric was NULL")
+    return(NULL)
   }
-  if (is.numeric(x)) {
-    (x - mean(x, na.rm = TRUE))/stats::sd(x, na.rm = TRUE)
-  } else x
+
+  if (scaleFactor & is.factor(x))
+    x <- as.numeric(x)
+
+  if (is.numeric(x)) y <- x - mean(x, na.rm = TRUE)
+  else               y <- x 
+
+  y
 }
 
 
