@@ -603,6 +603,7 @@ mainModelToParTable <- function(finalModel, method = "lms") {
                               op = "~~",
                               rowsLhs = FALSE,
                               symmetric = TRUE)
+
   parTable <- rbind(parTable, newRows)
 
   parTable <- lapplyDf(parTable, FUN = function(x) replace(x, x == -999, NA))
@@ -648,7 +649,8 @@ modelToParTable <- function(model, coefs = NULL, se = NULL, method = "lms", calc
     parTable[isLabelled, "std.error"] <- se[labels]
     # if the std.error of a labelled parameter is 0, it is invariant, and should be NA
     # NB: there is a very small chance that a std.error of 0 is caused by a rounding error
-    parTable[isLabelled & parTable$std.error == 0, "std.error"] <- NA
+    zeroStdError <- parTable$std.error == 0 & !is.na(parTable$std.error)
+    parTable[isLabelled & zeroStdError, "std.error"] <- NA
   }
 
   if (!calc.se) parTable$std.error <- NA  # when std.errors are not computed, static constraints
