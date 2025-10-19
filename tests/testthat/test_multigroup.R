@@ -16,16 +16,13 @@ m2 <- '
 
 est <- modsem(m2, oneIntMG, method = "qml", group = "group", robust.se = TRUE,
               cov.syntax = "")
-summary(est)
+summary(est, standardized = TRUE, center = TRUE)
 plot_jn(x = "X", z = "Z", y = "Y", model = est)
 plot_interaction(x = "X", z = "Z", y = "Y", model = est, vals_z = c(1, 0))
-plot_surface(x = "X", z = "Z", y = "Y", model = est)
-#> Error in prettyNum(.Internal(format(x, trim, digits, nsmall, width, 3L, 
-#>  : 
-#>   invalid value 0 for 'digits' argument
-#> In addition: Warning message:
-#> Comparative fit to H0 will not be calculated. 
-
+testthat::expect_warning(
+  plot_surface(x = "X", z = "Z", y = "Y", model = est),
+  regexp = "Plotting of surface.*"
+)
 
 HS.model <- ' visual  =~ x1 + x2 + x3
               textual =~ x4 + x5 + x6
@@ -40,7 +37,7 @@ fit_lavaan <- lavaan::sem(HS.model,
 # using modsem
 fit_modsem <- modsem(HS.model,
                      data = lavaan::HolzingerSwineford1939,
-                     group = "school", method = "lms", max.step = 1)
+                     group = "school")
 
 
 lavaanEst <- lavaan::parameterEstimates(fit_lavaan)
@@ -62,8 +59,6 @@ m1 <- '
 '
 
 est.mg <- modsem(m1, oneIntMG, method = "lms", group = "group", robust.se = TRUE)
-est.g1 <- modsem(m1, subset(oneIntMG, group == "G1"), method = "qml", robust.se = TRUE)
-est.g2 <- modsem(m1, subset(oneIntMG, group == "G2"), method = "qml", robust.se = TRUE)
 
 #> Iter=161 Mode=EM LogLik=-17477.99 ΔLL=3.2e-05 relΔLL=1.8e-09              
 #> 

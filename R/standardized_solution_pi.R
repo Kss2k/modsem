@@ -11,6 +11,9 @@ correctStdSolutionPI <- function(object, parTable.std, grouping = NULL) {
   vcor <- modsem_inspect(object, what = "cor.all")
 
   if (!is.null(grouping)) {
+    if (all(grouping) == 0L)
+      return(parTable.std)
+
     parTable     <- subsetByGrouping(parTable, grouping = grouping)
     parTable.std <- subsetByGrouping(parTable.std, grouping = grouping)
     if (!NROW(parTable) || !NROW(parTable.std)) return(NULL)

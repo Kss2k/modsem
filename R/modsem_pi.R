@@ -308,10 +308,10 @@ modsem_pi <- function(model.syntax = NULL,
 
   cont.cols <- setdiff(colnames(data), c(cluster, group))
 
-  if (args$center.data)
+  if (center.data)
     data[cont.cols] <- lapply(data[cont.cols], FUN = centerIfNumeric, scaleFactor = FALSE)
 
-  if (args$standardize.data)
+  if (standardize.data)
     data[cont.cols] <- lapply(data[cont.cols], FUN = scaleIfNumeric, scaleFactor = FALSE)
 
   prodInds <-

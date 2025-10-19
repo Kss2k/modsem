@@ -585,7 +585,7 @@ addTransformedEstimatesPT <- function(parTable,
                                       pass.parTable = TRUE,
                                       values.to = "transformed",
                                       values.from = "est",
-                                      merge.by = c("lhs", "op", "rhs"),
+                                      merge.by = c("lhs", "op", "rhs", "group"),
                                       ...) {
     if (pass.parTable) parTable.transform <- FUN(parTable = parTable, ...)
     else               parTable.transform <- FUN(...)
