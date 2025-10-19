@@ -658,8 +658,7 @@ modelToParTable <- function(model, coefs = NULL, se = NULL, method = "lms", calc
   parTable[!is.na(parTable$std.error) &
            parTable$std.error == -999, "std.error"] <- NA  # replace -999 with NA
 
-  # Sort parTable before returning
-  sortParTableDA(parTable = parTable, model = model)
+  parTable
 }
 
 
@@ -769,6 +768,7 @@ finalizeModelEstimatesDA <- function(model,
                     customParamsToParTable(model, coefs = lavCoefs$all, se = SE))
 
   parTable <- addZStatsParTable(parTable)
+  parTable <- sortParTableDA(parTable = parTable, model = model)
 
   out <- list(
     model            = finalModel,
