@@ -157,3 +157,18 @@ est_lms_pi <- modsem(syntax_pi, data_pi, method = "lms", calc.se = FALSE)
 est_qml_pi <- modsem(syntax_pi, data_pi, method = "qml", calc.se = FALSE)
 testthat::expect_true(est_lms_pi$iterations == 2)
 testthat::expect_true(est_qml_pi$iterations == 1)
+
+
+m_NA <- '
+  # Outer Model
+  X =~ x1 + x2 +x3
+  Y =~ NA*y1 + y2 + y3
+  Z =~ z1 + z2 + z3
+  Y ~~ 1*Y
+
+  # Inner model
+  Y ~ X + Z
+'
+
+est_lms_NA <- modsem(m_NA, oneInt, method = "lms")
+testthat::expect_true(est_lms_NA$iterations == 2L)

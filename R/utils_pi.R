@@ -183,7 +183,8 @@ defineUndefinedLabels <- function(parTable.x, parTable.y) {
 
   # means that we ha replaced a label
   parTable.z <- merge(parTable.y, parTable.x)
-  parTable.z <- parTable.z[parTable.z$mod.y != "" &  parTable.z$mod.x != "" &
+  parTable.z <- parTable.z[!parTable.z$mod.y %in% c("", "NA") &
+                           !parTable.z$mod.x %in% c("", "NA") &
                            parTable.z$mod.x != parTable.z$mod.y &
                            parTable.z$op %in% c("=~", "~1", "~", "~~"), ]
 

@@ -51,8 +51,13 @@ fillDynExprs <- function(X, parTable, op, RHS, LHS, type) {
     rhs <- dynamicExprs[i, "rhs"]
     mod <- dynamicExprs[i, "mod"]
 
-    X      <- setVal(X = X, rhs = rhs, lhs = lhs, val = 0)
-    labelX <- setVal(X = labelX, rhs = rhs, lhs = lhs, val = mod)
+    if (mod == "NA") {
+      X      <- setVal(X = X, rhs = rhs, lhs = lhs, val = NA)
+      labelX <- setVal(X = labelX, rhs = rhs, lhs = lhs, val = "")
+    } else {
+      X      <- setVal(X = X, rhs = rhs, lhs = lhs, val = 0)
+      labelX <- setVal(X = labelX, rhs = rhs, lhs = lhs, val = mod)
+    }
   }
 
   list(numeric = X, label = labelX)
