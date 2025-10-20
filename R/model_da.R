@@ -328,25 +328,25 @@ specifyModelDA <- function(..., group.info, createTheta = TRUE) {
   names(submodels) <- group.info$levelCres
 
   for (g in seq_len(n.groups)) {
-    args_g <- args 
+    args.g <- args 
 
     if (!is.null(group.info$data))
-      args_g$data <- group.info$data[group.info$indices[[g]], , drop = FALSE]
+      args.g$data <- group.info$data[group.info$indices[[g]], , drop = FALSE]
     else
-      args_g <- addNamedNullField(args_g, field = "data")
+      args.g <- addNamedNullField(args.g, field = "data")
 
-    args_g$parTable <- parTable[parTable$group == g, , drop = FALSE]
+    args.g$parTable <- parTable[parTable$group == g, , drop = FALSE]
 
     if (!is.null(parTableCov))
-      args_g$parTableCovModel <- parTableCov[parTableCov$group == g, , drop = FALSE]
+      args.g$parTableCovModel <- parTableCov[parTableCov$group == g, , drop = FALSE]
     else
-      args_g <- addNamedNullField(args_g, field = "parTableCovModel")
+      args.g <- addNamedNullField(args.g, field = "parTableCovModel")
 
-    submodel_g <- do.call(specifModelDA_Group, args_g)
-    submodel_g$info$group <- group.info$levels[[g]]
-    submodel_g$info$n.groups <- 1L
+    submodel.g <- do.call(specifModelDA_Group, args.g)
+    submodel.g$info$group <- group.info$levels[[g]]
+    submodel.g$info$n.groups <- 1L
 
-    submodels[[g]] <- submodel_g
+    submodels[[g]] <- submodel.g
   }
 
   model <- list(
@@ -756,14 +756,14 @@ finalizeModelEstimatesDA <- function(model,
     submodel$matricesNA <- emptyModel$models[[g]]$matrices
     submodel$covModelNA <- emptyModel$models[[g]]$covModel
 
-    parTable_g <- modelToParTable(submodel,
+    parTable.g <- modelToParTable(submodel,
                                   coefs = lavCoefs$all,
                                   se = SE,
                                   method = method,
                                   calc.se = calc.se,
                                   group = g)
 
-    parTable <- rbind(parTable, parTable_g)
+    parTable <- rbind(parTable, parTable.g)
   }
 
   parTable <- rbind(parTable,

@@ -102,9 +102,9 @@ optimizeStartingParamsDA <- function(model,
     submodel <- model$models[[g]]
     
     if ("group" %in% colnames(parTable))
-      parTable_g <- parTable[parTable$group == g, , drop = FALSE]
+      parTable.g <- parTable[parTable$group == g, , drop = FALSE]
     else
-      parTable_g <- parTable
+      parTable.g <- parTable
 
     fillLabelsMatrix <- function(matNumeric, matLabel, symmetric = FALSE) {
       if (all(matLabel == ""))
@@ -126,19 +126,19 @@ optimizeStartingParamsDA <- function(model,
     matricesMain      <- submodel$matrices
     labelMatricesMain <- submodel$labelMatrices
 
-    LambdaX <- findEstimatesParTable(matricesMain$lambdaX, parTable_g, op = "=~",
+    LambdaX <- findEstimatesParTable(matricesMain$lambdaX, parTable.g, op = "=~",
                                      rows_lhs = FALSE, fill = 0.7)
-    LambdaY <- findEstimatesParTable(matricesMain$lambdaY, parTable_g, op = "=~",
+    LambdaY <- findEstimatesParTable(matricesMain$lambdaY, parTable.g, op = "=~",
                                      rows_lhs = FALSE, fill = 0.7)
 
-    ThetaEpsilon <- findEstimatesParTable(matricesMain$thetaEpsilon, parTable_g,
+    ThetaEpsilon <- findEstimatesParTable(matricesMain$thetaEpsilon, parTable.g,
                                           op = "~~", fill = 0.2)
-    ThetaDelta   <- findEstimatesParTable(matricesMain$thetaDelta, parTable_g,
+    ThetaDelta   <- findEstimatesParTable(matricesMain$thetaDelta, parTable.g,
                                           op = "~~", fill = 0.2)
 
-    Psi <- findEstimatesParTable(matricesMain$psi, parTable_g, op = "~~", fill = 0)
-    Phi <- findEstimatesParTable(matricesMain$phi, parTable_g, op = "~~", fill = 0)
-    A   <- findEstimatesParTable(matricesMain$A, parTable_g, op = "~~", fill = 0)
+    Psi <- findEstimatesParTable(matricesMain$psi, parTable.g, op = "~~", fill = 0)
+    Phi <- findEstimatesParTable(matricesMain$phi, parTable.g, op = "~~", fill = 0)
+    A   <- findEstimatesParTable(matricesMain$A, parTable.g, op = "~~", fill = 0)
 
     # Matrices which can be corrected to ensure viable starting parameters need to
     # get filled in using labels as well, just for the checks them selves
@@ -181,18 +181,18 @@ optimizeStartingParamsDA <- function(model,
     A[upper.tri(A)] <- t(A)[upper.tri(A)]
     A <- t(tryCatch(chol(A), error = function(x) as.I(A)))
 
-    beta0 <- findInterceptsParTable(matricesMain$beta0, parTable_g, fill = 0)
-    alpha <- findInterceptsParTable(matricesMain$alpha, parTable_g, fill = 0)
+    beta0 <- findInterceptsParTable(matricesMain$beta0, parTable.g, fill = 0)
+    alpha <- findInterceptsParTable(matricesMain$alpha, parTable.g, fill = 0)
 
-    GammaEta <- findEstimatesParTable(matricesMain$gammaEta, parTable_g, op = "~", fill = 0)
-    GammaXi  <- findEstimatesParTable(matricesMain$gammaXi, parTable_g, op = "~", fill = 0)
+    GammaEta <- findEstimatesParTable(matricesMain$gammaEta, parTable.g, op = "~", fill = 0)
+    GammaXi  <- findEstimatesParTable(matricesMain$gammaXi, parTable.g, op = "~", fill = 0)
 
     OmegaEtaXi <- findInteractionEstimatesParTable(matricesMain$omegaEtaXi,
-                                                   parTable = parTable_g, fill = 0)
+                                                   parTable = parTable.g, fill = 0)
     OmegaXiXi <- findInteractionEstimatesParTable(matricesMain$omegaXiXi,
-                                                  parTable = parTable_g, fill = 0)
-    tauX <- findInterceptsParTable(matricesMain$tauX, parTable_g, fill = 0)
-    tauY <- findInterceptsParTable(matricesMain$tauY, parTable_g, fill = 0)
+                                                  parTable = parTable.g, fill = 0)
+    tauX <- findInterceptsParTable(matricesMain$tauX, parTable.g, fill = 0)
+    tauY <- findInterceptsParTable(matricesMain$tauY, parTable.g, fill = 0)
 
     thetaMain <- unlist(list(LambdaX[is.na(matricesMain$lambdaX)],
                              LambdaY[is.na(matricesMain$lambdaY)],
@@ -215,11 +215,11 @@ optimizeStartingParamsDA <- function(model,
     labelMatricesCov <- submodel$covModel$labelMatrices
 
     if (!is.null(matricesCov)) {
-      PsiCovModel <- findEstimatesParTable(matricesCov$psi, parTable_g, op = "~~", fill = 0)
-      PhiCovModel <- findEstimatesParTable(matricesCov$phi, parTable_g, op = "~~", fill = 0)
+      PsiCovModel <- findEstimatesParTable(matricesCov$psi, parTable.g, op = "~~", fill = 0)
+      PhiCovModel <- findEstimatesParTable(matricesCov$phi, parTable.g, op = "~~", fill = 0)
 
-      GammaEtaCovModel <- findEstimatesParTable(matricesCov$gammaEta, parTable_g, op = "~", fill = 0)
-      GammaXiCovModel <- findEstimatesParTable(matricesCov$gammaXi, parTable_g, op = "~", fill = 0)
+      GammaEtaCovModel <- findEstimatesParTable(matricesCov$gammaEta, parTable.g, op = "~", fill = 0)
+      GammaXiCovModel <- findEstimatesParTable(matricesCov$gammaXi, parTable.g, op = "~", fill = 0)
 
       PhiCovModel <- correctDiag(PhiCovModel, tol = 0)
       PsiCovModel <- correctDiag(PsiCovModel, tol = 0)

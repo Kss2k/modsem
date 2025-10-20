@@ -215,10 +215,10 @@ plot_jn <- function(x, z, y, model, min_z = -3, max_z = 3,
 
   plots <- list()
   for (g in getGroupsParTable(parTable)) {
-    parTable_g <- parTable[parTable$group == g, , drop = FALSE]
+    parTable.g <- parTable[parTable$group == g, , drop = FALSE]
 
     plots[[g]] <- plotJN_Group(
-      x = x, z = z, y = y, parTable = parTable_g, model = model,
+      x = x, z = z, y = y, parTable = parTable.g, model = model,
       min_z = min_z, max_z = max_z, sig.level = sig.level,
       alpha = alpha, detail = detail, sd.line = sd.line,
       standardized = standardized, xz = xz, ...

@@ -9,8 +9,8 @@ var_interactions.data.frame <- function(object, ignore.means = FALSE,
   ## interaction (and square) terms explicitly declared in the model
   out <- NULL
   for (g in getGroupsParTable(parTable)) {
-    parTable_g <- parTable[parTable$group == g, , drop = FALSE]
-    out <- rbind(out, varInteractionsGroup(parTable_g, ignore.means = ignore.means,
+    parTable.g <- parTable[parTable$group == g, , drop = FALSE]
+    out <- rbind(out, varInteractionsGroup(parTable.g, ignore.means = ignore.means,
                                            monte.carlo = monte.carlo,
                                            mc.reps = mc.reps, group = g, ...))
   }

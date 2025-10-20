@@ -248,9 +248,9 @@ postCheckModel <- function(model) {
 
   for (g in getGroupsParTable(parTable)) {
     submodel   <- model$models[[g]]
-    parTable_g <- parTable[parTable$group == g, , drop = FALSE]
+    parTable.g <- parTable[parTable$group == g, , drop = FALSE]
 
-    checkParTableEstimates(parTable_g)
+    checkParTableEstimates(parTable.g)
     checkVariances(model$expected.matrices[[g]])
     checkCovMatrices(model$expected.matrices[[g]])
   }

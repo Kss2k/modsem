@@ -48,7 +48,7 @@ modsem_inspect_da <- function(model, what = "default") {
     names(expected.by.group) <- group.names
   }
 
-  build_expected_payload <- function(expected) {
+  buildExpectedPayload <- function(expected) {
     if (is.null(expected)) {
       return(list(
         cov.ov  = NULL,
@@ -100,7 +100,7 @@ modsem_inspect_da <- function(model, what = "default") {
     )
   }
 
-  build_group_payload <- function(submodel, expected) {
+  buildGroupPayload <- function(submodel, expected) {
     matrices         <- submodel$matrices
     matricesCovModel <- submodel$covModel$matrices
     fetchCov <- function(name) {
@@ -140,11 +140,11 @@ modsem_inspect_da <- function(model, what = "default") {
         alpha        = modsemMatrix(alpha),
         beta0        = modsemMatrix(beta0)
       ),
-      build_expected_payload(expected)
+      buildExpectedPayload(expected)
     )
   }
 
-  group.payloads <- Map(build_group_payload, groupModels, expected.by.group)
+  group.payloads <- Map(buildGroupPayload, groupModels, expected.by.group)
   names(group.payloads) <- group.names
 
   collapseField <- function(field) {

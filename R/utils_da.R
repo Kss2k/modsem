@@ -552,7 +552,7 @@ nNegativeLast <- function(x, n = 10) {
 getDegreesOfFreedom <- function(p, coef, mean.structure = TRUE) {
   if (!length(p)) return(NA_real_)
 
-  moments_per_group <- function(pp) {
+  momentsPerGroup <- function(pp) {
     if (mean.structure) {
       pp * (pp + 3) / 2
     } else {
@@ -560,7 +560,7 @@ getDegreesOfFreedom <- function(p, coef, mean.structure = TRUE) {
     }
   }
 
-  m_total <- sum(vapply(p, moments_per_group, numeric(1L)))
+  m_total <- sum(vapply(p, momentsPerGroup, numeric(1L)))
   m_total - length(coef)
 }
 
@@ -839,8 +839,8 @@ calcExpectedMatricesDA <- function(parTable, xis = NULL, etas = NULL, intTerms =
   lapply(
     X = getGroupsParTable(parTable),
     FUN = function(g) {
-      parTable_g <- parTable[parTable$group == g, , drop = FALSE]
-      calcExpectedMatricesDA_Group(parTable_g, xis = xis, etas = etas, intTerms = intTerms)
+      parTable.g <- parTable[parTable$group == g, , drop = FALSE]
+      calcExpectedMatricesDA_Group(parTable.g, xis = xis, etas = etas, intTerms = intTerms)
     }
   )
 }
@@ -1139,8 +1139,8 @@ recalcInterceptsY <- function(parTable) {
   out <- NULL
 
   for (g in getGroupsParTable(parTable)) {
-    parTable_g <- parTable[parTable$group == g, , drop = FALSE]
-    out <- rbind(out, recalcInterceptsY_Group(parTable_g))  
+    parTable.g <- parTable[parTable$group == g, , drop = FALSE]
+    out <- rbind(out, recalcInterceptsY_Group(parTable.g))  
   }
 
   rbind(out, getZeroGroupParTable(parTable))
@@ -1206,10 +1206,10 @@ getZeroGroupParTable <- function(parTable) {
 prepareDataGroupDA <- function(group, data) {
   if (is.null(group)) {
     return(list(
-      has_groups = FALSE,
+      has.groups = FALSE,
       group = NULL,
-      group_raw = NULL,
-      group_var = NULL,
+      group.raw = NULL,
+      group.var = NULL,
       levels = NULL,
       n.groups = 1L,
       indices = list(seq_len(NROW(data))),
@@ -1224,34 +1224,34 @@ prepareDataGroupDA <- function(group, data) {
   n <- NROW(data)
   stopif(n == 0L, "Grouping requires non-empty data.")
 
-  group_raw <- NULL
-  group_var <- NULL
+  group.raw <- NULL
+  group.var <- NULL
 
   stopif(length(group) != 1L, "Grouping variable must be of length 1!")
   stopif(!group %in% names(data),
          sprintf("Grouping variable '%s' not found in `data`.", group))
 
-  group_raw <- data[[group]]
+  group.raw <- data[[group]]
   data <- data[, setdiff(names(data), group), drop = FALSE]
-  group_var <- group
+  group.var <- group
 
-  stopif(length(group_raw) != n, "Length of `group` must match the number of rows in `data`.")
-  stopif(any(is.na(group_raw)), "`group` cannot contain missing values.")
+  stopif(length(group.raw) != n, "Length of `group` must match the number of rows in `data`.")
+  stopif(any(is.na(group.raw)), "`group` cannot contain missing values.")
 
-  group_raw <- as.character(group_raw) # match lavaan behaviour, ignore factor levels
-  levels_order <- unique(group_raw)
-  group_factor <- factor(group_raw, levels = levels_order)
+  group.raw <- as.character(group.raw) # match lavaan behaviour, ignore factor levels
+  levels_order <- unique(group.raw)
+  group_factor <- factor(group.raw, levels = levels_order)
 
-  levels_group <- levels(group_factor)
-  n.groups <- length(levels_group)
+  group.levels <- levels(group_factor)
+  n.groups <- length(group.levels)
   indices <- split(seq_len(n), group_factor)
 
   list(
-    has_groups = n.groups > 1L,
+    has.groups = n.groups > 1L,
     group = group_factor,
-    group_raw = group_raw,
-    group_var = group_var,
-    levels = levels_group,
+    group.raw = group.raw,
+    group.var = group.var,
+    levels = group.levels,
     n.groups = n.groups,
     indices = indices,
     data = data,
@@ -1325,12 +1325,12 @@ expandParTableByGroup <- function(parTable, group.levels) {
   colsOut <- c("lhs", "op", "rhs", "group", "mod")
   parTableFull <- NULL
   for (i in seq_len(n.groups)) {
-    parTable_g       <- baseTable
-    parTable_g$mod   <- MOD[, i]
-    parTable_g$group <- i
+    parTable.g       <- baseTable
+    parTable.g$mod   <- MOD[, i]
+    parTable.g$group <- i
 
-    parTable_g <- parTable_g[colsOut]
-    parTableFull <- rbind(parTableFull, parTable_g)
+    parTable.g <- parTable.g[colsOut]
+    parTableFull <- rbind(parTableFull, parTable.g)
   }
 
   if (NROW(constraints)) {

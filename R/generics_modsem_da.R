@@ -906,8 +906,8 @@ modsem_predict.modsem_da <- function(object, standardized = FALSE, H0 = TRUE, ne
     sigma.inv <- GINV(sigma)
     lambda    <- getLambdaParTable(parTableH0g, rows = colnames(sigma), cols = lVs)
 
-    newdata_g <- NEWDATA[[g]]
-    X <- apply(as.matrix(newdata_g), MARGIN = 2, FUN = transform.x)
+    newdata.g <- NEWDATA[[g]]
+    X <- apply(as.matrix(newdata.g), MARGIN = 2, FUN = transform.x)
     X <- X[, colnames(sigma), drop = FALSE]
 
     FSC <- GINV(t(lambda) %*% sigma.inv %*% lambda) %*% (t(lambda) %*% sigma.inv)

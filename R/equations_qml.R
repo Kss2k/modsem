@@ -228,14 +228,14 @@ hessianLogLikQml <- function(theta, model, sign = -1, .relStep = .Machine$double
       SELECT_THETA_MAIN[[g]]
     )
 
-    .fg <- function(theta_g) {
-      theta[indices] <- theta_g # local copy of theta
+    .fg <- function(theta.g) {
+      theta[indices] <- theta.g # local copy of theta
       modFilled <- fillModel(theta = theta, model = model, method = "qml")
       .f(submodel = modFilled$models[[g]], sign = sign, sum = TRUE)
     }
 
-    theta_g <- theta[indices]
-    Hg <- fdHESS(pars = theta_g, fun = .fg, .relStep = .Machine$double.eps^(1/5))
+    theta.g <- theta[indices]
+    Hg <- fdHESS(pars = theta.g, fun = .fg, .relStep = .Machine$double.eps^(1/5))
 
     H[indices, indices] <- H[indices, indices] + Hg
   }

@@ -26,10 +26,10 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
   # The custom labels must all be added, before computing THETA_LAB_ALL
   for (g in seq_len(n.groups)) {
     submodel     <- model$models[[g]]
-    thetaLabel_g <- createThetaLabel(submodel$labelMatrices,
+    thetaLabel.g <- createThetaLabel(submodel$labelMatrices,
                                      submodel$covModel$labelMatrices,
                                      model$params$constrExprs)
-    THETA_LAB <- unionByNames(THETA_LAB, thetaLabel_g)
+    THETA_LAB <- unionByNames(THETA_LAB, thetaLabel.g)
   }
   THETA_LAB_ALL <- calcThetaLabel(THETA_LAB, model$params$constrExprs)
   LAV_LAB       <- names(THETA_LAB_ALL)
@@ -111,12 +111,12 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
   SELECT_THETA_MAIN <- vector("list", length = n.groups)
 
   for (g in seq_len(n.groups)) {
-    labelsMain_g <- LABELS_MAIN_GROUPS[[g]]
-    labelsCov_g  <- LABELS_COV_GROUPS[[g]]
+    labelsMain.g <- LABELS_MAIN_GROUPS[[g]]
+    labelsCov.g  <- LABELS_COV_GROUPS[[g]]
 
     selectTL <- seq_along(THETA_LAB) # available to all sub models
-    selectTC <- which(names(THETA_COV) %in% labelsCov_g)
-    selectTM <- which(names(THETA_MAIN) %in% labelsMain_g)
+    selectTC <- which(names(THETA_COV) %in% labelsCov.g)
+    selectTM <- which(names(THETA_MAIN) %in% labelsMain.g)
     
     # The selections must be offset by their respective location THETA as a whole
     # only selectTL doesn't need to be shifted, as it's at the start
@@ -375,7 +375,7 @@ calcPhiTheta <- function(theta, model, method) {
                 model$params$SELECT_THETA_COV[[g]],
                 model$params$SELECT_THETA_MAIN[[g]])
 
-    theta_g      <- theta[select]
+    theta.g      <- theta[select]
     submodFilled <- modFilled$models[[g]]
     submodel     <- model$models[[g]]
 

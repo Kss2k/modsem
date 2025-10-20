@@ -279,16 +279,16 @@ simpleGradientAllLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-
 
   for (g in seq_len(modelR$info$n.groups)) {
     submodelR   <- modelR$models[[g]]
-    locations_g <- locations[locations$group == g, , drop = FALSE]
+    locations.g <- locations[locations$group == g, , drop = FALSE]
 
     data      <- submodelR$data
-    block     <- locations_g$block
-    row       <- locations_g$row
-    col       <- locations_g$col
-    param     <- locations_g$param
-    symmetric <- locations_g$symmetric
+    block     <- locations.g$block
+    row       <- locations.g$row
+    col       <- locations.g$col
+    param     <- locations.g$param
+    symmetric <- locations.g$symmetric
 
-    grad_g <- FGRAD(modelR    = submodelR,
+    grad.g <- FGRAD(modelR    = submodelR,
                     P         = P$P_GROUPS[[g]],
                     block     = block,
                     row       = row,
@@ -301,7 +301,7 @@ simpleGradientAllLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-
                     eps       = epsilon,
                     ncores    = ThreadEnv$n.threads)
 
-    grad[locations_g$param, ] <- grad_g
+    grad[locations.g$param, ] <- grad.g
   }
 
   if (length(nlinDerivs)) {
@@ -333,17 +333,17 @@ obsLogLikLms <- function(theta, model, P, sign = 1, ...) {
   ll <- 0
   for (g in seq_len(modFilled$info$n.groups)) {
     submodel <- modFilled$models[[g]]
-    data_g   <- submodel$data
-    P_g      <- P$P_GROUPS[[g]]
+    data.g   <- submodel$data
+    P.g      <- P$P_GROUPS[[g]]
 
-    ll_g <- observedLogLikLmsCpp(submodel,
-                                 dataR = data_g$data.split,
-                                 colidxR = data_g$colidx0,
-                                 P = P_g,
-                                 n = data_g$n.pattern,
-                                 npatterns = data_g$p,
+    ll.g <- observedLogLikLmsCpp(submodel,
+                                 dataR = data.g$data.split,
+                                 colidxR = data.g$colidx0,
+                                 P = P.g,
+                                 n = data.g$n.pattern,
+                                 npatterns = data.g$p,
                                  ncores = ThreadEnv$n.threads)
-    ll <- ll + ll_g
+    ll <- ll + ll.g
   }
 
   sign * ll
@@ -355,11 +355,11 @@ obsLogLikLmsGroup <- function(submodel, P, sign = -1, ...) {
     data <- submodel$data
 
     ll <- observedLogLikLmsCpp(submodel,
-                               dataR = data_g$data.split,
-                               colidxR = data_g$colidx0,
+                               dataR = data.g$data.split,
+                               colidxR = data.g$colidx0,
                                P = P,
-                               n = data_g$n.pattern,
-                               npatterns = data_g$p,
+                               n = data.g$n.pattern,
+                               npatterns = data.g$p,
                                ncores = ThreadEnv$n.threads)
     sign * ll
 
@@ -388,7 +388,7 @@ gradientObsLogLikLms <- function(theta, model, P, sign = 1, epsilon = 1e-6) {
 }
 
 
-obsLogLikLms_i_group <- function(submodel, data, P, sign = 1) {
+obsLogLikLmsGroup_i <- function(submodel, data, P, sign = 1) {
   data <- submodel$data
   V  <- P$V
   w  <- P$w
@@ -422,16 +422,10 @@ obsLogLikLms_i_group <- function(submodel, data, P, sign = 1) {
 }
 
 
-# gradient function of obsLogLikLms_i
 gradientObsLogLikLms_i <- function(theta, model, P, sign = 1, epsilon = 1e-4) {
-  # FOBJECTIVE <- function(theta, submodel, P, sign, epsilon) {
-  #   obsLogLikLms_i_group(theta = theta, submodel = submodel, P = P,
-  #                        sign = sign, epsilon = epsilon)
-  # }
-
   complicatedGradientAllLogLikLms(theta = theta, model = model, P = P,
                                   sign = sign, epsilon = epsilon, sum = FALSE,
-                                  FOBJECTIVE = obsLogLikLms_i_group)
+                                  FOBJECTIVE = obsLogLikLmsGroup_i)
 }
 
 
@@ -498,14 +492,14 @@ complicatedHessianAllLogLikLms <- function(theta, model, P, sign = -1,
       SELECT_THETA_MAIN[[g]]
     )
 
-    FOBJECTIVE_GROUP <- function(theta_g) {
-      theta[indices] <- theta_g # local copy of theta
+    FOBJECTIVE_GROUP <- function(theta.g) {
+      theta[indices] <- theta.g # local copy of theta
       modFilled <- fillModel(theta = theta, model = model, method = "lms")
       FOBJECTIVE(submodel = modFilled$models[[g]], sign = sign, P = P$P_GROUPS[[g]])
     }
 
-    theta_g <- theta[indices]
-    Hg <- fdHESS(pars = theta_g, fun = FOBJECTIVE_GROUP, .relStep = .Machine$double.eps^(1/5))
+    theta.g <- theta[indices]
+    Hg <- fdHESS(pars = theta.g, fun = FOBJECTIVE_GROUP, .relStep = .Machine$double.eps^(1/5))
 
     H[indices, indices] <- H[indices, indices] + Hg
   }
@@ -533,33 +527,33 @@ simpleHessianAllLogLikLms <- function(theta, model, P, sign = -1,
   names(grad) <- locations$param
 
   for (g in seq_len(modelR$info$n.groups)) {
-    locations_g <- locations[locations$group == g, , drop = FALSE]
-    if (!NROW(locations_g)) next
+    locations.g <- locations[locations$group == g, , drop = FALSE]
+    if (!NROW(locations.g)) next
 
     submodelR <- modelR$models[[g]]
-    data_g    <- submodelR$data
+    data.g    <- submodelR$data
 
-    HESS_g <- FHESS(modelR    = submodelR,
+    HESS.g <- FHESS(modelR    = submodelR,
                     P         = P$P_GROUPS[[g]],
-                    block     = locations_g$block,
-                    row       = locations_g$row,
-                    col       = locations_g$col,
-                    colidxR   = data_g$colidx0,
-                    n         = data_g$n.pattern,
-                    d         = data_g$d.pattern,
-                    npatterns = data_g$p,
-                    symmetric = locations_g$symmetric,
+                    block     = locations.g$block,
+                    row       = locations.g$row,
+                    col       = locations.g$col,
+                    colidxR   = data.g$colidx0,
+                    n         = data.g$n.pattern,
+                    d         = data.g$d.pattern,
+                    npatterns = data.g$p,
+                    symmetric = locations.g$symmetric,
                     .relStep  = .relStep,
                     ncores    = ThreadEnv$n.threads)
 
-    H_g    <- HESS_g$Hessian
-    grad_g <- HESS_g$gradient
+    H.g    <- HESS.g$Hessian
+    grad.g <- HESS.g$gradient
 
-    dimnames(H_g) <- list(locations_g$param, locations_g$param)
-    names(grad_g) <- locations_g$param
+    dimnames(H.g) <- list(locations.g$param, locations.g$param)
+    names(grad.g) <- locations.g$param
 
-    H[locations_g$param, locations_g$param] <- H[locations_g$param, locations_g$param] + H_g
-    grad[locations_g$param] <- grad[locations_g$param] + grad_g
+    H[locations.g$param, locations.g$param] <- H[locations.g$param, locations.g$param] + H.g
+    grad[locations.g$param] <- grad[locations.g$param] + grad.g
   }
 
   if (length(nlinDerivs)) {
@@ -747,19 +741,19 @@ observedInfoFromLouisLms <- function(model,
   row_offset <- 0L
   for (g in seq_len(model$info$n.groups)) {
     submodel <- model$models[[g]]
-    data_g   <- submodel$data
-    P_g      <- P$P_GROUPS[[g]]
-    rows     <- seq_len(data_g$n) + row_offset
+    data.g   <- submodel$data
+    P.g      <- P$P_GROUPS[[g]]
+    rows     <- seq_len(data.g$n) + row_offset
 
     active_idx <- .activeThetaIndicesLms(model, g, p)
-    Jg <- length(P_g$w)
+    Jg <- length(P.g$w)
     for (j in seq_len(Jg)) {
-      z_j <- P_g$V[j, , drop = FALSE]
-      S_j <- .completeScoresNodeFD(theta, model, data_g, z_j,
+      z_j <- P.g$V[j, , drop = FALSE]
+      S_j <- .completeScoresNodeFD(theta, model, data.g, z_j,
                                    epsilon = fd.epsilon, scheme = fd.scheme,
                                    group = if (model$info$n.groups > 1L) g else NULL,
                                    active = active_idx)
-      r_j <- P_g$P[, j]
+      r_j <- P.g$P[, j]
 
       Rhalf <- sqrt(pmax(r_j, 0))
       if (NROW(S_j) && NCOL(S_j)) {
@@ -774,7 +768,7 @@ observedInfoFromLouisLms <- function(model,
       }
     }
 
-    row_offset <- row_offset + data_g$n
+    row_offset <- row_offset + data.g$n
   }
 
   sbar_outer <- crossprod(Sbar)

@@ -358,8 +358,8 @@ meanInteractions <- function(parTable, ignore.means = FALSE) {
   out <- NULL
 
   for (g in getGroupsParTable(parTable)) {
-    parTable_g <- parTable[parTable$group == g, , drop = FALSE]
-    out <- rbind(out, meanInteractionsGroup(parTable_g,
+    parTable.g <- parTable[parTable$group == g, , drop = FALSE]
+    out <- rbind(out, meanInteractionsGroup(parTable.g,
                                             ignore.means = ignore.means,
                                             group = g))
   }
@@ -758,8 +758,8 @@ isNonCenteredParTable <- function(parTable, tol = 1e-10) {
     parTableProto$group <- 1L
 
   for (g in getGroupsParTable(parTableProto)) {
-    parTableProto_g <- parTableProto
-    means <- getMeans(intVars, parTableProto_g)
+    parTableProto.g <- parTableProto
+    means <- getMeans(intVars, parTableProto.g)
 
     if (any(abs(means) > tol))
       return(TRUE)

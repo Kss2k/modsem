@@ -245,10 +245,10 @@ calcEFIM_LMS <- function(model, finalModel = NULL, theta,
       model$models[[g]]$data <- patternizeMissingDataFIML(POPULATION[[g]])
 
   } else for (g in seq_len(model$info$n.groups)) {
-    data_g   <- model$models[[g]]$data$data.full
+    data.g   <- model$models[[g]]$data$data.full
 
-    sample_g <- data_g[sample(NROW(data_g), R, replace = TRUE), , drop = FALSE]
-    model$models[[g]]$data <- patternizeMissingDataFIML(sample_g)
+    sample.g <- data.g[sample(NROW(data.g), R, replace = TRUE), , drop = FALSE]
+    model$models[[g]]$data <- patternizeMissingDataFIML(sample.g)
   }
   
   popEstep <- estepLms(model      = model,
@@ -306,10 +306,10 @@ calcEFIM_QML <- function(model, finalModel = NULL, theta, data, S = 100,
       model$models[[g]]$data <- patternizeMissingDataFIML(POPULATION[[g]])
 
   } else for (g in seq_len(model$info$n.groups)) {
-    data_g   <- model$models[[g]]$data$data.full
+    data.g   <- model$models[[g]]$data$data.full
 
-    sample_g <- data_g[sample(NROW(data_g), R, replace = TRUE), , drop = FALSE]
-    model$models[[g]]$data <- patternizeMissingDataFIML(sample_g)
+    sample.g <- data.g[sample(NROW(data.g), R, replace = TRUE), , drop = FALSE]
+    model$models[[g]]$data <- patternizeMissingDataFIML(sample.g)
   }
 
   for (g in seq_along(model$models)) {

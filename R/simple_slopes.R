@@ -152,10 +152,10 @@ simple_slopes <- function(x,
 
   for (g in getGroupsParTable(parTable)) {
     label      <- tryCatch(group.label[[g]], error = \(e) as.character(g))
-    parTable_g <- parTable[parTable$group == g, , drop = FALSE]
+    parTable.g <- parTable[parTable$group == g, , drop = FALSE]
 
     out[[label]] <- simpleSlopesGroup(
-      x = x, z = z, y = y, parTable = parTable_g, model = model, vals_x = vals_x,
+      x = x, z = z, y = y, parTable = parTable.g, model = model, vals_x = vals_x,
       vals_z = vals_z, rescale = rescale, ci_width = ci_width, ci_type = ci_type,
       relative_h0 = relative_h0, xz = xz, ...
     )

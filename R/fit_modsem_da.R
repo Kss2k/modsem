@@ -66,72 +66,72 @@ fit_modsem_da <- function(model, chisq = TRUE, lav.fit = FALSE) {
 
   for (g in seq_len(n.groups)) {
     submodel <- submodels[[g]]
-    data_g   <- submodel$data
+    data.g   <- submodel$data
 
-    data_full <- data_g$data.full
+    data_full <- data.g$data.full
     if (is.null(data_full) || !NROW(data_full) || !NCOL(data_full)) {
       next
     }
 
     data_full <- as.matrix(data_full)
-    N_g <- NROW(data_full)
-    p_g <- NCOL(data_full)
+    N.g <- NROW(data_full)
+    p.g <- NCOL(data_full)
 
-    N_vec[g] <- N_g
-    p_vec[g] <- p_g
+    N_vec[g] <- N.g
+    p_vec[g] <- p.g
 
-    mu_g_vec <- apply(data_full, 2, mean, na.rm = TRUE)
-    mu_g <- matrix(mu_g_vec, ncol = 1,
+    mu.g_vec <- apply(data_full, 2, mean, na.rm = TRUE)
+    mu.g <- matrix(mu.g_vec, ncol = 1,
                    dimnames = list(colnames(data_full), "~1"))
-    O_g <- stats::cov(data_full, use = "pairwise.complete.obs")
+    O.g <- stats::cov(data_full, use = "pairwise.complete.obs")
 
-    expected_g <- expected.list[[g]]
-    E_g <- if (!is.null(expected_g) && !is.null(expected_g$sigma.ov)) expected_g$sigma.ov else NULL
-    mu_hat_g <- if (!is.null(expected_g) && !is.null(expected_g$mu.ov)) expected_g$mu.ov else NULL
+    expected.g <- expected.list[[g]]
+    E.g <- if (!is.null(expected.g) && !is.null(expected.g$sigma.ov)) expected.g$sigma.ov else NULL
+    mu_hat.g <- if (!is.null(expected.g) && !is.null(expected.g$mu.ov)) expected.g$mu.ov else NULL
 
-    if (!mean.s || is.null(mu_hat_g)) {
-      mu_hat_g <- mu_g
+    if (!mean.s || is.null(mu_hat.g)) {
+      mu_hat.g <- mu.g
     }
 
-    if (!is.null(E_g)) {
+    if (!is.null(E.g)) {
       order_vars <- colnames(data_full)
-      E_g <- E_g[order_vars, order_vars, drop = FALSE]
-      mu_hat_g <- mu_hat_g[order_vars, , drop = FALSE]
+      E.g <- E.g[order_vars, order_vars, drop = FALSE]
+      mu_hat.g <- mu_hat.g[order_vars, , drop = FALSE]
     }
 
     prefix <- group.labels[[g]]
-    sample_cov_blocks[[g]] <- modsemMatrix(O_g, symmetric = TRUE)
-    mu_obs_blocks[[g]] <- modsemMatrix(mu_g)
+    sample_cov_blocks[[g]] <- modsemMatrix(O.g, symmetric = TRUE)
+    mu_obs_blocks[[g]] <- modsemMatrix(mu.g)
 
-    if (!is.null(E_g)) {
-      expected_cov_blocks[[g]] <- modsemMatrix(E_g, symmetric = TRUE)
-      mu_exp_blocks[[g]] <- modsemMatrix(mu_hat_g)
+    if (!is.null(E.g)) {
+      expected_cov_blocks[[g]] <- modsemMatrix(E.g, symmetric = TRUE)
+      mu_exp_blocks[[g]] <- modsemMatrix(mu_hat.g)
     } else {
       expected_cov_blocks[[g]] <- NULL
       mu_exp_blocks[[g]] <- NULL
     }
 
-    if (chisq && !is.null(E_g)) {
-      chi_g <- tryCatch(
-        calcChiSqr(O = O_g, E = E_g, N = N_g, p = p_g, mu = mu_g, mu.hat = mu_hat_g),
+    if (chisq && !is.null(E.g)) {
+      chi.g <- tryCatch(
+        calcChiSqr(O = O.g, E = E.g, N = N.g, p = p.g, mu = mu.g, mu.hat = mu_hat.g),
         error = function(e) {
           warning2("Failed to compute chi-square contribution for group '",
                    prefix, "': ", conditionMessage(e), immediate. = FALSE)
           NA_real_
         }
       )
-      chisq_parts[g] <- chi_g
+      chisq_parts[g] <- chi.g
 
-      if (!is.na(chi_g)) {
-        srmr_g <- tryCatch(
-          calcSRMR_Mplus(S = O_g, M = mu_g, Sigma.hat = E_g, Mu.hat = mu_hat_g,
+      if (!is.na(chi.g)) {
+        srmr.g <- tryCatch(
+          calcSRMR_Mplus(S = O.g, M = mu.g, Sigma.hat = E.g, Mu.hat = mu_hat.g,
                          mean.structure = mean.s),
           error = function(e) NA_real_
         )
 
-        if (!is.na(srmr_g)) {
-          weight <- max(N_g, 1)
-          srmr_weight_num <- srmr_weight_num + weight * srmr_g^2
+        if (!is.na(srmr.g)) {
+          weight <- max(N.g, 1)
+          srmr_weight_num <- srmr_weight_num + weight * srmr.g^2
           srmr_weight_den <- srmr_weight_den + weight
         }
       }
