@@ -63,7 +63,7 @@ calcFIM_da <- function(model,
     warnif(hessian && FIM == "observed",
            "`robust.se = TRUE` should not be paired with ",
            "`OFIM.hessian = TRUE` and `FIM = \"observed\"`")
-    H <- calcHessian(model, theta = theta, data = data, method = method,
+    H <- calcHessian(model, theta = theta, method = method,
                      epsilon = epsilon, P = P)
     invH <- solveFIM(H, NA__ = NA__)
 
@@ -99,7 +99,7 @@ fdHESS <- function(pars, ...) {
 }
 
 
-calcHessian <- function(model, theta, data, method = "lms",
+calcHessian <- function(model, theta, method = "lms",
                         epsilon = 1e-8, P = NULL) {
   if (method == "lms") {
     if (is.null(P)) P <- estepLms(model, theta = theta)
@@ -166,12 +166,13 @@ calcSE_da <- function(calc.se = TRUE, vcov, rawLabels, NA__ = -999) {
 }
 
 
-calcOFIM_LMS <- function(model, theta, data, hessian = FALSE,
+calcOFIM_LMS <- function(model, theta, hessian = FALSE,
                          epsilon = 1e-6, P = NULL,
                          robust.se = FALSE,
                          cluster   = NULL,
                          cr1s      = TRUE) {
-  if (is.null(P)) P <- estepLms(model, theta = theta, data = data)
+  if (is.null(P))
+    P <- estepLms(model, theta = theta)
 
   if (hessian) {
     # negative hessian (sign = -1)
@@ -220,19 +221,19 @@ calcOFIM_LMS <- function(model, theta, data, hessian = FALSE,
 }
 
 
-calcEFIM_LMS <- function(model, finalModel = NULL, theta, data,
-                         S         = 100,
+calcEFIM_LMS <- function(model, finalModel = NULL, theta,
+                         S          = 100,
                          parametric = TRUE,
                          epsilon    = 1e-6,
                          verbose    = FALSE,
                          R.max      = 1e6,
                          P          = NULL) {
   k <- length(theta)                       # number of free parameters
-  N <- data$n
+  N <- sum(vapply(model$models, FUN.VALUE = numeric(1L), FUN = \(sub) sub$data$n))
   R <- min(R.max, N * S)
   warnif(R.max <= N, "R.max is less than N!")
 
-  ovs <- colnames(data$data.full)
+  ovs <- colnames(model$models[[1L]]$data$data.full)
 
   if (parametric) {
     stopif(is.null(finalModel), "finalModel must be included in calcEFIM_LMS")
@@ -286,13 +287,12 @@ calcEFIM_LMS <- function(model, finalModel = NULL, theta, data,
 calcEFIM_QML <- function(model, finalModel = NULL, theta, data, S = 100,
                          parametric = TRUE, epsilon = 1e-8, verbose = FALSE,
                          R.max = 1e6) {
-  stop("EFIM_QML not available in multigroup model yet!")
   k <- length(theta)                       # number of free parameters
-  N <- data$n
+  N <- sum(vapply(model$models, FUN.VALUE = numeric(1L), FUN = \(sub) sub$data$n))
   R <- min(R.max, N * S)
   warnif(R.max <= N, "R.max is less than N!")
 
-  ovs <- colnames(data$data.full)
+  ovs <- colnames(model$models[[1L]]$data$data.full)
 
   model$data <- patternizeMissingDataFIML(population)
 
@@ -345,7 +345,8 @@ calcEFIM_QML <- function(model, finalModel = NULL, theta, data, S = 100,
 }
 
 
-calcOFIM_QML <- function(model, theta, data, hessian = FALSE,
+calcOFIM_QML <- function(model, theta,
+                         hessian = FALSE,
                          epsilon = 1e-8,
                          robust.se = FALSE,
                          cluster   = NULL,
@@ -354,7 +355,7 @@ calcOFIM_QML <- function(model, theta, data, hessian = FALSE,
 
   if (hessian) {
     # negative hessian (sign = -1)
-    I <- calcHessian(model = model, theta = theta, data = data,
+    I <- calcHessian(model = model, theta = theta,
                      method = "qml", epsilon = epsilon)
     return(I)
   }
