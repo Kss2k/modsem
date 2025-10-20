@@ -293,4 +293,4 @@ m1 <- '
   Y ~ X + Z
 '
 
-summary(modsem(m1, oneInt, method = "lms"))
+summary(modsem(m1, oneInt, method = "lms"), H0 = FALSE)
