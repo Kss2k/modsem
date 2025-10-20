@@ -4,10 +4,8 @@
 #'
 #' @param data A dataframe with observed variables used in the model.
 #'
-#' @param group Optional grouping variable for multigroup models. Supply either
-#'   the name of a column in \code{data} or a vector with one value per row in
-#'   \code{data}. The column will be removed from the analysis data prior to
-#'   estimation.
+#' @param Character. A variable name in the data frame defining the groups in a multiple
+#'   group analysis
 #'
 #' @param method method to use:
 #' \describe{
@@ -398,6 +396,7 @@ modsem_da <- function(model.syntax = NULL,
     corrected <- relcorr_single_item(
       syntax          = model.syntax,
       data            = data,
+      group           = group,
       choose          = rcs.choose,
       scale.corrected = rcs.scale.corrected,
       warn.lav        = FALSE

@@ -26,6 +26,9 @@
 #' @param warn.lav Should warnings from \code{lavaan::cfa} be displayed? If \code{FALSE}, they
 #'   are suppressed.
 #'
+#' @param Character. A variable name in the data frame defining the groups in a multiple
+#'   group analysis
+#'
 #' @return An object of S3 class \code{modsem_relcorr} (a named list) with elements:
 #' \describe{
 #'   \item{\code{syntax}}{Modified lavaan syntax string.}
@@ -70,10 +73,73 @@ relcorr_single_item <- function(syntax,
                                 data,
                                 choose = NULL,
                                 scale.corrected = TRUE,
-                                warn.lav = TRUE) {
+                                warn.lav = TRUE,
+                                group = NULL) {
   data <- as.data.frame(data)
 
-  parTable      <- modsemify(syntax)
+  if (is.null(group))
+    return(relcorrSingleItemGroup(syntax = syntax, data = data, choose = choose,
+                                  scale.corrected = scale.corrected,
+                                  warn.lav = warn.lav))
+
+  stopif(length(group) > 1L, "`group` must be a character vector of length 1!")
+  stopif(!group %in% colnames(data), sprintf("Unable to find `%s` in data!", group))
+
+  group.info <- getGroupInfo(
+    model.syntax = syntax,
+    cov.syntax   = NULL,
+    data         = data,
+    group        = group
+  )
+
+  parTable      <- group.info$parTable
+  group.label   <- as.character(group.info$group.levels)
+  groups        <- getGroupsParTable(parTable)
+  data[[group]] <- as.character(data[[group]])
+
+  out <- list(parTable = NULL, syntax = NULL, data = NULL, 
+              relcorr.groups = vector("list", length = length(groups)))
+
+  for (g in groups) {
+    g.val      <- group.label[[g]]
+    data.g     <- data[data[[group]] == g.val, , drop = FALSE]
+    parTable.g <- parTable[parTable$group == g, , drop = FALSE]
+    parTable.g <- parTable.g[, colnames(parTable.g) != "group", drop = FALSE]
+
+    relcorr.g <- relcorrSingleItemGroup(
+      parTable        = parTable.g,
+      data            = data.g,
+      choose          = choose,
+      scale.corrected = scale.corrected,
+      warn.lav        = warn.lav
+    )
+
+    out$relcorr.groups[[g]] <- relcorr.g
+
+    newParTable.g <- relcorr.g$parTable
+    newParTable.g$group <- g
+    newData.g <- relcorr.g$data
+
+    out$parTable <- rbind(out$parTable, newParTable.g)
+    out$data     <- rbind(out$data, newData.g)
+  }
+
+  out$syntax <- parTableToSyntax(out$parTable)
+  out
+}
+
+
+relcorrSingleItemGroup <- function(syntax = NULL,
+                                   parTable = NULL,
+                                   data,
+                                   choose = NULL,
+                                   scale.corrected = TRUE,
+                                   warn.lav = TRUE) {
+  data <- as.data.frame(data)
+
+  if (is.null(parTable))
+    parTable <- modsemify(syntax)
+
   intTerms      <- parTable$rhs[grepl(":", parTable$rhs)]
 
   parTableOuter <- parTable[parTable$op == "=~", ]
