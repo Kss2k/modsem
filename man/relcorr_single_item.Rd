@@ -9,7 +9,8 @@ relcorr_single_item(
   data,
   choose = NULL,
   scale.corrected = TRUE,
-  warn.lav = TRUE
+  warn.lav = TRUE,
+  group = NULL
 )
 }
 \arguments{
@@ -29,6 +30,9 @@ the items. Default is \code{TRUE}.}
 
 \item{warn.lav}{Should warnings from \code{lavaan::cfa} be displayed? If \code{FALSE}, they
 are suppressed.}
+
+\item{Character.}{A variable name in the data frame defining the groups in a multiple
+group analysis}
 }
 \value{
 An object of S3 class \code{modsem_relcorr} (a named list) with elements:
