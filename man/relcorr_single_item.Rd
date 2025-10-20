@@ -31,7 +31,7 @@ the items. Default is \code{TRUE}.}
 \item{warn.lav}{Should warnings from \code{lavaan::cfa} be displayed? If \code{FALSE}, they
 are suppressed.}
 
-\item{Character.}{A variable name in the data frame defining the groups in a multiple
+\item{group}{Character. A variable name in the data frame defining the groups in a multiple
 group analysis}
 }
 \value{

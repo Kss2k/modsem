@@ -26,7 +26,7 @@
 #' @param warn.lav Should warnings from \code{lavaan::cfa} be displayed? If \code{FALSE}, they
 #'   are suppressed.
 #'
-#' @param Character. A variable name in the data frame defining the groups in a multiple
+#' @param group Character. A variable name in the data frame defining the groups in a multiple
 #'   group analysis
 #'
 #' @return An object of S3 class \code{modsem_relcorr} (a named list) with elements:

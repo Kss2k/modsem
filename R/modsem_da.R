@@ -4,7 +4,7 @@
 #'
 #' @param data A dataframe with observed variables used in the model.
 #'
-#' @param Character. A variable name in the data frame defining the groups in a multiple
+#' @param group Character. A variable name in the data frame defining the groups in a multiple
 #'   group analysis
 #'
 #' @param method method to use:

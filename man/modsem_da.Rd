@@ -61,6 +61,9 @@ modsem_da(
 
 \item{data}{A dataframe with observed variables used in the model.}
 
+\item{group}{Character. A variable name in the data frame defining the groups in a multiple
+group analysis}
+
 \item{method}{method to use:
 \describe{
   \item{\code{"lms"}}{latent moderated structural equations (not passed to \code{lavaan}).}
@@ -267,9 +270,6 @@ variables can in some cases be biased, if the model is not split beforehand.
 The default is therefore \code{TRUE} for the QML approach.}
 
 \item{...}{additional arguments to be passed to the estimation function.}
-
-\item{Character.}{A variable name in the data frame defining the groups in a multiple
-group analysis}
 }
 \value{
 \code{modsem_da} object
