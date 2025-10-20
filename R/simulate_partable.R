@@ -1,5 +1,5 @@
 simulateDataParTable <- function(parTable, N, colsOVs = NULL, colsLVs = NULL) {
-  parTable <- getMissingGroups(parTable)
+  parTable <- addMissingGroups(parTable)
   groups   <- getGroupsParTable(parTable)
 
   LV <- vector("list", length = length(groups))

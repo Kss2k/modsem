@@ -145,7 +145,7 @@ simple_slopes <- function(x,
     parTable <- standardized_estimates(model, correction = TRUE)
   } else parTable <- parameter_estimates(model)
 
-  parTable <- getMissingLabels(getMissingGroups(parTable))
+  parTable <- getMissingLabels(addMissingGroups(parTable))
 
   out <- list()
   group.label <- tryCatch(modsem_inspect(model, what = "group.label"), error = \(e) NULL)

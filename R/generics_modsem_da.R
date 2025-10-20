@@ -860,8 +860,8 @@ modsem_predict.modsem_da <- function(object, standardized = FALSE, H0 = TRUE, ne
   parTableH1 <- parameter_estimates(modelH1)
   parTableH0 <- parameter_estimates(modelH0)
 
-  parTableH1 <- getMissingGroups(parTableH1)
-  parTableH0 <- getMissingGroups(parTableH0)
+  parTableH1 <- addMissingGroups(parTableH1)
+  parTableH0 <- addMissingGroups(parTableH0)
 
   groups <- getGroupsParTable(parTableH0)
   mgroup <- length(groups) > 1L

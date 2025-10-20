@@ -182,7 +182,7 @@ twostepDA <- function(model.syntax, data, method = "lms", zero.tol = 1e-12,
   )
 
   # prep partable from CFA
-  parTableCFA <- getMissingGroups(rename(parTableCFA, se = "se.cfa"))
+  parTableCFA <- addMissingGroups(rename(parTableCFA, se = "se.cfa"))
   parTableCFA <- parTableCFA[c("lhs", "op", "rhs", "group", "se.cfa")]
   parTableCFA$se.cfa[parTableCFA$se.cfa <= zero.tol] <- NA
   estParTable <- parameter_estimates(fit)

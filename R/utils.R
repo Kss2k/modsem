@@ -804,7 +804,7 @@ MAX <- function(x) {
 }
 
 
-getMissingGroups <- function(parTable) {
+addMissingGroups <- function(parTable) {
   if ("group" %in% colnames(parTable))
     return(parTable)
 

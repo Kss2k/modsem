@@ -211,7 +211,7 @@ plot_jn <- function(x, z, y, model, min_z = -3, max_z = 3,
     parTable <- standardized_estimates(model, correction = TRUE)
   } else parTable <- parameter_estimates(model)
 
-  parTable <- getMissingGroups(getMissingLabels(parTable))
+  parTable <- addMissingGroups(getMissingLabels(parTable))
 
   plots <- list()
   for (g in getGroupsParTable(parTable)) {
@@ -582,7 +582,7 @@ plot_surface <- function(x, z, y, model,
   else
     parTable <- parameter_estimates(model)
 
-  parTable <- getMissingGroups(parTable)
+  parTable <- addMissingGroups(parTable)
   groups   <- getGroupsParTable(parTable)
 
   if (length(groups) > 1L && is.null(group)) {

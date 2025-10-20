@@ -3,7 +3,7 @@ var_interactions.data.frame <- function(object, ignore.means = FALSE,
                                         monte.carlo = FALSE, mc.reps = 1e6, ...) {
 
   # Preparation
-  parTable <- getMissingGroups(object)
+  parTable <- addMissingGroups(object)
   parTable <- removeInteractionVariances(fillColsParTable(parTable))
 
   ## interaction (and square) terms explicitly declared in the model

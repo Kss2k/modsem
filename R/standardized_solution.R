@@ -22,9 +22,8 @@ transformedSolutionCOEFS <- function(object,
   parTable <- parameter_estimates(object, colon.pi = TRUE, high.order.as.measr = FALSE)
   parTable <- subsetByGrouping(parTable, grouping = grouping) # if NULL no subsetting
 
-  if (!"group" %in% names(parTable)) {
+  if (!"group" %in% names(parTable))
     parTable$group <- 1L
-  }
 
   if (!NROW(parTable)) return(NULL)
 
