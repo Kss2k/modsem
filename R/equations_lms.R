@@ -243,7 +243,7 @@ complicatedGradientAllLogLikLms <- function(theta, model, P, sign = -1, epsilon 
   for (g in seq_len(model$info$n.groups)) {
     f0 <- FOBJECTIVE_GROUP(theta = theta, g = g)
 
-    if (sum) J <- 1L 
+    if (sum) J <- 1L
     else     J <- seq(N.start[[g]], N.end[[g]], by = 1L)
 
     indices <- c(

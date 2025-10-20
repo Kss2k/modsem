@@ -865,11 +865,11 @@ modsem_predict.modsem_da <- function(object, standardized = FALSE, H0 = TRUE, ne
 
   groups <- getGroupsParTable(parTableH0)
   mgroup <- length(groups) > 1L
-    
+
   if (!is.null(newdata)) {
     newdata <- as.data.frame(newdata)
     cols  <- colnames(modelH0$model$models[[1L]]$data$data.full)
-    
+
     cols.present <- cols %in% colnames(newdata)
     stopif(!all(cols.present), "Missing cols in `newdata`:\n", cols[!cols.present])
 

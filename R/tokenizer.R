@@ -216,7 +216,7 @@ assignSubClass.LavOperator <- function(token) {
           ":"  = {subClass <- "LavInteraction"; priority <- 2},
           ":=" = {subClass <- "LavCustom";      priority <- 0},
           ","  = {subClass <- "LavSeperator";   priority <- 0},
-          "-"  = {subClass <- "LavSubtract";    priority <- 3}, 
+          "-"  = {subClass <- "LavSubtract";    priority <- 3},
           stop2("Unrecognized operator: ", highlightErrorToken(token))
   )
   structure(token,

@@ -97,7 +97,7 @@ relcorr_single_item <- function(syntax,
   groups        <- getGroupsParTable(parTable)
   data[[group]] <- as.character(data[[group]])
 
-  out <- list(parTable = NULL, syntax = NULL, data = NULL, 
+  out <- list(parTable = NULL, syntax = NULL, data = NULL,
               relcorr.groups = vector("list", length = length(groups)))
 
   for (g in groups) {

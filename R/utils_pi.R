@@ -33,7 +33,7 @@ scaleIfNumeric <- function(x, scaleFactor = TRUE) {
     x <- as.numeric(x)
 
   if (is.numeric(x)) y <- (x - mean(x, na.rm = TRUE)) / stats::sd(x, na.rm = TRUE)
-  else               y <- x 
+  else               y <- x
 
   y
 }
@@ -49,7 +49,7 @@ centerIfNumeric <- function(x, scaleFactor = TRUE) {
     x <- as.numeric(x)
 
   if (is.numeric(x)) y <- x - mean(x, na.rm = TRUE)
-  else               y <- x 
+  else               y <- x
 
   y
 }

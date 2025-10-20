@@ -254,7 +254,7 @@ postCheckModel <- function(model) {
     checkVariances(model$expected.matrices[[g]])
     checkCovMatrices(model$expected.matrices[[g]])
   }
-  
+
   checkVCOV(vcov(model, type = "free"), calc.se = model$args$calc.se)
 }
 

@@ -372,7 +372,7 @@ getEmptyModel <- function(group.info, cov.syntax, parTableCovModel,
 
   if (!is.null(cov.syntax) && is.null(parTableCovModel)) {
     parTableCovModelOrig <- modsemify(cov.syntax)
-    
+
     parTableCovModel <- expandParTableByGroup(
       parTableCovModelOrig, group.levels = group.info$group.levels
     )
@@ -1140,7 +1140,7 @@ recalcInterceptsY <- function(parTable) {
 
   for (g in getGroupsParTable(parTable)) {
     parTable.g <- parTable[parTable$group == g, , drop = FALSE]
-    out <- rbind(out, recalcInterceptsY_Group(parTable.g))  
+    out <- rbind(out, recalcInterceptsY_Group(parTable.g))
   }
 
   rbind(out, getZeroGroupParTable(parTable))
@@ -1375,7 +1375,7 @@ getGroupInfo <- function(model.syntax, cov.syntax, data, group,
   group.levels <- group.info$levels
   if (is.null(group.levels)) group.levels <- ""
 
-  group.info$group.levels <- group.levels 
+  group.info$group.levels <- group.levels
   group.info$parTable    <- expandParTableByGroup(parTable, group.levels = group.levels)
   group.info$parTableCov <- expandParTableByGroup(parTableCov, group.levels = group.levels)
 

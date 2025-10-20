@@ -4,7 +4,7 @@ combineLavLabels <- function(lavLabelsCov, lavLabelsMain, currentLabels, g = 1L)
   if (g > 1L)
     lavLabels <- stats::setNames(sprintf("%s.g%d", lavLabels, g),
                                  nm = names(lavLabels))
-     
+
   finalLabels <- currentLabels
   finalLabels[finalLabels %in% names(lavLabels)] <-
     lavLabels[names(lavLabels) %in% finalLabels]

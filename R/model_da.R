@@ -306,7 +306,7 @@ specifModelDA_Group <- function(syntax = NULL,
   if (checkModel)
     preCheckModel(model = model, covModel = covModel, method = method,
                   missing = missing)
-  
+
   model
 }
 
@@ -328,7 +328,7 @@ specifyModelDA <- function(..., group.info, createTheta = TRUE) {
   names(submodels) <- group.info$levelCres
 
   for (g in seq_len(n.groups)) {
-    args.g <- args 
+    args.g <- args
 
     if (!is.null(group.info$data))
       args.g$data <- group.info$data[group.info$indices[[g]], , drop = FALSE]
@@ -628,7 +628,7 @@ customParamsToParTable <- function(model, coefs, se) {
     out <- rbind(out, newRow)
   }
 
-  out 
+  out
 }
 
 

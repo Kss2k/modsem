@@ -17,7 +17,7 @@ calcFIM_da <- function(model,
   if (!calc.se) return(list(FIM = NULL, vcov = NULL, vcov.sub = NULL, type = "none",
                             raw.labels = names(theta), n.additions = 0))
   if (verbose) printf("Calculating standard errors (%s)\n", FIM)
-  
+
   collectCluster <- function(d) {
     if (is.null(d)) return(NULL)
 
@@ -250,7 +250,7 @@ calcEFIM_LMS <- function(model, finalModel = NULL, theta,
     sample.g <- data.g[sample(NROW(data.g), R, replace = TRUE), , drop = FALSE]
     model$models[[g]]$data <- patternizeMissingDataFIML(sample.g)
   }
-  
+
   popEstep <- estepLms(model      = model,
                        theta      = theta,
                        recalcQuad = TRUE,

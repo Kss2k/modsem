@@ -29,7 +29,7 @@ logLikQml <- function(theta, model, sum = TRUE, sign = -1, verbose = FALSE) {
   ll <- 0
   for (g in seq_len(model$info$n.groups))
     ll <- ll + logLikQmlGroup(modelFilled$models[[g]], sum = sum, sign = sign)
-  
+
   if (verbose)
     incrementIterations(sign * ll)
 
@@ -175,7 +175,7 @@ gradientLogLikQml <- function(theta, model, epsilon = 1e-8, sign = -1, .f = logL
   for (g in seq_len(model$info$n.groups)) {
     f0 <- .fg(theta = theta, g = g)
 
-    if (sum) J <- 1L 
+    if (sum) J <- 1L
     else     J <- seq(N.start[[g]], N.end[[g]], by = 1L)
 
     indices <- c(

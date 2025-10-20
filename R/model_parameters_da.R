@@ -90,7 +90,7 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
 
     if (g > 1L) {
       .newnames <- \(nm) sprintf("%s.g%d", nm, g)
-     
+
       # thetaLabel is labelled across the submodels, so the names don't change!
       names(thetaCov)    <- .newnames(names(thetaCov))
       names(thetaMain)   <- .newnames(names(thetaMain))
@@ -117,12 +117,12 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
     selectTL <- seq_along(THETA_LAB) # available to all sub models
     selectTC <- which(names(THETA_COV) %in% labelsCov.g)
     selectTM <- which(names(THETA_MAIN) %in% labelsMain.g)
-    
+
     # The selections must be offset by their respective location THETA as a whole
     # only selectTL doesn't need to be shifted, as it's at the start
     selectTC <- selectTC + length(THETA_LAB)
     selectTM <- selectTM + length(THETA_LAB) + length(THETA_COV)
-    
+
     SELECT_THETA_LAB[[g]]  <- selectTL
     SELECT_THETA_COV[[g]]  <- selectTC
     SELECT_THETA_MAIN[[g]] <- selectTM
@@ -207,7 +207,7 @@ fillModel <- function(model, theta, fillPhi = FALSE, method = "lms") {
 
   # labeled parameters
   thetaLabel <- NULL
-  
+
   if (length(params.utils$SELECT_THETA_LAB)) {
     thetaLabel <- theta[params.utils$SELECT_THETA_LAB[[1L]]] # same for all groups
     thetaLabel <- suppressWarnings(calcThetaLabel(thetaLabel, params.utils$constrExprs))
@@ -400,7 +400,7 @@ calcPhiTheta <- function(theta, model, method) {
       stopif(length(missing),
              "Missing labelled parameters in theta vector: ",
              paste(missing, collapse = ", "))
-      
+
       theta[select][labels] <- labVals
     }
 

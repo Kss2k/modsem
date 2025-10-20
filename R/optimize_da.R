@@ -94,13 +94,13 @@ optimizeStartingParamsDA <- function(model,
   SELECT_THETA_COV  <- params$SELECT_THETA_COV
   SELECT_THETA_MAIN <- params$SELECT_THETA_MAIN
   THETA <- params$theta
-    
+
   thetaLabel <- getLabeledParamsLavaan(parTable, params$constrExprs$fixedParams)
   THETA[SELECT_THETA_LAB[[1L]]][names(thetaLabel)] <- thetaLabel
 
   for (g in seq_len(model$info$n.groups)) {
     submodel <- model$models[[g]]
-    
+
     if ("group" %in% colnames(parTable))
       parTable.g <- parTable[parTable$group == g, , drop = FALSE]
     else

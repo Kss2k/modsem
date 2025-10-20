@@ -685,7 +685,7 @@ plot_surface <- function(x, z, y, model,
   )
 
   if (grid || tolower(colorscale) != "viridis") {
-    # for some reason this doesn't render with pkgdown this is a 
+    # for some reason this doesn't render with pkgdown this is a
     # temporary workaround, until I figure out what is going on...
     plotly::plot_ly(
       x = ~vals_x,

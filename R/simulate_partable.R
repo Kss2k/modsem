@@ -12,7 +12,7 @@ simulateDataParTable <- function(parTable, N, colsOVs = NULL, colsLVs = NULL) {
       colsOVs  = colsOVs,
       colsLVs  = colsLVs
     )
-    
+
     LV[[g]] <- simg$lV
     OV[[g]] <- simg$oV
   }
