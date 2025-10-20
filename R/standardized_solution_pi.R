@@ -22,7 +22,7 @@ correctStdSolutionPI <- function(object, parTable.std) {
       vcov.g <- vcov[[g]]
       vcor.g <- vcor[[g]]
     } else {
-      vocv.g <- vcov
+      vcov.g <- vcov
       vcor.g <- vcor
     }
 
