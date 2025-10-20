@@ -125,7 +125,7 @@ summary.modsem_da <- function(object,
     vars <- unique(unlist(lapply(r2, names)))
     vars <- vars[!is.na(vars) & nzchar(vars)]
     if (!length(vars)) return(NULL)
-    agg <- setNames(numeric(length(vars)), vars)
+    agg <- stats::setNames(numeric(length(vars)), vars)
     total_w <- sum(weights, na.rm = TRUE)
     if (!is.finite(total_w) || total_w <= 0) {
       total_w <- length(r2)

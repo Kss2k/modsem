@@ -48,10 +48,8 @@ estepLmsGroup <- function(submodel, lastQuad = NULL, recalcQuad = FALSE,
     )
 
     if (is.null(quad)) {
-      estep.fixed <- estepLms(
+      estep.fixed <- estepLmsGroup(
         submodel = submodel,
-        theta = theta,
-        data  = data,
         lastQuad = if (!is.null(lastQuad)) lastQuad else submodel$quad,
         recalcQuad = FALSE,
         ...
@@ -233,7 +231,7 @@ complicatedGradientAllLogLikLms <- function(theta, model, P, sign = -1, epsilon 
 
   k  <- length(theta)
 
-  grad <- matrix(0, n = n, ncol = k, dimnames = list(NULL, names(theta)))
+  grad <- matrix(0, nrow = n, ncol = k, dimnames = list(NULL, names(theta)))
 
   FOBJECTIVE_GROUP <- function(theta, g) {
     modFilled <- fillModel(theta = theta, model = model, method = "lms")
@@ -352,7 +350,7 @@ obsLogLikLms <- function(theta, model, P, sign = 1, ...) {
 
 obsLogLikLmsGroup <- function(submodel, P, sign = -1, ...) {
   tryCatch({
-    data <- submodel$data
+    data.g <- submodel$data
 
     ll <- observedLogLikLmsCpp(submodel,
                                dataR = data.g$data.split,
@@ -483,7 +481,7 @@ complicatedHessianAllLogLikLms <- function(theta, model, P, sign = -1,
   SELECT_THETA_MAIN <- params$SELECT_THETA_MAIN
 
   k <- length(theta)
-  H <- matrix(0, n = k, ncol = k, dimnames = list(names(theta), names(theta)))
+  H <- matrix(0, nrow = k, ncol = k, dimnames = list(names(theta), names(theta)))
 
   for (g in seq_len(model$info$n.groups)) {
     indices <- c(

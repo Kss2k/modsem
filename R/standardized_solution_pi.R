@@ -23,7 +23,7 @@ correctStdSolutionPI <- function(object, parTable.std) {
       vcor.g <- vcor[[g]]
     } else {
       vocv.g <- vcov
-      vcor.g <- vcor.g
+      vcor.g <- vcor
     }
 
     parTable.g     <- parTable[parTable$group == g, , drop = FALSE]

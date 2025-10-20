@@ -294,8 +294,6 @@ calcEFIM_QML <- function(model, finalModel = NULL, theta, data, S = 100,
 
   ovs <- colnames(model$models[[1L]]$data$data.full)
 
-  model$data <- patternizeMissingDataFIML(population)
-
   if (parametric) {
     stopif(is.null(finalModel), "finalModel must be included in calcEFIM_QML")
 

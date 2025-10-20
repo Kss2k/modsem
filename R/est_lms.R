@@ -316,7 +316,7 @@ emLms <- function(model,
       "Message: ", conditionMessage(e)
     ))
     P0 <- tryCatch(
-      estepLms(model = model, theta = model$theta, data = data,
+      estepLms(model = model, theta = model$theta,
                lastQuad = NULL, recalcQuad = FALSE,
                adaptive.quad.tol = adaptive.quad.tol, ...),
       error = function(e2) NULL
@@ -327,7 +327,7 @@ emLms <- function(model,
       model             = model,
       theta             = model$theta,
       method            = "lms",
-      data              = data,
+      data              = lapply(model$models, FUN = \(submodel) submodel$data),
       logLik            = ll0,
       iterations        = 0L,
       converged         = FALSE,

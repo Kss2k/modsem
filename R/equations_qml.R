@@ -165,7 +165,7 @@ gradientLogLikQml <- function(theta, model, epsilon = 1e-8, sign = -1, .f = logL
 
   k  <- length(theta)
 
-  grad <- matrix(0, n = n, ncol = k, dimnames = list(NULL, names(theta)))
+  grad <- matrix(0, nrow = n, ncol = k, dimnames = list(NULL, names(theta)))
 
   .fg <- function(theta, g) {
     modFilled <- fillModel(theta = theta, model = model, method = "qml")
@@ -219,7 +219,7 @@ hessianLogLikQml <- function(theta, model, sign = -1, .relStep = .Machine$double
   SELECT_THETA_MAIN <- params$SELECT_THETA_MAIN
 
   k <- length(theta)
-  H <- matrix(0, n = k, ncol = k, dimnames = list(names(theta), names(theta)))
+  H <- matrix(0, nrow = k, ncol = k, dimnames = list(names(theta), names(theta)))
 
   for (g in seq_len(model$info$n.groups)) {
     indices <- c(
