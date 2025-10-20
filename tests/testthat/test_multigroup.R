@@ -37,9 +37,8 @@ m1 <- '
 
 est.mg <- modsem(m1, oneIntMG, method = "lms", group = "group", robust.se = TRUE)
 est.mg.rcs <- modsem(m1, oneIntMG, method = "lms", group = "group", robust.se = TRUE, rcs = TRUE)
-standardized_estimates(est, correction = TRUE)
-standardized_estimates(est, correction = TRUE, std.errors = "delta")
-summary(est)
+standardized_estimates(est.mg, correction = TRUE)
+standardized_estimates(est.mg, correction = TRUE, std.errors = "delta")
 
 m2 <- '
   X =~ x1 + lx2 * x2 + lx3 * x3
@@ -52,7 +51,6 @@ m2 <- '
 '
 
 est <- modsem(m2, oneIntMG, method = "lms", group = "group")
-#> Error: Unknown labels in constraints: a1
 standardized_estimates(est, correction = TRUE)
 standardized_estimates(est, correction = TRUE, std.errors = "delta")
 summary(est, standardized = TRUE, center = TRUE)
