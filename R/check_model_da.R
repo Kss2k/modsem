@@ -247,7 +247,6 @@ postCheckModel <- function(model) {
   parTable <- model$parTable
 
   for (g in getGroupsParTable(parTable)) {
-    submodel   <- model$models[[g]]
     parTable.g <- parTable[parTable$group == g, , drop = FALSE]
 
     checkParTableEstimates(parTable.g)
