@@ -6,9 +6,15 @@ estepLms <- function(model, theta, lastQuad = NULL, recalcQuad = FALSE,
             quad = NULL, obsLL = NULL)
 
   for (g in seq_len(model$info$n.groups)) {
+    lastQuad.g <- if (!is.null(lastQuad)) lastQuad[[g]] else NULL
+    submodel   <- modFilled$models[[g]]
+
     P$P_GROUPS[[g]] <- estepLmsGroup(
-      submodel = modFilled$models[[g]], lastQuad = lastQuad[[g]],
-      recalcQuad = recalcQuad, adaptive.quad.tol = adaptive.quad.tol, ...
+      submodel          = submodel,
+      lastQuad          = lastQuad.g,
+      recalcQuad        = recalcQuad,
+      adaptive.quad.tol = adaptive.quad.tol,
+      ...
     )
   }
 
@@ -80,15 +86,12 @@ estepLmsGroup <- function(submodel, lastQuad = NULL, recalcQuad = FALSE,
 
   for (i in seq_along(w)) {
     p <- P[, i]
-    tGamma[[i]] <- sum(p)
-
     offset <- 1L
 
     wMeans[[i]] <- vector("list", length = length(data$ids))
     wCovs[[i]]  <- vector("list", length = length(data$ids))
     tGamma[[i]] <- numeric(length = length(data$ids))
 
-    # wmean <- colSums(data$data.full * p, na.rm = TRUE) / sum(p)
     for (j in data$ids) {
       n.pattern <- data$n.pattern[[j]]
       end       <- offset + n.pattern - 1L
@@ -97,7 +100,6 @@ estepLmsGroup <- function(submodel, lastQuad = NULL, recalcQuad = FALSE,
       colidx  <- data$colidx[[j]]
 
       pj   <- p[offset:end]
-      # wm   <- wmean[colidx]
       wm   <- colSums(data.id * pj) / sum(pj)
       X    <- data.id - matrix(wm, nrow=nrow(data.id), ncol=ncol(data.id), byrow=TRUE)
       wcov <- t(X) %*% (X * pj)

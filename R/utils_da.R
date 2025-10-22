@@ -1021,7 +1021,10 @@ splitParTable <- function(parTable) {
 
 
 sortParTableDA <- function(parTable, model) {
-  parTable.input <- model$parTable
+  parTable.input <- rbind(
+    model$models[[1L]]$covModel$parTable, # by definition lower order etas
+    model$models[[1L]]$parTable
+  )
 
   etas.input <- getEtas(parTable.input)
   etas.model <- getEtasModelDA(model$models[[1L]]) # sorted to be lower-triangular in gammaEta
