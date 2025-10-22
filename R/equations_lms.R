@@ -388,7 +388,7 @@ gradientObsLogLikLms <- function(theta, model, P, sign = 1, epsilon = 1e-6) {
 }
 
 
-obsLogLikLmsGroup_i <- function(submodel, data, P, sign = 1) {
+obsLogLikLmsGroup_i <- function(submodel, P, sign = 1) {
   data <- submodel$data
   V  <- P$V
   w  <- P$w
