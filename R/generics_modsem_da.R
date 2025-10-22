@@ -876,12 +876,12 @@ modsem_predict.modsem_da <- function(object, standardized = FALSE, H0 = TRUE, ne
     group <- modsem_inspect(modelH0, what = "group")
 
     if (!is.null(group)) {
-      group.values <- as.character(newdata$group)
+      group.values <- as.character(newdata[[group]])
       group.levels <- modsem_inspect(modelH0, what = "group.label")
 
       NEWDATA <- lapply(
         X = group.levels,
-        FUN = \(g) as.matrix(newdata[newdata$group == g, , drop = FALSE])[, cols]
+        FUN = \(g) as.matrix(newdata[newdata[[group]] == g, , drop = FALSE])[, cols]
       )
 
     } else {
@@ -912,7 +912,7 @@ modsem_predict.modsem_da <- function(object, standardized = FALSE, H0 = TRUE, ne
 
     FSC <- GINV(t(lambda) %*% sigma.inv %*% lambda) %*% (t(lambda) %*% sigma.inv)
 
-    alpha <- matrix(getMeans(lVs, parTable = parTableH1),
+    alpha <- matrix(getMeans(lVs, parTable = parTableH1g),
                     nrow = nrow(X), ncol = length(lVs), byrow = TRUE)
 
     Y <- X %*% t(FSC) + alpha
