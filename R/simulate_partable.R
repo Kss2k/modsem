@@ -5,10 +5,12 @@ simulateDataParTable <- function(parTable, N, colsOVs = NULL, colsLVs = NULL) {
   LV <- vector("list", length = length(groups))
   OV <- vector("list", length = length(groups))
 
+  N.g <- floor(N / length(groups))
+
   for (g in groups) {
     simg <- simulateDataParTableGroup(
       parTable = parTable[parTable$group == g, , drop = FALSE],
-      N        = N,
+      N        = N.g,
       colsOVs  = colsOVs,
       colsLVs  = colsLVs
     )

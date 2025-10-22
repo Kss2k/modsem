@@ -1,5 +1,4 @@
 calcFIM_da <- function(model,
-                       finalModel,
                        theta,
                        method = "lms",
                        calc.se = TRUE,
@@ -41,8 +40,8 @@ calcFIM_da <- function(model,
           observed = calcOFIM_LMS(model, theta = theta, epsilon = epsilon,
                                   hessian = hessian, P = P, robust.se = robust.se,
                                   cluster = cluster.vec, cr1s = cr1s),
-          expected = calcEFIM_LMS(model, finalModel = finalModel, theta = theta,
-                                  epsilon = epsilon, S = EFIM.S, parametric = EFIM.parametric,
+          expected = calcEFIM_LMS(model, theta = theta, epsilon = epsilon,
+                                  S = EFIM.S, parametric = EFIM.parametric,
                                   verbose = verbose, R.max = R.max, P = P),
           stop2("FIM must be either expected or observed")),
      qml =
@@ -50,10 +49,9 @@ calcFIM_da <- function(model,
           observed = calcOFIM_QML(model, theta = theta, hessian = hessian,
                                   epsilon = epsilon, robust.se = robust.se,
                                   cluster = cluster.vec, cr1s = cr1s),
-          expected = calcEFIM_QML(model, finalModel = finalModel, theta = theta,
-                                  epsilon = epsilon, S = EFIM.S,
-                                  parametric = EFIM.parametric, verbose = verbose,
-                                  R.max = R.max),
+          expected = calcEFIM_QML(model, theta = theta, epsilon = epsilon,
+                                  S = EFIM.S, parametric = EFIM.parametric,
+                                  verbose = verbose, R.max = R.max),
           stop2("FIM must be either expected or observed")),
      stop2("Unrecognized method: ", method)
   )
@@ -221,33 +219,38 @@ calcOFIM_LMS <- function(model, theta, hessian = FALSE,
 }
 
 
-calcEFIM_LMS <- function(model, finalModel = NULL, theta,
+calcEFIM_LMS <- function(model,
+                         theta,
                          S          = 100,
                          parametric = TRUE,
                          epsilon    = 1e-6,
                          verbose    = FALSE,
                          R.max      = 1e6,
                          P          = NULL) {
-  k <- length(theta)                       # number of free parameters
+  k <- length(theta) # number of free parameters
   N <- sum(vapply(model$models, FUN.VALUE = numeric(1L), FUN = \(sub) sub$data$n))
+  G <- model$info$n.groups
   R <- min(R.max, N * S)
+  R <- R - R %% G # make R divisble by the number of groups
+  R.g <- R / G
   warnif(R.max <= N, "R.max is less than N!")
 
   ovs <- colnames(model$models[[1L]]$data$data.full)
 
   if (parametric) {
-    stopif(is.null(finalModel), "finalModel must be included in calcEFIM_LMS")
+    # final model (without SEs)
+    finalModel <- getFinalModel(model = model, theta = theta, method = "lms")
 
-    parTable   <- modelToParTable(finalModel, method = "lms")
-    POPULATION <- simulateDataParTable(parTable, N = R, colsOVs = ovs)$OV
+    for (g in seq_len(model$info$n.groups)) {
+      parTable.g <- modelToParTable(finalModel$models[[g]], method = "lms")
+      sample.g   <- simulateDataParTable(parTable.g, N = R.g, colsOVs = ovs)$OV[[1L]]
 
-    for (g in seq_len(model$info$n.groups))
-      model$models[[g]]$data <- patternizeMissingDataFIML(POPULATION[[g]])
+      model$models[[g]]$data <- patternizeMissingDataFIML(sample.g)
+    }
 
   } else for (g in seq_len(model$info$n.groups)) {
     data.g   <- model$models[[g]]$data$data.full
-
-    sample.g <- data.g[sample(NROW(data.g), R, replace = TRUE), , drop = FALSE]
+    sample.g <- data.g[sample(NROW(data.g), R.g, replace = TRUE), , drop = FALSE]
     model$models[[g]]$data <- patternizeMissingDataFIML(sample.g)
   }
 
@@ -257,12 +260,11 @@ calcEFIM_LMS <- function(model, finalModel = NULL, theta,
                        lastQuad   = if(!is.null(P)) P$quad else NULL)
 
   suppressWarnings({
-
-  J <- gradientObsLogLikLms_i(theta   = theta,
-                              model   = model,
-                              P       = popEstep,
-                              sign    = +1,
-                              epsilon = epsilon)      # R × k matrix
+    J <- gradientObsLogLikLms_i(theta   = theta,
+                                model   = model,
+                                P       = popEstep,
+                                sign    = +1,
+                                epsilon = epsilon)      # R × k matrix
   })
 
   I <- matrix(0, nrow = k, ncol = k)
@@ -278,42 +280,45 @@ calcEFIM_LMS <- function(model, finalModel = NULL, theta,
     I <- I + crossprod(J[sub, , drop = FALSE])
   }
 
-  if (verbose) cat("\n")
-
   I / S
 }
 
 
-calcEFIM_QML <- function(model, finalModel = NULL, theta, data, S = 100,
+calcEFIM_QML <- function(model, theta, data, S = 100,
                          parametric = TRUE, epsilon = 1e-8, verbose = FALSE,
                          R.max = 1e6) {
-  k <- length(theta)                       # number of free parameters
+  k <- length(theta) # number of free parameters
   N <- sum(vapply(model$models, FUN.VALUE = numeric(1L), FUN = \(sub) sub$data$n))
+  G <- model$info$n.groups
   R <- min(R.max, N * S)
+  R <- R - R %% G # make R divisble by the number of groups
+  R.g <- R / G
+
   warnif(R.max <= N, "R.max is less than N!")
 
   ovs <- colnames(model$models[[1L]]$data$data.full)
 
   if (parametric) {
-    stopif(is.null(finalModel), "finalModel must be included in calcEFIM_QML")
+    # final model (without SEs)
+    finalModel <- getFinalModel(model = model, theta = theta, method = "qml")
 
-    parTable   <- modelToParTable(finalModel, method = "qml")
-    POPULATION <- simulateDataParTable(parTable, N = R, colsOVs = ovs)$OV
+    for (g in seq_len(model$info$n.groups)) {
+      parTable.g <- modelToParTable(finalModel$models[[g]], method = "qml")
+      sample.g   <- simulateDataParTable(parTable.g, N = R.g, colsOVs = ovs)$OV[[1L]]
 
-    for (g in seq_len(model$info$n.groups))
-      model$models[[g]]$data <- patternizeMissingDataFIML(POPULATION[[g]])
+      model$models[[g]]$data <- patternizeMissingDataFIML(sample.g)
+    }
 
   } else for (g in seq_len(model$info$n.groups)) {
     data.g   <- model$models[[g]]$data$data.full
-
-    sample.g <- data.g[sample(NROW(data.g), R, replace = TRUE), , drop = FALSE]
+    sample.g <- data.g[sample(NROW(data.g), R.g, replace = TRUE), , drop = FALSE]
     model$models[[g]]$data <- patternizeMissingDataFIML(sample.g)
   }
 
   for (g in seq_along(model$models)) {
     if (!is.null(model$models[[g]]$matrices$fullU)) {
-      fullU    <- model$models[[g]]$matrices$fullU
-      fullU_New <- fullU[rep(seq_len(N), length.out = R), , drop = FALSE]
+      fullU     <- model$models[[g]]$matrices$fullU
+      fullU_New <- fullU[rep(seq_len(NROW(fullU)), length.out = R.g), , drop = FALSE]
 
       model$models[[g]]$matrices$fullU <- fullU_New
     }
@@ -336,8 +341,6 @@ calcEFIM_QML <- function(model, finalModel = NULL, theta, data, S = 100,
 
     I <- I + crossprod(J[sub, , drop = FALSE])
   }
-
-  if (verbose) cat("\n")
 
   I / S
 }

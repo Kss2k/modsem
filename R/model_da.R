@@ -325,7 +325,6 @@ specifyModelDA <- function(..., group.info, createTheta = TRUE) {
          "Number of group-specific parameter tables does not match number of groups.")
 
   submodels <- vector("list", length = n.groups)
-  names(submodels) <- group.info$levelCres
 
   for (g in seq_len(n.groups)) {
     args.g <- args
@@ -704,22 +703,13 @@ finalizeModelEstimatesDA <- function(model,
   method <- match.arg(method)
   NA__ <- -999
 
-  # coefficients and filled model
-  lavCoefs <- getLavCoefs(model = model, theta = theta, method = method)
-  # (fillPhi is relevant for LMS, harmless for QML when ignored)
-  finalModel <- fillModel(model, theta, fillPhi = (method == "lms"), method = method)
+  # coefficients and (final) filled model
+  lavCoefs   <- getLavCoefs(model = model, theta = theta, method = method)
 
-  # keep NA "skeletons" for printing and SE attachment
-  emptyModel <- getEmptyModel(group.info = model$info$group.info,
-                              cov.syntax = model$models[[1L]]$cov.syntax,
-                              parTableCovModel = model$models[[1L]]$covModel$parTable,
-                              mean.observed = model$info$mean.observed,
-                              method = method)
   # information matrix + SE
   typeSE <- if (!calc.se) "none" else if (robust.se) "robust" else "standard"
 
   fim.args <- list(model = model,
-                   finalModel = finalModel,
                    theta = theta,
                    method = method,
                    EFIM.S = EFIM.S,
@@ -747,14 +737,12 @@ finalizeModelEstimatesDA <- function(model,
   modelSE <- getSE_Model(model, se = SE, method = method,
                          n.additions = FIMo$n.additions)
 
+  finalModel <- getFinalModel(model = model, theta = theta, method = method,
+                              modelSE = modelSE)
+
   parTable <- NULL
   for (g in seq_len(model$info$n.groups)) {
     submodel <- finalModel$models[[g]]
-
-    submodel$matricesSE <- modelSE$models[[g]]$matrices
-    submodel$covModelSE <- modelSE$models[[g]]$covModel
-    submodel$matricesNA <- emptyModel$models[[g]]$matrices
-    submodel$covModelNA <- emptyModel$models[[g]]$covModel
 
     parTable.g <- modelToParTable(submodel,
                                   coefs = lavCoefs$all,
@@ -811,4 +799,32 @@ addZStatsParTable <- function(parTable, se.col = "std.error", est.col = "est",
   parTable[[ci.u]]  <- parTable[[est.col]] + CI_WIDTH * parTable[[se.col]]
 
   parTable
+}
+
+
+getFinalModel <- function(model, theta, method, modelSE = NULL) {
+  finalModel <- fillModel(model, theta, fillPhi = method == "lms", method = method)
+
+  # keep NA "skeletons" for printing and SE attachment
+  emptyModel <- getEmptyModel(group.info = model$info$group.info,
+                              cov.syntax = model$models[[1L]]$cov.syntax,
+                              parTableCovModel = model$models[[1L]]$covModel$parTable,
+                              mean.observed = model$info$mean.observed,
+                              method = method)
+
+  for (g in seq_along(finalModel$models)) {
+    submodel <- finalModel$models[[g]]
+
+    if (!is.null(modelSE)) {
+      submodel$matricesSE <- modelSE$models[[g]]$matrices
+      submodel$covModelSE <- modelSE$models[[g]]$covModel
+    }
+
+    submodel$matricesNA <- emptyModel$models[[g]]$matrices
+    submodel$covModelNA <- emptyModel$models[[g]]$covModel
+
+    finalModel$models[[g]] <- submodel
+  }
+
+  finalModel
 }
