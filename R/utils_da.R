@@ -599,19 +599,34 @@ getXiRowLabelOmega <- function(label) {
 
 
 expandVCOV <- function(vcov, labels) {
-  labels_vcov <- colnames(vcov)
-  labels_vv <- intersect(labels, labels_vcov)
-  labels_zz <- setdiff(labels, labels_vcov)
+  labels.vcov <- colnames(vcov)
+  labels.vv <- intersect(labels, labels.vcov)
+  labels.zz <- setdiff(labels, labels.vcov)
 
-  m <- length(labels_vv)
-  k <- length(labels_zz)
+  m <- length(labels.vv)
+  k <- length(labels.zz)
 
-  Vvv <- vcov[labels_vv, labels_vv]
-  Vzz <- matrix(0, nrow = k, ncol = k, dimnames = list(labels_zz, labels_zz))
-  Vvz <- matrix(0, nrow = m, ncol = k, dimnames = list(labels_vv, labels_zz))
+  Vvv <- vcov[labels.vv, labels.vv]
+  Vzz <- matrix(0, nrow = k, ncol = k, dimnames = list(labels.zz, labels.zz))
+  Vvz <- matrix(0, nrow = m, ncol = k, dimnames = list(labels.vv, labels.zz))
 
   V <- rbind(cbind(Vvv, Vvz), cbind(t(Vvz), Vzz))
   V[labels, labels] # sort
+}
+
+
+expandCoef <- function(coef, labels) {
+  labels.coef <- names(coef)
+  labels.c    <- intersect(labels, labels.coef)
+  labels.z    <- setdiff(labels, labels.coef)
+
+  m <- length(labels.c)
+  k <- length(labels.z)
+
+  coef.c <- coef[labels.c]
+  coef.z <- stats::setNames(numeric(length(labels.z)), nm = labels.z)
+
+  c(coef.c, coef.z)
 }
 
 

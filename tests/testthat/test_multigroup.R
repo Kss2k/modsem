@@ -40,6 +40,8 @@ est.mg.rcs <- modsem(m1, oneIntMG, method = "lms", group = "group", robust.se = 
 standardized_estimates(est.mg, correction = TRUE)
 standardized_estimates(est.mg, correction = TRUE, std.errors = "delta")
 
+summary(standardize_model(est.mg))
+
 m2 <- '
   X =~ x1 + lx2 * x2 + lx3 * x3
   Z =~ z1 + z2 + z3
