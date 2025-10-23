@@ -194,9 +194,10 @@ summary.modsem_da <- function(object,
     )
   }
 
-  if (!var.interaction) {
+  if (!var.interaction)
     parTable.out <- removeInteractionVariances(parTable)
-  } else parTable.out <- parTable
+  else
+    parTable.out <- parTable
 
   args <- object$args
   out <- list(
@@ -288,7 +289,7 @@ print.summary_da <- function(x, digits = 3, ...) {
     formatNumeric(val, digits = digits, scientific = scientific)
   }
 
-  format_count <- function(val) {
+  formatCount <- function(val) {
     if (length(val) == 0) return("NA")
     num <- suppressWarnings(as.numeric(val))
     out <- ifelse(is.na(num), "NA",
@@ -325,67 +326,65 @@ print.summary_da <- function(x, digits = 3, ...) {
   )
 
   cat(allignLhsRhs(lhs = header.names, rhs = header.values, pad = "  ",
-                   width.out = width.out))
+                   width.out = width.out), "\n", sep = "")
 
-  n_obs_vec <- x$N
-  if (is.null(names(n_obs_vec)) || !any(nzchar(names(n_obs_vec)))) {
-    names(n_obs_vec) <- paste0("Group ", seq_along(n_obs_vec))
-  }
+  nObsVec <- x$N
+  if (is.null(names(nObsVec)) || !any(nzchar(names(nObsVec))))
+    names(nObsVec) <- paste0("Group ", seq_along(nObsVec))
 
-  total_n <- sum(n_obs_vec, na.rm = TRUE)
-  sample_lines <- allignLhsRhs(
+  total.n <- sum(nObsVec, na.rm = TRUE)
+  sampleLines <- allignLhsRhs(
     lhs = "Number of observations",
-    rhs = format_count(total_n),
+    rhs = formatCount(total.n),
     pad = "  ",
     width.out = width.out
   )
 
-  if (length(n_obs_vec) > 1) {
-    sample_lines <- paste0(sample_lines,
-                           allignLhsRhs(
-                             lhs = paste0("  ", names(n_obs_vec)),
-                             rhs = format_count(n_obs_vec),
-                             pad = "  ",
-                             width.out = width.out
-                           ))
+  if (length(nObsVec) > 1L) {
+    sampleLines <- paste0(
+      sampleLines,
+      allignLhsRhs(
+        lhs = paste0("  ", names(nObsVec)),
+        rhs = formatCount(nObsVec),
+        pad = "  ",
+        width.out = width.out
+      )
+    )
   }
 
-  if (isTRUE(x$is.fiml)) {
-    fiml_vec <- x$n.fiml.patterns
-    if (is.null(names(fiml_vec)) || !any(nzchar(names(fiml_vec)))) {
-      names(fiml_vec) <- paste0("Group ", seq_along(fiml_vec))
+  if (x$is.fiml) {
+    fimlVec <- x$n.fiml.patterns
+
+    if (is.null(names(fimlVec)) || !any(nzchar(names(fimlVec))))
+      names(fimlVec) <- paste0("Group ", seq_along(fimlVec))
+
+    totalPatterns <- sum(fimlVec, na.rm = TRUE)
+    sampleLines <- paste0(
+      sampleLines,
+      allignLhsRhs(
+        lhs = "Number of missing patterns",
+        rhs = formatCount(totalPatterns),
+        pad = "  ",
+        width.out = width.out
+      )
+    )
+
+    nonZero <- fimlVec > 0
+    if (length(fimlVec) > 1L && any(nonZero)) {
+      sampleLines <- paste0(
+        sampleLines,
+        allignLhsRhs(
+          lhs = paste0("  ", names(fimlVec)[nonZero]),
+          rhs = formatCount(fimlVec[nonZero]),
+          pad = "  ",
+          width.out = width.out
+        )
+      )
     }
-    total_patterns <- sum(fiml_vec, na.rm = TRUE)
-    sample_lines <- paste0(sample_lines,
-                           allignLhsRhs(
-                             lhs = "Number of missing patterns",
-                             rhs = format_count(total_patterns),
-                             pad = "  ",
-                             width.out = width.out
-                           ))
-    if (length(fiml_vec) > 1) {
-      non_zero <- fiml_vec > 0
-      if (any(non_zero)) {
-        sample_lines <- paste0(sample_lines,
-                               allignLhsRhs(
-                                 lhs = paste0("  ", names(fiml_vec)[non_zero]),
-                                 rhs = format_count(fiml_vec[non_zero]),
-                                  pad = "  ",
-                                  width.out = width.out
-                                ))
-      }
-    } else if (length(fiml_vec) == 1 && fiml_vec[[1]] > 0) {
-      sample_lines <- paste0(sample_lines,
-                             allignLhsRhs(
-                               lhs = paste0("  ", names(fiml_vec)),
-                               rhs = format_count(fiml_vec),
-                               pad = "  ",
-                               width.out = width.out
-                             ))
-    }
+
   }
 
-  cat(sample_lines)
+  cat(sampleLines, "\n", sep = "")
 
   # Criterion/LogLik -----------------------------------------------------------
   names <- c(
@@ -412,18 +411,19 @@ print.summary_da <- function(x, digits = 3, ...) {
 
   # Intergration ---------------------------------------------------------------
   if (!is.null(x$quad)) {
-    nodes_dim <- x$quad$nodes.dim
-    dim_val <- x$quad$dim
-    nodes_total <- x$quad$nodes.total
-    if (length(nodes_dim) || length(dim_val) || length(nodes_total)) {
+    nodesDim   <- x$quad$nodes.dim
+    dimVal     <- x$quad$dim
+    nodesTotal <- x$quad$nodes.total
+
+    if (length(nodesDim) || length(dimVal) || length(nodesTotal)) {
       cat("Numerical Integration:\n")
       names <- c("Points of integration (per dim)", "Dimensions",
                  "Total points of integration")
-      values <- c(format_count(nodes_dim),
-                  format_count(dim_val),
-                  format_count(nodes_total))
+      values <- c(formatCount(nodesDim),
+                  formatCount(dimVal),
+                  formatCount(nodesTotal))
       cat(allignLhsRhs(lhs = names, rhs = values, pad = "  ",
-                       width.out = width.out), "\n")
+                       width.out = width.out), "\n", sep = "")
     }
 
   }
