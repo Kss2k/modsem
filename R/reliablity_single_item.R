@@ -29,7 +29,7 @@
 #' @param group Character. A variable name in the data frame defining the groups in a multiple
 #'   group analysis
 #'
-#' @return An object of S3 class \code{modsem_relcorr} (a named list) with elements:
+#' @return An object of S3 class \code{ModsemRelcorr} (a named list) with elements:
 #' \describe{
 #'   \item{\code{syntax}}{Modified lavaan syntax string.}
 #'   \item{\code{data}}{Data frame with additional composite indicator columns.}
@@ -125,6 +125,8 @@ relcorr_single_item <- function(syntax,
   }
 
   out$syntax <- parTableToSyntax(out$parTable)
+  class(out) <- "MultiGroupModsemRelcorr"
+
   out
 }
 
@@ -345,7 +347,7 @@ relcorrSingleItemGroup <- function(syntax = NULL,
               intTerms = intTerms, residuals = res, res.std = res.std,
               cov.lv = cov.lv, residual_covariances = resCovMat)
 
-  class(out) <- c("list", "modsem_relcorr")
+  class(out) <- c("list", "ModsemRelcorr")
 
   out
 }
@@ -384,11 +386,53 @@ getHigherOrderResidual <- function(lV, cfa) {
 }
 
 
-simulateCrosssimulateCrossResCovRCS <- function(corrected,
-                                                elemsInIntTerms,
-                                                mc.reps = 3e4,
-                                                parTable,
-                                                include.normal.inds = FALSE) {
+simulateCrossResCovRCS <- function(corrected,
+                                   elemsInIntTerms,
+                                   mc.reps = 3e4,
+                                   parTable,
+                                   include.normal.inds = FALSE) {
+  if ( inherits(corrected, "ModsemRelcorr") &&
+      !inherits(corrected, "MultiGroupModsemRelcorr")) {
+
+    return(simulateCrossResCovRCS_Group(
+      corrected           = corrected,
+      elemsInIntTerms     = elemsInIntTerms,
+      mc.reps             = mc.reps,
+      parTable            = parTable,
+      include.normal.inds = include.normal.inds
+    ))
+  }
+
+  newRows <- NULL
+
+  for (g in seq_along(corrected$relcorr.groups)) {
+    corrected.g <- corrected$relcorr.groups[[g]]
+
+    simCrossResCov.g <- simulateCrossResCovRCS_Group(
+      corrected           = corrected.g,
+      elemsInIntTerms     = elemsInIntTerms,
+      mc.reps             = mc.reps,
+      parTable            = parTable,
+      include.normal.inds = include.normal.inds
+    )
+
+    newRows.g <- simCrossResCov.g$rows
+    newRows.g$group <- g
+
+    newRows <- rbind(newRows, newRows.g)
+  }
+
+  syntaxAdditions <- parTableToSyntax(newRows)
+
+  list(syntax = syntaxAdditions, rows = newRows)
+}
+
+
+simulateCrossResCovRCS_Group <- function(corrected,
+                                         elemsInIntTerms,
+                                         mc.reps = 3e4,
+                                         parTable,
+                                         include.normal.inds = FALSE) {
   EMPTY <- list(syntax = "", rows = NULL)
 
   if (!length(elemsInIntTerms))
@@ -483,7 +527,7 @@ simulateCrosssimulateCrossResCovRCS <- function(corrected,
 
 
 #' @export
-print.modsem_relcorr <- function(x,...) {
+print.ModsemRelcorr <- function(x,...) {
   sep <- strrep(" ", 4)
   indent <- strrep(" ", 2)
 

@@ -339,10 +339,9 @@ modsem_pi <- function(model.syntax = NULL,
   newSyntax <- parTableToSyntax(parTable, removeColon = TRUE)
 
   if (rcs && rcs.res.cov.xz && method != "ca") { # Constrained Approach Should handle this it on its own...
-    stopif(!is.null(group), "`rcs.res.cov.xz=TRUE` cannot (yet) be paired with multigroup models!")
 
     elemsxz   <- modelSpec$elementsInProdNames
-    crossResCov <- simulateCrosssimulateCrossResCovRCS(
+    crossResCov <- simulateCrossResCovRCS(
       corrected = corrected,
       elemsInIntTerms = elemsxz,
       mc.reps = rcs.mc.reps,

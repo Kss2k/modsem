@@ -35,7 +35,7 @@ are suppressed.}
 group analysis}
 }
 \value{
-An object of S3 class \code{modsem_relcorr} (a named list) with elements:
+An object of S3 class \code{ModsemRelcorr} (a named list) with elements:
 \describe{
   \item{\code{syntax}}{Modified lavaan syntax string.}
   \item{\code{data}}{Data frame with additional composite indicator columns.}
