@@ -209,36 +209,36 @@ function:</p>
 <span><span class="va">slopes</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simple_slopes.html">simple_slopes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"X"</span>, z <span class="op">=</span> <span class="st">"Z"</span>, y <span class="op">=</span> <span class="st">"Y"</span>,</span>
 <span>                        vals_z <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span>, model <span class="op">=</span> <span class="va">est1</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="va">slopes</span><span class="op">)</span></span>
-<span><span class="co">#&gt;       vals_x   vals_z  predicted  std.error   z.value       p.value   ci.upper</span></span>
-<span><span class="co">#&gt; 1  -2.971371 0.000000 -2.0043502 0.07897710 -25.37888 4.315156e-142 -1.8495579</span></span>
-<span><span class="co">#&gt; 2  -1.980914 0.000000 -1.3362335 0.05265140 -25.37888 4.315156e-142 -1.2330386</span></span>
-<span><span class="co">#&gt; 3  -0.990457 0.000000 -0.6681167 0.02632570 -25.37888 4.315156e-142 -0.6165193</span></span>
-<span><span class="co">#&gt; 4   0.000000 0.000000  0.0000000 0.00000000       NaN           NaN  0.0000000</span></span>
-<span><span class="co">#&gt; 5   0.990457 0.000000  0.6681167 0.02632570  25.37888 4.315156e-142  0.7197142</span></span>
-<span><span class="co">#&gt; 6   1.980914 0.000000  1.3362335 0.05265140  25.37888 4.315156e-142  1.4394283</span></span>
-<span><span class="co">#&gt; 7   2.971371 0.000000  2.0043502 0.07897710  25.37888 4.315156e-142  2.1591425</span></span>
-<span><span class="co">#&gt; 8  -2.971371 1.008084 -3.5419756 0.12016033 -29.47708 5.663689e-191 -3.3064657</span></span>
-<span><span class="co">#&gt; 9  -1.980914 1.008084 -2.1729189 0.08376085 -25.94194 2.242005e-148 -2.0087506</span></span>
-<span><span class="co">#&gt; 10 -0.990457 1.008084 -0.8038622 0.04930659 -16.30334  9.343915e-60 -0.7072230</span></span>
-<span><span class="co">#&gt; 11  0.000000 1.008084  0.5651945 0.02615878  21.60631 1.566928e-103  0.6164648</span></span>
-<span><span class="co">#&gt; 12  0.990457 1.008084  1.9342513 0.04213439  45.90671  0.000000e+00  2.0168332</span></span>
-<span><span class="co">#&gt; 13  1.980914 1.008084  3.3033080 0.07552626  43.73721  0.000000e+00  3.4513367</span></span>
-<span><span class="co">#&gt; 14  2.971371 1.008084  4.6723647 0.11167366  41.83945  0.000000e+00  4.8912411</span></span>
+<span><span class="co">#&gt;        vals_x   vals_z  predicted  std.error   z.value       p.value   ci.upper</span></span>
+<span><span class="co">#&gt; 1  -2.9713704 0.000000 -2.0043501 0.07897710 -25.37887 4.315370e-142 -1.8495578</span></span>
+<span><span class="co">#&gt; 2  -1.9809136 0.000000 -1.3362334 0.05265140 -25.37887 4.315370e-142 -1.2330385</span></span>
+<span><span class="co">#&gt; 3  -0.9904568 0.000000 -0.6681167 0.02632570 -25.37887 4.315370e-142 -0.6165193</span></span>
+<span><span class="co">#&gt; 4   0.0000000 0.000000  0.0000000 0.00000000       NaN           NaN  0.0000000</span></span>
+<span><span class="co">#&gt; 5   0.9904568 0.000000  0.6681167 0.02632570  25.37887 4.315370e-142  0.7197141</span></span>
+<span><span class="co">#&gt; 6   1.9809136 0.000000  1.3362334 0.05265140  25.37887 4.315370e-142  1.4394282</span></span>
+<span><span class="co">#&gt; 7   2.9713704 0.000000  2.0043501 0.07897710  25.37887 4.315370e-142  2.1591423</span></span>
+<span><span class="co">#&gt; 8  -2.9713704 1.008084 -3.5419750 0.12016032 -29.47708 5.664083e-191 -3.3064651</span></span>
+<span><span class="co">#&gt; 9  -1.9809136 1.008084 -2.1729185 0.08376085 -25.94194 2.242150e-148 -2.0087503</span></span>
+<span><span class="co">#&gt; 10 -0.9904568 1.008084 -0.8038620 0.04930659 -16.30334  9.344238e-60 -0.7072229</span></span>
+<span><span class="co">#&gt; 11  0.0000000 1.008084  0.5651944 0.02615878  21.60630 1.567068e-103  0.6164647</span></span>
+<span><span class="co">#&gt; 12  0.9904568 1.008084  1.9342509 0.04213438  45.90671  0.000000e+00  2.0168328</span></span>
+<span><span class="co">#&gt; 13  1.9809136 1.008084  3.3033074 0.07552624  43.73721  0.000000e+00  3.4513362</span></span>
+<span><span class="co">#&gt; 14  2.9713704 1.008084  4.6723639 0.11167365  41.83945  0.000000e+00  4.8912403</span></span>
 <span><span class="co">#&gt;      ci.lower</span></span>
-<span><span class="co">#&gt; 1  -2.1591425</span></span>
-<span><span class="co">#&gt; 2  -1.4394283</span></span>
-<span><span class="co">#&gt; 3  -0.7197142</span></span>
+<span><span class="co">#&gt; 1  -2.1591423</span></span>
+<span><span class="co">#&gt; 2  -1.4394282</span></span>
+<span><span class="co">#&gt; 3  -0.7197141</span></span>
 <span><span class="co">#&gt; 4   0.0000000</span></span>
 <span><span class="co">#&gt; 5   0.6165193</span></span>
-<span><span class="co">#&gt; 6   1.2330386</span></span>
-<span><span class="co">#&gt; 7   1.8495579</span></span>
-<span><span class="co">#&gt; 8  -3.7774855</span></span>
-<span><span class="co">#&gt; 9  -2.3370871</span></span>
-<span><span class="co">#&gt; 10 -0.9005013</span></span>
-<span><span class="co">#&gt; 11  0.5139243</span></span>
-<span><span class="co">#&gt; 12  1.8516694</span></span>
-<span><span class="co">#&gt; 13  3.1552792</span></span>
-<span><span class="co">#&gt; 14  4.4534884</span></span></code></pre></div>
+<span><span class="co">#&gt; 6   1.2330385</span></span>
+<span><span class="co">#&gt; 7   1.8495578</span></span>
+<span><span class="co">#&gt; 8  -3.7774849</span></span>
+<span><span class="co">#&gt; 9  -2.3370868</span></span>
+<span><span class="co">#&gt; 10 -0.9005012</span></span>
+<span><span class="co">#&gt; 11  0.5139242</span></span>
+<span><span class="co">#&gt; 12  1.8516691</span></span>
+<span><span class="co">#&gt; 13  3.1552787</span></span>
+<span><span class="co">#&gt; 14  4.4534876</span></span></code></pre></div>
 </div>
   </main>
 </div>

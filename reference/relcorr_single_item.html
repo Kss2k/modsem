@@ -73,7 +73,8 @@ composite variables, so that you can fit the full SEM in a single step.</p>
 <span>  <span class="va">data</span>,</span>
 <span>  choose <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  scale.corrected <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  warn.lav <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  warn.lav <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  group <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -107,10 +108,15 @@ the items. Default is <code>TRUE</code>.</p></dd>
 <dd><p>Should warnings from <code><a href="https://rdrr.io/pkg/lavaan/man/cfa.html" class="external-link">lavaan::cfa</a></code> be displayed? If <code>FALSE</code>, they
 are suppressed.</p></dd>
 
+
+<dt id="arg-group">group<a class="anchor" aria-label="anchor" href="#arg-group"></a></dt>
+<dd><p>Character. A variable name in the data frame defining the groups in a multiple
+group analysis</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>An object of S3 class <code>modsem_relcorr</code> (a named list) with elements:</p><dl><dt><code>syntax</code></dt>
+    <p>An object of S3 class <code>ModsemRelcorr</code> (a named list) with elements:</p><dl><dt><code>syntax</code></dt>
 <dd><p>Modified lavaan syntax string.</p></dd>
 
   <dt><code>data</code></dt>
@@ -211,18 +217,13 @@ by supplying <code>syntax = $syntax</code> and <code>data = $data</code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Estimator                                        LMS</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Optimization method                       EMA-NLMINB</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Number of model parameters                        19</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                                                       </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Number of observations                          1169</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Loglikelihood and Information Criteria:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Loglikelihood                               -9397.25</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Akaike (AIC)                                18832.50</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Bayesian (BIC)                              18928.71</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Numerical Integration:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Points of integration (per dim)                   32</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Dimensions                                         1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Total points of integration                       32</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Fit Measures for Baseline Model (H0):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                                               Standard</span>
