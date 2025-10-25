@@ -621,9 +621,9 @@ customParamsToParTable <- function(model, coefs, se) {
     lhs <- custom[i, "lhs"]
     rhs <- custom[i, "rhs"]
 
-    se <- tryCatch(se[[lhs]], error = \(e) NA)
+    se.i <- tryCatch(se[[lhs]], error = \(e) NA)
     newRow <- data.frame(lhs = lhs, op = ":=", rhs = rhs, label = lhs,
-                         group = 0L, est = coefs[[lhs]], std.error = se)
+                         group = 0L, est = coefs[[lhs]], std.error = se.i)
     out <- rbind(out, newRow)
   }
 
