@@ -145,8 +145,28 @@ simple_slopes <- function(x,
     parTable <- standardized_estimates(model, correction = TRUE)
   } else parTable <- parameter_estimates(model)
 
-  parTable <- getMissingLabels(parTable)
+  parTable <- getMissingLabels(addMissingGroups(parTable))
 
+  out <- list()
+  group.label <- tryCatch(modsem_inspect(model, what = "group.label"), error = \(e) NULL)
+
+  for (g in getGroupsParTable(parTable)) {
+    label      <- tryCatch(group.label[[g]], error = \(e) as.character(g))
+    parTable.g <- parTable[parTable$group == g, , drop = FALSE]
+
+    out[[label]] <- simpleSlopesGroup(
+      x = x, z = z, y = y, parTable = parTable.g, model = model, vals_x = vals_x,
+      vals_z = vals_z, rescale = rescale, ci_width = ci_width, ci_type = ci_type,
+      relative_h0 = relative_h0, xz = xz, ...
+    )
+  }
+
+  structure(out, class = "simple_slopes")
+}
+
+
+simpleSlopesGroup <- function(x, z, y, parTable, model, vals_x, vals_z, rescale,
+                              ci_width, ci_type, relative_h0, xz, ...) {
   if (is.null(xz))
     xz <- paste(x, z, sep = ":")
 
@@ -300,14 +320,11 @@ simple_slopes <- function(x,
     ci.upper = diff + ci.sig * std.error_diff
   )
 
-  structure(
-    list(
-      variable_names = c(x = x, z = z, y = y),
-      margins = df,
-      sig.slopes = sig.slopes,
-      sig.diff_min_max = sig.diff_min_max
-    ),
-    class = "simple_slopes"
+  list(
+    variable_names = c(x = x, z = z, y = y),
+    margins = df,
+    sig.slopes = sig.slopes,
+    sig.diff_min_max = sig.diff_min_max
   )
 }
 
@@ -367,6 +384,21 @@ printTable <- function(x) {
 
 #' @export
 print.simple_slopes <- function(x, digits = 2, scientific.p = FALSE, ...) {
+  if (length(x) <= 1L)
+    return(printSimpleSlopesGroup(x = x[[1L]], digits = digits, scientific.p = scientific.p, ...))
+
+  for (g in names(x)) {
+    printf("%s\n", strrep(H_LINE, getOption("width")))
+    printf("  Group: %s\n", g)
+    printf("%s\n", strrep(H_DLINE, getOption("width")))
+    printSimpleSlopesGroup(x = x[[g]], digits = digits, scientific.p = scientific.p, ...)
+  }
+
+  invisible(x)
+}
+
+
+printSimpleSlopesGroup <- function(x, digits = 2, scientific.p = FALSE, ...) {
   variables  <- x$variable_names
   margins    <- x$margins
   sig.slopes <- x$sig.slopes
@@ -451,12 +483,20 @@ print.simple_slopes <- function(x, digits = 2, scientific.p = FALSE, ...) {
     printTable(Z)
     cat("\n")
   }
+
+  invisible(x)
 }
 
 
 #' @export
 as.data.frame.simple_slopes <- function(x, ...) {
-  x$margins
+  if (length(x) <= 1L)
+    return(x[[1L]]$margins)
+
+  purrr::list_rbind(
+    lapply(X = names(x), FUN = \(g)
+           cbind(x[[g]]$margins, data.frame(group = g)))
+  )
 }
 
 

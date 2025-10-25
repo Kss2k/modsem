@@ -1,39 +1,28 @@
 # Functions
-specifyModelDA <- function(syntax = NULL,
-                           data = NULL,
-                           method = "lms",
-                           m = 16,
-                           cov.syntax = NULL,
-                           double = FALSE,
-                           parTable = NULL,
-                           parTableCovModel = NULL,
-                           auto.fix.first = TRUE,
-                           auto.fix.single = TRUE,
-                           createTheta = TRUE,
-                           mean.observed = TRUE,
-                           standardize.inp = FALSE,
-                           standardize.out = FALSE,
-                           checkModel = TRUE,
-                           quad.range = Inf,
-                           adaptive.quad = FALSE,
-                           adaptive.frequency = 3,
-                           missing = FALSE,
-                           orthogonal.x = FALSE,
-                           orthogonal.y = FALSE,
-                           auto.split.syntax = FALSE,
-                           cluster = NULL) {
-  if (!is.null(syntax)) parTable <- modsemify(syntax)
+specifModelDA_Group <- function(syntax = NULL,
+                                data = NULL,
+                                method = "lms",
+                                m = 16,
+                                cov.syntax = NULL,
+                                double = FALSE,
+                                parTable = NULL,
+                                parTableCovModel = NULL,
+                                auto.fix.first = TRUE,
+                                auto.fix.single = TRUE,
+                                createTheta = TRUE,
+                                mean.observed = TRUE,
+                                standardize.inp = FALSE,
+                                standardize.out = FALSE,
+                                checkModel = TRUE,
+                                quad.range = Inf,
+                                adaptive.quad = FALSE,
+                                adaptive.frequency = 3,
+                                missing = "complete",
+                                orthogonal.x = FALSE,
+                                orthogonal.y = FALSE,
+                                cluster = NULL) {
+  if (is.null(parTable) && !is.null(syntax)) parTable <- modsemify(syntax)
   stopif(is.null(parTable), "No parTable found")
-
-  if (auto.split.syntax && is.null(parTableCovModel) && is.null(cov.syntax)) {
-    split <- splitParTable(parTable)
-
-    parTable         <- split$parTable
-    parTableCovModel <- split$parTableCov
-
-    syntax     <- parTableToSyntax(parTable)
-    cov.syntax <- parTableToSyntax(parTableCovModel)
-  }
 
   checkParTableDA(parTable, method = method)
   # additions to lavaan-syntax for optimizer
@@ -44,7 +33,7 @@ specifyModelDA <- function(syntax = NULL,
   indsHigherOrderLVs <- getIndsLVs(parTable, lVs = higherOrderLVs, isOV = FALSE)
   ovs <- getOVs(parTable)
 
-  # endogenous variables (etas)model
+  # endogenous variables (etas)
   etas    <- getSortedEtas(parTable, isLV = TRUE, checkAny = TRUE)
   numEtas <- length(etas)
 
@@ -146,11 +135,13 @@ specifyModelDA <- function(syntax = NULL,
   labelPsi <- listPsi$label
 
   listPhi <- constructPhi(xis, method = method, cov.syntax = cov.syntax,
+                          parTableCovModel = parTableCovModel,
                           parTable = parTable, orthogonal.x = orthogonal.x)
   phi      <- listPhi$numeric
   labelPhi <- listPhi$label
 
   listA <- constructA(xis, method = method, cov.syntax = cov.syntax,
+                      parTableCovModel = parTableCovModel,
                       parTable = parTable, orthogonal.x = orthogonal.x)
   A      <- listA$numeric
   labelA <- listA$label
@@ -312,18 +303,100 @@ specifyModelDA <- function(syntax = NULL,
     lavaan.fit    = NULL
   )
 
-  model$constrExprs <- getConstrExprs(parTable, model$covModel$parTable)
-  if (createTheta) {
-    listTheta         <- createTheta(model, parTable.in = parTable)
-    model             <- c(model, listTheta)
-    model$freeParams  <- length(listTheta$theta)
-    model$info$bounds <- getParamBounds(model)
-    model$gradientStruct  <- getGradientStruct(model, theta = model$theta)
-  }
-
   if (checkModel)
     preCheckModel(model = model, covModel = covModel, method = method,
                   missing = missing)
+
+  model
+}
+
+
+specifyModelDA <- function(..., group.info, createTheta = TRUE) {
+  args <- list(...)
+
+  n.groups <- group.info$n.groups
+  stopif(n.groups < 1L, "Invalid grouping structure supplied.")
+
+  parTable    <- group.info$parTable
+  parTableCov <- group.info$parTableCov
+  group.col   <- parTable$group
+
+  stopif(is.null(group.col) || max(group.col) != n.groups,
+         "Number of group-specific parameter tables does not match number of groups.")
+
+  submodels <- vector("list", length = n.groups)
+
+  for (g in seq_len(n.groups)) {
+    args.g <- args
+
+    if (!is.null(group.info$data))
+      args.g$data <- group.info$data[group.info$indices[[g]], , drop = FALSE]
+    else
+      args.g <- addNamedNullField(args.g, field = "data")
+
+    args.g$parTable <- parTable[parTable$group == g, , drop = FALSE]
+
+    if (!is.null(parTableCov))
+      args.g$parTableCovModel <- parTableCov[parTableCov$group == g, , drop = FALSE]
+    else
+      args.g <- addNamedNullField(args.g, field = "parTableCovModel")
+
+    submodel.g <- do.call(specifModelDA_Group, args.g)
+    submodel.g$info$group <- group.info$levels[[g]]
+    submodel.g$info$n.groups <- 1L
+
+    submodels[[g]] <- submodel.g
+  }
+
+  model <- list(
+    models   = submodels,
+    syntax   = args$syntax,
+    data.raw = group.info$data.raw,
+    parTable = parTable,
+    info     = list(
+      n.groups      = n.groups,
+      group.levels  = group.info$levels,
+      group.info    = group.info,
+
+      # Constants across groups
+      xis           = submodels[[1L]]$info$xis,
+      etas          = submodels[[1L]]$info$etas,
+      numXis        = submodels[[1L]]$info$numXis,
+      numEtas       = submodels[[1L]]$info$numEtas,
+      indsXis       = submodels[[1L]]$info$indsXis,
+      indsEtas      = submodels[[1L]]$info$indsEtas,
+      allIndsXis    = submodels[[1L]]$info$allIndsXis,
+      allIndsEtas   = submodels[[1L]]$info$allIndsEtas,
+      varsInts      = submodels[[1L]]$info$varsInts,
+      latentEtas    = submodels[[1L]]$info$latentEtas,
+      scalingInds   = submodels[[1L]]$info$scalingInds,
+      kOmegaEta     = submodels[[1L]]$info$kOmegaEta,
+      nonLinearXis  = submodels[[1L]]$info$nonLinearXis,
+      mean.observed = submodels[[1L]]$info$mean.observed,
+
+      has.interaction    = submodels[[1L]]$info$has.interaction,
+      higherOrderLVs     = submodels[[1L]]$info$higherOrderLVs,
+      indsHigherOrderLVs = submodels[[1L]]$info$indsHigherOrderLVs,
+
+      lavOptimizerSyntaxAdditions = submodels[[1L]]$lavOptimizerSyntaxAdditions
+    ),
+
+    params = list()
+  )
+
+  # Currenlty we assume covModel has an uniform structure
+  model$params$constrExprs <- getConstrExprs(parTable, model$models[[1L]]$covModel$parTable)
+
+  if (createTheta) {
+    params <- createTheta(model, parTable.in = parTable)
+    model$params[names(params)] <- params
+
+    # TODO: Remove occurences of `model$theta`, and replace them with `model$params$theta`
+    model$theta <- params$theta # an ugly design decision, that was made at the very start
+
+    model$params$bounds <- getParamBounds(model)
+    model$params$gradientStruct <- getGradientStruct(model, theta = params$theta)
+  }
 
   model
 }
@@ -529,6 +602,7 @@ mainModelToParTable <- function(finalModel, method = "lms") {
                               op = "~~",
                               rowsLhs = FALSE,
                               symmetric = TRUE)
+
   parTable <- rbind(parTable, newRows)
 
   parTable <- lapplyDf(parTable, FUN = function(x) replace(x, x == -999, NA))
@@ -541,27 +615,31 @@ customParamsToParTable <- function(model, coefs, se) {
   custom   <- parTable[parTable$op == ":=", ]
 
   if (!NROW(custom$lhs)) return(NULL)
-  parTable <- NULL
+
+  out <- NULL
   for (i in seq_len(NROW(custom))) {
     lhs <- custom[i, "lhs"]
     rhs <- custom[i, "rhs"]
 
-    newRow <- data.frame(lhs = lhs, op = ":=", rhs = rhs,
-                         label = lhs, est = coefs[[lhs]],
-                         std.error = se[[lhs]])
-    parTable <- rbind(parTable, newRow)
+    se.i <- tryCatch(se[[lhs]], error = \(e) NA)
+    newRow <- data.frame(lhs = lhs, op = ":=", rhs = rhs, label = lhs,
+                         group = 0L, est = coefs[[lhs]], std.error = se.i)
+    out <- rbind(out, newRow)
   }
-  parTable
+
+  out
 }
 
 
-modelToParTable <- function(model, coefs = NULL, se = NULL, method = "lms", calc.se = TRUE) {
+modelToParTable <- function(model, coefs = NULL, se = NULL, method = "lms", calc.se = TRUE, group = 1L) {
   parTable <- rbind(covModelToParTable(model, method = method),
                     mainModelToParTable(model, method = method))
 
-  if (!is.null(coefs) && !is.null(se) && !is.null(names(se))) {
-    parTable <- rbind(parTable, customParamsToParTable(model, coefs, se))
+  colsOut <- c("lhs", "op", "rhs", "label", "group", "est", "std.error")
+  parTable$group <- group
+  parTable <- parTable[colsOut]
 
+  if (!is.null(coefs) && !is.null(se) && !is.null(names(se))) {
     # this is ugly but should work...
     # due to how values are read from the matrices, std.errors are overwritten
     # by the custom parameter-values (e.g., 'X=~a*x1; a==1.2' results in a std.error of 1.2, when it should be 0)
@@ -570,7 +648,8 @@ modelToParTable <- function(model, coefs = NULL, se = NULL, method = "lms", calc
     parTable[isLabelled, "std.error"] <- se[labels]
     # if the std.error of a labelled parameter is 0, it is invariant, and should be NA
     # NB: there is a very small chance that a std.error of 0 is caused by a rounding error
-    parTable[isLabelled & parTable$std.error == 0, "std.error"] <- NA
+    zeroStdError <- parTable$std.error == 0 & !is.na(parTable$std.error)
+    parTable[isLabelled & zeroStdError, "std.error"] <- NA
   }
 
   if (!calc.se) parTable$std.error <- NA  # when std.errors are not computed, static constraints
@@ -580,8 +659,7 @@ modelToParTable <- function(model, coefs = NULL, se = NULL, method = "lms", calc
   parTable[!is.na(parTable$std.error) &
            parTable$std.error == -999, "std.error"] <- NA  # replace -999 with NA
 
-  # Sort parTable before returning
-  sortParTableDA(parTable = parTable, model = model)
+  parTable
 }
 
 
@@ -625,27 +703,14 @@ finalizeModelEstimatesDA <- function(model,
   method <- match.arg(method)
   NA__ <- -999
 
-  # coefficients and filled model
-  lavCoefs <- getLavCoefs(model = model, theta = theta, method = method)
-  # (fillPhi is relevant for LMS, harmless for QML when ignored)
-  finalModel <- fillModel(model, theta, fillPhi = (method == "lms"), method = method)
-
-  # keep NA "skeletons" for printing and SE attachment
-  emptyModel <- getEmptyModel(parTable = model$parTable,
-                              cov.syntax = model$cov.syntax,
-                              parTableCovModel = model$covModel$parTable,
-                              mean.observed = model$info$mean.observed,
-                              method = method)
-  finalModel$matricesNA <- emptyModel$matrices
-  finalModel$covModelNA <- emptyModel$covModel
+  # coefficients and (final) filled model
+  lavCoefs   <- getLavCoefs(model = model, theta = theta, method = method)
 
   # information matrix + SE
   typeSE <- if (!calc.se) "none" else if (robust.se) "robust" else "standard"
 
   fim.args <- list(model = model,
-                   finalModel = finalModel,
                    theta = theta,
-                   data = data,
                    method = method,
                    EFIM.S = EFIM.S,
                    hessian = OFIM.hessian,
@@ -665,21 +730,35 @@ finalizeModelEstimatesDA <- function(model,
   FIMo <- do.call(calcFIM_da, fim.args)
 
   SE <- calcSE_da(calc.se = calc.se,
-                  FIMo$vcov.all,
+                  vcov = FIMo$vcov.all,
                   rawLabels = FIMo$raw.labels,
                   NA__ = NA__)
 
   modelSE <- getSE_Model(model, se = SE, method = method,
                          n.additions = FIMo$n.additions)
-  finalModel$matricesSE <- modelSE$matrices
-  finalModel$covModelSE <- modelSE$covModel
 
-  parTable <- modelToParTable(finalModel,
-                              coefs = lavCoefs$all,
-                              se = SE,
-                              method = method,
-                              calc.se = calc.se)
+  finalModel <- getFinalModel(model = model, theta = theta, method = method,
+                              modelSE = modelSE)
+
+  parTable <- NULL
+  for (g in seq_len(model$info$n.groups)) {
+    submodel <- finalModel$models[[g]]
+
+    parTable.g <- modelToParTable(submodel,
+                                  coefs = lavCoefs$all,
+                                  se = SE,
+                                  method = method,
+                                  calc.se = calc.se,
+                                  group = g)
+
+    parTable <- rbind(parTable, parTable.g)
+  }
+
+  parTable <- rbind(parTable,
+                    customParamsToParTable(model, coefs = lavCoefs$all, se = SE))
+
   parTable <- addZStatsParTable(parTable)
+  parTable <- sortParTableDA(parTable = parTable, model = model)
 
   out <- list(
     model            = finalModel,
@@ -720,4 +799,32 @@ addZStatsParTable <- function(parTable, se.col = "std.error", est.col = "est",
   parTable[[ci.u]]  <- parTable[[est.col]] + CI_WIDTH * parTable[[se.col]]
 
   parTable
+}
+
+
+getFinalModel <- function(model, theta, method, modelSE = NULL) {
+  finalModel <- fillModel(model, theta, fillPhi = method == "lms", method = method)
+
+  # keep NA "skeletons" for printing and SE attachment
+  emptyModel <- getEmptyModel(group.info = model$info$group.info,
+                              cov.syntax = model$models[[1L]]$cov.syntax,
+                              parTableCovModel = model$models[[1L]]$covModel$parTable,
+                              mean.observed = model$info$mean.observed,
+                              method = method)
+
+  for (g in seq_along(finalModel$models)) {
+    submodel <- finalModel$models[[g]]
+
+    if (!is.null(modelSE)) {
+      submodel$matricesSE <- modelSE$models[[g]]$matrices
+      submodel$covModelSE <- modelSE$models[[g]]$covModel
+    }
+
+    submodel$matricesNA <- emptyModel$models[[g]]$matrices
+    submodel$covModelNA <- emptyModel$models[[g]]$covModel
+
+    finalModel$models[[g]] <- submodel
+  }
+
+  finalModel
 }

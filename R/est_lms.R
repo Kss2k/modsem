@@ -1,6 +1,6 @@
-computeGradient <- function(theta, model, P, data, epsilon) {
+computeGradient <- function(theta, model, P, epsilon) {
   gradientCompLogLikLms(theta = theta, model = model, P = P, sign = -1,
-                        epsilon = epsilon, data = data)
+                        epsilon = epsilon)
 }
 
 
@@ -36,8 +36,8 @@ lbfgs_two_loop <- function(grad, s_list, y_list) {
 }
 
 
-computeFullIcom <- function(theta, model, data, P) {
-  Ic <- hessianCompLogLikLms(theta = theta, model = model, P = P, sign = -1, data = data)
+computeFullIcom <- function(theta, model, P) {
+  Ic <- hessianCompLogLikLms(theta = theta, model = model, P = P, sign = -1)
   0.5 * (Ic + t(Ic))
 }
 
@@ -76,9 +76,8 @@ emLms <- function(model,
   fs.matrix    <- match.arg(fs.matrix)
   fs.fd.scheme <- match.arg(fs.fd.scheme)
 
-  data         <- model$data
-  theta.lower  <- model$info$bounds$lower
-  theta.upper  <- model$info$bounds$upper
+  theta.lower  <- model$params$bounds$lower
+  theta.upper  <- model$params$bounds$upper
   bounds.all   <- c(theta.lower, theta.upper)
 
   if (all(is.infinite(bounds.all))) {
@@ -108,8 +107,8 @@ emLms <- function(model,
     direction <- NULL
 
     lastQuad     <- NULL
-    adaptiveQuad <- model$quad$adaptive
-    adaptiveFreq <- model$quad$adaptive.frequency
+    adaptiveQuad <- model$models[[1L]]$quad$adaptive # fixed across groups
+    adaptiveFreq <- model$models[[1L]]$quad$adaptive.frequency
 
     qn_env <- new.env(parent = emptyenv())
     qn_env$LBFGS_M <- 5
@@ -120,7 +119,7 @@ emLms <- function(model,
     iterations <- 0L
     run <- TRUE
 
-    testSimpleGradient <- !model$gradientStruct$hasCovModel
+    testSimpleGradient <- !model$params$gradientStruct$hasCovModel
 
     while (run) {
       iterations <- iterations + 1L
@@ -129,15 +128,16 @@ emLms <- function(model,
       recalcQuad <- adaptiveQuad && iterations %% adaptiveFreq == 0L
 
       # E-step at thetaOld
-      P <- estepLms(model = model, theta = thetaOld, data = data,
+      P <- estepLms(model = model, theta = thetaOld,
                     lastQuad = lastQuad, recalcQuad = recalcQuad,
                     adaptive.quad.tol = adaptive.quad.tol, ...)
 
       if (testSimpleGradient) {
         tryCatch({
-          gradientCompLogLikLms(theta = thetaNew, model = model, P = P, data = data)
+          gradientCompLogLikLms(theta = thetaNew, model = model, P = P)
         }, error = \(e) {
-          warning2("Optimized computation of gradient failed! Switching gradient type.")
+          warning2("Optimized computation of gradient failed! Switching gradient type.\n",
+                   "Message: ", conditionMessage(e))
           model$gradientStruct$hasCovModel <<- TRUE
           model$gradientStruct$isNonLinear <<- TRUE
         })
@@ -185,7 +185,7 @@ emLms <- function(model,
 
       # accelerated step
       if (algorithm != "EM" && mode != "EM") {
-        grad <- computeGradient(theta = thetaOld, model = model, data = data, P = P, epsilon = epsilon)
+        grad <- computeGradient(theta = thetaOld, model = model, P = P, epsilon = epsilon)
 
         if (mode == "QN") {
           direction <- if (length(qn_env$s_list)) {
@@ -197,7 +197,7 @@ emLms <- function(model,
           I_fs <- NULL
           if (fs.matrix == "Iobs") {
             I_fs <- tryCatch({
-              L <- observedInfoFromLouisLms(model = model, theta = thetaOld, data = data,
+              L <- observedInfoFromLouisLms(model = model, theta = thetaOld,
                                             P = P, recompute.P = FALSE,
                                             fd.scheme = fs.fd.scheme,
                                             fd.epsilon = fs.fd.epsilon,
@@ -206,7 +206,7 @@ emLms <- function(model,
             }, error = function(e) NULL)
           }
           if (is.null(I_fs)) {
-            I_fs <- computeFullIcom(theta = thetaOld, model = model, data = data, P = P)
+            I_fs <- computeFullIcom(theta = thetaOld, model = model, P = P)
           } else {
             I_fs <- 0.5 * (I_fs + t(I_fs))
           }
@@ -225,11 +225,11 @@ emLms <- function(model,
         if (!is.null(direction)) {
           alpha     <- 1
           success   <- FALSE
-          refQ      <- compLogLikLms(thetaOld, model, P, data, sign = 1)
+          refQ      <- compLogLikLms(theta = thetaOld, model = model, P = P, sign = 1)
 
           while (alpha > 1e-5) {
             thetaTrial  <- boundedTheta(thetaOld + alpha * direction)
-            llQTrial    <- suppressWarnings(compLogLikLms(thetaTrial,  model, P, data, sign = 1))
+            llQTrial    <- suppressWarnings(compLogLikLms(theta = thetaTrial,  model = model, P = P, sign = 1))
             ok <- !is.na(llQTrial) && (llQTrial >= refQ)
             if (ok) { success <- TRUE; break }
             alpha <- alpha / 2
@@ -239,10 +239,10 @@ emLms <- function(model,
             thetaNew <- thetaTrial
             if (mode == "QN") {
               # refresh P and grad at thetaNew before adding curvature pair
-              P_new <- estepLms(model = model, theta = thetaNew, data = data,
+              P_new <- estepLms(model = model, theta = thetaNew,
                                 lastQuad = lastQuad, recalcQuad = FALSE,
                                 adaptive.quad.tol = adaptive.quad.tol, ...)
-              gradNew <- computeGradient(theta = thetaNew, model = model, data = data,
+              gradNew <- computeGradient(theta = thetaNew, model = model,
                                          P = P_new, epsilon = epsilon)
               s_vec <- thetaNew - thetaOld
               y_vec <- gradNew - grad
@@ -268,7 +268,7 @@ emLms <- function(model,
       if (algorithm == "EM" || mode == "EM") {
         mstep <- mstepLms(model = model, P = P, theta = thetaOld,
                           max.step = max.step, epsilon = epsilon,
-                          data = data, optimizer = optimizer, control = control, ...)
+                          optimizer = optimizer, control = control, ...)
         if (!any(is.na(mstep$par))) thetaNew <- mstep$par
       }
     } # while
@@ -281,7 +281,7 @@ emLms <- function(model,
                             adaptive.quad.tol, quad.range))
 
     # final E-step
-    P <- estepLms(model = model, theta = thetaNew, data = data,
+    P <- estepLms(model = model, theta = thetaNew,
                   lastQuad = lastQuad, recalcQuad = FALSE,
                   adaptive.quad.tol = adaptive.quad.tol, ...)
 
@@ -289,7 +289,7 @@ emLms <- function(model,
       model             = model,
       theta             = thetaNew,
       method            = "lms",
-      data              = data,
+      data              = lapply(model$models, FUN = \(submodel) submodel$data),
       logLik            = P$obsLL,
       iterations        = iterations,
       converged         = iterations < max.iter,
@@ -316,7 +316,7 @@ emLms <- function(model,
       "Message: ", conditionMessage(e)
     ))
     P0 <- tryCatch(
-      estepLms(model = model, theta = model$theta, data = data,
+      estepLms(model = model, theta = model$theta,
                lastQuad = NULL, recalcQuad = FALSE,
                adaptive.quad.tol = adaptive.quad.tol, ...),
       error = function(e2) NULL
@@ -327,7 +327,7 @@ emLms <- function(model,
       model             = model,
       theta             = model$theta,
       method            = "lms",
-      data              = data,
+      data              = lapply(model$models, FUN = \(submodel) submodel$data),
       logLik            = ll0,
       iterations        = 0L,
       converged         = FALSE,
