@@ -291,22 +291,20 @@ standardized_estimates.modsem_pi <- function(object,
   if (correction && std.errors == "rescale") {
     parTable.std.naive <- uncorrected(object)
 
-    correction <- function(object, grouping = NULL) {
+    correction <- function(object) {
       correctStdSolutionPI(
         object       = object,
-        parTable.std = parTable.std.naive,
-        grouping     = grouping
+        parTable.std = parTable.std.naive
       )
     }
 
   } else if (correction) {
-    correction <- function(object, grouping = NULL) {
+    correction <- function(object) {
 
       solution <- standardizedSolutionCOEFS(
         object      = object,
         monte.carlo = monte.carlo,
         mc.reps     = mc.reps,
-        grouping    = grouping,
         center      = FALSE,
         ...
       )
@@ -328,11 +326,7 @@ standardized_estimates.modsem_pi <- function(object,
   warnif(hiorder && rescale, "Correction of higher-order models will likely not work!",
          immediate. = FALSE)
 
-  parTable.std <- applyTransformationByGrouping(
-    parTable = parTable.ustd,
-    FUN      = correction,
-    object   = object
-  )
+  parTable.std <- correction(object)
 
   if (!colon.pi) {
     rm <- \(x) stringr::str_remove_all(x, ":")

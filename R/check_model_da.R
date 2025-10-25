@@ -246,9 +246,14 @@ checkVarsIntsDA <- function(varsInts, lVs) {
 postCheckModel <- function(model) {
   parTable <- model$parTable
 
-  checkParTableEstimates(parTable)
-  checkVariances(model$expected.matrices)
-  checkCovMatrices(model$expected.matrices)
+  for (g in getGroupsParTable(parTable)) {
+    parTable.g <- parTable[parTable$group == g, , drop = FALSE]
+
+    checkParTableEstimates(parTable.g)
+    checkVariances(model$expected.matrices[[g]])
+    checkCovMatrices(model$expected.matrices[[g]])
+  }
+
   checkVCOV(vcov(model, type = "free"), calc.se = model$args$calc.se)
 }
 

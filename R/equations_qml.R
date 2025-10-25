@@ -25,19 +25,32 @@ incrementIterations <- function(logLik) {
 
 logLikQml <- function(theta, model, sum = TRUE, sign = -1, verbose = FALSE) {
   modelFilled <- fillModel(model, theta, method = "qml")
-  numXi       <- model$info$numXis
-  numEta      <- model$info$numEtas
-  kOmegaEta   <- model$info$kOmegaEta
-  latentEtas  <- model$info$latentEtas
 
-  m <- modelFilled$matrices
+  ll <- 0
+  for (g in seq_len(model$info$n.groups))
+    ll <- ll + logLikQmlGroup(modelFilled$models[[g]], sum = sum, sign = sign)
+
+  if (verbose)
+    incrementIterations(sign * ll)
+
+  ll
+}
+
+
+logLikQmlGroup <- function(submodel, sum = TRUE, sign = -1) {
+  numXi       <- submodel$info$numXis
+  numEta      <- submodel$info$numEtas
+  kOmegaEta   <- submodel$info$kOmegaEta
+  latentEtas  <- submodel$info$latentEtas
+
+  m <- submodel$matrices
   m$numEta    <- numEta
   m$numXi     <- numXi
   m$kOmegaEta <- kOmegaEta
 
-  m$tauX      <- m$tauX + m$lambdaX %*% m$beta0
-  m$x <- model$data$data.full[, model$info$allIndsXis, drop = FALSE]
-  m$y <- model$data$data.full[, model$info$allIndsEtas, drop = FALSE]
+  m$tauX <- m$tauX + m$lambdaX %*% m$beta0
+  m$x <- submodel$data$data.full[, submodel$info$allIndsXis, drop = FALSE]
+  m$y <- submodel$data$data.full[, submodel$info$allIndsEtas, drop = FALSE]
   m$x <- centerIndicators(m$x, tau = m$tauX)
   m$y <- centerIndicators(m$y, tau = m$tauY)
 
@@ -100,8 +113,6 @@ logLikQml <- function(theta, model, sum = TRUE, sign = -1, verbose = FALSE) {
 
   logLik <- (f2 + f3)
 
-  if (verbose) incrementIterations(logLik)
-
   sign * logLik
 }
 
@@ -138,13 +149,51 @@ centerIndicators <- function(X, tau) {
 }
 
 
-gradientLogLikQml <- function(theta, model, epsilon = 1e-8, sign = -1, data=NULL) {
-  if (!is.null(data)) model$data <- data
-  baseLL <- logLikQml(theta, model, sign = sign, verbose = FALSE)
-  vapply(seq_along(theta), FUN.VALUE = numeric(1L), FUN = function(i) {
-    theta[[i]] <- theta[[i]] + epsilon
-    (logLikQml(theta, model, sign = sign, verbose = FALSE) - baseLL) / epsilon
-  })
+gradientLogLikQml <- function(theta, model, epsilon = 1e-8, sign = -1, .f = logLikQmlGroup, sum = TRUE, ...) {
+  params <- model$params
+
+  SELECT_THETA_LAB  <- params$SELECT_THETA_LAB
+  SELECT_THETA_COV  <- params$SELECT_THETA_COV
+  SELECT_THETA_MAIN <- params$SELECT_THETA_MAIN
+
+  N <- vapply(model$models, FUN.VALUE = numeric(1L), FUN = \(sub) sub$data$n)
+  N.start <- c(1, cumsum(N)[-length(N)] + 1L)
+  N.end   <- cumsum(N)
+
+  if (sum) n <- 1L
+  else     n <- sum(N)
+
+  k  <- length(theta)
+
+  grad <- matrix(0, nrow = n, ncol = k, dimnames = list(NULL, names(theta)))
+
+  .fg <- function(theta, g) {
+    modFilled <- fillModel(theta = theta, model = model, method = "qml")
+    .f(submodel = modFilled$models[[g]], sign = sign, sum = sum, ...)
+  }
+
+  for (g in seq_len(model$info$n.groups)) {
+    f0 <- .fg(theta = theta, g = g)
+
+    if (sum) J <- 1L
+    else     J <- seq(N.start[[g]], N.end[[g]], by = 1L)
+
+    indices <- c(
+      SELECT_THETA_LAB[[g]],
+      SELECT_THETA_COV[[g]],
+      SELECT_THETA_MAIN[[g]]
+    )
+
+    for (i in indices) {
+      theta_i <- theta
+      theta_i[i] <- theta_i[i] + epsilon
+
+      fi <- .fg(theta_i, g = g)
+      grad[J, i] <- grad[J, i] + (fi - f0) / epsilon
+    }
+  }
+
+  if (n == 1L) as.vector(grad) else grad
 }
 
 
@@ -157,11 +206,41 @@ logLikQml_i <- function(theta, model, sign = -1) {
 
 # gradient function of logLikQml_i
 gradientLogLikQml_i <- function(theta, model, sign = -1, epsilon = 1e-8) {
-  baseLL <- logLikQml_i(theta, model, sign = sign)
-  lapplyMatrix(seq_along(theta), FUN = function(i) {
-    theta[[i]] <- theta[[i]] + epsilon
-    (logLikQml_i(theta, model, sign = sign) - baseLL) / epsilon
-  }, FUN.VALUE = numeric(model$data$n))
+  gradientLogLikQml(theta = theta, model = model, sign = sign, epsilon = epsilon, sum = FALSE)
+}
+
+
+hessianLogLikQml <- function(theta, model, sign = -1, .relStep = .Machine$double.eps ^ (1/5),
+                             .f = logLikQmlGroup) {
+  params <- model$params
+
+  SELECT_THETA_LAB  <- params$SELECT_THETA_LAB
+  SELECT_THETA_COV  <- params$SELECT_THETA_COV
+  SELECT_THETA_MAIN <- params$SELECT_THETA_MAIN
+
+  k <- length(theta)
+  H <- matrix(0, nrow = k, ncol = k, dimnames = list(names(theta), names(theta)))
+
+  for (g in seq_len(model$info$n.groups)) {
+    indices <- c(
+      SELECT_THETA_LAB[[g]],
+      SELECT_THETA_COV[[g]],
+      SELECT_THETA_MAIN[[g]]
+    )
+
+    .fg <- function(theta.g) {
+      theta[indices] <- theta.g # local copy of theta
+      modFilled <- fillModel(theta = theta, model = model, method = "qml")
+      .f(submodel = modFilled$models[[g]], sign = sign, sum = TRUE)
+    }
+
+    theta.g <- theta[indices]
+    Hg <- fdHESS(pars = theta.g, fun = .fg, .relStep = .Machine$double.eps^(1/5))
+
+    H[indices, indices] <- H[indices, indices] + Hg
+  }
+
+  H
 }
 
 
@@ -186,8 +265,8 @@ mstepQml <- function(model,
 
     est <- stats::nlminb(start = theta, objective = logLikQml, model = model,
                          gradient = gradient, sign = -1, verbose = verbose,
-                         upper = model$info$bounds$upper,
-                         lower = model$info$bounds$lower,
+                         upper = model$params$bounds$upper,
+                         lower = model$params$bounds$lower,
                          control = control, ...) |> suppressWarnings()
 
   } else if (optimizer == "L-BFGS-B") {
@@ -196,6 +275,8 @@ mstepQml <- function(model,
 
     est <- stats::optim(par = theta, fn = logLikQml, model = model,
                         gr = gradient, method = optimizer, sign = -1,
+                        upper = model$params$bounds$upper,
+                        lower = model$params$bounds$lower,
                         control = control, ...)
 
     est$objective  <- est$value

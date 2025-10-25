@@ -47,8 +47,8 @@ testthat::expect_no_warning({
                            orthogonal.x = TRUE, orthogonal.y = TRUE)
 })
 
-b.lower <- lms_linear_obl$model$info$bounds$lower
-b.upper <- lms_linear_obl$model$info$bounds$upper
+b.lower <- lms_linear_obl$model$params$bounds$lower
+b.upper <- lms_linear_obl$model$params$bounds$upper
 
 testthat::expect_equal(b.lower[["a"]], 0.000)
 testthat::expect_equal(b.upper[["a"]], 0.330)

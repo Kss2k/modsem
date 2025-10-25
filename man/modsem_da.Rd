@@ -7,6 +7,7 @@
 modsem_da(
   model.syntax = NULL,
   data = NULL,
+  group = NULL,
   method = "lms",
   verbose = NULL,
   optimize = NULL,
@@ -59,6 +60,9 @@ modsem_da(
 \item{model.syntax}{\code{lavaan} syntax}
 
 \item{data}{A dataframe with observed variables used in the model.}
+
+\item{group}{Character. A variable name in the data frame defining the groups in a multiple
+group analysis}
 
 \item{method}{method to use:
 \describe{

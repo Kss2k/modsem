@@ -133,13 +133,20 @@ plot_interaction <- function(x, z, y, model, vals_x = seq(-3, 3, .001),
   ci.upper  <- df$ci.upper
 
   # plotting margins
-  ggplot2::ggplot(df, ggplot2::aes(x = vals_x, y = predicted, colour = cat_z, group = cat_z)) +
+  p <- ggplot2::ggplot(df, ggplot2::aes(x = vals_x, y = predicted, colour = cat_z, group = cat_z)) +
     ggplot2::geom_line() +
     ggplot2::geom_ribbon(ggplot2::aes(ymin = ci.lower, ymax = ci.upper, fill = cat_z),
                          alpha = alpha_se, linewidth = 0, linetype = "blank") +
     ggplot2::labs(x = x, y = y, colour = z, fill = z) +
     ggplot2::ggtitle(sprintf("Marginal Effects of %s on %s, Given %s", x, y, z)) +
     ggplot2::theme_bw()
+
+  if (length(unique(df$group)) > 1L) {
+    group <- NULL # stop R CMD check from complaining about `~group`
+    p <- p + ggplot2::facet_wrap(~group)
+  }
+
+  p
 }
 
 
@@ -204,8 +211,30 @@ plot_jn <- function(x, z, y, model, min_z = -3, max_z = 3,
     parTable <- standardized_estimates(model, correction = TRUE)
   } else parTable <- parameter_estimates(model)
 
-  parTable <- getMissingLabels(parTable)
+  parTable <- addMissingGroups(getMissingLabels(parTable))
 
+  plots <- list()
+  for (g in getGroupsParTable(parTable)) {
+    parTable.g <- parTable[parTable$group == g, , drop = FALSE]
+
+    plots[[g]] <- plotJN_Group(
+      x = x, z = z, y = y, parTable = parTable.g, model = model,
+      min_z = min_z, max_z = max_z, sig.level = sig.level,
+      alpha = alpha, detail = detail, sd.line = sd.line,
+      standardized = standardized, xz = xz, ...
+    )
+  }
+
+  if (length(plots) <= 1L)
+    return(plots[[1L]])
+
+  group.label <- modsem_inspect(model, what = "group.label")
+  ggpubr::ggarrange(plotlist = plots, labels = group.label)
+}
+
+
+plotJN_Group <- function(x, z, y, parTable, model, min_z, max_z, sig.level, alpha,
+                         detail, sd.line, standardized, xz, ...) {
   if (is.null(xz))
     xz <- paste(x, z, sep = ":")
 
@@ -470,6 +499,10 @@ plot_jn <- function(x, z, y, model, min_z = -3, max_z = 3,
 #'   Must be a valid CSS color string, including \code{rgba()} for transparency.
 #'   - Default is \code{"rgba(0,0,0,0.45)"} (semi-transparent black).
 #'   Example: \code{"rgba(255,255,255,0.8)"} for semi-transparent white lines.
+#'
+#' @param group Which group to create surface plot for. Only relevant for multigroup
+#'   models. Must be an integer index, representing the nth group.
+#'
 #' @param ... Additional arguments passed to \code{plotly::plot_ly}.
 #'
 #' @details
@@ -538,14 +571,31 @@ plot_surface <- function(x, z, y, model,
                          grid_nx = 12,
                          grid_ny = 12,
                          grid_color = "rgba(0,0,0,0.45)",
+                         group = NULL,
                          ...) {
 
   stopif(!isModsemObject(model) && !isLavaanObject(model), "model must be of class ",
          "'modsem_pi', 'modsem_da', 'modsem_mplus' or 'lavaan'")
 
-  if (standardized) {
+  if (standardized)
     parTable <- standardized_estimates(model, correction = TRUE)
-  } else parTable <- parameter_estimates(model)
+  else
+    parTable <- parameter_estimates(model)
+
+  parTable <- addMissingGroups(parTable)
+  groups   <- getGroupsParTable(parTable)
+
+  if (length(groups) > 1L && is.null(group)) {
+    warning2("Plotting of surface plots for multiple groups is not implemented yet!\n",
+             "You can choose which group to plot using the `group` argument.\n",
+             "Plotting surface plot for the first group...",
+             immediate. = FALSE)
+  }
+
+  if (is.null(group))
+    group <- 1L
+
+  parTable <- parTable[parTable$group == group, , drop = FALSE]
 
   if (is.null(xz))
     xz <- paste(x, z, sep = ":")
@@ -635,7 +685,7 @@ plot_surface <- function(x, z, y, model,
   )
 
   if (grid || tolower(colorscale) != "viridis") {
-    # for some reason this doesn't render with pkgdown this is a 
+    # for some reason this doesn't render with pkgdown this is a
     # temporary workaround, until I figure out what is going on...
     plotly::plot_ly(
       x = ~vals_x,

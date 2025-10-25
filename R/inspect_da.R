@@ -10,48 +10,187 @@ inspectDA_Optim <- c("coefficients.free", "vcov.free", "information",
 modsem_inspect_da <- function(model, what = "default") {
   stopif(!length(what), "`what` is of length zero!")
 
-  matrices          <- model$model$matrices
-  matricesCovModel  <- model$model$covModel$matrices
-  expected.matrices <- model$expected.matrices
+  finalModel <- model$model
+  groupModels <- finalModel$models
+  n.groups <- length(groupModels)
+  is.multi <- n.groups > 1L
 
+  group.names <- names(groupModels)
+  if (!length(group.names) || any(!nzchar(group.names))) {
+    level.names <- finalModel$info$group.levels
 
-  lambda       <- diagPartitionedMat(matrices$lambdaX,
-                                     matrices$lambdaY)
-  theta        <- diagPartitionedMat(matrices$thetaDelta,
-                                     matrices$thetaEpsilon)
-  gamma.xi     <- diagPartitionedMat(matrices$gammaXi,
-                                     matricesCovModel$gammaXi)
-  gamma.eta    <- diagPartitionedMat(matrices$gammaEta,
-                                     matricesCovModel$gammaEta)
-  omega.xi.xi  <- diagPartitionedMat(matrices$omegaXiXi,
-                                     matricesCovModel$omegaXiXi)
-  omega.eta.xi <- diagPartitionedMat(matrices$omegaEtaXi,
-                                     matricesCovModel$omegaEtaXi)
-  phi          <- diagPartitionedMat(matrices$phi,
-                                     matricesCovModel$phi)
-  psi          <- diagPartitionedMat(matrices$psi,
-                                     matricesCovModel$psi)
+    if (!is.null(level.names) && length(level.names) == n.groups)
+      group.names <- level.names
+    else
+      group.names <- paste0("Group", seq_len(n.groups))
+  }
 
-  tau          <- rbind(matrices$tauX, matrices$tauY)
-  alpha        <- matrices$alpha
-  beta0        <- matrices$beta0
+  expected.raw <- model$expected.matrices
+  expected.by.group <- vector("list", length = n.groups)
+  names(expected.by.group) <- group.names
 
-  colnames(tau) <- colnames(alpha) <- colnames(beta0) <- "~1"
+  if (is.list(expected.raw) && length(expected.raw)) {
+    names.raw <- names(expected.raw)
+    for (g in seq_len(n.groups)) {
+      idx <- integer()
+      if (length(names.raw)) {
+        candidates <- unique(c(as.character(g), group.names[[g]]))
+        idx <- match(candidates, names.raw, nomatch = NA_integer_)
+        idx <- idx[!is.na(idx)]
+      }
+      if (!length(idx) && g <= length(expected.raw)) {
+        idx <- g
+      }
+      if (length(idx)) expected.by.group[[g]] <- expected.raw[[idx[[1]]]]
+    }
+  } else if (!is.null(expected.raw)) {
+    expected.by.group <- replicate(n.groups, expected.raw, simplify = FALSE)
+    names(expected.by.group) <- group.names
+  }
 
-  cov.ov  <- expected.matrices$sigma.ov
-  cov.lv  <- expected.matrices$sigma.lv
-  cov.all <- expected.matrices$sigma.all
+  buildExpectedPayload <- function(expected) {
+    if (is.null(expected)) {
+      return(list(
+        cov.ov  = NULL,
+        cov.lv  = NULL,
+        cov.all = NULL,
+        cor.ov  = NULL,
+        cor.lv  = NULL,
+        cor.all = NULL,
+        mean.lv = NULL,
+        mean.ov = NULL,
+        mean.all = NULL,
+        r2.all  = NULL,
+        r2.lv   = NULL,
+        r2.ov   = NULL,
+        res.all = NULL,
+        res.lv  = NULL,
+        res.ov  = NULL
+      ))
+    }
 
-  cor.ov  <- cov2cor(cov.ov)
-  cor.lv  <- cov2cor(cov.lv)
-  cor.all <- cov2cor(cov.all)
+    cov.ov  <- expected$sigma.ov
+    cov.lv  <- expected$sigma.lv
+    cov.all <- expected$sigma.all
 
+    cor.ov  <- if (!is.null(cov.ov))  cov2cor(cov.ov)   else NULL
+    cor.lv  <- if (!is.null(cov.lv))  cov2cor(cov.lv)   else NULL
+    cor.all <- if (!is.null(cov.all)) cov2cor(cov.all)  else NULL
 
-  info <- list(N                 = NROW(model$data$data.full),
+    list(
+      cov.ov  = modsemMatrix(cov.ov,  symmetric = TRUE),
+      cov.lv  = modsemMatrix(cov.lv,  symmetric = TRUE),
+      cov.all = modsemMatrix(cov.all, symmetric = TRUE),
+
+      cor.ov  = modsemMatrix(cor.ov,  symmetric = TRUE),
+      cor.lv  = modsemMatrix(cor.lv,  symmetric = TRUE),
+      cor.all = modsemMatrix(cor.all, symmetric = TRUE),
+
+      mean.lv  = modsemMatrix(expected$mu.lv),
+      mean.ov  = modsemMatrix(expected$mu.ov),
+      mean.all = modsemMatrix(expected$mu.all),
+
+      r2.all  = modsemVector(expected$r2.all),
+      r2.lv   = modsemVector(expected$r2.lv),
+      r2.ov   = modsemVector(expected$r2.ov),
+
+      res.all = modsemVector(expected$res.all),
+      res.lv  = modsemVector(expected$res.lv),
+      res.ov  = modsemVector(expected$res.ov)
+    )
+  }
+
+  buildGroupPayload <- function(submodel, expected) {
+    matrices         <- submodel$matrices
+    matricesCovModel <- submodel$covModel$matrices
+    fetchCov <- function(name) {
+      if (!is.null(matricesCovModel)) matricesCovModel[[name]] else NULL
+    }
+
+    lambda       <- diagPartitionedMat(matrices$lambdaX, matrices$lambdaY)
+    theta        <- diagPartitionedMat(matrices$thetaDelta, matrices$thetaEpsilon)
+    gamma.xi     <- diagPartitionedMat(matrices$gammaXi,     fetchCov("gammaXi"))
+    gamma.eta    <- diagPartitionedMat(matrices$gammaEta,    fetchCov("gammaEta"))
+    omega.xi.xi  <- diagPartitionedMat(matrices$omegaXiXi,   fetchCov("omegaXiXi"))
+    omega.eta.xi <- diagPartitionedMat(matrices$omegaEtaXi,  fetchCov("omegaEtaXi"))
+    phi          <- diagPartitionedMat(matrices$phi,         fetchCov("phi"))
+    psi          <- diagPartitionedMat(matrices$psi,         fetchCov("psi"))
+
+    tau   <- rbind(matrices$tauX, matrices$tauY)
+    alpha <- matrices$alpha
+    beta0 <- matrices$beta0
+
+    if (!is.null(tau))   colnames(tau)   <- "~1"
+    if (!is.null(alpha)) colnames(alpha) <- "~1"
+    if (!is.null(beta0)) colnames(beta0) <- "~1"
+
+    c(
+      list(
+        N            = submodel$data$n,
+        data         = submodel$data$data.full,
+        lambda       = modsemMatrix(lambda),
+        tau          = modsemMatrix(tau),
+        theta        = modsemMatrix(theta, symmetric = TRUE),
+        gamma.xi     = modsemMatrix(gamma.xi),
+        gamma.eta    = modsemMatrix(gamma.eta),
+        omega.xi.xi  = modsemMatrix(omega.xi.xi),
+        omega.eta.xi = modsemMatrix(omega.eta.xi),
+        phi          = modsemMatrix(phi, symmetric = TRUE),
+        psi          = modsemMatrix(psi, symmetric = TRUE),
+        alpha        = modsemMatrix(alpha),
+        beta0        = modsemMatrix(beta0)
+      ),
+      buildExpectedPayload(expected)
+    )
+  }
+
+  group.payloads <- Map(buildGroupPayload, groupModels, expected.by.group)
+  names(group.payloads) <- group.names
+
+  collapseField <- function(field) {
+    values <- lapply(group.payloads, `[[`, field)
+
+    if (!is.multi)
+      return(values[[1]])
+
+    names(values) <- group.names
+    values
+  }
+
+  N.val            <- collapseField("N")
+  data.val         <- collapseField("data")
+  lambda.val       <- collapseField("lambda")
+  tau.val          <- collapseField("tau")
+  theta.val        <- collapseField("theta")
+  gamma.xi.val     <- collapseField("gamma.xi")
+  gamma.eta.val    <- collapseField("gamma.eta")
+  omega.xi.xi.val  <- collapseField("omega.xi.xi")
+  omega.eta.xi.val <- collapseField("omega.eta.xi")
+  phi.val          <- collapseField("phi")
+  psi.val          <- collapseField("psi")
+  alpha.val        <- collapseField("alpha")
+  beta0.val        <- collapseField("beta0")
+  cov.ov.val       <- collapseField("cov.ov")
+  cov.lv.val       <- collapseField("cov.lv")
+  cov.all.val      <- collapseField("cov.all")
+  cor.ov.val       <- collapseField("cor.ov")
+  cor.lv.val       <- collapseField("cor.lv")
+  cor.all.val      <- collapseField("cor.all")
+  mean.lv.val      <- collapseField("mean.lv")
+  mean.ov.val      <- collapseField("mean.ov")
+  mean.all.val     <- collapseField("mean.all")
+  r2.all.val       <- collapseField("r2.all")
+  r2.lv.val        <- collapseField("r2.lv")
+  r2.ov.val        <- collapseField("r2.ov")
+  res.all.val      <- collapseField("res.all")
+  res.lv.val       <- collapseField("res.lv")
+  res.ov.val       <- collapseField("res.ov")
+
+  info <- list(N                 = N.val,
                vcov.all          = modsemMatrix(model$vcov.all, symmetric = TRUE),
                vcov.free         = modsemMatrix(model$vcov.free, symmetric = TRUE),
                information       = modsemMatrix(model$FIM, symmetric = TRUE),
-               data              = model$data$data.full,
+               data              = data.val,
                coefficients.all  = modsemVector(model$coefs.all),
                coefficients.free = modsemVector(model$coefs.free),
                partable          = modsemParTable(model$parTable),
@@ -60,39 +199,43 @@ modsem_inspect_da <- function(model, what = "default") {
                iterations        = model$iterations,
                convergence       = model$convergence,
 
-               lambda       = modsemMatrix(lambda),
-               tau          = modsemMatrix(tau),
-               theta        = modsemMatrix(theta, symmetric = TRUE),
-               gamma.xi     = modsemMatrix(gamma.xi),
-               gamma.eta    = modsemMatrix(gamma.eta),
-               omega.xi.xi  = modsemMatrix(omega.xi.xi),
-               omega.eta.xi = modsemMatrix(omega.eta.xi),
+               ngroups     = model$model$info$n.groups,
+               group       = model$model$args$group,
+               group.label = group.names,
 
-               phi   = modsemMatrix(phi, symmetric = TRUE),
-               psi   = modsemMatrix(psi, symmetric = TRUE),
+               lambda       = lambda.val,
+               tau          = tau.val,
+               theta        = theta.val,
+               gamma.xi     = gamma.xi.val,
+               gamma.eta    = gamma.eta.val,
+               omega.xi.xi  = omega.xi.xi.val,
+               omega.eta.xi = omega.eta.xi.val,
 
-               alpha = modsemMatrix(alpha),
-               beta0 = modsemMatrix(beta0),
+               phi   = phi.val,
+               psi   = psi.val,
 
-               cov.ov  = modsemMatrix(cov.ov, symmetric = TRUE),
-               cov.lv  = modsemMatrix(cov.lv, symmetric = TRUE),
-               cov.all = modsemMatrix(cov.all, symmetric = TRUE),
+               alpha = alpha.val,
+               beta0 = beta0.val,
 
-               cor.ov  = modsemMatrix(cor.ov, symmetric = TRUE),
-               cor.lv  = modsemMatrix(cor.lv, symmetric = TRUE),
-               cor.all = modsemMatrix(cor.all, symmetric = TRUE),
+               cov.ov  = cov.ov.val,
+               cov.lv  = cov.lv.val,
+               cov.all = cov.all.val,
 
-               mean.lv  = modsemMatrix(expected.matrices$mu.lv),
-               mean.ov  = modsemMatrix(expected.matrices$mu.ov),
-               mean.all = modsemMatrix(expected.matrices$mu.all),
+               cor.ov  = cor.ov.val,
+               cor.lv  = cor.lv.val,
+               cor.all = cor.all.val,
 
-               r2.all  = modsemVector(expected.matrices$r2.all),
-               r2.lv   = modsemVector(expected.matrices$r2.lv),
-               r2.ov   = modsemVector(expected.matrices$r2.ov),
+               mean.lv  = mean.lv.val,
+               mean.ov  = mean.ov.val,
+               mean.all = mean.all.val,
 
-               res.all = modsemVector(expected.matrices$res.all),
-               res.lv  = modsemVector(expected.matrices$res.lv),
-               res.ov  = modsemVector(expected.matrices$res.ov)
+               r2.all  = r2.all.val,
+               r2.lv   = r2.lv.val,
+               r2.ov   = r2.ov.val,
+
+               res.all = res.all.val,
+               res.lv  = res.lv.val,
+               res.ov  = res.ov.val
   )
 
   FIT <- \() {
@@ -123,8 +266,10 @@ modsem_inspect_da <- function(model, what = "default") {
   }
 
   nullvalues <- vapply(fields, FUN.VALUE = logical(1L), FUN = is.null)
+  okifnull   <- names(fields) %in% c("group", "group.label")
 
-  warnif(any(nullvalues), "Some fields in `modsem_inspect()` could not be retrieved!",
+  warnif(any(nullvalues & !okifnull),
+         "Some fields in `modsem_inspect()` could not be retrieved!",
          immediate. = FALSE)
 
   fields

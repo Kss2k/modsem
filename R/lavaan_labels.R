@@ -1,5 +1,10 @@
-combineLavLabels <- function(lavLabelsCov, lavLabelsMain, currentLabels) {
+combineLavLabels <- function(lavLabelsCov, lavLabelsMain, currentLabels, g = 1L) {
   lavLabels <- c(lavLabelsCov, lavLabelsMain)
+
+  if (g > 1L)
+    lavLabels <- stats::setNames(sprintf("%s.g%d", lavLabels, g),
+                                 nm = names(lavLabels))
+
   finalLabels <- currentLabels
   finalLabels[finalLabels %in% names(lavLabels)] <-
     lavLabels[names(lavLabels) %in% finalLabels]
@@ -108,9 +113,24 @@ createLabelsOmega <- function(X, parTable.in = NULL) {
 
 getLavCoefs <- function(model, theta, method) {
   fullTheta <- getTransformationsTheta(model, theta, method)
-  isFree    <- names(fullTheta) %in% names(theta)
+  fullNames  <- names(fullTheta)
+  thetaNames <- names(theta)
 
-  names(fullTheta) <- model$lavLabels
+  if (!is.null(fullNames) && !is.null(thetaNames)) {
+    isFree <- fullNames %in% thetaNames
+  } else if (!is.null(fullNames) && is.null(thetaNames)) {
+    isFree <- logical(length(fullTheta))
+  } else {
+    isFree <- seq_along(fullTheta) %in% seq_along(theta)
+  }
+
+  lavLabels <- model$params$lavLabels
+
+  if (!is.null(lavLabels) && length(lavLabels) == length(fullTheta)) {
+    names(fullTheta) <- lavLabels
+  } else if (!is.null(fullNames)) {
+    names(fullTheta) <- fullNames
+  }
 
   list(all = fullTheta, free = fullTheta[isFree])
 }

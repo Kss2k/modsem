@@ -1,6 +1,6 @@
 #' @export
 #' @describeIn parameter_estimates Get parameter estimates of a \code{lavaan} object
-parameter_estimates.lavaan <- function(object, colon.pi = TRUE, 
+parameter_estimates.lavaan <- function(object, colon.pi = TRUE,
                                        high.order.as.measr = NULL, # capture
                                        ...) {
   lavaan::parameterEstimates(object, ...)

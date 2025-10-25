@@ -4,6 +4,7 @@ optimizeStartingParamsDA <- function(model,
                                                  auto.fix.first = TRUE,
                                                  auto.fix.sinlge = TRUE,
                                                  robust.se = FALSE),
+                                     group = NULL,
                                      engine = c("pi", "sam")) {
   engine <- tolower(engine)
   engine <- match.arg(engine)
@@ -16,12 +17,14 @@ optimizeStartingParamsDA <- function(model,
   data     <- model$data.raw
   missing  <- tolower(args$missing)
 
+  syntax     <- model$info$group.info$syntax
+  cov.syntax <- model$info$group.info$cov.syntax
+
   robust.se       <- args$robust.se
   has.interaction <- model$info$has.interaction
 
-  syntax <- paste(model$syntax, model$covModel$syntax,
-                  model$info$lavOptimizerSyntaxAdditions,
-                  sep = "\n")
+  syntax <- paste(syntax, cov.syntax,
+                  model$info$lavOptimizerSyntaxAdditions, sep = "\n")
 
   acceptable.missing <- c("listwise", "ml", "direct", "fiml")
   if (has.interaction && missing %in% c("ml", "fiml", "direct")) {
@@ -73,6 +76,7 @@ optimizeStartingParamsDA <- function(model,
       orthogonal.y    = args$orthogonal.y,
       auto.fix.first  = args$auto.fix.first,
       auto.fix.single = args$auto.fix.single,
+      group           = group,
       suppress.warnings.lavaan = TRUE,
     )
 
@@ -85,144 +89,166 @@ optimizeStartingParamsDA <- function(model,
   if (isHigherOrderParTable(parTable))
     parTable <- higherOrderMeasr2Struct(parTable)
 
-  # labelled parameters
-  thetaLabel <- getLabeledParamsLavaan(parTable, model$constrExprs$fixedParams)
+  params <- model$params
+  SELECT_THETA_LAB  <- params$SELECT_THETA_LAB
+  SELECT_THETA_COV  <- params$SELECT_THETA_COV
+  SELECT_THETA_MAIN <- params$SELECT_THETA_MAIN
+  THETA <- params$theta
 
-  fillLabelsMatrix <- function(matNumeric, matLabel, symmetric = FALSE) {
-    if (all(matLabel == ""))
-      return(matNumeric)
+  thetaLabel <- getLabeledParamsLavaan(parTable, params$constrExprs$fixedParams)
+  THETA[SELECT_THETA_LAB[[1L]]][names(thetaLabel)] <- thetaLabel
 
-    labels <- c(matLabel[matLabel != ""])
-    labels <- labels[labels %in% names(thetaLabel)]
+  for (g in seq_len(model$info$n.groups)) {
+    submodel <- model$models[[g]]
 
-    for (label in labels)
-      matNumeric[matLabel == label] <- thetaLabel[[label]]
+    if ("group" %in% colnames(parTable))
+      parTable.g <- parTable[parTable$group == g, , drop = FALSE]
+    else
+      parTable.g <- parTable
 
-    if (symmetric)
-      matNumeric[upper.tri(matNumeric)] <- t(matNumeric)[upper.tri(matNumeric)]
+    fillLabelsMatrix <- function(matNumeric, matLabel, symmetric = FALSE) {
+      if (all(matLabel == ""))
+        return(matNumeric)
 
-    matNumeric
-  }
+      labels <- c(matLabel[matLabel != ""])
+      labels <- labels[labels %in% names(thetaLabel)]
 
-  # Main Model
-  matricesMain      <- model$matrices
-  labelMatricesMain <- model$labelMatrices
+      for (label in labels)
+        matNumeric[matLabel == label] <- thetaLabel[[label]]
 
-  LambdaX <- findEstimatesParTable(matricesMain$lambdaX, parTable, op = "=~",
-                                   rows_lhs = FALSE, fill = 0.7)
-  LambdaY <- findEstimatesParTable(matricesMain$lambdaY, parTable, op = "=~",
-                                   rows_lhs = FALSE, fill = 0.7)
+      if (symmetric)
+        matNumeric[upper.tri(matNumeric)] <- t(matNumeric)[upper.tri(matNumeric)]
 
-  ThetaEpsilon <- findEstimatesParTable(matricesMain$thetaEpsilon, parTable,
-                                        op = "~~", fill = 0.2)
-  ThetaDelta   <- findEstimatesParTable(matricesMain$thetaDelta, parTable,
-                                        op = "~~", fill = 0.2)
+      matNumeric
+    }
 
-  Psi <- findEstimatesParTable(matricesMain$psi, parTable, op = "~~", fill = 0)
-  Phi <- findEstimatesParTable(matricesMain$phi, parTable, op = "~~", fill = 0)
-  A   <- findEstimatesParTable(matricesMain$A, parTable, op = "~~", fill = 0)
+    # Main Model
+    matricesMain      <- submodel$matrices
+    labelMatricesMain <- submodel$labelMatrices
 
-  # Matrices which can be corrected to ensure viable starting parameters need to
-  # get filled in using labels as well, just for the checks them selves
-  Psi <- fillLabelsMatrix(Psi, labelMatricesMain$psi, symmetric = TRUE)
-  Phi <- fillLabelsMatrix(Phi, labelMatricesMain$phi, symmetric = TRUE)
-  A   <- fillLabelsMatrix(A, labelMatricesMain$A, symmetric = FALSE)
+    LambdaX <- findEstimatesParTable(matricesMain$lambdaX, parTable.g, op = "=~",
+                                     rows_lhs = FALSE, fill = 0.7)
+    LambdaY <- findEstimatesParTable(matricesMain$lambdaY, parTable.g, op = "=~",
+                                     rows_lhs = FALSE, fill = 0.7)
 
-  ThetaEpsilon <- fillLabelsMatrix(ThetaEpsilon,
-                                   labelMatricesMain$thetaEpsilon,
+    ThetaEpsilon <- findEstimatesParTable(matricesMain$thetaEpsilon, parTable.g,
+                                          op = "~~", fill = 0.2)
+    ThetaDelta   <- findEstimatesParTable(matricesMain$thetaDelta, parTable.g,
+                                          op = "~~", fill = 0.2)
+
+    Psi <- findEstimatesParTable(matricesMain$psi, parTable.g, op = "~~", fill = 0)
+    Phi <- findEstimatesParTable(matricesMain$phi, parTable.g, op = "~~", fill = 0)
+    A   <- findEstimatesParTable(matricesMain$A, parTable.g, op = "~~", fill = 0)
+
+    # Matrices which can be corrected to ensure viable starting parameters need to
+    # get filled in using labels as well, just for the checks them selves
+    Psi <- fillLabelsMatrix(Psi, labelMatricesMain$psi, symmetric = TRUE)
+    Phi <- fillLabelsMatrix(Phi, labelMatricesMain$phi, symmetric = TRUE)
+    A   <- fillLabelsMatrix(A, labelMatricesMain$A, symmetric = FALSE)
+
+    ThetaEpsilon <- fillLabelsMatrix(ThetaEpsilon,
+                                     labelMatricesMain$thetaEpsilon,
+                                     symmetric = TRUE)
+
+    ThetaDelta <- fillLabelsMatrix(ThetaDelta,
+                                   labelMatricesMain$thetaDelta,
                                    symmetric = TRUE)
 
-  ThetaDelta <- fillLabelsMatrix(ThetaDelta,
-                                 labelMatricesMain$thetaDelta,
-                                 symmetric = TRUE)
+    correctDiag <- function(M, fill = 1, tol = 0) {
+      M[M < tol & is.diag(M)] <- fill
+      M
+    }
 
-  correctDiag <- function(M, fill = 1, tol = 0) {
-    M[M < tol & is.diag(M)] <- fill
-    M
-  }
+    # Check for negative diagonals
+    ThetaEpsilon <- correctDiag(ThetaEpsilon, tol = 0) # no negative values
+    ThetaDelta   <- correctDiag(ThetaDelta, tol = 0) # no negative values
+    Psi          <- correctDiag(Psi, tol = 0) # no negative values
+    Phi          <- correctDiag(Phi, tol = 0) # no negative values
+    A            <- correctDiag(A, tol = 0)
 
-  # Check for negative diagonals
-  ThetaEpsilon <- correctDiag(ThetaEpsilon, tol = 0) # no negative values
-  ThetaDelta   <- correctDiag(ThetaDelta, tol = 0) # no negative values
-  Psi          <- correctDiag(Psi, tol = 0) # no negative values
-  Phi          <- correctDiag(Phi, tol = 0) # no negative values
-  A            <- correctDiag(A, tol = 0)
+    as.I <- function(M) { # If Phi/A is non-invertible we want I instead
+      I <- diag(NROW(M))
+      dimnames(I) <- dimnames(M)
+      I
+    }
 
-  as.I <- function(M) { # If Phi/A is non-invertible we want I instead
-    I <- diag(NROW(M))
-    dimnames(I) <- dimnames(M)
-    I
-  }
-
-  if (!is.invertible(Phi)) Phi <- as.I(Phi)
-  # Residuals don't need to be invertible...
-  # if (!is.invertible(Psi))          Psi <- as.I(Psi)
-  # if (!is.invertible(ThetaEpsilon)) ThetaEpsilon <- as.I(ThetaEpsilon)
-  # if (!is.invertible(ThetaDelta))   ThetaDelta   <- as.I(ThetaDelta)
-
-  A[upper.tri(A)] <- t(A)[upper.tri(A)]
-  A <- t(tryCatch(chol(A), error = function(x) as.I(A)))
-
-  beta0 <- findInterceptsParTable(matricesMain$beta0, parTable, fill = 0)
-  alpha <- findInterceptsParTable(matricesMain$alpha, parTable, fill = 0)
-
-  GammaEta <- findEstimatesParTable(matricesMain$gammaEta, parTable, op = "~", fill = 0)
-  GammaXi  <- findEstimatesParTable(matricesMain$gammaXi, parTable, op = "~", fill = 0)
-
-  OmegaEtaXi <- findInteractionEstimatesParTable(matricesMain$omegaEtaXi,
-                                                 parTable = parTable, fill = 0)
-  OmegaXiXi <- findInteractionEstimatesParTable(matricesMain$omegaXiXi,
-                                                parTable = parTable, fill = 0)
-  tauX <- findInterceptsParTable(matricesMain$tauX, parTable, fill = 0)
-  tauY <- findInterceptsParTable(matricesMain$tauY, parTable, fill = 0)
-
-  thetaMain <- unlist(list(LambdaX[is.na(matricesMain$lambdaX)],
-                           LambdaY[is.na(matricesMain$lambdaY)],
-                           tauX[is.na(matricesMain$tauX)],
-                           tauY[is.na(matricesMain$tauY)],
-                           ThetaDelta[is.na(matricesMain$thetaDelta)],
-                           ThetaEpsilon[is.na(matricesMain$thetaEpsilon)],
-                           Phi[is.na(matricesMain$phi)],
-                           A[is.na(matricesMain$A)],
-                           Psi[is.na(matricesMain$psi)],
-                           alpha[is.na(matricesMain$alpha)],
-                           beta0[is.na(matricesMain$beta0)],
-                           GammaXi[is.na(matricesMain$gammaXi)],
-                           GammaEta[is.na(matricesMain$gammaEta)],
-                           OmegaXiXi[is.na(matricesMain$omegaXiXi)],
-                           OmegaEtaXi[is.na(matricesMain$omegaEtaXi)]))
-
-  # Cov Model
-  matricesCov      <- model$covModel$matrices
-  labelMatricesCov <- model$covModel$labelMatrices
-
-  if (!is.null(matricesCov)) {
-    PsiCovModel <- findEstimatesParTable(matricesCov$psi, parTable, op = "~~", fill = 0)
-    PhiCovModel <- findEstimatesParTable(matricesCov$phi, parTable, op = "~~", fill = 0)
-
-    GammaEtaCovModel <- findEstimatesParTable(matricesCov$gammaEta, parTable, op = "~", fill = 0)
-    GammaXiCovModel <- findEstimatesParTable(matricesCov$gammaXi, parTable, op = "~", fill = 0)
-
-    PhiCovModel <- correctDiag(PhiCovModel, tol = 0)
-    PsiCovModel <- correctDiag(PsiCovModel, tol = 0)
-
-    PhiCovModel <- fillLabelsMatrix(PhiCovModel, labelMatricesCov$phi, symmetric = TRUE)
-
-    if (!is.invertible(PhiCovModel)) PhiCovModel <- as.I(PhiCovModel)
+    if (!is.invertible(Phi)) Phi <- as.I(Phi)
     # Residuals don't need to be invertible...
-    # if (!is.invertible(PsiCovModel)) PsiCovModel <- as.I(PsiCovModel)
+    # if (!is.invertible(Psi))          Psi <- as.I(Psi)
+    # if (!is.invertible(ThetaEpsilon)) ThetaEpsilon <- as.I(ThetaEpsilon)
+    # if (!is.invertible(ThetaDelta))   ThetaDelta   <- as.I(ThetaDelta)
 
-    thetaCov <- unlist(list(PhiCovModel[is.na(matricesCov$phi)],
-                            PsiCovModel[is.na(matricesCov$psi)],
-                            GammaXiCovModel[is.na(matricesCov$gammaXi)],
-                            GammaEtaCovModel[is.na(matricesCov$gammaEta)]))
-  } else thetaCov <- NULL
+    A[upper.tri(A)] <- t(A)[upper.tri(A)]
+    A <- t(tryCatch(chol(A), error = function(x) as.I(A)))
 
-  # Combinging the two
-  theta <- c(thetaLabel, thetaCov, thetaMain)
-  if (length(theta) == length(model$theta)) {
-    names(theta) <- names(model$theta)
-    model$theta <- theta
+    beta0 <- findInterceptsParTable(matricesMain$beta0, parTable.g, fill = 0)
+    alpha <- findInterceptsParTable(matricesMain$alpha, parTable.g, fill = 0)
+
+    GammaEta <- findEstimatesParTable(matricesMain$gammaEta, parTable.g, op = "~", fill = 0)
+    GammaXi  <- findEstimatesParTable(matricesMain$gammaXi, parTable.g, op = "~", fill = 0)
+
+    OmegaEtaXi <- findInteractionEstimatesParTable(matricesMain$omegaEtaXi,
+                                                   parTable = parTable.g, fill = 0)
+    OmegaXiXi <- findInteractionEstimatesParTable(matricesMain$omegaXiXi,
+                                                  parTable = parTable.g, fill = 0)
+    tauX <- findInterceptsParTable(matricesMain$tauX, parTable.g, fill = 0)
+    tauY <- findInterceptsParTable(matricesMain$tauY, parTable.g, fill = 0)
+
+    thetaMain <- unlist(list(LambdaX[is.na(matricesMain$lambdaX)],
+                             LambdaY[is.na(matricesMain$lambdaY)],
+                             tauX[is.na(matricesMain$tauX)],
+                             tauY[is.na(matricesMain$tauY)],
+                             ThetaDelta[is.na(matricesMain$thetaDelta)],
+                             ThetaEpsilon[is.na(matricesMain$thetaEpsilon)],
+                             Phi[is.na(matricesMain$phi)],
+                             A[is.na(matricesMain$A)],
+                             Psi[is.na(matricesMain$psi)],
+                             alpha[is.na(matricesMain$alpha)],
+                             beta0[is.na(matricesMain$beta0)],
+                             GammaXi[is.na(matricesMain$gammaXi)],
+                             GammaEta[is.na(matricesMain$gammaEta)],
+                             OmegaXiXi[is.na(matricesMain$omegaXiXi)],
+                             OmegaEtaXi[is.na(matricesMain$omegaEtaXi)]))
+
+    # Cov Model
+    matricesCov      <- submodel$covModel$matrices
+    labelMatricesCov <- submodel$covModel$labelMatrices
+
+    if (!is.null(matricesCov)) {
+      PsiCovModel <- findEstimatesParTable(matricesCov$psi, parTable.g, op = "~~", fill = 0)
+      PhiCovModel <- findEstimatesParTable(matricesCov$phi, parTable.g, op = "~~", fill = 0)
+
+      GammaEtaCovModel <- findEstimatesParTable(matricesCov$gammaEta, parTable.g, op = "~", fill = 0)
+      GammaXiCovModel <- findEstimatesParTable(matricesCov$gammaXi, parTable.g, op = "~", fill = 0)
+
+      PhiCovModel <- correctDiag(PhiCovModel, tol = 0)
+      PsiCovModel <- correctDiag(PsiCovModel, tol = 0)
+
+      PhiCovModel <- fillLabelsMatrix(PhiCovModel, labelMatricesCov$phi, symmetric = TRUE)
+
+      if (!is.invertible(PhiCovModel)) PhiCovModel <- as.I(PhiCovModel)
+      # Residuals don't need to be invertible...
+      # if (!is.invertible(PsiCovModel)) PsiCovModel <- as.I(PsiCovModel)
+
+      thetaCov <- unlist(list(PhiCovModel[is.na(matricesCov$phi)],
+                              PsiCovModel[is.na(matricesCov$psi)],
+                              GammaXiCovModel[is.na(matricesCov$gammaXi)],
+                              GammaEtaCovModel[is.na(matricesCov$gammaEta)]))
+    } else thetaCov <- NULL
+
+    selectThetaMain <- SELECT_THETA_MAIN[[g]]
+    selectThetaCov  <- SELECT_THETA_COV[[g]]
+
+    if (length(selectThetaMain) == length(thetaMain))
+      THETA[selectThetaMain] <- thetaMain
+
+    if (length(selectThetaCov) == length(thetaCov) && length(thetaCov) > 0L)
+      THETA[selectThetaCov] <- thetaCov
+  }
+
+  if (length(THETA) == length(model$theta)) {
+    names(THETA) <- names(model$theta)
+    model$theta <- THETA
   }
 
   model$lavaan.fit <- lavaan.fit
@@ -322,6 +348,7 @@ parameterEstimatesLavSAM <- function(syntax,
                                      auto.fix.first  = TRUE,
                                      auto.fix.single = TRUE,
                                      suppress.warnings.lavaan = TRUE,
+                                     group = NULL,
                                      ...) {
   parTable <- modsemify(syntax)
   higherOrderLVs <- getHigherOrderLVs(parTable)
@@ -344,6 +371,7 @@ parameterEstimatesLavSAM <- function(syntax,
       orthogonal.y    = orthogonal.y,
       auto.fix.first  = auto.fix.first,
       auto.fix.single = auto.fix.single,
+      group           = group,
       ...
     ))
 
@@ -384,6 +412,7 @@ parameterEstimatesLavSAM <- function(syntax,
     orthogonal.y    = orthogonal.y,
     auto.fix.first  = auto.fix.first,
     auto.fix.single = auto.fix.single,
+    group           = group,
     ...
   ))
 
@@ -422,22 +451,28 @@ parameterEstimatesLavSAM <- function(syntax,
     orthogonal.y    = orthogonal.y,
     auto.fix.first  = auto.fix.first,
     auto.fix.single = auto.fix.single,
+    group           = group,
     ...
   ))
 
   measr  <- getCFARows(lavaan::parameterEstimates(fitCFA))
   struct <- lavaan::parameterEstimates(fitSAM)
 
-  addlab <- \(pt) if (!"label" %in% colnames(pt)) {pt$label <- ""; pt} else pt
-  cols.x <- c("lhs", "op", "rhs")
+  addcol <- \(pt, col, val) if (!col %in% colnames(pt)) {pt[[col]] <- val; pt} else pt
+  cols.x <- c("lhs", "op", "rhs", "group")
   cols.y <- c("label", "est")
   cols   <- c(cols.x, cols.y)
 
-  parTableFull <- rbind(addlab(measr)[cols], addlab(struct)[cols])
+  measr  <- addcol(measr, col = "label", val = "")
+  measr  <- addcol(measr, col = "group", val = 1L)
+  struct <- addcol(struct, col = "label", val = "")
+  struct <- addcol(struct, col = "group", val = 1L)
+
+  parTableFull <- rbind(measr[cols], struct[cols])
   parTableFull <- parTableFull[!duplicated(parTableFull[cols.x]), , drop = FALSE]
 
   # if (!isNonCentered && !isHigherOrder) # if latent mean structure is not included
-    parTableFull <- recalcInterceptsY(parTableFull)
+  parTableFull <- recalcInterceptsY(parTableFull)
 
   list(fit = fitCFA, parTable = parTableFull)
 }
