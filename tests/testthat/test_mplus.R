@@ -69,7 +69,7 @@ if (run) {
 # Test robust std.errors
 mod <- '
 # X1-3 are Level 1 variables
-X1 =~ x1
+X1 =~ x1 
 X2 =~ x2
 X3 =~ x3
 

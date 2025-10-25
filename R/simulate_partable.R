@@ -1,38 +1,5 @@
 simulateDataParTable <- function(parTable, N, colsOVs = NULL, colsLVs = NULL) {
-  parTable <- addMissingGroups(parTable)
-  groups   <- getGroupsParTable(parTable)
-
-  LV <- vector("list", length = length(groups))
-  OV <- vector("list", length = length(groups))
-
-  N.g <- floor(N / length(groups))
-
-  for (g in groups) {
-    simg <- simulateDataParTableGroup(
-      parTable = parTable[parTable$group == g, , drop = FALSE],
-      N        = N.g,
-      colsOVs  = colsOVs,
-      colsLVs  = colsLVs
-    )
-
-    LV[[g]] <- simg$lV
-    OV[[g]] <- simg$oV
-  }
-
-  list(LV = LV, OV = OV)
-}
-
-
-simulatedGroupsToDf <- function(sim, type = "OV") {
-  simt <- sim[[toupper(type)]]
-
-  do.call(rbind, lapply(seq_along(simt), FUN = \(g)
-                        cbind(as.data.frame(simt), data.frame(group = g))))
-}
-
-
-simulateDataParTableGroup <- function(parTable, N, colsOVs = NULL, colsLVs = NULL) {
-  # endogenous variables (etas)
+  # endogenous variables (etas)model
   etas    <- getSortedEtas(parTable, isLV = TRUE, checkAny = TRUE)
   numEtas <- length(etas)
 

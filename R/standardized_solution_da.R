@@ -69,22 +69,14 @@ standardize_model <- function(model, monte.carlo = FALSE, mc.reps = 10000, ...) 
   stopif(!inherits(model, "modsem_da"), "The model must be of class 'modsem_da'.")
 
   solution <- standardizedSolutionCOEFS(model, monte.carlo = monte.carlo, mc.reps = mc.reps, ...)
-  all.pars <- names(coef(model, type = "all"))
 
   coefs.all <- solution$coefs
   vcov.all  <- solution$vcov
-
-  # Some parameters are lost as a function of the standardization procedure
-  # E.g., intercept parameters. Here we add them back in, to avoid breaking
-  # downstream functions appliead to the model object
-  coefs.all <- expandCoef(coefs.all, labels = all.pars)
-  vcov.all  <- expandVCOV(vcov.all, labels = all.pars)
 
   # It should be safe to use the same subset for both vcov.all and coefs.all
   # but in case something has gone wrong, we create seperate masks
   cnames.all <- names(coefs.all)
   vnames.all <- rownames(vcov.all)
-
   # intersect() shouldn't be neccessary, but just in case...
   cnames.free <- intersect(cnames.all, names(coef(model, type = "free")))
   vnames.free <- intersect(vnames.all, rownames(vcov(model, type = "free")))

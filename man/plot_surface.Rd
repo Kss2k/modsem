@@ -26,7 +26,6 @@ plot_surface(
   grid_nx = 12,
   grid_ny = 12,
   grid_color = "rgba(0,0,0,0.45)",
-  group = NULL,
   ...
 )
 }
@@ -102,9 +101,6 @@ Default is \code{12}.}
 Must be a valid CSS color string, including \code{rgba()} for transparency.
 - Default is \code{"rgba(0,0,0,0.45)"} (semi-transparent black).
 Example: \code{"rgba(255,255,255,0.8)"} for semi-transparent white lines.}
-
-\item{group}{Which group to create surface plot for. Only relevant for multigroup
-models. Must be an integer index, representing the nth group.}
 
 \item{...}{Additional arguments passed to \code{plotly::plot_ly}.}
 }

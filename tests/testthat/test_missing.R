@@ -78,8 +78,6 @@ testthat::expect_true(all(sd.corrected > sd.uncorrected))
 
 # test fiml
 fiml_lms <- modsem(m1, oneInt2, method = "lms", missing = "fiml")
-summary(fiml_lms)
-
 fiml_h0  <- estimate_h0(fiml_lms, calc.se = FALSE)
 testthat::expect_true(fiml_h0$iterations == 2L)
 
@@ -96,10 +94,3 @@ for (missing in missing.options) {
   testthat::expect_error(modsem(m1, oneInt3, method = "lms", missing = "fiml"),
                          regexp = "Please remove .*x1.*y2")
 }
-
-# test fiml with multigroup
-set.seed(123)
-oneIntMG <- oneInt2
-oneIntMG$group <- sample(c("G1", "G2"), nrow(oneInt2), replace = TRUE)
-fiml_lms_g <- modsem(m1, oneIntMG, method = "lms", missing = "fiml", group = "group")
-summary(fiml_lms_g)

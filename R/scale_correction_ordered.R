@@ -17,7 +17,6 @@ modsemOrderedScaleCorrectionV1 <- function(model.syntax,
                                            method = "lms",
                                            ordered = NULL,
                                            calc.se = TRUE,
-                                           group = NULL,
                                            iter = 75L,
                                            warmup = 25L,
                                            N = max(NROW(data), 1e5), # 10,000 initally
@@ -32,9 +31,6 @@ modsemOrderedScaleCorrectionV1 <- function(model.syntax,
                                            probit.correction = FALSE,
                                            ...) {
   standardize <- \(x) (x - mean(x, na.rm = TRUE)) / stats::sd(x, na.rm = TRUE)
-
-  stopif(!is.null(group), "Multigroup models do not work with: ",
-         "`modsemOrderedScaleCorrectionV1()`!")
 
   if (is.null(verbose))
     verbose <- TRUE # default
@@ -95,7 +91,6 @@ modsemOrderedScaleCorrectionV1 <- function(model.syntax,
           optimize         = optimize_i,
           calc.se          = FALSE,
           mean.observed    = ordered.mean.observed,
-          group            = group,
           ...
         ), error = \(e) {cat("\n"); print(e); NULL}
       )
@@ -450,12 +445,15 @@ modsemOrderedScaleCorrectionV2 <- function(model.syntax,
                                            method = "lms",
                                            ordered = NULL,
                                            calc.se = TRUE,
-                                           group = NULL,
+                                           iter = 75L,
+                                           warmup = 25L,
                                            N = max(NROW(data), 1e5),
                                            se = "simple",
                                            diff.theta.tol = 1e-10,
                                            ordered.mean.observed = FALSE,
                                            verbose = interactive(),
+                                           optimize = TRUE,
+                                           start = NULL,
                                            mean.observed = NULL,
                                            probit.correction = FALSE,
                                            ...) {
@@ -463,18 +461,17 @@ modsemOrderedScaleCorrectionV2 <- function(model.syntax,
   if (is.null(verbose)) verbose <- TRUE
 
   parTable.in <- modsemify(model.syntax)
-  xis  <- getXis(parTable.in, checkAny = FALSE)
-  inds <- getInds(parTable.in)
+  xis <- getXis(parTable.in, checkAny = FALSE)
 
+  inds <- getInds(parTable.in)
   parTable.cfa <- parTable.in[parTable.in$op == "=~" |
                               (parTable.in$lhs %in% inds &
                                parTable.in$rhs %in% inds), ,
                               drop = FALSE]
 
-  data <- as.data.frame(data)
-  cols <- getOVs(parTable.in)
-  cols.ordered <- cols[cols %in% ordered | sapply(data[cols], is.ordered)]
-  cols.cont    <- cols[!(cols %in% cols.ordered) & vapply(data[cols], is.numeric, TRUE)]
+  cols <- colnames(data)
+  cols.ordered <- cols[cols %in% ordered | sapply(data, is.ordered)]
+  cols.cont    <- cols[!(cols %in% cols.ordered) & vapply(data, is.numeric, TRUE)]
   ncat <- vapply(cols.ordered, FUN.VALUE = numeric(1L), FUN = \(x) length(unique(data[[x]])))
 
   warnif(any(ncat <= 2L) && !probit.correction,
@@ -491,90 +488,66 @@ modsemOrderedScaleCorrectionV2 <- function(model.syntax,
 
   if (verbose) printf("Estimating factor scores...\n")
   syntax.cfa <- parTableToSyntax(parTable.cfa)
+  fit.cfa    <- lavaan::cfa(syntax.cfa, data = data.x, ordered = cols.ordered, se = "none")
+  fscores <- as.data.frame(lavaan::lavPredict(fit.cfa))
 
-  if (is.null(group)) group.vals <- rep(1L, NROW(data.x))
-  else                group.vals <- data[[group]]
+  rescaled <- rescaleOrderedData_OP(
+    data            = data.x,
+    cols.ordered    = cols.ordered,
+    parTable.in     = parTable.in,
+    fscores         = fscores,
+    thresholds.vcov = TRUE
+  )
 
-  data.s   <- NULL
-  RESCALED <- list()
+  pcorr <- polychor(vars = cols, data = data.x,
+                    thresholds = NULL,
+                    ordered    = cols.ordered)
 
-  for (g in unique(group.vals)) {
-    data.xg <- data.x[group.vals == g, , drop = FALSE]
-
-    fit.cfa <- lavaan::cfa(syntax.cfa, data = data.xg, ordered = cols.ordered, se = "none")
-    fscores <- as.data.frame(lavaan::lavPredict(fit.cfa))
-
-    rescaled.g <- rescaleOrderedData_OP(
-      data            = data.xg,
-      cols.ordered    = cols.ordered,
-      parTable.in     = parTable.in,
-      fscores         = fscores,
-      thresholds.vcov = TRUE
-    )
-
-    RESCALED[[g]] <- rescaled.g
-    data.sg <- rescaled.g$data[cols]
-
-    pcorr <- polychor(vars = cols, data = data.xg,
-                      thresholds = NULL, ordered = cols.ordered)
-
-    if (probit.correction)
-      data.sg <- fitX2Cov(X = data.sg, S = pcorr)
-
-    data.sg <- as.data.frame(data.sg)
-
-    if (!is.null(group))
-      data.sg[[group]] <- g
-
-    data.s <- rbind(data.s, data.sg)
-  }
+  if (probit.correction) data.s <- fitX2Cov(X = rescaled$data, S = pcorr)
+  else                   data.s <- rescaled$data
 
   fit.out <- modsem_da(model.syntax     = model.syntax,
                        data             = data.s,
                        method           = method,
+                       start            = start,
                        verbose          = verbose,
+                       optimize         = optimize,
                        calc.se          = calc.se,
                        mean.observed    = ordered.mean.observed,
-                       group            = group,
                        ...)
 
-  for (g in seq_along(RESCALED)) {
-    rescaled.g <- RESCALED[[g]]
-
-    vcov.t <- NULL
-    coef.t <- NULL
-
-    for (col in cols.ordered) {
-      if (!is.null(rescaled.g$vcov[[col]]) && length(rescaled.g$vcov[[col]]))
-        vcov.t <- diagPartitionedMat(vcov.t, rescaled.g$vcov[[col]])
-
-      if (!is.null(rescaled.g$thresholds[[col]]) && length(rescaled.g$thresholds[[col]]))
-        coef.t <- c(coef.t, rescaled.g$thresholds[[col]])
+  # Use the last pass' thresholds (probit for endogenous; analytic for others)
+  vcov.t <- NULL
+  coef.t <- NULL
+  for (col in cols.ordered) {
+    if (!is.null(rescaled$vcov[[col]]) && length(rescaled$vcov[[col]])) {
+      vcov.t <- diagPartitionedMat(vcov.t, rescaled$vcov[[col]])
     }
-
-    parTable <- fit.out$parTable
-    cols.t <- c("lhs", "op", "rhs", "group", "label", "est", "std.error")
-    cols.m <- setdiff(colnames(parTable), cols.t)
-
-    if (length(coef.t)) {
-      lhs.t <- stringr::str_split_i(names(coef.t), pattern = "\\|", i = 1L)
-      rhs.t <- stringr::str_split_i(names(coef.t), pattern = "\\|", i = 2L)
-
-      parTable.t <- data.frame(lhs = lhs.t, op = "|", rhs = rhs.t, label = "",
-                               group = g, est = coef.t,
-                               std.error = if (!is.null(vcov.t)) sqrt(diag(vcov.t)) else NA_real_)
-      parTable.t[cols.m] <- NA
-
-      parTable.t <- addZStatsParTable(parTable.t)
-      parTable   <- sortParTableDA(rbind(parTable, parTable.t), model = fit.out$model)
-      fit.out$coef.all <- c(fit.out$coef.all, coef.t)
-
-      if (!is.null(vcov.t))
-        fit.out$vcov.all <- diagPartitionedMat(fit.out$vcov.all, vcov.t)
+    if (!is.null(rescaled$thresholds[[col]]) && length(rescaled$thresholds[[col]])) {
+      coef.t <- c(coef.t, rescaled$thresholds[[col]])
     }
   }
 
+  parTable <- fit.out$parTable
+  cols.t <- c("lhs", "op", "rhs", "label", "est", "std.error")
+  cols.m <- setdiff(colnames(parTable), cols.t)
+
+  if (length(coef.t)) {
+    lhs.t <- stringr::str_split_i(names(coef.t), pattern = "\\|", i = 1L)
+    rhs.t <- stringr::str_split_i(names(coef.t), pattern = "\\|", i = 2L)
+    parTable.t <- data.frame(lhs = lhs.t, op = "|", rhs = rhs.t, label = "",
+                             est = coef.t,
+                             std.error = if (!is.null(vcov.t)) sqrt(diag(vcov.t)) else NA_real_)
+    parTable.t[cols.m] <- NA
+    parTable.t <- addZStatsParTable(parTable.t)
+    parTable   <- sortParTableDA(rbind(parTable, parTable.t), model = fit.out$model)
+    fit.out$coef.all <- c(fit.out$coef.all, coef.t)
+    if (!is.null(vcov.t)) fit.out$vcov.all <- diagPartitionedMat(fit.out$vcov.all, vcov.t)
+  }
+
   fit.out$parTable <- parTable
+  fit.out$args$optimize <- optimize
+  fit.out$args$start    <- start
   fit.out
 }
 

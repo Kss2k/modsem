@@ -13,7 +13,7 @@ estQml <- function(model,
                    R.max = 1e6,
                    cr1s = TRUE,
                    ...) {
-  data <- lapply(model$models, FUN = \(sub) sub$data)
+  data <- model$data
 
   tryCatch({
 

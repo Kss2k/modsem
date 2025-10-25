@@ -108,32 +108,8 @@ bootstrap_modsem.modsem_da <- function(model,
   type <- tolower(type)
   type <- match.arg(type)
 
-  INSPECT  <- modsem_inspect(model, what = "all")
-  group    <- INSPECT$group
-
-  if (!is.null(group)) {
-    group.label <- INSPECT$group.label
-    DATA        <- INSPECT$data
-
-    cluster <- NULL
-    data    <- NULL
-
-    for (g in group.label) {
-      data.g.mat <- DATA[[g]]
-      data.g     <- as.data.frame(data.g.mat)
-      cluster.g  <- attr(data.mat, "cluster")
-      data.g[[group]] <- g
-
-      data    <- rbind(data, data.g)
-      cluster <- c(cluster, cluster.g)
-    }
-
-  } else {
-    data.mat <- INSPECT$data
-    data     <- as.data.frame(data.mat)
-    cluster  <- attr(data.mat, "cluster")
-  }
-
+  data.mat <- modsem_inspect(model, what = "data")
+  data     <- as.data.frame(data.mat)
   ovs      <- colnames(data)
   N        <- NROW(data)
   P        <- min(P.max, N * R)
@@ -141,11 +117,13 @@ bootstrap_modsem.modsem_da <- function(model,
 
   warnif(P.max <= N, "`P.max` is less than `N`!")
 
+  cluster <- attr(data.mat, "cluster")
+
   stopif(!is.null(cluster) && type != "nonparametric",
          "cluster bootstrap is only available with `type=\"nonparametric\"`!")
 
   population <- switch(type,
-    parametric    = simulateDataParTable(parTable, N = P, colsOVs = ovs)$OV,
+    parametric   = simulateDataParTable(parTable, N = P, colsOVs = ovs)$oV,
     nonparametric = data,
     stop2("Unrecognized type!\n")
   )
@@ -153,8 +131,8 @@ bootstrap_modsem.modsem_da <- function(model,
   argList              <- model$args
   argList$calc.se      <- calc.se
   argList$verbose      <- verbose
-  argList$model.syntax <- model$model$info$group.info$syntax
-  argList$cov.syntax   <- model$model$info$group.info$cov.syntax
+  argList$model.syntax <- model$model$syntax
+  argList$cov.syntax   <- model$model$covModel$syntax
   argList$method       <- model$method
 
   if (!optimize) {

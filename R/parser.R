@@ -217,43 +217,8 @@ modsemify <- function(syntax) {
 }
 
 
-ungroupParTable <- function(parTable) {
-  if (!"group" %in% colnames(parTable) || length(getGroupsParTable(parTable)) <= 1L)
-    return(parTable)
-
-  parUnique <- unique(parTable[c("lhs", "op", "rhs")])
-  parTableUngrouped <- NULL
-
-  for (i in seq_len(NROW(parUnique))) {
-    lhs <- parUnique[i, "lhs"]
-    op  <- parUnique[i, "op"]
-    rhs <- parUnique[i, "rhs"]
-
-    modifiers <- parTable[parTable$lhs == lhs &
-                          parTable$op  == op  &
-                          parTable$rhs == rhs, "mod"]
-
-    modifiers[modifiers == ""] <- NA
-
-    if (all(is.na(modifiers)))
-      mod <- ""
-    else
-      mod <- sprintf("c(%s)", paste0(modifiers, collapse = ", "))
-
-    parTableUngrouped <- rbind(
-      parTableUngrouped,
-      data.frame(lhs = lhs, op = op, rhs = rhs, mod = mod)
-    )
-  }
-
-  parTableUngrouped
-}
-
-
 parTableToSyntax <- function(parTable, removeColon = FALSE) {
   if (is.null(parTable)) return(NULL)
-
-  parTable <- ungroupParTable(parTable)
 
   intercepts <- parTable$op == "~1"
   parTable[intercepts, "rhs"] <- "1"
@@ -265,13 +230,12 @@ parTableToSyntax <- function(parTable, removeColon = FALSE) {
     parTable$rhs <- stringr::str_remove_all(parTable$rhs, ":")
     parTable$mod <- stringr::str_remove_all(parTable$mod, ":")
   }
-
-  for (i in seq_len(NROW(parTable))) {
-    if (parTable[["mod"]][[i]] != "" && parTable[["op"]][[i]] != ":=")
+  for (i in 1:nrow(parTable)) {
+    if (parTable[["mod"]][[i]] != "" && parTable[["op"]][[i]] != ":=") {
       modifier <- paste0(parTable[["mod"]][[i]], "*")
-    else
+    } else {
       modifier <- ""
-
+    }
     line <- paste0(parTable[["lhs"]][[i]], " ",
                    parTable[["op"]][[i]], " ",
                    modifier,

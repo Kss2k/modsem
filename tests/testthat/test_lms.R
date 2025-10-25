@@ -258,7 +258,7 @@ print(modsem_inspect(est_m1, what = c("vcov.all", "theta", "lambda", "psi", "inf
 testthat::expect_equal(coef_m1[["a"]], 1)
 testthat::expect_equal(coef_m1[["b"]], .2)
 testthat::expect_equal(coef_m1[["c"]], .7)
-testthat::expect_equal(est_m1$model$params$bounds$lower[["c"]], 0.7)
+testthat::expect_equal(est_m1$model$info$bounds$lower[["c"]], 0.7)
 
 m2 <- "
 # Outer Model
@@ -280,17 +280,3 @@ testthat::expect_error(
   modsem(m2, oneInt, method = "lms", cov.syntax = ""),
   regexp = "Dynamic constraints .*"
 )
-
-
-m1 <- '
-  # Outer Model
-  X =~ x1 + x2 +x3
-  Y =~ NA*y1 + y2 + y3
-  Z =~ z1 + z2 + z3
-  Y ~~ 1*Y
-
-  # Inner model
-  Y ~ X + Z
-'
-
-summary(modsem(m1, oneInt, method = "lms"), H0 = FALSE)

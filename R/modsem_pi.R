@@ -247,8 +247,7 @@ modsem_pi <- function(model.syntax = NULL,
     return(est)
   }
 
-  if (!is.data.frame(data))
-    data <- as.data.frame(data)
+  if (!is.data.frame(data)) data <- as.data.frame(data)
 
   if (rcs) { # use reliability-correct single items?
     if (!is.null(rcs.choose))
@@ -257,7 +256,6 @@ modsem_pi <- function(model.syntax = NULL,
     corrected <- relcorr_single_item(
       syntax          = model.syntax,
       data            = data,
-      group           = group,
       choose          = rcs.choose,
       scale.corrected = rcs.scale.corrected,
       warn.lav        = FALSE
@@ -307,13 +305,13 @@ modsem_pi <- function(model.syntax = NULL,
     data <- data[completeCases, ]
   }
 
-  cont.cols <- setdiff(colnames(data), c(cluster, group))
+  if (standardize.data || method %in% auto.scale) {
+    data <- lapplyDf(data, FUN = scaleIfNumeric, scaleFactor = FALSE)
+  }
 
-  if (center.data)
-    data[cont.cols] <- lapply(data[cont.cols], FUN = centerIfNumeric, scaleFactor = FALSE)
-
-  if (standardize.data)
-    data[cont.cols] <- lapply(data[cont.cols], FUN = scaleIfNumeric, scaleFactor = FALSE)
+  if (center.data || method %in% auto.center) {
+    data <- lapplyDf(data, FUN = function(x) x - mean(x, na.rm = TRUE))
+  }
 
   prodInds <-
     createProdInds(modelSpec,
@@ -341,7 +339,7 @@ modsem_pi <- function(model.syntax = NULL,
   if (rcs && rcs.res.cov.xz && method != "ca") { # Constrained Approach Should handle this it on its own...
 
     elemsxz   <- modelSpec$elementsInProdNames
-    crossResCov <- simulateCrossResCovRCS(
+    crossResCov <- simulateCrosssimulateCrossResCovRCS(
       corrected = corrected,
       elemsInIntTerms = elemsxz,
       mc.reps = rcs.mc.reps,

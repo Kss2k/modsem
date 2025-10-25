@@ -112,9 +112,9 @@ m3 <- '
   aaaaaa.aa  == -aaa.aa
   aaaaaa.aaa == -aaa.aaa
 
-  a   == 1 - aaa.a
-  aa  == 1 - aaa.aa
-  aaa == 1 - aaa.aaa
+  a   == 1 - aaa.a 
+  aa  == 1 - aaa.aa 
+  aaa == 1 - aaa.aaa 
 '
 
 lms.no.opt <- modsem(m3, oneInt, method = "lms",

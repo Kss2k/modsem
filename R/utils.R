@@ -14,9 +14,8 @@ stopif <- function(cond, ...) {
 
 
 warnif <- function(cond, ..., .newline = FALSE) {
-  if (!isTRUE(cond)) return(invisible(NULL))
-  if (.newline) cat("\n")
-  warning2(...)
+  if (cond && .newline) cat("\n")
+  if (cond) warning2(...)
 }
 
 
@@ -222,7 +221,7 @@ maxchar <- function(x) {
 
 
 fillColsParTable <- function(parTable) {
-  colNames <- c("lhs", "op", "rhs", "label", "group", "est",
+  colNames <- c("lhs", "op", "rhs", "label", "est",
                 "std.error", "z.value", "p.value", "ci.lower", "ci.upper")
   parTable[colNames[!colNames %in% colnames(parTable)]] <- NA
   parTable #[colNames]
@@ -355,20 +354,6 @@ centerInteractions <- function(parTable, center.means = TRUE) {
 
 
 meanInteractions <- function(parTable, ignore.means = FALSE) {
-  out <- NULL
-
-  for (g in getGroupsParTable(parTable)) {
-    parTable.g <- parTable[parTable$group == g, , drop = FALSE]
-    out <- rbind(out, meanInteractionsGroup(parTable.g,
-                                            ignore.means = ignore.means,
-                                            group = g))
-  }
-
-  rbind(out, getZeroGroupParTable(parTable))
-}
-
-
-meanInteractionsGroup <- function(parTable, ignore.means = FALSE, group = 0L) {
   intTerms <- unique(parTable[grepl(":", parTable$rhs), "rhs"])
 
   # remove existing
@@ -376,7 +361,7 @@ meanInteractionsGroup <- function(parTable, ignore.means = FALSE, group = 0L) {
                        , drop = FALSE]
 
   present  <- colnames(parTable)
-  newcols  <- c("lhs", "op", "rhs", "label", "group", "est")
+  newcols  <- c("lhs", "op", "rhs", "label", "est")
   newcols  <- intersect(newcols, present)
   fillcols <- setdiff(present, newcols)
 
@@ -392,7 +377,7 @@ meanInteractionsGroup <- function(parTable, ignore.means = FALSE, group = 0L) {
     meanXZ <- meanX * meanZ + covXZ
 
     newRow <- data.frame(lhs = intTerm, op = "~1", rhs = "",
-                         label = "", est = meanXZ, group = group)
+                         label = "", est = meanXZ)
 
     # Get correct cols
     newRow <- newRow[newcols]
@@ -470,13 +455,7 @@ stripColonsParTable <- function(parTable) {
 getMissingLabels <- function(parTable) {
   if (!"label" %in% colnames(parTable)) parTable$label <- ""
   missing <- is.na(parTable$label) | parTable$label == ""
-  group   <- parTable$group
-
   labels <- sprintf("%s%s%s", parTable$lhs, parTable$op, parTable$rhs)
-
-  if (any(group > 1L))
-    labels[group > 1L] <- paste0(labels[group > 1L], ".g", group[group > 1L])
-
   parTable[missing, "label"] <- labels[missing]
   parTable
 }
@@ -502,15 +481,9 @@ getParTableLabels <- function(parTable, labelCol="label", replace.dup = FALSE) {
   custom <- parTable$op == ":="
   parTable[custom, c("op", "rhs")] <- ""
 
-  group      <- parTable$group
-  new.labels <- paste0(parTable$lhs, parTable$op, parTable$rhs)
-
-  if (!is.null(group))
-    new.labels <- ifelse(group > 1L,
-                         yes = paste0(new.labels, ".g", group),
-                         no = new.labels)
-
-  ifelse(parTable[[labelCol]] == "", yes = new.labels, no = parTable[[labelCol]])
+  ifelse(parTable[[labelCol]] == "",
+         yes = paste0(parTable$lhs, parTable$op, parTable$rhs),
+         no = parTable[[labelCol]])
 }
 
 
@@ -613,7 +586,7 @@ sortConstrExprs <- function(parTable) {
   rows <- parTable[parTable$op %in% CONSTRAINT_OPS, ]
   if (NROW(rows) == 0) return(NULL)
 
-  labelled <- splitCLabels(parTable$mod[parTable$mod != ""])
+  labelled <- unique(parTable$mod[parTable$mod != ""])
   isConst  <- canBeNumeric(rows$rhs)
 
   rows <- rows[!(isConst & rows$op %in% BOUNDUARY_OPS), ] # not relevant
@@ -754,18 +727,8 @@ isNonCenteredParTable <- function(parTable, tol = 1e-10) {
   if (!"est" %in% colnames(parTableProto))
     parTableProto$est <- 1
 
-  if (!"group" %in% colnames(parTableProto))
-    parTableProto$group <- 1L
-
-  for (g in getGroupsParTable(parTableProto)) {
-    parTableProto.g <- parTableProto
-    means <- getMeans(intVars, parTableProto.g)
-
-    if (any(abs(means) > tol))
-      return(TRUE)
-  }
-
-  FALSE
+  means <- getMeans(intVars, parTableProto)
+  any(abs(means) > tol)
 }
 
 
@@ -778,44 +741,4 @@ hasIntTermVariances <- function(parTable) {
     any(parTable$lhs == xz & parTable$rhs == xz & parTable$op == "~~")
 
   all(vapply(intTerms, FUN.VALUE = logical(1L), FUN = hasVariance))
-}
-
-
-splitCLabels <- function(labels) {
-  if (!length(labels)) return(character())
-
-  unlist(lapply(labels, function(label) {
-    label_trim <- trimws(label)
-    if (grepl("^c\\s*\\(", label_trim) && grepl("\\)$", label_trim)) {
-      inside <- substr(label_trim,
-                       start = regexpr("\\(", label_trim, perl = TRUE) + 1L,
-                       stop = nchar(label_trim) - 1L)
-      tokens <- trimws(strsplit(inside, ",", fixed = FALSE)[[1]])
-      tokens[tokens != ""]
-    } else {
-      label_trim
-    }
-  }), use.names = FALSE)
-}
-
-
-MAX <- function(x) {
-  if (!length(x)) 0 else max(x, na.rm = TRUE)
-}
-
-
-addMissingGroups <- function(parTable) {
-  if ("group" %in% colnames(parTable))
-    return(parTable)
-
-  parTable$group <- 1L
-  parTable[parTable$op %in% CONSTRAINT_OPS, "group"] <- 0L
-
-  parTable
-}
-
-
-addNamedNullField <- function(x, field) {
-  x[field] <- stats::setNames(list(field = NULL), nm = field)
-  x
 }

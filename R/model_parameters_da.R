@@ -7,133 +7,66 @@ namesParMatricesCov <- c("gammaXi", "gammaEta", "A", "psi", "phi")
 
 
 createTheta <- function(model, start = NULL, parTable.in = NULL) {
-  THETA_LAB  <- NULL
-  THETA_COV  <- NULL
-  THETA_MAIN <- NULL
+  etas <- model$info$etas
 
-  n.groups   <- model$info$n.groups
-  if (is.null(n.groups)) n.groups <- model$info$n.groups
-  if (is.null(n.groups)) n.groups <- length(model$models)
+  listThetaCov <- createThetaCovModel(model$covModel)
+  thetaCov     <- listThetaCov$theta
+  lavLabelsCov <- listThetaCov$lavLabels
+  thetaLabel   <- createThetaLabel(model$labelMatrices,
+                                   model$covModel$labelMatrices,
+                                   model$constrExprs)
+  totalThetaLabel <- calcThetaLabel(thetaLabel, model$constrExprs)
 
-  LABELS_MAIN_GROUPS <- vector("list", length = n.groups)
-  LABELS_COV_GROUPS  <- vector("list", length = n.groups)
+  M            <- model$matrices
+  lambdaX      <- as.vector(M$lambdaX)
+  lambdaY      <- as.vector(M$lambdaY)
+  thetaDelta   <- as.vector(M$thetaDelta)
+  thetaEpsilon <- as.vector(M$thetaEpsilon)
+  phi          <- as.vector(M$phi)
+  A            <- as.vector(M$A)
+  psi          <- as.vector(M$psi)
+  tauX         <- as.vector(M$tauX)
+  tauY         <- as.vector(M$tauY)
+  alpha        <- as.vector(M$alpha)
+  beta0        <- as.vector(M$beta0)
+  gammaXi      <- as.vector(M$gammaXi)
+  gammaEta     <- as.vector(M$gammaEta)
+  omegaXiXi    <- as.vector(M$omegaXiXi)
+  omegaEtaXi   <- as.vector(M$omegaEtaXi)
 
-  unionByNames <- function(x, y) {
-    new <- setdiff(names(y), names(x))
-    if (length(new)) c(x, y[new]) else x
-  }
+  allModelValues <- c("lambdaX"      = lambdaX,
+                      "lambdaY"      = lambdaY,
+                      "tauX"         = tauX,
+                      "tauY"         = tauY,
+                      "thetaDelta"   = thetaDelta,
+                      "thetaEpsilon" = thetaEpsilon,
+                      "phi"          = phi,
+                      "A"            = A,
+                      "psi"          = psi,
+                      "alpha"        = alpha,
+                      "beta0"        = beta0,
+                      "gammaXi"      = gammaXi,
+                      "gammaEta"     = gammaEta,
+                      "omegaXiXi"    = omegaXiXi,
+                      "omegaEtaXi"   = omegaEtaXi)
 
-  # The custom labels must all be added, before computing THETA_LAB_ALL
-  for (g in seq_len(n.groups)) {
-    submodel     <- model$models[[g]]
-    thetaLabel.g <- createThetaLabel(submodel$labelMatrices,
-                                     submodel$covModel$labelMatrices,
-                                     model$params$constrExprs)
-    THETA_LAB <- unionByNames(THETA_LAB, thetaLabel.g)
-  }
-  THETA_LAB_ALL <- calcThetaLabel(THETA_LAB, model$params$constrExprs)
-  LAV_LAB       <- names(THETA_LAB_ALL)
+  lavLabelsMain <- createLavLabels(M, subset = is.na(allModelValues),
+                                   etas = etas, parTable.in = parTable.in)
 
-  for (g in seq_len(n.groups)) {
-    submodel <- model$models[[g]]
-    etas <- submodel$info$etas
+  thetaMain <- allModelValues[is.na(allModelValues)]
+  thetaMain <- fillThetaIfStartNULL(start = start, theta = thetaMain,
+                                    lavlab = lavLabelsMain)
+  theta     <- c(thetaLabel, thetaCov, thetaMain)
 
-    listThetaCov <- createThetaCovModel(submodel$covModel)
-    thetaCov     <- listThetaCov$theta
-    lavLabelsCov <- listThetaCov$lavLabels
+  allLabels <- names(c(totalThetaLabel, thetaCov, thetaMain))
+  lavLabels <- combineLavLabels(lavLabelsMain = lavLabelsMain,
+                                lavLabelsCov = lavLabelsCov,
+                                currentLabels = allLabels)
 
-    M            <- submodel$matrices
-    lambdaX      <- as.vector(M$lambdaX)
-    lambdaY      <- as.vector(M$lambdaY)
-    thetaDelta   <- as.vector(M$thetaDelta)
-    thetaEpsilon <- as.vector(M$thetaEpsilon)
-    phi          <- as.vector(M$phi)
-    A            <- as.vector(M$A)
-    psi          <- as.vector(M$psi)
-    tauX         <- as.vector(M$tauX)
-    tauY         <- as.vector(M$tauY)
-    alpha        <- as.vector(M$alpha)
-    beta0        <- as.vector(M$beta0)
-    gammaXi      <- as.vector(M$gammaXi)
-    gammaEta     <- as.vector(M$gammaEta)
-    omegaXiXi    <- as.vector(M$omegaXiXi)
-    omegaEtaXi   <- as.vector(M$omegaEtaXi)
-
-    allModelValues <- c("lambdaX"      = lambdaX,
-                        "lambdaY"      = lambdaY,
-                        "tauX"         = tauX,
-                        "tauY"         = tauY,
-                        "thetaDelta"   = thetaDelta,
-                        "thetaEpsilon" = thetaEpsilon,
-                        "phi"          = phi,
-                        "A"            = A,
-                        "psi"          = psi,
-                        "alpha"        = alpha,
-                        "beta0"        = beta0,
-                        "gammaXi"      = gammaXi,
-                        "gammaEta"     = gammaEta,
-                        "omegaXiXi"    = omegaXiXi,
-                        "omegaEtaXi"   = omegaEtaXi)
-
-    lavLabelsMain <- createLavLabels(M, subset = is.na(allModelValues),
-                                     etas = etas, parTable.in = parTable.in)
-
-    thetaMain <- allModelValues[is.na(allModelValues)]
-    thetaMain <- fillThetaIfStartNULL(start = start, theta = thetaMain,
-                                      lavlab = lavLabelsMain)
-
-    allLabels <- names(c(thetaCov, thetaMain))
-    lavLabels <- combineLavLabels(lavLabelsMain = lavLabelsMain,
-                                  lavLabelsCov = lavLabelsCov,
-                                  currentLabels = allLabels,
-                                  g = g)
-
-    if (g > 1L) {
-      .newnames <- \(nm) sprintf("%s.g%d", nm, g)
-
-      # thetaLabel is labelled across the submodels, so the names don't change!
-      names(thetaCov)    <- .newnames(names(thetaCov))
-      names(thetaMain)   <- .newnames(names(thetaMain))
-    }
-
-    LABELS_MAIN_GROUPS[[g]] <- if (length(thetaMain)) names(thetaMain) else character(0)
-    LABELS_COV_GROUPS[[g]]  <- if (length(thetaCov)) names(thetaCov) else character(0)
-
-    THETA_COV  <- unionByNames(THETA_COV, thetaCov)
-    THETA_MAIN <- unionByNames(THETA_MAIN, thetaMain)
-    LAV_LAB    <- union(LAV_LAB, lavLabels)
-  }
-
-  THETA <- c(THETA_LAB, THETA_COV, THETA_MAIN)
-
-  SELECT_THETA_LAB  <- vector("list", length = n.groups)
-  SELECT_THETA_COV  <- vector("list", length = n.groups)
-  SELECT_THETA_MAIN <- vector("list", length = n.groups)
-
-  for (g in seq_len(n.groups)) {
-    labelsMain.g <- LABELS_MAIN_GROUPS[[g]]
-    labelsCov.g  <- LABELS_COV_GROUPS[[g]]
-
-    selectTL <- seq_along(THETA_LAB) # available to all sub models
-    selectTC <- which(names(THETA_COV) %in% labelsCov.g)
-    selectTM <- which(names(THETA_MAIN) %in% labelsMain.g)
-
-    # The selections must be offset by their respective location THETA as a whole
-    # only selectTL doesn't need to be shifted, as it's at the start
-    selectTC <- selectTC + length(THETA_LAB)
-    selectTM <- selectTM + length(THETA_LAB) + length(THETA_COV)
-
-    SELECT_THETA_LAB[[g]]  <- selectTL
-    SELECT_THETA_COV[[g]]  <- selectTC
-    SELECT_THETA_MAIN[[g]] <- selectTM
-  }
-
-  list(theta             = THETA,
-       freeParams        = length(THETA),
-       SELECT_THETA_LAB  = SELECT_THETA_LAB,
-       SELECT_THETA_COV  = SELECT_THETA_COV,
-       SELECT_THETA_MAIN = SELECT_THETA_MAIN,
-       lavLabels         = LAV_LAB)
+  list(theta = theta, lenThetaMain = length(thetaMain),
+       lenThetaLabel = length(thetaLabel),
+       totalLenThetaLabel = length(totalThetaLabel),
+       lenThetaCov = length(thetaCov), lavLabels = lavLabels)
 }
 
 
@@ -200,36 +133,29 @@ fillThetaIfStartNULL <- function(start,
 
 
 fillModel <- function(model, theta, fillPhi = FALSE, method = "lms") {
-  params.utils <- model$params
-
-  if (is.null(names(theta)))
-    names(theta) <- names(params.utils$theta)
+  if (is.null(names(theta))) names(theta) <- names(model$theta)
 
   # labeled parameters
   thetaLabel <- NULL
-
-  if (length(params.utils$SELECT_THETA_LAB)) {
-    thetaLabel <- theta[params.utils$SELECT_THETA_LAB[[1L]]] # same for all groups
-    thetaLabel <- suppressWarnings(calcThetaLabel(thetaLabel, params.utils$constrExprs))
+  if (model$totalLenThetaLabel > 0) {
+    if (model$lenThetaLabel > 0) {
+      thetaLabel <- theta[seq_len(model$lenThetaLabel)]
+      theta <- theta[-seq_len(model$lenThetaLabel)]
+    }
+    thetaLabel <- suppressWarnings(calcThetaLabel(thetaLabel, model$constrExprs))
   }
 
-  for (g in seq_len(model$info$n.groups)) {
-    submodel <- model$models[[g]]
-
-    # cov model
-    thetaCov <- NULL
-    if (length(params.utils$SELECT_THETA_COV[[g]]))
-      thetaCov <- theta[params.utils$SELECT_THETA_COV[[g]]]
-
-    thetaMain <- theta[params.utils$SELECT_THETA_MAIN[[g]]]
-
-    submodel$covModel <- fillCovModel(submodel$covModel, thetaCov, thetaLabel)
-    submodel$matrices <- fillMainModel(submodel, thetaMain, thetaLabel,
-                                       fillPhi = fillPhi, method = method)
-
-    model$models[[g]] <- submodel
+  # cov model
+  thetaCov <- NULL
+  thetaMain <- theta
+  if (model$lenThetaCov > 0) {
+    thetaCov <- theta[seq_len(model$lenThetaCov)]
+    thetaMain <- theta[-seq_len(model$lenThetaCov)]
   }
 
+  model$covModel <- fillCovModel(model$covModel, thetaCov, thetaLabel)
+  model$matrices <- fillMainModel(model, thetaMain, thetaLabel,
+                                  fillPhi = fillPhi, method = method)
   model
 }
 
@@ -249,7 +175,7 @@ fillMainModel <- function(model, theta, thetaLabel, fillPhi = FALSE,
   if (!is.null(model$covModel$matrices)) {
     M$phi <- M$A <- expectedCovModel(covModel, method = method, sortedXis = xis)
   } else if (method == "lms") {
-    M$A <- fillNA_Matrix(M$A, theta = theta, pattern = "^A([0-9]*)")
+    M$A <- fillNA_Matrix(M$A, theta = theta, pattern = "^A[0-9]*$")
   } else if (method == "qml") {
     M$phi <- fillSymmetric(M$phi, fetch(theta, "^phi"))
   }
@@ -293,38 +219,21 @@ fillCovModel <- function(covModel, theta, thetaLabel) {
 
 
 fillNA_Matrix <- function(X, theta, pattern) {
-  idx <- is.na(X) & !is.nan(X)
-  values <- fetch(theta, pattern)
-  if (length(values) && sum(idx) != length(values)) {
-    stop2("Mismatch when filling matrix for pattern `", pattern, "`: expected ",
-          sum(idx), " values but got ", length(values))
-  }
-  if (sum(idx) > 0 && length(values) == 0) {
-    stop2("No values found in theta vector for pattern `", pattern, "`.")
-  }
-  X[idx] <- values
+  X[is.na(X) & !is.nan(X)] <- fetch(theta, pattern)
   X
 }
 
 
 fillSymmetric <- function(mat, values) {
-  idx <- is.na(mat) & !is.nan(mat)
-  if (sum(idx) > 0 && length(values) == 0) {
-    stop2("No values provided to fill symmetric matrix.")
-  }
-  if (length(values) && length(values) != sum(idx)) {
-    stop2("Mismatch when filling symmetric matrix: expected ", sum(idx),
-          " values but got ", length(values))
-  }
-  mat[idx] <- values
+  mat[is.na(mat) & !is.nan(mat)] <- values
   mat[upper.tri(mat)] <- t(mat)[upper.tri(mat)]
   mat
 }
 
 
 getParamBounds <- function(model) {
-  lower <- rep(-Inf, model$params$freeParams)
-  upper <- rep(Inf, model$params$freeParams)
+  lower <- rep(-Inf, model$freeParams)
+  upper <- rep(Inf, model$freeParams)
   names(lower) <- names(upper) <- names(model$theta)
 
   parTable <- model$parTable
@@ -366,47 +275,30 @@ checkStartingParams <- function(start, model) {
 
 calcPhiTheta <- function(theta, model, method) {
   if (method != "lms") return(theta)
+  filledModel <- fillModel(theta = theta, model = model, method = method,
+                           fillPhi = TRUE)
 
-  modFilled <- fillModel(theta = theta, model = model, method = method,
-                         fillPhi = TRUE)
-
-  for (g in seq_len(model$info$n.groups)) {
-    select <- c(model$params$SELECT_THETA_LAB[[g]],
-                model$params$SELECT_THETA_COV[[g]],
-                model$params$SELECT_THETA_MAIN[[g]])
-
-    theta.g      <- theta[select]
-    submodFilled <- modFilled$models[[g]]
-    submodel     <- model$models[[g]]
-
-    if (!is.null(submodel$covModel$matrices)) {
-      matEst <- submodFilled$covModel$matrices
-      matLab <- submodel$covModel$labelMatrices
-      matNA  <- submodel$covModel$matrices
-    } else {
-      matEst <- submodFilled$matrices
-      matNA  <- submodel$matrices
-      matLab <- submodel$labelMatrices
-    }
-
-    vals   <- as.vector(matEst$phi[is.na(matNA$A) & !is.nan(matNA$A)])
-    labels <- as.vector(matLab$A)
-
-    if (any(labels != "")) {
-      allVals <- as.vector(matEst$phi)
-      labVals <- allVals[labels != ""]
-      labels  <- labels[labels != ""]
-      missing <- setdiff(labels, names(theta))
-      stopif(length(missing),
-             "Missing labelled parameters in theta vector: ",
-             paste(missing, collapse = ", "))
-
-      theta[select][labels] <- labVals
-    }
-
-    theta[select][grepl("^A([0-9]*)", names(theta[select]))] <- vals
+  if (!is.null(model$covModel$matrices)) {
+    matEst <- filledModel$covModel$matrices
+    matLab <- model$covModel$labelMatrices
+    matNA  <- model$covModel$matrices
+  } else {
+    matEst <- filledModel$matrices
+    matNA  <- model$matrices
+    matLab <- model$labelMatrices
   }
 
+  vals   <- as.vector(matEst$phi[is.na(matNA$A) & !is.nan(matNA$A)])
+  labels <- as.vector(matLab$A)
+
+  if (any(labels != "")) {
+    allVals <- as.vector(matEst$phi)
+    labVals <- allVals[labels != ""]
+    labels  <- labels[labels != ""]
+    theta[labels] <- labVals
+  }
+
+  theta[grepl("^A[0-9]+$", names(theta))] <- vals
   theta
 }
 
@@ -450,7 +342,7 @@ getParamNamesMatrix <- function(mat, matname) {
 }
 
 
-getParamLocationsMatrices <- function(matrices, isFree = is.na, g = 1L, ignore.g.label = FALSE) {
+getParamLocationsMatrices <- function(matrices, isFree = is.na) {
   matrices <- matrices[intersect(names(matrices), names(LMS_BLOCKS))]
   locations <- data.frame(param = NULL, block = NULL, row = NULL, col = NULL)
   for (blockname in names(matrices)) {
@@ -469,12 +361,8 @@ getParamLocationsMatrices <- function(matrices, isFree = is.na, g = 1L, ignore.g
     rowidx <- rowidx[isFree(X)]
     colidx <- colidx[isFree(X)]
 
-    if (g > 1L && !ignore.g.label)
-      params <- sprintf("%s.g%d", params, g)
-
     locationsBlock <- data.frame(
       param = params,
-      group = g,
       block = block,
       row   = rowidx,
       col   = colidx,
@@ -508,7 +396,7 @@ getGradientStruct <- function(model, theta) {
 
 
 getGradientStructSimple <- function(model, theta) {
-  hasCovModel <- !is.null(model$models[[1L]]$covModel$matrices)
+  hasCovModel <- !is.null(model$covModel$matrices)
 
   if (hasCovModel) {
     out <- list(
@@ -554,27 +442,17 @@ getGradientStructSimple <- function(model, theta) {
     derivatives2[[constrVar]] <- secondDerivateConstraint(constrEq)
   }
 
-  isLinear <- vapply(
-    X = derivatives, FUN.VALUE = logical(1L),
-    FUN = \(X) all(vapply(X, FUN.VALUE = logical(1L), FUN = is.atomic))
-  )
+  isLinear <- vapply(derivatives, FUN.VALUE = logical(1L), FUN = is.atomic)
 
   linDerivs   <- derivatives[isLinear]
   nlinDerivs  <- derivatives[!isLinear]
   nlinDerivs2 <- derivatives2[!isLinear]
   evalTheta   <- \(theta) c(theta, suppressWarnings(calcThetaLabel(theta, model$constrExprs))) # This could be made a bit better
 
-  locations <- NULL
-  for (g in seq_len(model$info$n.groups)) {
-    submodel <- model$models[[g]]
-
-    locations <- rbind(
-       locations,
-       getParamLocationsMatrices(submodel$matrices, isFree = is.na, g = g),
-       getParamLocationsMatrices(submodel$labelMatrices, isFree = \(x) x != "",
-                                 g = g, ignore.g.label = TRUE) # labels don't change with g here
-    )
-  }
+  locations <- rbind(
+    getParamLocationsMatrices(model$matrices, isFree=is.na),
+    getParamLocationsMatrices(model$labelMatrices, isFree=\(x) x != "")
+  )
 
   k <- nrow(locations)
   m <- length(theta)
@@ -609,22 +487,12 @@ getGradientStructSimple <- function(model, theta) {
     }
   }
 
-  # In multigroup models we can have duplicated labels, that doesn't work
-  # with out logic, so we must add some unique identifiers to the param.full
-  # We also pass param.full as is, to map back and forth.
-  addid <- \(nm) paste0(nm, "#", seq_along(nm))
-  colnames(Jacobian)  <- addid(colnames(Jacobian))
-  colnames(Jacobian2) <- addid(colnames(Jacobian2))
-
-  locations$param <- addid(locations$param)
-
   list(
-    param.full  = param.full,
     locations   = locations,
     Jacobian    = Jacobian,
     Jacobian2   = Jacobian2,
     nlinDerivs  = nlinDerivs,
-    nlinDerivs2 = nlinDerivs2,
+    nlinDerivs2  = nlinDerivs2,
     evalTheta   = evalTheta,
     hasCovModel = hasCovModel,
     isNonLinear = length(nlinDerivs) > 1

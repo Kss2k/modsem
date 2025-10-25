@@ -116,9 +116,9 @@ expectedCovModel <- function(model, method = "lms", sortedXis) {
 
 
 covModelToParTable <- function(model, method = "lms") {
-  matricesEst   <- model$covModel$matrices
-  matricesSE    <- model$covModelSE$matrices
-  matricesNA    <- model$covModelNA$matrices
+  matricesEst <- model$covModel$matrices
+  matricesSE <- model$covModelSE$matrices
+  matricesNA <- model$covModelNA$matrices
   matricesLabel <- model$covModel$labelMatrices
 
   if (is.null(matricesEst) || is.null(matricesNA)) return(NULL)

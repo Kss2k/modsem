@@ -3,25 +3,9 @@ var_interactions.data.frame <- function(object, ignore.means = FALSE,
                                         monte.carlo = FALSE, mc.reps = 1e6, ...) {
 
   # Preparation
-  parTable <- addMissingGroups(object)
-  parTable <- removeInteractionVariances(fillColsParTable(parTable))
+  parTable <- removeInteractionVariances(fillColsParTable(object))
 
   ## interaction (and square) terms explicitly declared in the model
-  out <- NULL
-  for (g in getGroupsParTable(parTable)) {
-    parTable.g <- parTable[parTable$group == g, , drop = FALSE]
-    out <- rbind(out, varInteractionsGroup(parTable.g, ignore.means = ignore.means,
-                                           monte.carlo = monte.carlo,
-                                           mc.reps = mc.reps, group = g, ...))
-  }
-
-  rbind(out, getZeroGroupParTable(parTable))
-}
-
-
-varInteractionsGroup <- function(parTable, ignore.means = FALSE,
-                                 monte.carlo = FALSE, mc.reps = 1e6,
-                                 group = group, ...) {
   intTerms <- unique(parTable$rhs[parTable$op == "~" & grepl(":", parTable$rhs)])
   if (length(intTerms) == 0L)
     return(modsemParTable(parTable))                 # nothing to do
@@ -29,12 +13,12 @@ varInteractionsGroup <- function(parTable, ignore.means = FALSE,
   getIntTermLength <- \(xz) length(stringr::str_split(xz, pattern = ":")[[1L]])
   nway <- max(vapply(intTerms, FUN.VALUE = integer(1L), FUN = getIntTermLength))
 
+
   if (nway <= 2L && !monte.carlo) {
     varInteractionsAnalytic(
       parTable = parTable,
       intTerms = intTerms,
       ignore.means = ignore.means,
-      group = group,
       ...
     )
 
@@ -44,7 +28,6 @@ varInteractionsGroup <- function(parTable, ignore.means = FALSE,
       intTerms = intTerms,
       ignore.means = ignore.means,
       mc.reps = mc.reps,
-      group = group,
       ...
     )
 
@@ -52,7 +35,7 @@ varInteractionsGroup <- function(parTable, ignore.means = FALSE,
 }
 
 
-varInteractionsAnalytic <- function(parTable, intTerms, ignore.means = FALSE, group = 0L, ...) {
+varInteractionsAnalytic <- function(parTable, intTerms, ignore.means = FALSE, ...) {
   # Gather first‑ and second‑order moments for the base variables --
   vars <- sort(unique(unlist(strsplit(intTerms, ":", fixed = TRUE))))
 
@@ -88,14 +71,13 @@ varInteractionsAnalytic <- function(parTable, intTerms, ignore.means = FALSE, gr
     varP <- cov_PP(i, j, i, j)
     rows[[length(rows) + 1L]] <-
       data.frame(lhs = P, op = "~~", rhs = P, label = "",
-                 group = group, est = varP, std.error = NA,
-                 z.value = NA, p.value = NA, ci.lower = NA,
-                 ci.upper = NA)
+                 est = varP, std.error = NA, z.value = NA,
+                 p.value = NA, ci.lower = NA, ci.upper = NA)
 
     ## covariances with the *original* variables
     for (k in vars) {
       rows[[length(rows) + 1L]] <-
-        data.frame(lhs = k, op = "~~", rhs = P, label = "", group = group,
+        data.frame(lhs = k, op = "~~", rhs = P, label = "",
                    est = cov_PX(i, j, k), std.error = NA, z.value = NA,
                    p.value = NA, ci.lower = NA, ci.upper = NA)
     }
@@ -109,9 +91,9 @@ varInteractionsAnalytic <- function(parTable, intTerms, ignore.means = FALSE, gr
       ij <- prodPairs[[P1]];  kl <- prodPairs[[P2]]
       rows[[length(rows) + 1L]] <-
         data.frame(lhs = P1, op = "~~", rhs = P2, label = "",
-                   group = group, est = cov_PP(ij[1L], ij[2L], kl[1L], kl[2L]),
-                   std.error = NA, z.value = NA, p.value = NA,
-                   ci.lower = NA, ci.upper = NA)
+                   est = cov_PP(ij[1L], ij[2L], kl[1L], kl[2L]),
+                   std.error = NA, z.value = NA,
+                   p.value = NA, ci.lower = NA, ci.upper = NA)
     }
   }
 
@@ -121,8 +103,7 @@ varInteractionsAnalytic <- function(parTable, intTerms, ignore.means = FALSE, gr
 }
 
 
-varInteractionsMonteCarlo <- function(parTable, intTerms, ignore.means = FALSE,
-                                      mc.reps = 1e6, group = 0L, ...) {
+varInteractionsMonteCarlo <- function(parTable, intTerms, ignore.means = FALSE, mc.reps = 1e6, ...) {
   # Gather first‑ and second‑order moments for the base variables --
   intVars  <- unique(unlist(strsplit(intTerms, ":", fixed = TRUE)))
   xis      <- unique(parTable[parTable$op == "~", "rhs"])
@@ -157,7 +138,7 @@ varInteractionsMonteCarlo <- function(parTable, intTerms, ignore.means = FALSE,
       next
 
     newRow <- data.frame(lhs = x, op = "~~", rhs = z, label = "",
-                         group = group, est = est, std.error = NA, z.value = NA,
+                         est = est, std.error = NA, z.value = NA,
                          p.value = NA, ci.lower = NA, ci.upper = NA)
 
     parTable <- rbind(parTable, newRow)

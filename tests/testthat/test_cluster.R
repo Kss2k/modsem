@@ -94,7 +94,7 @@ testthat::expect_error(standardized_estimates(fit, correction = TRUE),
 # Test robust std.errors
 mod <- '
 # X1-3 are Level 1 variables
-X1 =~ x1
+X1 =~ x1 
 X2 =~ x2
 X3 =~ x3
 
@@ -110,7 +110,7 @@ fw ~ X1 + X2 + X3 + W1 + W2
 fit.rc <- modsem(mod, lavaan::Demo.twolevel, method = "lms", cluster = "cluster", robust.se = TRUE)
 #> Regressions:
 #>                  Estimate  Std.Error  z.value  P(>|z|)
-#>   fw ~
+#>   fw ~          
 #>     X1              0.517      0.027   19.224    0.000
 #>     X2              0.384      0.029   13.388    0.000
 #>     X3              0.174      0.026    6.677    0.000
@@ -121,7 +121,7 @@ fit.rc <- modsem(mod, lavaan::Demo.twolevel, method = "lms", cluster = "cluster"
 fit.r <- modsem(mod, lavaan::Demo.twolevel, method = "lms", robust.se = TRUE)
 #> Regressions:
 #>                  Estimate  Std.Error  z.value  P(>|z|)
-#>   fw ~
+#>   fw ~          
 #>     X1              0.517      0.029   18.068    0.000
 #>     X2              0.384      0.028   13.520    0.000
 #>     X3              0.174      0.028    6.286    0.000
