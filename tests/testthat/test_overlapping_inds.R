@@ -65,7 +65,7 @@ model <- '
 '
 
 testthat::expect_no_condition({
-  modsem(model, data = data, method = "lms")
+  fit <- modsem(model, data = data, method = "lms")
   summary(fit)
 })
 
