@@ -574,8 +574,10 @@ sortXis <- function(xis, varsInts, etas, intTerms, double) {
         all(interaction %in% nonLinearXis) && double) next # no need to add it again
 
     stopif(length(interaction) > 2, "Only interactions between two variables are allowed")
-    stopif(all(interaction %in% etas), "Interactions between two endogenous ",
-           "variables are not allowed, see \nvignette(\"interaction_two_etas\", \"modsem\")")
+    stopif(all(interaction %in% etas),
+           "Interactions between two endogenous variables are not allowed!",
+           "You can try passing `auto.split.syntax=TRUE` to fix the issue.",
+           "See \nvignette(\"interaction_two_etas\", \"modsem\").")
 
     choice <- unique(interaction[which(!interaction %in% etas &
                                        !interaction %in% nonLinearXis)])
