@@ -66,13 +66,27 @@ specifModelDA_Group <- function(syntax = NULL,
                                    missing = missing, cluster = cluster)
 
   # measurement model x
-  listLambdaX <- constructLambda(xis, indsXis, parTable = parTable,
-                                 auto.fix.first = auto.fix.first)
+  if (method == "qml") {
+    listLambdaX <- constructLambda(xis, indsXis, parTable = parTable,
+                                   auto.fix.first = auto.fix.first)
+  } else {
+    listLambdaX <- constructLambda(c(xis, etas), c(indsXis, indsEtas),
+                                   parTable = parTable,
+                                   auto.fix.first = auto.fix.first)
+  }
+
   lambdaX      <- listLambdaX$numeric
   labelLambdaX <- listLambdaX$label
 
-  listTauX <- constructTau(xis, indsXis, parTable = parTable,
-                           mean.observed = mean.observed)
+  if (method == "qml") {
+    listTauX <- constructTau(xis, indsXis, parTable = parTable,
+                             mean.observed = mean.observed)
+  } else {
+    listTauX <- constructTau(c(xis, etas), c(indsXis, indsEtas),
+                             parTable = parTable,
+                             mean.observed = mean.observed)
+  }
+
   tauX      <- listTauX$numeric
   labelTauX <- listTauX$label
   lavOptimizerSyntaxAdditions <- paste0(lavOptimizerSyntaxAdditions,
@@ -94,13 +108,25 @@ specifModelDA_Group <- function(syntax = NULL,
   thetaLabelDelta <- listThetaDelta$label
 
   # measurement model y
-  listLambdaY <- constructLambda(etas, indsEtas, parTable = parTable,
-                                 auto.fix.first = auto.fix.first)
+  if (method == "qml") {
+    listLambdaY <- constructLambda(etas, indsEtas, parTable = parTable,
+                                   auto.fix.first = auto.fix.first)
+  } else {
+    listLambdaY <- constructLambda(NULL, NULL, parTable = parTable,
+                                   auto.fix.first = auto.fix.first)
+  }
+
   lambdaY      <- listLambdaY$numeric
   labelLambdaY <- listLambdaY$label
 
-  listTauY <- constructTau(etas, indsEtas, parTable = parTable,
-                           mean.observed = mean.observed)
+  if (method == "qml") {
+    listTauY <- constructTau(etas, indsEtas, parTable = parTable,
+                             mean.observed = mean.observed)
+  } else {
+    listTauY <- constructTau(NULL, NULL, parTable = parTable,
+                             mean.observed = mean.observed)
+  }
+
   tauY      <- listTauY$numeric
   labelTauY <- listTauY$label
   lavOptimizerSyntaxAdditions <- paste0(lavOptimizerSyntaxAdditions,

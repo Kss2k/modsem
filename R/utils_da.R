@@ -165,14 +165,14 @@ getK_NA <- function(omega, labelOmega) {
 
 
 sortData <- function(data, allIndsXis, allIndsEtas) {
-  inds    <- c(allIndsXis, allIndsEtas)
+  inds    <- unique(c(allIndsXis, allIndsEtas))
   ovs     <- colnames(data)
   missing <- inds[!inds %in% ovs]
 
   stopif(!all(inds %in% ovs), "Missing observed variables in data:\n  ",
          paste(missing, collapse = ", "))
 
-  data[c(allIndsXis, allIndsEtas)]
+  data[unique(c(allIndsXis, allIndsEtas))]
 }
 
 

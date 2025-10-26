@@ -5,7 +5,6 @@
 #include "lms.h"
 #include "utils.h"
 #include "mvnorm.h"
-
 // [[Rcpp::depends(RcppArmadillo)]]
 
 
@@ -21,9 +20,7 @@ arma::vec muLmsCpp(Rcpp::List model, arma::vec z) {
   const arma::mat Oxx = Rcpp::as<arma::mat>(matrices["omegaXiXi"]);
   const arma::mat Oex = Rcpp::as<arma::mat>(matrices["omegaEtaXi"]);
   const arma::mat Ie = Rcpp::as<arma::mat>(matrices["Ieta"]);
-  const arma::mat lY = Rcpp::as<arma::mat>(matrices["lambdaY"]);
   const arma::mat lX = Rcpp::as<arma::mat>(matrices["lambdaX"]);
-  const arma::mat tY = Rcpp::as<arma::mat>(matrices["tauY"]);
   const arma::mat tX = Rcpp::as<arma::mat>(matrices["tauX"]);
   const arma::mat Gx = Rcpp::as<arma::mat>(matrices["gammaXi"]);
   const arma::mat Ge = Rcpp::as<arma::mat>(matrices["gammaEta"]);
@@ -37,13 +34,12 @@ arma::vec muLmsCpp(Rcpp::List model, arma::vec z) {
   const arma::mat kronZ = arma::kron(Ie, beta0 + A * zVec);
   const arma::mat Binv = arma::inv(Ie - Ge - kronZ.t() * Oex);
 
-  const arma::vec muX = tX + lX * (beta0 + A * zVec);
-  const arma::vec muY = tY +
-    lY * (Binv * (a +
-          Gx * (beta0 + A * zVec) +
-          kronZ.t() * Oxx * (beta0 + A * zVec)));
+  const arma::vec muXi  = beta0 + A * zVec;
+  const arma::vec muEta = Binv * (a +
+      Gx * (beta0 + A * zVec) +
+      kronZ.t() * Oxx * (beta0 + A * zVec));
 
-  return arma::join_cols(muX, muY);
+  return tX + lX * arma::join_cols(muXi, muEta);
 }
 
 
@@ -59,9 +55,7 @@ arma::mat sigmaLmsCpp(Rcpp::List model, arma::vec z) {
   const arma::mat Oxx = Rcpp::as<arma::mat>(matrices["omegaXiXi"]);
   const arma::mat Oex = Rcpp::as<arma::mat>(matrices["omegaEtaXi"]);
   const arma::mat Ie = Rcpp::as<arma::mat>(matrices["Ieta"]);
-  const arma::mat lY = Rcpp::as<arma::mat>(matrices["lambdaY"]);
   const arma::mat lX = Rcpp::as<arma::mat>(matrices["lambdaX"]);
-  const arma::mat tY = Rcpp::as<arma::mat>(matrices["tauY"]);
   const arma::mat tX = Rcpp::as<arma::mat>(matrices["tauX"]);
   const arma::mat Gx = Rcpp::as<arma::mat>(matrices["gammaXi"]);
   const arma::mat Ge = Rcpp::as<arma::mat>(matrices["gammaEta"]);
@@ -69,7 +63,6 @@ arma::mat sigmaLmsCpp(Rcpp::List model, arma::vec z) {
   const arma::mat beta0 = Rcpp::as<arma::mat>(matrices["beta0"]);
   const arma::mat Psi = Rcpp::as<arma::mat>(matrices["psi"]);
   const arma::mat d = Rcpp::as<arma::mat>(matrices["thetaDelta"]);
-  // const arma::mat e = Rcpp::as<arma::mat>(matrices["thetaEpsilon"]);
 
   arma::vec zVec;
   if (k > 0) zVec = arma::join_cols(z, arma::zeros<arma::vec>(numXis - k));
@@ -81,16 +74,17 @@ arma::mat sigmaLmsCpp(Rcpp::List model, arma::vec z) {
   arma::mat Oi = arma::eye<arma::mat>(numXis, numXis);
   Oi.diag() = arma::join_cols(arma::zeros<arma::vec>(k), arma::ones<arma::vec>(numXis - k));
 
-  const arma::mat Sxx = lX * A * Oi * A.t() * lX.t();
   const arma::mat Eta = Binv * (Gx * A + kronZ.t() * Oxx * A);
-  const arma::mat Sxy = lX * (A * Oi * Eta.t()) * lY.t();
-  const arma::mat Syy = lY * Eta * Oi * Eta.t() * lY.t() +
-    lY * (Binv * Psi * Binv.t()) * lY.t();
+  const arma::mat varXi    = A * Oi * A.t();
+  const arma::mat varEta   = Eta * Oi * Eta.t() + Binv * Psi * Binv.t();
+  const arma::mat covXiEta = A * Oi * Eta.t();
 
-  return arma::join_cols(
-    arma::join_rows(Sxx, Sxy),
-    arma::join_rows(Sxy.t(), Syy)
-  ) + d;
+  const arma::mat vcovXiEta = arma::join_cols(
+    arma::join_rows(varXi, covXiEta),
+    arma::join_rows(covXiEta.t(), varEta)
+  );
+
+  return lX * vcovXiEta * lX.t() + d;
 }
 
 
@@ -146,13 +140,12 @@ struct LMSModel {
     const arma::mat kronZ = arma::kron(Ie, beta0 + A * zVec);
     const arma::mat Binv = arma::inv(Ie - Ge - kronZ.t() * Oex);
 
-    const arma::vec muX = tX + lX * (beta0 + A * zVec);
-    const arma::vec muY = tY +
-      lY * (Binv * (a +
-            Gx * (beta0 + A * zVec) +
-            kronZ.t() * Oxx * (beta0 + A * zVec)));
+    const arma::vec muXi  = beta0 + A * zVec;
+    const arma::vec muEta = Binv * (a +
+        Gx * (beta0 + A * zVec) +
+        kronZ.t() * Oxx * (beta0 + A * zVec));
 
-    return arma::join_cols(muX, muY);
+    return tX + lX * arma::join_cols(muXi, muEta);
   }
 
   arma::mat Sigma(const arma::vec& z) const {
@@ -161,16 +154,17 @@ struct LMSModel {
     const arma::mat Binv = arma::inv(Ie - Ge - kronZ.t() * Oex);
 
     const arma::mat Oi = make_Oi(k, numXis);
-    const arma::mat Sxx = lX * A * Oi * A.t() * lX.t();
     const arma::mat Eta = Binv * (Gx * A + kronZ.t() * Oxx * A);
-    const arma::mat Sxy = lX * (A * Oi * Eta.t()) * lY.t();
-    const arma::mat Syy = lY * Eta * Oi * Eta.t() * lY.t() +
-      lY * (Binv * Psi * Binv.t()) * lY.t();
+    const arma::mat varXi    = A * Oi * A.t();
+    const arma::mat varEta   = Eta * Oi * Eta.t() + Binv * Psi * Binv.t();
+    const arma::mat covXiEta = A * Oi * Eta.t();
 
-    return arma::join_cols(
-        arma::join_rows(Sxx, Sxy),
-        arma::join_rows(Sxy.t(), Syy)
-        ) + d;
+    const arma::mat vcovXiEta = arma::join_cols(
+        arma::join_rows(varXi, covXiEta),
+        arma::join_rows(covXiEta.t(), varEta)
+        );
+
+    return lX * vcovXiEta * lX.t() + d;
   }
 
   LMSModel thread_clone() const {
@@ -366,8 +360,6 @@ arma::vec gradLogLikLmsCpp(const Rcpp::List& modelR,
 
   return gradientFD(M, comp_ll, block, row, col, symmetric, eps, ncores);
 }
-
-
 
 
 inline double observedLogLikFromModel(const LMSModel&  M,
