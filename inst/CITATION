@@ -8,10 +8,10 @@ bibentry(
     person(given = "Matthias", family = "Mittner")
   ),
   journal = "Structural Equation Modeling: A Multidisciplinary Journal",
-  year    = "2024",
-  #  volume  = "XX",
-  #  number  = "X",
-  #  pages   = "AAA–BBB",
+  year    = "2025",
+  volume  = "32",
+  number  = "4",
+  pages   = "717-729",
   doi      = "10.1080/10705511.2024.2417409",
   textVersion = paste(
     "Slupphaug, K. S., Mehmetoglu, M., & Mittner, M. (2024).",
