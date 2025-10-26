@@ -5,7 +5,7 @@ set.seed(29347098)
 
 var_X      <- 1
 var_Z      <- 1
-cov_X_Z    <- 0.2 
+cov_X_Z    <- 0.2
 
 gamma_Y_X  <- 0.3
 gamma_Y_Z  <- 0.5
@@ -32,9 +32,9 @@ XI <- rmvnorm(N, sigma = SXI)
 X <- XI[, 1]
 Z <- XI[, 2]
 
-Y <- 
-  gamma_Y_X * X + 
-  gamma_Y_Z * Z + 
+Y <-
+  gamma_Y_X * X +
+  gamma_Y_Z * Z +
   gamma_Y_XZ * X * Z +
   residual(zeta_Y)
 
