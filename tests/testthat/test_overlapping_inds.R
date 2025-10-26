@@ -38,17 +38,18 @@ Y <-
   gamma_Y_XZ * X * Z +
   residual(zeta_Y)
 
+# Non-overlapping Indicators
 x1 <- create_ind(X, beta_1, lambda_1, epsilon)
-x2 <- create_ind(X, beta_2, lambda_2, epsilon)
 x3 <- create_ind(X, beta_3, lambda_3, epsilon)
-
 z1 <- create_ind(Z, beta_1, lambda_1, epsilon)
 z2 <- create_ind(Z, beta_2, lambda_2, epsilon)
 z3 <- create_ind(Z, beta_3, lambda_3, epsilon)
-
 y1 <- create_ind(Y, beta_1, lambda_1, epsilon)
+
+# Overlapping Indicators
 y2 <- beta_1 + lambda_2 * Y + lambda_3 * X + residual(epsilon)
 y3 <- beta_2 + lambda_3 * Y + lambda_2 * X + residual(epsilon)
+x2 <- beta_2 + lambda_2 * X + lambda_3 * Z + residual(epsilon)
 
 data <- data.frame(
    x1, x2, x3,
@@ -58,7 +59,7 @@ data <- data.frame(
 
 model <- '
   X =~ x1 + x2 + x3 + y2 + y3
-  Z =~ z1 + z2 + z3
+  Z =~ z1 + z2 + z3 + x2
   Y =~ y1 + y2 + y3
 
   Y ~ X + Z + X:Z
