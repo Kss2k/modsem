@@ -61,6 +61,9 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE,
                                ordered = NULL,
                                ordered.link = c("logit", "probit"),
                                parameterization = c("centered", "non-centered")) {
+  if (!requireNamespace("rstan", quietly = TRUE))
+     stop2("The 'rstan' package is required to use the `modsem_stan()` function!")
+
   ordered.link <- tolower(ordered.link)
   ordered.link <- match.arg(ordered.link)
   

@@ -59,11 +59,10 @@ RoxygenNote: 7.3.3
 LinkingTo: Rcpp, RcppArmadillo
 Imports: Rcpp, purrr, stringr, lavaan, rlang, MplusAutomation, nlme, dplyr, 
   mvnfast, stats, fastGHQuad, mvtnorm, ggplot2, parallel, plotly, Deriv, MASS, Amelia,
-  grDevices, cli, RhpcBLASctl, rstan, ggpubr
+  grDevices, cli, RhpcBLASctl, ggpubr
 Depends: 
     R (>= 4.1.0)
 URL: https://modsem.org
 Suggests: 
-    knitr,
-    rmarkdown
+    knitr, rmarkdown, rstan
 VignetteBuilder: knitr

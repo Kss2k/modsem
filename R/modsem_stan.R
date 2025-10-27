@@ -54,6 +54,9 @@ modsem_stan <- function(model.syntax = NULL,
                         rcs.choose = NULL,
                         rcs.scale.corrected = TRUE,
                         ...) {
+  if (!requireNamespace("rstan", quietly = TRUE))
+     stop2("The 'rstan' package is required to use the `modsem_stan()` function!")
+
   if (rcs) { # use reliability-correct single items?
     corrected <- relcorr_single_item(
       syntax          = model.syntax,
