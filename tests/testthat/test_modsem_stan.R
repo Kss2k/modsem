@@ -210,7 +210,7 @@ if (TEST_STAN) {
   thresholds <- CUTS$thresholds
 
   thresholds.table <- NULL
-  parTable <- parameter_estimates(lms1)
+  parTable <- parameter_estimates(stan)
   for (col in choose) {
     tau.true   <- thresholds[[col]]
     tau.true   <- tau.true[is.finite(tau.true)]
@@ -250,4 +250,48 @@ if (TEST_STAN) {
                           data = oneInt, iter = 2000, chains = 2)
   # We can get a summary
   summary(fit.2way)
+
+  set.seed(82423)
+  n <- 500
+  X <- rnorm(n, mean = 0, sd = sqrt(1.2))
+  Z <- rnorm(n, mean = 0, sd = sqrt(1.4))
+
+  Psi <- matrix(c(0.6, 0.2, 0.2, 0.4), nrow = 2, ncol = 2)
+  Zeta <- mvtnorm::rmvnorm(n, mean = c(0, 0), sigma = Psi)
+
+  Theta <- matrix(c(0.2, 0.15, 0.15, 0.2), nrow = 2)
+  Epsilon <- mvtnorm::rmvnorm(n, mean = c(0, 0), sigma = Theta)
+
+  Y1 <- 0.7 * X + 0.3 * Z + Zeta[, 1L]
+  Y2 <- 0.3 * X + 0.7 * Z + Zeta[, 2L]
+
+  x1 <-       X + 1.2 + rnorm(n, mean = 0, sd = sqrt(0.2))
+  x2 <- 0.8 * X + 0.9 + rnorm(n, mean = 0, sd = sqrt(0.2))
+
+  z1 <-       Z + 1.2 + rnorm(n, mean = 0, sd = sqrt(0.2))
+  z2 <- 0.8 * Z + 0.9 + rnorm(n, mean = 0, sd = sqrt(0.2))
+
+  y1 <-       Y1 + 1.2 + rnorm(n, mean = 0, sd = sqrt(0.2))
+  y2 <- 0.8 * Y1 + 0.9 + Epsilon[, 1L]
+
+  y3 <-       Y2 + 1.2 + rnorm(n, mean = 0, sd = sqrt(0.2))
+  y4 <- 0.8 * Y2 + 0.9 + Epsilon[, 2L] 
+
+  data <- data.frame(x1, x2, z1, z2, y1, y2, y3, y4)
+
+  mod <- '
+    X  =~ x1 + x2
+    Z  =~ z1 + z2
+    Y1 =~ y1 + y2
+    Y2 =~ y3 + y4
+
+    Y1 ~ X + Z
+    Y2 ~ X + Z
+    
+    Y1 ~~ Y2
+    y2 ~~ y4
+  '
+
+  fit.lms  <- modsem(mod, data, method = "lms")
+  fit.stan <- modsem_stan(mod, data)
 }

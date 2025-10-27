@@ -166,6 +166,162 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE,
   GENERATED_QUANTITIES <- NULL
   EXCLUDE.PARS <- NULL
 
+  pair_key <- function(a, b) {
+    vals <- sort(c(a, b))
+    paste0(vals, collapse = "___")
+  }
+
+  normalize_cov_pairs <- function(df) {
+    if (!NROW(df)) return(df)
+    df$lhs <- pmin(df$lhs, df$rhs)
+    df$rhs <- pmax(df$lhs, df$rhs)
+    df <- df[!duplicated(df[, c("lhs", "rhs")]), , drop = FALSE]
+    df
+  }
+
+  build_components <- function(nodes, edges, order_ref) {
+    if (!length(nodes)) {
+      map <- setNames(rep(0L, length(order_ref)), order_ref)
+      return(list(groups = list(), map = map))
+    }
+
+    nodes <- unique(nodes)
+    if (!missing(order_ref) && length(order_ref)) {
+      nodes <- nodes[order(match(nodes, order_ref))]
+    } else {
+      order_ref <- nodes
+    }
+
+    adj <- stats::setNames(vector("list", length(nodes)), nodes)
+
+    if (NROW(edges)) {
+      for (i in seq_len(NROW(edges))) {
+        v1 <- edges$lhs[[i]]
+        v2 <- edges$rhs[[i]]
+
+        adj[[v1]] <- unique(c(adj[[v1]], v2))
+        adj[[v2]] <- unique(c(adj[[v2]], v1))
+      }
+    }
+
+    visited <- stats::setNames(rep(FALSE, length(nodes)), nodes)
+    groups  <- list()
+
+    for (node in nodes) {
+      if (visited[[node]]) next
+
+      stack <- node
+      visited[[node]] <- TRUE
+      comp <- character()
+
+      while (length(stack)) {
+        current <- stack[[length(stack)]]
+        stack <- stack[-length(stack)]
+        comp <- c(comp, current)
+
+        neighbors <- adj[[current]]
+        for (nbr in neighbors) {
+          if (!visited[[nbr]]) {
+            visited[[nbr]] <- TRUE
+            stack <- c(stack, nbr)
+          }
+        }
+      }
+
+      comp <- comp[order(match(comp, order_ref))]
+      groups[[length(groups) + 1L]] <- comp
+    }
+
+    groups <- Filter(function(g) length(g) > 1L, groups)
+
+    map <- setNames(rep(0L, length(order_ref)), order_ref)
+    if (length(groups)) {
+      for (i in seq_along(groups)) {
+        map[groups[[i]]] <- i
+      }
+    }
+
+    list(groups = groups, map = map)
+  }
+
+  # --- Residual covariance metadata: continuous indicators ---
+  contIndicatorsAll <- setdiff(allInds, ordSet)
+
+  contCovPairs <- parTable[
+    parTable$op == "~~" &
+      parTable$lhs %in% contIndicatorsAll &
+      parTable$rhs %in% contIndicatorsAll &
+      parTable$lhs != parTable$rhs,
+    c("lhs", "rhs", "mod"),
+    drop = FALSE
+  ]
+
+  if (NROW(contCovPairs)) {
+    contCovPairs$mod <- as.character(contCovPairs$mod)
+    contCovPairs$mod[contCovPairs$mod == ""] <- NA_character_
+    contCovPairs <- normalize_cov_pairs(contCovPairs)
+  }
+
+  contCovVars <- if (NROW(contCovPairs)) unique(c(contCovPairs$lhs, contCovPairs$rhs)) else character(0)
+  contCorrelatedVars <- contCovVars[order(match(contCovVars, contIndicatorsAll))]
+
+  contComponent <- build_components(
+    nodes = contCorrelatedVars,
+    edges = contCovPairs,
+    order_ref = contIndicatorsAll
+  )
+
+  contGroupMap <- contComponent$map
+  contResidGroups <- contComponent$groups
+
+  contResidIndex <- setNames(seq_along(contCorrelatedVars), contCorrelatedVars)
+
+  contPairLookup <- if (NROW(contCovPairs)) {
+    keys <- mapply(pair_key, contCovPairs$lhs, contCovPairs$rhs, SIMPLIFY = TRUE, USE.NAMES = FALSE)
+    stats::setNames(contCovPairs$mod, keys)
+  } else {
+    setNames(character(0), character(0))
+  }
+
+  continuous_meta <- list()
+
+  # --- Residual covariance metadata: latent etas ---
+  etaCovPairs <- parTable[
+    parTable$op == "~~" &
+      parTable$lhs %in% etas &
+      parTable$rhs %in% etas &
+      parTable$lhs != parTable$rhs,
+    c("lhs", "rhs", "mod"),
+    drop = FALSE
+  ]
+
+  if (NROW(etaCovPairs)) {
+    etaCovPairs$mod <- as.character(etaCovPairs$mod)
+    etaCovPairs$mod[etaCovPairs$mod == ""] <- NA_character_
+    etaCovPairs <- normalize_cov_pairs(etaCovPairs)
+  }
+
+  etaCovVars <- if (NROW(etaCovPairs)) unique(c(etaCovPairs$lhs, etaCovPairs$rhs)) else character(0)
+  etaCorrelatedVars <- etaCovVars[order(match(etaCovVars, etas))]
+
+  etaComponent <- build_components(
+    nodes = etaCorrelatedVars,
+    edges = etaCovPairs,
+    order_ref = etas
+  )
+
+  etaGroupMap <- etaComponent$map
+  etaResidGroups <- etaComponent$groups
+
+  etaPairLookup <- if (NROW(etaCovPairs)) {
+    keys <- mapply(pair_key, etaCovPairs$lhs, etaCovPairs$rhs, SIMPLIFY = TRUE, USE.NAMES = FALSE)
+    stats::setNames(etaCovPairs$mod, keys)
+  } else {
+    setNames(character(0), character(0))
+  }
+
+  eta_meta <- list()
+
   STAN_INDS_LV <- function(lV) {
     inds <- indsLVs[[lV]]
     k <- length(inds)
@@ -227,10 +383,34 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE,
         ind, ind, ind, ind
       )
 
-      modMeasrInd <- sprintf(
-        "INDICATORS_%s[,%d] ~ normal(%s__INTERCEPT + %s__MEASUREMENT__%s * %s, %s__STDDEV__%s);",
-        lV, i, ind, lV, ind, lV, ind, ind
+      groupId <- 0L
+      if (length(contGroupMap)) {
+        groupId <- contGroupMap[[ind]]
+        if (is.na(groupId)) groupId <- 0L
+      }
+
+      sigmaName     <- sprintf("%s__STDDEV__%s", ind, ind)
+      interceptName <- sprintf("%s__INTERCEPT", ind)
+      loadingName   <- sprintf("%s__MEASUREMENT__%s", lV, ind)
+      dataIdx <- if (ind %in% names(contResidIndex)) contResidIndex[[ind]] else NA_integer_
+
+      continuous_meta[[ind]] <<- list(
+        intercept = interceptName,
+        loading   = loadingName,
+        latent    = lV,
+        sigma     = sigmaName,
+        data_index = dataIdx,
+        group     = groupId
       )
+
+      if (groupId <= 0L) {
+        modMeasrInd <- sprintf(
+          "INDICATORS_%s[,%d] ~ normal(%s__INTERCEPT + %s__MEASUREMENT__%s * %s, %s__STDDEV__%s);",
+          lV, i, ind, lV, ind, lV, ind, ind
+        )
+      } else {
+        modMeasrInd <- NULL
+      }
 
       parLines <- c(
         parLines,
@@ -457,38 +637,283 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE,
     indeps <- stringr::str_replace_all(indeps, ":", "__XWITH__")
 
     labBeta <- sprintf("%s__REGRESSION__%s", eta, indeps)
-    allOrd <- is_allOrdinal_lv[eta]
+    allOrd  <- is_allOrdinal_lv[eta]
 
     parBeta   <- if (length(labBeta)) sprintf("real %s;", labBeta) else NULL
     parValues <- sprintf("vector[N] %s;", eta)
 
-    tparLines <- NULL
+    tparLines <- character()
+
+    meanExpr <- if (length(indeps)) collapse(sprintf("%s * %s", labBeta, indeps), sep = " + ") else "0"
+    meanExprVec <- if (meanExpr == "0") "rep_vector(0, N)" else meanExpr
+    meanName <- sprintf("%s__MEAN", eta)
+    tparLines <- c(tparLines, sprintf("vector[N] %s = %s;", meanName, meanExprVec))
+
+    groupId <- if (length(etaGroupMap)) etaGroupMap[[eta]] else 0L
+    if (is.na(groupId)) groupId <- 0L
 
     if (allOrd) {
-      # FIXED disturbance SD = 1
       parSD <- NULL
-      projEta <- if (length(indeps)) collapse(sprintf("%s * %s", labBeta, indeps), sep = " + ") else "0"
-      modEta <- sprintf("%s ~ normal(%s, 1);", eta, projEta)
-
-      # Expose the fixed residual variance under the usual name
-      tparLines <- sprintf("real %s__COVARIANCE__%s = 1;", eta, eta)
-
+      sigmaExpr <- "1"
+      tparLines <- c(tparLines, sprintf("real %s__COVARIANCE__%s = 1;", eta, eta))
     } else {
-      # Free disturbance SD (parameter remains as before)
       labSD <- sprintf("%s__STDDEV__%s", eta, eta)
       parSD <- sprintf("real<lower=0> %s;", labSD)
-      tparLines <- sprintf("real %s__COVARIANCE__%s = %s^2;", eta, eta, labSD)
-      projEta <- if (length(indeps)) collapse(sprintf("%s * %s", labBeta, indeps), sep = " + ") else "0"
-      modEta <- sprintf("%s ~ normal(%s, %s);", eta, projEta, labSD)
+      sigmaExpr <- labSD
+      tparLines <- c(tparLines, sprintf("real %s__COVARIANCE__%s = %s^2;", eta, eta, labSD))
     }
 
+    if (groupId > 0L) {
+      modEta <- NULL
+    } else {
+      modEta <- sprintf("%s ~ normal(%s, %s);", eta, meanName, sigmaExpr)
+    }
+
+    eta_meta[[eta]] <<- list(
+      mean  = meanName,
+      sigma = sigmaExpr,
+      group = groupId
+    )
+
     parameters  <- collapse(c(parValues, parSD, parBeta))
-    EXCLUDE.PARS <<- c(EXCLUDE.PARS, eta)
+    EXCLUDE.PARS <<- c(EXCLUDE.PARS, eta, meanName)
 
     list(
          parameters = parameters,
          model = modEta,
          transformed_parameters = collapse(tparLines)
+    )
+  }
+
+  STAN_CORRELATED_CONTINUOUS <- function() {
+    if (!length(contResidGroups)) return(list())
+
+    parLines  <- character()
+    tparLines <- character()
+    modelLines <- character()
+
+    if (length(names(contPairLookup))) {
+      for (key in names(contPairLookup)) {
+        vars <- strsplit(key, "___", fixed = TRUE)[[1L]]
+        v1 <- vars[[1L]]
+        v2 <- vars[[2L]]
+        covName <- sprintf("%s__COVARIANCE__%s", v1, v2)
+        modVal  <- contPairLookup[[key]]
+
+        if (is.na(modVal)) {
+          parLines <- c(parLines, sprintf("real %s;", covName))
+          tparLines <- c(
+            tparLines,
+            sprintf("real %s__COVARIANCE__%s = %s;", v2, v1, covName)
+          )
+        } else {
+          tparLines <- c(
+            tparLines,
+            sprintf("real %s__COVARIANCE__%s = %s;", v1, v2, modVal),
+            sprintf("real %s__COVARIANCE__%s = %s;", v2, v1, modVal)
+          )
+        }
+      }
+    }
+
+    for (g in seq_along(contResidGroups)) {
+      vars <- contResidGroups[[g]]
+      size <- length(vars)
+      thetaName <- sprintf("Theta_cont_%d", g)
+      lName <- sprintf("L_Theta_cont_%d", g)
+
+      tparLines <- c(
+        tparLines,
+        sprintf("matrix[%d, %d] %s;", size, size, thetaName),
+        sprintf("cholesky_factor_cov[%d] %s;", size, lName),
+        sprintf("%s = rep_matrix(0, %d, %d);", thetaName, size, size)
+      )
+
+      for (i in seq_along(vars)) {
+        var <- vars[[i]]
+        sigmaExpr <- continuous_meta[[var]]$sigma
+        tparLines <- c(
+          tparLines,
+          sprintf("%s[%d, %d] = square(%s);", thetaName, i, i, sigmaExpr)
+        )
+      }
+
+      if (size >= 2L) {
+        for (i in seq_along(vars)) {
+          for (j in seq_len(i - 1L)) {
+            vi <- vars[[i]]
+            vj <- vars[[j]]
+            key <- pair_key(vi, vj)
+            if (key %in% names(contPairLookup)) {
+              covExpr <- sprintf("%s__COVARIANCE__%s", vi, vj)
+            } else {
+              covExpr <- "0"
+            }
+            tparLines <- c(
+              tparLines,
+              sprintf("%s[%d, %d] = %s;", thetaName, i, j, covExpr),
+              sprintf("%s[%d, %d] = %s;", thetaName, j, i, covExpr)
+            )
+          }
+        }
+      }
+
+      tparLines <- c(
+        tparLines,
+        sprintf("%s = cholesky_decompose(%s);", lName, thetaName)
+      )
+
+      EXCLUDE.PARS <<- c(EXCLUDE.PARS, thetaName, lName)
+
+      loopLines <- c(
+        sprintf("for (n in 1:N) {"),
+        sprintf("  vector[%d] resid;", size)
+      )
+
+      for (i in seq_along(vars)) {
+        var <- vars[[i]]
+        meta <- continuous_meta[[var]]
+        dataIdx <- meta$data_index
+        if (is.na(dataIdx)) {
+          stop2("Missing data index for correlated indicator '", var, "'.")
+        }
+        expr <- sprintf("%s + %s * %s[n]",
+                        meta$intercept,
+                        meta$loading,
+                        meta$latent)
+        loopLines <- c(
+          loopLines,
+          sprintf("  resid[%d] = CONTINUOUS_INDICATORS[n, %d] - (%s);",
+                  i, dataIdx, expr)
+        )
+      }
+
+      loopLines <- c(
+        loopLines,
+        sprintf("  target += multi_normal_cholesky_lpdf(resid | rep_vector(0, %d), %s);", size, lName),
+        "}"
+      )
+
+      modelLines <- c(modelLines, paste(loopLines, collapse = "\n"))
+    }
+
+    dataLines <- sprintf("matrix[N, %d] CONTINUOUS_INDICATORS;", length(contResidIndex))
+
+    list(
+      data = dataLines,
+      parameters = collapse(parLines),
+      transformed_parameters = collapse(tparLines),
+      model = collapse(modelLines)
+    )
+  }
+
+  STAN_CORRELATED_ETAS <- function() {
+    if (!length(etaResidGroups)) return(list())
+
+    parLines  <- character()
+    tparLines <- character()
+    modelLines <- character()
+
+    if (length(names(etaPairLookup))) {
+      for (key in names(etaPairLookup)) {
+        vars <- strsplit(key, "___", fixed = TRUE)[[1L]]
+        v1 <- vars[[1L]]
+        v2 <- vars[[2L]]
+        covName <- sprintf("%s__COVARIANCE__%s", v1, v2)
+        modVal  <- etaPairLookup[[key]]
+
+        if (is.na(modVal)) {
+          parLines <- c(parLines, sprintf("real %s;", covName))
+          tparLines <- c(
+            tparLines,
+            sprintf("real %s__COVARIANCE__%s = %s;", v2, v1, covName)
+          )
+        } else {
+          tparLines <- c(
+            tparLines,
+            sprintf("real %s__COVARIANCE__%s = %s;", v1, v2, modVal),
+            sprintf("real %s__COVARIANCE__%s = %s;", v2, v1, modVal)
+          )
+        }
+      }
+    }
+
+    for (g in seq_along(etaResidGroups)) {
+      vars <- etaResidGroups[[g]]
+      size <- length(vars)
+      psiName <- sprintf("Psi_eta_%d", g)
+      lName <- sprintf("L_Psi_eta_%d", g)
+
+      tparLines <- c(
+        tparLines,
+        sprintf("matrix[%d, %d] %s;", size, size, psiName),
+        sprintf("cholesky_factor_cov[%d] %s;", size, lName),
+        sprintf("%s = rep_matrix(0, %d, %d);", psiName, size, size)
+      )
+
+      for (i in seq_along(vars)) {
+        var <- vars[[i]]
+        sigmaExpr <- eta_meta[[var]]$sigma
+        tparLines <- c(
+          tparLines,
+          sprintf("%s[%d, %d] = square(%s);", psiName, i, i, sigmaExpr)
+        )
+      }
+
+      if (size >= 2L) {
+        for (i in seq_along(vars)) {
+          for (j in seq_len(i - 1L)) {
+            vi <- vars[[i]]
+            vj <- vars[[j]]
+            key <- pair_key(vi, vj)
+            if (key %in% names(etaPairLookup)) {
+              covExpr <- sprintf("%s__COVARIANCE__%s", vi, vj)
+            } else {
+              covExpr <- "0"
+            }
+            tparLines <- c(
+              tparLines,
+              sprintf("%s[%d, %d] = %s;", psiName, i, j, covExpr),
+              sprintf("%s[%d, %d] = %s;", psiName, j, i, covExpr)
+            )
+          }
+        }
+      }
+
+      tparLines <- c(
+        tparLines,
+        sprintf("%s = cholesky_decompose(%s);", lName, psiName)
+      )
+
+      EXCLUDE.PARS <<- c(EXCLUDE.PARS, psiName, lName)
+
+      loopLines <- c(
+        sprintf("for (n in 1:N) {"),
+        sprintf("  vector[%d] resid;", size)
+      )
+
+      for (i in seq_along(vars)) {
+        var <- vars[[i]]
+        meta <- eta_meta[[var]]
+        loopLines <- c(
+          loopLines,
+          sprintf("  resid[%d] = %s[n] - %s[n];", i, var, meta$mean)
+        )
+      }
+
+      loopLines <- c(
+        loopLines,
+        sprintf("  target += multi_normal_cholesky_lpdf(resid | rep_vector(0, %d), %s);", size, lName),
+        "}"
+      )
+
+      modelLines <- c(modelLines, paste(loopLines, collapse = "\n"))
+    }
+
+    list(
+      parameters = collapse(parLines),
+      transformed_parameters = collapse(tparLines),
+      model = collapse(modelLines)
     )
   }
 
@@ -582,9 +1007,12 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE,
   }
 
   for (lV in lVs)   add2block(STAN_INDS_LV, lV = lV)
+  add2block(STAN_PAR_XIS, xis = xis)
   for (eta in etas) add2block(STAN_PAR_ETA, eta = eta)
 
-  add2block(STAN_PAR_XIS, xis = xis)
+  add2block(STAN_CORRELATED_CONTINUOUS)
+  add2block(STAN_CORRELATED_ETAS)
+
   add2block(STAN_COMPUTED_PRODUCTS, intTerms = intTerms)
   add2block(STAN_COMPUTED_COVARIANCES, vars = c(xis, intTerms))
   add2block(STAN_COMPUTED_VARIANCES, vars = c(xis, intTerms))
@@ -624,6 +1052,9 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE,
                    indsLVs = indsLVs,
                    allIndsXis = allIndsXis,
                    allIndsEtas = allIndsEtas,
+                   cont_resid_vars = contCorrelatedVars,
+                   cont_resid_groups = contResidGroups,
+                   eta_resid_groups = etaResidGroups,
                    exclude.pars = unique(EXCLUDE.PARS),
                    parTable = parTable))
 }
@@ -636,6 +1067,8 @@ getStanData <- function(compiled_model, data, missing = "listwise", ordered = NU
   indsLVs     <- compiled_model$info$indsLVs
   allIndsXis  <- compiled_model$info$allIndsXis
   allIndsEtas <- compiled_model$info$allIndsEtas
+  contResidVars <- compiled_model$info$cont_resid_vars
+  if (is.null(contResidVars)) contResidVars <- character(0)
 
   # 1) Pre-coerce requested ordinal columns in the raw data
   #    (safe even if columns are already numeric; ensures stable ordering)
@@ -683,6 +1116,10 @@ getStanData <- function(compiled_model, data, missing = "listwise", ordered = NU
 
     stan_data[[sprintf("ORD_INDICATOR_%s", ind)]] <- x_int
     stan_data[[sprintf("K_%s", ind)]]          <- K
+  }
+
+  if (length(contResidVars)) {
+    stan_data[["CONTINUOUS_INDICATORS"]] <- as.matrix(INDICATORS[, contResidVars, drop = FALSE])
   }
 
   stan_data
