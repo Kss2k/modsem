@@ -45,7 +45,10 @@ createTokensLine <- function(line, i = 1,
   }
 
   if (length(listTokens) > 0 && is.MathOperator(last(listTokens))) {
-    token <- buildMathExprToken(line[i:length(line)], pos = i)
+    lastToken <- last(listTokens)
+    offset <- attr(lastToken, "pos") + nchar(lastToken)
+
+    token <- buildMathExprToken(line[offset:length(line)], pos = offset)
     return(appendToList(listTokens, token))
   }
 
@@ -213,7 +216,7 @@ assignSubClass.LavOperator <- function(token) {
           ":"  = {subClass <- "LavInteraction"; priority <- 2},
           ":=" = {subClass <- "LavCustom";      priority <- 0},
           ","  = {subClass <- "LavSeperator";   priority <- 0},
-          "-"  = {subClass <- "LavSubtract";    priority <- 3}, 
+          "-"  = {subClass <- "LavSubtract";    priority <- 3},
           stop2("Unrecognized operator: ", highlightErrorToken(token))
   )
   structure(token,

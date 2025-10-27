@@ -1,23 +1,49 @@
-estepLms <- function(model, theta, data, lastQuad = NULL, recalcQuad = FALSE,
+estepLms <- function(model, theta, lastQuad = NULL, recalcQuad = FALSE,
                      adaptive.quad.tol = 1e-12, ...) {
   modFilled <- fillModel(model = model, theta = theta, method = "lms")
 
-  if (model$quad$adaptive && (recalcQuad || is.null(lastQuad))) {
-    m <- model$quad$m
-    a <- model$quad$a
-    b <- model$quad$b
-    m <- model$quad$m
-    k <- model$quad$k
+  P <- list(P_GROUPS = vector("list", length = model$info$n.groups),
+            quad = NULL, obsLL = NULL)
+
+  for (g in seq_len(model$info$n.groups)) {
+    lastQuad.g <- if (!is.null(lastQuad)) lastQuad[[g]] else NULL
+    submodel   <- modFilled$models[[g]]
+
+    P$P_GROUPS[[g]] <- estepLmsGroup(
+      submodel          = submodel,
+      lastQuad          = lastQuad.g,
+      recalcQuad        = recalcQuad,
+      adaptive.quad.tol = adaptive.quad.tol,
+      ...
+    )
+  }
+
+  P$quad  <- lapply(P$P_GROUPS, FUN = \(P) P$quad)
+  P$obsLL <- sum(vapply(P$P_GROUPS, FUN.VALUE = numeric(1L), FUN = \(P) P$obsLL))
+
+  P
+}
+
+
+estepLmsGroup <- function(submodel, lastQuad = NULL, recalcQuad = FALSE,
+                          adaptive.quad.tol = 1e-12, ...) {
+  data <- submodel$data
+
+  if (submodel$quad$adaptive && (recalcQuad || is.null(lastQuad))) {
+    m <- submodel$quad$m
+    a <- submodel$quad$a
+    b <- submodel$quad$b
+    m <- submodel$quad$m
+    k <- submodel$quad$k
 
     if (!is.null(lastQuad)) m.ceil <- lastQuad$m.ceil
     else if (k > 1) m.ceil <- m
     else m.ceil <- round(estMForNodesInRange(m, a = -5, b = 5))
 
-
     quad <- tryCatch({
         adaptiveGaussQuadrature(
           fun = densityLms, collapse = \(x) sum(log(rowSums(x))),
-          modFilled = modFilled, data = data, a = a, b = b, m = m,
+          modFilled = submodel, data = data, a = a, b = b, m = m,
           k = k, m.ceil = m.ceil, tol = adaptive.quad.tol,
         )
       }, error = function(e) {
@@ -28,11 +54,9 @@ estepLms <- function(model, theta, data, lastQuad = NULL, recalcQuad = FALSE,
     )
 
     if (is.null(quad)) {
-      estep.fixed <- estepLms(
-        model = model,
-        theta = theta,
-        data  = data,
-        lastQuad = if (!is.null(lastQuad)) lastQuad else model$quad,
+      estep.fixed <- estepLmsGroup(
+        submodel = submodel,
+        lastQuad = if (!is.null(lastQuad)) lastQuad else submodel$quad,
         recalcQuad = FALSE,
         ...
       )
@@ -45,14 +69,12 @@ estepLms <- function(model, theta, data, lastQuad = NULL, recalcQuad = FALSE,
     w <- quad$w
 
   } else {
-    quad <- if (model$quad$adaptive) lastQuad else model$quad
+    quad <- if (submodel$quad$adaptive) lastQuad else submodel$quad
     V    <- quad$n
     w    <- quad$w
     W    <- matrix(w, nrow = data$n, ncol = length(w), byrow = TRUE)
-    P    <- W * densityLms(V, modFilled = modFilled, data = data)
+    P    <- W * densityLms(V, modFilled = submodel, data = data)
   }
-
-
 
   density        <- rowSums(P)
   observedLogLik <- sum(log(density))
@@ -64,15 +86,12 @@ estepLms <- function(model, theta, data, lastQuad = NULL, recalcQuad = FALSE,
 
   for (i in seq_along(w)) {
     p <- P[, i]
-    tGamma[[i]] <- sum(p)
-
     offset <- 1L
 
     wMeans[[i]] <- vector("list", length = length(data$ids))
     wCovs[[i]]  <- vector("list", length = length(data$ids))
     tGamma[[i]] <- numeric(length = length(data$ids))
 
-    # wmean <- colSums(data$data.full * p, na.rm = TRUE) / sum(p)
     for (j in data$ids) {
       n.pattern <- data$n.pattern[[j]]
       end       <- offset + n.pattern - 1L
@@ -81,7 +100,6 @@ estepLms <- function(model, theta, data, lastQuad = NULL, recalcQuad = FALSE,
       colidx  <- data$colidx[[j]]
 
       pj   <- p[offset:end]
-      # wm   <- wmean[colidx]
       wm   <- colSums(data.id * pj) / sum(pj)
       X    <- data.id - matrix(wm, nrow=nrow(data.id), ncol=ncol(data.id), byrow=TRUE)
       wcov <- t(X) %*% (X * pj)
@@ -100,7 +118,7 @@ estepLms <- function(model, theta, data, lastQuad = NULL, recalcQuad = FALSE,
 
 
 # Maximization step of EM-algorithm (see Klein & Moosbrugger, 2000)
-mstepLms <- function(theta, model, P, data,
+mstepLms <- function(theta, model, P,
                      max.step,
                      verbose = FALSE,
                      control = list(),
@@ -110,11 +128,11 @@ mstepLms <- function(theta, model, P, data,
                      ...) {
   gradient <- function(theta) {
     gradientCompLogLikLms(theta = theta, model = model, P = P, sign = -1,
-                          data = data, epsilon = epsilon)
+                          epsilon = epsilon)
   }
 
   objective <- function(theta) {
-    compLogLikLms(theta = theta, model = model, P = P, sign = -1, data = data,
+    compLogLikLms(theta = theta, model = model, P = P, sign = -1,
                   epsilon = epsilon)
   }
 
@@ -122,16 +140,16 @@ mstepLms <- function(theta, model, P, data,
     if (is.null(control$iter.max)) control$iter.max <- max.step
     est <- stats::nlminb(start = theta, objective = objective,
                          gradient = gradient,
-                         upper = model$info$bounds$upper,
-                         lower = model$info$bounds$lower, control = control,
+                         upper = model$params$bounds$upper,
+                         lower = model$params$bounds$lower, control = control,
                          ...) |> suppressWarnings()
 
   } else if (optimizer == "L-BFGS-B") {
     if (is.null(control$maxit)) control$maxit <- max.step
     est <- stats::optim(par = theta, fn = objective, gr = gradient,
                         method = optim.method, control = control,
-                        lower = model$info$bounds$lower,
-                        upper = model$info$bounds$upper, ...)
+                        lower = model$params$bounds$lower,
+                        upper = model$params$bounds$upper, ...)
 
     est$objective  <- est$value
     est$iterations <- est$counts[["function"]]
@@ -143,74 +161,152 @@ mstepLms <- function(theta, model, P, data,
 }
 
 
-compLogLikLms <- function(theta, model, P, data, sign = -1, ...) {
+compLogLikLms <- function(theta, model, P, sign = -1, ...) {
   tryCatch({
     modFilled <- fillModel(model = model, theta = theta, method = "lms")
-    sign * completeLogLikLmsCpp(modelR=modFilled, P=P, quad=P$quad,
-                                colidxR = data$colidx0, n = data$n.pattern,
-                                d = data$d.pattern, npatterns = data$p)
+
+    ll <- 0
+    for (g in seq_len(model$info$n.groups)) {
+      submodel <- modFilled$models[[g]]
+      data <- submodel$data
+
+      ll <- ll + completeLogLikLmsCpp(
+        modelR=submodel, P=P$P_GROUPS[[g]], quad=P$quad[[g]],
+        colidxR = data$colidx0, n = data$n.pattern,
+        d = data$d.pattern, npatterns = data$p
+      )
+    }
+
+    sign * ll
+
   }, error = \(e) NA)
 }
 
 
-gradientCompLogLikLms <- function(theta, model, P, data, sign = -1, epsilon = 1e-6) {
-  gradientAllLogLikLms(theta = theta, model = model, P = P, sign = sign, data = data,
-                       epsilon = epsilon, FGRAD = gradLogLikLmsCpp, FOBJECTIVE = compLogLikLms)
+compLogLikLmsGroup <- function(submodel, P, sign = -1, ...) {
+  tryCatch({
+    data <- submodel$data
+
+    ll <- completeLogLikLmsCpp(
+      modelR = submodel, P = P, quad = P$quad,
+      colidxR = data$colidx0, n = data$n.pattern,
+      d = data$d.pattern, npatterns = data$p
+    )
+
+    sign * ll
+
+  }, error = \(e) NA)
 }
 
 
-gradientAllLogLikLms <- function(theta, model, P, data, sign = -1, epsilon = 1e-6,
+
+gradientCompLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-6) {
+  gradientAllLogLikLms(theta = theta, model = model, P = P, sign = sign,
+                       epsilon = epsilon, FGRAD = gradLogLikLmsCpp, FOBJECTIVE = compLogLikLmsGroup)
+}
+
+
+gradientAllLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-6,
                                  FGRAD, FOBJECTIVE) {
-  hasCovModel <- model$gradientStruct$hasCovModel
+  hasCovModel <- model$params$gradientStruct$hasCovModel
 
   if (hasCovModel) gradient <- \(...) complicatedGradientAllLogLikLms(..., FOBJECTIVE = FOBJECTIVE)
   else             gradient <- \(...) simpleGradientAllLogLikLms(..., FGRAD = FGRAD)
 
-  c(gradient(theta = theta, model = model, P = P, data = data, sign = sign, epsilon = epsilon))
+  c(gradient(theta = theta, model = model, P = P, sign = sign, epsilon = epsilon))
 }
 
 
-complicatedGradientAllLogLikLms <- function(theta, model, P, data, sign = -1, epsilon = 1e-4, FOBJECTIVE) {
-  # when we cannot simplify gradient using simpleGradientLogLikLms, we use
-  # good old forward difference...
-  baseLL <- FOBJECTIVE(theta, model = model, P = P, data = data, sign = sign)
-  vapply(seq_along(theta), FUN.VALUE = numeric(1L), FUN = function(i) {
-    theta[[i]] <- theta[[i]] + epsilon
-    (FOBJECTIVE(theta, model = model, P = P, data = data, sign = sign) - baseLL) / epsilon
-  })
+complicatedGradientAllLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-4, FOBJECTIVE, sum = TRUE, ...) {
+  params <- model$params
+
+  SELECT_THETA_LAB  <- params$SELECT_THETA_LAB
+  SELECT_THETA_COV  <- params$SELECT_THETA_COV
+  SELECT_THETA_MAIN <- params$SELECT_THETA_MAIN
+
+  N <- vapply(model$models, FUN.VALUE = numeric(1L), FUN = \(sub) sub$data$n)
+  N.start <- c(1, cumsum(N)[-length(N)] + 1L)
+  N.end   <- cumsum(N)
+
+  if (sum) n <- 1L
+  else     n <- sum(N)
+
+  k  <- length(theta)
+
+  grad <- matrix(0, nrow = n, ncol = k, dimnames = list(NULL, names(theta)))
+
+  FOBJECTIVE_GROUP <- function(theta, g) {
+    modFilled <- fillModel(theta = theta, model = model, method = "lms")
+    FOBJECTIVE(submodel = modFilled$models[[g]], P = P$P_GROUPS[[g]], sign = sign, ...)
+  }
+
+  for (g in seq_len(model$info$n.groups)) {
+    f0 <- FOBJECTIVE_GROUP(theta = theta, g = g)
+
+    if (sum) J <- 1L
+    else     J <- seq(N.start[[g]], N.end[[g]], by = 1L)
+
+    indices <- c(
+      SELECT_THETA_LAB[[g]],
+      SELECT_THETA_COV[[g]],
+      SELECT_THETA_MAIN[[g]]
+    )
+
+    for (i in indices) {
+      theta_i <- theta
+      theta_i[i] <- theta_i[i] + epsilon
+
+      fi <- FOBJECTIVE_GROUP(theta_i, g = g)
+      grad[J, i] <- grad[J, i] + (fi - f0) / epsilon
+    }
+  }
+
+  if (n == 1L) as.vector(grad) else grad
 }
 
 
-simpleGradientAllLogLikLms <- function(theta, model, P, data, sign = -1, epsilon = 1e-6, FGRAD) {
+simpleGradientAllLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-6, FGRAD, N.FGRAD = 1L) {
   # simple gradient which should work if constraints are well-behaved functions
   # which can be derivated by Deriv::Deriv, and there is no covModel
   modelR     <- fillModel(model=model, theta=theta, method="lms")
-  locations  <- model$gradientStruct$locations
-  Jacobian   <- model$gradientStruct$Jacobian
-  nlinDerivs <- model$gradientStruct$nlinDerivs
+  locations  <- model$params$gradientStruct$locations
+  Jacobian   <- model$params$gradientStruct$Jacobian
+  nlinDerivs <- model$params$gradientStruct$nlinDerivs
 
-  block     <- locations$block
-  row       <- locations$row
-  col       <- locations$col
-  param     <- locations$param
-  symmetric <- locations$symmetric
+  # grad <- stats::setNames(numeric(NROW(locations)), nm = locations$param)
+  grad <- matrix(0, nrow = NROW(locations), ncol = N.FGRAD,
+                 dimnames = list(locations$param, NULL))
 
-  grad <- FGRAD(modelR    = modelR,
-                P         = P,
-                block     = block,
-                row       = row,
-                col       = col,
-                symmetric = symmetric,
-                colidxR   = data$colidx0,
-                npatterns = data$p,
-                n         = data$n.pattern,
-                d         = data$d.pattern,
-                eps       = epsilon,
-                ncores    = ThreadEnv$n.threads)
+  for (g in seq_len(modelR$info$n.groups)) {
+    submodelR   <- modelR$models[[g]]
+    locations.g <- locations[locations$group == g, , drop = FALSE]
+
+    data      <- submodelR$data
+    block     <- locations.g$block
+    row       <- locations.g$row
+    col       <- locations.g$col
+    param     <- locations.g$param
+    symmetric <- locations.g$symmetric
+
+    grad.g <- FGRAD(modelR    = submodelR,
+                    P         = P$P_GROUPS[[g]],
+                    block     = block,
+                    row       = row,
+                    col       = col,
+                    symmetric = symmetric,
+                    colidxR   = data$colidx0,
+                    npatterns = data$p,
+                    n         = data$n.pattern,
+                    d         = data$d.pattern,
+                    eps       = epsilon,
+                    ncores    = ThreadEnv$n.threads)
+
+    grad[locations.g$param, ] <- grad.g
+  }
 
   if (length(nlinDerivs)) {
-    evalTheta  <- model$gradientStruct$evalTheta
-    param.full <- colnames(Jacobian)
+    evalTheta  <- model$params$gradientStruct$evalTheta
+    param.full <- stringr::str_split_i(colnames(Jacobian), pattern = "#", i = 1L) # non-unique
     param.part <- rownames(Jacobian)
     THETA      <- list2env(as.list(evalTheta(theta)))
 
@@ -231,19 +327,51 @@ simpleGradientAllLogLikLms <- function(theta, model, P, data, sign = -1, epsilon
 }
 
 
-obsLogLikLms <- function(theta, model, data, P, sign = 1, ...) {
-  modFilled <- fillModel(model = model, theta = theta, method = "lms")
-  ll <- observedLogLikLmsCpp(modFilled, dataR = data$data.split, P = P,
-                             colidxR = data$colidx0, n = data$n.pattern,
-                             npatterns = data$p, ncores = ThreadEnv$n.threads)
-  ll * sign
+obsLogLikLms <- function(theta, model, P, sign = 1, ...) {
+  modFilled  <- fillModel(model = model, theta = theta, method = "lms")
+
+  ll <- 0
+  for (g in seq_len(modFilled$info$n.groups)) {
+    submodel <- modFilled$models[[g]]
+    data.g   <- submodel$data
+    P.g      <- P$P_GROUPS[[g]]
+
+    ll.g <- observedLogLikLmsCpp(submodel,
+                                 dataR = data.g$data.split,
+                                 colidxR = data.g$colidx0,
+                                 P = P.g,
+                                 n = data.g$n.pattern,
+                                 npatterns = data.g$p,
+                                 ncores = ThreadEnv$n.threads)
+    ll <- ll + ll.g
+  }
+
+  sign * ll
 }
 
 
-gradientObsLogLikLms <- function(theta, model, data, P, sign = 1, epsilon = 1e-6) {
+obsLogLikLmsGroup <- function(submodel, P, sign = -1, ...) {
+  tryCatch({
+    data.g <- submodel$data
+
+    ll <- observedLogLikLmsCpp(submodel,
+                               dataR = data.g$data.split,
+                               colidxR = data.g$colidx0,
+                               P = P,
+                               n = data.g$n.pattern,
+                               npatterns = data.g$p,
+                               ncores = ThreadEnv$n.threads)
+    sign * ll
+
+  }, error = \(e) NA)
+}
+
+
+gradientObsLogLikLms <- function(theta, model, P, sign = 1, epsilon = 1e-6) {
   FGRAD <- function(modelR, P, block, row, col, symmetric, colidxR, npatterns,
                     eps, ncores, n, ...) {
-    gradObsLogLikLmsCpp(modelR = modelR, dataR = data$data.split, P = P,
+    dataR <- modelR$data
+    gradObsLogLikLmsCpp(modelR = modelR, dataR = dataR$data.split, P = P,
                         block = block, row = row, col = col,
                         symmetric = symmetric, colidxR = colidxR,
                         n = n, npatterns = npatterns, eps = eps,
@@ -251,38 +379,33 @@ gradientObsLogLikLms <- function(theta, model, data, P, sign = 1, epsilon = 1e-6
   }
 
   FOBJECTIVE <- function(theta, model, P, colidxR, npatterns, sign, ...) {
-    obsLogLikLms(theta = theta, model = model, data = data$data.split,
-                 P = P, colidxR = colidxR, npatterns = npatterns,
-                 sign = sign)
+    obsLogLikLmsGroup(theta = theta, model = model, P = P, sign = sign)
   }
 
   gradientAllLogLikLms(theta = theta, model = model, P = P, sign = sign,
-                       epsilon = epsilon, data = data,
-                       FGRAD = FGRAD, FOBJECTIVE = FOBJECTIVE)
+                       epsilon = epsilon, FGRAD = FGRAD,
+                       FOBJECTIVE = FOBJECTIVE)
 }
 
 
-obsLogLikLms_i <- function(theta, model, data, P, sign = 1, ...) {
-  modFilled <- fillModel(model = model, theta = theta, method = "lms")
-
-  V <- P$V
-  w <- P$w
-  m <- nrow(V)
+obsLogLikLmsGroup_i <- function(submodel, P, sign = 1) {
+  data <- submodel$data
+  V  <- P$V
+  w  <- P$w
+  m  <- nrow(V)
   px <- numeric(data$n)
 
   for (i in seq_len(m)) {
     z_i     <- V[i, ]
-    mu_i    <- muLmsCpp(  model = modFilled, z = z_i)
-    sigma_i <- sigmaLmsCpp(model = modFilled, z = z_i)
+    mu_i    <- muLmsCpp(model = submodel, z = z_i)
+    sigma_i <- sigmaLmsCpp(model = submodel, z = z_i)
 
     dens_i <- numeric(data$n)
-
     offset <- 1L
-    for (id in data$ids) { # go along patterns
-      n.pattern <- data$n.pattern[[id]]
 
-      colidx <- data$colidx[[id]]
-      dataid <- data$data.split[[id]]
+    for (id in data$ids) {
+      n.pattern <- data$n.pattern[[id]]
+      colidx    <- data$colidx[[id]]
 
       end <- offset + n.pattern - 1L
       dens_i[offset:end] <- dmvn(data$data.split[[id]],
@@ -299,14 +422,10 @@ obsLogLikLms_i <- function(theta, model, data, P, sign = 1, ...) {
 }
 
 
-# gradient function of obsLogLikLms_i
-gradientObsLogLikLms_i <- function(theta, model, data, P, sign = 1, epsilon = 1e-4) {
-  baseLL <- obsLogLikLms_i(theta, model, data = data, P = P, sign = sign)
-
-  lapplyMatrix(seq_along(theta), FUN = function(i) {
-    theta[[i]] <- theta[[i]] + epsilon
-    (obsLogLikLms_i(theta, model, data = data, P = P, sign = sign) - baseLL) / epsilon
-  }, FUN.VALUE = numeric(data$n))
+gradientObsLogLikLms_i <- function(theta, model, P, sign = 1, epsilon = 1e-4) {
+  complicatedGradientAllLogLikLms(theta = theta, model = model, P = P,
+                                  sign = sign, epsilon = epsilon, sum = FALSE,
+                                  FOBJECTIVE = obsLogLikLmsGroup_i)
 }
 
 
@@ -343,62 +462,103 @@ densityLms <- function(z, modFilled, data) {
 }
 
 
-hessianAllLogLikLms <- function(theta, model, P, data, sign = -1,
+hessianAllLogLikLms <- function(theta, model, P, sign = -1,
                                 FHESS, FOBJECTIVE, .relStep = .Machine$double.eps ^ (1/5)) {
-  hasCovModel <- model$gradientStruct$hasCovModel
+  hasCovModel <- model$params$gradientStruct$hasCovModel
 
   if (hasCovModel) hessian <- \(...) complicatedHessianAllLogLikLms(..., FOBJECTIVE = FOBJECTIVE, .relStep = .relStep)
   else             hessian <- \(...) simpleHessianAllLogLikLms(..., FHESS = FHESS, .relStep = .relStep)
 
-  hessian(theta = theta, model = model, P = P, data = data, sign = sign)
+  hessian(theta = theta, model = model, P = P, sign = sign)
 }
 
 
-compHessianAllLogLikLms <- function(theta, model, P, data, sign = -1,
-                                    .relStep = .Machine$double.eps ^ (1/6),
-                                    FOBJECTIVE) {
-  nlme::fdHess(pars = theta, FOBJECTIVE, model = model, P = P,
-               data = data, sign = sign, .relStep = .relStep)
+complicatedHessianAllLogLikLms <- function(theta, model, P, sign = -1,
+                                          .relStep = .Machine$double.eps ^ (1/6),
+                                          FOBJECTIVE) {
+  params <- model$params
+
+  SELECT_THETA_LAB  <- params$SELECT_THETA_LAB
+  SELECT_THETA_COV  <- params$SELECT_THETA_COV
+  SELECT_THETA_MAIN <- params$SELECT_THETA_MAIN
+
+  k <- length(theta)
+  H <- matrix(0, nrow = k, ncol = k, dimnames = list(names(theta), names(theta)))
+
+  for (g in seq_len(model$info$n.groups)) {
+    indices <- c(
+      SELECT_THETA_LAB[[g]],
+      SELECT_THETA_COV[[g]],
+      SELECT_THETA_MAIN[[g]]
+    )
+
+    FOBJECTIVE_GROUP <- function(theta.g) {
+      theta[indices] <- theta.g # local copy of theta
+      modFilled <- fillModel(theta = theta, model = model, method = "lms")
+      FOBJECTIVE(submodel = modFilled$models[[g]], sign = sign, P = P$P_GROUPS[[g]])
+    }
+
+    theta.g <- theta[indices]
+    Hg <- fdHESS(pars = theta.g, fun = FOBJECTIVE_GROUP, .relStep = .Machine$double.eps^(1/5))
+
+    H[indices, indices] <- H[indices, indices] + Hg
+  }
+
+  H
 }
 
 
-simpleHessianAllLogLikLms <- function(theta, model, P, data, sign = -1,
+simpleHessianAllLogLikLms <- function(theta, model, P, sign = -1,
                                       .relStep = .Machine$double.eps ^ (1/5),
                                       FHESS) {
-  # simple gradient which should work if constraints are well-behaved functions
+  # simple Hessian which should work if constraints are well-behaved functions
   # which can be derivated by Deriv::Deriv, and there is no covModel
-  modelR      <- fillModel(model=model, theta=theta, method="lms")
-  locations   <- model$gradientStruct$locations
-  Jacobian    <- model$gradientStruct$Jacobian
-  Jacobian2   <- model$gradientStruct$Jacobian2
-  nlinDerivs  <- model$gradientStruct$nlinDerivs
-  nlinDerivs2 <- model$gradientStruct$nlinDerivs2
+  modelR      <- fillModel(model = model, theta = theta, method = "lms")
+  locations   <- model$params$gradientStruct$locations
+  Jacobian    <- model$params$gradientStruct$Jacobian
+  Jacobian2   <- model$params$gradientStruct$Jacobian2
+  nlinDerivs  <- model$params$gradientStruct$nlinDerivs
+  nlinDerivs2 <- model$params$gradientStruct$nlinDerivs2
 
-  block     <- locations$block
-  row       <- locations$row
-  col       <- locations$col
-  param     <- locations$param
-  symmetric <- locations$symmetric
+  n.loc <- NROW(locations)
+  H <- matrix(0.0, nrow = n.loc, ncol = n.loc,
+              dimnames = list(locations$param, locations$param))
+  grad <- numeric(n.loc)
+  names(grad) <- locations$param
 
-  HESS <- FHESS(modelR    = modelR,
-                P         = P,
-                block     = block,
-                row       = row,
-                col       = col,
-                colidxR   = data$colidx0,
-                n         = data$n.pattern,
-                d         = data$d.pattern,
-                npatterns = data$p,
-                symmetric = symmetric,
-                .relStep  = .relStep,
-                ncores    = ThreadEnv$n.threads)
+  for (g in seq_len(modelR$info$n.groups)) {
+    locations.g <- locations[locations$group == g, , drop = FALSE]
+    if (!NROW(locations.g)) next
 
-  H    <- HESS$Hessian
-  grad <- HESS$gradient
+    submodelR <- modelR$models[[g]]
+    data.g    <- submodelR$data
+
+    HESS.g <- FHESS(modelR    = submodelR,
+                    P         = P$P_GROUPS[[g]],
+                    block     = locations.g$block,
+                    row       = locations.g$row,
+                    col       = locations.g$col,
+                    colidxR   = data.g$colidx0,
+                    n         = data.g$n.pattern,
+                    d         = data.g$d.pattern,
+                    npatterns = data.g$p,
+                    symmetric = locations.g$symmetric,
+                    .relStep  = .relStep,
+                    ncores    = ThreadEnv$n.threads)
+
+    H.g    <- HESS.g$Hessian
+    grad.g <- HESS.g$gradient
+
+    dimnames(H.g) <- list(locations.g$param, locations.g$param)
+    names(grad.g) <- locations.g$param
+
+    H[locations.g$param, locations.g$param] <- H[locations.g$param, locations.g$param] + H.g
+    grad[locations.g$param] <- grad[locations.g$param] + grad.g
+  }
 
   if (length(nlinDerivs)) {
-    evalTheta  <- model$gradientStruct$evalTheta
-    param.full <- colnames(Jacobian)
+    evalTheta  <- model$params$gradientStruct$evalTheta
+    param.full <- stringr::str_split_i(colnames(Jacobian), pattern = "#", i = 1L) # non-unique
     param.part <- rownames(Jacobian)
     THETA      <- list2env(as.list(evalTheta(theta)))
 
@@ -426,36 +586,31 @@ simpleHessianAllLogLikLms <- function(theta, model, P, data, sign = -1,
 }
 
 
-complicatedHessianAllLogLikLms <- function(theta, model, P, data, sign = -1, FOBJECTIVE,
-                                           .relStep = .Machine$double.eps ^ (1/5)) {
-  nlme::fdHess(pars = theta, fun = FOBJECTIVE, model = model, P = P, sign = sign,
-               .relStep = .relStep, data = data)$Hessian
-}
-
-
-hessianObsLogLikLms <- function(theta, model, data, P, sign = -1,
+hessianObsLogLikLms <- function(theta, model, P, sign = -1,
+                                data = NULL,
                                 .relStep = .Machine$double.eps ^ (1/5)) {
 
   FHESS <- function(modelR, P, block, row, col, symmetric, eps, .relStep, colidxR, n,
                     npatterns, ncores, ...) {
-    hessObsLogLikLmsCpp(modelR = modelR, dataR = data$data.split, P = P,
+    dataR <- modelR$data
+    hessObsLogLikLmsCpp(modelR = modelR, dataR = dataR$data.split, P = P,
                         block = block, row = row, col = col,
                         symmetric = symmetric, npatterns = npatterns,
                         colidxR = colidxR, n = n, relStep = .relStep,
                         minAbs = 0.0, ncores = ncores)
   }
 
-  FOBJECTIVE <- function(theta, model, P, sign, data, ...) {
-    obsLogLikLms(theta = theta, model = model, P = P, data = data, sign = sign)
+  FOBJECTIVE <- function(theta, submodel, P, sign, ...) {
+    obsLogLikLmsGroup(theta = theta, submodel = model, P = P, sign = sign)
   }
 
   hessianAllLogLikLms(theta = theta, model = model, P = P, sign = sign,
-                      data = data, FHESS = FHESS, FOBJECTIVE = FOBJECTIVE,
+                      FHESS = FHESS, FOBJECTIVE = FOBJECTIVE,
                       .relStep = .relStep)
 }
 
 
-hessianCompLogLikLms <- function(theta, model, P, data, sign = -1,
+hessianCompLogLikLms <- function(theta, model, P, sign = -1,
                                  .relStep = .Machine$double.eps ^ (1/5)) {
 
   FHESS <- function(modelR, P, block, row, col, symmetric, eps, .relStep, colidxR,
@@ -466,56 +621,96 @@ hessianCompLogLikLms <- function(theta, model, P, data, sign = -1,
                          npatterns = npatterns, minAbs = 0.0, ncores = ncores)
   }
 
-  FOBJECTIVE <- function(theta, model, P, data, sign) {
-    compLogLikLms(theta = theta, model = model, P = P, data = data, sign = sign)
-  }
-
-  hessianAllLogLikLms(theta = theta, model = model, P = P, data = data, sign = sign,
-                      FHESS = FHESS, FOBJECTIVE = FOBJECTIVE, .relStep = .relStep)
+  hessianAllLogLikLms(theta = theta, model = model, P = P, sign = sign,
+                      FHESS = FHESS, FOBJECTIVE = compLogLikLmsGroup,
+                      .relStep = .relStep)
 }
 
 
-.logdensAllObsNode <- function(theta, model, data, z) {
+.logdensAllObsNode <- function(theta, model, data, z, group = NULL) {
   modFilled <- fillModel(model = model, theta = theta, method = "lms")
+  submodel <- if (!is.null(modFilled$models)) {
+    if (is.null(group)) modFilled$models[[1L]] else modFilled$models[[group]]
+  } else modFilled
   # densitySingleLms returns densities for all rows at given z (not log)
-  dens <- densitySingleLms(z = z, modFilled = modFilled, data = data)
+  dens <- densitySingleLms(z = z, modFilled = submodel, data = data)
   # guard against underflow/zeros
   log(pmax(dens, .Machine$double.xmin))
+}
+
+
+.activeThetaIndicesLms <- function(model, group, p) {
+  select_lab  <- model$params$SELECT_THETA_LAB[[group]]
+  select_cov  <- model$params$SELECT_THETA_COV[[group]]
+  select_main <- model$params$SELECT_THETA_MAIN[[group]]
+
+  if (is.null(select_lab) && is.null(select_cov) && is.null(select_main)) {
+    return(seq_len(p))
+  }
+
+  idx <- c(select_lab,
+           select_cov,
+           select_main)
+
+  idx <- sort(unique(as.integer(idx)))
+  idx <- idx[idx >= 1L & idx <= p]
+
+  if (length(idx)) idx else seq_len(p)
 }
 
 
 # per-node, per-observation complete-data score via finite difference
 # Returns an n x p matrix S_j with row i = s_{ij}^T = grad_theta log p(y_i, z_j | theta)
 .completeScoresNodeFD <- function(theta, model, data, z,
-                                  epsilon = 1e-6, scheme = c("forward","central")) {
+                                  epsilon = 1e-6, scheme = c("forward","central"),
+                                  group = NULL, active = NULL) {
   scheme <- match.arg(scheme)
   p <- length(theta)
+
+  if (is.null(active)) {
+    active <- seq_len(p)
+  } else {
+    active <- unique(as.integer(active))
+    active <- active[active >= 1L & active <= p]
+  }
+
   n <- data$n
-  S <- matrix(0.0, nrow = n, ncol = p)
+  n_active <- length(active)
+
+  if (!n_active) {
+    return(matrix(0.0, nrow = n, ncol = 0L))
+  }
+
+  col_names <- names(theta)
+  if (!length(col_names)) col_names <- rep("", p)
+
+  S <- matrix(0.0, nrow = n, ncol = n_active,
+              dimnames = list(NULL, col_names[active]))
+
   if (scheme == "forward") {
-    f0 <- .logdensAllObsNode(theta, model, data, z)
-    for (k in seq_len(p)) {
+    f0 <- .logdensAllObsNode(theta, model, data, z, group = group)
+    for (pos in seq_len(n_active)) {
+      k <- active[pos]
       th1 <- theta; th1[k] <- th1[k] + epsilon
-      f1 <- .logdensAllObsNode(th1, model, data, z)
-      S[, k] <- (f1 - f0) / epsilon
+      f1 <- .logdensAllObsNode(th1, model, data, z, group = group)
+      S[, pos] <- (f1 - f0) / epsilon
     }
   } else { # central
-    for (k in seq_len(p)) {
+    for (pos in seq_len(n_active)) {
+      k <- active[pos]
       thp <- theta; thp[k] <- thp[k] + epsilon
       thm <- theta; thm[k] <- thm[k] - epsilon
-      fp <- .logdensAllObsNode(thp, model, data, z)
-      fm <- .logdensAllObsNode(thm, model, data, z)
-      S[, k] <- (fp - fm) / (2*epsilon)
+      fp <- .logdensAllObsNode(thp, model, data, z, group = group)
+      fm <- .logdensAllObsNode(thm, model, data, z, group = group)
+      S[, pos] <- (fp - fm) / (2 * epsilon)
     }
   }
-  dimnames(S) <- list(NULL, names(theta))
   S
 }
 
 # I_obs = I_com - I_mis using Louis' identity
 observedInfoFromLouisLms <- function(model,
                                      theta,
-                                     data,
                                      P = NULL,
                                      recompute.P = is.null(P),
                                      adaptive.quad.tol = 1e-12,
@@ -528,53 +723,60 @@ observedInfoFromLouisLms <- function(model,
 
   # E-step (if needed)
   if (recompute.P) {
-    P <- estepLms(model = model, theta = theta, data = data,
+    P <- estepLms(model = model, theta = theta,
                   lastQuad = NULL, recalcQuad = FALSE,
                   adaptive.quad.tol = adaptive.quad.tol, ...)
   }
 
-  # labels and sizes
-  p <- length(theta)
-  n <- data$n
-  J <- length(P$w)             # number of quadrature nodes
+  p   <- length(theta)
   lbl <- names(theta)
 
-  # Complete Information
-  Icom <- hessianCompLogLikLms(theta = theta, model = model, P = P, data = data,
-                               sign = -1)
+  n_total   <- sum(vapply(model$models, function(sub) sub$data$n, numeric(1L)))
 
-  # Imis = sum_i ( E[s_ij s_ij^T] - E[s_ij]E[s_ij]^T ), expectations over j with weights r_ij = P$P[i,j]
-  # Accumulate efficiently:
-  #   total_M = sum_j S_j^T diag(r_.j) S_j, where S_j is n x p score matrix at node j
-  #   Sbar (n x p) = sum_j r_.j * S_j  -> then sum_i sbar_i sbar_i^T = t(Sbar) %*% Sbar
+  Icom <- hessianCompLogLikLms(theta = theta, model = model, P = P, sign = -1)
+
   total_M <- matrix(0.0, p, p, dimnames = list(lbl, lbl))
-  Sbar    <- matrix(0.0, n, p)   # will hold per-observation E[s_ij]; no need to keep per-i outer products
+  Sbar    <- matrix(0.0, n_total, p)
 
-  for (j in seq_len(J)) {
-    z_j <- P$V[j, , drop = FALSE]       # node
-    S_j <- .completeScoresNodeFD(theta, model, data, z_j,
-                                       epsilon = fd.epsilon, scheme = fd.scheme)  # n x p
-    r_j <- P$P[, j]                     # length-n weights (posterior r_ij)
+  row_offset <- 0L
+  for (g in seq_len(model$info$n.groups)) {
+    submodel <- model$models[[g]]
+    data.g   <- submodel$data
+    P.g      <- P$P_GROUPS[[g]]
+    rows     <- seq_len(data.g$n) + row_offset
 
-    # total_M += t( S_j * sqrt(r_j) ) %*% ( S_j * sqrt(r_j) )
-    # (avoid forming diag(r_j) explicitly)
-    Rhalf <- sqrt(pmax(r_j, 0))
-    X <- S_j * Rhalf       # row-wise scaling
-    total_M <- total_M + crossprod(X)   # t(X) %*% X  -> p x p
+    active_idx <- .activeThetaIndicesLms(model, g, p)
+    Jg <- length(P.g$w)
+    for (j in seq_len(Jg)) {
+      z_j <- P.g$V[j, , drop = FALSE]
+      S_j <- .completeScoresNodeFD(theta, model, data.g, z_j,
+                                   epsilon = fd.epsilon, scheme = fd.scheme,
+                                   group = if (model$info$n.groups > 1L) g else NULL,
+                                   active = active_idx)
+      r_j <- P.g$P[, j]
 
-    # Sbar += r_j * S_j   (row-wise scaling)
-    Sbar <- Sbar + (S_j * r_j)
+      Rhalf <- sqrt(pmax(r_j, 0))
+      if (NROW(S_j) && NCOL(S_j)) {
+        X <- S_j * Rhalf
+        block <- total_M[active_idx, active_idx, drop = FALSE]
+        block <- block + crossprod(X)
+        total_M[active_idx, active_idx] <- block
+
+        Sbar_block <- Sbar[rows, active_idx, drop = FALSE]
+        Sbar_block <- Sbar_block + (S_j * r_j)
+        Sbar[rows, active_idx] <- Sbar_block
+      }
+    }
+
+    row_offset <- row_offset + data.g$n
   }
 
-  sbar_outer <- crossprod(Sbar) # sum_i sbar_i sbar_i^T  -> p x p
+  sbar_outer <- crossprod(Sbar)
   Imis <- total_M - sbar_outer
-
-  # Louis Identity
   Iobs <- Icom - Imis
 
-  # hygiene
   if (symmetrize) {
-    sym <- function(A) 0.5*(A + t(A))
+    sym <- function(A) 0.5 * (A + t(A))
     Icom <- sym(Icom); Imis <- sym(Imis); Iobs <- sym(Iobs)
   }
 

@@ -182,8 +182,8 @@ twostepDA <- function(model.syntax, data, method = "lms", zero.tol = 1e-12,
   )
 
   # prep partable from CFA
-  parTableCFA <- rename(parTableCFA, se = "se.cfa")
-  parTableCFA <- parTableCFA[c("lhs", "op", "rhs", "se.cfa")]
+  parTableCFA <- addMissingGroups(rename(parTableCFA, se = "se.cfa"))
+  parTableCFA <- parTableCFA[c("lhs", "op", "rhs", "group", "se.cfa")]
   parTableCFA$se.cfa[parTableCFA$se.cfa <= zero.tol] <- NA
   estParTable <- parameter_estimates(fit)
 
@@ -196,7 +196,7 @@ twostepDA <- function(model.syntax, data, method = "lms", zero.tol = 1e-12,
     parTableCFA, parTableCFACov[covrows, ]
   )
 
-  parTable.out <- leftJoin(left  = estParTable, right = parTableCFA)
+  parTable.out <- leftJoin(left = estParTable, right = parTableCFA)
 
   parTable.out$std.error <- ifelse(
     is.na(parTable.out$std.error) & !is.na(parTable.out$se.cfa),

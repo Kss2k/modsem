@@ -13,8 +13,9 @@ preCheckModel <- function(model, covModel = NULL, method = "lms", missing = "com
   checkOVsInStructuralModel(parTableMain = model$parTable,
                             parTableCov  = covModel$parTable)
 
-  checkOverlappingIndicators(allIndsXis = model$info$allIndsXis,
-                             allIndsEtas = model$info$allIndsEtas)
+  checkOverlappingIndicators(allIndsXis  = model$info$allIndsXis,
+                             allIndsEtas = model$info$allIndsEtas,
+                             method      = method)
 
   checkAConstraints(model = model, covModel = covModel, method = method)
 
@@ -204,10 +205,12 @@ checkMissingMethod <- function(method, missing) {
 }
 
 
-checkOverlappingIndicators <- function(allIndsXis, allIndsEtas) {
-  stopif(any(allIndsXis %in% allIndsEtas),
-         "The same indicator cannot be used for both an exogenous ",
-         "and endogenous variable, in the same model: ",
+checkOverlappingIndicators <- function(allIndsXis, allIndsEtas, method = "lms") {
+  stopif(any(allIndsXis %in% allIndsEtas) && method != "lms",
+         "The same indicator cannot be used for both an\n",
+         "exogenous and endogenous variable, in the QML approach!\n",
+         "Consider using the LMS approach instead.\n",
+         "Overlapping indicators: ",
          paste(allIndsXis[allIndsXis %in% allIndsEtas], collapse = ", "))
 }
 
@@ -246,9 +249,14 @@ checkVarsIntsDA <- function(varsInts, lVs) {
 postCheckModel <- function(model) {
   parTable <- model$parTable
 
-  checkParTableEstimates(parTable)
-  checkVariances(model$expected.matrices)
-  checkCovMatrices(model$expected.matrices)
+  for (g in getGroupsParTable(parTable)) {
+    parTable.g <- parTable[parTable$group == g, , drop = FALSE]
+
+    checkParTableEstimates(parTable.g)
+    checkVariances(model$expected.matrices[[g]])
+    checkCovMatrices(model$expected.matrices[[g]])
+  }
+
   checkVCOV(vcov(model, type = "free"), calc.se = model$args$calc.se)
 }
 

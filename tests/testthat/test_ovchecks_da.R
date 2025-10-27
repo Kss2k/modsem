@@ -59,8 +59,6 @@ m4 <- '
   Y ~ X + Z + X:Z
 '
 
-testthat::expect_error(modsem(m4, oneInt, method = "lms"),
-                       regexp = "The same indicator cannot be used .* y1")
 testthat::expect_error(modsem(m4, oneInt, method = "qml"),
                        regexp = "The same indicator cannot be used .* y1")
 

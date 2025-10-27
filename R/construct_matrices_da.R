@@ -51,8 +51,13 @@ fillDynExprs <- function(X, parTable, op, RHS, LHS, type) {
     rhs <- dynamicExprs[i, "rhs"]
     mod <- dynamicExprs[i, "mod"]
 
-    X      <- setVal(X = X, rhs = rhs, lhs = lhs, val = 0)
-    labelX <- setVal(X = labelX, rhs = rhs, lhs = lhs, val = mod)
+    if (mod == "NA") {
+      X      <- setVal(X = X, rhs = rhs, lhs = lhs, val = NA)
+      labelX <- setVal(X = labelX, rhs = rhs, lhs = lhs, val = "")
+    } else {
+      X      <- setVal(X = X, rhs = rhs, lhs = lhs, val = 0)
+      labelX <- setVal(X = labelX, rhs = rhs, lhs = lhs, val = mod)
+    }
   }
 
   list(numeric = X, label = labelX)
@@ -240,14 +245,15 @@ constructPsi <- function(etas, parTable, orthogonal.y = FALSE) {
 
 
 constructPhi <- function(xis, method = "lms", cov.syntax = NULL,
-                         parTable, orthogonal.x = FALSE) {
+                         parTable, parTableCovModel = NULL,
+                         orthogonal.x = FALSE) {
   if (!length(xis)) return(EMPTY_MATSTRUCT)
 
   numXis <- length(xis)
   phi    <- matrix(0, nrow = numXis, ncol = numXis,
                    dimnames = list(xis, xis))
 
-  if (method != "lms" && is.null(cov.syntax)) {
+  if (method != "lms" && is.null(cov.syntax) && is.null(parTableCovModel)) {
     if (!orthogonal.x) phi[lower.tri(phi, diag = TRUE)] <- NA
     else               diag(phi) <- NA
 
@@ -259,13 +265,14 @@ constructPhi <- function(xis, method = "lms", cov.syntax = NULL,
 
 
 constructA <- function(xis, method = "lms", cov.syntax = NULL,
-                       parTable, orthogonal.x = FALSE) {
-  if (!length(xis)) return(EMPTY_MATSTRUCT)
+                       parTable, parTableCovModel = NULL, orthogonal.x = FALSE) {
+  if (!length(xis))
+    return(EMPTY_MATSTRUCT)
 
   numXis <- length(xis)
   A      <- matrix(0, nrow = numXis, ncol = numXis,
                    dimnames = list(xis, xis))
-  if (method == "lms" && is.null(cov.syntax)) {
+  if (method == "lms" && is.null(cov.syntax) && is.null(parTableCovModel)) {
     if (!orthogonal.x) A[lower.tri(A, diag = TRUE)] <- NA
     else               diag(A) <- NA
 
@@ -566,8 +573,10 @@ sortXis <- function(xis, varsInts, etas, intTerms, double) {
         all(interaction %in% nonLinearXis) && double) next # no need to add it again
 
     stopif(length(interaction) > 2, "Only interactions between two variables are allowed")
-    stopif(all(interaction %in% etas), "Interactions between two endogenous ",
-           "variables are not allowed, see \nvignette(\"interaction_two_etas\", \"modsem\")")
+    stopif(all(interaction %in% etas),
+           "Interactions between two endogenous variables are not allowed!",
+           "You can try passing `auto.split.syntax=TRUE` to fix the issue.",
+           "See \nvignette(\"interaction_two_etas\", \"modsem\").")
 
     choice <- unique(interaction[which(!interaction %in% etas &
                                        !interaction %in% nonLinearXis)])

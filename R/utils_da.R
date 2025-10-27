@@ -130,8 +130,11 @@ diagPartitionedMat <- function(X, Y) {
 
 formatNumeric <- function(x, digits = 3, scientific = FALSE,
                           justify = "right", width = NULL) {
+  digits_fmt <- if (is.finite(digits)) max(0L, as.integer(digits)) else 3L
+  digits_fmt_fmt <- max(1L, digits_fmt)
   if (is.numeric(x)) {
-    format(round(x, digits), nsmall = digits, digits = digits,
+    x_round <- round(x, digits_fmt)
+    format(x_round, nsmall = digits_fmt, digits = digits_fmt_fmt,
            trim = FALSE, justify = justify, scientific = scientific,
            width = width)
   } else {
@@ -162,14 +165,14 @@ getK_NA <- function(omega, labelOmega) {
 
 
 sortData <- function(data, allIndsXis, allIndsEtas) {
-  inds    <- c(allIndsXis, allIndsEtas)
+  inds    <- unique(c(allIndsXis, allIndsEtas))
   ovs     <- colnames(data)
   missing <- inds[!inds %in% ovs]
 
   stopif(!all(inds %in% ovs), "Missing observed variables in data:\n  ",
          paste(missing, collapse = ", "))
 
-  data[c(allIndsXis, allIndsEtas)]
+  data[unique(c(allIndsXis, allIndsEtas))]
 }
 
 
@@ -349,8 +352,7 @@ createDoubleIntTerms <- function(x, z = NULL, sep = ":") {
 getFreeOrConstIntTerms <- function(varsInInt, eta, intTerms) {
   expr <- intTerms[intTerms$lhs == eta & intTerms$rhs %in%
                    createDoubleIntTerms(varsInInt), "mod"]
-  if (canBeNumeric(expr, includeNA = TRUE)) return(as.numeric(expr))
-  0
+  if (canBeNumeric(expr, includeNA = TRUE)) as.numeric(expr) else 0
 }
 
 
@@ -362,21 +364,33 @@ getLabelIntTerms <- function(varsInInt, eta, intTerms) {
 }
 
 
-getEmptyModel <- function(parTable, cov.syntax, parTableCovModel,
+getEmptyModel <- function(group.info, cov.syntax, parTableCovModel,
                           mean.observed = TRUE, method = "lms") {
-  parTable$mod <- ""
-  parTable <- removeConstraintExpressions(parTable)
+  group.info$parTable$mod <- ""
+  group.info$parTable <- removeConstraintExpressions(group.info$parTable)
+  group.info["data"]  <- list(data = NULL)
 
-  if (NROW(parTableCovModel)) {
+  if (!is.null(cov.syntax) && is.null(parTableCovModel)) {
+    parTableCovModelOrig <- modsemify(cov.syntax)
+
+    parTableCovModel <- expandParTableByGroup(
+      parTableCovModelOrig, group.levels = group.info$group.levels
+    )
+
+    group.info$parTableCov.orig <- parTableCovModelOrig
+    group.info$parTableCov      <- parTableCovModel
+
+  } else if (NROW(parTableCovModel)) {
     parTableCovModel$mod <- ""
     parTableCovModel <- removeConstraintExpressions(parTableCovModel)
+
+    group.info$parTableCov <- parTableCovModel
   }
 
   specifyModelDA(
-    parTable         = parTable,
+    group.info       = group.info,
     method           = method,
     cov.syntax       = cov.syntax,
-    parTableCovModel = parTableCovModel,
     mean.observed    = mean.observed,
     auto.fix.first   = FALSE,
     auto.fix.single  = FALSE,
@@ -395,10 +409,14 @@ as.character.matrix <- function(x, empty = TRUE, ...) {
 
 
 replaceNonNaModelMatrices <- function(model, value = -999) {
-  model$matrices <- lapply(model$matrices, function(x) {
+  .fillna <- function(x) {
     x[!is.na(x)] <- value
     x
-  })
+  }
+
+  for (g in seq_along(model$models))
+    model$models[[g]]$matrices <- lapply(model$models[[g]]$matrices, FUN = .fillna)
+
   model
 }
 
@@ -532,20 +550,18 @@ nNegativeLast <- function(x, n = 10) {
 
 
 getDegreesOfFreedom <- function(p, coef, mean.structure = TRUE) {
-  fm <- \(c) (p * (p + c)) / 2
+  if (!length(p)) return(NA_real_)
 
-  # c = 1 for a model without a meanstructure
-  # c = 3 for a model with meanstructure
-  # Without meanstructure:
-  #   m = p * (p + 1) / 2
-  # With meanstructure
-  #   m = p * (p + 1) / 2 + p
-  #     = (p * (p + 1) + p) / 2
-  #     = p * (1 + p + 1 + 1) / 2
-  #     = p * (p + 3) / 2
+  momentsPerGroup <- function(pp) {
+    if (mean.structure) {
+      pp * (pp + 3) / 2
+    } else {
+      pp * (pp + 1) / 2
+    }
+  }
 
-  m <- ifelse(mean.structure, yes = fm(3), no = fm(1))
-  m - length(coef)
+  m_total <- sum(vapply(p, momentsPerGroup, numeric(1L)))
+  m_total - length(coef)
 }
 
 
@@ -583,19 +599,34 @@ getXiRowLabelOmega <- function(label) {
 
 
 expandVCOV <- function(vcov, labels) {
-  labels_vcov <- colnames(vcov)
-  labels_vv <- intersect(labels, labels_vcov)
-  labels_zz <- setdiff(labels, labels_vcov)
+  labels.vcov <- colnames(vcov)
+  labels.vv <- intersect(labels, labels.vcov)
+  labels.zz <- setdiff(labels, labels.vcov)
 
-  m <- length(labels_vv)
-  k <- length(labels_zz)
+  m <- length(labels.vv)
+  k <- length(labels.zz)
 
-  Vvv <- vcov[labels_vv, labels_vv]
-  Vzz <- matrix(0, nrow = k, ncol = k, dimnames = list(labels_zz, labels_zz))
-  Vvz <- matrix(0, nrow = m, ncol = k, dimnames = list(labels_vv, labels_zz))
+  Vvv <- vcov[labels.vv, labels.vv]
+  Vzz <- matrix(0, nrow = k, ncol = k, dimnames = list(labels.zz, labels.zz))
+  Vvz <- matrix(0, nrow = m, ncol = k, dimnames = list(labels.vv, labels.zz))
 
   V <- rbind(cbind(Vvv, Vvz), cbind(t(Vvz), Vzz))
   V[labels, labels] # sort
+}
+
+
+expandCoef <- function(coef, labels) {
+  labels.coef <- names(coef)
+  labels.c    <- intersect(labels, labels.coef)
+  labels.z    <- setdiff(labels, labels.coef)
+
+  m <- length(labels.c)
+  k <- length(labels.z)
+
+  coef.c <- coef[labels.c]
+  coef.z <- stats::setNames(numeric(length(labels.z)), nm = labels.z)
+
+  c(coef.c, coef.z)
 }
 
 
@@ -820,6 +851,17 @@ getCoefMatricesDA <- function(parTable,
 
 
 calcExpectedMatricesDA <- function(parTable, xis = NULL, etas = NULL, intTerms = NULL) {
+  lapply(
+    X = getGroupsParTable(parTable),
+    FUN = function(g) {
+      parTable.g <- parTable[parTable$group == g, , drop = FALSE]
+      calcExpectedMatricesDA_Group(parTable.g, xis = xis, etas = etas, intTerms = intTerms)
+    }
+  )
+}
+
+
+calcExpectedMatricesDA_Group <- function(parTable, xis = NULL, etas = NULL, intTerms = NULL) {
   matricesCentered <- getCoefMatricesDA(parTable, xis = xis, etas = etas,
                                         intTerms = intTerms, centered = TRUE)
   matricesNonCentered <- getCoefMatricesDA(parTable, xis = xis, etas = etas,
@@ -994,11 +1036,14 @@ splitParTable <- function(parTable) {
 
 
 sortParTableDA <- function(parTable, model) {
-  parTable.input <- model$parTable
+  parTable.input <- rbind(
+    model$models[[1L]]$covModel$parTable, # by definition lower order etas
+    model$models[[1L]]$parTable
+  )
 
   etas.input <- getEtas(parTable.input)
-  etas.model <- getEtasModelDA(model) # sorted to be lower-triangular in gammaEta
-                                      # and includes etas from cov-model
+  etas.model <- getEtasModelDA(model$models[[1L]]) # sorted to be lower-triangular in gammaEta
+                                                   # and includes etas from cov-model
   etas <- unique(c(etas.input, etas.model))
 
   # xis <- getXisModelDA(model)
@@ -1023,11 +1068,12 @@ sortParTableDA <- function(parTable, model) {
 
   opOrder <- c("=~", "~", "~1", "~~", "|", ":=")
   varOrder <- unique(c(indsXis, indsEtas, xisLow, etasLow, xisHigh, xisLow))
+  groupOrder <- c(getGroupsParTable(parTable), 0)
 
   getScore <- function(x, order.by) {
     order.by <- unique(c(order.by, x)) # ensure that all of x is in order.by
-    mapping  <- stats::setNames(seq_along(order.by), nm = order.by)
-    score    <- mapping[x]
+    mapping  <- stats::setNames(seq_along(order.by), nm = as.character(order.by))
+    score    <- mapping[as.character(x)]
 
     if (length(score) != length(x)) {
       warning2("Sorting of parameter estimates failed!\n",
@@ -1039,11 +1085,12 @@ sortParTableDA <- function(parTable, model) {
     score
   }
 
-  scoreLhs <- getScore(x = parTable$lhs, order.by = varOrder)
-  scoreOp  <- getScore(x = parTable$op,  order.by = opOrder)
-  scoreRhs <- getScore(x = parTable$rhs, order.by = varOrder)
+  scoreGroup <- getScore(x = parTable$group, order.by = groupOrder)
+  scoreLhs   <- getScore(x = parTable$lhs, order.by = varOrder)
+  scoreOp    <- getScore(x = parTable$op,  order.by = opOrder)
+  scoreRhs   <- getScore(x = parTable$rhs, order.by = varOrder)
 
-  out <- parTable[order(scoreOp, scoreLhs, scoreRhs), , drop = FALSE]
+  out <- parTable[order(scoreGroup, scoreOp, scoreLhs, scoreRhs), , drop = FALSE]
   rownames(out) <- NULL
 
   out
@@ -1107,6 +1154,18 @@ higherOrderMeasr2Struct <- function(parTable) {
 
 
 recalcInterceptsY <- function(parTable) {
+  out <- NULL
+
+  for (g in getGroupsParTable(parTable)) {
+    parTable.g <- parTable[parTable$group == g, , drop = FALSE]
+    out <- rbind(out, recalcInterceptsY_Group(parTable.g))
+  }
+
+  rbind(out, getZeroGroupParTable(parTable))
+}
+
+
+recalcInterceptsY_Group <- function(parTable) {
   # fix intercept for indicators of endogenous variables, based on means
   # of interaction terms
   # intercepts are from a linear (CFA) model, combined with a non-linear SAM
@@ -1149,4 +1208,194 @@ recalcInterceptsY <- function(parTable) {
   }
 
   parTable
+}
+
+
+getGroupsParTable <- function(parTable) {
+  sort(unique(parTable$group[parTable$group > 0L]))
+}
+
+
+getZeroGroupParTable <- function(parTable) {
+  parTable[parTable$group <= 0L, , drop = FALSE]
+}
+
+
+prepareDataGroupDA <- function(group, data) {
+  if (is.null(group)) {
+    return(list(
+      has.groups = FALSE,
+      group = NULL,
+      group.raw = NULL,
+      group.var = NULL,
+      levels = NULL,
+      n.groups = 1L,
+      indices = list(seq_len(NROW(data))),
+      data = data,
+      data.raw = data
+    ))
+  }
+
+  data.raw <- data
+
+  stopif(!is.data.frame(data), "`data` must be a data.frame when grouping is used.")
+  n <- NROW(data)
+  stopif(n == 0L, "Grouping requires non-empty data.")
+
+  group.raw <- NULL
+  group.var <- NULL
+
+  stopif(length(group) != 1L, "Grouping variable must be of length 1!")
+  stopif(!group %in% names(data),
+         sprintf("Grouping variable '%s' not found in `data`.", group))
+
+  group.raw <- data[[group]]
+  data <- data[, setdiff(names(data), group), drop = FALSE]
+  group.var <- group
+
+  stopif(length(group.raw) != n, "Length of `group` must match the number of rows in `data`.")
+  stopif(any(is.na(group.raw)), "`group` cannot contain missing values.")
+
+  group.raw <- as.character(group.raw) # match lavaan behaviour, ignore factor levels
+  levels_order <- unique(group.raw)
+  group_factor <- factor(group.raw, levels = levels_order)
+
+  group.levels <- levels(group_factor)
+  n.groups <- length(group.levels)
+  indices <- split(seq_len(n), group_factor)
+
+  list(
+    has.groups = n.groups > 1L,
+    group = group_factor,
+    group.raw = group.raw,
+    group.var = group.var,
+    levels = group.levels,
+    n.groups = n.groups,
+    indices = indices,
+    data = data,
+    data.raw = data.raw
+  )
+}
+
+
+expandGroupModifier <- function(mod, n.groups) {
+  if (n.groups <= 1L)
+    return(rep(mod, n.groups))
+
+  if (length(mod) == 0L || mod == "")
+    return(rep("", n.groups))
+
+  if (is.na(mod))
+    return(rep(NA_character_, n.groups))
+
+  mod_trim <- trimws(mod)
+  if (!nzchar(mod_trim))
+    return(rep("", n.groups))
+
+  is_c_call <- grepl("^c\\s*\\(", mod_trim) && grepl("\\)$", mod_trim)
+  if (!is_c_call)
+    return(rep(mod_trim, n.groups))
+
+  inside <- substr(mod_trim,
+                   start = regexpr("\\(", mod_trim, perl = TRUE) + 1L,
+                   stop = nchar(mod_trim) - 1L)
+  tokens <- strsplit(inside, ",", fixed = FALSE)[[1]]
+  tokens <- trimws(tokens)
+
+  if (!length(tokens)) {
+    tokens <- rep("", n.groups)
+  } else if (length(tokens) == 1L) {
+    tokens <- rep(tokens, n.groups)
+  } else {
+    stopif(length(tokens) != n.groups,
+           sprintf("Found %d modifiers but expected %d groups.", length(tokens), n.groups))
+  }
+
+  tokens
+}
+
+
+expandGroupModifiers <- function(mod, n.groups) {
+  do.call(rbind, lapply(mod, FUN = expandGroupModifier, n.groups = n.groups))
+}
+
+
+expandParTableByGroup <- function(parTable, group.levels) {
+  if (!NROW(parTable))
+    return(parTable) # don't return NULL, as a zero-dim parTable has a special meaning
+                     # for cov models
+
+  n.groups <- length(group.levels)
+
+  if (n.groups <= 1L) {
+    if (!"mod" %in% names(parTable)) parTable$mod <- ""
+    parTable$group <- 1L
+    return(parTable[, c("lhs", "op", "rhs", "group", "mod")])
+  }
+
+  constraints <- parTable[parTable$op %in% CONSTRAINT_OPS, , drop = FALSE]
+  baseTable   <- parTable[!parTable$op %in% CONSTRAINT_OPS, , drop = FALSE]
+
+  if (!"mod" %in% names(baseTable)) baseTable$mod <- ""
+
+  MOD <- expandGroupModifiers(mod = baseTable$mod, n.groups = n.groups)
+
+  colsOut <- c("lhs", "op", "rhs", "group", "mod")
+  parTableFull <- NULL
+  for (i in seq_len(n.groups)) {
+    parTable.g       <- baseTable
+    parTable.g$mod   <- MOD[, i]
+    parTable.g$group <- i
+
+    parTable.g <- parTable.g[colsOut]
+    parTableFull <- rbind(parTableFull, parTable.g)
+  }
+
+  if (NROW(constraints)) {
+    if (!"mod" %in% names(constraints)) constraints$mod <- ""
+    constraints$group <- 0L
+    constraints <- constraints[colsOut]
+  } else {
+    constraints <- data.frame(lhs = character(),
+                              op = character(),
+                              rhs = character(),
+                              group = integer(),
+                              mod = character())
+  }
+
+  rbind(parTableFull, constraints)
+}
+
+
+getGroupInfo <- function(model.syntax, cov.syntax, data, group,
+                         auto.split.syntax = FALSE) {
+  group.info <- prepareDataGroupDA(group = group, data = data)
+
+  parTable    <- modsemify(model.syntax)
+  parTableCov <- modsemify(cov.syntax)
+
+  if (auto.split.syntax && is.null(parTableCov) && is.null(cov.syntax)) {
+    split <- splitParTable(parTable)
+
+    parTable    <- split$parTable
+    parTableCov <- split$parTableCov
+
+    syntax     <- parTableToSyntax(parTable)
+    cov.syntax <- parTableToSyntax(parTableCov)
+  }
+
+  group.info$syntax     <- model.syntax
+  group.info$cov.syntax <- cov.syntax
+
+  group.info$parTable.orig    <- parTable
+  group.info$parTableCov.orig <- parTableCov
+
+  group.levels <- group.info$levels
+  if (is.null(group.levels)) group.levels <- ""
+
+  group.info$group.levels <- group.levels
+  group.info$parTable    <- expandParTableByGroup(parTable, group.levels = group.levels)
+  group.info$parTableCov <- expandParTableByGroup(parTableCov, group.levels = group.levels)
+
+  group.info
 }
