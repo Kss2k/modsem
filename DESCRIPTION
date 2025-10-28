@@ -64,6 +64,5 @@ Depends:
     R (>= 4.1.0)
 URL: https://modsem.org
 Suggests: 
-    knitr,
-    rmarkdown
+    knitr, rmarkdown, rstan
 VignetteBuilder: knitr
