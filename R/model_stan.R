@@ -61,6 +61,8 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE,
                                ordered = NULL,
                                ordered.link = c("logit", "probit"),
                                parameterization = c("centered", "non-centered")) {
+  promptInstallRstan()
+
   if (!requireNamespace("rstan", quietly = TRUE))
      stop2("The 'rstan' package is required to use the `modsem_stan()` function!")
 
@@ -1010,12 +1012,12 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE,
 
   for (lV in lVs)   add2block(STAN_INDS_LV, lV = lV)
   add2block(STAN_PAR_XIS, xis = xis)
+  add2block(STAN_COMPUTED_PRODUCTS, intTerms = intTerms)
   for (eta in etas) add2block(STAN_PAR_ETA, eta = eta)
 
   add2block(STAN_CORRELATED_CONTINUOUS)
   add2block(STAN_CORRELATED_ETAS)
 
-  add2block(STAN_COMPUTED_PRODUCTS, intTerms = intTerms)
   add2block(STAN_COMPUTED_COVARIANCES, vars = c(xis, intTerms))
   add2block(STAN_COMPUTED_VARIANCES, vars = c(xis, intTerms))
 

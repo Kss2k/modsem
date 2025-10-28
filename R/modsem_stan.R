@@ -54,6 +54,8 @@ modsem_stan <- function(model.syntax = NULL,
                         rcs.choose = NULL,
                         rcs.scale.corrected = TRUE,
                         ...) {
+  promptInstallRstan()
+
   if (!requireNamespace("rstan", quietly = TRUE))
      stop2("The 'rstan' package is required to use the `modsem_stan()` function!")
 
@@ -378,4 +380,21 @@ sortParTableStan <- function(parTable, parTable.input) {
   rownames(out) <- NULL
 
   out
+}
+
+
+promptInstallRstan <- function() {
+  if (!interactive() || requireNamespace("rstan", quietly = TRUE))
+    return(NULL)
+
+  printf("The `rstan` package is needed to use `modsem_stan()`\n")
+  printf("Do you want to install it? (y/n)\n")
+
+  choice <- readLines(n = 1L)
+
+  if (!nchar(choice))
+    return(invisible(NULL))
+
+  if (tolower(substr(choice, 1L, 1L)) == "y")
+    install.packages("rstan")
 }
