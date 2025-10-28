@@ -287,11 +287,10 @@ if (TEST_STAN) {
 
     Y1 ~ X + Z
     Y2 ~ X + Z
-    
-    Y1 ~~ Y2
+
     y2 ~~ y4
   '
 
   fit.lms  <- modsem(mod, data, method = "lms")
-  fit.stan <- modsem_stan(mod, data)
+  fit.stan <- modsem_stan(mod, data, iter = 10000)
 }

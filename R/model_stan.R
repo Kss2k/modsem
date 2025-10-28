@@ -92,6 +92,7 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE,
   }
 
   parTable <- modsemify(model.syntax)
+  parTable <- addResidualCovariancesParTable(parTable)
 
   # endogenous variables (etas)model
   etas    <- getSortedEtas(parTable, isLV = TRUE, checkAny = TRUE)
@@ -171,7 +172,7 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE,
     paste0(vals, collapse = "___")
   }
 
-  normalize_cov_pairs <- function(df) {
+  normalizeCovPairs <- function(df) {
     if (!NROW(df)) return(df)
     df$lhs <- pmin(df$lhs, df$rhs)
     df$rhs <- pmax(df$lhs, df$rhs)
@@ -179,7 +180,7 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE,
     df
   }
 
-  build_components <- function(nodes, edges, order_ref) {
+  buildComponents <- function(nodes, edges, order_ref) {
     if (!length(nodes)) {
       map <- setNames(rep(0L, length(order_ref)), order_ref)
       return(list(groups = list(), map = map))
@@ -244,7 +245,7 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE,
     list(groups = groups, map = map)
   }
 
-  # --- Residual covariance metadata: continuous indicators ---
+  # Residual covariance metadata: continuous indicators
   contIndicatorsAll <- setdiff(allInds, ordSet)
 
   contCovPairs <- parTable[
@@ -259,13 +260,13 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE,
   if (NROW(contCovPairs)) {
     contCovPairs$mod <- as.character(contCovPairs$mod)
     contCovPairs$mod[contCovPairs$mod == ""] <- NA_character_
-    contCovPairs <- normalize_cov_pairs(contCovPairs)
+    contCovPairs <- normalizeCovPairs(contCovPairs)
   }
 
   contCovVars <- if (NROW(contCovPairs)) unique(c(contCovPairs$lhs, contCovPairs$rhs)) else character(0)
   contCorrelatedVars <- contCovVars[order(match(contCovVars, contIndicatorsAll))]
 
-  contComponent <- build_components(
+  contComponent <- buildComponents(
     nodes = contCorrelatedVars,
     edges = contCovPairs,
     order_ref = contIndicatorsAll
@@ -283,9 +284,10 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE,
     setNames(character(0), character(0))
   }
 
+  parTable <- addResidualCovariancesParTable(parTable)
   continuous_meta <- list()
 
-  # --- Residual covariance metadata: latent etas ---
+  # Residual covariance metadata: latent etas
   etaCovPairs <- parTable[
     parTable$op == "~~" &
       parTable$lhs %in% etas &
@@ -298,13 +300,13 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE,
   if (NROW(etaCovPairs)) {
     etaCovPairs$mod <- as.character(etaCovPairs$mod)
     etaCovPairs$mod[etaCovPairs$mod == ""] <- NA_character_
-    etaCovPairs <- normalize_cov_pairs(etaCovPairs)
+    etaCovPairs <- normalizeCovPairs(etaCovPairs)
   }
 
   etaCovVars <- if (NROW(etaCovPairs)) unique(c(etaCovPairs$lhs, etaCovPairs$rhs)) else character(0)
   etaCorrelatedVars <- etaCovVars[order(match(etaCovVars, etas))]
 
-  etaComponent <- build_components(
+  etaComponent <- buildComponents(
     nodes = etaCorrelatedVars,
     edges = etaCovPairs,
     order_ref = etas
@@ -554,7 +556,7 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE,
     fix_idx  <- which(vapply(xis, function(lv) is_allOrdinal_lv[lv], logical(1)))
     free_idx <- setdiff(seq_len(k), fix_idx)
   
-    # ---------------- parameters ----------------
+    # parameters
     parLOmega <- sprintf("cholesky_factor_corr[%d] L_Omega;", k)
   
     if (length(free_idx) > 0L) {
@@ -566,7 +568,7 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE,
     # Non-centered: matrix of standard normals (N x k)
     parZ <- sprintf("matrix[N, %d] z_XI;", k)
   
-    # ---------------- transformed parameters ----------------
+    # transformed parameters
     # Rebuild sqrtD_Phi with fixed 1's at fix_idx
     tparBuildSqrt <- c(
       sprintf("vector[%d] sqrtD_Phi;", k),
@@ -604,7 +606,7 @@ compile_stan_model <- function(model.syntax, compile = TRUE, force = FALSE,
     }
     tparXiVectors <- collapse(xiVectors)
   
-    # ---------------- model ----------------
+    # model
     modLOmega <- "L_Omega ~ lkj_corr_cholesky(1);"
     # Non-centered prior: standard normals (vectorised via to_vector)
     modZ      <- "to_vector(z_XI) ~ std_normal();"

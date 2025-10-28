@@ -164,12 +164,72 @@ modsem_stan <- function(model.syntax = NULL,
   op  <- allOp[keep]
   rhs <- allRhs[keep]
 
-  samples           <- samples[, keep, drop = FALSE]
-  namesSamplesRaw   <- colnames(samples)
+  samples         <- samples[, keep, drop = FALSE]
+  namesSamplesRaw <- colnames(samples)
+  diagnostics     <- diagnostics[namesSamplesRaw, , drop = FALSE]
+
+  # Detect duplicated residual covariance columns (order-insensitive)
+  sym_mask <- op == "~~" & lhs != rhs
+  dedup_key <- paste(
+    op,
+    ifelse(sym_mask, pmin(lhs, rhs), lhs),
+    ifelse(sym_mask, pmax(lhs, rhs), rhs),
+    sep = "::"
+  )
+
+  dup_idx <- duplicated(dedup_key)
+  if (any(dup_idx)) {
+    samples     <- samples[, !dup_idx, drop = FALSE]
+    lhs         <- lhs[!dup_idx]
+    op          <- op[!dup_idx]
+    rhs         <- rhs[!dup_idx]
+    diagnostics <- diagnostics[!dup_idx, , drop = FALSE]
+    dedup_key   <- dedup_key[!dup_idx]
+  }
+
+  # Align residual covariance orientation with the compiled parTable, if possible
+  sym_mask <- op == "~~" & lhs != rhs
+  if (any(sym_mask)) {
+    par_input <- compiled_model$info$parTable
+    input_sym <- par_input$op == "~~" & par_input$lhs != par_input$rhs
+    if (any(input_sym)) {
+      input_key <- paste(
+        par_input$op[input_sym],
+        pmin(par_input$lhs[input_sym], par_input$rhs[input_sym]),
+        pmax(par_input$lhs[input_sym], par_input$rhs[input_sym]),
+        sep = "::"
+      )
+
+      current_key <- dedup_key[sym_mask]
+      match_idx   <- match(current_key, input_key)
+      has_match   <- !is.na(match_idx)
+
+      if (any(has_match)) {
+        idx <- which(sym_mask)[has_match]
+        lhs[idx] <- par_input$lhs[input_sym][match_idx[has_match]]
+        rhs[idx] <- par_input$rhs[input_sym][match_idx[has_match]]
+      }
+
+      if (any(!has_match)) {
+        idx      <- which(sym_mask)[!has_match]
+        lhs_new  <- pmin(lhs[idx], rhs[idx])
+        rhs_new  <- pmax(lhs[idx], rhs[idx])
+        lhs[idx] <- lhs_new
+        rhs[idx] <- rhs_new
+      }
+    } else {
+      idx      <- which(sym_mask)
+      lhs_new  <- pmin(lhs[idx], rhs[idx])
+      rhs_new  <- pmax(lhs[idx], rhs[idx])
+      lhs[idx] <- lhs_new
+      rhs[idx] <- rhs_new
+    }
+  }
+
   colnames(samples) <- paste0(lhs, op, rhs)
+  rownames(diagnostics) <- colnames(samples)
 
   # Summaries
-  diagnostics <- diagnostics[namesSamplesRaw, , drop = FALSE]
   coefs <- apply(samples, MARGIN = 2, FUN = mean)
   vcov  <- stats::cov(samples)
   rhat  <- diagnostics[, "Rhat"]
