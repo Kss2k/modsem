@@ -239,6 +239,12 @@ modsem_stan <- function(model.syntax = NULL,
   pars_clean_for_table <- cleanPars(colnames(samples))  # human-friendly labels where relevant
 
   se <- sqrt(diag(vcov))
+  ci.lower <- apply(samples, MARGIN = 2, FUN = quantile, probs = 0.05)
+  ci.upper <- apply(samples, MARGIN = 2, FUN = quantile, probs = 0.95)
+  # non-symmetric P-value (Mplus note: https://www.statmodel.com/download/FAQ-Bootstrap%20-%20Pvalue.pdf)
+  B <- NROW(samples)
+  M <- apply(samples, MARGIN = 2, FUN = \(x) sum(x < 0))
+  p.value <- 2 * apply(cbind(M/B, 1 - M/B), MARGIN = 1, FUN = min) # Two-sided (non-symmetric)
 
   # handle NaNs and zero SEs
   se.zero <- se <= .Machine$double.eps
@@ -250,9 +256,9 @@ modsem_stan <- function(model.syntax = NULL,
     lhs = lhs, op = op, rhs = rhs,
     est = coefs, std.error = se,
     z.value = coefs / se,
-    p.value = 2 * stats::pnorm(-abs(coefs / se)),
-    ci.lower = coefs - CI_WIDTH * se,
-    ci.upper = coefs + CI_WIDTH * se,
+    p.value = p.value,
+    ci.lower = ci.lower,
+    ci.upper = ci.upper,
     R.hat = rhat, n.eff = neff,
     row.names = NULL
   )
@@ -275,8 +281,21 @@ modsem_stan <- function(model.syntax = NULL,
 
 
 #' @export
-summary.modsem_stan <- function(object, ...) {
-  parTable <- object$parTable
+summary.modsem_stan <- function(object, standardized = FALSE, ...) {
+  parTable <- parameter_estimates(object)
+
+  if (standardized) {
+    parTable <- addTransformedEstimatesPT(
+      parTable    = parTable,
+      values.from = "est",
+      values.to   = "Std.all",
+      merge.by    = c("lhs", "op", "rhs"),
+      FUN         = standardized_estimates,
+      object      = object,
+      ...
+    )
+  }
+
   parTable$n.eff <- as.character(round(parTable$n.eff)) # print as integer, not float
   summarize_partable(parTable)
 }
