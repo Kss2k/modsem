@@ -167,7 +167,7 @@ as passing additional arguments to them via <code>modsem()</code> can lead to un
 <span class="r-in"><span><span class="va">est1</span> <span class="op">&lt;-</span> <span class="fu">modsem</span><span class="op">(</span><span class="va">m1</span>, <span class="va">oneInt</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est1</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Estimating baseline model (H0)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> modsem (version 1.0.14, approach = dblcent):</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> modsem (version 1.0.13, approach = dblcent):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Interaction Model Fit Measures (H1):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Loglikelihood                              -26807.61 </span>
@@ -320,7 +320,7 @@ as passing additional arguments to them via <code>modsem()</code> can lead to un
 <span class="r-in"><span><span class="va">est1_ca</span> <span class="op">&lt;-</span> <span class="fu">modsem</span><span class="op">(</span><span class="va">m1</span>, <span class="va">oneInt</span>, method <span class="op">=</span> <span class="st">"ca"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est1_ca</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Estimating baseline model (H0)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> modsem (version 1.0.14, approach = ca):</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> modsem (version 1.0.13, approach = ca):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Interaction Model Fit Measures (H1):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Loglikelihood                              -24339.32 </span>
@@ -456,18 +456,23 @@ as passing additional arguments to them via <code>modsem()</code> can lead to un
 <span class="r-in"><span><span class="va">est1_lms</span> <span class="op">&lt;-</span> <span class="fu">modsem</span><span class="op">(</span><span class="va">m1</span>, <span class="va">oneInt</span>, method <span class="op">=</span> <span class="st">"lms"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est1_lms</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> modsem (1.0.14) ended normally after 16 iterations</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> modsem (1.0.13) ended normally after 16 iterations</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Estimator                                        LMS</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Optimization method                       EMA-NLMINB</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Number of model parameters                        31</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                                                       </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Number of observations                          2000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Loglikelihood and Information Criteria:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Loglikelihood                              -17493.60</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Akaike (AIC)                                35049.21</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Bayesian (BIC)                              35222.83</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Numerical Integration:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Points of integration (per dim)                   24</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Dimensions                                         1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Total points of integration                       24</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Fit Measures for Baseline Model (H0):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                                               Standard</span>
@@ -557,14 +562,14 @@ as passing additional arguments to them via <code>modsem()</code> can lead to un
 <span class="r-in"><span><span class="va">est1_qml</span> <span class="op">&lt;-</span> <span class="fu">modsem</span><span class="op">(</span><span class="va">m1</span>, <span class="va">oneInt</span>, method <span class="op">=</span> <span class="st">"qml"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est1_qml</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> modsem (1.0.14) ended normally after 36 iterations</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> modsem (1.0.13) ended normally after 36 iterations</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Estimator                                        QML</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Optimization method                           NLMINB</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Number of model parameters                        31</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                                                       </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Number of observations                          2000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Loglikelihood and Information Criteria:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Loglikelihood                              -17493.65</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Akaike (AIC)                                35049.29</span>
@@ -674,7 +679,7 @@ as passing additional arguments to them via <code>modsem()</code> can lead to un
 <span class="r-in"><span><span class="va">est_tpb</span> <span class="op">&lt;-</span> <span class="fu">modsem</span><span class="op">(</span><span class="va">tpb</span>, data <span class="op">=</span> <span class="va">TPB</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_tpb</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Estimating baseline model (H0)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> modsem (version 1.0.14, approach = dblcent):</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> modsem (version 1.0.13, approach = dblcent):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Interaction Model Fit Measures (H1):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Loglikelihood                              -34958.88 </span>
@@ -854,7 +859,7 @@ as passing additional arguments to them via <code>modsem()</code> can lead to un
 <span class="r-in"><span><span class="va">est_tpb_ca</span> <span class="op">&lt;-</span> <span class="fu">modsem</span><span class="op">(</span><span class="va">tpb</span>, data <span class="op">=</span> <span class="va">TPB</span>, method <span class="op">=</span> <span class="st">"ca"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_tpb_ca</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Estimating baseline model (H0)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> modsem (version 1.0.14, approach = ca):</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> modsem (version 1.0.13, approach = ca):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Interaction Model Fit Measures (H1):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Loglikelihood                              -32849.60 </span>
@@ -1023,18 +1028,23 @@ as passing additional arguments to them via <code>modsem()</code> can lead to un
 <span class="r-in"><span><span class="va">est_tpb_lms</span> <span class="op">&lt;-</span> <span class="fu">modsem</span><span class="op">(</span><span class="va">tpb</span>, data <span class="op">=</span> <span class="va">TPB</span>, method <span class="op">=</span> <span class="st">"lms"</span>, nodes <span class="op">=</span> <span class="fl">32</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_tpb_lms</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> modsem (1.0.14) ended normally after 19 iterations</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> modsem (1.0.13) ended normally after 19 iterations</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Estimator                                        LMS</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Optimization method                       EMA-NLMINB</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Number of model parameters                        54</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                                                       </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Number of observations                          2000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Loglikelihood and Information Criteria:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Loglikelihood                              -26326.03</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Akaike (AIC)                                52760.05</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Bayesian (BIC)                              53062.50</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Numerical Integration:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Points of integration (per dim)                   32</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Dimensions                                         1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Total points of integration                       32</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Fit Measures for Baseline Model (H0):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                                               Standard</span>
@@ -1111,7 +1121,7 @@ as passing additional arguments to them via <code>modsem()</code> can lead to un
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .att2            1.005      0.021   46.893    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .att3            1.015      0.020   51.384    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .att4            0.997      0.018   55.585    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .att5            0.990      0.022   45.598    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .att5            0.990      0.022   45.597    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .sn1             1.004      0.024   41.597    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .sn2             1.009      0.022   46.646    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .int1            1.012      0.022   46.901    0.000</span>
@@ -1156,14 +1166,14 @@ as passing additional arguments to them via <code>modsem()</code> can lead to un
 <span class="r-in"><span><span class="va">est_tpb_qml</span> <span class="op">&lt;-</span> <span class="fu">modsem</span><span class="op">(</span><span class="va">tpb</span>, data <span class="op">=</span> <span class="va">TPB</span>, method <span class="op">=</span> <span class="st">"qml"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_tpb_qml</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> modsem (1.0.14) ended normally after 85 iterations</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> modsem (1.0.13) ended normally after 83 iterations</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Estimator                                        QML</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Optimization method                           NLMINB</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Number of model parameters                        54</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                                                       </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Number of observations                          2000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Loglikelihood and Information Criteria:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Loglikelihood                              -26326.05</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Akaike (AIC)                                52760.10</span>
@@ -1205,61 +1215,61 @@ as passing additional arguments to them via <code>modsem()</code> can lead to un
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   ATT =~        </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     att1            1.000                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     att2            0.878      0.012   71.559    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     att3            0.789      0.012   66.372    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     att4            0.695      0.011   60.997    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     att2            0.878      0.012   71.560    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     att3            0.789      0.012   66.373    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     att4            0.695      0.011   60.998    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     att5            0.887      0.013   70.848    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   SN =~         </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     sn1             1.000                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     sn2             0.888      0.017   52.607    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     sn2             0.888      0.017   52.606    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   PBC =~        </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     pbc1            1.000                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     pbc2            0.912      0.013   69.467    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     pbc3            0.801      0.012   66.098    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     pbc2            0.912      0.013   69.466    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     pbc3            0.801      0.012   66.096    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   BEH =~        </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     b1              1.000                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     b2              0.960      0.030   31.746    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   INT =~        </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     int1            1.000                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     int2            0.913      0.015   59.047    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     int3            0.807      0.014   55.730    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   BEH =~        </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     b1              1.000                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     b2              0.960      0.030   31.748    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Regressions:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   BEH ~         </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC             0.232      0.022   10.404    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     INT             0.189      0.025    7.677    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     INT:PBC         0.205      0.018   11.310    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   INT ~         </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     ATT             0.213      0.026    8.164    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     SN              0.177      0.028    6.388    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC             0.217      0.030    7.348    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   BEH ~         </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC             0.232      0.022   10.405    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     INT             0.189      0.025    7.677    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     INT:PBC         0.205      0.018   11.310    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC             0.217      0.030    7.347    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Intercepts:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .int1            1.014      0.022   46.953    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .int2            1.012      0.020   50.394    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .int3            1.005      0.018   54.794    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .att1            1.014      0.024   41.997    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .int1            1.014      0.022   46.954    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .int2            1.012      0.020   50.396    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .int3            1.005      0.018   54.796    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .att1            1.014      0.024   41.998    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .att2            1.007      0.021   46.958    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .att3            1.016      0.020   51.446    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .att4            0.999      0.018   55.645    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .att5            0.992      0.022   45.662    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .sn1             1.005      0.024   41.653    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .sn2             1.010      0.022   46.701    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .att3            1.016      0.020   51.447    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .att4            0.999      0.018   55.646    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .att5            0.992      0.022   45.663    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .sn1             1.005      0.024   41.654    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .sn2             1.010      0.022   46.702    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .pbc1            0.997      0.024   42.405    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .pbc2            0.985      0.022   44.925    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .pbc3            0.991      0.020   50.445    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .pbc3            0.991      0.020   50.446    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .b1              1.001      0.021   46.990    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .b2              1.019      0.020   51.068    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .b2              1.019      0.020   51.067    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Covariances:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   ATT ~~        </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     SN              0.629      0.029   21.702    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC             0.678      0.029   23.456    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     SN              0.629      0.029   21.703    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC             0.678      0.029   23.457    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   SN ~~         </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC             0.677      0.029   23.083    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC             0.677      0.029   23.084    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Variances:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
@@ -1268,21 +1278,21 @@ as passing additional arguments to them via <code>modsem()</code> can lead to un
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .int3            0.168      0.007   23.548    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .att1            0.167      0.007   23.531    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .att2            0.150      0.006   24.712    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .att3            0.160      0.006   26.378    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .att3            0.160      0.006   26.379    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .att4            0.162      0.006   27.645    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .att5            0.159      0.006   24.925    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .sn1             0.178      0.015   12.093    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .sn2             0.157      0.012   13.251    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .sn1             0.178      0.015   12.094    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .sn2             0.157      0.012   13.250    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .pbc1            0.144      0.008   18.390    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .pbc2            0.160      0.007   21.431    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .pbc2            0.160      0.007   21.430    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .pbc3            0.155      0.006   23.886    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .b1              0.186      0.018   10.124    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .b2              0.135      0.017    8.130    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     ATT             0.998      0.037   26.941    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     SN              0.987      0.039   25.230    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     ATT             0.998      0.037   26.942    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     SN              0.987      0.039   25.231    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     PBC             0.962      0.036   27.074    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .BEH             0.455      0.023   20.138    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .INT             0.491      0.020   24.641    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .BEH             0.455      0.023   20.139    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 </code></pre></div>

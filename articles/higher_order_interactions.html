@@ -80,7 +80,7 @@
     
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://modsem.org" class="external-link">modsem</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; This is modsem (1.0.14). Please report any bugs!</span></span></code></pre></div>
+<span><span class="co">#&gt; This is modsem (1.0.13). Please report any bugs!</span></span></code></pre></div>
 <div class="section level2">
 <h2 id="lms-approach">LMS approach<a class="anchor" aria-label="anchor" href="#lms-approach"></a>
 </h2>
@@ -121,18 +121,23 @@ latent variable of <code>PC</code> (perceived control) and
 <span><span class="va">est_lms_2so</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">tpb_2so</span>, data <span class="op">=</span> <span class="va">TPB_2SO</span>, method <span class="op">=</span> <span class="st">"lms"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_lms_2so</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (1.0.14) ended normally after 76 iterations</span></span>
+<span><span class="co">#&gt; modsem (1.0.13) ended normally after 76 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                        LMS</span></span>
 <span><span class="co">#&gt;   Optimization method                       EMA-NLMINB</span></span>
 <span><span class="co">#&gt;   Number of model parameters                        50</span></span>
-<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;                                                       </span></span>
 <span><span class="co">#&gt;   Number of observations                          2000</span></span>
-<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; Loglikelihood and Information Criteria:</span></span>
 <span><span class="co">#&gt;   Loglikelihood                              -27008.82</span></span>
 <span><span class="co">#&gt;   Akaike (AIC)                                54117.64</span></span>
 <span><span class="co">#&gt;   Bayesian (BIC)                              54397.69</span></span>
+<span><span class="co">#&gt;  </span></span>
+<span><span class="co">#&gt; Numerical Integration:</span></span>
+<span><span class="co">#&gt;   Points of integration (per dim)                   24</span></span>
+<span><span class="co">#&gt;   Dimensions                                         1</span></span>
+<span><span class="co">#&gt;   Total points of integration                       24</span></span>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; Fit Measures for Baseline Model (H0):</span></span>
 <span><span class="co">#&gt;                                               Standard</span></span>
@@ -283,18 +288,23 @@ variable) and <code>PBC</code> (first order latent variable).</p>
 <span><span class="va">est_lms_1so</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">tpb_1so</span>, data <span class="op">=</span> <span class="va">TPB_1SO</span>, method <span class="op">=</span> <span class="st">"lms"</span>, nodes <span class="op">=</span> <span class="fl">32</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_lms_1so</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (1.0.14) ended normally after 37 iterations</span></span>
+<span><span class="co">#&gt; modsem (1.0.13) ended normally after 37 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                        LMS</span></span>
 <span><span class="co">#&gt;   Optimization method                       EMA-NLMINB</span></span>
 <span><span class="co">#&gt;   Number of model parameters                        39</span></span>
-<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;                                                       </span></span>
 <span><span class="co">#&gt;   Number of observations                          2000</span></span>
-<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; Loglikelihood and Information Criteria:</span></span>
 <span><span class="co">#&gt;   Loglikelihood                              -19992.75</span></span>
 <span><span class="co">#&gt;   Akaike (AIC)                                40063.51</span></span>
 <span><span class="co">#&gt;   Bayesian (BIC)                              40281.94</span></span>
+<span><span class="co">#&gt;  </span></span>
+<span><span class="co">#&gt; Numerical Integration:</span></span>
+<span><span class="co">#&gt;   Points of integration (per dim)                   32</span></span>
+<span><span class="co">#&gt;   Dimensions                                         1</span></span>
+<span><span class="co">#&gt;   Total points of integration                       32</span></span>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; Fit Measures for Baseline Model (H0):</span></span>
 <span><span class="co">#&gt;                                               Standard</span></span>
@@ -394,7 +404,7 @@ variable) and <code>PBC</code> (first order latent variable).</p>
 <span><span class="co">#&gt;    .PBC             0.299      0.018   16.411    0.000</span></span>
 <span><span class="co">#&gt;    .SN              0.199      0.013   14.886    0.000</span></span>
 <span><span class="co">#&gt;    .BEH             0.516      0.026   19.523    0.000</span></span>
-<span><span class="co">#&gt;     INT             0.994      0.049   20.208    0.000</span></span></code></pre></div>
+<span><span class="co">#&gt;     INT             0.994      0.025   40.296    0.000</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -442,7 +452,7 @@ an interaction effect between two higher order latent variables.</p>
 <span><span class="co">#&gt; Estimating baseline model (H0)</span></span>
 <span><span class="co">#&gt; Warning: Unable to estimate baseline model for models with higher-order</span></span>
 <span><span class="co">#&gt; interaction terms!</span></span>
-<span><span class="co">#&gt; modsem (version 1.0.14, approach = ca):</span></span>
+<span><span class="co">#&gt; modsem (version 1.0.13, approach = ca):</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Interaction Model Fit Measures (H1):</span></span>
 <span><span class="co">#&gt;   Loglikelihood                              -56477.03 </span></span>
@@ -650,7 +660,7 @@ an interaction effect between two higher order latent variables.</p>
 <span><span class="co">#&gt; Estimating baseline model (H0)</span></span>
 <span><span class="co">#&gt; Warning: Unable to estimate baseline model for models with higher-order</span></span>
 <span><span class="co">#&gt; interaction terms!</span></span>
-<span><span class="co">#&gt; modsem (version 1.0.14, approach = dblcent):</span></span>
+<span><span class="co">#&gt; modsem (version 1.0.13, approach = dblcent):</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Interaction Model Fit Measures (H1):</span></span>
 <span><span class="co">#&gt;   Loglikelihood                              -63633.46 </span></span>
@@ -1155,7 +1165,7 @@ first order latent variable.</p>
 <span><span class="co">#&gt; Estimating baseline model (H0)</span></span>
 <span><span class="co">#&gt; Warning: Unable to estimate baseline model for models with higher-order</span></span>
 <span><span class="co">#&gt; interaction terms!</span></span>
-<span><span class="co">#&gt; modsem (version 1.0.14, approach = ca):</span></span>
+<span><span class="co">#&gt; modsem (version 1.0.13, approach = ca):</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Interaction Model Fit Measures (H1):</span></span>
 <span><span class="co">#&gt;   Loglikelihood                              -42117.62 </span></span>
@@ -1326,7 +1336,7 @@ first order latent variable.</p>
 <span><span class="co">#&gt; Estimating baseline model (H0)</span></span>
 <span><span class="co">#&gt; Warning: Unable to estimate baseline model for models with higher-order</span></span>
 <span><span class="co">#&gt; interaction terms!</span></span>
-<span><span class="co">#&gt; modsem (version 1.0.14, approach = dblcent):</span></span>
+<span><span class="co">#&gt; modsem (version 1.0.13, approach = dblcent):</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Interaction Model Fit Measures (H1):</span></span>
 <span><span class="co">#&gt;   Loglikelihood                              -42695.54 </span></span>

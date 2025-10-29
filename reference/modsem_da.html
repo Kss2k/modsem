@@ -475,14 +475,14 @@ The default is therefore <code>TRUE</code> for the QML approach.</p></dd>
 <span class="r-in"><span><span class="va">est_qml</span> <span class="op">&lt;-</span> <span class="fu">modsem_da</span><span class="op">(</span><span class="va">m1</span>, <span class="va">oneInt</span>, method <span class="op">=</span> <span class="st">"qml"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_qml</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> modsem (1.0.14) ended normally after 36 iterations</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> modsem (1.0.13) ended normally after 36 iterations</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Estimator                                        QML</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Optimization method                           NLMINB</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Number of model parameters                        31</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                                                       </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Number of observations                          2000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Loglikelihood and Information Criteria:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Loglikelihood                              -17493.65</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Akaike (AIC)                                35049.29</span>
@@ -592,18 +592,23 @@ The default is therefore <code>TRUE</code> for the QML approach.</p></dd>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>It is recommended that you have at least 32 nodes for interaction effects between exogenous and endogenous variables in the lms approach 'nodes = 24'</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_lms</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> modsem (1.0.14) ended normally after 19 iterations</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> modsem (1.0.13) ended normally after 19 iterations</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Estimator                                        LMS</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Optimization method                       EMA-NLMINB</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Number of model parameters                        54</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                                                       </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Number of observations                          2000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Loglikelihood and Information Criteria:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Loglikelihood                              -26326.10</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Akaike (AIC)                                52760.21</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Bayesian (BIC)                              53062.66</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Numerical Integration:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Points of integration (per dim)                   24</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Dimensions                                         1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Total points of integration                       24</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Fit Measures for Baseline Model (H0):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                                               Standard</span>
@@ -678,7 +683,7 @@ The default is therefore <code>TRUE</code> for the QML approach.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .pbc3            0.990      0.020   50.238    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .att1            1.012      0.024   41.865    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .att2            1.005      0.021   46.825    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .att3            1.015      0.020   51.312    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .att3            1.015      0.020   51.311    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .att4            0.998      0.018   55.511    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .att5            0.991      0.022   45.532    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .sn1             1.004      0.024   41.536    0.000</span>
