@@ -109,8 +109,8 @@ double totalDmvnWeighted(const arma::vec& mu,
   // if (sigma.n_rows != d || sigma.n_cols != d) return NA_REAL;
   // if (nu.n_elem != d) return NA_REAL;
   // if (S.n_rows != d || S.n_cols != d) return NA_REAL;
-  // if (!sigma.is_finite() || !S.is_finite() || !mu.is_finite() || !nu.is_finite())
-  //  return NA_REAL;
+  if (!sigma.is_finite()) // avoid warning in arma::chol
+    return NA_REAL;
 
   // Cholesky factorization of Sigma (symmetric PD is assumed/required)
   arma::mat L;
