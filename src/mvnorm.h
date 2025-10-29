@@ -36,17 +36,20 @@ struct ThreadSetter {
 
 void inplace_tri_mat_mult(arma::rowvec &x, arma::mat const &trimat);
 
-arma::vec dmvnrm_arma_mc(const arma::mat &x, const arma::rowvec &mean,
-                         const arma::mat &sigma, const bool log, 
-                         const int ncores);
+arma::vec dmvnrmArmaMc(const arma::mat &x, const arma::rowvec &mean,
+                       const arma::mat &sigma, const bool log, 
+                       const int ncores);
 
-arma::vec rep_dmvnorm(const arma::mat &x, const arma::mat &expected,
-                      const arma::mat &sigma, const int t,
-                      const int);
+arma::vec repDmvnorm(const arma::mat &x, const arma::mat &expected,
+                     const arma::mat &sigma, const int t,
+                     const int);
 
-double totalDmvnWeightedCpp(const arma::vec& mu, const arma::mat& sigma,
-    const arma::vec& nu, const arma::mat& S, double tgamma, int n, int d);
-
+double totalDmvnWeighted(const arma::vec& mu,
+                         const arma::mat& sigma,
+                         const arma::vec& nu,
+                         const arma::mat& S,
+                         const double tgamma,
+                         const int d);
 
 arma::vec mahaInt(arma::mat & X, arma::vec & mu, arma::mat & sigma, unsigned int ncores, bool isChol);
 arma::vec dmvnInt( arma::mat X, arma::vec mu, arma::mat cholDec, bool log, unsigned int ncores);

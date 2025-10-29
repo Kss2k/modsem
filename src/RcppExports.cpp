@@ -271,9 +271,9 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// dmvnrm_arma_mc
-arma::vec dmvnrm_arma_mc(const arma::mat& x, const arma::rowvec& mean, const arma::mat& sigma, const bool log, const int ncores);
-RcppExport SEXP _modsem_dmvnrm_arma_mc(SEXP xSEXP, SEXP meanSEXP, SEXP sigmaSEXP, SEXP logSEXP, SEXP ncoresSEXP) {
+// dmvnrmArmaMc
+arma::vec dmvnrmArmaMc(const arma::mat& x, const arma::rowvec& mean, const arma::mat& sigma, const bool log, const int ncores);
+RcppExport SEXP _modsem_dmvnrmArmaMc(SEXP xSEXP, SEXP meanSEXP, SEXP sigmaSEXP, SEXP logSEXP, SEXP ncoresSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -282,13 +282,13 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const arma::mat& >::type sigma(sigmaSEXP);
     Rcpp::traits::input_parameter< const bool >::type log(logSEXP);
     Rcpp::traits::input_parameter< const int >::type ncores(ncoresSEXP);
-    rcpp_result_gen = Rcpp::wrap(dmvnrm_arma_mc(x, mean, sigma, log, ncores));
+    rcpp_result_gen = Rcpp::wrap(dmvnrmArmaMc(x, mean, sigma, log, ncores));
     return rcpp_result_gen;
 END_RCPP
 }
-// rep_dmvnorm
-arma::vec rep_dmvnorm(const arma::mat& x, const arma::mat& expected, const arma::mat& sigma, const int t, const int ncores);
-RcppExport SEXP _modsem_rep_dmvnorm(SEXP xSEXP, SEXP expectedSEXP, SEXP sigmaSEXP, SEXP tSEXP, SEXP ncoresSEXP) {
+// repDmvnormCpp
+arma::vec repDmvnormCpp(const arma::mat& x, const arma::mat& expected, const arma::mat& sigma, const int t, const int ncores);
+RcppExport SEXP _modsem_repDmvnormCpp(SEXP xSEXP, SEXP expectedSEXP, SEXP sigmaSEXP, SEXP tSEXP, SEXP ncoresSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -297,24 +297,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const arma::mat& >::type sigma(sigmaSEXP);
     Rcpp::traits::input_parameter< const int >::type t(tSEXP);
     Rcpp::traits::input_parameter< const int >::type ncores(ncoresSEXP);
-    rcpp_result_gen = Rcpp::wrap(rep_dmvnorm(x, expected, sigma, t, ncores));
-    return rcpp_result_gen;
-END_RCPP
-}
-// totalDmvnWeightedCpp
-double totalDmvnWeightedCpp(const arma::vec& mu, const arma::mat& sigma, const arma::vec& nu, const arma::mat& S, double tgamma, int n, int d);
-RcppExport SEXP _modsem_totalDmvnWeightedCpp(SEXP muSEXP, SEXP sigmaSEXP, SEXP nuSEXP, SEXP SSEXP, SEXP tgammaSEXP, SEXP nSEXP, SEXP dSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const arma::vec& >::type mu(muSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type sigma(sigmaSEXP);
-    Rcpp::traits::input_parameter< const arma::vec& >::type nu(nuSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type S(SSEXP);
-    Rcpp::traits::input_parameter< double >::type tgamma(tgammaSEXP);
-    Rcpp::traits::input_parameter< int >::type n(nSEXP);
-    Rcpp::traits::input_parameter< int >::type d(dSEXP);
-    rcpp_result_gen = Rcpp::wrap(totalDmvnWeightedCpp(mu, sigma, nu, S, tgamma, n, d));
+    rcpp_result_gen = Rcpp::wrap(repDmvnormCpp(x, expected, sigma, t, ncores));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -382,9 +365,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_modsem_varZCpp", (DL_FUNC) &_modsem_varZCpp, 3},
     {"_modsem_multiplyIndicatorsCpp", (DL_FUNC) &_modsem_multiplyIndicatorsCpp, 1},
     {"_modsem_checkOpenMP_Cpp", (DL_FUNC) &_modsem_checkOpenMP_Cpp, 0},
-    {"_modsem_dmvnrm_arma_mc", (DL_FUNC) &_modsem_dmvnrm_arma_mc, 5},
-    {"_modsem_rep_dmvnorm", (DL_FUNC) &_modsem_rep_dmvnorm, 5},
-    {"_modsem_totalDmvnWeightedCpp", (DL_FUNC) &_modsem_totalDmvnWeightedCpp, 7},
+    {"_modsem_dmvnrmArmaMc", (DL_FUNC) &_modsem_dmvnrmArmaMc, 5},
+    {"_modsem_repDmvnormCpp", (DL_FUNC) &_modsem_repDmvnormCpp, 5},
     {"_modsem_dmvnfast", (DL_FUNC) &_modsem_dmvnfast, 6},
     {"_modsem_tracePathsNumericCpp", (DL_FUNC) &_modsem_tracePathsNumericCpp, 4},
     {"_modsem_tracePathsCharacterCpp", (DL_FUNC) &_modsem_tracePathsCharacterCpp, 5},
