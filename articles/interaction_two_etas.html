@@ -80,7 +80,7 @@
     
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://modsem.org" class="external-link">modsem</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; This is modsem (1.0.13). Please report any bugs!</span></span></code></pre></div>
+<span><span class="co">#&gt; This is modsem (1.0.14). Please report any bugs!</span></span></code></pre></div>
 <div class="section level2">
 <h2 id="the-problem">The Problem<a class="anchor" aria-label="anchor" href="#the-problem"></a>
 </h2>
@@ -168,23 +168,18 @@ argument in <code>modsem</code>:</p>
 <span><span class="co">#&gt; effects between endogenous variables in the lms approach 'nodes = 24'</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_lms</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (1.0.13) ended normally after 33 iterations</span></span>
+<span><span class="co">#&gt; modsem (1.0.14) ended normally after 33 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                        LMS</span></span>
 <span><span class="co">#&gt;   Optimization method                       EMA-NLMINB</span></span>
 <span><span class="co">#&gt;   Number of model parameters                        54</span></span>
-<span><span class="co">#&gt;                                                       </span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Number of observations                          2000</span></span>
-<span><span class="co">#&gt;  </span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Loglikelihood and Information Criteria:</span></span>
 <span><span class="co">#&gt;   Loglikelihood                              -26360.48</span></span>
 <span><span class="co">#&gt;   Akaike (AIC)                                52828.97</span></span>
 <span><span class="co">#&gt;   Bayesian (BIC)                              53131.42</span></span>
-<span><span class="co">#&gt;  </span></span>
-<span><span class="co">#&gt; Numerical Integration:</span></span>
-<span><span class="co">#&gt;   Points of integration (per dim)                   24</span></span>
-<span><span class="co">#&gt;   Dimensions                                         1</span></span>
-<span><span class="co">#&gt;   Total points of integration                       24</span></span>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; Fit Measures for Baseline Model (H0):</span></span>
 <span><span class="co">#&gt;                                               Standard</span></span>
@@ -233,24 +228,24 @@ argument in <code>modsem</code>:</p>
 <span><span class="co">#&gt;     pbc1            1.000                             </span></span>
 <span><span class="co">#&gt;     pbc2            0.913      0.013   69.388    0.000</span></span>
 <span><span class="co">#&gt;     pbc3            0.801      0.012   66.083    0.000</span></span>
-<span><span class="co">#&gt;   BEH =~        </span></span>
-<span><span class="co">#&gt;     b1              1.000                             </span></span>
-<span><span class="co">#&gt;     b2              0.959      0.032   29.916    0.000</span></span>
 <span><span class="co">#&gt;   INT =~        </span></span>
 <span><span class="co">#&gt;     int1            1.000                             </span></span>
 <span><span class="co">#&gt;     int2            0.914      0.015   58.988    0.000</span></span>
 <span><span class="co">#&gt;     int3            0.807      0.015   55.610    0.000</span></span>
+<span><span class="co">#&gt;   BEH =~        </span></span>
+<span><span class="co">#&gt;     b1              1.000                             </span></span>
+<span><span class="co">#&gt;     b2              0.959      0.032   29.916    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;   BEH ~         </span></span>
-<span><span class="co">#&gt;     PBC             0.238      0.023   10.580    0.000</span></span>
-<span><span class="co">#&gt;     INT             0.197      0.025    7.746    0.000</span></span>
-<span><span class="co">#&gt;     INT:INT         0.129      0.016    7.898    0.000</span></span>
 <span><span class="co">#&gt;   INT ~         </span></span>
 <span><span class="co">#&gt;     ATT             0.213      0.026    8.161    0.000</span></span>
 <span><span class="co">#&gt;     SN              0.174      0.028    6.318    0.000</span></span>
 <span><span class="co">#&gt;     PBC             0.222      0.030    7.480    0.000</span></span>
+<span><span class="co">#&gt;   BEH ~         </span></span>
+<span><span class="co">#&gt;     PBC             0.238      0.023   10.580    0.000</span></span>
+<span><span class="co">#&gt;     INT             0.197      0.025    7.746    0.000</span></span>
+<span><span class="co">#&gt;     INT:INT         0.129      0.016    7.898    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Intercepts:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
@@ -298,21 +293,21 @@ argument in <code>modsem</code>:</p>
 <span><span class="co">#&gt;     ATT             0.998      0.037   26.952    0.000</span></span>
 <span><span class="co">#&gt;     SN              0.987      0.039   25.242    0.000</span></span>
 <span><span class="co">#&gt;     PBC             0.961      0.035   27.069    0.000</span></span>
-<span><span class="co">#&gt;    .BEH             0.475      0.024   19.743    0.000</span></span>
 <span><span class="co">#&gt;    .INT             0.488      0.020   24.576    0.000</span></span>
+<span><span class="co">#&gt;    .BEH             0.475      0.024   19.743    0.000</span></span>
 <span></span>
 <span><span class="va">est_qml</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">tpb_nonlinear</span>, data <span class="op">=</span> <span class="va">TPB</span>, cov.syntax <span class="op">=</span> <span class="va">tpb_linear</span>,</span>
 <span>                  method <span class="op">=</span> <span class="st">"qml"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_qml</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (1.0.13) ended normally after 84 iterations</span></span>
+<span><span class="co">#&gt; modsem (1.0.14) ended normally after 84 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                        QML</span></span>
 <span><span class="co">#&gt;   Optimization method                           NLMINB</span></span>
 <span><span class="co">#&gt;   Number of model parameters                        54</span></span>
-<span><span class="co">#&gt;                                                       </span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Number of observations                          2000</span></span>
-<span><span class="co">#&gt;  </span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Loglikelihood and Information Criteria:</span></span>
 <span><span class="co">#&gt;   Loglikelihood                              -26360.52</span></span>
 <span><span class="co">#&gt;   Akaike (AIC)                                52829.04</span></span>
@@ -365,24 +360,24 @@ argument in <code>modsem</code>:</p>
 <span><span class="co">#&gt;     pbc1            1.000                             </span></span>
 <span><span class="co">#&gt;     pbc2            0.913      0.013   69.382    0.000</span></span>
 <span><span class="co">#&gt;     pbc3            0.801      0.012   66.078    0.000</span></span>
-<span><span class="co">#&gt;   BEH =~        </span></span>
-<span><span class="co">#&gt;     b1              1.000                             </span></span>
-<span><span class="co">#&gt;     b2              0.960      0.032   29.905    0.000</span></span>
 <span><span class="co">#&gt;   INT =~        </span></span>
 <span><span class="co">#&gt;     int1            1.000                             </span></span>
 <span><span class="co">#&gt;     int2            0.914      0.015   59.034    0.000</span></span>
 <span><span class="co">#&gt;     int3            0.807      0.015   55.653    0.000</span></span>
+<span><span class="co">#&gt;   BEH =~        </span></span>
+<span><span class="co">#&gt;     b1              1.000                             </span></span>
+<span><span class="co">#&gt;     b2              0.960      0.032   29.905    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;   BEH ~         </span></span>
-<span><span class="co">#&gt;     PBC             0.239      0.023   10.586    0.000</span></span>
-<span><span class="co">#&gt;     INT             0.197      0.025    7.755    0.000</span></span>
-<span><span class="co">#&gt;     INT:INT         0.128      0.016    7.883    0.000</span></span>
 <span><span class="co">#&gt;   INT ~         </span></span>
 <span><span class="co">#&gt;     ATT             0.213      0.026    8.172    0.000</span></span>
 <span><span class="co">#&gt;     SN              0.175      0.028    6.334    0.000</span></span>
 <span><span class="co">#&gt;     PBC             0.222      0.030    7.506    0.000</span></span>
+<span><span class="co">#&gt;   BEH ~         </span></span>
+<span><span class="co">#&gt;     PBC             0.239      0.023   10.586    0.000</span></span>
+<span><span class="co">#&gt;     INT             0.197      0.025    7.755    0.000</span></span>
+<span><span class="co">#&gt;     INT:INT         0.128      0.016    7.883    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Intercepts:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
@@ -430,8 +425,8 @@ argument in <code>modsem</code>:</p>
 <span><span class="co">#&gt;     ATT             0.998      0.037   26.941    0.000</span></span>
 <span><span class="co">#&gt;     SN              0.987      0.039   25.231    0.000</span></span>
 <span><span class="co">#&gt;     PBC             0.961      0.036   27.049    0.000</span></span>
-<span><span class="co">#&gt;    .BEH             0.475      0.024   19.738    0.000</span></span>
-<span><span class="co">#&gt;    .INT             0.488      0.020   24.585    0.000</span></span></code></pre></div>
+<span><span class="co">#&gt;    .INT             0.488      0.020   24.585    0.000</span></span>
+<span><span class="co">#&gt;    .BEH             0.475      0.024   19.738    0.000</span></span></code></pre></div>
 <p>It is also possible to make <code>modsem</code> attempt to split up
 the model syntax automatically using the <code>auto.split.syntax</code>
 argument:</p>
@@ -441,23 +436,18 @@ argument:</p>
 <span><span class="co">#&gt; effects between endogenous variables in the lms approach 'nodes = 24'</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_lms</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (1.0.13) ended normally after 33 iterations</span></span>
+<span><span class="co">#&gt; modsem (1.0.14) ended normally after 33 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                        LMS</span></span>
 <span><span class="co">#&gt;   Optimization method                       EMA-NLMINB</span></span>
 <span><span class="co">#&gt;   Number of model parameters                        54</span></span>
-<span><span class="co">#&gt;                                                       </span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Number of observations                          2000</span></span>
-<span><span class="co">#&gt;  </span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Loglikelihood and Information Criteria:</span></span>
 <span><span class="co">#&gt;   Loglikelihood                              -26360.48</span></span>
 <span><span class="co">#&gt;   Akaike (AIC)                                52828.97</span></span>
 <span><span class="co">#&gt;   Bayesian (BIC)                              53131.42</span></span>
-<span><span class="co">#&gt;  </span></span>
-<span><span class="co">#&gt; Numerical Integration:</span></span>
-<span><span class="co">#&gt;   Points of integration (per dim)                   24</span></span>
-<span><span class="co">#&gt;   Dimensions                                         1</span></span>
-<span><span class="co">#&gt;   Total points of integration                       24</span></span>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; Fit Measures for Baseline Model (H0):</span></span>
 <span><span class="co">#&gt;                                               Standard</span></span>
@@ -506,24 +496,24 @@ argument:</p>
 <span><span class="co">#&gt;     pbc1            1.000                             </span></span>
 <span><span class="co">#&gt;     pbc2            0.913      0.013   69.388    0.000</span></span>
 <span><span class="co">#&gt;     pbc3            0.801      0.012   66.083    0.000</span></span>
-<span><span class="co">#&gt;   BEH =~        </span></span>
-<span><span class="co">#&gt;     b1              1.000                             </span></span>
-<span><span class="co">#&gt;     b2              0.959      0.032   29.916    0.000</span></span>
 <span><span class="co">#&gt;   INT =~        </span></span>
 <span><span class="co">#&gt;     int1            1.000                             </span></span>
 <span><span class="co">#&gt;     int2            0.914      0.015   58.988    0.000</span></span>
 <span><span class="co">#&gt;     int3            0.807      0.015   55.610    0.000</span></span>
+<span><span class="co">#&gt;   BEH =~        </span></span>
+<span><span class="co">#&gt;     b1              1.000                             </span></span>
+<span><span class="co">#&gt;     b2              0.959      0.032   29.916    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;   BEH ~         </span></span>
-<span><span class="co">#&gt;     PBC             0.238      0.023   10.580    0.000</span></span>
-<span><span class="co">#&gt;     INT             0.197      0.025    7.746    0.000</span></span>
-<span><span class="co">#&gt;     INT:INT         0.129      0.016    7.898    0.000</span></span>
 <span><span class="co">#&gt;   INT ~         </span></span>
 <span><span class="co">#&gt;     ATT             0.213      0.026    8.161    0.000</span></span>
 <span><span class="co">#&gt;     SN              0.174      0.028    6.318    0.000</span></span>
 <span><span class="co">#&gt;     PBC             0.222      0.030    7.480    0.000</span></span>
+<span><span class="co">#&gt;   BEH ~         </span></span>
+<span><span class="co">#&gt;     PBC             0.238      0.023   10.580    0.000</span></span>
+<span><span class="co">#&gt;     INT             0.197      0.025    7.746    0.000</span></span>
+<span><span class="co">#&gt;     INT:INT         0.129      0.016    7.898    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Intercepts:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
@@ -571,8 +561,8 @@ argument:</p>
 <span><span class="co">#&gt;     ATT             0.998      0.037   26.952    0.000</span></span>
 <span><span class="co">#&gt;     SN              0.987      0.039   25.242    0.000</span></span>
 <span><span class="co">#&gt;     PBC             0.961      0.035   27.069    0.000</span></span>
-<span><span class="co">#&gt;    .BEH             0.475      0.024   19.743    0.000</span></span>
-<span><span class="co">#&gt;    .INT             0.488      0.020   24.576    0.000</span></span></code></pre></div>
+<span><span class="co">#&gt;    .INT             0.488      0.020   24.576    0.000</span></span>
+<span><span class="co">#&gt;    .BEH             0.475      0.024   19.743    0.000</span></span></code></pre></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
