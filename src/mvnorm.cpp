@@ -51,16 +51,16 @@ arma::vec dmvnrmArmaMc(const arma::mat &x,
   arma::mat rooti = arma::inv(arma::trimatu(L));
   const double rootisum    = arma::sum(arma::log(rooti.diag()));
   const double constants   = -static_cast<double>(d) / 2.0 * log2pi;
-  const double other_terms = rootisum + constants;
+  const double otherTerms = rootisum + constants;
 
   #ifdef _OPENMP
   #pragma omp parallel for if(ncores>1) schedule(static) default(none)          \
-          shared(out, x, mean, rooti, other_terms, n)
+          shared(out, x, mean, rooti, otherTerms, n)
   #endif
   for (uword i = 0; i < n; ++i) {
     arma::rowvec z = x.row(i) - mean;
     inplace_tri_mat_mult(z, rooti);
-    out(i) = other_terms - 0.5 * arma::dot(z, z);
+    out(i) = otherTerms - 0.5 * arma::dot(z, z);
   }
 
   return log ? out : arma::exp(out);
@@ -105,13 +105,8 @@ double totalDmvnWeighted(const arma::vec& mu,
                          const arma::mat& S,
                          const double tgamma,
                          const int d) {
-  // Drop input checking (for now)
-  // if (mu.n_elem != d) return NA_REAL;
-  // if (sigma.n_rows != d || sigma.n_cols != d) return NA_REAL;
-  // if (nu.n_elem != d) return NA_REAL;
-  // if (S.n_rows != d || S.n_cols != d) return NA_REAL;
-  // if (!sigma.is_finite()) // avoid warning in arma::chol
-  //   return NA_REAL;
+  if (!sigma.is_finite()) // avoid warning in arma::chol
+    return NA_REAL;
 
   // Cholesky factorization of Sigma (symmetric PD is assumed/required)
   arma::mat L;
@@ -127,22 +122,22 @@ double totalDmvnWeighted(const arma::vec& mu,
   // Solve L^T x = y   (back substitution) is unnecessary for the Mahalanobis:
   // diff' Sigma^{-1} diff = y' y because x = (L^T)^{-1} y and y = L^{-1} diff,
   // and (L^{-1} diff)'(L^{-1} diff) = ||y||^2.
-  const double mahalanobis_term = tgamma * arma::dot(y, y);
+  const double mahalanobisTerm = tgamma * arma::dot(y, y);
 
   // trace(Sigma^{-1} S) without forming Sigma^{-1}:
   // X = Sigma^{-1} S is the solution of Sigma * X = S
   // Use the Cholesky: solve L * Z = S, then L^T * X = Z  -> X = solve(L^T, solve(L, S))
   arma::mat Z = arma::solve(arma::trimatl(L), S, arma::solve_opts::fast);
   arma::mat X = arma::solve(arma::trimatu(L.t()), Z, arma::solve_opts::fast);
-  const double trace_term = arma::trace(X);
+  const double traceTerm = arma::trace(X);
 
   // Log-likelihood
-  // -0.5 * [ tgamma * d * log(2*pi) + tgamma * log|Sigma| + trace(Sigma^{-1} S) + mahalanobis_term ]
+  // -0.5 * [ tgamma * d * log(2*pi) + tgamma * log|Sigma| + trace(Sigma^{-1} S) + mahalanobisTerm ]
   static const double log2pi = std::log(2.0 * M_PI);
   const double log_likelihood =
       -0.5 * (tgamma * (static_cast<double>(d) * log2pi + log_det_sigma)
-              + trace_term
-              + mahalanobis_term);
+              + traceTerm
+              + mahalanobisTerm);
 
   return log_likelihood;
 }
