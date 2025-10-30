@@ -205,7 +205,7 @@ summary.modsem_da <- function(object,
     data            = NULL,
     iterations      = object$iterations,
     logLik          = object$logLik,
-    fit             = fit_modsem_da(object, chisq = FALSE),
+    fit             = fitModsemDA_Internal(object, chisq = FALSE),
     D               = NULL,
     N               = structure(group.Ns, names = group.labels),
     N.total         = sum(group.Ns),
@@ -237,7 +237,7 @@ summary.modsem_da <- function(object,
 
     } else {
       out$D     <- compare_fit(est_h1 = object, est_h0 = est_h0)
-      out$fitH0 <- fit_modsem_da(est_h0, lav.fit = TRUE)
+      out$fitH0 <- fitModsemDA_Internal(est_h0, lav.fit = TRUE)
     }
   } else {
     out$D <- NULL
