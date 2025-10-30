@@ -659,3 +659,40 @@ labelRowsOmega <- function(X, eta) {
   rownames(X) <- paste0(eta, "~", rownames(X))
   X
 }
+
+
+constructThresholds <- function(ordered, parTable, data) {
+  if (!length(ordered))
+    return(EMPTY_MATSTRUCT)
+
+  numeric <- stats::setNames(vector("list", length(ordered)), ordered)
+  label   <- stats::setNames(vector("list", length(ordered)), ordered)
+
+  max.k <- 0L
+  for (col in ordered) {
+    k   <- length(unique(data[, col])) - 1L
+    lab <- paste0("t", seq_len(k))
+    tau <- matrix(NA, nrow = k, ncol = 1,
+                  dimnames = list(lab, col))
+
+    if (k > max.k) max.k <- k
+
+    TAU <- setMatrixConstraints(X = tau, parTable = parTable, op = "|",
+                                RHS = lab, LHS = col, type = "rhs",
+                                nonFreeParams = FALSE)
+    numeric[[col]] <- as.vector(TAU$numeric)
+    label[[col]]   <- as.vector(TAU$label)
+  }
+
+  nm.t <- c("negInf", paste0("t", seq_len(max.k)), "posInf")
+  pad <- \(x, val, l, h)
+   stats::setNames(c(l, x, h, rep(val, max.k - length(x))), nm = nm.t)
+
+  ninf <- -sqrt(.Machine$double.xmax) # Using actuall (+/-) Inf doesn't work well with Fortran
+  pinf <-  sqrt(.Machine$double.xmax)
+
+  numericMat <- do.call("rbind", lapply(numeric, FUN = pad, val = 0, l = ninf, h = pinf))
+  labelMat   <- do.call("rbind", lapply(label, FUN = pad, val = "", l = "", h = ""))
+
+  list(numeric = numericMat, label = labelMat)
+}
