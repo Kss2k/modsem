@@ -85,6 +85,7 @@ multiple regression lines and confidence/prediction bands.</p>
 <span>  rescale <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  standardized <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  xz <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  greyscale <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -165,6 +166,10 @@ If <code>NULL</code>, the term is created automatically as <code>paste(x, z, sep
 Some SEM backends may handle the interaction term differently (for instance, by
 removing or modifying the colon), and this function attempts to reconcile that
 internally.</p></dd>
+
+
+<dt id="arg-greyscale">greyscale<a class="anchor" aria-label="anchor" href="#arg-greyscale"></a></dt>
+<dd><p>Logical. If <code>TRUE</code> the plot is plotted in greyscale.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
