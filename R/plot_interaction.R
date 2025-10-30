@@ -247,7 +247,7 @@ plot_jn <- function(x, z, y, model, min_z = -3, max_z = 3,
   if (requireNamespace("ggpubr", quietly = TRUE)) { # Make R CMD check happy
     group.label <- modsem_inspect(model, what = "group.label")
     ggpubr::ggarrange(plotlist = plots, labels = group.label)
-  } else stop2(The `ggpubr` package is needed to arrange Johnson-Neyman plots in multigroup models!\n")
+  } else stop2("The `ggpubr` package is needed to arrange Johnson-Neyman plots in multigroup models!\n")
 }
 
 
