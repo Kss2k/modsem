@@ -62,7 +62,12 @@ for the baseline model, i.e., the model without the interaction effect</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">fit_modsem_da</span><span class="op">(</span><span class="va">model</span>, chisq <span class="op">=</span> <span class="cn">TRUE</span>, lav.fit <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">fit_modsem_da</span><span class="op">(</span></span>
+<span>  <span class="va">model</span>,</span>
+<span>  chisq <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  lav.fit <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  drop.list.single.group <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -85,6 +90,12 @@ the interaction model likely has a good RMSEA as well.</p></dd>
 the starting parameters be included (if available)? This is usually only approprioate
 for linear models (i.e., no interaction effects), where the parameter estimates
 for LMS and QML are equivalent to ML estimates from lavaan.</p></dd>
+
+
+<dt id="arg-drop-list-single-group">drop.list.single.group<a class="anchor" aria-label="anchor" href="#arg-drop-list-single-group"></a></dt>
+<dd><p>Logical. If FALSE, (some) results are returned as
+a list, where each element corresponds to a group (even if there is only a single group).
+If TRUE, the list will be unlisted if there is only a single group</p></dd>
 
 </dl></div>
 
