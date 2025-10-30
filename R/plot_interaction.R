@@ -241,7 +241,7 @@ plot_jn <- function(x, z, y, model, min_z = -3, max_z = 3,
     choice <- tolower(substr(readLines(n = 1L), 1L, 1L))
 
     stopifnot(choice == "y")
-    install.packages("ggpubr")
+    utils::install.packages("ggpubr")
   }
 
   if (requireNamespace("ggpubr", quietly = TRUE)) { # Make R CMD check happy
