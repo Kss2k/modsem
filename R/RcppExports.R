@@ -69,16 +69,16 @@ checkOpenMP_Cpp <- function() {
     .Call(`_modsem_checkOpenMP_Cpp`)
 }
 
-dmvnrm_arma_mc <- function(x, mean, sigma, log = TRUE, ncores = 1L) {
-    .Call(`_modsem_dmvnrm_arma_mc`, x, mean, sigma, log, ncores)
+dmvnrmArmaMc <- function(x, mean, sigma, log = TRUE, ncores = 1L) {
+    .Call(`_modsem_dmvnrmArmaMc`, x, mean, sigma, log, ncores)
 }
 
-rep_dmvnorm <- function(x, expected, sigma, t, ncores = 1L) {
-    .Call(`_modsem_rep_dmvnorm`, x, expected, sigma, t, ncores)
+repDmvnormCpp <- function(x, expected, sigma, t, ncores = 1L) {
+    .Call(`_modsem_repDmvnormCpp`, x, expected, sigma, t, ncores)
 }
 
-totalDmvnWeightedCpp <- function(mu, sigma, nu, S, tgamma, n, d) {
-    .Call(`_modsem_totalDmvnWeightedCpp`, mu, sigma, nu, S, tgamma, n, d)
+totalDmvnWeighted <- function(mu, sigma, nu, S, tgamma, d) {
+    .Call(`_modsem_totalDmvnWeighted`, mu, sigma, nu, S, tgamma, d)
 }
 
 dmvnfast <- function(X, mu, sigma, log, ncores, isChol) {

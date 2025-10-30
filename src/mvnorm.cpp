@@ -30,11 +30,11 @@ void inplace_tri_mat_mult(arma::rowvec &x, arma::mat const &trimat){
 
 
 // [[Rcpp::export]]
-arma::vec dmvnrm_arma_mc(const arma::mat &x,
-                         const arma::rowvec &mean,
-                         const arma::mat &sigma,
-                         const bool log = true,
-                         const int ncores = 1) {
+arma::vec dmvnrmArmaMc(const arma::mat &x,
+                       const arma::rowvec &mean,
+                       const arma::mat &sigma,
+                       const bool log = true,
+                       const int ncores = 1) {
   using arma::uword;
   ThreadSetter ts(ncores);
 
@@ -51,16 +51,16 @@ arma::vec dmvnrm_arma_mc(const arma::mat &x,
   arma::mat rooti = arma::inv(arma::trimatu(L));
   const double rootisum    = arma::sum(arma::log(rooti.diag()));
   const double constants   = -static_cast<double>(d) / 2.0 * log2pi;
-  const double other_terms = rootisum + constants;
+  const double otherTerms = rootisum + constants;
 
   #ifdef _OPENMP
   #pragma omp parallel for if(ncores>1) schedule(static) default(none)          \
-          shared(out, x, mean, rooti, other_terms, n)
+          shared(out, x, mean, rooti, otherTerms, n)
   #endif
   for (uword i = 0; i < n; ++i) {
     arma::rowvec z = x.row(i) - mean;
     inplace_tri_mat_mult(z, rooti);
-    out(i) = other_terms - 0.5 * arma::dot(z, z);
+    out(i) = otherTerms - 0.5 * arma::dot(z, z);
   }
 
   return log ? out : arma::exp(out);
@@ -68,11 +68,11 @@ arma::vec dmvnrm_arma_mc(const arma::mat &x,
 
 
 // [[Rcpp::export]]
-arma::vec rep_dmvnorm(const arma::mat &x,
-                      const arma::mat &expected,
-                      const arma::mat &sigma,
-                      const int t,
-                      const int ncores = 1) {
+arma::vec repDmvnormCpp(const arma::mat &x,
+                        const arma::mat &expected,
+                        const arma::mat &sigma,
+                        const int t,
+                        const int ncores = 1) {
   if (x.n_rows != static_cast<arma::uword>(t) ||
       expected.n_rows != static_cast<arma::uword>(t))
     Rcpp::stop("x and expected must each have exactly t rows");
@@ -91,7 +91,7 @@ arma::vec rep_dmvnorm(const arma::mat &x,
     arma::mat sigma_i = sigma.submat(r0, 0, r1, p - 1);
 
     // inner call runs single‑threaded to avoid nested OpenMP regions
-    out(i) = dmvnrm_arma_mc(x.row(i), expected.row(i), sigma_i, true, 1)(0);
+    out(i) = dmvnrmArmaMc(x.row(i), expected.row(i), sigma_i, true, 1)(0);
   }
 
   return out;
@@ -99,35 +99,45 @@ arma::vec rep_dmvnorm(const arma::mat &x,
 
 
 // [[Rcpp::export]]
-double totalDmvnWeightedCpp(const arma::vec& mu,
-                            const arma::mat& sigma,
-                            const arma::vec& nu,
-                            const arma::mat& S,
-                            double tgamma,
-                            int n,
-                            int d) {
-  if (!sigma.is_finite()) return NA_REAL;
+double totalDmvnWeighted(const arma::vec& mu,
+                         const arma::mat& sigma,
+                         const arma::vec& nu,
+                         const arma::mat& S,
+                         const double tgamma,
+                         const int d) {
+  if (!sigma.is_finite()) // avoid warning in arma::chol
+    return NA_REAL;
 
-  if (arma::any(arma::diagvec(sigma) <= 0)) return NA_REAL;
-
+  // Cholesky factorization of Sigma (symmetric PD is assumed/required)
   arma::mat L;
   if (!arma::chol(L, sigma, "lower")) return NA_REAL;
 
-  double log_det_sigma = 2.0 * arma::sum(log(L.diag()));
-  arma::mat sigma_inv = arma::inv_sympd(sigma);
-  if (!sigma_inv.is_finite()) return NA_REAL;
+  // log|Sigma| = 2 * sum(log(diag(L)))
+  const double log_det_sigma = 2.0 * arma::sum(arma::log(L.diag()));
 
+  // diff' * Sigma^{-1} * diff = || solve(L, diff) ||^2
   arma::vec diff = nu - mu;
-  double mahalanobis_term = tgamma * arma::as_scalar(diff.t() * sigma_inv * diff);
+  // Solve L y = diff  (forward substitution)
+  arma::vec y = arma::solve(arma::trimatl(L), diff, arma::solve_opts::fast);
+  // Solve L^T x = y   (back substitution) is unnecessary for the Mahalanobis:
+  // diff' Sigma^{-1} diff = y' y because x = (L^T)^{-1} y and y = L^{-1} diff,
+  // and (L^{-1} diff)'(L^{-1} diff) = ||y||^2.
+  const double mahalanobisTerm = tgamma * arma::dot(y, y);
 
-  double trace_term = arma::accu(sigma_inv % S);
+  // trace(Sigma^{-1} S) without forming Sigma^{-1}:
+  // X = Sigma^{-1} S is the solution of Sigma * X = S
+  // Use the Cholesky: solve L * Z = S, then L^T * X = Z  -> X = solve(L^T, solve(L, S))
+  arma::mat Z = arma::solve(arma::trimatl(L), S, arma::solve_opts::fast);
+  arma::mat X = arma::solve(arma::trimatu(L.t()), Z, arma::solve_opts::fast);
+  const double traceTerm = arma::trace(X);
 
-  double log_likelihood = -0.5 * (
-    tgamma * d * std::log(2.0 * M_PI) +
-    tgamma * log_det_sigma +
-    trace_term +
-    mahalanobis_term
-  );
+  // Log-likelihood
+  // -0.5 * [ tgamma * d * log(2*pi) + tgamma * log|Sigma| + trace(Sigma^{-1} S) + mahalanobisTerm ]
+  static const double log2pi = std::log(2.0 * M_PI);
+  const double log_likelihood =
+      -0.5 * (tgamma * (static_cast<double>(d) * log2pi + log_det_sigma)
+              + traceTerm
+              + mahalanobisTerm);
 
   return log_likelihood;
 }

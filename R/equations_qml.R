@@ -137,8 +137,8 @@ probf3 <- function(matrices, nonNormalInds, expected, sigma, t, numEta, sum = FA
   if (numEta == 1)
     p <- dnormCpp(matrices$y[, 1], mu = expected, sigma = sqrt(sigma), ncores = ThreadEnv$n.threads)
   else
-    p <- rep_dmvnorm(matrices$y[, nonNormalInds], expected = expected,
-                     sigma = sigma, t = t, ncores = ThreadEnv$n.threads)
+    p <- repDmvnormCpp(matrices$y[, nonNormalInds], expected = expected,
+                       sigma = sigma, t = t, ncores = ThreadEnv$n.threads)
   if (sum) sum(p) else p
 }
 
