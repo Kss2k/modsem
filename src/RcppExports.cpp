@@ -301,6 +301,22 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// totalDmvnWeighted
+double totalDmvnWeighted(const arma::vec& mu, const arma::mat& sigma, const arma::vec& nu, const arma::mat& S, const double tgamma, const int d);
+RcppExport SEXP _modsem_totalDmvnWeighted(SEXP muSEXP, SEXP sigmaSEXP, SEXP nuSEXP, SEXP SSEXP, SEXP tgammaSEXP, SEXP dSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::vec& >::type mu(muSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type sigma(sigmaSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type nu(nuSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type S(SSEXP);
+    Rcpp::traits::input_parameter< const double >::type tgamma(tgammaSEXP);
+    Rcpp::traits::input_parameter< const int >::type d(dSEXP);
+    rcpp_result_gen = Rcpp::wrap(totalDmvnWeighted(mu, sigma, nu, S, tgamma, d));
+    return rcpp_result_gen;
+END_RCPP
+}
 // dmvnfast
 arma::vec dmvnfast(arma::mat X, arma::vec mu, arma::mat sigma, const bool log, const int ncores, const bool isChol);
 RcppExport SEXP _modsem_dmvnfast(SEXP XSEXP, SEXP muSEXP, SEXP sigmaSEXP, SEXP logSEXP, SEXP ncoresSEXP, SEXP isCholSEXP) {
@@ -367,6 +383,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_modsem_checkOpenMP_Cpp", (DL_FUNC) &_modsem_checkOpenMP_Cpp, 0},
     {"_modsem_dmvnrmArmaMc", (DL_FUNC) &_modsem_dmvnrmArmaMc, 5},
     {"_modsem_repDmvnormCpp", (DL_FUNC) &_modsem_repDmvnormCpp, 5},
+    {"_modsem_totalDmvnWeighted", (DL_FUNC) &_modsem_totalDmvnWeighted, 6},
     {"_modsem_dmvnfast", (DL_FUNC) &_modsem_dmvnfast, 6},
     {"_modsem_tracePathsNumericCpp", (DL_FUNC) &_modsem_tracePathsNumericCpp, 4},
     {"_modsem_tracePathsCharacterCpp", (DL_FUNC) &_modsem_tracePathsCharacterCpp, 5},

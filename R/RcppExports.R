@@ -77,6 +77,10 @@ repDmvnormCpp <- function(x, expected, sigma, t, ncores = 1L) {
     .Call(`_modsem_repDmvnormCpp`, x, expected, sigma, t, ncores)
 }
 
+totalDmvnWeighted <- function(mu, sigma, nu, S, tgamma, d) {
+    .Call(`_modsem_totalDmvnWeighted`, mu, sigma, nu, S, tgamma, d)
+}
+
 dmvnfast <- function(X, mu, sigma, log, ncores, isChol) {
     .Call(`_modsem_dmvnfast`, X, mu, sigma, log, ncores, isChol)
 }
