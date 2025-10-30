@@ -18,6 +18,7 @@ plot_interaction(
   rescale = TRUE,
   standardized = FALSE,
   xz = NULL,
+  greyscale = FALSE,
   ...
 )
 }
@@ -69,6 +70,8 @@ If \code{NULL}, the term is created automatically as \code{paste(x, z, sep = ":"
 Some SEM backends may handle the interaction term differently (for instance, by
 removing or modifying the colon), and this function attempts to reconcile that
 internally.}
+
+\item{greyscale}{Logical. If \code{TRUE} the plot is plotted in greyscale.}
 
 \item{...}{Additional arguments passed on to \code{\link{simple_slopes}}.}
 }

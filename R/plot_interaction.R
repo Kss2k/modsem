@@ -42,6 +42,7 @@
 #'   Some SEM backends may handle the interaction term differently (for instance, by
 #'   removing or modifying the colon), and this function attempts to reconcile that
 #'   internally.
+#' @param greyscale Logical. If \code{TRUE} the plot is plotted in greyscale.
 #' @param ... Additional arguments passed on to \code{\link{simple_slopes}}.
 #'
 #' @details
@@ -117,6 +118,7 @@ plot_interaction <- function(x, z, y, model, vals_x = seq(-3, 3, .001),
                              vals_z, alpha_se = 0.15, digits = 2,
                              ci_width = 0.95, ci_type = "confidence",
                              rescale = TRUE, standardized = FALSE, xz = NULL,
+                             greyscale = FALSE,
                              ...) {
   slopes <- simple_slopes(x = x, z = z, y = y, model = model, vals_x = vals_x,
                           vals_z = vals_z, rescale = rescale, ci_width = ci_width,
@@ -146,6 +148,9 @@ plot_interaction <- function(x, z, y, model, vals_x = seq(-3, 3, .001),
     p <- p + ggplot2::facet_wrap(~group)
   }
 
+  if (greyscale)
+    p <- suppressMessages(p + ggplot2::scale_colour_grey() + ggplot2::scale_fill_grey())
+
   p
 }
 
@@ -167,6 +172,7 @@ plot_interaction <- function(x, z, y, model, vals_x = seq(-3, 3, .001),
 #' the sd.line falls outside of \code{[min_z, max_z]}.
 #' @param standardized Should coefficients be standardized beforehand?
 #' @param xz The name of the interaction term. If not specified, it will be created using \code{x} and \code{z}.
+#' @param greyscale Logical. If \code{TRUE} the plot is plotted in greyscale.
 #' @param ... Additional arguments (currently not used).
 #'
 #' @return A \code{ggplot} object showing the interaction plot with regions of significance.
@@ -202,7 +208,8 @@ plot_interaction <- function(x, z, y, model, vals_x = seq(-3, 3, .001),
 #' @export
 plot_jn <- function(x, z, y, model, min_z = -3, max_z = 3,
                     sig.level = 0.05, alpha = 0.2, detail = 1000,
-                    sd.line = 2, standardized = FALSE, xz = NULL, ...) {
+                    sd.line = 2, standardized = FALSE, xz = NULL,
+                    greyscale = FALSE, ...) {
 
   stopif(!inherits(model, c("modsem_da", "modsem_mplus", "modsem_pi", "lavaan")),
          "model must be of class 'modsem_pi', 'modsem_da', 'modsem_mplus', or 'lavaan'")
@@ -221,12 +228,21 @@ plot_jn <- function(x, z, y, model, min_z = -3, max_z = 3,
       x = x, z = z, y = y, parTable = parTable.g, model = model,
       min_z = min_z, max_z = max_z, sig.level = sig.level,
       alpha = alpha, detail = detail, sd.line = sd.line,
-      standardized = standardized, xz = xz, ...
+      standardized = standardized, xz = xz, greyscale = greyscale, ...
     )
   }
 
   if (length(plots) <= 1L)
     return(plots[[1L]])
+
+  if (!requireNamespace("ggpubr", quietly = TRUE)) {
+    printf("The `ggpubr` package is needed to arrange Johnson-Neyman plots in multigroup models!\n")
+    printf("Do you want to install it? (y/n) ")
+    choice <- tolower(substr(readLines(n = 1L), 1L, 1L))
+
+    stopifnot(choice == "y")
+    install.packages("ggpubr")
+  }
 
   group.label <- modsem_inspect(model, what = "group.label")
   ggpubr::ggarrange(plotlist = plots, labels = group.label)
@@ -234,7 +250,7 @@ plot_jn <- function(x, z, y, model, min_z = -3, max_z = 3,
 
 
 plotJN_Group <- function(x, z, y, parTable, model, min_z, max_z, sig.level, alpha,
-                         detail, sd.line, standardized, xz, ...) {
+                         detail, sd.line, standardized, xz, greyscale, ...) {
   if (is.null(xz))
     xz <- paste(x, z, sep = ":")
 
@@ -398,28 +414,33 @@ plotJN_Group <- function(x, z, y, parTable, model, min_z, max_z, sig.level, alph
     top_y <- suppressWarnings(max(df_plot$slope[is.finite(df_plot$slope)], na.rm = TRUE))
     if (!is.finite(top_y)) top_y <- y_range[2]
 
+    hline_colour <- if (greyscale) "black" else "red"
+
     if (exists("z_jn")) {
       if (is.finite(z_jn) && z_jn >= min_z && z_jn <= max_z) {
-        p <- p + ggplot2::geom_vline(xintercept = z_jn, linetype = "dashed", color = "red") +
+        p <- p + ggplot2::geom_vline(xintercept = z_jn, linetype = "dashed", color = hline_colour) +
           ggplot2::annotate("text", x = z_jn, y = top_y,
                             label = paste("JN point:", round(z_jn, 2)),
                             hjust = -0.1, vjust = 1, color = "black")
       }
     } else {
       if (is.finite(z_lower) && z_lower >= min_z && z_lower <= max_z) {
-        p <- p + ggplot2::geom_vline(xintercept = z_lower, linetype = "dashed", color = "red") +
+        p <- p + ggplot2::geom_vline(xintercept = z_lower, linetype = "dashed", color = hline_colour) +
           ggplot2::annotate("text", x = z_lower, y = top_y,
                             label = paste("JN point:", round(z_lower, 2)),
                             hjust = -0.1, vjust = 1, color = "black")
       }
       if (is.finite(z_upper) && z_upper >= min_z && z_upper <= max_z) {
-        p <- p + ggplot2::geom_vline(xintercept = z_upper, linetype = "dashed", color = "red") +
+        p <- p + ggplot2::geom_vline(xintercept = z_upper, linetype = "dashed", color = hline_colour) +
           ggplot2::annotate("text", x = z_upper, y = top_y,
                             label = paste("JN point:", round(z_upper, 2)),
                             hjust = -0.1, vjust = 1, color = "black")
       }
     }
   }
+
+  if (greyscale)
+    p <- suppressMessages(p + ggplot2::scale_colour_grey() + ggplot2::scale_fill_grey())
 
   p
 }
