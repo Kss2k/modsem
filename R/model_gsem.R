@@ -1,6 +1,4 @@
-createGsemModel <- function(parTable, ordered = NULL) {
-  Psi <- constructPsi(
-
+createGsemModelGroup <- function(parTable, ordered = NULL) {
   # General Information
   higherOrderLVs <- getHigherOrderLVs(parTable)
   indsHigherOrderLVs <- getIndsLVs(parTable, lVs = higherOrderLVs, isOV = FALSE)
@@ -38,8 +36,12 @@ createGsemModel <- function(parTable, ordered = NULL) {
   data.cleaned <- prepDataModsemDA(data, allIndsXis, allIndsEtas,
                                    missing = missing, cluster = cluster)
 
-  OMEGA <- matrix(0, nrow = numEtas + numXis, ncol = numEtas + numXis,
-                  dimnames = list(c(xis, etas), c(xis, etas)))
+  OMEGA <- matrix(0, nrow = xwith, ncol = numEtas + numXis,
+                  dimnames = list(xwith, c(xis, etas)))
+  for (i in seq_along(xwith)) {
+    vars <- stringr::str_split(intTerms$rhs[[i]], pattern = ":")[[1L]]
+    OMEGA[i, colnames(OMEGA) %in% vars] <- 1L
+  }
 
   listLambda <- constructLambda(lvs, indsLVs,
                                 parTable = parTable,
@@ -163,6 +165,10 @@ createGsemModel <- function(parTable, ordered = NULL) {
 }
 
 
+specifyModelGsem <- function(group.info, ...) {
+
+
+}
 # Global variables
 namesParMatricesGsem <- c("lambda", "gamma",
                           "theta", "phi", "tau", "alpha")
