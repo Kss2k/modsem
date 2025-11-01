@@ -426,7 +426,11 @@ LMS_BLOCKS = list(
   gammaEta     = 11,
   omegaXiXi    = 12,
   omegaEtaXi   = 13,
-  phi          = NA
+  phi          = NA,
+  lambda       = 15,
+  tau          = 16,
+  thresholds   = 17,
+  gamma        = 18
 )
 
 
@@ -434,6 +438,7 @@ SYMMETRIC_BLOCKS_LMS = c(
   thetaDelta = 4,
   thetaEpsilon = 5,
   psi = 7,
+  theta = 14,
   phi = NA
 )
 
