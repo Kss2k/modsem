@@ -1,3 +1,4 @@
+
 emGsem <- function(model,
                    algorithm = c("EMA", "EM"),
                    em.control = list(),
@@ -240,4 +241,5 @@ emGsem <- function(model,
     P <- estepGsem(model = model, theta = thetaNew,
                   lastQuad = lastQuad, recalcQuad = FALSE,
                   adaptive.quad.tol = adaptive.quad.tol, ...)
+  })
 }
