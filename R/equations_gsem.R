@@ -1,4 +1,3 @@
-
 emGsem <- function(model,
                    algorithm = c("EMA", "EM"),
                    em.control = list(),
@@ -242,4 +241,11 @@ emGsem <- function(model,
                   lastQuad = lastQuad, recalcQuad = FALSE,
                   adaptive.quad.tol = adaptive.quad.tol, ...)
   })
+}
+
+
+estepGsem <- function(model, theta, lastQuad = NULL, recalcQuad = FALSE, adaptive.quad.tol = 1e-10) {
+
+  modFilled <- fillModelGsem(model = model, theta = theta)
+  browser()
 }

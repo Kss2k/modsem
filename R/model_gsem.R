@@ -1,4 +1,23 @@
-createGsemModelGroup <- function(parTable, ordered = NULL) {
+createGsemModelGroup <- function(parTable, ordered = NULL,
+                                 data = NULL,
+                                 method = "lms",
+                                 m = 16,
+                                 cov.syntax = NULL,
+                                 double = FALSE,
+                                 auto.fix.first = TRUE,
+                                 auto.fix.single = TRUE,
+                                 createTheta = TRUE,
+                                 mean.observed = TRUE,
+                                 standardize.inp = FALSE,
+                                 standardize.out = FALSE,
+                                 checkModel = TRUE,
+                                 quad.range = Inf,
+                                 adaptive.quad = FALSE,
+                                 adaptive.frequency = 3,
+                                 missing = "complete",
+                                 orthogonal.x = FALSE,
+                                 orthogonal.y = FALSE,
+                                 cluster = NULL) {
   # General Information
   higherOrderLVs <- getHigherOrderLVs(parTable)
   indsHigherOrderLVs <- getIndsLVs(parTable, lVs = higherOrderLVs, isOV = FALSE)
@@ -28,15 +47,19 @@ createGsemModelGroup <- function(parTable, ordered = NULL) {
   numAllIndsXis <- length(allIndsXis)
 
   xwith <- unique(stringr::str_replace_all(intTerms$rhs, ":", "__XWITH__"))
-  lvs <- c(xwith, xis, etas)
+  lvs     <- c(xwith, xis, etas)
   indsLVs <- c(indsXis, indsEtas)
+
+  for (xz in xwith)
+    indsLVs <- addNamedNullField(indsLVs, xz)
+
   numLVs <- length(lvs)
 
   # clean data
   data.cleaned <- prepDataModsemDA(data, allIndsXis, allIndsEtas,
                                    missing = missing, cluster = cluster)
 
-  OMEGA <- matrix(0, nrow = xwith, ncol = numEtas + numXis,
+  OMEGA <- matrix(0, nrow = length(xwith), ncol = numEtas + numXis,
                   dimnames = list(xwith, c(xis, etas)))
   for (i in seq_along(xwith)) {
     vars <- stringr::str_split(intTerms$rhs[[i]], pattern = ":")[[1L]]
@@ -60,12 +83,12 @@ createGsemModelGroup <- function(parTable, ordered = NULL) {
                               auto.fix.single = auto.fix.single)
 
   theta      <- listTheta$numeric
-  thetaLabel <- listTheta$label
+  labelTheta <- listTheta$label
 
 
   # structural model
-  Ieta         <- diag(numLVs) # used for (B^-1 = (Ieta - gammaEta)^-1)
-  listGammaXi  <- constructGamma(lvs, lvs, parTable = parTable,
+  Ieta      <- diag(numLVs) # used for (B^-1 = (Ieta - gammaEta)^-1)
+  listGamma <- constructGamma(lvs, lvs, parTable = parTable,
                                  auto.fix.first = auto.fix.first)
   gamma      <- listGamma$numeric
   labelGamma <- listGamma$label
@@ -76,7 +99,7 @@ createGsemModelGroup <- function(parTable, ordered = NULL) {
   labelPsi <- listPsi$label
 
   listPhiXi <- constructPhi(xis, method = method, cov.syntax = cov.syntax,
-                            parTableCovModel = parTableCovModel,
+                            parTableCovModel = NULL,
                             parTable = parTable, orthogonal.x = orthogonal.x)
   phiXi      <- listPhiXi$numeric
   labelPhiXi <- listPhiXi$label
@@ -100,23 +123,22 @@ createGsemModelGroup <- function(parTable, ordered = NULL) {
 
   # list of matrices
   matrices <- list(
-    lambdaX      = lambda,
+    lambda       = lambda,
     gammaEta     = gamma,
     thetaEpsilon = theta,
     Ieta         = Ieta,
     psi          = psi,
     tauX         = tau,
-    alpha        = alpha,
+    alpha        = alpha
   )
 
   labelMatrices <- list(
-    lambdaX      = lambda,
-    gammaEta     = gamma,
-    thetaEpsilon = theta,
-    Ieta         = Ieta,
-    psi          = psi,
-    tauX         = tau,
-    alpha        = alpha,
+    lambda       = labelLambda,
+    gammaEta     = labelGamma,
+    thetaEpsilon = labelTheta,
+    psi          = labelPsi,
+    tauX         = labelTau,
+    alpha        = labelAlpha
   )
 
   quad <- quadrature(m, k = numEtas + numXis, quad.range = quad.range,
@@ -140,9 +162,7 @@ createGsemModelGroup <- function(parTable, ordered = NULL) {
 
       has.interaction    = NROW(intTerms) > 0L,
       higherOrderLVs     = higherOrderLVs,
-      indsHigherOrderLVs = indsHigherOrderLVs,
-
-      lavOptimizerSyntaxAdditions = lavOptimizerSyntaxAdditions
+      indsHigherOrderLVs = indsHigherOrderLVs
     ),
 
     data          = data.cleaned,
@@ -150,13 +170,11 @@ createGsemModelGroup <- function(parTable, ordered = NULL) {
     quad          = quad,
     matrices      = matrices,
     labelMatrices = labelMatrices,
-    syntax        = syntax,
-    cov.syntax    = cov.syntax,
     parTable      = parTable
   )
 
   if (checkModel)
-    preCheckModel(model = model, covModel = covModel, method = method,
+    preCheckModel(model = model, covModel = NULL, method = method,
                   missing = missing)
 
   model
@@ -170,7 +188,6 @@ specifyModelGsem <- function(..., group.info, createTheta = TRUE) {
   stopif(n.groups < 1L, "Invalid grouping structure supplied.")
 
   parTable    <- group.info$parTable
-  parTableCov <- group.info$parTableCov
   group.col   <- parTable$group
 
   stopif(is.null(group.col) || max(group.col) != n.groups,
@@ -188,12 +205,7 @@ specifyModelGsem <- function(..., group.info, createTheta = TRUE) {
 
     args.g$parTable <- parTable[parTable$group == g, , drop = FALSE]
 
-    if (!is.null(parTableCov))
-      args.g$parTableCovModel <- parTableCov[parTableCov$group == g, , drop = FALSE]
-    else
-      args.g <- addNamedNullField(args.g, field = "parTableCovModel")
-
-    submodel.g <- do.call(specifModelDA_Group, args.g)
+    submodel.g <- do.call(createGsemModelGroup, args.g)
     submodel.g$info$group <- group.info$levels[[g]]
     submodel.g$info$n.groups <- 1L
 
@@ -351,7 +363,7 @@ createThetaGsem <- function(model, start = NULL, parTable.in = NULL) {
 }
 
 
-fillModelGsem <- function(model, theta, fillPhi = FALSE, method = "lms") {
+fillModelGsem <- function(model, theta) {
   params.utils <- model$params
 
   if (is.null(names(theta)))
@@ -369,8 +381,7 @@ fillModelGsem <- function(model, theta, fillPhi = FALSE, method = "lms") {
     submodel <- model$models[[g]]
 
     thetaMain <- theta[params.utils$SELECT_THETA_MAIN[[g]]]
-    submodel$matrices <- fillGroupModelGsem(submodel, thetaMain, thetaLabel,
-                                            fillPhi = fillPhi, method = method)
+    submodel$matrices <- fillGroupModelGsem(submodel, thetaMain, thetaLabel)
 
     model$models[[g]] <- submodel
   }
@@ -383,7 +394,7 @@ fillGroupModelGsem <- function(model, theta, thetaLabel) {
   M <- model$matrices
 
   lMatrices <- model$labelMatrices[namesParMatricesGsem]
-  pMatrices <- M[namesParMatrices]
+  pMatrices <- M[namesParMatricesGsem]
   M[namesParMatrices] <- fillMatricesLabels(pMatrices, lMatrices, thetaLabel)
 
   M$lambda <- fillNA_Matrix(M$lambdaX, theta = theta, pattern = "^lambda")

@@ -5,6 +5,14 @@ calcSESimpleSlopes <- function(X, V) {
     .Call(`_modsem_calcSESimpleSlopes`, X, V)
 }
 
+P_Step_GSEM_Group <- function(modelR, P) {
+    .Call(`_modsem_P_Step_GSEM_Group`, modelR, P)
+}
+
+Q_GSEM_Group <- function(modelR, P) {
+    .Call(`_modsem_Q_GSEM_Group`, modelR, P)
+}
+
 muLmsCpp <- function(model, z) {
     .Call(`_modsem_muLmsCpp`, model, z)
 }
