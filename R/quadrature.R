@@ -5,6 +5,7 @@ quadrature <- function(m, k,
                        adaptive = FALSE,
                        quad.range = Inf,
                        adaptive.frequency = 3,
+                       n = 1L,
                        ...) {
   if (quad.range < 0) {
     warning2("`quad.range` should be positive, using `-quad.range` instead!\n")
@@ -39,6 +40,18 @@ quadrature <- function(m, k,
 
   nodes <- sqrt(2) * nodes
   weights <- weights * pi ^ (-k/2)
+
+  if (n > 1L) {
+    nodes.flat   <- nodes
+    weights.flat <- weights
+    mk           <- NROW(nodes)
+
+    nodes <- vector("list", mk)
+    weights <- matrix(weights.flat, nrow = n, ncol = mk, byrow = TRUE)
+
+    for (i in seq_len(mk))
+      nodes[[i]] <- matrix(nodes.flat[i, , drop = FALSE], nrow = n, ncol = k, byrow = TRUE)
+  }
 
   list(
     n = nodes,

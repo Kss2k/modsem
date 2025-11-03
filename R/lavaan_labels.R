@@ -98,7 +98,7 @@ createLabelsOmega <- function(X, parTable.in = NULL) {
   cols   <- colnames(X)
   labels <- character(0L)
 
-  for (i in seq_len(ncol(X))) for (j in seq_len(nrow(X))) {
+  for (i in seq_len(NCOL(X))) for (j in seq_len(NROW(X))) {
     eta_i <- stringr::str_split_i(rows[[j]], pattern = "~", i = 1) # y~x -> y
     lhs_i <- stringr::str_split_i(rows[[j]], pattern = "~", i = 2) # y~x -> x
     rhs_i <- cols[[i]]

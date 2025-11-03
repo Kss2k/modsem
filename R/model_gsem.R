@@ -124,25 +124,26 @@ createGsemModelGroup <- function(parTable, ordered = NULL,
   # list of matrices
   matrices <- list(
     lambda       = lambda,
-    gammaEta     = gamma,
-    thetaEpsilon = theta,
+    gamma        = gamma,
+    theta        = theta,
     Ieta         = Ieta,
     psi          = psi,
-    tauX         = tau,
+    tau          = tau,
     alpha        = alpha
   )
 
   labelMatrices <- list(
     lambda       = labelLambda,
-    gammaEta     = labelGamma,
-    thetaEpsilon = labelTheta,
+    gamma        = labelGamma,
+    theta        = labelTheta,
     psi          = labelPsi,
-    tauX         = labelTau,
+    tau          = labelTau,
     alpha        = labelAlpha
   )
 
   quad <- quadrature(m, k = numEtas + numXis, quad.range = quad.range,
-                     adaptive = adaptive.quad, adaptive.frequency = adaptive.frequency)
+                     adaptive = adaptive.quad, adaptive.frequency = adaptive.frequency,
+                     n = data.cleaned$n)
 
   model <- list(
     info = list(
@@ -262,7 +263,7 @@ specifyModelGsem <- function(..., group.info, createTheta = TRUE) {
 
 # Global variables
 namesParMatricesGsem <- c("lambda", "gamma",
-                          "theta", "phi", "tau", "alpha")
+                          "theta", "psi", "tau", "alpha")
 
 
 createThetaGsem <- function(model, start = NULL, parTable.in = NULL) {
@@ -395,14 +396,14 @@ fillGroupModelGsem <- function(model, theta, thetaLabel) {
 
   lMatrices <- model$labelMatrices[namesParMatricesGsem]
   pMatrices <- M[namesParMatricesGsem]
-  M[namesParMatrices] <- fillMatricesLabels(pMatrices, lMatrices, thetaLabel)
+  M[namesParMatricesGsem] <- fillMatricesLabels(pMatrices, lMatrices, thetaLabel)
 
-  M$lambda <- fillNA_Matrix(M$lambdaX, theta = theta, pattern = "^lambda")
-  M$theta  <- fillSymmetric(M$thetaDelta, fetch(theta, "^theta"))
+  M$lambda <- fillNA_Matrix(M$lambda, theta = theta, pattern = "^lambda")
+  M$theta  <- fillSymmetric(M$theta, fetch(theta, "^theta"))
   M$psi    <- fillSymmetric(M$psi, fetch(theta, "^psi"))
-  M$tau    <- fillNA_Matrix(M$tauX, theta = theta, pattern = "^tau")
+  M$tau    <- fillNA_Matrix(M$tau, theta = theta, pattern = "^tau")
   M$alpha  <- fillNA_Matrix(M$alpha, theta = theta, pattern = "^alpha")
-  M$gamma  <- fillNA_Matrix(M$gammaXi, theta = theta, pattern = "^gamma")
+  M$gamma  <- fillNA_Matrix(M$gamma, theta = theta, pattern = "^gamma")
 
   M
 }

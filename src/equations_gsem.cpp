@@ -155,3 +155,73 @@ double Q_GSEM_Group(Rcpp::List &modelR, const arma::mat &P) {
   return M.Q(P);
 }
 
+
+
+struct GSEM_Model {
+  std::vector<GSEM_ModelGroup> groupModels;
+  int ngroups;
+  int n;
+
+  explicit GSEM_Model(const Rcpp::List& modFilled) {
+    const Rcpp::List groupModelsR = modFilled["models"];
+    ngroups = groupModelsR.size();
+    groupModels = std::vector<GSEM_ModelGroup>(ngroups);
+
+    for (int g = 0L; g < ngroups; g++) {
+      groupModels[g] = GSEM_Model(groupModelsR[g]);
+      n += groupModels[g].n;
+    }
+
+    groupModels[g].n_rows;
+  }
+
+  arma::mat Pi() {
+    const int zk = groupModelsR[0L].Z.size();
+    arma::mat out(n, zk);
+    
+    int offset = 0L;
+    for (int g = 0L; g < ngroups; g++) {
+      const int ng = groupModelsR[g].n;
+      out.submat(offset, 0L, offset + ng - 1L, zk) = groupModelsR[g].Pi();
+      offset += ng;
+    }
+   
+    out = out / arma::sum(out, 1L); // sum along each row
+    return out;
+  }
+
+  arma::vec Qi(const arma::mat &P) {
+    arma::vec density = arma::zeros<arma::vec>(Z[0L].n_rows);
+
+    for (int q = 0; q < Z.size(); q++)
+      density += P.col(q) * getDensityZq(Z[q], true);
+
+    return density;
+  }
+
+  double Q(const arma::mat &P, const bool log = true) {
+    return arma::sum(Qi(P)); 
+  }
+
+  GSEM_ModelGroup threadClone() const {
+    GSEM_ModelGroup c = *this;    // shallow for everything (fast)
+                           // Deep-copy ONLY what setParams()/lms_param can modify:
+    c.Ie     = arma::mat(Ie);
+    c.Lambda = arma::mat(Lambda);
+    c.Gamma  = arma::mat(Gamma);
+    c.alpha  = arma::mat(alpha);
+    c.Psi    = arma::mat(Psi);
+    c.Theta  = arma::mat(Theta);
+
+    return c;
+  }
+
+  GSEM_Model threadClone() const {
+    GSEM_Model c = *this;
+
+    for (int g = 0; g < ngroups; g++)
+      c.groupModels[g] = groupmodels[g].threadClone();
+
+    return c;
+  }
+};

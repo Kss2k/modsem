@@ -245,7 +245,5 @@ emGsem <- function(model,
 
 
 estepGsem <- function(model, theta, lastQuad = NULL, recalcQuad = FALSE, adaptive.quad.tol = 1e-10) {
-
   modFilled <- fillModelGsem(model = model, theta = theta)
-  browser()
 }
