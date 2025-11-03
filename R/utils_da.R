@@ -202,6 +202,7 @@ castDataNumericMatrix <- function(data) {
 patternizeMissingDataFIML <- function(data) {
   # if we are not using fiml, the missing data should already have been removed...
   CLUSTER <- attr(data, "cluster")
+  WEIGHTS <- attr(data, "weights")
 
   Y   <- as.matrix(data)
   obs <- !is.na(Y)
@@ -257,12 +258,13 @@ patternizeMissingDataFIML <- function(data) {
     p          = length(ids),
     data.full  = data,
     is.fiml    = length(ids) > 1L,
-    cluster    = CLUSTER
+    cluster    = CLUSTER,
+    weights    = WEIGHTS
   )
 }
 
 
-handleMissingData <- function(data, missing = "listwise", CLUSTER = NULL) {
+handleMissingData <- function(data, missing = "listwise", CLUSTER = NULL, WEIGHTS = NULL) {
   missing       <- tolower(missing)
   completeCases <- stats::complete.cases(data)
   anyMissing    <- any(!completeCases)
@@ -270,6 +272,7 @@ handleMissingData <- function(data, missing = "listwise", CLUSTER = NULL) {
 
   if (!anyMissing){
     attr(data, "cluster") <- CLUSTER
+    attr(data, "weights") <- WEIGHTS
     return(data)
 
   } else if (allMissing) {
@@ -286,7 +289,8 @@ handleMissingData <- function(data, missing = "listwise", CLUSTER = NULL) {
              "or the `modsem_mimpute()` function!\n")
 
     out <- data[completeCases, ]
-    attr(out, "cluster") <- CLUSTER
+    attr(out, "cluster") <- CLUSTER[completeCases]
+    attr(out, "weights") <- WEIGHTS[completeCases]
 
     return(out)
 
@@ -302,6 +306,7 @@ handleMissingData <- function(data, missing = "listwise", CLUSTER = NULL) {
 
   } else if (missing %in% c("fiml", "ml", "direct")) {
     attr(data, "cluster") <- CLUSTER
+    attr(data, "weights") <- WEIGHTS
 
     rowMissingAll <- apply(data, MARGIN = 1, FUN = \(x) all(is.na(x)))
     data          <- data[!rowMissingAll, , drop = FALSE] # we've already know that
@@ -315,7 +320,7 @@ handleMissingData <- function(data, missing = "listwise", CLUSTER = NULL) {
 
 
 prepDataModsemDA <- function(data, allIndsXis, allIndsEtas, missing = "listwise",
-                             cluster = NULL) {
+                             cluster = NULL, sampling.weights = NULL) {
 
   if (is.null(data) || !NROW(data))
     return(list(data.full = NULL, n = 0, k = 0, p = 0, cluster = NULL))
@@ -327,9 +332,15 @@ prepDataModsemDA <- function(data, allIndsXis, allIndsEtas, missing = "listwise"
 
   } else CLUSTER <- NULL
 
+  if (!is.null(sampling.weights)) {
+    stopif(length(sampling.weights) > 1L, "`sampling.weights` must be a single variable!")
+    WEIGHTS <- data[, sampling.weights]
+
+  } else WEIGHTS <- NULL
+
   sortData(data, allIndsXis,  allIndsEtas) |>
     castDataNumericMatrix() |>
-    handleMissingData(missing = missing, CLUSTER = CLUSTER) |>
+    handleMissingData(missing = missing, CLUSTER = CLUSTER, WEIGHTS = WEIGHTS) |>
     patternizeMissingDataFIML()
 }
 
@@ -1221,8 +1232,28 @@ getZeroGroupParTable <- function(parTable) {
 }
 
 
-prepareDataGroupDA <- function(group, data) {
+prepareDataGroupDA <- function(group, data, sampling.weights, sampling.weights.normalization) {
+  if (!is.null(sampling.weights)) {
+    stopif(length(sampling.weights) != 1L, "sampling.weights variable must be of length 1!")
+    stopif(!sampling.weights %in% names(data),
+           sprintf("sampling.weights variable '%s' not found in `data`.", sampling.weights))
+
+    weights <- data[[sampling.weights]]
+    stopif(any(is.na(weights)), "`sampling.weights` cannot have missing values!")
+    stopif(any(weights < 0), "`sampling.weights` cannot have negative values!")
+  }
+
+  if ((!is.null(sampling.weights) && tolower(sampling.weights.normalization) == "total")) {
+    weights <- data[[sampling.weights]]
+    data[[sampling.weights]] <- NROW(data) * weights / sum(weights)
+  }
+
   if (is.null(group)) {
+    if ((!is.null(sampling.weights) && tolower(sampling.weights.normalization) == "group")) {
+      weights <- data[[sampling.weights]]
+      data[[sampling.weights]] <- NROW(data) * weights / sum(weights)
+    }
+
     return(list(
       has.groups = FALSE,
       group = NULL,
@@ -1253,8 +1284,18 @@ prepareDataGroupDA <- function(group, data) {
   data <- data[, setdiff(names(data), group), drop = FALSE]
   group.var <- group
 
-  stopif(length(group.raw) != n, "Length of `group` must match the number of rows in `data`.")
-  stopif(any(is.na(group.raw)), "`group` cannot contain missing values.")
+  if ((!is.null(sampling.weights) && tolower(sampling.weights.normalization) == "group")) {
+    weights <- data[[sampling.weights]]
+
+    for (g in group.raw) {
+      cond      <- group.raw == g
+      weights.g <- data[cond, sampling.weights]
+      data[cond, sampling.weights] <- sum(cond) * weights.g / sum(weights.g)
+    }
+  }
+
+  stopif(length(group.raw) != n, "Length of `group` must match the number of rows in `data`!")
+  stopif(any(is.na(group.raw)), "`group` cannot contain missing values!")
 
   group.raw <- as.character(group.raw) # match lavaan behaviour, ignore factor levels
   levels_order <- unique(group.raw)
@@ -1367,9 +1408,13 @@ expandParTableByGroup <- function(parTable, group.levels) {
 }
 
 
-getGroupInfo <- function(model.syntax, cov.syntax, data, group,
-                         auto.split.syntax = FALSE) {
-  group.info <- prepareDataGroupDA(group = group, data = data)
+parseModelArgumentsByGroupDA <- function(model.syntax, cov.syntax, data, group,
+                                         auto.split.syntax = FALSE,
+                                         sampling.weights = NULL,
+                                         sampling.weights.normalization = "total") {
+
+  group.info <- prepareDataGroupDA(group = group, data = data, sampling.weights = sampling.weights,
+                                   sampling.weights.normalization = sampling.weights.normalization)
 
   parTable    <- modsemify(model.syntax)
   parTableCov <- modsemify(cov.syntax)

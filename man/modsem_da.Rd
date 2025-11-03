@@ -45,6 +45,8 @@ modsem_da(
   ordered.probit.correction = FALSE,
   cluster = NULL,
   cr1s = FALSE,
+  sampling.weights = NULL,
+  sampling.weights.normalization = NULL,
   rcs = FALSE,
   rcs.choose = NULL,
   rcs.scale.corrected = TRUE,
@@ -226,6 +228,16 @@ of free parameters. This adjustment inflates standard errors to reduce the
 small-sample downward bias present in the basic cluster-robust (CR0) estimator,
 especially when \eqn{G} is small. If \code{FALSE}, the unadjusted CR0 estimator
 is used. Defaults to \code{TRUE}. Only relevant if \code{cluster} is specified.}
+
+\item{sampling.weights}{A variable name in the data frame containing sampling weight information.
+Depending on the sampling.weights.normalization argument, these weights may be rescaled (or not)
+so that their sum equals the number of observations (total or per group)}
+
+\item{sampling.weights.normalization}{If \code{"none"}, the sampling weights (if provided) will not be
+transformed. If \code{"total"}, the sampling weights are normalized by dividing by the total sum
+of the weights, and multiplying again by the total sample size. If \code{"group"}, the sampling
+weights are normalized per group: by dividing by the sum of the weights (in each group), and
+multiplying again by the group size. The default is \code{"total"}.}
 
 \item{rcs}{Should latent variable indicators be replaced with reliability-corrected
 single item indicators instead? See \code{\link{relcorr_single_item}}.}

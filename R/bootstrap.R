@@ -115,26 +115,31 @@ bootstrap_modsem.modsem_da <- function(model,
     group.label <- INSPECT$group.label
     DATA        <- INSPECT$data
 
-    cluster <- NULL
-    data    <- NULL
+    sampling.weights <- NULL
+    cluster          <- NULL
+    data             <- NULL
 
     for (g in group.label) {
-      data.g.mat <- DATA[[g]]
-      data.g     <- as.data.frame(data.g.mat)
-      cluster.g  <- attr(data.mat, "cluster")
-      data.g[[group]] <- g
+      data.g.mat         <- DATA[[g]]
+      data.g             <- as.data.frame(data.g.mat)
+      cluster.g          <- attr(data.g.mat, "cluster")
+      sampling.weights.g <- attr(data.g.mat, "weights")
+      data.g[[group]]    <- g
 
-      data    <- rbind(data, data.g)
-      cluster <- c(cluster, cluster.g)
+      data             <- rbind(data, data.g)
+      cluster          <- c(cluster, cluster.g)
+      sampling.weights <- c(sampling.weights, sampling.weights.g)
     }
 
   } else {
-    data.mat <- INSPECT$data
-    data     <- as.data.frame(data.mat)
-    cluster  <- attr(data.mat, "cluster")
+    data.mat         <- INSPECT$data
+    data             <- as.data.frame(data.mat)
+    cluster          <- attr(data.mat, "cluster")
+    sampling.weights <- attr(data.mat, "weights")
   }
 
-  ovs      <- colnames(data)
+  allvars  <- colnames(data)
+  ovs      <- INSPECT$ovs
   N        <- NROW(data)
   P        <- min(P.max, N * R)
   parTable <- parameter_estimates(model)
@@ -144,8 +149,14 @@ bootstrap_modsem.modsem_da <- function(model,
   stopif(!is.null(cluster) && type != "nonparametric",
          "cluster bootstrap is only available with `type=\"nonparametric\"`!")
 
+  if (!is.null(cluster) && !is.null(model$args$cluster))
+    data[[model$args$cluster]] <- cluster
+
+  if (!is.null(sampling.weights) && !is.null(model$args$sampling.weights))
+    data[[model$args$sampling.weights]] <- sampling.weights
+
   population <- switch(type,
-    parametric    = simulateDataParTable(parTable, N = P, colsOVs = ovs)$OV,
+    parametric    = simulatedGroupsToDf(simulateDataParTable(parTable, N = P, colsOVs = ovs), type = "OV"),
     nonparametric = data,
     stop2("Unrecognized type!\n")
   )
@@ -156,6 +167,13 @@ bootstrap_modsem.modsem_da <- function(model,
   argList$model.syntax <- model$model$info$group.info$syntax
   argList$cov.syntax   <- model$model$info$group.info$cov.syntax
   argList$method       <- model$method
+  argList$sampling.weights.normalization <- "none" # This has already been done
+
+  if (type == "parametric" && !is.null(argList$sampling.weights)) {
+    # By desing, the sampling weights aren't needed when simulating
+    # parametric data, so we delete the argument.
+    argList$sampling.weights <- NULL
+  }
 
   if (!optimize) {
     argList$start        <- model$theta
