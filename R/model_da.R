@@ -20,7 +20,8 @@ specifModelDA_Group <- function(syntax = NULL,
                                 missing = "complete",
                                 orthogonal.x = FALSE,
                                 orthogonal.y = FALSE,
-                                cluster = NULL) {
+                                cluster = NULL,
+                                sampling.weights = NULL) {
   if (is.null(parTable) && !is.null(syntax)) parTable <- modsemify(syntax)
   stopif(is.null(parTable), "No parTable found")
 
@@ -62,8 +63,14 @@ specifModelDA_Group <- function(syntax = NULL,
   numAllIndsXis <- length(allIndsXis)
 
   # clean data
-  data.cleaned <- prepDataModsemDA(data, allIndsXis, allIndsEtas,
-                                   missing = missing, cluster = cluster)
+  data.cleaned <- prepDataModsemDA(
+    data             = data,
+    allIndsXis       = allIndsXis,
+    allIndsEtas      = allIndsEtas,
+    missing          = missing,
+    cluster          = cluster,
+    sampling.weights = sampling.weights
+  )
 
   # measurement model x
   if (method == "qml") {

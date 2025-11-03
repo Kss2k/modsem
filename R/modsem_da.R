@@ -170,6 +170,16 @@
 #'   especially when \eqn{G} is small. If \code{FALSE}, the unadjusted CR0 estimator
 #'   is used. Defaults to \code{TRUE}. Only relevant if \code{cluster} is specified.
 #'
+#' @param sampling.weights A variable name in the data frame containing sampling weight information.
+#'   Depending on the sampling.weights.normalization argument, these weights may be rescaled (or not)
+#'   so that their sum equals the number of observations (total or per group)
+#'
+#' @param sampling.weights.normalization: If \code{"none"}, the sampling weights (if provided) will not be
+#'   transformed. If \code{"total"}, the sampling weights are normalized by dividing by the total sum
+#'   of the weights, and multiplying again by the total sample size. If \code{"group"}, the sampling
+#'   weights are normalized per group: by dividing by the sum of the weights (in each group), and
+#'   multiplying again by the group size. The default is \code{"total"}.
+#'
 #' @param rcs Should latent variable indicators be replaced with reliability-corrected
 #'   single item indicators instead? See \code{\link{relcorr_single_item}}.
 #'
@@ -314,6 +324,8 @@ modsem_da <- function(model.syntax = NULL,
                       ordered.probit.correction = FALSE,
                       cluster = NULL,
                       cr1s = FALSE,
+                      sampling.weights = NULL,
+                      sampling.weights.normalization = NULL,
                       rcs = FALSE,
                       rcs.choose = NULL,
                       rcs.scale.corrected = TRUE,
@@ -415,43 +427,45 @@ modsem_da <- function(model.syntax = NULL,
     getMethodSettingsDA(method,
       args =
         list(
-          verbose            = verbose,
-          optimize           = optimize,
-          nodes              = nodes,
-          convergence.abs    = convergence.abs,
-          convergence.rel    = convergence.rel,
-          optimizer          = optimizer,
-          center.data        = center.data,
-          standardize.data   = standardize.data,
-          standardize.out    = standardize.out,
-          standardize        = standardize,
-          mean.observed      = mean.observed,
-          double             = double,
-          calc.se            = calc.se,
-          FIM                = FIM,
-          EFIM.S             = EFIM.S,
-          OFIM.hessian       = OFIM.hessian,
-          EFIM.parametric    = EFIM.parametric,
-          robust.se          = robust.se,
-          R.max              = R.max,
-          max.iter           = max.iter,
-          max.step           = max.step,
-          epsilon            = epsilon,
-          quad.range         = quad.range,
-          adaptive.quad      = adaptive.quad,
-          adaptive.frequency = adaptive.frequency,
-          adaptive.quad.tol  = adaptive.quad.tol,
-          n.threads          = n.threads,
-          algorithm          = algorithm,
-          em.control         = em.control,
-          missing            = missing,
-          orthogonal.x       = orthogonal.x,
-          orthogonal.y       = orthogonal.y,
-          auto.fix.first     = auto.fix.first,
-          auto.fix.single    = auto.fix.single,
-          auto.split.syntax  = auto.split.syntax,
-          cr1s               = cr1s,
-          group              = group
+          verbose                        = verbose,
+          optimize                       = optimize,
+          nodes                          = nodes,
+          convergence.abs                = convergence.abs,
+          convergence.rel                = convergence.rel,
+          optimizer                      = optimizer,
+          center.data                    = center.data,
+          standardize.data               = standardize.data,
+          standardize.out                = standardize.out,
+          standardize                    = standardize,
+          mean.observed                  = mean.observed,
+          double                         = double,
+          calc.se                        = calc.se,
+          FIM                            = FIM,
+          EFIM.S                         = EFIM.S,
+          OFIM.hessian                   = OFIM.hessian,
+          EFIM.parametric                = EFIM.parametric,
+          robust.se                      = robust.se,
+          R.max                          = R.max,
+          max.iter                       = max.iter,
+          max.step                       = max.step,
+          epsilon                        = epsilon,
+          quad.range                     = quad.range,
+          adaptive.quad                  = adaptive.quad,
+          adaptive.frequency             = adaptive.frequency,
+          adaptive.quad.tol              = adaptive.quad.tol,
+          n.threads                      = n.threads,
+          algorithm                      = algorithm,
+          em.control                     = em.control,
+          missing                        = missing,
+          orthogonal.x                   = orthogonal.x,
+          orthogonal.y                   = orthogonal.y,
+          auto.fix.first                 = auto.fix.first,
+          auto.fix.single                = auto.fix.single,
+          auto.split.syntax              = auto.split.syntax,
+          cr1s                           = cr1s,
+          group                          = group,
+          sampling.weights               = sampling.weights,
+          sampling.weights.normalization = sampling.weights.normalization
         )
     )
 
@@ -463,12 +477,14 @@ modsem_da <- function(model.syntax = NULL,
   if (args$standardize.data)
     data[cont.cols] <- lapply(data[cont.cols], FUN = scaleIfNumeric, scaleFactor = FALSE)
 
-  group.info <- getGroupInfo(
+  group.info <- parseModelArgumentsByGroupDA(
     model.syntax       = model.syntax,
     cov.syntax         = cov.syntax,
     data               = data,
     group              = group,
-    auto.split.syntax  = args$auto.split.syntax
+    auto.split.syntax  = args$auto.split.syntax,
+    sampling.weights   = sampling.weights,
+    sampling.weights.normalization = args$sampling.weights.normalization
   )
 
   stopif(!method %in% c("lms", "qml"), "Method must be either 'lms' or 'qml'")
@@ -487,14 +503,22 @@ modsem_da <- function(model.syntax = NULL,
     orthogonal.y       = args$orthogonal.y,
     auto.fix.first     = args$auto.fix.first,
     auto.fix.single    = args$auto.fix.single,
-    cluster            = cluster
+    cluster            = cluster,
+    sampling.weights   = sampling.weights
   )
 
   if (args$optimize) {
     model <- tryCatch({
       .optimize <- purrr::quietly(optimizeStartingParamsDA)
-      #.optimize <- optimizeStartingParamsDA
-      result    <- .optimize(model, args = args, group = group, engine = "sam")
+      # .optimize <- \(...) list(result = optimizeStartingParamsDA(...))
+      result    <- .optimize(
+        model            = model,
+        args             = args,
+        group            = group,
+        sampling.weights = sampling.weights,
+        engine           = "sam"
+      )
+
       warnings  <- result$warnings
 
       if (length(warnings)) {

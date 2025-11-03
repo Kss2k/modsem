@@ -107,13 +107,17 @@ logLikQmlGroup <- function(submodel, sum = TRUE, sign = -1) {
   indsY         <- colnames(m$y)
   nonNormalInds <- indsY[!indsY %in% normalInds]
 
-  f2 <- probf2(matrices = m, normalInds = normalInds, sigma = sigmaXU, sum = sum)
-  f3 <- probf3(matrices = m, nonNormalInds = nonNormalInds, expected = Ey,
-               sigma = sigmaEpsilon, t = t, numEta = numEta, sum = sum)
+  # probability densities per observation
+  f2i <- probf2(matrices = m, normalInds = normalInds, sigma = sigmaXU)
+  f3i <- probf3(matrices = m, nonNormalInds = nonNormalInds, expected = Ey,
+               sigma = sigmaEpsilon, t = t, numEta = numEta)
+  lli <- f2i + f3i
 
-  logLik <- (f2 + f3)
+  # Correct by sampling weights (if available)
+  if (!is.null(submodel$data$weights))
+    lli <- submodel$data$weights * lli
 
-  sign * logLik
+  if (sum) sign * sum(lli) else sign * lli
 }
 
 
@@ -123,23 +127,21 @@ calcSigmaXU <- function(matrices) {
 }
 
 
-probf2 <- function(matrices, normalInds, sigma, sum=FALSE) {
+probf2 <- function(matrices, normalInds, sigma) {
   mu <- rep(0, ncol(sigma))
   X  <- cbind(matrices$x, matrices$u)[ , normalInds]
 
-  p <- dmvn(X, mean = mu, sigma = sigma, log = TRUE)
-
-  if (sum) sum(p) else p
+  dmvn(X, mean = mu, sigma = sigma, log = TRUE)
 }
 
 
-probf3 <- function(matrices, nonNormalInds, expected, sigma, t, numEta, sum = FALSE) {
+probf3 <- function(matrices, nonNormalInds, expected, sigma, t, numEta) {
   if (numEta == 1)
     p <- dnormCpp(matrices$y[, 1], mu = expected, sigma = sqrt(sigma), ncores = ThreadEnv$n.threads)
   else
     p <- repDmvnormCpp(matrices$y[, nonNormalInds], expected = expected,
                        sigma = sigma, t = t, ncores = ThreadEnv$n.threads)
-  if (sum) sum(p) else p
+  p
 }
 
 

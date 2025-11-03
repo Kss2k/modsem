@@ -365,6 +365,7 @@ arma::vec gradLogLikLmsCpp(const Rcpp::List& modelR,
 inline double observedLogLikFromModel(const LMSModel&  M,
                                       const arma::mat& V,
                                       const arma::vec& w,
+                                      const arma::vec& samplingWeights,
                                       const std::vector<arma::mat>& data,
                                       const std::vector<arma::uvec>& colidx,
                                       const arma::uvec n,
@@ -395,7 +396,7 @@ inline double observedLogLikFromModel(const LMSModel&  M,
     }
   }
 
-  return arma::sum(arma::log(density));
+  return arma::sum(samplingWeights * arma::log(density));
 }
 
 
@@ -416,11 +417,13 @@ arma::vec gradObsLogLikLmsCpp(const Rcpp::List& modelR,
 
   const arma::mat V = Rcpp::as<arma::mat>(P["V"]);
   const arma::vec w = Rcpp::as<arma::vec>(P["w"]);
+  const arma::vec samplingWeights = Rcpp::as<arma::vec>(P["sampling.weights"]);
+
   const auto colidx = as_vec_of_uvec(colidxR);
   const auto data   = as_vec_of_mat(dataR);
 
   auto obs_ll = [&](LMSModel& mod) -> double {
-    return observedLogLikFromModel(mod, V, w, data, colidx, n, npatterns, 1L); // single-threaded
+    return observedLogLikFromModel(mod, V, w, samplingWeights, data, colidx, n, npatterns, 1L); // single-threaded
   };
 
   return gradientFD(M, obs_ll, block, row, col, symmetric, eps, ncores); // multi-thread here instead
@@ -439,10 +442,12 @@ double observedLogLikLmsCpp(const Rcpp::List& modelR,
 
   const arma::mat V = Rcpp::as<arma::mat>(P["V"]);
   const arma::vec w = Rcpp::as<arma::vec>(P["w"]);
+  const arma::vec samplingWeights = Rcpp::as<arma::vec>(P["sampling.weights"]);
+
   const auto colidx = as_vec_of_uvec(colidxR);
   const auto data   = as_vec_of_mat(dataR);
 
-  return observedLogLikFromModel(M, V, w, data, colidx, n, npatterns, ncores);
+  return observedLogLikFromModel(M, V, w, samplingWeights, data, colidx, n, npatterns, ncores);
 }
 
 
@@ -715,11 +720,13 @@ Rcpp::List hessObsLogLikLmsCpp(const Rcpp::List& modelR,
 
     const arma::mat V = Rcpp::as<arma::mat>(P["V"]);
     const arma::vec w = Rcpp::as<arma::vec>(P["w"]);
+    const arma::vec samplingWeights = Rcpp::as<arma::vec>(P["sampling.weights"]);
+
     const auto colidx = as_vec_of_uvec(colidxR);
     const auto data   = as_vec_of_mat(dataR);
 
     auto obs_ll = [&](LMSModel& mod) -> double {
-        return observedLogLikFromModel(mod, V, w, data, colidx,
+        return observedLogLikFromModel(mod, V, w, samplingWeights, data, colidx,
                                        n, npatterns, 1L); // single-threaded
     };
 
