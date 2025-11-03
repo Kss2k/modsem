@@ -233,6 +233,12 @@ is used. Defaults to \code{TRUE}. Only relevant if \code{cluster} is specified.}
 Depending on the sampling.weights.normalization argument, these weights may be rescaled (or not)
 so that their sum equals the number of observations (total or per group)}
 
+\item{sampling.weights.normalization}{If \code{"none"}, the sampling weights (if provided) will not be
+transformed. If \code{"total"}, the sampling weights are normalized by dividing by the total sum
+of the weights, and multiplying again by the total sample size. If \code{"group"}, the sampling
+weights are normalized per group: by dividing by the sum of the weights (in each group), and
+multiplying again by the group size. The default is \code{"total"}.}
+
 \item{rcs}{Should latent variable indicators be replaced with reliability-corrected
 single item indicators instead? See \code{\link{relcorr_single_item}}.}
 
@@ -276,12 +282,6 @@ variables can in some cases be biased, if the model is not split beforehand.
 The default is therefore \code{TRUE} for the QML approach.}
 
 \item{...}{additional arguments to be passed to the estimation function.}
-
-\item{sampling.weights.normalization:}{If \code{"none"}, the sampling weights (if provided) will not be
-transformed. If \code{"total"}, the sampling weights are normalized by dividing by the total sum
-of the weights, and multiplying again by the total sample size. If \code{"group"}, the sampling
-weights are normalized per group: by dividing by the sum of the weights (in each group), and
-multiplying again by the group size. The default is \code{"total"}.}
 }
 \value{
 \code{modsem_da} object
