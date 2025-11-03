@@ -228,7 +228,7 @@ performed.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">qml_impute</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Imputing missing values. Consider using the `modsem_mimpute()` function!</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (1.0.14) ended normally after 51 iterations</span></span>
+<span><span class="co">#&gt; modsem (1.0.14) ended normally after 50 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                        QML</span></span>
 <span><span class="co">#&gt;   Optimization method                           NLMINB</span></span>
@@ -275,15 +275,15 @@ performed.</p>
 <span><span class="co">#&gt;   X =~          </span></span>
 <span><span class="co">#&gt;     x1              1.000                             </span></span>
 <span><span class="co">#&gt;     x2              0.800      0.012   64.173    0.000</span></span>
-<span><span class="co">#&gt;     x3              0.912      0.013   68.454    0.000</span></span>
+<span><span class="co">#&gt;     x3              0.912      0.013   68.453    0.000</span></span>
 <span><span class="co">#&gt;   Z =~          </span></span>
 <span><span class="co">#&gt;     z1              1.000                             </span></span>
-<span><span class="co">#&gt;     z2              0.810      0.012   64.967    0.000</span></span>
-<span><span class="co">#&gt;     z3              0.882      0.013   67.682    0.000</span></span>
+<span><span class="co">#&gt;     z2              0.810      0.012   64.968    0.000</span></span>
+<span><span class="co">#&gt;     z3              0.882      0.013   67.683    0.000</span></span>
 <span><span class="co">#&gt;   Y =~          </span></span>
 <span><span class="co">#&gt;     y1              1.000                             </span></span>
-<span><span class="co">#&gt;     y2              0.796      0.007  106.803    0.000</span></span>
-<span><span class="co">#&gt;     y3              0.902      0.008  112.544    0.000</span></span>
+<span><span class="co">#&gt;     y2              0.796      0.007  106.804    0.000</span></span>
+<span><span class="co">#&gt;     y3              0.902      0.008  112.543    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
@@ -301,7 +301,7 @@ performed.</p>
 <span><span class="co">#&gt;    .z2              1.205      0.020   59.219    0.000</span></span>
 <span><span class="co">#&gt;    .z3              0.915      0.022   42.032    0.000</span></span>
 <span><span class="co">#&gt;    .y1              1.039      0.033   31.417    0.000</span></span>
-<span><span class="co">#&gt;    .y2              1.218      0.027   45.417    0.000</span></span>
+<span><span class="co">#&gt;    .y2              1.218      0.027   45.416    0.000</span></span>
 <span><span class="co">#&gt;    .y3              0.952      0.030   31.631    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
@@ -311,17 +311,17 @@ performed.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;    .x1              0.155      0.009   17.946    0.000</span></span>
+<span><span class="co">#&gt;    .x1              0.155      0.009   17.945    0.000</span></span>
 <span><span class="co">#&gt;    .x2              0.163      0.007   23.325    0.000</span></span>
 <span><span class="co">#&gt;    .x3              0.162      0.008   20.695    0.000</span></span>
 <span><span class="co">#&gt;    .z1              0.166      0.009   18.432    0.000</span></span>
-<span><span class="co">#&gt;    .z2              0.161      0.007   22.759    0.000</span></span>
+<span><span class="co">#&gt;    .z2              0.161      0.007   22.760    0.000</span></span>
 <span><span class="co">#&gt;    .z3              0.158      0.008   20.724    0.000</span></span>
 <span><span class="co">#&gt;    .y1              0.160      0.009   17.974    0.000</span></span>
-<span><span class="co">#&gt;    .y2              0.157      0.007   22.808    0.000</span></span>
+<span><span class="co">#&gt;    .y2              0.157      0.007   22.807    0.000</span></span>
 <span><span class="co">#&gt;    .y3              0.164      0.008   20.568    0.000</span></span>
 <span><span class="co">#&gt;     X               0.990      0.037   27.072    0.000</span></span>
-<span><span class="co">#&gt;     Z               1.017      0.038   26.942    0.000</span></span>
+<span><span class="co">#&gt;     Z               1.017      0.038   26.943    0.000</span></span>
 <span><span class="co">#&gt;    .Y               0.984      0.038   25.957    0.000</span></span></code></pre></div>
 <p>A better option than single imputation, is multiple imputation, which
 can be performed both for the LMS and QML approaches, using the
