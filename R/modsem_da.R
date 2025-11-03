@@ -174,7 +174,7 @@
 #'   Depending on the sampling.weights.normalization argument, these weights may be rescaled (or not)
 #'   so that their sum equals the number of observations (total or per group)
 #'
-#' @param sampling.weights.normalization: If \code{"none"}, the sampling weights (if provided) will not be
+#' @param sampling.weights.normalization If \code{"none"}, the sampling weights (if provided) will not be
 #'   transformed. If \code{"total"}, the sampling weights are normalized by dividing by the total sum
 #'   of the weights, and multiplying again by the total sample size. If \code{"group"}, the sampling
 #'   weights are normalized per group: by dividing by the sum of the weights (in each group), and
