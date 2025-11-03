@@ -289,8 +289,8 @@ handleMissingData <- function(data, missing = "listwise", CLUSTER = NULL, WEIGHT
              "or the `modsem_mimpute()` function!\n")
 
     out <- data[completeCases, ]
-    attr(out, "cluster") <- CLUSTER[completeCases, ]
-    attr(out, "weights") <- WEIGHTS[completeCases, ]
+    attr(out, "cluster") <- CLUSTER[completeCases]
+    attr(out, "weights") <- WEIGHTS[completeCases]
 
     return(out)
 
