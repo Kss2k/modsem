@@ -64,7 +64,7 @@ optimizeStartingParamsDA <- function(model,
       missing          = missing,
       suppress.warnings.match = TRUE,
       suppress.warnings.lavaan = TRUE,
-      sampling.weights.normalization = args$sampling.widths.normalization
+      sampling.weights.normalization = args$sampling.weights.normalization
     )
     parTable   <- parameter_estimates(estPI, colon.pi = TRUE)
     lavaan.fit <- extract_lavaan(estPI)
