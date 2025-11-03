@@ -122,8 +122,8 @@ bootstrap_modsem.modsem_da <- function(model,
     for (g in group.label) {
       data.g.mat         <- DATA[[g]]
       data.g             <- as.data.frame(data.g.mat)
-      cluster.g          <- attr(data.mat, "cluster")
-      sampling.weights.g <- attr(data.mat, "weights")
+      cluster.g          <- attr(data.g.mat, "cluster")
+      sampling.weights.g <- attr(data.g.mat, "weights")
       data.g[[group]]    <- g
 
       data             <- rbind(data, data.g)
@@ -138,7 +138,8 @@ bootstrap_modsem.modsem_da <- function(model,
     sampling.weights <- attr(data.mat, "weights")
   }
 
-  ovs      <- colnames(data)
+  allvars  <- colnames(data)
+  ovs      <- INSPECT$ovs
   N        <- NROW(data)
   P        <- min(P.max, N * R)
   parTable <- parameter_estimates(model)
@@ -155,7 +156,7 @@ bootstrap_modsem.modsem_da <- function(model,
     data[[model$args$sampling.weights]] <- sampling.weights
 
   population <- switch(type,
-    parametric    = simulateDataParTable(parTable, N = P, colsOVs = ovs)$OV,
+    parametric    = simulatedGroupsToDf(simulateDataParTable(parTable, N = P, colsOVs = ovs), type = "OV"),
     nonparametric = data,
     stop2("Unrecognized type!\n")
   )

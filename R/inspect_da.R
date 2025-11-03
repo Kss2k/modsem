@@ -12,6 +12,7 @@ modsem_inspect_da <- function(model, what = "default") {
 
   finalModel <- model$model
   groupModels <- finalModel$models
+  ovs      <- c(finalModel$info$allIndsXis, finalModel$info$allIndsEtas)
   n.groups <- length(groupModels)
   is.multi <- n.groups > 1L
 
@@ -198,9 +199,10 @@ modsem_inspect_da <- function(model, what = "default") {
                loglik            = model$logLik,
                iterations        = model$iterations,
                convergence       = model$convergence,
+               ovs               = ovs,
 
                ngroups     = model$model$info$n.groups,
-               group       = model$model$args$group,
+               group       = model$args$group,
                group.label = group.names,
 
                lambda       = lambda.val,

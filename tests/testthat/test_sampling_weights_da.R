@@ -55,4 +55,25 @@ testthat::expect_no_condition({
   bootstrap_modsem(fit.qml.h0, R = 5L, optimize = TRUE, type = "nonparametric")
   bootstrap_modsem(fit.lms.h0, R = 5L, optimize = TRUE, type = "parametric")
   bootstrap_modsem(fit.qml.h0, R = 5L, optimize = TRUE, type = "parametric")
+  bootstrap_modsem(fit.lms.h0.mg1, R = 5L, optimize = TRUE, type = "nonparametric")
+  bootstrap_modsem(fit.lms.h0.mg1, R = 5L, optimize = TRUE, type = "parametric")
 })
+
+
+# Check missing sampling weights
+oneInt3 <- oneInt2
+oneInt3$weights[c(2, 3, 5, 18)] <- NA
+
+testthat::expect_error(
+  modsem(m1, oneInt3, method = "lms", sampling.weights = "weights"),
+  regexp = ".*sampling.weights.*cannot have missing.*"
+)
+
+# Check negative sampling weights
+oneInt3 <- oneInt2
+oneInt3$weights[c(2, 3, 5, 18)] <- c(-1.2, -0.001, -0.2, -3.2)
+
+testthat::expect_error(
+  modsem(m1, oneInt3, method = "lms", sampling.weights = "weights"),
+  regexp = ".*sampling.weights.*cannot have negative values.*"
+)

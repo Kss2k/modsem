@@ -64,3 +64,11 @@ testthat::expect_warning(
   plot_surface(x = "X", z = "Z", y = "Y", model = est),
   regexp = "Plotting of surface.*"
 )
+
+oneIntMG2 <- oneIntMG
+oneIntMG2$group[c(2, 388, 291, 1502)] <- NA
+
+testthat::expect_error(
+  modsem(m1, oneIntMG2, method = "lms", group = "group"),
+  regexp = ".*group.* cannot contain missing values.*"
+)

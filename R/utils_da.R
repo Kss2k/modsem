@@ -1237,8 +1237,10 @@ prepareDataGroupDA <- function(group, data, sampling.weights, sampling.weights.n
     stopif(length(sampling.weights) != 1L, "sampling.weights variable must be of length 1!")
     stopif(!sampling.weights %in% names(data),
            sprintf("sampling.weights variable '%s' not found in `data`.", sampling.weights))
-    stopif(any(is.na(sampling.weights)), "`sampling.weights` cannot have missing values!")
-    stopif(any(sampling.weights < 0), "`sampling.weights` cannot have negative values!")
+
+    weights <- data[[sampling.weights]]
+    stopif(any(is.na(weights)), "`sampling.weights` cannot have missing values!")
+    stopif(any(weights < 0), "`sampling.weights` cannot have negative values!")
   }
 
   if ((!is.null(sampling.weights) && tolower(sampling.weights.normalization) == "total")) {
@@ -1292,8 +1294,8 @@ prepareDataGroupDA <- function(group, data, sampling.weights, sampling.weights.n
     }
   }
 
-  stopif(length(group.raw) != n, "Length of `group` must match the number of rows in `data`.")
-  stopif(any(is.na(group.raw)), "`group` cannot contain missing values.")
+  stopif(length(group.raw) != n, "Length of `group` must match the number of rows in `data`!")
+  stopif(any(is.na(group.raw)), "`group` cannot contain missing values!")
 
   group.raw <- as.character(group.raw) # match lavaan behaviour, ignore factor levels
   levels_order <- unique(group.raw)

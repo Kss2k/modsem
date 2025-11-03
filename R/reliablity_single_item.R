@@ -85,7 +85,7 @@ relcorr_single_item <- function(syntax,
   stopif(length(group) > 1L, "`group` must be a character vector of length 1!")
   stopif(!group %in% colnames(data), sprintf("Unable to find `%s` in data!", group))
 
-  group.info <- getGroupInfo(
+  group.info <- parseModelArgumentsByGroupDA(
     model.syntax = syntax,
     cov.syntax   = NULL,
     data         = data,
