@@ -29,13 +29,14 @@ w.g2.1 <- fit.lms.h0.mg1$model$models[[2L]]$data$weights
 w.g1.2 <- fit.lms.h0.mg2$model$models[[1L]]$data$weights
 w.g2.2 <- fit.lms.h0.mg2$model$models[[2L]]$data$weights
 
-testthat::expect_true(sum(w.g1.1) + sum(w.g2.1) == length(w.g1.1) + length(w.g2.1))
-testthat::expect_true(sum(w.g1.1) != length(w.g1.1))
-testthat::expect_true(sum(w.g2.1) != length(w.g2.1))
+rsum <- \(..., digits = 5) round(sum(...), digits)
+testthat::expect_true(rsum(w.g1.1) + rsum(w.g2.1) == length(w.g1.1) + length(w.g2.1))
+testthat::expect_true(rsum(w.g1.1) != length(w.g1.1))
+testthat::expect_true(rsum(w.g2.1) != length(w.g2.1))
 
-testthat::expect_true(sum(w.g1.2) + sum(w.g2.2) == length(w.g1.2) + length(w.g2.2))
-testthat::expect_true(sum(w.g1.2) == length(w.g1.2))
-testthat::expect_true(sum(w.g2.2) == length(w.g2.2))
+testthat::expect_true(rsum(w.g1.2) + rsum(w.g2.2) == length(w.g1.2) + length(w.g2.2))
+testthat::expect_true(rsum(w.g1.2) == length(w.g1.2))
+testthat::expect_true(rsum(w.g2.2) == length(w.g2.2))
 
 m1 <- '
   X =~ x1 + x2 + x3
