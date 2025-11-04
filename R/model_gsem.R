@@ -46,7 +46,7 @@ createGsemModelGroup <- function(parTable, ordered = NULL,
   allIndsXis    <- unique(unlist(indsXis))
   numAllIndsXis <- length(allIndsXis)
 
-  xwith <- unique(stringr::str_replace_all(intTerms$rhs, ":", "__XWITH__"))
+  xwith   <- unique(intTerms$rhs) #stringr::str_replace_all(intTerms$rhs, ":", "__XWITH__"))
   lvs     <- c(xwith, xis, etas)
   indsLVs <- c(indsXis, indsEtas)
 
@@ -59,11 +59,11 @@ createGsemModelGroup <- function(parTable, ordered = NULL,
   data.cleaned <- prepDataModsemDA(data, allIndsXis, allIndsEtas,
                                    missing = missing, cluster = cluster)
 
-  OMEGA <- matrix(0, nrow = length(xwith), ncol = numEtas + numXis,
+  OMEGA <- matrix(FALSE, nrow = length(xwith), ncol = numEtas + numXis,
                   dimnames = list(xwith, c(xis, etas)))
   for (i in seq_along(xwith)) {
     vars <- stringr::str_split(intTerms$rhs[[i]], pattern = ":")[[1L]]
-    OMEGA[i, colnames(OMEGA) %in% vars] <- 1L
+    OMEGA[i, colnames(OMEGA) %in% vars] <- TRUE
   }
 
   listLambda <- constructLambda(lvs, indsLVs,
@@ -89,7 +89,8 @@ createGsemModelGroup <- function(parTable, ordered = NULL,
   # structural model
   Ieta      <- diag(numLVs) # used for (B^-1 = (Ieta - gammaEta)^-1)
   listGamma <- constructGamma(lvs, lvs, parTable = parTable,
-                                 auto.fix.first = auto.fix.first)
+                              auto.fix.first = auto.fix.first,
+                              include.xz = TRUE)
   gamma      <- listGamma$numeric
   labelGamma <- listGamma$label
 
@@ -98,7 +99,7 @@ createGsemModelGroup <- function(parTable, ordered = NULL,
   psi      <- listPsi$numeric
   labelPsi <- listPsi$label
 
-  listPhiXi <- constructPhi(xis, method = method, cov.syntax = cov.syntax,
+  listPhiXi <- constructPhi(xis, method = method, cov.syntax = NULL,
                             parTableCovModel = NULL,
                             parTable = parTable, orthogonal.x = orthogonal.x)
   phiXi      <- listPhiXi$numeric
@@ -129,7 +130,10 @@ createGsemModelGroup <- function(parTable, ordered = NULL,
     Ieta         = Ieta,
     psi          = psi,
     tau          = tau,
-    alpha        = alpha
+    alpha        = alpha,
+    thresholds   = thresholds,
+    OMEGA        = OMEGA,
+    isordered    = is.ordered
   )
 
   labelMatrices <- list(
@@ -138,7 +142,8 @@ createGsemModelGroup <- function(parTable, ordered = NULL,
     theta        = labelTheta,
     psi          = labelPsi,
     tau          = labelTau,
-    alpha        = labelAlpha
+    alpha        = labelAlpha,
+    thresholds   = thresholds
   )
 
   quad <- quadrature(m, k = numEtas + numXis, quad.range = quad.range,
@@ -156,6 +161,7 @@ createGsemModelGroup <- function(parTable, ordered = NULL,
       indsXis       = indsXis,
       indsEtas      = indsEtas,
       allIndsXis    = allIndsXis,
+
       allIndsEtas   = allIndsEtas,
       varsInts      = varsInts,
       mean.observed = mean.observed,
@@ -263,7 +269,7 @@ specifyModelGsem <- function(..., group.info, createTheta = TRUE) {
 
 # Global variables
 namesParMatricesGsem <- c("lambda", "gamma",
-                          "theta", "psi", "tau", "alpha")
+                          "theta", "psi", "tau", "alpha", "thresholds")
 
 
 createThetaGsem <- function(model, start = NULL, parTable.in = NULL) {
@@ -298,23 +304,25 @@ createThetaGsem <- function(model, start = NULL, parTable.in = NULL) {
     submodel <- model$models[[g]]
     etas <- submodel$info$etas
 
-    M       <- submodel$matrices
-    lambda  <- as.vector(M$lambda)
-    theta   <- as.vector(M$theta)
-    psi     <- as.vector(M$psi)
-    tau     <- as.vector(M$tau)
-    alpha   <- as.vector(M$alpha)
-    gamma   <- as.vector(M$gamma)
+    M          <- submodel$matrices
+    lambda     <- as.vector(M$lambda)
+    theta      <- as.vector(M$theta)
+    psi        <- as.vector(M$psi)
+    tau        <- as.vector(M$tau)
+    alpha      <- as.vector(M$alpha)
+    gamma      <- as.vector(M$gamma)
+    thresholds <- as.vector(M$thresholds)
 
-    allModelValues <- c("lambda" = lambda,
-                        "tau"    = tau,
-                        "theta"  = theta,
-                        "psi"    = psi,
-                        "alpha"  = alpha,
-                        "gamma"  = gamma)
+    allModelValues <- c("lambda"     = lambda,
+                        "tau"        = tau,
+                        "theta"      = theta,
+                        "psi"        = psi,
+                        "alpha"      = alpha,
+                        "gamma"      = gamma,
+                        "thresholds" = thresholds)
 
-    lavLabelsMain <- createLavLabels(M, subset = is.na(allModelValues),
-                                     etas = etas, parTable.in = parTable.in)
+    lavLabelsMain <- createLavLabelsGsem(M, subset = is.na(allModelValues),
+                                         etas = etas, parTable.in = parTable.in)
 
     thetaMain <- allModelValues[is.na(allModelValues)]
     thetaMain <- fillThetaIfStartNULL(start = start, theta = thetaMain,
@@ -398,12 +406,13 @@ fillGroupModelGsem <- function(model, theta, thetaLabel) {
   pMatrices <- M[namesParMatricesGsem]
   M[namesParMatricesGsem] <- fillMatricesLabels(pMatrices, lMatrices, thetaLabel)
 
-  M$lambda <- fillNA_Matrix(M$lambda, theta = theta, pattern = "^lambda")
-  M$theta  <- fillSymmetric(M$theta, fetch(theta, "^theta"))
-  M$psi    <- fillSymmetric(M$psi, fetch(theta, "^psi"))
-  M$tau    <- fillNA_Matrix(M$tau, theta = theta, pattern = "^tau")
-  M$alpha  <- fillNA_Matrix(M$alpha, theta = theta, pattern = "^alpha")
-  M$gamma  <- fillNA_Matrix(M$gamma, theta = theta, pattern = "^gamma")
+  M$lambda     <- fillNA_Matrix(M$lambda, theta = theta, pattern = "^lambda")
+  M$theta      <- fillSymmetric(M$theta, fetch(theta, "^theta"))
+  M$psi        <- fillSymmetric(M$psi, fetch(theta, "^psi"))
+  M$tau        <- fillNA_Matrix(M$tau, theta = theta, pattern = "^tau")
+  M$alpha      <- fillNA_Matrix(M$alpha, theta = theta, pattern = "^alpha")
+  M$gamma      <- fillNA_Matrix(M$gamma, theta = theta, pattern = "^gamma")
+  M$thresholds <- fillNA_Matrix(M$gamma, theta = theta, pattern = "^thresholds")
 
   M
 }

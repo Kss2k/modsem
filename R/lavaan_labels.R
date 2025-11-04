@@ -66,6 +66,27 @@ createLavLabelsCov <- function(matrices, subset) {
 }
 
 
+createLavLabelsGsem <- function(matrices, subset, etas, parTable.in = NULL) {
+  lambda <- createLabelsMatrix(matrices$lambda, op = "=~")
+  theta  <- createLabelsMatrix(matrices$theta, op = "~~")
+  psi    <- createLabelsMatrix(matrices$psi, op = "~~")
+  tau    <- createLabelsMatrix(matrices$tau, op = "~", first = "rows")
+  alpha  <- createLabelsMatrix(matrices$alpha, op = "~", first = "rows")
+  gamma  <- createLabelsMatrix(matrices$gamma, op = "~", first = "rows")
+  thresholds <- createLabelsMatrix(matrices$gamma, op = "~", first = "rows")
+
+  labels <- c(lambda = lambda,
+              tau = tau,
+              theta = theta,
+              psi = psi,
+              alpha = alpha,
+              gamma = gamma,
+              thresholds = thresholds)
+
+  labels[subset]
+}
+
+
 createLabelsMatrix <- function(X, op = "~", first = "cols") {
   labels <- character(0L)
   rows   <- rownames(X)

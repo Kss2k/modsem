@@ -24,26 +24,48 @@ BEGIN_RCPP
 END_RCPP
 }
 // P_Step_GSEM_Group
-arma::mat P_Step_GSEM_Group(Rcpp::List& modelR, const arma::mat& P);
-RcppExport SEXP _modsem_P_Step_GSEM_Group(SEXP modelRSEXP, SEXP PSEXP) {
+arma::mat P_Step_GSEM_Group(const Rcpp::List& modelR);
+RcppExport SEXP _modsem_P_Step_GSEM_Group(SEXP modelRSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::List& >::type modelR(modelRSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type P(PSEXP);
-    rcpp_result_gen = Rcpp::wrap(P_Step_GSEM_Group(modelR, P));
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type modelR(modelRSEXP);
+    rcpp_result_gen = Rcpp::wrap(P_Step_GSEM_Group(modelR));
     return rcpp_result_gen;
 END_RCPP
 }
 // Q_GSEM_Group
-double Q_GSEM_Group(Rcpp::List& modelR, const arma::mat& P);
+double Q_GSEM_Group(const Rcpp::List& modelR, const arma::mat& P);
 RcppExport SEXP _modsem_Q_GSEM_Group(SEXP modelRSEXP, SEXP PSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::List& >::type modelR(modelRSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type modelR(modelRSEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type P(PSEXP);
     rcpp_result_gen = Rcpp::wrap(Q_GSEM_Group(modelR, P));
+    return rcpp_result_gen;
+END_RCPP
+}
+// P_Step_GSEM
+arma::mat P_Step_GSEM(const Rcpp::List& modelR);
+RcppExport SEXP _modsem_P_Step_GSEM(SEXP modelRSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type modelR(modelRSEXP);
+    rcpp_result_gen = Rcpp::wrap(P_Step_GSEM(modelR));
+    return rcpp_result_gen;
+END_RCPP
+}
+// Q_GSEM
+double Q_GSEM(const Rcpp::List& modelR, const arma::mat& P);
+RcppExport SEXP _modsem_Q_GSEM(SEXP modelRSEXP, SEXP PSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type modelR(modelRSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type P(PSEXP);
+    rcpp_result_gen = Rcpp::wrap(Q_GSEM(modelR, P));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -389,8 +411,10 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_modsem_calcSESimpleSlopes", (DL_FUNC) &_modsem_calcSESimpleSlopes, 2},
-    {"_modsem_P_Step_GSEM_Group", (DL_FUNC) &_modsem_P_Step_GSEM_Group, 2},
+    {"_modsem_P_Step_GSEM_Group", (DL_FUNC) &_modsem_P_Step_GSEM_Group, 1},
     {"_modsem_Q_GSEM_Group", (DL_FUNC) &_modsem_Q_GSEM_Group, 2},
+    {"_modsem_P_Step_GSEM", (DL_FUNC) &_modsem_P_Step_GSEM, 1},
+    {"_modsem_Q_GSEM", (DL_FUNC) &_modsem_Q_GSEM, 2},
     {"_modsem_muLmsCpp", (DL_FUNC) &_modsem_muLmsCpp, 2},
     {"_modsem_sigmaLmsCpp", (DL_FUNC) &_modsem_sigmaLmsCpp, 2},
     {"_modsem_completeLogLikLmsCpp", (DL_FUNC) &_modsem_completeLogLikLmsCpp, 7},

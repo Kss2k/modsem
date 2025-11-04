@@ -743,7 +743,7 @@ getLevelsParTable <- function(parTable) {
 isPureEta <- function(eta, parTable) {
   predictors <- unique(parTable[parTable$op == "~", "rhs"])
   indicators <- unique(parTable[parTable$op == "=~", "rhs"])
-  !eta %in% c(predictors, indicators)
+  !eta %in% c(predictors, indicators) & !grepl(":", eta)
 }
 
 

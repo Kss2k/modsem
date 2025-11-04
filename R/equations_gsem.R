@@ -246,4 +246,84 @@ emGsem <- function(model,
 
 estepGsem <- function(model, theta, lastQuad = NULL, recalcQuad = FALSE, adaptive.quad.tol = 1e-10) {
   modFilled <- fillModelGsem(model = model, theta = theta)
+
+  # First step: Compute interaction term quadrature points
+  # This should probably be moved inside a new funciton
+  # So that we can apply it post AGHQ
+  for (g in seq_along(modFilled$models)) {
+    submodel <- modFilled$models[[g]]
+
+    quad.g   <- submodel$quad
+    etas.g   <- submodel$info$etas 
+    xis.g    <- submodel$info$xis
+    OMEGA.g  <- submodel$matrices$OMEGA
+    gamma.g  <- submodel$matrices$gamma
+    psi.g    <- submodel$matrices$psi
+    psi.g    <- psi.g[c(xis.g, etas.g), c(xis.g, etas.g), drop = FALSE]
+    alpha.g  <- submodel$matrices$alpha
+    A.g      <- chol(psi.g)
+    Z.g      <- quad.g$n
+    Zx.g     <- vector("list", length = length(Z.g))
+
+    for (i in seq_along(Z.g)) {
+      Z.gi  <- Z.g[[i]]
+      Zx.gi <- cbind(matrix(0, nrow = nrow(Z.gi), ncol = NROW(OMEGA.g)), Z.gi)
+
+      colnames(Zx.gi) <- colnames(gamma.g)
+
+      ZETA <- Z.gi %*% A.g
+      colnames(ZETA) <- colnames(psi.g)
+
+
+      definedLVs     <- xis.g
+      undefinedLVs   <- etas.g
+      undefinedXWITH <- rownames(OMEGA.g)
+
+      # Initialize Y.g
+      Y.gi <- as.data.frame(
+        lapplyNamed(xis.g, FUN = \(xi.g) alpha.g[xi.g, 1L] + ZETA[, xi.g],
+                    names = xis.g)
+      )
+
+      while (length(undefinedLVs)) {
+        lv.i <- undefinedLVs[[1L]]
+
+        undefInXWITH <- apply(OMEGA.g[, undefinedLVs, drop = FALSE], MARGIN = 1L, FUN = any)
+        OMEGA_DEF.g <- OMEGA.g[!undefInXWITH, , drop = FALSE]
+
+        for (xwith in intersect(undefinedXWITH, rownames(OMEGA_DEF.g))) {
+          row  <- OMEGA_DEF.g[xwith, , drop = TRUE]
+          vars <- colnames(OMEGA_DEF.g)[row]
+          prod <- apply(Y.gi, MARGIN = 1, FUN = prod)
+
+          Y.gi[[xwith]]  <- prod
+          Zx.gi[, xwith] <- prod
+
+          undefinedXWITH <- setdiff(xwith, undefinedXWITH)
+        }
+
+        vals.eta <- alpha.g[lv.i, 1L] + ZETA[, lv.i] # Start with residual + intercept
+        gamma.eta <- gamma.g[lv.i, definedLVs, drop = TRUE]
+        for (j in seq_along(gamma.eta)) {
+          indep.eta.j  <- names(gamma.eta)[[j]]
+          gamma.eta.j  <- gamma.eta[[j]]
+
+          vals.eta <- vals.eta + gamma.eta.j * Y.gi[[indep.eta.j]]
+        }
+        
+        Y.gi[[lv.i]] <- vals.eta
+
+        definedLVs   <- c(definedLVs, undefinedLVs[1L])
+        undefinedLVs <- undefinedLVs[-1L]
+      }
+
+      Zx.g[[i]] <- Zx.gi
+    }
+
+    modFilled$models[[g]]$quad$n <- Zx.g
+  }
+
+  
+  P_Step_GSEM(modFilled)
+ browser() 
 }

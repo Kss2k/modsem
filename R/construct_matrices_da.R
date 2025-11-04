@@ -180,10 +180,14 @@ constructTheta <- function(lVs, indsLVs, parTable, auto.fix.single = TRUE) {
 }
 
 
-constructGamma <- function(DVs, IVs, parTable, auto.fix.first = TRUE) {
+constructGamma <- function(DVs, IVs, parTable, auto.fix.first = TRUE, include.xz = FALSE) {
   if (!length(DVs)) return(EMPTY_MATSTRUCT)
 
-  notInt <- !grepl(":", parTable$rhs)
+  if (include.xz)
+    notInt <- TRUE
+  else
+    notInt <- !grepl(":", parTable$rhs)
+
   exprsGamma1 <- parTable[parTable$op == "~" & notInt & parTable$lhs %in% DVs &
                           parTable$rhs %in% IVs, , drop = FALSE]
   exprsGamma2 <- parTable[parTable$op == "=~" & notInt & parTable$rhs %in% DVs &
