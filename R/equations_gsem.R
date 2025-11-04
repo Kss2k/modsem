@@ -324,6 +324,5 @@ estepGsem <- function(model, theta, lastQuad = NULL, recalcQuad = FALSE, adaptiv
   }
 
   
-  P_Step_GSEM(modFilled)
- browser() 
+  P <- P_Step_GSEM(modFilled)
 }

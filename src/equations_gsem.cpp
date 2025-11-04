@@ -21,8 +21,10 @@ struct GSEM_ModelGroup {
 
   std::vector<arma::mat> Z, Y;
   std::vector<arma::uvec> colIdxPatterns;
+  
+  arma::uvec n;
 
-  unsigned k = 0, n = 0, p = 0;
+  unsigned k = 0, p = 0, N = 0;
   arma::vec isordered;
 
   explicit GSEM_ModelGroup(const Rcpp::List& modFilled) {
@@ -37,7 +39,8 @@ struct GSEM_ModelGroup {
     Rcpp::List dataSplit = dataR["data.split"];
     Rcpp::List colidxR   = dataR["colidx"];
 
-    n = Rcpp::as<unsigned>(dataR["n"]); // Rows
+    n = Rcpp::as<arma::uvec>(dataR["n"]); // Observations per patter
+    N = arma::sum(n);
     k = Rcpp::as<unsigned>(dataR["k"]); // Cols
     p = Rcpp::as<unsigned>(dataR["p"]); // patterns
 
@@ -64,17 +67,17 @@ struct GSEM_ModelGroup {
 
     for (int pi = 0; pi < p; pi++) {
       Y[pi]              = Rcpp::as<arma::mat>(dataSplit[pi]);
-      colIdxPatterns[pi] = Rcpp::as<arma::uvec>(colidxR[pi]);
+      colIdxPatterns[pi] = Rcpp::as<arma::uvec>(colidxR[pi]) - 1L; // Make zero based
     }
   }
   
   explicit GSEM_ModelGroup() { // Empty initilizer
-    k = 0, n = 0, p = 0;
+    k = 0, N = 0, p = 0;
   }
 
-  arma::vec expectedResponse(const arma::mat Zq) const {
-    arma::vec out(Zq.n_rows);
-    arma::vec ivec = arma::ones<arma::vec>(Zq.n_rows);
+  arma::mat expectedResponse(const arma::mat Zq) const {
+    arma::mat out(N, k);
+    arma::vec ivec = arma::ones<arma::vec>(N);
 
     arma::mat L;
     if (!arma::chol(L, Psi, "lower")) {
@@ -83,40 +86,48 @@ struct GSEM_ModelGroup {
     }
 
     const arma::mat B = arma::inv(Ie - Gamma);
-    return (ivec * tau.t() + ((ivec * alpha.t() + Zq * L) * B.t()) * Lambda.t()).as_col();
+    return ivec * tau.t() + ((ivec * alpha.t() + Zq * L) * B.t()) * Lambda.t();
   }
 
   arma::vec getDensityZq(const arma::mat Zq, const bool log = false) const {
-    arma::vec density(Zq.n_rows);
-    const arma::vec v = expectedResponse(Zq);
+    arma::vec density(N);
+    const arma::mat V = expectedResponse(Zq);
 
     unsigned offset = 0;
     for (int pi = 0; pi < p; pi++) {
-      const arma::mat Yp = Y[p];
+      const int np  = n[pi];
+      const int end = offset + np - 1L;
+
+      const arma::mat Yp = Y[pi];
       const arma::uvec colidxp = colIdxPatterns[pi];
-      const unsigned end = offset + Yp.n_rows - 1L;
 
       for (int idx = 0; idx < colidxp.n_elem; idx++) {
         const unsigned j = colidxp[idx];
         const double sd = std::sqrt(Theta(j, j));
 
-        const arma::vec yj = Yp.col(j).subvec(offset, end);
-        const arma::vec vj =  v.col(j).subvec(offset, end);
+        const arma::vec yj = Yp.col(j);
+        const arma::vec vj =  V.col(j).subvec(offset, end);
 
         density.subvec(offset, end) = dnorm(yj - vj, 0, sd, log);
       }
 
-      offset = end + 1L;
+      offset += np;
     }
+
+    return density;
   }
 
   arma::mat Pi() {
     arma::mat out(Z[0L].n_rows, Z.size());
      
     for (int q = 0; q < Z.size(); q++)
-      out.col(q) = W.col(q) * getDensityZq(Z[q], false);
-   
-    out = out / arma::sum(out, 1L); // sum along each row
+      out.col(q) = W.col(q) % getDensityZq(Z[q], false);
+  
+    Rcpp::Rcout << "Rows density: " << Z[0L].n_rows << "\n";
+    Rcpp::Rcout << "Rows W: " << W.n_rows << "\n";
+    Rcpp::Rcout << "Rows Out (pre): " << out.n_rows << "\n";
+    out = out.each_col() / arma::sum(out, 1L); // sum along each row
+    Rcpp::Rcout << "Rows Out (pre): " << out.n_rows << "\n";
     return out;
   }
 
@@ -124,7 +135,7 @@ struct GSEM_ModelGroup {
     arma::vec density = arma::zeros<arma::vec>(Z[0L].n_rows);
 
     for (int q = 0; q < Z.size(); q++)
-      density += P.col(q) * getDensityZq(Z[q], true);
+      density += P.col(q) % getDensityZq(Z[q], true);
 
     return density;
   }
@@ -164,28 +175,30 @@ double Q_GSEM_Group(const Rcpp::List &modelR, const arma::mat &P) {
 struct GSEM_Model {
   std::vector<GSEM_ModelGroup> groupModels;
   int ngroups;
-  int n;
+  int N = 0;
 
   explicit GSEM_Model(const Rcpp::List& modFilled) {
     const Rcpp::List groupModelsR = modFilled["models"];
     ngroups = groupModelsR.size();
     groupModels = std::vector<GSEM_ModelGroup>(ngroups);
 
+    N = 0;
     for (int g = 0L; g < ngroups; g++) {
       const Rcpp::List &groupModelR = groupModelsR[g];
       groupModels[g] = GSEM_ModelGroup(groupModelR);
-      n += groupModels[g].n;
+      N += groupModels[g].N;
     }
   }
 
   arma::mat Pi() {
     const int zk = groupModels[0L].Z.size();
-    arma::mat out(n, zk);
-    
+    arma::mat out(N, zk);
+   
+    Rcpp::Rcout << "dim out(N, zk), [" << N << ", " << zk << "]\n";
     int offset = 0L;
     for (int g = 0L; g < ngroups; g++) {
-      const int ng = groupModels[g].n;
-      out.submat(offset, 0L, offset + ng - 1L, zk) = groupModels[g].Pi();
+      const int ng = groupModels[g].N;
+      out.rows(offset, offset + ng - 1L) = groupModels[g].Pi();
       offset += ng;
     }
    
@@ -193,14 +206,14 @@ struct GSEM_Model {
   }
 
   arma::vec Qi(const arma::mat &P) {
-    arma::vec density(n);
+    arma::vec density(N);
 
     int offset = 0L;
     for (int g = 0L; g < ngroups; g++) {
-      const int ng  = groupModels[g].n;
+      const int ng  = groupModels[g].N;
       const int end = offset + ng - 1L;
 
-      const arma::mat &Pg = P.submat(offset, 0L, end, P.n_cols);
+      const arma::mat &Pg = P.rows(offset, end);
 
       density.subvec(offset, end) = groupModels[g].Qi(Pg);
       offset += ng;
