@@ -21,6 +21,10 @@ Q_GSEM <- function(modelR, P) {
     .Call(`_modsem_Q_GSEM`, modelR, P)
 }
 
+Qi_GSEM <- function(modelR, P) {
+    .Call(`_modsem_Qi_GSEM`, modelR, P)
+}
+
 muLmsCpp <- function(model, z) {
     .Call(`_modsem_muLmsCpp`, model, z)
 }

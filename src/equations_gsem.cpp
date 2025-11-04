@@ -122,12 +122,9 @@ struct GSEM_ModelGroup {
      
     for (int q = 0; q < Z.size(); q++)
       out.col(q) = W.col(q) % getDensityZq(Z[q], false);
-  
-    Rcpp::Rcout << "Rows density: " << Z[0L].n_rows << "\n";
-    Rcpp::Rcout << "Rows W: " << W.n_rows << "\n";
-    Rcpp::Rcout << "Rows Out (pre): " << out.n_rows << "\n";
+
+    Rcpp::Rcout << "Loglik: " << arma::accu(arma::log(out)) << "\n";
     out = out.each_col() / arma::sum(out, 1L); // sum along each row
-    Rcpp::Rcout << "Rows Out (pre): " << out.n_rows << "\n";
     return out;
   }
 
@@ -141,7 +138,7 @@ struct GSEM_ModelGroup {
   }
 
   double Q(const arma::mat &P) {
-    return arma::sum(Qi(P)); 
+    return arma::accu(Qi(P)); 
   }
 
   GSEM_ModelGroup threadClone() const {
@@ -249,4 +246,11 @@ arma::mat P_Step_GSEM(const Rcpp::List &modelR) {
 double Q_GSEM(const Rcpp::List &modelR, const arma::mat &P) {
   GSEM_Model M(modelR);
   return M.Q(P);
+}
+
+
+// [[Rcpp::export]]
+arma::vec Qi_GSEM(const Rcpp::List &modelR, const arma::mat &P) {
+  GSEM_Model M(modelR);
+  return M.Qi(P);
 }

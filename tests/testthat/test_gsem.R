@@ -1,4 +1,5 @@
 devtools::load_all()
+pkgbuild::compile_dll(deb=F, force=TRUE)
 
 m1 <- '
 # Outer Model

@@ -323,6 +323,13 @@ estepGsem <- function(model, theta, lastQuad = NULL, recalcQuad = FALSE, adaptiv
     modFilled$models[[g]]$quad$n <- Zx.g
   }
 
-  
+ 
+  browser()
   P <- P_Step_GSEM(modFilled)
+  Q <- Q_GSEM(modFilled, P = P)
+  Qi <- Qi_GSEM(modFilled, P = P)
+
+  browser()
+
+  P
 }

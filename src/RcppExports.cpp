@@ -69,6 +69,18 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// Qi_GSEM
+arma::vec Qi_GSEM(const Rcpp::List& modelR, const arma::mat& P);
+RcppExport SEXP _modsem_Qi_GSEM(SEXP modelRSEXP, SEXP PSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type modelR(modelRSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type P(PSEXP);
+    rcpp_result_gen = Rcpp::wrap(Qi_GSEM(modelR, P));
+    return rcpp_result_gen;
+END_RCPP
+}
 // muLmsCpp
 arma::vec muLmsCpp(Rcpp::List model, arma::vec z);
 RcppExport SEXP _modsem_muLmsCpp(SEXP modelSEXP, SEXP zSEXP) {
@@ -415,6 +427,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_modsem_Q_GSEM_Group", (DL_FUNC) &_modsem_Q_GSEM_Group, 2},
     {"_modsem_P_Step_GSEM", (DL_FUNC) &_modsem_P_Step_GSEM, 1},
     {"_modsem_Q_GSEM", (DL_FUNC) &_modsem_Q_GSEM, 2},
+    {"_modsem_Qi_GSEM", (DL_FUNC) &_modsem_Qi_GSEM, 2},
     {"_modsem_muLmsCpp", (DL_FUNC) &_modsem_muLmsCpp, 2},
     {"_modsem_sigmaLmsCpp", (DL_FUNC) &_modsem_sigmaLmsCpp, 2},
     {"_modsem_completeLogLikLmsCpp", (DL_FUNC) &_modsem_completeLogLikLmsCpp, 7},
