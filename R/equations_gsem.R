@@ -275,20 +275,31 @@ Q_Gsem <- function(theta, model, P_Step) {
 #   )
 # }
 
+gradQ_Gsem <- function(theta, model, P_Step) {
+  modFilled <- fillModelGsem(model = model, theta = theta)
+  for (g in seq_along(modFilled$models)) { # This should probably be refactored to C++ code
+    quad.g <- P_Step$QUAD[[g]]
+    modFilled$models[[g]]$quad <- quad.g
+  }
+
+  Grad_Q_GSEM(modelR = modFilled, P = P_Step$P)
+}
 
 mstepGsem <- function(theta, model, P_Step, max.step = 1L, control = list(),
                       lower = NULL, upper = NULL) {
   control$iter.max <- max.step
 
+  gradient  <- \(theta) -gradQ_Gsem(theta = theta, model = model, P_Step = P_Step)
   objective <- \(theta) -Q_Gsem(theta = theta, model = model, P_Step = P_Step)
 
+  browser()
   # timeExpr(
   # fit2 <- fastOneStepNLMINB(start = theta, objective = objective,
   #                           lower = lower, upper = upper)
   # )
 
   fit <- nlminb(start = theta, objective = objective, control = control,
-                lower = lower, upper = upper)
+                lower = lower, upper = upper, gradient = gradient)
 
   fit
 }

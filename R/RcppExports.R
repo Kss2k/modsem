@@ -25,6 +25,14 @@ Qi_GSEM <- function(modelR, P) {
     .Call(`_modsem_Qi_GSEM`, modelR, P)
 }
 
+Grad_Q_GSEM_Group <- function(modelR, P) {
+    .Call(`_modsem_Grad_Q_GSEM_Group`, modelR, P)
+}
+
+Grad_Q_GSEM <- function(modelR, P) {
+    .Call(`_modsem_Grad_Q_GSEM`, modelR, P)
+}
+
 muLmsCpp <- function(model, z) {
     .Call(`_modsem_muLmsCpp`, model, z)
 }

@@ -5,6 +5,10 @@
 
 #include "utils.h"
 #include "mvnorm.h"
+#include <unordered_map>
+#include <unordered_set>
+#include <string>
+#include <algorithm>
 // [[Rcpp::depends(RcppArmadillo)]]
 
 
@@ -32,33 +36,20 @@ arma::vec pnormOrderedProbit(const arma::vec v, // Expected value for latent res
 
   arma::vec out(n);
   const double sqrt2 = std::sqrt(2.0);
+  const double invSdSqrt2 = 1.0 / (sd * sqrt2);
+  const arma::vec mu = mean + v;
 
-  for (arma::uword i = 0; i < n; ++i) {
-    const double mu = mean + v[i];
-    const double low = lower[i];
-    const double upp = upper[i];
+  arma::vec zLower = (lower - mu) * invSdSqrt2;
+  arma::vec zUpper = (upper - mu) * invSdSqrt2;
 
-    double lower_cdf = 0.0;
-    if (!std::isinf(low)) {
-      const double z_lower = (low - mu) / (sd * sqrt2);
-      lower_cdf = 0.5 * std::erfc(-z_lower);
-    }
+  arma::vec lowerCdf = 0.5 * arma::erfc(-zLower);
+  arma::vec upperCdf = 0.5 * arma::erfc(-zUpper);
 
-    double upper_cdf = 1.0;
-    if (!std::isinf(upp)) {
-      const double z_upper = (upp - mu) / (sd * sqrt2);
-      upper_cdf = 0.5 * std::erfc(-z_upper);
-    }
+  arma::vec prob = upperCdf - lowerCdf;
+  arma::uvec nonPositive = arma::find(prob <= 0.0);
+  prob.elem(nonPositive).fill(arma::datum::nan);
 
-    double prob = upper_cdf - lower_cdf;
-    if (prob <= 0.0) {
-      prob = arma::datum::nan;
-    }
-
-    out[i] = log ? std::log(prob) : prob;
-  }
-
-  return out;
+  return log ? arma::log(prob) : prob;
 }
 
 
@@ -70,6 +61,22 @@ struct GSEM_ModelGroup {
   std::vector<arma::uvec> colIdxPatterns;
   
   arma::uvec n;
+
+  struct FreeEntry {
+    arma::uword row = 0;
+    arma::uword col = 0;
+    bool symmetric = false;
+    std::string label;
+  };
+
+  arma::mat cholPsi, B, Bt, LambdaT;
+  arma::rowvec alphaRow;
+  arma::vec thetaStd, thetaInvVar, thetaLogNorm;
+  std::vector<arma::vec> thresholdRows;
+  bool cholPsiValid = true;
+  std::vector<FreeEntry> freeLambda, freeTau, freeGamma, freeAlpha,
+    freePsi, freeTheta, freeThresholds;
+  std::vector<std::string> freeLabelOrder;
 
   unsigned k = 0, p = 0, N = 0;
   arma::uvec isordered; // if 0 variable is not ordered, if > 0, then it's the 1 based index
@@ -116,24 +123,436 @@ struct GSEM_ModelGroup {
       Y[pi]              = Rcpp::as<arma::mat>(dataSplit[pi]);
       colIdxPatterns[pi] = Rcpp::as<arma::uvec>(colidxR[pi]) - 1L; // Make zero based
     }
+
+    initializeCaches();
+    initializeFreeParams(modFilled);
   }
   
   explicit GSEM_ModelGroup() { // Empty initilizer
     k = 0, N = 0, p = 0;
   }
 
-  arma::mat expectedResponse(const arma::mat Zq) const {
-    arma::mat out(N, k);
-    arma::vec ivec = arma::ones<arma::vec>(N);
+  void initializeCaches() {
+    const arma::mat IeMinusGamma = Ie - Gamma;
+    const arma::uword latentDim = IeMinusGamma.n_rows;
 
-    arma::mat L;
-    if (!arma::chol(L, Psi, "lower")) {
-      out.fill(arma::datum::nan);
-      return out;
+    cholPsiValid = true;
+    if (Psi.n_rows > 0) {
+      cholPsiValid = arma::chol(cholPsi, Psi, "lower");
+      if (!cholPsiValid)
+        cholPsi.reset();
+    } else {
+      cholPsi.reset();
     }
 
-    const arma::mat B = arma::inv(Ie - Gamma);
-    return ivec * tau.t() + ((ivec * alpha.t() + Zq * L) * B.t()) * Lambda.t();
+    if (latentDim > 0) {
+      const arma::mat eyeLatent = arma::eye(latentDim, latentDim);
+      B = arma::solve(IeMinusGamma, eyeLatent, arma::solve_opts::fast);
+    } else {
+      B.reset();
+    }
+
+    Bt = B.t();
+    LambdaT = Lambda.t();
+    if (alpha.n_cols > 1)
+      Rcpp::stop("Alpha matrix with more than one column is not supported.");
+    if (alpha.n_elem > 0)
+      alphaRow = alpha.t();
+    else
+      alphaRow = arma::rowvec(latentDim, arma::fill::zeros);
+
+    if (alphaRow.n_elem != latentDim)
+      Rcpp::stop("Alpha has incompatible dimensions.");
+
+    const arma::uword manifestDim = Theta.n_rows;
+    thetaStd.set_size(manifestDim);
+    thetaInvVar.set_size(manifestDim);
+    thetaLogNorm.set_size(manifestDim);
+
+    const double log2pi = std::log(2.0 * M_PI);
+    for (arma::uword j = 0; j < manifestDim; ++j) {
+      const double variance = Theta(j, j);
+      const double sd = std::sqrt(variance);
+      thetaStd[j] = sd;
+      if (sd > 0) {
+        const double invVar = 1.0 / (sd * sd);
+        thetaInvVar[j] = invVar;
+        thetaLogNorm[j] = (-0.5) * log2pi - std::log(sd);
+      } else {
+        thetaInvVar[j] = arma::datum::nan;
+        thetaLogNorm[j] = arma::datum::nan;
+      }
+    }
+
+    thresholdRows.assign(manifestDim, arma::vec());
+    for (arma::uword j = 0; j < manifestDim; ++j) {
+      if (j < isordered.n_elem && isordered[j] > 0) {
+        const arma::uword idx = isordered[j] - 1L;
+        if (idx < Thresholds.n_rows)
+          thresholdRows[j] = Thresholds.row(idx).t();
+      }
+    }
+  }
+
+  void initializeFreeParams(const Rcpp::List& modFilled) {
+    freeLambda.clear();
+    freeTau.clear();
+    freeGamma.clear();
+    freeAlpha.clear();
+    freePsi.clear();
+    freeTheta.clear();
+    freeThresholds.clear();
+    freeLabelOrder.clear();
+
+    if (!modFilled.containsElementNamed("free"))
+      return;
+
+    Rcpp::List freeR = modFilled["free"];
+    std::unordered_set<std::string> seen;
+
+    auto parseMatrix = [&](const char* name, std::vector<FreeEntry>& out) {
+      if (!freeR.containsElementNamed(name))
+        return;
+
+      Rcpp::DataFrame df = freeR[name];
+      if (df.nrows() == 0)
+        return;
+
+      std::vector<int> rows = Rcpp::as<std::vector<int>>(df["row"]);
+      std::vector<int> cols = Rcpp::as<std::vector<int>>(df["col"]);
+      std::vector<int> sym = Rcpp::as<std::vector<int>>(df["symmetric"]);
+      std::vector<std::string> labels = Rcpp::as<std::vector<std::string>>(df["label"]);
+
+      const std::size_t len = rows.size();
+      out.reserve(len);
+
+      for (std::size_t i = 0; i < len; ++i) {
+        const int r = rows[i];
+        const int c = cols[i];
+        if (r == NA_INTEGER || c == NA_INTEGER)
+          continue;
+        if (i >= labels.size())
+          continue;
+        const std::string label = labels[i];
+        if (label.empty() || label == "NA")
+          continue;
+
+        FreeEntry entry;
+        entry.row = r > 0 ? static_cast<arma::uword>(r - 1) : 0;
+        entry.col = c > 0 ? static_cast<arma::uword>(c - 1) : 0;
+        entry.symmetric = (i < sym.size() && sym[i]);
+        entry.label = label;
+
+        out.push_back(entry);
+
+        if (!seen.count(entry.label)) {
+          seen.insert(entry.label);
+          freeLabelOrder.push_back(entry.label);
+        }
+      }
+    };
+
+    parseMatrix("lambda", freeLambda);
+    parseMatrix("tau", freeTau);
+    parseMatrix("gamma", freeGamma);
+    parseMatrix("alpha", freeAlpha);
+    parseMatrix("psi", freePsi);
+    parseMatrix("theta", freeTheta);
+    parseMatrix("thresholds", freeThresholds);
+  }
+
+  void computePredictors(const arma::mat& Zq,
+                         arma::mat& latent,
+                         arma::mat& S,
+                         arma::mat& V) const {
+    if (!cholPsiValid)
+      Rcpp::stop("Psi is not positive definite; cannot compute predictors.");
+
+    const arma::uword latentDim = B.n_rows;
+
+    if (latentDim == 0) {
+      latent.reset();
+      S.set_size(N, 0);
+      V.set_size(N, k);
+      V.each_row() = tau.t();
+      return;
+    }
+
+    if (cholPsi.n_elem > 0 && Zq.n_cols > 0)
+      latent = Zq * cholPsi;
+    else
+      latent = arma::mat(Zq.n_rows, latentDim, arma::fill::zeros);
+    latent.each_row() += alphaRow;
+
+    if (latent.n_rows != N)
+      Rcpp::stop("Quadrature nodes have inconsistent number of rows.");
+
+    S = latent * Bt;
+
+    V.set_size(N, k);
+    V.each_row() = tau.t();
+    if (LambdaT.n_elem > 0)
+      V += S * LambdaT;
+  }
+
+  Rcpp::NumericVector gradientQ(const arma::mat &P) const {
+    if (P.n_rows != N)
+      Rcpp::stop("`P` has incompatible number of rows.");
+    if (P.n_cols != Z.size())
+      Rcpp::stop("`P` has incompatible number of columns.");
+    if (!cholPsiValid)
+      Rcpp::stop("Psi is not positive definite; cannot compute gradients.");
+
+    std::vector<std::string> labelOrder = freeLabelOrder;
+    std::unordered_map<std::string, double> gradMap;
+    gradMap.reserve(labelOrder.size());
+    for (const auto& label : labelOrder)
+      gradMap[label] = 0.0;
+
+    auto addValue = [&](const std::string& label, double value) {
+      auto it = gradMap.find(label);
+      if (it == gradMap.end()) {
+        gradMap.emplace(label, value);
+        labelOrder.push_back(label);
+      } else {
+        it->second += value;
+      }
+    };
+
+    arma::vec gradTau = arma::zeros<arma::vec>(tau.n_rows);
+    arma::mat gradLambda = arma::zeros<arma::mat>(Lambda.n_rows, Lambda.n_cols);
+    arma::mat gradTheta = arma::zeros<arma::mat>(Theta.n_rows, Theta.n_cols);
+    arma::mat gradThresholds = arma::zeros<arma::mat>(Thresholds.n_rows, Thresholds.n_cols);
+    arma::mat gradB = arma::zeros<arma::mat>(B.n_rows, B.n_cols);
+    arma::mat gradChol = arma::zeros<arma::mat>(cholPsi.n_rows, cholPsi.n_cols);
+    arma::vec gradAlphaVec = arma::zeros<arma::vec>(alphaRow.n_elem);
+
+    const double invSqrt2Pi = 1.0 / std::sqrt(2.0 * M_PI);
+    arma::mat latent;
+    arma::mat S;
+    arma::mat V;
+
+    for (std::size_t q = 0; q < Z.size(); ++q) {
+      computePredictors(Z[q], latent, S, V);
+      const arma::vec weights = P.col(q);
+
+      unsigned offset = 0;
+      for (int pi = 0; pi < p; ++pi) {
+        const int np = n[pi];
+        const int end = offset + np - 1;
+
+        const arma::mat& Yp = Y[pi];
+        const arma::uvec& colidxp = colIdxPatterns[pi];
+        const arma::vec weightSub = weights.subvec(offset, end);
+        const auto Sblock = S.rows(offset, end);
+        arma::mat gradSblock(np, B.n_cols, arma::fill::zeros);
+
+        for (arma::uword idx = 0; idx < colidxp.n_elem; ++idx) {
+          const arma::uword j = colidxp[idx];
+          arma::vec scoreMean(np, arma::fill::zeros);
+          arma::vec scoreVar(np, arma::fill::zeros);
+
+          const arma::vec vj = V.col(j).subvec(offset, end);
+          const arma::vec yj = Yp.col(j);
+
+          if (isordered[j]) {
+            const arma::vec& thresholdRow = thresholdRows[j];
+            if (thresholdRow.n_elem == 0)
+              continue;
+
+            const arma::uword threshRowIdx = isordered[j] - 1;
+            const double sd = thetaStd[j];
+            if (!std::isfinite(sd) || sd <= 0.0)
+              continue;
+
+            arma::uvec catIdx = arma::conv_to<arma::uvec>::from(yj) - 1;
+            arma::uvec catIdxUpper = catIdx + 1;
+
+            arma::vec lower(np, arma::fill::zeros);
+            arma::vec upper(np, arma::fill::zeros);
+            const arma::uword nThresholds = thresholdRow.n_elem;
+            if (nThresholds == 0)
+              continue;
+            for (arma::uword obs = 0; obs < static_cast<arma::uword>(np); ++obs) {
+              const arma::uword li = catIdx[obs] < nThresholds ? catIdx[obs] : nThresholds - 1;
+              const arma::uword ui = catIdxUpper[obs] < nThresholds ? catIdxUpper[obs] : nThresholds - 1;
+              lower[obs] = thresholdRow[li];
+              upper[obs] = thresholdRow[ui];
+            }
+
+            arma::vec logProb = pnormOrderedProbit(vj, lower, upper, 0, sd, true);
+            arma::vec prob = arma::exp(logProb);
+
+            arma::vec zLower = (lower - vj) / sd;
+            arma::vec zUpper = (upper - vj) / sd;
+
+            arma::vec phiLower = arma::exp(-0.5 * arma::square(zLower)) * invSqrt2Pi;
+            arma::vec phiUpper = arma::exp(-0.5 * arma::square(zUpper)) * invSqrt2Pi;
+
+            arma::vec lowerDiff(np, arma::fill::zeros);
+            arma::vec upperDiff(np, arma::fill::zeros);
+
+            for (arma::uword obs = 0; obs < static_cast<arma::uword>(np); ++obs) {
+              if (std::isfinite(lower[obs]))
+                lowerDiff[obs] = lower[obs] - vj[obs];
+              else
+                phiLower[obs] = 0.0;
+
+              if (std::isfinite(upper[obs]))
+                upperDiff[obs] = upper[obs] - vj[obs];
+              else
+                phiUpper[obs] = 0.0;
+            }
+
+            arma::uvec valid = arma::find(prob > 0);
+            if (valid.n_elem == 0)
+              continue;
+
+            const double sdCubed = sd * sd * sd;
+            scoreMean.elem(valid) = (phiLower.elem(valid) - phiUpper.elem(valid)) /
+              (sd * prob.elem(valid));
+
+            scoreVar.elem(valid) = (phiLower.elem(valid) % lowerDiff.elem(valid) -
+              phiUpper.elem(valid) % upperDiff.elem(valid)) /
+              (2.0 * sdCubed * prob.elem(valid));
+
+            for (arma::uword obs = 0; obs < static_cast<arma::uword>(np); ++obs) {
+              const double w = weightSub[obs];
+              if (w == 0.0 || !std::isfinite(prob[obs]) || prob[obs] <= 0.0)
+                continue;
+
+              const double invSdProb = 1.0 / (sd * prob[obs]);
+
+              if (std::isfinite(lower[obs]) && catIdx[obs] < gradThresholds.n_cols)
+                gradThresholds(threshRowIdx, catIdx[obs]) += -phiLower[obs] * invSdProb * w;
+
+              if (std::isfinite(upper[obs]) && catIdxUpper[obs] < gradThresholds.n_cols)
+                gradThresholds(threshRowIdx, catIdxUpper[obs]) += phiUpper[obs] * invSdProb * w;
+            }
+          } else {
+            const double invVar = thetaInvVar[j];
+            if (!std::isfinite(invVar))
+              continue;
+
+            const arma::vec residual = yj - vj;
+            scoreMean = residual * invVar;
+
+            const double invVarSq = invVar * invVar;
+            scoreVar = 0.5 * (arma::square(residual) * invVarSq - invVar);
+          }
+
+          arma::vec weightedScore = weightSub % scoreMean;
+          const double sumScore = arma::accu(weightedScore);
+
+          if (gradTau.n_elem > j)
+            gradTau[j] += sumScore;
+
+          if (gradLambda.n_cols && Sblock.n_cols) {
+            gradLambda.row(j) += weightedScore.t() * Sblock;
+            gradSblock += weightedScore * Lambda.row(j);
+          }
+
+          if (gradTheta.n_rows > j && gradTheta.n_cols > j)
+            gradTheta(j, j) += arma::dot(weightSub, scoreVar);
+        }
+
+        if (B.n_cols > 0) {
+          const arma::mat latentBlock = latent.rows(offset, end);
+          gradB += latentBlock.t() * gradSblock;
+
+          const arma::mat gradLatentBlock = gradSblock * B;
+          if (gradAlphaVec.n_elem)
+            gradAlphaVec += arma::sum(gradLatentBlock, 0).t();
+          if (cholPsi.n_elem > 0)
+            gradChol += Z[q].rows(offset, end).t() * gradLatentBlock;
+        }
+
+        offset += np;
+      }
+    }
+
+    arma::mat gradAlphaMat(alpha.n_rows, alpha.n_cols, arma::fill::zeros);
+    if (gradAlphaVec.n_elem && alpha.n_elem) {
+      if (alpha.n_cols == 1)
+        gradAlphaMat.col(0) = gradAlphaVec;
+      else
+        gradAlphaMat.each_col() = gradAlphaVec;
+    }
+
+    arma::mat gradGammaMat(Gamma.n_rows, Gamma.n_cols, arma::fill::zeros);
+    if (gradB.n_elem)
+      gradGammaMat = B.t() * gradB * B.t();
+
+    arma::mat gradPsiMat(Psi.n_rows, Psi.n_cols, arma::fill::zeros);
+    if (cholPsi.n_elem) {
+      arma::mat lowerGrad = arma::trimatl(gradChol);
+      arma::mat halfGrad = 0.5 * lowerGrad;
+      arma::mat temp = arma::solve(arma::trimatu(cholPsi.t()), halfGrad.t(), arma::solve_opts::fast);
+      gradPsiMat = arma::symmatu(temp.t());
+    }
+
+    for (const auto& entry : freeTau) {
+      if (entry.row < gradTau.n_elem)
+        addValue(entry.label, gradTau[entry.row]);
+    }
+
+    for (const auto& entry : freeLambda) {
+      if (entry.row < gradLambda.n_rows && entry.col < gradLambda.n_cols)
+        addValue(entry.label, gradLambda(entry.row, entry.col));
+    }
+
+    for (const auto& entry : freeAlpha) {
+      if (entry.row < gradAlphaMat.n_rows && entry.col < gradAlphaMat.n_cols)
+        addValue(entry.label, gradAlphaMat(entry.row, entry.col));
+    }
+
+    for (const auto& entry : freeTheta) {
+      double value = 0.0;
+      if (entry.row < gradTheta.n_rows && entry.col < gradTheta.n_cols)
+        value = gradTheta(entry.row, entry.col);
+      if (entry.symmetric && entry.row != entry.col &&
+          entry.col < gradTheta.n_rows && entry.row < gradTheta.n_cols)
+        value += gradTheta(entry.col, entry.row);
+      addValue(entry.label, value);
+    }
+
+    for (const auto& entry : freeThresholds) {
+      if (entry.row < gradThresholds.n_rows && entry.col < gradThresholds.n_cols)
+        addValue(entry.label, gradThresholds(entry.row, entry.col));
+    }
+
+    for (const auto& entry : freeGamma)
+      if (entry.row < gradGammaMat.n_rows && entry.col < gradGammaMat.n_cols)
+        addValue(entry.label, gradGammaMat(entry.row, entry.col));
+    for (const auto& entry : freePsi) {
+      double value = 0.0;
+      if (entry.row < gradPsiMat.n_rows && entry.col < gradPsiMat.n_cols)
+        value += gradPsiMat(entry.row, entry.col);
+      if (entry.symmetric && entry.row != entry.col &&
+          entry.col < gradPsiMat.n_rows && entry.row < gradPsiMat.n_cols)
+        value += gradPsiMat(entry.col, entry.row);
+      addValue(entry.label, value);
+    }
+
+    Rcpp::NumericVector out(labelOrder.size());
+    for (std::size_t i = 0; i < labelOrder.size(); ++i)
+      out[i] = gradMap[labelOrder[i]];
+    out.names() = Rcpp::wrap(labelOrder);
+    return out;
+  }
+
+  arma::mat expectedResponse(const arma::mat Zq) const {
+    arma::mat V;
+    if (!cholPsiValid) {
+      V.set_size(N, k);
+      V.fill(arma::datum::nan);
+      return V;
+    }
+
+    arma::mat latent;
+    arma::mat S;
+    computePredictors(Zq, latent, S, V);
+    return V;
   }
 
   arma::vec getDensityZq(const arma::mat Zq, const bool log = false) const {
@@ -145,27 +564,34 @@ struct GSEM_ModelGroup {
       const int np  = n[pi];
       const int end = offset + np - 1L;
 
-      const arma::mat Yp = Y[pi];
-      const arma::uvec colidxp = colIdxPatterns[pi];
+      const arma::mat &Yp = Y[pi];
+      const arma::uvec &colidxp = colIdxPatterns[pi];
 
-      for (int idx = 0; idx < colidxp.n_elem; idx++) {
-        const unsigned j = colidxp[idx];
-        const double sd = std::sqrt(Theta(j, j));
-
+      for (arma::uword idx = 0; idx < colidxp.n_elem; ++idx) {
+        const arma::uword j = colidxp[idx];
+        const arma::vec vj = V.col(j).subvec(offset, end);
         const arma::vec yj = Yp.col(j);
-        const arma::vec vj =  V.col(j).subvec(offset, end);
 
         arma::vec ldensj;
         if (isordered[j]) {
-          const arma::vec thresholdsj = Thresholds.row(isordered[j] - 1L).t();
-          const arma::uvec tj = arma::conv_to<arma::uvec>::from(yj) - 1L;
-          const arma::vec lower = thresholdsj(tj);
-          const arma::vec upper = thresholdsj(tj + 1L);
-
-          ldensj = pnormOrderedProbit(vj, lower, upper, 0, sd, true);
-
+          const arma::vec &thresholdsj = thresholdRows[j];
+          if (thresholdsj.n_elem == 0) continue;
+          const arma::uword nThresholds = thresholdsj.n_elem;
+          arma::uvec tj = arma::conv_to<arma::uvec>::from(yj);
+          arma::vec lower(np, arma::fill::zeros);
+          arma::vec upper(np, arma::fill::zeros);
+          for (arma::uword obs = 0; obs < static_cast<arma::uword>(np); ++obs) {
+            const arma::uword idx = tj[obs] > 0 ? tj[obs] - 1 : 0;
+            const arma::uword lowerIdx = std::min(idx, nThresholds - 1);
+            const arma::uword upperIdx = std::min(idx + 1, nThresholds - 1);
+            lower[obs] = thresholdsj[lowerIdx];
+            upper[obs] = thresholdsj[upperIdx];
+          }
+          ldensj = pnormOrderedProbit(vj, lower, upper, 0, thetaStd[j], true);
         } else {
-          ldensj = dnorm(yj - vj, 0, sd, true);
+          const arma::vec residual = yj - vj;
+          const double invVarHalf = 0.5 * thetaInvVar[j];
+          ldensj = thetaLogNorm[j] - invVarHalf * arma::square(residual);
         }
 
         ldensity.subvec(offset, end) += ldensj;
@@ -208,6 +634,8 @@ struct GSEM_ModelGroup {
     c.alpha  = arma::mat(alpha);
     c.Psi    = arma::mat(Psi);
     c.Theta  = arma::mat(Theta);
+
+    c.initializeCaches();
 
     return c;
   }
@@ -281,6 +709,47 @@ struct GSEM_Model {
     return arma::sum(Qi(P));
   }
 
+  Rcpp::NumericVector gradientQ(const arma::mat &P) const {
+    if (P.n_rows != static_cast<arma::uword>(N))
+      Rcpp::stop("`P` has incompatible number of rows.");
+    if (ngroups == 0)
+      return Rcpp::NumericVector(0);
+
+    std::vector<std::string> labelOrder;
+    std::unordered_map<std::string, double> gradMap;
+
+    int offset = 0L;
+    for (int g = 0L; g < ngroups; ++g) {
+      const int ng = groupModels[g].N;
+      const int end = offset + ng - 1L;
+      const arma::mat Pg = P.rows(offset, end);
+
+      Rcpp::NumericVector gradGroup = groupModels[g].gradientQ(Pg);
+      Rcpp::CharacterVector names = gradGroup.names();
+
+      for (int i = 0; i < gradGroup.size(); ++i) {
+        const std::string label = Rcpp::as<std::string>(names[i]);
+        const double value = gradGroup[i];
+
+        auto it = gradMap.find(label);
+        if (it == gradMap.end()) {
+          gradMap.emplace(label, value);
+          labelOrder.push_back(label);
+        } else {
+          it->second += value;
+        }
+      }
+
+      offset += ng;
+    }
+
+    Rcpp::NumericVector out(labelOrder.size());
+    for (std::size_t i = 0; i < labelOrder.size(); ++i)
+      out[i] = gradMap[labelOrder[i]];
+    out.names() = Rcpp::wrap(labelOrder);
+    return out;
+  }
+
 
   GSEM_Model threadClone() const {
     GSEM_Model c = *this;
@@ -311,4 +780,18 @@ double Q_GSEM(const Rcpp::List &modelR, const arma::mat &P) {
 arma::vec Qi_GSEM(const Rcpp::List &modelR, const arma::mat &P) {
   GSEM_Model M(modelR);
   return M.Qi(P);
+}
+
+
+// [[Rcpp::export]]
+Rcpp::NumericVector Grad_Q_GSEM_Group(const Rcpp::List &modelR, const arma::mat &P) {
+  GSEM_ModelGroup M(modelR);
+  return M.gradientQ(P);
+}
+
+
+// [[Rcpp::export]]
+Rcpp::NumericVector Grad_Q_GSEM(const Rcpp::List &modelR, const arma::mat &P) {
+  GSEM_Model M(modelR);
+  return M.gradientQ(P);
 }

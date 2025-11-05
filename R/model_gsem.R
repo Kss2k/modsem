@@ -152,6 +152,18 @@ createGsemModelGroup <- function(parTable, ordered = NULL,
     thresholds   = labelThresholds
   )
 
+
+  free <- list(
+    lambda     = getFreeIndicesMatrixSet(lambda, labelLambda, symmetric = FALSE, name = "lambda"),
+    gamma      = getFreeIndicesMatrixSet(gamma, labelGamma, symmetric = FALSE, name = "gamma"),
+    theta      = getFreeIndicesMatrixSet(theta, labelTheta, symmetric = TRUE, name = "theta"),
+    psi        = getFreeIndicesMatrixSet(psi, labelPsi, symmetric = TRUE, name = "psi"),
+    tau        = getFreeIndicesMatrixSet(tau, labelTau, symmetric = FALSE, name = "tau"),
+    alpha      = getFreeIndicesMatrixSet(alpha, labelAlpha, symmetric = FALSE, name = "alpha"),
+    thresholds = getFreeIndicesMatrixSet(thresholds, labelThresholds, symmetric = FALSE, name = "thresholds")
+  )
+
+  
   quad <- quadrature(m, k = numEtas + numXis, quad.range = quad.range,
                      adaptive = adaptive.quad, adaptive.frequency = adaptive.frequency,
                      n = data.cleaned$n)
@@ -183,6 +195,7 @@ createGsemModelGroup <- function(parTable, ordered = NULL,
     quad          = quad,
     matrices      = matrices,
     labelMatrices = labelMatrices,
+    free          = free,
     parTable      = parTable
   )
 
@@ -421,4 +434,35 @@ fillGroupModelGsem <- function(model, theta, thetaLabel) {
   M$thresholds <- fillNA_Matrix(M$thresholds, theta = theta, pattern = "^thresholds")
 
   M
+}
+
+
+getFreeIndicesMatrixSet <- function(numericMat, labelMat, symmetric = FALSE, name) {
+  isFree <- is.na(numericMat) | labelMat != ""
+  
+  out <- NULL
+  defaultLabels <- unlist(stats::setNames(list(numericMat), nm = name))
+  defaultLabels <- names(defaultLabels[is.na(defaultLabels)])
+  k <- 0L
+
+  for (i in seq_len(NROW(isFree))) {
+    for (j in seq_len(NCOL(isFree))) {
+      free <- isFree[i, j]
+
+      if (!free)
+        next
+
+      if (labelMat[i, j] != "")
+        label <- labelMat[i, j]
+      else
+        label <- defaultLabels[(k <- k + 1L)]
+
+      out <- rbind(
+        out,
+        data.frame(row = i, col = j, label = label, symmetric = symmetric && i != j)
+      )
+    }
+  }
+
+  out
 }
