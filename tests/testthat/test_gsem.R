@@ -11,4 +11,4 @@ m1 <- '
   Y ~ X + Z + X:Z
 '
 
-lms1 <- modsem_gsem(m1, oneInt)
+lms1 <- modsem_gsem(m1, oneInt, nodes = 15)
