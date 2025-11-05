@@ -172,7 +172,7 @@ fillThetaIfStartNULL <- function(start,
 
   } else if (!is.null(lavlab)) {
     tryCatch({
-      OP <- "~~|=~|~1|~"
+      OP <- "~~|=~|~1|~|\\|"
       op <- stringr::str_extract(lavlab, pattern = OP)
       lr <- stringr::str_split_fixed(lavlab, pattern = OP, n = 2)
 
@@ -186,7 +186,13 @@ fillThetaIfStartNULL <- function(start,
       theta.filled[op == "~1"]              <- mean
       theta.filled[op == "~~" & lhs == rhs] <- var
       theta.filled[op == "~~" & lhs != rhs] <- cov
-      theta.filled[is.na(theta.filled)]     <- reg
+
+      for (var in unique(lhs[op=="|"])) {
+        cond <- op=="|" & lhs==var
+        theta.filled[cond] <- seq(-2.5, 2.5, length.out = sum(cond))
+      }
+
+      theta.filled[is.na(theta.filled)] <- reg
 
       theta.filled
     }, error = \(e)

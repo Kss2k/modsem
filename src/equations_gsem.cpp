@@ -21,6 +21,45 @@ arma::vec pnormOrderedProbit(const arma::vec v, // Expected value for latent res
                              const double mean = 0,
                              const double sd = 1,
                              const bool log = false)
+{
+  const arma::uword n = v.n_elem;
+
+  if (lower.n_elem != n || upper.n_elem != n)
+    Rcpp::stop("`lower` and `upper` must be the same length as `v`.");
+
+  if (sd <= 0)
+    Rcpp::stop("Standard deviation `sd` must be positive.");
+
+  arma::vec out(n);
+  const double sqrt2 = std::sqrt(2.0);
+
+  for (arma::uword i = 0; i < n; ++i) {
+    const double mu = mean + v[i];
+    const double low = lower[i];
+    const double upp = upper[i];
+
+    double lower_cdf = 0.0;
+    if (!std::isinf(low)) {
+      const double z_lower = (low - mu) / (sd * sqrt2);
+      lower_cdf = 0.5 * std::erfc(-z_lower);
+    }
+
+    double upper_cdf = 1.0;
+    if (!std::isinf(upp)) {
+      const double z_upper = (upp - mu) / (sd * sqrt2);
+      upper_cdf = 0.5 * std::erfc(-z_upper);
+    }
+
+    double prob = upper_cdf - lower_cdf;
+    if (prob <= 0.0) {
+      prob = arma::datum::nan;
+    }
+
+    out[i] = log ? std::log(prob) : prob;
+  }
+
+  return out;
+}
 
 
 // Gsem model for a single group/cluster
@@ -62,7 +101,7 @@ struct GSEM_ModelGroup {
     Psi        = Rcpp::as<arma::mat>(matrices["psi"]);
     Theta      = Rcpp::as<arma::mat>(matrices["theta"]);
     Thresholds = Rcpp::as<arma::mat>(matrices["thresholds"]);
-    isordered  = Rcpp::as<arma::vec>(matrices["isordered"]);
+    isordered  = Rcpp::as<arma::uvec>(matrices["isordered"]);
 
     W = Rcpp::as<arma::mat>(quad["w"]);
     Z = std::vector<arma::mat>(quad_i.length());
@@ -116,17 +155,28 @@ struct GSEM_ModelGroup {
         const arma::vec yj = Yp.col(j);
         const arma::vec vj =  V.col(j).subvec(offset, end);
 
+        arma::vec ldensj;
         if (isordered[j]) {
           const arma::vec thresholdsj = Thresholds.row(isordered[j] - 1L).t();
           const arma::uvec tj = arma::conv_to<arma::uvec>::from(yj) - 1L;
           const arma::vec lower = thresholdsj(tj);
           const arma::vec upper = thresholdsj(tj + 1L);
-          const arma::vec ldensj = pnormOrderedProbit(
-            vj, lower, upper, 0, sd
-          )
+
+          if (j == 5) {
+          Rcpp::Rcout << "Thresholds:\n" << Thresholds << "\n";
+          Rcpp::Rcout << "DATA:\n" << Yp.head_rows(25) << "\n";
+          Rcpp::Rcout << "j: " << j << "\n";
+          Rcpp::Rcout << "isordered[j]: " << isordered[j] << "\n";
+          Rcpp::Rcout << "thresholdsj:\n" << thresholdsj.subvec(0, 25) << "\n";
+          Rcpp::Rcout << "tj:\n" << tj.subvec(0, 25) << "\n";
+          Rcpp::Rcout << "lower:\n" << lower.subvec(0, 25) << "\n";
+          Rcpp::Rcout << "upper:\n" << upper.subvec(0, 25) << "\n";
+          }
+
+          ldensj = pnormOrderedProbit(vj, lower, upper, 0, sd);
 
         } else {
-          const arma::vec ldensj = dnorm(yj - vj, 0, sd, true);
+          ldensj = dnorm(yj - vj, 0, sd, true);
         }
 
         ldensity.subvec(offset, end) += ldensj;

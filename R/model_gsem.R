@@ -74,13 +74,16 @@ createGsemModelGroup <- function(parTable, ordered = NULL,
   labelLambda <- listLambda$label
 
   listTau <- constructTau(lvs, indsLVs,
-                          parTable = parTable, mean.observed = mean.observed)
+                          parTable = parTable,
+                          mean.observed = mean.observed,
+                          ordered = ordered)
 
   tau      <- listTau$numeric
   labelTau <- listTau$label
 
   listTheta <- constructTheta(lvs, indsLVs, parTable = parTable,
-                              auto.fix.single = auto.fix.single)
+                              auto.fix.single = auto.fix.single,
+                              ordered = ordered)
 
   theta      <- listTheta$numeric
   labelTheta <- listTheta$label
@@ -121,6 +124,8 @@ createGsemModelGroup <- function(parTable, ordered = NULL,
   labelThresholds <- listThresholds$label
 
   is.ordered <- rownames(lambda) %in% ordered
+  isordered <- cumsum(is.ordered)
+  isordered[!is.ordered] <- 0
 
   # list of matrices
   matrices <- list(
@@ -133,7 +138,7 @@ createGsemModelGroup <- function(parTable, ordered = NULL,
     alpha        = alpha,
     thresholds   = thresholds,
     OMEGA        = OMEGA,
-    isordered    = is.ordered
+    isordered    = isordered
   )
 
   labelMatrices <- list(
@@ -143,7 +148,7 @@ createGsemModelGroup <- function(parTable, ordered = NULL,
     psi          = labelPsi,
     tau          = labelTau,
     alpha        = labelAlpha,
-    thresholds   = thresholds
+    thresholds   = labelThresholds
   )
 
   quad <- quadrature(m, k = numEtas + numXis, quad.range = quad.range,

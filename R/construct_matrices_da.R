@@ -129,7 +129,7 @@ constructLambda <- function(lVs, indsLVs, parTable, auto.fix.first = TRUE) {
 }
 
 
-constructTau <- function(lVs, indsLVs, parTable, mean.observed = TRUE) {
+constructTau <- function(lVs, indsLVs, parTable, mean.observed = TRUE, ordered = NULL) {
   indsLVs       <- indsLVs[lVs] # make sure it is sorted
   allIndsLVs    <- unique(unlist(indsLVs))
   numAllIndsLVs <- length(allIndsLVs)
@@ -149,6 +149,8 @@ constructTau <- function(lVs, indsLVs, parTable, mean.observed = TRUE) {
     }
   }
 
+  tau[allIndsLVs %in% ordered] <- 0
+
   c(setMatrixConstraints(X = tau, parTable = parTable, op = "~1",
                          RHS = "", LHS = allIndsLVs, type = "lhs",
                          nonFreeParams = FALSE),
@@ -156,7 +158,7 @@ constructTau <- function(lVs, indsLVs, parTable, mean.observed = TRUE) {
 }
 
 
-constructTheta <- function(lVs, indsLVs, parTable, auto.fix.single = TRUE) {
+constructTheta <- function(lVs, indsLVs, parTable, auto.fix.single = TRUE, ordered = NULL) {
   numLVs        <- length(lVs)
   indsLVs       <- indsLVs[lVs] # make sure it is sorted
   numIndsLVs    <- lapply(indsLVs, FUN = length)
@@ -173,6 +175,8 @@ constructTheta <- function(lVs, indsLVs, parTable, auto.fix.single = TRUE) {
       theta[indsLVs[[lV]], indsLVs[[lV]]] <- 0
     }
   }
+
+  diag(theta)[allIndsLVs %in% ordered] <- 1
 
   setMatrixConstraints(X = theta, parTable = parTable, op = "~~",
                        RHS = allIndsLVs, LHS = allIndsLVs, type = "symmetric",

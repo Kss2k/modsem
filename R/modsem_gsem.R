@@ -136,7 +136,8 @@ modsem_gsem <- function(model.syntax = NULL,
     orthogonal.y       = args$orthogonal.y,
     auto.fix.first     = args$auto.fix.first,
     auto.fix.single    = args$auto.fix.single,
-    cluster            = cluster
+    cluster            = cluster,
+    ordered            = ordered
   )
 
   if (args$optimize) {
