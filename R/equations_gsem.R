@@ -282,7 +282,7 @@ gradQ_Gsem <- function(theta, model, P_Step) {
     modFilled$models[[g]]$quad <- quad.g
   }
 
-  Grad_Q_GSEM(modelR = modFilled, P = P_Step$P)
+  Grad_Q_GSEM(modelR = modFilled, P = P_Step$P)[names(theta)]
 }
 
 mstepGsem <- function(theta, model, P_Step, max.step = 1L, control = list(),
@@ -292,7 +292,6 @@ mstepGsem <- function(theta, model, P_Step, max.step = 1L, control = list(),
   gradient  <- \(theta) -gradQ_Gsem(theta = theta, model = model, P_Step = P_Step)
   objective <- \(theta) -Q_Gsem(theta = theta, model = model, P_Step = P_Step)
 
-  browser()
   # timeExpr(
   # fit2 <- fastOneStepNLMINB(start = theta, objective = objective,
   #                           lower = lower, upper = upper)
