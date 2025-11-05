@@ -669,9 +669,12 @@ labelRowsOmega <- function(X, eta) {
 }
 
 
-constructThresholds <- function(ordered, parTable, data) {
+constructThresholds <- function(inds, ordered, parTable, data) {
   if (!length(ordered))
     return(EMPTY_MATSTRUCT)
+
+  # Sort ordered by inds
+  ordered <- intersect(inds, ordered)
 
   numeric <- stats::setNames(vector("list", length(ordered)), ordered)
   label   <- stats::setNames(vector("list", length(ordered)), ordered)

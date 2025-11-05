@@ -162,18 +162,7 @@ struct GSEM_ModelGroup {
           const arma::vec lower = thresholdsj(tj);
           const arma::vec upper = thresholdsj(tj + 1L);
 
-          if (j == 5) {
-          Rcpp::Rcout << "Thresholds:\n" << Thresholds << "\n";
-          Rcpp::Rcout << "DATA:\n" << Yp.head_rows(25) << "\n";
-          Rcpp::Rcout << "j: " << j << "\n";
-          Rcpp::Rcout << "isordered[j]: " << isordered[j] << "\n";
-          Rcpp::Rcout << "thresholdsj:\n" << thresholdsj.subvec(0, 25) << "\n";
-          Rcpp::Rcout << "tj:\n" << tj.subvec(0, 25) << "\n";
-          Rcpp::Rcout << "lower:\n" << lower.subvec(0, 25) << "\n";
-          Rcpp::Rcout << "upper:\n" << upper.subvec(0, 25) << "\n";
-          }
-
-          ldensj = pnormOrderedProbit(vj, lower, upper, 0, sd);
+          ldensj = pnormOrderedProbit(vj, lower, upper, 0, sd, true);
 
         } else {
           ldensj = dnorm(yj - vj, 0, sd, true);

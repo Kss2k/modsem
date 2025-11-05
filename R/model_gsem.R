@@ -49,6 +49,7 @@ createGsemModelGroup <- function(parTable, ordered = NULL,
   xwith   <- unique(intTerms$rhs) #stringr::str_replace_all(intTerms$rhs, ":", "__XWITH__"))
   lvs     <- c(xwith, xis, etas)
   indsLVs <- c(indsXis, indsEtas)
+  allIndsLVs <- unlist(indsLVs)
 
   for (xz in xwith)
     indsLVs <- addNamedNullField(indsLVs, xz)
@@ -119,7 +120,7 @@ createGsemModelGroup <- function(parTable, ordered = NULL,
   alpha      <- listAlpha$numeric
   labelAlpha <- listAlpha$label
 
-  listThresholds  <- constructThresholds(ordered = ordered, parTable = parTable, data = data)
+  listThresholds  <- constructThresholds(inds = allIndsLVs, ordered = ordered, parTable = parTable, data = data)
   thresholds      <- listThresholds$numeric
   labelThresholds <- listThresholds$label
 
