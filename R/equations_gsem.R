@@ -54,7 +54,7 @@ emGsem <- function(model,
       deltaLL    <- logLikNew - logLikOld
       relDeltaLL <- if (is.finite(logLikOld)) deltaLL / abs(logLikOld) else Inf
 
-      updateStatusLog(iterations, mode, logLikNew, deltaLL, relDeltaLL, verbose)
+      updateStatusLog(iterations, "EM", logLikNew, deltaLL, relDeltaLL, verbose)
 
       converged <- (abs(deltaLL) < convergence.abs) ||
                    (abs(relDeltaLL) < convergence.rel)
@@ -200,29 +200,101 @@ estepGsem <- function(model, theta, lastQuad = NULL, recalcQuad = FALSE, adaptiv
   }
 
   QUAD <- lapply(modFilled$models, FUN = \(submod) submod$quad)
-  browser()
   P    <- P_Step_GSEM(modFilled, normalized = FALSE)
 
   density <- rowSums(P)
   P       <- P / density
   obsLL   <- sum(log(density))
 
-  browser()
-  list(P = P, QUAD = QUAD, obsLL = sum(log(P)))
+  list(P = P, QUAD = QUAD, obsLL = obsLL)
 }
 
 
 Q_Gsem <- function(theta, model, P_Step) {
   modFilled <- fillModelGsem(model = model, theta = theta)
   # This should probably be refactored to C++ code
-  for (g in seq_along(modFilled)) { # This should probably be refactored to C++ code
+  for (g in seq_along(modFilled$models)) { # This should probably be refactored to C++ code
     quad.g <- P_Step$QUAD[[g]]
-    modFilled$models[[g]] <- quad.g
+    modFilled$models[[g]]$quad <- quad.g
   }
+
+  Q_GSEM(modFilled, P = P_Step$P)
 }
 
 
-mstepGsem <- function(theta, model, P_Step) {
+fdgrad <- function(x, .f, ...,  eps = 1e-5) {
+  g <- numeric(length(x))
+
+  f0 <- .f(x, ...)
+  for (i in seq_along(x)) {
+    xi <- x
+    xi[i] <- x[i] + eps
+
+    fi <- .f(xi, ...)
+    g[i] <- (fi - f0) / eps
+  }
+
+  g
+}
 
 
+fastOneStepNLMINB <- function(start, objective, gradient = fdgrad, lower = NULL, upper = NULL, ...) {
+  direction <- -fdgrad(x = start, .f = objective, ...)
+
+  f0 <- objective(start, ...)
+
+  success <- FALSE
+
+  if (!is.null(lower) || !is.null(upper)) {
+    if (is.null(lower)) lower <- -Inf
+    if (is.null(upper)) upper <- Inf
+
+    truncatePars <- function(x) {
+      x[x < lower] <- lower[x < lower]
+      x[x > upper] <- upper[x > upper]
+      x
+    }
+
+  } else truncatePars <- \(x) x
+
+  alpha <- 1
+  while (alpha > 1e-5) {
+    test <- truncatePars(start + alpha * direction)
+    f1 <- objective(test, ...)
+
+    if (!is.nan(f1) && !is.na(f1) && f1 < f0) {
+      success <- TRUE
+      break
+    }
+
+    alpha <- alpha / 2L
+  }
+
+  list(
+    objective = if (success) f1   else f0,
+    par       = if (success) test else start,
+    success   = success
+  )
+}
+
+
+mstepGsem <- function(theta, model, P_Step, max.step = 1L, control = list(),
+                      lower = NULL, upper = NULL) {
+  control$iter.max <- max.step
+
+  objective <- \(theta) -Q_Gsem(theta = theta, model = model, P_Step = P_Step)
+
+  timeExpr(
+  fit2 <- fastOneStepNLMINB(start = theta, objective = objective,
+                            lower = lower, upper = upper)
+  )
+
+  browser()
+  timeExpr(
+  fit <- nlminb(start = theta, objective = objective, control = control,
+                lower = lower, upper = upper)
+  )
+
+
+  fit
 }

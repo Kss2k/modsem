@@ -268,8 +268,8 @@ specifyModelGsem <- function(..., group.info, createTheta = TRUE) {
 
 
 # Global variables
-namesParMatricesGsem <- c("lambda", "gamma",
-                          "theta", "psi", "tau", "alpha", "thresholds")
+namesParMatricesGsem <- c("lambda", "gamma", "theta", "psi",
+                          "tau", "alpha", "thresholds")
 
 
 createThetaGsem <- function(model, start = NULL, parTable.in = NULL) {
@@ -412,7 +412,7 @@ fillGroupModelGsem <- function(model, theta, thetaLabel) {
   M$tau        <- fillNA_Matrix(M$tau, theta = theta, pattern = "^tau")
   M$alpha      <- fillNA_Matrix(M$alpha, theta = theta, pattern = "^alpha")
   M$gamma      <- fillNA_Matrix(M$gamma, theta = theta, pattern = "^gamma")
-  M$thresholds <- fillNA_Matrix(M$gamma, theta = theta, pattern = "^thresholds")
+  M$thresholds <- fillNA_Matrix(M$thresholds, theta = theta, pattern = "^thresholds")
 
   M
 }

@@ -73,7 +73,7 @@ createLavLabelsGsem <- function(matrices, subset, etas, parTable.in = NULL) {
   tau    <- createLabelsMatrix(matrices$tau, op = "~", first = "rows")
   alpha  <- createLabelsMatrix(matrices$alpha, op = "~", first = "rows")
   gamma  <- createLabelsMatrix(matrices$gamma, op = "~", first = "rows")
-  thresholds <- createLabelsMatrix(matrices$gamma, op = "~", first = "rows")
+  thresholds <- createLabelsMatrix(matrices$thresholds, op = "|", first = "rows")
 
   labels <- c(lambda = lambda,
               tau = tau,
