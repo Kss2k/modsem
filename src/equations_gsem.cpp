@@ -15,6 +15,14 @@ arma::vec dnorm(const arma::vec x, const double mu, const double sd, const bool 
 }
 
 
+arma::vec pnormOrderedProbit(const arma::vec v, // Expected value for latent response variable
+                             const arma::vec lower, // lower thresholds for each response
+                             const arma::vec upper, // upper thresholds for each response
+                             const double mean = 0,
+                             const double sd = 1,
+                             const bool log = false)
+
+
 // Gsem model for a single group/cluster
 struct GSEM_ModelGroup {
   arma::mat Lambda, tau, Thresholds, Ie, Gamma, Psi, alpha, Theta, W;
@@ -25,7 +33,8 @@ struct GSEM_ModelGroup {
   arma::uvec n;
 
   unsigned k = 0, p = 0, N = 0;
-  arma::vec isordered;
+  arma::uvec isordered; // if 0 variable is not ordered, if > 0, then it's the 1 based index
+                        // denoting the row in `thresholds`
 
   explicit GSEM_ModelGroup(const Rcpp::List& modFilled) {
 
@@ -58,9 +67,8 @@ struct GSEM_ModelGroup {
     W = Rcpp::as<arma::mat>(quad["w"]);
     Z = std::vector<arma::mat>(quad_i.length());
 
-    for (int q = 0; q < quad_i.length(); q++) {
+    for (int q = 0; q < quad_i.length(); q++)
       Z[q] = Rcpp::as<arma::mat>(quad_i[q]);
-    }
 
     Y              = std::vector<arma::mat>(p);
     colIdxPatterns = std::vector<arma::uvec>(p);
@@ -108,7 +116,20 @@ struct GSEM_ModelGroup {
         const arma::vec yj = Yp.col(j);
         const arma::vec vj =  V.col(j).subvec(offset, end);
 
-        ldensity.subvec(offset, end) += dnorm(yj - vj, 0, sd, true);
+        if (isordered[j]) {
+          const arma::vec thresholdsj = Thresholds.row(isordered[j] - 1L).t();
+          const arma::uvec tj = arma::conv_to<arma::uvec>::from(yj) - 1L;
+          const arma::vec lower = thresholdsj(tj);
+          const arma::vec upper = thresholdsj(tj + 1L);
+          const arma::vec ldensj = pnormOrderedProbit(
+            vj, lower, upper, 0, sd
+          )
+
+        } else {
+          const arma::vec ldensj = dnorm(yj - vj, 0, sd, true);
+        }
+
+        ldensity.subvec(offset, end) += ldensj;
       }
 
       offset += np;
