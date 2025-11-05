@@ -105,95 +105,129 @@ estepGsem <- function(model, theta, lastQuad = NULL, recalcQuad = FALSE, adaptiv
     alpha.g  <- submodel$matrices$alpha
     A.g      <- chol(psi.g)
 
-    ## Pack quad.g$n (list of matrices) into a 3D array
-    Z_list   <- quad.g$n
-    G        <- length(Z_list)
-    rcz      <- dim(Z_list[[1L]])  # c(r, c)
-    r        <- rcz[1L]
-    cZ       <- rcz[2L]
-
-    # Combine without names overhead
-    Z_arr <- array(
-                   data = unlist(Z_list, use.names = FALSE),
-                   dim  = c(r, cZ, G)
-    )
-
-    ## Batch compute ZETA for all slices: r*G by cZ times A.g
-    # ZETA_arr[,,i] = Z_arr[,,i] %*% A.g
-    ZETA_mat <- matrix(Z_arr, nrow = r * G, ncol = cZ) %*% A.g   # (rG × cZ) %*% (cZ × p)
-    p        <- ncol(psi.g)
-    ZETA_arr <- array(ZETA_mat, dim = c(r, p, G))
-    colnames_ZETA <- colnames(psi.g)  # reuse once
-
-    ## Prepare constants reused in the inner loop
     colnames_gamma <- colnames(gamma.g)
-    undef_all_XWITH <- rownames(OMEGA.g)
+    latent_names   <- colnames(psi.g)
 
-    Zx.g <- vector("list", length = G)
+    # Pre-compute index maps
+    idx_latent_in_gamma <- match(latent_names, colnames_gamma)
+    idx_xis   <- match(xis.g, colnames_gamma)
+    idx_etas  <- match(etas.g, colnames_gamma)
+    xwith_names <- rownames(OMEGA.g)
+    idx_xwith   <- match(xwith_names, colnames_gamma)
+
+    alpha_full <- numeric(length(colnames_gamma))
+    if (!is.null(alpha.g) && nrow(alpha.g)) {
+      alpha_full[match(rownames(alpha.g), colnames_gamma)] <- alpha.g[, 1L]
+    }
+
+    gamma_mat <- as.matrix(gamma.g)
+
+    eta_parent_idx <- vector("list", length(idx_etas))
+    if (length(idx_etas)) {
+      for (k in seq_along(idx_etas)) {
+        row_idx <- idx_etas[k]
+        parents <- which(abs(gamma_mat[row_idx, ]) > 0)
+        eta_parent_idx[[k]] <- parents
+      }
+    }
+
+    xwith_parent_idx <- vector("list", length(idx_xwith))
+    if (length(idx_xwith)) {
+      parent_names <- colnames_gamma
+      for (k in seq_along(idx_xwith)) {
+        row <- OMEGA.g[k, , drop = TRUE]
+        xwith_parent_idx[[k]] <- which(row)
+      }
+    }
+
+    row_prod <- function(mat) {
+      if (!ncol(mat)) return(rep(1, nrow(mat)))
+      out <- mat[, 1L]
+      if (ncol(mat) > 1L) {
+        for (j in 2L:ncol(mat))
+          out <- out * mat[, j]
+      }
+      out
+    }
+
+    Z_list <- quad.g$n
+    G      <- length(Z_list)
+    Zx.g   <- vector("list", length = G)
 
     for (i in seq_len(G)) {
-      # pull slice i once
-      Z_gi      <- Z_arr[,,i]
-      ZETA      <- ZETA_arr[,,i, drop = FALSE][,,1L]
-      colnames(ZETA) <- colnames_ZETA
+      Z_gi <- Z_list[[i]]
+      n_i  <- nrow(Z_gi)
 
-      # Zx.gi scaffold: zeros for XWITH columns, then original Z_gi
-      Zx.gi <- cbind(matrix(0, nrow = r, ncol = nrow(OMEGA.g)), Z_gi)
-      colnames(Zx.gi) <- colnames_gamma
+      ZETA <- Z_gi %*% A.g
+      colnames(ZETA) <- latent_names
 
-      definedLVs     <- xis.g
-      undefinedLVs   <- etas.g
-      undefinedXWITH <- undef_all_XWITH
+      Zx_gi <- matrix(0, nrow = n_i, ncol = length(colnames_gamma))
+      colnames(Zx_gi) <- colnames_gamma
 
-      # Initialize Y.gi with xis: alpha + ZETA[, xi]
-      # (build as data.frame with named columns in xis order)
-      Y.gi <- as.data.frame(stats::setNames(
-         lapply(xis.g, \(xi.g) alpha.g[xi.g, 1L] + ZETA[, xi.g]),
-         xis.g
-      ))
+      if (length(idx_latent_in_gamma))
+        Zx_gi[, idx_latent_in_gamma] <- Z_gi
 
-      while (length(undefinedLVs)) {
-        lv.i <- undefinedLVs[[1L]]
-
-        undefInXWITH <- apply(OMEGA.g[, undefinedLVs, drop = FALSE], 1L, any)
-        OMEGA_DEF.g  <- OMEGA.g[!undefInXWITH, , drop = FALSE]
-
-        # Resolve XWITH rows that now have only defined LVs
-        if (nrow(OMEGA_DEF.g)) {
-          for (xwith in intersect(undefinedXWITH, rownames(OMEGA_DEF.g))) {
-            row  <- OMEGA_DEF.g[xwith, , drop = TRUE]
-            vars <- names(row)[row]
-
-            # product over the specific vars (more precise & avoids unnecessary cols)
-            # Base R row-wise product across selected columns:
-            prod <- Reduce(`*`, Y.gi[vars])
-
-            Y.gi[[xwith]]  <- prod
-            Zx.gi[, xwith] <- prod
-
-            # mark as defined
-            undefinedXWITH <- setdiff(undefinedXWITH, xwith)
-          }
-        }
-
-        # latent lv.i = alpha + residual(ZETA) + gamma * parents
-        vals.eta  <- alpha.g[lv.i, 1L] + ZETA[, lv.i]
-        gamma.eta <- gamma.g[lv.i, definedLVs, drop = TRUE]
-        if (length(gamma.eta)) {
-          # accumulate effects from already-defined parents
-          for (j in seq_along(gamma.eta)) {
-            indep.eta.j <- names(gamma.eta)[[j]]
-            vals.eta    <- vals.eta + gamma.eta[[j]] * Y.gi[[indep.eta.j]]
-          }
-        }
-
-        Y.gi[[lv.i]] <- vals.eta
-
-        definedLVs   <- c(definedLVs, lv.i)
-        undefinedLVs <- undefinedLVs[-1L]
+      Yvals <- matrix(0, nrow = n_i, ncol = length(colnames_gamma))
+      if (length(idx_latent_in_gamma)) {
+        base <- ZETA
+        base <- sweep(base, 2L, alpha_full[idx_latent_in_gamma], FUN = "+")
+        Yvals[, idx_latent_in_gamma] <- base
       }
 
-      Zx.g[[i]] <- Zx.gi
+      defined <- rep(FALSE, length(colnames_gamma))
+      if (length(idx_xis))
+        defined[idx_xis] <- TRUE
+
+      pending_etas <- idx_etas
+      pending_xwith <- seq_along(idx_xwith)
+
+      while (length(pending_etas) || length(pending_xwith)) {
+        progress <- FALSE
+
+        if (length(pending_xwith)) {
+          to_remove <- integer(0L)
+          for (k in pending_xwith) {
+            target_idx <- idx_xwith[k]
+            parents <- xwith_parent_idx[[k]]
+            if (!length(parents)) {
+              Yvals[, target_idx] <- 1
+              Zx_gi[, target_idx] <- 1
+              defined[target_idx] <- TRUE
+              to_remove <- c(to_remove, k)
+              progress <- TRUE
+            } else if (all(defined[parents])) {
+              prod_vals <- row_prod(Yvals[, parents, drop = FALSE])
+              Yvals[, target_idx] <- prod_vals
+              Zx_gi[, target_idx] <- prod_vals
+              defined[target_idx] <- TRUE
+              to_remove <- c(to_remove, k)
+              progress <- TRUE
+            }
+          }
+          if (length(to_remove))
+            pending_xwith <- setdiff(pending_xwith, to_remove)
+        }
+
+        if (length(pending_etas)) {
+          eta_idx <- pending_etas[1L]
+          eta_pos <- match(eta_idx, idx_etas)
+          parents <- eta_parent_idx[[eta_pos]]
+
+          vals_eta <- Yvals[, eta_idx, drop = FALSE]
+          vals_eta <- vals_eta[, 1L]
+          if (length(parents))
+            vals_eta <- vals_eta + as.vector(Yvals[, parents, drop = FALSE] %*% gamma_mat[eta_idx, parents])
+
+          Yvals[, eta_idx] <- vals_eta
+          defined[eta_idx] <- TRUE
+          pending_etas <- pending_etas[-1L]
+          progress <- TRUE
+        }
+
+        if (!progress) break
+      }
+
+      Zx.g[[i]] <- Zx_gi
     }
 
     modFilled$models[[g]]$quad$n <- Zx.g
