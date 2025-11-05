@@ -5,16 +5,16 @@ calcSESimpleSlopes <- function(X, V) {
     .Call(`_modsem_calcSESimpleSlopes`, X, V)
 }
 
-P_Step_GSEM_Group <- function(modelR) {
-    .Call(`_modsem_P_Step_GSEM_Group`, modelR)
+P_Step_GSEM_Group <- function(modelR, normalized) {
+    .Call(`_modsem_P_Step_GSEM_Group`, modelR, normalized)
 }
 
 Q_GSEM_Group <- function(modelR, P) {
     .Call(`_modsem_Q_GSEM_Group`, modelR, P)
 }
 
-P_Step_GSEM <- function(modelR) {
-    .Call(`_modsem_P_Step_GSEM`, modelR)
+P_Step_GSEM <- function(modelR, normalized) {
+    .Call(`_modsem_P_Step_GSEM`, modelR, normalized)
 }
 
 Q_GSEM <- function(modelR, P) {

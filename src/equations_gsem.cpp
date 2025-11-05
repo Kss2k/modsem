@@ -117,15 +117,16 @@ struct GSEM_ModelGroup {
     return density;
   }
 
-  arma::mat Pi() {
+  arma::mat Pi(const bool normalized) {
     arma::mat out(Z[0L].n_rows, Z.size());
      
-    for (int q = 0; q < Z.size(); q++)
+    for (int q = 0; q < Z.size(); q++) {
+      Rcpp::Rcout << "W.col(" << g << "):\n" << W.head_rows(5).col(q) << "\n";
+      Rcpp::Rcout << "density(Zq[" << q <<"]):\n" << getDensityZq(Z[q], false).subvec(0, 4) << "\n";
       out.col(q) = W.col(q) % getDensityZq(Z[q], false);
+    }
 
-    Rcpp::Rcout << "Loglik: " << arma::accu(arma::log(out)) << "\n";
-    out = out.each_col() / arma::sum(out, 1L); // sum along each row
-    return out;
+    return normalized ? out.each_col() / arma::sum(out, 1L): out;
   }
 
   arma::vec Qi(const arma::mat &P) {
@@ -157,9 +158,9 @@ struct GSEM_ModelGroup {
 
 
 // [[Rcpp::export]]
-arma::mat P_Step_GSEM_Group(const Rcpp::List &modelR) {
+arma::mat P_Step_GSEM_Group(const Rcpp::List &modelR, const bool normalized) {
   GSEM_ModelGroup M(modelR);
-  return M.Pi();
+  return M.Pi(normalized);
 }
 
 // [[Rcpp::export]]
@@ -187,15 +188,14 @@ struct GSEM_Model {
     }
   }
 
-  arma::mat Pi() {
+  arma::mat Pi(const bool normalized) {
     const int zk = groupModels[0L].Z.size();
     arma::mat out(N, zk);
    
-    Rcpp::Rcout << "dim out(N, zk), [" << N << ", " << zk << "]\n";
     int offset = 0L;
     for (int g = 0L; g < ngroups; g++) {
       const int ng = groupModels[g].N;
-      out.rows(offset, offset + ng - 1L) = groupModels[g].Pi();
+      out.rows(offset, offset + ng - 1L) = groupModels[g].Pi(normalized);
       offset += ng;
     }
    
@@ -236,9 +236,9 @@ struct GSEM_Model {
 
 
 // [[Rcpp::export]]
-arma::mat P_Step_GSEM(const Rcpp::List &modelR) {
+arma::mat P_Step_GSEM(const Rcpp::List &modelR, const bool normalized) {
   GSEM_Model M(modelR);
-  return M.Pi();
+  return M.Pi(normalized);
 }
 
 

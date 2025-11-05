@@ -28,50 +28,15 @@ emGsem <- function(model,
                    fs.jitter.mult = sqrt(.Machine$double.eps),
                    ...) {
 
-  algorithm    <- toupper(match.arg(algorithm))
-  fs.matrix    <- match.arg(fs.matrix)
-  fs.fd.scheme <- match.arg(fs.fd.scheme)
-
   theta.lower  <- model$params$bounds$lower
   theta.upper  <- model$params$bounds$upper
   bounds.all   <- c(theta.lower, theta.upper)
 
-  if (all(is.infinite(bounds.all))) {
-    boundedTheta <- \(theta) theta # don't do anything
-
-  } else {
-    boundedTheta <- function(theta) {
-      underflow <- theta < theta.lower
-      overflow  <- theta > theta.upper
-
-      theta[underflow] <- theta.lower[underflow]
-      theta[overflow]  <- theta.upper[overflow]
-
-      theta
-    }
-  }
-
   tryCatch({
-    tau  <- convergence.rel
-    tau1 <- if (is.null(em.control$tau1)) tau*1e6 else em.control$tau1
-    tau2 <- if (is.null(em.control$tau2)) tau*2   else em.control$tau2
-    tau3 <- if (is.null(em.control$tau3)) tau     else em.control$tau3
-
     logLikNew <- -Inf
     logLikOld <- -Inf
     thetaNew  <- model$theta
-    direction <- NULL
 
-    lastQuad     <- NULL
-    adaptiveQuad <- model$models[[1L]]$quad$adaptive # fixed across groups
-    adaptiveFreq <- model$models[[1L]]$quad$adaptive.frequency
-
-    qn_env <- new.env(parent = emptyenv())
-    qn_env$LBFGS_M <- 5
-    qn_env$s_list <- list()
-    qn_env$y_list <- list()
-
-    mode <- "EM"
     iterations <- 0L
     run <- TRUE
 
@@ -81,26 +46,9 @@ emGsem <- function(model,
       iterations <- iterations + 1L
       logLikOld  <- logLikNew
       thetaOld   <- thetaNew
-      recalcQuad <- adaptiveQuad && iterations %% adaptiveFreq == 0L
 
       # E-step at thetaOld
-      P <- estepGsem(model = model, theta = thetaOld,
-                    lastQuad = lastQuad, recalcQuad = recalcQuad,
-                    adaptive.quad.tol = adaptive.quad.tol, ...)
-
-      if (testSimpleGradient) {
-        tryCatch({
-          gradientCompLogLikGsem(theta = thetaNew, model = model, P = P)
-        }, error = \(e) {
-          warning2("Optimized computation of gradient failed! Switching gradient type.\n",
-                   "Message: ", conditionMessage(e))
-          model$gradientStruct$hasCovModel <<- TRUE
-          model$gradientStruct$isNonLinear <<- TRUE
-        })
-        testSimpleGradient <- FALSE
-      }
-
-      lastQuad <- P$quad
+      P <- estepGsem(model = model, theta = thetaOld)
 
       logLikNew  <- P$obsLL
       deltaLL    <- logLikNew - logLikOld
@@ -110,124 +58,18 @@ emGsem <- function(model,
 
       converged <- (abs(deltaLL) < convergence.abs) ||
                    (abs(relDeltaLL) < convergence.rel)
-      converged.em <- converged && mode == "EM"
 
-      if (iterations >= max.iter || converged.em) break
+      if (iterations >= max.iter || converged) break
 
       if (deltaLL < -1e-8) {
         if (verbose) cat("\n")
         warning2(sprintf("Loglikelihood decreased by %.2g", deltaLL))
       }
 
-      # EMA controller
-      if (algorithm == "EMA") {
-        previousMode <- mode
-        dl <- abs(relDeltaLL)
-        mode <- switch(mode,
-          EM = if (dl < tau1) "QN" else "EM",
-          QN = if (dl < tau2) "FS" else if (dl >= tau1) "EM" else "QN",
-          FS = if (dl < tau3) "STOP" else if (dl >= tau2) "QN" else "FS",
-          "EM"
-        )
-
-        if (converged) # converged but not in EM mode, switch to EM
-          mode <- "EM"
-
-        if (mode == "STOP") break
-        if (mode != previousMode) {
-          updateStatusLog(iterations, mode, logLikNew, deltaLL, relDeltaLL, verbose)
-        }
-      }
-
-      # accelerated step
-      if (algorithm != "EM" && mode != "EM") {
-        grad <- computeGradient(theta = thetaOld, model = model, P = P, epsilon = epsilon)
-
-        if (mode == "QN") {
-          direction <- if (length(qn_env$s_list)) {
-            lbfgs_two_loop(-grad, qn_env$s_list, qn_env$y_list)
-          } else -grad
-
-        } else if (mode == "FS") {
-          # FS direction using Iobs = Icom - Imis (Louis), with fallback to Icom
-          I_fs <- NULL
-          if (fs.matrix == "Iobs") {
-            I_fs <- tryCatch({
-              L <- observedInfoFromLouisGsem(model = model, theta = thetaOld,
-                                            P = P, recompute.P = FALSE,
-                                            fd.scheme = fs.fd.scheme,
-                                            fd.epsilon = fs.fd.epsilon,
-                                            symmetrize = TRUE)
-              L$I.obs
-            }, error = function(e) NULL)
-          }
-          if (is.null(I_fs)) {
-            I_fs <- computeFullIcom(theta = thetaOld, model = model, P = P)
-          } else {
-            I_fs <- 0.5 * (I_fs + t(I_fs))
-          }
-
-          # conditioning & scaled jitter
-          rc <- suppressWarnings(rcond(I_fs))
-          if (!is.finite(rc) || rc < 1e-10) {
-            jj <- fs.jitter.mult * max(1, max(diag(I_fs), na.rm = TRUE))
-            diag(I_fs) <- diag(I_fs) + jj
-          }
-          I_fs <- 0.5 * (I_fs + t(I_fs))
-          direction <- -tryCatch(solve(I_fs, grad), error = function(e) NULL)
-        }
-
-        # line search on observed LL (and weakly on Q)
-        if (!is.null(direction)) {
-          alpha     <- 1
-          success   <- FALSE
-          refQ      <- compLogLikGsem(theta = thetaOld, model = model, P = P, sign = 1)
-
-          while (alpha > 1e-5) {
-            thetaTrial  <- boundedTheta(thetaOld + alpha * direction)
-            llQTrial    <- suppressWarnings(compLogLikGsem(theta = thetaTrial,  model = model, P = P, sign = 1))
-            ok <- !is.na(llQTrial) && (llQTrial >= refQ)
-            if (ok) { success <- TRUE; break }
-            alpha <- alpha / 2
-          }
-
-          if (success) {
-            thetaNew <- thetaTrial
-            if (mode == "QN") {
-              # refresh P and grad at thetaNew before adding curvature pair
-              P_new <- estepGsem(model = model, theta = thetaNew,
-                                lastQuad = lastQuad, recalcQuad = FALSE,
-                                adaptive.quad.tol = adaptive.quad.tol, ...)
-              gradNew <- computeGradient(theta = thetaNew, model = model,
-                                         P = P_new, epsilon = epsilon)
-              s_vec <- thetaNew - thetaOld
-              y_vec <- gradNew - grad
-              if (sum(s_vec * y_vec) > 1e-8) {
-                qn_env$s_list <- c(qn_env$s_list, list(s_vec))
-                qn_env$y_list <- c(qn_env$y_list, list(y_vec))
-                if (length(qn_env$s_list) > qn_env$LBFGS_M) {
-                  qn_env$s_list <- qn_env$s_list[-1]
-                  qn_env$y_list <- qn_env$y_list[-1]
-                }
-              }
-              P <- P_new; lastQuad <- P_new$quad
-            }
-          } else {
-            mode <- "EM"
-          }
-        } else {
-          mode <- "EM"
-        }
-      }
-
-      # EM M-step (plain or fallback)
-      if (algorithm == "EM" || mode == "EM") {
-        mstep <- mstepGsem(model = model, P = P, theta = thetaOld,
-                          max.step = max.step, epsilon = epsilon,
-                          optimizer = optimizer, control = control, ...)
-        if (!any(is.na(mstep$par))) thetaNew <- mstep$par
-      }
-    } # while
+      mstep <- mstepGsem(model = model, P = P, theta = thetaOld,
+                         max.step = max.step, control = control, ...)
+      if (!any(is.na(mstep$par))) thetaNew <- mstep$par
+    }
 
     if (verbose) cat("\n")
     warnif(iterations >= max.iter, "Maximum iterations reached!\n",
@@ -236,11 +78,11 @@ emGsem <- function(model,
                             max.step, max.iter, nodes, adaptive.quad,
                             adaptive.quad.tol, quad.range))
 
-    # final E-step
-    P <- estepGsem(model = model, theta = thetaNew,
-                  lastQuad = lastQuad, recalcQuad = FALSE,
-                  adaptive.quad.tol = adaptive.quad.tol, ...)
   })
+
+
+  browser()
+  return(mstep)
 }
 
 
@@ -262,58 +104,92 @@ estepGsem <- function(model, theta, lastQuad = NULL, recalcQuad = FALSE, adaptiv
     psi.g    <- psi.g[c(xis.g, etas.g), c(xis.g, etas.g), drop = FALSE]
     alpha.g  <- submodel$matrices$alpha
     A.g      <- chol(psi.g)
-    Z.g      <- quad.g$n
-    Zx.g     <- vector("list", length = length(Z.g))
 
-    for (i in seq_along(Z.g)) {
-      Z.gi  <- Z.g[[i]]
-      Zx.gi <- cbind(matrix(0, nrow = nrow(Z.gi), ncol = NROW(OMEGA.g)), Z.gi)
+    ## Pack quad.g$n (list of matrices) into a 3D array
+    Z_list   <- quad.g$n
+    G        <- length(Z_list)
+    rcz      <- dim(Z_list[[1L]])  # c(r, c)
+    r        <- rcz[1L]
+    cZ       <- rcz[2L]
 
-      colnames(Zx.gi) <- colnames(gamma.g)
+    # Combine without names overhead
+    Z_arr <- array(
+                   data = unlist(Z_list, use.names = FALSE),
+                   dim  = c(r, cZ, G)
+    )
 
-      ZETA <- Z.gi %*% A.g
-      colnames(ZETA) <- colnames(psi.g)
+    ## Batch compute ZETA for all slices: r*G by cZ times A.g
+    # ZETA_arr[,,i] = Z_arr[,,i] %*% A.g
+    ZETA_mat <- matrix(Z_arr, nrow = r * G, ncol = cZ) %*% A.g   # (rG × cZ) %*% (cZ × p)
+    p        <- ncol(psi.g)
+    ZETA_arr <- array(ZETA_mat, dim = c(r, p, G))
+    colnames_ZETA <- colnames(psi.g)  # reuse once
 
+    ## Prepare constants reused in the inner loop
+    colnames_gamma <- colnames(gamma.g)
+    undef_all_XWITH <- rownames(OMEGA.g)
+
+    Zx.g <- vector("list", length = G)
+
+    for (i in seq_len(G)) {
+      # pull slice i once
+      Z_gi      <- Z_arr[,,i]
+      ZETA      <- ZETA_arr[,,i, drop = FALSE][,,1L]
+      colnames(ZETA) <- colnames_ZETA
+
+      # Zx.gi scaffold: zeros for XWITH columns, then original Z_gi
+      Zx.gi <- cbind(matrix(0, nrow = r, ncol = nrow(OMEGA.g)), Z_gi)
+      colnames(Zx.gi) <- colnames_gamma
 
       definedLVs     <- xis.g
       undefinedLVs   <- etas.g
-      undefinedXWITH <- rownames(OMEGA.g)
+      undefinedXWITH <- undef_all_XWITH
 
-      # Initialize Y.g
-      Y.gi <- as.data.frame(
-        lapplyNamed(xis.g, FUN = \(xi.g) alpha.g[xi.g, 1L] + ZETA[, xi.g],
-                    names = xis.g)
-      )
+      # Initialize Y.gi with xis: alpha + ZETA[, xi]
+      # (build as data.frame with named columns in xis order)
+      Y.gi <- as.data.frame(stats::setNames(
+         lapply(xis.g, \(xi.g) alpha.g[xi.g, 1L] + ZETA[, xi.g]),
+         xis.g
+      ))
 
       while (length(undefinedLVs)) {
         lv.i <- undefinedLVs[[1L]]
 
-        undefInXWITH <- apply(OMEGA.g[, undefinedLVs, drop = FALSE], MARGIN = 1L, FUN = any)
-        OMEGA_DEF.g <- OMEGA.g[!undefInXWITH, , drop = FALSE]
+        undefInXWITH <- apply(OMEGA.g[, undefinedLVs, drop = FALSE], 1L, any)
+        OMEGA_DEF.g  <- OMEGA.g[!undefInXWITH, , drop = FALSE]
 
-        for (xwith in intersect(undefinedXWITH, rownames(OMEGA_DEF.g))) {
-          row  <- OMEGA_DEF.g[xwith, , drop = TRUE]
-          vars <- colnames(OMEGA_DEF.g)[row]
-          prod <- apply(Y.gi, MARGIN = 1, FUN = prod)
+        # Resolve XWITH rows that now have only defined LVs
+        if (nrow(OMEGA_DEF.g)) {
+          for (xwith in intersect(undefinedXWITH, rownames(OMEGA_DEF.g))) {
+            row  <- OMEGA_DEF.g[xwith, , drop = TRUE]
+            vars <- names(row)[row]
 
-          Y.gi[[xwith]]  <- prod
-          Zx.gi[, xwith] <- prod
+            # product over the specific vars (more precise & avoids unnecessary cols)
+            # Base R row-wise product across selected columns:
+            prod <- Reduce(`*`, Y.gi[vars])
 
-          undefinedXWITH <- setdiff(xwith, undefinedXWITH)
+            Y.gi[[xwith]]  <- prod
+            Zx.gi[, xwith] <- prod
+
+            # mark as defined
+            undefinedXWITH <- setdiff(undefinedXWITH, xwith)
+          }
         }
 
-        vals.eta <- alpha.g[lv.i, 1L] + ZETA[, lv.i] # Start with residual + intercept
+        # latent lv.i = alpha + residual(ZETA) + gamma * parents
+        vals.eta  <- alpha.g[lv.i, 1L] + ZETA[, lv.i]
         gamma.eta <- gamma.g[lv.i, definedLVs, drop = TRUE]
-        for (j in seq_along(gamma.eta)) {
-          indep.eta.j  <- names(gamma.eta)[[j]]
-          gamma.eta.j  <- gamma.eta[[j]]
-
-          vals.eta <- vals.eta + gamma.eta.j * Y.gi[[indep.eta.j]]
+        if (length(gamma.eta)) {
+          # accumulate effects from already-defined parents
+          for (j in seq_along(gamma.eta)) {
+            indep.eta.j <- names(gamma.eta)[[j]]
+            vals.eta    <- vals.eta + gamma.eta[[j]] * Y.gi[[indep.eta.j]]
+          }
         }
-        
+
         Y.gi[[lv.i]] <- vals.eta
 
-        definedLVs   <- c(definedLVs, undefinedLVs[1L])
+        definedLVs   <- c(definedLVs, lv.i)
         undefinedLVs <- undefinedLVs[-1L]
       }
 
@@ -323,13 +199,30 @@ estepGsem <- function(model, theta, lastQuad = NULL, recalcQuad = FALSE, adaptiv
     modFilled$models[[g]]$quad$n <- Zx.g
   }
 
- 
+  QUAD <- lapply(modFilled$models, FUN = \(submod) submod$quad)
   browser()
-  P <- P_Step_GSEM(modFilled)
-  Q <- Q_GSEM(modFilled, P = P)
-  Qi <- Qi_GSEM(modFilled, P = P)
+  P    <- P_Step_GSEM(modFilled, normalized = FALSE)
+
+  density <- rowSums(P)
+  P       <- P / density
+  obsLL   <- sum(log(density))
 
   browser()
+  list(P = P, QUAD = QUAD, obsLL = sum(log(P)))
+}
 
-  P
+
+Q_Gsem <- function(theta, model, P_Step) {
+  modFilled <- fillModelGsem(model = model, theta = theta)
+  # This should probably be refactored to C++ code
+  for (g in seq_along(modFilled)) { # This should probably be refactored to C++ code
+    quad.g <- P_Step$QUAD[[g]]
+    modFilled$models[[g]] <- quad.g
+  }
+}
+
+
+mstepGsem <- function(theta, model, P_Step) {
+
+
 }

@@ -24,13 +24,14 @@ BEGIN_RCPP
 END_RCPP
 }
 // P_Step_GSEM_Group
-arma::mat P_Step_GSEM_Group(const Rcpp::List& modelR);
-RcppExport SEXP _modsem_P_Step_GSEM_Group(SEXP modelRSEXP) {
+arma::mat P_Step_GSEM_Group(const Rcpp::List& modelR, const bool normalized);
+RcppExport SEXP _modsem_P_Step_GSEM_Group(SEXP modelRSEXP, SEXP normalizedSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::List& >::type modelR(modelRSEXP);
-    rcpp_result_gen = Rcpp::wrap(P_Step_GSEM_Group(modelR));
+    Rcpp::traits::input_parameter< const bool >::type normalized(normalizedSEXP);
+    rcpp_result_gen = Rcpp::wrap(P_Step_GSEM_Group(modelR, normalized));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -47,13 +48,14 @@ BEGIN_RCPP
 END_RCPP
 }
 // P_Step_GSEM
-arma::mat P_Step_GSEM(const Rcpp::List& modelR);
-RcppExport SEXP _modsem_P_Step_GSEM(SEXP modelRSEXP) {
+arma::mat P_Step_GSEM(const Rcpp::List& modelR, const bool normalized);
+RcppExport SEXP _modsem_P_Step_GSEM(SEXP modelRSEXP, SEXP normalizedSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::List& >::type modelR(modelRSEXP);
-    rcpp_result_gen = Rcpp::wrap(P_Step_GSEM(modelR));
+    Rcpp::traits::input_parameter< const bool >::type normalized(normalizedSEXP);
+    rcpp_result_gen = Rcpp::wrap(P_Step_GSEM(modelR, normalized));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -423,9 +425,9 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_modsem_calcSESimpleSlopes", (DL_FUNC) &_modsem_calcSESimpleSlopes, 2},
-    {"_modsem_P_Step_GSEM_Group", (DL_FUNC) &_modsem_P_Step_GSEM_Group, 1},
+    {"_modsem_P_Step_GSEM_Group", (DL_FUNC) &_modsem_P_Step_GSEM_Group, 2},
     {"_modsem_Q_GSEM_Group", (DL_FUNC) &_modsem_Q_GSEM_Group, 2},
-    {"_modsem_P_Step_GSEM", (DL_FUNC) &_modsem_P_Step_GSEM, 1},
+    {"_modsem_P_Step_GSEM", (DL_FUNC) &_modsem_P_Step_GSEM, 2},
     {"_modsem_Q_GSEM", (DL_FUNC) &_modsem_Q_GSEM, 2},
     {"_modsem_Qi_GSEM", (DL_FUNC) &_modsem_Qi_GSEM, 2},
     {"_modsem_muLmsCpp", (DL_FUNC) &_modsem_muLmsCpp, 2},
