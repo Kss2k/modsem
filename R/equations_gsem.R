@@ -222,60 +222,58 @@ Q_Gsem <- function(theta, model, P_Step) {
 }
 
 
-fdgrad <- function(x, .f, ...,  eps = 1e-5) {
-  g <- numeric(length(x))
-
-  f0 <- .f(x, ...)
-  for (i in seq_along(x)) {
-    xi <- x
-    xi[i] <- x[i] + eps
-
-    fi <- .f(xi, ...)
-    g[i] <- (fi - f0) / eps
-  }
-
-  g
-}
-
-
-fastOneStepNLMINB <- function(start, objective, gradient = fdgrad, lower = NULL, upper = NULL, ...) {
-  direction <- -fdgrad(x = start, .f = objective, ...)
-
-  f0 <- objective(start, ...)
-
-  success <- FALSE
-
-  if (!is.null(lower) || !is.null(upper)) {
-    if (is.null(lower)) lower <- -Inf
-    if (is.null(upper)) upper <- Inf
-
-    truncatePars <- function(x) {
-      x[x < lower] <- lower[x < lower]
-      x[x > upper] <- upper[x > upper]
-      x
-    }
-
-  } else truncatePars <- \(x) x
-
-  alpha <- 1
-  while (alpha > 1e-5) {
-    test <- truncatePars(start + alpha * direction)
-    f1 <- objective(test, ...)
-
-    if (!is.nan(f1) && !is.na(f1) && f1 < f0) {
-      success <- TRUE
-      break
-    }
-
-    alpha <- alpha / 2L
-  }
-
-  list(
-    objective = if (success) f1   else f0,
-    par       = if (success) test else start,
-    success   = success
-  )
-}
+# fdgrad <- function(x, .f, ...,  eps = 1e-5) {
+#   g <- numeric(length(x))
+# 
+#   f0 <- .f(x, ...)
+#   for (i in seq_along(x)) {
+#     xi <- x
+#     xi[i] <- x[i] + eps
+# 
+#     fi <- .f(xi, ...)
+#     g[i] <- (fi - f0) / eps
+#   }
+# 
+#   g
+# }
+# fastOneStepNLMINB <- function(start, objective, gradient = fdgrad, lower = NULL, upper = NULL, ...) {
+#   direction <- -fdgrad(x = start, .f = objective, ...)
+# 
+#   f0 <- objective(start, ...)
+# 
+#   success <- FALSE
+# 
+#   if (!is.null(lower) || !is.null(upper)) {
+#     if (is.null(lower)) lower <- -Inf
+#     if (is.null(upper)) upper <- Inf
+# 
+#     truncatePars <- function(x) {
+#       x[x < lower] <- lower[x < lower]
+#       x[x > upper] <- upper[x > upper]
+#       x
+#     }
+# 
+#   } else truncatePars <- \(x) x
+# 
+#   alpha <- 1
+#   while (alpha > 1e-5) {
+#     test <- truncatePars(start + alpha * direction)
+#     f1 <- objective(test, ...)
+# 
+#     if (!is.nan(f1) && !is.na(f1) && f1 < f0) {
+#       success <- TRUE
+#       break
+#     }
+# 
+#     alpha <- alpha / 2L
+#   }
+# 
+#   list(
+#     objective = if (success) f1   else f0,
+#     par       = if (success) test else start,
+#     success   = success
+#   )
+# }
 
 
 mstepGsem <- function(theta, model, P_Step, max.step = 1L, control = list(),
@@ -284,17 +282,13 @@ mstepGsem <- function(theta, model, P_Step, max.step = 1L, control = list(),
 
   objective <- \(theta) -Q_Gsem(theta = theta, model = model, P_Step = P_Step)
 
-  timeExpr(
-  fit2 <- fastOneStepNLMINB(start = theta, objective = objective,
-                            lower = lower, upper = upper)
-  )
+  # timeExpr(
+  # fit2 <- fastOneStepNLMINB(start = theta, objective = objective,
+  #                           lower = lower, upper = upper)
+  # )
 
-  browser()
-  timeExpr(
   fit <- nlminb(start = theta, objective = objective, control = control,
                 lower = lower, upper = upper)
-  )
-
 
   fit
 }
