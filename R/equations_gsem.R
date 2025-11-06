@@ -109,66 +109,20 @@ estepGsem <- function(model, theta, lastQuad = NULL, recalcQuad = FALSE, adaptiv
     # psi.g[1, 2] <- psi.g[2, 1] <- 0.198
     # psi.g[3, 3] <- 0.982
 
-    A.g      <- chol(psi.g)
-    Z.g      <- quad.g$n
-    Zx.g     <- vector("list", length = length(Z.g))
+    cholPsi <- chol(psi.g)
+    latent_names <- colnames(psi.g)
+    alpha_latent <- if (nrow(alpha.g)) alpha.g[latent_names, 1L, drop = TRUE] else rep(0, length(latent_names))
 
-    for (i in seq_along(Z.g)) {
-      Z.gi  <- Z.g[[i]]
-      Zx.gi <- cbind(matrix(0, nrow = nrow(Z.gi), ncol = NROW(OMEGA.g)), Z.gi)
-
-      colnames(Zx.gi) <- colnames(gamma.g)
-
-      ZETA <- Z.gi %*% A.g
-      colnames(ZETA) <- colnames(psi.g)
-
-
-      definedLVs     <- xis.g
-      undefinedLVs   <- etas.g
-      undefinedXWITH <- rownames(OMEGA.g)
-
-      # Initialize Y.g
-      Y.gi <- as.data.frame(
-        lapplyNamed(xis.g, FUN = \(xi.g) alpha.g[xi.g, 1L] + ZETA[, xi.g],
-                    names = xis.g)
-      )
-
-      while (length(undefinedLVs)) {
-        lv.i <- undefinedLVs[[1L]]
-
-        undefInXWITH <- apply(OMEGA.g[, undefinedLVs, drop = FALSE], MARGIN = 1L, FUN = any)
-        OMEGA_DEF.g <- OMEGA.g[!undefInXWITH, , drop = FALSE]
-
-        for (xwith in intersect(undefinedXWITH, rownames(OMEGA_DEF.g))) {
-          row  <- OMEGA_DEF.g[xwith, , drop = TRUE]
-          vars <- colnames(OMEGA_DEF.g)[row]
-          prod <- apply(Y.gi, MARGIN = 1, FUN = prod)
-
-          Y.gi[[xwith]]  <- prod
-          Zx.gi[, xwith] <- prod
-
-          undefinedXWITH <- setdiff(xwith, undefinedXWITH)
-        }
-
-        vals.eta <- alpha.g[lv.i, 1L] + ZETA[, lv.i] # Start with residual + intercept
-        gamma.eta <- gamma.g[lv.i, definedLVs, drop = TRUE]
-        for (j in seq_along(gamma.eta)) {
-          indep.eta.j  <- names(gamma.eta)[[j]]
-          gamma.eta.j  <- gamma.eta[[j]]
-
-          vals.eta <- vals.eta + gamma.eta.j * Y.gi[[indep.eta.j]]
-        }
-        
-        Y.gi[[lv.i]] <- vals.eta
-
-        definedLVs   <- c(definedLVs, undefinedLVs[1L])
-        undefinedLVs <- undefinedLVs[-1L]
-      }
-
-      Zx.g[[i]] <- Zx.gi
-    }
-
-    modFilled$models[[g]]$quad$n <- Zx.g
+    modFilled$models[[g]]$quad$n <- expand_quadrature_cpp(
+      Z_list      = quad.g$n,
+      cholPsi     = cholPsi,
+      gamma       = gamma.g,
+      omega       = OMEGA.g,
+      alphaLatent = alpha_latent,
+      xiNames     = xis.g,
+      etaNames    = etas.g,
+      latentNames = latent_names
+    )
   }
 
   QUAD <- lapply(modFilled$models, FUN = \(submod) submod$quad)
@@ -194,20 +148,22 @@ Q_Gsem <- function(theta, model, P_Step) {
 }
 
 
-# fdgrad <- function(x, .f, ...,  eps = 1e-5) {
-#   g <- numeric(length(x))
-# 
-#   f0 <- .f(x, ...)
-#   for (i in seq_along(x)) {
-#     xi <- x
-#     xi[i] <- x[i] + eps
-# 
-#     fi <- .f(xi, ...)
-#     g[i] <- (fi - f0) / eps
-#   }
-# 
-#   g
-# }
+fdgrad <- function(x, .f, ...,  eps = 1e-5) {
+  g <- numeric(length(x))
+
+  f0 <- .f(x, ...)
+  for (i in seq_along(x)) {
+    xi <- x
+    xi[i] <- x[i] + eps
+
+    fi <- .f(xi, ...)
+    g[i] <- (fi - f0) / eps
+  }
+
+  g
+}
+
+
 # fastOneStepNLMINB <- function(start, objective, gradient = fdgrad, lower = NULL, upper = NULL, ...) {
 #   direction <- -fdgrad(x = start, .f = objective, ...)
 # 
@@ -247,6 +203,7 @@ Q_Gsem <- function(theta, model, P_Step) {
 #   )
 # }
 
+
 gradQ_Gsem <- function(theta, model, P_Step) {
   modFilled <- fillModelGsem(model = model, theta = theta)
   for (g in seq_along(modFilled$models)) { # This should probably be refactored to C++ code
@@ -257,13 +214,25 @@ gradQ_Gsem <- function(theta, model, P_Step) {
   Grad_Q_GSEM(modelR = modFilled, P = P_Step$P)[names(theta)]
 }
 
+
 mstepGsem <- function(theta, model, P_Step, max.step = 1L, control = list(),
                       lower = NULL, upper = NULL) {
   control$iter.max <- max.step
 
   gradient  <- \(theta) -gradQ_Gsem(theta = theta, model = model, P_Step = P_Step)
   objective <- \(theta) -Q_Gsem(theta = theta, model = model, P_Step = P_Step)
+  gradient2  <- \(theta) setNames(fdgrad(x = theta, .f = objective, eps = 1e-7), names(theta))
 
+  g1 <- gradient(theta)
+  g2 <- gradient2(theta)
+
+  cat("\nAnalytical Gradient:\n")
+  print(g1)
+  cat("Numerical Gradient:\n")
+  print(g2)
+  cat("Difference:\n")
+  print(round(g2 - g1, 4))
+  stop("Stopping after grad check")
   # timeExpr(
   # fit2 <- fastOneStepNLMINB(start = theta, objective = objective,
   #                           lower = lower, upper = upper)

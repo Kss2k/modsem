@@ -214,7 +214,7 @@ struct GSEM_ModelGroup {
       if (!freeR.containsElementNamed(name))
         return;
 
-      Rcpp::DataFrame df = freeR[name];
+      Rcpp::DataFrame df = Rcpp::as<Rcpp::DataFrame>(freeR[name]);
       if (df.nrows() == 0)
         return;
 
@@ -448,8 +448,9 @@ struct GSEM_ModelGroup {
             gradTau[j] += sumScore;
 
           if (gradLambda.n_cols && Sblock.n_cols) {
+            const arma::rowvec ds_dS = Lambda.row(j);
             gradLambda.row(j) += weightedScore.t() * Sblock;
-            gradSblock += weightedScore * Lambda.row(j);
+            gradSblock += weightedScore * ds_dS;
           }
 
           if (gradTheta.n_rows > j && gradTheta.n_cols > j)
@@ -463,8 +464,12 @@ struct GSEM_ModelGroup {
           const arma::mat gradLatentBlock = gradSblock * B;
           if (gradAlphaVec.n_elem)
             gradAlphaVec += arma::sum(gradLatentBlock, 0).t();
-          if (cholPsi.n_elem > 0)
-            gradChol += Z[q].rows(offset, end).t() * gradLatentBlock;
+          if (cholPsi.n_elem > 0) {
+            arma::mat Zblock = Z[q].rows(offset, end);
+            if (Zblock.n_cols > cholPsi.n_cols)
+              Zblock = Zblock.cols(Zblock.n_cols - cholPsi.n_cols, Zblock.n_cols - 1);
+            gradChol += Zblock.t() * gradLatentBlock;
+          }
         }
 
         offset += np;
@@ -481,14 +486,14 @@ struct GSEM_ModelGroup {
 
     arma::mat gradGammaMat(Gamma.n_rows, Gamma.n_cols, arma::fill::zeros);
     if (gradB.n_elem)
-      gradGammaMat = B.t() * gradB * B.t();
+      gradGammaMat = (B * gradB * B).t();
 
     arma::mat gradPsiMat(Psi.n_rows, Psi.n_cols, arma::fill::zeros);
     if (cholPsi.n_elem) {
-      arma::mat lowerGrad = arma::trimatl(gradChol);
-      arma::mat halfGrad = 0.5 * lowerGrad;
-      arma::mat temp = arma::solve(arma::trimatu(cholPsi.t()), halfGrad.t(), arma::solve_opts::fast);
-      gradPsiMat = arma::symmatu(temp.t());
+      arma::mat gradCholLower = arma::trimatl(gradChol);
+      arma::mat temp = arma::solve(arma::trimatu(cholPsi.t()), gradCholLower.t(), arma::solve_opts::fast);
+      arma::mat gradPsiCandidate = 0.5 * temp.t();
+      gradPsiMat = 0.5 * (gradPsiCandidate + gradPsiCandidate.t());
     }
 
     for (const auto& entry : freeTau) {
@@ -794,4 +799,203 @@ Rcpp::NumericVector Grad_Q_GSEM_Group(const Rcpp::List &modelR, const arma::mat 
 Rcpp::NumericVector Grad_Q_GSEM(const Rcpp::List &modelR, const arma::mat &P) {
   GSEM_Model M(modelR);
   return M.gradientQ(P);
+}
+
+
+static std::vector<std::string> asStdVector(const Rcpp::CharacterVector& x) {
+  std::vector<std::string> out;
+  out.reserve(x.size());
+  for (auto s : x) out.emplace_back(Rcpp::as<std::string>(s));
+  return out;
+}
+
+
+// [[Rcpp::export]]
+Rcpp::List expand_quadrature_cpp(const Rcpp::List& Z_list,
+                                 const arma::mat& cholPsi,
+                                 Rcpp::NumericMatrix gamma,
+                                 Rcpp::NumericMatrix omega,
+                                 const arma::vec& alphaLatent,
+                                 const Rcpp::CharacterVector& xiNames,
+                                 const Rcpp::CharacterVector& etaNames,
+                                 const Rcpp::CharacterVector& latentNames) {
+
+  const std::size_t latentCount = latentNames.size();
+  if (latentCount != static_cast<std::size_t>(cholPsi.n_cols) ||
+      latentCount != static_cast<std::size_t>(cholPsi.n_rows))
+    Rcpp::stop("Dimension mismatch between `cholPsi` and latent names.");
+
+  Rcpp::List gammaDim = gamma.attr("dimnames");
+  Rcpp::List omegaDim = omega.attr("dimnames");
+  const Rcpp::CharacterVector gammaRowNames = gammaDim[0];
+  const Rcpp::CharacterVector gammaColNames = gammaDim[1];
+  const Rcpp::CharacterVector omegaRowNames = omegaDim[0];
+  const Rcpp::CharacterVector omegaColNames = omegaDim[1];
+
+  const std::size_t totalVars = gammaColNames.size();
+  const std::size_t nXwith = omegaRowNames.size();
+
+  if (totalVars != nXwith + latentCount)
+    Rcpp::stop("Unexpected gamma dimension; expected xwith + latent columns.");
+
+  std::vector<std::string> gammaCols = asStdVector(gammaColNames);
+  std::vector<std::string> gammaRows = asStdVector(gammaRowNames);
+  std::vector<std::string> latentVec = asStdVector(latentNames);
+  std::vector<std::string> xwithVec  = asStdVector(omegaRowNames);
+  std::vector<std::string> omegaCols = asStdVector(omegaColNames);
+  std::vector<std::string> xiVec     = asStdVector(xiNames);
+  std::vector<std::string> etaVec    = asStdVector(etaNames);
+
+  std::unordered_map<std::string, std::size_t> gammaColIndex;
+  for (std::size_t i = 0; i < gammaCols.size(); ++i)
+    gammaColIndex[gammaCols[i]] = i;
+
+  std::unordered_map<std::string, std::size_t> gammaRowIndex;
+  for (std::size_t i = 0; i < gammaRows.size(); ++i)
+    gammaRowIndex[gammaRows[i]] = i;
+
+  std::unordered_map<std::string, std::size_t> latentIndex;
+  for (std::size_t i = 0; i < latentVec.size(); ++i)
+    latentIndex[latentVec[i]] = i;
+
+  std::vector<bool> isXi(totalVars, false);
+  for (const auto& name : xiVec) {
+    auto it = gammaColIndex.find(name);
+    if (it != gammaColIndex.end())
+      isXi[it->second] = true;
+  }
+
+  std::vector<std::vector<std::size_t>> etaParents(etaVec.size());
+  std::vector<std::vector<double>>      etaCoefs(etaVec.size());
+  for (std::size_t k = 0; k < etaVec.size(); ++k) {
+    const auto itRow = gammaRowIndex.find(etaVec[k]);
+    if (itRow == gammaRowIndex.end())
+      Rcpp::stop("Eta '%s' missing in gamma rows.", etaVec[k]);
+    const std::size_t rowIdx = itRow->second;
+    Rcpp::NumericMatrix::Row row = gamma.row(rowIdx);
+    for (std::size_t j = 0; j < totalVars; ++j) {
+      const double val = row[j];
+      if (val != 0.0) {
+        etaParents[k].push_back(j);
+        etaCoefs[k].push_back(val);
+      }
+    }
+  }
+
+  std::vector<std::vector<std::size_t>> xwithParents(xwithVec.size());
+  for (std::size_t k = 0; k < xwithVec.size(); ++k) {
+    arma::rowvec row = omega.row(static_cast<arma::uword>(k));
+    for (std::size_t j = 0; j < omegaCols.size(); ++j) {
+      if (row[j] != 0.0) {
+        const auto it = gammaColIndex.find(omegaCols[j]);
+        if (it == gammaColIndex.end())
+          Rcpp::stop("OMEGA column '%s' not found in gamma columns.", omegaCols[j]);
+        xwithParents[k].push_back(it->second);
+      }
+    }
+  }
+
+  if (alphaLatent.n_elem != static_cast<int>(latentCount))
+    Rcpp::stop("alpha vector length mismatch.");
+
+  Rcpp::List result(Z_list.size());
+
+  for (std::size_t idx = 0; idx < Z_list.size(); ++idx) {
+    arma::mat Z = Rcpp::as<arma::mat>(Z_list[idx]);
+    if (Z.n_cols != cholPsi.n_cols)
+      Rcpp::stop("Quadrature node dimension mismatch with psi.");
+
+    const std::size_t n = Z.n_rows;
+    arma::mat Zeta = Z * cholPsi;
+    for (std::size_t j = 0; j < latentCount; ++j)
+      Zeta.col(j) += alphaLatent[j];
+
+    arma::mat values(n, totalVars, arma::fill::zeros);
+    for (std::size_t j = 0; j < latentCount; ++j) {
+      const auto it = gammaColIndex.find(latentVec[j]);
+      if (it == gammaColIndex.end())
+        Rcpp::stop("Latent '%s' missing in gamma columns.", latentVec[j]);
+      values.col(it->second) = Zeta.col(j);
+    }
+
+    std::vector<bool> defined(totalVars, false);
+    for (const auto& name : xiVec) {
+      const auto it = gammaColIndex.find(name);
+      if (it != gammaColIndex.end())
+        defined[it->second] = true;
+    }
+
+    arma::mat out(n, nXwith + latentCount, arma::fill::zeros);
+    for (std::size_t j = 0; j < latentCount; ++j)
+      out.col(nXwith + j) = Z.col(j);
+
+    std::vector<bool> xwithDone(xwithVec.size(), false);
+    auto resolveXwith = [&]() -> bool {
+      bool progress = false;
+      for (std::size_t k = 0; k < xwithVec.size(); ++k) {
+        if (xwithDone[k]) continue;
+        const auto& parents = xwithParents[k];
+        bool ready = true;
+        for (const auto parent : parents) {
+          if (!defined[parent]) { ready = false; break; }
+        }
+        if (!ready) continue;
+
+        arma::vec prod(n, arma::fill::ones);
+        for (const auto parent : parents)
+          prod %= values.col(parent);
+
+        const auto itGamma = gammaColIndex.find(xwithVec[k]);
+        if (itGamma == gammaColIndex.end())
+          Rcpp::stop("XWITH '%s' missing in gamma columns.", xwithVec[k]);
+        const std::size_t tgt = itGamma->second;
+
+        values.col(tgt) = prod;
+        defined[tgt] = true;
+        out.col(k) = prod;
+        xwithDone[k] = true;
+        progress = true;
+      }
+      return progress;
+    };
+
+    while (resolveXwith()) {}
+
+    for (std::size_t k = 0; k < etaVec.size(); ++k) {
+      const auto itGamma = gammaColIndex.find(etaVec[k]);
+      const auto itLatent = latentIndex.find(etaVec[k]);
+      if (itGamma == gammaColIndex.end() || itLatent == latentIndex.end())
+        Rcpp::stop("Eta '%s' missing in gamma or latent names.", etaVec[k]);
+      const std::size_t tgt = itGamma->second;
+      const std::size_t latentPos = itLatent->second;
+
+      arma::vec vals = Zeta.col(latentPos);
+      const auto& parents = etaParents[k];
+      const auto& coefs   = etaCoefs[k];
+      for (std::size_t j = 0; j < parents.size(); ++j)
+        vals += values.col(parents[j]) * coefs[j];
+
+      values.col(tgt) = vals;
+      defined[tgt] = true;
+
+      while (resolveXwith()) {}
+    }
+
+    for (std::size_t k = 0; k < xwithVec.size(); ++k) {
+      if (!xwithDone[k])
+        Rcpp::stop("Failed to resolve latent variable order for quadrature expansion.");
+    }
+
+    Rcpp::NumericMatrix outR(n, nXwith + latentCount);
+    std::copy(out.begin(), out.end(), outR.begin());
+
+    Rcpp::CharacterVector colNames(nXwith + latentCount);
+    for (std::size_t j = 0; j < xwithVec.size(); ++j) colNames[j] = xwithVec[j];
+    for (std::size_t j = 0; j < latentVec.size(); ++j) colNames[nXwith + j] = latentVec[j];
+    colnames(outR) = colNames;
+
+    result[idx] = outR;
+  }
+
+  return result;
 }

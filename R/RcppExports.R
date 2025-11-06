@@ -33,6 +33,10 @@ Grad_Q_GSEM <- function(modelR, P) {
     .Call(`_modsem_Grad_Q_GSEM`, modelR, P)
 }
 
+expand_quadrature_cpp <- function(Z_list, cholPsi, gamma, omega, alphaLatent, xiNames, etaNames, latentNames) {
+    .Call(`_modsem_expand_quadrature_cpp`, Z_list, cholPsi, gamma, omega, alphaLatent, xiNames, etaNames, latentNames)
+}
+
 muLmsCpp <- function(model, z) {
     .Call(`_modsem_muLmsCpp`, model, z)
 }

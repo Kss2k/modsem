@@ -107,6 +107,24 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// expand_quadrature_cpp
+Rcpp::List expand_quadrature_cpp(const Rcpp::List& Z_list, const arma::mat& cholPsi, Rcpp::NumericMatrix gamma, Rcpp::NumericMatrix omega, const arma::vec& alphaLatent, const Rcpp::CharacterVector& xiNames, const Rcpp::CharacterVector& etaNames, const Rcpp::CharacterVector& latentNames);
+RcppExport SEXP _modsem_expand_quadrature_cpp(SEXP Z_listSEXP, SEXP cholPsiSEXP, SEXP gammaSEXP, SEXP omegaSEXP, SEXP alphaLatentSEXP, SEXP xiNamesSEXP, SEXP etaNamesSEXP, SEXP latentNamesSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type Z_list(Z_listSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type cholPsi(cholPsiSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type gamma(gammaSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type omega(omegaSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type alphaLatent(alphaLatentSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::CharacterVector& >::type xiNames(xiNamesSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::CharacterVector& >::type etaNames(etaNamesSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::CharacterVector& >::type latentNames(latentNamesSEXP);
+    rcpp_result_gen = Rcpp::wrap(expand_quadrature_cpp(Z_list, cholPsi, gamma, omega, alphaLatent, xiNames, etaNames, latentNames));
+    return rcpp_result_gen;
+END_RCPP
+}
 // muLmsCpp
 arma::vec muLmsCpp(Rcpp::List model, arma::vec z);
 RcppExport SEXP _modsem_muLmsCpp(SEXP modelSEXP, SEXP zSEXP) {
@@ -456,6 +474,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_modsem_Qi_GSEM", (DL_FUNC) &_modsem_Qi_GSEM, 2},
     {"_modsem_Grad_Q_GSEM_Group", (DL_FUNC) &_modsem_Grad_Q_GSEM_Group, 2},
     {"_modsem_Grad_Q_GSEM", (DL_FUNC) &_modsem_Grad_Q_GSEM, 2},
+    {"_modsem_expand_quadrature_cpp", (DL_FUNC) &_modsem_expand_quadrature_cpp, 8},
     {"_modsem_muLmsCpp", (DL_FUNC) &_modsem_muLmsCpp, 2},
     {"_modsem_sigmaLmsCpp", (DL_FUNC) &_modsem_sigmaLmsCpp, 2},
     {"_modsem_completeLogLikLmsCpp", (DL_FUNC) &_modsem_completeLogLikLmsCpp, 7},
