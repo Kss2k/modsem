@@ -9,13 +9,27 @@
 #include <unordered_set>
 #include <string>
 #include <algorithm>
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 // [[Rcpp::depends(RcppArmadillo)]]
-
+// [[Rcpp::plugins(openmp)]]
 
 arma::vec dnorm(const arma::vec x, const double mu, const double sd, const bool log = false) {
   const arma::vec e = x - mu;
   const arma::vec ldens = (- 0.5) * std::log(2 * M_PI) - std::log(sd) - (e % e)/(2 * sd * sd);
   return log ? ldens: arma::exp(ldens);
+}
+
+inline int resolve_ncores(const int requested) {
+#ifdef _OPENMP
+  if (requested <= 0)
+    return std::max(1, omp_get_max_threads());
+  return std::max(1, std::min(requested, omp_get_max_threads()));
+#else
+  (void)requested;
+  return 1;
+#endif
 }
 
 
@@ -77,6 +91,16 @@ struct GSEM_ModelGroup {
   std::vector<FreeEntry> freeLambda, freeTau, freeGamma, freeAlpha,
     freePsi, freeTheta, freeThresholds;
   std::vector<std::string> freeLabelOrder;
+
+  struct PredictorCacheEntry {
+    arma::mat latent;
+    arma::mat S;
+    arma::mat V;
+    bool valid = false;
+  };
+
+  mutable std::vector<PredictorCacheEntry> predictorCache;
+  mutable bool predictorCacheInitialized = false;
 
   unsigned k = 0, p = 0, N = 0;
   arma::uvec isordered; // if 0 variable is not ordered, if > 0, then it's the 1 based index
@@ -192,6 +216,9 @@ struct GSEM_ModelGroup {
           thresholdRows[j] = Thresholds.row(idx).t();
       }
     }
+
+    predictorCache.clear();
+    predictorCacheInitialized = false;
   }
 
   void initializeFreeParams(const Rcpp::List& modFilled) {
@@ -295,7 +322,48 @@ struct GSEM_ModelGroup {
       V += S * LambdaT;
   }
 
-  Rcpp::NumericVector gradientQ(const arma::mat &P) const {
+  void ensurePredictorCacheAllocated() const {
+    if (predictorCacheInitialized)
+      return;
+#ifdef _OPENMP
+#pragma omp critical(modsem_gsem_predictor_cache_init)
+#endif
+    {
+      if (!predictorCacheInitialized) {
+        predictorCache.assign(Z.size(), PredictorCacheEntry());
+        predictorCacheInitialized = true;
+      }
+    }
+  }
+
+  const PredictorCacheEntry& getPredictorCacheEntry(const std::size_t q) const {
+    ensurePredictorCacheAllocated();
+    if (q >= predictorCache.size())
+      Rcpp::stop("Quadrature index out of range.");
+
+    PredictorCacheEntry& entry = predictorCache[q];
+    if (!entry.valid) {
+#ifdef _OPENMP
+#pragma omp critical(modsem_gsem_predictor_cache_fill)
+#endif
+      {
+        if (!entry.valid) {
+          arma::mat latent;
+          arma::mat S;
+          arma::mat V;
+          computePredictors(Z[q], latent, S, V);
+          entry.latent = std::move(latent);
+          entry.S = std::move(S);
+          entry.V = std::move(V);
+          entry.valid = true;
+        }
+      }
+    }
+
+    return entry;
+  }
+
+  Rcpp::NumericVector gradientQ(const arma::mat &P, const int ncores = 1) const {
     if (P.n_rows != N)
       Rcpp::stop("`P` has incompatible number of rows.");
     if (P.n_cols != Z.size())
@@ -319,6 +387,9 @@ struct GSEM_ModelGroup {
       }
     };
 
+    const int nThreads = resolve_ncores(ncores);
+    ensurePredictorCacheAllocated();
+
     arma::vec gradTau = arma::zeros<arma::vec>(tau.n_rows);
     arma::mat gradLambda = arma::zeros<arma::mat>(Lambda.n_rows, Lambda.n_cols);
     arma::mat gradTheta = arma::zeros<arma::mat>(Theta.n_rows, Theta.n_cols);
@@ -327,14 +398,47 @@ struct GSEM_ModelGroup {
     arma::mat gradChol = arma::zeros<arma::mat>(cholPsi.n_rows, cholPsi.n_cols);
     arma::vec gradAlphaVec = arma::zeros<arma::vec>(alphaRow.n_elem);
 
-    const double invSqrt2Pi = 1.0 / std::sqrt(2.0 * M_PI);
-    arma::mat latent;
-    arma::mat S;
-    arma::mat V;
+    std::vector<arma::vec> gradTauList(nThreads);
+    std::vector<arma::mat> gradLambdaList(nThreads);
+    std::vector<arma::mat> gradThetaList(nThreads);
+    std::vector<arma::mat> gradThresholdsList(nThreads);
+    std::vector<arma::mat> gradBList(nThreads);
+    std::vector<arma::mat> gradCholList(nThreads);
+    std::vector<arma::vec> gradAlphaList(nThreads);
 
-    for (std::size_t q = 0; q < Z.size(); ++q) {
-      computePredictors(Z[q], latent, S, V);
-      const arma::vec weights = P.col(q);
+    for (int t = 0; t < nThreads; ++t) {
+      gradTauList[t].zeros(gradTau.n_elem);
+      gradLambdaList[t].zeros(gradLambda.n_rows, gradLambda.n_cols);
+      gradThetaList[t].zeros(gradTheta.n_rows, gradTheta.n_cols);
+      gradThresholdsList[t].zeros(gradThresholds.n_rows, gradThresholds.n_cols);
+      gradBList[t].zeros(gradB.n_rows, gradB.n_cols);
+      gradCholList[t].zeros(gradChol.n_rows, gradChol.n_cols);
+      gradAlphaList[t].zeros(gradAlphaVec.n_elem);
+    }
+
+    const double invSqrt2Pi = 1.0 / std::sqrt(2.0 * M_PI);
+    const std::size_t nQ = Z.size();
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(nThreads)
+#endif
+    for (std::size_t q = 0; q < nQ; ++q) {
+      int threadId = 0;
+#ifdef _OPENMP
+      threadId = omp_get_thread_num();
+#endif
+      arma::vec& gradTauLocal = gradTauList[threadId];
+      arma::mat& gradLambdaLocal = gradLambdaList[threadId];
+      arma::mat& gradThetaLocal = gradThetaList[threadId];
+      arma::mat& gradThresholdsLocal = gradThresholdsList[threadId];
+      arma::mat& gradBLocal = gradBList[threadId];
+      arma::mat& gradCholLocal = gradCholList[threadId];
+      arma::vec& gradAlphaLocal = gradAlphaList[threadId];
+
+      const PredictorCacheEntry& predictors = getPredictorCacheEntry(q);
+      const arma::mat& latent = predictors.latent;
+      const arma::mat& S = predictors.S;
+      const arma::mat& V = predictors.V;
+      const auto weights = P.col(q);
 
       unsigned offset = 0;
       for (int pi = 0; pi < p; ++pi) {
@@ -343,17 +447,29 @@ struct GSEM_ModelGroup {
 
         const arma::mat& Yp = Y[pi];
         const arma::uvec& colidxp = colIdxPatterns[pi];
-        const arma::vec weightSub = weights.subvec(offset, end);
+        auto weightSub = weights.subvec(offset, end);
         const auto Sblock = S.rows(offset, end);
         arma::mat gradSblock(np, B.n_cols, arma::fill::zeros);
+        const arma::uword npU = static_cast<arma::uword>(np);
+
+        arma::vec scoreMean(npU);
+        arma::vec scoreVar(npU);
+        arma::vec lower(npU);
+        arma::vec upper(npU);
+        arma::vec phiLower(npU);
+        arma::vec phiUpper(npU);
+        arma::vec lowerDiff(npU);
+        arma::vec upperDiff(npU);
+        arma::uvec catIdx(npU);
+        arma::uvec catIdxUpper(npU);
 
         for (arma::uword idx = 0; idx < colidxp.n_elem; ++idx) {
           const arma::uword j = colidxp[idx];
-          arma::vec scoreMean(np, arma::fill::zeros);
-          arma::vec scoreVar(np, arma::fill::zeros);
+          scoreMean.zeros();
+          scoreVar.zeros();
 
           const arma::vec vj = V.col(j).subvec(offset, end);
-          const arma::vec yj = Yp.col(j);
+          const auto yj = Yp.col(j);
 
           if (isordered[j]) {
             const arma::vec& thresholdRow = thresholdRows[j];
@@ -365,34 +481,32 @@ struct GSEM_ModelGroup {
             if (!std::isfinite(sd) || sd <= 0.0)
               continue;
 
-            arma::uvec catIdx = arma::conv_to<arma::uvec>::from(yj) - 1;
-            arma::uvec catIdxUpper = catIdx + 1;
-
-            arma::vec lower(np, arma::fill::zeros);
-            arma::vec upper(np, arma::fill::zeros);
             const arma::uword nThresholds = thresholdRow.n_elem;
             if (nThresholds == 0)
               continue;
-            for (arma::uword obs = 0; obs < static_cast<arma::uword>(np); ++obs) {
-              const arma::uword li = catIdx[obs] < nThresholds ? catIdx[obs] : nThresholds - 1;
-              const arma::uword ui = catIdxUpper[obs] < nThresholds ? catIdxUpper[obs] : nThresholds - 1;
+
+            for (arma::uword obs = 0; obs < npU; ++obs) {
+              const arma::sword raw = static_cast<arma::sword>(yj[obs]);
+              const arma::uword cat = raw > 0 ? static_cast<arma::uword>(raw - 1) : 0;
+              catIdx[obs] = cat;
+              catIdxUpper[obs] = cat + 1;
+              const arma::uword li = std::min(cat, nThresholds - 1);
+              const arma::uword ui = std::min(catIdxUpper[obs], nThresholds - 1);
               lower[obs] = thresholdRow[li];
               upper[obs] = thresholdRow[ui];
             }
 
-            arma::vec logProb = pnormOrderedProbit(vj, lower, upper, 0, sd, true);
-            arma::vec prob = arma::exp(logProb);
+            arma::vec prob = pnormOrderedProbit(vj, lower, upper, 0, sd, false);
 
             arma::vec zLower = (lower - vj) / sd;
             arma::vec zUpper = (upper - vj) / sd;
 
-            arma::vec phiLower = arma::exp(-0.5 * arma::square(zLower)) * invSqrt2Pi;
-            arma::vec phiUpper = arma::exp(-0.5 * arma::square(zUpper)) * invSqrt2Pi;
+            phiLower = arma::exp(-0.5 * arma::square(zLower)) * invSqrt2Pi;
+            phiUpper = arma::exp(-0.5 * arma::square(zUpper)) * invSqrt2Pi;
+            lowerDiff = lower - vj;
+            upperDiff = upper - vj;
 
-            arma::vec lowerDiff(np, arma::fill::zeros);
-            arma::vec upperDiff(np, arma::fill::zeros);
-
-            for (arma::uword obs = 0; obs < static_cast<arma::uword>(np); ++obs) {
+            for (arma::uword obs = 0; obs < npU; ++obs) {
               if (std::isfinite(lower[obs]))
                 lowerDiff[obs] = lower[obs] - vj[obs];
               else
@@ -416,18 +530,18 @@ struct GSEM_ModelGroup {
               phiUpper.elem(valid) % upperDiff.elem(valid)) /
               (2.0 * sdCubed * prob.elem(valid));
 
-            for (arma::uword obs = 0; obs < static_cast<arma::uword>(np); ++obs) {
+            for (arma::uword obs = 0; obs < npU; ++obs) {
               const double w = weightSub[obs];
               if (w == 0.0 || !std::isfinite(prob[obs]) || prob[obs] <= 0.0)
                 continue;
 
               const double invSdProb = 1.0 / (sd * prob[obs]);
 
-              if (std::isfinite(lower[obs]) && catIdx[obs] < gradThresholds.n_cols)
-                gradThresholds(threshRowIdx, catIdx[obs]) += -phiLower[obs] * invSdProb * w;
+              if (std::isfinite(lower[obs]) && catIdx[obs] < gradThresholdsLocal.n_cols)
+                gradThresholdsLocal(threshRowIdx, catIdx[obs]) += -phiLower[obs] * invSdProb * w;
 
-              if (std::isfinite(upper[obs]) && catIdxUpper[obs] < gradThresholds.n_cols)
-                gradThresholds(threshRowIdx, catIdxUpper[obs]) += phiUpper[obs] * invSdProb * w;
+              if (std::isfinite(upper[obs]) && catIdxUpper[obs] < gradThresholdsLocal.n_cols)
+                gradThresholdsLocal(threshRowIdx, catIdxUpper[obs]) += phiUpper[obs] * invSdProb * w;
             }
           } else {
             const double invVar = thetaInvVar[j];
@@ -444,36 +558,46 @@ struct GSEM_ModelGroup {
           arma::vec weightedScore = weightSub % scoreMean;
           const double sumScore = arma::accu(weightedScore);
 
-          if (gradTau.n_elem > j)
-            gradTau[j] += sumScore;
+          if (gradTauLocal.n_elem > j)
+            gradTauLocal[j] += sumScore;
 
-          if (gradLambda.n_cols && Sblock.n_cols) {
+          if (gradLambdaLocal.n_cols && Sblock.n_cols) {
             const arma::rowvec ds_dS = Lambda.row(j);
-            gradLambda.row(j) += weightedScore.t() * Sblock;
+            gradLambdaLocal.row(j) += weightedScore.t() * Sblock;
             gradSblock += weightedScore * ds_dS;
           }
 
-          if (gradTheta.n_rows > j && gradTheta.n_cols > j)
-            gradTheta(j, j) += arma::dot(weightSub, scoreVar);
+          if (gradThetaLocal.n_rows > j && gradThetaLocal.n_cols > j)
+            gradThetaLocal(j, j) += arma::dot(weightSub, scoreVar);
         }
 
         if (B.n_cols > 0) {
           const arma::mat latentBlock = latent.rows(offset, end);
-          gradB += latentBlock.t() * gradSblock;
+          gradBLocal += latentBlock.t() * gradSblock;
 
           const arma::mat gradLatentBlock = gradSblock * B;
-          if (gradAlphaVec.n_elem)
-            gradAlphaVec += arma::sum(gradLatentBlock, 0).t();
+          if (gradAlphaLocal.n_elem)
+            gradAlphaLocal += arma::sum(gradLatentBlock, 0).t();
           if (cholPsi.n_elem > 0) {
             arma::mat Zblock = Z[q].rows(offset, end);
             if (Zblock.n_cols > cholPsi.n_cols)
               Zblock = Zblock.cols(Zblock.n_cols - cholPsi.n_cols, Zblock.n_cols - 1);
-            gradChol += Zblock.t() * gradLatentBlock;
+            gradCholLocal += Zblock.t() * gradLatentBlock;
           }
         }
 
         offset += np;
       }
+    }
+
+    for (int t = 0; t < nThreads; ++t) {
+      gradTau += gradTauList[t];
+      gradLambda += gradLambdaList[t];
+      gradTheta += gradThetaList[t];
+      gradThresholds += gradThresholdsList[t];
+      gradB += gradBList[t];
+      gradChol += gradCholList[t];
+      gradAlphaVec += gradAlphaList[t];
     }
 
     arma::mat gradAlphaMat(alpha.n_rows, alpha.n_cols, arma::fill::zeros);
@@ -526,17 +650,18 @@ struct GSEM_ModelGroup {
         addValue(entry.label, gradThresholds(entry.row, entry.col));
     }
 
-    for (const auto& entry : freeGamma)
+    for (const auto& entry : freeGamma) {
       if (entry.row < gradGammaMat.n_rows && entry.col < gradGammaMat.n_cols)
         addValue(entry.label, gradGammaMat(entry.row, entry.col));
+    }
+
     for (const auto& entry : freePsi) {
       double value = 0.0;
-      if (entry.row < gradPsiMat.n_rows && entry.col < gradPsiMat.n_cols)
-        value += gradPsiMat(entry.row, entry.col);
-      if (entry.symmetric && entry.row != entry.col &&
-          entry.col < gradPsiMat.n_rows && entry.row < gradPsiMat.n_cols)
-        value += gradPsiMat(entry.col, entry.row);
-      addValue(entry.label, value);
+
+      if (entry.row < gradPsiMat.n_rows && entry.col < gradPsiMat.n_cols) {
+        const int scale = entry.symmetric && entry.row != entry.col ? 4L : 1L;
+        addValue(entry.label, scale * gradPsiMat(entry.row, entry.col));
+      }
     }
 
     Rcpp::NumericVector out(labelOrder.size());
@@ -560,9 +685,15 @@ struct GSEM_ModelGroup {
     return V;
   }
 
-  arma::vec getDensityZq(const arma::mat Zq, const bool log = false) const {
+  arma::vec getDensityZq(const std::size_t q, const bool log = false) const {
+    if (!cholPsiValid) {
+      arma::vec invalid(N);
+      invalid.fill(arma::datum::nan);
+      return invalid;
+    }
+
     arma::vec ldensity = arma::zeros<arma::vec>(N);
-    const arma::mat V = expectedResponse(Zq);
+    const arma::mat& V = getPredictorCacheEntry(q).V;
 
     unsigned offset = 0;
     for (int pi = 0; pi < p; pi++) {
@@ -571,24 +702,25 @@ struct GSEM_ModelGroup {
 
       const arma::mat &Yp = Y[pi];
       const arma::uvec &colidxp = colIdxPatterns[pi];
+      const arma::uword npU = static_cast<arma::uword>(np);
+      arma::vec lower(npU);
+      arma::vec upper(npU);
 
       for (arma::uword idx = 0; idx < colidxp.n_elem; ++idx) {
         const arma::uword j = colidxp[idx];
         const arma::vec vj = V.col(j).subvec(offset, end);
-        const arma::vec yj = Yp.col(j);
+        const auto yj = Yp.col(j);
 
         arma::vec ldensj;
         if (isordered[j]) {
           const arma::vec &thresholdsj = thresholdRows[j];
           if (thresholdsj.n_elem == 0) continue;
           const arma::uword nThresholds = thresholdsj.n_elem;
-          arma::uvec tj = arma::conv_to<arma::uvec>::from(yj);
-          arma::vec lower(np, arma::fill::zeros);
-          arma::vec upper(np, arma::fill::zeros);
-          for (arma::uword obs = 0; obs < static_cast<arma::uword>(np); ++obs) {
-            const arma::uword idx = tj[obs] > 0 ? tj[obs] - 1 : 0;
-            const arma::uword lowerIdx = std::min(idx, nThresholds - 1);
-            const arma::uword upperIdx = std::min(idx + 1, nThresholds - 1);
+          for (arma::uword obs = 0; obs < npU; ++obs) {
+            const arma::sword raw = static_cast<arma::sword>(yj[obs]);
+            const arma::uword idxVal = raw > 0 ? static_cast<arma::uword>(raw - 1) : 0;
+            const arma::uword lowerIdx = std::min(idxVal, nThresholds - 1);
+            const arma::uword upperIdx = std::min(idxVal + 1, nThresholds - 1);
             lower[obs] = thresholdsj[lowerIdx];
             upper[obs] = thresholdsj[upperIdx];
           }
@@ -608,26 +740,50 @@ struct GSEM_ModelGroup {
     return log ? ldensity : arma::exp(ldensity);
   }
 
-  arma::mat Pi(const bool normalized) {
+  arma::mat Pi(const bool normalized, const int ncores = 1) {
+    if (Z.empty())
+      return arma::mat();
+    const int nThreads = resolve_ncores(ncores);
+    ensurePredictorCacheAllocated();
     arma::mat out(Z[0L].n_rows, Z.size());
-     
-    for (int q = 0; q < Z.size(); q++)
-      out.col(q) = W.col(q) % getDensityZq(Z[q], false);
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(nThreads)
+#endif
+    for (int q = 0; q < static_cast<int>(Z.size()); q++)
+      out.col(q) = W.col(q) % getDensityZq(static_cast<std::size_t>(q), false);
 
     return normalized ? out.each_col() / arma::sum(out, 1L): out;
   }
 
-  arma::vec Qi(const arma::mat &P) {
+  arma::vec Qi(const arma::mat &P, const int ncores = 1) {
+    if (Z.empty())
+      return arma::vec();
+    const int nThreads = resolve_ncores(ncores);
+    ensurePredictorCacheAllocated();
     arma::vec density = arma::zeros<arma::vec>(Z[0L].n_rows);
+    std::vector<arma::vec> densityChunks(nThreads);
+    for (int t = 0; t < nThreads; ++t)
+      densityChunks[t].zeros(density.n_elem);
 
-    for (int q = 0; q < Z.size(); q++)
-      density += P.col(q) % getDensityZq(Z[q], true);
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(nThreads)
+#endif
+    for (int q = 0; q < static_cast<int>(Z.size()); q++) {
+      int threadId = 0;
+#ifdef _OPENMP
+      threadId = omp_get_thread_num();
+#endif
+      densityChunks[threadId] += P.col(q) % getDensityZq(static_cast<std::size_t>(q), true);
+    }
+
+    for (int t = 0; t < nThreads; ++t)
+      density += densityChunks[t];
 
     return density;
   }
 
-  double Q(const arma::mat &P) {
-    return arma::accu(Qi(P)); 
+  double Q(const arma::mat &P, const int ncores = 1) {
+    return arma::accu(Qi(P, ncores)); 
   }
 
   GSEM_ModelGroup threadClone() const {
@@ -648,16 +804,16 @@ struct GSEM_ModelGroup {
 
 
 // [[Rcpp::export]]
-arma::mat P_Step_GSEM_Group(const Rcpp::List &modelR, const bool normalized) {
+arma::mat P_Step_GSEM_Group(const Rcpp::List &modelR, const bool normalized, const int ncores) {
   GSEM_ModelGroup M(modelR);
-  return M.Pi(normalized);
+  return M.Pi(normalized, ncores);
 }
 
 
 // [[Rcpp::export]]
-double Q_GSEM_Group(const Rcpp::List &modelR, const arma::mat &P) {
+double Q_GSEM_Group(const Rcpp::List &modelR, const arma::mat &P, const int ncores) {
   GSEM_ModelGroup M(modelR);
-  return M.Q(P);
+  return M.Q(P, ncores);
 }
 
 
@@ -679,21 +835,21 @@ struct GSEM_Model {
     }
   }
 
-  arma::mat Pi(const bool normalized) {
+  arma::mat Pi(const bool normalized, const int ncores = 1) {
     const int zk = groupModels[0L].Z.size();
     arma::mat out(N, zk);
    
     int offset = 0L;
     for (int g = 0L; g < ngroups; g++) {
       const int ng = groupModels[g].N;
-      out.rows(offset, offset + ng - 1L) = groupModels[g].Pi(normalized);
+      out.rows(offset, offset + ng - 1L) = groupModels[g].Pi(normalized, ncores);
       offset += ng;
     }
    
     return out;
   }
 
-  arma::vec Qi(const arma::mat &P) {
+  arma::vec Qi(const arma::mat &P, const int ncores = 1) {
     arma::vec density(N);
 
     int offset = 0L;
@@ -703,18 +859,18 @@ struct GSEM_Model {
 
       const arma::mat &Pg = P.rows(offset, end);
 
-      density.subvec(offset, end) = groupModels[g].Qi(Pg);
+      density.subvec(offset, end) = groupModels[g].Qi(Pg, ncores);
       offset += ng;
     }
 
     return density;
   }
 
-  double Q(const arma::mat &P) {
-    return arma::sum(Qi(P));
+  double Q(const arma::mat &P, const int ncores = 1) {
+    return arma::sum(Qi(P, ncores));
   }
 
-  Rcpp::NumericVector gradientQ(const arma::mat &P) const {
+  Rcpp::NumericVector gradientQ(const arma::mat &P, const int ncores = 1) const {
     if (P.n_rows != static_cast<arma::uword>(N))
       Rcpp::stop("`P` has incompatible number of rows.");
     if (ngroups == 0)
@@ -729,7 +885,7 @@ struct GSEM_Model {
       const int end = offset + ng - 1L;
       const arma::mat Pg = P.rows(offset, end);
 
-      Rcpp::NumericVector gradGroup = groupModels[g].gradientQ(Pg);
+      Rcpp::NumericVector gradGroup = groupModels[g].gradientQ(Pg, ncores);
       Rcpp::CharacterVector names = gradGroup.names();
 
       for (int i = 0; i < gradGroup.size(); ++i) {
@@ -768,37 +924,37 @@ struct GSEM_Model {
 
 
 // [[Rcpp::export]]
-arma::mat P_Step_GSEM(const Rcpp::List &modelR, const bool normalized) {
+arma::mat P_Step_GSEM(const Rcpp::List &modelR, const bool normalized, const int ncores) {
   GSEM_Model M(modelR);
-  return M.Pi(normalized);
+  return M.Pi(normalized, ncores);
 }
 
 
 // [[Rcpp::export]]
-double Q_GSEM(const Rcpp::List &modelR, const arma::mat &P) {
+double Q_GSEM(const Rcpp::List &modelR, const arma::mat &P, const int ncores) {
   GSEM_Model M(modelR);
-  return M.Q(P);
+  return M.Q(P, ncores);
 }
 
 
 // [[Rcpp::export]]
-arma::vec Qi_GSEM(const Rcpp::List &modelR, const arma::mat &P) {
+arma::vec Qi_GSEM(const Rcpp::List &modelR, const arma::mat &P, const int ncores) {
   GSEM_Model M(modelR);
-  return M.Qi(P);
+  return M.Qi(P, ncores);
 }
 
 
 // [[Rcpp::export]]
-Rcpp::NumericVector Grad_Q_GSEM_Group(const Rcpp::List &modelR, const arma::mat &P) {
+Rcpp::NumericVector Grad_Q_GSEM_Group(const Rcpp::List &modelR, const arma::mat &P, const int ncores) {
   GSEM_ModelGroup M(modelR);
-  return M.gradientQ(P);
+  return M.gradientQ(P, ncores);
 }
 
 
 // [[Rcpp::export]]
-Rcpp::NumericVector Grad_Q_GSEM(const Rcpp::List &modelR, const arma::mat &P) {
+Rcpp::NumericVector Grad_Q_GSEM(const Rcpp::List &modelR, const arma::mat &P, const int ncores) {
   GSEM_Model M(modelR);
-  return M.gradientQ(P);
+  return M.gradientQ(P, ncores);
 }
 
 

@@ -24,86 +24,93 @@ BEGIN_RCPP
 END_RCPP
 }
 // P_Step_GSEM_Group
-arma::mat P_Step_GSEM_Group(const Rcpp::List& modelR, const bool normalized);
-RcppExport SEXP _modsem_P_Step_GSEM_Group(SEXP modelRSEXP, SEXP normalizedSEXP) {
+arma::mat P_Step_GSEM_Group(const Rcpp::List& modelR, const bool normalized, const int ncores);
+RcppExport SEXP _modsem_P_Step_GSEM_Group(SEXP modelRSEXP, SEXP normalizedSEXP, SEXP ncoresSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::List& >::type modelR(modelRSEXP);
     Rcpp::traits::input_parameter< const bool >::type normalized(normalizedSEXP);
-    rcpp_result_gen = Rcpp::wrap(P_Step_GSEM_Group(modelR, normalized));
+    Rcpp::traits::input_parameter< const int >::type ncores(ncoresSEXP);
+    rcpp_result_gen = Rcpp::wrap(P_Step_GSEM_Group(modelR, normalized, ncores));
     return rcpp_result_gen;
 END_RCPP
 }
 // Q_GSEM_Group
-double Q_GSEM_Group(const Rcpp::List& modelR, const arma::mat& P);
-RcppExport SEXP _modsem_Q_GSEM_Group(SEXP modelRSEXP, SEXP PSEXP) {
+double Q_GSEM_Group(const Rcpp::List& modelR, const arma::mat& P, const int ncores);
+RcppExport SEXP _modsem_Q_GSEM_Group(SEXP modelRSEXP, SEXP PSEXP, SEXP ncoresSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::List& >::type modelR(modelRSEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type P(PSEXP);
-    rcpp_result_gen = Rcpp::wrap(Q_GSEM_Group(modelR, P));
+    Rcpp::traits::input_parameter< const int >::type ncores(ncoresSEXP);
+    rcpp_result_gen = Rcpp::wrap(Q_GSEM_Group(modelR, P, ncores));
     return rcpp_result_gen;
 END_RCPP
 }
 // P_Step_GSEM
-arma::mat P_Step_GSEM(const Rcpp::List& modelR, const bool normalized);
-RcppExport SEXP _modsem_P_Step_GSEM(SEXP modelRSEXP, SEXP normalizedSEXP) {
+arma::mat P_Step_GSEM(const Rcpp::List& modelR, const bool normalized, const int ncores);
+RcppExport SEXP _modsem_P_Step_GSEM(SEXP modelRSEXP, SEXP normalizedSEXP, SEXP ncoresSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::List& >::type modelR(modelRSEXP);
     Rcpp::traits::input_parameter< const bool >::type normalized(normalizedSEXP);
-    rcpp_result_gen = Rcpp::wrap(P_Step_GSEM(modelR, normalized));
+    Rcpp::traits::input_parameter< const int >::type ncores(ncoresSEXP);
+    rcpp_result_gen = Rcpp::wrap(P_Step_GSEM(modelR, normalized, ncores));
     return rcpp_result_gen;
 END_RCPP
 }
 // Q_GSEM
-double Q_GSEM(const Rcpp::List& modelR, const arma::mat& P);
-RcppExport SEXP _modsem_Q_GSEM(SEXP modelRSEXP, SEXP PSEXP) {
+double Q_GSEM(const Rcpp::List& modelR, const arma::mat& P, const int ncores);
+RcppExport SEXP _modsem_Q_GSEM(SEXP modelRSEXP, SEXP PSEXP, SEXP ncoresSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::List& >::type modelR(modelRSEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type P(PSEXP);
-    rcpp_result_gen = Rcpp::wrap(Q_GSEM(modelR, P));
+    Rcpp::traits::input_parameter< const int >::type ncores(ncoresSEXP);
+    rcpp_result_gen = Rcpp::wrap(Q_GSEM(modelR, P, ncores));
     return rcpp_result_gen;
 END_RCPP
 }
 // Qi_GSEM
-arma::vec Qi_GSEM(const Rcpp::List& modelR, const arma::mat& P);
-RcppExport SEXP _modsem_Qi_GSEM(SEXP modelRSEXP, SEXP PSEXP) {
+arma::vec Qi_GSEM(const Rcpp::List& modelR, const arma::mat& P, const int ncores);
+RcppExport SEXP _modsem_Qi_GSEM(SEXP modelRSEXP, SEXP PSEXP, SEXP ncoresSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::List& >::type modelR(modelRSEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type P(PSEXP);
-    rcpp_result_gen = Rcpp::wrap(Qi_GSEM(modelR, P));
+    Rcpp::traits::input_parameter< const int >::type ncores(ncoresSEXP);
+    rcpp_result_gen = Rcpp::wrap(Qi_GSEM(modelR, P, ncores));
     return rcpp_result_gen;
 END_RCPP
 }
 // Grad_Q_GSEM_Group
-Rcpp::NumericVector Grad_Q_GSEM_Group(const Rcpp::List& modelR, const arma::mat& P);
-RcppExport SEXP _modsem_Grad_Q_GSEM_Group(SEXP modelRSEXP, SEXP PSEXP) {
+Rcpp::NumericVector Grad_Q_GSEM_Group(const Rcpp::List& modelR, const arma::mat& P, const int ncores);
+RcppExport SEXP _modsem_Grad_Q_GSEM_Group(SEXP modelRSEXP, SEXP PSEXP, SEXP ncoresSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::List& >::type modelR(modelRSEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type P(PSEXP);
-    rcpp_result_gen = Rcpp::wrap(Grad_Q_GSEM_Group(modelR, P));
+    Rcpp::traits::input_parameter< const int >::type ncores(ncoresSEXP);
+    rcpp_result_gen = Rcpp::wrap(Grad_Q_GSEM_Group(modelR, P, ncores));
     return rcpp_result_gen;
 END_RCPP
 }
 // Grad_Q_GSEM
-Rcpp::NumericVector Grad_Q_GSEM(const Rcpp::List& modelR, const arma::mat& P);
-RcppExport SEXP _modsem_Grad_Q_GSEM(SEXP modelRSEXP, SEXP PSEXP) {
+Rcpp::NumericVector Grad_Q_GSEM(const Rcpp::List& modelR, const arma::mat& P, const int ncores);
+RcppExport SEXP _modsem_Grad_Q_GSEM(SEXP modelRSEXP, SEXP PSEXP, SEXP ncoresSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::List& >::type modelR(modelRSEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type P(PSEXP);
-    rcpp_result_gen = Rcpp::wrap(Grad_Q_GSEM(modelR, P));
+    Rcpp::traits::input_parameter< const int >::type ncores(ncoresSEXP);
+    rcpp_result_gen = Rcpp::wrap(Grad_Q_GSEM(modelR, P, ncores));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -467,13 +474,13 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_modsem_calcSESimpleSlopes", (DL_FUNC) &_modsem_calcSESimpleSlopes, 2},
-    {"_modsem_P_Step_GSEM_Group", (DL_FUNC) &_modsem_P_Step_GSEM_Group, 2},
-    {"_modsem_Q_GSEM_Group", (DL_FUNC) &_modsem_Q_GSEM_Group, 2},
-    {"_modsem_P_Step_GSEM", (DL_FUNC) &_modsem_P_Step_GSEM, 2},
-    {"_modsem_Q_GSEM", (DL_FUNC) &_modsem_Q_GSEM, 2},
-    {"_modsem_Qi_GSEM", (DL_FUNC) &_modsem_Qi_GSEM, 2},
-    {"_modsem_Grad_Q_GSEM_Group", (DL_FUNC) &_modsem_Grad_Q_GSEM_Group, 2},
-    {"_modsem_Grad_Q_GSEM", (DL_FUNC) &_modsem_Grad_Q_GSEM, 2},
+    {"_modsem_P_Step_GSEM_Group", (DL_FUNC) &_modsem_P_Step_GSEM_Group, 3},
+    {"_modsem_Q_GSEM_Group", (DL_FUNC) &_modsem_Q_GSEM_Group, 3},
+    {"_modsem_P_Step_GSEM", (DL_FUNC) &_modsem_P_Step_GSEM, 3},
+    {"_modsem_Q_GSEM", (DL_FUNC) &_modsem_Q_GSEM, 3},
+    {"_modsem_Qi_GSEM", (DL_FUNC) &_modsem_Qi_GSEM, 3},
+    {"_modsem_Grad_Q_GSEM_Group", (DL_FUNC) &_modsem_Grad_Q_GSEM_Group, 3},
+    {"_modsem_Grad_Q_GSEM", (DL_FUNC) &_modsem_Grad_Q_GSEM, 3},
     {"_modsem_expand_quadrature_cpp", (DL_FUNC) &_modsem_expand_quadrature_cpp, 8},
     {"_modsem_muLmsCpp", (DL_FUNC) &_modsem_muLmsCpp, 2},
     {"_modsem_sigmaLmsCpp", (DL_FUNC) &_modsem_sigmaLmsCpp, 2},

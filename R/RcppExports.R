@@ -5,32 +5,32 @@ calcSESimpleSlopes <- function(X, V) {
     .Call(`_modsem_calcSESimpleSlopes`, X, V)
 }
 
-P_Step_GSEM_Group <- function(modelR, normalized) {
-    .Call(`_modsem_P_Step_GSEM_Group`, modelR, normalized)
+P_Step_GSEM_Group <- function(modelR, normalized, ncores) {
+    .Call(`_modsem_P_Step_GSEM_Group`, modelR, normalized, ncores)
 }
 
-Q_GSEM_Group <- function(modelR, P) {
-    .Call(`_modsem_Q_GSEM_Group`, modelR, P)
+Q_GSEM_Group <- function(modelR, P, ncores) {
+    .Call(`_modsem_Q_GSEM_Group`, modelR, P, ncores)
 }
 
-P_Step_GSEM <- function(modelR, normalized) {
-    .Call(`_modsem_P_Step_GSEM`, modelR, normalized)
+P_Step_GSEM <- function(modelR, normalized, ncores) {
+    .Call(`_modsem_P_Step_GSEM`, modelR, normalized, ncores)
 }
 
-Q_GSEM <- function(modelR, P) {
-    .Call(`_modsem_Q_GSEM`, modelR, P)
+Q_GSEM <- function(modelR, P, ncores) {
+    .Call(`_modsem_Q_GSEM`, modelR, P, ncores)
 }
 
-Qi_GSEM <- function(modelR, P) {
-    .Call(`_modsem_Qi_GSEM`, modelR, P)
+Qi_GSEM <- function(modelR, P, ncores) {
+    .Call(`_modsem_Qi_GSEM`, modelR, P, ncores)
 }
 
-Grad_Q_GSEM_Group <- function(modelR, P) {
-    .Call(`_modsem_Grad_Q_GSEM_Group`, modelR, P)
+Grad_Q_GSEM_Group <- function(modelR, P, ncores) {
+    .Call(`_modsem_Grad_Q_GSEM_Group`, modelR, P, ncores)
 }
 
-Grad_Q_GSEM <- function(modelR, P) {
-    .Call(`_modsem_Grad_Q_GSEM`, modelR, P)
+Grad_Q_GSEM <- function(modelR, P, ncores) {
+    .Call(`_modsem_Grad_Q_GSEM`, modelR, P, ncores)
 }
 
 expand_quadrature_cpp <- function(Z_list, cholPsi, gamma, omega, alphaLatent, xiNames, etaNames, latentNames) {

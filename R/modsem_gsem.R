@@ -210,6 +210,7 @@ modsem_gsem <- function(model.syntax = NULL,
     stop2(sprintf(message, method, e$message))
   })
 
+  return(est)
   # Finalize the model object
   # Expected means and covariances
   est$expected.matrices <- tryCatch(
