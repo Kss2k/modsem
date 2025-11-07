@@ -1,8 +1,8 @@
 ---
-title: "Customizing the output from `plot_interaction()`"
+title: "customizing the output from `plot_interaction()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Customizing the output from `plot_interaction()}
+  %\VignetteIndexEntry{customizing the output from `plot_interaction()}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
