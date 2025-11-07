@@ -162,7 +162,7 @@ struct GSEM_ModelGroup {
 
     cholPsiValid = true;
     if (Psi.n_rows > 0) {
-      cholPsiValid = arma::chol(cholPsi, Psi, "lower");
+      cholPsiValid = arma::chol(cholPsi, Psi, "upper");
       if (!cholPsiValid)
         cholPsi.reset();
     } else {
@@ -614,9 +614,9 @@ struct GSEM_ModelGroup {
 
     arma::mat gradPsiMat(Psi.n_rows, Psi.n_cols, arma::fill::zeros);
     if (cholPsi.n_elem) {
-      arma::mat gradCholLower = arma::trimatl(gradChol);
-      arma::mat temp = arma::solve(arma::trimatu(cholPsi.t()), gradCholLower.t(), arma::solve_opts::fast);
-      arma::mat gradPsiCandidate = 0.5 * temp.t();
+      arma::mat gradCholUpper = arma::trimatu(gradChol);
+      arma::mat temp = arma::solve(arma::trimatu(cholPsi), gradCholUpper, arma::solve_opts::fast);
+      arma::mat gradPsiCandidate = 0.5 * temp;
       gradPsiMat = 0.5 * (gradPsiCandidate + gradPsiCandidate.t());
     }
 
