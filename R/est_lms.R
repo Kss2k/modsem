@@ -132,7 +132,7 @@ emLms <- function(model,
                     lastQuad = lastQuad, recalcQuad = recalcQuad,
                     adaptive.quad.tol = adaptive.quad.tol, ...)
 
-      if (testSimpleGradient) {
+      if (FALSE && testSimpleGradient) {
         tryCatch({
           gradientCompLogLikLms(theta = thetaNew, model = model, P = P)
         }, error = \(e) {

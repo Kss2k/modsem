@@ -813,7 +813,8 @@ finalizeModelEstimatesDA <- function(model,
     FIM              = FIMo$FIM,
     vcov.all         = FIMo$vcov.all,
     vcov.free        = FIMo$vcov.free,
-    information      = FIMo$type
+    information      = FIMo$type,
+    estep            = P
   )
 
   if (isTRUE(includeStartModel))
