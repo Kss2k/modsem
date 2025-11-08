@@ -213,6 +213,32 @@ inline double& lms_param(LMSModel& M, std::size_t blk,
 }
 
 
+struct AlphaDerivatives {
+  arma::mat grad;
+  arma::mat hess;
+};
+
+struct TauXDerivatives {
+  arma::mat grad;
+  arma::mat hess;
+};
+
+AlphaDerivatives alphaGradHessComplete(const LMSModel&  M,
+                                       const arma::mat& V,
+                                       const std::vector<arma::vec>& TGamma,
+                                       const std::vector<std::vector<arma::vec>>& MeanPatterns,
+                                       const std::vector<std::vector<arma::mat>>& CovPatterns,
+                                       const std::vector<arma::uvec>& colidx,
+                                       const int npatterns);
+
+TauXDerivatives tauXGradHessComplete(const LMSModel&  M,
+                                     const arma::mat& V,
+                                     const std::vector<arma::vec>& TGamma,
+                                     const std::vector<std::vector<arma::vec>>& MeanPatterns,
+                                     const std::vector<std::vector<arma::mat>>& CovPatterns,
+                                     const std::vector<arma::uvec>& colidx,
+                                     const int npatterns);
+
 arma::mat gradAlphaComplete(const LMSModel&  M,
                             const arma::mat& V,
                             const std::vector<arma::vec>& TGamma,
@@ -220,6 +246,96 @@ arma::mat gradAlphaComplete(const LMSModel&  M,
                             const std::vector<std::vector<arma::mat>>& CovPatterns,
                             const std::vector<arma::uvec>& colidx,
                             const int npatterns);
+
+
+TauXDerivatives tauXGradHessComplete(const LMSModel&  M,
+                                     const arma::mat& V,
+                                     const std::vector<arma::vec>& TGamma,
+                                     const std::vector<std::vector<arma::vec>>& MeanPatterns,
+                                     const std::vector<std::vector<arma::mat>>& CovPatterns,
+                                     const std::vector<arma::uvec>& colidx,
+                                     const int npatterns) {
+  TauXDerivatives out;
+  out.grad = arma::mat(M.tX.n_rows, M.tX.n_cols, arma::fill::zeros);
+  out.hess = arma::mat(M.tX.n_elem, M.tX.n_elem, arma::fill::zeros);
+
+  const std::size_t J = V.n_rows;
+  const arma::uword nrows = M.tX.n_rows;
+  const arma::uword ncols = M.tX.n_cols;
+  const arma::uword nParams = M.tX.n_elem;
+
+  auto mu_index = [&](arma::uword r, arma::uword c) -> arma::uword {
+    return r + c * nrows;
+  };
+
+  for (std::size_t j = 0; j < J; ++j) {
+    if (arma::sum(TGamma[j]) <= DBL_MIN) continue;
+
+    const arma::vec z = V.row(j).t();
+    const arma::vec mu = M.mu(z);
+    const arma::mat Sigma = M.Sigma(z);
+
+    arma::vec gradMu(mu.n_elem, arma::fill::zeros);
+    arma::mat curvMu(mu.n_elem, mu.n_elem, arma::fill::zeros);
+
+    for (int i = 0; i < npatterns; ++i) {
+      const double tg = TGamma[j][i];
+      if (tg <= DBL_MIN) continue;
+
+      const arma::uvec& idx = colidx[i];
+      const arma::vec& nu = MeanPatterns[j][i];
+      const arma::mat& S  = CovPatterns [j][i];
+
+      arma::mat SigSel = Sigma.submat(idx, idx);
+      arma::mat L;
+      if (!arma::chol(L, SigSel, "lower")) continue;
+
+      const arma::vec diff = nu - mu.elem(idx);
+      arma::vec y = arma::solve(arma::trimatl(L), diff, arma::solve_opts::fast);
+      arma::vec linv_diff = arma::solve(arma::trimatu(L.t()), y, arma::solve_opts::fast);
+
+      gradMu.elem(idx) += tg * linv_diff;
+
+      arma::mat SigInv = arma::inv_sympd(SigSel);
+      curvMu.submat(idx, idx) += tg * SigInv;
+    }
+
+    const bool hasGrad = !gradMu.is_zero();
+    const bool hasCurv = !curvMu.is_zero();
+    if (!hasGrad && !hasCurv) continue;
+
+    if (hasGrad) {
+      for (arma::uword c = 0; c < ncols; ++c) {
+        for (arma::uword r = 0; r < nrows; ++r) {
+          const arma::uword idxMu = mu_index(r, c);
+          if (idxMu >= gradMu.n_elem) continue;
+          out.grad(r, c) += gradMu[idxMu];
+        }
+      }
+    }
+
+    if (hasCurv) {
+      for (arma::uword p = 0; p < nParams; ++p) {
+        const arma::uword rp = p % nrows;
+        const arma::uword cp = p / nrows;
+        const arma::uword idxP = mu_index(rp, cp);
+        if (idxP >= curvMu.n_rows) continue;
+
+        for (arma::uword q = 0; q < nParams; ++q) {
+          const arma::uword rq = q % nrows;
+          const arma::uword cq = q / nrows;
+          const arma::uword idxQ = mu_index(rq, cq);
+          if (idxQ >= curvMu.n_cols) continue;
+
+          out.hess(p, q) -= curvMu(idxP, idxQ);
+        }
+      }
+    }
+  }
+
+  return out;
+}
+
 
 arma::mat gradBeta0Complete(const LMSModel&  M,
                             const arma::mat& V,
@@ -1201,6 +1317,15 @@ arma::vec gradLogLikLmsCpp(const Rcpp::List& modelR,
   const arma::uvec idxOmegaEtaXi = arma::find(block == 13u);
   arma::vec grad(block.n_elem, arma::fill::zeros);
 
+  auto read_grad = [&](const arma::mat& G, const arma::uword pos) -> double {
+    const arma::uword r = row[pos];
+    const arma::uword c = col[pos];
+    if (symmetric[pos] && r != c) {
+      return G(r, c) + G(c, r);
+    }
+    return G(r, c);
+  };
+
   std::vector<arma::uword> fdPositions;
   fdPositions.reserve(block.n_elem);
   for (arma::uword pos = 0; pos < block.n_elem; ++pos) {
@@ -1245,7 +1370,7 @@ arma::vec gradLogLikLmsCpp(const Rcpp::List& modelR,
 
     for (std::size_t k = 0; k < idxAlpha.n_elem; ++k) {
       const std::size_t pos = idxAlpha[k];
-      grad[pos] = gradAlpha(row[pos], col[pos]);
+      grad[pos] = read_grad(gradAlpha, pos);
     }
   }
 
@@ -1289,7 +1414,7 @@ arma::vec gradLogLikLmsCpp(const Rcpp::List& modelR,
 
     for (std::size_t k = 0; k < idxPsi.n_elem; ++k) {
       const std::size_t pos = idxPsi[k];
-      grad[pos] = gradPsi(row[pos], col[pos]);
+      grad[pos] = read_grad(gradPsi, pos);
     }
   }
 
@@ -1300,7 +1425,7 @@ arma::vec gradLogLikLmsCpp(const Rcpp::List& modelR,
 
     for (std::size_t k = 0; k < idxThetaDelta.n_elem; ++k) {
       const std::size_t pos = idxThetaDelta[k];
-      grad[pos] = gradTheta(row[pos], col[pos]);
+      grad[pos] = read_grad(gradTheta, pos);
     }
   }
 
@@ -1344,7 +1469,7 @@ arma::vec gradLogLikLmsCpp(const Rcpp::List& modelR,
 
     for (std::size_t k = 0; k < idxOmegaXiXi.n_elem; ++k) {
       const std::size_t pos = idxOmegaXiXi[k];
-      grad[pos] = gradOxx(row[pos], col[pos]);
+      grad[pos] = read_grad(gradOxx, pos);
     }
   }
 
@@ -1512,43 +1637,49 @@ double observedLogLikLmsCpp(const Rcpp::List& modelR,
 }
 
 
-arma::mat gradAlphaComplete(const LMSModel&  M,
-                            const arma::mat& V,
-                            const std::vector<arma::vec>& TGamma,
-                            const std::vector<std::vector<arma::vec>>& MeanPatterns,
-                            const std::vector<std::vector<arma::mat>>& CovPatterns,
-                            const std::vector<arma::uvec>& colidx,
-                            const int npatterns) {
-  arma::mat gradAlpha(M.a.n_rows, M.a.n_cols, arma::fill::zeros);
+AlphaDerivatives alphaGradHessComplete(const LMSModel&  M,
+                                       const arma::mat& V,
+                                       const std::vector<arma::vec>& TGamma,
+                                       const std::vector<std::vector<arma::vec>>& MeanPatterns,
+                                       const std::vector<std::vector<arma::mat>>& CovPatterns,
+                                       const std::vector<arma::uvec>& colidx,
+                                       const int npatterns) {
+  AlphaDerivatives out;
+  out.grad = arma::mat(M.a.n_rows, M.a.n_cols, arma::fill::zeros);
+  out.hess = arma::mat(M.a.n_elem, M.a.n_elem, arma::fill::zeros);
 
   const std::size_t J = V.n_rows;
-  const unsigned numEta = M.Ie.n_rows;
+  const arma::uword numEta = M.Ie.n_rows;
+  const arma::uword etaStart = M.numXis;
+  const arma::uword etaEnd   = etaStart + numEta - 1;
+  const arma::mat L_eta = M.lX.cols(etaStart, etaEnd);
 
   for (std::size_t j = 0; j < J; ++j) {
     if (arma::sum(TGamma[j]) <= DBL_MIN) continue;
 
-    const arma::vec z = V.row(j).t();
+    const arma::vec z    = V.row(j).t();
     const arma::vec zVec = make_zvec(M.k, M.numXis, z);
     const arma::vec muXi = M.beta0 + M.A * zVec;
     const arma::mat kronZ = arma::kron(M.Ie, muXi);
-    const arma::mat B = M.Ie - M.Ge - kronZ.t() * M.Oex;
+    const arma::mat B    = M.Ie - M.Ge - kronZ.t() * M.Oex;
     const arma::mat Binv = arma::inv(B);
-    const arma::vec rhs = M.a + M.Gx * muXi + kronZ.t() * M.Oxx * muXi;
+    const arma::vec rhs  = M.a + M.Gx * muXi + kronZ.t() * M.Oxx * muXi;
     const arma::vec muEta = Binv * rhs;
 
     const arma::vec latent = arma::join_cols(muXi, muEta);
-    const arma::vec mu = M.tX + M.lX * latent;
-    const arma::mat Sigma = M.Sigma(z);
+    const arma::vec mu     = M.tX + M.lX * latent;
+    const arma::mat Sigma  = M.Sigma(z);
 
     arma::vec gradMu(mu.n_elem, arma::fill::zeros);
+    arma::mat curvMu(mu.n_elem, mu.n_elem, arma::fill::zeros);
 
     for (int i = 0; i < npatterns; ++i) {
       const double tg = TGamma[j][i];
       if (tg <= DBL_MIN) continue;
 
       const arma::uvec& idx = colidx[i];
-      const arma::vec& nu = MeanPatterns[j][i];
-      const arma::mat& S  = CovPatterns [j][i];
+      const arma::vec& nu   = MeanPatterns[j][i];
+      const arma::mat& S    = CovPatterns [j][i];
 
       arma::mat SigSel = Sigma.submat(idx, idx);
       arma::mat L;
@@ -1559,18 +1690,39 @@ arma::mat gradAlphaComplete(const LMSModel&  M,
       arma::vec linv_diff = arma::solve(arma::trimatu(L.t()), y, arma::solve_opts::fast);
 
       gradMu.elem(idx) += tg * linv_diff;
+
+      arma::mat SigInv = arma::inv_sympd(SigSel);
+      curvMu.submat(idx, idx) += tg * SigInv;
     }
 
-    if (arma::all(gradMu == 0.0)) continue;
+    if (arma::all(gradMu == 0.0) && curvMu.is_zero()) continue;
 
-    arma::vec gradLatent = M.lX.t() * gradMu;
-    arma::vec gradMuEta = gradLatent.subvec(M.numXis, M.numXis + numEta - 1);
-    arma::vec gradAlphaNode = Binv.t() * gradMuEta;
+    const arma::vec gradLatent = M.lX.t() * gradMu;
+    const arma::vec gradMuEta  = gradLatent.subvec(etaStart, etaEnd);
+    const arma::vec gradAlphaNode = Binv.t() * gradMuEta;
+    out.grad += arma::reshape(gradAlphaNode, out.grad.n_rows, out.grad.n_cols);
 
-    gradAlpha += arma::reshape(gradAlphaNode, gradAlpha.n_rows, gradAlpha.n_cols);
+    if (!curvMu.is_zero()) {
+      const arma::mat J = L_eta * Binv;
+      arma::mat hessNode = -J.t() * curvMu * J;
+      // enforce symmetry to control numeric noise
+      hessNode = 0.5 * (hessNode + hessNode.t());
+      out.hess += hessNode;
+    }
   }
 
-  return gradAlpha;
+  return out;
+}
+
+arma::mat gradAlphaComplete(const LMSModel&  M,
+                            const arma::mat& V,
+                            const std::vector<arma::vec>& TGamma,
+                            const std::vector<std::vector<arma::vec>>& MeanPatterns,
+                            const std::vector<std::vector<arma::mat>>& CovPatterns,
+                            const std::vector<arma::uvec>& colidx,
+                            const int npatterns) {
+  return alphaGradHessComplete(M, V, TGamma, MeanPatterns, CovPatterns,
+                               colidx, npatterns).grad;
 }
 
 
@@ -1705,50 +1857,8 @@ arma::mat gradTauXComplete(const LMSModel&  M,
                            const std::vector<std::vector<arma::mat>>& CovPatterns,
                            const std::vector<arma::uvec>& colidx,
                            const int npatterns) {
-  arma::mat gradTauX(M.tX.n_rows, M.tX.n_cols, arma::fill::zeros);
-
-  const std::size_t J = V.n_rows;
-
-  for (std::size_t j = 0; j < J; ++j) {
-    if (arma::sum(TGamma[j]) <= DBL_MIN) continue;
-
-    const arma::vec z = V.row(j).t();
-    const arma::vec mu = M.mu(z);
-    const arma::mat Sigma = M.Sigma(z);
-
-    arma::vec gradMu(mu.n_elem, arma::fill::zeros);
-
-    for (int i = 0; i < npatterns; ++i) {
-      const double tg = TGamma[j][i];
-      if (tg <= DBL_MIN) continue;
-
-      const arma::uvec& idx = colidx[i];
-      const arma::vec& nu = MeanPatterns[j][i];
-      const arma::mat& S  = CovPatterns [j][i];
-
-      arma::mat SigSel = Sigma.submat(idx, idx);
-      arma::mat L;
-      if (!arma::chol(L, SigSel, "lower")) continue;
-
-      const arma::vec diff = nu - mu.elem(idx);
-      arma::vec y = arma::solve(arma::trimatl(L), diff, arma::solve_opts::fast);
-      arma::vec linv_diff = arma::solve(arma::trimatu(L.t()), y, arma::solve_opts::fast);
-
-      gradMu.elem(idx) += tg * linv_diff;
-    }
-
-    if (arma::all(gradMu == 0.0)) continue;
-
-    for (arma::uword c = 0; c < M.tX.n_cols; ++c) {
-      for (arma::uword r = 0; r < M.tX.n_rows; ++r) {
-        const arma::uword idx = r + c * M.tX.n_rows;
-        if (idx < gradMu.n_elem)
-          gradTauX(r, c) += gradMu(idx);
-      }
-    }
-  }
-
-  return gradTauX;
+  return tauXGradHessComplete(M, V, TGamma, MeanPatterns, CovPatterns,
+                              colidx, npatterns).grad;
 }
 
 
@@ -2062,9 +2172,106 @@ Rcpp::List hessCompLogLikLmsCpp(const Rcpp::List& modelR,
 
   auto comp_ll = [&](LMSModel& mod) -> double {
     return completeLogLikFromModel(mod, V, TGamma, Mean, Cov,
+                                  colidx, n, d, npatterns); // single-threaded
+  };
+
+  Rcpp::List res = fdHessCpp(M, comp_ll, block, row, col, symmetric,
+                             relStep, minAbs, ncores);
+
+  arma::vec grad = res["gradient"];
+  arma::mat Hess = res["Hessian"];
+
+  const arma::uvec idxAlpha = arma::find(block == 8u);
+  if (!idxAlpha.is_empty()) {
+    const AlphaDerivatives alphaDerivs =
+        alphaGradHessComplete(M, V, TGamma, Mean, Cov, colidx, npatterns);
+    const arma::mat& gradAlpha = alphaDerivs.grad;
+    const arma::mat& hessAlpha = alphaDerivs.hess;
+
+    const arma::uword alphaRows = M.a.n_rows;
+    arma::uvec alphaLocal(idxAlpha.n_elem);
+
+    for (arma::uword k = 0; k < idxAlpha.n_elem; ++k) {
+      const arma::uword pos = idxAlpha[k];
+      const arma::uword r = row[pos];
+      const arma::uword c = col[pos];
+      grad[pos] = gradAlpha(r, c);
+      alphaLocal[k] = r + c * alphaRows;
+    }
+
+    for (arma::uword i = 0; i < idxAlpha.n_elem; ++i) {
+      const arma::uword pos_i = idxAlpha[i];
+      const arma::uword local_i = alphaLocal[i];
+      for (arma::uword j = 0; j < idxAlpha.n_elem; ++j) {
+        const arma::uword pos_j = idxAlpha[j];
+        const arma::uword local_j = alphaLocal[j];
+        Hess(pos_i, pos_j) = hessAlpha(local_i, local_j);
+      }
+    }
+  }
+
+  const arma::uvec idxTauX = arma::find(block == 2u);
+  if (!idxTauX.is_empty()) {
+    const TauXDerivatives tauDerivs =
+        tauXGradHessComplete(M, V, TGamma, Mean, Cov, colidx, npatterns);
+    const arma::mat& gradTau = tauDerivs.grad;
+    const arma::mat& hessTau = tauDerivs.hess;
+
+    const arma::uword tauRows = M.tX.n_rows;
+    arma::uvec tauLocal(idxTauX.n_elem);
+
+    for (arma::uword k = 0; k < idxTauX.n_elem; ++k) {
+      const arma::uword pos = idxTauX[k];
+      const arma::uword r = row[pos];
+      const arma::uword c = col[pos];
+      grad[pos] = gradTau(r, c);
+      tauLocal[k] = r + c * tauRows;
+    }
+
+    for (arma::uword i = 0; i < idxTauX.n_elem; ++i) {
+      const arma::uword pos_i = idxTauX[i];
+      const arma::uword local_i = tauLocal[i];
+      for (arma::uword j = 0; j < idxTauX.n_elem; ++j) {
+        const arma::uword pos_j = idxTauX[j];
+        const arma::uword local_j = tauLocal[j];
+        Hess(pos_i, pos_j) = hessTau(local_i, local_j);
+      }
+    }
+  }
+
+  res["gradient"] = grad;
+  res["Hessian"]  = Hess;
+  return res;
+}
+
+
+// [[Rcpp::export]]
+Rcpp::List hessCompLogLikLmsCpp_fd(const Rcpp::List& modelR,
+                                   const Rcpp::List& P,
+                                   const arma::uvec& block,
+                                   const arma::uvec& row,
+                                   const arma::uvec& col,
+                                   const arma::uvec& symmetric,
+                                   const Rcpp::List& colidxR,
+                                   const arma::uvec& n,
+                                   const arma::uvec& d,
+                                   const int         npatterns = 1,
+                                   const double      relStep   = 1e-6,
+                                   const double      minAbs    = 0.0,
+                                   const int         ncores    = 1L) {
+  LMSModel M(modelR);
+
+  const arma::mat  V       = Rcpp::as<arma::mat>(P["V"]);
+  const auto       TGamma  = as_vec_of_vec(P["tgamma"]);
+  const auto       Mean    = as_vec_of_vec_of_vec(P["mean"]);
+  const auto       Cov     = as_vec_of_vec_of_mat(P["cov"]);
+  const auto       colidx  = as_vec_of_uvec(colidxR);
+
+  auto comp_ll = [&](LMSModel& mod) -> double {
+    return completeLogLikFromModel(mod, V, TGamma, Mean, Cov,
                                    colidx, n, d, npatterns); // single-threaded
   };
 
   return fdHessCpp(M, comp_ll, block, row, col, symmetric,
-      relStep, minAbs, ncores); // multi-threaded
+                   relStep, minAbs, ncores);
 }

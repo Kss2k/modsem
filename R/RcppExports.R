@@ -45,6 +45,10 @@ hessCompLogLikLmsCpp <- function(modelR, P, block, row, col, symmetric, colidxR,
     .Call(`_modsem_hessCompLogLikLmsCpp`, modelR, P, block, row, col, symmetric, colidxR, n, d, npatterns, relStep, minAbs, ncores)
 }
 
+hessCompLogLikLmsCpp_fd <- function(modelR, P, block, row, col, symmetric, colidxR, n, d, npatterns = 1L, relStep = 1e-6, minAbs = 0.0, ncores = 1L) {
+    .Call(`_modsem_hessCompLogLikLmsCpp_fd`, modelR, P, block, row, col, symmetric, colidxR, n, d, npatterns, relStep, minAbs, ncores)
+}
+
 muQmlCpp <- function(m, t, ncores = 1L) {
     .Call(`_modsem_muQmlCpp`, m, t, ncores)
 }

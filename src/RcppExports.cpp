@@ -215,6 +215,29 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// hessCompLogLikLmsCpp_fd
+Rcpp::List hessCompLogLikLmsCpp_fd(const Rcpp::List& modelR, const Rcpp::List& P, const arma::uvec& block, const arma::uvec& row, const arma::uvec& col, const arma::uvec& symmetric, const Rcpp::List& colidxR, const arma::uvec& n, const arma::uvec& d, const int npatterns, const double relStep, const double minAbs, const int ncores);
+RcppExport SEXP _modsem_hessCompLogLikLmsCpp_fd(SEXP modelRSEXP, SEXP PSEXP, SEXP blockSEXP, SEXP rowSEXP, SEXP colSEXP, SEXP symmetricSEXP, SEXP colidxRSEXP, SEXP nSEXP, SEXP dSEXP, SEXP npatternsSEXP, SEXP relStepSEXP, SEXP minAbsSEXP, SEXP ncoresSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type modelR(modelRSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type P(PSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type block(blockSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type row(rowSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type col(colSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type symmetric(symmetricSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type colidxR(colidxRSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type n(nSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type d(dSEXP);
+    Rcpp::traits::input_parameter< const int >::type npatterns(npatternsSEXP);
+    Rcpp::traits::input_parameter< const double >::type relStep(relStepSEXP);
+    Rcpp::traits::input_parameter< const double >::type minAbs(minAbsSEXP);
+    Rcpp::traits::input_parameter< const int >::type ncores(ncoresSEXP);
+    rcpp_result_gen = Rcpp::wrap(hessCompLogLikLmsCpp_fd(modelR, P, block, row, col, symmetric, colidxR, n, d, npatterns, relStep, minAbs, ncores));
+    return rcpp_result_gen;
+END_RCPP
+}
 // muQmlCpp
 arma::mat muQmlCpp(Rcpp::List m, int t, int ncores);
 RcppExport SEXP _modsem_muQmlCpp(SEXP mSEXP, SEXP tSEXP, SEXP ncoresSEXP) {
@@ -419,6 +442,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_modsem_observedLogLikLmsCpp", (DL_FUNC) &_modsem_observedLogLikLmsCpp, 7},
     {"_modsem_hessObsLogLikLmsCpp", (DL_FUNC) &_modsem_hessObsLogLikLmsCpp, 13},
     {"_modsem_hessCompLogLikLmsCpp", (DL_FUNC) &_modsem_hessCompLogLikLmsCpp, 13},
+    {"_modsem_hessCompLogLikLmsCpp_fd", (DL_FUNC) &_modsem_hessCompLogLikLmsCpp_fd, 13},
     {"_modsem_muQmlCpp", (DL_FUNC) &_modsem_muQmlCpp, 3},
     {"_modsem_sigmaQmlCpp", (DL_FUNC) &_modsem_sigmaQmlCpp, 3},
     {"_modsem_calcKronXi", (DL_FUNC) &_modsem_calcKronXi, 3},
