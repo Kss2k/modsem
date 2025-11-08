@@ -389,10 +389,10 @@ parameterEstimatesLavSAM <- function(syntax,
                 parTable = lavaan::parameterEstimates(fitSEM)))
   }
 
-  # Get SAM structural model with measurement model from a CFA
+  # Get SAM structural model with measurement model from a linear model
   lVs <- getLVs(parTable)
 
-  getCFARows <- function(pt) {
+  getMeasrRows <- function(pt) {
     rhs <- pt$rhs
     lhs <- pt$lhs
     op  <- pt$op
@@ -408,12 +408,17 @@ parameterEstimatesLavSAM <- function(syntax,
     pt[cond1 | cond2 | cond3 | cond4, , drop = FALSE]
   }
 
-  parTableOuter <- getCFARows(parTable)
+  getH0Rows <- function(pt) {
+    ptH0 <- pt[!grepl(":", pt$lhs) & !grepl(":", pt$rhs), , drop = FALSE]
+    removeUnknownLabels(ptH0)
+  }
 
-  syntaxCFA <- parTableToSyntax(parTableOuter)
+  parTableOuter <- getH0Rows(parTable)
 
-  fitCFA <- wrapper(lavaan::cfa(
-    model            = syntaxCFA,
+  syntaxH0 <- parTableToSyntax(parTableOuter)
+
+  fitH0 <- wrapper(lavaan::sem(
+    model            = syntaxH0,
     data             = data,
     meanstructure    = meanstructure,
     estimator        = estimator,
@@ -428,12 +433,12 @@ parameterEstimatesLavSAM <- function(syntax,
     ...
   ))
 
-  if (isHigherOrder || isNonCentered) {
+  if (isHigherOrder) {
     # use factor scores instead
     # using `sam.method="fsr"` doesn't work for this purpose (yet)
     # so we do it manually instead
-    dataSAM <- tryCatch(lavaan::lavPredict(fitCFA, transform = TRUE),
-                        error = \(e) lavaan::lavPredict(fitCFA))
+    dataSAM <- tryCatch(lavaan::lavPredict(fitH0, transform = TRUE),
+                        error = \(e) lavaan::lavPredict(fitH0))
 
     structvars <- unique(c(
       colnames(dataSAM),
@@ -444,6 +449,7 @@ parameterEstimatesLavSAM <- function(syntax,
     parTableInner <- parTable[parTable$lhs %in% structvars &
                               parTable$rhs %in% structvars &
                               parTable$op != "=~", , drop = FALSE]
+
     syntaxSAM <- parTableToSyntax(parTableInner)
     SAMFUN    <- lavaan::sem
 
@@ -469,7 +475,8 @@ parameterEstimatesLavSAM <- function(syntax,
     ...
   ))
 
-  measr  <- getCFARows(lavaan::parameterEstimates(fitCFA))
+  parTableH0 <- lavaan::parameterEstimates(fitH0)
+  measr  <- getMeasrRows(parTableH0)
   struct <- lavaan::parameterEstimates(fitSAM)
 
   addcol <- \(pt, col, val) if (!col %in% colnames(pt)) {pt[[col]] <- val; pt} else pt
@@ -486,7 +493,8 @@ parameterEstimatesLavSAM <- function(syntax,
   parTableFull <- parTableFull[!duplicated(parTableFull[cols.x]), , drop = FALSE]
 
   # if (!isNonCentered && !isHigherOrder) # if latent mean structure is not included
-  parTableFull <- recalcInterceptsY(parTableFull)
+  parTableFull <- recalcInterceptsY(parTable.nlin = parTableFull,
+                                    parTable.lin  = parTableH0)
 
-  list(fit = fitCFA, parTable = parTableFull)
+  list(fit = fitH0, parTable = parTableFull)
 }
