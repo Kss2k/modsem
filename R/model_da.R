@@ -411,7 +411,7 @@ specifyModelDA <- function(..., group.info, createTheta = TRUE) {
       higherOrderLVs     = submodels[[1L]]$info$higherOrderLVs,
       indsHigherOrderLVs = submodels[[1L]]$info$indsHigherOrderLVs,
 
-      lavOptimizerSyntaxAdditions = submodels[[1L]]$lavOptimizerSyntaxAdditions
+      lavOptimizerSyntaxAdditions = submodels[[1L]]$info$lavOptimizerSyntaxAdditions
     ),
 
     params = list()

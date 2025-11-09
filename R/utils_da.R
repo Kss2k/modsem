@@ -1164,28 +1164,31 @@ higherOrderMeasr2Struct <- function(parTable) {
 }
 
 
-recalcInterceptsY <- function(parTable) {
+recalcInterceptsY <- function(parTable.nlin, parTable.lin) {
   out <- NULL
 
-  for (g in getGroupsParTable(parTable)) {
-    parTable.g <- parTable[parTable$group == g, , drop = FALSE]
-    out <- rbind(out, recalcInterceptsY_Group(parTable.g))
+  parTable.nlin <- addMissingGroups(parTable.nlin)
+  parTable.lin  <- addMissingGroups(parTable.lin)
+
+  for (g in getGroupsParTable(parTable.nlin)) {
+    parTable.nlin.g <- parTable.nlin[parTable.nlin$group == g, , drop = FALSE]
+    parTable.lin.g  <- parTable.lin[parTable.lin$group == g, , drop = FALSE]
+    out <- rbind(out, recalcInterceptsY_Group(parTable.nlin = parTable.nlin.g,
+                                              parTable.lin  = parTable.lin.g))
   }
 
-  rbind(out, getZeroGroupParTable(parTable))
+  rbind(out, getZeroGroupParTable(parTable.nlin))
 }
 
 
-recalcInterceptsY_Group <- function(parTable) {
+recalcInterceptsY_Group <- function(parTable.nlin, parTable.lin) {
   # fix intercept for indicators of endogenous variables, based on means
   # of interaction terms
-  # intercepts are from a linear (CFA) model, combined with a non-linear SAM
+  # intercepts are from a linear (H0) model, combined with a non-linear SAM
   # structural model. We want the mean structure to be coherent with those
   # from a full non-linear model
-  nlin.intercepts <- grepl(":", parTable$lhs) & parTable$op == "~1"
-  parTable.nlin <- meanInteractions(parTable, ignore.means = TRUE)
-  parTable.lin  <- parTable[!nlin.intercepts, , drop = FALSE] # remove non linear intercepts
-                                                              # from the SAM structural model
+  parTable      <- parTable.nlin
+  parTable.nlin <- meanInteractions(parTable.nlin, ignore.means = FALSE)
 
   for (eta in getEtas(parTable)) {
     meta.lin  <- getMean(eta, parTable = parTable.lin)
