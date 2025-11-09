@@ -7,7 +7,7 @@ grad_inputs <- lms_model_inputs
 compare_gradients <- function(block_id, row, col, symmetric = 0L, tol = 2e-2) {
   inputs <- grad_inputs()
 
-  gn <- \() modsem:::gradLogLikLmsCpp_cd(
+  grad_numeric <- modsem:::gradLogLikLmsCpp_cd(
     inputs$modelR, inputs$P,
     block = as.integer(block_id), row = as.integer(row),
     col = as.integer(col), symmetric = as.integer(symmetric),
@@ -15,16 +15,13 @@ compare_gradients <- function(block_id, row, col, symmetric = 0L, tol = 2e-2) {
     npatterns = 1L, eps = 1e-7, ncores = 1L
   )
 
-  ga <- \() modsem:::gradLogLikLmsCpp(
+  grad_analytic <- modsem:::gradLogLikLmsCpp(
     inputs$modelR, inputs$P,
     block = as.integer(block_id), row = as.integer(row),
     col = as.integer(col), symmetric = as.integer(symmetric),
     colidxR = inputs$colidx, n = inputs$n, d = inputs$d,
     npatterns = 1L, eps = 1e-7, ncores = 1L
   )
-
-  grad_numeric <- gn()
-  grad_analytic <- ga()
 
   expect_equal(as.numeric(grad_analytic),
                as.numeric(grad_numeric),
@@ -94,3 +91,29 @@ test_that("analytic thetaDelta gradient matches numeric finite differences", {
 test_that("analytic thetaDelta off-diagonal gradient matches numeric finite differences", {
   compare_gradients(block_id = 4, row = 0, col = 1, symmetric = 1L)
 })
+
+
+inputs <- grad_inputs()
+locations <- inputs$gradientStruct$locations
+
+fd <- \() modsem:::gradLogLikLmsCpp_fd(
+    inputs$modelR, inputs$P, block = locations$block,
+    row = locations$row, col = locations$col,
+    symmetric = locations$symmetric, colidxR = inputs$colidx,
+    n = inputs$n, d = inputs$d, npatterns = 1L,
+    eps = 1e-7, ncores = 4L
+  )
+
+an <- \() modsem:::gradLogLikLmsCpp(
+    inputs$modelR, inputs$P, block = locations$block,
+    row = locations$row, col = locations$col,
+    symmetric = locations$symmetric, colidxR = inputs$colidx,
+    n = inputs$n, d = inputs$d, npatterns = 1L,
+    eps = 1e-7, ncores = 4L
+  )
+
+rbenchmark::benchmark(
+  `forward-difference` = fd(),
+  `analytical`         = an(),
+  replications = 500
+)

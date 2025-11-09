@@ -46,7 +46,8 @@ lms_model_inputs <- local({
       P      = P_group,
       colidx = dataR$colidx0,
       n      = as.integer(dataR$n.pattern),
-      d      = as.integer(dataR$d.pattern)
+      d      = as.integer(dataR$d.pattern),
+      gradientStruct = fit$model$params$gradientStruct
     )
 
     cache
