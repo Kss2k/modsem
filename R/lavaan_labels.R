@@ -28,6 +28,7 @@ createLavLabels <- function(matrices, subset, etas, parTable.in = NULL) {
   gammaEta     <- createLabelsMatrix(matrices$gammaEta, op = "~", first = "rows")
   omegaXiXi    <- createLabelsOmega(matrices$omegaXiXi, parTable.in = parTable.in)
   omegaEtaXi   <- createLabelsOmega(matrices$omegaEtaXi, parTable.in = parTable.in)
+  thresholds   <- createLabelsMatrix(matrices$thresholds, op = "|", first = "rows")
 
   labels <- c("lambdaX" = lambdaX,
               "lambdaY" = lambdaY,
@@ -43,7 +44,8 @@ createLavLabels <- function(matrices, subset, etas, parTable.in = NULL) {
               "gammaXi" = gammaXi,
               "gammaEta" = gammaEta,
               "omegaXiXi" = omegaXiXi,
-              "omegaEtaXi" = omegaEtaXi)
+              "omegaEtaXi" = omegaEtaXi,
+              "thresholds" = thresholds)
 
   labels[subset]
 }

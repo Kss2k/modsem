@@ -129,7 +129,7 @@ constructLambda <- function(lVs, indsLVs, parTable, auto.fix.first = TRUE) {
 }
 
 
-constructTau <- function(lVs, indsLVs, parTable, mean.observed = TRUE) {
+constructTau <- function(lVs, indsLVs, parTable, mean.observed = TRUE, ordered = NULL) {
   indsLVs       <- indsLVs[lVs] # make sure it is sorted
   allIndsLVs    <- unique(unlist(indsLVs))
   numAllIndsLVs <- length(allIndsLVs)
@@ -149,6 +149,9 @@ constructTau <- function(lVs, indsLVs, parTable, mean.observed = TRUE) {
     }
   }
 
+  tau[allIndsLVs %in% ordered] <- 0
+  parTable <- parTable[!parTable$lhs %in% ordered, , drop = FALSE]
+
   c(setMatrixConstraints(X = tau, parTable = parTable, op = "~1",
                          RHS = "", LHS = allIndsLVs, type = "lhs",
                          nonFreeParams = FALSE),
@@ -156,7 +159,7 @@ constructTau <- function(lVs, indsLVs, parTable, mean.observed = TRUE) {
 }
 
 
-constructTheta <- function(lVs, indsLVs, parTable, auto.fix.single = TRUE) {
+constructTheta <- function(lVs, indsLVs, parTable, auto.fix.single = TRUE, ordered = NULL) {
   numLVs        <- length(lVs)
   indsLVs       <- indsLVs[lVs] # make sure it is sorted
   numIndsLVs    <- lapply(indsLVs, FUN = length)
@@ -173,6 +176,12 @@ constructTheta <- function(lVs, indsLVs, parTable, auto.fix.single = TRUE) {
       theta[indsLVs[[lV]], indsLVs[[lV]]] <- 0
     }
   }
+
+  isord <- allIndsLVs %in% ordered
+  theta[isord, isord] <- 0
+  diag(theta)[isord]  <- 1
+  parTable <- parTable[!parTable$lhs %in% ordered & !parTable$rhs %in% ordered,
+                       , drop = FALSE]
 
   setMatrixConstraints(X = theta, parTable = parTable, op = "~~",
                        RHS = allIndsLVs, LHS = allIndsLVs, type = "symmetric",
@@ -658,4 +667,50 @@ constructOmegaXiXi <- function(xis, etas, sortedXis, nonLinearXis,
 labelRowsOmega <- function(X, eta) {
   rownames(X) <- paste0(eta, "~", rownames(X))
   X
+}
+
+
+constructThresholds <- function(inds, ordered, parTable, data) {
+  if (!length(ordered))
+    return(EMPTY_MATSTRUCT)
+
+  # Sort ordered by inds
+  ordered <- intersect(inds, ordered)
+
+  numeric <- stats::setNames(vector("list", length(inds)), inds)
+  label   <- stats::setNames(vector("list", length(inds)), inds)
+
+  max.k <- 0L
+  for (col in inds) {
+    if (col %in% ordered) {
+      k   <- length(unique(data[, col])) - 1L
+      lab <- paste0("t", seq_len(k))
+      tau <- matrix(NA, nrow = k, ncol = 1,
+                    dimnames = list(lab, col))
+
+      if (k > max.k) max.k <- k
+
+      TAU <- setMatrixConstraints(X = tau, parTable = parTable, op = "|",
+                                  RHS = lab, LHS = col, type = "rhs",
+                                  nonFreeParams = FALSE)
+      numeric[[col]] <- as.vector(TAU$numeric)
+      label[[col]]   <- as.vector(TAU$label)
+
+    } else {
+      numeric[[col]] <- numeric(0L)
+      label[[col]]   <- character(0L)
+    }
+  }
+
+  nm.t <- c("negInf", paste0("t", seq_len(max.k)), "posInf")
+  pad <- \(x, val, l, h)
+   stats::setNames(c(l, x, h, rep(val, max.k - length(x))), nm = nm.t)
+
+  ninf <- -sqrt(.Machine$double.xmax) # Using actuall (+/-) Inf doesn't work well with Fortran
+  pinf <-  sqrt(.Machine$double.xmax)
+
+  numericMat <- do.call("rbind", lapply(numeric, FUN = pad, val = 0, l = ninf, h = pinf))
+  labelMat   <- do.call("rbind", lapply(label, FUN = pad, val = "", l = "", h = ""))
+
+  list(numeric = numericMat, label = labelMat)
 }

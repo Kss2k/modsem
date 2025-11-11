@@ -39,7 +39,9 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    cr1s = FALSE,
                    group = NULL,
                    sampling.weights = NULL,
-                   sampling.weights.normalization = "total"
+                   sampling.weights.normalization = "total",
+                   ordered.nodes = 5L,
+                   ordered = NULL
         ),
         qml = list(verbose = interactive(),
                    optimize = TRUE,
@@ -80,7 +82,9 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    cr1s = FALSE,
                    group = NULL,
                    sampling.weights = NULL,
-                   sampling.weights.normalization = "total"
+                   sampling.weights.normalization = "total",
+                   ordered.nodes = 5L,
+                   ordered = NULL
         )
     )
 

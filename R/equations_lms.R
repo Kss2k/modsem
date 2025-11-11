@@ -450,19 +450,58 @@ densitySingleLms <- function(z, modFilled, data) {
   mu <- muLmsCpp(model = modFilled, z = z)
   sigma <- sigmaLmsCpp(model = modFilled, z = z)
 
-  density <- numeric(data$n)
+  cov.lv <- covLvLmsCpp(model = modFilled, z = z)
+  mu.lv  <- muLvLmsCpp(model = modFilled, z = z)
 
+  k <- length(z)
+  diag(cov.lv)[seq_len(k)] <- 1
+
+  A.lv <- t(chol(cov.lv))
+
+  inds         <- modFilled$info$allInds
+  quad.ordered <- modFilled$quad.ordered
+  V.o          <- quad.ordered$n
+  w.o          <- quad.ordered$weights
+
+  Theta        <- modFilled$matrices$thetaDelta
+  Thresholds   <- modFilled$matrices$thresholds
+  Lambda       <- modFilled$matrices$lambdaX
+
+  density <- numeric(data$n)
   offset <- 1L
+
   for (id in data$ids) { # go along patterns
     n.pattern <- data$n.pattern[[id]]
 
-    colidx <- data$colidx[[id]]
-    dataid <- data$data.split[[id]]
+    colidx      <- data$colidx[[id]]
+    is.ordered  <- modFilled$info$is.ordered[colidx]
+    colidx.cont <- colidx[!is.ordered]
+    colidx.ord  <- colidx[is.ordered]
+    dataid      <- data$data.split[[id]]
 
     end <- offset + n.pattern - 1L
-    density[offset:end] <- dmvn(data$data.split[[id]],
-                                mean = mu[colidx],
-                                sigma = sigma[colidx, colidx])
+    density[offset:end] <- dmvn(data$data.split[[id]][, colidx.cont],
+                                mean = mu[colidx.cont],
+                                sigma = sigma[colidx.cont, colidx.cont])
+
+    for (q in seq_len(NROW(V.o))) {
+      v <- mu.lv + t(A.lv) %*% V.o[q, ]
+      response <- Lambda %*% v
+
+      for (j in colidx.ord) {
+        t <- data$data.split[[id]][, j]
+        lower <- Thresholds[j, t]
+        upper <- Thresholds[j, t+1L]
+        sd.j  <- sqrt(Theta[j, j])
+        v.j   <- response[j, ]
+
+        density[offset:end] <- density[offset:end] * (
+          pnorm(upper, mean = v.j, sd = sd.j) - pnorm(lower, mean = v.j, sd = sd.j)
+        )
+      }
+    }
+
+    density[offset:end] 
     offset <- end + 1L
   }
 

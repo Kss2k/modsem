@@ -25,6 +25,8 @@
 #'   where data is non-normal, it might be better to use the \code{qml} approach instead.
 #'   You can also consider setting \code{adaptive.quad = TRUE}.
 #'
+#' @ordered.nodes Number of quadrature nodes for latent variables with ordered indicators. Defaults to 5.
+#'
 #' @param missing How should missing values be handled? If \code{"listwise"} (default) missing values
 #'   are removed list-wise (alias: \code{"complete"} or \code{"casewise"}).
 #'   If \code{impute} values are imputed using \code{Amelia::amelia}.
@@ -321,6 +323,7 @@ modsem_da <- function(model.syntax = NULL,
                       algorithm = NULL,
                       em.control = NULL,
                       ordered = NULL,
+                      ordered.nodes = NULL,
                       ordered.probit.correction = FALSE,
                       cluster = NULL,
                       cr1s = FALSE,
@@ -343,60 +346,60 @@ modsem_da <- function(model.syntax = NULL,
     stop2("The provided model syntax is not of length 1")
   }
 
-  if (length(ordered) || any(sapply(data, FUN = is.ordered))) {
-    out <- modsemOrderedScaleCorrection(
-       model.syntax        = model.syntax,
-       data                = data,
-       method              = method,
-       verbose             = verbose,
-       optimize            = optimize,
-       nodes               = nodes,
-       missing             = missing,
-       convergence.abs     = convergence.abs,
-       convergence.rel     = convergence.rel,
-       optimizer           = optimizer,
-       center.data         = center.data,
-       standardize.data    = standardize.data,
-       standardize.out     = standardize.out,
-       standardize         = standardize,
-       mean.observed       = mean.observed,
-       cov.syntax          = cov.syntax,
-       double              = double,
-       calc.se             = calc.se,
-       FIM                 = FIM,
-       EFIM.S              = EFIM.S,
-       OFIM.hessian        = OFIM.hessian,
-       EFIM.parametric     = EFIM.parametric,
-       robust.se           = robust.se,
-       R.max               = R.max,
-       max.iter            = max.iter,
-       max.step            = max.step,
-       start               = start,
-       epsilon             = epsilon,
-       quad.range          = quad.range,
-       adaptive.quad       = adaptive.quad,
-       adaptive.frequency  = adaptive.frequency,
-       adaptive.quad.tol   = adaptive.quad.tol,
-       n.threads           = n.threads,
-       algorithm           = algorithm,
-       em.control          = em.control,
-       ordered             = ordered,
-       probit.correction   = ordered.probit.correction,
-       cluster             = cluster,
-       group               = group,
-       cr1s                = cr1s,
-       rcs                 = rcs,
-       rcs.choose          = rcs.choose,
-       rcs.scale.corrected = rcs.scale.corrected,
-       orthogonal.x        = orthogonal.x,
-       orthogonal.y        = orthogonal.y,
-       auto.fix.first      = auto.fix.first,
-       auto.fix.single     = auto.fix.single,
-       auto.split.syntax   = auto.split.syntax,
-       ...)
+  # if (length(ordered) || any(sapply(data, FUN = is.ordered))) {
+  #   out <- modsemOrderedScaleCorrection(
+  #      model.syntax        = model.syntax,
+  #      data                = data,
+  #      method              = method,
+  #      verbose             = verbose,
+  #      optimize            = optimize,
+  #      nodes               = nodes,
+  #      missing             = missing,
+  #      convergence.abs     = convergence.abs,
+  #      convergence.rel     = convergence.rel,
+  #      optimizer           = optimizer,
+  #      center.data         = center.data,
+  #      standardize.data    = standardize.data,
+  #      standardize.out     = standardize.out,
+  #      standardize         = standardize,
+  #      mean.observed       = mean.observed,
+  #      cov.syntax          = cov.syntax,
+  #      double              = double,
+  #      calc.se             = calc.se,
+  #      FIM                 = FIM,
+  #      EFIM.S              = EFIM.S,
+  #      OFIM.hessian        = OFIM.hessian,
+  #      EFIM.parametric     = EFIM.parametric,
+  #      robust.se           = robust.se,
+  #      R.max               = R.max,
+  #      max.iter            = max.iter,
+  #      max.step            = max.step,
+  #      start               = start,
+  #      epsilon             = epsilon,
+  #      quad.range          = quad.range,
+  #      adaptive.quad       = adaptive.quad,
+  #      adaptive.frequency  = adaptive.frequency,
+  #      adaptive.quad.tol   = adaptive.quad.tol,
+  #      n.threads           = n.threads,
+  #      algorithm           = algorithm,
+  #      em.control          = em.control,
+  #      ordered             = ordered,
+  #      probit.correction   = ordered.probit.correction,
+  #      cluster             = cluster,
+  #      group               = group,
+  #      cr1s                = cr1s,
+  #      rcs                 = rcs,
+  #      rcs.choose          = rcs.choose,
+  #      rcs.scale.corrected = rcs.scale.corrected,
+  #      orthogonal.x        = orthogonal.x,
+  #      orthogonal.y        = orthogonal.y,
+  #      auto.fix.first      = auto.fix.first,
+  #      auto.fix.single     = auto.fix.single,
+  #      auto.split.syntax   = auto.split.syntax,
+  #      ...)
 
-    return(out)
-  }
+  #   return(out)
+  # }
 
   if (is.null(data)) {
     stop2("No data provided")
@@ -465,7 +468,9 @@ modsem_da <- function(model.syntax = NULL,
           cr1s                           = cr1s,
           group                          = group,
           sampling.weights               = sampling.weights,
-          sampling.weights.normalization = sampling.weights.normalization
+          sampling.weights.normalization = sampling.weights.normalization,
+          ordered.nodes                  = ordered.nodes,
+          ordered                        = ordered
         )
     )
 
@@ -504,7 +509,9 @@ modsem_da <- function(model.syntax = NULL,
     auto.fix.first     = args$auto.fix.first,
     auto.fix.single    = args$auto.fix.single,
     cluster            = cluster,
-    sampling.weights   = sampling.weights
+    sampling.weights   = sampling.weights,
+    ordered            = ordered,
+    ordered.nodes      = args$ordered.nodes
   )
 
   if (args$optimize) {

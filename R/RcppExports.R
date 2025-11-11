@@ -13,6 +13,14 @@ sigmaLmsCpp <- function(model, z) {
     .Call(`_modsem_sigmaLmsCpp`, model, z)
 }
 
+muLvLmsCpp <- function(model, z) {
+    .Call(`_modsem_muLvLmsCpp`, model, z)
+}
+
+covLvLmsCpp <- function(model, z) {
+    .Call(`_modsem_covLvLmsCpp`, model, z)
+}
+
 completeLogLikLmsCpp <- function(modelR, P, quad, colidxR, n, d, npatterns = 1L) {
     .Call(`_modsem_completeLogLikLmsCpp`, modelR, P, quad, colidxR, n, d, npatterns)
 }

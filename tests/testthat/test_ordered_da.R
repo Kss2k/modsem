@@ -30,6 +30,7 @@ cut_data <- function(data, k = 5, choose = NULL) {
     x <- standardize(data[[var]])
     t <- rthreshold(k)
     y <- cut(x, breaks = t, ordered_result = TRUE)
+    y <- as.ordered(as.integer(y))
 
     min.x <- min(x)
     max.x <- max(x)
@@ -43,14 +44,13 @@ cut_data <- function(data, k = 5, choose = NULL) {
 
 
 
-CHOOSE <- list(c("x1", "x2", "z1", "y1"),
-               colnames(oneInt))
+CHOOSE <- list(c("y1", "y2", "y3"))
 
 for (choose in CHOOSE) {
   set.seed(2837290)
   CUTS <- cut_data(oneInt, choose = choose)
   oneInt2 <- CUTS$data
-  lms1 <- modsem(m1, oneInt2, method = "lms", ordered = choose)
+  devtools::load_all();lms1 <- modsem(m1, oneInt2, method = "lms", ordered = choose)
   thresholds <- CUTS$thresholds
 
 

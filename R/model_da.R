@@ -21,7 +21,9 @@ specifModelDA_Group <- function(syntax = NULL,
                                 orthogonal.x = FALSE,
                                 orthogonal.y = FALSE,
                                 cluster = NULL,
-                                sampling.weights = NULL) {
+                                sampling.weights = NULL,
+                                ordered = NULL,
+                                ordered.nodes = 5L) {
   if (is.null(parTable) && !is.null(syntax)) parTable <- modsemify(syntax)
   stopif(is.null(parTable), "No parTable found")
 
@@ -61,6 +63,9 @@ specifModelDA_Group <- function(syntax = NULL,
                        FUN = length)
   allIndsXis    <- unique(unlist(indsXis))
   numAllIndsXis <- length(allIndsXis)
+
+  indsLVs <- c(indsXis, indsEtas)
+  allInds <- unique(c(allIndsXis, allIndsEtas))
 
   # clean data
   data.cleaned <- prepDataModsemDA(
@@ -149,6 +154,12 @@ specifModelDA_Group <- function(syntax = NULL,
 
   thetaEpsilon      <- listThetaEpsilon$numeric
   thetaLabelEpsilon <- listThetaEpsilon$label
+
+  listThresholds <- constructThresholds(inds = allInds, ordered = ordered,
+                                        parTable = parTable, data = data)
+  thresholds      <- listThresholds$numeric
+  labelThresholds <- listThresholds$label
+
 
   # structural model
   Ieta         <- diag(numEtas) # used for (B^-1 = (Ieta - gammaEta)^-1)
@@ -252,6 +263,7 @@ specifModelDA_Group <- function(syntax = NULL,
     beta0        = beta0,
     omegaEtaXi   = omegaEtaXi,
     omegaXiXi    = omegaXiXi,
+    thresholds   = thresholds,
 
     selectScalingY      = selectScalingY,
     selectThetaEpsilon1 = selectThetaEpsilon1,
@@ -292,11 +304,23 @@ specifModelDA_Group <- function(syntax = NULL,
     beta0 = labelBeta0,
 
     omegaEtaXi = labelOmegaEtaXi,
-    omegaXiXi  = labelOmegaXiXi)
+    omegaXiXi  = labelOmegaXiXi,
+    thresholds = labelThresholds)
 
   k <- omegaAndSortedXis$k
   quad <- quadrature(m, k, quad.range = quad.range, adaptive = adaptive.quad,
                      adaptive.frequency = adaptive.frequency)
+  isOrdLV <- vapply(c(xis, etas), FUN.VALUE = logical(1L),
+                      FUN = \(lv) any(indsLVs[[lv]] %in% ordered))
+  ordLVs <- c(xis, etas)[isOrdLV]
+
+  quad.ordered <- quadrature(ordered.nodes, k = sum(isOrdLV), quad.range = quad.range,
+                             adaptive = adaptive.quad, adaptive.frequency = adaptive.frequency)
+  nodesOrdFull <- matrix(0, ncol = numXis + numEtas, nrow = NROW(quad.ordered$n),
+                         dimnames = list(NULL, c(xis, etas)))
+
+  nodesOrdFull[, isOrdLV] <- quad.ordered$n
+  quad.ordered$n <- nodesOrdFull
 
   model <- list(
     info = list(
@@ -310,12 +334,15 @@ specifModelDA_Group <- function(syntax = NULL,
       indsEtas      = indsEtas,
       allIndsXis    = allIndsXis,
       allIndsEtas   = allIndsEtas,
+      allInds       = allInds,
+      ordered       = ordered,
       varsInts      = varsInts,
       latentEtas    = latentEtas,
       scalingInds   = scalingInds,
       kOmegaEta     = getK_NA(omegaEtaXi, labelOmegaEtaXi),
       nonLinearXis  = nonLinearXis,
       mean.observed = mean.observed,
+      is.ordered    = c(allIndsXis, allIndsEtas) %in% ordered,
 
       has.interaction    = NROW(intTerms) > 0L,
       higherOrderLVs     = higherOrderLVs,
@@ -327,6 +354,7 @@ specifModelDA_Group <- function(syntax = NULL,
     data          = data.cleaned,
     data.raw      = data,
     quad          = quad,
+    quad.ordered  = quad.ordered,
     matrices      = matrices,
     labelMatrices = labelMatrices,
     syntax        = syntax,
@@ -400,12 +428,14 @@ specifyModelDA <- function(..., group.info, createTheta = TRUE) {
       indsEtas      = submodels[[1L]]$info$indsEtas,
       allIndsXis    = submodels[[1L]]$info$allIndsXis,
       allIndsEtas   = submodels[[1L]]$info$allIndsEtas,
+      allInds       = submodels[[1L]]$info$allInds,
       varsInts      = submodels[[1L]]$info$varsInts,
       latentEtas    = submodels[[1L]]$info$latentEtas,
       scalingInds   = submodels[[1L]]$info$scalingInds,
       kOmegaEta     = submodels[[1L]]$info$kOmegaEta,
       nonLinearXis  = submodels[[1L]]$info$nonLinearXis,
       mean.observed = submodels[[1L]]$info$mean.observed,
+      is.ordered    = submodels[[1L]]$info$is.ordered,
 
       has.interaction    = submodels[[1L]]$info$has.interaction,
       higherOrderLVs     = submodels[[1L]]$info$higherOrderLVs,

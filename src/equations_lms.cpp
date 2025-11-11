@@ -88,6 +88,80 @@ arma::mat sigmaLmsCpp(Rcpp::List model, arma::vec z) {
 }
 
 
+// [[Rcpp::export]]
+arma::vec muLvLmsCpp(Rcpp::List model, arma::vec z) {
+  const Rcpp::List matrices = model["matrices"];
+  const Rcpp::List info = model["info"];
+  const Rcpp::List quad = model["quad"];
+  const int numXis = Rcpp::as<int>(info["numXis"]);
+  const int k = Rcpp::as<int>(quad["k"]);
+  const arma::mat A = Rcpp::as<arma::mat>(matrices["A"]);
+  const arma::mat Oxx = Rcpp::as<arma::mat>(matrices["omegaXiXi"]);
+  const arma::mat Oex = Rcpp::as<arma::mat>(matrices["omegaEtaXi"]);
+  const arma::mat Ie = Rcpp::as<arma::mat>(matrices["Ieta"]);
+  const arma::mat Gx = Rcpp::as<arma::mat>(matrices["gammaXi"]);
+  const arma::mat Ge = Rcpp::as<arma::mat>(matrices["gammaEta"]);
+  const arma::mat a = Rcpp::as<arma::mat>(matrices["alpha"]);
+  const arma::mat beta0 = Rcpp::as<arma::mat>(matrices["beta0"]);
+
+  arma::vec zVec;
+  if (k > 0) zVec = arma::join_cols(z, arma::zeros<arma::vec>(numXis - k));
+  else       zVec = arma::zeros<arma::vec>(numXis);
+
+  const arma::mat kronZ = arma::kron(Ie, beta0 + A * zVec);
+  const arma::mat Binv = arma::inv(Ie - Ge - kronZ.t() * Oex);
+
+  const arma::vec muXi  = beta0 + A * zVec;
+  const arma::vec muEta = Binv * (a +
+      Gx * (beta0 + A * zVec) +
+      kronZ.t() * Oxx * (beta0 + A * zVec));
+
+  return arma::join_cols(muXi, muEta);
+}
+
+
+// [[Rcpp::export]]
+arma::mat covLvLmsCpp(Rcpp::List model, arma::vec z) {
+  const Rcpp::List matrices = model["matrices"];
+  const Rcpp::List info = model["info"];
+  const Rcpp::List quad = model["quad"];
+  const int numXis = Rcpp::as<int>(info["numXis"]);
+  const int k = Rcpp::as<int>(quad["k"]);
+  const arma::mat A = Rcpp::as<arma::mat>(matrices["A"]);
+  const arma::mat Oxx = Rcpp::as<arma::mat>(matrices["omegaXiXi"]);
+  const arma::mat Oex = Rcpp::as<arma::mat>(matrices["omegaEtaXi"]);
+  const arma::mat Ie = Rcpp::as<arma::mat>(matrices["Ieta"]);
+  const arma::mat tX = Rcpp::as<arma::mat>(matrices["tauX"]);
+  const arma::mat Gx = Rcpp::as<arma::mat>(matrices["gammaXi"]);
+  const arma::mat Ge = Rcpp::as<arma::mat>(matrices["gammaEta"]);
+  const arma::mat a = Rcpp::as<arma::mat>(matrices["alpha"]);
+  const arma::mat beta0 = Rcpp::as<arma::mat>(matrices["beta0"]);
+  const arma::mat Psi = Rcpp::as<arma::mat>(matrices["psi"]);
+
+  arma::vec zVec;
+  if (k > 0) zVec = arma::join_cols(z, arma::zeros<arma::vec>(numXis - k));
+  else       zVec = arma::zeros<arma::vec>(numXis);
+
+  const arma::mat kronZ = arma::kron(Ie, beta0 + A * zVec);
+  const arma::mat Binv = arma::inv(Ie - Ge - kronZ.t() * Oex);
+
+  arma::mat Oi = arma::eye<arma::mat>(numXis, numXis);
+  Oi.diag() = arma::join_cols(arma::zeros<arma::vec>(k), arma::ones<arma::vec>(numXis - k));
+
+  const arma::mat Eta = Binv * (Gx * A + kronZ.t() * Oxx * A);
+  const arma::mat varXi    = A * Oi * A.t();
+  const arma::mat varEta   = Eta * Oi * Eta.t() + Binv * Psi * Binv.t();
+  const arma::mat covXiEta = A * Oi * Eta.t();
+
+  const arma::mat vcovXiEta = arma::join_cols(
+    arma::join_rows(varXi, covXiEta),
+    arma::join_rows(covXiEta.t(), varEta)
+  );
+
+  return vcovXiEta;
+}
+
+
 inline arma::mat make_Oi(unsigned k, unsigned numXis) {
   arma::mat Oi = arma::eye<arma::mat>(numXis, numXis);
   Oi.diag() = arma::join_cols(arma::zeros<arma::vec>(k), arma::ones<arma::vec>(numXis - k));
