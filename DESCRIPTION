@@ -63,5 +63,5 @@ Imports: Rcpp, purrr, stringr, lavaan, rlang, MplusAutomation, nlme, dplyr,
 Depends: 
     R (>= 4.1.0)
 URL: https://modsem.org
-Suggests: knitr, rmarkdown, ggpubr
+Suggests: knitr, rmarkdown, ggpubr, RColorBrewer
 VignetteBuilder: knitr
