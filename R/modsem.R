@@ -123,7 +123,7 @@ modsem <- function(model.syntax = NULL,
 
   if (is.null(data)) {
     stop2("No data provided")
-  } else if (!is.data.frame(data)) {
+  } else {
     data <- as.data.frame(data)
   }
 

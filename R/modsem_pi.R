@@ -247,8 +247,7 @@ modsem_pi <- function(model.syntax = NULL,
     return(est)
   }
 
-  if (!is.data.frame(data))
-    data <- as.data.frame(data)
+  data <- as.data.frame(data)
 
   if (rcs) { # use reliability-correct single items?
     if (!is.null(rcs.choose))
