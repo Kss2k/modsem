@@ -469,7 +469,7 @@ modsem_da <- function(model.syntax = NULL,
         )
     )
 
-  cont.cols <- setdiff(colnames(data), c(cluster, group))
+  cont.cols <- setdiff(colnames(data), c(cluster, group, sampling.weights))
 
   if (args$center.data)
     data[cont.cols] <- lapply(data[cont.cols], FUN = centerIfNumeric, scaleFactor = FALSE)

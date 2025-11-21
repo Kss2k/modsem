@@ -13,6 +13,7 @@ oneInt2$weights <- rnorm(NROW(oneInt2), mean = 1, sd = 0.2)
 oneInt2$group   <- sample(2, NROW(oneInt2), replace = TRUE)
 
 testthat::expect_no_condition({
+  fit.lms.h0.std <- modsem(m0, oneInt2, method = "lms", sampling.weights = "weights", standardize.data = TRUE)
   fit.lms.h0 <- modsem(m0, oneInt2, method = "lms", sampling.weights = "weights")
   fit.qml.h0 <- modsem(m0, oneInt2, method = "qml", sampling.weights = "weights")
   fit.lms.h0.mg1 <- modsem(m0, oneInt2, method = "lms", group = "group", sampling.weights = "weights", sampling.weights.normalization = "total")
