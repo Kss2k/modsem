@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">modsem</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.14</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.15</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -81,7 +81,7 @@
     
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://modsem.org" class="external-link">modsem</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; This is modsem (1.0.14). Please report any bugs!</span></span></code></pre></div>
+<span><span class="co">#&gt; This is modsem (1.0.15). Please report any bugs!</span></span></code></pre></div>
 <div class="section level2">
 <h2 id="non-centered-interaction-terms">Non-centered interaction terms<a class="anchor" aria-label="anchor" href="#non-centered-interaction-terms"></a>
 </h2>
@@ -114,7 +114,7 @@ centered (i.e., they have non-zero means).</p>
 <span><span class="va">est</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">tpb</span>, <span class="va">TPB</span>, method <span class="op">=</span> <span class="st">"lms"</span>, nodes <span class="op">=</span> <span class="fl">32</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (1.0.14) ended normally after 29 iterations</span></span>
+<span><span class="co">#&gt; modsem (1.0.15) ended normally after 29 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                        LMS</span></span>
 <span><span class="co">#&gt;   Optimization method                       EMA-NLMINB</span></span>
@@ -258,7 +258,7 @@ centered, and we can see that the coefficients <code>BEH~PBC</code> and
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est</span>, standardized <span class="op">=</span> <span class="cn">TRUE</span>, centered <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (1.0.14) ended normally after 29 iterations</span></span>
+<span><span class="co">#&gt; modsem (1.0.15) ended normally after 29 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                        LMS</span></span>
 <span><span class="co">#&gt;   Optimization method                       EMA-NLMINB</span></span>
@@ -415,8 +415,8 @@ model all together.</p>
 <span><span class="co">#&gt; 16     INT  ~     ATT           1 0.213     0.026   8.158       0    0.162</span></span>
 <span><span class="co">#&gt; 17     INT  ~      SN           1 0.177     0.028   6.390       0    0.122</span></span>
 <span><span class="co">#&gt; 18     INT  ~     PBC           1 0.218     0.030   7.351       0    0.160</span></span>
-<span><span class="co">#&gt; 19     BEH  ~     PBC           1 0.232     0.022  10.407       0    0.189</span></span>
-<span><span class="co">#&gt; 20     BEH  ~     INT           1 0.189     0.025   7.677       0    0.141</span></span>
+<span><span class="co">#&gt; 19     BEH  ~     PBC           1 0.232     0.022  10.408       0    0.189</span></span>
+<span><span class="co">#&gt; 20     BEH  ~     INT           1 0.189     0.025   7.679       0    0.141</span></span>
 <span><span class="co">#&gt; 21     BEH  ~ INT:PBC           1 0.205     0.018  11.310       0    0.169</span></span>
 <span><span class="co">#&gt; 22    pbc1 ~~    pbc1           1 0.144     0.008  18.396       0    0.129</span></span>
 <span><span class="co">#&gt; 23    pbc2 ~~    pbc2           1 0.160     0.007  21.442       0    0.145</span></span>
