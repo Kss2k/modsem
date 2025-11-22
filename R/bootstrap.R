@@ -62,7 +62,7 @@ bootstrap_modsem.modsem_pi <- function(model, FUN = "coef", ...) {
     model
   }
 
-  fun.mod <- \(fit) do.call(FUN, list(wrapLavFit(fit)))
+  fun.mod <- \(fit, ...) do.call(FUN, list(wrapLavFit(fit), ...))
 
   lavaan::bootstrapLavaan(extract_lavaan(model), FUN = fun.mod, ...)
 }
