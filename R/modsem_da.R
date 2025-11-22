@@ -616,6 +616,7 @@ modsem_da <- function(model.syntax = NULL,
 
   # Arguments
   est$args <- args
+  attr(est, "isRCS_Model") <- rcs
   class(est) <- c("modsem_da", "modsem")
 
   # Check the results

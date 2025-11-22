@@ -52,7 +52,9 @@ bootstrap_modsem <- function(model = modsem, FUN, ...) {
 #' bootstrap_modsem(fit_pi, FUN = coef, R = 10L)
 #'
 #' @export
-bootstrap_modsem.modsem_pi <- function(model, FUN, ...) {
+bootstrap_modsem.modsem_pi <- function(model, FUN = "coef", ...) {
+  checkWarnRCS(model)
+
   wrapLavFit <- function(lavfit) {
     model$lavaan       <- lavfit
     model$coefParTable <- lavaan::parameterEstimates(lavfit)
@@ -60,7 +62,7 @@ bootstrap_modsem.modsem_pi <- function(model, FUN, ...) {
     model
   }
 
-  fun.mod <- \(fit) FUN(wrapLavFit(fit))
+  fun.mod <- \(fit) do.call(FUN, list(wrapLavFit(fit)))
 
   lavaan::bootstrapLavaan(extract_lavaan(model), FUN = fun.mod, ...)
 }
@@ -105,6 +107,8 @@ bootstrap_modsem.modsem_da <- function(model,
                                        calc.se = FALSE,
                                        optimize = FALSE,
                                        ...) {
+  checkWarnRCS(model)
+
   type <- tolower(type)
   type <- match.arg(type)
 
@@ -353,4 +357,13 @@ resample <- function(df, n.out = NROW(df), cluster = NULL, replace = TRUE) {
   purrr::list_rbind(
     lapply(clusters.sample, FUN = \(ci) df.orig[cluster==ci, , drop=FALSE])
   )
+}
+
+
+checkWarnRCS <- function(model) {
+  isRCS_Model <- attr(model, "isRCS_Model")
+
+  warnif(!is.null(isRCS_Model) && isRCS_Model,
+         "bootstrapping a model with estimated with `rcs=TRUE` directly, will\n",
+         "generate naive standard errors! Use `bootstrap_modsem.function()` instead!")
 }

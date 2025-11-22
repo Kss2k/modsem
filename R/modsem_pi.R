@@ -381,7 +381,12 @@ modsem_pi <- function(model.syntax = NULL,
     modelSpec$coefParTable <- coefParTable
   }
 
-  structure(modelSpec, class = c("modsem_pi", "modsem"), method = method)
+  structure(
+    modelSpec,
+    class = c("modsem_pi", "modsem"),
+    method = method,
+    isRCS_Model = rcs
+  )
 }
 
 

@@ -57,3 +57,13 @@ print(coef)
 
 cat("Standard Errors: \n")
 print(se)
+
+
+for (method in c("lms", "dblcent")) {
+  fit_rcs <- modsem(m1, oneInt, rcs = TRUE, method = method)
+
+  testthat::expect_warning(
+    bootstrap_modsem(fit_rcs, R = 10L),
+    regexp = "bootstrapping a model .*rcs=TRUE.*naive"
+  )
+}
