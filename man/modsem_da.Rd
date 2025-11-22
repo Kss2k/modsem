@@ -204,7 +204,7 @@ optimization steps when needed. Default is \code{"EM"}.}
 \item{em.control}{a list of control parameters for the EM algorithm. See \code{\link{default_settings_da}} for defaults.}
 
 \item{ordered}{Variables to be treated as ordered. Categories for ordered variables
-are scored, transforming them from ordinal scale to interval scale (\href{https://doi.org/10.1155/2014/304213}{Chen & Wang, 2014}).
+are scored, transforming them from ordinal scale to interval scale (\href{https://onlinelibrary.wiley.com/doi/10.1155/2014/304213}{Chen & Wang, 2014}).
 The underlying continous distributions
 are estimated analytically for indicators of exogenous variables, and using an ordered
 probit regression for indicators of endogenous variables. Factor scores are used as
