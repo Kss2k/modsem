@@ -785,6 +785,7 @@ modsemPICluster <- function(model.syntax = NULL,
   stopif(length(syntaxBlocks) != length(levelHeaders), "Different number of blocks than level headers!")
 
   data$ROW_IDENTIFIER_ <- seq_len(nrow(data))
+  has.interaction      <- FALSE
   newSyntax <- ""
   newData <- NULL
 
@@ -792,7 +793,11 @@ modsemPICluster <- function(model.syntax = NULL,
     syntaxBlock <- syntaxBlocks[[i]]
     levelHeader <- levelHeaders[[i]]
 
-    if (!NROW(modsemify(syntaxBlock))) next
+    parsedBlock <- modsemify(syntaxBlock)
+    if (!NROW(parsedBlock)) next
+
+    if (any(grepl(":", parsedBlock$rhs)))
+        has.interaction <- TRUE
 
     newBlockSyntax <- get_pi_syntax(
       model.syntax = syntaxBlock,
@@ -867,7 +872,9 @@ modsemPICluster <- function(model.syntax = NULL,
     )
   }
 
-  modelSpec <- list(syntax = newSyntax, data = newData)
+  modelSpec <- list(syntax = newSyntax, data = newData,
+                    has.interaction = has.interaction)
+
   if (run) {
     lavWrapper <- getWarningWrapper(silent = suppress.warnings.lavaan)
     lavEst <- tryCatch({

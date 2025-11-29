@@ -390,3 +390,36 @@ modsem_nobs <- function(object, ...) {
 modsem_predict <- function(object, ...) {
   UseMethod("modsem_predict")
 }
+
+
+#' Check if model object has interaction terms
+#'
+#' @param object An object of class \code{modsem_pi} or \code{modsem_da},
+#'   respectively.
+#'
+#' @return Logical. \code{TRUE} if the model has an interaction term,
+#'   otherwise it returns \code{FALSE}.
+#'
+#' @examples
+#' m1 <- '
+#' # Outer Model
+#'   X =~ x1 + x2 + x3
+#'   Z =~ z1 + z2 + z3
+#'   Y =~ y1 + y2 + y3
+#'
+#' # Inner Model
+#'   Y ~ X + Z + X:Z
+#' '
+#'
+#' est_dca <- modsem(m1, oneInt, method = "dblcent")
+#' is_interaction_model(est_dca)
+#'
+#' \dontrun{
+#' est_lms <- modsem(m1, oneInt, method = "lms")
+#' is_interaction_model(est_lms)
+#' }
+#'
+#' @export
+is_interaction_model <- function(object) {
+  UseMethod("is_interaction_model")
+}

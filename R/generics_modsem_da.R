@@ -61,7 +61,7 @@ parameter_estimates.modsem_da <- function(object, high.order.as.measr = TRUE, ..
 #' summary(est1, ci = TRUE, scientific = TRUE)
 #' }
 summary.modsem_da <- function(object,
-                              H0 = TRUE,
+                              H0 = is_interaction_model(object),
                               verbose = interactive(),
                               r.squared = TRUE,
                               fit = FALSE,
@@ -931,4 +931,10 @@ modsem_predict.modsem_da <- function(object, standardized = FALSE, H0 = TRUE, ne
   }
 
   if (mgroup) out else out[[1L]]
+}
+
+
+#' @export
+is_interaction_model.modsem_da <- function(object) {
+  isTRUE(object$model$info$has.interaction)
 }

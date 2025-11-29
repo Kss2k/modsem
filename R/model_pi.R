@@ -11,7 +11,7 @@ parseLavaan <- function(model.syntax = NULL,
   else if (length(model.syntax) > 1)
     stop2("The provided model syntax is not of length 1")
 
-  parTable <- modsemify(model.syntax)
+  parTable        <- modsemify(model.syntax)
   structuralExprs <- parTable[parTable$op == "~",]
   measureExprs    <- parTable[parTable$op %in% c("=~", "<~"), ]
 
@@ -77,6 +77,8 @@ parseLavaan <- function(model.syntax = NULL,
 
                     oVs = oVs,
                     lVs = lVs,
+
+                    has.interaction     = length(prodNames) > 0L,
                     prodNames           = prodNamesCleaned,
                     elementsInProdNames = elementsInProds,
                     relDfs = relDfs,
