@@ -9,7 +9,7 @@
 \usage{
 bootstrap_modsem(model = modsem, FUN, ...)
 
-\method{bootstrap_modsem}{modsem_pi}(model, FUN, ...)
+\method{bootstrap_modsem}{modsem_pi}(model, FUN = "coef", ...)
 
 \method{bootstrap_modsem}{modsem_da}(
   model,

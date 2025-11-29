@@ -16,7 +16,7 @@ printModsemPIHeader <- function(approach) {
 #' @rdname summary
 #' @export
 summary.modsem_pi <- function(object,
-                              H0 = TRUE,
+                              H0 = is_interaction_model(object),
                               r.squared = TRUE,
                               adjusted.stat = FALSE,
                               digits = 3,
@@ -384,4 +384,10 @@ print.modsem_pi <- function(x, ...) {
 #' @export
 modsem_predict.modsem_pi <- function(object, ...) {
   lavaan::predict(extract_lavaan(object), ...)
+}
+
+
+#' @export
+is_interaction_model.modsem_pi <- function(object) {
+  isTRUE(object$has.interaction)
 }
