@@ -684,9 +684,9 @@ plot_surface <- function(x, z, y, model,
       gamma_zz * z ^ 2
   }
 
-  proj_y <- outer(vals_x, vals_z, FUN = calcExpectedY)
+  proj_y <- t(outer(vals_x, vals_z, FUN = calcExpectedY))
 
-  # ---- gridline setup: use surface-contours drawn along x and y ----
+  # gridline setup: use surface-contours drawn along x and y
   # We specify regular spacing by "size". Plotly draws these as lines on the surface.
   nx <- max(1L, as.integer(grid_nx))
   ny <- max(1L, as.integer(grid_ny))
