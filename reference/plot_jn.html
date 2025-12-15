@@ -71,6 +71,7 @@
 <span>  standardized <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  xz <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  greyscale <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  plot.jn.points <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -132,6 +133,10 @@ the sd.line falls outside of <code>[min_z, max_z]</code>.</p></dd>
 <dd><p>Logical. If <code>TRUE</code> the plot is plotted in greyscale.</p></dd>
 
 
+<dt id="arg-plot-jn-points">plot.jn.points<a class="anchor" aria-label="anchor" href="#arg-plot-jn-points"></a></dt>
+<dd><p>Logical. If <code>TRUE</code>, omit the numeric annotations for the JN-points from the plot.</p></dd>
+
+
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
 <dd><p>Additional arguments (currently not used).</p></dd>
 
@@ -166,6 +171,8 @@ the sd.line falls outside of <code>[min_z, max_z]</code>.</p></dd>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">est</span> <span class="op">&lt;-</span> <span class="fu"><a href="modsem.html">modsem</a></span><span class="op">(</span><span class="va">m1</span>, data <span class="op">=</span> <span class="fu">lavaan</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/lavaan/man/HolzingerSwineford1939.html" class="external-link">HolzingerSwineford1939</a></span>, method <span class="op">=</span> <span class="st">"ca"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">plot_jn</span><span class="op">(</span>x <span class="op">=</span> <span class="st">"speed"</span>, z <span class="op">=</span> <span class="st">"textual"</span>, y <span class="op">=</span> <span class="st">"visual"</span>, model <span class="op">=</span> <span class="va">est</span>, max_z <span class="op">=</span> <span class="fl">6</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Johnson-Neyman Interval:</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   When textual is outside the interval [-1.52, 5.20], the slope of speed is p &lt; .05.</span>
 <span class="r-plt img"><img src="plot_jn-1.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 </code></pre></div>
