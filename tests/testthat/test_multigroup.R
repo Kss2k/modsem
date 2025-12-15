@@ -59,6 +59,7 @@ standardized_estimates(est, correction = TRUE)
 standardized_estimates(est, correction = TRUE, std.errors = "delta")
 summary(est, standardized = TRUE, center = TRUE)
 plot_jn(x = "X", z = "Z", y = "Y", model = est)
+plot_jn(x = "X", z = "Z", y = "Y", model = est, plot.jn.points = FALSE)
 plot_interaction(x = "X", z = "Z", y = "Y", model = est, vals_z = c(1, 0))
 testthat::expect_warning(
   plot_surface(x = "X", z = "Z", y = "Y", model = est),

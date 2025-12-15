@@ -173,6 +173,7 @@ plot_interaction <- function(x, z, y, model, vals_x = seq(-3, 3, .001),
 #' @param standardized Should coefficients be standardized beforehand?
 #' @param xz The name of the interaction term. If not specified, it will be created using \code{x} and \code{z}.
 #' @param greyscale Logical. If \code{TRUE} the plot is plotted in greyscale.
+#' @param plot.jn.points Logical. If \code{TRUE}, omit the numeric annotations for the JN-points from the plot.
 #' @param ... Additional arguments (currently not used).
 #'
 #' @return A \code{ggplot} object showing the interaction plot with regions of significance.
@@ -209,26 +210,28 @@ plot_interaction <- function(x, z, y, model, vals_x = seq(-3, 3, .001),
 plot_jn <- function(x, z, y, model, min_z = -3, max_z = 3,
                     sig.level = 0.05, alpha = 0.2, detail = 1000,
                     sd.line = 2, standardized = FALSE, xz = NULL,
-                    greyscale = FALSE, ...) {
+                    greyscale = FALSE, plot.jn.points = TRUE, ...) {
 
   stopif(!inherits(model, c("modsem_da", "modsem_mplus", "modsem_pi", "lavaan")),
          "model must be of class 'modsem_pi', 'modsem_da', 'modsem_mplus', or 'lavaan'")
 
-  if (standardized) {
-    parTable <- standardized_estimates(model, correction = TRUE)
-  } else parTable <- parameter_estimates(model)
+  if (standardized) parTable <- standardized_estimates(model, correction = TRUE)
+  else              parTable <- parameter_estimates(model)
 
+  group.label <- modsem_inspect(model, what = "group.label")
   parTable <- addMissingGroups(getMissingLabels(parTable))
 
   plots <- list()
   for (g in getGroupsParTable(parTable)) {
+    label.g    <- if (length(group.label)) group.label[[g]] else NULL
     parTable.g <- parTable[parTable$group == g, , drop = FALSE]
 
     plots[[g]] <- plotJN_Group(
       x = x, z = z, y = y, parTable = parTable.g, model = model,
       min_z = min_z, max_z = max_z, sig.level = sig.level,
       alpha = alpha, detail = detail, sd.line = sd.line,
-      standardized = standardized, xz = xz, greyscale = greyscale, ...
+      standardized = standardized, xz = xz, greyscale = greyscale,
+      plot.jn.points = plot.jn.points, group = g, group.label = label.g, ...
     )
   }
 
@@ -245,14 +248,14 @@ plot_jn <- function(x, z, y, model, min_z = -3, max_z = 3,
   }
 
   if (requireNamespace("ggpubr", quietly = TRUE)) { # Make R CMD check happy
-    group.label <- modsem_inspect(model, what = "group.label")
     ggpubr::ggarrange(plotlist = plots, labels = group.label)
   } else stop2("The `ggpubr` package is needed to arrange Johnson-Neyman plots in multigroup models!\n")
 }
 
 
 plotJN_Group <- function(x, z, y, parTable, model, min_z, max_z, sig.level, alpha,
-                         detail, sd.line, standardized, xz, greyscale, ...) {
+                         detail, sd.line, standardized, xz, greyscale,
+                         plot.jn.points = TRUE, group = NULL, group.label = NULL, ...) {
   if (is.null(xz))
     xz <- paste(x, z, sep = ":")
 
@@ -308,9 +311,11 @@ plotJN_Group <- function(x, z, y, parTable, model, min_z, max_z, sig.level, alph
   disc <- B^2 - 4 * A * C
 
   significant_everywhere <- FALSE
+  jn_points <- numeric(0)
   if (A == 0) {
     if (B != 0) {
       z_jn <- -C / B; z_lower <- z_jn; z_upper <- z_jn
+      jn_points <- z_jn
     } else {
       message("No regions where the effect transitions between significant and non-significant.")
       significant_everywhere <- TRUE
@@ -320,10 +325,30 @@ plotJN_Group <- function(x, z, y, parTable, model, min_z, max_z, sig.level, alph
     significant_everywhere <- TRUE
   } else if (disc == 0) {
     z_jn <- -B / (2 * A); z_lower <- z_jn; z_upper <- z_jn
+    jn_points <- z_jn
   } else {
     z1 <- (-B + sqrt(disc)) / (2 * A)
     z2 <- (-B - sqrt(disc)) / (2 * A)
     z_lower <- min(z1, z2); z_upper <- max(z1, z2)
+    jn_points <- c(z_lower, z_upper)
+  }
+  jn_points <- jn_points[is.finite(jn_points)]
+
+  if (length(jn_points) && !significant_everywhere) {
+    format_num <- function(val) formatC(val, format = "f", digits = 2)
+    format_sig <- function(val) sub("^0\\.", ".", formatC(val, format = "f", digits = 2))
+
+    interval <- sprintf("[%s, %s]", format_num(min(jn_points)), format_num(max(jn_points)))
+
+    if (!is.null(group.label)) {
+      header <- sprintf("Johnson-Neyman Interval (group %s):", group.label)
+    } else {
+      header <- "Johnson-Neyman Interval:"
+    }
+
+    body <- sprintf("When %s is outside the interval %s, the slope of %s is p < %s.",
+                    z, interval, x, format_sig(sig.level))
+    message(sprintf("%s\n  %s", header, body))
   }
 
   # grid and simple slopes
@@ -412,31 +437,22 @@ plotJN_Group <- function(x, z, y, parTable, model, min_z, max_z, sig.level, alph
 
   # only show JN lines if there is a transition in the plotted window
   has_transition_in_window <- any(diff(as.integer(df_plot$significant)) != 0, na.rm = TRUE)
-  if (!significant_everywhere && has_transition_in_window) {
-    top_y <- suppressWarnings(max(df_plot$slope[is.finite(df_plot$slope)], na.rm = TRUE))
-    if (!is.finite(top_y)) top_y <- y_range[2]
+  if (!significant_everywhere && has_transition_in_window && length(jn_points)) {
+    jn_points_in_window <- jn_points[jn_points >= min_z & jn_points <= max_z]
+    if (length(jn_points_in_window)) {
+      top_y <- suppressWarnings(max(df_plot$slope[is.finite(df_plot$slope)], na.rm = TRUE))
+      if (!is.finite(top_y)) top_y <- y_range[2]
 
-    hline_colour <- if (greyscale) "black" else "red"
+      hline_colour <- if (greyscale) "black" else "red"
 
-    if (exists("z_jn")) {
-      if (is.finite(z_jn) && z_jn >= min_z && z_jn <= max_z) {
-        p <- p + ggplot2::geom_vline(xintercept = z_jn, linetype = "dashed", color = hline_colour) +
-          ggplot2::annotate("text", x = z_jn, y = top_y,
-                            label = paste("JN point:", round(z_jn, 2)),
-                            hjust = -0.1, vjust = 1, color = "black")
-      }
-    } else {
-      if (is.finite(z_lower) && z_lower >= min_z && z_lower <= max_z) {
-        p <- p + ggplot2::geom_vline(xintercept = z_lower, linetype = "dashed", color = hline_colour) +
-          ggplot2::annotate("text", x = z_lower, y = top_y,
-                            label = paste("JN point:", round(z_lower, 2)),
-                            hjust = -0.1, vjust = 1, color = "black")
-      }
-      if (is.finite(z_upper) && z_upper >= min_z && z_upper <= max_z) {
-        p <- p + ggplot2::geom_vline(xintercept = z_upper, linetype = "dashed", color = hline_colour) +
-          ggplot2::annotate("text", x = z_upper, y = top_y,
-                            label = paste("JN point:", round(z_upper, 2)),
-                            hjust = -0.1, vjust = 1, color = "black")
+      for (point in jn_points_in_window) {
+        p <- p + ggplot2::geom_vline(xintercept = point, linetype = "dashed", color = hline_colour)
+
+        if (plot.jn.points) {
+          p <- p + ggplot2::annotate("text", x = point, y = top_y,
+                                     label = paste("JN point:", round(point, 2)),
+                                     hjust = -0.1, vjust = 1, color = "black")
+        }
       }
     }
   }
