@@ -18,6 +18,7 @@ plot_jn(
   standardized = FALSE,
   xz = NULL,
   greyscale = FALSE,
+  plot.jn.points = TRUE,
   ...
 )
 }
@@ -48,6 +49,8 @@ the sd.line falls outside of \code{[min_z, max_z]}.}
 \item{xz}{The name of the interaction term. If not specified, it will be created using \code{x} and \code{z}.}
 
 \item{greyscale}{Logical. If \code{TRUE} the plot is plotted in greyscale.}
+
+\item{plot.jn.points}{Logical. If \code{TRUE}, omit the numeric annotations for the JN-points from the plot.}
 
 \item{...}{Additional arguments (currently not used).}
 }
