@@ -81,6 +81,50 @@ test_that("analytic thetaDelta Hessian matches numeric finite differences", {
                         symmetric = symmetric)
 })
 
+test_that("analytic gammaXi Hessian matches numeric finite differences", {
+  inputs <- lms_model_inputs()
+  Gx <- inputs$modelR$matrices$gammaXi
+  dims <- dim(Gx)
+  n_r <- if (length(dims)) dims[1] else length(Gx)
+  n_c <- if (length(dims) > 1) dims[2] else 1L
+  skip_if(n_r == 0L || n_c == 0L, "gammaXi matrix is empty")
+  rows <- as.integer(c(0L, min(1L, n_r - 1L)))
+  cols <- as.integer(c(0L, min(1L, n_c - 1L)))
+  symmetric <- rep(0L, length(rows))
+  compare_block_hessian(block_id = 10L, rows = rows, cols = cols,
+                        symmetric = symmetric)
+})
+
+test_that("analytic gammaEta Hessian matches numeric finite differences", {
+  inputs <- lms_model_inputs()
+  Ge <- inputs$modelR$matrices$gammaEta
+  dims <- dim(Ge)
+  n_r <- if (length(dims)) dims[1] else length(Ge)
+  n_c <- if (length(dims) > 1) dims[2] else 1L
+  skip_if(n_r == 0L || n_c == 0L, "gammaEta matrix is empty")
+  rows <- as.integer(c(0L, min(1L, n_r - 1L)))
+  cols <- as.integer(c(0L, min(1L, n_c - 1L)))
+  symmetric <- rep(0L, length(rows))
+  compare_block_hessian(block_id = 11L, rows = rows, cols = cols,
+                        symmetric = symmetric)
+})
+
+test_that("analytic beta0 Hessian matches numeric finite differences", {
+  inputs <- lms_model_inputs()
+  beta0 <- inputs$modelR$matrices$beta0
+  dims <- dim(beta0)
+  n_r <- if (length(dims)) dims[1] else length(beta0)
+  n_c <- if (length(dims) > 1) dims[2] else 1L
+  skip_if(n_r == 0L || n_c == 0L, "beta0 matrix is empty")
+  n_test_r <- min(2L, n_r)
+  n_test_c <- min(2L, n_c)
+  rows <- as.integer(rep(seq_len(n_test_r) - 1L, times = n_test_c))
+  cols <- as.integer(rep(seq_len(n_test_c) - 1L, each = n_test_r))
+  symmetric <- rep(0L, length(rows))
+  compare_block_hessian(block_id = 9L, rows = rows, cols = cols,
+                        symmetric = symmetric)
+})
+
 test_that("numeric A Hessian matches central difference baseline", {
   inputs <- lms_model_inputs()
   A <- inputs$modelR$matrices$A
