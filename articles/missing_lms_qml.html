@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">modsem</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.15</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.16</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -81,7 +81,7 @@
     
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://modsem.org" class="external-link">modsem</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; This is modsem (1.0.15). Please report any bugs!</span></span></code></pre></div>
+<span><span class="co">#&gt; This is modsem (1.0.16). Please report any bugs!</span></span></code></pre></div>
 <div class="section level2">
 <h2 id="options-for-handling-missing-values">Options for Handling Missing Values<a class="anchor" aria-label="anchor" href="#options-for-handling-missing-values"></a>
 </h2>
@@ -118,7 +118,7 @@ generate some missing data using the <code>oneInt</code> dataset.</p>
 <span><span class="va">lms_fiml</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m1</span>, <span class="va">oneInt2</span>, method <span class="op">=</span> <span class="st">"lms"</span>, missing <span class="op">=</span> <span class="st">"fiml"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">lms_fiml</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (1.0.15) ended normally after 25 iterations</span></span>
+<span><span class="co">#&gt; modsem (1.0.16) ended normally after 25 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                        LMS</span></span>
 <span><span class="co">#&gt;   Optimization method                       EMA-NLMINB</span></span>
@@ -234,7 +234,7 @@ performed.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">qml_impute</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Imputing missing values. Consider using the `modsem_mimpute()` function!</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (1.0.15) ended normally after 55 iterations</span></span>
+<span><span class="co">#&gt; modsem (1.0.16) ended normally after 55 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                        QML</span></span>
 <span><span class="co">#&gt;   Optimization method                           NLMINB</span></span>
@@ -336,7 +336,7 @@ can be performed both for the LMS and QML approaches, using the
 <code class="sourceCode R"><span><span class="va">lms_mimpute</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem_mimpute.html">modsem_mimpute</a></span><span class="op">(</span><span class="va">m1</span>, <span class="va">oneInt2</span>, method <span class="op">=</span> <span class="st">"lms"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">lms_mimpute</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (1.0.15) ended normally after 355 iterations</span></span>
+<span><span class="co">#&gt; modsem (1.0.16) ended normally after 355 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                        LMS</span></span>
 <span><span class="co">#&gt;   Optimization method                       EMA-NLMINB</span></span>
