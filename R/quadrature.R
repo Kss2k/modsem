@@ -32,10 +32,10 @@ quadrature <- function(m, k,
   nodes <- singleDimGauss$x
   weights <- singleDimGauss$w
 
-  nodes <- lapply(seq_len(k), function(k) nodes) |>
-    expand.grid() |> as.matrix()
-  weights <- lapply(seq_len(k), function(k) weights) |>
-    expand.grid() |> apply(MARGIN = 1, prod)
+  nodes_list   <- replicate(k, nodes, simplify = FALSE)
+  weight_list  <- replicate(k, weights, simplify = FALSE)
+  nodes   <- do.call(expand.grid, nodes_list) |> as.matrix()
+  weights <- Reduce(kronecker, rev(weight_list))
 
   nodes <- sqrt(2) * nodes
   weights <- weights * pi ^ (-k/2)
@@ -55,7 +55,6 @@ quadrature <- function(m, k,
 
 
 adaptiveGaussQuadrature <- function(fun,
-                                    collapse = \(x) x, # function to collapse the results, if 'relevant'
                                     a = -7,
                                     b = 7,
                                     m = 32,
@@ -65,6 +64,7 @@ adaptiveGaussQuadrature <- function(fun,
                                     node.max = 1000,
                                     tol = 1e-12,
                                     mdiff.tol = 2,
+                                    secondary.pruning = TRUE,
                                     ...) {
   if (k == 0 || m == 0)
     return(list(n = matrix(0), w = 1, f = NA, m = 1, k = 1))
@@ -72,13 +72,14 @@ adaptiveGaussQuadrature <- function(fun,
   stopif(tol >= 1 || tol < 0,
          "`adaptive.quad.tol` must be in the boundary `[0, 1)`")
 
+  if (is.null(m.ceil) || all(is.na(m.ceil)))
+    m.ceil <- m + m / 2
+
   if (k <= 1) {
     out <- adaptiveGaussQuadratureK(
-      fun = fun, collapse = collapse,
-      a = a, b = b, m = m, m.ceil = m.ceil,
+      fun = fun, a = a, b = b, m = m, m.ceil = m.ceil,
       k = 1, K = k, iter = 1, iter.max = iter.max,
-      node.max = node.max, tol = tol,
-      mdiff.tol = mdiff.tol, ...
+      node.max = node.max, tol = tol, mdiff.tol = mdiff.tol, ...
     )
 
     return(out)
@@ -94,11 +95,9 @@ adaptiveGaussQuadrature <- function(fun,
 
   for (i in seq_len(k)) {
     QUAD <- adaptiveGaussQuadratureK(
-      fun = fun, collapse = collapse,
-      a = a[i], b = b[i], m = m, m.ceil = m.ceil[i],
+      fun = fun, a = a[i], b = b[i], m = m, m.ceil = m.ceil[i],
       k = i, K = k, iter = 1, iter.max = iter.max,
-      node.max = node.max, tol = tol,
-      mdiff.tol = mdiff.tol, ...
+      node.max = node.max, tol = tol, mdiff.tol = mdiff.tol, ...
     )
 
     NODES[[i]]     <- QUAD$n[, i]
@@ -106,21 +105,29 @@ adaptiveGaussQuadrature <- function(fun,
     new.ceils[[i]] <- QUAD$m.ceil
   }
 
-  quadn <- as.matrix(expand.grid(NODES))
-  quadw <- apply(expand.grid(WEIGHTS), MARGIN = 1, prod)
+  quadn <- do.call(expand.grid, NODES) |> as.matrix()
+  quadw <- Reduce(kronecker, rev(WEIGHTS))
   quadf <- fun(quadn, ...)
-  quadW <- matrix(quadw, nrow = nrow(quadf), ncol = length(quadw), byrow = TRUE)
+
+  if (secondary.pruning) {
+    pruned <- pruneQuadratureNodes(
+      quadw = quadw, quadn = quadn, quadf = quadf,
+      a = a, b = b, tol = tol
+    )
+
+    quadw  <- pruned$quadw
+    quadn  <- pruned$quadn
+    quadf  <- pruned$quadf
+  }
 
   list(n = quadn,
        w = quadw,
-       W = quadW,
        F = quadf,
        m.ceil = new.ceils)
 }
 
 
 adaptiveGaussQuadratureK <- function(fun,
-                                     collapse = \(x) x, # function to collapse the results, if 'relevant'
                                      a = -7,
                                      b = 7,
                                      m = 32,
@@ -147,58 +154,19 @@ adaptiveGaussQuadratureK <- function(fun,
   } else quadn <- quad$n
 
   quadf <- fun(quadn, ...)
-  quadw <- matrix(quad$w, ncol = length(quad$w), nrow = NROW(quadf), byrow = TRUE)
+  quadw <- quad$w
 
-  integral.full <- collapse(quadf * quadw)
+  pruned <- pruneQuadratureNodes(
+    quadw = quadw, quadn = quadn, quadf = quadf,
+    a = a, b = b, tol = tol
+  )
 
-  zeroInfoNodes <- apply(quadw * quadf, MARGIN=2, FUN = \(x) sum(x) <= .Machine$double.xmin)
-  nodesOutside  <- apply(quadn, MARGIN = 1, FUN = \(x) any(x < a | x > b))
-  isValidNode   <- !(zeroInfoNodes | nodesOutside)
-
-  quadn <- quadn[isValidNode, , drop = FALSE]
-  quadf <- quadf[, isValidNode, drop = FALSE]
-  quadw <- quadw[, isValidNode, drop = FALSE]
-
-  # vector of full-integral for thresholding
-  I.full <- integral.full
-
-  # current integral and error
-  I.cur <- collapse(quadf * quadw)
-  err   <- abs(I.cur - I.full)
-  m.cur <- nrow(quadn)
-  m.start  <- m.cur
-
-  # compute per-node contributions in one pass:
-  # c[j] = contribution of node j to the integral
-  contributions <- numeric(length=NCOL(quadf))
-  for (i in seq_len(NCOL(quadf))) {
-    I.sub <- collapse(quadf[, -i, drop=FALSE] * quadw[, -i, drop=FALSE])
-    contributions[[i]] <- abs(abs(I.sub) - abs(I.full))
-  }
-
-  # identify nodes trivially safe to remove
-  contrib.rank <- order(abs(contributions))
-  cumulative   <- cumsum(contributions[contrib.rank])
-  is.removable <- abs(cumulative) < tol * abs(I.full)
-
-  # reverse ordering of is.removable
-  is.removable <- is.removable[order(contrib.rank)]
-  removable    <- which(is.removable)
-
-  warnif(sum(contributions[removable]) > tol * abs(I.full),
-         "Something went wrong when pruning nodes:\n",
-         "More information than expected was lost!\n", .newline = TRUE)
-
-  stopif(length(removable) >= NROW(quadn), "Cannot remove all nodes!")
-
-  if (length(removable) > 0) {
-    # update everything by dropping them all at once
-    quadn <- quadn[-removable, , drop = FALSE]
-    quadf <- quadf[, -removable, drop = FALSE]
-    quadw <- quadw[, -removable, drop = FALSE]
-    # subtract their total from the current integral
-    I.cur  <- I.cur - sum(contributions[removable])
-  }
+  quadw  <- pruned$quadw
+  quadn  <- pruned$quadn
+  quadf  <- pruned$quadf
+  I.err  <- pruned$I.err
+  I.full <- pruned$I.full
+  I.cur  <- pruned$I.cur
 
   lower <- min(quadn)
   upper <- max(quadn)
@@ -221,7 +189,6 @@ adaptiveGaussQuadratureK <- function(fun,
 
     return(adaptiveGaussQuadratureK(
       fun = fun,
-      collapse = collapse,
       a = a,
       b = b,
       k = k,
@@ -243,22 +210,16 @@ adaptiveGaussQuadratureK <- function(fun,
                  iter, m.ceil, m, NROW(quadn), m.ceil - NROW(quadn)),
          .newline = TRUE)
 
-
-  # only need to calculate this before returning the final version
-  integral.reduced <- collapse(quadf * quadw)
-  error <- integral.reduced - integral.full
-
   list(n = quadn,
-       w = quadw[1, , drop = TRUE],
-       W = quadw,
+       w = quadw,
        F = quadf,
        k = k,
        m = nrow(quadn) ^ (1 / k),
 
        m.ceil   = m.ceil,
        iter     = iter,
-       error    = error,
-       integral = integral.reduced)
+       error    = I.err,
+       integral = I.cur)
 }
 
 
@@ -332,4 +293,91 @@ estMForNodesInRange <- function(k, a, b,
   root <- stats::uniroot(f, lower = lower, upper = upper, tol = tol)
 
   root$root
+}
+
+
+pruneQuadratureNodes <- function(quadw, quadn, quadf, a, b, tol) {
+  stopif(!is.numeric(quadw), "`quadw` must be numeric.")
+
+  weight_vec <- as.numeric(quadw)
+  n.nodes <- NCOL(quadf)
+  stopif(length(weight_vec) != n.nodes,
+         "`quadw` must have the same length as the number of quadrature nodes.")
+
+  n.input <- NROW(quadn)
+
+  # precompute weighted information to drop empty nodes early
+  weighted <- sweep(quadf, 2, weight_vec, "*")
+  zeroInfoNodes <- colSums(weighted) <= .Machine$double.xmin
+
+  lower_vec <- rep(a, length.out = NCOL(quadn))
+  upper_vec <- rep(b, length.out = NCOL(quadn))
+  lower_mat <- matrix(lower_vec, nrow = NROW(quadn), ncol = NCOL(quadn), byrow = TRUE)
+  upper_mat <- matrix(upper_vec, nrow = NROW(quadn), ncol = NCOL(quadn), byrow = TRUE)
+  nodesOutside <- rowSums((quadn < lower_mat) | (quadn > upper_mat)) > 0
+
+  isValidNode <- !(zeroInfoNodes | nodesOutside)
+
+  quadn <- quadn[isValidNode, , drop = FALSE]
+  quadf <- quadf[, isValidNode, drop = FALSE]
+  weight_vec <- weight_vec[isValidNode]
+  weighted <- weighted[, isValidNode, drop = FALSE]
+
+  # Calculate per node contributions
+  rs <- rowSums(weighted)
+
+  # guard against log(0) / division by 0
+  warnif(any(rs < 0), "Found negative quadrature node contributions, this is likely a bug!")
+  rs.safe <- pmax(rs, .Machine$double.xmin)
+
+  I.full <- sum(log(rs.safe))
+
+  # B[j,i] = log1p( - A[j,i] / rs[j] )
+  B <- log1p(-sweep(weighted, 1, rs.safe, "/"))
+  I.subvec <- I.full + colSums(B)
+
+  contributions <- abs(abs(I.subvec) - abs(I.full))
+
+  # identify nodes trivially safe to remove
+  contrib.rank <- order(abs(contributions))
+  cumulative   <- cumsum(contributions[contrib.rank])
+  is.removable <- abs(cumulative) < tol * abs(I.full)
+
+  # reverse ordering of is.removable
+  is.removable <- is.removable[order(contrib.rank)]
+  removable    <- which(is.removable)
+
+  warnif(sum(contributions[removable]) > tol * abs(I.full),
+         "Something went wrong when pruning nodes:\n",
+         "More information than expected was lost!\n", .newline = TRUE)
+
+  stopif(length(removable) >= NROW(quadn), "Cannot remove all nodes!")
+
+  I.cur <- I.full
+  I.err <- 0
+
+  if (length(removable) > 0) {
+    quadn <- quadn[-removable, , drop = FALSE]
+    quadf <- quadf[, -removable, drop = FALSE]
+    weighted <- weighted[, -removable, drop = FALSE]
+    weight_vec <- weight_vec[-removable]
+
+    I.cur  <- I.full - sum(contributions[removable])
+    I.err  <- I.full - I.cur
+  }
+
+  n.output  <- NROW(quadn)
+  n.removed <- n.input - n.output
+
+  list(
+    quadw   = weight_vec,
+    quadn   = quadn,
+    quadf   = quadf,
+    I.full  = I.full,
+    I.cur   = I.cur,
+    I.err   = I.err,
+    n.in    = n.input,
+    n.out   = n.output,
+    n.rm    = n.removed
+  )
 }

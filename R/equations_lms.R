@@ -43,8 +43,8 @@ estepLmsGroup <- function(submodel, lastQuad = NULL, recalcQuad = FALSE,
 
     quad <- tryCatch({
         adaptiveGaussQuadrature(
-          fun = densityLms, collapse = \(x) sum(log(rowSums(x))),
-          modFilled = submodel, data = data, a = a, b = b, m = m,
+          fun = densityLms, modFilled = submodel,
+          data = data, a = a, b = b, m = m,
           k = k, m.ceil = m.ceil, tol = adaptive.quad.tol,
         )
       }, error = function(e) {
@@ -65,16 +65,16 @@ estepLmsGroup <- function(submodel, lastQuad = NULL, recalcQuad = FALSE,
       return(estep.fixed)
     }
 
-    P <- quad$W * quad$F # P is already calculated
     V <- quad$n
     w <- quad$w
+    P <- sweep(quad$F, MARGIN = 2, STATS = w, FUN = "*")
 
   } else {
     quad <- if (submodel$quad$adaptive) lastQuad else submodel$quad
     V    <- quad$n
     w    <- quad$w
-    W    <- matrix(w, nrow = data$n, ncol = length(w), byrow = TRUE)
-    P    <- W * densityLms(V, modFilled = submodel, data = data)
+    densityVals <- densityLms(V, modFilled = submodel, data = data)
+    P    <- sweep(densityVals, MARGIN = 2, STATS = w, FUN = "*")
   }
 
   density        <- rowSums(P)
