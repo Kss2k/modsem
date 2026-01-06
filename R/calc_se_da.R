@@ -86,14 +86,122 @@ calcFIM_da <- function(model,
 }
 
 
-fdHESS <- function(pars, ...) {
-  tryCatch(
-    nlme::fdHess(pars = pars, ...)$Hessian,
-    error = function(e) {
-      warning2("Calculation of Hessian matrix failed...\n  ", e$message)
-      matrix(NA, nrow = length(pars), ncol = length(pars))
+fdHESS <- function(pars,
+                   fun,
+                   ...,
+                   .relStep = .Machine$double.eps^(1/5),
+                   .minAbsPar = 0,
+                   .switch.size = 120L,
+                   .mem.limit.bytes = 3 * 2 ^ 30) {
+  stopifnot(is.numeric(pars))
+
+  npar <- length(pars)
+  if (npar == 0)
+    return(matrix(0, 0, 0))
+
+  # mirror C++ heuristic: quadratic fit becomes computationally expensive for
+  # when there are many free parameters
+  m.ls <- 1 + 2 * npar + (npar * (npar - 1)) / 2
+  bytes.X <- m.ls * m.ls * 8
+  force.full.fd <- npar >= .switch.size || bytes.X > .mem.limit.bytes
+
+  computeFD <- function() {
+    tryCatch(
+      fdHessFullFD(
+        pars = pars,
+        fun = fun,
+        ...,
+        relStep = .relStep,
+        minAbsPar = .minAbsPar
+      ),
+      error = function(e) {
+        warning2("Finite-difference Hessian calculation failed...\n  ", e$message)
+        matrix(NA, nrow = npar, ncol = npar)
+      }
+    )
+  }
+
+  if (!force.full.fd) {
+    tryCatch(
+      nlme::fdHess(pars = pars, fun = fun, ..., .relStep = .relStep)$Hessian,
+      error = function(e) {
+        warning2(
+          "Switching to fallback finite-difference Hessian after nlme::fdHess error:\n  ",
+          e$message
+        )
+        computeFD()
+      }
+    )
+  } else computeFD()
+}
+
+
+fdHessFullFD <- function(pars, fun, ..., relStep, minAbsPar) {
+  npar <- length(pars)
+  par_names <- names(pars)
+
+  relStep <- rep(relStep, length.out = npar)
+  minAbsPar <- rep(minAbsPar, length.out = npar)
+  base <- as.numeric(pars)
+  names(base) <- par_names
+
+  incr <- pmax(abs(base), minAbsPar) * relStep
+  incr[incr == 0] <- relStep[incr == 0]
+
+  offset_template <- numeric(npar)
+  eval_fun <- function(offset) {
+    candidate <- base
+    candidate[] <- base + offset
+    fun(candidate, ...)
+  }
+
+  f0 <- eval_fun(offset_template)
+  Hess <- matrix(0, npar, npar)
+
+  for (i in seq_len(npar)) {
+    step_plus <- offset_template
+    step_minus <- offset_template
+    step_plus[i] <- incr[i]
+    step_minus[i] <- -incr[i]
+
+    f_ip <- eval_fun(step_plus)
+    f_im <- eval_fun(step_minus)
+
+    hi <- incr[i]
+    Hess[i, i] <- (f_ip + f_im - 2 * f0) / (hi * hi)
+  }
+
+  if (npar > 1) {
+    for (i in seq_len(npar - 1)) {
+      hi <- incr[i]
+      for (j in seq.int(i + 1, npar)) {
+        hj <- incr[j]
+
+        step <- offset_template
+        step[i] <- hi
+        step[j] <- hj
+        fpp <- eval_fun(step)
+
+        step[j] <- -hj
+        fpm <- eval_fun(step)
+
+        step[i] <- -hi
+        fmm <- eval_fun(step)
+
+        step[j] <- hj
+        fmp <- eval_fun(step)
+
+        hij <- (fpp - fpm - fmp + fmm) / (4 * hi * hj)
+        Hess[i, j] <- hij
+        Hess[j, i] <- hij
+      }
     }
-  )
+  }
+
+  if (!is.null(par_names))
+    dimnames(Hess) <- list(par_names, par_names)
+
+  Hess
 }
 
 
