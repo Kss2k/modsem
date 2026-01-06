@@ -43,8 +43,8 @@ estepLmsGroup <- function(submodel, lastQuad = NULL, recalcQuad = FALSE,
 
     quad <- tryCatch({
         adaptiveGaussQuadrature(
-          fun = densityLms, collapse = \(x) sum(log(rowSums(x))),
-          modFilled = submodel, data = data, a = a, b = b, m = m,
+          fun = densityLms, modFilled = submodel,
+          data = data, a = a, b = b, m = m,
           k = k, m.ceil = m.ceil, tol = adaptive.quad.tol,
         )
       }, error = function(e) {
