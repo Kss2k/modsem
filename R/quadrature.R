@@ -32,9 +32,10 @@ quadrature <- function(m, k,
   nodes <- singleDimGauss$x
   weights <- singleDimGauss$w
 
-  nodes_list <- replicate(k, nodes, simplify = FALSE)
-  nodes <- do.call(expand.grid, nodes_list) |> as.matrix()
-  weights <- Reduce(kronecker, replicate(k, weights, simplify = FALSE))
+  nodes_list   <- replicate(k, nodes, simplify = FALSE)
+  weight_list  <- replicate(k, weights, simplify = FALSE)
+  nodes   <- do.call(expand.grid, nodes_list) |> as.matrix()
+  weights <- Reduce(kronecker, rev(weight_list))
 
   nodes <- sqrt(2) * nodes
   weights <- weights * pi ^ (-k/2)
@@ -71,6 +72,9 @@ adaptiveGaussQuadrature <- function(fun,
   stopif(tol >= 1 || tol < 0,
          "`adaptive.quad.tol` must be in the boundary `[0, 1)`")
 
+  if (is.null(m.ceil) || all(is.na(m.ceil)))
+    m.ceil <- m + m / 2
+
   if (k <= 1) {
     out <- adaptiveGaussQuadratureK(
       fun = fun, a = a, b = b, m = m, m.ceil = m.ceil,
@@ -102,7 +106,7 @@ adaptiveGaussQuadrature <- function(fun,
   }
 
   quadn <- do.call(expand.grid, NODES) |> as.matrix()
-  quadw <- Reduce(kronecker, WEIGHTS)
+  quadw <- Reduce(kronecker, rev(WEIGHTS))
   quadf <- fun(quadn, ...)
 
   if (secondary.pruning) {
@@ -306,9 +310,11 @@ pruneQuadratureNodes <- function(quadw, quadn, quadf, a, b, tol) {
   weighted <- sweep(quadf, 2, weight_vec, "*")
   zeroInfoNodes <- colSums(weighted) <= .Machine$double.xmin
 
-  lower_mat <- matrix(rep_len(a, NCOL(quadn)), nrow = NROW(quadn), byrow = TRUE)
-  upper_mat <- matrix(rep_len(b, NCOL(quadn)), nrow = NROW(quadn), byrow = TRUE)
-  nodesOutside <- rowSums(quadn < lower_mat | quadn > upper_mat) > 0
+  lower_vec <- rep(a, length.out = NCOL(quadn))
+  upper_vec <- rep(b, length.out = NCOL(quadn))
+  lower_mat <- matrix(lower_vec, nrow = NROW(quadn), ncol = NCOL(quadn), byrow = TRUE)
+  upper_mat <- matrix(upper_vec, nrow = NROW(quadn), ncol = NCOL(quadn), byrow = TRUE)
+  nodesOutside <- rowSums((quadn < lower_mat) | (quadn > upper_mat)) > 0
 
   isValidNode <- !(zeroInfoNodes | nodesOutside)
 
