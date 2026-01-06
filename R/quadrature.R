@@ -32,10 +32,9 @@ quadrature <- function(m, k,
   nodes <- singleDimGauss$x
   weights <- singleDimGauss$w
 
-  nodes <- lapply(seq_len(k), function(k) nodes) |>
-    expand.grid() |> as.matrix()
-  weights <- lapply(seq_len(k), function(k) weights) |>
-    expand.grid() |> apply(MARGIN = 1, prod)
+  nodes_list <- replicate(k, nodes, simplify = FALSE)
+  nodes <- do.call(expand.grid, nodes_list) |> as.matrix()
+  weights <- Reduce(kronecker, replicate(k, weights, simplify = FALSE))
 
   nodes <- sqrt(2) * nodes
   weights <- weights * pi ^ (-k/2)
@@ -102,26 +101,23 @@ adaptiveGaussQuadrature <- function(fun,
     new.ceils[[i]] <- QUAD$m.ceil
   }
 
-  quadn <- as.matrix(expand.grid(NODES))
-  quadw <- apply(expand.grid(WEIGHTS), MARGIN = 1, prod)
+  quadn <- do.call(expand.grid, NODES) |> as.matrix()
+  quadw <- Reduce(kronecker, WEIGHTS)
   quadf <- fun(quadn, ...)
-  quadW <- matrix(quadw, nrow = nrow(quadf), ncol = length(quadw), byrow = TRUE)
-  
+
   if (secondary.pruning) {
     pruned <- pruneQuadratureNodes(
-      quadw = quadW, quadn = quadn, quadf = quadf,
+      quadw = quadw, quadn = quadn, quadf = quadf,
       a = a, b = b, tol = tol
     )
 
-    quadW  <- pruned$quadw
+    quadw  <- pruned$quadw
     quadn  <- pruned$quadn
     quadf  <- pruned$quadf
-    quadw  <- quadW[1, , drop = TRUE]
   }
 
   list(n = quadn,
        w = quadw,
-       W = quadW,
        F = quadf,
        m.ceil = new.ceils)
 }
@@ -154,7 +150,7 @@ adaptiveGaussQuadratureK <- function(fun,
   } else quadn <- quad$n
 
   quadf <- fun(quadn, ...)
-  quadw <- matrix(quad$w, ncol = length(quad$w), nrow = NROW(quadf), byrow = TRUE)
+  quadw <- quad$w
 
   pruned <- pruneQuadratureNodes(
     quadw = quadw, quadn = quadn, quadf = quadf,
@@ -211,8 +207,7 @@ adaptiveGaussQuadratureK <- function(fun,
          .newline = TRUE)
 
   list(n = quadn,
-       w = quadw[1, , drop = TRUE],
-       W = quadw,
+       w = quadw,
        F = quadf,
        k = k,
        m = nrow(quadn) ^ (1 / k),
@@ -298,28 +293,41 @@ estMForNodesInRange <- function(k, a, b,
 
 
 pruneQuadratureNodes <- function(quadw, quadn, quadf, a, b, tol) {
-  zeroInfoNodes <- apply(quadw * quadf, MARGIN=2, FUN = \(x) sum(x) <= .Machine$double.xmin)
-  nodesOutside  <- apply(quadn, MARGIN = 1, FUN = \(x) any(x < a | x > b))
-  isValidNode   <- !(zeroInfoNodes | nodesOutside)
+  stopif(!is.numeric(quadw), "`quadw` must be numeric.")
+
+  weight_vec <- as.numeric(quadw)
+  n.nodes <- NCOL(quadf)
+  stopif(length(weight_vec) != n.nodes,
+         "`quadw` must have the same length as the number of quadrature nodes.")
 
   n.input <- NROW(quadn)
+
+  # precompute weighted information to drop empty nodes early
+  weighted <- sweep(quadf, 2, weight_vec, "*")
+  zeroInfoNodes <- colSums(weighted) <= .Machine$double.xmin
+
+  lower_mat <- matrix(rep_len(a, NCOL(quadn)), nrow = NROW(quadn), byrow = TRUE)
+  upper_mat <- matrix(rep_len(b, NCOL(quadn)), nrow = NROW(quadn), byrow = TRUE)
+  nodesOutside <- rowSums(quadn < lower_mat | quadn > upper_mat) > 0
+
+  isValidNode <- !(zeroInfoNodes | nodesOutside)
+
   quadn <- quadn[isValidNode, , drop = FALSE]
   quadf <- quadf[, isValidNode, drop = FALSE]
-  quadw <- quadw[, isValidNode, drop = FALSE]
+  weight_vec <- weight_vec[isValidNode]
+  weighted <- weighted[, isValidNode, drop = FALSE]
 
   # Calculate per node contributions
-  A  <- quadf * quadw
-  rs <- rowSums(A)
+  rs <- rowSums(weighted)
 
   # guard against log(0) / division by 0
-  # If rs should *never* be <= 0 in your math, you may prefer 
   warnif(any(rs < 0), "Found negative quadrature node contributions, this is likely a bug!")
   rs.safe <- pmax(rs, .Machine$double.xmin)
 
   I.full <- sum(log(rs.safe))
 
   # B[j,i] = log1p( - A[j,i] / rs[j] )
-  B <- log1p(-A / rs.safe) # vectorized; creates an nrow x ncol matrix
+  B <- log1p(-sweep(weighted, 1, rs.safe, "/"))
   I.subvec <- I.full + colSums(B)
 
   contributions <- abs(abs(I.subvec) - abs(I.full))
@@ -339,12 +347,15 @@ pruneQuadratureNodes <- function(quadw, quadn, quadf, a, b, tol) {
 
   stopif(length(removable) >= NROW(quadn), "Cannot remove all nodes!")
 
+  I.cur <- I.full
+  I.err <- 0
+
   if (length(removable) > 0) {
-    # update everything by dropping them all at once
     quadn <- quadn[-removable, , drop = FALSE]
     quadf <- quadf[, -removable, drop = FALSE]
-    quadw <- quadw[, -removable, drop = FALSE]
-    # subtract their total from the current integral
+    weighted <- weighted[, -removable, drop = FALSE]
+    weight_vec <- weight_vec[-removable]
+
     I.cur  <- I.full - sum(contributions[removable])
     I.err  <- I.full - I.cur
   }
@@ -353,7 +364,7 @@ pruneQuadratureNodes <- function(quadw, quadn, quadf, a, b, tol) {
   n.removed <- n.input - n.output
 
   list(
-    quadw   = quadw,
+    quadw   = weight_vec,
     quadn   = quadn,
     quadf   = quadf,
     I.full  = I.full,
