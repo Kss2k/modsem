@@ -31,6 +31,34 @@ If you're using `Windows`, consider installing [`OpenBLAS in R for Windows`](htt
 for better perfmance. If you're using a `Linux` distribution, consider installing
 the [`ropenblas` package](https://CRAN.R-project.org/package=ropenblas)
 
+# Performance benchmarks and acceptance gate
+The repository contains an automated LMS/QML performance regression check that compares any candidate
+version of `modsem` with a baseline branch (defaults to `main`). The workflow lives in
+`.github/workflows/performance.yml` and publishes a markdown dashboard artifact every run. A pull request
+is rejected when any of the benchmark examples runs more than **5 seconds slower on average** for either
+the LMS or QML approach.
+
+You can reproduce the dashboard locally via:
+
+```bash
+Rscript inst/benchmarks/benchmark-modsem-version.R \
+  --baseline=main \
+  --candidate=$(git rev-parse HEAD) \
+  --candidate-source=local \
+  --reps=5 \
+  --output=inst/benchmarks/performance-dashboard.md \
+  --results=inst/benchmarks/performance-results.csv
+```
+
+Key flags:
+
+- `--candidate` and `--baseline` pick which git refs to compare.
+- `--candidate-source=local` forces the script to install the package from your working tree instead of GitHub.
+- `--tolerance` (default 5) controls the acceptable slowdown in seconds before the workflow fails.
+
+The resulting dashboard highlights the per-example deltas for LMS and QML so you can quickly spot
+and investigate regressions before opening a PR.
+
 # Methods/Approaches
 
 There are a number of approaches for estimating interaction effects in SEM. 

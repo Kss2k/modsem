@@ -1,0 +1,56 @@
+name: Performance Benchmarks
+
+on:
+  pull_request:
+    branches: [ main, test-workflow ]
+  workflow_dispatch:
+
+jobs:
+  run-performance-benchmarks:
+    name: linux (performance)
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/kss2k/container-modsem:latest
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      BASE_REF: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref || 'main' }}
+      CANDIDATE_REF: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.ref_name }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install benchmark dependencies
+        shell: Rscript {0}
+        run: |
+          options(repos = c(CRAN = "https://cloud.r-project.org"))
+          needed <- c("rbenchmark", "devtools")
+          to_install <- needed[!vapply(needed, requireNamespace, logical(1), quietly = TRUE)]
+          if (length(to_install)) {
+            install.packages(to_install)
+          }
+
+      - name: Run performance dashboard
+        shell: bash
+        run: |
+          set -o errexit
+          set -o pipefail
+          mkdir -p benchmarks
+          Rscript inst/benchmarks/benchmark-modsem-version.R \
+            --baseline="${BASE_REF}" \
+            --candidate="${CANDIDATE_REF}" \
+            --candidate-source=local \
+            --candidate-path=. \
+            --repo="kss2k/modsem" \
+            --reps=5 \
+            --tolerance=5 \
+            --output=benchmarks/performance-dashboard.md \
+            --results=benchmarks/performance-results.csv
+
+      - name: Upload benchmark dashboard
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-dashboard
+          path: benchmarks
