@@ -248,7 +248,7 @@ benchmarkVersion <- function(ref, methods, reps, sourceSpec) {
     do.call(rbind, methodRows)
   })
 
-  do.call(rbind, versionResults)
+  output <- do.call(rbind, versionResults)
   
   warn.output <- warnings()
 
@@ -256,6 +256,8 @@ benchmarkVersion <- function(ref, methods, reps, sourceSpec) {
     cat("There were", length(warn.output), "warnings:\n")
     print(warn.output)
   }
+
+  output
 }
 
 formatSeconds <- function(x) {
