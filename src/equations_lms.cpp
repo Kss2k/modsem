@@ -156,9 +156,11 @@ struct LMSModel {
     const arma::mat Eta    = arma::solve(B, rhs, arma::solve_opts::fast);
     const arma::mat AOi    = A * Oi;
     const arma::mat varXi  = AOi * A.t();
-    const arma::mat tmp    = arma::solve(arma::trans(B), Psi, arma::solve_opts::fast);
-    const arma::mat noise  = arma::solve(B, tmp, arma::solve_opts::fast);
-    const arma::mat varEta = Eta * Oi * Eta.t() + noise;
+    const arma::mat BinvT  = arma::solve(arma::trans(B),
+                                         arma::eye<arma::mat>(B.n_rows, B.n_cols),
+                                         arma::solve_opts::fast);
+    const arma::mat resvarEta = arma::solve(B, Psi * BinvT, arma::solve_opts::fast);
+    const arma::mat varEta = Eta * Oi * Eta.t() + resvarEta;
     const arma::mat covXiEta = AOi * Eta.t();
 
     const arma::mat vcovXiEta = arma::join_cols(
