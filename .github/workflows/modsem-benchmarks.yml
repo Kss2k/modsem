@@ -1,0 +1,110 @@
+name: modsem benchmarks
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  benchmark:
+    if: github.event_name != 'pull_request' || github.head_ref == 'lms-optimizations'
+    runs-on: ubuntu-latest
+    env:
+      RSPM: https://packagemanager.posit.co/cran/__linux__/jammy/latest
+      RESULTS_DIR: benchmark-results
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: main-branch
+          fetch-depth: 0
+
+      - name: Setup R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - name: Install remotes helper
+        run: Rscript -e 'install.packages("remotes", repos = Sys.getenv("RSPM"))'
+
+      - name: Install CRAN modsem
+        env:
+          TARGET_LIB: ${{ runner.temp }}/cran-lib
+        run: |
+          mkdir -p "$TARGET_LIB"
+          Rscript -e 'install.packages("modsem", lib=Sys.getenv("TARGET_LIB"), repos = Sys.getenv("RSPM"))'
+
+      - name: Benchmark CRAN modsem
+        env:
+          R_LIBS_USER: ${{ runner.temp }}/cran-lib
+        run: |
+          mkdir -p "$RESULTS_DIR"
+          Rscript inst/benchmarks/benchmark_models.R --output="$RESULTS_DIR/cran.csv"
+
+      - name: Install main modsem
+        env:
+          TARGET_LIB: ${{ runner.temp }}/main-lib
+        run: |
+          mkdir -p "$TARGET_LIB"
+          Rscript -e 'remotes::install_local("main-branch", lib=Sys.getenv("TARGET_LIB"), dependencies = TRUE, upgrade = "never")'
+
+      - name: Benchmark main modsem
+        env:
+          R_LIBS_USER: ${{ runner.temp }}/main-lib
+        run: |
+          Rscript inst/benchmarks/benchmark_models.R --output="$RESULTS_DIR/main.csv"
+
+      - name: Install PR modsem
+        env:
+          TARGET_LIB: ${{ runner.temp }}/pr-lib
+        run: |
+          mkdir -p "$TARGET_LIB"
+          Rscript -e 'remotes::install_local(".", lib=Sys.getenv("TARGET_LIB"), dependencies = TRUE, upgrade = "never")'
+
+      - name: Benchmark PR modsem
+        env:
+          R_LIBS_USER: ${{ runner.temp }}/pr-lib
+        run: |
+          Rscript inst/benchmarks/benchmark_models.R --output="$RESULTS_DIR/pr.csv"
+
+      - name: Summarize benchmark results
+        run: |
+          Rscript - <<'RS'
+          files <- list(
+            cran = file.path(Sys.getenv("RESULTS_DIR"), "cran.csv"),
+            main = file.path(Sys.getenv("RESULTS_DIR"), "main.csv"),
+            pr   = file.path(Sys.getenv("RESULTS_DIR"), "pr.csv")
+          )
+          stopifnot(all(file.exists(unlist(files))))
+          read_bench <- function(path, label) {
+            df <- utils::read.csv(path)
+            df$version <- label
+            df
+          }
+          df_list <- Map(read_bench, files, names(files))
+          df <- do.call(rbind, df_list)
+          summary <- aggregate(elapsed ~ model + version, df, mean)
+          utils::write.csv(df, file.path(Sys.getenv("RESULTS_DIR"), "raw_timings.csv"), row.names = FALSE)
+          utils::write.csv(summary, file.path(Sys.getenv("RESULTS_DIR"), "summary.csv"), row.names = FALSE)
+          print(summary)
+          wide <- reshape(summary, idvar = "model", timevar = "version", direction = "wide")
+          required <- c("elapsed.cran", "elapsed.main", "elapsed.pr")
+          missing <- setdiff(required, names(wide))
+          if (!length(missing)) {
+            wide$ratio_pr_vs_cran <- wide$elapsed.cran / wide$elapsed.pr
+            wide$ratio_pr_vs_main <- wide$elapsed.main / wide$elapsed.pr
+          }
+          cat("\nWide summary (seconds):\n")
+          print(wide)
+          RS
+
+      - name: Upload benchmark artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: modsem-benchmark-results
+          path: ${{ env.RESULTS_DIR }}
