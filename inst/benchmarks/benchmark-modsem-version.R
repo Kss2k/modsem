@@ -1,5 +1,40 @@
 #!/usr/bin/env Rscript
 
+## # Performance benchmarks and acceptance gate
+## The repository contains an automated LMS/QML performance regression check that compares any candidate
+## version of `modsem` with a baseline branch (defaults to `main`). The workflow lives in
+## `.github/workflows/performance.yml` and publishes a markdown dashboard artifact every run. A pull request
+## is rejected when any of the benchmark examples runs more than **5 seconds slower on average** for either
+## the LMS or QML approach.
+## 
+## You can reproduce the dashboard locally via:
+## 
+## ```bash
+## Rscript inst/benchmarks/benchmark-modsem-version.R \
+##   --baseline=main \
+##   --candidate=$(git rev-parse HEAD) \
+##   --candidate-source=local \
+##   --reps=5 \
+##   --output=inst/benchmarks/performance-dashboard.md \
+##   --results=inst/benchmarks/performance-results.csv
+## ```
+## 
+## Key flags:
+## 
+## - `--candidate` and `--baseline` pick which git refs to compare.
+## - `--candidate-source=local` forces the script to install the package from your working tree instead of GitHub.
+## - `--tolerance` (default 5) controls the acceptable slowdown in seconds before the workflow fails.
+## - `--badge-dir=badges` emits Shields.io-compatible JSON summaries per method (used by the performance badges).
+## 
+## The resulting dashboard highlights the per-example deltas for LMS and QML so you can quickly spot
+## and investigate regressions before opening a PR.
+## 
+## Two color-coded badges at the top of this README summarize the **average** performance deltas (main vs latest
+## CRAN release) for LMS and QML separately. Green means the current `main` branch is faster (bright green for gains >=5s,
+## green for >=2s, yellow-green for >=0.5s), while yellow/orange/red indicate slowdowns (<=-0.5s, <=-2s, <=-5s respectively).
+## These badges are refreshed daily (and on every push to `main`) via `.github/workflows/performance-badge.yml`,
+## which benchmarks `main` against the CRAN release and publishes the resulting JSON endpoints to the `perf-badges` branch.
+
 args <- commandArgs(trailingOnly = TRUE)
 
 repos <- getOption("repos")
