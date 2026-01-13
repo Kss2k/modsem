@@ -2,6 +2,13 @@
 
 args <- commandArgs(trailingOnly = TRUE)
 
+repos <- getOption("repos")
+cranIsUnset <- is.null(repos) || identical(repos, c(CRAN = "@CRAN@")) ||
+  is.na(repos["CRAN"]) || identical(repos["CRAN"], "@CRAN@")
+if (cranIsUnset) {
+  options(repos = c(CRAN = "https://cloud.r-project.org"))
+}
+
 ensureNamespace <- function(pkg) {
   if (!requireNamespace(pkg, quietly = TRUE)) {
     stop(sprintf("Package '%s' is required for this benchmark workflow.", pkg), call. = FALSE)
@@ -53,8 +60,8 @@ buildSourceSpec <- function(prefix, defaultSource, defaultRepo) {
 }
 
 validateSourceSpec <- function(spec, label) {
-  if (!spec$type %in% c("github", "local")) {
-    stop(sprintf("Unsupported %s_source '%s'. Use 'github' or 'local'.", label, spec$type), call. = FALSE)
+  if (!spec$type %in% c("github", "local", "cran")) {
+    stop(sprintf("Unsupported %s_source '%s'. Use 'github', 'local', or 'cran'.", label, spec$type), call. = FALSE)
   }
   if (spec$type == "github" && !nzchar(spec$repo)) {
     stop(sprintf("Provide a %s_repo value when using the github source.", label), call. = FALSE)
@@ -68,6 +75,7 @@ candidateSpec <- validateSourceSpec(buildSourceSpec("candidate", "github", repoS
 
 outputPath <- parseArg("output", file.path("inst", "benchmarks", "modsem-performance-dashboard.md"))
 resultsPath <- parseArg("results", "")
+badgeDir <- parseArg("badge_dir", parseArg("badge", ""))
 
 ensurePath <- function(path) {
   if (!nzchar(path)) return(path)
@@ -88,14 +96,21 @@ installModsemVersion <- function(ref, libDir, sourceSpec) {
       upgrade = "never",
       dependencies = FALSE
     )
+  } else if (identical(sourceSpec$type, "cran")) {
+    pkgName <- if (nzchar(sourceSpec$repo)) sourceSpec$repo else "modsem"
+    message(sprintf("[modsem %s] Installing CRAN release (%s) into %s", ref, pkgName, libDir))
+    utils::install.packages(
+      pkgName,
+      lib = libDir,
+      dependencies = FALSE,
+      quiet = TRUE
+    )
   } else {
     message(sprintf("[modsem %s] Installing %s@%s into %s", ref, sourceSpec$repo, ref, libDir))
     devtools::install_github(
       repo = sourceSpec$repo,
       ref = ref,
-      lib = libDir,
-      quick = TRUE,
-      upgrade_dependencies = FALSE
+      lib = libDir #, quick = TRUE, upgrade_dependencies = FALSE
     )
   }
 }
@@ -268,6 +283,38 @@ writeResultsCsv <- function(allResults, resultsPath) {
   message(sprintf("Raw benchmark results written to %s", resultsPath))
 }
 
+badgeColorFor <- function(value) {
+  if (is.na(value)) return("lightgrey")
+  if (value >= 5) return("brightgreen")
+  if (value >= 2) return("green")
+  if (value >= 0.5) return("yellowgreen")
+  if (value <= -5) return("red")
+  if (value <= -2) return("orange")
+  if (value <= -0.5) return("yellow")
+  "lightgrey"
+}
+
+writeBadgeJsons <- function(summaryDf, baselineRef, candidateRef, badgeDir) {
+  if (!nzchar(badgeDir)) return(invisible(NULL))
+  dir.create(badgeDir, recursive = TRUE, showWarnings = FALSE)
+  validRows <- summaryDf[!is.na(summaryDf$method), , drop = FALSE]
+  perMethod <- split(validRows, validRows$method)
+  lapply(names(perMethod), function(methodName) {
+    rows <- perMethod[[methodName]]
+    improvement <- mean(rows$avgSecondsBaseline - rows$avgSecondsCandidate, na.rm = TRUE)
+    badge <- if (is.na(improvement)) "n/a" else sprintf("%+.2f s", improvement)
+    color <- badgeColorFor(improvement)
+    label <- sprintf("%s Δ (main-rel)", methodName)
+    json <- sprintf(
+      '{"schemaVersion":1,"label":"%s","message":"%s","color":"%s"}',
+      label, badge, color
+    )
+    fileName <- file.path(badgeDir, paste0(tolower(methodName), ".json"))
+    writeLines(json, fileName)
+    message(sprintf("Badge for %s written to %s (%s)", methodName, fileName, badge))
+  })
+}
+
 baselineResults <- benchmarkVersion(baselineRef, methods, reps, baselineSpec)
 candidateResults <- benchmarkVersion(candidateRef, methods, reps, candidateSpec)
 
@@ -280,6 +327,7 @@ combinedResults <- rbind(
   transform(candidateResults, branch = "candidate")
 )
 writeResultsCsv(combinedResults, resultsPath)
+writeBadgeJsons(summaryDf, baselineRef, candidateRef, badgeDir)
 
 if (any(summaryDf$status == "FAIL")) {
   message("Performance regression detected (see dashboard).")

@@ -1,0 +1,62 @@
+name: Performance Badges
+
+on:
+  push:
+    branches: [ main ]
+  schedule:
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+jobs:
+  badge:
+    name: linux (badge)
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/kss2k/container-modsem:latest
+    permissions:
+      contents: write
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install badge dependencies
+        shell: Rscript {0}
+        run: |
+          options(repos = c(CRAN = "https://cloud.r-project.org"))
+          needed <- c("rbenchmark", "devtools")
+          to_install <- needed[!vapply(needed, requireNamespace, logical(1), quietly = TRUE)]
+          if (length(to_install)) {
+            install.packages(to_install)
+          }
+
+      - name: Generate badge JSON
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf badges
+          mkdir -p badges
+          Rscript inst/benchmarks/benchmark-modsem-version.R \
+            --baseline=CRAN \
+            --baseline-source=cran \
+            --baseline-repo=modsem \
+            --candidate="${{ github.ref_name }}" \
+            --candidate-source=local \
+            --candidate-path=. \
+            --methods=LMS,QML \
+            --reps=5 \
+            --tolerance=9999 \
+            --badge-dir=badges
+          ls -R badges
+
+      - name: Publish badge artifacts
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: badges
+          publish_branch: perf-badges
+          force_orphan: true

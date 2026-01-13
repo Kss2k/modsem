@@ -6,6 +6,8 @@
 [![PKGDOWN-Build](https://github.com/kss2k/modsem/actions/workflows/pkgdown.yml/badge.svg)](https://github.com/kss2k/modsem/actions/workflows/pkgdown.yml)
 [![](https://cranlogs.r-pkg.org/badges/grand-total/modsem)](https://cran.r-project.org/package=modsem)
 [![GitHub Clones](https://img.shields.io/badge/dynamic/json?color=success&label=Clone&query=count&url=https://gist.githubusercontent.com/Kss2k/131dd94e938508da4f039ec2a4ecb256/raw/clone.json&logo=github)](https://github.com/MShawon/github-clone-count-badge)
+[![LMS Perf](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/kss2k/modsem/perf-badges/lms.json)](inst/benchmarks)
+[![QML Perf](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/kss2k/modsem/perf-badges/qml.json)](inst/benchmarks)
 
 <!-- badges: end -->
 `modsem` is an `R`-package for estimating interaction (i.e., moderation) effects between latent variables
@@ -55,9 +57,16 @@ Key flags:
 - `--candidate` and `--baseline` pick which git refs to compare.
 - `--candidate-source=local` forces the script to install the package from your working tree instead of GitHub.
 - `--tolerance` (default 5) controls the acceptable slowdown in seconds before the workflow fails.
+- `--badge-dir=badges` emits Shields.io-compatible JSON summaries per method (used by the performance badges).
 
 The resulting dashboard highlights the per-example deltas for LMS and QML so you can quickly spot
 and investigate regressions before opening a PR.
+
+Two color-coded badges at the top of this README summarize the **average** performance deltas (main vs latest
+CRAN release) for LMS and QML separately. Green means the current `main` branch is faster (bright green for gains >=5s,
+green for >=2s, yellow-green for >=0.5s), while yellow/orange/red indicate slowdowns (<=-0.5s, <=-2s, <=-5s respectively).
+These badges are refreshed daily (and on every push to `main`) via `.github/workflows/performance-badge.yml`,
+which benchmarks `main` against the CRAN release and publishes the resulting JSON endpoints to the `perf-badges` branch.
 
 # Methods/Approaches
 
