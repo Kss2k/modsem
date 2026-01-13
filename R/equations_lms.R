@@ -106,12 +106,10 @@ estepLmsGroup <- function(submodel, lastQuad = NULL, recalcQuad = FALSE,
       data.id <- data$data.split[[j]]
       colidx  <- data$colidx[[j]]
 
-      pj      <- p[offset:end]
-      pj_sum  <- sum(pj)
-      wm      <- drop(crossprod(pj, data.id)) / pj_sum
-      centered <- sweep(data.id, 2, wm, "-")
-      weighted <- sweep(centered, 1, sqrt(pj), "*")
-      wcov    <- crossprod(weighted)
+      pj   <- p[offset:end]
+      wm   <- colSums(data.id * pj) / sum(pj)
+      X    <- data.id - matrix(wm, nrow=nrow(data.id), ncol=ncol(data.id), byrow=TRUE)
+      wcov <- t(X) %*% (X * pj)
 
       wMeans[[i]][[j]] <- wm
       wCovs[[i]][[j]]  <- wcov
@@ -139,32 +137,14 @@ mstepLms <- function(theta, model, P,
                      optim.method = "L-BFGS-B",
                      epsilon = 1e-6,
                      ...) {
-  getFilled <- local({
-    cache <- new.env(parent = emptyenv())
-    cache$theta <- NULL
-    cache$mod   <- NULL
-
-    function(theta) {
-      if (!is.null(cache$theta) && identical(cache$theta, theta)) {
-        cache$mod
-      } else {
-        cache$theta <- theta
-        cache$mod   <- fillModel(model = model, theta = theta, method = "lms")
-        cache$mod
-      }
-    }
-  })
-
   gradient <- function(theta) {
-    modFilled <- getFilled(theta)
     gradientCompLogLikLms(theta = theta, model = model, P = P, sign = -1,
-                          epsilon = epsilon, modFilled = modFilled)
+                          epsilon = epsilon)
   }
 
   objective <- function(theta) {
-    modFilled <- getFilled(theta)
     compLogLikLms(theta = theta, model = model, P = P, sign = -1,
-                  epsilon = epsilon, modFilled = modFilled)
+                  epsilon = epsilon)
   }
 
   if (optimizer == "nlminb") {
@@ -192,10 +172,9 @@ mstepLms <- function(theta, model, P,
 }
 
 
-compLogLikLms <- function(theta, model, P, sign = -1, modFilled = NULL, ...) {
+compLogLikLms <- function(theta, model, P, sign = -1, ...) {
   tryCatch({
-    if (is.null(modFilled))
-      modFilled <- fillModel(model = model, theta = theta, method = "lms")
+    modFilled <- fillModel(model = model, theta = theta, method = "lms")
 
     ll <- 0
     for (g in seq_len(model$info$n.groups)) {
@@ -232,34 +211,24 @@ compLogLikLmsGroup <- function(submodel, P, sign = -1, ...) {
 
 
 
-gradientCompLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-6,
-                                  modFilled = NULL) {
+gradientCompLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-6) {
   gradientAllLogLikLms(theta = theta, model = model, P = P, sign = sign,
-                       epsilon = epsilon, FGRAD = gradLogLikLmsCpp,
-                       FOBJECTIVE = compLogLikLmsGroup, modFilled = modFilled)
+                       epsilon = epsilon, FGRAD = gradLogLikLmsCpp, FOBJECTIVE = compLogLikLmsGroup)
 }
 
 
 gradientAllLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-6,
-                                 FGRAD, FOBJECTIVE, modFilled = NULL) {
+                                 FGRAD, FOBJECTIVE) {
   hasCovModel <- model$params$gradientStruct$hasCovModel
 
-  if (hasCovModel) {
-    gradient <- \(...) complicatedGradientAllLogLikLms(...,
-      FOBJECTIVE = FOBJECTIVE, modFilled = modFilled, theta.base = theta)
-  } else {
-    gradient <- \(...) simpleGradientAllLogLikLms(...,
-      FGRAD = FGRAD, modFilled = modFilled)
-  }
+  if (hasCovModel) gradient <- \(...) complicatedGradientAllLogLikLms(..., FOBJECTIVE = FOBJECTIVE)
+  else             gradient <- \(...) simpleGradientAllLogLikLms(..., FGRAD = FGRAD)
 
   c(gradient(theta = theta, model = model, P = P, sign = sign, epsilon = epsilon))
 }
 
 
-complicatedGradientAllLogLikLms <- function(theta, model, P, sign = -1,
-                                            epsilon = 1e-4, FOBJECTIVE,
-                                            sum = TRUE, modFilled = NULL,
-                                            theta.base = NULL, ...) {
+complicatedGradientAllLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-4, FOBJECTIVE, sum = TRUE, ...) {
   params <- model$params
 
   SELECT_THETA_LAB  <- params$SELECT_THETA_LAB
@@ -277,17 +246,9 @@ complicatedGradientAllLogLikLms <- function(theta, model, P, sign = -1,
 
   grad <- matrix(0, nrow = n, ncol = k, dimnames = list(NULL, names(theta)))
 
-  theta.base <- if (is.null(theta.base)) theta else theta.base
-  use_cache <- !is.null(modFilled)
-
-  FOBJECTIVE_GROUP <- function(theta.eval, g) {
-    if (use_cache && identical(theta.eval, theta.base)) {
-      submodel <- modFilled$models[[g]]
-    } else {
-      modFilledEval <- fillModel(theta = theta.eval, model = model, method = "lms")
-      submodel <- modFilledEval$models[[g]]
-    }
-    FOBJECTIVE(submodel = submodel, P = P$P_GROUPS[[g]], sign = sign, ...)
+  FOBJECTIVE_GROUP <- function(theta, g) {
+    modFilled <- fillModel(theta = theta, model = model, method = "lms")
+    FOBJECTIVE(submodel = modFilled$models[[g]], P = P$P_GROUPS[[g]], sign = sign, ...)
   }
 
   for (g in seq_len(model$info$n.groups)) {
@@ -315,13 +276,10 @@ complicatedGradientAllLogLikLms <- function(theta, model, P, sign = -1,
 }
 
 
-simpleGradientAllLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-6,
-                                       FGRAD, N.FGRAD = 1L, modFilled = NULL) {
+simpleGradientAllLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-6, FGRAD, N.FGRAD = 1L) {
   # simple gradient which should work if constraints are well-behaved functions
   # which can be derivated by Deriv::Deriv, and there is no covModel
-  modelR     <- if (is.null(modFilled))
-    fillModel(model = model, theta = theta, method = "lms")
-  else modFilled
+  modelR     <- fillModel(model=model, theta=theta, method="lms")
   locations  <- model$params$gradientStruct$locations
   Jacobian   <- model$params$gradientStruct$Jacobian
   nlinDerivs <- model$params$gradientStruct$nlinDerivs
