@@ -19,10 +19,19 @@ ensureNamespace("devtools")
 ensureNamespace("rbenchmark")
 
 parseArg <- function(name, default = NULL) {
-  pattern <- paste0("^--?", name, "=")
-  hit <- args[grepl(pattern, args)]
-  if (!length(hit)) return(default)
-  sub(pattern, "", hit[1])
+  candidates <- unique(c(
+    name,
+    if (grepl("_", name, fixed = TRUE)) gsub("_", "-", name, fixed = TRUE),
+    if (grepl("-", name, fixed = TRUE)) gsub("-", "_", name, fixed = TRUE)
+  ))
+  for (candidate in candidates) {
+    pattern <- paste0("^--?", candidate, "=")
+    hit <- args[grepl(pattern, args)]
+    if (length(hit)) {
+      return(sub(pattern, "", hit[1]))
+    }
+  }
+  default
 }
 
 splitMethods <- function(value) {
@@ -187,7 +196,7 @@ benchmarkVersion <- function(ref, methods, reps, sourceSpec) {
     methodRows <- lapply(names(runners), function(exampleName) {
       bench <- rbenchmark::benchmark(
         runners[[exampleName]](method),
-        repetitions = reps,
+        replications = reps,
         columns = c("test", "replications", "elapsed")
       )
       avg <- bench$elapsed / bench$replications
