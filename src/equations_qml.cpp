@@ -38,13 +38,11 @@ arma::mat muQmlCpp(Rcpp::List m, int t, int ncores = 1) {
 
       const arma::mat kronXi_t = kronXi.submat(firstRow, 0, lastRow, lastColKOxx);
       const arma::mat Binv_t   = Binv  .submat(firstRow, 0, lastRow, lastColBinv);
+      const arma::vec muXi     = beta0 + L1 * X.row(i).t();
+      const arma::vec kronTerm = kronXi_t * omegaXiXi * muXi;
+      const arma::vec rhs = trOmegaSigma + alpha + gammaXi * muXi + kronTerm;
 
-      Ey.row(i) = ( Binv_t *
-        ( trOmegaSigma + alpha
-          + gammaXi * (beta0 + L1 * X.row(i).t())
-          + kronXi_t * omegaXiXi * (beta0 + L1 * X.row(i).t()) )
-        + L2 * U.row(i).t()
-      ).t();
+      Ey.row(i) = ( Binv_t * rhs + L2 * U.row(i).t() ).t();
     }
 
   } else {
@@ -55,13 +53,11 @@ arma::mat muQmlCpp(Rcpp::List m, int t, int ncores = 1) {
     for (int i = 0; i < t; ++i) {
       const int firstRow = i * numEta, lastRow = (i + 1) * numEta - 1;
       const arma::mat kronXi_t = kronXi.submat(firstRow, 0, lastRow, lastColKOxx);
+      const arma::vec muXi     = beta0 + L1 * X.row(i).t();
+      const arma::vec kronTerm = kronXi_t * omegaXiXi * muXi;
+      const arma::vec rhs = trOmegaSigma + alpha + gammaXi * muXi + kronTerm;
 
-      Ey.row(i) = ( Binv *
-        ( trOmegaSigma + alpha
-          + gammaXi * (beta0 + L1 * X.row(i).t())
-          + kronXi_t * omegaXiXi * (beta0 + L1 * X.row(i).t()) )
-        + L2 * U.row(i).t()
-      ).t();
+      Ey.row(i) = ( Binv * rhs + L2 * U.row(i).t() ).t();
     }
   }
 
@@ -94,6 +90,7 @@ arma::mat sigmaQmlCpp(Rcpp::List m, int t, int ncores = 1) {
             lastColKOxx  = numXi * numEta - 1;
 
   const arma::mat omegaXiXi2T = omegaXiXi + transposeOmega(omegaXiXi, numEta); // omega + omega'
+  const arma::mat kronXiOmega = kronXi * omegaXiXi2T;
 
   if (Binv.n_rows > static_cast<unsigned>(numEta)) {
     #ifdef _OPENMP
@@ -102,12 +99,12 @@ arma::mat sigmaQmlCpp(Rcpp::List m, int t, int ncores = 1) {
 
     for (int i = 0; i < t; ++i) {
       const int firstRow = i * numEta, lastRow = (i + 1) * numEta - 1;
-      const arma::mat kronXi_t = kronXi.submat(firstRow, 0, lastRow, lastColKOxx);
+      const arma::mat kronOmega_t = kronXiOmega.submat(firstRow, 0, lastRow, lastColSigma);
       const arma::mat Binv_t   = Binv  .submat(firstRow, 0, lastRow, lastColSigma);
       const arma::mat Sigma2   = Binv_t * psi * Binv_t.t() + Sigma2Theta;
 
       const arma::mat BinvGammaXi2Omega =
-        Binv_t * gammaXi + kronXi_t * omegaXiXi2T;
+        Binv_t * gammaXi + kronOmega_t;
 
       sigmaE.submat(firstRow, 0, lastRow, lastColSigma) =
         BinvGammaXi2Omega * Sigma1 * BinvGammaXi2Omega.t() +
@@ -124,9 +121,9 @@ arma::mat sigmaQmlCpp(Rcpp::List m, int t, int ncores = 1) {
 
     for (int i = 0; i < t; ++i) {
       const int firstRow = i * numEta, lastRow = (i + 1) * numEta - 1;
-      const arma::mat kronXi_t = kronXi.submat(firstRow, 0, lastRow, lastColKOxx);
+      const arma::mat kronOmega_t = kronXiOmega.submat(firstRow, 0, lastRow, lastColSigma);
       const arma::mat BinvGammaXi2Omega =
-        Binv * gammaXi + kronXi_t * omegaXiXi2T;
+        Binv * gammaXi + kronOmega_t;
 
       sigmaE.submat(firstRow, 0, lastRow, lastColSigma) =
         BinvGammaXi2Omega * Sigma1 * BinvGammaXi2Omega.t() +
