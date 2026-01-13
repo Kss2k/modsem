@@ -1,17 +1,18 @@
-name: modsem benchmarks
+name: modsem benchmarks (LMS)
 
 on:
   pull_request:
   workflow_dispatch:
 
 jobs:
-  benchmark:
+  benchmark_lms:
     if: github.event_name != 'pull_request' || github.head_ref == 'lms-optimizations'
     runs-on: ubuntu-latest
     env:
       RSPM: https://packagemanager.posit.co/cran/__linux__/jammy/latest
       RESULTS_DIR: benchmark-results
       MODSEM_BENCH_ITERS: 25
+      MODSEM_BENCH_MODELS: oneInt_lms,TPB_lms
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v4
@@ -107,5 +108,5 @@ jobs:
       - name: Upload benchmark artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: modsem-benchmark-results
+          name: modsem-benchmark-results-lms
           path: ${{ env.RESULTS_DIR }}

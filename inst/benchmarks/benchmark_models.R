@@ -2,9 +2,11 @@
 
 parse_args <- function(args) {
   default_iters <- as.integer(Sys.getenv("MODSEM_BENCH_ITERS", "25"))
+  default_models <- Sys.getenv("MODSEM_BENCH_MODELS", "")
   opts <- list(
     output = "benchmark-results.csv",
-    iterations = default_iters
+    iterations = default_iters,
+    models = default_models
   )
 
   for (a in args) {
@@ -12,6 +14,8 @@ parse_args <- function(args) {
       opts$output <- sub("^--output=", "", a)
     } else if (grepl("^--iters=", a)) {
       opts$iterations <- suppressWarnings(as.integer(sub("^--iters=", "", a)))
+    } else if (grepl("^--models=", a)) {
+      opts$models <- sub("^--models=", "", a)
     } else {
       stop("Unknown argument: ", a)
     }
@@ -23,7 +27,7 @@ parse_args <- function(args) {
   opts
 }
 
-args <- parse_args(commandArgs(trailingOnly = TRUE))
+cfg <- parse_args(commandArgs(trailingOnly = TRUE))
 
 suppressPackageStartupMessages({
   if (!requireNamespace("modsem", quietly = TRUE))
@@ -119,11 +123,25 @@ benchmarks <- list(
   )
 )
 
+if (nzchar(cfg$models)) {
+  select <- trimws(strsplit(cfg$models, ",", fixed = TRUE)[[1]])
+  select <- select[nzchar(select)]
+  if (length(select)) {
+    avail <- vapply(benchmarks, `[[`, character(1), "name")
+    missing <- setdiff(select, avail)
+    if (length(missing))
+      stop("Unknown benchmark(s): ", paste(missing, collapse = ", "))
+    benchmarks <- Filter(function(b) b$name %in% select, benchmarks)
+  }
+}
+
+stopifnot(length(benchmarks) > 0)
+
 all_timings <- lapply(benchmarks, function(entry) {
-  vals <- numeric(args$iterations)
-  for (i in seq_len(args$iterations)) {
+  vals <- numeric(cfg$iterations)
+  for (i in seq_len(cfg$iterations)) {
     cat(sprintf("Running %s (iteration %d/%d)...\n",
-                entry$name, i, args$iterations))
+                entry$name, i, cfg$iterations))
     vals[i] <- system.time({
       fit <- entry$run()
       rm(fit)
@@ -132,15 +150,15 @@ all_timings <- lapply(benchmarks, function(entry) {
   }
   data.frame(
     model = entry$name,
-    iteration = seq_len(args$iterations),
+    iteration = seq_len(cfg$iterations),
     elapsed = vals
   )
 })
 
 timings <- do.call(rbind, all_timings)
 
-dir.create(dirname(args$output), recursive = TRUE, showWarnings = FALSE)
-utils::write.csv(timings, args$output, row.names = FALSE)
+dir.create(dirname(cfg$output), recursive = TRUE, showWarnings = FALSE)
+utils::write.csv(timings, cfg$output, row.names = FALSE)
 
 print(timings)
 
