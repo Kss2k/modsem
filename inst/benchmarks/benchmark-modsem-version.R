@@ -292,6 +292,45 @@ summarizeDeltas <- function(baselineDf, candidateDf, tolerance) {
 writeDashboard <- function(summaryDf, baselineRef, candidateRef, reps, tolerance, outputPath) {
   if (!nzchar(outputPath)) return(invisible(NULL))
 
+  headers <- c("Method", "Example", "Baseline (s)", "Candidate (s)", "\u0394 Seconds", "\u0394 Percent", "Status")
+  align <- c("left", "left", "right", "right", "right", "right", "left")
+  rowMatrix <- t(apply(summaryDf, 1, function(row) {
+    c(
+      row[["method"]],
+      row[["example"]],
+      formatSeconds(as.numeric(row[["avgSecondsBaseline"]])),
+      formatSeconds(as.numeric(row[["avgSecondsCandidate"]])),
+      formatSeconds(as.numeric(row[["deltaSeconds"]])),
+      formatPercent(as.numeric(row[["deltaPct"]])),
+      if (identical(row[["status"]], "FAIL")) "**FAIL**" else row[["status"]]
+    )
+  }))
+  if (!length(rowMatrix)) {
+    rowMatrix <- matrix(nrow = 0, ncol = length(headers))
+  }
+  tableMatrix <- rbind(headers, rowMatrix)
+  colWidths <- apply(tableMatrix, 2, function(col) max(nchar(col, type = "width"), na.rm = TRUE))
+
+  formatCell <- function(value, width, alignment) {
+    fmt <- if (alignment == "right") paste0("%", width, "s") else paste0("%-", width, "s")
+    sprintf(fmt, value)
+  }
+
+  formattedRows <- apply(tableMatrix, 1, function(row) {
+    sapply(seq_along(row), function(i) formatCell(row[i], colWidths[i], align[i]), USE.NAMES = FALSE)
+  })
+  formattedRows <- t(formattedRows)
+
+  separator <- sapply(seq_along(headers), function(i) {
+    width <- colWidths[i]
+    if (align[i] == "right") {
+      paste0(strrep("-", width - 1), ":")
+    } else {
+      paste0(":", strrep("-", width - 1))
+    }
+  })
+
+  tableLines <- apply(formattedRows, 1, function(row) paste("|", paste(row, collapse = " | "), "|"))
   lines <- c(
     "# modsem performance dashboard",
     "",
@@ -300,30 +339,11 @@ writeDashboard <- function(summaryDf, baselineRef, candidateRef, reps, tolerance
     sprintf("- Repetitions per benchmark: %s", reps),
     sprintf("- Acceptance tolerance: %.2f seconds", tolerance),
     "",
-    "| Method | Example | Baseline (s) | Candidate (s) | Δ Seconds | Δ Percent | Status |",
-    "| --- | --- | ---: | ---: | ---: | ---: | --- |"
+    tableLines[1],
+    paste("|", paste(separator, collapse = " | "), "|"),
+    tableLines[-1],
+    ""
   )
-
-  rowLines <- apply(summaryDf, 1, function(row) {
-    baseVal <- formatSeconds(as.numeric(row[["avgSecondsBaseline"]]))
-    candVal <- formatSeconds(as.numeric(row[["avgSecondsCandidate"]]))
-    deltaVal <- formatSeconds(as.numeric(row[["deltaSeconds"]]))
-    pctVal <- formatPercent(as.numeric(row[["deltaPct"]]))
-    status <- row[["status"]]
-    if (identical(status, "FAIL")) status <- "**FAIL**"
-    paste0(
-      "| ",
-      row[["method"]], " | ",
-      row[["example"]], " | ",
-      baseVal, " | ",
-      candVal, " | ",
-      deltaVal, " | ",
-      pctVal, " | ",
-      status, " |"
-    )
-  })
-
-  lines <- c(lines, rowLines, "")
   ensurePath(outputPath)
   writeLines(lines, con = outputPath)
   message(sprintf("Performance dashboard written to %s", outputPath))

@@ -82,7 +82,5 @@ CAREER ~ ENJ + SC + ENJ:ENJ + SC:SC + ENJ:SC
 # For such a small number of nodes it doesn't really matter if you use an
 # adaptive quadrature, as all the nodes bring some value
 # no warning for low number of nodes here, when using adaptive quadrature
-lms4 <- modsem(nlsem, data = jordan, method = "lms",
-               adaptive.quad=TRUE, OFIM.hessian = FALSE,
-               nodes = 15, mean.observed = FALSE)
+lms4 <- modsem(nlsem, data = jordan, method = "lms")
 summary(lms4)
