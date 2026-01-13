@@ -104,7 +104,7 @@ inline arma::vec make_zvec(unsigned k, unsigned numXis, const arma::vec& z) {
 
 struct LMSModel {
   arma::mat A, Oxx, Oex, Ie, lY, lX, tY, tX, Gx, Ge,
-    a, beta0, Psi, d, e;
+    a, beta0, Psi, d, e, Oi;
   unsigned  k       = 0;
   unsigned  numXis  = 0;
 
@@ -133,31 +133,33 @@ struct LMSModel {
     Psi    = Rcpp::as<arma::mat>(matrices["psi"]);
     d      = Rcpp::as<arma::mat>(matrices["thetaDelta"]);
     e      = Rcpp::as<arma::mat>(matrices["thetaEpsilon"]);
+    Oi     = make_Oi(k, numXis);
   }
 
   arma::vec mu(const arma::vec& z) const {
     const arma::vec zVec = make_zvec(k, numXis, z);
-    const arma::mat kronZ = arma::kron(Ie, beta0 + A * zVec);
-    const arma::mat Binv = arma::inv(Ie - Ge - kronZ.t() * Oex);
-
-    const arma::vec muXi  = beta0 + A * zVec;
-    const arma::vec muEta = Binv * (a +
-        Gx * (beta0 + A * zVec) +
-        kronZ.t() * Oxx * (beta0 + A * zVec));
+    const arma::vec muXi = beta0 + A * zVec;
+    const arma::mat kronZ = arma::kron(Ie, muXi);
+    const arma::mat B = Ie - Ge - kronZ.t() * Oex;
+    const arma::vec rhs = a + Gx * muXi + kronZ.t() * Oxx * muXi;
+    const arma::vec muEta = arma::solve(B, rhs, arma::solve_opts::fast);
 
     return tX + lX * arma::join_cols(muXi, muEta);
   }
 
   arma::mat Sigma(const arma::vec& z) const {
     const arma::vec zVec  = make_zvec(k, numXis, z);
-    const arma::mat kronZ = arma::kron(Ie, beta0 + A * zVec);
-    const arma::mat Binv = arma::inv(Ie - Ge - kronZ.t() * Oex);
-
-    const arma::mat Oi = make_Oi(k, numXis);
-    const arma::mat Eta = Binv * (Gx * A + kronZ.t() * Oxx * A);
-    const arma::mat varXi    = A * Oi * A.t();
-    const arma::mat varEta   = Eta * Oi * Eta.t() + Binv * Psi * Binv.t();
-    const arma::mat covXiEta = A * Oi * Eta.t();
+    const arma::vec muXi  = beta0 + A * zVec;
+    const arma::mat kronZ = arma::kron(Ie, muXi);
+    const arma::mat B = Ie - Ge - kronZ.t() * Oex;
+    const arma::mat rhs    = Gx * A + kronZ.t() * Oxx * A;
+    const arma::mat Eta    = arma::solve(B, rhs, arma::solve_opts::fast);
+    const arma::mat AOi    = A * Oi;
+    const arma::mat varXi  = AOi * A.t();
+    const arma::mat tmp    = arma::solve(arma::trans(B), Psi, arma::solve_opts::fast);
+    const arma::mat noise  = arma::solve(B, tmp, arma::solve_opts::fast);
+    const arma::mat varEta = Eta * Oi * Eta.t() + noise;
+    const arma::mat covXiEta = AOi * Eta.t();
 
     const arma::mat vcovXiEta = arma::join_cols(
         arma::join_rows(varXi, covXiEta),
@@ -185,6 +187,7 @@ struct LMSModel {
     c.Psi   = arma::mat(Psi);
     c.d     = arma::mat(d);
     c.e     = arma::mat(e);
+    c.Oi    = arma::mat(Oi);
 
     return c;
   }
