@@ -1,9 +1,10 @@
 #!/usr/bin/env Rscript
 
 parse_args <- function(args) {
+  default_iters <- as.integer(Sys.getenv("MODSEM_BENCH_ITERS", "25"))
   opts <- list(
     output = "benchmark-results.csv",
-    iterations = as.integer(Sys.getenv("MODSEM_BENCH_ITERS", "1"))
+    iterations = default_iters
   )
 
   for (a in args) {

@@ -11,6 +11,7 @@ jobs:
     env:
       RSPM: https://packagemanager.posit.co/cran/__linux__/jammy/latest
       RESULTS_DIR: benchmark-results
+      MODSEM_BENCH_ITERS: 25
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v4
