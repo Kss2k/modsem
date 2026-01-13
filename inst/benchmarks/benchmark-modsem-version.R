@@ -142,7 +142,7 @@ createExampleRunners <- function(dataEnv) {
       # Inner Model
         Y ~ X + Z + X:Z
       '
-      modsem(spec, dataEnv$oneInt, method = method)
+      modsem(spec, dataEnv$oneInt, method = tolower(method))
     },
     TPB = function(method) {
       spec <- '
@@ -158,7 +158,7 @@ createExampleRunners <- function(dataEnv) {
         BEH ~ INT + PBC
         BEH ~ INT:PBC
       '
-      modsem(spec, dataEnv$TPB, method = method)
+      modsem(spec, dataEnv$TPB, method = tolower(method))
     },
     JORDAN = function(method) {
       spec <- '
@@ -167,7 +167,7 @@ createExampleRunners <- function(dataEnv) {
         SC =~ academic1 + academic2 + academic3 + academic4 + academic5 + academic6
         CAREER ~ ENJ + SC + ENJ:ENJ + SC:SC + ENJ:SC
       '
-      modsem(spec, dataEnv$jordan, method = method)
+      modsem(spec, dataEnv$jordan, method = tomethod(method))
     }
   )
 }
