@@ -193,7 +193,8 @@ createExampleRunners <- function(dataEnv) {
         BEH ~ INT:PBC
       '
       modsem(spec, dataEnv$TPB, method = tolower(method), nodes = 32)
-    },
+    }
+    # ,
     # JORDAN = function(method) {
     #   spec <- '
     #     ENJ =~ enjoy1 + enjoy2 + enjoy3 + enjoy4 + enjoy5
