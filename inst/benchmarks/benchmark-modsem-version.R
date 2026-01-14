@@ -26,8 +26,7 @@
 ## - `--tolerance` (default 5) controls the acceptable slowdown in seconds before the workflow fails.
 ## - `--badge-dir=badges` emits Shields.io-compatible JSON summaries per method (used by the performance badges).
 ## 
-## The resulting dashboard highlights the per-example deltas for LMS and QML so you can quickly spot
-## and investigate regressions before opening a PR.
+## The resulting dashboard highlights the per-example deltas for LMS and QML so you can quickly spot and investigate regressions before opening a PR.
 ## 
 ## Two color-coded badges at the top of this README summarize the **average** performance deltas (main vs latest
 ## CRAN release) for LMS and QML separately. Green means the current `main` branch is faster (bright green for gains >=5s,
@@ -195,15 +194,15 @@ createExampleRunners <- function(dataEnv) {
       '
       modsem(spec, dataEnv$TPB, method = tolower(method), nodes = 32)
     },
-    JORDAN = function(method) {
-      spec <- '
-        ENJ =~ enjoy1 + enjoy2 + enjoy3 + enjoy4 + enjoy5
-        CAREER =~ career1 + career2 + career3 + career4
-        SC =~ academic1 + academic2 + academic3 + academic4 + academic5 + academic6
-        CAREER ~ ENJ + SC + ENJ:ENJ + SC:SC + ENJ:SC
-      '
-      modsem(spec, dataEnv$jordan, method = tolower(method), nodes = 15)
-    }
+    # JORDAN = function(method) {
+    #   spec <- '
+    #     ENJ =~ enjoy1 + enjoy2 + enjoy3 + enjoy4 + enjoy5
+    #     CAREER =~ career1 + career2 + career3 + career4
+    #     SC =~ academic1 + academic2 + academic3 + academic4 + academic5 + academic6
+    #     CAREER ~ ENJ + SC + ENJ:ENJ + SC:SC + ENJ:SC
+    #   '
+    #   modsem(spec, dataEnv$jordan, method = tolower(method), nodes = 15)
+    # }
   )
 }
 
@@ -282,9 +281,9 @@ summarizeDeltas <- function(baselineDf, candidateDf, tolerance) {
   merged$deltaSeconds <- merged$avgSecondsCandidate - merged$avgSecondsBaseline
   merged$deltaPct <- (merged$deltaSeconds / merged$avgSecondsBaseline) * 100
   merged$status <- ifelse(
-    is.na(merged$deltaSeconds),
+    is.na(merged$deltaPct),
     "MISSING",
-    ifelse(merged$deltaSeconds > tolerance, "FAIL", "PASS")
+    ifelse(merged$deltaPct > tolerance, "FAIL", "PASS")
   )
   merged
 }

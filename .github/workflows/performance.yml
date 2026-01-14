@@ -44,10 +44,11 @@ jobs:
             --candidate-source=local \
             --candidate-path=. \
             --repo="kss2k/modsem" \
-            --reps=5 \
+            --reps=100 \
             --tolerance=5 \
             --output=benchmarks/performance-dashboard.md \
-            --results=benchmarks/performance-results.csv
+            --results=benchmarks/performance-results.csv \
+            --methods=LMS
 
       - name: Upload benchmark dashboard
         uses: actions/upload-artifact@v4

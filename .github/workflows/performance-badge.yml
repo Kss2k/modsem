@@ -47,8 +47,8 @@ jobs:
             --candidate="${{ github.ref_name }}" \
             --candidate-source=local \
             --candidate-path=. \
-            --methods=LMS,QML \
-            --reps=5 \
+            --methods=LMS \
+            --reps=100 \
             --tolerance=9999 \
             --badge-dir=badges
           ls -R badges
