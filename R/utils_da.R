@@ -1526,7 +1526,7 @@ getOrthDisturbance <- function(X, variable, sigma = 0.1, seed = 289347) {
   y <- X[, variable, drop = TRUE]
 
   # Do mean imputation in X
-  for (j in seq_along(NCOL(X))) {
+  for (j in seq_len(NCOL(X))) {
     x <- X[, j, drop = TRUE]
     mu <- mean(x, na.rm = TRUE)
     X[is.na(x), j] <- mu
