@@ -152,6 +152,17 @@ getOVs <- function(parTable = NULL, model.syntax = NULL) {
 }
 
 
+getStructVars <- function(parTable) {
+  struct <- parTable[parTable$op == "~", , drop = FALSE]
+  unique(c(struct$lhs, struct$rhs))
+}
+
+
+getStructOVs <- function(parTable) {
+  intersect(getStructVars(parTable), getOVs(parTable))
+}
+
+
 getHigherOrderLVs <- function(parTable) {
   lVs                  <- getLVs(parTable)
   isHigherOrder        <- logical(length(lVs))
@@ -819,3 +830,16 @@ addNamedNullField <- function(x, field) {
   x[field] <- stats::setNames(list(field = NULL), nm = field)
   x
 }
+
+
+std1 <- function(v) {
+  mu    <- mean(v, na.rm = TRUE)
+  sigma <- stats::sd(v, na.rm = TRUE)
+
+  if (!is.finite(sigma) || sigma == 0)
+    sigma <- 1
+
+  (v - mu) / sigma
+}
+
+

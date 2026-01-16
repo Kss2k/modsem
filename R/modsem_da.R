@@ -335,6 +335,8 @@ modsem_da <- function(model.syntax = NULL,
                       auto.fix.single = NULL,
                       auto.split.syntax = NULL,
                       ...) {
+  method <- tolower(method)
+
   if (is.null(model.syntax)) {
     stop2("No model.syntax provided")
   } else if (!is.character(model.syntax)) {
@@ -480,6 +482,7 @@ modsem_da <- function(model.syntax = NULL,
   group.info <- parseModelArgumentsByGroupDA(
     model.syntax       = model.syntax,
     cov.syntax         = cov.syntax,
+    method             = method,
     data               = data,
     group              = group,
     auto.split.syntax  = args$auto.split.syntax,
@@ -510,7 +513,7 @@ modsem_da <- function(model.syntax = NULL,
   if (args$optimize) {
     model <- tryCatch({
       .optimize <- purrr::quietly(optimizeStartingParamsDA)
-      # .optimize <- \(...) list(result = optimizeStartingParamsDA(...))
+      .optimize <- \(...) list(result = optimizeStartingParamsDA(...))
       result    <- .optimize(
         model            = model,
         args             = args,

@@ -204,6 +204,8 @@ modsem_pi <- function(model.syntax = NULL,
                       rcs.scale.corrected = TRUE,
                       LAVFUN = lavaan::sem,
                       ...) {
+  method <- tolower(method)
+
   stopif(is.null(model.syntax), "No model syntax provided in modsem")
   stopif(is.null(data), "No data provided in modsem")
   stopif(!is.data.frame(data) && !is.matrix(data), "data must be a data.frame or matrix!")

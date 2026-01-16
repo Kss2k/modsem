@@ -113,6 +113,8 @@ modsem <- function(model.syntax = NULL,
                    data = NULL,
                    method = "dblcent",
                    ...) {
+  method <- tolower(method)
+
   if (is.null(model.syntax)) {
     stop2("No model.syntax provided")
   } else if (!is.character(model.syntax)) {

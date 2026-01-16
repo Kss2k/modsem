@@ -14,6 +14,9 @@ CONSTRAINT_OPS <- c("==", ">", "<", ":=")
 BOUNDUARY_OPS <- c(">", "<")
 
 
+TEMP_OV_PREFIX <- ".TEMP_OV__" 
+
+
 getFreeParams <- function(model) {
   model$freeParams
 }
@@ -1411,16 +1414,69 @@ expandParTableByGroup <- function(parTable, group.levels) {
 }
 
 
-parseModelArgumentsByGroupDA <- function(model.syntax, cov.syntax, data, group,
+parseModelArgumentsByGroupDA <- function(model.syntax, cov.syntax,
+                                         method, data, group,
                                          auto.split.syntax = FALSE,
                                          sampling.weights = NULL,
                                          sampling.weights.normalization = "total") {
+  parTable    <- modsemify(model.syntax)
+  parTableCov <- modsemify(cov.syntax)
+
+  # Check for observed (structural) variables
+  structovs <- getStructOVs(rbind(parTable, parTableCov))
+  ovs       <- getOVs(parTable, parTableCov)
+  intvars   <- unique(unlist(stringr::str_split(getIntTerms(parTable), pattern = ":")))
+  X         <- as.matrix(data[, ovs])
+
+  for (ov in structovs) {
+    tmp.ov <- paste0(TEMP_OV_PREFIX, ov)
+    
+    # Replace ov in measurement model with tmp.ov
+    parTable[parTable$op == "=~" & parTable$rhs == ov, "rhs"] <- tmp.ov
+
+    # We need to add some random error term to make LMS work properly
+    # We can't just add an arbitrarily small disturbance variance, as
+    # it leads to numerical instability
+    use.rng <- method == "lms" && ov %in% intvars
+
+    if (use.rng) {
+      # We need to add some random error term to make LMS work properly
+      # We can't just add an arbitrarily small disturbance variance, as
+      # it leads to numerical instability
+
+      x <- X[,ov]
+
+      sigma2 <- round(stats::var(x, na.rm = TRUE) / 10, 5)
+      sigma  <- sqrt(sigma2)
+      disturbance <- getOrthDisturbance(X = X, variable = ov, sigma = sigma)
+
+      data[[tmp.ov]] <- data[[ov]] + disturbance
+      # add new disturbance into X as well, so the next disturbance is orthogonal
+      # to the newly generated one
+      X <- cbind(matrix(data[[tmp.ov]], ncol = 1, dimnames = list(NULL, tmp.ov)), X)
+
+      parTable <- rbind(
+        parTable,
+        data.frame(lhs = ov, op = "=~", rhs = tmp.ov, mod = "1"),
+        data.frame(lhs = tmp.ov, op = "~~", rhs = tmp.ov, mod = as.character(sigma2))
+      )
+
+    } else {
+
+      data[[tmp.ov]] <- data[[ov]]
+      parTable <- rbind(
+        parTable,
+        data.frame(lhs = ov, op = "=~", rhs = tmp.ov, mod = "1")
+      )
+
+    }
+  }
+
+  if (length(structovs))
+    model.syntax <- parTableToSyntax(parTable)
 
   group.info <- prepareDataGroupDA(group = group, data = data, sampling.weights = sampling.weights,
                                    sampling.weights.normalization = sampling.weights.normalization)
-
-  parTable    <- modsemify(model.syntax)
-  parTableCov <- modsemify(cov.syntax)
 
   if (auto.split.syntax && is.null(parTableCov) && is.null(cov.syntax)) {
     split <- splitParTable(parTable)
@@ -1446,4 +1502,51 @@ parseModelArgumentsByGroupDA <- function(model.syntax, cov.syntax, data, group,
   group.info$parTableCov <- expandParTableByGroup(parTableCov, group.levels = group.levels)
 
   group.info
+}
+
+
+removeTempOV_RowsParTable <- function(parTable) {
+  tmp <- startsWith(parTable$lhs, TEMP_OV_PREFIX) | startsWith(parTable$rhs, TEMP_OV_PREFIX)
+  parTable[!tmp, , drop = FALSE]
+}
+
+
+getOrthDisturbance <- function(X, variable, sigma = 0.1, seed = 289347) {
+  if (exists(".Random.seed")) Orig.seed <- .Random.seed
+  else                        Orig.seed <- NULL
+
+  on.exit({
+    if (!is.null(Orig.seed))
+      .Random.seed <<- Orig.seed
+  })
+
+  set.seed(seed)
+
+  X <- as.matrix(X)
+  y <- X[, variable, drop = TRUE]
+
+  # Do mean imputation in X
+  for (j in seq_along(NCOL(X))) {
+    x <- X[, j, drop = TRUE]
+    mu <- mean(x, na.rm = TRUE)
+    X[is.na(x), j] <- mu
+  }
+
+  ok <- !is.na(y)
+  n <- sum(ok)
+
+  e.proto <- stats::rnorm(NROW(X))
+  e.orth <- stats::residuals(lm(as.data.frame(cbind(e.proto, X))))
+  e.scaled <- std1(e.orth) * sigma
+
+  out <- numeric(NROW(X))
+  out[ok] <- e.scaled
+
+  out
+}
+
+
+removeTempOV_RowsParTable <- function(parTable) {
+  tmp <- startsWith(parTable$lhs, TEMP_OV_PREFIX) | startsWith(parTable$rhs, TEMP_OV_PREFIX)
+  parTable[!tmp, , drop = FALSE]
 }
