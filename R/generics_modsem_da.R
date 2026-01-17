@@ -757,7 +757,7 @@ vcov.modsem_da <- function(object, type = c("all", "free"), ...) {
   type <- match.arg(type)
 
   what <- ifelse(type == "all", yes = "vcov.all", no = "vcov.free")
-  modsem_inspect_da(object, what = what)
+  modsem_inspect_da(object, what = what, ...)
 }
 
 
