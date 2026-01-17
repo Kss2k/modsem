@@ -11,26 +11,7 @@ m1 <- '
   Y ~ X + Z + X:Z + x1
 '
 
-testthat::expect_error(modsem(m1, oneInt, method = "lms"),
-                       regexp = "Observed variables are not allowed in .*")
-testthat::expect_error(modsem(m1, oneInt, method = "qml"),
-                       regexp = "Observed variables are not allowed in .*")
-
-
-m2 <- '
-  # Outer Model
-  X =~ x1 + x2 +x3
-  Y =~ y1 + y2 + y3
-  Z =~ z1 + z2 + z3
-
-  # Inner model
-  Y ~ X + Z + X:Z + jk
-'
-
-testthat::expect_error(modsem(m2, oneInt, method = "lms"),
-                       regexp = "Observed variables are not allowed in .*")
-testthat::expect_error(modsem(m2, oneInt, method = "qml"),
-                       regexp = "Observed variables are not allowed in .*")
+testthat::expect_no_error(modsem(m1, oneInt, method = "lms"))
 
 
 m3 <- '

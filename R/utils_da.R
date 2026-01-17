@@ -1427,6 +1427,10 @@ parseModelArgumentsByGroupDA <- function(model.syntax, cov.syntax,
   structovs <- getStructOVs(rbind(parTable, parTableCov))
   ovs       <- getOVs(rbind(parTable, parTableCov))
   intvars   <- unique(unlist(stringr::str_split(getIntTerms(parTable), pattern = ":")))
+
+  structovs <- intersect(colnames(data), structovs)
+  ovs       <- intersect(colnames(data), ovs)
+
   X         <- as.matrix(data[, ovs])
   l         <- 0
 
@@ -1434,7 +1438,7 @@ parseModelArgumentsByGroupDA <- function(model.syntax, cov.syntax,
     tmp.ov <- paste0(TEMP_OV_PREFIX, ov)
 
     # Replace ov in measurement model with tmp.ov
-    parTable[parTable$op == "=~" & parTable$rhs == ov, "rhs"] <- tmp.ov
+    # parTable[parTable$op == "=~" & parTable$rhs == ov, "rhs"] <- tmp.ov
 
     # We need to add some random error term to make LMS work properly
     # We can't just add an arbitrarily small disturbance variance, as

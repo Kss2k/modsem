@@ -222,6 +222,7 @@ print.summary_modsem_pi <- function(x, ...) {
 #' @export
 parameter_estimates.modsem_pi <- function(object, colon.pi = FALSE,
                                           high.order.as.measr = NULL, # capture argument
+                                          rm.tmp.ov = NULL, # capture argument
                                           ...) {
   parTable <- lavaan::parameterEstimates(object$lavaan, ...)
 
