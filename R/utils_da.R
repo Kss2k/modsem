@@ -14,7 +14,7 @@ CONSTRAINT_OPS <- c("==", ">", "<", ":=")
 BOUNDUARY_OPS <- c(">", "<")
 
 
-TEMP_OV_PREFIX <- ".TEMP_OV__" 
+TEMP_OV_PREFIX <- ".TEMP_OV__"
 
 
 getFreeParams <- function(model) {
@@ -1418,19 +1418,21 @@ parseModelArgumentsByGroupDA <- function(model.syntax, cov.syntax,
                                          method, data, group,
                                          auto.split.syntax = FALSE,
                                          sampling.weights = NULL,
-                                         sampling.weights.normalization = "total") {
+                                         sampling.weights.normalization = "total",
+                                         rng.indicators = 1) {
   parTable    <- modsemify(model.syntax)
   parTableCov <- modsemify(cov.syntax)
 
   # Check for observed (structural) variables
   structovs <- getStructOVs(rbind(parTable, parTableCov))
-  ovs       <- getOVs(parTable, parTableCov)
+  ovs       <- getOVs(rbind(parTable, parTableCov))
   intvars   <- unique(unlist(stringr::str_split(getIntTerms(parTable), pattern = ":")))
   X         <- as.matrix(data[, ovs])
+  l         <- 0
 
   for (ov in structovs) {
     tmp.ov <- paste0(TEMP_OV_PREFIX, ov)
-    
+
     # Replace ov in measurement model with tmp.ov
     parTable[parTable$op == "=~" & parTable$rhs == ov, "rhs"] <- tmp.ov
 
@@ -1445,22 +1447,28 @@ parseModelArgumentsByGroupDA <- function(model.syntax, cov.syntax,
       # it leads to numerical instability
 
       x <- X[,ov]
-
       sigma2 <- round(stats::var(x, na.rm = TRUE) / 10, 5)
       sigma  <- sqrt(sigma2)
-      disturbance <- getOrthDisturbance(X = X, variable = ov, sigma = sigma)
 
-      data[[tmp.ov]] <- data[[ov]] + disturbance
-      # add new disturbance into X as well, so the next disturbance is orthogonal
-      # to the newly generated one
-      X <- cbind(matrix(data[[tmp.ov]], ncol = 1, dimnames = list(NULL, tmp.ov)), X)
+      for (k in seq_len(rng.indicators)) {
+        tmp.ov.k <- paste0(tmp.ov, k)
 
-      parTable <- rbind(
-        parTable,
-        data.frame(lhs = ov, op = "=~", rhs = tmp.ov, mod = "1"),
-        data.frame(lhs = tmp.ov, op = "~~", rhs = tmp.ov, mod = as.character(sigma2))
-      )
+        seed <- k * floor(pi * 1000) + which(colnames(X) == ov) * 7200 + (l <- l + 1)
+        disturbance <- getOrthDisturbance(X = X, variable = ov, sigma = sigma, seed = seed)
+        # disturbance <- rnorm(length(x), mean = 0, sd = sigma)
 
+        data[[tmp.ov.k]] <- data[[ov]] + disturbance
+        # add new disturbance into X as well, so the next disturbance is orthogonal
+        # to the newly generated one
+        X <- cbind(matrix(data[[tmp.ov.k]], ncol = 1, dimnames = list(NULL, tmp.ov.k)), X)
+
+        parTable <- rbind(
+          parTable,
+          data.frame(lhs = ov, op = "=~", rhs = tmp.ov.k, mod = "1"),
+          # data.frame(lhs = tmp.ov.k, op = "~~", rhs = tmp.ov.k, mod = as.character(round(var(disturbance), 5)))
+          data.frame(lhs = tmp.ov.k, op = "~~", rhs = tmp.ov.k, mod = as.character(sigma2))
+        )
+      }
     } else {
 
       data[[tmp.ov]] <- data[[ov]]
