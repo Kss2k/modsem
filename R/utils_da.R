@@ -1431,9 +1431,10 @@ parseModelArgumentsByGroupDA <- function(model.syntax, cov.syntax,
   structovs <- intersect(colnames(data), structovs)
   ovs       <- intersect(colnames(data), ovs)
 
-  X         <- as.matrix(data[, ovs])
-  l         <- 0
+  if (length(structovs)) X <- as.matrix(get_pi_data(model.syntax, data = data))
+  else                   X <- NULL
 
+  l <- 0
   for (ov in structovs) {
     tmp.ov <- paste0(TEMP_OV_PREFIX, ov)
 
@@ -1459,7 +1460,6 @@ parseModelArgumentsByGroupDA <- function(model.syntax, cov.syntax,
 
         seed <- k * floor(pi * 1000) + which(colnames(X) == ov) * 7200 + (l <- l + 1)
         disturbance <- getOrthDisturbance(X = X, variable = ov, sigma = sigma, seed = seed)
-        # disturbance <- rnorm(length(x), mean = 0, sd = sigma)
 
         data[[tmp.ov.k]] <- data[[ov]] + disturbance
         # add new disturbance into X as well, so the next disturbance is orthogonal
@@ -1469,7 +1469,6 @@ parseModelArgumentsByGroupDA <- function(model.syntax, cov.syntax,
         parTable <- rbind(
           parTable,
           data.frame(lhs = ov, op = "=~", rhs = tmp.ov.k, mod = "1"),
-          # data.frame(lhs = tmp.ov.k, op = "~~", rhs = tmp.ov.k, mod = as.character(round(var(disturbance), 5)))
           data.frame(lhs = tmp.ov.k, op = "~~", rhs = tmp.ov.k, mod = as.character(sigma2))
         )
       }
