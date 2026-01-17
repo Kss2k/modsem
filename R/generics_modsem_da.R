@@ -769,7 +769,7 @@ coefficients.modsem_da <- function(object, type = c("all", "free"), ...) {
 
   what <- ifelse(type == "all", yes = "coefficients.all",
                  no = "coefficients.free")
-  modsem_inspect_da(object, what = what)
+  modsem_inspect_da(object, what = what, ...)
 }
 
 

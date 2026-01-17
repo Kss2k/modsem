@@ -7,8 +7,11 @@ inspectDA_Optim <- c("coefficients.free", "vcov.free", "information",
                      "loglik", "iterations", "convergence")
 
 
-modsem_inspect_da <- function(model, what = "default") {
+modsem_inspect_da <- function(model, what = "default", standardized = FALSE) {
   stopif(!length(what), "`what` is of length zero!")
+
+  if (standardized)
+    model <- standardize_model(model)
 
   finalModel <- model$model
   groupModels <- finalModel$models
