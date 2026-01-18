@@ -1426,61 +1426,38 @@ parseModelArgumentsByGroupDA <- function(model.syntax, cov.syntax,
   # Check for observed (structural) variables
   structovs <- getStructOVs(rbind(parTable, parTableCov))
   ovs       <- getOVs(rbind(parTable, parTableCov))
-  intvars   <- unique(unlist(stringr::str_split(getIntTerms(parTable), pattern = ":")))
 
-  structovs <- intersect(colnames(data), structovs)
-  ovs       <- intersect(colnames(data), ovs)
+  missing <- setdiff(ovs, colnames(data))
+  stopif(length(missing), "Missing observed variables in data:\n  ",
+         paste(missing, collapse = ", "))
 
-  if (length(structovs)) X <- as.matrix(get_pi_data(model.syntax, data = data))
-  else                   X <- NULL
+  varsInts  <- getVarsInts(getIntTermRows(parTable), removeColonNames = FALSE)
+  isOV_Int  <- vapply(varsInts, FUN.VALUE = logical(1L), FUN = \(x) all(x %in% ovs))
+  ovIntTerms <- names(varsInts)[isOV_Int]
 
-  l <- 0
+  for (ovInt in ovIntTerms) {
+    vars <- varsInts[[ovInt]]
+    ovIntNew <- stringr::str_remove_all(ovInt, pattern = ":")
+
+    parTable[parTable$lhs == ovInt, "lhs"] <- ovIntNew
+    parTable[parTable$rhs == ovInt, "rhs"] <- ovIntNew
+    data[[ovIntNew]] <- apply(data[vars], MARGIN = 1L, FUN = prod)
+    structovs <- c(structovs, ovIntNew)
+  }
+
   for (ov in structovs) {
     tmp.ov <- paste0(TEMP_OV_PREFIX, ov)
 
     # Replace ov in measurement model with tmp.ov
     # parTable[parTable$op == "=~" & parTable$rhs == ov, "rhs"] <- tmp.ov
 
-    # We need to add some random error term to make LMS work properly
-    # We can't just add an arbitrarily small disturbance variance, as
-    # it leads to numerical instability
-    use.rng <- method == "lms" && ov %in% intvars
-
-    if (use.rng) {
-      # We need to add some random error term to make LMS work properly
-      # We can't just add an arbitrarily small disturbance variance, as
-      # it leads to numerical instability
-
-      x <- X[,ov]
-      sigma2 <- round(stats::var(x, na.rm = TRUE) / 10, 5)
-      sigma  <- sqrt(sigma2)
-
-      for (k in seq_len(rng.indicators)) {
-        tmp.ov.k <- paste0(tmp.ov, k)
-
-        seed <- k * floor(pi * 1000) + which(colnames(X) == ov) * 7200 + (l <- l + 1)
-        disturbance <- getOrthDisturbance(X = X, variable = ov, sigma = sigma, seed = seed)
-
-        data[[tmp.ov.k]] <- data[[ov]] + disturbance
-        # add new disturbance into X as well, so the next disturbance is orthogonal
-        # to the newly generated one
-        X <- cbind(matrix(data[[tmp.ov.k]], ncol = 1, dimnames = list(NULL, tmp.ov.k)), X)
-
-        parTable <- rbind(
-          parTable,
-          data.frame(lhs = ov, op = "=~", rhs = tmp.ov.k, mod = "1"),
-          data.frame(lhs = tmp.ov.k, op = "~~", rhs = tmp.ov.k, mod = as.character(sigma2))
-        )
-      }
-    } else {
-
-      data[[tmp.ov]] <- data[[ov]]
-      parTable <- rbind(
-        parTable,
-        data.frame(lhs = ov, op = "=~", rhs = tmp.ov, mod = "1")
-      )
-
-    }
+    data[[tmp.ov]] <- data[[ov]]
+    parTable <- rbind(
+      parTable,
+      data.frame(lhs = ov, op = "=~", rhs = tmp.ov, mod = "1"),
+      data.frame(lhs = ov, op = "~1", rhs = "", mod = ""),
+      data.frame(lhs = tmp.ov, op = "~1", rhs = "", mod = "0")
+    )
   }
 
   if (length(structovs))
@@ -1504,6 +1481,7 @@ parseModelArgumentsByGroupDA <- function(model.syntax, cov.syntax,
 
   group.info$parTable.orig    <- parTable
   group.info$parTableCov.orig <- parTableCov
+  group.info$ovIntTerms       <- ovIntTerms
 
   group.levels <- group.info$levels
   if (is.null(group.levels)) group.levels <- ""
@@ -1560,4 +1538,42 @@ getOrthDisturbance <- function(X, variable, sigma = 0.1, seed = 289347) {
 removeTempOV_RowsParTable <- function(parTable) {
   tmp <- startsWith(parTable$lhs, TEMP_OV_PREFIX) | startsWith(parTable$rhs, TEMP_OV_PREFIX)
   parTable[!tmp, , drop = FALSE]
+}
+
+
+renameOV_IntTermsParTable <- function(parTable, ovIntTerms = NULL) {
+  if (is.null(ovIntTerms) || !length(ovIntTerms))
+    return(parTable)
+
+  for (ovInt in ovIntTerms) {
+    noColon <- stringr::str_remove_all(ovInt, pattern = ":")
+
+    parTable[parTable$lhs == noColon, "lhs"] <- ovInt
+    parTable[parTable$rhs == noColon, "rhs"] <- ovInt
+  }
+
+  parTable
+}
+
+
+renameOV_IntTermsMatrices <- function(matrices, ovIntTerms = NULL, fields = NULL) {
+  if (is.null(ovIntTerms) || !length(ovIntTerms))
+    return(parTable)
+
+  if (is.null(fields))
+    fields <- seq_along(matrices)
+
+  for (ovInt in ovIntTerms) {
+    noColon <- stringr::str_remove_all(ovInt, pattern = ":")
+
+    for (field in fields) {
+      rn <- rownames(matrices[[field]])
+      cn <- colnames(matrices[[field]])
+
+      rownames(matrices[[field]])[rn == noColon] <- ovInt
+      colnames(matrices[[field]])[cn == noColon] <- ovInt
+    }
+  }
+
+  matrices
 }

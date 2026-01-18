@@ -3,8 +3,14 @@
 #'   denoted with the \code{=~} operator? If \code{FALSE} the \code{~}
 #'   operator is used.
 #' @param rm.tmp.ov Should temporary (hidden) variables be removed?
+#' @param colon.ov.prod Should colons be added to observed product terms?
+#' @param label.renamed.prod Should renamed product terms keep their old (implicit) labels?
 #' @describeIn parameter_estimates Get parameter estimates of a \code{\link{modsem_da}} object
-parameter_estimates.modsem_da <- function(object, high.order.as.measr = TRUE, rm.tmp.ov = TRUE, ...) {
+parameter_estimates.modsem_da <- function(object, high.order.as.measr = TRUE,
+                                          rm.tmp.ov = TRUE,
+                                          colon.ov.prod = TRUE,
+                                          label.renamed.prod = FALSE,
+                                          ...) {
   parTable <- object$parTable
 
   if (high.order.as.measr) {
@@ -12,6 +18,25 @@ parameter_estimates.modsem_da <- function(object, high.order.as.measr = TRUE, rm
     parTable <- higherOrderStruct2Measr(parTable = parTable,
                                         indsHigherOrderLVs = indsHigherOrderLVs)
     parTable <- sortParTableDA(parTable, model = object$model)
+  }
+
+  if (colon.ov.prod) {
+    if (label.renamed.prod)
+      origLabels <- getParTableLabels(parTable, labelCol = "label")
+    else
+      origLabels <- parTable$label
+
+    ovIntTerms <- object$model$info$group.info$ovIntTerms
+
+    for (ovint in ovIntTerms) {
+      noColon <- stringr::str_remove_all(ovint, pattern = ":")
+      lmatch <- parTable$lhs == noColon
+      rmatch <- parTable$rhs == noColon
+
+      parTable[rmatch | lmatch, "label"] <- origLabels[rmatch | lmatch]
+      parTable[lmatch, "lhs"] <- ovint
+      parTable[rmatch, "rhs"] <- ovint
+    }
   }
 
   if (rm.tmp.ov)

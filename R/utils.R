@@ -499,6 +499,9 @@ strRemovIfString <- function(x, pattern) {
 
 
 getParTableLabels <- function(parTable, labelCol="label", replace.dup = FALSE) {
+  if (!labelCol %in% colnames(parTable))
+    parTable[[labelCol]] <- ""
+
   if (replace.dup) {
 		labels <- unique(parTable[[labelCol]][parTable[[labelCol]] != ""])
 
