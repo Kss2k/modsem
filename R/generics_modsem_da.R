@@ -29,7 +29,11 @@ parameter_estimates.modsem_da <- function(object, high.order.as.measr = TRUE,
     ovIntTerms <- object$model$info$group.info$ovIntTerms
 
     for (ovint in ovIntTerms) {
-      noColon <- stringr::str_remove_all(ovint, pattern = ":")
+      noColon <- stringr::str_replace_all(
+        string = ovint, pattern = ":",
+        replacement = OP_OV_INT
+      )
+
       lmatch <- parTable$lhs == noColon
       rmatch <- parTable$rhs == noColon
 

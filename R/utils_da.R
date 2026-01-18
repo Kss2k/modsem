@@ -7,6 +7,7 @@ OP_REPLACEMENTS <- c("~~"  = "___COVARIANCE___",
                      "<-"  = "___MPLUS_REGRESSION___",
                      "\\|" = "___THRESHOLD___")
 
+OP_OV_INT <- OP_REPLACEMENTS[[":"]]
 OP_REPLACEMENTS_INV <- structure(names(OP_REPLACEMENTS), names = OP_REPLACEMENTS)
 
 
@@ -1437,7 +1438,10 @@ parseModelArgumentsByGroupDA <- function(model.syntax, cov.syntax,
 
   for (ovInt in ovIntTerms) {
     vars <- varsInts[[ovInt]]
-    ovIntNew <- stringr::str_remove_all(ovInt, pattern = ":")
+    ovIntNew <- stringr::str_replace_all(
+      string = ovInt, pattern = ":",
+      replacement = OP_OV_INT
+    )
 
     parTable[parTable$lhs == ovInt, "lhs"] <- ovIntNew
     parTable[parTable$rhs == ovInt, "rhs"] <- ovIntNew
