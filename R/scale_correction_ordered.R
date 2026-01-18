@@ -434,17 +434,6 @@ rescaleOrderedData <- function(data, sim.ov, cols.ordered, cols.cont,
 }
 
 
-std1 <- function(v) {
-  mu    <- mean(v, na.rm = TRUE)
-  sigma <- stats::sd(v, na.rm = TRUE)
-
-  if (!is.finite(sigma) || sigma == 0)
-    sigma <- 1
-
-  (v - mu) / sigma
-}
-
-
 modsemOrderedScaleCorrectionV2 <- function(model.syntax,
                                            data,
                                            method = "lms",

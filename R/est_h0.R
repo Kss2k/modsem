@@ -58,18 +58,38 @@ estimate_h0.modsem_da <- function(object, warn_no_interaction = TRUE, ...) {
   argList[newArgNames] <- newArgList[newArgNames]
 
   tryCatch({
-    # TODO: labels should probably be replaced instead...
-    strippedParTable <- removeUnknownLabels(parTable[!grepl(":", parTable$rhs), ])
+    ovints <- stringr::str_replace_all(
+      string = object$model$info$group.info$ovIntTerms,
+      pattern = ":", replacement = OP_OV_INT
+    )
+
+    isInteractionTerm <-
+      parTable$op == "~" &
+      (parTable$rhs %in% ovints | grepl(":", parTable$rhs))
+
+    constrainedParTable <- redefineIntTermLabels(
+      parTable = parTable,
+      isInteractionTerm = isInteractionTerm
+    )
+
     # TODO: Do something similar for cov.syntax
 
-    if (NROW(strippedParTable) == NROW(parTable)) {
+    islvint  <- grepl(":", constrainedParTable$rhs)
+    haslvint <- any(islvint)
+    isovint  <- constrainedParTable$rhs %in% ovints & constrainedParTable$op == "~"
+    hasovint <- length(ovints)
+
+    constrainedParTable[isovint, "mod"] <- "0"
+    constrainedParTable <- constrainedParTable[!islvint, , drop = FALSE]
+
+    if (!haslvint && !hasovint) {
       warnif(warn_no_interaction, "No interaction terms found in the model. ",
              "The baseline model is identical to the original model, ",
              "and won't be estimated!")
       return(NULL)
     }
 
-    syntax <- parTableToSyntax(strippedParTable)
+    syntax <- parTableToSyntax(constrainedParTable)
     argList <- c(
       list(model.syntax = syntax, data = data, method = method,
            cov.syntax = cov.syntax), argList
@@ -131,20 +151,10 @@ estimate_h0.modsem_pi <- function(object, warn_no_interaction = TRUE,
     }
 
     isInteractionTerm <- grepl(":", parTable$rhs)
-    constrainedParTable <- parTable
-
-    # If there are any label modifiers, we must not remove them completely
-    # from the model, as they might be used elsewhere in the model
-    preExistingMod <- constrainedParTable[isInteractionTerm, "mod"]
-    preExistingMod <- preExistingMod[preExistingMod != ""]
-    preExistingLab <- unique(preExistingMod[!canBeNumeric(preExistingMod)])
-
-    # Redine the labels as zero, if they exist
-    if (length(preExistingLab)) {
-      redefinedLabels <- data.frame(lhs = preExistingLab, op  = ":=", rhs = "0",
-                                    mod = preExistingLab)
-      constrainedParTable <- rbind(redefinedLabels, constrainedParTable)
-    }
+    constrainedParTable <- redefineIntTermLabels(
+      parTable = parTable,
+      isInteractionTerm = isInteractionTerm
+    )
 
     # We don't want to remove the interaction term, since we want the baseline model
     # to have the same variables as the original model (inluding the product indicators).
@@ -181,4 +191,28 @@ parTableHasInteraction <- function(parTable) {
 
 parTableHasHigherOrderInteraction <- function(parTable) {
   any(grepl(":", parTable$rhs) & parTable$op == "=~")
+}
+
+
+redefineIntTermLabels <- function(parTable, isInteractionTerm = NULL) {
+  if (is.null(isInteractionTerm))
+    isInteractionTerm <- grepl(":", parTable$rhs)
+
+  constrainedParTable <- parTable
+
+  # If there are any label modifiers, we must not remove them completely
+  # from the model, as they might be used elsewhere in the model
+  preExistingMod <- constrainedParTable[isInteractionTerm, "mod"]
+  preExistingMod <- preExistingMod[preExistingMod != ""]
+  preExistingLab <- unique(preExistingMod[!canBeNumeric(preExistingMod)])
+
+  # Redine the labels as zero, if they exist
+  if (length(preExistingLab)) {
+    redefinedLabels <- data.frame(lhs = preExistingLab, op  = ":=", rhs = "0",
+                                  mod = preExistingLab, group = 0)
+    cols <- intersect(colnames(redefinedLabels), colnames(parTable))
+    constrainedParTable <- rbind(redefinedLabels[cols], constrainedParTable[cols])
+  }
+
+  constrainedParTable
 }

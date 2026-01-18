@@ -221,18 +221,34 @@ print.summary_modsem_pi <- function(x, ...) {
 #' @param colon.pi Should colons (\code{:}) be added to the interaction terms (E.g., `XZ` -> `X:Z`)?
 #' @export
 parameter_estimates.modsem_pi <- function(object, colon.pi = FALSE,
+                                          label.renamed.prod = FALSE,
                                           high.order.as.measr = NULL, # capture argument
+                                          rm.tmp.ov = NULL, # capture argument
+                                          colon.ov.prod = NULL, # capture
                                           ...) {
   parTable <- lavaan::parameterEstimates(object$lavaan, ...)
 
   if (colon.pi) {
     elems <- object$elementsInProdNames
 
+    if (length(elems) && !"label" %in% colnames(parTable))
+      parTable$label <- ""
+
+    if (label.renamed.prod)
+      origLabels <- getParTableLabels(parTable, labelCol = "label")
+    else
+      origLabels <- parTable$label
+
     for (xz in names(elems)) {
       xzColon <- paste0(elems[[xz]], collapse = ":")
-      parTable[parTable$rhs == xz, "rhs"] <- xzColon
-      parTable[parTable$lhs == xz, "lhs"] <- xzColon # shouldn't be necessary, but just in case
-                                                     # the user has done something weird...
+      rmatch <- parTable$rhs == xz
+      lmatch <- parTable$lhs == xz
+
+      parTable[rmatch | lmatch, "label"] <- origLabels[rmatch | lmatch]
+
+      parTable[rmatch, "rhs"] <- xzColon
+      parTable[lmatch, "lhs"] <- xzColon # shouldn't be necessary, but just in case
+                                         # the user has done something weird...
     }
   }
 

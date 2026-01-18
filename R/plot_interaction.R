@@ -215,8 +215,15 @@ plot_jn <- function(x, z, y, model, min_z = -3, max_z = 3,
   stopif(!inherits(model, c("modsem_da", "modsem_mplus", "modsem_pi", "lavaan")),
          "model must be of class 'modsem_pi', 'modsem_da', 'modsem_mplus', or 'lavaan'")
 
-  if (standardized) parTable <- standardized_estimates(model, correction = TRUE)
-  else              parTable <- parameter_estimates(model)
+  if (standardized) {
+    parTable <- standardized_estimates(model, correction = TRUE)
+  } else {
+    parTable <- parameter_estimates(
+      object = model,
+      colon.ov.prod = TRUE,
+      label.renamed.prod = TRUE
+    )
+  }
 
   group.label <- modsem_inspect(model, what = "group.label")
   parTable <- addMissingGroups(getMissingLabels(parTable))
@@ -616,10 +623,15 @@ plot_surface <- function(x, z, y, model,
   stopif(!isModsemObject(model) && !isLavaanObject(model), "model must be of class ",
          "'modsem_pi', 'modsem_da', 'modsem_mplus' or 'lavaan'")
 
-  if (standardized)
+  if (standardized) {
     parTable <- standardized_estimates(model, correction = TRUE)
-  else
-    parTable <- parameter_estimates(model)
+  } else {
+    parTable <- parameter_estimates(
+      object = model,
+      colon.ov.prod = TRUE,
+      label.renamed.prod = TRUE
+    )
+  }
 
   parTable <- addMissingGroups(parTable)
   groups   <- getGroupsParTable(parTable)

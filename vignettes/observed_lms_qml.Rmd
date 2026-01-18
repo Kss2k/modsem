@@ -22,7 +22,20 @@ library(modsem)
 
 # The Latent Moderated Structural Equations (LMS) and the Quasi Maximum Likelihood (QML) Approach
 
-In contrast to the other approaches, the `LMS` and `QML` approaches are designed to handle latent variables only. Thus, observed variables cannot be used as easily as in the other approaches. One way to get around this is by specifying your observed variable as a latent variable with a single indicator. `modsem()` will, by default, constrain the factor loading to `1` and the residual variance of the indicator to `0`. The only difference between the latent variable and its indicator, assuming it is an exogenous variable, is that it has a zero-mean. This approach works for both the `LMS` and `QML` methods in most cases, with two exceptions.
+As of version `1.0.16`, observed variables are supported (in most circumstances) for both the LMS and QML approaches.
+Here we can see an example using only observed variables.
+
+```{r}
+library(modsem)
+
+fit <- modsem('y1 ~ x1 + z1 + x1:z1', data = oneInt, method = "lms")
+summary(fit, standardized = TRUE)
+```
+
+If you're using an older version of `modsem`, the rest of the vignette details how to handle observed variables
+in the LMS and QML approaches. There might also be some cases where where converting observed variables to
+latent ones might be a more reliable option. For example, the LMS approach might struggle if it has to integrate
+along an observed variable.
 
 ## The LMS Approach
 
@@ -31,8 +44,6 @@ For the `LMS` approach, you can use the above-mentioned method in almost all cas
 In most instances, the first variable in the interaction term is chosen as the moderator. For example, if the interaction term is `"X:Z"`, `"X"` will usually be chosen as the moderator. Therefore, if only one of the variables is latent, you should place the latent variable first in the interaction term. If both variables are observed, you must specify a measurement error (e.g., `"x1 ~~ 0.1 * x1"`) for the indicator of the first variable in the interaction term.
 
 ```{r}
-library(modsem)
-
 # Interaction effect between a latent and an observed variable
 m1 <- '
 # Outer Model

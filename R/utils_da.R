@@ -7,11 +7,15 @@ OP_REPLACEMENTS <- c("~~"  = "___COVARIANCE___",
                      "<-"  = "___MPLUS_REGRESSION___",
                      "\\|" = "___THRESHOLD___")
 
+OP_OV_INT <- OP_REPLACEMENTS[[":"]]
 OP_REPLACEMENTS_INV <- structure(names(OP_REPLACEMENTS), names = OP_REPLACEMENTS)
 
 
 CONSTRAINT_OPS <- c("==", ">", "<", ":=")
 BOUNDUARY_OPS <- c(">", "<")
+
+
+TEMP_OV_PREFIX <- ".TEMP_OV__"
 
 
 getFreeParams <- function(model) {
@@ -1411,16 +1415,60 @@ expandParTableByGroup <- function(parTable, group.levels) {
 }
 
 
-parseModelArgumentsByGroupDA <- function(model.syntax, cov.syntax, data, group,
+parseModelArgumentsByGroupDA <- function(model.syntax, cov.syntax,
+                                         method, data, group,
                                          auto.split.syntax = FALSE,
                                          sampling.weights = NULL,
-                                         sampling.weights.normalization = "total") {
+                                         sampling.weights.normalization = "total",
+                                         rng.indicators = 1) {
+  parTable    <- modsemify(model.syntax)
+  parTableCov <- modsemify(cov.syntax)
+
+  # Check for observed (structural) variables
+  structovs <- getStructOVs(rbind(parTable, parTableCov))
+  ovs       <- getOVs(rbind(parTable, parTableCov))
+
+  missing <- setdiff(ovs, colnames(data))
+  stopif(length(missing), "Missing observed variables in data:\n  ",
+         paste(missing, collapse = ", "))
+
+  varsInts  <- getVarsInts(getIntTermRows(parTable), removeColonNames = FALSE)
+  isOV_Int  <- vapply(varsInts, FUN.VALUE = logical(1L), FUN = \(x) all(x %in% ovs))
+  ovIntTerms <- names(varsInts)[isOV_Int]
+
+  for (ovInt in ovIntTerms) {
+    vars <- varsInts[[ovInt]]
+    ovIntNew <- stringr::str_replace_all(
+      string = ovInt, pattern = ":",
+      replacement = OP_OV_INT
+    )
+
+    parTable[parTable$lhs == ovInt, "lhs"] <- ovIntNew
+    parTable[parTable$rhs == ovInt, "rhs"] <- ovIntNew
+    data[[ovIntNew]] <- apply(data[vars], MARGIN = 1L, FUN = prod)
+    structovs <- c(structovs, ovIntNew)
+  }
+
+  for (ov in structovs) {
+    tmp.ov <- paste0(TEMP_OV_PREFIX, ov)
+
+    # Replace ov in measurement model with tmp.ov
+    # parTable[parTable$op == "=~" & parTable$rhs == ov, "rhs"] <- tmp.ov
+
+    data[[tmp.ov]] <- data[[ov]]
+    parTable <- rbind(
+      parTable,
+      data.frame(lhs = ov, op = "=~", rhs = tmp.ov, mod = "1"),
+      data.frame(lhs = ov, op = "~1", rhs = "", mod = ""),
+      data.frame(lhs = tmp.ov, op = "~1", rhs = "", mod = "0")
+    )
+  }
+
+  if (length(structovs))
+    model.syntax <- parTableToSyntax(parTable)
 
   group.info <- prepareDataGroupDA(group = group, data = data, sampling.weights = sampling.weights,
                                    sampling.weights.normalization = sampling.weights.normalization)
-
-  parTable    <- modsemify(model.syntax)
-  parTableCov <- modsemify(cov.syntax)
 
   if (auto.split.syntax && is.null(parTableCov) && is.null(cov.syntax)) {
     split <- splitParTable(parTable)
@@ -1437,6 +1485,8 @@ parseModelArgumentsByGroupDA <- function(model.syntax, cov.syntax, data, group,
 
   group.info$parTable.orig    <- parTable
   group.info$parTableCov.orig <- parTableCov
+  group.info$ovIntTerms       <- ovIntTerms
+  group.info$structovs        <- structovs
 
   group.levels <- group.info$levels
   if (is.null(group.levels)) group.levels <- ""
@@ -1446,4 +1496,10 @@ parseModelArgumentsByGroupDA <- function(model.syntax, cov.syntax, data, group,
   group.info$parTableCov <- expandParTableByGroup(parTableCov, group.levels = group.levels)
 
   group.info
+}
+
+
+removeTempOV_RowsParTable <- function(parTable) {
+  tmp <- startsWith(parTable$lhs, TEMP_OV_PREFIX) | startsWith(parTable$rhs, TEMP_OV_PREFIX)
+  parTable[!tmp, , drop = FALSE]
 }
