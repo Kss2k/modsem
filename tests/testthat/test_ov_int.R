@@ -8,6 +8,7 @@ fit_qml <- modsem(m, oneInt, method = "qml")
 fit_lms <- modsem(m, oneInt, method = "lms")
 summary(fit_lms, standardized = TRUE)
 
+estimate_h0(fit_lms)
 
 tpb <- '
 int1 ~ att1 + sn1 + pbc1

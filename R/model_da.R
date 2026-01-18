@@ -381,6 +381,8 @@ specifyModelDA <- function(..., group.info, createTheta = TRUE) {
     submodels[[g]] <- submodel.g
   }
 
+  has.ov.interaction <- length(group.info$ovIntTerms) > 0
+
   model <- list(
     models   = submodels,
     syntax   = args$syntax,
@@ -407,7 +409,7 @@ specifyModelDA <- function(..., group.info, createTheta = TRUE) {
       nonLinearXis  = submodels[[1L]]$info$nonLinearXis,
       mean.observed = submodels[[1L]]$info$mean.observed,
 
-      has.interaction    = submodels[[1L]]$info$has.interaction,
+      has.interaction    = submodels[[1L]]$info$has.interaction || has.ov.interaction,
       higherOrderLVs     = submodels[[1L]]$info$higherOrderLVs,
       indsHigherOrderLVs = submodels[[1L]]$info$indsHigherOrderLVs,
 
