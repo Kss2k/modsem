@@ -1482,6 +1482,7 @@ parseModelArgumentsByGroupDA <- function(model.syntax, cov.syntax,
   group.info$parTable.orig    <- parTable
   group.info$parTableCov.orig <- parTableCov
   group.info$ovIntTerms       <- ovIntTerms
+  group.info$structovs        <- structovs
 
   group.levels <- group.info$levels
   if (is.null(group.levels)) group.levels <- ""
