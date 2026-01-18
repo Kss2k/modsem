@@ -46,13 +46,14 @@ testthat::expect_error(modsem(m4, oneInt, method = "qml"),
 
 tpb_main <- "
 # Outer Model (Based on Hagger et al., 2007)
-  ATT2 =~ a1 * att1 + a2 * att2 + att3 + att4 + att5
+  ATT =~ a1 * att1 + a2 * att2 + att3 + att4 + att5
   SN =~ s1 * sn1 + sn2
   PBC =~ p1 * pbc1 + pbc2 + pbc3
   INT =~ i1 * int1 + int2 + int3
   BEH =~ b1 + b2
 
 # Inner Model (Based on Steinmetz et al., 2011)
+  ATT ~ SN
   BEH ~ INT + a * PBC
 "
 
@@ -60,6 +61,6 @@ tpb_cov <- "
   INT ~ ATT + b * SN + c * PBC
 "
 
-expect_error(modsem(tpb_main, data = TPB, method = "lms",
-                    calc.se=FALSE, cov.syntax = tpb_cov),
-             regexp = "All latent variables in the cov-model must be an exogenous variable in the main model")
+testthat::expect_error(modsem(tpb_main, data = TPB, method = "lms",
+                              calc.se=FALSE, cov.syntax = tpb_cov),
+                       regexp = "All latent variables in the cov-model must be an exogenous variable in the main model")
