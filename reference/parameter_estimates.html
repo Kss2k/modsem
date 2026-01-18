@@ -60,16 +60,47 @@
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">parameter_estimates</span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># S3 method for class 'lavaan'</span></span>
-<span><span class="fu">parameter_estimates</span><span class="op">(</span><span class="va">object</span>, colon.pi <span class="op">=</span> <span class="cn">TRUE</span>, high.order.as.measr <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span>
+<span><span class="fu">parameter_estimates</span><span class="op">(</span></span>
+<span>  <span class="va">object</span>,</span>
+<span>  colon.pi <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  high.order.as.measr <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  rm.tmp.ov <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  label.renamed.prod <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  colon.ov.prod <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  <span class="va">...</span></span>
+<span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># S3 method for class 'modsem_da'</span></span>
-<span><span class="fu">parameter_estimates</span><span class="op">(</span><span class="va">object</span>, high.order.as.measr <span class="op">=</span> <span class="cn">TRUE</span>, <span class="va">...</span><span class="op">)</span></span>
+<span><span class="fu">parameter_estimates</span><span class="op">(</span></span>
+<span>  <span class="va">object</span>,</span>
+<span>  high.order.as.measr <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  rm.tmp.ov <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  colon.ov.prod <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  label.renamed.prod <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  <span class="va">...</span></span>
+<span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># S3 method for class 'modsem_mplus'</span></span>
-<span><span class="fu">parameter_estimates</span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span></span>
+<span><span class="fu">parameter_estimates</span><span class="op">(</span></span>
+<span>  <span class="va">object</span>,</span>
+<span>  colon.pi <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  high.order.as.measr <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  rm.tmp.ov <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  label.renamed.prod <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  colon.ov.prod <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  <span class="va">...</span></span>
+<span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># S3 method for class 'modsem_pi'</span></span>
-<span><span class="fu">parameter_estimates</span><span class="op">(</span><span class="va">object</span>, colon.pi <span class="op">=</span> <span class="cn">FALSE</span>, high.order.as.measr <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">parameter_estimates</span><span class="op">(</span></span>
+<span>  <span class="va">object</span>,</span>
+<span>  colon.pi <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  label.renamed.prod <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  high.order.as.measr <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  rm.tmp.ov <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  colon.ov.prod <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  <span class="va">...</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -92,6 +123,18 @@
 <dd><p>Should higher order measurement model be
 denoted with the <code>=~</code> operator? If <code>FALSE</code> the <code>~</code>
 operator is used.</p></dd>
+
+
+<dt id="arg-rm-tmp-ov">rm.tmp.ov<a class="anchor" aria-label="anchor" href="#arg-rm-tmp-ov"></a></dt>
+<dd><p>Should temporary (hidden) variables be removed?</p></dd>
+
+
+<dt id="arg-label-renamed-prod">label.renamed.prod<a class="anchor" aria-label="anchor" href="#arg-label-renamed-prod"></a></dt>
+<dd><p>Should renamed product terms keep their old (implicit) labels?</p></dd>
+
+
+<dt id="arg-colon-ov-prod">colon.ov.prod<a class="anchor" aria-label="anchor" href="#arg-colon-ov-prod"></a></dt>
+<dd><p>Should colons be added to observed product terms?</p></dd>
 
 </dl></div>
     <div class="section level2">
