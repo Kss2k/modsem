@@ -1428,6 +1428,8 @@ parseModelArgumentsByGroupDA <- function(model.syntax, cov.syntax,
   # Check for observed (structural) variables
   structovs <- getStructOVs(rbind(parTable, parTableCov))
   ovs       <- getOVs(rbind(parTable, parTableCov))
+  lvs       <- getLVs(parTable)
+  all.vars  <- unique(c(ovs, lvs, colnames(data)))
 
   missing <- setdiff(ovs, colnames(data))
   stopif(length(missing), "Missing observed variables in data:\n  ",
@@ -1451,11 +1453,11 @@ parseModelArgumentsByGroupDA <- function(model.syntax, cov.syntax,
       replacement = OP_OV_INT_2
     )
 
-    if (!ovIntNew1 %in% colnames(data)) ovIntNew <- ovIntNew1
-    else                                ovIntNew <- ovIntNew2
+    if (!ovIntNew1 %in% all.vars) ovIntNew <- ovIntNew1
+    else                          ovIntNew <- ovIntNew2
 
-    warnif(ovIntNew %in% colnames(data),
-           sprintf("Overwriting %s variable in data...", ovIntNew))
+    warnif(ovIntNew %in% all.vars,
+           sprintf("Overwriting %s variable in model...", ovIntNew))
 
     parTable[parTable$lhs == ovInt, "lhs"] <- ovIntNew
     parTable[parTable$rhs == ovInt, "rhs"] <- ovIntNew
