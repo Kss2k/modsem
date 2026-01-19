@@ -915,6 +915,12 @@ modsem_predict.modsem_da <- function(object, standardized = FALSE, H0 = TRUE, ne
   SIGMA <- modsem_inspect(modelH0, what = "cov.ov", is.public = TRUE)
   out <- vector("list", length = length(groups))
 
+  allLVs <- getLVs(parTableH1)
+  if (!length(allLVs)) {
+    message("There are no latent variables in model to predict...")
+    return(NULL)
+  }
+    
   for (g in groups) {
     parTableH1g <- parTableH1[parTableH1$group == g, , drop = FALSE]
     parTableH0g <- parTableH0[parTableH0$group == g, , drop = FALSE]

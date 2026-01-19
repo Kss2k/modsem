@@ -7,7 +7,11 @@ y1 ~ x1 + z1 + x1:z1
 testthat::expect_no_error({
   fit_qml <- modsem(m, oneInt, method = "qml")
   fit_lms <- modsem(m, oneInt, method = "lms")
-  modsem_predict(fit_lms)
+  testthat::expect_message(
+    modsem_predict(fit_lms),
+    regexp = "There are no latent.*"
+  )
+
   summary(fit_lms, standardized = TRUE)
   estimate_h0(fit_lms)
 })
