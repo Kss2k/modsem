@@ -27,19 +27,17 @@ parameter_estimates.modsem_da <- function(object, high.order.as.measr = TRUE,
       origLabels <- parTable$label
 
     ovIntTerms <- object$model$info$group.info$ovIntTerms
+    ovIntTermMappings <- object$model$info$group.info$ovIntTermMappings
 
     for (ovint in ovIntTerms) {
-      noColon <- stringr::str_replace_all(
-        string = ovint, pattern = ":",
-        replacement = OP_OV_INT
-      )
+      replacement <- ovIntTermMappings[[ovint]]
 
-      lmatch <- parTable$lhs == noColon
-      rmatch <- parTable$rhs == noColon
+      lmatch <- parTable$lhs == ovint
+      rmatch <- parTable$rhs == ovint
 
       parTable[rmatch | lmatch, "label"] <- origLabels[rmatch | lmatch]
-      parTable[lmatch, "lhs"] <- ovint
-      parTable[rmatch, "rhs"] <- ovint
+      parTable[lmatch, "lhs"] <- replacement
+      parTable[rmatch, "rhs"] <- replacement
     }
   }
 

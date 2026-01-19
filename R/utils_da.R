@@ -7,7 +7,8 @@ OP_REPLACEMENTS <- c("~~"  = "___COVARIANCE___",
                      "<-"  = "___MPLUS_REGRESSION___",
                      "\\|" = "___THRESHOLD___")
 
-OP_OV_INT <- OP_REPLACEMENTS[[":"]]
+OP_OV_INT_1 <- "."
+OP_OV_INT_2 <- OP_REPLACEMENTS[[":"]]
 OP_REPLACEMENTS_INV <- structure(names(OP_REPLACEMENTS), names = OP_REPLACEMENTS)
 
 
@@ -1435,18 +1436,33 @@ parseModelArgumentsByGroupDA <- function(model.syntax, cov.syntax,
   varsInts  <- getVarsInts(getIntTermRows(parTable), removeColonNames = FALSE)
   isOV_Int  <- vapply(varsInts, FUN.VALUE = logical(1L), FUN = \(x) all(x %in% ovs))
   ovIntTerms <- names(varsInts)[isOV_Int]
+  ovIntTermMappings <- character(0L)
 
   for (ovInt in ovIntTerms) {
     vars <- varsInts[[ovInt]]
-    ovIntNew <- stringr::str_replace_all(
+
+    ovIntNew1 <- stringr::str_replace_all(
       string = ovInt, pattern = ":",
-      replacement = OP_OV_INT
+      replacement = OP_OV_INT_1
     )
+
+    ovIntNew2 <- stringr::str_replace_all(
+      string = ovInt, pattern = ":",
+      replacement = OP_OV_INT_2
+    )
+
+    if (!ovIntNew1 %in% colnames(data)) ovIntNew <- ovIntNew1
+    else                                ovIntNew <- ovIntNew2
+
+    warnif(ovIntNew %in% colnames(data),
+           sprintf("Overwriting %s variable in data...", ovIntNew))
 
     parTable[parTable$lhs == ovInt, "lhs"] <- ovIntNew
     parTable[parTable$rhs == ovInt, "rhs"] <- ovIntNew
     data[[ovIntNew]] <- apply(data[vars], MARGIN = 1L, FUN = prod)
+
     structovs <- c(structovs, ovIntNew)
+    ovIntTermMappings[[ovIntNew]] <- ovInt
   }
 
   for (ov in structovs) {
@@ -1483,10 +1499,11 @@ parseModelArgumentsByGroupDA <- function(model.syntax, cov.syntax,
   group.info$syntax     <- model.syntax
   group.info$cov.syntax <- cov.syntax
 
-  group.info$parTable.orig    <- parTable
-  group.info$parTableCov.orig <- parTableCov
-  group.info$ovIntTerms       <- ovIntTerms
-  group.info$structovs        <- structovs
+  group.info$parTable.orig     <- parTable
+  group.info$parTableCov.orig  <- parTableCov
+  group.info$ovIntTerms        <- names(ovIntTermMappings)
+  group.info$ovIntTermMappings <- ovIntTermMappings
+  group.info$structovs         <- structovs
 
   group.levels <- group.info$levels
   if (is.null(group.levels)) group.levels <- ""

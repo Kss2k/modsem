@@ -58,10 +58,7 @@ estimate_h0.modsem_da <- function(object, warn_no_interaction = TRUE, ...) {
   argList[newArgNames] <- newArgList[newArgNames]
 
   tryCatch({
-    ovints <- stringr::str_replace_all(
-      string = object$model$info$group.info$ovIntTerms,
-      pattern = ":", replacement = OP_OV_INT
-    )
+    ovints <- object$model$info$group.info$ovIntTerms
 
     isInteractionTerm <-
       parTable$op == "~" &
