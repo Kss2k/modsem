@@ -9,7 +9,7 @@
 parameter_estimates.modsem_da <- function(object, high.order.as.measr = TRUE,
                                           rm.tmp.ov = TRUE,
                                           colon.ov.prod = TRUE,
-                                          label.renamed.prod = FALSE,
+                                          label.renamed.prod = NULL, # capture
                                           ...) {
   parTable <- object$parTable
 
@@ -20,33 +20,10 @@ parameter_estimates.modsem_da <- function(object, high.order.as.measr = TRUE,
     parTable <- sortParTableDA(parTable, model = object$model)
   }
 
-  if (colon.ov.prod) {
-    if (label.renamed.prod)
-      origLabels <- getParTableLabels(parTable, labelCol = "label")
-    else
-      origLabels <- parTable$label
-
-    ovIntTerms <- object$model$info$group.info$ovIntTerms
-
-    for (ovint in ovIntTerms) {
-      noColon <- stringr::str_replace_all(
-        string = ovint, pattern = ":",
-        replacement = OP_OV_INT
-      )
-
-      lmatch <- parTable$lhs == noColon
-      rmatch <- parTable$rhs == noColon
-
-      parTable[rmatch | lmatch, "label"] <- origLabels[rmatch | lmatch]
-      parTable[lmatch, "lhs"] <- ovint
-      parTable[rmatch, "rhs"] <- ovint
-    }
-  }
-
   if (rm.tmp.ov)
     parTable <- removeTempOV_RowsParTable(parTable)
 
-  parTable
+  modsemParTable(parTable, is.public = TRUE)
 }
 
 
@@ -899,8 +876,8 @@ modsem_predict.modsem_da <- function(object, standardized = FALSE, H0 = TRUE, ne
 
   transform.x <- if (center.data) \(x) x - mean(x, na.rm = TRUE) else \(x) x
 
-  parTableH1 <- parameter_estimates(modelH1, rm.tmp.ov = FALSE)
-  parTableH0 <- parameter_estimates(modelH0, rm.tmp.ov = FALSE)
+  parTableH1 <- parameter_estimates(modelH1, rm.tmp.ov = TRUE)
+  parTableH0 <- parameter_estimates(modelH0, rm.tmp.ov = TRUE)
 
   parTableH1 <- addMissingGroups(parTableH1)
   parTableH0 <- addMissingGroups(parTableH0)
@@ -915,11 +892,11 @@ modsem_predict.modsem_da <- function(object, standardized = FALSE, H0 = TRUE, ne
     cols.present <- cols %in% colnames(newdata)
     stopif(!all(cols.present), "Missing cols in `newdata`:\n", cols[!cols.present])
 
-    group <- modsem_inspect(modelH0, what = "group")
+    group <- modsem_inspect(modelH0, what = "group", is.public = TRUE)
 
     if (!is.null(group)) {
       group.values <- as.character(newdata[[group]])
-      group.levels <- modsem_inspect(modelH0, what = "group.label")
+      group.levels <- modsem_inspect(modelH0, what = "group.label", is.public = TRUE)
 
       NEWDATA <- lapply(
         X = group.levels,
@@ -935,7 +912,7 @@ modsem_predict.modsem_da <- function(object, standardized = FALSE, H0 = TRUE, ne
                       FUN = \(sub) sub$data$data.full)
   }
 
-  SIGMA <- modsem_inspect(modelH0, what = "cov.ov")
+  SIGMA <- modsem_inspect(modelH0, what = "cov.ov", is.public = TRUE)
   out <- vector("list", length = length(groups))
 
   for (g in groups) {

@@ -112,7 +112,7 @@ bootstrap_modsem.modsem_da <- function(model,
   type <- tolower(type)
   type <- match.arg(type)
 
-  INSPECT  <- modsem_inspect(model, what = "all")
+  INSPECT  <- modsem_inspect(model, what = "all", is.public = FALSE)
   group    <- INSPECT$group
 
   if (!is.null(group)) {

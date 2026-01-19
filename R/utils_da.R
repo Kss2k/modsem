@@ -677,12 +677,17 @@ getLambdaParTable <- function(parTable, rows = NULL, cols = NULL, fill.missing =
 
   indsLVs <- getIndsLVs(parTable, lVs = lVs)
   allInds <- unique(unlist(indsLVs))
+  allOVs  <- getOVs(parTable)
+  pureOVs <- setdiff(allOVs, allInds)
+  ivs     <- c(lVs, pureOVs)
 
-  lambda <- matrix(0, nrow = length(allInds), ncol = length(lVs),
-                   dimnames = list(allInds, lVs))
-  for (lV in lVs) for (ind in indsLVs[[lV]]) {
+  lambda <- matrix(0, nrow = length(allOVs), ncol = length(ivs),
+                   dimnames = list(allOVs, ivs))
+
+  for (lV in lVs) for (ind in indsLVs[[lV]])
     lambda[ind, lV] <- parTable[parTable$lhs == lV & parTable$rhs == ind, "est"]
-  }
+
+  diag(lambda[pureOVs, pureOVs]) <- 1
 
   if (is.null(rows)) rows <- rownames(lambda)
   if (is.null(cols)) cols <- colnames(lambda)
@@ -856,7 +861,6 @@ getCoefMatricesDA <- function(parTable,
   alpha <- createBeta(etas)
   beta0 <- createBeta(xis)
   tau   <- createBeta(inds)
-
   Binv <- solve(diag(nrow(gammaEta)) - gammaEta)
 
   list(gammaXi = gammaXi, gammaEta = gammaEta, Binv = Binv, psi = psi,
