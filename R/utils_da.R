@@ -1464,6 +1464,8 @@ parseModelArgumentsByGroupDA <- function(model.syntax, cov.syntax,
     data[[ovIntNew]] <- apply(data[vars], MARGIN = 1L, FUN = prod)
 
     structovs <- c(structovs, ovIntNew)
+    all.vars  <- c(all.vars, ovIntNew)
+
     ovIntTermMappings[[ovIntNew]] <- ovInt
   }
 
