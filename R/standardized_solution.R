@@ -24,7 +24,6 @@ transformedSolutionCOEFS <- function(object,
     colon.pi = TRUE,
     high.order.as.measr = FALSE,
     rm.tmp.ov = FALSE,
-    colon.ov.prod = TRUE,
     label.renamed.prod = TRUE
   )
 

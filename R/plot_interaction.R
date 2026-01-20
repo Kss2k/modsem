@@ -220,7 +220,6 @@ plot_jn <- function(x, z, y, model, min_z = -3, max_z = 3,
   } else {
     parTable <- parameter_estimates(
       object = model,
-      colon.ov.prod = TRUE,
       label.renamed.prod = TRUE
     )
   }
@@ -628,7 +627,6 @@ plot_surface <- function(x, z, y, model,
   } else {
     parTable <- parameter_estimates(
       object = model,
-      colon.ov.prod = TRUE,
       label.renamed.prod = TRUE
     )
   }
