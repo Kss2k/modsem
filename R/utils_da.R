@@ -856,7 +856,6 @@ getCoefMatricesDA <- function(parTable,
   alpha <- createBeta(etas)
   beta0 <- createBeta(xis)
   tau   <- createBeta(inds)
-
   Binv <- solve(diag(nrow(gammaEta)) - gammaEta)
 
   list(gammaXi = gammaXi, gammaEta = gammaEta, Binv = Binv, psi = psi,

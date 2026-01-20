@@ -1,5 +1,40 @@
-modsemMatrix <- function(mat, symmetric = isSymmetric(mat)) {
+modsemMatrix <- function(mat, symmetric = isSymmetric(mat), is.public = FALSE) {
   if (is.null(mat)) return(mat)
+
+  if (is.public) {
+    rn <- rownames(mat)
+    cn <- colnames(mat)
+
+    if (!is.null(rn)) {
+      isTempRn <- startsWith(rn, prefix = TEMP_OV_PREFIX)
+      rnClean <- stringr::str_remove_all(rn, pattern = TEMP_OV_PREFIX)
+      isDupTempRn <- rnClean[isTempRn] %in% rnClean[!isTempRn]
+
+      keepRn <- rep(TRUE, length(rn))
+      keepRn[isTempRn][isDupTempRn] <- FALSE
+      mat <- mat[keepRn, , drop = FALSE]
+
+      rownames(mat) <- stringr::str_replace_all(
+        string = rnClean[keepRn],
+        pattern = OP_REPLACEMENTS_INV
+      )
+    }
+
+    if (!is.null(cn)) {
+      isTempCn <- startsWith(cn, prefix = TEMP_OV_PREFIX)
+      cnClean <- stringr::str_remove_all(cn, pattern = TEMP_OV_PREFIX)
+      isDupTempCn <- cnClean[isTempCn] %in% cnClean[!isTempCn]
+
+      keepCn <- rep(TRUE, length(cn))
+      keepCn[isTempCn][isDupTempCn] <- FALSE
+      mat <- mat[ , keepCn, drop = FALSE]
+
+      colnames(mat) <- stringr::str_replace_all(
+        string = cnClean[keepCn],
+        pattern = OP_REPLACEMENTS_INV
+      )
+    }
+  }
 
   class(mat) <- unique(c("ModsemMatrix", class(mat)))
 
@@ -42,16 +77,50 @@ print.ModsemMatrix <- function(x, digits = 3, shift = 0L, ...) {
 }
 
 
-modsemParTable <- function(parTable) {
+modsemParTable <- function(parTable, is.public = FALSE) {
   if (is.null(parTable)) return(parTable)
+
+  if (is.public) {
+    paramCols <- c("lhs", "op", "rhs", "label")
+    paramCols <- intersect(paramCols, colnames(parTable))
+
+    for (col in paramCols) {
+      parTable[[col]] <- stringr::str_replace_all(
+        string = parTable[[col]],
+        pattern = OP_REPLACEMENTS_INV
+      )
+    }
+  }
 
   class(parTable) <- unique(c("ModsemParTable", class(parTable)))
   parTable
 }
 
 
-modsemVector <- function(vec) {
+modsemVector <- function(vec, is.public = FALSE) {
   if (is.null(vec)) return(vec)
+
+  if (is.public) {
+    nm <- names(vec)
+    isTemp <- startsWith(nm, prefix = TEMP_OV_PREFIX)
+
+    if (any(isTemp)) {
+      clean <- stringr::str_remove_all(nm, pattern = TEMP_OV_PREFIX)
+
+      isDupTemp <- clean[isTemp] %in% clean[!isTemp]
+
+      keep <- rep(TRUE, length(nm))
+      keep[isTemp][isDupTemp] <- FALSE
+
+      vec <- stats::setNames(vec[keep], nm = clean[keep])
+    }
+
+    names(vec) <- stringr::str_replace_all(
+      string = names(vec),
+      pattern = OP_REPLACEMENTS_INV
+    )
+  }
+
   class(vec) <- unique(c("ModsemVector", class(vec)))
 
   vec

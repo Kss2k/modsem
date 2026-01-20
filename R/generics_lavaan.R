@@ -5,7 +5,7 @@ parameter_estimates.lavaan <- function(object,
                                        high.order.as.measr = NULL, # capture
                                        rm.tmp.ov = NULL, # capture argument
                                        label.renamed.prod = NULL, # capture argument
-                                       colon.ov.prod = NULL, # capture
+                                       is.public = NULL, # capture argument
                                        ...) {
   lavaan::parameterEstimates(object, ...)
 }

@@ -224,7 +224,7 @@ parameter_estimates.modsem_pi <- function(object, colon.pi = FALSE,
                                           label.renamed.prod = FALSE,
                                           high.order.as.measr = NULL, # capture argument
                                           rm.tmp.ov = NULL, # capture argument
-                                          colon.ov.prod = NULL, # capture
+                                          is.public = NULL, # capture argument
                                           ...) {
   parTable <- lavaan::parameterEstimates(object$lavaan, ...)
 

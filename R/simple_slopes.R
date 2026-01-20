@@ -146,7 +146,6 @@ simple_slopes <- function(x,
   } else {
     parTable <- parameter_estimates(
       object = model,
-      colon.ov.prod = TRUE,
       label.renamed.prod = TRUE
     )
   }

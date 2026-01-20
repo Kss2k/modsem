@@ -7,6 +7,8 @@ y1 ~ x1 + z1 + x1:z1
 testthat::expect_no_error({
   fit_qml <- modsem(m, oneInt, method = "qml")
   fit_lms <- modsem(m, oneInt, method = "lms")
+  head(modsem_predict(fit_lms))
+
   summary(fit_lms, standardized = TRUE)
   estimate_h0(fit_lms)
 })
@@ -30,4 +32,5 @@ y1 ~ x1 + Z + x1:Z
 testthat::expect_no_error({
   # test selection of integrating variable
   fit_lms <- modsem(m2, oneInt, method = "lms")
+  head(modsem_predict(fit_lms))
 })
