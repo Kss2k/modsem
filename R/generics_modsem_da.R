@@ -3,12 +3,13 @@
 #'   denoted with the \code{=~} operator? If \code{FALSE} the \code{~}
 #'   operator is used.
 #' @param rm.tmp.ov Should temporary (hidden) variables be removed?
-#' @param colon.ov.prod Should colons be added to observed product terms?
 #' @param label.renamed.prod Should renamed product terms keep their old (implicit) labels?
+#' @param is.public Should public version of parameter table be returned?
+#'   If \code{FALSE}, the internal version of the parameter table is returned.
 #' @describeIn parameter_estimates Get parameter estimates of a \code{\link{modsem_da}} object
 parameter_estimates.modsem_da <- function(object, high.order.as.measr = TRUE,
-                                          rm.tmp.ov = TRUE,
-                                          colon.ov.prod = TRUE,
+                                          is.public = TRUE,
+                                          rm.tmp.ov = is.public,
                                           label.renamed.prod = NULL, # capture
                                           ...) {
   parTable <- object$parTable
@@ -23,7 +24,7 @@ parameter_estimates.modsem_da <- function(object, high.order.as.measr = TRUE,
   if (rm.tmp.ov)
     parTable <- removeTempOV_RowsParTable(parTable)
 
-  modsemParTable(parTable, is.public = TRUE)
+  modsemParTable(parTable, is.public = is.public)
 }
 
 
@@ -876,8 +877,8 @@ modsem_predict.modsem_da <- function(object, standardized = FALSE, H0 = TRUE, ne
 
   transform.x <- if (center.data) \(x) x - mean(x, na.rm = TRUE) else \(x) x
 
-  parTableH1 <- parameter_estimates(modelH1, rm.tmp.ov = TRUE)
-  parTableH0 <- parameter_estimates(modelH0, rm.tmp.ov = TRUE)
+  parTableH1 <- parameter_estimates(modelH1, is.public = FALSE)
+  parTableH0 <- parameter_estimates(modelH0, is.public = FALSE)
 
   parTableH1 <- addMissingGroups(parTableH1)
   parTableH0 <- addMissingGroups(parTableH0)
@@ -892,11 +893,11 @@ modsem_predict.modsem_da <- function(object, standardized = FALSE, H0 = TRUE, ne
     cols.present <- cols %in% colnames(newdata)
     stopif(!all(cols.present), "Missing cols in `newdata`:\n", cols[!cols.present])
 
-    group <- modsem_inspect(modelH0, what = "group", is.public = TRUE)
+    group <- modsem_inspect(modelH0, what = "group", is.public = FALSE)
 
     if (!is.null(group)) {
       group.values <- as.character(newdata[[group]])
-      group.levels <- modsem_inspect(modelH0, what = "group.label", is.public = TRUE)
+      group.levels <- modsem_inspect(modelH0, what = "group.label", is.public = FALSE)
 
       NEWDATA <- lapply(
         X = group.levels,
@@ -912,24 +913,19 @@ modsem_predict.modsem_da <- function(object, standardized = FALSE, H0 = TRUE, ne
                       FUN = \(sub) sub$data$data.full)
   }
 
-  SIGMA <- modsem_inspect(modelH0, what = "cov.ov", is.public = TRUE)
+  SIGMA <- modsem_inspect(modelH0, what = "cov.ov", is.public = FALSE)
   out <- vector("list", length = length(groups))
 
-  allLVs <- getLVs(parTableH1)
-  if (!length(allLVs)) {
-    message("There are no latent variables in model to predict...")
-    return(NULL)
-  }
-    
   for (g in groups) {
     parTableH1g <- parTableH1[parTableH1$group == g, , drop = FALSE]
     parTableH0g <- parTableH0[parTableH0$group == g, , drop = FALSE]
 
-    lVs   <- getLVs(parTableH1g)
+    lVs   <- getLVs(parTableH0g)
     sigma <- if (mgroup) SIGMA[[g]] else SIGMA
 
     sigma.inv <- GINV(sigma)
-    lambda    <- getLambdaParTable(parTableH0g, rows = colnames(sigma), cols = lVs)
+    lambda    <- getLambdaParTable(parTableH0g, rows = colnames(sigma), cols = lVs,
+                                   fill.missing = TRUE)
 
     newdata.g <- NEWDATA[[g]]
     X <- apply(as.matrix(newdata.g), MARGIN = 2, FUN = transform.x)
@@ -948,7 +944,7 @@ modsem_predict.modsem_da <- function(object, standardized = FALSE, H0 = TRUE, ne
       Y  <- apply(Y, MARGIN = 2, FUN = \(y) (y - mu(y)) / s(y))
     }
 
-    out[[g]] <- Y
+    out[[g]] <- modsemMatrix(Y, is.public = TRUE)
   }
 
   if (mgroup) out else out[[1L]]
