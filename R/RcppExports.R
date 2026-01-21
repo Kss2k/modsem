@@ -21,6 +21,14 @@ gradLogLikLmsCpp <- function(modelR, P, block, row, col, symmetric, colidxR, n, 
     .Call(`_modsem_gradLogLikLmsCpp`, modelR, P, block, row, col, symmetric, colidxR, n, d, npatterns, eps, ncores)
 }
 
+gradLogLikLmsCpp_fd <- function(modelR, P, block, row, col, symmetric, colidxR, n, d, npatterns = 1L, eps = 1e-6, ncores = 1L) {
+    .Call(`_modsem_gradLogLikLmsCpp_fd`, modelR, P, block, row, col, symmetric, colidxR, n, d, npatterns, eps, ncores)
+}
+
+gradLogLikLmsCpp_cd <- function(modelR, P, block, row, col, symmetric, colidxR, n, d, npatterns = 1L, eps = 1e-6, ncores = 1L) {
+    .Call(`_modsem_gradLogLikLmsCpp_cd`, modelR, P, block, row, col, symmetric, colidxR, n, d, npatterns, eps, ncores)
+}
+
 gradObsLogLikLmsCpp <- function(modelR, dataR, colidxR, P, block, row, col, symmetric, n, eps = 1e-6, npatterns = 1L, ncores = 1L) {
     .Call(`_modsem_gradObsLogLikLmsCpp`, modelR, dataR, colidxR, P, block, row, col, symmetric, n, eps, npatterns, ncores)
 }
@@ -35,6 +43,14 @@ hessObsLogLikLmsCpp <- function(modelR, dataR, P, block, row, col, symmetric, co
 
 hessCompLogLikLmsCpp <- function(modelR, P, block, row, col, symmetric, colidxR, n, d, npatterns = 1L, relStep = 1e-6, minAbs = 0.0, ncores = 1L) {
     .Call(`_modsem_hessCompLogLikLmsCpp`, modelR, P, block, row, col, symmetric, colidxR, n, d, npatterns, relStep, minAbs, ncores)
+}
+
+hessCompLogLikLmsCpp_fd <- function(modelR, P, block, row, col, symmetric, colidxR, n, d, npatterns = 1L, relStep = 1e-6, minAbs = 0.0, ncores = 1L) {
+    .Call(`_modsem_hessCompLogLikLmsCpp_fd`, modelR, P, block, row, col, symmetric, colidxR, n, d, npatterns, relStep, minAbs, ncores)
+}
+
+hessCompLogLikLmsCpp_central <- function(modelR, P, block, row, col, symmetric, colidxR, n, d, npatterns = 1L, relStep = 1e-6, minAbs = 0.0, ncores = 1L) {
+    .Call(`_modsem_hessCompLogLikLmsCpp_central`, modelR, P, block, row, col, symmetric, colidxR, n, d, npatterns, relStep, minAbs, ncores)
 }
 
 muQmlCpp <- function(m, t, ncores = 1L) {
