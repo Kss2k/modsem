@@ -7,7 +7,8 @@
 #' @param is.public Should public version of parameter table be returned?
 #'   If \code{FALSE}, the internal version of the parameter table is returned.
 #' @describeIn parameter_estimates Get parameter estimates of a \code{\link{modsem_da}} object
-parameter_estimates.modsem_da <- function(object, high.order.as.measr = TRUE,
+parameter_estimates.modsem_da <- function(object,
+                                          high.order.as.measr = TRUE,
                                           is.public = TRUE,
                                           rm.tmp.ov = is.public,
                                           label.renamed.prod = NULL, # capture

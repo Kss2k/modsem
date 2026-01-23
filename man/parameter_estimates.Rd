@@ -17,16 +17,16 @@ parameter_estimates(object, ...)
   high.order.as.measr = NULL,
   rm.tmp.ov = NULL,
   label.renamed.prod = NULL,
-  colon.ov.prod = NULL,
+  is.public = NULL,
   ...
 )
 
 \method{parameter_estimates}{modsem_da}(
   object,
   high.order.as.measr = TRUE,
-  rm.tmp.ov = TRUE,
-  colon.ov.prod = TRUE,
-  label.renamed.prod = FALSE,
+  is.public = TRUE,
+  rm.tmp.ov = is.public,
+  label.renamed.prod = NULL,
   ...
 )
 
@@ -36,7 +36,7 @@ parameter_estimates(object, ...)
   high.order.as.measr = NULL,
   rm.tmp.ov = NULL,
   label.renamed.prod = NULL,
-  colon.ov.prod = NULL,
+  is.public = NULL,
   ...
 )
 
@@ -46,7 +46,7 @@ parameter_estimates(object, ...)
   label.renamed.prod = FALSE,
   high.order.as.measr = NULL,
   rm.tmp.ov = NULL,
-  colon.ov.prod = NULL,
+  is.public = NULL,
   ...
 )
 }
@@ -65,7 +65,8 @@ operator is used.}
 
 \item{label.renamed.prod}{Should renamed product terms keep their old (implicit) labels?}
 
-\item{colon.ov.prod}{Should colons be added to observed product terms?}
+\item{is.public}{Should public version of parameter table be returned?
+If \code{FALSE}, the internal version of the parameter table is returned.}
 }
 \description{
 Extract parameterEstimates from an estimated model
