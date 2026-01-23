@@ -66,7 +66,7 @@
 <span>  high.order.as.measr <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  rm.tmp.ov <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  label.renamed.prod <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  colon.ov.prod <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  is.public <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -74,9 +74,9 @@
 <span><span class="fu">parameter_estimates</span><span class="op">(</span></span>
 <span>  <span class="va">object</span>,</span>
 <span>  high.order.as.measr <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  rm.tmp.ov <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  colon.ov.prod <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  label.renamed.prod <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  is.public <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  rm.tmp.ov <span class="op">=</span> <span class="va">is.public</span>,</span>
+<span>  label.renamed.prod <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -87,7 +87,7 @@
 <span>  high.order.as.measr <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  rm.tmp.ov <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  label.renamed.prod <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  colon.ov.prod <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  is.public <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -98,7 +98,7 @@
 <span>  label.renamed.prod <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  high.order.as.measr <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  rm.tmp.ov <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  colon.ov.prod <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  is.public <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -133,8 +133,9 @@ operator is used.</p></dd>
 <dd><p>Should renamed product terms keep their old (implicit) labels?</p></dd>
 
 
-<dt id="arg-colon-ov-prod">colon.ov.prod<a class="anchor" aria-label="anchor" href="#arg-colon-ov-prod"></a></dt>
-<dd><p>Should colons be added to observed product terms?</p></dd>
+<dt id="arg-is-public">is.public<a class="anchor" aria-label="anchor" href="#arg-is-public"></a></dt>
+<dd><p>Should public version of parameter table be returned?
+If <code>FALSE</code>, the internal version of the parameter table is returned.</p></dd>
 
 </dl></div>
     <div class="section level2">
