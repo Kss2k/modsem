@@ -4,10 +4,12 @@
 \alias{modsemify}
 \title{Generate parameter table for \code{lavaan} syntax}
 \usage{
-modsemify(syntax)
+modsemify(syntax, parentheses.as.string = FALSE)
 }
 \arguments{
 \item{syntax}{model syntax}
+
+\item{parentheses.as.string}{Should parentheses be read parsed as literal strings?}
 }
 \value{
 \code{data.frame} with columns \code{lhs, op, rhs, mod}
