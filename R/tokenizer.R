@@ -21,7 +21,7 @@ getCharsLine <- function(line, i = 1) {
 
 getLines <- function(syntax) {
   operators <- c("=~", "<=", ">=", "==", ":=", "~~", "~",
-                 "+", "*", "<-", "->", "<", ">", "-", "|")
+                 "+", "*", "<-", "->", "<", ">", "-", "|", ",")
   for (op in operators) {
     pattern <- paste0("\\", op, "\\s*[\n|;]")
     replace <- paste0(op, " ")
@@ -77,7 +77,7 @@ initializeToken <- function(char, pos, line) {
 
   nextCharIsAlpha <- grepl("[[:alpha:]\\.]", nextChar)
   nextCharIsNum   <- grepl("[[:digit:]]", nextChar)
-  opChars <- c("=", "~", "*", "+", "<", ">", ":", "^", "/", "-", "|")
+  opChars <- c("=", "~", "*", "+", "<", ">", ":", "^", "/", "-", "|", ",")
 
   # optimaly this should be a switch
   if (grepl("#", char)) {
