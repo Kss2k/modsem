@@ -1,4 +1,14 @@
-simulateDataParTable <- function(parTable, N, colsOVs = NULL, colsLVs = NULL) {
+simulateDataParTable <- function(parTable, N, colsOVs = NULL, colsLVs = NULL, seed = NULL) {
+  if (!is.null(seed) && exists(".Random.seed")) .Random.seed.orig <- .Random.seed
+  else                                          .Random.seed.orig <- NULL
+
+  on.exit({
+    if (!is.null(.Random.seed.orig)) .Random.seed <<- .Random.seed.orig
+  })
+
+  if (!is.null(seed))
+    set.seed(seed)
+
   parTable <- addMissingGroups(parTable)
   groups   <- getGroupsParTable(parTable)
 
