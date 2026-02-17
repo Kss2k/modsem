@@ -63,7 +63,7 @@ library(modsem)
 
 m1 <- '
   # Outer Model
-  X =~ x1 + x2 +x3
+  X =~ x1 + x2 + x3
   Y =~ y1 + y2 + y3
   Z =~ z1 + z2 + z3
   
@@ -131,7 +131,7 @@ summary(est2)
 ```R
 m3 <- '
   # Outer Model
-  X =~ x1 + x2 +x3
+  X =~ x1 + x2 + x3
   Y =~ y1 + y2 + y3
   
   # Inner model

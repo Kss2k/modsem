@@ -169,7 +169,7 @@ struct LMSModel {
 
   LMSModel thread_clone() const {
     LMSModel c = *this;    // shallow for everything (fast)
-                           // Deep-copy ONLY what set_params()/lms_param can modify:
+                           // Deep-copy ONLY what setParams()/lms_param can modify:
     c.A     = arma::mat(A);
     c.Oxx   = arma::mat(Oxx);
     c.Oex   = arma::mat(Oex);
@@ -295,10 +295,10 @@ inline double completeLogLikFromModel(
 
       if (tg <= DBL_MIN) continue;
 
-      ll += totalDmvnWeightedCpp(
+      ll += totalDmvnWeighted(
         mu.elem(colidx[i]),
         Sig.submat(colidx[i], colidx[i]),
-        nu, S, tg, n[i], d[i]);
+        nu, S, tg, d[i]);
     }
   }
 
@@ -365,6 +365,7 @@ arma::vec gradLogLikLmsCpp(const Rcpp::List& modelR,
 inline double observedLogLikFromModel(const LMSModel&  M,
                                       const arma::mat& V,
                                       const arma::vec& w,
+                                      const arma::vec& samplingWeights,
                                       const std::vector<arma::mat>& data,
                                       const std::vector<arma::uvec>& colidx,
                                       const arma::uvec n,
@@ -395,7 +396,7 @@ inline double observedLogLikFromModel(const LMSModel&  M,
     }
   }
 
-  return arma::sum(arma::log(density));
+  return arma::sum(samplingWeights * arma::log(density));
 }
 
 
@@ -416,11 +417,13 @@ arma::vec gradObsLogLikLmsCpp(const Rcpp::List& modelR,
 
   const arma::mat V = Rcpp::as<arma::mat>(P["V"]);
   const arma::vec w = Rcpp::as<arma::vec>(P["w"]);
+  const arma::vec samplingWeights = Rcpp::as<arma::vec>(P["sampling.weights"]);
+
   const auto colidx = as_vec_of_uvec(colidxR);
   const auto data   = as_vec_of_mat(dataR);
 
   auto obs_ll = [&](LMSModel& mod) -> double {
-    return observedLogLikFromModel(mod, V, w, data, colidx, n, npatterns, 1L); // single-threaded
+    return observedLogLikFromModel(mod, V, w, samplingWeights, data, colidx, n, npatterns, 1L); // single-threaded
   };
 
   return gradientFD(M, obs_ll, block, row, col, symmetric, eps, ncores); // multi-thread here instead
@@ -439,14 +442,16 @@ double observedLogLikLmsCpp(const Rcpp::List& modelR,
 
   const arma::mat V = Rcpp::as<arma::mat>(P["V"]);
   const arma::vec w = Rcpp::as<arma::vec>(P["w"]);
+  const arma::vec samplingWeights = Rcpp::as<arma::vec>(P["sampling.weights"]);
+
   const auto colidx = as_vec_of_uvec(colidxR);
   const auto data   = as_vec_of_mat(dataR);
 
-  return observedLogLikFromModel(M, V, w, data, colidx, n, npatterns, ncores);
+  return observedLogLikFromModel(M, V, w, samplingWeights, data, colidx, n, npatterns, ncores);
 }
 
 
-inline arma::vec get_params(const LMSModel& M,
+inline arma::vec getParams(const LMSModel& M,
                             const arma::uvec& block,
                             const arma::uvec& row,
                             const arma::uvec& col) {
@@ -459,7 +464,7 @@ inline arma::vec get_params(const LMSModel& M,
 }
 
 
-inline void set_params(LMSModel&         M,
+inline void setParams(LMSModel&         M,
                        const arma::uvec& block,
                        const arma::uvec& row,
                        const arma::uvec& col,
@@ -513,12 +518,12 @@ Rcpp::List fdHessQuadraticFit(LMSModel&         M,
   firstprivate(fun) schedule(static)
   for (std::size_t k = 0; k < m; ++k) {
     LMSModel Mc = M.thread_clone();
-    set_params(Mc, block, row, col, symmetric, base + disp[k] % incr);
+    setParams(Mc, block, row, col, symmetric, base + disp[k] % incr);
     y[k] = fun(Mc);
   }
 
   // Restore baseline
-  set_params(M, block, row, col, symmetric, base);
+  setParams(M, block, row, col, symmetric, base);
 
   // Build design matrix
   const std::size_t q = 1 + 2*p + (p*(p-1))/2;
@@ -567,20 +572,20 @@ Rcpp::List fdHessQuadraticFit(LMSModel&         M,
 
 template<class F>
 Rcpp::List fdHessFullFd(LMSModel&         M,
-                          F&&               fun,
-                          const arma::uvec& block,
-                          const arma::uvec& row,
-                          const arma::uvec& col,
-                          const arma::uvec& symmetric,
-                          const arma::vec&  base,
-                          const arma::vec&  incr,
-                          const int         ncores) {
+                        F&&               fun,
+                        const arma::uvec& block,
+                        const arma::uvec& row,
+                        const arma::uvec& col,
+                        const arma::uvec& symmetric,
+                        const arma::vec&  base,
+                        const arma::vec&  incr,
+                        const int         ncores) {
   const std::size_t p = block.n_elem;
   const std::size_t npairs = (p>1) ? (p*(p-1))/2 : 0;
   const std::size_t m = 1 + 2*p + 4*npairs;
 
   // Index helper for pairs
-  auto pair_index = [p](std::size_t i, std::size_t j) -> std::size_t {
+  auto pairIndex = [p](std::size_t i, std::size_t j) -> std::size_t {
     return (i*(2*p - i - 1))/2 + (j - i - 1);
   };
 
@@ -602,7 +607,7 @@ Rcpp::List fdHessFullFd(LMSModel&         M,
   if (p>1) {
     for (std::size_t i=0; i<p-1; ++i)
       for (std::size_t j=i+1; j<p; ++j) {
-        std::size_t k = pair_index(i,j);
+        std::size_t k = pairIndex(i,j);
         arma::vec v = arma::zeros<arma::vec>(p);
         v[i]= 1; v[j]= 1; idx_pp[k]=disp.size(); disp.push_back(v);
         v[i]= 1; v[j]=-1; idx_pm[k]=disp.size(); disp.push_back(v);
@@ -618,10 +623,10 @@ Rcpp::List fdHessFullFd(LMSModel&         M,
   firstprivate(fun) schedule(static)
   for (std::size_t k=0; k<disp.size(); ++k) {
     LMSModel Mc = M.thread_clone();
-    set_params(Mc, block, row, col, symmetric, base + disp[k] % incr);
+    setParams(Mc, block, row, col, symmetric, base + disp[k] % incr);
     y[k] = fun(Mc);
   }
-  set_params(M, block, row, col, symmetric, base);
+  setParams(M, block, row, col, symmetric, base);
 
   // Assemble gradient/Hessian
   arma::vec grad(p, arma::fill::zeros);
@@ -641,7 +646,7 @@ Rcpp::List fdHessFullFd(LMSModel&         M,
       double hi = incr[i];
       for (std::size_t j=i+1; j<p; ++j) {
         double hj = incr[j];
-        std::size_t k = pair_index(i,j);
+        std::size_t k = pairIndex(i,j);
         double fpp=y[idx_pp[k]], fpm=y[idx_pm[k]],
                fmp=y[idx_mp[k]], fmm=y[idx_mm[k]];
         double hij = (fpp - fpm - fmp + fmm) / (4.0*hi*hj);
@@ -674,7 +679,7 @@ Rcpp::List fdHessCpp(LMSModel&         M,
   ThreadSetter ts(ncores);
 
   const std::size_t p = block.n_elem;
-  const arma::vec base = get_params(M, block, row, col);
+  const arma::vec base = getParams(M, block, row, col);
   const arma::vec incr =
       arma::max(arma::abs(base), arma::vec(p).fill(minAbsPar)) * relStep;
 
@@ -715,11 +720,13 @@ Rcpp::List hessObsLogLikLmsCpp(const Rcpp::List& modelR,
 
     const arma::mat V = Rcpp::as<arma::mat>(P["V"]);
     const arma::vec w = Rcpp::as<arma::vec>(P["w"]);
+    const arma::vec samplingWeights = Rcpp::as<arma::vec>(P["sampling.weights"]);
+
     const auto colidx = as_vec_of_uvec(colidxR);
     const auto data   = as_vec_of_mat(dataR);
 
     auto obs_ll = [&](LMSModel& mod) -> double {
-        return observedLogLikFromModel(mod, V, w, data, colidx,
+        return observedLogLikFromModel(mod, V, w, samplingWeights, data, colidx,
                                        n, npatterns, 1L); // single-threaded
     };
 

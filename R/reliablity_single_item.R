@@ -85,7 +85,7 @@ relcorr_single_item <- function(syntax,
   stopif(length(group) > 1L, "`group` must be a character vector of length 1!")
   stopif(!group %in% colnames(data), sprintf("Unable to find `%s` in data!", group))
 
-  group.info <- getGroupInfo(
+  group.info <- parseModelArgumentsByGroupDA(
     model.syntax = syntax,
     cov.syntax   = NULL,
     data         = data,
@@ -446,6 +446,7 @@ simulateCrossResCovRCS_Group <- function(corrected,
   intTermIsRCS <- vapply(elemsInIntTerms, FUN.VALUE = logical(1L),
                          FUN = \(elems) all(elems %in% constructs))
   elemsInIntTerms <- elemsInIntTerms[intTermIsRCS]
+  intTerms <- intTerms[intTermIsRCS]
 
   if (!length(elemsInIntTerms))
     return(EMPTY)
@@ -471,20 +472,6 @@ simulateCrossResCovRCS_Group <- function(corrected,
     colnames(RESIDUALS)  <- single.items[nm]
   } else RESIDUALS <- list()
 
-  getres <- function(y, x) {
-    missing <- is.na(y) | is.na(x)
-
-    x.c <- x[!missing]
-    y.c <- y[!missing]
-
-    epsilon <- stats::residuals(stats::lm(x.c ~ y.c))
-
-    out <- rep(NA, length(epsilon))
-    out[!missing] <- epsilon
-
-    out
-  }
-
   for (intTerm in intTerms) {
     elems  <- elemsInIntTerms[[intTerm]]
     items  <- single.items[elems]
@@ -492,14 +479,12 @@ simulateCrossResCovRCS_Group <- function(corrected,
 
     xz.construct <- apply(CONSTRUCTS[elems], MARGIN = 1, FUN = prod)
     xz.item      <- apply(ITEMS[items],  MARGIN = 1, FUN = prod)
-    xz.residual  <- getres(y = xz.item, x = xz.construct)
 
     CONSTRUCTS[[intTerm]] <- xz.construct
-    RESIDUALS[[nameXZ]]   <- xz.residual
-    ITEMS[[intTerm]]      <- xz.item
+    ITEMS[[nameXZ]]      <- xz.item
   }
 
-  Epsilon <- stats::cov(as.data.frame(RESIDUALS), use = "na.or.complete")
+  Epsilon <- cov(ITEMS) - cov(CONSTRUCTS)
   newRows <- NULL
 
   for (i in seq_len(NROW(Epsilon))) {
@@ -508,10 +493,18 @@ simulateCrossResCovRCS_Group <- function(corrected,
       lhs <- rownames(Epsilon)[[i]]
       rhs <- colnames(Epsilon)[[j]]
 
-      matching <- parTable[((parTable$lhs == rhs & parTable$rhs == lhs) |
+      elems.lhs <- stringr::str_split_1(lhs, "composite_")
+      elems.rhs <- stringr::str_split_1(rhs, "composite_")
+
+      elems.lhs <- elems.lhs[elems.lhs != ""]
+      elems.rhs <- elems.rhs[elems.rhs != ""]
+
+      matching <- parTable[((parTable$lhs == lhs & parTable$rhs == rhs) |
                             (parTable$lhs == rhs & parTable$rhs == lhs)) &
                            parTable$op == "~~", ]
-      if (NROW(matching)) next
+
+      if (NROW(matching) || !length(intersect(elems.lhs, elems.rhs)))
+        next
 
       newRows <- rbind(
         newRows,

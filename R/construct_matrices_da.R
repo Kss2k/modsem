@@ -534,10 +534,15 @@ getScalingLambdaY <- function(lambdaY, indsEtas, etas, method = "qml") {
 
 
 sortXisConstructOmega <- function(xis, varsInts, etas, intTerms,
-                                  method = "lms", double = FALSE) {
+                                  method = "lms", double = FALSE,
+                                  structovs = NULL) {
   checkVarsIntsDA(varsInts, lVs = c(etas, xis))
-  listSortedXis <- sortXis(xis = xis, varsInts = varsInts, etas = etas,
-                           intTerms = intTerms, double = double)
+
+  listSortedXis <- sortXis(
+    xis = xis, varsInts = varsInts, etas = etas, intTerms = intTerms,
+    double = double, structovs = structovs
+  )
+
   sortedXis    <- listSortedXis$sortedXis
   nonLinearXis <- listSortedXis$nonLinearXis
 
@@ -558,7 +563,7 @@ sortXisConstructOmega <- function(xis, varsInts, etas, intTerms,
 }
 
 
-sortXis <- function(xis, varsInts, etas, intTerms, double) {
+sortXis <- function(xis, varsInts, etas, intTerms, double, structovs = NULL) {
   # allVarsInInts should be sorted according to which variables
   # occur in the most interaction terms (makes it more efficient)
   allVarsInInts <- unique(unlist(varsInts))
@@ -581,9 +586,15 @@ sortXis <- function(xis, varsInts, etas, intTerms, double) {
     choice <- unique(interaction[which(!interaction %in% etas &
                                        !interaction %in% nonLinearXis)])
 
-    if (length(choice) > 1 && !double) {
+    if (length(choice) > 1L && !double) {
       freq <- freqInIntTerms[choice, "freq"]
-      choice <- choice[whichIsMax(freq)][[1]] # pick first if both are equal
+      choice <- choice[whichIsMax(freq)]
+
+      is.ov <- choice %in% structovs
+      if (any(is.ov) && !all(is.ov)) k <- which(!is.ov) # only possible if length(choice) > 1
+      else                           k <- 1L # pick first if both are equal
+
+      choice <- choice[[k]]
     }
 
     nonLinearXis <- c(nonLinearXis, choice)

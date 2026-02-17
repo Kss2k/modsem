@@ -22,7 +22,7 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    R.max = 1e5,
                    max.iter = 500,
                    max.step = 1,
-                   epsilon = 1e-4,
+                   epsilon = 1e-6,
                    quad.range = Inf,
                    adaptive.quad = TRUE,
                    adaptive.quad.tol = 1e-12,
@@ -37,7 +37,9 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    auto.fix.single = TRUE,
                    auto.split.syntax = FALSE,
                    cr1s = FALSE,
-                   group = NULL
+                   group = NULL,
+                   sampling.weights = NULL,
+                   sampling.weights.normalization = "total"
         ),
         qml = list(verbose = interactive(),
                    optimize = TRUE,
@@ -76,7 +78,9 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    auto.fix.single = TRUE,
                    auto.split.syntax = TRUE,
                    cr1s = FALSE,
-                   group = NULL
+                   group = NULL,
+                   sampling.weights = NULL,
+                   sampling.weights.normalization = "total"
         )
     )
 
@@ -101,6 +105,10 @@ getMethodSettingsDA <- function(method, args = NULL) {
       args.out$OFIM.hessian && !args.out$robust.se
     args.out$center.data <- !args.out$standardize.data &&
       !args.out$mean.observed
+
+    if (is.null(args.out$group) &&
+        tolower(args.out$sampling.weights.normalization) == "group")
+      args.out$sampling.weights.normalization <- "total"
 
     args.out
 }

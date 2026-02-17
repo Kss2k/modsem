@@ -204,6 +204,8 @@ modsem_pi <- function(model.syntax = NULL,
                       rcs.scale.corrected = TRUE,
                       LAVFUN = lavaan::sem,
                       ...) {
+  method <- tolower(method)
+
   stopif(is.null(model.syntax), "No model syntax provided in modsem")
   stopif(is.null(data), "No data provided in modsem")
   stopif(!is.data.frame(data) && !is.matrix(data), "data must be a data.frame or matrix!")
@@ -247,8 +249,7 @@ modsem_pi <- function(model.syntax = NULL,
     return(est)
   }
 
-  if (!is.data.frame(data))
-    data <- as.data.frame(data)
+  data <- as.data.frame(data)
 
   if (rcs) { # use reliability-correct single items?
     if (!is.null(rcs.choose))
@@ -382,7 +383,12 @@ modsem_pi <- function(model.syntax = NULL,
     modelSpec$coefParTable <- coefParTable
   }
 
-  structure(modelSpec, class = c("modsem_pi", "modsem"), method = method)
+  structure(
+    modelSpec,
+    class = c("modsem_pi", "modsem"),
+    method = method,
+    isRCS_Model = rcs
+  )
 }
 
 
@@ -781,6 +787,7 @@ modsemPICluster <- function(model.syntax = NULL,
   stopif(length(syntaxBlocks) != length(levelHeaders), "Different number of blocks than level headers!")
 
   data$ROW_IDENTIFIER_ <- seq_len(nrow(data))
+  has.interaction      <- FALSE
   newSyntax <- ""
   newData <- NULL
 
@@ -788,7 +795,11 @@ modsemPICluster <- function(model.syntax = NULL,
     syntaxBlock <- syntaxBlocks[[i]]
     levelHeader <- levelHeaders[[i]]
 
-    if (!NROW(modsemify(syntaxBlock))) next
+    parsedBlock <- modsemify(syntaxBlock)
+    if (!NROW(parsedBlock)) next
+
+    if (any(grepl(":", parsedBlock$rhs)))
+        has.interaction <- TRUE
 
     newBlockSyntax <- get_pi_syntax(
       model.syntax = syntaxBlock,
@@ -863,7 +874,9 @@ modsemPICluster <- function(model.syntax = NULL,
     )
   }
 
-  modelSpec <- list(syntax = newSyntax, data = newData)
+  modelSpec <- list(syntax = newSyntax, data = newData,
+                    has.interaction = has.interaction)
+
   if (run) {
     lavWrapper <- getWarningWrapper(silent = suppress.warnings.lavaan)
     lavEst <- tryCatch({

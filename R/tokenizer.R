@@ -21,12 +21,13 @@ getCharsLine <- function(line, i = 1) {
 
 getLines <- function(syntax) {
   operators <- c("=~", "<=", ">=", "==", ":=", "~~", "~",
-                 "+", "*", "<-", "->", "<", ">", "-")
+                 "+", "*", "<-", "->", "<", ">", "-", "|", ",")
   for (op in operators) {
     pattern <- paste0("\\", op, "\\s*[\n|;]")
     replace <- paste0(op, " ")
     syntax <- stringr::str_replace_all(syntax, pattern, replace)
   }
+
   lines <- strsplit(syntax, "\n|;") |>
     unlist() |>
     as.list() |>
@@ -76,6 +77,7 @@ initializeToken <- function(char, pos, line) {
 
   nextCharIsAlpha <- grepl("[[:alpha:]\\.]", nextChar)
   nextCharIsNum   <- grepl("[[:digit:]]", nextChar)
+  opChars <- c("=", "~", "*", "+", "<", ">", ":", "^", "/", "-", "|", ",")
 
   # optimaly this should be a switch
   if (grepl("#", char)) {
@@ -90,7 +92,7 @@ initializeToken <- function(char, pos, line) {
   } else if (grepl("[\\(\\)]", char)) {
     type <- "LavClosure"
     priority <- 2
-  } else if (grepl("[\\=\\~\\*\\+\\<\\>\\,\\:\\^\\/-]", char)) {
+  } else if (char %in% opChars) {
     type <- "LavOperator"
     priority <- 0
   } else if (grepl("[[:alnum:]]", char) || (char == "." & nextCharIsNum)) {
@@ -217,6 +219,7 @@ assignSubClass.LavOperator <- function(token) {
           ":=" = {subClass <- "LavCustom";      priority <- 0},
           ","  = {subClass <- "LavSeperator";   priority <- 0},
           "-"  = {subClass <- "LavSubtract";    priority <- 3},
+          "|"  = {subClass <- "LavThreshold";   priority <- 0},
           stop2("Unrecognized operator: ", highlightErrorToken(token))
   )
   structure(token,

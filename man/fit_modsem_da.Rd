@@ -4,7 +4,12 @@
 \alias{fit_modsem_da}
 \title{Fit measures for QML and LMS models}
 \usage{
-fit_modsem_da(model, chisq = TRUE, lav.fit = FALSE)
+fit_modsem_da(
+  model,
+  chisq = TRUE,
+  lav.fit = FALSE,
+  drop.list.single.group = TRUE
+)
 }
 \arguments{
 \item{model}{fitted model. Thereafter, you can use 'compare_fit()'
@@ -18,6 +23,10 @@ the interaction model likely has a good RMSEA as well.}
 the starting parameters be included (if available)? This is usually only approprioate
 for linear models (i.e., no interaction effects), where the parameter estimates
 for LMS and QML are equivalent to ML estimates from lavaan.}
+
+\item{drop.list.single.group}{Logical. If FALSE, (some) results are returned as
+a list, where each element corresponds to a group (even if there is only a single group).
+If TRUE, the list will be unlisted if there is only a single group}
 }
 \description{
 Calculates chi-sq test and p-value, as well as RMSEA for

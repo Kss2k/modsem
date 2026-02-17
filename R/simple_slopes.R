@@ -143,7 +143,12 @@ simple_slopes <- function(x,
 
   if (standardized) {
     parTable <- standardized_estimates(model, correction = TRUE)
-  } else parTable <- parameter_estimates(model)
+  } else {
+    parTable <- parameter_estimates(
+      object = model,
+      label.renamed.prod = TRUE
+    )
+  }
 
   parTable <- getMissingLabels(addMissingGroups(parTable))
 

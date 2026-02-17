@@ -9,7 +9,7 @@
 \usage{
 \method{summary}{modsem_da}(
   object,
-  H0 = TRUE,
+  H0 = is_interaction_model(object),
   verbose = interactive(),
   r.squared = TRUE,
   fit = FALSE,
@@ -46,7 +46,7 @@
 
 \method{summary}{modsem_pi}(
   object,
-  H0 = TRUE,
+  H0 = is_interaction_model(object),
   r.squared = TRUE,
   adjusted.stat = FALSE,
   digits = 3,

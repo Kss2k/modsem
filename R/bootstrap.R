@@ -52,7 +52,9 @@ bootstrap_modsem <- function(model = modsem, FUN, ...) {
 #' bootstrap_modsem(fit_pi, FUN = coef, R = 10L)
 #'
 #' @export
-bootstrap_modsem.modsem_pi <- function(model, FUN, ...) {
+bootstrap_modsem.modsem_pi <- function(model, FUN = "coef", ...) {
+  checkWarnRCS(model)
+
   wrapLavFit <- function(lavfit) {
     model$lavaan       <- lavfit
     model$coefParTable <- lavaan::parameterEstimates(lavfit)
@@ -60,7 +62,7 @@ bootstrap_modsem.modsem_pi <- function(model, FUN, ...) {
     model
   }
 
-  fun.mod <- \(fit) FUN(wrapLavFit(fit))
+  fun.mod <- \(fit, ...) do.call(FUN, list(wrapLavFit(fit), ...))
 
   lavaan::bootstrapLavaan(extract_lavaan(model), FUN = fun.mod, ...)
 }
@@ -105,36 +107,43 @@ bootstrap_modsem.modsem_da <- function(model,
                                        calc.se = FALSE,
                                        optimize = FALSE,
                                        ...) {
+  checkWarnRCS(model)
+
   type <- tolower(type)
   type <- match.arg(type)
 
-  INSPECT  <- modsem_inspect(model, what = "all")
+  INSPECT  <- modsem_inspect(model, what = "all", is.public = FALSE)
   group    <- INSPECT$group
 
   if (!is.null(group)) {
     group.label <- INSPECT$group.label
     DATA        <- INSPECT$data
 
-    cluster <- NULL
-    data    <- NULL
+    sampling.weights <- NULL
+    cluster          <- NULL
+    data             <- NULL
 
     for (g in group.label) {
-      data.g.mat <- DATA[[g]]
-      data.g     <- as.data.frame(data.g.mat)
-      cluster.g  <- attr(data.mat, "cluster")
-      data.g[[group]] <- g
+      data.g.mat         <- DATA[[g]]
+      data.g             <- as.data.frame(data.g.mat)
+      cluster.g          <- attr(data.g.mat, "cluster")
+      sampling.weights.g <- attr(data.g.mat, "weights")
+      data.g[[group]]    <- g
 
-      data    <- rbind(data, data.g)
-      cluster <- c(cluster, cluster.g)
+      data             <- rbind(data, data.g)
+      cluster          <- c(cluster, cluster.g)
+      sampling.weights <- c(sampling.weights, sampling.weights.g)
     }
 
   } else {
-    data.mat <- INSPECT$data
-    data     <- as.data.frame(data.mat)
-    cluster  <- attr(data.mat, "cluster")
+    data.mat         <- INSPECT$data
+    data             <- as.data.frame(data.mat)
+    cluster          <- attr(data.mat, "cluster")
+    sampling.weights <- attr(data.mat, "weights")
   }
 
-  ovs      <- colnames(data)
+  allvars  <- colnames(data)
+  ovs      <- INSPECT$ovs
   N        <- NROW(data)
   P        <- min(P.max, N * R)
   parTable <- parameter_estimates(model)
@@ -144,8 +153,14 @@ bootstrap_modsem.modsem_da <- function(model,
   stopif(!is.null(cluster) && type != "nonparametric",
          "cluster bootstrap is only available with `type=\"nonparametric\"`!")
 
+  if (!is.null(cluster) && !is.null(model$args$cluster))
+    data[[model$args$cluster]] <- cluster
+
+  if (!is.null(sampling.weights) && !is.null(model$args$sampling.weights))
+    data[[model$args$sampling.weights]] <- sampling.weights
+
   population <- switch(type,
-    parametric    = simulateDataParTable(parTable, N = P, colsOVs = ovs)$OV,
+    parametric    = simulatedGroupsToDf(simulateDataParTable(parTable, N = P, colsOVs = ovs), type = "OV"),
     nonparametric = data,
     stop2("Unrecognized type!\n")
   )
@@ -156,6 +171,13 @@ bootstrap_modsem.modsem_da <- function(model,
   argList$model.syntax <- model$model$info$group.info$syntax
   argList$cov.syntax   <- model$model$info$group.info$cov.syntax
   argList$method       <- model$method
+  argList$sampling.weights.normalization <- "none" # This has already been done
+
+  if (type == "parametric" && !is.null(argList$sampling.weights)) {
+    # By desing, the sampling weights aren't needed when simulating
+    # parametric data, so we delete the argument.
+    argList$sampling.weights <- NULL
+  }
 
   if (!optimize) {
     argList$start        <- model$theta
@@ -335,4 +357,13 @@ resample <- function(df, n.out = NROW(df), cluster = NULL, replace = TRUE) {
   purrr::list_rbind(
     lapply(clusters.sample, FUN = \(ci) df.orig[cluster==ci, , drop=FALSE])
   )
+}
+
+
+checkWarnRCS <- function(model) {
+  isRCS_Model <- attr(model, "isRCS_Model")
+
+  warnif(!is.null(isRCS_Model) && isRCS_Model,
+         "bootstrapping a model with estimated with `rcs=TRUE` directly, will\n",
+         "generate naive standard errors! Use `bootstrap_modsem.function()` instead!")
 }

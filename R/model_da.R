@@ -1,26 +1,28 @@
 # Functions
-specifModelDA_Group <- function(syntax = NULL,
-                                data = NULL,
-                                method = "lms",
-                                m = 16,
-                                cov.syntax = NULL,
-                                double = FALSE,
-                                parTable = NULL,
-                                parTableCovModel = NULL,
-                                auto.fix.first = TRUE,
-                                auto.fix.single = TRUE,
-                                createTheta = TRUE,
-                                mean.observed = TRUE,
-                                standardize.inp = FALSE,
-                                standardize.out = FALSE,
-                                checkModel = TRUE,
-                                quad.range = Inf,
-                                adaptive.quad = FALSE,
-                                adaptive.frequency = 3,
-                                missing = "complete",
-                                orthogonal.x = FALSE,
-                                orthogonal.y = FALSE,
-                                cluster = NULL) {
+specifyModelDA_Group <- function(syntax = NULL,
+                                 data = NULL,
+                                 method = "lms",
+                                 m = 16,
+                                 cov.syntax = NULL,
+                                 double = FALSE,
+                                 parTable = NULL,
+                                 parTableCovModel = NULL,
+                                 auto.fix.first = TRUE,
+                                 auto.fix.single = TRUE,
+                                 createTheta = TRUE,
+                                 mean.observed = TRUE,
+                                 standardize.inp = FALSE,
+                                 standardize.out = FALSE,
+                                 checkModel = TRUE,
+                                 quad.range = Inf,
+                                 adaptive.quad = FALSE,
+                                 adaptive.frequency = 3,
+                                 missing = "complete",
+                                 orthogonal.x = FALSE,
+                                 orthogonal.y = FALSE,
+                                 cluster = NULL,
+                                 sampling.weights = NULL,
+                                 structovs = NULL) {
   if (is.null(parTable) && !is.null(syntax)) parTable <- modsemify(syntax)
   stopif(is.null(parTable), "No parTable found")
 
@@ -50,8 +52,11 @@ specifModelDA_Group <- function(syntax = NULL,
   xis           <- getXis(parTable, checkAny = TRUE)
   numXis        <- length(xis)
 
-  omegaAndSortedXis <- sortXisConstructOmega(xis, varsInts, etas, intTerms,
-                                             method = method, double = double)
+  omegaAndSortedXis <- sortXisConstructOmega(
+    xis = xis, varsInts = varsInts, etas = etas, intTerms = intTerms,
+    method = method, double = double, structovs = structovs
+  )
+
   xis <- omegaAndSortedXis$sortedXis # get sorted xis according to interaction terms
   nonLinearXis <- omegaAndSortedXis$nonLinearXis
 
@@ -62,8 +67,14 @@ specifModelDA_Group <- function(syntax = NULL,
   numAllIndsXis <- length(allIndsXis)
 
   # clean data
-  data.cleaned <- prepDataModsemDA(data, allIndsXis, allIndsEtas,
-                                   missing = missing, cluster = cluster)
+  data.cleaned <- prepDataModsemDA(
+    data             = data,
+    allIndsXis       = allIndsXis,
+    allIndsEtas      = allIndsEtas,
+    missing          = missing,
+    cluster          = cluster,
+    sampling.weights = sampling.weights
+  )
 
   # measurement model x
   if (method == "qml") {
@@ -345,6 +356,7 @@ specifyModelDA <- function(..., group.info, createTheta = TRUE) {
 
   parTable    <- group.info$parTable
   parTableCov <- group.info$parTableCov
+  structovs   <- group.info$structovs
   group.col   <- parTable$group
 
   stopif(is.null(group.col) || max(group.col) != n.groups,
@@ -361,18 +373,21 @@ specifyModelDA <- function(..., group.info, createTheta = TRUE) {
       args.g <- addNamedNullField(args.g, field = "data")
 
     args.g$parTable <- parTable[parTable$group == g, , drop = FALSE]
+    args.g$structovs <- structovs
 
     if (!is.null(parTableCov))
       args.g$parTableCovModel <- parTableCov[parTableCov$group == g, , drop = FALSE]
     else
       args.g <- addNamedNullField(args.g, field = "parTableCovModel")
 
-    submodel.g <- do.call(specifModelDA_Group, args.g)
+    submodel.g <- do.call(specifyModelDA_Group, args.g)
     submodel.g$info$group <- group.info$levels[[g]]
     submodel.g$info$n.groups <- 1L
 
     submodels[[g]] <- submodel.g
   }
+
+  has.ov.interaction <- length(group.info$ovIntTerms) > 0
 
   model <- list(
     models   = submodels,
@@ -400,11 +415,11 @@ specifyModelDA <- function(..., group.info, createTheta = TRUE) {
       nonLinearXis  = submodels[[1L]]$info$nonLinearXis,
       mean.observed = submodels[[1L]]$info$mean.observed,
 
-      has.interaction    = submodels[[1L]]$info$has.interaction,
+      has.interaction    = submodels[[1L]]$info$has.interaction || has.ov.interaction,
       higherOrderLVs     = submodels[[1L]]$info$higherOrderLVs,
       indsHigherOrderLVs = submodels[[1L]]$info$indsHigherOrderLVs,
 
-      lavOptimizerSyntaxAdditions = submodels[[1L]]$lavOptimizerSyntaxAdditions
+      lavOptimizerSyntaxAdditions = submodels[[1L]]$info$lavOptimizerSyntaxAdditions
     ),
 
     params = list()
@@ -802,7 +817,7 @@ finalizeModelEstimatesDA <- function(model,
     convergence.msg  = getConvergenceMessage(converged, iterations),
     type.se          = typeSE,
     type.estimates   = "unstandardized",
-    info.quad        = if (method == "lms") getInfoQuad(model$quad) else NULL,
+    info.quad        = if (method == "lms") getInfoQuad(model$models[[1L]]$quad) else NULL,
     FIM              = FIMo$FIM,
     vcov.all         = FIMo$vcov.all,
     vcov.free        = FIMo$vcov.free,
@@ -853,4 +868,10 @@ getFinalModel <- function(model, theta, method, modelSE = NULL) {
   }
 
   finalModel
+}
+
+
+markOV_IntTermsParTable <- function(parTable, model) {
+  model$model$info
+  browser()
 }

@@ -7,11 +7,15 @@ OP_REPLACEMENTS <- c("~~"  = "___COVARIANCE___",
                      "<-"  = "___MPLUS_REGRESSION___",
                      "\\|" = "___THRESHOLD___")
 
+OP_OV_INT <- OP_REPLACEMENTS[[":"]]
 OP_REPLACEMENTS_INV <- structure(names(OP_REPLACEMENTS), names = OP_REPLACEMENTS)
 
 
 CONSTRAINT_OPS <- c("==", ">", "<", ":=")
 BOUNDUARY_OPS <- c(">", "<")
+
+
+TEMP_OV_PREFIX <- ".TEMP_OV__"
 
 
 getFreeParams <- function(model) {
@@ -202,6 +206,7 @@ castDataNumericMatrix <- function(data) {
 patternizeMissingDataFIML <- function(data) {
   # if we are not using fiml, the missing data should already have been removed...
   CLUSTER <- attr(data, "cluster")
+  WEIGHTS <- attr(data, "weights")
 
   Y   <- as.matrix(data)
   obs <- !is.na(Y)
@@ -257,12 +262,13 @@ patternizeMissingDataFIML <- function(data) {
     p          = length(ids),
     data.full  = data,
     is.fiml    = length(ids) > 1L,
-    cluster    = CLUSTER
+    cluster    = CLUSTER,
+    weights    = WEIGHTS
   )
 }
 
 
-handleMissingData <- function(data, missing = "listwise", CLUSTER = NULL) {
+handleMissingData <- function(data, missing = "listwise", CLUSTER = NULL, WEIGHTS = NULL) {
   missing       <- tolower(missing)
   completeCases <- stats::complete.cases(data)
   anyMissing    <- any(!completeCases)
@@ -270,6 +276,7 @@ handleMissingData <- function(data, missing = "listwise", CLUSTER = NULL) {
 
   if (!anyMissing){
     attr(data, "cluster") <- CLUSTER
+    attr(data, "weights") <- WEIGHTS
     return(data)
 
   } else if (allMissing) {
@@ -286,7 +293,8 @@ handleMissingData <- function(data, missing = "listwise", CLUSTER = NULL) {
              "or the `modsem_mimpute()` function!\n")
 
     out <- data[completeCases, ]
-    attr(out, "cluster") <- CLUSTER
+    attr(out, "cluster") <- CLUSTER[completeCases]
+    attr(out, "weights") <- WEIGHTS[completeCases]
 
     return(out)
 
@@ -302,6 +310,7 @@ handleMissingData <- function(data, missing = "listwise", CLUSTER = NULL) {
 
   } else if (missing %in% c("fiml", "ml", "direct")) {
     attr(data, "cluster") <- CLUSTER
+    attr(data, "weights") <- WEIGHTS
 
     rowMissingAll <- apply(data, MARGIN = 1, FUN = \(x) all(is.na(x)))
     data          <- data[!rowMissingAll, , drop = FALSE] # we've already know that
@@ -315,7 +324,7 @@ handleMissingData <- function(data, missing = "listwise", CLUSTER = NULL) {
 
 
 prepDataModsemDA <- function(data, allIndsXis, allIndsEtas, missing = "listwise",
-                             cluster = NULL) {
+                             cluster = NULL, sampling.weights = NULL) {
 
   if (is.null(data) || !NROW(data))
     return(list(data.full = NULL, n = 0, k = 0, p = 0, cluster = NULL))
@@ -327,9 +336,15 @@ prepDataModsemDA <- function(data, allIndsXis, allIndsEtas, missing = "listwise"
 
   } else CLUSTER <- NULL
 
+  if (!is.null(sampling.weights)) {
+    stopif(length(sampling.weights) > 1L, "`sampling.weights` must be a single variable!")
+    WEIGHTS <- data[, sampling.weights]
+
+  } else WEIGHTS <- NULL
+
   sortData(data, allIndsXis,  allIndsEtas) |>
     castDataNumericMatrix() |>
-    handleMissingData(missing = missing, CLUSTER = CLUSTER) |>
+    handleMissingData(missing = missing, CLUSTER = CLUSTER, WEIGHTS = WEIGHTS) |>
     patternizeMissingDataFIML()
 }
 
@@ -876,7 +891,6 @@ getCoefMatricesDA <- function(parTable,
   alpha <- createBeta(etas)
   beta0 <- createBeta(xis)
   tau   <- createBeta(inds)
-
   Binv <- solve(diag(nrow(gammaEta)) - gammaEta)
 
   list(gammaXi = gammaXi, gammaEta = gammaEta, Binv = Binv, psi = psi,
@@ -1188,28 +1202,31 @@ higherOrderMeasr2Struct <- function(parTable) {
 }
 
 
-recalcInterceptsY <- function(parTable) {
+recalcInterceptsY <- function(parTable.nlin, parTable.lin) {
   out <- NULL
 
-  for (g in getGroupsParTable(parTable)) {
-    parTable.g <- parTable[parTable$group == g, , drop = FALSE]
-    out <- rbind(out, recalcInterceptsY_Group(parTable.g))
+  parTable.nlin <- addMissingGroups(parTable.nlin)
+  parTable.lin  <- addMissingGroups(parTable.lin)
+
+  for (g in getGroupsParTable(parTable.nlin)) {
+    parTable.nlin.g <- parTable.nlin[parTable.nlin$group == g, , drop = FALSE]
+    parTable.lin.g  <- parTable.lin[parTable.lin$group == g, , drop = FALSE]
+    out <- rbind(out, recalcInterceptsY_Group(parTable.nlin = parTable.nlin.g,
+                                              parTable.lin  = parTable.lin.g))
   }
 
-  rbind(out, getZeroGroupParTable(parTable))
+  rbind(out, getZeroGroupParTable(parTable.nlin))
 }
 
 
-recalcInterceptsY_Group <- function(parTable) {
+recalcInterceptsY_Group <- function(parTable.nlin, parTable.lin) {
   # fix intercept for indicators of endogenous variables, based on means
   # of interaction terms
-  # intercepts are from a linear (CFA) model, combined with a non-linear SAM
+  # intercepts are from a linear (H0) model, combined with a non-linear SAM
   # structural model. We want the mean structure to be coherent with those
   # from a full non-linear model
-  nlin.intercepts <- grepl(":", parTable$lhs) & parTable$op == "~1"
-  parTable.nlin <- meanInteractions(parTable, ignore.means = TRUE)
-  parTable.lin  <- parTable[!nlin.intercepts, , drop = FALSE] # remove non linear intercepts
-                                                              # from the SAM structural model
+  parTable      <- parTable.nlin
+  parTable.nlin <- meanInteractions(parTable.nlin, ignore.means = FALSE)
 
   for (eta in getEtas(parTable)) {
     meta.lin  <- getMean(eta, parTable = parTable.lin)
@@ -1256,8 +1273,28 @@ getZeroGroupParTable <- function(parTable) {
 }
 
 
-prepareDataGroupDA <- function(group, data) {
+prepareDataGroupDA <- function(group, data, sampling.weights, sampling.weights.normalization) {
+  if (!is.null(sampling.weights)) {
+    stopif(length(sampling.weights) != 1L, "sampling.weights variable must be of length 1!")
+    stopif(!sampling.weights %in% names(data),
+           sprintf("sampling.weights variable '%s' not found in `data`.", sampling.weights))
+
+    weights <- data[[sampling.weights]]
+    stopif(any(is.na(weights)), "`sampling.weights` cannot have missing values!")
+    stopif(any(weights < 0), "`sampling.weights` cannot have negative values!")
+  }
+
+  if ((!is.null(sampling.weights) && tolower(sampling.weights.normalization) == "total")) {
+    weights <- data[[sampling.weights]]
+    data[[sampling.weights]] <- NROW(data) * weights / sum(weights)
+  }
+
   if (is.null(group)) {
+    if ((!is.null(sampling.weights) && tolower(sampling.weights.normalization) == "group")) {
+      weights <- data[[sampling.weights]]
+      data[[sampling.weights]] <- NROW(data) * weights / sum(weights)
+    }
+
     return(list(
       has.groups = FALSE,
       group = NULL,
@@ -1288,8 +1325,18 @@ prepareDataGroupDA <- function(group, data) {
   data <- data[, setdiff(names(data), group), drop = FALSE]
   group.var <- group
 
-  stopif(length(group.raw) != n, "Length of `group` must match the number of rows in `data`.")
-  stopif(any(is.na(group.raw)), "`group` cannot contain missing values.")
+  if ((!is.null(sampling.weights) && tolower(sampling.weights.normalization) == "group")) {
+    weights <- data[[sampling.weights]]
+
+    for (g in group.raw) {
+      cond      <- group.raw == g
+      weights.g <- data[cond, sampling.weights]
+      data[cond, sampling.weights] <- sum(cond) * weights.g / sum(weights.g)
+    }
+  }
+
+  stopif(length(group.raw) != n, "Length of `group` must match the number of rows in `data`!")
+  stopif(any(is.na(group.raw)), "`group` cannot contain missing values!")
 
   group.raw <- as.character(group.raw) # match lavaan behaviour, ignore factor levels
   levels_order <- unique(group.raw)
@@ -1402,12 +1449,60 @@ expandParTableByGroup <- function(parTable, group.levels) {
 }
 
 
-getGroupInfo <- function(model.syntax, cov.syntax, data, group,
-                         auto.split.syntax = FALSE) {
-  group.info <- prepareDataGroupDA(group = group, data = data)
-
+parseModelArgumentsByGroupDA <- function(model.syntax, cov.syntax,
+                                         method, data, group,
+                                         auto.split.syntax = FALSE,
+                                         sampling.weights = NULL,
+                                         sampling.weights.normalization = "total",
+                                         rng.indicators = 1) {
   parTable    <- modsemify(model.syntax)
   parTableCov <- modsemify(cov.syntax)
+
+  # Check for observed (structural) variables
+  structovs <- getStructOVs(rbind(parTable, parTableCov))
+  ovs       <- getOVs(rbind(parTable, parTableCov))
+
+  missing <- setdiff(ovs, colnames(data))
+  stopif(length(missing), "Missing observed variables in data:\n  ",
+         paste(missing, collapse = ", "))
+
+  varsInts  <- getVarsInts(getIntTermRows(parTable), removeColonNames = FALSE)
+  isOV_Int  <- vapply(varsInts, FUN.VALUE = logical(1L), FUN = \(x) all(x %in% ovs))
+  ovIntTerms <- names(varsInts)[isOV_Int]
+
+  for (ovInt in ovIntTerms) {
+    vars <- varsInts[[ovInt]]
+    ovIntNew <- stringr::str_replace_all(
+      string = ovInt, pattern = ":",
+      replacement = OP_OV_INT
+    )
+
+    parTable[parTable$lhs == ovInt, "lhs"] <- ovIntNew
+    parTable[parTable$rhs == ovInt, "rhs"] <- ovIntNew
+    data[[ovIntNew]] <- apply(data[vars], MARGIN = 1L, FUN = prod)
+    structovs <- c(structovs, ovIntNew)
+  }
+
+  for (ov in structovs) {
+    tmp.ov <- paste0(TEMP_OV_PREFIX, ov)
+
+    # Replace ov in measurement model with tmp.ov
+    # parTable[parTable$op == "=~" & parTable$rhs == ov, "rhs"] <- tmp.ov
+
+    data[[tmp.ov]] <- data[[ov]]
+    parTable <- rbind(
+      parTable,
+      data.frame(lhs = ov, op = "=~", rhs = tmp.ov, mod = "1"),
+      data.frame(lhs = ov, op = "~1", rhs = "", mod = ""),
+      data.frame(lhs = tmp.ov, op = "~1", rhs = "", mod = "0")
+    )
+  }
+
+  if (length(structovs))
+    model.syntax <- parTableToSyntax(parTable)
+
+  group.info <- prepareDataGroupDA(group = group, data = data, sampling.weights = sampling.weights,
+                                   sampling.weights.normalization = sampling.weights.normalization)
 
   if (auto.split.syntax && is.null(parTableCov) && is.null(cov.syntax)) {
     split <- splitParTable(parTable)
@@ -1424,6 +1519,8 @@ getGroupInfo <- function(model.syntax, cov.syntax, data, group,
 
   group.info$parTable.orig    <- parTable
   group.info$parTableCov.orig <- parTableCov
+  group.info$ovIntTerms       <- ovIntTerms
+  group.info$structovs        <- structovs
 
   group.levels <- group.info$levels
   if (is.null(group.levels)) group.levels <- ""
@@ -1433,4 +1530,10 @@ getGroupInfo <- function(model.syntax, cov.syntax, data, group,
   group.info$parTableCov <- expandParTableByGroup(parTableCov, group.levels = group.levels)
 
   group.info
+}
+
+
+removeTempOV_RowsParTable <- function(parTable) {
+  tmp <- startsWith(parTable$lhs, TEMP_OV_PREFIX) | startsWith(parTable$rhs, TEMP_OV_PREFIX)
+  parTable[!tmp, , drop = FALSE]
 }

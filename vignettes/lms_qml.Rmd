@@ -22,7 +22,7 @@ library(modsem)
 
 # The Latent Moderated Structural Equations (LMS) and the Quasi Maximum Likelihood (QML) Approach
 
-Both the `LMS` and `QML` approaches work on most models, but interaction effects with endogenous variables can be tricky to estimate (see the [vignette](https://modsem.org/articles/interaction_two_etas.html)). Both approaches, particularly the `LMS` approach, are computationally intensive and are partially implemented in C++ (using `Rcpp` and `RcppArmadillo`). Additionally, starting parameters are estimated using the double-centering approach, and the means of the observed variables are used to generate good starting parameters for faster convergence. If you want to monitor the progress of the estimation process, you can use `verbose = TRUE`.
+Both the `LMS` and `QML` approaches work on most models, but interaction effects with endogenous variables can be tricky to estimate (see the [vignette](https://modsem.org/articles/interaction_two_etas.html)). Both approaches, particularly the `LMS` approach, are computationally intensive and are partially implemented in C++ (using `Rcpp` and `RcppArmadillo`). Additionally, starting parameters are optimized, to generate good starting parameters for faster convergence. If you want to monitor the progress of the estimation process, you can use `verbose = TRUE`.
 
 ## A Simple Example
 

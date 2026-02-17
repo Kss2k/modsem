@@ -27,7 +27,8 @@ estepLms <- function(model, theta, lastQuad = NULL, recalcQuad = FALSE,
 
 estepLmsGroup <- function(submodel, lastQuad = NULL, recalcQuad = FALSE,
                           adaptive.quad.tol = 1e-12, ...) {
-  data <- submodel$data
+  data             <- submodel$data
+  sampling.weights <- data$weights
 
   if (submodel$quad$adaptive && (recalcQuad || is.null(lastQuad))) {
     m <- submodel$quad$m
@@ -42,8 +43,8 @@ estepLmsGroup <- function(submodel, lastQuad = NULL, recalcQuad = FALSE,
 
     quad <- tryCatch({
         adaptiveGaussQuadrature(
-          fun = densityLms, collapse = \(x) sum(log(rowSums(x))),
-          modFilled = submodel, data = data, a = a, b = b, m = m,
+          fun = densityLms, modFilled = submodel,
+          data = data, a = a, b = b, m = m,
           k = k, m.ceil = m.ceil, tol = adaptive.quad.tol,
         )
       }, error = function(e) {
@@ -64,21 +65,27 @@ estepLmsGroup <- function(submodel, lastQuad = NULL, recalcQuad = FALSE,
       return(estep.fixed)
     }
 
-    P <- quad$W * quad$F # P is already calculated
     V <- quad$n
     w <- quad$w
+    P <- sweep(quad$F, MARGIN = 2, STATS = w, FUN = "*")
 
   } else {
     quad <- if (submodel$quad$adaptive) lastQuad else submodel$quad
     V    <- quad$n
     w    <- quad$w
-    W    <- matrix(w, nrow = data$n, ncol = length(w), byrow = TRUE)
-    P    <- W * densityLms(V, modFilled = submodel, data = data)
+    densityVals <- densityLms(V, modFilled = submodel, data = data)
+    P    <- sweep(densityVals, MARGIN = 2, STATS = w, FUN = "*")
   }
 
   density        <- rowSums(P)
   observedLogLik <- sum(log(density))
   P              <- P / density
+
+  # The sampling weights are already incorporated in `densityLms()`, so
+  # `observedLogLik` is correct. But the P/density correction is not.
+  # Here we correct P/density (if needed).
+  if (!is.null(sampling.weights))
+    P <- sampling.weights * P
 
   wMeans <- vector("list", length = length(w))
   wCovs  <- vector("list", length = length(w))
@@ -112,8 +119,12 @@ estepLmsGroup <- function(submodel, lastQuad = NULL, recalcQuad = FALSE,
     }
   }
 
+  # Create a vector for sampling weights, needed in some C++ code
+  if (!is.null(sampling.weights)) sampling.weights.vec <- sampling.weights
+  else                            sampling.weights.vec <- rep(1, NROW(P))
+
   list(P = P, mean = wMeans, cov = wCovs, tgamma = tGamma, V = V, w = w,
-       obsLL = observedLogLik, quad = quad)
+       obsLL = observedLogLik, quad = quad, sampling.weights = sampling.weights.vec)
 }
 
 
@@ -418,7 +429,13 @@ obsLogLikLmsGroup_i <- function(submodel, P, sign = 1) {
     px <- px + w[i] * dens_i
   }
 
-  sign * log(px)
+  logdens <- log(px)
+
+  sampling.weights <- data$weights
+  if (!is.null(sampling.weights))
+    logdens <- sampling.weights * logdens
+
+  sign * logdens
 }
 
 
@@ -448,6 +465,10 @@ densitySingleLms <- function(z, modFilled, data) {
                                 sigma = sigma[colidx, colidx])
     offset <- end + 1L
   }
+
+  sampling.weights <- data$weights
+  if (!is.null(sampling.weights))
+    density <- exp(log(density) * sampling.weights) # can this be simplified?
 
   density
 }

@@ -121,14 +121,14 @@ getTransformationsTheta <- function(model, theta, method) {
   constrExprs    <- model$params$constrExprs
   selectThetaLab <- model$params$SELECT_THETA_LAB[[1L]] # fixed across models
 
-  if (!length(selectThetaLab))
+  if (!length(selectThetaLab) && !length(constrExprs$exprs))
     return(thetaFull)
 
-  thetaLabel <- thetaFull[selectThetaLab]
-  thetaRest  <- thetaFull[-selectThetaLab]
+  zeroLen <- length(selectThetaLab) <= 0
+  thetaLabel <- if (zeroLen) NULL else thetaFull[selectThetaLab]
+  thetaRest  <- if (zeroLen) thetaFull else thetaFull[-selectThetaLab]
 
   thetaLabel <- suppressWarnings(calcThetaLabel(thetaLabel, constrExprs))
-
   c(thetaLabel, thetaRest)
 }
 

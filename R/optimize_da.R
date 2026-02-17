@@ -3,8 +3,10 @@ optimizeStartingParamsDA <- function(model,
                                                  orthogonal.y = FALSE,
                                                  auto.fix.first = TRUE,
                                                  auto.fix.sinlge = TRUE,
-                                                 robust.se = FALSE),
+                                                 robust.se = FALSE,
+                                                 sampling.weights.normalization = "none"), # already fixed by modsem
                                      group = NULL,
+                                     sampling.weights = NULL,
                                      engine = c("pi", "sam")) {
   engine <- tolower(engine)
   engine <- match.arg(engine)
@@ -45,39 +47,43 @@ optimizeStartingParamsDA <- function(model,
 
   if (engine == "pi") {
     estPI <- modsem_pi(
-      model.syntax    = syntax,
-      data            = data,
-      method          = "dblcent",
-      estimator       = estimator,
-      meanstructure   = TRUE,
-      orthogonal.x    = args$orthogonal.x,
-      orthogonal.y    = args$orthogonal.y,
-      auto.fix.first  = args$auto.fix.first,
-      auto.fix.single = args$auto.fix.single,
-      res.cov.method  = "simple.no.warn",
-      res.cov.across  = TRUE,
-      match           = TRUE,
-      match.recycle   = TRUE,
-      missing         = missing,
+      model.syntax     = syntax,
+      data             = data,
+      method           = "dblcent",
+      estimator        = estimator,
+      meanstructure    = TRUE,
+      orthogonal.x     = args$orthogonal.x,
+      orthogonal.y     = args$orthogonal.y,
+      auto.fix.first   = args$auto.fix.first,
+      auto.fix.single  = args$auto.fix.single,
+      sampling.weights = sampling.weights,
+      res.cov.method   = "simple.no.warn",
+      res.cov.across   = TRUE,
+      match            = TRUE,
+      match.recycle    = TRUE,
+      missing          = missing,
       suppress.warnings.match = TRUE,
-      suppress.warnings.lavaan = TRUE
+      suppress.warnings.lavaan = TRUE,
+      sampling.weights.normalization = args$sampling.weights.normalization
     )
     parTable   <- parameter_estimates(estPI, colon.pi = TRUE)
     lavaan.fit <- extract_lavaan(estPI)
 
   } else if (engine == "sam") {
     fitSAM   <- parameterEstimatesLavSAM(
-      syntax          = syntax,
-      data            = data,
-      estimator       = estimator,
-      missing         = missing,
-      meanstructure   = TRUE,
-      orthogonal.x    = args$orthogonal.x,
-      orthogonal.y    = args$orthogonal.y,
-      auto.fix.first  = args$auto.fix.first,
-      auto.fix.single = args$auto.fix.single,
-      group           = group,
+      syntax           = syntax,
+      data             = data,
+      estimator        = estimator,
+      missing          = missing,
+      meanstructure    = TRUE,
+      orthogonal.x     = args$orthogonal.x,
+      orthogonal.y     = args$orthogonal.y,
+      auto.fix.first   = args$auto.fix.first,
+      auto.fix.single  = args$auto.fix.single,
+      group            = group,
+      sampling.weights = sampling.weights,
       suppress.warnings.lavaan = TRUE,
+      sampling.weights.normalization = args$sampling.weights.normalization
     )
 
     parTable   <- fitSAM$parTable
@@ -340,15 +346,17 @@ sortParTable <- function(parTable, lhs, op, rhs) {
 
 parameterEstimatesLavSAM <- function(syntax,
                                      data,
-                                     estimator       = "ml",
-                                     missing         = "listwise",
-                                     meanstructure   = TRUE,
-                                     orthogonal.x    = FALSE,
-                                     orthogonal.y    = FALSE,
-                                     auto.fix.first  = TRUE,
-                                     auto.fix.single = TRUE,
+                                     estimator        = "ml",
+                                     missing          = "listwise",
+                                     meanstructure    = TRUE,
+                                     orthogonal.x     = FALSE,
+                                     orthogonal.y     = FALSE,
+                                     auto.fix.first   = TRUE,
+                                     auto.fix.single  = TRUE,
+                                     group            = NULL,
+                                     sampling.weights = NULL,
+                                     sampling.weights.normalization = "total",
                                      suppress.warnings.lavaan = TRUE,
-                                     group = NULL,
                                      ...) {
   parTable <- modsemify(syntax)
   higherOrderLVs <- getHigherOrderLVs(parTable)
@@ -362,16 +370,18 @@ parameterEstimatesLavSAM <- function(syntax,
 
   if (!any(grepl(":", parTable$rhs) | grepl(":", parTable$lhs))) {
     fitSEM <- wrapper(lavaan::sem(
-      model           = syntax,
-      data            = data,
-      meanstructure   = meanstructure,
-      estimator       = estimator,
-      missing         = missing,
-      orthogonal.x    = orthogonal.x,
-      orthogonal.y    = orthogonal.y,
-      auto.fix.first  = auto.fix.first,
-      auto.fix.single = auto.fix.single,
-      group           = group,
+      model            = syntax,
+      data             = data,
+      meanstructure    = meanstructure,
+      estimator        = estimator,
+      missing          = missing,
+      orthogonal.x     = orthogonal.x,
+      orthogonal.y     = orthogonal.y,
+      auto.fix.first   = auto.fix.first,
+      auto.fix.single  = auto.fix.single,
+      group            = group,
+      sampling.weights = sampling.weights,
+      sampling.weights.normalization = sampling.weights.normalization,
       ...
     ))
 
@@ -379,10 +389,10 @@ parameterEstimatesLavSAM <- function(syntax,
                 parTable = lavaan::parameterEstimates(fitSEM)))
   }
 
-  # Get SAM structural model with measurement model from a CFA
+  # Get SAM structural model with measurement model from a linear model
   lVs <- getLVs(parTable)
 
-  getCFARows <- function(pt) {
+  getMeasrRows <- function(pt) {
     rhs <- pt$rhs
     lhs <- pt$lhs
     op  <- pt$op
@@ -398,30 +408,37 @@ parameterEstimatesLavSAM <- function(syntax,
     pt[cond1 | cond2 | cond3 | cond4, , drop = FALSE]
   }
 
-  parTableOuter <- getCFARows(parTable)
+  getH0Rows <- function(pt) {
+    ptH0 <- pt[!grepl(":", pt$lhs) & !grepl(":", pt$rhs), , drop = FALSE]
+    removeUnknownLabels(ptH0)
+  }
 
-  syntaxCFA <- parTableToSyntax(parTableOuter)
+  parTableOuter <- getH0Rows(parTable)
 
-  fitCFA <- wrapper(lavaan::cfa(
-    model           = syntaxCFA,
-    data            = data,
-    meanstructure   = meanstructure,
-    estimator       = estimator,
-    missing         = missing,
-    orthogonal.x    = orthogonal.x,
-    orthogonal.y    = orthogonal.y,
-    auto.fix.first  = auto.fix.first,
-    auto.fix.single = auto.fix.single,
-    group           = group,
+  syntaxH0 <- parTableToSyntax(parTableOuter)
+
+  fitH0 <- wrapper(lavaan::sem(
+    model            = syntaxH0,
+    data             = data,
+    meanstructure    = meanstructure,
+    estimator        = estimator,
+    missing          = missing,
+    orthogonal.x     = orthogonal.x,
+    orthogonal.y     = orthogonal.y,
+    auto.fix.first   = auto.fix.first,
+    auto.fix.single  = auto.fix.single,
+    group            = group,
+    sampling.weights = sampling.weights,
+    sampling.weights.normalization = sampling.weights.normalization,
     ...
   ))
 
-  if (isHigherOrder || isNonCentered) {
+  if (isHigherOrder) {
     # use factor scores instead
     # using `sam.method="fsr"` doesn't work for this purpose (yet)
     # so we do it manually instead
-    dataSAM <- tryCatch(lavaan::lavPredict(fitCFA, transform = TRUE),
-                        error = \(e) lavaan::lavPredict(fitCFA))
+    dataSAM <- tryCatch(lavaan::lavPredict(fitH0, transform = TRUE),
+                        error = \(e) lavaan::lavPredict(fitH0))
 
     structvars <- unique(c(
       colnames(dataSAM),
@@ -432,6 +449,7 @@ parameterEstimatesLavSAM <- function(syntax,
     parTableInner <- parTable[parTable$lhs %in% structvars &
                               parTable$rhs %in% structvars &
                               parTable$op != "=~", , drop = FALSE]
+
     syntaxSAM <- parTableToSyntax(parTableInner)
     SAMFUN    <- lavaan::sem
 
@@ -442,20 +460,23 @@ parameterEstimatesLavSAM <- function(syntax,
   }
 
   fitSAM <- wrapper(SAMFUN(
-    model           = syntaxSAM,
-    data            = dataSAM,
-    se              = "none",
-    estimator       = estimator,
-    missing         = missing,
-    orthogonal.x    = orthogonal.x,
-    orthogonal.y    = orthogonal.y,
-    auto.fix.first  = auto.fix.first,
-    auto.fix.single = auto.fix.single,
-    group           = group,
+    model            = syntaxSAM,
+    data             = dataSAM,
+    se               = "none",
+    estimator        = estimator,
+    missing          = missing,
+    orthogonal.x     = orthogonal.x,
+    orthogonal.y     = orthogonal.y,
+    auto.fix.first   = auto.fix.first,
+    auto.fix.single  = auto.fix.single,
+    group            = group,
+    sampling.weights = sampling.weights,
+    sampling.weights.normalization = sampling.weights.normalization,
     ...
   ))
 
-  measr  <- getCFARows(lavaan::parameterEstimates(fitCFA))
+  parTableH0 <- lavaan::parameterEstimates(fitH0)
+  measr  <- getMeasrRows(parTableH0)
   struct <- lavaan::parameterEstimates(fitSAM)
 
   addcol <- \(pt, col, val) if (!col %in% colnames(pt)) {pt[[col]] <- val; pt} else pt
@@ -472,7 +493,8 @@ parameterEstimatesLavSAM <- function(syntax,
   parTableFull <- parTableFull[!duplicated(parTableFull[cols.x]), , drop = FALSE]
 
   # if (!isNonCentered && !isHigherOrder) # if latent mean structure is not included
-  parTableFull <- recalcInterceptsY(parTableFull)
+  parTableFull <- recalcInterceptsY(parTable.nlin = parTableFull,
+                                    parTable.lin  = parTableH0)
 
-  list(fit = fitCFA, parTable = parTableFull)
+  list(fit = fitH0, parTable = parTableFull)
 }

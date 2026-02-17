@@ -63,7 +63,13 @@ print.modsem_mplus <- function(x, ...) {
 
 #' @export
 #' @describeIn parameter_estimates Get parameter estimates of a \code{\link{modsem_mplus}} object
-parameter_estimates.modsem_mplus <- function(object, ...) {
+parameter_estimates.modsem_mplus <- function(object,
+                                             colon.pi = NULL, # capture
+                                             high.order.as.measr = NULL, # capture
+                                             rm.tmp.ov = NULL, # capture argument
+                                             label.renamed.prod = NULL, # capture argument
+                                             is.public = NULL, # capture argument
+                                             ...) {
   object$parTable
 }
 

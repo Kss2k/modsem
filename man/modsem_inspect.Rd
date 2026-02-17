@@ -63,6 +63,10 @@ organised in several sections.  Keywords are \emph{case-sensitive}.
 
 \describe{
 \item{\code{"N"}}{Number of analysed rows (integer).}
+\item{\code{"ngroups"}}{Number of groups in model (integer).}
+\item{\code{"group"}}{Group variable in model (character).}
+\item{\code{"group.label"}}{Group labels (character).}
+\item{\code{"ovs"}}{Observed variables used in model (character).}
 }
 
 \strong{Parameter estimates and standard errors:}

@@ -7,11 +7,22 @@ inspectDA_Optim <- c("coefficients.free", "vcov.free", "information",
                      "loglik", "iterations", "convergence")
 
 
-modsem_inspect_da <- function(model, what = "default") {
+modsem_inspect_da <- function(model,
+                              what = "default",
+                              standardized = FALSE,
+                              is.public = TRUE) {
+  # for brevity...
+  .modsemVector <- \(...) modsemVector(..., is.public = is.public)
+  .modsemMatrix <- \(...) modsemMatrix(..., is.public = is.public)
+
   stopif(!length(what), "`what` is of length zero!")
+
+  if (standardized)
+    model <- standardize_model(model)
 
   finalModel <- model$model
   groupModels <- finalModel$models
+  ovs      <- c(finalModel$info$allIndsXis, finalModel$info$allIndsEtas)
   n.groups <- length(groupModels)
   is.multi <- n.groups > 1L
 
@@ -78,25 +89,25 @@ modsem_inspect_da <- function(model, what = "default") {
     cor.all <- if (!is.null(cov.all)) cov2cor(cov.all)  else NULL
 
     list(
-      cov.ov  = modsemMatrix(cov.ov,  symmetric = TRUE),
-      cov.lv  = modsemMatrix(cov.lv,  symmetric = TRUE),
-      cov.all = modsemMatrix(cov.all, symmetric = TRUE),
+      cov.ov  = .modsemMatrix(cov.ov,  symmetric = TRUE),
+      cov.lv  = .modsemMatrix(cov.lv,  symmetric = TRUE),
+      cov.all = .modsemMatrix(cov.all, symmetric = TRUE),
 
-      cor.ov  = modsemMatrix(cor.ov,  symmetric = TRUE),
-      cor.lv  = modsemMatrix(cor.lv,  symmetric = TRUE),
-      cor.all = modsemMatrix(cor.all, symmetric = TRUE),
+      cor.ov  = .modsemMatrix(cor.ov,  symmetric = TRUE),
+      cor.lv  = .modsemMatrix(cor.lv,  symmetric = TRUE),
+      cor.all = .modsemMatrix(cor.all, symmetric = TRUE),
 
-      mean.lv  = modsemMatrix(expected$mu.lv),
-      mean.ov  = modsemMatrix(expected$mu.ov),
-      mean.all = modsemMatrix(expected$mu.all),
+      mean.lv  = .modsemMatrix(expected$mu.lv),
+      mean.ov  = .modsemMatrix(expected$mu.ov),
+      mean.all = .modsemMatrix(expected$mu.all),
 
-      r2.all  = modsemVector(expected$r2.all),
-      r2.lv   = modsemVector(expected$r2.lv),
-      r2.ov   = modsemVector(expected$r2.ov),
+      r2.all  = .modsemVector(expected$r2.all),
+      r2.lv   = .modsemVector(expected$r2.lv),
+      r2.ov   = .modsemVector(expected$r2.ov),
 
-      res.all = modsemVector(expected$res.all),
-      res.lv  = modsemVector(expected$res.lv),
-      res.ov  = modsemVector(expected$res.ov)
+      res.all = .modsemVector(expected$res.all),
+      res.lv  = .modsemVector(expected$res.lv),
+      res.ov  = .modsemVector(expected$res.ov)
     )
   }
 
@@ -128,17 +139,17 @@ modsem_inspect_da <- function(model, what = "default") {
       list(
         N            = submodel$data$n,
         data         = submodel$data$data.full,
-        lambda       = modsemMatrix(lambda),
-        tau          = modsemMatrix(tau),
-        theta        = modsemMatrix(theta, symmetric = TRUE),
-        gamma.xi     = modsemMatrix(gamma.xi),
-        gamma.eta    = modsemMatrix(gamma.eta),
-        omega.xi.xi  = modsemMatrix(omega.xi.xi),
-        omega.eta.xi = modsemMatrix(omega.eta.xi),
-        phi          = modsemMatrix(phi, symmetric = TRUE),
-        psi          = modsemMatrix(psi, symmetric = TRUE),
-        alpha        = modsemMatrix(alpha),
-        beta0        = modsemMatrix(beta0)
+        lambda       = .modsemMatrix(lambda),
+        tau          = .modsemMatrix(tau),
+        theta        = .modsemMatrix(theta, symmetric = TRUE),
+        gamma.xi     = .modsemMatrix(gamma.xi),
+        gamma.eta    = .modsemMatrix(gamma.eta),
+        omega.xi.xi  = .modsemMatrix(omega.xi.xi),
+        omega.eta.xi = .modsemMatrix(omega.eta.xi),
+        phi          = .modsemMatrix(phi, symmetric = TRUE),
+        psi          = .modsemMatrix(psi, symmetric = TRUE),
+        alpha        = .modsemMatrix(alpha),
+        beta0        = .modsemMatrix(beta0)
       ),
       buildExpectedPayload(expected)
     )
@@ -187,20 +198,21 @@ modsem_inspect_da <- function(model, what = "default") {
   res.ov.val       <- collapseField("res.ov")
 
   info <- list(N                 = N.val,
-               vcov.all          = modsemMatrix(model$vcov.all, symmetric = TRUE),
-               vcov.free         = modsemMatrix(model$vcov.free, symmetric = TRUE),
-               information       = modsemMatrix(model$FIM, symmetric = TRUE),
+               vcov.all          = .modsemMatrix(model$vcov.all, symmetric = TRUE),
+               vcov.free         = .modsemMatrix(model$vcov.free, symmetric = TRUE),
+               information       = .modsemMatrix(model$FIM, symmetric = TRUE),
                data              = data.val,
-               coefficients.all  = modsemVector(model$coefs.all),
-               coefficients.free = modsemVector(model$coefs.free),
-               partable          = modsemParTable(model$parTable),
+               coefficients.all  = .modsemVector(model$coefs.all),
+               coefficients.free = .modsemVector(model$coefs.free),
+               partable          = parameter_estimates(model, is.public = is.public),
                partable.input    = model$originalParTable,
                loglik            = model$logLik,
                iterations        = model$iterations,
                convergence       = model$convergence,
+               ovs               = ovs,
 
                ngroups     = model$model$info$n.groups,
-               group       = model$model$args$group,
+               group       = model$args$group,
                group.label = group.names,
 
                lambda       = lambda.val,

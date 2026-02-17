@@ -24,6 +24,7 @@ standardized_estimates(object, ...)
   monte.carlo = FALSE,
   mc.reps = 10000,
   tolerance.zero = 1e-10,
+  rm.tmp.ov = TRUE,
   ...
 )
 
@@ -50,6 +51,8 @@ standard errors; if \code{FALSE}, use the delta method (default).}
 \item{mc.reps}{Integer. Number of Monte Carlo replications to use if \code{std.errors = "monte.carlo"}.}
 
 \item{tolerance.zero}{Threshold below which standard errors are set to \code{NA}.}
+
+\item{rm.tmp.ov}{Should temporary (hidden) variables be removed?}
 
 \item{type}{Type of standardized estimates to retrieve. Can be one of: \code{"stdyx", "stdy", "std", "un", "modsem"}.}
 

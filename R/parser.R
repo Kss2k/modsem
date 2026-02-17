@@ -1,3 +1,8 @@
+PARSER_SETTINGS <- rlang::env(
+  parentheses.as.string = FALSE
+)
+
+
 evalToken <- function(token, lhs, rhs) {
   UseMethod("evalToken")
 }
@@ -112,6 +117,9 @@ evalToken.LavFunction <- function(token, lhs, rhs) {
 
 #' @export
 evalToken.LeftBracket <- function(token, lhs, rhs) {
+  if (PARSER_SETTINGS$parentheses.as.string)
+    return(paste0("(", stringifyTokens(rhs), ")"))
+
   rhs
 }
 
@@ -119,6 +127,27 @@ evalToken.LeftBracket <- function(token, lhs, rhs) {
 #' @export
 evalToken.RightBracket <- function(token, lhs, rhs) {
   lhs
+}
+
+
+stringifyTokens <- function(tokens) {
+  if (all(c("lhs", "op", "rhs") %in% names(tokens))) {
+    lhs <- paste0(unlist(tokens$lhs), collapse = "+")
+    op  <- unlist(tokens$op)[[1L]]
+    rhs <- paste0(unlist(tokens$rhs), collapse = "+")
+    out <- paste0(lhs, op, rhs)
+
+  } else {
+    out <- paste0(unlist(tokens), collapse="")
+  }
+
+  # This code is ugly as f*
+  class(out) <- c("LavObject", "LavName", "LavToken")
+  attr(out, "pos") <- attr(unlist(tokens)[[1L]], "pos")
+  attr(out, "priority") <- 13
+  attr(out, "lineNumber") <- attr(unlist(tokens)[[1L]], "lineNumber")
+
+  out
 }
 
 
@@ -189,6 +218,7 @@ createParTableBranch <- function(syntaxTree) {
 #' Generate parameter table for \code{lavaan} syntax
 #'
 #' @param syntax model syntax
+#' @param parentheses.as.string Should parentheses be read parsed as literal strings?
 #'
 #' @return \code{data.frame} with columns \code{lhs, op, rhs, mod}
 #' @export modsemify
@@ -205,11 +235,19 @@ createParTableBranch <- function(syntaxTree) {
 #'   Y ~ X + Z + X:Z
 #''
 #' modsemify(m1)
-modsemify <- function(syntax) {
+modsemify <- function(syntax, parentheses.as.string = FALSE) {
   if (is.null(syntax)) return(NULL)
 
   stopif(!is.character(syntax) && length(syntax) > 1,
          "Syntax is not a string og length 1")
+
+  on.exit({
+    PARSER_SETTINGS$parentheses.as.string <- FALSE
+  })
+
+  if (parentheses.as.string)
+    PARSER_SETTINGS$parentheses.as.string <- TRUE
+
   syntaxTrees <- createSyntaxTreesSyntax(syntax)
   parsedTrees <- parseSyntaxTrees(syntaxTrees)
   purrr::list_rbind(lapply(parsedTrees,

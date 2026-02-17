@@ -11,13 +11,44 @@
 \usage{
 parameter_estimates(object, ...)
 
-\method{parameter_estimates}{lavaan}(object, colon.pi = TRUE, high.order.as.measr = NULL, ...)
+\method{parameter_estimates}{lavaan}(
+  object,
+  colon.pi = NULL,
+  high.order.as.measr = NULL,
+  rm.tmp.ov = NULL,
+  label.renamed.prod = NULL,
+  is.public = NULL,
+  ...
+)
 
-\method{parameter_estimates}{modsem_da}(object, high.order.as.measr = TRUE, ...)
+\method{parameter_estimates}{modsem_da}(
+  object,
+  high.order.as.measr = TRUE,
+  is.public = TRUE,
+  rm.tmp.ov = is.public,
+  label.renamed.prod = NULL,
+  ...
+)
 
-\method{parameter_estimates}{modsem_mplus}(object, ...)
+\method{parameter_estimates}{modsem_mplus}(
+  object,
+  colon.pi = NULL,
+  high.order.as.measr = NULL,
+  rm.tmp.ov = NULL,
+  label.renamed.prod = NULL,
+  is.public = NULL,
+  ...
+)
 
-\method{parameter_estimates}{modsem_pi}(object, colon.pi = FALSE, high.order.as.measr = NULL, ...)
+\method{parameter_estimates}{modsem_pi}(
+  object,
+  colon.pi = FALSE,
+  label.renamed.prod = FALSE,
+  high.order.as.measr = NULL,
+  rm.tmp.ov = NULL,
+  is.public = NULL,
+  ...
+)
 }
 \arguments{
 \item{object}{An object of class \code{\link{modsem_pi}}, \code{\link{modsem_da}}, or \code{\link{modsem_mplus}}}
@@ -29,6 +60,13 @@ parameter_estimates(object, ...)
 \item{high.order.as.measr}{Should higher order measurement model be
 denoted with the \code{=~} operator? If \code{FALSE} the \code{~}
 operator is used.}
+
+\item{rm.tmp.ov}{Should temporary (hidden) variables be removed?}
+
+\item{label.renamed.prod}{Should renamed product terms keep their old (implicit) labels?}
+
+\item{is.public}{Should public version of parameter table be returned?
+If \code{FALSE}, the internal version of the parameter table is returned.}
 }
 \description{
 Extract parameterEstimates from an estimated model
