@@ -213,7 +213,7 @@ modsem_inspect_da <- function(model,
 
                ngroups     = model$model$info$n.groups,
                group       = model$args$group,
-               group.label = if (!is.null(group)) group.names else NULL,
+               group.label = if (!is.null(model$args$group)) group.names else NULL,
 
                lambda       = lambda.val,
                tau          = tau.val,
