@@ -156,7 +156,9 @@ simple_slopes <- function(x,
   group.label <- tryCatch(modsem_inspect(model, what = "group.label"), error = \(e) NULL)
 
   for (g in getGroupsParTable(parTable)) {
-    label      <- tryCatch(group.label[[g]], error = \(e) as.character(g))
+    label <- tryCatch(group.label[[g]], error = \(e) NULL)
+    label <- if (is.null(label)) as.character(g) else label
+
     parTable.g <- parTable[parTable$group == g, , drop = FALSE]
 
     out[[label]] <- simpleSlopesGroup(
