@@ -300,9 +300,15 @@ standardized_estimates.modsem_pi <- function(object,
   std.errors  <- tolower(std.errors)
   std.errors  <- match.arg(std.errors)
   monte.carlo <- std.errors == "monte.carlo"
- 
+
+  uncorrected <- function(object) {
+    rename(lavaan::standardizedSolution(object$lavaan, ...), est.std = "est")
+  }
+
   cleanOutputParTable <- function(parTable) {
-    if (colon.pi) {
+    hasColon <- any(grepl(":", parTable$rhs))
+
+    if (colon.pi && !hasColon) {
       elems <- object$elementsInProdNames
 
       if (length(elems) && !"label" %in% colnames(parTable))
@@ -321,13 +327,16 @@ standardized_estimates.modsem_pi <- function(object,
         parTable[lmatch, "lhs"] <- xzColon # shouldn't be necessary, but just in case
                                            # the user has done something weird...
       }
+
+    } else if (!colon.pi) {
+      rm <- \(x) stringr::str_remove_all(x, ":")
+      parTable$rhs <- rm(parTable$rhs)
+      parTable$lhs <- rm(parTable$lhs)
+
     }
 
     parTable
   }
-
-  uncorrected <- \(object) rename(lavaan::standardizedSolution(object$lavaan, ...),
-                                  est.std = "est")
 
   if (correction && std.errors == "rescale") {
     parTable.std.naive <- uncorrected(object)
