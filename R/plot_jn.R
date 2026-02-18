@@ -1,7 +1,9 @@
-getJN_PointsConditional <- function(x, z, y, parTable, model, min_z, max_z, sig.level, alpha,
+getJN_GridMonteCarlo <- function(x, z, y, parTable, model, min_z, max_z, sig.level, alpha,
                                     detail, sd.line, standardized, xz, greyscale,
                                     plot.jn.points = TRUE, group = NULL, group.label = NULL,
                                     type = "indirect", mc.reps = 10000, ...) {
+  message("Using Monte-Carlo quantiles...")
+
   type <- match.arg(type, c("indirect", "total", "direct"))
 
   mean_z <- getMean(z, parTable = parTable)
@@ -17,17 +19,16 @@ getJN_PointsConditional <- function(x, z, y, parTable, model, min_z, max_z, sig.
 
   intTerms <- getIntTerms(parTable)
 
-  if (!length(intTerms)) {
-    stop2("No interaction terms were found in the model.")
-  }
+  stopif(!length(intTerms), "No interaction terms were found in the model.")
 
   for (intTerm in intTerms) {
     elems <- stringr::str_split_1(intTerm, pattern = ":")
 
     if (!z %in% elems)
       next
-    else if (length(elems) > 2L)
-      stop2("Johnson-Neyman plot is not available for three-way (or higher) interactions!")
+
+    stopif(length(elems) > 2L,
+           "Johnson-Neyman plot is not available for three-way (or higher) interactions!")
 
     m <- elems[elems != z]
 
@@ -107,7 +108,7 @@ getJN_PointsConditional <- function(x, z, y, parTable, model, min_z, max_z, sig.
 
   list(
     grid = jn_points,
-    jn_points = approximate_jn_points_from_grid(jn_points),
+    jn_points = approxJN_PointsFromGrid(jn_points),
     significant_everywhere = significant_everywhere,
     mean_z = mean_z,
     sd_z = sd_z,
@@ -115,7 +116,7 @@ getJN_PointsConditional <- function(x, z, y, parTable, model, min_z, max_z, sig.
     max_z = z_max
   )
 }
-  
+
 
 #' Plot Interaction Effect Using the Johnson-Neyman Technique
 #'
@@ -137,8 +138,9 @@ getJN_PointsConditional <- function(x, z, y, parTable, model, min_z, max_z, sig.
 #' @param greyscale Logical. If \code{TRUE} the plot is plotted in greyscale.
 #' @param plot.jn.points Logical. If \code{TRUE}, omit the numeric annotations for the JN-points from the plot.
 #' @param type Which effect to display. One of \code{"direct"}, \code{"indirect"}, or \code{"total"}.
+#' @param mc.quantiles Should JN quantiles be calculated using Monte-Carlo estimates?
 #' @param mc.reps Number of Monte Carlo replicates used to approximate the confidence
-#'   bands when \code{type} is \code{"indirect"} or \code{"total"}.
+#'   bands when \code{mc.quantile} is \code{TRUE} and/or \code{type} is \code{"indirect"} or \code{"total"}.
 #' @param ... Additional arguments (currently not used).
 #'
 #' @return A \code{ggplot} object showing the interaction plot with regions of significance.
@@ -181,7 +183,7 @@ plot_jn <- function(x, z, y, model, min_z = -3, max_z = 3,
                     sd.line = 2, standardized = FALSE, xz = NULL,
                     greyscale = FALSE, plot.jn.points = TRUE,
                     type = c("direct", "indirect", "total"),
-                    mc.reps = 10000, ...) {
+                    mc.quantiles = FALSE, mc.reps = 10000, ...) {
 
   stopif(!inherits(model, c("modsem_da", "modsem_mplus", "modsem_pi", "lavaan")),
          "model must be of class 'modsem_pi', 'modsem_da', 'modsem_mplus', or 'lavaan'")
@@ -189,11 +191,12 @@ plot_jn <- function(x, z, y, model, min_z = -3, max_z = 3,
   type <- match.arg(type)
 
   if (standardized) {
-    parTable <- standardized_estimates(model, correction = TRUE)
+    parTable <- standardized_estimates(model, correction = TRUE, colon.pi = TRUE)
   } else {
     parTable <- parameter_estimates(
       object = model,
-      label.renamed.prod = TRUE
+      label.renamed.prod = TRUE,
+      colon.pi = TRUE
     )
   }
 
@@ -211,7 +214,7 @@ plot_jn <- function(x, z, y, model, min_z = -3, max_z = 3,
       alpha = alpha, detail = detail, sd.line = sd.line,
       standardized = standardized, xz = xz, greyscale = greyscale,
       plot.jn.points = plot.jn.points, group = g, group.label = label.g,
-      type = type, mc.reps = mc.reps, ...
+      type = type, mc.reps = mc.reps, mc.quantiles = mc.quantiles, ...
     )
   }
 
@@ -233,7 +236,7 @@ plot_jn <- function(x, z, y, model, min_z = -3, max_z = 3,
 }
 
 
-getJN_PointsDirect <- function(x, z, y, parTable, model, min_z, max_z, sig.level, alpha,
+getJN_GridDelta <- function(x, z, y, parTable, model, min_z, max_z, sig.level, alpha,
                                detail, sd.line, standardized, xz, greyscale,
                                plot.jn.points = TRUE, group = NULL, group.label = NULL, ...) {
   if (is.null(xz))
@@ -242,10 +245,6 @@ getJN_PointsDirect <- function(x, z, y, parTable, model, min_z, max_z, sig.level
   checkInputsSimpleSlopes(x = x, z = z, y = y, xz = xz, parTable = parTable)
 
   xz <- c(xz, reverseIntTerm(xz))
-
-  if (!inherits(model, c("modsem_da", "modsem_mplus")) && !inherits(model, "lavaan")) {
-    xz <- stringr::str_remove_all(xz, ":")
-  }
 
   if (inherits(model, "lavaan")) {
     vcov <- lavaan::vcov
@@ -298,15 +297,16 @@ getJN_PointsDirect <- function(x, z, y, parTable, model, min_z, max_z, sig.level
       z_jn <- -C / B; z_lower <- z_jn; z_upper <- z_jn
       jn_points <- z_jn
     } else {
-      message("No regions where the effect transitions between significant and non-significant.")
       significant_everywhere <- TRUE
     }
+
   } else if (disc < 0) {
-    message("No regions where the effect transitions between significant and non-significant.")
     significant_everywhere <- TRUE
+
   } else if (disc == 0) {
     z_jn <- -B / (2 * A); z_lower <- z_jn; z_upper <- z_jn
     jn_points <- z_jn
+
   } else {
     z1 <- (-B + sqrt(disc)) / (2 * A)
     z2 <- (-B - sqrt(disc)) / (2 * A)
@@ -336,7 +336,7 @@ getJN_PointsDirect <- function(x, z, y, parTable, model, min_z, max_z, sig.level
   )
 
   if (!length(jn_points) && !significant_everywhere) {
-    jn_points <- approximate_jn_points_from_grid(grid)
+    jn_points <- approxJN_PointsFromGrid(grid)
   }
 
   list(
@@ -355,24 +355,27 @@ plotJN_Group <- function(x, z, y, parTable, model, min_z, max_z, sig.level, alph
                          detail, sd.line, standardized, xz, greyscale,
                          plot.jn.points = TRUE, group = NULL, group.label = NULL,
                          type = c("direct", "indirect", "total"),
-                         mc.reps = 10000, ...) {
+                         mc.reps = 10000, mc.quantiles = FALSE, ...) {
 
   type <- match.arg(type)
 
-  result <- if (type == "direct") {
-    getJN_PointsDirect(
-      x = x, z = z, y = y, parTable = parTable, model = model, min_z = min_z,
-      max_z = max_z, sig.level = sig.level, alpha = alpha, detail = detail,
-      sd.line = sd.line, standardized = standardized, xz = xz, greyscale = greyscale,
-      plot.jn.points = plot.jn.points, group = group, group.label = group.label
-    )
-  } else {
-    getJN_PointsConditional(
+  if (type != "direct")
+    mc.quantiles <- TRUE
+
+  if (mc.quantiles) {
+    result <- getJN_GridMonteCarlo( # Monte-Carlo Quantiles
       x = x, z = z, y = y, parTable = parTable, model = model, min_z = min_z,
       max_z = max_z, sig.level = sig.level, alpha = alpha, detail = detail,
       sd.line = sd.line, standardized = standardized, xz = xz, greyscale = greyscale,
       plot.jn.points = plot.jn.points, group = group, group.label = group.label,
       type = type, mc.reps = mc.reps
+    )
+  } else {
+    result <- getJN_GridDelta( # Delta-Method (Symmetric) Quantiles
+      x = x, z = z, y = y, parTable = parTable, model = model, min_z = min_z,
+      max_z = max_z, sig.level = sig.level, alpha = alpha, detail = detail,
+      sd.line = sd.line, standardized = standardized, xz = xz, greyscale = greyscale,
+      plot.jn.points = plot.jn.points, group = group, group.label = group.label
     )
   }
 
@@ -396,19 +399,75 @@ plotJN_Group <- function(x, z, y, parTable, model, min_z, max_z, sig.level, alph
     format_num <- function(val) formatC(val, format = "f", digits = 2)
     format_sig <- function(val) sub("^0\\.", ".", formatC(val, format = "f", digits = 2))
 
-    sig_points <- if (length(jn_points)) jn_points else df_plot$z[significant]
-    interval <- sprintf("[%s, %s]", format_num(min(sig_points)),
-                        format_num(max(sig_points)))
+    transition_points <- jn_points
+    transition_points <- transition_points[is.finite(transition_points)]
+    transition_points <- sort(unique(transition_points))
+    transition_points <- transition_points[transition_points >= z_min & transition_points <= z_max]
 
-    if (!is.null(group.label)) {
-      header <- sprintf("Johnson-Neyman Interval (group %s):", group.label)
-    } else {
-      header <- "Johnson-Neyman Interval:"
+    run_info <- rle(significant)
+    n_runs <- length(run_info$values)
+
+    if (!length(transition_points)) {
+      transition_points <- approxJN_PointsFromGrid(df_plot)
+      transition_points <- transition_points[is.finite(transition_points)]
+      transition_points <- transition_points[transition_points >= z_min & transition_points <= z_max]
     }
 
-    body <- sprintf("When %s is outside the interval %s, the slope of %s is p < %s.",
-                    z, interval, x, format_sig(sig.level))
-    message(sprintf("%s\n  %s", header, body))
+    boundaries <- c(z_min, transition_points, z_max)
+    if (length(boundaries) != n_runs + 1L) {
+      idx <- which(diff(as.integer(significant)) != 0)
+      approx_points <- (df_plot$z[idx] + df_plot$z[idx + 1L]) / 2
+      boundaries <- c(z_min, approx_points, z_max)
+    }
+
+    if (length(boundaries) == n_runs + 1L && n_runs > 1L) {
+      describe_segment <- function(lower, upper, is_sig, pos, total) {
+        lower_txt <- format_num(lower)
+        upper_txt <- format_num(upper)
+        range_txt <- if (pos == 1L) {
+          sprintf("%s <= %s", z, upper_txt)
+        } else if (pos == total) {
+          sprintf("%s >= %s", z, lower_txt)
+        } else {
+          sprintf("%s is between %s and %s", z, lower_txt, upper_txt)
+        }
+        effect_txt <- if (is_sig) {
+          sprintf("the %s effect of %s is p < %s", type, x, format_sig(sig.level))
+        } else {
+          sprintf("the %s effect of %s is not significant (p >= %s)", type, x, format_sig(sig.level))
+        }
+        sprintf("When %s, %s.", range_txt, effect_txt)
+      }
+
+      body_lines <- vapply(
+        seq_len(n_runs),
+        function(i) describe_segment(boundaries[[i]], boundaries[[i + 1L]],
+                                     run_info$values[[i]], i, n_runs),
+        character(1)
+      )
+
+      if (!is.null(group.label)) {
+        header <- sprintf("Johnson-Neyman regions (group %s):", group.label)
+      } else {
+        header <- "Johnson-Neyman regions:"
+      }
+      message(sprintf("%s\n  %s", header, paste(body_lines, collapse = "\n  ")))
+
+    } else {
+      nsig <- df_plot$z[!significant]
+      interval <- sprintf("[%s, %s]", format_num(min(nsig)),
+                          format_num(max(nsig)))
+
+      if (!is.null(group.label)) {
+        header <- sprintf("Johnson-Neyman Interval (group %s):", group.label)
+      } else {
+        header <- "Johnson-Neyman Interval:"
+      }
+
+      body <- sprintf("When %s is outside the interval %s, the %s effect of %s is p < %s.",
+                      z, interval, type, x, format_sig(sig.level))
+      message(sprintf("%s\n  %s", header, body))
+    }
   }
 
 
@@ -484,7 +543,7 @@ plotJN_Group <- function(x, z, y, parTable, model, min_z, max_z, sig.level, alph
     jn_points_in_window <- jn_points[jn_points >= z_min & jn_points <= z_max]
 
     if (!length(jn_points_in_window)) {
-      jn_points_in_window <- approximate_jn_points_from_grid(df_plot)
+      jn_points_in_window <- approxJN_PointsFromGrid(df_plot)
       jn_points_in_window <- jn_points_in_window[jn_points_in_window >= z_min &
                                                  jn_points_in_window <= z_max]
     }
@@ -514,7 +573,7 @@ plotJN_Group <- function(x, z, y, parTable, model, min_z, max_z, sig.level, alph
 }
 
 
-approximate_jn_points_from_grid <- function(grid) {
+approxJN_PointsFromGrid <- function(grid) {
   if (is.null(grid) || !NROW(grid)) return(numeric(0))
 
   sig_vals <- grid$significant

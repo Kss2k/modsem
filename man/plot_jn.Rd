@@ -20,6 +20,7 @@ plot_jn(
   greyscale = FALSE,
   plot.jn.points = TRUE,
   type = c("direct", "indirect", "total"),
+  mc.quantiles = FALSE,
   mc.reps = 10000,
   ...
 )
@@ -56,8 +57,10 @@ the sd.line falls outside of \code{[min_z, max_z]}.}
 
 \item{type}{Which effect to display. One of \code{"direct"}, \code{"indirect"}, or \code{"total"}.}
 
+\item{mc.quantiles}{Should JN quantiles be calculated using Monte-Carlo estimates?}
+
 \item{mc.reps}{Number of Monte Carlo replicates used to approximate the confidence
-bands when \code{type} is \code{"indirect"} or \code{"total"}.}
+bands when \code{mc.quantile} is \code{TRUE} and/or \code{type} is \code{"indirect"} or \code{"total"}.}
 
 \item{...}{Additional arguments (currently not used).}
 }

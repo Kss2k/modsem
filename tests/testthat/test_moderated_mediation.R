@@ -13,3 +13,7 @@ tpb <- "
 
 est_lms <- modsem(tpb, TPB, method = "lms", nodes = 32)
 plot_jn(x = "ATT", z = "PBC", y = "BEH", model = est_lms, type = "indirect")
+plot_jn(x = "ATT", z = "PBC", y = "BEH", model = est_lms, type = "total")
+
+est_dblcent <- modsem(tpb, TPB, method = "dblcent")
+plot_jn(x = "ATT", z = "PBC", y = "BEH", model = est_dblcent, type = "indirect")
