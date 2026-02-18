@@ -300,6 +300,31 @@ standardized_estimates.modsem_pi <- function(object,
   std.errors  <- tolower(std.errors)
   std.errors  <- match.arg(std.errors)
   monte.carlo <- std.errors == "monte.carlo"
+ 
+  cleanOutputParTable <- function(parTable) {
+    if (colon.pi) {
+      elems <- object$elementsInProdNames
+
+      if (length(elems) && !"label" %in% colnames(parTable))
+        parTable$label <- ""
+
+      origLabels <- getParTableLabels(parTable, labelCol = "label")
+
+      for (xz in names(elems)) {
+        xzColon <- paste0(elems[[xz]], collapse = ":")
+        rmatch <- parTable$rhs == xz
+        lmatch <- parTable$lhs == xz
+
+        parTable[rmatch | lmatch, "label"] <- origLabels[rmatch | lmatch]
+
+        parTable[rmatch, "rhs"] <- xzColon
+        parTable[lmatch, "lhs"] <- xzColon # shouldn't be necessary, but just in case
+                                           # the user has done something weird...
+      }
+    }
+
+    parTable
+  }
 
   uncorrected <- \(object) rename(lavaan::standardizedSolution(object$lavaan, ...),
                                   est.std = "est")
@@ -328,7 +353,7 @@ standardized_estimates.modsem_pi <- function(object,
       solution$parTable
     }
 
-  } else return(uncorrected(object))
+  } else return(cleanOutputParTable(uncorrected(object)))
 
   parTable.ustd <- parameter_estimates(object)
 
@@ -344,13 +369,7 @@ standardized_estimates.modsem_pi <- function(object,
 
   parTable.std <- correction(object)
 
-  if (!colon.pi) {
-    rm <- \(x) stringr::str_remove_all(x, ":")
-    parTable.std$rhs <- rm(parTable.std$rhs)
-    parTable.std$lhs <- rm(parTable.std$lhs)
-  }
-
-  parTable.std
+  cleanOutputParTable(parTable.std)
 }
 
 
