@@ -72,6 +72,9 @@
 <span>  xz <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  greyscale <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  plot.jn.points <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"direct"</span>, <span class="st">"indirect"</span>, <span class="st">"total"</span><span class="op">)</span>,</span>
+<span>  mc.quantiles <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  mc.reps <span class="op">=</span> <span class="fl">10000</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -137,6 +140,19 @@ the sd.line falls outside of <code>[min_z, max_z]</code>.</p></dd>
 <dd><p>Logical. If <code>TRUE</code>, omit the numeric annotations for the JN-points from the plot.</p></dd>
 
 
+<dt id="arg-type">type<a class="anchor" aria-label="anchor" href="#arg-type"></a></dt>
+<dd><p>Which effect to display. One of <code>"direct"</code>, <code>"indirect"</code>, or <code>"total"</code>.</p></dd>
+
+
+<dt id="arg-mc-quantiles">mc.quantiles<a class="anchor" aria-label="anchor" href="#arg-mc-quantiles"></a></dt>
+<dd><p>Should JN quantiles be calculated using Monte-Carlo estimates?</p></dd>
+
+
+<dt id="arg-mc-reps">mc.reps<a class="anchor" aria-label="anchor" href="#arg-mc-reps"></a></dt>
+<dd><p>Number of Monte Carlo replicates used to approximate the confidence
+bands when <code>mc.quantile</code> is <code>TRUE</code> and/or <code>type</code> is <code>"indirect"</code> or <code>"total"</code>.</p></dd>
+
+
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
 <dd><p>Additional arguments (currently not used).</p></dd>
 
@@ -148,6 +164,9 @@ the sd.line falls outside of <code>[min_z, max_z]</code>.</p></dd>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>The function calculates the simple slopes of the predictor variable <code>x</code> on the outcome variable <code>y</code> at different levels of the moderator variable <code>z</code>. It uses the Johnson-Neyman technique to identify the regions of <code>z</code> where the effect of <code>x</code> on <code>y</code> is statistically significant.</p>
+<p>When plotting indirect or total effects, the function relies on Monte Carlo
+draws from the estimated sampling distribution of the parameters to approximate
+the conditional effect and its confidence interval across the moderator range.</p>
 <p>It extracts the necessary coefficients and variance-covariance information from the fitted model object. The function then computes the critical t-value and solves the quadratic equation derived from the t-statistic equation to find the Johnson-Neyman points.</p>
 <p>The plot displays:</p><ul><li><p>The estimated simple slopes across the range of <code>z</code>.</p></li>
 <li><p>Confidence intervals around the slopes.</p></li>
@@ -171,8 +190,10 @@ the sd.line falls outside of <code>[min_z, max_z]</code>.</p></dd>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">est</span> <span class="op">&lt;-</span> <span class="fu"><a href="modsem.html">modsem</a></span><span class="op">(</span><span class="va">m1</span>, data <span class="op">=</span> <span class="fu">lavaan</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/lavaan/man/HolzingerSwineford1939.html" class="external-link">HolzingerSwineford1939</a></span>, method <span class="op">=</span> <span class="st">"ca"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">plot_jn</span><span class="op">(</span>x <span class="op">=</span> <span class="st">"speed"</span>, z <span class="op">=</span> <span class="st">"textual"</span>, y <span class="op">=</span> <span class="st">"visual"</span>, model <span class="op">=</span> <span class="va">est</span>, max_z <span class="op">=</span> <span class="fl">6</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Johnson-Neyman Interval:</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>   When textual is outside the interval [-1.52, 5.20], the slope of speed is p &lt; .05.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Johnson-Neyman regions:</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   When textual &lt;= -1.52, the direct effect of speed is not significant (p &gt;= .05).</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   When textual is between -1.52 and 5.20, the direct effect of speed is p &lt; .05.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   When textual &gt;= 5.20, the direct effect of speed is not significant (p &gt;= .05).</span>
 <span class="r-plt img"><img src="plot_jn-1.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 </code></pre></div>
