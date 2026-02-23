@@ -477,8 +477,8 @@ simulateCrossResCovRCS_Group <- function(corrected,
     items  <- single.items[elems]
     nameXZ <- paste0(items, collapse = "")
 
-    xz.construct <- apply(CONSTRUCTS[elems], MARGIN = 1, FUN = prod)
-    xz.item      <- apply(ITEMS[items],  MARGIN = 1, FUN = prod)
+    xz.construct <- multiplyIndicatorsCpp(CONSTRUCTS[elems])
+    xz.item      <- multiplyIndicatorsCpp(ITEMS[items])
 
     CONSTRUCTS[[intTerm]] <- xz.construct
     ITEMS[[nameXZ]]      <- xz.item
