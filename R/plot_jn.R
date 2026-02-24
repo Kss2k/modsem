@@ -505,7 +505,7 @@ plotJN_Group <- function(x, z, y, parTable, model, min_z, max_z, sig.level, alph
   df_plot$Significance <- Significance
 
   # Define variables to stop R CMD check from complaining
-  slop  <- NULL
+  slope <- NULL
   lower <- NULL
   upper <- NULL
 
