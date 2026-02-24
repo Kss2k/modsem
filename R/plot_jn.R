@@ -504,7 +504,11 @@ plotJN_Group <- function(x, z, y, parTable, model, min_z, max_z, sig.level, alph
   df_plot$run_id <- run_id
   df_plot$Significance <- Significance
 
-  # plot
+  # Define variables to stop R CMD check from complaining
+  slop  <- NULL
+  lower <- NULL
+  upper <- NULL
+
   p <- ggplot2::ggplot(df_plot, ggplot2::aes(x = z, y = slope)) +
     # single ribbon, split into runs; fill follows Significance
     ggplot2::geom_ribbon(
