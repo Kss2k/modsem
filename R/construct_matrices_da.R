@@ -198,7 +198,6 @@ constructGamma <- function(DVs, IVs, parTable, auto.fix.first = TRUE) {
 
   exprsGamma <- rbind(exprsGamma1, exprsGamma3)
 
-
   numDVs <- length(DVs)
   numIVs <- length(IVs)
   gamma  <- matrix(0, nrow = numDVs, ncol = numIVs, dimnames = list(DVs, IVs))
