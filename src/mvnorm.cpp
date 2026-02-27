@@ -197,7 +197,8 @@ arma::vec dmvnfast(arma::mat X,
     forward_exception_to_r(__ex__);
 
   } catch(...){
-    ::Rf_error( "c++ exception (unknown reason)" );
+    // ::Rf_error( "c++ exception (unknown reason)" );
+    stop("c++ exception (unknown reason)");
   }
 
   return arma::mat();
