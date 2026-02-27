@@ -156,9 +156,10 @@ arma::vec dmvnfast(arma::mat X,
   // Copyright (C) 2014 Matteo Fasiolo  matteo.fasiolo@gmail.com
 
   try{
-    if(ncores == 0) stop("ncores has to be positive.");
-    if (X.n_cols != mu.n_elem) Rcpp::stop("X.n_cols != mu.n_elem");
-    if (X.n_cols != sigma.n_cols) Rcpp::stop("X.n_cols != sigma.n_cols");
+
+    if (ncores == 0)                  Rcpp::stop("ncores has to be positive.");
+    if (X.n_cols != mu.n_elem)        Rcpp::stop("X.n_cols != mu.n_elem");
+    if (X.n_cols != sigma.n_cols)     Rcpp::stop("X.n_cols != sigma.n_cols");
     if (sigma.n_rows != sigma.n_cols) Rcpp::stop("sigma.n_rows != sigma.n_cols");
 
     // Here we set the number of OMP threads, but before we save the original
@@ -198,7 +199,7 @@ arma::vec dmvnfast(arma::mat X,
 
   } catch(...){
     // ::Rf_error( "c++ exception (unknown reason)" );
-    stop("c++ exception (unknown reason)");
+    Rcpp::stop("c++ exception (unknown reason)");
   }
 
   return arma::mat();
