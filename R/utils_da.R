@@ -762,6 +762,41 @@ isPureEta <- function(eta, parTable) {
 }
 
 
+addResidualCovariancesParTable <- function(parTable) {
+  etas <- getEtas(parTable, checkAny = FALSE)
+
+  if (!length(etas))
+    return(parTable)
+
+  pureEtas <- etas[isPureEta(etas, parTable = parTable)]
+  k <- length(pureEtas)
+
+  if (k <= 1L)
+    return(parTable)
+
+  for (j in seq_len(k)) { # iterate in reverse order
+    eta.j <- pureEtas[[j]]
+
+    for (i in seq_len(j - 1L)) {
+      eta.i <- pureEtas[[i]]
+
+      exists <- (
+        (parTable$lhs == eta.i & parTable$op == "~~" & parTable$rhs == eta.j) |
+        (parTable$lhs == eta.j & parTable$op == "~~" & parTable$rhs == eta.i)
+      )
+
+      if (any(exists)) next
+
+      parTable <- rbind(parTable, data.frame(
+        lhs = eta.i, op = "~~", rhs = eta.j, mod = ""
+      ))
+    }
+  }
+
+  parTable
+}
+
+
 getCoefMatricesDA <- function(parTable,
                               xis = NULL,
                               etas = NULL,
