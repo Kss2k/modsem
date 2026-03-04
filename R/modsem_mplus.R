@@ -4,6 +4,7 @@
 #' @param data dataset
 #' @param estimator estimator argument passed to \code{Mplus}.
 #' @param cluster cluster argument passed to \code{Mplus}.
+#' @param categorical categorical argument passed to \code{Mplus}.
 #' @param type type argument passed to \code{Mplus}.
 #' @param algorithm algorithm argument passed to \code{Mplus}.
 #' @param processors processors argument passed to \code{Mplus}.
@@ -62,6 +63,7 @@ modsem_mplus <- function(model.syntax,
                          rcs.choose = NULL,
                          rcs.scale.corrected = TRUE,
                          output.std = TRUE,
+                         categorical = NULL,
                          ...) {
   if (rcs) { # use reliability-correct single items?
     corrected <- relcorr_single_item(
@@ -109,8 +111,14 @@ modsem_mplus <- function(model.syntax,
 
   # Fix names in data
   data  <- as.data.frame(data)
+  catCols <- colnames(data)[sapply(data, is.factor)]
+  categorical <- intersect(union(catCols, categorical), colnames(data))
+
   dmask <- colnames(data) %in% names(abbreviated)
+  dmaskCat <- categorical %in% names(abbreviated)
+
   colnames(data)[dmask] <- abbreviated[colnames(data)[dmask]]
+  categorical[dmaskCat] <- abbreviated[categorical[dmaskCat]]
 
   indicators <- unique(parTable[parTable$op == "=~", "rhs", drop = TRUE])
   intTerms <- unique(getIntTermRows(parTable)$rhs)
@@ -131,6 +139,15 @@ modsem_mplus <- function(model.syntax,
     VARIABLE <- sprintf("CLUSTER = %s;", cluster)
 
   } else VARIABLE <- NULL
+
+  # Categorical variables
+  categorical <- intersect(categorical, indicators)
+  if (length(categorical)) {
+    VARIABLE <- paste0(
+      VARIABLE, sprintf("\nCATEGORICAL = %s;",
+                        paste0(categorical, collapse = " "))
+    )
+  }
 
   usevariables <- intersect(c(cluster, indicators), colnames(data))
 
@@ -274,6 +291,7 @@ parTableToMplusModel <- function(parTable, ignoreConstraints = FALSE) {
   stringr::str_remove_all(out, ":")
 }
 
+
 parTableToMplusModelConstraints <- function(parTable) {
   constraints <- parTable[parTable$op %in% c(":=", "==", "<", ">"),
                           , drop = FALSE]
@@ -320,6 +338,7 @@ mplusTableToParTable <- function(coefsTable,
                                  intTerms,
                                  intTermsMplus,
                                  parTable.in = NULL) {
+
   coefsTable <- rename(coefsTable, Label = "label",
                        se = "std.error", pval = "p.value")
   coefsTable$label <- stringr::str_remove_all(coefsTable$label, pattern = " ")
@@ -327,7 +346,7 @@ mplusTableToParTable <- function(coefsTable,
   indicatorsCaps <- stringr::str_to_upper(indicators)
   patternMeas <-
     paste0("(", stringr::str_c(indicatorsCaps, collapse = "|"), ")") |>
-    paste0("<-(?!>|Intercept)")
+    paste0("<-(?!>|(Intercept|Thresholds))")
   measCoefNames <- grepl(patternMeas, coefsTable$label, perl = TRUE)
 
   # Mplus has lhs/rhs in reversed order for the measurement model,
@@ -336,20 +355,20 @@ mplusTableToParTable <- function(coefsTable,
                                   "<-", i = 1)
   measLhs <- stringr::str_split_i(coefsTable$label[measCoefNames],
                                   "<-", i = 2)
-  measModel <- data.frame(lhs = measLhs, op = "=~", rhs = measRhs) |>
-    cbind(coefsTable[measCoefNames, ])
+  measModel <- data.frame0(lhs = measLhs, op = "=~", rhs = measRhs) |>
+    cbind0(coefsTable[measCoefNames, ])
 
   # Structural Model
-  measrRemoved <- coefsTable[!measCoefNames, , drop = FALSE]
-  patternStruct <- "<-(?!>|Intercept)"
-  structCoefNames <- grepl(patternStruct, measrRemoved$label, perl = TRUE)
+  sub <- coefsTable[!measCoefNames, , drop = FALSE]
+  patternStruct <- "<-(?!>|(Intercept|Thresholds))"
+  structCoefNames <- grepl(patternStruct, sub$label, perl = TRUE)
 
-  structLhs <- stringr::str_split_i(measrRemoved$label[structCoefNames],
+  structLhs <- stringr::str_split_i(sub$label[structCoefNames],
                                     "<-", i = 1)
-  structRhs <- stringr::str_split_i(measrRemoved$label[structCoefNames],
+  structRhs <- stringr::str_split_i(sub$label[structCoefNames],
                                     "<-", i = 2)
-  structModel <- data.frame(lhs = structLhs, op = "~", rhs = structRhs) |>
-    cbind(measrRemoved[structCoefNames, ])
+  structModel <- data.frame0(lhs = structLhs, op = "~", rhs = structRhs) |>
+    cbind0(sub[structCoefNames, ])
 
   maxCharMplus <- maxchar(c(structModel$rhs, structModel$lhs))
   for (i in seq_along(intTerms)) {
@@ -361,31 +380,44 @@ mplusTableToParTable <- function(coefsTable,
   }
 
   # Variances and Covariances
-  structMeasrRemoved <- measrRemoved[!structCoefNames, , drop = FALSE]
+  sub <- sub[!structCoefNames, , drop = FALSE]
   patternCovVar <- "<->"
-  covVarCoefNames <- grepl(patternCovVar, structMeasrRemoved$label, perl = TRUE)
-  covVarLhs <- stringr::str_split_i(structMeasrRemoved$label[covVarCoefNames],
+  covVarCoefNames <- grepl(patternCovVar, sub$label, perl = TRUE)
+  covVarLhs <- stringr::str_split_i(sub$label[covVarCoefNames],
                                     "<->", i = 1)
-  covVarRhs <- stringr::str_split_i(structMeasrRemoved$label[covVarCoefNames],
+  covVarRhs <- stringr::str_split_i(sub$label[covVarCoefNames],
                                     "<->", i = 2)
-  covVarModel <- data.frame(lhs = covVarLhs, op = "~~", rhs = covVarRhs) |>
-    cbind(structMeasrRemoved[covVarCoefNames, ])
+  covVarModel <- data.frame0(lhs = covVarLhs, op = "~~", rhs = covVarRhs) |>
+    cbind0(sub[covVarCoefNames, ])
 
   # Intercepts
-  covStructMeasrRemoved <- structMeasrRemoved[!covVarCoefNames, , drop = FALSE]
+  sub <- sub[!covVarCoefNames, , drop = FALSE]
   patternIntercept <- "<-Intercept"
-  interceptNames <- grepl(patternIntercept, covStructMeasrRemoved$label, perl = TRUE)
-  interceptLhs <- stringr::str_split_i(covStructMeasrRemoved$label[interceptNames],
+  interceptNames <- grepl(patternIntercept, sub$label, perl = TRUE)
+  interceptLhs <- stringr::str_split_i(sub$label[interceptNames],
                                        "<-", i = 1)
-  interceptModel <- data.frame(lhs = interceptLhs, op = "~1", rhs = "") |>
-    cbind(covStructMeasrRemoved[interceptNames, ])
+  interceptModel <- data.frame0(lhs = interceptLhs, op = "~1", rhs = "") |>
+    cbind0(sub[interceptNames, ])
+
+  # Thresholds
+  sub <- sub[!interceptNames, , drop = FALSE]
+  patternThreshold <- "<-Thresholds"
+  thresholdNames <- grepl(patternThreshold, sub$label, perl = TRUE)
+  thresholdLhsPart <- stringr::str_split_i(sub$label[thresholdNames],
+                                       "<-", i = 1)
+
+  thresholdLhsSplit <- stringr::str_split_fixed(thresholdLhsPart, pattern = "\\$", n = 2)
+  thresholdLhs <- thresholdLhsSplit[,1L]
+  thresholdRhs <- paste0("t", thresholdLhsSplit[,2L])
+
+  thresholdModel <- data.frame0(lhs = thresholdLhs, op = "|", rhs = thresholdRhs) |>
+    cbind0(sub[thresholdNames, ])
 
   # Custom / Remaining
-  intCovStructMeasrRemoved <- covStructMeasrRemoved[!interceptNames, , drop = FALSE]
+  sub <- sub[!thresholdNames, , drop = FALSE]
 
-  if (NROW(intCovStructMeasrRemoved)) {
-    customModel <- data.frame(lhs = intCovStructMeasrRemoved$label, op = ":=", rhs = "") |>
-      cbind(intCovStructMeasrRemoved)
+  if (NROW(sub)) {
+    customModel <- cbind0(data.frame0(lhs = sub$label, op = ":=", rhs = ""), sub)
 
     if (!is.null(parTable.in)) {
       lrCustom <- parTable.in[parTable.in$op == ":=", c("lhs", "rhs"), drop = FALSE]
@@ -401,7 +433,7 @@ mplusTableToParTable <- function(coefsTable,
 
   # Combine
   mplusParTable <- rbind(measModel, structModel, covVarModel, interceptModel,
-                         customModel)
+                         thresholdModel, customModel)
   mplusParTable [c("lhs", "rhs")] <-
     lapplyDf(mplusParTable[c("lhs", "rhs")], function(x)
              stringr::str_remove_all(x, " "))
@@ -444,6 +476,7 @@ getOrderedParameterLabelsMplus <- function(parTable, TECH1, intTerms, intTermsMp
   if ("X" %in% names(spec)) specX <- spec$X
   else                      specX <- spec
 
+  tau    <- specX$tau
   nu     <- specX$nu
   alpha  <- specX$alpha
   lambda <- specX$lambda
@@ -463,6 +496,9 @@ getOrderedParameterLabelsMplus <- function(parTable, TECH1, intTerms, intTermsMp
   }
 
   getReg <- function(M, row.lhs = TRUE, op = "~", try.op = NULL) {
+    if (is.null(M))
+      return(NULL)
+
     out <- c()
 
     rows <- rownames(M)
@@ -499,7 +535,39 @@ getOrderedParameterLabelsMplus <- function(parTable, TECH1, intTerms, intTermsMp
     out
   }
 
+  getThreshold <- function(T) {
+    if (is.null(T))
+      return(NULL)
+
+    vars <- colnames(T)
+    split <- stringr::str_split_fixed(vars, pattern = "\\$", n = 2)
+
+    T <- c(T)
+    out <- c()
+
+    for (i in seq_along(T)) {
+      id <- as.integer(T[i])
+
+      if (is.na(id) || id <= 0L)
+        next
+
+      lhs <- split[i, 1]
+      rhs <- paste0("t", split[i, 2])
+
+      label <- parTable[parTable$op == "|" &
+                        parTable$lhs == lhs &
+                        parTable$rhs == rhs, "label"]
+
+      out <- setLabel(out = out, label = label, id = id)
+    }
+
+    out
+  }
+
   getIntercept <- function(T) {
+    if (is.null(T))
+      return(NULL)
+
     vars <- colnames(T)
     T <- c(T)
     out <- c()
@@ -523,6 +591,9 @@ getOrderedParameterLabelsMplus <- function(parTable, TECH1, intTerms, intTermsMp
 
 
   getCovariance <- function(M, op = "~~") {
+    if (is.null(M))
+      return(NULL)
+
     out <- c()
 
     rows <- rownames(M)
@@ -582,6 +653,7 @@ getOrderedParameterLabelsMplus <- function(parTable, TECH1, intTerms, intTermsMp
   }
 
   out <- c(
+    getThreshold(tau),
     getIntercept(nu),
     getIntercept(alpha),
     getReg(lambda, row.lhs = FALSE, op = "=~"),
@@ -595,3 +667,27 @@ getOrderedParameterLabelsMplus <- function(parTable, TECH1, intTerms, intTermsMp
   sort(out)
 }
 
+
+any0 <- function(x) {
+  any(vapply(x, FUN.VALUE = logical(1L), FUN = \(x) length(x) <= 0))
+}
+
+
+data.frame0 <- function(...) {
+  args <- list(...)
+
+  if (any0(args))
+    return(NULL)
+
+  data.frame(...)
+}
+
+
+cbind0 <- function(...) {
+  args <- list(...)
+
+  if (any0(args))
+    return(NULL)
+
+  cbind(...)
+}
