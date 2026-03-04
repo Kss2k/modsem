@@ -17,6 +17,7 @@ modsem_mplus(
   rcs.choose = NULL,
   rcs.scale.corrected = TRUE,
   output.std = TRUE,
+  categorical = NULL,
   ...
 )
 }
@@ -49,6 +50,8 @@ reliability-corrected single items are corrected for differences in factor loadi
 the items. Default is \code{TRUE}.}
 
 \item{output.std}{Should \code{STANDARDIZED} be added to \code{OUTPUT}?}
+
+\item{categorical}{categorical argument passed to \code{Mplus}.}
 
 \item{...}{arguments passed to other functions}
 }
