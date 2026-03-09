@@ -267,8 +267,7 @@ lapplyMatrix <- function(X, FUN, FUN.VALUE, ...) {
 # Wrapper of lapply where elements are names based on names argument, by default names
 # are based on X
 lapplyNamed <- function(X, FUN, ..., names = X) {
-  structure(lapply(X, FUN, ...),
-            names = names)
+  structure(lapply(X, FUN, ...), names = names)
 }
 
 
