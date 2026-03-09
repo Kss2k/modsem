@@ -484,7 +484,7 @@ simulateCrossResCovRCS_Group <- function(corrected,
     ITEMS[[nameXZ]]      <- xz.item
   }
 
-  Epsilon <- cov(ITEMS) - cov(CONSTRUCTS)
+  Epsilon <- stats::cov(ITEMS) - stats::cov(CONSTRUCTS)
   newRows <- NULL
 
   for (i in seq_len(NROW(Epsilon))) {
