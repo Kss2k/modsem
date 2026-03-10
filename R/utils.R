@@ -45,9 +45,9 @@ reverseIntTerm <- function(xz) {
 
 
 getEtas <- function(parTable, isLV = FALSE, checkAny = TRUE) {
-  lVs <- unique(parTable[parTable$op == "=~", "lhs"])
+  lVs <- unique(parTable[parTable$op %in% c("<~", "=~"), "lhs"])
   cond.lhs <- parTable$op == "~"
-  cond.rhs <- parTable$op == "=~" & parTable$rhs %in% lVs
+  cond.rhs <- parTable$op %in% c("<~", "=~") & parTable$rhs %in% lVs
 
   if (isLV) cond.lhs <- cond.lhs & parTable$lhs %in% lVs
 
@@ -65,7 +65,7 @@ getSortedEtas <- function(parTable, isLV = FALSE, checkAny = TRUE) {
   unsortedEtas <- getEtas(parTable, isLV = isLV, checkAny = checkAny)
 
   cond1 <- parTable$op == "~"
-  cond2 <- parTable$op == "=~" & parTable$rhs %in% unsortedEtas
+  cond2 <- parTable$op %in% c("<~", "=~") & parTable$rhs %in% unsortedEtas
 
   structExprs <- parTable[cond1, , drop = FALSE]
   measrExprs  <- parTable[cond2, , drop = FALSE]
@@ -106,7 +106,7 @@ getSortedEtas <- function(parTable, isLV = FALSE, checkAny = TRUE) {
 getXis <- function(parTable, etas = NULL, isLV = TRUE, checkAny = TRUE) {
   if (is.null(etas)) etas <- getEtas(parTable, isLV = isLV)
   # add all LVs which are not etas
-  xis <- unique(parTable[parTable$op == "=~" & !parTable$lhs %in% etas, "lhs"])
+  xis <- unique(parTable[parTable$op %in% c("<~", "=~") & !parTable$lhs %in% etas, "lhs"])
 
   if (!isLV) { # add any other variabels found in structural expressions
     xis <- unique(c(xis, parTable[parTable$op == "~" &
@@ -122,7 +122,7 @@ getXis <- function(parTable, etas = NULL, isLV = TRUE, checkAny = TRUE) {
 
 getIndicators <- function(parTable, observed=TRUE) {
   indicators <- unique(parTable[!grepl(":", parTable$rhs) &
-                                parTable$op == "=~", "rhs"])
+                                parTable$op %in% c("<~", "=~"), "rhs"])
 
   if (observed) indicators <- indicators[!indicators %in% getLVs(parTable)]
   indicators
@@ -131,12 +131,12 @@ getIndicators <- function(parTable, observed=TRUE) {
 
 getProdNames <- function(parTable) {
   unique(parTable[grepl(":", parTable$rhs) &
-         parTable$op %in% c("~", "=~"), "rhs"])
+         parTable$op %in% c("~", "=~", "<~"), "rhs"])
 }
 
 
 getLVs <- function(parTable) {
-  unique(parTable[parTable$op == "=~", "lhs"])
+  unique(parTable[parTable$op %in% c("=~", "<~"), "lhs"])
 }
 
 
@@ -145,7 +145,7 @@ getOVs <- function(parTable = NULL, model.syntax = NULL) {
   stopif(is.null(parTable), "Missing parTable")
 
   lVs    <- getLVs(parTable)
-  select <- parTable$op %in% c("=~", "~", "~~")
+  select <- parTable$op %in% c("<~", "=~", "~", "~~")
   vars   <- unique(c(parTable$lhs[select], parTable$rhs[select]))
 
   vars[!vars %in% lVs & !grepl(":", vars)]
@@ -169,7 +169,7 @@ getHigherOrderLVs <- function(parTable) {
   names(isHigherOrder) <- lVs
 
   for (lV in lVs) {
-    inds <- parTable[parTable$lhs == lV & parTable$op == "=~", "rhs"] |>
+    inds <- parTable[parTable$lhs == lV & parTable$op %in% c("<~", "=~"), "rhs"] |>
       stringr::str_split(pattern = ":") |> unlist()
 
     if (any(inds %in% lVs)) isHigherOrder[[lV]] <- TRUE
@@ -192,7 +192,7 @@ isClustered <- function(object) {
 getIndsLVs <- function(parTable, lVs, isOV = FALSE, ovs = NULL) {
   if (!length(lVs)) return(NULL)
 
-  measr <- parTable[parTable$op == "=~" & parTable$lhs %in% lVs, ]
+  measr <- parTable[parTable$op %in% c("<~", "=~") & parTable$lhs %in% lVs, ]
   stopif(!NROW(measr), "No measurement expressions found, for", lVs)
 
   if (isOV) .f <- \(lV) measr[measr$lhs == lV & measr$rhs %in% ovs, "rhs"]
