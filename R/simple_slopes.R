@@ -533,6 +533,6 @@ getVcovSimpleSlopes <- function(model, standardized = FALSE) {
   } else {
     warning2("standardized vcov is not available for model of class: ",
              class(model)[[1L]], immediate. = FALSE)
-    return(modsem_inspect(model, what = "vcov"))
+    return(vcov(model))
   }
 }
