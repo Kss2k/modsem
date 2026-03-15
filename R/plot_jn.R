@@ -67,7 +67,7 @@ getJN_GridMonteCarlo <- function(x, z, y, parTable, model, min_z, max_z, sig.lev
   stopif(!length(keep), sprintf("No %s effect between %s and %s was found!", type, x, y))
   expr <- parse(text = paste0(keep, collapse = "+"))
 
-  V <- tryCatch(vcov(model), error = \(e) NULL)
+  V <- tryCatch(getVcovSimpleSlopes(model, standardized = standardized), error = \(e) NULL)
   coefs <- structure(parTable$est, names = labels)
 
   if (is.null(V)) {
@@ -237,20 +237,14 @@ plot_jn <- function(x, z, y, model, min_z = -3, max_z = 3,
 
 
 getJN_GridDelta <- function(x, z, y, parTable, model, min_z, max_z, sig.level, alpha,
-                               detail, sd.line, standardized, xz, greyscale,
-                               plot.jn.points = TRUE, group = NULL, group.label = NULL, ...) {
+                            detail, sd.line, standardized, xz, greyscale,
+                            plot.jn.points = TRUE, group = NULL, group.label = NULL, ...) {
   if (is.null(xz))
     xz <- paste(x, z, sep = ":")
 
   checkInputsSimpleSlopes(x = x, z = z, y = y, xz = xz, parTable = parTable)
 
   xz <- c(xz, reverseIntTerm(xz))
-
-  if (inherits(model, "lavaan")) {
-    vcov <- lavaan::vcov
-    coef <- lavaan::coef
-    nobs <- lavaan::nobs
-  }
 
   # z mean/sd and plotting window
   mean_z <- getMean(z, parTable = parTable)
@@ -265,13 +259,19 @@ getJN_GridDelta <- function(x, z, y, parTable, model, min_z, max_z, sig.level, a
   stopif(length(beta_x)  == 0, "Coefficient for x not found in model")
   stopif(length(beta_xz) == 0, "Coefficient for interaction term not found in model")
 
-  VCOV <- vcov(model)
+  VCOV <- getVcovSimpleSlopes(model, standardized = standardized)
   label_beta_x  <- parTable[parTable$lhs == y & parTable$rhs == x   & parTable$op == "~", "label"]
   label_beta_xz <- parTable[parTable$lhs == y & parTable$rhs %in% xz & parTable$op == "~", "label"]
 
   var_beta_x         <- VCOV[label_beta_x,  label_beta_x]
   var_beta_xz        <- VCOV[label_beta_xz, label_beta_xz]
   cov_beta_x_beta_xz <- VCOV[label_beta_x,  label_beta_xz]
+
+  if (inherits(model, "lavaan")) {
+    vcov <- lavaan::vcov
+    coef <- lavaan::coef
+    nobs <- lavaan::nobs
+  }
 
   nobs <- nobs(model)
   npar <- length(coef(model))

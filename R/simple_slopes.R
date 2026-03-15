@@ -164,7 +164,7 @@ simple_slopes <- function(x,
     out[[label]] <- simpleSlopesGroup(
       x = x, z = z, y = y, parTable = parTable.g, model = model, vals_x = vals_x,
       vals_z = vals_z, rescale = rescale, ci_width = ci_width, ci_type = ci_type,
-      relative_h0 = relative_h0, xz = xz, ...
+      relative_h0 = relative_h0, xz = xz, standardized = standardized, ...
     )
   }
 
@@ -173,7 +173,8 @@ simple_slopes <- function(x,
 
 
 simpleSlopesGroup <- function(x, z, y, parTable, model, vals_x, vals_z, rescale,
-                              ci_width, ci_type, relative_h0, xz, ...) {
+                              ci_width, ci_type, relative_h0, xz,
+                              standardized, ...) {
   if (is.null(xz))
     xz <- paste(x, z, sep = ":")
 
@@ -194,15 +195,14 @@ simpleSlopesGroup <- function(x, z, y, parTable, model, vals_x, vals_z, rescale,
     zz <- stringr::str_remove_all(zz, ":")
   }
 
-  if (isLavaanObject(model)) {
+  if (inherits(model, "lavaan")) {
     vcov <- lavaan::vcov
-    nobs <- lavaan::nobs
     coef <- lavaan::coef
+    nobs <- lavaan::nobs
   }
 
   n     <- nobs(model)
-  VCOV  <- vcov(model)
-  coefs <- coef(model)
+  VCOV  <- getVcovSimpleSlopes(model, standardized = standardized)
 
   if (length(n) > 1) {
     # this won't work for multigroup models
@@ -520,5 +520,25 @@ checkInputsSimpleSlopes <- function(..., parTable) {
   for (nm in names(params)) {
     checkLength(x = params[[nm]], nm = nm)
     checkExists(x = params[[nm]])
+  }
+}
+
+
+getVcovSimpleSlopes <- function(model, standardized = FALSE) {
+  if (inherits(model, "modsem_da")) {
+    return(modsem_inspect(model, what = "vcov.all", standardized = standardized))
+
+  } else if (inherits(model, "modsem_pi")) {
+    what <- if (standardized) "vcov.std.all" else "vcov"
+    return(modsem_inspect(model, what = what))
+
+  } else if (inherits(model, "lavaan")) {
+    what <- if (standardized) "vcov.std.all" else "vcov"
+    return(lavaan::lavInspect(model, what = what))
+
+  } else {
+    warning2("standardized vcov is not available for model of class: ",
+             class(model)[[1L]], immediate. = FALSE)
+    return(vcov(model))
   }
 }
