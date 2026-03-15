@@ -267,6 +267,12 @@ getJN_GridDelta <- function(x, z, y, parTable, model, min_z, max_z, sig.level, a
   var_beta_xz        <- VCOV[label_beta_xz, label_beta_xz]
   cov_beta_x_beta_xz <- VCOV[label_beta_x,  label_beta_xz]
 
+  if (inherits(model, "lavaan")) {
+    vcov <- lavaan::vcov
+    coef <- lavaan::coef
+    nobs <- lavaan::nobs
+  }
+
   nobs <- nobs(model)
   npar <- length(coef(model))
   df_resid <- nobs - npar

@@ -195,6 +195,12 @@ simpleSlopesGroup <- function(x, z, y, parTable, model, vals_x, vals_z, rescale,
     zz <- stringr::str_remove_all(zz, ":")
   }
 
+  if (inherits(model, "lavaan")) {
+    vcov <- lavaan::vcov
+    coef <- lavaan::coef
+    nobs <- lavaan::nobs
+  }
+
   n     <- nobs(model)
   VCOV  <- getVcovSimpleSlopes(model, standardized = standardized)
 
