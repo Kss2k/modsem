@@ -370,7 +370,7 @@ getWidthPrintedParTable <- function(parTable,
 }
 
 
-formatPval <- function(p, scientific = TRUE) {
+formatPval <- function(p, scientific = TRUE, digits = 3) {
   if (scientific) return(format.pval(p))
-  format(round(p, digits = 3), nsmall = 3)
+  format(round(p, digits = digits), nsmall = digits)
 }
