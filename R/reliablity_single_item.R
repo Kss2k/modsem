@@ -598,47 +598,37 @@ calcAVE <- function(lambda.std, lV) {
 }
 
 
-getCompositeDenominator <- function(lV, parTable, cfa, scale.corrected) {
-  measr   <- parTable[parTable$lhs == lV & parTable$op == "=~", ]
-  inds    <- unique(measr$rhs)
-  mats    <- lavaan::lavInspect(cfa, what = "coef")
-  if (scale.corrected) {
-    sum(as.vector(mats$lambda[inds, lV]))
-  } else {
-    length(inds)  # rowMeans: divide sum by k
-  }
-}
-
-
 getCompositeRVCOV <- function(lVs, parTable, cfa, scale.corrected) {
-  # Build Theta blocks and denominators
-  mats   <- lavaan::lavInspect(cfa, what = "coef")
-  thetaF <- mats$theta
+  matrices <- lavaan::lavInspect(cfa, what = "coef")
+  lambda   <- matrices$lambda
+  theta    <- matrices$theta
 
-  # item lists per LV
-  item_list <- lapply(lVs, function(lv)
-    unique(parTable[parTable$lhs == lv & parTable$op == "=~", "rhs"])
-  )
-  names(item_list) <- lVs
+  inds <- rownames(lambda)[apply(lambda, MARGIN = 1L, FUN = \(x) any(x != 0))]
+  lambda <- lambda[inds, lVs, drop = FALSE]
+  theta  <- theta[inds, inds, drop = FALSE]
 
-  # denominators D_f
-  denom <- vapply(lVs, function(lv)
-    getCompositeDenominator(lv, parTable, cfa, scale.corrected),
-    numeric(1)
-  )
+  I <- lambda
+  I[I != 0] <- 1
 
-  p <- length(lVs)
-  resCov <- matrix(0, p, p, dimnames = list(lVs, lVs))
+  T <- t(I) %*% theta %*% I
 
-  for (i in seq_len(p)) {
-    Ii <- item_list[[i]]
-    for (j in i:p) {
-      Ij <- item_list[[j]]
-      block_sum <- sum(thetaF[Ii, Ij, drop = FALSE])
-      val <- block_sum / (denom[i] * denom[j])
-      resCov[i, j] <- val
-      resCov[j, i] <- val
+  if (scale.corrected) {
+    l <- apply(lambda, MARGIN = 2L, FUN = sum)
+
+    l.inv <- 1 / l
+    l.inv[l <= 0] <- 1L
+
+    if (length(l.inv) > 1) {
+      L.inv <- diag(l.inv)
+      dimnames(L.inv) <- list(names(l.inv), names(l.inv))
+
+    } else {
+      L.inv <- matrix(l.inv, nrow = 1, ncol = 1)
+      dimnames(L.inv) <- list(names(l.inv), names(l.inv))
     }
+
+    T <- L.inv %*% T %*% L.inv
   }
-  resCov
+
+  T
 }
