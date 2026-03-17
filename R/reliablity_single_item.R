@@ -612,9 +612,9 @@ getCompositeRVCOV <- function(lVs, parTable, cfa, scale.corrected) {
 
   T <- t(I) %*% theta %*% I
 
-  .f <- if (scale.corrected) sum else length
+  FUN <- if (scale.corrected) sum else \(x) sum(x != 0)
 
-  l <- apply(lambda, MARGIN = 2L, FUN = .f)
+  l <- apply(lambda, MARGIN = 2L, FUN = FUN)
   l.inv <- 1 / l
   l.inv[l <= 0] <- 1L
 
