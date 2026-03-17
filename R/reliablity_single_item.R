@@ -607,28 +607,23 @@ getCompositeRVCOV <- function(lVs, parTable, cfa, scale.corrected) {
   lambda <- lambda[inds, lVs, drop = FALSE]
   theta  <- theta[inds, inds, drop = FALSE]
 
-  I <- lambda
-  I[I != 0] <- 1
-
+  I <- sign(lambda)
   T <- t(I) %*% theta %*% I
 
-  if (scale.corrected) {
-    l <- apply(lambda, MARGIN = 2L, FUN = sum)
+  .f <- if (scale.corrected) sum else length
 
-    l.inv <- 1 / l
-    l.inv[l <= 0] <- 1L
+  l <- apply(lambda, MARGIN = 2L, FUN = .f)
+  l.inv <- 1 / l
+  l.inv[l <= 0] <- 1L
 
-    if (length(l.inv) > 1) {
-      L.inv <- diag(l.inv)
-      dimnames(L.inv) <- list(names(l.inv), names(l.inv))
+  if (length(l.inv) > 1) {
+    L.inv <- diag(l.inv)
+    dimnames(L.inv) <- list(names(l.inv), names(l.inv))
 
-    } else {
-      L.inv <- matrix(l.inv, nrow = 1, ncol = 1)
-      dimnames(L.inv) <- list(names(l.inv), names(l.inv))
-    }
-
-    T <- L.inv %*% T %*% L.inv
+  } else {
+    L.inv <- matrix(l.inv, nrow = 1, ncol = 1)
+    dimnames(L.inv) <- list(names(l.inv), names(l.inv))
   }
 
-  T
+  L.inv %*% T %*% L.inv
 }
