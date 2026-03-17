@@ -607,7 +607,9 @@ getCompositeRVCOV <- function(lVs, parTable, cfa, scale.corrected) {
   lambda <- lambda[inds, lVs, drop = FALSE]
   theta  <- theta[inds, inds, drop = FALSE]
 
-  I <- sign(lambda)
+  I <- lambda
+  I[I!=0] <- 1
+
   T <- t(I) %*% theta %*% I
 
   .f <- if (scale.corrected) sum else length
