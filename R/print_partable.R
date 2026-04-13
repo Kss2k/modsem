@@ -60,7 +60,7 @@ formatParTable <- function(parTable,
   parTable[isSingleCol, "rhs"] <- ""
 
   if (pad.res) {
-    etas    <- getEtas(parTable.in, isLV = FALSE)
+    etas    <- getEtas(parTable.in, isLV = FALSE, checkAny = FALSE)
     inds    <- getInds(parTable.in)
     resvars <- c(etas, inds)
 
