@@ -149,12 +149,14 @@ printParTable <- function(parTable,
       padWidthLhs = padWidthLhs,
       spacing = spacing
     )
+
+    cat("\n")
   }
 
   # Regressions
   parTableRegressions <- fParTable[parTable$op == "~", ]
   if (regressions && NROW(parTableRegressions) > 0) {
-    cat("\nRegressions:\n", formattedHeader)
+    cat("Regressions:\n", formattedHeader)
 
     printParTableDouble(
       parTableRegressions,
@@ -162,12 +164,14 @@ printParTable <- function(parTable,
       padWidthLhs = padWidthLhs,
       spacing = spacing
     )
+
+    cat("\n")
   }
 
   # Intercepts
   parTableIntercepts <- fParTable[parTable$op == "~1", ]
   if (intercepts && NROW(parTableIntercepts) > 0) {
-    cat("\nIntercepts:\n", formattedHeader)
+    cat("Intercepts:\n", formattedHeader)
 
     printParTableSingle(
       parTableIntercepts,
@@ -175,12 +179,14 @@ printParTable <- function(parTable,
       padWidthLhs = padWidthLhs,
       spacing = spacing
     )
+
+    cat("\n")
   }
 
   # Covariances
   parTableCovariances <- fParTable[parTable$op == "~~" & parTable$lhs != parTable$rhs, ]
   if (covariances && NROW(parTableCovariances) > 0) {
-    cat("\nCovariances:\n", formattedHeader)
+    cat("Covariances:\n", formattedHeader)
 
     printParTableDouble(
       parTableCovariances,
@@ -188,12 +194,14 @@ printParTable <- function(parTable,
       padWidthLhs = padWidthLhs,
       spacing = spacing
     )
+
+    cat("\n")
   }
 
   # Thresholds
   parTableThresholds <- fParTable[parTable$op == "|", ]
   if (thresholds && NROW(parTableThresholds) > 0) {
-    cat("\nThresholds:\n", formattedHeader)
+    cat("Thresholds:\n", formattedHeader)
 
     printParTableSingle(
       parTableThresholds,
@@ -201,12 +209,14 @@ printParTable <- function(parTable,
       padWidthLhs = padWidthLhs,
       spacing = spacing
     )
+
+    cat("\n")
   }
 
   # Variances
   parTableVariances <- fParTable[parTable$op == "~~" & parTable$lhs == parTable$rhs, ]
   if (variances && NROW(parTableVariances) > 0) {
-    cat("\nVariances:\n", formattedHeader)
+    cat("Variances:\n", formattedHeader)
 
     printParTableSingle(
       parTableVariances,
@@ -214,12 +224,14 @@ printParTable <- function(parTable,
       padWidthLhs = padWidthLhs,
       spacing = spacing
     )
+
+    cat("\n")
   }
 
   # Defined parameters
   parTableCustom <- fParTable[parTable$op == ":=", ]
   if (custom && NROW(parTableCustom) > 0) {
-    cat("\nDefined Parameters:\n", formattedHeader)
+    cat("Defined Parameters:\n", formattedHeader)
 
     printParTableSingle(
       parTableCustom,
@@ -227,8 +239,9 @@ printParTable <- function(parTable,
       padWidthLhs = padWidthLhs,
       spacing = spacing
     )
+
+    cat("\n")
   }
-  cat("\n")
 }
 
 
