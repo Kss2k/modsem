@@ -65,7 +65,7 @@ getSortedEtas <- function(parTable, isLV = FALSE, checkAny = TRUE) {
   unsortedEtas <- getEtas(parTable, isLV = isLV, checkAny = checkAny)
 
   cond1 <- parTable$op == "~"
-  cond2 <- parTable$op %in% c("<~", "=~") & parTable$rhs %in% unsortedEtas
+  cond2 <- parTable$op %in% c("=~", "<~") & parTable$rhs %in% unsortedEtas
 
   structExprs <- parTable[cond1, , drop = FALSE]
   measrExprs  <- parTable[cond2, , drop = FALSE]
@@ -88,12 +88,12 @@ getSortedEtas <- function(parTable, isLV = FALSE, checkAny = TRUE) {
       if ((eta <- structExprs[i, "lhs"]) %in% structExprs$rhs) next
 
       sortedEtas  <- c(eta, sortedEtas)
-      structExprs <- structExprs[!grepl(eta, structExprs$lhs), ]
+      structExprs <- structExprs[structExprs$lhs != eta, , drop = FALSE]
       break
     }
   }
 
-  if (!all(sortedEtas %in% unsortedEtas) &&
+  if (!all(unsortedEtas %in% sortedEtas) ||
       length(sortedEtas) != length(unsortedEtas)) {
       warning("unable to sort etas")
       return(unsortedEtas)
