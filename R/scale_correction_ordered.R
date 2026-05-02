@@ -1,6 +1,9 @@
 modsemOrderedScaleCorrection <- function(..., ordered.v2 = TRUE) {
-  message("Transforming ordered variables to interval scale...\n",
-          "This is an experimental feature, see `help(modsem_da)` for more information!")
+  message(
+    "Transforming ordered variables to interval scale...\n",
+    "This is an experimental feature, see `help(modsem_da)` for more information!\n"
+    "Consider using the MC-OrdPLSc algorithm in the `plssem` package instead."
+  )
 
   # v2 seems to be the best. Left here for testing purposes
   # The user can pass the `ordered.v2` argument to `modsem_da`
