@@ -90,7 +90,7 @@ transformedSolutionCOEFS <- function(object,
           diffVarEta <- newVarEta - oldVarEta
 
           cond <- (
-            parTable$lhs %in% etas & parTable$lhs == parTable$rhs &
+            parTable$lhs == eta & parTable$lhs == parTable$rhs &
             parTable$op == "~~" & parTable$group == g
           )
 
