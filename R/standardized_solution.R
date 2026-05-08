@@ -62,8 +62,43 @@ transformedSolutionCOEFS <- function(object,
     addVariances  <- (isNonCentered && isLav) || isMplus || isDA || missingVars
 
     if (addVariances) {
-      warnif(isLav, "Replacing interaction (co-)", "variances when centering the model!\n", immediate. = FALSE)
+      warnif(isLav,
+        "Replacing interaction (co-)", "variances when centering the model!\n",
+        immediate. = FALSE
+      )
+
+      # When replacing the covariance structure we might change the total variance
+      # of the endogenous variables. Here we try to correct for this by
+      # adding/subtracting the error to/from the residual variances
+      parTableOld <- parTable
+      etas        <- getEtas(parTable)
+
       parTable <- var_interactions(parTable, ignore.means = TRUE, mc.reps = mc.reps)
+
+      for (g in getGroupsParTable(parTable)) {
+        maskNew.g <- parTable$group == g
+        maskOld.g <- parTableOld$group == g
+
+        if (!any(maskNew.g, na.rm = TRUE) || !any(maskOld.g, na.rm = TRUE)) next
+
+        parTableNew.g <- centerInteractions(parTable[maskNew.g, , drop = FALSE])
+        parTableOld.g <- parTableOld[maskOld.g, , drop = FALSE]
+
+        newVarEtas  <- calcVarParTable(etas, parTable = parTableNew.g)
+        oldVarEtas  <- calcVarParTable(etas, parTable = parTableOld.g)
+        diffVarEtas <- stats::setNames(newVarEtas - oldVarEtas, nm = etas)
+
+        idx <- which(
+          parTable$lhs %in% etas &
+          parTable$lhs == parTable$rhs &
+          parTable$op == "~~" &
+          parTable$group == g
+        )
+
+        parTable[idx, "est"] <- (
+          parTable[idx, "est"] - diffVarEtas[parTable[idx, "lhs"]]
+        )
+      }
     }
   }
 
