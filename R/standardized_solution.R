@@ -71,7 +71,7 @@ transformedSolutionCOEFS <- function(object,
       # of the endogenous variables. Here we try to correct for this by
       # adding/subtracting the error to/from the residual variances
       parTableOld <- parTable
-      etas        <- getEtas(parTable)
+      etas        <- getSortedEtas(parTable)
 
       parTable <- var_interactions(parTable, ignore.means = TRUE, mc.reps = mc.reps)
 
@@ -84,20 +84,18 @@ transformedSolutionCOEFS <- function(object,
         parTableNew.g <- centerInteractions(parTable[maskNew.g, , drop = FALSE])
         parTableOld.g <- parTableOld[maskOld.g, , drop = FALSE]
 
-        newVarEtas  <- calcVarParTable(etas, parTable = parTableNew.g)
-        oldVarEtas  <- calcVarParTable(etas, parTable = parTableOld.g)
-        diffVarEtas <- stats::setNames(newVarEtas - oldVarEtas, nm = etas)
+        for (eta in etas) {
+          newVarEta  <- calcVarParTable(eta, parTable = parTableNew.g)
+          oldVarEta  <- calcVarParTable(eta, parTable = parTableOld.g)
+          diffVarEta <- newVarEta - oldVarEta
 
-        idx <- which(
-          parTable$lhs %in% etas &
-          parTable$lhs == parTable$rhs &
-          parTable$op == "~~" &
-          parTable$group == g
-        )
+          cond <- (
+            parTable$lhs %in% etas & parTable$lhs == parTable$rhs &
+            parTable$op == "~~" & parTable$group == g
+          )
 
-        parTable[idx, "est"] <- (
-          parTable[idx, "est"] - diffVarEtas[parTable[idx, "lhs"]]
-        )
+          parTable[cond, "est"] <- parTable[cond, "est"] - diffVarEta
+        }
       }
     }
   }

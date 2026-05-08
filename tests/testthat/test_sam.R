@@ -8,7 +8,7 @@ Z =~ z1 + z2 + z3
 Y ~ X + Z + X:Z
 '
 
-est <- sam(m1, oneInt)
+est <- sam(m1, oneInt, se = "none")
 parameter_estimates(est)
 
 centered_estimates(est)
@@ -34,7 +34,7 @@ z1~0*1
 y1~0*1
 '
 
-est_nc <- sam(m2, oneInt)
+est_nc <- sam(m2, oneInt, se = "none")
 wrap <- \(expr) (testthat::expect_warning(expr, regex = "Replacing.*"))
 wrap(centered_estimates(est_nc))
 wrap(standardized_estimates(est_nc))
