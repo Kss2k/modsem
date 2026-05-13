@@ -102,7 +102,7 @@ notFilledLambda <- function(ind, lambda) {
 }
 
 
-constructLambda <- function(lVs, indsLVs, parTable, auto.fix.first = TRUE) {
+constructLambda <- function(lVs, indsLVs, parTable, auto.fix.first = TRUE, mode = "a") {
   numLVs        <- length(lVs)
   indsLVs       <- indsLVs[lVs] # make sure it is sorted
   allIndsLVs    <- unique(unlist(indsLVs))
@@ -123,9 +123,64 @@ constructLambda <- function(lVs, indsLVs, parTable, auto.fix.first = TRUE) {
     }
   }
 
+  switch(tolower(mode),
+    a = {
+      composites <- getComposites(parTable)
+      lambda[,intersect(colnames(lambda), composites)] <- 0
+    },
+    b = {
+      composites <- getComposites(parTable)
+      lambda[,setdiff(colnames(lambda), composites)] <- 0
+    },
+    stop2("Unsupported mode: ", mode, "!")
+  )
+
   setMatrixConstraints(X = lambda, parTable = parTable, op = "=~",
                        RHS = allIndsLVs, LHS = lVs, type = "rhs",
                        nonFreeParams = TRUE) # first params are by default set to 1
+}
+
+
+constructT <- function(lVs, indsLVs, parTable,
+                       fix.composite.var = TRUE,
+                       data = NULL, missing = "listwise",
+                       sampling.weights = NULL) {
+  indsLVs <- indsLVs[lVs] # make sure it is sorted
+  allInds <- unique(unlist(indsLVs))
+  k       <- length(allInds)
+
+  T <- matrix(
+    0, nrow = k, ncol = k,
+    dimnames = list(allInds, allInds)
+  )
+
+  composites <- intersect(lVs, getComposites(parTable))
+  compositeInds <- unique(unlist(indsLVs[composites]))
+
+  for (composite in composites) {
+    idx <- intersect(rownames(T), indsLVs[[composite]])
+
+    if (fix.composite.var && !is.null(data$data.full)) {
+      X <- data$data.full[,idx, drop = FALSE]
+
+      S <- lavaan::lavCor(
+        object           = X,
+        missing          = missing,
+        sampling.weights = sampling.weights,
+        output           = "cov"
+      )
+
+      T[idx, idx] <- S[idx, idx]
+
+    } else {
+      T[idx, idx] <- NA
+
+    }
+  }
+
+  setMatrixConstraints(X = T, parTable = parTable, op = "~~",
+                       RHS = compositeInds, LHS = compositeInds,
+                       type = "symmetric", nonFreeParams = FALSE)
 }
 
 
@@ -173,6 +228,10 @@ constructTheta <- function(lVs, indsLVs, parTable, auto.fix.single = TRUE) {
       theta[indsLVs[[lV]], indsLVs[[lV]]] <- 0
     }
   }
+
+  compositeIndicators <- getCompositeIndicators(parTable)
+  isCompositeInd <- allIndsLVs %in% compositeIndicators
+  theta[isCompositeInd, isCompositeInd] <- 0
 
   setMatrixConstraints(X = theta, parTable = parTable, op = "~~",
                        RHS = allIndsLVs, LHS = allIndsLVs, type = "symmetric",

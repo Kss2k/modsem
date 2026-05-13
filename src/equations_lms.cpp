@@ -16,12 +16,15 @@ arma::vec muLmsCpp(Rcpp::List model, arma::vec z) {
   const Rcpp::List quad = model["quad"];
   const int numXis = Rcpp::as<int>(info["numXis"]);
   const int k = Rcpp::as<int>(quad["k"]);
+  const bool hasComposites = Rcpp::as<bool>(info["hasComposites"]);
   const arma::mat A = Rcpp::as<arma::mat>(matrices["A"]);
   const arma::mat Oxx = Rcpp::as<arma::mat>(matrices["omegaXiXi"]);
   const arma::mat Oex = Rcpp::as<arma::mat>(matrices["omegaEtaXi"]);
   const arma::mat Ie = Rcpp::as<arma::mat>(matrices["Ieta"]);
   const arma::mat lX = Rcpp::as<arma::mat>(matrices["lambdaX"]);
   const arma::mat tX = Rcpp::as<arma::mat>(matrices["tauX"]);
+  const arma::mat W = Rcpp::as<arma::mat>(matrices["W"]);
+  const arma::mat T = Rcpp::as<arma::mat>(matrices["T"]);
   const arma::mat Gx = Rcpp::as<arma::mat>(matrices["gammaXi"]);
   const arma::mat Ge = Rcpp::as<arma::mat>(matrices["gammaEta"]);
   const arma::mat a = Rcpp::as<arma::mat>(matrices["alpha"]);
@@ -39,6 +42,11 @@ arma::vec muLmsCpp(Rcpp::List model, arma::vec z) {
       Gx * (beta0 + A * zVec) +
       kronZ.t() * Oxx * (beta0 + A * zVec));
 
+  if (hasComposites) {
+    const arma::mat lXc = lX + T * W * arma::pinv(W.t() * T * W);
+    return tX + lXc * arma::join_cols(muXi, muEta);
+  }
+
   return tX + lX * arma::join_cols(muXi, muEta);
 }
 
@@ -51,12 +59,15 @@ arma::mat sigmaLmsCpp(Rcpp::List model, arma::vec z) {
   const Rcpp::List quad = model["quad"];
   const int numXis = Rcpp::as<int>(info["numXis"]);
   const int k = Rcpp::as<int>(quad["k"]);
+  const bool hasComposites = Rcpp::as<bool>(info["hasComposites"]);
   const arma::mat A = Rcpp::as<arma::mat>(matrices["A"]);
   const arma::mat Oxx = Rcpp::as<arma::mat>(matrices["omegaXiXi"]);
   const arma::mat Oex = Rcpp::as<arma::mat>(matrices["omegaEtaXi"]);
   const arma::mat Ie = Rcpp::as<arma::mat>(matrices["Ieta"]);
   const arma::mat lX = Rcpp::as<arma::mat>(matrices["lambdaX"]);
   const arma::mat tX = Rcpp::as<arma::mat>(matrices["tauX"]);
+  const arma::mat W = Rcpp::as<arma::mat>(matrices["W"]);
+  const arma::mat T = Rcpp::as<arma::mat>(matrices["T"]);
   const arma::mat Gx = Rcpp::as<arma::mat>(matrices["gammaXi"]);
   const arma::mat Ge = Rcpp::as<arma::mat>(matrices["gammaEta"]);
   const arma::mat a = Rcpp::as<arma::mat>(matrices["alpha"]);
@@ -84,6 +95,12 @@ arma::mat sigmaLmsCpp(Rcpp::List model, arma::vec z) {
     arma::join_rows(covXiEta.t(), varEta)
   );
 
+  if (hasComposites) {
+    const arma::mat lXc = lX + T * W * arma::pinv(W.t() * T * W);
+    const arma::mat dc = d + T - lXc * W.t() * T * W * lXc.t();
+    return lXc * vcovXiEta * lXc.t() + dc;
+  }
+
   return lX * vcovXiEta * lX.t() + d;
 }
 
@@ -103,10 +120,11 @@ inline arma::vec make_zvec(unsigned k, unsigned numXis, const arma::vec& z) {
 
 
 struct LMSModel {
-  arma::mat A, Oxx, Oex, Ie, lY, lX, tY, tX, Gx, Ge,
+  arma::mat A, Oxx, Oex, Ie, lY, lX, W, T, tY, tX, Gx, Ge,
     a, beta0, Psi, d, e;
-  unsigned  k       = 0;
-  unsigned  numXis  = 0;
+  unsigned  k        = 0;
+  unsigned  numXis   = 0;
+  bool hasComposites = false;
 
   explicit LMSModel(const Rcpp::List& modFilled) {
 
@@ -116,6 +134,7 @@ struct LMSModel {
 
     k       = Rcpp::as<unsigned>(quad["k"]);
     numXis  = Rcpp::as<unsigned>(info["numXis"]);
+    hasComposites = Rcpp::as<bool>(info["hasComposites"]);
 
     // one-liners, no loops
     A      = Rcpp::as<arma::mat>(matrices["A"]);
@@ -126,6 +145,8 @@ struct LMSModel {
     lX     = Rcpp::as<arma::mat>(matrices["lambdaX"]);
     tY     = Rcpp::as<arma::mat>(matrices["tauY"]);
     tX     = Rcpp::as<arma::mat>(matrices["tauX"]);
+    W      = Rcpp::as<arma::mat>(matrices["W"]);
+    T      = Rcpp::as<arma::mat>(matrices["T"]);
     Gx     = Rcpp::as<arma::mat>(matrices["gammaXi"]);
     Ge     = Rcpp::as<arma::mat>(matrices["gammaEta"]);
     a      = Rcpp::as<arma::mat>(matrices["alpha"]);
@@ -144,6 +165,11 @@ struct LMSModel {
     const arma::vec muEta = Binv * (a +
         Gx * (beta0 + A * zVec) +
         kronZ.t() * Oxx * (beta0 + A * zVec));
+
+    if (hasComposites) {
+      const arma::mat lXc = lX + T * W * arma::pinv(W.t() * T * W);
+      return tX + lXc * arma::join_cols(muXi, muEta);
+    }
 
     return tX + lX * arma::join_cols(muXi, muEta);
   }
@@ -164,6 +190,12 @@ struct LMSModel {
         arma::join_rows(covXiEta.t(), varEta)
         );
 
+    if (hasComposites) {
+      const arma::mat lXc = lX + T * W * arma::pinv(W.t() * T * W);
+      const arma::mat dc = d + T - lXc * W.t() * T * W * lXc.t();
+      return lXc * vcovXiEta * lXc.t() + dc;
+    }
+
     return lX * vcovXiEta * lX.t() + d;
   }
 
@@ -178,6 +210,8 @@ struct LMSModel {
     c.lX    = arma::mat(lX);
     c.tY    = arma::mat(tY);
     c.tX    = arma::mat(tX);
+    c.W     = arma::mat(W);
+    c.T     = arma::mat(T);
     c.Gx    = arma::mat(Gx);
     c.Ge    = arma::mat(Ge);
     c.a     = arma::mat(a);
@@ -208,6 +242,8 @@ inline double& lms_param(LMSModel& M, std::size_t blk,
     case 11: return  M.Ge   (r,c);
     case 12: return  M.Oxx  (r,c);
     case 13: return  M.Oex  (r,c);
+    case 14: return  M.W    (r,c);
+    case 15: return  M.T    (r,c);
     default: Rcpp::stop("unknown block id");
   }
 }

@@ -564,7 +564,7 @@ nNegativeLast <- function(x, n = 10) {
 }
 
 
-getDegreesOfFreedom <- function(p, coef, mean.structure = TRUE) {
+getDegreesOfFreedom <- function(p, coef, model, mean.structure = TRUE) {
   if (!length(p)) return(NA_real_)
 
   momentsPerGroup <- function(pp) {
@@ -575,8 +575,22 @@ getDegreesOfFreedom <- function(p, coef, mean.structure = TRUE) {
     }
   }
 
-  m_total <- sum(vapply(p, momentsPerGroup, numeric(1L)))
-  m_total - length(coef)
+  
+  df.total <- sum(vapply(p, momentsPerGroup, numeric(1L)))
+  df <- df.total - length(coef)
+
+  if (model$model$info$fixed.composite.var) {
+
+    for (g in seq_along(model$model$models)) {
+      M <- model$model$models[[g]]$matricesNA
+
+      # This would be closer to lavaan...
+      # df <- df - sum(apply(M$W, MARGIN = 2L, FUN = \(x) any(is.na(x))))
+      df <- df - sum(is.na(M$T))
+    }
+  }
+
+  df
 }
 
 
@@ -857,6 +871,16 @@ getCoefMatricesDA <- function(parTable,
   beta0 <- createBeta(xis)
   tau   <- createBeta(inds)
   Binv <- solve(diag(nrow(gammaEta)) - gammaEta)
+
+  stop("This is not finished yet!")
+  if (NCOL(W) && any(W != 0)) {
+    lambda.c <- T %*% W %*% GINV(t(W) %*% T %*% W)
+    theta.c  <- T - lambda.c %*% t(W) %*% T %*% W %*% t(lambda.c)
+
+    lambda <- lambda + lambda.c
+    theta  <- theta + theta.c
+  }
+
 
   list(gammaXi = gammaXi, gammaEta = gammaEta, Binv = Binv, psi = psi,
        phi = phi, theta = theta, alpha = alpha, beta0 = beta0, tau = tau,

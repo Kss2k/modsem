@@ -148,7 +148,10 @@ fit_modsem_da <- function(model, chisq = TRUE, lav.fit = FALSE,
   names(muExpBlocks)       <- group.labels
 
   N_total <- sum(N_vec)
-  df <- getDegreesOfFreedom(p = p_vec[p_vec > 0], coef = coef, mean.structure = mean.s)
+  df <- getDegreesOfFreedom(
+    p = p_vec[p_vec > 0], coef = coef, mean.structure = mean.s,
+    model = model
+  )
 
   if (chisq) {
     if (all(!is.na(chisqParts))) {

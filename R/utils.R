@@ -140,6 +140,16 @@ getLVs <- function(parTable) {
 }
 
 
+getComposites <- function(parTable) {
+  unique(parTable[parTable$op == "<~", "lhs"])
+}
+
+
+getCompositeIndicators <- function(parTable) {
+  unique(parTable[parTable$op == "<~", "rhs"])
+}
+
+
 getOVs <- function(parTable = NULL, model.syntax = NULL) {
   if (!is.null(model.syntax)) parTable <- modsemify(model.syntax)
   stopif(is.null(parTable), "Missing parTable")

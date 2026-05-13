@@ -47,6 +47,8 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
     lambdaY      <- as.vector(M$lambdaY)
     thetaDelta   <- as.vector(M$thetaDelta)
     thetaEpsilon <- as.vector(M$thetaEpsilon)
+    W            <- as.vector(M$W)
+    T            <- as.vector(M$T)
     phi          <- as.vector(M$phi)
     A            <- as.vector(M$A)
     psi          <- as.vector(M$psi)
@@ -59,21 +61,25 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
     omegaXiXi    <- as.vector(M$omegaXiXi)
     omegaEtaXi   <- as.vector(M$omegaEtaXi)
 
-    allModelValues <- c("lambdaX"      = lambdaX,
-                        "lambdaY"      = lambdaY,
-                        "tauX"         = tauX,
-                        "tauY"         = tauY,
-                        "thetaDelta"   = thetaDelta,
-                        "thetaEpsilon" = thetaEpsilon,
-                        "phi"          = phi,
-                        "A"            = A,
-                        "psi"          = psi,
-                        "alpha"        = alpha,
-                        "beta0"        = beta0,
-                        "gammaXi"      = gammaXi,
-                        "gammaEta"     = gammaEta,
-                        "omegaXiXi"    = omegaXiXi,
-                        "omegaEtaXi"   = omegaEtaXi)
+    allModelValues <- c(
+      lambdaX      = lambdaX,
+      lambdaY      = lambdaY,
+      tauX         = tauX,
+      tauY         = tauY,
+      thetaDelta   = thetaDelta,
+      thetaEpsilon = thetaEpsilon,
+      W            = W,
+      T            = T,
+      phi          = phi,
+      A            = A,
+      psi          = psi,
+      alpha        = alpha,
+      beta0        = beta0,
+      gammaXi      = gammaXi,
+      gammaEta     = gammaEta,
+      omegaXiXi    = omegaXiXi,
+      omegaEtaXi   = omegaEtaXi
+    )
 
     lavLabelsMain <- createLavLabels(M, subset = is.na(allModelValues),
                                      etas = etas, parTable.in = parTable.in)
@@ -145,10 +151,12 @@ createThetaCovModel <- function(covModel, start = NULL) {
   alpha    <- as.vector(M$alpha)
   gammaXi  <- as.vector(M$gammaXi)
   gammaEta <- as.vector(M$gammaEta)
-  thetaCov <- c("phi" = phi,
-                "psi" = psi,
-                "gammaXi" = gammaXi,
-                "gammaEta" = gammaEta)
+  thetaCov <- c(
+    phi = phi,
+    psi = psi,
+    gammaXi = gammaXi,
+    gammaEta = gammaEta
+  )
 
   lavLabelsCov <- createLavLabelsCov(M, subset = is.na(thetaCov))
   thetaCov <- thetaCov[is.na(thetaCov)]
@@ -172,7 +180,7 @@ fillThetaIfStartNULL <- function(start,
 
   } else if (!is.null(lavlab)) {
     tryCatch({
-      OP <- "~~|=~|~1|~"
+      OP <- "~~|<~|=~|~1|~"
       op <- stringr::str_extract(lavlab, pattern = OP)
       lr <- stringr::str_split_fixed(lavlab, pattern = OP, n = 2)
 
@@ -184,6 +192,7 @@ fillThetaIfStartNULL <- function(start,
       theta.filled[op == "~"]               <- reg
       theta.filled[op == "=~"]              <- meas
       theta.filled[op == "~1"]              <- mean
+      theta.filled[op == "<~"]              <- meas
       theta.filled[op == "~~" & lhs == rhs] <- var
       theta.filled[op == "~~" & lhs != rhs] <- cov
       theta.filled[is.na(theta.filled)]     <- reg
@@ -258,6 +267,8 @@ fillMainModel <- function(model, theta, thetaLabel, fillPhi = FALSE,
   M$lambdaY      <- fillNA_Matrix(M$lambdaY, theta = theta, pattern = "^lambdaY")
   M$thetaDelta   <- fillSymmetric(M$thetaDelta, fetch(theta, "^thetaDelta"))
   M$thetaEpsilon <- fillSymmetric(M$thetaEpsilon, fetch(theta, "thetaEpsilon"))
+  M$W            <- fillNA_Matrix(M$W, theta = theta, pattern = "^W")
+  M$T            <- fillSymmetric(M$T, fetch(theta, "^T"))
   M$psi          <- fillSymmetric(M$psi, fetch(theta, "^psi"))
   M$tauX         <- fillNA_Matrix(M$tauX, theta = theta, pattern = "^tauX")
   M$tauY         <- fillNA_Matrix(M$tauY, theta = theta, pattern = "^tauY")
@@ -426,7 +437,9 @@ LMS_BLOCKS = list(
   gammaEta     = 11,
   omegaXiXi    = 12,
   omegaEtaXi   = 13,
-  phi          = NA
+  phi          = NA,
+  W            = 14,
+  T            = 15
 )
 
 
@@ -434,7 +447,8 @@ SYMMETRIC_BLOCKS_LMS = c(
   thetaDelta = 4,
   thetaEpsilon = 5,
   psi = 7,
-  phi = NA
+  phi = NA,
+  W = 15
 )
 
 

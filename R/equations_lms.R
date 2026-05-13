@@ -542,39 +542,44 @@ simpleHessianAllLogLikLms <- function(theta, model, P, sign = -1,
   nlinDerivs2 <- model$params$gradientStruct$nlinDerivs2
 
   n.loc <- NROW(locations)
-  H <- matrix(0.0, nrow = n.loc, ncol = n.loc,
-              dimnames = list(locations$param, locations$param))
-  grad <- numeric(n.loc)
-  names(grad) <- locations$param
+  nm <- locations$param
+  H <- matrix(0.0, nrow = n.loc, ncol = n.loc, dimnames = list(nm, nm))
+  grad <- stats::setNames(numeric(n.loc), nm = nm)
 
   for (g in seq_len(modelR$info$n.groups)) {
-    locations.g <- locations[locations$group == g, , drop = FALSE]
+    locations.g <- locations[
+      locations$group == g, , drop = FALSE
+    ]
+
     if (!NROW(locations.g)) next
 
     submodelR <- modelR$models[[g]]
     data.g    <- submodelR$data
 
-    HESS.g <- FHESS(modelR    = submodelR,
-                    P         = P$P_GROUPS[[g]],
-                    block     = locations.g$block,
-                    row       = locations.g$row,
-                    col       = locations.g$col,
-                    colidxR   = data.g$colidx0,
-                    n         = data.g$n.pattern,
-                    d         = data.g$d.pattern,
-                    npatterns = data.g$p,
-                    symmetric = locations.g$symmetric,
-                    .relStep  = .relStep,
-                    ncores    = ThreadEnv$n.threads)
+    HESS.g <- FHESS(
+      modelR    = submodelR,
+      P         = P$P_GROUPS[[g]],
+      block     = locations.g$block,
+      row       = locations.g$row,
+      col       = locations.g$col,
+      colidxR   = data.g$colidx0,
+      n         = data.g$n.pattern,
+      d         = data.g$d.pattern,
+      npatterns = data.g$p,
+      symmetric = locations.g$symmetric,
+      .relStep  = .relStep,
+      ncores    = ThreadEnv$n.threads
+    )
 
     H.g    <- HESS.g$Hessian
     grad.g <- HESS.g$gradient
+    nm.g   <- locations.g$param
 
-    dimnames(H.g) <- list(locations.g$param, locations.g$param)
-    names(grad.g) <- locations.g$param
+    dimnames(H.g) <- list(nm.g, nm.g)
+    names(grad.g) <- nm.g
 
-    H[locations.g$param, locations.g$param] <- H[locations.g$param, locations.g$param] + H.g
-    grad[locations.g$param] <- grad[locations.g$param] + grad.g
+    H[nm.g, nm.g] <- H[nm.g, nm.g] + H.g
+    grad[nm.g] <- grad[nm.g] + grad.g
   }
 
   if (length(nlinDerivs)) {
@@ -798,7 +803,9 @@ observedInfoFromLouisLms <- function(model,
 
   if (symmetrize) {
     sym <- function(A) 0.5 * (A + t(A))
-    Icom <- sym(Icom); Imis <- sym(Imis); Iobs <- sym(Iobs)
+    Icom <- sym(Icom)
+    Imis <- sym(Imis)
+    Iobs <- sym(Iobs)
   }
 
   if (jitter > 0) {

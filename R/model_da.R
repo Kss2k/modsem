@@ -22,7 +22,8 @@ specifyModelDA_Group <- function(syntax = NULL,
                                  orthogonal.y = FALSE,
                                  cluster = NULL,
                                  sampling.weights = NULL,
-                                 structovs = NULL) {
+                                 structovs = NULL,
+                                 fix.composite.var = TRUE) {
   if (is.null(parTable) && !is.null(syntax)) parTable <- modsemify(syntax)
   stopif(is.null(parTable), "No parTable found")
 
@@ -45,7 +46,7 @@ specifyModelDA_Group <- function(syntax = NULL,
   allIndsEtas    <- unique(unlist(indsEtas))
   numAllIndsEtas <- length(allIndsEtas)
 
-  # exogenouts variables (xis) and interaction terms
+  # exogenous variables (xis) and interaction terms
   intTerms      <- getIntTermRows(parTable)
   varsInts      <- getVarsInts(intTerms)
   allVarsInInts <- unique(unlist(varsInts))
@@ -66,6 +67,19 @@ specifyModelDA_Group <- function(syntax = NULL,
   allIndsXis    <- unique(unlist(indsXis))
   numAllIndsXis <- length(allIndsXis)
 
+  # composite variables
+  composites    <- getComposites(parTable)
+  compositeXis  <- intersect(xis, composites)
+  compositeEtas <- intersect(etas, composites)
+  indsCompXis   <- indsXis[compositeXis]
+  indsCompEtas  <- indsEtas[compositeEtas]
+
+  # composite variables are only defined for lms
+  stopif(length(composites) && method == "qml",
+    "Composite constructs are not allowed with `method=\"qml\"` (yet)!\n",
+    "Try `method=\"lms\"` instead."
+  )
+
   # clean data
   data.cleaned <- prepDataModsemDA(
     data             = data,
@@ -78,24 +92,67 @@ specifyModelDA_Group <- function(syntax = NULL,
 
   # measurement model x
   if (method == "qml") {
-    listLambdaX <- constructLambda(xis, indsXis, parTable = parTable,
-                                   auto.fix.first = auto.fix.first)
+    listLambdaX <- constructLambda(
+      xis, indsXis, parTable = parTable,
+      auto.fix.first = auto.fix.first
+    )
+
   } else {
-    listLambdaX <- constructLambda(c(xis, etas), c(indsXis, indsEtas),
-                                   parTable = parTable,
-                                   auto.fix.first = auto.fix.first)
+    listLambdaX <- constructLambda(
+      c(xis, etas), c(indsXis, indsEtas),
+      parTable = parTable,
+      auto.fix.first = auto.fix.first
+    )
   }
 
   lambdaX      <- listLambdaX$numeric
   labelLambdaX <- listLambdaX$label
 
-  if (method == "qml") {
-    listTauX <- constructTau(xis, indsXis, parTable = parTable,
-                             mean.observed = mean.observed)
+  # Composite measurement model
+  if (length(composites)) {
+
+    listW <- constructLambda(
+      c(xis, etas), c(indsXis, indsEtas),
+      parTable = parTable,
+      auto.fix.first = auto.fix.first,
+      mode = "b"
+    )
+
+    listT <- constructT(c(xis, etas), c(indsXis, indsEtas),
+      parTable = parTable, fix.composite.var = fix.composite.var,
+      data = data.cleaned, missing = missing,
+      sampling.weights = sampling.weights
+    )
+
   } else {
-    listTauX <- constructTau(c(xis, etas), c(indsXis, indsEtas),
-                             parTable = parTable,
-                             mean.observed = mean.observed)
+    listW <- constructLambda(
+      NULL, NULL, parTable = parTable,
+      auto.fix.first = auto.fix.first
+    )
+
+    listT <- constructT(
+      NULL, NULL, parTable = parTable
+    )
+  }
+
+  W      <- listW$numeric
+  T      <- listT$numeric
+  labelW <- listW$label
+  labelT <- listT$label
+
+  # Intercepts
+  if (method == "qml") {
+    listTauX <- constructTau(
+      xis, indsXis, parTable = parTable,
+      mean.observed = mean.observed
+    )
+
+  } else {
+    listTauX <- constructTau(
+      c(xis, etas), c(indsXis, indsEtas),
+      parTable = parTable,
+      mean.observed = mean.observed
+    )
   }
 
   tauX      <- listTauX$numeric
@@ -107,12 +164,17 @@ specifyModelDA_Group <- function(syntax = NULL,
                  allIndsEtas = allIndsEtas, method = method)
 
   if (method == "qml") {
-    listThetaDelta <- constructTheta(xis, indsXis, parTable = parTable,
-                                     auto.fix.single = auto.fix.single)
+    listThetaDelta <- constructTheta(
+      xis, indsXis, parTable = parTable,
+      auto.fix.single = auto.fix.single
+    )
+
   } else {
-    listThetaDelta <- constructTheta(c(xis, etas), c(indsXis, indsEtas),
-                                     parTable = parTable,
-                                     auto.fix.single = auto.fix.single)
+    listThetaDelta <- constructTheta(
+      c(xis, etas), c(indsXis, indsEtas),
+      parTable = parTable,
+      auto.fix.single = auto.fix.single
+    )
   }
 
   thetaDelta      <- listThetaDelta$numeric
@@ -120,22 +182,32 @@ specifyModelDA_Group <- function(syntax = NULL,
 
   # measurement model y
   if (method == "qml") {
-    listLambdaY <- constructLambda(etas, indsEtas, parTable = parTable,
-                                   auto.fix.first = auto.fix.first)
+    listLambdaY <- constructLambda(
+      etas, indsEtas, parTable = parTable,
+      auto.fix.first = auto.fix.first
+    )
+
   } else {
-    listLambdaY <- constructLambda(NULL, NULL, parTable = parTable,
-                                   auto.fix.first = auto.fix.first)
+    listLambdaY <- constructLambda(
+      NULL, NULL, parTable = parTable,
+      auto.fix.first = auto.fix.first
+    )
   }
 
   lambdaY      <- listLambdaY$numeric
   labelLambdaY <- listLambdaY$label
 
   if (method == "qml") {
-    listTauY <- constructTau(etas, indsEtas, parTable = parTable,
-                             mean.observed = mean.observed)
+    listTauY <- constructTau(
+      etas, indsEtas, parTable = parTable,
+      mean.observed = mean.observed
+    )
+
   } else {
-    listTauY <- constructTau(NULL, NULL, parTable = parTable,
-                             mean.observed = mean.observed)
+    listTauY <- constructTau(
+      NULL, NULL, parTable = parTable,
+      mean.observed = mean.observed
+    )
   }
 
   tauY      <- listTauY$numeric
@@ -144,11 +216,16 @@ specifyModelDA_Group <- function(syntax = NULL,
                                         listTauY$syntaxAdditions)
 
   if (method == "qml") {
-    listThetaEpsilon <- constructTheta(etas, indsEtas, parTable = parTable,
-                                       auto.fix.single = auto.fix.single)
+    listThetaEpsilon <- constructTheta(
+      etas, indsEtas, parTable = parTable,
+      auto.fix.single = auto.fix.single
+    )
+
   } else {
-    listThetaEpsilon <- constructTheta(NULL, NULL, parTable = parTable,
-                                       auto.fix.single = auto.fix.single)
+    listThetaEpsilon <- constructTheta(
+      NULL, NULL, parTable = parTable,
+      auto.fix.single = auto.fix.single
+    )
   }
 
   thetaEpsilon      <- listThetaEpsilon$numeric
@@ -246,6 +323,8 @@ specifyModelDA_Group <- function(syntax = NULL,
     gammaEta     = gammaEta,
     thetaDelta   = thetaDelta,
     thetaEpsilon = thetaEpsilon,
+    W            = W,
+    T            = T,
     phi          = phi,
     A            = A,
     Ieta         = Ieta,
@@ -277,7 +356,8 @@ specifyModelDA_Group <- function(syntax = NULL,
     rowsR = rownames(emptyR),
 
     subThetaEpsilon1 = subThetaEpsilon1,
-    subThetaEpsilon2 = subThetaEpsilon2)
+    subThetaEpsilon2 = subThetaEpsilon2
+  )
 
   labelMatrices <- list(
     lambdaX      = labelLambdaX,
@@ -286,6 +366,8 @@ specifyModelDA_Group <- function(syntax = NULL,
     gammaEta     = labelGammaEta,
     thetaDelta   = thetaLabelDelta,
     thetaEpsilon = thetaLabelEpsilon,
+    W            = labelW,
+    T            = labelT,
 
     phi   = labelPhi,
     A     = labelA,
@@ -296,7 +378,8 @@ specifyModelDA_Group <- function(syntax = NULL,
     beta0 = labelBeta0,
 
     omegaEtaXi = labelOmegaEtaXi,
-    omegaXiXi  = labelOmegaXiXi)
+    omegaXiXi  = labelOmegaXiXi
+  )
 
   k <- omegaAndSortedXis$k
   quad <- quadrature(m, k, quad.range = quad.range, adaptive = adaptive.quad,
@@ -321,9 +404,11 @@ specifyModelDA_Group <- function(syntax = NULL,
       nonLinearXis  = nonLinearXis,
       mean.observed = mean.observed,
 
-      has.interaction    = NROW(intTerms) > 0L,
-      higherOrderLVs     = higherOrderLVs,
-      indsHigherOrderLVs = indsHigherOrderLVs,
+      has.interaction     = NROW(intTerms) > 0L,
+      higherOrderLVs      = higherOrderLVs,
+      indsHigherOrderLVs  = indsHigherOrderLVs,
+      hasComposites       = length(composites) > 0L,
+      fixed.composite.var = fix.composite.var,
 
       lavOptimizerSyntaxAdditions = lavOptimizerSyntaxAdditions
     ),
@@ -415,9 +500,11 @@ specifyModelDA <- function(..., group.info, createTheta = TRUE) {
       nonLinearXis  = submodels[[1L]]$info$nonLinearXis,
       mean.observed = submodels[[1L]]$info$mean.observed,
 
-      has.interaction    = submodels[[1L]]$info$has.interaction || has.ov.interaction,
-      higherOrderLVs     = submodels[[1L]]$info$higherOrderLVs,
-      indsHigherOrderLVs = submodels[[1L]]$info$indsHigherOrderLVs,
+      has.interaction     = submodels[[1L]]$info$has.interaction || has.ov.interaction,
+      higherOrderLVs      = submodels[[1L]]$info$higherOrderLVs,
+      indsHigherOrderLVs  = submodels[[1L]]$info$indsHigherOrderLVs,
+      hasComposites       = submodels[[1L]]$info$hasComposites,
+      fixed.composite.var = submodels[[1L]]$info$fixed.composite.var,
 
       lavOptimizerSyntaxAdditions = submodels[[1L]]$info$lavOptimizerSyntaxAdditions
     ),
@@ -540,6 +627,14 @@ mainModelToParTable <- function(finalModel, method = "lms") {
                               rowsLhs = FALSE)
   parTable <- rbind(parTable, newRows)
 
+  newRows <- matrixToParTable(matricesNA$W,
+                              matricesEst$W,
+                              matricesSE$W,
+                              matricesLabel$W,
+                              op = "<~",
+                              rowsLhs = FALSE)
+  parTable <- rbind(parTable, newRows)
+
   # coefficients Structural Model
   newRows <- matrixToParTable(matricesNA$gammaXi,
                               matricesEst$gammaXi,
@@ -610,6 +705,15 @@ mainModelToParTable <- function(finalModel, method = "lms") {
                               matricesEst$thetaEpsilon,
                               matricesSE$thetaEpsilon,
                               matricesLabel$thetaEpsilon,
+                              op = "~~", rowsLhs = TRUE,
+                              symmetric = TRUE)
+  parTable <- rbind(parTable, newRows)
+
+  # Composite indicator (co-) variances
+  newRows <- matrixToParTable(matricesNA$T,
+                              matricesEst$T,
+                              matricesSE$T,
+                              matricesLabel$T,
                               op = "~~", rowsLhs = TRUE,
                               symmetric = TRUE)
   parTable <- rbind(parTable, newRows)

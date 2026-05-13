@@ -70,7 +70,7 @@ optimizeStartingParamsDA <- function(model,
     lavaan.fit <- extract_lavaan(estPI)
 
   } else if (engine == "sam") {
-    fitSAM   <- parameterEstimatesLavSAM(
+    fitSAM <- parameterEstimatesLavSAM(
       syntax           = syntax,
       data             = data,
       estimator        = estimator,
@@ -133,24 +133,29 @@ optimizeStartingParamsDA <- function(model,
     labelMatricesMain <- submodel$labelMatrices
 
     LambdaX <- findEstimatesParTable(matricesMain$lambdaX, parTable.g, op = "=~",
-                                     rows_lhs = FALSE, fill = 0.7)
+                                     rows.lhs = FALSE, fill = 0.7)
     LambdaY <- findEstimatesParTable(matricesMain$lambdaY, parTable.g, op = "=~",
-                                     rows_lhs = FALSE, fill = 0.7)
+                                     rows.lhs = FALSE, fill = 0.7)
 
     ThetaEpsilon <- findEstimatesParTable(matricesMain$thetaEpsilon, parTable.g,
                                           op = "~~", fill = 0.2)
     ThetaDelta   <- findEstimatesParTable(matricesMain$thetaDelta, parTable.g,
                                           op = "~~", fill = 0.2)
 
+    W <- findEstimatesParTable(matricesMain$W, parTable.g, op = "<~",
+                               fill = 1, rows.lhs = FALSE)
+
     Psi <- findEstimatesParTable(matricesMain$psi, parTable.g, op = "~~", fill = 0)
     Phi <- findEstimatesParTable(matricesMain$phi, parTable.g, op = "~~", fill = 0)
     A   <- findEstimatesParTable(matricesMain$A, parTable.g, op = "~~", fill = 0)
+    T   <- findEstimatesParTable(matricesMain$T, parTable.g, op = "~~", fill = 0)
 
     # Matrices which can be corrected to ensure viable starting parameters need to
     # get filled in using labels as well, just for the checks them selves
     Psi <- fillLabelsMatrix(Psi, labelMatricesMain$psi, symmetric = TRUE)
     Phi <- fillLabelsMatrix(Phi, labelMatricesMain$phi, symmetric = TRUE)
     A   <- fillLabelsMatrix(A, labelMatricesMain$A, symmetric = FALSE)
+    T   <- fillLabelsMatrix(T, labelMatricesMain$T, symmetric = FALSE)
 
     ThetaEpsilon <- fillLabelsMatrix(ThetaEpsilon,
                                      labelMatricesMain$thetaEpsilon,
@@ -171,6 +176,7 @@ optimizeStartingParamsDA <- function(model,
     Psi          <- correctDiag(Psi, tol = 0) # no negative values
     Phi          <- correctDiag(Phi, tol = 0) # no negative values
     A            <- correctDiag(A, tol = 0)
+    T            <- correctDiag(T, tol = 0)
 
     as.I <- function(M) { # If Phi/A is non-invertible we want I instead
       I <- diag(NROW(M))
@@ -206,6 +212,8 @@ optimizeStartingParamsDA <- function(model,
                              tauY[is.na(matricesMain$tauY)],
                              ThetaDelta[is.na(matricesMain$thetaDelta)],
                              ThetaEpsilon[is.na(matricesMain$thetaEpsilon)],
+                             W[is.na(matricesMain$W)],
+                             T[is.na(matricesMain$T)],
                              Phi[is.na(matricesMain$phi)],
                              A[is.na(matricesMain$A)],
                              Psi[is.na(matricesMain$psi)],
@@ -262,7 +270,7 @@ optimizeStartingParamsDA <- function(model,
 }
 
 
-findEstimatesParTable <- function(mat, parTable, op = NULL, rows_lhs = TRUE,
+findEstimatesParTable <- function(mat, parTable, op = NULL, rows.lhs = TRUE,
                                   fill = NULL) {
   if (is.null(op)) stop("Missing operator")
   for (row in rownames(mat)) {
@@ -270,7 +278,7 @@ findEstimatesParTable <- function(mat, parTable, op = NULL, rows_lhs = TRUE,
       if (is.na(mat[row, col]))
         mat[row, col] <- extractFromParTable(row = row, op = op, col = col,
                                              parTable = parTable,
-                                             rows_lhs = rows_lhs, fill = fill)
+                                             rows.lhs = rows.lhs, fill = fill)
     }
   }
   mat
@@ -281,7 +289,7 @@ findInterceptsParTable <- function(mat, parTable, fill = NULL) {
   for (row in rownames(mat)) {
     if (is.na(mat[row, ]))
       mat[row, ] <- extractFromParTable(row = row, op = "~1", col = "",
-                                        parTable = parTable, rows_lhs = TRUE,
+                                        parTable = parTable, rows.lhs = TRUE,
                                         fill = fill)
   }
   mat
@@ -298,14 +306,14 @@ findInteractionEstimatesParTable <- function(omega, parTable, fill = NULL) {
     x   <- getXiRowLabelOmega(row)
     xz  <- createDoubleIntTerms(x = x, z = col, sep = ":")
     omega[row, col] <- extractFromParTable(eta, "~", xz, parTable = parTable,
-                                           rows_lhs = TRUE, fill = fill)
+                                           rows.lhs = TRUE, fill = fill)
   }
   omega
 }
 
 
-extractFromParTable <- function(row, op, col, parTable, rows_lhs = TRUE, fill = NULL) {
-  if (rows_lhs) {
+extractFromParTable <- function(row, op, col, parTable, rows.lhs = TRUE, fill = NULL) {
+  if (rows.lhs) {
     out <- parTable[parTable$lhs == row &
                     parTable$op == op &
                     parTable$rhs %in% col, "est"]
@@ -361,6 +369,7 @@ parameterEstimatesLavSAM <- function(syntax,
   parTable <- modsemify(syntax)
   higherOrderLVs <- getHigherOrderLVs(parTable)
   isHigherOrder  <- length(higherOrderLVs) > 0L
+  hasComposites  <- any(parTable$op == "<~")
   isNonCentered  <- isNonCenteredParTable(parTable)
   lowerOrderInds <- unlist(getIndsLVs(parTable, lVs = higherOrderLVs,
                                       isOV = FALSE))
@@ -380,6 +389,7 @@ parameterEstimatesLavSAM <- function(syntax,
       auto.fix.first   = auto.fix.first,
       auto.fix.single  = auto.fix.single,
       group            = group,
+      se               = "none",
       sampling.weights = sampling.weights,
       sampling.weights.normalization = sampling.weights.normalization,
       ...
@@ -397,7 +407,7 @@ parameterEstimatesLavSAM <- function(syntax,
     lhs <- pt$lhs
     op  <- pt$op
 
-    cond1 <- op == "=~"
+    cond1 <- op %in% c("=~", "<~")
     cond2 <- op == "~1"
     cond3 <- op == "~~" & !lhs %in% lVs & !rhs %in% lVs
 
@@ -428,12 +438,13 @@ parameterEstimatesLavSAM <- function(syntax,
     auto.fix.first   = auto.fix.first,
     auto.fix.single  = auto.fix.single,
     group            = group,
+    se               = "none",
     sampling.weights = sampling.weights,
     sampling.weights.normalization = sampling.weights.normalization,
     ...
   ))
 
-  if (isHigherOrder) {
+  if (isHigherOrder || hasComposites) {
     # use factor scores instead
     # using `sam.method="fsr"` doesn't work for this purpose (yet)
     # so we do it manually instead
