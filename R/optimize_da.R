@@ -450,8 +450,18 @@ parameterEstimatesLavSAM <- function(syntax,
     # use factor scores instead
     # using `sam.method="fsr"` doesn't work for this purpose (yet)
     # so we do it manually instead
-    dataSAM <- tryCatch(lavaan::lavPredict(fitH0, transform = TRUE),
-                        error = \(e) lavaan::lavPredict(fitH0))
+    dataSAM <- as.data.frame(tryCatch(
+      lavaan::lavPredict(fitH0, transform = TRUE),
+      error = \(e) lavaan::lavPredict(fitH0)
+    ))
+
+    for (col in colnames(dataSAM)) {
+      # This is mostly relevent for composites, where the mean structure
+      # i handled differently in lavaan vs modsem
+      if (!any(parTable$op == "~1" & parTable$lhs == col)) {
+        dataSAM[[col]] <- dataSAM[[col]] - mean(dataSAM[[col]], na.rm = TRUE)
+      }
+    }
 
     structvars <- unique(c(
       colnames(dataSAM),
