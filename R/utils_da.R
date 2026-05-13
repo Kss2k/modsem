@@ -906,7 +906,7 @@ getCoefMatricesDA <- function(parTable,
     theta[,compositeInds]  <- 0
 
     lambda.c <- T %*% W %*% GINV(t(W) %*% T %*% W)
-    theta.c <- lambda.c %*% t(W) %*% T %*% W %*% t(lambda.c)
+    theta.c <- T - lambda.c %*% t(W) %*% T %*% W %*% t(lambda.c)
 
   } else {
 
