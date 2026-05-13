@@ -392,6 +392,7 @@ parameterEstimatesLavSAM <- function(syntax,
       se               = "none",
       sampling.weights = sampling.weights,
       sampling.weights.normalization = sampling.weights.normalization,
+      optim.gradient   = if (hasComposites) "numerical" else "analytic",
       ...
     ))
 
@@ -441,6 +442,7 @@ parameterEstimatesLavSAM <- function(syntax,
     se               = "none",
     sampling.weights = sampling.weights,
     sampling.weights.normalization = sampling.weights.normalization,
+    optim.gradient   = if (hasComposites) "numerical" else "analytic",
     ...
   ))
 

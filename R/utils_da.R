@@ -686,16 +686,25 @@ intTermsAffectLV <- function(lV, parTable, etas = NULL) {
 }
 
 
-getLambdaParTable <- function(parTable, rows = NULL, cols = NULL, fill.missing = FALSE) {
+getLambdaParTable <- function(parTable, rows = NULL, cols = NULL, fill.missing = FALSE,
+                              op = c("=~", "<~")) {
   lVs <- getLVs(parTable)
 
   indsLVs <- getIndsLVs(parTable, lVs = lVs)
   allInds <- unique(unlist(indsLVs))
 
-  lambda <- matrix(0, nrow = length(allInds), ncol = length(lVs),
-                   dimnames = list(allInds, lVs))
+  lambda <- matrix(
+    0, nrow = length(allInds), ncol = length(lVs),
+    dimnames = list(allInds, lVs)
+  )
+
   for (lV in lVs) for (ind in indsLVs[[lV]]) {
-    lambda[ind, lV] <- parTable[parTable$lhs == lV & parTable$rhs == ind, "est"]
+    idx <- which(
+      parTable$lhs == lV & parTable$rhs == ind & parTable$op %in% op
+    )
+
+    if (length(idx))
+      lambda[ind, lV] <- parTable[idx[[1L]], "est"]
   }
 
   if (is.null(rows)) rows <- rownames(lambda)
@@ -807,7 +816,11 @@ getCoefMatricesDA <- function(parTable,
   inds <- unique(unlist(indsLV))
 
   # Create lambda
-  lambda <- getLambdaParTable(parTable, rows = inds, cols = lVs, fill.missing = TRUE)
+  lambda <- getLambdaParTable(
+    parTable = parTable, rows = inds,
+    cols = lVs, fill.missing = TRUE
+  )
+
 
   # Create Gamma
   gammaXi <- matrix(0, nrow = length(etas), ncol = length(xis),
@@ -870,21 +883,49 @@ getCoefMatricesDA <- function(parTable,
   alpha <- createBeta(etas)
   beta0 <- createBeta(xis)
   tau   <- createBeta(inds)
-  Binv <- solve(diag(nrow(gammaEta)) - gammaEta)
+  Binv  <- solve(diag(nrow(gammaEta)) - gammaEta)
 
-  stop("This is not finished yet!")
-  if (NCOL(W) && any(W != 0)) {
+  composites <- getComposites(parTable)
+  compositeInds <- getCompositeIndicators(parTable)
+
+  if (length(composites) && length(compositeInds)) {
+    factorInds <- setdiff(inds, compositeInds)
+    factors    <- setdiff(c(xis, etas), composites)
+
+    W <- lambda
+    T <- theta
+
+    W[,factors]    <- 0
+    W[factorInds,] <- 0
+    T[,factorInds] <- 0
+    T[factorInds,] <- 0
+
+    lambda[compositeInds,] <- 0
+    lambda[,composites]    <- 0
+    theta[compositeInds,]  <- 0
+    theta[,compositeInds]  <- 0
+
     lambda.c <- T %*% W %*% GINV(t(W) %*% T %*% W)
-    theta.c  <- T - lambda.c %*% t(W) %*% T %*% W %*% t(lambda.c)
+    theta.c <- lambda.c %*% t(W) %*% T %*% W %*% t(lambda.c)
 
-    lambda <- lambda + lambda.c
-    theta  <- theta + theta.c
+  } else {
+
+    T <- NULL
+    W <- NULL
+
+    lambda.c <- lambda
+    lambda.c[TRUE] <- 0
+
+    theta.c <- theta 
+    theta.c[TRUE] <- 0
   }
 
-
-  list(gammaXi = gammaXi, gammaEta = gammaEta, Binv = Binv, psi = psi,
-       phi = phi, theta = theta, alpha = alpha, beta0 = beta0, tau = tau,
-       lambda = lambda, inds = inds, xis = xis, etas = etas, lVs = lVs)
+  list(
+    gammaXi = gammaXi, gammaEta = gammaEta, Binv = Binv, psi = psi,
+    phi = phi, theta = theta, alpha = alpha, beta0 = beta0, tau = tau,
+    lambda = lambda, inds = inds, xis = xis, etas = etas, lVs = lVs,
+    lambda.c = lambda.c, theta.c = theta.c, T = T, W = W
+  )
 }
 
 
@@ -919,18 +960,22 @@ calcExpectedMatricesDA_Group <- function(parTable, xis = NULL, etas = NULL, intT
   Binv     <- matricesCentered$Binv
   tau      <- matricesCentered$tau
   lambda   <- matricesCentered$lambda
+  lambda.c <- matricesCentered$lambda.c
   alpha    <- matricesCentered$alpha
   beta0    <- matricesCentered$beta0
   theta    <- matricesCentered$theta
+  theta.c  <- matricesCentered$theta.c
 
   covEtaEta <- Binv %*% (gammaXi %*% phi %*% t(gammaXi) + psi) %*% t(Binv)
   covEtaXi <- Binv %*% gammaXi %*% phi
   sigma.lv <- rbind(cbind(phi, t(covEtaXi)),
                     cbind(covEtaXi, covEtaEta))
-  sigma.ov <- lambda %*% sigma.lv %*% t(lambda) + theta
+  sigma.ov <- (
+    (lambda + lambda.c) %*% sigma.lv %*% t(lambda + lambda.c) + theta + theta.c
+  )
 
   # lower left corner cov-lv-ov
-  sigma.lv.ov <- lambda %*% sigma.lv
+  sigma.lv.ov <- (lambda + lambda.c) %*% sigma.lv
   sigma.ov.lv <- t(sigma.lv.ov)
 
   sigma.all <- rbind(cbind(sigma.lv, sigma.ov.lv),
