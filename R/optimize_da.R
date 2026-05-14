@@ -454,33 +454,91 @@ parameterEstimatesLavSAM <- function(syntax,
     # use factor scores instead
     # using `sam.method="fsr"` doesn't work for this purpose (yet)
     # so we do it manually instead
+
     dataListSam <- tryCatch(
       lavaan::lavPredict(
         object = fitH0,
         transform = TRUE,
         append.data = TRUE,
-        drop.list.single.group = FALSE
+        drop.list.single.group = FALSE,
       ),
       error = function(e) {
         lavaan::lavPredict(
           object = fitH0,
           transform = FALSE,
           append.data = TRUE,
-          drop.list.single.group = FALSE
+          drop.list.single.group = FALSE,
         )
       }
     )
 
+    if (hasComposites && any(parTableOuter$op == "=~")) {
+      # lavPredict doesn't handly composites very well at all,
+      # and it seems to f**up all the factor scores. Here we define
+      # a small submodel only of the latent variables, which seems to
+      # work better. Here we try to remove the composites from the model
+
+      parTableOuterReflective <- parTableOuter[
+        parTableOuter$op == "=~", , drop = FALSE
+      ]
+
+      syntaxH0b <- parTableToSyntax(parTableOuterReflective)
+
+      fitH0b <- wrapper(lavaan::cfa(
+        model            = syntaxH0b,
+        data             = data,
+        meanstructure    = meanstructure,
+        estimator        = estimator,
+        missing          = missing,
+        orthogonal.x     = orthogonal.x,
+        orthogonal.y     = orthogonal.y,
+        auto.fix.first   = auto.fix.first,
+        auto.fix.single  = auto.fix.single,
+        group            = group,
+        se               = "none",
+        sampling.weights = sampling.weights,
+        sampling.weights.normalization = sampling.weights.normalization,
+        ...
+      ))
+
+      dataListSamReflective <- tryCatch(
+        lavaan::lavPredict(
+          object = fitH0b,
+          transform = TRUE,
+          append.data = FALSE,
+          drop.list.single.group = FALSE,
+        ),
+        error = function(e) {
+          lavaan::lavPredict(
+            object = fitH0b,
+            transform = FALSE,
+            append.data = FALSE,
+            drop.list.single.group = FALSE,
+          )
+        }
+      )
+
+      for (g in seq_along(dataListSamReflective)) {
+        X <- dataListSam[[g]]
+        Y <- dataListSamReflective[[g]]
+
+        replace <- intersect(colnames(X), colnames(Y))
+        X[,replace] <- Y[,replace]
+
+        dataListSam[[g]] <- X
+      }
+    }
+
     if (hasComposites) {
       # Composites are not handled properly by lavPredict (yet)
 
-      coefListH0 <- lavInspect(
+      coefListH0 <- lavaan::lavInspect(
         object = fitH0,
         what = "coef",
         drop.list.single.group = FALSE
       )
 
-      dataListH0 <- lavInspect(
+      dataListH0 <- lavaan::lavInspect(
         object = fitH0,
         what = "data",
         drop.list.single.group = FALSE
@@ -488,18 +546,26 @@ parameterEstimatesLavSAM <- function(syntax,
 
       composites <- getComposites(parTableOuter)
 
+      # variables with non-zero intercepts
+      interceptVars <- parTable[parTable$op == "~1", "lhs"]
+
       for (g in seq_along(dataListSam)) {
         Y.g <- dataListSam[[g]]
         X.g <- dataListH0[[g]]
         W.g <- coefListH0[[g]]$wmat
 
         composites.g <- intersect(colnames(Y.g), composites)
-      
+     
         if (is.null(W.g) || !length(composites.g))
           next
 
         F.g <- X.g %*% W.g
         Y.g[,composites.g] <- F.g[,composites.g]
+
+        # We want to mean center composites where the mean structure has
+        # been fixed to zero
+        for (comp0 in setdiff(composites.g, interceptVars))
+          Y.g[,comp0] <- Y.g[,comp0] - mean(Y.g[,comp0], na.rm = TRUE)
 
         dataListSam[[g]] <- Y.g
       }
@@ -540,9 +606,11 @@ parameterEstimatesLavSAM <- function(syntax,
       parTable[grepl(":", parTable$rhs), "rhs"]
     ))
 
-    parTableInner <- parTable[parTable$lhs %in% structvars &
-                              parTable$rhs %in% structvars &
-                              parTable$op != "=~", , drop = FALSE]
+    parTableInner <- parTable[
+      parTable$lhs %in% structvars &
+      parTable$rhs %in% structvars &
+      !parTable$op %in% c("=~", "<~"), , drop = FALSE
+    ]
 
     syntaxSam <- parTableToSyntax(parTableInner)
     SAMFUN    <- lavaan::sem
