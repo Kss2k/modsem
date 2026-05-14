@@ -565,7 +565,7 @@ nNegativeLast <- function(x, n = 10) {
 }
 
 
-getDegreesOfFreedom <- function(p, coef, model, mean.structure = TRUE) {
+getDegreesOfFreedom <- function(p, coef, mean.structure = TRUE, model) {
   if (!length(p)) return(NA_real_)
 
   momentsPerGroup <- function(pp) {

@@ -125,17 +125,19 @@ constructLambda <- function(lVs, indsLVs, parTable, auto.fix.first = TRUE, mode 
 
   switch(tolower(mode),
     a = {
+      op <- "=~"
       composites <- getComposites(parTable)
       lambda[,intersect(colnames(lambda), composites)] <- 0
     },
     b = {
+      op <- "<~"
       composites <- getComposites(parTable)
       lambda[,setdiff(colnames(lambda), composites)] <- 0
     },
     stop2("Unsupported mode: ", mode, "!")
   )
 
-  setMatrixConstraints(X = lambda, parTable = parTable, op = "=~",
+  setMatrixConstraints(X = lambda, parTable = parTable, op = op,
                        RHS = allIndsLVs, LHS = lVs, type = "rhs",
                        nonFreeParams = TRUE) # first params are by default set to 1
 }

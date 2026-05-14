@@ -232,7 +232,7 @@ transformedSolutionCOEFS <- function(object,
       }
     }
     
-    # Composite Weights 
+    # Composite Weights
     for (composite in composites.g) {
       inds.comp <- indsLVs.g[[composite]]
       if (!length(inds.comp)) next

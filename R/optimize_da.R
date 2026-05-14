@@ -473,7 +473,7 @@ parameterEstimatesLavSAM <- function(syntax,
     )
 
     if (hasComposites && any(parTableOuter$op == "=~")) {
-      # lavPredict doesn't handly composites very well at all,
+      # lavPredict doesn't handle composites very well at all,
       # and it seems to f**up all the factor scores. Here we define
       # a small submodel only of the latent variables, which seems to
       # work better. Here we try to remove the composites from the model
