@@ -37,7 +37,8 @@ NOTE: Run default_settings_da to see default arguments.'></head><body>
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/customize_plot_interactions.html">customizing the output from `plot_interaction()`</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/composites.html">composite constructs</a></li>
+    <li><a class="dropdown-item" href="../articles/customize_plot_interactions.html">customizing the output from `plot_interaction()`</a></li>
     <li><a class="dropdown-item" href="../articles/customizing.html">customizing interaction terms</a></li>
     <li><a class="dropdown-item" href="../articles/estimation_lms.html">estimation alternatives using the LMS approach</a></li>
     <li><a class="dropdown-item" href="../articles/fit_measures_da.html">fit measures for LMS and QML</a></li>
@@ -136,6 +137,7 @@ necessary syntax, and variables for the estimation of models with latent product
 <span>  auto.fix.first <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  auto.fix.single <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  auto.split.syntax <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  fix.composite.var <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -462,6 +464,11 @@ given that both are linear (i.e., not affected by interaction terms). This is
 When using the QML approach interation effects between exogenous and endogenous
 variables can in some cases be biased, if the model is not split beforehand.
 The default is therefore <code>TRUE</code> for the QML approach.</p></dd>
+
+
+<dt id="arg-fix-composite-var">fix.composite.var<a class="anchor" aria-label="anchor" href="#arg-fix-composite-var"></a></dt>
+<dd><p>If <code>TRUE</code> (default) the block covariance structure
+of composite indiactors is fixed.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
