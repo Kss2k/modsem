@@ -1,6 +1,5 @@
 devtools::load_all()
 
-
 tpb.lin <- '
 # Outer Model (Based on Hagger et al., 2007)
   ATT <~ att1 + att2 + att3 + att4 + att5
@@ -15,8 +14,9 @@ tpb.lin <- '
 '
 
 testthat::expect_no_condition({
-fit_lav <- lavaan::sem(tpb.lin, TPB, optim.gradient = NULL)
-fit_mod <- modsem(tpb.lin, TPB, method = "lms")
+  fit_lav <- lavaan::sem(tpb.lin, TPB, optim.gradient = NULL)
+  fit_mod <- modsem(tpb.lin, TPB, method = "lms")
+  modsem_predict(fit_mod)
 })
 
 coef_lav <- lavaan::coef(fit_lav)
@@ -53,3 +53,5 @@ testthat::expect_error(
   modsem(tpb.int, TPB, method = "qml"),
   regexp = "Composite constructs .*"
 )
+
+testthat::expect_true(!is.null(modsem_inspect(fit_mod)$wmat))
