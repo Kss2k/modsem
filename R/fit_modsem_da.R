@@ -36,7 +36,7 @@ fit_modsem_da <- function(model, chisq = TRUE, lav.fit = FALSE,
   mean.s <- model$args$mean.observed || t > 0
   logLik <- model$logLik
   coef   <- coef(model, type = "free")
-  k      <- length(coef)
+  npar   <- length(coef)
 
   finalModel <- model$model
   submodels  <- if (!is.null(finalModel$models)) finalModel$models else list()
@@ -197,10 +197,10 @@ fit_modsem_da <- function(model, chisq = TRUE, lav.fit = FALSE,
     )
   }
 
-  AIC  <- calcAIC(logLik, k = k)
-  AICc <- calcAdjAIC(logLik, k = k, N = N_total)
-  BIC  <- calcBIC(logLik, k = k, N = N_total)
-  aBIC <- calcAdjBIC(logLik, k = k, N = N_total)
+  AIC  <- calcAIC(logLik, k = npar)
+  AICc <- calcAdjAIC(logLik, k = npar, N = N_total)
+  BIC  <- calcBIC(logLik, k = npar, N = N_total)
+  aBIC <- calcAdjBIC(logLik, k = npar, N = N_total)
 
   if (lav.fit) {
     lavfit <- tryCatch(
@@ -228,6 +228,7 @@ fit_modsem_da <- function(model, chisq = TRUE, lav.fit = FALSE,
     mu.observed    = muObsBlocks,
     mu.expected    = muExpBlocks,
 
+    npar         = npar,
     chisq.value  = chisqValue,
     chisq.pvalue = chisqP,
     chisq.df     = df,

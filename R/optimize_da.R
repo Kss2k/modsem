@@ -70,7 +70,7 @@ optimizeStartingParamsDA <- function(model,
     lavaan.fit <- extract_lavaan(estPI)
 
   } else if (engine == "sam") {
-    fitSAM <- parameterEstimatesLavSAM(
+    fitSam <- parameterEstimatesLavSAM(
       syntax           = syntax,
       data             = data,
       estimator        = estimator,
@@ -86,8 +86,8 @@ optimizeStartingParamsDA <- function(model,
       sampling.weights.normalization = args$sampling.weights.normalization
     )
 
-    parTable   <- fitSAM$parTable
-    lavaan.fit <- fitSAM$fit
+    parTable   <- fitSam$parTable
+    lavaan.fit <- fitSam$fit
   }
 
   stopif(is.null(parTable), "lavaan failed!")
@@ -377,6 +377,10 @@ parameterEstimatesLavSAM <- function(syntax,
   if (suppress.warnings.lavaan) wrapper <- suppressWarnings
   else                          wrapper <- \(x) x # do nothing
 
+  optim.gradient.override <- NULL
+  if (hasComposites && getPackageVersion("lavaan") < "0.6-22")
+    optim.gradient.override <- "numerical" # analytical does not work
+
   if (!any(grepl(":", parTable$rhs) | grepl(":", parTable$lhs))) {
     fitSEM <- wrapper(lavaan::sem(
       model            = syntax,
@@ -392,7 +396,7 @@ parameterEstimatesLavSAM <- function(syntax,
       se               = "none",
       sampling.weights = sampling.weights,
       sampling.weights.normalization = sampling.weights.normalization,
-      optim.gradient   = if (hasComposites) "numerical" else "analytic",
+      optim.gradient   = optim.gradient.override,
       ...
     ))
 
@@ -442,7 +446,7 @@ parameterEstimatesLavSAM <- function(syntax,
     se               = "none",
     sampling.weights = sampling.weights,
     sampling.weights.normalization = sampling.weights.normalization,
-    optim.gradient   = if (hasComposites) "numerical" else "analytic",
+    optim.gradient   = optim.gradient.override,
     ...
   ))
 
@@ -450,21 +454,88 @@ parameterEstimatesLavSAM <- function(syntax,
     # use factor scores instead
     # using `sam.method="fsr"` doesn't work for this purpose (yet)
     # so we do it manually instead
-    dataSAM <- as.data.frame(tryCatch(
-      lavaan::lavPredict(fitH0, transform = TRUE),
-      error = \(e) lavaan::lavPredict(fitH0)
-    ))
+    dataListSam <- tryCatch(
+      lavaan::lavPredict(
+        object = fitH0,
+        transform = TRUE,
+        append.data = TRUE,
+        drop.list.single.group = FALSE
+      ),
+      error = function(e) {
+        lavaan::lavPredict(
+          object = fitH0,
+          transform = FALSE,
+          append.data = TRUE,
+          drop.list.single.group = FALSE
+        )
+      }
+    )
 
-    for (col in colnames(dataSAM)) {
-      # This is mostly relevent for composites, where the mean structure
-      # i handled differently in lavaan vs modsem
-      if (!any(parTable$op == "~1" & parTable$lhs == col)) {
-        dataSAM[[col]] <- dataSAM[[col]] - mean(dataSAM[[col]], na.rm = TRUE)
+    if (hasComposites) {
+      # Composites are not handled properly by lavPredict (yet)
+
+      coefListH0 <- lavInspect(
+        object = fitH0,
+        what = "coef",
+        drop.list.single.group = FALSE
+      )
+
+      dataListH0 <- lavInspect(
+        object = fitH0,
+        what = "data",
+        drop.list.single.group = FALSE
+      )
+
+      composites <- getComposites(parTableOuter)
+
+      for (g in seq_along(dataListSam)) {
+        Y.g <- dataListSam[[g]]
+        X.g <- dataListH0[[g]]
+        W.g <- coefListH0[[g]]$wmat
+
+        composites.g <- intersect(colnames(Y.g), composites)
+      
+        if (is.null(W.g) || !length(composites.g))
+          next
+
+        F.g <- X.g %*% W.g
+        Y.g[,composites.g] <- F.g[,composites.g]
+
+        dataListSam[[g]] <- Y.g
       }
     }
 
+    if (!is.null(sampling.weights)) {
+      warning2(
+        "Ignoring sampling weights when optimizing parameter estimates..."
+      )
+      sampling.weights <- NULL
+    }
+
+    if (length(group)) {
+      stopif(length(group) > 1L,
+        "Unable to optimize parameters for multigroup models with more\n",
+        "than one grouping variable!"
+      )
+
+      if (!is.null(names(dataListSam))) groupings <- names(dataListSam)
+      else groupings <- seq_along(dataListSam)
+
+      for (g in groupings) {
+        # Append grouping varible before rbind
+        # Grouping variable may be a character, so we
+        # convert to a data.frame before appending
+        X <- as.data.frame(dataListSam[[g]])
+        X[[group]] <- g
+
+        dataListSam[[g]] <- X
+      }
+    }
+
+    dataSam <- do.call(rbind, dataListSam)
+
     structvars <- unique(c(
-      colnames(dataSAM),
+      colnames(dataSam),
       parTable[grepl(":", parTable$lhs), "lhs"],
       parTable[grepl(":", parTable$rhs), "rhs"]
     ))
@@ -473,18 +544,18 @@ parameterEstimatesLavSAM <- function(syntax,
                               parTable$rhs %in% structvars &
                               parTable$op != "=~", , drop = FALSE]
 
-    syntaxSAM <- parTableToSyntax(parTableInner)
+    syntaxSam <- parTableToSyntax(parTableInner)
     SAMFUN    <- lavaan::sem
 
   } else {
-    syntaxSAM <- parTableToSyntax(parTable)
-    dataSAM   <- data
+    syntaxSam <- parTableToSyntax(parTable)
+    dataSam   <- data
     SAMFUN    <- lavaan::sam
   }
 
-  fitSAM <- wrapper(SAMFUN(
-    model            = syntaxSAM,
-    data             = dataSAM,
+  fitSam <- wrapper(SAMFUN(
+    model            = syntaxSam,
+    data             = dataSam,
     se               = "none",
     estimator        = estimator,
     missing          = missing,
@@ -495,12 +566,12 @@ parameterEstimatesLavSAM <- function(syntax,
     group            = group,
     sampling.weights = sampling.weights,
     sampling.weights.normalization = sampling.weights.normalization,
-    ...
+    ... # don't need to set optim.gradient here, since we only have ovs
   ))
 
   parTableH0 <- lavaan::parameterEstimates(fitH0)
   measr  <- getMeasrRows(parTableH0)
-  struct <- lavaan::parameterEstimates(fitSAM)
+  struct <- lavaan::parameterEstimates(fitSam)
 
   addcol <- \(pt, col, val) if (!col %in% colnames(pt)) {pt[[col]] <- val; pt} else pt
   cols.x <- c("lhs", "op", "rhs", "group")
