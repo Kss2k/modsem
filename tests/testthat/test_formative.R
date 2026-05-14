@@ -16,9 +16,10 @@ tpb.lin <- '
 testthat::expect_no_condition({
   fit_lav <- lavaan::sem(tpb.lin, TPB, optim.gradient = "numerical")
   fit_mod <- modsem(tpb.lin, TPB, method = "lms")
-  X <<- modsem_predict(fit_mod)
+  X <- modsem_predict(fit_mod)
 })
 
+testthat::expect_true(fit_mod$iterations == 2L)
 coef_lav <- lavaan::coef(fit_lav)
 coef_mod <- coef(fit_mod)[names(coef_lav)]
 

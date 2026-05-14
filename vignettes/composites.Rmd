@@ -44,6 +44,6 @@ tpb <- '
   BEH ~ INT + PBC + INT:PBC
 '
 
-fit <- modsem(tpb.lin, TPB, method = "lms", nodes = 32)
+fit <- modsem(tpb, TPB, method = "lms", nodes = 32)
 summary(fit)
 ```

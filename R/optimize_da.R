@@ -402,8 +402,12 @@ parameterEstimatesLavSAM <- function(syntax,
       ...
     ))
 
-    return(list(fit = fitSEM,
-                parTable = lavaan::parameterEstimates(fitSEM)))
+    output <- lavaan::parameterEstimates(fitSEM)
+
+    if (hasComposites)
+      output <- recalcInterceptsComposites(output, input = parTable)
+
+    return(list(fit = fitSEM, parTable = output))
   }
 
   # Get SAM structural model with measurement model from a linear model
@@ -658,8 +662,17 @@ parameterEstimatesLavSAM <- function(syntax,
   parTableFull <- parTableFull[!duplicated(parTableFull[cols.x]), , drop = FALSE]
 
   # if (!isNonCentered && !isHigherOrder) # if latent mean structure is not included
-  parTableFull <- recalcInterceptsY(parTable.nlin = parTableFull,
-                                    parTable.lin  = parTableH0)
+  parTableFull <- recalcInterceptsY(
+    parTable.nlin = parTableFull,
+    parTable.lin  = parTableH0
+  )
+
+  if (hasComposites) {
+    parTableFull <- recalcInterceptsComposites(
+      parTable = parTableFull,
+      input = parTable
+    )
+  }
 
   list(fit = fitH0, parTable = parTableFull)
 }
