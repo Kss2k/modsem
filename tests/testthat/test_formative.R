@@ -32,6 +32,28 @@ testthat::expect_equal( # modsem does not fix composite variances like lavaan
   msr_lav[["df"]]
 )
 
+# Test standardization of indicator covariances
+std <- standardized_estimates(fit_mod)
+att <- c("att1", "att2", "att3", "att4", "att5")
+S <- cor(TPB[att])
+
+for (i in seq_along(att)) {
+  x <- att[[i]]
+
+  for (j in seq_len(i)) {
+    y <- att[[j]]
+
+    observed <- S[x, y]
+    expected <- std[
+      (std$lhs == x & std$op == "~~" & std$rhs == y) |
+      (std$lhs == y & std$op == "~~" & std$rhs == x), "est"
+    ]
+
+    testthat::expect_equal(observed, expected)
+  }
+}
+
+
 tpb.int <- '
 # Outer Model (Based on Hagger et al., 2007)
   ATT <~ att1 + att2 + att3 + att4 + att5

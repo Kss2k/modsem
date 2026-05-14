@@ -1,6 +1,7 @@
 OP_REPLACEMENTS <- c("~~"  = "___COVARIANCE___",
                      "=~"  = "___MEASUREMENT___",
                      ":="  = "___CUSTOM___",
+                     "<~"  = "___COMPOSITE___",
                      "~"   = "___REGRESSION___",
                      ":"   = "___INTERACTION___",
                      "<->" = "___MPLUS_COVARIANCE___",
