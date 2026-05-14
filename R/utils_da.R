@@ -580,7 +580,7 @@ getDegreesOfFreedom <- function(p, coef, mean.structure = TRUE, model) {
   df.total <- sum(vapply(p, momentsPerGroup, numeric(1L)))
   df <- df.total - length(coef)
 
-  if (model$model$info$fixed.composite.var) {
+  if (isTRUE(model$model$info$fixed.composite.var)) {
 
     for (g in seq_along(model$model$models)) {
       M <- model$model$models[[g]]$matricesNA

@@ -82,7 +82,7 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    group = NULL,
                    sampling.weights = NULL,
                    sampling.weights.normalization = "total",
-                   fix.composite.var = NULL # not relevant
+                   fix.composite.var = FALSE
         )
     )
 
