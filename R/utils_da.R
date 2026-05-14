@@ -1298,6 +1298,75 @@ recalcInterceptsY_Group <- function(parTable.nlin, parTable.lin) {
 }
 
 
+recalcInterceptsComposites <- function(parTable, input) {
+  out <- NULL
+
+  parTable <- addMissingGroups(parTable)
+  input    <- addMissingGroups(input)
+
+  for (g in getGroupsParTable(parTable)) {
+    parTable.g <- parTable[parTable$group == g, , drop = FALSE]
+    out <- rbind(out, recalcInterceptsComposites_Group(parTable.g, input))
+  }
+
+  rbind(out, getZeroGroupParTable(parTable))
+}
+
+
+recalcInterceptsComposites_Group <- function(parTable, input) {
+  # Translate lavaan's composite mean convention to modsem's.
+  # lavaan assigns composites the mean of their indicators (W' * mu_indicators).
+  # modsem assigns composites zero mean by default (for composites without an
+  # explicit ~1 in the user's syntax).
+  # We reparameterize: set composite ~1 = 0 and route the composite mean
+  # contribution (delta = gamma * mu_c) into either the eta intercept (if the
+  # user specified eta ~1) or into the indicator intercepts (the default case,
+  # where eta ~1 = 0 for identification), preserving E[ind] throughout.
+  composites    <- getComposites(input)
+  interceptVars <- unique(input[input$op == "~1", "lhs"])
+  zeroMeanComps <- setdiff(composites, interceptVars)
+
+  for (comp in zeroMeanComps) {
+    muC <- getIntercept(comp, parTable)
+
+    if (!length(muC) || muC == 0) next
+
+    cond.comp <- parTable$op == "~1" & parTable$lhs == comp
+    if (any(cond.comp))
+      parTable[cond.comp, "est"] <- 0
+
+    structRows <- parTable[parTable$op == "~" & parTable$rhs == comp, , drop = FALSE]
+    for (i in seq_len(NROW(structRows))) {
+      eta   <- structRows[i, "lhs"]
+      gamma <- structRows[i, "est"]
+      delta <- gamma * muC
+
+      ieta <- getIntercept(eta, parTable)
+      inds <- unique(parTable[parTable$lhs == eta & parTable$op == "=~", "rhs"])
+
+      if (ieta != 0) {
+        # eta has a user-specified intercept: absorb delta into eta ~1
+        cond.eta <- parTable$op == "~1" & parTable$lhs == eta
+        if (any(cond.eta))
+          parTable[cond.eta, "est"] <- parTable[cond.eta, "est"] + delta
+      } else {
+        # eta ~1 is fixed to 0 for identification: push delta into indicators
+        for (ind in inds) {
+          lambda   <- parTable[parTable$lhs == eta &
+                               parTable$op == "=~" &
+                               parTable$rhs == ind, "est"]
+          cond.ind <- parTable$op == "~1" & parTable$lhs == ind
+          if (!length(lambda) || !any(cond.ind)) next
+          parTable[cond.ind, "est"] <- parTable[cond.ind, "est"] + lambda * delta
+        }
+      }
+    }
+  }
+
+  parTable
+}
+
+
 getGroupsParTable <- function(parTable) {
   sort(unique(parTable$group[parTable$group > 0L]))
 }
