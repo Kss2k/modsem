@@ -8,103 +8,6 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 
 
-// Deprecated will remove soon...
-// [[Rcpp::export]]
-arma::vec muLmsCpp(Rcpp::List model, arma::vec z) {
-  const Rcpp::List matrices = model["matrices"];
-  const Rcpp::List info = model["info"];
-  const Rcpp::List quad = model["quad"];
-  const int numXis = Rcpp::as<int>(info["numXis"]);
-  const int k = Rcpp::as<int>(quad["k"]);
-  const bool hasComposites = Rcpp::as<bool>(info["hasComposites"]);
-  const arma::mat A = Rcpp::as<arma::mat>(matrices["A"]);
-  const arma::mat Oxx = Rcpp::as<arma::mat>(matrices["omegaXiXi"]);
-  const arma::mat Oex = Rcpp::as<arma::mat>(matrices["omegaEtaXi"]);
-  const arma::mat Ie = Rcpp::as<arma::mat>(matrices["Ieta"]);
-  const arma::mat lX = Rcpp::as<arma::mat>(matrices["lambdaX"]);
-  const arma::mat tX = Rcpp::as<arma::mat>(matrices["tauX"]);
-  const arma::mat W = Rcpp::as<arma::mat>(matrices["W"]);
-  const arma::mat T = Rcpp::as<arma::mat>(matrices["T"]);
-  const arma::mat Gx = Rcpp::as<arma::mat>(matrices["gammaXi"]);
-  const arma::mat Ge = Rcpp::as<arma::mat>(matrices["gammaEta"]);
-  const arma::mat a = Rcpp::as<arma::mat>(matrices["alpha"]);
-  const arma::mat beta0 = Rcpp::as<arma::mat>(matrices["beta0"]);
-
-  arma::vec zVec;
-  if (k > 0) zVec = arma::join_cols(z, arma::zeros<arma::vec>(numXis - k));
-  else       zVec = arma::zeros<arma::vec>(numXis);
-
-  const arma::mat kronZ = arma::kron(Ie, beta0 + A * zVec);
-  const arma::mat Binv = arma::inv(Ie - Ge - kronZ.t() * Oex);
-
-  const arma::vec muXi  = beta0 + A * zVec;
-  const arma::vec muEta = Binv * (a +
-      Gx * (beta0 + A * zVec) +
-      kronZ.t() * Oxx * (beta0 + A * zVec));
-
-  if (hasComposites) {
-    const arma::mat lXc = lX + T * W * arma::pinv(W.t() * T * W);
-    return tX + lXc * arma::join_cols(muXi, muEta);
-  }
-
-  return tX + lX * arma::join_cols(muXi, muEta);
-}
-
-
-// Deprecated will remove soon...
-// [[Rcpp::export]]
-arma::mat sigmaLmsCpp(Rcpp::List model, arma::vec z) {
-  const Rcpp::List matrices = model["matrices"];
-  const Rcpp::List info = model["info"];
-  const Rcpp::List quad = model["quad"];
-  const int numXis = Rcpp::as<int>(info["numXis"]);
-  const int k = Rcpp::as<int>(quad["k"]);
-  const bool hasComposites = Rcpp::as<bool>(info["hasComposites"]);
-  const arma::mat A = Rcpp::as<arma::mat>(matrices["A"]);
-  const arma::mat Oxx = Rcpp::as<arma::mat>(matrices["omegaXiXi"]);
-  const arma::mat Oex = Rcpp::as<arma::mat>(matrices["omegaEtaXi"]);
-  const arma::mat Ie = Rcpp::as<arma::mat>(matrices["Ieta"]);
-  const arma::mat lX = Rcpp::as<arma::mat>(matrices["lambdaX"]);
-  const arma::mat tX = Rcpp::as<arma::mat>(matrices["tauX"]);
-  const arma::mat W = Rcpp::as<arma::mat>(matrices["W"]);
-  const arma::mat T = Rcpp::as<arma::mat>(matrices["T"]);
-  const arma::mat Gx = Rcpp::as<arma::mat>(matrices["gammaXi"]);
-  const arma::mat Ge = Rcpp::as<arma::mat>(matrices["gammaEta"]);
-  const arma::mat a = Rcpp::as<arma::mat>(matrices["alpha"]);
-  const arma::mat beta0 = Rcpp::as<arma::mat>(matrices["beta0"]);
-  const arma::mat Psi = Rcpp::as<arma::mat>(matrices["psi"]);
-  const arma::mat d = Rcpp::as<arma::mat>(matrices["thetaDelta"]);
-
-  arma::vec zVec;
-  if (k > 0) zVec = arma::join_cols(z, arma::zeros<arma::vec>(numXis - k));
-  else       zVec = arma::zeros<arma::vec>(numXis);
-
-  const arma::mat kronZ = arma::kron(Ie, beta0 + A * zVec);
-  const arma::mat Binv = arma::inv(Ie - Ge - kronZ.t() * Oex);
-
-  arma::mat Oi = arma::eye<arma::mat>(numXis, numXis);
-  Oi.diag() = arma::join_cols(arma::zeros<arma::vec>(k), arma::ones<arma::vec>(numXis - k));
-
-  const arma::mat Eta = Binv * (Gx * A + kronZ.t() * Oxx * A);
-  const arma::mat varXi    = A * Oi * A.t();
-  const arma::mat varEta   = Eta * Oi * Eta.t() + Binv * Psi * Binv.t();
-  const arma::mat covXiEta = A * Oi * Eta.t();
-
-  const arma::mat vcovXiEta = arma::join_cols(
-    arma::join_rows(varXi, covXiEta),
-    arma::join_rows(covXiEta.t(), varEta)
-  );
-
-  if (hasComposites) {
-    const arma::mat lXc = lX + T * W * arma::pinv(W.t() * T * W);
-    const arma::mat dc = d + T - lXc * W.t() * T * W * lXc.t();
-    return lXc * vcovXiEta * lXc.t() + dc;
-  }
-
-  return lX * vcovXiEta * lX.t() + d;
-}
-
-
 inline arma::mat make_Oi(unsigned k, unsigned numXis) {
   arma::mat Oi = arma::eye<arma::mat>(numXis, numXis);
   Oi.diag() = arma::join_cols(arma::zeros<arma::vec>(k), arma::ones<arma::vec>(numXis - k));
@@ -156,47 +59,38 @@ struct LMSModel {
     e      = Rcpp::as<arma::mat>(matrices["thetaEpsilon"]);
   }
 
-  arma::vec mu(const arma::vec& z) const {
-    const arma::vec zVec = make_zvec(k, numXis, z);
+  // Combined mu+Sigma: avoids recomputing zVec/kronZ/Binv/lXc for the same z.
+  // Use this in any hot path that needs both.
+  std::pair<arma::vec, arma::mat> muSigma(const arma::vec& z) const {
+    const arma::vec zVec  = make_zvec(k, numXis, z);
     const arma::mat kronZ = arma::kron(Ie, beta0 + A * zVec);
-    const arma::mat Binv = arma::inv(Ie - Ge - kronZ.t() * Oex);
+    const arma::mat Binv  = arma::inv(Ie - Ge - kronZ.t() * Oex);
 
     const arma::vec muXi  = beta0 + A * zVec;
     const arma::vec muEta = Binv * (a +
-        Gx * (beta0 + A * zVec) +
-        kronZ.t() * Oxx * (beta0 + A * zVec));
+        Gx * muXi +
+        kronZ.t() * Oxx * muXi);
 
-    if (hasComposites) {
-      const arma::mat lXc = lX + T * W * arma::pinv(W.t() * T * W);
-      return tX + lXc * arma::join_cols(muXi, muEta);
-    }
-
-    return tX + lX * arma::join_cols(muXi, muEta);
-  }
-
-  arma::mat Sigma(const arma::vec& z) const {
-    const arma::vec zVec  = make_zvec(k, numXis, z);
-    const arma::mat kronZ = arma::kron(Ie, beta0 + A * zVec);
-    const arma::mat Binv = arma::inv(Ie - Ge - kronZ.t() * Oex);
-
-    const arma::mat Oi = make_Oi(k, numXis);
-    const arma::mat Eta = Binv * (Gx * A + kronZ.t() * Oxx * A);
+    const arma::mat Oi       = make_Oi(k, numXis);
+    const arma::mat Eta      = Binv * (Gx * A + kronZ.t() * Oxx * A);
     const arma::mat varXi    = A * Oi * A.t();
     const arma::mat varEta   = Eta * Oi * Eta.t() + Binv * Psi * Binv.t();
     const arma::mat covXiEta = A * Oi * Eta.t();
 
     const arma::mat vcovXiEta = arma::join_cols(
-        arma::join_rows(varXi, covXiEta),
-        arma::join_rows(covXiEta.t(), varEta)
-        );
+      arma::join_rows(varXi,        covXiEta),
+      arma::join_rows(covXiEta.t(), varEta)
+    );
+
+    const arma::vec xieta = arma::join_cols(muXi, muEta);
 
     if (hasComposites) {
       const arma::mat lXc = lX + T * W * arma::pinv(W.t() * T * W);
-      const arma::mat dc = d + T - lXc * W.t() * T * W * lXc.t();
-      return lXc * vcovXiEta * lXc.t() + dc;
+      const arma::mat dc  = d + T - lXc * W.t() * T * W * lXc.t();
+      return std::make_pair(tX + lXc * xieta, lXc * vcovXiEta * lXc.t() + dc);
     }
 
-    return lX * vcovXiEta * lX.t() + d;
+    return std::make_pair(tX + lX * xieta, lX * vcovXiEta * lX.t() + d);
   }
 
   LMSModel thread_clone() const {
@@ -223,6 +117,16 @@ struct LMSModel {
     return c;
   }
 };
+
+
+// [[Rcpp::export]]
+Rcpp::List muSigmaLmsCpp(Rcpp::List model, arma::vec z) {
+  const std::pair<arma::vec, arma::mat> ms = LMSModel(model).muSigma(z);
+  return Rcpp::List::create(
+    Rcpp::Named("mu")    = ms.first,
+    Rcpp::Named("sigma") = ms.second
+  );
+}
 
 
 inline double& lms_param(LMSModel& M, std::size_t blk,
@@ -320,9 +224,10 @@ inline double completeLogLikFromModel(
 
     if (arma::sum(TGamma[j]) <= DBL_MIN) continue;
 
-    const arma::vec& z  = V.row(j).t();   // view – no copy
-    const arma::vec mu  = M.mu   (z);
-    const arma::mat Sig = M.Sigma(z);
+    const arma::vec& z = V.row(j).t();   // view – no copy
+    const std::pair<arma::vec, arma::mat> ms = M.muSigma(z);
+    const arma::vec& mu  = ms.first;
+    const arma::mat& Sig = ms.second;
 
     for (int i = 0; i < npatterns; i++) {
       const arma::vec& nu = MeanPatterns[j][i];
@@ -350,16 +255,13 @@ double completeLogLikLmsCpp(const Rcpp::List& modelR,
                             const arma::uvec& n,
                             const arma::uvec& d,
                             const int npatterns = 1) {
-  const LMSModel model = LMSModel(modelR);
-  const arma::mat Z = Rcpp::as<arma::mat>(quad["n"]).t(); // transpose so we can use column order vectors
+  const LMSModel model(modelR);
 
-  const arma::mat V       = Rcpp::as<arma::mat>(P["V"]);
-  const auto      TGamma  = as_vec_of_vec(P["tgamma"]);
-  const auto      Mean    = as_vec_of_vec_of_vec(P["mean"]);
-  const auto      Cov     = as_vec_of_vec_of_mat(P["cov"]);
-  const auto      colidx  = as_vec_of_uvec(colidxR);
-
-  const Rcpp::List info   = modelR["info"];
+  const arma::mat V      = Rcpp::as<arma::mat>(P["V"]);
+  const auto TGamma      = as_vec_of_vec(P["tgamma"]);
+  const auto Mean        = as_vec_of_vec_of_vec(P["mean"]);
+  const auto Cov         = as_vec_of_vec_of_mat(P["cov"]);
+  const auto colidx      = as_vec_of_uvec(colidxR);
 
   return completeLogLikFromModel(model, V, TGamma, Mean, Cov,
                                  colidx, n, d, npatterns);
@@ -381,17 +283,14 @@ arma::vec gradLogLikLmsCpp(const Rcpp::List& modelR,
                            const int         ncores = 1L) {
   LMSModel M(modelR);
 
-  const arma::mat V       = Rcpp::as<arma::mat>(P["V"]);
-  const auto      TGamma  = as_vec_of_vec(P["tgamma"]);
-  const auto      Mean    = as_vec_of_vec_of_vec(P["mean"]);
-  const auto      Cov     = as_vec_of_vec_of_mat(P["cov"]);
-  const auto      colidx  = as_vec_of_uvec(colidxR);
-
-  const Rcpp::List info   = modelR["info"];
+  const arma::mat V      = Rcpp::as<arma::mat>(P["V"]);
+  const auto TGamma      = as_vec_of_vec(P["tgamma"]);
+  const auto Mean        = as_vec_of_vec_of_vec(P["mean"]);
+  const auto Cov         = as_vec_of_vec_of_mat(P["cov"]);
+  const auto colidx      = as_vec_of_uvec(colidxR);
 
   auto comp_ll = [&](LMSModel& mod) -> double {
-    return completeLogLikFromModel(mod, V, TGamma, Mean, Cov,
-                                   colidx, n, d, npatterns);
+    return completeLogLikFromModel(mod, V, TGamma, Mean, Cov, colidx, n, d, npatterns);
   };
 
   return gradientFD(M, comp_ll, block, row, col, symmetric, eps, ncores);
@@ -414,9 +313,10 @@ inline double observedLogLikFromModel(const LMSModel&  M,
   for (std::size_t i = 0; i < Q; ++i) {
     if (w[i] <= DBL_MIN) continue;
 
-    const arma::vec z   = V.row(i).t();
-    const arma::vec mu  = M.mu   (z);
-    const arma::mat Sig = M.Sigma(z);
+    const arma::vec z = V.row(i).t();
+    const std::pair<arma::vec, arma::mat> ms = M.muSigma(z);
+    const arma::vec& mu  = ms.first;
+    const arma::mat& Sig = ms.second;
 
     int offset = 0L;
     for (int j = 0; j < npatterns; j++) {
@@ -459,10 +359,10 @@ arma::vec gradObsLogLikLmsCpp(const Rcpp::List& modelR,
   const auto data   = as_vec_of_mat(dataR);
 
   auto obs_ll = [&](LMSModel& mod) -> double {
-    return observedLogLikFromModel(mod, V, w, samplingWeights, data, colidx, n, npatterns, 1L); // single-threaded
+    return observedLogLikFromModel(mod, V, w, samplingWeights, data, colidx, n, npatterns, 1L);
   };
 
-  return gradientFD(M, obs_ll, block, row, col, symmetric, eps, ncores); // multi-thread here instead
+  return gradientFD(M, obs_ll, block, row, col, symmetric, eps, ncores);
 }
 
 
@@ -749,25 +649,23 @@ Rcpp::List hessObsLogLikLmsCpp(const Rcpp::List& modelR,
                                const Rcpp::List& colidxR,
                                const arma::uvec& n,
                                const int         npatterns = 1L,
-                               const double      relStep = 1e-6,
-                               const double      minAbs  = 0.0,
-                               const int         ncores  = 1L) {
-    LMSModel M(modelR);
+                               const double      relStep   = 1e-6,
+                               const double      minAbs    = 0.0,
+                               const int         ncores    = 1L) {
+  LMSModel M(modelR);
 
-    const arma::mat V = Rcpp::as<arma::mat>(P["V"]);
-    const arma::vec w = Rcpp::as<arma::vec>(P["w"]);
-    const arma::vec samplingWeights = Rcpp::as<arma::vec>(P["sampling.weights"]);
+  const arma::mat V               = Rcpp::as<arma::mat>(P["V"]);
+  const arma::vec w               = Rcpp::as<arma::vec>(P["w"]);
+  const arma::vec samplingWeights = Rcpp::as<arma::vec>(P["sampling.weights"]);
 
-    const auto colidx = as_vec_of_uvec(colidxR);
-    const auto data   = as_vec_of_mat(dataR);
+  const auto colidx = as_vec_of_uvec(colidxR);
+  const auto data   = as_vec_of_mat(dataR);
 
-    auto obs_ll = [&](LMSModel& mod) -> double {
-        return observedLogLikFromModel(mod, V, w, samplingWeights, data, colidx,
-                                       n, npatterns, 1L); // single-threaded
-    };
+  auto obs_ll = [&](LMSModel& mod) -> double {
+    return observedLogLikFromModel(mod, V, w, samplingWeights, data, colidx, n, npatterns, 1L);
+  };
 
-    return fdHessCpp(M, obs_ll, block, row, col, symmetric,
-        relStep, minAbs, ncores); // multi-threaded
+  return fdHessCpp(M, obs_ll, block, row, col, symmetric, relStep, minAbs, ncores);
 }
 
 
@@ -787,19 +685,15 @@ Rcpp::List hessCompLogLikLmsCpp(const Rcpp::List& modelR,
                                 const int         ncores    = 1L) {
   LMSModel M(modelR);
 
-  const arma::mat  V       = Rcpp::as<arma::mat>(P["V"]);
-  const auto       TGamma  = as_vec_of_vec(P["tgamma"]);
-  const auto       Mean    = as_vec_of_vec_of_vec(P["mean"]);
-  const auto       Cov     = as_vec_of_vec_of_mat(P["cov"]);
-  const auto       colidx  = as_vec_of_uvec(colidxR);
-
-  const Rcpp::List info   = modelR["info"];
+  const arma::mat V      = Rcpp::as<arma::mat>(P["V"]);
+  const auto TGamma      = as_vec_of_vec(P["tgamma"]);
+  const auto Mean        = as_vec_of_vec_of_vec(P["mean"]);
+  const auto Cov         = as_vec_of_vec_of_mat(P["cov"]);
+  const auto colidx      = as_vec_of_uvec(colidxR);
 
   auto comp_ll = [&](LMSModel& mod) -> double {
-    return completeLogLikFromModel(mod, V, TGamma, Mean, Cov,
-                                   colidx, n, d, npatterns); // single-threaded
+    return completeLogLikFromModel(mod, V, TGamma, Mean, Cov, colidx, n, d, npatterns);
   };
 
-  return fdHessCpp(M, comp_ll, block, row, col, symmetric,
-      relStep, minAbs, ncores); // multi-threaded
+  return fdHessCpp(M, comp_ll, block, row, col, symmetric, relStep, minAbs, ncores);
 }

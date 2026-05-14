@@ -407,9 +407,10 @@ obsLogLikLmsGroup_i <- function(submodel, P, sign = 1) {
   px <- numeric(data$n)
 
   for (i in seq_len(m)) {
-    z_i     <- V[i, ]
-    mu_i    <- muLmsCpp(model = submodel, z = z_i)
-    sigma_i <- sigmaLmsCpp(model = submodel, z = z_i)
+    z_i        <- V[i, ]
+    ms_i       <- muSigmaLmsCpp(model = submodel, z = z_i)
+    mu_i    <- ms_i$mu
+    sigma_i <- ms_i$sigma
 
     dens_i <- numeric(data$n)
     offset <- 1L
@@ -447,8 +448,9 @@ gradientObsLogLikLms_i <- function(theta, model, P, sign = 1, epsilon = 1e-4) {
 
 
 densitySingleLms <- function(z, modFilled, data) {
-  mu <- muLmsCpp(model = modFilled, z = z)
-  sigma <- sigmaLmsCpp(model = modFilled, z = z)
+  ms    <- muSigmaLmsCpp(model = modFilled, z = z)
+  mu    <- ms$mu
+  sigma <- ms$sigma
 
   density <- numeric(data$n)
 

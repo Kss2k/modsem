@@ -16,7 +16,7 @@ tpb.lin <- '
 testthat::expect_no_condition({
   fit_lav <- lavaan::sem(tpb.lin, TPB, optim.gradient = NULL)
   fit_mod <- modsem(tpb.lin, TPB, method = "lms")
-  modsem_predict(fit_mod)
+  X <- modsem_predict(fit_mod)
 })
 
 coef_lav <- lavaan::coef(fit_lav)

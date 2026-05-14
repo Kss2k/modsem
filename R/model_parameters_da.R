@@ -448,7 +448,7 @@ SYMMETRIC_BLOCKS_LMS = c(
   thetaEpsilon = 5,
   psi = 7,
   phi = NA,
-  W = 15
+  T = 15
 )
 
 

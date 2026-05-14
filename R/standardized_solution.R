@@ -250,7 +250,7 @@ transformedSolutionCOEFS <- function(object,
 
         var.comp <- variances.g[[composite]]
         var.ind <- variances.g[[ind]]
-        if (is.null(var.lv) || is.null(var.ind)) next
+        if (is.null(var.comp) || is.null(var.ind)) next
 
         scalingCoef <- sqrt(var.ind) / sqrt(var.comp)
         w <- COEFS[[label]] * scalingCoef
