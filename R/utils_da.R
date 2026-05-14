@@ -1149,7 +1149,7 @@ sortParTableDA <- function(parTable, model) {
   etasLow  <- etas[!isHigherOrderEta]
   etasHigh <- etas[isHigherOrderEta]
 
-  opOrder <- c("=~", "~", "~1", "~~", "|", ":=")
+  opOrder <- c("=~", "<~", "~", "~1", "~~", "|", ":=")
   varOrder <- unique(c(indsXis, indsEtas, xisLow, etasLow, xisHigh, xisLow))
   groupOrder <- c(getGroupsParTable(parTable), 0)
 
