@@ -192,30 +192,33 @@
 #'   the items. Default is \code{TRUE}.
 #'
 #' @param orthogonal.x If \code{TRUE}, all covariances among exogenous latent variables only are set to zero.
-#'  Default is \code{FALSE}.
+#'   Default is \code{FALSE}.
 #'
 #' @param orthogonal.y If \code{TRUE}, all covariances among endogenous latent variables only are set to zero.
-#'  If \code{FALSE} residual covariances are added between pure endogenous variables;
-#'  those that are predicted by no other endogenous variable in the structural model.
-#'  Default is \code{FALSE}.
+#'   If \code{FALSE} residual covariances are added between pure endogenous variables;
+#'   those that are predicted by no other endogenous variable in the structural model.
+#'   Default is \code{FALSE}.
 #'
 #' @param orthogonal.y If \code{TRUE}, all covariances among endogenous latent variables only are set to zero.
-#'  If \code{FALSE} residual covariances are added between pure endogenous variables;
-#'  those that are predicted by no other endogenous variable in the structural model.
-#'  Default is \code{FALSE}.
+#'   If \code{FALSE} residual covariances are added between pure endogenous variables;
+#'   those that are predicted by no other endogenous variable in the structural model.
+#'   Default is \code{FALSE}.
 #'
 #' @param auto.fix.first If \code{TRUE} the factor loading of the first indicator, for
-#'  a given latent variable is fixed to \code{1}. If \code{FALSE} no loadings are fixed
-#'  (automatically). Note that that this might make it such that the model no longer is
-#'  identified. Default is \code{TRUE}. \strong{NOTE} this behaviour is overridden
-#'  if the first loading is labelled, where it gets treated as a free parameter instead. This
-#'  differs from the default behaviour in \code{lavaan}.
+#'   a given latent variable is fixed to \code{1}. If \code{FALSE} no loadings are fixed
+#'   (automatically). Note that that this might make it such that the model no longer is
+#'   identified. Default is \code{TRUE}. \strong{NOTE} this behaviour is overridden
+#'   if the first loading is labelled, where it gets treated as a free parameter instead. This
+#'   differs from the default behaviour in \code{lavaan}.
 #'
 #' @param auto.fix.single If \code{TRUE}, the residual variance of
-#'  an observed indicator is set to zero if it is the only indicator of a latent variable.
-#'  If \code{FALSE} the residual variance is not fixed to zero, and treated as a free parameter
-#'  of the model. Default is \code{TRUE}. \strong{NOTE} this behaviour is overridden
-#'  if the first loading is labelled, where it gets treated as a free parameter instead.
+#'   an observed indicator is set to zero if it is the only indicator of a latent variable.
+#'   If \code{FALSE} the residual variance is not fixed to zero, and treated as a free parameter
+#'   of the model. Default is \code{TRUE}. \strong{NOTE} this behaviour is overridden
+#'   if the first loading is labelled, where it gets treated as a free parameter instead.
+#'
+#' @param fix.composite.var If \code{TRUE} (default) the block covariance structure
+#'   of composite indiactors is fixed.
 #'
 #' @param auto.split.syntax Should the model syntax automatically be split into a
 #'   linear and non-linear part? This is done by moving the structural model for
@@ -334,6 +337,7 @@ modsem_da <- function(model.syntax = NULL,
                       auto.fix.first = NULL,
                       auto.fix.single = NULL,
                       auto.split.syntax = NULL,
+                      fix.composite.var = NULL,
                       ...) {
   method <- tolower(method)
 
@@ -395,6 +399,7 @@ modsem_da <- function(model.syntax = NULL,
        auto.fix.first      = auto.fix.first,
        auto.fix.single     = auto.fix.single,
        auto.split.syntax   = auto.split.syntax,
+       fix.composite.var   = fix.composite.var,
        ...)
 
     return(out)
@@ -467,7 +472,8 @@ modsem_da <- function(model.syntax = NULL,
           cr1s                           = cr1s,
           group                          = group,
           sampling.weights               = sampling.weights,
-          sampling.weights.normalization = sampling.weights.normalization
+          sampling.weights.normalization = sampling.weights.normalization,
+          fix.composite.var              = fix.composite.var
         )
     )
 
@@ -506,6 +512,7 @@ modsem_da <- function(model.syntax = NULL,
     orthogonal.y       = args$orthogonal.y,
     auto.fix.first     = args$auto.fix.first,
     auto.fix.single    = args$auto.fix.single,
+    fix.composite.var  = args$fix.composite.var,
     cluster            = cluster,
     sampling.weights   = sampling.weights
   )
@@ -513,7 +520,7 @@ modsem_da <- function(model.syntax = NULL,
   if (args$optimize) {
     model <- tryCatch({
       .optimize <- purrr::quietly(optimizeStartingParamsDA)
-      .optimize <- \(...) list(result = optimizeStartingParamsDA(...))
+      # .optimize <- \(...) list(result = optimizeStartingParamsDA(...))
       result    <- .optimize(
         model            = model,
         args             = args,

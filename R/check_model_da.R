@@ -324,8 +324,10 @@ checkCovMatrices <- function(expected.matrices) {
 checkVCOV <- function(vcov, calc.se = TRUE, tol.eigen = .Machine$double.eps ^ (3/4)) {
   if (!calc.se || is.null(vcov)) return(NULL) # checks not relevant
 
-  eigenvalues <- tryCatch(eigen(vcov, only.values = TRUE)$values,
-                          error = \(e) rep(NA, min(1L, NCOL(vcov))))
+  eigenvalues <- tryCatch(
+    eigen(vcov, only.values = TRUE)$values,
+    error = \(e) rep(NA, min(1L, NCOL(vcov)))
+  )
 
   if (all(is.na(eigenvalues))) {
     warning2("Unable to compute eigenvalues of the variance-covariance matrix!")

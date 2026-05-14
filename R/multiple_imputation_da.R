@@ -281,11 +281,11 @@ aggregateMatrices <- function(fits, type) {
   switch(type,
     main = {
       matrices  <- fits[[1]]$model$matrices
-      names.num <- namesParMatrices
+      names.num <- NAMES_PAR_MATRICES
     },
     cov = {
       matrices  <- fits[[1]]$model$covModel$matrices
-      names.num <- namesParMatricesCov
+      names.num <- NAMES_PAR_MATRICES_COV
     },
     expected = {
       matrices  <- fits[[1]]$expected.matrices

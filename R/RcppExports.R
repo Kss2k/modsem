@@ -5,12 +5,8 @@ calcSESimpleSlopes <- function(X, V) {
     .Call(`_modsem_calcSESimpleSlopes`, X, V)
 }
 
-muLmsCpp <- function(model, z) {
-    .Call(`_modsem_muLmsCpp`, model, z)
-}
-
-sigmaLmsCpp <- function(model, z) {
-    .Call(`_modsem_sigmaLmsCpp`, model, z)
+muSigmaLmsCpp <- function(model, z) {
+    .Call(`_modsem_muSigmaLmsCpp`, model, z)
 }
 
 completeLogLikLmsCpp <- function(modelR, P, quad, colidxR, n, d, npatterns = 1L) {

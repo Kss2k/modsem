@@ -23,14 +23,15 @@ formatParTable <- function(parTable,
   isCov    <- parTable$op == "~~" & parTable$lhs != parTable$rhs
   isReg    <- parTable$op == "~"
   isIntr   <- parTable$op == "~1" # Intercept
-  isMeasr  <- parTable$op == "=~" | parTable$op == "<~"
+  isMeasrF <- parTable$op == "=~" # Measurement of factors
+  isMeasrC <- parTable$op == "<~" # Measurement of composites
   isThrs   <- parTable$op == "|"
 
   parTable[isCustom, "label"] <- ""
   parTable[isThrs, "lhs"] <- paste0(parTable[isThrs, "lhs"], "|",
                                     parTable[isThrs, "rhs"])
 
-  isDoubleCol <- isReg  | isCov | isMeasr # Should output have double columns?
+  isDoubleCol <- isReg  | isCov | isMeasrF | isMeasrC # Should output have double columns?
   isSingleCol <- isIntr | isVar | isCustom | isThrs
 
   if (shorten.lhs.header) {
@@ -61,7 +62,7 @@ formatParTable <- function(parTable,
 
   if (pad.res) {
     etas    <- getEtas(parTable.in, isLV = FALSE, checkAny = FALSE)
-    inds    <- getInds(parTable.in)
+    inds    <- getReflectiveIndicators(parTable.in)
     resvars <- c(etas, inds)
 
     isResVarCovOrInt <- (
@@ -138,13 +139,28 @@ printParTable <- function(parTable,
     pad, stringr::str_c(header[-(1:3)], collapse = space), "\n"
   )
 
-  # Measurement model
-  parTableLoadings <- fParTable[fParTable$op %in% c("=~", "<~"), ]
+  # Latent Variables
+  parTableLoadings <- fParTable[fParTable$op == "=~", ]
   if (loadings && NROW(parTableLoadings) > 0) {
     cat("Latent Variables:\n", formattedHeader)
 
     printParTableDouble(
       parTableLoadings,
+      padWidth = padWidth,
+      padWidthLhs = padWidthLhs,
+      spacing = spacing
+    )
+
+    cat("\n")
+  }
+
+  # Composites
+  parTableComposites <- fParTable[fParTable$op == "<~", ]
+  if (loadings && NROW(parTableComposites) > 0) {
+    cat("Composites:\n", formattedHeader)
+
+    printParTableDouble(
+      parTableComposites,
       padWidth = padWidth,
       padWidthLhs = padWidthLhs,
       spacing = spacing

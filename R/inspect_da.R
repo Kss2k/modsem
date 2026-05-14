@@ -1,4 +1,4 @@
-inspectDA_Matrices <- c("lambda", "tau", "theta", "gamma.xi",
+inspectDA_Matrices <- c("lambda", "wmat", "tau", "theta", "gamma.xi",
                         "gamma.eta", "omega.xi.xi",
                         "omega.eta.xi", "phi", "psi", "alpha", "beta0")
 
@@ -126,6 +126,12 @@ modsem_inspect_da <- function(model,
     omega.eta.xi <- diagPartitionedMat(matrices$omegaEtaXi,  fetchCov("omegaEtaXi"))
     phi          <- diagPartitionedMat(matrices$phi,         fetchCov("phi"))
     psi          <- diagPartitionedMat(matrices$psi,         fetchCov("psi"))
+    W            <- matrices$W
+
+    if (!NROW(W)) {
+      W <- lambda
+      W[TRUE] <- 0
+    }
 
     tau   <- rbind(matrices$tauX, matrices$tauY)
     alpha <- matrices$alpha
@@ -135,11 +141,12 @@ modsem_inspect_da <- function(model,
     if (!is.null(alpha)) colnames(alpha) <- "~1"
     if (!is.null(beta0)) colnames(beta0) <- "~1"
 
-    c(
+    out <- c(
       list(
         N            = submodel$data$n,
         data         = submodel$data$data.full,
         lambda       = .modsemMatrix(lambda),
+        wmat         = .modsemMatrix(W),
         tau          = .modsemMatrix(tau),
         theta        = .modsemMatrix(theta, symmetric = TRUE),
         gamma.xi     = .modsemMatrix(gamma.xi),
@@ -171,6 +178,7 @@ modsem_inspect_da <- function(model,
   N.val            <- collapseField("N")
   data.val         <- collapseField("data")
   lambda.val       <- collapseField("lambda")
+  wmat.val         <- collapseField("wmat")
   tau.val          <- collapseField("tau")
   theta.val        <- collapseField("theta")
   gamma.xi.val     <- collapseField("gamma.xi")
@@ -197,57 +205,59 @@ modsem_inspect_da <- function(model,
   res.lv.val       <- collapseField("res.lv")
   res.ov.val       <- collapseField("res.ov")
 
-  info <- list(N                 = N.val,
-               vcov.all          = .modsemMatrix(model$vcov.all, symmetric = TRUE),
-               vcov.free         = .modsemMatrix(model$vcov.free, symmetric = TRUE),
-               information       = .modsemMatrix(model$FIM, symmetric = TRUE),
-               data              = data.val,
-               coefficients.all  = .modsemVector(model$coefs.all),
-               coefficients.free = .modsemVector(model$coefs.free),
-               partable          = parameter_estimates(model, is.public = is.public),
-               partable.input    = model$originalParTable,
-               loglik            = model$logLik,
-               iterations        = model$iterations,
-               convergence       = model$convergence,
-               ovs               = ovs,
+  info <- list(
+     N                 = N.val,
+     vcov.all          = .modsemMatrix(model$vcov.all, symmetric = TRUE),
+     vcov.free         = .modsemMatrix(model$vcov.free, symmetric = TRUE),
+     information       = .modsemMatrix(model$FIM, symmetric = TRUE),
+     data              = data.val,
+     coefficients.all  = .modsemVector(model$coefs.all),
+     coefficients.free = .modsemVector(model$coefs.free),
+     partable          = parameter_estimates(model, is.public = is.public),
+     partable.input    = model$originalParTable,
+     loglik            = model$logLik,
+     iterations        = model$iterations,
+     convergence       = model$convergence,
+     ovs               = ovs,
 
-               ngroups     = model$model$info$n.groups,
-               group       = model$args$group,
-               group.label = if (!is.null(model$args$group)) group.names else NULL,
+     ngroups     = model$model$info$n.groups,
+     group       = model$args$group,
+     group.label = if (!is.null(model$args$group)) group.names else NULL,
 
-               lambda       = lambda.val,
-               tau          = tau.val,
-               theta        = theta.val,
-               gamma.xi     = gamma.xi.val,
-               gamma.eta    = gamma.eta.val,
-               omega.xi.xi  = omega.xi.xi.val,
-               omega.eta.xi = omega.eta.xi.val,
+     lambda       = lambda.val,
+     wmat         = wmat.val,
+     tau          = tau.val,
+     theta        = theta.val,
+     gamma.xi     = gamma.xi.val,
+     gamma.eta    = gamma.eta.val,
+     omega.xi.xi  = omega.xi.xi.val,
+     omega.eta.xi = omega.eta.xi.val,
 
-               phi   = phi.val,
-               psi   = psi.val,
+     phi   = phi.val,
+     psi   = psi.val,
 
-               alpha = alpha.val,
-               beta0 = beta0.val,
+     alpha = alpha.val,
+     beta0 = beta0.val,
 
-               cov.ov  = cov.ov.val,
-               cov.lv  = cov.lv.val,
-               cov.all = cov.all.val,
+     cov.ov  = cov.ov.val,
+     cov.lv  = cov.lv.val,
+     cov.all = cov.all.val,
 
-               cor.ov  = cor.ov.val,
-               cor.lv  = cor.lv.val,
-               cor.all = cor.all.val,
+     cor.ov  = cor.ov.val,
+     cor.lv  = cor.lv.val,
+     cor.all = cor.all.val,
 
-               mean.lv  = mean.lv.val,
-               mean.ov  = mean.ov.val,
-               mean.all = mean.all.val,
+     mean.lv  = mean.lv.val,
+     mean.ov  = mean.ov.val,
+     mean.all = mean.all.val,
 
-               r2.all  = r2.all.val,
-               r2.lv   = r2.lv.val,
-               r2.ov   = r2.ov.val,
+     r2.all  = r2.all.val,
+     r2.lv   = r2.lv.val,
+     r2.ov   = r2.ov.val,
 
-               res.all = res.all.val,
-               res.lv  = res.lv.val,
-               res.ov  = res.ov.val
+     res.all = res.all.val,
+     res.lv  = res.lv.val,
+     res.ov  = res.ov.val
   )
 
   FIT <- \() {

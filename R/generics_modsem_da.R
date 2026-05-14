@@ -925,8 +925,9 @@ modsem_predict.modsem_da <- function(object, standardized = FALSE, H0 = TRUE, ne
     sigma <- if (mgroup) SIGMA[[g]] else SIGMA
 
     sigma.inv <- GINV(sigma)
-    lambda    <- getLambdaParTable(parTableH0g, rows = colnames(sigma), cols = lVs,
-                                   fill.missing = TRUE)
+    lambda <- getLambdaParTable(
+      parTableH0g, rows = colnames(sigma), cols = lVs, fill.missing = TRUE
+    )
 
     newdata.g <- NEWDATA[[g]]
     X <- apply(as.matrix(newdata.g), MARGIN = 2, FUN = transform.x)
@@ -934,8 +935,13 @@ modsem_predict.modsem_da <- function(object, standardized = FALSE, H0 = TRUE, ne
 
     FSC <- GINV(t(lambda) %*% sigma.inv %*% lambda) %*% (t(lambda) %*% sigma.inv)
 
-    alpha <- matrix(getMeans(lVs, parTable = parTableH1g),
-                    nrow = nrow(X), ncol = length(lVs), byrow = TRUE)
+    composites <- getComposites(parTableH1g)
+    if (length(composites)) FSC[composites,] <- t(lambda)[composites,]
+
+    alpha <- matrix(
+      getMeans(lVs, parTable = parTableH1g),
+      nrow = nrow(X), ncol = length(lVs), byrow = TRUE
+    )
 
     Y <- X %*% t(FSC) + alpha
 

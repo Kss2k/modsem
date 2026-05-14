@@ -184,12 +184,14 @@ transformedSolutionCOEFS <- function(object,
     parTable.g <- parTable[parTable$group == g, , drop = FALSE]
     if (!NROW(parTable.g)) next
 
-    lVs.g      <- getLVs(parTable.g)
-    intTerms.g <- getIntTerms(parTable.g)
-    etas.g     <- getSortedEtas(parTable.g, isLV = FALSE)
-    xis.g      <- getXis(parTable.g, etas = etas.g, isLV = FALSE)
-    indsLVs.g  <- getIndsLVs(parTable.g, lVs.g)
-    allInds.g  <- unique(unlist(indsLVs.g))
+    lVs.g        <- getLVs(parTable.g)
+    intTerms.g   <- getIntTerms(parTable.g)
+    etas.g       <- getSortedEtas(parTable.g, isLV = FALSE)
+    xis.g        <- getXis(parTable.g, etas = etas.g, isLV = FALSE)
+    indsLVs.g    <- getIndsLVs(parTable.g, lVs.g)
+    allInds.g    <- unique(unlist(indsLVs.g))
+    composites.g <- getComposites(parTable.g)
+    factors.g    <- setdiff(lVs.g, composites.g)
 
     vars.g <- unique(c(allInds.g, lVs.g, intTerms.g, xis.g, etas.g))
     varianceEquations.g <- structure(
@@ -204,23 +206,56 @@ transformedSolutionCOEFS <- function(object,
     variances.g <- lapply(varianceEquations.g, FUN = \(eq) eval(eq, envir = COEFS))
 
     # Factor Loadings
-    for (lV in lVs.g) {
-      inds_lV <- indsLVs.g[[lV]]
-      if (!length(inds_lV)) next
+    for (lV in factors.g) {
+      inds.lv <- indsLVs.g[[lV]]
+      if (!length(inds.lv)) next
 
-      for (ind in inds_lV) {
-        selectRows  <- parTable.g$lhs == lV & parTable.g$op == "=~" & parTable.g$rhs == ind
+      for (ind in inds.lv) {
+        selectRows <- (
+          parTable.g$lhs == lV &
+          parTable.g$op == "=~" &
+          parTable.g$rhs == ind
+        )
+
         if (!any(selectRows)) next
+
         label <- parTable.g[selectRows, "label"]
 
-        var_lV <- variances.g[[lV]]
-        var_ind <- variances.g[[ind]]
-        if (is.null(var_lV) || is.null(var_ind)) next
+        var.lv <- variances.g[[lV]]
+        var.ind <- variances.g[[ind]]
+        if (is.null(var.lv) || is.null(var.ind)) next
 
-        scalingCoef <- sqrt(var_lV) / sqrt(var_ind)
+        scalingCoef <- sqrt(var.lv) / sqrt(var.ind)
         lambda      <- COEFS[[label]] * scalingCoef
 
         COEFS[[label]] <- lambda
+      }
+    }
+    
+    # Composite Weights
+    for (composite in composites.g) {
+      inds.comp <- indsLVs.g[[composite]]
+      if (!length(inds.comp)) next
+
+      for (ind in inds.comp) {
+        selectRows <- (
+          parTable.g$lhs == composite &
+          parTable.g$op == "<~" &
+          parTable.g$rhs == ind
+        )
+
+        if (!any(selectRows)) next
+
+        label <- parTable.g[selectRows, "label"]
+
+        var.comp <- variances.g[[composite]]
+        var.ind <- variances.g[[ind]]
+        if (is.null(var.comp) || is.null(var.ind)) next
+
+        scalingCoef <- sqrt(var.ind) / sqrt(var.comp)
+        w <- COEFS[[label]] * scalingCoef
+
+        COEFS[[label]] <- w 
       }
     }
 
@@ -234,11 +269,11 @@ transformedSolutionCOEFS <- function(object,
       for (xi in structExprsEta$rhs) {
         selectRows  <- selectStrucExprsEta & parTable.g$rhs == xi
         if (!any(selectRows)) next
-        var_xi <- variances.g[[xi]]
-        var_eta <- variances.g[[eta]]
-        if (is.null(var_xi) || is.null(var_eta)) next
+        var.xi <- variances.g[[xi]]
+        var.eta <- variances.g[[eta]]
+        if (is.null(var.xi) || is.null(var.eta)) next
 
-        scalingCoef <- sqrt(var_xi) / sqrt(var_eta)
+        scalingCoef <- sqrt(var.xi) / sqrt(var.eta)
         label       <- parTable.g[selectRows, "label"]
         gamma       <- COEFS[[label]] * scalingCoef
 
@@ -260,11 +295,11 @@ transformedSolutionCOEFS <- function(object,
         parTable.g$lhs %in% xis_pair &
         parTable.g$rhs %in% xis_pair
 
-      var_lhs <- variances.g[[lhs]]
-      var_rhs <- variances.g[[rhs]]
-      if (is.null(var_lhs) || is.null(var_rhs)) next
+      var.lhs <- variances.g[[lhs]]
+      var.rhs <- variances.g[[rhs]]
+      if (is.null(var.lhs) || is.null(var.rhs)) next
 
-      scalingCoef <- sqrt(var_lhs) * sqrt(var_rhs)
+      scalingCoef <- sqrt(var.lhs) * sqrt(var.rhs)
 
       if (lhs != rhs) {
         selectRows <- selectRows & parTable.g$lhs != parTable.g$rhs
@@ -280,25 +315,32 @@ transformedSolutionCOEFS <- function(object,
     for (eta in etas.g) {
       selectRows <- parTable.g$lhs == eta & parTable.g$op == "~~" & parTable.g$rhs == eta
       if (!any(selectRows)) next
-      var_eta <- variances.g[[eta]]
-      if (is.null(var_eta)) next
+      var.eta <- variances.g[[eta]]
+      if (is.null(var.eta)) next
       label <- parTable.g[selectRows, "label"]
-      residual <- COEFS[[label]] / var_eta
+      residual <- COEFS[[label]] / var.eta
 
       COEFS[[label]] <- residual
     }
 
-    # residual variances inds
-    for (ind in allInds.g) {
-      selectRows <- parTable.g$lhs == ind & parTable.g$op == "~~" & parTable.g$rhs == ind
-      if (!any(selectRows)) next
-      var_ind <- variances.g[[ind]]
-      if (is.null(var_ind)) next
+    # residual variances of indicators
+    indicatorCovariances <- parTable.g[
+      parTable.g$lhs %in% allInds.g &
+      parTable.g$op == "~~" &
+      parTable.g$rhs %in% allInds.g, , drop = FALSE
+    ]
 
-      label <- parTable.g[selectRows, "label"]
-      residual <- COEFS[[label]] / var_ind
+    for (i in seq_len(NROW(indicatorCovariances))) {
+      row <- indicatorCovariances[i, , drop = FALSE]
 
-      COEFS[[label]] <- residual
+      ind.x <- row$lhs
+      ind.y <- row$rhs
+      label <- row$label
+
+      var.x <- variances.g[[ind.x]]
+      var.y <- variances.g[[ind.y]]
+
+      COEFS[[label]] <- COEFS[[label]] / (sqrt(var.x) * sqrt(var.y))
     }
 
     # Correct Scale of interaction terms

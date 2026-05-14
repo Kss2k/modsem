@@ -120,15 +120,6 @@ getXis <- function(parTable, etas = NULL, isLV = TRUE, checkAny = TRUE) {
 }
 
 
-getIndicators <- function(parTable, observed=TRUE) {
-  indicators <- unique(parTable[!grepl(":", parTable$rhs) &
-                                parTable$op %in% c("<~", "=~"), "rhs"])
-
-  if (observed) indicators <- indicators[!indicators %in% getLVs(parTable)]
-  indicators
-}
-
-
 getProdNames <- function(parTable) {
   unique(parTable[grepl(":", parTable$rhs) &
          parTable$op %in% c("~", "=~", "<~"), "rhs"])
@@ -137,6 +128,11 @@ getProdNames <- function(parTable) {
 
 getLVs <- function(parTable) {
   unique(parTable[parTable$op %in% c("=~", "<~"), "lhs"])
+}
+
+
+getComposites <- function(parTable) {
+  unique(parTable[parTable$op == "<~", "lhs"])
 }
 
 
@@ -204,6 +200,25 @@ getIndsLVs <- function(parTable, lVs, isOV = FALSE, ovs = NULL) {
 
 getInds <- function(parTable, ...) {
   unique(unlist(getIndsLVs(parTable, lVs = getLVs(parTable)), ...))
+}
+
+
+getIndicators <- function(parTable, observed=TRUE) {
+  indicators <- unique(parTable[!grepl(":", parTable$rhs) &
+                                parTable$op %in% c("<~", "=~"), "rhs"])
+
+  if (observed) indicators <- indicators[!indicators %in% getLVs(parTable)]
+  indicators
+}
+
+
+getReflectiveIndicators <- function(parTable) {
+  unique(unlist(parTable[parTable$op == "=~", "rhs"]))
+}
+
+
+getCompositeIndicators <- function(parTable) {
+  unique(parTable[parTable$op == "<~", "rhs"])
 }
 
 

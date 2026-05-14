@@ -55,6 +55,7 @@ modsem_da(
   auto.fix.first = NULL,
   auto.fix.single = NULL,
   auto.split.syntax = NULL,
+  fix.composite.var = NULL,
   ...
 )
 }
@@ -280,6 +281,9 @@ given that both are linear (i.e., not affected by interaction terms). This is
 When using the QML approach interation effects between exogenous and endogenous
 variables can in some cases be biased, if the model is not split beforehand.
 The default is therefore \code{TRUE} for the QML approach.}
+
+\item{fix.composite.var}{If \code{TRUE} (default) the block covariance structure
+of composite indiactors is fixed.}
 
 \item{...}{additional arguments to be passed to the estimation function.}
 }

@@ -70,7 +70,7 @@ optimizeStartingParamsDA <- function(model,
     lavaan.fit <- extract_lavaan(estPI)
 
   } else if (engine == "sam") {
-    fitSAM   <- parameterEstimatesLavSAM(
+    fitSam <- parameterEstimatesLavSAM(
       syntax           = syntax,
       data             = data,
       estimator        = estimator,
@@ -86,8 +86,8 @@ optimizeStartingParamsDA <- function(model,
       sampling.weights.normalization = args$sampling.weights.normalization
     )
 
-    parTable   <- fitSAM$parTable
-    lavaan.fit <- fitSAM$fit
+    parTable   <- fitSam$parTable
+    lavaan.fit <- fitSam$fit
   }
 
   stopif(is.null(parTable), "lavaan failed!")
@@ -133,24 +133,30 @@ optimizeStartingParamsDA <- function(model,
     labelMatricesMain <- submodel$labelMatrices
 
     LambdaX <- findEstimatesParTable(matricesMain$lambdaX, parTable.g, op = "=~",
-                                     rows_lhs = FALSE, fill = 0.7)
+                                     rows.lhs = FALSE, fill = 0.7)
     LambdaY <- findEstimatesParTable(matricesMain$lambdaY, parTable.g, op = "=~",
-                                     rows_lhs = FALSE, fill = 0.7)
+                                     rows.lhs = FALSE, fill = 0.7)
 
     ThetaEpsilon <- findEstimatesParTable(matricesMain$thetaEpsilon, parTable.g,
                                           op = "~~", fill = 0.2)
     ThetaDelta   <- findEstimatesParTable(matricesMain$thetaDelta, parTable.g,
                                           op = "~~", fill = 0.2)
 
+    W <- findEstimatesParTable(matricesMain$W, parTable.g, op = "<~",
+                               fill = 1, rows.lhs = FALSE)
+
     Psi <- findEstimatesParTable(matricesMain$psi, parTable.g, op = "~~", fill = 0)
     Phi <- findEstimatesParTable(matricesMain$phi, parTable.g, op = "~~", fill = 0)
     A   <- findEstimatesParTable(matricesMain$A, parTable.g, op = "~~", fill = 0)
+    T   <- findEstimatesParTable(matricesMain$T, parTable.g, op = "~~", fill = 0)
 
     # Matrices which can be corrected to ensure viable starting parameters need to
     # get filled in using labels as well, just for the checks them selves
     Psi <- fillLabelsMatrix(Psi, labelMatricesMain$psi, symmetric = TRUE)
     Phi <- fillLabelsMatrix(Phi, labelMatricesMain$phi, symmetric = TRUE)
     A   <- fillLabelsMatrix(A, labelMatricesMain$A, symmetric = FALSE)
+    T   <- fillLabelsMatrix(T, labelMatricesMain$T, symmetric = FALSE)
+    W   <- fillLabelsMatrix(W, labelMatricesMain$W, symmetric = FALSE)
 
     ThetaEpsilon <- fillLabelsMatrix(ThetaEpsilon,
                                      labelMatricesMain$thetaEpsilon,
@@ -171,6 +177,7 @@ optimizeStartingParamsDA <- function(model,
     Psi          <- correctDiag(Psi, tol = 0) # no negative values
     Phi          <- correctDiag(Phi, tol = 0) # no negative values
     A            <- correctDiag(A, tol = 0)
+    T            <- correctDiag(T, tol = 0)
 
     as.I <- function(M) { # If Phi/A is non-invertible we want I instead
       I <- diag(NROW(M))
@@ -206,6 +213,8 @@ optimizeStartingParamsDA <- function(model,
                              tauY[is.na(matricesMain$tauY)],
                              ThetaDelta[is.na(matricesMain$thetaDelta)],
                              ThetaEpsilon[is.na(matricesMain$thetaEpsilon)],
+                             W[is.na(matricesMain$W)],
+                             T[is.na(matricesMain$T)],
                              Phi[is.na(matricesMain$phi)],
                              A[is.na(matricesMain$A)],
                              Psi[is.na(matricesMain$psi)],
@@ -262,7 +271,7 @@ optimizeStartingParamsDA <- function(model,
 }
 
 
-findEstimatesParTable <- function(mat, parTable, op = NULL, rows_lhs = TRUE,
+findEstimatesParTable <- function(mat, parTable, op = NULL, rows.lhs = TRUE,
                                   fill = NULL) {
   if (is.null(op)) stop("Missing operator")
   for (row in rownames(mat)) {
@@ -270,7 +279,7 @@ findEstimatesParTable <- function(mat, parTable, op = NULL, rows_lhs = TRUE,
       if (is.na(mat[row, col]))
         mat[row, col] <- extractFromParTable(row = row, op = op, col = col,
                                              parTable = parTable,
-                                             rows_lhs = rows_lhs, fill = fill)
+                                             rows.lhs = rows.lhs, fill = fill)
     }
   }
   mat
@@ -281,7 +290,7 @@ findInterceptsParTable <- function(mat, parTable, fill = NULL) {
   for (row in rownames(mat)) {
     if (is.na(mat[row, ]))
       mat[row, ] <- extractFromParTable(row = row, op = "~1", col = "",
-                                        parTable = parTable, rows_lhs = TRUE,
+                                        parTable = parTable, rows.lhs = TRUE,
                                         fill = fill)
   }
   mat
@@ -298,14 +307,14 @@ findInteractionEstimatesParTable <- function(omega, parTable, fill = NULL) {
     x   <- getXiRowLabelOmega(row)
     xz  <- createDoubleIntTerms(x = x, z = col, sep = ":")
     omega[row, col] <- extractFromParTable(eta, "~", xz, parTable = parTable,
-                                           rows_lhs = TRUE, fill = fill)
+                                           rows.lhs = TRUE, fill = fill)
   }
   omega
 }
 
 
-extractFromParTable <- function(row, op, col, parTable, rows_lhs = TRUE, fill = NULL) {
-  if (rows_lhs) {
+extractFromParTable <- function(row, op, col, parTable, rows.lhs = TRUE, fill = NULL) {
+  if (rows.lhs) {
     out <- parTable[parTable$lhs == row &
                     parTable$op == op &
                     parTable$rhs %in% col, "est"]
@@ -361,12 +370,18 @@ parameterEstimatesLavSAM <- function(syntax,
   parTable <- modsemify(syntax)
   higherOrderLVs <- getHigherOrderLVs(parTable)
   isHigherOrder  <- length(higherOrderLVs) > 0L
+  hasComposites  <- any(parTable$op == "<~")
   isNonCentered  <- isNonCenteredParTable(parTable)
   lowerOrderInds <- unlist(getIndsLVs(parTable, lVs = higherOrderLVs,
                                       isOV = FALSE))
 
   if (suppress.warnings.lavaan) wrapper <- suppressWarnings
   else                          wrapper <- \(x) x # do nothing
+
+  lavaanVersion           <- getPackageVersion("lavaan")
+  optim.gradient.override <- NULL
+  if (hasComposites && utils::compareVersion(lavaanVersion, "0.6-22") < 0)
+    optim.gradient.override <- "numerical" # analytical does not work
 
   if (!any(grepl(":", parTable$rhs) | grepl(":", parTable$lhs))) {
     fitSEM <- wrapper(lavaan::sem(
@@ -380,8 +395,10 @@ parameterEstimatesLavSAM <- function(syntax,
       auto.fix.first   = auto.fix.first,
       auto.fix.single  = auto.fix.single,
       group            = group,
+      se               = "none",
       sampling.weights = sampling.weights,
       sampling.weights.normalization = sampling.weights.normalization,
+      optim.gradient   = optim.gradient.override,
       ...
     ))
 
@@ -397,7 +414,7 @@ parameterEstimatesLavSAM <- function(syntax,
     lhs <- pt$lhs
     op  <- pt$op
 
-    cond1 <- op == "=~"
+    cond1 <- op %in% c("=~", "<~")
     cond2 <- op == "~1"
     cond3 <- op == "~~" & !lhs %in% lVs & !rhs %in% lVs
 
@@ -428,40 +445,188 @@ parameterEstimatesLavSAM <- function(syntax,
     auto.fix.first   = auto.fix.first,
     auto.fix.single  = auto.fix.single,
     group            = group,
+    se               = "none",
     sampling.weights = sampling.weights,
     sampling.weights.normalization = sampling.weights.normalization,
+    optim.gradient   = optim.gradient.override,
     ...
   ))
 
-  if (isHigherOrder) {
+  if (isHigherOrder || hasComposites) {
     # use factor scores instead
     # using `sam.method="fsr"` doesn't work for this purpose (yet)
     # so we do it manually instead
-    dataSAM <- tryCatch(lavaan::lavPredict(fitH0, transform = TRUE),
-                        error = \(e) lavaan::lavPredict(fitH0))
+
+    dataListSam <- tryCatch(
+      lavaan::lavPredict(
+        object = fitH0,
+        transform = TRUE,
+        append.data = TRUE,
+        drop.list.single.group = FALSE,
+      ),
+      error = function(e) {
+        lavaan::lavPredict(
+          object = fitH0,
+          transform = FALSE,
+          append.data = TRUE,
+          drop.list.single.group = FALSE,
+        )
+      }
+    )
+
+    if (hasComposites && any(parTableOuter$op == "=~") &&
+        utils::compareVersion(lavaanVersion, "0.6-99") < 0) {
+      # lavPredict doesn't handle composites very well at all,
+      # and it seems to f**up all the factor scores. Here we define
+      # a small submodel only of the latent variables, which seems to
+      # work better. Here we try to remove the composites from the model
+
+      parTableOuterReflective <- parTableOuter[
+        parTableOuter$op == "=~", , drop = FALSE
+      ]
+
+      syntaxH0b <- parTableToSyntax(parTableOuterReflective)
+
+      fitH0b <- wrapper(lavaan::cfa(
+        model            = syntaxH0b,
+        data             = data,
+        meanstructure    = meanstructure,
+        estimator        = estimator,
+        missing          = missing,
+        orthogonal.x     = orthogonal.x,
+        orthogonal.y     = orthogonal.y,
+        auto.fix.first   = auto.fix.first,
+        auto.fix.single  = auto.fix.single,
+        group            = group,
+        se               = "none",
+        sampling.weights = sampling.weights,
+        sampling.weights.normalization = sampling.weights.normalization,
+        ...
+      ))
+
+      dataListSamReflective <- tryCatch(
+        lavaan::lavPredict(
+          object = fitH0b,
+          transform = TRUE,
+          append.data = FALSE,
+          drop.list.single.group = FALSE,
+        ),
+        error = function(e) {
+          lavaan::lavPredict(
+            object = fitH0b,
+            transform = FALSE,
+            append.data = FALSE,
+            drop.list.single.group = FALSE,
+          )
+        }
+      )
+
+      for (g in seq_along(dataListSamReflective)) {
+        X <- dataListSam[[g]]
+        Y <- dataListSamReflective[[g]]
+
+        replace <- intersect(colnames(X), colnames(Y))
+        X[,replace] <- Y[,replace]
+
+        dataListSam[[g]] <- X
+      }
+    }
+
+    if (hasComposites && utils::compareVersion(lavaanVersion, "0.6-99") < 0) {
+      # Composites are not handled properly by lavPredict (yet)
+
+      coefListH0 <- lavaan::lavInspect(
+        object = fitH0,
+        what = "coef",
+        drop.list.single.group = FALSE
+      )
+
+      dataListH0 <- lavaan::lavInspect(
+        object = fitH0,
+        what = "data",
+        drop.list.single.group = FALSE
+      )
+
+      composites <- getComposites(parTableOuter)
+
+      # variables with non-zero intercepts
+      interceptVars <- parTable[parTable$op == "~1", "lhs"]
+
+      for (g in seq_along(dataListSam)) {
+        Y.g <- dataListSam[[g]]
+        X.g <- dataListH0[[g]]
+        W.g <- coefListH0[[g]]$wmat
+
+        composites.g <- intersect(colnames(Y.g), composites)
+     
+        if (is.null(W.g) || !length(composites.g))
+          next
+
+        F.g <- X.g %*% W.g
+        Y.g[,composites.g] <- F.g[,composites.g]
+
+        # We want to mean center composites where the mean structure has
+        # been fixed to zero
+        for (comp0 in setdiff(composites.g, interceptVars))
+          Y.g[,comp0] <- Y.g[,comp0] - mean(Y.g[,comp0], na.rm = TRUE)
+
+        dataListSam[[g]] <- Y.g
+      }
+    }
+
+    if (!is.null(sampling.weights)) {
+      warning2(
+        "Ignoring sampling weights when optimizing parameter estimates..."
+      )
+      sampling.weights <- NULL
+    }
+
+    if (length(group)) {
+      stopif(length(group) > 1L,
+        "Unable to optimize parameters for multigroup models with more\n",
+        "than one grouping variable!"
+      )
+
+      if (!is.null(names(dataListSam))) groupings <- names(dataListSam)
+      else groupings <- seq_along(dataListSam)
+
+      for (g in groupings) {
+        # Append grouping varible before rbind
+        # Grouping variable may be a character, so we
+        # convert to a data.frame before appending
+        X <- as.data.frame(dataListSam[[g]])
+        X[[group]] <- g
+
+        dataListSam[[g]] <- X
+      }
+    }
+
+    dataSam <- do.call(rbind, dataListSam)
 
     structvars <- unique(c(
-      colnames(dataSAM),
+      colnames(dataSam),
       parTable[grepl(":", parTable$lhs), "lhs"],
       parTable[grepl(":", parTable$rhs), "rhs"]
     ))
 
-    parTableInner <- parTable[parTable$lhs %in% structvars &
-                              parTable$rhs %in% structvars &
-                              parTable$op != "=~", , drop = FALSE]
+    parTableInner <- parTable[
+      parTable$lhs %in% structvars &
+      parTable$rhs %in% structvars &
+      !parTable$op %in% c("=~", "<~"), , drop = FALSE
+    ]
 
-    syntaxSAM <- parTableToSyntax(parTableInner)
+    syntaxSam <- parTableToSyntax(parTableInner)
     SAMFUN    <- lavaan::sem
 
   } else {
-    syntaxSAM <- parTableToSyntax(parTable)
-    dataSAM   <- data
+    syntaxSam <- parTableToSyntax(parTable)
+    dataSam   <- data
     SAMFUN    <- lavaan::sam
   }
 
-  fitSAM <- wrapper(SAMFUN(
-    model            = syntaxSAM,
-    data             = dataSAM,
+  fitSam <- wrapper(SAMFUN(
+    model            = syntaxSam,
+    data             = dataSam,
     se               = "none",
     estimator        = estimator,
     missing          = missing,
@@ -472,12 +637,12 @@ parameterEstimatesLavSAM <- function(syntax,
     group            = group,
     sampling.weights = sampling.weights,
     sampling.weights.normalization = sampling.weights.normalization,
-    ...
+    ... # don't need to set optim.gradient here, since we only have ovs
   ))
 
   parTableH0 <- lavaan::parameterEstimates(fitH0)
   measr  <- getMeasrRows(parTableH0)
-  struct <- lavaan::parameterEstimates(fitSAM)
+  struct <- lavaan::parameterEstimates(fitSam)
 
   addcol <- \(pt, col, val) if (!col %in% colnames(pt)) {pt[[col]] <- val; pt} else pt
   cols.x <- c("lhs", "op", "rhs", "group")

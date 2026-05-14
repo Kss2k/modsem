@@ -1,6 +1,7 @@
 OP_REPLACEMENTS <- c("~~"  = "___COVARIANCE___",
                      "=~"  = "___MEASUREMENT___",
                      ":="  = "___CUSTOM___",
+                     "<~"  = "___COMPOSITE___",
                      "~"   = "___REGRESSION___",
                      ":"   = "___INTERACTION___",
                      "<->" = "___MPLUS_COVARIANCE___",
@@ -564,7 +565,7 @@ nNegativeLast <- function(x, n = 10) {
 }
 
 
-getDegreesOfFreedom <- function(p, coef, mean.structure = TRUE) {
+getDegreesOfFreedom <- function(p, coef, mean.structure = TRUE, model) {
   if (!length(p)) return(NA_real_)
 
   momentsPerGroup <- function(pp) {
@@ -575,8 +576,22 @@ getDegreesOfFreedom <- function(p, coef, mean.structure = TRUE) {
     }
   }
 
-  m_total <- sum(vapply(p, momentsPerGroup, numeric(1L)))
-  m_total - length(coef)
+  
+  df.total <- sum(vapply(p, momentsPerGroup, numeric(1L)))
+  df <- df.total - length(coef)
+
+  if (isTRUE(model$model$info$fixed.composite.var)) {
+
+    for (g in seq_along(model$model$models)) {
+      M <- model$model$models[[g]]$matricesNA
+
+      # This would be closer to lavaan...
+      # df <- df - sum(apply(M$W, MARGIN = 2L, FUN = \(x) any(is.na(x))))
+      df <- df - sum(is.na(M$T))
+    }
+  }
+
+  df
 }
 
 
@@ -672,16 +687,25 @@ intTermsAffectLV <- function(lV, parTable, etas = NULL) {
 }
 
 
-getLambdaParTable <- function(parTable, rows = NULL, cols = NULL, fill.missing = FALSE) {
+getLambdaParTable <- function(parTable, rows = NULL, cols = NULL, fill.missing = FALSE,
+                              op = c("=~", "<~")) {
   lVs <- getLVs(parTable)
 
   indsLVs <- getIndsLVs(parTable, lVs = lVs)
   allInds <- unique(unlist(indsLVs))
 
-  lambda <- matrix(0, nrow = length(allInds), ncol = length(lVs),
-                   dimnames = list(allInds, lVs))
+  lambda <- matrix(
+    0, nrow = length(allInds), ncol = length(lVs),
+    dimnames = list(allInds, lVs)
+  )
+
   for (lV in lVs) for (ind in indsLVs[[lV]]) {
-    lambda[ind, lV] <- parTable[parTable$lhs == lV & parTable$rhs == ind, "est"]
+    idx <- which(
+      parTable$lhs == lV & parTable$rhs == ind & parTable$op %in% op
+    )
+
+    if (length(idx))
+      lambda[ind, lV] <- parTable[idx[[1L]], "est"]
   }
 
   if (is.null(rows)) rows <- rownames(lambda)
@@ -793,7 +817,11 @@ getCoefMatricesDA <- function(parTable,
   inds <- unique(unlist(indsLV))
 
   # Create lambda
-  lambda <- getLambdaParTable(parTable, rows = inds, cols = lVs, fill.missing = TRUE)
+  lambda <- getLambdaParTable(
+    parTable = parTable, rows = inds,
+    cols = lVs, fill.missing = TRUE
+  )
+
 
   # Create Gamma
   gammaXi <- matrix(0, nrow = length(etas), ncol = length(xis),
@@ -856,11 +884,49 @@ getCoefMatricesDA <- function(parTable,
   alpha <- createBeta(etas)
   beta0 <- createBeta(xis)
   tau   <- createBeta(inds)
-  Binv <- solve(diag(nrow(gammaEta)) - gammaEta)
+  Binv  <- solve(diag(nrow(gammaEta)) - gammaEta)
 
-  list(gammaXi = gammaXi, gammaEta = gammaEta, Binv = Binv, psi = psi,
-       phi = phi, theta = theta, alpha = alpha, beta0 = beta0, tau = tau,
-       lambda = lambda, inds = inds, xis = xis, etas = etas, lVs = lVs)
+  composites <- getComposites(parTable)
+  compositeInds <- getCompositeIndicators(parTable)
+
+  if (length(composites) && length(compositeInds)) {
+    factorInds <- setdiff(inds, compositeInds)
+    factors    <- setdiff(c(xis, etas), composites)
+
+    W <- lambda
+    T <- theta
+
+    W[,factors]    <- 0
+    W[factorInds,] <- 0
+    T[,factorInds] <- 0
+    T[factorInds,] <- 0
+
+    lambda[compositeInds,] <- 0
+    lambda[,composites]    <- 0
+    theta[compositeInds,]  <- 0
+    theta[,compositeInds]  <- 0
+
+    lambda.c <- T %*% W %*% GINV(t(W) %*% T %*% W)
+    theta.c <- T - lambda.c %*% t(W) %*% T %*% W %*% t(lambda.c)
+
+  } else {
+
+    T <- NULL
+    W <- NULL
+
+    lambda.c <- lambda
+    lambda.c[TRUE] <- 0
+
+    theta.c <- theta 
+    theta.c[TRUE] <- 0
+  }
+
+  list(
+    gammaXi = gammaXi, gammaEta = gammaEta, Binv = Binv, psi = psi,
+    phi = phi, theta = theta, alpha = alpha, beta0 = beta0, tau = tau,
+    lambda = lambda, inds = inds, xis = xis, etas = etas, lVs = lVs,
+    lambda.c = lambda.c, theta.c = theta.c, T = T, W = W
+  )
 }
 
 
@@ -895,18 +961,22 @@ calcExpectedMatricesDA_Group <- function(parTable, xis = NULL, etas = NULL, intT
   Binv     <- matricesCentered$Binv
   tau      <- matricesCentered$tau
   lambda   <- matricesCentered$lambda
+  lambda.c <- matricesCentered$lambda.c
   alpha    <- matricesCentered$alpha
   beta0    <- matricesCentered$beta0
   theta    <- matricesCentered$theta
+  theta.c  <- matricesCentered$theta.c
 
   covEtaEta <- Binv %*% (gammaXi %*% phi %*% t(gammaXi) + psi) %*% t(Binv)
   covEtaXi <- Binv %*% gammaXi %*% phi
   sigma.lv <- rbind(cbind(phi, t(covEtaXi)),
                     cbind(covEtaXi, covEtaEta))
-  sigma.ov <- lambda %*% sigma.lv %*% t(lambda) + theta
+  sigma.ov <- (
+    (lambda + lambda.c) %*% sigma.lv %*% t(lambda + lambda.c) + theta + theta.c
+  )
 
   # lower left corner cov-lv-ov
-  sigma.lv.ov <- lambda %*% sigma.lv
+  sigma.lv.ov <- (lambda + lambda.c) %*% sigma.lv
   sigma.ov.lv <- t(sigma.lv.ov)
 
   sigma.all <- rbind(cbind(sigma.lv, sigma.ov.lv),
@@ -1080,7 +1150,7 @@ sortParTableDA <- function(parTable, model) {
   etasLow  <- etas[!isHigherOrderEta]
   etasHigh <- etas[isHigherOrderEta]
 
-  opOrder <- c("=~", "~", "~1", "~~", "|", ":=")
+  opOrder <- c("=~", "<~", "~", "~1", "~~", "|", ":=")
   varOrder <- unique(c(indsXis, indsEtas, xisLow, etasLow, xisHigh, xisLow))
   groupOrder <- c(getGroupsParTable(parTable), 0)
 
