@@ -1,9 +1,9 @@
 # Global variables
-namesParMatrices <- c("lambdaX", "lambdaY", "gammaXi", "gammaEta",
-                      "thetaDelta", "thetaEpsilon", "phi", "A",
+NAMES_PAR_MATRICES <- c("lambdaX", "lambdaY", "gammaXi", "gammaEta",
+                      "thetaDelta", "thetaEpsilon", "W", "T", "phi", "A",
                       "psi", "tauX", "tauY", "alpha", "beta0", "omegaEtaXi",
                       "omegaXiXi")
-namesParMatricesCov <- c("gammaXi", "gammaEta", "A", "psi", "phi")
+NAMES_PAR_MATRICES_COV <- c("gammaXi", "gammaEta", "A", "psi", "phi")
 
 
 createTheta <- function(model, start = NULL, parTable.in = NULL) {
@@ -251,9 +251,9 @@ fillMainModel <- function(model, theta, thetaLabel, fillPhi = FALSE,
   M        <- model$matrices
   covModel <- model$covModel
 
-  lMatrices <- model$labelMatrices[namesParMatrices]
-  pMatrices <- M[namesParMatrices]
-  M[namesParMatrices] <- fillMatricesLabels(pMatrices, lMatrices, thetaLabel)
+  lMatrices <- model$labelMatrices[NAMES_PAR_MATRICES]
+  pMatrices <- M[NAMES_PAR_MATRICES]
+  M[NAMES_PAR_MATRICES] <- fillMatricesLabels(pMatrices, lMatrices, thetaLabel)
 
   if (!is.null(model$covModel$matrices)) {
     M$phi <- M$A <- expectedCovModel(covModel, method = method, sortedXis = xis)
@@ -289,9 +289,9 @@ fillCovModel <- function(covModel, theta, thetaLabel) {
   if (is.null(covModel$matrices)) return(covModel)
   M <- covModel$matrices
 
-  lMatrices <- covModel$labelMatrices[namesParMatricesCov]
-  pMatrices <- M[namesParMatricesCov]
-  M[namesParMatricesCov] <- fillMatricesLabels(pMatrices, lMatrices, thetaLabel)
+  lMatrices <- covModel$labelMatrices[NAMES_PAR_MATRICES_COV]
+  pMatrices <- M[NAMES_PAR_MATRICES_COV]
+  M[NAMES_PAR_MATRICES_COV] <- fillMatricesLabels(pMatrices, lMatrices, thetaLabel)
 
   M$psi      <- fillSymmetric(M$psi, fetch(theta, "^psi"))
   M$gammaEta <- fillNA_Matrix(M$gammaEta, theta = theta, pattern = "^gammaEta")

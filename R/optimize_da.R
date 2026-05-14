@@ -378,10 +378,9 @@ parameterEstimatesLavSAM <- function(syntax,
   if (suppress.warnings.lavaan) wrapper <- suppressWarnings
   else                          wrapper <- \(x) x # do nothing
 
+  lavaanVersion           <- getPackageVersion("lavaan")
   optim.gradient.override <- NULL
-  lavaanVersion <- getPackageVersion("lavaan")
-
-  if (hasComposites && lavaanVersion < "0.6-22")
+  if (hasComposites && utils::compareVersion(lavaanVersion, "0.6-22") < 0)
     optim.gradient.override <- "numerical" # analytical does not work
 
   if (!any(grepl(":", parTable$rhs) | grepl(":", parTable$lhs))) {
@@ -475,7 +474,8 @@ parameterEstimatesLavSAM <- function(syntax,
       }
     )
 
-    if (hasComposites && any(parTableOuter$op == "=~") && lavaanVersion < "0.6-99") {
+    if (hasComposites && any(parTableOuter$op == "=~") &&
+        utils::compareVersion(lavaanVersion, "0.6-99") < 0) {
       # lavPredict doesn't handle composites very well at all,
       # and it seems to f**up all the factor scores. Here we define
       # a small submodel only of the latent variables, which seems to
@@ -532,7 +532,7 @@ parameterEstimatesLavSAM <- function(syntax,
       }
     }
 
-    if (hasComposites && lavaanVersion < "0.6-99") {
+    if (hasComposites && utils::compareVersion(lavaanVersion, "0.6-99") < 0) {
       # Composites are not handled properly by lavPredict (yet)
 
       coefListH0 <- lavaan::lavInspect(
