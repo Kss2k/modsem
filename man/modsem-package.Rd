@@ -11,6 +11,7 @@ Estimation of interaction (i.e., moderation) effects between latent variables in
 Useful links:
 \itemize{
   \item \url{https://modsem.org}
+  \item \url{https://github.com/kss2k/modsem}
 }
 
 }

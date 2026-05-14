@@ -156,6 +156,7 @@ optimizeStartingParamsDA <- function(model,
     Phi <- fillLabelsMatrix(Phi, labelMatricesMain$phi, symmetric = TRUE)
     A   <- fillLabelsMatrix(A, labelMatricesMain$A, symmetric = FALSE)
     T   <- fillLabelsMatrix(T, labelMatricesMain$T, symmetric = FALSE)
+    W   <- fillLabelsMatrix(W, labelMatricesMain$W, symmetric = FALSE)
 
     ThetaEpsilon <- fillLabelsMatrix(ThetaEpsilon,
                                      labelMatricesMain$thetaEpsilon,
