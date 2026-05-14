@@ -1,0 +1,49 @@
+---
+title: "composite constructs"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{composite constructs}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+EVAL_DEFAULT <- FALSE
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = EVAL_DEFAULT
+)
+```
+
+```{r setup}
+library(modsem)
+```
+
+# Composite Constructs
+As of version `1.0.20`, the `modsem` function supports the estimation of models
+with composite constructs, when using `method="lms"`. The approach is based
+on [Tamara Schamberger, Florian Schuberth, Jörg Henseler & Yves Rosseel, 2015](https://arxiv.org/abs/2508.06112).
+
+Here we can see a simple example, using the `TPB` dataset.
+
+```{r}
+tpb <- '
+# Outer Model (Based on Hagger et al., 2007)
+  # Latent Variables
+  SN =~ sn1 + sn2
+  PBC =~ pbc1 + pbc2 + pbc3
+  INT =~ int1 + int2 + int3
+
+  # Composites
+  ATT <~ att1 + att2 + att3 + att4 + att5
+  BEH <~ b1 + b2
+
+# Inner Model (Based on Steinmetz et al., 2011)
+  INT ~ ATT + SN + PBC
+  BEH ~ INT + PBC + INT:PBC
+'
+
+fit <- modsem(tpb.lin, TPB, method = "lms", nodes = 32)
+summary(fit)
+```
