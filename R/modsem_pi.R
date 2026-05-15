@@ -533,6 +533,7 @@ addSpecsParTable <- function(modelSpec,
   parTable <- rbindParTable(parTable, measureParTable)
 
   compositeProds    <- latentProds[isCompVec]
+  nonCompRelDfs     <- relDfs[!isCompVec[names(relDfs)]]
   hasNonCompProds   <- any(!isCompVec)
 
   # Enter label/constraint block only when non-composite products require it
@@ -584,8 +585,8 @@ addSpecsParTable <- function(modelSpec,
     }
   }
 
-  if (constrained.var)      parTable <- specifyVarCov(parTable, relDfs)
-  if (constrained.loadings) parTable <- specifyFactorLoadings(parTable, relDfs)
+  if (constrained.var)      parTable <- specifyVarCov(parTable, nonCompRelDfs)
+  if (constrained.loadings) parTable <- specifyFactorLoadings(parTable, nonCompRelDfs)
 
   if (constrained.prod.mean) {
     # Skip mean constraint for fully-composite product terms
