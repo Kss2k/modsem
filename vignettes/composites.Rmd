@@ -24,8 +24,10 @@ library(modsem)
 As of version `1.0.20`, the `modsem` function supports the estimation of models
 with composite constructs, when using `method="lms"`. The approach is based
 on [Tamara Schamberger, Florian Schuberth, Jörg Henseler & Yves Rosseel, 2015](https://arxiv.org/abs/2508.06112).
+Depending on your `lavaan` version (`>=0.6-20`), composite constructs can also
+be used with the product indicator approaches (e.g., `method="dblcent"`).
 
-Here we can see a simple example, using the `TPB` dataset.
+Here we can see a simple example, using the LMS approach with the `TPB` dataset.
 
 ```{r}
 tpb <- '
