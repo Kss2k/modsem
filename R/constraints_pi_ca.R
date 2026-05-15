@@ -35,9 +35,9 @@ specifyFactorLoadings <- function(parTable, relDfs) {
 }
 
 
-addVariances <- function(pt) {
+addVariances <- function(pt, exclude = character(0)) {
   # Add variance-labels if missing for LVs
-  LVs <- getLVs(pt)
+  LVs <- setdiff(getLVs(pt), exclude)
   if (length(LVs) == 0) return(pt)
 
   specifiedLVs <- pt[pt$lhs %in% LVs &
