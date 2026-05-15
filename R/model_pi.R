@@ -40,6 +40,14 @@ parseLavaan <- function(model.syntax = NULL,
   checkElementsInProds(elementsInProds, lVs=lVs, oVs=oVs)
   checkHigherOrderInteractions(elementsInProds, parTable=parTable)
 
+  # Identify composite (formative) variables and which product terms are fully composite
+  composites <- getComposites(parTable)
+  isCompositeProd <- vapply(
+    elementsInProds,
+    FUN.VALUE = logical(1L),
+    FUN = function(elems) length(elems) > 0L && all(elems %in% composites)
+  )
+
   # Inds belonging to latent variables which are specified in the syntax
   indsLatents <- structureLavExprs(measureExprs)
 
@@ -82,6 +90,9 @@ parseLavaan <- function(model.syntax = NULL,
                     prodNames           = prodNamesCleaned,
                     elementsInProdNames = elementsInProds,
                     relDfs = relDfs,
+
+                    composites      = composites,
+                    isCompositeProd = isCompositeProd,
 
                     indsInLatentProds = indsInLatentProds,
                     latentProds       = names(indsInLatentProds),

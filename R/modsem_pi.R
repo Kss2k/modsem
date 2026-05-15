@@ -61,6 +61,12 @@
 #'   residual covariances are only allowed between product indicators which belong to the same
 #'   latent interaction term.
 #'
+#' @param composite.int.res.cov Should residual covariance syntax be generated for interaction
+#'   terms that are fully composite (i.e., all component variables defined with \code{<~})?
+#'   Defaults to \code{FALSE} because for fully composite interaction terms the residual
+#'   covariances of the product indicators are not needed. Set to \code{TRUE} to force
+#'   residual covariance syntax for composite interaction terms (useful for testing).
+#'
 #' @param auto.scale methods which should be scaled automatically (usually not useful)
 #'
 #' @param auto.center methods which should be centered automatically (usually not useful)
@@ -188,6 +194,7 @@ modsem_pi <- function(model.syntax = NULL,
                       constrained.var = NULL,
                       res.cov.method = NULL,
                       res.cov.across = NULL,
+                      composite.int.res.cov = FALSE,
                       auto.scale = "none",
                       auto.center = "none",
                       estimator = "ML",
@@ -229,6 +236,7 @@ modsem_pi <- function(model.syntax = NULL,
       constrained.var = constrained.var,
       res.cov.method = res.cov.method,
       res.cov.across = res.cov.across,
+      composite.int.res.cov = composite.int.res.cov,
       auto.scale = auto.scale,
       auto.center = auto.center,
       run = run,
@@ -292,6 +300,19 @@ modsem_pi <- function(model.syntax = NULL,
                            suppress.warnings.match = suppress.warnings.match,
                            match.recycle = methodSettings$match.recycle)
 
+  # Composite variables in interaction terms are not supported with method="ca"
+  if (method == "ca" && length(modelSpec$composites) > 0L) {
+    hasCompositeElement <- vapply(
+      modelSpec$elementsInProdNames,
+      FUN.VALUE = logical(1L),
+      FUN = function(elems) any(elems %in% modelSpec$composites)
+    )
+    if (any(hasCompositeElement)) {
+      stop2('method="ca" does not support composite variables in interaction terms. ',
+            'Use method="dblcent", "rca", "uca", or "pind" instead.')
+    }
+  }
+
   # Save these for later
   input <- list(syntax = model.syntax, data = data,
                 parTable = modelSpec$parTable)
@@ -335,7 +356,8 @@ modsem_pi <- function(model.syntax = NULL,
                                constrained.prod.mean = methodSettings$constrained.prod.mean,
                                constrained.loadings = methodSettings$constrained.loadings,
                                constrained.var = methodSettings$constrained.var,
-                               firstFixed = first.loading.fixed)
+                               firstFixed = first.loading.fixed,
+                               composite.int.res.cov = composite.int.res.cov)
 
   newSyntax <- parTableToSyntax(parTable, removeColon = TRUE)
 
@@ -483,22 +505,39 @@ addSpecsParTable <- function(modelSpec,
                              constrained.prod.mean = FALSE,
                              constrained.loadings = FALSE,
                              constrained.var = FALSE,
-                             firstFixed = TRUE) {
-  relDfs       <- modelSpec$relDfs
-  latentProds  <- modelSpec$latentProds
-  indProdNames <- modelSpec$indProdNames
-  parTable     <- modelSpec$parTable
+                             firstFixed = TRUE,
+                             composite.int.res.cov = FALSE) {
+  relDfs          <- modelSpec$relDfs
+  latentProds     <- modelSpec$latentProds
+  indProdNames    <- modelSpec$indProdNames
+  parTable        <- modelSpec$parTable
+  isCompositeProd <- modelSpec$isCompositeProd
 
   if (is.null(relDfs) || length(relDfs) < 1) return(parTable)
 
-  measureParTable <- purrr::map2(.x = latentProds, .y = indProdNames,
-                                 .f = getParTableMeasure, operator = "=~",
-                                 firstFixed = firstFixed) |>
-    purrr::list_rbind()
+  # Look up composite status for each product term (FALSE when unknown)
+  isCompVec <- isCompositeProd[latentProds]
+  isCompVec[is.na(isCompVec)] <- FALSE
+
+  # Composite product terms use <~ (formative); mixed/latent use =~
+  measureParTable <- purrr::map2(
+    .x = latentProds,
+    .y = indProdNames,
+    .f = function(prodName, indNames) {
+      isComp <- isTRUE(isCompVec[[prodName]])
+      op     <- if (isComp) "<~" else "=~"
+      ff     <- if (isComp) FALSE else firstFixed
+      getParTableMeasure(prodName, indNames, operator = op, firstFixed = ff)
+    }
+  ) |> purrr::list_rbind()
   parTable <- rbindParTable(parTable, measureParTable)
 
-  if (constrained.var || constrained.loadings || constrained.prod.mean) {
-    parTable <- addVariances(parTable) |>
+  compositeProds    <- latentProds[isCompVec]
+  hasNonCompProds   <- any(!isCompVec)
+
+  # Enter label/constraint block only when non-composite products require it
+  if (constrained.var || constrained.loadings || (constrained.prod.mean && hasNonCompProds)) {
+    parTable <- addVariances(parTable, exclude = compositeProds) |>
       addCovariances() |>
       labelParameters() |>
       labelFactorLoadings()
@@ -508,45 +547,60 @@ addSpecsParTable <- function(modelSpec,
     stop2("residual.cov.syntax is not FALSE or TRUE in generateSyntax")
 
   } else if (residual.cov.syntax && res.cov.method != "none") {
-    # Even if `res.cov.across == TRUE` we still want to run `getParTableResCov`
-    # for each latent interaction terms, due to some important checks, which
-    # won't work properly when using a combined `relDf`. If checks fail
-    # we get `attr(relDf, "OK") == FALSE`
-    residualCovariancesList <- purrr::map(.x = relDfs, .f = getParTableResCov,
-                                          method = res.cov.method,
-                                          pt = parTable,
-                                          include.single.inds = FALSE)
-    residualCovariances <- purrr::list_rbind(residualCovariancesList)
-
-    if (res.cov.across) {
-      # Get residual covariances across interaction terms
-      # E.g.,
-      # X:Z =~ x1:z1
-      # X:M =~ x1:m1
-      # x1:z1 ~~ x1:m1
-      isOK <- vapply(residualCovariancesList, FUN.VALUE = logical(1L),
-                     FUN = \(rows) attr(rows, "OK"))
-      RelList <- Reduce(lapply(unname(relDfs[isOK]), FUN = as.list), f = c)
-      residualCovariances <- getParTableResCov(relDf = RelList, # works with list as well
-                                               method = res.cov.method,
-                                               pt = parTable,
-                                               include.single.inds = TRUE)
+    # Skip residual covariances for fully-composite product terms unless
+    # composite.int.res.cov = TRUE
+    if (!composite.int.res.cov) {
+      resCovRelDfs <- relDfs[!isCompVec[names(relDfs)]]
+    } else {
+      resCovRelDfs <- relDfs
     }
 
-    parTable <- rbindParTable(parTable, residualCovariances)
+    if (length(resCovRelDfs) > 0) {
+      # Even if `res.cov.across == TRUE` we still want to run `getParTableResCov`
+      # for each interaction term, due to some important checks. If checks fail
+      # we get `attr(relDf, "OK") == FALSE`
+      residualCovariancesList <- purrr::map(.x = resCovRelDfs, .f = getParTableResCov,
+                                            method = res.cov.method,
+                                            pt = parTable,
+                                            include.single.inds = FALSE)
+      residualCovariances <- purrr::list_rbind(residualCovariancesList)
+
+      if (res.cov.across) {
+        # Get residual covariances across interaction terms
+        # E.g.,
+        # X:Z =~ x1:z1
+        # X:M =~ x1:m1
+        # x1:z1 ~~ x1:m1
+        isOK <- vapply(residualCovariancesList, FUN.VALUE = logical(1L),
+                       FUN = \(rows) attr(rows, "OK"))
+        RelList <- Reduce(lapply(unname(resCovRelDfs[isOK]), FUN = as.list), f = c)
+        residualCovariances <- getParTableResCov(relDf = RelList,
+                                                 method = res.cov.method,
+                                                 pt = parTable,
+                                                 include.single.inds = TRUE)
+      }
+
+      parTable <- rbindParTable(parTable, residualCovariances)
+    }
   }
 
   if (constrained.var)      parTable <- specifyVarCov(parTable, relDfs)
   if (constrained.loadings) parTable <- specifyFactorLoadings(parTable, relDfs)
 
   if (constrained.prod.mean) {
-    restrictedMeans <- purrr::map2(.x = modelSpec$prodNames,
-                                   .y = modelSpec$elementsInProdNames,
-                                   .f = getParTableRestrictedMean,
-                                   createLabels = !constrained.var,
-                                   pt = parTable) |>
-      purrr::list_rbind()
-    parTable <- rbindParTable(parTable, restrictedMeans)
+    # Skip mean constraint for fully-composite product terms
+    nonCompProdNames    <- modelSpec$prodNames[!isCompVec[modelSpec$prodNames]]
+    nonCompElemsInProds <- modelSpec$elementsInProdNames[nonCompProdNames]
+
+    if (length(nonCompProdNames) > 0) {
+      restrictedMeans <- purrr::map2(.x = nonCompProdNames,
+                                     .y = nonCompElemsInProds,
+                                     .f = getParTableRestrictedMean,
+                                     createLabels = !constrained.var,
+                                     pt = parTable) |>
+        purrr::list_rbind()
+      parTable <- rbindParTable(parTable, restrictedMeans)
+    }
   }
 
   # redefine labels (using 'old' := 'new'), if any were overwritten when adding constraints
@@ -759,6 +813,7 @@ modsemPICluster <- function(model.syntax = NULL,
                             constrained.var = NULL,
                             res.cov.method = NULL,
                             res.cov.across = NULL,
+                            composite.int.res.cov = FALSE,
                             auto.scale = "none",
                             auto.center = "none",
                             estimator = "ML",
@@ -819,6 +874,7 @@ modsemPICluster <- function(model.syntax = NULL,
       constrained.var = constrained.var,
       res.cov.method = res.cov.method,
       res.cov.across = res.cov.across,
+      composite.int.res.cov = composite.int.res.cov,
       auto.scale = auto.scale,
       auto.center = auto.center,
       suppress.warnings.match = suppress.warnings.match,
@@ -847,6 +903,7 @@ modsemPICluster <- function(model.syntax = NULL,
       constrained.var = constrained.var,
       res.cov.method = res.cov.method,
       res.cov.across = res.cov.across,
+      composite.int.res.cov = composite.int.res.cov,
       auto.scale = auto.scale,
       auto.center = auto.center,
       suppress.warnings.match = suppress.warnings.match,
