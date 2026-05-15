@@ -138,24 +138,28 @@ testthat::test_that('method="ca" allows linear composites with latent products',
 # --- Estimation: fully-composite interaction ----------------------------------
 
 testthat::test_that("fully-composite interaction converges with dblcent", {
-  fit <- suppressWarnings(modsem_pi(m_fully_comp, oneInt, method = "dblcent"))
+  fit <- suppressWarnings(modsem_pi(m_fully_comp, oneInt, method = "dblcent",
+                                    optim.gradient = "numerical"))
   testthat::expect_true(lavaan::lavInspect(fit$lavaan, "converged"))
 })
 
 testthat::test_that("fully-composite interaction converges with rca", {
-  fit <- suppressWarnings(modsem_pi(m_fully_comp, oneInt, method = "rca"))
+  fit <- suppressWarnings(modsem_pi(m_fully_comp, oneInt, method = "rca",
+                                    optim.gradient = "numerical"))
   testthat::expect_true(lavaan::lavInspect(fit$lavaan, "converged"))
 })
 
 testthat::test_that("fully-composite interaction converges with uca", {
-  fit <- suppressWarnings(modsem_pi(m_fully_comp, oneInt, method = "uca"))
+  fit <- suppressWarnings(modsem_pi(m_fully_comp, oneInt, method = "uca",
+                                    optim.gradient = "numerical"))
   testthat::expect_true(lavaan::lavInspect(fit$lavaan, "converged"))
 })
 
 # --- Estimation: mixed interaction --------------------------------------------
 
 testthat::test_that("mixed (latent x composite) interaction converges with dblcent", {
-  fit <- suppressWarnings(modsem_pi(m_mixed, oneInt, method = "dblcent"))
+  fit <- suppressWarnings(modsem_pi(m_mixed, oneInt, method = "dblcent",
+                                    optim.gradient = "numerical"))
   testthat::expect_true(lavaan::lavInspect(fit$lavaan, "converged"))
 })
 
