@@ -469,9 +469,7 @@ modsemOrderedScaleCorrectionV2 <- function(model.syntax,
   cols.cont    <- cols[!(cols %in% cols.ordered) & vapply(data[cols], is.numeric, TRUE)]
   ncat <- vapply(cols.ordered, FUN.VALUE = numeric(1L), FUN = \(x) length(unique(data[[x]])))
 
-  warnif(any(ncat <= 2L) && !probit.correction,
-         "Some ordered variables only have two categories.\n",
-         "Consider passing `ordered.probit.correction=TRUE`")
+  stopif(any(ncat <= 2L), "Ordinal variables must have 3 or more categories!")
 
   ordinalize <- function(x) {
     if   (is.ordered(x)) return(as.ordered(as.integer(x))) # re-order levels, e.g., [2, 3, 4] -> [1, 2, 3]
