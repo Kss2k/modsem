@@ -75,7 +75,7 @@ transformedSolutionCOEFS <- function(object,
 
       parTable <- var_interactions(parTable, ignore.means = TRUE, mc.reps = mc.reps)
 
-      for (g in getGroupsParTable(parTable)) {
+      if (isLav) for (g in getGroupsParTable(parTable)) {
         maskNew.g <- parTable$group == g
         maskOld.g <- parTableOld$group == g
 
