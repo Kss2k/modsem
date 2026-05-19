@@ -171,11 +171,7 @@ modsemOrderedMCCorrection <- function(model.syntax,
   type.se <- if (isTRUE(calc.se)) fit0$type.se else "none"
   type.se.env <- new.env(parent = emptyenv())
   type.se.env$value <- type.se
-  naive.se.label <- paste0(
-    fit0$type.se,
-    " + ordered mc naive scaling",
-    " (set ordered.delta=TRUE for full delta-method)"
-  )
+  naive.se.label <- "naive"
 
   if (isTRUE(calc.se)) {
     vcov.free <- std.info$vcov.free
@@ -556,6 +552,10 @@ mcRobbinsMonro <- function(p, f, tol, min.iter, max.iter, verbose = FALSE,
     root <- mcGetConvergencePoints(history)
 
   names(root) <- colnames(history)
+
+  if (isTRUE(verbose))
+    printf("\n")
+
   list(root = root, iter = i, converged = i < max.iter, history = history,
        polyak.juditsky = polyak.juditsky,
        pj.extrapolate = pj.extrapolate)
