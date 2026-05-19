@@ -20,6 +20,8 @@
 #'
 #' @param variances Logical, whether to include variance estimates in the output.
 #'
+#' @param thresholds Logical, whether to include threshold estimates in the output.
+#'
 #' @return A summary object containing the parameter table and additional information.
 #'
 #' @examples
@@ -46,7 +48,8 @@ summarize_partable <- function(parTable,
                                regressions = TRUE,
                                covariances = TRUE,
                                intercepts  = TRUE,
-                               variances   = TRUE) {
+                               variances   = TRUE,
+                               thresholds  = TRUE) {
   if (!"label" %in% colnames(parTable)) parTable$label <- ""
 
   parTable <- rename(
@@ -68,7 +71,8 @@ summarize_partable <- function(parTable,
     regressions = regressions,
     covariances = covariances,
     intercepts  = intercepts,
-    variances   = variances
+    variances   = variances,
+    thresholds  = thresholds
   )
 
   info.names <- c("Number of model parameters",
@@ -89,6 +93,7 @@ summarize_partable <- function(parTable,
     covariances = covariances,
     intercepts  = intercepts,
     variances   = variances,
+    thresholds  = thresholds,
     width.out   = width.out,
     info.names  = info.names,
     info.values = info.values
@@ -122,6 +127,7 @@ print.modsem_partable_summary <- function(x, ...) {
     regressions = x$regressions,
     covariances = x$covariances,
     intercepts  = x$intercepts,
-    variances   = x$variances
+    variances   = x$variances,
+    thresholds  = x$thresholds
   )
 }

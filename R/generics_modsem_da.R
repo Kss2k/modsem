@@ -52,6 +52,7 @@ parameter_estimates.modsem_da <- function(object,
 #' @param intercepts Should intercepts be included in the output?
 #' If \code{standardized = TRUE} intercepts will by default be excluded.
 #' @param variances Print variances.
+#' @param thresholds Print thresholds.
 #' @param var.interaction If FALSE variances for interaction terms will be removed
 #' from the output.
 #' @param ... Additional arguments.
@@ -90,6 +91,7 @@ summary.modsem_da <- function(object,
                               covariances = TRUE,
                               intercepts = TRUE,
                               variances = TRUE,
+                              thresholds = TRUE,
                               var.interaction = FALSE,
                               ...) {
   method   <- object$method
@@ -231,7 +233,9 @@ summary.modsem_da <- function(object,
     n.fiml.patterns = structure(fiml.counts, names = group.labels),
     group.labels    = group.labels,
     npar            = length(coef(object, type = "free")),
-    convergence.msg = object$convergence.msg
+    convergence.msg = object$convergence.msg,
+    naive.fit.measures = !is.null(object$ordered.mc),
+    ordered.mc = object$ordered.mc
   )
 
   if (H0) {
@@ -250,9 +254,11 @@ summary.modsem_da <- function(object,
     } else {
       out$D     <- compare_fit(est_h1 = object, est_h0 = est_h0)
       out$fitH0 <- fitModsemDA_Internal(est_h0, lav.fit = TRUE)
+      out$naive.fit.measures.h0 <- !is.null(est_h0$ordered.mc)
     }
   } else {
     out$D <- NULL
+    out$naive.fit.measures.h0 <- FALSE
   }
 
   if (r.squared) {
@@ -282,6 +288,7 @@ summary.modsem_da <- function(object,
     covariances   = covariances,
     intercepts    = intercepts,
     variances     = variances,
+    thresholds    = thresholds,
     extra.cols    = extra.cols,
     extra.fit     = fit,
     scaled.stat   = object$args$robust.se
@@ -320,22 +327,41 @@ print.summary_da <- function(x, digits = 3, ...) {
     covariances = x$format$covariances,
     intercepts  = x$format$intercepts,
     variances   = x$format$variances,
+    thresholds  = x$format$thresholds,
     extra.cols  = NULL
   )
 
   printf(x$convergence.msg)
 
   # Convergence and Model Info -------------------------------------------------
-  header.names <- c(
-    "Estimator",
-    "Optimization method",
-    "Number of model parameters"
-  )
+  is.mc.ordered <- !is.null(x$ordered.mc)
 
-  header.values <- c(
-    stringr::str_to_upper(c(x$method, x$optimizer)),
-    x$npar
-  )
+  if (is.mc.ordered) {
+    header.names <- c(
+      "Estimator",
+      "Optimization method",
+      "Naive optimization method",
+      "Number of model parameters"
+    )
+
+    header.values <- c(
+      paste0("MC-", stringr::str_to_upper(x$method)),
+      "ROBBINS-MONRO",
+      stringr::str_to_upper(x$optimizer),
+      x$npar
+    )
+  } else {
+    header.names <- c(
+      "Estimator",
+      "Optimization method",
+      "Number of model parameters"
+    )
+
+    header.values <- c(
+      stringr::str_to_upper(c(x$method, x$optimizer)),
+      x$npar
+    )
+  }
 
   cat(allignLhsRhs(lhs = header.names, rhs = header.values, pad = "  ",
                    width.out = width.out), "\n", sep = "")
@@ -400,9 +426,9 @@ print.summary_da <- function(x, digits = 3, ...) {
 
   # Criterion/LogLik -----------------------------------------------------------
   names <- c(
-    "Loglikelihood",
-    "Akaike (AIC)",
-    "Bayesian (BIC)"
+    if (isTRUE(x$naive.fit.measures)) "Naive Loglikelihood" else "Loglikelihood",
+    if (isTRUE(x$naive.fit.measures)) "Naive Akaike (AIC)" else "Akaike (AIC)",
+    if (isTRUE(x$naive.fit.measures)) "Naive Bayesian (BIC)" else "Bayesian (BIC)"
   )
 
   values <- c(
@@ -412,12 +438,21 @@ print.summary_da <- function(x, digits = 3, ...) {
   )
 
   if (x$format$adjusted.stat) {
-    names  <- c(names, "Corrected Akaike (AICc)", "Adjusted Bayesian (aBIC)")
+    names  <- c(
+      names,
+      if (isTRUE(x$naive.fit.measures)) "Naive Corrected Akaike (AICc)" else "Corrected Akaike (AICc)",
+      if (isTRUE(x$naive.fit.measures)) "Naive Adjusted Bayesian (aBIC)" else "Adjusted Bayesian (aBIC)"
+    )
     values <- c(values, format_value(x$fit$AICc, digits = 2),
                 format_value(x$fit$aBIC, digits = 2))
   }
 
-  cat("Loglikelihood and Information Criteria:\n")
+  ll.title <- if (isTRUE(x$naive.fit.measures)) {
+    "Naive Loglikelihood and Information Criteria:"
+  } else {
+    "Loglikelihood and Information Criteria:"
+  }
+  cat(ll.title, "\n", sep = "")
   cat(allignLhsRhs(lhs = names, rhs = values, pad = "  ",
                    width.out = width.out), "\n")
 
@@ -500,7 +535,10 @@ print.summary_da <- function(x, digits = 3, ...) {
       }
     }
 
-    names <- c(names, "", "Loglikelihood", "Akaike (AIC)", "Bayesian (BIC)")
+    ll.h0 <- if (isTRUE(x$naive.fit.measures.h0)) "Naive Loglikelihood" else "Loglikelihood"
+    aic.h0 <- if (isTRUE(x$naive.fit.measures.h0)) "Naive Akaike (AIC)" else "Akaike (AIC)"
+    bic.h0 <- if (isTRUE(x$naive.fit.measures.h0)) "Naive Bayesian (BIC)" else "Bayesian (BIC)"
+    names <- c(names, "", ll.h0, aic.h0, bic.h0)
     values <- c(values, "",
                 format_value(x$nullModel$logLik, digits = 2),
                 format_value(x$fitH0$AIC, digits = 2),
@@ -510,7 +548,17 @@ print.summary_da <- function(x, digits = 3, ...) {
       values.scaled <- c(values.scaled, rep("", 4))
 
     if (x$format$adjusted.stat) {
-      names <- c(names, "Corrected Akaike (AICc)", "Adjusted Bayesian (aBIC)")
+      aicc.h0 <- if (isTRUE(x$naive.fit.measures.h0)) {
+        "Naive Corrected Akaike (AICc)"
+      } else {
+        "Corrected Akaike (AICc)"
+      }
+      abic.h0 <- if (isTRUE(x$naive.fit.measures.h0)) {
+        "Naive Adjusted Bayesian (aBIC)"
+      } else {
+        "Adjusted Bayesian (aBIC)"
+      }
+      names <- c(names, aicc.h0, abic.h0)
       values <- c(values,
                   format_value(x$fitH0$AICc, digits = 2),
                   format_value(x$fitH0$aBIC, digits = 2))
@@ -598,6 +646,7 @@ print.summary_da <- function(x, digits = 3, ...) {
                   covariances = x$format$covariances,
                   intercepts  = x$format$intercepts,
                   variances   = x$format$variances,
+                  thresholds  = x$format$thresholds,
                   extra.cols  = x$format$extra.cols)
   }
 }

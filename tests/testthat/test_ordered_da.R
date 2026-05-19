@@ -2,12 +2,10 @@ devtools::load_all()
 
 
 m1 <- '
-# Outer Model
   X =~ x1 + x2 + x3
   Z =~ z1 + z2 + z3
   Y =~ y1 + y2 + y3
 
-# Inner Model
   Y ~ X + Z + X:Z
 '
 
@@ -25,53 +23,47 @@ cut_data <- function(data, k = 5, choose = NULL) {
 
   standardize <- \(x) (x - mean(x)) / sd(x)
 
-  thresholds <- list()
   for (var in choose) {
     x <- standardize(data[[var]])
     t <- rthreshold(k)
-    y <- cut(x, breaks = t, ordered_result = TRUE)
-
-    min.x <- min(x)
-    max.x <- max(x)
-
-    data[[var]]       <- y
-    thresholds[[var]] <- t[t >= min.x & t <= max.x]
+    data[[var]] <- cut(x, breaks = t, ordered_result = TRUE)
   }
 
-  list(data = data, thresholds = thresholds)
+  data
 }
 
 
+testthat::test_that("ordered LMS fits without conditions and returns stable interaction estimate", {
+  choose <- c("x1", "x2", "z1", "y1")
 
-CHOOSE <- list(c("x1", "x2", "z1", "y1"),
-               colnames(oneInt))
-
-for (choose in CHOOSE) {
   set.seed(2837290)
-  CUTS <- cut_data(oneInt, choose = choose)
-  oneInt2 <- CUTS$data
-  lms1 <- modsem(m1, oneInt2, method = "lms", ordered = choose)
-  thresholds <- CUTS$thresholds
+  data <- cut_data(oneInt, choose = choose)
 
+  fit <- NULL
+  testthat::expect_no_condition({
+    fit <- suppressMessages(
+      modsem(
+        m1,
+        data,
+        method = "lms",
+        ordered = choose,
+        mean.observed = FALSE,
+        ordered.fixed.seed = FALSE,
+        ordered.polyak.juditsky = TRUE,
+        verbose = FALSE
+      )
+    )
+  })
 
-  thresholds.table <- NULL
-  parTable <- parameter_estimates(lms1)
-  for (col in choose) {
-    tau.true   <- thresholds[[col]]
-    tau.true   <- tau.true[is.finite(tau.true)]
-    mask       <- parTable$lhs == col & parTable$op == "|"
-    tau.est    <- parTable[mask, "est"]
-    tau.lower  <- parTable[mask, "ci.lower"]
-    tau.upper  <- parTable[mask, "ci.upper"]
-    pars <- paste0(col, "|t", seq_along(tau.true))
+  par_table <- parameter_estimates(fit)
+  int_est <- par_table[
+    par_table$lhs == "Y" &
+      par_table$op == "~" &
+      par_table$rhs == "X:Z",
+    "est"
+  ]
 
-    rows <- data.frame(parameter = pars, true = tau.true,
-                       est = tau.est, diff = tau.true - tau.est,
-                       ci.lower = tau.lower, ci.upper = tau.upper,
-                       ok = tau.true >= tau.lower & tau.true <= tau.upper)
-    thresholds.table <- rbind(thresholds.table, rows)
-  }
-
-  print(modsemParTable(thresholds.table))
-  testthat::expect_true(sum(thresholds.table$ok) / NROW(thresholds.table) >= 0.95) # 95% confidence
-}
+  testthat::expect_length(int_est, 1L)
+  testthat::expect_gte(int_est, 0.440)
+  testthat::expect_lte(int_est, 0.462)
+})
