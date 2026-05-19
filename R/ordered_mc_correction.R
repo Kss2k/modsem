@@ -311,13 +311,15 @@ mcPrepareOrderedData <- function(data, ovs, ordered, group = NULL,
       out[ordered] <- lapply(out[ordered], std1)
   } else {
     group.vals <- out[[group]]
-    for (g in unique(group.vals)) {
-      idx <- which(group.vals == g)
-      for (col in ordered) {
+    for (col in ordered) {
+      x.out <- numeric(NROW(out))
+      for (g in unique(group.vals)) {
+        idx <- which(group.vals == g)
         x <- mcOrderedInteger(out[[col]][idx])
         if (standardize) x <- std1(x)
-        out[[col]][idx] <- x
+        x.out[idx] <- x
       }
+      out[[col]] <- x.out
     }
   }
 
