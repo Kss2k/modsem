@@ -44,6 +44,9 @@ estimate_h0 <- function(object, warn_no_interaction = TRUE, ...) {
 }
 
 
+estimateH0Cached <- memoise::memoise(estimate_h0)
+
+
 #' @describeIn estimate_h0 Estimate baseline model for \code{\link{modsem_da}} objects
 #' @export
 estimate_h0.modsem_da <- function(object, warn_no_interaction = TRUE, ...) {

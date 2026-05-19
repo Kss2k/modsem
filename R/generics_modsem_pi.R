@@ -49,7 +49,7 @@ summary.modsem_pi <- function(object,
   # Baseline (H0) model
   if (H0) tryCatch({
     if (verbose) cat("Estimating baseline model (H0)\n")
-    est_h0 <- estimate_h0(object, ...)
+    est_h0 <- estimateH0Cached(object, ...)
     out$nullModel <- est_h0
 
     if (!is.null(est_h0)) {

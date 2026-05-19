@@ -242,7 +242,7 @@ summary.modsem_da <- function(object,
     if (any(grepl(":", parTable$rhs)) && verbose)
       cat("Estimating baseline model (H0)\n")
 
-    est_h0 <- estimate_h0(object, calc.se = FALSE, warn_no_interaction = FALSE)
+    est_h0 <- estimateH0Cached(object, calc.se = FALSE, warn_no_interaction = FALSE)
 
     out$nullModel <- est_h0
     if (is.null(est_h0)) {
