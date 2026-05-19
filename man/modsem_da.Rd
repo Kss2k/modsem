@@ -47,12 +47,12 @@ modsem_da(
   ordered.max.iter = 50L,
   ordered.tol = 0.001,
   ordered.rng.seed = NULL,
-  ordered.fixed.seed = TRUE,
+  ordered.fixed.seed = FALSE,
   ordered.polyak.juditsky = TRUE,
   ordered.pj.extrapolate = TRUE,
   ordered.delta = FALSE,
   ordered.delta.reps = NULL,
-  ordered.delta.epsilon = 1e-04,
+  ordered.delta.epsilon = 0.001,
   ordered.standardize = TRUE,
   cluster = NULL,
   cr1s = FALSE,
@@ -396,7 +396,7 @@ summary(est_lms)
 }
 }
 \references{
-Slupphaug, K., Mehmetoglu, M., \& Mittner, M. (2026, March 21).
+Slupphaug, K., Mehmetoglu, M., and Mittner, M. (2026, March 21).
 \emph{Consistent Estimates from Biased Estimators: Monte-Carlo Consistent Partial
 Least Squares for Latent Interaction Models with Ordinal Indicators}. PsyArXiv.
 \doi{10.31234/osf.io/fwzj6_v1}

@@ -13,7 +13,7 @@ modsemOrderedMCCorrection <- function(model.syntax,
                                          ordered.max.iter = 50L,
                                          ordered.tol = 1e-3,
                                          ordered.rng.seed = NULL,
-                                         ordered.fixed.seed = TRUE,
+                                         ordered.fixed.seed = FALSE,
                                          ordered.polyak.juditsky = TRUE,
                                          ordered.pj.extrapolate = TRUE,
                                          ordered.fn.args = list(),
@@ -455,7 +455,7 @@ mcOrdinalizeSimulatedData <- function(sim, ovs, ordered, PROBS, group = NULL,
 
     if (!is.null(group)) {
       group.name <- names(PROBS)[[g]]
-      data.g[[group]] <- type.convert(group.name, as.is = TRUE)
+      data.g[[group]] <- utils::type.convert(group.name, as.is = TRUE)
     }
 
     out <- rbind(out, data.g)
