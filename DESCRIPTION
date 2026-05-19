@@ -55,14 +55,14 @@ Description:
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.3.3
 LinkingTo: Rcpp, RcppArmadillo
 Imports: Rcpp, purrr, stringr, lavaan, rlang, MplusAutomation, nlme, dplyr, 
   mvnfast, stats, fastGHQuad, mvtnorm, ggplot2, parallel, plotly, Deriv, MASS, Amelia,
-  grDevices, cli, RhpcBLASctl
+  grDevices, cli, RhpcBLASctl, memoise
 Depends: 
     R (>= 4.1.0)
 URL: https://modsem.org,
   https://github.com/kss2k/modsem
 Suggests: knitr, rmarkdown, ggpubr, RColorBrewer
 VignetteBuilder: knitr
+Config/roxygen2/version: 8.0.0

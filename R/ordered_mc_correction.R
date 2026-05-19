@@ -1,33 +1,33 @@
 modsemOrderedMCCorrection <- function(model.syntax,
-                                         data,
-                                         method = "lms",
-                                         ordered = NULL,
-                                         calc.se = TRUE,
-                                         group = NULL,
-                                         verbose = interactive(),
-                                         optimize = TRUE,
-                                         start = NULL,
-                                         mc.reps = NULL,
-                                         ordered.mc.reps = mc.reps,
-                                         ordered.min.iter = 5L,
-                                         ordered.max.iter = 50L,
-                                         ordered.tol = 1e-3,
-                                         ordered.rng.seed = NULL,
-                                         ordered.fixed.seed = FALSE,
-                                         ordered.polyak.juditsky = TRUE,
-                                         ordered.pj.extrapolate = TRUE,
-                                         ordered.fn.args = list(),
-                                         ordered.delta = FALSE,
-                                         ordered.delta.reps = ordered.mc.reps,
-                                         ordered.delta.epsilon = 1e-4,
-                                         ordered.standardize = TRUE,
-                                         standardize = NULL,
-                                         standardize.out = NULL,
-                                         cluster = NULL,
-                                         sampling.weights = NULL,
-                                         sampling.weights.normalization = NULL,
-                                         mean.observed = NULL, # capture
-                                         ...) {
+                                      data,
+                                      method = "lms",
+                                      ordered = NULL,
+                                      calc.se = TRUE,
+                                      group = NULL,
+                                      verbose = interactive(),
+                                      optimize = TRUE,
+                                      start = NULL,
+                                      mc.reps = NULL,
+                                      ordered.mc.reps = mc.reps,
+                                      ordered.min.iter = 20L,
+                                      ordered.max.iter = 100L,
+                                      ordered.tol = 1e-4,
+                                      ordered.rng.seed = NULL,
+                                      ordered.fixed.seed = FALSE,
+                                      ordered.polyak.juditsky = TRUE,
+                                      ordered.pj.extrapolate = TRUE,
+                                      ordered.fn.args = list(),
+                                      ordered.delta = FALSE,
+                                      ordered.delta.reps = ordered.mc.reps,
+                                      ordered.delta.epsilon = 1e-2,
+                                      ordered.standardize = TRUE,
+                                      standardize = NULL,
+                                      standardize.out = NULL,
+                                      cluster = NULL,
+                                      sampling.weights = NULL,
+                                      sampling.weights.normalization = NULL,
+                                      mean.observed = NULL, # capture
+                                      ...) {
   method <- tolower(method)
   stopif(
     !method %in% c("lms", "qml"),
@@ -37,9 +37,9 @@ modsemOrderedMCCorrection <- function(model.syntax,
   if (is.null(verbose)) verbose <- TRUE
   if (is.null(calc.se)) calc.se <- TRUE
   if (is.null(ordered.mc.reps))
-    ordered.mc.reps <- max(NROW(data), 10000L)
+    ordered.mc.reps <- max(NROW(data), 2000L)
   if (is.null(ordered.delta.reps))
-    ordered.delta.reps <- ordered.mc.reps
+    ordered.delta.reps <- max(ordered.mc.reps, 10000L)
 
   ordered.mc.reps <- as.integer(ordered.mc.reps)
   ordered.delta.reps <- as.integer(ordered.delta.reps)
@@ -194,11 +194,11 @@ modsemOrderedMCCorrection <- function(model.syntax,
           V <- H.inv %*% vcov.free %*% t(H.inv)
           V <- 0.5 * (V + t(V))
           dimnames(V) <- list(names(theta.mc), names(theta.mc))
-          type.se.env$value <- paste0(fit0$type.se, " + ordered mc delta")
+          type.se.env$value <- "mc-delta"
           V
         }, error = function(e) {
           warning2(
-            "Delta-method MC correction failed; using ordered MC naive ",
+            "Delta-method MC correction failed; using ordered MC naive\n",
             "scaling standard errors instead. Message: ", conditionMessage(e)
           )
           type.se.env$value <- naive.se.label
@@ -210,10 +210,7 @@ modsemOrderedMCCorrection <- function(model.syntax,
         })
       } else {
         if (verbose) {
-          message(
-            "Using ordered MC naive scaling standard errors. ",
-            "Set `ordered.delta = TRUE` for the full delta-method correction."
-          )
+          message("Using ordered MC naive scaling standard errors.")
         }
         vcov.free <- mcOrderedNaiveScalingVcov(
           theta.mc = theta.mc,
@@ -246,6 +243,7 @@ modsemOrderedMCCorrection <- function(model.syntax,
     fit = fit.out,
     thresholds = thresholds
   )
+
   fit.out$expected.matrices <- mcOrderedExpectedMatrices(
     fit = fit.out,
     std.info = std.info,
@@ -790,19 +788,30 @@ mcStandardizedStateInfo <- function(fit) {
     monte.carlo = FALSE
   )
   parTable <- as.data.frame(solution$parTable)
-  parTable$.state_id <- getParTableLabels(parTable, labelCol = "label")
-  parTable$.state_redundant <- FALSE
+  parTable$.state.id <- getParTableLabels(parTable, labelCol = "label")
+  parTable$.state.redundant <- FALSE
+
+  lhs <- parTable$lhs
+  op  <- parTable$op
+  rhs <- parTable$rhs
 
   has.residual.cov <- mcHasResidualCovariances(parTable)
-  keep <- parTable$op %in% c("=~", "<~", "~", "~~")
+  keep <- op %in% c("=~", "<~", "~", "~~")
+
   if (!has.residual.cov) {
-    redundant <- keep & parTable$op == "~~" & parTable$lhs == parTable$rhs
-    parTable$.state_redundant[redundant] <- TRUE
+    redundant <- (
+      keep & (
+        (op == "~~" & lhs == rhs) |
+        (op == "~~" & (grepl(":", lhs) | grepl(":", rhs)))
+      )
+    )
+
+    parTable$.state.redundant[redundant] <- TRUE
     keep <- keep & !redundant
   }
 
-  ids <- unique(parTable$.state_id[keep])
-  est <- stats::setNames(parTable$est, parTable$.state_id)
+  ids <- unique(parTable$.state.id[keep])
+  est <- stats::setNames(parTable$est, parTable$.state.id)
   est <- est[ids]
 
   vcov.free <- solution$vcov
@@ -819,20 +828,6 @@ mcStandardizedStateInfo <- function(fit) {
     reduced = !has.residual.cov,
     has.residual.cov = has.residual.cov
   )
-}
-
-
-mcExtractStandardizedState <- function(fit, std.info) {
-  solution <- standardizedSolutionCOEFS(
-    fit,
-    monte.carlo = FALSE
-  )
-  parTable <- as.data.frame(solution$parTable)
-  parTable$.state_id <- getParTableLabels(parTable, labelCol = "label")
-  est <- stats::setNames(parTable$est, parTable$.state_id)
-  out <- est[names(std.info$state)]
-  names(out) <- names(std.info$state)
-  out
 }
 
 
@@ -854,9 +849,23 @@ mcHasResidualCovariances <- function(parTable) {
 }
 
 
+
+mcExtractStandardizedState <- function(fit, std.info) {
+  solution <- standardizedSolutionCOEFS(fit, monte.carlo = FALSE)
+  parTable <- as.data.frame(solution$parTable)
+
+  parTable$.state.id <- getParTableLabels(parTable, labelCol = "label")
+  est <- stats::setNames(parTable$est, parTable$.state.id)
+  out <- est[names(std.info$state)]
+  names(out) <- names(std.info$state)
+
+  out
+}
+
+
 mcStdParTableFromState <- function(std.info, state) {
   parTable <- std.info$template
-  idx <- match(parTable$.state_id, names(state))
+  idx <- match(parTable$.state.id, names(state))
   hit <- !is.na(idx)
   parTable$est[hit] <- state[idx[hit]]
 
@@ -868,6 +877,8 @@ mcStdParTableFromState <- function(std.info, state) {
 
 
 mcStdRefreshRedundant <- function(parTable) {
+  # parTable <- var_interactions(parTable)
+
   groups <- getGroupsParTable(addMissingGroups(parTable))
   out <- parTable
 
@@ -923,13 +934,13 @@ mcOverwriteFitWithStdState <- function(fit, state, vcov.free, std.info, calc.se,
   }
 
   parTable$std.error <- NA_real_
-  idx.se <- match(parTable$.state_id, names(se))
+  idx.se <- match(parTable$.state.id, names(se))
   hit.se <- !is.na(idx.se)
   parTable$std.error[hit.se] <- se[idx.se[hit.se]]
 
   parTable <- addZStatsParTable(parTable)
-  parTable$.state_id <- NULL
-  parTable$.state_redundant <- NULL
+  parTable$.state.id <- NULL
+  parTable$.state.redundant <- NULL
 
   fit$parTable <- modsemParTable(sortParTableDA(parTable, model = fit$model))
   fit$coefs.all <- stats::setNames(parTable$est, getParTableLabels(parTable, labelCol = "label", replace.dup = TRUE))
