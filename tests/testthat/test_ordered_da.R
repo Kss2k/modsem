@@ -34,7 +34,7 @@ cut_data <- function(data, k = 5, choose = NULL) {
 
 
 testthat::test_that("ordered LMS fits without conditions and returns stable interaction estimate", {
-  choose <- c("x1", "x2", "z1", "y1")
+  choose <- colnames(oneInt)
 
   set.seed(2837290)
   data <- cut_data(oneInt, choose = choose)
@@ -65,5 +65,5 @@ testthat::test_that("ordered LMS fits without conditions and returns stable inte
 
   testthat::expect_length(int_est, 1L)
   testthat::expect_gte(int_est, 0.440)
-  testthat::expect_lte(int_est, 0.462)
+  testthat::expect_lte(int_est, 0.460)
 })

@@ -210,7 +210,7 @@ modsemOrderedMCCorrection <- function(model.syntax,
         })
       } else {
         if (verbose) {
-          message("Using ordered MC naive scaling standard errors.\n")
+          message("Using ordered MC naive scaling standard errors.")
         }
         vcov.free <- mcOrderedNaiveScalingVcov(
           theta.mc = theta.mc,
