@@ -809,7 +809,7 @@ mcStandardizedStateInfo <- function(fit) {
       )
     )
 
-    parTable$.state_redundant[redundant] <- TRUE
+    parTable$.state.redundant[redundant] <- TRUE
     keep <- keep & !redundant
   }
 
