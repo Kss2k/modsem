@@ -86,14 +86,27 @@ fit_modsem_da <- function(model, chisq = TRUE, lav.fit = FALSE,
     N_vec[g] <- N.g
     p_vec[g] <- p.g
 
-    mu.g_vec <- apply(data_full, 2, mean, na.rm = TRUE)
-    mu.g <- matrix(mu.g_vec, ncol = 1,
-                   dimnames = list(colnames(data_full), "~1"))
-    O.g <- stats::cov(data_full, use = "pairwise.complete.obs")
-
     expected.g <- expected.list[[g]]
-    E.g <- if (!is.null(expected.g) && !is.null(expected.g$sigma.ov)) expected.g$sigma.ov else NULL
-    mu_hat.g <- if (!is.null(expected.g) && !is.null(expected.g$mu.ov)) expected.g$mu.ov else NULL
+    has.ord <- !is.null(expected.g) &&
+      !is.null(expected.g$sigma.ord.observed) &&
+      !is.null(expected.g$sigma.ord.expected)
+
+    if (has.ord) {
+      O.g <- expected.g$sigma.ord.observed
+      E.g <- expected.g$sigma.ord.expected
+      mu.g <- if (!is.null(expected.g$mu.ord.observed)) expected.g$mu.ord.observed else
+        matrix(0, nrow = nrow(O.g), ncol = 1, dimnames = list(rownames(O.g), "~1"))
+      mu_hat.g <- if (!is.null(expected.g$mu.ord.expected)) expected.g$mu.ord.expected else
+        matrix(0, nrow = nrow(E.g), ncol = 1, dimnames = list(rownames(E.g), "~1"))
+      p.g <- NCOL(O.g)
+    } else {
+      mu.g_vec <- apply(data_full, 2, mean, na.rm = TRUE)
+      mu.g <- matrix(mu.g_vec, ncol = 1,
+                     dimnames = list(colnames(data_full), "~1"))
+      O.g <- stats::cov(data_full, use = "pairwise.complete.obs")
+      E.g <- if (!is.null(expected.g) && !is.null(expected.g$sigma.ov)) expected.g$sigma.ov else NULL
+      mu_hat.g <- if (!is.null(expected.g) && !is.null(expected.g$mu.ov)) expected.g$mu.ov else NULL
+    }
 
     if (!mean.s || is.null(mu_hat.g))
       mu_hat.g <- mu.g
