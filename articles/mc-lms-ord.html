@@ -5,12 +5,12 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>MC-LMS-ORD • modsem</title>
+<title>interactions with ordered data • modsem</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="MC-LMS-ORD">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="interactions with ordered data">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -43,7 +43,7 @@
     <li><a class="dropdown-item" href="../articles/interaction_two_etas.html">interaction effects between endogenous variables</a></li>
     <li><a class="dropdown-item" href="../articles/lavaan.html">using lavaan functions</a></li>
     <li><a class="dropdown-item" href="../articles/lms_qml.html">LMS and QML approaches</a></li>
-    <li><a class="dropdown-item" href="../articles/mc-lms-ord.html">MC-LMS-ORD</a></li>
+    <li><a class="dropdown-item" href="../articles/mc-lms-ord.html">interactions with ordered data</a></li>
     <li><a class="dropdown-item" href="../articles/meanstructure_lms_qml.html">non-centered interaction terms (LMS and QML)</a></li>
     <li><a class="dropdown-item" href="../articles/methods.html">methods</a></li>
     <li><a class="dropdown-item" href="../articles/missing_lms_qml.html">missing data in the LMS and QML approaches</a></li>
@@ -73,7 +73,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>MC-LMS-ORD</h1>
+      <h1>interactions with ordered data</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/kss2k/modsem/blob/main/vignettes/mc-lms-ord.Rmd" class="external-link"><code>vignettes/mc-lms-ord.Rmd</code></a></small>
@@ -82,10 +82,13 @@
 
     
     
-<p><code>modsem</code> implements a Monte-Carlo correction for
-ordered-indicator LMS and QML models. In this vignette we refer to these
-estimators informally as <code>MC-LMS-ORD</code> and
-<code>MC-QML-ORD</code>.</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://modsem.org" class="external-link">modsem</a></span><span class="op">)</span></span>
+<span><span class="co">#&gt; This is modsem (1.0.20). Please report any bugs!</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">2938472</span><span class="op">)</span></span></code></pre></div>
+<p><code>modsem</code> implements a Monte-Carlo correction for LMS and
+QML models with ordinal data. Here we refer to these informally as
+<code>MC-LMS-ORD</code> and <code>MC-QML-ORD</code>.</p>
 <p>The <code>MC-LMS-ORD</code> and <code>MC-QML-ORD</code> algorithms
 are based on <a href="https://osf.io/preprints/psyarxiv/fwzj6_v1" class="external-link">Slupphaug, Mehmetoglu,
 and Mittner (2026)</a> For a more direct implementation of the original
@@ -95,7 +98,7 @@ package</a>.</p>
 <h2 id="example">Example<a class="anchor" aria-label="anchor" href="#example"></a>
 </h2>
 <p>Here we ordinalize the data in the <code>oneInt</code> dataset.</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ordinalize</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">probs</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.35</span>, <span class="fl">0.7</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">x</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="va">x</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/stats/sd.html" class="external-link">sd</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/cut.html" class="external-link">cut</a></span><span class="op">(</span></span>
@@ -109,7 +112,7 @@ package</a>.</p>
 <span><span class="va">oneIntOrd</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">oneInt</span>, <span class="va">ordinalize</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>Now we can estimate our model, indicating which variables are
 ordinal, using the <code>ordered=</code> argument.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">model</span> <span class="op">&lt;-</span> <span class="st">"</span></span>
 <span><span class="st">  X =~ x1 + x2 + x3</span></span>
 <span><span class="st">  Z =~ z1 + z2 + z3</span></span>
@@ -124,15 +127,19 @@ ordinal, using the <code>ordered=</code> argument.</p>
 <span>  method <span class="op">=</span> <span class="st">"lms"</span>,</span>
 <span>  ordered <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">oneIntOrd</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
+<span><span class="co">#&gt; Estimating MC-LMS-ORD Correction (R=2000).</span></span>
 <span><span class="co">#&gt;                                                                                 Iter=1 Mode=EM LogLik=-19229.66 ΔLL=Inf relΔLL=Inf                                                                                Iter=2 Mode=EM LogLik=-19224.16 ΔLL=5.5 relΔLL=0.00029                                                                                Iter=3 Mode=EM LogLik=-19223.78 ΔLL=0.38 relΔLL=2e-05                                                                                Iter=3 Mode=QN LogLik=-19223.78 ΔLL=0.38 relΔLL=2e-05                                                                                Iter=4 Mode=QN LogLik=-19223.61 ΔLL=0.17 relΔLL=9.1e-06                                                                                Iter=5 Mode=QN LogLik=-19223.56 ΔLL=0.052 relΔLL=2.7e-06                                                                                Iter=6 Mode=QN LogLik=-19223.46 ΔLL=0.095 relΔLL=5e-06                                                                                Iter=7 Mode=QN LogLik=-19223.46 ΔLL=0.0081 relΔLL=4.2e-07                                                                                Iter=8 Mode=QN LogLik=-19223.44 ΔLL=0.012 relΔLL=6e-07                                                                                Iter=9 Mode=QN LogLik=-19223.44 ΔLL=0.0053 relΔLL=2.8e-07                                                                                Iter=10 Mode=QN LogLik=-19223.44 ΔLL=0.0022 relΔLL=1.1e-07                                                                                Iter=11 Mode=QN LogLik=-19223.44 ΔLL=0.00033 relΔLL=1.7e-08                                                                                Iter=12 Mode=QN LogLik=-19223.44 ΔLL=0.00018 relΔLL=9.2e-09                                                                                Iter=13 Mode=QN LogLik=-19223.44 ΔLL=7e-05 relΔLL=3.6e-09                                                                                Iter=13 Mode=EM LogLik=-19223.44 ΔLL=7e-05 relΔLL=3.6e-09                                                                                Iter=14 Mode=EM LogLik=-19223.44 ΔLL=7e-06 relΔLL=3.6e-10</span></span>
 <span><span class="co">#&gt; Calculating standard errors (observed)</span></span>
-<span><span class="co">#&gt; MC iter 1; ΔE(θ) = 0.05522MC iter 2; ΔE(θ) = 0.0271MC iter 3; ΔE(θ) = 0.01591MC iter 4; ΔE(θ) = 0.009428MC iter 5; ΔE(θ) = 0.006958MC iter 6; ΔE(θ) = 0.005539MC iter 7; ΔE(θ) = 0.004431MC iter 8; ΔE(θ) = 0.002347MC iter 9; ΔE(θ) = 0.003357MC iter 10; ΔE(θ) = 0.002891MC iter 11; ΔE(θ) = 0.002139MC iter 12; ΔE(θ) = 0.001907MC iter 13; ΔE(θ) = 0.001776MC iter 14; ΔE(θ) = 0.001558MC iter 15; ΔE(θ) = 0.0009046MC iter 16; ΔE(θ) = 0.0006225MC iter 17; ΔE(θ) = 0.0008563MC iter 18; ΔE(θ) = 0.001104MC iter 19; ΔE(θ) = 0.00119MC iter 20; ΔE(θ) = 0.0009217MC iter 21; ΔE(θ) = 0.0004232MC iter 22; ΔE(θ) = 0.0006006MC iter 23; ΔE(θ) = 0.0004097MC iter 24; ΔE(θ) = 0.0004408MC iter 25; ΔE(θ) = 0.0006615MC iter 26; ΔE(θ) = 0.0005617MC iter 27; ΔE(θ) = 0.0006304MC iter 28; ΔE(θ) = 0.0005516MC iter 29; ΔE(θ) = 0.0006248MC iter 30; ΔE(θ) = 0.0004971MC iter 31; ΔE(θ) = 0.0005067MC iter 32; ΔE(θ) = 0.0004478MC iter 33; ΔE(θ) = 0.0004025MC iter 34; ΔE(θ) = 0.0002031MC iter 35; ΔE(θ) = 0.0001844MC iter 36; ΔE(θ) = 0.0001884MC iter 37; ΔE(θ) = 0.0001917MC iter 38; ΔE(θ) = 0.000159MC iter 39; ΔE(θ) = 0.0001989MC iter 40; ΔE(θ) = 0.0001979MC iter 41; ΔE(θ) = 0.000346MC iter 42; ΔE(θ) = 0.0004291MC iter 43; ΔE(θ) = 0.0004128MC iter 44; ΔE(θ) = 0.0003121MC iter 45; ΔE(θ) = 0.0004069MC iter 46; ΔE(θ) = 0.0003534MC iter 47; ΔE(θ) = 0.0003255MC iter 48; ΔE(θ) = 0.0002628MC iter 49; ΔE(θ) = 0.0003643MC iter 50; ΔE(θ) = 0.0003541MC iter 51; ΔE(θ) = 0.0002832MC iter 52; ΔE(θ) = 0.000298MC iter 53; ΔE(θ) = 0.0002248MC iter 54; ΔE(θ) = 0.000278MC iter 55; ΔE(θ) = 0.0002238MC iter 56; ΔE(θ) = 0.0002283MC iter 57; ΔE(θ) = 0.000252MC iter 58; ΔE(θ) = 0.0002374MC iter 59; ΔE(θ) = 0.0002111MC iter 60; ΔE(θ) = 0.0002744MC iter 61; ΔE(θ) = 0.0002733MC iter 62; ΔE(θ) = 0.0002886MC iter 63; ΔE(θ) = 0.0003709MC iter 64; ΔE(θ) = 0.0003812MC iter 65; ΔE(θ) = 0.0003076MC iter 66; ΔE(θ) = 0.0002645MC iter 67; ΔE(θ) = 0.0002437MC iter 68; ΔE(θ) = 0.0002022MC iter 69; ΔE(θ) = 0.0002351MC iter 70; ΔE(θ) = 0.0001647MC iter 71; ΔE(θ) = 0.0001354MC iter 72; ΔE(θ) = 0.0001296MC iter 73; ΔE(θ) = 0.0001753MC iter 74; ΔE(θ) = 0.0001564MC iter 75; ΔE(θ) = 0.0001038MC iter 76; ΔE(θ) = 9.383e-05MC iter 77; ΔE(θ) = 0.0001076MC iter 78; ΔE(θ) = 0.0001554MC iter 79; ΔE(θ) = 0.0001464MC iter 80; ΔE(θ) = 0.0001373MC iter 81; ΔE(θ) = 0.000126MC iter 82; ΔE(θ) = 0.0001629MC iter 83; ΔE(θ) = 0.0001202MC iter 84; ΔE(θ) = 0.0001251MC iter 85; ΔE(θ) = 0.000114MC iter 86; ΔE(θ) = 9.23e-05MC iter 87; ΔE(θ) = 0.0001087MC iter 88; ΔE(θ) = 0.0001096MC iter 89; ΔE(θ) = 8.943e-05MC iter 90; ΔE(θ) = 0.0001016MC iter 91; ΔE(θ) = 0.0001105MC iter 92; ΔE(θ) = 0.0001035MC iter 93; ΔE(θ) = 0.0001206MC iter 94; ΔE(θ) = 0.0001219MC iter 95; ΔE(θ) = 0.0001093MC iter 96; ΔE(θ) = 0.0001111MC iter 97; ΔE(θ) = 8.797e-05MC iter 98; ΔE(θ) = 0.0001037MC iter 99; ΔE(θ) = 0.0001643MC iter 100; ΔE(θ) = 0.0001382</span></span>
+<span><span class="co">#&gt; MC iter 1; ΔE(θ) = 0.05418MC iter 2; ΔE(θ) = 0.0214MC iter 3; ΔE(θ) = 0.01074MC iter 4; ΔE(θ) = 0.01316MC iter 5; ΔE(θ) = 0.009612MC iter 6; ΔE(θ) = 0.004587MC iter 7; ΔE(θ) = 0.004153MC iter 8; ΔE(θ) = 0.002455MC iter 9; ΔE(θ) = 0.002605MC iter 10; ΔE(θ) = 0.002057MC iter 11; ΔE(θ) = 0.001633MC iter 12; ΔE(θ) = 0.001401MC iter 13; ΔE(θ) = 0.001708MC iter 14; ΔE(θ) = 0.001501MC iter 15; ΔE(θ) = 0.001128MC iter 16; ΔE(θ) = 0.001344MC iter 17; ΔE(θ) = 0.001494MC iter 18; ΔE(θ) = 0.001627MC iter 19; ΔE(θ) = 0.001407MC iter 20; ΔE(θ) = 0.001039MC iter 21; ΔE(θ) = 0.0007161MC iter 22; ΔE(θ) = 0.0005831MC iter 23; ΔE(θ) = 0.0005223MC iter 24; ΔE(θ) = 0.0006645MC iter 25; ΔE(θ) = 0.0004257MC iter 26; ΔE(θ) = 0.0004617MC iter 27; ΔE(θ) = 0.0004956MC iter 28; ΔE(θ) = 0.0004255MC iter 29; ΔE(θ) = 0.0004356MC iter 30; ΔE(θ) = 0.0006305MC iter 31; ΔE(θ) = 0.0006575MC iter 32; ΔE(θ) = 0.0005525MC iter 33; ΔE(θ) = 0.0004074MC iter 34; ΔE(θ) = 0.0004511MC iter 35; ΔE(θ) = 0.0004981MC iter 36; ΔE(θ) = 0.0004025MC iter 37; ΔE(θ) = 0.0002677MC iter 38; ΔE(θ) = 0.0003648MC iter 39; ΔE(θ) = 0.0003775MC iter 40; ΔE(θ) = 0.0002567MC iter 41; ΔE(θ) = 0.0002691MC iter 42; ΔE(θ) = 0.0001416MC iter 43; ΔE(θ) = 0.0002148MC iter 44; ΔE(θ) = 0.0002398MC iter 45; ΔE(θ) = 0.0002622MC iter 46; ΔE(θ) = 0.0002199MC iter 47; ΔE(θ) = 0.0002197MC iter 48; ΔE(θ) = 0.0002122MC iter 49; ΔE(θ) = 0.0001236MC iter 50; ΔE(θ) = 9.877e-05MC iter 51; ΔE(θ) = 0.0001367MC iter 52; ΔE(θ) = 0.0001634MC iter 53; ΔE(θ) = 9.212e-05MC iter 54; ΔE(θ) = 0.0001081MC iter 55; ΔE(θ) = 0.0001093MC iter 56; ΔE(θ) = 9.684e-05MC iter 57; ΔE(θ) = 8.424e-05MC iter 58; ΔE(θ) = 0.0001388MC iter 59; ΔE(θ) = 0.0001315MC iter 60; ΔE(θ) = 0.0001931MC iter 61; ΔE(θ) = 0.0001808MC iter 62; ΔE(θ) = 0.0001542MC iter 63; ΔE(θ) = 0.0001155MC iter 64; ΔE(θ) = 0.0001522MC iter 65; ΔE(θ) = 0.0001342MC iter 66; ΔE(θ) = 9.095e-05MC iter 67; ΔE(θ) = 9.664e-05MC iter 68; ΔE(θ) = 0.0001211MC iter 69; ΔE(θ) = 0.0001437MC iter 70; ΔE(θ) = 0.0001378MC iter 71; ΔE(θ) = 9.698e-05MC iter 72; ΔE(θ) = 0.0001016MC iter 73; ΔE(θ) = 9.556e-05MC iter 74; ΔE(θ) = 0.0001044MC iter 75; ΔE(θ) = 0.0001064MC iter 76; ΔE(θ) = 0.0001499MC iter 77; ΔE(θ) = 0.0001426MC iter 78; ΔE(θ) = 0.0001052MC iter 79; ΔE(θ) = 7.384e-05MC iter 80; ΔE(θ) = 6.815e-05MC iter 81; ΔE(θ) = 6.671e-05</span></span>
+<span><span class="co">#&gt; Using penalized standard errors.</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_lms_ord</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Estimating MC-LMS-ORD Correction (R=2000).</span></span>
 <span><span class="co">#&gt;                                                                                 Iter=1 Mode=EM LogLik=-19343.47 ΔLL=Inf relΔLL=Inf                                                                                Iter=2 Mode=EM LogLik=-19343.47 ΔLL=3.6e-12 relΔLL=1.9e-16</span></span>
-<span><span class="co">#&gt; MC iter 1; ΔE(θ) = 0.04377MC iter 2; ΔE(θ) = 0.01564MC iter 3; ΔE(θ) = 0.007894MC iter 4; ΔE(θ) = 0.008065MC iter 5; ΔE(θ) = 0.002867MC iter 6; ΔE(θ) = 0.002567MC iter 7; ΔE(θ) = 0.001482MC iter 8; ΔE(θ) = 0.001353MC iter 9; ΔE(θ) = 0.001122MC iter 10; ΔE(θ) = 0.0009496MC iter 11; ΔE(θ) = 0.0007899MC iter 12; ΔE(θ) = 0.0009268MC iter 13; ΔE(θ) = 0.001111MC iter 14; ΔE(θ) = 0.0007803MC iter 15; ΔE(θ) = 0.0008389MC iter 16; ΔE(θ) = 0.0006329MC iter 17; ΔE(θ) = 0.0004597MC iter 18; ΔE(θ) = 0.0006177MC iter 19; ΔE(θ) = 0.0005837MC iter 20; ΔE(θ) = 0.001078MC iter 21; ΔE(θ) = 0.001021MC iter 22; ΔE(θ) = 0.0005018MC iter 23; ΔE(θ) = 0.0005102MC iter 24; ΔE(θ) = 0.0004136MC iter 25; ΔE(θ) = 0.0003931MC iter 26; ΔE(θ) = 0.0002353MC iter 27; ΔE(θ) = 0.0003077MC iter 28; ΔE(θ) = 0.0003752MC iter 29; ΔE(θ) = 0.0004393MC iter 30; ΔE(θ) = 0.000733MC iter 31; ΔE(θ) = 0.000704MC iter 32; ΔE(θ) = 0.0007704MC iter 33; ΔE(θ) = 0.0004511MC iter 34; ΔE(θ) = 0.0004584MC iter 35; ΔE(θ) = 0.000537MC iter 36; ΔE(θ) = 0.0005613MC iter 37; ΔE(θ) = 0.0003588MC iter 38; ΔE(θ) = 0.0004299MC iter 39; ΔE(θ) = 0.0005243MC iter 40; ΔE(θ) = 0.0004251MC iter 41; ΔE(θ) = 0.0004397MC iter 42; ΔE(θ) = 0.0004396MC iter 43; ΔE(θ) = 0.0005041MC iter 44; ΔE(θ) = 0.0004426MC iter 45; ΔE(θ) = 0.0004259MC iter 46; ΔE(θ) = 0.0002251MC iter 47; ΔE(θ) = 0.0001799MC iter 48; ΔE(θ) = 0.0001872MC iter 49; ΔE(θ) = 0.0001698MC iter 50; ΔE(θ) = 0.0001322MC iter 51; ΔE(θ) = 0.0001069MC iter 52; ΔE(θ) = 0.0001096MC iter 53; ΔE(θ) = 0.0001658MC iter 54; ΔE(θ) = 0.0001706MC iter 55; ΔE(θ) = 0.0001998MC iter 56; ΔE(θ) = 0.0001852MC iter 57; ΔE(θ) = 0.0002285MC iter 58; ΔE(θ) = 0.000235MC iter 59; ΔE(θ) = 0.0003146MC iter 60; ΔE(θ) = 0.0003787MC iter 61; ΔE(θ) = 0.0002885MC iter 62; ΔE(θ) = 0.0002921MC iter 63; ΔE(θ) = 0.0002515MC iter 64; ΔE(θ) = 0.0002117MC iter 65; ΔE(θ) = 0.000188MC iter 66; ΔE(θ) = 0.0001349MC iter 67; ΔE(θ) = 0.0001566MC iter 68; ΔE(θ) = 0.0001015MC iter 69; ΔE(θ) = 6.329e-05MC iter 70; ΔE(θ) = 5.954e-05MC iter 71; ΔE(θ) = 6.871e-05</span></span>
-<span><span class="co">#&gt; modsem (1.0.20) did NOT end normally after 100 iterations</span></span>
-<span><span class="co">#&gt; ** WARNING ** Estimates below are most likely unreliable</span></span>
+<span><span class="co">#&gt; MC iter 1; ΔE(θ) = 0.04145MC iter 2; ΔE(θ) = 0.0125MC iter 3; ΔE(θ) = 0.007652MC iter 4; ΔE(θ) = 0.004858MC iter 5; ΔE(θ) = 0.003324MC iter 6; ΔE(θ) = 0.003381MC iter 7; ΔE(θ) = 0.002365MC iter 8; ΔE(θ) = 0.002483MC iter 9; ΔE(θ) = 0.001875MC iter 10; ΔE(θ) = 0.002502MC iter 11; ΔE(θ) = 0.001204MC iter 12; ΔE(θ) = 0.0008462MC iter 13; ΔE(θ) = 0.001154MC iter 14; ΔE(θ) = 0.0006931MC iter 15; ΔE(θ) = 0.000864MC iter 16; ΔE(θ) = 0.0008056MC iter 17; ΔE(θ) = 0.0007639MC iter 18; ΔE(θ) = 0.001032MC iter 19; ΔE(θ) = 0.001071MC iter 20; ΔE(θ) = 0.0008326MC iter 21; ΔE(θ) = 0.0007304MC iter 22; ΔE(θ) = 0.0005442MC iter 23; ΔE(θ) = 0.0004541MC iter 24; ΔE(θ) = 0.0002854MC iter 25; ΔE(θ) = 0.00052MC iter 26; ΔE(θ) = 0.0002734MC iter 27; ΔE(θ) = 0.0002854MC iter 28; ΔE(θ) = 0.0002761MC iter 29; ΔE(θ) = 0.0002452MC iter 30; ΔE(θ) = 0.0002526MC iter 31; ΔE(θ) = 0.0002357MC iter 32; ΔE(θ) = 0.0002352MC iter 33; ΔE(θ) = 0.0001882MC iter 34; ΔE(θ) = 0.0001942MC iter 35; ΔE(θ) = 0.0001296MC iter 36; ΔE(θ) = 0.0001645MC iter 37; ΔE(θ) = 0.0001288MC iter 38; ΔE(θ) = 0.0001879MC iter 39; ΔE(θ) = 0.0001659MC iter 40; ΔE(θ) = 0.0002342MC iter 41; ΔE(θ) = 0.0002289MC iter 42; ΔE(θ) = 0.0001532MC iter 43; ΔE(θ) = 0.000126MC iter 44; ΔE(θ) = 0.0001686MC iter 45; ΔE(θ) = 0.0001436MC iter 46; ΔE(θ) = 0.0002299MC iter 47; ΔE(θ) = 0.0001535MC iter 48; ΔE(θ) = 0.0002198MC iter 49; ΔE(θ) = 0.0001332MC iter 50; ΔE(θ) = 0.0001111MC iter 51; ΔE(θ) = 0.0001628MC iter 52; ΔE(θ) = 0.0002289MC iter 53; ΔE(θ) = 0.0001509MC iter 54; ΔE(θ) = 0.0001528MC iter 55; ΔE(θ) = 0.0001511MC iter 56; ΔE(θ) = 0.000112MC iter 57; ΔE(θ) = 0.0001595MC iter 58; ΔE(θ) = 0.0001305MC iter 59; ΔE(θ) = 0.0001616MC iter 60; ΔE(θ) = 0.0001931MC iter 61; ΔE(θ) = 0.0001969MC iter 62; ΔE(θ) = 0.0002246MC iter 63; ΔE(θ) = 0.0002345MC iter 64; ΔE(θ) = 0.0002709MC iter 65; ΔE(θ) = 0.0002544MC iter 66; ΔE(θ) = 0.0001956MC iter 67; ΔE(θ) = 0.0001811MC iter 68; ΔE(θ) = 0.0001918MC iter 69; ΔE(θ) = 0.0001342MC iter 70; ΔE(θ) = 0.0001768MC iter 71; ΔE(θ) = 8.639e-05MC iter 72; ΔE(θ) = 0.0001692MC iter 73; ΔE(θ) = 0.0001779MC iter 74; ΔE(θ) = 0.0001812MC iter 75; ΔE(θ) = 0.0002003MC iter 76; ΔE(θ) = 0.0002156MC iter 77; ΔE(θ) = 0.0001356MC iter 78; ΔE(θ) = 0.0001095MC iter 79; ΔE(θ) = 0.000109MC iter 80; ΔE(θ) = 8.899e-05MC iter 81; ΔE(θ) = 9.754e-05MC iter 82; ΔE(θ) = 3.949e-05</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; modsem (1.0.20) ended normally after 81 iterations</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                     MC-LMS</span></span>
 <span><span class="co">#&gt;   Optimization method                    ROBBINS-MONRO</span></span>
 <span><span class="co">#&gt;   Naive optimization method                 EMA-NLMINB</span></span>
@@ -152,10 +159,10 @@ ordinal, using the <code>ordered=</code> argument.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fit Measures for Baseline Model (H0):</span></span>
 <span><span class="co">#&gt;                                               Standard</span></span>
-<span><span class="co">#&gt;   Chi-square                                     46.53</span></span>
+<span><span class="co">#&gt;   Chi-square                                     54.26</span></span>
 <span><span class="co">#&gt;   Degrees of Freedom (Chi-square)                   33</span></span>
-<span><span class="co">#&gt;   P-value (Chi-square)                           0.059</span></span>
-<span><span class="co">#&gt;   RMSEA                                          0.014</span></span>
+<span><span class="co">#&gt;   P-value (Chi-square)                           0.011</span></span>
+<span><span class="co">#&gt;   RMSEA                                          0.018</span></span>
 <span><span class="co">#&gt;                                                       </span></span>
 <span><span class="co">#&gt;   Naive Loglikelihood                        -19343.47</span></span>
 <span><span class="co">#&gt;   Naive Akaike (AIC)                          38710.94</span></span>
@@ -176,29 +183,29 @@ ordinal, using the <code>ordered=</code> argument.</p>
 <span><span class="co">#&gt; Latent Variables:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   X =~          </span></span>
-<span><span class="co">#&gt;     x1              0.931      0.060   15.594    0.000</span></span>
-<span><span class="co">#&gt;     x2              0.900      0.065   13.912    0.000</span></span>
-<span><span class="co">#&gt;     x3              0.918      0.061   14.944    0.000</span></span>
+<span><span class="co">#&gt;     x1              0.933      0.061   15.176    0.000</span></span>
+<span><span class="co">#&gt;     x2              0.900      0.064   14.030    0.000</span></span>
+<span><span class="co">#&gt;     x3              0.918      0.061   15.156    0.000</span></span>
 <span><span class="co">#&gt;   Z =~          </span></span>
-<span><span class="co">#&gt;     z1              0.920      0.062   14.935    0.000</span></span>
-<span><span class="co">#&gt;     z2              0.905      0.064   14.191    0.000</span></span>
-<span><span class="co">#&gt;     z3              0.910      0.064   14.319    0.000</span></span>
+<span><span class="co">#&gt;     z1              0.920      0.062   14.888    0.000</span></span>
+<span><span class="co">#&gt;     z2              0.905      0.063   14.321    0.000</span></span>
+<span><span class="co">#&gt;     z3              0.909      0.062   14.598    0.000</span></span>
 <span><span class="co">#&gt;   Y =~          </span></span>
-<span><span class="co">#&gt;     y1              0.975      0.057   17.227    0.000</span></span>
-<span><span class="co">#&gt;     y2              0.957      0.065   14.714    0.000</span></span>
-<span><span class="co">#&gt;     y3              0.964      0.061   15.765    0.000</span></span>
+<span><span class="co">#&gt;     y1              0.975      0.057   17.212    0.000</span></span>
+<span><span class="co">#&gt;     y2              0.958      0.066   14.511    0.000</span></span>
+<span><span class="co">#&gt;     y3              0.965      0.062   15.529    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   Y ~           </span></span>
-<span><span class="co">#&gt;     X               0.441      0.051    8.691    0.000</span></span>
-<span><span class="co">#&gt;     Z               0.379      0.034   10.992    0.000</span></span>
-<span><span class="co">#&gt;     X:Z             0.488      0.156    3.123    0.002</span></span>
+<span><span class="co">#&gt;     X               0.433      0.044    9.838    0.000</span></span>
+<span><span class="co">#&gt;     Z               0.382      0.037   10.265    0.000</span></span>
+<span><span class="co">#&gt;     X:Z             0.484      0.152    3.176    0.001</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   X ~~          </span></span>
-<span><span class="co">#&gt;     Z               0.188      0.029    6.420    0.000</span></span>
+<span><span class="co">#&gt;     Z               0.197      0.035    5.664    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Thresholds:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
@@ -223,18 +230,18 @@ ordinal, using the <code>ordered=</code> argument.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;    .x1              0.132                             </span></span>
-<span><span class="co">#&gt;    .x2              0.190                             </span></span>
-<span><span class="co">#&gt;    .x3              0.156                             </span></span>
+<span><span class="co">#&gt;    .x1              0.129                             </span></span>
+<span><span class="co">#&gt;    .x2              0.191                             </span></span>
+<span><span class="co">#&gt;    .x3              0.158                             </span></span>
 <span><span class="co">#&gt;    .z1              0.154                             </span></span>
-<span><span class="co">#&gt;    .z2              0.180                             </span></span>
-<span><span class="co">#&gt;    .z3              0.172                             </span></span>
+<span><span class="co">#&gt;    .z2              0.181                             </span></span>
+<span><span class="co">#&gt;    .z3              0.174                             </span></span>
 <span><span class="co">#&gt;    .y1              0.049                             </span></span>
-<span><span class="co">#&gt;    .y2              0.085                             </span></span>
-<span><span class="co">#&gt;    .y3              0.070                             </span></span>
+<span><span class="co">#&gt;    .y2              0.083                             </span></span>
+<span><span class="co">#&gt;    .y3              0.068                             </span></span>
 <span><span class="co">#&gt;     X               1.000                             </span></span>
 <span><span class="co">#&gt;     Z               1.000                             </span></span>
-<span><span class="co">#&gt;    .Y               0.361</span></span></code></pre></div>
+<span><span class="co">#&gt;    .Y               0.367</span></span></code></pre></div>
 </div>
   </main>
 </div>
