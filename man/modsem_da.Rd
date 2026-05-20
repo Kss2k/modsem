@@ -50,7 +50,8 @@ modsem_da(
   ordered.fixed.seed = FALSE,
   ordered.polyak.juditsky = TRUE,
   ordered.pj.extrapolate = TRUE,
-  ordered.delta = FALSE,
+  ordered.se = c("penalty", "naive", "delta"),
+  ordered.se.penalty = 1,
   ordered.delta.reps = NULL,
   ordered.delta.epsilon = 0.01,
   ordered.standardize = TRUE,
@@ -253,18 +254,23 @@ the ordered MC Robbins-Monro solver?}
 Polyak-Juditsky path to estimate the convergence point. If \code{FALSE}, the
 averaged iterate is used directly.}
 
-\item{ordered.delta}{Logical. If \code{TRUE}, use the full delta-method Jacobian
-correction for ordered MC standard errors. If \code{FALSE} (default), use a much
-cheaper diagonal rescaling approximation based on the ratio between MC-corrected
-and naive standardized estimates. The fitted object and summary output report
-which standard-error correction was used.}
+\item{ordered.se}{Character string selecting the ordered MC standard-error
+correction. \code{"penalty"} (default) uses a conservative variance inflation
+based on the discrepancy between the naive and MC-corrected standardized estimates.
+\code{"naive"} uses the fast diagonal rescaling approximation, and
+\code{"delta"} uses the full delta-method Jacobian correction.}
+
+\item{ordered.se.penalty}{Non-negative numeric multiplier used when
+\code{ordered.se = "penalty"}. The penalty adds
+\code{ordered.se.penalty * (theta_mc - theta_naive)^2} to the diagonal of the
+naive covariance matrix on the variance scale.}
 
 \item{ordered.delta.reps}{Integer. Monte-Carlo sample size used when approximating
 the ordered MC delta-method Jacobian. Only relevant if
-\code{ordered.delta = TRUE}.}
+\code{ordered.se = "delta"}.}
 
 \item{ordered.delta.epsilon}{Finite-difference step size used for the ordered MC
-delta-method Jacobian. Only relevant if \code{ordered.delta = TRUE}.}
+delta-method Jacobian. Only relevant if \code{ordered.se = "delta"}.}
 
 \item{ordered.standardize}{Logical. Should scored ordered indicators be standardized
 before the observed-data fit and after ordinalizing simulated indicators? This is

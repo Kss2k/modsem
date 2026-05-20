@@ -18,11 +18,6 @@ Useful links:
 \author{
 \strong{Maintainer}: Kjell Solem Slupphaug \email{slupphaugkjell@gmail.com} (\href{https://orcid.org/0009-0005-8324-2834}{ORCID})
 
-Authors:
-\itemize{
-  \item Kjell Solem Slupphaug \email{slupphaugkjell@gmail.com} (\href{https://orcid.org/0009-0005-8324-2834}{ORCID})
-}
-
 Other contributors:
 \itemize{
   \item Mehmet Mehmetoglu \email{mehmetm@ntnu.no} (\href{https://orcid.org/0000-0002-6092-8551}{ORCID}) [contributor]
