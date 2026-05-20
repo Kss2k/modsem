@@ -36,8 +36,10 @@ modsemOrderedMCCorrection <- function(model.syntax,
     "MC ordered correction is only available for LMS and QML."
   )
 
-  if (is.null(verbose)) verbose <- TRUE
-  if (is.null(calc.se)) calc.se <- TRUE
+  if (is.null(verbose))
+    verbose <- interactive()
+  if (is.null(calc.se))
+    calc.se <- TRUE
   if (is.null(ordered.mc.reps))
     ordered.mc.reps <- max(NROW(data), 2000L)
   if (is.null(ordered.delta.reps))
