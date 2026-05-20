@@ -199,7 +199,7 @@ modsemOrderedMCCorrection <- function(model.syntax,
           V <- H.inv %*% vcov.free %*% t(H.inv)
           V <- 0.5 * (V + t(V))
           dimnames(V) <- list(names(theta.mc), names(theta.mc))
-          type.se <<- naive.se.label
+          type.se <<- delta.se.label
 
           V
 
