@@ -46,6 +46,7 @@ NOTE: Run default_settings_da to see default arguments.'></head><body>
     <li><a class="dropdown-item" href="../articles/interaction_two_etas.html">interaction effects between endogenous variables</a></li>
     <li><a class="dropdown-item" href="../articles/lavaan.html">using lavaan functions</a></li>
     <li><a class="dropdown-item" href="../articles/lms_qml.html">LMS and QML approaches</a></li>
+    <li><a class="dropdown-item" href="../articles/mc-lms-ord.html">MC-LMS-ORD</a></li>
     <li><a class="dropdown-item" href="../articles/meanstructure_lms_qml.html">non-centered interaction terms (LMS and QML)</a></li>
     <li><a class="dropdown-item" href="../articles/methods.html">methods</a></li>
     <li><a class="dropdown-item" href="../articles/missing_lms_qml.html">missing data in the LMS and QML approaches</a></li>
@@ -132,7 +133,8 @@ necessary syntax, and variables for the estimation of models with latent product
 <span>  ordered.fixed.seed <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  ordered.polyak.juditsky <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  ordered.pj.extrapolate <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  ordered.delta <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  ordered.se <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"penalty"</span>, <span class="st">"naive"</span>, <span class="st">"delta"</span><span class="op">)</span>,</span>
+<span>  ordered.se.penalty <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  ordered.delta.reps <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  ordered.delta.epsilon <span class="op">=</span> <span class="fl">0.01</span>,</span>
 <span>  ordered.standardize <span class="op">=</span> <span class="cn">TRUE</span>,</span>
@@ -427,23 +429,30 @@ Polyak-Juditsky path to estimate the convergence point. If <code>FALSE</code>, t
 averaged iterate is used directly.</p></dd>
 
 
-<dt id="arg-ordered-delta">ordered.delta<a class="anchor" aria-label="anchor" href="#arg-ordered-delta"></a></dt>
-<dd><p>Logical. If <code>TRUE</code>, use the full delta-method Jacobian
-correction for ordered MC standard errors. If <code>FALSE</code> (default), use a much
-cheaper diagonal rescaling approximation based on the ratio between MC-corrected
-and naive standardized estimates. The fitted object and summary output report
-which standard-error correction was used.</p></dd>
+<dt id="arg-ordered-se">ordered.se<a class="anchor" aria-label="anchor" href="#arg-ordered-se"></a></dt>
+<dd><p>Character string selecting the ordered MC standard-error
+correction. <code>"penalty"</code> (default) uses a conservative variance inflation
+based on the discrepancy between the naive and MC-corrected standardized estimates.
+<code>"naive"</code> uses the fast diagonal rescaling approximation, and
+<code>"delta"</code> uses the full delta-method Jacobian correction.</p></dd>
+
+
+<dt id="arg-ordered-se-penalty">ordered.se.penalty<a class="anchor" aria-label="anchor" href="#arg-ordered-se-penalty"></a></dt>
+<dd><p>Non-negative numeric multiplier used when
+<code>ordered.se = "penalty"</code>. The penalty adds
+<code>ordered.se.penalty * (theta_mc - theta_naive)^2</code> to the diagonal of the
+naive covariance matrix on the variance scale.</p></dd>
 
 
 <dt id="arg-ordered-delta-reps">ordered.delta.reps<a class="anchor" aria-label="anchor" href="#arg-ordered-delta-reps"></a></dt>
 <dd><p>Integer. Monte-Carlo sample size used when approximating
 the ordered MC delta-method Jacobian. Only relevant if
-<code>ordered.delta = TRUE</code>.</p></dd>
+<code>ordered.se = "delta"</code>.</p></dd>
 
 
 <dt id="arg-ordered-delta-epsilon">ordered.delta.epsilon<a class="anchor" aria-label="anchor" href="#arg-ordered-delta-epsilon"></a></dt>
 <dd><p>Finite-difference step size used for the ordered MC
-delta-method Jacobian. Only relevant if <code>ordered.delta = TRUE</code>.</p></dd>
+delta-method Jacobian. Only relevant if <code>ordered.se = "delta"</code>.</p></dd>
 
 
 <dt id="arg-ordered-standardize">ordered.standardize<a class="anchor" aria-label="anchor" href="#arg-ordered-standardize"></a></dt>
