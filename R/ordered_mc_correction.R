@@ -17,7 +17,8 @@ modsemOrderedMCCorrection <- function(model.syntax,
                                       ordered.polyak.juditsky = TRUE,
                                       ordered.pj.extrapolate = TRUE,
                                       ordered.fn.args = list(),
-                                      ordered.delta = FALSE,
+                                      ordered.se = c("penalty", "naive", "delta"),
+                                      ordered.se.penalty = 1,
                                       ordered.delta.reps = ordered.mc.reps,
                                       ordered.delta.epsilon = 1e-2,
                                       ordered.standardize = TRUE,
@@ -29,6 +30,7 @@ modsemOrderedMCCorrection <- function(model.syntax,
                                       mean.observed = NULL, # capture
                                       ...) {
   method <- tolower(method)
+  ordered.se <- match.arg(ordered.se)
   stopif(
     !method %in% c("lms", "qml"),
     "MC ordered correction is only available for LMS and QML."
@@ -66,7 +68,7 @@ modsemOrderedMCCorrection <- function(model.syntax,
 
   if (verbose) {
     message(
-      sprintf("Estimating MC-%s correction for ordered indicators (%d replications).",
+      sprintf("Estimating MC-%s-ORD Correction (R=%d).",
               toupper(method), ordered.mc.reps)
     )
   }
@@ -169,15 +171,18 @@ modsemOrderedMCCorrection <- function(model.syntax,
 
   vcov.free <- NULL
   type.se <- if (isTRUE(calc.se)) fit0$type.se else "none"
-  type.se.env <- new.env(parent = emptyenv())
-  type.se.env$value <- type.se
-  naive.se.label <- "naive"
+
+  naive.se.label   <- "naive"
+  penalty.se.label <- "penalized"
+  delta.se.label   <- "delta"
 
   if (isTRUE(calc.se)) {
     vcov.free <- std.info$vcov.free
+
     if (!is.null(vcov.free) &&
         all(dim(vcov.free) == c(length(theta.mc), length(theta.mc)))) {
-      if (isTRUE(ordered.delta)) {
+
+      if (identical(ordered.se, "delta")) {
         if (verbose)
           message("Calculating MC ordered delta-method standard errors.")
 
@@ -194,34 +199,56 @@ modsemOrderedMCCorrection <- function(model.syntax,
           V <- H.inv %*% vcov.free %*% t(H.inv)
           V <- 0.5 * (V + t(V))
           dimnames(V) <- list(names(theta.mc), names(theta.mc))
-          type.se.env$value <- "mc-delta"
+          type.se <<- delta.se.label
+
           V
+
         }, error = function(e) {
           warning2(
-            "Delta-method MC correction failed; using ordered MC naive\n",
-            "scaling standard errors instead. Message: ", conditionMessage(e)
+            "Delta-method MC correction failed; using ordered MC penalty ",
+            "standard errors instead. Message: ", conditionMessage(e)
           )
-          type.se.env$value <- naive.se.label
-          mcOrderedNaiveScalingVcov(
+
+          penalized <- mcOrderedPenaltyVcov(
             theta.mc = theta.mc,
             theta0 = theta0,
-            vcov.free = std.info$vcov.free
+            vcov.free = std.info$vcov.free,
+            lambda = ordered.se.penalty
           )
+
+          type.se <<- penalty.se.label
+          penalized
         })
-      } else {
+
+      } else if (identical(ordered.se, "naive")) {
         if (verbose) {
-          message("Using ordered MC naive scaling standard errors.")
+          message("Using naive standard errors.")
         }
+
         vcov.free <- mcOrderedNaiveScalingVcov(
           theta.mc = theta.mc,
           theta0 = theta0,
           vcov.free = vcov.free
         )
-        type.se.env$value <- naive.se.label
+
+        type.se <- naive.se.label
+
+      } else if (identical(ordered.se, "penalty")) {
+        if (verbose) {
+          message("Using penalized standard errors.")
+        }
+
+        vcov.free <- mcOrderedPenaltyVcov(
+          theta.mc = theta.mc,
+          theta0 = theta0,
+          vcov.free = vcov.free,
+          lambda = ordered.se.penalty
+        )
+
+        type.se <- penalty.se.label
       }
     }
   }
-  type.se <- type.se.env$value
 
   fit.out <- mcOverwriteFitWithStdState(
     fit = fit0,
@@ -273,7 +300,8 @@ modsemOrderedMCCorrection <- function(model.syntax,
   fit.out$args$ordered.polyak.juditsky <- ordered.polyak.juditsky
   fit.out$args$ordered.pj.extrapolate <- ordered.pj.extrapolate
   fit.out$args$ordered.fn.args <- ordered.fn.args
-  fit.out$args$ordered.delta <- ordered.delta
+  fit.out$args$ordered.se <- ordered.se
+  fit.out$args$ordered.se.penalty <- ordered.se.penalty
   fit.out$args$ordered.delta.reps <- ordered.delta.reps
   fit.out$args$ordered.delta.epsilon <- ordered.delta.epsilon
   fit.out$args$optimize <- optimize
@@ -667,6 +695,21 @@ mcOrderedNaiveScalingVcov <- function(theta.mc, theta0, vcov.free,
   dimnames(D) <- list(ids, ids)
   V <- vcov.free[ids, ids, drop = FALSE]
   V <- D %*% V %*% D
+  V <- 0.5 * (V + t(V))
+  dimnames(V) <- list(ids, ids)
+  expandVCOV(V, labels = rownames(vcov.free))
+}
+
+
+mcOrderedPenaltyVcov <- function(theta.mc, theta0, vcov.free, lambda = 1) {
+  if (is.null(vcov.free)) return(NULL)
+
+  ids <- intersect(names(theta.mc), intersect(names(theta0), rownames(vcov.free)))
+  if (!length(ids)) return(vcov.free)
+
+  d <- theta.mc[ids] - theta0[ids]
+  V <- vcov.free[ids, ids, drop = FALSE]
+  V <- V + lambda * diag(d^2, nrow = length(d))
   V <- 0.5 * (V + t(V))
   dimnames(V) <- list(ids, ids)
   expandVCOV(V, labels = rownames(vcov.free))

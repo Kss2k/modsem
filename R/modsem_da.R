@@ -182,18 +182,23 @@
 #'   Polyak-Juditsky path to estimate the convergence point. If \code{FALSE}, the
 #'   averaged iterate is used directly.
 #'
-#' @param ordered.delta Logical. If \code{TRUE}, use the full delta-method Jacobian
-#'   correction for ordered MC standard errors. If \code{FALSE} (default), use a much
-#'   cheaper diagonal rescaling approximation based on the ratio between MC-corrected
-#'   and naive standardized estimates. The fitted object and summary output report
-#'   which standard-error correction was used.
+#' @param ordered.se Character string selecting the ordered MC standard-error
+#'   correction. \code{"penalty"} (default) uses a conservative variance inflation
+#'   based on the discrepancy between the naive and MC-corrected standardized estimates.
+#'   \code{"naive"} uses the fast diagonal rescaling approximation, and
+#'   \code{"delta"} uses the full delta-method Jacobian correction.
+#'
+#' @param ordered.se.penalty Non-negative numeric multiplier used when
+#'   \code{ordered.se = "penalty"}. The penalty adds
+#'   \code{ordered.se.penalty * (theta_mc - theta_naive)^2} to the diagonal of the
+#'   naive covariance matrix on the variance scale.
 #'
 #' @param ordered.delta.reps Integer. Monte-Carlo sample size used when approximating
 #'   the ordered MC delta-method Jacobian. Only relevant if
-#'   \code{ordered.delta = TRUE}.
+#'   \code{ordered.se = "delta"}.
 #'
 #' @param ordered.delta.epsilon Finite-difference step size used for the ordered MC
-#'   delta-method Jacobian. Only relevant if \code{ordered.delta = TRUE}.
+#'   delta-method Jacobian. Only relevant if \code{ordered.se = "delta"}.
 #'
 #' @param ordered.standardize Logical. Should scored ordered indicators be standardized
 #'   before the observed-data fit and after ordinalizing simulated indicators? This is
@@ -379,7 +384,8 @@ modsem_da <- function(model.syntax = NULL,
                       ordered.fixed.seed = FALSE,
                       ordered.polyak.juditsky = TRUE,
                       ordered.pj.extrapolate = TRUE,
-                      ordered.delta = FALSE,
+                      ordered.se = c("penalty", "naive", "delta"),
+                      ordered.se.penalty = 1,
                       ordered.delta.reps = NULL,
                       ordered.delta.epsilon = 1e-2,
                       ordered.standardize = TRUE,
@@ -406,6 +412,8 @@ modsem_da <- function(model.syntax = NULL,
   } else if (length(model.syntax) > 1) {
     stop2("The provided model syntax is not of length 1")
   }
+
+  ordered.se <- match.arg(ordered.se)
 
   if (length(ordered) || any(sapply(data, FUN = is.ordered))) {
     out <- modsemOrderedMCCorrection(
@@ -453,7 +461,8 @@ modsem_da <- function(model.syntax = NULL,
        ordered.fixed.seed  = ordered.fixed.seed,
        ordered.polyak.juditsky = ordered.polyak.juditsky,
        ordered.pj.extrapolate  = ordered.pj.extrapolate,
-       ordered.delta       = ordered.delta,
+       ordered.se          = ordered.se,
+       ordered.se.penalty  = ordered.se.penalty,
        ordered.delta.reps  = ordered.delta.reps,
        ordered.delta.epsilon = ordered.delta.epsilon,
        ordered.standardize = ordered.standardize,
