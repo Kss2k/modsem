@@ -1,28 +1,28 @@
 ---
-title: "MC-LMS-ORD"
+title: "interactions with ordered data"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{MC-LMS-ORD}
+  %\VignetteIndexEntry{interactions with ordered data}
   %\VignetteEngine{knitr::rmarkdown}
   \usepackage[utf8]{inputenc}
 ---
 
-```{r setup, include=FALSE}
+```{r, include = FALSE}
 EVAL_DEFAULT <- FALSE
-
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  message = FALSE,
-  warning = FALSE,
   eval = EVAL_DEFAULT
 )
-
-library(modsem)
 ```
 
-`modsem` implements a Monte-Carlo correction for ordered-indicator LMS and QML
-models. In this vignette we refer to these estimators informally as
+```{r setup}
+library(modsem)
+set.seed(2938472)
+```
+
+`modsem` implements a Monte-Carlo correction for LMS and QML
+models with ordinal data. Here we refer to these informally as
 `MC-LMS-ORD` and `MC-QML-ORD`.
 
 The `MC-LMS-ORD` and `MC-QML-ORD` algorithms are based on 
