@@ -1,0 +1,71 @@
+---
+title: "MC-LMS-ORD"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{MC-LMS-ORD}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+```{r setup, include=FALSE}
+EVAL_DEFAULT <- FALSE
+
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  message = FALSE,
+  warning = FALSE,
+  eval = EVAL_DEFAULT
+)
+
+library(modsem)
+```
+
+`modsem` implements a Monte-Carlo correction for ordered-indicator LMS and QML
+models. In this vignette we refer to these estimators informally as
+`MC-LMS-ORD` and `MC-QML-ORD`.
+
+The `MC-LMS-ORD` and `MC-QML-ORD` algorithms are based on 
+[Slupphaug, Mehmetoglu, and Mittner (2026)](https://osf.io/preprints/psyarxiv/fwzj6_v1)
+For a more direct implementation of the original algorithm, we
+recommend checking out the [`plssem` package](https://CRAN.R-project.org/package=plssem).
+
+# Example
+
+Here we ordinalize the data in the `oneInt` dataset.
+
+```{r}
+ordinalize <- function(x, probs = c(0, 0.35, 0.7, 1)) {
+  x <- (x - mean(x)) / sd(x)
+  cut(
+    x,
+    breaks = stats::quantile(x, probs = probs),
+    include.lowest = TRUE,
+    ordered_result = TRUE
+  )
+}
+
+oneIntOrd <- as.data.frame(lapply(oneInt, ordinalize))
+```
+
+Now we can estimate our model, indicating which variables are ordinal, using
+the `ordered=` argument.
+
+```{r}
+model <- "
+  X =~ x1 + x2 + x3
+  Z =~ z1 + z2 + z3
+  Y =~ y1 + y2 + y3
+
+  Y ~ X + Z + X:Z
+"
+
+fit_lms_ord <- modsem(
+  model,
+  data = oneIntOrd,
+  method = "lms",
+  ordered = colnames(oneIntOrd)
+)
+
+summary(fit_lms_ord)
+```
