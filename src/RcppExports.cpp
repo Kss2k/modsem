@@ -271,40 +271,40 @@ BEGIN_RCPP
 END_RCPP
 }
 // gradCompLogLikAdLmsCpp
-arma::vec gradCompLogLikAdLmsCpp(const Rcpp::List& modelR, const Rcpp::List& P, const arma::uvec& block, const arma::uvec& row, const arma::uvec& col, const arma::uvec& symmetric, const Rcpp::List& colidxR, const arma::uvec& n, const arma::uvec& d, const int npatterns);
+Eigen::VectorXd gradCompLogLikAdLmsCpp(const Rcpp::List& modelR, const Rcpp::List& P, const Rcpp::IntegerVector& block, const Rcpp::IntegerVector& row, const Rcpp::IntegerVector& col, const Rcpp::IntegerVector& symmetric, const Rcpp::List& colidxR, const Rcpp::IntegerVector& n, const Rcpp::IntegerVector& d, const int npatterns);
 RcppExport SEXP _modsem_gradCompLogLikAdLmsCpp(SEXP modelRSEXP, SEXP PSEXP, SEXP blockSEXP, SEXP rowSEXP, SEXP colSEXP, SEXP symmetricSEXP, SEXP colidxRSEXP, SEXP nSEXP, SEXP dSEXP, SEXP npatternsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::List& >::type modelR(modelRSEXP);
     Rcpp::traits::input_parameter< const Rcpp::List& >::type P(PSEXP);
-    Rcpp::traits::input_parameter< const arma::uvec& >::type block(blockSEXP);
-    Rcpp::traits::input_parameter< const arma::uvec& >::type row(rowSEXP);
-    Rcpp::traits::input_parameter< const arma::uvec& >::type col(colSEXP);
-    Rcpp::traits::input_parameter< const arma::uvec& >::type symmetric(symmetricSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type block(blockSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type row(rowSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type col(colSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type symmetric(symmetricSEXP);
     Rcpp::traits::input_parameter< const Rcpp::List& >::type colidxR(colidxRSEXP);
-    Rcpp::traits::input_parameter< const arma::uvec& >::type n(nSEXP);
-    Rcpp::traits::input_parameter< const arma::uvec& >::type d(dSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type n(nSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type d(dSEXP);
     Rcpp::traits::input_parameter< const int >::type npatterns(npatternsSEXP);
     rcpp_result_gen = Rcpp::wrap(gradCompLogLikAdLmsCpp(modelR, P, block, row, col, symmetric, colidxR, n, d, npatterns));
     return rcpp_result_gen;
 END_RCPP
 }
 // hessCompLogLikAdLmsCpp
-Rcpp::List hessCompLogLikAdLmsCpp(const Rcpp::List& modelR, const Rcpp::List& P, const arma::uvec& block, const arma::uvec& row, const arma::uvec& col, const arma::uvec& symmetric, const Rcpp::List& colidxR, const arma::uvec& n, const arma::uvec& d, const int npatterns, const int ncores);
+Rcpp::List hessCompLogLikAdLmsCpp(const Rcpp::List& modelR, const Rcpp::List& P, const Rcpp::IntegerVector& block, const Rcpp::IntegerVector& row, const Rcpp::IntegerVector& col, const Rcpp::IntegerVector& symmetric, const Rcpp::List& colidxR, const Rcpp::IntegerVector& n, const Rcpp::IntegerVector& d, const int npatterns, const int ncores);
 RcppExport SEXP _modsem_hessCompLogLikAdLmsCpp(SEXP modelRSEXP, SEXP PSEXP, SEXP blockSEXP, SEXP rowSEXP, SEXP colSEXP, SEXP symmetricSEXP, SEXP colidxRSEXP, SEXP nSEXP, SEXP dSEXP, SEXP npatternsSEXP, SEXP ncoresSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::List& >::type modelR(modelRSEXP);
     Rcpp::traits::input_parameter< const Rcpp::List& >::type P(PSEXP);
-    Rcpp::traits::input_parameter< const arma::uvec& >::type block(blockSEXP);
-    Rcpp::traits::input_parameter< const arma::uvec& >::type row(rowSEXP);
-    Rcpp::traits::input_parameter< const arma::uvec& >::type col(colSEXP);
-    Rcpp::traits::input_parameter< const arma::uvec& >::type symmetric(symmetricSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type block(blockSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type row(rowSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type col(colSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type symmetric(symmetricSEXP);
     Rcpp::traits::input_parameter< const Rcpp::List& >::type colidxR(colidxRSEXP);
-    Rcpp::traits::input_parameter< const arma::uvec& >::type n(nSEXP);
-    Rcpp::traits::input_parameter< const arma::uvec& >::type d(dSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type n(nSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type d(dSEXP);
     Rcpp::traits::input_parameter< const int >::type npatterns(npatternsSEXP);
     Rcpp::traits::input_parameter< const int >::type ncores(ncoresSEXP);
     rcpp_result_gen = Rcpp::wrap(hessCompLogLikAdLmsCpp(modelR, P, block, row, col, symmetric, colidxR, n, d, npatterns, ncores));

@@ -1,37 +1,12 @@
 #ifndef mvnorm_h
-#define mvnorm_h 
+#define mvnorm_h
 
 #define BOOST_DISABLE_ASSERTS true
-
-#ifdef _OPENMP
-#include <omp.h>
-#endif
 
 #include <RcppArmadillo.h>
 // [[Rcpp::plugins(openmp)]]
 
-struct ThreadSetter {
-  int old_threads_mp = 1;
-
-  explicit ThreadSetter(const int ncores) {
-    // OpenMP
-    #ifdef _OPENMP
-      if (ncores <= 0)
-        Rcpp::stop("ncores must be positive");
-
-      old_threads_mp = omp_get_max_threads();
-      omp_set_num_threads(ncores);
-    #else
-      old_threads_mp = 1;
-    #endif
-  }
-
-  ~ThreadSetter() {
-    #ifdef _OPENMP
-      omp_set_num_threads(old_threads_mp);
-    #endif
-  }
-};
+#include "thread_setter.h"  // ThreadSetter (arma-free)
 
 
 void inplace_tri_mat_mult(arma::rowvec &x, arma::mat const &trimat);

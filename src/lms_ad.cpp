@@ -3,14 +3,10 @@
 // Stan headers MUST come first to register Eigen plugins before any
 // other header pulls in Eigen.
 
-#include <RcppArmadillo.h>
-#include <stan/math/rev.hpp>
+#include <stan/math/rev.hpp>  // must precede any other Eigen include
 #include <RcppEigen.h>
+#include "thread_setter.h"
 
-#include "utils.h"
-#include "mvnorm.h"             // ThreadSetter + OpenMP guards
-
-// [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::depends(StanHeaders)]]
 // [[Rcpp::depends(RcppEigen)]]
 // [[Rcpp::depends(BH)]]
@@ -21,7 +17,6 @@
 #if defined(__GNUC__) || defined(__clang__)
 extern "C" { __attribute__((weak)) void openblas_set_num_threads(int n); }
 #else
-// MSVC / other: declare as a do-nothing inline — no OpenBLAS thread issue there
 static inline void openblas_set_num_threads(int) {}
 #endif
 
@@ -77,19 +72,68 @@ T total_dmvn_weighted_ad(const EVec<T>& mu, const EMat<T>& Sig,
 
 // ─── Subset helpers ──────────────────────────────────────────────────────────
 template<typename T>
-EVec<T> subset_vec(const EVec<T>& v, const arma::uvec& idx) {
-  EVec<T> out(idx.n_elem);
-  for (arma::uword k = 0; k < idx.n_elem; ++k) out(k) = v(idx[k]);
+EVec<T> subset_vec(const EVec<T>& v, const std::vector<int>& idx) {
+  EVec<T> out(idx.size());
+  for (int k = 0; k < (int)idx.size(); ++k) out(k) = v(idx[k]);
   return out;
 }
 
 template<typename T>
-EMat<T> subset_sym_mat(const EMat<T>& M, const arma::uvec& idx) {
-  int n = (int)idx.n_elem;
+EMat<T> subset_sym_mat(const EMat<T>& M, const std::vector<int>& idx) {
+  int n = (int)idx.size();
   EMat<T> out(n, n);
   for (int a = 0; a < n; ++a)
     for (int b = 0; b < n; ++b)
       out(a, b) = M(idx[a], idx[b]);
+  return out;
+}
+
+// ─── R-list parsers (arma-free) ───────────────────────────────────────────────
+static std::vector<std::vector<EVecd>>
+parse_list_of_list_of_vec(const Rcpp::List& L) {
+  int J = L.size();
+  std::vector<std::vector<EVecd>> out(J);
+  for (int j = 0; j < J; ++j) {
+    Rcpp::List inner = L[j];
+    int I = inner.size();
+    out[j].resize(I);
+    for (int i = 0; i < I; ++i)
+      out[j][i] = Rcpp::as<EVecd>(inner[i]);
+  }
+  return out;
+}
+
+static std::vector<std::vector<EMatd>>
+parse_list_of_list_of_mat(const Rcpp::List& L) {
+  int J = L.size();
+  std::vector<std::vector<EMatd>> out(J);
+  for (int j = 0; j < J; ++j) {
+    Rcpp::List inner = L[j];
+    int I = inner.size();
+    out[j].resize(I);
+    for (int i = 0; i < I; ++i)
+      out[j][i] = Rcpp::as<EMatd>(inner[i]);
+  }
+  return out;
+}
+
+static std::vector<EVecd>
+parse_list_of_vec(const Rcpp::List& L) {
+  int J = L.size();
+  std::vector<EVecd> out(J);
+  for (int j = 0; j < J; ++j)
+    out[j] = Rcpp::as<EVecd>(L[j]);
+  return out;
+}
+
+static std::vector<std::vector<int>>
+parse_list_of_ivec(const Rcpp::List& L) {
+  int J = L.size();
+  std::vector<std::vector<int>> out(J);
+  for (int j = 0; j < J; ++j) {
+    Rcpp::IntegerVector v = L[j];
+    out[j].assign(v.begin(), v.end());
+  }
   return out;
 }
 
@@ -106,12 +150,12 @@ struct CompLogLikAD {
 
   // Sufficient statistics — indexed [j][i] for node j, pattern i
   int Q, npatterns;
-  EMatd V;                                     // Q × k quadrature nodes
-  std::vector<std::vector<EVecd>> nu;          // weighted means
-  std::vector<std::vector<EMatd>> S;           // weighted scatter
-  std::vector<std::vector<double>> tg;         // total weights
-  std::vector<arma::uvec> colidx;              // pattern column indices (arma, 0-based)
-  std::vector<int> dims;                       // observed dimension per pattern
+  EMatd V;                                       // Q × k quadrature nodes
+  std::vector<std::vector<EVecd>> nu;            // weighted means
+  std::vector<std::vector<EMatd>> S;             // weighted scatter
+  std::vector<EVecd> tg;                         // total weights (Q × npatterns)
+  std::vector<std::vector<int>> colidx;          // pattern column indices (0-based)
+  std::vector<int> dims;                         // observed dimension per pattern
 
   // Called by stan::math::gradient (T=var)
   template<typename T>
@@ -170,6 +214,22 @@ struct CompLogLikAD {
     EMat<T> AOi   = A * Oi;
     EMat<T> AOiAt = AOi * A.transpose();
 
+    // ── Composite-adjusted loading matrix and residual (z-independent) ───
+    // Mirrors muSigma() in equations_lms.cpp:
+    //   lXc = lX + T * W * pinv(W^T * T * W)
+    //   dc  = d + T - lXc * (W^T * T * W) * lXc^T
+    // generalized_inverse (SVD-based) matches arma::pinv and stays valid
+    // when WtTW is rank-deficient at perturbed parameter values.
+    EMat<T> lX_eff, d_eff;
+    if (hasComposites0) {
+      EMat<T> WtTW = W.transpose() * Tmat * W;
+      lX_eff = lX + Tmat * W * stan::math::generalized_inverse(WtTW);
+      d_eff  = dMat + Tmat - lX_eff * WtTW * lX_eff.transpose();
+    } else {
+      lX_eff = lX;
+      d_eff  = dMat;
+    }
+
     // ── Accumulate complete log-likelihood ────────────────────────────────
     T ll = T(0.0);
 
@@ -202,16 +262,16 @@ struct CompLogLikAD {
       xieta.head(nxi)  = muXi;
       xieta.tail(neta) = muEta;
 
-      EVec<T> mu_j  = tX + lX * xieta;
-      EMat<T> Sig_j = lX * vcov * lX.transpose() + dMat;
+      EVec<T> mu_j  = tX + lX_eff * xieta;
+      EMat<T> Sig_j = lX_eff * vcov * lX_eff.transpose() + d_eff;
 
       for (int i = 0; i < npatterns; ++i) {
-        if (tg[j][i] <= 0.0) continue;
+        if (tg[j](i) <= 0.0) continue;
         EVec<T> mu_i  = subset_vec   (mu_j,  colidx[i]);
         EMat<T> Sig_i = subset_sym_mat(Sig_j, colidx[i]);
         ll += total_dmvn_weighted_ad(mu_i, Sig_i,
                                      nu[j][i], S[j][i],
-                                     tg[j][i], dims[i]);
+                                     tg[j](i), dims[i]);
       }
     }
 
@@ -220,91 +280,69 @@ struct CompLogLikAD {
 };
 
 
-// ─── Helpers to convert arma ↔ Eigen ─────────────────────────────────────────
-static EMatd arma2eigen(const arma::mat& m) {
-  return Eigen::Map<const EMatd>(m.memptr(), m.n_rows, m.n_cols);
-}
-static EVecd arma2eigenv(const arma::vec& v) {
-  return Eigen::Map<const EVecd>(v.memptr(), v.n_elem);
-}
-
-
 // ─── Shared setup: populate functor + build theta0 from R args ───────────────
 static std::pair<CompLogLikAD, EVecd>
-buildCompLogLikAD(const Rcpp::List& modelR,
-                  const Rcpp::List& P,
-                  const arma::uvec& block,
-                  const arma::uvec& row,
-                  const arma::uvec& col,
-                  const arma::uvec& symmetric,
-                  const Rcpp::List& colidxR,
-                  const arma::uvec& n,
-                  const arma::uvec& d,
-                  const int         npatterns) {
+buildCompLogLikAD(const Rcpp::List&    modelR,
+                  const Rcpp::List&    P,
+                  const Rcpp::IntegerVector& block,
+                  const Rcpp::IntegerVector& row,
+                  const Rcpp::IntegerVector& col,
+                  const Rcpp::IntegerVector& symmetric,
+                  const Rcpp::List&    colidxR,
+                  const Rcpp::IntegerVector& n,
+                  const Rcpp::IntegerVector& d,
+                  const int            npatterns) {
   CompLogLikAD f;
 
   const Rcpp::List matrices = modelR["matrices"];
   const Rcpp::List info     = modelR["info"];
   const Rcpp::List quad     = modelR["quad"];
 
-  f.A0     = arma2eigen(Rcpp::as<arma::mat>(matrices["A"]));
-  f.Oxx0   = arma2eigen(Rcpp::as<arma::mat>(matrices["omegaXiXi"]));
-  f.Oex0   = arma2eigen(Rcpp::as<arma::mat>(matrices["omegaEtaXi"]));
-  f.Ie0    = arma2eigen(Rcpp::as<arma::mat>(matrices["Ieta"]));
-  f.lY0    = arma2eigen(Rcpp::as<arma::mat>(matrices["lambdaY"]));
-  f.lX0    = arma2eigen(Rcpp::as<arma::mat>(matrices["lambdaX"]));
-  f.tY0    = arma2eigen(Rcpp::as<arma::mat>(matrices["tauY"]));
-  f.tX0    = arma2eigen(Rcpp::as<arma::mat>(matrices["tauX"]));
-  f.W0     = arma2eigen(Rcpp::as<arma::mat>(matrices["W"]));
-  f.Tmat0  = arma2eigen(Rcpp::as<arma::mat>(matrices["T"]));
-  f.Gx0    = arma2eigen(Rcpp::as<arma::mat>(matrices["gammaXi"]));
-  f.Ge0    = arma2eigen(Rcpp::as<arma::mat>(matrices["gammaEta"]));
-  f.a0     = arma2eigen(Rcpp::as<arma::mat>(matrices["alpha"]));
-  f.beta00 = arma2eigen(Rcpp::as<arma::mat>(matrices["beta0"]));
-  f.Psi0   = arma2eigen(Rcpp::as<arma::mat>(matrices["psi"]));
-  f.d0     = arma2eigen(Rcpp::as<arma::mat>(matrices["thetaDelta"]));
-  f.e0     = arma2eigen(Rcpp::as<arma::mat>(matrices["thetaEpsilon"]));
+  f.A0     = Rcpp::as<EMatd>(matrices["A"]);
+  f.Oxx0   = Rcpp::as<EMatd>(matrices["omegaXiXi"]);
+  f.Oex0   = Rcpp::as<EMatd>(matrices["omegaEtaXi"]);
+  f.Ie0    = Rcpp::as<EMatd>(matrices["Ieta"]);
+  f.lY0    = Rcpp::as<EMatd>(matrices["lambdaY"]);
+  f.lX0    = Rcpp::as<EMatd>(matrices["lambdaX"]);
+  f.tY0    = Rcpp::as<EMatd>(matrices["tauY"]);
+  f.tX0    = Rcpp::as<EMatd>(matrices["tauX"]);
+  f.W0     = Rcpp::as<EMatd>(matrices["W"]);
+  f.Tmat0  = Rcpp::as<EMatd>(matrices["T"]);
+  f.Gx0    = Rcpp::as<EMatd>(matrices["gammaXi"]);
+  f.Ge0    = Rcpp::as<EMatd>(matrices["gammaEta"]);
+  f.a0     = Rcpp::as<EMatd>(matrices["alpha"]);
+  f.beta00 = Rcpp::as<EMatd>(matrices["beta0"]);
+  f.Psi0   = Rcpp::as<EMatd>(matrices["psi"]);
+  f.d0     = Rcpp::as<EMatd>(matrices["thetaDelta"]);
+  f.e0     = Rcpp::as<EMatd>(matrices["thetaEpsilon"]);
 
   f.k0             = Rcpp::as<int>(quad["k"]);
   f.numXis0        = Rcpp::as<int>(info["numXis"]);
   f.hasComposites0 = Rcpp::as<bool>(info["hasComposites"]);
 
-  if (f.hasComposites0)
-    Rcpp::stop("AD path: composite variables not yet supported");
-
-  const int p = (int)block.n_elem;
+  const int p = block.size();
   f.blk.resize(p); f.r.resize(p); f.c.resize(p); f.sym.resize(p);
   for (int ki = 0; ki < p; ++ki) {
-    f.blk[ki] = (int)block[ki];
-    f.r  [ki] = (int)row  [ki];
-    f.c  [ki] = (int)col  [ki];
-    f.sym[ki] = (int)symmetric[ki];
+    f.blk[ki] = block[ki];
+    f.r  [ki] = row  [ki];
+    f.c  [ki] = col  [ki];
+    f.sym[ki] = symmetric[ki];
   }
 
-  const arma::mat Vmat = Rcpp::as<arma::mat>(P["V"]);
-  f.V = arma2eigen(Vmat);
+  f.V = Rcpp::as<EMatd>(P["V"]);
   f.Q = f.V.rows();
   f.npatterns = npatterns;
 
-  const auto Mean   = as_vec_of_vec_of_vec(P["mean"]);
-  const auto Cov    = as_vec_of_vec_of_mat(P["cov"]);
-  const auto TGamma = as_vec_of_vec(P["tgamma"]);
+  f.nu = parse_list_of_list_of_vec(P["mean"]);
+  f.S  = parse_list_of_list_of_mat(P["cov"]);
 
-  f.nu.resize(f.Q); f.S.resize(f.Q); f.tg.resize(f.Q);
-  for (int j = 0; j < f.Q; ++j) {
-    f.nu[j].resize(npatterns);
-    f.S [j].resize(npatterns);
-    f.tg[j].resize(npatterns);
-    for (int i = 0; i < npatterns; ++i) {
-      f.nu[j][i] = arma2eigenv(Mean[j][i]);
-      f.S [j][i] = arma2eigen (Cov [j][i]);
-      f.tg[j][i] = TGamma[j][i];
-    }
-  }
+  const auto TGamma = parse_list_of_vec(P["tgamma"]);
+  f.tg.resize(f.Q);
+  for (int j = 0; j < f.Q; ++j) f.tg[j] = TGamma[j];
 
-  f.colidx = as_vec_of_uvec(colidxR);
+  f.colidx = parse_list_of_ivec(colidxR);
   f.dims.resize(npatterns);
-  for (int i = 0; i < npatterns; ++i) f.dims[i] = (int)d[i];
+  for (int i = 0; i < npatterns; ++i) f.dims[i] = d[i];
 
   // Extract current parameter values for theta0
   auto get_elem = [&](int bi, int ri, int ci) -> double {
@@ -339,23 +377,22 @@ buildCompLogLikAD(const Rcpp::List& modelR,
 
 // ─── AD gradient of complete log-likelihood ──────────────────────────────────
 // [[Rcpp::export]]
-arma::vec gradCompLogLikAdLmsCpp(const Rcpp::List& modelR,
-                                  const Rcpp::List& P,
-                                  const arma::uvec& block,
-                                  const arma::uvec& row,
-                                  const arma::uvec& col,
-                                  const arma::uvec& symmetric,
-                                  const Rcpp::List& colidxR,
-                                  const arma::uvec& n,
-                                  const arma::uvec& d,
-                                  const int npatterns = 1) {
+EVecd gradCompLogLikAdLmsCpp(const Rcpp::List& modelR,
+                              const Rcpp::List& P,
+                              const Rcpp::IntegerVector& block,
+                              const Rcpp::IntegerVector& row,
+                              const Rcpp::IntegerVector& col,
+                              const Rcpp::IntegerVector& symmetric,
+                              const Rcpp::List& colidxR,
+                              const Rcpp::IntegerVector& n,
+                              const Rcpp::IntegerVector& d,
+                              const int npatterns = 1) {
   auto [f, theta0] = buildCompLogLikAD(modelR, P, block, row, col, symmetric,
                                         colidxR, n, d, npatterns);
   double ll_val;
   EVecd  grad_val;
   stan::math::gradient(f, theta0, ll_val, grad_val);
-
-  return arma::vec(grad_val.data(), grad_val.size());
+  return grad_val;
 }
 
 
@@ -370,13 +407,13 @@ arma::vec gradCompLogLikAdLmsCpp(const Rcpp::List& modelR,
 // [[Rcpp::export]]
 Rcpp::List hessCompLogLikAdLmsCpp(const Rcpp::List& modelR,
                                    const Rcpp::List& P,
-                                   const arma::uvec& block,
-                                   const arma::uvec& row,
-                                   const arma::uvec& col,
-                                   const arma::uvec& symmetric,
+                                   const Rcpp::IntegerVector& block,
+                                   const Rcpp::IntegerVector& row,
+                                   const Rcpp::IntegerVector& col,
+                                   const Rcpp::IntegerVector& symmetric,
                                    const Rcpp::List& colidxR,
-                                   const arma::uvec& n,
-                                   const arma::uvec& d,
+                                   const Rcpp::IntegerVector& n,
+                                   const Rcpp::IntegerVector& d,
                                    const int npatterns = 1,
                                    const int ncores    = 1) {
   auto [f, theta0] = buildCompLogLikAD(modelR, P, block, row, col, symmetric,
@@ -419,12 +456,9 @@ Rcpp::List hessCompLogLikAdLmsCpp(const Rcpp::List& modelR,
 
   H = 0.5 * (H + H.transpose());
 
-  arma::vec g(grad0.data(), p, true);
-  arma::mat Hmat(H.data(), p, p, true);
-
   return Rcpp::List::create(
     Rcpp::Named("mean")     = ll_val,
-    Rcpp::Named("gradient") = g,
-    Rcpp::Named("Hessian")  = Hmat
+    Rcpp::Named("gradient") = grad0,
+    Rcpp::Named("Hessian")  = H
   );
 }
