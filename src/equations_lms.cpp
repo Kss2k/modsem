@@ -368,7 +368,8 @@ inline arma::vec completeGradientReverseFromModel(
     const arma::uvec& col,
     const arma::uvec& symmetric,
     const int npatterns = 1,
-    const int ncores = 1L) {
+    const int ncores = 1L,
+    const bool set_threads = true) {
 
   LMSAdjoints adj(M);
   const std::size_t J = V.n_rows;
@@ -376,10 +377,15 @@ inline arma::vec completeGradientReverseFromModel(
   const std::size_t npar = block.n_elem;
   bool failed = false;
 
-  ThreadSetter ts(ncores);
-
 #ifdef _OPENMP
-  const int nthreads = omp_get_max_threads();
+  int old_threads = omp_get_max_threads();
+  if (set_threads) {
+    if (ncores <= 0)
+      Rcpp::stop("ncores must be positive");
+    omp_set_num_threads(ncores);
+  }
+  const bool in_parallel = omp_in_parallel();
+  const int nthreads = in_parallel ? 1 : omp_get_max_threads();
 #else
   const int nthreads = 1;
 #endif
@@ -388,9 +394,9 @@ inline arma::vec completeGradientReverseFromModel(
   for (int t = 0; t < nthreads; ++t)
     thread_adj.emplace_back(M);
 
-#pragma omp parallel for default(none) \
+#pragma omp parallel for default(none) if(!in_parallel) \
   shared(M, V, TGamma, MeanPatterns, CovPatterns, colidx, J, pObs, npatterns, \
-         thread_adj) reduction(||:failed) schedule(static)
+         thread_adj, in_parallel) reduction(||:failed) schedule(static)
   for (std::size_t j = 0; j < J; j++) {
     if (arma::sum(TGamma[j]) <= DBL_MIN) continue;
 
@@ -439,6 +445,9 @@ inline arma::vec completeGradientReverseFromModel(
   if (failed) {
     arma::vec grad(npar);
     grad.fill(arma::datum::nan);
+#ifdef _OPENMP
+    if (set_threads) omp_set_num_threads(old_threads);
+#endif
     return grad;
   }
 
@@ -454,6 +463,10 @@ inline arma::vec completeGradientReverseFromModel(
     if (symmetric[k] && row[k] != col[k])
       grad[k] += A(col[k], row[k]);
   }
+
+#ifdef _OPENMP
+  if (set_threads) omp_set_num_threads(old_threads);
+#endif
 
   return grad;
 }
@@ -984,6 +997,69 @@ Rcpp::List hessObsLogLikLmsCpp(const Rcpp::List& modelR,
 }
 
 
+inline Rcpp::List fdHessFromCompleteGradient(
+    LMSModel& M,
+    const arma::mat& V,
+    const std::vector<arma::vec>& TGamma,
+    const std::vector<std::vector<arma::vec>>& Mean,
+    const std::vector<std::vector<arma::mat>>& Cov,
+    const std::vector<arma::uvec>& colidx,
+    const arma::uvec& n,
+    const arma::uvec& d,
+    const arma::uvec& block,
+    const arma::uvec& row,
+    const arma::uvec& col,
+    const arma::uvec& symmetric,
+    const int npatterns,
+    const double relStep,
+    const double minAbs,
+    const int ncores) {
+
+  ThreadSetter ts(ncores);
+
+  const std::size_t p = block.n_elem;
+  const arma::vec base = getParams(M, block, row, col);
+  const double min_scale = (minAbs > 0.0) ? minAbs : 1.0;
+  const arma::vec incr =
+    arma::max(arma::abs(base), arma::vec(p).fill(min_scale)) * relStep;
+
+  const double f0 = completeLogLikFromModel(M, V, TGamma, Mean, Cov,
+                                            colidx, n, d, npatterns);
+  const arma::vec grad0 = completeGradientReverseFromModel(
+    M, V, TGamma, Mean, Cov, colidx, block, row, col, symmetric,
+    npatterns, ncores, false
+  );
+
+  arma::mat Hess(p, p, arma::fill::zeros);
+
+#pragma omp parallel for default(none) \
+  shared(M, V, TGamma, Mean, Cov, colidx, n, d, block, row, col, symmetric, \
+         npatterns, p, base, incr, grad0, Hess) schedule(static)
+  for (std::size_t j = 0; j < p; ++j) {
+    LMSModel Mc = M.thread_clone();
+    arma::vec pars = base;
+    pars[j] += incr[j];
+    setParams(Mc, block, row, col, symmetric, pars);
+    Mc.update_cache();
+
+    const arma::vec grad_j = completeGradientReverseFromModel(
+      Mc, V, TGamma, Mean, Cov, colidx, block, row, col, symmetric,
+      npatterns, 1L, false
+    );
+
+    Hess.col(j) = (grad_j - grad0) / incr[j];
+  }
+
+  Hess = 0.5 * (Hess + Hess.t());
+
+  return Rcpp::List::create(
+    Rcpp::Named("mean")     = f0,
+    Rcpp::Named("gradient") = grad0,
+    Rcpp::Named("Hessian")  = Hess
+  );
+}
+
+
 // [[Rcpp::export]]
 Rcpp::List hessCompLogLikLmsCpp(const Rcpp::List& modelR,
                                 const Rcpp::List& P,
@@ -1009,6 +1085,12 @@ Rcpp::List hessCompLogLikLmsCpp(const Rcpp::List& modelR,
   auto comp_ll = [&](LMSModel& mod) -> double {
     return completeLogLikFromModel(mod, V, TGamma, Mean, Cov, colidx, n, d, npatterns);
   };
+
+  if (!M.hasComposites) {
+    return fdHessFromCompleteGradient(M, V, TGamma, Mean, Cov, colidx, n, d,
+                                      block, row, col, symmetric, npatterns,
+                                      relStep, minAbs, ncores);
+  }
 
   return fdHessCpp(M, comp_ll, block, row, col, symmetric, relStep, minAbs, ncores);
 }
