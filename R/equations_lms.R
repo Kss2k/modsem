@@ -619,20 +619,11 @@ hessianObsLogLikLms <- function(theta, model, P, sign = -1,
 
 hessianCompLogLikLms <- function(theta, model, P, sign = -1,
                                  .relStep = .Machine$double.eps ^ (1/5)) {
-  # p < 120: FD quadratic-fit is faster (OpenMP-parallel, cheap evals)
-  # p >= 120: FD switches to full-FD (4x more evals); parallel AD sweeps win
   FHESS <- function(modelR, P, block, row, col, symmetric, .relStep, colidxR,
                     n, d, npatterns, ncores, ...) {
-    if (length(block) >= 120L) {
-      hessCompLogLikAdLmsCpp(modelR = modelR, P = P, block = block, row = row,
-                             col = col, symmetric = symmetric, colidxR = colidxR,
-                             n = n, d = d, npatterns = npatterns, ncores = ncores)
-    } else {
-      hessCompLogLikLmsCpp(modelR = modelR, P = P, block = block,
-                           row = row, col = col, symmetric = symmetric,
-                           colidxR = colidxR, n = n, d = d, relStep = .relStep,
-                           npatterns = npatterns, minAbs = 0.0, ncores = ncores)
-    }
+    hessCompLogLikAdLmsCpp(modelR = modelR, P = P, block = block, row = row,
+                           col = col, symmetric = symmetric, colidxR = colidxR,
+                           n = n, d = d, npatterns = npatterns, ncores = ncores)
   }
 
   hessianAllLogLikLms(theta = theta, model = model, P = P, sign = sign,

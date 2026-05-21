@@ -1,10 +1,10 @@
-// Reverse-mode AD gradient and forward-over-reverse Hessian for LMS
+// Reverse-mode AD gradient and central-FD-of-gradient Hessian for LMS
 // log-likelihoods via Stan Math.
 // Stan headers MUST come first to register Eigen plugins before any
 // other header pulls in Eigen.
 
 #include <RcppArmadillo.h>
-#include <stan/math/mix.hpp>   // includes rev + fwd — needed for hessian()
+#include <stan/math/rev.hpp>
 #include <RcppEigen.h>
 
 #include "utils.h"
@@ -15,9 +15,15 @@
 // [[Rcpp::depends(RcppEigen)]]
 // [[Rcpp::depends(BH)]]
 
-// Forward declaration: suppress OpenBLAS internal threading inside OMP regions.
-// The symbol is present in libopenblas; falls back to a no-op if absent.
-extern "C" { void openblas_set_num_threads(int); }
+// Suppress OpenBLAS internal threading inside OMP regions.
+// Declared weak so the linker resolves it to nullptr on non-OpenBLAS backends
+// (reference BLAS, MKL, Accelerate) — the call site guards against null.
+#if defined(__GNUC__) || defined(__clang__)
+extern "C" { __attribute__((weak)) void openblas_set_num_threads(int n); }
+#else
+// MSVC / other: declare as a do-nothing inline — no OpenBLAS thread issue there
+static inline void openblas_set_num_threads(int) {}
+#endif
 
 // ─── type aliases ─────────────────────────────────────────────────────────────
 template<typename T>
@@ -107,7 +113,7 @@ struct CompLogLikAD {
   std::vector<arma::uvec> colidx;              // pattern column indices (arma, 0-based)
   std::vector<int> dims;                       // observed dimension per pattern
 
-  // Called by stan::math::gradient (T=var) and stan::math::hessian (T=fvar<var>)
+  // Called by stan::math::gradient (T=var)
   template<typename T>
   T operator()(const EVec<T>& theta) const {
     // ── Build T-typed matrices from base doubles, overriding free params ──
@@ -353,10 +359,13 @@ arma::vec gradCompLogLikAdLmsCpp(const Rcpp::List& modelR,
 }
 
 
-// ─── AD Hessian of complete log-likelihood ────────────────────────────────────
-// Each of the p forward-over-reverse sweeps is independent: they run in
-// parallel via OpenMP, each with its own thread-local Stan Math autodiff stack
-// (nested_rev_autodiff creates a fresh nested scope per thread).
+// ─── Hessian via central-FD of AD gradient ────────────────────────────────────
+// For each direction i, two reverse-mode AD gradient evaluations at
+//   theta0 ± eps*e_i  give an entire column of the Hessian:
+//   H[:,i] = (grad(theta0 + eps*e_i) − grad(theta0 − eps*e_i)) / (2*eps)
+// Cost: 1 baseline gradient + 2p gradient evals (each ≈ cost of one function
+// eval), totalling O(p) — versus O(p²) for FD-of-function approaches.
+// Columns are independent: trivially parallelised over OMP threads.
 // Returns List(mean, gradient, Hessian) matching hessCompLogLikLmsCpp format.
 // [[Rcpp::export]]
 Rcpp::List hessCompLogLikAdLmsCpp(const Rcpp::List& modelR,
@@ -374,62 +383,43 @@ Rcpp::List hessCompLogLikAdLmsCpp(const Rcpp::List& modelR,
                                         colidxR, n, d, npatterns);
   const int p = theta0.size();
 
-  using FVV = stan::math::fvar<stan::math::var>;
+  // Baseline: ll and gradient at theta0 (single thread, before OMP region)
+  double ll_val;
+  EVecd  grad0(p);
+  stan::math::gradient(f, theta0, ll_val, grad0);
 
-  EMatd  H(p, p);
-  EVecd  grad_val(p);
-  double ll_val      = 0.0;
-  bool   ll_captured = false;
+  // Optimal step for central FD of an exact gradient: (eps_mach)^(1/3) ~ 6e-6
+  const double eps = std::cbrt(std::numeric_limits<double>::epsilon());
 
+  EMatd H(p, p);
   ThreadSetter ts(ncores);
 
-  // With STAN_THREADS, the autodiff stack is TLS (__thread pointer).
-  // Each new OMP thread starts with instance_=nullptr and must instantiate
-  // a ChainableStack before touching any var/fvar<var> operations.
-  // nested_rev_autodiff is then safe: it pushes/pops on the thread's own stack.
-  //
-  // OpenBLAS (and some other BLAS) will serialize BLAS calls made inside an
-  // OMP parallel region unless its own thread count is 1.  Temporarily set it
-  // to 1 so that each OMP thread's matrix ops run single-threaded.
+  // With STAN_THREADS, each OMP thread needs its own ChainableStack initialised
+  // before any var operations.  stan::math::gradient uses nested_rev_autodiff
+  // internally, so it is safe once the stack exists.
 #pragma omp parallel
   {
-    stan::math::ChainableStack thread_stack;  // initialize TLS for this OMP thread
-
-    // Suppress BLAS internal threading while inside OMP region
-    openblas_set_num_threads(1);
+    stan::math::ChainableStack thread_stack;
+    if (openblas_set_num_threads) openblas_set_num_threads(1);
 
 #pragma omp for schedule(static)
-  for (int i = 0; i < p; ++i) {
-    stan::math::nested_rev_autodiff nested;
+    for (int i = 0; i < p; ++i) {
+      EVecd tp = theta0, tm = theta0;
+      tp(i) += eps;
+      tm(i) -= eps;
 
-    EVec<FVV> theta_fvd(p);
-    for (int j = 0; j < p; ++j)
-      theta_fvd(j) = FVV(theta0(j), j == i ? 1.0 : 0.0);
+      double ll_p, ll_m;
+      EVecd  gp(p), gm(p);
+      stan::math::gradient(f, tp, ll_p, gp);
+      stan::math::gradient(f, tm, ll_m, gm);
 
-    FVV result = f(theta_fvd);
-
-    // gradient[i] = d(f)/d(theta_i) = result.d_.val()
-    grad_val(i) = result.d_.val();
-
-    // ll only needs to be captured once (same value for every sweep)
-#pragma omp critical
-    {
-      if (!ll_captured) { ll_val = result.val_.val(); ll_captured = true; }
+      H.col(i) = (gp - gm) / (2.0 * eps);
     }
-
-    // Reverse sweep on the inner var tape to get row i of the Hessian
-    stan::math::grad(result.d_.vi_);
-
-    for (int j = 0; j < p; ++j)
-      H(i, j) = theta_fvd(j).val_.adj();
-    // nested destructor recovers this thread's nested stack frame
   }
-  } // end omp parallel (thread_stack destructor cleans up TLS)
 
-  // Symmetrise (should already be symmetric to machine precision)
   H = 0.5 * (H + H.transpose());
 
-  arma::vec g(grad_val.data(), p, true);
+  arma::vec g(grad0.data(), p, true);
   arma::mat Hmat(H.data(), p, p, true);
 
   return Rcpp::List::create(
