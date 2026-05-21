@@ -87,44 +87,16 @@ estepLmsGroup <- function(submodel, lastQuad = NULL, recalcQuad = FALSE,
   if (!is.null(sampling.weights))
     P <- sampling.weights * P
 
-  wMeans <- vector("list", length = length(w))
-  wCovs  <- vector("list", length = length(w))
-  tGamma <- vector("list", length = length(w))
-
-  for (i in seq_along(w)) {
-    p <- P[, i]
-    offset <- 1L
-
-    wMeans[[i]] <- vector("list", length = length(data$ids))
-    wCovs[[i]]  <- vector("list", length = length(data$ids))
-    tGamma[[i]] <- numeric(length = length(data$ids))
-
-    for (j in data$ids) {
-      n.pattern <- data$n.pattern[[j]]
-      end       <- offset + n.pattern - 1L
-
-      data.id <- data$data.split[[j]]
-      colidx  <- data$colidx[[j]]
-
-      pj   <- p[offset:end]
-      wm   <- colSums(data.id * pj) / sum(pj)
-      X    <- data.id - matrix(wm, nrow=nrow(data.id), ncol=ncol(data.id), byrow=TRUE)
-      wcov <- t(X) %*% (X * pj)
-
-      wMeans[[i]][[j]] <- wm
-      wCovs[[i]][[j]]  <- wcov
-      tGamma[[i]][[j]] <- sum(pj)
-
-      offset <- end + 1L
-    }
-  }
+  stats <- estepSuffStatLmsCpp(P = P, dataR = data$data.split,
+                               n = data$n.pattern, npatterns = data$p)
 
   # Create a vector for sampling weights, needed in some C++ code
   if (!is.null(sampling.weights)) sampling.weights.vec <- sampling.weights
   else                            sampling.weights.vec <- rep(1, NROW(P))
 
-  list(P = P, mean = wMeans, cov = wCovs, tgamma = tGamma, V = V, w = w,
-       obsLL = observedLogLik, quad = quad, sampling.weights = sampling.weights.vec)
+  list(P = P, mean = stats$mean, cov = stats$cov, tgamma = stats$tgamma,
+       V = V, w = w, obsLL = observedLogLik, quad = quad,
+       sampling.weights = sampling.weights.vec)
 }
 
 
@@ -478,10 +450,11 @@ densitySingleLms <- function(z, modFilled, data) {
 
 densityLms <- function(z, modFilled, data) {
   if (is.null(dim(z))) z <- matrix(z, ncol = modFilled$quad$k)
-
-  lapplyMatrix(seq_len(nrow(z)), FUN.VALUE = numeric(data$n), FUN = function(i) {
-    densitySingleLms(z = z[i, , drop=FALSE], modFilled = modFilled, data = data)
-  })
+  sw <- if (!is.null(data$weights)) data$weights else numeric(0L)
+  densityMatrixLmsCpp(modelR = modFilled, V = z,
+                      dataR = data$data.split, colidxR = data$colidx0,
+                      n = data$n.pattern, samplingWeights = sw,
+                      npatterns = data$p)
 }
 
 
