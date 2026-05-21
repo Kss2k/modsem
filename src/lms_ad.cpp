@@ -2,14 +2,18 @@
 // log-likelihoods via Stan Math.
 // Stan headers MUST come first to register Eigen plugins before any
 // other header pulls in Eigen.
-// [[Rcpp::depends(StanHeaders)]]
-// [[Rcpp::depends(RcppEigen)]]
-// [[Rcpp::depends(RcppArmadillo)]]
-// [[Rcpp::depends(BH)]]
-#include <stan/math/mix.hpp>   // includes rev + fwd — needed for hessian()
+
 #include <RcppArmadillo.h>
+#include <stan/math/mix.hpp>   // includes rev + fwd — needed for hessian()
+#include <RcppEigen.h>
+
 #include "utils.h"
 #include "mvnorm.h"             // ThreadSetter + OpenMP guards
+
+// [[Rcpp::depends(RcppArmadillo)]]
+// [[Rcpp::depends(StanHeaders)]]
+// [[Rcpp::depends(RcppEigen)]]
+// [[Rcpp::depends(BH)]]
 
 // Forward declaration: suppress OpenBLAS internal threading inside OMP regions.
 // The symbol is present in libopenblas; falls back to a no-op if absent.

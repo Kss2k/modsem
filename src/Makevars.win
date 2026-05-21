@@ -12,8 +12,8 @@ TBB         = $(shell Rscript -e "cat(system.file('include', package='RcppParall
 ## -DSTAN_NO_RANGE_CHECKS: skip Stan bounds checking in production builds
 PKG_CXXFLAGS = $(SHLIB_OPENMP_CXXFLAGS) \
                -I"$(STANHEADERS)" -I"$(EIGEN)" -I"$(BH)" -I"$(TBB)" \
-               -D_REENTRANT -DBOOST_DISABLE_ASSERTS -DSTAN_NO_RANGE_CHECKS
+               -D_REENTRANT -DBOOST_DISABLE_ASSERTS -DSTAN_NO_RANGE_CHECKS \
                -DSTAN_THREADS -DEIGEN_NO_DEBUG
 
-PKG_LIBS = $(SHLIB_OPENMP_CXXFLAGS) $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
+PKG_LIBS = $(SHLIB_OPENMP_CXXFLAGS) $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS) \
            -L"$(TBB_LIB)" -ltbb -Wl,-rpath,"$(TBB_LIB)"
