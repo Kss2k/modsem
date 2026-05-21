@@ -183,9 +183,15 @@ compLogLikLmsGroup <- function(submodel, P, sign = -1, ...) {
 
 
 
+gradCompLogLikAdLms <- function(modelR, P, block, row, col, symmetric, colidxR, npatterns, n, d, ...) {
+  gradCompLogLikAdLmsCpp(modelR = modelR, P = P, block = block, row = row, col = col,
+                         symmetric = symmetric, colidxR = colidxR, n = n, d = d,
+                         npatterns = npatterns)
+}
+
 gradientCompLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-6) {
   gradientAllLogLikLms(theta = theta, model = model, P = P, sign = sign,
-                       epsilon = epsilon, FGRAD = gradLogLikLmsCpp, FOBJECTIVE = compLogLikLmsGroup)
+                       epsilon = epsilon, FGRAD = gradCompLogLikAdLms, FOBJECTIVE = compLogLikLmsGroup)
 }
 
 
@@ -613,13 +619,20 @@ hessianObsLogLikLms <- function(theta, model, P, sign = -1,
 
 hessianCompLogLikLms <- function(theta, model, P, sign = -1,
                                  .relStep = .Machine$double.eps ^ (1/5)) {
-
-  FHESS <- function(modelR, P, block, row, col, symmetric, eps, .relStep, colidxR,
-                    n, d, npatterns, ncores) {
-    hessCompLogLikLmsCpp(modelR = modelR, P = P, block = block,
-                         row = row, col = col, symmetric = symmetric,
-                         colidxR = colidxR, n = n, d = d, relStep = .relStep,
-                         npatterns = npatterns, minAbs = 0.0, ncores = ncores)
+  # p < 120: FD quadratic-fit is faster (OpenMP-parallel, cheap evals)
+  # p >= 120: FD switches to full-FD (4x more evals); parallel AD sweeps win
+  FHESS <- function(modelR, P, block, row, col, symmetric, .relStep, colidxR,
+                    n, d, npatterns, ncores, ...) {
+    if (length(block) >= 120L) {
+      hessCompLogLikAdLmsCpp(modelR = modelR, P = P, block = block, row = row,
+                             col = col, symmetric = symmetric, colidxR = colidxR,
+                             n = n, d = d, npatterns = npatterns, ncores = ncores)
+    } else {
+      hessCompLogLikLmsCpp(modelR = modelR, P = P, block = block,
+                           row = row, col = col, symmetric = symmetric,
+                           colidxR = colidxR, n = n, d = d, relStep = .relStep,
+                           npatterns = npatterns, minAbs = 0.0, ncores = ncores)
+    }
   }
 
   hessianAllLogLikLms(theta = theta, model = model, P = P, sign = sign,

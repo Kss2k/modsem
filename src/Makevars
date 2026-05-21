@@ -1,18 +1,21 @@
-
-## With R 3.1.0 or later, you can uncomment the following line to tell R to
-## enable compilation with C++11 (where available)
-##
-## Also, OpenMP support in Armadillo prefers C++11 support. However, for wider
-## availability of the package we do not yet enforce this here.  It is however
-## recommended for client packages to set it.
-##
-## And with R 3.4.0, and RcppArmadillo 0.7.960.*, we turn C++11 on as OpenMP
-## support within Armadillo prefers / requires it
-##
-## R 4.0.0 made C++11 the default, R 4.1.0 switched to C++14, R 4.3.0 to C++17
-## _In general_ we should no longer need to set a standard as any recent R
-## installation will do the right thing. Should you need it, uncomment it and
-## set the appropriate value, possibly CXX17.
+## C++17 required for Stan Math and Armadillo
 CXX_STD = CXX17
-PKG_CXXFLAGS= $(SHLIB_OPENMP_CXXFLAGS) -DARMA_USE_CURRENT
-PKG_LIBS =  $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS) $(SHLIB_OPENMP_CXXFLAGS)
+
+## Locate Stan Math / Eigen / Boost / TBB headers and TBB library
+STANHEADERS = $(shell Rscript -e "cat(system.file('include', package='StanHeaders'))")
+EIGEN       = $(shell Rscript -e "cat(system.file('include', package='RcppEigen'))")
+BH          = $(shell Rscript -e "cat(system.file('include', package='BH'))")
+TBB         = $(shell Rscript -e "cat(system.file('include', package='RcppParallel'))")
+TBB_LIB     = $(shell Rscript -e "cat(RcppParallel:::tbbLibraryPath())")
+
+## -D_REENTRANT: required by Stan Math (lgamma_r etc.)
+## -DBOOST_DISABLE_ASSERTS: suppress Boost runtime assertion overhead
+## -DSTAN_NO_RANGE_CHECKS: skip Stan bounds checking in production builds
+## -DSTAN_THREADS: enables thread-local autodiff stacks (required for parallel AD)
+PKG_CXXFLAGS = $(SHLIB_OPENMP_CXXFLAGS) -DARMA_USE_CURRENT \
+               -I"$(STANHEADERS)" -I"$(EIGEN)" -I"$(BH)" -I"$(TBB)" \
+               -D_REENTRANT -DBOOST_DISABLE_ASSERTS -DSTAN_NO_RANGE_CHECKS \
+               -DSTAN_THREADS -DEIGEN_NO_DEBUG
+
+PKG_LIBS = $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS) $(SHLIB_OPENMP_CXXFLAGS) \
+           -L"$(TBB_LIB)" -ltbb -Wl,-rpath,"$(TBB_LIB)"

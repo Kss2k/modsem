@@ -55,10 +55,14 @@ Description:
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
-LinkingTo: Rcpp, RcppArmadillo
-Imports: Rcpp, purrr, stringr, lavaan, rlang, MplusAutomation, nlme, dplyr, 
+LinkingTo:
+  StanHeaders (>= 2.26.0), rstan (>= 2.26.0), BH (>= 1.69.0), Rcpp (>= 0.12.15),
+  RcppEigen (>= 0.3.3.4.0), RcppParallel (>= 5.0.1), RcppArmadillo
+Imports: Rcpp, purrr, stringr, lavaan, rlang, MplusAutomation, nlme, dplyr,
   mvnfast, stats, fastGHQuad, mvtnorm, ggplot2, parallel, plotly, Deriv, MASS, Amelia,
-  grDevices, cli, RhpcBLASctl, memoise
+  grDevices, cli, RhpcBLASctl, memoise,
+  StanHeaders (>= 2.26.0), rstan (>= 2.26.0), BH (>= 1.69.0), Rcpp (>= 0.12.15),
+  RcppEigen (>= 0.3.3.4.0), RcppParallel (>= 5.0.1)
 Depends: 
     R (>= 4.1.0)
 URL: https://modsem.org,

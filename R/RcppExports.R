@@ -65,6 +65,14 @@ varZCpp <- function(Omega, Sigma1, numEta) {
     .Call(`_modsem_varZCpp`, Omega, Sigma1, numEta)
 }
 
+gradCompLogLikAdLmsCpp <- function(modelR, P, block, row, col, symmetric, colidxR, n, d, npatterns = 1L) {
+    .Call(`_modsem_gradCompLogLikAdLmsCpp`, modelR, P, block, row, col, symmetric, colidxR, n, d, npatterns)
+}
+
+hessCompLogLikAdLmsCpp <- function(modelR, P, block, row, col, symmetric, colidxR, n, d, npatterns = 1L, ncores = 1L) {
+    .Call(`_modsem_hessCompLogLikAdLmsCpp`, modelR, P, block, row, col, symmetric, colidxR, n, d, npatterns, ncores)
+}
+
 multiplyIndicatorsCpp <- function(df) {
     .Call(`_modsem_multiplyIndicatorsCpp`, df)
 }

@@ -2,6 +2,7 @@
 // Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 #include <RcppArmadillo.h>
+#include <RcppEigen.h>
 #include <Rcpp.h>
 
 using namespace Rcpp;
@@ -269,6 +270,47 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// gradCompLogLikAdLmsCpp
+arma::vec gradCompLogLikAdLmsCpp(const Rcpp::List& modelR, const Rcpp::List& P, const arma::uvec& block, const arma::uvec& row, const arma::uvec& col, const arma::uvec& symmetric, const Rcpp::List& colidxR, const arma::uvec& n, const arma::uvec& d, const int npatterns);
+RcppExport SEXP _modsem_gradCompLogLikAdLmsCpp(SEXP modelRSEXP, SEXP PSEXP, SEXP blockSEXP, SEXP rowSEXP, SEXP colSEXP, SEXP symmetricSEXP, SEXP colidxRSEXP, SEXP nSEXP, SEXP dSEXP, SEXP npatternsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type modelR(modelRSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type P(PSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type block(blockSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type row(rowSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type col(colSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type symmetric(symmetricSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type colidxR(colidxRSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type n(nSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type d(dSEXP);
+    Rcpp::traits::input_parameter< const int >::type npatterns(npatternsSEXP);
+    rcpp_result_gen = Rcpp::wrap(gradCompLogLikAdLmsCpp(modelR, P, block, row, col, symmetric, colidxR, n, d, npatterns));
+    return rcpp_result_gen;
+END_RCPP
+}
+// hessCompLogLikAdLmsCpp
+Rcpp::List hessCompLogLikAdLmsCpp(const Rcpp::List& modelR, const Rcpp::List& P, const arma::uvec& block, const arma::uvec& row, const arma::uvec& col, const arma::uvec& symmetric, const Rcpp::List& colidxR, const arma::uvec& n, const arma::uvec& d, const int npatterns, const int ncores);
+RcppExport SEXP _modsem_hessCompLogLikAdLmsCpp(SEXP modelRSEXP, SEXP PSEXP, SEXP blockSEXP, SEXP rowSEXP, SEXP colSEXP, SEXP symmetricSEXP, SEXP colidxRSEXP, SEXP nSEXP, SEXP dSEXP, SEXP npatternsSEXP, SEXP ncoresSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type modelR(modelRSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type P(PSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type block(blockSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type row(rowSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type col(colSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type symmetric(symmetricSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type colidxR(colidxRSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type n(nSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type d(dSEXP);
+    Rcpp::traits::input_parameter< const int >::type npatterns(npatternsSEXP);
+    Rcpp::traits::input_parameter< const int >::type ncores(ncoresSEXP);
+    rcpp_result_gen = Rcpp::wrap(hessCompLogLikAdLmsCpp(modelR, P, block, row, col, symmetric, colidxR, n, d, npatterns, ncores));
+    return rcpp_result_gen;
+END_RCPP
+}
 // multiplyIndicatorsCpp
 Rcpp::NumericVector multiplyIndicatorsCpp(Rcpp::DataFrame df);
 RcppExport SEXP _modsem_multiplyIndicatorsCpp(SEXP dfSEXP) {
@@ -399,6 +441,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_modsem_calcBinvCpp", (DL_FUNC) &_modsem_calcBinvCpp, 3},
     {"_modsem_dnormCpp", (DL_FUNC) &_modsem_dnormCpp, 4},
     {"_modsem_varZCpp", (DL_FUNC) &_modsem_varZCpp, 3},
+    {"_modsem_gradCompLogLikAdLmsCpp", (DL_FUNC) &_modsem_gradCompLogLikAdLmsCpp, 10},
+    {"_modsem_hessCompLogLikAdLmsCpp", (DL_FUNC) &_modsem_hessCompLogLikAdLmsCpp, 11},
     {"_modsem_multiplyIndicatorsCpp", (DL_FUNC) &_modsem_multiplyIndicatorsCpp, 1},
     {"_modsem_checkOpenMP_Cpp", (DL_FUNC) &_modsem_checkOpenMP_Cpp, 0},
     {"_modsem_dmvnrmArmaMc", (DL_FUNC) &_modsem_dmvnrmArmaMc, 5},
