@@ -51,7 +51,7 @@ modsem_da(
   ordered.polyak.juditsky = TRUE,
   ordered.pj.extrapolate = TRUE,
   ordered.se = c("penalty", "naive", "delta"),
-  ordered.se.penalty = 1,
+  ordered.se.penalty = 0.25,
   ordered.delta.reps = NULL,
   ordered.delta.epsilon = 0.01,
   ordered.standardize = TRUE,
