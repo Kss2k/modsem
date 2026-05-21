@@ -33,6 +33,14 @@ hessCompLogLikLmsCpp <- function(modelR, P, block, row, col, symmetric, colidxR,
     .Call(`_modsem_hessCompLogLikLmsCpp`, modelR, P, block, row, col, symmetric, colidxR, n, d, npatterns, relStep, minAbs, ncores)
 }
 
+densityMatrixLmsCpp <- function(modelR, V, dataR, colidxR, n, samplingWeights, npatterns = 1L) {
+    .Call(`_modsem_densityMatrixLmsCpp`, modelR, V, dataR, colidxR, n, samplingWeights, npatterns)
+}
+
+estepSuffStatLmsCpp <- function(P, dataR, n, npatterns = 1L) {
+    .Call(`_modsem_estepSuffStatLmsCpp`, P, dataR, n, npatterns)
+}
+
 muQmlCpp <- function(m, t, ncores = 1L) {
     .Call(`_modsem_muQmlCpp`, m, t, ncores)
 }

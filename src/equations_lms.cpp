@@ -29,6 +29,17 @@ struct LMSModel {
   unsigned  numXis   = 0;
   bool hasComposites = false;
 
+  // Precomputed z-independent derived quantities; call update_cache() after any
+  // change to A or Gx (i.e. after lms_param / setParams perturbations).
+  arma::mat Oi, GxA, AOi, AOiAt;
+
+  void update_cache() {
+    Oi    = make_Oi(k, numXis);
+    GxA   = Gx * A;
+    AOi   = A * Oi;
+    AOiAt = AOi * A.t();
+  }
+
   explicit LMSModel(const Rcpp::List& modFilled) {
 
     Rcpp::List matrices = modFilled["matrices"];
@@ -57,6 +68,8 @@ struct LMSModel {
     Psi    = Rcpp::as<arma::mat>(matrices["psi"]);
     d      = Rcpp::as<arma::mat>(matrices["thetaDelta"]);
     e      = Rcpp::as<arma::mat>(matrices["thetaEpsilon"]);
+
+    update_cache();
   }
 
   // Combined mu+Sigma: avoids recomputing zVec/kronZ/Binv/lXc for the same z.
@@ -71,11 +84,10 @@ struct LMSModel {
         Gx * muXi +
         kronZ.t() * Oxx * muXi);
 
-    const arma::mat Oi       = make_Oi(k, numXis);
-    const arma::mat Eta      = Binv * (Gx * A + kronZ.t() * Oxx * A);
-    const arma::mat varXi    = A * Oi * A.t();
+    const arma::mat Eta      = Binv * (GxA + kronZ.t() * Oxx * A);
+    const arma::mat varXi    = AOiAt;
     const arma::mat varEta   = Eta * Oi * Eta.t() + Binv * Psi * Binv.t();
-    const arma::mat covXiEta = A * Oi * Eta.t();
+    const arma::mat covXiEta = AOi * Eta.t();
 
     const arma::mat vcovXiEta = arma::join_cols(
       arma::join_rows(varXi,        covXiEta),
@@ -113,6 +125,10 @@ struct LMSModel {
     c.Psi   = arma::mat(Psi);
     c.d     = arma::mat(d);
     c.e     = arma::mat(e);
+    c.Oi    = arma::mat(Oi);
+    c.GxA   = arma::mat(GxA);
+    c.AOi   = arma::mat(AOi);
+    c.AOiAt = arma::mat(AOiAt);
 
     return c;
   }
@@ -192,6 +208,7 @@ arma::vec gradientFD(LMSModel&         M,
     // Forward finite difference step
     ti += eps;
     if (tj) *tj += eps;
+    Mc.update_cache();
 
     // Evaluate on the perturbed *local* model
     const double f1 = logLik(Mc);
@@ -455,6 +472,7 @@ Rcpp::List fdHessQuadraticFit(LMSModel&         M,
   for (std::size_t k = 0; k < m; ++k) {
     LMSModel Mc = M.thread_clone();
     setParams(Mc, block, row, col, symmetric, base + disp[k] % incr);
+    Mc.update_cache();
     y[k] = fun(Mc);
   }
 
@@ -560,6 +578,7 @@ Rcpp::List fdHessFullFd(LMSModel&         M,
   for (std::size_t k=0; k<disp.size(); ++k) {
     LMSModel Mc = M.thread_clone();
     setParams(Mc, block, row, col, symmetric, base + disp[k] % incr);
+    Mc.update_cache();
     y[k] = fun(Mc);
   }
   setParams(M, block, row, col, symmetric, base);
@@ -696,4 +715,92 @@ Rcpp::List hessCompLogLikLmsCpp(const Rcpp::List& modelR,
   };
 
   return fdHessCpp(M, comp_ll, block, row, col, symmetric, relStep, minAbs, ncores);
+}
+
+
+// [[Rcpp::export]]
+arma::mat densityMatrixLmsCpp(const Rcpp::List& modelR,
+                               const arma::mat&  V,
+                               const Rcpp::List& dataR,
+                               const Rcpp::List& colidxR,
+                               const arma::uvec& n,
+                               const arma::vec&  samplingWeights,
+                               const int npatterns = 1) {
+  const LMSModel M(modelR);
+  const auto data   = as_vec_of_mat(dataR);
+  const auto colidx = as_vec_of_uvec(colidxR);
+
+  const std::size_t Q  = V.n_rows;
+  const int         N  = (int)arma::sum(n);
+  const bool        hasSW = samplingWeights.n_elem == (std::size_t)N;
+
+  arma::mat out(N, Q, arma::fill::zeros);
+
+  for (std::size_t i = 0; i < Q; ++i) {
+    const arma::vec z   = V.row(i).t();
+    const auto      ms  = M.muSigma(z);
+    const arma::vec& mu  = ms.first;
+    const arma::mat& Sig = ms.second;
+
+    int offset = 0;
+    for (int j = 0; j < npatterns; ++j) {
+      const int end = offset + (int)n[j] - 1;
+      out(arma::span(offset, end), i) =
+        dmvnfast(data[j], mu.elem(colidx[j]), Sig.submat(colidx[j], colidx[j]),
+                 false, 1, false);
+      offset = end + 1;
+    }
+
+    if (hasSW)
+      out.col(i) = arma::exp(arma::log(out.col(i)) % samplingWeights);
+  }
+
+  return out;
+}
+
+
+// [[Rcpp::export]]
+Rcpp::List estepSuffStatLmsCpp(const arma::mat&  P,
+                                const Rcpp::List& dataR,
+                                const arma::uvec& n,
+                                const int npatterns = 1) {
+  const auto data = as_vec_of_mat(dataR);
+  const std::size_t Q = P.n_cols;
+
+  Rcpp::List wMeans(Q), wCovs(Q), tGamma(Q);
+
+  for (std::size_t i = 0; i < Q; ++i) {
+    const arma::vec p = P.col(i);
+
+    Rcpp::List wMeans_i(npatterns), wCovs_i(npatterns);
+    arma::vec  tGamma_i(npatterns);
+
+    int offset = 0;
+    for (int j = 0; j < npatterns; ++j) {
+      const int        end = offset + (int)n[j] - 1;
+      const arma::vec   pj = p.subvec(offset, end);
+      const arma::mat&  Dj = data[j];
+
+      const double tg  = arma::sum(pj);
+      arma::vec    wm  = Dj.t() * pj / tg;
+      arma::mat    X   = Dj.each_row() - wm.t();
+      arma::mat    cov = X.t() * (X.each_col() % pj);
+
+      wMeans_i[j] = wm;
+      wCovs_i[j]  = cov;
+      tGamma_i[j] = tg;
+
+      offset = end + 1;
+    }
+
+    wMeans[i] = wMeans_i;
+    wCovs[i]  = wCovs_i;
+    tGamma[i] = tGamma_i;
+  }
+
+  return Rcpp::List::create(
+    Rcpp::Named("mean")   = wMeans,
+    Rcpp::Named("cov")    = wCovs,
+    Rcpp::Named("tgamma") = tGamma
+  );
 }
