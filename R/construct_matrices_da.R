@@ -597,12 +597,12 @@ getScalingLambdaY <- function(lambdaY, indsEtas, etas, method = "qml") {
 
 sortXisConstructOmega <- function(xis, varsInts, etas, intTerms,
                                   method = "lms", double = FALSE,
-                                  structovs = NULL) {
+                                  structovs = NULL, composites = NULL) {
   checkVarsIntsDA(varsInts, lVs = c(etas, xis))
 
   listSortedXis <- sortXis(
     xis = xis, varsInts = varsInts, etas = etas, intTerms = intTerms,
-    double = double, structovs = structovs
+    double = double, structovs = structovs, composites = composites
   )
 
   sortedXis    <- listSortedXis$sortedXis
@@ -625,7 +625,8 @@ sortXisConstructOmega <- function(xis, varsInts, etas, intTerms,
 }
 
 
-sortXis <- function(xis, varsInts, etas, intTerms, double, structovs = NULL) {
+sortXis <- function(xis, varsInts, etas, intTerms, double, structovs = NULL,
+                    composites = NULL) {
   # allVarsInInts should be sorted according to which variables
   # occur in the most interaction terms (makes it more efficient)
   allVarsInInts <- unique(unlist(varsInts))
@@ -653,8 +654,20 @@ sortXis <- function(xis, varsInts, etas, intTerms, double, structovs = NULL) {
       choice <- choice[whichIsMax(freq)]
 
       is.ov <- choice %in% structovs
-      if (any(is.ov) && !all(is.ov)) k <- which(!is.ov) # only possible if length(choice) > 1
-      else                           k <- 1L # pick first if both are equal
+      is.composite <- choice %in% composites
+
+      if (any(is.ov) && !all(is.ov)) {
+        # only possible if length(choice) > 1
+        k <- which(!is.ov)
+
+      } else if (any(is.composite) && !all(is.composite)) {
+        # only possible if length(choice) > 1
+        k <- which(!is.composite)
+
+      } else {
+        k <- 1L # pick first if both are equal
+
+      }
 
       choice <- choice[[k]]
     }
@@ -664,8 +677,11 @@ sortXis <- function(xis, varsInts, etas, intTerms, double, structovs = NULL) {
 
   linearXis <- xis[!xis %in% nonLinearXis]
 
-  list(linearXis = linearXis, sortedXis = c(nonLinearXis, linearXis),
-       nonLinearXis = nonLinearXis)
+  list(
+    linearXis = linearXis,
+    sortedXis = c(nonLinearXis, linearXis),
+    nonLinearXis = nonLinearXis
+  )
 }
 
 

@@ -35,6 +35,7 @@ specifyModelDA_Group <- function(syntax = NULL,
   higherOrderLVs <- getHigherOrderLVs(parTable)
   indsHigherOrderLVs <- getIndsLVs(parTable, lVs = higherOrderLVs, isOV = FALSE)
   ovs <- getOVs(parTable)
+  composites <- getComposites(parTable)
 
   # endogenous variables (etas)
   etas    <- getSortedEtas(parTable, isLV = TRUE, checkAny = TRUE)
@@ -55,7 +56,8 @@ specifyModelDA_Group <- function(syntax = NULL,
 
   omegaAndSortedXis <- sortXisConstructOmega(
     xis = xis, varsInts = varsInts, etas = etas, intTerms = intTerms,
-    method = method, double = double, structovs = structovs
+    method = method, double = double, structovs = structovs,
+    composites = composites
   )
 
   xis <- omegaAndSortedXis$sortedXis # get sorted xis according to interaction terms
@@ -68,7 +70,6 @@ specifyModelDA_Group <- function(syntax = NULL,
   numAllIndsXis <- length(allIndsXis)
 
   # composite variables
-  composites    <- getComposites(parTable)
   compositeXis  <- intersect(xis, composites)
   compositeEtas <- intersect(etas, composites)
   indsCompXis   <- indsXis[compositeXis]
