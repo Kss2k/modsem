@@ -256,6 +256,78 @@ inline void accumulateMuSigmaAdjoints(const LMSModel& M,
   );
   const arma::vec xieta = arma::join_cols(u, v);
 
+  if (M.hasComposites) {
+    const arma::mat WTWinv = arma::pinv(M.W.t() * M.T * M.W);
+    const arma::mat lXc = M.lX + M.T * M.W * WTWinv;
+    const arma::mat WTW = M.W.t() * M.T * M.W;
+    const arma::mat VS = V - WTW;
+
+    if (adj.tX.n_elem == mu_bar.n_elem) adj.tX += mu_bar;
+    adj.lX += mu_bar * xieta.t();
+
+    arma::vec xieta_bar = lXc.t() * mu_bar;
+    arma::mat V_bar = lXc.t() * Sigma_bar * lXc;
+    adj.lX += (Sigma_bar + Sigma_bar.t()) * lXc * VS;
+    adj.d += Sigma_bar;
+
+    arma::vec u_bar = xieta_bar.subvec(0, M.numXis - 1);
+    arma::vec v_bar = xieta_bar.subvec(M.numXis, M.numXis + numEta - 1);
+
+    arma::mat varXi_bar = V_bar.submat(0, 0, M.numXis - 1, M.numXis - 1);
+    arma::mat cov_bar = V_bar.submat(0, M.numXis, M.numXis - 1, M.numXis + numEta - 1);
+    arma::mat varEta_bar = V_bar.submat(M.numXis, M.numXis,
+                                        M.numXis + numEta - 1,
+                                        M.numXis + numEta - 1);
+    cov_bar += V_bar.submat(M.numXis, 0,
+                            M.numXis + numEta - 1,
+                            M.numXis - 1).t();
+
+    adj.A += (varXi_bar + varXi_bar.t()) * M.AOi;
+
+    arma::mat Eta_bar = cov_bar.t() * M.AOi;
+    adj.A += cov_bar * Eta * M.Oi;
+
+    Eta_bar += (varEta_bar + varEta_bar.t()) * Eta * M.Oi;
+    arma::mat Binv_bar = varEta_bar * Binv * M.Psi.t() +
+                         varEta_bar.t() * Binv * M.Psi;
+    adj.Psi += Binv.t() * varEta_bar * Binv;
+
+    Binv_bar += Eta_bar * C.t();
+    arma::mat C_bar = Binv.t() * Eta_bar;
+
+    Binv_bar += v_bar * r.t();
+    arma::vec r_bar = Binv.t() * v_bar;
+
+    arma::mat B_bar = -Binv.t() * Binv_bar * Binv.t();
+    adj.Ge -= B_bar;
+    arma::mat K_bar = -M.Oex * B_bar.t();
+    adj.Oex += -K * B_bar;
+
+    adj.a += r_bar;
+    adj.Gx += r_bar * u.t();
+    u_bar += M.Gx.t() * r_bar;
+
+    arma::vec q = M.Oxx * u;
+    K_bar += q * r_bar.t();
+    arma::vec q_bar = K * r_bar;
+    adj.Oxx += q_bar * u.t();
+    u_bar += M.Oxx.t() * q_bar;
+
+    adj.Gx += C_bar * M.A.t();
+    adj.A += M.Gx.t() * C_bar;
+
+    arma::mat M_bar = K * C_bar;
+    K_bar += (M.Oxx * M.A) * C_bar.t();
+    adj.Oxx += M_bar * M.A.t();
+    adj.A += M.Oxx.t() * M_bar;
+
+    add_kron_Ie_u_adjoint(u_bar, K_bar, M.numXis, numEta);
+
+    adj.beta0 += u_bar;
+    adj.A += u_bar * zVec.t();
+    return;
+  }
+
   if (adj.tX.n_elem == mu_bar.n_elem) adj.tX += mu_bar;
   adj.lX += mu_bar * xieta.t();
 
@@ -526,6 +598,47 @@ arma::vec gradientFD(LMSModel&         M,
 }
 
 
+template<class F>
+void gradientFDSelected(LMSModel&         M,
+                        F&&               logLik,
+                        const arma::uvec& block,
+                        const arma::uvec& row,
+                        const arma::uvec& col,
+                        const arma::uvec& symmetric,
+                        const arma::uvec& selected,
+                        arma::vec&        grad,
+                        const double      eps = 1e-6,
+                        const int         ncores = 1L) {
+  if (selected.is_empty()) return;
+
+  ThreadSetter ts(ncores);
+  const double f0 = logLik(M);
+
+  #pragma omp parallel for default(none) \
+      shared(M, block, row, col, symmetric, eps, grad, f0, selected) \
+      firstprivate(logLik) \
+      schedule(static)
+  for (arma::uword s = 0; s < selected.n_elem; ++s) {
+    const std::size_t k = selected[s];
+    LMSModel Mc = M.thread_clone();
+
+    double& ti = lms_param(Mc, block[k], row[k], col[k]);
+    double* tj = nullptr;
+
+    if (symmetric[k] && row[k] != col[k]) {
+      tj = &lms_param(Mc, block[k], col[k], row[k]);
+    }
+
+    ti += eps;
+    if (tj) *tj += eps;
+    Mc.update_cache();
+
+    const double f1 = logLik(Mc);
+    grad[k] = (f1 - f0) / eps;
+  }
+}
+
+
 inline double completeLogLikFromModel(
     const LMSModel&  M,
     const arma::mat& V,
@@ -619,7 +732,15 @@ arma::vec gradLogLikLmsCpp(const Rcpp::List& modelR,
                                             npatterns, ncores);
   }
 
-  return gradientFD(M, comp_ll, block, row, col, symmetric, eps, ncores);
+  arma::vec grad = completeGradientReverseFromModel(M, V, TGamma, Mean, Cov,
+                                                    colidx, block, row, col,
+                                                    symmetric, npatterns,
+                                                    ncores);
+  const arma::uvec selected = arma::find((block == 14) || (block == 15));
+  gradientFDSelected(M, comp_ll, block, row, col, symmetric, selected, grad,
+                     eps, ncores);
+
+  return grad;
 }
 
 
