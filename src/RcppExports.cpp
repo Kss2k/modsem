@@ -160,8 +160,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // densityMatrixLmsCpp
-arma::mat densityMatrixLmsCpp(const Rcpp::List& modelR, const arma::mat& V, const Rcpp::List& dataR, const Rcpp::List& colidxR, const arma::uvec& n, const arma::vec& samplingWeights, const int npatterns);
-RcppExport SEXP _modsem_densityMatrixLmsCpp(SEXP modelRSEXP, SEXP VSEXP, SEXP dataRSEXP, SEXP colidxRSEXP, SEXP nSEXP, SEXP samplingWeightsSEXP, SEXP npatternsSEXP) {
+arma::mat densityMatrixLmsCpp(const Rcpp::List& modelR, const arma::mat& V, const Rcpp::List& dataR, const Rcpp::List& colidxR, const arma::uvec& n, const arma::vec& samplingWeights, const int npatterns, const int ncores);
+RcppExport SEXP _modsem_densityMatrixLmsCpp(SEXP modelRSEXP, SEXP VSEXP, SEXP dataRSEXP, SEXP colidxRSEXP, SEXP nSEXP, SEXP samplingWeightsSEXP, SEXP npatternsSEXP, SEXP ncoresSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -172,13 +172,14 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const arma::uvec& >::type n(nSEXP);
     Rcpp::traits::input_parameter< const arma::vec& >::type samplingWeights(samplingWeightsSEXP);
     Rcpp::traits::input_parameter< const int >::type npatterns(npatternsSEXP);
-    rcpp_result_gen = Rcpp::wrap(densityMatrixLmsCpp(modelR, V, dataR, colidxR, n, samplingWeights, npatterns));
+    Rcpp::traits::input_parameter< const int >::type ncores(ncoresSEXP);
+    rcpp_result_gen = Rcpp::wrap(densityMatrixLmsCpp(modelR, V, dataR, colidxR, n, samplingWeights, npatterns, ncores));
     return rcpp_result_gen;
 END_RCPP
 }
 // estepSuffStatLmsCpp
-Rcpp::List estepSuffStatLmsCpp(const arma::mat& P, const Rcpp::List& dataR, const arma::uvec& n, const int npatterns);
-RcppExport SEXP _modsem_estepSuffStatLmsCpp(SEXP PSEXP, SEXP dataRSEXP, SEXP nSEXP, SEXP npatternsSEXP) {
+Rcpp::List estepSuffStatLmsCpp(const arma::mat& P, const Rcpp::List& dataR, const arma::uvec& n, const int npatterns, const int ncores);
+RcppExport SEXP _modsem_estepSuffStatLmsCpp(SEXP PSEXP, SEXP dataRSEXP, SEXP nSEXP, SEXP npatternsSEXP, SEXP ncoresSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -186,7 +187,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const Rcpp::List& >::type dataR(dataRSEXP);
     Rcpp::traits::input_parameter< const arma::uvec& >::type n(nSEXP);
     Rcpp::traits::input_parameter< const int >::type npatterns(npatternsSEXP);
-    rcpp_result_gen = Rcpp::wrap(estepSuffStatLmsCpp(P, dataR, n, npatterns));
+    Rcpp::traits::input_parameter< const int >::type ncores(ncoresSEXP);
+    rcpp_result_gen = Rcpp::wrap(estepSuffStatLmsCpp(P, dataR, n, npatterns, ncores));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -391,8 +393,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_modsem_observedLogLikLmsCpp", (DL_FUNC) &_modsem_observedLogLikLmsCpp, 7},
     {"_modsem_hessObsLogLikLmsCpp", (DL_FUNC) &_modsem_hessObsLogLikLmsCpp, 13},
     {"_modsem_hessCompLogLikLmsCpp", (DL_FUNC) &_modsem_hessCompLogLikLmsCpp, 13},
-    {"_modsem_densityMatrixLmsCpp", (DL_FUNC) &_modsem_densityMatrixLmsCpp, 7},
-    {"_modsem_estepSuffStatLmsCpp", (DL_FUNC) &_modsem_estepSuffStatLmsCpp, 4},
+    {"_modsem_densityMatrixLmsCpp", (DL_FUNC) &_modsem_densityMatrixLmsCpp, 8},
+    {"_modsem_estepSuffStatLmsCpp", (DL_FUNC) &_modsem_estepSuffStatLmsCpp, 5},
     {"_modsem_muQmlCpp", (DL_FUNC) &_modsem_muQmlCpp, 3},
     {"_modsem_sigmaQmlCpp", (DL_FUNC) &_modsem_sigmaQmlCpp, 3},
     {"_modsem_calcKronXi", (DL_FUNC) &_modsem_calcKronXi, 3},

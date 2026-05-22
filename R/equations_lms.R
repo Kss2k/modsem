@@ -88,7 +88,8 @@ estepLmsGroup <- function(submodel, lastQuad = NULL, recalcQuad = FALSE,
     P <- sampling.weights * P
 
   stats <- estepSuffStatLmsCpp(P = P, dataR = data$data.split,
-                               n = data$n.pattern, npatterns = data$p)
+                               n = data$n.pattern, npatterns = data$p,
+                               ncores = ThreadEnv$n.threads)
 
   # Create a vector for sampling weights, needed in some C++ code
   if (!is.null(sampling.weights)) sampling.weights.vec <- sampling.weights
@@ -454,7 +455,7 @@ densityLms <- function(z, modFilled, data) {
   densityMatrixLmsCpp(modelR = modFilled, V = z,
                       dataR = data$data.split, colidxR = data$colidx0,
                       n = data$n.pattern, samplingWeights = sw,
-                      npatterns = data$p)
+                      npatterns = data$p, ncores = ThreadEnv$n.threads)
 }
 
 
