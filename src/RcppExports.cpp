@@ -354,6 +354,18 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// predictedLatentScoresCpp
+arma::mat predictedLatentScoresCpp(const arma::mat Zeta, const Rcpp::List matrices);
+RcppExport SEXP _modsem_predictedLatentScoresCpp(SEXP ZetaSEXP, SEXP matricesSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::mat >::type Zeta(ZetaSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List >::type matrices(matricesSEXP);
+    rcpp_result_gen = Rcpp::wrap(predictedLatentScoresCpp(Zeta, matrices));
+    return rcpp_result_gen;
+END_RCPP
+}
 // tracePathsNumericCpp
 Rcpp::NumericVector tracePathsNumericCpp(Rcpp::CharacterVector x, Rcpp::CharacterVector y, Rcpp::DataFrame parTable, int maxlen);
 RcppExport SEXP _modsem_tracePathsNumericCpp(SEXP xSEXP, SEXP ySEXP, SEXP parTableSEXP, SEXP maxlenSEXP) {
@@ -407,6 +419,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_modsem_repDmvnormCpp", (DL_FUNC) &_modsem_repDmvnormCpp, 5},
     {"_modsem_totalDmvnWeighted", (DL_FUNC) &_modsem_totalDmvnWeighted, 6},
     {"_modsem_dmvnfast", (DL_FUNC) &_modsem_dmvnfast, 6},
+    {"_modsem_predictedLatentScoresCpp", (DL_FUNC) &_modsem_predictedLatentScoresCpp, 2},
     {"_modsem_tracePathsNumericCpp", (DL_FUNC) &_modsem_tracePathsNumericCpp, 4},
     {"_modsem_tracePathsCharacterCpp", (DL_FUNC) &_modsem_tracePathsCharacterCpp, 5},
     {NULL, NULL, 0}

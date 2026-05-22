@@ -89,6 +89,10 @@ dmvnfast <- function(X, mu, sigma, log, ncores, isChol) {
     .Call(`_modsem_dmvnfast`, X, mu, sigma, log, ncores, isChol)
 }
 
+predictedLatentScoresCpp <- function(Zeta, matrices) {
+    .Call(`_modsem_predictedLatentScoresCpp`, Zeta, matrices)
+}
+
 tracePathsNumericCpp <- function(x, y, parTable, maxlen = 100L) {
     .Call(`_modsem_tracePathsNumericCpp`, x, y, parTable, maxlen)
 }
