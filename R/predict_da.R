@@ -1,11 +1,11 @@
 modsemPredictDA <- function(object, newdata = NULL, method = c("EBM", "ML")) {
-  model <- object$model
+  model    <- object$model
   submodels <- model$models
 
   if (is.null(newdata)) {
-    data <- object$data
+    DATA <- object$data
   } else {
-    stop2("newdata argument is not implemented (yet)!")
+    DATA <- prepNewdataDA(object, newdata)
   }
 
   ETA <- vector("list", length = length(submodels))
@@ -15,12 +15,12 @@ modsemPredictDA <- function(object, newdata = NULL, method = c("EBM", "ML")) {
 
     ETA[[g]] <- modsemPredictEtaDA_Group(
       submodel = submodels[[g]],
-      data     = data[[g]],
+      data     = DATA[[g]],
       method   = method
     )
 
     YY[[g]] <- YFromEta(
-      Eta       = ETA[[g]],
+      Eta      = ETA[[g]],
       matrices = submodels[[g]]$matrices
     )
   }
@@ -29,29 +29,15 @@ modsemPredictDA <- function(object, newdata = NULL, method = c("EBM", "ML")) {
 }
 
 
-modsemPredictY_DA_Group <- function(object, newdata = NULL, method = c("EBM", "ML")) {
-  Eta <- modsemPredictEtaDA(
-    object  = object,
-    newdata = newdata,
-    method  = method
-  )
-
-  matrices <-
-  LambdaX <- matrices$lambdaX
-  LambdaY <- matrices$lambdaY
-
-  Lambda <- diagPartitionedMat(LambdaX, LambdaY)
-  Eta %*% t(Lambda)
-}
-
-
 modsemPredictEtaDA_Group <- function(submodel, data, method = c("EBM", "ML")) {
   method <- match.arg(toupper(method), c("EBM", "ML"))
 
-  matrices <- submodel$matrices
+  matrices   <- submodel$matrices
   data.split <- data$data.split
-  patterns <- data$patterns
-  xptr <- modelMatrixCacheCpp(matrices)
+  patterns   <- data$patterns
+  rowidx     <- data$rowidx
+  n.total    <- data$n
+  xptr       <- modelMatrixCacheCpp(matrices)
 
   .f <- switch(method,
     ML  = logLikFromZetaMLCpp,
@@ -59,51 +45,94 @@ modsemPredictEtaDA_Group <- function(submodel, data, method = c("EBM", "ML")) {
     stop2("Unrecognized method: ", method, "!")
   )
 
-  ETA <- vector("list", length = length(patterns))
+  k   <- NCOL(matrices$phi) + NCOL(matrices$psi)
+  dim <- c(colnames(matrices$phi), colnames(matrices$psi))
+
+  Eta.out <- matrix(NA_real_, nrow = n.total, ncol = k, dimnames = list(NULL, dim))
 
   for (p in seq_along(data.split)) {
-    data.p <- data.split[[p]]
-    pattern.p <- patterns[p,,drop=TRUE]
-    idx.p <- which(pattern.p) - 1
+    data.p    <- data.split[[p]]
+    pattern.p <- patterns[p, , drop = TRUE]
+    idx.p     <- which(pattern.p) - 1L
 
-    n <- NROW(data.p)
-    k <- NCOL(matrices$phi) + NCOL(matrices$psi)
-    dim <- c(colnames(matrices$phi), colnames(matrices$psi))
-
+    n     <- NROW(data.p)
     start <- rep(0, k)
-    Eta <- matrix(
-      NA_real_, nrow = n, ncol = k,
-      dimnames = list(NULL, dim)
-    )
+    Eta.p <- matrix(NA_real_, nrow = n, ncol = k)
 
     for (i in seq_len(n)) {
-      y <- data.p[i,, drop=TRUE]
-
-      objective_i <- \(zeta)
-        -.f(zeta = zeta, y = y, xptr = xptr, idx = idx.p)
+      y <- data.p[i, , drop = TRUE]
 
       opt_i <- nlminb(
-        start = start,
-        objective = objective_i,
-        gradient = NULL # for now
+        start     = start,
+        objective = \(zeta) -.f(zeta = zeta, y = y, xptr = xptr, idx = idx.p),
+        gradient  = NULL
       )
 
-      Eta[i,] <- impliedEtaFromZetaCpp(
-        zeta = opt_i$par, xptr = xptr
-      )
+      Eta.p[i, ] <- impliedEtaFromZetaCpp(zeta = opt_i$par, xptr = xptr)
     }
 
-    ETA[[p]] <- Eta
+    Eta.out[rowidx[[p]], ] <- Eta.p
   }
 
-  do.call(rbind, ETA)
+  Eta.out
 }
 
 
 YFromEta <- function(Eta, matrices) {
   LambdaX <- matrices$lambdaX
   LambdaY <- matrices$lambdaY
+  tauX    <- matrices$tauX
+  tauY    <- matrices$tauY
 
   Lambda <- diagPartitionedMat(LambdaX, LambdaY)
-  Eta %*% t(Lambda)
+  tau    <- c(tauX, tauY)
+
+  sweep(Eta %*% t(Lambda), MARGIN = 2, STATS = tau, FUN = "+")
+}
+
+
+prepNewdataDA <- function(object, newdata) {
+  newdata    <- as.data.frame(newdata)
+  submodels  <- object$model$models
+  group.var  <- object$args$group
+  n.groups   <- length(submodels)
+
+  if (!is.null(group.var)) {
+    stopif(!group.var %in% colnames(newdata),
+           sprintf("Grouping variable '%s' not found in `newdata`.", group.var))
+
+    group.levels <- object$model$info$group.levels
+    stopif(is.null(group.levels),
+           "Model has a grouping variable but group levels could not be determined.")
+
+    group.values <- as.character(newdata[[group.var]])
+
+    DATA <- lapply(seq_len(n.groups), function(g) {
+      cols <- colnames(submodels[[g]]$data$data.full)
+
+      missing.cols <- setdiff(cols, colnames(newdata))
+      stopif(length(missing.cols),
+             "Missing columns in `newdata`:\n  ", paste(missing.cols, collapse = ", "))
+
+      rows.g <- group.values == group.levels[[g]]
+      mat.g  <- as.matrix(newdata[rows.g, cols, drop = FALSE])
+      storage.mode(mat.g) <- "double"
+
+      patternizeMissingDataFIML(mat.g)
+    })
+
+  } else {
+    cols <- colnames(submodels[[1L]]$data$data.full)
+
+    missing.cols <- setdiff(cols, colnames(newdata))
+    stopif(length(missing.cols),
+           "Missing columns in `newdata`:\n  ", paste(missing.cols, collapse = ", "))
+
+    mat <- as.matrix(newdata[, cols, drop = FALSE])
+    storage.mode(mat) <- "double"
+
+    DATA <- list(patternizeMissingDataFIML(mat))
+  }
+
+  DATA
 }

@@ -22,12 +22,20 @@ testthat::expect_no_condition({
   fit_fiml <- modsem(tpb, TPB2, method = "lms", nodes = 32, missing = "fiml")
 
   ebm <- modsemPredictDA(fit_fiml, method = "EBM")
-  ml <- modsemPredictDA(fit_fiml, method = "ML")
+  ml  <- modsemPredictDA(fit_fiml, method = "ML")
+
+  # newdata: use first 20 rows (may contain missing)
+  ebm_new <- modsemPredictDA(fit_fiml, newdata = TPB2[1:20, ], method = "EBM")
+  ml_new  <- modsemPredictDA(fit_fiml, newdata = TPB2[1:20, ], method = "ML")
 })
-  
+
 testthat::expect_no_condition({
   fit_qml <- modsem(tpb, TPB, method = "qml")
 
   ebm <- modsemPredictDA(fit_qml, method = "EBM")
-  ml <- modsemPredictDA(fit_qml, method = "ML")
+  ml  <- modsemPredictDA(fit_qml, method = "ML")
+
+  # newdata: use last 20 rows
+  ebm_new <- modsemPredictDA(fit_qml, newdata = TPB[181:200, ], method = "EBM")
+  ml_new  <- modsemPredictDA(fit_qml, newdata = TPB[181:200, ], method = "ML")
 })
