@@ -80,14 +80,11 @@ struct LMSModel {
     const arma::mat kronZ = arma::kron(Ie, muXi);
     const arma::mat B     = Ie - Ge - kronZ.t() * Oex;
 
-    // Use arma::solve instead of arma::inv: avoids materialising B^{-1} and is
-    // more numerically stable.  For Binv*Psi*Binv.t() use the identity
-    // B^{-1} Psi B^{-T} = solve(B, solve(B, Psi).t())  (Psi symmetric).
-    const arma::vec muEta    = arma::solve(B, a + Gx * muXi + kronZ.t() * Oxx * muXi);
-    const arma::mat Eta      = arma::solve(B, GxA + kronZ.t() * Oxx * A);
-    const arma::mat BinvPsi  = arma::solve(B, Psi);
+    const arma::mat Binv     = arma::inv(B);
+    const arma::vec muEta    = Binv * (a + Gx * muXi + kronZ.t() * Oxx * muXi);
+    const arma::mat Eta      = Binv * (GxA + kronZ.t() * Oxx * A);
     const arma::mat varXi    = AOiAt;
-    const arma::mat varEta   = Eta * Oi * Eta.t() + arma::solve(B, BinvPsi.t());
+    const arma::mat varEta   = Eta * Oi * Eta.t() + Binv * Psi * Binv.t();
     const arma::mat covXiEta = AOi * Eta.t();
 
     const arma::mat vcovXiEta = arma::join_cols(
