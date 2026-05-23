@@ -406,11 +406,11 @@ modsem_da <- function(model.syntax = NULL,
   method <- tolower(method)
 
   if (is.null(model.syntax)) {
-    stop2("No model.syntax provided")
+    mod_msg_stop("No model.syntax provided")
   } else if (!is.character(model.syntax)) {
-    stop2("The provided model syntax is not a string!")
+    mod_msg_stop("The provided model syntax is not a string!")
   } else if (length(model.syntax) > 1) {
-    stop2("The provided model syntax is not of length 1")
+    mod_msg_stop("The provided model syntax is not of length 1")
   }
 
   ordered.se <- match.arg(ordered.se)
@@ -486,7 +486,7 @@ modsem_da <- function(model.syntax = NULL,
   }
 
   if (is.null(data)) {
-    stop2("No data provided")
+    mod_msg_stop("No data provided")
   } else {
     data <- as.data.frame(data)
   }
@@ -507,7 +507,7 @@ modsem_da <- function(model.syntax = NULL,
 
   if ("convergence" %in% names(list(...))) {
     convergence.rel <- list(...)$convergence
-    warning2("Argument 'convergence' is deprecated, use 'convergence.rel' instead.")
+    mod_msg_warn("Argument 'convergence' is deprecated, use 'convergence.rel' instead.")
   }
 
   args <-
@@ -576,7 +576,7 @@ modsem_da <- function(model.syntax = NULL,
     sampling.weights.normalization = args$sampling.weights.normalization
   )
 
-  stopif(!method %in% c("lms", "qml"), "Method must be either 'lms' or 'qml'")
+  mod_stopif(!method %in% c("lms", "qml"), "Method must be either 'lms' or 'qml'")
 
   model <- specifyModelDA(
     group.info         = group.info,
@@ -617,13 +617,25 @@ modsem_da <- function(model.syntax = NULL,
           collapse = "\n"
         )
 
-        warning2("warning when optimizing starting parameters:\n", fwarnings)
+        mod_msg_warn_immediate(
+          paste0("warning when optimizing starting parameters:\n", fwarnings)
+        )
       }
 
       result$result
 
     }, error = function(e) {
-      warning2("unable to optimize starting parameters:\n", e)
+      mod_msg_warn_immediate(
+        paste0("unable to optimize starting parameters:\n", e)
+      )
+
+      if (is.null(max.step) && args$max.step <= 1 && method == "lms") {
+        # When we don't have optimized starting parameters with LMS, the algorithm
+        # will likely not converge with the default max.step
+        mod_msg_note("Increasing max step in EM-algorithm to 50")
+        args$max.step <<- 50
+      }
+
       model
     })
   }
@@ -688,7 +700,7 @@ modsem_da <- function(model.syntax = NULL,
     if (args$verbose) cat("\n")
     message <- paste0("modsem [%s]: Model estimation failed!\n",
                       "Message: %s")
-    stop2(sprintf(message, method, e$message))
+    mod_msg_stop(sprintf(message, method, e$message))
   })
 
   # Finalize the model object
@@ -700,7 +712,7 @@ modsem_da <- function(model.syntax = NULL,
       etas = getEtasModelDA(model$models[[1L]])  # taking both the main model and cov model into account
     ),
     error = function(e) {
-      warning2("Failed to calculate expected matrices: ", e$message)
+      mod_msg_warn(paste0("Failed to calculate expected matrices: ", e$message))
       NULL
     })
 

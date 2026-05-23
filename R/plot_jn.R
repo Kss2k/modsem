@@ -2,13 +2,13 @@ getJN_GridMonteCarlo <- function(x, z, y, parTable, model, min_z, max_z, sig.lev
                                     detail, sd.line, standardized, xz, greyscale,
                                     plot.jn.points = TRUE, group = NULL, group.label = NULL,
                                     type = "indirect", mc.reps = 10000, ...) {
-  message("Using Monte-Carlo quantiles...")
+  mod_msg_note("Using Monte-Carlo quantiles...")
 
   type <- match.arg(type, c("indirect", "total", "direct"))
 
   mean_z <- getMean(z, parTable = parTable)
   sd_z   <- sqrt(calcCovParTable(x = z, y = z, parTable = parTable))
-  stopif(is.na(sd_z), sprintf("Variance for %s not found in model", z))
+  mod_stopif(is.na(sd_z), sprintf("Variance for %s not found in model", z))
 
   z_min <- min_z + mean_z
   z_max <- max_z + mean_z
@@ -19,7 +19,7 @@ getJN_GridMonteCarlo <- function(x, z, y, parTable, model, min_z, max_z, sig.lev
 
   intTerms <- getIntTerms(parTable)
 
-  stopif(!length(intTerms), "No interaction terms were found in the model.")
+  mod_stopif(!length(intTerms), "No interaction terms were found in the model.")
 
   for (intTerm in intTerms) {
     elems <- stringr::str_split_1(intTerm, pattern = ":")
@@ -27,7 +27,7 @@ getJN_GridMonteCarlo <- function(x, z, y, parTable, model, min_z, max_z, sig.lev
     if (!z %in% elems)
       next
 
-    stopif(length(elems) > 2L,
+    mod_stopif(length(elems) > 2L,
            "Johnson-Neyman plot is not available for three-way (or higher) interactions!")
 
     m <- elems[elems != z]
@@ -53,7 +53,7 @@ getJN_GridMonteCarlo <- function(x, z, y, parTable, model, min_z, max_z, sig.lev
                               !grepl(":", parTable$rhs), , drop = FALSE]
 
   paths <- getJN_PathsParTable(x = x, y = y, parTable = parTable.simple)
-  stopif(is.null(paths), sprintf("No paths between %s and %s were found!", x, y))
+  mod_stopif(is.null(paths), sprintf("No paths between %s and %s were found!", x, y))
 
   is.direct <- attr(paths, "is.direct")
 
@@ -64,7 +64,7 @@ getJN_GridMonteCarlo <- function(x, z, y, parTable, model, min_z, max_z, sig.lev
   )
 
   keep <- expr_paths[[type]]
-  stopif(!length(keep), sprintf("No %s effect between %s and %s was found!", type, x, y))
+  mod_stopif(!length(keep), sprintf("No %s effect between %s and %s was found!", type, x, y))
   expr <- parse(text = paste0(keep, collapse = "+"))
 
   V <- tryCatch(getVcovSimpleSlopes(model, standardized = standardized), error = \(e) NULL)
@@ -185,7 +185,7 @@ plot_jn <- function(x, z, y, model, min_z = -3, max_z = 3,
                     type = c("direct", "indirect", "total"),
                     mc.quantiles = FALSE, mc.reps = 10000, ...) {
 
-  stopif(!inherits(model, c("modsem_da", "modsem_mplus", "modsem_pi", "lavaan")),
+  mod_stopif(!inherits(model, c("modsem_da", "modsem_mplus", "modsem_pi", "lavaan")),
          "model must be of class 'modsem_pi', 'modsem_da', 'modsem_mplus', or 'lavaan'")
 
   type <- match.arg(type)
@@ -232,7 +232,7 @@ plot_jn <- function(x, z, y, model, min_z = -3, max_z = 3,
 
   if (requireNamespace("ggpubr", quietly = TRUE)) { # Make R CMD check happy
     ggpubr::ggarrange(plotlist = plots, labels = group.label)
-  } else stop2("The `ggpubr` package is needed to arrange Johnson-Neyman plots in multigroup models!\n")
+  } else mod_msg_stop("The `ggpubr` package is needed to arrange Johnson-Neyman plots in multigroup models!\n")
 }
 
 
@@ -249,15 +249,15 @@ getJN_GridDelta <- function(x, z, y, parTable, model, min_z, max_z, sig.level, a
   # z mean/sd and plotting window
   mean_z <- getMean(z, parTable = parTable)
   sd_z   <- sqrt(calcCovParTable(x = z, y = z, parTable = parTable))
-  stopif(is.na(sd_z), sprintf("Variance for %s not found in model", z))
+  mod_stopif(is.na(sd_z), sprintf("Variance for %s not found in model", z))
   z_min  <- min_z + mean_z
   z_max  <- max_z + mean_z
 
   # coefficients
   beta_x  <- parTable[parTable$lhs == y & parTable$rhs == x   & parTable$op == "~", "est"]
   beta_xz <- parTable[parTable$lhs == y & parTable$rhs %in% xz & parTable$op == "~", "est"]
-  stopif(length(beta_x)  == 0, "Coefficient for x not found in model")
-  stopif(length(beta_xz) == 0, "Coefficient for interaction term not found in model")
+  mod_stopif(length(beta_x)  == 0, "Coefficient for x not found in model")
+  mod_stopif(length(beta_xz) == 0, "Coefficient for interaction term not found in model")
 
   VCOV <- getVcovSimpleSlopes(model, standardized = standardized)
   label_beta_x  <- parTable[parTable$lhs == y & parTable$rhs == x   & parTable$op == "~", "label"]
@@ -277,8 +277,8 @@ getJN_GridDelta <- function(x, z, y, parTable, model, min_z, max_z, sig.level, a
   npar <- length(coef(model))
   df_resid <- nobs - npar
   if (df_resid < 1) {
-    warning2("Degrees of freedom for residuals must be greater than 0. ",
-             "Using sample size instead of degrees of freedom")
+    mod_msg_warn(paste0("Degrees of freedom for residuals must be greater than 0. ",
+             "Using sample size instead of degrees of freedom"))
     df_resid <- nobs
   }
 
@@ -392,7 +392,7 @@ plotJN_Group <- function(x, z, y, parTable, model, min_z, max_z, sig.level, alph
   sig_any <- any(significant)
 
   if (sig_all || !sig_any) {
-    message("No regions where the effect transitions between significant and non-significant.")
+    mod_msg_note("No regions where the effect transitions between significant and non-significant.")
   }
 
   if (sig_any && !sig_all) {
@@ -481,11 +481,11 @@ plotJN_Group <- function(x, z, y, parTable, model, min_z, max_z, sig.level, alph
   x_end   <- mean_z + sd.line * sd_z
 
   if (x_start < z_min && x_end > z_max) {
-    warning2("Truncating SD-range on the right and left!")
+    mod_msg_warn("Truncating SD-range on the right and left!")
   } else if (x_start < z_min) {
-    warning2("Truncating SD-range on the left!")
+    mod_msg_warn("Truncating SD-range on the left!")
   } else if (x_end > z_max) {
-    warning2("Truncating SD-range on the right!")
+    mod_msg_warn("Truncating SD-range on the right!")
   }
   x_start <- max(x_start, z_min)
   x_end   <- min(x_end, z_max)

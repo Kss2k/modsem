@@ -283,7 +283,7 @@ mstepQml <- function(model,
 
     est$objective  <- est$value
     est$iterations <- est$counts[["function"]]
-  } else stop2("Unrecognized optimizer, must be either 'nlminb' or 'L-BFGS-B'")
+  } else mod_msg_stop("Unrecognized optimizer, must be either 'nlminb' or 'L-BFGS-B'")
 
   if (verbose) cat("\n")
 

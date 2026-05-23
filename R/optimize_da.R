@@ -90,7 +90,7 @@ optimizeStartingParamsDA <- function(model,
     lavaan.fit <- fitSam$fit
   }
 
-  stopif(is.null(parTable), "lavaan failed!")
+  mod_stopif(is.null(parTable), "lavaan failed!")
 
   if (isHigherOrderParTable(parTable))
     parTable <- higherOrderMeasr2Struct(parTable)
@@ -330,11 +330,11 @@ extractFromParTable <- function(row, op, col, parTable, rows.lhs = TRUE, fill = 
   }
 
   if (length(out) == 0) {
-    stopif(is.null(fill), "No match found")
+    mod_stopif(is.null(fill), "No match found")
     out <- fill
   }
 
-  stopif(length(out) > 1, "Incorrect length of matches")
+  mod_stopif(length(out) > 1, "Incorrect length of matches")
 
   out
 }
@@ -364,8 +364,8 @@ parameterEstimatesLavSAM <- function(syntax,
                                      auto.fix.single  = TRUE,
                                      group            = NULL,
                                      sampling.weights = NULL,
-                                     sampling.weights.normalization = "total",
                                      suppress.warnings.lavaan = TRUE,
+                                     sampling.weights.normalization = "total",
                                      ...) {
   parTable <- modsemify(syntax)
   higherOrderLVs <- getHigherOrderLVs(parTable)
@@ -384,7 +384,7 @@ parameterEstimatesLavSAM <- function(syntax,
     optim.gradient.override <- "numerical" # analytical does not work
 
   if (!any(grepl(":", parTable$rhs) | grepl(":", parTable$lhs))) {
-    fitSEM <- wrapper(lavaan::sem(
+    fitSem <- wrapper(lavaan::sem(
       model            = syntax,
       data             = data,
       meanstructure    = meanstructure,
@@ -397,17 +397,20 @@ parameterEstimatesLavSAM <- function(syntax,
       group            = group,
       se               = "none",
       sampling.weights = sampling.weights,
-      sampling.weights.normalization = sampling.weights.normalization,
       optim.gradient   = optim.gradient.override,
+      sampling.weights.normalization = sampling.weights.normalization,
       ...
     ))
 
-    output <- lavaan::parameterEstimates(fitSEM)
+    admissible <- lavaan::lavInspect(fitSem, what = "post.check")
+    mod_stopif(!admissible, "The structural model is inadmissible!")
+
+    output <- lavaan::parameterEstimates(fitSem)
 
     if (hasComposites)
       output <- recalcInterceptsComposites(output, input = parTable)
 
-    return(list(fit = fitSEM, parTable = output))
+    return(list(fit = fitSem, parTable = output))
   }
 
   # Get SAM structural model with measurement model from a linear model
@@ -451,10 +454,13 @@ parameterEstimatesLavSAM <- function(syntax,
     group            = group,
     se               = "none",
     sampling.weights = sampling.weights,
-    sampling.weights.normalization = sampling.weights.normalization,
     optim.gradient   = optim.gradient.override,
+    sampling.weights.normalization = sampling.weights.normalization,
     ...
   ))
+
+  admissible <- lavaan::lavInspect(fitH0, what = "post.check")
+  mod_stopif(!admissible, "The measurement model is inadmissible!")
 
   if (isHigherOrder || hasComposites) {
     # use factor scores instead
@@ -507,6 +513,9 @@ parameterEstimatesLavSAM <- function(syntax,
         sampling.weights.normalization = sampling.weights.normalization,
         ...
       ))
+
+      admissible <- lavaan::lavInspect(fitH0b, what = "post.check")
+      mod_stopif(!admissible, "The measurement model is inadmissible!")
 
       dataListSamReflective <- tryCatch(
         lavaan::lavPredict(
@@ -579,16 +588,16 @@ parameterEstimatesLavSAM <- function(syntax,
     }
 
     if (!is.null(sampling.weights)) {
-      warning2(
+      mod_msg_warn(
         "Ignoring sampling weights when optimizing parameter estimates..."
       )
       sampling.weights <- NULL
     }
 
     if (length(group)) {
-      stopif(length(group) > 1L,
-        "Unable to optimize parameters for multigroup models with more\n",
-        "than one grouping variable!"
+      mod_stopif(length(group) > 1L,
+        paste0("Unable to optimize parameters for multigroup models with more\n",
+        "than one grouping variable!")
       )
 
       if (!is.null(names(dataListSam))) groupings <- names(dataListSam)
@@ -643,6 +652,9 @@ parameterEstimatesLavSAM <- function(syntax,
     sampling.weights.normalization = sampling.weights.normalization,
     ... # don't need to set optim.gradient here, since we only have ovs
   ))
+
+  admissible <- lavaan::lavInspect(fitSam, what = "post.check")
+  mod_stopif(!admissible, "The structural model is inadmissible!")
 
   parTableH0 <- lavaan::parameterEstimates(fitH0)
   measr  <- getMeasrRows(parTableH0)

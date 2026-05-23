@@ -26,10 +26,9 @@ fit_modsem_da <- function(model, chisq = TRUE, lav.fit = FALSE,
                           drop.list.single.group = TRUE) {
   parTable <- model$parTable
   if (isTRUE(chisq) && any(grepl(":", parTable$rhs), na.rm = TRUE)) {
-    warning2("Chi-Square based fit-measures for LMS and QML ",
+    mod_msg_warn(paste0("Chi-Square based fit-measures for LMS and QML ",
              "should be calculated for baseline model ",
-             "i.e., the model without the interaction effect",
-             immediate. = FALSE)
+             "i.e., the model without the interaction effect"))
   }
 
   t      <- nFreeInterceptsDA(model)
@@ -132,8 +131,8 @@ fit_modsem_da <- function(model, chisq = TRUE, lav.fit = FALSE,
       chi.g <- tryCatch(
         calcChiSqr(O = O.g, E = E.g, N = N.g, p = p.g, mu = mu.g, mu.hat = mu_hat.g),
         error = function(e) {
-          warning2("Failed to compute chi-square contribution for group ",
-                   g, ": ", conditionMessage(e), immediate. = FALSE)
+          mod_msg_warn(paste0("Failed to compute chi-square contribution for group ",
+                   g, ": ", conditionMessage(e)))
           NA_real_
         }
       )
@@ -219,8 +218,8 @@ fit_modsem_da <- function(model, chisq = TRUE, lav.fit = FALSE,
     lavfit <- tryCatch(
       lavaan::fitMeasures(model$model$lavaan.fit),
       error = function(e) {
-        warning2("Unable to retrieve fit measures for lavaan model!\n",
-                 "Message: ", conditionMessage(e), immediate. = FALSE)
+        mod_msg_warn(paste0("Unable to retrieve fit measures for lavaan model!\n",
+                 "Message: ", conditionMessage(e)))
         NULL
       }
     )

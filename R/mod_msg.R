@@ -1,0 +1,279 @@
+# Copied (almost) directly from lavaan/R/lav_msg.R
+modsem_cache_env <- new.env(parent = emptyenv())
+
+# Displays a message (... concatenated with spaces in between) with header
+# 'modsem(function):', except when showheader == FALSE, and formatted to have
+# a maximum line length of 'txt_width' while all but the first line start with
+# 'indent' spaces. If a footer is specified it is appended to the formatted text
+# 'as is'. The message is shown via R function 'message()'.
+mod_msg_note <- function(..., showheader = FALSE, footer = "") {
+  wat <- unlist(list(...), use.names = FALSE)
+  if (!showheader) wat <- c("modsem NOTE: ___", wat)
+  msg <- mod_msg(wat, showheader = showheader)
+  if (footer != "") msg <- paste(msg, footer, sep = "\n")
+  message(msg, domain = NA)
+}
+
+# Displays a message with header and formatted as
+# above via R function 'warning()'.
+mod_msg_warn <- function(..., footer = "", immediate. = FALSE) {
+  wat <- unlist(list(...), use.names = FALSE)
+  msg <- mod_msg(wat)
+  if (footer != "") msg <- paste(msg, footer, sep = "\n")
+  warning(msg, call. = FALSE, domain = NA, immediate. = immediate.)
+}
+
+
+# Warn immediately
+mod_msg_warn_immediate <- function(..., footer = "") {
+  mod_msg_warn(..., footer = "", immediate. = TRUE)
+}
+
+# Displays a message with header and formatted as
+# above via R function 'stop()'.
+mod_msg_stop <- function(..., footer = "") {
+  wat <- unlist(list(...), use.names = FALSE)
+  msg <- mod_msg(wat)
+  if (footer != "") msg <- paste(msg, footer, sep = "\n")
+  stop(msg, call. = FALSE, domain = NA)
+}
+
+# Displays a message with header and formatted as
+# above via R function 'stop()', where the message is prepended with "FIXME:",
+# to indicate an internal error, e.g. an error condition which was supposed
+# to be handled in the calling functions. Such error message do not have to
+# be created by [n]gettext[f] because they don't have to be translated!!!
+mod_msg_fixme <- function(...) {
+  wat <- c("FIXME: ", unlist(list(...), use.names = FALSE))
+  stop(mod_msg(wat), call. = FALSE, domain = NA)
+}
+
+# subroutine for above functions
+mod_msg <- function(wat, txt_width = getOption("width", 80L),
+                    indent = 3L, showheader = TRUE) {
+  if (showheader) {
+    ignore_in_stack <- c(
+      "^eval$", "^try", "^doTryCatch", "^mod_msg", "^stop$", "^warning$",
+      "^which$", "^unique$", "^as\\.", "^unlist$", "^message$",
+      "^source$", "^withVisible$", "^tryCatch.W.E$", "^withCallingHandlers$",
+      "^do.call$", "^paste", "^mod_stopif", "^mod_warnif", "^warn", "^stop",
+      "^message", "^[0-9]+$" # anonymous functions?
+    )
+    sc <- sys.calls()
+    sc_i <- length(sc)
+    sc_naam <- ""
+    while (sc_i > 0L) {
+      x <- tryCatch(
+        as.character(sc[[sc_i]][[1L]]),
+        error = function(e) "unknown"
+      )
+      if (length(x) == 3L) {
+        # needed if a function specified in namespace, e.g.
+        # as.character(str2lang("modsem::sem(m, d)")[[1L]])
+        x <- x[[3L]]
+      }
+      skip <- FALSE
+      for (re in ignore_in_stack) {
+        if (grepl(re, x)) {
+          skip <- TRUE
+          break
+        }
+      }
+      if (!skip) {
+        sc_naam <- x
+        break
+      }
+      sc_i <- sc_i - 1L
+    }
+    if (sc_naam == "") {
+      header <- "modsem: ___"
+    } else {
+      header <- paste0("modsem->", sc_naam, "(): ___")
+    }
+  } else {
+    header <- ""
+  }
+  txt_width <- txt_width - indent # whitespace at the right
+  # make sure we only have a single string
+  txt <- paste(wat, collapse = " ")
+  # split the txt in little chunks
+  chunks <- strsplit(paste(header, txt), "\\s+", fixed = FALSE)[[1]]
+
+  # chunk size (number of characters)
+  chunk_size <- nchar(chunks)
+
+  # remove empty chunk in position 1 (if txt starts with whitespace)
+  if (chunk_size[1L] == 0L) {
+    chunks <- chunks[-1L]
+    chunk_size <- chunk_size[-1]
+  }
+
+  nstart <- 1L
+  nstop <- 1L
+  corr_line1 <- 7L # first line possibly contains "error: "
+  while (nstart <= length(chunks)) {
+    while (nstop < length(chunks) &&
+           sum(chunk_size[seq.int(nstart, nstop + 1L)]) + corr_line1 +
+           nstop - nstart + indent < txt_width && chunks[nstop + 1L] != "___") {
+      nstop <- nstop + 1
+    }
+    corr_line1 <- 0L
+    if (nstop < length(chunks) && chunks[nstop + 1L] == "___") {
+      # forced line break
+      chunks[nstop + 1L] <-  ""
+      nstop <- nstop + 1L
+    }
+    if (nstop < length(chunks)) {
+      chunks[nstop + 1L] <- paste0(
+        "\n", strrep(" ", indent),
+        chunks[nstop + 1L]
+      )
+    }
+    nstart <- nstop + 1L
+    nstop <- nstart
+  }
+  paste(chunks, collapse = " ")
+}
+
+
+mod_stopif <- function(cond, ...) {
+  if (length(cond) > 0 && !is.na(cond[[1L]]) && cond[[1L]])
+    mod_msg_stop(...)
+}
+
+
+mod_warnif <- function(cond, ..., .newline = FALSE) {
+  if (length(cond) > 0 && !is.na(cond[[1L]]) && cond[[1L]]) {
+    if (.newline) cat("\n")
+    mod_msg_warn(...)
+  }
+}
+
+
+mod_warnif_immediate <- function(cond, ..., .newline = FALSE) {
+  if (length(cond) > 0 && !is.na(cond[[1L]]) && cond[[1L]]) {
+    if (.newline) cat("\n")
+    mod_msg_warn_immediate(...)
+  }
+}
+
+
+# Transforms a value to a character representation for use in messages
+# if logsep = "array" (default), letters[1:3] is transformed to ("a", "b", "c")
+# if logsep = "none", c("x", "y", "z") is transformed to "x", "y", "z"
+# if logsep = "and", 1:3 is transformed to 1, 2 and 3
+# if logsep = "or", c("a", "b", "c") is transformed to "a", "b" or "c"
+# The type of quote can be modified via parameter qd (default = TRUE).
+# If the object has names, the names will be prepended with a colon before the
+# value, e.g. c(x = 2.3, y = 4) --> (x : 2.3, y : 4).
+mod_msg_view <- function(x,
+                         log_sep = c("array", "none", "and", "or"),
+                         qd = TRUE) {
+  if (missing(x)) {
+    return("NULL")
+  }
+  log_sep <- match.arg(log_sep)
+  xn <- names(x)
+  if (is.list(x)) {
+    xx <- sapply(x, mod_msg_view)
+  } else {
+    if (is.character(x)) {
+      if (qd) {
+        xx <- dQuote(x, q = FALSE)
+      } else {
+        xx <- sQuote(x, q = FALSE)
+      }
+    } else {
+      xx <- as.character(x)
+    }
+    xx[is.na(x)] <- "NA"
+  }
+  if (!is.null(xn)) xx <- paste(xn, ":", xx)
+  if (length(xx) == 1) {
+    rv <- xx
+  } else {
+    if (log_sep == "array") rv <- paste0("(", paste(xx, collapse = ", "), ")")
+    if (log_sep == "none") rv <- paste(xx, collapse = ", ")
+    if (log_sep == "and") rv <- paste(paste(xx[-length(xx)], collapse = ", "),
+     gettext("and"), xx[length(xx)])
+    if (log_sep == "or") rv <- paste(paste(xx[-length(xx)], collapse = ", "),
+     gettext("or"), xx[length(xx)])
+  }
+  rv
+}
+# Warning for deprecated functions
+# Like base::.Deprecated but specialised for modsem
+# parameter times specifies how many times the warning should be generated
+# during one "modsem-package-session"
+mod_deprecated <- function(new,
+                           old = as.character(sys.call(sys.parent()))[1L],
+                           times = 1L) {
+  dprmsg <-  get0(paste0("dpr_", old), modsem_cache_env,
+                  ifnotfound = as.integer(times))
+  if (dprmsg <= 0L) return(invisible(NULL))
+  assign(paste0("dpr_", old), dprmsg - 1L, modsem_cache_env)
+  msg <- c(gettextf("'%s' is deprecated.\n", old),
+         gettextf("Use '%s' instead.\n", new),
+         gettext("See help(\"Deprecated\")"))
+  msg <- paste(msg, collapse = "")
+  warning(warningCondition(msg, old = old, new = new, package = NULL,
+                           class = "deprecatedWarning"))
+}
+
+# Warning for deprecated arguments-parameter for another parameter in a function
+# method_par specifies the name of the parameter used for a 'method'
+# arg_par specifies the name of the deprecated parameter
+# parameter times specifies how many times the warning should be generated
+# during one "modsem-package-session"
+mod_deprecated_args <- function(method_par, arg_par, times = 1L) {
+  dprmsg <-  get0(paste0("dpr_", method_par, arg_par), modsem_cache_env,
+                  ifnotfound = as.integer(times))
+  if (dprmsg <= 0L) return(invisible(NULL))
+  assign(paste0("dpr_", method_par, arg_par), dprmsg - 1L, modsem_cache_env)
+  msg <- c(gettextf("Argument '%s' is deprecated.\n", arg_par),
+      gettextf("The arguments for '%s' can now be provided in '%s' itself.\n",
+      method_par, method_par))
+  msg <- paste(msg, collapse = "")
+  warning(warningCondition(msg, old = arg_par, new = method_par, package = NULL,
+                           class = "deprecatedWarning"))
+}
+
+#  ---------------  examples of use ----------------------
+# # warning if argument x is missing
+#   mod_msg_warn(gettextf(
+#     "argument %1$s is missing, using %2$s.",
+#     x, mod_msg_view(usedvalue)
+#   ))
+#
+# # warning if length of an argument x is greater then 1 and cannot be
+#   mod_msg_warn(gettextf("%1$s argument should be a single character string.
+#   Only the first one (%2$s) is used.", xname, x[[1]]))
+#
+# # error if argument is unknown (show value)
+#   mod_msg_stop(gettextf(
+#     "%1$s argument unknown: %2$s",
+#     xname, mod_msg_view(xvalue)
+#   ))
+#
+# # error if argument isn't one of the allowed values, show values allowed
+#   if (length(allowed) == 2L) {
+#     mod_msg_stop(gettextf(
+#       "%1$s argument must be either %2$s",
+#       x, mod_msg_view(allowed, "or")
+#     ))
+#   } else {
+#     mod_msg_stop(gettextf(
+#       "%1$s argument must be one of %2$s",
+#       x, mod_msg_view(allowed, "or")
+#     ))
+#   }
+#
+# # error if argument isn't one of the allowed values (show invalid ones)
+#   mod_msg_stop(sprintf(
+#     ngettext(
+#       length(invalids),
+#       "invalid value in %1$s argument: %2$s.",
+#       "invalid values in %1$s argument: %2$s."
+#     ),
+#     x, mod_msg_view(invalids, log_sep = "none")
+#   ))

@@ -119,13 +119,13 @@ modsemPredictEtaDA_Group <- function(submodel, data, method = c("EBM", "ML")) {
   .f <- switch(method,
     ML  = logLikFromZetaMLCpp,
     EBM = logLikFromZetaEBMCpp,
-    stop2("Unrecognized method: ", method, "!")
+    mod_msg_stop(paste0("Unrecognized method: ", method, "!"))
   )
 
   .g <- switch(method,
     ML  = gradLogLikFromZetaMLCpp,
     EBM = gradLogLikFromZetaEBMCpp,
-    stop2("Unrecognized method: ", method, "!")
+    mod_msg_stop(paste0("Unrecognized method: ", method, "!"))
   )
 
   k   <- NCOL(matrices$phi) + NCOL(matrices$psi)
@@ -155,7 +155,7 @@ modsemPredictEtaDA_Group <- function(submodel, data, method = c("EBM", "ML")) {
         Eta.p[i, ] <- impliedEtaFromZetaCpp(zeta = opt_i$par, xptr = xptr)
 
       }, error = function(e) {
-        warning2(sprintf("nlminb() failed for pattern %i, row %i!", p, i))
+        mod_msg_warn(sprintf("nlminb() failed for pattern %i, row %i!", p, i))
         NULL
       })
     }
@@ -188,11 +188,11 @@ prepNewdataDA <- function(object, newdata) {
   n.groups   <- length(submodels)
 
   if (!is.null(group.var)) {
-    stopif(!group.var %in% colnames(newdata),
+    mod_stopif(!group.var %in% colnames(newdata),
            sprintf("Grouping variable '%s' not found in `newdata`.", group.var))
 
     group.levels <- object$model$info$group.levels
-    stopif(is.null(group.levels),
+    mod_stopif(is.null(group.levels),
            "Model has a grouping variable but group levels could not be determined.")
 
     group.values <- as.character(newdata[[group.var]])
@@ -201,8 +201,8 @@ prepNewdataDA <- function(object, newdata) {
       cols <- colnames(submodels[[g]]$data$data.full)
 
       missing.cols <- setdiff(cols, colnames(newdata))
-      stopif(length(missing.cols),
-             "Missing columns in `newdata`:\n  ", paste(missing.cols, collapse = ", "))
+      mod_stopif(length(missing.cols),
+             paste0("Missing columns in `newdata`:\n  ", paste(missing.cols, collapse = ", ")))
 
       rows.g <- group.values == group.levels[[g]]
       if (!any(rows.g)) return(NULL)
@@ -219,8 +219,8 @@ prepNewdataDA <- function(object, newdata) {
     cols <- colnames(submodels[[1L]]$data$data.full)
 
     missing.cols <- setdiff(cols, colnames(newdata))
-    stopif(length(missing.cols),
-           "Missing columns in `newdata`:\n  ", paste(missing.cols, collapse = ", "))
+    mod_stopif(length(missing.cols),
+           paste0("Missing columns in `newdata`:\n  ", paste(missing.cols, collapse = ", ")))
 
     mat <- as.matrix(newdata[, cols, drop = FALSE])
     storage.mode(mat) <- "double"
@@ -245,9 +245,9 @@ addStructOVColumnsDA <- function(newdata, object) {
     ovIntNew <- stringr::str_replace_all(ovInt, ":", OP_OV_INT)
 
     missing <- setdiff(vars, colnames(newdata))
-    stopif(length(missing),
-           "Missing columns in `newdata` required for interaction term '", ovInt, "':\n  ",
-           paste(missing, collapse = ", "))
+    mod_stopif(length(missing),
+           paste0("Missing columns in `newdata` required for interaction term '", ovInt, "':\n  ",
+           paste(missing, collapse = ", ")))
 
     newdata[[ovIntNew]] <- apply(newdata[, vars, drop = FALSE], MARGIN = 1L, FUN = prod)
   }
@@ -257,8 +257,8 @@ addStructOVColumnsDA <- function(newdata, object) {
   plainStructOVs <- setdiff(structovs, ovIntNewNms)
 
   missing <- setdiff(plainStructOVs, colnames(newdata))
-  stopif(length(missing),
-    "Missing columns in `newdata`:\n  ", paste(missing, collapse = ", ")
+  mod_stopif(length(missing),
+    paste0("Missing columns in `newdata`:\n  ", paste(missing, collapse = ", "))
   )
 
   for (ov in structovs) {
@@ -382,8 +382,8 @@ convertCompositesToObs <- function(matrices, data) {
     t(W.mat[etaInds, etaCompLVs, drop = FALSE]) %*% tauY.full[etaInds]
   )
 
-  newTauX <- c(tauX.full[xiRegInds],  setNames(tau.xiComp,  xiScoreNms))
-  newTauY <- c(tauY.full[etaRegInds], setNames(tau.etaComp, etaScoreNms))
+  newTauX <- c(tauX.full[xiRegInds],  stats::setNames(tau.xiComp,  xiScoreNms))
+  newTauY <- c(tauY.full[etaRegInds], stats::setNames(tau.etaComp, etaScoreNms))
 
   matrices$lambdaX      <- rbind(lX.reg, lX.comp)
   matrices$lambdaY      <- rbind(lY.reg, lY.comp)

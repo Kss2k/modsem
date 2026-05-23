@@ -7,7 +7,7 @@ quadrature <- function(m, k,
                        adaptive.frequency = 3,
                        ...) {
   if (quad.range < 0) {
-    warning2("`quad.range` should be positive, using `-quad.range` instead!\n")
+    mod_msg_warn("`quad.range` should be positive, using `-quad.range` instead!\n")
     quad.range <- -quad.range
   }
 
@@ -69,7 +69,7 @@ adaptiveGaussQuadrature <- function(fun,
   if (k == 0 || m == 0)
     return(list(n = matrix(0), w = 1, f = NA, m = 1, k = 1))
 
-  stopif(tol >= 1 || tol < 0,
+  mod_stopif(tol >= 1 || tol < 0,
          "`adaptive.quad.tol` must be in the boundary `[0, 1)`")
 
   if (is.null(m.ceil) || all(is.na(m.ceil)))
@@ -204,10 +204,10 @@ adaptiveGaussQuadratureK <- function(fun,
     ))
   }
 
-  warnif(iter >= iter.max,
-         "Max iterations reached fitting quasi-adaptive quadrature...\n",
+  mod_warnif(iter >= iter.max,
+         paste0("Max iterations reached fitting quasi-adaptive quadrature...\n",
          sprintf("Iter %d, total: %d, target: %d, kept: %d, discarded: %d",
-                 iter, m.ceil, m, NROW(quadn), m.ceil - NROW(quadn)),
+                 iter, m.ceil, m, NROW(quadn), m.ceil - NROW(quadn))),
          .newline = TRUE)
 
   list(n = quadn,
@@ -224,9 +224,9 @@ adaptiveGaussQuadratureK <- function(fun,
 
 
 estGHNodesInRange <- function(m, a, b, scale = TRUE) {
-  stopif(!is.numeric(m) || length(m) != 1 || m <= 0,
+  mod_stopif(!is.numeric(m) || length(m) != 1 || m <= 0,
          "'m' must be a single positive number")
-  stopif(!is.numeric(a) || length(a) != 1 || !is.numeric(b) || length(b) != 1,
+  mod_stopif(!is.numeric(a) || length(a) != 1 || !is.numeric(b) || length(b) != 1,
          "'a' and 'b' must be numeric scalars")
 
   if (scale) {
@@ -261,9 +261,9 @@ estMForNodesInRange <- function(k, a, b,
                                 tol = 1e-6,
                                 maxiter = 100,
                                 scale = TRUE) {
-  stopif(!is.numeric(k) || length(k) != 1 || k <= 0,
+  mod_stopif(!is.numeric(k) || length(k) != 1 || k <= 0,
          "'k' must be a single positive number")
-  stopif(!is.numeric(a) || length(a) != 1 || !is.numeric(b) || length(b) != 1,
+  mod_stopif(!is.numeric(a) || length(a) != 1 || !is.numeric(b) || length(b) != 1,
          "'a' and 'b' must be numeric scalars")
 
   if (scale) {
@@ -286,7 +286,7 @@ estMForNodesInRange <- function(k, a, b,
       upper <- upper * 2
       iter <- iter + 1
     }
-    stopif(f(upper) < 0, "Unable to bracket root: increase maxiter or provide a larger 'upper'.")
+    mod_stopif(f(upper) < 0, "Unable to bracket root: increase maxiter or provide a larger 'upper'.")
   }
 
   # Use uniroot for inversion
@@ -297,11 +297,11 @@ estMForNodesInRange <- function(k, a, b,
 
 
 pruneQuadratureNodes <- function(quadw, quadn, quadf, a, b, tol) {
-  stopif(!is.numeric(quadw), "`quadw` must be numeric.")
+  mod_stopif(!is.numeric(quadw), "`quadw` must be numeric.")
 
   weight_vec <- as.numeric(quadw)
   n.nodes <- NCOL(quadf)
-  stopif(length(weight_vec) != n.nodes,
+  mod_stopif(length(weight_vec) != n.nodes,
          "`quadw` must have the same length as the number of quadrature nodes.")
 
   n.input <- NROW(quadn)
@@ -327,7 +327,7 @@ pruneQuadratureNodes <- function(quadw, quadn, quadf, a, b, tol) {
   rs <- rowSums(weighted)
 
   # guard against log(0) / division by 0
-  warnif(any(rs < 0), "Found negative quadrature node contributions, this is likely a bug!")
+  mod_warnif(any(rs < 0), "Found negative quadrature node contributions, this is likely a bug!")
   rs.safe <- pmax(rs, .Machine$double.xmin)
 
   I.full <- sum(log(rs.safe))
@@ -347,11 +347,11 @@ pruneQuadratureNodes <- function(quadw, quadn, quadf, a, b, tol) {
   is.removable <- is.removable[order(contrib.rank)]
   removable    <- which(is.removable)
 
-  warnif(sum(contributions[removable]) > tol * abs(I.full),
-         "Something went wrong when pruning nodes:\n",
-         "More information than expected was lost!\n", .newline = TRUE)
+  mod_warnif(sum(contributions[removable]) > tol * abs(I.full),
+         paste0("Something went wrong when pruning nodes:\n",
+         "More information than expected was lost!\n"), .newline = TRUE)
 
-  stopif(length(removable) >= NROW(quadn), "Cannot remove all nodes!")
+  mod_stopif(length(removable) >= NROW(quadn), "Cannot remove all nodes!")
 
   I.cur <- I.full
   I.err <- 0

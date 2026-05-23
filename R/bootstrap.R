@@ -148,9 +148,9 @@ bootstrap_modsem.modsem_da <- function(model,
   P        <- min(P.max, N * R)
   parTable <- parameter_estimates(model)
 
-  warnif(P.max <= N, "`P.max` is less than `N`!")
+  mod_warnif(P.max <= N, "`P.max` is less than `N`!")
 
-  stopif(!is.null(cluster) && type != "nonparametric",
+  mod_stopif(!is.null(cluster) && type != "nonparametric",
          "cluster bootstrap is only available with `type=\"nonparametric\"`!")
 
   if (!is.null(cluster) && !is.null(model$args$cluster))
@@ -162,7 +162,7 @@ bootstrap_modsem.modsem_da <- function(model,
   population <- switch(type,
     parametric    = simulatedGroupsToDf(simulateDataParTable(parTable, N = P, colsOVs = ovs), type = "OV"),
     nonparametric = data,
-    stop2("Unrecognized type!\n")
+    mod_msg_stop("Unrecognized type!\n")
   )
 
   argList              <- model$args
@@ -196,7 +196,7 @@ bootstrap_modsem.modsem_da <- function(model,
 
   } else out <- vector("list", length = R)
 
-  ERROR <- \(e) {warning2(e, immediate. = FALSE); NULL}
+  ERROR <- \(e) {mod_msg_warn(e); NULL}
 
   for (i in seq_len(R)) {
     printedLines <- utils::capture.output(split = TRUE, {
@@ -290,11 +290,11 @@ bootstrap_modsem.function <- function(model = modsem,
   data <- as.data.frame(data)
   N    <- NROW(data)
 
-  ERROR <- \(e) {warning2(e, immediate. = FALSE); NULL}
+  ERROR <- \(e) {mod_msg_warn(e); NULL}
 
   if (!is.null(cluster.boot)) {
-    stopif(length(cluster.boot) > 1L, "`cluster.boot` must be of length 1!")
-    stopif(!cluster.boot %in% colnames(data), "`cluster.boot` must be a column in `data`!")
+    mod_stopif(length(cluster.boot) > 1L, "`cluster.boot` must be of length 1!")
+    mod_stopif(!cluster.boot %in% colnames(data), "`cluster.boot` must be a column in `data`!")
     cluster.values <- data[[cluster.boot]]
 
   } else cluster.values <- NULL
@@ -347,7 +347,7 @@ resample <- function(df, n.out = NROW(df), cluster = NULL, replace = TRUE) {
     return(df.orig[idx, , drop = FALSE])
   }
 
-  stopif(length(cluster) != NROW(df.orig), "Cluster must be of same lenght as data!")
+  mod_stopif(length(cluster) != NROW(df.orig), "Cluster must be of same lenght as data!")
 
   clusters <- unique(cluster)
   G <- length(clusters)
@@ -363,7 +363,7 @@ resample <- function(df, n.out = NROW(df), cluster = NULL, replace = TRUE) {
 checkWarnRCS <- function(model) {
   isRCS_Model <- attr(model, "isRCS_Model")
 
-  warnif(!is.null(isRCS_Model) && isRCS_Model,
-         "bootstrapping a model with estimated with `rcs=TRUE` directly, will\n",
-         "generate naive standard errors! Use `bootstrap_modsem.function()` instead!")
+  mod_warnif(!is.null(isRCS_Model) && isRCS_Model,
+         paste0("bootstrapping a model with estimated with `rcs=TRUE` directly, will\n",
+         "generate naive standard errors! Use `bootstrap_modsem.function()` instead!"))
 }

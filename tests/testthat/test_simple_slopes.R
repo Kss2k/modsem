@@ -60,7 +60,7 @@ checkInputValidation <- function(x.default = "X",
       argsWrong[[par]] <- "I_DO_NOT_EXIST"
       testthat::expect_error(
          do.call(FUN, argsWrong),
-         regexp = sprintf("Unrecognized variable: I_DO_NOT_EXIST\\!")
+         regexp = sprintf(".*Unrecognized variable: I_DO_NOT_EXIST.*")
       )
     }
   }

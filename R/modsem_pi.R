@@ -213,9 +213,9 @@ modsem_pi <- function(model.syntax = NULL,
                       ...) {
   method <- tolower(method)
 
-  stopif(is.null(model.syntax), "No model syntax provided in modsem")
-  stopif(is.null(data), "No data provided in modsem")
-  stopif(!is.data.frame(data) && !is.matrix(data), "data must be a data.frame or matrix!")
+  mod_stopif(is.null(model.syntax), "No model syntax provided in modsem")
+  mod_stopif(is.null(data), "No data provided in modsem")
+  mod_stopif(!is.data.frame(data) && !is.matrix(data), "data must be a data.frame or matrix!")
 
   if (!is.null(cluster)) {
     est <- modsemPICluster(
@@ -308,8 +308,8 @@ modsem_pi <- function(model.syntax = NULL,
       FUN = function(elems) any(elems %in% modelSpec$composites)
     )
     if (any(hasCompositeElement)) {
-      stop2('method="ca" does not support composite variables in interaction terms. ',
-            'Use method="dblcent", "rca", "uca", or "pind" instead.')
+      mod_msg_stop(paste0('method="ca" does not support composite variables in interaction terms. ',
+            'Use method="dblcent", "rca", "uca", or "pind" instead.'))
     }
   }
 
@@ -320,12 +320,12 @@ modsem_pi <- function(model.syntax = NULL,
   # Data Processing
   oVs        <- c(modelSpec$oVs, group)
   missingOVs <- setdiff(oVs, colnames(data))
-  stopif(length(missingOVs), "Missing variables in data:\n", missingOVs)
+  mod_stopif(length(missingOVs), paste0("Missing variables in data:\n", missingOVs))
 
   completeCases <- stats::complete.cases(data[oVs])
 
   if (any(!completeCases) && (is.null(na.rm) || na.rm)) {
-    warnif(is.null(na.rm), "Removing missing values list-wise.")
+    mod_warnif(is.null(na.rm), "Removing missing values list-wise.")
     data <- data[completeCases, ]
   }
 
@@ -396,7 +396,7 @@ modsem_pi <- function(model.syntax = NULL,
     lavEst <- tryCatch(LAVFUN(newSyntax, newData, estimator = estimator,
                               group = group, ...) |> lavWrapper(),
                        error = function(cnd) {
-                         warning2(capturePrint(cnd))
+                         mod_msg_warn(capturePrint(cnd))
                          NULL
                        })
     coefParTable <- tryCatch(lavaan::parameterEstimates(lavEst),
@@ -429,7 +429,7 @@ createProdInds <- function(modelSpec,
                             .f = calculateResidualsDf, data = data)
 
   } else if (!is.logical(residuals.prods)) {
-    stop2("residualProds was neither FALSE nor TRUE in createProdInds")
+    mod_msg_stop("residualProds was neither FALSE nor TRUE in createProdInds")
   }
 
   if (center.after) {
@@ -447,7 +447,7 @@ createIndProds <- function(relDf, indNames, data, centered = FALSE) {
   inds      <- data[indNames]
   isNumeric <- sapply(inds, is.numeric)
 
-  stopif(any(!isNumeric), "Expected inds to be numeric when creating prods")
+  mod_stopif(any(!isNumeric), "Expected inds to be numeric when creating prods")
 
   if (centered) {
     inds <- lapplyDf(inds, FUN = function(x) x - mean(x, na.rm = TRUE))
@@ -545,7 +545,7 @@ addSpecsParTable <- function(modelSpec,
   }
 
   if (!is.logical(residual.cov.syntax)) {
-    stop2("residual.cov.syntax is not FALSE or TRUE in generateSyntax")
+    mod_msg_stop("residual.cov.syntax is not FALSE or TRUE in generateSyntax")
 
   } else if (residual.cov.syntax && res.cov.method != "none") {
     # Skip residual covariances for fully-composite product terms unless
@@ -615,10 +615,10 @@ addSpecsParTable <- function(modelSpec,
 # this function assumes a prod of only two latent variables no more
 getParTableRestrictedMean <- function(prodName, elementsInProdName,
                                       createLabels = TRUE, pt) {
-  stopif(length(elementsInProdName) > 2,
-         "The mean of a latent prod should not be constrained when there",
+  mod_stopif(length(elementsInProdName) > 2,
+         paste0("The mean of a latent prod should not be constrained when there",
          " are more than two variables in the prod term. Please use a",
-         " different method \n")
+         " different method \n"))
 
   meanLabel     <- createLabelMean(prodName)
   meanStructure <- createParTableRow(vecLhsRhs = c(prodName, ""),
@@ -645,8 +645,8 @@ getParTableMeasure <- function(dependentName,
                                predictorNames,
                                operator = "=~",
                                firstFixed = FALSE) {
-  stopif(length(dependentName) > 1, "Expected dependentName ",
-         "to be a single string in getParTableMeasure")
+  mod_stopif(length(dependentName) > 1, paste0("Expected dependentName ",
+         "to be a single string in getParTableMeasure"))
 
   if (length(predictorNames) == 1 && dependentName == predictorNames) {
     # In this case it should be seen as an observed variable,
@@ -791,7 +791,7 @@ get_pi_data <- function(model.syntax, data, method = "dblcent",
 #' lav_est <- extract_lavaan(est)
 extract_lavaan <- function(object) {
   if (!inherits(object, "modsem_pi")) {
-    stop2("object is not of class modsem_pi")
+    mod_msg_stop("object is not of class modsem_pi")
   }
   object$lavaan
 }
@@ -831,7 +831,7 @@ modsemPICluster <- function(model.syntax = NULL,
                             rcs.scale.corrected = FALSE,
                             LAVFUN = lavaan::sem,
                             ...) {
-  stopif(na.rm, "`na.rm=TRUE` can currently not be paired with the `cluster` argument!")
+  mod_stopif(na.rm, "`na.rm=TRUE` can currently not be paired with the `cluster` argument!")
 
   levelPattern <- "level([:blank:]*):([:blank:]*)([A-z]|[0-9]+)"
   levelHeaders <- unlist(stringr::str_extract_all(model.syntax, pattern=levelPattern))
@@ -840,7 +840,7 @@ modsemPICluster <- function(model.syntax = NULL,
   if (!length(levelHeaders)) levelHeaders <- ""
   else                       syntaxBlocks <- syntaxBlocks[-1]
 
-  stopif(length(syntaxBlocks) != length(levelHeaders), "Different number of blocks than level headers!")
+  mod_stopif(length(syntaxBlocks) != length(levelHeaders), "Different number of blocks than level headers!")
 
   data$ROW_IDENTIFIER_ <- seq_len(nrow(data))
   has.interaction      <- FALSE
@@ -944,7 +944,7 @@ modsemPICluster <- function(model.syntax = NULL,
         ))
       },
       error = function(cnd) {
-        warning2(capturePrint(cnd))
+        mod_msg_warn(capturePrint(cnd))
         NULL
       }
     )

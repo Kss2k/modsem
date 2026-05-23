@@ -66,7 +66,7 @@
 #'
 #' @export
 standardize_model <- function(model, monte.carlo = FALSE, mc.reps = 10000, ...) {
-  stopif(!inherits(model, "modsem_da"), "The model must be of class 'modsem_da'.")
+  mod_stopif(!inherits(model, "modsem_da"), "The model must be of class 'modsem_da'.")
 
   solution <- standardizedSolutionCOEFS(model, monte.carlo = monte.carlo, mc.reps = mc.reps, ...)
   all.pars <- names(coef(model, type = "all"))

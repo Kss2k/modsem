@@ -14,11 +14,11 @@ runMultipleMethods <- function(model.syntax,
     estimates[[method]] <- tryCatch(
       modsem(model.syntax, data, method, ...),
       warning = function(w) {
-        warning2("Warning in ", method, "\n", capturePrint(w), "\n")
+        mod_msg_warn(paste0("Warning in ", method, "\n", capturePrint(w), "\n"))
         modsem(model.syntax, data, method, ...)
       },
       error = function(e) {
-        warning2("Error in ", method, "\n", capturePrint(e))
+        mod_msg_warn(paste0("Error in ", method, "\n", capturePrint(e)))
         NA
       }
     )

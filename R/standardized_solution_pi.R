@@ -29,7 +29,7 @@ correctStdSolutionPI <- function(object, parTable.std) {
     parTable.g     <- parTable[parTable$group == g, , drop = FALSE]
     parTable.g.std <- parTable.std[parTable$group == g, , drop = FALSE]
 
-    stopif(!"est" %in% cols,
+    mod_stopif(!"est" %in% cols,
            "The parTable must contain the 'est' column for the standardized solution.")
 
     for (xz in names(intTerms)) {
@@ -41,8 +41,7 @@ correctStdSolutionPI <- function(object, parTable.std) {
       y <- rowsXZ$lhs[[1]]
 
       if (!length(y)) {
-        warning2("No endogenous variable found for interaction term '", xz, "'.",
-                 immediate. = FALSE)
+        mod_msg_warn(paste0("No endogenous variable found for interaction term '", xz, "'."))
         next
       }
 
@@ -128,11 +127,10 @@ correctStdSolutionPI <- function(object, parTable.std) {
     etas <- unique(parTable.g.std[parTable.std.new$op == "~", "lhs"])
     varEtas <- calcVarParTable(etas, parTable.g.std)
 
-    warnif(
+    mod_warnif(
       any(abs(varEtas - 1) > 1e-10),
-      "Some variances are not equal to 1! ",
-      "This indicates that the solution was not standardized correctly!",
-      immediate. = FALSE
+      paste0("Some variances are not equal to 1! ",
+      "This indicates that the solution was not standardized correctly!")
     )
 
     parTable.std.new <- rbind(parTable.std.new, parTable.g.std)
@@ -142,7 +140,7 @@ correctStdSolutionPI <- function(object, parTable.std) {
   constrExprs <- sortConstrExprsFinalPt(parTable.std) # not .new
 
   errorWarning <- function(e) {
-    warning2("Calculation of custom parameter failed: ", e, immediate. = FALSE)
+    mod_msg_warn(paste0("Calculation of custom parameter failed: ", e))
     NA
   }
 

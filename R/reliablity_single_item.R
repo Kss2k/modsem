@@ -82,8 +82,8 @@ relcorr_single_item <- function(syntax,
                                   scale.corrected = scale.corrected,
                                   warn.lav = warn.lav))
 
-  stopif(length(group) > 1L, "`group` must be a character vector of length 1!")
-  stopif(!group %in% colnames(data), sprintf("Unable to find `%s` in data!", group))
+  mod_stopif(length(group) > 1L, "`group` must be a character vector of length 1!")
+  mod_stopif(!group %in% colnames(data), sprintf("Unable to find `%s` in data!", group))
 
   group.info <- parseModelArgumentsByGroupDA(
     model.syntax = syntax,
@@ -153,14 +153,14 @@ relcorrSingleItemGroup <- function(syntax = NULL,
   higherOrderLVs <- getHigherOrderLVs(parTable)
   firstOrderLVs  <- setdiff(lVs, higherOrderLVs)
 
-  stopif(any(higherOrderLVs %in% allInds),
+  mod_stopif(any(higherOrderLVs %in% allInds),
          "Third order (or higher) latent variables are not allowed (yet)!")
 
   choose <- if (is.null(choose)) lVs else choose
   ignore <- setdiff(lVs, choose)
 
-  warnif(any(!choose %in% lVs), "Could not find latent variables:\n",
-         paste(choose[!choose %in% lVs], collapse = ", "))
+  mod_warnif(any(!choose %in% lVs), paste0("Could not find latent variables:\n",
+         paste(choose[!choose %in% lVs], collapse = ", ")))
   choose <- choose[choose %in% lVs]
 
   ignoreRows <- parTableOuter$lhs %in% ignore
@@ -168,13 +168,13 @@ relcorrSingleItemGroup <- function(syntax = NULL,
   parTableInner <- rbind(parTableInner, parTableOuter[ignoreRows, ])
   parTableOuter <- parTableOuter[!ignoreRows, ]
 
-  stopif(!NROW(parTableOuter), "Cannot ignore all latent variables when creating ",
-         "reliability corrected items!")
+  mod_stopif(!NROW(parTableOuter), paste0("Cannot ignore all latent variables when creating ",
+         "reliability corrected items!"))
 
-  warnif(any(!canBeNumeric(parTableOuter$mod, includeNA = TRUE)),
-         "Labels and modifiers in the measurement model used to create reliability ",
+  mod_warnif(any(!canBeNumeric(parTableOuter$mod, includeNA = TRUE)),
+         paste0("Labels and modifiers in the measurement model used to create reliability ",
          "corrected single items will be ignored!\nThis may cause the model constraints ",
-         "in the structural model to break!", immediate. = FALSE)
+         "in the structural model to break!"))
 
   lVs  <- setdiff(firstOrderLVs, ignore)
   indsLVs <- getIndsLVs(parTableOuter, lVs = lVs)
@@ -192,9 +192,8 @@ relcorrSingleItemGroup <- function(syntax = NULL,
   # Check if there are any indicators in the structural model
   indsInInner <- parTableInner$lhs %in% inds | parTableInner$rhs %in% inds
   if (any(indsInInner)) {
-    warning2("Removing expressions containing indicators!\n",
-             capturePrint(parTableInner[indsInInner, c("lhs", "op", "rhs")]),
-             immediate. = FALSE)
+    mod_msg_warn(paste0("Removing expressions containing indicators!\n",
+             capturePrint(parTableInner[indsInInner, c("lhs", "op", "rhs")])))
     parTableInner <- parTableInner[!indsInInner, ]
   }
 
@@ -286,10 +285,10 @@ relcorrSingleItemGroup <- function(syntax = NULL,
   }
 
   if (any(secondOrder)) {
-    message(
-      "Correcting first order items/lVs for higher order measurement model!\n",
-      "Note that the first order LVs no longer can be used directly in the\n",
-      "structural model!"
+    mod_msg_note(
+      paste0("Correcting first order items/lVs for higher order measurement model!",
+      "Note that the first order LVs no longer can be used directly in the",
+      "structural model!")
     )
 
     lVs2        <- lVs[secondOrder]
@@ -566,8 +565,8 @@ calcChronbach <- function(R, x) {
 
   if (k == 1) return(1) # should be treated like an observed variable
 
-  warnif(any(Rx < 0), "Some item covariances are negative! Consider ",
-         "recoding your items!")
+  mod_warnif(any(Rx < 0), paste0("Some item covariances are negative! Consider ",
+         "recoding your items!"))
 
   Rx <- abs(Rx)
   varSum <- sum(diag(Rx))
@@ -581,8 +580,8 @@ calcConstructRel <- function(lambda.std, lV) {
   lambda.std <- lambda.std[, lV, drop=FALSE]
   lambda.std <- lambda.std[lambda.std != 0]
 
-  warnif(any(lambda.std < 0), "Some items have negative factor loadings!\n",
-         "Consider recoding your items!")
+  mod_warnif(any(lambda.std < 0), paste0("Some items have negative factor loadings!\n",
+         "Consider recoding your items!"))
 
   sum(lambda.std) ^ 2 / (sum(lambda.std) ^ 2 + sum(1 - lambda.std ^ 2))
 }

@@ -25,9 +25,9 @@ m3 <- '
 '
 
 testthat::expect_error(modsem(m3, oneInt, method = "lms"),
-                       regexp = "Missing observed variables in data:.*jk.*")
+                       regexp = ".*Missing observed variables in data:.*jk.*")
 testthat::expect_error(modsem(m3, oneInt, method = "qml"),
-                       regexp = "Missing observed variables in data:.*jk.*")
+                       regexp = ".*Missing observed variables in data:.*jk.*")
 
 
 m4 <- '
@@ -41,7 +41,7 @@ m4 <- '
 '
 
 testthat::expect_error(modsem(m4, oneInt, method = "qml"),
-                       regexp = "The same indicator cannot be used .* y1")
+                       regexp = ".*The same indicator cannot be used .* y1")
 
 
 tpb_main <- "
@@ -63,4 +63,4 @@ tpb_cov <- "
 
 testthat::expect_error(modsem(tpb_main, data = TPB, method = "lms",
                               calc.se=FALSE, cov.syntax = tpb_cov),
-                       regexp = "All latent variables in the cov-model must be an exogenous variable in the main model")
+                       regexp = ".*All latent variables.*")

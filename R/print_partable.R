@@ -307,7 +307,7 @@ pasteLabels <- function(vars, labels, width = 14) {
   widthLabel     <- min(maxchar(labels), width - initWidthVar - 3L) # space + ()
   widthVar       <- width - widthLabel - 3L
 
-  warnif(widthVar + widthLabel + 3L != width, "Mismatching widhts!")
+  mod_warnif(widthVar + widthLabel + 3L != width, "Mismatching widhts!")
 
   pasted <- paste0(vars, " (", labels, ")")
   widths <- nchar(pasted)

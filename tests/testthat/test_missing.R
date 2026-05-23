@@ -42,7 +42,7 @@ testthat::expect_true(any(is.na(est$data)))
 testthat::expect_warning(
   modsem(m1, oneInt2, method = "lms", missing = "complete", convergence.abs = 1,
          calc.se = FALSE),
-  regexp = "Removing.*Consider.*"
+  regexp = "Removing missing values list-wise"
 )
 
 

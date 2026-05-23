@@ -66,7 +66,7 @@ modsem_mimpute <- function(model.syntax,
                            verbose = interactive(),
                            se = c("simple", "full"),
                            ...) {
-  stopif(!method %in% c("lms", "qml"),
+  mod_stopif(!method %in% c("lms", "qml"),
          "Multiple imputation is only available for the LMS and QML approaches!")
 
   modsem_mimput_modsem_da(
@@ -97,9 +97,9 @@ modsem_mimput_modsem_da <- function(model.syntax,
   ovs      <- getOVs(parTable)
 
   missing.cols <- !ovs %in% colnames(data)
-  stopif(any(missing.cols),
-         "Variables missing from data:\n",
-         paste(ovs[missing.cols], sep = "\n"))
+  mod_stopif(any(missing.cols),
+         paste0("Variables missing from data:\n",
+         paste(ovs[missing.cols], sep = "\n")))
 
   data <- data[, ovs, drop = FALSE]
 
@@ -187,8 +187,8 @@ modsem_mimput_modsem_da <- function(model.syntax,
   failed <- vapply(fits, FUN.VALUE = logical(1L), FUN = is.null)
 
   if (any(failed)) {
-    warning2(sprintf("Model estimation failed in %d out of %d impuations!",
-                     sum(failed), m), immediate. = FALSE)
+    mod_msg_warn(sprintf("Model estimation failed in %d out of %d impuations!",
+                     sum(failed), m))
 
     fits      <- fits[!failed]
     COEF.ALL  <- COEF.ALL[!failed]

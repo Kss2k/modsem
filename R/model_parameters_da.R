@@ -307,11 +307,11 @@ fillNA_Matrix <- function(X, theta, pattern) {
   idx <- is.na(X) & !is.nan(X)
   values <- fetch(theta, pattern)
   if (length(values) && sum(idx) != length(values)) {
-    stop2("Mismatch when filling matrix for pattern `", pattern, "`: expected ",
-          sum(idx), " values but got ", length(values))
+    mod_msg_stop(paste0("Mismatch when filling matrix for pattern `", pattern, "`: expected ",
+          sum(idx), " values but got ", length(values)))
   }
   if (sum(idx) > 0 && length(values) == 0) {
-    stop2("No values found in theta vector for pattern `", pattern, "`.")
+    mod_msg_stop(paste0("No values found in theta vector for pattern `", pattern, "`."))
   }
   X[idx] <- values
   X
@@ -321,11 +321,11 @@ fillNA_Matrix <- function(X, theta, pattern) {
 fillSymmetric <- function(mat, values) {
   idx <- is.na(mat) & !is.nan(mat)
   if (sum(idx) > 0 && length(values) == 0) {
-    stop2("No values provided to fill symmetric matrix.")
+    mod_msg_stop("No values provided to fill symmetric matrix.")
   }
   if (length(values) && length(values) != sum(idx)) {
-    stop2("Mismatch when filling symmetric matrix: expected ", sum(idx),
-          " values but got ", length(values))
+    mod_msg_stop(paste0("Mismatch when filling symmetric matrix: expected ", sum(idx),
+          " values but got ", length(values)))
   }
   mat[idx] <- values
   mat[upper.tri(mat)] <- t(mat)[upper.tri(mat)]
@@ -362,13 +362,13 @@ getParamBounds <- function(model) {
 
 checkStartingParams <- function(start, model) {
   if (length(start) != length(model$theta)) {
-    stop2("The length of the starting parameters does not match the number of parameters in the model")
+    mod_msg_stop("The length of the starting parameters does not match the number of parameters in the model")
   }
   if (is.null(names(start))) {
     names(start) <- names(model$theta)
   }
   if (!all(names(start) %in% names(model$theta))) {
-    stop2("The names of the starting parameters do not match the names of the parameters in the model")
+    mod_msg_stop("The names of the starting parameters do not match the names of the parameters in the model")
   }
 
   NULL
@@ -408,9 +408,9 @@ calcPhiTheta <- function(theta, model, method) {
       labVals <- allVals[labels != ""]
       labels  <- labels[labels != ""]
       missing <- setdiff(labels, names(theta))
-      stopif(length(missing),
-             "Missing labelled parameters in theta vector: ",
-             paste(missing, collapse = ", "))
+      mod_stopif(length(missing),
+             paste0("Missing labelled parameters in theta vector: ",
+             paste(missing, collapse = ", ")))
 
       theta[select][labels] <- labVals
     }
@@ -506,7 +506,7 @@ getGradientStruct <- function(model, theta) {
   tryCatch(
     getGradientStructSimple(model = model, theta = theta),
     error = function(e) {
-      warning2("Failed to compute gradient structure: ", e$message)
+      mod_msg_warn(paste0("Failed to compute gradient structure: ", e$message))
 
       list(
         locations   = NULL,
