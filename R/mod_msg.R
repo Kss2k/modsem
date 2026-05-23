@@ -1,4 +1,5 @@
 # Copied (almost) directly from lavaan/R/lav_msg.R
+modsem_cache_env <- new.env(parent = emptyenv())
 
 # Displays a message (... concatenated with spaces in between) with header
 # 'modsem(function):', except when showheader == FALSE, and formatted to have
@@ -55,7 +56,8 @@ mod_msg <- function(wat, txt_width = getOption("width", 80L),
       "^eval$", "^try", "^doTryCatch", "^mod_msg", "^stop$", "^warning$",
       "^which$", "^unique$", "^as\\.", "^unlist$", "^message$",
       "^source$", "^withVisible$", "^tryCatch.W.E$", "^withCallingHandlers$",
-      "^do.call$", "^paste", "^mod_stopif", "^mod_warnif"
+      "^do.call$", "^paste", "^mod_stopif", "^mod_warnif", "^warn", "^stop",
+      "^message"
     )
     sc <- sys.calls()
     sc_i <- length(sc)
