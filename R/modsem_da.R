@@ -617,13 +617,25 @@ modsem_da <- function(model.syntax = NULL,
           collapse = "\n"
         )
 
-        mod_msg_warn(paste0("warning when optimizing starting parameters:\n", fwarnings))
+        mod_msg_warn_immediate(
+          paste0("warning when optimizing starting parameters:\n", fwarnings)
+        )
       }
 
       result$result
 
     }, error = function(e) {
-      mod_msg_warn(paste0("unable to optimize starting parameters:\n", e))
+      mod_msg_warn_immediate(
+        paste0("unable to optimize starting parameters:\n", e)
+      )
+
+      if (is.null(max.step) && args$max.step <= 1 && method == "lms") {
+        # When we don't have optimized starting parameters with LMS, the algorithm
+        # will likely not converge with the default max.step
+        mod_msg_note("Increasing max step in EM-algorithm to 50")
+        args$max.step <<- 50
+      }
+
       model
     })
   }
