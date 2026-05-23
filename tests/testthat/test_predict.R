@@ -15,13 +15,19 @@ tpb <- '
 '
 
 
-TPB2 <- TPB
-TPB2[23:150, "att1"] <- NA
+testthat::expect_no_condition({
+  TPB2 <- TPB
+  TPB2[23:150, "att1"] <- NA
 
-fit <- modsem(tpb, TPB2, method = "lms", nodes = 32, missing = "fiml")
-summary(lms2)
+  fit_fiml <- modsem(tpb, TPB2, method = "lms", nodes = 32, missing = "fiml")
 
-ebm <- modsemPredictDA(fit, method = "EBM")
-ml <- modsemPredictDA(fit, method = "ML")
-cov(ebm$Eta)
-cov(ml$Eta)
+  ebm <- modsemPredictDA(fit_fiml, method = "EBM")
+  ml <- modsemPredictDA(fit_fiml, method = "ML")
+})
+  
+testthat::expect_no_condition({
+  fit_qml <- modsem(tpb, TPB, method = "qml")
+
+  ebm <- modsemPredictDA(fit_qml, method = "EBM")
+  ml <- modsemPredictDA(fit_qml, method = "ML")
+})
