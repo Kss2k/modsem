@@ -52,7 +52,7 @@ values or factor scores from modsem models."></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Predict From <code>modsem</code> Models</h1>
-      <small class="dont-index">Source: <a href="https://github.com/kss2k/modsem/blob/main/R/generics.R" class="external-link"><code>R/generics.R</code></a>, <a href="https://github.com/kss2k/modsem/blob/main/R/generics_modsem_da.R" class="external-link"><code>R/generics_modsem_da.R</code></a>, <a href="https://github.com/kss2k/modsem/blob/main/R/generics_modsem_pi.R" class="external-link"><code>R/generics_modsem_pi.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/kss2k/modsem/blob/main/R/generics.R" class="external-link"><code>R/generics.R</code></a>, <a href="https://github.com/kss2k/modsem/blob/main/R/generics_modsem_pi.R" class="external-link"><code>R/generics_modsem_pi.R</code></a>, <a href="https://github.com/kss2k/modsem/blob/main/R/predict_da.R" class="external-link"><code>R/predict_da.R</code></a></small>
       <div class="d-none name"><code>modsem_predict.Rd</code></div>
     </div>
 
@@ -65,18 +65,18 @@ values or factor scores from <code><a href="modsem.html">modsem</a></code> model
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">modsem_predict</span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span></span>
 <span></span>
+<span><span class="co"># S3 method for class 'modsem_pi'</span></span>
+<span><span class="fu">modsem_predict</span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span></span>
+<span></span>
 <span><span class="co"># S3 method for class 'modsem_da'</span></span>
 <span><span class="fu">modsem_predict</span><span class="op">(</span></span>
 <span>  <span class="va">object</span>,</span>
-<span>  standardized <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  H0 <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  newdata <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  center.data <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"EBM"</span>, <span class="st">"ML"</span>, <span class="st">"Bartlett"</span>, <span class="st">"Regression"</span><span class="op">)</span>,</span>
+<span>  type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"lv"</span>, <span class="st">"ov"</span>, <span class="st">"all"</span><span class="op">)</span>,</span>
+<span>  standardized <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  <span class="va">...</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># S3 method for class 'modsem_pi'</span></span>
-<span><span class="fu">modsem_predict</span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -84,46 +84,65 @@ values or factor scores from <code><a href="modsem.html">modsem</a></code> model
 
 
 <dl><dt id="arg-object">object<a class="anchor" aria-label="anchor" href="#arg-object"></a></dt>
-<dd><p><code><a href="modsem_da.html">modsem_da</a></code> object</p></dd>
+<dd><p>An object of class <code>modsem_pi</code> or <code>modsem_da</code>,
+respectively.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
-<dd><p>Further arguments passed to <code>lavaan::predict</code>;
-currently ignored by the <code><a href="modsem_da.html">modsem_da</a></code> method.</p></dd>
-
-
-<dt id="arg-standardized">standardized<a class="anchor" aria-label="anchor" href="#arg-standardized"></a></dt>
-<dd><p>Logical. If <code>TRUE</code>, return standardized factor scores.</p></dd>
-
-
-<dt id="arg-h-">H0<a class="anchor" aria-label="anchor" href="#arg-h-"></a></dt>
-<dd><p>Logical. If <code>TRUE</code> (default), use the baseline model to compute factor scores.
-If <code>FALSE</code>, use the model specified in <code>object</code>. Using <code>H0 = FALSE</code> is not recommended!</p></dd>
+<dd><p>Further arguments passed to <code>lavaan::predict</code> for
+<code><a href="modsem_pi.html">modsem_pi</a></code> objects; currently ignored by the
+<code><a href="modsem_da.html">modsem_da</a></code> method.</p></dd>
 
 
 <dt id="arg-newdata">newdata<a class="anchor" aria-label="anchor" href="#arg-newdata"></a></dt>
-<dd><p>Compute factor scores based on a different dataset, than the one used in the model estimation.</p></dd>
+<dd><p>Optional <code>data.frame</code> or matrix. If supplied, factor
+scores are computed for these observations instead of the data used during
+model estimation. Must contain all observed-variable columns required by
+the model; missing values are handled via FIML. Currently only supported
+by the <code><a href="modsem_da.html">modsem_da</a></code> method.</p></dd>
 
 
-<dt id="arg-center-data">center.data<a class="anchor" aria-label="anchor" href="#arg-center-data"></a></dt>
-<dd><p>Should data be centered before computing factor scores? Default is <code>TRUE</code>.</p></dd>
+<dt id="arg-method">method<a class="anchor" aria-label="anchor" href="#arg-method"></a></dt>
+<dd><p>Character. Scoring method. One of <code>"EBM"</code> (Empirical
+Bayes Modal; MAP estimate of the posterior), <code>"ML"</code> (maximum
+likelihood), <code>"Bartlett"</code> (alias for <code>"EBM"</code>), or
+<code>"Regression"</code> (alias for <code>"ML"</code>). For <code><a href="modsem_da.html">modsem_da</a></code>
+objects this selects the optimisation-based scoring algorithm. For
+<code><a href="modsem_pi.html">modsem_pi</a></code> objects the argument is forwarded to
+<code><a href="https://rdrr.io/pkg/lavaan/man/lavPredict.html" class="external-link">lavaan::lavPredict</a></code>, which accepts the same <code>method</code> values.</p></dd>
+
+
+<dt id="arg-type">type<a class="anchor" aria-label="anchor" href="#arg-type"></a></dt>
+<dd><p>Character. Which scores to return: <code>"lv"</code> for latent
+variable scores only (default), <code>"ov"</code> for model-implied observed
+variable scores, or <code>"all"</code> for both combined. For
+<code><a href="modsem_da.html">modsem_da</a></code> objects this is handled directly; for
+<code><a href="modsem_pi.html">modsem_pi</a></code> objects it is forwarded to
+<code><a href="https://rdrr.io/pkg/lavaan/man/lavPredict.html" class="external-link">lavaan::lavPredict</a></code>, which supports the same <code>type</code> values.</p></dd>
+
+
+<dt id="arg-standardized">standardized<a class="anchor" aria-label="anchor" href="#arg-standardized"></a></dt>
+<dd><p>Logical. If <code>TRUE</code>, each score column is
+standardised (mean 0, SD 1) before returning. Currently only used by the
+<code><a href="modsem_da.html">modsem_da</a></code> method.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>* For <code><a href="modsem_pi.html">modsem_pi</a></code>: whatever <code>lavaan::predict()</code>, which usually
-  returns a matrix of factor scores.
-* For <code><a href="modsem_da.html">modsem_da</a></code>: a numeric matrix \(n \times p\), where \(n\) is the number of
-  (complete) observations in the dataset, and \(p\) the number of latent variables. Each
-  column contains either raw or standardised factor scores, depending on the
-  <code>standardized</code> argument.</p>
+    <p>* For <code><a href="modsem_pi.html">modsem_pi</a></code>: whatever <code>lavaan::predict()</code> returns,
+  which is usually a matrix of factor scores.
+* For <code><a href="modsem_da.html">modsem_da</a></code>: a numeric matrix with one row per
+  observation. Columns depend on <code>type</code>: latent variable scores
+  (<code>"lv"</code>), model-implied observed-variable scores (<code>"ov"</code>), or
+  both (<code>"all"</code>). Columns are optionally standardised if
+  <code>standardized = TRUE</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="methods-by-class-">Methods (by class)<a class="anchor" aria-label="anchor" href="#methods-by-class-"></a></h2>
 
-<ul><li><p><code>modsem_predict(modsem_da)</code>: Computes (optionally standardised) factor scores via the
-regression method using the baseline model unless <code>H0 = FALSE</code>.</p></li>
-<li><p><code>modsem_predict(modsem_pi)</code>: Wrapper for <code>lavaan::predict</code></p></li>
+<ul><li><p><code>modsem_predict(modsem_pi)</code>: Wrapper for <code>lavaan::predict</code></p></li>
+<li><p><code>modsem_predict(modsem_da)</code>: Computes factor scores or model-implied observed-variable scores for a
+<code><a href="modsem_da.html">modsem_da</a></code> model via MAP optimisation.</p></li>
 </ul></div>
 
     <div class="section level2">
@@ -151,13 +170,13 @@ regression method using the baseline model unless <code>H0 = FALSE</code>.</p></
 <span class="r-in"><span><span class="co"># \dontrun{</span></span></span>
 <span class="r-in"><span><span class="va">est_lms</span> <span class="op">&lt;-</span> <span class="fu"><a href="modsem.html">modsem</a></span><span class="op">(</span><span class="va">m1</span>, <span class="va">oneInt</span>, method <span class="op">=</span> <span class="st">"lms"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu">modsem_predict</span><span class="op">(</span><span class="va">est_lms</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>            X           Z           Y</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1  0.7980664  0.06766337  0.03152707</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 -0.7424647  2.36034558 -0.89907069</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 -1.9141728  0.58633881 -1.95369573</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4  1.3947779  2.23652498  5.08213668</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5  1.8146304 -0.99632556  0.89884045</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6 -1.8390114 -0.92032081 -0.31852536</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>               X           Z          Y</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1,]  0.7357389  0.04716883  0.1964398</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [2,] -0.7203068  2.20235753 -0.7361697</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [3,] -1.8030916  0.53553350 -1.7885657</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [4,]  1.4377306  2.18265291  5.1743911</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [5,]  1.6977740 -0.77326868  0.9575354</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [6,] -1.7324633 -0.90187073 -0.2039848</span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
