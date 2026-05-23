@@ -356,16 +356,34 @@ modsem_nobs <- function(object, ...) {
 #'
 #' @param object An object of class \code{modsem_pi} or \code{modsem_da},
 #'   respectively.
+#' @param newdata Optional \code{data.frame} or matrix. If supplied, factor
+#'   scores are computed for these observations instead of the data used during
+#'   model estimation. Must contain all observed-variable columns required by
+#'   the model; missing values are handled via FIML. Currently only supported
+#'   by the \code{\link{modsem_da}} method.
+#' @param method Character. Scoring method. One of \code{"EBM"} (Empirical
+#'   Bayes Modal; MAP estimate of the posterior), \code{"ML"} (maximum
+#'   likelihood), \code{"Bartlett"} (alias for \code{"EBM"}), or
+#'   \code{"Regression"} (alias for \code{"ML"}). Currently only used by the
+#'   \code{\link{modsem_da}} method.
+#' @param type Character. Which scores to return: \code{"lv"} for latent
+#'   variable scores only (default), \code{"ov"} for model-implied observed
+#'   variable scores, or \code{"all"} for both combined. Currently only used by
+#'   the \code{\link{modsem_da}} method.
+#' @param standardized Logical. If \code{TRUE}, each score column is
+#'   standardised (mean 0, SD 1) before returning. Currently only used by the
+#'   \code{\link{modsem_da}} method.
 #' @param ... Further arguments passed to \code{lavaan::predict};
 #'   currently ignored by the \code{\link{modsem_da}} method.
 #'
 #' @return
-#' * For \code{\link{modsem_pi}}: whatever \code{lavaan::predict()}, which usually
-#'   returns a matrix of factor scores.
-#' * For \code{\link{modsem_da}}: a numeric matrix \eqn{n \times p}, where \eqn{n} is the number of
-#'   (complete) observations in the dataset, and \eqn{p} the number of latent variables. Each
-#'   column contains either raw or standardised factor scores, depending on the
-#'   \code{standardized} argument.
+#' * For \code{\link{modsem_pi}}: whatever \code{lavaan::predict()} returns,
+#'   which is usually a matrix of factor scores.
+#' * For \code{\link{modsem_da}}: a numeric matrix with one row per
+#'   observation. Columns depend on \code{type}: latent variable scores
+#'   (\code{"lv"}), model-implied observed-variable scores (\code{"ov"}), or
+#'   both (\code{"all"}). Columns are optionally standardised if
+#'   \code{standardized = TRUE}.
 #'
 #' @examples
 #' m1 <- '

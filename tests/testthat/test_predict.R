@@ -29,6 +29,7 @@ testthat::expect_no_condition({
   ml_new  <- modsemPredictDA(fit_fiml, newdata = TPB2[1:20, ], method = "ML")
 })
 
+
 testthat::expect_no_condition({
   fit_qml <- modsem(tpb, TPB, method = "qml")
 

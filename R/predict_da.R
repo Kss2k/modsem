@@ -1,22 +1,47 @@
 #' @describeIn modsem_predict
-#' Computes (optionally standardised) factor scores via the
-#'   regression method using the baseline model unless \code{H0 = FALSE}.
-#'
-#' @param object \code{\link{modsem_da}} object
-#' @param standardized Logical. If \code{TRUE}, return standardized factor scores.
-#' @param newdata Compute factor scores based on a different dataset, than the one used in the model estimation.
+#' Computes factor scores or model-implied observed-variable scores for a
+#' \code{\link{modsem_da}} model via MAP optimisation.
 #' @export
 modsem_predict.modsem_da <- function(object,
                                      newdata = NULL,
-                                     method = c("EBM", "ML"),
+                                     method = c("EBM", "ML", "Bartlett", "Regression"),
                                      type = c("lv", "ov", "all"),
                                      standardized = FALSE,
                                      ...) {
-  modsemPredictDA(
-    object = object,
+  method <- match.arg(
+    arg        = toupper(method)[[1L]],
+    choices    = c("EBM", "ML", "BARTLETT", "REGRESSION"),
+    several.ok = FALSE
+  )
+
+  if      (method == "BARTLETT")   method <- "EBM"
+  else if (method == "REGRESSION") method <- "ML"
+
+  predicted <- modsemPredictDA(
+    object  = object,
     newdata = newdata,
-    method = method
-  )$Eta
+    method  = method
+  )
+
+  Eta <- predicted$Eta
+  Y   <- predicted$Y
+
+  type <- match.arg(
+    arg        = tolower(type)[[1L]],
+    choices    = c("lv", "ov", "all"),
+    several.ok = FALSE
+  )
+
+  out <- switch(type,
+    lv  = Eta,
+    ov  = Y,
+    all = cbind(Eta, Y[,setdiff(colnames(Y), colnames(Eta)), drop = FALSE])
+  )
+
+  if (standardized)
+    out <- modsemMatrix(scale(out))
+
+  out
 }
 
 
@@ -57,13 +82,12 @@ modsemPredictDA <- function(object, newdata = NULL, method = c("EBM", "ML")) {
 modsemPredictEtaDA_Group <- function(submodel, data, method = c("EBM", "ML")) {
   method <- match.arg(toupper(method), c("EBM", "ML"))
 
-  # TODO:
-  #  We can handle composites (theoretically) by converting them to observed
-  #  variables, and modifying data and matrices$lambda/matrices$theta accordingly.
-  #  This can be done in modsemPredictPreProcessMatrices().
-  stopif(isTRUE(submodel$info$hasComposites),
-    "modsem_predict() does not work with composite variables (yet)!"
-  )
+  # Convert composite LVs to observed scores upfront: replaces their multi-
+  # indicator blocks with a single score column and rebuilds the patternized
+  # data to match. This is analogous to how TEMP_OV wrapping handles structural
+  # OVs -- the composite score becomes a perfect single-indicator of the LV.
+  processed  <- convertCompositesToObs(submodel$matrices, data)
+  data       <- processed$data
 
   # data
   data.split <- data$data.split
@@ -71,13 +95,19 @@ modsemPredictEtaDA_Group <- function(submodel, data, method = c("EBM", "ML")) {
   rowidx     <- data$rowidx
   n.total    <- data$n
 
-  # matrices
-  matrices <- modsemPredictPreProcessMatrices(submodel$matrices, data = data)
+  # matrices: fill any zero/NA theta diagonals (TEMP_OV, single-indicator composites)
+  matrices <- modsemPredictPreProcessMatrices(processed$matrices, data = data)
   xptr     <- modelMatrixCacheCpp(matrices)
 
   .f <- switch(method,
     ML  = logLikFromZetaMLCpp,
     EBM = logLikFromZetaEBMCpp,
+    stop2("Unrecognized method: ", method, "!")
+  )
+
+  .g <- switch(method,
+    ML  = gradLogLikFromZetaMLCpp,
+    EBM = gradLogLikFromZetaEBMCpp,
     stop2("Unrecognized method: ", method, "!")
   )
 
@@ -98,13 +128,19 @@ modsemPredictEtaDA_Group <- function(submodel, data, method = c("EBM", "ML")) {
     for (i in seq_len(n)) {
       y <- data.p[i, , drop = TRUE]
 
-      opt_i <- nlminb(
-        start     = start,
-        objective = \(zeta) -.f(zeta = zeta, y = y, xptr = xptr, idx = idx.p),
-        gradient  = NULL
-      )
+      tryCatch({
+        opt_i <- nlminb(
+          start     = start,
+          objective = \(zeta) -.f(zeta = zeta, y = y, xptr = xptr, idx = idx.p),
+          gradient  = \(zeta) -.g(zeta = zeta, y = y, xptr = xptr, idx = idx.p)
+        )
 
-      Eta.p[i, ] <- impliedEtaFromZetaCpp(zeta = opt_i$par, xptr = xptr)
+        Eta.p[i, ] <- impliedEtaFromZetaCpp(zeta = opt_i$par, xptr = xptr)
+
+      }, error = function(e) {
+        warning2(sprintf("nlminb() failed for pattern %i, row %i!", p, i))
+        NULL
+      })
     }
 
     Eta[rowidx[[p]], ] <- Eta.p
@@ -196,10 +232,10 @@ addStructOVColumnsDA <- function(newdata, object) {
   }
 
   # Plain structural OVs: check they are present, then add TEMP_OV copy
-  ovIntNew_names  <- stringr::str_replace_all(ovIntTerms, ":", OP_OV_INT)
-  plainStructovs <- setdiff(structovs, ovIntNew_names)
+  ovIntNewNms    <- stringr::str_replace_all(ovIntTerms, ":", OP_OV_INT)
+  plainStructOVs <- setdiff(structovs, ovIntNewNms)
 
-  missing <- setdiff(plainStructovs, colnames(newdata))
+  missing <- setdiff(plainStructOVs, colnames(newdata))
   stopif(length(missing),
     "Missing columns in `newdata`:\n  ", paste(missing, collapse = ", ")
   )
@@ -213,39 +249,129 @@ addStructOVColumnsDA <- function(newdata, object) {
 
 
 modsemPredictPreProcessMatrices <- function(matrices, data, pct.fill = 0.01) {
-  # There are two goals here:
-  #   1. Handle observed variables with zeros in diag(Theta)
-  #   2. Handle composite variables
-  # For point 2 we convert composite variables to observed variables using the weights
-  # Point 2 is not implemented (yet).
-  # For point 2 we will also need to modify and return data
-
-  W <- matrices$W
-  is.composite <- apply(W, MARGIN = 2L, FUN = \(x) any(x != 0))
-
-  if (any(is.composite)) {
-    stop2("modsem_predict() does not work with composite variables (yet)!")
-  }
-
+  # Fill zero/NA diagonal entries in Theta with pct.fill * empirical variance.
+  # Handles TEMP_OV indicators (theta = 0 by construction) and composite score
+  # columns added by convertCompositesToObs (also initialised to 0).
   fillTheta <- function(Theta) {
     if (!NROW(Theta) || !NCOL(Theta))
       return(Theta)
 
-    nm <- colnames(Theta)
+    nm      <- colnames(Theta)
     bad.idx <- which(diag(Theta) <= 0 | is.na(diag(Theta)))
 
     for (idx in bad.idx) {
       col <- nm[idx]
-      var <- var(data$data.full[,col], na.rm = TRUE)
-
-      Theta[idx, idx] <- pct.fill * var
+      Theta[idx, idx] <- pct.fill * var(data$data.full[, col], na.rm = TRUE)
     }
 
     Theta
   }
 
-  matrices$thetaDelta <- fillTheta(matrices$thetaDelta)
+  matrices$thetaDelta   <- fillTheta(matrices$thetaDelta)
   matrices$thetaEpsilon <- fillTheta(matrices$thetaEpsilon)
 
   matrices
+}
+
+
+convertCompositesToObs <- function(matrices, data) {
+  # For each composite LV, replace its multi-indicator block in the data with a
+  # single composite-score column (score = W' * indicators). The modified lambda
+  # gets a loading of 1 from the LV to its score column; theta is set to 0
+  # (fillTheta adds a small regularising value afterward). This is the same
+  # pattern as TEMP_OV wrapping for structural OVs.
+  W.mat <- matrices$W
+
+  has.composites <- NCOL(W.mat) > 0L &&
+                    any(apply(W.mat, MARGIN = 2L, FUN = \(x) any(x != 0)))
+
+  if (!has.composites)
+    return(list(matrices = matrices, data = data))
+
+  compLVs  <- colnames(W.mat)[apply(W.mat, 2L, \(x) any(x != 0))]
+  compInds <- rownames(W.mat)[apply(W.mat, 1L, \(x) any(x != 0))]
+
+  xiInds  <- rownames(matrices$lambdaX) %||% character(0)
+  etaInds <- rownames(matrices$lambdaY) %||% character(0)
+  xis     <- colnames(matrices$lambdaX) %||% character(0)
+  etas    <- colnames(matrices$lambdaY) %||% character(0)
+
+  xiCompLVs  <- intersect(xis,     compLVs)
+  etaCompLVs <- intersect(etas,    compLVs)
+  xiRegInds  <- setdiff(xiInds,    compInds)
+  etaRegInds <- setdiff(etaInds,   compInds)
+
+  xiScoreNms  <- if (length(xiCompLVs))  paste0(".PRED_COMP__", xiCompLVs)  else character(0)
+  etaScoreNms <- if (length(etaCompLVs)) paste0(".PRED_COMP__", etaCompLVs) else character(0)
+
+  # Compute composite scores. W.mat rows and dataFull columns are both indexed
+  # by indicator names, so named indexing gives correct alignment.
+  # NA propagates naturally when any component indicator is missing.
+  dataFull  <- data$data.full
+  W.comp    <- W.mat[, compLVs, drop = FALSE]
+  shared    <- intersect(rownames(W.comp), colnames(dataFull))
+  compScore <- dataFull[, shared, drop = FALSE] %*% W.comp[shared, , drop = FALSE]
+  colnames(compScore) <- c(xiScoreNms, etaScoreNms)
+
+  # New data matrix: xi regular inds, xi scores, eta regular inds, eta scores.
+  # This ordering matches the new lambdaX/lambdaY row ordering below.
+  newDataFull <- cbind(
+    dataFull[, xiRegInds,    drop = FALSE],
+    compScore[, xiScoreNms,  drop = FALSE],
+    dataFull[, etaRegInds,   drop = FALSE],
+    compScore[, etaScoreNms, drop = FALSE]
+  )
+
+  # lambdaX: keep regular-indicator rows; add a row per xi composite with loading 1
+  lX.reg  <- matrices$lambdaX[xiRegInds, , drop = FALSE]
+  lX.comp <- matrix(0, nrow = length(xiCompLVs), ncol = length(xis),
+                    dimnames = list(xiScoreNms, xis))
+  for (i in seq_along(xiCompLVs))
+    lX.comp[xiScoreNms[i], xiCompLVs[i]] <- 1
+
+  # lambdaY: same for eta composites
+  lY.reg  <- matrices$lambdaY[etaRegInds, , drop = FALSE]
+  lY.comp <- matrix(0, nrow = length(etaCompLVs), ncol = length(etas),
+                    dimnames = list(etaScoreNms, etas))
+  for (i in seq_along(etaCompLVs))
+    lY.comp[etaScoreNms[i], etaCompLVs[i]] <- 1
+
+  # thetaDelta / thetaEpsilon: drop composite-indicator rows/cols; add score
+  # rows/cols initialised to 0 (fillTheta regularises them)
+  newThetaDelta   <- expandTheta(matrices$thetaDelta,   keep = xiRegInds,  add = xiScoreNms)
+  newThetaEpsilon <- expandTheta(matrices$thetaEpsilon, keep = etaRegInds, add = etaScoreNms)
+
+  # tauX / tauY: tauX is stored as a 1-column matrix; extract as named vectors.
+  # tau for a composite score = W' * tau_indicators (weighted sum of intercepts).
+  tauX.full <- setNames(as.vector(matrices$tauX), rownames(matrices$tauX) %||% character(0))
+  tauY.full <- setNames(as.vector(matrices$tauY), rownames(matrices$tauY) %||% character(0))
+
+  tau.xiComp  <- as.vector(t(W.mat[xiInds,  xiCompLVs,  drop = FALSE]) %*% tauX.full[xiInds])
+  tau.etaComp <- as.vector(t(W.mat[etaInds, etaCompLVs, drop = FALSE]) %*% tauY.full[etaInds])
+
+  newTauX <- c(tauX.full[xiRegInds],  setNames(tau.xiComp,  xiScoreNms))
+  newTauY <- c(tauY.full[etaRegInds], setNames(tau.etaComp, etaScoreNms))
+
+  matrices$lambdaX      <- rbind(lX.reg, lX.comp)
+  matrices$lambdaY      <- rbind(lY.reg, lY.comp)
+  matrices$thetaDelta   <- newThetaDelta
+  matrices$thetaEpsilon <- newThetaEpsilon
+  matrices$tauX         <- newTauX
+  matrices$tauY         <- newTauY
+
+  list(matrices = matrices, data = patternizeMissingDataFIML(newDataFull))
+}
+
+
+expandTheta <- function(Theta, keep, add) {
+  thetaKept <- Theta[keep, keep, drop = FALSE]
+  n.add     <- length(add)
+  if (!n.add) return(thetaKept)
+
+  n.keep <- nrow(thetaKept)
+  nm     <- c(keep, add)
+  out    <- matrix(0, nrow = n.keep + n.add, ncol = n.keep + n.add,
+                   dimnames = list(nm, nm))
+  out[keep, keep] <- thetaKept
+  out
 }

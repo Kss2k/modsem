@@ -130,6 +130,28 @@ double logLikFromZetaMLCpp(
 
 
 // [[Rcpp::export]]
+arma::vec gradLogLikFromZetaMLCpp(
+  const arma::vec zeta,
+  const arma::vec y,
+  const SEXP xptr,
+  const arma::uvec idx,
+  const double eps = 1e-4
+) {
+  // avoid overhead of getting numerical gradient from within R
+  const double ll0 = logLikFromZetaMLCpp(zeta, y, xptr, idx);
+
+  arma::vec grad(zeta.n_elem);
+  for (int i = 0; i < (int)grad.n_elem; i++) {
+    arma::vec zetai = zeta;
+    zetai(i) = zetai(i) + eps;
+    grad(i) = (logLikFromZetaMLCpp(zetai, y, xptr, idx) - ll0) / eps;
+  }
+
+  return grad;
+}
+
+
+// [[Rcpp::export]]
 double logLikFromZetaEBMCpp(
   const arma::vec zeta,
   const arma::vec y,
@@ -143,4 +165,26 @@ double logLikFromZetaEBMCpp(
   const double evidence = logLikFromZetaMLCpp(zeta, y, xptr, idx);
 
   return prior + evidence;
+}
+
+
+// [[Rcpp::export]]
+arma::vec gradLogLikFromZetaEBMCpp(
+  const arma::vec zeta,
+  const arma::vec y,
+  const SEXP xptr,
+  const arma::uvec idx,
+  const double eps = 1e-4
+) {
+  // avoid overhead of getting numerical gradient from within R
+  const double ll0 = logLikFromZetaEBMCpp(zeta, y, xptr, idx);
+
+  arma::vec grad(zeta.n_elem);
+  for (int i = 0; i < (int)grad.n_elem; i++) {
+    arma::vec zetai = zeta;
+    zetai(i) = zetai(i) + eps;
+    grad(i) = (logLikFromZetaEBMCpp(zetai, y, xptr, idx) - ll0) / eps;
+  }
+
+  return grad;
 }

@@ -105,8 +105,16 @@ logLikFromZetaMLCpp <- function(zeta, y, xptr, idx) {
     .Call(`_modsem_logLikFromZetaMLCpp`, zeta, y, xptr, idx)
 }
 
+gradLogLikFromZetaMLCpp <- function(zeta, y, xptr, idx, eps = 1e-4) {
+    .Call(`_modsem_gradLogLikFromZetaMLCpp`, zeta, y, xptr, idx, eps)
+}
+
 logLikFromZetaEBMCpp <- function(zeta, y, xptr, idx) {
     .Call(`_modsem_logLikFromZetaEBMCpp`, zeta, y, xptr, idx)
+}
+
+gradLogLikFromZetaEBMCpp <- function(zeta, y, xptr, idx, eps = 1e-4) {
+    .Call(`_modsem_gradLogLikFromZetaEBMCpp`, zeta, y, xptr, idx, eps)
 }
 
 tracePathsNumericCpp <- function(x, y, parTable, maxlen = 100L) {
