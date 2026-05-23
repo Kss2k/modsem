@@ -1,3 +1,25 @@
+#' @describeIn modsem_predict
+#' Computes (optionally standardised) factor scores via the
+#'   regression method using the baseline model unless \code{H0 = FALSE}.
+#'
+#' @param object \code{\link{modsem_da}} object
+#' @param standardized Logical. If \code{TRUE}, return standardized factor scores.
+#' @param newdata Compute factor scores based on a different dataset, than the one used in the model estimation.
+#' @export
+modsem_predict.modsem_da <- function(object,
+                                     newdata = NULL,
+                                     method = c("EBM", "ML"),
+                                     type = c("lv", "ov", "all"),
+                                     standardized = FALSE,
+                                     ...) {
+  modsemPredictDA(
+    object = object,
+    newdata = newdata,
+    method = method
+  )$Eta
+}
+
+
 modsemPredictDA <- function(object, newdata = NULL, method = c("EBM", "ML")) {
   model    <- object$model
   submodels <- model$models
@@ -25,19 +47,33 @@ modsemPredictDA <- function(object, newdata = NULL, method = c("EBM", "ML")) {
     )
   }
 
-  list(Eta = do.call(rbind, ETA), Y = do.call(rbind, YY))
+  list(
+    Eta = modsemMatrix(do.call(rbind, ETA), is.public = TRUE),
+    Y   = modsemMatrix(do.call(rbind, YY), is.public = TRUE)
+  )
 }
 
 
 modsemPredictEtaDA_Group <- function(submodel, data, method = c("EBM", "ML")) {
   method <- match.arg(toupper(method), c("EBM", "ML"))
 
-  matrices   <- submodel$matrices
+  # TODO:
+  #  We can handle composites (theoretically) by converting them to observed
+  #  variables, and modifying data and matrices$lambda/matrices$theta accordingly.
+  #  This can be done in modsemPredictPreProcessMatrices().
+  stopif(isTRUE(submodel$info$hasComposites),
+    "modsem_predict() does not work with composite variables (yet)!"
+  )
+
+  # data
   data.split <- data$data.split
   patterns   <- data$patterns
   rowidx     <- data$rowidx
   n.total    <- data$n
-  xptr       <- modelMatrixCacheCpp(matrices)
+
+  # matrices
+  matrices <- modsemPredictPreProcessMatrices(submodel$matrices, data = data)
+  xptr     <- modelMatrixCacheCpp(matrices)
 
   .f <- switch(method,
     ML  = logLikFromZetaMLCpp,
@@ -48,7 +84,7 @@ modsemPredictEtaDA_Group <- function(submodel, data, method = c("EBM", "ML")) {
   k   <- NCOL(matrices$phi) + NCOL(matrices$psi)
   dim <- c(colnames(matrices$phi), colnames(matrices$psi))
 
-  Eta.out <- matrix(NA_real_, nrow = n.total, ncol = k, dimnames = list(NULL, dim))
+  Eta <- matrix(NA_real_, nrow = n.total, ncol = k, dimnames = list(NULL, dim))
 
   for (p in seq_along(data.split)) {
     data.p    <- data.split[[p]]
@@ -71,10 +107,10 @@ modsemPredictEtaDA_Group <- function(submodel, data, method = c("EBM", "ML")) {
       Eta.p[i, ] <- impliedEtaFromZetaCpp(zeta = opt_i$par, xptr = xptr)
     }
 
-    Eta.out[rowidx[[p]], ] <- Eta.p
+    Eta[rowidx[[p]], ] <- Eta.p
   }
 
-  Eta.out
+  Eta
 }
 
 
@@ -93,6 +129,7 @@ YFromEta <- function(Eta, matrices) {
 
 prepNewdataDA <- function(object, newdata) {
   newdata    <- as.data.frame(newdata)
+  newdata    <- addStructOVColumnsDA(newdata, object)  # add TEMP_OV cols
   submodels  <- object$model$models
   group.var  <- object$args$group
   n.groups   <- length(submodels)
@@ -135,4 +172,80 @@ prepNewdataDA <- function(object, newdata) {
   }
 
   DATA
+}
+
+
+addStructOVColumnsDA <- function(newdata, object) {
+  group.info <- object$model$info$group.info
+  structovs  <- group.info$structovs
+  ovIntTerms <- group.info$ovIntTerms
+
+  if (!length(structovs)) return(newdata)
+
+  # OV interaction terms: compute product columns (e.g. x1:x2 -> x1___INTERACTION___x2)
+  for (ovInt in ovIntTerms) {
+    vars     <- stringr::str_split_1(ovInt, ":")
+    ovIntNew <- stringr::str_replace_all(ovInt, ":", OP_OV_INT)
+
+    missing <- setdiff(vars, colnames(newdata))
+    stopif(length(missing),
+           "Missing columns in `newdata` required for interaction term '", ovInt, "':\n  ",
+           paste(missing, collapse = ", "))
+
+    newdata[[ovIntNew]] <- apply(newdata[, vars, drop = FALSE], MARGIN = 1L, FUN = prod)
+  }
+
+  # Plain structural OVs: check they are present, then add TEMP_OV copy
+  ovIntNew_names  <- stringr::str_replace_all(ovIntTerms, ":", OP_OV_INT)
+  plainStructovs <- setdiff(structovs, ovIntNew_names)
+
+  missing <- setdiff(plainStructovs, colnames(newdata))
+  stopif(length(missing),
+    "Missing columns in `newdata`:\n  ", paste(missing, collapse = ", ")
+  )
+
+  for (ov in structovs) {
+    newdata[[paste0(TEMP_OV_PREFIX, ov)]] <- newdata[[ov]]
+  }
+
+  newdata
+}
+
+
+modsemPredictPreProcessMatrices <- function(matrices, data, pct.fill = 0.01) {
+  # There are two goals here:
+  #   1. Handle observed variables with zeros in diag(Theta)
+  #   2. Handle composite variables
+  # For point 2 we convert composite variables to observed variables using the weights
+  # Point 2 is not implemented (yet).
+  # For point 2 we will also need to modify and return data
+
+  W <- matrices$W
+  is.composite <- apply(W, MARGIN = 2L, FUN = \(x) any(x != 0))
+
+  if (any(is.composite)) {
+    stop2("modsem_predict() does not work with composite variables (yet)!")
+  }
+
+  fillTheta <- function(Theta) {
+    if (!NROW(Theta) || !NCOL(Theta))
+      return(Theta)
+
+    nm <- colnames(Theta)
+    bad.idx <- which(diag(Theta) <= 0 | is.na(diag(Theta)))
+
+    for (idx in bad.idx) {
+      col <- nm[idx]
+      var <- var(data$data.full[,col], na.rm = TRUE)
+
+      Theta[idx, idx] <- pct.fill * var
+    }
+
+    Theta
+  }
+
+  matrices$thetaDelta <- fillTheta(matrices$thetaDelta)
+  matrices$thetaEpsilon <- fillTheta(matrices$thetaEpsilon)
+
+  matrices
 }
