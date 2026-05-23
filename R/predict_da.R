@@ -382,8 +382,8 @@ convertCompositesToObs <- function(matrices, data) {
     t(W.mat[etaInds, etaCompLVs, drop = FALSE]) %*% tauY.full[etaInds]
   )
 
-  newTauX <- c(tauX.full[xiRegInds],  setNames(tau.xiComp,  xiScoreNms))
-  newTauY <- c(tauY.full[etaRegInds], setNames(tau.etaComp, etaScoreNms))
+  newTauX <- c(tauX.full[xiRegInds],  stats::setNames(tau.xiComp,  xiScoreNms))
+  newTauY <- c(tauY.full[etaRegInds], stats::setNames(tau.etaComp, etaScoreNms))
 
   matrices$lambdaX      <- rbind(lX.reg, lX.comp)
   matrices$lambdaY      <- rbind(lY.reg, lY.comp)
