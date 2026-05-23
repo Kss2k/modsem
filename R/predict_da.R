@@ -73,9 +73,25 @@ modsemPredictDA <- function(object, newdata = NULL, method = c("EBM", "ML")) {
     )
   }
 
+  # collect
+  Eta <- do.call(rbind, ETA)
+  Y   <- do.call(rbind, YY)
+
+  # Restore original row order when newdata was split by group.
+  # Each non-NULL DATA[[g]] carries an "orig.idx" attribute recording its rows'
+  # positions in newdata; unlist() collects them in group-processing order so
+  # order() gives the permutation back to input order.
+  orig.idx <- unlist(lapply(DATA, attr, "orig.idx"))
+
+  if (length(orig.idx)) {
+    ord <- order(orig.idx)
+    Eta <- Eta[ord, , drop = FALSE]
+    Y   <- Y[ord, , drop = FALSE]
+  }
+
   list(
-    Eta = modsemMatrix(do.call(rbind, ETA), is.public = TRUE),
-    Y   = modsemMatrix(do.call(rbind, YY), is.public = TRUE)
+    Eta = modsemMatrix(Eta, is.public = TRUE),
+    Y   = modsemMatrix(Y, is.public = TRUE)
   )
 }
 
@@ -194,7 +210,9 @@ prepNewdataDA <- function(object, newdata) {
       mat.g  <- as.matrix(newdata[rows.g, cols, drop = FALSE])
       storage.mode(mat.g) <- "double"
 
-      patternizeMissingDataFIML(mat.g)
+      data.g <- patternizeMissingDataFIML(mat.g)
+      attr(data.g, "orig.idx") <- which(rows.g)
+      data.g
     })
 
   } else {
