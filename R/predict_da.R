@@ -59,6 +59,7 @@ modsemPredictDA <- function(object, newdata = NULL, method = c("EBM", "ML")) {
   YY  <- vector("list", length = length(submodels))
 
   for (g in seq_along(submodels)) {
+    if (is.null(DATA[[g]])) next
 
     ETA[[g]] <- modsemPredictEtaDA_Group(
       submodel = submodels[[g]],
@@ -188,6 +189,8 @@ prepNewdataDA <- function(object, newdata) {
              "Missing columns in `newdata`:\n  ", paste(missing.cols, collapse = ", "))
 
       rows.g <- group.values == group.levels[[g]]
+      if (!any(rows.g)) return(NULL)
+
       mat.g  <- as.matrix(newdata[rows.g, cols, drop = FALSE])
       storage.mode(mat.g) <- "double"
 
