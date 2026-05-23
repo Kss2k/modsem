@@ -11,7 +11,7 @@ createExprNode <- function(node, lhs = NULL, rhs = NULL,
 
 getMinTokenPriority <- function(listTokens, min = NA) {
   if (is.null(listTokens) || length(listTokens) == 0) {
-    stopif(is.na(min), "Unable to find minimum priority for tokens")
+    mod_stopif(is.na(min), "Unable to find minimum priority for tokens")
     return(min)
   }
 
@@ -27,7 +27,7 @@ chooseToken <- function(listTokens, i = 1, chosenTokenIdx = NULL,
                         leftClosures = list()) {
 
   if (is.null(listTokens) || i > length(listTokens)) {
-    stopif(is.null(chosenTokenIdx) && length(leftClosures) > 0,
+    mod_stopif(is.null(chosenTokenIdx) && length(leftClosures) > 0,
            "Unmatched left bracket", last(leftClosures))
     return(chosenTokenIdx)
   }
@@ -37,7 +37,7 @@ chooseToken <- function(listTokens, i = 1, chosenTokenIdx = NULL,
     leftClosures <- appendToList(leftClosures, token)
 
   } else if (is.RightClosure(token)) {
-    stopif(length(leftClosures) == 0, "Unmatched right bracket",
+    mod_stopif(length(leftClosures) == 0, "Unmatched right bracket",
            highlightErrorToken(token))
 
     leftClosures <- leftClosures[-1]

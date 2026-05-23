@@ -48,8 +48,7 @@ estepLmsGroup <- function(submodel, lastQuad = NULL, recalcQuad = FALSE,
           k = k, m.ceil = m.ceil, tol = adaptive.quad.tol,
         )
       }, error = function(e) {
-        warning2("Calculation of adaptive quadrature failed!\n", e,
-                 immediate. = FALSE)
+        mod_msg_warn("Calculation of adaptive quadrature failed!\n", e)
         NULL
       }
     )
@@ -138,7 +137,7 @@ mstepLms <- function(theta, model, P,
     est$objective  <- est$value
     est$iterations <- est$counts[["function"]]
   } else {
-    stop2("Unrecognized optimizer, must be either 'nlminb' or 'L-BFGS-B'")
+    mod_msg_stop("Unrecognized optimizer, must be either 'nlminb' or 'L-BFGS-B'")
   }
 
   est

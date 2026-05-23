@@ -25,7 +25,7 @@ specifyModelDA_Group <- function(syntax = NULL,
                                  structovs = NULL,
                                  fix.composite.var = TRUE) {
   if (is.null(parTable) && !is.null(syntax)) parTable <- modsemify(syntax)
-  stopif(is.null(parTable), "No parTable found")
+  mod_stopif(is.null(parTable), "No parTable found")
 
   checkParTableDA(parTable, method = method)
   # additions to lavaan-syntax for optimizer
@@ -76,7 +76,7 @@ specifyModelDA_Group <- function(syntax = NULL,
   indsCompEtas  <- indsEtas[compositeEtas]
 
   # composite variables are only defined for lms
-  stopif(length(composites) && method == "qml",
+  mod_stopif(length(composites) && method == "qml",
     "Composite constructs are not allowed with `method=\"qml\"` (yet)!\n",
     "Try `method=\"lms\"` instead."
   )
@@ -438,14 +438,14 @@ specifyModelDA <- function(..., group.info, createTheta = TRUE) {
   args <- list(...)
 
   n.groups <- group.info$n.groups
-  stopif(n.groups < 1L, "Invalid grouping structure supplied.")
+  mod_stopif(n.groups < 1L, "Invalid grouping structure supplied.")
 
   parTable    <- group.info$parTable
   parTableCov <- group.info$parTableCov
   structovs   <- group.info$structovs
   group.col   <- parTable$group
 
-  stopif(is.null(group.col) || max(group.col) != n.groups,
+  mod_stopif(is.null(group.col) || max(group.col) != n.groups,
          "Number of group-specific parameter tables does not match number of groups.")
 
   submodels <- vector("list", length = n.groups)

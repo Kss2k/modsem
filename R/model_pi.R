@@ -5,11 +5,11 @@ parseLavaan <- function(model.syntax = NULL,
                         match.recycle = FALSE) {
   # Check if a model.syntax is provided, if not we should return an error
   if (is.null(model.syntax))
-    stop2("No model.syntax provided")
+    mod_msg_stop("No model.syntax provided")
   else if (!is.character(model.syntax))
-    stop2("The provided model syntax is not a string!")
+    mod_msg_stop("The provided model syntax is not a string!")
   else if (length(model.syntax) > 1)
-    stop2("The provided model syntax is not of length 1")
+    mod_msg_stop("The provided model syntax is not of length 1")
 
   parTable        <- modsemify(model.syntax)
   structuralExprs <- parTable[parTable$op == "~",]
@@ -23,7 +23,7 @@ parseLavaan <- function(model.syntax = NULL,
 
   # Get all the indicators in the model
   inds <- getIndicators(parTable, observed=TRUE)
-  stopif(!all(inds %in% variableNames),
+  mod_stopif(!all(inds %in% variableNames),
          "Unable to find observed variables in data: ",
          capturePrint(inds[!inds %in% variableNames]))
 
@@ -119,7 +119,7 @@ structureLavExprs <- function(parTable = NULL) {
 
 
 getIndsVariable <- function(varName = NULL,  indsLatents = NULL) {
-  stopif(is.null(varName), "Error in getIndsVariable(), varName is NULL")
+  mod_stopif(is.null(varName), "Error in getIndsVariable(), varName is NULL")
   # Get the names of the latent variables in the model
   lVs <- names(indsLatents)
 
@@ -133,7 +133,7 @@ getIndsVariable <- function(varName = NULL,  indsLatents = NULL) {
   }
 
   # Error if it is neither a latent- nor an observerd variable
-  stop2("Something went wrong in getIndsVariable(), ",
+  mod_msg_stop("Something went wrong in getIndsVariable(), ",
         "varName neither observed not latent")
 }
 
@@ -143,7 +143,7 @@ getIndsMultipleVariables <- function(varNames = NULL, indsLatents = NULL) {
   # varNames = vector with variableNames
   # output should be a list
   # Check that arguements are supplied/not NULL
-  stopif(is.null(varNames), "Error in getIndsMultipleVariables(), varNames is NULL")
+  mod_stopif(is.null(varNames), "Error in getIndsMultipleVariables(), varNames is NULL")
   # use getIndsVariable for each element in varNames, and return a named list
   lapplyNamed(varNames,
               FUN = getIndsVariable,
@@ -152,21 +152,21 @@ getIndsMultipleVariables <- function(varNames = NULL, indsLatents = NULL) {
 
 
 splitProdName <- function(prodName, pattern) {
-  stopif(is.null(prodName) ,"prodNames in splitProdName was NULL")
-  stopif(is.null(pattern) ,"pattern in splitProdName was NULL")
+  mod_stopif(is.null(prodName) ,"prodNames in splitProdName was NULL")
+  mod_stopif(is.null(pattern) ,"pattern in splitProdName was NULL")
   stringr::str_split_1(prodName, pattern)
 }
 
 
 splitProdNamesVec <- function(prodNames, pattern) {
-  stopif(is.null(prodNames) ,"prodNames in splitProdNamesVec was NULL")
-  stopif(is.null(pattern) ,"pattern in splitProdNamesVec was NULL")
+  mod_stopif(is.null(prodNames) ,"prodNames in splitProdNamesVec was NULL")
+  mod_stopif(is.null(pattern) ,"pattern in splitProdNamesVec was NULL")
   unlist(stringr::str_split(prodNames, pattern))
 }
 
 
 fixProdNames <- function(prodName, pattern = NULL) {
-  stopif(is.null(pattern) ,"pattern in fixProdNames was NULL")
+  mod_stopif(is.null(pattern) ,"pattern in fixProdNames was NULL")
   stringr::str_remove_all(prodName, pattern)
 }
 
@@ -185,7 +185,7 @@ createRelDf <- function(indsProdTerm,
                       FUN = length)
 
     if ((shortest <- min(lengths)) != (longest <- max(lengths))) {
-      warnif(!suppress.warnings.match, "Unequal number of indicators for latent variables ",
+      mod_warnif(!suppress.warnings.match, "Unequal number of indicators for latent variables ",
              "in product term, some indicators will be recycled!")
 
       if (match.recycle)

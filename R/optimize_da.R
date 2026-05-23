@@ -90,7 +90,7 @@ optimizeStartingParamsDA <- function(model,
     lavaan.fit <- fitSam$fit
   }
 
-  stopif(is.null(parTable), "lavaan failed!")
+  mod_stopif(is.null(parTable), "lavaan failed!")
 
   if (isHigherOrderParTable(parTable))
     parTable <- higherOrderMeasr2Struct(parTable)
@@ -330,11 +330,11 @@ extractFromParTable <- function(row, op, col, parTable, rows.lhs = TRUE, fill = 
   }
 
   if (length(out) == 0) {
-    stopif(is.null(fill), "No match found")
+    mod_stopif(is.null(fill), "No match found")
     out <- fill
   }
 
-  stopif(length(out) > 1, "Incorrect length of matches")
+  mod_stopif(length(out) > 1, "Incorrect length of matches")
 
   out
 }
@@ -579,14 +579,14 @@ parameterEstimatesLavSAM <- function(syntax,
     }
 
     if (!is.null(sampling.weights)) {
-      warning2(
+      mod_msg_warn(
         "Ignoring sampling weights when optimizing parameter estimates..."
       )
       sampling.weights <- NULL
     }
 
     if (length(group)) {
-      stopif(length(group) > 1L,
+      mod_stopif(length(group) > 1L,
         "Unable to optimize parameters for multigroup models with more\n",
         "than one grouping variable!"
       )

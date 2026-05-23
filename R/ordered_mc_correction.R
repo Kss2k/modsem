@@ -31,7 +31,7 @@ modsemOrderedMCCorrection <- function(model.syntax,
                                       ...) {
   method <- tolower(method)
   ordered.se <- match.arg(ordered.se)
-  stopif(
+  mod_stopif(
     !method %in% c("lms", "qml"),
     "MC ordered correction is only available for LMS and QML."
   )
@@ -48,16 +48,16 @@ modsemOrderedMCCorrection <- function(model.syntax,
   ordered.mc.reps <- as.integer(ordered.mc.reps)
   ordered.delta.reps <- as.integer(ordered.delta.reps)
 
-  stopif(ordered.mc.reps < 2L, "`ordered.mc.reps` must be at least 2.")
-  stopif(ordered.min.iter < 1L, "`ordered.min.iter` must be at least 1.")
-  stopif(ordered.max.iter < ordered.min.iter,
+  mod_stopif(ordered.mc.reps < 2L, "`ordered.mc.reps` must be at least 2.")
+  mod_stopif(ordered.min.iter < 1L, "`ordered.min.iter` must be at least 1.")
+  mod_stopif(ordered.max.iter < ordered.min.iter,
          "`ordered.max.iter` must be larger than `ordered.min.iter`.")
-  stopif(!is.list(ordered.fn.args), "`ordered.fn.args` must be a list.")
+  mod_stopif(!is.list(ordered.fn.args), "`ordered.fn.args` must be a list.")
 
   if (ordered.fixed.seed && is.null(ordered.rng.seed)) {
     ordered.rng.seed <- floor(stats::runif(1L, min = 1, max = 9999999))
     if (verbose)
-      message(sprintf("Using fixed MC ordered seed %i.", ordered.rng.seed))
+      mod_msg_note(sprintf("Using fixed MC ordered seed %i.", ordered.rng.seed))
   }
 
   parTable.in <- modsemify(model.syntax)
@@ -65,15 +65,11 @@ modsemOrderedMCCorrection <- function(model.syntax,
 
   data <- as.data.frame(data)
   cols.ordered <- mcOrderedCols(data = data, ovs = ovs, ordered = ordered)
-  stopif(!length(cols.ordered),
+  mod_stopif(!length(cols.ordered),
          "No ordered variables were found for MC ordered correction.")
 
-  if (verbose) {
-    message(
-      sprintf("Estimating MC-%s-ORD Correction (R=%d).",
-              toupper(method), ordered.mc.reps)
-    )
-  }
+  if (verbose)
+    mod_msg_note(sprintf("Estimating MC-%s-ORD Correction (R=%d).", toupper(method), ordered.mc.reps))
 
   observed <- mcPrepareOrderedData(
     data = data,
@@ -139,7 +135,7 @@ modsemOrderedMCCorrection <- function(model.syntax,
   }
 
   if (isTRUE(ordered.polyak.juditsky) && !isTRUE(ordered.pj.extrapolate)) {
-    if (verbose) message("Warming up MC ordered solver.")
+    if (verbose) mod_msg_note("Warming up MC ordered solver.")
 
     warmup <- mcRobbinsMonro(
       p = p,
@@ -186,7 +182,7 @@ modsemOrderedMCCorrection <- function(model.syntax,
 
       if (identical(ordered.se, "delta")) {
         if (verbose)
-          message("Calculating MC ordered delta-method standard errors.")
+          mod_msg_note("Calculating MC ordered delta-method standard errors.")
 
         vcov.free <- tryCatch({
           H <- mcDeltaJacobian(
@@ -206,7 +202,7 @@ modsemOrderedMCCorrection <- function(model.syntax,
           V
 
         }, error = function(e) {
-          warning2(
+          mod_msg_warn(
             "Delta-method MC correction failed; using ordered MC penalty ",
             "standard errors instead. Message: ", conditionMessage(e)
           )
@@ -223,9 +219,8 @@ modsemOrderedMCCorrection <- function(model.syntax,
         })
 
       } else if (identical(ordered.se, "naive")) {
-        if (verbose) {
-          message("Using naive standard errors.")
-        }
+        if (verbose)
+          mod_msg_note("Using naive standard errors.")
 
         vcov.free <- mcOrderedNaiveScalingVcov(
           theta.mc = theta.mc,
@@ -236,9 +231,8 @@ modsemOrderedMCCorrection <- function(model.syntax,
         type.se <- naive.se.label
 
       } else if (identical(ordered.se, "penalty")) {
-        if (verbose) {
-          message("Using penalized standard errors.")
-        }
+        if (verbose)
+          mod_msg_note("Using penalized standard errors.")
 
         vcov.free <- mcOrderedPenaltyVcov(
           theta.mc = theta.mc,

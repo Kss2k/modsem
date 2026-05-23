@@ -43,7 +43,7 @@ calcFIM_da <- function(model,
           expected = calcEFIM_LMS(model, theta = theta, epsilon = epsilon,
                                   S = EFIM.S, parametric = EFIM.parametric,
                                   verbose = verbose, R.max = R.max, P = P),
-          stop2("FIM must be either expected or observed")),
+          mod_msg_stop("FIM must be either expected or observed")),
      qml =
        switch(FIM,
           observed = calcOFIM_QML(model, theta = theta, hessian = hessian,
@@ -52,13 +52,13 @@ calcFIM_da <- function(model,
           expected = calcEFIM_QML(model, theta = theta, epsilon = epsilon,
                                   S = EFIM.S, parametric = EFIM.parametric,
                                   verbose = verbose, R.max = R.max),
-          stop2("FIM must be either expected or observed")),
-     stop2("Unrecognized method: ", method)
+          mod_msg_stop("FIM must be either expected or observed")),
+     mod_msg_stop("Unrecognized method: ", method)
   )
 
 
   if (robust.se) {
-    warnif(hessian && FIM == "observed",
+    mod_warnif(hessian && FIM == "observed",
            "`robust.se = TRUE` should not be paired with ",
            "`OFIM.hessian = TRUE` and `FIM = \"observed\"`")
     H <- calcHessian(model, theta = theta, method = method,
@@ -115,7 +115,7 @@ fdHESS <- function(pars,
         minAbsPar = .minAbsPar
       ),
       error = function(e) {
-        warning2("Finite-difference Hessian calculation failed...\n  ", e$message)
+        mod_msg_warn("Finite-difference Hessian calculation failed...\n  ", e$message)
         matrix(NA, nrow = npar, ncol = npar)
       }
     )
@@ -125,7 +125,7 @@ fdHESS <- function(pars,
     tryCatch(
       nlme::fdHess(pars = pars, fun = fun, ..., .relStep = .relStep)$Hessian,
       error = function(e) {
-        warning2(
+        mod_msg_warn(
           "Switching to fallback finite-difference Hessian after nlme::fdHess error:\n  ",
           e$message
         )
@@ -214,7 +214,7 @@ calcHessian <- function(model, theta, method = "lms",
                                             P = P)$I.obs
 
     H <- tryCatch(suppressWarnings(fH(model)), error = function(e) {
-      warning2("Optimized calculation of Hessian failed, attempting to switch!\n", e)
+      mod_msg_warn("Optimized calculation of Hessian failed, attempting to switch!\n", e)
       model$gradientStruct$hasCovModel <- TRUE
 
       suppressWarnings(fH(model))
@@ -255,19 +255,17 @@ calcSE_da <- function(calc.se = TRUE, vcov, rawLabels, NA__ = -999) {
     return(stats::setNames(rep(NA__, length(rawLabels)), nm = rawLabels))
 
   if (is.null(vcov)) {
-    warning2("Fisher Information Matrix (FIM) was not calculated, ",
-             "unable to compute standard errors", immediate. = FALSE)
+    mod_msg_warn("Fisher Information Matrix (FIM) was not calculated, ",
+             "unable to compute standard errors")
     return(rep(NA__, length(rawLabels)))
   }
 
   se <- suppressWarnings(sqrt(diag(vcov)))
 
   if (all(is.na(se))) {
-    warning2("Standard errors could not be computed, negative Hessian is singular.",
-             immediate. = FALSE)
+    mod_msg_warn("Standard errors could not be computed, negative Hessian is singular.")
   } else if (any(is.nan(se))) {
-    warning2("Standard errors for some coefficients could not be computed.",
-             immediate. = FALSE)
+    mod_msg_warn("Standard errors for some coefficients could not be computed.")
   }
 
   if (!is.null(names(se))) names(se) <- rawLabels
@@ -302,7 +300,7 @@ calcOFIM_LMS <- function(model, theta, hessian = FALSE,
     return(crossprod(S))
   }
 
-  stopif(length(cluster) != nrow(S),
+  mod_stopif(length(cluster) != nrow(S),
          "Length of 'cluster' must equal the number of rows in the data / scores.")
 
   f <- as.factor(cluster)
@@ -345,7 +343,7 @@ calcEFIM_LMS <- function(model,
   R <- min(R.max, N * S)
   R <- R - R %% G # make R divisble by the number of groups
   R.g <- R / G
-  warnif(R.max <= N, "R.max is less than N!")
+  mod_warnif(R.max <= N, "R.max is less than N!")
 
   ovs <- colnames(model$models[[1L]]$data$data.full)
 
@@ -406,7 +404,7 @@ calcEFIM_QML <- function(model, theta, data, S = 100,
   R <- R - R %% G # make R divisble by the number of groups
   R.g <- R / G
 
-  warnif(R.max <= N, "R.max is less than N!")
+  mod_warnif(R.max <= N, "R.max is less than N!")
 
   ovs <- colnames(model$models[[1L]]$data$data.full)
 
@@ -483,7 +481,7 @@ calcOFIM_QML <- function(model, theta,
     return(crossprod(S))
   }
 
-  stopif(length(cluster) != nrow(S),
+  mod_stopif(length(cluster) != nrow(S),
          "Length of 'cluster' must equal the number of rows in the data / scores.")
 
   f <- as.factor(cluster)

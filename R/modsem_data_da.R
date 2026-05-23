@@ -5,14 +5,14 @@ prepDataModsemDA <- function(data, allIndsXis, allIndsEtas, missing = "listwise"
     return(list(data.full = NULL, n = 0, k = 0, p = 0, cluster = NULL, idx = NULL))
 
   if (!is.null(cluster)) {
-    stopif(length(cluster) > 1L, "`cluster` must be a single variable!")
+    mod_stopif(length(cluster) > 1L, "`cluster` must be a single variable!")
 
     CLUSTER <- as.factor(data[, cluster])
 
   } else CLUSTER <- NULL
 
   if (!is.null(sampling.weights)) {
-    stopif(length(sampling.weights) > 1L, "`sampling.weights` must be a single variable!")
+    mod_stopif(length(sampling.weights) > 1L, "`sampling.weights` must be a single variable!")
     WEIGHTS <- data[, sampling.weights]
 
   } else WEIGHTS <- NULL
@@ -33,7 +33,7 @@ sortData <- function(data, allIndsXis, allIndsEtas) {
   ovs     <- colnames(data)
   missing <- inds[!inds %in% ovs]
 
-  stopif(!all(inds %in% ovs), "Missing observed variables in data:\n  ",
+  mod_stopif(!all(inds %in% ovs), "Missing observed variables in data:\n  ",
          paste(missing, collapse = ", "))
 
   data[unique(c(allIndsXis, allIndsEtas))]
@@ -51,13 +51,13 @@ castDataNumericMatrix <- function(data) {
     numericData <- lapplyDf(data, FUN = as.numeric)
   },
   warning = function(w) {
-    warning2("Warning in converting data to numeric: \n", w)
+    mod_msg_warn("Warning in converting data to numeric: \n", w)
     numericData <- suppressWarnings(lapplyDf(data, FUN = as.numeric))
-    stopif(anyAllNA(numericData), "Unable to convert data to type numeric")
+    mod_stopif(anyAllNA(numericData), "Unable to convert data to type numeric")
     numeric
   },
   error = function(e) {
-    stop2("Unable to convert data to type numeric")
+    mod_msg_stop("Unable to convert data to type numeric")
   })
   as.matrix(data)
 }
@@ -74,7 +74,7 @@ patternizeMissingDataFIML <- function(data) {
 
   rowMissingAll <- apply(obs, MARGIN = 1, FUN = \(x) !any(x))
   colMissingAll <- apply(obs, MARGIN = 2, FUN = \(x) !any(x))
-  stopif(any(colMissingAll),
+  mod_stopif(any(colMissingAll),
          "Please remove variables with only missing values:\n  ",
          paste0(colnames(obs)[colMissingAll], collapse = ", "))
 
@@ -147,12 +147,12 @@ handleMissingData <- function(data, missing = "listwise", CLUSTER = NULL, WEIGHT
     missingAllCol <- apply(data, MARGIN = 2, FUN = \(x) all(is.na(x)))
     colsMissing   <- colnames(data)[missingAllCol]
 
-    stop2("Please remove variables with only missing values:\n  ",
+    mod_msg_stop("Please remove variables with only missing values:\n  ",
           paste0(colsMissing, collapse = ", "))
   }
 
   if (missing %in% c("listwise", "casewise", "complete")) {
-    warning2("Removing missing values list-wise!\n",
+    mod_msg_warn("Removing missing values list-wise!\n",
              "Consider using `missing=\"fiml\"`, `missing=\"impute\"`, ",
              "or the `modsem_mimpute()` function!\n")
 
@@ -164,7 +164,7 @@ handleMissingData <- function(data, missing = "listwise", CLUSTER = NULL, WEIGHT
     return(out)
 
   } else if (missing == "impute") {
-    message("Imputing missing values. Consider using the `modsem_mimpute()` function!")
+    mod_msg_note("Imputing missing values. Consider using the `modsem_mimpute()` function!")
 
     imp  <- Amelia::amelia(data, m = 1, p2s = 0)
 
@@ -186,6 +186,6 @@ handleMissingData <- function(data, missing = "listwise", CLUSTER = NULL, WEIGHT
     return(data)
 
   } else {
-    stop2(sprintf("Unrecognized value for `missing`: `%s`", missing))
+    mod_msg_stop(sprintf("Unrecognized value for `missing`: `%s`", missing))
   }
 }

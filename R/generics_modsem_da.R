@@ -246,7 +246,7 @@ summary.modsem_da <- function(object,
 
     out$nullModel <- est_h0
     if (is.null(est_h0)) {
-      warning2("Comparative fit to H0 will not be calculated.", immediate. = FALSE)
+      mod_msg_warn("Comparative fit to H0 will not be calculated.")
       H0        <- FALSE
       out$D     <- NULL
       out$fitH0 <- NULL

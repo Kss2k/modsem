@@ -41,7 +41,7 @@ summary.modsem_pi <- function(object,
 
   # If no interaction effect, skip H0, r.squared, and warn if H0 requested
   if (!hasInteraction) {
-    warnif(H0, "Comparative fit to H0 will not be calculated.", immediate. = FALSE)
+    mod_warnif(H0, "Comparative fit to H0 will not be calculated.")
     class(out) <- c("summary_modsem_pi", "list")
     return(out)
   }
@@ -58,7 +58,7 @@ summary.modsem_pi <- function(object,
       out$LRT <- lrt
       out$fitH0 <- tryCatch(lavaan::fitMeasures(extract_lavaan(est_h0)), error = \(e) NA)
     }
-  }, error = \(e) warning2("Baseline model could not be estimated: ", e$message, immediate. = FALSE))
+  }, error = \(e) mod_msg_warn("Baseline model could not be estimated: ", e$message))
 
   # R-squared for latent endogenous variables only
   if (r.squared & length(etas)) tryCatch({
@@ -71,7 +71,7 @@ summary.modsem_pi <- function(object,
       out$r.squared.H0   <- r2AllH0[etas]
       out$r.squared.diff <- out$r.squared - out$r.squared.H0
     }
-  }, error = \(e) warning2("R-squared could not be computed: ", e$message, immediate. = FALSE))
+  }, error = \(e) mod_msg_warn("R-squared could not be computed: ", e$message))
 
   class(out) <- c("summary_modsem_pi", "list")
   out
@@ -370,11 +370,10 @@ standardized_estimates.modsem_pi <- function(object,
   cluster <- isClustered(object)
   rescale <- std.errors == "rescale"
 
-  stopif(hiorder && !rescale, 'Correction of higher-order models are ',
+  mod_stopif(hiorder && !rescale, 'Correction of higher-order models are ',
          'not supported at all with `std.errors = "rescale"`!')
-  stopif(cluster, "Correction of clustered (multilevel) models is not supported!")
-  warnif(hiorder && rescale, "Correction of higher-order models will likely not work!",
-         immediate. = FALSE)
+  mod_stopif(cluster, "Correction of clustered (multilevel) models is not supported!")
+  mod_warnif(hiorder && rescale, "Correction of higher-order models will likely not work!")
 
   parTable.std <- correction(object)
 

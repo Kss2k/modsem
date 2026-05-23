@@ -25,7 +25,7 @@ selectValuesByCol <- function(value, df, column.value, column.match) {
 # scale numeric vector is numeric
 scaleIfNumeric <- function(x, scaleFactor = TRUE) {
   if (is.null(x)) {
-    warning2("x in scaleIfNumeric was NULL")
+    mod_msg_warn("x in scaleIfNumeric was NULL")
     return(NULL)
   }
 
@@ -41,7 +41,7 @@ scaleIfNumeric <- function(x, scaleFactor = TRUE) {
 
 centerIfNumeric <- function(x, scaleFactor = TRUE) {
   if (is.null(x)) {
-    warning2("x in centerIfNumeric was NULL")
+    mod_msg_warn("x in centerIfNumeric was NULL")
     return(NULL)
   }
 
@@ -81,7 +81,7 @@ combineListDf <- function(listDf) {
   if (sum(as.integer(matchingColnames)) > 0) {
     duplicates <- stringr::str_c(colnames(listDf[[2]])[matchingColnames],
                                  collapse = ", ")
-    warning2("There were some duplicate product indicators, was this intended?\n",
+    mod_msg_warn("There were some duplicate product indicators, was this intended?\n",
              "The duplicates of these product indicators were removed: \n", duplicates, "\n")
   }
 
@@ -97,7 +97,7 @@ maxDepth <- function(list, max = 2, depth = 1) {
     return(depth)
   }
 
-  stopif(depth > max, "Incorrectly nested syntax")
+  mod_stopif(depth > max, "Incorrectly nested syntax")
   deepest <- 1
   for (i in seq_along(list)) {
     branchDepth <- maxDepth(list[[i]], max = max, depth + 1)
@@ -133,7 +133,7 @@ rbindParTable <- function(parTable, newRows) {
           list(row) %in% parTableRows,
         parTableRows = newParTableRows)
 
-  warnif(sum(as.integer(duplicateRows)) > 0,
+  mod_warnif(sum(as.integer(duplicateRows)) > 0,
           "Some duplicates in the parTable was removed, have you accidentally ",
           "specified some of these in your syntax? \n",
           capturePrint(parTable[duplicateRows, ]))
@@ -233,7 +233,7 @@ isLavLabelFunction <- function(label, context, warning = FALSE) {
 warnReplacingLabel <- function(old, new, parTable.row) {
   context <- paste(parTable.row$lhs, parTable.row$op,
                    paste0(old, "*", parTable.row$rhs))
-  warning2("Replacing `", old, "` with new label `", new, "` in: `",
+  mod_msg_warn("Replacing `", old, "` with new label `", new, "` in: `",
            context, "`")
 }
 
@@ -241,7 +241,7 @@ warnReplacingLabel <- function(old, new, parTable.row) {
 checkHigherOrderInteractions <- function(elementsInProds, parTable) {
   higherOrderLVs <- getHigherOrderLVs(parTable)
   for (xz in elementsInProds) {
-    stopif(any(xz %in% higherOrderLVs), "The `:` operator is not allowed ",
+    mod_stopif(any(xz %in% higherOrderLVs), "The `:` operator is not allowed ",
            "for higher order latent variables, please redefine the interaction term",
            "as a higher order latent variable using the `=~` operator.\n",
            "You can also try using `method=\"lms\"` or `rcs=TRUE`\n",
@@ -252,7 +252,7 @@ checkHigherOrderInteractions <- function(elementsInProds, parTable) {
 
 checkElementsInProds <- function(elementsInProds, lVs, oVs) {
   for (xz in elementsInProds) {
-    stopif(!all(xz %in% c(lVs, oVs)), "Unknown element in product term: `",
+    mod_stopif(!all(xz %in% c(lVs, oVs)), "Unknown element in product term: `",
            xz[!xz %in% c(lVs, oVs)][[1]], "`!")
   }
 }

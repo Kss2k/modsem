@@ -7,7 +7,7 @@ transformedSolutionCOEFS <- function(object,
                                      center = TRUE,
                                      standardize = TRUE,
                                      ...) {
-  stopif(!inherits(object, c("modsem_da", "modsem_pi", "lavaan", "modsem_mplus")),
+  mod_stopif(!inherits(object, c("modsem_da", "modsem_pi", "lavaan", "modsem_mplus")),
          "The model must be of class `modsem_da`, `modsem_mplus`, `modsem_pi` or `lavaan`!")
 
   isLav   <- inherits(object, "lavaan")
@@ -62,9 +62,8 @@ transformedSolutionCOEFS <- function(object,
     addVariances  <- (isNonCentered && isLav) || isMplus || isDA || missingVars
 
     if (addVariances) {
-      warnif(isLav,
-        "Replacing interaction (co-)", "variances when centering the model!\n",
-        immediate. = FALSE
+      mod_warnif(isLav,
+        "Replacing interaction (co-)", "variances when centering the model!\n"
       )
 
       # When replacing the covariance structure we might change the total variance
@@ -385,7 +384,7 @@ transformedSolutionCOEFS <- function(object,
   # fill parTable
   std.errors <- suppressWarnings(sqrt(diag(vcov)))
   warnFunc <- function(type, row) {
-    warning2("Unable to calculate standardized ", type, " for: ",
+    mod_msg_warn("Unable to calculate standardized ", type, " for: ",
              paste0(row$lhs, row$op, row$rhs))
   }
 
@@ -466,8 +465,7 @@ correctStdSolutionCOEFS <- function(parTable,
     Y <- rowsXZ$lhs[[1]]
 
     if (!length(Y)) {
-      warning2("No endogenous variable found for interaction term '", XZ, "'.",
-               immediate. = FALSE)
+      mod_msg_warn("No endogenous variable found for interaction term '", XZ, "'.")
       next
     }
 
@@ -600,7 +598,7 @@ centeredSolutionCOEFS <- function(object,
 
 
 getMeanFormula <- function(x, parTable, label.col = "label") {
-  stopif(length(x) > 1, "x must be a single string")
+  mod_stopif(length(x) > 1, "x must be a single string")
 
   meanY <- getIntercept(x, parTable = parTable, col = label.col)
   gamma <- parTable[parTable$lhs == x & parTable$op == "~", , drop = FALSE]

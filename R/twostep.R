@@ -81,7 +81,7 @@
 twostep <- function(model.syntax, data, method = "lms", ...) {
   if (method %in% PI_METHODS)      twostepfun <- twostepPI
   else if (method %in% DA_METHODS) twostepfun <- twostepDA
-  else stop2("Unsupported method: ", method)
+  else mod_msg_stop("Unsupported method: ", method)
 
   twostepfun(
      model.syntax = model.syntax,
@@ -99,7 +99,7 @@ twostepPI <- function(..., LAVFUN = NULL) { # capture LAVFUN arg
 
 twostepDA <- function(model.syntax, data, method = "lms", zero.tol = 1e-12,
                       fix.cov.xis = TRUE, ...) {
-  stopif(!method %in% DA_METHODS, "Unsupported method: ", method)
+  mod_stopif(!method %in% DA_METHODS, "Unsupported method: ", method)
 
   data <- as.data.frame(data)
   parTable      <- modsemify(model.syntax)

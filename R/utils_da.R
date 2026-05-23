@@ -979,8 +979,7 @@ sortParTableDA <- function(parTable, model) {
     score    <- mapping[as.character(x)]
 
     if (length(score) != length(x)) {
-      warning2("Sorting of parameter estimates failed!\n",
-               immediate. = FALSE)
+      mod_msg_warn("Sorting of parameter estimates failed!\n")
 
       return(seq_along(x))
     }
@@ -1198,13 +1197,13 @@ getZeroGroupParTable <- function(parTable) {
 
 prepareDataGroupDA <- function(group, data, sampling.weights, sampling.weights.normalization) {
   if (!is.null(sampling.weights)) {
-    stopif(length(sampling.weights) != 1L, "sampling.weights variable must be of length 1!")
-    stopif(!sampling.weights %in% names(data),
+    mod_stopif(length(sampling.weights) != 1L, "sampling.weights variable must be of length 1!")
+    mod_stopif(!sampling.weights %in% names(data),
            sprintf("sampling.weights variable '%s' not found in `data`.", sampling.weights))
 
     weights <- data[[sampling.weights]]
-    stopif(any(is.na(weights)), "`sampling.weights` cannot have missing values!")
-    stopif(any(weights < 0), "`sampling.weights` cannot have negative values!")
+    mod_stopif(any(is.na(weights)), "`sampling.weights` cannot have missing values!")
+    mod_stopif(any(weights < 0), "`sampling.weights` cannot have negative values!")
   }
 
   if ((!is.null(sampling.weights) && tolower(sampling.weights.normalization) == "total")) {
@@ -1233,15 +1232,15 @@ prepareDataGroupDA <- function(group, data, sampling.weights, sampling.weights.n
 
   data.raw <- data
 
-  stopif(!is.data.frame(data), "`data` must be a data.frame when grouping is used.")
+  mod_stopif(!is.data.frame(data), "`data` must be a data.frame when grouping is used.")
   n <- NROW(data)
-  stopif(n == 0L, "Grouping requires non-empty data.")
+  mod_stopif(n == 0L, "Grouping requires non-empty data.")
 
   group.raw <- NULL
   group.var <- NULL
 
-  stopif(length(group) != 1L, "Grouping variable must be of length 1!")
-  stopif(!group %in% names(data),
+  mod_stopif(length(group) != 1L, "Grouping variable must be of length 1!")
+  mod_stopif(!group %in% names(data),
          sprintf("Grouping variable '%s' not found in `data`.", group))
 
   group.raw <- data[[group]]
@@ -1258,8 +1257,8 @@ prepareDataGroupDA <- function(group, data, sampling.weights, sampling.weights.n
     }
   }
 
-  stopif(length(group.raw) != n, "Length of `group` must match the number of rows in `data`!")
-  stopif(any(is.na(group.raw)), "`group` cannot contain missing values!")
+  mod_stopif(length(group.raw) != n, "Length of `group` must match the number of rows in `data`!")
+  mod_stopif(any(is.na(group.raw)), "`group` cannot contain missing values!")
 
   group.raw <- as.character(group.raw) # match lavaan behaviour, ignore factor levels
   levels_order <- unique(group.raw)
@@ -1312,7 +1311,7 @@ expandGroupModifier <- function(mod, n.groups) {
   } else if (length(tokens) == 1L) {
     tokens <- rep(tokens, n.groups)
   } else {
-    stopif(length(tokens) != n.groups,
+    mod_stopif(length(tokens) != n.groups,
            sprintf("Found %d modifiers but expected %d groups.", length(tokens), n.groups))
   }
 
@@ -1386,7 +1385,7 @@ parseModelArgumentsByGroupDA <- function(model.syntax, cov.syntax,
   ovs       <- getOVs(rbind(parTable, parTableCov))
 
   missing <- setdiff(ovs, colnames(data))
-  stopif(length(missing), "Missing observed variables in data:\n  ",
+  mod_stopif(length(missing), "Missing observed variables in data:\n  ",
          paste(missing, collapse = ", "))
 
   varsInts  <- getVarsInts(getIntTermRows(parTable), removeColonNames = FALSE)

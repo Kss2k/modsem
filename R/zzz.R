@@ -8,7 +8,7 @@ getPackageVersion <- function(pkgname) {
       fields = "Version"
     ))
   }, error = function(e) {
-    warning2("Failed to get package version")
+    mod_msg_warn("Failed to get package version")
     "??" # replace this with a hard-coded value?
   })
 }

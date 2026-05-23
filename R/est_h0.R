@@ -86,7 +86,7 @@ estimate_h0.modsem_da <- function(object, warn_no_interaction = TRUE, ...) {
     constrainedParTable <- constrainedParTable[!islvint, , drop = FALSE]
 
     if (!haslvint && !hasovint) {
-      warnif(warn_no_interaction, "No interaction terms found in the model. ",
+      mod_warnif(warn_no_interaction, "No interaction terms found in the model. ",
              "The baseline model is identical to the original model, ",
              "and won't be estimated!")
       return(NULL)
@@ -101,7 +101,7 @@ estimate_h0.modsem_da <- function(object, warn_no_interaction = TRUE, ...) {
     do.call(modsem_da, args = argList)
   },
   error = function(e) {
-    warning2("Null model could not be estimated. ",
+    mod_msg_warn("Null model could not be estimated. ",
              "Error message: ", e$message)
     NULL
   })
@@ -135,21 +135,20 @@ estimate_h0.modsem_pi <- function(object, warn_no_interaction = TRUE,
   argList[newArgNames] <- newArgList[newArgNames]
 
   if (!is.null(lavArgs$cluster)) {
-    warning2("Baseline model cannot (yet) be estimated with clustering!", .immediate. = FALSE)
+    mod_msg_warn("Baseline model cannot (yet) be estimated with clustering!")
     return(NULL)
   }
 
   tryCatch({
     if (!parTableHasInteraction(parTable)) {
-      warnif(warn_no_interaction,
+      mod_warnif(warn_no_interaction,
              "No interaction terms found in the model. ",
              "The baseline model is identical to the original model, ",
              "and won't be estimated!")
       return(NULL)
 
     } else if (parTableHasHigherOrderInteraction(parTable)) {
-      warning2("Unable to estimate baseline model for models with higher-order interaction terms!",
-               immediate. = FALSE)
+      mod_msg_warn("Unable to estimate baseline model for models with higher-order interaction terms!")
       return(NULL)
     }
 
@@ -173,15 +172,14 @@ estimate_h0.modsem_pi <- function(object, warn_no_interaction = TRUE,
     fit <- do.call(modsem_pi, args = argList)
 
     if (is.null(extract_lavaan(fit))) {
-      warning2("`lavaan` failed when estimating the model!", immediate. = FALSE)
+      mod_msg_warn("`lavaan` failed when estimating the model!")
       return(NULL)
     }
 
     fit
   },
   error = function(e) {
-    warning2("Baseline model could not be estimated: ", e$message,
-             immediate. = FALSE)
+    mod_msg_warn("Baseline model could not be estimated: ", e$message)
     NULL
   })
 }

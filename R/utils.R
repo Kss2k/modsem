@@ -1,27 +1,5 @@
-warning2 <- function(..., call. = FALSE, immediate. = TRUE) {
-  warning(..., call. = call., immediate. = immediate.)
-}
-
-
-stop2 <- function(..., call. = FALSE) {
-  stop(..., call. = call.)
-}
-
-
-stopif <- function(cond, ...) {
-  if (cond) stop2(...)
-}
-
-
-warnif <- function(cond, ..., .newline = FALSE) {
-  if (!isTRUE(cond)) return(invisible(NULL))
-  if (.newline) cat("\n")
-  warning2(...)
-}
-
-
 calcCovParTable <- function(x, y, parTable, measurement.model = FALSE, maxlen = 100) {
-  stopif(length(x) != length(y), "x and y must be the same length")
+  mod_stopif(length(x) != length(y), "x and y must be the same length")
 
   if (measurement.model) parTable <- redefineMeasurementModel(parTable)
   parTable <- parTable[!parTable$op %in% c(":=", "~1", "=~"), ]
@@ -39,7 +17,7 @@ calcVarParTable <- function(x, parTable, measurement.model = FALSE, maxlen = 100
 
 
 reverseIntTerm <- function(xz) {
-  stopif(length(xz) > 1, "xz must be a single string")
+  mod_stopif(length(xz) > 1, "xz must be a single string")
   stringr::str_c(rev(stringr::str_split_1(xz, ":")), collapse = ":")
 }
 
@@ -55,7 +33,7 @@ getEtas <- function(parTable, isLV = FALSE, checkAny = TRUE) {
   etas.rhs <- parTable[cond.rhs, "rhs"]
 
   etas <- unique(c(etas.rhs, etas.lhs))
-  stopif(checkAny && !length(etas), "No etas found")
+  mod_stopif(checkAny && !length(etas), "No etas found")
 
   etas
 }
@@ -82,7 +60,7 @@ getSortedEtas <- function(parTable, isLV = FALSE, checkAny = TRUE) {
   sortedEtas  <- character(0L)
 
   while (length(sortedEtas) < length(unsortedEtas) && nrow(structExprs) > 0) {
-    stopif(all(unique(structExprs$lhs) %in% structExprs$rhs), "Model is non-recursive")
+    mod_stopif(all(unique(structExprs$lhs) %in% structExprs$rhs), "Model is non-recursive")
 
     for (i in seq_len(nrow(structExprs))) {
       if ((eta <- structExprs[i, "lhs"]) %in% structExprs$rhs) next
@@ -115,7 +93,7 @@ getXis <- function(parTable, etas = NULL, isLV = TRUE, checkAny = TRUE) {
 
   xis <- xis[!grepl(":", xis)] # remove interaction terms
 
-  stopif(checkAny && !length(xis), "No xis found")
+  mod_stopif(checkAny && !length(xis), "No xis found")
   xis
 }
 
@@ -138,7 +116,7 @@ getComposites <- function(parTable) {
 
 getOVs <- function(parTable = NULL, model.syntax = NULL) {
   if (!is.null(model.syntax)) parTable <- modsemify(model.syntax)
-  stopif(is.null(parTable), "Missing parTable")
+  mod_stopif(is.null(parTable), "Missing parTable")
 
   lVs    <- getLVs(parTable)
   select <- parTable$op %in% c("<~", "=~", "~", "~~")
@@ -189,7 +167,7 @@ getIndsLVs <- function(parTable, lVs, isOV = FALSE, ovs = NULL) {
   if (!length(lVs)) return(NULL)
 
   measr <- parTable[parTable$op %in% c("<~", "=~") & parTable$lhs %in% lVs, ]
-  stopif(!NROW(measr), "No measurement expressions found, for", lVs)
+  mod_stopif(!NROW(measr), "No measurement expressions found, for", lVs)
 
   if (isOV) .f <- \(lV) measr[measr$lhs == lV & measr$rhs %in% ovs, "rhs"]
   else      .f <- \(lV) measr[measr$lhs == lV, "rhs"]
@@ -300,7 +278,7 @@ isModsemObject <- function(x) {
 
 
 getIntercept <- function(x, parTable, col = "est") {
-  if (length(x) > 1) stop2("x must be a single string")
+  if (length(x) > 1) mod_msg_stop("x must be a single string")
 
   intercept <- parTable[parTable$lhs == x & parTable$op == "~1", col]
 
@@ -318,7 +296,7 @@ getIntercepts <- function(x, parTable) {
 
 
 getMean <- function(x, parTable) {
-  stopif(length(x) > 1, "x must be a single string")
+  mod_stopif(length(x) > 1, "x must be a single string")
 
   meanY <- getIntercept(x, parTable = parTable)
   gamma <- parTable[parTable$lhs == x & parTable$op == "~", , drop = FALSE]
@@ -647,13 +625,13 @@ sortConstrExprs <- function(parTable) {
   rows <- rows[!(isConst & rows$op %in% BOUNDUARY_OPS), ] # not relevant
 
   if (!all(rows$lhs %in% labelled)) {
-    stop2("Unknown labels in constraints: ", rows$lhs[!rows$lhs %in% labelled])
+    mod_msg_stop("Unknown labels in constraints: ", rows$lhs[!rows$lhs %in% labelled])
 
   } else if (length(unique(rows$lhs)) != length(rows$lhs)) {
-    stop2("Duplicated labels in constraints:\n", capturePrint(table(rows$lhs)))
+    mod_msg_stop("Duplicated labels in constraints:\n", capturePrint(table(rows$lhs)))
 
   } else if (any(rows$op %in% BOUNDUARY_OPS)) {
-    stop2("Dynamic constraints with ('<', '>') are not implemented yet!")
+    mod_msg_stop("Dynamic constraints with ('<', '>') are not implemented yet!")
   }
 
   definedLabels <- labelled[!labelled %in% rows$lhs]
@@ -672,12 +650,12 @@ sortConstrExprs <- function(parTable) {
       }
     }
 
-    stopif(!matchedAny, "Unkown labels in constraints: ",
+    mod_stopif(!matchedAny, "Unkown labels in constraints: ",
            labels_i[!labels_i %in% definedLabels])
   }
 
   if (NROW(sortedRows) != NROW(rows)) {
-    warning2("Something went wrong when sorting and parsing constraint-expressions ",
+    mod_msg_warn("Something went wrong when sorting and parsing constraint-expressions ",
              "attempting to estimate model with unsorted expressions")
     return(rows)
   }
@@ -858,5 +836,3 @@ std1 <- function(v) {
 
   (v - mu) / sigma
 }
-
-

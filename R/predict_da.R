@@ -119,13 +119,13 @@ modsemPredictEtaDA_Group <- function(submodel, data, method = c("EBM", "ML")) {
   .f <- switch(method,
     ML  = logLikFromZetaMLCpp,
     EBM = logLikFromZetaEBMCpp,
-    stop2("Unrecognized method: ", method, "!")
+    mod_msg_stop("Unrecognized method: ", method, "!")
   )
 
   .g <- switch(method,
     ML  = gradLogLikFromZetaMLCpp,
     EBM = gradLogLikFromZetaEBMCpp,
-    stop2("Unrecognized method: ", method, "!")
+    mod_msg_stop("Unrecognized method: ", method, "!")
   )
 
   k   <- NCOL(matrices$phi) + NCOL(matrices$psi)
@@ -155,7 +155,7 @@ modsemPredictEtaDA_Group <- function(submodel, data, method = c("EBM", "ML")) {
         Eta.p[i, ] <- impliedEtaFromZetaCpp(zeta = opt_i$par, xptr = xptr)
 
       }, error = function(e) {
-        warning2(sprintf("nlminb() failed for pattern %i, row %i!", p, i))
+        mod_msg_warn(sprintf("nlminb() failed for pattern %i, row %i!", p, i))
         NULL
       })
     }
@@ -188,11 +188,11 @@ prepNewdataDA <- function(object, newdata) {
   n.groups   <- length(submodels)
 
   if (!is.null(group.var)) {
-    stopif(!group.var %in% colnames(newdata),
+    mod_stopif(!group.var %in% colnames(newdata),
            sprintf("Grouping variable '%s' not found in `newdata`.", group.var))
 
     group.levels <- object$model$info$group.levels
-    stopif(is.null(group.levels),
+    mod_stopif(is.null(group.levels),
            "Model has a grouping variable but group levels could not be determined.")
 
     group.values <- as.character(newdata[[group.var]])
@@ -201,7 +201,7 @@ prepNewdataDA <- function(object, newdata) {
       cols <- colnames(submodels[[g]]$data$data.full)
 
       missing.cols <- setdiff(cols, colnames(newdata))
-      stopif(length(missing.cols),
+      mod_stopif(length(missing.cols),
              "Missing columns in `newdata`:\n  ", paste(missing.cols, collapse = ", "))
 
       rows.g <- group.values == group.levels[[g]]
@@ -219,7 +219,7 @@ prepNewdataDA <- function(object, newdata) {
     cols <- colnames(submodels[[1L]]$data$data.full)
 
     missing.cols <- setdiff(cols, colnames(newdata))
-    stopif(length(missing.cols),
+    mod_stopif(length(missing.cols),
            "Missing columns in `newdata`:\n  ", paste(missing.cols, collapse = ", "))
 
     mat <- as.matrix(newdata[, cols, drop = FALSE])
@@ -245,7 +245,7 @@ addStructOVColumnsDA <- function(newdata, object) {
     ovIntNew <- stringr::str_replace_all(ovInt, ":", OP_OV_INT)
 
     missing <- setdiff(vars, colnames(newdata))
-    stopif(length(missing),
+    mod_stopif(length(missing),
            "Missing columns in `newdata` required for interaction term '", ovInt, "':\n  ",
            paste(missing, collapse = ", "))
 
@@ -257,7 +257,7 @@ addStructOVColumnsDA <- function(newdata, object) {
   plainStructOVs <- setdiff(structovs, ovIntNewNms)
 
   missing <- setdiff(plainStructOVs, colnames(newdata))
-  stopif(length(missing),
+  mod_stopif(length(missing),
     "Missing columns in `newdata`:\n  ", paste(missing, collapse = ", ")
   )
 

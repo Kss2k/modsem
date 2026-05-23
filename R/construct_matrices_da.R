@@ -134,7 +134,7 @@ constructLambda <- function(lVs, indsLVs, parTable, auto.fix.first = TRUE, mode 
       composites <- getComposites(parTable)
       lambda[,setdiff(colnames(lambda), composites)] <- 0
     },
-    stop2("Unsupported mode: ", mode, "!")
+    mod_msg_stop("Unsupported mode: ", mode, "!")
   )
 
   setMatrixConstraints(X = lambda, parTable = parTable, op = op,
@@ -417,7 +417,7 @@ constructR <- function(etas, indsEtas, lambdaY, method = "qml") {
   lastRow <- lastCol <- 0
   for (i in seq_len(numEtas)) {
     nInds <- numIndsEtas[[etas[[i]]]] - 1
-    if (nInds == 0) stop2("Etas in QML must have at least two indicators")
+    if (nInds == 0) mod_msg_stop("Etas in QML must have at least two indicators")
     # free params
     R[seq_len(nInds) + lastRow, lastCol + 1] <- NA
     R[seq_len(nInds) + lastRow,
@@ -640,8 +640,8 @@ sortXis <- function(xis, varsInts, etas, intTerms, double, structovs = NULL,
     if (any(interaction %in% nonLinearXis) && !double ||
         all(interaction %in% nonLinearXis) && double) next # no need to add it again
 
-    stopif(length(interaction) > 2, "Only interactions between two variables are allowed")
-    stopif(all(interaction %in% etas),
+    mod_stopif(length(interaction) > 2, "Only interactions between two variables are allowed")
+    mod_stopif(all(interaction %in% etas),
            "Interactions between two endogenous variables are not allowed!",
            "You can try passing `auto.split.syntax=TRUE` to fix the issue.",
            "See \nvignette(\"interaction_two_etas\", \"modsem\").")

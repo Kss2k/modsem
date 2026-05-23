@@ -138,7 +138,7 @@ simple_slopes <- function(x,
                           standardized = FALSE,
                           xz = NULL,
                           ...) {
-  stopif(!isModsemObject(model) && !isLavaanObject(model), "model must be of class ",
+  mod_stopif(!isModsemObject(model) && !isLavaanObject(model), "model must be of class ",
          "'modsem_pi', 'modsem_da', 'modsem_mplus' or 'lavaan'")
 
   if (standardized) {
@@ -222,11 +222,11 @@ simpleSlopesGroup <- function(x, z, y, parTable, model, vals_x, vals_z, rescale,
   var_x   <- calcCovParTable(x, x, parTable)
   var_z   <- calcCovParTable(z, z, parTable)
 
-  stopif(is.na(var_x), "Variance for x not found in model")
-  stopif(is.na(var_z), "Variance for z not found in model")
-  stopif(length(beta_x) == 0, "Coefficient for x not found in model")
-  stopif(length(beta_z) == 0, "Coefficient for z not found in model")
-  warnif(length(beta_xz) == 0, "Coefficient for interaction term not found in model")
+  mod_stopif(is.na(var_x), "Variance for x not found in model")
+  mod_stopif(is.na(var_z), "Variance for z not found in model")
+  mod_stopif(length(beta_x) == 0, "Coefficient for x not found in model")
+  mod_stopif(length(beta_z) == 0, "Coefficient for z not found in model")
+  mod_warnif(length(beta_xz) == 0, "Coefficient for interaction term not found in model")
 
   if (!length(beta_xx)) beta_xx <- 0
   if (!length(beta_xz)) beta_xz <- 0
@@ -520,8 +520,8 @@ checkInputsSimpleSlopes <- function(..., parTable) {
   variables <- c(parTable[varmask, "lhs"], parTable[varmask, "rhs"])
   variables <- unique(variables[variables != ""])
 
-  checkLength <- \(x, nm) stopif(length(x) != 1L, nm, " must be of length 1!")
-  checkExists <- \(x) stopif(!x %in% variables && !grepl(":", x),
+  checkLength <- \(x, nm) mod_stopif(length(x) != 1L, nm, " must be of length 1!")
+  checkExists <- \(x) mod_stopif(!x %in% variables && !grepl(":", x),
                              "Unrecognized variable: ", x, "!")
 
   params <- list(...)
@@ -545,8 +545,8 @@ getVcovSimpleSlopes <- function(model, standardized = FALSE) {
     return(lavaan::lavInspect(model, what = what))
 
   } else {
-    warning2("standardized vcov is not available for model of class: ",
-             class(model)[[1L]], immediate. = FALSE)
+    mod_msg_warn("standardized vcov is not available for model of class: ",
+             class(model)[[1L]])
     return(vcov(model))
   }
 }

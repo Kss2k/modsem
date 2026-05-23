@@ -13,10 +13,10 @@ evalToken.LavOperator <- function(token, lhs, rhs) {
   if (is.LavToken(rhs)) rhs <- list(rhs)
   if (is.LavToken(lhs)) lhs <- list(lhs)
 
-  stopif(!is.atomic(lhs) && is.LavOperator(lhs$op), "Unexpected operator ",
+  mod_stopif(!is.atomic(lhs) && is.LavOperator(lhs$op), "Unexpected operator ",
          highlightErrorToken(lhs$op))
 
-  stopif(!is.atomic(rhs) && is.LavOperator(rhs$op), "Unexpected operator ",
+  mod_stopif(!is.atomic(rhs) && is.LavOperator(rhs$op), "Unexpected operator ",
          highlightErrorToken(rhs$op))
 
   list(lhs = lhs, op = token, rhs = rhs)
@@ -31,9 +31,9 @@ evalToken.LavToken <- function(token, lhs, rhs) {
 
 #' @export
 evalToken.LavName <- function(token, lhs, rhs) {
-  stopif(is.LavToken(rhs), "Unexpected token ",
+  mod_stopif(is.LavToken(rhs), "Unexpected token ",
          highlightErrorToken(rhs))
-  stopif(is.LavToken(lhs), "Unexpected token ",
+  mod_stopif(is.LavToken(lhs), "Unexpected token ",
          highlightErrorToken(lhs))
   token
 }
@@ -41,9 +41,9 @@ evalToken.LavName <- function(token, lhs, rhs) {
 
 #' @export
 evalToken.LavNumeric <- function(token, lhs, rhs) {
-  stopif(is.LavToken(rhs), "Unexpected token ",
+  mod_stopif(is.LavToken(rhs), "Unexpected token ",
          highlightErrorToken(rhs))
-  stopif(is.LavToken(lhs), "Unexpected token ",
+  mod_stopif(is.LavToken(lhs), "Unexpected token ",
          highlightErrorToken(lhs))
   token
 }
@@ -52,9 +52,9 @@ evalToken.LavNumeric <- function(token, lhs, rhs) {
 #' @export
 evalToken.LavAdd <- function(token, lhs, rhs) {
   if (is.null(rhs)) {
-    stop2("Expected token after `+` ", highlightErrorToken(token))
+    mod_msg_stop("Expected token after `+` ", highlightErrorToken(token))
   } else if (is.null(lhs)) {
-    stop2("Expected token before `+` ", highlightErrorToken(token))
+    mod_msg_stop("Expected token before `+` ", highlightErrorToken(token))
   }
 
   if (is.LavToken(rhs)) {
@@ -92,7 +92,7 @@ evalToken.LavBlank <- function(token, lhs, rhs) {
 #' @export
 evalToken.LavInteraction <- function(token, lhs, rhs) {
   if (!"LavName" %in% class(lhs) || !"LavName" %in% class(rhs)) {
-    stop2("Interactions are reserved for objects ", highlightErrorToken(token))
+    mod_msg_stop("Interactions are reserved for objects ", highlightErrorToken(token))
   }
   out <- paste0(lhs, token, rhs)
   attributes(out) <- attributes(lhs)
@@ -238,7 +238,7 @@ createParTableBranch <- function(syntaxTree) {
 modsemify <- function(syntax, parentheses.as.string = FALSE) {
   if (is.null(syntax)) return(NULL)
 
-  stopif(!is.character(syntax) && length(syntax) > 1,
+  mod_stopif(!is.character(syntax) && length(syntax) > 1,
          "Syntax is not a string og length 1")
 
   on.exit({
@@ -322,7 +322,7 @@ parTableToSyntax <- function(parTable, removeColon = FALSE) {
 
 
 mergeTokens <- function(x, y) {
-  stopif(!"LavName" %in% class(x) || !"LavName" %in% class(x),
+  mod_stopif(!"LavName" %in% class(x) || !"LavName" %in% class(x),
          "Interactions are reserved for objects ",
          highlightErrorToken(x))
 

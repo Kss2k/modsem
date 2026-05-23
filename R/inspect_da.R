@@ -15,7 +15,7 @@ modsem_inspect_da <- function(model,
   .modsemVector <- \(...) modsemVector(..., is.public = is.public)
   .modsemMatrix <- \(...) modsemMatrix(..., is.public = is.public)
 
-  stopif(!length(what), "`what` is of length zero!")
+  mod_stopif(!length(what), "`what` is of length zero!")
 
   if (standardized)
     model <- standardize_model(model)
@@ -290,9 +290,8 @@ modsem_inspect_da <- function(model,
   nullvalues <- vapply(fields, FUN.VALUE = logical(1L), FUN = is.null)
   okifnull   <- names(fields) %in% c("group", "group.label")
 
-  warnif(any(nullvalues & !okifnull),
-         "Some fields in `modsem_inspect()` could not be retrieved!",
-         immediate. = FALSE)
+  mod_warnif(any(nullvalues & !okifnull),
+         "Some fields in `modsem_inspect()` could not be retrieved!")
 
   fields
 }
