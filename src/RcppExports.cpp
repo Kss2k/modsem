@@ -354,6 +354,99 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// modelMatrixCacheCpp
+SEXP modelMatrixCacheCpp(Rcpp::List matrices);
+RcppExport SEXP _modsem_modelMatrixCacheCpp(SEXP matricesSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::List >::type matrices(matricesSEXP);
+    rcpp_result_gen = Rcpp::wrap(modelMatrixCacheCpp(matrices));
+    return rcpp_result_gen;
+END_RCPP
+}
+// impliedEtaFromZetaCpp
+arma::vec impliedEtaFromZetaCpp(const arma::vec zeta, const SEXP xptr);
+RcppExport SEXP _modsem_impliedEtaFromZetaCpp(SEXP zetaSEXP, SEXP xptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::vec >::type zeta(zetaSEXP);
+    Rcpp::traits::input_parameter< const SEXP >::type xptr(xptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(impliedEtaFromZetaCpp(zeta, xptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// impliedYFromEtaCpp
+arma::vec impliedYFromEtaCpp(const arma::vec eta, const SEXP xptr);
+RcppExport SEXP _modsem_impliedYFromEtaCpp(SEXP etaSEXP, SEXP xptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::vec >::type eta(etaSEXP);
+    Rcpp::traits::input_parameter< const SEXP >::type xptr(xptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(impliedYFromEtaCpp(eta, xptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// logLikFromZetaMLCpp
+double logLikFromZetaMLCpp(const arma::vec zeta, const arma::vec y, const SEXP xptr, const arma::uvec idx);
+RcppExport SEXP _modsem_logLikFromZetaMLCpp(SEXP zetaSEXP, SEXP ySEXP, SEXP xptrSEXP, SEXP idxSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::vec >::type zeta(zetaSEXP);
+    Rcpp::traits::input_parameter< const arma::vec >::type y(ySEXP);
+    Rcpp::traits::input_parameter< const SEXP >::type xptr(xptrSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec >::type idx(idxSEXP);
+    rcpp_result_gen = Rcpp::wrap(logLikFromZetaMLCpp(zeta, y, xptr, idx));
+    return rcpp_result_gen;
+END_RCPP
+}
+// gradLogLikFromZetaMLCpp
+arma::vec gradLogLikFromZetaMLCpp(const arma::vec zeta, const arma::vec y, const SEXP xptr, const arma::uvec idx, const double eps);
+RcppExport SEXP _modsem_gradLogLikFromZetaMLCpp(SEXP zetaSEXP, SEXP ySEXP, SEXP xptrSEXP, SEXP idxSEXP, SEXP epsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::vec >::type zeta(zetaSEXP);
+    Rcpp::traits::input_parameter< const arma::vec >::type y(ySEXP);
+    Rcpp::traits::input_parameter< const SEXP >::type xptr(xptrSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec >::type idx(idxSEXP);
+    Rcpp::traits::input_parameter< const double >::type eps(epsSEXP);
+    rcpp_result_gen = Rcpp::wrap(gradLogLikFromZetaMLCpp(zeta, y, xptr, idx, eps));
+    return rcpp_result_gen;
+END_RCPP
+}
+// logLikFromZetaEBMCpp
+double logLikFromZetaEBMCpp(const arma::vec zeta, const arma::vec y, const SEXP xptr, const arma::uvec idx);
+RcppExport SEXP _modsem_logLikFromZetaEBMCpp(SEXP zetaSEXP, SEXP ySEXP, SEXP xptrSEXP, SEXP idxSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::vec >::type zeta(zetaSEXP);
+    Rcpp::traits::input_parameter< const arma::vec >::type y(ySEXP);
+    Rcpp::traits::input_parameter< const SEXP >::type xptr(xptrSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec >::type idx(idxSEXP);
+    rcpp_result_gen = Rcpp::wrap(logLikFromZetaEBMCpp(zeta, y, xptr, idx));
+    return rcpp_result_gen;
+END_RCPP
+}
+// gradLogLikFromZetaEBMCpp
+arma::vec gradLogLikFromZetaEBMCpp(const arma::vec zeta, const arma::vec y, const SEXP xptr, const arma::uvec idx, const double eps);
+RcppExport SEXP _modsem_gradLogLikFromZetaEBMCpp(SEXP zetaSEXP, SEXP ySEXP, SEXP xptrSEXP, SEXP idxSEXP, SEXP epsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::vec >::type zeta(zetaSEXP);
+    Rcpp::traits::input_parameter< const arma::vec >::type y(ySEXP);
+    Rcpp::traits::input_parameter< const SEXP >::type xptr(xptrSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec >::type idx(idxSEXP);
+    Rcpp::traits::input_parameter< const double >::type eps(epsSEXP);
+    rcpp_result_gen = Rcpp::wrap(gradLogLikFromZetaEBMCpp(zeta, y, xptr, idx, eps));
+    return rcpp_result_gen;
+END_RCPP
+}
 // tracePathsNumericCpp
 Rcpp::NumericVector tracePathsNumericCpp(Rcpp::CharacterVector x, Rcpp::CharacterVector y, Rcpp::DataFrame parTable, int maxlen);
 RcppExport SEXP _modsem_tracePathsNumericCpp(SEXP xSEXP, SEXP ySEXP, SEXP parTableSEXP, SEXP maxlenSEXP) {
@@ -407,6 +500,13 @@ static const R_CallMethodDef CallEntries[] = {
     {"_modsem_repDmvnormCpp", (DL_FUNC) &_modsem_repDmvnormCpp, 5},
     {"_modsem_totalDmvnWeighted", (DL_FUNC) &_modsem_totalDmvnWeighted, 6},
     {"_modsem_dmvnfast", (DL_FUNC) &_modsem_dmvnfast, 6},
+    {"_modsem_modelMatrixCacheCpp", (DL_FUNC) &_modsem_modelMatrixCacheCpp, 1},
+    {"_modsem_impliedEtaFromZetaCpp", (DL_FUNC) &_modsem_impliedEtaFromZetaCpp, 2},
+    {"_modsem_impliedYFromEtaCpp", (DL_FUNC) &_modsem_impliedYFromEtaCpp, 2},
+    {"_modsem_logLikFromZetaMLCpp", (DL_FUNC) &_modsem_logLikFromZetaMLCpp, 4},
+    {"_modsem_gradLogLikFromZetaMLCpp", (DL_FUNC) &_modsem_gradLogLikFromZetaMLCpp, 5},
+    {"_modsem_logLikFromZetaEBMCpp", (DL_FUNC) &_modsem_logLikFromZetaEBMCpp, 4},
+    {"_modsem_gradLogLikFromZetaEBMCpp", (DL_FUNC) &_modsem_gradLogLikFromZetaEBMCpp, 5},
     {"_modsem_tracePathsNumericCpp", (DL_FUNC) &_modsem_tracePathsNumericCpp, 4},
     {"_modsem_tracePathsCharacterCpp", (DL_FUNC) &_modsem_tracePathsCharacterCpp, 5},
     {NULL, NULL, 0}

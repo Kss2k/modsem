@@ -89,6 +89,34 @@ dmvnfast <- function(X, mu, sigma, log, ncores, isChol) {
     .Call(`_modsem_dmvnfast`, X, mu, sigma, log, ncores, isChol)
 }
 
+modelMatrixCacheCpp <- function(matrices) {
+    .Call(`_modsem_modelMatrixCacheCpp`, matrices)
+}
+
+impliedEtaFromZetaCpp <- function(zeta, xptr) {
+    .Call(`_modsem_impliedEtaFromZetaCpp`, zeta, xptr)
+}
+
+impliedYFromEtaCpp <- function(eta, xptr) {
+    .Call(`_modsem_impliedYFromEtaCpp`, eta, xptr)
+}
+
+logLikFromZetaMLCpp <- function(zeta, y, xptr, idx) {
+    .Call(`_modsem_logLikFromZetaMLCpp`, zeta, y, xptr, idx)
+}
+
+gradLogLikFromZetaMLCpp <- function(zeta, y, xptr, idx, eps = 1e-4) {
+    .Call(`_modsem_gradLogLikFromZetaMLCpp`, zeta, y, xptr, idx, eps)
+}
+
+logLikFromZetaEBMCpp <- function(zeta, y, xptr, idx) {
+    .Call(`_modsem_logLikFromZetaEBMCpp`, zeta, y, xptr, idx)
+}
+
+gradLogLikFromZetaEBMCpp <- function(zeta, y, xptr, idx, eps = 1e-4) {
+    .Call(`_modsem_gradLogLikFromZetaEBMCpp`, zeta, y, xptr, idx, eps)
+}
+
 tracePathsNumericCpp <- function(x, y, parTable, maxlen = 100L) {
     .Call(`_modsem_tracePathsNumericCpp`, x, y, parTable, maxlen)
 }
