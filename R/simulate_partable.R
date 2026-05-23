@@ -68,8 +68,8 @@ simulateDataParTableGroup <- function(parTable, N, colsOVs = NULL, colsLVs = NUL
   varsIntTerms <- getVarsInts(intTermRows, removeColonNames = FALSE)
 
   mod_stopif(any(vapply(varsIntTerms, FUN.VALUE = numeric(1L), FUN = length) > 2),
-         "Cannot simulate data for interaction effects with more than two ",
-         "components, yet")
+         paste0("Cannot simulate data for interaction effects with more than two ",
+         "components, yet"))
 
   # simulate data for xis
   phi <- rmvnormParTable(parTable, type = "phi", N = N)

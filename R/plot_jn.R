@@ -277,8 +277,8 @@ getJN_GridDelta <- function(x, z, y, parTable, model, min_z, max_z, sig.level, a
   npar <- length(coef(model))
   df_resid <- nobs - npar
   if (df_resid < 1) {
-    mod_msg_warn("Degrees of freedom for residuals must be greater than 0. ",
-             "Using sample size instead of degrees of freedom")
+    mod_msg_warn(paste0("Degrees of freedom for residuals must be greater than 0. ",
+             "Using sample size instead of degrees of freedom"))
     df_resid <- nobs
   }
 

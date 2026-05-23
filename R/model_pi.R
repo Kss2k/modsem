@@ -24,8 +24,8 @@ parseLavaan <- function(model.syntax = NULL,
   # Get all the indicators in the model
   inds <- getIndicators(parTable, observed=TRUE)
   mod_stopif(!all(inds %in% variableNames),
-         "Unable to find observed variables in data: ",
-         capturePrint(inds[!inds %in% variableNames]))
+         paste0("Unable to find observed variables in data: ",
+         capturePrint(inds[!inds %in% variableNames])))
 
   # Are prods latent?
   elementsInProds <- lapplyNamed(prodNames,
@@ -133,8 +133,8 @@ getIndsVariable <- function(varName = NULL,  indsLatents = NULL) {
   }
 
   # Error if it is neither a latent- nor an observerd variable
-  mod_msg_stop("Something went wrong in getIndsVariable(), ",
-        "varName neither observed not latent")
+  mod_msg_stop(paste0("Something went wrong in getIndsVariable(), ",
+        "varName neither observed not latent"))
 }
 
 
@@ -185,8 +185,8 @@ createRelDf <- function(indsProdTerm,
                       FUN = length)
 
     if ((shortest <- min(lengths)) != (longest <- max(lengths))) {
-      mod_warnif(!suppress.warnings.match, "Unequal number of indicators for latent variables ",
-             "in product term, some indicators will be recycled!")
+      mod_warnif(!suppress.warnings.match, paste0("Unequal number of indicators for latent variables ",
+             "in product term, some indicators will be recycled!"))
 
       if (match.recycle)
         selector <- \(x) x[rep(seq_along(x), length.out = longest)]

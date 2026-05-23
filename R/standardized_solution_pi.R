@@ -41,7 +41,7 @@ correctStdSolutionPI <- function(object, parTable.std) {
       y <- rowsXZ$lhs[[1]]
 
       if (!length(y)) {
-        mod_msg_warn("No endogenous variable found for interaction term '", xz, "'.")
+        mod_msg_warn(paste0("No endogenous variable found for interaction term '", xz, "'."))
         next
       }
 
@@ -129,8 +129,8 @@ correctStdSolutionPI <- function(object, parTable.std) {
 
     mod_warnif(
       any(abs(varEtas - 1) > 1e-10),
-      "Some variances are not equal to 1! ",
-      "This indicates that the solution was not standardized correctly!"
+      paste0("Some variances are not equal to 1! ",
+      "This indicates that the solution was not standardized correctly!")
     )
 
     parTable.std.new <- rbind(parTable.std.new, parTable.g.std)
@@ -140,7 +140,7 @@ correctStdSolutionPI <- function(object, parTable.std) {
   constrExprs <- sortConstrExprsFinalPt(parTable.std) # not .new
 
   errorWarning <- function(e) {
-    mod_msg_warn("Calculation of custom parameter failed: ", e)
+    mod_msg_warn(paste0("Calculation of custom parameter failed: ", e))
     NA
   }
 

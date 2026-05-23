@@ -98,8 +98,8 @@ modsem_mimput_modsem_da <- function(model.syntax,
 
   missing.cols <- !ovs %in% colnames(data)
   mod_stopif(any(missing.cols),
-         "Variables missing from data:\n",
-         paste(ovs[missing.cols], sep = "\n"))
+         paste0("Variables missing from data:\n",
+         paste(ovs[missing.cols], sep = "\n")))
 
   data <- data[, ovs, drop = FALSE]
 

@@ -205,9 +205,9 @@ adaptiveGaussQuadratureK <- function(fun,
   }
 
   mod_warnif(iter >= iter.max,
-         "Max iterations reached fitting quasi-adaptive quadrature...\n",
+         paste0("Max iterations reached fitting quasi-adaptive quadrature...\n",
          sprintf("Iter %d, total: %d, target: %d, kept: %d, discarded: %d",
-                 iter, m.ceil, m, NROW(quadn), m.ceil - NROW(quadn)),
+                 iter, m.ceil, m, NROW(quadn), m.ceil - NROW(quadn))),
          .newline = TRUE)
 
   list(n = quadn,
@@ -348,8 +348,8 @@ pruneQuadratureNodes <- function(quadw, quadn, quadf, a, b, tol) {
   removable    <- which(is.removable)
 
   mod_warnif(sum(contributions[removable]) > tol * abs(I.full),
-         "Something went wrong when pruning nodes:\n",
-         "More information than expected was lost!\n", .newline = TRUE)
+         paste0("Something went wrong when pruning nodes:\n",
+         "More information than expected was lost!\n"), .newline = TRUE)
 
   mod_stopif(length(removable) >= NROW(quadn), "Cannot remove all nodes!")
 

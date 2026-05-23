@@ -305,8 +305,8 @@ plot_surface <- function(x, z, y, model,
                          group = NULL,
                          ...) {
 
-  mod_stopif(!isModsemObject(model) && !isLavaanObject(model), "model must be of class ",
-         "'modsem_pi', 'modsem_da', 'modsem_mplus' or 'lavaan'")
+  mod_stopif(!isModsemObject(model) && !isLavaanObject(model), paste0("model must be of class ",
+         "'modsem_pi', 'modsem_da', 'modsem_mplus' or 'lavaan'"))
 
   if (standardized) {
     parTable <- standardized_estimates(model, correction = TRUE)
@@ -321,9 +321,9 @@ plot_surface <- function(x, z, y, model,
   groups   <- getGroupsParTable(parTable)
 
   if (length(groups) > 1L && is.null(group)) {
-    mod_msg_warn("Plotting of surface plots for multiple groups is not implemented yet!\n",
+    mod_msg_warn(paste0("Plotting of surface plots for multiple groups is not implemented yet!\n",
              "You can choose which group to plot using the `group` argument.\n",
-             "Plotting surface plot for the first group...")
+             "Plotting surface plot for the first group..."))
   }
 
   if (is.null(group))

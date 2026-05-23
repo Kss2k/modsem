@@ -119,13 +119,13 @@ modsemPredictEtaDA_Group <- function(submodel, data, method = c("EBM", "ML")) {
   .f <- switch(method,
     ML  = logLikFromZetaMLCpp,
     EBM = logLikFromZetaEBMCpp,
-    mod_msg_stop("Unrecognized method: ", method, "!")
+    mod_msg_stop(paste0("Unrecognized method: ", method, "!"))
   )
 
   .g <- switch(method,
     ML  = gradLogLikFromZetaMLCpp,
     EBM = gradLogLikFromZetaEBMCpp,
-    mod_msg_stop("Unrecognized method: ", method, "!")
+    mod_msg_stop(paste0("Unrecognized method: ", method, "!"))
   )
 
   k   <- NCOL(matrices$phi) + NCOL(matrices$psi)
@@ -202,7 +202,7 @@ prepNewdataDA <- function(object, newdata) {
 
       missing.cols <- setdiff(cols, colnames(newdata))
       mod_stopif(length(missing.cols),
-             "Missing columns in `newdata`:\n  ", paste(missing.cols, collapse = ", "))
+             paste0("Missing columns in `newdata`:\n  ", paste(missing.cols, collapse = ", ")))
 
       rows.g <- group.values == group.levels[[g]]
       if (!any(rows.g)) return(NULL)
@@ -220,7 +220,7 @@ prepNewdataDA <- function(object, newdata) {
 
     missing.cols <- setdiff(cols, colnames(newdata))
     mod_stopif(length(missing.cols),
-           "Missing columns in `newdata`:\n  ", paste(missing.cols, collapse = ", "))
+           paste0("Missing columns in `newdata`:\n  ", paste(missing.cols, collapse = ", ")))
 
     mat <- as.matrix(newdata[, cols, drop = FALSE])
     storage.mode(mat) <- "double"
@@ -246,8 +246,8 @@ addStructOVColumnsDA <- function(newdata, object) {
 
     missing <- setdiff(vars, colnames(newdata))
     mod_stopif(length(missing),
-           "Missing columns in `newdata` required for interaction term '", ovInt, "':\n  ",
-           paste(missing, collapse = ", "))
+           paste0("Missing columns in `newdata` required for interaction term '", ovInt, "':\n  ",
+           paste(missing, collapse = ", ")))
 
     newdata[[ovIntNew]] <- apply(newdata[, vars, drop = FALSE], MARGIN = 1L, FUN = prod)
   }
@@ -258,7 +258,7 @@ addStructOVColumnsDA <- function(newdata, object) {
 
   missing <- setdiff(plainStructOVs, colnames(newdata))
   mod_stopif(length(missing),
-    "Missing columns in `newdata`:\n  ", paste(missing, collapse = ", ")
+    paste0("Missing columns in `newdata`:\n  ", paste(missing, collapse = ", "))
   )
 
   for (ov in structovs) {

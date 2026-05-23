@@ -48,7 +48,7 @@ estepLmsGroup <- function(submodel, lastQuad = NULL, recalcQuad = FALSE,
           k = k, m.ceil = m.ceil, tol = adaptive.quad.tol,
         )
       }, error = function(e) {
-        mod_msg_warn("Calculation of adaptive quadrature failed!\n", e)
+        mod_msg_warn(paste0("Calculation of adaptive quadrature failed!\n", e))
         NULL
       }
     )

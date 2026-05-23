@@ -14,9 +14,9 @@ findFunctionEnd <- function(listTokens, i = 1) {
 
 LavEqual <- function(string) {
   if (!is.character(string)) {
-    mod_msg_stop("Expected argument in equal() to be string, got: ", string)
+    mod_msg_stop(paste0("Expected argument in equal() to be string, got: ", string))
   } else if (length(string) > 1) {
-    mod_msg_stop("Expected a single string in equal(), got: ", string)
+    mod_msg_stop(paste0("Expected a single string in equal(), got: ", string))
   }
   paste0("equal(\"", string, "\")")
 }
@@ -24,9 +24,9 @@ LavEqual <- function(string) {
 
 LavStart <- function(number) {
   if (!is.numeric(number)) {
-    mod_msg_stop("Expected argument in start() to be string, got: ", number)
+    mod_msg_stop(paste0("Expected argument in start() to be string, got: ", number))
   } else if (length(number) > 1) {
-    mod_msg_stop("Expected a single number in start(), got: ", number)
+    mod_msg_stop(paste0("Expected a single number in start(), got: ", number))
   }
   paste0("start(", number, ")")
 }

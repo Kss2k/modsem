@@ -86,9 +86,9 @@ estimate_h0.modsem_da <- function(object, warn_no_interaction = TRUE, ...) {
     constrainedParTable <- constrainedParTable[!islvint, , drop = FALSE]
 
     if (!haslvint && !hasovint) {
-      mod_warnif(warn_no_interaction, "No interaction terms found in the model. ",
+      mod_warnif(warn_no_interaction, paste0("No interaction terms found in the model. ",
              "The baseline model is identical to the original model, ",
-             "and won't be estimated!")
+             "and won't be estimated!"))
       return(NULL)
     }
 
@@ -101,8 +101,8 @@ estimate_h0.modsem_da <- function(object, warn_no_interaction = TRUE, ...) {
     do.call(modsem_da, args = argList)
   },
   error = function(e) {
-    mod_msg_warn("Null model could not be estimated. ",
-             "Error message: ", e$message)
+    mod_msg_warn(paste0("Null model could not be estimated. ",
+             "Error message: ", e$message))
     NULL
   })
 }
@@ -142,9 +142,9 @@ estimate_h0.modsem_pi <- function(object, warn_no_interaction = TRUE,
   tryCatch({
     if (!parTableHasInteraction(parTable)) {
       mod_warnif(warn_no_interaction,
-             "No interaction terms found in the model. ",
+             paste0("No interaction terms found in the model. ",
              "The baseline model is identical to the original model, ",
-             "and won't be estimated!")
+             "and won't be estimated!"))
       return(NULL)
 
     } else if (parTableHasHigherOrderInteraction(parTable)) {
@@ -179,7 +179,7 @@ estimate_h0.modsem_pi <- function(object, warn_no_interaction = TRUE,
     fit
   },
   error = function(e) {
-    mod_msg_warn("Baseline model could not be estimated: ", e$message)
+    mod_msg_warn(paste0("Baseline model could not be estimated: ", e$message))
     NULL
   })
 }

@@ -204,8 +204,8 @@ modsem_mplus <- function(model.syntax,
     vcov
 
   }, error = function(e) {
-    mod_msg_warn("Unable to retrive `tech3` from `Mplus` results\n",
-             "Message: ", e)
+    mod_msg_warn(paste0("Unable to retrive `tech3` from `Mplus` results\n",
+             "Message: ", e))
 
     k <- length(pars.tech1)
     vcov <- matrix(NA, nrow = k, ncol = k,
@@ -215,8 +215,8 @@ modsem_mplus <- function(model.syntax,
   std <- tryCatch({
     MplusAutomation::get_results(results, element = "standardized")
   }, error = function(e) {
-    mod_msg_warn("Unable to retrive `standardized` from `Mplus` results\n",
-             "Message: ", e)
+    mod_msg_warn(paste0("Unable to retrive `standardized` from `Mplus` results\n",
+             "Message: ", e))
     std <- NULL
   })
 
@@ -329,7 +329,7 @@ switchLavOpToMplus <- function(op) {
          "~" = "ON",
          "~~" = "WITH",
          ":" = "|",
-         mod_msg_stop("Operator not supported for use in Mplus: ", op, "\n"))
+         mod_msg_stop(paste0("Operator not supported for use in Mplus: ", op, "\n")))
 }
 
 
@@ -486,7 +486,7 @@ getOrderedParameterLabelsMplus <- function(parTable, TECH1, intTerms, intTermsMp
 
   setLabel <- function(out, label, id) {
     if (!length(label)) {
-      mod_msg_warn("Unable to find label for parameter ", id, "!")
+      mod_msg_warn(paste0("Unable to find label for parameter ", id, "!"))
       out[as.character(id)] <- id
 
     } else out[label] <- id
@@ -622,8 +622,8 @@ getOrderedParameterLabelsMplus <- function(parTable, TECH1, intTerms, intTermsMp
 
     # assumes M has nrows(M)
     mod_warnif(NROW(M) > 1L,
-           "Expected parameter matrix for additional pars\n",
-           "to have a single row!")
+           paste0("Expected parameter matrix for additional pars\n",
+           "to have a single row!"))
 
     cols <- colnames(M)
     out  <- c()

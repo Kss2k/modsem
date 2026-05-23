@@ -596,8 +596,8 @@ parameterEstimatesLavSAM <- function(syntax,
 
     if (length(group)) {
       mod_stopif(length(group) > 1L,
-        "Unable to optimize parameters for multigroup models with more\n",
-        "than one grouping variable!"
+        paste0("Unable to optimize parameters for multigroup models with more\n",
+        "than one grouping variable!")
       )
 
       if (!is.null(names(dataListSam))) groupings <- names(dataListSam)

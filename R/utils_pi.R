@@ -81,8 +81,8 @@ combineListDf <- function(listDf) {
   if (sum(as.integer(matchingColnames)) > 0) {
     duplicates <- stringr::str_c(colnames(listDf[[2]])[matchingColnames],
                                  collapse = ", ")
-    mod_msg_warn("There were some duplicate product indicators, was this intended?\n",
-             "The duplicates of these product indicators were removed: \n", duplicates, "\n")
+    mod_msg_warn(paste0("There were some duplicate product indicators, was this intended?\n",
+             "The duplicates of these product indicators were removed: \n", duplicates, "\n"))
   }
 
   combinedDf <- cbind.data.frame(listDf[[1]], listDf[[2]][,!matchingColnames, drop = FALSE])
@@ -134,9 +134,9 @@ rbindParTable <- function(parTable, newRows) {
         parTableRows = newParTableRows)
 
   mod_warnif(sum(as.integer(duplicateRows)) > 0,
-          "Some duplicates in the parTable was removed, have you accidentally ",
+          paste0("Some duplicates in the parTable was removed, have you accidentally ",
           "specified some of these in your syntax? \n",
-          capturePrint(parTable[duplicateRows, ]))
+          capturePrint(parTable[duplicateRows, ])))
 
   rbind(parTable[!duplicateRows, ], newRows)
 }
@@ -233,27 +233,27 @@ isLavLabelFunction <- function(label, context, warning = FALSE) {
 warnReplacingLabel <- function(old, new, parTable.row) {
   context <- paste(parTable.row$lhs, parTable.row$op,
                    paste0(old, "*", parTable.row$rhs))
-  mod_msg_warn("Replacing `", old, "` with new label `", new, "` in: `",
-           context, "`")
+  mod_msg_warn(paste0("Replacing `", old, "` with new label `", new, "` in: `",
+           context, "`"))
 }
 
 
 checkHigherOrderInteractions <- function(elementsInProds, parTable) {
   higherOrderLVs <- getHigherOrderLVs(parTable)
   for (xz in elementsInProds) {
-    mod_stopif(any(xz %in% higherOrderLVs), "The `:` operator is not allowed ",
+    mod_stopif(any(xz %in% higherOrderLVs), paste0("The `:` operator is not allowed ",
            "for higher order latent variables, please redefine the interaction term",
            "as a higher order latent variable using the `=~` operator.\n",
            "You can also try using `method=\"lms\"` or `rcs=TRUE`\n",
-           "Run `vignette(\"higher_order_interactions\")` for more information")
+           "Run `vignette(\"higher_order_interactions\")` for more information"))
   }
 }
 
 
 checkElementsInProds <- function(elementsInProds, lVs, oVs) {
   for (xz in elementsInProds) {
-    mod_stopif(!all(xz %in% c(lVs, oVs)), "Unknown element in product term: `",
-           xz[!xz %in% c(lVs, oVs)][[1]], "`!")
+    mod_stopif(!all(xz %in% c(lVs, oVs)), paste0("Unknown element in product term: `",
+           xz[!xz %in% c(lVs, oVs)][[1]], "`!"))
   }
 }
 

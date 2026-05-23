@@ -77,8 +77,8 @@ specifyModelDA_Group <- function(syntax = NULL,
 
   # composite variables are only defined for lms
   mod_stopif(length(composites) && method == "qml",
-    "Composite constructs are not allowed with `method=\"qml\"` (yet)!\n",
-    "Try `method=\"lms\"` instead."
+    paste0("Composite constructs are not allowed with `method=\"qml\"` (yet)!\n",
+    "Try `method=\"lms\"` instead.")
   )
 
   # clean data

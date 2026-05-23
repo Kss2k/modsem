@@ -136,8 +136,8 @@ emLms <- function(model,
         tryCatch({
           gradientCompLogLikLms(theta = thetaNew, model = model, P = P)
         }, error = \(e) {
-          mod_msg_warn_immediate("Optimized computation of gradient failed! Switching gradient type.\n",
-                   "Message: ", conditionMessage(e))
+          mod_msg_warn_immediate(paste0("Optimized computation of gradient failed! Switching gradient type.\n",
+                   "Message: ", conditionMessage(e)))
           model$gradientStruct$hasCovModel <<- TRUE
           model$gradientStruct$isNonLinear <<- TRUE
         })
@@ -274,11 +274,11 @@ emLms <- function(model,
     } # while
 
     if (verbose) cat("\n")
-    mod_warnif(iterations >= max.iter, "Maximum iterations reached!\n",
+    mod_warnif(iterations >= max.iter, paste0("Maximum iterations reached!\n",
            "Consider tweaking these parameters:\n",
            formatParameters(convergence.abs, convergence.rel, algorithm,
                             max.step, max.iter, nodes, adaptive.quad,
-                            adaptive.quad.tol, quad.range))
+                            adaptive.quad.tol, quad.range)))
 
     # final E-step
     P <- estepLms(model = model, theta = thetaNew,

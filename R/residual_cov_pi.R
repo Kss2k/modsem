@@ -71,9 +71,9 @@ getParTableResCov.simple <- function(relDf, explicit.zero = FALSE, include.singl
   }
 
   if (all(isShared)) {
-    mod_msg_warn("All residual covariances between product indicators were freed!\n",
+    mod_msg_warn(paste0("All residual covariances between product indicators were freed!\n",
              "The model will likely not be identifiable! Please try passing:\n",
-             "  `res.cov.method = \"none\"` or `res.cov.method = \"equality\"`")
+             "  `res.cov.method = \"none\"` or `res.cov.method = \"equality\"`"))
     OK <- FALSE
   }
 
@@ -159,8 +159,8 @@ getParTableResCov.equality <- function(relDf, setToZero = FALSE) {
 # Constrained Approach ---------------------------------------------------------
 getParTableResCov.ca <- function(relDf, pt) {
   if (nrow(relDf) > 2) {
-    mod_msg_stop("Constrained approach for constraining residual covariances should ",
-         "not be used with latent products with more than two components")
+    mod_msg_stop(paste0("Constrained approach for constraining residual covariances should ",
+         "not be used with latent products with more than two components"))
   }
   if (ncol(relDf) <= 1) {
     return(NULL)

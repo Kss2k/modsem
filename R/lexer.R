@@ -28,7 +28,7 @@ chooseToken <- function(listTokens, i = 1, chosenTokenIdx = NULL,
 
   if (is.null(listTokens) || i > length(listTokens)) {
     mod_stopif(is.null(chosenTokenIdx) && length(leftClosures) > 0,
-           "Unmatched left bracket", last(leftClosures))
+           paste0("Unmatched left bracket", last(leftClosures)))
     return(chosenTokenIdx)
   }
   token <- listTokens[[i]]
@@ -37,8 +37,8 @@ chooseToken <- function(listTokens, i = 1, chosenTokenIdx = NULL,
     leftClosures <- appendToList(leftClosures, token)
 
   } else if (is.RightClosure(token)) {
-    mod_stopif(length(leftClosures) == 0, "Unmatched right bracket",
-           highlightErrorToken(token))
+    mod_stopif(length(leftClosures) == 0, paste0("Unmatched right bracket",
+           highlightErrorToken(token)))
 
     leftClosures <- leftClosures[-1]
     if (length(leftClosures) == 0) {

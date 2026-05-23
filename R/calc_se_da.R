@@ -53,14 +53,14 @@ calcFIM_da <- function(model,
                                   S = EFIM.S, parametric = EFIM.parametric,
                                   verbose = verbose, R.max = R.max),
           mod_msg_stop("FIM must be either expected or observed")),
-     mod_msg_stop("Unrecognized method: ", method)
+     mod_msg_stop(paste0("Unrecognized method: ", method))
   )
 
 
   if (robust.se) {
     mod_warnif(hessian && FIM == "observed",
-           "`robust.se = TRUE` should not be paired with ",
-           "`OFIM.hessian = TRUE` and `FIM = \"observed\"`")
+           paste0("`robust.se = TRUE` should not be paired with ",
+                  "`OFIM.hessian = TRUE` and `FIM = \"observed\"`"))
     H <- calcHessian(model, theta = theta, method = method,
                      epsilon = epsilon, P = P)
     invH <- solveFIM(H, NA__ = NA__)
@@ -115,7 +115,7 @@ fdHESS <- function(pars,
         minAbsPar = .minAbsPar
       ),
       error = function(e) {
-        mod_msg_warn("Finite-difference Hessian calculation failed...\n  ", e$message)
+        mod_msg_warn(paste0("Finite-difference Hessian calculation failed...\n  ", e$message))
         matrix(NA, nrow = npar, ncol = npar)
       }
     )
@@ -125,10 +125,10 @@ fdHESS <- function(pars,
     tryCatch(
       nlme::fdHess(pars = pars, fun = fun, ..., .relStep = .relStep)$Hessian,
       error = function(e) {
-        mod_msg_warn(
+        mod_msg_warn(paste0(
           "Switching to fallback finite-difference Hessian after nlme::fdHess error:\n  ",
           e$message
-        )
+        ))
         computeFD()
       }
     )
@@ -214,7 +214,7 @@ calcHessian <- function(model, theta, method = "lms",
                                             P = P)$I.obs
 
     H <- tryCatch(suppressWarnings(fH(model)), error = function(e) {
-      mod_msg_warn("Optimized calculation of Hessian failed, attempting to switch!\n", e)
+      mod_msg_warn(paste0("Optimized calculation of Hessian failed, attempting to switch!\n", e))
       model$gradientStruct$hasCovModel <- TRUE
 
       suppressWarnings(fH(model))
@@ -255,8 +255,8 @@ calcSE_da <- function(calc.se = TRUE, vcov, rawLabels, NA__ = -999) {
     return(stats::setNames(rep(NA__, length(rawLabels)), nm = rawLabels))
 
   if (is.null(vcov)) {
-    mod_msg_warn("Fisher Information Matrix (FIM) was not calculated, ",
-             "unable to compute standard errors")
+    mod_msg_warn(paste0("Fisher Information Matrix (FIM) was not calculated, ",
+             "unable to compute standard errors"))
     return(rep(NA__, length(rawLabels)))
   }
 

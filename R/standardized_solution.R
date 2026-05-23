@@ -63,7 +63,7 @@ transformedSolutionCOEFS <- function(object,
 
     if (addVariances) {
       mod_warnif(isLav,
-        "Replacing interaction (co-)", "variances when centering the model!\n"
+        paste0("Replacing interaction (co-)", "variances when centering the model!\n")
       )
 
       # When replacing the covariance structure we might change the total variance
@@ -384,8 +384,8 @@ transformedSolutionCOEFS <- function(object,
   # fill parTable
   std.errors <- suppressWarnings(sqrt(diag(vcov)))
   warnFunc <- function(type, row) {
-    mod_msg_warn("Unable to calculate standardized ", type, " for: ",
-             paste0(row$lhs, row$op, row$rhs))
+    mod_msg_warn(paste0("Unable to calculate standardized ", type, " for: ",
+             paste0(row$lhs, row$op, row$rhs)))
   }
 
   verboseLabels <- stringr::str_replace_all(parTable$label, OP_REPLACEMENTS)
@@ -465,7 +465,7 @@ correctStdSolutionCOEFS <- function(parTable,
     Y <- rowsXZ$lhs[[1]]
 
     if (!length(Y)) {
-      mod_msg_warn("No endogenous variable found for interaction term '", XZ, "'.")
+      mod_msg_warn(paste0("No endogenous variable found for interaction term '", XZ, "'."))
       next
     }
 

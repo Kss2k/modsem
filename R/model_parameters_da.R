@@ -307,11 +307,11 @@ fillNA_Matrix <- function(X, theta, pattern) {
   idx <- is.na(X) & !is.nan(X)
   values <- fetch(theta, pattern)
   if (length(values) && sum(idx) != length(values)) {
-    mod_msg_stop("Mismatch when filling matrix for pattern `", pattern, "`: expected ",
-          sum(idx), " values but got ", length(values))
+    mod_msg_stop(paste0("Mismatch when filling matrix for pattern `", pattern, "`: expected ",
+          sum(idx), " values but got ", length(values)))
   }
   if (sum(idx) > 0 && length(values) == 0) {
-    mod_msg_stop("No values found in theta vector for pattern `", pattern, "`.")
+    mod_msg_stop(paste0("No values found in theta vector for pattern `", pattern, "`."))
   }
   X[idx] <- values
   X
@@ -324,8 +324,8 @@ fillSymmetric <- function(mat, values) {
     mod_msg_stop("No values provided to fill symmetric matrix.")
   }
   if (length(values) && length(values) != sum(idx)) {
-    mod_msg_stop("Mismatch when filling symmetric matrix: expected ", sum(idx),
-          " values but got ", length(values))
+    mod_msg_stop(paste0("Mismatch when filling symmetric matrix: expected ", sum(idx),
+          " values but got ", length(values)))
   }
   mat[idx] <- values
   mat[upper.tri(mat)] <- t(mat)[upper.tri(mat)]
@@ -409,8 +409,8 @@ calcPhiTheta <- function(theta, model, method) {
       labels  <- labels[labels != ""]
       missing <- setdiff(labels, names(theta))
       mod_stopif(length(missing),
-             "Missing labelled parameters in theta vector: ",
-             paste(missing, collapse = ", "))
+             paste0("Missing labelled parameters in theta vector: ",
+             paste(missing, collapse = ", ")))
 
       theta[select][labels] <- labVals
     }
@@ -506,7 +506,7 @@ getGradientStruct <- function(model, theta) {
   tryCatch(
     getGradientStructSimple(model = model, theta = theta),
     error = function(e) {
-      mod_msg_warn("Failed to compute gradient structure: ", e$message)
+      mod_msg_warn(paste0("Failed to compute gradient structure: ", e$message))
 
       list(
         locations   = NULL,

@@ -7,8 +7,8 @@ blas_set_num_threads <- function(n, .default = 1L) {
   tryCatch(
     purrr::quietly(RhpcBLASctl::blas_set_num_threads)(n),
     error = function(e) {
-      mod_msg_warn("Could not set threads for OpenBLAS!\nMessage: ",
-               conditionMessage(e))
+      mod_msg_warn(paste0("Could not set threads for OpenBLAS!\nMessage: ",
+               conditionMessage(e)))
 
       .default # return default
     }
@@ -20,8 +20,8 @@ blas_get_num_procs <- function(.default = 1L) {
   tryCatch(
     purrr::quietly(RhpcBLASctl::blas_get_num_procs)(),
     error = function(e) {
-      mod_msg_warn("Could not get processors for OpenBLAS!\nMessage: ",
-               conditionMessage(e))
+      mod_msg_warn(paste0("Could not get processors for OpenBLAS!\nMessage: ",
+               conditionMessage(e)))
 
       .default # return default
     }

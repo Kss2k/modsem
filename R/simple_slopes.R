@@ -138,8 +138,8 @@ simple_slopes <- function(x,
                           standardized = FALSE,
                           xz = NULL,
                           ...) {
-  mod_stopif(!isModsemObject(model) && !isLavaanObject(model), "model must be of class ",
-         "'modsem_pi', 'modsem_da', 'modsem_mplus' or 'lavaan'")
+  mod_stopif(!isModsemObject(model) && !isLavaanObject(model), paste0("model must be of class ",
+         "'modsem_pi', 'modsem_da', 'modsem_mplus' or 'lavaan'"))
 
   if (standardized) {
     parTable <- standardized_estimates(model, correction = TRUE)
@@ -520,9 +520,9 @@ checkInputsSimpleSlopes <- function(..., parTable) {
   variables <- c(parTable[varmask, "lhs"], parTable[varmask, "rhs"])
   variables <- unique(variables[variables != ""])
 
-  checkLength <- \(x, nm) mod_stopif(length(x) != 1L, nm, " must be of length 1!")
+  checkLength <- \(x, nm) mod_stopif(length(x) != 1L, paste0(nm, " must be of length 1!"))
   checkExists <- \(x) mod_stopif(!x %in% variables && !grepl(":", x),
-                             "Unrecognized variable: ", x, "!")
+                             paste0("Unrecognized variable: ", x, "!"))
 
   params <- list(...)
   for (nm in names(params)) {
@@ -545,8 +545,8 @@ getVcovSimpleSlopes <- function(model, standardized = FALSE) {
     return(lavaan::lavInspect(model, what = what))
 
   } else {
-    mod_msg_warn("standardized vcov is not available for model of class: ",
-             class(model)[[1L]])
+    mod_msg_warn(paste0("standardized vcov is not available for model of class: ",
+             class(model)[[1L]]))
     return(vcov(model))
   }
 }

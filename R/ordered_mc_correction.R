@@ -202,10 +202,10 @@ modsemOrderedMCCorrection <- function(model.syntax,
           V
 
         }, error = function(e) {
-          mod_msg_warn(
+          mod_msg_warn(paste0(
             "Delta-method MC correction failed; using ordered MC penalty ",
             "standard errors instead. Message: ", conditionMessage(e)
-          )
+          ))
 
           penalized <- mcOrderedPenaltyVcov(
             theta.mc = theta.mc,

@@ -1385,8 +1385,8 @@ parseModelArgumentsByGroupDA <- function(model.syntax, cov.syntax,
   ovs       <- getOVs(rbind(parTable, parTableCov))
 
   missing <- setdiff(ovs, colnames(data))
-  mod_stopif(length(missing), "Missing observed variables in data:\n  ",
-         paste(missing, collapse = ", "))
+  mod_stopif(length(missing), paste0("Missing observed variables in data:\n  ",
+         paste(missing, collapse = ", ")))
 
   varsInts  <- getVarsInts(getIntTermRows(parTable), removeColonNames = FALSE)
   isOV_Int  <- vapply(varsInts, FUN.VALUE = logical(1L), FUN = \(x) all(x %in% ovs))

@@ -134,7 +134,7 @@ constructLambda <- function(lVs, indsLVs, parTable, auto.fix.first = TRUE, mode 
       composites <- getComposites(parTable)
       lambda[,setdiff(colnames(lambda), composites)] <- 0
     },
-    mod_msg_stop("Unsupported mode: ", mode, "!")
+    mod_msg_stop(paste0("Unsupported mode: ", mode, "!"))
   )
 
   setMatrixConstraints(X = lambda, parTable = parTable, op = op,
@@ -642,9 +642,9 @@ sortXis <- function(xis, varsInts, etas, intTerms, double, structovs = NULL,
 
     mod_stopif(length(interaction) > 2, "Only interactions between two variables are allowed")
     mod_stopif(all(interaction %in% etas),
-           "Interactions between two endogenous variables are not allowed!",
+           paste0("Interactions between two endogenous variables are not allowed!",
            "You can try passing `auto.split.syntax=TRUE` to fix the issue.",
-           "See \nvignette(\"interaction_two_etas\", \"modsem\").")
+           "See \nvignette(\"interaction_two_etas\", \"modsem\")."))
 
     choice <- unique(interaction[which(!interaction %in% etas &
                                        !interaction %in% nonLinearXis)])

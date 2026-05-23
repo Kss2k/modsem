@@ -167,7 +167,7 @@ getIndsLVs <- function(parTable, lVs, isOV = FALSE, ovs = NULL) {
   if (!length(lVs)) return(NULL)
 
   measr <- parTable[parTable$op %in% c("<~", "=~") & parTable$lhs %in% lVs, ]
-  mod_stopif(!NROW(measr), "No measurement expressions found, for", lVs)
+  mod_stopif(!NROW(measr), paste0("No measurement expressions found, for", lVs))
 
   if (isOV) .f <- \(lV) measr[measr$lhs == lV & measr$rhs %in% ovs, "rhs"]
   else      .f <- \(lV) measr[measr$lhs == lV, "rhs"]
@@ -625,10 +625,10 @@ sortConstrExprs <- function(parTable) {
   rows <- rows[!(isConst & rows$op %in% BOUNDUARY_OPS), ] # not relevant
 
   if (!all(rows$lhs %in% labelled)) {
-    mod_msg_stop("Unknown labels in constraints: ", rows$lhs[!rows$lhs %in% labelled])
+    mod_msg_stop(paste0("Unknown labels in constraints: ", rows$lhs[!rows$lhs %in% labelled]))
 
   } else if (length(unique(rows$lhs)) != length(rows$lhs)) {
-    mod_msg_stop("Duplicated labels in constraints:\n", capturePrint(table(rows$lhs)))
+    mod_msg_stop(paste0("Duplicated labels in constraints:\n", capturePrint(table(rows$lhs))))
 
   } else if (any(rows$op %in% BOUNDUARY_OPS)) {
     mod_msg_stop("Dynamic constraints with ('<', '>') are not implemented yet!")
@@ -650,13 +650,13 @@ sortConstrExprs <- function(parTable) {
       }
     }
 
-    mod_stopif(!matchedAny, "Unkown labels in constraints: ",
-           labels_i[!labels_i %in% definedLabels])
+    mod_stopif(!matchedAny, paste0("Unkown labels in constraints: ",
+           labels_i[!labels_i %in% definedLabels]))
   }
 
   if (NROW(sortedRows) != NROW(rows)) {
-    mod_msg_warn("Something went wrong when sorting and parsing constraint-expressions ",
-             "attempting to estimate model with unsorted expressions")
+    mod_msg_warn(paste0("Something went wrong when sorting and parsing constraint-expressions ",
+             "attempting to estimate model with unsorted expressions"))
     return(rows)
   }
 

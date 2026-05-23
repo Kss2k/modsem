@@ -102,9 +102,9 @@ initializeToken <- function(char, pos, line) {
     type <- "LavString"
     priority <- 10
   } else {
-    mod_msg_stop("Unrecognized class of token in line ", attr(line, "lineNumber"),
+    mod_msg_stop(paste0("Unrecognized class of token in line ", attr(line, "lineNumber"),
          " pos ", pos, "\n",
-         highlightError(line, pos = pos))
+         highlightError(line, pos = pos)))
   }
 
   structure(char,
@@ -132,7 +132,7 @@ fitsToken <- function(token, nextChar) {
 
 #' @export
 fitsToken.LavName <- function(token, nextChar) {
-  mod_stopif(length(nextChar) != 1, "Wrong length of nextChar", nextChar)
+  mod_stopif(length(nextChar) != 1, paste0("Wrong length of nextChar", nextChar))
   # if object name ends with ( it is a function,
   # and next char belongs to a new object
   if (grepl("\\($", token)) {
@@ -144,7 +144,7 @@ fitsToken.LavName <- function(token, nextChar) {
 
 #' @export
 fitsToken.LavString <- function(token, nextChar) {
-  mod_stopif(length(nextChar) != 1, "Wrong length of nextChar", nextChar)
+  mod_stopif(length(nextChar) != 1, paste0("Wrong length of nextChar", nextChar))
   # if object name ends with ( it is a function,
   # and next char belongs to a new object
   if (grepl('\\"$', token)) {
@@ -156,7 +156,7 @@ fitsToken.LavString <- function(token, nextChar) {
 
 #' @export
 fitsToken.LavOperator <- function(token, nextChar) {
-  mod_stopif(length(nextChar) != 1, "Wrong length of nextChar", nextChar)
+  mod_stopif(length(nextChar) != 1, paste0("Wrong length of nextChar", nextChar))
 
   completeToken <- paste0(token, nextChar)
   switch(completeToken,
@@ -176,7 +176,7 @@ fitsToken.LavOperator <- function(token, nextChar) {
 
 #' @export
 fitsToken.LavBlank <- function(token, nextChar) {
-  mod_stopif(length(nextChar) != 1, "Wrong length of nextChar", nextChar)
+  mod_stopif(length(nextChar) != 1, paste0("Wrong length of nextChar", nextChar))
   grepl("\\s+", nextChar)
 }
 
@@ -189,7 +189,7 @@ fitsToken.LavClosure <- function(token, nextChar) {
 
 #' @export
 fitsToken.LavNumeric <- function(token, nextChar) {
-  mod_stopif(length(nextChar) != 1, "Wrong length of nextChar", nextChar)
+  mod_stopif(length(nextChar) != 1, paste0("Wrong length of nextChar", nextChar))
   grepl("[[:digit:].]", nextChar)
 }
 
@@ -222,7 +222,7 @@ assignSubClass.LavOperator <- function(token) {
           "-"  = {subClass <- "LavSubtract";    priority <- 3},
           "|"  = {subClass <- "LavThreshold";   priority <- 0},
           "<~" = {subClass <- "LavMeasure";     priority <- 0},
-          mod_msg_stop("Unrecognized operator: ", highlightErrorToken(token))
+          mod_msg_stop(paste0("Unrecognized operator: ", highlightErrorToken(token)))
   )
   structure(token,
             class = c(subClass, class(token)),
@@ -235,7 +235,7 @@ assignSubClass.LavClosure <- function(token) {
   switch(getTokenString(token),
           "("  = {subClass <- "LeftBracket";    priority <- 3},
           ")"  = {subClass <- "RightBracket";   priority <- 3},
-          mod_msg_stop("Unrecognized operator: ", token)
+          mod_msg_stop(paste0("Unrecognized operator: ", token))
   )
   structure(token,
             class = c(subClass, class(token)),
@@ -285,14 +285,14 @@ appendToList <- function(list, elem) {
 prioritizeTokens <- function(listTokens, i = 1, brackets = list(),
                              nLeftBrackets = 0) {
   if (is.null(listTokens) || i > length(listTokens)) {
-    mod_stopif(nLeftBrackets != 0, "Unmatched left bracket",
-           highlightErrorToken(brackets[[1]]))
+    mod_stopif(nLeftBrackets != 0, paste0("Unmatched left bracket",
+           highlightErrorToken(brackets[[1]])))
     return(listTokens)
   } else if (is.RightClosure(listTokens[[i]])) {
     brackets <- brackets[-length(brackets)]
     nLeftBrackets <- nLeftBrackets - 1
-    mod_stopif(nLeftBrackets < 0, "Unmatched right bracket ",
-           highlightErrorToken(listTokens[[i]]))
+    mod_stopif(nLeftBrackets < 0, paste0("Unmatched right bracket ",
+           highlightErrorToken(listTokens[[i]])))
   }
   getTokenPriority(listTokens[[i]]) <-
     getTokenPriority(listTokens[[i]]) + nLeftBrackets*10
@@ -347,7 +347,7 @@ mergeTokensToString <- function(listTokens) {
 
 
 addCharToken <- function(token, nextChar) {
-  mod_stopif(length(nextChar) != 1, "Wrong length of nextChar ", nextChar)
+  mod_stopif(length(nextChar) != 1, paste0("Wrong length of nextChar ", nextChar))
 
   out <- paste0(token, nextChar)
   attributes(out) <- attributes(token)

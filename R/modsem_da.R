@@ -617,13 +617,13 @@ modsem_da <- function(model.syntax = NULL,
           collapse = "\n"
         )
 
-        mod_msg_warn("warning when optimizing starting parameters:\n", fwarnings)
+        mod_msg_warn(paste0("warning when optimizing starting parameters:\n", fwarnings))
       }
 
       result$result
 
     }, error = function(e) {
-      mod_msg_warn("unable to optimize starting parameters:\n", e)
+      mod_msg_warn(paste0("unable to optimize starting parameters:\n", e))
       model
     })
   }
@@ -700,7 +700,7 @@ modsem_da <- function(model.syntax = NULL,
       etas = getEtasModelDA(model$models[[1L]])  # taking both the main model and cov model into account
     ),
     error = function(e) {
-      mod_msg_warn("Failed to calculate expected matrices: ", e$message)
+      mod_msg_warn(paste0("Failed to calculate expected matrices: ", e$message))
       NULL
     })
 

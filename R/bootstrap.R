@@ -364,6 +364,6 @@ checkWarnRCS <- function(model) {
   isRCS_Model <- attr(model, "isRCS_Model")
 
   mod_warnif(!is.null(isRCS_Model) && isRCS_Model,
-         "bootstrapping a model with estimated with `rcs=TRUE` directly, will\n",
-         "generate naive standard errors! Use `bootstrap_modsem.function()` instead!")
+         paste0("bootstrapping a model with estimated with `rcs=TRUE` directly, will\n",
+         "generate naive standard errors! Use `bootstrap_modsem.function()` instead!"))
 }

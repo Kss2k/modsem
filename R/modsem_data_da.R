@@ -33,8 +33,8 @@ sortData <- function(data, allIndsXis, allIndsEtas) {
   ovs     <- colnames(data)
   missing <- inds[!inds %in% ovs]
 
-  mod_stopif(!all(inds %in% ovs), "Missing observed variables in data:\n  ",
-         paste(missing, collapse = ", "))
+  mod_stopif(!all(inds %in% ovs), paste0("Missing observed variables in data:\n  ",
+         paste(missing, collapse = ", ")))
 
   data[unique(c(allIndsXis, allIndsEtas))]
 }
@@ -51,7 +51,7 @@ castDataNumericMatrix <- function(data) {
     numericData <- lapplyDf(data, FUN = as.numeric)
   },
   warning = function(w) {
-    mod_msg_warn("Warning in converting data to numeric: \n", w)
+    mod_msg_warn(paste0("Warning in converting data to numeric: \n", w))
     numericData <- suppressWarnings(lapplyDf(data, FUN = as.numeric))
     mod_stopif(anyAllNA(numericData), "Unable to convert data to type numeric")
     numeric
@@ -75,8 +75,8 @@ patternizeMissingDataFIML <- function(data) {
   rowMissingAll <- apply(obs, MARGIN = 1, FUN = \(x) !any(x))
   colMissingAll <- apply(obs, MARGIN = 2, FUN = \(x) !any(x))
   mod_stopif(any(colMissingAll),
-         "Please remove variables with only missing values:\n  ",
-         paste0(colnames(obs)[colMissingAll], collapse = ", "))
+         paste0("Please remove variables with only missing values:\n  ",
+         paste0(colnames(obs)[colMissingAll], collapse = ", ")))
 
   patterns <- unique(obs, MARING = 2)
 
@@ -147,14 +147,14 @@ handleMissingData <- function(data, missing = "listwise", CLUSTER = NULL, WEIGHT
     missingAllCol <- apply(data, MARGIN = 2, FUN = \(x) all(is.na(x)))
     colsMissing   <- colnames(data)[missingAllCol]
 
-    mod_msg_stop("Please remove variables with only missing values:\n  ",
-          paste0(colsMissing, collapse = ", "))
+    mod_msg_stop(paste0("Please remove variables with only missing values:\n  ",
+          paste0(colsMissing, collapse = ", ")))
   }
 
   if (missing %in% c("listwise", "casewise", "complete")) {
-    mod_msg_warn("Removing missing values list-wise!\n",
+    mod_msg_warn(paste0("Removing missing values list-wise!\n",
              "Consider using `missing=\"fiml\"`, `missing=\"impute\"`, ",
-             "or the `modsem_mimpute()` function!\n")
+             "or the `modsem_mimpute()` function!\n"))
 
     out <- data[completeCases, ]
     attr(out, "cluster") <- CLUSTER[completeCases]

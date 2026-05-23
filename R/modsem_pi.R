@@ -308,8 +308,8 @@ modsem_pi <- function(model.syntax = NULL,
       FUN = function(elems) any(elems %in% modelSpec$composites)
     )
     if (any(hasCompositeElement)) {
-      mod_msg_stop('method="ca" does not support composite variables in interaction terms. ',
-            'Use method="dblcent", "rca", "uca", or "pind" instead.')
+      mod_msg_stop(paste0('method="ca" does not support composite variables in interaction terms. ',
+            'Use method="dblcent", "rca", "uca", or "pind" instead.'))
     }
   }
 
@@ -320,7 +320,7 @@ modsem_pi <- function(model.syntax = NULL,
   # Data Processing
   oVs        <- c(modelSpec$oVs, group)
   missingOVs <- setdiff(oVs, colnames(data))
-  mod_stopif(length(missingOVs), "Missing variables in data:\n", missingOVs)
+  mod_stopif(length(missingOVs), paste0("Missing variables in data:\n", missingOVs))
 
   completeCases <- stats::complete.cases(data[oVs])
 
@@ -616,9 +616,9 @@ addSpecsParTable <- function(modelSpec,
 getParTableRestrictedMean <- function(prodName, elementsInProdName,
                                       createLabels = TRUE, pt) {
   mod_stopif(length(elementsInProdName) > 2,
-         "The mean of a latent prod should not be constrained when there",
+         paste0("The mean of a latent prod should not be constrained when there",
          " are more than two variables in the prod term. Please use a",
-         " different method \n")
+         " different method \n"))
 
   meanLabel     <- createLabelMean(prodName)
   meanStructure <- createParTableRow(vecLhsRhs = c(prodName, ""),
@@ -645,8 +645,8 @@ getParTableMeasure <- function(dependentName,
                                predictorNames,
                                operator = "=~",
                                firstFixed = FALSE) {
-  mod_stopif(length(dependentName) > 1, "Expected dependentName ",
-         "to be a single string in getParTableMeasure")
+  mod_stopif(length(dependentName) > 1, paste0("Expected dependentName ",
+         "to be a single string in getParTableMeasure"))
 
   if (length(predictorNames) == 1 && dependentName == predictorNames) {
     # In this case it should be seen as an observed variable,
