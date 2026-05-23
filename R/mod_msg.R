@@ -1,4 +1,4 @@
-# Copied (almost) directly from modsem/R/mod_msg.R
+# Copied (almost) directly from lavaan/R/lav_msg.R
 
 # Displays a message (... concatenated with spaces in between) with header
 # 'modsem(function):', except when showheader == FALSE, and formatted to have
