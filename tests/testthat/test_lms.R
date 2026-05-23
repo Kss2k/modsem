@@ -64,7 +64,7 @@ m1 <- "
 "
 
 testthat::expect_warning(
-  modsem(m1, oneInt, method = "lms") ,
+  modsem(m1, oneInt, method = "lms"),
   regexp = "Variances and covariances .*"
 )
 
@@ -276,7 +276,7 @@ m2 <- "
 "
 
 testthat::expect_error(
-  modsem(m2, oneInt, method = "lms", cov.syntax = "")
+  modsem(m2, oneInt, method = "lms", cov.syntax = ""),
   regexp = "Dynamic constraints .*"
 )
 
