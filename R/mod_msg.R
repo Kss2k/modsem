@@ -57,7 +57,7 @@ mod_msg <- function(wat, txt_width = getOption("width", 80L),
       "^which$", "^unique$", "^as\\.", "^unlist$", "^message$",
       "^source$", "^withVisible$", "^tryCatch.W.E$", "^withCallingHandlers$",
       "^do.call$", "^paste", "^mod_stopif", "^mod_warnif", "^warn", "^stop",
-      "^message"
+      "^message", "^[0-9]+$" # anonymous functions?
     )
     sc <- sys.calls()
     sc_i <- length(sc)
