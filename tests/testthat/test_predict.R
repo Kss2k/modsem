@@ -1,3 +1,5 @@
+devtools::load_all()
+
 tpb <- '
 # Outer Model (Based on Hagger et al., 2007)
   ATT =~ att1 + att2 + att3 + att4 + att5
@@ -18,3 +20,8 @@ TPB2[23:150, "att1"] <- NA
 
 fit <- modsem(tpb, TPB2, method = "lms", nodes = 32, missing = "fiml")
 summary(lms2)
+
+ebm <- modsemPredictDA(fit, method = "EBM")
+ml <- modsemPredictDA(fit, method = "ML")
+cov(ebm$Eta)
+cov(ml$Eta)

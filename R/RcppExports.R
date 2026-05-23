@@ -89,8 +89,24 @@ dmvnfast <- function(X, mu, sigma, log, ncores, isChol) {
     .Call(`_modsem_dmvnfast`, X, mu, sigma, log, ncores, isChol)
 }
 
-predictedLatentScoresCpp <- function(Zeta, matrices) {
-    .Call(`_modsem_predictedLatentScoresCpp`, Zeta, matrices)
+modelMatrixCacheCpp <- function(matrices) {
+    .Call(`_modsem_modelMatrixCacheCpp`, matrices)
+}
+
+impliedEtaFromZetaCpp <- function(zeta, xptr) {
+    .Call(`_modsem_impliedEtaFromZetaCpp`, zeta, xptr)
+}
+
+impliedYFromEtaCpp <- function(eta, xptr) {
+    .Call(`_modsem_impliedYFromEtaCpp`, eta, xptr)
+}
+
+logLikFromZetaMLCpp <- function(zeta, y, xptr, idx) {
+    .Call(`_modsem_logLikFromZetaMLCpp`, zeta, y, xptr, idx)
+}
+
+logLikFromZetaEBMCpp <- function(zeta, y, xptr, idx) {
+    .Call(`_modsem_logLikFromZetaEBMCpp`, zeta, y, xptr, idx)
 }
 
 tracePathsNumericCpp <- function(x, y, parTable, maxlen = 100L) {
