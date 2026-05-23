@@ -17,7 +17,7 @@ testthat::expect_no_condition({
   fit_lav <- lavaan::sem(tpb.lin, TPB, optim.gradient = "numerical")
   fit_mod <- modsem(tpb.lin, TPB, method = "lms")
   head(modsem_predict(fit_mod))
-  head(modsem_predict(fit_mod), newdata = TPB[1:100, ])
+  head(modsem_predict(fit_mod, newdata = TPB[1:100, ]))
 })
 
 testthat::expect_true(fit_mod$iterations == 2L)
