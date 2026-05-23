@@ -146,7 +146,7 @@ modsemPredictEtaDA_Group <- function(submodel, data, method = c("EBM", "ML")) {
       y <- data.p[i, , drop = TRUE]
 
       tryCatch({
-        opt_i <- nlminb(
+        opt_i <- stats::nlminb(
           start     = start,
           objective = \(zeta) -.f(zeta = zeta, y = y, xptr = xptr, idx = idx.p),
           gradient  = \(zeta) -.g(zeta = zeta, y = y, xptr = xptr, idx = idx.p)
@@ -282,7 +282,7 @@ modsemPredictPreProcessMatrices <- function(matrices, data, pct.fill = 0.01) {
 
     for (idx in bad.idx) {
       col <- nm[idx]
-      Theta[idx, idx] <- pct.fill * var(data$data.full[, col], na.rm = TRUE)
+      Theta[idx, idx] <- pct.fill * stats::var(data$data.full[, col], na.rm = TRUE)
     }
 
     Theta
@@ -359,16 +359,28 @@ convertCompositesToObs <- function(matrices, data) {
 
   # thetaDelta / thetaEpsilon: drop composite-indicator rows/cols; add score
   # rows/cols initialised to 0 (fillTheta regularises them)
-  newThetaDelta   <- expandTheta(matrices$thetaDelta,   keep = xiRegInds,  add = xiScoreNms)
-  newThetaEpsilon <- expandTheta(matrices$thetaEpsilon, keep = etaRegInds, add = etaScoreNms)
+  newThetaDelta   <- expandTheta(
+    matrices$thetaDelta, keep = xiRegInds,  add = xiScoreNms
+  )
+  newThetaEpsilon <- expandTheta(
+    matrices$thetaEpsilon, keep = etaRegInds, add = etaScoreNms
+  )
 
   # tauX / tauY: tauX is stored as a 1-column matrix; extract as named vectors.
   # tau for a composite score = W' * tau_indicators (weighted sum of intercepts).
-  tauX.full <- setNames(as.vector(matrices$tauX), rownames(matrices$tauX) %||% character(0))
-  tauY.full <- setNames(as.vector(matrices$tauY), rownames(matrices$tauY) %||% character(0))
+  tauX.full <- stats::setNames(
+    as.vector(matrices$tauX), rownames(matrices$tauX) %||% character(0)
+  )
+  tauY.full <- stats::setNames(
+    as.vector(matrices$tauY), rownames(matrices$tauY) %||% character(0)
+  )
 
-  tau.xiComp  <- as.vector(t(W.mat[xiInds,  xiCompLVs,  drop = FALSE]) %*% tauX.full[xiInds])
-  tau.etaComp <- as.vector(t(W.mat[etaInds, etaCompLVs, drop = FALSE]) %*% tauY.full[etaInds])
+  tau.xiComp  <- as.vector(
+    t(W.mat[xiInds,  xiCompLVs,  drop = FALSE]) %*% tauX.full[xiInds]
+  )
+  tau.etaComp <- as.vector(
+    t(W.mat[etaInds, etaCompLVs, drop = FALSE]) %*% tauY.full[etaInds]
+  )
 
   newTauX <- c(tauX.full[xiRegInds],  setNames(tau.xiComp,  xiScoreNms))
   newTauY <- c(tauY.full[etaRegInds], setNames(tau.etaComp, etaScoreNms))

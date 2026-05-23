@@ -364,17 +364,22 @@ modsem_nobs <- function(object, ...) {
 #' @param method Character. Scoring method. One of \code{"EBM"} (Empirical
 #'   Bayes Modal; MAP estimate of the posterior), \code{"ML"} (maximum
 #'   likelihood), \code{"Bartlett"} (alias for \code{"EBM"}), or
-#'   \code{"Regression"} (alias for \code{"ML"}). Currently only used by the
-#'   \code{\link{modsem_da}} method.
+#'   \code{"Regression"} (alias for \code{"ML"}). For \code{\link{modsem_da}}
+#'   objects this selects the optimisation-based scoring algorithm. For
+#'   \code{\link{modsem_pi}} objects the argument is forwarded to
+#'   \code{lavaan::lavPredict}, which accepts the same \code{method} values.
 #' @param type Character. Which scores to return: \code{"lv"} for latent
 #'   variable scores only (default), \code{"ov"} for model-implied observed
-#'   variable scores, or \code{"all"} for both combined. Currently only used by
-#'   the \code{\link{modsem_da}} method.
+#'   variable scores, or \code{"all"} for both combined. For
+#'   \code{\link{modsem_da}} objects this is handled directly; for
+#'   \code{\link{modsem_pi}} objects it is forwarded to
+#'   \code{lavaan::lavPredict}, which supports the same \code{type} values.
 #' @param standardized Logical. If \code{TRUE}, each score column is
 #'   standardised (mean 0, SD 1) before returning. Currently only used by the
 #'   \code{\link{modsem_da}} method.
-#' @param ... Further arguments passed to \code{lavaan::predict};
-#'   currently ignored by the \code{\link{modsem_da}} method.
+#' @param ... Further arguments passed to \code{lavaan::predict} for
+#'   \code{\link{modsem_pi}} objects; currently ignored by the
+#'   \code{\link{modsem_da}} method.
 #'
 #' @return
 #' * For \code{\link{modsem_pi}}: whatever \code{lavaan::predict()} returns,
