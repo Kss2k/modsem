@@ -364,8 +364,8 @@ parameterEstimatesLavSAM <- function(syntax,
                                      auto.fix.single  = TRUE,
                                      group            = NULL,
                                      sampling.weights = NULL,
-                                     sampling.weights.normalization = "total",
                                      suppress.warnings.lavaan = TRUE,
+                                     sampling.weights.normalization = "total",
                                      ...) {
   parTable <- modsemify(syntax)
   higherOrderLVs <- getHigherOrderLVs(parTable)
@@ -384,7 +384,7 @@ parameterEstimatesLavSAM <- function(syntax,
     optim.gradient.override <- "numerical" # analytical does not work
 
   if (!any(grepl(":", parTable$rhs) | grepl(":", parTable$lhs))) {
-    fitSEM <- wrapper(lavaan::sem(
+    fitSem <- wrapper(lavaan::sem(
       model            = syntax,
       data             = data,
       meanstructure    = meanstructure,
@@ -397,17 +397,20 @@ parameterEstimatesLavSAM <- function(syntax,
       group            = group,
       se               = "none",
       sampling.weights = sampling.weights,
-      sampling.weights.normalization = sampling.weights.normalization,
       optim.gradient   = optim.gradient.override,
+      sampling.weights.normalization = sampling.weights.normalization,
       ...
     ))
 
-    output <- lavaan::parameterEstimates(fitSEM)
+    admissible <- lavaan::lavInspect(fitSem, what = "post.check")
+    mod_stopif(!admissible, "The structural model is inadmissible!")
+
+    output <- lavaan::parameterEstimates(fitSem)
 
     if (hasComposites)
       output <- recalcInterceptsComposites(output, input = parTable)
 
-    return(list(fit = fitSEM, parTable = output))
+    return(list(fit = fitSem, parTable = output))
   }
 
   # Get SAM structural model with measurement model from a linear model
@@ -451,10 +454,13 @@ parameterEstimatesLavSAM <- function(syntax,
     group            = group,
     se               = "none",
     sampling.weights = sampling.weights,
-    sampling.weights.normalization = sampling.weights.normalization,
     optim.gradient   = optim.gradient.override,
+    sampling.weights.normalization = sampling.weights.normalization,
     ...
   ))
+
+  admissible <- lavaan::lavInspect(fitH0, what = "post.check")
+  mod_stopif(!admissible, "The measurement model is inadmissible!")
 
   if (isHigherOrder || hasComposites) {
     # use factor scores instead
@@ -507,6 +513,9 @@ parameterEstimatesLavSAM <- function(syntax,
         sampling.weights.normalization = sampling.weights.normalization,
         ...
       ))
+
+      admissible <- lavaan::lavInspect(fitH0b, what = "post.check")
+      mod_stopif(!admissible, "The measurement model is inadmissible!")
 
       dataListSamReflective <- tryCatch(
         lavaan::lavPredict(
@@ -643,6 +652,9 @@ parameterEstimatesLavSAM <- function(syntax,
     sampling.weights.normalization = sampling.weights.normalization,
     ... # don't need to set optim.gradient here, since we only have ovs
   ))
+
+  admissible <- lavaan::lavInspect(fitSam, what = "post.check")
+  mod_stopif(!admissible, "The structural model is inadmissible!")
 
   parTableH0 <- lavaan::parameterEstimates(fitH0)
   measr  <- getMeasrRows(parTableH0)
