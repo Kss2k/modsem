@@ -377,6 +377,9 @@ modsem_nobs <- function(object, ...) {
 #' @param standardized Logical. If \code{TRUE}, each score column is
 #'   standardised (mean 0, SD 1) before returning. Currently only used by the
 #'   \code{\link{modsem_da}} method.
+#' @param drop.list.single.group Logical. If \code{TRUE}, covariance attributes
+#'   for single-group \code{\link{modsem_da}} predictions drop the outer group
+#'   list, matching \code{lavaan::lavPredict}.
 #' @param ... Further arguments passed to \code{lavaan::predict} for
 #'   \code{\link{modsem_pi}} objects; currently ignored by the
 #'   \code{\link{modsem_da}} method.

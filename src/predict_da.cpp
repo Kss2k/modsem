@@ -151,6 +151,132 @@ arma::vec gradLogLikFromZetaMLCpp(
 }
 
 
+template<class F>
+Rcpp::List hessLogLikFromZetaQuadraticFit(
+    const arma::vec& zeta,
+    F&& fun,
+    const double relStep,
+    const double minAbsPar
+) {
+  const std::size_t p = zeta.n_elem;
+
+  if (p == 0) {
+    return Rcpp::List::create(
+      Rcpp::Named("mean")     = fun(zeta),
+      Rcpp::Named("gradient") = arma::vec(),
+      Rcpp::Named("Hessian")  = arma::mat(0, 0)
+    );
+  }
+
+  arma::vec incr = arma::max(arma::abs(zeta), arma::vec(p).fill(minAbsPar)) * relStep;
+  for (std::size_t i = 0; i < p; ++i)
+    if (incr[i] == 0.0) incr[i] = relStep;
+
+  std::vector<arma::vec> disp;
+  disp.reserve(1 + 2 * p + (p * (p - 1)) / 2);
+  disp.emplace_back(arma::zeros<arma::vec>(p));
+
+  for (std::size_t i = 0; i < p; ++i) {
+    arma::vec v = arma::zeros<arma::vec>(p);
+    v[i] =  1.0; disp.push_back(v);
+    v[i] = -1.0; disp.push_back(v);
+  }
+
+  for (std::size_t i = 0; i < p - 1; ++i) {
+    for (std::size_t j = i + 1; j < p; ++j) {
+      arma::vec v = arma::zeros<arma::vec>(p);
+      v[i] = 1.0;
+      v[j] = 1.0;
+      disp.push_back(v);
+    }
+  }
+
+  const std::size_t m = disp.size();
+  arma::vec values(m);
+  for (std::size_t k = 0; k < m; ++k)
+    values[k] = fun(zeta + disp[k] % incr);
+
+  const std::size_t q = 1 + 2 * p + (p * (p - 1)) / 2;
+  arma::mat X(m, q, arma::fill::ones);
+
+  std::size_t colId = 1;
+  for (std::size_t j = 0; j < p; ++j, ++colId)
+    for (std::size_t k = 0; k < m; ++k)
+      X(k, colId) = disp[k][j];
+
+  for (std::size_t j = 0; j < p; ++j, ++colId)
+    for (std::size_t k = 0; k < m; ++k)
+      X(k, colId) = disp[k][j] * disp[k][j];
+
+  for (std::size_t i = 0; i < p - 1; ++i)
+    for (std::size_t j = i + 1; j < p; ++j, ++colId)
+      for (std::size_t k = 0; k < m; ++k)
+        X(k, colId) = disp[k][i] * disp[k][j];
+
+  arma::vec frac(q, arma::fill::ones);
+  for (std::size_t j = 0; j < p; ++j)
+    frac[1 + j] = incr[j];
+
+  for (std::size_t j = 0; j < p; ++j)
+    frac[1 + p + j] = incr[j] * incr[j];
+
+  colId = 1 + 2 * p;
+  for (std::size_t i = 0; i < p - 1; ++i)
+    for (std::size_t j = i + 1; j < p; ++j, ++colId)
+      frac[colId] = incr[i] * incr[j];
+
+  arma::vec coef = arma::solve(X, values) / frac;
+
+  arma::vec grad = coef.subvec(1, p);
+  arma::mat Hess(p, p, arma::fill::zeros);
+
+  for (std::size_t j = 0; j < p; ++j)
+    Hess(j, j) = 2.0 * coef[1 + p + j];
+
+  colId = 1 + 2 * p;
+  for (std::size_t i = 0; i < p - 1; ++i) {
+    for (std::size_t j = i + 1; j < p; ++j, ++colId) {
+      Hess(i, j) = coef[colId];
+      Hess(j, i) = coef[colId];
+    }
+  }
+
+  return Rcpp::List::create(
+    Rcpp::Named("mean")     = coef[0],
+    Rcpp::Named("gradient") = grad,
+    Rcpp::Named("Hessian")  = Hess
+  );
+}
+
+
+template<class F>
+Rcpp::List hessLogLikFromZetaCpp(
+    const arma::vec& zeta,
+    F&& fun,
+    const double relStep,
+    const double minAbsPar
+) {
+  return hessLogLikFromZetaQuadraticFit(zeta, std::forward<F>(fun), relStep, minAbsPar);
+}
+
+
+// [[Rcpp::export]]
+Rcpp::List hessLogLikFromZetaMLCpp(
+  const arma::vec zeta,
+  const arma::vec y,
+  const SEXP xptr,
+  const arma::uvec idx,
+  const double relStep = 1e-4,
+  const double minAbsPar = 0.0
+) {
+  auto fun = [&](const arma::vec& zi) -> double {
+    return logLikFromZetaMLCpp(zi, y, xptr, idx);
+  };
+
+  return hessLogLikFromZetaCpp(zeta, fun, relStep, minAbsPar);
+}
+
+
 // [[Rcpp::export]]
 double logLikFromZetaEBMCpp(
   const arma::vec zeta,
@@ -187,4 +313,21 @@ arma::vec gradLogLikFromZetaEBMCpp(
   }
 
   return grad;
+}
+
+
+// [[Rcpp::export]]
+Rcpp::List hessLogLikFromZetaEBMCpp(
+  const arma::vec zeta,
+  const arma::vec y,
+  const SEXP xptr,
+  const arma::uvec idx,
+  const double relStep = 1e-4,
+  const double minAbsPar = 0.0
+) {
+  auto fun = [&](const arma::vec& zi) -> double {
+    return logLikFromZetaEBMCpp(zi, y, xptr, idx);
+  };
+
+  return hessLogLikFromZetaCpp(zeta, fun, relStep, minAbsPar);
 }
