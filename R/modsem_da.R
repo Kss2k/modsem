@@ -601,12 +601,16 @@ modsem_da <- function(model.syntax = NULL,
     model <- tryCatch({
       .optimize <- purrr::quietly(optimizeStartingParamsDA)
       #.optimize <- \(...) list(result = optimizeStartingParamsDA(...))
-      result    <- .optimize(
+
+      ops <- c(group.info$parTable$op, group.info$parTableCov$op)
+      engine <- if (any(ops %in% CONSTRAINT_OPS)) "pi" else "sam"
+
+      result <- .optimize(
         model            = model,
         args             = args,
         group            = group,
         sampling.weights = sampling.weights,
-        engine           = "sam"
+        engine           = engine
       )
 
       warnings  <- result$warnings

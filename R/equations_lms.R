@@ -254,6 +254,7 @@ simpleGradientAllLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-
   modelR     <- fillModel(model=model, theta=theta, method="lms")
   locations  <- model$params$gradientStruct$locations
   Jacobian   <- model$params$gradientStruct$Jacobian
+  Jacobian   <- .refreshCovModelJacobian(theta, model, Jacobian)$J
   nlinDerivs <- model$params$gradientStruct$nlinDerivs
 
   # grad <- stats::setNames(numeric(NROW(locations)), nm = locations$param)
@@ -513,6 +514,9 @@ simpleHessianAllLogLikLms <- function(theta, model, P, sign = -1,
   locations   <- model$params$gradientStruct$locations
   Jacobian    <- model$params$gradientStruct$Jacobian
   Jacobian2   <- model$params$gradientStruct$Jacobian2
+  jac         <- .refreshCovModelJacobian(theta, model, Jacobian, Jacobian2)
+  Jacobian    <- jac$J
+  Jacobian2   <- jac$J2
   nlinDerivs  <- model$params$gradientStruct$nlinDerivs
   nlinDerivs2 <- model$params$gradientStruct$nlinDerivs2
 

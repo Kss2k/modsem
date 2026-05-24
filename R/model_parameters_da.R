@@ -564,6 +564,48 @@ getGradientStruct <- function(model, theta) {
 }
 
 
+# Recompute the A-matrix (block 6) columns of Jacobian/Jacobian2 at the
+# current theta.  expectedCovModel() involves nonlinear operations (Cholesky),
+# so dA/dtheta is theta-dependent and must be refreshed at each gradient call.
+# Jacobian2 is optional — pass NULL to skip the second-derivative update.
+.refreshCovModelJacobian <- function(theta, model, Jacobian, Jacobian2 = NULL) {
+  locations <- model$params$gradientStruct$locations
+  cov_locs  <- locations[locations$block == 6L, , drop = FALSE]
+  if (!NROW(cov_locs)) return(list(J = Jacobian, J2 = Jacobian2))
+
+  eps        <- (.Machine$double.eps)^(1/4)
+  param.part <- rownames(Jacobian)
+
+  for (g in seq_len(model$info$n.groups)) {
+    submodel <- model$models[[g]]
+    if (is.null(submodel$covModel$matrices)) next
+
+    A_locs_g  <- cov_locs[cov_locs$group == g, , drop = FALSE]
+    affecting <- c(model$params$SELECT_THETA_LAB[[1L]],
+                   model$params$SELECT_THETA_COV[[g]])
+    if (!length(affecting) || !NROW(A_locs_g)) next
+
+    A0    <- .evalCovModelA(theta, submodel, model$params, g)
+    ri    <- A_locs_g$row + 1L
+    ci    <- A_locs_g$col + 1L
+    acols <- A_locs_g$param  # already carries the #N dedup suffix
+
+    for (k_idx in affecting) {
+      k_nm <- param.part[[k_idx]]
+      tp <- theta; tp[[k_idx]] <- tp[[k_idx]] + eps
+      tm <- theta; tm[[k_idx]] <- tm[[k_idx]] - eps
+      Ap <- .evalCovModelA(tp, submodel, model$params, g)
+      Am <- .evalCovModelA(tm, submodel, model$params, g)
+      Jacobian[k_nm, acols] <- (Ap - Am)[cbind(ri, ci)] / (2 * eps)
+      if (!is.null(Jacobian2))
+        Jacobian2[k_nm, acols] <- (Ap - 2*A0 + Am)[cbind(ri, ci)] / eps^2
+    }
+  }
+
+  list(J = Jacobian, J2 = Jacobian2)
+}
+
+
 getGradientStructSimple <- function(model, theta) {
   hasCovModel <- !is.null(model$models[[1L]]$covModel$matrices)
 
