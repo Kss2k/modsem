@@ -119,7 +119,7 @@ emLms <- function(model,
     iterations <- 0L
     run <- TRUE
 
-    testSimpleGradient <- !model$params$gradientStruct$hasCovModel
+    testSimpleGradient <- !model$params$gradientStruct$useFDGradient
 
     while (run) {
       iterations <- iterations + 1L
@@ -138,8 +138,8 @@ emLms <- function(model,
         }, error = \(e) {
           mod_msg_warn_immediate(paste0("Optimized computation of gradient failed! Switching gradient type.\n",
                    "Message: ", conditionMessage(e)))
-          model$gradientStruct$hasCovModel <<- TRUE
-          model$gradientStruct$isNonLinear <<- TRUE
+          model$params$gradientStruct$useFDGradient <<- TRUE
+          model$params$gradientStruct$isNonLinear  <<- TRUE
         })
         testSimpleGradient <- FALSE
       }

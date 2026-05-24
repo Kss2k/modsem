@@ -191,10 +191,10 @@ gradientCompLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-6) {
 
 gradientAllLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-6,
                                  FGRAD, FOBJECTIVE) {
-  hasCovModel <- model$params$gradientStruct$hasCovModel
+  useFDGradient <- model$params$gradientStruct$useFDGradient
 
-  if (hasCovModel) gradient <- \(...) complicatedGradientAllLogLikLms(..., FOBJECTIVE = FOBJECTIVE)
-  else             gradient <- \(...) simpleGradientAllLogLikLms(..., FGRAD = FGRAD)
+  if (useFDGradient) gradient <- \(...) complicatedGradientAllLogLikLms(..., FOBJECTIVE = FOBJECTIVE)
+  else               gradient <- \(...) simpleGradientAllLogLikLms(..., FGRAD = FGRAD)
 
   c(gradient(theta = theta, model = model, P = P, sign = sign, epsilon = epsilon))
 }
@@ -460,10 +460,10 @@ densityLms <- function(z, modFilled, data) {
 
 hessianAllLogLikLms <- function(theta, model, P, sign = -1,
                                 FHESS, FOBJECTIVE, .relStep = .Machine$double.eps ^ (1/5)) {
-  hasCovModel <- model$params$gradientStruct$hasCovModel
+  useFDGradient <- model$params$gradientStruct$useFDGradient
 
-  if (hasCovModel) hessian <- \(...) complicatedHessianAllLogLikLms(..., FOBJECTIVE = FOBJECTIVE, .relStep = .relStep)
-  else             hessian <- \(...) simpleHessianAllLogLikLms(..., FHESS = FHESS, .relStep = .relStep)
+  if (useFDGradient) hessian <- \(...) complicatedHessianAllLogLikLms(..., FOBJECTIVE = FOBJECTIVE, .relStep = .relStep)
+  else               hessian <- \(...) simpleHessianAllLogLikLms(..., FHESS = FHESS, .relStep = .relStep)
 
   hessian(theta = theta, model = model, P = P, sign = sign)
 }
