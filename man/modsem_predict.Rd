@@ -55,6 +55,11 @@ variable scores, or \code{"all"} for both combined. For
 standardised (mean 0, SD 1) before returning. Currently only used by the
 \code{\link{modsem_da}} method.}
 
+\item{se}{Logical. If \code{TRUE}, attach standard-error and asymptotic
+covariance attributes for \code{\link{modsem_da}} predictions. Standard
+errors are returned in the \code{"se"} attribute and covariance matrices in
+the \code{"acov"} attribute.}
+
 \item{drop.list.single.group}{Logical. If \code{TRUE}, covariance attributes
 for single-group \code{\link{modsem_da}} predictions drop the outer group
 list, matching \code{lavaan::lavPredict}.}
