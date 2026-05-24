@@ -513,7 +513,7 @@ getGradientStruct <- function(model, theta) {
         Jacobian    = NULL,
         nlinDerivs  = NULL,
         evalTheta   = NULL,
-        hasCovModel = TRUE, # may not be true, but we should behave as if it is
+        useFDGradient = TRUE, # may not be true, but we should behave as if it is
         isNonLinear = TRUE  # may not be true, but we should behave as if it is
       )
     }
@@ -521,21 +521,93 @@ getGradientStruct <- function(model, theta) {
 }
 
 
+# Evaluate the A matrix (lower-Cholesky of xi covariance) produced by the
+# covModel for group g at a given theta.  Cheap: no integration, just matrix
+# algebra inside expectedCovModel().
+.evalCovModelA <- function(theta, submodel, params, g, method = "lms") {
+  thetaLabel <- NULL
+  if (length(params$SELECT_THETA_LAB)) {
+    thetaLabel <- suppressWarnings(
+      calcThetaLabel(theta[params$SELECT_THETA_LAB[[1L]]], params$constrExprs)
+    )
+  }
+  thetaCov <- if (length(params$SELECT_THETA_COV[[g]]))
+    theta[params$SELECT_THETA_COV[[g]]] else NULL
+
+  filledCov <- fillCovModel(submodel$covModel, thetaCov, thetaLabel)
+  expectedCovModel(filledCov, method = method, sortedXis = submodel$info$xis)
+}
+
+
+# locations data.frame for the lower-triangular A entries controlled by covModel.
+.getCovModelALocations <- function(submodel, g) {
+  numXis <- submodel$info$numXis
+  xis    <- submodel$info$xis
+  A_dim  <- matrix(0L, nrow = numXis, ncol = numXis, dimnames = list(xis, xis))
+
+  free_mask <- lower.tri(A_dim, diag = TRUE)
+  params    <- getParamNamesMatrix(mat = A_dim, matname = "A")[free_mask]
+  rowidx    <- (row(A_dim) - 1L)[free_mask]
+  colidx    <- (col(A_dim) - 1L)[free_mask]
+
+  if (g > 1L) params <- sprintf("%s.g%d", params, g)
+
+  data.frame(
+    param     = params,
+    group     = g,
+    block     = LMS_BLOCKS[["A"]],
+    row       = rowidx,
+    col       = colidx,
+    symmetric = 0L,
+    stringsAsFactors = FALSE
+  )
+}
+
+
+# Recompute the A-matrix (block 6) columns of Jacobian/Jacobian2 at the
+# current theta.  expectedCovModel() involves nonlinear operations (Cholesky),
+# so dA/dtheta is theta-dependent and must be refreshed at each gradient call.
+# Jacobian2 is optional — pass NULL to skip the second-derivative update.
+.refreshCovModelJacobian <- function(theta, model, Jacobian, Jacobian2 = NULL) {
+  locations <- model$params$gradientStruct$locations
+  cov_locs  <- locations[locations$block == 6L, , drop = FALSE]
+  if (!NROW(cov_locs)) return(list(J = Jacobian, J2 = Jacobian2))
+
+  eps        <- (.Machine$double.eps)^(1/4)
+  param.part <- rownames(Jacobian)
+
+  for (g in seq_len(model$info$n.groups)) {
+    submodel <- model$models[[g]]
+    if (is.null(submodel$covModel$matrices)) next
+
+    A_locs_g  <- cov_locs[cov_locs$group == g, , drop = FALSE]
+    affecting <- c(model$params$SELECT_THETA_LAB[[1L]],
+                   model$params$SELECT_THETA_COV[[g]])
+    if (!length(affecting) || !NROW(A_locs_g)) next
+
+    A0    <- .evalCovModelA(theta, submodel, model$params, g)
+    ri    <- A_locs_g$row + 1L
+    ci    <- A_locs_g$col + 1L
+    acols <- A_locs_g$param  # already carries the #N dedup suffix
+
+    for (k_idx in affecting) {
+      k_nm <- param.part[[k_idx]]
+      tp <- theta; tp[[k_idx]] <- tp[[k_idx]] + eps
+      tm <- theta; tm[[k_idx]] <- tm[[k_idx]] - eps
+      Ap <- .evalCovModelA(tp, submodel, model$params, g)
+      Am <- .evalCovModelA(tm, submodel, model$params, g)
+      Jacobian[k_nm, acols] <- (Ap - Am)[cbind(ri, ci)] / (2 * eps)
+      if (!is.null(Jacobian2))
+        Jacobian2[k_nm, acols] <- (Ap - 2*A0 + Am)[cbind(ri, ci)] / eps^2
+    }
+  }
+
+  list(J = Jacobian, J2 = Jacobian2)
+}
+
+
 getGradientStructSimple <- function(model, theta) {
   hasCovModel <- !is.null(model$models[[1L]]$covModel$matrices)
-
-  if (hasCovModel) {
-    out <- list(
-      locations   = NULL,
-      Jacobian    = NULL,
-      nlinDerivs  = NULL,
-      evalTheta   = NULL,
-      hasCovModel = TRUE,
-      isNonLinear = TRUE  # may not be true, but we should behave as if it is
-    )
-
-    return(out)
-  }
 
   parTable <- model$parTable
   parTable <- parTable[!parTable$op %in% BOUNDUARY_OPS, , drop = FALSE] # not relevant
@@ -623,6 +695,55 @@ getGradientStructSimple <- function(model, theta) {
     }
   }
 
+  # When a covModel is present, the A matrix is entirely determined by
+  # expectedCovModel(thetaCov) rather than being free parameters in thetaMain.
+  # We extend the Jacobian with those A-entry columns and fill them via central
+  # finite differences on expectedCovModel — cheap (matrix algebra only,
+  # no integration) and exact enough for gradient/Hessian quality.
+  if (hasCovModel) {
+    cov_locs <- NULL
+    for (g in seq_len(model$info$n.groups)) {
+      if (!is.null(model$models[[g]]$covModel$matrices))
+        cov_locs <- rbind(cov_locs, .getCovModelALocations(model$models[[g]], g))
+    }
+
+    n_cov  <- NROW(cov_locs)
+    cov_J  <- matrix(0, nrow = m, ncol = n_cov,
+                     dimnames = list(param.part, cov_locs$param))
+    cov_J2 <- cov_J
+    eps    <- (.Machine$double.eps)^(1/4) # good balance for both J and J2
+
+    for (g in seq_len(model$info$n.groups)) {
+      submodel <- model$models[[g]]
+      if (is.null(submodel$covModel$matrices)) next
+
+      A_locs_g  <- cov_locs[cov_locs$group == g, , drop = FALSE]
+      affecting <- c(model$params$SELECT_THETA_LAB[[1L]],
+                     model$params$SELECT_THETA_COV[[g]])
+      if (!length(affecting) || !NROW(A_locs_g)) next
+
+      A0 <- .evalCovModelA(theta, submodel, model$params, g)
+      ri <- A_locs_g$row + 1L  # 0-indexed -> 1-indexed
+      ci <- A_locs_g$col + 1L
+
+      for (k_idx in affecting) {
+        k_nm <- param.part[[k_idx]]
+        theta_p <- theta; theta_p[[k_idx]] <- theta_p[[k_idx]] + eps
+        theta_m <- theta; theta_m[[k_idx]] <- theta_m[[k_idx]] - eps
+
+        Ap <- .evalCovModelA(theta_p, submodel, model$params, g)
+        Am <- .evalCovModelA(theta_m, submodel, model$params, g)
+
+        cov_J [k_nm, A_locs_g$param] <- (Ap - Am)[cbind(ri, ci)] / (2 * eps)
+        cov_J2[k_nm, A_locs_g$param] <- (Ap - 2*A0 + Am)[cbind(ri, ci)] / eps^2
+      }
+    }
+
+    locations <- rbind(locations, cov_locs)
+    Jacobian  <- cbind(Jacobian,  cov_J)
+    Jacobian2 <- cbind(Jacobian2, cov_J2)
+  }
+
   # In multigroup models we can have duplicated labels, that doesn't work
   # with out logic, so we must add some unique identifiers to the param.full
   # We also pass param.full as is, to map back and forth.
@@ -640,7 +761,7 @@ getGradientStructSimple <- function(model, theta) {
     nlinDerivs  = nlinDerivs,
     nlinDerivs2 = nlinDerivs2,
     evalTheta   = evalTheta,
-    hasCovModel = hasCovModel,
+    useFDGradient = FALSE,
     isNonLinear = length(nlinDerivs) > 1
   )
 }

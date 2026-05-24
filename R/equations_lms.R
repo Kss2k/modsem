@@ -191,10 +191,10 @@ gradientCompLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-6) {
 
 gradientAllLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-6,
                                  FGRAD, FOBJECTIVE) {
-  hasCovModel <- model$params$gradientStruct$hasCovModel
+  useFDGradient <- model$params$gradientStruct$useFDGradient
 
-  if (hasCovModel) gradient <- \(...) complicatedGradientAllLogLikLms(..., FOBJECTIVE = FOBJECTIVE)
-  else             gradient <- \(...) simpleGradientAllLogLikLms(..., FGRAD = FGRAD)
+  if (useFDGradient) gradient <- \(...) complicatedGradientAllLogLikLms(..., FOBJECTIVE = FOBJECTIVE)
+  else               gradient <- \(...) simpleGradientAllLogLikLms(..., FGRAD = FGRAD)
 
   c(gradient(theta = theta, model = model, P = P, sign = sign, epsilon = epsilon))
 }
@@ -254,6 +254,7 @@ simpleGradientAllLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-
   modelR     <- fillModel(model=model, theta=theta, method="lms")
   locations  <- model$params$gradientStruct$locations
   Jacobian   <- model$params$gradientStruct$Jacobian
+  Jacobian   <- .refreshCovModelJacobian(theta, model, Jacobian)$J
   nlinDerivs <- model$params$gradientStruct$nlinDerivs
 
   # grad <- stats::setNames(numeric(NROW(locations)), nm = locations$param)
@@ -460,10 +461,10 @@ densityLms <- function(z, modFilled, data) {
 
 hessianAllLogLikLms <- function(theta, model, P, sign = -1,
                                 FHESS, FOBJECTIVE, .relStep = .Machine$double.eps ^ (1/5)) {
-  hasCovModel <- model$params$gradientStruct$hasCovModel
+  useFDGradient <- model$params$gradientStruct$useFDGradient
 
-  if (hasCovModel) hessian <- \(...) complicatedHessianAllLogLikLms(..., FOBJECTIVE = FOBJECTIVE, .relStep = .relStep)
-  else             hessian <- \(...) simpleHessianAllLogLikLms(..., FHESS = FHESS, .relStep = .relStep)
+  if (useFDGradient) hessian <- \(...) complicatedHessianAllLogLikLms(..., FOBJECTIVE = FOBJECTIVE, .relStep = .relStep)
+  else               hessian <- \(...) simpleHessianAllLogLikLms(..., FHESS = FHESS, .relStep = .relStep)
 
   hessian(theta = theta, model = model, P = P, sign = sign)
 }
@@ -513,6 +514,9 @@ simpleHessianAllLogLikLms <- function(theta, model, P, sign = -1,
   locations   <- model$params$gradientStruct$locations
   Jacobian    <- model$params$gradientStruct$Jacobian
   Jacobian2   <- model$params$gradientStruct$Jacobian2
+  jac         <- .refreshCovModelJacobian(theta, model, Jacobian, Jacobian2)
+  Jacobian    <- jac$J
+  Jacobian2   <- jac$J2
   nlinDerivs  <- model$params$gradientStruct$nlinDerivs
   nlinDerivs2 <- model$params$gradientStruct$nlinDerivs2
 
