@@ -43,16 +43,17 @@ modsem_predict.modsem_da <- function(object,
   )
 
   if (standardized) {
-    predAttrs <- attributes(out)[c(
-      "se", "acov"
-    )]
+    predAttrs <- attributes(out)[c("se", "acov")]
 
-    out <- modsemMatrix(scale(out))
+    scaled <- scale(out)
+    sc     <- attr(scaled, "scaled:scale")
+    out    <- modsemMatrix(scaled)
 
-    for (nm in names(predAttrs)) {
-      if (!is.null(predAttrs[[nm]]))
-        attr(out, nm) <- predAttrs[[nm]]
-    }
+    if (!is.null(predAttrs$se))
+      attr(out, "se") <- sweep(predAttrs$se, MARGIN = 2L,
+                               STATS = sc[colnames(predAttrs$se)], FUN = "/")
+    if (!is.null(predAttrs$acov))
+      attr(out, "acov") <- predictDA_RescaleAcov(predAttrs$acov, sc)
   }
 
   out
@@ -497,6 +498,19 @@ predictDASqrtDiag <- function(x) {
   v <- diag(x)
   v[v < 0] <- NA_real_
   sqrt(v)
+}
+
+
+predictDA_RescaleAcov <- function(acov, sc) {
+  if (is.matrix(acov)) {
+    d <- 1 / sc[rownames(acov)]
+    return(sweep(sweep(acov, 1L, d, "*"), 2L, d, "*"))
+  }
+
+  patterns.attr <- attr(acov, "patterns")
+  out <- lapply(acov, \(v) if (is.null(v)) NULL else predictDA_RescaleAcov(v, sc))
+  attr(out, "patterns") <- patterns.attr
+  out
 }
 
 
