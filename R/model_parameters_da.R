@@ -422,7 +422,7 @@ calcPhiTheta <- function(theta, model, method) {
 }
 
 
-LMS_BLOCKS = list(
+DA_BLOCKS = list(
   lambdaX      = 0,
   lambdaY      = 1,
   tauX         = 2,
@@ -437,18 +437,18 @@ LMS_BLOCKS = list(
   gammaEta     = 11,
   omegaXiXi    = 12,
   omegaEtaXi   = 13,
-  phi          = NA,
   W            = 14,
-  T            = 15
+  T            = 15,
+  phi          = 16   # QML: free parameter; LMS: derived from A (not free)
 )
 
 
-SYMMETRIC_BLOCKS_LMS = c(
-  thetaDelta = 4,
+SYMMETRIC_BLOCKS_DA = c(
+  thetaDelta   = 4,
   thetaEpsilon = 5,
-  psi = 7,
-  phi = NA,
-  T = 15
+  psi          = 7,
+  T            = 15,
+  phi          = 16
 )
 
 
@@ -465,7 +465,7 @@ getParamNamesMatrix <- function(mat, matname) {
 
 
 getParamLocationsMatrices <- function(matrices, isFree = is.na, g = 1L, ignore.g.label = FALSE) {
-  matrices <- matrices[intersect(names(matrices), names(LMS_BLOCKS))]
+  matrices <- matrices[intersect(names(matrices), names(DA_BLOCKS))]
   locations <- data.frame(param = NULL, block = NULL, row = NULL, col = NULL)
   for (blockname in names(matrices)) {
     X <- matrices[[blockname]]
@@ -475,7 +475,7 @@ getParamLocationsMatrices <- function(matrices, isFree = is.na, g = 1L, ignore.g
     if (!any(isFree(X))) next
 
     params <- getParamNamesMatrix(mat = X, matname = blockname)
-    block  <- LMS_BLOCKS[[blockname]]
+    block  <- DA_BLOCKS[[blockname]]
     rowidx <- matrix(seq_len(n) - 1, nrow = n, ncol = m, byrow = FALSE)
     colidx <- matrix(seq_len(m) - 1, nrow = n, ncol = m, byrow = TRUE)
 
@@ -492,7 +492,7 @@ getParamLocationsMatrices <- function(matrices, isFree = is.na, g = 1L, ignore.g
       block = block,
       row   = rowidx,
       col   = colidx,
-      symmetric = as.integer(block %in% SYMMETRIC_BLOCKS_LMS)
+      symmetric = as.integer(block %in% SYMMETRIC_BLOCKS_DA)
     )
 
     locations <- rbind(locations, locationsBlock)

@@ -38,6 +38,12 @@ logLikQml <- function(theta, model, sum = TRUE, sign = -1, verbose = FALSE) {
 
 
 logLikQmlGroup <- function(submodel, sum = TRUE, sign = -1) {
+  if (sum) {
+    ll <- logLikQmlCpp(submodel, ncores = ThreadEnv$n.threads)
+    return(sign * ll)
+  }
+
+  # Per-observation path — used by robust SE / sandwich estimator only
   numXi       <- submodel$info$numXis
   numEta      <- submodel$info$numEtas
   kOmegaEta   <- submodel$info$kOmegaEta
@@ -117,7 +123,7 @@ logLikQmlGroup <- function(submodel, sum = TRUE, sign = -1) {
   if (!is.null(submodel$data$weights))
     lli <- submodel$data$weights * lli
 
-  if (sum) sign * sum(lli) else sign * lli
+  sign * lli
 }
 
 
@@ -151,7 +157,57 @@ centerIndicators <- function(X, tau) {
 }
 
 
-gradientLogLikQml <- function(theta, model, epsilon = 1e-8, sign = -1, .f = logLikQmlGroup, sum = TRUE, ...) {
+simpleGradientLogLikQml <- function(theta, model, sign = -1, epsilon = 1e-6) {
+  modelFilled <- fillModel(model = model, theta = theta, method = "qml")
+  locations   <- model$params$gradientStruct$locations
+  Jacobian    <- model$params$gradientStruct$Jacobian
+  nlinDerivs  <- model$params$gradientStruct$nlinDerivs
+
+  grad <- matrix(0, nrow = NROW(locations), ncol = 1L,
+                 dimnames = list(locations$param, NULL))
+
+  for (g in seq_len(modelFilled$info$n.groups)) {
+    locations.g <- locations[locations$group == g, , drop = FALSE]
+    if (!NROW(locations.g)) next
+
+    grad.g <- gradLogLikQmlCpp(
+      submodel  = modelFilled$models[[g]],
+      block     = locations.g$block,
+      row       = locations.g$row,
+      col       = locations.g$col,
+      symmetric = locations.g$symmetric,
+      eps       = epsilon,
+      ncores    = ThreadEnv$n.threads
+    )
+    grad[locations.g$param, ] <- grad.g
+  }
+
+  if (length(nlinDerivs)) {
+    evalTheta  <- model$params$gradientStruct$evalTheta
+    param.full <- stringr::str_split_i(colnames(Jacobian), pattern = "#", i = 1L)
+    param.part <- rownames(Jacobian)
+    THETA      <- list2env(as.list(evalTheta(theta)))
+
+    for (dep in names(nlinDerivs)) {
+      derivs <- nlinDerivs[[dep]]
+      for (indep in names(derivs)) {
+        deriv <- eval(expr = derivs[[indep]], envir = THETA)
+        Jacobian[param.part == indep, param.full == dep] <- deriv
+      }
+    }
+  }
+
+  as.vector(sign * Jacobian %*% grad)
+}
+
+
+gradientLogLikQml <- function(theta, model, epsilon = 1e-8, sign = -1,
+                               .f = logLikQmlGroup, sum = TRUE, ...) {
+  if (sum && !isTRUE(model$params$gradientStruct$hasCovModel))
+    return(simpleGradientLogLikQml(theta = theta, model = model,
+                                    sign = sign, epsilon = epsilon))
+
+  # Fallback: per-obs path or covModel — original R-level FD
   params <- model$params
 
   SELECT_THETA_LAB  <- params$SELECT_THETA_LAB
@@ -162,10 +218,8 @@ gradientLogLikQml <- function(theta, model, epsilon = 1e-8, sign = -1, .f = logL
   N.start <- c(1, cumsum(N)[-length(N)] + 1L)
   N.end   <- cumsum(N)
 
-  if (sum) n <- 1L
-  else     n <- sum(N)
-
-  k  <- length(theta)
+  n <- if (sum) 1L else sum(N)
+  k <- length(theta)
 
   grad <- matrix(0, nrow = n, ncol = k, dimnames = list(NULL, names(theta)))
 
@@ -176,21 +230,14 @@ gradientLogLikQml <- function(theta, model, epsilon = 1e-8, sign = -1, .f = logL
 
   for (g in seq_len(model$info$n.groups)) {
     f0 <- .fg(theta = theta, g = g)
+    J  <- if (sum) 1L else seq(N.start[[g]], N.end[[g]], by = 1L)
 
-    if (sum) J <- 1L
-    else     J <- seq(N.start[[g]], N.end[[g]], by = 1L)
-
-    indices <- c(
-      SELECT_THETA_LAB[[g]],
-      SELECT_THETA_COV[[g]],
-      SELECT_THETA_MAIN[[g]]
-    )
+    indices <- c(SELECT_THETA_LAB[[g]], SELECT_THETA_COV[[g]], SELECT_THETA_MAIN[[g]])
 
     for (i in indices) {
-      theta_i <- theta
+      theta_i    <- theta
       theta_i[i] <- theta_i[i] + epsilon
-
-      fi <- .fg(theta_i, g = g)
+      fi         <- .fg(theta_i, g = g)
       grad[J, i] <- grad[J, i] + (fi - f0) / epsilon
     }
   }
@@ -212,8 +259,75 @@ gradientLogLikQml_i <- function(theta, model, sign = -1, epsilon = 1e-8) {
 }
 
 
-hessianLogLikQml <- function(theta, model, sign = -1, .relStep = .Machine$double.eps ^ (1/5),
-                             .f = logLikQmlGroup) {
+simpleHessianLogLikQml <- function(theta, model, sign = -1,
+                                    .relStep = .Machine$double.eps ^ (1/5)) {
+  modelFilled <- fillModel(model = model, theta = theta, method = "qml")
+  locations   <- model$params$gradientStruct$locations
+  Jacobian    <- model$params$gradientStruct$Jacobian
+  Jacobian2   <- model$params$gradientStruct$Jacobian2
+  nlinDerivs  <- model$params$gradientStruct$nlinDerivs
+  nlinDerivs2 <- model$params$gradientStruct$nlinDerivs2
+
+  n.loc <- NROW(locations)
+  nm    <- locations$param
+  H     <- matrix(0.0, nrow = n.loc, ncol = n.loc, dimnames = list(nm, nm))
+  grad  <- stats::setNames(numeric(n.loc), nm = nm)
+
+  for (g in seq_len(modelFilled$info$n.groups)) {
+    locations.g <- locations[locations$group == g, , drop = FALSE]
+    if (!NROW(locations.g)) next
+
+    HESS.g <- hessLogLikQmlCpp(
+      submodel  = modelFilled$models[[g]],
+      block     = locations.g$block,
+      row       = locations.g$row,
+      col       = locations.g$col,
+      symmetric = locations.g$symmetric,
+      relStep   = .relStep,
+      minAbs    = 1.0,
+      ncores    = ThreadEnv$n.threads
+    )
+
+    nm.g <- locations.g$param
+    dimnames(HESS.g$Hessian) <- list(nm.g, nm.g)
+    names(HESS.g$gradient)   <- nm.g
+
+    H[nm.g, nm.g] <- H[nm.g, nm.g] + HESS.g$Hessian
+    grad[nm.g]    <- grad[nm.g] + HESS.g$gradient
+  }
+
+  if (length(nlinDerivs)) {
+    evalTheta  <- model$params$gradientStruct$evalTheta
+    param.full <- stringr::str_split_i(colnames(Jacobian), pattern = "#", i = 1L)
+    param.part <- rownames(Jacobian)
+    THETA      <- list2env(as.list(evalTheta(theta)))
+
+    for (dep in names(nlinDerivs)) {
+      derivs1 <- nlinDerivs[[dep]]
+      derivs2 <- nlinDerivs2[[dep]]
+      for (indep in names(derivs1)) {
+        deriv1 <- eval(expr = derivs1[[indep]], envir = THETA)
+        deriv2 <- eval(expr = derivs2[[indep]], envir = THETA)
+        Jacobian [param.part == indep, param.full == dep] <- deriv1
+        Jacobian2[param.part == indep, param.full == dep] <- deriv2
+      }
+    }
+  }
+
+  term1 <- Jacobian %*% H %*% t(Jacobian)
+  term2 <- diag(drop(Jacobian2 %*% grad), nrow = nrow(Jacobian))
+  sign * (term1 + term2)
+}
+
+
+hessianLogLikQml <- function(theta, model, sign = -1,
+                              .relStep = .Machine$double.eps ^ (1/5),
+                              .f = logLikQmlGroup) {
+  if (!isTRUE(model$params$gradientStruct$hasCovModel))
+    return(simpleHessianLogLikQml(theta = theta, model = model,
+                                   sign = sign, .relStep = .relStep))
+
+  # Fallback: covModel — pure R-level FD Hessian
   params <- model$params
 
   SELECT_THETA_LAB  <- params$SELECT_THETA_LAB
@@ -224,21 +338,16 @@ hessianLogLikQml <- function(theta, model, sign = -1, .relStep = .Machine$double
   H <- matrix(0, nrow = k, ncol = k, dimnames = list(names(theta), names(theta)))
 
   for (g in seq_len(model$info$n.groups)) {
-    indices <- c(
-      SELECT_THETA_LAB[[g]],
-      SELECT_THETA_COV[[g]],
-      SELECT_THETA_MAIN[[g]]
-    )
+    indices <- c(SELECT_THETA_LAB[[g]], SELECT_THETA_COV[[g]], SELECT_THETA_MAIN[[g]])
 
     .fg <- function(theta.g) {
-      theta[indices] <- theta.g # local copy of theta
+      theta[indices] <- theta.g
       modFilled <- fillModel(theta = theta, model = model, method = "qml")
       .f(submodel = modFilled$models[[g]], sign = sign, sum = TRUE)
     }
 
     theta.g <- theta[indices]
     Hg <- fdHESS(pars = theta.g, fun = .fg, .relStep = .Machine$double.eps^(1/5))
-
     H[indices, indices] <- H[indices, indices] + Hg
   }
 
