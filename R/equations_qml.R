@@ -169,8 +169,8 @@ centerIndicators <- function(X, tau) {
 
 refreshQmlGradientJacobian <- function(theta, model, Jacobian) {
   if (isTRUE(model$params$gradientStruct$hasCovModel))
-    Jacobian <- .refreshCovModelJacobian(theta, model, Jacobian,
-                                         method = "qml")$J
+    Jacobian <- refreshCovModelJacobian(theta, model, Jacobian,
+                                        method = "qml")$J
 
   nlinDerivs <- model$params$gradientStruct$nlinDerivs
   if (length(nlinDerivs)) {

@@ -524,7 +524,7 @@ getGradientStruct <- function(model, theta, method = "lms") {
 # Evaluate the A matrix (lower-Cholesky of xi covariance) produced by the
 # covModel for group g at a given theta.  Cheap: no integration, just matrix
 # algebra inside expectedCovModel().
-.evalCovModelA <- function(theta, submodel, params, g, method = "lms") {
+evalCovModelA <- function(theta, submodel, params, g, method = "lms") {
   thetaLabel <- NULL
   if (length(params$SELECT_THETA_LAB)) {
     thetaLabel <- suppressWarnings(
@@ -540,7 +540,7 @@ getGradientStruct <- function(model, theta, method = "lms") {
 
 
 # locations data.frame for the lower-triangular A entries controlled by covModel.
-.getCovModelALocations <- function(submodel, g, method = "lms") {
+getCovModelALocations <- function(submodel, g, method = "lms") {
   numXis <- submodel$info$numXis
   xis    <- submodel$info$xis
   matname <- if (identical(method, "qml")) "phi" else "A"
@@ -570,8 +570,8 @@ getGradientStruct <- function(model, theta, method = "lms") {
 # current theta.  expectedCovModel() involves nonlinear operations (Cholesky),
 # so dA/dtheta is theta-dependent and must be refreshed at each gradient call.
 # Jacobian2 is optional — pass NULL to skip the second-derivative update.
-.refreshCovModelJacobian <- function(theta, model, Jacobian, Jacobian2 = NULL,
-                                     method = NULL) {
+refreshCovModelJacobian <- function(theta, model, Jacobian, Jacobian2 = NULL,
+                                    method = NULL) {
   if (is.null(method))
     method <- model$params$gradientStruct$covModelMethod %||% "lms"
   locations <- model$params$gradientStruct$locations
@@ -591,7 +591,7 @@ getGradientStruct <- function(model, theta, method = "lms") {
                    model$params$SELECT_THETA_COV[[g]])
     if (!length(affecting) || !NROW(A_locs_g)) next
 
-    A0    <- .evalCovModelA(theta, submodel, model$params, g, method = method)
+    A0    <- evalCovModelA(theta, submodel, model$params, g, method = method)
     ri    <- A_locs_g$row + 1L
     ci    <- A_locs_g$col + 1L
     acols <- A_locs_g$param  # already carries the #N dedup suffix
@@ -600,8 +600,8 @@ getGradientStruct <- function(model, theta, method = "lms") {
       k_nm <- param.part[[k_idx]]
       tp <- theta; tp[[k_idx]] <- tp[[k_idx]] + eps
       tm <- theta; tm[[k_idx]] <- tm[[k_idx]] - eps
-      Ap <- .evalCovModelA(tp, submodel, model$params, g, method = method)
-      Am <- .evalCovModelA(tm, submodel, model$params, g, method = method)
+      Ap <- evalCovModelA(tp, submodel, model$params, g, method = method)
+      Am <- evalCovModelA(tm, submodel, model$params, g, method = method)
       Jacobian[k_nm, acols] <- (Ap - Am)[cbind(ri, ci)] / (2 * eps)
       if (!is.null(Jacobian2))
         Jacobian2[k_nm, acols] <- (Ap - 2*A0 + Am)[cbind(ri, ci)] / eps^2
@@ -714,8 +714,8 @@ getGradientStructSimple <- function(model, theta, method = "lms") {
     cov_locs <- NULL
     for (g in seq_len(model$info$n.groups)) {
       if (!is.null(model$models[[g]]$covModel$matrices))
-        cov_locs <- rbind(cov_locs, .getCovModelALocations(model$models[[g]], g,
-                                                            method = method))
+        cov_locs <- rbind(cov_locs, getCovModelALocations(model$models[[g]], g,
+                                                           method = method))
     }
 
     n_cov  <- NROW(cov_locs)
@@ -733,7 +733,7 @@ getGradientStructSimple <- function(model, theta, method = "lms") {
                      model$params$SELECT_THETA_COV[[g]])
       if (!length(affecting) || !NROW(A_locs_g)) next
 
-      A0 <- .evalCovModelA(theta, submodel, model$params, g, method = method)
+      A0 <- evalCovModelA(theta, submodel, model$params, g, method = method)
       ri <- A_locs_g$row + 1L  # 0-indexed -> 1-indexed
       ci <- A_locs_g$col + 1L
 
@@ -742,8 +742,8 @@ getGradientStructSimple <- function(model, theta, method = "lms") {
         theta_p <- theta; theta_p[[k_idx]] <- theta_p[[k_idx]] + eps
         theta_m <- theta; theta_m[[k_idx]] <- theta_m[[k_idx]] - eps
 
-        Ap <- .evalCovModelA(theta_p, submodel, model$params, g, method = method)
-        Am <- .evalCovModelA(theta_m, submodel, model$params, g, method = method)
+        Ap <- evalCovModelA(theta_p, submodel, model$params, g, method = method)
+        Am <- evalCovModelA(theta_m, submodel, model$params, g, method = method)
 
         cov_J [k_nm, A_locs_g$param] <- (Ap - Am)[cbind(ri, ci)] / (2 * eps)
         cov_J2[k_nm, A_locs_g$param] <- (Ap - 2*A0 + Am)[cbind(ri, ci)] / eps^2

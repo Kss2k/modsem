@@ -254,7 +254,7 @@ simpleGradientAllLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-
   modelR     <- fillModel(model=model, theta=theta, method="lms")
   locations  <- model$params$gradientStruct$locations
   Jacobian   <- model$params$gradientStruct$Jacobian
-  Jacobian   <- .refreshCovModelJacobian(theta, model, Jacobian)$J
+  Jacobian   <- refreshCovModelJacobian(theta, model, Jacobian)$J
   nlinDerivs <- model$params$gradientStruct$nlinDerivs
 
   # grad <- stats::setNames(numeric(NROW(locations)), nm = locations$param)
@@ -453,7 +453,7 @@ simpleHessianAllLogLikLms <- function(theta, model, P, sign = -1,
   locations   <- model$params$gradientStruct$locations
   Jacobian    <- model$params$gradientStruct$Jacobian
   Jacobian2   <- model$params$gradientStruct$Jacobian2
-  jac         <- .refreshCovModelJacobian(theta, model, Jacobian, Jacobian2)
+  jac         <- refreshCovModelJacobian(theta, model, Jacobian, Jacobian2)
   Jacobian    <- jac$J
   Jacobian2   <- jac$J2
   nlinDerivs  <- model$params$gradientStruct$nlinDerivs
@@ -547,7 +547,7 @@ hessianCompLogLikLms <- function(theta, model, P, sign = -1,
 }
 
 
-.logdensAllObsNode <- function(theta, model, data, z, group = NULL) {
+logdensAllObsNode <- function(theta, model, data, z, group = NULL) {
   modFilled <- fillModel(model = model, theta = theta, method = "lms")
   submodel <- if (!is.null(modFilled$models)) {
     if (is.null(group)) modFilled$models[[1L]] else modFilled$models[[group]]
@@ -559,7 +559,7 @@ hessianCompLogLikLms <- function(theta, model, P, sign = -1,
 }
 
 
-.activeThetaIndicesLms <- function(model, group, p) {
+activeThetaIndicesLms <- function(model, group, p) {
   select_lab  <- model$params$SELECT_THETA_LAB[[group]]
   select_cov  <- model$params$SELECT_THETA_COV[[group]]
   select_main <- model$params$SELECT_THETA_MAIN[[group]]
@@ -581,9 +581,9 @@ hessianCompLogLikLms <- function(theta, model, P, sign = -1,
 
 # per-node, per-observation complete-data score via finite difference
 # Returns an n x p matrix S_j with row i = s_{ij}^T = grad_theta log p(y_i, z_j | theta)
-.completeScoresNodeFD <- function(theta, model, data, z,
-                                  epsilon = 1e-6, scheme = c("forward","central"),
-                                  group = NULL, active = NULL) {
+completeScoresNodeFD <- function(theta, model, data, z,
+                                 epsilon = 1e-6, scheme = c("forward","central"),
+                                 group = NULL, active = NULL) {
   scheme <- match.arg(scheme)
   p <- length(theta)
 
@@ -608,11 +608,11 @@ hessianCompLogLikLms <- function(theta, model, P, sign = -1,
               dimnames = list(NULL, col_names[active]))
 
   if (scheme == "forward") {
-    f0 <- .logdensAllObsNode(theta, model, data, z, group = group)
+    f0 <- logdensAllObsNode(theta, model, data, z, group = group)
     for (pos in seq_len(n_active)) {
       k <- active[pos]
       th1 <- theta; th1[k] <- th1[k] + epsilon
-      f1 <- .logdensAllObsNode(th1, model, data, z, group = group)
+      f1 <- logdensAllObsNode(th1, model, data, z, group = group)
       S[, pos] <- (f1 - f0) / epsilon
     }
   } else { # central
@@ -620,8 +620,8 @@ hessianCompLogLikLms <- function(theta, model, P, sign = -1,
       k <- active[pos]
       thp <- theta; thp[k] <- thp[k] + epsilon
       thm <- theta; thm[k] <- thm[k] - epsilon
-      fp <- .logdensAllObsNode(thp, model, data, z, group = group)
-      fm <- .logdensAllObsNode(thm, model, data, z, group = group)
+      fp <- logdensAllObsNode(thp, model, data, z, group = group)
+      fm <- logdensAllObsNode(thm, model, data, z, group = group)
       S[, pos] <- (fp - fm) / (2 * epsilon)
     }
   }
@@ -665,14 +665,14 @@ observedInfoFromLouisLms <- function(model,
     P.g      <- P$P_GROUPS[[g]]
     rows     <- seq_len(data.g$n) + row_offset
 
-    active_idx <- .activeThetaIndicesLms(model, g, p)
+    active_idx <- activeThetaIndicesLms(model, g, p)
     Jg <- length(P.g$w)
     for (j in seq_len(Jg)) {
       z_j <- P.g$V[j, , drop = FALSE]
-      S_j <- .completeScoresNodeFD(theta, model, data.g, z_j,
-                                   epsilon = fd.epsilon, scheme = fd.scheme,
-                                   group = if (model$info$n.groups > 1L) g else NULL,
-                                   active = active_idx)
+      S_j <- completeScoresNodeFD(theta, model, data.g, z_j,
+                                  epsilon = fd.epsilon, scheme = fd.scheme,
+                                  group = if (model$info$n.groups > 1L) g else NULL,
+                                  active = active_idx)
       r_j <- P.g$P[, j]
 
       Rhalf <- sqrt(pmax(r_j, 0))
