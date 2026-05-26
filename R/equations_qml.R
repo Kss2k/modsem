@@ -178,16 +178,20 @@ simpleGradientLogLikQml <- function(theta, model, sign = -1, epsilon = 1e-6) {
       symmetric = locations.g$symmetric
     )
 
-    if (any(!is.finite(grad.g))) {
-      grad.g <- gradLogLikQmlCpp(
+    bad <- !is.finite(grad.g)
+
+    if (any(bad)) {
+      grad.fd <- gradLogLikQmlCpp(
         submodel  = modelFilled$models[[g]],
-        block     = locations.g$block,
-        row       = locations.g$row,
-        col       = locations.g$col,
-        symmetric = locations.g$symmetric,
+        block     = locations.g$block[bad],
+        row       = locations.g$row[bad],
+        col       = locations.g$col[bad],
+        symmetric = locations.g$symmetric[bad],
         eps       = epsilon,
         ncores    = ThreadEnv$n.threads
       )
+
+      grad.g[bad] <- grad.fd
     }
 
     grad[locations.g$param, ] <- grad.g

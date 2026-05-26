@@ -857,6 +857,8 @@ arma::vec analyticalGradQmlCore(
   arma::mat S_SE_acc(pY_f3, pY_f3, arma::fill::zeros);
   // Step 5b: score w.r.t. Sigma1, accumulated as BG2O_i' · S_SE_i · BG2O_i
   arma::mat S_SE_BG2O_acc(M.Gx.n_cols, M.Gx.n_cols, arma::fill::zeros);
+  arma::mat Gx_mean_acc(M.Gx.n_rows, M.Gx.n_cols, arma::fill::zeros);
+  arma::mat Gx_cov_acc(M.Gx.n_rows, M.Gx.n_cols, arma::fill::zeros);
 
   bool fail = false;
 
@@ -910,6 +912,11 @@ arma::vec analyticalGradQmlCore(
     s_Ey_acc      += w * (invSE_i * dv_i);
     S_SE_acc      += w * S_SE_i;
     S_SE_BG2O_acc += w * (BG2O.t() * S_SE_i * BG2O);
+
+    if (kOmega0) {
+      Gx_mean_acc += w * ((Binv_i.t() * (invSE_i * dv_i)) * mi.t());
+      Gx_cov_acc  += w * (Binv_i.t() * S_SE_i * BG2O * M.Sigma1);
+    }
   }
 
   if (fail) { grad.fill(arma::datum::nan); return grad; }
@@ -1164,6 +1171,37 @@ arma::vec analyticalGradQmlCore(
   }
 
   // TODO Step 5d–f: Gx, beta0, tX, Oxx, Ge, Oex
+  {
+    for (std::size_t k = 0; k < p; ++k) {
+      const arma::uword r   = row[k];
+      const arma::uword c   = col[k];
+      const bool        sym = static_cast<bool>(symmetric[k]);
+
+      switch (block[k]) {
+        case 10: { // Gx / gammaXi
+          if (kOmega0) {
+            grad[k] += Gx_mean_acc(r, c) + 2.0 * Gx_cov_acc(r, c);
+            if (sym && r != c)
+              grad[k] += Gx_mean_acc(c, r) + 2.0 * Gx_cov_acc(c, r);
+          }
+          break;
+        }
+        default: break;
+      }
+    }
+  }
+
+  for (std::size_t k = 0; k < p; ++k) {
+    const arma::uword blk = block[k];
+    const bool supported =
+      (blk == 3) ||                    // tauY
+      (blk == 10 && kOmega0) ||        // gammaXi, only when Binv is constant
+      (blk == 7 && kOmega0) ||         // psi, only when Binv is constant
+      (blk == 8 && kOmega0);           // alpha, only when Binv is constant
+
+    if (!supported)
+      grad[k] = arma::datum::nan;
+  }
 
   return grad;
 }
