@@ -136,7 +136,8 @@ emLms <- function(model,
         tryCatch({
           gradientCompLogLikLms(theta = thetaNew, model = model, P = P)
         }, error = \(e) {
-          mod_msg_warn_immediate(paste0("Optimized computation of gradient failed! Switching gradient type.\n",
+          mod_msg_warn_immediate(
+            paste0("Optimized computation of gradient failed! Switching gradient type.\n",
                    "Message: ", conditionMessage(e)))
           model$params$gradientStruct$useFDGradient <<- TRUE
           model$params$gradientStruct$isNonLinear  <<- TRUE
@@ -314,7 +315,7 @@ emLms <- function(model,
     mod_msg_warn(paste0(
       "Model estimation failed, returning starting values!\n",
       "Message: ", conditionMessage(e)
-    ))
+    ), newline. = verbose)
     P0 <- tryCatch(
       estepLms(model = model, theta = model$theta,
                lastQuad = NULL, recalcQuad = FALSE,

@@ -603,7 +603,7 @@ modsem_da <- function(model.syntax = NULL,
       #.optimize <- \(...) list(result = optimizeStartingParamsDA(...))
 
       ops <- c(group.info$parTable$op, group.info$parTableCov$op)
-      engine <- if (any(ops %in% CONSTRAINT_OPS)) "pi" else "sam"
+      engine <- if (any(ops %in% c("<", ">", "=="))) "pi" else "sam"
 
       result <- .optimize(
         model            = model,

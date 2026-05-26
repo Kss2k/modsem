@@ -178,9 +178,10 @@ checkOmegaEtaXi <- function(model, method = "qml", zero.tol = 1e-10) {
   problematic <- any(is.na(omegaEtaXi) | abs(omegaEtaXi) > zero.tol)
 
   mod_warnif(problematic,
-         paste0("Interactions between exogenous and enodgenous variables in the QML\n",
-         "approach can be biased in some cases...\n",
-         "You can try passing `auto.split.syntax=FALSE` and `cov.syntax=NULL`..."))
+    paste0("Interactions between exogenous and enodgenous variables in the QML\n",
+           "approach can be biased in some cases...\n",
+           "You can try passing `auto.split.syntax=TRUE` and `cov.syntax=NULL`...")
+  )
 }
 
 

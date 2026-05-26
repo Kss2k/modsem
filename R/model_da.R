@@ -524,7 +524,8 @@ specifyModelDA <- function(..., group.info, createTheta = TRUE) {
     model$theta <- params$theta # an ugly design decision, that was made at the very start
 
     model$params$bounds <- getParamBounds(model)
-    model$params$gradientStruct <- getGradientStruct(model, theta = params$theta)
+    model$params$gradientStruct <- getGradientStruct(model, theta = params$theta,
+                                                     method = args$method)
   }
 
   model
