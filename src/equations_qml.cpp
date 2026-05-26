@@ -5,16 +5,16 @@
 #include "mvnorm.h"
 
 inline arma::mat qmlOexJacobianTerm(const arma::mat& omegaEtaXi,
-                                    const arma::vec& eta_mean,
+                                    const arma::vec& etaMean,
                                     const int numXi,
                                     const int numEta) {
-  const arma::vec oex_eta = omegaEtaXi * eta_mean;
+  const arma::vec oexEta = omegaEtaXi * etaMean;
   arma::mat out(numEta, numXi, arma::fill::none);
 
   for (int eta = 0; eta < numEta; ++eta) {
     const int offset = eta * numXi;
     for (int xi = 0; xi < numXi; ++xi)
-      out(eta, xi) = oex_eta(offset + xi);
+      out(eta, xi) = oexEta(offset + xi);
   }
 
   return out;
@@ -25,18 +25,18 @@ inline arma::mat qmlJacobianEtaXi(const arma::mat& Binv,
                                   const arma::mat& kronXi,
                                   const arma::mat& omegaXiXi2T,
                                   const arma::mat& omegaEtaXi,
-                                  const arma::vec& eta_mean,
-                                  const bool include_oex_term) {
+                                  const arma::vec& etaMean,
+                                  const bool includeOexTerm) {
   arma::mat jac = Binv * gammaXi + kronXi * omegaXiXi2T;
 
-  if (include_oex_term)
-    jac += Binv * qmlOexJacobianTerm(omegaEtaXi, eta_mean,
+  if (includeOexTerm)
+    jac += Binv * qmlOexJacobianTerm(omegaEtaXi, etaMean,
                                      gammaXi.n_cols, gammaXi.n_rows);
 
   return jac;
 }
 
-inline arma::vec qmlDmCovFromBG(const arma::mat& score_bg,
+inline arma::vec qmlDmCovFromBG(const arma::mat& scoreBg,
                                 const arma::mat& omegaXiXi2T,
                                 const int numEta,
                                 const int numXi) {
@@ -47,7 +47,7 @@ inline arma::vec qmlDmCovFromBG(const arma::mat& score_bg,
     for (int eta = 0; eta < numEta; ++eta) {
       const int row = eta * numXi + xi;
       for (int col = 0; col < numXi; ++col)
-        acc += score_bg(eta, col) * omegaXiXi2T(row, col);
+        acc += scoreBg(eta, col) * omegaXiXi2T(row, col);
     }
     out(xi) = acc;
   }
@@ -430,42 +430,42 @@ struct QMLModel {
   bool     hasTE2; // any non-latent etas needing residual variance in fullSig2TE
 
   // Column indices into data.full
-  arma::uvec x_col_idx;
-  arma::uvec y_col_idx;
-  arma::vec  sampling_weights;
-  bool       has_sw;
+  arma::uvec xColIdx;
+  arma::uvec yColIdx;
+  arma::vec  samplingWeights;
+  bool       hasSamplingWeights;
 
   // Structural indices (hasR)
-  arma::uvec R_na_linidx;    // col-major NA positions in emptyR
-  arma::uvec lY_free_linidx; // col-major !selectScalingY positions in lY
-  arma::uvec colsR_uvec;     // positions of colsR in allIndsEtas (= e diag idx = y col idx)
-  arma::uvec betaRows_uvec;  // row positions of selectBetaRows in lY
-  arma::uvec latentEta_uvec; // positions of latentEtas in etas ordering
-  arma::uvec selectTE1_diag; // diagonal positions in e for scaling-indicator residuals
+  arma::uvec rNaLinidx;      // col-major NA positions in emptyR
+  arma::uvec lYFreeLinidx;   // col-major !selectScalingY positions in lY
+  arma::uvec colsRUvec;      // positions of colsR in allIndsEtas (= e diag idx = y col idx)
+  arma::uvec betaRowsUvec;   // row positions of selectBetaRows in lY
+  arma::uvec latentEtaUvec;  // positions of latentEtas in etas ordering
+  arma::uvec selectTE1Diag; // diagonal positions in e for scaling-indicator residuals
 
   // Structural indices (hasTE2)
-  arma::uvec selectTE2_diag;    // diagonal positions in e for non-latent scaling residuals
-  arma::uvec nonLatentEta_uvec; // positions of non-latent etas in etas ordering
+  arma::uvec selectTE2Diag;    // diagonal positions in e for non-latent scaling residuals
+  arma::uvec nonLatentEtaUvec; // positions of non-latent etas in etas ordering
 
   // Indices for f3: nonNormalInds = allIndsEtas NOT in colsU (scaling/single indicators)
-  arma::uvec nonNormal_uvec;    // positions within etas_cv (= y column ordering)
+  arma::uvec nonNormalUvec;    // positions within etasCv (= y column ordering)
 
   // Template for R (0 where fixed, will be overwritten at NA positions)
-  arma::mat R_tmpl;
+  arma::mat rTemplate;
 
   // Cached obs-independent derived quantities
-  arma::vec  tauX_adj;
+  arma::vec  tauXAdj;
   arma::mat  LXPLX, cholLXPLX, invLXPLX, L1, Sigma1;    // cholLXPLX is upper-triangular
   arma::mat  R, RER, cholRER, invRER;           // cholRER is upper-triangular
-  arma::mat  Beta, subTE1, L2_sub, Sigma2TE_sub;
+  arma::mat  Beta, subTE1, L2Sub, Sigma2TESub;
   arma::mat  fullSig2TE;                        // numEtas x numEtas
-  arma::mat  L2R_cache;                         // numEtas x nColsR
+  arma::mat  L2RCache;                          // numEtas x nColsR
   arma::vec  trOmSig;
   arma::mat  varZ, Oxx2T;
-  arma::mat  Binv_c, Sigma2_c, BinvVarZ_c;     // kOmegaEta == 0 only
+  arma::mat  BinvConst, Sigma2Const, BinvVarZConst; // kOmegaEta == 0 only
 
-  void update_cache() {
-    tauX_adj = tX + lX * beta0;
+  void updateCache() {
+    tauXAdj = tX + lX * beta0;
 
     LXPLX     = lX * phi * lX.t() + d;
     cholLXPLX = arma::chol(LXPLX, "upper");
@@ -474,35 +474,35 @@ struct QMLModel {
     Sigma1    = phi - L1 * lX * phi;
 
     if (hasR) {
-      R = R_tmpl;
-      for (arma::uword k = 0; k < R_na_linidx.n_elem; ++k)
-        R(R_na_linidx(k)) = -lY(lY_free_linidx(k));
+      R = rTemplate;
+      for (arma::uword k = 0; k < rNaLinidx.n_elem; ++k)
+        R(rNaLinidx(k)) = -lY(lYFreeLinidx(k));
 
-      RER    = R * e.submat(colsR_uvec, colsR_uvec) * R.t();
+      RER    = R * e.submat(colsRUvec, colsRUvec) * R.t();
       cholRER = arma::chol(RER, "upper");
       invRER = arma::inv_sympd(RER);
 
-      Beta = lY.submat(betaRows_uvec, latentEta_uvec);
+      Beta = lY.submat(betaRowsUvec, latentEtaUvec);
 
-      const arma::uword ns = selectTE1_diag.n_elem;
+      const arma::uword ns = selectTE1Diag.n_elem;
       arma::vec te1(ns);
       for (arma::uword k = 0; k < ns; ++k)
-        te1(k) = e(selectTE1_diag(k), selectTE1_diag(k));
+        te1(k) = e(selectTE1Diag(k), selectTE1Diag(k));
       subTE1 = arma::diagmat(te1);
 
-      L2_sub       = -subTE1 * Beta.t() * invRER;
-      Sigma2TE_sub = subTE1 - arma::diagmat(arma::square(te1)) * Beta.t() * invRER * Beta;
+      L2Sub       = -subTE1 * Beta.t() * invRER;
+      Sigma2TESub = subTE1 - arma::diagmat(arma::square(te1)) * Beta.t() * invRER * Beta;
 
       fullSig2TE.zeros();
-      fullSig2TE.submat(latentEta_uvec, latentEta_uvec) = Sigma2TE_sub;
-      L2R_cache.zeros();
-      L2R_cache.rows(latentEta_uvec) = L2_sub * R;
+      fullSig2TE.submat(latentEtaUvec, latentEtaUvec) = Sigma2TESub;
+      L2RCache.zeros();
+      L2RCache.rows(latentEtaUvec) = L2Sub * R;
     }
 
     if (hasTE2) {
-      for (arma::uword k = 0; k < selectTE2_diag.n_elem; ++k) {
-        const arma::uword p = nonLatentEta_uvec(k);
-        fullSig2TE(p, p) = e(selectTE2_diag(k), selectTE2_diag(k));
+      for (arma::uword k = 0; k < selectTE2Diag.n_elem; ++k) {
+        const arma::uword p = nonLatentEtaUvec(k);
+        fullSig2TE(p, p) = e(selectTE2Diag(k), selectTE2Diag(k));
       }
     }
 
@@ -511,9 +511,9 @@ struct QMLModel {
     Oxx2T   = Oxx + transposeOmega(Oxx, numEtas);
 
     if (kOmegaEta == 0) {
-      Binv_c     = arma::inv(Ie - Ge);
-      Sigma2_c   = Binv_c * Psi * Binv_c.t() + fullSig2TE;
-      BinvVarZ_c = Binv_c * varZ * Binv_c.t();
+      BinvConst     = arma::inv(Ie - Ge);
+      Sigma2Const   = BinvConst * Psi * BinvConst.t() + fullSig2TE;
+      BinvVarZConst = BinvConst * varZ * BinvConst.t();
     }
   }
 
@@ -542,89 +542,89 @@ struct QMLModel {
     phi   = Rcpp::as<arma::mat>(mat["phi"]);
     Ie    = Rcpp::as<arma::mat>(mat["Ieta"]);
 
-    const Rcpp::CharacterVector xis_cv  = info["allIndsXis"];
-    const Rcpp::CharacterVector etas_cv = info["allIndsEtas"];
-    const Rcpp::CharacterVector eta_lv  = info["etas"];  // latent variable names
+    const Rcpp::CharacterVector xisCv  = info["allIndsXis"];
+    const Rcpp::CharacterVector etasCv = info["allIndsEtas"];
+    const Rcpp::CharacterVector etaLv  = info["etas"];  // latent variable names
 
-    const Rcpp::CharacterVector data_cols = qmlMatColnames(dat["data.full"]);
-    x_col_idx = qmlCharMatch(xis_cv,  data_cols);
-    y_col_idx = qmlCharMatch(etas_cv, data_cols);
+    const Rcpp::CharacterVector dataCols = qmlMatColnames(dat["data.full"]);
+    xColIdx = qmlCharMatch(xisCv,  dataCols);
+    yColIdx = qmlCharMatch(etasCv, dataCols);
 
-    // nonNormal_uvec: positions in etas_cv NOT absorbed into u (i.e. not in colsU).
+    // nonNormalUvec: positions in etasCv NOT absorbed into u (i.e. not in colsU).
     // These are the scaling / single-indicator etas used for the f3 density.
     {
-      const SEXP colsU_s = mat["colsU"];
-      if (!Rf_isNull(colsU_s) && Rf_length(colsU_s) > 0) {
-        const Rcpp::CharacterVector colsU_cv =
-          Rcpp::as<Rcpp::CharacterVector>(colsU_s);
-        arma::uvec is_u(etas_cv.size(), arma::fill::zeros);
-        for (int j = 0; j < etas_cv.size(); ++j)
-          for (int k = 0; k < colsU_cv.size(); ++k)
-            if (etas_cv[j] == colsU_cv[k]) { is_u(j) = 1; break; }
-        nonNormal_uvec = arma::find(is_u == 0);
+      const SEXP colsUSexp = mat["colsU"];
+      if (!Rf_isNull(colsUSexp) && Rf_length(colsUSexp) > 0) {
+        const Rcpp::CharacterVector colsUCv =
+          Rcpp::as<Rcpp::CharacterVector>(colsUSexp);
+        arma::uvec isU(etasCv.size(), arma::fill::zeros);
+        for (int j = 0; j < etasCv.size(); ++j)
+          for (int k = 0; k < colsUCv.size(); ++k)
+            if (etasCv[j] == colsUCv[k]) { isU(j) = 1; break; }
+        nonNormalUvec = arma::find(isU == 0);
       } else {
-        nonNormal_uvec =
-          arma::regspace<arma::uvec>(0, (arma::uword)etas_cv.size() - 1);
+        nonNormalUvec =
+          arma::regspace<arma::uvec>(0, (arma::uword)etasCv.size() - 1);
       }
     }
 
-    has_sw = !Rf_isNull(dat["weights"]);
-    if (has_sw) sampling_weights = Rcpp::as<arma::vec>(dat["weights"]);
+    hasSamplingWeights = !Rf_isNull(dat["weights"]);
+    if (hasSamplingWeights) samplingWeights = Rcpp::as<arma::vec>(dat["weights"]);
 
     fullSig2TE.zeros(numEtas, numEtas);
 
-    const SEXP emptyR_s = mat["emptyR"];
-    hasR = !Rf_isNull(emptyR_s);
+    const SEXP emptyRSexp = mat["emptyR"];
+    hasR = !Rf_isNull(emptyRSexp);
 
     if (hasR) {
-      const arma::mat emptyR_mat = Rcpp::as<arma::mat>(emptyR_s);
-      R_na_linidx = arma::find_nonfinite(emptyR_mat);
-      R_tmpl = emptyR_mat;
-      R_tmpl.replace(arma::datum::nan, 0.0);
+      const arma::mat emptyRMat = Rcpp::as<arma::mat>(emptyRSexp);
+      rNaLinidx = arma::find_nonfinite(emptyRMat);
+      rTemplate = emptyRMat;
+      rTemplate.replace(arma::datum::nan, 0.0);
 
-      lY_free_linidx = arma::find(
+      lYFreeLinidx = arma::find(
           Rcpp::as<arma::mat>(mat["selectScalingY"]) < 0.5);
 
-      colsR_uvec =
-          qmlCharMatch(Rcpp::as<Rcpp::CharacterVector>(mat["colsR"]), etas_cv);
+      colsRUvec =
+          qmlCharMatch(Rcpp::as<Rcpp::CharacterVector>(mat["colsR"]), etasCv);
 
-      betaRows_uvec = arma::find(
+      betaRowsUvec = arma::find(
           Rcpp::as<arma::mat>(mat["selectBetaRows"]).col(0) > 0.5);
 
-      const Rcpp::CharacterVector latEta_cv = info["latentEtas"];
-      latentEta_uvec = qmlCharMatch(latEta_cv, eta_lv);
+      const Rcpp::CharacterVector latEtaCv = info["latentEtas"];
+      latentEtaUvec = qmlCharMatch(latEtaCv, etaLv);
 
-      selectTE1_diag = arma::find(
+      selectTE1Diag = arma::find(
           Rcpp::as<arma::mat>(mat["selectThetaEpsilon1"]).diag() > 0.5);
 
-      L2R_cache.zeros(numEtas, colsR_uvec.n_elem);
+      L2RCache.zeros(numEtas, colsRUvec.n_elem);
     }
 
     hasTE2 = false;
-    const SEXP selTE2_s = mat["selectThetaEpsilon2"];
-    if (!Rf_isNull(selTE2_s)) {
-      const arma::mat selTE2 = Rcpp::as<arma::mat>(selTE2_s);
+    const SEXP selTE2Sexp = mat["selectThetaEpsilon2"];
+    if (!Rf_isNull(selTE2Sexp)) {
+      const arma::mat selTE2 = Rcpp::as<arma::mat>(selTE2Sexp);
       if (selTE2.n_elem > 0) {
-        selectTE2_diag = arma::find(selTE2.diag() > 0.5);
-        hasTE2 = (selectTE2_diag.n_elem > 0);
+        selectTE2Diag = arma::find(selTE2.diag() > 0.5);
+        hasTE2 = (selectTE2Diag.n_elem > 0);
       }
     }
 
     if (hasTE2) {
       if (hasR) {
         arma::uvec isLat(numEtas, arma::fill::zeros);
-        for (arma::uword k = 0; k < latentEta_uvec.n_elem; ++k)
-          isLat(latentEta_uvec(k)) = 1;
-        nonLatentEta_uvec = arma::find(isLat == 0);
+        for (arma::uword k = 0; k < latentEtaUvec.n_elem; ++k)
+          isLat(latentEtaUvec(k)) = 1;
+        nonLatentEtaUvec = arma::find(isLat == 0);
       } else {
-        nonLatentEta_uvec = arma::regspace<arma::uvec>(0, numEtas - 1);
+        nonLatentEtaUvec = arma::regspace<arma::uvec>(0, numEtas - 1);
       }
     }
 
-    update_cache();
+    updateCache();
   }
 
-  QMLModel thread_clone() const {
+  QMLModel threadClone() const {
     QMLModel c = *this;
     c.lX = arma::mat(lX);  c.lY = arma::mat(lY);
     c.tX = arma::mat(tX);  c.tY = arma::mat(tY);
@@ -638,7 +638,7 @@ struct QMLModel {
 };
 
 
-inline double& qml_param(QMLModel& M, std::size_t blk,
+inline double& qmlParam(QMLModel& M, std::size_t blk,
                          std::size_t r, std::size_t c) {
   switch (blk) {
     case 0 : return M.lX   (r,c);
@@ -655,42 +655,42 @@ inline double& qml_param(QMLModel& M, std::size_t blk,
     case 12: return M.Oxx  (r,c);
     case 13: return M.Oex  (r,c);
     case 16: return M.phi  (r,c);
-    default: Rcpp::stop("qml_param: unknown block %zu", blk);
+    default: Rcpp::stop("qmlParam: unknown block %zu", blk);
   }
 }
 
 
 inline double logLikQmlFromModel(const QMLModel& M,
-                                 const arma::mat& data_full,
+                                 const arma::mat& dataFull,
                                  const int ncores = 1) {
-  const int t      = static_cast<int>(data_full.n_rows);
-  const int pX     = static_cast<int>(M.x_col_idx.n_elem);
-  const int pY     = static_cast<int>(M.y_col_idx.n_elem);
-  const int pY_f3  = static_cast<int>(M.nonNormal_uvec.n_elem); // scaling/single inds
-  static const double log2pi_d = std::log(2.0 * M_PI);
+  const int t     = static_cast<int>(dataFull.n_rows);
+  const int pX    = static_cast<int>(M.xColIdx.n_elem);
+  const int pY    = static_cast<int>(M.yColIdx.n_elem);
+  const int pYF3  = static_cast<int>(M.nonNormalUvec.n_elem); // scaling/single inds
+  static const double log2piD = std::log(2.0 * M_PI);
 
   arma::mat X(t, pX), Y(t, pY);
   for (int j = 0; j < pX; ++j)
-    X.col(j) = data_full.col(M.x_col_idx(j)) - M.tauX_adj(j);
+    X.col(j) = dataFull.col(M.xColIdx(j)) - M.tauXAdj(j);
   for (int j = 0; j < pY; ++j)
-    Y.col(j) = data_full.col(M.y_col_idx(j)) - M.tY(j, 0);
+    Y.col(j) = dataFull.col(M.yColIdx(j)) - M.tY(j, 0);
 
   // Pre-compute constant parts of f2 log-densities
   const double logdet_x  = 2.0 * arma::sum(arma::log(M.cholLXPLX.diag()));
-  const double f2x_const = -0.5 * (pX * log2pi_d + logdet_x);
+  const double f2xConst = -0.5 * (pX * log2piD + logdet_x);
 
   int    nU = 0;
-  double f2u_const = 0.0;
-  arma::mat Y_colsR;
+  double f2uConst = 0.0;
+  arma::mat yColsR;
   if (M.hasR) {
     nU = static_cast<int>(M.RER.n_rows);
     const double logdet_u = 2.0 * arma::sum(arma::log(M.cholRER.diag()));
-    f2u_const = -0.5 * (nU * log2pi_d + logdet_u);
+    f2uConst = -0.5 * (nU * log2piD + logdet_u);
 
-    const arma::uword nColsR = M.colsR_uvec.n_elem;
-    Y_colsR.set_size(t, nColsR);
+    const arma::uword nColsR = M.colsRUvec.n_elem;
+    yColsR.set_size(t, nColsR);
     for (arma::uword j = 0; j < nColsR; ++j)
-      Y_colsR.col(j) = Y.col(M.colsR_uvec(j));
+      yColsR.col(j) = Y.col(M.colsRUvec(j));
   }
 
   const bool kOmega0 = (M.kOmegaEta == 0);
@@ -698,8 +698,8 @@ inline double logLikQmlFromModel(const QMLModel& M,
   bool   fail = false;
 
 #ifdef _OPENMP
-  const bool in_parallel = omp_in_parallel();
-  const int  nth = in_parallel ? 1 : ncores;
+  const bool inParallel = omp_in_parallel();
+  const int  nth = inParallel ? 1 : ncores;
 #else
   const int  nth = 1;
 #endif
@@ -709,23 +709,23 @@ inline double logLikQmlFromModel(const QMLModel& M,
   for (int i = 0; i < t; ++i) {
     const arma::vec xi = X.row(i).t();
     // yi: only scaling/single indicators (nonNormalInds), one per eta
-    arma::vec yi(pY_f3);
-    for (int jj = 0; jj < pY_f3; ++jj) yi(jj) = Y(i, M.nonNormal_uvec(jj));
+    arma::vec yi(pYF3);
+    for (int jj = 0; jj < pYF3; ++jj) yi(jj) = Y(i, M.nonNormalUvec(jj));
 
     // --- f2x: logN(xi | 0, LXPLX) ---
     // cholLXPLX is upper triangular U: LXPLX = U^T U
     // maha = ||U^{-T} xi||^2, solved via trimatl(U^T)
     const arma::vec zx = arma::solve(arma::trimatl(M.cholLXPLX.t()), xi,
                                      arma::solve_opts::fast);
-    const double f2x_i = f2x_const - 0.5 * arma::dot(zx, zx);
+    const double f2x_i = f2xConst - 0.5 * arma::dot(zx, zx);
 
     // --- f2u: logN(u_raw | 0, RER) ---
     double f2u_i = 0.0;
     if (M.hasR) {
-      const arma::vec u_raw = M.R * Y_colsR.row(i).t();
-      const arma::vec zu    = arma::solve(arma::trimatl(M.cholRER.t()), u_raw,
+      const arma::vec uRaw = M.R * yColsR.row(i).t();
+      const arma::vec zu   = arma::solve(arma::trimatl(M.cholRER.t()), uRaw,
                                           arma::solve_opts::fast);
-      f2u_i = f2u_const - 0.5 * arma::dot(zu, zu);
+      f2u_i = f2uConst - 0.5 * arma::dot(zu, zu);
     }
 
     // --- f3: logN(yi | Ey_i, SigmaE_i) ---
@@ -734,9 +734,9 @@ inline double logLikQmlFromModel(const QMLModel& M,
 
     arma::mat Binv_i, Sig2_i, BvZ_i;
     if (kOmega0) {
-      Binv_i = M.Binv_c;
-      Sig2_i = M.Sigma2_c;
-      BvZ_i  = M.BinvVarZ_c;
+      Binv_i = M.BinvConst;
+      Sig2_i = M.Sigma2Const;
+      BvZ_i  = M.BinvVarZConst;
     } else {
       Binv_i = arma::inv(M.Ie - M.Ge - Ki * M.Oex);
       Sig2_i = Binv_i * M.Psi * Binv_i.t() + M.fullSig2TE;
@@ -745,7 +745,7 @@ inline double logLikQmlFromModel(const QMLModel& M,
 
     arma::vec Ey_i = Binv_i * (M.trOmSig + M.a + M.Gx * mi + Ki * M.Oxx * mi);
     if (M.hasR)
-      Ey_i += M.L2R_cache * Y_colsR.row(i).t();
+      Ey_i += M.L2RCache * yColsR.row(i).t();
 
     const arma::mat BG2O =
       qmlJacobianEtaXi(Binv_i, M.Gx, Ki, M.Oxx2T, M.Oex, Ey_i, !kOmega0);
@@ -757,9 +757,9 @@ inline double logLikQmlFromModel(const QMLModel& M,
     const arma::vec dv   = yi - Ey_i;
     const arma::vec zf   = arma::solve(arma::trimatl(Lf), dv, arma::solve_opts::fast);
     const double logdet_f = 2.0 * arma::sum(arma::log(Lf.diag()));
-    const double f3_i    = -0.5 * (pY_f3 * log2pi_d + logdet_f + arma::dot(zf, zf));
+    const double f3_i    = -0.5 * (pYF3 * log2piD + logdet_f + arma::dot(zf, zf));
 
-    const double w = M.has_sw ? M.sampling_weights(i) : 1.0;
+    const double w = M.hasSamplingWeights ? M.samplingWeights(i) : 1.0;
     ll += w * (f2x_i + f2u_i + f3_i);
   }
 
@@ -768,36 +768,36 @@ inline double logLikQmlFromModel(const QMLModel& M,
 }
 
 inline arma::vec obsLogLikQmlFromModel(const QMLModel& M,
-                                       const arma::mat& data_full,
+                                       const arma::mat& dataFull,
                                        const int ncores = 1) {
-  const int t      = static_cast<int>(data_full.n_rows);
-  const int pX     = static_cast<int>(M.x_col_idx.n_elem);
-  const int pY     = static_cast<int>(M.y_col_idx.n_elem);
-  const int pY_f3  = static_cast<int>(M.nonNormal_uvec.n_elem);
-  static const double log2pi_d = std::log(2.0 * M_PI);
+  const int t    = static_cast<int>(dataFull.n_rows);
+  const int pX   = static_cast<int>(M.xColIdx.n_elem);
+  const int pY   = static_cast<int>(M.yColIdx.n_elem);
+  const int pYF3 = static_cast<int>(M.nonNormalUvec.n_elem);
+  static const double log2piD = std::log(2.0 * M_PI);
 
   arma::vec ll(t, arma::fill::zeros);
   arma::mat X(t, pX), Y(t, pY);
   for (int j = 0; j < pX; ++j)
-    X.col(j) = data_full.col(M.x_col_idx(j)) - M.tauX_adj(j);
+    X.col(j) = dataFull.col(M.xColIdx(j)) - M.tauXAdj(j);
   for (int j = 0; j < pY; ++j)
-    Y.col(j) = data_full.col(M.y_col_idx(j)) - M.tY(j, 0);
+    Y.col(j) = dataFull.col(M.yColIdx(j)) - M.tY(j, 0);
 
   const double logdet_x  = 2.0 * arma::sum(arma::log(M.cholLXPLX.diag()));
-  const double f2x_const = -0.5 * (pX * log2pi_d + logdet_x);
+  const double f2xConst = -0.5 * (pX * log2piD + logdet_x);
 
   int    nU = 0;
-  double f2u_const = 0.0;
-  arma::mat Y_colsR;
+  double f2uConst = 0.0;
+  arma::mat yColsR;
   if (M.hasR) {
     nU = static_cast<int>(M.RER.n_rows);
     const double logdet_u = 2.0 * arma::sum(arma::log(M.cholRER.diag()));
-    f2u_const = -0.5 * (nU * log2pi_d + logdet_u);
+    f2uConst = -0.5 * (nU * log2piD + logdet_u);
 
-    const arma::uword nColsR = M.colsR_uvec.n_elem;
-    Y_colsR.set_size(t, nColsR);
+    const arma::uword nColsR = M.colsRUvec.n_elem;
+    yColsR.set_size(t, nColsR);
     for (arma::uword j = 0; j < nColsR; ++j)
-      Y_colsR.col(j) = Y.col(M.colsR_uvec(j));
+      yColsR.col(j) = Y.col(M.colsRUvec(j));
   }
 
   const bool kOmega0 = (M.kOmegaEta == 0);
@@ -808,25 +808,25 @@ inline arma::vec obsLogLikQmlFromModel(const QMLModel& M,
 
     const arma::vec zx = arma::solve(arma::trimatl(M.cholLXPLX.t()), xi,
                                      arma::solve_opts::fast);
-    const double f2x_i = f2x_const - 0.5 * arma::dot(zx, zx);
+    const double f2x_i = f2xConst - 0.5 * arma::dot(zx, zx);
 
     double f2u_i = 0.0;
     if (M.hasR) {
-      const arma::vec u_raw = M.R * Y_colsR.row(i).t();
-      const arma::vec zu = arma::solve(arma::trimatl(M.cholRER.t()), u_raw,
+      const arma::vec uRaw = M.R * yColsR.row(i).t();
+      const arma::vec zu = arma::solve(arma::trimatl(M.cholRER.t()), uRaw,
                                        arma::solve_opts::fast);
-      f2u_i = f2u_const - 0.5 * arma::dot(zu, zu);
+      f2u_i = f2uConst - 0.5 * arma::dot(zu, zu);
     }
 
-    arma::vec yi(pY_f3);
-    for (int jj = 0; jj < pY_f3; ++jj) yi(jj) = Y(i, M.nonNormal_uvec(jj));
+    arma::vec yi(pYF3);
+    for (int jj = 0; jj < pYF3; ++jj) yi(jj) = Y(i, M.nonNormalUvec(jj));
 
     const arma::vec mi = M.beta0 + M.L1 * xi;
     const arma::mat Ki = arma::kron(M.Ie, mi.t());
 
     arma::mat Binv_i, Sig2_i, BvZ_i;
     if (kOmega0) {
-      Binv_i = M.Binv_c; Sig2_i = M.Sigma2_c; BvZ_i = M.BinvVarZ_c;
+      Binv_i = M.BinvConst; Sig2_i = M.Sigma2Const; BvZ_i = M.BinvVarZConst;
     } else {
       Binv_i = arma::inv(M.Ie - M.Ge - Ki * M.Oex);
       Sig2_i = Binv_i * M.Psi * Binv_i.t() + M.fullSig2TE;
@@ -835,7 +835,7 @@ inline arma::vec obsLogLikQmlFromModel(const QMLModel& M,
 
     const arma::vec h_i = M.trOmSig + M.a + M.Gx * mi + Ki * M.Oxx * mi;
     arma::vec Ey_i = Binv_i * h_i;
-    if (M.hasR) Ey_i += M.L2R_cache * Y_colsR.row(i).t();
+    if (M.hasR) Ey_i += M.L2RCache * yColsR.row(i).t();
 
     const arma::mat BG2O =
       qmlJacobianEtaXi(Binv_i, M.Gx, Ki, M.Oxx2T, M.Oex, Ey_i, !kOmega0);
@@ -846,9 +846,9 @@ inline arma::vec obsLogLikQmlFromModel(const QMLModel& M,
     const double logdet_f = 2.0 * arma::sum(arma::log(Lf.diag()));
     const arma::vec zf = arma::solve(arma::trimatl(Lf), yi - Ey_i,
                                      arma::solve_opts::fast);
-    const double f3_i = -0.5 * (pY_f3 * log2pi_d + logdet_f + arma::dot(zf, zf));
+    const double f3_i = -0.5 * (pYF3 * log2piD + logdet_f + arma::dot(zf, zf));
 
-    const double w = M.has_sw ? M.sampling_weights(i) : 1.0;
+    const double w = M.hasSamplingWeights ? M.samplingWeights(i) : 1.0;
     ll(i) = w * (f2x_i + f2u_i + f3_i);
   }
 
@@ -861,9 +861,9 @@ inline arma::vec obsLogLikQmlFromModel(const QMLModel& M,
 double logLikQmlCpp(const Rcpp::List& submodel, const int ncores = 1) {
   try {
     const QMLModel M(submodel);
-    const arma::mat data_full =
+    const arma::mat dataFull =
       Rcpp::as<arma::mat>(Rcpp::as<Rcpp::List>(submodel["data"])["data.full"]);
-    return logLikQmlFromModel(M, data_full, ncores);
+    return logLikQmlFromModel(M, dataFull, ncores);
   } catch (...) {
     // Return NaN so the optimizer can step away from this bad parameter point.
     // Do NOT call Rcpp::stop() — that would kill the optimizer via tryCatch.
@@ -883,7 +883,7 @@ inline arma::vec getParamsQml(QMLModel& M,
   const std::size_t p = block.n_elem;
   arma::vec pars(p);
   for (std::size_t k = 0; k < p; ++k)
-    pars[k] = qml_param(M, block[k], row[k], col[k]);
+    pars[k] = qmlParam(M, block[k], row[k], col[k]);
   return pars;
 }
 
@@ -895,9 +895,9 @@ inline void setParamsQml(QMLModel& M,
                           const arma::vec& vals) {
   const std::size_t p = block.n_elem;
   for (std::size_t k = 0; k < p; ++k) {
-    qml_param(M, block[k], row[k], col[k]) = vals[k];
+    qmlParam(M, block[k], row[k], col[k]) = vals[k];
     if (symmetric[k] && row[k] != col[k])
-      qml_param(M, block[k], col[k], row[k]) = vals[k];
+      qmlParam(M, block[k], col[k], row[k]) = vals[k];
   }
 }
 
@@ -921,14 +921,14 @@ arma::vec gradientFDQmlCore(QMLModel& M, F logLik,
     shared(M, block, row, col, symmetric, eps, grad, f0, p) firstprivate(logLik)
   for (std::size_t k = 0; k < p; ++k) {
     try {
-      QMLModel Mc = M.thread_clone();
-      double& ti = qml_param(Mc, block[k], row[k], col[k]);
+      QMLModel Mc = M.threadClone();
+      double& ti = qmlParam(Mc, block[k], row[k], col[k]);
       double* tj = nullptr;
       if (symmetric[k] && row[k] != col[k])
-        tj = &qml_param(Mc, block[k], col[k], row[k]);
+        tj = &qmlParam(Mc, block[k], col[k], row[k]);
       ti += eps;
       if (tj) *tj += eps;
-      Mc.update_cache();
+      Mc.updateCache();
       grad[k] = (logLik(Mc) - f0) / eps;
     } catch (...) {
       grad[k] = arma::datum::nan;
@@ -945,16 +945,16 @@ arma::vec gradientFDQmlCore(QMLModel& M, F logLik,
 
 arma::vec analyticalGradQmlCore(
     const QMLModel& M,
-    const arma::mat& data_full,
+    const arma::mat& dataFull,
     const arma::uvec& block,
     const arma::uvec& row,
     const arma::uvec& col,
     const arma::uvec& symmetric)
 {
-  const int        t      = static_cast<int>(data_full.n_rows);
-  const int        pX     = static_cast<int>(M.x_col_idx.n_elem);
-  const int        pY     = static_cast<int>(M.y_col_idx.n_elem);
-  const int        pY_f3  = static_cast<int>(M.nonNormal_uvec.n_elem);
+  const int        t      = static_cast<int>(dataFull.n_rows);
+  const int        pX     = static_cast<int>(M.xColIdx.n_elem);
+  const int        pY     = static_cast<int>(M.yColIdx.n_elem);
+  const int        pYF3   = static_cast<int>(M.nonNormalUvec.n_elem);
   const std::size_t p     = block.n_elem;
   const bool       kOmega0 = (M.kOmegaEta == 0);
 
@@ -963,16 +963,16 @@ arma::vec analyticalGradQmlCore(
   // Mean-centered indicators
   arma::mat X(t, pX), Y(t, pY);
   for (int j = 0; j < pX; ++j)
-    X.col(j) = data_full.col(M.x_col_idx(j)) - M.tauX_adj(j);
+    X.col(j) = dataFull.col(M.xColIdx(j)) - M.tauXAdj(j);
   for (int j = 0; j < pY; ++j)
-    Y.col(j) = data_full.col(M.y_col_idx(j)) - M.tY(j, 0);
+    Y.col(j) = dataFull.col(M.yColIdx(j)) - M.tY(j, 0);
 
-  const arma::uword nColsR = M.hasR ? M.colsR_uvec.n_elem : 0;
-  arma::mat Y_colsR;
+  const arma::uword nColsR = M.hasR ? M.colsRUvec.n_elem : 0;
+  arma::mat yColsR;
   if (M.hasR) {
-    Y_colsR.set_size(t, nColsR);
+    yColsR.set_size(t, nColsR);
     for (arma::uword j = 0; j < nColsR; ++j)
-      Y_colsR.col(j) = Y.col(M.colsR_uvec(j));
+      yColsR.col(j) = Y.col(M.colsRUvec(j));
   }
 
   // -----------------------------------------------------------------------
@@ -981,56 +981,56 @@ arma::vec analyticalGradQmlCore(
   double    sumW  = 0.0;
   arma::mat sumXX(pX, pX, arma::fill::zeros);
   arma::mat sumUU, sumYY;
-  arma::mat L2R_acc;
-  arma::vec sumY_colsR_vec;
+  arma::mat l2RAcc;
+  arma::vec sumYColsRVec;
   if (M.hasR) {
     sumUU.zeros(M.RER.n_rows, M.RER.n_rows);
-    sumYY.zeros(M.colsR_uvec.n_elem, M.colsR_uvec.n_elem);
-    L2R_acc.zeros(M.latentEta_uvec.n_elem, M.colsR_uvec.n_elem);
-    sumY_colsR_vec.zeros(nColsR);
+    sumYY.zeros(M.colsRUvec.n_elem, M.colsRUvec.n_elem);
+    l2RAcc.zeros(M.latentEtaUvec.n_elem, M.colsRUvec.n_elem);
+    sumYColsRVec.zeros(nColsR);
   }
 
   // f3 score accumulators
-  arma::vec s_Ey_acc(pY_f3,        arma::fill::zeros);
-  arma::mat S_SE_acc(pY_f3, pY_f3, arma::fill::zeros);
+  arma::vec sEyAcc(pYF3,        arma::fill::zeros);
+  arma::mat sSEAcc(pYF3, pYF3, arma::fill::zeros);
   // Step 5b: score w.r.t. Sigma1, accumulated as BG2O_i' · S_SE_i · BG2O_i
-  arma::mat S_SE_BG2O_acc(M.Gx.n_cols, M.Gx.n_cols, arma::fill::zeros);
-  arma::mat Gx_mean_acc(M.Gx.n_rows, M.Gx.n_cols, arma::fill::zeros);
-  arma::mat Gx_cov_acc(M.Gx.n_rows, M.Gx.n_cols, arma::fill::zeros);
-  arma::vec alpha_acc(M.a.n_rows, arma::fill::zeros);
-  arma::mat Psi_acc(M.Psi.n_rows, M.Psi.n_cols, arma::fill::zeros);
-  arma::vec m_acc(M.Gx.n_cols, arma::fill::zeros);
-  arma::vec tauX_adj_acc(pX, arma::fill::zeros);
-  arma::mat Ge_acc(M.Ge.n_rows, M.Ge.n_cols, arma::fill::zeros);
-  arma::mat Oxx_acc(M.Oxx.n_rows, M.Oxx.n_cols, arma::fill::zeros);
-  arma::mat Oex_acc(M.Oex.n_rows, M.Oex.n_cols, arma::fill::zeros);
+  arma::mat sSEBG2OAcc(M.Gx.n_cols, M.Gx.n_cols, arma::fill::zeros);
+  arma::mat gxMeanAcc(M.Gx.n_rows, M.Gx.n_cols, arma::fill::zeros);
+  arma::mat gxCovAcc(M.Gx.n_rows, M.Gx.n_cols, arma::fill::zeros);
+  arma::vec alphaAcc(M.a.n_rows, arma::fill::zeros);
+  arma::mat psiAcc(M.Psi.n_rows, M.Psi.n_cols, arma::fill::zeros);
+  arma::vec mAcc(M.Gx.n_cols, arma::fill::zeros);
+  arma::vec tauXAdjAcc(pX, arma::fill::zeros);
+  arma::mat geAcc(M.Ge.n_rows, M.Ge.n_cols, arma::fill::zeros);
+  arma::mat oxxAcc(M.Oxx.n_rows, M.Oxx.n_cols, arma::fill::zeros);
+  arma::mat oexAcc(M.Oex.n_rows, M.Oex.n_cols, arma::fill::zeros);
 
   bool fail = false;
 
   for (int i = 0; i < t; ++i) {
     const arma::vec xi = X.row(i).t();
-    const double    w  = M.has_sw ? M.sampling_weights(i) : 1.0;
+    const double    w  = M.hasSamplingWeights ? M.samplingWeights(i) : 1.0;
     sumW  += w;
     sumXX += w * (xi * xi.t());
 
     if (M.hasR) {
-      const arma::vec yc    = Y_colsR.row(i).t();
-      const arma::vec u_raw = M.R * yc;
-      sumUU += w * (u_raw * u_raw.t());
+      const arma::vec yc   = yColsR.row(i).t();
+      const arma::vec uRaw = M.R * yc;
+      sumUU += w * (uRaw * uRaw.t());
       sumYY += w * (yc * yc.t());
-      sumY_colsR_vec += w * yc;
+      sumYColsRVec += w * yc;
     }
 
     // f3 intermediates — same computation as logLikQmlFromModel
-    arma::vec yi(pY_f3);
-    for (int jj = 0; jj < pY_f3; ++jj) yi(jj) = Y(i, M.nonNormal_uvec(jj));
+    arma::vec yi(pYF3);
+    for (int jj = 0; jj < pYF3; ++jj) yi(jj) = Y(i, M.nonNormalUvec(jj));
 
     const arma::vec mi = M.beta0 + M.L1 * xi;
     const arma::mat Ki = arma::kron(M.Ie, mi.t());
 
     arma::mat Binv_i, Sig2_i, BvZ_i;
     if (kOmega0) {
-      Binv_i = M.Binv_c; Sig2_i = M.Sigma2_c; BvZ_i = M.BinvVarZ_c;
+      Binv_i = M.BinvConst; Sig2_i = M.Sigma2Const; BvZ_i = M.BinvVarZConst;
     } else {
       Binv_i = arma::inv(M.Ie - M.Ge - Ki * M.Oex);
       Sig2_i = Binv_i * M.Psi * Binv_i.t() + M.fullSig2TE;
@@ -1040,7 +1040,7 @@ arma::vec analyticalGradQmlCore(
     const arma::vec h_i = M.trOmSig + M.a + M.Gx * mi + Ki * M.Oxx * mi;
     const arma::vec Ey_struct_i = Binv_i * h_i;
     arma::vec Ey_i = Ey_struct_i;
-    if (M.hasR) Ey_i += M.L2R_cache * Y_colsR.row(i).t();
+    if (M.hasR) Ey_i += M.L2RCache * yColsR.row(i).t();
 
     const arma::mat BG2O =
       qmlJacobianEtaXi(Binv_i, M.Gx, Ki, M.Oxx2T, M.Oex, Ey_i, !kOmega0);
@@ -1048,8 +1048,8 @@ arma::vec analyticalGradQmlCore(
 
     arma::mat Lf;
     if (!arma::chol(Lf, SE_i, "lower")) { fail = true; continue; }
-    const arma::mat I_se = arma::eye<arma::mat>(SE_i.n_rows, SE_i.n_cols);
-    const arma::mat tmp  = arma::solve(arma::trimatl(Lf), I_se,
+    const arma::mat iSE = arma::eye<arma::mat>(SE_i.n_rows, SE_i.n_cols);
+    const arma::mat tmp = arma::solve(arma::trimatl(Lf), iSE,
                                        arma::solve_opts::fast);
     const arma::mat invSE_i = arma::solve(arma::trimatu(Lf.t()), tmp,
                                           arma::solve_opts::fast);
@@ -1057,78 +1057,78 @@ arma::vec analyticalGradQmlCore(
     const arma::vec dv_i    = yi - Ey_i;
     const arma::mat S_SE_i  = (-0.5) * (invSE_i - invSE_i * dv_i * dv_i.t() * invSE_i);
     const arma::vec score_y_i = invSE_i * dv_i;
-    s_Ey_acc      += w * score_y_i;
-    S_SE_acc      += w * S_SE_i;
-    S_SE_BG2O_acc += w * (BG2O.t() * S_SE_i * BG2O);
-    alpha_acc     += w * (Binv_i.t() * score_y_i);
-    Psi_acc       += w * (Binv_i.t() * S_SE_i * Binv_i);
+    sEyAcc      += w * score_y_i;
+    sSEAcc      += w * S_SE_i;
+    sSEBG2OAcc  += w * (BG2O.t() * S_SE_i * BG2O);
+    alphaAcc    += w * (Binv_i.t() * score_y_i);
+    psiAcc      += w * (Binv_i.t() * S_SE_i * Binv_i);
 
     if (M.hasR)
-      L2R_acc += w * (score_y_i(M.latentEta_uvec) * Y_colsR.row(i));
+      l2RAcc += w * (score_y_i(M.latentEtaUvec) * yColsR.row(i));
 
-    Gx_mean_acc += w * ((Binv_i.t() * score_y_i) * mi.t());
-    Gx_cov_acc  += w * (Binv_i.t() * S_SE_i * BG2O * M.Sigma1);
+    gxMeanAcc += w * ((Binv_i.t() * score_y_i) * mi.t());
+    gxCovAcc  += w * (Binv_i.t() * S_SE_i * BG2O * M.Sigma1);
 
     if (!kOmega0) {
-      const arma::mat score_bg = 2.0 * S_SE_i * BG2O * M.Sigma1;
-      const arma::mat T_oex =
+      const arma::mat scoreBg = 2.0 * S_SE_i * BG2O * M.Sigma1;
+      const arma::mat tOex =
         qmlOexJacobianTerm(M.Oex, Ey_i, M.Gx.n_cols, M.Gx.n_rows);
-      const arma::mat T_bar = Binv_i.t() * score_bg;
+      const arma::mat tBar = Binv_i.t() * scoreBg;
 
-      arma::vec Ey_bar = score_y_i;
-      for (arma::uword eta = 0; eta < T_bar.n_rows; ++eta) {
-        const arma::uword row_offset = eta * M.Gx.n_cols;
-        for (arma::uword xi_col = 0; xi_col < T_bar.n_cols; ++xi_col) {
-          const arma::uword oex_row = row_offset + xi_col;
-          const double t_score = T_bar(eta, xi_col);
-          Oex_acc.row(oex_row) += w * t_score * Ey_i.t();
-          Ey_bar += t_score * M.Oex.row(oex_row).t();
+      arma::vec eyBar = score_y_i;
+      for (arma::uword eta = 0; eta < tBar.n_rows; ++eta) {
+        const arma::uword rowOffset = eta * M.Gx.n_cols;
+        for (arma::uword xiCol = 0; xiCol < tBar.n_cols; ++xiCol) {
+          const arma::uword oexRow = rowOffset + xiCol;
+          const double tScore = tBar(eta, xiCol);
+          oexAcc.row(oexRow) += w * tScore * Ey_i.t();
+          eyBar += tScore * M.Oex.row(oexRow).t();
         }
       }
 
       const arma::mat Q = M.Psi + M.varZ;
-      arma::mat Binv_bar = Ey_bar * h_i.t();
-      Binv_bar += 2.0 * S_SE_i * Binv_i * Q;
-      Binv_bar += score_bg * (M.Gx + T_oex).t();
+      arma::mat binvBar = eyBar * h_i.t();
+      binvBar += 2.0 * S_SE_i * Binv_i * Q;
+      binvBar += scoreBg * (M.Gx + tOex).t();
 
-      const arma::vec h_bar = Binv_i.t() * Ey_bar;
-      const arma::mat B_bar = -Binv_i.t() * Binv_bar * Binv_i.t();
-      const arma::mat K_bar =
-        score_bg * M.Oxx2T.t() - B_bar * M.Oex.t() +
-        h_bar * (M.Oxx * mi).t();
+      const arma::vec hBar = Binv_i.t() * eyBar;
+      const arma::mat bBar = -Binv_i.t() * binvBar * Binv_i.t();
+      const arma::mat kBar =
+        scoreBg * M.Oxx2T.t() - bBar * M.Oex.t() +
+        hBar * (M.Oxx * mi).t();
 
-      Ge_acc += w * (-B_bar);
-      Oex_acc += w * (-Ki.t() * B_bar);
+      geAcc += w * (-bBar);
+      oexAcc += w * (-Ki.t() * bBar);
 
-      arma::vec m_bar = M.Gx.t() * h_bar;
-      m_bar += M.Oxx.t() * (Ki.t() * h_bar);
+      arma::vec mBar = M.Gx.t() * hBar;
+      mBar += M.Oxx.t() * (Ki.t() * hBar);
       for (arma::uword eta = 0; eta < M.Gx.n_rows; ++eta) {
-        const arma::uword row_offset = eta * M.Gx.n_cols;
-        for (arma::uword xi_col = 0; xi_col < M.Gx.n_cols; ++xi_col)
-          m_bar(xi_col) += K_bar(eta, row_offset + xi_col);
+        const arma::uword rowOffset = eta * M.Gx.n_cols;
+        for (arma::uword xiCol = 0; xiCol < M.Gx.n_cols; ++xiCol)
+          mBar(xiCol) += kBar(eta, rowOffset + xiCol);
       }
 
-      m_acc        += w * m_bar;
-      tauX_adj_acc += w * (M.invLXPLX * xi - M.L1.t() * m_bar);
+      mAcc       += w * mBar;
+      tauXAdjAcc += w * (M.invLXPLX * xi - M.L1.t() * mBar);
 
-      const arma::mat varZ_bar = Binv_i.t() * S_SE_i * Binv_i;
-      const arma::vec q_bar = Ki.t() * h_bar;
+      const arma::mat varZBar = Binv_i.t() * S_SE_i * Binv_i;
+      const arma::vec qBar = Ki.t() * hBar;
       const int numXi = static_cast<int>(M.Gx.n_cols);
       const int numEta = static_cast<int>(M.Gx.n_rows);
       for (int eta = 0; eta < numEta; ++eta) {
-        const int row_offset = eta * numXi;
-        const arma::mat omega_eta =
-          M.Oxx.submat(row_offset, 0, row_offset + numXi - 1, numXi - 1);
+        const int rowOffset = eta * numXi;
+        const arma::mat omegaEta =
+          M.Oxx.submat(rowOffset, 0, rowOffset + numXi - 1, numXi - 1);
 
         for (int a = 0; a < numXi; ++a) {
           for (int b = 0; b < numXi; ++b) {
-            Oxx_acc(row_offset + a, b) += w * (
-              h_bar(eta) * M.Sigma1(b, a) +
-              q_bar(row_offset + a) * mi(b) +
-              score_bg(eta, b) * mi(a) +
-              score_bg(eta, a) * mi(b) +
-              varZ_bar(eta, eta) *
-                qmlVarZDerivative(omega_eta, M.Sigma1, a, b)
+            oxxAcc(rowOffset + a, b) += w * (
+              hBar(eta) * M.Sigma1(b, a) +
+              qBar(rowOffset + a) * mi(b) +
+              scoreBg(eta, b) * mi(a) +
+              scoreBg(eta, a) * mi(b) +
+              varZBar(eta, eta) *
+                qmlVarZDerivative(omegaEta, M.Sigma1, a, b)
             );
           }
         }
@@ -1136,33 +1136,33 @@ arma::vec analyticalGradQmlCore(
     }
 
     if (kOmega0) {
-      arma::vec s_m_i = BG2O.t() * score_y_i;
-      s_m_i += qmlDmCovFromBG(2.0 * S_SE_i * BG2O * M.Sigma1,
+      arma::vec sM_i = BG2O.t() * score_y_i;
+      sM_i += qmlDmCovFromBG(2.0 * S_SE_i * BG2O * M.Sigma1,
                               M.Oxx2T, M.Gx.n_rows, M.Gx.n_cols);
 
-      m_acc        += w * s_m_i;
-      tauX_adj_acc += w * (M.invLXPLX * xi - M.L1.t() * s_m_i);
+      mAcc       += w * sM_i;
+      tauXAdjAcc += w * (M.invLXPLX * xi - M.L1.t() * sM_i);
 
-      const arma::mat score_bg = 2.0 * S_SE_i * BG2O * M.Sigma1;
+      const arma::mat scoreBg = 2.0 * S_SE_i * BG2O * M.Sigma1;
       const arma::mat BinvGx   = Binv_i * M.Gx;
       const arma::mat BinvQBt  = Binv_i * (M.Psi + M.varZ) * Binv_i.t();
-      Ge_acc += w * (
+      geAcc += w * (
         (Binv_i.t() * score_y_i) * Ey_struct_i.t() +
-        Binv_i.t() * score_bg * BinvGx.t() +
+        Binv_i.t() * scoreBg * BinvGx.t() +
         2.0 * Binv_i.t() * S_SE_i * BinvQBt
       );
 
-      const arma::vec s_h_i = Binv_i.t() * score_y_i;
+      const arma::vec sH_i = Binv_i.t() * score_y_i;
       const int numXi = static_cast<int>(M.Gx.n_cols);
       const int numEta = static_cast<int>(M.Gx.n_rows);
       for (int eta = 0; eta < numEta; ++eta) {
-        const int row_offset = eta * numXi;
+        const int rowOffset = eta * numXi;
         for (int a = 0; a < numXi; ++a) {
           for (int b = 0; b < numXi; ++b) {
-            Oxx_acc(row_offset + a, b) += w * (
-              s_h_i(eta) * (M.Sigma1(b, a) + mi(a) * mi(b)) +
-              score_bg(eta, b) * mi(a) +
-              score_bg(eta, a) * mi(b)
+            oxxAcc(rowOffset + a, b) += w * (
+              sH_i(eta) * (M.Sigma1(b, a) + mi(a) * mi(b)) +
+              scoreBg(eta, b) * mi(a) +
+              scoreBg(eta, a) * mi(b)
             );
           }
         }
@@ -1175,7 +1175,7 @@ arma::vec analyticalGradQmlCore(
   // -----------------------------------------------------------------------
   // f2x: score w.r.t. LXPLX
   // -----------------------------------------------------------------------
-  const arma::mat S_LXPLX = -0.5 * sumW * M.invLXPLX
+  const arma::mat sLXPLX = -0.5 * sumW * M.invLXPLX
                            + 0.5 * M.invLXPLX * sumXX * M.invLXPLX;
 
   // Step 3: map S_LXPLX → grad entries for lX(0), d(4), phi(16)
@@ -1184,8 +1184,8 @@ arma::vec analyticalGradQmlCore(
   // phi(r,c):  dLL/d(phi_{r,c})  = fac * (lX' * S_LXPLX * lX)(r,c),
   //            fac = 2 when off-diagonal symmetric, 1 otherwise
   {
-    const arma::mat SlX_phi  = S_LXPLX * M.lX * M.phi;    // pX  × pXi
-    const arma::mat lXT_S_lX = M.lX.t() * S_LXPLX * M.lX; // pXi × pXi
+    const arma::mat slXPhi  = sLXPLX * M.lX * M.phi;    // pX  × pXi
+    const arma::mat lXTSLX = M.lX.t() * sLXPLX * M.lX; // pXi × pXi
 
     for (std::size_t k = 0; k < p; ++k) {
       const arma::uword r   = row[k];
@@ -1194,9 +1194,9 @@ arma::vec analyticalGradQmlCore(
       const double      fac = (sym && r != c) ? 2.0 : 1.0;
 
       switch (block[k]) {
-        case 0:  grad[k] += 2.0 * SlX_phi(r, c);    break; // lX
-        case 4:  grad[k] += S_LXPLX(r, c);           break; // d
-        case 16: grad[k] += fac * lXT_S_lX(r, c);   break; // phi
+        case 0:  grad[k] += 2.0 * slXPhi(r, c);    break; // lX
+        case 4:  grad[k] += sLXPLX(r, c);           break; // d
+        case 16: grad[k] += fac * lXTSLX(r, c);   break; // phi
         default: break;
       }
     }
@@ -1206,20 +1206,20 @@ arma::vec analyticalGradQmlCore(
   // f2u: score w.r.t. RER
   // -----------------------------------------------------------------------
   if (M.hasR) {
-    const arma::mat S_RER = -0.5 * sumW * M.invRER
+    const arma::mat sRER = -0.5 * sumW * M.invRER
                           + 0.5 * M.invRER * sumUU * M.invRER;
     {
-      const arma::mat e_sub = M.e.submat(M.colsR_uvec, M.colsR_uvec);
-      const arma::uword nColsR = M.colsR_uvec.n_elem;
+      const arma::mat eSub = M.e.submat(M.colsRUvec, M.colsRUvec);
+      const arma::uword nColsR = M.colsRUvec.n_elem;
       const arma::uword nU     = M.R.n_rows;
 
-      arma::mat G_R = -M.invRER * M.R * sumYY
-                    + 2.0 * S_RER * M.R * e_sub;
-      arma::mat G_e_sub = M.R.t() * S_RER * M.R;
+      arma::mat gR = -M.invRER * M.R * sumYY
+                    + 2.0 * sRER * M.R * eSub;
+      arma::mat gESub = M.R.t() * sRER * M.R;
 
-      if (M.selectTE1_diag.n_elem > 0) {
-        const arma::mat G_Sigma =
-          S_SE_acc.submat(M.latentEta_uvec, M.latentEta_uvec);
+      if (M.selectTE1Diag.n_elem > 0) {
+        const arma::mat gSigma =
+          sSEAcc.submat(M.latentEtaUvec, M.latentEtaUvec);
         const arma::mat D = M.subTE1;
         const arma::mat D2 = arma::diagmat(arma::square(D.diag()));
         const arma::mat C = M.invRER;
@@ -1227,31 +1227,31 @@ arma::vec analyticalGradQmlCore(
         const arma::mat H = A.t() * C * A;
         const arma::mat L2 = -D * A.t() * C;
 
-        arma::mat G_L2 = L2R_acc * M.R.t();
-        G_R += L2.t() * L2R_acc;
+        arma::mat gL2 = l2RAcc * M.R.t();
+        gR += L2.t() * l2RAcc;
 
-        arma::vec G_te(D.n_rows, arma::fill::zeros);
+        arma::vec gTe(D.n_rows, arma::fill::zeros);
         const arma::mat AtC = A.t() * C;
         for (arma::uword j = 0; j < D.n_rows; ++j) {
-          G_te(j) += G_Sigma(j, j);
-          G_te(j) -= 2.0 * D(j, j) * arma::dot(G_Sigma.row(j), H.row(j));
-          G_te(j) -= arma::dot(G_L2.row(j), AtC.row(j));
+          gTe(j) += gSigma(j, j);
+          gTe(j) -= 2.0 * D(j, j) * arma::dot(gSigma.row(j), H.row(j));
+          gTe(j) -= arma::dot(gL2.row(j), AtC.row(j));
         }
 
-        arma::mat G_H = -D2 * G_Sigma;
-        arma::mat G_A = C * A * G_H.t() + C.t() * A * G_H;
-        arma::mat G_C = A * G_H.t() * A.t();
+        arma::mat gH = -D2 * gSigma;
+        arma::mat gA = C * A * gH.t() + C.t() * A * gH;
+        arma::mat gC = A * gH.t() * A.t();
 
-        G_A += -(C * G_L2.t() * D);
-        G_C += -(G_L2.t() * D * A.t());
+        gA += -(C * gL2.t() * D);
+        gC += -(gL2.t() * D * A.t());
 
-        const arma::mat G_RER = -C.t() * G_C * C.t();
-        G_R     += G_RER * M.R * e_sub + G_RER.t() * M.R * e_sub;
-        G_e_sub += M.R.t() * G_RER * M.R;
+        const arma::mat gRER = -C.t() * gC * C.t();
+        gR     += gRER * M.R * eSub + gRER.t() * M.R * eSub;
+        gESub += M.R.t() * gRER * M.R;
 
-        for (arma::uword j = 0; j < M.selectTE1_diag.n_elem; ++j) {
-          const arma::uword idx = M.selectTE1_diag(j);
-          G_e_sub(idx, idx) += G_te(j);
+        for (arma::uword j = 0; j < M.selectTE1Diag.n_elem; ++j) {
+          const arma::uword idx = M.selectTE1Diag(j);
+          gESub(idx, idx) += gTe(j);
         }
 
         for (std::size_t k = 0; k < p; ++k) {
@@ -1259,33 +1259,33 @@ arma::vec analyticalGradQmlCore(
           const arma::uword r = row[k], c = col[k];
           const bool sym = static_cast<bool>(symmetric[k]);
           if (r < M.lY.n_rows && c < M.lY.n_cols) {
-            for (arma::uword br = 0; br < M.betaRows_uvec.n_elem; ++br)
-              for (arma::uword bc = 0; bc < M.latentEta_uvec.n_elem; ++bc)
-                if (M.betaRows_uvec(br) == r && M.latentEta_uvec(bc) == c)
-                  grad[k] += G_A(br, bc);
+            for (arma::uword br = 0; br < M.betaRowsUvec.n_elem; ++br)
+              for (arma::uword bc = 0; bc < M.latentEtaUvec.n_elem; ++bc)
+                if (M.betaRowsUvec(br) == r && M.latentEtaUvec(bc) == c)
+                  grad[k] += gA(br, bc);
           }
           if (sym && r != c && c < M.lY.n_rows && r < M.lY.n_cols) {
-            for (arma::uword br = 0; br < M.betaRows_uvec.n_elem; ++br)
-              for (arma::uword bc = 0; bc < M.latentEta_uvec.n_elem; ++bc)
-                if (M.betaRows_uvec(br) == c && M.latentEta_uvec(bc) == r)
-                  grad[k] += G_A(br, bc);
+            for (arma::uword br = 0; br < M.betaRowsUvec.n_elem; ++br)
+              for (arma::uword bc = 0; bc < M.latentEtaUvec.n_elem; ++bc)
+                if (M.betaRowsUvec(br) == c && M.latentEtaUvec(bc) == r)
+                  grad[k] += gA(br, bc);
           }
         }
       }
 
       // Lookup: lY linear col-major index → R linear col-major index.
       // Unused entries stay at sentinel (arma::uword)-1.
-      const arma::uword lY_sz = M.lY.n_rows * M.lY.n_cols;
-      std::vector<arma::uword> lY2R(lY_sz, (arma::uword)-1);
-      for (arma::uword kk = 0; kk < M.lY_free_linidx.n_elem; ++kk)
-        lY2R[M.lY_free_linidx(kk)] = M.R_na_linidx(kk);
+      const arma::uword lYSize = M.lY.n_rows * M.lY.n_cols;
+      std::vector<arma::uword> lY2R(lYSize, (arma::uword)-1);
+      for (arma::uword kk = 0; kk < M.lYFreeLinidx.n_elem; ++kk)
+        lY2R[M.lYFreeLinidx(kk)] = M.rNaLinidx(kk);
 
-      auto add_lY_contrib = [&](arma::uword lyr, arma::uword lyc, double& g) {
+      auto addLYContrib = [&](arma::uword lyr, arma::uword lyc, double& g) {
         const arma::uword li = lyc * M.lY.n_rows + lyr;
-        if (li < lY_sz && lY2R[li] != (arma::uword)-1) {
+        if (li < lYSize && lY2R[li] != (arma::uword)-1) {
           const arma::uword Rlin = lY2R[li];
           const arma::uword Ri = Rlin % nU, Rj = Rlin / nU;
-          g -= G_R(Ri, Rj);
+          g -= gR(Ri, Rj);
         }
       };
 
@@ -1296,13 +1296,13 @@ arma::vec analyticalGradQmlCore(
 
         switch (block[k]) {
           case 1: {  // lY
-            add_lY_contrib(r, c, grad[k]);
-            if (sym && r != c) add_lY_contrib(c, r, grad[k]);
+            addLYContrib(r, c, grad[k]);
+            if (sym && r != c) addLYContrib(c, r, grad[k]);
             break;
           }
           case 5: {  // e — only colsR diagonal entries contribute here
             for (arma::uword rr = 0; rr < nColsR; ++rr) {
-              if (M.colsR_uvec(rr) == r) { grad[k] += G_e_sub(rr, rr); break; }
+              if (M.colsRUvec(rr) == r) { grad[k] += gESub(rr, rr); break; }
             }
             break;
           }
@@ -1317,41 +1317,41 @@ arma::vec analyticalGradQmlCore(
   // -----------------------------------------------------------------------
   {
     // tY at colsR positions has two contributions:
-    //   f2u: ∂LL_f2u/∂tY(colsR[jj]) = (R' · invRER · R · sumY_colsR)(jj)
+    //   f2u: ∂LL_f2u/∂tY(colsR[jj]) = (R' · invRER · R · sumYColsR)(jj)
     //     (from ∂u_i/∂tY = -R[:,jj], linear in u_i)
-    //   f3:  ∂LL_f3/∂tY(colsR[jj])  = -(L2R_cache' · s_Ey_acc)(jj)
-    //     (from Ey_i += L2R_cache · y_colsR_i, shifted by -tY)
-    arma::vec RT_invRER_R_sy, L2R_Ey;
+    //   f3:  ∂LL_f3/∂tY(colsR[jj])  = -(L2RCache' · sEyAcc)(jj)
+    //     (from Ey_i += L2RCache · yColsR_i, shifted by -tY)
+    arma::vec rtInvRerRSy, l2REy;
     if (M.hasR) {
-      RT_invRER_R_sy = M.R.t() * M.invRER * M.R * sumY_colsR_vec;
-      L2R_Ey         = M.L2R_cache.t() * s_Ey_acc;
+      rtInvRerRSy = M.R.t() * M.invRER * M.R * sumYColsRVec;
+      l2REy       = M.L2RCache.t() * sEyAcc;
     }
 
     for (std::size_t k = 0; k < p; ++k) {
       const arma::uword r = row[k];
       switch (block[k]) {
         case 3: {  // tY
-          // A given tY can appear in BOTH nonNormal_uvec AND colsR_uvec
+          // A given tY can appear in BOTH nonNormalUvec AND colsRUvec
           // (e.g. the scaling indicator is in f3 directly and also in u=R·y_colsR).
           // Accumulate all matching contributions without short-circuiting.
           //
           // direct f3: dv_i(jj) = yi(jj) - Ey_i(jj), ∂yi(jj)/∂tY(r,0) = -1
           // ∂f3/∂dv * ∂dv/∂tY = (-s_Ey_i(jj)) * (-1) = +s_Ey_i(jj)
-          for (int jj = 0; jj < pY_f3; ++jj) {
-            if (M.nonNormal_uvec(jj) == r) grad[k] += s_Ey_acc(jj);
+          for (int jj = 0; jj < pYF3; ++jj) {
+            if (M.nonNormalUvec(jj) == r) grad[k] += sEyAcc(jj);
           }
-          // colsR path: f2u linear + f3 via L2R_cache · y_colsR_i
+          // colsR path: f2u linear + f3 via L2RCache · yColsR_i
           if (M.hasR) {
             for (arma::uword jj = 0; jj < nColsR; ++jj) {
-              if (M.colsR_uvec(jj) == r) {
-                grad[k] += RT_invRER_R_sy(jj) - L2R_Ey(jj);
+              if (M.colsRUvec(jj) == r) {
+                grad[k] += rtInvRerRSy(jj) - l2REy(jj);
               }
             }
           }
           break;
         }
         case 8: {  // a: ∂Ey_i/∂a(r,0) = Binv_i[:,r]
-          grad[k] += alpha_acc(r);
+          grad[k] += alphaAcc(r);
           break;
         }
         default: break;
@@ -1369,9 +1369,9 @@ arma::vec analyticalGradQmlCore(
   //   S_LXPLX_f3 = L1' · S_SE_BG2O_acc · L1
   // Then the same Step-3 formulas apply with S_LXPLX_f3 in place of S_LXPLX.
   {
-    const arma::mat S_LXPLX_f3  = M.L1.t() * S_SE_BG2O_acc * M.L1; // pX × pX
-    const arma::mat SlX_phi_f3  = S_LXPLX_f3 * M.lX * M.phi;
-    const arma::mat lXT_S_lX_f3 = M.lX.t() * S_LXPLX_f3 * M.lX;
+    const arma::mat sLXPLXF3  = M.L1.t() * sSEBG2OAcc * M.L1; // pX × pX
+    const arma::mat slXPhiF3  = sLXPLXF3 * M.lX * M.phi;
+    const arma::mat lXTSLXF3 = M.lX.t() * sLXPLXF3 * M.lX;
 
     for (std::size_t k = 0; k < p; ++k) {
       const arma::uword r   = row[k];
@@ -1380,9 +1380,9 @@ arma::vec analyticalGradQmlCore(
       const double      fac = (sym && r != c) ? 2.0 : 1.0;
 
       switch (block[k]) {
-        case 0:  grad[k] += 2.0 * SlX_phi_f3(r, c);   break;  // lX
-        case 4:  grad[k] += S_LXPLX_f3(r, c);          break;  // d
-        case 16: grad[k] += fac * lXT_S_lX_f3(r, c);  break;  // phi
+        case 0:  grad[k] += 2.0 * slXPhiF3(r, c);   break;  // lX
+        case 4:  grad[k] += sLXPLXF3(r, c);          break;  // d
+        case 16: grad[k] += fac * lXTSLXF3(r, c);  break;  // phi
         default: break;
       }
     }
@@ -1394,7 +1394,7 @@ arma::vec analyticalGradQmlCore(
   // Sig2_i = Binv_i · Psi · Binv_i' + fullSig2TE
   //
   // Psi (kOmegaEta == 0):
-  //   constant Binv_c → score = (Binv_c' · S_SE_acc · Binv_c)(r,c)
+  //   constant BinvConst → score = (BinvConst' · sSEAcc · BinvConst)(r,c)
   //
   // e non-colsR has one direct path into fullSig2TE:
   //   TE2: non-latent etas — fullSig2TE(p,p) = e(q,q) → grad += S_SE_acc(p,p)
@@ -1408,14 +1408,14 @@ arma::vec analyticalGradQmlCore(
 
       switch (block[k]) {
         case 7: {  // Psi
-          grad[k] += fac * Psi_acc(r, c);
+          grad[k] += fac * psiAcc(r, c);
           break;
         }
         case 5: {  // e non-colsR; colsR entries are handled in Step 4
           if (M.hasTE2) {
-            for (arma::uword kk = 0; kk < M.selectTE2_diag.n_elem; ++kk) {
-              if (M.selectTE2_diag(kk) == r) {
-                grad[k] += S_SE_acc(M.nonLatentEta_uvec(kk), M.nonLatentEta_uvec(kk));
+            for (arma::uword kk = 0; kk < M.selectTE2Diag.n_elem; ++kk) {
+              if (M.selectTE2Diag(kk) == r) {
+                grad[k] += sSEAcc(M.nonLatentEtaUvec(kk), M.nonLatentEtaUvec(kk));
                 break;
               }
             }
@@ -1429,17 +1429,17 @@ arma::vec analyticalGradQmlCore(
 
   // Step 5d-f: remaining structural mappings.
   {
-    const arma::vec beta0_acc = m_acc + M.lX.t() * tauX_adj_acc;
+    const arma::vec beta0Acc = mAcc + M.lX.t() * tauXAdjAcc;
     if (kOmega0) {
       const int numXi = static_cast<int>(M.Gx.n_cols);
       const int numEta = static_cast<int>(M.Gx.n_rows);
       for (int eta = 0; eta < numEta; ++eta) {
-        const arma::mat omega_eta =
+        const arma::mat omegaEta =
           M.Oxx.submat(eta * numXi, 0, (eta + 1) * numXi - 1, numXi - 1);
         for (int a = 0; a < numXi; ++a) {
           for (int b = 0; b < numXi; ++b) {
-            Oxx_acc(eta * numXi + a, b) +=
-              Psi_acc(eta, eta) * qmlVarZDerivative(omega_eta, M.Sigma1, a, b);
+            oxxAcc(eta * numXi + a, b) +=
+              psiAcc(eta, eta) * qmlVarZDerivative(omegaEta, M.Sigma1, a, b);
           }
         }
       }
@@ -1452,35 +1452,35 @@ arma::vec analyticalGradQmlCore(
 
       switch (block[k]) {
         case 2: { // tX / tauX
-          grad[k] += tauX_adj_acc(r);
+          grad[k] += tauXAdjAcc(r);
           break;
         }
         case 9: { // beta0
-          grad[k] += beta0_acc(r);
+          grad[k] += beta0Acc(r);
           break;
         }
         case 10: { // Gx / gammaXi
-          grad[k] += Gx_mean_acc(r, c) + 2.0 * Gx_cov_acc(r, c);
+          grad[k] += gxMeanAcc(r, c) + 2.0 * gxCovAcc(r, c);
           if (sym && r != c)
-            grad[k] += Gx_mean_acc(c, r) + 2.0 * Gx_cov_acc(c, r);
+            grad[k] += gxMeanAcc(c, r) + 2.0 * gxCovAcc(c, r);
           break;
         }
         case 11: { // Ge / gammaEta
-          grad[k] += Ge_acc(r, c);
-          if (sym && r != c) grad[k] += Ge_acc(c, r);
+          grad[k] += geAcc(r, c);
+          if (sym && r != c) grad[k] += geAcc(c, r);
           break;
         }
         case 12: { // Oxx / omegaXiXi
-          grad[k] += Oxx_acc(r, c);
-          if (sym && r != c && c < Oxx_acc.n_rows && r < Oxx_acc.n_cols)
-            grad[k] += Oxx_acc(c, r);
+          grad[k] += oxxAcc(r, c);
+          if (sym && r != c && c < oxxAcc.n_rows && r < oxxAcc.n_cols)
+            grad[k] += oxxAcc(c, r);
           break;
         }
         case 13: { // Oex / omegaEtaXi
           if (!kOmega0) {
-            grad[k] += Oex_acc(r, c);
-            if (sym && r != c && c < Oex_acc.n_rows && r < Oex_acc.n_cols)
-              grad[k] += Oex_acc(c, r);
+            grad[k] += oexAcc(r, c);
+            if (sym && r != c && c < oexAcc.n_rows && r < oexAcc.n_cols)
+              grad[k] += oexAcc(c, r);
           }
           break;
         }
@@ -1523,41 +1523,41 @@ arma::mat analyticalObsGradQmlCpp(const Rcpp::List& submodel,
                                   const arma::uvec& symmetric) {
   try {
     const QMLModel M(submodel);
-    const arma::mat data_full =
+    const arma::mat dataFull =
       Rcpp::as<arma::mat>(Rcpp::as<Rcpp::List>(submodel["data"])["data.full"]);
 
-    const arma::uword n = data_full.n_rows;
+    const arma::uword n = dataFull.n_rows;
     const arma::uword p = block.n_elem;
     arma::mat out(n, p, arma::fill::zeros);
 
     for (arma::uword i = 0; i < n; ++i) {
-      QMLModel Mi = M.thread_clone();
-      if (Mi.has_sw) {
+      QMLModel Mi = M.threadClone();
+      if (Mi.hasSamplingWeights) {
         arma::vec wi(1);
-        wi(0) = M.sampling_weights(i);
-        Mi.sampling_weights = wi;
+        wi(0) = M.samplingWeights(i);
+        Mi.samplingWeights = wi;
       }
-      out.row(i) = analyticalGradQmlCore(Mi, data_full.rows(i, i),
+      out.row(i) = analyticalGradQmlCore(Mi, dataFull.rows(i, i),
                                          block, row, col, symmetric).t();
     }
 
     return out;
   } catch (const std::exception& e) {
     Rcpp::warning("analyticalObsGradQmlCpp exception: %s", e.what());
-    arma::mat nan_grad(
+    arma::mat nanGrad(
       Rcpp::as<arma::mat>(Rcpp::as<Rcpp::List>(submodel["data"])["data.full"]).n_rows,
       block.n_elem
     );
-    nan_grad.fill(arma::datum::nan);
-    return nan_grad;
+    nanGrad.fill(arma::datum::nan);
+    return nanGrad;
   } catch (...) {
     Rcpp::warning("analyticalObsGradQmlCpp: unknown exception");
-    arma::mat nan_grad(
+    arma::mat nanGrad(
       Rcpp::as<arma::mat>(Rcpp::as<Rcpp::List>(submodel["data"])["data.full"]).n_rows,
       block.n_elem
     );
-    nan_grad.fill(arma::datum::nan);
-    return nan_grad;
+    nanGrad.fill(arma::datum::nan);
+    return nanGrad;
   }
 }
 
@@ -1570,19 +1570,19 @@ arma::vec analyticalGradQmlCpp(const Rcpp::List& submodel,
                                 const arma::uvec& symmetric) {
   try {
     const QMLModel  M(submodel);
-    const arma::mat data_full =
+    const arma::mat dataFull =
       Rcpp::as<arma::mat>(Rcpp::as<Rcpp::List>(submodel["data"])["data.full"]);
-    return analyticalGradQmlCore(M, data_full, block, row, col, symmetric);
+    return analyticalGradQmlCore(M, dataFull, block, row, col, symmetric);
   } catch (const std::exception& e) {
     Rcpp::warning("analyticalGradQmlCpp exception: %s", e.what());
-    arma::vec nan_grad(block.n_elem);
-    nan_grad.fill(arma::datum::nan);
-    return nan_grad;
+    arma::vec nanGrad(block.n_elem);
+    nanGrad.fill(arma::datum::nan);
+    return nanGrad;
   } catch (...) {
     Rcpp::warning("analyticalGradQmlCpp: unknown exception");
-    arma::vec nan_grad(block.n_elem);
-    nan_grad.fill(arma::datum::nan);
-    return nan_grad;
+    arma::vec nanGrad(block.n_elem);
+    nanGrad.fill(arma::datum::nan);
+    return nanGrad;
   }
 }
 
@@ -1598,19 +1598,19 @@ arma::vec gradLogLikQmlCpp(const Rcpp::List& submodel,
   try {
     ThreadSetter ts(ncores);
     QMLModel M(submodel);
-    const arma::mat data_full =
+    const arma::mat dataFull =
       Rcpp::as<arma::mat>(Rcpp::as<Rcpp::List>(submodel["data"])["data.full"]);
 
-    auto qml_ll = [&data_full](QMLModel& Mc) -> double {
-      return logLikQmlFromModel(Mc, data_full, 1);
+    auto qmlLl = [&dataFull](QMLModel& Mc) -> double {
+      return logLikQmlFromModel(Mc, dataFull, 1);
     };
 
-    return gradientFDQmlCore(M, qml_ll, block, row, col, symmetric, eps, ncores);
+    return gradientFDQmlCore(M, qmlLl, block, row, col, symmetric, eps, ncores);
   } catch (...) {
     // Return NaN gradient so the optimizer steps away from this bad point.
-    arma::vec nan_grad(block.n_elem);
-    nan_grad.fill(arma::datum::nan);
-    return nan_grad;
+    arma::vec nanGrad(block.n_elem);
+    nanGrad.fill(arma::datum::nan);
+    return nanGrad;
   }
 }
 
@@ -1626,27 +1626,27 @@ arma::mat gradObsLogLikQmlCpp(const Rcpp::List& submodel,
   try {
     ThreadSetter ts(ncores);
     QMLModel M(submodel);
-    const arma::mat data_full =
+    const arma::mat dataFull =
       Rcpp::as<arma::mat>(Rcpp::as<Rcpp::List>(submodel["data"])["data.full"]);
 
-    const arma::uword n = data_full.n_rows;
+    const arma::uword n = dataFull.n_rows;
     const arma::uword p = block.n_elem;
     arma::mat grad(n, p, arma::fill::zeros);
-    const arma::vec f0 = obsLogLikQmlFromModel(M, data_full, 1);
+    const arma::vec f0 = obsLogLikQmlFromModel(M, dataFull, 1);
 
     #pragma omp parallel for if(ncores > 1) schedule(static) \
-      shared(M, data_full, block, row, col, symmetric, eps, grad, f0, p)
+      shared(M, dataFull, block, row, col, symmetric, eps, grad, f0, p)
     for (std::size_t k = 0; k < p; ++k) {
       try {
-        QMLModel Mc = M.thread_clone();
-        double& ti = qml_param(Mc, block[k], row[k], col[k]);
+        QMLModel Mc = M.threadClone();
+        double& ti = qmlParam(Mc, block[k], row[k], col[k]);
         double* tj = nullptr;
         if (symmetric[k] && row[k] != col[k])
-          tj = &qml_param(Mc, block[k], col[k], row[k]);
+          tj = &qmlParam(Mc, block[k], col[k], row[k]);
         ti += eps;
         if (tj) *tj += eps;
-        Mc.update_cache();
-        grad.col(k) = (obsLogLikQmlFromModel(Mc, data_full, 1) - f0) / eps;
+        Mc.updateCache();
+        grad.col(k) = (obsLogLikQmlFromModel(Mc, dataFull, 1) - f0) / eps;
       } catch (...) {
         grad.col(k).fill(arma::datum::nan);
       }
@@ -1654,12 +1654,12 @@ arma::mat gradObsLogLikQmlCpp(const Rcpp::List& submodel,
 
     return grad;
   } catch (...) {
-    arma::mat nan_grad(
+    arma::mat nanGrad(
       Rcpp::as<arma::mat>(Rcpp::as<Rcpp::List>(submodel["data"])["data.full"]).n_rows,
       block.n_elem
     );
-    nan_grad.fill(arma::datum::nan);
-    return nan_grad;
+    nanGrad.fill(arma::datum::nan);
+    return nanGrad;
   }
 }
 
@@ -1679,11 +1679,11 @@ Rcpp::List hessLogLikQmlCpp(const Rcpp::List& submodel,
                               const int ncores      = 1L) {
   ThreadSetter ts(ncores);
   QMLModel M(submodel);
-  const arma::mat data_full =
+  const arma::mat dataFull =
     Rcpp::as<arma::mat>(Rcpp::as<Rcpp::List>(submodel["data"])["data.full"]);
 
-  auto qml_ll = [&data_full](QMLModel& Mc) -> double {
-    return logLikQmlFromModel(Mc, data_full, 1);
+  auto qmlLl = [&dataFull](QMLModel& Mc) -> double {
+    return logLikQmlFromModel(Mc, dataFull, 1);
   };
 
   const std::size_t p = block.n_elem;
@@ -1691,25 +1691,25 @@ Rcpp::List hessLogLikQmlCpp(const Rcpp::List& submodel,
   const arma::vec incr =
     arma::max(arma::abs(base), arma::vec(p).fill(minAbs)) * relStep;
 
-  const double    f0    = logLikQmlFromModel(M, data_full, 1);
-  const arma::vec grad0 = gradientFDQmlCore(M, qml_ll, block, row, col,
+  const double    f0    = logLikQmlFromModel(M, dataFull, 1);
+  const arma::vec grad0 = gradientFDQmlCore(M, qmlLl, block, row, col,
                                              symmetric, relStep, 1);
 
   arma::mat Hess(p, p, arma::fill::zeros);
 
   #pragma omp parallel for if(ncores > 1) schedule(static) \
-    shared(M, data_full, block, row, col, symmetric, p, base, incr, grad0, Hess) \
-    firstprivate(qml_ll)
+    shared(M, dataFull, block, row, col, symmetric, p, base, incr, grad0, Hess) \
+    firstprivate(qmlLl)
   for (std::size_t j = 0; j < p; ++j) {
     try {
-      QMLModel Mc = M.thread_clone();
+      QMLModel Mc = M.threadClone();
       arma::vec pars = base;
       pars[j] += incr[j];
       setParamsQml(Mc, block, row, col, symmetric, pars);
-      Mc.update_cache();
-      const arma::vec grad_j = gradientFDQmlCore(Mc, qml_ll, block, row, col,
+      Mc.updateCache();
+      const arma::vec gradJ = gradientFDQmlCore(Mc, qmlLl, block, row, col,
                                                   symmetric, relStep, 1);
-      Hess.col(j) = (grad_j - grad0) / incr[j];
+      Hess.col(j) = (gradJ - grad0) / incr[j];
     } catch (...) {
       Hess.col(j).fill(arma::datum::nan);
     }

@@ -1,7 +1,7 @@
 OptimizerInfoQML <- rlang::env(eval = 0, logLiks = 0)
 
 
-.qmlNcores <- function() {
+qmlNcores <- function() {
   ncores <- ThreadEnv$n.threads
   if (length(ncores) != 1L || is.null(ncores) || is.na(ncores)) 1L else ncores
 }
@@ -44,7 +44,7 @@ logLikQml <- function(theta, model, sum = TRUE, sign = -1, verbose = FALSE) {
 
 
 logLikQmlGroup <- function(submodel, sum = TRUE, sign = -1) {
-  ncores <- .qmlNcores()
+  ncores <- qmlNcores()
 
   if (sum) {
     ll <- logLikQmlCpp(submodel, ncores = ncores)
@@ -150,7 +150,7 @@ probf2 <- function(matrices, normalInds, sigma) {
 
 
 probf3 <- function(matrices, nonNormalInds, expected, sigma, t, numEta) {
-  ncores <- .qmlNcores()
+  ncores <- qmlNcores()
   if (numEta == 1)
     p <- dnormCpp(matrices$y[, 1], mu = expected, sigma = sqrt(sigma),
                   ncores = ncores)
@@ -167,7 +167,7 @@ centerIndicators <- function(X, tau) {
 }
 
 
-.refreshQmlGradientJacobian <- function(theta, model, Jacobian) {
+refreshQmlGradientJacobian <- function(theta, model, Jacobian) {
   if (isTRUE(model$params$gradientStruct$hasCovModel))
     Jacobian <- .refreshCovModelJacobian(theta, model, Jacobian,
                                          method = "qml")$J
@@ -196,8 +196,8 @@ simpleGradientLogLikQml <- function(theta, model, sign = -1, epsilon = 1e-6) {
   modelFilled <- fillModel(model = model, theta = theta, method = "qml")
   locations   <- model$params$gradientStruct$locations
   Jacobian    <- model$params$gradientStruct$Jacobian
-  Jacobian    <- .refreshQmlGradientJacobian(theta, model, Jacobian)
-  ncores      <- .qmlNcores()
+  Jacobian    <- refreshQmlGradientJacobian(theta, model, Jacobian)
+  ncores      <- qmlNcores()
 
   grad <- matrix(0, nrow = NROW(locations), ncol = 1L,
                  dimnames = list(locations$param, NULL))
@@ -241,8 +241,8 @@ simpleObsGradientLogLikQml <- function(theta, model, sign = -1, epsilon = 1e-6) 
   modelFilled <- fillModel(model = model, theta = theta, method = "qml")
   locations   <- model$params$gradientStruct$locations
   Jacobian    <- model$params$gradientStruct$Jacobian
-  Jacobian    <- .refreshQmlGradientJacobian(theta, model, Jacobian)
-  ncores      <- .qmlNcores()
+  Jacobian    <- refreshQmlGradientJacobian(theta, model, Jacobian)
+  ncores      <- qmlNcores()
 
   N <- vapply(modelFilled$models, FUN.VALUE = integer(1L),
               FUN = \(sub) NROW(sub$data$data.full))
@@ -364,7 +364,7 @@ simpleHessianLogLikQml <- function(theta, model, sign = -1,
   nm    <- locations$param
   H     <- matrix(0.0, nrow = n.loc, ncol = n.loc, dimnames = list(nm, nm))
   grad  <- stats::setNames(numeric(n.loc), nm = nm)
-  ncores <- .qmlNcores()
+  ncores <- qmlNcores()
 
   for (g in seq_len(modelFilled$info$n.groups)) {
     locations.g <- locations[locations$group == g, , drop = FALSE]
