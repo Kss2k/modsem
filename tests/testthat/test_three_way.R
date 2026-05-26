@@ -127,9 +127,11 @@ summary(est, H0 = FALSE)
 #>     ZW  (true: 0.2)   0.213    0.008   26.954    0.000
 #>     XZW (true: 2.2)   2.216    0.004  503.945    0.000
 
-est.rcs.1 <- modsem(model, data, method = "dblcent", rcs = TRUE,
-                    rcs.scale.corrected = FALSE)
-summary(est.rcs.1, H0 = FALSE)
+suppressWarnings({
+  est.rcs.1 <- modsem(model, data, method = "dblcent", rcs = TRUE,
+                      rcs.scale.corrected = FALSE)
+  summary(est.rcs.1, H0 = FALSE)
+})
 # n = 100,000
 #> Regressions:
 #>                    Estimate  Std.Err  z-value  P(>|z|)
