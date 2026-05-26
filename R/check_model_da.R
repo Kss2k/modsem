@@ -22,6 +22,8 @@ preCheckModel <- function(model, covModel = NULL, method = "lms", missing = "com
   checkCovEtaXi(parTable = model$parTable, canBeCausedByCovModel = hasCovModel)
   checkCovEtaXi(parTable = model$covModel$parTable, canBeCausedByCovModel = FALSE)
 
+  checkOmegaEtaXi(model = model, method = method)
+
   checkMissingMethod(method = method, missing = missing)
 }
 
@@ -166,6 +168,20 @@ checkCovEtaXi <- function(parTable, canBeCausedByCovModel = FALSE) {
   )
 
   mod_warnif_immediate(any(problematicRows), msg)
+}
+
+
+checkOmegaEtaXi <- function(model, method = "qml", zero.tol = 1e-10) {
+  if (method != "qml") return(NULL)
+
+  omegaEtaXi <- model$matrices$omegaEtaXi
+  problematic <- any(is.na(omegaEtaXi) | abs(omegaEtaXi) > zero.tol)
+
+  mod_warnif(problematic,
+    paste0("Interactions between exogenous and enodgenous variables in the QML\n",
+           "approach can be biased in some cases...\n",
+           "You can try passing `auto.split.syntax=TRUE` and `cov.syntax=NULL`...")
+  )
 }
 
 

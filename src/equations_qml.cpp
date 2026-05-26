@@ -1032,6 +1032,7 @@ arma::vec analyticalGradQmlCore(
 
   // f3 score accumulators
   arma::vec sEyAcc(pYF3,        arma::fill::zeros);
+  arma::vec eyForL2Acc(pYF3,    arma::fill::zeros);
   arma::mat sSEAcc(pYF3, pYF3, arma::fill::zeros);
   arma::mat sigma1Acc(M.Sigma1.n_rows, M.Sigma1.n_cols, arma::fill::zeros);
   arma::mat gxMeanAcc(M.Gx.n_rows, M.Gx.n_cols, arma::fill::zeros);
@@ -1126,6 +1127,14 @@ arma::vec analyticalGradQmlCore(
         }
       }
 
+      const arma::vec eyExtra = eyBar - score_y_i;
+      const arma::vec hExtra = Binv_i.t() * eyExtra;
+      alphaAcc += w * hExtra;
+      gxMeanAcc += w * (hExtra * mi.t());
+      if (M.hasR)
+        l2RAcc += w * (eyExtra(M.latentEtaUvec) * yColsR.row(i));
+      eyForL2Acc += w * eyBar;
+
       const arma::mat Q = M.Psi + M.varZ;
       arma::mat binvBar = eyBar * h_i.t();
       binvBar += 2.0 * S_SE_i * Binv_i * Q;
@@ -1183,6 +1192,7 @@ arma::vec analyticalGradQmlCore(
       arma::vec sM_i = BG2O.t() * score_y_i;
       sM_i += qmlDmCovFromBG(2.0 * S_SE_i * BG2O * M.Sigma1,
                               M.Oxx2T, M.Gx.n_rows, M.Gx.n_cols);
+      eyForL2Acc += w * score_y_i;
 
       mAcc       += w * sM_i;
       l1Acc      += w * (sM_i * xi.t());
@@ -1402,7 +1412,7 @@ arma::vec analyticalGradQmlCore(
     arma::vec rtInvRerRSy, l2REy;
     if (M.hasR) {
       rtInvRerRSy = M.R.t() * M.invRER * M.R * sumYColsRVec;
-      l2REy       = M.L2RCache.t() * sEyAcc;
+      l2REy       = M.L2RCache.t() * eyForL2Acc;
     }
 
     for (std::size_t k = 0; k < p; ++k) {
