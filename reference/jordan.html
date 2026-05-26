@@ -148,13 +148,6 @@ Paris, France. Obtained from: https://www.oecd.org/pisa/pisaproducts/database-pi
 <span class="r-in"><span><span class="st">"</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">est</span> <span class="op">&lt;-</span> <span class="fu"><a href="modsem.html">modsem</a></span><span class="op">(</span><span class="va">m1</span>, data <span class="op">=</span> <span class="va">jordan</span>, method <span class="op">=</span> <span class="st">"qml"</span><span class="op">)</span></span></span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>modsem-&gt;calcSE_da():  </span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span>    Standard errors for some coefficients could not be computed.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>modsem-&gt;checkVCOV():  </span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span>    The variance-covariance matrix of the estimated parameters (vcov) does not </span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span>    appear to be positive definite! The smallest eigenvalue (= -5.891934e+00) </span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span>    is smaller than zero. This may be a symptom that the model is not </span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span>    identified.</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> modsem (1.0.20) ended normally after 62 iterations</span>
@@ -203,75 +196,75 @@ Paris, France. Obtained from: https://www.oecd.org/pisa/pisaproducts/database-pi
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   ENJ =~        </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     enjoy1          1.000                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     enjoy2          1.002      0.020   50.613    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     enjoy3          0.894      0.020   43.675    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     enjoy4          0.999      0.021   48.239    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     enjoy5          1.047      0.021   50.415    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     enjoy2          1.002      0.020   50.473    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     enjoy3          0.894      0.021   43.586    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     enjoy4          0.999      0.021   48.106    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     enjoy5          1.047      0.021   50.262    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   SC =~         </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     academic1       1.000                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     academic2       1.104      0.028   38.980    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     academic3       1.235      0.030   41.763    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     academic4       1.254      0.030   41.904    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     academic5       1.113      0.029   38.689    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     academic6       1.198      0.030   40.393    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     academic2       1.104      0.028   38.750    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     academic3       1.235      0.030   41.474    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     academic4       1.254      0.030   41.574    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     academic5       1.113      0.029   38.449    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     academic6       1.198      0.030   40.124    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   CAREER =~     </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     career1         1.000                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     career2         1.040      0.016   65.183    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     career3         0.952      0.016   57.842    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     career4         0.818      0.017   48.365    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     career2         1.040      0.016   65.105    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     career3         0.952      0.016   57.788    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     career4         0.818      0.017   48.327    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Regressions:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   CAREER ~      </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     ENJ             0.526      0.019   28.064    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     SC              0.465      0.023   20.507    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     ENJ:ENJ         0.029      0.002   15.176    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     ENJ:SC         -0.046      0.026   -1.796    0.073</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     SC:SC           0.002      0.021    0.079    0.937</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     ENJ             0.526      0.020   26.278    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     SC              0.465      0.023   20.092    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     ENJ:ENJ         0.029      0.021    1.374    0.170</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     ENJ:SC         -0.046      0.043   -1.091    0.275</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     SC:SC           0.002      0.033    0.050    0.960</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Intercepts:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .enjoy1          0.000      0.010   -0.022    0.982</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .enjoy2          0.000                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .enjoy3          0.000      0.011   -0.038    0.970</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .enjoy4          0.000                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .enjoy5          0.000      0.010    0.022    0.982</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .academic1       0.000      0.012   -0.019    0.985</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .academic2       0.000      0.012   -0.019    0.985</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .academic3      -0.001      0.012   -0.045    0.964</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .academic4       0.000      0.012   -0.029    0.977</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .academic5      -0.001      0.012   -0.062    0.951</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .academic6       0.001      0.012    0.048    0.962</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .career1        -0.005      0.009   -0.556    0.579</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .career2        -0.006      0.008   -0.697    0.486</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .career3        -0.005      0.009   -0.544    0.586</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .career4        -0.005      0.010   -0.464    0.643</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .enjoy1          0.000      0.013   -0.018    0.986</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .enjoy2          0.000      0.013    0.002    0.998</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .enjoy3          0.000      0.013   -0.032    0.974</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .enjoy4          0.000      0.013   -0.003    0.998</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .enjoy5          0.000      0.013    0.017    0.986</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .academic1       0.000      0.013   -0.018    0.986</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .academic2       0.000      0.013   -0.018    0.986</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .academic3      -0.001      0.013   -0.042    0.967</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .academic4       0.000      0.013   -0.027    0.978</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .academic5      -0.001      0.013   -0.058    0.954</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .academic6       0.001      0.013    0.045    0.964</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .career1        -0.005      0.016   -0.293    0.770</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .career2        -0.006      0.017   -0.341    0.733</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .career3        -0.005      0.016   -0.300    0.764</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .career4        -0.005      0.015   -0.310    0.756</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Covariances:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   ENJ ~~        </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     SC              0.218      0.009   25.519    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     SC              0.218      0.009   25.388    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Variances:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .enjoy1          0.487      0.011   44.350    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .enjoy2          0.489      0.011   44.422    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .enjoy3          0.596      0.012   48.234    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .enjoy4          0.488      0.011   44.619    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .enjoy5          0.442      0.010   42.483    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .academic1       0.644      0.013   49.814    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .academic2       0.566      0.012   47.865    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .academic3       0.473      0.011   44.322    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .academic4       0.455      0.010   43.588    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .academic5       0.565      0.012   47.694    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .academic6       0.502      0.011   45.445    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .career1         0.373      0.009   40.398    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .career2         0.328      0.009   37.018    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .career3         0.436      0.010   43.274    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .career4         0.576      0.012   48.380    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     ENJ             0.500      0.017   29.560    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     SC              0.338      0.015   23.237    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .CAREER          0.302      0.010   29.757    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .enjoy1          0.487      0.011   44.272    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .enjoy2          0.489      0.011   44.355    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .enjoy3          0.596      0.012   48.174    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .enjoy4          0.488      0.011   44.501    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .enjoy5          0.442      0.010   42.409    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .academic1       0.644      0.013   49.744    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .academic2       0.566      0.012   47.803    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .academic3       0.473      0.011   44.254    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .academic4       0.455      0.010   43.515    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .academic5       0.565      0.012   47.625    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .academic6       0.502      0.011   45.374    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .career1         0.373      0.009   40.322    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .career2         0.328      0.009   36.941    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .career3         0.436      0.010   43.201    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .career4         0.576      0.012   48.312    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     ENJ             0.500      0.017   29.384    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     SC              0.338      0.015   22.945    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .CAREER          0.302      0.010   29.650    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 </code></pre></div>
