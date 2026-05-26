@@ -161,6 +161,9 @@ simpleGradientLogLikQml <- function(theta, model, sign = -1, epsilon = 1e-6) {
   modelFilled <- fillModel(model = model, theta = theta, method = "qml")
   locations   <- model$params$gradientStruct$locations
   Jacobian    <- model$params$gradientStruct$Jacobian
+  if (isTRUE(model$params$gradientStruct$hasCovModel))
+    Jacobian <- .refreshCovModelJacobian(theta, model, Jacobian,
+                                         method = "qml")$J
   nlinDerivs  <- model$params$gradientStruct$nlinDerivs
 
   grad <- matrix(0, nrow = NROW(locations), ncol = 1L,
@@ -218,11 +221,11 @@ simpleGradientLogLikQml <- function(theta, model, sign = -1, epsilon = 1e-6) {
 
 gradientLogLikQml <- function(theta, model, epsilon = 1e-8, sign = -1,
                                .f = logLikQmlGroup, sum = TRUE, ...) {
-  if (sum && !isTRUE(model$params$gradientStruct$hasCovModel))
+  if (sum)
     return(simpleGradientLogLikQml(theta = theta, model = model,
                                     sign = sign, epsilon = epsilon))
 
-  # Fallback: per-obs path or covModel — original R-level FD
+  # Fallback: per-obs path — original R-level FD
   params <- model$params
 
   SELECT_THETA_LAB  <- params$SELECT_THETA_LAB

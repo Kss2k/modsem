@@ -36,6 +36,53 @@ inline arma::mat qmlJacobianEtaXi(const arma::mat& Binv,
   return jac;
 }
 
+inline arma::vec qmlDmCovFromBG(const arma::mat& score_bg,
+                                const arma::mat& omegaXiXi2T,
+                                const int numEta,
+                                const int numXi) {
+  arma::vec out(numXi, arma::fill::zeros);
+
+  for (int xi = 0; xi < numXi; ++xi) {
+    double acc = 0.0;
+    for (int eta = 0; eta < numEta; ++eta) {
+      const int row = eta * numXi + xi;
+      for (int col = 0; col < numXi; ++col)
+        acc += score_bg(eta, col) * omegaXiXi2T(row, col);
+    }
+    out(xi) = acc;
+  }
+
+  return out;
+}
+
+inline double qmlVarZDerivative(const arma::mat& omega,
+                                const arma::mat& sigma1,
+                                const int row,
+                                const int col) {
+  const int ds = static_cast<int>(sigma1.n_rows);
+  double out = 0.0;
+
+  for (int k = 0; k < ds; ++k) {
+    for (int s = 0; s < ds; ++s) {
+      out += omega(k, s) *
+        (sigma1(row, col) * sigma1(k, s) +
+         sigma1(row, k)   * sigma1(col, s) +
+         sigma1(row, s)   * sigma1(col, k));
+    }
+  }
+
+  for (int i = 0; i < ds; ++i) {
+    for (int j = 0; j < ds; ++j) {
+      out += omega(i, j) *
+        (sigma1(i, j)   * sigma1(row, col) +
+         sigma1(i, row) * sigma1(j, col) +
+         sigma1(i, col) * sigma1(j, row));
+    }
+  }
+
+  return out - 2.0 * arma::trace(omega * sigma1) * sigma1(col, row);
+}
+
 // [[Rcpp::export]]
 arma::mat muQmlCpp(Rcpp::List m, int t, int ncores = 1) {
   ThreadSetter ts(ncores);                       // set threads
@@ -845,10 +892,12 @@ arma::vec analyticalGradQmlCore(
   double    sumW  = 0.0;
   arma::mat sumXX(pX, pX, arma::fill::zeros);
   arma::mat sumUU, sumYY;
+  arma::mat L2R_acc;
   arma::vec sumY_colsR_vec;
   if (M.hasR) {
     sumUU.zeros(M.RER.n_rows, M.RER.n_rows);
     sumYY.zeros(M.colsR_uvec.n_elem, M.colsR_uvec.n_elem);
+    L2R_acc.zeros(M.latentEta_uvec.n_elem, M.colsR_uvec.n_elem);
     sumY_colsR_vec.zeros(nColsR);
   }
 
@@ -859,6 +908,12 @@ arma::vec analyticalGradQmlCore(
   arma::mat S_SE_BG2O_acc(M.Gx.n_cols, M.Gx.n_cols, arma::fill::zeros);
   arma::mat Gx_mean_acc(M.Gx.n_rows, M.Gx.n_cols, arma::fill::zeros);
   arma::mat Gx_cov_acc(M.Gx.n_rows, M.Gx.n_cols, arma::fill::zeros);
+  arma::vec alpha_acc(M.a.n_rows, arma::fill::zeros);
+  arma::mat Psi_acc(M.Psi.n_rows, M.Psi.n_cols, arma::fill::zeros);
+  arma::vec m_acc(M.Gx.n_cols, arma::fill::zeros);
+  arma::vec tauX_adj_acc(pX, arma::fill::zeros);
+  arma::mat Ge_acc(M.Ge.n_rows, M.Ge.n_cols, arma::fill::zeros);
+  arma::mat Oxx_acc(M.Oxx.n_rows, M.Oxx.n_cols, arma::fill::zeros);
 
   bool fail = false;
 
@@ -892,7 +947,9 @@ arma::vec analyticalGradQmlCore(
       BvZ_i  = Binv_i * M.varZ * Binv_i.t();
     }
 
-    arma::vec Ey_i = Binv_i * (M.trOmSig + M.a + M.Gx * mi + Ki * M.Oxx * mi);
+    const arma::vec h_i = M.trOmSig + M.a + M.Gx * mi + Ki * M.Oxx * mi;
+    const arma::vec Ey_struct_i = Binv_i * h_i;
+    arma::vec Ey_i = Ey_struct_i;
     if (M.hasR) Ey_i += M.L2R_cache * Y_colsR.row(i).t();
 
     const arma::mat BG2O =
@@ -909,13 +966,51 @@ arma::vec analyticalGradQmlCore(
 
     const arma::vec dv_i    = yi - Ey_i;
     const arma::mat S_SE_i  = (-0.5) * (invSE_i - invSE_i * dv_i * dv_i.t() * invSE_i);
-    s_Ey_acc      += w * (invSE_i * dv_i);
+    const arma::vec score_y_i = invSE_i * dv_i;
+    s_Ey_acc      += w * score_y_i;
     S_SE_acc      += w * S_SE_i;
     S_SE_BG2O_acc += w * (BG2O.t() * S_SE_i * BG2O);
+    alpha_acc     += w * (Binv_i.t() * score_y_i);
+    Psi_acc       += w * (Binv_i.t() * S_SE_i * Binv_i);
+
+    if (M.hasR)
+      L2R_acc += w * (score_y_i(M.latentEta_uvec) * Y_colsR.row(i));
+
+    Gx_mean_acc += w * ((Binv_i.t() * score_y_i) * mi.t());
+    Gx_cov_acc  += w * (Binv_i.t() * S_SE_i * BG2O * M.Sigma1);
 
     if (kOmega0) {
-      Gx_mean_acc += w * ((Binv_i.t() * (invSE_i * dv_i)) * mi.t());
-      Gx_cov_acc  += w * (Binv_i.t() * S_SE_i * BG2O * M.Sigma1);
+      arma::vec s_m_i = BG2O.t() * score_y_i;
+      s_m_i += qmlDmCovFromBG(2.0 * S_SE_i * BG2O * M.Sigma1,
+                              M.Oxx2T, M.Gx.n_rows, M.Gx.n_cols);
+
+      m_acc        += w * s_m_i;
+      tauX_adj_acc += w * (M.invLXPLX * xi - M.L1.t() * s_m_i);
+
+      const arma::mat score_bg = 2.0 * S_SE_i * BG2O * M.Sigma1;
+      const arma::mat BinvGx   = Binv_i * M.Gx;
+      const arma::mat BinvQBt  = Binv_i * (M.Psi + M.varZ) * Binv_i.t();
+      Ge_acc += w * (
+        (Binv_i.t() * score_y_i) * Ey_struct_i.t() +
+        Binv_i.t() * score_bg * BinvGx.t() +
+        2.0 * Binv_i.t() * S_SE_i * BinvQBt
+      );
+
+      const arma::vec s_h_i = Binv_i.t() * score_y_i;
+      const int numXi = static_cast<int>(M.Gx.n_cols);
+      const int numEta = static_cast<int>(M.Gx.n_rows);
+      for (int eta = 0; eta < numEta; ++eta) {
+        const int row_offset = eta * numXi;
+        for (int a = 0; a < numXi; ++a) {
+          for (int b = 0; b < numXi; ++b) {
+            Oxx_acc(row_offset + a, b) += w * (
+              s_h_i(eta) * (M.Sigma1(b, a) + mi(a) * mi(b)) +
+              score_bg(eta, b) * mi(a) +
+              score_bg(eta, a) * mi(b)
+            );
+          }
+        }
+      }
     }
   }
 
@@ -957,24 +1052,70 @@ arma::vec analyticalGradQmlCore(
   if (M.hasR) {
     const arma::mat S_RER = -0.5 * sumW * M.invRER
                           + 0.5 * M.invRER * sumUU * M.invRER;
-
-    // Step 4: map S_RER → grad entries for lY(1) and e(5) in colsR.
-    //
-    // RER = R * e_sub * R',  e_sub = e[colsR_uvec, colsR_uvec].
-    //
-    // e(q,q) at colsR position rr:
-    //   d(RER)/d(e_{q,q}) = R * E_{rr,rr} * R'
-    //   grad += (R' * S_RER * R)(rr, rr)
-    //
-    // lY(r,c) free — maps to R(Ri,Rj) = -lY(r,c):
-    //   d(RER)/d(lY_{r,c}) = -(E_{Ri,Rj}*e_sub*R' + R*e_sub*E_{Rj,Ri})
-    //   grad += -2 * (S_RER * R * e_sub)(Ri, Rj)
-    //   If symmetric: also add the (c,r) partner's contribution.
     {
-      const arma::mat e_sub        = M.e.submat(M.colsR_uvec, M.colsR_uvec);
-      const arma::mat SRR_e        = S_RER * M.R * e_sub;         // nU × nColsR
-      const arma::mat invRER_R_YY  = M.invRER * M.R * sumYY;      // nU × nColsR
-      const arma::mat RT_S_R       = M.R.t() * S_RER * M.R;       // nColsR × nColsR
+      const arma::mat e_sub = M.e.submat(M.colsR_uvec, M.colsR_uvec);
+      const arma::uword nColsR = M.colsR_uvec.n_elem;
+      const arma::uword nU     = M.R.n_rows;
+
+      arma::mat G_R = -M.invRER * M.R * sumYY
+                    + 2.0 * S_RER * M.R * e_sub;
+      arma::mat G_e_sub = M.R.t() * S_RER * M.R;
+
+      if (M.selectTE1_diag.n_elem > 0) {
+        const arma::mat G_Sigma =
+          S_SE_acc.submat(M.latentEta_uvec, M.latentEta_uvec);
+        const arma::mat D = M.subTE1;
+        const arma::mat D2 = arma::diagmat(arma::square(D.diag()));
+        const arma::mat C = M.invRER;
+        const arma::mat A = M.Beta;
+        const arma::mat H = A.t() * C * A;
+        const arma::mat L2 = -D * A.t() * C;
+
+        arma::mat G_L2 = L2R_acc * M.R.t();
+        G_R += L2.t() * L2R_acc;
+
+        arma::vec G_te(D.n_rows, arma::fill::zeros);
+        const arma::mat AtC = A.t() * C;
+        for (arma::uword j = 0; j < D.n_rows; ++j) {
+          G_te(j) += G_Sigma(j, j);
+          G_te(j) -= 2.0 * D(j, j) * arma::dot(G_Sigma.row(j), H.row(j));
+          G_te(j) -= arma::dot(G_L2.row(j), AtC.row(j));
+        }
+
+        arma::mat G_H = -D2 * G_Sigma;
+        arma::mat G_A = C * A * G_H.t() + C.t() * A * G_H;
+        arma::mat G_C = A * G_H.t() * A.t();
+
+        G_A += -(C * G_L2.t() * D);
+        G_C += -(G_L2.t() * D * A.t());
+
+        const arma::mat G_RER = -C.t() * G_C * C.t();
+        G_R     += G_RER * M.R * e_sub + G_RER.t() * M.R * e_sub;
+        G_e_sub += M.R.t() * G_RER * M.R;
+
+        for (arma::uword j = 0; j < M.selectTE1_diag.n_elem; ++j) {
+          const arma::uword idx = M.selectTE1_diag(j);
+          G_e_sub(idx, idx) += G_te(j);
+        }
+
+        for (std::size_t k = 0; k < p; ++k) {
+          if (block[k] != 1) continue;
+          const arma::uword r = row[k], c = col[k];
+          const bool sym = static_cast<bool>(symmetric[k]);
+          if (r < M.lY.n_rows && c < M.lY.n_cols) {
+            for (arma::uword br = 0; br < M.betaRows_uvec.n_elem; ++br)
+              for (arma::uword bc = 0; bc < M.latentEta_uvec.n_elem; ++bc)
+                if (M.betaRows_uvec(br) == r && M.latentEta_uvec(bc) == c)
+                  grad[k] += G_A(br, bc);
+          }
+          if (sym && r != c && c < M.lY.n_rows && r < M.lY.n_cols) {
+            for (arma::uword br = 0; br < M.betaRows_uvec.n_elem; ++br)
+              for (arma::uword bc = 0; bc < M.latentEta_uvec.n_elem; ++bc)
+                if (M.betaRows_uvec(br) == c && M.latentEta_uvec(bc) == r)
+                  grad[k] += G_A(br, bc);
+          }
+        }
+      }
 
       // Lookup: lY linear col-major index → R linear col-major index.
       // Unused entries stay at sentinel (arma::uword)-1.
@@ -983,18 +1124,12 @@ arma::vec analyticalGradQmlCore(
       for (arma::uword kk = 0; kk < M.lY_free_linidx.n_elem; ++kk)
         lY2R[M.lY_free_linidx(kk)] = M.R_na_linidx(kk);
 
-      const arma::uword nColsR = M.colsR_uvec.n_elem;
-      const arma::uword nU     = M.R.n_rows;
-
-      // Full lY gradient through R:
-      //   ∂LL_f2u/∂lY(r,c) = -(invRER·R·sumYY)(Ri,Rj) + 2·(S_RER·R·e_sub)(Ri,Rj)
-      // (the first term comes from u_i = R·y_colsR changing; the second from RER changing)
       auto add_lY_contrib = [&](arma::uword lyr, arma::uword lyc, double& g) {
         const arma::uword li = lyc * M.lY.n_rows + lyr;
         if (li < lY_sz && lY2R[li] != (arma::uword)-1) {
           const arma::uword Rlin = lY2R[li];
           const arma::uword Ri = Rlin % nU, Rj = Rlin / nU;
-          g += invRER_R_YY(Ri, Rj) - 2.0 * SRR_e(Ri, Rj);
+          g -= G_R(Ri, Rj);
         }
       };
 
@@ -1011,7 +1146,7 @@ arma::vec analyticalGradQmlCore(
           }
           case 5: {  // e — only colsR diagonal entries contribute here
             for (arma::uword rr = 0; rr < nColsR; ++rr) {
-              if (M.colsR_uvec(rr) == r) { grad[k] += RT_S_R(rr, rr); break; }
+              if (M.colsR_uvec(rr) == r) { grad[k] += G_e_sub(rr, rr); break; }
             }
             break;
           }
@@ -1025,10 +1160,6 @@ arma::vec analyticalGradQmlCore(
   // Step 5a: tY (blk 3) and a (blk 8)
   // -----------------------------------------------------------------------
   {
-    // a: ∂Ey_i/∂a(r,0) = Binv_i[:,r]; constant Binv_c for kOmegaEta == 0
-    arma::vec Binv_Ey;
-    if (kOmega0) Binv_Ey = M.Binv_c.t() * s_Ey_acc;    // numEtas-vec
-
     // tY at colsR positions has two contributions:
     //   f2u: ∂LL_f2u/∂tY(colsR[jj]) = (R' · invRER · R · sumY_colsR)(jj)
     //     (from ∂u_i/∂tY = -R[:,jj], linear in u_i)
@@ -1064,8 +1195,7 @@ arma::vec analyticalGradQmlCore(
           break;
         }
         case 8: {  // a: ∂Ey_i/∂a(r,0) = Binv_i[:,r]
-          if (kOmega0) grad[k] += Binv_Ey(r);
-          // kOmegaEta != 0 needs per-obs Binv_i accumulation — deferred to later step
+          grad[k] += alpha_acc(r);
           break;
         }
         default: break;
@@ -1110,33 +1240,10 @@ arma::vec analyticalGradQmlCore(
   // Psi (kOmegaEta == 0):
   //   constant Binv_c → score = (Binv_c' · S_SE_acc · Binv_c)(r,c)
   //
-  // e non-colsR has two paths into fullSig2TE:
+  // e non-colsR has one direct path into fullSig2TE:
   //   TE2: non-latent etas — fullSig2TE(p,p) = e(q,q) → grad += S_SE_acc(p,p)
-  //   TE1: latent etas — fullSig2TE via Sigma2TE_sub and L2R_cache
-  //     Sigma2TE_sub = subTE1 − diag(te1²) · BtRB  (BtRB = Beta' · invRER · Beta)
-  //     L2R_cache[latentEta,:] = −subTE1 · Beta' · invRER · R
-  //     ∂LL_f3/∂te1(j) = S_sub(j,j) − 2·te1(j)·(S_sub·BtRB)(j,j)
-  //                       − s_Ey_lat(j)·(Beta'·invRER·R·sumY_colsR)(j)
+  // TE1 and colsR residual paths are handled in the R/RER adjoint above.
   {
-    arma::mat Binvt_S_Binv;
-    if (kOmega0) Binvt_S_Binv = M.Binv_c.t() * S_SE_acc * M.Binv_c;
-
-    arma::vec te1_grad;
-    if (M.hasR && M.selectTE1_diag.n_elem > 0) {
-      const arma::uword ns    = M.selectTE1_diag.n_elem;
-      const arma::mat S_sub   = S_SE_acc.submat(M.latentEta_uvec, M.latentEta_uvec);
-      const arma::mat BtRB    = M.Beta.t() * M.invRER * M.Beta;
-      const arma::vec S_BtRB_diag = arma::diagvec(S_sub * BtRB);
-      const arma::vec s_Ey_lat    = s_Ey_acc(M.latentEta_uvec);
-      const arma::vec BtR_sumYR   = M.Beta.t() * M.invRER * M.R * sumY_colsR_vec;
-      te1_grad.set_size(ns);
-      for (arma::uword j = 0; j < ns; ++j) {
-        te1_grad(j) = S_sub(j, j)
-                    - 2.0 * M.subTE1(j, j) * S_BtRB_diag(j)
-                    - s_Ey_lat(j) * BtR_sumYR(j);
-      }
-    }
-
     for (std::size_t k = 0; k < p; ++k) {
       const arma::uword r   = row[k];
       const arma::uword c   = col[k];
@@ -1145,8 +1252,7 @@ arma::vec analyticalGradQmlCore(
 
       switch (block[k]) {
         case 7: {  // Psi
-          if (kOmega0) grad[k] += fac * Binvt_S_Binv(r, c);
-          // kOmegaEta != 0: needs per-obs Binv_i accumulation — deferred
+          grad[k] += fac * Psi_acc(r, c);
           break;
         }
         case 5: {  // e non-colsR; colsR entries are handled in Step 4
@@ -1158,11 +1264,6 @@ arma::vec analyticalGradQmlCore(
               }
             }
           }
-          if (M.hasR && te1_grad.n_elem > 0) {
-            for (arma::uword j = 0; j < M.selectTE1_diag.n_elem; ++j) {
-              if (M.selectTE1_diag(j) == r) { grad[k] += te1_grad(j); break; }
-            }
-          }
           break;
         }
         default: break;
@@ -1172,17 +1273,56 @@ arma::vec analyticalGradQmlCore(
 
   // TODO Step 5d–f: Gx, beta0, tX, Oxx, Ge, Oex
   {
+    const arma::vec beta0_acc =
+      kOmega0 ? (m_acc + M.lX.t() * tauX_adj_acc)
+              : arma::vec(M.beta0.n_rows, arma::fill::zeros);
+    if (kOmega0) {
+      const int numXi = static_cast<int>(M.Gx.n_cols);
+      const int numEta = static_cast<int>(M.Gx.n_rows);
+      for (int eta = 0; eta < numEta; ++eta) {
+        const arma::mat omega_eta =
+          M.Oxx.submat(eta * numXi, 0, (eta + 1) * numXi - 1, numXi - 1);
+        for (int a = 0; a < numXi; ++a) {
+          for (int b = 0; b < numXi; ++b) {
+            Oxx_acc(eta * numXi + a, b) +=
+              Psi_acc(eta, eta) * qmlVarZDerivative(omega_eta, M.Sigma1, a, b);
+          }
+        }
+      }
+    }
+
     for (std::size_t k = 0; k < p; ++k) {
       const arma::uword r   = row[k];
       const arma::uword c   = col[k];
       const bool        sym = static_cast<bool>(symmetric[k]);
 
       switch (block[k]) {
+        case 2: { // tX / tauX
+          if (kOmega0) grad[k] += tauX_adj_acc(r);
+          break;
+        }
+        case 9: { // beta0
+          if (kOmega0) grad[k] += beta0_acc(r);
+          break;
+        }
         case 10: { // Gx / gammaXi
+          grad[k] += Gx_mean_acc(r, c) + 2.0 * Gx_cov_acc(r, c);
+          if (sym && r != c)
+            grad[k] += Gx_mean_acc(c, r) + 2.0 * Gx_cov_acc(c, r);
+          break;
+        }
+        case 11: { // Ge / gammaEta
           if (kOmega0) {
-            grad[k] += Gx_mean_acc(r, c) + 2.0 * Gx_cov_acc(r, c);
-            if (sym && r != c)
-              grad[k] += Gx_mean_acc(c, r) + 2.0 * Gx_cov_acc(c, r);
+            grad[k] += Ge_acc(r, c);
+            if (sym && r != c) grad[k] += Ge_acc(c, r);
+          }
+          break;
+        }
+        case 12: { // Oxx / omegaXiXi
+          if (kOmega0) {
+            grad[k] += Oxx_acc(r, c);
+            if (sym && r != c && c < Oxx_acc.n_rows && r < Oxx_acc.n_cols)
+              grad[k] += Oxx_acc(c, r);
           }
           break;
         }
@@ -1194,10 +1334,19 @@ arma::vec analyticalGradQmlCore(
   for (std::size_t k = 0; k < p; ++k) {
     const arma::uword blk = block[k];
     const bool supported =
+      (blk == 0) ||                    // lambdaX
+      (blk == 1) ||                    // lambdaY
+      (blk == 2 && kOmega0) ||         // tauX, only when Binv is constant
       (blk == 3) ||                    // tauY
-      (blk == 10 && kOmega0) ||        // gammaXi, only when Binv is constant
-      (blk == 7 && kOmega0) ||         // psi, only when Binv is constant
-      (blk == 8 && kOmega0);           // alpha, only when Binv is constant
+      (blk == 4) ||                    // thetaDelta
+      (blk == 5) ||                    // thetaEpsilon
+      (blk == 9 && kOmega0) ||         // beta0, only when Binv is constant
+      (blk == 10) ||                   // gammaXi
+      (blk == 11 && kOmega0) ||        // gammaEta, only when Binv is constant
+      (blk == 12 && kOmega0) ||        // omegaXiXi, only when Binv is constant
+      (blk == 7) ||                    // psi
+      (blk == 8) ||                    // alpha
+      (blk == 16);                     // phi
 
     if (!supported)
       grad[k] = arma::datum::nan;
