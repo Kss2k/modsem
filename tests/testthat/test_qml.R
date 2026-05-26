@@ -250,6 +250,78 @@ testthat::test_that("simple QML analytical gradient matches C++ FD for supported
 
   testthat::expect_true(all(is.finite(grad.analytical)))
   testthat::expect_equal(grad.analytical, grad.fd, tolerance = 2e-3)
+
+  tpb.interaction <- '
+  ATT =~ att1 + att2 + att3 + att4 + att5
+  SN =~ sn1 + sn2
+  PBC =~ pbc1 + pbc2 + pbc3
+  INT =~ int1 + int2 + int3
+  BEH =~ b1 + b2
+  INT ~ ATT + SN + PBC
+  BEH ~ INT + PBC
+  BEH ~ INT:PBC
+  BEH ~ ATT:PBC
+  ATT ~ 1
+  PBC ~ 1
+  '
+
+  group.info <- parseModelArgumentsByGroupDA(
+    model.syntax = tpb.interaction,
+    cov.syntax = NULL,
+    method = "qml",
+    data = TPB,
+    group = NULL,
+    auto.split.syntax = FALSE
+  )
+
+  model <- specifyModelDA(
+    group.info = group.info,
+    method = "qml",
+    m = 16,
+    mean.observed = TRUE,
+    double = FALSE,
+    quad.range = Inf,
+    adaptive.quad = FALSE,
+    adaptive.frequency = 3,
+    missing = "complete",
+    orthogonal.x = FALSE,
+    orthogonal.y = FALSE,
+    auto.fix.first = TRUE,
+    auto.fix.single = TRUE,
+    fix.composite.var = TRUE,
+    cluster = NULL,
+    sampling.weights = NULL
+  )
+
+  model.filled <- fillModel(model = model, theta = model$theta, method = "qml")
+  locations <- subset(
+    model$params$gradientStruct$locations,
+    group == 1 & block %in% c(2, 9, 11, 12, 13)
+  )
+
+  grad.analytical <- analyticalGradQmlCpp(
+    submodel = model.filled$models[[1]],
+    block = locations$block,
+    row = locations$row,
+    col = locations$col,
+    symmetric = locations$symmetric
+  )
+
+  grad.fd <- gradLogLikQmlCpp(
+    submodel = model.filled$models[[1]],
+    block = locations$block,
+    row = locations$row,
+    col = locations$col,
+    symmetric = locations$symmetric,
+    eps = 1e-6,
+    ncores = 1L
+  )
+
+  testthat::expect_true(model.filled$models[[1]]$info$kOmegaEta > 0L)
+  testthat::expect_equal(sort(unique(locations$block)),
+                         c(2, 9, 11, 12, 13))
+  testthat::expect_true(all(is.finite(grad.analytical)))
+  testthat::expect_equal(grad.analytical, grad.fd, tolerance = 2e-3)
 })
 
 testthat::test_that("split QML uses hybrid gradient through covModel Jacobian", {
@@ -395,4 +467,78 @@ testthat::test_that("split QML uses hybrid observation scores through covModel J
   testthat::expect_true(all(is.finite(scores.hybrid[, indices])))
   testthat::expect_equal(scores.hybrid[, indices], scores.fd,
                          tolerance = 1e-4)
+})
+
+testthat::test_that("unsplit QML uses analytical non-constant-Binv observation scores", {
+  tpb <- '
+  ATT =~ att1 + att2 + att3 + att4 + att5
+  SN =~ sn1 + sn2
+  PBC =~ pbc1 + pbc2 + pbc3
+  INT =~ int1 + int2 + int3
+  BEH =~ b1 + b2
+  INT ~ ATT + SN + PBC
+  BEH ~ INT + PBC
+  BEH ~ INT:PBC
+  BEH ~ ATT:PBC
+  ATT ~ 1
+  PBC ~ 1
+  '
+
+  group.info <- parseModelArgumentsByGroupDA(
+    model.syntax = tpb,
+    cov.syntax = NULL,
+    method = "qml",
+    data = TPB,
+    group = NULL,
+    auto.split.syntax = FALSE
+  )
+
+  model <- specifyModelDA(
+    group.info = group.info,
+    method = "qml",
+    m = 16,
+    mean.observed = TRUE,
+    double = FALSE,
+    quad.range = Inf,
+    adaptive.quad = FALSE,
+    adaptive.frequency = 3,
+    missing = "complete",
+    orthogonal.x = FALSE,
+    orthogonal.y = FALSE,
+    auto.fix.first = TRUE,
+    auto.fix.single = TRUE,
+    fix.composite.var = TRUE,
+    cluster = NULL,
+    sampling.weights = NULL
+  )
+
+  model.filled <- fillModel(model = model, theta = model$theta, method = "qml")
+  locations <- subset(
+    model$params$gradientStruct$locations,
+    group == 1 & block %in% c(2, 9, 11, 12, 13)
+  )
+
+  scores.analytical <- analyticalObsGradQmlCpp(
+    submodel = model.filled$models[[1]],
+    block = locations$block,
+    row = locations$row,
+    col = locations$col,
+    symmetric = locations$symmetric
+  )
+
+  scores.fd <- gradObsLogLikQmlCpp(
+    submodel = model.filled$models[[1]],
+    block = locations$block,
+    row = locations$row,
+    col = locations$col,
+    symmetric = locations$symmetric,
+    eps = 1e-6,
+    ncores = 1L
+  )
+
+  testthat::expect_true(model.filled$models[[1]]$info$kOmegaEta > 0L)
+  testthat::expect_equal(sort(unique(locations$block)),
+                         c(2, 9, 11, 12, 13))
+  testthat::expect_true(all(is.finite(scores.analytical)))
+  testthat::expect_equal(scores.analytical, scores.fd, tolerance = 1e-4)
 })

@@ -806,14 +806,14 @@ inline arma::vec obsLogLikQmlFromModel(const QMLModel& M,
   for (int i = 0; i < t; ++i) {
     const arma::vec xi = X.row(i).t();
 
-    const arma::vec zx = arma::solve(arma::trimatu(M.cholLXPLX), xi,
+    const arma::vec zx = arma::solve(arma::trimatl(M.cholLXPLX.t()), xi,
                                      arma::solve_opts::fast);
     const double f2x_i = f2x_const - 0.5 * arma::dot(zx, zx);
 
     double f2u_i = 0.0;
     if (M.hasR) {
       const arma::vec u_raw = M.R * Y_colsR.row(i).t();
-      const arma::vec zu = arma::solve(arma::trimatu(M.cholRER), u_raw,
+      const arma::vec zu = arma::solve(arma::trimatl(M.cholRER.t()), u_raw,
                                        arma::solve_opts::fast);
       f2u_i = f2u_const - 0.5 * arma::dot(zu, zu);
     }
@@ -1003,6 +1003,7 @@ arma::vec analyticalGradQmlCore(
   arma::vec tauX_adj_acc(pX, arma::fill::zeros);
   arma::mat Ge_acc(M.Ge.n_rows, M.Ge.n_cols, arma::fill::zeros);
   arma::mat Oxx_acc(M.Oxx.n_rows, M.Oxx.n_cols, arma::fill::zeros);
+  arma::mat Oex_acc(M.Oex.n_rows, M.Oex.n_cols, arma::fill::zeros);
 
   bool fail = false;
 
@@ -1067,6 +1068,72 @@ arma::vec analyticalGradQmlCore(
 
     Gx_mean_acc += w * ((Binv_i.t() * score_y_i) * mi.t());
     Gx_cov_acc  += w * (Binv_i.t() * S_SE_i * BG2O * M.Sigma1);
+
+    if (!kOmega0) {
+      const arma::mat score_bg = 2.0 * S_SE_i * BG2O * M.Sigma1;
+      const arma::mat T_oex =
+        qmlOexJacobianTerm(M.Oex, Ey_i, M.Gx.n_cols, M.Gx.n_rows);
+      const arma::mat T_bar = Binv_i.t() * score_bg;
+
+      arma::vec Ey_bar = score_y_i;
+      for (arma::uword eta = 0; eta < T_bar.n_rows; ++eta) {
+        const arma::uword row_offset = eta * M.Gx.n_cols;
+        for (arma::uword xi_col = 0; xi_col < T_bar.n_cols; ++xi_col) {
+          const arma::uword oex_row = row_offset + xi_col;
+          const double t_score = T_bar(eta, xi_col);
+          Oex_acc.row(oex_row) += w * t_score * Ey_i.t();
+          Ey_bar += t_score * M.Oex.row(oex_row).t();
+        }
+      }
+
+      const arma::mat Q = M.Psi + M.varZ;
+      arma::mat Binv_bar = Ey_bar * h_i.t();
+      Binv_bar += 2.0 * S_SE_i * Binv_i * Q;
+      Binv_bar += score_bg * (M.Gx + T_oex).t();
+
+      const arma::vec h_bar = Binv_i.t() * Ey_bar;
+      const arma::mat B_bar = -Binv_i.t() * Binv_bar * Binv_i.t();
+      const arma::mat K_bar =
+        score_bg * M.Oxx2T.t() - B_bar * M.Oex.t() +
+        h_bar * (M.Oxx * mi).t();
+
+      Ge_acc += w * (-B_bar);
+      Oex_acc += w * (-Ki.t() * B_bar);
+
+      arma::vec m_bar = M.Gx.t() * h_bar;
+      m_bar += M.Oxx.t() * (Ki.t() * h_bar);
+      for (arma::uword eta = 0; eta < M.Gx.n_rows; ++eta) {
+        const arma::uword row_offset = eta * M.Gx.n_cols;
+        for (arma::uword xi_col = 0; xi_col < M.Gx.n_cols; ++xi_col)
+          m_bar(xi_col) += K_bar(eta, row_offset + xi_col);
+      }
+
+      m_acc        += w * m_bar;
+      tauX_adj_acc += w * (M.invLXPLX * xi - M.L1.t() * m_bar);
+
+      const arma::mat varZ_bar = Binv_i.t() * S_SE_i * Binv_i;
+      const arma::vec q_bar = Ki.t() * h_bar;
+      const int numXi = static_cast<int>(M.Gx.n_cols);
+      const int numEta = static_cast<int>(M.Gx.n_rows);
+      for (int eta = 0; eta < numEta; ++eta) {
+        const int row_offset = eta * numXi;
+        const arma::mat omega_eta =
+          M.Oxx.submat(row_offset, 0, row_offset + numXi - 1, numXi - 1);
+
+        for (int a = 0; a < numXi; ++a) {
+          for (int b = 0; b < numXi; ++b) {
+            Oxx_acc(row_offset + a, b) += w * (
+              h_bar(eta) * M.Sigma1(b, a) +
+              q_bar(row_offset + a) * mi(b) +
+              score_bg(eta, b) * mi(a) +
+              score_bg(eta, a) * mi(b) +
+              varZ_bar(eta, eta) *
+                qmlVarZDerivative(omega_eta, M.Sigma1, a, b)
+            );
+          }
+        }
+      }
+    }
 
     if (kOmega0) {
       arma::vec s_m_i = BG2O.t() * score_y_i;
@@ -1360,11 +1427,9 @@ arma::vec analyticalGradQmlCore(
     }
   }
 
-  // TODO Step 5d–f: Gx, beta0, tX, Oxx, Ge, Oex
+  // Step 5d-f: remaining structural mappings.
   {
-    const arma::vec beta0_acc =
-      kOmega0 ? (m_acc + M.lX.t() * tauX_adj_acc)
-              : arma::vec(M.beta0.n_rows, arma::fill::zeros);
+    const arma::vec beta0_acc = m_acc + M.lX.t() * tauX_adj_acc;
     if (kOmega0) {
       const int numXi = static_cast<int>(M.Gx.n_cols);
       const int numEta = static_cast<int>(M.Gx.n_rows);
@@ -1387,11 +1452,11 @@ arma::vec analyticalGradQmlCore(
 
       switch (block[k]) {
         case 2: { // tX / tauX
-          if (kOmega0) grad[k] += tauX_adj_acc(r);
+          grad[k] += tauX_adj_acc(r);
           break;
         }
         case 9: { // beta0
-          if (kOmega0) grad[k] += beta0_acc(r);
+          grad[k] += beta0_acc(r);
           break;
         }
         case 10: { // Gx / gammaXi
@@ -1401,17 +1466,21 @@ arma::vec analyticalGradQmlCore(
           break;
         }
         case 11: { // Ge / gammaEta
-          if (kOmega0) {
-            grad[k] += Ge_acc(r, c);
-            if (sym && r != c) grad[k] += Ge_acc(c, r);
-          }
+          grad[k] += Ge_acc(r, c);
+          if (sym && r != c) grad[k] += Ge_acc(c, r);
           break;
         }
         case 12: { // Oxx / omegaXiXi
-          if (kOmega0) {
-            grad[k] += Oxx_acc(r, c);
-            if (sym && r != c && c < Oxx_acc.n_rows && r < Oxx_acc.n_cols)
-              grad[k] += Oxx_acc(c, r);
+          grad[k] += Oxx_acc(r, c);
+          if (sym && r != c && c < Oxx_acc.n_rows && r < Oxx_acc.n_cols)
+            grad[k] += Oxx_acc(c, r);
+          break;
+        }
+        case 13: { // Oex / omegaEtaXi
+          if (!kOmega0) {
+            grad[k] += Oex_acc(r, c);
+            if (sym && r != c && c < Oex_acc.n_rows && r < Oex_acc.n_cols)
+              grad[k] += Oex_acc(c, r);
           }
           break;
         }
@@ -1425,14 +1494,15 @@ arma::vec analyticalGradQmlCore(
     const bool supported =
       (blk == 0) ||                    // lambdaX
       (blk == 1) ||                    // lambdaY
-      (blk == 2 && kOmega0) ||         // tauX, only when Binv is constant
+      (blk == 2) ||                    // tauX
       (blk == 3) ||                    // tauY
       (blk == 4) ||                    // thetaDelta
       (blk == 5) ||                    // thetaEpsilon
-      (blk == 9 && kOmega0) ||         // beta0, only when Binv is constant
+      (blk == 9) ||                    // beta0
       (blk == 10) ||                   // gammaXi
-      (blk == 11 && kOmega0) ||        // gammaEta, only when Binv is constant
-      (blk == 12 && kOmega0) ||        // omegaXiXi, only when Binv is constant
+      (blk == 11) ||                   // gammaEta
+      (blk == 12) ||                   // omegaXiXi
+      (blk == 13 && !kOmega0) ||       // omegaEtaXi
       (blk == 7) ||                    // psi
       (blk == 8) ||                    // alpha
       (blk == 16);                     // phi
