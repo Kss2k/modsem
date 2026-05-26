@@ -359,6 +359,10 @@ simpleHessianLogLikQml <- function(theta, model, sign = -1,
   locations   <- model$params$gradientStruct$locations
   Jacobian    <- model$params$gradientStruct$Jacobian
   Jacobian2   <- model$params$gradientStruct$Jacobian2
+  jac         <- refreshCovModelJacobian(theta, model, Jacobian, Jacobian2,
+                                         method = "qml")
+  Jacobian    <- jac$J
+  Jacobian2   <- jac$J2
   nlinDerivs  <- model$params$gradientStruct$nlinDerivs
   nlinDerivs2 <- model$params$gradientStruct$nlinDerivs2
 
@@ -418,12 +422,11 @@ simpleHessianLogLikQml <- function(theta, model, sign = -1,
 hessianLogLikQml <- function(theta, model, sign = -1,
                               .relStep = .Machine$double.eps ^ (1/5),
                               .f = logLikQmlGroup) {
-  if (!isTRUE(model$params$gradientStruct$hasCovModel) &&
-      qmlCanUseGradientStruct(model))
+  if (qmlCanUseGradientStruct(model))
     return(simpleHessianLogLikQml(theta = theta, model = model,
                                    sign = sign, .relStep = .relStep))
 
-  # Fallback: covModel — pure R-level FD Hessian
+  # Fallback: pure R-level FD Hessian when no usable gradient structure exists.
   params <- model$params
 
   SELECT_THETA_LAB  <- params$SELECT_THETA_LAB
