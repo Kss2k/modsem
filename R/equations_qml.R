@@ -192,6 +192,15 @@ refreshQmlGradientJacobian <- function(theta, model, Jacobian) {
 }
 
 
+qmlCanUseGradientStruct <- function(model) {
+  gradientStruct <- model$params$gradientStruct
+
+  !isTRUE(gradientStruct$useFDGradient) &&
+    !is.null(gradientStruct$locations) &&
+    !is.null(gradientStruct$Jacobian)
+}
+
+
 simpleGradientLogLikQml <- function(theta, model, sign = -1, epsilon = 1e-6) {
   modelFilled <- fillModel(model = model, theta = theta, method = "qml")
   locations   <- model$params$gradientStruct$locations
@@ -291,11 +300,11 @@ simpleObsGradientLogLikQml <- function(theta, model, sign = -1, epsilon = 1e-6) 
 
 gradientLogLikQml <- function(theta, model, epsilon = 1e-8, sign = -1,
                                .f = logLikQmlGroup, sum = TRUE, ...) {
-  if (sum)
+  if (sum && qmlCanUseGradientStruct(model))
     return(simpleGradientLogLikQml(theta = theta, model = model,
                                     sign = sign, epsilon = epsilon))
 
-  if (identical(.f, logLikQmlGroup))
+  if (!sum && identical(.f, logLikQmlGroup) && qmlCanUseGradientStruct(model))
     return(simpleObsGradientLogLikQml(theta = theta, model = model,
                                       sign = sign, epsilon = epsilon))
 
@@ -409,7 +418,8 @@ simpleHessianLogLikQml <- function(theta, model, sign = -1,
 hessianLogLikQml <- function(theta, model, sign = -1,
                               .relStep = .Machine$double.eps ^ (1/5),
                               .f = logLikQmlGroup) {
-  if (!isTRUE(model$params$gradientStruct$hasCovModel))
+  if (!isTRUE(model$params$gradientStruct$hasCovModel) &&
+      qmlCanUseGradientStruct(model))
     return(simpleHessianLogLikQml(theta = theta, model = model,
                                    sign = sign, .relStep = .relStep))
 

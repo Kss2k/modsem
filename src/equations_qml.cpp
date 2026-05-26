@@ -83,6 +83,41 @@ inline double qmlVarZDerivative(const arma::mat& omega,
   return out - 2.0 * arma::trace(omega * sigma1) * sigma1(col, row);
 }
 
+
+inline double qmlVarZSigmaDerivative(const arma::mat& omega,
+                                     const arma::mat& sigma1,
+                                     const int row,
+                                     const int col) {
+  const int ds = static_cast<int>(sigma1.n_rows);
+  double out = 0.0;
+  double omegaSigmaElem = 0.0;
+
+  for (int i = 0; i < ds; ++i)
+    for (int j = 0; j < ds; ++j)
+      omegaSigmaElem += omega(i, j) * sigma1(i, j);
+
+  out += 2.0 * omega(row, col) * omegaSigmaElem;
+
+  for (int j = 0; j < ds; ++j)
+    for (int s = 0; s < ds; ++s)
+      out += omega(row, j) * omega(col, s) * sigma1(j, s);
+
+  for (int i = 0; i < ds; ++i)
+    for (int k = 0; k < ds; ++k)
+      out += omega(i, row) * omega(k, col) * sigma1(i, k);
+
+  for (int j = 0; j < ds; ++j)
+    for (int k = 0; k < ds; ++k)
+      out += omega(row, j) * omega(k, col) * sigma1(j, k);
+
+  for (int i = 0; i < ds; ++i)
+    for (int s = 0; s < ds; ++s)
+      out += omega(i, row) * omega(col, s) * sigma1(i, s);
+
+  return out - 2.0 * arma::trace(omega * sigma1) * omega(col, row);
+}
+
+
 // [[Rcpp::export]]
 arma::mat muQmlCpp(Rcpp::List m, int t, int ncores = 1) {
   ThreadSetter ts(ncores);                       // set threads
@@ -421,8 +456,8 @@ inline Rcpp::CharacterVector qmlMatColnames(SEXP x) {
 
 struct QMLModel {
   // Free parameter matrices  (DA_BLOCKS: 0=lX,1=lY,2=tX,3=tY,4=d,5=e,
-  //   7=Psi,8=a,9=beta0,10=Gx,11=Ge,12=Oxx,13=Oex,16=phi)
-  arma::mat lX, lY, tX, tY, d, e, Psi, a, beta0, Gx, Ge, Oxx, Oex, phi, Ie;
+  //   7=Psi,8=a,9=beta0,10=Gx,11=Ge,12=Oxx,13=Oex,14=W,15=T,16=phi)
+  arma::mat lX, lY, tX, tY, d, e, Psi, a, beta0, Gx, Ge, Oxx, Oex, W, T, phi, Ie;
 
   unsigned numXis, numEtas;
   int      kOmegaEta;
@@ -539,6 +574,8 @@ struct QMLModel {
     Ge    = Rcpp::as<arma::mat>(mat["gammaEta"]);
     Oxx   = Rcpp::as<arma::mat>(mat["omegaXiXi"]);
     Oex   = Rcpp::as<arma::mat>(mat["omegaEtaXi"]);
+    W     = Rcpp::as<arma::mat>(mat["W"]);
+    T     = Rcpp::as<arma::mat>(mat["T"]);
     phi   = Rcpp::as<arma::mat>(mat["phi"]);
     Ie    = Rcpp::as<arma::mat>(mat["Ieta"]);
 
@@ -632,7 +669,8 @@ struct QMLModel {
     c.Psi   = arma::mat(Psi);   c.a     = arma::mat(a);
     c.beta0 = arma::mat(beta0); c.Gx    = arma::mat(Gx);
     c.Ge    = arma::mat(Ge);    c.Oxx   = arma::mat(Oxx);
-    c.Oex   = arma::mat(Oex);   c.phi   = arma::mat(phi);
+    c.Oex   = arma::mat(Oex);   c.W     = arma::mat(W);
+    c.T     = arma::mat(T);     c.phi   = arma::mat(phi);
     return c;
   }
 };
@@ -654,6 +692,8 @@ inline double& qmlParam(QMLModel& M, std::size_t blk,
     case 11: return M.Ge   (r,c);
     case 12: return M.Oxx  (r,c);
     case 13: return M.Oex  (r,c);
+    case 14: return M.W    (r,c);
+    case 15: return M.T    (r,c);
     case 16: return M.phi  (r,c);
     default: Rcpp::stop("qmlParam: unknown block %zu", blk);
   }
@@ -993,13 +1033,13 @@ arma::vec analyticalGradQmlCore(
   // f3 score accumulators
   arma::vec sEyAcc(pYF3,        arma::fill::zeros);
   arma::mat sSEAcc(pYF3, pYF3, arma::fill::zeros);
-  // Step 5b: score w.r.t. Sigma1, accumulated as BG2O_i' · S_SE_i · BG2O_i
-  arma::mat sSEBG2OAcc(M.Gx.n_cols, M.Gx.n_cols, arma::fill::zeros);
+  arma::mat sigma1Acc(M.Sigma1.n_rows, M.Sigma1.n_cols, arma::fill::zeros);
   arma::mat gxMeanAcc(M.Gx.n_rows, M.Gx.n_cols, arma::fill::zeros);
   arma::mat gxCovAcc(M.Gx.n_rows, M.Gx.n_cols, arma::fill::zeros);
   arma::vec alphaAcc(M.a.n_rows, arma::fill::zeros);
   arma::mat psiAcc(M.Psi.n_rows, M.Psi.n_cols, arma::fill::zeros);
   arma::vec mAcc(M.Gx.n_cols, arma::fill::zeros);
+  arma::mat l1Acc(M.L1.n_rows, M.L1.n_cols, arma::fill::zeros);
   arma::vec tauXAdjAcc(pX, arma::fill::zeros);
   arma::mat geAcc(M.Ge.n_rows, M.Ge.n_cols, arma::fill::zeros);
   arma::mat oxxAcc(M.Oxx.n_rows, M.Oxx.n_cols, arma::fill::zeros);
@@ -1059,7 +1099,7 @@ arma::vec analyticalGradQmlCore(
     const arma::vec score_y_i = invSE_i * dv_i;
     sEyAcc      += w * score_y_i;
     sSEAcc      += w * S_SE_i;
-    sSEBG2OAcc  += w * (BG2O.t() * S_SE_i * BG2O);
+    sigma1Acc   += w * (BG2O.t() * S_SE_i * BG2O);
     alphaAcc    += w * (Binv_i.t() * score_y_i);
     psiAcc      += w * (Binv_i.t() * S_SE_i * Binv_i);
 
@@ -1109,6 +1149,7 @@ arma::vec analyticalGradQmlCore(
       }
 
       mAcc       += w * mBar;
+      l1Acc      += w * (mBar * xi.t());
       tauXAdjAcc += w * (M.invLXPLX * xi - M.L1.t() * mBar);
 
       const arma::mat varZBar = Binv_i.t() * S_SE_i * Binv_i;
@@ -1119,6 +1160,7 @@ arma::vec analyticalGradQmlCore(
         const int rowOffset = eta * numXi;
         const arma::mat omegaEta =
           M.Oxx.submat(rowOffset, 0, rowOffset + numXi - 1, numXi - 1);
+        sigma1Acc += w * hBar(eta) * omegaEta.t();
 
         for (int a = 0; a < numXi; ++a) {
           for (int b = 0; b < numXi; ++b) {
@@ -1130,6 +1172,8 @@ arma::vec analyticalGradQmlCore(
               varZBar(eta, eta) *
                 qmlVarZDerivative(omegaEta, M.Sigma1, a, b)
             );
+            sigma1Acc(a, b) += w * varZBar(eta, eta) *
+              qmlVarZSigmaDerivative(omegaEta, M.Sigma1, a, b);
           }
         }
       }
@@ -1141,6 +1185,7 @@ arma::vec analyticalGradQmlCore(
                               M.Oxx2T, M.Gx.n_rows, M.Gx.n_cols);
 
       mAcc       += w * sM_i;
+      l1Acc      += w * (sM_i * xi.t());
       tauXAdjAcc += w * (M.invLXPLX * xi - M.L1.t() * sM_i);
 
       const arma::mat scoreBg = 2.0 * S_SE_i * BG2O * M.Sigma1;
@@ -1153,10 +1198,15 @@ arma::vec analyticalGradQmlCore(
       );
 
       const arma::vec sH_i = Binv_i.t() * score_y_i;
+      const arma::mat varZBar = Binv_i.t() * S_SE_i * Binv_i;
       const int numXi = static_cast<int>(M.Gx.n_cols);
       const int numEta = static_cast<int>(M.Gx.n_rows);
       for (int eta = 0; eta < numEta; ++eta) {
         const int rowOffset = eta * numXi;
+        const arma::mat omegaEta =
+          M.Oxx.submat(rowOffset, 0, rowOffset + numXi - 1, numXi - 1);
+        sigma1Acc += w * sH_i(eta) * omegaEta.t();
+
         for (int a = 0; a < numXi; ++a) {
           for (int b = 0; b < numXi; ++b) {
             oxxAcc(rowOffset + a, b) += w * (
@@ -1164,6 +1214,8 @@ arma::vec analyticalGradQmlCore(
               scoreBg(eta, b) * mi(a) +
               scoreBg(eta, a) * mi(b)
             );
+            sigma1Acc(a, b) += w * varZBar(eta, eta) *
+              qmlVarZSigmaDerivative(omegaEta, M.Sigma1, a, b);
           }
         }
       }
@@ -1173,30 +1225,56 @@ arma::vec analyticalGradQmlCore(
   if (fail) { grad.fill(arma::datum::nan); return grad; }
 
   // -----------------------------------------------------------------------
-  // f2x: score w.r.t. LXPLX
+  // f2x and f3 exogenous-side reverse pass
   // -----------------------------------------------------------------------
-  const arma::mat sLXPLX = -0.5 * sumW * M.invLXPLX
-                           + 0.5 * M.invLXPLX * sumXX * M.invLXPLX;
+  // The exogenous measurement parameters enter f3 through both:
+  //   Sigma1 = phi - L1 * lX * phi
+  //   L1     = phi * lX' * inv(lX * phi * lX' + thetaDelta)
+  // Earlier code only pushed the Sigma1 score through LXPLX, which missed
+  // the posterior-mean path mi = beta0 + L1 * x.
+  arma::mat sLXPLX = -0.5 * sumW * M.invLXPLX
+                     + 0.5 * M.invLXPLX * sumXX * M.invLXPLX;
+  arma::mat lXAcc(M.lX.n_rows, M.lX.n_cols, arma::fill::zeros);
+  arma::mat phiAcc(M.phi.n_rows, M.phi.n_cols, arma::fill::zeros);
 
-  // Step 3: map S_LXPLX → grad entries for lX(0), d(4), phi(16)
-  // lX(r,c):   dLL/d(lX_{r,c})   = 2 * (S_LXPLX * lX * phi)(r,c)
-  // d(r,r):    dLL/d(d_{r,r})    = S_LXPLX(r,r)
-  // phi(r,c):  dLL/d(phi_{r,c})  = fac * (lX' * S_LXPLX * lX)(r,c),
-  //            fac = 2 when off-diagonal symmetric, 1 otherwise
   {
-    const arma::mat slXPhi  = sLXPLX * M.lX * M.phi;    // pX  × pXi
-    const arma::mat lXTSLX = M.lX.t() * sLXPLX * M.lX; // pXi × pXi
+    // Reverse Sigma1 = phi - L1 * lX * phi.
+    phiAcc += sigma1Acc;
+    l1Acc  += -sigma1Acc * (M.lX * M.phi).t();
+    lXAcc  += -M.L1.t() * sigma1Acc * M.phi.t();
+    phiAcc += -(M.L1 * M.lX).t() * sigma1Acc;
+
+    // Reverse L1 = phi * lX' * invLXPLX.
+    const arma::mat h = M.phi * M.lX.t();
+    phiAcc += l1Acc * M.invLXPLX.t() * M.lX;
+    lXAcc  += M.invLXPLX * l1Acc.t() * M.phi;
+    sLXPLX += -M.invLXPLX * h.t() * l1Acc * M.invLXPLX;
+
+    // Reverse LXPLX = lX * phi * lX' + thetaDelta.
+    const arma::mat sLXPLXSym = 0.5 * (sLXPLX + sLXPLX.t());
+    lXAcc  += 2.0 * sLXPLXSym * M.lX * M.phi;
+    phiAcc += M.lX.t() * sLXPLXSym * M.lX;
 
     for (std::size_t k = 0; k < p; ++k) {
       const arma::uword r   = row[k];
       const arma::uword c   = col[k];
       const bool        sym = static_cast<bool>(symmetric[k]);
-      const double      fac = (sym && r != c) ? 2.0 : 1.0;
 
       switch (block[k]) {
-        case 0:  grad[k] += 2.0 * slXPhi(r, c);    break; // lX
-        case 4:  grad[k] += sLXPLX(r, c);           break; // d
-        case 16: grad[k] += fac * lXTSLX(r, c);   break; // phi
+        case 0: {
+          grad[k] += lXAcc(r, c);
+          break;
+        }
+        case 4: {
+          grad[k] += sLXPLXSym(r, c);
+          if (sym && r != c) grad[k] += sLXPLXSym(c, r);
+          break;
+        }
+        case 16: {
+          grad[k] += phiAcc(r, c);
+          if (sym && r != c) grad[k] += phiAcc(c, r);
+          break;
+        }
         default: break;
       }
     }
@@ -1354,35 +1432,6 @@ arma::vec analyticalGradQmlCore(
           grad[k] += alphaAcc(r);
           break;
         }
-        default: break;
-      }
-    }
-  }
-
-  // -----------------------------------------------------------------------
-  // Step 5b: lX (blk 0), d (blk 4), phi (blk 16) — f3 contributions via Sigma1
-  // -----------------------------------------------------------------------
-  // SE_i += BG2O_i · Sigma1 · BG2O_i'.
-  // Differentiating Sigma1 = phi - L1 · lX · phi w.r.t. LXPLX:
-  //   dSigma1 = L1 · d(LXPLX) · L1'  (L1 = phi·lX'·invLXPLX)
-  // → effective score w.r.t. LXPLX from f3:
-  //   S_LXPLX_f3 = L1' · S_SE_BG2O_acc · L1
-  // Then the same Step-3 formulas apply with S_LXPLX_f3 in place of S_LXPLX.
-  {
-    const arma::mat sLXPLXF3  = M.L1.t() * sSEBG2OAcc * M.L1; // pX × pX
-    const arma::mat slXPhiF3  = sLXPLXF3 * M.lX * M.phi;
-    const arma::mat lXTSLXF3 = M.lX.t() * sLXPLXF3 * M.lX;
-
-    for (std::size_t k = 0; k < p; ++k) {
-      const arma::uword r   = row[k];
-      const arma::uword c   = col[k];
-      const bool        sym = static_cast<bool>(symmetric[k]);
-      const double      fac = (sym && r != c) ? 2.0 : 1.0;
-
-      switch (block[k]) {
-        case 0:  grad[k] += 2.0 * slXPhiF3(r, c);   break;  // lX
-        case 4:  grad[k] += sLXPLXF3(r, c);          break;  // d
-        case 16: grad[k] += fac * lXTSLXF3(r, c);  break;  // phi
         default: break;
       }
     }

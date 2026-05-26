@@ -17,6 +17,41 @@ print(summary(est1, scientific = TRUE))
 plot_interaction(x = "X", z = "Z", y = "Y", xz = "X:Z", vals_z = c(-0.5, 0.5), model = est1)
 plot_surface(x = "X", z = "Z", y = "Y", model = est1)
 
+testthat::test_that("QML honors finite-difference gradient fallback", {
+  model <- est1$start.model
+  if (is.null(model)) model <- est1$model
+
+  model$params$gradientStruct$useFDGradient <- TRUE
+  model$params$gradientStruct$locations <- NULL
+  model$params$gradientStruct$Jacobian <- NULL
+
+  grad <- gradientLogLikQml(theta = model$theta, model = model, sum = TRUE)
+  scores <- gradientLogLikQml(theta = model$theta, model = model, sum = FALSE)
+
+  testthat::expect_length(grad, length(model$theta))
+  testthat::expect_equal(ncol(scores), length(model$theta))
+})
+
+testthat::test_that("QML FD mapping includes composite variance blocks", {
+  model <- est1$start.model
+  if (is.null(model)) model <- est1$model
+
+  submodel <- fillModel(theta = model$theta, model = model,
+                        method = "qml")$models[[1L]]
+  submodel$matrices$W <- matrix(1, 1, 1)
+  submodel$matrices$T <- matrix(1, 1, 1)
+
+  grad <- gradLogLikQmlCpp(
+    submodel = submodel,
+    block = c(14L, 15L),
+    row = c(0L, 0L),
+    col = c(0L, 0L),
+    symmetric = c(0L, 1L)
+  )
+
+  testthat::expect_true(all(is.finite(grad)))
+})
+
 
 tpb <- '
 # Outer Model (Based on Hagger et al., 2007)
@@ -179,7 +214,7 @@ testthat::test_that("simple QML analytical gradient matches C++ FD for supported
     row = locations$row,
     col = locations$col,
     symmetric = locations$symmetric,
-    eps = 5e-7,
+    eps = 1e-7,
     ncores = 1L
   )
 
