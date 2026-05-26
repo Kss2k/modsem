@@ -310,16 +310,24 @@ transformedSolutionCOEFS <- function(object,
       COEFS[[label]] <- covs
     }
 
-    # Residual Variances etas
-    for (eta in etas.g) {
-      selectRows <- parTable.g$lhs == eta & parTable.g$op == "~~" & parTable.g$rhs == eta
-      if (!any(selectRows)) next
-      var.eta <- variances.g[[eta]]
-      if (is.null(var.eta)) next
-      label <- parTable.g[selectRows, "label"]
-      residual <- COEFS[[label]] / var.eta
+    # Residual Variances and Covariances of etas
+    etaCovariances <- parTable.g[
+      parTable.g$lhs %in% etas.g &
+      parTable.g$op == "~~" &
+      parTable.g$rhs %in% etas.g, , drop = FALSE
+    ]
 
-      COEFS[[label]] <- residual
+    for (i in seq_len(NROW(etaCovariances))) {
+      row   <- etaCovariances[i, , drop = FALSE]
+      eta.x <- row$lhs
+      eta.y <- row$rhs
+      label <- row$label
+
+      var.x <- variances.g[[eta.x]]
+      var.y <- variances.g[[eta.y]]
+      if (is.null(var.x) || is.null(var.y)) next
+
+      COEFS[[label]] <- COEFS[[label]] / (sqrt(var.x) * sqrt(var.y))
     }
 
     # residual variances of indicators
