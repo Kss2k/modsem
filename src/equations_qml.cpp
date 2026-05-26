@@ -767,6 +767,95 @@ inline double logLikQmlFromModel(const QMLModel& M,
   return ll;
 }
 
+inline arma::vec obsLogLikQmlFromModel(const QMLModel& M,
+                                       const arma::mat& data_full,
+                                       const int ncores = 1) {
+  const int t      = static_cast<int>(data_full.n_rows);
+  const int pX     = static_cast<int>(M.x_col_idx.n_elem);
+  const int pY     = static_cast<int>(M.y_col_idx.n_elem);
+  const int pY_f3  = static_cast<int>(M.nonNormal_uvec.n_elem);
+  static const double log2pi_d = std::log(2.0 * M_PI);
+
+  arma::vec ll(t, arma::fill::zeros);
+  arma::mat X(t, pX), Y(t, pY);
+  for (int j = 0; j < pX; ++j)
+    X.col(j) = data_full.col(M.x_col_idx(j)) - M.tauX_adj(j);
+  for (int j = 0; j < pY; ++j)
+    Y.col(j) = data_full.col(M.y_col_idx(j)) - M.tY(j, 0);
+
+  const double logdet_x  = 2.0 * arma::sum(arma::log(M.cholLXPLX.diag()));
+  const double f2x_const = -0.5 * (pX * log2pi_d + logdet_x);
+
+  int    nU = 0;
+  double f2u_const = 0.0;
+  arma::mat Y_colsR;
+  if (M.hasR) {
+    nU = static_cast<int>(M.RER.n_rows);
+    const double logdet_u = 2.0 * arma::sum(arma::log(M.cholRER.diag()));
+    f2u_const = -0.5 * (nU * log2pi_d + logdet_u);
+
+    const arma::uword nColsR = M.colsR_uvec.n_elem;
+    Y_colsR.set_size(t, nColsR);
+    for (arma::uword j = 0; j < nColsR; ++j)
+      Y_colsR.col(j) = Y.col(M.colsR_uvec(j));
+  }
+
+  const bool kOmega0 = (M.kOmegaEta == 0);
+  bool fail = false;
+
+  for (int i = 0; i < t; ++i) {
+    const arma::vec xi = X.row(i).t();
+
+    const arma::vec zx = arma::solve(arma::trimatu(M.cholLXPLX), xi,
+                                     arma::solve_opts::fast);
+    const double f2x_i = f2x_const - 0.5 * arma::dot(zx, zx);
+
+    double f2u_i = 0.0;
+    if (M.hasR) {
+      const arma::vec u_raw = M.R * Y_colsR.row(i).t();
+      const arma::vec zu = arma::solve(arma::trimatu(M.cholRER), u_raw,
+                                       arma::solve_opts::fast);
+      f2u_i = f2u_const - 0.5 * arma::dot(zu, zu);
+    }
+
+    arma::vec yi(pY_f3);
+    for (int jj = 0; jj < pY_f3; ++jj) yi(jj) = Y(i, M.nonNormal_uvec(jj));
+
+    const arma::vec mi = M.beta0 + M.L1 * xi;
+    const arma::mat Ki = arma::kron(M.Ie, mi.t());
+
+    arma::mat Binv_i, Sig2_i, BvZ_i;
+    if (kOmega0) {
+      Binv_i = M.Binv_c; Sig2_i = M.Sigma2_c; BvZ_i = M.BinvVarZ_c;
+    } else {
+      Binv_i = arma::inv(M.Ie - M.Ge - Ki * M.Oex);
+      Sig2_i = Binv_i * M.Psi * Binv_i.t() + M.fullSig2TE;
+      BvZ_i  = Binv_i * M.varZ * Binv_i.t();
+    }
+
+    const arma::vec h_i = M.trOmSig + M.a + M.Gx * mi + Ki * M.Oxx * mi;
+    arma::vec Ey_i = Binv_i * h_i;
+    if (M.hasR) Ey_i += M.L2R_cache * Y_colsR.row(i).t();
+
+    const arma::mat BG2O =
+      qmlJacobianEtaXi(Binv_i, M.Gx, Ki, M.Oxx2T, M.Oex, Ey_i, !kOmega0);
+    const arma::mat SE_i = BG2O * M.Sigma1 * BG2O.t() + Sig2_i + BvZ_i;
+
+    arma::mat Lf;
+    if (!arma::chol(Lf, SE_i, "lower")) { fail = true; continue; }
+    const double logdet_f = 2.0 * arma::sum(arma::log(Lf.diag()));
+    const arma::vec zf = arma::solve(arma::trimatl(Lf), yi - Ey_i,
+                                     arma::solve_opts::fast);
+    const double f3_i = -0.5 * (pY_f3 * log2pi_d + logdet_f + arma::dot(zf, zf));
+
+    const double w = M.has_sw ? M.sampling_weights(i) : 1.0;
+    ll(i) = w * (f2x_i + f2u_i + f3_i);
+  }
+
+  if (fail) ll.fill(arma::datum::nan);
+  return ll;
+}
+
 
 // [[Rcpp::export]]
 double logLikQmlCpp(const Rcpp::List& submodel, const int ncores = 1) {
@@ -1356,7 +1445,53 @@ arma::vec analyticalGradQmlCore(
 }
 
 
-// Temporary export for testing Step 3 — will be removed once all steps are done.
+// [[Rcpp::export]]
+arma::mat analyticalObsGradQmlCpp(const Rcpp::List& submodel,
+                                  const arma::uvec& block,
+                                  const arma::uvec& row,
+                                  const arma::uvec& col,
+                                  const arma::uvec& symmetric) {
+  try {
+    const QMLModel M(submodel);
+    const arma::mat data_full =
+      Rcpp::as<arma::mat>(Rcpp::as<Rcpp::List>(submodel["data"])["data.full"]);
+
+    const arma::uword n = data_full.n_rows;
+    const arma::uword p = block.n_elem;
+    arma::mat out(n, p, arma::fill::zeros);
+
+    for (arma::uword i = 0; i < n; ++i) {
+      QMLModel Mi = M.thread_clone();
+      if (Mi.has_sw) {
+        arma::vec wi(1);
+        wi(0) = M.sampling_weights(i);
+        Mi.sampling_weights = wi;
+      }
+      out.row(i) = analyticalGradQmlCore(Mi, data_full.rows(i, i),
+                                         block, row, col, symmetric).t();
+    }
+
+    return out;
+  } catch (const std::exception& e) {
+    Rcpp::warning("analyticalObsGradQmlCpp exception: %s", e.what());
+    arma::mat nan_grad(
+      Rcpp::as<arma::mat>(Rcpp::as<Rcpp::List>(submodel["data"])["data.full"]).n_rows,
+      block.n_elem
+    );
+    nan_grad.fill(arma::datum::nan);
+    return nan_grad;
+  } catch (...) {
+    Rcpp::warning("analyticalObsGradQmlCpp: unknown exception");
+    arma::mat nan_grad(
+      Rcpp::as<arma::mat>(Rcpp::as<Rcpp::List>(submodel["data"])["data.full"]).n_rows,
+      block.n_elem
+    );
+    nan_grad.fill(arma::datum::nan);
+    return nan_grad;
+  }
+}
+
+
 // [[Rcpp::export]]
 arma::vec analyticalGradQmlCpp(const Rcpp::List& submodel,
                                 const arma::uvec& block,
@@ -1404,6 +1539,55 @@ arma::vec gradLogLikQmlCpp(const Rcpp::List& submodel,
   } catch (...) {
     // Return NaN gradient so the optimizer steps away from this bad point.
     arma::vec nan_grad(block.n_elem);
+    nan_grad.fill(arma::datum::nan);
+    return nan_grad;
+  }
+}
+
+
+// [[Rcpp::export]]
+arma::mat gradObsLogLikQmlCpp(const Rcpp::List& submodel,
+                              const arma::uvec& block,
+                              const arma::uvec& row,
+                              const arma::uvec& col,
+                              const arma::uvec& symmetric,
+                              const double eps = 1e-6,
+                              const int ncores = 1L) {
+  try {
+    ThreadSetter ts(ncores);
+    QMLModel M(submodel);
+    const arma::mat data_full =
+      Rcpp::as<arma::mat>(Rcpp::as<Rcpp::List>(submodel["data"])["data.full"]);
+
+    const arma::uword n = data_full.n_rows;
+    const arma::uword p = block.n_elem;
+    arma::mat grad(n, p, arma::fill::zeros);
+    const arma::vec f0 = obsLogLikQmlFromModel(M, data_full, 1);
+
+    #pragma omp parallel for if(ncores > 1) schedule(static) \
+      shared(M, data_full, block, row, col, symmetric, eps, grad, f0, p)
+    for (std::size_t k = 0; k < p; ++k) {
+      try {
+        QMLModel Mc = M.thread_clone();
+        double& ti = qml_param(Mc, block[k], row[k], col[k]);
+        double* tj = nullptr;
+        if (symmetric[k] && row[k] != col[k])
+          tj = &qml_param(Mc, block[k], col[k], row[k]);
+        ti += eps;
+        if (tj) *tj += eps;
+        Mc.update_cache();
+        grad.col(k) = (obsLogLikQmlFromModel(Mc, data_full, 1) - f0) / eps;
+      } catch (...) {
+        grad.col(k).fill(arma::datum::nan);
+      }
+    }
+
+    return grad;
+  } catch (...) {
+    arma::mat nan_grad(
+      Rcpp::as<arma::mat>(Rcpp::as<Rcpp::List>(submodel["data"])["data.full"]).n_rows,
+      block.n_elem
+    );
     nan_grad.fill(arma::datum::nan);
     return nan_grad;
   }

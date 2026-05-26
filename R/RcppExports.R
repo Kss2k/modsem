@@ -69,12 +69,20 @@ logLikQmlCpp <- function(submodel, ncores = 1L) {
     .Call(`_modsem_logLikQmlCpp`, submodel, ncores)
 }
 
+analyticalObsGradQmlCpp <- function(submodel, block, row, col, symmetric) {
+    .Call(`_modsem_analyticalObsGradQmlCpp`, submodel, block, row, col, symmetric)
+}
+
 analyticalGradQmlCpp <- function(submodel, block, row, col, symmetric) {
     .Call(`_modsem_analyticalGradQmlCpp`, submodel, block, row, col, symmetric)
 }
 
 gradLogLikQmlCpp <- function(submodel, block, row, col, symmetric, eps = 1e-6, ncores = 1L) {
     .Call(`_modsem_gradLogLikQmlCpp`, submodel, block, row, col, symmetric, eps, ncores)
+}
+
+gradObsLogLikQmlCpp <- function(submodel, block, row, col, symmetric, eps = 1e-6, ncores = 1L) {
+    .Call(`_modsem_gradObsLogLikQmlCpp`, submodel, block, row, col, symmetric, eps, ncores)
 }
 
 hessLogLikQmlCpp <- function(submodel, block, row, col, symmetric, relStep = 1e-4, minAbs = 1.0, ncores = 1L) {

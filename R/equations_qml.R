@@ -1,6 +1,12 @@
 OptimizerInfoQML <- rlang::env(eval = 0, logLiks = 0)
 
 
+.qmlNcores <- function() {
+  ncores <- ThreadEnv$n.threads
+  if (length(ncores) != 1L || is.null(ncores) || is.na(ncores)) 1L else ncores
+}
+
+
 resetOptimizerInfoQML <- function() {
   OptimizerInfoQML$eval    <- 0
   OptimizerInfoQML$logLiks <- -Inf
@@ -38,8 +44,10 @@ logLikQml <- function(theta, model, sum = TRUE, sign = -1, verbose = FALSE) {
 
 
 logLikQmlGroup <- function(submodel, sum = TRUE, sign = -1) {
+  ncores <- .qmlNcores()
+
   if (sum) {
-    ll <- logLikQmlCpp(submodel, ncores = ThreadEnv$n.threads)
+    ll <- logLikQmlCpp(submodel, ncores = ncores)
     return(sign * ll)
   }
 
@@ -102,11 +110,11 @@ logLikQmlGroup <- function(submodel, sum = TRUE, sign = -1) {
   invLXPLX <- solve(m$LXPLX)
   m$L1     <- m$phi %*% t(m$lambdaX) %*% invLXPLX
   m$Sigma1 <- m$phi - m$phi %*% t(m$lambdaX) %*% invLXPLX %*% m$lambdaX %*% m$phi
-  m$kronXi <- calcKronXi(m, t, ncores = ThreadEnv$n.threads)
-  m$Binv   <- calcBinvCpp(m, t, ncores = ThreadEnv$n.threads)
+  m$kronXi <- calcKronXi(m, t, ncores = ncores)
+  m$Binv   <- calcBinvCpp(m, t, ncores = ncores)
 
-  Ey            <- muQmlCpp(m, t, ncores = ThreadEnv$n.threads)
-  sigmaEpsilon  <- sigmaQmlCpp(m, t, ncores = ThreadEnv$n.threads)
+  Ey            <- muQmlCpp(m, t, ncores = ncores)
+  sigmaEpsilon  <- sigmaQmlCpp(m, t, ncores = ncores)
   sigmaXU       <- calcSigmaXU(m)
 
   normalInds    <- colnames(sigmaXU)
@@ -142,11 +150,13 @@ probf2 <- function(matrices, normalInds, sigma) {
 
 
 probf3 <- function(matrices, nonNormalInds, expected, sigma, t, numEta) {
+  ncores <- .qmlNcores()
   if (numEta == 1)
-    p <- dnormCpp(matrices$y[, 1], mu = expected, sigma = sqrt(sigma), ncores = ThreadEnv$n.threads)
+    p <- dnormCpp(matrices$y[, 1], mu = expected, sigma = sqrt(sigma),
+                  ncores = ncores)
   else
     p <- repDmvnormCpp(matrices$y[, nonNormalInds], expected = expected,
-                       sigma = sigma, t = t, ncores = ThreadEnv$n.threads)
+                       sigma = sigma, t = t, ncores = ncores)
   p
 }
 
@@ -157,14 +167,37 @@ centerIndicators <- function(X, tau) {
 }
 
 
+.refreshQmlGradientJacobian <- function(theta, model, Jacobian) {
+  if (isTRUE(model$params$gradientStruct$hasCovModel))
+    Jacobian <- .refreshCovModelJacobian(theta, model, Jacobian,
+                                         method = "qml")$J
+
+  nlinDerivs <- model$params$gradientStruct$nlinDerivs
+  if (length(nlinDerivs)) {
+    evalTheta  <- model$params$gradientStruct$evalTheta
+    param.full <- stringr::str_split_i(colnames(Jacobian), pattern = "#", i = 1L)
+    param.part <- rownames(Jacobian)
+    THETA      <- list2env(as.list(evalTheta(theta)))
+
+    for (dep in names(nlinDerivs)) {
+      derivs <- nlinDerivs[[dep]]
+      for (indep in names(derivs)) {
+        deriv <- eval(expr = derivs[[indep]], envir = THETA)
+        Jacobian[param.part == indep, param.full == dep] <- deriv
+      }
+    }
+  }
+
+  Jacobian
+}
+
+
 simpleGradientLogLikQml <- function(theta, model, sign = -1, epsilon = 1e-6) {
   modelFilled <- fillModel(model = model, theta = theta, method = "qml")
   locations   <- model$params$gradientStruct$locations
   Jacobian    <- model$params$gradientStruct$Jacobian
-  if (isTRUE(model$params$gradientStruct$hasCovModel))
-    Jacobian <- .refreshCovModelJacobian(theta, model, Jacobian,
-                                         method = "qml")$J
-  nlinDerivs  <- model$params$gradientStruct$nlinDerivs
+  Jacobian    <- .refreshQmlGradientJacobian(theta, model, Jacobian)
+  ncores      <- .qmlNcores()
 
   grad <- matrix(0, nrow = NROW(locations), ncol = 1L,
                  dimnames = list(locations$param, NULL))
@@ -191,7 +224,7 @@ simpleGradientLogLikQml <- function(theta, model, sign = -1, epsilon = 1e-6) {
         col       = locations.g$col[bad],
         symmetric = locations.g$symmetric[bad],
         eps       = epsilon,
-        ncores    = ThreadEnv$n.threads
+        ncores    = ncores
       )
 
       grad.g[bad] <- grad.fd
@@ -200,22 +233,59 @@ simpleGradientLogLikQml <- function(theta, model, sign = -1, epsilon = 1e-6) {
     grad[locations.g$param, ] <- grad.g
   }
 
-  if (length(nlinDerivs)) {
-    evalTheta  <- model$params$gradientStruct$evalTheta
-    param.full <- stringr::str_split_i(colnames(Jacobian), pattern = "#", i = 1L)
-    param.part <- rownames(Jacobian)
-    THETA      <- list2env(as.list(evalTheta(theta)))
+  as.vector(sign * Jacobian %*% grad)
+}
 
-    for (dep in names(nlinDerivs)) {
-      derivs <- nlinDerivs[[dep]]
-      for (indep in names(derivs)) {
-        deriv <- eval(expr = derivs[[indep]], envir = THETA)
-        Jacobian[param.part == indep, param.full == dep] <- deriv
-      }
+
+simpleObsGradientLogLikQml <- function(theta, model, sign = -1, epsilon = 1e-6) {
+  modelFilled <- fillModel(model = model, theta = theta, method = "qml")
+  locations   <- model$params$gradientStruct$locations
+  Jacobian    <- model$params$gradientStruct$Jacobian
+  Jacobian    <- .refreshQmlGradientJacobian(theta, model, Jacobian)
+  ncores      <- .qmlNcores()
+
+  N <- vapply(modelFilled$models, FUN.VALUE = integer(1L),
+              FUN = \(sub) NROW(sub$data$data.full))
+  N.start <- c(1L, cumsum(N)[-length(N)] + 1L)
+  N.end   <- cumsum(N)
+
+  scores <- matrix(0, nrow = sum(N), ncol = length(theta),
+                   dimnames = list(NULL, names(theta)))
+
+  for (g in seq_len(modelFilled$info$n.groups)) {
+    locations.g <- locations[locations$group == g, , drop = FALSE]
+    if (!NROW(locations.g)) next
+
+    scores.g <- analyticalObsGradQmlCpp(
+      submodel  = modelFilled$models[[g]],
+      block     = locations.g$block,
+      row       = locations.g$row,
+      col       = locations.g$col,
+      symmetric = locations.g$symmetric
+    )
+
+    bad <- colSums(!is.finite(scores.g)) > 0L
+
+    if (any(bad)) {
+      scores.fd <- gradObsLogLikQmlCpp(
+        submodel  = modelFilled$models[[g]],
+        block     = locations.g$block[bad],
+        row       = locations.g$row[bad],
+        col       = locations.g$col[bad],
+        symmetric = locations.g$symmetric[bad],
+        eps       = epsilon,
+        ncores    = ncores
+      )
+
+      scores.g[, bad] <- scores.fd
     }
+
+    J.g <- Jacobian[, locations.g$param, drop = FALSE]
+    rows.g <- seq(N.start[[g]], N.end[[g]], by = 1L)
+    scores[rows.g, ] <- sign * scores.g %*% t(J.g)
   }
 
-  as.vector(sign * Jacobian %*% grad)
+  scores
 }
 
 
@@ -224,6 +294,10 @@ gradientLogLikQml <- function(theta, model, epsilon = 1e-8, sign = -1,
   if (sum)
     return(simpleGradientLogLikQml(theta = theta, model = model,
                                     sign = sign, epsilon = epsilon))
+
+  if (identical(.f, logLikQmlGroup))
+    return(simpleObsGradientLogLikQml(theta = theta, model = model,
+                                      sign = sign, epsilon = epsilon))
 
   # Fallback: per-obs path — original R-level FD
   params <- model$params
@@ -290,6 +364,7 @@ simpleHessianLogLikQml <- function(theta, model, sign = -1,
   nm    <- locations$param
   H     <- matrix(0.0, nrow = n.loc, ncol = n.loc, dimnames = list(nm, nm))
   grad  <- stats::setNames(numeric(n.loc), nm = nm)
+  ncores <- .qmlNcores()
 
   for (g in seq_len(modelFilled$info$n.groups)) {
     locations.g <- locations[locations$group == g, , drop = FALSE]
@@ -303,7 +378,7 @@ simpleHessianLogLikQml <- function(theta, model, sign = -1,
       symmetric = locations.g$symmetric,
       relStep   = .relStep,
       minAbs    = 1.0,
-      ncores    = ThreadEnv$n.threads
+      ncores    = ncores
     )
 
     nm.g <- locations.g$param

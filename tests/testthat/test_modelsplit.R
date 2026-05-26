@@ -23,6 +23,35 @@ testthat::expect_warning(
 )
 summary(est_qml)
 
+testthat::expect_warning(
+  est_qml_unsplit <- modsem(
+    tpb, TPB, method = "qml", auto.split.syntax = FALSE, calc.se = FALSE,
+    convergence.rel = 1e-5
+  )
+)
+est_qml_split <- suppressWarnings(modsem(
+  tpb, TPB, method = "qml", auto.split.syntax = TRUE, calc.se = FALSE,
+  convergence.rel = 1e-5
+))
+
+pe_unsplit <- parameter_estimates(est_qml_unsplit)
+pe_split   <- parameter_estimates(est_qml_split)
+
+get_est <- function(pe, lhs, rhs) {
+  pe[pe$lhs == lhs & pe$op == "~" & pe$rhs == rhs, "est"]
+}
+
+testthat::expect_equal(
+  get_est(pe_unsplit, "BEH", "INT:PBC"),
+  get_est(pe_split, "BEH", "INT:PBC"),
+  tolerance = 0.02
+)
+testthat::expect_equal(
+  get_est(pe_unsplit, "BEH", "INT"),
+  get_est(pe_split, "BEH", "INT"),
+  tolerance = 0.02
+)
+
 
 tpb2 <- '
 # Outer Model (Based on Hagger et al., 2007)
