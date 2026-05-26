@@ -555,7 +555,7 @@ getGradientStruct <- function(model, theta) {
   data.frame(
     param     = params,
     group     = g,
-    block     = LMS_BLOCKS[["A"]],
+    block     = DA_BLOCKS[["A"]],
     row       = rowidx,
     col       = colidx,
     symmetric = 0L,

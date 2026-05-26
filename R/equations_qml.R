@@ -170,15 +170,26 @@ simpleGradientLogLikQml <- function(theta, model, sign = -1, epsilon = 1e-6) {
     locations.g <- locations[locations$group == g, , drop = FALSE]
     if (!NROW(locations.g)) next
 
-    grad.g <- gradLogLikQmlCpp(
+    grad.g <- analyticalGradQmlCpp(
       submodel  = modelFilled$models[[g]],
       block     = locations.g$block,
       row       = locations.g$row,
       col       = locations.g$col,
-      symmetric = locations.g$symmetric,
-      eps       = epsilon,
-      ncores    = ThreadEnv$n.threads
+      symmetric = locations.g$symmetric
     )
+
+    if (any(!is.finite(grad.g))) {
+      grad.g <- gradLogLikQmlCpp(
+        submodel  = modelFilled$models[[g]],
+        block     = locations.g$block,
+        row       = locations.g$row,
+        col       = locations.g$col,
+        symmetric = locations.g$symmetric,
+        eps       = epsilon,
+        ncores    = ThreadEnv$n.threads
+      )
+    }
+
     grad[locations.g$param, ] <- grad.g
   }
 

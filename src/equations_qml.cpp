@@ -4,6 +4,38 @@
 #include "qml.h"
 #include "mvnorm.h"
 
+inline arma::mat qmlOexJacobianTerm(const arma::mat& omegaEtaXi,
+                                    const arma::vec& eta_mean,
+                                    const int numXi,
+                                    const int numEta) {
+  const arma::vec oex_eta = omegaEtaXi * eta_mean;
+  arma::mat out(numEta, numXi, arma::fill::none);
+
+  for (int eta = 0; eta < numEta; ++eta) {
+    const int offset = eta * numXi;
+    for (int xi = 0; xi < numXi; ++xi)
+      out(eta, xi) = oex_eta(offset + xi);
+  }
+
+  return out;
+}
+
+inline arma::mat qmlJacobianEtaXi(const arma::mat& Binv,
+                                  const arma::mat& gammaXi,
+                                  const arma::mat& kronXi,
+                                  const arma::mat& omegaXiXi2T,
+                                  const arma::mat& omegaEtaXi,
+                                  const arma::vec& eta_mean,
+                                  const bool include_oex_term) {
+  arma::mat jac = Binv * gammaXi + kronXi * omegaXiXi2T;
+
+  if (include_oex_term)
+    jac += Binv * qmlOexJacobianTerm(omegaEtaXi, eta_mean,
+                                     gammaXi.n_cols, gammaXi.n_rows);
+
+  return jac;
+}
+
 // [[Rcpp::export]]
 arma::mat muQmlCpp(Rcpp::List m, int t, int ncores = 1) {
   ThreadSetter ts(ncores);                       // set threads
@@ -75,6 +107,8 @@ arma::mat sigmaQmlCpp(Rcpp::List m, int t, int ncores = 1) {
 
   const int  numEta           = m["numEta"];
   const int  numXi            = m["numXi"];
+  const arma::mat alpha       = m["alpha"];
+  const arma::mat beta0       = m["beta0"];
   const arma::mat gammaXi     = m["gammaXi"];
   const arma::mat omegaXiXi   = m["omegaXiXi"];
   const arma::mat L1          = m["L1"];
@@ -86,8 +120,11 @@ arma::mat sigmaQmlCpp(Rcpp::List m, int t, int ncores = 1) {
   const arma::mat psi         = m["psi"];
   const arma::mat Binv        = m["Binv"];
   const arma::mat kronXi      = m["kronXi"];
+  const arma::mat omegaEtaXi  = m["omegaEtaXi"];
+  const bool includeOexTerm   = Binv.n_rows > static_cast<unsigned>(numEta);
 
   const arma::mat varZ = varZCpp(omegaXiXi, Sigma1, numEta);
+  const arma::vec trOmegaSigma = traceOmegaSigma1(omegaXiXi * Sigma1, numEta);
   arma::mat sigmaE(t * numEta, numEta, arma::fill::none);
 
   const int lastColSigma = numEta - 1,
@@ -105,9 +142,15 @@ arma::mat sigmaQmlCpp(Rcpp::List m, int t, int ncores = 1) {
       const arma::mat kronXi_t = kronXi.submat(firstRow, 0, lastRow, lastColKOxx);
       const arma::mat Binv_t   = Binv  .submat(firstRow, 0, lastRow, lastColSigma);
       const arma::mat Sigma2   = Binv_t * psi * Binv_t.t() + Sigma2Theta;
+      const arma::vec mi       = beta0 + L1 * X.row(i).t();
+      const arma::vec Ey_i     = Binv_t *
+        ( trOmegaSigma + alpha
+          + gammaXi * mi
+          + kronXi_t * omegaXiXi * mi );
 
       const arma::mat BinvGammaXi2Omega =
-        Binv_t * gammaXi + kronXi_t * omegaXiXi2T;
+        qmlJacobianEtaXi(Binv_t, gammaXi, kronXi_t, omegaXiXi2T,
+                         omegaEtaXi, Ey_i, includeOexTerm);
 
       sigmaE.submat(firstRow, 0, lastRow, lastColSigma) =
         BinvGammaXi2Omega * Sigma1 * BinvGammaXi2Omega.t() +
@@ -125,8 +168,14 @@ arma::mat sigmaQmlCpp(Rcpp::List m, int t, int ncores = 1) {
     for (int i = 0; i < t; ++i) {
       const int firstRow = i * numEta, lastRow = (i + 1) * numEta - 1;
       const arma::mat kronXi_t = kronXi.submat(firstRow, 0, lastRow, lastColKOxx);
+      const arma::vec mi = beta0 + L1 * X.row(i).t();
+      const arma::vec Ey_i = Binv *
+        ( trOmegaSigma + alpha
+          + gammaXi * mi
+          + kronXi_t * omegaXiXi * mi );
       const arma::mat BinvGammaXi2Omega =
-        Binv * gammaXi + kronXi_t * omegaXiXi2T;
+        qmlJacobianEtaXi(Binv, gammaXi, kronXi_t, omegaXiXi2T,
+                         omegaEtaXi, Ey_i, includeOexTerm);
 
       sigmaE.submat(firstRow, 0, lastRow, lastColSigma) =
         BinvGammaXi2Omega * Sigma1 * BinvGammaXi2Omega.t() +
@@ -651,7 +700,8 @@ inline double logLikQmlFromModel(const QMLModel& M,
     if (M.hasR)
       Ey_i += M.L2R_cache * Y_colsR.row(i).t();
 
-    const arma::mat BG2O = Binv_i * M.Gx + Ki * M.Oxx2T;
+    const arma::mat BG2O =
+      qmlJacobianEtaXi(Binv_i, M.Gx, Ki, M.Oxx2T, M.Oex, Ey_i, !kOmega0);
     const arma::mat SE_i = BG2O * M.Sigma1 * BG2O.t() + Sig2_i + BvZ_i;
 
     arma::mat Lf;
@@ -843,11 +893,17 @@ arma::vec analyticalGradQmlCore(
     arma::vec Ey_i = Binv_i * (M.trOmSig + M.a + M.Gx * mi + Ki * M.Oxx * mi);
     if (M.hasR) Ey_i += M.L2R_cache * Y_colsR.row(i).t();
 
-    const arma::mat BG2O = Binv_i * M.Gx + Ki * M.Oxx2T;
+    const arma::mat BG2O =
+      qmlJacobianEtaXi(Binv_i, M.Gx, Ki, M.Oxx2T, M.Oex, Ey_i, !kOmega0);
     const arma::mat SE_i = BG2O * M.Sigma1 * BG2O.t() + Sig2_i + BvZ_i;
 
-    arma::mat invSE_i;
-    if (!arma::inv_sympd(invSE_i, SE_i)) { fail = true; continue; }
+    arma::mat Lf;
+    if (!arma::chol(Lf, SE_i, "lower")) { fail = true; continue; }
+    const arma::mat I_se = arma::eye<arma::mat>(SE_i.n_rows, SE_i.n_cols);
+    const arma::mat tmp  = arma::solve(arma::trimatl(Lf), I_se,
+                                       arma::solve_opts::fast);
+    const arma::mat invSE_i = arma::solve(arma::trimatu(Lf.t()), tmp,
+                                          arma::solve_opts::fast);
 
     const arma::vec dv_i    = yi - Ey_i;
     const arma::mat S_SE_i  = (-0.5) * (invSE_i - invSE_i * dv_i * dv_i.t() * invSE_i);

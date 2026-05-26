@@ -22,6 +22,7 @@ estQml <- function(model,
                       convergence = convergence, epsilon = epsilon,
                       verbose = verbose, optimizer = optimizer, ...)
 
+    stop()
     finalizeModelEstimatesDA(
       model             = model,
       theta             = final$par,
@@ -50,7 +51,7 @@ estQml <- function(model,
     mod_msg_warn(paste0(
       "Model estimation failed, returning starting values!\n",
       "Message: ", conditionMessage(e)
-    ))
+    ), newline. = verbose)
 
     finalizeModelEstimatesDA(
       model             = model,
