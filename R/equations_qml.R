@@ -338,14 +338,7 @@ gradientLogLikQml <- function(theta, model, epsilon = 1e-8, sign = -1,
 }
 
 
-# log likelihood for each observation -- not all
-# wrapper fro logLikQml(sum = FALSE)
-logLikQml_i <- function(theta, model, sign = -1) {
-  logLikQml(theta, model, sum = FALSE, sign = sign, verbose = FALSE)
-}
-
-
-# gradient function of logLikQml_i
+# Gradient function for per-observation QML scores.
 gradientLogLikQml_i <- function(theta, model, sign = -1, epsilon = 1e-8) {
   gradientLogLikQml(theta = theta, model = model, sign = sign, epsilon = epsilon, sum = FALSE)
 }

@@ -311,67 +311,6 @@ simpleGradientAllLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-
 }
 
 
-obsLogLikLms <- function(theta, model, P, sign = 1, ...) {
-  modFilled  <- fillModel(model = model, theta = theta, method = "lms")
-
-  ll <- 0
-  for (g in seq_len(modFilled$info$n.groups)) {
-    submodel <- modFilled$models[[g]]
-    data.g   <- submodel$data
-    P.g      <- P$P_GROUPS[[g]]
-
-    ll.g <- observedLogLikLmsCpp(submodel,
-                                 dataR = data.g$data.split,
-                                 colidxR = data.g$colidx0,
-                                 P = P.g,
-                                 n = data.g$n.pattern,
-                                 npatterns = data.g$p,
-                                 ncores = ThreadEnv$n.threads)
-    ll <- ll + ll.g
-  }
-
-  sign * ll
-}
-
-
-obsLogLikLmsGroup <- function(submodel, P, sign = -1, ...) {
-  tryCatch({
-    data.g <- submodel$data
-
-    ll <- observedLogLikLmsCpp(submodel,
-                               dataR = data.g$data.split,
-                               colidxR = data.g$colidx0,
-                               P = P,
-                               n = data.g$n.pattern,
-                               npatterns = data.g$p,
-                               ncores = ThreadEnv$n.threads)
-    sign * ll
-
-  }, error = \(e) NA)
-}
-
-
-gradientObsLogLikLms <- function(theta, model, P, sign = 1, epsilon = 1e-6) {
-  FGRAD <- function(modelR, P, block, row, col, symmetric, colidxR, npatterns,
-                    eps, ncores, n, ...) {
-    dataR <- modelR$data
-    gradObsLogLikLmsCpp(modelR = modelR, dataR = dataR$data.split, P = P,
-                        block = block, row = row, col = col,
-                        symmetric = symmetric, colidxR = colidxR,
-                        n = n, npatterns = npatterns, eps = eps,
-                        ncores = ncores)
-  }
-
-  FOBJECTIVE <- function(theta, model, P, colidxR, npatterns, sign, ...) {
-    obsLogLikLmsGroup(theta = theta, model = model, P = P, sign = sign)
-  }
-
-  gradientAllLogLikLms(theta = theta, model = model, P = P, sign = sign,
-                       epsilon = epsilon, FGRAD = FGRAD,
-                       FOBJECTIVE = FOBJECTIVE)
-}
-
-
 obsLogLikLmsGroup_i <- function(submodel, P, sign = 1) {
   data <- submodel$data
   V  <- P$V
@@ -588,30 +527,6 @@ simpleHessianAllLogLikLms <- function(theta, model, P, sign = -1,
   term2 <- diag(drop(Jacobian2 %*% grad), nrow = nrow(Jacobian))
 
   sign * (term1 + term2)
-}
-
-
-hessianObsLogLikLms <- function(theta, model, P, sign = -1,
-                                data = NULL,
-                                .relStep = .Machine$double.eps ^ (1/5)) {
-
-  FHESS <- function(modelR, P, block, row, col, symmetric, eps, .relStep, colidxR, n,
-                    npatterns, ncores, ...) {
-    dataR <- modelR$data
-    hessObsLogLikLmsCpp(modelR = modelR, dataR = dataR$data.split, P = P,
-                        block = block, row = row, col = col,
-                        symmetric = symmetric, npatterns = npatterns,
-                        colidxR = colidxR, n = n, relStep = .relStep,
-                        minAbs = 0.0, ncores = ncores)
-  }
-
-  FOBJECTIVE <- function(theta, submodel, P, sign, ...) {
-    obsLogLikLmsGroup(theta = theta, submodel = model, P = P, sign = sign)
-  }
-
-  hessianAllLogLikLms(theta = theta, model = model, P = P, sign = sign,
-                      FHESS = FHESS, FOBJECTIVE = FOBJECTIVE,
-                      .relStep = .relStep)
 }
 
 
