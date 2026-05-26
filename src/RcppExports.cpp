@@ -313,9 +313,9 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// gradLogLikQmlCpp
-arma::vec gradLogLikQmlCpp(const Rcpp::List& submodel, const arma::uvec& block, const arma::uvec& row, const arma::uvec& col, const arma::uvec& symmetric, const double eps, const int ncores);
-RcppExport SEXP _modsem_gradLogLikQmlCpp(SEXP submodelSEXP, SEXP blockSEXP, SEXP rowSEXP, SEXP colSEXP, SEXP symmetricSEXP, SEXP epsSEXP, SEXP ncoresSEXP) {
+// gradLogLikQmlFDCpp
+arma::vec gradLogLikQmlFDCpp(const Rcpp::List& submodel, const arma::uvec& block, const arma::uvec& row, const arma::uvec& col, const arma::uvec& symmetric, const double eps, const int ncores);
+RcppExport SEXP _modsem_gradLogLikQmlFDCpp(SEXP submodelSEXP, SEXP blockSEXP, SEXP rowSEXP, SEXP colSEXP, SEXP symmetricSEXP, SEXP epsSEXP, SEXP ncoresSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -326,13 +326,13 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const arma::uvec& >::type symmetric(symmetricSEXP);
     Rcpp::traits::input_parameter< const double >::type eps(epsSEXP);
     Rcpp::traits::input_parameter< const int >::type ncores(ncoresSEXP);
-    rcpp_result_gen = Rcpp::wrap(gradLogLikQmlCpp(submodel, block, row, col, symmetric, eps, ncores));
+    rcpp_result_gen = Rcpp::wrap(gradLogLikQmlFDCpp(submodel, block, row, col, symmetric, eps, ncores));
     return rcpp_result_gen;
 END_RCPP
 }
-// gradObsLogLikQmlCpp
-arma::mat gradObsLogLikQmlCpp(const Rcpp::List& submodel, const arma::uvec& block, const arma::uvec& row, const arma::uvec& col, const arma::uvec& symmetric, const double eps, const int ncores);
-RcppExport SEXP _modsem_gradObsLogLikQmlCpp(SEXP submodelSEXP, SEXP blockSEXP, SEXP rowSEXP, SEXP colSEXP, SEXP symmetricSEXP, SEXP epsSEXP, SEXP ncoresSEXP) {
+// gradObsLogLikQmlFDCpp
+arma::mat gradObsLogLikQmlFDCpp(const Rcpp::List& submodel, const arma::uvec& block, const arma::uvec& row, const arma::uvec& col, const arma::uvec& symmetric, const double eps, const int ncores);
+RcppExport SEXP _modsem_gradObsLogLikQmlFDCpp(SEXP submodelSEXP, SEXP blockSEXP, SEXP rowSEXP, SEXP colSEXP, SEXP symmetricSEXP, SEXP epsSEXP, SEXP ncoresSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -343,7 +343,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const arma::uvec& >::type symmetric(symmetricSEXP);
     Rcpp::traits::input_parameter< const double >::type eps(epsSEXP);
     Rcpp::traits::input_parameter< const int >::type ncores(ncoresSEXP);
-    rcpp_result_gen = Rcpp::wrap(gradObsLogLikQmlCpp(submodel, block, row, col, symmetric, eps, ncores));
+    rcpp_result_gen = Rcpp::wrap(gradObsLogLikQmlFDCpp(submodel, block, row, col, symmetric, eps, ncores));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -623,8 +623,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_modsem_logLikQmlCpp", (DL_FUNC) &_modsem_logLikQmlCpp, 2},
     {"_modsem_analyticalObsGradQmlCpp", (DL_FUNC) &_modsem_analyticalObsGradQmlCpp, 5},
     {"_modsem_analyticalGradQmlCpp", (DL_FUNC) &_modsem_analyticalGradQmlCpp, 5},
-    {"_modsem_gradLogLikQmlCpp", (DL_FUNC) &_modsem_gradLogLikQmlCpp, 7},
-    {"_modsem_gradObsLogLikQmlCpp", (DL_FUNC) &_modsem_gradObsLogLikQmlCpp, 7},
+    {"_modsem_gradLogLikQmlFDCpp", (DL_FUNC) &_modsem_gradLogLikQmlFDCpp, 7},
+    {"_modsem_gradObsLogLikQmlFDCpp", (DL_FUNC) &_modsem_gradObsLogLikQmlFDCpp, 7},
     {"_modsem_hessLogLikQmlCpp", (DL_FUNC) &_modsem_hessLogLikQmlCpp, 8},
     {"_modsem_multiplyIndicatorsCpp", (DL_FUNC) &_modsem_multiplyIndicatorsCpp, 1},
     {"_modsem_checkOpenMP_Cpp", (DL_FUNC) &_modsem_checkOpenMP_Cpp, 0},

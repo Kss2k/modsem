@@ -226,7 +226,7 @@ simpleGradientLogLikQml <- function(theta, model, sign = -1, epsilon = 1e-6) {
     bad <- !is.finite(grad.g)
 
     if (any(bad)) {
-      grad.fd <- gradLogLikQmlCpp(
+      grad.fd <- gradLogLikQmlFDCpp(
         submodel  = modelFilled$models[[g]],
         block     = locations.g$block[bad],
         row       = locations.g$row[bad],
@@ -276,7 +276,7 @@ simpleObsGradientLogLikQml <- function(theta, model, sign = -1, epsilon = 1e-6) 
     bad <- colSums(!is.finite(scores.g)) > 0L
 
     if (any(bad)) {
-      scores.fd <- gradObsLogLikQmlCpp(
+      scores.fd <- gradObsLogLikQmlFDCpp(
         submodel  = modelFilled$models[[g]],
         block     = locations.g$block[bad],
         row       = locations.g$row[bad],

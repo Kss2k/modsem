@@ -1551,13 +1551,42 @@ arma::vec analyticalGradQmlCore(
       (blk == 10) ||                   // gammaXi
       (blk == 11) ||                   // gammaEta
       (blk == 12) ||                   // omegaXiXi
-      (blk == 13 && !kOmega0) ||       // omegaEtaXi
+      (blk == 13) ||                   // omegaEtaXi
       (blk == 7) ||                    // psi
       (blk == 8) ||                    // alpha
       (blk == 16);                     // phi
 
     if (!supported)
       grad[k] = arma::datum::nan;
+  }
+
+  return grad;
+}
+
+
+arma::vec hybridGradQmlCore(
+    const QMLModel& M,
+    const arma::mat& dataFull,
+    const arma::uvec& block,
+    const arma::uvec& row,
+    const arma::uvec& col,
+    const arma::uvec& symmetric,
+    const double eps,
+    const int ncores)
+{
+  arma::vec grad = analyticalGradQmlCore(M, dataFull, block, row, col,
+                                         symmetric);
+  if (grad.is_finite()) return grad;
+
+  auto qmlLl = [&dataFull](QMLModel& Mc) -> double {
+    return logLikQmlFromModel(Mc, dataFull, 1);
+  };
+  QMLModel Mc = M.threadClone();
+  const arma::vec gradFD = gradientFDQmlCore(Mc, qmlLl, block, row, col,
+                                             symmetric, eps, ncores);
+
+  for (arma::uword k = 0; k < grad.n_elem; ++k) {
+    if (!std::isfinite(grad(k))) grad(k) = gradFD(k);
   }
 
   return grad;
@@ -1637,13 +1666,13 @@ arma::vec analyticalGradQmlCpp(const Rcpp::List& submodel,
 
 
 // [[Rcpp::export]]
-arma::vec gradLogLikQmlCpp(const Rcpp::List& submodel,
-                            const arma::uvec& block,
-                            const arma::uvec& row,
-                            const arma::uvec& col,
-                            const arma::uvec& symmetric,
-                            const double eps    = 1e-6,
-                            const int ncores    = 1L) {
+arma::vec gradLogLikQmlFDCpp(const Rcpp::List& submodel,
+                              const arma::uvec& block,
+                              const arma::uvec& row,
+                              const arma::uvec& col,
+                              const arma::uvec& symmetric,
+                              const double eps    = 1e-6,
+                              const int ncores    = 1L) {
   try {
     ThreadSetter ts(ncores);
     QMLModel M(submodel);
@@ -1665,13 +1694,13 @@ arma::vec gradLogLikQmlCpp(const Rcpp::List& submodel,
 
 
 // [[Rcpp::export]]
-arma::mat gradObsLogLikQmlCpp(const Rcpp::List& submodel,
-                              const arma::uvec& block,
-                              const arma::uvec& row,
-                              const arma::uvec& col,
-                              const arma::uvec& symmetric,
-                              const double eps = 1e-6,
-                              const int ncores = 1L) {
+arma::mat gradObsLogLikQmlFDCpp(const Rcpp::List& submodel,
+                                const arma::uvec& block,
+                                const arma::uvec& row,
+                                const arma::uvec& col,
+                                const arma::uvec& symmetric,
+                                const double eps = 1e-6,
+                                const int ncores = 1L) {
   try {
     ThreadSetter ts(ncores);
     QMLModel M(submodel);
@@ -1714,7 +1743,7 @@ arma::mat gradObsLogLikQmlCpp(const Rcpp::List& submodel,
 
 
 // =============================================================
-// Hybrid Hessian: FD of C++ gradient
+// Hybrid Hessian: finite difference of analytical gradients.
 // =============================================================
 
 // [[Rcpp::export]]
@@ -1731,24 +1760,20 @@ Rcpp::List hessLogLikQmlCpp(const Rcpp::List& submodel,
   const arma::mat dataFull =
     Rcpp::as<arma::mat>(Rcpp::as<Rcpp::List>(submodel["data"])["data.full"]);
 
-  auto qmlLl = [&dataFull](QMLModel& Mc) -> double {
-    return logLikQmlFromModel(Mc, dataFull, 1);
-  };
-
   const std::size_t p = block.n_elem;
   const arma::vec base = getParamsQml(M, block, row, col);
   const arma::vec incr =
     arma::max(arma::abs(base), arma::vec(p).fill(minAbs)) * relStep;
 
   const double    f0    = logLikQmlFromModel(M, dataFull, 1);
-  const arma::vec grad0 = gradientFDQmlCore(M, qmlLl, block, row, col,
-                                             symmetric, relStep, 1);
+  const arma::vec grad0 = hybridGradQmlCore(
+    M, dataFull, block, row, col, symmetric, relStep, 1
+  );
 
   arma::mat Hess(p, p, arma::fill::zeros);
 
   #pragma omp parallel for if(ncores > 1) schedule(static) \
-    shared(M, dataFull, block, row, col, symmetric, p, base, incr, grad0, Hess) \
-    firstprivate(qmlLl)
+    shared(M, dataFull, block, row, col, symmetric, p, base, incr, grad0, Hess)
   for (std::size_t j = 0; j < p; ++j) {
     try {
       QMLModel Mc = M.threadClone();
@@ -1756,8 +1781,9 @@ Rcpp::List hessLogLikQmlCpp(const Rcpp::List& submodel,
       pars[j] += incr[j];
       setParamsQml(Mc, block, row, col, symmetric, pars);
       Mc.updateCache();
-      const arma::vec gradJ = gradientFDQmlCore(Mc, qmlLl, block, row, col,
-                                                  symmetric, relStep, 1);
+      const arma::vec gradJ = hybridGradQmlCore(
+        Mc, dataFull, block, row, col, symmetric, relStep, 1
+      );
       Hess.col(j) = (gradJ - grad0) / incr[j];
     } catch (...) {
       Hess.col(j).fill(arma::datum::nan);

@@ -41,7 +41,7 @@ testthat::test_that("QML FD mapping includes composite variance blocks", {
   submodel$matrices$W <- matrix(1, 1, 1)
   submodel$matrices$T <- matrix(1, 1, 1)
 
-  grad <- gradLogLikQmlCpp(
+  grad <- gradLogLikQmlFDCpp(
     submodel = submodel,
     block = c(14L, 15L),
     row = c(0L, 0L),
@@ -208,7 +208,7 @@ testthat::test_that("simple QML analytical gradient matches C++ FD for supported
     symmetric = locations$symmetric
   )
 
-  grad.fd <- gradLogLikQmlCpp(
+  grad.fd <- gradLogLikQmlFDCpp(
     submodel = model.filled$models[[1]],
     block = locations$block,
     row = locations$row,
@@ -273,7 +273,7 @@ testthat::test_that("simple QML analytical gradient matches C++ FD for supported
     symmetric = locations$symmetric
   )
 
-  grad.fd <- gradLogLikQmlCpp(
+  grad.fd <- gradLogLikQmlFDCpp(
     submodel = model.filled$models[[1]],
     block = locations$block,
     row = locations$row,
@@ -342,7 +342,7 @@ testthat::test_that("simple QML analytical gradient matches C++ FD for supported
     symmetric = locations$symmetric
   )
 
-  grad.fd <- gradLogLikQmlCpp(
+  grad.fd <- gradLogLikQmlFDCpp(
     submodel = model.filled$models[[1]],
     block = locations$block,
     row = locations$row,
@@ -561,7 +561,7 @@ testthat::test_that("unsplit QML uses analytical non-constant-Binv observation s
     symmetric = locations$symmetric
   )
 
-  scores.fd <- gradObsLogLikQmlCpp(
+  scores.fd <- gradObsLogLikQmlFDCpp(
     submodel = model.filled$models[[1]],
     block = locations$block,
     row = locations$row,
