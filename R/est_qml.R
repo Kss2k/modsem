@@ -22,7 +22,6 @@ estQml <- function(model,
                       convergence = convergence, epsilon = epsilon,
                       verbose = verbose, optimizer = optimizer, ...)
 
-    stop()
     finalizeModelEstimatesDA(
       model             = model,
       theta             = final$par,
