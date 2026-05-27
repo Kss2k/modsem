@@ -233,10 +233,10 @@ LMS approach. Another option is to use (multiple) imputation.</p>
 performed.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">qml_impute</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m1</span>, <span class="va">oneInt2</span>, method <span class="op">=</span> <span class="st">"qml"</span>, missing <span class="op">=</span> <span class="st">"impute"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; modsem NOTE:  </span></span>
+<span><span class="co">#&gt; modsem-&gt;handleMissingData():  </span></span>
 <span><span class="co">#&gt;    Imputing missing values. Consider using the `modsem_mimpute()` function!</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">qml_impute</span><span class="op">)</span></span>
-<span><span class="co">#&gt; modsem NOTE:  </span></span>
+<span><span class="co">#&gt; modsem-&gt;handleMissingData():  </span></span>
 <span><span class="co">#&gt;    Imputing missing values. Consider using the `modsem_mimpute()` function!</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; modsem (1.0.20) ended normally after 51 iterations</span></span>
