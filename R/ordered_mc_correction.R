@@ -66,10 +66,20 @@ modsemOrderedMCCorrection <- function(model.syntax,
   data <- as.data.frame(data)
   cols.ordered <- mcOrderedCols(data = data, ovs = ovs, ordered = ordered)
   mod_stopif(!length(cols.ordered),
-         "No ordered variables were found for MC ordered correction.")
+    "No ordered variables were found for MC ordered correction."
+  )
 
-  if (verbose)
-    mod_msg_note(sprintf("Estimating MC-%s-ORD Correction (R=%d).", toupper(method), ordered.mc.reps))
+  if (verbose) {
+    mod_msg_note(
+      sprintf(
+        "Estimating Monte-Carlo corrected estimates (method=%s, R=%d).\n",
+        toupper(method), ordered.mc.reps
+      ),
+      "This is an experimental feature!",
+      "See `help(\"modsem_da\")` for more information.",
+      "Consider using the MC-OrdPLSc estimator in the `plssem` package."
+    )
+  }
 
   observed <- mcPrepareOrderedData(
     data = data,
@@ -172,7 +182,7 @@ modsemOrderedMCCorrection <- function(model.syntax,
 
   naive.se.label   <- "naive"
   penalty.se.label <- "penalized"
-  delta.se.label   <- "delta"
+  delta.se.label   <- "mc-delta"
 
   if (isTRUE(calc.se)) {
     vcov.free <- std.info$vcov.free
@@ -185,18 +195,37 @@ modsemOrderedMCCorrection <- function(model.syntax,
           mod_msg_note("Calculating MC ordered delta-method standard errors.")
 
         vcov.free <- tryCatch({
+          delta.seed <- ordered.rng.seed
+
+          if (is.null(delta.seed)) {
+            delta.seed <- floor(stats::runif(1L, min = 1, max = 9999999))
+
+            if (verbose)
+              mod_msg_note(sprintf("Using fixed MC ordered delta seed %i.", delta.seed))
+          }
+
+          vcov.delta <- mcAlignVcov(vcov.free, labels = names(theta.mc))
+
           H <- mcDeltaJacobian(
             p = theta.mc,
             f = f,
             reps = ordered.delta.reps,
-            seed = ordered.rng.seed,
-            epsilon = ordered.delta.epsilon
+            seed = delta.seed,
+            epsilon = ordered.delta.epsilon,
+            verbose = verbose
           )
 
-          H.inv <- solve(H)
-          V <- H.inv %*% vcov.free %*% t(H.inv)
-          V <- 0.5 * (V + t(V))
+          H.inv <- mcStableInverse(H)
+          V <- H.inv %*% vcov.delta %*% t(H.inv)
+          V <- mcStableVcov(V)
+
           dimnames(V) <- list(names(theta.mc), names(theta.mc))
+          attr(V, "delta.jacobian") <- H
+          attr(V, "delta.seed") <- delta.seed
+          attr(V, "delta.inverse.method") <- attr(H.inv, "method")
+          attr(V, "delta.condition") <- attr(H.inv, "condition")
+          attr(V, "delta.psd.adjusted") <- attr(V, "psd.adjusted")
+
           type.se <<- delta.se.label
 
           V
@@ -651,12 +680,14 @@ mcGetConvergencePoints <- function(history) {
 }
 
 
-mcDeltaJacobian <- function(p, f, reps, seed, epsilon = 1e-3) {
+mcDeltaJacobian <- function(p, f, reps, seed, epsilon = 1e-3, verbose = interactive()) {
   k <- length(p)
   J <- matrix(NA_real_, nrow = k, ncol = k,
               dimnames = list(names(p), names(p)))
 
   for (j in seq_len(k)) {
+    if (verbose) printf("\rCalculating Jacobian %d/%d...", j, k)
+
     step <- epsilon * max(1, abs(p[[j]]))
     p.plus <- p
     p.minus <- p
@@ -665,10 +696,97 @@ mcDeltaJacobian <- function(p, f, reps, seed, epsilon = 1e-3) {
 
     f.plus <- f(p.plus, reps = reps, seed = seed, verbose.fit = FALSE)
     f.minus <- f(p.minus, reps = reps, seed = seed, verbose.fit = FALSE)
+
+    if (!all(is.finite(f.plus)) || !all(is.finite(f.minus)))
+      stop("Non-finite finite-difference function value.")
+
     J[, j] <- (f.plus - f.minus) / (2 * step)
   }
 
+  if (verbose)
+    printf("\n")
+
+  if (!all(is.finite(J)))
+    stop("Non-finite finite-difference Jacobian.")
+
   J
+}
+
+
+mcAlignVcov <- function(vcov, labels) {
+  if (is.null(vcov))
+    stop("Missing variance-covariance matrix.")
+
+  dn <- dimnames(vcov)
+  if (is.null(dn) || is.null(dn[[1L]]) || is.null(dn[[2L]]))
+    stop("Variance-covariance matrix must have dimnames.")
+
+  missing <- setdiff(labels, rownames(vcov))
+  if (length(missing))
+    stop("Variance-covariance matrix is missing parameters: ",
+         paste(missing, collapse = ", "))
+
+  V <- vcov[labels, labels, drop = FALSE]
+  V <- 0.5 * (V + t(V))
+  dimnames(V) <- list(labels, labels)
+  V
+}
+
+
+mcStableInverse <- function(X, rcond.tol = 1e-8) {
+  if (NROW(X) != NCOL(X))
+    stop("Jacobian must be square.")
+  if (!all(is.finite(X)))
+    stop("Jacobian contains non-finite values.")
+
+  sv <- svd(X)
+  d <- sv$d
+  d.max <- max(d)
+  d.min <- min(d)
+  if (!is.finite(d.max) || d.max <= 0)
+    stop("Jacobian is numerically zero.")
+
+  rcond <- d.min / d.max
+  if (is.finite(rcond) && rcond > rcond.tol) {
+    out <- solve(X)
+    method <- "solve"
+    condition <- 1 / rcond
+  } else {
+    d.reg <- pmax(d, d.max * rcond.tol)
+    out <- sv$v %*% (diag(1 / d.reg, nrow = length(d.reg)) %*% t(sv$u))
+    method <- "svd-ridge"
+    condition <- 1 / max(rcond, rcond.tol, na.rm = TRUE)
+  }
+
+  dimnames(out) <- rev(dimnames(X))
+  attr(out, "method") <- method
+  attr(out, "condition") <- condition
+  out
+}
+
+
+mcStableVcov <- function(V, eigen.tol = .Machine$double.eps^0.5) {
+  nms <- dimnames(V)
+  V <- 0.5 * (V + t(V))
+  if (!all(is.finite(V)))
+    stop("Delta-method variance-covariance matrix contains non-finite values.")
+
+  eig <- eigen(V, symmetric = TRUE)
+  scale <- max(abs(eig$values), 1)
+  lower <- -eigen.tol * scale
+  adjusted <- any(eig$values < 0)
+  materially.adjusted <- any(eig$values < lower)
+  values <- pmax(eig$values, 0)
+
+  if (adjusted) {
+    V <- eig$vectors %*% (diag(values, nrow = length(values)) %*% t(eig$vectors))
+    V <- 0.5 * (V + t(V))
+  }
+
+  dimnames(V) <- nms
+  attr(V, "psd.adjusted") <- adjusted
+  attr(V, "psd.materially.adjusted") <- materially.adjusted
+  V
 }
 
 
@@ -735,7 +853,11 @@ mcOrderedExpectedMatrices <- function(fit,
                                       mc.reps,
                                       seed = NULL,
                                       standardize = TRUE) {
-  parTable <- mcStdParTableFromState(std.info = std.info, state = state)
+
+  parTable <- mcStdParTableFromState(
+    std.info = std.info, state = state
+  )
+
   sim <- simulateDataParTableStandardized(
     parTable = parTable,
     N = mc.reps,
@@ -757,6 +879,7 @@ mcOrderedExpectedMatrices <- function(fit,
     ovs = ovs,
     group = group
   )
+
   expected.blocks <- mcSplitOrderedBlocks(
     data = sim.ord,
     ovs = ovs,
@@ -770,10 +893,16 @@ mcOrderedExpectedMatrices <- function(fit,
 
     sigma.obs <- stats::cov(obs.g, use = "pairwise.complete.obs")
     sigma.exp <- stats::cov(exp.g, use = "pairwise.complete.obs")
-    mu.obs <- matrix(colMeans(obs.g, na.rm = TRUE), ncol = 1,
-                     dimnames = list(colnames(obs.g), "~1"))
-    mu.exp <- matrix(colMeans(exp.g, na.rm = TRUE), ncol = 1,
-                     dimnames = list(colnames(exp.g), "~1"))
+
+    mu.obs <- matrix(
+      colMeans(obs.g, na.rm = TRUE), ncol = 1,
+      dimnames = list(colnames(obs.g), "~1")
+    )
+
+    mu.exp <- matrix(
+      colMeans(exp.g, na.rm = TRUE), ncol = 1,
+      dimnames = list(colnames(exp.g), "~1")
+    )
 
     out[[i]] <- list(
       sigma.all = sigma.exp,
@@ -886,7 +1015,6 @@ mcHasResidualCovariances <- function(parTable) {
       covs$rhs %in% endogenous
   )
 }
-
 
 
 mcExtractStandardizedState <- function(fit, std.info) {
@@ -1009,13 +1137,16 @@ mcReplaceFreeVcovAll <- function(fit, vcov.free) {
 }
 
 
-mcSEFromVcov <- function(fit, theta, vcov.free) {
+mcSEFromVcov <- function(fit, theta, vcov.free, zero.tol = 1e-10) {
   if (is.null(vcov.free))
     return(stats::setNames(rep(NA_real_, length(fit$coefs.all)),
                            names(fit$coefs.all)))
 
   lav <- mcFreeLavLabels(fit = fit, theta = theta)
+
   se <- sqrt(pmax(diag(vcov.free), 0))
+  se[se < zero.tol] <- NA_real_
+
   stats::setNames(se, lav)
 }
 
