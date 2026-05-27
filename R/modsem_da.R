@@ -182,14 +182,14 @@
 #'   Polyak-Juditsky path to estimate the convergence point. If \code{FALSE}, the
 #'   averaged iterate is used directly.
 #'
-#' @param ordered.se Character string selecting the ordered MC standard-error
-#'   correction. \code{"penalty"} (default) uses a conservative variance inflation
+#' @param ordered.se Character string selecting the ordered MC standard-error correction.
+#'   \code{"delta"} (default) uses the delta method.
+#'   \code{"penalty"} uses a conservative variance inflation
 #'   based on the discrepancy between the naive and MC-corrected standardized estimates.
 #'   \code{"naive"} uses the fast diagonal rescaling approximation, and
-#'   \code{"delta"} uses the full delta-method Jacobian correction.
 #'
 #' @param ordered.se.penalty Non-negative numeric multiplier used when
-#'   \code{ordered.se = "penalty"}. The penalty adds
+#'   \code{ordered.se = "penalized"}. The penalty adds
 #'   \code{ordered.se.penalty * (theta_mc - theta_naive)^2} to the diagonal of the
 #'   naive covariance matrix on the variance scale.
 #'
@@ -378,13 +378,13 @@ modsem_da <- function(model.syntax = NULL,
                       ordered = NULL,
                       ordered.mc.reps = NULL,
                       ordered.min.iter = 20L,
-                      ordered.max.iter = 100L,
+                      ordered.max.iter = 250L,
                       ordered.tol = 1e-4,
                       ordered.rng.seed = NULL,
                       ordered.fixed.seed = FALSE,
                       ordered.polyak.juditsky = TRUE,
                       ordered.pj.extrapolate = TRUE,
-                      ordered.se = c("penalty", "naive", "delta"),
+                      ordered.se = c("delta", "penalized", "naive"),
                       ordered.se.penalty = 0.25,
                       ordered.delta.reps = NULL,
                       ordered.delta.epsilon = 1e-2,

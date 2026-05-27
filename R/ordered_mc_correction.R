@@ -10,14 +10,14 @@ modsemOrderedMCCorrection <- function(model.syntax,
                                       mc.reps = NULL,
                                       ordered.mc.reps = mc.reps,
                                       ordered.min.iter = 20L,
-                                      ordered.max.iter = 100L,
+                                      ordered.max.iter = 250L,
                                       ordered.tol = 1e-4,
                                       ordered.rng.seed = NULL,
                                       ordered.fixed.seed = FALSE,
                                       ordered.polyak.juditsky = TRUE,
                                       ordered.pj.extrapolate = TRUE,
                                       ordered.fn.args = list(),
-                                      ordered.se = c("penalty", "naive", "delta"),
+                                      ordered.se = c("delta", "penalized", "naive"),
                                       ordered.se.penalty = 0.5,
                                       ordered.delta.reps = ordered.mc.reps,
                                       ordered.delta.epsilon = 1e-2,
@@ -181,7 +181,7 @@ modsemOrderedMCCorrection <- function(model.syntax,
   type.se <- if (isTRUE(calc.se)) fit0$type.se else "none"
 
   naive.se.label   <- "naive"
-  penalty.se.label <- "penalized"
+  penalized.se.label <- "penalized"
   delta.se.label   <- "mc-delta"
 
   if (isTRUE(calc.se)) {
@@ -232,7 +232,7 @@ modsemOrderedMCCorrection <- function(model.syntax,
 
         }, error = function(e) {
           mod_msg_warn(paste0(
-            "Delta-method MC correction failed; using ordered MC penalty ",
+            "Delta-method MC correction failed; using ordered MC penalized ",
             "standard errors instead. Message: ", conditionMessage(e)
           ))
 
@@ -259,7 +259,7 @@ modsemOrderedMCCorrection <- function(model.syntax,
 
         type.se <- naive.se.label
 
-      } else if (identical(ordered.se, "penalty")) {
+      } else if (identical(ordered.se, "penalized")) {
         if (verbose)
           mod_msg_note("Using penalized standard errors.")
 
@@ -698,7 +698,7 @@ mcDeltaJacobian <- function(p, f, reps, seed, epsilon = 1e-3, verbose = interact
     f.minus <- f(p.minus, reps = reps, seed = seed, verbose.fit = FALSE)
 
     if (!all(is.finite(f.plus)) || !all(is.finite(f.minus)))
-      stop("Non-finite finite-difference function value.")
+      mod_msg_stop("Non-finite finite-difference function value.")
 
     J[, j] <- (f.plus - f.minus) / (2 * step)
   }
@@ -707,7 +707,7 @@ mcDeltaJacobian <- function(p, f, reps, seed, epsilon = 1e-3, verbose = interact
     printf("\n")
 
   if (!all(is.finite(J)))
-    stop("Non-finite finite-difference Jacobian.")
+    mod_msg_stop("Non-finite finite-difference Jacobian.")
 
   J
 }
@@ -715,15 +715,15 @@ mcDeltaJacobian <- function(p, f, reps, seed, epsilon = 1e-3, verbose = interact
 
 mcAlignVcov <- function(vcov, labels) {
   if (is.null(vcov))
-    stop("Missing variance-covariance matrix.")
+    mod_msg_stop("Missing variance-covariance matrix.")
 
   dn <- dimnames(vcov)
   if (is.null(dn) || is.null(dn[[1L]]) || is.null(dn[[2L]]))
-    stop("Variance-covariance matrix must have dimnames.")
+    mod_msg_stop("Variance-covariance matrix must have dimnames.")
 
   missing <- setdiff(labels, rownames(vcov))
   if (length(missing))
-    stop("Variance-covariance matrix is missing parameters: ",
+    mod_msg_stop("Variance-covariance matrix is missing parameters: ",
          paste(missing, collapse = ", "))
 
   V <- vcov[labels, labels, drop = FALSE]
@@ -735,16 +735,16 @@ mcAlignVcov <- function(vcov, labels) {
 
 mcStableInverse <- function(X, rcond.tol = 1e-8) {
   if (NROW(X) != NCOL(X))
-    stop("Jacobian must be square.")
+    mod_msg_stop("Jacobian must be square.")
   if (!all(is.finite(X)))
-    stop("Jacobian contains non-finite values.")
+    mod_msg_stop("Jacobian contains non-finite values.")
 
   sv <- svd(X)
   d <- sv$d
   d.max <- max(d)
   d.min <- min(d)
   if (!is.finite(d.max) || d.max <= 0)
-    stop("Jacobian is numerically zero.")
+    mod_msg_stop("Jacobian is numerically zero.")
 
   rcond <- d.min / d.max
   if (is.finite(rcond) && rcond > rcond.tol) {
@@ -769,7 +769,7 @@ mcStableVcov <- function(V, eigen.tol = .Machine$double.eps^0.5) {
   nms <- dimnames(V)
   V <- 0.5 * (V + t(V))
   if (!all(is.finite(V)))
-    stop("Delta-method variance-covariance matrix contains non-finite values.")
+    mod_msg_stop("Delta-method variance-covariance matrix contains non-finite values.")
 
   eig <- eigen(V, symmetric = TRUE)
   scale <- max(abs(eig$values), 1)
@@ -964,14 +964,14 @@ mcStandardizedStateInfo <- function(fit) {
   rhs <- parTable$rhs
 
   has.residual.cov <- mcHasResidualCovariances(parTable)
-  keep <- op %in% c("=~", "<~", "~", "~~")
+  keep <- (
+    op %in% c("=~", "<~", "~", "~~") &
+    !(op == "~~" & (grepl(":", lhs) | grepl(":", rhs)))
+  )
 
   if (!has.residual.cov) {
     redundant <- (
-      keep & (
-        (op == "~~" & lhs == rhs) |
-        (op == "~~" & (grepl(":", lhs) | grepl(":", rhs)))
-      )
+      keep & (op == "~~" & lhs == rhs)
     )
 
     parTable$.state.redundant[redundant] <- TRUE
@@ -1010,9 +1010,8 @@ mcHasResidualCovariances <- function(parTable) {
 
   covs <- parTable[is.cov, , drop = FALSE]
   any(
-    (covs$lhs %in% inds & covs$rhs %in% inds) |
-      covs$lhs %in% endogenous |
-      covs$rhs %in% endogenous
+    (covs$lhs %in% inds & covs$rhs %in% inds & covs$rhs == covs$lhs) |
+    (covs$lhs %in% endogenous & covs$rhs %in% endogenous & covs$rhs == covs$lhs)
   )
 }
 

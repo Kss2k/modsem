@@ -6,7 +6,7 @@ modsem_cache_env <- new.env(parent = emptyenv())
 # a maximum line length of 'txt_width' while all but the first line start with
 # 'indent' spaces. If a footer is specified it is appended to the formatted text
 # 'as is'. The message is shown via R function 'message()'.
-mod_msg_note <- function(..., showheader = FALSE, footer = "") {
+mod_msg_note <- function(..., showheader = TRUE, footer = "") {
   wat <- unlist(list(...), use.names = FALSE)
   if (!showheader) wat <- c("modsem NOTE: ___", wat)
   msg <- mod_msg(wat, showheader = showheader)
