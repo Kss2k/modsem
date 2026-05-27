@@ -243,7 +243,7 @@ modsemOrderedMCCorrection <- function(model.syntax,
             lambda = ordered.se.penalty
           )
 
-          type.se <<- penalty.se.label
+          type.se <<- penalized.se.label
           penalized
         })
 
@@ -270,7 +270,7 @@ modsemOrderedMCCorrection <- function(model.syntax,
           lambda = ordered.se.penalty
         )
 
-        type.se <- penalty.se.label
+        type.se <- penalized.se.label
       }
     }
   }
@@ -1000,18 +1000,22 @@ mcStandardizedStateInfo <- function(fit) {
 
 
 mcHasResidualCovariances <- function(parTable) {
-  is.cov <- parTable$op == "~~" & parTable$lhs != parTable$rhs
-  if (!any(is.cov)) return(FALSE)
+  is.cov <- (
+    parTable$op == "~~" & parTable$lhs != parTable$rhs &
+    !grepl(":", parTable$lhs) & !grepl(":", parTable$rhs)
+  )
 
-  lVs <- getLVs(parTable)
-  indsLVs <- getIndsLVs(parTable, lVs = lVs)
-  inds <- unique(unlist(indsLVs))
-  endogenous <- unique(parTable[parTable$op == "~", "lhs"])
+  if (!any(is.cov))
+    return(FALSE)
+
+  inds <- getIndicators(parTable)
+  etas <- getEtas(parTable, checkAny = FALSE)
 
   covs <- parTable[is.cov, , drop = FALSE]
+
   any(
-    (covs$lhs %in% inds & covs$rhs %in% inds & covs$rhs == covs$lhs) |
-    (covs$lhs %in% endogenous & covs$rhs %in% endogenous & covs$rhs == covs$lhs)
+    (covs$lhs %in% inds & covs$rhs %in% inds) |
+    covs$lhs %in% etas | covs$rhs %in% etas
   )
 }
 
