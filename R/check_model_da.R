@@ -38,13 +38,13 @@ checkAConstraints <- function(model, covModel, method = "lms") {
   isOKANumeric <- all(is.na(An[lower.tri(An, diag = TRUE)])) ||
                  !any(is.na(An[lower.tri(An)]))
 
-  mod_warnif(!isOKALabel || !isOKANumeric,
-         paste0("Variances and covariances of exogenous variables aren't truely ",
-         "free parameters in the LMS approach.\n\n",
-         "Using them in model constraints will likely not work as intended!\n\n",
-         'To fix this you can pass an empty model to `cov.syntax`, for example: \n',
-         '    `modsem(my_model, data = my_data, method = "lms", cov.syntax = "")`')
-  )
+  mod_warnif_immediate(!isOKALabel || !isOKANumeric, paste0(
+    "Variances and covariances of exogenous variables aren't truely ",
+     "free parameters in the LMS approach.\n\n",
+     "Using them in model constraints will likely not work as intended!\n\n",
+     'To fix this you can pass an empty model to `cov.syntax`, for example: \n',
+     '    `modsem(my_model, data = my_data, method = "lms", cov.syntax = "")`'
+  ))
 }
 
 
@@ -126,15 +126,23 @@ checkNodesLms <- function(parTableMain,
     else mod_msg_warn("Unable to classify latent variables in interaction terms")
   })
 
-  mod_warnif(!nodesXiXi_ok, paste0("It is recommended that you have at least ",
-         minNodesXiXi,  " nodes for interaction effects between ",
-         "exogenous variables in the lms approach 'nodes = ", nodes, "'"))
-  mod_warnif(!nodesXiEta_ok, paste0("It is recommended that you have at least ",
-         minNodesXiEta, " nodes for interaction effects between exogenous ",
-         "and endogenous variables in the lms approach 'nodes = ", nodes, "'"))
-  mod_warnif(!nodesEtaEta_ok, paste0("It is recommended that you have at least ",
-         minNodesEtaEta, " nodes for interaction effects between endogenous ",
-         "variables in the lms approach 'nodes = ", nodes, "'"))
+  mod_warnif_immediate(!nodesXiXi_ok,
+    paste0("It is recommended that you have at least ",
+           minNodesXiXi,  " nodes for interaction effects between ",
+           "exogenous variables in the lms approach 'nodes = ", nodes, "'")
+  )
+
+  mod_warnif_immediate(!nodesXiEta_ok,
+    paste0("It is recommended that you have at least ",
+           minNodesXiEta, " nodes for interaction effects between exogenous ",
+           "and endogenous variables in the lms approach 'nodes = ", nodes, "'")
+  )
+
+  mod_warnif_immediate(!nodesEtaEta_ok,
+    paste0("It is recommended that you have at least ",
+           minNodesEtaEta, " nodes for interaction effects between endogenous ",
+           "variables in the lms approach 'nodes = ", nodes, "'")
+  )
 }
 
 
@@ -177,7 +185,7 @@ checkOmegaEtaXi <- function(model, method = "qml", zero.tol = 1e-10) {
   omegaEtaXi <- model$matrices$omegaEtaXi
   problematic <- any(is.na(omegaEtaXi) | abs(omegaEtaXi) > zero.tol)
 
-  mod_warnif(problematic,
+  mod_warnif_immediate(problematic,
     paste0("Interactions between exogenous and enodgenous variables in the QML\n",
            "approach can be biased in some cases...\n",
            "You can try passing `auto.split.syntax=TRUE` and `cov.syntax=NULL`...")
