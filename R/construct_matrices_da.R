@@ -197,8 +197,10 @@ constructTau <- function(lVs, indsLVs, parTable, mean.observed = TRUE) {
                 dimnames = list(allIndsLVs, "1"))
   for (lV in lVs) { # set first ind to 0, if lV has meanstructure
     subPT <- parTable[parTable$lhs == lV & parTable$op == "~1", ]
-    if (NROW(subPT)) {
-      firstInd         <- indsLVs[[lV]][[1]]
+    indsLV <- indsLVs[[lV]]
+
+    if (NROW(subPT) && length(indsLV)) {
+      firstInd         <- indsLV[[1]]
       tau[firstInd, 1] <- 0
       lavOptimizerSyntaxAdditions <-
         getFixedInterceptSyntax(indicator = firstInd, parTable = parTable,
