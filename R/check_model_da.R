@@ -168,11 +168,13 @@ checkCovEtaXi <- function(parTable, canBeCausedByCovModel = FALSE) {
     )
   } else msgcov <- ""
 
+  prob <- parTable[problematicRows, ]
+  par <- paste0(prob$lhs, prob$op, prob$rhs)
+
   msg <- paste0(
     "Covariances between exogenous and endogenous variables are not available,\n",
     "and will be ignored! The problematic covariances are:\n",
-    capturePrint(parTable[problematicRows, ]),
-    msgcov
+    paste0(par, collapse = ", "), msgcov
   )
 
   mod_warnif_immediate(any(problematicRows), msg)
