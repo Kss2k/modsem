@@ -21,7 +21,7 @@ createLavLabels <- function(matrices, subset, etas, parTable.in = NULL) {
   T            <- createLabelsMatrix(matrices$T, op = "~~")
   phi          <- createLabelsMatrix(matrices$phi, op = "~~")
   A            <- createLabelsMatrix(matrices$A, op = "~~")
-  APsi         <- createLabelsMatrix(matrices$APsi, op = "~~", first = "cols")
+  covZetaXi    <- createLabelsMatrix(matrices$covZetaXi, op = "~~", first = "cols")
   psi          <- createLabelsMatrix(matrices$psi, op = "~~")
   tauX         <- createLabelsMatrix(matrices$tauX, op = "~", first = "rows")
   tauY         <- createLabelsMatrix(matrices$tauY, op = "~", first = "rows")
@@ -43,7 +43,7 @@ createLavLabels <- function(matrices, subset, etas, parTable.in = NULL) {
     T = T,
     phi = phi,
     A = A,
-    APsi = APsi,
+    covZetaXi = covZetaXi,
     psi = psi,
     alpha = alpha,
     beta0 = beta0,

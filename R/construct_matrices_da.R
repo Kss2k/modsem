@@ -356,14 +356,14 @@ constructA <- function(xis, method = "lms", cov.syntax = NULL,
 }
 
 
-constructAPsi <- function(xis, etas, method = "lms", parTable) {
+constructCovZetaXi <- function(xis, etas, method = "lms", parTable) {
   if (method != "lms" || !length(xis) || !length(etas))
     return(EMPTY_MATSTRUCT)
 
   numXis <- length(xis)
   numEtas <- length(etas)
 
-  APsi <- matrix(
+  covZetaXi <- matrix(
     0, nrow = numEtas, ncol = numXis,
     dimnames = list(etas, xis)
   )
@@ -381,7 +381,7 @@ constructAPsi <- function(xis, etas, method = "lms", parTable) {
   parTableResCov$rhs[swap] <- lhs
 
   setMatrixConstraints(
-    X = APsi, parTable = parTableResCov, op = "~~",
+    X = covZetaXi, parTable = parTableResCov, op = "~~",
     RHS = c(xis, etas), LHS = c(xis, etas),
     type = "lhs", nonFreeParams = FALSE
   )

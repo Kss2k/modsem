@@ -682,19 +682,19 @@ getCoefMatricesDA <- function(parTable,
   psi   <- createCov(etas)
   phi   <- createCov(xis)
   theta <- createCov(inds)
-  APsi <- matrix(0, nrow = length(etas), ncol = length(xis),
-                 dimnames = list(etas, xis))
-  APsiRows <- parTable[parTable$op == "~~" &
+  covZetaXi <- matrix(0, nrow = length(etas), ncol = length(xis),
+                       dimnames = list(etas, xis))
+  covZetaXiRows <- parTable[parTable$op == "~~" &
                        ((parTable$lhs %in% etas & parTable$rhs %in% xis) |
                         (parTable$lhs %in% xis & parTable$rhs %in% etas)),
                        , drop = FALSE]
-  for (i in seq_len(NROW(APsiRows))) {
-    lhs <- APsiRows$lhs[i]
-    rhs <- APsiRows$rhs[i]
-    est <- APsiRows$est[i]
+  for (i in seq_len(NROW(covZetaXiRows))) {
+    lhs <- covZetaXiRows$lhs[i]
+    rhs <- covZetaXiRows$rhs[i]
+    est <- covZetaXiRows$est[i]
 
-    if (lhs %in% etas) APsi[lhs, rhs] <- est
-    else               APsi[rhs, lhs] <- est
+    if (lhs %in% etas) covZetaXi[lhs, rhs] <- est
+    else               covZetaXi[rhs, lhs] <- est
   }
 
   createBeta <- function(var) {
@@ -756,7 +756,7 @@ getCoefMatricesDA <- function(parTable,
 
   list(
     gammaXi = gammaXi, gammaEta = gammaEta, Binv = Binv, psi = psi,
-    APsi = APsi,
+    covZetaXi = covZetaXi,
     phi = phi, theta = theta, alpha = alpha, beta0 = beta0, tau = tau,
     lambda = lambda, inds = inds, xis = xis, etas = etas, lVs = lVs,
     lambda.c = lambda.c, theta.c = theta.c, T = T, W = W
@@ -788,27 +788,27 @@ calcExpectedMatricesDA_Group <- function(parTable, xis = NULL, etas = NULL, intT
 
   # Sigma ----------------------------------------------------------------------
   # Uses centered solution
-  gammaXi  <- matricesCentered$gammaXi
-  gammaEta <- matricesCentered$gammaEta
-  phi      <- matricesCentered$phi
-  psi      <- matricesCentered$psi
-  APsi     <- matricesCentered$APsi
-  Binv     <- matricesCentered$Binv
-  tau      <- matricesCentered$tau
-  lambda   <- matricesCentered$lambda
-  lambda.c <- matricesCentered$lambda.c
-  alpha    <- matricesCentered$alpha
-  beta0    <- matricesCentered$beta0
-  theta    <- matricesCentered$theta
-  theta.c  <- matricesCentered$theta.c
+  gammaXi   <- matricesCentered$gammaXi
+  gammaEta  <- matricesCentered$gammaEta
+  phi       <- matricesCentered$phi
+  psi       <- matricesCentered$psi
+  covZetaXi <- matricesCentered$covZetaXi
+  Binv      <- matricesCentered$Binv
+  tau       <- matricesCentered$tau
+  lambda    <- matricesCentered$lambda
+  lambda.c  <- matricesCentered$lambda.c
+  alpha     <- matricesCentered$alpha
+  beta0     <- matricesCentered$beta0
+  theta     <- matricesCentered$theta
+  theta.c   <- matricesCentered$theta.c
 
   covEtaEta <- Binv %*% (
     gammaXi %*% phi %*% t(gammaXi) +
-      gammaXi %*% t(APsi) +
-      APsi %*% t(gammaXi) +
+      gammaXi %*% t(covZetaXi) +
+      covZetaXi %*% t(gammaXi) +
       psi
   ) %*% t(Binv)
-  covEtaXi <- Binv %*% (gammaXi %*% phi + APsi)
+  covEtaXi <- Binv %*% (gammaXi %*% phi + covZetaXi)
   sigma.lv <- rbind(cbind(phi, t(covEtaXi)),
                     cbind(covEtaXi, covEtaEta))
   sigma.ov <- (

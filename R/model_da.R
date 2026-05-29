@@ -261,9 +261,10 @@ specifyModelDA_Group <- function(syntax = NULL,
   A      <- listA$numeric
   labelA <- listA$label
 
-  listAPsi <- constructAPsi(xis, etas, method = method, parTable = parTable)
-  APsi      <- listAPsi$numeric
-  labelAPsi <- listAPsi$label
+  listCovZetaXi <- constructCovZetaXi(xis, etas, method = method,
+                                       parTable = parTable)
+  covZetaXi      <- listCovZetaXi$numeric
+  labelCovZetaXi <- listCovZetaXi$label
 
   # mean etas
   listAlpha <- constructAlpha(etas, parTable = parTable,
@@ -332,7 +333,7 @@ specifyModelDA_Group <- function(syntax = NULL,
     T            = T,
     phi          = phi,
     A            = A,
-    APsi         = APsi,
+    covZetaXi    = covZetaXi,
     Ieta         = Ieta,
     psi          = psi,
     tauX         = tauX,
@@ -377,7 +378,7 @@ specifyModelDA_Group <- function(syntax = NULL,
 
     phi   = labelPhi,
     A     = labelA,
-    APsi  = labelAPsi,
+    covZetaXi = labelCovZetaXi,
     psi   = labelPsi,
     tauX  = labelTauX,
     tauY  = labelTauY,
@@ -748,10 +749,10 @@ mainModelToParTable <- function(finalModel, method = "lms") {
                               symmetric = TRUE)
   parTable <- rbind(parTable, newRows)
 
-  newRows <- matrixToParTable(matricesNA$APsi,
-                              matricesEst$APsi,
-                              matricesSE$APsi,
-                              matricesLabel$APsi,
+  newRows <- matrixToParTable(matricesNA$covZetaXi,
+                              matricesEst$covZetaXi,
+                              matricesSE$covZetaXi,
+                              matricesLabel$covZetaXi,
                               op = "~~",
                               rowsLhs = TRUE)
   parTable <- rbind(parTable, newRows)

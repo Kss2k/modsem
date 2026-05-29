@@ -24,18 +24,18 @@ inline arma::vec makeZvec(unsigned k, unsigned numXis, const arma::vec& z) {
 
 struct LMSModel {
   arma::mat A, Oxx, Oex, Ie, lY, lX, W, T, tY, tX, Gx, Ge,
-    a, beta0, Psi, d, e, APsi;
+    a, beta0, Psi, d, e, covZetaXi;
   unsigned  k        = 0;
   unsigned  numXis   = 0;
   bool hasComposites = false;
 
   // Precomputed z-independent derived quantities; call updateCache() after any
-  // change to A, Gx, Psi, or APsi (i.e. after lmsParam / setParams perturbations).
+  // change to A, Gx, Psi, or covZetaXi (i.e. after lmsParam / setParams perturbations).
   arma::mat Oi, GxA, AOi, AOiAt, ZetaProj, PsiOrth;
 
   void updateCache() {
     Oi       = makeOi(k, numXis);
-    ZetaProj = arma::solve(arma::trimatl(A), APsi.t(), arma::solve_opts::fast).t();
+    ZetaProj = arma::solve(arma::trimatl(A), covZetaXi.t(), arma::solve_opts::fast).t();
     PsiOrth  = Psi - ZetaProj * ZetaProj.t();
     GxA      = Gx * A;
     AOi      = A * Oi;
@@ -53,24 +53,24 @@ struct LMSModel {
     hasComposites = Rcpp::as<bool>(info["hasComposites"]);
 
     // one-liners, no loops
-    A      = Rcpp::as<arma::mat>(matrices["A"]);
-    Oxx    = Rcpp::as<arma::mat>(matrices["omegaXiXi"]);
-    Oex    = Rcpp::as<arma::mat>(matrices["omegaEtaXi"]);
-    Ie     = Rcpp::as<arma::mat>(matrices["Ieta"]);
-    lY     = Rcpp::as<arma::mat>(matrices["lambdaY"]);
-    lX     = Rcpp::as<arma::mat>(matrices["lambdaX"]);
-    tY     = Rcpp::as<arma::mat>(matrices["tauY"]);
-    tX     = Rcpp::as<arma::mat>(matrices["tauX"]);
-    W      = Rcpp::as<arma::mat>(matrices["W"]);
-    T      = Rcpp::as<arma::mat>(matrices["T"]);
-    Gx     = Rcpp::as<arma::mat>(matrices["gammaXi"]);
-    Ge     = Rcpp::as<arma::mat>(matrices["gammaEta"]);
-    a      = Rcpp::as<arma::mat>(matrices["alpha"]);
-    beta0  = Rcpp::as<arma::mat>(matrices["beta0"]);
-    Psi    = Rcpp::as<arma::mat>(matrices["psi"]);
-    d      = Rcpp::as<arma::mat>(matrices["thetaDelta"]);
-    e      = Rcpp::as<arma::mat>(matrices["thetaEpsilon"]);
-    APsi   = Rcpp::as<arma::mat>(matrices["APsi"]);
+    A         = Rcpp::as<arma::mat>(matrices["A"]);
+    Oxx       = Rcpp::as<arma::mat>(matrices["omegaXiXi"]);
+    Oex       = Rcpp::as<arma::mat>(matrices["omegaEtaXi"]);
+    Ie        = Rcpp::as<arma::mat>(matrices["Ieta"]);
+    lY        = Rcpp::as<arma::mat>(matrices["lambdaY"]);
+    lX        = Rcpp::as<arma::mat>(matrices["lambdaX"]);
+    tY        = Rcpp::as<arma::mat>(matrices["tauY"]);
+    tX        = Rcpp::as<arma::mat>(matrices["tauX"]);
+    W         = Rcpp::as<arma::mat>(matrices["W"]);
+    T         = Rcpp::as<arma::mat>(matrices["T"]);
+    Gx        = Rcpp::as<arma::mat>(matrices["gammaXi"]);
+    Ge        = Rcpp::as<arma::mat>(matrices["gammaEta"]);
+    a         = Rcpp::as<arma::mat>(matrices["alpha"]);
+    beta0     = Rcpp::as<arma::mat>(matrices["beta0"]);
+    Psi       = Rcpp::as<arma::mat>(matrices["psi"]);
+    d         = Rcpp::as<arma::mat>(matrices["thetaDelta"]);
+    e         = Rcpp::as<arma::mat>(matrices["thetaEpsilon"]);
+    covZetaXi = Rcpp::as<arma::mat>(matrices["covZetaXi"]);
 
     updateCache();
   }
@@ -109,30 +109,30 @@ struct LMSModel {
   LMSModel threadClone() const {
     LMSModel c = *this;    // shallow for everything (fast)
                            // Deep-copy ONLY what setParams()/lmsParam can modify:
-    c.A     = arma::mat(A);
-    c.Oxx   = arma::mat(Oxx);
-    c.Oex   = arma::mat(Oex);
-    c.Ie    = arma::mat(Ie);
-    c.lY    = arma::mat(lY);
-    c.lX    = arma::mat(lX);
-    c.tY    = arma::mat(tY);
-    c.tX    = arma::mat(tX);
-    c.W     = arma::mat(W);
-    c.T     = arma::mat(T);
-    c.Gx    = arma::mat(Gx);
-    c.Ge    = arma::mat(Ge);
-    c.a     = arma::mat(a);
-    c.beta0 = arma::mat(beta0);
-    c.Psi   = arma::mat(Psi);
-    c.APsi  = arma::mat(APsi);
-    c.d     = arma::mat(d);
-    c.e     = arma::mat(e);
-    c.Oi    = arma::mat(Oi);
-    c.GxA   = arma::mat(GxA);
-    c.AOi   = arma::mat(AOi);
-    c.AOiAt = arma::mat(AOiAt);
-    c.ZetaProj = arma::mat(ZetaProj);
-    c.PsiOrth = arma::mat(PsiOrth);
+    c.A         = arma::mat(A);
+    c.Oxx       = arma::mat(Oxx);
+    c.Oex       = arma::mat(Oex);
+    c.Ie        = arma::mat(Ie);
+    c.lY        = arma::mat(lY);
+    c.lX        = arma::mat(lX);
+    c.tY        = arma::mat(tY);
+    c.tX        = arma::mat(tX);
+    c.W         = arma::mat(W);
+    c.T         = arma::mat(T);
+    c.Gx        = arma::mat(Gx);
+    c.Ge        = arma::mat(Ge);
+    c.a         = arma::mat(a);
+    c.beta0     = arma::mat(beta0);
+    c.Psi       = arma::mat(Psi);
+    c.covZetaXi = arma::mat(covZetaXi);
+    c.d         = arma::mat(d);
+    c.e         = arma::mat(e);
+    c.Oi        = arma::mat(Oi);
+    c.GxA       = arma::mat(GxA);
+    c.AOi       = arma::mat(AOi);
+    c.AOiAt     = arma::mat(AOiAt);
+    c.ZetaProj  = arma::mat(ZetaProj);
+    c.PsiOrth   = arma::mat(PsiOrth);
 
     return c;
   }
@@ -196,13 +196,13 @@ inline double& lmsParam(LMSModel& M, std::size_t blk,
     case 13: return  M.Oex  (r,c);
     case 14: return  M.W    (r,c);
     case 15: return  M.T    (r,c);
-    case 17: return  M.APsi (r,c);
+    case 17: return  M.covZetaXi (r,c);
     default: Rcpp::stop("unknown block id");
   }
 }
 
 struct LMSAdjoints {
-  arma::mat A, Oxx, Oex, lX, tX, Gx, Ge, a, beta0, Psi, APsi, d;
+  arma::mat A, Oxx, Oex, lX, tX, Gx, Ge, a, beta0, Psi, covZetaXi, d;
 
   explicit LMSAdjoints(const LMSModel& M) :
     A(M.A.n_rows, M.A.n_cols, arma::fill::zeros),
@@ -215,22 +215,22 @@ struct LMSAdjoints {
     a(M.a.n_rows, M.a.n_cols, arma::fill::zeros),
     beta0(M.beta0.n_rows, M.beta0.n_cols, arma::fill::zeros),
     Psi(M.Psi.n_rows, M.Psi.n_cols, arma::fill::zeros),
-    APsi(M.APsi.n_rows, M.APsi.n_cols, arma::fill::zeros),
+    covZetaXi(M.covZetaXi.n_rows, M.covZetaXi.n_cols, arma::fill::zeros),
     d(M.d.n_rows, M.d.n_cols, arma::fill::zeros) {}
 
   void add(const LMSAdjoints& other) {
-    A     += other.A;
-    Oxx   += other.Oxx;
-    Oex   += other.Oex;
-    lX    += other.lX;
-    tX    += other.tX;
-    Gx    += other.Gx;
-    Ge    += other.Ge;
-    a     += other.a;
-    beta0 += other.beta0;
-    Psi   += other.Psi;
-    APsi  += other.APsi;
-    d     += other.d;
+    A         += other.A;
+    Oxx       += other.Oxx;
+    Oex       += other.Oex;
+    lX        += other.lX;
+    tX        += other.tX;
+    Gx        += other.Gx;
+    Ge        += other.Ge;
+    a         += other.a;
+    beta0     += other.beta0;
+    Psi       += other.Psi;
+    covZetaXi += other.covZetaXi;
+    d         += other.d;
   }
 };
 
@@ -259,7 +259,7 @@ inline const arma::mat& lmsAdjointBlock(const LMSAdjoints& adj,
     case 11: return adj.Ge;
     case 12: return adj.Oxx;
     case 13: return adj.Oex;
-    case 17: return adj.APsi;
+    case 17: return adj.covZetaXi;
     default: {
       static const arma::mat empty;
       return empty;
@@ -282,7 +282,7 @@ inline void addLatentCovAdjoints(const LMSModel& M,
   if (!EBar.n_elem) return;
 
   const arma::mat invA = arma::inv(arma::trimatl(M.A));
-  adj.APsi += EBar * invA;
+  adj.covZetaXi += EBar * invA;
   adj.A    -= M.ZetaProj.t() * EBar * invA;
 }
 

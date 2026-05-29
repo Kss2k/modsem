@@ -125,7 +125,7 @@ modsem_inspect_da <- function(model,
     omega.xi.xi  <- diagPartitionedMat(matrices$omegaXiXi,   fetchCov("omegaXiXi"))
     omega.eta.xi <- diagPartitionedMat(matrices$omegaEtaXi,  fetchCov("omegaEtaXi"))
     phi          <- diagPartitionedMat(matrices$phi,         fetchCov("phi"))
-    apsi         <- matrices$APsi
+    cov.zeta.xi  <- matrices$covZetaXi
     psi          <- diagPartitionedMat(matrices$psi,         fetchCov("psi"))
     W            <- matrices$W
 
@@ -155,7 +155,7 @@ modsem_inspect_da <- function(model,
         omega.xi.xi  = .modsemMatrix(omega.xi.xi),
         omega.eta.xi = .modsemMatrix(omega.eta.xi),
         phi          = .modsemMatrix(phi, symmetric = TRUE),
-        apsi         = .modsemMatrix(apsi),
+        cov.zeta.xi  = .modsemMatrix(cov.zeta.xi),
         psi          = .modsemMatrix(psi, symmetric = TRUE),
         alpha        = .modsemMatrix(alpha),
         beta0        = .modsemMatrix(beta0)
