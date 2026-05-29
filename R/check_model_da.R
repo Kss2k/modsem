@@ -179,7 +179,7 @@ checkCovEtaXi <- function(parTable, canBeCausedByCovModel = FALSE,
 
   msg <- paste0(
     "Covariances between exogenous and endogenous variables are not available,\n",
-    "and will be ignored! The problematic covariances are:\n",
+    "and will be ignored! Consider trying `method=\"lms\"` instead. The problematic covariances are:\n",
     paste0(par, collapse = ", "), msgcov
   )
 

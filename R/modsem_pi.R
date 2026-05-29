@@ -396,7 +396,7 @@ modsem_pi <- function(model.syntax = NULL,
     lavEst <- tryCatch(LAVFUN(newSyntax, newData, estimator = estimator,
                               group = group, ...) |> lavWrapper(),
                        error = function(cnd) {
-                         mod_msg_warn(capturePrint(cnd))
+                         mod_msg_warn(conditionMessage(cnd))
                          NULL
                        })
     coefParTable <- tryCatch(lavaan::parameterEstimates(lavEst),
@@ -944,7 +944,7 @@ modsemPICluster <- function(model.syntax = NULL,
         ))
       },
       error = function(cnd) {
-        mod_msg_warn(capturePrint(cnd))
+        mod_msg_warn(conditionMessage(cnd))
         NULL
       }
     )

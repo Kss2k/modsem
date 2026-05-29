@@ -628,7 +628,10 @@ sortConstrExprs <- function(parTable) {
     mod_msg_stop(paste0("Unknown labels in constraints: ", rows$lhs[!rows$lhs %in% labelled]))
 
   } else if (length(unique(rows$lhs)) != length(rows$lhs)) {
-    mod_msg_stop(paste0("Duplicated labels in constraints:\n", capturePrint(table(rows$lhs))))
+    mod_msg_stop(
+      paste0("Duplicated labels in constraints:\n",
+             paste0(rows$lhs[duplicated(rows$lhs)], collapse = ", "))
+    )
 
   } else if (any(rows$op %in% BOUNDUARY_OPS)) {
     mod_msg_stop("Dynamic constraints with ('<', '>') are not implemented yet!")

@@ -192,8 +192,16 @@ relcorrSingleItemGroup <- function(syntax = NULL,
   # Check if there are any indicators in the structural model
   indsInInner <- parTableInner$lhs %in% inds | parTableInner$rhs %in% inds
   if (any(indsInInner)) {
-    mod_msg_warn(paste0("Removing expressions containing indicators!\n",
-             capturePrint(parTableInner[indsInInner, c("lhs", "op", "rhs")])))
+    removing <- apply(
+      X = parTableInner[indsInInner, c("lhs", "op", "rhs"), drop = FALSE],
+      MARGIN = 1L, FUN = paste0, collapse = ""
+    )
+
+    mod_msg_warn(
+      paste0("Removing expressions containing indicators!\n",
+             paste0(removing, collapse = ", "))
+    )
+
     parTableInner <- parTableInner[!indsInInner, ]
   }
 
