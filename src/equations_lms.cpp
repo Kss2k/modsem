@@ -24,20 +24,22 @@ inline arma::vec makeZvec(unsigned k, unsigned numXis, const arma::vec& z) {
 
 struct LMSModel {
   arma::mat A, Oxx, Oex, Ie, lY, lX, W, T, tY, tX, Gx, Ge,
-    a, beta0, Psi, d, e;
+    a, beta0, Psi, d, e, APsi;
   unsigned  k        = 0;
   unsigned  numXis   = 0;
   bool hasComposites = false;
 
   // Precomputed z-independent derived quantities; call updateCache() after any
-  // change to A or Gx (i.e. after lmsParam / setParams perturbations).
-  arma::mat Oi, GxA, AOi, AOiAt;
+  // change to A, Gx, Psi, or APsi (i.e. after lmsParam / setParams perturbations).
+  arma::mat Oi, GxA, AOi, AOiAt, ZetaProj, PsiOrth;
 
   void updateCache() {
-    Oi    = makeOi(k, numXis);
-    GxA   = Gx * A;
-    AOi   = A * Oi;
-    AOiAt = AOi * A.t();
+    Oi       = makeOi(k, numXis);
+    ZetaProj = arma::solve(arma::trimatl(A), APsi.t(), arma::solve_opts::fast).t();
+    PsiOrth  = Psi - ZetaProj * ZetaProj.t();
+    GxA      = Gx * A;
+    AOi      = A * Oi;
+    AOiAt    = AOi * A.t();
   }
 
   explicit LMSModel(const Rcpp::List& modFilled) {
@@ -68,6 +70,7 @@ struct LMSModel {
     Psi    = Rcpp::as<arma::mat>(matrices["psi"]);
     d      = Rcpp::as<arma::mat>(matrices["thetaDelta"]);
     e      = Rcpp::as<arma::mat>(matrices["thetaEpsilon"]);
+    APsi   = Rcpp::as<arma::mat>(matrices["APsi"]);
 
     updateCache();
   }
@@ -81,10 +84,10 @@ struct LMSModel {
     const arma::mat B     = Ie - Ge - kronZ.t() * Oex;
 
     const arma::mat Binv     = arma::inv(B);
-    const arma::vec muEta    = Binv * (a + Gx * muXi + kronZ.t() * Oxx * muXi);
-    const arma::mat Eta      = Binv * (GxA + kronZ.t() * Oxx * A);
+    const arma::vec muEta    = Binv * (a + Gx * muXi + kronZ.t() * Oxx * muXi + ZetaProj * zVec);
+    const arma::mat Eta      = Binv * (GxA + kronZ.t() * Oxx * A + ZetaProj);
     const arma::mat varXi    = AOiAt;
-    const arma::mat varEta   = Eta * Oi * Eta.t() + Binv * Psi * Binv.t();
+    const arma::mat varEta   = Eta * Oi * Eta.t() + Binv * PsiOrth * Binv.t();
     const arma::mat covXiEta = AOi * Eta.t();
 
     const arma::mat vcovXiEta = arma::join_cols(
@@ -121,12 +124,15 @@ struct LMSModel {
     c.a     = arma::mat(a);
     c.beta0 = arma::mat(beta0);
     c.Psi   = arma::mat(Psi);
+    c.APsi  = arma::mat(APsi);
     c.d     = arma::mat(d);
     c.e     = arma::mat(e);
     c.Oi    = arma::mat(Oi);
     c.GxA   = arma::mat(GxA);
     c.AOi   = arma::mat(AOi);
     c.AOiAt = arma::mat(AOiAt);
+    c.ZetaProj = arma::mat(ZetaProj);
+    c.PsiOrth = arma::mat(PsiOrth);
 
     return c;
   }
@@ -190,12 +196,13 @@ inline double& lmsParam(LMSModel& M, std::size_t blk,
     case 13: return  M.Oex  (r,c);
     case 14: return  M.W    (r,c);
     case 15: return  M.T    (r,c);
+    case 17: return  M.APsi (r,c);
     default: Rcpp::stop("unknown block id");
   }
 }
 
 struct LMSAdjoints {
-  arma::mat A, Oxx, Oex, lX, tX, Gx, Ge, a, beta0, Psi, d;
+  arma::mat A, Oxx, Oex, lX, tX, Gx, Ge, a, beta0, Psi, APsi, d;
 
   explicit LMSAdjoints(const LMSModel& M) :
     A(M.A.n_rows, M.A.n_cols, arma::fill::zeros),
@@ -208,6 +215,7 @@ struct LMSAdjoints {
     a(M.a.n_rows, M.a.n_cols, arma::fill::zeros),
     beta0(M.beta0.n_rows, M.beta0.n_cols, arma::fill::zeros),
     Psi(M.Psi.n_rows, M.Psi.n_cols, arma::fill::zeros),
+    APsi(M.APsi.n_rows, M.APsi.n_cols, arma::fill::zeros),
     d(M.d.n_rows, M.d.n_cols, arma::fill::zeros) {}
 
   void add(const LMSAdjoints& other) {
@@ -221,6 +229,7 @@ struct LMSAdjoints {
     a     += other.a;
     beta0 += other.beta0;
     Psi   += other.Psi;
+    APsi  += other.APsi;
     d     += other.d;
   }
 };
@@ -250,11 +259,31 @@ inline const arma::mat& lmsAdjointBlock(const LMSAdjoints& adj,
     case 11: return adj.Ge;
     case 12: return adj.Oxx;
     case 13: return adj.Oex;
+    case 17: return adj.APsi;
     default: {
       static const arma::mat empty;
       return empty;
     }
   }
+}
+
+
+inline void addLatentCovAdjoints(const LMSModel& M,
+                                 const arma::mat& ZetaProjBar,
+                                 const arma::mat& psiIndependentBar,
+                                 LMSAdjoints& adj) {
+  arma::mat EBar = ZetaProjBar;
+
+  if (psiIndependentBar.n_elem) {
+    adj.Psi += psiIndependentBar;
+    EBar -= (psiIndependentBar + psiIndependentBar.t()) * M.ZetaProj;
+  }
+
+  if (!EBar.n_elem) return;
+
+  const arma::mat invA = arma::inv(arma::trimatl(M.A));
+  adj.APsi += EBar * invA;
+  adj.A    -= M.ZetaProj.t() * EBar * invA;
 }
 
 
@@ -269,12 +298,12 @@ inline void accumulateMuSigmaAdjoints(const LMSModel& M,
   const arma::mat K = arma::kron(M.Ie, u);
   const arma::mat B = M.Ie - M.Ge - K.t() * M.Oex;
   const arma::mat Binv = arma::inv(B);
-  const arma::vec r = M.a + M.Gx * u + K.t() * M.Oxx * u;
+  const arma::vec r = M.a + M.Gx * u + K.t() * M.Oxx * u + M.ZetaProj * zVec;
   const arma::vec v = Binv * r;
-  const arma::mat C = M.Gx * M.A + K.t() * M.Oxx * M.A;
+  const arma::mat C = M.Gx * M.A + K.t() * M.Oxx * M.A + M.ZetaProj;
   const arma::mat Eta = Binv * C;
   const arma::mat varXi = M.AOiAt;
-  const arma::mat varEta = Eta * M.Oi * Eta.t() + Binv * M.Psi * Binv.t();
+  const arma::mat varEta = Eta * M.Oi * Eta.t() + Binv * M.PsiOrth * Binv.t();
   const arma::mat covXiEta = M.AOi * Eta.t();
   const arma::mat V = arma::join_cols(
     arma::join_rows(varXi,        covXiEta),
@@ -314,9 +343,9 @@ inline void accumulateMuSigmaAdjoints(const LMSModel& M,
     adj.A += covBar * Eta * M.Oi;
 
     EtaBar += (varEtaBar + varEtaBar.t()) * Eta * M.Oi;
-    arma::mat BinvBar = varEtaBar * Binv * M.Psi.t() +
-                        varEtaBar.t() * Binv * M.Psi;
-    adj.Psi += Binv.t() * varEtaBar * Binv;
+    arma::mat BinvBar = varEtaBar * Binv * M.PsiOrth.t() +
+                        varEtaBar.t() * Binv * M.PsiOrth;
+    arma::mat PsiOrthBar = Binv.t() * varEtaBar * Binv;
 
     BinvBar += EtaBar * C.t();
     arma::mat CBar = Binv.t() * EtaBar;
@@ -332,6 +361,7 @@ inline void accumulateMuSigmaAdjoints(const LMSModel& M,
     adj.a += rBar;
     adj.Gx += rBar * u.t();
     uBar += M.Gx.t() * rBar;
+    arma::mat ZetaProjBar = rBar * zVec.t();
 
     arma::vec q = M.Oxx * u;
     KBar += q * rBar.t();
@@ -341,6 +371,7 @@ inline void accumulateMuSigmaAdjoints(const LMSModel& M,
 
     adj.Gx += CBar * M.A.t();
     adj.A += M.Gx.t() * CBar;
+    ZetaProjBar += CBar;
 
     arma::mat MBar = K * CBar;
     KBar += (M.Oxx * M.A) * CBar.t();
@@ -348,6 +379,7 @@ inline void accumulateMuSigmaAdjoints(const LMSModel& M,
     adj.A += M.Oxx.t() * MBar;
 
     addKronIeUAdjoint(uBar, KBar, M.numXis, numEta);
+    addLatentCovAdjoints(M, ZetaProjBar, PsiOrthBar, adj);
 
     adj.beta0 += uBar;
     adj.A += uBar * zVec.t();
@@ -380,9 +412,9 @@ inline void accumulateMuSigmaAdjoints(const LMSModel& M,
   adj.A += covBar * Eta * M.Oi;
 
   EtaBar += (varEtaBar + varEtaBar.t()) * Eta * M.Oi;
-  arma::mat BinvBar = varEtaBar * Binv * M.Psi.t() +
-                      varEtaBar.t() * Binv * M.Psi;
-  adj.Psi += Binv.t() * varEtaBar * Binv;
+  arma::mat BinvBar = varEtaBar * Binv * M.PsiOrth.t() +
+                      varEtaBar.t() * Binv * M.PsiOrth;
+  arma::mat PsiOrthBar = Binv.t() * varEtaBar * Binv;
 
   BinvBar += EtaBar * C.t();
   arma::mat CBar = Binv.t() * EtaBar;
@@ -398,6 +430,7 @@ inline void accumulateMuSigmaAdjoints(const LMSModel& M,
   adj.a += rBar;
   adj.Gx += rBar * u.t();
   uBar += M.Gx.t() * rBar;
+  arma::mat ZetaProjBar = rBar * zVec.t();
 
   arma::vec q = M.Oxx * u;
   KBar += q * rBar.t();
@@ -407,6 +440,7 @@ inline void accumulateMuSigmaAdjoints(const LMSModel& M,
 
   adj.Gx += CBar * M.A.t();
   adj.A += M.Gx.t() * CBar;
+  ZetaProjBar += CBar;
 
   arma::mat MBar = K * CBar;
   KBar += (M.Oxx * M.A) * CBar.t();
@@ -414,6 +448,7 @@ inline void accumulateMuSigmaAdjoints(const LMSModel& M,
   adj.A += M.Oxx.t() * MBar;
 
   addKronIeUAdjoint(uBar, KBar, M.numXis, numEta);
+  addLatentCovAdjoints(M, ZetaProjBar, PsiOrthBar, adj);
 
   adj.beta0 += uBar;
   adj.A += uBar * zVec.t();

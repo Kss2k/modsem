@@ -1,6 +1,6 @@
 inspectDA_Matrices <- c("lambda", "wmat", "tau", "theta", "gamma.xi",
                         "gamma.eta", "omega.xi.xi",
-                        "omega.eta.xi", "phi", "psi", "alpha", "beta0")
+                        "omega.eta.xi", "phi", "apsi", "psi", "alpha", "beta0")
 
 
 inspectDA_Optim <- c("coefficients.free", "vcov.free", "information",
@@ -125,6 +125,7 @@ modsem_inspect_da <- function(model,
     omega.xi.xi  <- diagPartitionedMat(matrices$omegaXiXi,   fetchCov("omegaXiXi"))
     omega.eta.xi <- diagPartitionedMat(matrices$omegaEtaXi,  fetchCov("omegaEtaXi"))
     phi          <- diagPartitionedMat(matrices$phi,         fetchCov("phi"))
+    apsi         <- matrices$APsi
     psi          <- diagPartitionedMat(matrices$psi,         fetchCov("psi"))
     W            <- matrices$W
 
@@ -154,6 +155,7 @@ modsem_inspect_da <- function(model,
         omega.xi.xi  = .modsemMatrix(omega.xi.xi),
         omega.eta.xi = .modsemMatrix(omega.eta.xi),
         phi          = .modsemMatrix(phi, symmetric = TRUE),
+        apsi         = .modsemMatrix(apsi),
         psi          = .modsemMatrix(psi, symmetric = TRUE),
         alpha        = .modsemMatrix(alpha),
         beta0        = .modsemMatrix(beta0)
@@ -186,6 +188,7 @@ modsem_inspect_da <- function(model,
   omega.xi.xi.val  <- collapseField("omega.xi.xi")
   omega.eta.xi.val <- collapseField("omega.eta.xi")
   phi.val          <- collapseField("phi")
+  apsi.val         <- collapseField("apsi")
   psi.val          <- collapseField("psi")
   alpha.val        <- collapseField("alpha")
   beta0.val        <- collapseField("beta0")
@@ -234,6 +237,7 @@ modsem_inspect_da <- function(model,
      omega.eta.xi = omega.eta.xi.val,
 
      phi   = phi.val,
+     apsi  = apsi.val,
      psi   = psi.val,
 
      alpha = alpha.val,

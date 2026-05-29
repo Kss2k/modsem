@@ -149,6 +149,7 @@ optimizeStartingParamsDA <- function(model,
     Psi <- findEstimatesParTable(matricesMain$psi, parTable.g, op = "~~", fill = 0)
     Phi <- findEstimatesParTable(matricesMain$phi, parTable.g, op = "~~", fill = 0)
     A   <- findEstimatesParTable(matricesMain$A, parTable.g, op = "~~", fill = 0)
+    APsi <- findEstimatesParTable(matricesMain$APsi, parTable.g, op = "~~", fill = 0)
     T   <- findEstimatesParTable(matricesMain$T, parTable.g, op = "~~", fill = 0)
 
     # Matrices which can be corrected to ensure viable starting parameters need to
@@ -156,6 +157,7 @@ optimizeStartingParamsDA <- function(model,
     Psi <- fillLabelsMatrix(Psi, labelMatricesMain$psi, symmetric = TRUE)
     Phi <- fillLabelsMatrix(Phi, labelMatricesMain$phi, symmetric = TRUE)
     A   <- fillLabelsMatrix(A, labelMatricesMain$A, symmetric = FALSE)
+    APsi <- fillLabelsMatrix(APsi, labelMatricesMain$APsi, symmetric = FALSE)
     T   <- fillLabelsMatrix(T, labelMatricesMain$T, symmetric = FALSE)
     W   <- fillLabelsMatrix(W, labelMatricesMain$W, symmetric = FALSE)
 
@@ -218,6 +220,7 @@ optimizeStartingParamsDA <- function(model,
                              T[is.na(matricesMain$T)],
                              Phi[is.na(matricesMain$phi)],
                              A[is.na(matricesMain$A)],
+                             APsi[is.na(matricesMain$APsi)],
                              Psi[is.na(matricesMain$psi)],
                              alpha[is.na(matricesMain$alpha)],
                              beta0[is.na(matricesMain$beta0)],

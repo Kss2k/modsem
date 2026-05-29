@@ -19,8 +19,10 @@ preCheckModel <- function(model, covModel = NULL, method = "lms", missing = "com
 
   checkAConstraints(model = model, covModel = covModel, method = method)
 
-  checkCovEtaXi(parTable = model$parTable, canBeCausedByCovModel = hasCovModel)
-  checkCovEtaXi(parTable = model$covModel$parTable, canBeCausedByCovModel = FALSE)
+  checkCovEtaXi(parTable = model$parTable, canBeCausedByCovModel = hasCovModel,
+                method = method)
+  checkCovEtaXi(parTable = model$covModel$parTable, canBeCausedByCovModel = FALSE,
+                method = method)
 
   checkOmegaEtaXi(model = model, method = method)
 
@@ -146,8 +148,12 @@ checkNodesLms <- function(parTableMain,
 }
 
 
-checkCovEtaXi <- function(parTable, canBeCausedByCovModel = FALSE) {
+checkCovEtaXi <- function(parTable, canBeCausedByCovModel = FALSE,
+                          method = "lms") {
   if (!NROW(parTable))
+    return(NULL)
+
+  if (method == "lms")
     return(NULL)
 
   etas <- getEtas(parTable, checkAny = FALSE, isLV = FALSE)

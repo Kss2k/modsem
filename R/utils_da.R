@@ -682,6 +682,20 @@ getCoefMatricesDA <- function(parTable,
   psi   <- createCov(etas)
   phi   <- createCov(xis)
   theta <- createCov(inds)
+  APsi <- matrix(0, nrow = length(etas), ncol = length(xis),
+                 dimnames = list(etas, xis))
+  APsiRows <- parTable[parTable$op == "~~" &
+                       ((parTable$lhs %in% etas & parTable$rhs %in% xis) |
+                        (parTable$lhs %in% xis & parTable$rhs %in% etas)),
+                       , drop = FALSE]
+  for (i in seq_len(NROW(APsiRows))) {
+    lhs <- APsiRows$lhs[i]
+    rhs <- APsiRows$rhs[i]
+    est <- APsiRows$est[i]
+
+    if (lhs %in% etas) APsi[lhs, rhs] <- est
+    else               APsi[rhs, lhs] <- est
+  }
 
   createBeta <- function(var) {
     beta <- matrix(0, nrow = length(var), ncol = 1,
@@ -742,6 +756,7 @@ getCoefMatricesDA <- function(parTable,
 
   list(
     gammaXi = gammaXi, gammaEta = gammaEta, Binv = Binv, psi = psi,
+    APsi = APsi,
     phi = phi, theta = theta, alpha = alpha, beta0 = beta0, tau = tau,
     lambda = lambda, inds = inds, xis = xis, etas = etas, lVs = lVs,
     lambda.c = lambda.c, theta.c = theta.c, T = T, W = W
@@ -777,6 +792,7 @@ calcExpectedMatricesDA_Group <- function(parTable, xis = NULL, etas = NULL, intT
   gammaEta <- matricesCentered$gammaEta
   phi      <- matricesCentered$phi
   psi      <- matricesCentered$psi
+  APsi     <- matricesCentered$APsi
   Binv     <- matricesCentered$Binv
   tau      <- matricesCentered$tau
   lambda   <- matricesCentered$lambda
@@ -786,8 +802,13 @@ calcExpectedMatricesDA_Group <- function(parTable, xis = NULL, etas = NULL, intT
   theta    <- matricesCentered$theta
   theta.c  <- matricesCentered$theta.c
 
-  covEtaEta <- Binv %*% (gammaXi %*% phi %*% t(gammaXi) + psi) %*% t(Binv)
-  covEtaXi <- Binv %*% gammaXi %*% phi
+  covEtaEta <- Binv %*% (
+    gammaXi %*% phi %*% t(gammaXi) +
+      gammaXi %*% t(APsi) +
+      APsi %*% t(gammaXi) +
+      psi
+  ) %*% t(Binv)
+  covEtaXi <- Binv %*% (gammaXi %*% phi + APsi)
   sigma.lv <- rbind(cbind(phi, t(covEtaXi)),
                     cbind(covEtaXi, covEtaEta))
   sigma.ov <- (

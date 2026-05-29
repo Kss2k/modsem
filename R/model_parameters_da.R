@@ -1,8 +1,8 @@
 # Global variables
 NAMES_PAR_MATRICES <- c("lambdaX", "lambdaY", "gammaXi", "gammaEta",
                       "thetaDelta", "thetaEpsilon", "W", "T", "phi", "A",
-                      "psi", "tauX", "tauY", "alpha", "beta0", "omegaEtaXi",
-                      "omegaXiXi")
+                      "APsi", "psi", "tauX", "tauY", "alpha", "beta0",
+                      "omegaEtaXi", "omegaXiXi")
 NAMES_PAR_MATRICES_COV <- c("gammaXi", "gammaEta", "A", "psi", "phi")
 
 
@@ -51,6 +51,7 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
     T            <- as.vector(M$T)
     phi          <- as.vector(M$phi)
     A            <- as.vector(M$A)
+    APsi         <- as.vector(M$APsi)
     psi          <- as.vector(M$psi)
     tauX         <- as.vector(M$tauX)
     tauY         <- as.vector(M$tauY)
@@ -72,6 +73,7 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
       T            = T,
       phi          = phi,
       A            = A,
+      APsi         = APsi,
       psi          = psi,
       alpha        = alpha,
       beta0        = beta0,
@@ -258,7 +260,7 @@ fillMainModel <- function(model, theta, thetaLabel, fillPhi = FALSE,
   if (!is.null(model$covModel$matrices)) {
     M$phi <- M$A <- expectedCovModel(covModel, method = method, sortedXis = xis)
   } else if (method == "lms") {
-    M$A <- fillNA_Matrix(M$A, theta = theta, pattern = "^A([0-9]*)")
+    M$A <- fillNA_Matrix(M$A, theta = theta, pattern = "^A([0-9]+)?$")
   } else if (method == "qml") {
     M$phi <- fillSymmetric(M$phi, fetch(theta, "^phi"))
   }
@@ -269,6 +271,7 @@ fillMainModel <- function(model, theta, thetaLabel, fillPhi = FALSE,
   M$thetaEpsilon <- fillSymmetric(M$thetaEpsilon, fetch(theta, "thetaEpsilon"))
   M$W            <- fillNA_Matrix(M$W, theta = theta, pattern = "^W")
   M$T            <- fillSymmetric(M$T, fetch(theta, "^T"))
+  M$APsi         <- fillNA_Matrix(M$APsi, theta = theta, pattern = "^APsi")
   M$psi          <- fillSymmetric(M$psi, fetch(theta, "^psi"))
   M$tauX         <- fillNA_Matrix(M$tauX, theta = theta, pattern = "^tauX")
   M$tauY         <- fillNA_Matrix(M$tauY, theta = theta, pattern = "^tauY")
@@ -279,7 +282,9 @@ fillMainModel <- function(model, theta, thetaLabel, fillPhi = FALSE,
   M$omegaXiXi    <- fillNA_Matrix(M$omegaXiXi, theta = theta, pattern = "^omegaXiXi")
   M$omegaEtaXi   <- fillNA_Matrix(M$omegaEtaXi, theta = theta, pattern = "^omegaEtaXi")
 
-  if (fillPhi) M$phi <- M$A %*% t(M$A)
+  if (fillPhi) {
+    M$phi <- M$A %*% t(M$A)
+  }
   M
 }
 
@@ -415,7 +420,7 @@ calcPhiTheta <- function(theta, model, method) {
       theta[select][labels] <- labVals
     }
 
-    theta[select][grepl("^A([0-9]*)", names(theta[select]))] <- vals
+    theta[select][grepl("^A([0-9]+)?$", names(theta[select]))] <- vals
   }
 
   theta
@@ -439,7 +444,8 @@ DA_BLOCKS = list(
   omegaEtaXi   = 13,
   W            = 14,
   T            = 15,
-  phi          = 16   # QML: free parameter; LMS: derived from A (not free)
+  phi          = 16,  # QML: free parameter; LMS: derived from A (not free)
+  APsi         = 17
 )
 
 
