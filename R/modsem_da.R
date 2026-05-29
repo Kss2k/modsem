@@ -709,7 +709,7 @@ modsem_da <- function(model.syntax = NULL,
 
   # Finalize the model object
   # Expected means and covariances
-  est$expected.matrices <- tryCatch(
+  expected.matrices <- tryCatch(
     calcExpectedMatricesDA(
       parTable = est$parTable,
       xis  = getXisModelDA(model$models[[1L]]), # taking both the main model and cov model into account
@@ -718,7 +718,16 @@ modsem_da <- function(model.syntax = NULL,
     error = function(e) {
       mod_msg_warn(paste0("Failed to calculate expected matrices: ", e$message))
       NULL
-    })
+    }
+  )
+
+  if (!is.null(expected.matrices)) {
+    est$expected.matrices <- expected.matrices
+
+    for (g in seq_along(est$model$models)) # attach to submodels
+      est$model$models[[g]]$expected.matrices <- expected.matrices[[g]]
+  }
+
 
   # Arguments
   est$args <- args

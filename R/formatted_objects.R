@@ -1,4 +1,4 @@
-modsemMatrix <- function(mat, symmetric = isSymmetric(mat), is.public = FALSE) {
+modsemMatrix <- function(mat, symmetric = !is.null(mat) && isSymmetric(mat), is.public = FALSE) {
   if (is.null(mat)) return(mat)
 
   if (is.public) {

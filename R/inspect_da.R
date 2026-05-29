@@ -1,6 +1,5 @@
-inspectDA_Matrices <- c("lambda", "wmat", "tau", "theta", "gamma.xi",
-                        "gamma.eta", "omega.xi.xi",
-                        "omega.eta.xi", "phi", "apsi", "psi", "alpha", "beta0")
+inspectDA_Matrices <- c("lambda", "theta", "wmat", "tmat",
+                        "psi", "beta", "nu", "alpha")
 
 
 inspectDA_Optim <- c("coefficients.free", "vcov.free", "information",
@@ -112,53 +111,43 @@ modsem_inspect_da <- function(model,
   }
 
   buildGroupPayload <- function(submodel, expected) {
-    matrices         <- submodel$matrices
-    matricesCovModel <- submodel$covModel$matrices
-    fetchCov <- function(name) {
-      if (!is.null(matricesCovModel)) matricesCovModel[[name]] else NULL
+    # matrices in lavaan notation
+    matrices <- submodel$expected.matrices$matrices
+
+    lambda <- matrices$lambda
+    theta  <- matrices$theta
+    wmat   <- matrices$wmat
+    tmat   <- matrices$tmat
+    beta   <- matrices$beta
+    psi    <- matrices$psi
+    alpha  <- matrices$alpha
+    nu     <- matrices$nu
+
+    if (!NROW(wmat)) {
+      wmat <- lambda
+      wmat[TRUE] <- 0
     }
 
-    lambda       <- diagPartitionedMat(matrices$lambdaX, matrices$lambdaY)
-    theta        <- diagPartitionedMat(matrices$thetaDelta, matrices$thetaEpsilon)
-    gamma.xi     <- diagPartitionedMat(matrices$gammaXi,     fetchCov("gammaXi"))
-    gamma.eta    <- diagPartitionedMat(matrices$gammaEta,    fetchCov("gammaEta"))
-    omega.xi.xi  <- diagPartitionedMat(matrices$omegaXiXi,   fetchCov("omegaXiXi"))
-    omega.eta.xi <- diagPartitionedMat(matrices$omegaEtaXi,  fetchCov("omegaEtaXi"))
-    phi          <- diagPartitionedMat(matrices$phi,         fetchCov("phi"))
-    cov.zeta.xi  <- matrices$covZetaXi
-    psi          <- diagPartitionedMat(matrices$psi,         fetchCov("psi"))
-    W            <- matrices$W
-
-    if (!NROW(W)) {
-      W <- lambda
-      W[TRUE] <- 0
+    if (!NROW(tmat)) {
+      tmat <- theta 
+      tmat[TRUE] <- 0
     }
 
-    tau   <- rbind(matrices$tauX, matrices$tauY)
-    alpha <- matrices$alpha
-    beta0 <- matrices$beta0
-
-    if (!is.null(tau))   colnames(tau)   <- "~1"
+    if (!is.null(nu))    colnames(nu)   <- "~1"
     if (!is.null(alpha)) colnames(alpha) <- "~1"
-    if (!is.null(beta0)) colnames(beta0) <- "~1"
 
     out <- c(
       list(
-        N            = submodel$data$n,
-        data         = submodel$data$data.full,
-        lambda       = .modsemMatrix(lambda),
-        wmat         = .modsemMatrix(W),
-        tau          = .modsemMatrix(tau),
-        theta        = .modsemMatrix(theta, symmetric = TRUE),
-        gamma.xi     = .modsemMatrix(gamma.xi),
-        gamma.eta    = .modsemMatrix(gamma.eta),
-        omega.xi.xi  = .modsemMatrix(omega.xi.xi),
-        omega.eta.xi = .modsemMatrix(omega.eta.xi),
-        phi          = .modsemMatrix(phi, symmetric = TRUE),
-        cov.zeta.xi  = .modsemMatrix(cov.zeta.xi),
-        psi          = .modsemMatrix(psi, symmetric = TRUE),
-        alpha        = .modsemMatrix(alpha),
-        beta0        = .modsemMatrix(beta0)
+        N      = submodel$data$n,
+        data   = submodel$data$data.full,
+        lambda = .modsemMatrix(lambda),
+        wmat   = .modsemMatrix(wmat),
+        theta  = .modsemMatrix(theta, symmetric = TRUE),
+        tmat   = .modsemMatrix(tmat),
+        nu     = .modsemMatrix(nu),
+        alpha  = .modsemMatrix(alpha),
+        beta   = .modsemMatrix(beta),
+        psi    = .modsemMatrix(psi, symmetric = TRUE)
       ),
       buildExpectedPayload(expected)
     )
@@ -181,17 +170,12 @@ modsem_inspect_da <- function(model,
   data.val         <- collapseField("data")
   lambda.val       <- collapseField("lambda")
   wmat.val         <- collapseField("wmat")
-  tau.val          <- collapseField("tau")
+  tmat.val         <- collapseField("tmat")
+  nu.val           <- collapseField("nu")
   theta.val        <- collapseField("theta")
-  gamma.xi.val     <- collapseField("gamma.xi")
-  gamma.eta.val    <- collapseField("gamma.eta")
-  omega.xi.xi.val  <- collapseField("omega.xi.xi")
-  omega.eta.xi.val <- collapseField("omega.eta.xi")
-  phi.val          <- collapseField("phi")
-  apsi.val         <- collapseField("apsi")
+  beta.val         <- collapseField("beta")
   psi.val          <- collapseField("psi")
   alpha.val        <- collapseField("alpha")
-  beta0.val        <- collapseField("beta0")
   cov.ov.val       <- collapseField("cov.ov")
   cov.lv.val       <- collapseField("cov.lv")
   cov.all.val      <- collapseField("cov.all")
@@ -227,21 +211,14 @@ modsem_inspect_da <- function(model,
      group       = model$args$group,
      group.label = if (!is.null(model$args$group)) group.names else NULL,
 
-     lambda       = lambda.val,
-     wmat         = wmat.val,
-     tau          = tau.val,
-     theta        = theta.val,
-     gamma.xi     = gamma.xi.val,
-     gamma.eta    = gamma.eta.val,
-     omega.xi.xi  = omega.xi.xi.val,
-     omega.eta.xi = omega.eta.xi.val,
-
-     phi   = phi.val,
-     apsi  = apsi.val,
-     psi   = psi.val,
-
-     alpha = alpha.val,
-     beta0 = beta0.val,
+     lambda  = lambda.val,
+     theta   = theta.val,
+     wmat    = wmat.val,
+     tmat    = tmat.val,
+     nu      = nu.val,
+     alpha   = alpha.val,
+     beta    = beta.val,
+     psi     = psi.val,
 
      cov.ov  = cov.ov.val,
      cov.lv  = cov.lv.val,

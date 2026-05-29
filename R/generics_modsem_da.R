@@ -667,9 +667,9 @@ var_interactions.modsem_da <- function(object, ...) {
 
 #' Inspect components of a \code{modsem_da} fit
 #'
-#' \code{modsem_inspect.modsem_da} Lets you
-#' pull matrices, optimiser diagnostics, expected moments, or fit
-#' measures from a \code{\link{modsem_da}} object.
+#' \code{modsem_inspect.modsem_da} lets you pull lavaan-style matrices,
+#' optimiser diagnostics, expected moments, or fit measures from a
+#' \code{\link{modsem_da}} object.
 #'
 #' @param object A fitted object of class \code{"modsem_da"}.
 #' @param what   Character scalar selecting what to return (see \emph{Details}).
@@ -690,7 +690,7 @@ var_interactions.modsem_da <- function(object, ...) {
 #'   \item{\code{"coef.all"}}{Coefficients and variance-covariance matrix of both free and constrained parameters (same as \code{"coef"}).}
 #'   \item{\code{"coef.free"}}{Coefficients and variance-covariance matrix of the free parameters.}
 #'   \item{\code{"all"}}{All items listed below, including \code{data}.}
-#'   \item{\code{"matrices"}}{The model matrices.}
+#'   \item{\code{"matrices"}}{The lavaan-style model matrices.}
 #'   \item{\code{"optim"}}{Only the items under \emph{Optimiser diagnostics}}.
 #'   \item{\code{"fit"}}{A list with \code{fit.h0}, \code{fit.h1}, comparative.fit}
 #' }
@@ -735,17 +735,14 @@ var_interactions.modsem_da <- function(object, ...) {
 #' \strong{Model matrices:}
 #'
 #' \describe{
-#'   \item{\code{"lambda"}}{\eqn{\Lambda} – Factor loadings.}
-#'   \item{\code{"tau"}}{\eqn{\tau} – Intercepts for indicators.}
-#'   \item{\code{"theta"}}{\eqn{\Theta} – Residual (Co-)Variances for indicators.}
-#'   \item{\code{"gamma.xi"}}{\eqn{\Gamma_{\xi}} – Structural coefficients between exogenous and endogenous variables.}
-#'   \item{\code{"gamma.eta"}}{\eqn{\Gamma_{\eta}} – Structural coefficients between endogenous variables.}
-#'   \item{\code{"omega.xi.xi"}}{\eqn{\Omega_{\xi\xi}} – Interaction effects between exogenous variables}
-#'   \item{\code{"omega.eta.xi"}}{\eqn{\Omega_{\eta\xi}} – Interaction effects between exogenous and endogenous variables}
-#'   \item{\code{"phi"}}{\eqn{\Phi} – (Co-)Variances among exogenous variables.}
-#'   \item{\code{"psi"}}{\eqn{\Psi} – Residual (co-)variances among engoenous variables.}
-#'   \item{\code{"alpha"}}{\eqn{\alpha} – Intercepts for endogenous variables}
-#'   \item{\code{"beta0"}}{\eqn{\beta_0} – Intercepts for exogenous variables}
+#'   \item{\code{"lambda"}}{Factor loadings.}
+#'   \item{\code{"theta"}}{Residual covariance matrix for indicators.}
+#'   \item{\code{"wmat"}}{Composite loading matrix for observed indicators, if present.}
+#'   \item{\code{"tmat"}}{Composite residual matrix for indicators, if present.}
+#'   \item{\code{"psi"}}{Residual covariance matrix for latent variables.}
+#'   \item{\code{"beta"}}{Structural regression matrix among latent variables.}
+#'   \item{\code{"nu"}}{Intercepts for observed variables.}
+#'   \item{\code{"alpha"}}{Intercepts for latent variables.}
 #' }
 #' \strong{Model-implied matrices:}
 #'
@@ -800,7 +797,7 @@ var_interactions.modsem_da <- function(object, ...) {
 #'
 #' modsem_inspect(est) # everything except "data"
 #' modsem_inspect(est, what = "optim")
-#' modsem_inspect(est, what = "phi")
+#' modsem_inspect(est, what = "matrices")
 #' }
 #'
 #' @export
