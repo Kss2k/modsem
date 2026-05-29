@@ -24,8 +24,9 @@ parseLavaan <- function(model.syntax = NULL,
   # Get all the indicators in the model
   inds <- getIndicators(parTable, observed=TRUE)
   mod_stopif(!all(inds %in% variableNames),
-         paste0("Unable to find observed variables in data: ",
-         capturePrint(inds[!inds %in% variableNames])))
+    paste0("Unable to find observed variables in data: ",
+    paste0(inds[!inds %in% variableNames], collapse = ", "))
+  )
 
   # Are prods latent?
   elementsInProds <- lapplyNamed(prodNames,

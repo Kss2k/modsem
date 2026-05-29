@@ -127,16 +127,20 @@ rbindParTable <- function(parTable, newRows) {
                           list(row)) |>
     purrr::list_flatten()
 
-  duplicateRows <- apply(parTable[c("lhs", "op", "rhs")],
-        MARGIN = 1,
-        FUN = function(row, parTableRows)
-          list(row) %in% parTableRows,
-        parTableRows = newParTableRows)
+  duplicateRows <- apply(
+    X = parTable[c("lhs", "op", "rhs")],
+    MARGIN = 1,
+    FUN = \(row, parTableRows) list(row) %in% parTableRows,
+    parTableRows = newParTableRows
+  )
+
+  dupParTable <- parTable[duplicateRows, , drop = FALSE]
+  dupPar <- paste0(dupParTable$lhs, dupParTable$op, dupParTable$rhs)
 
   mod_warnif(sum(as.integer(duplicateRows)) > 0,
-          paste0("Some duplicates in the parTable was removed, have you accidentally ",
-          "specified some of these in your syntax? \n",
-          capturePrint(parTable[duplicateRows, ])))
+    paste0("Some duplicates in the parTable was removed, have you accidentally ",
+    "specified some of these in your syntax? \n", paste0(dupPar, collapse = ", "))
+  )
 
   rbind(parTable[!duplicateRows, ], newRows)
 }

@@ -356,6 +356,38 @@ constructA <- function(xis, method = "lms", cov.syntax = NULL,
 }
 
 
+constructCovZetaXi <- function(xis, etas, method = "lms", parTable) {
+  if (method != "lms" || !length(xis) || !length(etas))
+    return(EMPTY_MATSTRUCT)
+
+  numXis <- length(xis)
+  numEtas <- length(etas)
+
+  covZetaXi <- matrix(
+    0, nrow = numEtas, ncol = numXis,
+    dimnames = list(etas, xis)
+  )
+
+  parTableResCov <- parTable[
+    parTable$op == "~~" &
+    ((parTable$lhs %in% etas & parTable$rhs %in% xis) |
+     (parTable$lhs %in% xis & parTable$rhs %in% etas)),
+    , drop = FALSE
+  ]
+
+  swap <- parTableResCov$lhs %in% xis
+  lhs <- parTableResCov$lhs[swap]
+  parTableResCov$lhs[swap] <- parTableResCov$rhs[swap]
+  parTableResCov$rhs[swap] <- lhs
+
+  setMatrixConstraints(
+    X = covZetaXi, parTable = parTableResCov, op = "~~",
+    RHS = c(xis, etas), LHS = c(xis, etas),
+    type = "lhs", nonFreeParams = FALSE
+  )
+}
+
+
 constructAlpha <- function(etas, parTable, mean.observed = TRUE) {
   if (!length(etas)) return(EMPTY_MATSTRUCT)
 

@@ -605,11 +605,11 @@ isPureEta <- function(eta, parTable) {
 }
 
 
-getCoefMatricesDA <- function(parTable,
-                              xis = NULL,
-                              etas = NULL,
-                              intTerms = NULL,
-                              centered = TRUE) {
+getCoefMatricesDA_LavRepresentation <- function(parTable,
+                                                xis = NULL,
+                                                etas = NULL,
+                                                intTerms = NULL,
+                                                centered = TRUE) {
 
   parTable <- removeInteractionVariances(parTable)
 
@@ -641,24 +641,26 @@ getCoefMatricesDA <- function(parTable,
     cols = lVs, fill.missing = TRUE
   )
 
+  createBeta <- function(vars) {
+    beta <- matrix(0, nrow = length(vars), ncol = length(vars),
+                   dimnames = list(vars, vars))
 
-  # Create Gamma
-  gammaXi <- matrix(0, nrow = length(etas), ncol = length(xis),
-                    dimnames = list(etas, xis))
-  gammaEta <- matrix(0, nrow = length(etas), ncol = length(etas),
-                     dimnames = list(etas, etas))
+    betaRows <- parTable[
+      parTable$lhs %in% vars &
+      parTable$op == "~" &
+      parTable$rhs %in% vars, ,
+      drop = FALSE
+    ]
 
-  for (eta in etas) {
-    reg <- parTable[parTable$lhs == eta & parTable$op == "~", , drop = FALSE]
+    for (i in seq_len(NROW(betaRows))) {
+      lhs <- betaRows$lhs[i]
+      rhs <- betaRows$rhs[i]
+      est <- betaRows$est[i]
 
-    for (i in seq_len(NROW(reg))) {
-      predictor <- reg[i, "rhs"]
-      est       <- reg[i, "est"]
-
-      if      (predictor %in% xis)  gammaXi[eta, predictor] <- est
-      else if (predictor %in% etas) gammaEta[eta, predictor] <- est
-      else warning("Unexpected type of predictor: ", predictor)
+      beta[lhs, rhs] <- est
     }
+
+    beta
   }
 
   createCov <- function(vars) {
@@ -679,31 +681,29 @@ getCoefMatricesDA <- function(parTable,
     cov
   }
 
-  psi   <- createCov(etas)
-  phi   <- createCov(xis)
-  theta <- createCov(inds)
-
-  createBeta <- function(var) {
-    beta <- matrix(0, nrow = length(var), ncol = 1,
+  createTau <- function(var) {
+    tau <- matrix(0, nrow = length(var), ncol = 1,
                    dimnames = list(var, "~1"))
 
-    betaRows <- parTable[parTable$op == "~1" & parTable$lhs %in% var, , drop = FALSE]
-    for (i in seq_len(NROW(betaRows))) {
-      lhs <- betaRows$lhs[i]
-      est <- betaRows$est[i]
+    tauRows <- parTable[parTable$op == "~1" & parTable$lhs %in% var, , drop = FALSE]
+    for (i in seq_len(NROW(tauRows))) {
+      lhs <- tauRows$lhs[i]
+      est <- tauRows$est[i]
 
       if (lhs %in% var) {
-        beta[lhs, "~1"] <- est
+        tau[lhs, "~1"] <- est
       } else warning("Unexpected type of variable in beta: ", lhs)
     }
 
-    beta
+    tau 
   }
 
-  alpha <- createBeta(etas)
-  beta0 <- createBeta(xis)
-  tau   <- createBeta(inds)
-  Binv  <- solve(diag(nrow(gammaEta)) - gammaEta)
+  psi   <- createCov(c(xis, etas))
+  beta  <- createBeta(c(xis, etas))
+  alpha <- createTau(c(xis, etas))
+  nu    <- createTau(inds)
+  theta <- createCov(inds)
+  binv  <- solve(diag(nrow(beta)) - beta)
 
   composites <- getComposites(parTable)
   compositeInds <- getCompositeIndicators(parTable)
@@ -741,10 +741,10 @@ getCoefMatricesDA <- function(parTable,
   }
 
   list(
-    gammaXi = gammaXi, gammaEta = gammaEta, Binv = Binv, psi = psi,
-    phi = phi, theta = theta, alpha = alpha, beta0 = beta0, tau = tau,
+    beta = beta, binv = binv, psi = psi,
+    theta = theta, alpha = alpha, nu = nu,
     lambda = lambda, inds = inds, xis = xis, etas = etas, lVs = lVs,
-    lambda.c = lambda.c, theta.c = theta.c, T = T, W = W
+    lambda.c = lambda.c, theta.c = theta.c, tmat = T, wmat = W
   )
 }
 
@@ -761,10 +761,16 @@ calcExpectedMatricesDA <- function(parTable, xis = NULL, etas = NULL, intTerms =
 
 
 calcExpectedMatricesDA_Group <- function(parTable, xis = NULL, etas = NULL, intTerms = NULL) {
-  matricesCentered <- getCoefMatricesDA(parTable, xis = xis, etas = etas,
-                                        intTerms = intTerms, centered = TRUE)
-  matricesNonCentered <- getCoefMatricesDA(parTable, xis = xis, etas = etas,
-                                           intTerms = intTerms, centered = FALSE)
+  # Get matrices in lavaan (i.e., lisrel) representation
+  matricesCentered <- getCoefMatricesDA_LavRepresentation(
+    parTable = parTable, xis = xis, etas = etas,
+    intTerms = intTerms, centered = TRUE
+  )
+
+  matricesNonCentered <- getCoefMatricesDA_LavRepresentation(
+    parTable = parTable, xis = xis, etas = etas,
+    intTerms = intTerms, centered = FALSE
+  )
 
   lVs  <- matricesCentered$lVs
   xis  <- matricesCentered$xis
@@ -773,23 +779,17 @@ calcExpectedMatricesDA_Group <- function(parTable, xis = NULL, etas = NULL, intT
 
   # Sigma ----------------------------------------------------------------------
   # Uses centered solution
-  gammaXi  <- matricesCentered$gammaXi
-  gammaEta <- matricesCentered$gammaEta
-  phi      <- matricesCentered$phi
-  psi      <- matricesCentered$psi
-  Binv     <- matricesCentered$Binv
-  tau      <- matricesCentered$tau
-  lambda   <- matricesCentered$lambda
-  lambda.c <- matricesCentered$lambda.c
-  alpha    <- matricesCentered$alpha
-  beta0    <- matricesCentered$beta0
-  theta    <- matricesCentered$theta
-  theta.c  <- matricesCentered$theta.c
+  beta      <- matricesCentered$beta
+  psi       <- matricesCentered$psi
+  binv      <- matricesCentered$binv
+  nu        <- matricesCentered$nu
+  alpha     <- matricesCentered$alpha
+  lambda    <- matricesCentered$lambda
+  lambda.c  <- matricesCentered$lambda.c
+  theta     <- matricesCentered$theta
+  theta.c   <- matricesCentered$theta.c
 
-  covEtaEta <- Binv %*% (gammaXi %*% phi %*% t(gammaXi) + psi) %*% t(Binv)
-  covEtaXi <- Binv %*% gammaXi %*% phi
-  sigma.lv <- rbind(cbind(phi, t(covEtaXi)),
-                    cbind(covEtaXi, covEtaEta))
+  sigma.lv <- binv %*% psi %*% t(binv)
   sigma.ov <- (
     (lambda + lambda.c) %*% sigma.lv %*% t(lambda + lambda.c) + theta + theta.c
   )
@@ -805,7 +805,7 @@ calcExpectedMatricesDA_Group <- function(parTable, xis = NULL, etas = NULL, intT
   # Uses centered solution
   eta.all <- c(etas, inds)
   var.eta.all <- diag(sigma.all[eta.all, eta.all, drop = FALSE])
-  res.eta.all <- c(diag(psi), diag(theta))
+  res.eta.all <- c(diag(psi)[etas], diag(theta))
 
   r2.all <- (var.eta.all - res.eta.all) / var.eta.all
   r2.lv  <- r2.all[etas]
@@ -817,40 +817,33 @@ calcExpectedMatricesDA_Group <- function(parTable, xis = NULL, etas = NULL, intT
 
   # Mu -------------------------------------------------------------------------
   # Uses uncentered solution
-  gammaXiNc  <- matricesNonCentered$gammaXi
-  gammaEtaNc <- matricesNonCentered$gammaEta
-  phiNc      <- matricesNonCentered$phi
+  betaNc     <- matricesNonCentered$beta
   psiNc      <- matricesNonCentered$psi
-  BinvNc     <- matricesNonCentered$Binv
-  tauNc      <- matricesNonCentered$tau
+  binvNc     <- matricesNonCentered$binv
+  nuNc       <- matricesNonCentered$nu
   lambdaNc   <- matricesNonCentered$lambda
+  lambdaNc.c <- matricesNonCentered$lambda.c
   alphaNc    <- matricesNonCentered$alpha
-  beta0Nc    <- matricesNonCentered$beta0
 
-  mu.eta <- BinvNc %*% (alphaNc + gammaXiNc %*% beta0Nc)
-  mu.lv  <- rbind(beta0Nc, mu.eta)
-  mu.ov  <- tauNc + lambdaNc %*% mu.lv
+  mu.lv <- binvNc %*% alphaNc
+  mu.ov  <- nuNc + (lambdaNc + lambdaNc.c) %*% mu.lv
   mu.all <- rbind(mu.lv, mu.ov)
 
   list(
-    sigma.all = sigma.all,
-    sigma.lv  = sigma.lv,
-    sigma.ov  = sigma.ov,
-    mu.all    = mu.all,
-    mu.lv     = mu.lv,
-    mu.ov     = mu.ov,
-    r2.all    = r2.all,
-    r2.lv     = r2.lv,
-    r2.ov     = r2.ov,
-    res.all   = res.all,
-    res.lv    = res.lv,
-    res.ov    = res.ov,
-    lambda    = lambda,
-    gammaXi   = gammaXi,
-    gammaEta  = gammaEta,
-    psi       = psi,
-    phi       = phi,
-    theta     = theta
+    sigma.all  = sigma.all,
+    sigma.lv   = sigma.lv,
+    sigma.ov   = sigma.ov,
+    mu.all     = mu.all,
+    mu.lv      = mu.lv,
+    mu.ov      = mu.ov,
+    r2.all     = r2.all,
+    r2.lv      = r2.lv,
+    r2.ov      = r2.ov,
+    res.all    = res.all,
+    res.lv     = res.lv,
+    res.ov     = res.ov,
+    matrices   = matricesNonCentered,
+    matrices.c = matricesCentered
   )
 }
 

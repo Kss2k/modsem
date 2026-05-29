@@ -1,8 +1,8 @@
 # Global variables
 NAMES_PAR_MATRICES <- c("lambdaX", "lambdaY", "gammaXi", "gammaEta",
                       "thetaDelta", "thetaEpsilon", "W", "T", "phi", "A",
-                      "psi", "tauX", "tauY", "alpha", "beta0", "omegaEtaXi",
-                      "omegaXiXi")
+                      "covZetaXi", "psi", "tauX", "tauY", "alpha", "beta0",
+                      "omegaEtaXi", "omegaXiXi")
 NAMES_PAR_MATRICES_COV <- c("gammaXi", "gammaEta", "A", "psi", "phi")
 
 
@@ -51,6 +51,7 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
     T            <- as.vector(M$T)
     phi          <- as.vector(M$phi)
     A            <- as.vector(M$A)
+    covZetaXi    <- as.vector(M$covZetaXi)
     psi          <- as.vector(M$psi)
     tauX         <- as.vector(M$tauX)
     tauY         <- as.vector(M$tauY)
@@ -72,6 +73,7 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
       T            = T,
       phi          = phi,
       A            = A,
+      covZetaXi    = covZetaXi,
       psi          = psi,
       alpha        = alpha,
       beta0        = beta0,
@@ -257,10 +259,13 @@ fillMainModel <- function(model, theta, thetaLabel, fillPhi = FALSE,
 
   if (!is.null(model$covModel$matrices)) {
     M$phi <- M$A <- expectedCovModel(covModel, method = method, sortedXis = xis)
+
   } else if (method == "lms") {
     M$A <- fillNA_Matrix(M$A, theta = theta, pattern = "^A([0-9]*)")
+
   } else if (method == "qml") {
     M$phi <- fillSymmetric(M$phi, fetch(theta, "^phi"))
+
   }
 
   M$lambdaX      <- fillNA_Matrix(M$lambdaX, theta = theta, pattern = "^lambdaX")
@@ -269,6 +274,7 @@ fillMainModel <- function(model, theta, thetaLabel, fillPhi = FALSE,
   M$thetaEpsilon <- fillSymmetric(M$thetaEpsilon, fetch(theta, "thetaEpsilon"))
   M$W            <- fillNA_Matrix(M$W, theta = theta, pattern = "^W")
   M$T            <- fillSymmetric(M$T, fetch(theta, "^T"))
+  M$covZetaXi    <- fillNA_Matrix(M$covZetaXi, theta = theta, pattern = "^covZetaXi")
   M$psi          <- fillSymmetric(M$psi, fetch(theta, "^psi"))
   M$tauX         <- fillNA_Matrix(M$tauX, theta = theta, pattern = "^tauX")
   M$tauY         <- fillNA_Matrix(M$tauY, theta = theta, pattern = "^tauY")
@@ -279,7 +285,9 @@ fillMainModel <- function(model, theta, thetaLabel, fillPhi = FALSE,
   M$omegaXiXi    <- fillNA_Matrix(M$omegaXiXi, theta = theta, pattern = "^omegaXiXi")
   M$omegaEtaXi   <- fillNA_Matrix(M$omegaEtaXi, theta = theta, pattern = "^omegaEtaXi")
 
-  if (fillPhi) M$phi <- M$A %*% t(M$A)
+  if (fillPhi) {
+    M$phi <- M$A %*% t(M$A)
+  }
   M
 }
 
@@ -306,13 +314,16 @@ fillCovModel <- function(covModel, theta, thetaLabel) {
 fillNA_Matrix <- function(X, theta, pattern) {
   idx <- is.na(X) & !is.nan(X)
   values <- fetch(theta, pattern)
-  if (length(values) && sum(idx) != length(values)) {
-    mod_msg_stop(paste0("Mismatch when filling matrix for pattern `", pattern, "`: expected ",
-          sum(idx), " values but got ", length(values)))
-  }
-  if (sum(idx) > 0 && length(values) == 0) {
-    mod_msg_stop(paste0("No values found in theta vector for pattern `", pattern, "`."))
-  }
+
+  mod_stopif(length(values) && sum(idx) != length(values),
+    paste0("Mismatch when filling matrix for pattern `", pattern, "`: expected ",
+           sum(idx), " values but got ", length(values))
+  )
+
+  mod_stopif(sum(idx) > 0 && length(values) == 0,
+    paste0("No values found in theta vector for pattern `", pattern, "`.")
+  )
+
   X[idx] <- values
   X
 }
@@ -415,7 +426,7 @@ calcPhiTheta <- function(theta, model, method) {
       theta[select][labels] <- labVals
     }
 
-    theta[select][grepl("^A([0-9]*)", names(theta[select]))] <- vals
+    theta[select][grepl("^A([0-9]+)?$", names(theta[select]))] <- vals
   }
 
   theta
@@ -439,7 +450,8 @@ DA_BLOCKS = list(
   omegaEtaXi   = 13,
   W            = 14,
   T            = 15,
-  phi          = 16   # QML: free parameter; LMS: derived from A (not free)
+  phi          = 16,  # QML: free parameter; LMS: derived from A (not free)
+  covZetaXi    = 17
 )
 
 
