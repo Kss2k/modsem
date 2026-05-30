@@ -16,8 +16,8 @@ modsem_predict.modsem_da <- function(object,
     several.ok = FALSE
   )
 
-  if      (method == "BARTLETT")   method <- "EBM"
-  else if (method == "REGRESSION") method <- "ML"
+  if      (method == "BARTLETT")   method <- "ML"
+  else if (method == "REGRESSION") method <- "EBM"
 
   predicted <- modsemPredictDA(
     object  = object,
