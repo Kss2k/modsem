@@ -34,6 +34,14 @@ testthat::test_that("Residual covariances between xis and etas in the LMS approa
   fit.lav <- lavaan::sem(syntax, data, meanstructure = TRUE)
   fit.mod <- modsem(syntax, data, method = "lms", optimize = FALSE, convergence.abs = 1e-6)
 
+  ebm.mod <- c(modsem_predict(fit.mod, method = "EBM"))
+  ebm.lav <- c(lavaan::lavPredict(fit.lav, method = "EBM"))
+  testthat::expect_equal(ebm.mod, ebm.lav, tol = 1e-4)
+
+  ml.mod  <- c(modsem_predict(fit.mod, method = "ML"))
+  ml.lav  <- c(lavaan::lavPredict(fit.lav, method = "ML"))
+  testthat::expect_equal(ml.mod, ml.lav, tol = 1e-4)
+
   est.mod <- c(coef(fit.mod))
   est.lav <- lavaan::coef(fit.lav)[names(est.mod)]
 

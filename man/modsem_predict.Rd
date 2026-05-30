@@ -38,8 +38,8 @@ by the \code{\link{modsem_da}} method.}
 
 \item{method}{Character. Scoring method. One of \code{"EBM"} (Empirical
 Bayes Modal; MAP estimate of the posterior), \code{"ML"} (maximum
-likelihood), \code{"Bartlett"} (alias for \code{"EBM"}), or
-\code{"Regression"} (alias for \code{"ML"}). For \code{\link{modsem_da}}
+likelihood), \code{"Regression"} (alias for \code{"EBM"}), or
+\code{"Bartlett"} (alias for \code{"ML"}). For \code{\link{modsem_da}}
 objects this selects the optimisation-based scoring algorithm. For
 \code{\link{modsem_pi}} objects the argument is forwarded to
 \code{lavaan::lavPredict}, which accepts the same \code{method} values.}

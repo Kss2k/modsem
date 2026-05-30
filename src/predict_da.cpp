@@ -19,6 +19,30 @@ arma::mat diagPartitioned(const arma::mat X, const arma::mat Y) {
   return Z;
 }
 
+
+arma::mat diagPartitionedWithCorners(
+  const arma::mat X, const arma::mat Y, const arma::mat Z) {
+  const int mx = X.n_cols;
+  const int ny = Y.n_rows;
+  const int nz = Z.n_rows;
+  const int mz = Z.n_cols;
+
+  if (!nz || !mz) // relevant only for QML
+    return diagPartitioned(X, Y);
+
+  if (nz != ny)
+    Rcpp::stop("Number of rows in Z must match the number of rows in Y!");
+
+  if (mz != mx)
+    Rcpp::stop("Number of cols in Z must match the number of cols in X!");
+
+  return arma::join_cols(
+    arma::join_rows(X, Z.t()),
+    arma::join_rows(Z, Y)
+  );
+}
+
+
 struct ModelMatrices {
   // Measurement Model
   arma::mat Lambda;
@@ -49,10 +73,11 @@ struct ModelMatrices {
     tau    = arma::join_cols(tauX, tauY);
 
     // Structural Model
-    const arma::mat PhiX = Rcpp::as<arma::mat>(matrices["phi"]);
-    const arma::mat PsiY = Rcpp::as<arma::mat>(matrices["psi"]);
+    const arma::mat PhiX      = Rcpp::as<arma::mat>(matrices["phi"]);
+    const arma::mat PsiY      = Rcpp::as<arma::mat>(matrices["psi"]);
+    const arma::mat CovZetaXi = Rcpp::as<arma::mat>(matrices["covZetaXi"]);
 
-    Psi        = diagPartitioned(PhiX, PsiY);
+    Psi        = diagPartitionedWithCorners(PhiX, PsiY, CovZetaXi);
     GammaXi    = Rcpp::as<arma::mat>(matrices["gammaXi"]);
     GammaEta   = Rcpp::as<arma::mat>(matrices["gammaEta"]);
     OmegaXiXi  = Rcpp::as<arma::mat>(matrices["omegaXiXi"]);

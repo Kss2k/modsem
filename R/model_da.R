@@ -990,9 +990,3 @@ getFinalModel <- function(model, theta, method, modelSE = NULL) {
 
   finalModel
 }
-
-
-markOV_IntTermsParTable <- function(parTable, model) {
-  model$model$info
-  browser()
-}
