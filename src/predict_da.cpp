@@ -27,6 +27,9 @@ arma::mat diagPartitionedWithCorners(
   const int nz = Z.n_rows;
   const int mz = Z.n_cols;
 
+  if (!nz || !mz) // relevant only for QML
+    return diagPartitioned(X, Y);
+
   if (nz != ny)
     Rcpp::stop("Number of rows in Z must match the number of rows in Y!");
 
