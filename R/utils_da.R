@@ -635,12 +635,6 @@ getCoefMatricesDA_LavRepresentation <- function(parTable,
   indsLV <- getIndsLVs(parTable, lVs = lVs)
   inds <- unique(unlist(indsLV))
 
-  # Create lambda
-  lambda <- getLambdaParTable(
-    parTable = parTable, rows = inds,
-    cols = lVs, fill.missing = TRUE
-  )
-
   createBeta <- function(vars) {
     beta <- matrix(0, nrow = length(vars), ncol = length(vars),
                    dimnames = list(vars, vars))
@@ -657,7 +651,7 @@ getCoefMatricesDA_LavRepresentation <- function(parTable,
       rhs <- betaRows$rhs[i]
       est <- betaRows$est[i]
 
-      beta[lhs, rhs] <- est
+      beta[rhs, lhs] <- est
     }
 
     beta
@@ -697,6 +691,11 @@ getCoefMatricesDA_LavRepresentation <- function(parTable,
 
     tau 
   }
+
+  lambda <- getLambdaParTable(
+    parTable = parTable, rows = inds,
+    cols = lVs, fill.missing = TRUE
+  )
 
   psi   <- createCov(c(xis, etas))
   beta  <- createBeta(c(xis, etas))
@@ -789,7 +788,9 @@ calcExpectedMatricesDA_Group <- function(parTable, xis = NULL, etas = NULL, intT
   theta     <- matricesCentered$theta
   theta.c   <- matricesCentered$theta.c
 
-  sigma.lv <- binv %*% psi %*% t(binv)
+  # sigma.lv <- binv %*% psi %*% t(binv)
+  # We have it the opposite way with the lavaan/lisrel representation of beta/binv
+  sigma.lv <- t(binv) %*% psi %*% binv
   sigma.ov <- (
     (lambda + lambda.c) %*% sigma.lv %*% t(lambda + lambda.c) + theta + theta.c
   )
@@ -825,7 +826,7 @@ calcExpectedMatricesDA_Group <- function(parTable, xis = NULL, etas = NULL, intT
   lambdaNc.c <- matricesNonCentered$lambda.c
   alphaNc    <- matricesNonCentered$alpha
 
-  mu.lv <- binvNc %*% alphaNc
+  mu.lv <- t(binvNc) %*% alphaNc
   mu.ov  <- nuNc + (lambdaNc + lambdaNc.c) %*% mu.lv
   mu.all <- rbind(mu.lv, mu.ov)
 
