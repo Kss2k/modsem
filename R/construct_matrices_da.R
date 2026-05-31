@@ -317,7 +317,7 @@ constructPhi <- function(xis, method = "lms", cov.syntax = NULL,
   phi    <- matrix(0, nrow = numXis, ncol = numXis,
                    dimnames = list(xis, xis))
 
-  if (method != "lms" && is.null(cov.syntax) && is.null(parTableCovModel)) {
+  if (!method %in% c("lms", "laplace") && is.null(cov.syntax) && is.null(parTableCovModel)) {
     if (!orthogonal.x) phi[lower.tri(phi, diag = TRUE)] <- NA
     else               diag(phi) <- NA
 
@@ -336,7 +336,7 @@ constructA <- function(xis, method = "lms", cov.syntax = NULL,
   numXis <- length(xis)
   A      <- matrix(0, nrow = numXis, ncol = numXis,
                    dimnames = list(xis, xis))
-  if (method == "lms" && is.null(cov.syntax) && is.null(parTableCovModel)) {
+  if (method %in% c("lms", "laplace") && is.null(cov.syntax) && is.null(parTableCovModel)) {
     if (!orthogonal.x) A[lower.tri(A, diag = TRUE)] <- NA
     else               diag(A) <- NA
 
@@ -357,7 +357,7 @@ constructA <- function(xis, method = "lms", cov.syntax = NULL,
 
 
 constructCovZetaXi <- function(xis, etas, method = "lms", parTable) {
-  if (method != "lms" || !length(xis) || !length(etas))
+  if (!method %in% c("lms", "laplace") || !length(xis) || !length(etas))
     return(EMPTY_MATSTRUCT)
 
   numXis <- length(xis)

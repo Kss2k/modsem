@@ -260,8 +260,8 @@ fillMainModel <- function(model, theta, thetaLabel, fillPhi = FALSE,
   if (!is.null(model$covModel$matrices)) {
     M$phi <- M$A <- expectedCovModel(covModel, method = method, sortedXis = xis)
 
-  } else if (method == "lms") {
-    M$A <- fillNA_Matrix(M$A, theta = theta, pattern = "^A([0-9]*)")
+	  } else if (method %in% c("lms", "laplace")) {
+	    M$A <- fillNA_Matrix(M$A, theta = theta, pattern = "^A([0-9]*)")
 
   } else if (method == "qml") {
     M$phi <- fillSymmetric(M$phi, fetch(theta, "^phi"))
@@ -387,7 +387,7 @@ checkStartingParams <- function(start, model) {
 
 
 calcPhiTheta <- function(theta, model, method) {
-  if (method != "lms") return(theta)
+  if (!method %in% c("lms", "laplace")) return(theta)
 
   modFilled <- fillModel(theta = theta, model = model, method = method,
                          fillPhi = TRUE)

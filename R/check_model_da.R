@@ -31,7 +31,7 @@ preCheckModel <- function(model, covModel = NULL, method = "lms", missing = "com
 
 
 checkAConstraints <- function(model, covModel, method = "lms") {
-  if (method != "lms" || !is.null(covModel$matrices)) return(NULL)
+  if (!method %in% c("lms", "laplace") || !is.null(covModel$matrices)) return(NULL)
 
   An <- model$matrices$A
   Al <- model$labelMatrices$A
@@ -65,7 +65,7 @@ checkCovModelVariables <- function(covModel, modelXis, method = "lms") {
 
 
 checkZeroVariances <- function(model, method = "lms") {
-  if (method != "lms") return(NULL)
+  if (!method %in% c("lms", "laplace")) return(NULL)
 
   nonLinearXis <- model$info$nonLinearXis
   inds <- model$info$indsXis[nonLinearXis]
@@ -153,7 +153,7 @@ checkCovEtaXi <- function(parTable, canBeCausedByCovModel = FALSE,
   if (!NROW(parTable))
     return(NULL)
 
-  if (method == "lms")
+  if (method %in% c("lms", "laplace"))
     return(NULL)
 
   etas <- getEtas(parTable, checkAny = FALSE, isLV = FALSE)
@@ -223,7 +223,7 @@ checkMissingMethod <- function(method, missing) {
 
 
 checkOverlappingIndicators <- function(allIndsXis, allIndsEtas, method = "lms") {
-  mod_stopif(any(allIndsXis %in% allIndsEtas) && method != "lms",
+  mod_stopif(any(allIndsXis %in% allIndsEtas) && !method %in% c("lms", "laplace"),
          paste0("The same indicator cannot be used for both an\n",
          "exogenous and endogenous variable, in the QML approach!\n",
          "Consider using the LMS approach instead.\n",
@@ -240,7 +240,7 @@ checkParTableDA <- function(parTable, method = "lms") {
 
 
 checkResCovX_Y <- function(parTable, allIndsXis, allIndsEtas, method = "lms") {
-  if (method == "lms") return(NULL)
+  if (method %in% c("lms", "laplace")) return(NULL)
 
   cond1 <- parTable$op == "~~"
   cond2 <- parTable$lhs %in% allIndsXis & parTable$rhs %in% allIndsEtas

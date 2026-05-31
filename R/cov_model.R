@@ -104,7 +104,7 @@ expectedCovModel <- function(model, method = "lms", sortedXis) {
 
   sigma <- sigma[sortedXis, sortedXis]
 
-  if (method == "lms") {
+  if (method %in% c("lms", "laplace")) {
     sigma <- tryCatch(t(chol(sigma)),
                       error = function(e) {
                         sigma[TRUE] <- NaN

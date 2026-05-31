@@ -415,7 +415,8 @@ modsem_da <- function(model.syntax = NULL,
 
   ordered.se <- match.arg(ordered.se)
 
-  if (length(ordered) || any(sapply(data, FUN = is.ordered))) {
+  if (method != "laplace" &&
+      (length(ordered) || any(sapply(data, FUN = is.ordered)))) {
     out <- modsemOrderedMCCorrection(
        model.syntax                   = model.syntax,
        data                           = data,
@@ -491,6 +492,18 @@ modsem_da <- function(model.syntax = NULL,
     data <- as.data.frame(data)
   }
 
+  laplace.ordered <- character(0L)
+  if (method == "laplace") {
+    laplace.ordered <- unique(c(
+      ordered,
+      names(data)[vapply(data, is.ordered, logical(1L))]
+    ))
+    laplace.ordered <- intersect(laplace.ordered, names(data))
+    data[laplace.ordered] <- lapply(data[laplace.ordered], function(x) {
+      as.integer(as.ordered(x))
+    })
+  }
+
   if (rcs) { # use reliability-correct single items?
     corrected <- relcorr_single_item(
       syntax          = model.syntax,
@@ -557,7 +570,8 @@ modsem_da <- function(model.syntax = NULL,
         )
     )
 
-  cont.cols <- setdiff(colnames(data), c(cluster, group, sampling.weights))
+  cont.cols <- setdiff(colnames(data), c(cluster, group, sampling.weights,
+                                         laplace.ordered))
 
   if (args$center.data)
     data[cont.cols] <- lapply(data[cont.cols], FUN = centerIfNumeric, scaleFactor = FALSE)
@@ -576,7 +590,8 @@ modsem_da <- function(model.syntax = NULL,
     sampling.weights.normalization = args$sampling.weights.normalization
   )
 
-  mod_stopif(!method %in% c("lms", "qml"), "Method must be either 'lms' or 'qml'")
+  mod_stopif(!method %in% c("lms", "qml", "laplace"),
+             "Method must be either 'lms', 'qml', or 'laplace'")
 
   model <- specifyModelDA(
     group.info         = group.info,
@@ -593,6 +608,7 @@ modsem_da <- function(model.syntax = NULL,
     auto.fix.first     = args$auto.fix.first,
     auto.fix.single    = args$auto.fix.single,
     fix.composite.var  = args$fix.composite.var,
+    ordered            = laplace.ordered,
     cluster            = cluster,
     sampling.weights   = sampling.weights
   )
@@ -699,13 +715,31 @@ modsem_da <- function(model.syntax = NULL,
       nodes             = args$nodes,
       cr1s              = args$cr1s,
       ...
-  )),
+    ),
+    laplace = estLaplace(model,
+      verbose      = args$verbose,
+      convergence  = args$convergence.rel,
+      calc.se      = args$calc.se,
+      epsilon      = args$epsilon,
+      optimizer    = args$optimizer,
+      ...
+    )),
   error = function(e) {
     if (args$verbose) cat("\n")
     message <- paste0("modsem [%s]: Model estimation failed!\n",
                       "Message: %s")
     mod_msg_stop(sprintf(message, method, e$message))
   })
+
+  if (method == "laplace" && length(laplace.ordered)) {
+    thresholds <- mcOrderedThresholdsDelta(
+      data    = data,
+      ordered = laplace.ordered,
+      group   = group,
+      calc.se = FALSE
+    )
+    est <- mcAppendThresholds(est, thresholds)
+  }
 
   # Finalize the model object
   # Expected means and covariances

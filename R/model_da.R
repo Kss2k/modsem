@@ -23,6 +23,7 @@ specifyModelDA_Group <- function(syntax = NULL,
                                  cluster = NULL,
                                  sampling.weights = NULL,
                                  structovs = NULL,
+                                 ordered = NULL,
                                  fix.composite.var = TRUE) {
   if (is.null(parTable) && !is.null(syntax)) parTable <- modsemify(syntax)
   mod_stopif(is.null(parTable), "No parTable found")
@@ -232,6 +233,21 @@ specifyModelDA_Group <- function(syntax = NULL,
   thetaEpsilon      <- listThetaEpsilon$numeric
   thetaLabelEpsilon <- listThetaEpsilon$label
 
+  laplaceOrdinal <- constructLaplaceOrdinal(
+    data         = data,
+    ordered      = ordered,
+    thetaDelta   = thetaDelta,
+    thetaEpsilon = thetaEpsilon,
+    tauX         = tauX,
+    tauY         = tauY,
+    parTable     = parTable,
+    method       = method
+  )
+  thetaDelta   <- laplaceOrdinal$thetaDelta
+  thetaEpsilon <- laplaceOrdinal$thetaEpsilon
+  tauX         <- laplaceOrdinal$tauX
+  tauY         <- laplaceOrdinal$tauY
+
   # structural model
   Ieta         <- diag(numEtas) # used for (B^-1 = (Ieta - gammaEta)^-1)
   listGammaXi  <- constructGamma(etas, xis, parTable = parTable,
@@ -342,6 +358,7 @@ specifyModelDA_Group <- function(syntax = NULL,
     beta0        = beta0,
     omegaEtaXi   = omegaEtaXi,
     omegaXiXi    = omegaXiXi,
+    ordinal      = laplaceOrdinal$ordinal,
 
     selectScalingY      = selectScalingY,
     selectThetaEpsilon1 = selectThetaEpsilon1,
@@ -539,6 +556,74 @@ specifyModelDA <- function(..., group.info, createTheta = TRUE) {
 }
 
 
+constructLaplaceOrdinal <- function(data, ordered, thetaDelta, thetaEpsilon,
+                                    tauX, tauY, parTable, method) {
+  indicator.names <- c(rownames(thetaDelta), rownames(thetaEpsilon))
+  thresholds <- vector("list", length(indicator.names))
+  out <- list(
+    thetaDelta   = thetaDelta,
+    thetaEpsilon = thetaEpsilon,
+    tauX         = tauX,
+    tauY         = tauY,
+    ordinal      = list(
+      isOrdinal = indicator.names %in% ordered,
+      thresholds = thresholds
+    )
+  )
+  if (method != "laplace" || !length(ordered))
+    return(out)
+
+  residual.covs <- parTable[
+    parTable$op == "~~" &
+      parTable$lhs != parTable$rhs &
+      (parTable$lhs %in% ordered | parTable$rhs %in% ordered),
+    ,
+    drop = FALSE
+  ]
+  mod_stopif(NROW(residual.covs) > 0L,
+    "Residual covariances involving ordered indicators are not supported.")
+
+  for (indicator in intersect(ordered, indicator.names)) {
+    tab <- tabulate(as.integer(as.ordered(data[[indicator]])))
+    tab <- tab[tab > 0L]
+    mod_stopif(length(tab) < 2L,
+      sprintf("Ordered indicator `%s` must contain at least two categories.",
+              indicator))
+
+    cumulative <- cumsum(tab / sum(tab))
+    thresholds[[match(indicator, indicator.names)]] <-
+      c(-Inf, stats::qnorm(cumulative[-length(cumulative)]), Inf)
+
+    if (indicator %in% rownames(thetaDelta)) {
+      residual.covs <- thetaDelta[indicator, setdiff(rownames(thetaDelta),
+                                                     indicator)]
+      mod_stopif(any(is.na(residual.covs) | residual.covs != 0),
+        "Residual covariances involving ordered indicators are not supported.")
+      thetaDelta[indicator, indicator] <- 1
+      tauX[indicator, 1L] <- 0
+    } else {
+      residual.covs <- thetaEpsilon[indicator, setdiff(rownames(thetaEpsilon),
+                                                       indicator)]
+      mod_stopif(any(is.na(residual.covs) | residual.covs != 0),
+        "Residual covariances involving ordered indicators are not supported.")
+      thetaEpsilon[indicator, indicator] <- 1
+      tauY[indicator, 1L] <- 0
+    }
+  }
+
+  list(
+    thetaDelta   = thetaDelta,
+    thetaEpsilon = thetaEpsilon,
+    tauX         = tauX,
+    tauY         = tauY,
+    ordinal      = list(
+      isOrdinal = indicator.names %in% ordered,
+      thresholds = thresholds
+    )
+  )
+}
+
+
 matrixToParTable <- function(matrixNA, matrixEst, matrixSE, matrixLabel,
                              op = "=~", rowsLhs = TRUE, symmetric = FALSE) {
   if (symmetric) {
@@ -728,7 +813,7 @@ mainModelToParTable <- function(finalModel, method = "lms") {
   parTable <- rbind(parTable, newRows)
 
   # (Co) variances Structural Model
-  if (method == "lms") {
+  if (method %in% c("lms", "laplace")) {
     phiNA <- matricesNA$A
     phiEst <- matricesEst$phi
     phiSE <- matricesSE$A
@@ -840,7 +925,7 @@ getConvergenceMessage <- function(converged, iterations) {
 
 finalizeModelEstimatesDA <- function(model,
                                      theta,
-                                     method = c("lms","qml"),
+                                     method = c("lms", "qml", "laplace"),
                                      data,
                                      logLik,
                                      iterations,
@@ -965,7 +1050,8 @@ addZStatsParTable <- function(parTable, se.col = "std.error", est.col = "est",
 
 
 getFinalModel <- function(model, theta, method, modelSE = NULL) {
-  finalModel <- fillModel(model, theta, fillPhi = method == "lms", method = method)
+  finalModel <- fillModel(model, theta, fillPhi = method %in% c("lms", "laplace"),
+                          method = method)
 
   # keep NA "skeletons" for printing and SE attachment
   emptyModel <- getEmptyModel(group.info = model$info$group.info,

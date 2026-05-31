@@ -1,5 +1,5 @@
 PI_METHODS   = c("rca", "uca", "dblcent", "pind", "ca", "custom")
-DA_METHODS   = c("lms", "qml")
+DA_METHODS   = c("lms", "qml", "laplace")
 MPLUS_METHOD = "mplus"
 
 

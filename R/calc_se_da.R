@@ -53,6 +53,10 @@ calcFIM_da <- function(model,
                                   S = EFIM.S, parametric = EFIM.parametric,
                                   verbose = verbose, R.max = R.max),
           mod_msg_stop("FIM must be either expected or observed")),
+     laplace =
+       switch(FIM,
+          observed = calcOFIM_Laplace(model, theta = theta),
+          expected = mod_msg_stop("Expected FIM is not available for Laplace yet")),
      mod_msg_stop(paste0("Unrecognized method: ", method))
   )
 
@@ -226,6 +230,8 @@ calcHessian <- function(model, theta, method = "lms",
       H <- hessianLogLikQml(theta = theta, model = model,
                             sign = -1, .relStep = .Machine$double.eps^(1/5))
     })
+  } else if (method == "laplace") {
+    H <- calcOFIM_Laplace(model, theta = theta)
   }
 
   H
