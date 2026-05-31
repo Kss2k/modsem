@@ -192,7 +192,7 @@ buildTMBDataGroup <- function(model, g = 1L) {
 
 # Observed FIM for the Laplace method via the TMB exact Hessian.
 # Called by calcFIM_da in calc_se_da.R.
-calcOFIM_Laplace <- function(model, theta, ...) {
+calcOFIM_Laplace <- function(model, theta, ..., eps = 1e-4) {
   loadTMBModel()
   submodel <- model$models[[1L]]
   n        <- submodel$data$n
@@ -209,11 +209,23 @@ calcOFIM_Laplace <- function(model, theta, ...) {
   )
 
   H <- tryCatch(obj$he(unname(theta)), error = function(e) NULL)
+
   if (is.null(H) || !all(is.finite(H))) {
     p <- length(theta)
-    return(matrix(NA_real_, p, p,
-                  dimnames = list(names(theta), names(theta))))
+    H <- matrix(NA_real_, p, p,
+                dimnames = list(names(theta), names(theta)))
+
+    grad0 <- obj$gr(unname(theta))
+    for (i in seq_len(p)) {
+      thetai <- unname(theta)
+      thetai[[i]] <- thetai[[i]] + eps
+      gradi <- obj$gr(thetai)
+      H[,i] <- (gradi-grad0)/eps
+    }
+
+    return(H)
   }
+
   dimnames(H) <- list(names(theta), names(theta))
   H
 }
