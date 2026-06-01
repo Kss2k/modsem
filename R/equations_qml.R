@@ -7,7 +7,7 @@ qmlNcores <- function() {
 }
 
 
-resetOptimizerInfoQML <- function() {
+resetOptimizerInfo <- function() {
   OptimizerInfoQML$eval    <- 0
   OptimizerInfoQML$logLiks <- -Inf
 }
@@ -463,7 +463,7 @@ mstepQml <- function(model,
                      optimizer = "nlminb",
                      epsilon = 1e-8,
                      ...) {
-  resetOptimizerInfoQML()
+  resetOptimizerInfo()
 
   gradient <- function(theta, model, sign, ...) # use ... to capture unused args
     gradientLogLikQml(theta = theta, model = model, epsilon = epsilon, sign = sign)

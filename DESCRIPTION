@@ -13,6 +13,9 @@ Authors@R:
              email = "matthias.mittner@uit.no", role=c("ctb"),
              comment = c(ORCID="0000-0003-0205-7353")))
 Maintainer: Kjell Solem Slupphaug <slupphaugkjell@gmail.com>
+Author: Kjell Solem Slupphaug [aut, cre],
+    Mehmet Mehmetoglu [ctb],
+    Matthias Mittner [ctb]
 Description: 
     Estimation of interaction (i.e., moderation) effects between latent variables
     in structural equation models (SEM). 
@@ -63,7 +66,7 @@ Depends:
     R (>= 4.1.0)
 URL: https://modsem.org,
   https://github.com/kss2k/modsem
-Suggests: knitr, rmarkdown, ggpubr, RColorBrewer, TMB
+Suggests: knitr, rmarkdown, ggpubr, RColorBrewer, modsemTMB, remotes
 VignetteBuilder: knitr
 Config/roxygen2/version: 8.0.0
 RoxygenNote: 7.3.3

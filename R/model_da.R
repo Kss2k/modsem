@@ -153,7 +153,8 @@ specifyModelDA_Group <- function(syntax = NULL,
     listTauX <- constructTau(
       c(xis, etas), c(indsXis, indsEtas),
       parTable = parTable,
-      mean.observed = mean.observed
+      mean.observed = mean.observed,
+      ordered = ordered
     )
   }
 
@@ -175,7 +176,8 @@ specifyModelDA_Group <- function(syntax = NULL,
     listThetaDelta <- constructTheta(
       c(xis, etas), c(indsXis, indsEtas),
       parTable = parTable,
-      auto.fix.single = auto.fix.single
+      auto.fix.single = auto.fix.single,
+      ordered = ordered
     )
   }
 
@@ -233,20 +235,12 @@ specifyModelDA_Group <- function(syntax = NULL,
   thetaEpsilon      <- listThetaEpsilon$numeric
   thetaLabelEpsilon <- listThetaEpsilon$label
 
-  laplaceOrdinal <- constructLaplaceOrdinal(
-    data         = data,
-    ordered      = ordered,
-    thetaDelta   = thetaDelta,
-    thetaEpsilon = thetaEpsilon,
-    tauX         = tauX,
-    tauY         = tauY,
-    parTable     = parTable,
-    method       = method
+  ThreshMatList <- constructThreshMat(
+    c(xis, etas), c(indsXis, indsEtas),
+    ordered = ordered, data = data, parTable = parTable
   )
-  thetaDelta   <- laplaceOrdinal$thetaDelta
-  thetaEpsilon <- laplaceOrdinal$thetaEpsilon
-  tauX         <- laplaceOrdinal$tauX
-  tauY         <- laplaceOrdinal$tauY
+  ThreshMat      <- ThreshMatList$numeric
+  labelThreshMat <- ThreshMatList$label
 
   # structural model
   Ieta         <- diag(numEtas) # used for (B^-1 = (Ieta - gammaEta)^-1)
@@ -358,7 +352,7 @@ specifyModelDA_Group <- function(syntax = NULL,
     beta0        = beta0,
     omegaEtaXi   = omegaEtaXi,
     omegaXiXi    = omegaXiXi,
-    ordinal      = laplaceOrdinal$ordinal,
+    threshMat    = ThreshMat,
 
     selectScalingY      = selectScalingY,
     selectThetaEpsilon1 = selectThetaEpsilon1,
@@ -403,7 +397,8 @@ specifyModelDA_Group <- function(syntax = NULL,
     beta0 = labelBeta0,
 
     omegaEtaXi = labelOmegaEtaXi,
-    omegaXiXi  = labelOmegaXiXi
+    omegaXiXi  = labelOmegaXiXi,
+    threshMat  = labelThreshMat
   )
 
   k <- omegaAndSortedXis$k
@@ -428,6 +423,7 @@ specifyModelDA_Group <- function(syntax = NULL,
       kOmegaEta     = getK_NA(omegaEtaXi, labelOmegaEtaXi),
       nonLinearXis  = nonLinearXis,
       mean.observed = mean.observed,
+      ordered       = ordered,
 
       has.interaction     = NROW(intTerms) > 0L,
       higherOrderLVs      = higherOrderLVs,
@@ -556,74 +552,6 @@ specifyModelDA <- function(..., group.info, createTheta = TRUE) {
 }
 
 
-constructLaplaceOrdinal <- function(data, ordered, thetaDelta, thetaEpsilon,
-                                    tauX, tauY, parTable, method) {
-  indicator.names <- c(rownames(thetaDelta), rownames(thetaEpsilon))
-  thresholds <- vector("list", length(indicator.names))
-  out <- list(
-    thetaDelta   = thetaDelta,
-    thetaEpsilon = thetaEpsilon,
-    tauX         = tauX,
-    tauY         = tauY,
-    ordinal      = list(
-      isOrdinal = indicator.names %in% ordered,
-      thresholds = thresholds
-    )
-  )
-  if (method != "laplace" || !length(ordered))
-    return(out)
-
-  residual.covs <- parTable[
-    parTable$op == "~~" &
-      parTable$lhs != parTable$rhs &
-      (parTable$lhs %in% ordered | parTable$rhs %in% ordered),
-    ,
-    drop = FALSE
-  ]
-  mod_stopif(NROW(residual.covs) > 0L,
-    "Residual covariances involving ordered indicators are not supported.")
-
-  for (indicator in intersect(ordered, indicator.names)) {
-    tab <- tabulate(as.integer(as.ordered(data[[indicator]])))
-    tab <- tab[tab > 0L]
-    mod_stopif(length(tab) < 2L,
-      sprintf("Ordered indicator `%s` must contain at least two categories.",
-              indicator))
-
-    cumulative <- cumsum(tab / sum(tab))
-    thresholds[[match(indicator, indicator.names)]] <-
-      c(-Inf, stats::qnorm(cumulative[-length(cumulative)]), Inf)
-
-    if (indicator %in% rownames(thetaDelta)) {
-      residual.covs <- thetaDelta[indicator, setdiff(rownames(thetaDelta),
-                                                     indicator)]
-      mod_stopif(any(is.na(residual.covs) | residual.covs != 0),
-        "Residual covariances involving ordered indicators are not supported.")
-      thetaDelta[indicator, indicator] <- 1
-      tauX[indicator, 1L] <- 0
-    } else {
-      residual.covs <- thetaEpsilon[indicator, setdiff(rownames(thetaEpsilon),
-                                                       indicator)]
-      mod_stopif(any(is.na(residual.covs) | residual.covs != 0),
-        "Residual covariances involving ordered indicators are not supported.")
-      thetaEpsilon[indicator, indicator] <- 1
-      tauY[indicator, 1L] <- 0
-    }
-  }
-
-  list(
-    thetaDelta   = thetaDelta,
-    thetaEpsilon = thetaEpsilon,
-    tauX         = tauX,
-    tauY         = tauY,
-    ordinal      = list(
-      isOrdinal = indicator.names %in% ordered,
-      thresholds = thresholds
-    )
-  )
-}
-
-
 matrixToParTable <- function(matrixNA, matrixEst, matrixSE, matrixLabel,
                              op = "=~", rowsLhs = TRUE, symmetric = FALSE) {
   if (symmetric) {
@@ -641,6 +569,7 @@ matrixToParTable <- function(matrixNA, matrixEst, matrixSE, matrixLabel,
   parTable <- NULL
   for (lhs in rownames(matrixEst)) {
     for (rhs in colnames(matrixEst)) {
+      if (is.nan(matrixNA[lhs, rhs])) next
       if (!is.na(matrixNA[lhs, rhs]) && matrixLabel[lhs, rhs] == "") next
       newRow <- data.frame(lhs = lhs, op = op, rhs = rhs,
                            label = matrixLabel[lhs, rhs],
@@ -801,6 +730,14 @@ mainModelToParTable <- function(finalModel, method = "lms") {
                               matricesLabel$thetaEpsilon,
                               op = "~~", rowsLhs = TRUE,
                               symmetric = TRUE)
+  parTable <- rbind(parTable, newRows)
+
+  # Thresholds for ordered indicators
+  newRows <- matrixToParTable(matricesNA$threshMat,
+                              matricesEst$threshMat,
+                              matricesSE$threshMat,
+                              matricesLabel$threshMat,
+                              op = "|", rowsLhs = TRUE)
   parTable <- rbind(parTable, newRows)
 
   # Composite indicator (co-) variances
@@ -1062,6 +999,8 @@ getFinalModel <- function(model, theta, method, modelSE = NULL) {
 
   for (g in seq_along(finalModel$models)) {
     submodel <- finalModel$models[[g]]
+    emptyModel$models[[g]]$matrices$threshMat <-
+      model$models[[g]]$matrices$threshMat
 
     if (!is.null(modelSE)) {
       submodel$matricesSE <- modelSE$models[[g]]$matrices

@@ -24,6 +24,7 @@ optimizeStartingParamsDA <- function(model,
 
   robust.se       <- args$robust.se
   has.interaction <- model$info$has.interaction
+  ordered <- unique(unlist(lapply(model$models, \(x) x$info$ordered)))
 
   syntax <- paste(syntax, cov.syntax,
                   model$info$lavOptimizerSyntaxAdditions, sep = "\n")
@@ -39,7 +40,9 @@ optimizeStartingParamsDA <- function(model,
     missing <- "listwise"
   } else if (!missing %in% acceptable.missing) missing <- "listwise"
 
-  if (!has.interaction && robust.se) {
+  if (length(ordered)) {
+    estimator <- "WLSMV"
+  } else if (!has.interaction && robust.se) {
     estimator <- "MLR"
 
     # Not worth the extra compute for non-linear models
@@ -74,6 +77,8 @@ optimizeStartingParamsDA <- function(model,
     fitSam <- parameterEstimatesLavSAM(
       syntax           = syntax,
       data             = data,
+      ordered          = ordered,
+      parameterization = if (length(ordered)) "theta" else "delta",
       estimator        = estimator,
       missing          = missing,
       meanstructure    = TRUE,
@@ -142,6 +147,18 @@ optimizeStartingParamsDA <- function(model,
                                           op = "~~", fill = 0.2)
     ThetaDelta   <- findEstimatesParTable(matricesMain$thetaDelta, parTable.g,
                                           op = "~~", fill = 0.2)
+    ThreshMat <- findEstimatesParTable(matricesMain$threshMat, parTable.g,
+                                       op = "|", fill = 0)
+    for (indicator in intersect(rownames(ThreshMat), ordered)) {
+      free <- is.na(matricesMain$threshMat[indicator, ]) &
+        !is.nan(matricesMain$threshMat[indicator, ])
+      if (!any(free)) next
+
+      x <- droplevels(as.ordered(data[[indicator]]))
+      tab <- as.numeric(table(x))
+      cumulative <- cumsum(tab / sum(tab))
+      ThreshMat[indicator, free] <- stats::qnorm(cumulative[-length(cumulative)])
+    }
 
     W <- findEstimatesParTable(matricesMain$W, parTable.g, op = "<~",
                                fill = 1, rows.lhs = FALSE)
@@ -227,7 +244,9 @@ optimizeStartingParamsDA <- function(model,
                              GammaXi[is.na(matricesMain$gammaXi)],
                              GammaEta[is.na(matricesMain$gammaEta)],
                              OmegaXiXi[is.na(matricesMain$omegaXiXi)],
-                             OmegaEtaXi[is.na(matricesMain$omegaEtaXi)]))
+                             OmegaEtaXi[is.na(matricesMain$omegaEtaXi)],
+                             ThreshMat[is.na(matricesMain$threshMat) &
+                                       !is.nan(matricesMain$threshMat)]))
 
     # Cov Model
     matricesCov      <- submodel$covModel$matrices
@@ -280,7 +299,7 @@ findEstimatesParTable <- function(mat, parTable, op = NULL, rows.lhs = TRUE,
   if (is.null(op)) stop("Missing operator")
   for (row in rownames(mat)) {
     for (col in colnames(mat)) {
-      if (is.na(mat[row, col]))
+      if (is.na(mat[row, col]) && !is.nan(mat[row, col]))
         mat[row, col] <- extractFromParTable(row = row, op = op, col = col,
                                              parTable = parTable,
                                              rows.lhs = rows.lhs, fill = fill)
@@ -359,6 +378,8 @@ sortParTable <- function(parTable, lhs, op, rhs) {
 
 parameterEstimatesLavSAM <- function(syntax,
                                      data,
+                                     ordered          = NULL,
+                                     parameterization = "delta",
                                      estimator        = "ml",
                                      missing          = "listwise",
                                      meanstructure    = TRUE,
@@ -378,6 +399,9 @@ parameterEstimatesLavSAM <- function(syntax,
   isNonCentered  <- isNonCenteredParTable(parTable)
   lowerOrderInds <- unlist(getIndsLVs(parTable, lVs = higherOrderLVs,
                                       isOV = FALSE))
+  ordered <- intersect(ordered %||% character(0L), colnames(data))
+  if (length(ordered))
+    data[ordered] <- lapply(data[ordered], \(x) as.ordered(x))
 
   if (suppress.warnings.lavaan) wrapper <- suppressWarnings
   else                          wrapper <- \(x) x # do nothing
@@ -387,7 +411,8 @@ parameterEstimatesLavSAM <- function(syntax,
   if (hasComposites && utils::compareVersion(lavaanVersion, "0.6-22") < 0)
     optim.gradient.override <- "numerical" # analytical does not work
 
-  if (!any(grepl(":", parTable$rhs) | grepl(":", parTable$lhs))) {
+  if (!length(ordered) &&
+      !any(grepl(":", parTable$rhs) | grepl(":", parTable$lhs))) {
     fitSem <- wrapper(lavaan::sem(
       model            = syntax,
       data             = data,
@@ -401,6 +426,8 @@ parameterEstimatesLavSAM <- function(syntax,
       group            = group,
       se               = "none",
       sampling.weights = sampling.weights,
+      ordered          = ordered,
+      parameterization = parameterization,
       optim.gradient   = optim.gradient.override,
       sampling.weights.normalization = sampling.weights.normalization,
       ...
@@ -426,7 +453,7 @@ parameterEstimatesLavSAM <- function(syntax,
     op  <- pt$op
 
     cond1 <- op %in% c("=~", "<~")
-    cond2 <- op == "~1"
+    cond2 <- op %in% c("~1", "|")
     cond3 <- op == "~~" & !lhs %in% lVs & !rhs %in% lVs
 
     # residual variances for higher order lvs are not returned from SAM
@@ -458,35 +485,77 @@ parameterEstimatesLavSAM <- function(syntax,
     group            = group,
     se               = "none",
     sampling.weights = sampling.weights,
+    ordered          = ordered,
+    parameterization = parameterization,
     optim.gradient   = optim.gradient.override,
     sampling.weights.normalization = sampling.weights.normalization,
     ...
   ))
 
   admissible <- lavaan::lavInspect(fitH0, what = "post.check")
-  mod_stopif(!admissible, "The measurement model is inadmissible!")
+  mod_stopif(!admissible && !length(ordered),
+    "The measurement model is inadmissible!")
 
-  if (isHigherOrder || hasComposites) {
+  if (isHigherOrder || hasComposites || length(ordered)) {
     # use factor scores instead
     # using `sam.method="fsr"` doesn't work for this purpose (yet)
     # so we do it manually instead
 
     dataListSam <- tryCatch(
-      lavaan::lavPredict(
+      suppressWarnings(lavaan::lavPredict(
         object = fitH0,
         transform = TRUE,
         append.data = TRUE,
         drop.list.single.group = FALSE,
-      ),
+      )),
       error = function(e) {
-        lavaan::lavPredict(
+        suppressWarnings(lavaan::lavPredict(
           object = fitH0,
           transform = FALSE,
           append.data = TRUE,
           drop.list.single.group = FALSE,
-        )
+        ))
       }
     )
+
+    # lavaan cannot calculate EBM scores when an ordinal CFA has a Heywood
+    # case. Keep the two-step regression usable by repairing only invalid
+    # scores with standardized unit-weight indicator scores.
+    if (length(ordered)) {
+      indsLVs <- getIndsLVs(parTableOuter, lVs = lVs)
+      scoreIndicator <- function(x) {
+        x <- as.numeric(x)
+        s <- stats::sd(x, na.rm = TRUE)
+        if (!is.finite(s) || s == 0) return(x - mean(x, na.rm = TRUE))
+        (x - mean(x, na.rm = TRUE)) / s
+      }
+
+      for (g in seq_along(dataListSam)) {
+        X <- as.data.frame(dataListSam[[g]])
+        raw <- if (is.null(group)) {
+          data
+        } else {
+          level <- if (!is.null(names(dataListSam))) names(dataListSam)[[g]]
+                   else unique(data[[group]])[[g]]
+          data[data[[group]] == level, , drop = FALSE]
+        }
+
+        for (lv in lVs) {
+          inds <- intersect(indsLVs[[lv]], colnames(raw))
+          if (!length(inds)) next
+          score <- if (lv %in% colnames(X)) X[[lv]] else numeric(0L)
+          if (isTRUE(any(is.finite(score)) &&
+                     stats::sd(score, na.rm = TRUE) > 0)) next
+
+          indicators <- vapply(raw[inds], scoreIndicator,
+                               FUN.VALUE = numeric(NROW(raw)))
+          score <- rowMeans(indicators, na.rm = TRUE)
+          score[!is.finite(score)] <- 0
+          X[[lv]] <- score
+        }
+        dataListSam[[g]] <- X
+      }
+    }
 
     if (hasComposites && any(parTableOuter$op == "=~") &&
         utils::compareVersion(lavaanVersion, "0.6-99") < 0) {
@@ -514,6 +583,8 @@ parameterEstimatesLavSAM <- function(syntax,
         group            = group,
         se               = "none",
         sampling.weights = sampling.weights,
+        ordered          = intersect(ordered, getOVs(parTableOuterReflective)),
+        parameterization = parameterization,
         sampling.weights.normalization = sampling.weights.normalization,
         ...
       ))
@@ -645,7 +716,8 @@ parameterEstimatesLavSAM <- function(syntax,
     model            = syntaxSam,
     data             = dataSam,
     se               = "none",
-    estimator        = estimator,
+    estimator        = if (identical(SAMFUN, lavaan::sem) && length(ordered))
+      "ML" else estimator,
     missing          = missing,
     orthogonal.x     = orthogonal.x,
     orthogonal.y     = orthogonal.y,
@@ -653,12 +725,15 @@ parameterEstimatesLavSAM <- function(syntax,
     auto.fix.single  = auto.fix.single,
     group            = group,
     sampling.weights = sampling.weights,
+    ordered          = if (identical(SAMFUN, lavaan::sam)) ordered else NULL,
+    parameterization = parameterization,
     sampling.weights.normalization = sampling.weights.normalization,
     ... # don't need to set optim.gradient here, since we only have ovs
   ))
 
   admissible <- lavaan::lavInspect(fitSam, what = "post.check")
-  mod_stopif(!admissible, "The structural model is inadmissible!")
+  mod_stopif(!admissible && !length(ordered),
+    "The structural model is inadmissible!")
 
   parTableH0 <- lavaan::parameterEstimates(fitH0)
   measr  <- getMeasrRows(parTableH0)

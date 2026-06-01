@@ -1,39 +1,45 @@
-# Laplace estimator for modsem DA models (TMB-based).
-#
-# The TMB template marginalises the per-observation latent variables (Zeta)
-# via the Laplace approximation, providing exact AD gradients for the outer
-# optimisation over structural parameters and an exact Hessian for SEs.
+modsemTMB_MakeADFun <- function(...) {
+  msg <- "The `modsemTMB` package is needed to use the LMS-LAPLACE estimator!"
 
-TMB_DLL_NAME <- "modsem_laplace"
-TMB_DLL_ENV  <- new.env(parent = emptyenv())
-TMB_DLL_ENV$loaded <- FALSE
+  if (!requireNamespace("modsemTMB", quietly = TRUE)) {
+    printf()
+    printf("Do you want to install it? (y/n) ")
+    choice <- tolower(substr(readLines(n = 1L), 1L, 1L))
+
+    stopifnot(choice == "y")
+    remotes::install_github("kss2k/modsemTMB")
+  }
+
+  if (requireNamespace("modsemTMB", quietly = TRUE)) { # Make R CMD check happy
+    modsemTMB::MakeADFun(...)
+  } else mod_msg_stop(msg)
+}
 
 
-# Compile and dyn.load the TMB template (once per session).
-loadTMBModel <- function() {
-  if (isTRUE(TMB_DLL_ENV$loaded))
-    return(invisible(NULL))
+boundLaplaceThresholds <- function(model, theta, threshMat_idx, lower, upper,
+                                   g = 1L) {
+  filled <- fillModel(model, theta, method = "laplace", fillPhi = FALSE)
+  threshMat <- filled$models[[g]]$matrices$threshMat
+  if (!length(threshMat)) return(list(lower = lower, upper = upper))
 
-  src <- system.file("tmb", paste0(TMB_DLL_NAME, ".cpp"), package = "modsem")
-  if (!nzchar(src))
-    mod_msg_stop(
-      "TMB template not found. Re-install modsem or check inst/tmb/."
-    )
+  idx <- matrix(threshMat_idx, nrow = NROW(threshMat), ncol = NCOL(threshMat))
+  for (i in seq_len(NROW(threshMat))) {
+    for (j in seq_len(NCOL(threshMat))) {
+      k <- idx[i, j] + 1L
+      if (k <= 0L) next
 
-  # Compile into a temp directory to avoid conflicts with the main Rcpp DSO
-  work_dir <- file.path(tempdir(), "modsem_tmb")
-  dir.create(work_dir, showWarnings = FALSE, recursive = TRUE)
-  file.copy(src, file.path(work_dir, paste0(TMB_DLL_NAME, ".cpp")),
-            overwrite = TRUE)
+      current <- threshMat[i, j]
+      previous <- threshMat[i, j - 1L]
+      following <- threshMat[i, j + 1L]
 
-  old_wd <- setwd(work_dir)
-  on.exit(setwd(old_wd), add = TRUE)
+      lower[[k]] <- max(lower[[k]],
+                        if (is.finite(previous)) mean(c(previous, current)) else -Inf)
+      upper[[k]] <- min(upper[[k]],
+                        if (is.finite(following)) mean(c(current, following)) else Inf)
+    }
+  }
 
-  TMB::compile(paste0(TMB_DLL_NAME, ".cpp"))
-  dyn.load(TMB::dynlib(TMB_DLL_NAME))
-  TMB_DLL_ENV$loaded <- TRUE
-
-  invisible(NULL)
+  list(lower = lower, upper = upper)
 }
 
 
@@ -53,7 +59,7 @@ buildTMBDataGroup <- function(model, g = 1L) {
   nLatent <- nXi + nEta
   n_theta <- length(model$theta)
 
-  # ---- Probe fillModel with sentinel values --------------------------------
+  # Probe fillModel with sentinel values
   SENTINEL_BASE <- 1e6
   theta_probe   <- seq(SENTINEL_BASE, SENTINEL_BASE + n_theta - 1L)
   names(theta_probe) <- names(model$theta)
@@ -89,8 +95,14 @@ buildTMBDataGroup <- function(model, g = 1L) {
 
   # Fixed skeleton: original matrix with free (NA) positions zeroed out
   skel <- function(mat) { out <- mat; out[is.na(out)] <- 0; out }
+  threshSkel <- function(mat) {
+    out <- skel(mat)
+    out[is.infinite(out) & out < 0] <- -1e30
+    out[is.infinite(out) & out > 0] <-  1e30
+    out
+  }
 
-  # ---- Observation matrix ---------------------------------------------------
+  # Observation matrix
   nInd <- NROW(M_orig$lambdaX)
   n    <- submodel$data$n
 
@@ -113,40 +125,31 @@ buildTMBDataGroup <- function(model, g = 1L) {
     if (n_obs_vec[i] > 0L)
       obs_idx[i, seq_len(n_obs_vec[i])] <- obs_list[[i]]
 
-  # ---- Ordinal info ---------------------------------------------------------
-  ordinal    <- M_orig$ordinal
-  is_ordinal <- as.integer(ordinal$isOrdinal)
-
+  # Ordinal info
+  indicator.names <- rownames(M_orig$lambdaX)
+  is_ordinal <- as.integer(indicator.names %in% submodel$info$ordered)
   thresh_n <- integer(nInd)
-  for (j in seq_len(nInd)) {
-    t_j <- ordinal$thresholds[[j]]
-    if (!is.null(t_j) && length(t_j) > 0L && is_ordinal[j])
-      thresh_n[j] <- length(t_j)
-  }
-  max_thresh <- max(thresh_n, 1L)
-  thresh_mat <- matrix(0.0, nrow = nInd, ncol = max_thresh)
-  for (j in seq_len(nInd)) {
-    if (thresh_n[j] > 0L) {
-      t_j <- ordinal$thresholds[[j]]
-      t_j[is.infinite(t_j) & t_j < 0] <- -1e30
-      t_j[is.infinite(t_j) & t_j > 0] <-  1e30
-      thresh_mat[j, seq_len(thresh_n[j])] <- t_j
-    }
+  if (length(submodel$info$ordered)) {
+    thresh_n <- vapply(seq_len(nInd), function(j) {
+      if (!is_ordinal[[j]]) return(0L)
+      as.integer(sum(!is.nan(M_orig$threshMat[j, ])))
+    }, integer(1L))
   }
 
-  # ---- Index arrays (via probe) --------------------------------------------
+  # Index arrays (via probe)
   Lambda_idx      <- asIdx(M_f$lambdaX)
-  Theta_diag_idx  <- asIdx(diag(M_f$thetaDelta))
+  Theta_idx       <- asIdxLTri(M_f$thetaDelta)
   tau_idx         <- asIdx(M_f$tauX)
   GammaXi_idx     <- asIdx(M_f$gammaXi)
   GammaEta_idx    <- asIdx(M_f$gammaEta)
-  OmegaXiXi_idx  <- asIdx(M_f$omegaXiXi)
-  OmegaEtaXi_idx <- asIdx(M_f$omegaEtaXi)
+  OmegaXiXi_idx   <- asIdx(M_f$omegaXiXi)
+  OmegaEtaXi_idx  <- asIdx(M_f$omegaEtaXi)
   alpha_idx       <- asIdx(M_f$alpha)
   beta0_idx       <- asIdx(M_f$beta0)
   A_lower_idx     <- asIdxLTri(M_f$A)
   psi_idx         <- asIdxLTri(M_f$psi)
-  covZetaXi_idx  <- asIdx(M_f$covZetaXi)
+  covZetaXi_idx   <- asIdx(M_f$covZetaXi)
+  threshMat_idx   <- asIdx(M_f$threshMat)
 
   list(
     nXi  = nXi,
@@ -159,33 +162,118 @@ buildTMBDataGroup <- function(model, g = 1L) {
 
     is_ordinal = is_ordinal,
     thresh_n   = thresh_n,
-    thresh_mat = thresh_mat,
 
     Lambda_f      = skel(M_orig$lambdaX),
-    Theta_diag_f  = diag(skel(M_orig$thetaDelta)),
+    Theta_f       = skel(M_orig$thetaDelta),
     tau_f         = drop(skel(M_orig$tauX)),
     GammaXi_f     = skel(M_orig$gammaXi),
     GammaEta_f    = skel(M_orig$gammaEta),
-    OmegaXiXi_f  = skel(M_orig$omegaXiXi),
-    OmegaEtaXi_f = skel(M_orig$omegaEtaXi),
+    OmegaXiXi_f   = skel(M_orig$omegaXiXi),
+    OmegaEtaXi_f  = skel(M_orig$omegaEtaXi),
     alpha_f       = drop(skel(M_orig$alpha)),
     beta0_f       = drop(skel(M_orig$beta0)),
     A_lower_f     = skel(M_orig$A),
     psi_f         = skel(M_orig$psi),
-    covZetaXi_f  = skel(M_orig$covZetaXi),
+    covZetaXi_f   = skel(M_orig$covZetaXi),
+    threshMat_f   = threshSkel(M_orig$threshMat),
 
     Lambda_idx      = Lambda_idx,
-    Theta_diag_idx  = Theta_diag_idx,
+    Theta_idx       = Theta_idx,
     tau_idx         = tau_idx,
     GammaXi_idx     = GammaXi_idx,
     GammaEta_idx    = GammaEta_idx,
-    OmegaXiXi_idx  = OmegaXiXi_idx,
-    OmegaEtaXi_idx = OmegaEtaXi_idx,
+    OmegaXiXi_idx   = OmegaXiXi_idx,
+    OmegaEtaXi_idx  = OmegaEtaXi_idx,
     alpha_idx       = alpha_idx,
     beta0_idx       = beta0_idx,
     A_lower_idx     = A_lower_idx,
     psi_idx         = psi_idx,
-    covZetaXi_idx  = covZetaXi_idx
+    covZetaXi_idx   = covZetaXi_idx,
+    threshMat_idx   = threshMat_idx
+  )
+}
+
+
+buildLaplaceADFunctions <- function(model, theta, verbose = interactive(), eps = 1e-4) {
+  resetOptimizerInfo()
+
+  G <- length(model$models)
+
+  mod_stopif(G > 1,
+    "Laplace Approximation is not implemented for multigroup models (yet)!"
+  )
+
+  objective <- NULL
+  gradient  <- NULL
+  hessian   <- NULL
+  par       <- NULL
+
+  for (g in seq_len(G)) {
+    submodel <- model$models[[g]]
+    n        <- submodel$data$n
+    nLatent  <- submodel$info$numXis + submodel$info$numEtas
+
+    tmbData <- buildTMBDataGroup(
+      model = model,
+      g = g
+    )
+
+    tmbPar  <- list(
+      theta = unname(theta),
+      Zeta  = matrix(0.0, nrow = n, ncol = nLatent)
+    )
+
+    obj.g <- modsemTMB_MakeADFun(
+      data       = tmbData,
+      parameters = tmbPar,
+      random     = "Zeta"
+    )
+
+    objective <- obj.g$fn
+    gradient  <- obj.g$gr
+    hessian   <- obj.g$hessian
+    par       <- obj.g$par
+  }
+
+  OBJECTIVE <- function(par) {
+    nll <- objective(par) # negative log likelihood
+    if (verbose) incrementIterations(-nll)
+    nll
+  }
+
+  GRADIENT <- function(par) {
+    gradient(par)
+  }
+
+  HESSIAN <- function(par) {
+    # Hessian calculation currently doesn't work with random effects
+    H <- tryCatch(obj$he(par), error = function(e) NULL)
+
+    if (is.null(H) || !all(is.finite(H))) {
+      p <- length(par)
+      H <- matrix(NA_real_, p, p)
+
+      grad0 <- gradient(par)
+
+      for (i in seq_len(p)) {
+        pari <- par
+        pari[[i]] <- pari[[i]] + eps
+
+        gradi <- gradient(pari)
+        H[,i] <- (gradi-grad0)/eps
+      }
+    }
+
+    H
+  }
+
+  list(
+    objective = OBJECTIVE,
+    gradient  = GRADIENT,
+    hessian   = HESSIAN,
+    par       = par,
+    tmbData   = tmbData,
+    tmbPar    = tmbPar
   )
 }
 
@@ -193,38 +281,15 @@ buildTMBDataGroup <- function(model, g = 1L) {
 # Observed FIM for the Laplace method via the TMB exact Hessian.
 # Called by calcFIM_da in calc_se_da.R.
 calcOFIM_Laplace <- function(model, theta, ..., eps = 1e-4) {
-  loadTMBModel()
-  submodel <- model$models[[1L]]
-  n        <- submodel$data$n
-  nLatent  <- submodel$info$numXis + submodel$info$numEtas
+  AD <- buildLaplaceADFunctions(model = model, theta = theta, eps = eps)
 
-  tmb_data <- buildTMBDataGroup(model, g = 1L)
-  obj <- TMB::MakeADFun(
-    data       = tmb_data,
-    parameters = list(theta = unname(theta),
-                      Zeta  = matrix(0.0, nrow = n, ncol = nLatent)),
-    random     = "Zeta",
-    DLL        = TMB_DLL_NAME,
-    silent     = TRUE
-  )
-
-  H <- tryCatch(obj$he(unname(theta)), error = function(e) NULL)
-
-  if (is.null(H) || !all(is.finite(H))) {
-    p <- length(theta)
-    H <- matrix(NA_real_, p, p,
-                dimnames = list(names(theta), names(theta)))
-
-    grad0 <- obj$gr(unname(theta))
-    for (i in seq_len(p)) {
-      thetai <- unname(theta)
-      thetai[[i]] <- thetai[[i]] + eps
-      gradi <- obj$gr(thetai)
-      H[,i] <- (gradi-grad0)/eps
-    }
-
-    return(H)
-  }
+  H <- tryCatch({
+    AD$hessian(unname(theta))
+  }, error = function(e) {
+    mod_msg_warn("Calculation of Hessian failed!")
+      p <- length(theta)
+      matrix(NA_real_, p, p)
+  })
 
   dimnames(H) <- list(names(theta), names(theta))
   H
@@ -239,11 +304,10 @@ estLaplace <- function(model,
                        epsilon      = 1e-6,
                        optimizer    = "nlminb",
                        inner.control = list(),
+                       iter.max     = 1000,
                        ...) {
   mod_stopif(model$info$n.groups > 1L,
     "method=\"laplace\" currently supports single-group models only.")
-
-  loadTMBModel()
 
   theta     <- model$theta
   data      <- lapply(model$models, FUN = \(sub) sub$data)
@@ -253,49 +317,48 @@ estLaplace <- function(model,
   nLatent   <- nXi + nEta
   n         <- submodel$data$n
 
-  tmb_data <- buildTMBDataGroup(model, g = 1L)
-
-  tmb_par <- list(
-    theta = unname(theta),
-    Zeta  = matrix(0.0, nrow = n, ncol = nLatent)
-  )
-
-  obj <- TMB::MakeADFun(
-    data       = tmb_data,
-    parameters = tmb_par,
-    random     = "Zeta",
-    DLL        = TMB_DLL_NAME,
-    silent     = !verbose
+  AD <- buildLaplaceADFunctions(
+    model = model, theta = theta, verbose = verbose
   )
 
   bounds <- model$params$bounds
   lower  <- unname(bounds$lower)
   upper  <- unname(bounds$upper)
+  bounds <- boundLaplaceThresholds(
+    model = model, theta = theta,
+    threshMat_idx = AD$tmbData$threshMat_idx,
+    lower = lower, upper = upper
+  )
 
-  if (verbose) printf("Optimising (method=laplace)\n")
+  lower <- bounds$lower
+  upper <- bounds$upper
 
   if (optimizer == "nlminb") {
     control <- list(
       rel.tol  = convergence,
-      iter.max = 1000L,
-      eval.max = 5000L
+      iter.max = iter.max,
+      eval.max = 5 * iter.max
     )
-    opt <- stats::nlminb(
-      start     = obj$par,
-      objective = obj$fn,
-      gradient  = obj$gr,
-      lower     = lower,
-      upper     = upper,
-      control   = control
-    )
+
+    suppressWarnings({
+      opt <- stats::nlminb(
+        start     = AD$par,
+        objective = AD$objective,
+        gradient  = AD$gradient,
+        lower     = lower,
+        upper     = upper,
+        control   = control
+      )
+    })
+
     converged  <- opt$convergence == 0L
     iterations <- opt$iterations
 
   } else if (optimizer == "L-BFGS-B") {
     opt <- stats::optim(
-      par    = obj$par,
-      fn     = obj$fn,
-      gr     = obj$gr,
+      par    = AD$par,
+      fn     = AD$objective,
+      gr     = AD$gradient,
       method = "L-BFGS-B",
       lower  = lower,
       upper  = upper,
@@ -308,6 +371,8 @@ estLaplace <- function(model,
   } else {
     mod_msg_stop("optimizer must be 'nlminb' or 'L-BFGS-B'.")
   }
+
+  if (verbose) printf("\n")
 
   theta_hat     <- structure(opt$par, names = names(theta))
   logLik_hat    <- -opt$objective

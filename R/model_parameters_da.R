@@ -2,7 +2,7 @@
 NAMES_PAR_MATRICES <- c("lambdaX", "lambdaY", "gammaXi", "gammaEta",
                       "thetaDelta", "thetaEpsilon", "W", "T", "phi", "A",
                       "covZetaXi", "psi", "tauX", "tauY", "alpha", "beta0",
-                      "omegaEtaXi", "omegaXiXi")
+                      "omegaEtaXi", "omegaXiXi", "threshMat")
 NAMES_PAR_MATRICES_COV <- c("gammaXi", "gammaEta", "A", "psi", "phi")
 
 
@@ -61,6 +61,7 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
     gammaEta     <- as.vector(M$gammaEta)
     omegaXiXi    <- as.vector(M$omegaXiXi)
     omegaEtaXi   <- as.vector(M$omegaEtaXi)
+    threshMat    <- as.vector(M$threshMat)
 
     allModelValues <- c(
       lambdaX      = lambdaX,
@@ -80,13 +81,15 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
       gammaXi      = gammaXi,
       gammaEta     = gammaEta,
       omegaXiXi    = omegaXiXi,
-      omegaEtaXi   = omegaEtaXi
+      omegaEtaXi   = omegaEtaXi,
+      threshMat    = threshMat
     )
 
-    lavLabelsMain <- createLavLabels(M, subset = is.na(allModelValues),
+    isFreeMain <- is.na(allModelValues) & !is.nan(allModelValues)
+    lavLabelsMain <- createLavLabels(M, subset = isFreeMain,
                                      etas = etas, parTable.in = parTable.in)
 
-    thetaMain <- allModelValues[is.na(allModelValues)]
+    thetaMain <- allModelValues[isFreeMain]
     thetaMain <- fillThetaIfStartNULL(start = start, theta = thetaMain,
                                       lavlab = lavLabelsMain)
 
@@ -182,7 +185,7 @@ fillThetaIfStartNULL <- function(start,
 
   } else if (!is.null(lavlab)) {
     tryCatch({
-      OP <- "~~|<~|=~|~1|~"
+      OP <- "\\||~~|<~|=~|~1|~"
       op <- stringr::str_extract(lavlab, pattern = OP)
       lr <- stringr::str_split_fixed(lavlab, pattern = OP, n = 2)
 
@@ -197,6 +200,16 @@ fillThetaIfStartNULL <- function(start,
       theta.filled[op == "<~"]              <- meas
       theta.filled[op == "~~" & lhs == rhs] <- var
       theta.filled[op == "~~" & lhs != rhs] <- cov
+
+      is.threshold <- op == "|"
+      for (indicator in unique(lhs[is.threshold])) {
+        idx <- which(is.threshold & lhs == indicator)
+        threshold.number <- as.integer(stringr::str_remove(rhs[idx], "^t"))
+        theta.filled[idx] <- stats::qnorm(
+          threshold.number / (max(threshold.number) + 1)
+        )
+      }
+
       theta.filled[is.na(theta.filled)]     <- reg
 
       theta.filled
@@ -284,6 +297,7 @@ fillMainModel <- function(model, theta, thetaLabel, fillPhi = FALSE,
   M$gammaXi      <- fillNA_Matrix(M$gammaXi, theta = theta, pattern = "^gammaXi")
   M$omegaXiXi    <- fillNA_Matrix(M$omegaXiXi, theta = theta, pattern = "^omegaXiXi")
   M$omegaEtaXi   <- fillNA_Matrix(M$omegaEtaXi, theta = theta, pattern = "^omegaEtaXi")
+  M$threshMat    <- fillNA_Matrix(M$threshMat, theta = theta, pattern = "^threshMat")
 
   if (fillPhi) {
     M$phi <- M$A %*% t(M$A)
@@ -451,7 +465,8 @@ DA_BLOCKS = list(
   W            = 14,
   T            = 15,
   phi          = 16,  # QML: free parameter; LMS: derived from A (not free)
-  covZetaXi    = 17
+  covZetaXi    = 17,
+  threshMat    = 18
 )
 
 
@@ -476,7 +491,9 @@ getParamNamesMatrix <- function(mat, matname) {
 }
 
 
-getParamLocationsMatrices <- function(matrices, isFree = is.na, g = 1L, ignore.g.label = FALSE) {
+getParamLocationsMatrices <- function(matrices,
+                                      isFree = \(x) is.na(x) & !is.nan(x),
+                                      g = 1L, ignore.g.label = FALSE) {
   matrices <- matrices[intersect(names(matrices), names(DA_BLOCKS))]
   locations <- data.frame(param = NULL, block = NULL, row = NULL, col = NULL)
   for (blockname in names(matrices)) {

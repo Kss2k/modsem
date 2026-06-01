@@ -10,9 +10,8 @@ testthat::test_that("Laplace DA estimator returns finite continuous-model estima
 
   fit <- modsem(
     syntax,
-    data = oneInt[1:200, ],
-    method = "laplace",
-    calc.se = FALSE
+    data = oneInt,
+    method = "laplace"
   )
 
   testthat::expect_s3_class(fit, "modsem_da")
@@ -97,6 +96,34 @@ testthat::test_that("Laplace DA combines continuous and ordered indicator likeli
 
   testthat::expect_true(is.finite(fit$logLik))
   testthat::expect_true(all(is.finite(coef(fit, type = "free"))))
+})
+
+
+testthat::test_that("Laplace DA estimates residual covariances between continuous indicators", {
+  syntax <- "
+    X =~ x1 + x2 + x3
+    Y =~ y1 + y2 + y3
+    Y ~ X
+    x1 ~~ x2
+  "
+
+  fit <- modsem(
+    syntax,
+    data = oneInt[1:80, c("x1", "x2", "x3", "y1", "y2", "y3")],
+    method = "laplace",
+    calc.se = FALSE
+  )
+
+  residual.cov <- fit$parTable[
+    fit$parTable$lhs %in% c("x1", "x2") &
+      fit$parTable$op == "~~" &
+      fit$parTable$rhs %in% c("x1", "x2") &
+      fit$parTable$lhs != fit$parTable$rhs,
+    "est"
+  ]
+
+  testthat::expect_length(residual.cov, 1L)
+  testthat::expect_true(is.finite(residual.cov))
 })
 
 

@@ -500,7 +500,7 @@ modsem_da <- function(model.syntax = NULL,
     ))
     laplace.ordered <- intersect(laplace.ordered, names(data))
     data[laplace.ordered] <- lapply(data[laplace.ordered], function(x) {
-      as.integer(as.ordered(x))
+      as.integer(droplevels(as.ordered(x)))
     })
   }
 
@@ -620,6 +620,7 @@ modsem_da <- function(model.syntax = NULL,
 
       ops <- c(group.info$parTable$op, group.info$parTableCov$op)
       engine <- if (any(ops %in% c("<", ">", "=="))) "pi" else "sam"
+      if (length(laplace.ordered)) engine <- "sam"
 
       result <- .optimize(
         model            = model,
@@ -730,16 +731,6 @@ modsem_da <- function(model.syntax = NULL,
                       "Message: %s")
     mod_msg_stop(sprintf(message, method, e$message))
   })
-
-  if (method == "laplace" && length(laplace.ordered)) {
-    thresholds <- mcOrderedThresholdsDelta(
-      data    = data,
-      ordered = laplace.ordered,
-      group   = group,
-      calc.se = FALSE
-    )
-    est <- mcAppendThresholds(est, thresholds)
-  }
 
   # Finalize the model object
   # Expected means and covariances

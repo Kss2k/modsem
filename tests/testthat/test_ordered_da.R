@@ -26,7 +26,8 @@ cut_data <- function(data, k = 5, choose = NULL) {
   for (var in choose) {
     x <- standardize(data[[var]])
     t <- rthreshold(k)
-    data[[var]] <- cut(x, breaks = t, ordered_result = TRUE)
+    z <- cut(x, breaks = t, ordered_result = FALSE, labels = FALSE)
+    data[[var]] <- as.integer(as.ordered(as.integer(as.ordered(z))))
   }
 
   data
@@ -39,6 +40,7 @@ testthat::test_that("ordered LMS fits without conditions and returns stable inte
   set.seed(2837290)
   data <- cut_data(oneInt, choose = choose)
 
+  fit_laplace <- modsem(m1, data, method = "laplace", ordered = choose)
   fit <- NULL
   testthat::expect_no_condition({
     fit <- suppressMessages(

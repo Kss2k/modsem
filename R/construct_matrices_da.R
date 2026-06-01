@@ -186,7 +186,7 @@ constructT <- function(lVs, indsLVs, parTable,
 }
 
 
-constructTau <- function(lVs, indsLVs, parTable, mean.observed = TRUE) {
+constructTau <- function(lVs, indsLVs, parTable, mean.observed = TRUE, ordered = NULL) {
   indsLVs       <- indsLVs[lVs] # make sure it is sorted
   allIndsLVs    <- unique(unlist(indsLVs))
   numAllIndsLVs <- length(allIndsLVs)
@@ -208,6 +208,9 @@ constructTau <- function(lVs, indsLVs, parTable, mean.observed = TRUE) {
     }
   }
 
+  # fix to zero for ordered indicators
+  tau[allIndsLVs %in% ordered] <- 0
+
   c(setMatrixConstraints(X = tau, parTable = parTable, op = "~1",
                          RHS = "", LHS = allIndsLVs, type = "lhs",
                          nonFreeParams = FALSE),
@@ -215,7 +218,7 @@ constructTau <- function(lVs, indsLVs, parTable, mean.observed = TRUE) {
 }
 
 
-constructTheta <- function(lVs, indsLVs, parTable, auto.fix.single = TRUE) {
+constructTheta <- function(lVs, indsLVs, parTable, auto.fix.single = TRUE, ordered = NULL) {
   numLVs        <- length(lVs)
   indsLVs       <- indsLVs[lVs] # make sure it is sorted
   numIndsLVs    <- lapply(indsLVs, FUN = length)
@@ -233,13 +236,72 @@ constructTheta <- function(lVs, indsLVs, parTable, auto.fix.single = TRUE) {
     }
   }
 
+  # composites
   compositeIndicators <- getCompositeIndicators(parTable)
   isCompositeInd <- allIndsLVs %in% compositeIndicators
   theta[isCompositeInd, isCompositeInd] <- 0
 
+  # ordinal
+  isOrderedInd <- allIndsLVs %in% ordered
+  theta[isOrderedInd, isOrderedInd] <- 1
+
+  residual.covs <- parTable[
+    parTable$op == "~~" &
+      parTable$lhs != parTable$rhs &
+      (parTable$lhs %in% ordered | parTable$rhs %in% ordered),
+    ,
+    drop = FALSE
+  ]
+  mod_stopif(NROW(residual.covs) > 0L,
+    "Residual covariances involving ordered indicators are not supported.")
+
   setMatrixConstraints(X = theta, parTable = parTable, op = "~~",
                        RHS = allIndsLVs, LHS = allIndsLVs, type = "symmetric",
                        nonFreeParams = FALSE)
+}
+
+
+constructThreshMat <- function(lVs, indsLVs, ordered, data, parTable) {
+  if (!length(ordered)) return(EMPTY_MATSTRUCT)
+
+  indsLVs    <- indsLVs[lVs] # make sure it is sorted
+  allIndsLVs <- unique(unlist(indsLVs))
+
+  THR <- vector("list", length(allIndsLVs))
+  maxk <- 0
+
+  for (i in seq_along(allIndsLVs)) {
+    ind <- allIndsLVs[[i]]
+
+    if (!ind %in% ordered) {
+      THR[[i]] <- c(-Inf, Inf)
+      next
+    }
+
+    C <- unique(data[,ind])
+    C <- C[!is.na(C)]
+    k <- length(C)
+
+    if (k > maxk)
+      maxk <- k
+
+    mod_stopif(k <= 1, sprintf("%s has only a single category!", ind))
+    mod_warnif(k >= 12, sprintf("%s has 12 or more categories!", ind))
+
+    THR[[i]] <- c(-Inf, rep(NA, k - 1), Inf)
+  }
+
+  zeropad <- \(x) c(x, rep(NaN, maxk + 1L - length(x)))
+
+  ThreshMat <- do.call(rbind, lapply(THR, zeropad))
+  colnames(ThreshMat) <- c("nInf", paste0("t", seq_len(maxk - 1L)), "pInf")
+  rownames(ThreshMat) <- allIndsLVs
+
+  setMatrixConstraints(
+    X = ThreshMat, parTable = parTable, op = "|",
+    RHS = colnames(ThreshMat), LHS = allIndsLVs, type = "lhs",
+    nonFreeParams = FALSE
+  )
 }
 
 
