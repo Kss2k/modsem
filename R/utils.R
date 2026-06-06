@@ -216,7 +216,7 @@ checkLhsIntTerms <- function(parTable) {
   bad <- getIntTerms(parTable, col = "lhs")
   mod_stopif(length(bad),
     "Interaction terms can (currently) not be treated as dependent variables!",
-    "Indpendent variable interaction terms:", paste0(bad, collapse = ", ")
+    "Independent variable interaction terms:", paste0(bad, collapse = ", ")
   )
 }
 
