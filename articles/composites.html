@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">modsem</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.20</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.21</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -84,7 +84,7 @@
     
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://modsem.org" class="external-link">modsem</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; This is modsem (1.0.20). Please report any bugs!</span></span></code></pre></div>
+<span><span class="co">#&gt; This is modsem (1.0.21). Please report any bugs!</span></span></code></pre></div>
 <div class="section level2">
 <h2 id="composite-constructs">Composite Constructs<a class="anchor" aria-label="anchor" href="#composite-constructs"></a>
 </h2>
@@ -117,7 +117,7 @@ constructs can also be used with the product indicator approaches (e.g.,
 <span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">tpb</span>, <span class="va">TPB</span>, method <span class="op">=</span> <span class="st">"lms"</span>, nodes <span class="op">=</span> <span class="fl">32</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (1.0.20) ended normally after 38 iterations</span></span>
+<span><span class="co">#&gt; modsem (1.0.21) ended normally after 38 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                        LMS</span></span>
 <span><span class="co">#&gt;   Optimization method                       EMA-NLMINB</span></span>
@@ -174,53 +174,53 @@ constructs can also be used with the product indicator approaches (e.g.,
 <span><span class="co">#&gt;     sn2             0.888      0.017   52.608    0.000</span></span>
 <span><span class="co">#&gt;   PBC =~        </span></span>
 <span><span class="co">#&gt;     pbc1            1.000                             </span></span>
-<span><span class="co">#&gt;     pbc2            0.912      0.013   69.336    0.000</span></span>
-<span><span class="co">#&gt;     pbc3            0.801      0.012   65.994    0.000</span></span>
+<span><span class="co">#&gt;     pbc2            0.912      0.013   69.337    0.000</span></span>
+<span><span class="co">#&gt;     pbc3            0.801      0.012   65.996    0.000</span></span>
 <span><span class="co">#&gt;   INT =~        </span></span>
 <span><span class="co">#&gt;     int1            1.000                             </span></span>
-<span><span class="co">#&gt;     int2            0.913      0.015   59.047    0.000</span></span>
-<span><span class="co">#&gt;     int3            0.807      0.014   55.729    0.000</span></span>
+<span><span class="co">#&gt;     int2            0.913      0.015   59.046    0.000</span></span>
+<span><span class="co">#&gt;     int3            0.807      0.014   55.728    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Composites:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   ATT &lt;~        </span></span>
 <span><span class="co">#&gt;     att1            1.000                             </span></span>
-<span><span class="co">#&gt;     att2            0.675      0.260    2.598    0.009</span></span>
-<span><span class="co">#&gt;     att3            0.866      0.278    3.122    0.002</span></span>
-<span><span class="co">#&gt;     att4            0.836      0.271    3.081    0.002</span></span>
-<span><span class="co">#&gt;     att5            1.118      0.311    3.594    0.000</span></span>
+<span><span class="co">#&gt;     att2            0.675      0.260    2.596    0.009</span></span>
+<span><span class="co">#&gt;     att3            0.866      0.278    3.120    0.002</span></span>
+<span><span class="co">#&gt;     att4            0.836      0.271    3.080    0.002</span></span>
+<span><span class="co">#&gt;     att5            1.118      0.311    3.591    0.000</span></span>
 <span><span class="co">#&gt;   BEH &lt;~        </span></span>
 <span><span class="co">#&gt;     b1              1.000                             </span></span>
-<span><span class="co">#&gt;     b2              1.484      0.395    3.757    0.000</span></span>
+<span><span class="co">#&gt;     b2              1.484      0.395    3.756    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   INT ~         </span></span>
 <span><span class="co">#&gt;     SN              0.182      0.027    6.612    0.000</span></span>
-<span><span class="co">#&gt;     PBC             0.226      0.029    7.766    0.000</span></span>
-<span><span class="co">#&gt;     ATT             0.051      0.011    4.725    0.000</span></span>
+<span><span class="co">#&gt;     PBC             0.226      0.029    7.767    0.000</span></span>
+<span><span class="co">#&gt;     ATT             0.051      0.011    4.720    0.000</span></span>
 <span><span class="co">#&gt;   BEH ~         </span></span>
-<span><span class="co">#&gt;     PBC             0.563      0.102    5.536    0.000</span></span>
-<span><span class="co">#&gt;     INT             0.461      0.096    4.815    0.000</span></span>
-<span><span class="co">#&gt;     INT:PBC         0.496      0.088    5.661    0.000</span></span>
+<span><span class="co">#&gt;     PBC             0.563      0.102    5.535    0.000</span></span>
+<span><span class="co">#&gt;     INT             0.461      0.096    4.814    0.000</span></span>
+<span><span class="co">#&gt;     INT:PBC         0.496      0.088    5.660    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Intercepts:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;    .pbc1            0.997      0.024   42.388    0.000</span></span>
 <span><span class="co">#&gt;    .pbc2            0.984      0.022   44.908    0.000</span></span>
 <span><span class="co">#&gt;    .pbc3            0.991      0.020   50.428    0.000</span></span>
-<span><span class="co">#&gt;    .sn1             1.005      0.024   41.633    0.000</span></span>
+<span><span class="co">#&gt;    .sn1             1.005      0.024   41.632    0.000</span></span>
 <span><span class="co">#&gt;    .sn2             1.010      0.022   46.682    0.000</span></span>
 <span><span class="co">#&gt;     att1            1.013      0.024   41.979    0.000</span></span>
 <span><span class="co">#&gt;     att2            1.006      0.021   46.939    0.000</span></span>
 <span><span class="co">#&gt;     att3            1.016      0.020   51.427    0.000</span></span>
 <span><span class="co">#&gt;     att4            0.999      0.018   55.625    0.000</span></span>
 <span><span class="co">#&gt;     att5            0.992      0.022   45.644    0.000</span></span>
-<span><span class="co">#&gt;    .int1            1.013      0.022   46.939    0.000</span></span>
-<span><span class="co">#&gt;    .int2            1.012      0.020   50.380    0.000</span></span>
-<span><span class="co">#&gt;    .int3            1.005      0.018   54.780    0.000</span></span>
-<span><span class="co">#&gt;     b1              1.002      0.021   47.006    0.000</span></span>
-<span><span class="co">#&gt;     b2              1.019      0.020   51.016    0.000</span></span>
+<span><span class="co">#&gt;    .int1            1.013      0.022   46.938    0.000</span></span>
+<span><span class="co">#&gt;    .int2            1.012      0.020   50.377    0.000</span></span>
+<span><span class="co">#&gt;    .int3            1.005      0.018   54.778    0.000</span></span>
+<span><span class="co">#&gt;     b1              1.002      0.021   47.005    0.000</span></span>
+<span><span class="co">#&gt;     b2              1.019      0.020   51.015    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
@@ -241,18 +241,18 @@ constructs can also be used with the product indicator approaches (e.g.,
 <span><span class="co">#&gt;   b2 ~~         </span></span>
 <span><span class="co">#&gt;     b1              0.605                             </span></span>
 <span><span class="co">#&gt;   SN ~~         </span></span>
-<span><span class="co">#&gt;     ATT             2.428      0.435    5.575    0.000</span></span>
+<span><span class="co">#&gt;     ATT             2.428      0.436    5.569    0.000</span></span>
 <span><span class="co">#&gt;   PBC ~~        </span></span>
-<span><span class="co">#&gt;     SN              0.678      0.029   23.326    0.000</span></span>
-<span><span class="co">#&gt;     ATT             2.614      0.467    5.592    0.000</span></span>
+<span><span class="co">#&gt;     SN              0.678      0.029   23.325    0.000</span></span>
+<span><span class="co">#&gt;     ATT             2.614      0.468    5.585    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;    .pbc1            0.144      0.008   18.384    0.000</span></span>
-<span><span class="co">#&gt;    .pbc2            0.160      0.007   21.434    0.000</span></span>
-<span><span class="co">#&gt;    .pbc3            0.155      0.006   23.881    0.000</span></span>
+<span><span class="co">#&gt;    .pbc1            0.144      0.008   18.385    0.000</span></span>
+<span><span class="co">#&gt;    .pbc2            0.160      0.007   21.435    0.000</span></span>
+<span><span class="co">#&gt;    .pbc3            0.155      0.006   23.883    0.000</span></span>
 <span><span class="co">#&gt;    .sn1             0.178      0.015   12.076    0.000</span></span>
-<span><span class="co">#&gt;    .sn2             0.157      0.012   13.270    0.000</span></span>
+<span><span class="co">#&gt;    .sn2             0.157      0.012   13.269    0.000</span></span>
 <span><span class="co">#&gt;     att1            1.166                             </span></span>
 <span><span class="co">#&gt;     att2            0.920                             </span></span>
 <span><span class="co">#&gt;     att3            0.781                             </span></span>
@@ -260,14 +260,14 @@ constructs can also be used with the product indicator approaches (e.g.,
 <span><span class="co">#&gt;     att5            0.944                             </span></span>
 <span><span class="co">#&gt;    .int1            0.157      0.009   18.097    0.000</span></span>
 <span><span class="co">#&gt;    .int2            0.160      0.008   20.408    0.000</span></span>
-<span><span class="co">#&gt;    .int3            0.168      0.007   23.553    0.000</span></span>
+<span><span class="co">#&gt;    .int3            0.168      0.007   23.552    0.000</span></span>
 <span><span class="co">#&gt;     b1              0.815                             </span></span>
 <span><span class="co">#&gt;     b2              0.716                             </span></span>
-<span><span class="co">#&gt;     SN              0.988      0.039   25.403    0.000</span></span>
+<span><span class="co">#&gt;     SN              0.988      0.039   25.402    0.000</span></span>
 <span><span class="co">#&gt;     PBC             0.963      0.035   27.226    0.000</span></span>
-<span><span class="co">#&gt;     ATT            15.450      5.390    2.866    0.004</span></span>
+<span><span class="co">#&gt;     ATT            15.450      5.397    2.863    0.004</span></span>
 <span><span class="co">#&gt;    .INT             0.493      0.020   24.709    0.000</span></span>
-<span><span class="co">#&gt;    .BEH             3.166      1.004    3.153    0.002</span></span></code></pre></div>
+<span><span class="co">#&gt;    .BEH             3.166      1.004    3.152    0.002</span></span></code></pre></div>
 </div>
   </main>
 </div>

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">modsem</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.20</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.21</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -216,7 +216,7 @@ not <code>est.std</code>, regardless of model type.</p>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">std1</span> <span class="op">&lt;-</span> <span class="fu">standardized_estimates</span><span class="op">(</span><span class="va">est_dca</span><span class="op">)</span> <span class="co"># no correction</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="summarize_partable.html">summarize_partable</a></span><span class="op">(</span><span class="va">std1</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> modsem (version 1.0.20)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> modsem (version 1.0.21)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Number of model parameters                        64</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Number of latent variables                         4</span>
@@ -226,7 +226,7 @@ not <code>est.std</code>, regardless of model type.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   X =~          </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     x1              0.927      0.005  197.805    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x2              0.892      0.006  156.888    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     x2              0.892      0.006  156.889    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     x3              0.914      0.005  180.631    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Z =~          </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     z1              0.926      0.005  197.375    0.000</span>
@@ -237,7 +237,7 @@ not <code>est.std</code>, regardless of model type.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     y2              0.955      0.002  390.119    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     y3              0.962      0.002  435.067    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   XZ =~         </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x1z1            0.878      0.007  129.129    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     x1z1            0.878      0.007  129.130    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     x2z1            0.836      0.008  105.776    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     x3z1            0.843      0.008  108.821    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     x1z2            0.833      0.008  102.749    0.000</span>
@@ -316,7 +316,7 @@ not <code>est.std</code>, regardless of model type.</p>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">std2</span> <span class="op">&lt;-</span> <span class="fu">standardized_estimates</span><span class="op">(</span><span class="va">est_dca</span>, correction <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="co"># apply correction</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="summarize_partable.html">summarize_partable</a></span><span class="op">(</span><span class="va">std2</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> modsem (version 1.0.20)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> modsem (version 1.0.21)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Number of model parameters                        64</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Number of latent variables                         4</span>
@@ -326,7 +326,7 @@ not <code>est.std</code>, regardless of model type.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   X =~          </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     x1              0.927      0.005  197.805    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x2              0.892      0.006  156.888    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     x2              0.892      0.006  156.889    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     x3              0.914      0.005  180.631    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Z =~          </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     z1              0.926      0.005  197.375    0.000</span>
@@ -337,7 +337,7 @@ not <code>est.std</code>, regardless of model type.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     y2              0.955      0.002  390.119    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     y3              0.962      0.002  435.067    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   XZ =~         </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x1z1            0.878      0.007  129.129    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     x1z1            0.878      0.007  129.130    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     x2z1            0.836      0.008  105.776    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     x3z1            0.843      0.008  108.821    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     x1z2            0.833      0.008  102.749    0.000</span>
@@ -440,7 +440,7 @@ not <code>est.std</code>, regardless of model type.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 20  y2 ~~  y2           1 0.090     0.005  18.718       0    0.081    0.100</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 21  y3 ~~  y3           1 0.076     0.004  17.246       0    0.068    0.085</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 22   X ~~   X           1 1.000        NA      NA      NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 23   X ~~   Z           1 0.200     0.023   8.759       0    0.155    0.245</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 23   X ~~   Z           1 0.200     0.023   8.767       0    0.155    0.245</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 24   X ~~ X:Z           1 0.000        NA      NA      NA       NA       NA</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 25   Z ~~   Z           1 1.000        NA      NA      NA       NA       NA</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 26   Z ~~ X:Z           1 0.000        NA      NA      NA       NA       NA</span>
