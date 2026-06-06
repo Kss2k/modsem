@@ -206,9 +206,18 @@ getIntTermRows <- function(parTable) {
 }
 
 
-getIntTerms <- function(parTable) {
+getIntTerms <- function(parTable, col = "rhs") {
   structExprs <- parTable[parTable$op == "~", ]
-  unique(structExprs[grepl(":", structExprs$rhs), "rhs"])
+  unique(structExprs[grepl(":", structExprs[[col]]), col])
+}
+
+
+checkLhsIntTerms <- function(parTable) {
+  bad <- getIntTerms(parTable, col = "lhs")
+  mod_stopif(length(bad),
+    "Interaction terms can (currently) not be treated as dependent variables!",
+    "Independent variable interaction terms:", paste0(bad, collapse = ", ")
+  )
 }
 
 
