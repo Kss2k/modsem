@@ -48,6 +48,7 @@ specifyModelDA_Group <- function(syntax = NULL,
   numAllIndsEtas <- length(allIndsEtas)
 
   # exogenous variables (xis) and interaction terms
+  checkLhsIntTerms(parTable)
   intTerms      <- getIntTermRows(parTable)
   varsInts      <- getVarsInts(intTerms)
   allVarsInInts <- unique(unlist(varsInts))
