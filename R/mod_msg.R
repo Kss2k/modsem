@@ -31,9 +31,16 @@ mod_msg_warn_immediate <- function(..., footer = "") {
 
 # Displays a message with header and formatted as
 # above via R function 'stop()'.
-mod_msg_stop <- function(..., footer = "") {
+mod_msg_stop <- function(..., footer = "", only.format.header = FALSE) {
   wat <- unlist(list(...), use.names = FALSE)
   msg <- mod_msg(wat)
+
+  if (only.format.header) {
+    # trust the formatting in ... already, only paste the header on top
+    header <- attr(msg, "header")
+    msg <- paste0(header, "\n", ...)
+  }
+
   if (footer != "") msg <- paste(msg, footer, sep = "\n")
   stop(msg, call. = FALSE, domain = NA)
 }
@@ -132,7 +139,11 @@ mod_msg <- function(wat, txt_width = getOption("width", 80L),
     nstart <- nstop + 1L
     nstop <- nstart
   }
-  paste(chunks, collapse = " ")
+
+  out <- paste(chunks, collapse = " ")
+  attr(out, "header") <- stringr::str_replace_all(header, ": ___", ":")
+
+  out
 }
 
 

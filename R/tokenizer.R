@@ -102,16 +102,20 @@ initializeToken <- function(char, pos, line) {
     type <- "LavString"
     priority <- 10
   } else {
-    mod_msg_stop(paste0("Unrecognized class of token in line ", attr(line, "lineNumber"),
-         " pos ", pos, "\n",
-         highlightError(line, pos = pos)))
+    mod_msg_stop(
+      paste0("Unrecognized class of token in line ", attr(line, "lineNumber"), " pos ", pos, "\n"),
+      highlightError(line, pos = pos),
+      only.format.header = TRUE
+    )
   }
 
-  structure(char,
-            pos = pos,
-            lineNumber = attr(line, "lineNumber"),
-            priority = priority,
-            class = c(type, "LavToken"))
+  structure(
+    char,
+    pos = pos,
+    lineNumber = attr(line, "lineNumber"),
+    priority = priority,
+    class = c(type, "LavToken")
+  )
 }
 
 
@@ -222,7 +226,10 @@ assignSubClass.LavOperator <- function(token) {
           "-"  = {subClass <- "LavSubtract";    priority <- 3},
           "|"  = {subClass <- "LavThreshold";   priority <- 0},
           "<~" = {subClass <- "LavMeasure";     priority <- 0},
-          mod_msg_stop(paste0("Unrecognized operator: ", highlightErrorToken(token)))
+          mod_msg_stop(
+            paste0("Unrecognized operator: ", highlightErrorToken(token)),
+            only.format.header = TRUE
+          )
   )
   structure(token,
             class = c(subClass, class(token)),
@@ -285,14 +292,20 @@ appendToList <- function(list, elem) {
 prioritizeTokens <- function(listTokens, i = 1, brackets = list(),
                              nLeftBrackets = 0) {
   if (is.null(listTokens) || i > length(listTokens)) {
-    mod_stopif(nLeftBrackets != 0, paste0("Unmatched left bracket",
-           highlightErrorToken(brackets[[1]])))
+    mod_stopif(nLeftBrackets != 0,
+      paste0("Unmatched left bracket", highlightErrorToken(brackets[[1]])),
+      only.format.header = TRUE
+    )
+
     return(listTokens)
+
   } else if (is.RightClosure(listTokens[[i]])) {
     brackets <- brackets[-length(brackets)]
     nLeftBrackets <- nLeftBrackets - 1
-    mod_stopif(nLeftBrackets < 0, paste0("Unmatched right bracket ",
-           highlightErrorToken(listTokens[[i]])))
+    mod_stopif(nLeftBrackets < 0,
+      paste0("Unmatched right bracket ", highlightErrorToken(listTokens[[i]])),
+      only.format.header = TRUE
+    )
   }
   getTokenPriority(listTokens[[i]]) <-
     getTokenPriority(listTokens[[i]]) + nLeftBrackets*10

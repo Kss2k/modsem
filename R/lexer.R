@@ -37,8 +37,10 @@ chooseToken <- function(listTokens, i = 1, chosenTokenIdx = NULL,
     leftClosures <- appendToList(leftClosures, token)
 
   } else if (is.RightClosure(token)) {
-    mod_stopif(length(leftClosures) == 0, paste0("Unmatched right bracket",
-           highlightErrorToken(token)))
+    mod_stopif(length(leftClosures) == 0,
+      paste0("Unmatched right bracket", highlightErrorToken(token)),
+      only.format.header = TRUE
+    )
 
     leftClosures <- leftClosures[-1]
     if (length(leftClosures) == 0) {
