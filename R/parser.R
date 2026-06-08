@@ -13,11 +13,15 @@ evalToken.LavOperator <- function(token, lhs, rhs) {
   if (is.LavToken(rhs)) rhs <- list(rhs)
   if (is.LavToken(lhs)) lhs <- list(lhs)
 
-  mod_stopif(!is.atomic(lhs) && is.LavOperator(lhs$op), paste0("Unexpected operator ",
-         highlightErrorToken(lhs$op)))
+  mod_stopif(!is.atomic(lhs) && is.LavOperator(lhs$op),
+    paste0("Unexpected operator ", highlightErrorToken(lhs$op)),
+    only.format.header = TRUE
+  )
 
-  mod_stopif(!is.atomic(rhs) && is.LavOperator(rhs$op), paste0("Unexpected operator ",
-         highlightErrorToken(rhs$op)))
+  mod_stopif(!is.atomic(rhs) && is.LavOperator(rhs$op),
+    paste0("Unexpected operator ", highlightErrorToken(rhs$op)),
+    only.format.header = TRUE
+  )
 
   list(lhs = lhs, op = token, rhs = rhs)
 }
@@ -31,20 +35,32 @@ evalToken.LavToken <- function(token, lhs, rhs) {
 
 #' @export
 evalToken.LavName <- function(token, lhs, rhs) {
-  mod_stopif(is.LavToken(rhs), paste0("Unexpected token ",
-         highlightErrorToken(rhs)))
-  mod_stopif(is.LavToken(lhs), paste0("Unexpected token ",
-         highlightErrorToken(lhs)))
+  mod_stopif(is.LavToken(rhs),
+    paste0("Unexpected token ", highlightErrorToken(rhs)),
+    only.format.header = TRUE
+  )
+  mod_stopif(is.LavToken(lhs),
+    paste0("Unexpected token ", highlightErrorToken(lhs)),
+    only.format.header = TRUE
+  )
   token
 }
 
 
 #' @export
 evalToken.LavNumeric <- function(token, lhs, rhs) {
-  mod_stopif(is.LavToken(rhs), paste0("Unexpected token ",
-         highlightErrorToken(rhs)))
-  mod_stopif(is.LavToken(lhs), paste0("Unexpected token ",
-         highlightErrorToken(lhs)))
+  mod_stopif(is.LavToken(rhs),
+    "Unexpected token:\n",
+    highlightErrorToken(rhs),
+    only.format.header = TRUE
+  )
+
+  mod_stopif(is.LavToken(lhs),
+    "Unexpected token:\n",
+    highlightErrorToken(lhs),
+    only.format.header = TRUE
+  )
+
   token
 }
 
@@ -52,9 +68,16 @@ evalToken.LavNumeric <- function(token, lhs, rhs) {
 #' @export
 evalToken.LavAdd <- function(token, lhs, rhs) {
   if (is.null(rhs)) {
-    mod_msg_stop(paste0("Expected token after `+` ", highlightErrorToken(token)))
+    mod_msg_stop(
+      paste0("Expected token after `+` ", highlightErrorToken(token)),
+      only.format.header = TRUE
+    )
+
   } else if (is.null(lhs)) {
-    mod_msg_stop(paste0("Expected token before `+` ", highlightErrorToken(token)))
+    mod_msg_stop(
+      paste0("Expected token before `+` ", highlightErrorToken(token)),
+      only.format.header = TRUE
+    )
   }
 
   if (is.LavToken(rhs)) {
@@ -69,8 +92,7 @@ evalToken.LavAdd <- function(token, lhs, rhs) {
 
 #' @export
 evalToken.LavModify <- function(token, lhs, rhs) {
-  structure(rhs,
-            modifier = lhs)
+  structure(rhs, modifier = lhs)
 }
 
 
@@ -92,7 +114,10 @@ evalToken.LavBlank <- function(token, lhs, rhs) {
 #' @export
 evalToken.LavInteraction <- function(token, lhs, rhs) {
   if (!"LavName" %in% class(lhs) || !"LavName" %in% class(rhs)) {
-    mod_msg_stop(paste0("Interactions are reserved for objects ", highlightErrorToken(token)))
+    mod_msg_stop(
+      paste0("Interactions are reserved for objects ", highlightErrorToken(token)),
+      only.format.header = TRUE
+    )
   }
   out <- paste0(lhs, token, rhs)
   attributes(out) <- attributes(lhs)
@@ -239,7 +264,8 @@ modsemify <- function(syntax, parentheses.as.string = FALSE) {
   if (is.null(syntax)) return(NULL)
 
   mod_stopif(!is.character(syntax) && length(syntax) > 1,
-         "Syntax is not a string og length 1")
+    "Syntax is not a string og length 1"
+  )
 
   on.exit({
     PARSER_SETTINGS$parentheses.as.string <- FALSE
@@ -323,8 +349,9 @@ parTableToSyntax <- function(parTable, removeColon = FALSE) {
 
 mergeTokens <- function(x, y) {
   mod_stopif(!"LavName" %in% class(x) || !"LavName" %in% class(x),
-         paste0("Interactions are reserved for objects ",
-         highlightErrorToken(x)))
+    paste0("Interactions are reserved for objects ", highlightErrorToken(x)),
+    only.format.header = TRUE
+  )
 
   out <- paste0(x, y)
   attributes(out) <- attributes(x)

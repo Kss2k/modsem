@@ -1409,9 +1409,15 @@ parseModelArgumentsByGroupDA <- function(model.syntax, cov.syntax,
     parTable <- rbind(
       parTable,
       data.frame(lhs = ov, op = "=~", rhs = tmp.ov, mod = "1"),
-      data.frame(lhs = ov, op = "~1", rhs = "", mod = ""),
       data.frame(lhs = tmp.ov, op = "~1", rhs = "", mod = "0")
     )
+
+    if (!any(parTable$lhs == ov & parTable$op == "~1")) {
+      parTable <- rbind(
+        parTable,
+        data.frame(lhs = ov, op = "~1", rhs = "", mod = "")
+      )
+    }
   }
 
   if (length(structovs))
