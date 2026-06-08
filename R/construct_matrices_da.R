@@ -272,12 +272,15 @@ constructGamma <- function(DVs, IVs, parTable, auto.fix.first = TRUE) {
 
   higherOrderLVs <- unique(exprsGamma2[exprsGamma2$op == "=~", "lhs"])
   for (lVh in higherOrderLVs) {
-    firstFilled <- FALSE
     inds <- exprsGamma2[exprsGamma2$op == "=~" &
                         exprsGamma2$lhs == lVh, "rhs"]
     ind1 <- inds[[1L]]
 
-    if (auto.fix.first) gamma$numeric[ind1, lVh] <- 1
+    if (auto.fix.first &&
+        is.na(gamma$numeric[ind1, lVh]) &&
+        gamma$label[ind1, lVh] == "") {
+      gamma$numeric[ind1, lVh] <- 1
+    }
   }
 
   gamma
