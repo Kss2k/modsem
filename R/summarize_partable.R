@@ -22,8 +22,6 @@
 #'
 #' @param thresholds Logical, whether to include threshold estimates in the output.
 #'
-#' @param ... Additional arguments passed to internal printing function.
-#'
 #' @return A summary object containing the parameter table and additional information.
 #'
 #' @examples
@@ -51,8 +49,7 @@ summarize_partable <- function(parTable,
                                covariances = TRUE,
                                intercepts  = TRUE,
                                variances   = TRUE,
-                               thresholds  = TRUE,
-                               ...) {
+                               thresholds  = TRUE) {
   if (!"label" %in% colnames(parTable)) parTable$label <- ""
 
   parTable <- rename(
@@ -99,8 +96,7 @@ summarize_partable <- function(parTable,
     thresholds  = thresholds,
     width.out   = width.out,
     info.names  = info.names,
-    info.values = info.values,
-    extra.args  = list(...)
+    info.values = info.values
   )
 
   class(out) <- c("list", "modsem_partable_summary")
