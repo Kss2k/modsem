@@ -156,7 +156,7 @@ between two latent variables in <code>lavaan</code>.</p>
 <span><span class="co">#&gt; R-Squared Change (H1 - H0):</span></span>
 <span><span class="co">#&gt;   Y                                              0.204 </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; lavaan 0.6-20 ended normally after 161 iterations</span></span>
+<span><span class="co">#&gt; lavaan 0.6-20 ended normally after 158 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                         ML</span></span>
 <span><span class="co">#&gt;   Optimization method                           NLMINB</span></span>
@@ -761,10 +761,6 @@ quadratic effects.</p>
 <span></span>
 <span><span class="co"># Using the LMS approach</span></span>
 <span><span class="va">est_tpb_lms</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">tpb</span>, <span class="va">TPB</span>, method <span class="op">=</span> <span class="st">"lms"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: modsem-&gt;checkNodesLms():  </span></span>
-<span><span class="co">#&gt;    It is recommended that you have at least 32 nodes for interaction effects </span></span>
-<span><span class="co">#&gt;    between exogenous and endogenous variables in the lms approach 'nodes = </span></span>
-<span><span class="co">#&gt;    24'</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_tpb_lms</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; modsem (1.0.21) ended normally after 22 iterations</span></span>
