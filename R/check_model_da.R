@@ -107,7 +107,7 @@ checkNodesLms <- function(parTableMain,
                           method = "lms",
                           adaptive = FALSE,
                           minNodesXiXi   = if (!adaptive) 16 else 15,
-                          minNodesXiEta  = if (!adaptive) 32 else 32,
+                          minNodesXiEta  = if (!adaptive) 32 else 24,
                           minNodesEtaEta = if (!adaptive) 48 else 32) {
   if (method != "lms") return(NULL)
 
