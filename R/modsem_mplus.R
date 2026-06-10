@@ -65,6 +65,9 @@ modsem_mplus <- function(model.syntax,
                          output.std = TRUE,
                          categorical = NULL,
                          ...) {
+  if (!requireNamespace("MplusAutomation", quietly = TRUE))
+    stop("modsem_mplus() requires the 'MplusAutomation' package; please install it.")
+
   if (rcs) { # use reliability-correct single items?
     corrected <- relcorr_single_item(
       syntax          = model.syntax,
