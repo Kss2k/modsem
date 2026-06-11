@@ -113,7 +113,7 @@ patternizeMissingDataFIML <- function(data) {
   # is in pattern-concatenated order (i.e., the stacked rows of `data.split`),
   # so the row-level vectors must be permuted accordingly. With a single
   # pattern, `perm` is the identity.
-  perm <- unlist(rowidx)
+  permutation <- unlist(rowidx)
 
   list(
     ids        = ids,
@@ -129,9 +129,9 @@ patternizeMissingDataFIML <- function(data) {
     p          = length(ids),
     data.full  = data,
     is.fiml    = length(ids) > 1L,
-    cluster    = CLUSTER[perm],
-    weights    = WEIGHTS[perm],
-    index      = INDEX[perm]
+    cluster    = CLUSTER[permutation],
+    weights    = WEIGHTS[permutation],
+    index      = INDEX[permutation]
   )
 }
 
@@ -185,8 +185,7 @@ handleMissingData <- function(data, missing = "listwise", CLUSTER = NULL, WEIGHT
     rowMissingAll <- apply(data, MARGIN = 1, FUN = \(x) all(is.na(x)))
     keep          <- !rowMissingAll
 
-    data <- data[keep, , drop = FALSE] # we've already know that
-                                       # all(rowMissingAll) != TRUE
+    data <- data[keep, , drop = FALSE] # we already know that !all(rowMissingAll)
 
     # NOTE: attributes must be set after subsetting, as subsetting a
     # matrix drops any custom attributes!
