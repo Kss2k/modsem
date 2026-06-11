@@ -124,6 +124,8 @@ mstepLms <- function(theta, model, P,
 
   if (optimizer == "nlminb") {
     if (is.null(control$iter.max)) control$iter.max <- max.step
+    if (is.null(control$eval.max)) control$eval.max <- 2 * control$iter.max
+
     est <- stats::nlminb(start = theta, objective = objective,
                          gradient = gradient,
                          upper = model$params$bounds$upper,
