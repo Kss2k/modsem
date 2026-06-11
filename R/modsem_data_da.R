@@ -109,6 +109,12 @@ patternizeMissingDataFIML <- function(data) {
     d.pattern[[id]] <- length(cidx)
   }
 
+  # Everything downstream (posterior matrices, densities, score contributions)
+  # is in pattern-concatenated order (i.e., the stacked rows of `data.split`),
+  # so the row-level vectors must be permuted accordingly. With a single
+  # pattern, `perm` is the identity.
+  permutation <- unlist(rowidx)
+
   list(
     ids        = ids,
     rowidx     = rowidx,
@@ -123,9 +129,9 @@ patternizeMissingDataFIML <- function(data) {
     p          = length(ids),
     data.full  = data,
     is.fiml    = length(ids) > 1L,
-    cluster    = CLUSTER,
-    weights    = WEIGHTS,
-    index      = INDEX
+    cluster    = CLUSTER[permutation],
+    weights    = WEIGHTS[permutation],
+    index      = INDEX[permutation]
   )
 }
 
@@ -159,7 +165,7 @@ handleMissingData <- function(data, missing = "listwise", CLUSTER = NULL, WEIGHT
     out <- data[completeCases, ]
     attr(out, "cluster") <- CLUSTER[completeCases]
     attr(out, "weights") <- WEIGHTS[completeCases]
-    attr(data, "index")  <- INDEX[completeCases]
+    attr(out, "index")   <- INDEX[completeCases]
 
     return(out)
 
@@ -176,13 +182,17 @@ handleMissingData <- function(data, missing = "listwise", CLUSTER = NULL, WEIGHT
     return(imp1)
 
   } else if (missing %in% c("fiml", "ml", "direct")) {
-    attr(data, "cluster") <- CLUSTER
-    attr(data, "weights") <- WEIGHTS
-    attr(data, "index")   <- INDEX
-
     rowMissingAll <- apply(data, MARGIN = 1, FUN = \(x) all(is.na(x)))
-    data          <- data[!rowMissingAll, , drop = FALSE] # we've already know that
-                                                          # all(rowMissingAll) != TRUE
+    keep          <- !rowMissingAll
+
+    data <- data[keep, , drop = FALSE] # we already know that !all(rowMissingAll)
+
+    # NOTE: attributes must be set after subsetting, as subsetting a
+    # matrix drops any custom attributes!
+    attr(data, "cluster") <- CLUSTER[keep]
+    attr(data, "weights") <- WEIGHTS[keep]
+    attr(data, "index")   <- INDEX[keep]
+
     return(data)
 
   } else {

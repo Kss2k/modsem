@@ -103,3 +103,39 @@ oneIntMG <- oneInt2
 oneIntMG$group <- sample(c("G1", "G2"), nrow(oneInt2), replace = TRUE)
 fiml_lms_g <- modsem(m1, oneIntMG, method = "lms", missing = "fiml", group = "group")
 summary(fiml_lms_g)
+
+
+# test fiml with sampling weights
+# Sampling weights used to be silently dropped under
+# FIML (matrix subsetting in `handleMissingData()` dropped the attribute),
+# and the weights must be aligned with the pattern-concatenated row
+# order used by the E-step, so results must be invariant to row shuffling.
+
+set.seed(42283)
+oneIntW <- oneInt[seq_len(400), ]
+oneIntW[sample(400, 60), "x2"] <- NA
+oneIntW$wt <- runif(400, 0.2, 3)
+oneIntWSorted <- oneIntW[order(is.na(oneIntW$x2)), ]
+
+set.seed(7282)
+oneIntWShuffled <- oneIntWSorted[sample(400), ]
+
+fiml.w  <- modsem(m1, oneIntWSorted, method = "lms", missing = "fiml",
+                  sampling.weights = "wt", calc.se = FALSE)
+fiml.w2 <- modsem(m1, oneIntWShuffled, method = "lms", missing = "fiml",
+                  sampling.weights = "wt", calc.se = FALSE)
+fiml.nw <- modsem(m1, oneIntWSorted, method = "lms", missing = "fiml",
+                  calc.se = FALSE)
+
+# weights must actually affect the fit
+testthat::expect_gt(
+  max(abs(coef(fiml.w) - coef(fiml.nw)[names(coef(fiml.w))])),
+  expected = 0.01
+)
+
+# and must be invariant to the row ordering of the data
+testthat::expect_equal(
+  unclass(coef(fiml.w)),
+  unclass(coef(fiml.w2)[names(coef(fiml.w))]),
+  tolerance = 1e-8
+)
