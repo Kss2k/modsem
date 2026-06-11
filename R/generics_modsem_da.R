@@ -134,7 +134,7 @@ summary.modsem_da <- function(object,
         all(r2_names %in% names(weights))) {
       weights <- weights[r2_names]
     } else {
-      weights <- weights[seq_len(length(r2))]
+      weights <- weights[seq_along(r2)]
     }
     vars <- unique(unlist(lapply(r2, names)))
     vars <- vars[!is.na(vars) & nzchar(vars)]

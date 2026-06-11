@@ -311,87 +311,29 @@ inline void accumulateMuSigmaAdjoints(const LMSModel& M,
   );
   const arma::vec xieta = arma::join_cols(u, v);
 
+  const arma::mat *lXc = &M.lX;
+  const arma::mat *Vc = &V;
+  arma::mat lXComposite;
+  arma::mat VComposite;
+
   if (M.hasComposites) {
-    const arma::mat WTWinv = arma::pinv(M.W.t() * M.T * M.W);
-    const arma::mat lXc = M.lX + M.T * M.W * WTWinv;
+    // Correct lambda and theta for composites
     const arma::mat WTW = M.W.t() * M.T * M.W;
-    const arma::mat VS = V - WTW;
+    const arma::mat WTWinv = arma::pinv(WTW);
 
-    if (adj.tX.n_elem == muBar.n_elem) adj.tX += muBar;
-    adj.lX += muBar * xieta.t();
+    lXComposite = M.lX + M.T * M.W * WTWinv;
+    VComposite  = V - WTW;
 
-    arma::vec xietaBar = lXc.t() * muBar;
-    arma::mat VBar = lXc.t() * SigmaBar * lXc;
-    adj.lX += (SigmaBar + SigmaBar.t()) * lXc * VS;
-    adj.d += SigmaBar;
-
-    arma::vec uBar = xietaBar.subvec(0, M.numXis - 1);
-    arma::vec vBar = xietaBar.subvec(M.numXis, M.numXis + numEta - 1);
-
-    arma::mat varXiBar = VBar.submat(0, 0, M.numXis - 1, M.numXis - 1);
-    arma::mat covBar = VBar.submat(0, M.numXis, M.numXis - 1, M.numXis + numEta - 1);
-    arma::mat varEtaBar = VBar.submat(M.numXis, M.numXis,
-                                      M.numXis + numEta - 1,
-                                      M.numXis + numEta - 1);
-    covBar += VBar.submat(M.numXis, 0,
-                          M.numXis + numEta - 1,
-                          M.numXis - 1).t();
-
-    adj.A += (varXiBar + varXiBar.t()) * M.AOi;
-
-    arma::mat EtaBar = covBar.t() * M.AOi;
-    adj.A += covBar * Eta * M.Oi;
-
-    EtaBar += (varEtaBar + varEtaBar.t()) * Eta * M.Oi;
-    arma::mat BinvBar = varEtaBar * Binv * M.PsiOrth.t() +
-                        varEtaBar.t() * Binv * M.PsiOrth;
-    arma::mat PsiOrthBar = Binv.t() * varEtaBar * Binv;
-
-    BinvBar += EtaBar * C.t();
-    arma::mat CBar = Binv.t() * EtaBar;
-
-    BinvBar += vBar * r.t();
-    arma::vec rBar = Binv.t() * vBar;
-
-    arma::mat BBar = -Binv.t() * BinvBar * Binv.t();
-    adj.Ge -= BBar;
-    arma::mat KBar = -M.Oex * BBar.t();
-    adj.Oex += -K * BBar;
-
-    adj.a += rBar;
-    adj.Gx += rBar * u.t();
-    uBar += M.Gx.t() * rBar;
-    arma::mat ZetaProjBar = rBar * zVec.t();
-
-    arma::vec q = M.Oxx * u;
-    KBar += q * rBar.t();
-    arma::vec qBar = K * rBar;
-    adj.Oxx += qBar * u.t();
-    uBar += M.Oxx.t() * qBar;
-
-    adj.Gx += CBar * M.A.t();
-    adj.A += M.Gx.t() * CBar;
-    ZetaProjBar += CBar;
-
-    arma::mat MBar = K * CBar;
-    KBar += (M.Oxx * M.A) * CBar.t();
-    adj.Oxx += MBar * M.A.t();
-    adj.A += M.Oxx.t() * MBar;
-
-    addKronIeUAdjoint(uBar, KBar, M.numXis, numEta);
-    addLatentCovAdjoints(M, ZetaProjBar, PsiOrthBar, adj);
-
-    adj.beta0 += uBar;
-    adj.A += uBar * zVec.t();
-    return;
+    lXc = &lXComposite;
+    Vc  = &VComposite;
   }
 
   if (adj.tX.n_elem == muBar.n_elem) adj.tX += muBar;
   adj.lX += muBar * xieta.t();
 
-  arma::vec xietaBar = M.lX.t() * muBar;
-  arma::mat VBar = M.lX.t() * SigmaBar * M.lX;
-  adj.lX += (SigmaBar + SigmaBar.t()) * M.lX * V;
+  arma::vec xietaBar = lXc->t() * muBar;
+  arma::mat VBar = lXc->t() * SigmaBar * (*lXc);
+  adj.lX += (SigmaBar + SigmaBar.t()) * (*lXc) * (*Vc);
   adj.d += SigmaBar;
 
   arma::vec uBar = xietaBar.subvec(0, M.numXis - 1);
