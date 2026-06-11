@@ -123,24 +123,45 @@ mstepLms <- function(theta, model, P,
   }
 
   if (optimizer == "nlminb") {
-    if (is.null(control$iter.max)) control$iter.max <- max.step
-    if (is.null(control$eval.max)) control$eval.max <- 2 * control$iter.max
+    if (is.null(control$iter.max)) {
+      # max.step is usually 1
+      control$iter.max <- max.step
+    }
 
-    est <- stats::nlminb(start = theta, objective = objective,
-                         gradient = gradient,
-                         upper = model$params$bounds$upper,
-                         lower = model$params$bounds$lower, control = control,
-                         ...) |> suppressWarnings()
+    if (is.null(control$eval.max)) {
+      # defaults to 200, so we keep the default unless iter.max > 100
+      control$eval.max <- max(200L, 2 * control$iter.max)
+    }
+
+    est <- suppressWarnings(stats::nlminb(
+      start     = theta,
+      objective = objective,
+      gradient  = gradient,
+      upper     = model$params$bounds$upper,
+      lower     = model$params$bounds$lower,
+      control   = control,
+      ...
+    ))
 
   } else if (optimizer == "L-BFGS-B") {
-    if (is.null(control$maxit)) control$maxit <- max.step
-    est <- stats::optim(par = theta, fn = objective, gr = gradient,
-                        method = optim.method, control = control,
-                        lower = model$params$bounds$lower,
-                        upper = model$params$bounds$upper, ...)
+    if (is.null(control$maxit)) {
+      # max.step is usually 1
+      control$maxit <- max.step
+    }
+
+    est <- stats::optim(
+      par    = theta,
+      fn     = objective,
+      gr     = gradient,
+      method = optim.method, control = control,
+      lower  = model$params$bounds$lower,
+      upper  = model$params$bounds$upper,
+      ...
+    )
 
     est$objective  <- est$value
     est$iterations <- est$counts[["function"]]
+
   } else {
     mod_msg_stop("Unrecognized optimizer, must be either 'nlminb' or 'L-BFGS-B'")
   }
