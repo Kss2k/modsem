@@ -17,7 +17,7 @@ modsemOrderedMCCorrection <- function(model.syntax,
                                       ordered.polyak.juditsky = TRUE,
                                       ordered.pj.extrapolate = TRUE,
                                       ordered.fn.args = list(),
-                                      ordered.se = c("delta", "mixed", "penalized", "naive"),
+                                      ordered.se = c("mixed", "delta", "penalized", "naive"),
                                       ordered.se.penalty = 0.5,
                                       ordered.delta.reps = ordered.mc.reps,
                                       ordered.delta.epsilon = 1e-2,
@@ -186,7 +186,7 @@ modsemOrderedMCCorrection <- function(model.syntax,
   naive.se.label   <- "naive"
   penalized.se.label <- "penalized"
   delta.se.label   <- "mc-delta"
-  mixed.se.label   <- "mc-mixed"
+  mixed.se.label   <- "mixed[delta|penalized]"
 
   if (isTRUE(calc.se)) {
     vcov.free <- std.info$vcov.free
@@ -1278,6 +1278,16 @@ mcFreeLavLabels <- function(fit, theta) {
 mcOrderedThresholdsBoot <- function(data, sim, ordered, group = NULL,
                                     calc.se = TRUE, boot.reps = 1000L,
                                     seed = NULL, zero.tol = 1e-10) {
+  if (!is.null(seed) && exists(".Random.seed")) .Random.seed.orig <- .Random.seed
+  else                                          .Random.seed.orig <- NULL
+
+  on.exit({
+    if (!is.null(.Random.seed.orig)) .Random.seed <<- .Random.seed.orig
+  })
+
+  if (!is.null(seed))
+    set.seed(seed)
+
   if (is.null(group)) {
     groups <- list("1" = data)
   } else {
@@ -1285,9 +1295,6 @@ mcOrderedThresholdsBoot <- function(data, sim, ordered, group = NULL,
     groups <- stats::setNames(lapply(vals, function(g) data[data[[group]] == g, ]),
                               as.character(vals))
   }
-
-  if (!is.null(seed))
-    set.seed(seed)
 
   out <- NULL
   V.out <- NULL
@@ -1306,6 +1313,9 @@ mcOrderedThresholdsBoot <- function(data, sim, ordered, group = NULL,
       tau <- mcThresholdsFromCounts(tab, x.sim = x.sim)
 
       labs <- paste0(col, "|t", seq_len(K - 1L))
+      if (g > 1L) # match the group suffix convention in `getParTableLabels()`
+        labs <- paste0(labs, ".g", g)
+
       se.tau <- rep(NA_real_, length(tau))
 
       if (isTRUE(calc.se) && boot.reps >= 2L) {
@@ -1367,9 +1377,7 @@ mcAppendThresholds <- function(fit, thresholds) {
 
   fit$parTable <- modsemParTable(sortParTableDA(rbind(parTable, thresholds),
                                                 model = fit$model))
-  coef.t <- stats::setNames(thresholds$est,
-                            paste0(thresholds$lhs, thresholds$op,
-                                   thresholds$rhs))
+  coef.t <- stats::setNames(thresholds$est, getParTableLabels(thresholds))
   fit$coefs.all <- c(fit$coefs.all, coef.t)
 
   if (!is.null(V.tau))

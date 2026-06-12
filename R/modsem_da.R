@@ -183,14 +183,14 @@
 #'   averaged iterate is used directly.
 #'
 #' @param ordered.se Character string selecting the ordered MC standard-error correction.
-#'   \code{"delta"} (default) uses the delta method for all free parameters.
-#'   \code{"mixed"} uses the delta method for the structural path coefficients only,
-#'   and penalized standard errors for the remaining parameters. This is considerably
-#'   faster and numerically more stable than \code{"delta"}, since the
+#'   \code{"mixed"} (default) uses the delta method for the structural path coefficients
+#'   only, and penalized standard errors for the remaining parameters. This is
+#'   considerably faster and numerically more stable than \code{"delta"}, since the
 #'   finite-difference Jacobian is restricted to the structural coefficients.
+#'   \code{"delta"} uses the delta method for all free parameters.
 #'   \code{"penalized"} uses a conservative variance inflation
 #'   based on the discrepancy between the naive and MC-corrected standardized estimates.
-#'   \code{"naive"} uses the fast diagonal rescaling approximation, and
+#'   \code{"naive"} uses the fast diagonal rescaling approximation.
 #'
 #' @param ordered.se.penalty Non-negative numeric multiplier used when
 #'   \code{ordered.se = "penalized"}. The penalty adds
@@ -396,7 +396,7 @@ modsem_da <- function(model.syntax = NULL,
                       ordered.fixed.seed = FALSE,
                       ordered.polyak.juditsky = TRUE,
                       ordered.pj.extrapolate = TRUE,
-                      ordered.se = c("delta", "mixed", "penalized", "naive"),
+                      ordered.se = c("mixed", "delta", "penalized", "naive"),
                       ordered.se.penalty = 0.25,
                       ordered.delta.reps = NULL,
                       ordered.delta.epsilon = 1e-2,
