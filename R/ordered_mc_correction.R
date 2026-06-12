@@ -80,7 +80,7 @@ modsemOrderedMCCorrection <- function(model.syntax,
       ),
       "This is an experimental feature!",
       "See `help(\"modsem_da\")` for more information.",
-      "Consider using the MC-OrdPLSc estimator in the `plssem` package."
+      "Consider using the (faster) MC-OrdPLSc estimator in the `plssem` package."
     )
   }
 
