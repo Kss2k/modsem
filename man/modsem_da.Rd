@@ -50,10 +50,11 @@ modsem_da(
   ordered.fixed.seed = FALSE,
   ordered.polyak.juditsky = TRUE,
   ordered.pj.extrapolate = TRUE,
-  ordered.se = c("delta", "penalized", "naive"),
+  ordered.se = c("mixed", "delta", "penalized", "naive"),
   ordered.se.penalty = 0.25,
   ordered.delta.reps = NULL,
   ordered.delta.epsilon = 0.01,
+  ordered.boot.reps = 1000L,
   ordered.standardize = TRUE,
   cluster = NULL,
   cr1s = FALSE,
@@ -225,9 +226,9 @@ optimization steps when needed. Default is \code{"EM"}.}
   algorithm described by Slupphaug, Mehmetoglu, and Mittner (2026,
   \doi{10.31234/osf.io/fwzj6_v1}).
 
-  Thresholds are currently treated as fixed calibration quantities derived from the
-  observed marginal category proportions. They are reported in the output for
-  transparency, but they are not part of the free Monte-Carlo state vector.}
+  Threshold standard errors are computed using a simple bootstrap of the category counts
+  (see \code{ordered.boot.reps}), which does not propagate uncertainty from the
+  model parameter estimates.}
 
 \item{ordered.mc.reps}{Integer. Monte-Carlo sample size used in each ordered MC
 correction step. Larger values reduce simulation noise but increase runtime.}
@@ -255,10 +256,14 @@ Polyak-Juditsky path to estimate the convergence point. If \code{FALSE}, the
 averaged iterate is used directly.}
 
 \item{ordered.se}{Character string selecting the ordered MC standard-error correction.
-\code{"delta"} (default) uses the delta method.
-\code{"penalty"} uses a conservative variance inflation
+\code{"mixed"} (default) uses the delta method for the structural path coefficients
+only, and penalized standard errors for the remaining parameters. This is
+considerably faster and numerically more stable than \code{"delta"}, since the
+finite-difference Jacobian is restricted to the structural coefficients.
+\code{"delta"} uses the delta method for all free parameters.
+\code{"penalized"} uses a conservative variance inflation
 based on the discrepancy between the naive and MC-corrected standardized estimates.
-\code{"naive"} uses the fast diagonal rescaling approximation, and}
+\code{"naive"} uses the fast diagonal rescaling approximation.}
 
 \item{ordered.se.penalty}{Non-negative numeric multiplier used when
 \code{ordered.se = "penalized"}. The penalty adds
@@ -267,10 +272,18 @@ naive covariance matrix on the variance scale.}
 
 \item{ordered.delta.reps}{Integer. Monte-Carlo sample size used when approximating
 the ordered MC delta-method Jacobian. Only relevant if
-\code{ordered.se = "delta"}.}
+\code{ordered.se} is \code{"delta"} or \code{"mixed"}.}
 
 \item{ordered.delta.epsilon}{Finite-difference step size used for the ordered MC
-delta-method Jacobian. Only relevant if \code{ordered.se = "delta"}.}
+delta-method Jacobian. Only relevant if \code{ordered.se} is \code{"delta"}
+or \code{"mixed"}.}
+
+\item{ordered.boot.reps}{Integer. Number of bootstrap replications used to compute
+standard errors for the thresholds of ordered indicators. The bootstrap resamples
+the category counts at the observed sample size, holding the simulated
+(model-implied) reference distribution of the continuous indicators fixed. Note
+that this does not account for the uncertainty in the model parameter estimates,
+and should be seen as a rough approximation. Set to \code{0} to disable.}
 
 \item{ordered.standardize}{Logical. Should scored ordered indicators be standardized
 before the observed-data fit and after ordinalizing simulated indicators? This is
