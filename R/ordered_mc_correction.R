@@ -17,10 +17,11 @@ modsemOrderedMCCorrection <- function(model.syntax,
                                       ordered.polyak.juditsky = TRUE,
                                       ordered.pj.extrapolate = TRUE,
                                       ordered.fn.args = list(),
-                                      ordered.se = c("delta", "penalized", "naive"),
+                                      ordered.se = c("delta", "mixed", "penalized", "naive"),
                                       ordered.se.penalty = 0.5,
                                       ordered.delta.reps = ordered.mc.reps,
                                       ordered.delta.epsilon = 1e-2,
+                                      ordered.boot.reps = 1000L,
                                       ordered.standardize = TRUE,
                                       standardize = NULL,
                                       standardize.out = NULL,
@@ -47,8 +48,10 @@ modsemOrderedMCCorrection <- function(model.syntax,
 
   ordered.mc.reps <- as.integer(ordered.mc.reps)
   ordered.delta.reps <- as.integer(ordered.delta.reps)
+  ordered.boot.reps <- as.integer(ordered.boot.reps %||% 0L)
 
   mod_stopif(ordered.mc.reps < 2L, "`ordered.mc.reps` must be at least 2.")
+  mod_stopif(ordered.boot.reps < 0L, "`ordered.boot.reps` must be non-negative.")
   mod_stopif(ordered.min.iter < 1L, "`ordered.min.iter` must be at least 1.")
   mod_stopif(ordered.max.iter < ordered.min.iter,
          "`ordered.max.iter` must be larger than `ordered.min.iter`.")
@@ -183,6 +186,7 @@ modsemOrderedMCCorrection <- function(model.syntax,
   naive.se.label   <- "naive"
   penalized.se.label <- "penalized"
   delta.se.label   <- "mc-delta"
+  mixed.se.label   <- "mc-mixed"
 
   if (isTRUE(calc.se)) {
     vcov.free <- std.info$vcov.free
@@ -226,13 +230,89 @@ modsemOrderedMCCorrection <- function(model.syntax,
           attr(V, "delta.condition") <- attr(H.inv, "condition")
           attr(V, "delta.psd.adjusted") <- attr(V, "psd.adjusted")
 
-          type.se <<- delta.se.label
+          # `tryCatch()` evaluates this expression directly in the function
+          # frame, so a plain `<-` hits the local `type.se`; `<<-` would not.
+          type.se <- delta.se.label
 
           V
 
         }, error = function(e) {
           mod_msg_warn(paste0(
             "Delta-method MC correction failed; using ordered MC penalized ",
+            "standard errors instead. Message: ", conditionMessage(e)
+          ))
+
+          penalized <- mcOrderedPenaltyVcov(
+            theta.mc = theta.mc,
+            theta0 = theta0,
+            vcov.free = std.info$vcov.free,
+            lambda = ordered.se.penalty
+          )
+
+          type.se <<- penalized.se.label
+          penalized
+        })
+
+      } else if (identical(ordered.se, "mixed")) {
+        if (verbose)
+          mod_msg_note("Calculating MC ordered mixed standard errors.")
+
+        vcov.free <- tryCatch({
+          ids.struct <- intersect(mcStructuralStateIds(std.info), names(theta.mc))
+          mod_stopif(!length(ids.struct),
+                     "No structural path coefficients found.")
+
+          delta.seed <- ordered.rng.seed
+
+          if (is.null(delta.seed)) {
+            delta.seed <- floor(stats::runif(1L, min = 1, max = 9999999))
+
+            if (verbose)
+              mod_msg_note(sprintf("Using fixed MC ordered delta seed %i.", delta.seed))
+          }
+
+          vcov.delta <- mcAlignVcov(vcov.free, labels = names(theta.mc))
+
+          H <- mcDeltaJacobian(
+            p = theta.mc,
+            f = f,
+            reps = ordered.delta.reps,
+            seed = delta.seed,
+            epsilon = ordered.delta.epsilon,
+            verbose = verbose,
+            select = ids.struct
+          )
+
+          H.inv <- mcStableInverse(H)
+          V.struct <- H.inv %*%
+            vcov.delta[ids.struct, ids.struct, drop = FALSE] %*% t(H.inv)
+
+          V <- mcOrderedPenaltyVcov(
+            theta.mc = theta.mc,
+            theta0 = theta0,
+            vcov.free = std.info$vcov.free,
+            lambda = ordered.se.penalty
+          )
+
+          V <- mcAlignVcov(V, labels = names(theta.mc))
+          V[ids.struct, ids.struct] <- V.struct
+          V <- mcStableVcov(V)
+
+          dimnames(V) <- list(names(theta.mc), names(theta.mc))
+          attr(V, "delta.jacobian") <- H
+          attr(V, "delta.seed") <- delta.seed
+          attr(V, "delta.inverse.method") <- attr(H.inv, "method")
+          attr(V, "delta.condition") <- attr(H.inv, "condition")
+          attr(V, "delta.parameters") <- ids.struct
+          attr(V, "delta.psd.adjusted") <- attr(V, "psd.adjusted")
+
+          type.se <- mixed.se.label
+
+          V
+
+        }, error = function(e) {
+          mod_msg_warn(paste0(
+            "Mixed delta-method MC correction failed; using ordered MC penalized ",
             "standard errors instead. Message: ", conditionMessage(e)
           ))
 
@@ -284,11 +364,21 @@ modsemOrderedMCCorrection <- function(model.syntax,
     type.se = type.se
   )
 
-  thresholds <- mcOrderedThresholdsDelta(
+  sim.mc <- simulateDataParTableStandardized(
+    parTable = mcStdParTableFromState(std.info = std.info, state = theta.mc),
+    N = ordered.delta.reps,
+    colsOVs = ovs,
+    seed = ordered.rng.seed
+  )
+
+  thresholds <- mcOrderedThresholdsBoot(
     data = observed$raw,
+    sim = sim.mc,
     ordered = cols.ordered,
     group = group,
-    calc.se = calc.se
+    calc.se = calc.se,
+    boot.reps = ordered.boot.reps,
+    seed = ordered.rng.seed
   )
 
   fit.out <- mcAppendThresholds(
@@ -329,6 +419,7 @@ modsemOrderedMCCorrection <- function(model.syntax,
   fit.out$args$ordered.se.penalty <- ordered.se.penalty
   fit.out$args$ordered.delta.reps <- ordered.delta.reps
   fit.out$args$ordered.delta.epsilon <- ordered.delta.epsilon
+  fit.out$args$ordered.boot.reps <- ordered.boot.reps
   fit.out$args$optimize <- optimize
   fit.out$args$start <- start
   fit.out$ordered.mc <- mcfit
@@ -680,19 +771,22 @@ mcGetConvergencePoints <- function(history) {
 }
 
 
-mcDeltaJacobian <- function(p, f, reps, seed, epsilon = 1e-3, verbose = interactive()) {
-  k <- length(p)
+mcDeltaJacobian <- function(p, f, reps, seed, epsilon = 1e-3,
+                            verbose = interactive(), select = NULL) {
+  select <- select %||% names(p)
+  k <- length(select)
   J <- matrix(NA_real_, nrow = k, ncol = k,
-              dimnames = list(names(p), names(p)))
+              dimnames = list(select, select))
 
   for (j in seq_len(k)) {
     if (verbose) printf("\rCalculating Jacobian %d/%d...", j, k)
 
-    step <- epsilon * max(1, abs(p[[j]]))
+    id <- select[[j]]
+    step <- epsilon * max(1, abs(p[[id]]))
     p.plus <- p
     p.minus <- p
-    p.plus[[j]] <- p.plus[[j]] + step
-    p.minus[[j]] <- p.minus[[j]] - step
+    p.plus[[id]] <- p.plus[[id]] + step
+    p.minus[[id]] <- p.minus[[id]] - step
 
     f.plus <- f(p.plus, reps = reps, seed = seed, verbose.fit = FALSE)
     f.minus <- f(p.minus, reps = reps, seed = seed, verbose.fit = FALSE)
@@ -700,7 +794,7 @@ mcDeltaJacobian <- function(p, f, reps, seed, epsilon = 1e-3, verbose = interact
     if (!all(is.finite(f.plus)) || !all(is.finite(f.minus)))
       mod_msg_stop("Non-finite finite-difference function value.")
 
-    J[, j] <- (f.plus - f.minus) / (2 * step)
+    J[, j] <- (f.plus[select] - f.minus[select]) / (2 * step)
   }
 
   if (verbose)
@@ -710,6 +804,13 @@ mcDeltaJacobian <- function(p, f, reps, seed, epsilon = 1e-3, verbose = interact
     mod_msg_stop("Non-finite finite-difference Jacobian.")
 
   J
+}
+
+
+mcStructuralStateIds <- function(std.info) {
+  parTable <- std.info$template
+  keep <- parTable$op == "~" & parTable$rhs != "1"
+  unique(parTable$.state.id[keep])
 }
 
 
@@ -1092,7 +1193,7 @@ mcStdRefreshRedundant <- function(parTable) {
 
 
 mcOverwriteFitWithStdState <- function(fit, state, vcov.free, std.info, calc.se,
-                                       type.se = fit$type.se) {
+                                       type.se = fit$type.se, zero.tol = 1e-10) {
   parTable <- mcStdParTableFromState(std.info = std.info, state = state)
 
   se <- stats::setNames(rep(NA_real_, length(state)), names(state))
@@ -1100,6 +1201,7 @@ mcOverwriteFitWithStdState <- function(fit, state, vcov.free, std.info, calc.se,
     ids.v <- intersect(names(state), rownames(vcov.free))
     if (length(ids.v)) {
       se[ids.v] <- sqrt(pmax(diag(vcov.free[ids.v, ids.v, drop = FALSE]), 0))
+      se[which(se <= zero.tol)] <- NA_real_
     }
   }
 
@@ -1165,8 +1267,17 @@ mcFreeLavLabels <- function(fit, theta) {
 }
 
 
-mcOrderedThresholdsDelta <- function(data, ordered, group = NULL,
-                                     calc.se = TRUE) {
+# Thresholds for the ordered indicators are the empirical quantiles of the
+# model-implied (simulated) continuous indicator distributions at the observed
+# cumulative category proportions, matching the cut points used by
+# `mcOrdinalize()`. No normality is assumed; indicators of endogenous latent
+# variables are non-normal whenever interaction effects are present. The
+# bootstrap resamples the category counts at the observed (group) sample size,
+# holding the simulated reference distribution fixed, so it does not propagate
+# uncertainty from the model parameter estimates.
+mcOrderedThresholdsBoot <- function(data, sim, ordered, group = NULL,
+                                    calc.se = TRUE, boot.reps = 1000L,
+                                    seed = NULL, zero.tol = 1e-10) {
   if (is.null(group)) {
     groups <- list("1" = data)
   } else {
@@ -1175,10 +1286,15 @@ mcOrderedThresholdsDelta <- function(data, ordered, group = NULL,
                               as.character(vals))
   }
 
+  if (!is.null(seed))
+    set.seed(seed)
+
   out <- NULL
   V.out <- NULL
   for (g in seq_along(groups)) {
     data.g <- groups[[g]]
+    sim.g <- as.data.frame(sim$OV[[min(g, length(sim$OV))]])
+
     for (col in ordered) {
       x <- as.ordered(data.g[[col]])
       tab <- as.numeric(table(x))
@@ -1186,14 +1302,26 @@ mcOrderedThresholdsDelta <- function(data, ordered, group = NULL,
       n <- sum(tab)
       if (K < 2L) next
 
-      p <- tab / n
-      C <- cumsum(p)[-K]
-      eps <- .Machine$double.eps^0.5
-      C <- pmin(pmax(C, eps), 1 - eps)
-      tau <- stats::qnorm(C)
+      x.sim <- sim.g[[col]]
+      tau <- mcThresholdsFromCounts(tab, x.sim = x.sim)
 
       labs <- paste0(col, "|t", seq_len(K - 1L))
       se.tau <- rep(NA_real_, length(tau))
+
+      if (isTRUE(calc.se) && boot.reps >= 2L) {
+        counts.b <- stats::rmultinom(boot.reps, size = n, prob = tab / n)
+        tau.b <- apply(counts.b, MARGIN = 2L, FUN = mcThresholdsFromCounts,
+                       x.sim = x.sim)
+
+        if (is.null(dim(tau.b)))
+          tau.b <- matrix(tau.b, nrow = 1L)
+
+        V.tau <- stats::cov(t(tau.b))
+        dimnames(V.tau) <- list(labs, labs)
+        se.tau <- sqrt(pmax(diag(V.tau), 0))
+        se.tau[which(se.tau <= zero.tol)] <- NA_real_
+        V.out <- diagPartitionedMat(V.out, V.tau)
+      }
 
       out <- rbind(out, data.frame(
         lhs = col,
@@ -1214,6 +1342,16 @@ mcOrderedThresholdsDelta <- function(data, ordered, group = NULL,
     attr(out, "vcov.thresholds") <- V.out
   }
   out
+}
+
+
+# Same quantile computation as the break points in `mcOrdinalize()`.
+mcThresholdsFromCounts <- function(counts, x.sim) {
+  K <- length(counts)
+  C <- cumsum(counts / sum(counts))[-K]
+  eps <- .Machine$double.eps^0.5
+  C <- pmin(pmax(C, eps), 1 - eps)
+  stats::quantile(x.sim, probs = C, names = FALSE, type = 7, na.rm = TRUE)
 }
 
 
