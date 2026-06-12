@@ -133,10 +133,11 @@ necessary syntax, and variables for the estimation of models with latent product
 <span>  ordered.fixed.seed <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  ordered.polyak.juditsky <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  ordered.pj.extrapolate <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  ordered.se <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"delta"</span>, <span class="st">"penalized"</span>, <span class="st">"naive"</span><span class="op">)</span>,</span>
+<span>  ordered.se <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mixed"</span>, <span class="st">"delta"</span>, <span class="st">"penalized"</span>, <span class="st">"naive"</span><span class="op">)</span>,</span>
 <span>  ordered.se.penalty <span class="op">=</span> <span class="fl">0.25</span>,</span>
 <span>  ordered.delta.reps <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  ordered.delta.epsilon <span class="op">=</span> <span class="fl">0.01</span>,</span>
+<span>  ordered.boot.reps <span class="op">=</span> <span class="fl">1000L</span>,</span>
 <span>  ordered.standardize <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  cluster <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  cr1s <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -383,9 +384,9 @@ optimization steps when needed. Default is <code>"EM"</code>.</p></dd>
   algorithm described by Slupphaug, Mehmetoglu, and Mittner (2026,
   <a href="https://doi.org/10.31234/osf.io/fwzj6_v1" class="external-link">doi:10.31234/osf.io/fwzj6_v1</a>
 ).</p>
-<p>Thresholds are currently treated as fixed calibration quantities derived from the
-  observed marginal category proportions. They are reported in the output for
-  transparency, but they are not part of the free Monte-Carlo state vector.</p></dd>
+<p>Threshold standard errors are computed using a simple bootstrap of the category counts
+  (see <code>ordered.boot.reps</code>), which does not propagate uncertainty from the
+  model parameter estimates.</p></dd>
 
 
 <dt id="arg-ordered-mc-reps">ordered.mc.reps<a class="anchor" aria-label="anchor" href="#arg-ordered-mc-reps"></a></dt>
@@ -431,10 +432,14 @@ averaged iterate is used directly.</p></dd>
 
 <dt id="arg-ordered-se">ordered.se<a class="anchor" aria-label="anchor" href="#arg-ordered-se"></a></dt>
 <dd><p>Character string selecting the ordered MC standard-error correction.
-<code>"delta"</code> (default) uses the delta method.
-<code>"penalty"</code> uses a conservative variance inflation
+<code>"mixed"</code> (default) uses the delta method for the structural path coefficients
+only, and penalized standard errors for the remaining parameters. This is
+considerably faster and numerically more stable than <code>"delta"</code>, since the
+finite-difference Jacobian is restricted to the structural coefficients.
+<code>"delta"</code> uses the delta method for all free parameters.
+<code>"penalized"</code> uses a conservative variance inflation
 based on the discrepancy between the naive and MC-corrected standardized estimates.
-<code>"naive"</code> uses the fast diagonal rescaling approximation, and</p></dd>
+<code>"naive"</code> uses the fast diagonal rescaling approximation.</p></dd>
 
 
 <dt id="arg-ordered-se-penalty">ordered.se.penalty<a class="anchor" aria-label="anchor" href="#arg-ordered-se-penalty"></a></dt>
@@ -447,12 +452,22 @@ naive covariance matrix on the variance scale.</p></dd>
 <dt id="arg-ordered-delta-reps">ordered.delta.reps<a class="anchor" aria-label="anchor" href="#arg-ordered-delta-reps"></a></dt>
 <dd><p>Integer. Monte-Carlo sample size used when approximating
 the ordered MC delta-method Jacobian. Only relevant if
-<code>ordered.se = "delta"</code>.</p></dd>
+<code>ordered.se</code> is <code>"delta"</code> or <code>"mixed"</code>.</p></dd>
 
 
 <dt id="arg-ordered-delta-epsilon">ordered.delta.epsilon<a class="anchor" aria-label="anchor" href="#arg-ordered-delta-epsilon"></a></dt>
 <dd><p>Finite-difference step size used for the ordered MC
-delta-method Jacobian. Only relevant if <code>ordered.se = "delta"</code>.</p></dd>
+delta-method Jacobian. Only relevant if <code>ordered.se</code> is <code>"delta"</code>
+or <code>"mixed"</code>.</p></dd>
+
+
+<dt id="arg-ordered-boot-reps">ordered.boot.reps<a class="anchor" aria-label="anchor" href="#arg-ordered-boot-reps"></a></dt>
+<dd><p>Integer. Number of bootstrap replications used to compute
+standard errors for the thresholds of ordered indicators. The bootstrap resamples
+the category counts at the observed sample size, holding the simulated
+(model-implied) reference distribution of the continuous indicators fixed. Note
+that this does not account for the uncertainty in the model parameter estimates,
+and should be seen as a rough approximation. Set to <code>0</code> to disable.</p></dd>
 
 
 <dt id="arg-ordered-standardize">ordered.standardize<a class="anchor" aria-label="anchor" href="#arg-ordered-standardize"></a></dt>
