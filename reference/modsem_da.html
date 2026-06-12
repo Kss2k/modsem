@@ -133,7 +133,7 @@ necessary syntax, and variables for the estimation of models with latent product
 <span>  ordered.fixed.seed <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  ordered.polyak.juditsky <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  ordered.pj.extrapolate <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  ordered.se <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mixed"</span>, <span class="st">"delta"</span>, <span class="st">"penalized"</span>, <span class="st">"naive"</span><span class="op">)</span>,</span>
+<span>  ordered.se <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"delta"</span>, <span class="st">"penalized"</span>, <span class="st">"naive"</span>, <span class="st">"mixed"</span><span class="op">)</span>,</span>
 <span>  ordered.se.penalty <span class="op">=</span> <span class="fl">0.25</span>,</span>
 <span>  ordered.delta.reps <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  ordered.delta.epsilon <span class="op">=</span> <span class="fl">0.01</span>,</span>
@@ -432,14 +432,14 @@ averaged iterate is used directly.</p></dd>
 
 <dt id="arg-ordered-se">ordered.se<a class="anchor" aria-label="anchor" href="#arg-ordered-se"></a></dt>
 <dd><p>Character string selecting the ordered MC standard-error correction.
-<code>"mixed"</code> (default) uses the delta method for the structural path coefficients
-only, and penalized standard errors for the remaining parameters. This is
-considerably faster and numerically more stable than <code>"delta"</code>, since the
-finite-difference Jacobian is restricted to the structural coefficients.
-<code>"delta"</code> uses the delta method for all free parameters.
+<code>"delta"</code> (default) uses the delta method for all free parameters.
 <code>"penalized"</code> uses a conservative variance inflation
 based on the discrepancy between the naive and MC-corrected standardized estimates.
-<code>"naive"</code> uses the fast diagonal rescaling approximation.</p></dd>
+<code>"naive"</code> uses the fast diagonal rescaling approximation.
+<code>"mixed"</code> uses the delta method for the structural path coefficients
+only, and penalized standard errors for the remaining parameters. This is
+considerably faster, and is a good option if you're only interested in
+the structural model.</p></dd>
 
 
 <dt id="arg-ordered-se-penalty">ordered.se.penalty<a class="anchor" aria-label="anchor" href="#arg-ordered-se-penalty"></a></dt>
