@@ -1,16 +1,5 @@
-# UTF-8 escaped characters for box drawing
-V_LINE = "\u2502" # vertical line
-H_LINE = "\u2500" # horizontal line
-D_CROSS = "\u252c" # down cross
-LU_CORNER = "\u250c" # left upper corner
-LL_CORNER = "\u2514" # left lower corner
-RU_CORNER = "\u2510" # left upper corner
-RL_CORNER = "\u2518" # right lower corner
-H_DLINE = "\u2550" # horizontal double line
-F_DCROSS = "\u256a" # full double cross
-R_DCROSS = "\u2561" # right double cross
-L_DCROSS = "\u255e" # left double cross
-U_CROSS = "\u2534" # up cross
+# Box-drawing characters live in BOX_CHARS (see zzz.R); the active set
+# (unicode or ASCII fallback) is selected at load time in .onLoad().
 
 
 #' Get the simple slopes of a SEM model
@@ -358,27 +347,29 @@ calc_se <- function(df, e, VCOV, se_type = "confidence") {
 printTable <- function(x) {
   if (!NROW(x)) return(NULL)
 
-  header <- paste0(paste(x[1, ], collapse = paste0(" ", V_LINE, " ")), " ")
+  box <- BOX_CHARS$chars
+
+  header <- paste0(paste(x[1, ], collapse = paste0(" ", box$V_LINE, " ")), " ")
   header_vec <- unlist(stringr::str_split(header, ""))
 
-  sep_thin_vec <- rep(H_LINE, nchar(header))
-  sep_thin_vec[header_vec == V_LINE] <- D_CROSS
+  sep_thin_vec <- rep(box$H_LINE, nchar(header))
+  sep_thin_vec[header_vec == box$V_LINE] <- box$D_CROSS
   sep_thin <- paste0(sep_thin_vec, collapse="")
-  sep_thin <- paste0(LU_CORNER, sep_thin, RU_CORNER, "\n")
+  sep_thin <- paste0(box$LU_CORNER, sep_thin, box$RU_CORNER, "\n")
 
-  sep_thick_vec <- rep(H_DLINE, nchar(header))
-  sep_thick_vec[header_vec == V_LINE] <- F_DCROSS
+  sep_thick_vec <- rep(box$H_DLINE, nchar(header))
+  sep_thick_vec[header_vec == box$V_LINE] <- box$F_DCROSS
   sep_thick <- paste0(sep_thick_vec, collapse="")
-  sep_thick <- paste0(L_DCROSS, sep_thick, R_DCROSS, "\n")
+  sep_thick <- paste0(box$L_DCROSS, sep_thick, box$R_DCROSS, "\n")
 
   sep_bottom_vec <- sep_thin_vec
-  sep_bottom_vec[header_vec == V_LINE] <- U_CROSS
+  sep_bottom_vec[header_vec == box$V_LINE] <- box$U_CROSS
   sep_bottom <- paste0(sep_bottom_vec, collapse="")
-  sep_bottom <- paste0(LL_CORNER, sep_bottom, RL_CORNER, "\n")
+  sep_bottom <- paste0(box$LL_CORNER, sep_bottom, box$RL_CORNER, "\n")
 
   for (i in seq_len(nrow(x))) {
-    str <- paste(x[i, ], collapse = paste0(" ", V_LINE, " "))
-    str <- paste0(V_LINE, str, " ", V_LINE, "\n")
+    str <- paste(x[i, ], collapse = paste0(" ", box$V_LINE, " "))
+    str <- paste0(box$V_LINE, str, " ", box$V_LINE, "\n")
 
     if (i == 1) {
       cat(sep_thin, str, sep_thick, sep = "")
@@ -394,10 +385,11 @@ print.simple_slopes <- function(x, digits = 2, scientific.p = FALSE, ...) {
   if (length(x) <= 1L)
     return(printSimpleSlopesGroup(x = x[[1L]], digits = digits, scientific.p = scientific.p, ...))
 
+  box <- BOX_CHARS$chars
   for (g in names(x)) {
-    printf("%s\n", strrep(H_LINE, getOption("width")))
+    printf("%s\n", strrep(box$H_LINE, getOption("width")))
     printf("  Group: %s\n", g)
-    printf("%s\n", strrep(H_DLINE, getOption("width")))
+    printf("%s\n", strrep(box$H_DLINE, getOption("width")))
     printSimpleSlopesGroup(x = x[[g]], digits = digits, scientific.p = scientific.p, ...)
   }
 

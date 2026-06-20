@@ -996,8 +996,8 @@ sortParTableDA <- function(parTable, model) {
 updateStatusLog <- function(iterations, mode, logLikNew, deltaLL, relDeltaLL, verbose = FALSE) {
   if (verbose) {
     clearConsoleLine()
-    printf("\rIter=%d Mode=%s LogLik=%.2f \u0394LL=%.2g rel\u0394LL=%.2g",
-           iterations, mode, logLikNew, deltaLL, relDeltaLL)
+    msg <- MSG_STRINGS$strings$updateStatusLog0
+    printf(msg, iterations, mode, logLikNew, deltaLL, relDeltaLL)
   }
 }
 
