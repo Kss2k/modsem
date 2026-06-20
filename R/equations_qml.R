@@ -21,8 +21,8 @@ incrementIterations <- function(logLik) {
   relDeltaLL <- diffLL$rel
 
   clearConsoleLine() # clear before printing
-  printf("\rEval=%d LogLik=%.2f \u0394LL=%.2g rel\u0394LL=%.2g",
-         eval, logLik, abs(deltaLL), abs(relDeltaLL))
+  msg <- MSG_STRINGS$strings$incrementIterations0
+  printf(msg, eval, logLik, abs(deltaLL), abs(relDeltaLL))
 
   OptimizerInfoQML$eval    <- eval
   OptimizerInfoQML$logLiks <- logLiks
