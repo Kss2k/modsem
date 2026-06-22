@@ -322,12 +322,6 @@ print.summary_da <- function(x, digits = 3, ...) {
     scientific  = x$format$scientific,
     ci          = FALSE,
     digits      = x$format$digits,
-    loadings    = x$format$loadings,
-    regressions = x$format$regressions,
-    covariances = x$format$covariances,
-    intercepts  = x$format$intercepts,
-    variances   = x$format$variances,
-    thresholds  = x$format$thresholds,
     extra.cols  = NULL
   )
 
