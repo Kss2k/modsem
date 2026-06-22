@@ -371,8 +371,10 @@ getWidthPrintedParTable <- function(parTable,
                                     padWidth    = 2,
                                     padWidthLhs = 2,
                                     spacing     = 2,
-                                    extra.cols = NULL) {
-  formatted <- formatParTable(
+                                    extra.cols = NULL,
+                                    ...) { # add ... for backwards compatability,
+                                           # such that passing old (unused) arguments
+  formatted <- formatParTable(             # doesn't throw an error
     parTable,
     digits = digits,
     ci = ci,
