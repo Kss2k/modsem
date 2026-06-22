@@ -66,13 +66,7 @@ summarize_partable <- function(parTable,
     parTable    = parTable,
     scientific  = scientific,
     ci          = ci,
-    digits      = digits,
-    loadings    = loadings,
-    regressions = regressions,
-    covariances = covariances,
-    intercepts  = intercepts,
-    variances   = variances,
-    thresholds  = thresholds
+    digits      = digits
   )
 
   info.names <- c("Number of model parameters",
