@@ -18,6 +18,7 @@ modsem_mplus(
   rcs.scale.corrected = TRUE,
   output.std = TRUE,
   categorical = NULL,
+  cleanup = FALSE,
   ...
 )
 }
@@ -52,6 +53,10 @@ the items. Default is \code{TRUE}.}
 \item{output.std}{Should \code{STANDARDIZED} be added to \code{OUTPUT}?}
 
 \item{categorical}{categorical argument passed to \code{Mplus}.}
+
+\item{cleanup}{Should the \code{Mplus} files (\code{.inp}, \code{.dat} and \code{.out})
+created during estimation be deleted when \code{modsem_mplus()} exits? Default is
+\code{FALSE}, meaning the files are kept in the working directory.}
 
 \item{...}{arguments passed to other functions}
 }
