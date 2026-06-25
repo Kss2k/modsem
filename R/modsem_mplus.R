@@ -23,6 +23,10 @@
 #'
 #' @param output.std Should \code{STANDARDIZED} be added to \code{OUTPUT}?
 #'
+#' @param cleanup Should the \code{Mplus} files (\code{.inp}, \code{.dat} and \code{.out})
+#'   created during estimation be deleted when \code{modsem_mplus()} exits? Default is
+#'   \code{FALSE}, meaning the files are kept in the working directory.
+#'
 #' @param ... arguments passed to other functions
 #'
 #' @return modsem_mplus object
@@ -64,6 +68,7 @@ modsem_mplus <- function(model.syntax,
                          rcs.scale.corrected = TRUE,
                          output.std = TRUE,
                          categorical = NULL,
+                         cleanup = FALSE,
                          ...) {
   if (!requireNamespace("MplusAutomation", quietly = TRUE))
     stop("modsem_mplus() requires the 'MplusAutomation' package; please install it.")
@@ -172,15 +177,26 @@ modsem_mplus <- function(model.syntax,
     rdata = data[usevariables],
   )
 
-  results <- MplusAutomation::mplusModeler(model,
-                                           modelout = "mplusResults.inp",
-                                           run = 1L)
+  fprefix <- getMplusFilePrefix()
+  if (cleanup)
+    on.exit(cleanupMplusFiles(fprefix), add = TRUE)
+
+  results <- MplusAutomation::mplusModeler(
+    model,
+    modelout = paste0(fprefix, ".inp"),
+    run = 1L,
+    writeData = "always",
+    hashfilename = FALSE
+  )
+
   coefsTable    <- coef(results)
-  mplusParTable <- mplusTableToParTable(coefsTable,
-                                        intTerms = intTerms,
-                                        intTermsMplus = intTermsMplus,
-                                        indicators = indicators,
-                                        parTable.in = parTable)
+  mplusParTable <- mplusTableToParTable(
+    coefsTable,
+    intTerms = intTerms,
+    intTermsMplus = intTermsMplus,
+    indicators = indicators,
+    parTable.in = parTable
+  )
 
   # coef and vcov
   TECH1 <- MplusAutomation::get_results(results, element = "tech1")
@@ -692,4 +708,42 @@ cbind0 <- function(...) {
     return(NULL)
 
   cbind(...)
+}
+
+
+mplusFilePrefixExists <- function(fprefix) {
+  inp <- paste0(fprefix, ".inp")
+  dat <- paste0(fprefix, ".dat")
+  out <- paste0(fprefix, ".out")
+  file.exists(inp) || file.exists(dat) || file.exists(out)
+}
+
+
+cleanupMplusFiles <- function(fprefix) {
+  files <- paste0(fprefix, c(".inp", ".dat", ".out"))
+  unlink(files[file.exists(files)])
+}
+
+
+getMplusFilePrefix <- function(max.iter = 20) {
+  randid <- generateRandomCharId(n=12)
+  fprefix <- paste0("mplusResults", randid)
+
+  if (!mplusFilePrefixExists(fprefix))
+    return(fprefix)
+
+  for (i in seq_len(max.iter)) {
+    id <- generateRandomCharId(2)
+    fprefix <- paste0(fprefix, id)
+
+    if (!mplusFilePrefixExists(fprefix))
+      return(fprefix)
+  }
+
+  mod_msg_warn(
+    "Unable to create a unique name for Mplus files!",
+    "Previous results might get overwritten..."
+  )
+
+  fprefix
 }
