@@ -74,6 +74,7 @@
 <span>  rcs.scale.corrected <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  output.std <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  categorical <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  cleanup <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -137,6 +138,12 @@ the items. Default is <code>TRUE</code>.</p></dd>
 
 <dt id="arg-categorical">categorical<a class="anchor" aria-label="anchor" href="#arg-categorical"></a></dt>
 <dd><p>categorical argument passed to <code>Mplus</code>.</p></dd>
+
+
+<dt id="arg-cleanup">cleanup<a class="anchor" aria-label="anchor" href="#arg-cleanup"></a></dt>
+<dd><p>Should the <code>Mplus</code> files (<code>.inp</code>, <code>.dat</code> and <code>.out</code>)
+created during estimation be deleted when <code>modsem_mplus()</code> exits? Default is
+<code>FALSE</code>, meaning the files are kept in the working directory.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
