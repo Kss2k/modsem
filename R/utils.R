@@ -848,9 +848,3 @@ std1 <- function(v) {
 
   (v - mu) / sigma
 }
-
-
-generateRandomCharId <- function(n = 36) {
-  chars <- c(letters, LETTERS, as.character(0:9))
-  paste0(sample(chars, size = n, replace = TRUE), collapse = "")
-}
