@@ -725,9 +725,9 @@ cleanupMplusFiles <- function(fprefix) {
 }
 
 
-getMplusFilePrefix <- function(max.iter = 20) {
+getMplusFilePrefix <- function(max.iter = 20, base = "mpresults") {
   randid <- generateRandomCharId(n=12)
-  fprefix <- paste0("mplusResults", randid)
+  fprefix <- paste0(base, randid)
 
   if (!mplusFilePrefixExists(fprefix))
     return(fprefix)
@@ -746,4 +746,13 @@ getMplusFilePrefix <- function(max.iter = 20) {
   )
 
   fprefix
+}
+
+
+generateRandomCharId <- function(n = 36) {
+  # use only lower letters, as Mplus sometimes seem to convert upper case
+  # characters in the .inp file to lower characters in the .out file. In
+  # particular this seems to happen on Mplus 8.11 on Windows
+  chars <- c(letters, as.character(0:9))
+  paste0(sample(chars, size = n, replace = TRUE), collapse = "")
 }
