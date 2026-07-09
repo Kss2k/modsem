@@ -462,7 +462,7 @@ calcOFIM_QML <- function(model, theta,
                          robust.se = FALSE,
                          cluster   = NULL,
                          cr1s      = TRUE) {
-  N <- sum(vapply(model$models, FUN.VALUE = numeric(1L), FUN = \(sub) NROW(sub$data)))
+  N <- sum(vapply(model$models, FUN.VALUE = numeric(1L), FUN = \(sub) sub$data$n))
 
   if (hessian) {
     # negative hessian (sign = -1)
