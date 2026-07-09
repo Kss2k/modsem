@@ -462,8 +462,6 @@ calcOFIM_QML <- function(model, theta,
                          robust.se = FALSE,
                          cluster   = NULL,
                          cr1s      = TRUE) {
-  N <- sum(vapply(model$models, FUN.VALUE = numeric(1L), FUN = \(sub) sub$data$n))
-
   if (hessian) {
     # negative hessian (sign = -1)
     I <- calcHessian(model = model, theta = theta,
@@ -500,7 +498,7 @@ calcOFIM_QML <- function(model, theta,
 
   # Optional CR1S small-sample correction
   if (isTRUE(cr1s)) {
-    q <- ncol(S)
+    N <- nrow(S); q <- ncol(S)
     if (G > 1 && N > q)
       B <- B * (G / (G - 1)) * ((N - 1) / (N - q))
   }
