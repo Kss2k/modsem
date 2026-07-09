@@ -418,6 +418,16 @@ plot_surface <- function(x, z, y, model,
     z = list(show = FALSE)  # keep z-contours off unless desired later
   )
 
+  # hoverover box
+  # We could use a monospace font, and use format() such that all of the
+  # numerical values are aligned properly, but for now we keep it simple...
+  hovertemplate <- paste0(
+    x, " %{x:.2f}<br>",
+    z, " %{y:.2f}<br>",
+    y, " %{z:.2f}",
+    "<extra></extra>"
+  )
+
   if (grid || tolower(colorscale) != "viridis") {
     # for some reason this doesn't render with pkgdown this is a
     # temporary workaround, until I figure out what is going on...
@@ -435,6 +445,7 @@ plot_surface <- function(x, z, y, model,
       colorbar = list(title = y),
       cmin = cmin,
       cmax = cmax,
+      hovertemplate = hovertemplate,
       ...
     ) |>
       plotly::layout(
@@ -447,8 +458,14 @@ plot_surface <- function(x, z, y, model,
       )
 
   } else {
-    plotly::plot_ly(z = ~proj_y, x = ~vals_x, y = ~vals_z, type = "surface",
-                    colorbar = list(title = y)) |>
+    plotly::plot_ly(
+      z = ~proj_y,
+      x = ~vals_x,
+      y = ~vals_z,
+      type = "surface",
+      colorbar = list(title = y),
+      hovertemplate = hovertemplate
+    ) |>
     plotly::layout(title = sprintf("Surface Plot of Interaction Effect between %s and %s, on %s", x, z, y),
                    scene = list(xaxis = list(title = x),
                                 zaxis = list(title = y),
