@@ -165,7 +165,13 @@ bootstrap_modsem.modsem_da <- function(model,
     mod_msg_stop("Unrecognized type!\n")
   )
 
-  argList              <- model$args
+  # Use settings from the original model, but allow the user to
+  # overrride the defaults
+  userArgs <- list(...)
+  argList  <- model$args
+  argList[names(userArgs)] <- userArgs
+ 
+  # Except these...
   argList$calc.se      <- calc.se
   argList$verbose      <- verbose
   argList$model.syntax <- model$model$info$group.info$syntax
@@ -206,7 +212,7 @@ bootstrap_modsem.modsem_da <- function(model,
       argList_i <- c(argList, list(data = sample_i))
 
       fit_i <- tryCatch(
-        do.call(modsem_da, args = argList_i, ...),
+        do.call(modsem_da, args = argList_i),
         error = ERROR
       )
 
@@ -340,7 +346,7 @@ bootstrap_modsem.function <- function(model = modsem,
 
 
 resample <- function(df, n.out = NROW(df), cluster = NULL, replace = TRUE) {
-  df.orig   <- as.data.frame(df)
+  df.orig <- as.data.frame(df)
 
   if (is.null(cluster)) {
     idx <- sample(NROW(df.orig), size = n.out, replace = replace)
