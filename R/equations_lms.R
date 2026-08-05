@@ -80,12 +80,15 @@ estepLmsGroup <- function(submodel, lastQuad = NULL, recalcQuad = FALSE,
   }
 
   density        <- rowSums(P)
-  observedLogLik <- sum(log(density))
+  observedLogLik <- if (is.null(sampling.weights)) {
+    sum(log(density))
+  } else {
+    sum(sampling.weights * log(density))
+  }
   P              <- P / density
 
-  # The sampling weights are already incorporated in `densityLms()`, so
-  # `observedLogLik` is correct. But the P/density correction is not.
-  # Here we correct P/density (if needed).
+  # Sampling weights multiply each observation's log likelihood and posterior
+  # contribution; they must not alter the posterior node probabilities.
   if (!is.null(sampling.weights))
     P <- sampling.weights * P
 
@@ -208,10 +211,55 @@ compLogLikLmsGroup <- function(submodel, P, sign = -1, ...) {
 }
 
 
+obsLogLikLms <- function(theta, model, P, sign = -1, ...) {
+  tryCatch({
+    modFilled <- fillModel(model = model, theta = theta, method = "lms")
+    ll <- 0
+
+    for (g in seq_len(model$info$n.groups)) {
+      ll <- ll + obsLogLikLmsGroup(
+        submodel = modFilled$models[[g]], P = P$P_GROUPS[[g]], sign = 1
+      )
+    }
+
+    sign * ll
+  }, error = \(e) NA_real_)
+}
+
+
+obsLogLikLmsGroup <- function(submodel, P, sign = -1, ...) {
+  tryCatch({
+    data <- submodel$data
+    sign * observedLogLikLmsCpp(
+      modelR = submodel, dataR = data$data.split, colidxR = data$colidx0,
+      P = P, n = data$n.pattern, npatterns = data$p,
+      ncores = ThreadEnv$n.threads
+    )
+  }, error = \(e) NA_real_)
+}
+
+
 
 gradientCompLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-6) {
   gradientAllLogLikLms(theta = theta, model = model, P = P, sign = sign,
                        epsilon = epsilon, FGRAD = gradLogLikLmsCpp, FOBJECTIVE = compLogLikLmsGroup)
+}
+
+
+gradientObsLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-6) {
+  FGRAD <- function(modelR, P, block, row, col, symmetric, colidxR,
+                    n, d, npatterns, eps, ncores) {
+    gradObsLogLikLmsCpp(
+      modelR = modelR, dataR = modelR$data$data.split, colidxR = colidxR,
+      P = P, block = block, row = row, col = col, symmetric = symmetric,
+      n = n, eps = eps, npatterns = npatterns, ncores = ncores
+    )
+  }
+
+  gradientAllLogLikLms(
+    theta = theta, model = model, P = P, sign = sign, epsilon = epsilon,
+    FGRAD = FGRAD, FOBJECTIVE = obsLogLikLmsGroup
+  )
 }
 
 
@@ -406,20 +454,15 @@ densitySingleLms <- function(z, modFilled, data) {
     offset <- end + 1L
   }
 
-  sampling.weights <- data$weights
-  if (!is.null(sampling.weights))
-    density <- exp(log(density) * sampling.weights) # can this be simplified?
-
   density
 }
 
 
 densityLms <- function(z, modFilled, data) {
   if (is.null(dim(z))) z <- matrix(z, ncol = modFilled$quad$k)
-  sw <- if (!is.null(data$weights)) data$weights else numeric(0L)
   densityMatrixLmsCpp(modelR = modFilled, V = z,
                       dataR = data$data.split, colidxR = data$colidx0,
-                      n = data$n.pattern, samplingWeights = sw,
+                      n = data$n.pattern, samplingWeights = numeric(0L),
                       npatterns = data$p, ncores = ThreadEnv$n.threads)
 }
 
@@ -570,6 +613,25 @@ hessianCompLogLikLms <- function(theta, model, P, sign = -1,
   hessianAllLogLikLms(theta = theta, model = model, P = P, sign = sign,
                       FHESS = FHESS, FOBJECTIVE = compLogLikLmsGroup,
                       .relStep = .relStep)
+}
+
+
+hessianObsLogLikLms <- function(theta, model, P, sign = -1,
+                                .relStep = .Machine$double.eps ^ (1/5)) {
+  FHESS <- function(modelR, P, block, row, col, symmetric, eps, .relStep,
+                    colidxR, n, d, npatterns, ncores) {
+    hessObsLogLikLmsCpp(
+      modelR = modelR, dataR = modelR$data$data.split, P = P,
+      block = block, row = row, col = col, symmetric = symmetric,
+      colidxR = colidxR, n = n, npatterns = npatterns,
+      relStep = .relStep, minAbs = 0.0, ncores = ncores
+    )
+  }
+
+  hessianAllLogLikLms(
+    theta = theta, model = model, P = P, sign = sign,
+    FHESS = FHESS, FOBJECTIVE = obsLogLikLmsGroup, .relStep = .relStep
+  )
 }
 
 
