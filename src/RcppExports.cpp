@@ -35,6 +35,27 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// completeScoresNodeAnalyticalLmsCpp
+arma::mat completeScoresNodeAnalyticalLmsCpp(const Rcpp::List& modelR, const Rcpp::List& dataR, const arma::vec& z, const arma::uvec& block, const arma::uvec& row, const arma::uvec& col, const arma::uvec& symmetric, const Rcpp::List& colidxR, const arma::uvec& n, const int npatterns, const int ncores);
+RcppExport SEXP _modsem_completeScoresNodeAnalyticalLmsCpp(SEXP modelRSEXP, SEXP dataRSEXP, SEXP zSEXP, SEXP blockSEXP, SEXP rowSEXP, SEXP colSEXP, SEXP symmetricSEXP, SEXP colidxRSEXP, SEXP nSEXP, SEXP npatternsSEXP, SEXP ncoresSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type modelR(modelRSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type dataR(dataRSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type z(zSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type block(blockSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type row(rowSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type col(colSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type symmetric(symmetricSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type colidxR(colidxRSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type n(nSEXP);
+    Rcpp::traits::input_parameter< const int >::type npatterns(npatternsSEXP);
+    Rcpp::traits::input_parameter< const int >::type ncores(ncoresSEXP);
+    rcpp_result_gen = Rcpp::wrap(completeScoresNodeAnalyticalLmsCpp(modelR, dataR, z, block, row, col, symmetric, colidxR, n, npatterns, ncores));
+    return rcpp_result_gen;
+END_RCPP
+}
 // completeLogLikLmsCpp
 double completeLogLikLmsCpp(const Rcpp::List& modelR, const Rcpp::List& P, const Rcpp::List& quad, const Rcpp::List& colidxR, const arma::uvec& n, const arma::uvec& d, const int npatterns);
 RcppExport SEXP _modsem_completeLogLikLmsCpp(SEXP modelRSEXP, SEXP PSEXP, SEXP quadSEXP, SEXP colidxRSEXP, SEXP nSEXP, SEXP dSEXP, SEXP npatternsSEXP) {
@@ -606,6 +627,7 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_modsem_calcSESimpleSlopes", (DL_FUNC) &_modsem_calcSESimpleSlopes, 2},
     {"_modsem_muSigmaLmsCpp", (DL_FUNC) &_modsem_muSigmaLmsCpp, 2},
+    {"_modsem_completeScoresNodeAnalyticalLmsCpp", (DL_FUNC) &_modsem_completeScoresNodeAnalyticalLmsCpp, 11},
     {"_modsem_completeLogLikLmsCpp", (DL_FUNC) &_modsem_completeLogLikLmsCpp, 7},
     {"_modsem_gradLogLikLmsCpp", (DL_FUNC) &_modsem_gradLogLikLmsCpp, 12},
     {"_modsem_gradObsLogLikLmsCpp", (DL_FUNC) &_modsem_gradObsLogLikLmsCpp, 12},

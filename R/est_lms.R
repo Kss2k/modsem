@@ -1,6 +1,6 @@
 computeGradient <- function(theta, model, P, epsilon) {
-  gradientCompLogLikLms(theta = theta, model = model, P = P, sign = -1,
-                        epsilon = epsilon)
+  gradientObsLogLikLms(theta = theta, model = model, P = P, sign = -1,
+                       epsilon = epsilon)
 }
 
 
@@ -39,6 +39,12 @@ lbfgs_two_loop <- function(grad, s_list, y_list) {
 computeFullIcom <- function(theta, model, P) {
   Ic <- hessianCompLogLikLms(theta = theta, model = model, P = P, sign = -1)
   0.5 * (Ic + t(Ic))
+}
+
+
+computeFullIobs <- function(theta, model, P) {
+  Iobs <- hessianObsLogLikLms(theta = theta, model = model, P = P, sign = -1)
+  0.5 * (Iobs + t(Iobs))
 }
 
 
@@ -132,9 +138,14 @@ emLms <- function(model,
                     lastQuad = lastQuad, recalcQuad = recalcQuad,
                     adaptive.quad.tol = adaptive.quad.tol, ...)
 
+      if (recalcQuad) {
+        qn_env$s_list <- list()
+        qn_env$y_list <- list()
+      }
+
       if (testSimpleGradient) {
         tryCatch({
-          gradientCompLogLikLms(theta = thetaNew, model = model, P = P)
+          gradientObsLogLikLms(theta = thetaNew, model = model, P = P)
         }, error = \(e) {
           mod_msg_warn_immediate(
             paste0("Optimized computation of gradient failed! Switching gradient type.\n",
@@ -194,17 +205,13 @@ emLms <- function(model,
           } else -grad
 
         } else if (mode == "FS") {
-          # FS direction using Iobs = Icom - Imis (Louis), with fallback to Icom
+          # Fisher-scoring direction from the fixed-quadrature observed likelihood.
           I_fs <- NULL
           if (fs.matrix == "Iobs") {
-            I_fs <- tryCatch({
-              L <- observedInfoFromLouisLms(model = model, theta = thetaOld,
-                                            P = P, recompute.P = FALSE,
-                                            fd.scheme = fs.fd.scheme,
-                                            fd.epsilon = fs.fd.epsilon,
-                                            symmetrize = TRUE)
-              L$I.obs
-            }, error = function(e) NULL)
+            I_fs <- tryCatch(
+              computeFullIobs(theta = thetaOld, model = model, P = P),
+              error = function(e) NULL
+            )
           }
           if (is.null(I_fs)) {
             I_fs <- computeFullIcom(theta = thetaOld, model = model, P = P)
@@ -222,16 +229,18 @@ emLms <- function(model,
           direction <- -tryCatch(solve(I_fs, grad), error = function(e) NULL)
         }
 
-        # line search on observed LL (and weakly on Q)
+        # Line search on the observed likelihood, holding quadrature fixed.
         if (!is.null(direction)) {
           alpha     <- 1
           success   <- FALSE
-          refQ      <- compLogLikLms(theta = thetaOld, model = model, P = P, sign = 1)
+          refObs    <- obsLogLikLms(theta = thetaOld, model = model, P = P, sign = 1)
 
           while (alpha > 1e-5) {
             thetaTrial  <- boundedTheta(thetaOld + alpha * direction)
-            llQTrial    <- suppressWarnings(compLogLikLms(theta = thetaTrial,  model = model, P = P, sign = 1))
-            ok <- !is.na(llQTrial) && (llQTrial >= refQ)
+            llObsTrial  <- suppressWarnings(obsLogLikLms(
+              theta = thetaTrial, model = model, P = P, sign = 1
+            ))
+            ok <- is.finite(llObsTrial) && llObsTrial >= refObs
             if (ok) { success <- TRUE; break }
             alpha <- alpha / 2
           }
@@ -258,9 +267,13 @@ emLms <- function(model,
               P <- P_new; lastQuad <- P_new$quad
             }
           } else {
+            qn_env$s_list <- list()
+            qn_env$y_list <- list()
             mode <- "EM"
           }
         } else {
+          qn_env$s_list <- list()
+          qn_env$y_list <- list()
           mode <- "EM"
         }
       }

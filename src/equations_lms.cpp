@@ -202,7 +202,7 @@ inline double& lmsParam(LMSModel& M, std::size_t blk,
 }
 
 struct LMSAdjoints {
-  arma::mat A, Oxx, Oex, lX, tX, Gx, Ge, a, beta0, Psi, covZetaXi, d;
+  arma::mat A, Oxx, Oex, lX, tX, Gx, Ge, a, beta0, Psi, covZetaXi, d, W, T;
 
   explicit LMSAdjoints(const LMSModel& M) :
     A(M.A.n_rows, M.A.n_cols, arma::fill::zeros),
@@ -216,7 +216,9 @@ struct LMSAdjoints {
     beta0(M.beta0.n_rows, M.beta0.n_cols, arma::fill::zeros),
     Psi(M.Psi.n_rows, M.Psi.n_cols, arma::fill::zeros),
     covZetaXi(M.covZetaXi.n_rows, M.covZetaXi.n_cols, arma::fill::zeros),
-    d(M.d.n_rows, M.d.n_cols, arma::fill::zeros) {}
+    d(M.d.n_rows, M.d.n_cols, arma::fill::zeros),
+    W(M.W.n_rows, M.W.n_cols, arma::fill::zeros),
+    T(M.T.n_rows, M.T.n_cols, arma::fill::zeros) {}
 
   void add(const LMSAdjoints& other) {
     A         += other.A;
@@ -231,6 +233,8 @@ struct LMSAdjoints {
     Psi       += other.Psi;
     covZetaXi += other.covZetaXi;
     d         += other.d;
+    W         += other.W;
+    T         += other.T;
   }
 };
 
@@ -259,6 +263,8 @@ inline const arma::mat& lmsAdjointBlock(const LMSAdjoints& adj,
     case 11: return adj.Ge;
     case 12: return adj.Oxx;
     case 13: return adj.Oex;
+    case 14: return adj.W;
+    case 15: return adj.T;
     case 17: return adj.covZetaXi;
     default: {
       static const arma::mat empty;
@@ -311,30 +317,50 @@ inline void accumulateMuSigmaAdjoints(const LMSModel& M,
   );
   const arma::vec xieta = arma::join_cols(u, v);
 
-  const arma::mat *lXc = &M.lX;
-  const arma::mat *Vc = &V;
-  arma::mat lXComposite;
-  arma::mat VComposite;
+  if (adj.tX.n_elem == muBar.n_elem) adj.tX += muBar;
+  arma::vec xietaBar;
+  arma::mat VBar;
 
   if (M.hasComposites) {
-    // Correct lambda and theta for composites
-    const arma::mat WTW = M.W.t() * M.T * M.W;
-    const arma::mat WTWinv = arma::pinv(WTW);
+    // mu = L*xieta and Sigma = L*(V-H)*L' + d + T, where
+    // H = W'*T*W and L = lX + T*W*pinv(H).
+    const arma::mat H = M.W.t() * M.T * M.W;
+    const arma::mat R = arma::pinv(H);
+    const arma::mat L = M.lX + M.T * M.W * R;
+    const arma::mat VC = V - H;
 
-    lXComposite = M.lX + M.T * M.W * WTWinv;
-    VComposite  = V - WTW;
+    arma::mat LBar = muBar * xieta.t() +
+      (SigmaBar + SigmaBar.t()) * L * VC;
+    arma::mat HBar = -L.t() * SigmaBar * L;
+    const arma::mat RBar = M.W.t() * M.T.t() * LBar;
 
-    lXc = &lXComposite;
-    Vc  = &VComposite;
+    adj.lX += LBar;
+    adj.d  += SigmaBar;
+    adj.T  += SigmaBar + LBar * R.t() * M.W.t();
+    adj.W  += M.T.t() * LBar * R.t();
+
+    // Reverse the Moore-Penrose inverse. This is the constant-rank
+    // differential and reduces to -R' RBar R' when H is nonsingular.
+    const arma::mat IH = arma::eye<arma::mat>(H.n_rows, H.n_cols);
+    const arma::mat leftNull  = IH - R * H;
+    const arma::mat rightNull = IH - H * R;
+    HBar += -R.t() * RBar * R.t()
+      + (R * R.t()) * RBar * rightNull.t()
+      + leftNull.t() * RBar * (R.t() * R);
+
+    // H = W'*T*W.
+    adj.T += M.W * HBar * M.W.t();
+    adj.W += M.T * M.W * HBar.t() + M.T.t() * M.W * HBar;
+
+    xietaBar = L.t() * muBar;
+    VBar = L.t() * SigmaBar * L;
+  } else {
+    adj.lX += muBar * xieta.t();
+    adj.lX += (SigmaBar + SigmaBar.t()) * M.lX * V;
+    adj.d  += SigmaBar;
+    xietaBar = M.lX.t() * muBar;
+    VBar = M.lX.t() * SigmaBar * M.lX;
   }
-
-  if (adj.tX.n_elem == muBar.n_elem) adj.tX += muBar;
-  adj.lX += muBar * xieta.t();
-
-  arma::vec xietaBar = lXc->t() * muBar;
-  arma::mat VBar = lXc->t() * SigmaBar * (*lXc);
-  adj.lX += (SigmaBar + SigmaBar.t()) * (*lXc) * (*Vc);
-  adj.d += SigmaBar;
 
   arma::vec uBar = xietaBar.subvec(0, M.numXis - 1);
   arma::vec vBar = xietaBar.subvec(M.numXis, M.numXis + numEta - 1);
@@ -547,6 +573,93 @@ inline arma::vec completeGradientReverseFromModel(
 }
 
 
+// Per-observation complete-data scores at one quadrature node. The node-level
+// mean/covariance factorization is shared across all rows in each missing-data
+// pattern; only the observation-specific MVN adjoints are recomputed.
+// [[Rcpp::export]]
+arma::mat completeScoresNodeAnalyticalLmsCpp(
+    const Rcpp::List& modelR,
+    const Rcpp::List& dataR,
+    const arma::vec& z,
+    const arma::uvec& block,
+    const arma::uvec& row,
+    const arma::uvec& col,
+    const arma::uvec& symmetric,
+    const Rcpp::List& colidxR,
+    const arma::uvec& n,
+    const int npatterns = 1L,
+    const int ncores = 1L) {
+
+  const LMSModel M(modelR);
+  const auto data = as_vec_of_mat(dataR);
+  const auto colidx = as_vec_of_uvec(colidxR);
+  const auto ms = M.muSigma(z);
+  const arma::vec& mu = ms.first;
+  const arma::mat& Sig = ms.second;
+  const arma::uword pObs = M.lX.n_rows;
+  const arma::uword npar = block.n_elem;
+  const arma::uword N = arma::sum(n);
+  arma::mat scores(N, npar, arma::fill::zeros);
+  bool failed = false;
+
+  ThreadSetter ts(ncores);
+  arma::uword offset = 0;
+  for (int pat = 0; pat < npatterns; ++pat) {
+    const arma::uvec& idx = colidx[pat];
+    const arma::vec muS = mu.elem(idx);
+    const arma::mat sigS = Sig.submat(idx, idx);
+    arma::mat L;
+    if (!arma::chol(L, sigS, "lower")) {
+      scores.fill(arma::datum::nan);
+      return scores;
+    }
+
+    const arma::mat Sinv = arma::solve(
+      arma::trimatu(L.t()),
+      arma::solve(arma::trimatl(L),
+                  arma::eye<arma::mat>(sigS.n_rows, sigS.n_cols),
+                  arma::solve_opts::fast),
+      arma::solve_opts::fast
+    );
+    const arma::mat centered = data[pat].each_row() - muS.t();
+    const arma::mat invDiff = Sinv * centered.t();
+    const arma::uword nPat = n[pat];
+
+#pragma omp parallel for default(none) if(ncores > 1) \
+    shared(M, z, idx, Sinv, invDiff, block, row, col, symmetric, scores, \
+           offset, nPat, npar, pObs) reduction(||:failed) schedule(static)
+    for (arma::uword i = 0; i < nPat; ++i) {
+      const arma::vec muBar_i = invDiff.col(i);
+      const arma::mat SigmaBar_i = 0.5 *
+        (muBar_i * muBar_i.t() - Sinv);
+      arma::vec muBar(pObs);
+      arma::mat SigmaBar(pObs, pObs);
+      muBar.zeros();
+      SigmaBar.zeros();
+      muBar.elem(idx) = muBar_i;
+      SigmaBar.submat(idx, idx) = SigmaBar_i;
+
+      LMSAdjoints adj(M);
+      accumulateMuSigmaAdjoints(M, z, muBar, SigmaBar, adj);
+
+      for (arma::uword k = 0; k < npar; ++k) {
+        const arma::mat& A = lmsAdjointBlock(adj, block[k]);
+        if (A.is_empty()) continue;
+        double value = A(row[k], col[k]);
+        if (symmetric[k] && row[k] != col[k])
+          value += A(col[k], row[k]);
+        scores(offset + i, k) = value;
+        if (!std::isfinite(value)) failed = true;
+      }
+    }
+    offset += nPat;
+  }
+
+  if (failed) scores.fill(arma::datum::nan);
+  return scores;
+}
+
+
 template<class F>
 arma::vec gradientFD(LMSModel&         M,
                      F&&               logLik,
@@ -725,25 +838,9 @@ arma::vec gradLogLikLmsCpp(const Rcpp::List& modelR,
   const auto Cov         = as_vec_of_vec_of_mat(P["cov"]);
   const auto colidx      = as_vec_of_uvec(colidxR);
 
-  auto compLl = [&](LMSModel& mod) -> double {
-    return completeLogLikFromModel(mod, V, TGamma, Mean, Cov, colidx, n, d, npatterns);
-  };
-
-  if (!M.hasComposites) {
-    return completeGradientReverseFromModel(M, V, TGamma, Mean, Cov, colidx,
-                                            block, row, col, symmetric,
-                                            npatterns, ncores);
-  }
-
-  arma::vec grad = completeGradientReverseFromModel(M, V, TGamma, Mean, Cov,
-                                                    colidx, block, row, col,
-                                                    symmetric, npatterns,
-                                                    ncores);
-  const arma::uvec selected = arma::find((block == 14) || (block == 15));
-  gradientFDSelected(M, compLl, block, row, col, symmetric, selected, grad,
-                     eps, ncores);
-
-  return grad;
+  return completeGradientReverseFromModel(M, V, TGamma, Mean, Cov, colidx,
+                                          block, row, col, symmetric,
+                                          npatterns, ncores);
 }
 
 
@@ -802,6 +899,91 @@ inline double observedLogLikFromModel(const LMSModel&  M,
 }
 
 
+inline arma::vec observedGradientReverseFromModel(
+    const LMSModel& M,
+    const arma::mat& V,
+    const arma::vec& w,
+    const arma::vec& samplingWeights,
+    const std::vector<arma::mat>& data,
+    const std::vector<arma::uvec>& colidx,
+    const arma::uvec& n,
+    const arma::uvec& block,
+    const arma::uvec& row,
+    const arma::uvec& col,
+    const arma::uvec& symmetric,
+    const int npatterns = 1L,
+    const int ncores = 1L) {
+  // Fisher's identity: the observed-data score is the posterior expectation
+  // of the complete-data score.  Recompute the posterior probabilities at M
+  // (using the supplied, fixed quadrature), construct the same sufficient
+  // statistics as the E-step, and feed them to the analytical reverse-mode
+  // complete-data score.
+  const std::size_t Q = V.n_rows;
+  const arma::uword N = arma::sum(n);
+  arma::mat joint(N, Q, arma::fill::zeros);
+
+#pragma omp parallel for schedule(static) default(none) if(ncores > 1) \
+  shared(M, V, w, data, colidx, n, joint, Q, npatterns)
+  for (std::size_t j = 0; j < Q; ++j) {
+    if (w[j] <= DBL_MIN) continue;
+
+    const arma::vec z = V.row(j).t();
+    const auto ms = M.muSigma(z);
+    int offset = 0;
+    for (int pat = 0; pat < npatterns; ++pat) {
+      const int end = offset + static_cast<int>(n[pat]) - 1;
+      joint(arma::span(offset, end), j) =
+        w[j] * mvnDensSt(data[pat], colidx[pat], ms.first, ms.second);
+      offset = end + 1;
+    }
+  }
+
+  const arma::vec marginal = arma::sum(joint, 1);
+  if (!marginal.is_finite() || arma::any(marginal <= 0.0)) {
+    arma::vec out(block.n_elem);
+    out.fill(arma::datum::nan);
+    return out;
+  }
+
+  arma::mat posterior = joint.each_col() / marginal;
+  posterior.each_col() %= samplingWeights;
+
+  std::vector<std::vector<arma::vec>> Mean(
+    Q, std::vector<arma::vec>(npatterns));
+  std::vector<std::vector<arma::mat>> Cov(
+    Q, std::vector<arma::mat>(npatterns));
+  std::vector<arma::vec> TGamma(Q, arma::zeros<arma::vec>(npatterns));
+
+#pragma omp parallel for schedule(static) default(none) if(ncores > 1) \
+  shared(posterior, data, n, Mean, Cov, TGamma, Q, npatterns)
+  for (std::size_t j = 0; j < Q; ++j) {
+    int offset = 0;
+    for (int pat = 0; pat < npatterns; ++pat) {
+      const int end = offset + static_cast<int>(n[pat]) - 1;
+      const arma::vec pj = posterior.col(j).subvec(offset, end);
+      const double tg = arma::sum(pj);
+      TGamma[j][pat] = tg;
+
+      if (tg > DBL_MIN) {
+        const arma::vec mean = data[pat].t() * pj / tg;
+        const arma::mat centered = data[pat].each_row() - mean.t();
+        Mean[j][pat] = mean;
+        Cov[j][pat] = centered.t() * (centered.each_col() % pj);
+      } else {
+        Mean[j][pat] = arma::zeros<arma::vec>(data[pat].n_cols);
+        Cov[j][pat] = arma::zeros<arma::mat>(data[pat].n_cols,
+                                             data[pat].n_cols);
+      }
+      offset = end + 1;
+    }
+  }
+
+  return completeGradientReverseFromModel(
+    M, V, TGamma, Mean, Cov, colidx, block, row, col, symmetric,
+    npatterns, ncores, false);
+}
+
+
 // [[Rcpp::export]]
 arma::vec gradObsLogLikLmsCpp(const Rcpp::List& modelR,
                               const Rcpp::List& dataR,
@@ -823,12 +1005,11 @@ arma::vec gradObsLogLikLmsCpp(const Rcpp::List& modelR,
 
   const auto colidx = as_vec_of_uvec(colidxR);
   const auto data   = as_vec_of_mat(dataR);
+  ThreadSetter ts(ncores);
 
-  auto obsLl = [&](LMSModel& mod) -> double {
-    return observedLogLikFromModel(mod, V, w, samplingWeights, data, colidx, n, npatterns, 1L);
-  };
-
-  return gradientFD(M, obsLl, block, row, col, symmetric, eps, ncores);
+  return observedGradientReverseFromModel(
+    M, V, w, samplingWeights, data, colidx, n, block, row, col, symmetric,
+    npatterns, ncores);
 }
 
 
@@ -1106,6 +1287,65 @@ Rcpp::List fdHessCpp(LMSModel&         M,
 }
 
 
+inline Rcpp::List fdHessFromObservedGradient(
+    LMSModel& M,
+    const arma::mat& V,
+    const arma::vec& w,
+    const arma::vec& samplingWeights,
+    const std::vector<arma::mat>& data,
+    const std::vector<arma::uvec>& colidx,
+    const arma::uvec& n,
+    const arma::uvec& block,
+    const arma::uvec& row,
+    const arma::uvec& col,
+    const arma::uvec& symmetric,
+    const int npatterns,
+    const double relStep,
+    const double minAbs,
+    const int ncores) {
+
+  ThreadSetter ts(ncores);
+
+  const std::size_t p = block.n_elem;
+  const arma::vec base = getParams(M, block, row, col);
+  const double minScale = (minAbs > 0.0) ? minAbs : 1.0;
+  const arma::vec incr =
+    arma::max(arma::abs(base), arma::vec(p).fill(minScale)) * relStep;
+
+  const double f0 = observedLogLikFromModel(
+    M, V, w, samplingWeights, data, colidx, n, npatterns, ncores);
+  const arma::vec grad0 = observedGradientReverseFromModel(
+    M, V, w, samplingWeights, data, colidx, n, block, row, col, symmetric,
+    npatterns, ncores);
+
+  arma::mat Hess(p, p, arma::fill::zeros);
+
+#pragma omp parallel for default(none) \
+  shared(M, V, w, samplingWeights, data, colidx, n, block, row, col, symmetric, \
+         npatterns, p, base, incr, grad0, Hess) schedule(static)
+  for (std::size_t j = 0; j < p; ++j) {
+    LMSModel Mc = M.threadClone();
+    arma::vec pars = base;
+    pars[j] += incr[j];
+    setParams(Mc, block, row, col, symmetric, pars);
+    Mc.updateCache();
+
+    const arma::vec gradJ = observedGradientReverseFromModel(
+      Mc, V, w, samplingWeights, data, colidx, n, block, row, col,
+      symmetric, npatterns, 1L);
+    Hess.col(j) = (gradJ - grad0) / incr[j];
+  }
+
+  Hess = 0.5 * (Hess + Hess.t());
+
+  return Rcpp::List::create(
+    Rcpp::Named("mean")     = f0,
+    Rcpp::Named("gradient") = grad0,
+    Rcpp::Named("Hessian")  = Hess
+  );
+}
+
+
 // [[Rcpp::export]]
 Rcpp::List hessObsLogLikLmsCpp(const Rcpp::List& modelR,
                                const Rcpp::List& dataR,
@@ -1129,11 +1369,9 @@ Rcpp::List hessObsLogLikLmsCpp(const Rcpp::List& modelR,
   const auto colidx = as_vec_of_uvec(colidxR);
   const auto data   = as_vec_of_mat(dataR);
 
-  auto obsLl = [&](LMSModel& mod) -> double {
-    return observedLogLikFromModel(mod, V, w, samplingWeights, data, colidx, n, npatterns, 1L);
-  };
-
-  return fdHessCpp(M, obsLl, block, row, col, symmetric, relStep, minAbs, ncores);
+  return fdHessFromObservedGradient(
+    M, V, w, samplingWeights, data, colidx, n, block, row, col, symmetric,
+    npatterns, relStep, minAbs, ncores);
 }
 
 
@@ -1222,17 +1460,9 @@ Rcpp::List hessCompLogLikLmsCpp(const Rcpp::List& modelR,
   const auto Cov         = as_vec_of_vec_of_mat(P["cov"]);
   const auto colidx      = as_vec_of_uvec(colidxR);
 
-  auto compLl = [&](LMSModel& mod) -> double {
-    return completeLogLikFromModel(mod, V, TGamma, Mean, Cov, colidx, n, d, npatterns);
-  };
-
-  if (!M.hasComposites) {
-    return fdHessFromCompleteGradient(M, V, TGamma, Mean, Cov, colidx, n, d,
-                                      block, row, col, symmetric, npatterns,
-                                      relStep, minAbs, ncores);
-  }
-
-  return fdHessCpp(M, compLl, block, row, col, symmetric, relStep, minAbs, ncores);
+  return fdHessFromCompleteGradient(M, V, TGamma, Mean, Cov, colidx, n, d,
+                                    block, row, col, symmetric, npatterns,
+                                    relStep, minAbs, ncores);
 }
 
 
