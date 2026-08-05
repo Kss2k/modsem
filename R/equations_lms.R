@@ -716,6 +716,54 @@ completeScoresNodeFD <- function(theta, model, data, z,
   S
 }
 
+
+lmsFirstDerivativeJacobian <- function(theta, model) {
+  gradientStruct <- model$params$gradientStruct
+  Jacobian <- refreshCovModelJacobian(
+    theta, model, gradientStruct$Jacobian
+  )$J
+  nlinDerivs <- gradientStruct$nlinDerivs
+
+  if (length(nlinDerivs)) {
+    evalTheta  <- gradientStruct$evalTheta
+    param.full <- stringr::str_split_i(
+      colnames(Jacobian), pattern = "#", i = 1L
+    )
+    param.part <- rownames(Jacobian)
+    THETA <- list2env(as.list(evalTheta(theta)))
+
+    for (dep in names(nlinDerivs)) {
+      for (indep in names(nlinDerivs[[dep]])) {
+        deriv <- eval(expr = nlinDerivs[[dep]][[indep]], envir = THETA)
+        Jacobian[param.part == indep, param.full == dep] <- deriv
+      }
+    }
+  }
+
+  Jacobian
+}
+
+
+completeScoresNodeAnalytical <- function(submodel, data, z, locations,
+                                         Jacobian, active) {
+  rawScores <- completeScoresNodeAnalyticalLmsCpp(
+    modelR = submodel,
+    dataR = data$data.split,
+    z = c(z),
+    block = locations$block,
+    row = locations$row,
+    col = locations$col,
+    symmetric = locations$symmetric,
+    colidxR = data$colidx0,
+    n = data$n.pattern,
+    npatterns = data$p,
+    ncores = ThreadEnv$n.threads
+  )
+
+  mapping <- Jacobian[active, locations$param, drop = FALSE]
+  rawScores %*% t(mapping)
+}
+
 # I_obs = I_com - I_mis using Louis' identity
 observedInfoFromLouisLms <- function(model,
                                      theta,
@@ -724,10 +772,19 @@ observedInfoFromLouisLms <- function(model,
                                      adaptive.quad.tol = 1e-12,
                                      fd.epsilon = 1e-6,
                                      fd.scheme = c("forward","central"),
+                                     score.method = c("auto", "analytical", "finite.difference"),
                                      symmetrize = TRUE,
                                      jitter = 0.0,
                                      ...) {
   fd.scheme <- match.arg(fd.scheme)
+  score.method <- match.arg(score.method)
+  if (score.method == "auto") {
+    score.method <- if (isTRUE(model$params$gradientStruct$useFDGradient)) {
+      "finite.difference"
+    } else {
+      "analytical"
+    }
+  }
 
   # E-step (if needed)
   if (recompute.P) {
@@ -743,6 +800,12 @@ observedInfoFromLouisLms <- function(model,
 
   Icom <- hessianCompLogLikLms(theta = theta, model = model, P = P, sign = -1)
 
+  if (score.method == "analytical") {
+    modelFilled <- fillModel(model = model, theta = theta, method = "lms")
+    locations <- model$params$gradientStruct$locations
+    Jacobian <- lmsFirstDerivativeJacobian(theta, model)
+  }
+
   total_M <- matrix(0.0, p, p, dimnames = list(lbl, lbl))
   Sbar    <- matrix(0.0, n_total, p)
 
@@ -754,14 +817,38 @@ observedInfoFromLouisLms <- function(model,
     rows     <- seq_len(data.g$n) + row_offset
 
     active_idx <- activeThetaIndicesLms(model, g, p)
+    if (score.method == "analytical") {
+      submodelFilled <- modelFilled$models[[g]]
+      locations.g <- locations[locations$group == g, , drop = FALSE]
+    }
+    sampling_weights <- P.g$sampling.weights
+    mod_stopif(length(sampling_weights) != data.g$n,
+               "Invalid sampling-weight vector in LMS posterior object.")
+    sqrt_weights <- sqrt(pmax(sampling_weights, 0))
     Jg <- length(P.g$w)
     for (j in seq_len(Jg)) {
       z_j <- P.g$V[j, , drop = FALSE]
-      S_j <- completeScoresNodeFD(theta, model, data.g, z_j,
-                                  epsilon = fd.epsilon, scheme = fd.scheme,
-                                  group = if (model$info$n.groups > 1L) g else NULL,
-                                  active = active_idx)
+      S_j <- if (score.method == "analytical") {
+        completeScoresNodeAnalytical(
+          submodel = submodelFilled, data = data.g, z = z_j,
+          locations = locations.g, Jacobian = Jacobian, active = active_idx
+        )
+      } else {
+        completeScoresNodeFD(
+          theta, model, data.g, z_j,
+          epsilon = fd.epsilon, scheme = fd.scheme,
+          group = if (model$info$n.groups > 1L) g else NULL,
+          active = active_idx
+        )
+      }
+      # P.g$P contains w_i * gamma_ij. This is directly suitable for
+      # E_w[s s']; for E_w[s]E_w[s]' we need sqrt(w_i) * E[s], not
+      # w_i * E[s], otherwise crossprod() squares the sampling weights.
       r_j <- P.g$P[, j]
+      mean_score_weights <- numeric(length(r_j))
+      positive_weights <- sqrt_weights > 0
+      mean_score_weights[positive_weights] <-
+        r_j[positive_weights] / sqrt_weights[positive_weights]
 
       Rhalf <- sqrt(pmax(r_j, 0))
       if (NROW(S_j) && NCOL(S_j)) {
@@ -771,7 +858,7 @@ observedInfoFromLouisLms <- function(model,
         total_M[active_idx, active_idx] <- block
 
         Sbar_block <- Sbar[rows, active_idx, drop = FALSE]
-        Sbar_block <- Sbar_block + (S_j * r_j)
+        Sbar_block <- Sbar_block + (S_j * mean_score_weights)
         Sbar[rows, active_idx] <- Sbar_block
       }
     }

@@ -573,6 +573,93 @@ inline arma::vec completeGradientReverseFromModel(
 }
 
 
+// Per-observation complete-data scores at one quadrature node. The node-level
+// mean/covariance factorization is shared across all rows in each missing-data
+// pattern; only the observation-specific MVN adjoints are recomputed.
+// [[Rcpp::export]]
+arma::mat completeScoresNodeAnalyticalLmsCpp(
+    const Rcpp::List& modelR,
+    const Rcpp::List& dataR,
+    const arma::vec& z,
+    const arma::uvec& block,
+    const arma::uvec& row,
+    const arma::uvec& col,
+    const arma::uvec& symmetric,
+    const Rcpp::List& colidxR,
+    const arma::uvec& n,
+    const int npatterns = 1L,
+    const int ncores = 1L) {
+
+  const LMSModel M(modelR);
+  const auto data = as_vec_of_mat(dataR);
+  const auto colidx = as_vec_of_uvec(colidxR);
+  const auto ms = M.muSigma(z);
+  const arma::vec& mu = ms.first;
+  const arma::mat& Sig = ms.second;
+  const arma::uword pObs = M.lX.n_rows;
+  const arma::uword npar = block.n_elem;
+  const arma::uword N = arma::sum(n);
+  arma::mat scores(N, npar, arma::fill::zeros);
+  bool failed = false;
+
+  ThreadSetter ts(ncores);
+  arma::uword offset = 0;
+  for (int pat = 0; pat < npatterns; ++pat) {
+    const arma::uvec& idx = colidx[pat];
+    const arma::vec muS = mu.elem(idx);
+    const arma::mat sigS = Sig.submat(idx, idx);
+    arma::mat L;
+    if (!arma::chol(L, sigS, "lower")) {
+      scores.fill(arma::datum::nan);
+      return scores;
+    }
+
+    const arma::mat Sinv = arma::solve(
+      arma::trimatu(L.t()),
+      arma::solve(arma::trimatl(L),
+                  arma::eye<arma::mat>(sigS.n_rows, sigS.n_cols),
+                  arma::solve_opts::fast),
+      arma::solve_opts::fast
+    );
+    const arma::mat centered = data[pat].each_row() - muS.t();
+    const arma::mat invDiff = Sinv * centered.t();
+    const arma::uword nPat = n[pat];
+
+#pragma omp parallel for default(none) if(ncores > 1) \
+    shared(M, z, idx, Sinv, invDiff, block, row, col, symmetric, scores, \
+           offset, nPat, npar, pObs) reduction(||:failed) schedule(static)
+    for (arma::uword i = 0; i < nPat; ++i) {
+      const arma::vec muBar_i = invDiff.col(i);
+      const arma::mat SigmaBar_i = 0.5 *
+        (muBar_i * muBar_i.t() - Sinv);
+      arma::vec muBar(pObs);
+      arma::mat SigmaBar(pObs, pObs);
+      muBar.zeros();
+      SigmaBar.zeros();
+      muBar.elem(idx) = muBar_i;
+      SigmaBar.submat(idx, idx) = SigmaBar_i;
+
+      LMSAdjoints adj(M);
+      accumulateMuSigmaAdjoints(M, z, muBar, SigmaBar, adj);
+
+      for (arma::uword k = 0; k < npar; ++k) {
+        const arma::mat& A = lmsAdjointBlock(adj, block[k]);
+        if (A.is_empty()) continue;
+        double value = A(row[k], col[k]);
+        if (symmetric[k] && row[k] != col[k])
+          value += A(col[k], row[k]);
+        scores(offset + i, k) = value;
+        if (!std::isfinite(value)) failed = true;
+      }
+    }
+    offset += nPat;
+  }
+
+  if (failed) scores.fill(arma::datum::nan);
+  return scores;
+}
+
+
 template<class F>
 arma::vec gradientFD(LMSModel&         M,
                      F&&               logLik,

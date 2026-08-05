@@ -9,6 +9,10 @@ muSigmaLmsCpp <- function(model, z) {
     .Call(`_modsem_muSigmaLmsCpp`, model, z)
 }
 
+completeScoresNodeAnalyticalLmsCpp <- function(modelR, dataR, z, block, row, col, symmetric, colidxR, n, npatterns = 1L, ncores = 1L) {
+    .Call(`_modsem_completeScoresNodeAnalyticalLmsCpp`, modelR, dataR, z, block, row, col, symmetric, colidxR, n, npatterns, ncores)
+}
+
 completeLogLikLmsCpp <- function(modelR, P, quad, colidxR, n, d, npatterns = 1L) {
     .Call(`_modsem_completeLogLikLmsCpp`, modelR, P, quad, colidxR, n, d, npatterns)
 }
