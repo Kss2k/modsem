@@ -98,4 +98,4 @@ Example.C2.Model.3 <- '
 
 est_Model.C3 <- modsem(Example.C2.Model.3, data = Data_C2, method="dblcent", estimator="MLR")
 # method = dblcent, rca, uca, ca, pind
-summary(est_Model.C3, fit.measure=TRUE, standardized=TRUE, rsq=TRUE)
+summary(est_Model.C3, fit.measures=TRUE, standardized=TRUE, rsq=TRUE)
