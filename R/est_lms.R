@@ -486,7 +486,13 @@ emLms <- function(model,
 
         )
 
-      thetaNew <- mstep$par
+      if (!is.null(mstep$par) &&
+          length(mstep$par) == length(thetaOld) &&
+          all(is.finite(mstep$par))) {
+        thetaNew <- mstep$par
+      } else {
+        thetaNew <- thetaOld
+      }
     } # while
 
     if (verbose) cat("\n")
@@ -602,7 +608,7 @@ fischerScoring <- function(par,
     # conditioning & scaled jitter
     rc <- suppressWarnings(rcond(I))
     if (!is.finite(rc) || rc < 1e-10) {
-      jj <- fs.jitter.mult * max(1, max(diag(I), na.rm = TRUE))
+      jj <- jitter.mult * max(1, max(diag(I), na.rm = TRUE))
       diag(I) <- diag(I) + jj
     }
 

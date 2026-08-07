@@ -3,8 +3,7 @@ inspectDA_Matrices <- c("lambda", "theta", "wmat", "tmat",
 
 
 inspectDA_Optim <- c("coefficients.free", "vcov.free", "information",
-                     "loglik", "iterations", "convergence",
-                     "iteration.history")
+                     "loglik", "iterations", "convergence")
 
 
 modsem_inspect_da <- function(model,
@@ -206,7 +205,6 @@ modsem_inspect_da <- function(model,
      loglik            = model$logLik,
      iterations        = model$iterations,
      convergence       = model$convergence,
-     iteration.history = model$iteration.history,
      ovs               = ovs,
 
      ngroups     = model$model$info$n.groups,
@@ -243,6 +241,12 @@ modsem_inspect_da <- function(model,
      res.ov  = res.ov.val
   )
 
+  optim.fields <- inspectDA_Optim
+  if (!is.null(model$iteration.history)) {
+    info$iteration.history <- model$iteration.history
+    optim.fields <- c(optim.fields, "iteration.history")
+  }
+
   FIT <- \() {
     h0 <- estimate_h0(model, calc.se = FALSE)
     list(
@@ -264,7 +268,7 @@ modsem_inspect_da <- function(model,
       default   = info[names(info) != "data"],
       all       = info,
       matrices  = info[inspectDA_Matrices],
-      optim     = info[inspectDA_Optim],
+      optim     = info[optim.fields],
       fit       = FIT(),
       info[[what]]
     )
