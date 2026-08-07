@@ -35,20 +35,8 @@ computeFullIobs <- function(theta, model, P, louis = TRUE) {
 lmsIterationHistory <- function() {
   data.frame(
     iteration = integer(),
-    mode = character(),
-    logLik = numeric(),
-    deltaLL = numeric(),
-    relDeltaLL = numeric(),
-    expectedFinalLogLik = numeric(),
-    expectedConvergenceLogLik = numeric(),
-    expectedRemainingIterations = numeric(),
-    expectedRemainingGain = numeric(),
-    expectedGainPerIteration = numeric(),
-    expectedNextGain = numeric(),
-    gainDecay = numeric(),
-    gainModelN = integer(),
-    gainModelRSquared = numeric(),
-    forecastStatus = character()
+    expected.remaining.iterations = numeric(),
+    expected.final.loglik = numeric()
   )
 }
 
@@ -130,34 +118,24 @@ forecastLogLikLms <- function(history,
                               convergence.rel = 1e-10,
                               min.gains = 3L,
                               window = 10L) {
-  empty <- function(status, currentLL = NA_real_, currentGain = NA_real_) {
+  empty <- function() {
     data.frame(
-      currentLogLik = currentLL,
-      currentGain = currentGain,
-      expectedFinalLogLik = NA_real_,
-      expectedConvergenceLogLik = NA_real_,
-      expectedRemainingIterations = NA_real_,
-      expectedRemainingGain = NA_real_,
-      expectedGainPerIteration = NA_real_,
-      expectedNextGain = NA_real_,
-      gainDecay = NA_real_,
-      gainModelN = 0L,
-      gainModelRSquared = NA_real_,
-      forecastStatus = status
+      expected.remaining.iterations = NA_real_,
+      expected.final.loglik = NA_real_
     )
   }
 
   history <- normalizeLmsLogLikHistory(history)
-  if (!NROW(history)) return(empty("empty-history"))
+  if (!NROW(history)) return(empty())
 
   if (!is.null(i)) {
     history <- history[history$iteration <= i, , drop = FALSE]
-    if (!NROW(history)) return(empty("iteration-before-history"))
+    if (!NROW(history)) return(empty())
   }
 
   okLL <- is.finite(history$logLik)
   history <- history[okLL, , drop = FALSE]
-  if (!NROW(history)) return(empty("no-finite-loglik"))
+  if (!NROW(history)) return(empty())
 
   currentLL <- history$logLik[NROW(history)]
   currentGain <- history$deltaLL[NROW(history)]
@@ -167,8 +145,7 @@ forecastLogLikLms <- function(history,
   gain <- gain[okGain]
   gainIteration <- gainIteration[okGain]
 
-  if (length(gain) < min.gains)
-    return(empty("insufficient-positive-gains", currentLL, currentGain))
+  if (length(gain) < min.gains) return(empty())
 
   if (is.finite(window) && length(gain) > window) {
     keep <- seq.int(length(gain) - window + 1L, length(gain))
@@ -182,39 +159,18 @@ forecastLogLikLms <- function(history,
   slope <- unname(coefs[["iteration"]])
   intercept <- unname(coefs[["(Intercept)"]])
   decay <- exp(slope)
-  method <- "log-linear"
 
   if (!is.finite(decay) || decay <= 0 || decay >= 1) {
     ratios <- gain[-1L] / gain[-length(gain)]
     ratios <- ratios[is.finite(ratios) & ratios > 0 & ratios < 1]
-    if (!length(ratios)) {
-      out <- empty("nondecaying-gains", currentLL, currentGain)
-      out$gainModelN <- length(gain)
-      return(out)
-    }
+    if (!length(ratios)) return(empty())
     decay <- stats::median(ratios)
     expectedNextGain <- gain[[length(gain)]] * decay
-    rSquared <- NA_real_
-    method <- "ratio-median"
   } else {
     expectedNextGain <- exp(intercept + slope * (history$iteration[NROW(history)] + 1L))
-    fittedLogGain <- stats::fitted(fit)
-    residLogGain <- fitData$logGain - fittedLogGain
-    tssLogGain <- sum((fitData$logGain - mean(fitData$logGain))^2)
-    rSquared <- if (tssLogGain > 0) {
-      1 - sum(residLogGain^2) / tssLogGain
-    } else {
-      NA_real_
-    }
   }
 
-  if (!is.finite(expectedNextGain) || expectedNextGain < 0) {
-    out <- empty("invalid-next-gain", currentLL, currentGain)
-    out$gainDecay <- decay
-    out$gainModelN <- length(gain)
-    out$gainModelRSquared <- rSquared
-    return(out)
-  }
+  if (!is.finite(expectedNextGain) || expectedNextGain < 0) return(empty())
 
   decay <- max(0, min(decay, 1 - sqrt(.Machine$double.eps)))
   expectedRemainingGain <- if (decay == 0) expectedNextGain else expectedNextGain / (1 - decay)
@@ -226,61 +182,33 @@ forecastLogLikLms <- function(history,
 
   if (is.finite(currentAbsGain) && currentAbsGain < stopGain) {
     expectedRemainingIterations <- 0L
-    expectedConvergenceLogLik <- currentLL
   } else if (expectedNextGain <= stopGain || decay == 0) {
     expectedRemainingIterations <- 1L
-    expectedConvergenceLogLik <- currentLL + expectedNextGain
   } else {
     expectedRemainingIterations <- ceiling(log(stopGain / expectedNextGain) / log(decay) + 1)
-    expectedConvergenceGain <- expectedNextGain *
-      (1 - decay^expectedRemainingIterations) / (1 - decay)
-    expectedConvergenceLogLik <- currentLL + expectedConvergenceGain
-  }
-
-  expectedGainPerIteration <- if (expectedRemainingIterations > 0) {
-    (expectedConvergenceLogLik - currentLL) / expectedRemainingIterations
-  } else {
-    NA_real_
   }
 
   data.frame(
-    currentLogLik = currentLL,
-    currentGain = currentGain,
-    expectedFinalLogLik = expectedFinalLogLik,
-    expectedConvergenceLogLik = expectedConvergenceLogLik,
-    expectedRemainingIterations = expectedRemainingIterations,
-    expectedRemainingGain = expectedRemainingGain,
-    expectedGainPerIteration = expectedGainPerIteration,
-    expectedNextGain = expectedNextGain,
-    gainDecay = decay,
-    gainModelN = length(gain),
-    gainModelRSquared = rSquared,
-    forecastStatus = paste("ok", method, sep = ":")
+    expected.remaining.iterations = expectedRemainingIterations,
+    expected.final.loglik = expectedFinalLogLik
   )
 }
 
 
-appendLmsIterationHistory <- function(history, iteration, mode, logLik,
-                                      deltaLL, relDeltaLL,
-                                      convergence.abs, convergence.rel) {
-  row <- data.frame(
-    iteration = iteration,
-    mode = mode,
-    logLik = logLik,
-    deltaLL = deltaLL,
-    relDeltaLL = relDeltaLL
-  )
-  historyRaw <- rbind(history[c("iteration", "mode", "logLik", "deltaLL", "relDeltaLL")],
-                      row)
+appendLmsIterationHistory <- function(history, iteration, loglik.history,
+                                      convergence.abs, convergence.rel,
+                                      forecast.min.gains = 3L,
+                                      forecast.window = 10L) {
   forecast <- forecastLogLikLms(
-    history = historyRaw,
+    history = loglik.history,
     i = iteration,
     convergence.abs = convergence.abs,
-    convergence.rel = convergence.rel
+    convergence.rel = convergence.rel,
+    min.gains = forecast.min.gains,
+    window = forecast.window
   )
 
-  forecastCols <- !names(forecast) %in% c("currentLogLik", "currentGain")
-  rbind(history, cbind(row, forecast[forecastCols]))
+  rbind(history, cbind(iteration = iteration, forecast))
 }
 
 
@@ -307,30 +235,61 @@ emLms <- function(model,
                   adaptive.quad.tol = 1e-12,
                   nodes = 24,
                   cr1s = TRUE,
+                  ema.min.iter = 10L,
+                  ema.trend.min = 0,
+                  ema.forecast.min.gains = 3L,
+                  ema.forecast.window = 10L,
+                  qn.remaining.min = 10,
+                  qn.remaining.max = 200,
+                  fs.remaining.min = 200,
+                  fs.remaining.max = 500,
+                  fallback.max.step.min = 50,
+                  fallback.max.step.mult = 50,
+                  qn.maxit.start = 1L,
+                  qn.maxit.mult = 2,
+                  qn.maxit.max = 25L,
+                  fs.maxit.start = 1L,
                   ...) {
 
   algorithm <- toupper(match.arg(algorithm))
+  ema.min.iter <- as.integer(ema.min.iter)
+  ema.forecast.min.gains <- as.integer(ema.forecast.min.gains)
+  qn.maxit.start <- as.integer(qn.maxit.start)
+  qn.maxit.max <- as.integer(qn.maxit.max)
+  fs.maxit.start <- as.integer(fs.maxit.start)
+
+  mod_stopif(ema.min.iter < 2L, "`ema.min.iter` must be at least 2.")
+  mod_stopif(ema.forecast.min.gains < 2L, "`ema.forecast.min.gains` must be at least 2.")
+  mod_stopif(ema.forecast.window < ema.forecast.min.gains,
+             "`ema.forecast.window` must be at least `ema.forecast.min.gains`.")
+  mod_stopif(qn.remaining.min >= qn.remaining.max,
+             "`qn.remaining.min` must be smaller than `qn.remaining.max`.")
+  mod_stopif(fs.remaining.min >= fs.remaining.max,
+             "`fs.remaining.min` must be smaller than `fs.remaining.max`.")
+  mod_stopif(qn.maxit.start < 1L || qn.maxit.max < qn.maxit.start,
+             "`qn.maxit.max` must be at least `qn.maxit.start`.")
+  mod_stopif(qn.maxit.mult < 1, "`qn.maxit.mult` must be at least 1.")
+  mod_stopif(fs.maxit.start < 1L, "`fs.maxit.start` must be at least 1.")
+
   history <- lmsIterationHistory()
+  loglik.history <- numeric()
 
   theta.lower  <- model$params$bounds$lower
   theta.upper  <- model$params$bounds$upper
-  bounds.all   <- c(theta.lower, theta.upper)
 
-  maxIterFS <- 1L
-  maxIterQN <- 1L
+  max.iter.fs <- fs.maxit.start
+  max.iter.qn <- qn.maxit.start
 
   tryCatch({
     logLikNew <- -Inf
     logLikOld <- -Inf
     thetaNew  <- model$theta
-    direction <- NULL
 
     lastQuad     <- NULL
     adaptiveQuad <- model$models[[1L]]$quad$adaptive # fixed across groups
     adaptiveFreq <- model$models[[1L]]$quad$adaptive.frequency
 
-    nEM_Iter   <- 0
-    nEM_Switch <- 5
+    n.em.iter  <- 0
     mode       <- "EM"
     iterations <- 0L
     run        <- TRUE
@@ -342,7 +301,7 @@ emLms <- function(model,
       logLikOld  <- logLikNew
       thetaOld   <- thetaNew
       recalcQuad <- adaptiveQuad && iterations %% adaptiveFreq == 0L
-      tmpMaxStep <- 0L
+      tmp.max.step <- 0L
 
       mod_stopif(any(!is.finite(thetaOld)),
         "Missing/Non finite values in estimated parameters at iteration",
@@ -377,18 +336,18 @@ emLms <- function(model,
       logLikNew  <- P$obsLL
       deltaLL    <- logLikNew - logLikOld
       relDeltaLL <- if (is.finite(logLikOld)) deltaLL / abs(logLikOld) else Inf
+      loglik.history <- c(loglik.history, logLikNew)
 
       updateStatusLog(iterations, mode, logLikNew, deltaLL, relDeltaLL, verbose)
 
       history <- appendLmsIterationHistory(
         history         = history,
         iteration       = iterations,
-        mode            = mode,
-        logLik          = logLikNew,
-        deltaLL         = deltaLL,
-        relDeltaLL      = relDeltaLL,
+        loglik.history  = loglik.history,
         convergence.abs = convergence.abs,
-        convergence.rel = convergence.rel
+        convergence.rel = convergence.rel,
+        forecast.min.gains = ema.forecast.min.gains,
+        forecast.window = ema.forecast.window
       )
 
       converged <- (abs(deltaLL) < convergence.abs) ||
@@ -404,26 +363,26 @@ emLms <- function(model,
 
       if (mode != "EM") { # switch back to EM
         mode <- "EM"
-        nEM_Iter <- 0
-      } else nEM_Iter <- nEM_Iter + 1L
+        n.em.iter <- 0
+      } else n.em.iter <- n.em.iter + 1L
 
       # EMA controller
-      if (algorithm == "EMA" & nEM_Iter > nEM_Switch) {
-        previousMode <- mode
-
+      if (algorithm == "EMA" && n.em.iter > ema.min.iter) {
         # Check if expected number of iterations is increasing
-        change <- diff(tail(history$expectedRemainingIterations, nEM_Switch))
+        change <- diff(tail(history$expected.remaining.iterations, ema.min.iter))
        
-        if (all(is.finite(change)) && mean(change) > 0) {
-          remaining <- tail(history$expectedRemainingIterations, 1)
+        if (all(is.finite(change)) && mean(change) > ema.trend.min) {
+          remaining <- tail(history$expected.remaining.iterations, 1L)[[1L]]
 
           # Increase the max step in case remaining > 500 or 
           # QN/FS fails, and we fall back to an EM step
-          tmpMaxStep <- max(50, 50 * max.step, na.rm = TRUE)
+          tmp.max.step <- max(fallback.max.step.min,
+                            fallback.max.step.mult * max.step,
+                            na.rm = TRUE)
 
-          if (remaining > 200 && remaining <= 500) {
+          if (remaining > fs.remaining.min && remaining <= fs.remaining.max) {
             mode <- "FS"
-          } else if (remaining < 200) {
+          } else if (remaining > qn.remaining.min && remaining <= qn.remaining.max) {
             mode <- "QN"
           }
 
@@ -469,7 +428,7 @@ emLms <- function(model,
           model = model,
           P = P,
           theta = thetaOld,
-          max.step = max(max.step, tmpMaxStep, na.rm = TRUE),
+          max.step = max(max.step, tmp.max.step, na.rm = TRUE),
           epsilon = epsilon,
           optimizer = optimizer,
           control = control,
@@ -484,7 +443,7 @@ emLms <- function(model,
             model = model,
             P = P,
             theta = thetaOld,
-            max.step = max(max.step, tmpMaxStep, na.rm = TRUE),
+            max.step = max(max.step, tmp.max.step, na.rm = TRUE),
             epsilon = epsilon,
             optimizer = optimizer,
             control = control,
@@ -502,12 +461,12 @@ emLms <- function(model,
               gr = .obsgr,
               lower = theta.lower,
               upper = theta.upper,
-              control = list(maxit = maxIterQN),
+              control = list(maxit = max.iter.qn),
               method = "L-BFGS-B"
             )
           }, error = .error)
 
-          maxIterQN <- 2 * maxIterQN
+          max.iter.qn <- min(qn.maxit.max, qn.maxit.mult * max.iter.qn)
         },
 
         FS = {
@@ -520,7 +479,7 @@ emLms <- function(model,
               hs = .obshs,
               lower = theta.lower,
               upper = theta.upper,
-              max.iter = maxIterFS
+              max.iter = max.iter.fs
             )
           }, error = .error)
         }

@@ -717,7 +717,7 @@ var_interactions.modsem_da <- function(object, ...) {
 #'   \item{\code{"loglik"}}{Log-likelihood.}
 #'   \item{\code{"iterations"}}{Optimiser iteration count.}
 #'   \item{\code{"convergence"}}{\code{TRUE}/\code{FALSE} indicating whether the model converged.}
-#'   \item{\code{"iteration.history"}}{LMS iteration log-likelihood history and convergence forecast diagnostics, if available.}
+#'   \item{\code{"iteration.history"}}{LMS forecast history with expected remaining iterations and expected final log-likelihood, if available.}
 #' }
 #'
 #' \strong{Parameter tables:}
