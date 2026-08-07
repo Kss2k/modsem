@@ -336,6 +336,7 @@ emLms <- function(model,
   }
   qn.factr <- if (is.null(qn.factr)) default.optim.factr else qn.factr
   ema.final.qn.factr <- if (is.null(ema.final.qn.factr)) qn.factr else ema.final.qn.factr
+  do.final.qn <- isTRUE(ema.final.qn) && isTRUE(model$info$has.interaction)
 
   history <- lmsIterationHistory()
   loglik.history <- numeric()
@@ -431,8 +432,7 @@ emLms <- function(model,
       run.final.qn <- FALSE
 
       if (iterations >= max.iter) break
-      if (algorithm == "EMA" && isTRUE(ema.final.qn) &&
-          ema.final.phase == "qn") {
+      if (algorithm == "EMA" && do.final.qn && ema.final.phase == "qn") {
         if (converged || ema.final.qn.rounds >= ema.final.qn.rounds.max) {
           ema.final.phase <- "em"
         } else {
@@ -440,8 +440,7 @@ emLms <- function(model,
         }
 
       } else if (converged.em) {
-        if (algorithm == "EMA" && isTRUE(ema.final.qn) &&
-            ema.final.phase == "none") {
+        if (algorithm == "EMA" && do.final.qn && ema.final.phase == "none") {
           ema.final.phase <- "qn"
           run.final.qn <- TRUE
         } else {
