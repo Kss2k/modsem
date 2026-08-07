@@ -241,6 +241,12 @@ modsem_inspect_da <- function(model,
      res.ov  = res.ov.val
   )
 
+  optim.fields <- inspectDA_Optim
+  if (!is.null(model$iteration.history)) {
+    info$iteration.history <- model$iteration.history
+    optim.fields <- c(optim.fields, "iteration.history")
+  }
+
   FIT <- \() {
     h0 <- estimate_h0(model, calc.se = FALSE)
     list(
@@ -262,7 +268,7 @@ modsem_inspect_da <- function(model,
       default   = info[names(info) != "data"],
       all       = info,
       matrices  = info[inspectDA_Matrices],
-      optim     = info[inspectDA_Optim],
+      optim     = info[optim.fields],
       fit       = FIT(),
       info[[what]]
     )

@@ -27,11 +27,13 @@ m1 <- '
 lms.no.opt <- modsem(m1, oneInt, method = "lms",
                      optimize = FALSE,
                      standardize.data = TRUE,
-                     mean.observed = FALSE)
+                     mean.observed = FALSE,
+                     convergence.abs = 1e-8)
 lms.opt <- modsem(m1, oneInt, method = "lms",
                   optimize = TRUE,
                   standardize.data = TRUE,
-                  mean.observed = FALSE)
+                  mean.observed = FALSE,
+                  convergence.abs = 1e-8)
 
 testthat::expect_equal(coef(lms.no.opt),
                        coef(lms.opt), tol = 2e-4)
@@ -73,10 +75,12 @@ m2 <- '
 
 lms.no.opt <- modsem(m2, oneInt, method = "lms",
                      optimize = FALSE,
-                     standardize.data = TRUE)
+                     standardize.data = TRUE,
+                     convergence.abs = 1e-8)
 lms.opt <- modsem(m2, oneInt, method = "lms",
                   optimize = TRUE,
-                  standardize.data = TRUE)
+                  standardize.data = TRUE,
+                  convergence.abs = 1e-8)
 
 testthat::expect_equal(coef(lms.no.opt),
                        coef(lms.opt), tol = 3e-4)
