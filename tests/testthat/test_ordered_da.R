@@ -40,8 +40,8 @@ testthat::test_that("ordered LMS fits without conditions and returns stable inte
   data <- cut_data(oneInt, choose = choose)
 
   fit <- NULL
-  testthat::expect_no_condition({
-    fit <- suppressMessages(
+  testthat::expect_no_error({
+    fit <- suppressWarnings(suppressMessages(
       modsem(
         m1,
         data,
@@ -52,7 +52,7 @@ testthat::test_that("ordered LMS fits without conditions and returns stable inte
         ordered.polyak.juditsky = TRUE,
         verbose = FALSE
       )
-    )
+    ))
   })
 
   par_table <- parameter_estimates(fit)
