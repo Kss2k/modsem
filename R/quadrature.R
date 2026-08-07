@@ -207,7 +207,7 @@ adaptiveGaussQuadratureK <- function(fun,
   mod_warnif_immediate(
     iter >= iter.max,
     paste0("Max iterations reached fitting quasi-adaptive quadrature...\n",
-           sprintf("Iter %d, total: %d, target: %d, kept: %d, discarded: %d",
+           sprintf("Iter: %d, total: %d, target: %d, kept: %d, discarded: %d",
                    iter, m.ceil, m, NROW(quadn), m.ceil - NROW(quadn))),
     .newline = TRUE
   )

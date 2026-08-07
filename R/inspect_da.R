@@ -3,7 +3,8 @@ inspectDA_Matrices <- c("lambda", "theta", "wmat", "tmat",
 
 
 inspectDA_Optim <- c("coefficients.free", "vcov.free", "information",
-                     "loglik", "iterations", "convergence")
+                     "loglik", "iterations", "convergence",
+                     "iteration.history")
 
 
 modsem_inspect_da <- function(model,
@@ -205,6 +206,7 @@ modsem_inspect_da <- function(model,
      loglik            = model$logLik,
      iterations        = model$iterations,
      convergence       = model$convergence,
+     iteration.history = model$iteration.history,
      ovs               = ovs,
 
      ngroups     = model$model$info$n.groups,
