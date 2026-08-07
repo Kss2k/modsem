@@ -61,7 +61,7 @@ adaptiveGaussQuadrature <- function(fun,
                                     m.ceil = m + m / 2,
                                     k = 1,
                                     iter.max = 10,
-                                    node.max = 1000,
+                                    node.max = 500,
                                     tol = 1e-12,
                                     mdiff.tol = 2,
                                     secondary.pruning = TRUE,
@@ -105,9 +105,14 @@ adaptiveGaussQuadrature <- function(fun,
     new.ceils[[i]] <- QUAD$m.ceil
   }
 
-  quadn <- do.call(expand.grid, NODES) |> as.matrix()
+  quadn <- as.matrix(do.call(expand.grid, NODES))
   quadw <- Reduce(kronecker, rev(WEIGHTS))
   quadf <- fun(quadn, ...)
+  weighted <- sweep(quadf, 2, quadw, "*")
+  integral <- quadratureLogLik(weighted)
+  error <- 0
+  error.abs <- 0
+  error.rel <- 0
 
   if (secondary.pruning) {
     pruned <- pruneQuadratureNodes(
@@ -115,15 +120,25 @@ adaptiveGaussQuadrature <- function(fun,
       a = a, b = b, tol = tol
     )
 
-    quadw  <- pruned$quadw
-    quadn  <- pruned$quadn
-    quadf  <- pruned$quadf
+    quadw     <- pruned$quadw
+    quadn     <- pruned$quadn
+    quadf     <- pruned$quadf
+    integral  <- pruned$I.cur
+    error     <- pruned$I.err
+    error.abs <- pruned$I.err.abs
+    error.rel <- pruned$I.err.rel
   }
 
-  list(n = quadn,
-       w = quadw,
-       F = quadf,
-       m.ceil = new.ceils)
+  list(
+    n = quadn,
+    w = quadw,
+    F = quadf,
+    m.ceil = new.ceils,
+    error = error,
+    error.abs = error.abs,
+    error.rel = error.rel,
+    integral = integral
+  )
 }
 
 
@@ -136,7 +151,7 @@ adaptiveGaussQuadratureK <- function(fun,
                                      K = 1,
                                      iter = 1,
                                      iter.max = 10,
-                                     node.max = 1000,
+                                     node.max = 500,
                                      tol = 1e-12,
                                      mdiff.tol = 2,
                                      ...) {
@@ -161,12 +176,14 @@ adaptiveGaussQuadratureK <- function(fun,
     a = a, b = b, tol = tol
   )
 
-  quadw  <- pruned$quadw
-  quadn  <- pruned$quadn
-  quadf  <- pruned$quadf
-  I.err  <- pruned$I.err
-  I.full <- pruned$I.full
-  I.cur  <- pruned$I.cur
+  quadw     <- pruned$quadw
+  quadn     <- pruned$quadn
+  quadf     <- pruned$quadf
+  I.err     <- pruned$I.err
+  I.full    <- pruned$I.full
+  I.cur     <- pruned$I.cur
+  I.err.abs <- pruned$I.err.abs
+  I.err.rel <- pruned$I.err.rel
 
   lower <- min(quadn)
   upper <- max(quadn)
@@ -212,16 +229,20 @@ adaptiveGaussQuadratureK <- function(fun,
     .newline = TRUE
   )
 
-  list(n = quadn,
-       w = quadw,
-       F = quadf,
-       k = k,
-       m = nrow(quadn) ^ (1 / k),
+  list(
+    n = quadn,
+    w = quadw,
+    F = quadf,
+    k = k,
+    m = nrow(quadn) ^ (1 / k),
 
-       m.ceil   = m.ceil,
-       iter     = iter,
-       error    = I.err,
-       integral = I.cur)
+    m.ceil   = m.ceil,
+    iter     = iter,
+    error    = I.err,
+    error.abs = I.err.abs,
+    error.rel = I.err.rel,
+    integral = I.cur
+  )
 }
 
 
@@ -298,6 +319,24 @@ estMForNodesInRange <- function(k, a, b,
 }
 
 
+quadratureLogLik <- function(weighted) {
+  rs <- rowSums(weighted)
+
+  mod_warnif(any(rs < 0), "Found negative quadrature node contributions, this is likely a bug!")
+
+  rs.safe <- pmax(rs, .Machine$double.xmin)
+  sum(log(rs.safe))
+}
+
+
+quadratureRelativeError <- function(error, reference) {
+  if (!is.finite(reference) || reference == 0)
+    return(NA_real_)
+
+  abs(error) / abs(reference)
+}
+
+
 pruneQuadratureNodes <- function(quadw, quadn, quadf, a, b, tol) {
   mod_stopif(!is.numeric(quadw), "`quadw` must be numeric.")
 
@@ -310,6 +349,8 @@ pruneQuadratureNodes <- function(quadw, quadn, quadf, a, b, tol) {
 
   # precompute weighted information to drop empty nodes early
   weighted <- sweep(quadf, 2, weight_vec, "*")
+  I.full <- quadratureLogLik(weighted)
+
   zeroInfoNodes <- colSums(weighted) <= .Machine$double.xmin
 
   lower_vec <- rep(a, length.out = NCOL(quadn))
@@ -329,44 +370,41 @@ pruneQuadratureNodes <- function(quadw, quadn, quadf, a, b, tol) {
   rs <- rowSums(weighted)
 
   # guard against log(0) / division by 0
-  mod_warnif(any(rs < 0), "Found negative quadrature node contributions, this is likely a bug!")
   rs.safe <- pmax(rs, .Machine$double.xmin)
-
-  I.full <- sum(log(rs.safe))
 
   # B[j,i] = log1p( - A[j,i] / rs[j] )
   B <- log1p(-sweep(weighted, 1, rs.safe, "/"))
-  I.subvec <- I.full + colSums(B)
+  I.base <- quadratureLogLik(weighted)
+  I.subvec <- I.base + colSums(B)
 
-  contributions <- abs(abs(I.subvec) - abs(I.full))
+  contributions <- abs(abs(I.subvec) - abs(I.base))
 
   # identify nodes trivially safe to remove
   contrib.rank <- order(abs(contributions))
   cumulative   <- cumsum(contributions[contrib.rank])
-  is.removable <- abs(cumulative) < tol * abs(I.full)
+  is.removable <- abs(cumulative) < tol * abs(I.base)
 
   # reverse ordering of is.removable
   is.removable <- is.removable[order(contrib.rank)]
   removable    <- which(is.removable)
 
-  mod_warnif(sum(contributions[removable]) > tol * abs(I.full),
+  mod_warnif(sum(contributions[removable]) > tol * abs(I.base),
          paste0("Something went wrong when pruning nodes:\n",
          "More information than expected was lost!\n"), .newline = TRUE)
 
   mod_stopif(length(removable) >= NROW(quadn), "Cannot remove all nodes!")
-
-  I.cur <- I.full
-  I.err <- 0
 
   if (length(removable) > 0) {
     quadn <- quadn[-removable, , drop = FALSE]
     quadf <- quadf[, -removable, drop = FALSE]
     weighted <- weighted[, -removable, drop = FALSE]
     weight_vec <- weight_vec[-removable]
-
-    I.cur  <- I.full - sum(contributions[removable])
-    I.err  <- I.full - I.cur
   }
+
+  I.cur <- quadratureLogLik(weighted)
+  I.err <- I.full - I.cur
+  I.err.abs <- abs(I.err)
+  I.err.rel <- quadratureRelativeError(I.err, I.full)
 
   n.output  <- NROW(quadn)
   n.removed <- n.input - n.output
@@ -378,6 +416,8 @@ pruneQuadratureNodes <- function(quadw, quadn, quadf, a, b, tol) {
     I.full  = I.full,
     I.cur   = I.cur,
     I.err   = I.err,
+    I.err.abs = I.err.abs,
+    I.err.rel = I.err.rel,
     n.in    = n.input,
     n.out   = n.output,
     n.rm    = n.removed

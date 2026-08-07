@@ -18,8 +18,26 @@ estepLms <- function(model, theta, lastQuad = NULL, recalcQuad = FALSE,
     )
   }
 
-  P$quad  <- lapply(P$P_GROUPS, FUN = \(P) P$quad)
-  P$obsLL <- sum(vapply(P$P_GROUPS, FUN.VALUE = numeric(1L), FUN = \(P) P$obsLL))
+  P$quad.err <- sum(vapply(
+    X = P$P_GROUPS,
+    FUN.VALUE = numeric(1L),
+    FUN = function(P) {
+      err <- P$quad$error.abs
+      if (!length(err) || !is.finite(err[[1L]])) return(0.0)
+      abs(err[[1L]])
+    }
+  ))
+
+  P$quad  <- lapply(
+    X = P$P_GROUPS,
+    FUN = \(P) P$quad
+  )
+
+  P$obsLL <- sum(vapply(
+    X = P$P_GROUPS,
+    FUN.VALUE = numeric(1L),
+    FUN = \(P) P$obsLL
+  ))
 
   P
 }
@@ -79,13 +97,11 @@ estepLmsGroup <- function(submodel, lastQuad = NULL, recalcQuad = FALSE,
     P    <- sweep(densityVals, MARGIN = 2, STATS = w, FUN = "*")
   }
 
-  density        <- rowSums(P)
-  observedLogLik <- if (is.null(sampling.weights)) {
-    sum(log(density))
-  } else {
-    sum(sampling.weights * log(density))
-  }
-  P              <- P / density
+  density <- rowSums(P)
+  P <- P / density
+  if (is.null(sampling.weights)) observedLogLik <- sum(log(density))
+  else observedLogLik <- sum(sampling.weights * log(density))
+
 
   # Sampling weights multiply each observation's log likelihood and posterior
   # contribution; they must not alter the posterior node probabilities.

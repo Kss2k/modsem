@@ -248,6 +248,12 @@ emLms <- function(model,
                   qn.maxit.start = 1L,
                   qn.maxit.mult = 2,
                   qn.maxit.max = 25L,
+                  qn.factr = NULL,
+                  qn.pgtol = 0,
+                  ema.final.qn = TRUE,
+                  ema.final.qn.maxit = qn.maxit.max,
+                  ema.final.qn.factr = qn.factr,
+                  ema.final.qn.rounds.max = 25L,
                   fs.maxit.start = 1L,
                   ...) {
 
@@ -256,6 +262,8 @@ emLms <- function(model,
   ema.forecast.min.gains <- as.integer(ema.forecast.min.gains)
   qn.maxit.start <- as.integer(qn.maxit.start)
   qn.maxit.max <- as.integer(qn.maxit.max)
+  ema.final.qn.maxit <- as.integer(ema.final.qn.maxit)
+  ema.final.qn.rounds.max <- as.integer(ema.final.qn.rounds.max)
   fs.maxit.start <- as.integer(fs.maxit.start)
 
   mod_stopif(ema.min.iter < 2L, "`ema.min.iter` must be at least 2.")
@@ -269,7 +277,22 @@ emLms <- function(model,
   mod_stopif(qn.maxit.start < 1L || qn.maxit.max < qn.maxit.start,
              "`qn.maxit.max` must be at least `qn.maxit.start`.")
   mod_stopif(qn.maxit.mult < 1, "`qn.maxit.mult` must be at least 1.")
+  mod_stopif(!is.null(qn.factr) && qn.factr <= 0, "`qn.factr` must be positive.")
+  mod_stopif(!is.null(ema.final.qn.factr) && ema.final.qn.factr <= 0,
+             "`ema.final.qn.factr` must be positive.")
+  mod_stopif(!is.null(qn.pgtol) && qn.pgtol < 0, "`qn.pgtol` must be non-negative.")
+  mod_stopif(ema.final.qn.maxit < 1L, "`ema.final.qn.maxit` must be at least 1.")
+  mod_stopif(ema.final.qn.rounds.max < 1L,
+             "`ema.final.qn.rounds.max` must be at least 1.")
   mod_stopif(fs.maxit.start < 1L, "`fs.maxit.start` must be at least 1.")
+
+  default.optim.factr <- if (is.finite(convergence.rel) && convergence.rel > 0) {
+    max(1, convergence.rel / .Machine$double.eps)
+  } else {
+    NULL
+  }
+  qn.factr <- if (is.null(qn.factr)) default.optim.factr else qn.factr
+  ema.final.qn.factr <- if (is.null(ema.final.qn.factr)) qn.factr else ema.final.qn.factr
 
   history <- lmsIterationHistory()
   loglik.history <- numeric()
@@ -293,6 +316,8 @@ emLms <- function(model,
     mode       <- "EM"
     iterations <- 0L
     run        <- TRUE
+    ema.final.phase <- "none"
+    ema.final.qn.rounds <- 0L
 
     testSimpleGradient <- !model$params$gradientStruct$useFDGradient
 
@@ -353,10 +378,30 @@ emLms <- function(model,
       converged <- (abs(deltaLL) < convergence.abs) ||
                    (abs(relDeltaLL) < convergence.rel)
       converged.em <- converged && mode == "EM"
+      run.final.qn <- FALSE
 
-      if (iterations >= max.iter || converged.em) break
+      if (iterations >= max.iter) break
+      if (algorithm == "EMA" && isTRUE(ema.final.qn) &&
+          ema.final.phase == "qn") {
+        if (converged || ema.final.qn.rounds >= ema.final.qn.rounds.max) {
+          ema.final.phase <- "em"
+        } else {
+          run.final.qn <- TRUE
+        }
 
-      if (deltaLL < -1e-8) {
+      } else if (converged.em) {
+        if (algorithm == "EMA" && isTRUE(ema.final.qn) &&
+            ema.final.phase == "none") {
+          ema.final.phase <- "qn"
+          run.final.qn <- TRUE
+        } else {
+          break
+        }
+      }
+
+      # If quadrature has just been recalculated, we should be less strict
+      quad.err <- as.integer(recalcQuad) * P$quad.err
+      if (deltaLL < -max(1e-8, quad.err, na.rm = TRUE)) {
         if (verbose) cat("\n")
         mod_msg_warn_immediate(sprintf("Loglikelihood decreased by %.2g", deltaLL))
       }
@@ -367,7 +412,14 @@ emLms <- function(model,
       } else n.em.iter <- n.em.iter + 1L
 
       # EMA controller
-      if (algorithm == "EMA" && n.em.iter > ema.min.iter) {
+      if (run.final.qn) {
+        mode <- "QN"
+        updateStatusLog(iterations, mode, logLikNew, deltaLL, relDeltaLL, verbose)
+
+      } else if (ema.final.phase == "em") {
+        mode <- "EM"
+
+      } else if (algorithm == "EMA" && n.em.iter > ema.min.iter) {
         # Check if expected number of iterations is increasing
         change <- diff(tail(history$expected.remaining.iterations, ema.min.iter))
        
@@ -455,18 +507,33 @@ emLms <- function(model,
         QN = {
           # Quasi Newton
           mstep <- tryCatch({
+            qn.control <- list(maxit = max.iter.qn)
+            if (!is.null(qn.factr)) qn.control$factr <- qn.factr
+            if (!is.null(qn.pgtol)) qn.control$pgtol <- qn.pgtol
+
+            if (ema.final.phase == "qn") {
+              qn.control$maxit <- ema.final.qn.maxit
+              if (!is.null(ema.final.qn.factr)) {
+                qn.control$factr <- ema.final.qn.factr
+              }
+            }
+
             optim(
               par = thetaOld,
               fn = .obsfn,
               gr = .obsgr,
               lower = theta.lower,
               upper = theta.upper,
-              control = list(maxit = max.iter.qn),
+              control = qn.control,
               method = "L-BFGS-B"
             )
           }, error = .error)
 
-          max.iter.qn <- min(qn.maxit.max, qn.maxit.mult * max.iter.qn)
+          if (ema.final.phase == "qn") {
+            ema.final.qn.rounds <- ema.final.qn.rounds + 1L
+          } else {
+            max.iter.qn <- min(qn.maxit.max, qn.maxit.mult * max.iter.qn)
+          }
         },
 
         FS = {
