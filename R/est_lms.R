@@ -35,6 +35,11 @@ computeFullIobs <- function(theta, model, P, louis = TRUE) {
 lmsIterationHistory <- function() {
   data.frame(
     iteration = integer(),
+    mode = character(),
+    loglik = numeric(),
+    abs.change = numeric(),
+    rel.change = numeric(),
+    elapsed.time = numeric(),
     expected.remaining.iterations = numeric(),
     expected.final.loglik = numeric()
   )
@@ -198,7 +203,12 @@ forecastLogLikLms <- function(history,
 appendLmsIterationHistory <- function(history, iteration, loglik.history,
                                       convergence.abs, convergence.rel,
                                       forecast.min.gains = 3L,
-                                      forecast.window = 10L) {
+                                      forecast.window = 10L,
+                                      mode = NA_character_,
+                                      loglik = NULL,
+                                      abs.change = NULL,
+                                      rel.change = NULL,
+                                      elapsed.time = NA_real_) {
   forecast <- forecastLogLikLms(
     history = loglik.history,
     i = iteration,
@@ -208,7 +218,40 @@ appendLmsIterationHistory <- function(history, iteration, loglik.history,
     window = forecast.window
   )
 
-  rbind(history, cbind(iteration = iteration, forecast))
+  history.normalized <- normalizeLmsLogLikHistory(loglik.history)
+
+  if (is.null(loglik)) {
+    loglik <- if (NROW(history.normalized)) {
+      history.normalized$logLik[[NROW(history.normalized)]]
+    } else {
+      NA_real_
+    }
+  }
+  if (is.null(abs.change)) {
+    abs.change <- if (NROW(history.normalized)) {
+      abs(history.normalized$deltaLL[[NROW(history.normalized)]])
+    } else {
+      NA_real_
+    }
+  }
+  if (is.null(rel.change)) {
+    rel.change <- if (NROW(history.normalized)) {
+      abs(history.normalized$relDeltaLL[[NROW(history.normalized)]])
+    } else {
+      NA_real_
+    }
+  }
+
+  row <- data.frame(
+    iteration = iteration,
+    mode = as.character(mode),
+    loglik = as.numeric(loglik),
+    abs.change = as.numeric(abs.change),
+    rel.change = as.numeric(rel.change),
+    elapsed.time = as.numeric(elapsed.time)
+  )
+
+  rbind(history, cbind(row, forecast))
 }
 
 
@@ -321,6 +364,8 @@ emLms <- function(model,
 
     testSimpleGradient <- !model$params$gradientStruct$useFDGradient
 
+    history.start.time <- proc.time()[["elapsed"]]
+
     while (run) {
       iterations <- iterations + 1L
       logLikOld  <- logLikNew
@@ -372,7 +417,12 @@ emLms <- function(model,
         convergence.abs = convergence.abs,
         convergence.rel = convergence.rel,
         forecast.min.gains = ema.forecast.min.gains,
-        forecast.window = ema.forecast.window
+        forecast.window = ema.forecast.window,
+        mode            = mode,
+        loglik          = logLikNew,
+        abs.change      = abs(deltaLL),
+        rel.change      = abs(relDeltaLL),
+        elapsed.time    = proc.time()[["elapsed"]] - history.start.time
       )
 
       converged <- (abs(deltaLL) < convergence.abs) ||
