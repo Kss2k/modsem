@@ -315,7 +315,8 @@ lmsGraphAdaptiveRule <- function(submodel, previous = NULL,
                                  mode.max.iter = 25L,
                                  curvature.floor = 1e-6,
                                  derivative.step = 1e-4,
-                                 max.nodes = 1e6) {
+                                 max.nodes = 1e6,
+                                 workspace = NULL) {
   link <- match.arg(link)
   dimension <- submodel$info$numXis + submodel$info$numEtas
   if (!dimension) return(lmsGraphBaseRule(submodel, max.nodes))
@@ -341,7 +342,8 @@ lmsGraphAdaptiveRule <- function(submodel, previous = NULL,
     submodel$info$numXis, submodel$info$numEtas,
     submodel$data$data.split, submodel$data$colidx0, ordered,
     identical(link, "logit"), mode.max.iter, tolerance,
-    curvature.floor, derivative.step
+    curvature.floor, derivative.step, ThreadEnv$n.threads %||% 1L,
+    workspace
   )
   failed <- sum(compiled$convergence != 0L)
   adjusted <- sum(compiled$curvatureAdjusted != 0L)
@@ -369,11 +371,12 @@ lmsGraphAdaptiveRule <- function(submodel, previous = NULL,
 
 lmsGraphRule <- function(submodel, previous = NULL,
                          link = c("logit", "probit"),
-                         tolerance = 1e-8, max.nodes = 1e6) {
+                         tolerance = 1e-8, max.nodes = 1e6,
+                         workspace = NULL) {
   link <- match.arg(link)
   if (isTRUE(submodel$quad$adaptive))
     lmsGraphAdaptiveRule(submodel, previous, link, tolerance,
-                         max.nodes = max.nodes)
+                         max.nodes = max.nodes, workspace = workspace)
   else
     lmsGraphBaseRule(submodel, max.nodes)
 }
@@ -389,7 +392,18 @@ lmsGraphStates <- function(submodel, nodes) {
 }
 
 
-lmsGraphLogKernel <- function(submodel, nodes, link = c("logit", "probit")) {
+lmsGraphWorkspace <- function(submodel) {
+  M <- submodel$matrices
+  ordered <- match(submodel$info$ordered %||% character(),
+                   rownames(M$lambdaX)) - 1L
+  ordered <- ordered[!is.na(ordered)]
+  lmsGraphWorkspaceCpp(submodel$data$data.split, submodel$data$colidx0,
+                       ordered)
+}
+
+
+lmsGraphLogKernel <- function(submodel, nodes, link = c("logit", "probit"),
+                              workspace = NULL) {
   link <- match.arg(link)
   lmsGraphValidate(submodel)
   M <- submodel$matrices
@@ -398,11 +412,10 @@ lmsGraphLogKernel <- function(submodel, nodes, link = c("logit", "probit")) {
     M$thresholds <- matrix(NaN, NROW(M$lambdaX), 0L)
   ordered <- match(submodel$info$ordered %||% character(), rownames(M$lambdaX)) - 1L
   ordered <- ordered[!is.na(ordered)]
-  lmsGraphLogKernelCpp(
-    M, nodes, submodel$info$numXis, submodel$info$numEtas,
-    data$data.split, data$colidx0, ordered, identical(link, "logit"),
-    ThreadEnv$n.threads %||% 1L
-  )
+  if (is.null(workspace)) workspace <- lmsGraphWorkspace(submodel)
+  lmsGraphLogKernelWorkspaceCpp(
+    M, nodes, submodel$info$numXis, submodel$info$numEtas, workspace,
+    identical(link, "logit"), ThreadEnv$n.threads %||% 1L)
 }
 
 
@@ -423,20 +436,18 @@ pstepLmsGraph <- function(model, theta, lastQuad = NULL, recalcQuad = FALSE,
     submodel <- filled$models[[g]]
     submodel$quad <- model$models[[g]]$quad
     previous <- if (!is.null(lastQuad)) lastQuad[[g]] else NULL
+    workspace <- previous$workspace %||% lmsGraphWorkspace(submodel)
     rule <- if (!is.null(previous) && !recalcQuad) previous else
       lmsGraphRule(submodel, previous = previous, link = link,
-                   tolerance = adaptive.quad.tol)
+                   tolerance = adaptive.quad.tol, workspace = workspace)
+    rule$workspace <- workspace
     sampling.weights <- submodel$data$weights
     if (is.null(sampling.weights)) sampling.weights <- rep(1, submodel$data$n)
     M <- submodel$matrices
     if (is.null(M$thresholds))
       M$thresholds <- matrix(NaN, NROW(M$lambdaX), 0L)
-    ordered <- match(submodel$info$ordered %||% character(),
-                     rownames(M$lambdaX)) - 1L
-    ordered <- ordered[!is.na(ordered)]
-    aggregate <- lmsGraphPstepCpp(
-      M, rule$n, submodel$info$numXis, submodel$info$numEtas,
-      submodel$data$data.split, submodel$data$colidx0, ordered,
+    aggregate <- lmsGraphPstepWorkspaceCpp(
+      M, rule$n, submodel$info$numXis, submodel$info$numEtas, workspace,
       rule$w, sampling.weights, identical(link, "logit"),
       ThreadEnv$n.threads %||% 1L
     )
@@ -449,7 +460,8 @@ pstepLmsGraph <- function(model, theta, lastQuad = NULL, recalcQuad = FALSE,
       log.kernel = log.kernel,
       V = rule$n, w = rule$w, quad = rule,
       obsLL = aggregate$logLik,
-      sampling.weights = sampling.weights, link = link
+      sampling.weights = sampling.weights, link = link,
+      workspace = workspace
     )
   }
 
@@ -464,11 +476,22 @@ lmsGraphObjective <- function(theta, model, P, observed = FALSE, sign = -1) {
   ll <- 0
   for (g in seq_len(model$info$n.groups)) {
     Pg <- P$P_GROUPS[[g]]
-    log.kernel <- lmsGraphLogKernel(filled$models[[g]], Pg$V, Pg$link %||% "logit")
     if (observed) {
+      log.kernel <- lmsGraphLogKernel(
+        filled$models[[g]], Pg$V, Pg$link %||% "logit", Pg$workspace
+      )
       ll <- ll + lmsGraphAggregateCpp(log.kernel, Pg$w, Pg$sampling.weights)$logLik
     } else {
-      ll <- ll + lmsGraphWeightedKernelCpp(log.kernel, Pg$P)
+      submodel <- filled$models[[g]]
+      M <- submodel$matrices
+      if (is.null(M$thresholds))
+        M$thresholds <- matrix(NaN, NROW(M$lambdaX), 0L)
+      workspace <- Pg$workspace %||% lmsGraphWorkspace(submodel)
+      ll <- ll + lmsGraphCompleteWorkspaceCpp(
+        M, Pg$V, submodel$info$numXis, submodel$info$numEtas,
+        workspace, Pg$P, identical(Pg$link %||% "logit", "logit"),
+        ThreadEnv$n.threads %||% 1L
+      )
     }
   }
   sign * ll
@@ -554,6 +577,7 @@ lmsGraphAnalyticalGradient <- function(theta, model, P, observed, sign) {
                      rownames(M$lambdaX)) - 1L
     ordered <- ordered[!is.na(ordered)]
     Pg <- P$P_GROUPS[[g]]
+    workspace <- Pg$workspace %||% lmsGraphWorkspace(submodel)
     score <- lmsGraphReverseScoreCpp(
       M, Pg$V, submodel$info$numXis, submodel$info$numEtas,
       submodel$data$data.split, submodel$data$colidx0, ordered,
@@ -561,7 +585,7 @@ lmsGraphAnalyticalGradient <- function(theta, model, P, observed, sign) {
       if (observed) matrix(numeric(), 0L, 0L) else Pg$P,
       observed, loc$block, loc$row, loc$col, loc$symmetric,
       identical(Pg$link %||% "logit", "logit"),
-      ThreadEnv$n.threads %||% 1L
+      ThreadEnv$n.threads %||% 1L, workspace
     )
     raw[loc$param] <- score
   }

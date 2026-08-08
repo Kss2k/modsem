@@ -82,11 +82,23 @@ testthat::test_that("compiled LMS graph kernel matches mixed logit and probit li
     out
   }
 
+  workspace <- lmsGraphWorkspaceCpp(list(values), list(0:1), 0L)
   for (link in c("logit", "probit")) {
     compiled <- lmsGraphLogKernelCpp(
       M, nodes, 1L, 0L, list(values), list(0:1), 0L, link == "logit"
     )
     testthat::expect_equal(compiled, direct(link), tolerance = 1e-12)
+    cached <- lmsGraphLogKernelWorkspaceCpp(
+      M, nodes, 1L, 0L, workspace, link == "logit"
+    )
+    testthat::expect_equal(cached, compiled, tolerance = 1e-12)
+    complete.weights <- matrix(seq_len(length(cached)), NROW(cached))
+    testthat::expect_equal(
+      lmsGraphCompleteWorkspaceCpp(
+        M, nodes, 1L, 0L, workspace, complete.weights, link == "logit"
+      ),
+      sum(compiled * complete.weights), tolerance = 1e-12
+    )
   }
 })
 

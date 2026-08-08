@@ -93,12 +93,28 @@ hessLogLikQmlCpp <- function(submodel, block, row, col, symmetric, relStep = 1e-
     .Call(`_modsem_hessLogLikQmlCpp`, submodel, block, row, col, symmetric, relStep, minAbs, ncores)
 }
 
+lmsGraphWorkspaceCpp <- function(dataR, colidxR, orderedIndex) {
+    .Call(`_modsem_lmsGraphWorkspaceCpp`, dataR, colidxR, orderedIndex)
+}
+
+lmsGraphLogKernelWorkspaceCpp <- function(matrices, nodes, numXis, numEtas, workspaceSEXP, logistic = TRUE, ncores = 1L) {
+    .Call(`_modsem_lmsGraphLogKernelWorkspaceCpp`, matrices, nodes, numXis, numEtas, workspaceSEXP, logistic, ncores)
+}
+
+lmsGraphPstepWorkspaceCpp <- function(matrices, nodes, numXis, numEtas, workspaceSEXP, quadWeights, rowWeights, logistic = TRUE, ncores = 1L) {
+    .Call(`_modsem_lmsGraphPstepWorkspaceCpp`, matrices, nodes, numXis, numEtas, workspaceSEXP, quadWeights, rowWeights, logistic, ncores)
+}
+
+lmsGraphCompleteWorkspaceCpp <- function(matrices, nodes, numXis, numEtas, workspaceSEXP, weights, logistic = TRUE, ncores = 1L) {
+    .Call(`_modsem_lmsGraphCompleteWorkspaceCpp`, matrices, nodes, numXis, numEtas, workspaceSEXP, weights, logistic, ncores)
+}
+
 lmsGraphStatesCpp <- function(matrices, nodes, numXis, numEtas) {
     .Call(`_modsem_lmsGraphStatesCpp`, matrices, nodes, numXis, numEtas)
 }
 
-lmsGraphAdaptiveRuleCpp <- function(matrices, baseNodes, baseWeights, starts, numXis, numEtas, dataR, colidxR, orderedIndex, logistic = TRUE, maxIterations = 25L, tolerance = 1e-8, curvatureFloor = 1e-6, derivativeStep = 1e-4) {
-    .Call(`_modsem_lmsGraphAdaptiveRuleCpp`, matrices, baseNodes, baseWeights, starts, numXis, numEtas, dataR, colidxR, orderedIndex, logistic, maxIterations, tolerance, curvatureFloor, derivativeStep)
+lmsGraphAdaptiveRuleCpp <- function(matrices, baseNodes, baseWeights, starts, numXis, numEtas, dataR, colidxR, orderedIndex, logistic = TRUE, maxIterations = 25L, tolerance = 1e-8, curvatureFloor = 1e-6, derivativeStep = 1e-4, ncores = 1L, workspaceSEXP = NULL) {
+    .Call(`_modsem_lmsGraphAdaptiveRuleCpp`, matrices, baseNodes, baseWeights, starts, numXis, numEtas, dataR, colidxR, orderedIndex, logistic, maxIterations, tolerance, curvatureFloor, derivativeStep, ncores, workspaceSEXP)
 }
 
 lmsGraphLogKernelCpp <- function(matrices, nodes, numXis, numEtas, dataR, colidxR, orderedIndex, logistic = TRUE, ncores = 1L) {
@@ -121,8 +137,8 @@ lmsGraphScoreCpp <- function(matrices, nodes, numXis, numEtas, dataR, colidxR, o
     .Call(`_modsem_lmsGraphScoreCpp`, matrices, nodes, numXis, numEtas, dataR, colidxR, orderedIndex, quadWeights, rowWeights, completeWeights, observed, block, row, col, symmetric, logistic)
 }
 
-lmsGraphReverseScoreCpp <- function(matrices, nodes, numXis, numEtas, dataR, colidxR, orderedIndex, quadWeights, rowWeights, completeWeights, observed, block, row, col, symmetric, logistic = TRUE, ncores = 1L) {
-    .Call(`_modsem_lmsGraphReverseScoreCpp`, matrices, nodes, numXis, numEtas, dataR, colidxR, orderedIndex, quadWeights, rowWeights, completeWeights, observed, block, row, col, symmetric, logistic, ncores)
+lmsGraphReverseScoreCpp <- function(matrices, nodes, numXis, numEtas, dataR, colidxR, orderedIndex, quadWeights, rowWeights, completeWeights, observed, block, row, col, symmetric, logistic = TRUE, ncores = 1L, workspaceSEXP = NULL) {
+    .Call(`_modsem_lmsGraphReverseScoreCpp`, matrices, nodes, numXis, numEtas, dataR, colidxR, orderedIndex, quadWeights, rowWeights, completeWeights, observed, block, row, col, symmetric, logistic, ncores, workspaceSEXP)
 }
 
 multiplyIndicatorsCpp <- function(df) {

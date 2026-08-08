@@ -11,7 +11,10 @@ m1 <- '
   c := 10 * a
 '
 
-lms1 <- modsem(m1, oneInt, method = "lms", adaptive.quad=TRUE)
+lms1 <- modsem(m1, oneInt, 
+  method = "lms", adaptive.quad=TRUE, lms.backend = "graph", nodes = 5,
+  optimize = TRUE, adaptive.frequency = 15L
+)
 
 tpb <- '
 # Outer Model (Based on Hagger et al., 2007)
