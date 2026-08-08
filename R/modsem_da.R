@@ -10,9 +10,6 @@
 #' @param method method to use:
 #' \describe{
 #'   \item{\code{"lms"}}{latent moderated structural equations (not passed to \code{lavaan}).}
-#'   \item{\code{"lms-jv"}}{ordinal-probit marginal maximum likelihood using
-#'     adaptive Gauss-Hermite quadrature, following Jin, Vegelius, and
-#'     Yang-Wallentin. \code{"lms-cat"} is an alias.}
 #'   \item{\code{"qml"}}{quasi maximum likelihood estimation (not passed to \code{lavaan}).}
 #' }
 #'
@@ -22,6 +19,8 @@
 #'
 #' @param nodes number of quadrature nodes (points of integration) used in \code{lms},
 #'   increased number gives better estimates but slower computation. How many are needed depends on the complexity of the model.
+#'   The graph LMS backend defaults to five nodes per latent dimension with
+#'   observation-specific adaptive Gauss--Hermite quadrature.
 #'   For simple models, somewhere between 16-24 nodes should be enough; for more complex models, higher numbers may be needed.
 #'   For models where there is an interaction effect between an endogenous and exogenous variable,
 #'   the number of nodes should be at least 32, but practically (e.g., ordinal/skewed data), more than 32 is recommended. In cases
@@ -125,10 +124,10 @@
 #'   but this will likely be inefficient and pointless at a large number of nodes. Nodes outside
 #'   \code{+/- quad.range} will be ignored.
 #'
-#' @param adaptive.quad should a quasi adaptive quadrature be used? If \code{TRUE}, the quadrature nodes will be adapted to the data.
-#'   If \code{FALSE}, the quadrature nodes will be fixed. Default is \code{FALSE}. The adaptive quadrature does not fit an adaptive
-#'   quadrature to each participant, but instead tries to place more nodes where posterior distribution is highest. Compared with a
-#'   fixed Gauss Hermite quadrature this usually means that less nodes are placed at the tails of the distribution.
+#' @param adaptive.quad should adaptive quadrature be used? For the graph LMS
+#'   backend, a separate rule is centered and scaled at each observation's
+#'   posterior mode and is the default. If \code{FALSE}, a packed fixed
+#'   Gauss--Hermite rule is used.
 #'
 #' @param adaptive.frequency How often should the quasi-adaptive quadrature be calculated? Defaults to 3, meaning
 #'   that it is recalculated every third EM-iteration.
@@ -219,11 +218,12 @@
 #'   before the observed-data fit and after ordinalizing simulated indicators? This is
 #'   recommended for numerical stability and is enabled by default.
 #'
-#' @param integration Numerical integration rule for \code{method = "lms-jv"}.
-#'   One of \code{"auto"}, \code{"aghq"}, \code{"sparse"}, or \code{"qmc"}.
-#'
-#' @param integration.control Named list controlling ordinal-probit integration
-#'   and optimization. See \code{default_settings_da("lms-jv")}.
+#' @param lms.backend LMS likelihood implementation. The experimental
+#'   \code{"graph"} backend integrates one innovation per latent variable and
+#'   supports continuous and ordered indicators. The default \code{"legacy"}
+#'   backend is retained for continuous models.
+#' @param link Link for ordered indicators in the LMS graph backend. The default
+#'   is \code{"logit"}; \code{"probit"} is also available.
 #'
 #' @param cluster Clusters used to compute standard errors robust to non-indepence of observations. Must be paired with
 #'   \code{robust.se = TRUE}.
@@ -314,6 +314,10 @@
 #' \code{modsem_da()} handles the latter and can estimate models using both QML and LMS,
 #' necessary syntax, and variables for the estimation of models with latent product indicators.
 #'
+#' Ordered indicators use the LMS graph backend with conditionally independent
+#' univariate response likelihoods. Measurement intercepts and response scales
+#' are fixed for identification and ordered thresholds are estimated directly.
+#'
 #' \strong{NOTE}: Run \code{\link{default_settings_da}} to see default arguments.
 #'
 #' @references
@@ -396,6 +400,8 @@ modsem_da <- function(model.syntax = NULL,
                       n.threads = NULL,
                       algorithm = NULL,
                       em.control = NULL,
+                      lms.backend = c("legacy", "graph"),
+                      link = c("logit", "probit"),
                       ordered = NULL,
                       ordered.mc.reps = NULL,
                       ordered.min.iter = 20L,
@@ -411,8 +417,6 @@ modsem_da <- function(model.syntax = NULL,
                       ordered.delta.epsilon = 1e-2,
                       ordered.boot.reps = 1000L,
                       ordered.standardize = TRUE,
-                      integration = c("auto", "aghq", "sparse", "qmc"),
-                      integration.control = list(),
                       cluster = NULL,
                       cr1s = FALSE,
                       sampling.weights = NULL,
@@ -428,7 +432,9 @@ modsem_da <- function(model.syntax = NULL,
                       fix.composite.var = NULL,
                       ...) {
   method <- tolower(method)
-  method.requested <- method
+  nodes.user.supplied <- !is.null(nodes)
+  lms.backend <- match.arg(lms.backend)
+  link <- match.arg(link)
 
   if (is.null(model.syntax)) {
     mod_msg_stop("No model.syntax provided")
@@ -439,27 +445,11 @@ modsem_da <- function(model.syntax = NULL,
   }
 
   ordered.se <- match.arg(ordered.se)
-  integration <- match.arg(integration)
 
-  if (method %in% c("lms-jv", "lms-cat")) {
-    return(modsemLmsCat(
-      model.syntax = model.syntax, data = data, ordered = ordered,
-      group = group, sampling.weights = sampling.weights,
-      sampling.weights.normalization = sampling.weights.normalization,
-      missing = missing, nodes = nodes, integration = integration,
-      integration.control = integration.control, calc.se = calc.se,
-      robust.se = robust.se, cluster = cluster, start = start,
-      optimizer = optimizer, max.iter = max.iter,
-      convergence.abs = convergence.abs, verbose = verbose,
-      adaptive.frequency = adaptive.frequency,
-      requested.method = method.requested,
-      cov.syntax = cov.syntax, auto.fix.first = auto.fix.first,
-      auto.fix.single = auto.fix.single, n.threads = n.threads,
-      ...
-    ))
-  }
+  has.ordered <- length(ordered) || any(vapply(data, is.ordered, logical(1L)))
+  if (has.ordered && method == "lms") lms.backend <- "graph"
 
-  if (length(ordered) || any(sapply(data, FUN = is.ordered))) {
+  if (has.ordered && method != "lms") {
     out <- modsemOrderedMCCorrection(
        model.syntax                   = model.syntax,
        data                           = data,
@@ -601,6 +591,11 @@ modsem_da <- function(model.syntax = NULL,
           fix.composite.var              = fix.composite.var
         )
     )
+  args$ordered <- if (has.ordered) lmsGraphOrderedColumns(data, model.syntax, ordered) else NULL
+  if (method == "lms" && lms.backend == "graph" && !nodes.user.supplied)
+    args$nodes <- 5L
+  args$parameterization <- "theta"
+  args$factor.score.optim <- "nlminb"
 
   cont.cols <- setdiff(colnames(data), c(cluster, group, sampling.weights))
 
@@ -641,6 +636,26 @@ modsem_da <- function(model.syntax = NULL,
     cluster            = cluster,
     sampling.weights   = sampling.weights
   )
+
+  if (method == "lms" && lms.backend == "graph" && has.ordered) {
+    model <- lmsGraphPrepareOrdered(
+      model = model, data = data, model.syntax = model.syntax,
+      ordered = ordered, group = group, link = link
+    )
+  }
+
+  if (method == "lms" && lms.backend == "graph") {
+    for (g in seq_along(model$models)) {
+      model$models[[g]]$quad$adaptive <- isTRUE(args$adaptive.quad)
+      model$models[[g]]$quad$adaptive.frequency <- args$adaptive.frequency
+    }
+    integration.dimension <- model$models[[1L]]$info$numXis +
+      model$models[[1L]]$info$numEtas
+    mod_warnif(integration.dimension > 5L,
+      paste0("The LMS graph model integrates over ", integration.dimension,
+             " latent variables. Product-rule AGHQ may be expensive; consider ",
+             "changing the integration settings described in `?modsem_da`."))
+  }
 
   if (args$optimize) {
     model <- tryCatch({
@@ -687,6 +702,16 @@ modsem_da <- function(model.syntax = NULL,
 
       model
     })
+  }
+
+  # Starting-value optimization may rebuild the DA model, so restore the graph
+  # integration contract afterward.
+  if (method == "lms" && lms.backend == "graph") {
+    for (g in seq_along(model$models)) {
+      model$models[[g]]$quad$m <- args$nodes
+      model$models[[g]]$quad$adaptive <- isTRUE(args$adaptive.quad)
+      model$models[[g]]$quad$adaptive.frequency <- args$adaptive.frequency
+    }
   }
 
   if (!is.null(start)) {
@@ -743,6 +768,8 @@ modsem_da <- function(model.syntax = NULL,
       adaptive.quad.tol = args$adaptive.quad.tol,
       nodes             = args$nodes,
       cr1s              = args$cr1s,
+      lms.backend       = lms.backend,
+      link              = link,
       ...
   )),
   error = function(e) {

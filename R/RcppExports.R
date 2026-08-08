@@ -93,36 +93,36 @@ hessLogLikQmlCpp <- function(submodel, block, row, col, symmetric, relStep = 1e-
     .Call(`_modsem_hessLogLikQmlCpp`, submodel, block, row, col, symmetric, relStep, minAbs, ncores)
 }
 
-lmsCatFrozenQCpp <- function(posterior, logKernel, rowWeights) {
-    .Call(`_modsem_lmsCatFrozenQCpp`, posterior, logKernel, rowWeights)
+lmsGraphStatesCpp <- function(matrices, nodes, numXis, numEtas) {
+    .Call(`_modsem_lmsGraphStatesCpp`, matrices, nodes, numXis, numEtas)
 }
 
-ordinalLogLikCpp <- function(codes, mu, thresholds, quadWeights, logAdjust, patternWeights, gradient = FALSE, details = FALSE, posteriorDetails = TRUE) {
-    .Call(`_modsem_ordinalLogLikCpp`, codes, mu, thresholds, quadWeights, logAdjust, patternWeights, gradient, details, posteriorDetails)
+lmsGraphAdaptiveRuleCpp <- function(matrices, baseNodes, baseWeights, starts, numXis, numEtas, dataR, colidxR, orderedIndex, logistic = TRUE, maxIterations = 25L, tolerance = 1e-8, curvatureFloor = 1e-6, derivativeStep = 1e-4) {
+    .Call(`_modsem_lmsGraphAdaptiveRuleCpp`, matrices, baseNodes, baseWeights, starts, numXis, numEtas, dataR, colidxR, orderedIndex, logistic, maxIterations, tolerance, curvatureFloor, derivativeStep)
 }
 
-adaptiveOrdinalLogLikCpp <- function(codes, mu, thresholds, quadWeights, logAdjust, patternWeights, nodesPerPattern) {
-    .Call(`_modsem_adaptiveOrdinalLogLikCpp`, codes, mu, thresholds, quadWeights, logAdjust, patternWeights, nodesPerPattern)
+lmsGraphLogKernelCpp <- function(matrices, nodes, numXis, numEtas, dataR, colidxR, orderedIndex, logistic = TRUE, ncores = 1L) {
+    .Call(`_modsem_lmsGraphLogKernelCpp`, matrices, nodes, numXis, numEtas, dataR, colidxR, orderedIndex, logistic, ncores)
 }
 
-mixedLogLikCpp <- function(codes, categoricalMu, thresholds, continuousData, continuousMu, covariance, quadWeights, logAdjust, rowWeights, gradient = FALSE, details = FALSE, posteriorDetails = TRUE) {
-    .Call(`_modsem_mixedLogLikCpp`, codes, categoricalMu, thresholds, continuousData, continuousMu, covariance, quadWeights, logAdjust, rowWeights, gradient, details, posteriorDetails)
+lmsGraphAggregateCpp <- function(logKernel, quadWeights, rowWeights) {
+    .Call(`_modsem_lmsGraphAggregateCpp`, logKernel, quadWeights, rowWeights)
 }
 
-adaptiveMixedLogLikCpp <- function(codes, categoricalMu, thresholds, continuousData, continuousMu, covariance, quadWeights, logAdjust, rowWeights, nodesPerRow) {
-    .Call(`_modsem_adaptiveMixedLogLikCpp`, codes, categoricalMu, thresholds, continuousData, continuousMu, covariance, quadWeights, logAdjust, rowWeights, nodesPerRow)
+lmsGraphPstepCpp <- function(matrices, nodes, numXis, numEtas, dataR, colidxR, orderedIndex, quadWeights, rowWeights, logistic = TRUE, ncores = 1L) {
+    .Call(`_modsem_lmsGraphPstepCpp`, matrices, nodes, numXis, numEtas, dataR, colidxR, orderedIndex, quadWeights, rowWeights, logistic, ncores)
 }
 
-lmsCatLatentMeansCpp <- function(matrices, nodes, explicitIndex, fullDimension) {
-    .Call(`_modsem_lmsCatLatentMeansCpp`, matrices, nodes, explicitIndex, fullDimension)
+lmsGraphWeightedKernelCpp <- function(logKernel, weights) {
+    .Call(`_modsem_lmsGraphWeightedKernelCpp`, logKernel, weights)
 }
 
-lmsCatReducedMomentsCpp <- function(matrices, nodes, explicitIndex, analyticIndex, fullDimension) {
-    .Call(`_modsem_lmsCatReducedMomentsCpp`, matrices, nodes, explicitIndex, analyticIndex, fullDimension)
+lmsGraphScoreCpp <- function(matrices, nodes, numXis, numEtas, dataR, colidxR, orderedIndex, quadWeights, rowWeights, completeWeights, observed, block, row, col, symmetric, logistic = TRUE) {
+    .Call(`_modsem_lmsGraphScoreCpp`, matrices, nodes, numXis, numEtas, dataR, colidxR, orderedIndex, quadWeights, rowWeights, completeWeights, observed, block, row, col, symmetric, logistic)
 }
 
-lmsCatMatrixScoreCpp <- function(matrices, nodes, explicitIndex, fullDimension, predictorScore, covarianceScore, continuousIndex, analyticIndex, block, row, col, symmetric) {
-    .Call(`_modsem_lmsCatMatrixScoreCpp`, matrices, nodes, explicitIndex, fullDimension, predictorScore, covarianceScore, continuousIndex, analyticIndex, block, row, col, symmetric)
+lmsGraphReverseScoreCpp <- function(matrices, nodes, numXis, numEtas, dataR, colidxR, orderedIndex, quadWeights, rowWeights, completeWeights, observed, block, row, col, symmetric, logistic = TRUE, ncores = 1L) {
+    .Call(`_modsem_lmsGraphReverseScoreCpp`, matrices, nodes, numXis, numEtas, dataR, colidxR, orderedIndex, quadWeights, rowWeights, completeWeights, observed, block, row, col, symmetric, logistic, ncores)
 }
 
 multiplyIndicatorsCpp <- function(df) {

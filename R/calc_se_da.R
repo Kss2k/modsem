@@ -208,6 +208,12 @@ fdHessFullFD <- function(pars, fun, ..., relStep, minAbsPar) {
 calcHessian <- function(model, theta, method = "lms",
                         epsilon = 1e-8, P = NULL) {
   if (method == "lms") {
+    if (!is.null(P$lms.backend) && P$lms.backend == "graph") {
+      return(getLmsBackend("graph")$hessian.observed(
+        theta = theta, model = model, P = P, sign = -1,
+        .relStep = .Machine$double.eps ^ (1/4)
+      ))
+    }
     if (is.null(P)) P <- estepLms(model, theta = theta)
     # negative hessian (sign = -1)
     fH <- \(model) observedInfoFromLouisLms(model = model, theta = theta,

@@ -41,6 +41,8 @@ modsem_da(
   n.threads = NULL,
   algorithm = NULL,
   em.control = NULL,
+  lms.backend = c("legacy", "graph"),
+  link = c("logit", "probit"),
   ordered = NULL,
   ordered.mc.reps = NULL,
   ordered.min.iter = 20L,
@@ -56,8 +58,6 @@ modsem_da(
   ordered.delta.epsilon = 0.01,
   ordered.boot.reps = 1000L,
   ordered.standardize = TRUE,
-  integration = c("auto", "aghq", "sparse", "qmc"),
-  integration.control = list(),
   cluster = NULL,
   cr1s = FALSE,
   sampling.weights = NULL,
@@ -85,9 +85,6 @@ group analysis}
 \item{method}{method to use:
 \describe{
   \item{\code{"lms"}}{latent moderated structural equations (not passed to \code{lavaan}).}
-  \item{\code{"lms-jv"}}{ordinal-probit marginal maximum likelihood using
-    adaptive Gauss-Hermite quadrature, following Jin, Vegelius, and
-    Yang-Wallentin. \code{"lms-cat"} is an alias.}
   \item{\code{"qml"}}{quasi maximum likelihood estimation (not passed to \code{lavaan}).}
 }}
 
@@ -97,6 +94,8 @@ group analysis}
 
 \item{nodes}{number of quadrature nodes (points of integration) used in \code{lms},
 increased number gives better estimates but slower computation. How many are needed depends on the complexity of the model.
+The graph LMS backend defaults to five nodes per latent dimension with
+observation-specific adaptive Gauss--Hermite quadrature.
 For simple models, somewhere between 16-24 nodes should be enough; for more complex models, higher numbers may be needed.
 For models where there is an interaction effect between an endogenous and exogenous variable,
 the number of nodes should be at least 32, but practically (e.g., ordinal/skewed data), more than 32 is recommended. In cases
@@ -200,10 +199,10 @@ when using quasi-adaptive Gaussian-Hermite Quadratures. By default \code{Inf}, s
 but this will likely be inefficient and pointless at a large number of nodes. Nodes outside
 \code{+/- quad.range} will be ignored.}
 
-\item{adaptive.quad}{should a quasi adaptive quadrature be used? If \code{TRUE}, the quadrature nodes will be adapted to the data.
-If \code{FALSE}, the quadrature nodes will be fixed. Default is \code{FALSE}. The adaptive quadrature does not fit an adaptive
-quadrature to each participant, but instead tries to place more nodes where posterior distribution is highest. Compared with a
-fixed Gauss Hermite quadrature this usually means that less nodes are placed at the tails of the distribution.}
+\item{adaptive.quad}{should adaptive quadrature be used? For the graph LMS
+backend, a separate rule is centered and scaled at each observation's
+posterior mode and is the default. If \code{FALSE}, a packed fixed
+Gauss--Hermite rule is used.}
 
 \item{adaptive.frequency}{How often should the quasi-adaptive quadrature be calculated? Defaults to 3, meaning
 that it is recalculated every third EM-iteration.}
@@ -221,6 +220,14 @@ accelerated EM procedure that uses Quasi-Newton and Fisher Scoring
 optimization steps when needed. Default is \code{"EM"}.}
 
 \item{em.control}{a list of control parameters for the EM algorithm. See \code{\link{default_settings_da}} for defaults.}
+
+\item{lms.backend}{LMS likelihood implementation. The experimental
+\code{"graph"} backend integrates one innovation per latent variable and
+supports continuous and ordered indicators. The default \code{"legacy"}
+backend is retained for continuous models.}
+
+\item{link}{Link for ordered indicators in the LMS graph backend. The default
+is \code{"logit"}; \code{"probit"} is also available.}
 
 \item{ordered}{Variables to be treated as ordered. Ordered indicators are handled
   with a Monte-Carlo correction for the LMS/QML estimator on standardized category
@@ -293,12 +300,6 @@ and should be seen as a rough approximation. Set to \code{0} to disable.}
 \item{ordered.standardize}{Logical. Should scored ordered indicators be standardized
 before the observed-data fit and after ordinalizing simulated indicators? This is
 recommended for numerical stability and is enabled by default.}
-
-\item{integration}{Numerical integration rule for \code{method = "lms-jv"}.
-One of \code{"auto"}, \code{"aghq"}, \code{"sparse"}, or \code{"qmc"}.}
-
-\item{integration.control}{Named list controlling ordinal-probit integration
-and optimization. See \code{default_settings_da("lms-jv")}.}
 
 \item{cluster}{Clusters used to compute standard errors robust to non-indepence of observations. Must be paired with
 \code{robust.se = TRUE}.}
@@ -383,6 +384,10 @@ two frameworks:
 
 \code{modsem_da()} handles the latter and can estimate models using both QML and LMS,
 necessary syntax, and variables for the estimation of models with latent product indicators.
+
+Ordered indicators use the LMS graph backend with conditionally independent
+univariate response likelihoods. Measurement intercepts and response scales
+are fixed for identification and ordered thresholds are estimated directly.
 
 \strong{NOTE}: Run \code{\link{default_settings_da}} to see default arguments.
 }

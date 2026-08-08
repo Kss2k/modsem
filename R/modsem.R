@@ -1,5 +1,5 @@
 PI_METHODS   = c("rca", "uca", "dblcent", "pind", "ca", "custom")
-DA_METHODS   = c("lms", "lms-jv", "lms-cat", "qml")
+DA_METHODS   = c("lms", "qml")
 MPLUS_METHOD = "mplus"
 
 
@@ -17,9 +17,6 @@ MPLUS_METHOD = "mplus"
 #'   \item{\code{"uca"}}{unconstrained approach (passed to \code{lavaan}).}
 #'   \item{\code{"pind"}}{prod ind approach, with no constraints or centering (passed to \code{lavaan}).}
 #'   \item{\code{"lms"}}{latent moderated structural equations (not passed to \code{lavaan}).}
-#'   \item{\code{"lms-jv"}}{marginal maximum likelihood for LMS models with
-#'     ordinal indicators, following Jin, Vegelius, and Yang-Wallentin.}
-#'   \item{\code{"lms-cat"}}{alias for \code{"lms-jv"}.}
 #'   \item{\code{"qml"}}{quasi maximum likelihood estimation (not passed to \code{lavaan}).}
 #'   \item{\code{"custom"}}{use parameters specified in the function call (passed to \code{lavaan}).}
 #'   \item{\code{"mplus"}}{estimate model through \code{Mplus}.}

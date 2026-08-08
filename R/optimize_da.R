@@ -7,7 +7,8 @@ optimizeStartingParamsDA <- function(model,
                                                  sampling.weights.normalization = "none"), # already fixed by modsem
                                      group = NULL,
                                      sampling.weights = NULL,
-                                     engine = c("pi", "sam")) {
+                                     engine = c("pi", "sam"),
+                                     parTable = NULL, lavaan.fit = NULL) {
   engine <- tolower(engine)
   engine <- match.arg(engine)
 
@@ -45,7 +46,7 @@ optimizeStartingParamsDA <- function(model,
     # Not worth the extra compute for non-linear models
   } else estimator <- "ML"
 
-  if (engine == "pi") {
+  if (is.null(parTable) && engine == "pi") {
     estPI <- modsem_pi(
       model.syntax     = syntax,
       data             = data,
@@ -70,7 +71,7 @@ optimizeStartingParamsDA <- function(model,
     parTable   <- parameter_estimates(estPI, colon.pi = TRUE)
     lavaan.fit <- extract_lavaan(estPI)
 
-  } else if (engine == "sam") {
+  } else if (is.null(parTable) && engine == "sam") {
     fitSam <- parameterEstimatesLavSAM(
       syntax           = syntax,
       data             = data,
@@ -84,7 +85,10 @@ optimizeStartingParamsDA <- function(model,
       group            = group,
       sampling.weights = sampling.weights,
       suppress.warnings.lavaan = TRUE,
-      sampling.weights.normalization = args$sampling.weights.normalization
+      sampling.weights.normalization = args$sampling.weights.normalization,
+      ordered = args$ordered %||% NULL,
+      parameterization = args$parameterization %||% "theta",
+      factor.score.optim = args$factor.score.optim %||% "nlminb"
     )
 
     parTable   <- fitSam$parTable
@@ -370,12 +374,18 @@ parameterEstimatesLavSAM <- function(syntax,
                                      sampling.weights = NULL,
                                      suppress.warnings.lavaan = TRUE,
                                      sampling.weights.normalization = "total",
+                                     ordered = NULL,
+                                     parameterization = "theta",
+                                     factor.score.optim = "nlminb",
                                      ...) {
   parTable <- modsemify(syntax)
   higherOrderLVs <- getHigherOrderLVs(parTable)
   isHigherOrder  <- length(higherOrderLVs) > 0L
   hasComposites  <- any(parTable$op == "<~")
   isNonCentered  <- isNonCenteredParTable(parTable)
+  categorical <- length(ordered) > 0L
+  measurement.estimator <- if (categorical) "WLSMV" else estimator
+  structural.estimator <- if (categorical) "ML" else estimator
   lowerOrderInds <- unlist(getIndsLVs(parTable, lVs = higherOrderLVs,
                                       isOV = FALSE))
 
@@ -392,7 +402,7 @@ parameterEstimatesLavSAM <- function(syntax,
       model            = syntax,
       data             = data,
       meanstructure    = meanstructure,
-      estimator        = estimator,
+      estimator        = measurement.estimator,
       missing          = missing,
       orthogonal.x     = orthogonal.x,
       orthogonal.y     = orthogonal.y,
@@ -401,6 +411,8 @@ parameterEstimatesLavSAM <- function(syntax,
       group            = group,
       se               = "none",
       sampling.weights = sampling.weights,
+      ordered           = ordered,
+      parameterization  = parameterization,
       optim.gradient   = optim.gradient.override,
       sampling.weights.normalization = sampling.weights.normalization,
       ...
@@ -441,15 +453,16 @@ parameterEstimatesLavSAM <- function(syntax,
     removeUnknownLabels(ptH0)
   }
 
-  parTableOuter <- getH0Rows(parTable)
+  parTableOuter <- if (categorical) getMeasrRows(parTable) else getH0Rows(parTable)
 
   syntaxH0 <- parTableToSyntax(parTableOuter)
 
-  fitH0 <- wrapper(lavaan::sem(
+  measurement.fun <- if (categorical) lavaan::cfa else lavaan::sem
+  fitH0 <- wrapper(measurement.fun(
     model            = syntaxH0,
     data             = data,
     meanstructure    = meanstructure,
-    estimator        = estimator,
+    estimator        = measurement.estimator,
     missing          = missing,
     orthogonal.x     = orthogonal.x,
     orthogonal.y     = orthogonal.y,
@@ -458,6 +471,8 @@ parameterEstimatesLavSAM <- function(syntax,
     group            = group,
     se               = "none",
     sampling.weights = sampling.weights,
+    ordered           = ordered,
+    parameterization  = parameterization,
     optim.gradient   = optim.gradient.override,
     sampling.weights.normalization = sampling.weights.normalization,
     ...
@@ -466,26 +481,21 @@ parameterEstimatesLavSAM <- function(syntax,
   admissible <- lavaan::lavInspect(fitH0, what = "post.check")
   mod_stopif(!admissible, "The measurement model is inadmissible!")
 
-  if (isHigherOrder || hasComposites) {
+  if (isHigherOrder || hasComposites || categorical) {
     # use factor scores instead
     # using `sam.method="fsr"` doesn't work for this purpose (yet)
     # so we do it manually instead
 
+    predictScores <- function(transform) {
+      args.predict <- list(
+        object = fitH0, method = "EBM", transform = transform,
+        append.data = TRUE, drop.list.single.group = FALSE
+      )
+      if (categorical) args.predict$optim_method <- factor.score.optim
+      do.call(lavaan::lavPredict, args.predict)
+    }
     dataListSam <- tryCatch(
-      lavaan::lavPredict(
-        object = fitH0,
-        transform = TRUE,
-        append.data = TRUE,
-        drop.list.single.group = FALSE,
-      ),
-      error = function(e) {
-        lavaan::lavPredict(
-          object = fitH0,
-          transform = FALSE,
-          append.data = TRUE,
-          drop.list.single.group = FALSE,
-        )
-      }
+      predictScores(TRUE), error = function(e) predictScores(FALSE)
     )
 
     if (hasComposites && any(parTableOuter$op == "=~") &&
@@ -645,7 +655,7 @@ parameterEstimatesLavSAM <- function(syntax,
     model            = syntaxSam,
     data             = dataSam,
     se               = "none",
-    estimator        = estimator,
+    estimator        = structural.estimator,
     missing          = missing,
     orthogonal.x     = orthogonal.x,
     orthogonal.y     = orthogonal.y,

@@ -386,145 +386,159 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// lmsCatFrozenQCpp
-double lmsCatFrozenQCpp(const arma::mat& posterior, const arma::mat& logKernel, const arma::vec& rowWeights);
-RcppExport SEXP _modsem_lmsCatFrozenQCpp(SEXP posteriorSEXP, SEXP logKernelSEXP, SEXP rowWeightsSEXP) {
+// lmsGraphStatesCpp
+arma::mat lmsGraphStatesCpp(const Rcpp::List& matrices, const arma::mat& nodes, const int numXis, const int numEtas);
+RcppExport SEXP _modsem_lmsGraphStatesCpp(SEXP matricesSEXP, SEXP nodesSEXP, SEXP numXisSEXP, SEXP numEtasSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const arma::mat& >::type posterior(posteriorSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type matrices(matricesSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type nodes(nodesSEXP);
+    Rcpp::traits::input_parameter< const int >::type numXis(numXisSEXP);
+    Rcpp::traits::input_parameter< const int >::type numEtas(numEtasSEXP);
+    rcpp_result_gen = Rcpp::wrap(lmsGraphStatesCpp(matrices, nodes, numXis, numEtas));
+    return rcpp_result_gen;
+END_RCPP
+}
+// lmsGraphAdaptiveRuleCpp
+Rcpp::List lmsGraphAdaptiveRuleCpp(const Rcpp::List& matrices, const arma::mat& baseNodes, const arma::vec& baseWeights, const arma::mat& starts, const int numXis, const int numEtas, const Rcpp::List& dataR, const Rcpp::List& colidxR, const Rcpp::IntegerVector& orderedIndex, const bool logistic, const int maxIterations, const double tolerance, const double curvatureFloor, const double derivativeStep);
+RcppExport SEXP _modsem_lmsGraphAdaptiveRuleCpp(SEXP matricesSEXP, SEXP baseNodesSEXP, SEXP baseWeightsSEXP, SEXP startsSEXP, SEXP numXisSEXP, SEXP numEtasSEXP, SEXP dataRSEXP, SEXP colidxRSEXP, SEXP orderedIndexSEXP, SEXP logisticSEXP, SEXP maxIterationsSEXP, SEXP toleranceSEXP, SEXP curvatureFloorSEXP, SEXP derivativeStepSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type matrices(matricesSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type baseNodes(baseNodesSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type baseWeights(baseWeightsSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type starts(startsSEXP);
+    Rcpp::traits::input_parameter< const int >::type numXis(numXisSEXP);
+    Rcpp::traits::input_parameter< const int >::type numEtas(numEtasSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type dataR(dataRSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type colidxR(colidxRSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type orderedIndex(orderedIndexSEXP);
+    Rcpp::traits::input_parameter< const bool >::type logistic(logisticSEXP);
+    Rcpp::traits::input_parameter< const int >::type maxIterations(maxIterationsSEXP);
+    Rcpp::traits::input_parameter< const double >::type tolerance(toleranceSEXP);
+    Rcpp::traits::input_parameter< const double >::type curvatureFloor(curvatureFloorSEXP);
+    Rcpp::traits::input_parameter< const double >::type derivativeStep(derivativeStepSEXP);
+    rcpp_result_gen = Rcpp::wrap(lmsGraphAdaptiveRuleCpp(matrices, baseNodes, baseWeights, starts, numXis, numEtas, dataR, colidxR, orderedIndex, logistic, maxIterations, tolerance, curvatureFloor, derivativeStep));
+    return rcpp_result_gen;
+END_RCPP
+}
+// lmsGraphLogKernelCpp
+arma::mat lmsGraphLogKernelCpp(const Rcpp::List& matrices, const arma::mat& nodes, const int numXis, const int numEtas, const Rcpp::List& dataR, const Rcpp::List& colidxR, const Rcpp::IntegerVector& orderedIndex, const bool logistic, const int ncores);
+RcppExport SEXP _modsem_lmsGraphLogKernelCpp(SEXP matricesSEXP, SEXP nodesSEXP, SEXP numXisSEXP, SEXP numEtasSEXP, SEXP dataRSEXP, SEXP colidxRSEXP, SEXP orderedIndexSEXP, SEXP logisticSEXP, SEXP ncoresSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type matrices(matricesSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type nodes(nodesSEXP);
+    Rcpp::traits::input_parameter< const int >::type numXis(numXisSEXP);
+    Rcpp::traits::input_parameter< const int >::type numEtas(numEtasSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type dataR(dataRSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type colidxR(colidxRSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type orderedIndex(orderedIndexSEXP);
+    Rcpp::traits::input_parameter< const bool >::type logistic(logisticSEXP);
+    Rcpp::traits::input_parameter< const int >::type ncores(ncoresSEXP);
+    rcpp_result_gen = Rcpp::wrap(lmsGraphLogKernelCpp(matrices, nodes, numXis, numEtas, dataR, colidxR, orderedIndex, logistic, ncores));
+    return rcpp_result_gen;
+END_RCPP
+}
+// lmsGraphAggregateCpp
+Rcpp::List lmsGraphAggregateCpp(const arma::mat& logKernel, const arma::vec& quadWeights, const arma::vec& rowWeights);
+RcppExport SEXP _modsem_lmsGraphAggregateCpp(SEXP logKernelSEXP, SEXP quadWeightsSEXP, SEXP rowWeightsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::mat& >::type logKernel(logKernelSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type quadWeights(quadWeightsSEXP);
     Rcpp::traits::input_parameter< const arma::vec& >::type rowWeights(rowWeightsSEXP);
-    rcpp_result_gen = Rcpp::wrap(lmsCatFrozenQCpp(posterior, logKernel, rowWeights));
+    rcpp_result_gen = Rcpp::wrap(lmsGraphAggregateCpp(logKernel, quadWeights, rowWeights));
     return rcpp_result_gen;
 END_RCPP
 }
-// ordinalLogLikCpp
-Rcpp::List ordinalLogLikCpp(const Rcpp::IntegerMatrix& codes, const arma::mat& mu, const Rcpp::List& thresholds, const arma::vec& quadWeights, const arma::vec& logAdjust, const arma::vec& patternWeights, const bool gradient, const bool details, const bool posteriorDetails);
-RcppExport SEXP _modsem_ordinalLogLikCpp(SEXP codesSEXP, SEXP muSEXP, SEXP thresholdsSEXP, SEXP quadWeightsSEXP, SEXP logAdjustSEXP, SEXP patternWeightsSEXP, SEXP gradientSEXP, SEXP detailsSEXP, SEXP posteriorDetailsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Rcpp::IntegerMatrix& >::type codes(codesSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type mu(muSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::List& >::type thresholds(thresholdsSEXP);
-    Rcpp::traits::input_parameter< const arma::vec& >::type quadWeights(quadWeightsSEXP);
-    Rcpp::traits::input_parameter< const arma::vec& >::type logAdjust(logAdjustSEXP);
-    Rcpp::traits::input_parameter< const arma::vec& >::type patternWeights(patternWeightsSEXP);
-    Rcpp::traits::input_parameter< const bool >::type gradient(gradientSEXP);
-    Rcpp::traits::input_parameter< const bool >::type details(detailsSEXP);
-    Rcpp::traits::input_parameter< const bool >::type posteriorDetails(posteriorDetailsSEXP);
-    rcpp_result_gen = Rcpp::wrap(ordinalLogLikCpp(codes, mu, thresholds, quadWeights, logAdjust, patternWeights, gradient, details, posteriorDetails));
-    return rcpp_result_gen;
-END_RCPP
-}
-// adaptiveOrdinalLogLikCpp
-double adaptiveOrdinalLogLikCpp(const Rcpp::IntegerMatrix& codes, const arma::mat& mu, const Rcpp::List& thresholds, const arma::vec& quadWeights, const arma::vec& logAdjust, const arma::vec& patternWeights, const int nodesPerPattern);
-RcppExport SEXP _modsem_adaptiveOrdinalLogLikCpp(SEXP codesSEXP, SEXP muSEXP, SEXP thresholdsSEXP, SEXP quadWeightsSEXP, SEXP logAdjustSEXP, SEXP patternWeightsSEXP, SEXP nodesPerPatternSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Rcpp::IntegerMatrix& >::type codes(codesSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type mu(muSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::List& >::type thresholds(thresholdsSEXP);
-    Rcpp::traits::input_parameter< const arma::vec& >::type quadWeights(quadWeightsSEXP);
-    Rcpp::traits::input_parameter< const arma::vec& >::type logAdjust(logAdjustSEXP);
-    Rcpp::traits::input_parameter< const arma::vec& >::type patternWeights(patternWeightsSEXP);
-    Rcpp::traits::input_parameter< const int >::type nodesPerPattern(nodesPerPatternSEXP);
-    rcpp_result_gen = Rcpp::wrap(adaptiveOrdinalLogLikCpp(codes, mu, thresholds, quadWeights, logAdjust, patternWeights, nodesPerPattern));
-    return rcpp_result_gen;
-END_RCPP
-}
-// mixedLogLikCpp
-Rcpp::List mixedLogLikCpp(const Rcpp::IntegerMatrix& codes, const arma::mat& categoricalMu, const Rcpp::List& thresholds, const arma::mat& continuousData, const arma::mat& continuousMu, const Rcpp::List& covariance, const arma::vec& quadWeights, const arma::vec& logAdjust, const arma::vec& rowWeights, const bool gradient, const bool details, const bool posteriorDetails);
-RcppExport SEXP _modsem_mixedLogLikCpp(SEXP codesSEXP, SEXP categoricalMuSEXP, SEXP thresholdsSEXP, SEXP continuousDataSEXP, SEXP continuousMuSEXP, SEXP covarianceSEXP, SEXP quadWeightsSEXP, SEXP logAdjustSEXP, SEXP rowWeightsSEXP, SEXP gradientSEXP, SEXP detailsSEXP, SEXP posteriorDetailsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Rcpp::IntegerMatrix& >::type codes(codesSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type categoricalMu(categoricalMuSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::List& >::type thresholds(thresholdsSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type continuousData(continuousDataSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type continuousMu(continuousMuSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::List& >::type covariance(covarianceSEXP);
-    Rcpp::traits::input_parameter< const arma::vec& >::type quadWeights(quadWeightsSEXP);
-    Rcpp::traits::input_parameter< const arma::vec& >::type logAdjust(logAdjustSEXP);
-    Rcpp::traits::input_parameter< const arma::vec& >::type rowWeights(rowWeightsSEXP);
-    Rcpp::traits::input_parameter< const bool >::type gradient(gradientSEXP);
-    Rcpp::traits::input_parameter< const bool >::type details(detailsSEXP);
-    Rcpp::traits::input_parameter< const bool >::type posteriorDetails(posteriorDetailsSEXP);
-    rcpp_result_gen = Rcpp::wrap(mixedLogLikCpp(codes, categoricalMu, thresholds, continuousData, continuousMu, covariance, quadWeights, logAdjust, rowWeights, gradient, details, posteriorDetails));
-    return rcpp_result_gen;
-END_RCPP
-}
-// adaptiveMixedLogLikCpp
-double adaptiveMixedLogLikCpp(const Rcpp::IntegerMatrix& codes, const arma::mat& categoricalMu, const Rcpp::List& thresholds, const arma::mat& continuousData, const arma::mat& continuousMu, const Rcpp::List& covariance, const arma::vec& quadWeights, const arma::vec& logAdjust, const arma::vec& rowWeights, const int nodesPerRow);
-RcppExport SEXP _modsem_adaptiveMixedLogLikCpp(SEXP codesSEXP, SEXP categoricalMuSEXP, SEXP thresholdsSEXP, SEXP continuousDataSEXP, SEXP continuousMuSEXP, SEXP covarianceSEXP, SEXP quadWeightsSEXP, SEXP logAdjustSEXP, SEXP rowWeightsSEXP, SEXP nodesPerRowSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Rcpp::IntegerMatrix& >::type codes(codesSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type categoricalMu(categoricalMuSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::List& >::type thresholds(thresholdsSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type continuousData(continuousDataSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type continuousMu(continuousMuSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::List& >::type covariance(covarianceSEXP);
-    Rcpp::traits::input_parameter< const arma::vec& >::type quadWeights(quadWeightsSEXP);
-    Rcpp::traits::input_parameter< const arma::vec& >::type logAdjust(logAdjustSEXP);
-    Rcpp::traits::input_parameter< const arma::vec& >::type rowWeights(rowWeightsSEXP);
-    Rcpp::traits::input_parameter< const int >::type nodesPerRow(nodesPerRowSEXP);
-    rcpp_result_gen = Rcpp::wrap(adaptiveMixedLogLikCpp(codes, categoricalMu, thresholds, continuousData, continuousMu, covariance, quadWeights, logAdjust, rowWeights, nodesPerRow));
-    return rcpp_result_gen;
-END_RCPP
-}
-// lmsCatLatentMeansCpp
-arma::mat lmsCatLatentMeansCpp(const Rcpp::List& matrices, const arma::mat& nodes, const Rcpp::IntegerVector& explicitIndex, const int fullDimension);
-RcppExport SEXP _modsem_lmsCatLatentMeansCpp(SEXP matricesSEXP, SEXP nodesSEXP, SEXP explicitIndexSEXP, SEXP fullDimensionSEXP) {
+// lmsGraphPstepCpp
+Rcpp::List lmsGraphPstepCpp(const Rcpp::List& matrices, const arma::mat& nodes, const int numXis, const int numEtas, const Rcpp::List& dataR, const Rcpp::List& colidxR, const Rcpp::IntegerVector& orderedIndex, const arma::vec& quadWeights, const arma::vec& rowWeights, const bool logistic, const int ncores);
+RcppExport SEXP _modsem_lmsGraphPstepCpp(SEXP matricesSEXP, SEXP nodesSEXP, SEXP numXisSEXP, SEXP numEtasSEXP, SEXP dataRSEXP, SEXP colidxRSEXP, SEXP orderedIndexSEXP, SEXP quadWeightsSEXP, SEXP rowWeightsSEXP, SEXP logisticSEXP, SEXP ncoresSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::List& >::type matrices(matricesSEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type nodes(nodesSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type explicitIndex(explicitIndexSEXP);
-    Rcpp::traits::input_parameter< const int >::type fullDimension(fullDimensionSEXP);
-    rcpp_result_gen = Rcpp::wrap(lmsCatLatentMeansCpp(matrices, nodes, explicitIndex, fullDimension));
+    Rcpp::traits::input_parameter< const int >::type numXis(numXisSEXP);
+    Rcpp::traits::input_parameter< const int >::type numEtas(numEtasSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type dataR(dataRSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type colidxR(colidxRSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type orderedIndex(orderedIndexSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type quadWeights(quadWeightsSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type rowWeights(rowWeightsSEXP);
+    Rcpp::traits::input_parameter< const bool >::type logistic(logisticSEXP);
+    Rcpp::traits::input_parameter< const int >::type ncores(ncoresSEXP);
+    rcpp_result_gen = Rcpp::wrap(lmsGraphPstepCpp(matrices, nodes, numXis, numEtas, dataR, colidxR, orderedIndex, quadWeights, rowWeights, logistic, ncores));
     return rcpp_result_gen;
 END_RCPP
 }
-// lmsCatReducedMomentsCpp
-Rcpp::List lmsCatReducedMomentsCpp(const Rcpp::List& matrices, const arma::mat& nodes, const Rcpp::IntegerVector& explicitIndex, const Rcpp::IntegerVector& analyticIndex, const int fullDimension);
-RcppExport SEXP _modsem_lmsCatReducedMomentsCpp(SEXP matricesSEXP, SEXP nodesSEXP, SEXP explicitIndexSEXP, SEXP analyticIndexSEXP, SEXP fullDimensionSEXP) {
+// lmsGraphWeightedKernelCpp
+double lmsGraphWeightedKernelCpp(const arma::mat& logKernel, const arma::mat& weights);
+RcppExport SEXP _modsem_lmsGraphWeightedKernelCpp(SEXP logKernelSEXP, SEXP weightsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::mat& >::type logKernel(logKernelSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type weights(weightsSEXP);
+    rcpp_result_gen = Rcpp::wrap(lmsGraphWeightedKernelCpp(logKernel, weights));
+    return rcpp_result_gen;
+END_RCPP
+}
+// lmsGraphScoreCpp
+arma::vec lmsGraphScoreCpp(const Rcpp::List& matrices, const arma::mat& nodes, const int numXis, const int numEtas, const Rcpp::List& dataR, const Rcpp::List& colidxR, const Rcpp::IntegerVector& orderedIndex, const arma::vec& quadWeights, const arma::vec& rowWeights, const arma::mat& completeWeights, const bool observed, const Rcpp::IntegerVector& block, const Rcpp::IntegerVector& row, const Rcpp::IntegerVector& col, const Rcpp::LogicalVector& symmetric, const bool logistic);
+RcppExport SEXP _modsem_lmsGraphScoreCpp(SEXP matricesSEXP, SEXP nodesSEXP, SEXP numXisSEXP, SEXP numEtasSEXP, SEXP dataRSEXP, SEXP colidxRSEXP, SEXP orderedIndexSEXP, SEXP quadWeightsSEXP, SEXP rowWeightsSEXP, SEXP completeWeightsSEXP, SEXP observedSEXP, SEXP blockSEXP, SEXP rowSEXP, SEXP colSEXP, SEXP symmetricSEXP, SEXP logisticSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::List& >::type matrices(matricesSEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type nodes(nodesSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type explicitIndex(explicitIndexSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type analyticIndex(analyticIndexSEXP);
-    Rcpp::traits::input_parameter< const int >::type fullDimension(fullDimensionSEXP);
-    rcpp_result_gen = Rcpp::wrap(lmsCatReducedMomentsCpp(matrices, nodes, explicitIndex, analyticIndex, fullDimension));
+    Rcpp::traits::input_parameter< const int >::type numXis(numXisSEXP);
+    Rcpp::traits::input_parameter< const int >::type numEtas(numEtasSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type dataR(dataRSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type colidxR(colidxRSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type orderedIndex(orderedIndexSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type quadWeights(quadWeightsSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type rowWeights(rowWeightsSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type completeWeights(completeWeightsSEXP);
+    Rcpp::traits::input_parameter< const bool >::type observed(observedSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type block(blockSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type row(rowSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type col(colSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::LogicalVector& >::type symmetric(symmetricSEXP);
+    Rcpp::traits::input_parameter< const bool >::type logistic(logisticSEXP);
+    rcpp_result_gen = Rcpp::wrap(lmsGraphScoreCpp(matrices, nodes, numXis, numEtas, dataR, colidxR, orderedIndex, quadWeights, rowWeights, completeWeights, observed, block, row, col, symmetric, logistic));
     return rcpp_result_gen;
 END_RCPP
 }
-// lmsCatMatrixScoreCpp
-arma::vec lmsCatMatrixScoreCpp(const Rcpp::List& matrices, const arma::mat& nodes, const Rcpp::IntegerVector& explicitIndex, const int fullDimension, const arma::mat& predictorScore, const Rcpp::List& covarianceScore, const Rcpp::IntegerVector& continuousIndex, const Rcpp::IntegerVector& analyticIndex, const arma::uvec& block, const arma::uvec& row, const arma::uvec& col, const arma::uvec& symmetric);
-RcppExport SEXP _modsem_lmsCatMatrixScoreCpp(SEXP matricesSEXP, SEXP nodesSEXP, SEXP explicitIndexSEXP, SEXP fullDimensionSEXP, SEXP predictorScoreSEXP, SEXP covarianceScoreSEXP, SEXP continuousIndexSEXP, SEXP analyticIndexSEXP, SEXP blockSEXP, SEXP rowSEXP, SEXP colSEXP, SEXP symmetricSEXP) {
+// lmsGraphReverseScoreCpp
+arma::vec lmsGraphReverseScoreCpp(const Rcpp::List& matrices, const arma::mat& nodes, const int numXis, const int numEtas, const Rcpp::List& dataR, const Rcpp::List& colidxR, const Rcpp::IntegerVector& orderedIndex, const arma::vec& quadWeights, const arma::vec& rowWeights, const arma::mat& completeWeights, const bool observed, const Rcpp::IntegerVector& block, const Rcpp::IntegerVector& row, const Rcpp::IntegerVector& col, const Rcpp::LogicalVector& symmetric, const bool logistic, const int ncores);
+RcppExport SEXP _modsem_lmsGraphReverseScoreCpp(SEXP matricesSEXP, SEXP nodesSEXP, SEXP numXisSEXP, SEXP numEtasSEXP, SEXP dataRSEXP, SEXP colidxRSEXP, SEXP orderedIndexSEXP, SEXP quadWeightsSEXP, SEXP rowWeightsSEXP, SEXP completeWeightsSEXP, SEXP observedSEXP, SEXP blockSEXP, SEXP rowSEXP, SEXP colSEXP, SEXP symmetricSEXP, SEXP logisticSEXP, SEXP ncoresSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::List& >::type matrices(matricesSEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type nodes(nodesSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type explicitIndex(explicitIndexSEXP);
-    Rcpp::traits::input_parameter< const int >::type fullDimension(fullDimensionSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type predictorScore(predictorScoreSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::List& >::type covarianceScore(covarianceScoreSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type continuousIndex(continuousIndexSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type analyticIndex(analyticIndexSEXP);
-    Rcpp::traits::input_parameter< const arma::uvec& >::type block(blockSEXP);
-    Rcpp::traits::input_parameter< const arma::uvec& >::type row(rowSEXP);
-    Rcpp::traits::input_parameter< const arma::uvec& >::type col(colSEXP);
-    Rcpp::traits::input_parameter< const arma::uvec& >::type symmetric(symmetricSEXP);
-    rcpp_result_gen = Rcpp::wrap(lmsCatMatrixScoreCpp(matrices, nodes, explicitIndex, fullDimension, predictorScore, covarianceScore, continuousIndex, analyticIndex, block, row, col, symmetric));
+    Rcpp::traits::input_parameter< const int >::type numXis(numXisSEXP);
+    Rcpp::traits::input_parameter< const int >::type numEtas(numEtasSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type dataR(dataRSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type colidxR(colidxRSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type orderedIndex(orderedIndexSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type quadWeights(quadWeightsSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type rowWeights(rowWeightsSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type completeWeights(completeWeightsSEXP);
+    Rcpp::traits::input_parameter< const bool >::type observed(observedSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type block(blockSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type row(rowSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type col(colSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::LogicalVector& >::type symmetric(symmetricSEXP);
+    Rcpp::traits::input_parameter< const bool >::type logistic(logisticSEXP);
+    Rcpp::traits::input_parameter< const int >::type ncores(ncoresSEXP);
+    rcpp_result_gen = Rcpp::wrap(lmsGraphReverseScoreCpp(matrices, nodes, numXis, numEtas, dataR, colidxR, orderedIndex, quadWeights, rowWeights, completeWeights, observed, block, row, col, symmetric, logistic, ncores));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -790,14 +804,14 @@ static const R_CallMethodDef CallEntries[] = {
     {"_modsem_gradLogLikQmlFDCpp", (DL_FUNC) &_modsem_gradLogLikQmlFDCpp, 7},
     {"_modsem_gradObsLogLikQmlFDCpp", (DL_FUNC) &_modsem_gradObsLogLikQmlFDCpp, 7},
     {"_modsem_hessLogLikQmlCpp", (DL_FUNC) &_modsem_hessLogLikQmlCpp, 8},
-    {"_modsem_lmsCatFrozenQCpp", (DL_FUNC) &_modsem_lmsCatFrozenQCpp, 3},
-    {"_modsem_ordinalLogLikCpp", (DL_FUNC) &_modsem_ordinalLogLikCpp, 9},
-    {"_modsem_adaptiveOrdinalLogLikCpp", (DL_FUNC) &_modsem_adaptiveOrdinalLogLikCpp, 7},
-    {"_modsem_mixedLogLikCpp", (DL_FUNC) &_modsem_mixedLogLikCpp, 12},
-    {"_modsem_adaptiveMixedLogLikCpp", (DL_FUNC) &_modsem_adaptiveMixedLogLikCpp, 10},
-    {"_modsem_lmsCatLatentMeansCpp", (DL_FUNC) &_modsem_lmsCatLatentMeansCpp, 4},
-    {"_modsem_lmsCatReducedMomentsCpp", (DL_FUNC) &_modsem_lmsCatReducedMomentsCpp, 5},
-    {"_modsem_lmsCatMatrixScoreCpp", (DL_FUNC) &_modsem_lmsCatMatrixScoreCpp, 12},
+    {"_modsem_lmsGraphStatesCpp", (DL_FUNC) &_modsem_lmsGraphStatesCpp, 4},
+    {"_modsem_lmsGraphAdaptiveRuleCpp", (DL_FUNC) &_modsem_lmsGraphAdaptiveRuleCpp, 14},
+    {"_modsem_lmsGraphLogKernelCpp", (DL_FUNC) &_modsem_lmsGraphLogKernelCpp, 9},
+    {"_modsem_lmsGraphAggregateCpp", (DL_FUNC) &_modsem_lmsGraphAggregateCpp, 3},
+    {"_modsem_lmsGraphPstepCpp", (DL_FUNC) &_modsem_lmsGraphPstepCpp, 11},
+    {"_modsem_lmsGraphWeightedKernelCpp", (DL_FUNC) &_modsem_lmsGraphWeightedKernelCpp, 2},
+    {"_modsem_lmsGraphScoreCpp", (DL_FUNC) &_modsem_lmsGraphScoreCpp, 16},
+    {"_modsem_lmsGraphReverseScoreCpp", (DL_FUNC) &_modsem_lmsGraphReverseScoreCpp, 17},
     {"_modsem_multiplyIndicatorsCpp", (DL_FUNC) &_modsem_multiplyIndicatorsCpp, 1},
     {"_modsem_checkOpenMP_Cpp", (DL_FUNC) &_modsem_checkOpenMP_Cpp, 0},
     {"_modsem_dmvnrmArmaMc", (DL_FUNC) &_modsem_dmvnrmArmaMc, 5},

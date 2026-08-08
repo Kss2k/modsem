@@ -1,10 +1,34 @@
-computeGradient <- function(theta, model, P, epsilon) {
-  gradientObsLogLikLms(theta = theta, model = model, P = P, sign = -1,
-                       epsilon = epsilon)
+getLmsBackend <- function(backend = c("legacy", "graph"),
+                          link = c("logit", "probit")) {
+  backend <- match.arg(backend)
+  link <- match.arg(link)
+  if (backend == "graph") return(lmsGraphBackend(link))
+  list(
+    name = "legacy", pstep = estepLms,
+    complete = compLogLikLms, observed = obsLogLikLms,
+    gradient.complete = gradientCompLogLikLms,
+    gradient.observed = gradientObsLogLikLms,
+    hessian.complete = hessianCompLogLikLms,
+    hessian.observed = hessianObsLogLikLms
+  )
 }
 
 
-computeFullIobs <- function(theta, model, P, louis = TRUE) {
+computeGradient <- function(theta, model, P, epsilon,
+                            backend = getLmsBackend("legacy")) {
+  backend$gradient.observed(theta = theta, model = model, P = P, sign = -1,
+                            epsilon = epsilon)
+}
+
+
+computeFullIobs <- function(theta, model, P, louis = TRUE,
+                            backend = getLmsBackend("legacy")) {
+
+  if (backend$name == "graph") {
+    I <- backend$hessian.observed(theta = theta, model = model, P = P,
+                                  sign = -1)
+    return(0.5 * (I + t(I)))
+  }
 
   if (louis) {
     louisInfo <- observedInfoFromLouisLms(
@@ -278,6 +302,8 @@ emLms <- function(model,
                   adaptive.quad.tol = 1e-12,
                   nodes = 24,
                   cr1s = TRUE,
+                  lms.backend = c("legacy", "graph"),
+                  link = c("logit", "probit"),
                   ema.min.iter = 10L,
                   ema.trend.min = 0,
                   ema.forecast.min.gains = 3L,
@@ -301,6 +327,15 @@ emLms <- function(model,
                   ...) {
 
   algorithm <- toupper(match.arg(algorithm))
+  link <- match.arg(link)
+  backend <- getLmsBackend(lms.backend, link)
+  if (backend$name == "graph" && calc.se) {
+    mod_stopif(robust.se,
+      "Robust standard errors are not yet available for `lms.backend = \"graph\"`.")
+    mod_stopif(FIM != "observed",
+      "Only the observed Hessian is currently available for `lms.backend = \"graph\"`.")
+    OFIM.hessian <- TRUE
+  }
   ema.min.iter <- as.integer(ema.min.iter)
   ema.forecast.min.gains <- as.integer(ema.forecast.min.gains)
   qn.maxit.start <- as.integer(qn.maxit.start)
@@ -380,7 +415,7 @@ emLms <- function(model,
       )
 
       # E-step at thetaOld
-      P <- estepLms(
+      P <- backend$pstep(
         model             = model,
         theta             = thetaOld,
         lastQuad          = lastQuad,
@@ -391,7 +426,7 @@ emLms <- function(model,
 
       if (testSimpleGradient) {
         tryCatch({
-          gradientObsLogLikLms(theta = thetaNew, model = model, P = P)
+          backend$gradient.observed(theta = thetaNew, model = model, P = P)
         }, error = \(e) {
           mod_msg_warn_immediate(
             paste0("Optimized computation of gradient failed! Switching gradient type.\n",
@@ -492,19 +527,20 @@ emLms <- function(model,
       }
 
       .obsfn <- function(x) {
-        ll <- obsLogLikLms(theta = x, model = model, P = P, sign = -1)
+        ll <- backend$observed(theta = x, model = model, P = P, sign = -1)
         if (!is.finite(ll)) .Machine$double.xmax^(1/10) else ll # optim doesn't handle Inf well
       }
 
       .obsgr <- function(x) {
-        grad <- gradientObsLogLikLms(theta = x, model = model, P = P, sign = -1, epsilon = epsilon)
+        grad <- backend$gradient.observed(theta = x, model = model, P = P,
+                                          sign = -1, epsilon = epsilon)
    
         non.finite <- !is.finite(grad)
         if (any(non.finite)) {
           # This might happen during a bad line search in optim()
           # as long as obsLogLikLms() is non finite as well, it should be ok,
           # as it will be rejected...
-          ll <- obsLogLikLms(theta = x, model = model, P = P, sign = -1)
+          ll <- backend$observed(theta = x, model = model, P = P, sign = -1)
           mod_stopif(is.finite(ll),
             "Some gradient values are NaN, but objective is finite!"
           )
@@ -519,7 +555,8 @@ emLms <- function(model,
       }
 
       .obshs <- function(x, louis = TRUE) {
-        computeFullIobs(theta = x, model = model, P = P, louis = louis)
+        computeFullIobs(theta = x, model = model, P = P, louis = louis,
+                        backend = backend)
       }
 
       .error <- function(e) {
@@ -533,6 +570,7 @@ emLms <- function(model,
           epsilon = epsilon,
           optimizer = optimizer,
           control = control,
+          backend = backend,
           ...
         )
       }
@@ -548,6 +586,7 @@ emLms <- function(model,
             epsilon = epsilon,
             optimizer = optimizer,
             control = control,
+            backend = backend,
             ...
           )
 
@@ -619,7 +658,7 @@ emLms <- function(model,
                             adaptive.quad.tol, quad.range)))
 
     # final E-step
-    P <- estepLms(model = model, theta = thetaNew,
+    P <- backend$pstep(model = model, theta = thetaNew,
                   lastQuad = lastQuad, recalcQuad = FALSE,
                   adaptive.quad.tol = adaptive.quad.tol, ...)
 
@@ -656,7 +695,7 @@ emLms <- function(model,
       "Message: ", conditionMessage(e)
     ), newline. = verbose)
     P0 <- tryCatch(
-      estepLms(model = model, theta = model$theta,
+      backend$pstep(model = model, theta = model$theta,
                lastQuad = NULL, recalcQuad = FALSE,
                adaptive.quad.tol = adaptive.quad.tol, ...),
       error = function(e2) NULL

@@ -130,15 +130,16 @@ mstepLms <- function(theta, model, P,
                      optimizer = "nlminb",
                      optim.method = "L-BFGS-B",
                      epsilon = 1e-6,
+                     backend = getLmsBackend("legacy"),
                      ...) {
   gradient <- function(theta) {
-    gradientCompLogLikLms(theta = theta, model = model, P = P, sign = -1,
-                          epsilon = epsilon)
+    backend$gradient.complete(theta = theta, model = model, P = P, sign = -1,
+                              epsilon = epsilon)
   }
 
   objective <- function(theta) {
-    compLogLikLms(theta = theta, model = model, P = P, sign = -1,
-                  epsilon = epsilon)
+    backend$complete(theta = theta, model = model, P = P, sign = -1,
+                     epsilon = epsilon)
   }
 
   if (optimizer == "nlminb") {
