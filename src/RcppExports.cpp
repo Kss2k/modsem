@@ -612,6 +612,27 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// lmsGraphLaplace2Cpp
+Rcpp::List lmsGraphLaplace2Cpp(const Rcpp::List& matrices, const arma::mat& modes, const int numXis, const int numEtas, const Rcpp::List& dataR, const Rcpp::List& colidxR, const Rcpp::IntegerVector& orderedIndex, const bool logistic, const double curvatureFloor, const double correctionFloor, const int ncores);
+RcppExport SEXP _modsem_lmsGraphLaplace2Cpp(SEXP matricesSEXP, SEXP modesSEXP, SEXP numXisSEXP, SEXP numEtasSEXP, SEXP dataRSEXP, SEXP colidxRSEXP, SEXP orderedIndexSEXP, SEXP logisticSEXP, SEXP curvatureFloorSEXP, SEXP correctionFloorSEXP, SEXP ncoresSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type matrices(matricesSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type modes(modesSEXP);
+    Rcpp::traits::input_parameter< const int >::type numXis(numXisSEXP);
+    Rcpp::traits::input_parameter< const int >::type numEtas(numEtasSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type dataR(dataRSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type colidxR(colidxRSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type orderedIndex(orderedIndexSEXP);
+    Rcpp::traits::input_parameter< const bool >::type logistic(logisticSEXP);
+    Rcpp::traits::input_parameter< const double >::type curvatureFloor(curvatureFloorSEXP);
+    Rcpp::traits::input_parameter< const double >::type correctionFloor(correctionFloorSEXP);
+    Rcpp::traits::input_parameter< const int >::type ncores(ncoresSEXP);
+    rcpp_result_gen = Rcpp::wrap(lmsGraphLaplace2Cpp(matrices, modes, numXis, numEtas, dataR, colidxR, orderedIndex, logistic, curvatureFloor, correctionFloor, ncores));
+    return rcpp_result_gen;
+END_RCPP
+}
 // multiplyIndicatorsCpp
 Rcpp::NumericVector multiplyIndicatorsCpp(Rcpp::DataFrame df);
 RcppExport SEXP _modsem_multiplyIndicatorsCpp(SEXP dfSEXP) {
@@ -886,6 +907,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_modsem_lmsGraphWeightedKernelCpp", (DL_FUNC) &_modsem_lmsGraphWeightedKernelCpp, 2},
     {"_modsem_lmsGraphScoreCpp", (DL_FUNC) &_modsem_lmsGraphScoreCpp, 16},
     {"_modsem_lmsGraphReverseScoreCpp", (DL_FUNC) &_modsem_lmsGraphReverseScoreCpp, 18},
+    {"_modsem_lmsGraphLaplace2Cpp", (DL_FUNC) &_modsem_lmsGraphLaplace2Cpp, 11},
     {"_modsem_multiplyIndicatorsCpp", (DL_FUNC) &_modsem_multiplyIndicatorsCpp, 1},
     {"_modsem_checkOpenMP_Cpp", (DL_FUNC) &_modsem_checkOpenMP_Cpp, 0},
     {"_modsem_dmvnrmArmaMc", (DL_FUNC) &_modsem_dmvnrmArmaMc, 5},

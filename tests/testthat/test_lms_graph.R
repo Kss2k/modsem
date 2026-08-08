@@ -136,6 +136,85 @@ testthat::test_that("packed graph rules support observation-specific nodes and w
 })
 
 
+testthat::test_that("second-order Laplace is exact for a Gaussian latent model", {
+  one.node <- quadrature(1L, 3L)
+  testthat::expect_equal(unname(one.node$n), matrix(0, 1L, 3L),
+                         ignore_attr = TRUE)
+  testthat::expect_equal(as.numeric(one.node$w), 1)
+  M <- list(
+    A = matrix(1), covZetaXi = matrix(numeric(), 0L, 1L),
+    psi = matrix(numeric(), 0L, 0L), beta0 = matrix(0),
+    alpha = matrix(numeric(), 0L, 1L), gammaXi = matrix(numeric(), 0L, 1L),
+    gammaEta = matrix(numeric(), 0L, 0L),
+    omegaXiXi = matrix(numeric(), 0L, 1L),
+    omegaEtaXi = matrix(numeric(), 0L, 0L),
+    lambdaX = matrix(1), tauX = matrix(0), thetaDelta = matrix(1),
+    thresholds = matrix(NaN, 1L, 0L)
+  )
+  value <- .3
+  result <- lmsGraphLaplace2Cpp(
+    M, matrix(value / 2), 1L, 0L, list(matrix(value)), list(0L), integer()
+  )
+  exact <- dnorm(value, 0, sqrt(2), log = TRUE)
+  testthat::expect_equal(as.numeric(result$first), exact, tolerance = 1e-12)
+  testthat::expect_equal(as.numeric(result$second), exact, tolerance = 1e-12)
+  testthat::expect_equal(as.numeric(result$correction), 0, tolerance = 1e-12)
+})
+
+
+testthat::test_that("second-order Laplace improves a binary-logit integral", {
+  M <- list(
+    A = matrix(1), covZetaXi = matrix(numeric(), 0L, 1L),
+    psi = matrix(numeric(), 0L, 0L), beta0 = matrix(0),
+    alpha = matrix(numeric(), 0L, 1L), gammaXi = matrix(numeric(), 0L, 1L),
+    gammaEta = matrix(numeric(), 0L, 0L),
+    omegaXiXi = matrix(numeric(), 0L, 1L),
+    omegaEtaXi = matrix(numeric(), 0L, 0L),
+    lambdaX = matrix(1), tauX = matrix(0), thetaDelta = matrix(1),
+    thresholds = matrix(0)
+  )
+  mode <- uniroot(function(z) z + plogis(z), c(-2, 0))$root
+  result <- lmsGraphLaplace2Cpp(
+    M, matrix(mode), 1L, 0L, list(matrix(1)), list(0L), 0L
+  )
+  exact <- log(.5)
+  testthat::expect_lt(abs(result$second - exact), abs(result$first - exact))
+  testthat::expect_false(as.logical(result$adjusted))
+})
+
+
+testthat::test_that("second-order Laplace approaches high-node AGHQ in three dimensions", {
+  M <- list(
+    A = diag(2), covZetaXi = matrix(0, 1L, 2L), psi = matrix(1),
+    gammaXi = matrix(c(.2, .3), 1L), gammaEta = matrix(0, 1L, 1L),
+    omegaXiXi = matrix(c(0, .4, 0, 0), 2L, 2L),
+    omegaEtaXi = matrix(0, 2L, 1L), beta0 = matrix(0, 2L, 1L),
+    alpha = matrix(0), lambdaX = matrix(c(0, 0, 1), 1L),
+    tauX = matrix(0), thetaDelta = matrix(1),
+    thresholds = matrix(NaN, 1L, 0L)
+  )
+  data <- list(matrix(.2))
+  columns <- list(0L)
+  base <- quadrature(5L, 3L)
+  adaptive <- lmsGraphAdaptiveRuleCpp(
+    M, base$n, base$w, matrix(0, 1L, 3L), 2L, 1L,
+    data, columns, integer(), ncores = 1L
+  )
+  laplace <- lmsGraphLaplace2Cpp(
+    M, adaptive$modes, 2L, 1L, data, columns, integer()
+  )
+  high <- quadrature(15L, 3L)
+  kernel <- lmsGraphLogKernelCpp(
+    M, high$n, 2L, 1L, data, columns, integer()
+  )
+  reference <- lmsGraphAggregateCpp(kernel, high$w, 1)$logLik
+  testthat::expect_lt(abs(laplace$second - reference),
+                      abs(laplace$first - reference))
+  testthat::expect_equal(as.numeric(laplace$second), reference,
+                         tolerance = 3e-3)
+})
+
+
 testthat::test_that("per-observation adaptive graph quadrature is exact for Gaussian rows", {
   values <- matrix(c(-1, .4, 1.5), ncol = 1L)
   M <- list(

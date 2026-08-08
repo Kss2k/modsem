@@ -27,6 +27,7 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    adaptive.quad = TRUE,
                    adaptive.quad.tol = 1e-12,
                    adaptive.frequency = 3,
+                   integration = "aghq",
                    n.threads = NULL,
                    algorithm = "EMA",
                    em.control = list(),

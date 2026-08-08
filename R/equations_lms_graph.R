@@ -114,12 +114,16 @@ lmsGraphPrepareOrdered <- function(model, data, model.syntax, ordered = NULL,
   model
 }
 
-lmsGraphBackend <- function(link = c("logit", "probit")) {
+lmsGraphBackend <- function(link = c("logit", "probit"),
+                            integration = c("aghq", "laplace", "laplace2")) {
   link <- match.arg(link)
+  integration <- match.arg(integration)
   list(
     name = "graph",
     link = link,
-    pstep = function(...) pstepLmsGraph(..., link = link),
+    pstep = function(...) pstepLmsGraph(
+      ..., link = link, integration = integration
+    ),
     complete = compLogLikLmsGraph,
     observed = obsLogLikLmsGraph,
     gradient.complete = gradientCompLogLikLmsGraph,
@@ -316,14 +320,16 @@ lmsGraphAdaptiveRule <- function(submodel, previous = NULL,
                                  curvature.floor = 1e-6,
                                  derivative.step = 1e-4,
                                  max.nodes = 1e6,
-                                 workspace = NULL) {
+                                 workspace = NULL,
+                                 base = NULL) {
   link <- match.arg(link)
   dimension <- submodel$info$numXis + submodel$info$numEtas
   if (!dimension) return(lmsGraphBaseRule(submodel, max.nodes))
-  base <- quadrature(
-    m = submodel$quad$m, k = dimension, adaptive = FALSE,
-    quad.range = submodel$quad$quad.range
-  )
+  if (is.null(base))
+    base <- quadrature(
+      m = submodel$quad$m, k = dimension, adaptive = FALSE,
+      quad.range = submodel$quad$quad.range
+    )
   mod_stopif(NROW(base$n) > max.nodes,
              "The adaptive LMS graph rule exceeds the node limit.")
   M <- submodel$matrices
@@ -366,6 +372,28 @@ lmsGraphAdaptiveRule <- function(submodel, previous = NULL,
     adaptive.frequency = submodel$quad$adaptive.frequency,
     packed = TRUE
   )
+}
+
+
+lmsGraphLaplaceSigmaRule <- function(submodel, previous = NULL,
+                                     link = c("logit", "probit"),
+                                     tolerance = 1e-8,
+                                     workspace = NULL) {
+  link <- match.arg(link)
+  dimension <- submodel$info$numXis + submodel$info$numEtas
+  if (!dimension) return(lmsGraphBaseRule(submodel))
+  radius <- sqrt(dimension)
+  base.nodes <- rbind(diag(radius, dimension), -diag(radius, dimension))
+  base <- list(
+    n = base.nodes, w = rep(1 / (2 * dimension), 2 * dimension),
+    m = NA_integer_, k = dimension,
+    quad.range = Inf, adaptive = FALSE
+  )
+  rule <- lmsGraphAdaptiveRule(
+    submodel, previous, link, tolerance, workspace = workspace, base = base
+  )
+  rule$laplace.sigma <- TRUE
+  rule
 }
 
 
@@ -427,8 +455,10 @@ lmsGraphLogSumExp <- function(x) {
 
 pstepLmsGraph <- function(model, theta, lastQuad = NULL, recalcQuad = FALSE,
                           link = c("logit", "probit"),
-                          adaptive.quad.tol = 1e-8, ...) {
+                          adaptive.quad.tol = 1e-8,
+                          integration = c("aghq", "laplace", "laplace2"), ...) {
   link <- match.arg(link)
+  integration <- match.arg(integration)
   filled <- fillModel(model = model, theta = theta, method = "lms")
   groups <- vector("list", model$info$n.groups)
 
@@ -437,15 +467,23 @@ pstepLmsGraph <- function(model, theta, lastQuad = NULL, recalcQuad = FALSE,
     submodel$quad <- model$models[[g]]$quad
     previous <- if (!is.null(lastQuad)) lastQuad[[g]] else NULL
     workspace <- previous$workspace %||% lmsGraphWorkspace(submodel)
-    rule <- if (!is.null(previous) && !recalcQuad) previous else
-      lmsGraphRule(submodel, previous = previous, link = link,
-                   tolerance = adaptive.quad.tol, workspace = workspace)
+    rule <- if (!is.null(previous) && !recalcQuad) previous else if (
+      integration == "aghq"
+    ) lmsGraphRule(submodel, previous = previous, link = link,
+                   tolerance = adaptive.quad.tol, workspace = workspace) else
+      lmsGraphLaplaceSigmaRule(
+        submodel, previous = previous, link = link,
+        tolerance = adaptive.quad.tol, workspace = workspace
+      )
     rule$workspace <- workspace
     sampling.weights <- submodel$data$weights
     if (is.null(sampling.weights)) sampling.weights <- rep(1, submodel$data$n)
     M <- submodel$matrices
     if (is.null(M$thresholds))
       M$thresholds <- matrix(NaN, NROW(M$lambdaX), 0L)
+    ordered <- match(submodel$info$ordered %||% character(),
+                     rownames(M$lambdaX)) - 1L
+    ordered <- ordered[!is.na(ordered)]
     aggregate <- lmsGraphPstepWorkspaceCpp(
       M, rule$n, submodel$info$numXis, submodel$info$numEtas, workspace,
       rule$w, sampling.weights, identical(link, "logit"),
@@ -453,25 +491,45 @@ pstepLmsGraph <- function(model, theta, lastQuad = NULL, recalcQuad = FALSE,
     )
     log.kernel <- aggregate$logKernel
     posterior <- aggregate$posterior
+    observed.logLik <- aggregate$logLik
+    laplace <- NULL
+    if (integration != "aghq") {
+      laplace <- lmsGraphLaplace2Cpp(
+        M, rule$modes, submodel$info$numXis, submodel$info$numEtas,
+        submodel$data$data.split, submodel$data$colidx0, ordered,
+        identical(link, "logit"), 1e-6, 1e-8,
+        ThreadEnv$n.threads %||% 1L
+      )
+      contribution <- if (integration == "laplace2")
+        laplace$second else laplace$first
+      observed.logLik <- sum(sampling.weights * contribution)
+    }
 
     groups[[g]] <- list(
       P = posterior * sampling.weights,
       posterior = posterior,
       log.kernel = log.kernel,
       V = rule$n, w = rule$w, quad = rule,
-      obsLL = aggregate$logLik,
+      obsLL = observed.logLik, laplace = laplace,
       sampling.weights = sampling.weights, link = link,
-      workspace = workspace
+      workspace = workspace, integration = integration
     )
   }
 
   list(P_GROUPS = groups, quad = lapply(groups, `[[`, "quad"),
        obsLL = sum(vapply(groups, `[[`, numeric(1L), "obsLL")),
-       lms.backend = "graph")
+       lms.backend = "graph", integration = integration)
 }
 
 
 lmsGraphObjective <- function(theta, model, P, observed = FALSE, sign = -1) {
+  if (observed && !is.null(P$integration) && P$integration != "aghq") {
+    approximation <- lmsGraphLaplaceEvaluation(
+      model, theta, P$integration, P$quad,
+      P$P_GROUPS[[1L]]$link %||% "logit"
+    )
+    return(sign * approximation$logLik)
+  }
   filled <- fillModel(model = model, theta = theta, method = "lms")
   ll <- 0
   for (g in seq_len(model$info$n.groups)) {
@@ -601,6 +659,10 @@ gradientCompLogLikLmsGraph <- function(theta, model, P, sign = -1,
 
 gradientObsLogLikLmsGraph <- function(theta, model, P, sign = -1,
                                       epsilon = 1e-6, ...) {
+  if (!is.null(P$integration) && P$integration != "aghq")
+    return(lmsGraphGradient(
+      theta, function(x) obsLogLikLmsGraph(x, model, P, sign), epsilon
+    ))
   lmsGraphAnalyticalGradient(theta, model, P, observed = TRUE, sign = sign)
 }
 
@@ -612,6 +674,10 @@ hessianCompLogLikLmsGraph <- function(theta, model, P, sign = -1,
 
 hessianObsLogLikLmsGraph <- function(theta, model, P, sign = -1,
                                      .relStep = .Machine$double.eps ^ (1/4), ...) {
+  if (!is.null(P$integration) && P$integration != "aghq")
+    return((-sign) * lmsGraphLaplaceInformation(
+      theta, model, P, epsilon = max(.relStep, 1e-5)
+    ))
   lmsGraphHessianFromGradient(theta, function(x)
     gradientObsLogLikLmsGraph(x, model, P, sign), .relStep)
 }

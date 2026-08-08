@@ -1,8 +1,10 @@
 getLmsBackend <- function(backend = c("legacy", "graph"),
-                          link = c("logit", "probit")) {
+                          link = c("logit", "probit"),
+                          integration = c("aghq", "laplace", "laplace2")) {
   backend <- match.arg(backend)
   link <- match.arg(link)
-  if (backend == "graph") return(lmsGraphBackend(link))
+  integration <- match.arg(integration)
+  if (backend == "graph") return(lmsGraphBackend(link, integration))
   list(
     name = "legacy", pstep = estepLms,
     complete = compLogLikLms, observed = obsLogLikLms,
@@ -304,6 +306,7 @@ emLms <- function(model,
                   cr1s = TRUE,
                   lms.backend = c("legacy", "graph"),
                   link = c("logit", "probit"),
+                  integration = c("aghq", "laplace", "laplace2"),
                   ema.min.iter = 10L,
                   ema.trend.min = 0,
                   ema.forecast.min.gains = 3L,
@@ -328,7 +331,8 @@ emLms <- function(model,
 
   algorithm <- toupper(match.arg(algorithm))
   link <- match.arg(link)
-  backend <- getLmsBackend(lms.backend, link)
+  integration <- match.arg(integration)
+  backend <- getLmsBackend(lms.backend, link, integration)
   if (backend$name == "graph" && calc.se) {
     mod_stopif(robust.se,
       "Robust standard errors are not yet available for `lms.backend = \"graph\"`.")
@@ -647,6 +651,33 @@ emLms <- function(model,
         thetaNew <- mstep$par
       } else {
         thetaNew <- thetaOld
+      }
+
+      # A higher-order Laplace E-step is a generalized EM approximation, so
+      # the unconstrained M-step need not increase the corrected observed
+      # likelihood. Backtrack along the EM direction until it does.
+      if (algorithm == "EM" && integration != "aghq" &&
+          any(thetaNew != thetaOld)) {
+        direction <- thetaNew - thetaOld
+        accepted <- FALSE
+        for (backtrack in 0:12) {
+          scale <- 2 ^ (-backtrack)
+          candidate <- thetaOld + scale * direction
+          candidateP <- tryCatch(
+            backend$pstep(
+              model = model, theta = candidate, lastQuad = lastQuad,
+              recalcQuad = FALSE,
+              adaptive.quad.tol = adaptive.quad.tol, ...
+            ), error = function(e) NULL
+          )
+          if (!is.null(candidateP) && is.finite(candidateP$obsLL) &&
+              candidateP$obsLL >= P$obsLL - 1e-8) {
+            thetaNew <- candidate
+            accepted <- TRUE
+            break
+          }
+        }
+        if (!accepted) thetaNew <- thetaOld
       }
     } # while
 

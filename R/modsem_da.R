@@ -133,6 +133,8 @@
 #'   that it is recalculated every third EM-iteration.
 #'
 #' @param adaptive.quad.tol Relative error tolerance for quasi adaptive quadrature. Defaults to \code{1e-12}.
+#' @param integration Integration rule for the LMS graph backend. One of
+#'   \code{"aghq"}, \code{"laplace"}, or \code{"laplace2"}.
 #'
 #' @param n.threads number of threads to use for parallel processing. If \code{NULL}, it will use <= 2 threads.
 #'   If an integer is specified, it will use that number of threads (e.g., \code{n.threads = 4} will use 4 threads).
@@ -397,6 +399,7 @@ modsem_da <- function(model.syntax = NULL,
                       adaptive.quad = NULL,
                       adaptive.frequency = NULL,
                       adaptive.quad.tol = NULL,
+                      integration = NULL,
                       n.threads = NULL,
                       algorithm = NULL,
                       em.control = NULL,
@@ -575,6 +578,7 @@ modsem_da <- function(model.syntax = NULL,
           adaptive.quad                  = adaptive.quad,
           adaptive.frequency             = adaptive.frequency,
           adaptive.quad.tol              = adaptive.quad.tol,
+          integration                    = integration,
           n.threads                      = n.threads,
           algorithm                      = algorithm,
           em.control                     = em.control,
@@ -591,6 +595,13 @@ modsem_da <- function(model.syntax = NULL,
           fix.composite.var              = fix.composite.var
         )
     )
+  args$integration <- match.arg(args$integration,
+                                c("aghq", "laplace", "laplace2"))
+  if (args$integration != "aghq" && is.null(algorithm))
+    args$algorithm <- "EM"
+  mod_stopif(args$integration != "aghq" &&
+               (method != "lms" || lms.backend != "graph"),
+             "Laplace integration is only available for the LMS graph backend.")
   args$ordered <- if (has.ordered) lmsGraphOrderedColumns(data, model.syntax, ordered) else NULL
   if (method == "lms" && lms.backend == "graph" && !nodes.user.supplied)
     args$nodes <- 5L
@@ -651,7 +662,7 @@ modsem_da <- function(model.syntax = NULL,
     }
     integration.dimension <- model$models[[1L]]$info$numXis +
       model$models[[1L]]$info$numEtas
-    mod_warnif(integration.dimension > 5L,
+    mod_warnif(integration.dimension > 5L && args$integration == "aghq",
       paste0("The LMS graph model integrates over ", integration.dimension,
              " latent variables. Product-rule AGHQ may be expensive; consider ",
              "changing the integration settings described in `?modsem_da`."))
@@ -746,7 +757,18 @@ modsem_da <- function(model.syntax = NULL,
       cr1s            = args$cr1s,
       ...
     ),
-    lms = emLms(model,
+    lms = if (args$integration != "aghq" &&
+              toupper(args$algorithm) != "EM") estLmsGraphLaplace(model,
+      order             = args$integration,
+      link              = link,
+      optimizer         = args$optimizer,
+      max.iter          = args$max.iter,
+      convergence.rel   = args$convergence.rel,
+      calc.se           = args$calc.se,
+      verbose           = args$verbose,
+      adaptive.quad.tol = args$adaptive.quad.tol,
+      ...
+    ) else emLms(model,
       verbose           = args$verbose,
       convergence.abs   = args$convergence.abs,
       convergence.rel   = args$convergence.rel,
@@ -770,6 +792,8 @@ modsem_da <- function(model.syntax = NULL,
       cr1s              = args$cr1s,
       lms.backend       = lms.backend,
       link              = link,
+      integration       = args$integration,
+      ema.final.qn      = args$integration == "aghq",
       ...
   )),
   error = function(e) {

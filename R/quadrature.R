@@ -28,9 +28,14 @@ quadrature <- function(m, k,
     ))
   }
 
-  singleDimGauss <- fastGHQuad::gaussHermiteData(m)
-  nodes <- singleDimGauss$x
-  weights <- singleDimGauss$w
+  if (m == 1L) {
+    nodes <- 0
+    weights <- sqrt(pi)
+  } else {
+    singleDimGauss <- fastGHQuad::gaussHermiteData(m)
+    nodes <- singleDimGauss$x
+    weights <- singleDimGauss$w
+  }
 
   nodes_list   <- replicate(k, nodes, simplify = FALSE)
   weight_list  <- replicate(k, weights, simplify = FALSE)

@@ -141,6 +141,10 @@ lmsGraphReverseScoreCpp <- function(matrices, nodes, numXis, numEtas, dataR, col
     .Call(`_modsem_lmsGraphReverseScoreCpp`, matrices, nodes, numXis, numEtas, dataR, colidxR, orderedIndex, quadWeights, rowWeights, completeWeights, observed, block, row, col, symmetric, logistic, ncores, workspaceSEXP)
 }
 
+lmsGraphLaplace2Cpp <- function(matrices, modes, numXis, numEtas, dataR, colidxR, orderedIndex, logistic = TRUE, curvatureFloor = 1e-6, correctionFloor = 1e-8, ncores = 1L) {
+    .Call(`_modsem_lmsGraphLaplace2Cpp`, matrices, modes, numXis, numEtas, dataR, colidxR, orderedIndex, logistic, curvatureFloor, correctionFloor, ncores)
+}
+
 multiplyIndicatorsCpp <- function(df) {
     .Call(`_modsem_multiplyIndicatorsCpp`, df)
 }
