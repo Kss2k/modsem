@@ -377,6 +377,19 @@ void numericalGradientHessian(const std::function<double(const arma::vec&)>& fn,
     }
 }
 
+arma::vec numericalGradient(const std::function<double(const arma::vec&)>& fn,
+                            const arma::vec& x,
+                            const double relativeStep) {
+  arma::vec gradient(x.n_elem, arma::fill::zeros);
+  const arma::vec step = relativeStep * (1.0 + arma::abs(x));
+  for (arma::uword j = 0; j < x.n_elem; ++j) {
+    arma::vec xp = x, xm = x;
+    xp(j) += step(j); xm(j) -= step(j);
+    gradient(j) = (fn(xp) - fn(xm)) / (2.0 * step(j));
+  }
+  return gradient;
+}
+
 } // namespace
 
 
@@ -442,42 +455,57 @@ Rcpp::List lmsGraphAdaptiveRuleCpp(const Rcpp::List& matrices,
       arma::vec mode = starts.row(observation).t();
       int code = 1;
       const double gradientTolerance = std::max(1e-6, std::sqrt(tolerance));
+      arma::mat inverseHessian(dimension, dimension, arma::fill::eye);
+      arma::vec gradient = numericalGradient(objective, mode, derivativeStep);
       for (int iteration = 0; iteration < maxIterations; ++iteration) {
-        arma::vec gradient;
-        arma::mat hessian;
-        numericalGradientHessian(objective, mode, gradient, hessian,
-                                 derivativeStep);
-        if (!gradient.is_finite() || !hessian.is_finite()) { code = 2; break; }
+        if (!gradient.is_finite()) { code = 2; break; }
         if (arma::abs(gradient).max() < gradientTolerance) { code = 0; break; }
-        arma::vec eigenvalues;
-        arma::mat eigenvectors;
-        if (!arma::eig_sym(eigenvalues, eigenvectors, hessian)) { code = 3; break; }
-        eigenvalues.transform([&](double value) {
-          return std::max(value, curvatureFloor);
-        });
-        const arma::vec direction = -eigenvectors *
-          ((eigenvectors.t() * gradient) / eigenvalues);
+        arma::vec direction = -inverseHessian * gradient;
+        double directionalDerivative = arma::dot(gradient, direction);
+        if (!direction.is_finite() || directionalDerivative >= 0.0) {
+          inverseHessian.eye();
+          direction = -gradient;
+          directionalDerivative = -arma::dot(gradient, gradient);
+        }
         const double current = objective(mode);
         double scale = 1.0;
         bool accepted = false;
+        arma::vec candidate;
         while (scale >= 1e-6) {
-          const arma::vec candidate = mode + scale * direction;
+          candidate = mode + scale * direction;
           const double candidateValue = objective(candidate);
-          if (std::isfinite(candidateValue) && candidateValue < current) {
-            mode = candidate; accepted = true; break;
+          if (std::isfinite(candidateValue) &&
+              candidateValue <= current + 1e-4 * scale * directionalDerivative) {
+            accepted = true; break;
           }
           scale *= 0.5;
         }
         if (!accepted) { code = 4; break; }
-        if (arma::abs(scale * direction).max() < gradientTolerance) {
-          code = 0; break;
+        const arma::vec newGradient = numericalGradient(
+          objective, candidate, derivativeStep
+        );
+        if (!newGradient.is_finite()) { code = 2; break; }
+        const arma::vec stepTaken = candidate - mode;
+        const arma::vec gradientChange = newGradient - gradient;
+        const double curvature = arma::dot(gradientChange, stepTaken);
+        if (curvature > 1e-10) {
+          const double rho = 1.0 / curvature;
+          const arma::mat identity(dimension, dimension, arma::fill::eye);
+          const arma::mat left = identity - rho * stepTaken * gradientChange.t();
+          inverseHessian = left * inverseHessian * left.t() +
+            rho * stepTaken * stepTaken.t();
+        } else {
+          inverseHessian.eye();
         }
+        mode = candidate;
+        gradient = newGradient;
+        if (arma::abs(stepTaken).max() < gradientTolerance) { code = 0; break; }
       }
       modes.row(observation) = mode.t();
 
-      arma::vec gradient, eigenvalues;
+      arma::vec finalGradient, eigenvalues;
       arma::mat hessian, eigenvectors;
-      numericalGradientHessian(objective, mode, gradient, hessian,
+      numericalGradientHessian(objective, mode, finalGradient, hessian,
                                derivativeStep);
       if (!arma::eig_sym(eigenvalues, eigenvectors, hessian) ||
           !eigenvalues.is_finite()) {
