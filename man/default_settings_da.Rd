@@ -4,7 +4,7 @@
 \alias{default_settings_da}
 \title{default arguments fro LMS and QML approach}
 \usage{
-default_settings_da(method = c("lms", "qml"))
+default_settings_da(method = c("lms", "lms-jv", "lms-cat", "qml"))
 }
 \arguments{
 \item{method}{which method to get the settings for}

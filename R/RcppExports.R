@@ -93,6 +93,38 @@ hessLogLikQmlCpp <- function(submodel, block, row, col, symmetric, relStep = 1e-
     .Call(`_modsem_hessLogLikQmlCpp`, submodel, block, row, col, symmetric, relStep, minAbs, ncores)
 }
 
+lmsCatFrozenQCpp <- function(posterior, logKernel, rowWeights) {
+    .Call(`_modsem_lmsCatFrozenQCpp`, posterior, logKernel, rowWeights)
+}
+
+ordinalLogLikCpp <- function(codes, mu, thresholds, quadWeights, logAdjust, patternWeights, gradient = FALSE, details = FALSE, posteriorDetails = TRUE) {
+    .Call(`_modsem_ordinalLogLikCpp`, codes, mu, thresholds, quadWeights, logAdjust, patternWeights, gradient, details, posteriorDetails)
+}
+
+adaptiveOrdinalLogLikCpp <- function(codes, mu, thresholds, quadWeights, logAdjust, patternWeights, nodesPerPattern) {
+    .Call(`_modsem_adaptiveOrdinalLogLikCpp`, codes, mu, thresholds, quadWeights, logAdjust, patternWeights, nodesPerPattern)
+}
+
+mixedLogLikCpp <- function(codes, categoricalMu, thresholds, continuousData, continuousMu, covariance, quadWeights, logAdjust, rowWeights, gradient = FALSE, details = FALSE, posteriorDetails = TRUE) {
+    .Call(`_modsem_mixedLogLikCpp`, codes, categoricalMu, thresholds, continuousData, continuousMu, covariance, quadWeights, logAdjust, rowWeights, gradient, details, posteriorDetails)
+}
+
+adaptiveMixedLogLikCpp <- function(codes, categoricalMu, thresholds, continuousData, continuousMu, covariance, quadWeights, logAdjust, rowWeights, nodesPerRow) {
+    .Call(`_modsem_adaptiveMixedLogLikCpp`, codes, categoricalMu, thresholds, continuousData, continuousMu, covariance, quadWeights, logAdjust, rowWeights, nodesPerRow)
+}
+
+lmsCatLatentMeansCpp <- function(matrices, nodes, explicitIndex, fullDimension) {
+    .Call(`_modsem_lmsCatLatentMeansCpp`, matrices, nodes, explicitIndex, fullDimension)
+}
+
+lmsCatReducedMomentsCpp <- function(matrices, nodes, explicitIndex, analyticIndex, fullDimension) {
+    .Call(`_modsem_lmsCatReducedMomentsCpp`, matrices, nodes, explicitIndex, analyticIndex, fullDimension)
+}
+
+lmsCatMatrixScoreCpp <- function(matrices, nodes, explicitIndex, fullDimension, predictorScore, covarianceScore, continuousIndex, analyticIndex, block, row, col, symmetric) {
+    .Call(`_modsem_lmsCatMatrixScoreCpp`, matrices, nodes, explicitIndex, fullDimension, predictorScore, covarianceScore, continuousIndex, analyticIndex, block, row, col, symmetric)
+}
+
 multiplyIndicatorsCpp <- function(df) {
     .Call(`_modsem_multiplyIndicatorsCpp`, df)
 }

@@ -10,6 +10,9 @@
 #' @param method method to use:
 #' \describe{
 #'   \item{\code{"lms"}}{latent moderated structural equations (not passed to \code{lavaan}).}
+#'   \item{\code{"lms-jv"}}{ordinal-probit marginal maximum likelihood using
+#'     adaptive Gauss-Hermite quadrature, following Jin, Vegelius, and
+#'     Yang-Wallentin. \code{"lms-cat"} is an alias.}
 #'   \item{\code{"qml"}}{quasi maximum likelihood estimation (not passed to \code{lavaan}).}
 #' }
 #'
@@ -216,6 +219,12 @@
 #'   before the observed-data fit and after ordinalizing simulated indicators? This is
 #'   recommended for numerical stability and is enabled by default.
 #'
+#' @param integration Numerical integration rule for \code{method = "lms-jv"}.
+#'   One of \code{"auto"}, \code{"aghq"}, \code{"sparse"}, or \code{"qmc"}.
+#'
+#' @param integration.control Named list controlling ordinal-probit integration
+#'   and optimization. See \code{default_settings_da("lms-jv")}.
+#'
 #' @param cluster Clusters used to compute standard errors robust to non-indepence of observations. Must be paired with
 #'   \code{robust.se = TRUE}.
 #'
@@ -402,6 +411,8 @@ modsem_da <- function(model.syntax = NULL,
                       ordered.delta.epsilon = 1e-2,
                       ordered.boot.reps = 1000L,
                       ordered.standardize = TRUE,
+                      integration = c("auto", "aghq", "sparse", "qmc"),
+                      integration.control = list(),
                       cluster = NULL,
                       cr1s = FALSE,
                       sampling.weights = NULL,
@@ -417,6 +428,7 @@ modsem_da <- function(model.syntax = NULL,
                       fix.composite.var = NULL,
                       ...) {
   method <- tolower(method)
+  method.requested <- method
 
   if (is.null(model.syntax)) {
     mod_msg_stop("No model.syntax provided")
@@ -427,6 +439,25 @@ modsem_da <- function(model.syntax = NULL,
   }
 
   ordered.se <- match.arg(ordered.se)
+  integration <- match.arg(integration)
+
+  if (method %in% c("lms-jv", "lms-cat")) {
+    return(modsemLmsCat(
+      model.syntax = model.syntax, data = data, ordered = ordered,
+      group = group, sampling.weights = sampling.weights,
+      sampling.weights.normalization = sampling.weights.normalization,
+      missing = missing, nodes = nodes, integration = integration,
+      integration.control = integration.control, calc.se = calc.se,
+      robust.se = robust.se, cluster = cluster, start = start,
+      optimizer = optimizer, max.iter = max.iter,
+      convergence.abs = convergence.abs, verbose = verbose,
+      adaptive.frequency = adaptive.frequency,
+      requested.method = method.requested,
+      cov.syntax = cov.syntax, auto.fix.first = auto.fix.first,
+      auto.fix.single = auto.fix.single, n.threads = n.threads,
+      ...
+    ))
+  }
 
   if (length(ordered) || any(sapply(data, FUN = is.ordered))) {
     out <- modsemOrderedMCCorrection(

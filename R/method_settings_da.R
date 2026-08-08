@@ -86,6 +86,12 @@ getMethodSettingsDA <- function(method, args = NULL) {
         )
     )
 
+    settings[["lms-jv"]] <- c(
+        settings$lms,
+        list(integration = "auto", integration.control = lmsCatControl())
+    )
+    settings[["lms-cat"]] <- settings[["lms-jv"]]
+
     if (is.null(args)) return(settings[method])
 
     settingNames <- unique(unlist(lapply(settings, FUN = names)))
@@ -127,6 +133,6 @@ getMethodSettingsDA <- function(method, args = NULL) {
 #' @examples
 #' library(modsem)
 #' default_settings_da()
-default_settings_da <- function(method = c("lms", "qml")) {
+default_settings_da <- function(method = c("lms", "lms-jv", "lms-cat", "qml")) {
   getMethodSettingsDA(method = method, args = NULL)
 }

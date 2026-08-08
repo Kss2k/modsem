@@ -2,7 +2,7 @@
 NAMES_PAR_MATRICES <- c("lambdaX", "lambdaY", "gammaXi", "gammaEta",
                       "thetaDelta", "thetaEpsilon", "W", "T", "phi", "A",
                       "covZetaXi", "psi", "tauX", "tauY", "alpha", "beta0",
-                      "omegaEtaXi", "omegaXiXi")
+                      "omegaEtaXi", "omegaXiXi", "thresholdDelta")
 NAMES_PAR_MATRICES_COV <- c("gammaXi", "gammaEta", "A", "psi", "phi")
 
 
@@ -61,6 +61,7 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
     gammaEta     <- as.vector(M$gammaEta)
     omegaXiXi    <- as.vector(M$omegaXiXi)
     omegaEtaXi   <- as.vector(M$omegaEtaXi)
+    thresholdDelta <- as.vector(M$thresholdDelta %||% numeric(0))
 
     allModelValues <- c(
       lambdaX      = lambdaX,
@@ -80,13 +81,15 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
       gammaXi      = gammaXi,
       gammaEta     = gammaEta,
       omegaXiXi    = omegaXiXi,
-      omegaEtaXi   = omegaEtaXi
+      omegaEtaXi   = omegaEtaXi,
+      thresholdDelta = thresholdDelta
     )
 
-    lavLabelsMain <- createLavLabels(M, subset = is.na(allModelValues),
+    freeModelValues <- is.na(allModelValues) & !is.nan(allModelValues)
+    lavLabelsMain <- createLavLabels(M, subset = freeModelValues,
                                      etas = etas, parTable.in = parTable.in)
 
-    thetaMain <- allModelValues[is.na(allModelValues)]
+    thetaMain <- allModelValues[freeModelValues]
     thetaMain <- fillThetaIfStartNULL(start = start, theta = thetaMain,
                                       lavlab = lavLabelsMain)
 
@@ -284,11 +287,34 @@ fillMainModel <- function(model, theta, thetaLabel, fillPhi = FALSE,
   M$gammaXi      <- fillNA_Matrix(M$gammaXi, theta = theta, pattern = "^gammaXi")
   M$omegaXiXi    <- fillNA_Matrix(M$omegaXiXi, theta = theta, pattern = "^omegaXiXi")
   M$omegaEtaXi   <- fillNA_Matrix(M$omegaEtaXi, theta = theta, pattern = "^omegaEtaXi")
+  if (!is.null(M$thresholdDelta)) {
+    M$thresholdDelta <- fillNA_Matrix(
+      M$thresholdDelta, theta = theta, pattern = "^thresholdDelta"
+    )
+    M$thresholds <- thresholdDeltaToThresholdMatrix(M$thresholdDelta)
+  }
 
   if (fillPhi) {
     M$phi <- M$A %*% t(M$A)
   }
   M
+}
+
+
+thresholdDeltaToThresholdMatrix <- function(delta) {
+  thresholds <- delta
+  if (!length(delta)) return(thresholds)
+  for (i in seq_len(NROW(delta))) {
+    use <- which(is.finite(delta[i, ]))
+    if (!length(use)) next
+    d <- delta[i, use]
+    thresholds[i, use] <- c(
+      d[1L],
+      if (length(d) > 1L)
+        d[1L] + cumsum(log1p(exp(-abs(d[-1L]))) + pmax(d[-1L], 0))
+    )
+  }
+  thresholds
 }
 
 
@@ -451,7 +477,8 @@ DA_BLOCKS = list(
   W            = 14,
   T            = 15,
   phi          = 16,  # QML: free parameter; LMS: derived from A (not free)
-  covZetaXi    = 17
+  covZetaXi    = 17,
+  thresholdDelta = 18
 )
 
 
@@ -476,7 +503,9 @@ getParamNamesMatrix <- function(mat, matname) {
 }
 
 
-getParamLocationsMatrices <- function(matrices, isFree = is.na, g = 1L, ignore.g.label = FALSE) {
+getParamLocationsMatrices <- function(
+    matrices, isFree = function(x) is.na(x) & !is.nan(x),
+    g = 1L, ignore.g.label = FALSE) {
   matrices <- matrices[intersect(names(matrices), names(DA_BLOCKS))]
   locations <- data.frame(param = NULL, block = NULL, row = NULL, col = NULL)
   for (blockname in names(matrices)) {

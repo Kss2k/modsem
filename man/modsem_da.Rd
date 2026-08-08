@@ -56,6 +56,8 @@ modsem_da(
   ordered.delta.epsilon = 0.01,
   ordered.boot.reps = 1000L,
   ordered.standardize = TRUE,
+  integration = c("auto", "aghq", "sparse", "qmc"),
+  integration.control = list(),
   cluster = NULL,
   cr1s = FALSE,
   sampling.weights = NULL,
@@ -83,6 +85,9 @@ group analysis}
 \item{method}{method to use:
 \describe{
   \item{\code{"lms"}}{latent moderated structural equations (not passed to \code{lavaan}).}
+  \item{\code{"lms-jv"}}{ordinal-probit marginal maximum likelihood using
+    adaptive Gauss-Hermite quadrature, following Jin, Vegelius, and
+    Yang-Wallentin. \code{"lms-cat"} is an alias.}
   \item{\code{"qml"}}{quasi maximum likelihood estimation (not passed to \code{lavaan}).}
 }}
 
@@ -288,6 +293,12 @@ and should be seen as a rough approximation. Set to \code{0} to disable.}
 \item{ordered.standardize}{Logical. Should scored ordered indicators be standardized
 before the observed-data fit and after ordinalizing simulated indicators? This is
 recommended for numerical stability and is enabled by default.}
+
+\item{integration}{Numerical integration rule for \code{method = "lms-jv"}.
+One of \code{"auto"}, \code{"aghq"}, \code{"sparse"}, or \code{"qmc"}.}
+
+\item{integration.control}{Named list controlling ordinal-probit integration
+and optimization. See \code{default_settings_da("lms-jv")}.}
 
 \item{cluster}{Clusters used to compute standard errors robust to non-indepence of observations. Must be paired with
 \code{robust.se = TRUE}.}
