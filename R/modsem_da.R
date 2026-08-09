@@ -43,7 +43,10 @@
 #'   For the LMS approach the EM-algorithm stops whenever
 #'   the relative or absolute convergence criterion is reached.
 #'
-#' @param optimizer optimizer to use, can be either \code{"nlminb"} or \code{"L-BFGS-B"}. For LMS, \code{"nlminb"} is recommended.
+#' @param optimizer Optimizer to use. Can be \code{"custom"}, \code{"nlminb"},
+#'   or \code{"L-BFGS-B"}. For graph Laplace estimation with
+#'   \code{algorithm = "QN"}, \code{"custom"} is the default and reuses the
+#'   accepted quadrature-mode state between objective and gradient evaluations.
 #'   For QML, \code{"L-BFGS-B"} may be faster if there is a large number of iterations, but slower if there are few iterations.
 #'
 #' @param center.data should data be centered before fitting model
@@ -134,14 +137,19 @@
 #'
 #' @param adaptive.quad.tol Relative error tolerance for quasi adaptive quadrature. Defaults to \code{1e-12}.
 #' @param integration Integration rule for the LMS graph backend. One of
-#'   \code{"aghq"}, \code{"laplace"}, or \code{"laplace2"}.
+#'   \code{"aghq"}, \code{"qmc"}, \code{"laplace"}, or \code{"laplace2"}.
+#'   With \code{"qmc"}, \code{nodes} is the total number of low-discrepancy
+#'   draws rather than the number of nodes per latent dimension.
 #'
 #' @param n.threads number of threads to use for parallel processing. If \code{NULL}, it will use <= 2 threads.
 #'   If an integer is specified, it will use that number of threads (e.g., \code{n.threads = 4} will use 4 threads).
 #'   If \code{"default"}, it will use the default number of threads (2).
 #'   If \code{"max"}, it will use all available threads, \code{"min"} will use 1 thread.
 #'
-#' @param algorithm algorithm to use for the EM algorithm. Can be either \code{"EM"} or \code{"EMA"}.
+#' @param algorithm Estimation algorithm. \code{"EM"} and \code{"EMA"} are
+#'   available for ordinary LMS estimation. With graph Laplace integration,
+#'   use \code{"EM"} for generalized EM or \code{"QN"} for direct
+#'   quasi-Newton maximization.
 #'   \code{"EM"} is the standard EM algorithm. \code{"EMA"} is an
 #'   accelerated EM procedure that uses Quasi-Newton and Fisher Scoring
 #'   optimization steps when needed. Default is \code{"EM"}.
@@ -596,15 +604,29 @@ modsem_da <- function(model.syntax = NULL,
         )
     )
   args$integration <- match.arg(args$integration,
-                                c("aghq", "laplace", "laplace2"))
+                                c("aghq", "qmc", "laplace", "laplace2"))
   if (args$integration != "aghq" && is.null(algorithm))
     args$algorithm <- "EM"
+  if (args$integration %in% c("laplace", "laplace2") &&
+      toupper(args$algorithm) == "EMA") {
+    mod_msg_warn_immediate(
+      "For Laplace integration, `algorithm = \"EMA\"` is deprecated; using `algorithm = \"QN\"`."
+    )
+    args$algorithm <- "QN"
+  }
+  mod_stopif(toupper(args$algorithm) == "QN" &&
+               (method != "lms" || lms.backend != "graph" ||
+                !args$integration %in% c("laplace", "laplace2")),
+             paste0("`algorithm = \"QN\"` is currently available only with ",
+                    "Laplace integration and the LMS graph backend."))
+  if (identical(toupper(args$algorithm), "QN") && is.null(optimizer))
+    args$optimizer <- "custom"
   mod_stopif(args$integration != "aghq" &&
                (method != "lms" || lms.backend != "graph"),
              "Laplace integration is only available for the LMS graph backend.")
   args$ordered <- if (has.ordered) lmsGraphOrderedColumns(data, model.syntax, ordered) else NULL
   if (method == "lms" && lms.backend == "graph" && !nodes.user.supplied)
-    args$nodes <- 5L
+    args$nodes <- if (args$integration == "qmc") 256L else 5L
   args$parameterization <- "theta"
   args$factor.score.optim <- "nlminb"
 
@@ -758,11 +780,12 @@ modsem_da <- function(model.syntax = NULL,
       ...
     ),
     lms = if (args$integration != "aghq" &&
-              toupper(args$algorithm) != "EM") estLmsGraphLaplace(model,
+              toupper(args$algorithm) == "QN") estLmsGraphLaplace(model,
       order             = args$integration,
       link              = link,
       optimizer         = args$optimizer,
       max.iter          = args$max.iter,
+      max.step          = args$max.step,
       convergence.rel   = args$convergence.rel,
       calc.se           = args$calc.se,
       verbose           = args$verbose,

@@ -145,6 +145,10 @@ lmsGraphLaplace2Cpp <- function(matrices, modes, numXis, numEtas, dataR, colidxR
     .Call(`_modsem_lmsGraphLaplace2Cpp`, matrices, modes, numXis, numEtas, dataR, colidxR, orderedIndex, logistic, curvatureFloor, correctionFloor, ncores)
 }
 
+lmsGraphLaplaceFixedBatchCpp <- function(matrixVariants, modes, numXis, numEtas, dataR, colidxR, orderedIndex, secondOrder = TRUE, logistic = TRUE, curvatureFloor = 1e-6, correctionFloor = 1e-8, ncores = 1L) {
+    .Call(`_modsem_lmsGraphLaplaceFixedBatchCpp`, matrixVariants, modes, numXis, numEtas, dataR, colidxR, orderedIndex, secondOrder, logistic, curvatureFloor, correctionFloor, ncores)
+}
+
 multiplyIndicatorsCpp <- function(df) {
     .Call(`_modsem_multiplyIndicatorsCpp`, df)
 }

@@ -13,6 +13,35 @@ testthat::test_that("LMS graph backend transforms one unified latent covariance"
 })
 
 
+testthat::test_that("QMC nodes are deterministic low-discrepancy normal draws", {
+  first <- lmsGraphHalton(64L, 3L)
+  second <- lmsGraphHalton(64L, 3L)
+  testthat::expect_equal(first, second)
+  testthat::expect_true(all(first > 0 & first < 1))
+  normal <- matrix(stats::qnorm(first), ncol = 3L)
+  testthat::expect_lt(max(abs(colMeans(normal))), .15)
+  correlations <- stats::cor(normal)
+  testthat::expect_lt(max(abs(correlations[lower.tri(correlations)])), .15)
+})
+
+
+testthat::test_that("hybrid graph score replaces covariance directions only", {
+  theta <- c(A1 = .2, gammaXi1 = .3, psi1 = .4)
+  target <- c(-.1, .5, .8)
+  analytical <- c(A1 = 999,
+                  gammaXi1 = unname(2 * (theta[2L] - target[2L])),
+                  psi1 = 999)
+  hybrid <- lmsGraphReplaceCovarianceGradient(
+    theta, analytical, function(value) sum((value - target)^2), 1e-6
+  )
+  expected <- 2 * (theta - target)
+  testthat::expect_equal(hybrid[c("A1", "psi1")],
+                         expected[c("A1", "psi1")], tolerance = 2e-6)
+  testthat::expect_identical(hybrid[["gammaXi1"]],
+                             analytical[["gammaXi1"]])
+})
+
+
 testthat::test_that("LMS graph states follow recursive structural order", {
   M <- list(
     A = matrix(1, 1L), covZetaXi = matrix(0, 2L, 1L), psi = diag(2L),
@@ -212,6 +241,56 @@ testthat::test_that("second-order Laplace approaches high-node AGHQ in three dim
                       abs(laplace$first - reference))
   testthat::expect_equal(as.numeric(laplace$second), reference,
                          tolerance = 3e-3)
+})
+
+testthat::test_that("implicit Laplace2 gradient includes optimized-mode dependence", {
+  syntax <- paste(
+    "X =~ x1 + x2 + x3",
+    "Z =~ z1 + z2 + z3",
+    "Y =~ y1 + y2 + y3",
+    "Y ~ X + Z + X:Z",
+    sep = "\n"
+  )
+  fit <- suppressWarnings(modsem(
+    syntax, oneInt[seq_len(8L), ], method = "lms",
+    lms.backend = "graph", integration = "laplace2", algorithm = "EM",
+    optimize = FALSE, calc.se = FALSE, max.iter = 1L, n.threads = 1L
+  ))
+  model <- fit$start.model
+  theta <- model$theta
+  implicit <- lmsGraphLaplaceImplicitGradient(
+    theta, model, "laplace2", link = "logit"
+  )$gradient
+  step <- 1e-5 * pmax(1, abs(theta))
+  numerical <- vapply(seq_along(theta), function(j) {
+    plus <- minus <- theta
+    plus[j] <- plus[j] + step[j]
+    minus[j] <- minus[j] - step[j]
+    (lmsGraphLaplaceEvaluation(model, plus, "laplace2", link = "logit")$logLik -
+       lmsGraphLaplaceEvaluation(model, minus, "laplace2", link = "logit")$logLik) /
+      (2 * step[j])
+  }, numeric(1L))
+  names(numerical) <- names(theta)
+  testthat::expect_equal(implicit, numerical, tolerance = 2e-5, scale = 1)
+})
+
+testthat::test_that("custom QN respects bounds and reuses accepted state", {
+  previous.seen <- list()
+  evaluate <- function(theta, previous) {
+    previous.seen[[length(previous.seen) + 1L]] <<- !is.null(previous)
+    difference <- theta - c(.25, 2)
+    list(valid = TRUE, objective = sum(difference^2),
+         gradient = 2 * difference,
+         evaluation = list(quad = list(theta = theta)))
+  }
+  fit <- lmsGraphBoundedLbfgs(
+    c(-.5, 0), evaluate, lower = c(-1, -1), upper = c(1, 1),
+    max.iter = 50L, convergence.rel = 1e-10
+  )
+  testthat::expect_equal(fit$par, c(.25, 1), tolerance = 1e-6)
+  testthat::expect_equal(fit$convergence, 0L)
+  testthat::expect_false(previous.seen[[1L]])
+  testthat::expect_true(any(unlist(previous.seen[-1L])))
 })
 
 

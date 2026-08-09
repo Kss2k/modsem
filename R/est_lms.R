@@ -1,6 +1,6 @@
 getLmsBackend <- function(backend = c("legacy", "graph"),
                           link = c("logit", "probit"),
-                          integration = c("aghq", "laplace", "laplace2")) {
+                          integration = c("aghq", "qmc", "laplace", "laplace2")) {
   backend <- match.arg(backend)
   link <- match.arg(link)
   integration <- match.arg(integration)
@@ -306,7 +306,7 @@ emLms <- function(model,
                   cr1s = TRUE,
                   lms.backend = c("legacy", "graph"),
                   link = c("logit", "probit"),
-                  integration = c("aghq", "laplace", "laplace2"),
+                  integration = c("aghq", "qmc", "laplace", "laplace2"),
                   ema.min.iter = 10L,
                   ema.trend.min = 0,
                   ema.forecast.min.gains = 3L,
@@ -465,8 +465,9 @@ emLms <- function(model,
         elapsed.time    = proc.time()[["elapsed"]] - history.start.time
       )
 
-      converged <- (abs(deltaLL) < convergence.abs) ||
-                   (abs(relDeltaLL) < convergence.rel)
+      converged <- ((abs(deltaLL) < convergence.abs) ||
+                    (abs(relDeltaLL) < convergence.rel)) &&
+        (!adaptiveQuad || recalcQuad)
       converged.em <- converged && mode == "EM"
       run.final.qn <- FALSE
 
@@ -656,7 +657,7 @@ emLms <- function(model,
       # A higher-order Laplace E-step is a generalized EM approximation, so
       # the unconstrained M-step need not increase the corrected observed
       # likelihood. Backtrack along the EM direction until it does.
-      if (algorithm == "EM" && integration != "aghq" &&
+      if (algorithm == "EM" && integration %in% c("laplace", "laplace2") &&
           any(thetaNew != thetaOld)) {
         direction <- thetaNew - thetaOld
         accepted <- FALSE
@@ -717,6 +718,7 @@ emLms <- function(model,
       startModel        = model
     )
     fit$iteration.history <- history
+    fit$integration <- integration
     fit
 
   }, error = function(e) {
@@ -756,6 +758,7 @@ emLms <- function(model,
       includeStartModel = TRUE,
       startModel        = model
     )
+    fit$integration <- integration
     fit$iteration.history <- history
     fit
   })

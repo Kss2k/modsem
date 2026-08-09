@@ -214,6 +214,7 @@ struct LaplaceModel {
       covariance.submat(nx,0,d-1,nx-1)=cross;
       covariance.submat(0,nx,nx-1,d-1)=cross.t();
     }
+    covariance=0.5*(covariance+covariance.t());
     if(!arma::chol(chol,covariance))
       Rcpp::stop("The unified latent covariance matrix is not positive definite.");
     plan=graphPlan(gx,ge,oxx,oex,nx,ne);
@@ -245,7 +246,14 @@ std::vector<Observation> observationsFromR(const Rcpp::List& dataR,
   return out;
 }
 
-struct LaplaceResult { double first; double second; double correction; bool adjusted; };
+struct LaplaceResult {
+  double first;
+  double second;
+  double correction;
+  bool adjusted;
+  arma::vec gradient;
+  arma::mat hessian;
+};
 
 LaplaceResult observationLaplace(
     const LaplaceModel& model, const arma::rowvec& mode,
@@ -283,7 +291,10 @@ LaplaceResult observationLaplace(
       Jet4 probability=constantJet(d,1.0);
       if(code<categories) probability=cdfJet(addJet(constantJet(d,model.thresholds[column](code-1)),scaleJet(mu,-1.0)),model.logistic);
       if(code>1) probability=addJet(probability,scaleJet(cdfJet(addJet(constantJet(d,model.thresholds[column](code-2)),scaleJet(mu,-1.0)),model.logistic),-1.0));
-      if(!(probability.v>0.0) || !std::isfinite(probability.v)) return {NA_REAL,NA_REAL,NA_REAL,true};
+      if(!(probability.v>0.0) || !std::isfinite(probability.v))
+        return {NA_REAL,NA_REAL,NA_REAL,true,
+          arma::vec(d,arma::fill::value(NA_REAL)),
+          arma::mat(d,d,arma::fill::value(NA_REAL))};
       f=addJet(f,scaleJet(logJet(probability),-1.0));
     } else {
       const double variance=model.theta(column,column);
@@ -322,7 +333,7 @@ LaplaceResult observationLaplace(
     std::abs(correction)<=0.5 && 1.0+correction>correctionFloor;
   const double factor=reliable ? 1.0+correction : 1.0;
   if(!reliable) adjusted=true;
-  return {first,first+std::log(factor),correction,adjusted};
+  return {first,first+std::log(factor),correction,adjusted,f.g,f.h};
 }
 
 } // namespace
@@ -345,13 +356,71 @@ Rcpp::List lmsGraphLaplace2Cpp(const Rcpp::List& matrices,
   const LaplaceModel model(matrices,numXis,numEtas,orderedIndex,logistic);
   arma::vec first(observations.size()),second(observations.size()),correction(observations.size());
   arma::uvec adjusted(observations.size(),arma::fill::zeros);
+  arma::mat modeGradient(observations.size(),numXis+numEtas);
+  arma::cube modeHessian(numXis+numEtas,numXis+numEtas,observations.size());
   #ifdef _OPENMP
   #pragma omp parallel for num_threads(ncores) if(ncores>1) schedule(dynamic)
   #endif
   for(int i=0;i<static_cast<int>(observations.size());++i) {
     LaplaceResult value=observationLaplace(model,modes.row(i),observations[i],curvatureFloor,correctionFloor);
     first(i)=value.first; second(i)=value.second; correction(i)=value.correction; adjusted(i)=value.adjusted;
+    modeGradient.row(i)=value.gradient.t();
+    modeHessian.slice(i)=value.hessian;
   }
   return Rcpp::List::create(Rcpp::Named("first")=first,Rcpp::Named("second")=second,
-    Rcpp::Named("correction")=correction,Rcpp::Named("adjusted")=adjusted);
+    Rcpp::Named("correction")=correction,Rcpp::Named("adjusted")=adjusted,
+    Rcpp::Named("modeGradient")=modeGradient,
+    Rcpp::Named("modeHessian")=modeHessian);
+}
+
+// Evaluate a collection of parameter-perturbed models at fixed posterior modes.
+// The variants are packed into one parallel loop to avoid repeated R/C++ calls.
+// [[Rcpp::export]]
+Rcpp::List lmsGraphLaplaceFixedBatchCpp(
+    const Rcpp::List& matrixVariants,
+    const arma::mat& modes,
+    const int numXis,
+    const int numEtas,
+    const Rcpp::List& dataR,
+    const Rcpp::List& colidxR,
+    const Rcpp::IntegerVector& orderedIndex,
+    const bool secondOrder=true,
+    const bool logistic=true,
+    const double curvatureFloor=1e-6,
+    const double correctionFloor=1e-8,
+    const int ncores=1) {
+  const std::vector<Observation> observations=observationsFromR(dataR,colidxR);
+  const int variants=matrixVariants.size();
+  const int dimension=numXis+numEtas;
+  if(variants<1) Rcpp::stop("At least one Laplace parameter variant is required.");
+  if(modes.n_rows!=observations.size() ||
+     modes.n_cols!=static_cast<arma::uword>(dimension))
+    Rcpp::stop("Laplace modes have incompatible dimensions.");
+  arma::mat contribution(observations.size(),variants);
+  arma::cube modeGradient(observations.size(),dimension,variants);
+  arma::umat adjusted(observations.size(),variants,arma::fill::zeros);
+  std::vector<LaplaceModel> models;
+  models.reserve(variants);
+  for(int variant=0;variant<variants;++variant) {
+    models.emplace_back(Rcpp::as<Rcpp::List>(matrixVariants[variant]),
+                        numXis,numEtas,orderedIndex,logistic);
+  }
+  #ifdef _OPENMP
+  #pragma omp parallel for num_threads(ncores) if(ncores>1) schedule(static)
+  #endif
+  for(int variant=0;variant<variants;++variant) {
+    for(int observation=0;
+        observation<static_cast<int>(observations.size());++observation) {
+      const LaplaceResult value=observationLaplace(
+        models[variant],modes.row(observation),observations[observation],
+        curvatureFloor,correctionFloor);
+      contribution(observation,variant)=secondOrder ? value.second : value.first;
+      modeGradient.slice(variant).row(observation)=value.gradient.t();
+      adjusted(observation,variant)=value.adjusted;
+    }
+  }
+  return Rcpp::List::create(
+    Rcpp::Named("contribution")=contribution,
+    Rcpp::Named("modeGradient")=modeGradient,
+    Rcpp::Named("adjusted")=adjusted);
 }
