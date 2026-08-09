@@ -19,8 +19,8 @@
 #'
 #' @param nodes number of quadrature nodes (points of integration) used in \code{lms},
 #'   increased number gives better estimates but slower computation. How many are needed depends on the complexity of the model.
-#'   The graph LMS backend defaults to five nodes per latent dimension with
-#'   observation-specific adaptive Gauss--Hermite quadrature.
+#'   The graph LMS backend defaults to five nodes per latent dimension. With
+#'   adaptive quadrature it constructs one quasi-adaptive rule per group.
 #'   For simple models, somewhere between 16-24 nodes should be enough; for more complex models, higher numbers may be needed.
 #'   For models where there is an interaction effect between an endogenous and exogenous variable,
 #'   the number of nodes should be at least 32, but practically (e.g., ordinal/skewed data), more than 32 is recommended. In cases
@@ -128,9 +128,9 @@
 #'   \code{+/- quad.range} will be ignored.
 #'
 #' @param adaptive.quad should adaptive quadrature be used? For the graph LMS
-#'   backend, a separate rule is centered and scaled at each observation's
-#'   posterior mode and is the default. If \code{FALSE}, a packed fixed
-#'   Gauss--Hermite rule is used.
+#'   backend, a common quasi-adaptive rule is selected and pruned using the
+#'   group likelihood. If \code{FALSE}, a common fixed Gauss--Hermite rule is
+#'   used. A common rule permits a sufficient-statistics M-step.
 #'
 #' @param adaptive.frequency How often should the quasi-adaptive quadrature be calculated? Defaults to 3, meaning
 #'   that it is recalculated every third EM-iteration.
@@ -138,6 +138,8 @@
 #' @param adaptive.quad.tol Relative error tolerance for quasi adaptive quadrature. Defaults to \code{1e-12}.
 #' @param integration Integration rule for the LMS graph backend. One of
 #'   \code{"aghq"}, \code{"qmc"}, \code{"laplace"}, or \code{"laplace2"}.
+#'   For EM with \code{"aghq"}, \code{adaptive.quad = TRUE} uses the common
+#'   quasi-adaptive LMS rule.
 #'   With \code{"qmc"}, \code{nodes} is the total number of low-discrepancy
 #'   draws rather than the number of nodes per latent dimension.
 #'

@@ -165,6 +165,95 @@ testthat::test_that("packed graph rules support observation-specific nodes and w
 })
 
 
+testthat::test_that("common graph sufficient statistics reproduce packed M-step", {
+  delta <- matrix(c(-.4, log(expm1(1.2)), NaN, NaN), 2L, byrow = TRUE)
+  M <- list(
+    A = matrix(1.1), covZetaXi = matrix(.12), psi = matrix(.8),
+    beta0 = matrix(.15), alpha = matrix(-.1), gammaXi = matrix(.35),
+    gammaEta = matrix(0), omegaXiXi = matrix(.18),
+    omegaEtaXi = matrix(.11),
+    lambdaX = matrix(c(1, .7, .45, 1.1), 2L, byrow = TRUE),
+    tauX = matrix(c(0, .2)), thetaDelta = diag(c(1, .65)),
+    thresholdDelta = delta, thresholds = thresholdDeltaToThresholdMatrix(delta)
+  )
+  nodes <- as.matrix(expand.grid(c(-1, .2, 1.1), c(-.8, .4, 1.3)))
+  values <- matrix(c(1, -.2, 2, .4, 3, 1.0), 3L, byrow = TRUE)
+  posterior <- matrix(seq_len(NROW(values) * NROW(nodes)), NROW(values))
+  posterior <- posterior / rowSums(posterior)
+  posterior <- posterior * c(1, 1.5, .7)
+  workspace <- lmsGraphWorkspaceCpp(list(values), list(0:1), 0L)
+  quadrature.weights <- rep(1 / NROW(nodes), NROW(nodes))
+  sampling.weights <- c(1, 1.5, .7)
+  ordinary.e <- lmsGraphCommonPstepCpp(
+    M, nodes, 1L, 1L, workspace, quadrature.weights,
+    sampling.weights, TRUE, 1L
+  )
+  fused.e <- lmsGraphCommonEstepCpp(
+    M, nodes, 1L, 1L, workspace, quadrature.weights,
+    sampling.weights, TRUE, 2L, 1L
+  )
+  ordinary.statistics <- lmsGraphSufficientStatsCpp(
+    ordinary.e$posterior * sampling.weights, workspace, 2L, 3L, 1L
+  )
+  testthat::expect_equal(fused.e$logLik, ordinary.e$logLik, tolerance = 1e-12)
+  testthat::expect_equal(
+    as.numeric(fused.e$nodeMass),
+    as.numeric(colSums(ordinary.e$posterior * sampling.weights)),
+    tolerance = 1e-12
+  )
+  for (component in names(ordinary.statistics))
+    testthat::expect_equal(fused.e$statistics[[component]],
+                           ordinary.statistics[[component]], tolerance = 1e-12)
+  statistics <- lmsGraphSufficientStatsCpp(
+    posterior, workspace, 2L, 3L, 1L
+  )
+  packed.nodes <- nodes[rep(seq_len(NROW(nodes)), times = NROW(values)),
+                        , drop = FALSE]
+  packed.objective <- lmsGraphCompleteWorkspaceCpp(
+    M, packed.nodes, 1L, 1L, workspace, posterior, TRUE, 1L
+  )
+  compact.objective <- lmsGraphSufficientCompleteCpp(
+    M, nodes, 1L, 1L, workspace, statistics, TRUE, 1L
+  )
+  testthat::expect_equal(compact.objective, packed.objective, tolerance = 1e-12)
+
+  blocks <- c(0L, 2L, 4L, 6L, 7L, 8L, 9L, 10L, 12L, 13L, 17L, 18L)
+  rows <- c(1L, 1L, 1L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L)
+  cols <- c(1L, 0L, 1L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 1L)
+  symmetric <- blocks %in% c(4L, 7L)
+  packed.score <- lmsGraphReverseScoreCpp(
+    M, packed.nodes, 1L, 1L, list(values), list(0:1), 0L,
+    rep(1, NROW(packed.nodes)), rep(1, NROW(values)), posterior, FALSE,
+    blocks, rows, cols, symmetric, TRUE, 1L, workspace
+  )
+  compact.score <- lmsGraphSufficientScoreCpp(
+    M, nodes, 1L, 1L, statistics, 0L,
+    blocks, rows, cols, symmetric, TRUE
+  )
+  testthat::expect_equal(compact.score, packed.score, tolerance = 1e-10)
+})
+
+
+testthat::test_that("common graph statistics respect missingness patterns", {
+  data <- list(matrix(c(1, .5, 2, -.3), 2L, byrow = TRUE), matrix(.8))
+  columns <- list(0:1, 1L)
+  workspace <- lmsGraphWorkspaceCpp(data, columns, 0L)
+  posterior <- matrix(c(.1, .2, .7, .3, .3, .4, .2, .5, .3), 3L)
+  statistics <- lmsGraphSufficientStatsCpp(
+    posterior, workspace, 2L, 3L, 2L
+  )
+  testthat::expect_equal(statistics$mass[, 1L], colSums(posterior[1:2, ]))
+  testthat::expect_equal(statistics$mass[, 2L], colSums(posterior))
+  testthat::expect_equal(statistics$counts[, 1L, 1L], posterior[1L, ])
+  testthat::expect_equal(statistics$counts[, 2L, 1L], posterior[2L, ])
+  values <- c(.5, -.3, .8)
+  testthat::expect_equal(statistics$sum[, 2L],
+                         drop(crossprod(posterior, values)))
+  testthat::expect_equal(statistics$sumsq[, 2L],
+                         drop(crossprod(posterior, values^2)))
+})
+
+
 testthat::test_that("second-order Laplace is exact for a Gaussian latent model", {
   one.node <- quadrature(1L, 3L)
   testthat::expect_equal(unname(one.node$n), matrix(0, 1L, 3L),

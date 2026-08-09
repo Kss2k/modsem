@@ -244,17 +244,70 @@ struct GraphObservation {
   std::vector<int> columns;
 };
 
+struct GraphIndicatorData {
+  arma::uvec rows;
+  arma::vec values;
+  arma::mat categoryDesign;
+};
+
 std::vector<GraphObservation> flattenGraphObservations(
   const Rcpp::List& dataR, const Rcpp::List& colidxR);
 
 struct GraphWorkspace {
   std::vector<GraphObservation> observations;
   std::vector<int> orderedIndex;
+  std::vector<bool> orderedLookup;
+  std::vector<GraphIndicatorData> indicators;
+  arma::mat denseValues;
 
   GraphWorkspace(const Rcpp::List& dataR, const Rcpp::List& colidxR,
                  const Rcpp::IntegerVector& ordered) :
     observations(flattenGraphObservations(dataR, colidxR)),
-    orderedIndex(ordered.begin(), ordered.end()) {}
+    orderedIndex(ordered.begin(), ordered.end()) {
+      int indicators = 0;
+      for (const GraphObservation& observation : observations)
+        for (const int column : observation.columns)
+          indicators = std::max(indicators, column + 1);
+      orderedLookup.assign(indicators, false);
+      for (const int indicator : orderedIndex)
+        if (indicator >= 0 && indicator < indicators)
+          orderedLookup[indicator] = true;
+
+      std::vector<std::vector<arma::uword>> rowsByIndicator(indicators);
+      std::vector<std::vector<double>> valuesByIndicator(indicators);
+      for (arma::uword i = 0; i < observations.size(); ++i) {
+        const GraphObservation& observation = observations[i];
+        for (arma::uword j = 0; j < observation.values.n_elem; ++j) {
+          const int indicator = observation.columns[j];
+          rowsByIndicator[indicator].push_back(i);
+          valuesByIndicator[indicator].push_back(observation.values(j));
+        }
+      }
+      this->indicators.resize(indicators);
+      denseValues.set_size(observations.size(), indicators);
+      denseValues.fill(arma::datum::nan);
+      for (int indicator = 0; indicator < indicators; ++indicator) {
+        this->indicators[indicator].rows = arma::conv_to<arma::uvec>::from(
+          rowsByIndicator[indicator]);
+        this->indicators[indicator].values = arma::conv_to<arma::vec>::from(
+          valuesByIndicator[indicator]);
+        if (orderedLookup[indicator] && !valuesByIndicator[indicator].empty()) {
+          const int categories = static_cast<int>(
+            *std::max_element(valuesByIndicator[indicator].begin(),
+                              valuesByIndicator[indicator].end()));
+          this->indicators[indicator].categoryDesign.zeros(
+            valuesByIndicator[indicator].size(), categories);
+          for (arma::uword i = 0; i < valuesByIndicator[indicator].size(); ++i) {
+            const int category = static_cast<int>(valuesByIndicator[indicator][i]) - 1;
+            if (category >= 0 && category < categories)
+              this->indicators[indicator].categoryDesign(i, category) = 1.0;
+          }
+        }
+      }
+      for (arma::uword i = 0; i < observations.size(); ++i)
+        for (arma::uword j = 0; j < observations[i].values.n_elem; ++j)
+          denseValues(i, observations[i].columns[j]) = observations[i].values(j);
+    }
 };
 
 struct PreparedGraph {
@@ -460,6 +513,50 @@ arma::mat responseLogKernel(const arma::mat& means,
   return out;
 }
 
+// Response kernel for a quadrature rule shared by every observation.  The
+// graph and measurement model are evaluated Q times, rather than N * Q times.
+arma::mat responseLogKernelCommon(
+    const arma::mat& means,
+    const arma::mat& theta,
+    const ResponsePlan& responsePlan,
+    const GraphWorkspace& workspace,
+    const bool logistic,
+    const int ncores) {
+  const std::vector<GraphObservation>& observations = workspace.observations;
+  const arma::uword Q = means.n_rows;
+  arma::mat out(observations.size(), Q, arma::fill::zeros);
+  std::vector<arma::mat> ordinalTables(means.n_cols);
+  for (arma::uword indicator = 0; indicator < means.n_cols; ++indicator) {
+    const GraphIndicatorData& data = workspace.indicators[indicator];
+    arma::mat contribution;
+    if (responsePlan.ordered[indicator]) {
+      const int categories = responsePlan.thresholds[indicator].n_elem + 1;
+      ordinalTables[indicator].set_size(Q, categories);
+      for (int category = 1; category <= categories; ++category)
+        ordinalTables[indicator].col(category - 1) = ordinalBlockEvaluation(
+          category, responsePlan.thresholds[indicator],
+          means.col(indicator), logistic
+        ).logProbability;
+      contribution = data.categoryDesign * ordinalTables[indicator].t();
+    } else {
+      const double variance = theta(indicator, indicator);
+      const arma::vec mu = means.col(indicator);
+      contribution = data.values * mu.t() / variance;
+      contribution.each_col() -= 0.5 * arma::square(data.values) / variance;
+      contribution.each_row() -= 0.5 *
+        (std::log(2.0 * M_PI * variance) + arma::square(mu) / variance).t();
+    }
+    if (data.rows.n_elem == observations.size() && data.rows(0) == 0 &&
+        data.rows(data.rows.n_elem - 1) == observations.size() - 1) {
+      out += contribution;
+    } else {
+      for (arma::uword i = 0; i < data.rows.n_elem; ++i)
+        out.row(data.rows(i)) += contribution.row(i);
+    }
+  }
+  return out;
+}
+
 double responseWeightedKernel(
     const arma::mat& means,
     const arma::mat& theta,
@@ -584,6 +681,31 @@ Rcpp::List aggregateKernel(const arma::mat& logKernel,
   );
 }
 
+Rcpp::List aggregateCommonKernel(const arma::mat& logKernel,
+                                 const arma::vec& quadWeights,
+                                 const arma::vec& rowWeights) {
+  if (quadWeights.n_elem != logKernel.n_cols)
+    Rcpp::stop("A common quadrature rule needs Q weights.");
+  if (rowWeights.n_elem != logKernel.n_rows)
+    Rcpp::stop("Sampling weights must have one element per observation.");
+  const arma::rowvec logWeights = arma::log(quadWeights).t();
+  arma::mat posterior(logKernel.n_rows, logKernel.n_cols, arma::fill::zeros);
+  arma::vec logDensity(logKernel.n_rows);
+  double logLik = 0.0;
+  for (arma::uword i = 0; i < logKernel.n_rows; ++i) {
+    const arma::rowvec joint = logKernel.row(i) + logWeights;
+    const double maximum = joint.max();
+    logDensity(i) = maximum + std::log(arma::accu(arma::exp(joint - maximum)));
+    posterior.row(i) = arma::exp(joint - logDensity(i));
+    logLik += rowWeights(i) * logDensity(i);
+  }
+  return Rcpp::List::create(
+    Rcpp::Named("logLik") = logLik,
+    Rcpp::Named("posterior") = posterior,
+    Rcpp::Named("logDensity") = logDensity
+  );
+}
+
 arma::mat graphStates(const Rcpp::List& matrices, const arma::mat& nodes,
                       const int numXis, const int numEtas) {
   const arma::mat A = Rcpp::as<arma::mat>(matrices["A"]);
@@ -647,6 +769,271 @@ SEXP lmsGraphWorkspaceCpp(const Rcpp::List& dataR,
     new GraphWorkspace(dataR, colidxR, orderedIndex), true
   );
   return workspace;
+}
+
+
+// [[Rcpp::export]]
+Rcpp::List lmsGraphCommonPstepCpp(const Rcpp::List& matrices,
+                                  const arma::mat& nodes,
+                                  const int numXis,
+                                  const int numEtas,
+                                  SEXP workspaceSEXP,
+                                  const arma::vec& quadWeights,
+                                  const arma::vec& rowWeights,
+                                  const bool logistic = true,
+                                  const int ncores = 1) {
+  Rcpp::XPtr<GraphWorkspace> workspace(workspaceSEXP);
+  const PreparedGraph prepared(matrices, numXis, numEtas,
+                               workspace->orderedIndex);
+  const arma::mat states = prepared.states(nodes);
+  const arma::mat means = measurementMeans(
+    states, prepared.tau, prepared.loadingPlan
+  );
+  const arma::mat logKernel = responseLogKernelCommon(
+    means, prepared.theta, prepared.responsePlan, *workspace,
+    logistic, ncores
+  );
+  Rcpp::List out = aggregateCommonKernel(logKernel, quadWeights, rowWeights);
+  out["logKernel"] = logKernel;
+  return out;
+}
+
+
+// Fused common-rule E-step. Posterior probabilities exist only for one block
+// at a time and are immediately reduced to M-step sufficient statistics.
+// [[Rcpp::export]]
+Rcpp::List lmsGraphCommonEstepCpp(const Rcpp::List& matrices,
+                                  const arma::mat& nodes,
+                                  const int numXis,
+                                  const int numEtas,
+                                  SEXP workspaceSEXP,
+                                  const arma::vec& quadWeights,
+                                  const arma::vec& rowWeights,
+                                  const bool logistic = true,
+                                  const int blockSize = 256,
+                                  const int ncores = 1) {
+  Rcpp::XPtr<GraphWorkspace> workspace(workspaceSEXP);
+  const PreparedGraph prepared(matrices, numXis, numEtas,
+                               workspace->orderedIndex);
+  const arma::mat states = prepared.states(nodes);
+  const arma::mat means = measurementMeans(
+    states, prepared.tau, prepared.loadingPlan);
+  const arma::uword N = workspace->observations.size();
+  const arma::uword Q = nodes.n_rows;
+  const arma::uword J = means.n_cols;
+  if (quadWeights.n_elem != Q || rowWeights.n_elem != N)
+    Rcpp::stop("Common E-step quadrature or sampling weights are incompatible.");
+  if (blockSize < 1) Rcpp::stop("E-step block size must be positive.");
+  const arma::rowvec logQuadWeights = arma::log(quadWeights).t();
+
+  int maxCategories = 1;
+  std::vector<arma::mat> ordinalTables(J);
+  for (arma::uword indicator = 0; indicator < J; ++indicator) {
+    if (!prepared.responsePlan.ordered[indicator]) continue;
+    const int categories = prepared.responsePlan.thresholds[indicator].n_elem + 1;
+    maxCategories = std::max(maxCategories, categories);
+    ordinalTables[indicator].set_size(categories, Q);
+    for (int category = 1; category <= categories; ++category)
+      ordinalTables[indicator].row(category - 1) = ordinalBlockEvaluation(
+        category, prepared.responsePlan.thresholds[indicator],
+        means.col(indicator), logistic).logProbability.t();
+  }
+
+  arma::mat mass(Q, J, arma::fill::zeros);
+  arma::mat sum(Q, J, arma::fill::zeros);
+  arma::mat sumsq(Q, J, arma::fill::zeros);
+  arma::cube counts(Q, maxCategories, J, arma::fill::zeros);
+  arma::vec logDensity(N);
+  arma::vec nodeMass(Q, arma::fill::zeros);
+  double logLik = 0.0;
+
+  for (arma::uword first = 0; first < N; first += blockSize) {
+    const arma::uword last = std::min(N - 1, first + blockSize - 1);
+    const arma::uword B = last - first + 1;
+    arma::mat posterior(B, Q, arma::fill::zeros);
+
+    for (arma::uword indicator = 0; indicator < J; ++indicator) {
+      const arma::vec values = workspace->denseValues.col(indicator).subvec(first, last);
+      const arma::uvec use = arma::find_finite(values);
+      if (use.n_elem == 0) continue;
+      const arma::vec observedValues = values.elem(use);
+      if (prepared.responsePlan.ordered[indicator]) {
+        const arma::uvec category = arma::conv_to<arma::uvec>::from(observedValues - 1.0);
+        const arma::mat contribution = ordinalTables[indicator].rows(category);
+        if (use.n_elem == B) posterior += contribution;
+        else posterior.rows(use) += contribution;
+      } else {
+        const double variance = prepared.theta(indicator, indicator);
+        const arma::vec mu = means.col(indicator);
+        arma::mat contribution = observedValues * mu.t() / variance;
+        contribution.each_col() -= 0.5 * arma::square(observedValues) / variance;
+        contribution.each_row() -= 0.5 *
+          (std::log(2.0 * M_PI * variance) + arma::square(mu) / variance).t();
+        if (use.n_elem == B) posterior += contribution;
+        else posterior.rows(use) += contribution;
+      }
+    }
+
+    for (arma::uword i = 0; i < B; ++i) {
+      posterior.row(i) += logQuadWeights;
+      const double maximum = posterior.row(i).max();
+      posterior.row(i) = arma::exp(posterior.row(i) - maximum);
+      const double density = arma::accu(posterior.row(i));
+      logDensity(first + i) = maximum + std::log(density);
+      logLik += rowWeights(first + i) * logDensity(first + i);
+      posterior.row(i) *= rowWeights(first + i) / density;
+      nodeMass += posterior.row(i).t();
+    }
+
+    for (arma::uword indicator = 0; indicator < J; ++indicator) {
+      const arma::vec values = workspace->denseValues.col(indicator).subvec(first, last);
+      const arma::uvec use = arma::find_finite(values);
+      if (use.n_elem == 0) continue;
+      const arma::vec observedValues = values.elem(use);
+      const arma::mat weights = use.n_elem == B ? posterior : posterior.rows(use);
+      mass.col(indicator) += arma::sum(weights, 0).t();
+      if (prepared.responsePlan.ordered[indicator]) {
+        const int categories = ordinalTables[indicator].n_rows;
+        arma::mat design(use.n_elem, categories, arma::fill::zeros);
+        for (arma::uword i = 0; i < use.n_elem; ++i)
+          design(i, static_cast<int>(observedValues(i)) - 1) = 1.0;
+        counts.slice(indicator).cols(0, categories - 1) += weights.t() * design;
+      } else {
+        sum.col(indicator) += weights.t() * observedValues;
+        sumsq.col(indicator) += weights.t() * arma::square(observedValues);
+      }
+    }
+  }
+  (void)ncores;
+  return Rcpp::List::create(
+    Rcpp::Named("logLik") = logLik,
+    Rcpp::Named("logDensity") = logDensity,
+    Rcpp::Named("nodeMass") = nodeMass,
+    Rcpp::Named("statistics") = Rcpp::List::create(
+      Rcpp::Named("mass") = mass,
+      Rcpp::Named("sum") = sum,
+      Rcpp::Named("sumsq") = sumsq,
+      Rcpp::Named("counts") = counts
+    )
+  );
+}
+
+
+// Reduce the weighted posterior to everything required by the conditionally
+// independent continuous/ordinal measurement likelihood in the M-step.
+// [[Rcpp::export]]
+Rcpp::List lmsGraphSufficientStatsCpp(const arma::mat& posterior,
+                                      SEXP workspaceSEXP,
+                                      const int indicators,
+                                      const int maxCategories,
+                                      const int ncores = 1) {
+  Rcpp::XPtr<GraphWorkspace> workspace(workspaceSEXP);
+  if (posterior.n_rows != workspace->observations.size())
+    Rcpp::stop("Posterior rows and observations are incompatible.");
+  const arma::uword Q = posterior.n_cols;
+  arma::mat mass(Q, indicators, arma::fill::zeros);
+  arma::mat sum(Q, indicators, arma::fill::zeros);
+  arma::mat sumsq(Q, indicators, arma::fill::zeros);
+  arma::cube counts(Q, std::max(1, maxCategories), indicators,
+                    arma::fill::zeros);
+
+  if (static_cast<int>(workspace->indicators.size()) > indicators)
+    Rcpp::stop("The workspace has more indicators than the model matrices.");
+
+  // Work indicator-wise. The posterior submatrix is column-major after the
+  // row gather, allowing BLAS matrix-vector products to replace the former
+  // Q * N * J scalar traversal. Each indicator owns its output column/slice.
+  #ifdef _OPENMP
+  #pragma omp parallel for num_threads(ncores) if(ncores > 1) schedule(dynamic)
+  #endif
+  for (int indicator = 0; indicator < indicators; ++indicator) {
+    if (indicator >= static_cast<int>(workspace->indicators.size())) continue;
+    const GraphIndicatorData& data = workspace->indicators[indicator];
+    if (data.rows.n_elem == 0) continue;
+    const bool complete = data.rows.n_elem == posterior.n_rows &&
+      data.rows(0) == 0 && data.rows(data.rows.n_elem - 1) == posterior.n_rows - 1;
+    arma::mat weights;
+    if (!complete) weights = posterior.rows(data.rows);
+    if (complete) mass.col(indicator) = arma::sum(posterior, 0).t();
+    else mass.col(indicator) = arma::sum(weights, 0).t();
+    const bool ordered = indicator <
+      static_cast<int>(workspace->orderedLookup.size()) &&
+      workspace->orderedLookup[indicator];
+    if (ordered) {
+      const arma::mat categoryCounts = complete ?
+        posterior.t() * data.categoryDesign :
+        weights.t() * data.categoryDesign;
+      counts.slice(indicator).cols(0, categoryCounts.n_cols - 1) =
+        categoryCounts;
+    } else {
+      if (complete) {
+        sum.col(indicator) = posterior.t() * data.values;
+        sumsq.col(indicator) = posterior.t() * arma::square(data.values);
+      } else {
+        sum.col(indicator) = weights.t() * data.values;
+        sumsq.col(indicator) = weights.t() * arma::square(data.values);
+      }
+    }
+  }
+  return Rcpp::List::create(
+    Rcpp::Named("mass") = mass,
+    Rcpp::Named("sum") = sum,
+    Rcpp::Named("sumsq") = sumsq,
+    Rcpp::Named("counts") = counts
+  );
+}
+
+
+// [[Rcpp::export]]
+double lmsGraphSufficientCompleteCpp(const Rcpp::List& matrices,
+                                     const arma::mat& nodes,
+                                     const int numXis,
+                                     const int numEtas,
+                                     SEXP workspaceSEXP,
+                                     const Rcpp::List& statistics,
+                                     const bool logistic = true,
+                                     const int ncores = 1) {
+  Rcpp::XPtr<GraphWorkspace> workspace(workspaceSEXP);
+  const PreparedGraph prepared(matrices, numXis, numEtas,
+                               workspace->orderedIndex);
+  const arma::mat states = prepared.states(nodes);
+  const arma::mat means = measurementMeans(
+    states, prepared.tau, prepared.loadingPlan
+  );
+  const arma::mat mass = Rcpp::as<arma::mat>(statistics["mass"]);
+  const arma::mat sum = Rcpp::as<arma::mat>(statistics["sum"]);
+  const arma::mat sumsq = Rcpp::as<arma::mat>(statistics["sumsq"]);
+  const arma::cube counts = Rcpp::as<arma::cube>(statistics["counts"]);
+  if (mass.n_rows != nodes.n_rows || mass.n_cols != means.n_cols)
+    Rcpp::stop("Graph sufficient statistics have incompatible dimensions.");
+  double total = 0.0;
+  #ifdef _OPENMP
+  #pragma omp parallel for num_threads(ncores) if(ncores > 1) \
+    schedule(static) reduction(+:total)
+  #endif
+  for (int indicatorInt = 0;
+       indicatorInt < static_cast<int>(means.n_cols); ++indicatorInt) {
+    const arma::uword indicator = static_cast<arma::uword>(indicatorInt);
+    if (prepared.responsePlan.ordered[indicator]) {
+      const int categories = prepared.responsePlan.thresholds[indicator].n_elem + 1;
+      for (int category = 1; category <= categories; ++category) {
+        const OrdinalBlockEvaluation evaluation = ordinalBlockEvaluation(
+          category, prepared.responsePlan.thresholds[indicator],
+          means.col(indicator), logistic
+        );
+        total += arma::dot(counts.slice(indicator).col(category - 1),
+                           evaluation.logProbability);
+      }
+    } else {
+      const double variance = prepared.theta(indicator, indicator);
+      const arma::vec mu = means.col(indicator);
+      const arma::vec rss = sumsq.col(indicator) -
+        2.0 * mu % sum.col(indicator) + arma::square(mu) % mass.col(indicator);
+      total += arma::accu(-0.5 * (mass.col(indicator) *
+        std::log(2.0 * M_PI * variance) + rss / variance));
+    }
+  }
+  return total;
 }
 
 
@@ -765,6 +1152,7 @@ Rcpp::List lmsGraphAdaptiveRuleCpp(const Rcpp::List& matrices,
 
   const PreparedGraph prepared(matrices, numXis, numEtas, ordered);
   arma::mat modes(observations, dimension, arma::fill::zeros);
+  arma::cube transforms(dimension, dimension, observations, arma::fill::zeros);
   arma::mat packedNodes(observations * Q, dimension, arma::fill::zeros);
   arma::vec logWeights(observations * Q, arma::fill::zeros);
   arma::ivec convergence(observations, arma::fill::zeros);
@@ -861,6 +1249,7 @@ Rcpp::List lmsGraphAdaptiveRuleCpp(const Rcpp::List& matrices,
         }
       const arma::mat transform = eigenvectors *
         arma::diagmat(1.0 / arma::sqrt(eigenvalues));
+      transforms.slice(observation) = transform;
       arma::mat adaptiveNodes = baseNodes * transform.t();
       adaptiveNodes.each_row() += mode.t();
       const arma::uword first = observation * Q, last = first + Q - 1;
@@ -877,6 +1266,7 @@ Rcpp::List lmsGraphAdaptiveRuleCpp(const Rcpp::List& matrices,
     Rcpp::Named("nodes") = packedNodes,
     Rcpp::Named("logWeights") = logWeights,
     Rcpp::Named("modes") = modes,
+    Rcpp::Named("transforms") = transforms,
     Rcpp::Named("convergence") = convergence,
     Rcpp::Named("curvatureAdjusted") = curvatureAdjusted
   );
@@ -1449,6 +1839,205 @@ arma::vec lmsGraphReverseScoreCpp(const Rcpp::List& matrices,
       } else {
         dSigma(numXis + rr, cc) = 1.0;
         dSigma(cc, numXis + rr) = 1.0;
+      }
+      score(parameter) = arma::accu(cholBar % cholDirectional(latentChol, dSigma));
+      break;
+    }
+    default: break;
+    }
+  }
+  return score;
+}
+
+
+// Reverse-mode complete-data score for one quadrature rule shared by a group.
+// All observation-level work has already been reduced in the E-step.
+// [[Rcpp::export]]
+arma::vec lmsGraphSufficientScoreCpp(
+    const Rcpp::List& matrices, const arma::mat& nodes,
+    const int numXis, const int numEtas, const Rcpp::List& statistics,
+    const Rcpp::IntegerVector& orderedIndex,
+    const Rcpp::IntegerVector& block, const Rcpp::IntegerVector& row,
+    const Rcpp::IntegerVector& col, const Rcpp::LogicalVector& symmetric,
+    const bool logistic = true) {
+  const arma::mat A = Rcpp::as<arma::mat>(matrices["A"]);
+  const arma::mat cross = Rcpp::as<arma::mat>(matrices["covZetaXi"]);
+  const arma::mat psi = Rcpp::as<arma::mat>(matrices["psi"]);
+  const arma::mat gammaXi = Rcpp::as<arma::mat>(matrices["gammaXi"]);
+  const arma::mat gammaEta = Rcpp::as<arma::mat>(matrices["gammaEta"]);
+  const arma::mat omegaXiXi = Rcpp::as<arma::mat>(matrices["omegaXiXi"]);
+  const arma::mat omegaEtaXi = Rcpp::as<arma::mat>(matrices["omegaEtaXi"]);
+  const arma::vec beta0 = Rcpp::as<arma::vec>(matrices["beta0"]);
+  const arma::vec alpha = Rcpp::as<arma::vec>(matrices["alpha"]);
+  const arma::mat lambda = Rcpp::as<arma::mat>(matrices["lambdaX"]);
+  const arma::vec tau = Rcpp::as<arma::vec>(matrices["tauX"]);
+  const arma::mat theta = Rcpp::as<arma::mat>(matrices["thetaDelta"]);
+  const arma::mat thresholdMatrix = Rcpp::as<arma::mat>(matrices["thresholds"]);
+  const arma::mat thresholdDelta = Rcpp::as<arma::mat>(matrices["thresholdDelta"]);
+  const int dimension = numXis + numEtas;
+
+  arma::mat latentCov(dimension, dimension, arma::fill::zeros);
+  if (numXis > 0) latentCov.submat(0, 0, numXis - 1, numXis - 1) = A * A.t();
+  if (numEtas > 0)
+    latentCov.submat(numXis, numXis, dimension - 1, dimension - 1) = psi;
+  if (numXis > 0 && numEtas > 0) {
+    latentCov.submat(numXis, 0, dimension - 1, numXis - 1) = cross;
+    latentCov.submat(0, numXis, numXis - 1, dimension - 1) = cross.t();
+  }
+  arma::mat latentChol;
+  if (!arma::chol(latentChol, latentCov))
+    Rcpp::stop("The unified latent covariance matrix is not positive definite.");
+  const arma::mat innovations = nodes * latentChol;
+  arma::mat xi(nodes.n_rows, numXis, arma::fill::zeros);
+  if (numXis > 0) { xi = innovations.cols(0, numXis - 1); xi.each_row() += beta0.t(); }
+  arma::mat eta(nodes.n_rows, numEtas, arma::fill::zeros);
+  const std::vector<GraphEquationPlan> plan = buildGraphPlan(
+    gammaXi, gammaEta, omegaXiXi, omegaEtaXi, numXis, numEtas);
+  for (int j = 0; j < numEtas; ++j) {
+    arma::vec value = innovations.col(numXis + j) + alpha(j);
+    for (const GraphTerm& term : plan[j].xiLinear)
+      value += term.coefficient * xi.col(term.first);
+    for (const GraphTerm& term : plan[j].etaLinear)
+      value += term.coefficient * eta.col(term.first);
+    for (const GraphTerm& term : plan[j].xiXi)
+      value += term.coefficient * xi.col(term.first) % xi.col(term.second);
+    for (const GraphTerm& term : plan[j].xiEta)
+      value += term.coefficient * xi.col(term.first) % eta.col(term.second);
+    eta.col(j) = value;
+  }
+  const arma::mat states = arma::join_rows(xi, eta);
+  const std::vector<LoadingTerm> loadingPlan = buildLoadingPlan(lambda);
+  const arma::mat means = measurementMeans(states, tau, loadingPlan);
+  const ResponsePlan responsePlan = buildResponsePlan(
+    lambda.n_rows, thresholdMatrix, orderedIndex);
+  const arma::mat mass = Rcpp::as<arma::mat>(statistics["mass"]);
+  const arma::mat sum = Rcpp::as<arma::mat>(statistics["sum"]);
+  const arma::mat sumsq = Rcpp::as<arma::mat>(statistics["sumsq"]);
+  const arma::cube counts = Rcpp::as<arma::cube>(statistics["counts"]);
+
+  arma::mat meanBar(means.n_rows, means.n_cols, arma::fill::zeros);
+  arma::mat thresholdBar(thresholdMatrix.n_rows, thresholdMatrix.n_cols,
+                         arma::fill::zeros);
+  arma::vec varianceBar(theta.n_rows, arma::fill::zeros);
+  for (arma::uword indicator = 0; indicator < means.n_cols; ++indicator) {
+    if (responsePlan.ordered[indicator]) {
+      const arma::uvec& use = responsePlan.thresholdUse[indicator];
+      const int categories = use.n_elem + 1;
+      for (int category = 1; category <= categories; ++category) {
+        const arma::vec weights = counts.slice(indicator).col(category - 1);
+        const OrdinalBlockEvaluation evaluation = ordinalBlockEvaluation(
+          category, responsePlan.thresholds[indicator],
+          means.col(indicator), logistic);
+        meanBar.col(indicator) += weights %
+          (evaluation.lowerRatio - evaluation.upperRatio);
+        if (category > 1)
+          thresholdBar(indicator, use(category - 2)) -=
+            arma::dot(weights, evaluation.lowerRatio);
+        if (category < categories)
+          thresholdBar(indicator, use(category - 1)) +=
+            arma::dot(weights, evaluation.upperRatio);
+      }
+    } else {
+      const double variance = theta(indicator, indicator);
+      const arma::vec mu = means.col(indicator);
+      meanBar.col(indicator) =
+        (sum.col(indicator) - mu % mass.col(indicator)) / variance;
+      const arma::vec rss = sumsq.col(indicator) - 2.0 * mu %
+        sum.col(indicator) + arma::square(mu) % mass.col(indicator);
+      varianceBar(indicator) = arma::accu(
+        -0.5 * mass.col(indicator) / variance +
+        0.5 * rss / (variance * variance));
+    }
+  }
+
+  const arma::vec tauBar = arma::sum(meanBar, 0).t();
+  arma::mat stateBar(states.n_rows, states.n_cols, arma::fill::zeros);
+  for (const LoadingTerm& term : loadingPlan)
+    stateBar.col(term.latent) += term.coefficient * meanBar.col(term.indicator);
+  arma::mat xiBar = numXis > 0 ? stateBar.cols(0, numXis - 1) :
+    arma::mat(nodes.n_rows, 0, arma::fill::zeros);
+  arma::mat etaBar = numEtas > 0 ? stateBar.cols(numXis, dimension - 1) :
+    arma::mat(nodes.n_rows, 0, arma::fill::zeros);
+  arma::mat equationBar(nodes.n_rows, numEtas, arma::fill::zeros);
+  arma::vec alphaBar(alpha.n_elem, arma::fill::zeros);
+  arma::vec beta0Bar(beta0.n_elem, arma::fill::zeros);
+  arma::mat innovationBar(nodes.n_rows, dimension, arma::fill::zeros);
+  for (int j = numEtas - 1; j >= 0; --j) {
+    const arma::vec b = etaBar.col(j);
+    equationBar.col(j) = b;
+    innovationBar.col(numXis + j) += b;
+    alphaBar(j) += arma::accu(b);
+    for (const GraphTerm& term : plan[j].etaLinear)
+      etaBar.col(term.first) += term.coefficient * b;
+    for (const GraphTerm& term : plan[j].xiLinear)
+      xiBar.col(term.first) += term.coefficient * b;
+    for (const GraphTerm& term : plan[j].xiXi) {
+      xiBar.col(term.first) += term.coefficient * b % xi.col(term.second);
+      xiBar.col(term.second) += term.coefficient * b % xi.col(term.first);
+    }
+    for (const GraphTerm& term : plan[j].xiEta) {
+      xiBar.col(term.first) += term.coefficient * b % eta.col(term.second);
+      etaBar.col(term.second) += term.coefficient * b % xi.col(term.first);
+    }
+  }
+  if (numXis > 0) {
+    innovationBar.cols(0, numXis - 1) += xiBar;
+    beta0Bar += arma::sum(xiBar, 0).t();
+  }
+  const arma::mat cholBar = nodes.t() * innovationBar;
+
+  arma::vec score(block.size(), arma::fill::zeros);
+  for (int parameter = 0; parameter < block.size(); ++parameter) {
+    const int bb = block[parameter], rr = row[parameter], cc = col[parameter];
+    switch (bb) {
+    case 0: score(parameter) = arma::dot(meanBar.col(rr), states.col(cc)); break;
+    case 2: score(parameter) = tauBar(rr); break;
+    case 4: score(parameter) = rr == cc ? varianceBar(rr) : 0.0; break;
+    case 8: score(parameter) = alphaBar(rr); break;
+    case 9: score(parameter) = beta0Bar(rr); break;
+    case 10: score(parameter) = arma::dot(equationBar.col(rr), xi.col(cc)); break;
+    case 11: score(parameter) = arma::dot(equationBar.col(rr), eta.col(cc)); break;
+    case 12: {
+      if (numXis > 0) {
+        const int equation = rr / numXis, firstXi = rr % numXis;
+        score(parameter) = arma::dot(equationBar.col(equation),
+          xi.col(firstXi) % xi.col(cc));
+      }
+      break;
+    }
+    case 13: {
+      if (numXis > 0) {
+        const int equation = rr / numXis, firstXi = rr % numXis;
+        score(parameter) = arma::dot(equationBar.col(equation),
+          xi.col(firstXi) % eta.col(cc));
+      }
+      break;
+    }
+    case 18: {
+      if (rr < 0 || cc < 0 || static_cast<arma::uword>(rr) >= thresholdDelta.n_rows ||
+          static_cast<arma::uword>(cc) >= thresholdDelta.n_cols ||
+          !std::isfinite(thresholdDelta(rr, cc))) break;
+      const arma::uvec use = arma::find_finite(thresholdDelta.row(rr).t());
+      double value = 0.0;
+      for (arma::uword position = 0; position < use.n_elem; ++position)
+        if (cc == 0 || static_cast<int>(use(position)) >= cc)
+          value += thresholdBar(rr, use(position));
+      if (cc > 0) value *= 1.0 / (1.0 + std::exp(-thresholdDelta(rr, cc)));
+      score(parameter) = value;
+      break;
+    }
+    case 6: case 7: case 17: {
+      arma::mat dSigma(dimension, dimension, arma::fill::zeros);
+      if (bb == 6) {
+        arma::mat dA(A.n_rows, A.n_cols, arma::fill::zeros); dA(rr, cc) = 1.0;
+        dSigma.submat(0, 0, numXis - 1, numXis - 1) = dA * A.t() + A * dA.t();
+      } else if (bb == 7) {
+        arma::mat dPsi(psi.n_rows, psi.n_cols, arma::fill::zeros);
+        dPsi(rr, cc) = 1.0;
+        if (symmetric[parameter] && rr != cc) dPsi(cc, rr) = 1.0;
+        dSigma.submat(numXis, numXis, dimension - 1, dimension - 1) = dPsi;
+      } else {
+        dSigma(numXis + rr, cc) = 1.0; dSigma(cc, numXis + rr) = 1.0;
       }
       score(parameter) = arma::accu(cholBar % cholDirectional(latentChol, dSigma));
       break;

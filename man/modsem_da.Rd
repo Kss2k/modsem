@@ -38,6 +38,7 @@ modsem_da(
   adaptive.quad = NULL,
   adaptive.frequency = NULL,
   adaptive.quad.tol = NULL,
+  integration = NULL,
   n.threads = NULL,
   algorithm = NULL,
   em.control = NULL,
@@ -94,8 +95,8 @@ group analysis}
 
 \item{nodes}{number of quadrature nodes (points of integration) used in \code{lms},
 increased number gives better estimates but slower computation. How many are needed depends on the complexity of the model.
-The graph LMS backend defaults to five nodes per latent dimension with
-observation-specific adaptive Gauss--Hermite quadrature.
+The graph LMS backend defaults to five nodes per latent dimension. With
+adaptive quadrature it constructs one quasi-adaptive rule per group.
 For simple models, somewhere between 16-24 nodes should be enough; for more complex models, higher numbers may be needed.
 For models where there is an interaction effect between an endogenous and exogenous variable,
 the number of nodes should be at least 32, but practically (e.g., ordinal/skewed data), more than 32 is recommended. In cases
@@ -118,7 +119,10 @@ Lower values give better estimates but slower computation.
 For the LMS approach the EM-algorithm stops whenever
 the relative or absolute convergence criterion is reached.}
 
-\item{optimizer}{optimizer to use, can be either \code{"nlminb"} or \code{"L-BFGS-B"}. For LMS, \code{"nlminb"} is recommended.
+\item{optimizer}{Optimizer to use. Can be \code{"custom"}, \code{"nlminb"},
+or \code{"L-BFGS-B"}. For graph Laplace estimation with
+\code{algorithm = "QN"}, \code{"custom"} is the default and reuses the
+accepted quadrature-mode state between objective and gradient evaluations.
 For QML, \code{"L-BFGS-B"} may be faster if there is a large number of iterations, but slower if there are few iterations.}
 
 \item{center.data}{should data be centered before fitting model}
@@ -200,21 +204,31 @@ but this will likely be inefficient and pointless at a large number of nodes. No
 \code{+/- quad.range} will be ignored.}
 
 \item{adaptive.quad}{should adaptive quadrature be used? For the graph LMS
-backend, a separate rule is centered and scaled at each observation's
-posterior mode and is the default. If \code{FALSE}, a packed fixed
-Gauss--Hermite rule is used.}
+backend, a common quasi-adaptive rule is selected and pruned using the
+group likelihood. If \code{FALSE}, a common fixed Gauss--Hermite rule is
+used. A common rule permits a sufficient-statistics M-step.}
 
 \item{adaptive.frequency}{How often should the quasi-adaptive quadrature be calculated? Defaults to 3, meaning
 that it is recalculated every third EM-iteration.}
 
 \item{adaptive.quad.tol}{Relative error tolerance for quasi adaptive quadrature. Defaults to \code{1e-12}.}
 
+\item{integration}{Integration rule for the LMS graph backend. One of
+\code{"aghq"}, \code{"qmc"}, \code{"laplace"}, or \code{"laplace2"}.
+For EM with \code{"aghq"}, \code{adaptive.quad = TRUE} uses the common
+quasi-adaptive LMS rule.
+With \code{"qmc"}, \code{nodes} is the total number of low-discrepancy
+draws rather than the number of nodes per latent dimension.}
+
 \item{n.threads}{number of threads to use for parallel processing. If \code{NULL}, it will use <= 2 threads.
 If an integer is specified, it will use that number of threads (e.g., \code{n.threads = 4} will use 4 threads).
 If \code{"default"}, it will use the default number of threads (2).
 If \code{"max"}, it will use all available threads, \code{"min"} will use 1 thread.}
 
-\item{algorithm}{algorithm to use for the EM algorithm. Can be either \code{"EM"} or \code{"EMA"}.
+\item{algorithm}{Estimation algorithm. \code{"EM"} and \code{"EMA"} are
+available for ordinary LMS estimation. With graph Laplace integration,
+use \code{"EM"} for generalized EM or \code{"QN"} for direct
+quasi-Newton maximization.
 \code{"EM"} is the standard EM algorithm. \code{"EMA"} is an
 accelerated EM procedure that uses Quasi-Newton and Fisher Scoring
 optimization steps when needed. Default is \code{"EM"}.}

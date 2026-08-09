@@ -188,6 +188,128 @@ lmsGraphBaseRule <- function(submodel, max.nodes = 1e6) {
 }
 
 
+lmsGraphCommonBaseRule <- function(submodel, max.nodes = 1e6) {
+  dimension <- submodel$info$numXis + submodel$info$numEtas
+  order <- submodel$quad$m
+  nodes.per.observation <- order ^ dimension
+  mod_stopif(!is.finite(nodes.per.observation) ||
+               nodes.per.observation > max.nodes,
+    sprintf(paste0("The LMS graph product rule requires %.0f nodes in %d latent ",
+                   "dimensions. Reduce `nodes` or use another integration rule."),
+            nodes.per.observation, dimension))
+  rule <- quadrature(m = order, k = dimension, adaptive = FALSE,
+                     quad.range = submodel$quad$quad.range)
+  rule$Q <- NROW(rule$n)
+  rule$N <- submodel$data$n
+  rule$common <- TRUE
+  rule$packed <- FALSE
+  rule
+}
+
+
+lmsGraphCommonDensity <- function(nodes, submodel, workspace, link) {
+  M <- submodel$matrices
+  if (is.null(M$thresholds))
+    M$thresholds <- matrix(NaN, NROW(M$lambdaX), 0L)
+  sampling.weights <- rep(1, submodel$data$n)
+  result <- lmsGraphCommonPstepCpp(
+    M, nodes, submodel$info$numXis, submodel$info$numEtas, workspace,
+    rep(1, NROW(nodes)), sampling.weights, identical(link, "logit"),
+    ThreadEnv$n.threads %||% 1L
+  )
+  exp(result$logKernel)
+}
+
+
+lmsGraphQuasiAdaptiveRule <- function(submodel, link, workspace,
+                                      tolerance = 1e-12, previous = NULL,
+                                      max.nodes = 1e6) {
+  dimension <- submodel$info$numXis + submodel$info$numEtas
+  if (!dimension) return(lmsGraphCommonBaseRule(submodel, max.nodes))
+  m <- submodel$quad$m
+  m.ceil <- if (!is.null(previous$m.ceil)) previous$m.ceil else m
+  rule <- adaptiveGaussQuadrature(
+    fun = lmsGraphCommonDensity, submodel = submodel, workspace = workspace,
+    link = link, a = submodel$quad$a, b = submodel$quad$b,
+    m = m, k = dimension, m.ceil = m.ceil, tol = tolerance
+  )
+  mod_stopif(NROW(rule$n) > max.nodes,
+             "The quasi-adaptive LMS graph rule exceeds the node limit.")
+  # The density matrix is needed only while selecting nodes. The actual E-step
+  # is evaluated below using the final rule, so retaining it duplicates N * Q
+  # storage in every subsequent M-step.
+  rule$F <- NULL
+  rule$Q <- NROW(rule$n)
+  rule$N <- submodel$data$n
+  rule$common <- TRUE
+  rule$packed <- FALSE
+  rule$adaptive <- TRUE
+  rule$adaptive.frequency <- submodel$quad$adaptive.frequency
+  rule
+}
+
+
+lmsGraphCoverageAdaptiveRule <- function(submodel, link, workspace,
+                                         tolerance = 1e-12,
+                                         previous = NULL,
+                                         max.nodes = 1e6) {
+  dimension <- submodel$info$numXis + submodel$info$numEtas
+  if (!dimension) return(lmsGraphCommonBaseRule(submodel, max.nodes))
+  requested <- as.integer(submodel$quad$m)
+  budget <- requested ^ dimension
+  candidate.order <- max(
+    requested,
+    as.integer(round(estMForNodesInRange(requested, -5, 5))),
+    if (requested >= 15L) 2L * requested + 2L else requested
+  )
+  candidate.nodes <- candidate.order ^ dimension
+  mod_stopif(!is.finite(candidate.nodes) || candidate.nodes > max.nodes,
+             sprintf(paste0("Coverage-adaptive quadrature requires %.0f candidate ",
+                            "nodes. Reduce `nodes` or use another integration rule."),
+                     candidate.nodes))
+  candidate <- quadrature(
+    m = candidate.order, k = dimension, adaptive = FALSE,
+    quad.range = submodel$quad$quad.range
+  )
+  M <- submodel$matrices
+  if (is.null(M$thresholds))
+    M$thresholds <- matrix(NaN, NROW(M$lambdaX), 0L)
+  sampling.weights <- submodel$data$weights
+  if (is.null(sampling.weights)) sampling.weights <- rep(1, submodel$data$n)
+  pilot <- lmsGraphCommonEstepCpp(
+    M, candidate$n, submodel$info$numXis, submodel$info$numEtas,
+    workspace, candidate$w, sampling.weights, identical(link, "logit"),
+    256L, ThreadEnv$n.threads %||% 1L
+  )
+  retained <- order(pilot$nodeMass, decreasing = TRUE)[
+    seq_len(min(budget, length(pilot$nodeMass)))
+  ]
+  retained.evaluation <- lmsGraphCommonEstepCpp(
+    M, candidate$n[retained, , drop = FALSE],
+    submodel$info$numXis, submodel$info$numEtas,
+    workspace, candidate$w[retained], sampling.weights,
+    identical(link, "logit"), 256L, ThreadEnv$n.threads %||% 1L
+  )
+  log.coverage <- retained.evaluation$logDensity - pilot$logDensity
+  coverage <- exp(log.coverage)
+  error <- retained.evaluation$logLik - pilot$logLik
+  list(
+    n = candidate$n[retained, , drop = FALSE],
+    w = candidate$w[retained],
+    Q = length(retained), N = submodel$data$n, k = dimension,
+    m = requested, m.ceil = candidate.order,
+    candidate.Q = NROW(candidate$n), budget = budget,
+    min.coverage = min(coverage), mean.coverage = mean(coverage),
+    error = error, error.abs = abs(error), error.rel = NA_real_,
+    quad.range = submodel$quad$quad.range,
+    adaptive = TRUE,
+    adaptive.frequency = submodel$quad$adaptive.frequency,
+    coverage.adaptive = TRUE, common = TRUE, packed = FALSE,
+    evaluation = retained.evaluation
+  )
+}
+
+
 lmsGraphHalton <- function(samples, dimension, skip = 100L) {
   primes <- c(2L, 3L, 5L, 7L, 11L, 13L, 17L, 19L, 23L, 29L,
               31L, 37L, 41L, 43L, 47L, 53L, 59L, 61L, 67L, 71L)
@@ -520,9 +642,13 @@ pstepLmsGraph <- function(model, theta, lastQuad = NULL, recalcQuad = FALSE,
     previous <- if (!is.null(lastQuad)) lastQuad[[g]] else NULL
     workspace <- previous$workspace %||% lmsGraphWorkspace(submodel)
     rule <- if (!is.null(previous) && !recalcQuad) previous else if (
-      integration == "aghq"
-    ) lmsGraphRule(submodel, previous = previous, link = link,
-                   tolerance = adaptive.quad.tol, workspace = workspace) else if (
+      integration == "aghq" && isTRUE(submodel$quad$adaptive)
+    ) lmsGraphCoverageAdaptiveRule(
+      submodel, link = link, workspace = workspace,
+      tolerance = adaptive.quad.tol, previous = previous
+    ) else if (integration == "aghq") {
+      lmsGraphCommonBaseRule(submodel)
+    } else if (
       integration == "qmc"
     ) lmsGraphQmcRule(submodel, previous = previous, link = link,
                       tolerance = adaptive.quad.tol, workspace = workspace) else
@@ -539,13 +665,21 @@ pstepLmsGraph <- function(model, theta, lastQuad = NULL, recalcQuad = FALSE,
     ordered <- match(submodel$info$ordered %||% character(),
                      rownames(M$lambdaX)) - 1L
     ordered <- ordered[!is.na(ordered)]
-    aggregate <- lmsGraphPstepWorkspaceCpp(
-      M, rule$n, submodel$info$numXis, submodel$info$numEtas, workspace,
-      rule$w, sampling.weights, identical(link, "logit"),
-      ThreadEnv$n.threads %||% 1L
-    )
-    log.kernel <- aggregate$logKernel
-    posterior <- aggregate$posterior
+    aggregate <- if (isTRUE(rule$common) && !is.null(rule$evaluation)) {
+      rule$evaluation
+    } else if (isTRUE(rule$common))
+      lmsGraphCommonEstepCpp(
+        M, rule$n, submodel$info$numXis, submodel$info$numEtas, workspace,
+        rule$w, sampling.weights, identical(link, "logit"),
+        256L, ThreadEnv$n.threads %||% 1L
+      ) else lmsGraphPstepWorkspaceCpp(
+        M, rule$n, submodel$info$numXis, submodel$info$numEtas, workspace,
+        rule$w, sampling.weights, identical(link, "logit"),
+        ThreadEnv$n.threads %||% 1L
+      )
+    rule$evaluation <- NULL
+    log.kernel <- aggregate$logKernel %||% NULL
+    posterior <- aggregate$posterior %||% NULL
     observed.logLik <- aggregate$logLik
     laplace <- NULL
     if (integration %in% c("laplace", "laplace2")) {
@@ -560,14 +694,16 @@ pstepLmsGraph <- function(model, theta, lastQuad = NULL, recalcQuad = FALSE,
       observed.logLik <- sum(sampling.weights * contribution)
     }
 
+    sufficient <- if (isTRUE(rule$common)) aggregate$statistics else NULL
     groups[[g]] <- list(
-      P = posterior * sampling.weights,
+      P = if (is.null(posterior)) NULL else posterior * sampling.weights,
       posterior = posterior,
       log.kernel = log.kernel,
       V = rule$n, w = rule$w, quad = rule,
       obsLL = observed.logLik, laplace = laplace,
       sampling.weights = sampling.weights, link = link,
-      workspace = workspace, integration = integration
+      workspace = workspace, integration = integration,
+      sufficient = sufficient, common = isTRUE(rule$common)
     )
   }
 
@@ -590,21 +726,42 @@ lmsGraphObjective <- function(theta, model, P, observed = FALSE, sign = -1) {
   for (g in seq_len(model$info$n.groups)) {
     Pg <- P$P_GROUPS[[g]]
     if (observed) {
-      log.kernel <- lmsGraphLogKernel(
-        filled$models[[g]], Pg$V, Pg$link %||% "logit", Pg$workspace
-      )
-      ll <- ll + lmsGraphAggregateCpp(log.kernel, Pg$w, Pg$sampling.weights)$logLik
+      if (isTRUE(Pg$common)) {
+        submodel <- filled$models[[g]]
+        M <- submodel$matrices
+        if (is.null(M$thresholds))
+          M$thresholds <- matrix(NaN, NROW(M$lambdaX), 0L)
+        ll <- ll + lmsGraphCommonEstepCpp(
+          M, Pg$V, submodel$info$numXis, submodel$info$numEtas,
+          Pg$workspace, Pg$w, Pg$sampling.weights,
+          identical(Pg$link %||% "logit", "logit"),
+          256L, ThreadEnv$n.threads %||% 1L
+        )$logLik
+      } else {
+        log.kernel <- lmsGraphLogKernel(
+          filled$models[[g]], Pg$V, Pg$link %||% "logit", Pg$workspace
+        )
+        ll <- ll + lmsGraphAggregateCpp(
+          log.kernel, Pg$w, Pg$sampling.weights
+        )$logLik
+      }
     } else {
       submodel <- filled$models[[g]]
       M <- submodel$matrices
       if (is.null(M$thresholds))
         M$thresholds <- matrix(NaN, NROW(M$lambdaX), 0L)
       workspace <- Pg$workspace %||% lmsGraphWorkspace(submodel)
-      ll <- ll + lmsGraphCompleteWorkspaceCpp(
-        M, Pg$V, submodel$info$numXis, submodel$info$numEtas,
-        workspace, Pg$P, identical(Pg$link %||% "logit", "logit"),
-        ThreadEnv$n.threads %||% 1L
-      )
+      ll <- ll + if (isTRUE(Pg$common))
+        lmsGraphSufficientCompleteCpp(
+          M, Pg$V, submodel$info$numXis, submodel$info$numEtas,
+          workspace, Pg$sufficient,
+          identical(Pg$link %||% "logit", "logit"),
+          ThreadEnv$n.threads %||% 1L
+        ) else lmsGraphCompleteWorkspaceCpp(
+          M, Pg$V, submodel$info$numXis, submodel$info$numEtas,
+          workspace, Pg$P, identical(Pg$link %||% "logit", "logit"),
+          ThreadEnv$n.threads %||% 1L
+        )
     }
   }
   sign * ll
@@ -691,15 +848,37 @@ lmsGraphAnalyticalGradient <- function(theta, model, P, observed, sign) {
     ordered <- ordered[!is.na(ordered)]
     Pg <- P$P_GROUPS[[g]]
     workspace <- Pg$workspace %||% lmsGraphWorkspace(submodel)
-    score <- lmsGraphReverseScoreCpp(
-      M, Pg$V, submodel$info$numXis, submodel$info$numEtas,
-      submodel$data$data.split, submodel$data$colidx0, ordered,
-      Pg$w, Pg$sampling.weights,
-      if (observed) matrix(numeric(), 0L, 0L) else Pg$P,
-      observed, loc$block, loc$row, loc$col, loc$symmetric,
-      identical(Pg$link %||% "logit", "logit"),
-      ThreadEnv$n.threads %||% 1L, workspace
-    )
+    score <- if (isTRUE(Pg$common)) {
+      statistics <- Pg$sufficient
+      if (observed) statistics <- lmsGraphCommonEstepCpp(
+        M, Pg$V, submodel$info$numXis, submodel$info$numEtas,
+        workspace, Pg$w, Pg$sampling.weights,
+        identical(Pg$link %||% "logit", "logit"),
+        256L, ThreadEnv$n.threads %||% 1L
+      )$statistics
+      lmsGraphSufficientScoreCpp(
+        M, Pg$V, submodel$info$numXis, submodel$info$numEtas,
+        statistics, ordered, loc$block, loc$row, loc$col, loc$symmetric,
+        identical(Pg$link %||% "logit", "logit")
+      )
+    } else {
+        nodes <- Pg$V
+        weights <- Pg$w
+        if (isTRUE(Pg$common)) {
+          nodes <- nodes[rep(seq_len(NROW(nodes)), times = submodel$data$n),
+                         , drop = FALSE]
+          weights <- rep(weights, times = submodel$data$n)
+        }
+        lmsGraphReverseScoreCpp(
+          M, nodes, submodel$info$numXis, submodel$info$numEtas,
+          submodel$data$data.split, submodel$data$colidx0, ordered,
+          weights, Pg$sampling.weights,
+          if (observed) matrix(numeric(), 0L, 0L) else Pg$P,
+          observed, loc$block, loc$row, loc$col, loc$symmetric,
+          identical(Pg$link %||% "logit", "logit"),
+          ThreadEnv$n.threads %||% 1L, workspace
+        )
+      }
     raw[loc$param] <- score
   }
   J <- lmsFirstDerivativeJacobian(theta, model)
