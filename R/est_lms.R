@@ -1,10 +1,8 @@
 getLmsBackend <- function(backend = c("legacy", "graph"),
-                          link = c("logit", "probit"),
-                          integration = c("aghq", "qmc", "laplace", "laplace2")) {
+                          link = c("logit", "probit")) {
   backend <- match.arg(backend)
   link <- match.arg(link)
-  integration <- match.arg(integration)
-  if (backend == "graph") return(lmsGraphBackend(link, integration))
+  if (backend == "graph") return(lmsGraphBackend(link))
   list(
     name = "legacy", pstep = estepLms,
     complete = compLogLikLms, observed = obsLogLikLms,
@@ -299,14 +297,12 @@ emLms <- function(model,
                   epsilon = 1e-6,
                   optimizer = "nlminb",
                   R.max = 1e6,
-                  adaptive.quad = FALSE,
                   quad.range = -Inf,
                   adaptive.quad.tol = 1e-12,
                   nodes = 24,
                   cr1s = TRUE,
                   lms.backend = c("legacy", "graph"),
                   link = c("logit", "probit"),
-                  integration = c("aghq", "qmc", "laplace", "laplace2"),
                   ema.min.iter = 10L,
                   ema.trend.min = 0,
                   ema.forecast.min.gains = 3L,
@@ -331,8 +327,7 @@ emLms <- function(model,
 
   algorithm <- toupper(match.arg(algorithm))
   link <- match.arg(link)
-  integration <- match.arg(integration)
-  backend <- getLmsBackend(lms.backend, link, integration)
+  backend <- getLmsBackend(lms.backend, link)
   if (backend$name == "graph" && calc.se) {
     mod_stopif(robust.se,
       "Robust standard errors are not yet available for `lms.backend = \"graph\"`.")
@@ -386,14 +381,18 @@ emLms <- function(model,
   max.iter.fs <- fs.maxit.start
   max.iter.qn <- qn.maxit.start
 
+  quad.spec    <- model$models[[1L]]$quad # fixed across groups
+  adaptiveQuad <- isAdaptiveQuad(quad.spec)
+  adaptiveFreq <- quad.spec$adaptive.frequency
+  integration  <- quad.spec$integration
+  adaptive     <- quad.spec$adaptive
+
   tryCatch({
     logLikNew <- -Inf
     logLikOld <- -Inf
     thetaNew  <- model$theta
 
     lastQuad     <- NULL
-    adaptiveQuad <- model$models[[1L]]$quad$adaptive # fixed across groups
-    adaptiveFreq <- model$models[[1L]]$quad$adaptive.frequency
 
     n.em.iter  <- 0
     mode       <- "EM"
@@ -653,41 +652,14 @@ emLms <- function(model,
       } else {
         thetaNew <- thetaOld
       }
-
-      # A higher-order Laplace E-step is a generalized EM approximation, so
-      # the unconstrained M-step need not increase the corrected observed
-      # likelihood. Backtrack along the EM direction until it does.
-      if (algorithm == "EM" && integration %in% c("laplace", "laplace2") &&
-          any(thetaNew != thetaOld)) {
-        direction <- thetaNew - thetaOld
-        accepted <- FALSE
-        for (backtrack in 0:12) {
-          scale <- 2 ^ (-backtrack)
-          candidate <- thetaOld + scale * direction
-          candidateP <- tryCatch(
-            backend$pstep(
-              model = model, theta = candidate, lastQuad = lastQuad,
-              recalcQuad = FALSE,
-              adaptive.quad.tol = adaptive.quad.tol, ...
-            ), error = function(e) NULL
-          )
-          if (!is.null(candidateP) && is.finite(candidateP$obsLL) &&
-              candidateP$obsLL >= P$obsLL - 1e-8) {
-            thetaNew <- candidate
-            accepted <- TRUE
-            break
-          }
-        }
-        if (!accepted) thetaNew <- thetaOld
-      }
     } # while
 
     if (verbose) cat("\n")
     mod_warnif(iterations >= max.iter, paste0("Maximum iterations reached!\n",
            "Consider tweaking these parameters:\n",
            formatParameters(convergence.abs, convergence.rel, algorithm,
-                            max.step, max.iter, nodes, adaptive.quad,
-                            adaptive.quad.tol, quad.range)))
+                            max.step, max.iter, nodes, integration,
+                            adaptive, adaptive.quad.tol, quad.range)))
 
     # final E-step
     P <- backend$pstep(model = model, theta = thetaNew,
@@ -719,6 +691,7 @@ emLms <- function(model,
     )
     fit$iteration.history <- history
     fit$integration <- integration
+    fit$adaptive <- adaptive
     fit
 
   }, error = function(e) {
@@ -759,6 +732,7 @@ emLms <- function(model,
       startModel        = model
     )
     fit$integration <- integration
+    fit$adaptive <- adaptive
     fit$iteration.history <- history
     fit
   })

@@ -597,27 +597,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// lmsGraphPstepCpp
-Rcpp::List lmsGraphPstepCpp(const Rcpp::List& matrices, const arma::mat& nodes, const int numXis, const int numEtas, const Rcpp::List& dataR, const Rcpp::List& colidxR, const Rcpp::IntegerVector& orderedIndex, const arma::vec& quadWeights, const arma::vec& rowWeights, const bool logistic, const int ncores);
-RcppExport SEXP _modsem_lmsGraphPstepCpp(SEXP matricesSEXP, SEXP nodesSEXP, SEXP numXisSEXP, SEXP numEtasSEXP, SEXP dataRSEXP, SEXP colidxRSEXP, SEXP orderedIndexSEXP, SEXP quadWeightsSEXP, SEXP rowWeightsSEXP, SEXP logisticSEXP, SEXP ncoresSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Rcpp::List& >::type matrices(matricesSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type nodes(nodesSEXP);
-    Rcpp::traits::input_parameter< const int >::type numXis(numXisSEXP);
-    Rcpp::traits::input_parameter< const int >::type numEtas(numEtasSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::List& >::type dataR(dataRSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::List& >::type colidxR(colidxRSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type orderedIndex(orderedIndexSEXP);
-    Rcpp::traits::input_parameter< const arma::vec& >::type quadWeights(quadWeightsSEXP);
-    Rcpp::traits::input_parameter< const arma::vec& >::type rowWeights(rowWeightsSEXP);
-    Rcpp::traits::input_parameter< const bool >::type logistic(logisticSEXP);
-    Rcpp::traits::input_parameter< const int >::type ncores(ncoresSEXP);
-    rcpp_result_gen = Rcpp::wrap(lmsGraphPstepCpp(matrices, nodes, numXis, numEtas, dataR, colidxR, orderedIndex, quadWeights, rowWeights, logistic, ncores));
-    return rcpp_result_gen;
-END_RCPP
-}
 // lmsGraphWeightedKernelCpp
 double lmsGraphWeightedKernelCpp(const arma::mat& logKernel, const arma::mat& weights);
 RcppExport SEXP _modsem_lmsGraphWeightedKernelCpp(SEXP logKernelSEXP, SEXP weightsSEXP) {
@@ -702,49 +681,6 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const Rcpp::LogicalVector& >::type symmetric(symmetricSEXP);
     Rcpp::traits::input_parameter< const bool >::type logistic(logisticSEXP);
     rcpp_result_gen = Rcpp::wrap(lmsGraphSufficientScoreCpp(matrices, nodes, numXis, numEtas, statistics, orderedIndex, block, row, col, symmetric, logistic));
-    return rcpp_result_gen;
-END_RCPP
-}
-// lmsGraphLaplace2Cpp
-Rcpp::List lmsGraphLaplace2Cpp(const Rcpp::List& matrices, const arma::mat& modes, const int numXis, const int numEtas, const Rcpp::List& dataR, const Rcpp::List& colidxR, const Rcpp::IntegerVector& orderedIndex, const bool logistic, const double curvatureFloor, const double correctionFloor, const int ncores);
-RcppExport SEXP _modsem_lmsGraphLaplace2Cpp(SEXP matricesSEXP, SEXP modesSEXP, SEXP numXisSEXP, SEXP numEtasSEXP, SEXP dataRSEXP, SEXP colidxRSEXP, SEXP orderedIndexSEXP, SEXP logisticSEXP, SEXP curvatureFloorSEXP, SEXP correctionFloorSEXP, SEXP ncoresSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Rcpp::List& >::type matrices(matricesSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type modes(modesSEXP);
-    Rcpp::traits::input_parameter< const int >::type numXis(numXisSEXP);
-    Rcpp::traits::input_parameter< const int >::type numEtas(numEtasSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::List& >::type dataR(dataRSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::List& >::type colidxR(colidxRSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type orderedIndex(orderedIndexSEXP);
-    Rcpp::traits::input_parameter< const bool >::type logistic(logisticSEXP);
-    Rcpp::traits::input_parameter< const double >::type curvatureFloor(curvatureFloorSEXP);
-    Rcpp::traits::input_parameter< const double >::type correctionFloor(correctionFloorSEXP);
-    Rcpp::traits::input_parameter< const int >::type ncores(ncoresSEXP);
-    rcpp_result_gen = Rcpp::wrap(lmsGraphLaplace2Cpp(matrices, modes, numXis, numEtas, dataR, colidxR, orderedIndex, logistic, curvatureFloor, correctionFloor, ncores));
-    return rcpp_result_gen;
-END_RCPP
-}
-// lmsGraphLaplaceFixedBatchCpp
-Rcpp::List lmsGraphLaplaceFixedBatchCpp(const Rcpp::List& matrixVariants, const arma::mat& modes, const int numXis, const int numEtas, const Rcpp::List& dataR, const Rcpp::List& colidxR, const Rcpp::IntegerVector& orderedIndex, const bool secondOrder, const bool logistic, const double curvatureFloor, const double correctionFloor, const int ncores);
-RcppExport SEXP _modsem_lmsGraphLaplaceFixedBatchCpp(SEXP matrixVariantsSEXP, SEXP modesSEXP, SEXP numXisSEXP, SEXP numEtasSEXP, SEXP dataRSEXP, SEXP colidxRSEXP, SEXP orderedIndexSEXP, SEXP secondOrderSEXP, SEXP logisticSEXP, SEXP curvatureFloorSEXP, SEXP correctionFloorSEXP, SEXP ncoresSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Rcpp::List& >::type matrixVariants(matrixVariantsSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type modes(modesSEXP);
-    Rcpp::traits::input_parameter< const int >::type numXis(numXisSEXP);
-    Rcpp::traits::input_parameter< const int >::type numEtas(numEtasSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::List& >::type dataR(dataRSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::List& >::type colidxR(colidxRSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type orderedIndex(orderedIndexSEXP);
-    Rcpp::traits::input_parameter< const bool >::type secondOrder(secondOrderSEXP);
-    Rcpp::traits::input_parameter< const bool >::type logistic(logisticSEXP);
-    Rcpp::traits::input_parameter< const double >::type curvatureFloor(curvatureFloorSEXP);
-    Rcpp::traits::input_parameter< const double >::type correctionFloor(correctionFloorSEXP);
-    Rcpp::traits::input_parameter< const int >::type ncores(ncoresSEXP);
-    rcpp_result_gen = Rcpp::wrap(lmsGraphLaplaceFixedBatchCpp(matrixVariants, modes, numXis, numEtas, dataR, colidxR, orderedIndex, secondOrder, logistic, curvatureFloor, correctionFloor, ncores));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -1022,13 +958,10 @@ static const R_CallMethodDef CallEntries[] = {
     {"_modsem_lmsGraphAdaptiveRuleCpp", (DL_FUNC) &_modsem_lmsGraphAdaptiveRuleCpp, 16},
     {"_modsem_lmsGraphLogKernelCpp", (DL_FUNC) &_modsem_lmsGraphLogKernelCpp, 9},
     {"_modsem_lmsGraphAggregateCpp", (DL_FUNC) &_modsem_lmsGraphAggregateCpp, 3},
-    {"_modsem_lmsGraphPstepCpp", (DL_FUNC) &_modsem_lmsGraphPstepCpp, 11},
     {"_modsem_lmsGraphWeightedKernelCpp", (DL_FUNC) &_modsem_lmsGraphWeightedKernelCpp, 2},
     {"_modsem_lmsGraphScoreCpp", (DL_FUNC) &_modsem_lmsGraphScoreCpp, 16},
     {"_modsem_lmsGraphReverseScoreCpp", (DL_FUNC) &_modsem_lmsGraphReverseScoreCpp, 18},
     {"_modsem_lmsGraphSufficientScoreCpp", (DL_FUNC) &_modsem_lmsGraphSufficientScoreCpp, 11},
-    {"_modsem_lmsGraphLaplace2Cpp", (DL_FUNC) &_modsem_lmsGraphLaplace2Cpp, 11},
-    {"_modsem_lmsGraphLaplaceFixedBatchCpp", (DL_FUNC) &_modsem_lmsGraphLaplaceFixedBatchCpp, 12},
     {"_modsem_multiplyIndicatorsCpp", (DL_FUNC) &_modsem_multiplyIndicatorsCpp, 1},
     {"_modsem_checkOpenMP_Cpp", (DL_FUNC) &_modsem_checkOpenMP_Cpp, 0},
     {"_modsem_dmvnrmArmaMc", (DL_FUNC) &_modsem_dmvnrmArmaMc, 5},

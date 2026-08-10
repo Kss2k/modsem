@@ -386,6 +386,9 @@ parameterEstimatesLavSAM <- function(syntax,
   categorical <- length(ordered) > 0L
   measurement.estimator <- if (categorical) "WLSMV" else estimator
   structural.estimator <- if (categorical) "ML" else estimator
+  # `parameterization` only means anything for ordered indicators, and lavaan
+  # rejects "theta" outright for models with composites.
+  if (!categorical) parameterization <- "delta"
   lowerOrderInds <- unlist(getIndsLVs(parTable, lVs = higherOrderLVs,
                                       isOV = FALSE))
 

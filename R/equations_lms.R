@@ -48,22 +48,14 @@ estepLmsGroup <- function(submodel, lastQuad = NULL, recalcQuad = FALSE,
   data             <- submodel$data
   sampling.weights <- data$weights
 
-  if (submodel$quad$adaptive && (recalcQuad || is.null(lastQuad))) {
-    m <- submodel$quad$m
-    a <- submodel$quad$a
-    b <- submodel$quad$b
-    m <- submodel$quad$m
-    k <- submodel$quad$k
+  spec <- submodel$quad
+  spec$adaptive.quad.tol <- adaptive.quad.tol
 
-    if (!is.null(lastQuad)) m.ceil <- lastQuad$m.ceil
-    else if (k > 1) m.ceil <- m
-    else m.ceil <- round(estMForNodesInRange(m, a = -5, b = 5))
-
+  if (isAdaptiveQuad(spec) && (recalcQuad || is.null(lastQuad))) {
     quad <- tryCatch({
-        adaptiveGaussQuadrature(
-          fun = densityLms, modFilled = submodel,
-          data = data, a = a, b = b, m = m,
-          k = k, m.ceil = m.ceil, tol = adaptive.quad.tol,
+        buildQuadRule(
+          spec, density = densityLms, previous = lastQuad,
+          modFilled = submodel, data = data
         )
       }, error = function(e) {
         mod_msg_warn_immediate(
@@ -75,27 +67,31 @@ estepLmsGroup <- function(submodel, lastQuad = NULL, recalcQuad = FALSE,
     )
 
     if (is.null(quad)) {
-      estep.fixed <- estepLmsGroup(
+      # Fall back to the fixed rule for this iteration rather than aborting.
+      return(estepLmsGroup(
         submodel = submodel,
-        lastQuad = if (!is.null(lastQuad)) lastQuad else submodel$quad,
+        lastQuad = lastQuad %||% buildQuadRule(setAdaptiveQuad(spec, "none")),
         recalcQuad = FALSE,
         ...
-      )
-
-      return(estep.fixed)
+      ))
     }
 
-    V <- quad$n
-    w <- quad$w
-    P <- sweep(quad$F, MARGIN = 2, STATS = w, FUN = "*")
+    # The densities the pruner evaluated belong to the rule we just built, so
+    # reuse them here, but never carry them into the next iteration: the
+    # parameters will have moved by then.
+    densityVals <- quad$F
+    quad$F <- NULL
+    if (is.null(densityVals) || NCOL(densityVals) != NROW(quad$n))
+      densityVals <- densityLms(quad$n, modFilled = submodel, data = data)
 
   } else {
-    quad <- if (submodel$quad$adaptive) lastQuad else submodel$quad
-    V    <- quad$n
-    w    <- quad$w
-    densityVals <- densityLms(V, modFilled = submodel, data = data)
-    P    <- sweep(densityVals, MARGIN = 2, STATS = w, FUN = "*")
+    quad <- lastQuad %||% buildQuadRule(spec)
+    densityVals <- densityLms(quad$n, modFilled = submodel, data = data)
   }
+
+  V <- quad$n
+  w <- quad$w
+  P <- sweep(densityVals, MARGIN = 2, STATS = w, FUN = "*")
 
   density <- rowSums(P)
   P <- P / density

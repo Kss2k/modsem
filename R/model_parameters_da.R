@@ -703,7 +703,12 @@ getGradientStructSimple <- function(model, theta, method = "lms") {
 
     locations <- rbind(
        locations,
-       getParamLocationsMatrices(submodel$matrices, isFree = is.na, g = g),
+       # Use the shared free-parameter predicate rather than plain `is.na()`:
+       # `is.na(NaN)` is TRUE, so the latter treats structurally absent entries
+       # as free. Ordered models mark absent thresholds with NaN, which
+       # `createTheta()` already excludes, so overriding here made `locations`
+       # disagree with `theta`. A no-op for matrices that contain no NaN.
+       getParamLocationsMatrices(submodel$matrices, g = g),
        getParamLocationsMatrices(submodel$labelMatrices, isFree = \(x) x != "",
                                  g = g, ignore.g.label = TRUE) # labels don't change with g here
     )

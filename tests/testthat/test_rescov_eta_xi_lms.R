@@ -66,7 +66,10 @@ testthat::test_that("Residual covariances between xis and etas in the LMS approa
     y3 = make_indicator(y.int, 0.90)
   )
 
-  fit.mod.int <- modsem(syntax.int, data, method = "lms")
+  # Pinned to 24 nodes rather than the default 15: this compares an integrated
+  # interaction model against an exactly-integrated linear one at tol = 1e-3,
+  # which needs more resolution than the default provides.
+  fit.mod.int <- modsem(syntax.int, data, method = "lms", nodes = 24)
   est.mod.int <- coef(fit.mod.int)
   testthat::expect_equal(
     est.mod.int[["X~~Y"]],

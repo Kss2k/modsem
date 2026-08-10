@@ -14,9 +14,7 @@ specifyModelDA_Group <- function(syntax = NULL,
                                  standardize.inp = FALSE,
                                  standardize.out = FALSE,
                                  checkModel = TRUE,
-                                 quad.range = Inf,
-                                 adaptive.quad = FALSE,
-                                 adaptive.frequency = 3,
+                                 quad = NULL,
                                  missing = "complete",
                                  orthogonal.x = FALSE,
                                  orthogonal.y = FALSE,
@@ -390,9 +388,12 @@ specifyModelDA_Group <- function(syntax = NULL,
     omegaXiXi  = labelOmegaXiXi
   )
 
+  # The quadrature *spec* is stored; the nodes themselves are built on demand
+  # by `buildQuadRule()`, so a k-dimensional product grid is never materialised
+  # here only to be replaced by an adaptive rule during the first E-step.
   k <- omegaAndSortedXis$k
-  quad <- quadrature(m, k, quad.range = quad.range, adaptive = adaptive.quad,
-                     adaptive.frequency = adaptive.frequency)
+  quad <- if (is.null(quad)) quadSpec(nodes = m, k = k) else
+    utils::modifyList(quad, list(k = k))
 
   model <- list(
     info = list(

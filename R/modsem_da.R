@@ -17,15 +17,35 @@
 #'
 #' @param optimize should starting parameters be optimized
 #'
-#' @param nodes number of quadrature nodes (points of integration) used in \code{lms},
-#'   increased number gives better estimates but slower computation. How many are needed depends on the complexity of the model.
-#'   The graph LMS backend defaults to five nodes per latent dimension. With
-#'   adaptive quadrature it constructs one quasi-adaptive rule per group.
-#'   For simple models, somewhere between 16-24 nodes should be enough; for more complex models, higher numbers may be needed.
-#'   For models where there is an interaction effect between an endogenous and exogenous variable,
-#'   the number of nodes should be at least 32, but practically (e.g., ordinal/skewed data), more than 32 is recommended. In cases
-#'   where data is non-normal, it might be better to use the \code{qml} approach instead.
-#'   You can also consider setting \code{adaptive.quad = TRUE}.
+#' @param nodes Number of points of integration used in \code{lms}. More points
+#'   give better estimates but slower computation; how many are needed depends
+#'   on the complexity of the model.
+#'
+#'   \strong{What \code{nodes} counts depends on \code{integration}}: for
+#'   \code{"gh"} and \code{"rect"} it is the number of nodes \emph{per latent
+#'   dimension}, so a product rule costs \code{nodes^k} points in \code{k}
+#'   dimensions. For \code{"mc"} it is the \emph{total} number of draws, whose
+#'   cost does not grow with dimension.
+#'
+#'   If left unset, the default is chosen from \code{integration} and
+#'   \code{adaptive}:
+#'
+#'   \tabular{lrrr}{
+#'     \strong{integration} \tab \code{adaptive = "none"} \tab \code{"quasi"} \tab \code{"full"} \cr
+#'     \code{"gh"}   \tab  15 \tab  15 \tab   5 \cr
+#'     \code{"rect"} \tab  15 \tab  15 \tab   5 \cr
+#'     \code{"mc"}   \tab 500 \tab   - \tab 250 \cr
+#'   }
+#'
+#'   The shared-rule defaults match Mplus: 15 points per dimension for both
+#'   product rules and 500 draws in total for Monte-Carlo.
+#'
+#'   A per-observation rule (\code{adaptive = "full"}) needs far fewer points
+#'   than a shared one because it is centred on each observation's own
+#'   posterior. For models with an interaction between an endogenous and an
+#'   exogenous variable, a shared rule may need considerably more than the
+#'   default; where the data is non-normal, the \code{qml} approach may be a
+#'   better choice than raising \code{nodes}.
 #'
 #' @param missing How should missing values be handled? If \code{"listwise"} (default) missing values
 #'   are removed list-wise (alias: \code{"complete"} or \code{"casewise"}).
@@ -43,10 +63,7 @@
 #'   For the LMS approach the EM-algorithm stops whenever
 #'   the relative or absolute convergence criterion is reached.
 #'
-#' @param optimizer Optimizer to use. Can be \code{"custom"}, \code{"nlminb"},
-#'   or \code{"L-BFGS-B"}. For graph Laplace estimation with
-#'   \code{algorithm = "QN"}, \code{"custom"} is the default and reuses the
-#'   accepted quadrature-mode state between objective and gradient evaluations.
+#' @param optimizer optimizer to use, can be either \code{"nlminb"} or \code{"L-BFGS-B"}. For LMS, \code{"nlminb"} is recommended.
 #'   For QML, \code{"L-BFGS-B"} may be faster if there is a large number of iterations, but slower if there are few iterations.
 #'
 #' @param center.data should data be centered before fitting model
@@ -122,36 +139,85 @@
 #'
 #' @param epsilon finite difference for numerical derivatives.
 #'
-#' @param quad.range range in z-scores to perform numerical integration in LMS using,
-#'   when using quasi-adaptive Gaussian-Hermite Quadratures. By default \code{Inf}, such that \code{f(t)} is integrated from -Inf to Inf,
-#'   but this will likely be inefficient and pointless at a large number of nodes. Nodes outside
-#'   \code{+/- quad.range} will be ignored.
+#' @param quad.range range in z-scores over which to perform numerical
+#'   integration in LMS. By default \code{Inf}, so that \code{f(t)} is
+#'   integrated from -Inf to Inf, but this is likely inefficient at a large
+#'   number of nodes. Nodes outside \code{+/- quad.range} are ignored. Applies
+#'   to \code{integration = "gh"}; the rectangular rule has its own range.
 #'
-#' @param adaptive.quad should adaptive quadrature be used? For the graph LMS
-#'   backend, a common quasi-adaptive rule is selected and pruned using the
-#'   group likelihood. If \code{FALSE}, a common fixed Gauss--Hermite rule is
-#'   used. A common rule permits a sufficient-statistics M-step.
+#' @param rect.range Half-width of the integration range for
+#'   \code{integration = "rect"}, in z-scores. Defaults to 5, matching Mplus.
 #'
-#' @param adaptive.frequency How often should the quasi-adaptive quadrature be calculated? Defaults to 3, meaning
-#'   that it is recalculated every third EM-iteration.
+#'   This matters as much as \code{nodes}. A trapezoid rule on a
+#'   Gaussian-decaying integrand is not the \code{O(h^2)} scheme its name
+#'   suggests: Poisson summation gives a discretisation error of
+#'   \code{2 * exp(-2 * pi^2 / h^2)} for spacing \code{h}, so it converges
+#'   exponentially. Accuracy is governed by whichever is larger, that term or
+#'   the truncation error \code{2 * (1 - pnorm(rect.range))}. At 15 nodes over
+#'   \code{+/- 5} the discretisation error is around \code{3e-17} while
+#'   truncation is around \code{6e-7}, so the rule is truncation-limited by ten
+#'   orders of magnitude and widening the range helps far more than adding
+#'   nodes. Ignored by \code{"gh"} and \code{"mc"}, which use
+#'   \code{quad.range}.
 #'
-#' @param adaptive.quad.tol Relative error tolerance for quasi adaptive quadrature. Defaults to \code{1e-12}.
-#' @param integration Integration rule for the LMS graph backend. One of
-#'   \code{"aghq"}, \code{"qmc"}, \code{"laplace"}, or \code{"laplace2"}.
-#'   For EM with \code{"aghq"}, \code{adaptive.quad = TRUE} uses the common
-#'   quasi-adaptive LMS rule.
-#'   With \code{"qmc"}, \code{nodes} is the total number of low-discrepancy
-#'   draws rather than the number of nodes per latent dimension.
+#' @param integration Which numerical integration rule to use for \code{lms}.
+#' \describe{
+#'   \item{\code{"gh"}}{Gauss-Hermite product rule (the default). Highest
+#'     accuracy per node for smooth posteriors.}
+#'   \item{\code{"rect"}}{Equispaced rectangular product rule over \code{+/- 5}
+#'     per dimension, weighted by the normal density. This is the rule Mplus
+#'     uses under \code{INTEGRATION = STANDARD}, and is the closest match to
+#'     Mplus output.}
+#'   \item{\code{"mc"}}{Monte-Carlo integration from a fixed, seeded set of
+#'     standard-normal draws. The only rule whose cost does not grow with the
+#'     number of latent dimensions. Draws are held fixed across EM iterations,
+#'     so the likelihood stays a deterministic function of the parameters.}
+#' }
+#'
+#' @param adaptive How the integration rule is placed. Independent of
+#'   \code{integration}: the chosen rule is used in every case, only its
+#'   location changes.
+#' \describe{
+#'   \item{\code{"quasi"}}{(default) One rule per group, adapted to the
+#'     aggregate posterior. For \code{"gh"} the rule is pruned one dimension at
+#'     a time, dropping nodes that carry negligible information; for
+#'     \code{"rect"} the range is shrunk onto where the mass actually lies and
+#'     the same number of points respaced inside it. A shared rule permits a
+#'     sufficient-statistics M-step, which is much faster than the alternative.}
+#'   \item{\code{"none"}}{One fixed rule, shared by every observation.}
+#'   \item{\code{"full"}}{One rule per observation, centred on that
+#'     observation's posterior mode and scaled by its Hessian. Far more
+#'     accurate per node -- hence the much lower default \code{nodes} -- but it
+#'     rules out the sufficient-statistics M-step, so each iteration costs
+#'     \code{O(N * nodes^k)}. Graph backend only.}
+#' }
+#'
+#'   Not every combination is available:
+#'
+#'   \tabular{lll}{
+#'     \strong{backend} \tab \strong{gh / rect} \tab \strong{mc} \cr
+#'     \code{"legacy"} \tab \code{"none"}, \code{"quasi"} \tab - \cr
+#'     \code{"graph"}  \tab \code{"none"}, \code{"quasi"}, \code{"full"} \tab \code{"none"}, \code{"full"} \cr
+#'   }
+#'
+#' @param adaptive.quad \strong{Deprecated}; use \code{adaptive} instead.
+#'   \code{TRUE} maps to \code{adaptive = "quasi"} and \code{FALSE} to
+#'   \code{adaptive = "none"}.
+#'
+#' @param adaptive.frequency How often should the adaptive rule be recalculated?
+#'   Defaults to 3, meaning every third EM-iteration. Applies to both
+#'   \code{adaptive = "quasi"} (when the rule is re-pruned) and
+#'   \code{adaptive = "full"} (when the per-observation modes are refitted).
+#'
+#' @param adaptive.quad.tol Relative error tolerance used when pruning or
+#'   trimming a quasi-adaptive rule. Defaults to \code{1e-12}.
 #'
 #' @param n.threads number of threads to use for parallel processing. If \code{NULL}, it will use <= 2 threads.
 #'   If an integer is specified, it will use that number of threads (e.g., \code{n.threads = 4} will use 4 threads).
 #'   If \code{"default"}, it will use the default number of threads (2).
 #'   If \code{"max"}, it will use all available threads, \code{"min"} will use 1 thread.
 #'
-#' @param algorithm Estimation algorithm. \code{"EM"} and \code{"EMA"} are
-#'   available for ordinary LMS estimation. With graph Laplace integration,
-#'   use \code{"EM"} for generalized EM or \code{"QN"} for direct
-#'   quasi-Newton maximization.
+#' @param algorithm algorithm to use for the EM algorithm. Can be either \code{"EM"} or \code{"EMA"}.
 #'   \code{"EM"} is the standard EM algorithm. \code{"EMA"} is an
 #'   accelerated EM procedure that uses Quasi-Newton and Fisher Scoring
 #'   optimization steps when needed. Default is \code{"EM"}.
@@ -232,8 +298,14 @@
 #'
 #' @param lms.backend LMS likelihood implementation. The experimental
 #'   \code{"graph"} backend integrates one innovation per latent variable and
-#'   supports continuous and ordered indicators. The default \code{"legacy"}
-#'   backend is retained for continuous models.
+#'   evaluates latent variables in structural order, which lets it support
+#'   n-way interactions and ordered indicators, and is what makes
+#'   \code{adaptive = "full"} and \code{integration = "mc"} available. It
+#'   requires conditionally independent indicators and does not support
+#'   composites. The default \code{"legacy"} backend integrates only the
+#'   nonlinear latent dimensions, so its product rule is much smaller.
+#'   Selected automatically when the data has ordered indicators.
+#'
 #' @param link Link for ordered indicators in the LMS graph backend. The default
 #'   is \code{"logit"}; \code{"probit"} is also available.
 #'
@@ -406,10 +478,12 @@ modsem_da <- function(model.syntax = NULL,
                       start = NULL,
                       epsilon = NULL,
                       quad.range = NULL,
-                      adaptive.quad = NULL,
+                      rect.range = NULL,
+                      integration = NULL,
+                      adaptive = NULL,
+                      adaptive.quad = NULL, # deprecated, use `adaptive`
                       adaptive.frequency = NULL,
                       adaptive.quad.tol = NULL,
-                      integration = NULL,
                       n.threads = NULL,
                       algorithm = NULL,
                       em.control = NULL,
@@ -445,9 +519,15 @@ modsem_da <- function(model.syntax = NULL,
                       fix.composite.var = NULL,
                       ...) {
   method <- tolower(method)
-  nodes.user.supplied <- !is.null(nodes)
   lms.backend <- match.arg(lms.backend)
   link <- match.arg(link)
+
+  if (!is.null(adaptive.quad)) {
+    mapped <- if (isTRUE(adaptive.quad)) "quasi" else "none"
+    mod_msg_warn_immediate(sprintf(
+      "`adaptive.quad` is deprecated; use `adaptive = \"%s\"` instead.", mapped))
+    if (is.null(adaptive)) adaptive <- mapped
+  }
 
   if (is.null(model.syntax)) {
     mod_msg_stop("No model.syntax provided")
@@ -493,7 +573,9 @@ modsem_da <- function(model.syntax = NULL,
        start                          = start,
        epsilon                        = epsilon,
        quad.range                     = quad.range,
-       adaptive.quad                  = adaptive.quad,
+       rect.range                     = rect.range,
+       integration                    = integration,
+       adaptive                       = adaptive,
        adaptive.frequency             = adaptive.frequency,
        adaptive.quad.tol              = adaptive.quad.tol,
        n.threads                      = n.threads,
@@ -585,10 +667,11 @@ modsem_da <- function(model.syntax = NULL,
           max.step                       = max.step,
           epsilon                        = epsilon,
           quad.range                     = quad.range,
-          adaptive.quad                  = adaptive.quad,
+          rect.range                     = rect.range,
+          integration                    = integration,
+          adaptive                       = adaptive,
           adaptive.frequency             = adaptive.frequency,
           adaptive.quad.tol              = adaptive.quad.tol,
-          integration                    = integration,
           n.threads                      = n.threads,
           algorithm                      = algorithm,
           em.control                     = em.control,
@@ -605,32 +688,21 @@ modsem_da <- function(model.syntax = NULL,
           fix.composite.var              = fix.composite.var
         )
     )
-  args$integration <- match.arg(args$integration,
-                                c("aghq", "qmc", "laplace", "laplace2"))
-  if (args$integration != "aghq" && is.null(algorithm))
-    args$algorithm <- "EM"
-  if (args$integration %in% c("laplace", "laplace2") &&
-      toupper(args$algorithm) == "EMA") {
-    mod_msg_warn_immediate(
-      "For Laplace integration, `algorithm = \"EMA\"` is deprecated; using `algorithm = \"QN\"`."
-    )
-    args$algorithm <- "QN"
-  }
-  mod_stopif(toupper(args$algorithm) == "QN" &&
-               (method != "lms" || lms.backend != "graph" ||
-                !args$integration %in% c("laplace", "laplace2")),
-             paste0("`algorithm = \"QN\"` is currently available only with ",
-                    "Laplace integration and the LMS graph backend."))
-  if (identical(toupper(args$algorithm), "QN") && is.null(optimizer))
-    args$optimizer <- "custom"
-  mod_stopif(args$integration != "aghq" &&
-               (method != "lms" || lms.backend != "graph"),
-             "Laplace integration is only available for the LMS graph backend.")
+  quad.spec <- quadSpec(
+    integration        = args$integration,
+    adaptive           = args$adaptive,
+    nodes              = args$nodes,
+    quad.range         = args$quad.range,
+    rect.range         = args$rect.range,
+    adaptive.frequency = args$adaptive.frequency,
+    adaptive.quad.tol  = args$adaptive.quad.tol
+  )
+  if (method == "lms") checkQuadAvailable(quad.spec, backend = lms.backend)
+
+  # Only keys that are also `modsem_da()` arguments may live on `args`: it is
+  # replayed through `do.call(modsem_da, ...)` by `estimate_h0()`, so anything
+  # else surfaces there as an unused-argument error.
   args$ordered <- if (has.ordered) lmsGraphOrderedColumns(data, model.syntax, ordered) else NULL
-  if (method == "lms" && lms.backend == "graph" && !nodes.user.supplied)
-    args$nodes <- if (args$integration == "qmc") 256L else 5L
-  args$parameterization <- "theta"
-  args$factor.score.optim <- "nlminb"
 
   cont.cols <- setdiff(colnames(data), c(cluster, group, sampling.weights))
 
@@ -659,9 +731,7 @@ modsem_da <- function(model.syntax = NULL,
     m                  = args$nodes,
     mean.observed      = args$mean.observed,
     double             = args$double,
-    quad.range         = args$quad.range,
-    adaptive.quad      = args$adaptive.quad,
-    adaptive.frequency = args$adaptive.frequency,
+    quad               = quad.spec,
     missing            = args$missing,
     orthogonal.x       = args$orthogonal.x,
     orthogonal.y       = args$orthogonal.y,
@@ -679,17 +749,16 @@ modsem_da <- function(model.syntax = NULL,
     )
   }
 
+  # The graph backend integrates every latent variable, not just the nonlinear
+  # ones, so its product rule is far larger than the legacy backend's.
   if (method == "lms" && lms.backend == "graph") {
-    for (g in seq_along(model$models)) {
-      model$models[[g]]$quad$adaptive <- isTRUE(args$adaptive.quad)
-      model$models[[g]]$quad$adaptive.frequency <- args$adaptive.frequency
-    }
     integration.dimension <- model$models[[1L]]$info$numXis +
       model$models[[1L]]$info$numEtas
-    mod_warnif(integration.dimension > 5L && args$integration == "aghq",
+    mod_warnif(integration.dimension > 5L && args$integration != "mc",
       paste0("The LMS graph model integrates over ", integration.dimension,
-             " latent variables. Product-rule AGHQ may be expensive; consider ",
-             "changing the integration settings described in `?modsem_da`."))
+             " latent variables, so a product rule needs ", args$nodes, "^",
+             integration.dimension, " points. Consider `adaptive = \"full\"` ",
+             "or `integration = \"mc\"`; see `?modsem_da`."))
   }
 
   if (args$optimize) {
@@ -739,14 +808,15 @@ modsem_da <- function(model.syntax = NULL,
     })
   }
 
-  # Starting-value optimization may rebuild the DA model, so restore the graph
-  # integration contract afterward.
-  if (method == "lms" && lms.backend == "graph") {
-    for (g in seq_along(model$models)) {
-      model$models[[g]]$quad$m <- args$nodes
-      model$models[[g]]$quad$adaptive <- isTRUE(args$adaptive.quad)
-      model$models[[g]]$quad$adaptive.frequency <- args$adaptive.frequency
-    }
+  # Starting-value optimization may rebuild the DA model, so reinstate the
+  # requested integration spec afterwards. The two backends integrate over
+  # different dimensions: the graph backend takes one innovation per latent
+  # variable, the legacy backend only the nonlinear ones.
+  if (method == "lms") for (g in seq_along(model$models)) {
+    info <- model$models[[g]]$info
+    k <- if (lms.backend == "graph") info$numXis + info$numEtas else
+      model$models[[g]]$quad$k
+    model$models[[g]]$quad <- utils::modifyList(quad.spec, list(k = k))
   }
 
   if (!is.null(start)) {
@@ -781,19 +851,7 @@ modsem_da <- function(model.syntax = NULL,
       cr1s            = args$cr1s,
       ...
     ),
-    lms = if (args$integration != "aghq" &&
-              toupper(args$algorithm) == "QN") estLmsGraphLaplace(model,
-      order             = args$integration,
-      link              = link,
-      optimizer         = args$optimizer,
-      max.iter          = args$max.iter,
-      max.step          = args$max.step,
-      convergence.rel   = args$convergence.rel,
-      calc.se           = args$calc.se,
-      verbose           = args$verbose,
-      adaptive.quad.tol = args$adaptive.quad.tol,
-      ...
-    ) else emLms(model,
+    lms = emLms(model,
       verbose           = args$verbose,
       convergence.abs   = args$convergence.abs,
       convergence.rel   = args$convergence.rel,
@@ -810,15 +868,12 @@ modsem_da <- function(model.syntax = NULL,
       R.max             = args$R.max,
       em.control        = args$em.control,
       algorithm         = args$algorithm,
-      adaptive.quad     = args$adaptive.quad,
       quad.range        = args$quad.range,
       adaptive.quad.tol = args$adaptive.quad.tol,
       nodes             = args$nodes,
       cr1s              = args$cr1s,
       lms.backend       = lms.backend,
       link              = link,
-      integration       = args$integration,
-      ema.final.qn      = args$integration == "aghq",
       ...
   )),
   error = function(e) {

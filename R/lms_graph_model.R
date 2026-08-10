@@ -1,0 +1,220 @@
+# Model setup for the recursive (graph) LMS backend.
+#
+# This backend integrates a standard-normal innovation for every latent
+# variable. A single joint covariance matrix transforms those innovations, and
+# latent variables are then evaluated in structural (topological) order, which
+# is what lets it handle n-way interactions and ordered indicators. Indicators
+# are conditionally independent given the latent variables.
+#
+# The E-step and the likelihood live in R/lms_graph_estep.R.
+
+lmsGraphOrderedColumns <- function(data, model.syntax, ordered = NULL) {
+  observed <- getOVs(modsemify(model.syntax))
+  automatic <- names(data)[vapply(data, is.ordered, logical(1L))]
+  columns <- unique(c(ordered, automatic))
+  missing <- setdiff(columns, names(data))
+  mod_stopif(length(missing), paste("Ordered variables not found:",
+                                    paste(missing, collapse = ", ")))
+  intersect(columns, observed)
+}
+
+
+lmsGraphThresholdSpec <- function(data, ordered, group = NULL,
+                                  link = c("logit", "probit")) {
+  link <- match.arg(link)
+  groups <- if (is.null(group)) rep(1L, NROW(data)) else
+    match(data[[group]], unique(data[[group]]))
+  specs <- list()
+  delta <- numeric()
+  for (g in sort(unique(groups))) for (variable in ordered) {
+    values <- data[[variable]][groups == g]
+    code <- if (is.factor(values)) as.integer(values) else
+      match(values, sort(unique(values[!is.na(values)])))
+    categories <- max(code, na.rm = TRUE)
+    mod_stopif(!is.finite(categories) || categories < 2L,
+      sprintf("Ordered indicator `%s` has fewer than two categories in group %d.",
+              variable, g))
+    probability <- vapply(seq_len(categories - 1L), function(k)
+      mean(code <= k, na.rm = TRUE), numeric(1L))
+    probability <- pmin(pmax(probability, 1e-5), 1 - 1e-5)
+    thresholds <- if (link == "logit") stats::qlogis(probability) else
+      stats::qnorm(probability)
+    gaps <- pmax(diff(thresholds), 1e-8)
+    values.delta <- c(thresholds[1L], if (length(gaps)) log(expm1(gaps)))
+    labels <- paste0(variable, "|t", seq_len(categories - 1L))
+    index <- length(delta) + seq_along(values.delta)
+    delta <- c(delta, values.delta)
+    specs[[paste(g, variable, sep = "::")]] <- list(
+      group = g, variable = variable, K = categories,
+      index = index, labels = labels
+    )
+  }
+  list(specs = specs, delta = delta)
+}
+
+
+lmsGraphPrepareOrdered <- function(model, data, model.syntax, ordered = NULL,
+                                   group = NULL,
+                                   link = c("logit", "probit")) {
+  link <- match.arg(link)
+  ordered <- lmsGraphOrderedColumns(data, model.syntax, ordered)
+  if (!length(ordered)) return(model)
+  threshold.info <- lmsGraphThresholdSpec(data, ordered, group, link)
+  old.theta <- model$theta
+  threshold.starts <- numeric()
+
+  for (g in seq_along(model$models)) {
+    submodel <- model$models[[g]]
+    indicators <- rownames(submodel$matrices$lambdaX)
+    ordered.g <- intersect(ordered, indicators)
+    indicator.index <- match(ordered.g, indicators)
+
+    # Identification for ordinal responses: zero intercept and unit response
+    # scale. Off-diagonal response residuals remain unsupported.
+    submodel$matrices$tauX[indicator.index, 1L] <- 0
+    submodel$matrices$thetaDelta[indicator.index, ] <- 0
+    submodel$matrices$thetaDelta[, indicator.index] <- 0
+    diag(submodel$matrices$thetaDelta)[indicator.index] <- 1
+    submodel$labelMatrices$tauX[indicator.index, 1L] <- ""
+    submodel$labelMatrices$thetaDelta[indicator.index, ] <- ""
+    submodel$labelMatrices$thetaDelta[, indicator.index] <- ""
+
+    specs <- Filter(function(x) identical(x$group, g), threshold.info$specs)
+    maximum <- max(c(0L, vapply(specs, function(x) x$K - 1L, integer(1L))))
+    threshold.delta <- matrix(NaN, length(indicators), maximum,
+      dimnames = list(indicators, paste0("t", seq_len(maximum))))
+    for (spec in specs)
+      threshold.delta[spec$variable, seq_len(spec$K - 1L)] <-
+        threshold.info$delta[spec$index]
+    submodel$matrices$thresholdDelta <- threshold.delta
+    submodel$matrices$thresholds <- thresholdDeltaToThresholdMatrix(threshold.delta)
+    submodel$labelMatrices$thresholdDelta <- matrix("", NROW(threshold.delta),
+      NCOL(threshold.delta), dimnames = dimnames(threshold.delta))
+    submodel$labelMatrices$thresholds <- submodel$labelMatrices$thresholdDelta
+
+    free <- is.finite(threshold.delta)
+    starts <- threshold.delta[free]
+    names(starts) <- getParamNamesMatrix(threshold.delta, "thresholdDelta")[free]
+    if (g > 1L) names(starts) <- sprintf("%s.g%d", names(starts), g)
+    threshold.starts <- c(threshold.starts, starts)
+    submodel$matrices$thresholdDelta[free] <- NA_real_
+    submodel$info$ordered <- ordered.g
+    model$models[[g]] <- submodel
+  }
+
+  params <- createTheta(model, parTable.in = model$parTable)
+  common <- intersect(names(old.theta), names(params$theta))
+  params$theta[common] <- old.theta[common]
+  params$theta[names(threshold.starts)] <- threshold.starts
+  model$params[names(params)] <- params
+  model$theta <- params$theta
+  model$params$bounds <- getParamBounds(model)
+  model$params$gradientStruct <- getGradientStruct(model, model$theta, method = "lms")
+  model$info$ordered <- ordered
+  model$info$lms.graph.link <- link
+  model
+}
+
+
+lmsGraphBackend <- function(link = c("logit", "probit")) {
+  link <- match.arg(link)
+  list(
+    name = "graph",
+    link = link,
+    pstep = function(...) pstepLmsGraph(..., link = link),
+    complete = compLogLikLmsGraph,
+    observed = obsLogLikLmsGraph,
+    gradient.complete = gradientCompLogLikLmsGraph,
+    gradient.observed = gradientObsLogLikLmsGraph,
+    hessian.complete = hessianCompLogLikLmsGraph,
+    hessian.observed = hessianObsLogLikLmsGraph
+  )
+}
+
+
+lmsGraphValidate <- function(submodel, tolerance = 1e-12) {
+  M <- submodel$matrices
+  mod_stopif(isTRUE(submodel$info$hasComposites),
+             "The experimental LMS graph backend does not yet support composites.")
+  residual <- M$thetaDelta
+  if (length(residual)) {
+    offdiag <- residual
+    diag(offdiag) <- 0
+    mod_stopif(any(abs(offdiag) > tolerance, na.rm = TRUE),
+      paste0("The experimental LMS graph backend requires conditionally independent ",
+             "indicators; residual covariances between indicators are not supported."))
+    mod_stopif(any(!is.finite(diag(residual))) || any(diag(residual) <= 0),
+               "All indicator residual variances must be finite and positive.")
+  }
+
+  invisible(TRUE)
+}
+
+
+lmsGraphLatentCovariance <- function(M) {
+  exogenous <- if (length(M$A)) M$A %*% t(M$A) else matrix(numeric(), 0L, 0L)
+  cross <- M$covZetaXi
+  endogenous <- M$psi
+
+  if (!NROW(exogenous)) return(endogenous)
+  if (!NROW(endogenous)) return(exogenous)
+
+  rbind(cbind(exogenous, t(cross)),
+        cbind(cross, endogenous))
+}
+
+
+# The graph backend integrates over every latent variable, unlike the legacy
+# backend which only integrates the nonlinear dimensions.
+lmsGraphDimension <- function(submodel)
+  submodel$info$numXis + submodel$info$numEtas
+
+
+# `thresholds` is absent whenever a model has no ordered indicators, but the
+# compiled code always expects the matrix to exist.
+lmsGraphMatrices <- function(submodel) {
+  M <- submodel$matrices
+  if (is.null(M$thresholds))
+    M$thresholds <- matrix(NaN, NROW(M$lambdaX), 0L)
+  M
+}
+
+
+lmsGraphOrderedIndex <- function(submodel, M = lmsGraphMatrices(submodel)) {
+  index <- match(submodel$info$ordered %||% character(), rownames(M$lambdaX)) - 1L
+  index[!is.na(index)]
+}
+
+
+lmsGraphSamplingWeights <- function(submodel) {
+  weights <- submodel$data$weights
+  if (is.null(weights)) rep(1, submodel$data$n) else weights
+}
+
+
+lmsGraphStates <- function(submodel, nodes) {
+  lmsGraphValidate(submodel)
+  states <- lmsGraphStatesCpp(
+    submodel$matrices, nodes, submodel$info$numXis, submodel$info$numEtas
+  )
+  colnames(states) <- c(submodel$info$xis, submodel$info$etas)
+  states
+}
+
+
+lmsGraphWorkspace <- function(submodel) {
+  lmsGraphWorkspaceCpp(submodel$data$data.split, submodel$data$colidx0,
+                       lmsGraphOrderedIndex(submodel))
+}
+
+
+lmsGraphLogKernel <- function(submodel, nodes, link = c("logit", "probit"),
+                              workspace = NULL) {
+  link <- match.arg(link)
+  lmsGraphValidate(submodel)
+  if (is.null(workspace)) workspace <- lmsGraphWorkspace(submodel)
+  lmsGraphLogKernelWorkspaceCpp(
+    lmsGraphMatrices(submodel), nodes, submodel$info$numXis,
+    submodel$info$numEtas, workspace, identical(link, "logit"),
+    ThreadEnv$n.threads %||% 1L)
+}

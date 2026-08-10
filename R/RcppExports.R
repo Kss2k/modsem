@@ -141,10 +141,6 @@ lmsGraphAggregateCpp <- function(logKernel, quadWeights, rowWeights) {
     .Call(`_modsem_lmsGraphAggregateCpp`, logKernel, quadWeights, rowWeights)
 }
 
-lmsGraphPstepCpp <- function(matrices, nodes, numXis, numEtas, dataR, colidxR, orderedIndex, quadWeights, rowWeights, logistic = TRUE, ncores = 1L) {
-    .Call(`_modsem_lmsGraphPstepCpp`, matrices, nodes, numXis, numEtas, dataR, colidxR, orderedIndex, quadWeights, rowWeights, logistic, ncores)
-}
-
 lmsGraphWeightedKernelCpp <- function(logKernel, weights) {
     .Call(`_modsem_lmsGraphWeightedKernelCpp`, logKernel, weights)
 }
@@ -159,14 +155,6 @@ lmsGraphReverseScoreCpp <- function(matrices, nodes, numXis, numEtas, dataR, col
 
 lmsGraphSufficientScoreCpp <- function(matrices, nodes, numXis, numEtas, statistics, orderedIndex, block, row, col, symmetric, logistic = TRUE) {
     .Call(`_modsem_lmsGraphSufficientScoreCpp`, matrices, nodes, numXis, numEtas, statistics, orderedIndex, block, row, col, symmetric, logistic)
-}
-
-lmsGraphLaplace2Cpp <- function(matrices, modes, numXis, numEtas, dataR, colidxR, orderedIndex, logistic = TRUE, curvatureFloor = 1e-6, correctionFloor = 1e-8, ncores = 1L) {
-    .Call(`_modsem_lmsGraphLaplace2Cpp`, matrices, modes, numXis, numEtas, dataR, colidxR, orderedIndex, logistic, curvatureFloor, correctionFloor, ncores)
-}
-
-lmsGraphLaplaceFixedBatchCpp <- function(matrixVariants, modes, numXis, numEtas, dataR, colidxR, orderedIndex, secondOrder = TRUE, logistic = TRUE, curvatureFloor = 1e-6, correctionFloor = 1e-8, ncores = 1L) {
-    .Call(`_modsem_lmsGraphLaplaceFixedBatchCpp`, matrixVariants, modes, numXis, numEtas, dataR, colidxR, orderedIndex, secondOrder, logistic, curvatureFloor, correctionFloor, ncores)
 }
 
 multiplyIndicatorsCpp <- function(df) {

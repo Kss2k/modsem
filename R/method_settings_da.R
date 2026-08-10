@@ -3,7 +3,9 @@ getMethodSettingsDA <- function(method, args = NULL) {
     settings <- list(
         lms = list(verbose = interactive(),
                    optimize = TRUE,
-                   nodes = 24,
+                   # Resolved below from `integration` and `adaptive`; this is
+                   # the value for the default `gh` + `quasi` combination.
+                   nodes = 15,
                    convergence.abs = 1e-4,
                    convergence.rel = 1e-10,
                    optimizer = "nlminb",
@@ -24,10 +26,11 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    max.step = 1,
                    epsilon = 1e-6,
                    quad.range = Inf,
-                   adaptive.quad = TRUE,
+                   rect.range = 5,
+                   integration = "gh",
+                   adaptive = "quasi",
                    adaptive.quad.tol = 1e-12,
                    adaptive.frequency = 3,
-                   integration = "aghq",
                    n.threads = NULL,
                    algorithm = "EMA",
                    em.control = list(),
@@ -66,10 +69,11 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    max.step = NULL,
                    epsilon = 1e-8,
                    quad.range = Inf,
-                   adaptive.quad = FALSE,
+                   rect.range = 5,
+                   integration = "gh",
+                   adaptive = "none",
                    adaptive.quad.tol = NULL,
                    n.threads = NULL,
-                   adaptive.quad = FALSE,
                    adaptive.frequency = NULL,
                    em.control = NULL,
                    algorithm = NULL,
@@ -97,6 +101,18 @@ getMethodSettingsDA <- function(method, args = NULL) {
     mod_stopif(!method %in% names(settings), "Unrecognized method")
 
     args.out <- c(settings[[method]][missingArgs], args[!isMissing])
+
+    if (method == "lms") {
+      args.out$integration <- match.arg(args.out$integration, INTEGRATION_TYPES)
+      args.out$adaptive    <- match.arg(args.out$adaptive, ADAPTIVE_TYPES)
+
+      # How many nodes are sensible depends on both axes: a per-observation
+      # rule needs far fewer points than a shared one, and Monte-Carlo counts
+      # total draws rather than nodes per dimension.
+      if (is.null(args$nodes))
+        args.out$nodes <-
+          QUAD_NODE_DEFAULTS[[args.out$integration]][[args.out$adaptive]]
+    }
 
     args.out$standardize.data <-
       args.out$standardize || args.out$standardize.data

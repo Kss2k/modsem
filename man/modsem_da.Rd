@@ -35,10 +35,11 @@ modsem_da(
   start = NULL,
   epsilon = NULL,
   quad.range = NULL,
+  integration = NULL,
+  adaptive = NULL,
   adaptive.quad = NULL,
   adaptive.frequency = NULL,
   adaptive.quad.tol = NULL,
-  integration = NULL,
   n.threads = NULL,
   algorithm = NULL,
   em.control = NULL,
@@ -93,15 +94,32 @@ group analysis}
 
 \item{optimize}{should starting parameters be optimized}
 
-\item{nodes}{number of quadrature nodes (points of integration) used in \code{lms},
-increased number gives better estimates but slower computation. How many are needed depends on the complexity of the model.
-The graph LMS backend defaults to five nodes per latent dimension. With
-adaptive quadrature it constructs one quasi-adaptive rule per group.
-For simple models, somewhere between 16-24 nodes should be enough; for more complex models, higher numbers may be needed.
-For models where there is an interaction effect between an endogenous and exogenous variable,
-the number of nodes should be at least 32, but practically (e.g., ordinal/skewed data), more than 32 is recommended. In cases
-where data is non-normal, it might be better to use the \code{qml} approach instead.
-You can also consider setting \code{adaptive.quad = TRUE}.}
+\item{nodes}{Number of points of integration used in \code{lms}. More points
+  give better estimates but slower computation; how many are needed depends
+  on the complexity of the model.
+
+  \strong{What \code{nodes} counts depends on \code{integration}}: for
+  \code{"gh"} and \code{"rect"} it is the number of nodes \emph{per latent
+  dimension}, so a product rule costs \code{nodes^k} points in \code{k}
+  dimensions. For \code{"mc"} it is the \emph{total} number of draws, whose
+  cost does not grow with dimension.
+
+  If left unset, the default is chosen from \code{integration} and
+  \code{adaptive}:
+
+  \tabular{lrrr}{
+    \strong{integration} \tab \code{adaptive = "none"} \tab \code{"quasi"} \tab \code{"full"} \cr
+    \code{"gh"}   \tab   15 \tab   15 \tab   5 \cr
+    \code{"rect"} \tab   15 \tab   15 \tab   5 \cr
+    \code{"mc"}   \tab 5000 \tab    - \tab 250 \cr
+  }
+
+  A per-observation rule (\code{adaptive = "full"}) needs far fewer points
+  than a shared one because it is centred on each observation's own
+  posterior. For models with an interaction between an endogenous and an
+  exogenous variable, a shared rule may need considerably more than the
+  default; where the data is non-normal, the \code{qml} approach may be a
+  better choice than raising \code{nodes}.}
 
 \item{missing}{How should missing values be handled? If \code{"listwise"} (default) missing values
 are removed list-wise (alias: \code{"complete"} or \code{"casewise"}).
@@ -119,10 +137,7 @@ Lower values give better estimates but slower computation.
 For the LMS approach the EM-algorithm stops whenever
 the relative or absolute convergence criterion is reached.}
 
-\item{optimizer}{Optimizer to use. Can be \code{"custom"}, \code{"nlminb"},
-or \code{"L-BFGS-B"}. For graph Laplace estimation with
-\code{algorithm = "QN"}, \code{"custom"} is the default and reuses the
-accepted quadrature-mode state between objective and gradient evaluations.
+\item{optimizer}{optimizer to use, can be either \code{"nlminb"} or \code{"L-BFGS-B"}. For LMS, \code{"nlminb"} is recommended.
 For QML, \code{"L-BFGS-B"} may be faster if there is a large number of iterations, but slower if there are few iterations.}
 
 \item{center.data}{should data be centered before fitting model}
@@ -198,37 +213,70 @@ fischer information matrix.}
 
 \item{epsilon}{finite difference for numerical derivatives.}
 
-\item{quad.range}{range in z-scores to perform numerical integration in LMS using,
-when using quasi-adaptive Gaussian-Hermite Quadratures. By default \code{Inf}, such that \code{f(t)} is integrated from -Inf to Inf,
-but this will likely be inefficient and pointless at a large number of nodes. Nodes outside
-\code{+/- quad.range} will be ignored.}
+\item{quad.range}{range in z-scores over which to perform numerical
+integration in LMS. By default \code{Inf}, so that \code{f(t)} is
+integrated from -Inf to Inf, but this is likely inefficient at a large
+number of nodes. Nodes outside \code{+/- quad.range} are ignored. Applies
+to \code{integration = "gh"}; the rectangular rule has its own range.}
 
-\item{adaptive.quad}{should adaptive quadrature be used? For the graph LMS
-backend, a common quasi-adaptive rule is selected and pruned using the
-group likelihood. If \code{FALSE}, a common fixed Gauss--Hermite rule is
-used. A common rule permits a sufficient-statistics M-step.}
+\item{integration}{Which numerical integration rule to use for \code{lms}.
+\describe{
+  \item{\code{"gh"}}{Gauss-Hermite product rule (the default). Highest
+    accuracy per node for smooth posteriors.}
+  \item{\code{"rect"}}{Equispaced rectangular product rule over \code{+/- 5}
+    per dimension, weighted by the normal density. This is the rule Mplus
+    uses under \code{INTEGRATION = STANDARD}, and is the closest match to
+    Mplus output.}
+  \item{\code{"mc"}}{Monte-Carlo integration from a fixed, seeded set of
+    standard-normal draws. The only rule whose cost does not grow with the
+    number of latent dimensions. Draws are held fixed across EM iterations,
+    so the likelihood stays a deterministic function of the parameters.}
+}}
 
-\item{adaptive.frequency}{How often should the quasi-adaptive quadrature be calculated? Defaults to 3, meaning
-that it is recalculated every third EM-iteration.}
+\item{adaptive}{How the integration rule is placed. Independent of
+  \code{integration}: the chosen rule is used in every case, only its
+  location changes.
+\describe{
+  \item{\code{"quasi"}}{(default) One rule per group, adapted to the
+    aggregate posterior. For \code{"gh"} the rule is pruned one dimension at
+    a time, dropping nodes that carry negligible information; for
+    \code{"rect"} the range is shrunk onto where the mass actually lies and
+    the same number of points respaced inside it. A shared rule permits a
+    sufficient-statistics M-step, which is much faster than the alternative.}
+  \item{\code{"none"}}{One fixed rule, shared by every observation.}
+  \item{\code{"full"}}{One rule per observation, centred on that
+    observation's posterior mode and scaled by its Hessian. Far more
+    accurate per node -- hence the much lower default \code{nodes} -- but it
+    rules out the sufficient-statistics M-step, so each iteration costs
+    \code{O(N * nodes^k)}. Graph backend only.}
+}
 
-\item{adaptive.quad.tol}{Relative error tolerance for quasi adaptive quadrature. Defaults to \code{1e-12}.}
+  Not every combination is available:
 
-\item{integration}{Integration rule for the LMS graph backend. One of
-\code{"aghq"}, \code{"qmc"}, \code{"laplace"}, or \code{"laplace2"}.
-For EM with \code{"aghq"}, \code{adaptive.quad = TRUE} uses the common
-quasi-adaptive LMS rule.
-With \code{"qmc"}, \code{nodes} is the total number of low-discrepancy
-draws rather than the number of nodes per latent dimension.}
+  \tabular{lll}{
+    \strong{backend} \tab \strong{gh / rect} \tab \strong{mc} \cr
+    \code{"legacy"} \tab \code{"none"}, \code{"quasi"} \tab - \cr
+    \code{"graph"}  \tab \code{"none"}, \code{"quasi"}, \code{"full"} \tab \code{"none"}, \code{"full"} \cr
+  }}
+
+\item{adaptive.quad}{\strong{Deprecated}; use \code{adaptive} instead.
+\code{TRUE} maps to \code{adaptive = "quasi"} and \code{FALSE} to
+\code{adaptive = "none"}.}
+
+\item{adaptive.frequency}{How often should the adaptive rule be recalculated?
+Defaults to 3, meaning every third EM-iteration. Applies to both
+\code{adaptive = "quasi"} (when the rule is re-pruned) and
+\code{adaptive = "full"} (when the per-observation modes are refitted).}
+
+\item{adaptive.quad.tol}{Relative error tolerance used when pruning or
+trimming a quasi-adaptive rule. Defaults to \code{1e-12}.}
 
 \item{n.threads}{number of threads to use for parallel processing. If \code{NULL}, it will use <= 2 threads.
 If an integer is specified, it will use that number of threads (e.g., \code{n.threads = 4} will use 4 threads).
 If \code{"default"}, it will use the default number of threads (2).
 If \code{"max"}, it will use all available threads, \code{"min"} will use 1 thread.}
 
-\item{algorithm}{Estimation algorithm. \code{"EM"} and \code{"EMA"} are
-available for ordinary LMS estimation. With graph Laplace integration,
-use \code{"EM"} for generalized EM or \code{"QN"} for direct
-quasi-Newton maximization.
+\item{algorithm}{algorithm to use for the EM algorithm. Can be either \code{"EM"} or \code{"EMA"}.
 \code{"EM"} is the standard EM algorithm. \code{"EMA"} is an
 accelerated EM procedure that uses Quasi-Newton and Fisher Scoring
 optimization steps when needed. Default is \code{"EM"}.}
@@ -237,8 +285,13 @@ optimization steps when needed. Default is \code{"EM"}.}
 
 \item{lms.backend}{LMS likelihood implementation. The experimental
 \code{"graph"} backend integrates one innovation per latent variable and
-supports continuous and ordered indicators. The default \code{"legacy"}
-backend is retained for continuous models.}
+evaluates latent variables in structural order, which lets it support
+n-way interactions and ordered indicators, and is what makes
+\code{adaptive = "full"} and \code{integration = "mc"} available. It
+requires conditionally independent indicators and does not support
+composites. The default \code{"legacy"} backend integrates only the
+nonlinear latent dimensions, so its product rule is much smaller.
+Selected automatically when the data has ordered indicators.}
 
 \item{link}{Link for ordered indicators in the LMS graph backend. The default
 is \code{"logit"}; \code{"probit"} is also available.}

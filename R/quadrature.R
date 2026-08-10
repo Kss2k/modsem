@@ -1,63 +1,354 @@
-# Calculate weights and node points for mixture functions via Gauss-Hermite
-# quadrature as defined in Klein & Moosbrugger (2000). Also stores information
-# regarding adaptive quadrature.
-quadrature <- function(m, k,
-                       adaptive = FALSE,
-                       quad.range = Inf,
-                       adaptive.frequency = 3,
-                       ...) {
+# Numerical integration rules for the LMS approach.
+#
+# A *spec* describes which rule to build; it never holds nodes. Rules are
+# materialised on demand by `buildQuadRule()`, so a k-dimensional product grid
+# only ever exists when it is about to be evaluated. This matters because a
+# product rule costs `nodes ^ k` rows, and building one eagerly at model
+# construction (as earlier versions did) wastes that memory even when the rule
+# is immediately replaced by an adaptive one.
+#
+# Two axes are orthogonal:
+#
+#   integration  "gh"   Gauss-Hermite product rule
+#                "rect" equispaced rectangular rule, as in Mplus INTEGRATION=STANDARD
+#                "mc"   fixed Monte-Carlo draws
+#
+#   adaptive     "none"  one fixed rule, shared by every observation
+#                "quasi" one rule per group, adapted to the aggregate posterior
+#                "full"  one rule per observation, from its mode and Hessian
+#
+# `adaptive = "full"` is not implemented here: it builds the corresponding
+# non-adaptive rule and hands it to the backend, which transforms it per
+# observation. That keeps the two axes independent.
+
+INTEGRATION_TYPES <- c("gh", "rect", "mc")
+ADAPTIVE_TYPES    <- c("none", "quasi", "full")
+
+INTEGRATION_LABELS <- c(gh = "Gauss-Hermite", rect = "Rectangular",
+                        mc = "Monte-Carlo")
+ADAPTIVE_LABELS <- c(none = "None (fixed rule)",
+                     quasi = "Quasi (one rule per group)",
+                     full = "Full (one rule per observation)")
+
+# Default nodes keyed on (integration, adaptive). For `gh` and `rect` this is
+# the number of nodes per latent dimension; for `mc` it is the total number of
+# draws, whose cost does not grow with dimension.
+#
+# The shared-rule defaults match Mplus: 15 points per dimension for both
+# product rules, 500 draws in total for Monte-Carlo. A per-observation rule is
+# centred on each observation's own posterior and needs far fewer points.
+QUAD_NODE_DEFAULTS <- list(
+  gh   = c(none = 15,  quasi = 15,  full = 5),
+  rect = c(none = 15,  quasi = 15,  full = 5),
+  mc   = c(none = 500, quasi = 500, full = 250)
+)
+
+# Which (backend, integration, adaptive) combinations are supported. The legacy
+# LMS backend has no per-observation machinery and its E-step is built around a
+# product rule, so it offers the two common rules only.
+QUAD_AVAILABLE <- list(
+  legacy = list(gh = c("none", "quasi"), rect = c("none", "quasi"), mc = character()),
+  graph  = list(gh = ADAPTIVE_TYPES, rect = ADAPTIVE_TYPES, mc = c("none", "full"))
+)
+
+
+quadSpec <- function(integration = "gh",
+                     adaptive = "quasi",
+                     nodes = NULL,
+                     k = 0L,
+                     quad.range = Inf,
+                     rect.range = 5,
+                     adaptive.frequency = 3L,
+                     adaptive.quad.tol = 1e-12,
+                     seed = 1234L,
+                     max.nodes = 1e6) {
+  integration <- match.arg(integration, INTEGRATION_TYPES)
+  adaptive    <- match.arg(adaptive, ADAPTIVE_TYPES)
+
+  if (is.null(nodes)) nodes <- QUAD_NODE_DEFAULTS[[integration]][[adaptive]]
+
   if (quad.range < 0) {
     mod_msg_warn("`quad.range` should be positive, using `-quad.range` instead!\n")
     quad.range <- -quad.range
   }
 
-  a <- -quad.range
-  b <- quad.range
-
-  if (k == 0 || m == 0) {
-    return(list(
-      n = matrix(0),
-      w = 1,
-      k = 0,
-      m = m,
-      a = a,
-      b = b,
-      adaptive = FALSE,
-      quad.range = quad.range,
-      adaptive.frequency = adaptive.frequency
-    ))
-  }
-
-  if (m == 1L) {
-    nodes <- 0
-    weights <- sqrt(pi)
-  } else {
-    singleDimGauss <- fastGHQuad::gaussHermiteData(m)
-    nodes <- singleDimGauss$x
-    weights <- singleDimGauss$w
-  }
-
-  nodes_list   <- replicate(k, nodes, simplify = FALSE)
-  weight_list  <- replicate(k, weights, simplify = FALSE)
-  nodes   <- do.call(expand.grid, nodes_list) |> as.matrix()
-  weights <- Reduce(kronecker, rev(weight_list))
-
-  nodes <- sqrt(2) * nodes
-  weights <- weights * pi ^ (-k/2)
-
-  list(
-    n = nodes,
-    w = weights,
-    k = k,
-    m = m,
-    a = a,
-    b = b,
-    quad.range = quad.range,
-    adaptive = adaptive,
-    adaptive.frequency = adaptive.frequency
-  )
+  structure(list(
+    integration = integration,
+    adaptive    = adaptive,
+    m           = as.numeric(nodes),
+    k           = as.integer(k),
+    quad.range  = quad.range,
+    rect.range  = rect.range,
+    a           = -quad.range,
+    b           = quad.range,
+    adaptive.frequency = adaptive.frequency,
+    adaptive.quad.tol  = adaptive.quad.tol,
+    seed        = seed,
+    max.nodes   = max.nodes
+  ), class = "modsem_quad_spec")
 }
 
+
+# A model with no dimensions to integrate (a purely linear LMS model) has a
+# single degenerate node, so there is nothing for any adaptation to do.
+quadIsDegenerate <- function(spec)
+  !isTRUE(spec$k >= 1L) || !isTRUE(spec$m >= 1)
+
+
+isAdaptiveQuad <- function(spec)
+  !identical(spec$adaptive, "none") && !quadIsDegenerate(spec)
+
+
+setAdaptiveQuad <- function(spec, adaptive) {
+  spec$adaptive <- match.arg(adaptive, ADAPTIVE_TYPES)
+  spec
+}
+
+
+# `nodes` counts draws for Monte-Carlo and nodes per dimension otherwise.
+quadTotalNodes <- function(spec) {
+  if (identical(spec$integration, "mc")) as.numeric(spec$m)
+  else as.numeric(spec$m) ^ as.numeric(spec$k)
+}
+
+
+checkQuadBudget <- function(spec, total = quadTotalNodes(spec), what = NULL) {
+  if (is.finite(total) && total <= spec$max.nodes) return(invisible(TRUE))
+  label <- if (is.null(what)) "requested rule" else what
+  mod_msg_stop(sprintf(paste0(
+    "The %s needs %.0f integration points in %d latent dimensions, which ",
+    "exceeds the limit of %.0f.\n",
+    "Reduce `nodes`, use `adaptive = \"quasi\"` to prune the rule, ",
+    "`adaptive = \"full\"` for a small per-observation rule, or ",
+    "`integration = \"mc\"` whose cost does not grow with dimension."),
+    label, total, spec$k, spec$max.nodes))
+}
+
+
+checkQuadAvailable <- function(spec, backend = "legacy") {
+  available <- QUAD_AVAILABLE[[backend]][[spec$integration]]
+  if (spec$adaptive %in% available) return(invisible(TRUE))
+
+  alternatives <- if (!length(available))
+    sprintf("`integration = \"%s\"` is not available for the %s LMS backend",
+            spec$integration, backend)
+  else sprintf("the %s LMS backend supports `adaptive = %s` with `integration = \"%s\"`",
+               backend, paste0("\"", available, "\"", collapse = " or "),
+               spec$integration)
+
+  hint <- if (identical(backend, "legacy") &&
+              spec$adaptive %in% QUAD_AVAILABLE$graph[[spec$integration]])
+    "\nUse `lms.backend = \"graph\"` for this combination." else ""
+
+  mod_msg_stop(sprintf(
+    "`integration = \"%s\"` with `adaptive = \"%s\"` is not supported: %s.%s",
+    spec$integration, spec$adaptive, alternatives, hint))
+}
+
+
+# One-dimensional rules ------------------------------------------------------
+#
+# Every product rule is assembled from per-dimension node/weight vectors, which
+# may differ in length once an adaptive rule has pruned them. Weights are
+# normalised per dimension so their tensor product integrates a constant to one.
+
+gaussHermite1d <- function(m) {
+  if (m <= 1L) return(list(n = 0, w = 1))
+  single <- fastGHQuad::gaussHermiteData(m)
+  list(n = sqrt(2) * single$x, w = single$w * pi ^ (-1 / 2))
+}
+
+
+# Trapezoid weights on an equispaced grid: the two endpoints each cover half an
+# interval. Mplus calls this "rectangular (trapezoid)" integration. Normalising
+# by the sum makes the rule integrate a constant exactly.
+#
+# On an unbounded, Gaussian-decaying integrand this rule is not the O(h^2)
+# scheme its name suggests: Poisson summation gives an aliasing error of
+# 2*exp(-2*pi^2/h^2), so it converges exponentially in 1/h. Accuracy is then
+# governed by whichever is larger, that term or the truncation error
+# 2*(1 - pnorm(range)) -- which is why `rect.range` matters as much as `nodes`.
+rectangularWeights <- function(nodes) {
+  weights <- stats::dnorm(nodes)
+  ends <- c(1L, length(weights))
+  if (length(weights) > 1L) weights[ends] <- 0.5 * weights[ends]
+  weights / sum(weights)
+}
+
+
+rectangular1d <- function(m, range = 5) {
+  if (m <= 1L) return(list(n = 0, w = 1))
+  nodes <- seq(-range, range, length.out = m)
+  list(n = nodes, w = rectangularWeights(nodes))
+}
+
+
+quadNodes1d <- function(spec, m = spec$m) {
+  switch(spec$integration,
+         gh   = gaussHermite1d(m),
+         rect = rectangular1d(m, range = spec$rect.range),
+         mod_msg_stop(sprintf("`%s` has no one-dimensional rule.", spec$integration)))
+}
+
+
+# `expand.grid()` varies the first column fastest, so the matching weight
+# product is a kronecker over the reversed list.
+tensorProductRule <- function(nodes, weights) {
+  n <- as.matrix(do.call(expand.grid, nodes))
+  dimnames(n) <- NULL
+  # `kronecker()` returns a 1-d array, which does not recycle against a matrix.
+  list(n = n, w = as.numeric(Reduce(kronecker, rev(weights))))
+}
+
+
+withSeed <- function(seed, expr) {
+  if (is.null(seed)) return(expr)
+  if (exists(".Random.seed", envir = globalenv(), inherits = FALSE)) {
+    state <- get(".Random.seed", envir = globalenv(), inherits = FALSE)
+    on.exit(assign(".Random.seed", state, envir = globalenv()), add = TRUE)
+  } else {
+    on.exit(rm(".Random.seed", envir = globalenv()), add = TRUE)
+  }
+  set.seed(seed)
+  expr
+}
+
+
+# Rule builders --------------------------------------------------------------
+#
+# Each builder returns `list(n, w)`; `buildQuadRule()` adds the bookkeeping.
+# The registry below is the seam for changing an adaptation strategy: swapping
+# the dense-candidate approach back in for `gh$quasi`, say, is a one-line change
+# here and touches nothing else.
+
+quadRuleFixed <- function(spec, ...) {
+  if (spec$k < 1L) return(list(n = matrix(0), w = 1))
+  checkQuadBudget(spec, what = sprintf("fixed %s rule", spec$integration))
+  single <- quadNodes1d(spec)
+  tensorProductRule(replicate(spec$k, single$n, simplify = FALSE),
+                    replicate(spec$k, single$w, simplify = FALSE))
+}
+
+
+quadRuleMonteCarlo <- function(spec, ...) {
+  samples <- as.integer(spec$m)
+  mod_stopif(samples < 2L, "Monte-Carlo integration requires at least two draws.")
+  checkQuadBudget(spec, total = samples, what = "Monte-Carlo rule")
+  if (spec$k < 1L) return(list(n = matrix(0), w = 1))
+  nodes <- withSeed(spec$seed,
+                    matrix(stats::rnorm(samples * spec$k), samples, spec$k))
+  list(n = nodes, w = rep(1 / samples, samples))
+}
+
+
+# Gauss-Hermite, quasi-adaptive: prune one dimension at a time on a 1-D grid
+# and only then form the product of the surviving nodes. A dense k-dimensional
+# candidate grid is never built, which is what lets this scale past three or
+# four latent dimensions.
+quadRuleGaussHermiteQuasi <- function(spec, density, previous = NULL, ...) {
+  if (spec$k < 1L) return(list(n = matrix(0), w = 1))
+  m.ceil <- previous$m.ceil
+  if (is.null(m.ceil) || !all(is.finite(m.ceil)))
+    m.ceil <- if (spec$k > 1L) spec$m else
+      round(estMForNodesInRange(spec$m, a = -5, b = 5))
+
+  rule <- adaptiveGaussQuadrature(
+    fun = density, a = spec$a, b = spec$b, m = spec$m, k = spec$k,
+    m.ceil = m.ceil, tol = spec$adaptive.quad.tol, ...
+  )
+  checkQuadBudget(spec, total = NROW(rule$n), what = "quasi-adaptive rule")
+  rule
+}
+
+
+# Rectangular, quasi-adaptive: a rectangular rule's one real lever is its
+# range, so rather than dropping nodes we shrink the interval per dimension to
+# where the aggregate posterior actually has mass and respace the same number
+# of points inside it. Pruning would waste the lever; see `?modsem_da`.
+quadRuleRectangularQuasi <- function(spec, density, previous = NULL, ...) {
+  if (spec$k < 1L) return(list(n = matrix(0), w = 1))
+  checkQuadBudget(spec, what = "quasi-adaptive rectangular rule")
+
+  probe.m <- max(4L * as.integer(spec$m), 64L)
+  nodes <- weights <- vector("list", spec$k)
+
+  for (j in seq_len(spec$k)) {
+    probe <- rectangular1d(probe.m, range = spec$rect.range)
+    grid <- matrix(0, probe.m, spec$k)
+    grid[, j] <- probe$n
+
+    trimmed <- tryCatch({
+      pruned <- pruneQuadratureNodes(
+        quadw = probe$w, quadn = grid, quadf = density(grid, ...),
+        a = spec$a, b = spec$b, tol = spec$adaptive.quad.tol
+      )
+      range(pruned$quadn[, j])
+    }, error = function(e) c(-spec$rect.range, spec$rect.range))
+
+    lower <- min(trimmed)
+    upper <- max(trimmed)
+    if (!is.finite(lower) || !is.finite(upper) || upper - lower <= 0) {
+      lower <- -spec$rect.range
+      upper <- spec$rect.range
+    }
+
+    axis <- if (spec$m <= 1L) 0 else seq(lower, upper, length.out = spec$m)
+    nodes[[j]] <- axis
+    weights[[j]] <- if (length(axis) > 1L) rectangularWeights(axis) else 1
+  }
+
+  out <- tensorProductRule(nodes, weights)
+  out$range <- vapply(nodes, range, numeric(2L))
+  out
+}
+
+
+QUAD_BUILDERS <- list(
+  gh   = list(none = quadRuleFixed,      quasi = quadRuleGaussHermiteQuasi),
+  rect = list(none = quadRuleFixed,      quasi = quadRuleRectangularQuasi),
+  mc   = list(none = quadRuleMonteCarlo, quasi = NULL)
+)
+
+
+# Build the rule a spec describes.
+#
+# `density(nodes, ...)` must return an N by Q matrix of densities and is only
+# needed for `adaptive = "quasi"`. `adaptive = "full"` returns the underlying
+# common rule; transforming it per observation is the backend's job, since only
+# the backend can find each observation's mode and Hessian.
+buildQuadRule <- function(spec, density = NULL, previous = NULL, ...) {
+  adaptive <- if (identical(spec$adaptive, "full") ||
+                  quadIsDegenerate(spec)) "none" else spec$adaptive
+  builder <- QUAD_BUILDERS[[spec$integration]][[adaptive]]
+  mod_stopif(is.null(builder), sprintf(
+    "`integration = \"%s\"` has no `adaptive = \"%s\"` rule.",
+    spec$integration, spec$adaptive))
+  mod_stopif(identical(adaptive, "quasi") && is.null(density),
+             "A quasi-adaptive rule needs a density function.")
+
+  rule <- builder(spec, density = density, previous = previous, ...)
+
+  rule$Q <- NROW(rule$n)
+  rule$k <- spec$k
+  rule$m <- spec$m
+  rule$integration <- spec$integration
+  rule$adaptive <- spec$adaptive
+  rule$adaptive.frequency <- spec$adaptive.frequency
+  rule$quad.range <- spec$quad.range
+  rule$spec <- spec
+  # A rule shared by every observation permits the sufficient-statistic M-step;
+  # a per-observation rule does not. `full` rules are marked by the backend
+  # once it has packed them.
+  rule$common <- TRUE
+  rule$packed <- FALSE
+  rule
+}
+
+
+# Legacy quasi-adaptive Gauss-Hermite ----------------------------------------
+#
+# Prune a denser one-dimensional rule until the number of surviving nodes lands
+# near the requested order, then take the tensor product of the pruned axes.
 
 adaptiveGaussQuadrature <- function(fun,
                                     a = -7,
@@ -110,8 +401,9 @@ adaptiveGaussQuadrature <- function(fun,
     new.ceils[[i]] <- QUAD$m.ceil
   }
 
-  quadn <- as.matrix(do.call(expand.grid, NODES))
-  quadw <- Reduce(kronecker, rev(WEIGHTS))
+  product <- tensorProductRule(NODES, WEIGHTS)
+  quadn <- product$n
+  quadw <- product$w
   quadf <- fun(quadn, ...)
   weighted <- sweep(quadf, 2, quadw, "*")
   integral <- quadratureLogLik(weighted)
@@ -166,15 +458,15 @@ adaptiveGaussQuadratureK <- function(fun,
   if (is.null(m.ceil) || is.na(m.ceil) || m.ceil <= 0)
     m.ceil <- round(estMForNodesInRange(m, a = -5, b = 5))
 
-  quad  <- quadrature(m = m.ceil, k = 1)
+  single <- gaussHermite1d(m.ceil)
 
   if (K > 1) { # more computationally efficient/scalable
     quadn <- matrix(0, nrow = m.ceil, ncol = K)
-    quadn[,k] <- quad$n
-  } else quadn <- quad$n
+    quadn[,k] <- single$n
+  } else quadn <- matrix(single$n, ncol = 1L)
 
   quadf <- fun(quadn, ...)
-  quadw <- quad$w
+  quadw <- single$w
 
   pruned <- pruneQuadratureNodes(
     quadw = quadw, quadn = quadn, quadf = quadf,
@@ -327,8 +619,10 @@ estMForNodesInRange <- function(k, a, b,
 quadratureLogLik <- function(weighted) {
   rs <- rowSums(weighted)
 
-  mod_warnif(any(rs < 0), "Found negative quadrature node contributions, this is likely a bug!")
+  mod_warnif(any(rs < 0, na.rm = TRUE),
+             "Found negative quadrature node contributions, this is likely a bug!")
 
+  rs[!is.finite(rs)] <- 0
   rs.safe <- pmax(rs, .Machine$double.xmin)
   sum(log(rs.safe))
 }
@@ -351,6 +645,13 @@ pruneQuadratureNodes <- function(quadw, quadn, quadf, a, b, tol) {
          "`quadw` must have the same length as the number of quadrature nodes.")
 
   n.input <- NROW(quadn)
+
+  # A node whose density is not finite carries no usable information about
+  # where to place the rule, so treat it as empty rather than letting the NaN
+  # propagate into every downstream comparison. Ordinal kernels underflow
+  # readily -- they are a product of one categorical probability per indicator
+  # -- and the E-step itself, which works in log space, is unaffected.
+  quadf[!is.finite(quadf)] <- 0
 
   # precompute weighted information to drop empty nodes early
   weighted <- sweep(quadf, 2, weight_vec, "*")
@@ -378,11 +679,22 @@ pruneQuadratureNodes <- function(quadw, quadn, quadf, a, b, tol) {
   rs.safe <- pmax(rs, .Machine$double.xmin)
 
   # B[j,i] = log1p( - A[j,i] / rs[j] )
-  B <- log1p(-sweep(weighted, 1, rs.safe, "/"))
+  #
+  # An observation whose density underflows to zero at every node leaves
+  # `rs.safe` at the smallest representable double, so the ratio blows up and
+  # `log1p()` returns NaN. Such a row carries no information about which nodes
+  # to keep, so its contribution is zero rather than a propagating NaN. This
+  # happens readily for ordinal indicators, where the kernel is a product of
+  # one categorical probability per indicator.
+  ratio <- sweep(weighted, 1, rs.safe, "/")
+  ratio[!is.finite(ratio)] <- 0
+  ratio <- pmin(pmax(ratio, 0), 1 - .Machine$double.eps)
+  B <- log1p(-ratio)
   I.base <- quadratureLogLik(weighted)
   I.subvec <- I.base + colSums(B)
 
   contributions <- abs(abs(I.subvec) - abs(I.base))
+  contributions[!is.finite(contributions)] <- 0
 
   # identify nodes trivially safe to remove
   contrib.rank <- order(abs(contributions))

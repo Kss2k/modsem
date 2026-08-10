@@ -77,6 +77,20 @@ double logLogisticCdf(const double x) {
   return x - std::log1p(std::exp(x));
 }
 
+// Category log-probabilities are consumed by 0/1-weighted sums -- a design
+// matrix product in the common kernel, a dot product against posterior counts
+// in the M-step. IEEE gives 0 * -Inf = NaN, so a single underflowed category
+// at an extreme node would poison every observation at that node, not just the
+// ones actually in that category. Representing an underflowed probability by
+// the smallest usable log instead of -Inf keeps those zero-weighted terms at
+// zero; exp() of it is still 0, so nothing else changes.
+constexpr double LOG_PROBABILITY_FLOOR = -700.0;
+
+double floorLogProbability(const double x) {
+  return (std::isnan(x) || x < LOG_PROBABILITY_FLOOR) ?
+    LOG_PROBABILITY_FLOOR : x;
+}
+
 double logDiffExp(const double a, const double b) {
   if (!std::isfinite(b) && b < 0.0) return a;
   if (b >= a) return R_NegInf;
@@ -86,18 +100,18 @@ double logDiffExp(const double a, const double b) {
 double ordinalLogProbability(const int code, const arma::rowvec& thresholds,
                              const double eta, const bool logistic) {
   const int categories = static_cast<int>(thresholds.n_elem) + 1;
-  if (code < 1 || code > categories) return R_NegInf;
+  if (code < 1 || code > categories) return LOG_PROBABILITY_FLOOR;
   const double lower = code == 1 ? R_NegInf : thresholds(code - 2) - eta;
   const double upper = code == categories ? R_PosInf : thresholds(code - 1) - eta;
   if (!std::isfinite(upper) && upper > 0.0) {
-    if (logistic) return logLogisticCdf(-lower);
-    return R::pnorm(-lower, 0.0, 1.0, true, true);
+    if (logistic) return floorLogProbability(logLogisticCdf(-lower));
+    return floorLogProbability(R::pnorm(-lower, 0.0, 1.0, true, true));
   }
   const double logUpper = logistic ? logLogisticCdf(upper) :
     R::pnorm(upper, 0.0, 1.0, true, true);
   const double logLower = logistic ? logLogisticCdf(lower) :
     R::pnorm(lower, 0.0, 1.0, true, true);
-  return logDiffExp(logUpper, logLower);
+  return floorLogProbability(logDiffExp(logUpper, logLower));
 }
 
 double logResponseDensity(const double x, const bool logistic) {
@@ -123,7 +137,8 @@ OrdinalEvaluation ordinalEvaluation(const int code,
       logLogisticCdf(lower) : R_NegInf;
     const double logUpper = std::isfinite(upper) ?
       logLogisticCdf(upper) : 0.0;
-    const double logp = logDiffExp(logUpper, logLower);
+    const double logp = floorLogProbability(logDiffExp(logUpper, logLower));
+    if (logp <= LOG_PROBABILITY_FLOOR) return {logp, 0.0, 0.0};
     return {
       logp,
       std::isfinite(lower) ?
@@ -133,6 +148,7 @@ OrdinalEvaluation ordinalEvaluation(const int code,
     };
   }
   const double logp = ordinalLogProbability(code, thresholds, eta, false);
+  if (logp <= LOG_PROBABILITY_FLOOR) return {logp, 0.0, 0.0};
   return {
     logp,
     std::isfinite(lower) ? std::exp(logResponseDensity(lower, false) - logp) : 0.0,
@@ -187,20 +203,32 @@ OrdinalBlockEvaluation ordinalBlockEvaluation(const int code,
   } else if (code == categories) {
     out.logProbability = logLogisticCdfVector(eta - thresholds(code - 2));
   } else {
-    out.logProbability = logUpper +
-      arma::log1p(-arma::exp(logLower - logUpper));
+    // Both bounds underflow to the same value once eta is extreme, and the
+    // vectorised form would then evaluate (-Inf) - (-Inf) = NaN. Defer to the
+    // scalar routine, which treats an underflowed category as probability zero.
+    for (arma::uword q = 0; q < eta.n_elem; ++q)
+      out.logProbability(q) = logDiffExp(logUpper(q), logLower(q));
   }
+  out.logProbability.transform(floorLogProbability);
+
+  // A category with zero probability has no well-defined threshold ratio;
+  // dividing by it would yield Inf and poison the score. Zero is the value the
+  // scalar path uses for a structurally absent bound.
+  const arma::uvec degenerate =
+    arma::find(out.logProbability <= LOG_PROBABILITY_FLOOR);
   if (code > 1) {
     const arma::vec lower = thresholds(code - 2) - eta;
     out.lowerRatio = arma::exp(
       logLower + logLogisticCdfVector(-lower) - out.logProbability
     );
+    out.lowerRatio.elem(degenerate).zeros();
   }
   if (code < categories) {
     const arma::vec upper = thresholds(code - 1) - eta;
     out.upperRatio = arma::exp(
       logUpper + logLogisticCdfVector(-upper) - out.logProbability
     );
+    out.upperRatio.elem(degenerate).zeros();
   }
   return out;
 }
@@ -1308,28 +1336,6 @@ Rcpp::List lmsGraphAggregateCpp(const arma::mat& logKernel,
                                 const arma::vec& quadWeights,
                                 const arma::vec& rowWeights) {
   return aggregateKernel(logKernel, quadWeights, rowWeights);
-}
-
-
-// [[Rcpp::export]]
-Rcpp::List lmsGraphPstepCpp(const Rcpp::List& matrices,
-                            const arma::mat& nodes,
-                            const int numXis,
-                            const int numEtas,
-                            const Rcpp::List& dataR,
-                            const Rcpp::List& colidxR,
-                            const Rcpp::IntegerVector& orderedIndex,
-                            const arma::vec& quadWeights,
-                            const arma::vec& rowWeights,
-                            const bool logistic = true,
-                            const int ncores = 1) {
-  const arma::mat logKernel = lmsGraphLogKernelCpp(
-    matrices, nodes, numXis, numEtas, dataR, colidxR, orderedIndex, logistic,
-    ncores
-  );
-  Rcpp::List out = aggregateKernel(logKernel, quadWeights, rowWeights);
-  out["logKernel"] = logKernel;
-  return out;
 }
 
 

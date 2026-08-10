@@ -424,8 +424,8 @@ nFreeInterceptsDA <- function(model) {
 
 
 getInfoQuad <- function(quad) {
-  list(dim = quad$k, nodes.dim = quad$m, nodes.total = quad$m ^ quad$k,
-       adaptive = isTRUE(quad$adaptive))
+  list(dim = quad$k, nodes.dim = quad$m, nodes.total = quadTotalNodes(quad),
+       integration = quad$integration, adaptive = quad$adaptive)
 }
 
 

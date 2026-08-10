@@ -8,7 +8,7 @@ preCheckModel <- function(model, covModel = NULL, method = "lms", missing = "com
   checkNodesLms(parTableMain = model$parTable,
                 parTableCov  = covModel$parTable,
                 nodes = model$quad$m, method = method,
-                adaptive = model$quad$adaptive)
+                adaptive = isAdaptiveQuad(model$quad))
 
   checkOVsInStructuralModel(parTableMain = model$parTable,
                             parTableCov  = covModel$parTable)

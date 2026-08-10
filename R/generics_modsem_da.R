@@ -458,9 +458,15 @@ print.summary_da <- function(x, digits = 3, ...) {
 
     if (length(nodesDim) || length(dimVal) || length(nodesTotal)) {
       cat("Numerical Integration:\n")
-      names <- c("Points of integration (per dim)", "Dimensions",
-                 "Total points of integration")
-      values <- c(formatCount(nodesDim),
+
+      # For Monte-Carlo, `nodes` is a total rather than a count per dimension.
+      isMonteCarlo <- identical(x$quad$integration, "mc")
+      names <- c("Integration rule", "Adaptive quadrature",
+                 if (!isMonteCarlo) "Points of integration (per dim)",
+                 "Dimensions", "Total points of integration")
+      values <- c(INTEGRATION_LABELS[x$quad$integration] %||% "",
+                  ADAPTIVE_LABELS[x$quad$adaptive] %||% "",
+                  if (!isMonteCarlo) formatCount(nodesDim),
                   formatCount(dimVal),
                   formatCount(nodesTotal))
       cat(allignLhsRhs(lhs = names, rhs = values, pad = "  ",

@@ -13,18 +13,6 @@ testthat::test_that("LMS graph backend transforms one unified latent covariance"
 })
 
 
-testthat::test_that("QMC nodes are deterministic low-discrepancy normal draws", {
-  first <- lmsGraphHalton(64L, 3L)
-  second <- lmsGraphHalton(64L, 3L)
-  testthat::expect_equal(first, second)
-  testthat::expect_true(all(first > 0 & first < 1))
-  normal <- matrix(stats::qnorm(first), ncol = 3L)
-  testthat::expect_lt(max(abs(colMeans(normal))), .15)
-  correlations <- stats::cor(normal)
-  testthat::expect_lt(max(abs(correlations[lower.tri(correlations)])), .15)
-})
-
-
 testthat::test_that("hybrid graph score replaces covariance directions only", {
   theta <- c(A1 = .2, gammaXi1 = .3, psi1 = .4)
   target <- c(-.1, .5, .8)
@@ -254,135 +242,6 @@ testthat::test_that("common graph statistics respect missingness patterns", {
 })
 
 
-testthat::test_that("second-order Laplace is exact for a Gaussian latent model", {
-  one.node <- quadrature(1L, 3L)
-  testthat::expect_equal(unname(one.node$n), matrix(0, 1L, 3L),
-                         ignore_attr = TRUE)
-  testthat::expect_equal(as.numeric(one.node$w), 1)
-  M <- list(
-    A = matrix(1), covZetaXi = matrix(numeric(), 0L, 1L),
-    psi = matrix(numeric(), 0L, 0L), beta0 = matrix(0),
-    alpha = matrix(numeric(), 0L, 1L), gammaXi = matrix(numeric(), 0L, 1L),
-    gammaEta = matrix(numeric(), 0L, 0L),
-    omegaXiXi = matrix(numeric(), 0L, 1L),
-    omegaEtaXi = matrix(numeric(), 0L, 0L),
-    lambdaX = matrix(1), tauX = matrix(0), thetaDelta = matrix(1),
-    thresholds = matrix(NaN, 1L, 0L)
-  )
-  value <- .3
-  result <- lmsGraphLaplace2Cpp(
-    M, matrix(value / 2), 1L, 0L, list(matrix(value)), list(0L), integer()
-  )
-  exact <- dnorm(value, 0, sqrt(2), log = TRUE)
-  testthat::expect_equal(as.numeric(result$first), exact, tolerance = 1e-12)
-  testthat::expect_equal(as.numeric(result$second), exact, tolerance = 1e-12)
-  testthat::expect_equal(as.numeric(result$correction), 0, tolerance = 1e-12)
-})
-
-
-testthat::test_that("second-order Laplace improves a binary-logit integral", {
-  M <- list(
-    A = matrix(1), covZetaXi = matrix(numeric(), 0L, 1L),
-    psi = matrix(numeric(), 0L, 0L), beta0 = matrix(0),
-    alpha = matrix(numeric(), 0L, 1L), gammaXi = matrix(numeric(), 0L, 1L),
-    gammaEta = matrix(numeric(), 0L, 0L),
-    omegaXiXi = matrix(numeric(), 0L, 1L),
-    omegaEtaXi = matrix(numeric(), 0L, 0L),
-    lambdaX = matrix(1), tauX = matrix(0), thetaDelta = matrix(1),
-    thresholds = matrix(0)
-  )
-  mode <- uniroot(function(z) z + plogis(z), c(-2, 0))$root
-  result <- lmsGraphLaplace2Cpp(
-    M, matrix(mode), 1L, 0L, list(matrix(1)), list(0L), 0L
-  )
-  exact <- log(.5)
-  testthat::expect_lt(abs(result$second - exact), abs(result$first - exact))
-  testthat::expect_false(as.logical(result$adjusted))
-})
-
-
-testthat::test_that("second-order Laplace approaches high-node AGHQ in three dimensions", {
-  M <- list(
-    A = diag(2), covZetaXi = matrix(0, 1L, 2L), psi = matrix(1),
-    gammaXi = matrix(c(.2, .3), 1L), gammaEta = matrix(0, 1L, 1L),
-    omegaXiXi = matrix(c(0, .4, 0, 0), 2L, 2L),
-    omegaEtaXi = matrix(0, 2L, 1L), beta0 = matrix(0, 2L, 1L),
-    alpha = matrix(0), lambdaX = matrix(c(0, 0, 1), 1L),
-    tauX = matrix(0), thetaDelta = matrix(1),
-    thresholds = matrix(NaN, 1L, 0L)
-  )
-  data <- list(matrix(.2))
-  columns <- list(0L)
-  base <- quadrature(5L, 3L)
-  adaptive <- lmsGraphAdaptiveRuleCpp(
-    M, base$n, base$w, matrix(0, 1L, 3L), 2L, 1L,
-    data, columns, integer(), ncores = 1L
-  )
-  laplace <- lmsGraphLaplace2Cpp(
-    M, adaptive$modes, 2L, 1L, data, columns, integer()
-  )
-  high <- quadrature(15L, 3L)
-  kernel <- lmsGraphLogKernelCpp(
-    M, high$n, 2L, 1L, data, columns, integer()
-  )
-  reference <- lmsGraphAggregateCpp(kernel, high$w, 1)$logLik
-  testthat::expect_lt(abs(laplace$second - reference),
-                      abs(laplace$first - reference))
-  testthat::expect_equal(as.numeric(laplace$second), reference,
-                         tolerance = 3e-3)
-})
-
-testthat::test_that("implicit Laplace2 gradient includes optimized-mode dependence", {
-  syntax <- paste(
-    "X =~ x1 + x2 + x3",
-    "Z =~ z1 + z2 + z3",
-    "Y =~ y1 + y2 + y3",
-    "Y ~ X + Z + X:Z",
-    sep = "\n"
-  )
-  fit <- suppressWarnings(modsem(
-    syntax, oneInt[seq_len(8L), ], method = "lms",
-    lms.backend = "graph", integration = "laplace2", algorithm = "EM",
-    optimize = FALSE, calc.se = FALSE, max.iter = 1L, n.threads = 1L
-  ))
-  model <- fit$start.model
-  theta <- model$theta
-  implicit <- lmsGraphLaplaceImplicitGradient(
-    theta, model, "laplace2", link = "logit"
-  )$gradient
-  step <- 1e-5 * pmax(1, abs(theta))
-  numerical <- vapply(seq_along(theta), function(j) {
-    plus <- minus <- theta
-    plus[j] <- plus[j] + step[j]
-    minus[j] <- minus[j] - step[j]
-    (lmsGraphLaplaceEvaluation(model, plus, "laplace2", link = "logit")$logLik -
-       lmsGraphLaplaceEvaluation(model, minus, "laplace2", link = "logit")$logLik) /
-      (2 * step[j])
-  }, numeric(1L))
-  names(numerical) <- names(theta)
-  testthat::expect_equal(implicit, numerical, tolerance = 2e-5, scale = 1)
-})
-
-testthat::test_that("custom QN respects bounds and reuses accepted state", {
-  previous.seen <- list()
-  evaluate <- function(theta, previous) {
-    previous.seen[[length(previous.seen) + 1L]] <<- !is.null(previous)
-    difference <- theta - c(.25, 2)
-    list(valid = TRUE, objective = sum(difference^2),
-         gradient = 2 * difference,
-         evaluation = list(quad = list(theta = theta)))
-  }
-  fit <- lmsGraphBoundedLbfgs(
-    c(-.5, 0), evaluate, lower = c(-1, -1), upper = c(1, 1),
-    max.iter = 50L, convergence.rel = 1e-10
-  )
-  testthat::expect_equal(fit$par, c(.25, 1), tolerance = 1e-6)
-  testthat::expect_equal(fit$convergence, 0L)
-  testthat::expect_false(previous.seen[[1L]])
-  testthat::expect_true(any(unlist(previous.seen[-1L])))
-})
-
-
 testthat::test_that("per-observation adaptive graph quadrature is exact for Gaussian rows", {
   values <- matrix(c(-1, .4, 1.5), ncol = 1L)
   M <- list(
@@ -401,21 +260,23 @@ testthat::test_that("per-observation adaptive graph quadrature is exact for Gaus
     info = list(numXis = 1L, numEtas = 0L, ordered = character()),
     data = list(n = NROW(values), data.split = list(values),
                 colidx0 = list(0L)),
-    quad = list(m = 3L, quad.range = Inf, adaptive = TRUE,
-                adaptive.frequency = 3L)
+    quad = quadSpec(integration = "gh", adaptive = "full", nodes = 3L, k = 1L)
   )
-  rule <- lmsGraphAdaptiveRule(submodel, link = "logit", tolerance = 1e-10)
-  reference <- lmsGraphAdaptiveRuleR(submodel, link = "logit",
-                                     tolerance = 1e-10)
+  workspace <- lmsGraphWorkspace(submodel)
+  base <- buildQuadRule(setAdaptiveQuad(submodel$quad, "none"))
+  rule <- lmsGraphAdaptPerObservation(submodel, base, "logit", workspace,
+                                      tolerance = 1e-10)
   kernel <- lmsGraphLogKernelCpp(
     M, rule$n, 1L, 0L, list(values), list(0L), integer(), TRUE
   )
   aggregate <- lmsGraphAggregateCpp(kernel, rule$w, rep(1, NROW(values)))
+
+  testthat::expect_false(rule$common)
+  testthat::expect_true(rule$packed)
+  # For a Gaussian row the posterior mode and the marginal density are known
+  # in closed form, so these are exact checks rather than agreement checks.
   testthat::expect_equal(rule$modes[, 1L], values[, 1L] / 2,
                          tolerance = 1e-5)
-  testthat::expect_equal(rule$modes, reference$modes, tolerance = 1e-5)
-  testthat::expect_equal(as.numeric(rule$log.w), as.numeric(reference$log.w),
-                         tolerance = 2e-5)
   testthat::expect_equal(as.numeric(aggregate$logDensity),
                          dnorm(values[, 1L], 0, sqrt(2), log = TRUE),
                          tolerance = 1e-7)
@@ -439,10 +300,10 @@ testthat::test_that("adaptive ordered likelihood agrees with a dense fixed rule"
     matrices = M,
     info = list(numXis = 1L, numEtas = 0L, ordered = "y"),
     data = list(n = 3L, data.split = list(values), colidx0 = list(0L)),
-    quad = list(m = 5L, quad.range = Inf, adaptive = TRUE,
-                adaptive.frequency = 3L)
+    quad = quadSpec(integration = "gh", adaptive = "full", nodes = 5L, k = 1L)
   )
-  adaptive <- lmsGraphAdaptiveRule(submodel, link = "logit")
+  workspace <- lmsGraphWorkspace(submodel)
+  adaptive <- lmsGraphBuildRule(submodel, workspace, "logit")
   adaptive.kernel <- lmsGraphLogKernelCpp(
     M, adaptive$n, 1L, 0L, list(values), list(0L), 0L, TRUE
   )
@@ -450,7 +311,8 @@ testthat::test_that("adaptive ordered likelihood agrees with a dense fixed rule"
     adaptive.kernel, adaptive$w, rep(1, 3L)
   )$logDensity
 
-  dense <- quadrature(m = 41L, k = 1L, adaptive = FALSE)
+  dense <- buildQuadRule(quadSpec(integration = "gh", adaptive = "none",
+                                  nodes = 41L, k = 1L))
   dense.nodes <- dense$n[rep(seq_len(NROW(dense$n)), times = 3L),,
                              drop = FALSE]
   dense.weights <- rep(dense$w, times = 3L)
