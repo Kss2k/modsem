@@ -342,6 +342,17 @@ specifyModelDA_Group <- function(syntax = NULL,
     omegaEtaXi   = omegaEtaXi,
     omegaXiXi    = omegaXiXi,
 
+    # Product representation used by the LMS graph backend. Empty here and
+    # filled by `lmsGraphPrepareProducts()` for that backend only, in the same
+    # way `lambdaY`/`thetaEpsilon` sit empty for the LMS approach. Keeping both
+    # representations present, one of them zero-dimensional, means every
+    # loop-and-vector based routine degenerates correctly without needing to
+    # know which backend is in use.
+    productDesign = matrix(0L, 0L, numXis + numEtas,
+                           dimnames = list(NULL, c(xis, etas))),
+    omega         = matrix(numeric(), numEtas, 0L,
+                           dimnames = list(etas, NULL)),
+
     selectScalingY      = selectScalingY,
     selectThetaEpsilon1 = selectThetaEpsilon1,
     selectThetaEpsilon2 = selectThetaEpsilon2,
@@ -385,7 +396,8 @@ specifyModelDA_Group <- function(syntax = NULL,
     beta0 = labelBeta0,
 
     omegaEtaXi = labelOmegaEtaXi,
-    omegaXiXi  = labelOmegaXiXi
+    omegaXiXi  = labelOmegaXiXi,
+    omega      = matrix(character(), numEtas, 0L, dimnames = list(etas, NULL))
   )
 
   # The quadrature *spec* is stored; the nodes themselves are built on demand

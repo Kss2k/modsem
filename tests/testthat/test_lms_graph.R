@@ -36,8 +36,9 @@ testthat::test_that("LMS graph states follow recursive structural order", {
     beta0 = matrix(.2), alpha = matrix(c(.1, -.3), 2L),
     gammaXi = matrix(c(.5, -.2), 2L),
     gammaEta = matrix(c(0, 0, .4, 0), 2L, byrow = TRUE),
-    omegaXiXi = matrix(c(.25, 0), 2L),
-    omegaEtaXi = matrix(c(0, 0, .3, 0), 2L, byrow = TRUE),
+    productDesign = matrix(c(2L, 0L, 0L,
+                            1L, 1L, 0L), 2L, 3L, byrow = TRUE),
+    omega = matrix(c(.25, 0, 0, .3), 2L, 2L),
     thetaDelta = diag(3L), lambdaX = diag(3L), tauX = matrix(0, 3L, 1L)
   )
   submodel <- list(
@@ -73,8 +74,7 @@ testthat::test_that("compiled LMS graph kernel matches mixed logit and probit li
     psi = matrix(numeric(), 0L, 0L), beta0 = matrix(0),
     alpha = matrix(numeric(), 0L, 1L), gammaXi = matrix(numeric(), 0L, 1L),
     gammaEta = matrix(numeric(), 0L, 0L),
-    omegaXiXi = matrix(numeric(), 0L, 1L),
-    omegaEtaXi = matrix(numeric(), 0L, 0L),
+    productDesign = matrix(0L, 0L, 1L), omega = matrix(numeric(), 0L, 0L),
     lambdaX = matrix(c(1, .5), 2L), tauX = matrix(c(0, .2), 2L),
     thetaDelta = diag(c(1, .7)),
     thresholds = matrix(c(-.4, .8, NaN, NaN), 2L, byrow = TRUE)
@@ -126,8 +126,7 @@ testthat::test_that("packed graph rules support observation-specific nodes and w
     psi = matrix(numeric(), 0L, 0L), beta0 = matrix(0),
     alpha = matrix(numeric(), 0L, 1L), gammaXi = matrix(numeric(), 0L, 1L),
     gammaEta = matrix(numeric(), 0L, 0L),
-    omegaXiXi = matrix(numeric(), 0L, 1L),
-    omegaEtaXi = matrix(numeric(), 0L, 0L),
+    productDesign = matrix(0L, 0L, 1L), omega = matrix(numeric(), 0L, 0L),
     lambdaX = matrix(1), tauX = matrix(0), thetaDelta = matrix(1),
     thresholds = matrix(NaN, 1L, 0L)
   )
@@ -158,8 +157,9 @@ testthat::test_that("common graph sufficient statistics reproduce packed M-step"
   M <- list(
     A = matrix(1.1), covZetaXi = matrix(.12), psi = matrix(.8),
     beta0 = matrix(.15), alpha = matrix(-.1), gammaXi = matrix(.35),
-    gammaEta = matrix(0), omegaXiXi = matrix(.18),
-    omegaEtaXi = matrix(.11),
+    gammaEta = matrix(0),
+    productDesign = matrix(c(2L, 0L), 1L, 2L, byrow = TRUE),
+    omega = matrix(.18, 1L, 1L),
     lambdaX = matrix(c(1, .7, .45, 1.1), 2L, byrow = TRUE),
     tauX = matrix(c(0, .2)), thetaDelta = diag(c(1, .65)),
     thresholdDelta = delta, thresholds = thresholdDeltaToThresholdMatrix(delta)
@@ -249,8 +249,7 @@ testthat::test_that("per-observation adaptive graph quadrature is exact for Gaus
     psi = matrix(numeric(), 0L, 0L), beta0 = matrix(0),
     alpha = matrix(numeric(), 0L, 1L), gammaXi = matrix(numeric(), 0L, 1L),
     gammaEta = matrix(numeric(), 0L, 0L),
-    omegaXiXi = matrix(numeric(), 0L, 1L),
-    omegaEtaXi = matrix(numeric(), 0L, 0L),
+    productDesign = matrix(0L, 0L, 1L), omega = matrix(numeric(), 0L, 0L),
     lambdaX = matrix(1, dimnames = list("y", "x")),
     tauX = matrix(0), thetaDelta = matrix(1),
     thresholds = matrix(NaN, 1L, 0L)
@@ -290,8 +289,7 @@ testthat::test_that("adaptive ordered likelihood agrees with a dense fixed rule"
     psi = matrix(numeric(), 0L, 0L), beta0 = matrix(0),
     alpha = matrix(numeric(), 0L, 1L), gammaXi = matrix(numeric(), 0L, 1L),
     gammaEta = matrix(numeric(), 0L, 0L),
-    omegaXiXi = matrix(numeric(), 0L, 1L),
-    omegaEtaXi = matrix(numeric(), 0L, 0L),
+    productDesign = matrix(0L, 0L, 1L), omega = matrix(numeric(), 0L, 0L),
     lambdaX = matrix(.9, dimnames = list("y", "x")), tauX = matrix(0),
     thetaDelta = matrix(1), thresholds = matrix(c(-.6, .7), 1L),
     thresholdDelta = matrix(c(-.6, log(expm1(1.3))), 1L)
@@ -333,7 +331,8 @@ testthat::test_that("analytical LMS graph scores match central differences", {
     A = matrix(1.1), covZetaXi = matrix(.12), psi = matrix(.8),
     beta0 = matrix(.15), alpha = matrix(-.1),
     gammaXi = matrix(.35), gammaEta = matrix(0),
-    omegaXiXi = matrix(.18), omegaEtaXi = matrix(.11),
+    productDesign = matrix(c(2L, 0L), 1L, 2L, byrow = TRUE),
+    omega = matrix(.18, 1L, 1L),
     lambdaX = matrix(c(1, .7, .45, 1.1), 2L, byrow = TRUE),
     tauX = matrix(c(0, .2)), thetaDelta = diag(c(1, .65)),
     thresholdDelta = delta, thresholds = thresholdDeltaToThresholdMatrix(delta)
@@ -351,9 +350,9 @@ testthat::test_that("analytical LMS graph scores match central differences", {
   )
   weight.blocks <- weight.blocks / rowSums(weight.blocks)
   weights <- as.numeric(t(weight.blocks))
-  blocks <- c(0L, 2L, 4L, 6L, 7L, 8L, 9L, 10L, 11L, 12L, 13L, 17L, 18L, 18L)
-  rows <- c(1L, 1L, 1L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L)
-  cols <- c(1L, 0L, 1L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 1L)
+  blocks <- c(0L, 2L, 4L, 6L, 7L, 8L, 9L, 10L, 11L, 19L, 17L, 18L, 18L)
+  rows <- c(1L, 1L, 1L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L)
+  cols <- c(1L, 0L, 1L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 1L)
   symmetric <- blocks %in% c(4L, 7L)
 
   objective <- function(matrices) {
@@ -363,9 +362,10 @@ testthat::test_that("analytical LMS graph scores match central differences", {
     lmsGraphAggregateCpp(kernel, weights, row.weights)$logLik
   }
   perturb <- function(matrices, index, amount) {
+    # Indexed by block + 1; blocks 12/13 (the old Kronecker omegas) are gone.
     names <- c("lambdaX", NA, "tauX", NA, "thetaDelta", NA, "A", "psi",
-               "alpha", "beta0", "gammaXi", "gammaEta", "omegaXiXi",
-               "omegaEtaXi", NA, NA, NA, "covZetaXi", "thresholdDelta")
+               "alpha", "beta0", "gammaXi", "gammaEta", NA, NA, NA, NA, NA,
+               "covZetaXi", "thresholdDelta", "omega")
     name <- names[blocks[index] + 1L]
     matrices[[name]][rows[index] + 1L, cols[index] + 1L] <-
       matrices[[name]][rows[index] + 1L, cols[index] + 1L] + amount
@@ -393,7 +393,7 @@ testthat::test_that("analytical LMS graph scores match central differences", {
   # The direct measurement and acyclic structural blocks have exact scores.
   # Covariance-Cholesky directions are tested separately, while self-referential
   # eta terms are outside the recursive graph model.
-  exact <- c(1L, 2L, 3L, 6L, 8L, 10L, 13L, 14L)
+  exact <- c(1L, 2L, 3L, 6L, 8L, 10L, 12L, 13L)
   testthat::expect_equal(as.numeric(analytical)[exact], numerical[exact],
                          tolerance = 2e-5, scale = 1)
 
@@ -433,8 +433,7 @@ testthat::test_that("reverse graph score ignores structurally absent thresholds"
     psi = matrix(numeric(), 0L, 0L), beta0 = matrix(0),
     alpha = matrix(numeric(), 0L, 1L), gammaXi = matrix(numeric(), 0L, 1L),
     gammaEta = matrix(numeric(), 0L, 0L),
-    omegaXiXi = matrix(numeric(), 0L, 1L),
-    omegaEtaXi = matrix(numeric(), 0L, 0L),
+    productDesign = matrix(0L, 0L, 1L), omega = matrix(numeric(), 0L, 0L),
     lambdaX = matrix(c(1, .5), 2L), tauX = matrix(c(0, 0), 2L),
     thetaDelta = diag(2L), thresholdDelta = delta,
     thresholds = thresholdDeltaToThresholdMatrix(delta)

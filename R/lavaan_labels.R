@@ -31,6 +31,9 @@ createLavLabels <- function(matrices, subset, etas, parTable.in = NULL) {
   gammaEta     <- createLabelsMatrix(matrices$gammaEta, op = "~", first = "rows")
   omegaXiXi    <- createLabelsOmega(matrices$omegaXiXi, parTable.in = parTable.in)
   omegaEtaXi   <- createLabelsOmega(matrices$omegaEtaXi, parTable.in = parTable.in)
+  thresholdDelta <- createLabelsThreshold(matrices$thresholdDelta)
+  omega        <- createLabelsProductOmega(matrices$omega,
+                                           parTable.in = parTable.in)
 
   labels <- c(
     lambdaX = lambdaX,
@@ -50,7 +53,9 @@ createLavLabels <- function(matrices, subset, etas, parTable.in = NULL) {
     gammaXi = gammaXi,
     gammaEta = gammaEta,
     omegaXiXi = omegaXiXi,
-    omegaEtaXi = omegaEtaXi
+    omegaEtaXi = omegaEtaXi,
+    thresholdDelta = thresholdDelta,
+    omega = omega
   )
 
   labels[subset]
@@ -141,4 +146,46 @@ getLavCoefs <- function(model, theta, method) {
   }
 
   list(all = fullTheta, free = fullTheta[isFree])
+}
+
+
+# Labels for the graph backend's product coefficients. Far simpler than the
+# Kronecker case: the product name is already the right-hand side. Column-major
+# to match `as.vector()`, as every other label constructor is.
+createLabelsProductOmega <- function(X, parTable.in = NULL) {
+  if (is.null(X) || !length(X)) return(character(0L))
+  rows <- rownames(X)
+  cols <- colnames(X)
+  labels <- character(0L)
+
+  key <- function(product)
+    paste(sort(lmsGraphProductFactors(product)), collapse = ":")
+
+  for (i in seq_len(ncol(X))) for (j in seq_len(nrow(X))) {
+    product <- cols[[i]]
+    # Report the factor ordering the user wrote rather than the canonical one,
+    # so `Z:X` in the syntax does not come back as `X:Z`.
+    if (!is.null(parTable.in)) {
+      candidates <- parTable.in$rhs[parTable.in$op == "~" &
+                                      parTable.in$lhs == rows[[j]]]
+      same <- candidates[vapply(candidates, function(r)
+        identical(key(r), key(product)), logical(1L))]
+      if (length(same)) product <- same[[1L]]
+    }
+    labels <- c(labels, sprintf("%s~%s", rows[[j]], product))
+  }
+  labels
+}
+
+
+# Thresholds are stored as an indicators-by-categories matrix with NaN where a
+# category does not exist. Absent entries still need a slot so the label vector
+# stays aligned with `allModelValues`.
+createLabelsThreshold <- function(X) {
+  if (is.null(X) || !length(X)) return(character(0L))
+  rows <- rownames(X)
+  labels <- character(0L)
+  for (i in seq_len(ncol(X))) for (j in seq_len(nrow(X)))
+    labels <- c(labels, sprintf("%s|t%d", rows[[j]], i))
+  labels
 }

@@ -30,15 +30,22 @@
 #'   If left unset, the default is chosen from \code{integration} and
 #'   \code{adaptive}:
 #'
-#'   \tabular{lrrr}{
-#'     \strong{integration} \tab \code{adaptive = "none"} \tab \code{"quasi"} \tab \code{"full"} \cr
-#'     \code{"gh"}   \tab  15 \tab  15 \tab   5 \cr
-#'     \code{"rect"} \tab  15 \tab  15 \tab   5 \cr
-#'     \code{"mc"}   \tab 500 \tab   - \tab 250 \cr
+#'   \tabular{lrrrr}{
+#'     \strong{integration} \tab \strong{backend} \tab \code{adaptive = "none"} \tab \code{"quasi"} \tab \code{"full"} \cr
+#'     \code{"gh"}   \tab legacy \tab  24 \tab  24 \tab   5 \cr
+#'     \code{"gh"}   \tab graph  \tab  15 \tab  15 \tab   5 \cr
+#'     \code{"rect"} \tab legacy \tab  24 \tab  24 \tab   5 \cr
+#'     \code{"rect"} \tab graph  \tab  15 \tab  15 \tab   5 \cr
+#'     \code{"mc"}   \tab both   \tab 500 \tab   - \tab 250 \cr
 #'   }
 #'
-#'   The shared-rule defaults match Mplus: 15 points per dimension for both
-#'   product rules and 500 draws in total for Monte-Carlo.
+#'   The legacy backend integrates only the nonlinear latent dimensions, so its
+#'   product rule is small and extra nodes cost little -- and are measurably
+#'   needed. On \code{oneInt}, a 15-node quasi-adaptive rule leaves the
+#'   interaction 0.005 from the per-observation AGHQ reference, while 20 and
+#'   above agree to four decimals. The graph backend integrates every latent
+#'   variable, so its product rule grows much faster and 15 is the practical
+#'   ceiling.
 #'
 #'   A per-observation rule (\code{adaptive = "full"}) needs far fewer points
 #'   than a shared one because it is centred on each observation's own
@@ -668,6 +675,7 @@ modsem_da <- function(model.syntax = NULL,
           epsilon                        = epsilon,
           quad.range                     = quad.range,
           rect.range                     = rect.range,
+          lms.backend                    = lms.backend,
           integration                    = integration,
           adaptive                       = adaptive,
           adaptive.frequency             = adaptive.frequency,
@@ -741,6 +749,9 @@ modsem_da <- function(model.syntax = NULL,
     cluster            = cluster,
     sampling.weights   = sampling.weights
   )
+
+  if (method == "lms" && lms.backend == "graph")
+    model <- lmsGraphPrepareProducts(model)
 
   if (method == "lms" && lms.backend == "graph" && has.ordered) {
     model <- lmsGraphPrepareOrdered(

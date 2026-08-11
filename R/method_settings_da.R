@@ -3,9 +3,10 @@ getMethodSettingsDA <- function(method, args = NULL) {
     settings <- list(
         lms = list(verbose = interactive(),
                    optimize = TRUE,
-                   # Resolved below from `integration` and `adaptive`; this is
-                   # the value for the default `gh` + `quasi` combination.
-                   nodes = 15,
+                   # Resolved below by `quadNodeDefault()` from `integration`,
+                   # `adaptive` and `lms.backend`. This is the value for the
+                   # default legacy `gh` + `quasi` combination.
+                   nodes = 24,
                    convergence.abs = 1e-4,
                    convergence.rel = 1e-10,
                    optimizer = "nlminb",
@@ -27,6 +28,7 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    epsilon = 1e-6,
                    quad.range = Inf,
                    rect.range = 5,
+                   lms.backend = "legacy",
                    integration = "gh",
                    adaptive = "quasi",
                    adaptive.quad.tol = 1e-12,
@@ -70,6 +72,7 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    epsilon = 1e-8,
                    quad.range = Inf,
                    rect.range = 5,
+                   lms.backend = "legacy",
                    integration = "gh",
                    adaptive = "none",
                    adaptive.quad.tol = NULL,
@@ -110,8 +113,9 @@ getMethodSettingsDA <- function(method, args = NULL) {
       # rule needs far fewer points than a shared one, and Monte-Carlo counts
       # total draws rather than nodes per dimension.
       if (is.null(args$nodes))
-        args.out$nodes <-
-          QUAD_NODE_DEFAULTS[[args.out$integration]][[args.out$adaptive]]
+        args.out$nodes <- quadNodeDefault(args.out$integration,
+                                          args.out$adaptive,
+                                          args.out$lms.backend %||% "legacy")
     }
 
     args.out$standardize.data <-

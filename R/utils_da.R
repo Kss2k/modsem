@@ -423,8 +423,11 @@ nFreeInterceptsDA <- function(model) {
 }
 
 
+# `nodes.total` must report the rule actually used, not `nodes^k`: an adaptive
+# rule prunes, and reporting the requested size hides that entirely.
 getInfoQuad <- function(quad) {
-  list(dim = quad$k, nodes.dim = quad$m, nodes.total = quadTotalNodes(quad),
+  total <- if (!is.null(quad$n)) NROW(quad$n) else quadTotalNodes(quad)
+  list(dim = quad$k, nodes.dim = quad$m, nodes.total = total,
        integration = quad$integration, adaptive = quad$adaptive)
 }
 

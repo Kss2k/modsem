@@ -53,10 +53,32 @@ testthat::test_that("quasi-adaptive rules stay near the requested node budget", 
     quadSpec(integration = "rect", adaptive = "quasi", nodes = 12L, k = 2L),
     density = gaussianDensity
   )
-  # The rectangular rule adapts its range rather than dropping nodes, so the
-  # node count is exactly the requested budget.
-  testthat::expect_equal(NROW(rect$n), 144L)
+  # The rectangular rule adapts its range and then drops corner nodes -- those
+  # extreme in every dimension at once, which carry almost none of the integral
+  # -- so it lands at or below the requested budget rather than exactly on it.
+  testthat::expect_lte(NROW(rect$n), 144L)
+  testthat::expect_gte(NROW(rect$n), 64L)
   testthat::expect_lte(max(abs(rect$n)), 5)
+  testthat::expect_true(rect$common)
+})
+
+
+testthat::test_that("product rules drop corner nodes", {
+  # A corner of a Cartesian grid is extreme in every dimension at once, so its
+  # weight is the product of the extreme one-dimensional weights and it carries
+  # essentially none of the integral. Both product rules must shed them.
+  for (integration in c("gh", "rect")) {
+    spec <- quadSpec(integration = integration, adaptive = "quasi",
+                     nodes = 10L, k = 3L)
+    rule <- buildQuadRule(spec, density = gaussianDensity)
+    testthat::expect_lt(NROW(rule$n), 10L^3L)
+
+    # An adapted rule covers a trimmed region, so its weights sum to the mass
+    # it spans rather than to 1. Renormalising them would turn the estimate
+    # into a conditional expectation -- see the closed-form test below.
+    testthat::expect_lte(sum(rule$w), 1 + 1e-8)
+    testthat::expect_gt(sum(rule$w), 0.5)
+  }
 })
 
 
@@ -73,7 +95,7 @@ testthat::test_that("the rectangular quasi rule shrinks onto concentrated mass",
 
   testthat::expect_equal(NROW(rule$n), 12L)
   testthat::expect_lt(max(abs(rule$n)), 5)
-  testthat::expect_equal(sum(rule$w), 1, tolerance = 1e-12)
+  testthat::expect_lte(sum(rule$w), 1 + 1e-8)
   # Nodes stay equispaced within the trimmed range.
   testthat::expect_equal(length(unique(round(diff(sort(rule$n[, 1L])), 8))), 1L)
 })
@@ -146,16 +168,27 @@ testthat::test_that("the availability matrix rejects unsupported combinations", 
 })
 
 
-testthat::test_that("node defaults follow both the integration and adaptive axis", {
+testthat::test_that("node defaults follow integration, adaptive and backend", {
   nodesFor <- function(...) getMethodSettingsDA(
     "lms", args = c(list(...), list(nodes = NULL)))$nodes
 
-  testthat::expect_equal(nodesFor(integration = "gh",   adaptive = "quasi"), 15)
-  testthat::expect_equal(nodesFor(integration = "gh",   adaptive = "none"),  15)
-  testthat::expect_equal(nodesFor(integration = "gh",   adaptive = "full"),   5)
-  testthat::expect_equal(nodesFor(integration = "rect", adaptive = "full"),   5)
-  testthat::expect_equal(nodesFor(integration = "mc",   adaptive = "none"), 500)
-  testthat::expect_equal(nodesFor(integration = "mc",   adaptive = "full"),  250)
+  # Shared rules: the legacy backend integrates only the nonlinear dimensions,
+  # so it can afford -- and needs -- more points than the graph backend.
+  for (integration in c("gh", "rect")) for (adaptive in c("none", "quasi")) {
+    testthat::expect_equal(nodesFor(lms.backend = "legacy",
+      integration = integration, adaptive = adaptive), 24)
+    testthat::expect_equal(nodesFor(lms.backend = "graph",
+      integration = integration, adaptive = adaptive), 15)
+  }
+  # Per-observation and Monte-Carlo counts do not depend on the backend.
+  for (backend in c("legacy", "graph")) {
+    testthat::expect_equal(nodesFor(lms.backend = backend,
+      integration = "gh", adaptive = "full"), 5)
+    testthat::expect_equal(nodesFor(lms.backend = backend,
+      integration = "mc", adaptive = "none"), 500)
+    testthat::expect_equal(nodesFor(lms.backend = backend,
+      integration = "mc", adaptive = "full"), 250)
+  }
 
   # An explicit value always wins.
   testthat::expect_equal(
@@ -171,4 +204,49 @@ testthat::test_that("the model stores a quadrature spec rather than a node grid"
   testthat::expect_null(spec$w)
   testthat::expect_true(isAdaptiveQuad(spec))
   testthat::expect_false(isAdaptiveQuad(setAdaptiveQuad(spec, "none")))
+})
+
+
+testthat::test_that("rules reproduce closed-form integrals of the normal", {
+  # Agreement with another approximation cannot catch a bias that affects both.
+  # These integrands have exact values, so they can.
+  #
+  #   exp(a'z)                      E[f] = exp(a'a / 2)      smooth, fat tails
+  #   exp(-|z - mu|^2 / (2 s2))     E[f] = (s2/(1+s2))^(k/2) *
+  #                                        exp(-|mu|^2 / (2(1+s2)))
+  #
+  # The second is shaped like a real posterior: narrow and off-centre. It is the
+  # case that exposed the weight-renormalisation bias in the rectangular
+  # quasi-adaptive rule, where adaptation made the rule WORSE than not adapting.
+  k <- 2L
+  exponential <- list(
+    f = function(z, a = rep(1, k)) exp(as.vector(z %*% a)),
+    true = exp(sum(rep(1, k)^2) / 2)
+  )
+  bump <- local({
+    mu <- rep(1, k); s2 <- 0.25
+    list(f = function(z) exp(-0.5 * rowSums(sweep(z, 2L, mu)^2) / s2),
+         true = (s2 / (1 + s2))^(k / 2) * exp(-sum(mu^2) / (2 * (1 + s2))))
+  })
+
+  for (case in list(exponential, bump)) {
+    density <- function(nodes, ...) matrix(case$f(nodes), nrow = 1L)
+    estimate <- function(rule) sum(case$f(rule$n) * rule$w)
+
+    for (integration in c("gh", "rect")) {
+      fixed <- buildQuadRule(quadSpec(integration = integration,
+                                      adaptive = "none", nodes = 15L, k = k))
+      quasi <- buildQuadRule(quadSpec(integration = integration,
+                                      adaptive = "quasi", nodes = 15L, k = k),
+                             density = density)
+      error <- function(rule) abs(estimate(rule) - case$true) / abs(case$true)
+
+      # Every rule must at least be in the right ballpark.
+      testthat::expect_lt(error(fixed), 1e-1)
+      testthat::expect_lt(error(quasi), 1e-1)
+      # Adapting must never make a rule worse than not adapting. This is the
+      # signature the renormalisation bug produced.
+      testthat::expect_lte(error(quasi), max(error(fixed), 1e-3))
+    }
+  }
 })

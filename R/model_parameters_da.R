@@ -2,7 +2,8 @@
 NAMES_PAR_MATRICES <- c("lambdaX", "lambdaY", "gammaXi", "gammaEta",
                       "thetaDelta", "thetaEpsilon", "W", "T", "phi", "A",
                       "covZetaXi", "psi", "tauX", "tauY", "alpha", "beta0",
-                      "omegaEtaXi", "omegaXiXi", "thresholdDelta")
+                      "omegaEtaXi", "omegaXiXi", "thresholdDelta",
+                      "omega")
 NAMES_PAR_MATRICES_COV <- c("gammaXi", "gammaEta", "A", "psi", "phi")
 
 
@@ -62,6 +63,7 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
     omegaXiXi    <- as.vector(M$omegaXiXi)
     omegaEtaXi   <- as.vector(M$omegaEtaXi)
     thresholdDelta <- as.vector(M$thresholdDelta %||% numeric(0))
+    omega          <- as.vector(M$omega %||% numeric(0))
 
     allModelValues <- c(
       lambdaX      = lambdaX,
@@ -82,7 +84,8 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
       gammaEta     = gammaEta,
       omegaXiXi    = omegaXiXi,
       omegaEtaXi   = omegaEtaXi,
-      thresholdDelta = thresholdDelta
+      thresholdDelta = thresholdDelta,
+      omega          = omega
     )
 
     freeModelValues <- is.na(allModelValues) & !is.nan(allModelValues)
@@ -287,6 +290,8 @@ fillMainModel <- function(model, theta, thetaLabel, fillPhi = FALSE,
   M$gammaXi      <- fillNA_Matrix(M$gammaXi, theta = theta, pattern = "^gammaXi")
   M$omegaXiXi    <- fillNA_Matrix(M$omegaXiXi, theta = theta, pattern = "^omegaXiXi")
   M$omegaEtaXi   <- fillNA_Matrix(M$omegaEtaXi, theta = theta, pattern = "^omegaEtaXi")
+  if (!is.null(M$omega))
+    M$omega <- fillNA_Matrix(M$omega, theta = theta, pattern = "^omega[0-9]*$")
   if (!is.null(M$thresholdDelta)) {
     M$thresholdDelta <- fillNA_Matrix(
       M$thresholdDelta, theta = theta, pattern = "^thresholdDelta"
@@ -478,7 +483,11 @@ DA_BLOCKS = list(
   T            = 15,
   phi          = 16,  # QML: free parameter; LMS: derived from A (not free)
   covZetaXi    = 17,
-  thresholdDelta = 18
+  thresholdDelta = 18,
+  # Graph backend only: coefficients on product terms. `productDesign` is the
+  # companion structural matrix and deliberately has no block -- it is never a
+  # free parameter.
+  omega        = 19
 )
 
 

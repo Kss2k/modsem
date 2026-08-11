@@ -12,11 +12,34 @@ struct GraphTerm {
   double coefficient;
 };
 
+// One factor of a product term: a latent variable and how many times it
+// appears, so `X:X` is a single factor with exponent 2.
+struct ProductFactor {
+  int variable;
+  int exponent;
+};
+
+// A product is described once, globally, and referenced by index from every
+// equation that uses it, so it is evaluated at most once per node.
+struct ProductPlan {
+  std::vector<ProductFactor> factors;
+  int lastEta; // -1 if the product contains no endogenous variable
+};
+
+struct GraphProductTerm {
+  int product;
+  double coefficient;
+};
+
 struct GraphEquationPlan {
   std::vector<GraphTerm> xiLinear;
   std::vector<GraphTerm> etaLinear;
-  std::vector<GraphTerm> xiXi;
-  std::vector<GraphTerm> xiEta;
+  std::vector<GraphProductTerm> products;
+};
+
+struct GraphPlan {
+  std::vector<GraphEquationPlan> equations;
+  std::vector<ProductPlan> products;
 };
 
 struct LoadingTerm {
@@ -46,30 +69,186 @@ arma::mat measurementMeans(const arma::mat& states,
   return means;
 }
 
-std::vector<GraphEquationPlan> buildGraphPlan(const arma::mat& gammaXi,
-                                               const arma::mat& gammaEta,
-                                               const arma::mat& omegaXiXi,
-                                               const arma::mat& omegaEtaXi,
-                                               const int numXis,
-                                               const int numEtas) {
-  std::vector<GraphEquationPlan> plan(numEtas);
-  for (int equation = 0; equation < numEtas; ++equation) {
-    const int firstRow = equation * numXis;
-    for (int x = 0; x < numXis; ++x) {
-      if (gammaXi(equation, x) != 0.0)
-        plan[equation].xiLinear.push_back({x, -1, gammaXi(equation, x)});
-      for (int z = 0; z < numXis; ++z)
-        if (omegaXiXi(firstRow + x, z) != 0.0)
-          plan[equation].xiXi.push_back({x, z, omegaXiXi(firstRow + x, z)});
-      for (int eta = 0; eta < numEtas; ++eta)
-        if (omegaEtaXi(firstRow + x, eta) != 0.0)
-          plan[equation].xiEta.push_back({x, eta, omegaEtaXi(firstRow + x, eta)});
+// `productDesign` is P by (numXis + numEtas) integer exponents; `omega` is
+// numEtas by P coefficients. Together they replace the stacked Kronecker omega
+// blocks, which could only express two-way products and forbade eta-by-eta
+// terms. See R/lms_graph_products.R for how they are built.
+GraphPlan buildGraphPlan(const arma::mat& gammaXi,
+                         const arma::mat& gammaEta,
+                         const arma::mat& productDesign,
+                         const arma::mat& omega,
+                         const int numXis,
+                         const int numEtas) {
+  GraphPlan plan;
+  plan.equations.resize(numEtas);
+
+  const int numProducts = static_cast<int>(productDesign.n_rows);
+  plan.products.resize(numProducts);
+  for (int p = 0; p < numProducts; ++p) {
+    plan.products[p].lastEta = -1;
+    for (int v = 0; v < static_cast<int>(productDesign.n_cols); ++v) {
+      const int exponent = static_cast<int>(productDesign(p, v));
+      if (exponent <= 0) continue;
+      plan.products[p].factors.push_back({v, exponent});
+      if (v >= numXis) plan.products[p].lastEta =
+        std::max(plan.products[p].lastEta, v - numXis);
     }
+  }
+
+  for (int equation = 0; equation < numEtas; ++equation) {
+    for (int x = 0; x < numXis; ++x)
+      if (gammaXi(equation, x) != 0.0)
+        plan.equations[equation].xiLinear.push_back({x, -1, gammaXi(equation, x)});
     for (int eta = 0; eta < numEtas; ++eta)
       if (gammaEta(equation, eta) != 0.0)
-        plan[equation].etaLinear.push_back({eta, -1, gammaEta(equation, eta)});
+        plan.equations[equation].etaLinear.push_back({eta, -1, gammaEta(equation, eta)});
+    for (int p = 0; p < numProducts; ++p) {
+      if (omega(equation, p) == 0.0) continue;
+      // R validates evaluation order, but a product whose endogenous factors
+      // are not yet available would silently read zeros here, so guard it.
+      if (plan.products[p].lastEta >= equation)
+        Rcpp::stop("A product term references an endogenous variable that is "
+                   "not evaluated before the equation using it.");
+      plan.equations[equation].products.push_back({p, omega(equation, p)});
+    }
   }
   return plan;
+}
+
+
+// Evaluate one product across all nodes. Exponents are applied by repeated
+// multiplication over the nonzero factors rather than by any pooled matrix
+// operation: a 0/1 design matrix used as a BLAS selector is what produced the
+// `0 * -Inf = NaN` bug in the ordinal kernel.
+arma::vec evaluateProduct(const ProductPlan& product, const arma::mat& xi,
+                          const arma::mat& eta, const int numXis,
+                          const arma::uword rows) {
+  arma::vec value(rows, arma::fill::ones);
+  for (const ProductFactor& factor : product.factors) {
+    const arma::vec base = factor.variable < numXis ?
+      xi.col(factor.variable) : eta.col(factor.variable - numXis);
+    for (int power = 0; power < factor.exponent; ++power) value %= base;
+  }
+  return value;
+}
+
+
+// Evaluate the latent state matrix from transformed innovations. Products are
+// cached across equations but can only be evaluated once their endogenous
+// factors exist, so evaluation interleaves with the structural order rather
+// than happening upfront.
+arma::mat evaluateGraphStates(const GraphPlan& plan,
+                              const arma::mat& innovations,
+                              const arma::vec& beta0, const arma::vec& alpha,
+                              const int numXis, const int numEtas,
+                              arma::mat* productOut = nullptr) {
+  const arma::uword rows = innovations.n_rows;
+  arma::mat xi(rows, numXis, arma::fill::zeros);
+  if (numXis > 0) {
+    xi = innovations.cols(0, numXis - 1);
+    xi.each_row() += beta0.t();
+  }
+
+  arma::mat eta(rows, numEtas, arma::fill::zeros);
+  const arma::uword numProducts = plan.products.size();
+  arma::mat productValue(rows, numProducts, arma::fill::zeros);
+  std::vector<bool> evaluated(numProducts, false);
+
+  for (int equation = 0; equation < numEtas; ++equation) {
+    // Evaluate every product whose factors are now available, not only those
+    // this equation references. A free coefficient currently sitting at zero is
+    // absent from the plan, but its derivative still needs the product value,
+    // so an unevaluated column would silently score as zero.
+    for (arma::uword p = 0; p < numProducts; ++p)
+      if (!evaluated[p] && plan.products[p].lastEta < equation) {
+        productValue.col(p) = evaluateProduct(plan.products[p], xi, eta,
+                                              numXis, rows);
+        evaluated[p] = true;
+      }
+
+    arma::vec value = innovations.col(numXis + equation) + alpha(equation);
+    for (const GraphTerm& term : plan.equations[equation].xiLinear)
+      value += term.coefficient * xi.col(term.first);
+    for (const GraphTerm& term : plan.equations[equation].etaLinear)
+      value += term.coefficient * eta.col(term.first);
+    for (const GraphProductTerm& term : plan.equations[equation].products)
+      value += term.coefficient * productValue.col(term.product);
+    eta.col(equation) = value;
+  }
+
+  // Every eta exists now, so anything still unevaluated can be finished.
+  for (arma::uword p = 0; p < numProducts; ++p)
+    if (!evaluated[p]) {
+      productValue.col(p) = evaluateProduct(plan.products[p], xi, eta,
+                                            numXis, rows);
+      evaluated[p] = true;
+    }
+  if (productOut != nullptr) *productOut = productValue;
+  return arma::join_rows(xi, eta);
+}
+
+
+// Derivative of one product with respect to one of its factors, across every
+// node. Built by re-multiplying the remaining factors, never by dividing the
+// product, so a zero-valued factor stays finite.
+arma::vec productFactorDerivative(const ProductPlan& product,
+                                  const std::size_t index,
+                                  const arma::mat& xi, const arma::mat& eta,
+                                  const int numXis, const arma::uword rows) {
+  const ProductFactor& target = product.factors[index];
+  const arma::vec targetBase = target.variable < numXis ?
+    xi.col(target.variable) : eta.col(target.variable - numXis);
+
+  arma::vec derivative(rows, arma::fill::ones);
+  derivative *= static_cast<double>(target.exponent);
+  for (int power = 0; power < target.exponent - 1; ++power)
+    derivative %= targetBase;
+  for (std::size_t j = 0; j < product.factors.size(); ++j) {
+    if (j == index) continue;
+    const ProductFactor& other = product.factors[j];
+    const arma::vec base = other.variable < numXis ?
+      xi.col(other.variable) : eta.col(other.variable - numXis);
+    for (int power = 0; power < other.exponent; ++power) derivative %= base;
+  }
+  return derivative;
+}
+
+
+// A product at one state, together with its derivative with respect to each
+// factor. `d/dx_v = e_v * x_v^(e_v - 1) * prod_{u != v} x_u^{e_u}` is built by
+// re-multiplying the other factors rather than dividing the total, so a factor
+// that happens to be zero cannot produce NaN. Products have very few factors,
+// so the quadratic cost is irrelevant.
+struct ProductDerivative {
+  double value;
+  std::vector<double> partial; // aligned with product.factors
+};
+
+ProductDerivative productAt(const ProductPlan& product,
+                            const arma::rowvec& xi,
+                            const arma::rowvec& eta,
+                            const int numXis) {
+  const std::size_t n = product.factors.size();
+  ProductDerivative out;
+  out.value = 1.0;
+  out.partial.assign(n, 0.0);
+
+  std::vector<double> base(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    const ProductFactor& factor = product.factors[i];
+    base[i] = factor.variable < numXis ? xi(factor.variable) :
+      eta(factor.variable - numXis);
+    out.value *= std::pow(base[i], factor.exponent);
+  }
+
+  for (std::size_t i = 0; i < n; ++i) {
+    double derivative = product.factors[i].exponent *
+      std::pow(base[i], product.factors[i].exponent - 1);
+    for (std::size_t j = 0; j < n; ++j)
+      if (j != i) derivative *= std::pow(base[j], product.factors[j].exponent);
+    out.partial[i] = derivative;
+  }
+  return out;
 }
 
 double logLogisticCdf(const double x) {
@@ -345,14 +524,14 @@ struct PreparedGraph {
   arma::mat latentChol;
   arma::mat gammaXi;
   arma::mat gammaEta;
-  arma::mat omegaXiXi;
-  arma::mat omegaEtaXi;
+  arma::mat productDesign;
+  arma::mat omega;
   arma::vec beta0;
   arma::vec alpha;
   arma::mat lambda;
   arma::vec tau;
   arma::mat theta;
-  std::vector<GraphEquationPlan> structuralPlan;
+  GraphPlan structuralPlan;
   std::vector<LoadingTerm> loadingPlan;
   ResponsePlan responsePlan;
 
@@ -361,8 +540,8 @@ struct PreparedGraph {
     numXis(xis), numEtas(etas), dimension(xis + etas),
     gammaXi(Rcpp::as<arma::mat>(matrices["gammaXi"])),
     gammaEta(Rcpp::as<arma::mat>(matrices["gammaEta"])),
-    omegaXiXi(Rcpp::as<arma::mat>(matrices["omegaXiXi"])),
-    omegaEtaXi(Rcpp::as<arma::mat>(matrices["omegaEtaXi"])),
+    productDesign(Rcpp::as<arma::mat>(matrices["productDesign"])),
+    omega(Rcpp::as<arma::mat>(matrices["omega"])),
     beta0(Rcpp::as<arma::vec>(matrices["beta0"])),
     alpha(Rcpp::as<arma::vec>(matrices["alpha"])),
     lambda(Rcpp::as<arma::mat>(matrices["lambdaX"])),
@@ -383,33 +562,15 @@ struct PreparedGraph {
     }
     if (!arma::chol(latentChol, covariance))
       Rcpp::stop("The unified latent covariance matrix is not positive definite.");
-    structuralPlan = buildGraphPlan(gammaXi, gammaEta, omegaXiXi,
-                                    omegaEtaXi, numXis, numEtas);
+    structuralPlan = buildGraphPlan(gammaXi, gammaEta, productDesign,
+                                    omega, numXis, numEtas);
     loadingPlan = buildLoadingPlan(lambda);
     responsePlan = buildResponsePlan(lambda.n_rows, thresholds, orderedIndex);
   }
 
   arma::mat states(const arma::mat& nodes) const {
-    const arma::mat innovations = nodes * latentChol;
-    arma::mat xi(nodes.n_rows, numXis, arma::fill::zeros);
-    if (numXis > 0) {
-      xi = innovations.cols(0, numXis - 1);
-      xi.each_row() += beta0.t();
-    }
-    arma::mat eta(nodes.n_rows, numEtas, arma::fill::zeros);
-    for (int equation = 0; equation < numEtas; ++equation) {
-      arma::vec value = innovations.col(numXis + equation) + alpha(equation);
-      for (const GraphTerm& term : structuralPlan[equation].xiLinear)
-        value += term.coefficient * xi.col(term.first);
-      for (const GraphTerm& term : structuralPlan[equation].etaLinear)
-        value += term.coefficient * eta.col(term.first);
-      for (const GraphTerm& term : structuralPlan[equation].xiXi)
-        value += term.coefficient * xi.col(term.first) % xi.col(term.second);
-      for (const GraphTerm& term : structuralPlan[equation].xiEta)
-        value += term.coefficient * xi.col(term.first) % eta.col(term.second);
-      eta.col(equation) = value;
-    }
-    return arma::join_rows(xi, eta);
+    return evaluateGraphStates(structuralPlan, nodes * latentChol, beta0,
+                               alpha, numXis, numEtas);
   }
 
   double negativeLogPosterior(const arma::vec& node,
@@ -454,17 +615,21 @@ struct PreparedGraph {
       for (int equation = numEtas - 1; equation >= 0; --equation) {
         const double b = etaBar(equation);
         innovationBar(numXis + equation) += b;
-        for (const GraphTerm& term : structuralPlan[equation].etaLinear)
+        for (const GraphTerm& term : structuralPlan.equations[equation].etaLinear)
           etaBar(term.first) += term.coefficient * b;
-        for (const GraphTerm& term : structuralPlan[equation].xiLinear)
+        for (const GraphTerm& term : structuralPlan.equations[equation].xiLinear)
           xiBar(term.first) += term.coefficient * b;
-        for (const GraphTerm& term : structuralPlan[equation].xiXi) {
-          xiBar(term.first) += term.coefficient * b * xi(term.second);
-          xiBar(term.second) += term.coefficient * b * xi(term.first);
-        }
-        for (const GraphTerm& term : structuralPlan[equation].xiEta) {
-          xiBar(term.first) += term.coefficient * b * eta(term.second);
-          etaBar(term.second) += term.coefficient * b * xi(term.first);
+        for (const GraphProductTerm& term :
+               structuralPlan.equations[equation].products) {
+          const ProductPlan& product = structuralPlan.products[term.product];
+          const ProductDerivative derivative = productAt(product, xi, eta, numXis);
+          for (std::size_t i = 0; i < product.factors.size(); ++i) {
+            const int variable = product.factors[i].variable;
+            const double contribution =
+              term.coefficient * b * derivative.partial[i];
+            if (variable < numXis) xiBar(variable) += contribution;
+            else etaBar(variable - numXis) += contribution;
+          }
         }
       }
       if (numXis > 0) innovationBar.cols(0, numXis - 1) += xiBar;
@@ -741,8 +906,8 @@ arma::mat graphStates(const Rcpp::List& matrices, const arma::mat& nodes,
   const arma::mat psi = Rcpp::as<arma::mat>(matrices["psi"]);
   const arma::mat gammaXi = Rcpp::as<arma::mat>(matrices["gammaXi"]);
   const arma::mat gammaEta = Rcpp::as<arma::mat>(matrices["gammaEta"]);
-  const arma::mat omegaXiXi = Rcpp::as<arma::mat>(matrices["omegaXiXi"]);
-  const arma::mat omegaEtaXi = Rcpp::as<arma::mat>(matrices["omegaEtaXi"]);
+  const arma::mat productDesign = Rcpp::as<arma::mat>(matrices["productDesign"]);
+  const arma::mat omega = Rcpp::as<arma::mat>(matrices["omega"]);
   const arma::vec beta0 = Rcpp::as<arma::vec>(matrices["beta0"]);
   const arma::vec alpha = Rcpp::as<arma::vec>(matrices["alpha"]);
 
@@ -760,30 +925,11 @@ arma::mat graphStates(const Rcpp::List& matrices, const arma::mat& nodes,
   arma::mat latentChol;
   if (!arma::chol(latentChol, latentCov))
     Rcpp::stop("The unified latent covariance matrix is not positive definite.");
-  const arma::mat innovations = nodes * latentChol;
-  arma::mat xi(nodes.n_rows, numXis, arma::fill::zeros);
-  if (numXis > 0) {
-    xi = innovations.cols(0, numXis - 1);
-    xi.each_row() += beta0.t();
-  }
-  arma::mat eta(nodes.n_rows, numEtas, arma::fill::zeros);
-  const std::vector<GraphEquationPlan> plan = buildGraphPlan(
-    gammaXi, gammaEta, omegaXiXi, omegaEtaXi, numXis, numEtas
+  const GraphPlan plan = buildGraphPlan(
+    gammaXi, gammaEta, productDesign, omega, numXis, numEtas
   );
-
-  for (int j = 0; j < numEtas; ++j) {
-    arma::vec value = innovations.col(numXis + j) + alpha(j);
-    for (const GraphTerm& term : plan[j].xiLinear)
-      value += term.coefficient * xi.col(term.first);
-    for (const GraphTerm& term : plan[j].etaLinear)
-      value += term.coefficient * eta.col(term.first);
-    for (const GraphTerm& term : plan[j].xiXi)
-      value += term.coefficient * xi.col(term.first) % xi.col(term.second);
-    for (const GraphTerm& term : plan[j].xiEta)
-      value += term.coefficient * xi.col(term.first) % eta.col(term.second);
-    eta.col(j) = value;
-  }
-  return arma::join_rows(xi, eta);
+  return evaluateGraphStates(plan, nodes * latentChol, beta0, alpha,
+                             numXis, numEtas);
 }
 
 } // namespace
@@ -1370,8 +1516,8 @@ arma::vec lmsGraphScoreCpp(const Rcpp::List& matrices,
   const arma::mat psi = Rcpp::as<arma::mat>(matrices["psi"]);
   const arma::mat gammaXi = Rcpp::as<arma::mat>(matrices["gammaXi"]);
   const arma::mat gammaEta = Rcpp::as<arma::mat>(matrices["gammaEta"]);
-  const arma::mat omegaXiXi = Rcpp::as<arma::mat>(matrices["omegaXiXi"]);
-  const arma::mat omegaEtaXi = Rcpp::as<arma::mat>(matrices["omegaEtaXi"]);
+  const arma::mat productDesign = Rcpp::as<arma::mat>(matrices["productDesign"]);
+  const arma::mat omega = Rcpp::as<arma::mat>(matrices["omega"]);
   const arma::vec beta0 = Rcpp::as<arma::vec>(matrices["beta0"]);
   const arma::vec alpha = Rcpp::as<arma::vec>(matrices["alpha"]);
   const arma::mat lambda = Rcpp::as<arma::mat>(matrices["lambdaX"]);
@@ -1392,29 +1538,17 @@ arma::vec lmsGraphScoreCpp(const Rcpp::List& matrices,
   arma::mat latentChol;
   if (!arma::chol(latentChol, latentCov))
     Rcpp::stop("The unified latent covariance matrix is not positive definite.");
-  const arma::mat innovations = nodes * latentChol;
-  arma::mat xi(nodes.n_rows, numXis, arma::fill::zeros);
-  if (numXis > 0) {
-    xi = innovations.cols(0, numXis - 1);
-    xi.each_row() += beta0.t();
-  }
-  arma::mat eta(nodes.n_rows, numEtas, arma::fill::zeros);
-  const std::vector<GraphEquationPlan> plan = buildGraphPlan(
-    gammaXi, gammaEta, omegaXiXi, omegaEtaXi, numXis, numEtas
+  const GraphPlan plan = buildGraphPlan(
+    gammaXi, gammaEta, productDesign, omega, numXis, numEtas
   );
-  for (int j = 0; j < numEtas; ++j) {
-    arma::vec value = innovations.col(numXis + j) + alpha(j);
-    for (const GraphTerm& term : plan[j].xiLinear)
-      value += term.coefficient * xi.col(term.first);
-    for (const GraphTerm& term : plan[j].etaLinear)
-      value += term.coefficient * eta.col(term.first);
-    for (const GraphTerm& term : plan[j].xiXi)
-      value += term.coefficient * xi.col(term.first) % xi.col(term.second);
-    for (const GraphTerm& term : plan[j].xiEta)
-      value += term.coefficient * xi.col(term.first) % eta.col(term.second);
-    eta.col(j) = value;
-  }
-  const arma::mat states = arma::join_rows(xi, eta);
+  arma::mat productValue;
+  const arma::mat states = evaluateGraphStates(
+    plan, nodes * latentChol, beta0, alpha, numXis, numEtas, &productValue
+  );
+  const arma::mat xi = numXis > 0 ? states.cols(0, numXis - 1) :
+    arma::mat(nodes.n_rows, 0);
+  const arma::mat eta = numEtas > 0 ?
+    states.cols(numXis, numXis + numEtas - 1) : arma::mat(nodes.n_rows, 0);
   const std::vector<LoadingTerm> loadingPlan = buildLoadingPlan(lambda);
   const arma::mat means = measurementMeans(states, tau, loadingPlan);
 
@@ -1443,8 +1577,7 @@ arma::vec lmsGraphScoreCpp(const Rcpp::List& matrices,
     arma::mat dPsi(psi.n_rows, psi.n_cols, arma::fill::zeros);
     arma::mat dGammaXi(gammaXi.n_rows, gammaXi.n_cols, arma::fill::zeros);
     arma::mat dGammaEta(gammaEta.n_rows, gammaEta.n_cols, arma::fill::zeros);
-    arma::mat dOxx(omegaXiXi.n_rows, omegaXiXi.n_cols, arma::fill::zeros);
-    arma::mat dOex(omegaEtaXi.n_rows, omegaEtaXi.n_cols, arma::fill::zeros);
+    arma::mat dOmega(omega.n_rows, omega.n_cols, arma::fill::zeros);
     arma::vec dBeta0(beta0.n_elem, arma::fill::zeros);
     arma::vec dAlpha(alpha.n_elem, arma::fill::zeros);
     arma::mat dLambda(lambda.n_rows, lambda.n_cols, arma::fill::zeros);
@@ -1469,8 +1602,7 @@ arma::vec lmsGraphScoreCpp(const Rcpp::List& matrices,
     case 9: dBeta0(rr) = 1.0; break;
     case 10: dGammaXi(rr, cc) = 1.0; break;
     case 11: dGammaEta(rr, cc) = 1.0; break;
-    case 12: dOxx(rr, cc) = 1.0; break;
-    case 13: dOex(rr, cc) = 1.0; break;
+    case 19: dOmega(rr, cc) = 1.0; break;
     case 17: dCross(rr, cc) = 1.0; break;
     case 18: {
       arma::uvec use = arma::find_finite(thresholdDelta.row(rr).t());
@@ -1506,17 +1638,30 @@ arma::vec lmsGraphScoreCpp(const Rcpp::List& matrices,
     arma::mat dEta(nodes.n_rows, numEtas, arma::fill::zeros);
     for (int j = 0; j < numEtas; ++j) {
       arma::vec dValue = dInnovations.col(numXis + j) + dAlpha(j);
-      if (numXis > 0) {
-        const arma::uword first = j * numXis, last = first + numXis - 1;
-        const arma::mat oxx = omegaXiXi.rows(first, last);
-        const arma::mat oex = omegaEtaXi.rows(first, last);
+      if (numXis > 0)
         dValue += dXi * gammaXi.row(j).t() + xi * dGammaXi.row(j).t();
-        dValue += arma::sum((dXi * oxx.t() + xi * dOxx.rows(first, last).t()) % xi +
-                            (xi * oxx.t()) % dXi, 1);
-        dValue += arma::sum((dXi * oex + xi * dOex.rows(first, last)) % eta +
-                            (xi * oex) % dEta, 1);
-      }
       dValue += dEta * gammaEta.row(j).t() + eta * dGammaEta.row(j).t();
+      // Forward mode over products: the coefficient's own direction plus the
+      // chain rule through each factor. Every product is considered, not just
+      // the ones in the plan, so a free coefficient currently at zero still
+      // contributes its own direction.
+      for (arma::uword pp = 0; pp < plan.products.size(); ++pp) {
+        const ProductPlan& product = plan.products[pp];
+        if (product.lastEta >= j) continue;
+        if (omega(j, pp) != 0.0) {
+          arma::vec dProduct(nodes.n_rows, arma::fill::zeros);
+          for (std::size_t i = 0; i < product.factors.size(); ++i) {
+            const int variable = product.factors[i].variable;
+            const arma::vec dFactor = variable < numXis ? dXi.col(variable) :
+              dEta.col(variable - numXis);
+            dProduct += productFactorDerivative(product, i, xi, eta, numXis,
+                                                nodes.n_rows) % dFactor;
+          }
+          dValue += omega(j, pp) * dProduct;
+        }
+        if (dOmega(j, pp) != 0.0)
+          dValue += dOmega(j, pp) * productValue.col(pp);
+      }
       dEta.col(j) = dValue;
     }
     const arma::mat dStates = arma::join_rows(dXi, dEta);
@@ -1605,8 +1750,8 @@ arma::vec lmsGraphReverseScoreCpp(const Rcpp::List& matrices,
   const arma::mat psi = Rcpp::as<arma::mat>(matrices["psi"]);
   const arma::mat gammaXi = Rcpp::as<arma::mat>(matrices["gammaXi"]);
   const arma::mat gammaEta = Rcpp::as<arma::mat>(matrices["gammaEta"]);
-  const arma::mat omegaXiXi = Rcpp::as<arma::mat>(matrices["omegaXiXi"]);
-  const arma::mat omegaEtaXi = Rcpp::as<arma::mat>(matrices["omegaEtaXi"]);
+  const arma::mat productDesign = Rcpp::as<arma::mat>(matrices["productDesign"]);
+  const arma::mat omega = Rcpp::as<arma::mat>(matrices["omega"]);
   const arma::vec beta0 = Rcpp::as<arma::vec>(matrices["beta0"]);
   const arma::vec alpha = Rcpp::as<arma::vec>(matrices["alpha"]);
   const arma::mat lambda = Rcpp::as<arma::mat>(matrices["lambdaX"]);
@@ -1627,29 +1772,17 @@ arma::vec lmsGraphReverseScoreCpp(const Rcpp::List& matrices,
   arma::mat latentChol;
   if (!arma::chol(latentChol, latentCov))
     Rcpp::stop("The unified latent covariance matrix is not positive definite.");
-  const arma::mat innovations = nodes * latentChol;
-  arma::mat xi(nodes.n_rows, numXis, arma::fill::zeros);
-  if (numXis > 0) {
-    xi = innovations.cols(0, numXis - 1);
-    xi.each_row() += beta0.t();
-  }
-  arma::mat eta(nodes.n_rows, numEtas, arma::fill::zeros);
-  const std::vector<GraphEquationPlan> plan = buildGraphPlan(
-    gammaXi, gammaEta, omegaXiXi, omegaEtaXi, numXis, numEtas
+  const GraphPlan plan = buildGraphPlan(
+    gammaXi, gammaEta, productDesign, omega, numXis, numEtas
   );
-  for (int j = 0; j < numEtas; ++j) {
-    arma::vec value = innovations.col(numXis + j) + alpha(j);
-    for (const GraphTerm& term : plan[j].xiLinear)
-      value += term.coefficient * xi.col(term.first);
-    for (const GraphTerm& term : plan[j].etaLinear)
-      value += term.coefficient * eta.col(term.first);
-    for (const GraphTerm& term : plan[j].xiXi)
-      value += term.coefficient * xi.col(term.first) % xi.col(term.second);
-    for (const GraphTerm& term : plan[j].xiEta)
-      value += term.coefficient * xi.col(term.first) % eta.col(term.second);
-    eta.col(j) = value;
-  }
-  const arma::mat states = arma::join_rows(xi, eta);
+  arma::mat productValue;
+  const arma::mat states = evaluateGraphStates(
+    plan, nodes * latentChol, beta0, alpha, numXis, numEtas, &productValue
+  );
+  const arma::mat xi = numXis > 0 ? states.cols(0, numXis - 1) :
+    arma::mat(nodes.n_rows, 0);
+  const arma::mat eta = numEtas > 0 ?
+    states.cols(numXis, numXis + numEtas - 1) : arma::mat(nodes.n_rows, 0);
   const std::vector<LoadingTerm> loadingPlan = buildLoadingPlan(lambda);
   const arma::mat means = measurementMeans(states, tau, loadingPlan);
   const ResponsePlan responsePlan = buildResponsePlan(
@@ -1760,18 +1893,20 @@ arma::vec lmsGraphReverseScoreCpp(const Rcpp::List& matrices,
     equationBar.col(j) = b;
     innovationBar.col(numXis + j) += b;
     alphaBar(j) += arma::accu(b);
-    for (const GraphTerm& term : plan[j].etaLinear)
+    for (const GraphTerm& term : plan.equations[j].etaLinear)
       etaBar.col(term.first) += term.coefficient * b;
     if (numXis > 0) {
-      for (const GraphTerm& term : plan[j].xiLinear)
+      for (const GraphTerm& term : plan.equations[j].xiLinear)
         xiBar.col(term.first) += term.coefficient * b;
-      for (const GraphTerm& term : plan[j].xiXi) {
-        xiBar.col(term.first) += term.coefficient * b % xi.col(term.second);
-        xiBar.col(term.second) += term.coefficient * b % xi.col(term.first);
-      }
-      for (const GraphTerm& term : plan[j].xiEta) {
-        xiBar.col(term.first) += term.coefficient * b % eta.col(term.second);
-        etaBar.col(term.second) += term.coefficient * b % xi.col(term.first);
+    }
+    for (const GraphProductTerm& term : plan.equations[j].products) {
+      const ProductPlan& product = plan.products[term.product];
+      for (std::size_t i = 0; i < product.factors.size(); ++i) {
+        const int variable = product.factors[i].variable;
+        const arma::vec contribution = term.coefficient * b %
+          productFactorDerivative(product, i, xi, eta, numXis, nodes.n_rows);
+        if (variable < numXis) xiBar.col(variable) += contribution;
+        else etaBar.col(variable - numXis) += contribution;
       }
     }
   }
@@ -1798,22 +1933,11 @@ arma::vec lmsGraphReverseScoreCpp(const Rcpp::List& matrices,
     case 11:
       score(parameter) = arma::dot(equationBar.col(rr), eta.col(cc));
       break;
-    case 12: {
-      if (numXis <= 0) break;
-      const int equation = rr / numXis;
-      const int firstXi = rr % numXis;
-      score(parameter) = arma::dot(
-        equationBar.col(equation), xi.col(firstXi) % xi.col(cc)
-      );
-      break;
-    }
-    case 13: {
-      if (numXis <= 0) break;
-      const int equation = rr / numXis;
-      const int firstXi = rr % numXis;
-      score(parameter) = arma::dot(
-        equationBar.col(equation), xi.col(firstXi) % eta.col(cc)
-      );
+    case 19: {
+      // d(eta_j)/d(omega_{j,p}) is simply the value of product p, which the
+      // forward pass already cached.
+      if (cc < 0 || static_cast<arma::uword>(cc) >= productValue.n_cols) break;
+      score(parameter) = arma::dot(equationBar.col(rr), productValue.col(cc));
       break;
     }
     case 18: {
@@ -1871,8 +1995,8 @@ arma::vec lmsGraphSufficientScoreCpp(
   const arma::mat psi = Rcpp::as<arma::mat>(matrices["psi"]);
   const arma::mat gammaXi = Rcpp::as<arma::mat>(matrices["gammaXi"]);
   const arma::mat gammaEta = Rcpp::as<arma::mat>(matrices["gammaEta"]);
-  const arma::mat omegaXiXi = Rcpp::as<arma::mat>(matrices["omegaXiXi"]);
-  const arma::mat omegaEtaXi = Rcpp::as<arma::mat>(matrices["omegaEtaXi"]);
+  const arma::mat productDesign = Rcpp::as<arma::mat>(matrices["productDesign"]);
+  const arma::mat omega = Rcpp::as<arma::mat>(matrices["omega"]);
   const arma::vec beta0 = Rcpp::as<arma::vec>(matrices["beta0"]);
   const arma::vec alpha = Rcpp::as<arma::vec>(matrices["alpha"]);
   const arma::mat lambda = Rcpp::as<arma::mat>(matrices["lambdaX"]);
@@ -1893,25 +2017,15 @@ arma::vec lmsGraphSufficientScoreCpp(
   arma::mat latentChol;
   if (!arma::chol(latentChol, latentCov))
     Rcpp::stop("The unified latent covariance matrix is not positive definite.");
-  const arma::mat innovations = nodes * latentChol;
-  arma::mat xi(nodes.n_rows, numXis, arma::fill::zeros);
-  if (numXis > 0) { xi = innovations.cols(0, numXis - 1); xi.each_row() += beta0.t(); }
-  arma::mat eta(nodes.n_rows, numEtas, arma::fill::zeros);
-  const std::vector<GraphEquationPlan> plan = buildGraphPlan(
-    gammaXi, gammaEta, omegaXiXi, omegaEtaXi, numXis, numEtas);
-  for (int j = 0; j < numEtas; ++j) {
-    arma::vec value = innovations.col(numXis + j) + alpha(j);
-    for (const GraphTerm& term : plan[j].xiLinear)
-      value += term.coefficient * xi.col(term.first);
-    for (const GraphTerm& term : plan[j].etaLinear)
-      value += term.coefficient * eta.col(term.first);
-    for (const GraphTerm& term : plan[j].xiXi)
-      value += term.coefficient * xi.col(term.first) % xi.col(term.second);
-    for (const GraphTerm& term : plan[j].xiEta)
-      value += term.coefficient * xi.col(term.first) % eta.col(term.second);
-    eta.col(j) = value;
-  }
-  const arma::mat states = arma::join_rows(xi, eta);
+  const GraphPlan plan = buildGraphPlan(
+    gammaXi, gammaEta, productDesign, omega, numXis, numEtas);
+  arma::mat productValue;
+  const arma::mat states = evaluateGraphStates(
+    plan, nodes * latentChol, beta0, alpha, numXis, numEtas, &productValue);
+  const arma::mat xi = numXis > 0 ? states.cols(0, numXis - 1) :
+    arma::mat(nodes.n_rows, 0);
+  const arma::mat eta = numEtas > 0 ?
+    states.cols(numXis, numXis + numEtas - 1) : arma::mat(nodes.n_rows, 0);
   const std::vector<LoadingTerm> loadingPlan = buildLoadingPlan(lambda);
   const arma::mat means = measurementMeans(states, tau, loadingPlan);
   const ResponsePlan responsePlan = buildResponsePlan(
@@ -1973,17 +2087,19 @@ arma::vec lmsGraphSufficientScoreCpp(
     equationBar.col(j) = b;
     innovationBar.col(numXis + j) += b;
     alphaBar(j) += arma::accu(b);
-    for (const GraphTerm& term : plan[j].etaLinear)
+    for (const GraphTerm& term : plan.equations[j].etaLinear)
       etaBar.col(term.first) += term.coefficient * b;
-    for (const GraphTerm& term : plan[j].xiLinear)
+    for (const GraphTerm& term : plan.equations[j].xiLinear)
       xiBar.col(term.first) += term.coefficient * b;
-    for (const GraphTerm& term : plan[j].xiXi) {
-      xiBar.col(term.first) += term.coefficient * b % xi.col(term.second);
-      xiBar.col(term.second) += term.coefficient * b % xi.col(term.first);
-    }
-    for (const GraphTerm& term : plan[j].xiEta) {
-      xiBar.col(term.first) += term.coefficient * b % eta.col(term.second);
-      etaBar.col(term.second) += term.coefficient * b % xi.col(term.first);
+    for (const GraphProductTerm& term : plan.equations[j].products) {
+      const ProductPlan& product = plan.products[term.product];
+      for (std::size_t i = 0; i < product.factors.size(); ++i) {
+        const int variable = product.factors[i].variable;
+        const arma::vec contribution = term.coefficient * b %
+          productFactorDerivative(product, i, xi, eta, numXis, nodes.n_rows);
+        if (variable < numXis) xiBar.col(variable) += contribution;
+        else etaBar.col(variable - numXis) += contribution;
+      }
     }
   }
   if (numXis > 0) {
@@ -2003,20 +2119,10 @@ arma::vec lmsGraphSufficientScoreCpp(
     case 9: score(parameter) = beta0Bar(rr); break;
     case 10: score(parameter) = arma::dot(equationBar.col(rr), xi.col(cc)); break;
     case 11: score(parameter) = arma::dot(equationBar.col(rr), eta.col(cc)); break;
-    case 12: {
-      if (numXis > 0) {
-        const int equation = rr / numXis, firstXi = rr % numXis;
-        score(parameter) = arma::dot(equationBar.col(equation),
-          xi.col(firstXi) % xi.col(cc));
-      }
-      break;
-    }
-    case 13: {
-      if (numXis > 0) {
-        const int equation = rr / numXis, firstXi = rr % numXis;
-        score(parameter) = arma::dot(equationBar.col(equation),
-          xi.col(firstXi) % eta.col(cc));
-      }
+    case 19: {
+      // d(eta_j)/d(omega_{j,p}) is the value of product p, already cached.
+      if (cc < 0 || static_cast<arma::uword>(cc) >= productValue.n_cols) break;
+      score(parameter) = arma::dot(equationBar.col(rr), productValue.col(cc));
       break;
     }
     case 18: {

@@ -12,8 +12,9 @@ m1 <- '
 '
 
 lms1 <- modsem(m1, oneInt, 
-  method = "lms", adaptive.quad=TRUE, lms.backend = "graph", nodes = 5,
-  optimize = TRUE, adaptive.frequency = 15L
+  method = "lms", adaptive = "quasi", lms.backend = "graph", nodes = 15,
+  optimize = TRUE, adaptive.frequency = 15L, adaptive.quad.tol = 1e-4,
+  integration = "rect"
 )
 
 tpb <- '
@@ -30,7 +31,7 @@ tpb <- '
   BEH ~ INT:PBC
 '
 
-lms2 <- modsem(tpb, TPB, method = "lms", nodes = 32, adaptive.quad=TRUE)
+lms2 <- modsem(tpb, TPB, method = "lms", nodes = 32, adaptive = "quasi")
 summary(lms2)
 
 
@@ -50,7 +51,7 @@ tpb_uk <- "
 
 lms3 <- modsem(tpb_uk, data = TPB_UK, "lms",
                nodes=32, FIM="observed", robust.se = TRUE,
-               adaptive.quad=TRUE, algorithm ="EMA")
+               adaptive = "quasi", algorithm ="EMA")
 print(summary(lms3))
 #> Regressions:
 #>                   Estimate  Std.Error  z.value  P(>|z|)
@@ -87,6 +88,6 @@ CAREER ~ ENJ + SC + ENJ:ENJ + SC:SC + ENJ:SC
 # adaptive quadrature, as all the nodes bring some value
 # no warning for low number of nodes here, when using adaptive quadrature
 lms4 <- modsem(nlsem, data = jordan, method = "lms",
-               adaptive.quad=TRUE, OFIM.hessian = FALSE,
+               adaptive = "quasi", OFIM.hessian = FALSE,
                nodes = 15, mean.observed = FALSE)
 summary(lms4)

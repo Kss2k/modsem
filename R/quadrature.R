@@ -34,14 +34,36 @@ ADAPTIVE_LABELS <- c(none = "None (fixed rule)",
 # the number of nodes per latent dimension; for `mc` it is the total number of
 # draws, whose cost does not grow with dimension.
 #
-# The shared-rule defaults match Mplus: 15 points per dimension for both
-# product rules, 500 draws in total for Monte-Carlo. A per-observation rule is
-# centred on each observation's own posterior and needs far fewer points.
+# These are the graph-backend defaults. A per-observation rule is centred on
+# each observation's own posterior and needs far fewer points than a shared one.
+# `QUAD_NODE_DEFAULTS_LEGACY` below overrides the shared-rule counts for the
+# legacy backend.
 QUAD_NODE_DEFAULTS <- list(
   gh   = c(none = 15,  quasi = 15,  full = 5),
   rect = c(none = 15,  quasi = 15,  full = 5),
   mc   = c(none = 500, quasi = 500, full = 250)
 )
+
+# The legacy backend needs more points for a shared rule than the graph backend
+# does. It integrates only the nonlinear dimensions, so its product rule is
+# small and extra nodes are nearly free -- and measurably needed: on `oneInt` a
+# 15-node quasi-adaptive rule puts the interaction 0.005 away from the
+# per-observation AGHQ reference, while 20 and above agree to four decimals.
+QUAD_NODE_DEFAULTS_LEGACY <- list(
+  gh   = c(none = 24, quasi = 24),
+  rect = c(none = 24, quasi = 24)
+)
+
+
+quadNodeDefault <- function(integration, adaptive, backend = "legacy") {
+  # The legacy table deliberately covers only the shared rules of gh and rect,
+  # so both the integration type and the adaptive type may be absent from it.
+  override <- QUAD_NODE_DEFAULTS_LEGACY[[integration]]
+  override <- if (is.null(override)) NA_real_ else override[adaptive]
+  if (identical(backend, "legacy") && isTRUE(!is.na(override)))
+    return(unname(override))
+  unname(QUAD_NODE_DEFAULTS[[integration]][adaptive])
+}
 
 # Which (backend, integration, adaptive) combinations are supported. The legacy
 # LMS backend has no per-observation machinery and its E-step is built around a
@@ -168,11 +190,22 @@ gaussHermite1d <- function(m) {
 # 2*exp(-2*pi^2/h^2), so it converges exponentially in 1/h. Accuracy is then
 # governed by whichever is larger, that term or the truncation error
 # 2*(1 - pnorm(range)) -- which is why `rect.range` matters as much as `nodes`.
-rectangularWeights <- function(nodes) {
+rectangularWeights <- function(nodes, normalise = TRUE) {
   weights <- stats::dnorm(nodes)
   ends <- c(1L, length(weights))
   if (length(weights) > 1L) weights[ends] <- 0.5 * weights[ends]
-  weights / sum(weights)
+
+  # Normalising makes the rule integrate a constant exactly, which is right
+  # when the range covers essentially all the mass. It is WRONG once the range
+  # has been deliberately trimmed: dividing by the truncated integral of phi
+  # turns the estimate into E[f | |z| < r] rather than E[f], which biases
+  # upward for a centrally concentrated integrand. `gh` does not renormalise
+  # after pruning either.
+  if (normalise) return(weights / sum(weights))
+
+  spacing <- if (length(nodes) > 1L)
+    (max(nodes) - min(nodes)) / (length(nodes) - 1L) else 1
+  weights * spacing
 }
 
 
@@ -294,12 +327,57 @@ quadRuleRectangularQuasi <- function(spec, density, previous = NULL, ...) {
 
     axis <- if (spec$m <= 1L) 0 else seq(lower, upper, length.out = spec$m)
     nodes[[j]] <- axis
-    weights[[j]] <- if (length(axis) > 1L) rectangularWeights(axis) else 1
+    weights[[j]] <- if (length(axis) > 1L)
+      rectangularWeights(axis, normalise = FALSE) else 1
   }
 
   out <- tensorProductRule(nodes, weights)
   out$range <- vapply(nodes, range, numeric(2L))
-  out
+
+  # Trimming the range per dimension still leaves a full Cartesian product, so
+  # the corners survive: nodes extreme in every dimension at once, which carry
+  # almost none of the integral. `gh` drops these in `adaptiveGaussQuadrature`'s
+  # secondary pruning, and without the same step `rect` keeps every one of its
+  # nodes for the whole run while `gh` sheds them as the posterior tightens --
+  # which is why `rect` grew superlinearly with EM iterations and `gh` did not.
+  pruneProductCorners(out, spec, density, ...)
+}
+
+
+# Drop product-rule nodes that contribute nothing to the integral.
+#
+# Two stages. First a weight-product pre-filter, which needs no model
+# evaluation at all: on a Cartesian rule a node's weight is the product of its
+# one-dimensional weights, so a corner is the product of the extreme ones and
+# is vanishingly small (at 15-point Gauss-Hermite the outermost 1-D weight is
+# ~1e-9 of the central, so a three-dimensional corner is ~1e-27 of it). That
+# reduces the expensive N-by-Q density evaluation to N-by-Q_survivors.
+#
+# The pre-filter uses the PRIOR, so a node with negligible weight could still
+# matter if the likelihood is large there. It is therefore deliberately
+# conservative, and the existing contribution-based pruner -- which does look at
+# the density -- makes the real decision on what survives.
+pruneProductCorners <- function(rule, spec, density, weight.tol = 1e-14, ...) {
+  if (is.null(density) || NROW(rule$n) <= 1L) return(rule)
+
+  keep <- rule$w >= weight.tol * max(rule$w)
+  if (!any(keep)) return(rule)
+  rule$n <- rule$n[keep, , drop = FALSE]
+  rule$w <- rule$w[keep]
+  if (NROW(rule$n) <= 1L) return(rule)
+
+  pruned <- tryCatch(pruneQuadratureNodes(
+    quadw = rule$w, quadn = rule$n, quadf = density(rule$n, ...),
+    a = spec$a, b = spec$b, tol = spec$adaptive.quad.tol
+  ), error = function(e) NULL)
+  if (is.null(pruned)) return(rule)
+
+  rule$n <- pruned$quadn
+  rule$w <- pruned$quadw
+  rule$error <- pruned$I.err
+  rule$error.abs <- pruned$I.err.abs
+  rule$error.rel <- pruned$I.err.rel
+  rule
 }
 
 
