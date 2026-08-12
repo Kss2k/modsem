@@ -627,6 +627,29 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// lmsGraphMeasurementNewtonCpp
+Rcpp::List lmsGraphMeasurementNewtonCpp(const Rcpp::List& matrices, const arma::mat& nodes, const int numXis, const int numEtas, const Rcpp::List& dataR, const Rcpp::List& colidxR, const Rcpp::IntegerVector& orderedIndex, const arma::mat& completeWeights, const Rcpp::List& activeLatents, const bool logistic, const int ncores, SEXP workspaceSEXP, const bool shared);
+RcppExport SEXP _modsem_lmsGraphMeasurementNewtonCpp(SEXP matricesSEXP, SEXP nodesSEXP, SEXP numXisSEXP, SEXP numEtasSEXP, SEXP dataRSEXP, SEXP colidxRSEXP, SEXP orderedIndexSEXP, SEXP completeWeightsSEXP, SEXP activeLatentsSEXP, SEXP logisticSEXP, SEXP ncoresSEXP, SEXP workspaceSEXPSEXP, SEXP sharedSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type matrices(matricesSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type nodes(nodesSEXP);
+    Rcpp::traits::input_parameter< const int >::type numXis(numXisSEXP);
+    Rcpp::traits::input_parameter< const int >::type numEtas(numEtasSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type dataR(dataRSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type colidxR(colidxRSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type orderedIndex(orderedIndexSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type completeWeights(completeWeightsSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type activeLatents(activeLatentsSEXP);
+    Rcpp::traits::input_parameter< const bool >::type logistic(logisticSEXP);
+    Rcpp::traits::input_parameter< const int >::type ncores(ncoresSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type workspaceSEXP(workspaceSEXPSEXP);
+    Rcpp::traits::input_parameter< const bool >::type shared(sharedSEXP);
+    rcpp_result_gen = Rcpp::wrap(lmsGraphMeasurementNewtonCpp(matrices, nodes, numXis, numEtas, dataR, colidxR, orderedIndex, completeWeights, activeLatents, logistic, ncores, workspaceSEXP, shared));
+    return rcpp_result_gen;
+END_RCPP
+}
 // multiplyIndicatorsCpp
 Rcpp::NumericVector multiplyIndicatorsCpp(Rcpp::DataFrame df);
 RcppExport SEXP _modsem_multiplyIndicatorsCpp(SEXP dfSEXP) {
@@ -902,6 +925,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_modsem_lmsGraphReverseScoreCpp", (DL_FUNC) &_modsem_lmsGraphReverseScoreCpp, 19},
     {"_modsem_lmsGraphStructuralStatsCpp", (DL_FUNC) &_modsem_lmsGraphStructuralStatsCpp, 6},
     {"_modsem_lmsGraphStructuralCompleteCpp", (DL_FUNC) &_modsem_lmsGraphStructuralCompleteCpp, 6},
+    {"_modsem_lmsGraphMeasurementNewtonCpp", (DL_FUNC) &_modsem_lmsGraphMeasurementNewtonCpp, 13},
     {"_modsem_multiplyIndicatorsCpp", (DL_FUNC) &_modsem_multiplyIndicatorsCpp, 1},
     {"_modsem_checkOpenMP_Cpp", (DL_FUNC) &_modsem_checkOpenMP_Cpp, 0},
     {"_modsem_dmvnrmArmaMc", (DL_FUNC) &_modsem_dmvnrmArmaMc, 5},

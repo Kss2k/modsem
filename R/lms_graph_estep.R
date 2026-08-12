@@ -371,3 +371,238 @@ hessianObsLogLikLmsGraph <- function(theta, model, P, sign = -1,
   lmsGraphHessianFromGradient(theta, function(x)
     gradientObsLogLikLmsGraph(x, model, P, sign), .relStep)
 }
+
+
+# Blocks the measurement Newton step understands. `lambdaY`, `tauY` and
+# `thetaEpsilon` are absent by construction on the graph backend, which routes
+# every indicator through the X matrices.
+LMS_GRAPH_NEWTON_BLOCKS <- c(lambdaX = 0, tauX = 2, thetaDelta = 4,
+                             thresholdDelta = 18)
+
+
+# Latent columns whose loading on each indicator can move. The traversal
+# carries one Hessian slot per entry, so keeping this to the loadings that are
+# actually nonzero or free is what keeps the blocks small under simple
+# structure -- one latent per indicator rather than all of them.
+lmsGraphActiveLatents <- function(lambda, locations) {
+  loadings <- locations[locations$block ==
+                        LMS_GRAPH_NEWTON_BLOCKS[["lambdaX"]], , drop = FALSE]
+  lapply(seq_len(NROW(lambda)), function(indicator) {
+    free <- loadings$col[loadings$row == indicator - 1L]
+    sort(unique(c(which(lambda[indicator, ] != 0) - 1L, free)))
+  })
+}
+
+
+# Express each measurement free parameter as a direction in its indicator's
+# block coordinates ([intercept, loadings, variance | thresholds]).
+#
+# Returns NULL whenever the block split is not visibly true, and the caller
+# then keeps the nlminb path -- always correct, merely slower. It is refused
+# for a free parameter outside the four matrices above, an off-diagonal
+# residual covariance, a parameter spanning two indicators (a shared label or
+# equality constraint), or a nonlinear parameter map, whose second-order term
+# this does not carry.
+lmsGraphNewtonPlan <- function(theta, model, measurement, submodel, M,
+                               activeLatents, group = 1L) {
+  gradientStruct <- model$params$gradientStruct
+  if (length(gradientStruct$nlinDerivs)) return(NULL)
+
+  locations <- gradientStruct$locations
+  J <- lmsFirstDerivativeJacobian(theta, model)
+  if (is.null(locations) || !length(measurement)) return(NULL)
+
+  inGroup <- locations$group == group
+  thresholdDelta <- M$thresholdDelta
+  indicators <- NROW(M$lambdaX)
+  # `lmsGraphOrderedIndex()` returns 0-based indicator indices, not a mask.
+  ordered <- logical(indicators)
+  ordered[lmsGraphOrderedIndex(submodel, M) + 1L] <- TRUE
+
+  # slots per indicator, matching the layout the traversal returns
+  slots <- vapply(seq_len(indicators), FUN.VALUE = integer(1L),
+                  function(l) {
+    extra <- if (ordered[l]) sum(is.finite(thresholdDelta[l, ])) else 1L
+    1L + length(activeLatents[[l]]) + as.integer(extra)
+  })
+
+  direction <- vector("list", indicators) # slots x |theta| per indicator
+  # Second-order terms from the threshold map, one entry per `thresholdDelta`
+  # location: they are only known once the block gradient is in hand.
+  deltaTerms <- vector("list", indicators)
+  owner <- integer(length(measurement))
+
+  for (i in seq_along(measurement)) {
+    t <- measurement[i]
+    touched <- which(J[t, ] != 0 & inGroup)
+    if (!length(touched)) return(NULL)
+    if (!all(locations$block[touched] %in% LMS_GRAPH_NEWTON_BLOCKS)) return(NULL)
+
+    rows <- unique(locations$row[touched])
+    if (length(rows) != 1L) return(NULL) # spans two indicators
+    indicator <- rows + 1L
+    owner[i] <- indicator
+
+    if (is.null(direction[[indicator]])) {
+      direction[[indicator]] <- matrix(0, slots[indicator], length(measurement))
+      deltaTerms[[indicator]] <- list()
+    }
+
+    active <- activeLatents[[indicator]]
+    meanSlots <- 1L + length(active)
+    use <- if (ordered[indicator]) which(is.finite(thresholdDelta[indicator, ]))
+           else integer(0)
+
+    for (loc in touched) {
+      weight <- J[t, loc]
+      block <- locations$block[loc]
+      col <- locations$col[loc]
+
+      if (block == LMS_GRAPH_NEWTON_BLOCKS[["tauX"]]) {
+        direction[[indicator]][1L, i] <- direction[[indicator]][1L, i] + weight
+
+      } else if (block == LMS_GRAPH_NEWTON_BLOCKS[["lambdaX"]]) {
+        slot <- match(col, active)
+        if (is.na(slot)) return(NULL)
+        direction[[indicator]][1L + slot, i] <-
+          direction[[indicator]][1L + slot, i] + weight
+
+      } else if (block == LMS_GRAPH_NEWTON_BLOCKS[["thetaDelta"]]) {
+        if (locations$row[loc] != col) return(NULL) # off-diagonal residual
+        direction[[indicator]][slots[indicator], i] <-
+          direction[[indicator]][slots[indicator], i] + weight
+
+      } else { # thresholdDelta: thresholds are a cumulative softplus of delta
+        delta <- thresholdDelta[indicator, col + 1L]
+        if (!is.finite(delta)) return(NULL)
+        slope <- if (col == 0L) 1 else 1 / (1 + exp(-delta))
+        reached <- which(use - 1L >= col)
+        if (!length(reached)) next
+        direction[[indicator]][meanSlots + reached, i] <-
+          direction[[indicator]][meanSlots + reached, i] + weight * slope
+        # The curvature of that map contributes a term that J' H J cannot
+        # see, sum_k (dQ/dtau_k) * d2 tau_k / d delta^2, with
+        # d2 tau / d delta^2 = slope * (1 - slope). It needs the gradient, so
+        # only its shape is recorded here.
+        if (col > 0L) {
+          key <- paste(loc)
+          term <- deltaTerms[[indicator]][[key]]
+          if (is.null(term))
+            term <- list(v = numeric(length(measurement)),
+                         slots = meanSlots + reached,
+                         factor = slope * (1 - slope))
+          term$v[i] <- term$v[i] + weight
+          deltaTerms[[indicator]][[key]] <- term
+        }
+      }
+    }
+  }
+
+  keep <- which(!vapply(direction, is.null, logical(1L)))
+  if (!length(keep)) return(NULL)
+  list(theta = measurement, owner = owner, indicators = keep,
+       direction = direction, deltaTerms = deltaTerms, slots = slots)
+}
+
+
+# Newton system for one indicator: its free parameters, the gradient and the
+# Hessian of the complete-data objective with respect to them.
+lmsGraphNewtonSystem <- function(plan, indicator, gradient, hessian) {
+  B <- plan$direction[[indicator]]
+  keep <- which(colSums(abs(B)) > 0)
+  if (!length(keep)) return(NULL)
+  B <- B[, keep, drop = FALSE]
+
+  H <- crossprod(B, hessian %*% B)
+  for (term in plan$deltaTerms[[indicator]]) {
+    v <- term$v[keep]
+    H <- H + (sum(gradient[term$slots]) * term$factor) * tcrossprod(v)
+  }
+
+  list(theta = plan$theta[keep], gradient = drop(crossprod(B, gradient)),
+       hessian = H)
+}
+
+
+# One Newton step on the measurement block.
+#
+# With the latent nodes held fixed the measurement objective separates across
+# indicators, so its Hessian is block diagonal and a single traversal yields
+# every block (see lmsGraphMeasurementNewtonCpp).
+#
+# Mplus does the same thing rather than anything cleverer. Measured against the
+# demo binary by varying MUITERATIONS at fixed MITERATIONS: one of its M-step
+# iterations costs 0.110 s at N=500 and 0.465 s at N=2000, so N x 4.0 gives
+# cost x 4.23 -- its M-step iterations re-traverse the data exactly as this
+# does, and there is no N-independent sufficient statistic to exploit. It
+# averages ~1.6 iterations per M-step (2.775 vs 2.500 s/iter at MUITERATIONS=1),
+# so ONE damped step is the right target, not Newton to convergence.
+#
+# Returns NULL when the block split does not hold, and the caller then keeps
+# the nlminb path.
+lmsGraphNewtonMeasurement <- function(theta, model, P, measurement, lower,
+                                      upper, objective, link = "logit") {
+  if (model$info$n.groups > 1L) return(NULL) # a shared label would span groups
+
+  filled <- fillModel(model = model, theta = theta, method = "lms")
+  submodel <- filled$models[[1L]]
+  M <- lmsGraphMatrices(submodel)
+  if (!NCOL(M$thresholds)) M$thresholdDelta <- M$thresholds
+
+  locations <- model$params$gradientStruct$locations
+  active <- lmsGraphActiveLatents(
+    M$lambdaX, locations[locations$group == 1L, , drop = FALSE]
+  )
+  plan <- lmsGraphNewtonPlan(theta, model, measurement, submodel, M, active)
+  if (is.null(plan)) return(NULL)
+
+  Pg <- P$P_GROUPS[[1L]]
+  fused <- lmsGraphMeasurementNewtonCpp(
+    M, Pg$V, submodel$info$numXis, submodel$info$numEtas,
+    submodel$data$data.split, submodel$data$colidx0,
+    lmsGraphOrderedIndex(submodel, M), Pg$P, active,
+    identical(link, "logit"), ThreadEnv$n.threads %||% 1L,
+    Pg$workspace %||% lmsGraphWorkspace(submodel), isTRUE(Pg$common)
+  )
+
+  direction <- numeric(length(theta))
+  for (indicator in plan$indicators) {
+    system <- lmsGraphNewtonSystem(plan, indicator, fused$gradient[[indicator]],
+                                   fused$hessian[[indicator]])
+    if (is.null(system)) next
+
+    # The objective is maximised here, so its Hessian must be negative
+    # definite for the Newton direction to ascend. `chol()` errors otherwise,
+    # and rather than patch a single block we hand the whole M-step back to
+    # nlminb -- indefiniteness means the quadratic model is not trustworthy,
+    # and this is rare near the optimum.
+    step <- tryCatch({
+      R <- chol(-system$hessian)
+      backsolve(R, backsolve(R, system$gradient, transpose = TRUE))
+    }, error = function(e) NULL)
+    if (is.null(step) || !all(is.finite(step))) return(NULL)
+
+    direction[system$theta] <- step
+  }
+  if (!any(direction != 0)) return(NULL)
+
+  # The measurement block runs first in the ECM, so the starting objective is
+  # the one at the E-step parameters -- available without a pass.
+  start <- completeAtEstepLmsGraph(P, sign = -1)
+  if (!is.finite(start)) start <- objective(theta)
+
+  # Backtrack on the whole direction. A full Newton step is right when the
+  # quadratic model holds; halving twice covers the early iterations where it
+  # does not, and is still far cheaper than the line search it replaces.
+  for (scale in c(1, 0.5, 0.25)) {
+    candidate <- theta
+    candidate[measurement] <- pmin(pmax(
+      theta[measurement] + scale * direction[measurement],
+      lower[measurement]), upper[measurement])
+    value <- objective(candidate)
+    if (is.finite(value) && value <= start)
+      return(list(theta = candidate, objective = value, iterations = 1L,
+                  convergence = 0L, message = "newton"))
+  }
+  NULL
+}

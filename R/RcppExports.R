@@ -145,6 +145,10 @@ lmsGraphStructuralCompleteCpp <- function(matrices, S, W, numXis, numEtas, numPr
     .Call(`_modsem_lmsGraphStructuralCompleteCpp`, matrices, S, W, numXis, numEtas, numProducts)
 }
 
+lmsGraphMeasurementNewtonCpp <- function(matrices, nodes, numXis, numEtas, dataR, colidxR, orderedIndex, completeWeights, activeLatents, logistic = TRUE, ncores = 1L, workspaceSEXP = NULL, shared = FALSE) {
+    .Call(`_modsem_lmsGraphMeasurementNewtonCpp`, matrices, nodes, numXis, numEtas, dataR, colidxR, orderedIndex, completeWeights, activeLatents, logistic, ncores, workspaceSEXP, shared)
+}
+
 multiplyIndicatorsCpp <- function(df) {
     .Call(`_modsem_multiplyIndicatorsCpp`, df)
 }

@@ -248,7 +248,8 @@ mstepLmsGraphEcm <- function(theta, model, P, max.step,
                              verbose = FALSE, control = list(),
                              optimizer = "nlminb", epsilon = 1e-6,
                              backend = getLmsBackend("graph"),
-                             measurement.step = c("nlminb", "armijo"), ...) {
+                             measurement.step = c("newton", "nlminb", "armijo"),
+                             ...) {
   # `nlminb` is the default on measurement, despite costing ~5.2 full passes
   # against Armijo's ~3. Measured on the ordered benchmark at a matched ~315 s
   # budget (733 rows, 15 nodes, adaptive full):
@@ -296,14 +297,26 @@ mstepLmsGraphEcm <- function(theta, model, P, max.step,
                                                     P = P, sign = -1,
                                                     epsilon = epsilon)
 
-  measurement <- if (identical(measurement.step, "armijo"))
-    armijoBlockStep(theta, partition$measurement, objective, gradient,
-                    lower, upper, P = P)
-  else runBlock(
-    theta, partition$measurement,
-    objective = objective, gradient = gradient,
-    iter.max = max.step
-  )
+  # Newton first: one traversal buys the objective, the gradient and the exact
+  # block-diagonal Hessian, against the ~5 passes nlminb spends line-searching
+  # the same block. It declines (returns NULL) whenever the block split does
+  # not hold or the quadratic model is untrustworthy, and nlminb then runs
+  # unchanged -- so this can only cost a wasted traversal, never correctness.
+  measurement <- if (identical(measurement.step, "newton"))
+    lmsGraphNewtonMeasurement(theta, model, P, partition$measurement,
+                              lower, upper, objective,
+                              link = P$P_GROUPS[[1L]]$link %||% "logit")
+  else NULL
+
+  if (is.null(measurement))
+    measurement <- if (identical(measurement.step, "armijo"))
+      armijoBlockStep(theta, partition$measurement, objective, gradient,
+                      lower, upper, P = P)
+    else runBlock(
+      theta, partition$measurement,
+      objective = objective, gradient = gradient,
+      iter.max = max.step
+    )
 
   # The structural objective is free, so this block is run to convergence
   # rather than for `max.step` iterations. Mplus spends 8-14 evaluations here

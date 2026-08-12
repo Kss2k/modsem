@@ -1887,3 +1887,287 @@ double lmsGraphStructuralCompleteCpp(const Rcpp::List& matrices,
   return -0.5 * (W * (dimension * std::log(2.0 * M_PI) + logDeterminant) +
                  arma::trace(solved));
 }
+
+
+// ---------------------------------------------------------------------------
+// Measurement Newton step for the ECM M-step.
+//
+// With the latent nodes held fixed, the measurement half of the complete-data
+// objective separates exactly across indicators: indicator l depends only on
+// its own intercept, loadings, residual variance and thresholds, and on the
+// nodes -- never on another indicator's parameters. Its Hessian is therefore
+// block diagonal, and one traversal yields the objective together with every
+// block's gradient and Hessian.
+//
+// Blocks are returned in the coordinates
+//     [ intercept , loadings(active latents) , variance | thresholds ]
+// with `variance` present for a continuous indicator and `thresholds` for an
+// ordered one. R maps those onto free parameters, which for thresholds means
+// chaining through the `thresholdDelta` parameterisation.
+//
+// This replaces the ~5 full N x Q passes nlminb spent line-searching the
+// block with one. The second derivatives are the ones verified against central
+// differences before any of this was written; with
+//   a = lowerRatio, b = upperRatio, g = a - b, and f' the density derivative:
+//     d2/dm2               = (f'(up) - f'(lo))/p - g^2
+//     d2/dtau_c^2          = f'(up)/p - b^2
+//     d2/dtau_{c-1}^2      = -f'(lo)/p - a^2
+//     d2/dtau_c dtau_{c-1} = a*b
+//     d2/dm dtau_c         = -f'(up)/p - g*b
+//     d2/dm dtau_{c-1}     = f'(lo)/p + g*a
+// f'/p is read off the ratios rather than recomputed: for the probit
+// f'(x)/p = -x * f(x)/p, and for the logit f'(x)/p = (1 - 2F(x)) * f(x)/p.
+// [[Rcpp::export]]
+Rcpp::List lmsGraphMeasurementNewtonCpp(const Rcpp::List& matrices,
+                                        const arma::mat& nodes,
+                                        const int numXis,
+                                        const int numEtas,
+                                        const Rcpp::List& dataR,
+                                        const Rcpp::List& colidxR,
+                                        const Rcpp::IntegerVector& orderedIndex,
+                                        const arma::mat& completeWeights,
+                                        const Rcpp::List& activeLatents,
+                                        const bool logistic = true,
+                                        const int ncores = 1,
+                                        SEXP workspaceSEXP = R_NilValue,
+                                        const bool shared = false) {
+  const arma::mat A = Rcpp::as<arma::mat>(matrices["A"]);
+  const arma::mat cross = Rcpp::as<arma::mat>(matrices["covZetaXi"]);
+  const arma::mat psi = Rcpp::as<arma::mat>(matrices["psi"]);
+  const arma::mat gammaXi = Rcpp::as<arma::mat>(matrices["gammaXi"]);
+  const arma::mat gammaEta = Rcpp::as<arma::mat>(matrices["gammaEta"]);
+  const arma::mat productDesign = Rcpp::as<arma::mat>(matrices["productDesign"]);
+  const arma::mat omega = Rcpp::as<arma::mat>(matrices["omega"]);
+  const arma::vec beta0 = Rcpp::as<arma::vec>(matrices["beta0"]);
+  const arma::vec alpha = Rcpp::as<arma::vec>(matrices["alpha"]);
+  const arma::mat lambda = Rcpp::as<arma::mat>(matrices["lambdaX"]);
+  const arma::vec tau = Rcpp::as<arma::vec>(matrices["tauX"]);
+  const arma::mat theta = Rcpp::as<arma::mat>(matrices["thetaDelta"]);
+  const arma::mat thresholdMatrix = Rcpp::as<arma::mat>(matrices["thresholds"]);
+  const int dimension = numXis + numEtas;
+
+  arma::mat latentCov(dimension, dimension, arma::fill::zeros);
+  if (numXis > 0) latentCov.submat(0, 0, numXis - 1, numXis - 1) = A * A.t();
+  if (numEtas > 0)
+    latentCov.submat(numXis, numXis, dimension - 1, dimension - 1) = psi;
+  if (numXis > 0 && numEtas > 0) {
+    latentCov.submat(numXis, 0, dimension - 1, numXis - 1) = cross;
+    latentCov.submat(0, numXis, numXis - 1, dimension - 1) = cross.t();
+  }
+  arma::mat latentChol;
+  if (!arma::chol(latentChol, latentCov))
+    Rcpp::stop("The unified latent covariance matrix is not positive definite.");
+  const GraphPlan plan = buildGraphPlan(
+    gammaXi, gammaEta, productDesign, omega, numXis, numEtas
+  );
+  const arma::mat states = evaluateGraphStates(
+    plan, nodes * latentChol, beta0, alpha, numXis, numEtas, nullptr
+  );
+  const std::vector<LoadingTerm> loadingPlan = buildLoadingPlan(lambda);
+  const arma::mat means = measurementMeans(states, tau, loadingPlan);
+  const ResponsePlan responsePlan = buildResponsePlan(
+    lambda.n_rows, thresholdMatrix, orderedIndex
+  );
+
+  std::vector<GraphObservation> temporaryObservations;
+  const std::vector<GraphObservation>* observations;
+  if (workspaceSEXP == R_NilValue) {
+    temporaryObservations = flattenGraphObservations(dataR, colidxR);
+    observations = &temporaryObservations;
+  } else {
+    Rcpp::XPtr<GraphWorkspace> workspace(workspaceSEXP);
+    observations = &workspace->observations;
+  }
+  const arma::uword totalRows = observations->size();
+  const arma::uword nodesPerObservation =
+    graphNodesPerObservation(nodes, totalRows, shared);
+  const arma::uword meanStride = shared ? 0 : nodesPerObservation;
+  if (completeWeights.n_rows != totalRows ||
+      completeWeights.n_cols != nodesPerObservation)
+    Rcpp::stop("Complete-data weights have incompatible dimensions.");
+
+  const arma::uword indicators = lambda.n_rows;
+
+  // Per-indicator layout. `latents` are the latent columns whose loading on
+  // this indicator can move; the intercept always occupies slot 0.
+  std::vector<arma::uvec> latents(indicators);
+  std::vector<arma::uword> meanSlots(indicators), totalSlots(indicators);
+  for (arma::uword l = 0; l < indicators; ++l) {
+    latents[l] = Rcpp::as<arma::uvec>(activeLatents[l]);
+    meanSlots[l] = 1 + latents[l].n_elem;
+    totalSlots[l] = meanSlots[l] +
+      (responsePlan.ordered[l] ? responsePlan.thresholds[l].n_elem : 1);
+  }
+
+  std::vector<arma::vec> gradient(indicators);
+  std::vector<arma::mat> hessian(indicators);
+  for (arma::uword l = 0; l < indicators; ++l) {
+    gradient[l].zeros(totalSlots[l]);
+    hessian[l].zeros(totalSlots[l], totalSlots[l]);
+  }
+  double objective = 0.0;
+
+  #ifdef _OPENMP
+  #pragma omp parallel num_threads(ncores) if(ncores > 1)
+  #endif
+  {
+    // The blocks are tiny -- (1 + loadings + categories)^2 per indicator -- so
+    // every thread keeps its own copy and reduces once at the end. There is no
+    // shared-rule race to worry about here for the same reason.
+    std::vector<arma::vec> gradientLocal(indicators);
+    std::vector<arma::mat> hessianLocal(indicators);
+    for (arma::uword l = 0; l < indicators; ++l) {
+      gradientLocal[l].zeros(totalSlots[l]);
+      hessianLocal[l].zeros(totalSlots[l], totalSlots[l]);
+    }
+    double objectiveLocal = 0.0;
+    arma::vec design;
+
+    #ifdef _OPENMP
+    #pragma omp for schedule(static)
+    #endif
+    for (int iInt = 0; iInt < static_cast<int>(totalRows); ++iInt) {
+      const arma::uword i = static_cast<arma::uword>(iInt);
+      const GraphObservation& observation = (*observations)[i];
+      const arma::uword first = i * meanStride;
+      const arma::uword last = first + nodesPerObservation - 1;
+      const arma::vec weights = completeWeights.row(i).t();
+
+      for (arma::uword j = 0; j < observation.values.n_elem; ++j) {
+        const int column = observation.columns[j];
+        const arma::uword slots = totalSlots[column];
+        const arma::uword mSlots = meanSlots[column];
+        const arma::uvec& use = latents[column];
+        arma::vec& g = gradientLocal[column];
+        arma::mat& H = hessianLocal[column];
+        const arma::vec m = means.col(column).subvec(first, last);
+        design.set_size(mSlots);
+        design(0) = 1.0;
+
+        if (responsePlan.ordered[column]) {
+          const int code = static_cast<int>(observation.values(j));
+          const arma::rowvec& thresholds = responsePlan.thresholds[column];
+          const int categories = static_cast<int>(thresholds.n_elem) + 1;
+          const OrdinalBlockEvaluation evaluation = ordinalBlockEvaluation(
+            code, thresholds, m, logistic
+          );
+          objectiveLocal += arma::dot(weights, evaluation.logProbability);
+
+          const arma::uword lowerSlot = mSlots + (code - 2);
+          const arma::uword upperSlot = mSlots + (code - 1);
+
+          for (arma::uword q = 0; q < weights.n_elem; ++q) {
+            const double w = weights(q);
+            if (w == 0.0) continue;
+            const double a = evaluation.lowerRatio(q);
+            const double b = evaluation.upperRatio(q);
+            const double gm = a - b;
+
+            // f'(x)/p from the ratio already in hand: no extra CDF evaluation
+            // on the probit path, one logistic each on the logit path.
+            double dLower = 0.0, dUpper = 0.0;
+            if (code > 1) {
+              const double x = thresholds(code - 2) - m(q);
+              dLower = logistic ? a * (1.0 - 2.0 / (1.0 + std::exp(-x))) :
+                                  -x * a;
+            }
+            if (code < categories) {
+              const double x = thresholds(code - 1) - m(q);
+              dUpper = logistic ? b * (1.0 - 2.0 / (1.0 + std::exp(-x))) :
+                                  -x * b;
+            }
+
+            const double hmm = (dUpper - dLower) - gm * gm;
+            for (arma::uword k = 1; k < mSlots; ++k)
+              design(k) = states(first + q, use(k - 1));
+
+            for (arma::uword r = 0; r < mSlots; ++r) {
+              const double wd = w * design(r);
+              g(r) += wd * gm;
+              for (arma::uword c = 0; c <= r; ++c)
+                H(r, c) += wd * hmm * design(c);
+            }
+            if (code > 1) {
+              const double hll = -dLower - a * a;
+              const double hml = dLower + gm * a;
+              g(lowerSlot) -= w * a;
+              H(lowerSlot, lowerSlot) += w * hll;
+              for (arma::uword r = 0; r < mSlots; ++r)
+                H(lowerSlot, r) += w * hml * design(r);
+            }
+            if (code < categories) {
+              const double huu = dUpper - b * b;
+              const double hmu = -dUpper - gm * b;
+              g(upperSlot) += w * b;
+              H(upperSlot, upperSlot) += w * huu;
+              for (arma::uword r = 0; r < mSlots; ++r)
+                H(upperSlot, r) += w * hmu * design(r);
+            }
+            if (code > 1 && code < categories)
+              H(upperSlot, lowerSlot) += w * a * b;
+          }
+
+        } else {
+          const double variance = theta(column, column);
+          const arma::uword varSlot = slots - 1;
+          const arma::vec residual = observation.values(j) - m;
+          objectiveLocal += arma::dot(weights,
+            -0.5 * std::log(2.0 * M_PI * variance) -
+            0.5 * arma::square(residual) / variance);
+
+          for (arma::uword q = 0; q < weights.n_elem; ++q) {
+            const double w = weights(q);
+            if (w == 0.0) continue;
+            const double r0 = residual(q);
+            const double gm = r0 / variance;
+            const double hmm = -1.0 / variance;
+            const double gv = -0.5 / variance +
+              0.5 * r0 * r0 / (variance * variance);
+            const double hvv = 0.5 / (variance * variance) -
+              r0 * r0 / (variance * variance * variance);
+            const double hmv = -r0 / (variance * variance);
+
+            for (arma::uword k = 1; k < mSlots; ++k)
+              design(k) = states(first + q, use(k - 1));
+
+            for (arma::uword r = 0; r < mSlots; ++r) {
+              const double wd = w * design(r);
+              g(r) += wd * gm;
+              for (arma::uword c = 0; c <= r; ++c)
+                H(r, c) += wd * hmm * design(c);
+            }
+            g(varSlot) += w * gv;
+            H(varSlot, varSlot) += w * hvv;
+            for (arma::uword r = 0; r < mSlots; ++r)
+              H(varSlot, r) += w * hmv * design(r);
+          }
+        }
+      }
+    }
+
+    #ifdef _OPENMP
+    #pragma omp critical(lms_graph_newton_reduce)
+    #endif
+    {
+      objective += objectiveLocal;
+      for (arma::uword l = 0; l < indicators; ++l) {
+        gradient[l] += gradientLocal[l];
+        hessian[l] += hessianLocal[l];
+      }
+    }
+  }
+
+  // Only the lower triangle was filled, since every contribution is symmetric.
+  Rcpp::List gradientOut(indicators), hessianOut(indicators);
+  for (arma::uword l = 0; l < indicators; ++l) {
+    arma::mat& H = hessian[l];
+    H = arma::symmatl(H);
+    gradientOut[l] = gradient[l];
+    hessianOut[l] = H;
+  }
+  return Rcpp::List::create(
+    Rcpp::Named("objective") = objective,
+    Rcpp::Named("gradient") = gradientOut,
+    Rcpp::Named("hessian") = hessianOut
+  );
+}
