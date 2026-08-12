@@ -388,6 +388,61 @@ QUAD_BUILDERS <- list(
 )
 
 
+# Drop product-rule nodes whose prior weight is negligible, before the rule is
+# replicated per observation.
+#
+# On a Cartesian rule a node's weight is the product of its one-dimensional
+# weights, so the outer shell is vanishingly light: at 15-point Gauss-Hermite
+# in three dimensions the weights span 6.3e-28 to 3.2e-02, and the lightest
+# 38% of nodes carry 3.2e-10 of the total mass between them. Evaluating them
+# costs the same as evaluating the centre.
+#
+# Pruning the BASE rule, rather than per observation, keeps the packed layout
+# rectangular: the same node indices vanish for every observation, so an
+# N-by-Q matrix simply becomes N-by-Q'. Per-observation pruning would make the
+# node count ragged and complicate every kernel.
+#
+# This applies only to `adaptive = "full"`, and that restriction is what makes
+# it safe. The usual objection to weight-based pruning is that it consults the
+# prior, so a light node could still matter where the likelihood is large. But
+# a full-adaptive rule is recentred on each observation's posterior mode, so
+# the light outer shell is exactly where that observation's likelihood is also
+# negligible. Under a fixed rule the two need not coincide, which is why the
+# quasi builders prune on contribution (`pruneQuadratureNodes`) instead.
+#
+# Monte-Carlo rules are excluded: their weights are equal by construction, so
+# there is nothing to drop, and any threshold would either keep everything or
+# discard the rule. Mplus behaves the same way -- its per-iteration cost grows
+# sublinearly in the node count for Gauss-Hermite and rectangular rules
+# (log-log slopes 0.84 and 0.88) but linearly for Monte-Carlo (0.998).
+QUAD_PRUNE_WEIGHT_TOL <- 1e-10
+
+pruneNegligibleWeights <- function(rule, spec,
+                                   tol = QUAD_PRUNE_WEIGHT_TOL) {
+  if (!identical(spec$adaptive, "full")) return(rule)
+  if (identical(spec$integration, "mc")) return(rule)
+  if (!length(rule$w) || NROW(rule$n) <= 1L) return(rule)
+  if (!is.finite(tol) || tol <= 0) return(rule)
+
+  keep <- rule$w >= tol * max(rule$w)
+  # Never let the rule collapse: a degenerate or pathologically scaled set of
+  # weights should fall through unpruned rather than silently leave a handful
+  # of nodes carrying the whole integral.
+  if (sum(keep) < 2L || all(keep)) return(rule)
+
+  total <- sum(rule$w)
+  rule$pruned.from <- length(keep)
+  rule$pruned.mass <- if (total > 0) 1 - sum(rule$w[keep]) / total else 0
+  rule$n <- rule$n[keep, , drop = FALSE]
+  # Weights are deliberately NOT renormalised. Scaling the survivors back up
+  # would trade a known, bounded downward bias of `pruned.mass` for an upward
+  # one, and #14 was exactly a renormalisation bias of this kind. At the
+  # default tolerance the discarded mass is ~3e-10, far below quadrature error.
+  rule$w <- rule$w[keep]
+  rule
+}
+
+
 # Build the rule a spec describes.
 #
 # `density(nodes, ...)` must return an N by Q matrix of densities and is only
@@ -405,6 +460,7 @@ buildQuadRule <- function(spec, density = NULL, previous = NULL, ...) {
              "A quasi-adaptive rule needs a density function.")
 
   rule <- builder(spec, density = density, previous = previous, ...)
+  rule <- pruneNegligibleWeights(rule, spec)
 
   rule$Q <- NROW(rule$n)
   rule$k <- spec$k
