@@ -21,7 +21,8 @@ specifyModelDA_Group <- function(syntax = NULL,
                                  cluster = NULL,
                                  sampling.weights = NULL,
                                  structovs = NULL,
-                                 fix.composite.var = TRUE) {
+                                 fix.composite.var = TRUE,
+                                 compress.data = FALSE) {
   if (is.null(parTable) && !is.null(syntax)) parTable <- modsemify(syntax)
   mod_stopif(is.null(parTable), "No parTable found")
 
@@ -87,7 +88,8 @@ specifyModelDA_Group <- function(syntax = NULL,
     allIndsEtas      = allIndsEtas,
     missing          = missing,
     cluster          = cluster,
-    sampling.weights = sampling.weights
+    sampling.weights = sampling.weights,
+    compress.data    = compress.data
   )
 
   # measurement model x

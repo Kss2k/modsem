@@ -138,7 +138,7 @@ modsem_inspect_da <- function(model,
 
     out <- c(
       list(
-        N      = submodel$data$n,
+        N      = submodel$data$n.obs %||% submodel$data$n,
         data   = submodel$data$data.full,
         lambda = .modsemMatrix(lambda),
         wmat   = .modsemMatrix(wmat),

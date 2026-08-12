@@ -1,8 +1,9 @@
 prepDataModsemDA <- function(data, allIndsXis, allIndsEtas, missing = "listwise",
-                             cluster = NULL, sampling.weights = NULL) {
+                             cluster = NULL, sampling.weights = NULL, compress.data = FALSE) {
 
   if (is.null(data) || !NROW(data))
-    return(list(data.full = NULL, n = 0, k = 0, p = 0, cluster = NULL, idx = NULL))
+    return(list(data.full = NULL, n = 0, n.obs = 0, k = 0, p = 0,
+                cluster = NULL, idx = NULL))
 
   if (!is.null(cluster)) {
     mod_stopif(length(cluster) > 1L, "`cluster` must be a single variable!")
@@ -20,12 +21,82 @@ prepDataModsemDA <- function(data, allIndsXis, allIndsEtas, missing = "listwise"
   sortData(data, allIndsXis, allIndsEtas) |>
     castDataNumericMatrix() |>
     handleMissingData(missing = missing, CLUSTER = CLUSTER, WEIGHTS = WEIGHTS) |>
+    compressData(compress = compress.data) |>
     patternizeMissingDataFIML()
 }
 
 
 indexData <- function(data) {
-  attr(data, "idx") 
+  attr(data, "idx")
+}
+
+
+# `weights` are stored in pattern-concatenated order (the stacked rows of
+# `data.split`), whereas `data.full` keeps the input row order. Anything
+# combining the two -- sample moments, N -- needs the weights mapped back.
+# With a single missing-data pattern the permutation is the identity.
+rowWeightsDA <- function(data) {
+  w <- data$weights
+  if (is.null(w)) return(NULL)
+
+  perm <- unlist(data$rowidx)
+  if (is.null(perm) || length(perm) != length(w)) return(w)
+
+  out <- numeric(length(w))
+  out[perm] <- w
+  out
+}
+
+
+# Weighted analogue of `cov(X, use = "pairwise.complete.obs")`. Reduces to it
+# exactly when every weight is 1: pairwise means, denominator sum(w) - 1.
+weightedCovPairwise <- function(X, w) {
+  p  <- NCOL(X)
+  S  <- matrix(NA_real_, p, p, dimnames = list(colnames(X), colnames(X)))
+  ok <- !is.na(X)
+
+  for (i in seq_len(p)) for (j in i:p) {
+    use <- ok[, i] & ok[, j]
+    W   <- sum(w[use])
+    if (W <= 1) next
+
+    mi <- sum(w[use] * X[use, i]) / W
+    mj <- sum(w[use] * X[use, j]) / W
+
+    S[i, j] <- S[j, i] <-
+      sum(w[use] * (X[use, i] - mi) * (X[use, j] - mj)) / (W - 1)
+  }
+
+  S
+}
+
+
+# Map from compressed rows back to input rows: `out[i]` is the compressed row
+# that input row `i` was collapsed into. NULL when the data was not compressed,
+# which is how callers detect that no expansion is needed. Like the weights,
+# `index` is stored in pattern-concatenated order and must be permuted back.
+decompressRowsDA <- function(data) {
+  index <- data$index
+  if (!is.list(index)) return(NULL)
+
+  perm <- unlist(data$rowidx)
+  if (!is.null(perm) && length(perm) == length(index)) {
+    ordered <- vector("list", length(index))
+    ordered[perm] <- index
+    index <- ordered
+  }
+
+  out <- integer(sum(lengths(index)))
+  for (j in seq_along(index)) out[index[[j]]] <- j
+  out
+}
+
+
+weightedColMeans <- function(X, w) {
+  vapply(seq_len(NCOL(X)), FUN.VALUE = numeric(1L), FUN = function(j) {
+    use <- !is.na(X[, j])
+    sum(w[use] * X[use, j]) / sum(w[use])
+  })
 }
 
 sortData <- function(data, allIndsXis, allIndsEtas) {
@@ -63,11 +134,78 @@ castDataNumericMatrix <- function(data) {
 }
 
 
+# A double formatted with "%.17g" round-trips exactly, so rows are merged only
+# when they are bit-for-bit identical. Plain `as.character()` would truncate to
+# 15 significant digits and could silently merge distinct continuous rows.
+compressKey <- function(x) {
+  if (is.numeric(x)) sprintf("%.17g", x) else as.character(x)
+}
+
+
+# Collapse duplicate rows into a single row carrying their summed weight.
+#
+# The likelihood only ever sees the data through row patterns: `m` identical
+# rows contribute `m` copies of the same term, so replacing them with one row
+# of weight `m` is exact rather than an approximation. On categorical
+# indicators the row space is finite and the saving is large (Mplus compresses
+# for the same reason, which is also what makes the two directly comparable).
+compressData <- function(data, compress = TRUE) {
+  if (!compress || is.null(data) || NROW(data) < 2L)
+    return(data)
+
+  CLUSTER <- attr(data, "cluster")
+  WEIGHTS <- attr(data, "weights")
+  INDEX   <- attr(data, "index")
+
+  # Rows may only be merged when they also agree on the cluster they belong
+  # to -- collapsing across clusters would destroy the nesting structure the
+  # cluster-robust machinery relies on.
+  keyed <- as.data.frame(data)
+  if (!is.null(CLUSTER)) keyed[["..cluster.."]] <- CLUSTER
+
+  key   <- do.call(paste, c(lapply(keyed, FUN = compressKey), list(sep = "\r")))
+  first <- !duplicated(key)
+  u     <- sum(first)
+
+  if (u >= NROW(data)) return(data)
+
+  mod_msg_note("Compressing data from", NROW(data), "->", u, "rows..")
+
+  if (is.null(WEIGHTS)) WEIGHTS <- rep(1, NROW(data))
+  if (is.null(INDEX))   INDEX   <- seq_len(NROW(data))
+
+  # `match()` against the first occurrences numbers the groups 1..u in order of
+  # first appearance, which is exactly the row order of `udata`. Both
+  # `rowsum(reorder = TRUE)` and `split()` order their output by that group
+  # number, so no further alignment is needed.
+  id    <- match(key, key[first])
+  udata <- data[first, , drop = FALSE]
+
+  # NOTE: attributes must be set after subsetting, as subsetting a matrix
+  # drops any custom attributes.
+  attr(udata, "weights") <- as.vector(rowsum(WEIGHTS, group = id, reorder = TRUE))
+  attr(udata, "cluster") <- CLUSTER[first]
+
+  # `index` is a plain vector on uncompressed data, but a list of the original
+  # row numbers here. Whenever `index` is a list we know the data has been
+  # compressed, which is what functions like `modsem_inspect()` and
+  # `modsem_predict()` need in order to decompress back to the input rows.
+  attr(udata, "index") <- unname(split(INDEX, id))
+
+  # The number of rows actually estimated on is no longer the sample size, so
+  # carry the latter separately for anything reporting N (AIC/BIC, nobs(), ...)
+  attr(udata, "n.obs") <- attr(data, "n.obs") %||% NROW(data)
+
+  udata
+}
+
+
 patternizeMissingDataFIML <- function(data) {
   # if we are not using fiml, the missing data should already have been removed...
   CLUSTER <- attr(data, "cluster")
   WEIGHTS <- attr(data, "weights")
   INDEX   <- attr(data, "index")
+  N.OBS   <- attr(data, "n.obs")
 
   Y   <- as.matrix(data)
   obs <- !is.na(Y)
@@ -83,7 +221,15 @@ patternizeMissingDataFIML <- function(data) {
   if (any(rowMissingAll)) { # remove patterns where all are missing
     # This shouldn't really happen, as it should be handled already in
     # `handleMissingData()`. Regardless, we should handle it if it ever happens
-    return(patternizeMissingDataFIML(data[!rowMissingAll, , drop = FALSE]))
+    kept <- data[!rowMissingAll, , drop = FALSE]
+
+    # subsetting a matrix drops custom attributes, so re-attach them
+    attr(kept, "cluster") <- CLUSTER[!rowMissingAll]
+    attr(kept, "weights") <- WEIGHTS[!rowMissingAll]
+    attr(kept, "index")   <- INDEX[!rowMissingAll]
+    attr(kept, "n.obs")   <- N.OBS
+
+    return(patternizeMissingDataFIML(kept))
   }
 
   ids <- seq_len(NROW(patterns))
@@ -125,6 +271,11 @@ patternizeMissingDataFIML <- function(data) {
     n.pattern  = n.pattern,
     d.pattern  = d.pattern,
     n          = NROW(data),
+
+    # `n` counts the rows actually estimated on; after `compressData()` those
+    # are distinct row patterns rather than observations, so anything reporting
+    # a sample size (nobs(), AIC/BIC, ...) must use `n.obs` instead.
+    n.obs      = N.OBS %||% NROW(data),
     k          = NCOL(data),
     p          = length(ids),
     data.full  = data,

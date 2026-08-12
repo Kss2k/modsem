@@ -328,6 +328,17 @@
 #'   especially when \eqn{G} is small. If \code{FALSE}, the unadjusted CR0 estimator
 #'   is used. Defaults to \code{TRUE}. Only relevant if \code{cluster} is specified.
 #'
+#' @param compress.data Logical; should duplicate rows be collapsed into a single row
+#'   carrying their summed weight before estimation? This is exact, not an
+#'   approximation: identical rows contribute identical terms to the likelihood,
+#'   so replacing \eqn{m} copies of a row by one row of weight \eqn{m} leaves the
+#'   log-likelihood, the estimates and the standard errors unchanged. It is
+#'   worthwhile whenever the data have a small number of distinct rows -- in
+#'   particular with \code{ordered} indicators, where the row space is finite.
+#'   Defaults to \code{TRUE} for \code{lms.backend = "graph"}, whose cost is linear
+#'   in the number of rows, and \code{FALSE} otherwise. If duplicate rows are
+#'   collapsed, \code{nobs()} still reports the original number of observations.
+#'
 #' @param sampling.weights A variable name in the data frame containing sampling weight information.
 #'   Depending on the sampling.weights.normalization argument, these weights may be rescaled (or not)
 #'   so that their sum equals the number of observations (total or per group)
@@ -513,6 +524,7 @@ modsem_da <- function(model.syntax = NULL,
                       ordered.standardize = TRUE,
                       cluster = NULL,
                       cr1s = FALSE,
+                      compress.data = NULL,
                       sampling.weights = NULL,
                       sampling.weights.normalization = NULL,
                       rcs = FALSE,
@@ -606,6 +618,7 @@ modsem_da <- function(model.syntax = NULL,
        cluster                        = cluster,
        group                          = group,
        cr1s                           = cr1s,
+       compress.data                  = compress.data,
        sampling.weights               = sampling.weights,
        sampling.weights.normalization = sampling.weights.normalization,
        rcs                            = rcs,
@@ -690,6 +703,7 @@ modsem_da <- function(model.syntax = NULL,
           auto.fix.single                = auto.fix.single,
           auto.split.syntax              = auto.split.syntax,
           cr1s                           = cr1s,
+          compress.data                  = compress.data,
           group                          = group,
           sampling.weights               = sampling.weights,
           sampling.weights.normalization = sampling.weights.normalization,
@@ -747,7 +761,8 @@ modsem_da <- function(model.syntax = NULL,
     auto.fix.single    = args$auto.fix.single,
     fix.composite.var  = args$fix.composite.var,
     cluster            = cluster,
-    sampling.weights   = sampling.weights
+    sampling.weights   = sampling.weights,
+    compress.data      = args$compress.data
   )
 
   if (method == "lms" && lms.backend == "graph")

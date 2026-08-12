@@ -79,7 +79,15 @@ fit_modsem_da <- function(model, chisq = TRUE, lav.fit = FALSE,
     }
 
     data_full <- as.matrix(data_full)
-    N.g <- NROW(data_full)
+
+    # Rows are weighted whenever `sampling.weights` was given or duplicate rows
+    # were collapsed by `compressData()`, so both N and the sample moments below
+    # must be weighted. With unit weights this is the unweighted computation.
+    w.g <- rowWeightsDA(data.g)
+    if (is.null(w.g) || length(w.g) != NROW(data_full))
+      w.g <- rep(1, NROW(data_full))
+
+    N.g <- sum(w.g)
     p.g <- NCOL(data_full)
 
     N_vec[g] <- N.g
@@ -99,10 +107,10 @@ fit_modsem_da <- function(model, chisq = TRUE, lav.fit = FALSE,
         matrix(0, nrow = nrow(E.g), ncol = 1, dimnames = list(rownames(E.g), "~1"))
       p.g <- NCOL(O.g)
     } else {
-      mu.g_vec <- apply(data_full, 2, mean, na.rm = TRUE)
+      mu.g_vec <- weightedColMeans(data_full, w.g)
       mu.g <- matrix(mu.g_vec, ncol = 1,
                      dimnames = list(colnames(data_full), "~1"))
-      O.g <- stats::cov(data_full, use = "pairwise.complete.obs")
+      O.g <- weightedCovPairwise(data_full, w.g)
       E.g <- if (!is.null(expected.g) && !is.null(expected.g$sigma.ov)) expected.g$sigma.ov else NULL
       mu_hat.g <- if (!is.null(expected.g) && !is.null(expected.g$mu.ov)) expected.g$mu.ov else NULL
     }

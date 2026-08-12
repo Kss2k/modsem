@@ -344,7 +344,10 @@ calcEFIM_LMS <- function(model,
                          R.max      = 1e6,
                          P          = NULL) {
   k <- length(theta) # number of free parameters
-  N <- sum(vapply(model$models, FUN.VALUE = numeric(1L), FUN = \(sub) sub$data$n))
+  # `n.obs` rather than `n`: with `compress.data` the latter counts distinct
+  # row patterns, and the simulated sample must be sized by the sample size.
+  N <- sum(vapply(model$models, FUN.VALUE = numeric(1L),
+                  FUN = \(sub) sub$data$n.obs %||% sub$data$n))
   G <- model$info$n.groups
   R <- min(R.max, N * S)
   R <- R - R %% G # make R divisble by the number of groups
@@ -404,7 +407,10 @@ calcEFIM_QML <- function(model, theta, data, S = 100,
                          parametric = TRUE, epsilon = 1e-8, verbose = FALSE,
                          R.max = 1e6) {
   k <- length(theta) # number of free parameters
-  N <- sum(vapply(model$models, FUN.VALUE = numeric(1L), FUN = \(sub) sub$data$n))
+  # `n.obs` rather than `n`: with `compress.data` the latter counts distinct
+  # row patterns, and the simulated sample must be sized by the sample size.
+  N <- sum(vapply(model$models, FUN.VALUE = numeric(1L),
+                  FUN = \(sub) sub$data$n.obs %||% sub$data$n))
   G <- model$info$n.groups
   R <- min(R.max, N * S)
   R <- R - R %% G # make R divisble by the number of groups

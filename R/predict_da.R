@@ -160,6 +160,18 @@ modsemPredictDA <- function(object, newdata = NULL, method = c("EBM", "ML"),
       attr(attr(ALL[[g]], "acov"), "patterns") <- attr(A.eta.g, "patterns")
       attr(ALL[[g]], "pattern") <- pattern.g
     }
+
+    # With `compress.data` the model was estimated on distinct row patterns, so
+    # there is one prediction per pattern. Expand back so the caller still gets
+    # one row per input observation -- duplicate rows have identical
+    # predictions by construction, which is why collapsing them was exact.
+    expand <- decompressRowsDA(DATA[[g]])
+
+    if (!is.null(expand)) {
+      ETA[[g]] <- predictDAExpandRows(ETA[[g]], expand)
+      YY[[g]]  <- predictDAExpandRows(YY[[g]],  expand)
+      ALL[[g]] <- predictDAExpandRows(ALL[[g]], expand)
+    }
   }
 
   # collect
@@ -230,6 +242,30 @@ modsemPredictDA <- function(object, newdata = NULL, method = c("EBM", "ML"),
   }
 
   list(Eta = Eta, Y = Y, All = All)
+}
+
+
+# Expand a per-pattern prediction matrix back to one row per input observation.
+# `se` is only expanded when it is genuinely per-row: with a single missing-data
+# pattern it is stored as a single broadcast row, which must be left alone.
+predictDAExpandRows <- function(X, expand) {
+  if (is.null(X) || !NROW(X)) return(X)
+
+  n    <- NROW(X)
+  se   <- attr(X, "se")
+  pat  <- attr(X, "pattern")
+  acov <- attr(X, "acov")
+
+  out <- X[expand, , drop = FALSE]
+
+  if (!is.null(se))
+    attr(out, "se") <- if (NROW(se) == n) se[expand, , drop = FALSE] else se
+  if (!is.null(pat))
+    attr(out, "pattern") <- if (length(pat) == n) pat[expand] else pat
+  if (!is.null(acov))
+    attr(out, "acov") <- acov
+
+  out
 }
 
 

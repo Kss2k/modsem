@@ -35,6 +35,7 @@ modsem_da(
   start = NULL,
   epsilon = NULL,
   quad.range = NULL,
+  rect.range = NULL,
   integration = NULL,
   adaptive = NULL,
   adaptive.quad = NULL,
@@ -62,6 +63,7 @@ modsem_da(
   ordered.standardize = TRUE,
   cluster = NULL,
   cr1s = FALSE,
+  compress.data = NULL,
   sampling.weights = NULL,
   sampling.weights.normalization = NULL,
   rcs = FALSE,
@@ -107,12 +109,22 @@ group analysis}
   If left unset, the default is chosen from \code{integration} and
   \code{adaptive}:
 
-  \tabular{lrrr}{
-    \strong{integration} \tab \code{adaptive = "none"} \tab \code{"quasi"} \tab \code{"full"} \cr
-    \code{"gh"}   \tab   15 \tab   15 \tab   5 \cr
-    \code{"rect"} \tab   15 \tab   15 \tab   5 \cr
-    \code{"mc"}   \tab 5000 \tab    - \tab 250 \cr
+  \tabular{lrrrr}{
+    \strong{integration} \tab \strong{backend} \tab \code{adaptive = "none"} \tab \code{"quasi"} \tab \code{"full"} \cr
+    \code{"gh"}   \tab legacy \tab  24 \tab  24 \tab   5 \cr
+    \code{"gh"}   \tab graph  \tab  15 \tab  15 \tab   5 \cr
+    \code{"rect"} \tab legacy \tab  24 \tab  24 \tab   5 \cr
+    \code{"rect"} \tab graph  \tab  15 \tab  15 \tab   5 \cr
+    \code{"mc"}   \tab both   \tab 500 \tab   - \tab 250 \cr
   }
+
+  The legacy backend integrates only the nonlinear latent dimensions, so its
+  product rule is small and extra nodes cost little -- and are measurably
+  needed. On \code{oneInt}, a 15-node quasi-adaptive rule leaves the
+  interaction 0.005 from the per-observation AGHQ reference, while 20 and
+  above agree to four decimals. The graph backend integrates every latent
+  variable, so its product rule grows much faster and 15 is the practical
+  ceiling.
 
   A per-observation rule (\code{adaptive = "full"}) needs far fewer points
   than a shared one because it is centred on each observation's own
@@ -218,6 +230,21 @@ integration in LMS. By default \code{Inf}, so that \code{f(t)} is
 integrated from -Inf to Inf, but this is likely inefficient at a large
 number of nodes. Nodes outside \code{+/- quad.range} are ignored. Applies
 to \code{integration = "gh"}; the rectangular rule has its own range.}
+
+\item{rect.range}{Half-width of the integration range for
+  \code{integration = "rect"}, in z-scores. Defaults to 5, matching Mplus.
+
+  This matters as much as \code{nodes}. A trapezoid rule on a
+  Gaussian-decaying integrand is not the \code{O(h^2)} scheme its name
+  suggests: Poisson summation gives a discretisation error of
+  \code{2 * exp(-2 * pi^2 / h^2)} for spacing \code{h}, so it converges
+  exponentially. Accuracy is governed by whichever is larger, that term or
+  the truncation error \code{2 * (1 - pnorm(rect.range))}. At 15 nodes over
+  \code{+/- 5} the discretisation error is around \code{3e-17} while
+  truncation is around \code{6e-7}, so the rule is truncation-limited by ten
+  orders of magnitude and widening the range helps far more than adding
+  nodes. Ignored by \code{"gh"} and \code{"mc"}, which use
+  \code{quad.range}.}
 
 \item{integration}{Which numerical integration rule to use for \code{lms}.
 \describe{
@@ -379,6 +406,17 @@ of free parameters. This adjustment inflates standard errors to reduce the
 small-sample downward bias present in the basic cluster-robust (CR0) estimator,
 especially when \eqn{G} is small. If \code{FALSE}, the unadjusted CR0 estimator
 is used. Defaults to \code{TRUE}. Only relevant if \code{cluster} is specified.}
+
+\item{compress.data}{Logical; should duplicate rows be collapsed into a single row
+carrying their summed weight before estimation? This is exact, not an
+approximation: identical rows contribute identical terms to the likelihood,
+so replacing \eqn{m} copies of a row by one row of weight \eqn{m} leaves the
+log-likelihood, the estimates and the standard errors unchanged. It is
+worthwhile whenever the data have a small number of distinct rows -- in
+particular with \code{ordered} indicators, where the row space is finite.
+Defaults to \code{TRUE} for \code{lms.backend = "graph"}, whose cost is linear
+in the number of rows, and \code{FALSE} otherwise. If duplicate rows are
+collapsed, \code{nobs()} still reports the original number of observations.}
 
 \item{sampling.weights}{A variable name in the data frame containing sampling weight information.
 Depending on the sampling.weights.normalization argument, these weights may be rescaled (or not)

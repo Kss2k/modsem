@@ -157,6 +157,9 @@ summary.modsem_da <- function(object,
 
   extract_n <- function(dat) {
     if (is.null(dat)) return(0)
+    # `n.obs` and `n` differ only when duplicate rows have been collapsed by
+    # `compressData()`; reporting must use the number of observations.
+    if (!is.null(dat$n.obs)) return(dat$n.obs)
     if (!is.null(dat$n)) return(dat$n)
     if (!is.null(dat$data.full)) return(NROW(dat$data.full))
     if (!is.null(dat$data)) return(NROW(dat$data))

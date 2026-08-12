@@ -43,6 +43,7 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    auto.fix.single = TRUE,
                    auto.split.syntax = FALSE,
                    cr1s = FALSE,
+                   compress.data = FALSE,
                    group = NULL,
                    sampling.weights = NULL,
                    sampling.weights.normalization = "total",
@@ -87,6 +88,7 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    auto.fix.single = TRUE,
                    auto.split.syntax = TRUE,
                    cr1s = FALSE,
+                   compress.data = FALSE,
                    group = NULL,
                    sampling.weights = NULL,
                    sampling.weights.normalization = "total",
@@ -116,6 +118,17 @@ getMethodSettingsDA <- function(method, args = NULL) {
         args.out$nodes <- quadNodeDefault(args.out$integration,
                                           args.out$adaptive,
                                           args.out$lms.backend %||% "legacy")
+
+      # The graph backend costs one N x Q traversal per objective evaluation,
+      # so its runtime is linear in the number of rows. Collapsing duplicate
+      # rows is exact (see `compressData()`), and on the categorical data this
+      # backend targets it removes a large fraction of them -- which is also
+      # what Mplus does, so it keeps the two comparable. The legacy LMS and
+      # QML backends are left alone: they are not row-bound in the same way,
+      # and their weighted paths are less well exercised.
+      if (is.null(args$compress.data))
+        args.out$compress.data <-
+          identical(args.out$lms.backend %||% "legacy", "graph")
     }
 
     args.out$standardize.data <-
