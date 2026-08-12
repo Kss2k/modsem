@@ -248,8 +248,26 @@ mstepLmsGraphEcm <- function(theta, model, P, max.step,
                              verbose = FALSE, control = list(),
                              optimizer = "nlminb", epsilon = 1e-6,
                              backend = getLmsBackend("graph"),
-                             measurement.step = c("newton", "nlminb", "armijo"),
+                             measurement.step = c("nlminb", "newton", "armijo"),
                              ...) {
+  # `newton` is NOT the default, despite being 1.70x cheaper per iteration.
+  # Measured on the ordered benchmark:
+  #   plain EM, 10 iterations, 15 nodes   newton 1.49 s/iter, logLik -5575.54
+  #                                       nlminb 2.53 s/iter, logLik -5739.06
+  #   plain EM, 120 iterations, 5 nodes   newton 50.9 s, logLik -13116.57
+  #                                       nlminb 52.9 s, logLik -13175.21
+  #   EMA, to convergence, 8 nodes        newton 436.3 s, logLik -13243.20,
+  #                                         300 iterations -- HIT THE CAP
+  #                                       nlminb 414.9 s, logLik -13077.21,
+  #                                         210 iterations -- CONVERGED
+  # So it wins early and loses the endgame: nlminb finishes 166 log-likelihood
+  # ahead in less wall time, and the Newton path does not converge at all.
+  # This is the Armijo failure mode of #21 repeating -- per-iteration cost says
+  # the opposite of total time to a given log-likelihood. The likely cause is
+  # that the step below accepts ANY candidate improving the complete-data
+  # objective, so where nlminb solves the block it can bank a trivial
+  # improvement and stall. Do not promote this default without re-running the
+  # EMA-to-convergence arm.
   # `nlminb` is the default on measurement, despite costing ~5.2 full passes
   # against Armijo's ~3. Measured on the ordered benchmark at a matched ~315 s
   # budget (733 rows, 15 nodes, adaptive full):
