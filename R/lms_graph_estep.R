@@ -534,9 +534,14 @@ lmsGraphNewtonSystem <- function(plan, indicator, gradient, hessian) {
 # demo binary by varying MUITERATIONS at fixed MITERATIONS: one of its M-step
 # iterations costs 0.110 s at N=500 and 0.465 s at N=2000, so N x 4.0 gives
 # cost x 4.23 -- its M-step iterations re-traverse the data exactly as this
-# does, and there is no N-independent sufficient statistic to exploit. It
-# averages ~1.6 iterations per M-step (2.775 vs 2.500 s/iter at MUITERATIONS=1),
-# so ONE damped step is the right target, not Newton to convergence.
+# does, and there is no N-independent sufficient statistic to exploit (#25).
+#
+# ONE step is also the right count, not Newton to convergence. A default-
+# settings TECH5 trace prints exactly one measurement iteration in every
+# section -- 499 of them under EM, 289 under EMA, counted mechanically over the
+# whole file (#26). Iterating this block to 3 or 5 steps was tried and moved
+# the EMA endgame by 15 logLik against a 110 gap, so the single step is not
+# what holds `newton` back; see mstepLmsGraphEcm for the full table.
 #
 # Returns NULL when the block split does not hold, and the caller then keeps
 # the nlminb path.

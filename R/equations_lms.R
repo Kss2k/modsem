@@ -250,24 +250,35 @@ mstepLmsGraphEcm <- function(theta, model, P, max.step,
                              backend = getLmsBackend("graph"),
                              measurement.step = c("nlminb", "newton", "armijo"),
                              structural.iter.max = NULL, ...) {
-  # `newton` is NOT the default, despite being 1.70x cheaper per iteration.
-  # Measured on the ordered benchmark:
-  #   plain EM, 10 iterations, 15 nodes   newton 1.49 s/iter, logLik -5575.54
-  #                                       nlminb 2.53 s/iter, logLik -5739.06
-  #   plain EM, 120 iterations, 5 nodes   newton 50.9 s, logLik -13116.57
-  #                                       nlminb 52.9 s, logLik -13175.21
-  #   EMA, to convergence, 8 nodes        newton 436.3 s, logLik -13243.20,
-  #                                         300 iterations -- HIT THE CAP
-  #                                       nlminb 414.9 s, logLik -13077.21,
-  #                                         210 iterations -- CONVERGED
-  # So it wins early and loses the endgame: nlminb finishes 166 log-likelihood
-  # ahead in less wall time, and the Newton path does not converge at all.
-  # This is the Armijo failure mode of #21 repeating -- per-iteration cost says
-  # the opposite of total time to a given log-likelihood. The likely cause is
-  # that the step below accepts ANY candidate improving the complete-data
-  # objective, so where nlminb solves the block it can bank a trivial
-  # improvement and stall. Do not promote this default without re-running the
-  # EMA-to-convergence arm.
+  # `newton` is NOT the default, and three separate attempts to make it one
+  # have failed. Its Hessian is verified exact (gradient 2.4e-13, Hessian
+  # 3.5e-10 against finite differences, 27/27 parameters), so this is a
+  # trajectory problem, not a correctness one.
+  #
+  # Plain EM says newton wins:
+  #   10 iterations, 15 nodes   newton 1.49 s/iter, logLik -5575.54
+  #                             nlminb 2.53 s/iter, logLik -5739.06
+  #   120 iterations, 5 nodes   newton 50.9 s, logLik -13116.57
+  #                             nlminb 52.9 s, logLik -13175.21
+  # EMA to convergence says the opposite, and EMA is what users run. At 8 nodes,
+  # 300-iteration cap, Fisher scoring off (Mplus EMA reference: -13076.45):
+  #   nlminb                    -13077.50   297 iterations, CONVERGED, 2.62 s/it
+  #   newton, 1 step per M-step -13190.11   300, HIT THE CAP,          2.64 s/it
+  #   newton, up to 3 steps     -13201.44   300, HIT THE CAP,          2.89 s/it
+  #   newton, up to 5 steps     -13185.69   300, HIT THE CAP,          2.74 s/it
+  # Iterating the block moves it 15 logLik against a 110 gap, so "one Newton
+  # step versus a block nlminb SOLVES" is NOT the explanation (#23). Nor is
+  # Fisher scoring: turning it off bought 53 logLik and changed nothing
+  # relative to nlminb. Nor is damping (full steps accepted 37/39), the free
+  # `start` value, or over-solving the structural block.
+  #
+  # Note the last column. The 1.70x per-iteration advantage came from plain-EM
+  # profiles and does NOT survive into the EMA loop, where the two paths cost
+  # the same per iteration. So there is currently no case for `newton` at all:
+  # same cost, 113 logLik worse, does not converge. Do not promote it without
+  # re-running the EMA-to-convergence arm above -- per-iteration cost has now
+  # said the opposite of time-to-a-given-logLik three times (#21, and both
+  # plain-EM rows here).
   # `nlminb` is the default on measurement, despite costing ~5.2 full passes
   # against Armijo's ~3. Measured on the ordered benchmark at a matched ~315 s
   # budget (733 rows, 15 nodes, adaptive full):
