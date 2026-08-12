@@ -620,6 +620,42 @@ omegaToParTable <- function(omegaNA, omegaEst, omegaSE, omegaLabel, parTable.in 
 }
 
 
+# The graph backend keeps its interaction coefficients in the product-design
+# `omega` (etas by products) rather than in the Kronecker `omegaXiXi` and
+# `omegaEtaXi` blocks, so it needs its own emitter. Column names are already
+# the right-hand side, exactly as in `createLabelsProductOmega()`.
+productOmegaToParTable <- function(omegaNA, omegaEst, omegaSE, omegaLabel,
+                                   parTable.in = NULL) {
+  if (is.null(omegaEst) || !length(omegaEst)) return(NULL)
+
+  key <- function(product)
+    paste(sort(lmsGraphProductFactors(product)), collapse = ":")
+
+  # Report the factor ordering the user wrote rather than the canonical one, so
+  # `Z:X` in the syntax does not come back as `X:Z`.
+  getIntTerm <- function(lhs, product) {
+    if (is.null(parTable.in)) return(product)
+    candidates <- parTable.in$rhs[parTable.in$op == "~" &
+                                    parTable.in$lhs == lhs]
+    same <- candidates[vapply(candidates, function(r)
+      identical(key(r), key(product)), logical(1L))]
+    if (length(same)) same[[1L]] else product
+  }
+
+  parTable <- NULL
+  for (row in rownames(omegaEst)) for (col in colnames(omegaEst)) {
+    if (!is.na(omegaNA[row, col]) && omegaLabel[row, col] == "") next
+    newRow <- data.frame(lhs = row, op = "~",
+                         rhs = getIntTerm(lhs = row, product = col),
+                         label = omegaLabel[row, col],
+                         est = omegaEst[row, col],
+                         std.error = omegaSE[row, col])
+    parTable <- rbind(parTable, newRow)
+  }
+  parTable
+}
+
+
 mainModelToParTable <- function(finalModel, method = "lms") {
   matricesEst   <- finalModel$matrices
   matricesSE    <- finalModel$matricesSE
@@ -688,6 +724,13 @@ mainModelToParTable <- function(finalModel, method = "lms") {
                              matricesSE$omegaEtaXi,
                              matricesLabel$omegaEtaXi,
                              parTable.in = parTable.in)
+  parTable <- rbind(parTable, newRows)
+
+  newRows <- productOmegaToParTable(matricesNA$omega,
+                                    matricesEst$omega,
+                                    matricesSE$omega,
+                                    matricesLabel$omega,
+                                    parTable.in = parTable.in)
   parTable <- rbind(parTable, newRows)
 
   # Intercepts
@@ -998,6 +1041,13 @@ getFinalModel <- function(model, theta, method, modelSE = NULL) {
 
     submodel$matricesNA <- emptyModel$models[[g]]$matrices
     submodel$covModelNA <- emptyModel$models[[g]]$covModel
+
+    # `getEmptyModel()` rebuilds the skeleton from the syntax, so it never runs
+    # `lmsGraphPrepareProducts()` and its `omega` is still the zero-column
+    # placeholder from `specifyModelDA()`. The unfilled model already carries
+    # NA for free product coefficients, which is what the skeleton is for.
+    if (NCOL(model$models[[g]]$matrices$omega))
+      submodel$matricesNA$omega <- model$models[[g]]$matrices$omega
 
     finalModel$models[[g]] <- submodel
   }

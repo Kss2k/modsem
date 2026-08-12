@@ -1,13 +1,17 @@
 # E-step, likelihood and derivatives for the recursive (graph) LMS backend.
 #
-# Two evaluation paths exist, and the distinction that matters is whether the
-# quadrature rule is shared by every observation:
+# There is one evaluation path: a quadrature rule per observation. A rule that
+# happens to be shared by every observation (adaptive "none" or "quasi") is not
+# replicated into an N * Q matrix -- it is stored once, as Q nodes, and read by
+# every observation through a zero stride (`shared = TRUE` below). That keeps
+# non-adaptive rules affordable in memory at large N without a second
+# implementation to keep in step.
 #
-#   common  one rule for the whole group (adaptive "none" or "quasi"). The
-#           posterior is reduced to sufficient statistics as it is formed, so
-#           the M-step never materialises an N by Q matrix and costs O(Q).
-#   packed  one rule per observation (adaptive "full"). Nodes are stacked into
-#           an N * Q matrix and the M-step is O(N * Q).
+# The sufficient-statistic M-step that shared rules used to get, which reduced
+# the posterior as it was formed and cost O(Q) rather than O(N * Q), has been
+# removed along with the kernel that went with it. Shared rules therefore pay
+# the same per-iteration cost as per-observation ones; `adaptive = "quasi"`
+# remains worthwhile for accuracy per node under a shared rule, not for speed.
 #
 # Model setup lives in R/lms_graph_model.R.
 
@@ -15,11 +19,11 @@
 # Density on a common set of nodes, in the N by Q layout the quasi-adaptive
 # node pruner expects.
 lmsGraphDensity <- function(nodes, submodel, workspace, link) {
-  result <- lmsGraphCommonPstepCpp(
+  result <- lmsGraphPstepWorkspaceCpp(
     lmsGraphMatrices(submodel), nodes, submodel$info$numXis,
     submodel$info$numEtas, workspace, rep(1, NROW(nodes)),
     rep(1, submodel$data$n), identical(link, "logit"),
-    ThreadEnv$n.threads %||% 1L
+    ThreadEnv$n.threads %||% 1L, TRUE
   )
   exp(result$logKernel)
 }
@@ -123,28 +127,35 @@ pstepLmsGraph <- function(model, theta, lastQuad = NULL, recalcQuad = FALSE,
     M <- lmsGraphMatrices(submodel)
     sampling.weights <- lmsGraphSamplingWeights(submodel)
 
-    aggregate <- if (isTRUE(rule$common))
-      lmsGraphCommonEstepCpp(
-        M, rule$n, submodel$info$numXis, submodel$info$numEtas, workspace,
-        rule$w, sampling.weights, identical(link, "logit"),
-        256L, ThreadEnv$n.threads %||% 1L
-      ) else lmsGraphPstepWorkspaceCpp(
-        M, rule$n, submodel$info$numXis, submodel$info$numEtas, workspace,
-        rule$w, sampling.weights, identical(link, "logit"),
-        ThreadEnv$n.threads %||% 1L
-      )
+    aggregate <- lmsGraphPstepWorkspaceCpp(
+      M, rule$n, submodel$info$numXis, submodel$info$numEtas, workspace,
+      rule$w, sampling.weights, identical(link, "logit"),
+      ThreadEnv$n.threads %||% 1L, isTRUE(rule$common)
+    )
 
     posterior <- aggregate$posterior %||% NULL
+    P.g <- if (is.null(posterior)) NULL else posterior * sampling.weights
+
+    # Structural sufficient statistics for the ECM M-step. Formed here, at the
+    # E-step parameters, because the whole point is that the latent nodes are
+    # then held fixed: with z fixed the complete-data objective separates into
+    # a measurement half that needs the N by Q kernel and a structural half
+    # that needs only these moments. See lmsGraphStructuralStatsCpp.
+    structural <- if (is.null(P.g)) NULL else lmsGraphStructuralStatsCpp(
+      M, rule$n, submodel$info$numXis, submodel$info$numEtas, P.g,
+      isTRUE(rule$common)
+    )
+
     groups[[g]] <- list(
-      P = if (is.null(posterior)) NULL else posterior * sampling.weights,
+      P = P.g,
       posterior = posterior,
       log.kernel = aggregate$logKernel %||% NULL,
       V = rule$n, w = rule$w, quad = rule,
       obsLL = aggregate$logLik,
       sampling.weights = sampling.weights, link = link,
       workspace = workspace,
-      sufficient = if (isTRUE(rule$common)) aggregate$statistics else NULL,
-      common = isTRUE(rule$common)
+      common = isTRUE(rule$common),
+      structural = structural
     )
   }
 
@@ -170,29 +181,18 @@ lmsGraphObjective <- function(theta, model, P, observed = FALSE, sign = -1) {
     logistic <- identical(Pg$link %||% "logit", "logit")
     workspace <- Pg$workspace %||% lmsGraphWorkspace(submodel)
 
-    ll <- ll + if (observed && Pg$common) {
-      lmsGraphCommonEstepCpp(
-        M, Pg$V, submodel$info$numXis, submodel$info$numEtas,
-        workspace, Pg$w, Pg$sampling.weights, logistic,
-        256L, ThreadEnv$n.threads %||% 1L
-      )$logLik
-
-    } else if (observed) {
+    ll <- ll + if (observed) {
       lmsGraphAggregateCpp(
-        lmsGraphLogKernel(submodel, Pg$V, Pg$link %||% "logit", workspace),
+        lmsGraphLogKernel(submodel, Pg$V, Pg$link %||% "logit", workspace,
+                          shared = isTRUE(Pg$common)),
         Pg$w, Pg$sampling.weights
       )$logLik
-
-    } else if (Pg$common) {
-      lmsGraphSufficientCompleteCpp(
-        M, Pg$V, submodel$info$numXis, submodel$info$numEtas,
-        workspace, Pg$sufficient, logistic, ThreadEnv$n.threads %||% 1L
-      )
 
     } else {
       lmsGraphCompleteWorkspaceCpp(
         M, Pg$V, submodel$info$numXis, submodel$info$numEtas,
-        workspace, Pg$P, logistic, ThreadEnv$n.threads %||% 1L
+        workspace, Pg$P, logistic, ThreadEnv$n.threads %||% 1L,
+        isTRUE(Pg$common)
       )
     }
   }
@@ -239,25 +239,14 @@ lmsGraphAnalyticalGradient <- function(theta, model, P, observed, sign) {
     logistic <- identical(Pg$link %||% "logit", "logit")
     workspace <- Pg$workspace %||% lmsGraphWorkspace(submodel)
 
-    score <- if (isTRUE(Pg$common)) {
-      statistics <- Pg$sufficient
-      if (observed) statistics <- lmsGraphCommonEstepCpp(
-        M, Pg$V, submodel$info$numXis, submodel$info$numEtas,
-        workspace, Pg$w, Pg$sampling.weights, logistic,
-        256L, ThreadEnv$n.threads %||% 1L
-      )$statistics
-      lmsGraphSufficientScoreCpp(
-        M, Pg$V, submodel$info$numXis, submodel$info$numEtas,
-        statistics, ordered, loc$block, loc$row, loc$col, loc$symmetric,
-        logistic
-      )
-    } else lmsGraphReverseScoreCpp(
+    score <- lmsGraphReverseScoreCpp(
       M, Pg$V, submodel$info$numXis, submodel$info$numEtas,
       submodel$data$data.split, submodel$data$colidx0, ordered,
       Pg$w, Pg$sampling.weights,
       if (observed) matrix(numeric(), 0L, 0L) else Pg$P,
       observed, loc$block, loc$row, loc$col, loc$symmetric,
-      logistic, ThreadEnv$n.threads %||% 1L, workspace
+      logistic, ThreadEnv$n.threads %||% 1L, workspace,
+      isTRUE(Pg$common)
     )
     raw[loc$param] <- score
   }
@@ -284,6 +273,79 @@ lmsGraphAnalyticalGradient <- function(theta, model, P, observed, sign) {
 # which are the entries this gradient was already trusted for.
 #
 # `epsilon` is retained in the signatures because callers pass it positionally.
+
+# Blocks whose parameters enter the likelihood only through the measurement
+# model, i.e. through `means = tau + states %*% t(lambda)` and the thresholds.
+# Everything else -- A, psi, alpha, beta0, gammaXi, gammaEta, covZetaXi, omega
+# -- enters only through the latent density once the nodes are held fixed.
+#
+# A function rather than a constant: `DA_BLOCKS` lives in
+# R/model_parameters_da.R, which is sourced after this file, so a top-level
+# reference would not resolve at load time.
+lmsGraphMeasurementBlocks <- function() {
+  unlist(DA_BLOCKS[c("lambdaX", "lambdaY", "tauX", "tauY", "thetaDelta",
+                     "thetaEpsilon", "thresholdDelta")], use.names = FALSE)
+}
+
+
+# Split the free parameter vector into the two ECM blocks. A label constraint
+# can tie one free parameter to several matrix entries, so the split is taken
+# from the Jacobian's sparsity rather than from names: a parameter counts as
+# measurement if it touches ANY measurement location. That keeps a parameter
+# shared between the two halves in the measurement step, which uses the full
+# objective and is therefore correct for it either way -- the structural step
+# is the one that would be wrong, since it cannot see the kernel.
+lmsGraphEcmPartition <- function(theta, model) {
+  locations <- model$params$gradientStruct$locations
+  J <- lmsFirstDerivativeJacobian(theta, model)
+  measurement.location <- locations$block %in% lmsGraphMeasurementBlocks()
+  touches <- function(mask) {
+    if (!any(mask)) return(rep(FALSE, length(theta)))
+    abs(J[, mask, drop = FALSE]) %*% rep(1, sum(mask)) > 0
+  }
+  measurement <- as.logical(touches(measurement.location))
+  structural <- as.logical(touches(!measurement.location)) & !measurement
+  list(measurement = which(measurement), structural = which(structural))
+}
+
+
+# The complete-data objective at the E-step parameters, for free.
+#
+# `lmsGraphObjective()` in the complete case reduces to
+#   sum_i sum_q P_iq * sum_j log f(x_ij | z_iq)
+# and the inner sum over indicators is exactly the log kernel the E-step
+# already formed. So the value at the point the M-step starts from needs no
+# pass over the data at all -- it is a dot product of two matrices in hand.
+# Line searches need that starting value, and paying an N by Q pass for it
+# would eat most of what a cheap step saves.
+completeAtEstepLmsGraph <- function(P, sign = -1) {
+  ll <- 0
+  for (Pg in P$P_GROUPS) {
+    if (is.null(Pg$P) || is.null(Pg$log.kernel)) return(NA_real_)
+    ll <- ll + sum(Pg$P * Pg$log.kernel)
+  }
+  sign * ll
+}
+
+
+# Structural half of the complete-data objective, from the statistics the
+# E-step formed. Costs O(d^3) with d = 1 + numXis + numEtas + numProducts --
+# no pass over the data at all.
+structuralCompLogLikLmsGraph <- function(theta, model, P, sign = -1, ...) {
+  filled <- fillModel(model = model, theta = theta, method = "lms")
+  ll <- 0
+  for (g in seq_len(model$info$n.groups)) {
+    stats <- P$P_GROUPS[[g]]$structural
+    if (is.null(stats)) next
+    submodel <- filled$models[[g]]
+    ll <- ll + lmsGraphStructuralCompleteCpp(
+      lmsGraphMatrices(submodel), stats$S, stats$W,
+      submodel$info$numXis, submodel$info$numEtas, stats$numProducts
+    )
+  }
+  sign * ll
+}
+
 
 gradientCompLogLikLmsGraph <- function(theta, model, P, sign = -1,
                                        epsilon = 1e-6, ...) {

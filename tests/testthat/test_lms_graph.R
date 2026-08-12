@@ -13,21 +13,13 @@ testthat::test_that("LMS graph backend transforms one unified latent covariance"
 })
 
 
-testthat::test_that("hybrid graph score replaces covariance directions only", {
-  theta <- c(A1 = .2, gammaXi1 = .3, psi1 = .4)
-  target <- c(-.1, .5, .8)
-  analytical <- c(A1 = 999,
-                  gammaXi1 = unname(2 * (theta[2L] - target[2L])),
-                  psi1 = 999)
-  hybrid <- lmsGraphReplaceCovarianceGradient(
-    theta, analytical, function(value) sum((value - target)^2), 1e-6
-  )
-  expected <- 2 * (theta - target)
-  testthat::expect_equal(hybrid[c("A1", "psi1")],
-                         expected[c("A1", "psi1")], tolerance = 2e-6)
-  testthat::expect_identical(hybrid[["gammaXi1"]],
-                             analytical[["gammaXi1"]])
-})
+# The covariance directions (blocks 6, 7 and 17) used to be overwritten with
+# forward differences, and this is where that hybrid was tested. The analytic
+# scores turned out to be correct -- they are checked against central
+# differences in "analytical LMS graph scores match central differences" below,
+# whose `blocks` vector already covers 6, 7 and 17 -- so the override was pure
+# cost on the per-observation path, where every objective evaluation is a full
+# N-by-Q pass. Removed; the coverage lives in that test.
 
 
 testthat::test_that("LMS graph states follow recursive structural order", {
@@ -152,95 +144,91 @@ testthat::test_that("packed graph rules support observation-specific nodes and w
 })
 
 
-testthat::test_that("common graph sufficient statistics reproduce packed M-step", {
+# The two tests that lived here ("common graph sufficient statistics reproduce
+# packed M-step" and "common graph statistics respect missingness patterns")
+# checked that the shared-rule sufficient-statistic M-step agreed with the
+# packed one. That second implementation is gone -- a shared rule is now read
+# from the same Q nodes through a zero stride rather than through its own
+# kernel and M-step.
+#
+# What replaces them is the equivalence the stride actually claims: reading Q
+# shared nodes with stride 0 must give exactly what replicating those nodes N
+# times and reading them with stride Q gives. The replicated side is the
+# ordinary packed path, which the score and likelihood tests below already
+# pin down, so this anchors the shared path to something independently tested.
+testthat::test_that("a shared rule read with zero stride equals the replicated rule", {
   delta <- matrix(c(-.4, log(expm1(1.2)), NaN, NaN), 2L, byrow = TRUE)
   M <- list(
     A = matrix(1.1), covZetaXi = matrix(.12), psi = matrix(.8),
-    beta0 = matrix(.15), alpha = matrix(-.1), gammaXi = matrix(.35),
-    gammaEta = matrix(0),
+    beta0 = matrix(.15), alpha = matrix(-.1),
+    gammaXi = matrix(.35), gammaEta = matrix(0),
     productDesign = matrix(c(2L, 0L), 1L, 2L, byrow = TRUE),
     omega = matrix(.18, 1L, 1L),
     lambdaX = matrix(c(1, .7, .45, 1.1), 2L, byrow = TRUE),
     tauX = matrix(c(0, .2)), thetaDelta = diag(c(1, .65)),
     thresholdDelta = delta, thresholds = thresholdDeltaToThresholdMatrix(delta)
   )
-  nodes <- as.matrix(expand.grid(c(-1, .2, 1.1), c(-.8, .4, 1.3)))
+  shared.nodes <- as.matrix(expand.grid(c(-1, .2, 1.1), c(-.8, .4, 1.3)))
+  Q <- NROW(shared.nodes)
   values <- matrix(c(1, -.2, 2, .4, 3, 1.0), 3L, byrow = TRUE)
-  posterior <- matrix(seq_len(NROW(values) * NROW(nodes)), NROW(values))
-  posterior <- posterior / rowSums(posterior)
-  posterior <- posterior * c(1, 1.5, .7)
+  N <- NROW(values)
+  row.weights <- c(1, 1.5, .7)
+  shared.weights <- rep(1 / Q, Q)
+
+  # Same rule, the two ways of storing it.
+  packed.nodes <- shared.nodes[rep(seq_len(Q), times = N), , drop = FALSE]
+  packed.weights <- rep(shared.weights, times = N)
+
   workspace <- lmsGraphWorkspaceCpp(list(values), list(0:1), 0L)
-  quadrature.weights <- rep(1 / NROW(nodes), NROW(nodes))
-  sampling.weights <- c(1, 1.5, .7)
-  ordinary.e <- lmsGraphCommonPstepCpp(
-    M, nodes, 1L, 1L, workspace, quadrature.weights,
-    sampling.weights, TRUE, 1L
-  )
-  fused.e <- lmsGraphCommonEstepCpp(
-    M, nodes, 1L, 1L, workspace, quadrature.weights,
-    sampling.weights, TRUE, 2L, 1L
-  )
-  ordinary.statistics <- lmsGraphSufficientStatsCpp(
-    ordinary.e$posterior * sampling.weights, workspace, 2L, 3L, 1L
-  )
-  testthat::expect_equal(fused.e$logLik, ordinary.e$logLik, tolerance = 1e-12)
+
+  shared.kernel <- lmsGraphLogKernelWorkspaceCpp(
+    M, shared.nodes, 1L, 1L, workspace, TRUE, 1L, TRUE)
+  packed.kernel <- lmsGraphLogKernelWorkspaceCpp(
+    M, packed.nodes, 1L, 1L, workspace, TRUE, 1L, FALSE)
+  testthat::expect_equal(shared.kernel, packed.kernel, tolerance = 1e-12)
+
+  shared.step <- lmsGraphPstepWorkspaceCpp(
+    M, shared.nodes, 1L, 1L, workspace, shared.weights, row.weights,
+    TRUE, 1L, TRUE)
+  packed.step <- lmsGraphPstepWorkspaceCpp(
+    M, packed.nodes, 1L, 1L, workspace, packed.weights, row.weights,
+    TRUE, 1L, FALSE)
+  testthat::expect_equal(shared.step$logLik, packed.step$logLik,
+                         tolerance = 1e-12)
+  testthat::expect_equal(shared.step$posterior, packed.step$posterior,
+                         tolerance = 1e-12)
+
+  posterior <- packed.step$posterior * row.weights
   testthat::expect_equal(
-    as.numeric(fused.e$nodeMass),
-    as.numeric(colSums(ordinary.e$posterior * sampling.weights)),
-    tolerance = 1e-12
-  )
-  for (component in names(ordinary.statistics))
-    testthat::expect_equal(fused.e$statistics[[component]],
-                           ordinary.statistics[[component]], tolerance = 1e-12)
-  statistics <- lmsGraphSufficientStatsCpp(
-    posterior, workspace, 2L, 3L, 1L
-  )
-  packed.nodes <- nodes[rep(seq_len(NROW(nodes)), times = NROW(values)),
-                        , drop = FALSE]
-  packed.objective <- lmsGraphCompleteWorkspaceCpp(
-    M, packed.nodes, 1L, 1L, workspace, posterior, TRUE, 1L
-  )
-  compact.objective <- lmsGraphSufficientCompleteCpp(
-    M, nodes, 1L, 1L, workspace, statistics, TRUE, 1L
-  )
-  testthat::expect_equal(compact.objective, packed.objective, tolerance = 1e-12)
+    lmsGraphCompleteWorkspaceCpp(M, shared.nodes, 1L, 1L, workspace,
+                                 posterior, TRUE, 1L, TRUE),
+    lmsGraphCompleteWorkspaceCpp(M, packed.nodes, 1L, 1L, workspace,
+                                 posterior, TRUE, 1L, FALSE),
+    tolerance = 1e-12)
 
-  blocks <- c(0L, 2L, 4L, 6L, 7L, 8L, 9L, 10L, 12L, 13L, 17L, 18L)
-  rows <- c(1L, 1L, 1L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L)
-  cols <- c(1L, 0L, 1L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 1L)
+  # The score is the path with genuinely new code: with a shared rule every
+  # observation accumulates into the same Q rows of the response adjoint, so
+  # it is reduced per thread rather than written in place.
+  blocks <- c(0L, 2L, 4L, 6L, 7L, 8L, 9L, 10L, 11L, 19L, 17L, 18L, 18L)
+  rows <- c(1L, 1L, 1L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L)
+  cols <- c(1L, 0L, 1L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 1L)
   symmetric <- blocks %in% c(4L, 7L)
-  packed.score <- lmsGraphReverseScoreCpp(
-    M, packed.nodes, 1L, 1L, list(values), list(0:1), 0L,
-    rep(1, NROW(packed.nodes)), rep(1, NROW(values)), posterior, FALSE,
-    blocks, rows, cols, symmetric, TRUE, 1L, workspace
-  )
-  compact.score <- lmsGraphSufficientScoreCpp(
-    M, nodes, 1L, 1L, statistics, 0L,
-    blocks, rows, cols, symmetric, TRUE
-  )
-  testthat::expect_equal(compact.score, packed.score, tolerance = 1e-10)
+  for (observed in c(TRUE, FALSE)) {
+    complete.weights <- if (observed) matrix(numeric(), 0L, 0L) else posterior
+    for (threads in c(1L, 2L)) {
+      shared.score <- lmsGraphReverseScoreCpp(
+        M, shared.nodes, 1L, 1L, list(values), list(0:1), 0L,
+        shared.weights, row.weights, complete.weights, observed,
+        blocks, rows, cols, symmetric, TRUE, threads, workspace, TRUE)
+      packed.score <- lmsGraphReverseScoreCpp(
+        M, packed.nodes, 1L, 1L, list(values), list(0:1), 0L,
+        packed.weights, row.weights, complete.weights, observed,
+        blocks, rows, cols, symmetric, TRUE, threads, workspace, FALSE)
+      testthat::expect_equal(as.numeric(shared.score),
+                             as.numeric(packed.score), tolerance = 1e-10)
+    }
+  }
 })
-
-
-testthat::test_that("common graph statistics respect missingness patterns", {
-  data <- list(matrix(c(1, .5, 2, -.3), 2L, byrow = TRUE), matrix(.8))
-  columns <- list(0:1, 1L)
-  workspace <- lmsGraphWorkspaceCpp(data, columns, 0L)
-  posterior <- matrix(c(.1, .2, .7, .3, .3, .4, .2, .5, .3), 3L)
-  statistics <- lmsGraphSufficientStatsCpp(
-    posterior, workspace, 2L, 3L, 2L
-  )
-  testthat::expect_equal(statistics$mass[, 1L], colSums(posterior[1:2, ]))
-  testthat::expect_equal(statistics$mass[, 2L], colSums(posterior))
-  testthat::expect_equal(statistics$counts[, 1L, 1L], posterior[1L, ])
-  testthat::expect_equal(statistics$counts[, 2L, 1L], posterior[2L, ])
-  values <- c(.5, -.3, .8)
-  testthat::expect_equal(statistics$sum[, 2L],
-                         drop(crossprod(posterior, values)))
-  testthat::expect_equal(statistics$sumsq[, 2L],
-                         drop(crossprod(posterior, values^2)))
-})
-
 
 testthat::test_that("per-observation adaptive graph quadrature is exact for Gaussian rows", {
   values <- matrix(c(-1, .4, 1.5), ncol = 1L)

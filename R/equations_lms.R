@@ -186,6 +186,153 @@ mstepLms <- function(theta, model, P,
 }
 
 
+# Conditional M-step for the graph backend (ECM).
+#
+# Holding the E-step's latent nodes fixed makes the complete-data objective
+# separable:
+#
+#   Q(theta) = sum P log f(x | z; measurement) + sum P log p(z; structural)
+#
+# The measurement half still costs an N by Q pass with the ordinal CDFs; the
+# structural half costs O(d^3) from the moment matrix the E-step formed, about
+# 15 microseconds against 0.42 s for a joint evaluation. Optimising the blocks
+# in turn is therefore worth it even though each is a coordinate step.
+#
+# ORDER MATTERS, and only in one direction. The measurement block runs FIRST,
+# while the structural parameters are still at their E-step values, so the
+# states the existing objective rebuilds internally are exactly the fixed z the
+# separation assumes -- which is why that half needs no new machinery. Running
+# the structural block first would move the states out from under it.
+# One backtracking step along the analytic gradient, for the measurement block.
+#
+# `nlminb` with iter.max = 1 spends about 5.2 full N by Q passes on this block,
+# nearly all of it line search, which is what stopped the ECM split from paying
+# off. This does one gradient (one pass) and then one objective per trial,
+# accepting the first Armijo-sufficient decrease -- typically two to three
+# passes. The starting value costs nothing: `completeAtEstepLmsGraph()` reads
+# it off the E-step's kernel and posterior.
+#
+# Generalised EM only requires an increase, not a maximum, so a single accepted
+# step is a legitimate M-step. If no trial improves, the block is left where it
+# was, which keeps the monotonicity guarantee intact.
+armijoBlockStep <- function(theta, index, objective, gradient, lower, upper,
+                            P = NULL, tries = 6L, shrink = 0.4, c1 = 1e-4,
+                            move = 0.5) {
+  f0 <- completeAtEstepLmsGraph(P, sign = -1)
+  if (!is.finite(f0)) f0 <- objective(theta)
+  g <- gradient(theta)[index]
+  if (!all(is.finite(g)) || all(g == 0))
+    return(list(theta = theta, objective = f0, iterations = 0L,
+                convergence = 0L, message = "no usable gradient"))
+
+  # Scale so the largest parameter moves by `move` on the first trial: the
+  # block mixes loadings and thresholds, whose gradients differ by orders of
+  # magnitude, and an unscaled step would spend every trial backtracking.
+  step <- move / max(abs(g))
+  at <- function(x) { full <- theta; full[index] <- x; full }
+  for (k in seq_len(tries)) {
+    candidate <- pmin(pmax(theta[index] - step * g, lower[index]), upper[index])
+    delta <- theta[index] - candidate
+    f <- objective(at(candidate))
+    if (is.finite(f) && f <= f0 - c1 * sum(g * delta))
+      return(list(theta = at(candidate), objective = f, iterations = k,
+                  convergence = 0L, message = "armijo"))
+    step <- step * shrink
+  }
+  list(theta = theta, objective = f0, iterations = tries, convergence = 1L,
+       message = "armijo found no improving step")
+}
+
+
+mstepLmsGraphEcm <- function(theta, model, P, max.step,
+                             verbose = FALSE, control = list(),
+                             optimizer = "nlminb", epsilon = 1e-6,
+                             backend = getLmsBackend("graph"),
+                             measurement.step = c("nlminb", "armijo"), ...) {
+  # `nlminb` is the default on measurement, despite costing ~5.2 full passes
+  # against Armijo's ~3. Measured on the ordered benchmark at a matched ~315 s
+  # budget (733 rows, 15 nodes, adaptive full):
+  #     joint M-step        312.1 s   logLik -5525.899
+  #     ECM + nlminb        311.8 s   logLik -5479.980
+  #     ECM + armijo        320.5 s   logLik -5491.075
+  # Armijo runs 110 iterations against nlminb's 80 in the same time and still
+  # ends further from the optimum: its line search is buying real progress, not
+  # burning passes. Do not switch the default without re-running that
+  # comparison at equal WALL TIME -- per-iteration cost alone says the opposite.
+  measurement.step <- match.arg(measurement.step)
+  partition <- lmsGraphEcmPartition(theta, model)
+  lower <- model$params$bounds$lower
+  upper <- model$params$bounds$upper
+
+  # Fall back to the joint step when the split is degenerate: a model with no
+  # structural free parameters gains nothing, and one with no measurement free
+  # parameters is not a shape this was designed for.
+  if (!length(partition$structural) || !length(partition$measurement))
+    return(mstepLms(theta, model, P, max.step = max.step, verbose = verbose,
+                    control = control, optimizer = optimizer,
+                    epsilon = epsilon, backend = backend, ...))
+
+  runBlock <- function(theta, index, objective, gradient, iter.max) {
+    at <- function(x) { full <- theta; full[index] <- x; full }
+    control.block <- control
+    control.block$iter.max <- iter.max
+    control.block$eval.max <- max(200L, 2L * iter.max)
+    est <- suppressWarnings(stats::nlminb(
+      start = theta[index],
+      objective = function(x) objective(at(x)),
+      gradient = if (is.null(gradient)) NULL else
+        function(x) gradient(at(x))[index],
+      lower = lower[index], upper = upper[index],
+      control = control.block
+    ))
+    list(theta = at(est$par), objective = est$objective,
+         iterations = est$iterations, convergence = est$convergence,
+         message = est$message)
+  }
+
+  objective <- function(x) backend$complete(theta = x, model = model, P = P,
+                                            sign = -1, epsilon = epsilon)
+  gradient <- function(x) backend$gradient.complete(theta = x, model = model,
+                                                    P = P, sign = -1,
+                                                    epsilon = epsilon)
+
+  measurement <- if (identical(measurement.step, "armijo"))
+    armijoBlockStep(theta, partition$measurement, objective, gradient,
+                    lower, upper, P = P)
+  else runBlock(
+    theta, partition$measurement,
+    objective = objective, gradient = gradient,
+    iter.max = max.step
+  )
+
+  # The structural objective is free, so this block is run to convergence
+  # rather than for `max.step` iterations. Mplus spends 8-14 evaluations here
+  # per EM iteration; at 15 microseconds each the budget is irrelevant.
+  structural <- runBlock(
+    measurement$theta, partition$structural,
+    objective = function(x) structuralCompLogLikLmsGraph(x, model, P, sign = -1),
+    gradient = NULL,
+    iter.max = max(50L, max.step)
+  )
+
+  # The caller expects the joint objective at the final point. Evaluating it
+  # directly would cost a full N by Q pass for a number we can reconstruct:
+  # the measurement block already returned the joint value at its optimum
+  # (with the structural parameters still at their E-step values), and the
+  # structural block only moved the structural half. Both structural terms
+  # cost about 15 microseconds, so this replaces a pass with two of those.
+  structural.before <- structuralCompLogLikLmsGraph(measurement$theta, model,
+                                                    P, sign = -1)
+  structural.after <- structuralCompLogLikLmsGraph(structural$theta, model,
+                                                   P, sign = -1)
+  list(par = structural$theta,
+       objective = measurement$objective - structural.before + structural.after,
+       iterations = measurement$iterations + structural$iterations,
+       convergence = max(measurement$convergence, structural$convergence),
+       message = measurement$message)
+}
+
+
 compLogLikLms <- function(theta, model, P, sign = -1, ...) {
   tryCatch({
     modFilled <- fillModel(model = model, theta = theta, method = "lms")

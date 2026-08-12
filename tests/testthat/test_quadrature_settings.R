@@ -30,7 +30,12 @@ Theta <- diag(c(
   0.2, 0.4, 0.5
 ))
 
-Sigma <- Lambda %*% Psi %*% t(Lambda) + Theta
+
+scale <- 0.5
+ThetaScaled <- Theta * scale
+
+
+Sigma <- Lambda %*% Psi %*% t(Lambda) + ThetaScaled
 
 n <- 2000
 
@@ -73,10 +78,12 @@ gh10  <- quadRuleFixed(quadSpec(nodes = 10, k = 3, integration = "gh"))
 gh15  <- quadRuleFixed(quadSpec(nodes = 15, k = 3, integration = "gh"))
 gh20  <- quadRuleFixed(quadSpec(nodes = 20, k = 3, integration = "gh", max.nodes = Inf))
 gh100 <- quadRuleFixed(quadSpec(nodes = 100, k = 3, integration = "gh", max.nodes = Inf))
+gh200 <- quadRuleFixed(quadSpec(nodes = 200, k = 3, integration = "gh", max.nodes = Inf))
 
 # really slow but it should serve as an initial "true" value
-keep <- apply(gh100$n, MARGIN = 1L, FUN = \(x) all(abs(x) <= 5.5))
-true <- logIntegral(gh100$n[keep,], gh100$w[keep])
+keep <- apply(gh200$n, MARGIN = 1L, FUN = \(x) all(abs(x) <= 5.5)) 
+logIntegral(gh200$n[keep,], gh200$w[keep])
+true <- sum(mvtnorm::dmvnorm(X, sigma = Sigma, log = TRUE))
 #> [1] -24622.6
 
 benchmarkQuadRules <- function(...) {

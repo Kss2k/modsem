@@ -69,12 +69,23 @@ lmsGraphPrepareOrdered <- function(model, data, model.syntax, ordered = NULL,
     ordered.g <- intersect(ordered, indicators)
     indicator.index <- match(ordered.g, indicators)
 
-    # Identification for ordinal responses: zero intercept and unit response
-    # scale. Off-diagonal response residuals remain unsupported.
+    # Identification for ordinal responses: zero intercept, and a response
+    # scale fixed by the link rather than estimated. Off-diagonal response
+    # residuals remain unsupported.
+    #
+    # The likelihood never reads this entry -- every `theta(column, column)`
+    # in the kernels and scores sits in the continuous branch -- so it exists
+    # for whatever reconstructs implied variances from the matrices, chiefly
+    # the standardized solution. It therefore has to carry the variance the
+    # link actually implies: a standard logistic residual has variance pi^2/3,
+    # not 1. Recording 1 under `link = "logit"` left standardized loadings and
+    # R-squared for ordered indicators computed against a residual roughly
+    # 3.3x too small.
+    response.variance <- if (identical(link, "logit")) pi^2 / 3 else 1
     submodel$matrices$tauX[indicator.index, 1L] <- 0
     submodel$matrices$thetaDelta[indicator.index, ] <- 0
     submodel$matrices$thetaDelta[, indicator.index] <- 0
-    diag(submodel$matrices$thetaDelta)[indicator.index] <- 1
+    diag(submodel$matrices$thetaDelta)[indicator.index] <- response.variance
     submodel$labelMatrices$tauX[indicator.index, 1L] <- ""
     submodel$labelMatrices$thetaDelta[indicator.index, ] <- ""
     submodel$labelMatrices$thetaDelta[, indicator.index] <- ""
@@ -127,7 +138,10 @@ lmsGraphBackend <- function(link = c("logit", "probit")) {
     gradient.complete = gradientCompLogLikLmsGraph,
     gradient.observed = gradientObsLogLikLmsGraph,
     hessian.complete = hessianCompLogLikLmsGraph,
-    hessian.observed = hessianObsLogLikLmsGraph
+    hessian.observed = hessianObsLogLikLmsGraph,
+    # ECM: the structural block is separable from the measurement block once
+    # the E-step's latent nodes are held fixed, and is essentially free.
+    mstep = mstepLmsGraphEcm
   )
 }
 
@@ -209,12 +223,12 @@ lmsGraphWorkspace <- function(submodel) {
 
 
 lmsGraphLogKernel <- function(submodel, nodes, link = c("logit", "probit"),
-                              workspace = NULL) {
+                              workspace = NULL, shared = FALSE) {
   link <- match.arg(link)
   lmsGraphValidate(submodel)
   if (is.null(workspace)) workspace <- lmsGraphWorkspace(submodel)
   lmsGraphLogKernelWorkspaceCpp(
     lmsGraphMatrices(submodel), nodes, submodel$info$numXis,
     submodel$info$numEtas, workspace, identical(link, "logit"),
-    ThreadEnv$n.threads %||% 1L)
+    ThreadEnv$n.threads %||% 1L, shared)
 }

@@ -55,7 +55,14 @@ testthat::test_that("ordered LMS fits without conditions and returns stable inte
     ))
   })
 
-  par_table <- parameter_estimates(fit)
+  # Standardized, not `parameter_estimates()`. These bounds are on the
+  # standardized scale: they were set when ordered models went through a
+  # different estimator whose latent variances sat near 1, so the two scales
+  # coincided. The graph backend leaves the latents in the y* metric the link
+  # implies (variances ~17), where the interaction carries sd(X)sd(Z)/sd(Y)
+  # rather than sd(X)/sd(Y) -- a factor of ~2.7 on this model. The standardized
+  # estimate is the scale-free quantity the test is actually about.
+  par_table <- standardized_estimates(fit)
   int_est <- par_table[
     par_table$lhs == "Y" &
       par_table$op == "~" &

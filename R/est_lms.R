@@ -9,7 +9,8 @@ getLmsBackend <- function(backend = c("legacy", "graph"),
     gradient.complete = gradientCompLogLikLms,
     gradient.observed = gradientObsLogLikLms,
     hessian.complete = hessianCompLogLikLms,
-    hessian.observed = hessianObsLogLikLms
+    hessian.observed = hessianObsLogLikLms,
+    mstep = mstepLms
   )
 }
 
@@ -566,7 +567,7 @@ emLms <- function(model,
       .error <- function(e) {
         mod_msg_warn(mode, "mode failed! Message:", conditionMessage(e))
 
-        mstepLms(
+        (backend$mstep %||% mstepLms)(
           model = model,
           P = P,
           theta = thetaOld,
@@ -582,7 +583,7 @@ emLms <- function(model,
       # accelerated step
       switch(mode,
         EM = {
-          mstep <- mstepLms(
+          mstep <- (backend$mstep %||% mstepLms)(
             model = model,
             P = P,
             theta = thetaOld,

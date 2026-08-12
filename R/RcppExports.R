@@ -97,32 +97,16 @@ lmsGraphWorkspaceCpp <- function(dataR, colidxR, orderedIndex) {
     .Call(`_modsem_lmsGraphWorkspaceCpp`, dataR, colidxR, orderedIndex)
 }
 
-lmsGraphCommonPstepCpp <- function(matrices, nodes, numXis, numEtas, workspaceSEXP, quadWeights, rowWeights, logistic = TRUE, ncores = 1L) {
-    .Call(`_modsem_lmsGraphCommonPstepCpp`, matrices, nodes, numXis, numEtas, workspaceSEXP, quadWeights, rowWeights, logistic, ncores)
+lmsGraphLogKernelWorkspaceCpp <- function(matrices, nodes, numXis, numEtas, workspaceSEXP, logistic = TRUE, ncores = 1L, shared = FALSE) {
+    .Call(`_modsem_lmsGraphLogKernelWorkspaceCpp`, matrices, nodes, numXis, numEtas, workspaceSEXP, logistic, ncores, shared)
 }
 
-lmsGraphCommonEstepCpp <- function(matrices, nodes, numXis, numEtas, workspaceSEXP, quadWeights, rowWeights, logistic = TRUE, blockSize = 256L, ncores = 1L) {
-    .Call(`_modsem_lmsGraphCommonEstepCpp`, matrices, nodes, numXis, numEtas, workspaceSEXP, quadWeights, rowWeights, logistic, blockSize, ncores)
+lmsGraphPstepWorkspaceCpp <- function(matrices, nodes, numXis, numEtas, workspaceSEXP, quadWeights, rowWeights, logistic = TRUE, ncores = 1L, shared = FALSE) {
+    .Call(`_modsem_lmsGraphPstepWorkspaceCpp`, matrices, nodes, numXis, numEtas, workspaceSEXP, quadWeights, rowWeights, logistic, ncores, shared)
 }
 
-lmsGraphSufficientStatsCpp <- function(posterior, workspaceSEXP, indicators, maxCategories, ncores = 1L) {
-    .Call(`_modsem_lmsGraphSufficientStatsCpp`, posterior, workspaceSEXP, indicators, maxCategories, ncores)
-}
-
-lmsGraphSufficientCompleteCpp <- function(matrices, nodes, numXis, numEtas, workspaceSEXP, statistics, logistic = TRUE, ncores = 1L) {
-    .Call(`_modsem_lmsGraphSufficientCompleteCpp`, matrices, nodes, numXis, numEtas, workspaceSEXP, statistics, logistic, ncores)
-}
-
-lmsGraphLogKernelWorkspaceCpp <- function(matrices, nodes, numXis, numEtas, workspaceSEXP, logistic = TRUE, ncores = 1L) {
-    .Call(`_modsem_lmsGraphLogKernelWorkspaceCpp`, matrices, nodes, numXis, numEtas, workspaceSEXP, logistic, ncores)
-}
-
-lmsGraphPstepWorkspaceCpp <- function(matrices, nodes, numXis, numEtas, workspaceSEXP, quadWeights, rowWeights, logistic = TRUE, ncores = 1L) {
-    .Call(`_modsem_lmsGraphPstepWorkspaceCpp`, matrices, nodes, numXis, numEtas, workspaceSEXP, quadWeights, rowWeights, logistic, ncores)
-}
-
-lmsGraphCompleteWorkspaceCpp <- function(matrices, nodes, numXis, numEtas, workspaceSEXP, weights, logistic = TRUE, ncores = 1L) {
-    .Call(`_modsem_lmsGraphCompleteWorkspaceCpp`, matrices, nodes, numXis, numEtas, workspaceSEXP, weights, logistic, ncores)
+lmsGraphCompleteWorkspaceCpp <- function(matrices, nodes, numXis, numEtas, workspaceSEXP, weights, logistic = TRUE, ncores = 1L, shared = FALSE) {
+    .Call(`_modsem_lmsGraphCompleteWorkspaceCpp`, matrices, nodes, numXis, numEtas, workspaceSEXP, weights, logistic, ncores, shared)
 }
 
 lmsGraphStatesCpp <- function(matrices, nodes, numXis, numEtas) {
@@ -149,12 +133,16 @@ lmsGraphScoreCpp <- function(matrices, nodes, numXis, numEtas, dataR, colidxR, o
     .Call(`_modsem_lmsGraphScoreCpp`, matrices, nodes, numXis, numEtas, dataR, colidxR, orderedIndex, quadWeights, rowWeights, completeWeights, observed, block, row, col, symmetric, logistic)
 }
 
-lmsGraphReverseScoreCpp <- function(matrices, nodes, numXis, numEtas, dataR, colidxR, orderedIndex, quadWeights, rowWeights, completeWeights, observed, block, row, col, symmetric, logistic = TRUE, ncores = 1L, workspaceSEXP = NULL) {
-    .Call(`_modsem_lmsGraphReverseScoreCpp`, matrices, nodes, numXis, numEtas, dataR, colidxR, orderedIndex, quadWeights, rowWeights, completeWeights, observed, block, row, col, symmetric, logistic, ncores, workspaceSEXP)
+lmsGraphReverseScoreCpp <- function(matrices, nodes, numXis, numEtas, dataR, colidxR, orderedIndex, quadWeights, rowWeights, completeWeights, observed, block, row, col, symmetric, logistic = TRUE, ncores = 1L, workspaceSEXP = NULL, shared = FALSE) {
+    .Call(`_modsem_lmsGraphReverseScoreCpp`, matrices, nodes, numXis, numEtas, dataR, colidxR, orderedIndex, quadWeights, rowWeights, completeWeights, observed, block, row, col, symmetric, logistic, ncores, workspaceSEXP, shared)
 }
 
-lmsGraphSufficientScoreCpp <- function(matrices, nodes, numXis, numEtas, statistics, orderedIndex, block, row, col, symmetric, logistic = TRUE) {
-    .Call(`_modsem_lmsGraphSufficientScoreCpp`, matrices, nodes, numXis, numEtas, statistics, orderedIndex, block, row, col, symmetric, logistic)
+lmsGraphStructuralStatsCpp <- function(matrices, nodes, numXis, numEtas, posterior, shared = FALSE) {
+    .Call(`_modsem_lmsGraphStructuralStatsCpp`, matrices, nodes, numXis, numEtas, posterior, shared)
+}
+
+lmsGraphStructuralCompleteCpp <- function(matrices, S, W, numXis, numEtas, numProducts) {
+    .Call(`_modsem_lmsGraphStructuralCompleteCpp`, matrices, S, W, numXis, numEtas, numProducts)
 }
 
 multiplyIndicatorsCpp <- function(df) {
