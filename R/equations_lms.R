@@ -249,7 +249,7 @@ mstepLmsGraphEcm <- function(theta, model, P, max.step,
                              optimizer = "nlminb", epsilon = 1e-6,
                              backend = getLmsBackend("graph"),
                              measurement.step = c("nlminb", "newton", "armijo"),
-                             ...) {
+                             structural.iter.max = NULL, ...) {
   # `newton` is NOT the default, despite being 1.70x cheaper per iteration.
   # Measured on the ordered benchmark:
   #   plain EM, 10 iterations, 15 nodes   newton 1.49 s/iter, logLik -5575.54
@@ -337,13 +337,20 @@ mstepLmsGraphEcm <- function(theta, model, P, max.step,
     )
 
   # The structural objective is free, so this block is run to convergence
-  # rather than for `max.step` iterations. Mplus spends 8-14 evaluations here
-  # per EM iteration; at 15 microseconds each the budget is irrelevant.
+  # rather than for `max.step` iterations; at ~15 microseconds an evaluation the
+  # budget costs nothing in wall time.
+  #
+  # It is not free in TRAJECTORY, though, which is why the cap is exposed.
+  # Mplus takes ~2 quasi-Newton iterations here -- its TECH5 labels the section
+  # "ITERATIONS USING QUASI-NEWTON" and prints a step-length line search --
+  # while an instrumented trace of this block shows it taking 32-51. Solving
+  # one ECM block to convergence while taking a single step on the other is not
+  # the same algorithm, and is a suspect for the Newton path's endgame (#23).
   structural <- runBlock(
     measurement$theta, partition$structural,
     objective = function(x) structuralCompLogLikLmsGraph(x, model, P, sign = -1),
     gradient = NULL,
-    iter.max = max(50L, max.step)
+    iter.max = structural.iter.max %||% max(50L, max.step)
   )
 
   # The caller expects the joint objective at the final point. Evaluating it
