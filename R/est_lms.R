@@ -304,6 +304,7 @@ emLms <- function(model,
                   cr1s = TRUE,
                   lms.backend = c("legacy", "graph"),
                   link = c("logit", "probit"),
+                  ema.modes = NULL,
                   ema.min.iter = 10L,
                   ema.trend.min = 0,
                   ema.forecast.min.gains = 3L,
@@ -336,6 +337,17 @@ emLms <- function(model,
       "Only the observed Hessian is currently available for `lms.backend = \"graph\"`.")
     OFIM.hessian <- TRUE
   }
+  # Which accelerated modes the EMA controller may switch into. Fisher scoring
+  # is off by default on the graph backend: its M-step is an ECM split whose
+  # measurement and structural blocks are solved to different depths, and the
+  # FS step assumes a joint update, so the two interact in ways that have not
+  # been characterised (#23). EM and QN are always available; "EM" is implied.
+  ema.modes <- ema.modes %||% em.control$ema.modes %||%
+    if (identical(lms.backend[[1L]], "graph")) c("EM", "QN")
+    else c("EM", "QN", "FS")
+  ema.modes <- union("EM", match.arg(ema.modes, c("EM", "QN", "FS"),
+                                     several.ok = TRUE))
+
   ema.min.iter <- as.integer(ema.min.iter)
   ema.forecast.min.gains <- as.integer(ema.forecast.min.gains)
   qn.maxit.start <- as.integer(qn.maxit.start)
@@ -501,7 +513,7 @@ emLms <- function(model,
       } else n.em.iter <- n.em.iter + 1L
 
       # EMA controller
-      if (run.final.qn) {
+      if (run.final.qn && "QN" %in% ema.modes) {
         mode <- "QN"
         updateStatusLog(iterations, mode, logLikNew, deltaLL, relDeltaLL, verbose)
 
@@ -521,9 +533,12 @@ emLms <- function(model,
                             fallback.max.step.mult * max.step,
                             na.rm = TRUE)
 
-          if (remaining > fs.remaining.min && remaining <= fs.remaining.max) {
+          if ("FS" %in% ema.modes &&
+              remaining > fs.remaining.min && remaining <= fs.remaining.max) {
             mode <- "FS"
-          } else if (remaining > qn.remaining.min && remaining <= qn.remaining.max) {
+          } else if ("QN" %in% ema.modes &&
+                     remaining > qn.remaining.min &&
+                     remaining <= qn.remaining.max) {
             mode <- "QN"
           }
 
