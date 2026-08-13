@@ -105,16 +105,12 @@ lmsGraphPstepWorkspaceCpp <- function(matrices, nodes, numXis, numEtas, workspac
     .Call(`_modsem_lmsGraphPstepWorkspaceCpp`, matrices, nodes, numXis, numEtas, workspaceSEXP, quadWeights, rowWeights, logistic, ncores, shared)
 }
 
-lmsGraphCompleteStatesCpp <- function(matrices, states, workspaceSEXP, weights, logistic = TRUE, ncores = 1L, shared = FALSE) {
-    .Call(`_modsem_lmsGraphCompleteStatesCpp`, matrices, states, workspaceSEXP, weights, logistic, ncores, shared)
+lmsGraphCompleteWorkspaceCpp <- function(matrices, nodes, numXis, numEtas, workspaceSEXP, weights, logistic = TRUE, ncores = 1L, shared = FALSE) {
+    .Call(`_modsem_lmsGraphCompleteWorkspaceCpp`, matrices, nodes, numXis, numEtas, workspaceSEXP, weights, logistic, ncores, shared)
 }
 
 lmsGraphStatesCpp <- function(matrices, nodes, numXis, numEtas) {
     .Call(`_modsem_lmsGraphStatesCpp`, matrices, nodes, numXis, numEtas)
-}
-
-lmsGraphStatesProductsCpp <- function(matrices, nodes, numXis, numEtas) {
-    .Call(`_modsem_lmsGraphStatesProductsCpp`, matrices, nodes, numXis, numEtas)
 }
 
 lmsGraphAdaptiveRuleCpp <- function(matrices, baseNodes, baseWeights, starts, numXis, numEtas, dataR, colidxR, orderedIndex, logistic = TRUE, maxIterations = 25L, tolerance = 1e-8, curvatureFloor = 1e-6, derivativeStep = 1e-4, ncores = 1L, workspaceSEXP = NULL) {
@@ -137,24 +133,20 @@ lmsGraphScoreCpp <- function(matrices, nodes, numXis, numEtas, dataR, colidxR, o
     .Call(`_modsem_lmsGraphScoreCpp`, matrices, nodes, numXis, numEtas, dataR, colidxR, orderedIndex, quadWeights, rowWeights, completeWeights, observed, block, row, col, symmetric, logistic)
 }
 
-lmsGraphMeasurementScoreCpp <- function(matrices, states, workspaceSEXP, completeWeights, block, row, col, logistic = TRUE, ncores = 1L, shared = FALSE) {
-    .Call(`_modsem_lmsGraphMeasurementScoreCpp`, matrices, states, workspaceSEXP, completeWeights, block, row, col, logistic, ncores, shared)
-}
-
 lmsGraphReverseScoreCpp <- function(matrices, nodes, numXis, numEtas, dataR, colidxR, orderedIndex, quadWeights, rowWeights, completeWeights, observed, block, row, col, symmetric, logistic = TRUE, ncores = 1L, workspaceSEXP = NULL, shared = FALSE) {
     .Call(`_modsem_lmsGraphReverseScoreCpp`, matrices, nodes, numXis, numEtas, dataR, colidxR, orderedIndex, quadWeights, rowWeights, completeWeights, observed, block, row, col, symmetric, logistic, ncores, workspaceSEXP, shared)
 }
 
-lmsGraphStructuralStatsCpp <- function(states, productValue, posterior, shared = FALSE) {
-    .Call(`_modsem_lmsGraphStructuralStatsCpp`, states, productValue, posterior, shared)
+lmsGraphStructuralStatsCpp <- function(matrices, nodes, numXis, numEtas, posterior, shared = FALSE) {
+    .Call(`_modsem_lmsGraphStructuralStatsCpp`, matrices, nodes, numXis, numEtas, posterior, shared)
 }
 
 lmsGraphStructuralCompleteCpp <- function(matrices, S, W, numXis, numEtas, numProducts) {
     .Call(`_modsem_lmsGraphStructuralCompleteCpp`, matrices, S, W, numXis, numEtas, numProducts)
 }
 
-lmsGraphMeasurementNewtonCpp <- function(matrices, states, dataR, colidxR, orderedIndex, completeWeights, activeLatents, logistic = TRUE, ncores = 1L, workspaceSEXP = NULL, shared = FALSE) {
-    .Call(`_modsem_lmsGraphMeasurementNewtonCpp`, matrices, states, dataR, colidxR, orderedIndex, completeWeights, activeLatents, logistic, ncores, workspaceSEXP, shared)
+lmsGraphMeasurementNewtonCpp <- function(matrices, nodes, numXis, numEtas, dataR, colidxR, orderedIndex, completeWeights, activeLatents, logistic = TRUE, ncores = 1L, workspaceSEXP = NULL, shared = FALSE) {
+    .Call(`_modsem_lmsGraphMeasurementNewtonCpp`, matrices, nodes, numXis, numEtas, dataR, colidxR, orderedIndex, completeWeights, activeLatents, logistic, ncores, workspaceSEXP, shared)
 }
 
 multiplyIndicatorsCpp <- function(df) {

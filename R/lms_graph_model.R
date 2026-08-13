@@ -139,22 +139,29 @@ lmsGraphBackend <- function(link = c("logit", "probit")) {
     gradient.observed = gradientObsLogLikLmsGraph,
     hessian.complete = hessianCompLogLikLmsGraph,
     hessian.observed = hessianObsLogLikLmsGraph,
-    # The ECM split, valid because the complete data is now z rather than the
-    # standardised innovations (#28). The E-step freezes z and the objective
-    # carries the latent density it leaves behind:
-    #   Q(theta) = sum P log f(x | z; measurement) + sum P log p(z; structural)
-    # Those two halves have disjoint parameters, so ascending them in turn
-    # ascends Q.
+    # The joint M-step, NOT the ECM split (#27). The split assumed the
+    # structural block was separable from the measurement kernel once the
+    # E-step's latent nodes were held fixed. It is not. The nodes are
+    # STANDARDISED INNOVATIONS, not latent values: `graphStates` scales them by
+    # the Cholesky of the joint latent covariance (A, psi, covZetaXi) and then
+    # runs the result through beta0/alpha/Gamma/Omega, so the latent state
+    # z = (xi, eta) is a function of the nodes AND of every structural
+    # parameter. Freezing the nodes does not freeze z, and so each structural
+    # parameter moves the indicator means. Perturbing structural parameters
+    # alone changed the measurement objective in 39 of 39 probes, and the joint
+    # objective's whole response to such a move lived in the measurement half.
+    # The structural block was optimising a surrogate that missed that by a
+    # median of 205%, and lowered the true Q in 6 of 39 M-steps here (worst
+    # -16.6) -- see test_em_monotonicity.R.
     #
-    # This split was wired once before without that change and had to be
-    # reverted (#27). Under the innovation augmentation there is no second
-    # term: every structural parameter reaches the objective through z, so a
-    # structural-only move changed the measurement half in 39 of 39 probes and
-    # the block was ascending a surrogate that missed the truth by a median of
-    # 205%, lowering the true Q in 6 of 39 M-steps (worst -16.6). The guard
-    # against that returning is the third test in test_em_monotonicity.R, which
-    # asserts the generalised-EM property on the M-step actually wired here.
-    mstep = mstepLmsGraphEcm
+    # `mstepLmsGraphEcm` is kept, unwired, because the split becomes exact if
+    # the complete data is switched from the innovations u to the states z:
+    # freeze z across the M-step AND add sum P log p(z; structural) to Q, after
+    # which p(x | z) and p(z) separate cleanly. That is #28, and the two halves
+    # have to land together -- freezing without adding leaves the structural
+    # parameters with nothing to move them, adding without freezing
+    # double-counts. Until then the joint step is the correct one.
+    mstep = mstepLms
   )
 }
 

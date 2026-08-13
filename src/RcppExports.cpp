@@ -437,20 +437,22 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// lmsGraphCompleteStatesCpp
-double lmsGraphCompleteStatesCpp(const Rcpp::List& matrices, const arma::mat& states, SEXP workspaceSEXP, const arma::mat& weights, const bool logistic, const int ncores, const bool shared);
-RcppExport SEXP _modsem_lmsGraphCompleteStatesCpp(SEXP matricesSEXP, SEXP statesSEXP, SEXP workspaceSEXPSEXP, SEXP weightsSEXP, SEXP logisticSEXP, SEXP ncoresSEXP, SEXP sharedSEXP) {
+// lmsGraphCompleteWorkspaceCpp
+double lmsGraphCompleteWorkspaceCpp(const Rcpp::List& matrices, const arma::mat& nodes, const int numXis, const int numEtas, SEXP workspaceSEXP, const arma::mat& weights, const bool logistic, const int ncores, const bool shared);
+RcppExport SEXP _modsem_lmsGraphCompleteWorkspaceCpp(SEXP matricesSEXP, SEXP nodesSEXP, SEXP numXisSEXP, SEXP numEtasSEXP, SEXP workspaceSEXPSEXP, SEXP weightsSEXP, SEXP logisticSEXP, SEXP ncoresSEXP, SEXP sharedSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::List& >::type matrices(matricesSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type states(statesSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type nodes(nodesSEXP);
+    Rcpp::traits::input_parameter< const int >::type numXis(numXisSEXP);
+    Rcpp::traits::input_parameter< const int >::type numEtas(numEtasSEXP);
     Rcpp::traits::input_parameter< SEXP >::type workspaceSEXP(workspaceSEXPSEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type weights(weightsSEXP);
     Rcpp::traits::input_parameter< const bool >::type logistic(logisticSEXP);
     Rcpp::traits::input_parameter< const int >::type ncores(ncoresSEXP);
     Rcpp::traits::input_parameter< const bool >::type shared(sharedSEXP);
-    rcpp_result_gen = Rcpp::wrap(lmsGraphCompleteStatesCpp(matrices, states, workspaceSEXP, weights, logistic, ncores, shared));
+    rcpp_result_gen = Rcpp::wrap(lmsGraphCompleteWorkspaceCpp(matrices, nodes, numXis, numEtas, workspaceSEXP, weights, logistic, ncores, shared));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -465,20 +467,6 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const int >::type numXis(numXisSEXP);
     Rcpp::traits::input_parameter< const int >::type numEtas(numEtasSEXP);
     rcpp_result_gen = Rcpp::wrap(lmsGraphStatesCpp(matrices, nodes, numXis, numEtas));
-    return rcpp_result_gen;
-END_RCPP
-}
-// lmsGraphStatesProductsCpp
-Rcpp::List lmsGraphStatesProductsCpp(const Rcpp::List& matrices, const arma::mat& nodes, const int numXis, const int numEtas);
-RcppExport SEXP _modsem_lmsGraphStatesProductsCpp(SEXP matricesSEXP, SEXP nodesSEXP, SEXP numXisSEXP, SEXP numEtasSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Rcpp::List& >::type matrices(matricesSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type nodes(nodesSEXP);
-    Rcpp::traits::input_parameter< const int >::type numXis(numXisSEXP);
-    Rcpp::traits::input_parameter< const int >::type numEtas(numEtasSEXP);
-    rcpp_result_gen = Rcpp::wrap(lmsGraphStatesProductsCpp(matrices, nodes, numXis, numEtas));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -578,26 +566,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// lmsGraphMeasurementScoreCpp
-Rcpp::List lmsGraphMeasurementScoreCpp(const Rcpp::List& matrices, const arma::mat& states, SEXP workspaceSEXP, const arma::mat& completeWeights, const Rcpp::IntegerVector& block, const Rcpp::IntegerVector& row, const Rcpp::IntegerVector& col, const bool logistic, const int ncores, const bool shared);
-RcppExport SEXP _modsem_lmsGraphMeasurementScoreCpp(SEXP matricesSEXP, SEXP statesSEXP, SEXP workspaceSEXPSEXP, SEXP completeWeightsSEXP, SEXP blockSEXP, SEXP rowSEXP, SEXP colSEXP, SEXP logisticSEXP, SEXP ncoresSEXP, SEXP sharedSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Rcpp::List& >::type matrices(matricesSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type states(statesSEXP);
-    Rcpp::traits::input_parameter< SEXP >::type workspaceSEXP(workspaceSEXPSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type completeWeights(completeWeightsSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type block(blockSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type row(rowSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type col(colSEXP);
-    Rcpp::traits::input_parameter< const bool >::type logistic(logisticSEXP);
-    Rcpp::traits::input_parameter< const int >::type ncores(ncoresSEXP);
-    Rcpp::traits::input_parameter< const bool >::type shared(sharedSEXP);
-    rcpp_result_gen = Rcpp::wrap(lmsGraphMeasurementScoreCpp(matrices, states, workspaceSEXP, completeWeights, block, row, col, logistic, ncores, shared));
-    return rcpp_result_gen;
-END_RCPP
-}
 // lmsGraphReverseScoreCpp
 arma::vec lmsGraphReverseScoreCpp(const Rcpp::List& matrices, const arma::mat& nodes, const int numXis, const int numEtas, const Rcpp::List& dataR, const Rcpp::List& colidxR, const Rcpp::IntegerVector& orderedIndex, const arma::vec& quadWeights, const arma::vec& rowWeights, const arma::mat& completeWeights, const bool observed, const Rcpp::IntegerVector& block, const Rcpp::IntegerVector& row, const Rcpp::IntegerVector& col, const Rcpp::LogicalVector& symmetric, const bool logistic, const int ncores, SEXP workspaceSEXP, const bool shared);
 RcppExport SEXP _modsem_lmsGraphReverseScoreCpp(SEXP matricesSEXP, SEXP nodesSEXP, SEXP numXisSEXP, SEXP numEtasSEXP, SEXP dataRSEXP, SEXP colidxRSEXP, SEXP orderedIndexSEXP, SEXP quadWeightsSEXP, SEXP rowWeightsSEXP, SEXP completeWeightsSEXP, SEXP observedSEXP, SEXP blockSEXP, SEXP rowSEXP, SEXP colSEXP, SEXP symmetricSEXP, SEXP logisticSEXP, SEXP ncoresSEXP, SEXP workspaceSEXPSEXP, SEXP sharedSEXP) {
@@ -628,16 +596,18 @@ BEGIN_RCPP
 END_RCPP
 }
 // lmsGraphStructuralStatsCpp
-Rcpp::List lmsGraphStructuralStatsCpp(const arma::mat& states, const arma::mat& productValue, const arma::mat& posterior, const bool shared);
-RcppExport SEXP _modsem_lmsGraphStructuralStatsCpp(SEXP statesSEXP, SEXP productValueSEXP, SEXP posteriorSEXP, SEXP sharedSEXP) {
+Rcpp::List lmsGraphStructuralStatsCpp(const Rcpp::List& matrices, const arma::mat& nodes, const int numXis, const int numEtas, const arma::mat& posterior, const bool shared);
+RcppExport SEXP _modsem_lmsGraphStructuralStatsCpp(SEXP matricesSEXP, SEXP nodesSEXP, SEXP numXisSEXP, SEXP numEtasSEXP, SEXP posteriorSEXP, SEXP sharedSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const arma::mat& >::type states(statesSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type productValue(productValueSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type matrices(matricesSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type nodes(nodesSEXP);
+    Rcpp::traits::input_parameter< const int >::type numXis(numXisSEXP);
+    Rcpp::traits::input_parameter< const int >::type numEtas(numEtasSEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type posterior(posteriorSEXP);
     Rcpp::traits::input_parameter< const bool >::type shared(sharedSEXP);
-    rcpp_result_gen = Rcpp::wrap(lmsGraphStructuralStatsCpp(states, productValue, posterior, shared));
+    rcpp_result_gen = Rcpp::wrap(lmsGraphStructuralStatsCpp(matrices, nodes, numXis, numEtas, posterior, shared));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -658,13 +628,15 @@ BEGIN_RCPP
 END_RCPP
 }
 // lmsGraphMeasurementNewtonCpp
-Rcpp::List lmsGraphMeasurementNewtonCpp(const Rcpp::List& matrices, const arma::mat& states, const Rcpp::List& dataR, const Rcpp::List& colidxR, const Rcpp::IntegerVector& orderedIndex, const arma::mat& completeWeights, const Rcpp::List& activeLatents, const bool logistic, const int ncores, SEXP workspaceSEXP, const bool shared);
-RcppExport SEXP _modsem_lmsGraphMeasurementNewtonCpp(SEXP matricesSEXP, SEXP statesSEXP, SEXP dataRSEXP, SEXP colidxRSEXP, SEXP orderedIndexSEXP, SEXP completeWeightsSEXP, SEXP activeLatentsSEXP, SEXP logisticSEXP, SEXP ncoresSEXP, SEXP workspaceSEXPSEXP, SEXP sharedSEXP) {
+Rcpp::List lmsGraphMeasurementNewtonCpp(const Rcpp::List& matrices, const arma::mat& nodes, const int numXis, const int numEtas, const Rcpp::List& dataR, const Rcpp::List& colidxR, const Rcpp::IntegerVector& orderedIndex, const arma::mat& completeWeights, const Rcpp::List& activeLatents, const bool logistic, const int ncores, SEXP workspaceSEXP, const bool shared);
+RcppExport SEXP _modsem_lmsGraphMeasurementNewtonCpp(SEXP matricesSEXP, SEXP nodesSEXP, SEXP numXisSEXP, SEXP numEtasSEXP, SEXP dataRSEXP, SEXP colidxRSEXP, SEXP orderedIndexSEXP, SEXP completeWeightsSEXP, SEXP activeLatentsSEXP, SEXP logisticSEXP, SEXP ncoresSEXP, SEXP workspaceSEXPSEXP, SEXP sharedSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::List& >::type matrices(matricesSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type states(statesSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type nodes(nodesSEXP);
+    Rcpp::traits::input_parameter< const int >::type numXis(numXisSEXP);
+    Rcpp::traits::input_parameter< const int >::type numEtas(numEtasSEXP);
     Rcpp::traits::input_parameter< const Rcpp::List& >::type dataR(dataRSEXP);
     Rcpp::traits::input_parameter< const Rcpp::List& >::type colidxR(colidxRSEXP);
     Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type orderedIndex(orderedIndexSEXP);
@@ -674,7 +646,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const int >::type ncores(ncoresSEXP);
     Rcpp::traits::input_parameter< SEXP >::type workspaceSEXP(workspaceSEXPSEXP);
     Rcpp::traits::input_parameter< const bool >::type shared(sharedSEXP);
-    rcpp_result_gen = Rcpp::wrap(lmsGraphMeasurementNewtonCpp(matrices, states, dataR, colidxR, orderedIndex, completeWeights, activeLatents, logistic, ncores, workspaceSEXP, shared));
+    rcpp_result_gen = Rcpp::wrap(lmsGraphMeasurementNewtonCpp(matrices, nodes, numXis, numEtas, dataR, colidxR, orderedIndex, completeWeights, activeLatents, logistic, ncores, workspaceSEXP, shared));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -943,19 +915,17 @@ static const R_CallMethodDef CallEntries[] = {
     {"_modsem_lmsGraphWorkspaceCpp", (DL_FUNC) &_modsem_lmsGraphWorkspaceCpp, 3},
     {"_modsem_lmsGraphLogKernelWorkspaceCpp", (DL_FUNC) &_modsem_lmsGraphLogKernelWorkspaceCpp, 8},
     {"_modsem_lmsGraphPstepWorkspaceCpp", (DL_FUNC) &_modsem_lmsGraphPstepWorkspaceCpp, 10},
-    {"_modsem_lmsGraphCompleteStatesCpp", (DL_FUNC) &_modsem_lmsGraphCompleteStatesCpp, 7},
+    {"_modsem_lmsGraphCompleteWorkspaceCpp", (DL_FUNC) &_modsem_lmsGraphCompleteWorkspaceCpp, 9},
     {"_modsem_lmsGraphStatesCpp", (DL_FUNC) &_modsem_lmsGraphStatesCpp, 4},
-    {"_modsem_lmsGraphStatesProductsCpp", (DL_FUNC) &_modsem_lmsGraphStatesProductsCpp, 4},
     {"_modsem_lmsGraphAdaptiveRuleCpp", (DL_FUNC) &_modsem_lmsGraphAdaptiveRuleCpp, 16},
     {"_modsem_lmsGraphLogKernelCpp", (DL_FUNC) &_modsem_lmsGraphLogKernelCpp, 9},
     {"_modsem_lmsGraphAggregateCpp", (DL_FUNC) &_modsem_lmsGraphAggregateCpp, 3},
     {"_modsem_lmsGraphWeightedKernelCpp", (DL_FUNC) &_modsem_lmsGraphWeightedKernelCpp, 2},
     {"_modsem_lmsGraphScoreCpp", (DL_FUNC) &_modsem_lmsGraphScoreCpp, 16},
-    {"_modsem_lmsGraphMeasurementScoreCpp", (DL_FUNC) &_modsem_lmsGraphMeasurementScoreCpp, 10},
     {"_modsem_lmsGraphReverseScoreCpp", (DL_FUNC) &_modsem_lmsGraphReverseScoreCpp, 19},
-    {"_modsem_lmsGraphStructuralStatsCpp", (DL_FUNC) &_modsem_lmsGraphStructuralStatsCpp, 4},
+    {"_modsem_lmsGraphStructuralStatsCpp", (DL_FUNC) &_modsem_lmsGraphStructuralStatsCpp, 6},
     {"_modsem_lmsGraphStructuralCompleteCpp", (DL_FUNC) &_modsem_lmsGraphStructuralCompleteCpp, 6},
-    {"_modsem_lmsGraphMeasurementNewtonCpp", (DL_FUNC) &_modsem_lmsGraphMeasurementNewtonCpp, 11},
+    {"_modsem_lmsGraphMeasurementNewtonCpp", (DL_FUNC) &_modsem_lmsGraphMeasurementNewtonCpp, 13},
     {"_modsem_multiplyIndicatorsCpp", (DL_FUNC) &_modsem_multiplyIndicatorsCpp, 1},
     {"_modsem_checkOpenMP_Cpp", (DL_FUNC) &_modsem_checkOpenMP_Cpp, 0},
     {"_modsem_dmvnrmArmaMc", (DL_FUNC) &_modsem_dmvnrmArmaMc, 5},
