@@ -141,19 +141,26 @@ lmsGraphBackend <- function(link = c("logit", "probit")) {
     hessian.observed = hessianObsLogLikLmsGraph,
     # The joint M-step, NOT the ECM split (#27). The split assumed the
     # structural block was separable from the measurement kernel once the
-    # E-step's latent nodes were held fixed. It is not: the nodes are
-    # (xi, zeta), so eta is reconstructed from them through alpha/Gamma/Omega
-    # and every structural parameter moves the indicator means. Perturbing
-    # structural parameters alone changed the measurement objective in 39 of 39
-    # probes, and the joint objective's whole response to such a move lived in
-    # the measurement half. The structural block was optimising a surrogate
-    # that missed that by a median of 205%, and lowered the true Q in 6 of 39
-    # M-steps here (worst -16.6) -- see test_em_monotonicity.R.
+    # E-step's latent nodes were held fixed. It is not. The nodes are
+    # STANDARDISED INNOVATIONS, not latent values: `graphStates` scales them by
+    # the Cholesky of the joint latent covariance (A, psi, covZetaXi) and then
+    # runs the result through beta0/alpha/Gamma/Omega, so the latent state
+    # z = (xi, eta) is a function of the nodes AND of every structural
+    # parameter. Freezing the nodes does not freeze z, and so each structural
+    # parameter moves the indicator means. Perturbing structural parameters
+    # alone changed the measurement objective in 39 of 39 probes, and the joint
+    # objective's whole response to such a move lived in the measurement half.
+    # The structural block was optimising a surrogate that missed that by a
+    # median of 205%, and lowered the true Q in 6 of 39 M-steps here (worst
+    # -16.6) -- see test_em_monotonicity.R.
     #
-    # `mstepLmsGraphEcm` is kept, unwired, because the split becomes exact
-    # under (xi, eta) nodes, where p(y|xi,eta), p(eta|xi) and p(xi) separate
-    # cleanly and the latter two have closed forms. That reparameterisation is
-    # the open work; until then the joint step is the correct one.
+    # `mstepLmsGraphEcm` is kept, unwired, because the split becomes exact if
+    # the complete data is switched from the innovations u to the states z:
+    # freeze z across the M-step AND add sum P log p(z; structural) to Q, after
+    # which p(x | z) and p(z) separate cleanly. That is #28, and the two halves
+    # have to land together -- freezing without adding leaves the structural
+    # parameters with nothing to move them, adding without freezing
+    # double-counts. Until then the joint step is the correct one.
     mstep = mstepLms
   )
 }

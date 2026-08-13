@@ -6,12 +6,13 @@
 # structural parameters in a block optimised through a surrogate built from
 # E-step sufficient statistics, on the reading that they were separable from
 # the measurement kernel once the latent nodes were fixed. They are not: the
-# graph backend's nodes are (xi, zeta), so eta is RECONSTRUCTED from them
-# through alpha/Gamma/Omega, and every structural parameter moves the indicator
-# means. Perturbing structural parameters alone changed the measurement
-# objective in 39 of 39 probes, and the joint objective's entire response to
-# such a move lived in the measurement half (d.joint + d.measurement = 0 to
-# 7e-11). The surrogate missed that by a median of 205%.
+# graph backend's nodes are STANDARDISED INNOVATIONS rather than latent values,
+# so the state z = (xi, eta) is RECONSTRUCTED from them through the latent
+# Cholesky and beta0/alpha/Gamma/Omega, and every structural parameter moves
+# the indicator means. Perturbing structural parameters alone changed the
+# measurement objective in 39 of 39 probes, and the joint objective's entire
+# response to such a move lived in the measurement half (d.joint +
+# d.measurement = 0 to 7e-11). The surrogate missed that by a median of 205%.
 #
 # The symptom was a plain-EM run decreasing the observed log-likelihood in 134
 # of 299 iterations (#27). Nothing caught it for the whole life of the split,

@@ -1718,9 +1718,13 @@ arma::vec lmsGraphReverseScoreCpp(const Rcpp::List& matrices,
 // ---------------------------------------------------------------------------
 // Structural sufficient statistics for the ECM M-step.
 //
-// The E-step's nodes are held fixed through the M-step and read as latent
-// values z = (xi, eta) rather than as standardised innovations. With z fixed
-// the complete-data objective separates exactly:
+// PREMISE, NOT YET TRUE OF THE SHIPPED CODE (#28). Everything below assumes the
+// E-step's nodes are held fixed through the M-step and read as latent values
+// z = (xi, eta). They are not: `graphStates` treats them as standardised
+// innovations, scaling by the latent Cholesky and pushing through
+// beta0/alpha/Gamma/Omega, so z moves whenever a structural parameter does.
+// That is why the ECM split is unwired -- see `lmsGraphBackend`. With z
+// genuinely fixed the complete-data objective separates exactly:
 //
 //   Q(theta) = sum P log f(x | z; measurement)   <- needs the N by Q kernel
 //            + sum P log p(z;   structural)      <- needs only the moments here
