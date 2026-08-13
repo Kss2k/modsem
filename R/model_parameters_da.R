@@ -2,7 +2,7 @@
 NAMES_PAR_MATRICES <- c("lambdaX", "lambdaY", "gammaXi", "gammaEta",
                       "thetaDelta", "thetaEpsilon", "W", "T", "phi", "A",
                       "covZetaXi", "psi", "tauX", "tauY", "alpha", "beta0",
-                      "omegaEtaXi", "omegaXiXi")
+                      "omegaEtaXi", "omegaXiXi", "thresholdDelta")
 NAMES_PAR_MATRICES_COV <- c("gammaXi", "gammaEta", "A", "psi", "phi")
 
 
@@ -61,6 +61,7 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
     gammaEta     <- as.vector(M$gammaEta)
     omegaXiXi    <- as.vector(M$omegaXiXi)
     omegaEtaXi   <- as.vector(M$omegaEtaXi)
+    thresholdDelta <- as.vector(M$thresholdDelta %||% numeric(0))
 
     allModelValues <- c(
       lambdaX      = lambdaX,
@@ -80,13 +81,19 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
       gammaXi      = gammaXi,
       gammaEta     = gammaEta,
       omegaXiXi    = omegaXiXi,
-      omegaEtaXi   = omegaEtaXi
+      omegaEtaXi   = omegaEtaXi,
+      thresholdDelta = thresholdDelta
     )
 
-    lavLabelsMain <- createLavLabels(M, subset = is.na(allModelValues),
+    # A threshold matrix is ragged: indicators with fewer categories leave
+    # trailing entries structurally absent, marked NaN. `is.na(NaN)` is TRUE, so
+    # the free-parameter test has to exclude NaN explicitly or those entries are
+    # estimated. A no-op for matrices containing no NaN.
+    freeModelValues <- is.na(allModelValues) & !is.nan(allModelValues)
+    lavLabelsMain <- createLavLabels(M, subset = freeModelValues,
                                      etas = etas, parTable.in = parTable.in)
 
-    thetaMain <- allModelValues[is.na(allModelValues)]
+    thetaMain <- allModelValues[freeModelValues]
     thetaMain <- fillThetaIfStartNULL(start = start, theta = thetaMain,
                                       lavlab = lavLabelsMain)
 
@@ -284,11 +291,96 @@ fillMainModel <- function(model, theta, thetaLabel, fillPhi = FALSE,
   M$gammaXi      <- fillNA_Matrix(M$gammaXi, theta = theta, pattern = "^gammaXi")
   M$omegaXiXi    <- fillNA_Matrix(M$omegaXiXi, theta = theta, pattern = "^omegaXiXi")
   M$omegaEtaXi   <- fillNA_Matrix(M$omegaEtaXi, theta = theta, pattern = "^omegaEtaXi")
+  if (!is.null(M$thresholdDelta)) {
+    M$thresholdDelta <- fillNA_Matrix(
+      M$thresholdDelta, theta = theta, pattern = "^thresholdDelta"
+    )
+    M$thresholds <- thresholdDeltaToThresholdMatrix(M$thresholdDelta)
+  }
 
   if (fillPhi) {
     M$phi <- M$A %*% t(M$A)
   }
   M
+}
+
+
+# Ordered thresholds, from an unconstrained parameterisation.
+#
+# Thresholds must be strictly increasing within an indicator, which an optimiser
+# working on the thresholds directly cannot be told. So the free parameters are
+# `delta`: the first is the first threshold, and each subsequent one is mapped
+# through softplus to a strictly positive GAP and accumulated. Any real vector
+# therefore yields a valid ordered set, with no constraints and no bounds.
+#
+# softplus is written as log1p(exp(-|d|)) + max(d, 0) rather than log(1 + exp(d))
+# so it does not overflow for large positive d.
+#
+# Ragged rows -- indicators with fewer categories -- carry NaN in the unused
+# trailing entries and are skipped; see the free-parameter test in createTheta().
+thresholdDeltaToThresholdMatrix <- function(delta) {
+  thresholds <- delta
+  if (!length(delta)) return(thresholds)
+  for (i in seq_len(NROW(delta))) {
+    use <- which(is.finite(delta[i, ]))
+    if (!length(use)) next
+    d <- delta[i, use]
+    thresholds[i, use] <- c(
+      d[1L],
+      if (length(d) > 1L)
+        d[1L] + cumsum(log1p(exp(-abs(d[-1L]))) + pmax(d[-1L], 0))
+    )
+  }
+  thresholds
+}
+
+
+# Starting values for `thresholdDelta`, and the bookkeeping that says which
+# entries belong to which indicator.
+#
+# Thresholds start where the observed cumulative proportions put them: the k-th
+# threshold of an indicator is the link-transformed proportion at or below
+# category k. Those are then converted into the gap parameterisation that
+# `thresholdDeltaToThresholdMatrix()` expects -- first threshold as-is, and each
+# gap through the softplus inverse `log(expm1(gap))`.
+#
+# Proportions are clamped away from 0 and 1 so an empty or saturated category
+# gives a large finite start rather than +/-Inf, and gaps are floored so a pair
+# of categories with identical cumulative proportions does not produce log(0).
+#
+# Estimator-agnostic: it reads data and returns numbers, with no dependence on
+# how the likelihood is then computed.
+orderedThresholdSpec <- function(data, ordered, group = NULL,
+                                 link = c("logit", "probit")) {
+  link <- match.arg(link)
+  groups <- if (is.null(group)) rep(1L, NROW(data)) else
+    match(data[[group]], unique(data[[group]]))
+  specs <- list()
+  delta <- numeric()
+  for (g in sort(unique(groups))) for (variable in ordered) {
+    values <- data[[variable]][groups == g]
+    code <- if (is.factor(values)) as.integer(values) else
+      match(values, sort(unique(values[!is.na(values)])))
+    categories <- max(code, na.rm = TRUE)
+    mod_stopif(!is.finite(categories) || categories < 2L,
+      sprintf("Ordered indicator `%s` has fewer than two categories in group %d.",
+              variable, g))
+    probability <- vapply(seq_len(categories - 1L), function(k)
+      mean(code <= k, na.rm = TRUE), numeric(1L))
+    probability <- pmin(pmax(probability, 1e-5), 1 - 1e-5)
+    thresholds <- if (link == "logit") stats::qlogis(probability) else
+      stats::qnorm(probability)
+    gaps <- pmax(diff(thresholds), 1e-8)
+    values.delta <- c(thresholds[1L], if (length(gaps)) log(expm1(gaps)))
+    labels <- paste0(variable, "|t", seq_len(categories - 1L))
+    index <- length(delta) + seq_along(values.delta)
+    delta <- c(delta, values.delta)
+    specs[[paste(g, variable, sep = "::")]] <- list(
+      group = g, variable = variable, K = categories,
+      index = index, labels = labels
+    )
+  }
+  list(specs = specs, delta = delta)
 }
 
 
@@ -451,7 +543,8 @@ DA_BLOCKS = list(
   W            = 14,
   T            = 15,
   phi          = 16,  # QML: free parameter; LMS: derived from A (not free)
-  covZetaXi    = 17
+  covZetaXi    = 17,
+  thresholdDelta = 18
 )
 
 
@@ -476,7 +569,9 @@ getParamNamesMatrix <- function(mat, matname) {
 }
 
 
-getParamLocationsMatrices <- function(matrices, isFree = is.na, g = 1L, ignore.g.label = FALSE) {
+getParamLocationsMatrices <- function(
+    matrices, isFree = function(x) is.na(x) & !is.nan(x),
+    g = 1L, ignore.g.label = FALSE) {
   matrices <- matrices[intersect(names(matrices), names(DA_BLOCKS))]
   locations <- data.frame(param = NULL, block = NULL, row = NULL, col = NULL)
   for (blockname in names(matrices)) {
@@ -674,7 +769,10 @@ getGradientStructSimple <- function(model, theta, method = "lms") {
 
     locations <- rbind(
        locations,
-       getParamLocationsMatrices(submodel$matrices, isFree = is.na, g = g),
+       # Shared free-parameter predicate, not plain `is.na()`: the latter counts
+       # structurally absent NaN threshold entries as free, which made
+       # `locations` disagree with `theta`.
+       getParamLocationsMatrices(submodel$matrices, g = g),
        getParamLocationsMatrices(submodel$labelMatrices, isFree = \(x) x != "",
                                  g = g, ignore.g.label = TRUE) # labels don't change with g here
     )
