@@ -1,0 +1,781 @@
+Mplus VERSION 8.11 DEMO (Linux)
+MUTHEN & MUTHEN
+08/13/2026  10:52 AM
+
+INPUT INSTRUCTIONS
+
+  TITLE:
+  Running Model via Mplus
+  DATA:
+  FILE = "mpresultsmezn3z9aqo0t.dat";
+  VARIABLE:
+  NAMES = cmp_ATT_ cmps_SN_ cmp_PBC_ cmp_INT_ cmp_BEH_;
+   MISSING=.;
+
+  ANALYSIS:
+  estimator = ml;
+  type = random;
+  algorithm = integration;
+  processors = 2;
+  integration =  15;
+
+  MODEL:
+  INT ON ATT;
+  INT ON SN;
+  INT ON PBC;
+  BEH ON INT;
+  BEH ON PBC;
+  BEH ON INTPBC;
+  ATT BY cmp_ATT_@1;
+  SN BY cmps_SN_@1;
+  PBC BY cmp_PBC_@1;
+  INT BY cmp_INT_@1;
+  BEH BY cmp_BEH_@1;
+    cmp_ATT_@0.04424428;
+    cmps_SN_@0.09380454;
+    cmp_PBC_@0.06241130;
+    cmp_INT_@0.06541446;
+    cmp_BEH_@0.08271897;
+  INTPBC | INT XWITH PBC;
+
+  OUTPUT:
+  TECH1;
+  TECH3;
+  STANDARDIZED;
+
+
+
+INPUT READING TERMINATED NORMALLY
+
+
+
+
+Running Model via Mplus
+
+SUMMARY OF ANALYSIS
+
+Number of groups                                                 1
+Number of observations                                        2000
+
+Number of dependent variables                                    5
+Number of independent variables                                  0
+Number of continuous latent variables                            6
+
+Observed dependent variables
+
+  Continuous
+   CMP_ATT_    CMPS_SN_    CMP_PBC_    CMP_INT_    CMP_BEH_
+
+Continuous latent variables
+   ATT         SN          PBC         INT         BEH         INTPBC
+
+
+Estimator                                                       ML
+Information matrix                                        OBSERVED
+Optimization Specifications for the Quasi-Newton Algorithm for
+Continuous Outcomes
+  Maximum number of iterations                                 100
+  Convergence criterion                                  0.100D-05
+Optimization Specifications for the EM Algorithm
+  Maximum number of iterations                                 500
+  Convergence criteria
+    Loglikelihood change                                 0.100D-02
+    Relative loglikelihood change                        0.100D-05
+    Derivative                                           0.100D-02
+Optimization Specifications for the M step of the EM Algorithm for
+Categorical Latent variables
+  Number of M step iterations                                    1
+  M step convergence criterion                           0.100D-02
+  Basis for M step termination                           ITERATION
+Optimization Specifications for the M step of the EM Algorithm for
+Censored, Binary or Ordered Categorical (Ordinal), Unordered
+Categorical (Nominal) and Count Outcomes
+  Number of M step iterations                                    1
+  M step convergence criterion                           0.100D-02
+  Basis for M step termination                           ITERATION
+  Maximum value for logit thresholds                            15
+  Minimum value for logit thresholds                           -15
+  Minimum expected cell size for chi-square              0.100D-01
+Maximum number of iterations for H1                           2000
+Convergence criterion for H1                             0.100D-03
+Optimization algorithm                                         EMA
+Integration Specifications
+  Type                                                    STANDARD
+  Number of integration points                                  15
+  Dimensions of numerical integration                            2
+  Adaptive quadrature                                           ON
+Cholesky                                                       OFF
+
+Input data file(s)
+  mpresultsmezn3z9aqo0t.dat
+Input data format  FREE
+
+
+SUMMARY OF DATA
+
+     Number of missing data patterns             1
+
+
+COVARIANCE COVERAGE OF DATA
+
+Minimum covariance coverage value   0.100
+
+
+     PROPORTION OF DATA PRESENT FOR Y
+
+
+           Covariance Coverage
+              CMP_ATT_      CMPS_SN_      CMP_PBC_      CMP_INT_      CMP_BEH_
+              ________      ________      ________      ________      ________
+ CMP_ATT_       1.000
+ CMPS_SN_       1.000         1.000
+ CMP_PBC_       1.000         1.000         1.000
+ CMP_INT_       1.000         1.000         1.000         1.000
+ CMP_BEH_       1.000         1.000         1.000         1.000         1.000
+
+
+
+UNIVARIATE SAMPLE STATISTICS
+
+
+     UNIVARIATE HIGHER-ORDER MOMENT DESCRIPTIVE STATISTICS
+
+         Variable/         Mean/     Skewness/   Minimum/ % with                Percentiles
+        Sample Size      Variance    Kurtosis    Maximum  Min/Max      20%/60%    40%/80%    Median
+
+     CMP_ATT_              1.183       0.107      -2.255    0.05%       0.336      0.910      1.177
+            2000.000       1.042       0.000       5.183    0.05%       1.442      2.035
+     CMPS_SN_              1.067       0.014      -2.813    0.05%       0.171      0.784      1.052
+            2000.000       1.082      -0.207       4.145    0.05%       1.337      1.977
+     CMP_PBC_              1.096       0.091      -2.088    0.05%       0.245      0.809      1.081
+            2000.000       1.024       0.022       4.312    0.05%       1.335      1.941
+     CMP_INT_              1.113      -0.017      -2.292    0.05%       0.360      0.867      1.118
+            2000.000       0.839       0.223       4.210    0.05%       1.334      1.856
+     CMP_BEH_              1.121       0.326      -1.327    0.05%       0.390      0.879      1.093
+            2000.000       0.705       0.859       6.735    0.05%       1.334      1.836
+
+
+THE MODEL ESTIMATION TERMINATED NORMALLY
+
+
+
+MODEL FIT INFORMATION
+
+Number of Free Parameters                       19
+
+Loglikelihood
+
+          H0 Value                      -11955.199
+
+Information Criteria
+
+          Akaike (AIC)                   23948.398
+          Bayesian (BIC)                 24054.815
+          Sample-Size Adjusted BIC       23994.451
+            (n* = (n + 2) / 24)
+
+
+
+MODEL RESULTS
+
+                                                    Two-Tailed
+                    Estimate       S.E.  Est./S.E.    P-Value
+
+ ATT      BY
+    CMP_ATT_           1.000      0.000    999.000    999.000
+
+ SN       BY
+    CMPS_SN_           1.000      0.000    999.000    999.000
+
+ PBC      BY
+    CMP_PBC_           1.000      0.000    999.000    999.000
+
+ INT      BY
+    CMP_INT_           1.000      0.000    999.000    999.000
+
+ BEH      BY
+    CMP_BEH_           1.000      0.000    999.000    999.000
+
+ INT        ON
+    ATT                0.214      0.026      8.218      0.000
+    SN                 0.176      0.027      6.428      0.000
+    PBC                0.217      0.029      7.350      0.000
+
+ BEH        ON
+    INT                0.189      0.024      7.733      0.000
+    PBC                0.231      0.022     10.629      0.000
+    INTPBC             0.204      0.018     11.640      0.000
+
+ SN       WITH
+    ATT                0.629      0.028     22.806      0.000
+
+ PBC      WITH
+    ATT                0.678      0.028     24.541      0.000
+    SN                 0.678      0.028     24.222      0.000
+
+ Intercepts
+    CMP_ATT_           1.183      0.023     51.838      0.000
+    CMPS_SN_           1.067      0.023     45.902      0.000
+    CMP_PBC_           1.096      0.023     48.413      0.000
+    CMP_INT_           1.113      0.020     54.337      0.000
+    CMP_BEH_           1.025      0.020     51.544      0.000
+
+ Variances
+    ATT                0.998      0.033     30.281      0.000
+    SN                 0.988      0.034     28.881      0.000
+    PBC                0.962      0.032     29.696      0.000
+
+ Residual Variances
+    CMP_ATT_           0.044      0.000    999.000    999.000
+    CMPS_SN_           0.094      0.000    999.000    999.000
+    CMP_PBC_           0.062      0.000    999.000    999.000
+    CMP_INT_           0.065      0.000    999.000    999.000
+    CMP_BEH_           0.083      0.000    999.000    999.000
+    INT                0.490      0.018     27.520      0.000
+    BEH                0.451      0.017     26.248      0.000
+
+
+QUALITY OF NUMERICAL RESULTS
+
+     Condition Number for the Information Matrix              0.191E-01
+       (ratio of smallest to largest eigenvalue)
+
+
+STANDARDIZED MODEL RESULTS
+
+
+STDYX Standardization
+
+                                                    Two-Tailed
+                    Estimate       S.E.  Est./S.E.    P-Value
+
+ ATT      BY
+    CMP_ATT_           0.979      0.001   1426.774      0.000
+
+ SN       BY
+    CMPS_SN_           0.956      0.001    666.010      0.000
+
+ PBC      BY
+    CMP_PBC_           0.969      0.001    974.659      0.000
+
+ INT      BY
+    CMP_INT_           0.960      0.001    748.395      0.000
+
+ BEH      BY
+    CMP_BEH_           0.938      0.002    456.358      0.000
+
+ INT        ON
+    ATT                0.243      0.029      8.315      0.000
+    SN                 0.199      0.031      6.479      0.000
+    PBC                0.242      0.033      7.424      0.000
+
+ BEH        ON
+    INT                0.213      0.027      7.879      0.000
+    PBC                0.290      0.026     10.954      0.000
+    INTPBC             0.225      0.019     11.726      0.000
+
+ SN       WITH
+    ATT                0.634      0.015     42.377      0.000
+
+ PBC      WITH
+    ATT                0.692      0.013     53.697      0.000
+    SN                 0.696      0.013     52.009      0.000
+
+ Intercepts
+    CMP_ATT_           1.159      0.029     40.093      0.000
+    CMPS_SN_           1.026      0.028     37.151      0.000
+    CMP_PBC_           1.083      0.028     38.445      0.000
+    CMP_INT_           1.215      0.029     41.216      0.000
+    CMP_BEH_           1.230      0.032     39.030      0.000
+
+ Variances
+    ATT                1.000      0.000    999.000    999.000
+    SN                 1.000      0.000    999.000    999.000
+    PBC                1.000      0.000    999.000    999.000
+
+ Residual Variances
+    CMP_ATT_           0.042      0.001     31.623      0.000
+    CMPS_SN_           0.087      0.003     31.624      0.000
+    CMP_PBC_           0.061      0.002     31.623      0.000
+    CMP_INT_           0.078      0.002     31.623      0.000
+    CMP_BEH_           0.119      0.004     30.892      0.000
+    INT                0.634      0.019     33.924      0.000
+    BEH                0.737      0.020     37.028      0.000
+
+
+STDY Standardization
+
+                                                    Two-Tailed
+                    Estimate       S.E.  Est./S.E.    P-Value
+
+ ATT      BY
+    CMP_ATT_           0.979      0.001   1426.774      0.000
+
+ SN       BY
+    CMPS_SN_           0.956      0.001    666.010      0.000
+
+ PBC      BY
+    CMP_PBC_           0.969      0.001    974.659      0.000
+
+ INT      BY
+    CMP_INT_           0.960      0.001    748.395      0.000
+
+ BEH      BY
+    CMP_BEH_           0.938      0.002    456.358      0.000
+
+ INT        ON
+    ATT                0.243      0.029      8.315      0.000
+    SN                 0.199      0.031      6.479      0.000
+    PBC                0.242      0.033      7.424      0.000
+
+ BEH        ON
+    INT                0.213      0.027      7.879      0.000
+    PBC                0.290      0.026     10.954      0.000
+    INTPBC             0.225      0.019     11.726      0.000
+
+ SN       WITH
+    ATT                0.634      0.015     42.377      0.000
+
+ PBC      WITH
+    ATT                0.692      0.013     53.697      0.000
+    SN                 0.696      0.013     52.009      0.000
+
+ Intercepts
+    CMP_ATT_           1.159      0.029     40.093      0.000
+    CMPS_SN_           1.026      0.028     37.151      0.000
+    CMP_PBC_           1.083      0.028     38.445      0.000
+    CMP_INT_           1.215      0.029     41.216      0.000
+    CMP_BEH_           1.230      0.032     39.030      0.000
+
+ Variances
+    ATT                1.000      0.000    999.000    999.000
+    SN                 1.000      0.000    999.000    999.000
+    PBC                1.000      0.000    999.000    999.000
+
+ Residual Variances
+    CMP_ATT_           0.042      0.001     31.623      0.000
+    CMPS_SN_           0.087      0.003     31.624      0.000
+    CMP_PBC_           0.061      0.002     31.623      0.000
+    CMP_INT_           0.078      0.002     31.623      0.000
+    CMP_BEH_           0.119      0.004     30.892      0.000
+    INT                0.634      0.019     33.924      0.000
+    BEH                0.737      0.020     37.028      0.000
+
+
+STD Standardization
+
+                                                    Two-Tailed
+                    Estimate       S.E.  Est./S.E.    P-Value
+
+ ATT      BY
+    CMP_ATT_           0.999      0.016     60.562      0.000
+
+ SN       BY
+    CMPS_SN_           0.994      0.017     57.763      0.000
+
+ PBC      BY
+    CMP_PBC_           0.981      0.017     59.393      0.000
+
+ INT      BY
+    CMP_INT_           0.880      0.015     58.318      0.000
+
+ BEH      BY
+    CMP_BEH_           0.782      0.014     54.417      0.000
+
+ INT        ON
+    ATT                0.243      0.029      8.315      0.000
+    SN                 0.199      0.031      6.479      0.000
+    PBC                0.242      0.033      7.424      0.000
+
+ BEH        ON
+    INT                0.213      0.027      7.879      0.000
+    PBC                0.290      0.026     10.954      0.000
+    INTPBC             0.225      0.019     11.726      0.000
+
+ SN       WITH
+    ATT                0.634      0.015     42.377      0.000
+
+ PBC      WITH
+    ATT                0.692      0.013     53.697      0.000
+    SN                 0.696      0.013     52.009      0.000
+
+ Intercepts
+    CMP_ATT_           1.183      0.023     51.838      0.000
+    CMPS_SN_           1.067      0.023     45.902      0.000
+    CMP_PBC_           1.096      0.023     48.413      0.000
+    CMP_INT_           1.113      0.020     54.337      0.000
+    CMP_BEH_           1.025      0.020     51.544      0.000
+
+ Variances
+    ATT                1.000      0.000    999.000    999.000
+    SN                 1.000      0.000    999.000    999.000
+    PBC                1.000      0.000    999.000    999.000
+
+ Residual Variances
+    CMP_ATT_           0.044      0.000    999.000    999.000
+    CMPS_SN_           0.094      0.000    999.000    999.000
+    CMP_PBC_           0.062      0.000    999.000    999.000
+    CMP_INT_           0.065      0.000    999.000    999.000
+    CMP_BEH_           0.083      0.000    999.000    999.000
+    INT                0.634      0.019     33.924      0.000
+    BEH                0.737      0.020     37.028      0.000
+
+
+R-SQUARE
+
+    Observed                                        Two-Tailed
+    Variable        Estimate       S.E.  Est./S.E.    P-Value
+
+    CMP_ATT_           0.958      0.001    713.387      0.000
+    CMPS_SN_           0.913      0.003    333.005      0.000
+    CMP_PBC_           0.939      0.002    487.330      0.000
+    CMP_INT_           0.922      0.002    374.198      0.000
+    CMP_BEH_           0.881      0.004    228.179      0.000
+
+     Latent                                         Two-Tailed
+    Variable        Estimate       S.E.  Est./S.E.    P-Value
+
+    INT                0.366      0.019     19.618      0.000
+    BEH                0.263      0.020     13.190      0.000
+
+
+TECHNICAL 1 OUTPUT
+
+
+     PARAMETER SPECIFICATION
+
+
+           NU
+              CMP_ATT_      CMPS_SN_      CMP_PBC_      CMP_INT_      CMP_BEH_
+              ________      ________      ________      ________      ________
+                    1             2             3             4             5
+
+
+           LAMBDA
+              ATT           SN            PBC           INT           BEH
+              ________      ________      ________      ________      ________
+ CMP_ATT_           0             0             0             0             0
+ CMPS_SN_           0             0             0             0             0
+ CMP_PBC_           0             0             0             0             0
+ CMP_INT_           0             0             0             0             0
+ CMP_BEH_           0             0             0             0             0
+
+
+           LAMBDA
+              INTPBC
+              ________
+ CMP_ATT_           0
+ CMPS_SN_           0
+ CMP_PBC_           0
+ CMP_INT_           0
+ CMP_BEH_           0
+
+
+           THETA
+              CMP_ATT_      CMPS_SN_      CMP_PBC_      CMP_INT_      CMP_BEH_
+              ________      ________      ________      ________      ________
+ CMP_ATT_           0
+ CMPS_SN_           0             0
+ CMP_PBC_           0             0             0
+ CMP_INT_           0             0             0             0
+ CMP_BEH_           0             0             0             0             0
+
+
+           ALPHA
+              ATT           SN            PBC           INT           BEH
+              ________      ________      ________      ________      ________
+                    0             0             0             0             0
+
+
+           ALPHA
+              INTPBC
+              ________
+                    0
+
+
+           BETA
+              ATT           SN            PBC           INT           BEH
+              ________      ________      ________      ________      ________
+ ATT                0             0             0             0             0
+ SN                 0             0             0             0             0
+ PBC                0             0             0             0             0
+ INT                6             7             8             0             0
+ BEH                0             0             9            10             0
+ INTPBC             0             0             0             0             0
+
+
+           BETA
+              INTPBC
+              ________
+ ATT                0
+ SN                 0
+ PBC                0
+ INT                0
+ BEH               11
+ INTPBC             0
+
+
+           PSI
+              ATT           SN            PBC           INT           BEH
+              ________      ________      ________      ________      ________
+ ATT               12
+ SN                13            14
+ PBC               15            16            17
+ INT                0             0             0            18
+ BEH                0             0             0             0            19
+ INTPBC             0             0             0             0             0
+
+
+           PSI
+              INTPBC
+              ________
+ INTPBC             0
+
+
+     STARTING VALUES
+
+
+           NU
+              CMP_ATT_      CMPS_SN_      CMP_PBC_      CMP_INT_      CMP_BEH_
+              ________      ________      ________      ________      ________
+                1.183         1.067         1.096         1.113         1.121
+
+
+           LAMBDA
+              ATT           SN            PBC           INT           BEH
+              ________      ________      ________      ________      ________
+ CMP_ATT_       1.000         0.000         0.000         0.000         0.000
+ CMPS_SN_       0.000         1.000         0.000         0.000         0.000
+ CMP_PBC_       0.000         0.000         1.000         0.000         0.000
+ CMP_INT_       0.000         0.000         0.000         1.000         0.000
+ CMP_BEH_       0.000         0.000         0.000         0.000         1.000
+
+
+           LAMBDA
+              INTPBC
+              ________
+ CMP_ATT_       0.000
+ CMPS_SN_       0.000
+ CMP_PBC_       0.000
+ CMP_INT_       0.000
+ CMP_BEH_       0.000
+
+
+           THETA
+              CMP_ATT_      CMPS_SN_      CMP_PBC_      CMP_INT_      CMP_BEH_
+              ________      ________      ________      ________      ________
+ CMP_ATT_       0.044
+ CMPS_SN_       0.000         0.094
+ CMP_PBC_       0.000         0.000         0.062
+ CMP_INT_       0.000         0.000         0.000         0.065
+ CMP_BEH_       0.000         0.000         0.000         0.000         0.083
+
+
+           ALPHA
+              ATT           SN            PBC           INT           BEH
+              ________      ________      ________      ________      ________
+                0.000         0.000         0.000         0.000         0.000
+
+
+           ALPHA
+              INTPBC
+              ________
+                0.000
+
+
+           BETA
+              ATT           SN            PBC           INT           BEH
+              ________      ________      ________      ________      ________
+ ATT            0.000         0.000         0.000         0.000         0.000
+ SN             0.000         0.000         0.000         0.000         0.000
+ PBC            0.000         0.000         0.000         0.000         0.000
+ INT            0.000         0.000         0.000         0.000         0.000
+ BEH            0.000         0.000         0.000         0.000         0.000
+ INTPBC         0.000         0.000         0.000         0.000         0.000
+
+
+           BETA
+              INTPBC
+              ________
+ ATT            0.000
+ SN             0.000
+ PBC            0.000
+ INT            0.000
+ BEH            0.000
+ INTPBC         0.000
+
+
+           PSI
+              ATT           SN            PBC           INT           BEH
+              ________      ________      ________      ________      ________
+ ATT            0.050
+ SN             0.000         0.050
+ PBC            0.000         0.000         0.050
+ INT            0.000         0.000         0.000         0.050
+ BEH            0.000         0.000         0.000         0.000         0.050
+ INTPBC         0.000         0.000         0.000         0.000         0.000
+
+
+           PSI
+              INTPBC
+              ________
+ INTPBC         0.000
+
+
+TECHNICAL 3 OUTPUT
+
+
+           ESTIMATED COVARIANCE MATRIX FOR PARAMETER ESTIMATES
+                     1             2             3             4             5
+              ________      ________      ________      ________      ________
+        1   0.521165D-03
+        2   0.314698D-03  0.540775D-03
+        3   0.339055D-03  0.339005D-03  0.512078D-03
+        4   0.235673D-03  0.227812D-03  0.236473D-03  0.419722D-03
+        5   0.122865D-03  0.121370D-03  0.155796D-03  0.127728D-03  0.395335D-03
+        6   0.126872D-07 -0.798097D-09 -0.843636D-09  0.661483D-08  0.396671D-05
+        7  -0.212824D-09  0.141335D-07 -0.632476D-09  0.115058D-08  0.329060D-05
+        8  -0.125110D-08 -0.204060D-08  0.125537D-07  0.146016D-07 -0.111895D-04
+        9   0.480230D-04  0.464213D-04  0.481851D-04  0.788636D-04  0.376038D-04
+       10   0.690920D-04  0.690818D-04  0.979913D-04  0.481869D-04  0.310611D-04
+       11   0.169279D-07  0.167384D-07  0.211099D-07  0.170245D-07 -0.142464D-03
+       12   0.450586D-07  0.272074D-07  0.293147D-07  0.203762D-07  0.106141D-07
+       13   0.326107D-07  0.348526D-07  0.270203D-07  0.184432D-07  0.972273D-08
+       14   0.229538D-07  0.394419D-07  0.247266D-07  0.166167D-07  0.884342D-08
+       15   0.410244D-07  0.304611D-07  0.391080D-07  0.219665D-07 -0.338614D-06
+       16   0.281641D-07  0.397310D-07  0.356417D-07  0.199615D-07 -0.210109D-06
+       17   0.339845D-07  0.339883D-07  0.515065D-07  0.234385D-07  0.197965D-06
+       18  -0.542780D-09 -0.704385D-09 -0.734583D-09  0.126532D-07  0.424255D-05
+       19  -0.529467D-09 -0.509707D-09 -0.682984D-09 -0.559363D-09  0.473634D-05
+
+
+           ESTIMATED COVARIANCE MATRIX FOR PARAMETER ESTIMATES
+                     6             7             8             9            10
+              ________      ________      ________      ________      ________
+        6   0.677409D-03
+        7  -0.208354D-03  0.751689D-03
+        8  -0.349712D-03 -0.402416D-03  0.869303D-03
+        9  -0.335066D-05 -0.229184D-05  0.310303D-05  0.472932D-03
+       10   0.544432D-05  0.446806D-05 -0.146646D-04 -0.288731D-03  0.596197D-03
+       11  -0.106633D-07  0.154100D-05 -0.858361D-05 -0.218349D-04  0.487464D-05
+       12  -0.103431D-04  0.261857D-06  0.436329D-06  0.399357D-08  0.591076D-08
+       13  -0.875879D-05 -0.545399D-05  0.857350D-06  0.364260D-08  0.547519D-08
+       14   0.969566D-06 -0.198617D-04  0.166461D-05  0.332798D-08  0.501513D-08
+       15  -0.721849D-05  0.450695D-06 -0.500198D-05 -0.446994D-05 -0.202083D-05
+       16   0.909860D-06 -0.778714D-05 -0.867262D-05 -0.497385D-05 -0.128402D-05
+       17   0.895360D-06  0.905698D-06 -0.156776D-04 -0.156862D-04  0.809758D-06
+       18   0.263355D-05 -0.836372D-05 -0.378601D-05  0.457061D-05 -0.884304D-05
+       19   0.260473D-06  0.337890D-06 -0.185615D-06 -0.418979D-05 -0.538237D-05
+
+
+           ESTIMATED COVARIANCE MATRIX FOR PARAMETER ESTIMATES
+                    11            12            13            14            15
+              ________      ________      ________      ________      ________
+       11   0.306499D-03
+       12  -0.188775D-09  0.108648D-02
+       13  -0.127935D-09  0.656041D-03  0.761726D-03
+       14  -0.713968D-10  0.396133D-03  0.680701D-03  0.116969D-02
+       15  -0.559690D-05  0.706847D-03  0.566765D-03  0.426734D-03  0.763567D-03
+       16  -0.567268D-05  0.426810D-03  0.580075D-03  0.733285D-03  0.552187D-03
+       17  -0.131076D-04  0.459864D-03  0.459781D-03  0.459699D-03  0.694563D-03
+       18  -0.577394D-05  0.895426D-07  0.156418D-06  0.273305D-06  0.165358D-06
+       19  -0.102195D-04  0.130816D-10  0.135913D-10  0.730290D-11  0.369303D-06
+
+
+           ESTIMATED COVARIANCE MATRIX FOR PARAMETER ESTIMATES
+                    16            17            18            19
+              ________      ________      ________      ________
+       16   0.783559D-03
+       17   0.694476D-03  0.104894D-02
+       18   0.248186D-06  0.176191D-06  0.317589D-03
+       19   0.662363D-06  0.220813D-06 -0.208514D-06  0.294588D-03
+
+
+           ESTIMATED CORRELATION MATRIX FOR PARAMETER ESTIMATES
+                     1             2             3             4             5
+              ________      ________      ________      ________      ________
+        1       1.000
+        2       0.593         1.000
+        3       0.656         0.644         1.000
+        4       0.504         0.478         0.510         1.000
+        5       0.271         0.262         0.346         0.314         1.000
+        6       0.000         0.000         0.000         0.000         0.008
+        7       0.000         0.000         0.000         0.000         0.006
+        8       0.000         0.000         0.000         0.000        -0.019
+        9       0.097         0.092         0.098         0.177         0.087
+       10       0.124         0.122         0.177         0.096         0.064
+       11       0.000         0.000         0.000         0.000        -0.409
+       12       0.000         0.000         0.000         0.000         0.000
+       13       0.000         0.000         0.000         0.000         0.000
+       14       0.000         0.000         0.000         0.000         0.000
+       15       0.000         0.000         0.000         0.000        -0.001
+       16       0.000         0.000         0.000         0.000         0.000
+       17       0.000         0.000         0.000         0.000         0.000
+       18       0.000         0.000         0.000         0.000         0.012
+       19       0.000         0.000         0.000         0.000         0.014
+
+
+           ESTIMATED CORRELATION MATRIX FOR PARAMETER ESTIMATES
+                     6             7             8             9            10
+              ________      ________      ________      ________      ________
+        6       1.000
+        7      -0.292         1.000
+        8      -0.456        -0.498         1.000
+        9      -0.006        -0.004         0.005         1.000
+       10       0.009         0.007        -0.020        -0.544         1.000
+       11       0.000         0.003        -0.017        -0.057         0.011
+       12      -0.012         0.000         0.000         0.000         0.000
+       13      -0.012        -0.007         0.001         0.000         0.000
+       14       0.001        -0.021         0.002         0.000         0.000
+       15      -0.010         0.001        -0.006        -0.007        -0.003
+       16       0.001        -0.010        -0.011        -0.008        -0.002
+       17       0.001         0.001        -0.016        -0.022         0.001
+       18       0.006        -0.017        -0.007         0.012        -0.020
+       19       0.001         0.001         0.000        -0.011        -0.013
+
+
+           ESTIMATED CORRELATION MATRIX FOR PARAMETER ESTIMATES
+                    11            12            13            14            15
+              ________      ________      ________      ________      ________
+       11       1.000
+       12       0.000         1.000
+       13       0.000         0.721         1.000
+       14       0.000         0.351         0.721         1.000
+       15      -0.012         0.776         0.743         0.452         1.000
+       16      -0.012         0.463         0.751         0.766         0.714
+       17      -0.023         0.431         0.514         0.415         0.776
+       18      -0.019         0.000         0.000         0.000         0.000
+       19      -0.034         0.000         0.000         0.000         0.001
+
+
+           ESTIMATED CORRELATION MATRIX FOR PARAMETER ESTIMATES
+                    16            17            18            19
+              ________      ________      ________      ________
+       16       1.000
+       17       0.766         1.000
+       18       0.000         0.000         1.000
+       19       0.001         0.000        -0.001         1.000
+
+
+     Beginning Time:  10:52:07
+        Ending Time:  10:52:11
+       Elapsed Time:  00:00:04
+
+
+Mplus VERSION 8.11 DEMO (Linux) has the following limitations:
+  Maximum number of dependent variables: 6
+  Maximum number of independent variables: 2
+  Maximum number of between variables: 2
+  Maximum number of continuous latent variables in time series analysis: 2
+
+
+MUTHEN & MUTHEN
+3463 Stoner Ave.
+Los Angeles, CA  90066
+
+Tel: (310) 391-9971
+Fax: (310) 391-8971
+Web: www.StatModel.com
+Support: Support@StatModel.com
+
+Copyright (c) 1998-2024 Muthen & Muthen

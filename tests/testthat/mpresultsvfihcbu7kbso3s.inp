@@ -1,0 +1,43 @@
+TITLE:
+Running Model via Mplus
+DATA:
+FILE = "mpresultsvfihcbu7kbso3s.dat"; 
+VARIABLE:
+NAMES = x1 x2 x3 x4 z1 z2 z3 z4 y1 y2 y3 y4; 
+ MISSING=.;
+ 
+ANALYSIS:
+estimator = ml;
+type = random;
+algorithm = integration;
+processors = 2;
+integration =  15;
+
+MODEL:
+LX1 BY x1;
+LX1 BY x2;
+LX2 BY x3;
+LX2 BY x4;
+LZ1 BY z1;
+LZ1 BY z2;
+LZ2 BY z3;
+LZ2 BY z4;
+LY1 BY y1;
+LY1 BY y2;
+LY2 BY y3;
+LY2 BY y4;
+LX BY LX1;
+LX BY LX2;
+LZ BY LZ1;
+LZ BY LZ2;
+LY BY LY1;
+LY BY LY2;
+LY ON LX;
+LY ON LZ;
+LY ON LXLZ;
+LXLZ | LX XWITH LZ;
+
+OUTPUT:
+TECH1;
+TECH3;
+STANDARDIZED;

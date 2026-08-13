@@ -729,7 +729,7 @@ mainModelToParTable <- function(finalModel, method = "lms") {
   parTable <- rbind(parTable, newRows)
 
   # (Co) variances Structural Model
-  if (method == "lms") {
+  if (method %in% c("lms", "pml")) {
     phiNA <- matricesNA$A
     phiEst <- matricesEst$phi
     phiSE <- matricesSE$A
@@ -841,7 +841,7 @@ getConvergenceMessage <- function(converged, iterations) {
 
 finalizeModelEstimatesDA <- function(model,
                                      theta,
-                                     method = c("lms","qml"),
+                                     method = c("lms","qml","pml"),
                                      data,
                                      logLik,
                                      iterations,
@@ -966,7 +966,9 @@ addZStatsParTable <- function(parTable, se.col = "std.error", est.col = "est",
 
 
 getFinalModel <- function(model, theta, method, modelSE = NULL) {
-  finalModel <- fillModel(model, theta, fillPhi = method == "lms", method = method)
+  finalModel <- fillModel(model, theta,
+                          fillPhi = method %in% c("lms", "pml"),
+                          method = method)
 
   # keep NA "skeletons" for printing and SE attachment
   emptyModel <- getEmptyModel(group.info = model$info$group.info,

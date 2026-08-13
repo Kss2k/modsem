@@ -1,0 +1,38 @@
+TITLE:
+Running Model via Mplus
+DATA:
+FILE = "mpresults4z3ygd24ccc2.dat"; 
+VARIABLE:
+NAMES = cluster cmps_X1_ cmps_X2_ cmps_X3_ cmps_W1_ cmps_W2_ cmpst_f_; 
+ MISSING=.;
+ CLUSTER = cluster;
+ANALYSIS:
+estimator = MLR;
+type = complex;
+algorithm = integration;
+processors = 2;
+integration =  15;
+
+MODEL:
+fw ON X1;
+fw ON X2;
+fw ON X3;
+fw ON W1;
+fw ON W2;
+X1 BY cmps_X1_@1;
+X2 BY cmps_X2_@1;
+X3 BY cmps_X3_@1;
+W1 BY cmps_W1_@1;
+W2 BY cmps_W2_@1;
+fw BY cmpst_f_@1;
+  cmps_X1_@0.0000000;
+  cmps_X2_@0.0000000;
+  cmps_X3_@0.0000000;
+  cmps_W1_@0.0000000;
+  cmps_W2_@0.0000000;
+  cmpst_f_@0.5788063;
+
+OUTPUT:
+TECH1;
+TECH3;
+STANDARDIZED;

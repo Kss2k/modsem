@@ -1,0 +1,38 @@
+TITLE:
+Running Model via Mplus
+DATA:
+FILE = "mpresultsyzcdrvx9q4vp.dat"; 
+VARIABLE:
+NAMES = x1 x2 z1 z2 y1 y2; 
+ MISSING=.;
+ 
+ANALYSIS:
+estimator = MLR;
+type = random;
+algorithm = integration;
+processors = 2;
+integration =  15;
+
+MODEL:
+X BY x1;
+X BY x2;
+Z BY z1;
+Z BY z2;
+Y BY y1;
+Y BY y2;
+Y ON X (b1);
+Y ON Z (b2);
+Y ON XZ (b3);
+XZ | X XWITH Z;
+
+MODEL CONSTRAINT:
+NEW(ccoef);
+ccoef =  (b1 + b2 * b3) / 2;
+NEW(ccoef2);
+ccoef2 =  b1 * b2;
+b1 =  b2;
+
+OUTPUT:
+TECH1;
+TECH3;
+STANDARDIZED;

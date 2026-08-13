@@ -1,0 +1,38 @@
+TITLE:
+Running Model via Mplus
+DATA:
+FILE = "mpresultsmezn3z9aqo0t.dat"; 
+VARIABLE:
+NAMES = cmp_ATT_ cmps_SN_ cmp_PBC_ cmp_INT_ cmp_BEH_; 
+ MISSING=.;
+ 
+ANALYSIS:
+estimator = ml;
+type = random;
+algorithm = integration;
+processors = 2;
+integration =  15;
+
+MODEL:
+INT ON ATT;
+INT ON SN;
+INT ON PBC;
+BEH ON INT;
+BEH ON PBC;
+BEH ON INTPBC;
+ATT BY cmp_ATT_@1;
+SN BY cmps_SN_@1;
+PBC BY cmp_PBC_@1;
+INT BY cmp_INT_@1;
+BEH BY cmp_BEH_@1;
+  cmp_ATT_@0.04424428;
+  cmps_SN_@0.09380454;
+  cmp_PBC_@0.06241130;
+  cmp_INT_@0.06541446;
+  cmp_BEH_@0.08271897;
+INTPBC | INT XWITH PBC;
+
+OUTPUT:
+TECH1;
+TECH3;
+STANDARDIZED;

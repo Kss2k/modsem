@@ -428,7 +428,8 @@ modsem_da <- function(model.syntax = NULL,
 
   ordered.se <- match.arg(ordered.se)
 
-  if (length(ordered) || any(sapply(data, FUN = is.ordered))) {
+  if (!identical(method, "pml") &&
+      (length(ordered) || any(sapply(data, FUN = is.ordered)))) {
     out <- modsemOrderedMCCorrection(
        model.syntax                   = model.syntax,
        data                           = data,
@@ -590,7 +591,8 @@ modsem_da <- function(model.syntax = NULL,
     sampling.weights.normalization = args$sampling.weights.normalization
   )
 
-  mod_stopif(!method %in% c("lms", "qml"), "Method must be either 'lms' or 'qml'")
+  mod_stopif(!method %in% c("lms", "qml", "pml"),
+             "Method must be one of 'lms', 'qml' or 'pml'")
 
   model <- specifyModelDA(
     group.info         = group.info,
@@ -610,6 +612,23 @@ modsem_da <- function(model.syntax = NULL,
     cluster            = cluster,
     sampling.weights   = sampling.weights
   )
+
+  # PML treats ordered indicators natively: thresholds become free parameters
+  # and the underlying variables are identified in the theta parameterisation
+  # (intercept 0, residual variance 1, probit). This has to happen after the
+  # model exists and before `theta` is used, since it adds parameters.
+  if (identical(method, "pml"))
+    model <- pmlPrepareOrdered(
+      model, data = data,
+      ordered = intersect(
+        unique(c(ordered, names(data)[vapply(data, is.ordered, logical(1L))])),
+        rownames(model$models[[1L]]$matrices$lambdaX)))
+
+
+  # The starting-value pass fits the model with lavaan ML, which does not
+  # support ordered data. PML supplies its own starts (thresholds from observed
+  # cumulative proportions, via pmlPrepareOrdered), so skip it.
+  if (identical(method, "pml")) args$optimize <- FALSE
 
   if (args$optimize) {
     model <- tryCatch({
@@ -688,6 +707,23 @@ modsem_da <- function(model.syntax = NULL,
       optimizer       = args$optimizer,
       R.max           = args$R.max,
       cr1s            = args$cr1s,
+      ...
+    ),
+    pml = estPml(model,
+      data         = data,
+      verbose      = args$verbose,
+      calc.se      = args$calc.se,
+      max.iter     = args$max.iter,
+      optimizer    = args$optimizer,
+      epsilon      = args$epsilon,
+      FIM          = args$FIM,
+      OFIM.hessian = args$OFIM.hessian,
+      EFIM.S       = args$EFIM.S,
+      EFIM.parametric = args$EFIM.parametric,
+      robust.se    = args$robust.se,
+      R.max        = args$R.max,
+      cr1s         = args$cr1s,
+      nodes        = args$nodes %||% 30L,
       ...
     ),
     lms = emLms(model,

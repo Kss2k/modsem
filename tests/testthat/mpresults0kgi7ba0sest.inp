@@ -1,0 +1,36 @@
+TITLE:
+Running Model via Mplus
+DATA:
+FILE = "mpresults0kgi7ba0sest.dat"; 
+VARIABLE:
+NAMES = c_SUBJEC cmp_PBC_ cmp_INT_ cmp_BEH_; 
+ MISSING=.;
+ 
+ANALYSIS:
+estimator = ml;
+type = random;
+algorithm = integration;
+processors = 2;
+integration =  8;
+
+MODEL:
+BEH ON INT;
+BEH ON PBC;
+BEH ON INTPBCSUBJEC;
+BEH ON INTPBC;
+BEH ON SUBJEC;
+SUBJEC BY c_SUBJEC@1;
+PBC BY cmp_PBC_@1;
+INT BY cmp_INT_@1;
+BEH BY cmp_BEH_@1;
+  c_SUBJEC@0.09226640;
+  cmp_PBC_@0.05969827;
+  cmp_INT_@0.06532619;
+  cmp_BEH_@0.07318337;
+INTPBC | INT XWITH PBC;
+INTPBCSUBJEC | INTPBC XWITH SUBJEC;
+INTPBC | INT XWITH PBC;
+
+OUTPUT:
+TECH1;
+TECH3;

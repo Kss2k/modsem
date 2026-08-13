@@ -86,6 +86,22 @@ getMethodSettingsDA <- function(method, args = NULL) {
         )
     )
 
+    # PML inherits the LMS settings, not QML's: it uses the LMS model and needs
+    # the quadrature settings (`nodes` above all), which QML has no notion of.
+    # It is a direct optimiser though, so the EM-specific entries -- max.step,
+    # algorithm, em.control -- are carried but unused.
+    settings$pml <- settings$lms
+    # Needs a Godambe sandwich, which is not implemented.
+    settings$pml$calc.se <- FALSE
+    # The conditioning integral is observation-INDEPENDENT, which is what makes
+    # the pairwise objective free of N. There is therefore nothing to adapt per
+    # observation, and the rule stays shared and fixed.
+    settings$pml$adaptive.quad <- FALSE
+    # Measured: the conditioning quadrature needs ~30 points per nonlinear
+    # direction; 12 leaves enough error to displace parameters by 20%.
+    settings$pml$nodes <- 30L
+
+
     if (is.null(args)) return(settings[method])
 
     settingNames <- unique(unlist(lapply(settings, FUN = names)))
@@ -127,6 +143,6 @@ getMethodSettingsDA <- function(method, args = NULL) {
 #' @examples
 #' library(modsem)
 #' default_settings_da()
-default_settings_da <- function(method = c("lms", "qml")) {
+default_settings_da <- function(method = c("lms", "qml", "pml")) {
   getMethodSettingsDA(method = method, args = NULL)
 }

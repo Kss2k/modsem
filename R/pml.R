@@ -173,3 +173,83 @@ pmlObjective <- function(M, numXis, numEtas, thresholds, tables, rule,
     total <- total + sum(tables$tables[[p]] * log(pmax(probability[[p]], 1e-12)))
   sign * total
 }
+
+
+# Probit identification for ordered indicators, and the threshold matrix.
+#
+# The scale of an underlying variable is not identified alongside free
+# thresholds, so it has to be fixed. PML uses the THETA parameterisation, which
+# is also what lavaan's `parameterization = "theta"` does:
+#   * indicator intercept fixed at 0,
+#   * residual variance fixed at 1 (probit; there is no logit option -- see the
+#     header),
+#   * every threshold free, parameterised through `thresholdDelta` so ordering
+#     holds by construction.
+#
+# Starting values come from the observed cumulative proportions via
+# `orderedThresholdSpec()`.
+pmlPrepareOrdered <- function(model, data, ordered) {
+  if (!length(ordered)) return(model)
+  info <- orderedThresholdSpec(data, ordered, link = "probit")
+  starts <- numeric()
+
+  for (g in seq_along(model$models)) {
+    submodel <- model$models[[g]]
+    indicators <- rownames(submodel$matrices$lambdaX)
+    index <- match(intersect(ordered, indicators), indicators)
+    if (!length(index)) next
+
+    submodel$matrices$tauX[index, 1L] <- 0
+    submodel$matrices$thetaDelta[index, ] <- 0
+    submodel$matrices$thetaDelta[, index] <- 0
+    diag(submodel$matrices$thetaDelta)[index] <- 1
+    submodel$labelMatrices$tauX[index, 1L] <- ""
+    submodel$labelMatrices$thetaDelta[index, ] <- ""
+    submodel$labelMatrices$thetaDelta[, index] <- ""
+
+    specs <- Filter(function(x) identical(x$group, g), info$specs)
+    width <- max(c(0L, vapply(specs, function(x) x$K - 1L, integer(1L))))
+    delta <- matrix(NaN, length(indicators), width,
+                    dimnames = list(indicators, paste0("t", seq_len(width))))
+    for (spec in specs)
+      delta[spec$variable, seq_len(spec$K - 1L)] <- info$delta[spec$index]
+
+    submodel$matrices$thresholdDelta <- delta
+    submodel$matrices$thresholds <- thresholdDeltaToThresholdMatrix(delta)
+    submodel$labelMatrices$thresholdDelta <- matrix(
+      "", NROW(delta), NCOL(delta), dimnames = dimnames(delta))
+    submodel$labelMatrices$thresholds <- submodel$labelMatrices$thresholdDelta
+
+    free <- is.finite(delta)
+    values <- delta[free]
+    names(values) <- getParamNamesMatrix(delta, "thresholdDelta")[free]
+    if (g > 1L) names(values) <- sprintf("%s.g%d", names(values), g)
+    starts <- c(starts, values)
+    submodel$matrices$thresholdDelta[free] <- NA_real_
+    submodel$info$ordered <- intersect(ordered, indicators)
+    model$models[[g]] <- submodel
+  }
+
+  old <- model$theta
+  params <- createTheta(model, parTable.in = model$parTable)
+  shared <- intersect(names(old), names(params$theta))
+  params$theta[shared] <- old[shared]
+  params$theta[names(starts)] <- starts
+  model$params[names(params)] <- params
+  model$theta <- params$theta
+  model$params$bounds <- getParamBounds(model)
+  model$info$ordered <- ordered
+  model
+}
+
+
+# Thresholds as a per-indicator list, dropping the NaN padding that ragged rows
+# carry. Indicators with no thresholds (continuous) get `numeric(0)`.
+pmlThresholdList <- function(M) {
+  if (is.null(M$thresholds) || !NCOL(M$thresholds))
+    return(rep(list(numeric(0)), NROW(M$lambdaX)))
+  lapply(seq_len(NROW(M$thresholds)), function(i) {
+    row <- M$thresholds[i, ]
+    as.numeric(row[is.finite(row)])
+  })
+}
