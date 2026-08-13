@@ -137,18 +137,6 @@ lmsGraphReverseScoreCpp <- function(matrices, nodes, numXis, numEtas, dataR, col
     .Call(`_modsem_lmsGraphReverseScoreCpp`, matrices, nodes, numXis, numEtas, dataR, colidxR, orderedIndex, quadWeights, rowWeights, completeWeights, observed, block, row, col, symmetric, logistic, ncores, workspaceSEXP, shared)
 }
 
-lmsGraphStructuralStatsCpp <- function(matrices, nodes, numXis, numEtas, posterior, shared = FALSE) {
-    .Call(`_modsem_lmsGraphStructuralStatsCpp`, matrices, nodes, numXis, numEtas, posterior, shared)
-}
-
-lmsGraphStructuralCompleteCpp <- function(matrices, S, W, numXis, numEtas, numProducts) {
-    .Call(`_modsem_lmsGraphStructuralCompleteCpp`, matrices, S, W, numXis, numEtas, numProducts)
-}
-
-lmsGraphMeasurementNewtonCpp <- function(matrices, nodes, numXis, numEtas, dataR, colidxR, orderedIndex, completeWeights, activeLatents, logistic = TRUE, ncores = 1L, workspaceSEXP = NULL, shared = FALSE) {
-    .Call(`_modsem_lmsGraphMeasurementNewtonCpp`, matrices, nodes, numXis, numEtas, dataR, colidxR, orderedIndex, completeWeights, activeLatents, logistic, ncores, workspaceSEXP, shared)
-}
-
 multiplyIndicatorsCpp <- function(df) {
     .Call(`_modsem_multiplyIndicatorsCpp`, df)
 }

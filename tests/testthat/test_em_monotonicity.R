@@ -45,7 +45,7 @@ monotonicityViolations <- function(fit, tolerance = 1e-8) {
 # actually wired up, rather than one the backend may no longer call. The depth
 # guard matters because the ECM step delegates to the joint one when the block
 # split is degenerate, which would otherwise record the same step twice.
-mstepObjectiveGains <- function(expr, steps = c("mstepLms", "mstepLmsGraphEcm")) {
+mstepObjectiveGains <- function(expr, steps = "mstepLms") {
   namespace <- asNamespace("modsem")
   gains <- numeric(0)
   depth <- 0L

@@ -139,28 +139,33 @@ lmsGraphBackend <- function(link = c("logit", "probit")) {
     gradient.observed = gradientObsLogLikLmsGraph,
     hessian.complete = hessianCompLogLikLmsGraph,
     hessian.observed = hessianObsLogLikLmsGraph,
-    # The joint M-step, NOT the ECM split (#27). The split assumed the
-    # structural block was separable from the measurement kernel once the
-    # E-step's latent nodes were held fixed. It is not. The nodes are
-    # STANDARDISED INNOVATIONS, not latent values: `graphStates` scales them by
-    # the Cholesky of the joint latent covariance (A, psi, covZetaXi) and then
-    # runs the result through beta0/alpha/Gamma/Omega, so the latent state
-    # z = (xi, eta) is a function of the nodes AND of every structural
-    # parameter. Freezing the nodes does not freeze z, and so each structural
-    # parameter moves the indicator means. Perturbing structural parameters
-    # alone changed the measurement objective in 39 of 39 probes, and the joint
-    # objective's whole response to such a move lived in the measurement half.
-    # The structural block was optimising a surrogate that missed that by a
-    # median of 205%, and lowered the true Q in 6 of 39 M-steps here (worst
-    # -16.6) -- see test_em_monotonicity.R.
+    # The joint M-step -- classic EM. An ECM split of this into a measurement
+    # block and a structural block was tried twice and removed twice; the code
+    # is gone rather than parked, because both failures were structural rather
+    # than fixable.
     #
-    # `mstepLmsGraphEcm` is kept, unwired, because the split becomes exact if
-    # the complete data is switched from the innovations u to the states z:
-    # freeze z across the M-step AND add sum P log p(z; structural) to Q, after
-    # which p(x | z) and p(z) separate cleanly. That is #28, and the two halves
-    # have to land together -- freezing without adding leaves the structural
-    # parameters with nothing to move them, adding without freezing
-    # double-counts. Until then the joint step is the correct one.
+    # The first attempt (#27) split the blocks while the complete data was still
+    # the standardised innovations. That is not separable: `graphStates` scales
+    # the nodes by the Cholesky of the joint latent covariance and runs them
+    # through beta0/alpha/Gamma/Omega, so the latent state z = (xi, eta) is a
+    # function of the nodes AND of every structural parameter. Freezing the nodes
+    # does not freeze z. A structural-only move changed the measurement objective
+    # in 39 of 39 probes, and the structural block lowered the true Q in 6 of 39
+    # M-steps (worst -16.6).
+    #
+    # The second attempt (#28) made the split exact by switching the complete
+    # data to z -- freeze z at the E-step, add sum P log p(z; structural) to Q.
+    # That works on its own terms, but it makes Q the EM surrogate for
+    #   sum_q omega_q f(x|z_q) p(z_q; theta),
+    # while the likelihood modsem reports and monitors is
+    #   sum_q w_q f(x | g(u_q; theta)).
+    # Those agree only as quadrature error vanishes, so an M-step that provably
+    # raised Q could lower the reported likelihood: 20 decreases in 140 EMA
+    # iterations on the ordered example, against 0 before and 0 after.
+    #
+    # Under the innovation augmentation the complete-data objective IS the
+    # surrogate for the likelihood being reported, so monotonicity is structural
+    # rather than incidental. That is the property this backend keeps.
     mstep = mstepLms
   )
 }
