@@ -149,9 +149,14 @@ pstepLmsGraph <- function(model, theta, lastQuad = NULL, recalcQuad = FALSE,
     # This costs a second N by Q by d matrix alongside `rule$n`. That is the
     # same order as the nodes already stored, and only on the per-observation
     # adaptive path; a shared rule keeps both at Q by d.
-    states <- if (is.null(P.g)) NULL else lmsGraphStatesCpp(
+    # One traversal yields both: the states to freeze, and the product values
+    # the structural statistics need. Deriving them separately ran
+    # `evaluateGraphStates` twice over the same N by Q nodes with the same
+    # matrices, which measured 10% of a continuous run.
+    derived <- if (is.null(P.g)) NULL else lmsGraphStatesProductsCpp(
       M, rule$n, submodel$info$numXis, submodel$info$numEtas
     )
+    states <- derived$states
 
     # Structural sufficient statistics for the ECM M-step. Formed here, at the
     # E-step parameters, because the whole point is that the latent nodes are
@@ -159,8 +164,7 @@ pstepLmsGraph <- function(model, theta, lastQuad = NULL, recalcQuad = FALSE,
     # a measurement half that needs the N by Q kernel and a structural half
     # that needs only these moments. See lmsGraphStructuralStatsCpp.
     structural <- if (is.null(P.g)) NULL else lmsGraphStructuralStatsCpp(
-      M, rule$n, submodel$info$numXis, submodel$info$numEtas, P.g,
-      isTRUE(rule$common)
+      states, derived$products, P.g, isTRUE(rule$common)
     )
 
     # The structural half at the E-step parameters. Kept so that
@@ -431,19 +435,86 @@ completeAtEstepLmsGraph <- function(P, sign = -1) {
 }
 
 
+# Matrices `lmsGraphStructuralCompleteCpp` actually reads: the latent covariance
+# blocks (A, psi, covZetaXi) and the structural map (gammaXi, gammaEta, omega,
+# beta0, alpha). `productDesign` is a static design and is never filled, so it
+# survives untouched from the template.
+LMS_GRAPH_STRUCTURAL_MATRICES <- c("A", "psi", "covZetaXi", "gammaXi",
+                                   "gammaEta", "omega", "beta0", "alpha")
+
+
+# `fillModel` restricted to the structural half.
+#
+# The structural objective is O(d^3) and touches no data -- 15 microseconds in
+# the compiled routine -- but the ECM structural block evaluates it thousands of
+# times per M-step, because nlminb finite-differences it. A full `fillModel`
+# costs ~445 of those microseconds, thirty times the callee's own work, spent
+# filling matrices it never reads: lambdaX, tauX, thetaDelta, and on ordered data
+# the whole thresholdDelta -> thresholds cumulative softplus, which is an R loop
+# over indicators. That was 12.6% of an ordered run.
+#
+# This mirrors `fillMainModel` for the eight matrices above and nothing else. It
+# must keep mirroring it: a change to how those are filled has to land here too,
+# which is what the equivalence test in test_lms_graph.R checks.
+fillStructuralLmsGraph <- function(model, theta) {
+  params <- model$params
+  if (is.null(names(theta))) names(theta) <- names(params$theta)
+
+  thetaLabel <- NULL
+  if (length(params$SELECT_THETA_LAB))
+    thetaLabel <- suppressWarnings(calcThetaLabel(
+      theta[params$SELECT_THETA_LAB[[1L]]], params$constrExprs
+    ))
+
+  lapply(seq_len(model$info$n.groups), function(g) {
+    submodel <- model$models[[g]]
+    M <- submodel$matrices
+    keep <- intersect(LMS_GRAPH_STRUCTURAL_MATRICES, names(M))
+    M[keep] <- fillMatricesLabels(M[keep], submodel$labelMatrices[keep],
+                                  thetaLabel)
+    thetaMain <- theta[params$SELECT_THETA_MAIN[[g]]]
+
+    if (!is.null(submodel$covModel$matrices)) {
+      thetaCov <- if (length(params$SELECT_THETA_COV[[g]]))
+        theta[params$SELECT_THETA_COV[[g]]] else NULL
+      M$A <- expectedCovModel(
+        fillCovModel(submodel$covModel, thetaCov, thetaLabel),
+        method = "lms", sortedXis = submodel$info$xis
+      )
+    } else {
+      M$A <- fillNA_Matrix(M$A, theta = thetaMain, pattern = "^A([0-9]*)")
+    }
+
+    M$covZetaXi <- fillNA_Matrix(M$covZetaXi, theta = thetaMain,
+                                 pattern = "^covZetaXi")
+    M$psi       <- fillSymmetric(M$psi, fetch(thetaMain, "^psi"))
+    M$alpha     <- fillNA_Matrix(M$alpha, theta = thetaMain, pattern = "^alpha")
+    M$beta0     <- fillNA_Matrix(M$beta0, theta = thetaMain, pattern = "^beta0")
+    M$gammaEta  <- fillNA_Matrix(M$gammaEta, theta = thetaMain,
+                                 pattern = "^gammaEta")
+    M$gammaXi   <- fillNA_Matrix(M$gammaXi, theta = thetaMain,
+                                 pattern = "^gammaXi")
+    if (!is.null(M$omega))
+      M$omega <- fillNA_Matrix(M$omega, theta = thetaMain,
+                               pattern = "^omega[0-9]*$")
+    M
+  })
+}
+
+
 # Structural half of the complete-data objective, from the statistics the
 # E-step formed. Costs O(d^3) with d = 1 + numXis + numEtas + numProducts --
 # no pass over the data at all.
 structuralCompLogLikLmsGraph <- function(theta, model, P, sign = -1, ...) {
-  filled <- fillModel(model = model, theta = theta, method = "lms")
+  matrices <- fillStructuralLmsGraph(model, theta)
   ll <- 0
   for (g in seq_len(model$info$n.groups)) {
     stats <- P$P_GROUPS[[g]]$structural
     if (is.null(stats)) next
-    submodel <- filled$models[[g]]
+    info <- model$models[[g]]$info
     ll <- ll + lmsGraphStructuralCompleteCpp(
-      lmsGraphMatrices(submodel), stats$S, stats$W,
-      submodel$info$numXis, submodel$info$numEtas, stats$numProducts
+      matrices[[g]], stats$S, stats$W, info$numXis, info$numEtas,
+      stats$numProducts
     )
   }
   sign * ll

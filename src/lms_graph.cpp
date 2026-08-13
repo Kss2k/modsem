@@ -857,7 +857,8 @@ Rcpp::List aggregateKernel(const arma::mat& logKernel,
 
 
 arma::mat graphStates(const Rcpp::List& matrices, const arma::mat& nodes,
-                      const int numXis, const int numEtas) {
+                      const int numXis, const int numEtas,
+                      arma::mat* productValue = nullptr) {
   const arma::mat A = Rcpp::as<arma::mat>(matrices["A"]);
   const arma::mat cross = Rcpp::as<arma::mat>(matrices["covZetaXi"]);
   const arma::mat psi = Rcpp::as<arma::mat>(matrices["psi"]);
@@ -886,7 +887,7 @@ arma::mat graphStates(const Rcpp::List& matrices, const arma::mat& nodes,
     gammaXi, gammaEta, productDesign, omega, numXis, numEtas
   );
   return evaluateGraphStates(plan, nodes * latentChol, beta0, alpha,
-                             numXis, numEtas);
+                             numXis, numEtas, productValue);
 }
 
 } // namespace
@@ -1014,6 +1015,27 @@ arma::mat lmsGraphStatesCpp(const Rcpp::List& matrices,
                             const int numXis,
                             const int numEtas) {
   return graphStates(matrices, nodes, numXis, numEtas);
+}
+
+
+// States AND the product values, from ONE traversal.
+//
+// The E-step needs both: the states to freeze (#28) and the products to build
+// the structural sufficient statistics. Deriving them separately meant running
+// `evaluateGraphStates` twice over the same N by Q nodes with the same matrices,
+// which was 10% of a continuous run.
+// [[Rcpp::export]]
+Rcpp::List lmsGraphStatesProductsCpp(const Rcpp::List& matrices,
+                                     const arma::mat& nodes,
+                                     const int numXis,
+                                     const int numEtas) {
+  arma::mat productValue;
+  const arma::mat states = graphStates(matrices, nodes, numXis, numEtas,
+                                       &productValue);
+  return Rcpp::List::create(
+    Rcpp::Named("states") = states,
+    Rcpp::Named("products") = productValue
+  );
 }
 
 
@@ -1922,34 +1944,21 @@ arma::mat structuralCovariance(const Rcpp::List& matrices, const int numXis,
 }
 
 
-// S = sum_iq P_iq h h', with h built from the FIXED E-step nodes. `shared`
+// S = sum_iq P_iq h h', with h built from the FIXED E-step states. `shared`
 // has the same meaning as everywhere else: Q rows read by every observation,
 // versus N * Q rows read one block each.
+//
+// States and products arrive already derived, from `lmsGraphStatesProductsCpp`.
+// This used to take the nodes and re-derive them, duplicating the traversal the
+// E-step had just done to freeze the states.
 // [[Rcpp::export]]
-Rcpp::List lmsGraphStructuralStatsCpp(const Rcpp::List& matrices,
-                                      const arma::mat& nodes,
-                                      const int numXis,
-                                      const int numEtas,
+Rcpp::List lmsGraphStructuralStatsCpp(const arma::mat& states,
+                                      const arma::mat& productValue,
                                       const arma::mat& posterior,
                                       const bool shared = false) {
-  const arma::mat gammaXi = Rcpp::as<arma::mat>(matrices["gammaXi"]);
-  const arma::mat gammaEta = Rcpp::as<arma::mat>(matrices["gammaEta"]);
-  const arma::mat productDesign = Rcpp::as<arma::mat>(matrices["productDesign"]);
-  const arma::mat omega = Rcpp::as<arma::mat>(matrices["omega"]);
-  const arma::vec beta0 = Rcpp::as<arma::vec>(matrices["beta0"]);
-  const arma::vec alpha = Rcpp::as<arma::vec>(matrices["alpha"]);
-
-  arma::mat latentChol;
-  if (!arma::chol(latentChol, structuralCovariance(matrices, numXis, numEtas)))
-    Rcpp::stop("The unified latent covariance matrix is not positive definite.");
-  const GraphPlan plan = buildGraphPlan(gammaXi, gammaEta, productDesign,
-                                        omega, numXis, numEtas);
-  arma::mat productValue;
-  const arma::mat states = evaluateGraphStates(
-    plan, nodes * latentChol, beta0, alpha, numXis, numEtas, &productValue);
-
   const arma::uword numProducts = productValue.n_cols;
-  const StructuralDesign design = structuralDesign(numXis, numEtas, numProducts);
+  // h = [1, states, products]; the latent dimension is just states.n_cols here.
+  const arma::uword width = 1 + states.n_cols + numProducts;
   const arma::uword N = posterior.n_rows;
   const arma::uword Q = posterior.n_cols;
   const arma::uword stride = shared ? 0 : Q;
@@ -1962,9 +1971,9 @@ Rcpp::List lmsGraphStructuralStatsCpp(const Rcpp::List& matrices,
   arma::vec nodeMass;
   if (shared) nodeMass = arma::sum(posterior, 0).t();
 
-  arma::mat S(design.width, design.width, arma::fill::zeros);
+  arma::mat S(width, width, arma::fill::zeros);
   double W = 0.0;
-  arma::rowvec h(design.width);
+  arma::rowvec h(width);
   h(0) = 1.0;
   const arma::uword rows = shared ? Q : N * Q;
   for (arma::uword r = 0; r < rows; ++r) {

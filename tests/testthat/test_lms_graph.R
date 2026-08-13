@@ -435,3 +435,95 @@ testthat::test_that("reverse graph score ignores structurally absent thresholds"
   )
   testthat::expect_equal(as.numeric(score), 0)
 })
+
+
+# `fillStructuralLmsGraph` is a narrow copy of `fillMainModel`, filling only the
+# eight matrices the structural objective reads. It exists because a full
+# `fillModel` cost thirty times the compiled routine's own work, and the ECM
+# structural block runs that routine thousands of times per M-step.
+#
+# A copy has to be kept honest: if how those matrices are filled ever changes in
+# `fillMainModel`, this must follow. So compare the two paths directly, over
+# perturbed parameter vectors, including label equality (which routes through
+# `fillMatricesLabels`) and a second eta (which exercises gammaEta and psi).
+testthat::test_that("the narrow structural fill matches a full fillModel", {
+  referenceStructural <- function(theta, model, P, sign = -1) {
+    filled <- modsem:::fillModel(model = model, theta = theta, method = "lms")
+    ll <- 0
+    for (g in seq_len(model$info$n.groups)) {
+      stats <- P$P_GROUPS[[g]]$structural
+      if (is.null(stats)) next
+      submodel <- filled$models[[g]]
+      ll <- ll + lmsGraphStructuralCompleteCpp(
+        lmsGraphMatrices(submodel), stats$S, stats$W,
+        submodel$info$numXis, submodel$info$numEtas, stats$numProducts
+      )
+    }
+    sign * ll
+  }
+
+  captureMstep <- function(syntax, data, ordered = NULL) {
+    ns <- asNamespace("modsem")
+    names <- c("mstepLms", "mstepLmsGraphEcm")
+    originals <- stats::setNames(lapply(names, get, envir = ns), names)
+    got <- NULL
+    for (nm in names) {
+      wrapper <- local({
+        inner <- originals[[nm]]
+        function(theta, model, P, max.step, ...) {
+          if (is.null(got)) got <<- list(theta = theta, model = model, P = P)
+          inner(theta, model, P, max.step, ...)
+        }
+      })
+      unlockBinding(nm, ns); assign(nm, wrapper, envir = ns)
+    }
+    on.exit(for (nm in names) {
+      assign(nm, originals[[nm]], envir = ns); lockBinding(nm, ns)
+    })
+    args <- list(model.syntax = syntax, data = data, method = "lms",
+                 lms.backend = "graph", adaptive = "full", integration = "gh",
+                 nodes = 5L, algorithm = "EM", max.iter = 2L,
+                 calc.se = FALSE, verbose = FALSE)
+    if (!is.null(ordered)) args$ordered <- ordered
+    suppressWarnings(do.call(modsem, args))
+    got
+  }
+
+  set.seed(11)
+  vars <- c("x1", "x2", "z1", "z2", "y1", "y2")
+  syntaxes <- list(
+    plain = 'X =~ x1 + x2
+             Z =~ z1 + z2
+             Y =~ y1 + y2
+             Y ~ X + Z + X:Z',
+    labelled = 'X =~ x1 + l1*x2
+                Z =~ z1 + l1*z2
+                Y =~ y1 + y2
+                Y ~ X + Z + X:Z',
+    twoeta = 'X =~ x1 + x2
+              Z =~ z1 + z2
+              Y =~ y1 + y2
+              Z ~ X
+              Y ~ X + Z + X:Z'
+  )
+
+  for (name in names(syntaxes)) {
+    got <- captureMstep(syntaxes[[name]], oneInt[vars])
+    testthat::expect_false(is.null(got), info = name)
+    for (i in 1:20) {
+      theta <- got$theta
+      if (i > 1)
+        theta <- theta + stats::rnorm(length(theta), sd = 0.15) *
+          pmax(0.2, abs(theta))
+      reference <- tryCatch(referenceStructural(theta, got$model, got$P),
+                            error = function(e) NA_real_)
+      narrow <- tryCatch(
+        modsem:::structuralCompLogLikLmsGraph(theta, got$model, got$P),
+        error = function(e) NA_real_)
+      # Both paths must reject the same points, and agree exactly elsewhere.
+      testthat::expect_equal(is.na(reference), is.na(narrow), info = name)
+      if (!is.na(reference))
+        testthat::expect_equal(narrow, reference, tolerance = 1e-12, info = name)
+    }
+  }
+})

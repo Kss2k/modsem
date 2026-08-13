@@ -468,6 +468,20 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// lmsGraphStatesProductsCpp
+Rcpp::List lmsGraphStatesProductsCpp(const Rcpp::List& matrices, const arma::mat& nodes, const int numXis, const int numEtas);
+RcppExport SEXP _modsem_lmsGraphStatesProductsCpp(SEXP matricesSEXP, SEXP nodesSEXP, SEXP numXisSEXP, SEXP numEtasSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type matrices(matricesSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type nodes(nodesSEXP);
+    Rcpp::traits::input_parameter< const int >::type numXis(numXisSEXP);
+    Rcpp::traits::input_parameter< const int >::type numEtas(numEtasSEXP);
+    rcpp_result_gen = Rcpp::wrap(lmsGraphStatesProductsCpp(matrices, nodes, numXis, numEtas));
+    return rcpp_result_gen;
+END_RCPP
+}
 // lmsGraphAdaptiveRuleCpp
 Rcpp::List lmsGraphAdaptiveRuleCpp(const Rcpp::List& matrices, const arma::mat& baseNodes, const arma::vec& baseWeights, const arma::mat& starts, const int numXis, const int numEtas, const Rcpp::List& dataR, const Rcpp::List& colidxR, const Rcpp::IntegerVector& orderedIndex, const bool logistic, const int maxIterations, const double tolerance, const double curvatureFloor, const double derivativeStep, const int ncores, SEXP workspaceSEXP);
 RcppExport SEXP _modsem_lmsGraphAdaptiveRuleCpp(SEXP matricesSEXP, SEXP baseNodesSEXP, SEXP baseWeightsSEXP, SEXP startsSEXP, SEXP numXisSEXP, SEXP numEtasSEXP, SEXP dataRSEXP, SEXP colidxRSEXP, SEXP orderedIndexSEXP, SEXP logisticSEXP, SEXP maxIterationsSEXP, SEXP toleranceSEXP, SEXP curvatureFloorSEXP, SEXP derivativeStepSEXP, SEXP ncoresSEXP, SEXP workspaceSEXPSEXP) {
@@ -614,18 +628,16 @@ BEGIN_RCPP
 END_RCPP
 }
 // lmsGraphStructuralStatsCpp
-Rcpp::List lmsGraphStructuralStatsCpp(const Rcpp::List& matrices, const arma::mat& nodes, const int numXis, const int numEtas, const arma::mat& posterior, const bool shared);
-RcppExport SEXP _modsem_lmsGraphStructuralStatsCpp(SEXP matricesSEXP, SEXP nodesSEXP, SEXP numXisSEXP, SEXP numEtasSEXP, SEXP posteriorSEXP, SEXP sharedSEXP) {
+Rcpp::List lmsGraphStructuralStatsCpp(const arma::mat& states, const arma::mat& productValue, const arma::mat& posterior, const bool shared);
+RcppExport SEXP _modsem_lmsGraphStructuralStatsCpp(SEXP statesSEXP, SEXP productValueSEXP, SEXP posteriorSEXP, SEXP sharedSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Rcpp::List& >::type matrices(matricesSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type nodes(nodesSEXP);
-    Rcpp::traits::input_parameter< const int >::type numXis(numXisSEXP);
-    Rcpp::traits::input_parameter< const int >::type numEtas(numEtasSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type states(statesSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type productValue(productValueSEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type posterior(posteriorSEXP);
     Rcpp::traits::input_parameter< const bool >::type shared(sharedSEXP);
-    rcpp_result_gen = Rcpp::wrap(lmsGraphStructuralStatsCpp(matrices, nodes, numXis, numEtas, posterior, shared));
+    rcpp_result_gen = Rcpp::wrap(lmsGraphStructuralStatsCpp(states, productValue, posterior, shared));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -933,6 +945,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_modsem_lmsGraphPstepWorkspaceCpp", (DL_FUNC) &_modsem_lmsGraphPstepWorkspaceCpp, 10},
     {"_modsem_lmsGraphCompleteStatesCpp", (DL_FUNC) &_modsem_lmsGraphCompleteStatesCpp, 7},
     {"_modsem_lmsGraphStatesCpp", (DL_FUNC) &_modsem_lmsGraphStatesCpp, 4},
+    {"_modsem_lmsGraphStatesProductsCpp", (DL_FUNC) &_modsem_lmsGraphStatesProductsCpp, 4},
     {"_modsem_lmsGraphAdaptiveRuleCpp", (DL_FUNC) &_modsem_lmsGraphAdaptiveRuleCpp, 16},
     {"_modsem_lmsGraphLogKernelCpp", (DL_FUNC) &_modsem_lmsGraphLogKernelCpp, 9},
     {"_modsem_lmsGraphAggregateCpp", (DL_FUNC) &_modsem_lmsGraphAggregateCpp, 3},
@@ -940,7 +953,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_modsem_lmsGraphScoreCpp", (DL_FUNC) &_modsem_lmsGraphScoreCpp, 16},
     {"_modsem_lmsGraphMeasurementScoreCpp", (DL_FUNC) &_modsem_lmsGraphMeasurementScoreCpp, 10},
     {"_modsem_lmsGraphReverseScoreCpp", (DL_FUNC) &_modsem_lmsGraphReverseScoreCpp, 19},
-    {"_modsem_lmsGraphStructuralStatsCpp", (DL_FUNC) &_modsem_lmsGraphStructuralStatsCpp, 6},
+    {"_modsem_lmsGraphStructuralStatsCpp", (DL_FUNC) &_modsem_lmsGraphStructuralStatsCpp, 4},
     {"_modsem_lmsGraphStructuralCompleteCpp", (DL_FUNC) &_modsem_lmsGraphStructuralCompleteCpp, 6},
     {"_modsem_lmsGraphMeasurementNewtonCpp", (DL_FUNC) &_modsem_lmsGraphMeasurementNewtonCpp, 11},
     {"_modsem_multiplyIndicatorsCpp", (DL_FUNC) &_modsem_multiplyIndicatorsCpp, 1},
