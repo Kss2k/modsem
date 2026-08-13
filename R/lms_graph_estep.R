@@ -197,11 +197,73 @@ pstepLmsGraph <- function(model, theta, lastQuad = NULL, recalcQuad = FALSE,
     if (!length(err) || !is.finite(err[[1L]])) 0.0 else abs(err[[1L]])
   }, numeric(1L))
 
+  # Identifies THIS E-step. `lmsGraphMeasurementPass` memoises on it together
+  # with theta, because the frozen states and the posterior both change here
+  # while theta need not, and a value keyed on theta alone would be read back
+  # against the wrong E-step.
+  LmsGraphCache$stamp <- LmsGraphCache$stamp + 1L
+
   list(P_GROUPS = groups, quad = lapply(groups, `[[`, "quad"),
        quad.err = sum(quad.err),
        obsLL = sum(vapply(groups, `[[`, numeric(1L), "obsLL")),
+       stamp = LmsGraphCache$stamp,
        lms.backend = "graph")
 }
+
+
+# One slot, holding the last measurement pass. See lmsGraphMeasurementPass.
+LmsGraphCache <- new.env(parent = emptyenv())
+LmsGraphCache$stamp <- 0L
+LmsGraphCache$last <- NULL
+
+
+# The measurement half of the complete-data objective AND its score, from a
+# single traversal, memoised on (E-step, theta).
+#
+# The M-step's optimiser asks for the objective and then the gradient at the very
+# same theta -- measured at 100% of gradient calls -- and then frequently asks
+# for that objective again. Evaluating them independently meant two or three full
+# N by Q passes per point where one suffices: the adjoint traversal already
+# evaluates every response probability the objective needs.
+#
+# Keyed on `P$stamp` as well as theta, because the frozen states and the
+# posterior both change at every E-step while theta may not. The stamp is unique
+# per pstep call, so a stale entry cannot be read across iterations or models.
+lmsGraphMeasurementPass <- function(theta, model, P) {
+  cached <- LmsGraphCache$last
+  if (!is.null(cached) && identical(cached$stamp, P$stamp) &&
+      length(cached$theta) == length(theta) && all(cached$theta == theta))
+    return(cached)
+
+  filled <- fillModel(model = model, theta = theta, method = "lms")
+  locations <- model$params$gradientStruct$locations
+  raw <- stats::setNames(numeric(NROW(locations)), locations$param)
+  objective <- 0
+  for (g in seq_len(model$info$n.groups)) {
+    Pg <- P$P_GROUPS[[g]]
+    submodel <- filled$models[[g]]
+    M <- lmsGraphMatrices(submodel)
+    if (!NCOL(M$thresholds)) M$thresholdDelta <- M$thresholds
+    loc <- locations[locations$group == g, , drop = FALSE]
+    out <- lmsGraphMeasurementScoreCpp(
+      M, Pg$states, Pg$workspace %||% lmsGraphWorkspace(submodel), Pg$P,
+      loc$block, loc$row, loc$col,
+      identical(Pg$link %||% "logit", "logit"),
+      ThreadEnv$n.threads %||% 1L, isTRUE(Pg$common)
+    )
+    objective <- objective + out$objective
+    if (NROW(loc)) raw[loc$param] <- out$score
+  }
+
+  pass <- list(stamp = P$stamp, theta = theta, objective = objective, raw = raw)
+  LmsGraphCache$last <- pass
+  pass
+}
+
+
+# Latent density half, unsigned.
+lmsGraphStructuralHalf <- function(theta, model, P)
+  structuralCompLogLikLmsGraph(theta, model, P, sign = 1)
 
 
 # The OBSERVED branch re-derives the latent states from the current parameters,
@@ -210,32 +272,21 @@ pstepLmsGraph <- function(model, theta, lastQuad = NULL, recalcQuad = FALSE,
 # because the complete data is z itself (#28) -- it reads the states frozen at
 # the E-step and adds the latent density that the freezing leaves behind.
 lmsGraphObjective <- function(theta, model, P, observed = FALSE, sign = -1) {
+  if (!observed)
+    return(sign * (lmsGraphMeasurementPass(theta, model, P)$objective +
+                     lmsGraphStructuralHalf(theta, model, P)))
+
   filled <- fillModel(model = model, theta = theta, method = "lms")
   ll <- 0
   for (g in seq_len(model$info$n.groups)) {
     Pg <- P$P_GROUPS[[g]]
     submodel <- filled$models[[g]]
-    M <- lmsGraphMatrices(submodel)
-    logistic <- identical(Pg$link %||% "logit", "logit")
     workspace <- Pg$workspace %||% lmsGraphWorkspace(submodel)
-
-    ll <- ll + if (observed) {
-      lmsGraphAggregateCpp(
-        lmsGraphLogKernel(submodel, Pg$V, Pg$link %||% "logit", workspace,
-                          shared = isTRUE(Pg$common)),
-        Pg$w, Pg$sampling.weights
-      )$logLik
-
-    } else {
-      stats <- Pg$structural
-      lmsGraphCompleteStatesCpp(
-        M, Pg$states, workspace, Pg$P, logistic,
-        ThreadEnv$n.threads %||% 1L, isTRUE(Pg$common)
-      ) + if (is.null(stats)) 0 else lmsGraphStructuralCompleteCpp(
-        M, stats$S, stats$W, submodel$info$numXis, submodel$info$numEtas,
-        stats$numProducts
-      )
-    }
+    ll <- ll + lmsGraphAggregateCpp(
+      lmsGraphLogKernel(submodel, Pg$V, Pg$link %||% "logit", workspace,
+                        shared = isTRUE(Pg$common)),
+      Pg$w, Pg$sampling.weights
+    )$logLik
   }
   sign * ll
 }
@@ -265,7 +316,19 @@ lmsGraphHessianFromGradient <- function(theta, gradient,
 }
 
 
+# Complete data is z, frozen (#28), so the complete-data half sees the
+# measurement parameters only -- no reverse traversal of the structural graph and
+# no Cholesky direction -- and it shares its traversal with the objective through
+# `lmsGraphMeasurementPass`. The observed likelihood is the marginal one and
+# still needs the full reverse pass, because there the nodes ARE innovations.
 lmsGraphAnalyticalGradient <- function(theta, model, P, observed, sign) {
+  if (!observed) {
+    J <- lmsFirstDerivativeJacobian(theta, model)
+    raw <- lmsGraphMeasurementPass(theta, model, P)$raw
+    return(drop(sign * J %*% raw) +
+             lmsGraphStructuralGradient(theta, model, P, sign, J))
+  }
+
   filled <- fillModel(model = model, theta = theta, method = "lms")
   locations <- model$params$gradientStruct$locations
   raw <- stats::setNames(numeric(NROW(locations)), locations$param)
@@ -275,33 +338,20 @@ lmsGraphAnalyticalGradient <- function(theta, model, P, observed, sign) {
     submodel <- filled$models[[g]]
     M <- lmsGraphMatrices(submodel)
     if (!NCOL(M$thresholds)) M$thresholdDelta <- M$thresholds
-    ordered <- lmsGraphOrderedIndex(submodel, M)
     Pg <- P$P_GROUPS[[g]]
-    logistic <- identical(Pg$link %||% "logit", "logit")
-    workspace <- Pg$workspace %||% lmsGraphWorkspace(submodel)
-
-    # Complete data is z, frozen (#28), so this half sees the measurement
-    # parameters only -- no reverse traversal of the structural graph, and no
-    # Cholesky direction. The observed likelihood is the marginal one and still
-    # needs the full reverse pass, because there the nodes ARE innovations.
-    score <- if (observed) lmsGraphReverseScoreCpp(
+    raw[loc$param] <- lmsGraphReverseScoreCpp(
       M, Pg$V, submodel$info$numXis, submodel$info$numEtas,
-      submodel$data$data.split, submodel$data$colidx0, ordered,
+      submodel$data$data.split, submodel$data$colidx0,
+      lmsGraphOrderedIndex(submodel, M),
       Pg$w, Pg$sampling.weights, matrix(numeric(), 0L, 0L),
       TRUE, loc$block, loc$row, loc$col, loc$symmetric,
-      logistic, ThreadEnv$n.threads %||% 1L, workspace,
+      identical(Pg$link %||% "logit", "logit"),
+      ThreadEnv$n.threads %||% 1L,
+      Pg$workspace %||% lmsGraphWorkspace(submodel),
       isTRUE(Pg$common)
-    ) else lmsGraphMeasurementScoreCpp(
-      M, Pg$states, workspace, Pg$P,
-      loc$block, loc$row, loc$col,
-      logistic, ThreadEnv$n.threads %||% 1L, isTRUE(Pg$common)
     )
-    raw[loc$param] <- score
   }
-  J <- lmsFirstDerivativeJacobian(theta, model)
-  out <- drop(sign * J %*% raw)
-  if (observed) out else out + lmsGraphStructuralGradient(theta, model, P,
-                                                          sign, J)
+  drop(sign * lmsFirstDerivativeJacobian(theta, model) %*% raw)
 }
 
 

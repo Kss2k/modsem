@@ -579,7 +579,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // lmsGraphMeasurementScoreCpp
-arma::vec lmsGraphMeasurementScoreCpp(const Rcpp::List& matrices, const arma::mat& states, SEXP workspaceSEXP, const arma::mat& completeWeights, const Rcpp::IntegerVector& block, const Rcpp::IntegerVector& row, const Rcpp::IntegerVector& col, const bool logistic, const int ncores, const bool shared);
+Rcpp::List lmsGraphMeasurementScoreCpp(const Rcpp::List& matrices, const arma::mat& states, SEXP workspaceSEXP, const arma::mat& completeWeights, const Rcpp::IntegerVector& block, const Rcpp::IntegerVector& row, const Rcpp::IntegerVector& col, const bool logistic, const int ncores, const bool shared);
 RcppExport SEXP _modsem_lmsGraphMeasurementScoreCpp(SEXP matricesSEXP, SEXP statesSEXP, SEXP workspaceSEXPSEXP, SEXP completeWeightsSEXP, SEXP blockSEXP, SEXP rowSEXP, SEXP colSEXP, SEXP logisticSEXP, SEXP ncoresSEXP, SEXP sharedSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;

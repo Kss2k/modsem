@@ -1484,6 +1484,12 @@ struct MeasurementAdjoint {
   arma::mat mean;
   arma::mat threshold;
   arma::vec variance;
+  // The weighted log-likelihood, accumulated in the same traversal. The adjoint
+  // already evaluates every response probability it needs -- `ordinalBlockEvaluation`
+  // returns the log probability alongside the ratios, and the continuous branch
+  // forms the residual either way -- so the objective costs an extra add per
+  // cell rather than an extra pass (#1 of the profiling work).
+  double objective;
 };
 
 MeasurementAdjoint measurementAdjoint(
@@ -1503,9 +1509,11 @@ MeasurementAdjoint measurementAdjoint(
   out.mean.zeros(means.n_rows, means.n_cols);
   out.threshold.zeros(thresholdRows, thresholdCols);
   out.variance.zeros(theta.n_rows);
+  out.objective = 0.0;
+  double objective = 0.0;
   const arma::uword totalRows = observations.size();
   #ifdef _OPENMP
-  #pragma omp parallel num_threads(ncores) if(ncores > 1)
+  #pragma omp parallel num_threads(ncores) if(ncores > 1) reduction(+:objective)
   #endif
   {
     arma::mat thresholdLocal(out.threshold.n_rows, out.threshold.n_cols,
@@ -1542,6 +1550,7 @@ MeasurementAdjoint measurementAdjoint(
             );
             meanTarget.col(column).subvec(first, last) += weights %
               (evaluation.lowerRatio - evaluation.upperRatio);
+            objective += arma::dot(weights, evaluation.logProbability);
             if (code > 1)
               thresholdLocal(column, use(code - 2)) -=
                 arma::dot(weights, evaluation.lowerRatio);
@@ -1554,6 +1563,9 @@ MeasurementAdjoint measurementAdjoint(
               means.col(column).subvec(first, last);
             meanTarget.col(column).subvec(first, last) +=
               weights % residual / variance;
+            objective += arma::dot(weights, -0.5 *
+              (std::log(2.0 * M_PI * variance) +
+               arma::square(residual) / variance));
             varianceLocal(column) += arma::dot(weights,
               -0.5 / variance + 0.5 * arma::square(residual) /
                 (variance * variance));
@@ -1569,6 +1581,7 @@ MeasurementAdjoint measurementAdjoint(
       if (!ownRows) out.mean += meanLocal;
     }
   }
+  out.objective = objective;
   return out;
 }
 
@@ -1602,17 +1615,22 @@ double thresholdDeltaScore(const arma::mat& thresholdDelta,
 // -- lambdaX (0), tauX (2), thetaDelta (4) and thresholdDelta (18) -- can be
 // nonzero, and every other location is left at zero for the caller to fill
 // from the latent-density half.
+// Returns BOTH the score and the objective, because one traversal yields both
+// and the M-step always wants them at the same theta: the optimiser asks for the
+// objective first and the gradient at that same point immediately after, 100% of
+// the time as measured. Computing them separately meant two full N by Q passes
+// where the second re-derived everything the first had.
 // [[Rcpp::export]]
-arma::vec lmsGraphMeasurementScoreCpp(const Rcpp::List& matrices,
-                                      const arma::mat& states,
-                                      SEXP workspaceSEXP,
-                                      const arma::mat& completeWeights,
-                                      const Rcpp::IntegerVector& block,
-                                      const Rcpp::IntegerVector& row,
-                                      const Rcpp::IntegerVector& col,
-                                      const bool logistic = true,
-                                      const int ncores = 1,
-                                      const bool shared = false) {
+Rcpp::List lmsGraphMeasurementScoreCpp(const Rcpp::List& matrices,
+                                       const arma::mat& states,
+                                       SEXP workspaceSEXP,
+                                       const arma::mat& completeWeights,
+                                       const Rcpp::IntegerVector& block,
+                                       const Rcpp::IntegerVector& row,
+                                       const Rcpp::IntegerVector& col,
+                                       const bool logistic = true,
+                                       const int ncores = 1,
+                                       const bool shared = false) {
   Rcpp::XPtr<GraphWorkspace> workspace(workspaceSEXP);
   const arma::mat lambda = Rcpp::as<arma::mat>(matrices["lambdaX"]);
   const arma::vec tau = Rcpp::as<arma::vec>(matrices["tauX"]);
@@ -1655,7 +1673,10 @@ arma::vec lmsGraphMeasurementScoreCpp(const Rcpp::List& matrices,
     default: break;
     }
   }
-  return score;
+  return Rcpp::List::create(
+    Rcpp::Named("score") = score,
+    Rcpp::Named("objective") = adjoint.objective
+  );
 }
 
 
