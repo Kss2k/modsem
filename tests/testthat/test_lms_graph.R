@@ -219,11 +219,11 @@ testthat::test_that("a shared rule read with zero stride equals the replicated r
       shared.score <- lmsGraphReverseScoreCpp(
         M, shared.nodes, 1L, 1L, list(values), list(0:1), 0L,
         shared.weights, row.weights, complete.weights, observed,
-        blocks, rows, cols, symmetric, TRUE, threads, workspace, TRUE)
+        blocks, rows, cols, symmetric, TRUE, threads, workspace, TRUE)$score
       packed.score <- lmsGraphReverseScoreCpp(
         M, packed.nodes, 1L, 1L, list(values), list(0:1), 0L,
         packed.weights, row.weights, complete.weights, observed,
-        blocks, rows, cols, symmetric, TRUE, threads, workspace, FALSE)
+        blocks, rows, cols, symmetric, TRUE, threads, workspace, FALSE)$score
       testthat::expect_equal(as.numeric(shared.score),
                              as.numeric(packed.score), tolerance = 1e-10)
     }
@@ -370,7 +370,7 @@ testthat::test_that("analytical LMS graph scores match central differences", {
     M, nodes, 1L, 1L, list(values), list(0:1), 0L,
     weights, row.weights, matrix(numeric(), 0L, 0L), TRUE,
     blocks, rows, cols, symmetric, TRUE
-  )
+  )$score
   testthat::expect_equal(as.numeric(reverse), as.numeric(analytical),
                          tolerance = 1e-10)
   epsilon <- 1e-6
@@ -398,7 +398,7 @@ testthat::test_that("analytical LMS graph scores match central differences", {
     M, nodes, 1L, 1L, list(values), list(0:1), 0L,
     weights, row.weights, posterior, FALSE,
     blocks, rows, cols, symmetric, TRUE
-  )
+  )$score
   testthat::expect_equal(as.numeric(complete.reverse), as.numeric(complete),
                          tolerance = 1e-10)
   complete.objective <- function(matrices) lmsGraphWeightedKernelCpp(
@@ -431,6 +431,6 @@ testthat::test_that("reverse graph score ignores structurally absent thresholds"
     list(matrix(c(1, 0), 1L)), list(0:1), 0L,
     1, 1, matrix(numeric(), 0L, 0L), TRUE,
     18L, 1L, 1L, FALSE, TRUE
-  )
+  )$score
   testthat::expect_equal(as.numeric(score), 0)
 })

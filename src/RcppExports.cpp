@@ -567,7 +567,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // lmsGraphReverseScoreCpp
-arma::vec lmsGraphReverseScoreCpp(const Rcpp::List& matrices, const arma::mat& nodes, const int numXis, const int numEtas, const Rcpp::List& dataR, const Rcpp::List& colidxR, const Rcpp::IntegerVector& orderedIndex, const arma::vec& quadWeights, const arma::vec& rowWeights, const arma::mat& completeWeights, const bool observed, const Rcpp::IntegerVector& block, const Rcpp::IntegerVector& row, const Rcpp::IntegerVector& col, const Rcpp::LogicalVector& symmetric, const bool logistic, const int ncores, SEXP workspaceSEXP, const bool shared);
+Rcpp::List lmsGraphReverseScoreCpp(const Rcpp::List& matrices, const arma::mat& nodes, const int numXis, const int numEtas, const Rcpp::List& dataR, const Rcpp::List& colidxR, const Rcpp::IntegerVector& orderedIndex, const arma::vec& quadWeights, const arma::vec& rowWeights, const arma::mat& completeWeights, const bool observed, const Rcpp::IntegerVector& block, const Rcpp::IntegerVector& row, const Rcpp::IntegerVector& col, const Rcpp::LogicalVector& symmetric, const bool logistic, const int ncores, SEXP workspaceSEXP, const bool shared);
 RcppExport SEXP _modsem_lmsGraphReverseScoreCpp(SEXP matricesSEXP, SEXP nodesSEXP, SEXP numXisSEXP, SEXP numEtasSEXP, SEXP dataRSEXP, SEXP colidxRSEXP, SEXP orderedIndexSEXP, SEXP quadWeightsSEXP, SEXP rowWeightsSEXP, SEXP completeWeightsSEXP, SEXP observedSEXP, SEXP blockSEXP, SEXP rowSEXP, SEXP colSEXP, SEXP symmetricSEXP, SEXP logisticSEXP, SEXP ncoresSEXP, SEXP workspaceSEXPSEXP, SEXP sharedSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;

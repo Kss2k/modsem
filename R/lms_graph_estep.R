@@ -153,37 +153,34 @@ pstepLmsGraph <- function(model, theta, lastQuad = NULL, recalcQuad = FALSE,
     if (!length(err) || !is.finite(err[[1L]])) 0.0 else abs(err[[1L]])
   }, numeric(1L))
 
+  # Identifies THIS E-step, for `lmsGraphCompletePass`'s memo. The posterior and
+  # the quadrature rule both change here while theta need not, so a value keyed
+  # on theta alone would be read back against the wrong E-step.
+  LmsGraphCache$stamp <- LmsGraphCache$stamp + 1L
+
   list(P_GROUPS = groups, quad = lapply(groups, `[[`, "quad"),
        quad.err = sum(quad.err),
        obsLL = sum(vapply(groups, `[[`, numeric(1L), "obsLL")),
+       stamp = LmsGraphCache$stamp,
        lms.backend = "graph")
 }
 
 
 lmsGraphObjective <- function(theta, model, P, observed = FALSE, sign = -1) {
+  if (!observed)
+    return(sign * lmsGraphCompletePass(theta, model, P)$objective)
+
   filled <- fillModel(model = model, theta = theta, method = "lms")
   ll <- 0
   for (g in seq_len(model$info$n.groups)) {
     Pg <- P$P_GROUPS[[g]]
     submodel <- filled$models[[g]]
-    M <- lmsGraphMatrices(submodel)
-    logistic <- identical(Pg$link %||% "logit", "logit")
-    workspace <- Pg$workspace %||% lmsGraphWorkspace(submodel)
-
-    ll <- ll + if (observed) {
-      lmsGraphAggregateCpp(
-        lmsGraphLogKernel(submodel, Pg$V, Pg$link %||% "logit", workspace,
-                          shared = isTRUE(Pg$common)),
-        Pg$w, Pg$sampling.weights
-      )$logLik
-
-    } else {
-      lmsGraphCompleteWorkspaceCpp(
-        M, Pg$V, submodel$info$numXis, submodel$info$numEtas,
-        workspace, Pg$P, logistic, ThreadEnv$n.threads %||% 1L,
-        isTRUE(Pg$common)
-      )
-    }
+    ll <- ll + lmsGraphAggregateCpp(
+      lmsGraphLogKernel(submodel, Pg$V, Pg$link %||% "logit",
+                        Pg$workspace %||% lmsGraphWorkspace(submodel),
+                        shared = isTRUE(Pg$common)),
+      Pg$w, Pg$sampling.weights
+    )$logLik
   }
   sign * ll
 }
@@ -214,6 +211,11 @@ lmsGraphHessianFromGradient <- function(theta, gradient,
 
 
 lmsGraphAnalyticalGradient <- function(theta, model, P, observed, sign) {
+  if (!observed) {
+    pass <- lmsGraphCompletePass(theta, model, P)
+    return(drop(sign * lmsFirstDerivativeJacobian(theta, model) %*% pass$raw))
+  }
+
   filled <- fillModel(model = model, theta = theta, method = "lms")
   locations <- model$params$gradientStruct$locations
   raw <- stats::setNames(numeric(NROW(locations)), locations$param)
@@ -223,24 +225,80 @@ lmsGraphAnalyticalGradient <- function(theta, model, P, observed, sign) {
     submodel <- filled$models[[g]]
     M <- lmsGraphMatrices(submodel)
     if (!NCOL(M$thresholds)) M$thresholdDelta <- M$thresholds
-    ordered <- lmsGraphOrderedIndex(submodel, M)
     Pg <- P$P_GROUPS[[g]]
-    logistic <- identical(Pg$link %||% "logit", "logit")
-    workspace <- Pg$workspace %||% lmsGraphWorkspace(submodel)
-
-    score <- lmsGraphReverseScoreCpp(
+    raw[loc$param] <- lmsGraphReverseScoreCpp(
       M, Pg$V, submodel$info$numXis, submodel$info$numEtas,
-      submodel$data$data.split, submodel$data$colidx0, ordered,
-      Pg$w, Pg$sampling.weights,
-      if (observed) matrix(numeric(), 0L, 0L) else Pg$P,
-      observed, loc$block, loc$row, loc$col, loc$symmetric,
-      logistic, ThreadEnv$n.threads %||% 1L, workspace,
+      submodel$data$data.split, submodel$data$colidx0,
+      lmsGraphOrderedIndex(submodel, M),
+      Pg$w, Pg$sampling.weights, matrix(numeric(), 0L, 0L),
+      TRUE, loc$block, loc$row, loc$col, loc$symmetric,
+      identical(Pg$link %||% "logit", "logit"),
+      ThreadEnv$n.threads %||% 1L,
+      Pg$workspace %||% lmsGraphWorkspace(submodel),
+      isTRUE(Pg$common)
+    )$score
+  }
+  drop(sign * lmsFirstDerivativeJacobian(theta, model) %*% raw)
+}
+
+
+# One slot, holding the last complete-data pass. See lmsGraphCompletePass.
+LmsGraphCache <- new.env(parent = emptyenv())
+LmsGraphCache$stamp <- 0L
+LmsGraphCache$last <- NULL
+
+
+# The complete-data objective AND its score, from a single traversal, memoised
+# on (E-step, theta).
+#
+# The M-step's optimiser asks for the objective and then the gradient at the very
+# same theta -- measured at 100% of gradient calls -- and then frequently asks
+# for that objective again. The observed call pattern over one M-step is
+#     o1 g1 o2 g2 o2 o3 g3 o4 g4 o4 o5 g5 o6 o7
+# i.e. 9 objective and 5 gradient calls across 7 distinct points. Evaluated
+# independently that is 14 full N by Q passes where 7 suffice; the reverse
+# traversal already computes every response probability the objective needs.
+#
+# Note the objective always comes FIRST, so a cache fed only by the gradient
+# could never serve it -- the two have to be produced together on first touch.
+#
+# Keyed on `P$stamp` as well as theta, because the posterior and the quadrature
+# rule both change at an E-step while theta may not; keyed on theta alone a
+# stale entry would be read back against the wrong E-step.
+lmsGraphCompletePass <- function(theta, model, P) {
+  cached <- LmsGraphCache$last
+  if (!is.null(cached) && identical(cached$stamp, P$stamp) &&
+      length(cached$theta) == length(theta) && all(cached$theta == theta))
+    return(cached)
+
+  filled <- fillModel(model = model, theta = theta, method = "lms")
+  locations <- model$params$gradientStruct$locations
+  raw <- stats::setNames(numeric(NROW(locations)), locations$param)
+  objective <- 0
+  for (g in seq_len(model$info$n.groups)) {
+    Pg <- P$P_GROUPS[[g]]
+    submodel <- filled$models[[g]]
+    M <- lmsGraphMatrices(submodel)
+    if (!NCOL(M$thresholds)) M$thresholdDelta <- M$thresholds
+    loc <- locations[locations$group == g, , drop = FALSE]
+    out <- lmsGraphReverseScoreCpp(
+      M, Pg$V, submodel$info$numXis, submodel$info$numEtas,
+      submodel$data$data.split, submodel$data$colidx0,
+      lmsGraphOrderedIndex(submodel, M),
+      Pg$w, Pg$sampling.weights, Pg$P,
+      FALSE, loc$block, loc$row, loc$col, loc$symmetric,
+      identical(Pg$link %||% "logit", "logit"),
+      ThreadEnv$n.threads %||% 1L,
+      Pg$workspace %||% lmsGraphWorkspace(submodel),
       isTRUE(Pg$common)
     )
-    raw[loc$param] <- score
+    objective <- objective + out$objective
+    if (NROW(loc)) raw[loc$param] <- out$score
   }
-  J <- lmsFirstDerivativeJacobian(theta, model)
-  drop(sign * J %*% raw)
+
+  pass <- list(stamp = P$stamp, theta = theta, objective = objective, raw = raw)
+  LmsGraphCache$last <- pass
+  pass
 }
 
 

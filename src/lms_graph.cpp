@@ -1447,8 +1447,15 @@ arma::vec lmsGraphScoreCpp(const Rcpp::List& matrices,
 // accumulated over observations/nodes, and the structural graph is traversed
 // once in reverse. Cholesky directions are evaluated only for covariance
 // locations, never inside the observation/node loops.
+//
+// Returns the complete-data objective alongside the score, because one
+// traversal yields both and the M-step wants them at the same theta: the
+// optimiser asks for the objective first and the gradient at that same point
+// immediately after, measured at 100% of gradient calls. See
+// `lmsGraphCompletePass` in R/lms_graph_estep.R. The objective is meaningless
+// under `observed` -- see the note at its accumulator.
 // [[Rcpp::export]]
-arma::vec lmsGraphReverseScoreCpp(const Rcpp::List& matrices,
+Rcpp::List lmsGraphReverseScoreCpp(const Rcpp::List& matrices,
                                   const arma::mat& nodes,
                                   const int numXis,
                                   const int numEtas,
@@ -1542,8 +1549,18 @@ arma::vec lmsGraphReverseScoreCpp(const Rcpp::List& matrices,
   arma::mat thresholdBar(thresholdMatrix.n_rows, thresholdMatrix.n_cols,
                          arma::fill::zeros);
   arma::vec varianceBar(theta.n_rows, arma::fill::zeros);
+  // The weighted log-likelihood, accumulated in this same traversal. The adjoint
+  // already evaluates every response probability the complete-data objective
+  // needs -- `ordinalBlockEvaluation` returns the log probability alongside the
+  // ratios, and the continuous branch forms the residual either way -- so this
+  // costs an extra add per cell rather than an extra N by Q pass. Meaningful
+  // only when `observed` is false, where `likelihoodWeights` are the posterior
+  // masses P and the sum is the complete-data objective; under `observed` the
+  // weights are the current posterior and the sum is NOT the observed
+  // log-likelihood, so the caller must ignore it.
+  double objective = 0.0;
   #ifdef _OPENMP
-  #pragma omp parallel num_threads(ncores) if(ncores > 1)
+  #pragma omp parallel num_threads(ncores) if(ncores > 1) reduction(+:objective)
   #endif
   {
     arma::mat thresholdLocal(thresholdBar.n_rows, thresholdBar.n_cols,
@@ -1580,6 +1597,7 @@ arma::vec lmsGraphReverseScoreCpp(const Rcpp::List& matrices,
             );
             meanTarget.col(column).subvec(first, last) += weights %
               (evaluation.lowerRatio - evaluation.upperRatio);
+            objective += arma::dot(weights, evaluation.logProbability);
             if (code > 1)
               thresholdLocal(column, use(code - 2)) -=
                 arma::dot(weights, evaluation.lowerRatio);
@@ -1592,6 +1610,9 @@ arma::vec lmsGraphReverseScoreCpp(const Rcpp::List& matrices,
               means.col(column).subvec(first, last);
             meanTarget.col(column).subvec(first, last) +=
               weights % residual / variance;
+            objective += arma::dot(weights, -0.5 *
+              (std::log(2.0 * M_PI * variance) +
+               arma::square(residual) / variance));
             varianceLocal(column) += arma::dot(weights,
               -0.5 / variance + 0.5 * arma::square(residual) /
                 (variance * variance));
@@ -1709,5 +1730,8 @@ arma::vec lmsGraphReverseScoreCpp(const Rcpp::List& matrices,
     default: break;
     }
   }
-  return score;
+  return Rcpp::List::create(
+    Rcpp::Named("score") = score,
+    Rcpp::Named("objective") = objective
+  );
 }
