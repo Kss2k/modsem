@@ -973,27 +973,36 @@ Rcpp::List lmsGraphPstepWorkspaceCpp(const Rcpp::List& matrices,
 }
 
 
+// Measurement half of the complete-data objective with the latent states FROZEN
+// at their E-step values (#28), i.e. sum_iq P_iq log f(x_i | z_iq; measurement).
+//
+// The states arrive already derived, so no structural matrix is read and no
+// Cholesky is taken. That matters beyond speed: during the M-step's structural
+// block the optimiser probes covariance parameters that need not be positive
+// definite, and deriving states there would throw on a point this half does not
+// depend on.
 // [[Rcpp::export]]
-double lmsGraphCompleteWorkspaceCpp(const Rcpp::List& matrices,
-                                    const arma::mat& nodes,
-                                    const int numXis,
-                                    const int numEtas,
-                                    SEXP workspaceSEXP,
-                                    const arma::mat& weights,
-                                    const bool logistic = true,
-                                    const int ncores = 1,
-                                    const bool shared = false) {
+double lmsGraphCompleteStatesCpp(const Rcpp::List& matrices,
+                                 const arma::mat& states,
+                                 SEXP workspaceSEXP,
+                                 const arma::mat& weights,
+                                 const bool logistic = true,
+                                 const int ncores = 1,
+                                 const bool shared = false) {
   Rcpp::XPtr<GraphWorkspace> workspace(workspaceSEXP);
-  const PreparedGraph prepared(matrices, numXis, numEtas,
-                               workspace->orderedIndex);
-  const arma::mat states = prepared.states(nodes);
-  const arma::mat means = measurementMeans(
-    states, prepared.tau, prepared.loadingPlan
+  const arma::mat lambda = Rcpp::as<arma::mat>(matrices["lambdaX"]);
+  const arma::vec tau = Rcpp::as<arma::vec>(matrices["tauX"]);
+  const arma::mat theta = Rcpp::as<arma::mat>(matrices["thetaDelta"]);
+  const arma::mat thresholds = Rcpp::as<arma::mat>(matrices["thresholds"]);
+  const std::vector<LoadingTerm> loadingPlan = buildLoadingPlan(lambda);
+  const ResponsePlan responsePlan = buildResponsePlan(
+    lambda.n_rows, thresholds, workspace->orderedIndex
   );
+  const arma::mat means = measurementMeans(states, tau, loadingPlan);
   const arma::uword Q = graphNodesPerObservation(
-    nodes, workspace->observations.size(), shared);
+    states, workspace->observations.size(), shared);
   return responseWeightedKernel(
-    means, prepared.theta, prepared.responsePlan, workspace->observations,
+    means, theta, responsePlan, workspace->observations,
     weights, logistic, ncores, shared ? 0 : Q
   );
 }
@@ -1443,6 +1452,191 @@ arma::vec lmsGraphScoreCpp(const Rcpp::List& matrices,
 }
 
 
+// Adjoints of the measurement kernel: the derivative of the weighted response
+// log-likelihood with respect to the indicator means, the thresholds and the
+// residual variances. This is the whole of the observation-by-node traversal,
+// and it is the same work whether the caller then backpropagates into the
+// structural graph (`lmsGraphReverseScoreCpp`) or stops here because the latent
+// states are frozen (`lmsGraphMeasurementScoreCpp`, #28).
+struct MeasurementAdjoint {
+  arma::mat mean;
+  arma::mat threshold;
+  arma::vec variance;
+};
+
+MeasurementAdjoint measurementAdjoint(
+    const arma::mat& means,
+    const arma::mat& theta,
+    const ResponsePlan& responsePlan,
+    const std::vector<GraphObservation>& observations,
+    const arma::mat& likelihoodWeights,
+    const arma::uword thresholdRows,
+    const arma::uword thresholdCols,
+    const arma::uword nodesPerObservation,
+    const arma::uword meanStride,
+    const bool logistic,
+    const int ncores,
+    const bool shared) {
+  MeasurementAdjoint out;
+  out.mean.zeros(means.n_rows, means.n_cols);
+  out.threshold.zeros(thresholdRows, thresholdCols);
+  out.variance.zeros(theta.n_rows);
+  const arma::uword totalRows = observations.size();
+  #ifdef _OPENMP
+  #pragma omp parallel num_threads(ncores) if(ncores > 1)
+  #endif
+  {
+    arma::mat thresholdLocal(out.threshold.n_rows, out.threshold.n_cols,
+                             arma::fill::zeros);
+    arma::vec varianceLocal(out.variance.n_elem, arma::fill::zeros);
+    // With a rule per observation each thread owns a disjoint block of
+    // `mean` rows, so it can be written in place. With a shared rule every
+    // observation writes the SAME Q rows, which would be a data race, so each
+    // thread accumulates into its own copy and reduces below. That copy is
+    // Q by J -- small, because a shared rule is exactly the case where the
+    // node set is not replicated.
+    const bool ownRows = !shared;
+    arma::mat meanLocal;
+    if (!ownRows) meanLocal.zeros(means.n_rows, means.n_cols);
+    arma::mat& meanTarget = ownRows ? out.mean : meanLocal;
+    #ifdef _OPENMP
+    #pragma omp for schedule(static)
+    #endif
+    for (int iInt = 0; iInt < static_cast<int>(totalRows); ++iInt) {
+      const arma::uword i = static_cast<arma::uword>(iInt);
+      const GraphObservation& observation = observations[i];
+      const arma::uword first = i * meanStride;
+      const arma::uword last = first + nodesPerObservation - 1;
+      const arma::vec weights = likelihoodWeights.row(i).t();
+      for (arma::uword j = 0; j < observation.values.n_elem; ++j) {
+          const int column = observation.columns[j];
+          if (responsePlan.ordered[column]) {
+            const arma::uvec& use = responsePlan.thresholdUse[column];
+            const int code = static_cast<int>(observation.values(j));
+            const int categories = use.n_elem + 1;
+            const OrdinalBlockEvaluation evaluation = ordinalBlockEvaluation(
+              code, responsePlan.thresholds[column],
+              means.col(column).subvec(first, last), logistic
+            );
+            meanTarget.col(column).subvec(first, last) += weights %
+              (evaluation.lowerRatio - evaluation.upperRatio);
+            if (code > 1)
+              thresholdLocal(column, use(code - 2)) -=
+                arma::dot(weights, evaluation.lowerRatio);
+            if (code < categories)
+              thresholdLocal(column, use(code - 1)) +=
+                arma::dot(weights, evaluation.upperRatio);
+          } else {
+            const double variance = theta(column, column);
+            const arma::vec residual = observation.values(j) -
+              means.col(column).subvec(first, last);
+            meanTarget.col(column).subvec(first, last) +=
+              weights % residual / variance;
+            varianceLocal(column) += arma::dot(weights,
+              -0.5 / variance + 0.5 * arma::square(residual) /
+                (variance * variance));
+        }
+      }
+    }
+    #ifdef _OPENMP
+    #pragma omp critical(lms_graph_adjoint_reduce)
+    #endif
+    {
+      out.threshold += thresholdLocal;
+      out.variance += varianceLocal;
+      if (!ownRows) out.mean += meanLocal;
+    }
+  }
+  return out;
+}
+
+
+// Chain a threshold adjoint through the cumulative-softplus `thresholdDelta`
+// parameterisation: entry 0 shifts every threshold in the row, and entry c > 0
+// is a positive gap that shifts thresholds c and above by softplus'(delta).
+double thresholdDeltaScore(const arma::mat& thresholdDelta,
+                           const arma::mat& thresholdBar,
+                           const int rr, const int cc) {
+  if (rr < 0 || cc < 0 ||
+      static_cast<arma::uword>(rr) >= thresholdDelta.n_rows ||
+      static_cast<arma::uword>(cc) >= thresholdDelta.n_cols ||
+      !std::isfinite(thresholdDelta(rr, cc)))
+    return 0.0;
+  const arma::uvec use = arma::find_finite(thresholdDelta.row(rr).t());
+  double value = 0.0;
+  for (arma::uword position = 0; position < use.n_elem; ++position)
+    if (cc == 0 || static_cast<int>(use(position)) >= cc)
+      value += thresholdBar(rr, use(position));
+  if (cc > 0) value *= 1.0 / (1.0 + std::exp(-thresholdDelta(rr, cc)));
+  return value;
+}
+
+
+// Score of the measurement half of the complete-data objective with the latent
+// states FROZEN at their E-step values (#28). Under that augmentation the
+// complete data is z rather than the innovations u, so the structural
+// parameters do not enter this half at all: there is no reverse traversal of
+// the structural graph and no Cholesky direction. Only the measurement blocks
+// -- lambdaX (0), tauX (2), thetaDelta (4) and thresholdDelta (18) -- can be
+// nonzero, and every other location is left at zero for the caller to fill
+// from the latent-density half.
+// [[Rcpp::export]]
+arma::vec lmsGraphMeasurementScoreCpp(const Rcpp::List& matrices,
+                                      const arma::mat& states,
+                                      SEXP workspaceSEXP,
+                                      const arma::mat& completeWeights,
+                                      const Rcpp::IntegerVector& block,
+                                      const Rcpp::IntegerVector& row,
+                                      const Rcpp::IntegerVector& col,
+                                      const bool logistic = true,
+                                      const int ncores = 1,
+                                      const bool shared = false) {
+  Rcpp::XPtr<GraphWorkspace> workspace(workspaceSEXP);
+  const arma::mat lambda = Rcpp::as<arma::mat>(matrices["lambdaX"]);
+  const arma::vec tau = Rcpp::as<arma::vec>(matrices["tauX"]);
+  const arma::mat theta = Rcpp::as<arma::mat>(matrices["thetaDelta"]);
+  const arma::mat thresholdMatrix = Rcpp::as<arma::mat>(matrices["thresholds"]);
+  const arma::mat thresholdDelta = Rcpp::as<arma::mat>(matrices["thresholdDelta"]);
+
+  const std::vector<LoadingTerm> loadingPlan = buildLoadingPlan(lambda);
+  const ResponsePlan responsePlan = buildResponsePlan(
+    lambda.n_rows, thresholdMatrix, workspace->orderedIndex
+  );
+  const arma::mat means = measurementMeans(states, tau, loadingPlan);
+  const arma::uword totalRows = workspace->observations.size();
+  const arma::uword nodesPerObservation =
+    graphNodesPerObservation(states, totalRows, shared);
+  if (completeWeights.n_rows != totalRows ||
+      completeWeights.n_cols != nodesPerObservation)
+    Rcpp::stop("Complete-data weights have incompatible dimensions.");
+
+  const MeasurementAdjoint adjoint = measurementAdjoint(
+    means, theta, responsePlan, workspace->observations, completeWeights,
+    thresholdMatrix.n_rows, thresholdMatrix.n_cols, nodesPerObservation,
+    shared ? 0 : nodesPerObservation, logistic, ncores, shared
+  );
+  const arma::vec tauBar = arma::sum(adjoint.mean, 0).t();
+
+  arma::vec score(block.size(), arma::fill::zeros);
+  for (int parameter = 0; parameter < block.size(); ++parameter) {
+    const int bb = block[parameter], rr = row[parameter], cc = col[parameter];
+    switch (bb) {
+    case 0:
+      score(parameter) = arma::dot(adjoint.mean.col(rr), states.col(cc));
+      break;
+    case 2: score(parameter) = tauBar(rr); break;
+    case 4: score(parameter) = rr == cc ? adjoint.variance(rr) : 0.0; break;
+    case 18:
+      score(parameter) = thresholdDeltaScore(thresholdDelta, adjoint.threshold,
+                                             rr, cc);
+      break;
+    default: break;
+    }
+  }
+  return score;
+}
+
+
 // Reverse-mode score. The likelihood is evaluated once, response adjoints are
 // accumulated over observations/nodes, and the structural graph is traversed
 // once in reverse. Cholesky directions are evaluated only for covariance
@@ -1538,75 +1732,14 @@ arma::vec lmsGraphReverseScoreCpp(const Rcpp::List& matrices,
     likelihoodWeights = completeWeights;
   }
 
-  arma::mat meanBar(means.n_rows, means.n_cols, arma::fill::zeros);
-  arma::mat thresholdBar(thresholdMatrix.n_rows, thresholdMatrix.n_cols,
-                         arma::fill::zeros);
-  arma::vec varianceBar(theta.n_rows, arma::fill::zeros);
-  #ifdef _OPENMP
-  #pragma omp parallel num_threads(ncores) if(ncores > 1)
-  #endif
-  {
-    arma::mat thresholdLocal(thresholdBar.n_rows, thresholdBar.n_cols,
-                             arma::fill::zeros);
-    arma::vec varianceLocal(varianceBar.n_elem, arma::fill::zeros);
-    // With a rule per observation each thread owns a disjoint block of
-    // `meanBar` rows, so it can be written in place. With a shared rule every
-    // observation writes the SAME Q rows, which would be a data race, so each
-    // thread accumulates into its own copy and reduces below. That copy is
-    // Q by J -- small, because a shared rule is exactly the case where the
-    // node set is not replicated.
-    const bool ownRows = !shared;
-    arma::mat meanLocal;
-    if (!ownRows) meanLocal.zeros(means.n_rows, means.n_cols);
-    arma::mat& meanTarget = ownRows ? meanBar : meanLocal;
-    #ifdef _OPENMP
-    #pragma omp for schedule(static)
-    #endif
-    for (int iInt = 0; iInt < static_cast<int>(totalRows); ++iInt) {
-      const arma::uword i = static_cast<arma::uword>(iInt);
-      const GraphObservation& observation = (*observations)[i];
-      const arma::uword first = i * meanStride;
-      const arma::uword last = first + nodesPerObservation - 1;
-      const arma::vec weights = likelihoodWeights.row(i).t();
-      for (arma::uword j = 0; j < observation.values.n_elem; ++j) {
-          const int column = observation.columns[j];
-          if (responsePlan.ordered[column]) {
-            const arma::uvec& use = responsePlan.thresholdUse[column];
-            const int code = static_cast<int>(observation.values(j));
-            const int categories = use.n_elem + 1;
-            const OrdinalBlockEvaluation evaluation = ordinalBlockEvaluation(
-              code, responsePlan.thresholds[column],
-              means.col(column).subvec(first, last), logistic
-            );
-            meanTarget.col(column).subvec(first, last) += weights %
-              (evaluation.lowerRatio - evaluation.upperRatio);
-            if (code > 1)
-              thresholdLocal(column, use(code - 2)) -=
-                arma::dot(weights, evaluation.lowerRatio);
-            if (code < categories)
-              thresholdLocal(column, use(code - 1)) +=
-                arma::dot(weights, evaluation.upperRatio);
-          } else {
-            const double variance = theta(column, column);
-            const arma::vec residual = observation.values(j) -
-              means.col(column).subvec(first, last);
-            meanTarget.col(column).subvec(first, last) +=
-              weights % residual / variance;
-            varianceLocal(column) += arma::dot(weights,
-              -0.5 / variance + 0.5 * arma::square(residual) /
-                (variance * variance));
-        }
-      }
-    }
-    #ifdef _OPENMP
-    #pragma omp critical(lms_graph_adjoint_reduce)
-    #endif
-    {
-      thresholdBar += thresholdLocal;
-      varianceBar += varianceLocal;
-      if (!ownRows) meanBar += meanLocal;
-    }
-  }
+  const MeasurementAdjoint adjoint = measurementAdjoint(
+    means, theta, responsePlan, *observations, likelihoodWeights,
+    thresholdMatrix.n_rows, thresholdMatrix.n_cols, nodesPerObservation,
+    meanStride, logistic, ncores, shared
+  );
+  const arma::mat& meanBar = adjoint.mean;
+  const arma::mat& thresholdBar = adjoint.threshold;
+  const arma::vec& varianceBar = adjoint.variance;
 
   const arma::vec tauBar = arma::sum(meanBar, 0).t();
   arma::mat stateBar(states.n_rows, states.n_cols, arma::fill::zeros);
@@ -1673,22 +1806,10 @@ arma::vec lmsGraphReverseScoreCpp(const Rcpp::List& matrices,
       score(parameter) = arma::dot(equationBar.col(rr), productValue.col(cc));
       break;
     }
-    case 18: {
-      if (rr < 0 || cc < 0 || static_cast<arma::uword>(rr) >= thresholdDelta.n_rows ||
-          static_cast<arma::uword>(cc) >= thresholdDelta.n_cols ||
-          !std::isfinite(thresholdDelta(rr, cc))) {
-        score(parameter) = 0.0;
-        break;
-      }
-      const arma::uvec use = arma::find_finite(thresholdDelta.row(rr).t());
-      double value = 0.0;
-      for (arma::uword position = 0; position < use.n_elem; ++position)
-        if (cc == 0 || static_cast<int>(use(position)) >= cc)
-          value += thresholdBar(rr, use(position));
-      if (cc > 0) value *= 1.0 / (1.0 + std::exp(-thresholdDelta(rr, cc)));
-      score(parameter) = value;
+    case 18:
+      score(parameter) = thresholdDeltaScore(thresholdDelta, thresholdBar,
+                                             rr, cc);
       break;
-    }
     case 6: case 7: case 17: {
       arma::mat dSigma(dimension, dimension, arma::fill::zeros);
       if (bb == 6) {
@@ -1896,12 +2017,13 @@ double lmsGraphStructuralCompleteCpp(const Rcpp::List& matrices,
 // ---------------------------------------------------------------------------
 // Measurement Newton step for the ECM M-step.
 //
-// With the latent nodes held fixed, the measurement half of the complete-data
-// objective separates exactly across indicators: indicator l depends only on
-// its own intercept, loadings, residual variance and thresholds, and on the
-// nodes -- never on another indicator's parameters. Its Hessian is therefore
-// block diagonal, and one traversal yields the objective together with every
-// block's gradient and Hessian.
+// With the latent states held fixed (#28 -- they arrive already derived, from
+// the E-step), the measurement half of the complete-data objective separates
+// exactly across indicators: indicator l depends only on its own intercept,
+// loadings, residual variance and thresholds, and on the states -- never on
+// another indicator's parameters, and never on a structural one. Its Hessian is
+// therefore block diagonal, and one traversal yields the objective together
+// with every block's gradient and Hessian.
 //
 // Blocks are returned in the coordinates
 //     [ intercept , loadings(active latents) , variance | thresholds ]
@@ -1923,9 +2045,7 @@ double lmsGraphStructuralCompleteCpp(const Rcpp::List& matrices,
 // f'(x)/p = -x * f(x)/p, and for the logit f'(x)/p = (1 - 2F(x)) * f(x)/p.
 // [[Rcpp::export]]
 Rcpp::List lmsGraphMeasurementNewtonCpp(const Rcpp::List& matrices,
-                                        const arma::mat& nodes,
-                                        const int numXis,
-                                        const int numEtas,
+                                        const arma::mat& states,
                                         const Rcpp::List& dataR,
                                         const Rcpp::List& colidxR,
                                         const Rcpp::IntegerVector& orderedIndex,
@@ -1935,38 +2055,10 @@ Rcpp::List lmsGraphMeasurementNewtonCpp(const Rcpp::List& matrices,
                                         const int ncores = 1,
                                         SEXP workspaceSEXP = R_NilValue,
                                         const bool shared = false) {
-  const arma::mat A = Rcpp::as<arma::mat>(matrices["A"]);
-  const arma::mat cross = Rcpp::as<arma::mat>(matrices["covZetaXi"]);
-  const arma::mat psi = Rcpp::as<arma::mat>(matrices["psi"]);
-  const arma::mat gammaXi = Rcpp::as<arma::mat>(matrices["gammaXi"]);
-  const arma::mat gammaEta = Rcpp::as<arma::mat>(matrices["gammaEta"]);
-  const arma::mat productDesign = Rcpp::as<arma::mat>(matrices["productDesign"]);
-  const arma::mat omega = Rcpp::as<arma::mat>(matrices["omega"]);
-  const arma::vec beta0 = Rcpp::as<arma::vec>(matrices["beta0"]);
-  const arma::vec alpha = Rcpp::as<arma::vec>(matrices["alpha"]);
   const arma::mat lambda = Rcpp::as<arma::mat>(matrices["lambdaX"]);
   const arma::vec tau = Rcpp::as<arma::vec>(matrices["tauX"]);
   const arma::mat theta = Rcpp::as<arma::mat>(matrices["thetaDelta"]);
   const arma::mat thresholdMatrix = Rcpp::as<arma::mat>(matrices["thresholds"]);
-  const int dimension = numXis + numEtas;
-
-  arma::mat latentCov(dimension, dimension, arma::fill::zeros);
-  if (numXis > 0) latentCov.submat(0, 0, numXis - 1, numXis - 1) = A * A.t();
-  if (numEtas > 0)
-    latentCov.submat(numXis, numXis, dimension - 1, dimension - 1) = psi;
-  if (numXis > 0 && numEtas > 0) {
-    latentCov.submat(numXis, 0, dimension - 1, numXis - 1) = cross;
-    latentCov.submat(0, numXis, numXis - 1, dimension - 1) = cross.t();
-  }
-  arma::mat latentChol;
-  if (!arma::chol(latentChol, latentCov))
-    Rcpp::stop("The unified latent covariance matrix is not positive definite.");
-  const GraphPlan plan = buildGraphPlan(
-    gammaXi, gammaEta, productDesign, omega, numXis, numEtas
-  );
-  const arma::mat states = evaluateGraphStates(
-    plan, nodes * latentChol, beta0, alpha, numXis, numEtas, nullptr
-  );
   const std::vector<LoadingTerm> loadingPlan = buildLoadingPlan(lambda);
   const arma::mat means = measurementMeans(states, tau, loadingPlan);
   const ResponsePlan responsePlan = buildResponsePlan(
@@ -1984,7 +2076,7 @@ Rcpp::List lmsGraphMeasurementNewtonCpp(const Rcpp::List& matrices,
   }
   const arma::uword totalRows = observations->size();
   const arma::uword nodesPerObservation =
-    graphNodesPerObservation(nodes, totalRows, shared);
+    graphNodesPerObservation(states, totalRows, shared);
   const arma::uword meanStride = shared ? 0 : nodesPerObservation;
   if (completeWeights.n_rows != totalRows ||
       completeWeights.n_cols != nodesPerObservation)

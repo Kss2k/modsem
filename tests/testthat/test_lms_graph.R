@@ -103,8 +103,9 @@ testthat::test_that("compiled LMS graph kernel matches mixed logit and probit li
     testthat::expect_equal(cached, compiled, tolerance = 1e-12)
     complete.weights <- matrix(seq_len(length(cached)), NROW(cached))
     testthat::expect_equal(
-      lmsGraphCompleteWorkspaceCpp(
-        M, nodes, 1L, 0L, workspace, complete.weights, link == "logit"
+      lmsGraphCompleteStatesCpp(
+        M, lmsGraphStatesCpp(M, nodes, 1L, 0L), workspace, complete.weights,
+        link == "logit"
       ),
       sum(compiled * complete.weights), tolerance = 1e-12
     )
@@ -200,10 +201,10 @@ testthat::test_that("a shared rule read with zero stride equals the replicated r
 
   posterior <- packed.step$posterior * row.weights
   testthat::expect_equal(
-    lmsGraphCompleteWorkspaceCpp(M, shared.nodes, 1L, 1L, workspace,
-                                 posterior, TRUE, 1L, TRUE),
-    lmsGraphCompleteWorkspaceCpp(M, packed.nodes, 1L, 1L, workspace,
-                                 posterior, TRUE, 1L, FALSE),
+    lmsGraphCompleteStatesCpp(M, lmsGraphStatesCpp(M, shared.nodes, 1L, 1L),
+                              workspace, posterior, TRUE, 1L, TRUE),
+    lmsGraphCompleteStatesCpp(M, lmsGraphStatesCpp(M, packed.nodes, 1L, 1L),
+                              workspace, posterior, TRUE, 1L, FALSE),
     tolerance = 1e-12)
 
   # The score is the path with genuinely new code: with a shared rule every

@@ -136,6 +136,23 @@ pstepLmsGraph <- function(model, theta, lastQuad = NULL, recalcQuad = FALSE,
     posterior <- aggregate$posterior %||% NULL
     P.g <- if (is.null(posterior)) NULL else posterior * sampling.weights
 
+    # The frozen latent states (#28). The complete data is z = (xi, eta), NOT
+    # the standardised innovations the rule holds, so z is derived once here
+    # with the E-step parameters and then held fixed for the whole M-step. That
+    # is what makes the complete-data objective separate:
+    #   Q(theta) = sum P log f(x | z; measurement) + sum P log p(z; structural)
+    # With z instead re-derived from the current parameters at every evaluation
+    # -- which is what `lmsGraphStatesCpp` does, and what the objective used to
+    # do -- the second term is absent, the structural parameters act through the
+    # first, and the split silently optimises the wrong function (#27).
+    #
+    # This costs a second N by Q by d matrix alongside `rule$n`. That is the
+    # same order as the nodes already stored, and only on the per-observation
+    # adaptive path; a shared rule keeps both at Q by d.
+    states <- if (is.null(P.g)) NULL else lmsGraphStatesCpp(
+      M, rule$n, submodel$info$numXis, submodel$info$numEtas
+    )
+
     # Structural sufficient statistics for the ECM M-step. Formed here, at the
     # E-step parameters, because the whole point is that the latent nodes are
     # then held fixed: with z fixed the complete-data objective separates into
@@ -146,16 +163,28 @@ pstepLmsGraph <- function(model, theta, lastQuad = NULL, recalcQuad = FALSE,
       isTRUE(rule$common)
     )
 
+    # The structural half at the E-step parameters. Kept so that
+    # `completeAtEstepLmsGraph` can still report Q without a pass over the data:
+    # the measurement half is the log kernel already in hand, and this is the
+    # rest. O(d^3), so it costs nothing to form here.
+    structural.ll <- if (is.null(structural)) NULL else
+      lmsGraphStructuralCompleteCpp(
+        M, structural$S, structural$W, submodel$info$numXis,
+        submodel$info$numEtas, structural$numProducts
+      )
+
     groups[[g]] <- list(
       P = P.g,
       posterior = posterior,
       log.kernel = aggregate$logKernel %||% NULL,
       V = rule$n, w = rule$w, quad = rule,
+      states = states,
       obsLL = aggregate$logLik,
       sampling.weights = sampling.weights, link = link,
       workspace = workspace,
       common = isTRUE(rule$common),
-      structural = structural
+      structural = structural,
+      structural.ll = structural.ll
     )
   }
 
@@ -171,6 +200,11 @@ pstepLmsGraph <- function(model, theta, lastQuad = NULL, recalcQuad = FALSE,
 }
 
 
+# The OBSERVED branch re-derives the latent states from the current parameters,
+# because it is the marginal likelihood: the nodes are innovations and the map
+# from them to z is exactly what theta controls. The COMPLETE branch does not,
+# because the complete data is z itself (#28) -- it reads the states frozen at
+# the E-step and adds the latent density that the freezing leaves behind.
 lmsGraphObjective <- function(theta, model, P, observed = FALSE, sign = -1) {
   filled <- fillModel(model = model, theta = theta, method = "lms")
   ll <- 0
@@ -189,10 +223,13 @@ lmsGraphObjective <- function(theta, model, P, observed = FALSE, sign = -1) {
       )$logLik
 
     } else {
-      lmsGraphCompleteWorkspaceCpp(
-        M, Pg$V, submodel$info$numXis, submodel$info$numEtas,
-        workspace, Pg$P, logistic, ThreadEnv$n.threads %||% 1L,
-        isTRUE(Pg$common)
+      stats <- Pg$structural
+      lmsGraphCompleteStatesCpp(
+        M, Pg$states, workspace, Pg$P, logistic,
+        ThreadEnv$n.threads %||% 1L, isTRUE(Pg$common)
+      ) + if (is.null(stats)) 0 else lmsGraphStructuralCompleteCpp(
+        M, stats$S, stats$W, submodel$info$numXis, submodel$info$numEtas,
+        stats$numProducts
       )
     }
   }
@@ -239,19 +276,80 @@ lmsGraphAnalyticalGradient <- function(theta, model, P, observed, sign) {
     logistic <- identical(Pg$link %||% "logit", "logit")
     workspace <- Pg$workspace %||% lmsGraphWorkspace(submodel)
 
-    score <- lmsGraphReverseScoreCpp(
+    # Complete data is z, frozen (#28), so this half sees the measurement
+    # parameters only -- no reverse traversal of the structural graph, and no
+    # Cholesky direction. The observed likelihood is the marginal one and still
+    # needs the full reverse pass, because there the nodes ARE innovations.
+    score <- if (observed) lmsGraphReverseScoreCpp(
       M, Pg$V, submodel$info$numXis, submodel$info$numEtas,
       submodel$data$data.split, submodel$data$colidx0, ordered,
-      Pg$w, Pg$sampling.weights,
-      if (observed) matrix(numeric(), 0L, 0L) else Pg$P,
-      observed, loc$block, loc$row, loc$col, loc$symmetric,
+      Pg$w, Pg$sampling.weights, matrix(numeric(), 0L, 0L),
+      TRUE, loc$block, loc$row, loc$col, loc$symmetric,
       logistic, ThreadEnv$n.threads %||% 1L, workspace,
       isTRUE(Pg$common)
+    ) else lmsGraphMeasurementScoreCpp(
+      M, Pg$states, workspace, Pg$P,
+      loc$block, loc$row, loc$col,
+      logistic, ThreadEnv$n.threads %||% 1L, isTRUE(Pg$common)
     )
     raw[loc$param] <- score
   }
   J <- lmsFirstDerivativeJacobian(theta, model)
-  drop(sign * J %*% raw)
+  out <- drop(sign * J %*% raw)
+  if (observed) out else out + lmsGraphStructuralGradient(theta, model, P,
+                                                          sign, J)
+}
+
+
+# Gradient of the latent-density half of the complete-data objective, by central
+# differences.
+#
+# The term is O(d^3) with d = 1 + numXis + numEtas + numProducts and touches no
+# data at all -- about 15 microseconds an evaluation -- and it is differenced
+# only over the parameters that actually reach a structural location, read off
+# the Jacobian's sparsity rather than off names so that label constraints are
+# handled. A parameter shared with a measurement location is included here too:
+# the two halves are added, so each contributes its own part of the chain rule.
+#
+# An analytic score would need dB/dtheta and dSigma/dtheta for every structural
+# block. Worth writing if this shows up in a profile against the N by Q
+# measurement pass; it has not.
+lmsGraphStructuralGradient <- function(theta, model, P, sign, J = NULL,
+                                       epsilon = .Machine$double.eps ^ (1 / 3)) {
+  out <- stats::setNames(numeric(length(theta)), names(theta))
+  locations <- model$params$gradientStruct$locations
+  structural.location <- !(locations$block %in% lmsGraphMeasurementBlocks())
+  if (!any(structural.location)) return(out)
+  if (is.null(J)) J <- lmsFirstDerivativeJacobian(theta, model)
+  index <- which(as.logical(
+    abs(J[, structural.location, drop = FALSE]) %*%
+      rep(1, sum(structural.location)) > 0
+  ))
+  if (!length(index)) return(out)
+
+  # A step can put a covariance parameter somewhere the Cholesky fails. That is
+  # a probe outside the feasible set, not an error in the objective, so fall
+  # back to the one-sided difference rather than propagating it.
+  value <- function(x) tryCatch(
+    structuralCompLogLikLmsGraph(x, model, P, sign),
+    error = function(e) NA_real_
+  )
+  base <- value(theta)
+  step <- epsilon * pmax(1, abs(theta[index]))
+  for (k in seq_along(index)) {
+    j <- index[k]
+    plus <- minus <- theta
+    plus[j] <- plus[j] + step[k]
+    minus[j] <- minus[j] - step[k]
+    up <- value(plus)
+    down <- value(minus)
+    out[j] <- if (is.finite(up) && is.finite(down))
+      (up - down) / (2 * step[k])
+    else if (is.finite(up) && is.finite(base)) (up - base) / step[k]
+    else if (is.finite(down) && is.finite(base)) (base - down) / step[k]
+    else 0
+  }
+  out
 }
 
 
@@ -311,18 +409,23 @@ lmsGraphEcmPartition <- function(theta, model) {
 
 # The complete-data objective at the E-step parameters, for free.
 #
-# `lmsGraphObjective()` in the complete case reduces to
+# The measurement half of `lmsGraphObjective()` reduces at the E-step point to
 #   sum_i sum_q P_iq * sum_j log f(x_ij | z_iq)
 # and the inner sum over indicators is exactly the log kernel the E-step
 # already formed. So the value at the point the M-step starts from needs no
 # pass over the data at all -- it is a dot product of two matrices in hand.
 # Line searches need that starting value, and paying an N by Q pass for it
 # would eat most of what a cheap step saves.
+#
+# The latent-density half (#28) is not in the kernel, so it is added from the
+# value the E-step recorded. Dropping it here would make this disagree with
+# `compLogLikLmsGraph` at the same theta by exactly that term, which is the
+# quantity a line search is trying to improve.
 completeAtEstepLmsGraph <- function(P, sign = -1) {
   ll <- 0
   for (Pg in P$P_GROUPS) {
     if (is.null(Pg$P) || is.null(Pg$log.kernel)) return(NA_real_)
-    ll <- ll + sum(Pg$P * Pg$log.kernel)
+    ll <- ll + sum(Pg$P * Pg$log.kernel) + (Pg$structural.ll %||% 0)
   }
   sign * ll
 }
@@ -563,7 +666,7 @@ lmsGraphNewtonMeasurement <- function(theta, model, P, measurement, lower,
 
   Pg <- P$P_GROUPS[[1L]]
   fused <- lmsGraphMeasurementNewtonCpp(
-    M, Pg$V, submodel$info$numXis, submodel$info$numEtas,
+    M, Pg$states,
     submodel$data$data.split, submodel$data$colidx0,
     lmsGraphOrderedIndex(submodel, M), Pg$P, active,
     identical(link, "logit"), ThreadEnv$n.threads %||% 1L,
