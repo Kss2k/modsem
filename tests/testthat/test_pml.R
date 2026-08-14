@@ -157,6 +157,70 @@ testthat::test_that("hoisting a clean pair is exact, not an approximation", {
 })
 
 
+testthat::test_that("the k > 0 conditioning reproduces the generating process", {
+  # lavaan cannot check this: there is no interaction PML to compare against. So
+  # the reference is the data-generating process itself -- simulate from the
+  # model the matrices describe, count the cells, and see whether the quadrature
+  # lands on the frequencies. Nothing about the conditioning path is reused,
+  # which is the point.
+  sub <- interactionFixture()
+  M <- sub$matrices
+  rows <- seq_len(6L)
+  tau <- c(-0.7, 0.1, 0.8)
+  thresholds <- rep(list(tau), 6L)
+  omega <- M$omegaXiXi[1L, 2L]
+
+  set.seed(1L)
+  chunks <- 4L; n <- 5e5L
+  N <- chunks * n
+  pairs <- t(utils::combn(6L, 2L))
+  counts <- array(0, dim = c(4L, 4L, NROW(pairs)))
+  for (ch in seq_len(chunks)) {
+    xi <- matrix(stats::rnorm(2L * n), n, 2L) %*% t(M$A)
+    eta <- as.vector(xi %*% t(M$gammaXi)) + omega * xi[, 1L] * xi[, 2L] +
+      stats::rnorm(n, sd = sqrt(M$psi[[1L]]))
+    xstar <- cbind(xi, eta) %*% t(M$lambdaX) + matrix(stats::rnorm(6L * n), n, 6L)
+    code <- apply(xstar, 2L, function(v) findInterval(v, tau) + 1L)
+    for (p in seq_len(NROW(pairs)))
+      counts[, , p] <- counts[, , p] +
+        table(factor(code[, pairs[p, 1L]], levels = 1:4),
+              factor(code[, pairs[p, 2L]], levels = 1:4))
+  }
+
+  quadrature <- function(j, k, m) {
+    rule <- pmlQuadRule(1L, m = m)
+    moments <- pmlMomentsCpp(sub, rule$n)
+    out <- 0
+    for (q in seq_along(moments))
+      out <- out + rule$w[[q]] * pmlPairProbabilities(
+        pmlSelectMoments(moments[[q]], rows), thresholds, j, k)
+    out
+  }
+  unconditional <- pmlSelectMoments(pmlUnconditionalMomentsCpp(sub), rows)
+  observed <- function(j, k)
+    counts[, , which(pairs[, 1L] == j & pairs[, 2L] == k)] / N
+
+  # Per-cell Monte Carlo SE is ~1.7e-4 here, so 1e-3 is a few SE.
+  for (pair in list(c(1L, 2L), c(1L, 3L), c(5L, 6L), c(1L, 5L), c(3L, 5L))) {
+    j <- pair[[1L]]; k <- pair[[2L]]
+    testthat::expect_lt(max(abs(quadrature(j, k, 60L) - observed(j, k))), 1e-3,
+                        label = sprintf("quadrature error on pair (%d,%d)", j, k))
+  }
+
+  # And the partition is not over-eager: dropping the integral on a pair marked
+  # `integrated` is wrong by more than an order of magnitude above MC noise,
+  # while on a `hoisted` pair it changes nothing.
+  clean <- pmlCleanIndicators(M, 2L, 1L)
+  for (pair in list(c(1L, 2L), c(1L, 3L), c(5L, 6L), c(1L, 5L), c(3L, 5L))) {
+    j <- pair[[1L]]; k <- pair[[2L]]
+    gap <- max(abs(pmlPairProbabilities(unconditional, thresholds, j, k) -
+                     observed(j, k)))
+    if (clean[[j]] && clean[[k]]) testthat::expect_lt(gap, 1e-3)
+    else                          testthat::expect_gt(gap, 1e-2)
+  }
+})
+
+
 testthat::test_that("PML matches lavaan on a linear ordinal model (k = 0)", {
   fx <- ordinalFixture()
   syntax <- '
