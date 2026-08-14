@@ -47,8 +47,13 @@ estepLmsGroup <- function(submodel, lastQuad = NULL, recalcQuad = FALSE,
                           adaptive.quad.tol = 1e-12, ...) {
   data             <- submodel$data
   sampling.weights <- data$weights
+  adaptiveMode     <- submodel$quad$adaptive
 
-  if (submodel$quad$adaptive && (recalcQuad || is.null(lastQuad))) {
+  if (adaptiveMode %in% c("aghq", "fixed-n"))
+    return(estepLmsGroupAghq(submodel = submodel, lastQuad = lastQuad,
+                             adapt = adaptiveMode == "aghq"))
+
+  if (adaptiveMode == "quasi" && (recalcQuad || is.null(lastQuad))) {
     m <- submodel$quad$m
     a <- submodel$quad$a
     b <- submodel$quad$b
@@ -90,7 +95,7 @@ estepLmsGroup <- function(submodel, lastQuad = NULL, recalcQuad = FALSE,
     P <- sweep(quad$F, MARGIN = 2, STATS = w, FUN = "*")
 
   } else {
-    quad <- if (submodel$quad$adaptive) lastQuad else submodel$quad
+    quad <- if (adaptiveMode == "quasi") lastQuad else submodel$quad
     V    <- quad$n
     w    <- quad$w
     densityVals <- densityLms(V, modFilled = submodel, data = data)
@@ -118,6 +123,70 @@ estepLmsGroup <- function(submodel, lastQuad = NULL, recalcQuad = FALSE,
 
   list(P = P, mean = stats$mean, cov = stats$cov, tgamma = stats$tgamma,
        V = V, w = w, obsLL = observedLogLik, quad = quad,
+       sampling.weights = sampling.weights.vec)
+}
+
+
+# E-step for `adaptive.quad %in% c("aghq", "fixed-n")`: every row gets its own
+# adapted (or, for "fixed-n", deliberately non-adapted) node/weight grid.
+# Unlike estepLmsGroup(), there is no shared-node sufficient-statistic
+# aggregation (estepSuffStatLmsCpp) here -- see the note atop the analogous
+# C++ section in equations_lms.cpp for why that's unnecessary for this path.
+# The per-row modes are warm-started from `lastQuad$Zstar` (previous
+# iteration), and always recomputed (regardless of `recalcQuad`/
+# `adaptive.frequency`, which only govern the "quasi" path): AGHQ's benefit
+# comes from staying tightly adapted to the current theta.
+estepLmsGroupAghq <- function(submodel, lastQuad = NULL, adapt = TRUE, ...) {
+  data             <- submodel$data
+  sampling.weights <- data$weights
+  k <- submodel$quad$k
+  m <- submodel$quad$m
+
+  base <- quadrature(m = m, k = k, adaptive = "fixed")
+
+  Z0 <- if (!is.null(lastQuad$Zstar) &&
+            NROW(lastQuad$Zstar) == data$n && NCOL(lastQuad$Zstar) == k) {
+    lastQuad$Zstar
+  } else {
+    matrix(0, nrow = data$n, ncol = k)
+  }
+
+  grids <- aghqRowGridsLmsCpp(
+    modelR = submodel, dataR = data$data.split, colidxR = data$colidx0,
+    n = data$n.pattern, baseN = base$n, baseW = base$w, Z0 = Z0,
+    adapt = adapt, npatterns = data$p, ncores = ThreadEnv$n.threads
+  )
+
+  est <- aghqEstepLmsCpp(
+    modelR = submodel, Z = grids$Z, W = grids$W, dataR = data$data.split,
+    colidxR = data$colidx0,
+    samplingWeights = if (!is.null(sampling.weights)) sampling.weights else numeric(0L),
+    n = data$n.pattern, npatterns = data$p, ncores = ThreadEnv$n.threads
+  )
+
+  mod_warnif_immediate(
+    mean(grids$ok) < 0.9 && adapt,
+    sprintf(paste0("AGHQ mode-finding fell back to the non-adapted node for ",
+                   "%.1f%% of observations in this group (usually harmless, ",
+                   "but a high fraction can indicate a poorly identified model)."),
+            100 * (1 - mean(grids$ok))),
+    .newline = TRUE
+  )
+
+  if (!is.null(sampling.weights)) sampling.weights.vec <- sampling.weights
+  else                            sampling.weights.vec <- rep(1, data$n)
+
+  quad <- list(adaptive = submodel$quad$adaptive, k = k, m = m,
+              Zstar = grids$Zstar, ok = grids$ok)
+
+  # Z/W are kept (not just the posterior Gamma) so that obsLogLikLmsGroup()/
+  # gradientObsLogLikLms() can recompute the posterior at a *different* trial
+  # theta using these SAME (E-step-time) adapted nodes -- the AGHQ analogue of
+  # how observedGradientReverseFromModel() reuses the shared-node V/w for the
+  # observed-data gradient via Fisher's identity.
+  list(P = est$Gamma, Z = grids$Z, W = grids$W,
+       mean = NULL, cov = NULL, tgamma = NULL, V = NULL, w = NULL,
+       obsLL = est$obsLL, quad = quad,
        sampling.weights = sampling.weights.vec)
 }
 
@@ -226,6 +295,25 @@ mstepLms <- function(theta, model, P,
 }
 
 
+completeLogLikLmsGroupCpp <- function(submodel, P) {
+  data <- submodel$data
+
+  if (submodel$quad$adaptive %in% c("aghq", "fixed-n")) {
+    completeLogLikLmsAghqCpp(
+      modelR = submodel, Z = P$Z, Gamma = P$P,
+      dataR = data$data.split, colidxR = data$colidx0,
+      n = data$n.pattern, npatterns = data$p, ncores = ThreadEnv$n.threads
+    )
+  } else {
+    completeLogLikLmsCpp(
+      modelR = submodel, P = P, quad = P$quad,
+      colidxR = data$colidx0, n = data$n.pattern,
+      d = data$d.pattern, npatterns = data$p
+    )
+  }
+}
+
+
 compLogLikLms <- function(theta, model, P, sign = -1, ...) {
   tryCatch({
     modFilled <- fillModel(model = model, theta = theta, method = "lms")
@@ -233,13 +321,8 @@ compLogLikLms <- function(theta, model, P, sign = -1, ...) {
     ll <- 0
     for (g in seq_len(model$info$n.groups)) {
       submodel <- modFilled$models[[g]]
-      data <- submodel$data
 
-      ll <- ll + completeLogLikLmsCpp(
-        modelR=submodel, P=P$P_GROUPS[[g]], quad=P$quad[[g]],
-        colidxR = data$colidx0, n = data$n.pattern,
-        d = data$d.pattern, npatterns = data$p
-      )
+      ll <- ll + completeLogLikLmsGroupCpp(submodel = submodel, P = P$P_GROUPS[[g]])
     }
 
     sign * ll
@@ -250,13 +333,7 @@ compLogLikLms <- function(theta, model, P, sign = -1, ...) {
 
 compLogLikLmsGroup <- function(submodel, P, sign = -1, ...) {
   tryCatch({
-    data <- submodel$data
-
-    ll <- completeLogLikLmsCpp(
-      modelR = submodel, P = P, quad = P$quad,
-      colidxR = data$colidx0, n = data$n.pattern,
-      d = data$d.pattern, npatterns = data$p
-    )
+    ll <- completeLogLikLmsGroupCpp(submodel = submodel, P = P)
 
     sign * ll
 
@@ -280,33 +357,84 @@ obsLogLikLms <- function(theta, model, P, sign = -1, ...) {
 }
 
 
+# Recomputes the AGHQ posterior (and marginal density/obsLL) at `submodel`'s
+# CURRENT theta, reusing the FIXED (E-step-time) adapted nodes/weights in
+# `P$Z`/`P$W` -- i.e. Fisher's identity applied to the per-row grid: the
+# observed-data quantities at a *trial* theta are obtained by re-weighting
+# the same nodes, not by re-adapting them. Mirrors how observedGradientReverseFromModel()
+# reuses the shared-node V/w for the non-aghq path.
+aghqPosteriorAtTheta <- function(submodel, P) {
+  data <- submodel$data
+  aghqEstepLmsCpp(
+    modelR = submodel, Z = P$Z, W = P$W, dataR = data$data.split,
+    colidxR = data$colidx0, samplingWeights = P$sampling.weights,
+    n = data$n.pattern, npatterns = data$p, ncores = ThreadEnv$n.threads
+  )
+}
+
+
 obsLogLikLmsGroup <- function(submodel, P, sign = -1, ...) {
   tryCatch({
     data <- submodel$data
-    sign * observedLogLikLmsCpp(
-      modelR = submodel, dataR = data$data.split, colidxR = data$colidx0,
-      P = P, n = data$n.pattern, npatterns = data$p,
-      ncores = ThreadEnv$n.threads
-    )
+
+    ll <- if (submodel$quad$adaptive %in% c("aghq", "fixed-n")) {
+      aghqPosteriorAtTheta(submodel = submodel, P = P)$obsLL
+    } else {
+      observedLogLikLmsCpp(
+        modelR = submodel, dataR = data$data.split, colidxR = data$colidx0,
+        P = P, n = data$n.pattern, npatterns = data$p,
+        ncores = ThreadEnv$n.threads
+      )
+    }
+
+    sign * ll
   }, error = \(e) NA_real_)
 }
 
 
 
 gradientCompLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-6) {
+  FGRAD <- function(modelR, P, block, row, col, symmetric, colidxR,
+                    n, d, npatterns, eps, ncores) {
+    if (modelR$quad$adaptive %in% c("aghq", "fixed-n")) {
+      gradLogLikLmsAghqCpp(
+        modelR = modelR, Z = P$Z, Gamma = P$P,
+        dataR = modelR$data$data.split, colidxR = colidxR,
+        n = n, block = block, row = row, col = col, symmetric = symmetric,
+        npatterns = npatterns, ncores = ncores
+      )
+    } else {
+      gradLogLikLmsCpp(
+        modelR = modelR, P = P, block = block, row = row, col = col,
+        symmetric = symmetric, colidxR = colidxR, n = n, d = d,
+        npatterns = npatterns, eps = eps, ncores = ncores
+      )
+    }
+  }
+
   gradientAllLogLikLms(theta = theta, model = model, P = P, sign = sign,
-                       epsilon = epsilon, FGRAD = gradLogLikLmsCpp, FOBJECTIVE = compLogLikLmsGroup)
+                       epsilon = epsilon, FGRAD = FGRAD, FOBJECTIVE = compLogLikLmsGroup)
 }
 
 
 gradientObsLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-6) {
   FGRAD <- function(modelR, P, block, row, col, symmetric, colidxR,
                     n, d, npatterns, eps, ncores) {
-    gradObsLogLikLmsCpp(
-      modelR = modelR, dataR = modelR$data$data.split, colidxR = colidxR,
-      P = P, block = block, row = row, col = col, symmetric = symmetric,
-      n = n, eps = eps, npatterns = npatterns, ncores = ncores
-    )
+    if (modelR$quad$adaptive %in% c("aghq", "fixed-n")) {
+      Gamma <- aghqPosteriorAtTheta(submodel = modelR, P = P)$Gamma
+      gradLogLikLmsAghqCpp(
+        modelR = modelR, Z = P$Z, Gamma = Gamma,
+        dataR = modelR$data$data.split, colidxR = colidxR, n = n,
+        block = block, row = row, col = col, symmetric = symmetric,
+        npatterns = npatterns, ncores = ncores
+      )
+    } else {
+      gradObsLogLikLmsCpp(
+        modelR = modelR, dataR = modelR$data$data.split, colidxR = colidxR,
+        P = P, block = block, row = row, col = col, symmetric = symmetric,
+        n = n, eps = eps, npatterns = npatterns, ncores = ncores
+      )
+    }
   }
 
   gradientAllLogLikLms(
@@ -657,10 +785,19 @@ hessianCompLogLikLms <- function(theta, model, P, sign = -1,
 
   FHESS <- function(modelR, P, block, row, col, symmetric, eps, .relStep, colidxR,
                     n, d, npatterns, ncores) {
-    hessCompLogLikLmsCpp(modelR = modelR, P = P, block = block,
-                         row = row, col = col, symmetric = symmetric,
-                         colidxR = colidxR, n = n, d = d, relStep = .relStep,
-                         npatterns = npatterns, minAbs = 0.0, ncores = ncores)
+    if (modelR$quad$adaptive %in% c("aghq", "fixed-n")) {
+      hessCompLogLikLmsAghqCpp(
+        modelR = modelR, Z = P$Z, Gamma = P$P, dataR = modelR$data$data.split,
+        block = block, row = row, col = col, symmetric = symmetric,
+        colidxR = colidxR, n = n, relStep = .relStep, npatterns = npatterns,
+        minAbs = 0.0, ncores = ncores
+      )
+    } else {
+      hessCompLogLikLmsCpp(modelR = modelR, P = P, block = block,
+                           row = row, col = col, symmetric = symmetric,
+                           colidxR = colidxR, n = n, d = d, relStep = .relStep,
+                           npatterns = npatterns, minAbs = 0.0, ncores = ncores)
+    }
   }
 
   hessianAllLogLikLms(theta = theta, model = model, P = P, sign = sign,
@@ -839,6 +976,13 @@ observedInfoFromLouisLms <- function(model,
     }
   }
 
+  aghqGroups <- vapply(model$models, FUN.VALUE = logical(1L),
+                       FUN = \(sub) sub$quad$adaptive %in% c("aghq", "fixed-n"))
+  mod_stopif(any(aghqGroups) && score.method != "analytical",
+    "Louis' identity for `adaptive.quad %in% c(\"aghq\", \"fixed-n\")` currently ",
+    "requires `score.method = \"analytical\"` (the default, unless the model's ",
+    "gradient structure forces `useFDGradient = TRUE`).")
+
   # E-step (if needed)
   if (recompute.P) {
     P <- estepLms(model = model, theta = theta,
@@ -878,6 +1022,35 @@ observedInfoFromLouisLms <- function(model,
     mod_stopif(length(sampling_weights) != data.g$n,
                "Invalid sampling-weight vector in LMS posterior object.")
     sqrt_weights <- sqrt(pmax(sampling_weights, 0))
+
+    if (aghqGroups[[g]]) {
+      # Every row has its own adapted nodes, so there's no shared z_j to loop
+      # over -- louisRawScoresAghqCpp() accumulates total_M/Sbar directly in
+      # one pass over (row, node) pairs, in raw "locations" space. Map through
+      # the Jacobian once here (equivalent to completeScoresNodeAnalytical()
+      # doing it per-node, since the mapping is linear and commutes with the
+      # row/node sums).
+      raw <- louisRawScoresAghqCpp(
+        modelR = submodelFilled, Z = P.g$Z, Gamma = P.g$P,
+        sqrtSamplingWeights = sqrt_weights,
+        dataR = data.g$data.split, colidxR = data.g$colidx0,
+        n = data.g$n.pattern, block = locations.g$block,
+        row = locations.g$row, col = locations.g$col,
+        symmetric = locations.g$symmetric, npatterns = data.g$p,
+        ncores = ThreadEnv$n.threads
+      )
+
+      mapping <- Jacobian[active_idx, locations.g$param, drop = FALSE]
+
+      total_M[active_idx, active_idx] <- total_M[active_idx, active_idx] +
+        mapping %*% raw$total_M %*% t(mapping)
+      Sbar[rows, active_idx] <- Sbar[rows, active_idx] +
+        raw$Sbar %*% t(mapping)
+
+      row_offset <- row_offset + data.g$n
+      next
+    }
+
     Jg <- length(P.g$w)
     for (j in seq_len(Jg)) {
       z_j <- P.g$V[j, , drop = FALSE]

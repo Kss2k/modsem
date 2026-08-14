@@ -106,6 +106,90 @@ struct LMSModel {
     return std::make_pair(tX + lX * xieta, lX * vcovXiEta * lX.t() + d);
   }
 
+  // mu(z), Sigma(z) together with their first derivatives w.r.t. z (k slices
+  // each). mu(z) = tX + L*xieta(z), Sigma(z) = L*V(z)*L' + dConst, where L
+  // (lX or, with composites, the composite loading lXc) and dConst are
+  // z-independent, so only xieta(z) and V(z) need differentiating. B(z) is
+  // affine in z (dB/dz_l is a constant matrix), so d(Binv)/dz_l follows the
+  // standard matrix-inverse identity -Binv*dB_l*Binv. Mirrors muSigma() term
+  // for term, just forward-differentiated w.r.t. each z_l.
+  struct MuSigmaJacZ {
+    arma::vec mu;
+    arma::mat Sigma;
+    std::vector<arma::vec> dmu;    // length k
+    std::vector<arma::mat> dSigma; // length k
+  };
+
+  MuSigmaJacZ muSigmaJacZ(const arma::vec& z) const {
+    const arma::vec zVec  = makeZvec(k, numXis, z);
+    const arma::vec muXi  = beta0 + A * zVec;
+    const arma::mat kronZ = arma::kron(Ie, muXi);
+    const arma::mat B     = Ie - Ge - kronZ.t() * Oex;
+
+    const arma::mat Binv  = arma::inv(B);
+    const arma::vec r     = a + Gx * muXi + kronZ.t() * Oxx * muXi + ZetaProj * zVec;
+    const arma::vec muEta = Binv * r;
+    const arma::mat C     = GxA + kronZ.t() * Oxx * A + ZetaProj;
+    const arma::mat Eta   = Binv * C;
+    const arma::mat varXi    = AOiAt;
+    const arma::mat varEta   = Eta * Oi * Eta.t() + Binv * PsiOrth * Binv.t();
+    const arma::mat covXiEta = AOi * Eta.t();
+
+    const arma::mat V = arma::join_cols(
+      arma::join_rows(varXi,        covXiEta),
+      arma::join_rows(covXiEta.t(), varEta)
+    );
+    const arma::vec xieta = arma::join_cols(muXi, muEta);
+
+    arma::mat L, dConst;
+    if (hasComposites) {
+      const arma::mat H = W.t() * T * W;
+      const arma::mat R = arma::pinv(H);
+      L = lX + T * W * R;
+      dConst = d + T - L * W.t() * T * W * L.t();
+    } else {
+      L = lX;
+      dConst = d;
+    }
+
+    MuSigmaJacZ out;
+    out.mu    = tX + L * xieta;
+    out.Sigma = L * V * L.t() + dConst;
+    out.dmu.resize(k);
+    out.dSigma.resize(k);
+
+    for (unsigned l = 0; l < k; ++l) {
+      const arma::vec dMuXi_l = A.col(l);              // d(muXi)/dz_l
+      const arma::mat K_l     = arma::kron(Ie, dMuXi_l); // d(kronZ)/dz_l
+      const arma::mat B_l     = -K_l.t() * Oex;          // d(B)/dz_l, constant in z
+      const arma::mat dBinv_l = -Binv * B_l * Binv;
+
+      const arma::vec dr_l = Gx * dMuXi_l + K_l.t() * Oxx * muXi
+                            + kronZ.t() * Oxx * dMuXi_l + ZetaProj.col(l);
+      const arma::vec dMuEta_l = dBinv_l * r + Binv * dr_l;
+
+      const arma::mat dC_l   = K_l.t() * Oxx * A;
+      const arma::mat dEta_l = dBinv_l * C + Binv * dC_l;
+
+      const arma::mat dCovXiEta_l = AOi * dEta_l.t();
+      const arma::mat dVarEta_l   = dEta_l * Oi * Eta.t() + Eta * Oi * dEta_l.t()
+                                   + dBinv_l * PsiOrth * Binv.t() + Binv * PsiOrth * dBinv_l.t();
+
+      const arma::mat dVarXi_l(varXi.n_rows, varXi.n_cols, arma::fill::zeros);
+      const arma::mat dV_l = arma::join_cols(
+        arma::join_rows(dVarXi_l,        dCovXiEta_l),
+        arma::join_rows(dCovXiEta_l.t(), dVarEta_l)
+      );
+
+      const arma::vec dxieta_l = arma::join_cols(dMuXi_l, dMuEta_l);
+
+      out.dmu[l]    = L * dxieta_l;
+      out.dSigma[l] = L * dV_l * L.t();
+    }
+
+    return out;
+  }
+
   LMSModel threadClone() const {
     LMSModel c = *this;    // shallow for everything (fast)
                            // Deep-copy ONLY what setParams()/lmsParam can modify:
@@ -173,6 +257,281 @@ Rcpp::List muSigmaLmsCpp(Rcpp::List model, arma::vec z) {
   return Rcpp::List::create(
     Rcpp::Named("mu")    = ms.first,
     Rcpp::Named("sigma") = ms.second
+  );
+}
+
+
+// Gradient of log f(y | z) w.r.t. z (dimension k), for ONE observation, using
+// the analytic Jacobians from muSigmaJacZ(). `y`/`idx` are the observed sub-
+// vector and its column indices (missing-data pattern). Does NOT include the
+// -0.5*z'z prior term (added separately, trivially, wherever this is used).
+// Returns a k-vector of NaN if Sigma restricted to idx is not PD.
+inline arma::vec gradLogDensityZ(const LMSModel& M,
+                                 const arma::vec& z,
+                                 const arma::vec& y,
+                                 const arma::uvec& idx) {
+  const LMSModel::MuSigmaJacZ jac = M.muSigmaJacZ(z);
+  const arma::vec muS  = jac.mu.elem(idx);
+  const arma::mat sigS = jac.Sigma.submat(idx, idx);
+
+  arma::vec grad(M.k);
+
+  arma::mat L;
+  if (!sigS.is_finite() || !arma::chol(L, sigS, "lower")) {
+    grad.fill(arma::datum::nan);
+    return grad;
+  }
+
+  const arma::mat Sinv = arma::solve(
+    arma::trimatu(L.t()),
+    arma::solve(arma::trimatl(L),
+                arma::eye<arma::mat>(sigS.n_rows, sigS.n_cols),
+                arma::solve_opts::fast),
+    arma::solve_opts::fast
+  );
+  const arma::vec diff     = y - muS;
+  const arma::vec Sinv_diff = Sinv * diff;
+
+  for (unsigned l = 0; l < M.k; ++l) {
+    const arma::vec dmuS  = jac.dmu[l].elem(idx);
+    const arma::mat dSigS = jac.dSigma[l].submat(idx, idx);
+
+    const double trTerm   = arma::trace(Sinv * dSigS);
+    const double quadTerm = arma::as_scalar(Sinv_diff.t() * dSigS * Sinv_diff);
+
+    grad[l] = -0.5 * trTerm + arma::as_scalar(diff.t() * Sinv * dmuS) + 0.5 * quadTerm;
+  }
+
+  return grad;
+}
+
+
+// [[Rcpp::export]]
+arma::vec gradLogDensityZLmsCpp(const Rcpp::List& modelR, const arma::vec& z,
+                                const arma::vec& y, const arma::uvec& idx) {
+  const LMSModel M(modelR);
+  return gradLogDensityZ(M, z, y, idx - 1); // idx passed 1-indexed from R
+}
+
+
+// ======================================================
+// Per-row AGHQ: Newton mode-finding + adaptive node/weight construction
+// ======================================================
+
+struct AghqRowResult {
+  arma::vec z;   // mode (or fallback 0)
+  arma::mat L;   // lower Cholesky of curvature Hneg, Hneg = L*L' (or fallback I)
+  bool      ok;  // whether Newton actually converged (false => fallback used)
+};
+
+
+// Newton mode-search for g(z) = log f(y|z) - 0.5*z'z, using the analytic
+// gradient (gradLogDensityZ) and a Hessian obtained by central-differencing
+// that analytic gradient (2k evaluations per iteration; k is small so this
+// is cheap). Falls back to z*=0, curvature=I (i.e. the same result as
+// "fixed-n") on any failure: non-finite density, a Hessian that stays
+// indefinite even after ridging, or hitting `iterMax` without reaching
+// `gradTol`.
+inline AghqRowResult findModeZ(const LMSModel&   M,
+                               const arma::vec&  y,
+                               const arma::uvec& idx,
+                               const arma::vec&  z0,
+                               const unsigned    iterMax = 25,
+                               const double      gradTol = 1e-8,
+                               const double      fdH     = 1e-4) {
+  const unsigned k = M.k;
+
+  AghqRowResult fallback;
+  fallback.z  = arma::zeros<arma::vec>(k);
+  fallback.L  = arma::eye<arma::mat>(k, k);
+  fallback.ok = false;
+
+  if (k == 0) return fallback;
+
+  auto gradG = [&](const arma::vec& zz) -> arma::vec {
+    arma::vec g = gradLogDensityZ(M, zz, y, idx);
+    if (!g.is_finite()) return g;
+    return g - zz; // add d(-0.5 z'z)/dz = -z
+  };
+
+  auto hessNeg = [&](const arma::vec& zz, const arma::vec& gCurrent,
+                     arma::mat& Hneg) -> bool {
+    Hneg.zeros(k, k);
+    for (unsigned j = 0; j < k; ++j) {
+      arma::vec zp = zz, zm = zz;
+      zp[j] += fdH; zm[j] -= fdH;
+      const arma::vec gp = gradG(zp);
+      const arma::vec gm = gradG(zm);
+      if (!gp.is_finite() || !gm.is_finite()) return false;
+      Hneg.col(j) = -(gp - gm) / (2.0 * fdH);
+    }
+    Hneg = 0.5 * (Hneg + Hneg.t());
+    return true;
+  };
+
+  auto cholWithRidge = [&](arma::mat& Hneg, arma::mat& L) -> bool {
+    double ridge = 0.0;
+    for (int attempt = 0; attempt < 6; ++attempt) {
+      arma::mat Htry = Hneg + ridge * arma::eye<arma::mat>(k, k);
+      if (arma::chol(L, Htry, "lower")) { Hneg = Htry; return true; }
+      ridge = (ridge <= 0.0) ? 1e-6 : ridge * 10.0;
+    }
+    return false;
+  };
+
+  arma::vec z = (z0.n_elem == k && z0.is_finite()) ? z0 : arma::zeros<arma::vec>(k);
+
+  for (unsigned it = 0; it < iterMax; ++it) {
+    const arma::vec g = gradG(z);
+    if (!g.is_finite()) return fallback;
+
+    arma::mat Hneg;
+    if (!hessNeg(z, g, Hneg)) return fallback;
+
+    arma::mat L;
+    if (!cholWithRidge(Hneg, L)) return fallback;
+
+    if (arma::abs(g).max() < gradTol) {
+      AghqRowResult out; out.z = z; out.L = L; out.ok = true;
+      return out;
+    }
+
+    // Newton step: Hneg * delta = g
+    arma::vec delta = arma::solve(
+      arma::trimatu(L.t()),
+      arma::solve(arma::trimatl(L), g, arma::solve_opts::fast),
+      arma::solve_opts::fast
+    );
+
+    double step = 1.0;
+    arma::vec zNew = z + delta;
+    arma::vec gNew = gradG(zNew);
+    int halvings = 0;
+    const double gNorm = arma::abs(g).max();
+    while ((!gNew.is_finite() || arma::abs(gNew).max() > 10.0 * gNorm + 1.0) &&
+           halvings < 8) {
+      step *= 0.5;
+      zNew = z + step * delta;
+      gNew = gradG(zNew);
+      ++halvings;
+    }
+    if (!gNew.is_finite()) return fallback;
+
+    z = zNew;
+  }
+
+  return fallback; // iteration cap reached without meeting gradTol
+}
+
+
+struct AghqGrid {
+  arma::mat Z; // J x k adapted nodes
+  arma::vec W; // J adapted weights
+};
+
+
+// Builds one row's adapted nodes/weights from mode `zStar` and curvature
+// Cholesky `L` (Hneg = L*L'), given the shared base grid (baseN, baseW) --
+// the SAME nodes/weights `quadrature()` produces on the R side (i.e. already
+// sqrt(2)-scaled, pi^(-k/2)-weighted). With zStar=0, L=I this reduces
+// exactly to (baseN, baseW): see derivation notes in the R-side aghq wiring.
+inline AghqGrid buildAghqGrid(const arma::vec& zStar, const arma::mat& L,
+                              const arma::mat& baseN, const arma::vec& baseW) {
+  const unsigned k = zStar.n_elem;
+  const unsigned J = baseN.n_rows;
+
+  const arma::mat Linv = arma::inv(arma::trimatl(L)); // L^{-1}
+  const arma::mat Z = arma::repmat(zStar.t(), J, 1) + baseN * Linv;
+
+  const double logDetTerm = k * 0.5 * std::log(2.0 * M_PI) - arma::sum(arma::log(L.diag()));
+
+  arma::vec W(J);
+  for (unsigned j = 0; j < J; ++j) {
+    const double nsq   = arma::dot(baseN.row(j), baseN.row(j));
+    const double zsq   = arma::dot(Z.row(j), Z.row(j));
+    const double logphi = -0.5 * (k * std::log(2.0 * M_PI) + zsq);
+    W[j] = std::exp(logDetTerm + std::log(baseW[j]) + 0.5 * nsq + logphi);
+  }
+
+  AghqGrid out; out.Z = Z; out.W = W;
+  return out;
+}
+
+
+// For every row (grouped by missing-data pattern), finds the AGHQ mode +
+// curvature (or, if `adapt=false`, uses the fixed-n fallback z*=0, I for
+// every row) and builds that row's adapted node/weight grid. `Z0` holds
+// warm-start modes in the same row order as the concatenated patterns
+// (i.e. the order data$ids/data$data.split are iterated in elsewhere).
+// [[Rcpp::export]]
+Rcpp::List aghqRowGridsLmsCpp(const Rcpp::List& modelR,
+                              const Rcpp::List& dataR,
+                              const Rcpp::List& colidxR,
+                              const arma::uvec& n,
+                              const arma::mat&  baseN,
+                              const arma::vec&  baseW,
+                              const arma::mat&  Z0,
+                              const bool         adapt,
+                              const int          npatterns = 1,
+                              const unsigned      iterMax  = 25,
+                              const double        gradTol  = 1e-8,
+                              const double        fdH      = 1e-4,
+                              const int          ncores    = 1) {
+  const LMSModel M(modelR);
+  const auto data   = as_vec_of_mat(dataR);
+  const auto colidx = as_vec_of_uvec(colidxR);
+  const unsigned k  = M.k;
+  const unsigned J  = baseN.n_rows;
+  const arma::uword N = arma::sum(n);
+
+  arma::cube Z(N, J, k, arma::fill::zeros);
+  arma::mat  W(N, J, arma::fill::zeros);
+  arma::mat  Zstar(N, k, arma::fill::zeros);
+  arma::uvec ok(N, arma::fill::zeros);
+
+  ThreadSetter ts(ncores);
+
+  arma::uword offset = 0;
+  for (int pat = 0; pat < npatterns; ++pat) {
+    const arma::uvec& idx = colidx[pat];
+    const arma::mat&  Dat = data[pat];
+    const arma::uword nPat = n[pat];
+
+#pragma omp parallel for schedule(static) default(none) if(ncores > 1) \
+    shared(M, Dat, idx, baseN, baseW, Z0, adapt, offset, nPat, k, J, \
+           Z, W, Zstar, ok, iterMax, gradTol, fdH)
+    for (arma::uword i = 0; i < nPat; ++i) {
+      const arma::uword row = offset + i;
+      const arma::vec y  = Dat.row(i).t();
+      const arma::vec z0 = Z0.row(row).t();
+
+      AghqRowResult res;
+      if (adapt) {
+        res = findModeZ(M, y, idx, z0, iterMax, gradTol, fdH);
+      } else {
+        res.z  = arma::zeros<arma::vec>(k);
+        res.L  = arma::eye<arma::mat>(k, k);
+        res.ok = true;
+      }
+
+      const AghqGrid grid = buildAghqGrid(res.z, res.L, baseN, baseW);
+
+      for (arma::uword j = 0; j < J; ++j)
+        for (arma::uword l = 0; l < k; ++l)
+          Z(row, j, l) = grid.Z(j, l);
+
+      W.row(row) = grid.W.t();
+      Zstar.row(row) = res.z.t();
+      ok[row] = res.ok ? 1 : 0;
+    }
+    offset += nPat;
+  }
+
+  return Rcpp::List::create(
+    Rcpp::Named("Z")     = Z,
+    Rcpp::Named("W")     = W,
+    Rcpp::Named("Zstar") = Zstar,
+    Rcpp::Named("ok")    = ok
   );
 }
 
@@ -457,6 +816,335 @@ inline bool completeLogLikScore(const arma::vec& mu,
 }
 
 
+// ======================================================
+// Per-row AGHQ E-step (posterior) and M-step (complete log-lik/gradient)
+// ======================================================
+//
+// Every row has its own adapted node/weight grid (Z: N x J x k, from
+// aghqRowGridsLmsCpp), so unlike the shared-grid path there is no pooling
+// across rows at a node: each (row, node) pair is a "group" of exactly one
+// observation. The weighted-Gaussian complete-data log-lik/score machinery
+// (totalDmvnWeighted / completeLogLikScore) already handles this correctly
+// when passed nu=y_i, S=0, tg=gamma_ij -- the general weighted formula
+// collapses to the plain single-point case, so it's reused unchanged; no
+// sufficient-statistic aggregation (estepSuffStatLmsCpp's analog) is needed.
+
+
+// E-step: posterior gamma_ij (N x J) from per-row adapted nodes/weights, plus
+// the observed (marginal) log-likelihood. Sampling weights, if present, are
+// folded into gamma (as in estepLmsGroup) but must not alter within-row
+// normalization.
+// [[Rcpp::export]]
+Rcpp::List aghqEstepLmsCpp(const Rcpp::List& modelR,
+                           const arma::cube& Z,
+                           const arma::mat&  W,
+                           const Rcpp::List& dataR,
+                           const Rcpp::List& colidxR,
+                           const arma::vec&  samplingWeights,
+                           const arma::uvec& n,
+                           const int npatterns = 1,
+                           const int ncores    = 1) {
+  const LMSModel M(modelR);
+  const auto data   = as_vec_of_mat(dataR);
+  const auto colidx = as_vec_of_uvec(colidxR);
+  const arma::uword J = Z.n_cols;
+  const arma::uword k = Z.n_slices;
+  const arma::uword N = arma::sum(n);
+  const bool hasSW = samplingWeights.n_elem == N;
+
+  arma::mat Gamma(N, J, arma::fill::zeros);
+  arma::vec density(N, arma::fill::zeros);
+
+  ThreadSetter ts(ncores);
+
+  arma::uword offset = 0;
+  for (int pat = 0; pat < npatterns; ++pat) {
+    const arma::uvec& idx  = colidx[pat];
+    const arma::mat&  Dat  = data[pat];
+    const arma::uword nPat = n[pat];
+
+#pragma omp parallel for schedule(static) default(none) if(ncores > 1) \
+    shared(M, Dat, idx, Z, W, offset, nPat, J, k, Gamma, density)
+    for (arma::uword i = 0; i < nPat; ++i) {
+      const arma::uword row = offset + i;
+
+      arma::vec dens(J);
+      for (arma::uword j = 0; j < J; ++j) {
+        arma::vec zj(k);
+        for (arma::uword l = 0; l < k; ++l) zj[l] = Z(row, j, l);
+
+        const auto ms = M.muSigma(zj);
+        // mvnDensSt evaluates the (non-log) MVN density for every row of its
+        // first argument; called here with a single row.
+        const arma::vec d1 = mvnDensSt(Dat.rows(i, i), idx, ms.first, ms.second);
+        const double dj = d1[0];
+        dens[j] = std::isfinite(dj) ? W(row, j) * dj : 0.0;
+      }
+
+      const double rowDensity = arma::sum(dens);
+      density[row] = rowDensity;
+      if (rowDensity > DBL_MIN) Gamma.row(row) = (dens / rowDensity).t();
+    }
+    offset += nPat;
+  }
+
+  const arma::vec densitySafe = arma::clamp(density, DBL_MIN, arma::datum::inf);
+  const double obsLL = hasSW
+    ? arma::sum(samplingWeights % arma::log(densitySafe))
+    : arma::sum(arma::log(densitySafe));
+
+  if (hasSW) Gamma.each_col() %= samplingWeights;
+
+  return Rcpp::List::create(
+    Rcpp::Named("Gamma")   = Gamma,
+    Rcpp::Named("density") = density,
+    Rcpp::Named("obsLL")   = obsLL
+  );
+}
+
+
+// M-step objective: complete-data log-lik, sum_i sum_j gamma_ij * log f(y_i|z_ij).
+// Internal (LMSModel-taking) version, reused by the Rcpp-exported wrapper
+// below and by the Hessian-via-FD wrapper further down, to avoid re-parsing
+// modelR/dataR/colidxR from R on every FD evaluation.
+inline double completeLogLikFromModelAghq(const LMSModel&  M,
+                                          const arma::cube& Z,
+                                          const arma::mat&  Gamma,
+                                          const std::vector<arma::mat>&  data,
+                                          const std::vector<arma::uvec>& colidx,
+                                          const arma::uvec& n,
+                                          const int npatterns = 1,
+                                          const int ncores    = 1) {
+  const arma::uword J = Z.n_cols;
+  const arma::uword k = Z.n_slices;
+
+  ThreadSetter ts(ncores);
+
+  double ll = 0.0;
+  arma::uword offset = 0;
+
+  for (int pat = 0; pat < npatterns; ++pat) {
+    const arma::uvec& idx  = colidx[pat];
+    const arma::mat&  Dat  = data[pat];
+    const arma::uword nPat = n[pat];
+    const int dObs = (int) idx.n_elem;
+    const arma::mat Szero  = arma::zeros<arma::mat>(dObs, dObs);
+
+    double llPat = 0.0;
+#pragma omp parallel for reduction(+:llPat) schedule(static) default(none) \
+    shared(M, Dat, idx, Z, Gamma, offset, nPat, J, k, Szero, dObs) if(ncores > 1)
+    for (arma::uword i = 0; i < nPat; ++i) {
+      const arma::uword row = offset + i;
+      const arma::vec y = Dat.row(i).t();
+      double llRow = 0.0;
+
+      for (arma::uword j = 0; j < J; ++j) {
+        const double tg = Gamma(row, j);
+        if (tg <= DBL_MIN) continue;
+
+        arma::vec zj(k);
+        for (arma::uword l = 0; l < k; ++l) zj[l] = Z(row, j, l);
+
+        const auto ms = M.muSigma(zj);
+        const arma::vec muS  = ms.first.elem(idx);
+        const arma::mat sigS = ms.second.submat(idx, idx);
+
+        llRow += totalDmvnWeighted(muS, sigS, y, Szero, tg, dObs);
+      }
+      llPat += llRow;
+    }
+
+    ll += llPat;
+    offset += nPat;
+  }
+
+  return ll;
+}
+
+
+// [[Rcpp::export]]
+double completeLogLikLmsAghqCpp(const Rcpp::List& modelR,
+                                const arma::cube& Z,
+                                const arma::mat&  Gamma,
+                                const Rcpp::List& dataR,
+                                const Rcpp::List& colidxR,
+                                const arma::uvec& n,
+                                const int npatterns = 1,
+                                const int ncores    = 1) {
+  const LMSModel M(modelR);
+  const auto data   = as_vec_of_mat(dataR);
+  const auto colidx = as_vec_of_uvec(colidxR);
+  return completeLogLikFromModelAghq(M, Z, Gamma, data, colidx, n, npatterns, ncores);
+}
+
+
+// M-step gradient: reverse-mode adjoint of the complete-data log-lik w.r.t.
+// theta, accumulated per (row, node) pair via completeLogLikScore (nu=y_i,
+// S=0) and accumulateMuSigmaAdjoints -- identical building blocks to the
+// shared-grid path (completeGradientReverseFromModel), just re-looped.
+// Internal version (see completeLogLikFromModelAghq for why); `setThreads`
+// mirrors completeGradientReverseFromModel's flag of the same name -- pass
+// false when called from within an already-parallel region (e.g. per-FD-step
+// inside the Hessian wrapper) to avoid touching the global OpenMP thread count.
+inline arma::vec completeGradientReverseFromModelAghq(
+    const LMSModel&  M,
+    const arma::cube& Z,
+    const arma::mat&  Gamma,
+    const std::vector<arma::mat>&  data,
+    const std::vector<arma::uvec>& colidx,
+    const arma::uvec& n,
+    const arma::uvec& block,
+    const arma::uvec& row,
+    const arma::uvec& col,
+    const arma::uvec& symmetric,
+    const int npatterns = 1,
+    const int ncores    = 1,
+    const bool setThreads = true) {
+  const arma::uword J    = Z.n_cols;
+  const arma::uword k    = Z.n_slices;
+  const arma::uword pObs = M.lX.n_rows;
+  const std::size_t npar = block.n_elem;
+
+  bool failed = false;
+
+#ifdef _OPENMP
+  int oldThreads = omp_get_max_threads();
+  if (setThreads) {
+    if (ncores <= 0) Rcpp::stop("ncores must be positive");
+    omp_set_num_threads(ncores);
+  }
+  const bool inParallel = omp_in_parallel();
+  const int nthreads = inParallel ? 1 : omp_get_max_threads();
+#else
+  const int nthreads = 1;
+#endif
+
+  std::vector<LMSAdjoints> threadAdj;
+  threadAdj.reserve(nthreads);
+  for (int t = 0; t < nthreads; ++t) threadAdj.emplace_back(M);
+
+  // Per-thread scratch buffers for the padded-to-pObs adjoint inputs, reused
+  // across every (row, node) pair instead of allocated fresh each time (that
+  // was measured to be a real cost at N*J scale). Entries outside `idx` are
+  // never written except via the explicit re-zero below when `idx` changes
+  // between patterns, and entries inside `idx` are fully overwritten (not
+  // accumulated) on every use, so a single zero per (pattern, thread) is
+  // sufficient -- not per (row, node).
+  std::vector<arma::vec> threadMuBarFull;
+  std::vector<arma::mat> threadSigBarFull;
+  threadMuBarFull.reserve(nthreads);
+  threadSigBarFull.reserve(nthreads);
+  for (int t = 0; t < nthreads; ++t) {
+    threadMuBarFull.emplace_back(pObs);
+    threadSigBarFull.emplace_back(pObs, pObs);
+  }
+
+  arma::uword offset = 0;
+  for (int pat = 0; pat < npatterns; ++pat) {
+    const arma::uvec& idx  = colidx[pat];
+    const arma::mat&  Dat  = data[pat];
+    const arma::uword nPat = n[pat];
+    const arma::mat Szero  = arma::zeros<arma::mat>(idx.n_elem, idx.n_elem);
+
+    for (int t = 0; t < nthreads; ++t) {
+      threadMuBarFull[t].zeros();
+      threadSigBarFull[t].zeros();
+    }
+
+#pragma omp parallel for default(none) if(!inParallel) schedule(static) \
+    shared(M, Dat, idx, Z, Gamma, offset, nPat, J, k, pObs, threadAdj, Szero, \
+           threadMuBarFull, threadSigBarFull) \
+    reduction(||:failed)
+    for (arma::uword i = 0; i < nPat; ++i) {
+      const arma::uword rowIdx = offset + i;
+      const arma::vec y = Dat.row(i).t();
+
+#ifdef _OPENMP
+      const int tid = omp_get_thread_num();
+#else
+      const int tid = 0;
+#endif
+      arma::vec& muBarFull  = threadMuBarFull[tid];
+      arma::mat& SigBarFull = threadSigBarFull[tid];
+
+      for (arma::uword j = 0; j < J; ++j) {
+        const double tg = Gamma(rowIdx, j);
+        if (tg <= DBL_MIN) continue;
+
+        arma::vec zj(k);
+        for (arma::uword l = 0; l < k; ++l) zj[l] = Z(rowIdx, j, l);
+
+        const auto ms = M.muSigma(zj);
+        const arma::vec& mu  = ms.first;
+        const arma::mat& Sig = ms.second;
+
+        arma::vec muBar_i;
+        arma::mat SigBar_i;
+        if (!completeLogLikScore(mu.elem(idx), Sig.submat(idx, idx), y, Szero,
+                                 tg, muBar_i, SigBar_i)) {
+          failed = true;
+          continue;
+        }
+
+        muBarFull.elem(idx) = muBar_i;
+        SigBarFull.submat(idx, idx) = SigBar_i;
+
+        accumulateMuSigmaAdjoints(M, zj, muBarFull, SigBarFull, threadAdj[tid]);
+      }
+    }
+    offset += nPat;
+  }
+
+  if (failed) {
+    arma::vec grad(npar);
+    grad.fill(arma::datum::nan);
+#ifdef _OPENMP
+    if (setThreads) omp_set_num_threads(oldThreads);
+#endif
+    return grad;
+  }
+
+  LMSAdjoints adj(M);
+  for (int t = 0; t < nthreads; ++t) adj.add(threadAdj[t]);
+
+  arma::vec grad(npar, arma::fill::zeros);
+  for (std::size_t kk = 0; kk < npar; ++kk) {
+    const arma::mat& Ablk = lmsAdjointBlock(adj, block[kk]);
+    if (Ablk.is_empty()) continue;
+    grad[kk] = Ablk(row[kk], col[kk]);
+    if (symmetric[kk] && row[kk] != col[kk]) grad[kk] += Ablk(col[kk], row[kk]);
+  }
+
+#ifdef _OPENMP
+  if (setThreads) omp_set_num_threads(oldThreads);
+#endif
+
+  return grad;
+}
+
+
+// [[Rcpp::export]]
+arma::vec gradLogLikLmsAghqCpp(const Rcpp::List& modelR,
+                               const arma::cube& Z,
+                               const arma::mat&  Gamma,
+                               const Rcpp::List& dataR,
+                               const Rcpp::List& colidxR,
+                               const arma::uvec& n,
+                               const arma::uvec& block,
+                               const arma::uvec& row,
+                               const arma::uvec& col,
+                               const arma::uvec& symmetric,
+                               const int npatterns = 1,
+                               const int ncores    = 1) {
+  const LMSModel M(modelR);
+  const auto data   = as_vec_of_mat(dataR);
+  const auto colidx = as_vec_of_uvec(colidxR);
+  return completeGradientReverseFromModelAghq(M, Z, Gamma, data, colidx, n,
+                                              block, row, col, symmetric,
+                                              npatterns, ncores, true);
+}
+
+
 inline arma::vec completeGradientReverseFromModel(
     const LMSModel&  M,
     const arma::mat& V,
@@ -657,6 +1345,163 @@ arma::mat completeScoresNodeAnalyticalLmsCpp(
 
   if (failed) scores.fill(arma::datum::nan);
   return scores;
+}
+
+
+// Louis' identity building blocks for AGHQ: accumulates, in one pass over
+// (row, node) pairs, total_M = sum_i sum_j r_ij * s_ij s_ij' (raw "locations"
+// space, npar x npar) and Sbar[i,] = sum_j (r_ij / sqrt(sw_i)) * s_ij, where
+// s_ij is the RAW (tgamma=1) complete-data score at that row's own adapted
+// node. Mirrors completeScoresNodeAnalyticalLmsCpp's per-observation adjoint
+// machinery just above, but looped per-row (own z) instead of per-shared-node
+// (one z for every row) -- there's no cross-row sharing to exploit once nodes
+// are row-specific, so this accumulates directly instead of returning a
+// per-node score matrix for the R side to combine (as the shared-node path
+// does). The R side maps total_M/Sbar through the per-group Jacobian into
+// theta-space once, mirroring how completeScoresNodeAnalytical() does that
+// mapping for the shared-node path today.
+// [[Rcpp::export]]
+Rcpp::List louisRawScoresAghqCpp(const Rcpp::List& modelR,
+                                 const arma::cube& Z,
+                                 const arma::mat&  Gamma,
+                                 const arma::vec&  sqrtSamplingWeights,
+                                 const Rcpp::List& dataR,
+                                 const Rcpp::List& colidxR,
+                                 const arma::uvec& n,
+                                 const arma::uvec& block,
+                                 const arma::uvec& row,
+                                 const arma::uvec& col,
+                                 const arma::uvec& symmetric,
+                                 const int npatterns = 1,
+                                 const int ncores    = 1) {
+  const LMSModel M(modelR);
+  const auto data   = as_vec_of_mat(dataR);
+  const auto colidx = as_vec_of_uvec(colidxR);
+  const arma::uword J    = Z.n_cols;
+  const arma::uword k    = Z.n_slices;
+  const arma::uword pObs = M.lX.n_rows;
+  const std::size_t npar = block.n_elem;
+  const arma::uword N    = arma::sum(n);
+
+  arma::mat Sbar(N, npar, arma::fill::zeros);
+
+  ThreadSetter ts(ncores);
+#ifdef _OPENMP
+  const int nthreads = omp_get_max_threads();
+#else
+  const int nthreads = 1;
+#endif
+  std::vector<arma::mat> threadM;
+  threadM.reserve(nthreads);
+  for (int t = 0; t < nthreads; ++t)
+    threadM.emplace_back(npar, npar, arma::fill::zeros);
+
+  // Per-thread scratch, reused across (row, node) pairs -- see the identical
+  // comment in completeGradientReverseFromModelAghq for why a single zero
+  // per (pattern, thread) suffices for the pObs-sized buffers. s_ij is fully
+  // overwritten (or explicitly zeroed) every use regardless, so it's reused
+  // purely to avoid the allocation, not the zeroing.
+  std::vector<arma::vec> threadMuBarFull;
+  std::vector<arma::mat> threadSigBarFull;
+  std::vector<arma::vec> threadSij;
+  threadMuBarFull.reserve(nthreads);
+  threadSigBarFull.reserve(nthreads);
+  threadSij.reserve(nthreads);
+  for (int t = 0; t < nthreads; ++t) {
+    threadMuBarFull.emplace_back(pObs);
+    threadSigBarFull.emplace_back(pObs, pObs);
+    threadSij.emplace_back(npar);
+  }
+
+  bool failed = false;
+  arma::uword offset = 0;
+
+  for (int pat = 0; pat < npatterns; ++pat) {
+    const arma::uvec& idx  = colidx[pat];
+    const arma::mat&  Dat  = data[pat];
+    const arma::uword nPat = n[pat];
+    const arma::mat Szero  = arma::zeros<arma::mat>(idx.n_elem, idx.n_elem);
+
+    for (int t = 0; t < nthreads; ++t) {
+      threadMuBarFull[t].zeros();
+      threadSigBarFull[t].zeros();
+    }
+
+#pragma omp parallel for default(none) schedule(static) if(ncores > 1) \
+    shared(M, Dat, idx, Z, Gamma, sqrtSamplingWeights, offset, nPat, J, k, \
+           pObs, npar, block, row, col, symmetric, Szero, threadM, Sbar, \
+           threadMuBarFull, threadSigBarFull, threadSij) \
+    reduction(||:failed)
+    for (arma::uword i = 0; i < nPat; ++i) {
+      const arma::uword rowIdx = offset + i;
+      const arma::vec y = Dat.row(i).t();
+      const double sqrtSw = sqrtSamplingWeights[rowIdx];
+
+#ifdef _OPENMP
+      const int tid = omp_get_thread_num();
+#else
+      const int tid = 0;
+#endif
+      arma::vec& muBarFull  = threadMuBarFull[tid];
+      arma::mat& SigBarFull = threadSigBarFull[tid];
+      arma::vec& s_ij       = threadSij[tid];
+
+      for (arma::uword j = 0; j < J; ++j) {
+        const double r_ij = Gamma(rowIdx, j);
+        if (r_ij <= 0.0) continue;
+
+        arma::vec zj(k);
+        for (arma::uword l = 0; l < k; ++l) zj[l] = Z(rowIdx, j, l);
+
+        const auto ms = M.muSigma(zj);
+        const arma::vec& mu  = ms.first;
+        const arma::mat& Sig = ms.second;
+
+        arma::vec muBar_i;
+        arma::mat SigBar_i;
+        // raw (unweighted) score: tgamma = 1, S = 0
+        if (!completeLogLikScore(mu.elem(idx), Sig.submat(idx, idx), y, Szero,
+                                 1.0, muBar_i, SigBar_i)) {
+          failed = true;
+          continue;
+        }
+
+        muBarFull.elem(idx) = muBar_i;
+        SigBarFull.submat(idx, idx) = SigBar_i;
+
+        LMSAdjoints adj(M);
+        accumulateMuSigmaAdjoints(M, zj, muBarFull, SigBarFull, adj);
+
+        s_ij.zeros();
+        for (std::size_t kk = 0; kk < npar; ++kk) {
+          const arma::mat& Ablk = lmsAdjointBlock(adj, block[kk]);
+          if (Ablk.is_empty()) continue;
+          double v = Ablk(row[kk], col[kk]);
+          if (symmetric[kk] && row[kk] != col[kk]) v += Ablk(col[kk], row[kk]);
+          s_ij[kk] = v;
+        }
+
+        threadM[tid] += r_ij * (s_ij * s_ij.t());
+
+        if (sqrtSw > 0.0)
+          Sbar.row(rowIdx) += (r_ij / sqrtSw) * s_ij.t();
+      }
+    }
+    offset += nPat;
+  }
+
+  arma::mat total_M(npar, npar, arma::fill::zeros);
+  for (int t = 0; t < nthreads; ++t) total_M += threadM[t];
+
+  if (failed) {
+    total_M.fill(arma::datum::nan);
+    Sbar.fill(arma::datum::nan);
+  }
+
+  return Rcpp::List::create(
+    Rcpp::Named("total_M") = total_M,
+    Rcpp::Named("Sbar")    = Sbar
+  );
 }
 
 
@@ -1463,6 +2308,96 @@ Rcpp::List hessCompLogLikLmsCpp(const Rcpp::List& modelR,
   return fdHessFromCompleteGradient(M, V, TGamma, Mean, Cov, colidx, n, d,
                                     block, row, col, symmetric, npatterns,
                                     relStep, minAbs, ncores);
+}
+
+
+// AGHQ analogue of fdHessFromCompleteGradient: Hessian of the complete-data
+// log-lik via central-difference-free (one-sided) FD of the analytical
+// gradient, at FIXED (E-step-time) Z/Gamma -- same recipe, just pointed at
+// completeLogLikFromModelAghq/completeGradientReverseFromModelAghq.
+inline Rcpp::List fdHessFromCompleteGradientAghq(
+    LMSModel&          M,
+    const arma::cube&  Z,
+    const arma::mat&   Gamma,
+    const std::vector<arma::mat>&  data,
+    const std::vector<arma::uvec>& colidx,
+    const arma::uvec& n,
+    const arma::uvec& block,
+    const arma::uvec& row,
+    const arma::uvec& col,
+    const arma::uvec& symmetric,
+    const int    npatterns,
+    const double relStep,
+    const double minAbs,
+    const int    ncores) {
+
+  ThreadSetter ts(ncores);
+
+  const std::size_t p = block.n_elem;
+  const arma::vec base = getParams(M, block, row, col);
+  const double minScale = (minAbs > 0.0) ? minAbs : 1.0;
+  const arma::vec incr =
+    arma::max(arma::abs(base), arma::vec(p).fill(minScale)) * relStep;
+
+  const double f0 = completeLogLikFromModelAghq(M, Z, Gamma, data, colidx, n,
+                                                npatterns, ncores);
+  const arma::vec grad0 = completeGradientReverseFromModelAghq(
+    M, Z, Gamma, data, colidx, n, block, row, col, symmetric,
+    npatterns, ncores, false
+  );
+
+  arma::mat Hess(p, p, arma::fill::zeros);
+
+#pragma omp parallel for default(none) \
+  shared(M, Z, Gamma, data, colidx, n, block, row, col, symmetric, \
+         npatterns, p, base, incr, grad0, Hess) schedule(static)
+  for (std::size_t j = 0; j < p; ++j) {
+    LMSModel Mc = M.threadClone();
+    arma::vec pars = base;
+    pars[j] += incr[j];
+    setParams(Mc, block, row, col, symmetric, pars);
+    Mc.updateCache();
+
+    const arma::vec gradJ = completeGradientReverseFromModelAghq(
+      Mc, Z, Gamma, data, colidx, n, block, row, col, symmetric,
+      npatterns, 1L, false
+    );
+
+    Hess.col(j) = (gradJ - grad0) / incr[j];
+  }
+
+  Hess = 0.5 * (Hess + Hess.t());
+
+  return Rcpp::List::create(
+    Rcpp::Named("mean")     = f0,
+    Rcpp::Named("gradient") = grad0,
+    Rcpp::Named("Hessian")  = Hess
+  );
+}
+
+
+// [[Rcpp::export]]
+Rcpp::List hessCompLogLikLmsAghqCpp(const Rcpp::List& modelR,
+                                    const arma::cube& Z,
+                                    const arma::mat&  Gamma,
+                                    const Rcpp::List& dataR,
+                                    const arma::uvec& block,
+                                    const arma::uvec& row,
+                                    const arma::uvec& col,
+                                    const arma::uvec& symmetric,
+                                    const Rcpp::List& colidxR,
+                                    const arma::uvec& n,
+                                    const int         npatterns = 1,
+                                    const double      relStep   = 1e-6,
+                                    const double      minAbs    = 0.0,
+                                    const int         ncores    = 1L) {
+  LMSModel M(modelR);
+  const auto data   = as_vec_of_mat(dataR);
+  const auto colidx = as_vec_of_uvec(colidxR);
+
+  return fdHessFromCompleteGradientAghq(M, Z, Gamma, data, colidx, n,
+                                        block, row, col, symmetric, npatterns,
+                                        relStep, minAbs, ncores);
 }
 
 

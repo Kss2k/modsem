@@ -96,7 +96,7 @@ For simple models, somewhere between 16-24 nodes should be enough; for more comp
 For models where there is an interaction effect between an endogenous and exogenous variable,
 the number of nodes should be at least 32, but practically (e.g., ordinal/skewed data), more than 32 is recommended. In cases
 where data is non-normal, it might be better to use the \code{qml} approach instead.
-You can also consider setting \code{adaptive.quad = TRUE}.}
+You can also consider setting \code{adaptive.quad = "quasi"} (or \code{"aghq"}).}
 
 \item{missing}{How should missing values be handled? If \code{"listwise"} (default) missing values
 are removed list-wise (alias: \code{"complete"} or \code{"casewise"}).
@@ -195,13 +195,25 @@ when using quasi-adaptive Gaussian-Hermite Quadratures. By default \code{Inf}, s
 but this will likely be inefficient and pointless at a large number of nodes. Nodes outside
 \code{+/- quad.range} will be ignored.}
 
-\item{adaptive.quad}{should a quasi adaptive quadrature be used? If \code{TRUE}, the quadrature nodes will be adapted to the data.
-If \code{FALSE}, the quadrature nodes will be fixed. Default is \code{FALSE}. The adaptive quadrature does not fit an adaptive
-quadrature to each participant, but instead tries to place more nodes where posterior distribution is highest. Compared with a
-fixed Gauss Hermite quadrature this usually means that less nodes are placed at the tails of the distribution.}
+\item{adaptive.quad}{which quadrature scheme to use for \code{lms}. One of:
+\describe{
+  \item{\code{"fixed"}}{a single, non-adaptive Gauss-Hermite rule shared across all rows.}
+  \item{\code{"quasi"}}{a single quasi-adaptive rule shared across all rows: nodes are
+    iteratively re-ranged to place more mass where the (aggregate) posterior is
+    highest, but every row still uses the same rule. Usually a good default; noticeably
+    more accurate than \code{"fixed"} at little extra cost.}
+  \item{\code{"aghq"}}{one adaptive rule per observation (per-row mode and curvature).
+    More accurate than \code{"quasi"} when the row-level posterior is much narrower
+    than the aggregate one (e.g. some models with small residual variances), at
+    higher computational cost.}
+  \item{\code{"fixed-n"}}{mainly useful for debugging: runs the same per-row machinery
+    as \code{"aghq"}, but with the per-row adaptation disabled.}
+}
+Defaults to \code{"fixed"}. \strong{NOTE}: Logical \code{TRUE}/\code{FALSE} are still accepted
+(mapped to \code{"quasi"}/\code{"fixed"} respectively) but are deprecated and will emit a warning.}
 
 \item{adaptive.frequency}{How often should the quasi-adaptive quadrature be calculated? Defaults to 3, meaning
-that it is recalculated every third EM-iteration.}
+that it is recalculated every third EM-iteration. Only relevant when \code{adaptive.quad = "quasi"}.}
 
 \item{adaptive.quad.tol}{Relative error tolerance for quasi adaptive quadrature. Defaults to \code{1e-12}.}
 

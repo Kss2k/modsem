@@ -105,10 +105,16 @@ checkNodesLms <- function(parTableMain,
                           parTableCov,
                           nodes,
                           method = "lms",
-                          adaptive = FALSE,
-                          minNodesXiXi   = if (!adaptive) 16 else 15,
-                          minNodesXiEta  = if (!adaptive) 32 else 24,
-                          minNodesEtaEta = if (!adaptive) 48 else 32) {
+                          # "fixed" gets the strict (old FALSE) thresholds; every other
+                          # mode ("quasi", "aghq", "fixed-n") gets the relaxed (old TRUE)
+                          # ones, since they all place nodes more efficiently than a
+                          # single fixed grid. TODO: revisit once "aghq" lands for real -
+                          # per-row adaptive quadrature typically wants far fewer nodes
+                          # per dimension than "quasi" does.
+                          adaptive = "fixed",
+                          minNodesXiXi   = if (adaptive == "fixed") 16 else 15,
+                          minNodesXiEta  = if (adaptive == "fixed") 32 else 24,
+                          minNodesEtaEta = if (adaptive == "fixed") 48 else 32) {
   if (method != "lms") return(NULL)
 
   parTable <- rbind(parTableMain, parTableCov)

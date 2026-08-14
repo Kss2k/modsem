@@ -1,11 +1,55 @@
+# Valid values for the `adaptive.quad` / `quadrature(adaptive=)` argument:
+#   "fixed"   - a single, non-adaptive Gauss-Hermite rule (old `adaptive.quad = FALSE`)
+#   "quasi"   - a single quasi-adaptive rule shared across all rows (old `adaptive.quad = TRUE`)
+#   "aghq"    - one adaptive rule per observation (per-row mode + curvature)
+#   "fixed-n" - the "aghq" pipeline with per-row adaptation disabled (z*=0, curvature=I
+#               for every row); not meant for normal use, exists to check that the
+#               per-row machinery reduces to "fixed" when adaptation is turned off.
+ADAPTIVE_QUAD_MODES <- c("fixed", "quasi", "aghq", "fixed-n")
+
+
+# Normalizes `adaptive` to one of ADAPTIVE_QUAD_MODES. Accepts the legacy logical
+# TRUE/FALSE (TRUE -> "quasi", FALSE -> "fixed") for backwards compatibility, with
+# a deprecation warning.
+normalizeAdaptiveQuad <- function(adaptive) {
+  if (is.logical(adaptive)) {
+    mod_stopif(length(adaptive) != 1L || is.na(adaptive),
+      "`adaptive.quad` must be a single (non-missing) logical or character value.")
+
+    mode <- if (isTRUE(adaptive)) "quasi" else "fixed"
+
+    mod_msg_warn(
+      "Passing a logical value to `adaptive.quad` is deprecated, use ",
+      sprintf('`adaptive.quad = "%s"`', mode), " instead. ",
+      "Support for logical values will be removed in a future release."
+    )
+
+    return(mode)
+  }
+
+  mod_stopif(!is.character(adaptive) || length(adaptive) != 1L,
+    "`adaptive.quad` must be a single character value, one of: ",
+    paste(shQuote(ADAPTIVE_QUAD_MODES), collapse = ", "))
+
+  mod_stopif(!adaptive %in% ADAPTIVE_QUAD_MODES,
+    "`adaptive.quad` must be one of: ",
+    paste(shQuote(ADAPTIVE_QUAD_MODES), collapse = ", "),
+    ", got: ", shQuote(adaptive))
+
+  adaptive
+}
+
+
 # Calculate weights and node points for mixture functions via Gauss-Hermite
 # quadrature as defined in Klein & Moosbrugger (2000). Also stores information
 # regarding adaptive quadrature.
 quadrature <- function(m, k,
-                       adaptive = FALSE,
+                       adaptive = "fixed",
                        quad.range = Inf,
                        adaptive.frequency = 3,
                        ...) {
+  adaptive <- normalizeAdaptiveQuad(adaptive)
+
   if (quad.range < 0) {
     mod_msg_warn("`quad.range` should be positive, using `-quad.range` instead!\n")
     quad.range <- -quad.range
@@ -22,7 +66,7 @@ quadrature <- function(m, k,
       m = m,
       a = a,
       b = b,
-      adaptive = FALSE,
+      adaptive = "fixed",
       quad.range = quad.range,
       adaptive.frequency = adaptive.frequency
     ))

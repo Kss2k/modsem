@@ -74,7 +74,7 @@
 #' \dontrun{
 #'   uk_qml <- twostep(tpb_uk, TPB_UK, method = "qml")
 #'
-#'   uk_lms <- twostep(tpb_uk, TPB_UK, method = "lms", nodes = 32, adaptive.quad = TRUE)
+#'   uk_lms <- twostep(tpb_uk, TPB_UK, method = "lms", nodes = 32, adaptive.quad = "quasi")
 #'   summary(uk_lms)
 #' }
 #' @export

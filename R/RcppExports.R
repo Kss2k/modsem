@@ -9,8 +9,32 @@ muSigmaLmsCpp <- function(model, z) {
     .Call(`_modsem_muSigmaLmsCpp`, model, z)
 }
 
+gradLogDensityZLmsCpp <- function(modelR, z, y, idx) {
+    .Call(`_modsem_gradLogDensityZLmsCpp`, modelR, z, y, idx)
+}
+
+aghqRowGridsLmsCpp <- function(modelR, dataR, colidxR, n, baseN, baseW, Z0, adapt, npatterns = 1L, iterMax = 25L, gradTol = 1e-8, fdH = 1e-4, ncores = 1L) {
+    .Call(`_modsem_aghqRowGridsLmsCpp`, modelR, dataR, colidxR, n, baseN, baseW, Z0, adapt, npatterns, iterMax, gradTol, fdH, ncores)
+}
+
+aghqEstepLmsCpp <- function(modelR, Z, W, dataR, colidxR, samplingWeights, n, npatterns = 1L, ncores = 1L) {
+    .Call(`_modsem_aghqEstepLmsCpp`, modelR, Z, W, dataR, colidxR, samplingWeights, n, npatterns, ncores)
+}
+
+completeLogLikLmsAghqCpp <- function(modelR, Z, Gamma, dataR, colidxR, n, npatterns = 1L, ncores = 1L) {
+    .Call(`_modsem_completeLogLikLmsAghqCpp`, modelR, Z, Gamma, dataR, colidxR, n, npatterns, ncores)
+}
+
+gradLogLikLmsAghqCpp <- function(modelR, Z, Gamma, dataR, colidxR, n, block, row, col, symmetric, npatterns = 1L, ncores = 1L) {
+    .Call(`_modsem_gradLogLikLmsAghqCpp`, modelR, Z, Gamma, dataR, colidxR, n, block, row, col, symmetric, npatterns, ncores)
+}
+
 completeScoresNodeAnalyticalLmsCpp <- function(modelR, dataR, z, block, row, col, symmetric, colidxR, n, npatterns = 1L, ncores = 1L) {
     .Call(`_modsem_completeScoresNodeAnalyticalLmsCpp`, modelR, dataR, z, block, row, col, symmetric, colidxR, n, npatterns, ncores)
+}
+
+louisRawScoresAghqCpp <- function(modelR, Z, Gamma, sqrtSamplingWeights, dataR, colidxR, n, block, row, col, symmetric, npatterns = 1L, ncores = 1L) {
+    .Call(`_modsem_louisRawScoresAghqCpp`, modelR, Z, Gamma, sqrtSamplingWeights, dataR, colidxR, n, block, row, col, symmetric, npatterns, ncores)
 }
 
 completeLogLikLmsCpp <- function(modelR, P, quad, colidxR, n, d, npatterns = 1L) {
@@ -35,6 +59,10 @@ hessObsLogLikLmsCpp <- function(modelR, dataR, P, block, row, col, symmetric, co
 
 hessCompLogLikLmsCpp <- function(modelR, P, block, row, col, symmetric, colidxR, n, d, npatterns = 1L, relStep = 1e-6, minAbs = 0.0, ncores = 1L) {
     .Call(`_modsem_hessCompLogLikLmsCpp`, modelR, P, block, row, col, symmetric, colidxR, n, d, npatterns, relStep, minAbs, ncores)
+}
+
+hessCompLogLikLmsAghqCpp <- function(modelR, Z, Gamma, dataR, block, row, col, symmetric, colidxR, n, npatterns = 1L, relStep = 1e-6, minAbs = 0.0, ncores = 1L) {
+    .Call(`_modsem_hessCompLogLikLmsAghqCpp`, modelR, Z, Gamma, dataR, block, row, col, symmetric, colidxR, n, npatterns, relStep, minAbs, ncores)
 }
 
 densityMatrixLmsCpp <- function(modelR, V, dataR, colidxR, n, samplingWeights, npatterns = 1L, ncores = 1L) {

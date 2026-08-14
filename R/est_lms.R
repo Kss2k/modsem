@@ -255,6 +255,29 @@ appendLmsIterationHistory <- function(history, iteration, loglik.history,
 }
 
 
+# Standard-error computation (Louis' identity, observed-info Hessian) isn't
+# implemented for the per-row "aghq"/"fixed-n" paths -- see equations_lms.R.
+# Models fit with those modes get their SEs from a "quasi" quadrature refit
+# at the converged theta instead: a known, documented inconsistency between
+# the (better) objective used for point estimation and the objective used
+# for SEs, accepted for now rather than leaving SEs entirely unavailable.
+# AGHQ's whole point is that per-row adaptation needs far fewer nodes than a
+# shared "quasi" grid does, so the node count the user chose for `nodes=`
+# (tuned for aghq) is usually too small for a *standalone* quasi fit to be
+# numerically stable -- bump it for this refit only, independent of what was
+# used for point estimation.
+asQuasiModelForSE <- function(model, min.nodes = 24L) {
+  for (g in seq_len(model$info$n.groups)) {
+    quad <- model$models[[g]]$quad
+    quad$adaptive <- "quasi"
+    if (quad$k > 0) quad$m <- max(quad$m, min.nodes)
+    model$models[[g]]$quad <- quad
+  }
+
+  model
+}
+
+
 emLms <- function(model,
                   algorithm = c("EMA", "EM"),
                   em.control = list(),
@@ -273,7 +296,7 @@ emLms <- function(model,
                   epsilon = 1e-6,
                   optimizer = "nlminb",
                   R.max = 1e6,
-                  adaptive.quad = FALSE,
+                  adaptive.quad = "fixed",
                   quad.range = -Inf,
                   adaptive.quad.tol = 1e-12,
                   nodes = 24,
@@ -353,8 +376,15 @@ emLms <- function(model,
     thetaNew  <- model$theta
 
     lastQuad     <- NULL
-    adaptiveQuad <- model$models[[1L]]$quad$adaptive # fixed across groups
+    adaptiveMode <- model$models[[1L]]$quad$adaptive # fixed across groups
     adaptiveFreq <- model$models[[1L]]$quad$adaptive.frequency
+
+    # FS mode (below) needs the observed-data Hessian (computeFullIobs ->
+    # Louis' identity), which "aghq"/"fixed-n" don't implement yet -- FS
+    # attempts fail gracefully via the .error handler's tryCatch fallback to
+    # a plain EM step in the meantime. QN only needs the observed-data
+    # gradient, which IS implemented for aghq/fixed-n (gradientObsLogLikLms),
+    # so it's left enabled.
 
     n.em.iter  <- 0
     mode       <- "EM"
@@ -371,7 +401,12 @@ emLms <- function(model,
       iterations <- iterations + 1L
       logLikOld  <- logLikNew
       thetaOld   <- thetaNew
-      recalcQuad <- adaptiveQuad && iterations %% adaptiveFreq == 0L
+      recalcQuad <- switch(adaptiveMode,
+        quasi     = iterations %% adaptiveFreq == 0L,
+        aghq      = ,
+        `fixed-n` = TRUE,
+        FALSE
+      )
       tmp.max.step <- 0L
 
       mod_stopif(any(!is.finite(thetaOld)),
@@ -623,8 +658,25 @@ emLms <- function(model,
                   lastQuad = lastQuad, recalcQuad = FALSE,
                   adaptive.quad.tol = adaptive.quad.tol, ...)
 
+    # "aghq"/"fixed-n" have a native Louis' identity (observedInfoFromLouisLms)
+    # for the default SE path (FIM = "observed", OFIM.hessian = TRUE). The OPG
+    # path (OFIM.hessian = FALSE) and the expected-FIM path still rely on
+    # per-row observed-score/simulation machinery that isn't implemented for
+    # the per-row grid yet -- fall back to a "quasi" refit at the converged
+    # theta for SEs in those cases only. See asQuasiModelForSE().
+    modelForSE <- model
+    P.se       <- P
+    nativeSE   <- FIM == "observed" && OFIM.hessian
+
+    if (adaptiveMode %in% c("aghq", "fixed-n") && calc.se && !nativeSE) {
+      modelForSE <- asQuasiModelForSE(model)
+      P.se <- estepLms(model = modelForSE, theta = thetaNew,
+                       lastQuad = NULL, recalcQuad = TRUE,
+                       adaptive.quad.tol = adaptive.quad.tol, ...)
+    }
+
     fit <- finalizeModelEstimatesDA(
-      model             = model,
+      model             = modelForSE,
       theta             = thetaNew,
       method            = "lms",
       data              = lapply(model$models, FUN = \(submodel) submodel$data),
@@ -642,10 +694,15 @@ emLms <- function(model,
       cr1s              = cr1s,
       R.max             = R.max,
       verbose           = verbose,
-      P                 = P,
+      P                 = P.se,
       includeStartModel = TRUE,
       startModel        = model
     )
+
+    if (adaptiveMode %in% c("aghq", "fixed-n"))
+      for (g in seq_along(fit$model$models))
+        fit$model$models[[g]]$quad$adaptive <- adaptiveMode
+
     fit$iteration.history <- history
     fit
 
