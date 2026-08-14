@@ -654,7 +654,8 @@ emLms <- function(model,
     mod_msg_warn(paste0(
       "Model estimation failed, returning starting values!\n",
       "Message: ", conditionMessage(e)
-    ), newline. = verbose)
+    ))
+
     P0 <- tryCatch(
       estepLms(model = model, theta = model$theta,
                lastQuad = NULL, recalcQuad = FALSE,

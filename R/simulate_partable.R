@@ -45,22 +45,12 @@ simulateDataParTableGroup <- function(parTable, N, colsOVs = NULL, colsLVs = NUL
   # endogenous variables (etas)
   etas    <- getSortedEtas(parTable, isLV = TRUE, checkAny = TRUE)
   numEtas <- length(etas)
-
-  indsEtas    <- getIndsLVs(parTable, etas)
-  numIndsEtas <- vapply(indsEtas, FUN.VALUE = vector("integer", 1L),
-                        FUN = length)
-  allIndsEtas    <- unique(unlist(indsEtas))
-  numAllIndsEtas <- length(allIndsEtas)
+  indsEtas <- getIndsLVs(parTable, etas)
 
   # exogenouts variables (xis) and interaction terms
   xis    <- getXis(parTable, checkAny = TRUE)
   numXis <- length(xis)
-
-  indsXis    <- getIndsLVs(parTable, xis)
-  numIndsXis <- vapply(indsXis, FUN.VALUE = vector("integer", 1L),
-                       FUN = length)
-  allIndsXis    <- unique(unlist(indsXis))
-  numAllIndsXis <- length(allIndsXis)
+  indsXis <- getIndsLVs(parTable, xis)
 
   # interaction terms
   intTerms <- getIntTerms(parTable)
@@ -103,20 +93,36 @@ simulateDataParTableGroup <- function(parTable, N, colsOVs = NULL, colsLVs = NUL
 
   dataXZs <- dataLVs[, intTerms]
   dataLVs <- dataLVs[, c(xis, etas)]
-  dataOVs <- matrix(0, nrow = N, ncol = numAllIndsXis + numAllIndsEtas,
-                    dimnames = list(NULL, c(allIndsXis, allIndsEtas)))
-  indsLVs <- c(indsXis, indsEtas)
-  interceptVector <- rep(1, N)
 
+  indsLVs <- c(indsXis, indsEtas)
+  allInds <- unique(unlist(indsLVs))
+  numAllInds <- length(allInds)
+
+  dataOVs <- matrix(
+    0, nrow = N, ncol = numAllInds,
+    dimnames = list(NULL, allInds)
+  )
+
+  # insert residuals and intercepts
+  indsTheta <- intersect(allInds, colnames(theta))
+  tau <- getIntercepts(indsTheta, parTable = parTable)
+
+  dataOVs[,indsTheta] <- sweep(
+    x = theta[,indsTheta, drop = FALSE],
+    MARGIN = 2L,
+    STATS = tau,
+    FUN = "+"
+  )
+    
   for (lV in c(xis, etas)) {
     inds   <- indsLVs[[lV]]
-    tau    <- getIntercepts(inds, parTable = parTable)
     alpha  <- getMean(lV, parTable = parTable)
     lambda <- getLambda(lV = lV, inds = inds, parTable = parTable)
-    dataOVs[, inds] <-
-      interceptVector %*% t(tau) +
-      (alpha + dataLVs[, lV]) %*% t(lambda) +
-      theta[, inds]
+
+    dataOVs[, inds] <- (
+      dataOVs[,inds, drop = FALSE] +
+      (alpha + dataLVs[, lV]) %*% t(lambda)
+    )
   }
 
   if (!is.null(colsOVs)) dataOVs <- dataOVs[ , colsOVs]

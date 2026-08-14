@@ -149,7 +149,7 @@ static arma::vec mvnDensSt(const arma::mat&  X,
   const arma::mat sigS = Sig.submat(idx, idx);
 
   arma::mat L;
-  if (!arma::chol(L, sigS, "lower")) {
+  if (!sigS.is_finite() || !arma::chol(L, sigS, "lower")) { // avoid warning in arma::chol
     arma::vec out(X.n_rows);
     out.fill(arma::datum::nan);
     return out;
@@ -609,7 +609,7 @@ arma::mat completeScoresNodeAnalyticalLmsCpp(
     const arma::vec muS = mu.elem(idx);
     const arma::mat sigS = Sig.submat(idx, idx);
     arma::mat L;
-    if (!arma::chol(L, sigS, "lower")) {
+    if (!sigS.is_finite() || !arma::chol(L, sigS, "lower")) { // avoid warning in arma::chol
       scores.fill(arma::datum::nan);
       return scores;
     }

@@ -131,14 +131,51 @@ mstepLms <- function(theta, model, P,
                      optim.method = "L-BFGS-B",
                      epsilon = 1e-6,
                      ...) {
+  thetaInput <- theta
+
   gradient <- function(theta) {
-    gradientCompLogLikLms(theta = theta, model = model, P = P, sign = -1,
-                          epsilon = epsilon)
+    grad <- gradientCompLogLikLms(
+      theta = theta,
+      model = model,
+      P = P,
+      sign = -1,
+      epsilon = epsilon
+    )
+
+    non.finite <- !is.finite(grad)
+    if (any(non.finite)) {
+      # This might happen during a bad line search in optim()
+      # as long as obsLogLikLms() is non finite as well, it should be ok,
+      # as it will be rejected...
+      ll <- compLogLikLms(
+        theta = theta,
+        model = model,
+        P = P, sign = -1,
+        epsilon = epsilon
+      )
+
+      mod_warnif(is.finite(ll),
+        "Some gradient values are NaN, but objective is finite!"
+      )
+
+      dir <- sign(theta - thetaInput)
+      dir[!is.finite(dir)] <- 0
+
+      grad[non.finite] <- dir[non.finite] * .Machine$double.xmax^(1/10)
+    }
+
+    grad
   }
 
   objective <- function(theta) {
-    compLogLikLms(theta = theta, model = model, P = P, sign = -1,
-                  epsilon = epsilon)
+    ll <- compLogLikLms(
+      theta = theta,
+      model = model,
+      P = P, sign = -1,
+      epsilon = epsilon
+    )
+
+    if (!is.finite(ll)) .Machine$double.xmax^(1/10) else ll # optim doesn't handle Inf well
   }
 
   if (optimizer == "nlminb") {
