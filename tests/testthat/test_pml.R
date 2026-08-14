@@ -36,6 +36,78 @@ ordinalFixture <- function(categories = 4L, seed = 42L) {
 }
 
 
+# A k = 1 model: `Y ~ X + Z + X:Z`, two indicators each, conditioning on xi1.
+# Indicators 1-4 measure the xis and are untouched by the interaction;
+# indicators 5-6 measure eta and are not.
+interactionFixture <- function(omega = 0.4) {
+  Phi <- matrix(c(1.0, 0.3, 0.3, 1.2), 2L)
+  lambda <- matrix(0, 6L, 3L)
+  lambda[1:2, 1L] <- c(1, 0.8)
+  lambda[3:4, 2L] <- c(1, 0.9)
+  lambda[5:6, 3L] <- c(1, 0.7)
+  Oxx <- matrix(0, 2L, 2L)
+  Oxx[1L, 2L] <- omega
+  list(lambdaX = lambda, tauX = matrix(0, 6L, 1L), thetaDelta = diag(6L),
+       A = t(chol(Phi)), psi = matrix(0.8, 1L),
+       gammaXi = matrix(c(0.5, 0.4), 1L, 2L), gammaEta = matrix(0, 1L, 1L),
+       alpha = matrix(0, 1L), beta0 = matrix(0, 2L, 1L),
+       covZetaXi = matrix(0, 1L, 2L),
+       omegaXiXi = Oxx, omegaEtaXi = matrix(0, 2L, 1L))
+}
+
+
+testthat::test_that("affectedness is downstream of an interaction, not exogeneity", {
+  M <- interactionFixture()
+  testthat::expect_equal(pmlAffectedEtas(M, 2L, 1L), TRUE)
+  testthat::expect_equal(pmlCleanIndicators(M, 2L, 1L),
+                         c(TRUE, TRUE, TRUE, TRUE, FALSE, FALSE))
+
+  # No omega at all: everything is clean, and the node loop should never run.
+  linear <- interactionFixture(omega = 0)
+  testthat::expect_equal(pmlAffectedEtas(linear, 2L, 1L), FALSE)
+  testthat::expect_true(all(pmlCleanIndicators(linear, 2L, 1L)))
+
+  # Two etas, omega only in eta1's block, eta2 ~ eta1. eta2 inherits the
+  # nonlinearity through gammaEta even though its own block is empty.
+  Oxx <- matrix(0, 4L, 2L); Oxx[1L, 2L] <- 0.4
+  chained <- list(gammaEta = matrix(c(0, 0.5, 0, 0), 2L, 2L),
+                  omegaXiXi = Oxx, omegaEtaXi = matrix(0, 4L, 2L))
+  testthat::expect_equal(pmlAffectedEtas(chained, 2L, 2L), c(TRUE, TRUE))
+
+  chained$gammaEta[] <- 0
+  testthat::expect_equal(pmlAffectedEtas(chained, 2L, 2L), c(TRUE, FALSE))
+})
+
+
+testthat::test_that("hoisting a clean pair is exact, not an approximation", {
+  M <- interactionFixture()
+  thresholds <- rep(list(c(-0.7, 0.1, 0.8)), 6L)
+
+  mixture <- function(j, k, m) {
+    rule <- pmlQuadRule(1L, m = m)
+    out <- 0
+    for (q in seq_len(NROW(rule$n))) {
+      implied <- pmlImpliedMoments(
+        M, pmlLatentMoments(M, 2L, 1L, as.vector(rule$n[q, ])))
+      out <- out + rule$w[[q]] * pmlPairProbabilities(implied, thresholds, j, k)
+    }
+    out
+  }
+  hoisted <- function(j, k)
+    pmlPairProbabilities(pmlImpliedMoments(M, pmlLatentMoments(M, 2L, 1L)),
+                         thresholds, j, k)
+
+  # A clean pair: the quadrature is CONVERGING ON the closed form, so the
+  # hoisted value is the exact answer the node loop can only approach.
+  testthat::expect_lt(max(abs(mixture(1L, 2L, 60L) - hoisted(1L, 2L))), 1e-9)
+  testthat::expect_gt(max(abs(mixture(1L, 2L, 5L) - hoisted(1L, 2L))), 1e-6)
+
+  # A pair on the interaction's outcome is genuinely non-normal, so the
+  # unconditional moments are NOT the answer and the loop is required.
+  testthat::expect_gt(max(abs(mixture(5L, 6L, 60L) - hoisted(5L, 6L))), 1e-4)
+})
+
+
 testthat::test_that("the k = 0 quadrature rule is a single unit-weight node", {
   rule <- pmlQuadRule(0L)
   testthat::expect_equal(NROW(rule$n), 1L)

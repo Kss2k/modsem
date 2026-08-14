@@ -61,12 +61,18 @@ pmlLatentMoments <- function(M, numXis, numEtas, znode = numeric(0)) {
     matrix(0, numEtas, numXis) else M$covZetaXi
 
   if (k > 0L) {
+    ci <- seq_len(k); fi <- setdiff(seq_len(numXis), ci)
+
+    # The rule's nodes are standard normal INNOVATIONS, matching LMS's
+    # xi = beta0 + A u with A lower triangular. Conditioning on u_1..k is
+    # therefore conditioning on xi_1..k, and this is the xi value meant.
+    znode <- muXi[ci] + as.vector(M$A[ci, ci, drop = FALSE] %*% znode)
+
     # The product terms become linear in the free xis once the conditioning
     # ones are fixed: this is `kronZ' Oxx` from the legacy kernel.
     kronZ <- Reduce(kronecker, rep(list(znode), 1L))
     Gx <- Gx + matrix(kronZ, nrow = 1L) %*% M$omegaXiXi[seq_len(k), , drop = FALSE]
 
-    ci <- seq_len(k); fi <- setdiff(seq_len(numXis), ci)
     Scc <- Phi[ci, ci, drop = FALSE]
     Sfc <- Phi[fi, ci, drop = FALSE]
     solved <- Sfc %*% solve(Scc)
@@ -152,22 +158,85 @@ pmlPairTables <- function(data, ordered, categories) {
 }
 
 
+# Which etas carry an interaction, directly or through a structural path.
+#
+# omegaXiXi and omegaEtaXi are stacked per-eta blocks of `numXis` rows each, the
+# layout `kron(Ieta, muXi)' Omega` reads. An eta is DIRECTLY affected if its own
+# block is nonzero, and affectedness then propagates forwards along gammaEta:
+# anything regressed on an affected eta is itself affected.
+#
+# The criterion is "downstream of an interaction", NOT "exogenous". In the TPB
+# model `INT ~ ATT + SN + PBC` is linear, so INT is clean even though it is
+# endogenous; and if `BEH ~ INT` with an interaction in INT's equation, BEH is
+# affected even though it carries no omega of its own.
+pmlAffectedEtas <- function(M, numXis, numEtas) {
+  if (numEtas < 1L) return(logical(0L))
+  nonzeroBlock <- function(Omega, i) {
+    if (is.null(Omega) || !length(Omega)) return(FALSE)
+    rows <- (i - 1L) * numXis + seq_len(numXis)
+    any(Omega[rows, , drop = FALSE] != 0)
+  }
+  affected <- vapply(seq_len(numEtas), function(i)
+    nonzeroBlock(M$omegaXiXi, i) || nonzeroBlock(M$omegaEtaXi, i), logical(1L))
+
+  repeat {
+    # unname(): gammaEta carries dimnames, and a named/unnamed mismatch would
+    # make `identical()` never fire.
+    grown <- affected |
+      unname(rowSums(abs(M$gammaEta[, affected, drop = FALSE])) > 0)
+    if (identical(grown, affected)) break
+    affected <- grown
+  }
+  affected
+}
+
+
+# Indicators that load on no affected eta. Their underlying variables are
+# unconditionally normal, so a pair of them needs no quadrature.
+pmlCleanIndicators <- function(M, numXis, numEtas) {
+  affected <- pmlAffectedEtas(M, numXis, numEtas)
+  if (!any(affected)) return(rep(TRUE, NROW(M$lambdaX)))
+  unname(rowSums(abs(M$lambdaX[, numXis + which(affected), drop = FALSE])) == 0)
+}
+
+
 # The pairwise composite log-likelihood.
+#
+# Conditional on a node the model is linear-Gaussian, so EVERY pair is a
+# bivariate-normal rectangle there. But a pair whose indicators are untouched by
+# any interaction is bivariate normal UNCONDITIONALLY as well -- mixing those
+# conditional normals back over the node distribution returns exactly the
+# unconditional pair. Running such a pair through the quadrature is therefore not
+# only wasted work but strictly worse ACCURACY: it approximates a quantity the
+# closed form already delivers exactly. Those pairs are computed once, outside
+# the loop.
 #
 # `sign = -1` gives a minimisation objective, matching the DA convention.
 pmlObjective <- function(M, numXis, numEtas, thresholds, tables, rule,
                          sign = -1) {
   pairs <- tables$pairs
+  clean <- pmlCleanIndicators(M, numXis, numEtas)
+  hoisted <- which(clean[pairs[, 1L]] & clean[pairs[, 2L]])
+  integrated <- setdiff(seq_len(NROW(pairs)), hoisted)
   probability <- vector("list", NROW(pairs))
-  for (q in seq_len(NROW(rule$n))) {
+
+  if (length(hoisted)) {
+    implied <- pmlImpliedMoments(M, pmlLatentMoments(M, numXis, numEtas))
+    for (p in hoisted)
+      probability[[p]] <- pmlPairProbabilities(implied, thresholds,
+                                               pairs[p, 1L], pairs[p, 2L])
+  }
+
+  if (length(integrated)) for (q in seq_len(NROW(rule$n))) {
     latent <- pmlLatentMoments(M, numXis, numEtas, as.vector(rule$n[q, ]))
     implied <- pmlImpliedMoments(M, latent)
-    for (p in seq_len(NROW(pairs))) {
+    for (p in integrated) {
       cell <- rule$w[[q]] *
         pmlPairProbabilities(implied, thresholds, pairs[p, 1L], pairs[p, 2L])
       probability[[p]] <- if (q == 1L) cell else probability[[p]] + cell
     }
   }
+
   total <- 0
   for (p in seq_len(NROW(pairs)))
     total <- total + sum(tables$tables[[p]] * log(pmax(probability[[p]], 1e-12)))
