@@ -7,9 +7,9 @@
 # matrices to bivariate x* moments, the threshold parameterisation, and the
 # rectangle probabilities.
 #
-# It is deliberately the k = 0 case. The conditioning path in pmlLatentMoments()
-# is written for k > 0 but is NOT verified here; validating it needs a reference
-# that does not exist yet, and that is the next stage.
+# It is deliberately the k = 0 case. The conditioning path is written for k > 0
+# but is NOT verified against an external reference here; that needs a reference
+# which does not exist yet, and is the next stage.
 #
 # lavaan matching notes:
 #   * `parameterization = "theta"` fixes residual variances at 1, which is the
@@ -36,6 +36,26 @@ ordinalFixture <- function(categories = 4L, seed = 42L) {
 }
 
 
+# The moments come from LMSModel, so a fixture has to be a whole submodel, not
+# just the handful of matrices the arithmetic touches.
+pmlSubmodel <- function(m, numXis, numEtas, k = 0L) {
+  none <- matrix(0, 0L, 0L)
+  default <- function(name, value) if (is.null(m[[name]])) value else m[[name]]
+  matrices <- list(
+    A = m$A, lambdaX = m$lambdaX, tauX = m$tauX, thetaDelta = m$thetaDelta,
+    gammaXi = m$gammaXi, gammaEta = m$gammaEta, alpha = m$alpha,
+    beta0 = m$beta0, psi = m$psi, Ieta = diag(numEtas),
+    omegaXiXi  = default("omegaXiXi",  matrix(0, numEtas * numXis, numXis)),
+    omegaEtaXi = default("omegaEtaXi", matrix(0, numEtas * numXis, numEtas)),
+    covZetaXi  = default("covZetaXi",  matrix(0, numEtas, numXis)),
+    lambdaY = none, tauY = none, thetaEpsilon = none, W = none, T = none
+  )
+  list(matrices = matrices,
+       info = list(numXis = numXis, numEtas = numEtas, hasComposites = FALSE),
+       quad = list(k = k))
+}
+
+
 # A k = 1 model: `Y ~ X + Z + X:Z`, two indicators each, conditioning on xi1.
 # Indicators 1-4 measure the xis and are untouched by the interaction;
 # indicators 5-6 measure eta and are not.
@@ -47,65 +67,13 @@ interactionFixture <- function(omega = 0.4) {
   lambda[5:6, 3L] <- c(1, 0.7)
   Oxx <- matrix(0, 2L, 2L)
   Oxx[1L, 2L] <- omega
-  list(lambdaX = lambda, tauX = matrix(0, 6L, 1L), thetaDelta = diag(6L),
-       A = t(chol(Phi)), psi = matrix(0.8, 1L),
-       gammaXi = matrix(c(0.5, 0.4), 1L, 2L), gammaEta = matrix(0, 1L, 1L),
-       alpha = matrix(0, 1L), beta0 = matrix(0, 2L, 1L),
-       covZetaXi = matrix(0, 1L, 2L),
-       omegaXiXi = Oxx, omegaEtaXi = matrix(0, 2L, 1L))
+  pmlSubmodel(list(
+    lambdaX = lambda, tauX = matrix(0, 6L, 1L), thetaDelta = diag(6L),
+    A = t(chol(Phi)), psi = matrix(0.8, 1L),
+    gammaXi = matrix(c(0.5, 0.4), 1L, 2L), gammaEta = matrix(0, 1L, 1L),
+    alpha = matrix(0, 1L), beta0 = matrix(0, 2L, 1L),
+    omegaXiXi = Oxx), numXis = 2L, numEtas = 1L, k = 1L)
 }
-
-
-testthat::test_that("affectedness is downstream of an interaction, not exogeneity", {
-  M <- interactionFixture()
-  testthat::expect_equal(pmlAffectedEtas(M, 2L, 1L), TRUE)
-  testthat::expect_equal(pmlCleanIndicators(M, 2L, 1L),
-                         c(TRUE, TRUE, TRUE, TRUE, FALSE, FALSE))
-
-  # No omega at all: everything is clean, and the node loop should never run.
-  linear <- interactionFixture(omega = 0)
-  testthat::expect_equal(pmlAffectedEtas(linear, 2L, 1L), FALSE)
-  testthat::expect_true(all(pmlCleanIndicators(linear, 2L, 1L)))
-
-  # Two etas, omega only in eta1's block, eta2 ~ eta1. eta2 inherits the
-  # nonlinearity through gammaEta even though its own block is empty.
-  Oxx <- matrix(0, 4L, 2L); Oxx[1L, 2L] <- 0.4
-  chained <- list(gammaEta = matrix(c(0, 0.5, 0, 0), 2L, 2L),
-                  omegaXiXi = Oxx, omegaEtaXi = matrix(0, 4L, 2L))
-  testthat::expect_equal(pmlAffectedEtas(chained, 2L, 2L), c(TRUE, TRUE))
-
-  chained$gammaEta[] <- 0
-  testthat::expect_equal(pmlAffectedEtas(chained, 2L, 2L), c(TRUE, FALSE))
-})
-
-
-testthat::test_that("hoisting a clean pair is exact, not an approximation", {
-  M <- interactionFixture()
-  thresholds <- rep(list(c(-0.7, 0.1, 0.8)), 6L)
-
-  mixture <- function(j, k, m) {
-    rule <- pmlQuadRule(1L, m = m)
-    out <- 0
-    for (q in seq_len(NROW(rule$n))) {
-      implied <- pmlImpliedMoments(
-        M, pmlLatentMoments(M, 2L, 1L, as.vector(rule$n[q, ])))
-      out <- out + rule$w[[q]] * pmlPairProbabilities(implied, thresholds, j, k)
-    }
-    out
-  }
-  hoisted <- function(j, k)
-    pmlPairProbabilities(pmlImpliedMoments(M, pmlLatentMoments(M, 2L, 1L)),
-                         thresholds, j, k)
-
-  # A clean pair: the quadrature is CONVERGING ON the closed form, so the
-  # hoisted value is the exact answer the node loop can only approach.
-  testthat::expect_lt(max(abs(mixture(1L, 2L, 60L) - hoisted(1L, 2L))), 1e-9)
-  testthat::expect_gt(max(abs(mixture(1L, 2L, 5L) - hoisted(1L, 2L))), 1e-6)
-
-  # A pair on the interaction's outcome is genuinely non-normal, so the
-  # unconditional moments are NOT the answer and the loop is required.
-  testthat::expect_gt(max(abs(mixture(5L, 6L, 60L) - hoisted(5L, 6L))), 1e-4)
-})
 
 
 testthat::test_that("the k = 0 quadrature rule is a single unit-weight node", {
@@ -120,23 +88,72 @@ testthat::test_that("the k = 0 quadrature rule is a single unit-weight node", {
 })
 
 
+testthat::test_that("affectedness is downstream of an interaction, not exogeneity", {
+  M <- interactionFixture()$matrices
+  testthat::expect_equal(pmlAffectedEtas(M, 2L, 1L), TRUE)
+  testthat::expect_equal(pmlCleanIndicators(M, 2L, 1L),
+                         c(TRUE, TRUE, TRUE, TRUE, FALSE, FALSE))
+
+  # No omega at all: everything is clean, and the node loop should never run.
+  linear <- interactionFixture(omega = 0)$matrices
+  testthat::expect_equal(pmlAffectedEtas(linear, 2L, 1L), FALSE)
+  testthat::expect_true(all(pmlCleanIndicators(linear, 2L, 1L)))
+
+  # A FREE omega is NA in the unfilled matrices and must count as nonzero --
+  # otherwise the split would be built at a zero starting value and be wrong for
+  # every iteration after the first.
+  unfilled <- linear
+  unfilled$omegaXiXi[1L, 2L] <- NA_real_
+  testthat::expect_equal(pmlAffectedEtas(unfilled, 2L, 1L), TRUE)
+
+  # Two etas, omega only in eta1's block, eta2 ~ eta1. eta2 inherits the
+  # nonlinearity through gammaEta even though its own block is empty.
+  Oxx <- matrix(0, 4L, 2L); Oxx[1L, 2L] <- 0.4
+  chained <- list(gammaEta = matrix(c(0, 0.5, 0, 0), 2L, 2L),
+                  omegaXiXi = Oxx, omegaEtaXi = matrix(0, 4L, 2L))
+  testthat::expect_equal(pmlAffectedEtas(chained, 2L, 2L), c(TRUE, TRUE))
+
+  chained$gammaEta[] <- 0
+  testthat::expect_equal(pmlAffectedEtas(chained, 2L, 2L), c(TRUE, FALSE))
+})
+
+
 testthat::test_that("pair probabilities are a proper distribution over cells", {
-  fx <- ordinalFixture()
-  M <- list(
-    lambdaX = matrix(c(1, 0.8, 0, 0, 0, 1), 3L, 2L),
-    tauX = matrix(0, 3L, 1L), thetaDelta = diag(3L),
-    A = matrix(c(1.2, 0, 0.3, 0.9), 2L), psi = matrix(0.7, 1L),
-    gammaXi = matrix(0.5, 1L, 1L), gammaEta = matrix(0, 1L, 1L),
-    alpha = matrix(0, 1L), beta0 = matrix(0, 1L, 1L),
-    covZetaXi = matrix(0, 1L, 1L)
-  )
-  # a 2-latent measurement model, no eta: build moments directly
-  latent <- list(mean = c(0, 0), cov = M$A %*% t(M$A))
-  implied <- pmlImpliedMoments(M, latent)
-  thresholds <- rep(list(c(-0.8, 0, 0.9)), 3L)
-  P <- pmlPairProbabilities(implied, thresholds, 1L, 2L)
+  sub <- interactionFixture()
+  implied <- pmlSelectMoments(pmlUnconditionalMomentsCpp(sub), seq_len(6L))
+  thresholds <- rep(list(c(-0.8, 0, 0.9)), 6L)
+  P <- pmlPairProbabilities(implied, thresholds, 1L, 3L)
   testthat::expect_true(all(P > 0))
   testthat::expect_equal(sum(P), 1, tolerance = 1e-9)
+})
+
+
+testthat::test_that("hoisting a clean pair is exact, not an approximation", {
+  sub <- interactionFixture()
+  rows <- seq_len(6L)
+  thresholds <- rep(list(c(-0.7, 0.1, 0.8)), 6L)
+
+  mixture <- function(j, k, m) {
+    rule <- pmlQuadRule(1L, m = m)
+    moments <- pmlMomentsCpp(sub, rule$n)
+    out <- 0
+    for (q in seq_along(moments))
+      out <- out + rule$w[[q]] * pmlPairProbabilities(
+        pmlSelectMoments(moments[[q]], rows), thresholds, j, k)
+    out
+  }
+  hoisted <- function(j, k)
+    pmlPairProbabilities(pmlSelectMoments(pmlUnconditionalMomentsCpp(sub), rows),
+                         thresholds, j, k)
+
+  # A clean pair: the quadrature is CONVERGING ON the closed form, so the
+  # hoisted value is the exact answer the node loop can only approach.
+  testthat::expect_lt(max(abs(mixture(1L, 2L, 60L) - hoisted(1L, 2L))), 1e-9)
+  testthat::expect_gt(max(abs(mixture(1L, 2L, 5L) - hoisted(1L, 2L))), 1e-6)
+
+  # A pair on the interaction's outcome is genuinely non-normal, so the
+  # unconditional moments are NOT the answer and the loop is required.
+  testthat::expect_gt(max(abs(mixture(5L, 6L, 60L) - hoisted(5L, 6L))), 1e-4)
 })
 
 
@@ -173,19 +190,22 @@ testthat::test_that("PML matches lavaan on a linear ordinal model (k = 0)", {
   lambda[7:9, 3L] <- c(1, pick("Y", "=~", "y2"), pick("Y", "=~", "y3"))
   Phi <- matrix(c(pick("X", "~~", "X"), pick("X", "~~", "Z"),
                   pick("X", "~~", "Z"), pick("Z", "~~", "Z")), 2L)
-  M <- list(
+  sub <- pmlSubmodel(list(
     lambdaX = lambda, tauX = matrix(0, 9L, 1L), thetaDelta = diag(9L),
     A = t(chol(Phi)), psi = matrix(pick("Y", "~~", "Y"), 1L),
     gammaXi = matrix(c(pick("Y", "~", "X"), pick("Y", "~", "Z")), 1L, 2L),
     gammaEta = matrix(0, 1L, 1L), alpha = matrix(0, 1L),
-    beta0 = matrix(0, 2L, 1L), covZetaXi = matrix(0, 1L, 2L)
-  )
+    beta0 = matrix(0, 2L, 1L)), numXis = 2L, numEtas = 1L, k = 0L)
   thresholds <- split(pe$est[pe$op == "|"],
                       rep(seq_len(9L), each = categories[[1L]] - 1L))
 
-  objective <- pmlObjective(M, numXis = 2L, numEtas = 1L,
-                            thresholds = thresholds, tables = tables,
-                            rule = pmlQuadRule(0L), sign = -1)
+  rows <- seq_len(9L)
+  partition <- pmlPartition(sub$matrices, 2L, 1L, tables$pairs, rows)
+  testthat::expect_length(partition$integrated, 0L)
+
+  objective <- pmlObjective(sub, thresholds = thresholds, tables = tables,
+                            rule = pmlQuadRule(0L), partition = partition,
+                            rows = rows, sign = -1)
   expected <- saturated - lavaan::lavInspect(lav, "optim")$fx * NROW(fx$data)
   testthat::expect_equal(-objective, expected, tolerance = 1e-6,
                          info = sprintf("PML %.6f vs lavaan-implied %.6f",

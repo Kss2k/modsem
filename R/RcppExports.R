@@ -117,6 +117,14 @@ dmvnfast <- function(X, mu, sigma, log, ncores, isChol) {
     .Call(`_modsem_dmvnfast`, X, mu, sigma, log, ncores, isChol)
 }
 
+pmlMomentsCpp <- function(modFilled, nodes) {
+    .Call(`_modsem_pmlMomentsCpp`, modFilled, nodes)
+}
+
+pmlUnconditionalMomentsCpp <- function(modFilled) {
+    .Call(`_modsem_pmlUnconditionalMomentsCpp`, modFilled)
+}
+
 modelMatrixCacheCpp <- function(matrices) {
     .Call(`_modsem_modelMatrixCacheCpp`, matrices)
 }

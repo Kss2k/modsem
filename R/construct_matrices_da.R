@@ -360,7 +360,7 @@ constructA <- function(xis, method = "lms", cov.syntax = NULL,
 
 
 constructCovZetaXi <- function(xis, etas, method = "lms", parTable) {
-  if (method != "lms" || !length(xis) || !length(etas))
+  if (!method %in% c("lms", "pml") || !length(xis) || !length(etas))
     return(EMPTY_MATSTRUCT)
 
   numXis <- length(xis)

@@ -469,6 +469,29 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// pmlMomentsCpp
+Rcpp::List pmlMomentsCpp(const Rcpp::List& modFilled, const arma::mat& nodes);
+RcppExport SEXP _modsem_pmlMomentsCpp(SEXP modFilledSEXP, SEXP nodesSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type modFilled(modFilledSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type nodes(nodesSEXP);
+    rcpp_result_gen = Rcpp::wrap(pmlMomentsCpp(modFilled, nodes));
+    return rcpp_result_gen;
+END_RCPP
+}
+// pmlUnconditionalMomentsCpp
+Rcpp::List pmlUnconditionalMomentsCpp(const Rcpp::List& modFilled);
+RcppExport SEXP _modsem_pmlUnconditionalMomentsCpp(SEXP modFilledSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type modFilled(modFilledSEXP);
+    rcpp_result_gen = Rcpp::wrap(pmlUnconditionalMomentsCpp(modFilled));
+    return rcpp_result_gen;
+END_RCPP
+}
 // modelMatrixCacheCpp
 SEXP modelMatrixCacheCpp(Rcpp::List matrices);
 RcppExport SEXP _modsem_modelMatrixCacheCpp(SEXP matricesSEXP) {
@@ -654,6 +677,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_modsem_repDmvnormCpp", (DL_FUNC) &_modsem_repDmvnormCpp, 5},
     {"_modsem_totalDmvnWeighted", (DL_FUNC) &_modsem_totalDmvnWeighted, 6},
     {"_modsem_dmvnfast", (DL_FUNC) &_modsem_dmvnfast, 6},
+    {"_modsem_pmlMomentsCpp", (DL_FUNC) &_modsem_pmlMomentsCpp, 2},
+    {"_modsem_pmlUnconditionalMomentsCpp", (DL_FUNC) &_modsem_pmlUnconditionalMomentsCpp, 1},
     {"_modsem_modelMatrixCacheCpp", (DL_FUNC) &_modsem_modelMatrixCacheCpp, 1},
     {"_modsem_impliedEtaFromZetaCpp", (DL_FUNC) &_modsem_impliedEtaFromZetaCpp, 2},
     {"_modsem_impliedYFromEtaCpp", (DL_FUNC) &_modsem_impliedYFromEtaCpp, 2},

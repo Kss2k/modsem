@@ -40,21 +40,26 @@ estPml <- function(model,
   k <- submodel$quad$k %||% 0L
   rule <- pmlQuadRule(k, m = nodes)
 
-  # Ordered indicators occupy the first rows of lambdaX by construction of the
-  # measurement model; the objective indexes pairs against that ordering.
-  index <- match(ordered, rownames(submodel$matrices$lambdaX))
-  mod_stopif(anyNA(index), "Ordered indicators not found in the model matrices.")
+  # `rows` maps each ordered indicator onto its row of lambdaX. Everything the
+  # objective touches -- pairs, thresholds, the clean/integrated split -- is
+  # indexed against `ordered`, and this is the only place that translates.
+  rows <- match(ordered, rownames(submodel$matrices$lambdaX))
+  mod_stopif(anyNA(rows), "Ordered indicators not found in the model matrices.")
+
+  # From the UNFILLED matrices, so a free omega counts as nonzero even though it
+  # starts at zero, and the split cannot shift underneath the optimiser.
+  partition <- pmlPartition(submodel$matrices, submodel$info$numXis,
+                            submodel$info$numEtas, tables$pairs, rows)
 
   objective <- function(theta) {
     filled <- tryCatch(fillModel(model = model, theta = theta, method = "lms"),
                        error = function(e) NULL)
     if (is.null(filled)) return(.Machine$double.xmax^(1 / 4))
-    M <- filled$models[[1L]]$matrices
+    sub <- filled$models[[1L]]
     value <- tryCatch(
-      pmlObjective(M, numXis = submodel$info$numXis,
-                   numEtas = submodel$info$numEtas,
-                   thresholds = pmlThresholdList(M)[index],
-                   tables = tables, rule = rule, sign = -1),
+      pmlObjective(sub, thresholds = pmlThresholdList(sub$matrices)[rows],
+                   tables = tables, rule = rule, partition = partition,
+                   rows = rows, sign = -1),
       error = function(e) NA_real_)
     if (!is.finite(value)) .Machine$double.xmax^(1 / 4) else value
   }

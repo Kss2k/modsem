@@ -44,63 +44,16 @@ pmlQuadRule <- function(k, m = 30L) {
 }
 
 
-# Mean and covariance of the full latent vector (xi, eta), conditional on the
-# first `k` xis being held at `znode`.
+# Underlying-variable moments, restricted to the ordered indicators.
 #
-# With those held fixed the structural equation is linear, so this is ordinary
-# Gaussian conditioning followed by the usual reduced-form solve. At k = 0 the
-# conditioning is vacuous and this returns the unconditional moments.
-pmlLatentMoments <- function(M, numXis, numEtas, znode = numeric(0)) {
-  k <- length(znode)
-  Phi <- M$A %*% t(M$A)
-  Binv <- solve(diag(numEtas) - M$gammaEta)
-  muXi <- as.vector(M$beta0)
-  Gx <- M$gammaXi
-  alpha <- as.vector(M$alpha)
-  covZetaXi <- if (is.null(M$covZetaXi) || !length(M$covZetaXi))
-    matrix(0, numEtas, numXis) else M$covZetaXi
-
-  if (k > 0L) {
-    ci <- seq_len(k); fi <- setdiff(seq_len(numXis), ci)
-
-    # The rule's nodes are standard normal INNOVATIONS, matching LMS's
-    # xi = beta0 + A u with A lower triangular. Conditioning on u_1..k is
-    # therefore conditioning on xi_1..k, and this is the xi value meant.
-    znode <- muXi[ci] + as.vector(M$A[ci, ci, drop = FALSE] %*% znode)
-
-    # The product terms become linear in the free xis once the conditioning
-    # ones are fixed: this is `kronZ' Oxx` from the legacy kernel.
-    kronZ <- Reduce(kronecker, rep(list(znode), 1L))
-    Gx <- Gx + matrix(kronZ, nrow = 1L) %*% M$omegaXiXi[seq_len(k), , drop = FALSE]
-
-    Scc <- Phi[ci, ci, drop = FALSE]
-    Sfc <- Phi[fi, ci, drop = FALSE]
-    solved <- Sfc %*% solve(Scc)
-    muFree <- muXi[fi] + as.vector(solved %*% (znode - muXi[ci]))
-    covFree <- Phi[fi, fi, drop = FALSE] - solved %*% t(Sfc)
-
-    # Re-embed at full width, with the conditioned block degenerate.
-    muXi <- replace(muXi, fi, muFree); muXi[ci] <- znode
-    Phi <- matrix(0, numXis, numXis)
-    Phi[fi, fi] <- covFree
-  }
-
-  muEta <- as.vector(Binv %*% (alpha + Gx %*% muXi))
-  covXiEta <- Phi %*% t(Gx) %*% t(Binv) + t(covZetaXi) %*% t(Binv)
-  covEta <- Binv %*% (Gx %*% Phi %*% t(Gx) + Gx %*% t(covZetaXi) +
-                        covZetaXi %*% t(Gx) + M$psi) %*% t(Binv)
-
-  list(mean = c(muXi, muEta),
-       cov = rbind(cbind(Phi, covXiEta), cbind(t(covXiEta), covEta)))
-}
-
-
-# Underlying-variable moments. Every indicator routes through lambdaX/tauX,
-# whose columns span the xis followed by the etas.
-pmlImpliedMoments <- function(M, latent) {
-  mean <- as.vector(M$tauX) + as.vector(M$lambdaX %*% latent$mean)
-  cov <- M$lambdaX %*% latent$cov %*% t(M$lambdaX) + M$thetaDelta
-  list(mean = mean, sd = sqrt(diag(cov)), cov = cov)
+# The moments themselves come from `LMSModel::muSigma()` in src/pml.cpp -- the
+# same kernel the full-information likelihood uses -- so there is no second
+# definition of the model's conditional distribution to drift out of step.
+# `rows` maps the ordered indicators onto rows of lambdaX, which puts everything
+# downstream (pairs, thresholds, the clean/integrated split) in one index space.
+pmlSelectMoments <- function(moments, rows) {
+  cov <- moments$cov[rows, rows, drop = FALSE]
+  list(mean = moments$mean[rows], cov = cov, sd = sqrt(diag(cov)))
 }
 
 
@@ -169,12 +122,18 @@ pmlPairTables <- function(data, ordered, categories) {
 # model `INT ~ ATT + SN + PBC` is linear, so INT is clean even though it is
 # endogenous; and if `BEH ~ INT` with an interaction in INT's equation, BEH is
 # affected even though it carries no omega of its own.
+#
+# This reads STRUCTURE, not values, so it must be given the UNFILLED matrices:
+# a free entry is NA there and counts as nonzero. Reading a filled model would
+# call everything clean whenever omega starts at zero, which is exactly where
+# the optimiser starts.
 pmlAffectedEtas <- function(M, numXis, numEtas) {
   if (numEtas < 1L) return(logical(0L))
+  nonzero <- function(x) is.na(x) | x != 0
   nonzeroBlock <- function(Omega, i) {
     if (is.null(Omega) || !length(Omega)) return(FALSE)
     rows <- (i - 1L) * numXis + seq_len(numXis)
-    any(Omega[rows, , drop = FALSE] != 0)
+    any(nonzero(Omega[rows, , drop = FALSE]))
   }
   affected <- vapply(seq_len(numEtas), function(i)
     nonzeroBlock(M$omegaXiXi, i) || nonzeroBlock(M$omegaEtaXi, i), logical(1L))
@@ -182,8 +141,8 @@ pmlAffectedEtas <- function(M, numXis, numEtas) {
   repeat {
     # unname(): gammaEta carries dimnames, and a named/unnamed mismatch would
     # make `identical()` never fire.
-    grown <- affected |
-      unname(rowSums(abs(M$gammaEta[, affected, drop = FALSE])) > 0)
+    grown <- affected | unname(rowSums(
+      nonzero(M$gammaEta[, affected, drop = FALSE])) > 0)
     if (identical(grown, affected)) break
     affected <- grown
   }
@@ -196,7 +155,18 @@ pmlAffectedEtas <- function(M, numXis, numEtas) {
 pmlCleanIndicators <- function(M, numXis, numEtas) {
   affected <- pmlAffectedEtas(M, numXis, numEtas)
   if (!any(affected)) return(rep(TRUE, NROW(M$lambdaX)))
-  unname(rowSums(abs(M$lambdaX[, numXis + which(affected), drop = FALSE])) == 0)
+  loadings <- M$lambdaX[, numXis + which(affected), drop = FALSE]
+  unname(rowSums(is.na(loadings) | loadings != 0) == 0)
+}
+
+
+# Split the pairs into those the node loop has to see and those it does not.
+# Computed once, from the unfilled model, and held fixed for the whole fit.
+pmlPartition <- function(M, numXis, numEtas, pairs, rows) {
+  clean <- pmlCleanIndicators(M, numXis, numEtas)[rows]
+  hoisted <- which(clean[pairs[, 1L]] & clean[pairs[, 2L]])
+  list(hoisted = hoisted,
+       integrated = setdiff(seq_len(NROW(pairs)), hoisted))
 }
 
 
@@ -212,28 +182,27 @@ pmlCleanIndicators <- function(M, numXis, numEtas) {
 # the loop.
 #
 # `sign = -1` gives a minimisation objective, matching the DA convention.
-pmlObjective <- function(M, numXis, numEtas, thresholds, tables, rule,
+pmlObjective <- function(submodel, thresholds, tables, rule, partition, rows,
                          sign = -1) {
   pairs <- tables$pairs
-  clean <- pmlCleanIndicators(M, numXis, numEtas)
-  hoisted <- which(clean[pairs[, 1L]] & clean[pairs[, 2L]])
-  integrated <- setdiff(seq_len(NROW(pairs)), hoisted)
   probability <- vector("list", NROW(pairs))
 
-  if (length(hoisted)) {
-    implied <- pmlImpliedMoments(M, pmlLatentMoments(M, numXis, numEtas))
-    for (p in hoisted)
+  if (length(partition$hoisted)) {
+    implied <- pmlSelectMoments(pmlUnconditionalMomentsCpp(submodel), rows)
+    for (p in partition$hoisted)
       probability[[p]] <- pmlPairProbabilities(implied, thresholds,
                                                pairs[p, 1L], pairs[p, 2L])
   }
 
-  if (length(integrated)) for (q in seq_len(NROW(rule$n))) {
-    latent <- pmlLatentMoments(M, numXis, numEtas, as.vector(rule$n[q, ]))
-    implied <- pmlImpliedMoments(M, latent)
-    for (p in integrated) {
-      cell <- rule$w[[q]] *
-        pmlPairProbabilities(implied, thresholds, pairs[p, 1L], pairs[p, 2L])
-      probability[[p]] <- if (q == 1L) cell else probability[[p]] + cell
+  if (length(partition$integrated)) {
+    moments <- pmlMomentsCpp(submodel, rule$n)
+    for (q in seq_along(moments)) {
+      implied <- pmlSelectMoments(moments[[q]], rows)
+      for (p in partition$integrated) {
+        cell <- rule$w[[q]] *
+          pmlPairProbabilities(implied, thresholds, pairs[p, 1L], pairs[p, 2L])
+        probability[[p]] <- if (q == 1L) cell else probability[[p]] + cell
+      }
     }
   }
 
