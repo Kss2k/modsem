@@ -888,7 +888,8 @@ splitParTableEtas <- function(parTable, parTableCov = NULL, splitEtas, allEtas,
     split <- splitParTableEtas(parTable = parTable,
                                parTableCov = parTableCov,
                                splitEtas = downstreamEtas,
-                               allEtas = allEtas)
+                               allEtas = allEtas,
+                               nonLinearEtas = nonLinearEtas)
 
     parTable    <- split$parTable
     parTableCov <- split$parTableCov
