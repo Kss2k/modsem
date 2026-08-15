@@ -287,9 +287,14 @@ inline void addLatentCovAdjoints(const LMSModel& M,
 
   if (!EBar.n_elem) return;
 
+  // ZetaProj = covZetaXi * A^-T, so with EBar = dL/dZetaProj:
+  //   dL/dcovZetaXi = EBar * A^-1
+  //   dL/dA         = -A^-T * EBar^T * ZetaProj
+  // NOTE: dL/dA is NOT symmetric here -- `A` is the (lower triangular) Cholesky
+  // factor, not a covariance matrix, so the transpose must not be dropped
   const arma::mat invA = arma::inv(arma::trimatl(M.A));
   adj.covZetaXi += EBar * invA;
-  adj.A    -= M.ZetaProj.t() * EBar * invA;
+  adj.A    -= invA.t() * EBar.t() * M.ZetaProj;
 }
 
 

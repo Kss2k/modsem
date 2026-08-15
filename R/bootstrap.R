@@ -77,6 +77,10 @@ bootstrap_modsem.modsem_pi <- function(model, FUN = "coef", ...) {
 #' @param verbose Should progress information be printed to the console?
 #' @param calc.se Should standard errors for each replicate. Defaults to \code{FALSE}.
 #' @param optimize Should starting values be re-optimized for each replicate. Defaults to \code{FALSE}.
+#' @param algorithm Which algorithm should be used for the LMS approach? Defaults to \code{"EM"}, as
+#'   opposed to \code{"EMA"}.
+#' @param convergence.abs Absolute convergence criteria. Defaults to 10 times the original criteria.
+#' @param convergence.rel Relative convergence criteria. Defaults to 10 times the original criteria.
 #'
 #' @details The function internally resamples the observed data (non-parametric
 #'   case) or simulates from the estimated parameter table (parametric case),
@@ -106,6 +110,9 @@ bootstrap_modsem.modsem_da <- function(model,
                                        verbose = interactive(),
                                        calc.se = FALSE,
                                        optimize = FALSE,
+                                       convergence.abs = 10 * model$args$convergence.abs,
+                                       convergence.rel = 10 * model$args$convergence.rel,
+                                       algorithm = "EM",
                                        ...) {
   checkWarnRCS(model)
 
@@ -172,11 +179,14 @@ bootstrap_modsem.modsem_da <- function(model,
   argList[names(userArgs)] <- userArgs
  
   # Except these...
-  argList$calc.se      <- calc.se
-  argList$verbose      <- verbose
-  argList$model.syntax <- model$model$info$group.info$syntax
-  argList$cov.syntax   <- model$model$info$group.info$cov.syntax
-  argList$method       <- model$method
+  argList$algorithm       <- algorithm
+  argList$convergence.abs <- convergence.abs
+  argList$convergence.rel <- convergence.rel
+  argList$calc.se         <- calc.se
+  argList$verbose         <- verbose
+  argList$model.syntax    <- model$model$info$group.info$syntax
+  argList$cov.syntax      <- model$model$info$group.info$cov.syntax
+  argList$method          <- model$method
   argList$sampling.weights.normalization <- "none" # This has already been done
 
   if (type == "parametric" && !is.null(argList$sampling.weights)) {

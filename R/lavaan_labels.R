@@ -60,16 +60,10 @@ createLavLabels <- function(matrices, subset, etas, parTable.in = NULL) {
 createLavLabelsCov <- function(matrices, subset) {
   if (is.null(matrices)) return(NULL)
 
-  phi      <- createLabelsMatrix(matrices$phi, op = "~~")
-  psi      <- createLabelsMatrix(matrices$psi, op = "~~")
-  gammaXi  <- createLabelsMatrix(matrices$gammaXi, op = "~", first = "rows")
-  gammaEta <- createLabelsMatrix(matrices$gammaEta, op = "~", first = "rows")
+  psi   <- createLabelsMatrix(matrices$psi, op = "~~")
+  gamma <- createLabelsMatrix(matrices$gamma, op = "~", first = "rows")
 
-  labels <- c("phi" = phi,
-              "psi" = psi,
-              "gammaXi" = gammaXi,
-              "gammaEta" = gammaEta)
-
+  labels <- c(psi = psi, gamma = gamma)
   labels[subset]
 }
 

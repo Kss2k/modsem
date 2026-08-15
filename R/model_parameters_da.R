@@ -3,7 +3,7 @@ NAMES_PAR_MATRICES <- c("lambdaX", "lambdaY", "gammaXi", "gammaEta",
                       "thetaDelta", "thetaEpsilon", "W", "T", "phi", "A",
                       "covZetaXi", "psi", "tauX", "tauY", "alpha", "beta0",
                       "omegaEtaXi", "omegaXiXi")
-NAMES_PAR_MATRICES_COV <- c("gammaXi", "gammaEta", "A", "psi", "phi")
+NAMES_PAR_MATRICES_COV <- c("gamma", "psi")
 
 
 createTheta <- function(model, start = NULL, parTable.in = NULL) {
@@ -148,17 +148,9 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
 createThetaCovModel <- function(covModel, start = NULL) {
   M <- covModel$matrices
 
-  phi      <- as.vector(M$phi)
-  psi      <- as.vector(M$psi)
-  alpha    <- as.vector(M$alpha)
-  gammaXi  <- as.vector(M$gammaXi)
-  gammaEta <- as.vector(M$gammaEta)
-  thetaCov <- c(
-    phi = phi,
-    psi = psi,
-    gammaXi = gammaXi,
-    gammaEta = gammaEta
-  )
+  psi   <- as.vector(M$psi)
+  gamma <- as.vector(M$gamma)
+  thetaCov <- c(psi = psi, gamma = gamma)
 
   lavLabelsCov <- createLavLabelsCov(M, subset = is.na(thetaCov))
   thetaCov <- thetaCov[is.na(thetaCov)]
@@ -301,10 +293,8 @@ fillCovModel <- function(covModel, theta, thetaLabel) {
   pMatrices <- M[NAMES_PAR_MATRICES_COV]
   M[NAMES_PAR_MATRICES_COV] <- fillMatricesLabels(pMatrices, lMatrices, thetaLabel)
 
-  M$psi      <- fillSymmetric(M$psi, fetch(theta, "^psi"))
-  M$gammaEta <- fillNA_Matrix(M$gammaEta, theta = theta, pattern = "^gammaEta")
-  M$gammaXi  <- fillNA_Matrix(M$gammaXi, theta = theta, pattern = "^gammaXi")
-  M$phi <- fillSymmetric(M$phi, fetch(theta, "^phi"))
+  M$psi   <- fillSymmetric(M$psi, fetch(theta, "^psi"))
+  M$gamma <- fillNA_Matrix(M$gamma, theta = theta, pattern = "^gamma")
 
   covModel$matrices <- M
   covModel
@@ -543,6 +533,7 @@ evalCovModelA <- function(theta, submodel, params, g, method = "lms") {
       calcThetaLabel(theta[params$SELECT_THETA_LAB[[1L]]], params$constrExprs)
     )
   }
+
   thetaCov <- if (length(params$SELECT_THETA_COV[[g]]))
     theta[params$SELECT_THETA_COV[[g]]] else NULL
 
@@ -586,6 +577,7 @@ refreshCovModelJacobian <- function(theta, model, Jacobian, Jacobian2 = NULL,
                                     method = NULL) {
   if (is.null(method))
     method <- model$params$gradientStruct$covModelMethod %||% "lms"
+
   locations <- model$params$gradientStruct$locations
   cov_block <- if (identical(method, "qml")) DA_BLOCKS[["phi"]] else DA_BLOCKS[["A"]]
   cov_locs  <- locations[locations$block == cov_block, , drop = FALSE]
@@ -615,6 +607,7 @@ refreshCovModelJacobian <- function(theta, model, Jacobian, Jacobian2 = NULL,
       Ap <- evalCovModelA(tp, submodel, model$params, g, method = method)
       Am <- evalCovModelA(tm, submodel, model$params, g, method = method)
       Jacobian[k_nm, acols] <- (Ap - Am)[cbind(ri, ci)] / (2 * eps)
+
       if (!is.null(Jacobian2))
         Jacobian2[k_nm, acols] <- (Ap - 2*A0 + Am)[cbind(ri, ci)] / eps^2
     }

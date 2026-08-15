@@ -235,24 +235,16 @@ optimizeStartingParamsDA <- function(model,
 
     if (!is.null(matricesCov)) {
       PsiCovModel <- findEstimatesParTable(matricesCov$psi, parTable.g, op = "~~", fill = 0)
-      PhiCovModel <- findEstimatesParTable(matricesCov$phi, parTable.g, op = "~~", fill = 0)
+      GammaCovModel <- findEstimatesParTable(matricesCov$gamma, parTable.g, op = "~", fill = 0)
 
-      GammaEtaCovModel <- findEstimatesParTable(matricesCov$gammaEta, parTable.g, op = "~", fill = 0)
-      GammaXiCovModel <- findEstimatesParTable(matricesCov$gammaXi, parTable.g, op = "~", fill = 0)
-
-      PhiCovModel <- correctDiag(PhiCovModel, tol = 0)
+      PsiCovModel <- fillLabelsMatrix(PsiCovModel, labelMatricesCov$psi, symmetric = TRUE)
       PsiCovModel <- correctDiag(PsiCovModel, tol = 0)
 
-      PhiCovModel <- fillLabelsMatrix(PhiCovModel, labelMatricesCov$phi, symmetric = TRUE)
+      if (!is.invertible(PsiCovModel)) PsiCovModel <- as.I(PsiCovModel)
 
-      if (!is.invertible(PhiCovModel)) PhiCovModel <- as.I(PhiCovModel)
-      # Residuals don't need to be invertible...
-      # if (!is.invertible(PsiCovModel)) PsiCovModel <- as.I(PsiCovModel)
-
-      thetaCov <- unlist(list(PhiCovModel[is.na(matricesCov$phi)],
-                              PsiCovModel[is.na(matricesCov$psi)],
-                              GammaXiCovModel[is.na(matricesCov$gammaXi)],
-                              GammaEtaCovModel[is.na(matricesCov$gammaEta)]))
+      # NOTE: must match the order in createThetaCovModel()
+      thetaCov <- unlist(list(PsiCovModel[is.na(matricesCov$psi)],
+                              GammaCovModel[is.na(matricesCov$gamma)]))
     } else thetaCov <- NULL
 
     selectThetaMain <- SELECT_THETA_MAIN[[g]]

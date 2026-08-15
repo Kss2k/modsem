@@ -20,6 +20,9 @@ bootstrap_modsem(model = modsem, FUN, ...)
   verbose = interactive(),
   calc.se = FALSE,
   optimize = FALSE,
+  convergence.abs = 10 * model$args$convergence.abs,
+  convergence.rel = 10 * model$args$convergence.rel,
+  algorithm = "EM",
   ...
 )
 
@@ -57,6 +60,13 @@ for \code{\link{modsem_pi}} objects, or \code{\link{modsem_da}} for
 \item{calc.se}{Should standard errors for each replicate. Defaults to \code{FALSE}.}
 
 \item{optimize}{Should starting values be re-optimized for each replicate. Defaults to \code{FALSE}.}
+
+\item{convergence.abs}{Absolute convergence criteria. Defaults to 10 times the original criteria.}
+
+\item{convergence.rel}{Relative convergence criteria. Defaults to 10 times the original criteria.}
+
+\item{algorithm}{Which algorithm should be used for the LMS approach? Defaults to \code{"EM"}, as
+opposed to \code{"EMA"}.}
 
 \item{data}{Dataset to be resampled.}
 
