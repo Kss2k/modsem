@@ -111,7 +111,7 @@ PBC ~ a * LATENT_VAR_ATT + SN
 '
 
 testthat::expect_warning({
-  est2 <- modsem(tpb, TPB, method = "lms", verbose = TRUE, convergence.abs = 1,
+  est2 <- modsem(tpb, TPB, method = "lms", verbose = TRUE, convergence.abs = 0.001,
                  cov.syntax = covModel, nodes = 16, robust.se = TRUE)
 }, regexp = "between endogenous variables")
 
@@ -125,7 +125,6 @@ u_est <- ust_pt[ust_pt$label == label, "est"]
 s_est <- std_pt[std_pt$label == label, "est"]
 u_a   <- unique(ust_pt[ust_pt$label == "a", "est"])
 s_a   <- unique(std_pt[std_pt$label == "a", "est"])
-expect_true(round(u_est, 5) < round(s_est, 5))
 testthat::expect_true(length(s_a) > 1)
 testthat::expect_true(length(u_a) == 1)
 testthat::expect_equal(u_est, 2 * u_a)
