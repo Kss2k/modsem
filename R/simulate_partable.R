@@ -42,143 +42,95 @@ simulatedGroupsToDf <- function(sim, type = "OV") {
 
 
 simulateDataParTableGroup <- function(parTable, N, colsOVs = NULL, colsLVs = NULL) {
+  # Output columns
+  if (is.null(colsOVs)) colsOVs <- getOVs(parTable)
+  if (is.null(colsLVs)) colsLVs <- getLVs(parTable)
+
+  # Here we simplify the model by converting all =~ to ~
+  lhs <- parTable$lhs
+  op  <- parTable$op
+  rhs <- parTable$rhs
+
+  # Thus we can treat indicators the same as endogenous variables
+  idx <- which(op == "=~")
+  parTable[idx, "lhs"] <- rhs[idx]
+  parTable[idx, "op"]  <- "~"
+  parTable[idx, "rhs"] <- lhs[idx]
+
   # endogenous variables (etas)
-  etas    <- getSortedEtas(parTable, isLV = TRUE, checkAny = TRUE)
-  numEtas <- length(etas)
-  indsEtas <- getIndsLVs(parTable, etas)
+  etas <- getSortedEtas(parTable, isLV = FALSE, checkAny = TRUE)
+  xis  <- getXis(parTable, checkAny = TRUE, isLV = FALSE)
+  vars <- union(xis, etas)
 
-  # exogenouts variables (xis) and interaction terms
-  xis    <- getXis(parTable, checkAny = TRUE)
-  numXis <- length(xis)
-  indsXis <- getIndsLVs(parTable, xis)
+  # sample disturbances
+  Psi <- matrix(
+    0, nrow = length(vars), ncol = length(vars),
+    dimnames = list(vars, vars)
+  )
 
-  # interaction terms
-  intTerms <- getIntTerms(parTable)
-  intTermRows <- getIntTermRows(parTable)
-  varsIntTerms <- getVarsInts(intTermRows, removeColonNames = FALSE)
+  psi.idx <- which(
+    parTable$lhs %in% vars & parTable$op == "~~" & parTable$rhs %in% vars
+  )
 
-  mod_stopif(any(vapply(varsIntTerms, FUN.VALUE = numeric(1L), FUN = length) > 2),
-         paste0("Cannot simulate data for interaction effects with more than two ",
-         "components, yet"))
+  for (i in psi.idx) {
+    lhs <- parTable[i, "lhs"]
+    rhs <- parTable[i, "rhs"]
+    est <- parTable[i, "est"]
+    Psi[lhs, rhs] <- Psi[rhs, lhs] <- est
+  }
 
-  # simulate data for xis
-  phi <- rmvnormParTable(parTable, type = "phi", N = N)
-  psi <- rmvnormParTable(parTable, type = "psi", N = N)
-  theta <- rmvnormParTable(parTable, type = "theta", N = N)
+  alpha <- getIntercepts(vars, parTable = parTable)
 
-  dataLVs <- phi
+  # Keep a copy of Zeta
+  Zeta <- as.matrix(mvtnorm::rmvnorm(n = N, mean = alpha, sigma = Psi))
+  colnames(Zeta) <- vars
+  Eta <- Zeta
 
-  subVarsIntTerms <- varsIntTerms
   for (eta in etas) {
-    toBuildXZ <- vapply(subVarsIntTerms, FUN.VALUE = logical(1L),
-                        FUN = function(x) all(x %in% colnames(dataLVs)))
-    XZ <- mutliplyPairs(dataLVs, XZ = subVarsIntTerms[toBuildXZ])
-    subVarsIntTerms <- subVarsIntTerms[!toBuildXZ]
-    dataLVs <- cbind(dataLVs, XZ)
+    idx <- which(parTable$lhs == eta & parTable$op == "~")
 
-    structExprsEta <- parTable[parTable$lhs == eta & parTable$op == "~", ,
-                               drop = FALSE]
-    alpha <- parTable[parTable$lhs == eta & parTable$op == "~1", "est"]
-    if (NROW(alpha) == 0) alpha <- 0
-
-    y <- rep(alpha, length = N)
-    for (i in seq_len(NROW(structExprsEta))) {
-      row <- structExprsEta[i, , drop = FALSE]
-      y <-  y + row$est * dataLVs[ , row$rhs]
+    y <- Eta[,eta, drop = TRUE]
+    for (i in idx) {
+      row <- parTable[i, , drop = FALSE]
+      gamma <- row$est
+      x <- getValuesFromRhs(rhs = row$rhs, mat = Eta)
+      y <-  y + gamma * x
     }
 
-    y <- y + psi[, eta]
-    dataLVs <- cbind(dataLVs, matrix(y, nrow = N, dimnames = list(NULL, eta)))
+    Eta[,eta] <- y
   }
 
-  dataXZs <- dataLVs[, intTerms]
-  dataLVs <- dataLVs[, c(xis, etas)]
-
-  indsLVs <- c(indsXis, indsEtas)
-  allInds <- unique(unlist(indsLVs))
-  numAllInds <- length(allInds)
-
-  dataOVs <- matrix(
-    0, nrow = N, ncol = numAllInds,
-    dimnames = list(NULL, allInds)
-  )
-
-  # insert residuals and intercepts
-  indsTheta <- intersect(allInds, colnames(theta))
-  tau <- getIntercepts(indsTheta, parTable = parTable)
-
-  dataOVs[,indsTheta] <- sweep(
-    x = theta[,indsTheta, drop = FALSE],
-    MARGIN = 2L,
-    STATS = tau,
-    FUN = "+"
-  )
-    
-  for (lV in c(xis, etas)) {
-    inds   <- indsLVs[[lV]]
-    alpha  <- getMean(lV, parTable = parTable)
-    lambda <- getLambda(lV = lV, inds = inds, parTable = parTable)
-
-    dataOVs[, inds] <- (
-      dataOVs[,inds, drop = FALSE] +
-      (alpha + dataLVs[, lV]) %*% t(lambda)
-    )
-  }
-
-  if (!is.null(colsOVs)) dataOVs <- dataOVs[ , colsOVs]
-  if (!is.null(colsLVs)) dataLVs <- dataLVs[ , colsLVs]
+  dataOVs <- Eta[,colsOVs, drop = FALSE]
+  dataLVs <- Eta[,colsLVs, drop = FALSE]
 
   list(oV = dataOVs, lV = dataLVs)
 }
 
 
-rmvnormParTable <- function(parTable, type = "phi", N) {
-  vars <- switch(type,
-                 phi = getXis(parTable, checkAny = TRUE),
-                 psi = getSortedEtas(parTable, checkAny = TRUE, isLV = TRUE),
-                 theta = getInds(parTable))
+getValuesFromRhs <- function(rhs, mat) {
+  mod_stopif(!length(rhs), "rhs is of length zero!")
 
-  vcov <- matrix(0, nrow = length(vars), ncol = length(vars),
-                dimnames = list(vars, vars))
+  if (!grepl(":", rhs))
+    return(mat[,rhs, drop = TRUE])
 
-  vcovExpres <- parTable[parTable$lhs %in% vars &
-                         parTable$op == "~~" &
-                         parTable$rhs %in% vars, ]
+  elems <- stringr::str_split_1(rhs, pattern = ":")
 
-  for (i in seq_len(nrow(vcovExpres))) {
-    lhs <- vcovExpres[i, "lhs"]
-    rhs <- vcovExpres[i, "rhs"]
-    est <- vcovExpres[i, "est"]
-    vcov[lhs, rhs] <- vcov[rhs, lhs] <- est
-  }
+  if (length(elems) == 1L) # should have been caught earlier, but just in case...
+    return(mat[,elems, drop = TRUE])
 
-  if (type == "phi") beta0 <- getIntercepts(vars, parTable = parTable)
-  else beta0 <- rep(0, length(vars))
+  mod_stopif(!length(elems),
+    "zero elements in product:", rhs
+  )
 
-  X <- as.matrix(mvtnorm::rmvnorm(n = N, mean = beta0, sigma = vcov))
-  colnames(X) <- vars
-  X
-}
+  mod_stopif(!all(elems %in% colnames(mat)),
+    "Missing values for elements in product!",
+    paste0(setdiff(elems, colnames(mat)), collapse = ", ")
+  )
 
+  xz <- rep(1, NROW(mat))
 
-mutliplyPairs <- function(X, XZ) {
-  if (!is.list(XZ)) stop("Expected xz to be a list: ", XZ)
-  prods <- matrix(0, nrow = NROW(X), ncol = length(XZ),
-                  dimnames = list(NULL, names(XZ)))
-  for (i in seq_len(length(XZ))) {
-    col <- names(XZ)[[i]]
-    xz <- XZ[[i]]
-    prods[, col] <- X[ , xz[[1]]] * X[ , xz[[2]]]
-  }
-  prods
-}
+  for (x in elems)
+    xz <- xz * mat[,x, drop = TRUE]
 
-
-getLambda <- function(lV, inds, parTable) {
-  lambda <- parTable[parTable$lhs == lV &
-                     parTable$op == "=~" &
-                     parTable$rhs %in% inds, ]
-  out <- lambda$est
-  names(out) <- lambda$rhs
-  out[inds]
+  xz
 }
