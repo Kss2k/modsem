@@ -252,8 +252,13 @@ replaceNonNaModelMatrices <- function(model, value = -999) {
     x
   }
 
-  for (g in seq_along(model$models))
+  for (g in seq_along(model$models)) {
     model$models[[g]]$matrices <- lapply(model$models[[g]]$matrices, FUN = .fillna)
+
+    if (!is.null(model$models[[g]]$covModel$matrices))
+      model$models[[g]]$covModel$matrices <- lapply(model$models[[g]]$covModel$matrices, FUN = .fillna)
+  }
+
 
   model
 }
@@ -604,7 +609,8 @@ getLevelsParTable <- function(parTable) {
 isPureEta <- function(eta, parTable) {
   predictors <- unique(parTable[parTable$op == "~", "rhs"])
   indicators <- unique(parTable[parTable$op == "=~", "rhs"])
-  !eta %in% c(predictors, indicators)
+  dependents <- unique(parTable[parTable$op == "~", "lhs"])
+  !eta %in% c(predictors, indicators) & eta %in% dependents
 }
 
 

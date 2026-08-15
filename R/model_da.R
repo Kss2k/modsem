@@ -37,6 +37,11 @@ specifyModelDA_Group <- function(syntax = NULL,
   ovs <- getOVs(parTable)
   composites <- getComposites(parTable)
 
+  # Check for higher order composites
+  mod_stopif(any(composites %in% higherOrderLVs),
+    "Higher order composites are not supported (yet)!"
+  )
+
   # endogenous variables (etas)
   etas    <- getSortedEtas(parTable, isLV = TRUE, checkAny = TRUE)
   numEtas <- length(etas)
@@ -539,8 +544,9 @@ specifyModelDA <- function(..., group.info, createTheta = TRUE) {
     model$theta <- params$theta # an ugly design decision, that was made at the very start
 
     model$params$bounds <- getParamBounds(model)
-    model$params$gradientStruct <- getGradientStruct(model, theta = params$theta,
-                                                     method = args$method)
+    model$params$gradientStruct <- getGradientStruct(
+      model, theta = params$theta, method = args$method
+    )
   }
 
   model

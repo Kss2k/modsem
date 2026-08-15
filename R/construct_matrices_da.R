@@ -287,7 +287,10 @@ constructGamma <- function(DVs, IVs, parTable, auto.fix.first = TRUE) {
 }
 
 
-constructPsi <- function(etas, parTable, orthogonal.y = FALSE) {
+constructPsi <- function(etas, parTable,
+                         orthogonal.y = FALSE,
+                         orthogonal.x = FALSE, 
+                         has.exo = FALSE) {
   if (!length(etas)) return(EMPTY_MATSTRUCT)
 
   numEtas   <- length(etas)
@@ -301,6 +304,18 @@ constructPsi <- function(etas, parTable, orthogonal.y = FALSE) {
       eta_j <- etas[[j]]
 
       if (isPureEta(eta_i, parTable) && isPureEta(eta_j, parTable))
+        psi[i, j] <- NA
+    }
+  }
+
+  if (has.exo && !orthogonal.x) {
+    xis <- getXis(parTable, isLV = FALSE, checkAny = FALSE)
+
+    for (i in seq_len(NROW(psi))) for (j in seq_len(i - 1)) {
+      eta_i <- etas[[i]]
+      eta_j <- etas[[j]]
+
+      if (eta_i %in% xis && eta_j %in% xis)
         psi[i, j] <- NA
     }
   }

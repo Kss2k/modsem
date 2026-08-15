@@ -33,65 +33,50 @@ covModel <- function(syntax = NULL,
     numXis   <- length(xis)
     isSimple <- TRUE
 
-    parTable <- parTable.main[(parTable.main$lhs %in% xis.main &
-                              parTable.main$rhs %in% xis.main &
-                              parTable.main$op == "~~") |
-                              parTable.main$op %in% c(":=", "=="), , drop = FALSE]
+    parTable <- parTable.main[
+      (parTable.main$lhs %in% xis.main &
+       parTable.main$rhs %in% xis.main &
+       parTable.main$op == "~~") |
+       parTable.main$op %in% c(":=", "=="), , drop = FALSE
+    ]
   }
 
-  # Gamma
-  listGammaXi <- constructGamma(etas, xis, parTable = parTable)
-  gammaXi <- listGammaXi$numeric
-  labelGammaXi <- listGammaXi$label
-
-  listGammaEta <- constructGamma(etas, etas, parTable = parTable)
-  gammaEta <- listGammaEta$numeric
-  labelGammaEta <- listGammaEta$label
+  # Gamma, i.e., [[gammaEta, gammaXi], [0, 0]] over c(etas, xis).
+  # The xi rows are all zero, as xis are exogenous by construction
+  listGamma <- constructGamma(c(etas, xis), c(etas, xis), parTable = parTable)
+  gamma <- listGamma$numeric
+  labelGamma <- listGamma$label
 
   # covariance matrices
   # We need the full partable to look for all relevant covariances
   listPsi <- constructPsi(
-    etas,
+    c(etas, xis),
     parTable = parTable.full,
-    orthogonal.y = orthogonal.y
+    orthogonal.y = orthogonal.y,
+    orthogonal.x = orthogonal.x,
+    has.exo = TRUE
   )
 
   psi <- listPsi$numeric
   labelPsi <- listPsi$label
 
-  # We need the full partable to look for all relevant covariances
-  listPhi <- constructPhi(
-    xis,
-    method = "qml", # no need to treat methods differently here...
-    parTable = parTable.full,
-    orthogonal.x = orthogonal.x
+  matrices <- list(gamma = gamma, psi = psi)
+
+  labelMatrices <- list(gamma = labelGamma, psi = labelPsi)
+
+  model <- list(
+    info = list(
+      etas = etas,
+      numEtas = numEtas,
+      xis = xis,
+      numXis = numXis,
+      is.simple = isSimple
+    ),
+    matrices = matrices,
+    labelMatrices = labelMatrices,
+    syntax = syntax,
+    parTable = parTable
   )
-
-  phi <- listPhi$numeric
-  labelPhi <- listPhi$label
-
-  matrices <- list(
-    gammaXi = gammaXi,
-    gammaEta = gammaEta,
-    psi = psi,
-    phi = phi)
-
-  labelMatrices <- list(
-    gammaXi = labelGammaXi,
-    gammaEta = labelGammaEta,
-    psi = labelPsi,
-    phi = labelPhi)
-
-  model <- list(info =
-                list(etas = etas,
-                     numEtas = numEtas,
-                     xis = xis,
-                     numXis = numXis,
-                     is.simple = isSimple),
-                matrices = matrices,
-                labelMatrices = labelMatrices,
-                syntax = syntax,
-                parTable = parTable)
 
   model
 }
@@ -104,21 +89,13 @@ countFreeCovModel <- function(matrices) {
 
 
 expectedCovModel <- function(model, method = "lms", sortedXis) {
-  gammaXi <- model$matrices$gammaXi
-  gammaEta <- model$matrices$gammaEta
-
-  phi <- model$matrices$phi
+  gamma <- model$matrices$gamma
   psi <- model$matrices$psi
 
-  if (!model$info$is.simple) {
-    Binv <- solve(diag(nrow(gammaEta)) - gammaEta)
-    covEtaEta <- Binv %*% (gammaXi %*% phi %*% t(gammaXi) + psi) %*% t(Binv)
-    covEtaXi <- Binv %*% gammaXi %*% phi
-    sigma <- rbind(cbind(covEtaEta, covEtaXi),
-                   cbind(t(covEtaXi), phi))
+  # `gamma` is all-zero when `is.simple`, in which case this is just the identity
+  Binv <- solve(diag(nrow(gamma)) - gamma)
 
-  } else sigma <- phi
-
+  sigma <- Binv %*% psi %*% t(Binv)
   sigma <- sigma[sortedXis, sortedXis]
 
   if (method == "lms") {
@@ -147,35 +124,19 @@ covModelToParTable <- function(model, method = "lms") {
 
   if (!model$covModel$info$is.simple) {
     # coefficients Structural Model
-    newRows <- matrixToParTable(matricesNA$gammaXi,
-                                matricesEst$gammaXi,
-                                matricesSE$gammaXi,
-                                matricesLabel$gammaXi,
+    newRows <- matrixToParTable(matricesNA$gamma,
+                                matricesEst$gamma,
+                                matricesSE$gamma,
+                                matricesLabel$gamma,
                                 op = "~",
                                 rowsLhs = TRUE)
-    parTable <- rbind(parTable, newRows)
-
-    newRows <- matrixToParTable(matricesNA$gammaEta,
-                                matricesEst$gammaEta,
-                                matricesSE$gammaEta,
-                                matricesLabel$gammaEta,
-                                op = "~",
-                                rowsLhs = TRUE)
-    parTable <- rbind(parTable, newRows)
-
-    newRows <- matrixToParTable(matricesNA$psi,
-                                matricesEst$psi,
-                                matricesSE$psi,
-                                matricesLabel$psi,
-                                op = "~~",
-                                rowsLhs = FALSE)
     parTable <- rbind(parTable, newRows)
   }
 
-  newRows <- matrixToParTable(matricesNA$phi,
-                              matricesEst$phi,
-                              matricesSE$phi,
-                              matricesLabel$phi,
+  newRows <- matrixToParTable(matricesNA$psi,
+                              matricesEst$psi,
+                              matricesSE$psi,
+                              matricesLabel$psi,
                               op = "~~",
                               rowsLhs = FALSE,
                               symmetric = TRUE)
