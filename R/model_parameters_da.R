@@ -533,6 +533,7 @@ evalCovModelA <- function(theta, submodel, params, g, method = "lms") {
       calcThetaLabel(theta[params$SELECT_THETA_LAB[[1L]]], params$constrExprs)
     )
   }
+
   thetaCov <- if (length(params$SELECT_THETA_COV[[g]]))
     theta[params$SELECT_THETA_COV[[g]]] else NULL
 
@@ -606,6 +607,7 @@ refreshCovModelJacobian <- function(theta, model, Jacobian, Jacobian2 = NULL,
       Ap <- evalCovModelA(tp, submodel, model$params, g, method = method)
       Am <- evalCovModelA(tm, submodel, model$params, g, method = method)
       Jacobian[k_nm, acols] <- (Ap - Am)[cbind(ri, ci)] / (2 * eps)
+
       if (!is.null(Jacobian2))
         Jacobian2[k_nm, acols] <- (Ap - 2*A0 + Am)[cbind(ri, ci)] / eps^2
     }
