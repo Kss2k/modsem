@@ -201,3 +201,163 @@ pmlThresholdList <- function(M) {
     as.numeric(row[is.finite(row)])
   })
 }
+
+
+# Where each free parameter sits in the model matrices.
+#
+# Built once per fit. The gradient needs this so it can perturb a single matrix
+# entry directly, rather than going back through `fillModel()` -- which rebuilds
+# every matrix and does eighteen regex sweeps over the parameter names, and cost
+# more than the whole objective did.
+#
+# `thresholdDelta` is deliberately excluded: thresholds do not enter muSigma at
+# all, so their gradient is analytic all the way down and never needs the
+# Jacobian below.
+pmlParamLocations <- function(model) {
+  submodel <- model$models[[1L]]
+  names <- setdiff(NAMES_PAR_MATRICES, "thresholdDelta")
+  out <- list()
+
+  for (name in intersect(names, names(submodel$matrices))) {
+    X <- submodel$matrices[[name]]
+    if (!length(X)) next
+    free <- is.na(X) & !is.nan(X)
+    if (!any(free)) next
+
+    labels <- getParamNamesMatrix(X, name)[free]
+    index <- which(free)
+    out[[name]] <- list(
+      matrix = name, label = labels, index = index,
+      row = ((index - 1L) %% NROW(X)) + 1L,
+      col = ((index - 1L) %/% NROW(X)) + 1L,
+      symmetric = name %in% c("thetaDelta", "thetaEpsilon", "psi", "phi", "T")
+    )
+  }
+  out
+}
+
+
+# Rows of `thresholdDelta` that carry free parameters, with the labels they map
+# onto. Ragged rows hold NaN in their unused trailing entries.
+pmlThresholdLocations <- function(model) {
+  delta <- model$models[[1L]]$matrices$thresholdDelta
+  if (is.null(delta) || !length(delta)) return(NULL)
+  labels <- matrix(getParamNamesMatrix(delta, "thresholdDelta"),
+                   NROW(delta), NCOL(delta))
+  free <- is.na(delta) & !is.nan(delta)
+  list(labels = labels, free = free)
+}
+
+
+# The pairwise composite log-likelihood and its gradient.
+#
+# The gradient is analytic in everything the pair probabilities see directly --
+# the implied moments and the thresholds -- and finite-difference only in the
+# map from theta to those moments. That split matters: the finite differences
+# never touch a bivariate normal CDF, so the expensive, ill-conditioned part of
+# the derivative is exact and only the cheap, smooth part is approximated.
+#
+# See src/pml.cpp for the corner derivatives, including Plackett's identity for
+# d/drho, which R/pls_polycor.R uses for the same purpose.
+pmlObjectiveGradient <- function(model, theta, plan, sign = -1) {
+  filled <- fillModel(model = model, theta = theta, method = "lms")
+  sub <- filled$models[[1L]]
+  thresholds <- pmlThresholdList(sub$matrices)[plan$rows]
+
+  parts <- pmlMomentGradientCpp(
+    sub, nodes = plan$rule$n, weights = plan$rule$w,
+    thresholdList = thresholds, rows = plan$rows0, pairs = plan$pairs0,
+    countList = plan$tables$tables,
+    hoisted = plan$hoisted0, integrated = plan$integrated0)
+
+  gradient <- numeric(length(theta))
+  names(gradient) <- names(theta)
+
+  # d/dtheta of the moments, one parameter at a time. `unconditional` is the
+  # k = 0 moment set the hoisted pairs read; it moves with theta too.
+  needNodes <- length(plan$integrated0) > 0L
+  needMarginal <- length(plan$hoisted0) > 0L
+  base <- pmlMoments(sub, plan, needNodes, needMarginal)
+
+  # CENTRAL differences: the one-sided error would be O(step) and land at ~5e-6
+  # relative, which is enough to stop nlminb tightening the last digits. The
+  # extra cost is one more muSigma per parameter -- ~25% of the gradient, and
+  # nothing at all in CDF evaluations.
+  nudge <- function(M, loc, i, step) {
+    M[[loc$matrix]][loc$row[[i]], loc$col[[i]]] <-
+      M[[loc$matrix]][loc$row[[i]], loc$col[[i]]] + step
+    if (loc$symmetric)
+      M[[loc$matrix]][loc$col[[i]], loc$row[[i]]] <-
+        M[[loc$matrix]][loc$row[[i]], loc$col[[i]]]
+    pmlMoments(list(matrices = M, info = sub$info, quad = sub$quad),
+               plan, needNodes, needMarginal)
+  }
+
+  for (loc in plan$locations) {
+    for (i in seq_along(loc$index)) {
+      label <- loc$label[[i]]
+      if (!label %in% names(gradient)) next
+      step <- 1e-6 * max(1, abs(theta[[label]]))
+      gradient[[label]] <- pmlContract(
+        parts, nudge(sub$matrices, loc, i, -step),
+        nudge(sub$matrices, loc, i, step), 2 * step)
+    }
+  }
+
+  # Thresholds: tau_1 = delta_1 and tau_c = tau_{c-1} + softplus(delta_c), so
+  # delta_c moves every threshold at or after it, scaled by the softplus slope.
+  if (!is.null(plan$thresholds)) {
+    delta <- sub$matrices$thresholdDelta
+    for (i in seq_along(plan$rows)) {
+      r <- plan$rows[[i]]
+      dtau <- parts$dtau[[i]]
+      if (!length(dtau)) next
+      tail <- rev(cumsum(rev(dtau)))
+      for (c in seq_along(dtau)) {
+        label <- plan$thresholds$labels[r, c]
+        if (!plan$thresholds$free[r, c] || !label %in% names(gradient)) next
+        slope <- if (c == 1L) 1 else stats::plogis(delta[r, c])
+        gradient[[label]] <- tail[[c]] * slope
+      }
+    }
+  }
+
+  list(objective = sign * parts$objective, gradient = sign * gradient)
+}
+
+
+# Implied moments in the ordered-indicator index space, for both the node set
+# and the unconditional set.
+pmlMoments <- function(sub, plan, nodes = TRUE, marginal = TRUE) {
+  list(
+    nodes = if (nodes)
+      pmlMomentsCpp(sub, plan$rule$n, plan$rows0, unconditional = FALSE),
+    marginal = if (marginal)
+      pmlMomentsCpp(sub, plan$rule$n, plan$rows0, unconditional = TRUE))
+}
+
+
+# Contract dpl/d(moments) with d(moments)/dtheta.
+#
+# Covariance gradients come back upper triangular -- entry (j,k) is the
+# derivative with respect to the single parameter S_jk, not split between the
+# two symmetric positions -- so the sum runs over j <= k only.
+pmlContract <- function(parts, base, moved, step) {
+  total <- 0
+  upper <- function(G, D) sum(G[upper.tri(G, diag = TRUE)] *
+                                D[upper.tri(D, diag = TRUE)])
+
+  if (!is.null(base$marginal)) {
+    total <- total +
+      sum(parts$dmuHoisted * (moved$marginal$mean - base$marginal$mean)) +
+      upper(parts$dcovHoisted, moved$marginal$cov - base$marginal$cov)
+  }
+  if (!is.null(base$nodes)) {
+    total <- total + sum(parts$dmuNodes * (moved$nodes$mean - base$nodes$mean))
+    for (q in seq_along(base$nodes$cov))
+      total <- total +
+        upper(parts$dcovNodes[[q]], moved$nodes$cov[[q]] - base$nodes$cov[[q]])
+  }
+
+  total / step
+}

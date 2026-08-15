@@ -291,3 +291,257 @@ Rcpp::List pmlProbabilitiesCpp(const Rcpp::List& modFilled,
     hoisted, integrated);
   return Rcpp::wrap(probability);
 }
+
+
+// ---------------------------------------------------------------------------
+// Derivatives.
+//
+// nlminb was running ~57 objective evaluations per iteration for 39 parameters:
+// one for the step and the rest rebuilding the gradient by finite differences,
+// each one a full pass over every pair, cell and node. An analytic gradient
+// collapses that to a single pass.
+//
+// The three partial derivatives of the bivariate normal CDF are closed form:
+//
+//   dPhi2/da   = phi(a) * Phi((b - rho*a) / sqrt(1 - rho^2))
+//   dPhi2/db   = phi(b) * Phi((a - rho*b) / sqrt(1 - rho^2))
+//   dPhi2/drho = phi2(a, b; rho)                      <- Plackett's identity
+//
+// The last one is why this is cheap: the derivative of a CDF that costs a
+// 6-20 point quadrature is a single exponential. R/pls_polycor.R uses the same
+// identity for the polychoric gradient (`dbinorm`), over the same corner grid.
+//
+// Here the chain runs one step further, because PML's parameters are not the
+// correlation but the model's implied moments:
+//
+//   a_c = (tau_c - mu_j) / s_j,   rho = S_jk / (s_j * s_k)
+//
+// so d/dmu, d/dS and d/dtau all follow from the corner derivatives above.
+// What this function does NOT do is differentiate the moments with respect to
+// theta -- that is the LMS Jacobian, and R gets it by perturbing muSigma
+// directly, which costs no CDF evaluations at all.
+
+static inline double normalPdf(double z) {
+  return R::dnorm(z, 0.0, 1.0, 0);
+}
+
+
+// dPhi2 at one corner, with the infinite arguments every rectangle's border
+// carries. At a = +Inf the CDF is Phi(b), so it still moves with b -- writing
+// the general formula would give 0 * Inf there.
+static void cornerDerivatives(double a, double b, double rho,
+                              double& da, double& db, double& drho) {
+  da = db = drho = 0.0;
+  if (a == R_NegInf || b == R_NegInf) return;              // Phi2 == 0
+  if (a == R_PosInf && b == R_PosInf) return;              // Phi2 == 1
+  if (a == R_PosInf) { db = normalPdf(b); return; }        // Phi2 == Phi(b)
+  if (b == R_PosInf) { da = normalPdf(a); return; }        // Phi2 == Phi(a)
+
+  const double om = 1.0 - rho * rho;
+  const double root = std::sqrt(om);
+  da   = normalPdf(a) * normalCdf((b - rho * a) / root);
+  db   = normalPdf(b) * normalCdf((a - rho * b) / root);
+  drho = std::exp(-(a * a - 2.0 * rho * a * b + b * b) / (2.0 * om)) /
+         (kTwoPi * root);
+}
+
+
+// Accumulate one pair's contribution to dpl/dmu, dpl/dS and dpl/dtau.
+//
+// `weightedCounts` is n_cd / pi_cd times the node weight -- the only place the
+// observed data enters. The corner adjoint is the transpose of the second
+// difference that built the cell in the first place, so corner (i,j) picks up
+// the four cells it borders with alternating signs.
+static void accumulatePairGradient(const arma::vec& mu, const arma::mat& sigma,
+                                   const std::vector<arma::vec>& thresholds,
+                                   const arma::uvec& rows,
+                                   arma::uword j, arma::uword k,
+                                   const arma::mat& weightedCounts,
+                                   arma::vec& dmu, arma::mat& dsigma,
+                                   std::vector<arma::vec>& dtau) {
+  const arma::uword rj = rows[j], rk = rows[k];
+  const double Sjj = sigma(rj, rj), Skk = sigma(rk, rk);
+  const double sj = std::sqrt(Sjj), sk = std::sqrt(Skk);
+  const double rho = sigma(rj, rk) / (sj * sk);
+
+  const arma::vec& tj = thresholds[j];
+  const arma::vec& tk = thresholds[k];
+  const arma::uword nj = tj.n_elem, nk = tk.n_elem;
+
+  std::vector<double> a(nj + 2), b(nk + 2);
+  a[0] = R_NegInf; a[nj + 1] = R_PosInf;
+  b[0] = R_NegInf; b[nk + 1] = R_PosInf;
+  for (arma::uword c = 0; c < nj; ++c) a[c + 1] = (tj[c] - mu[rj]) / sj;
+  for (arma::uword d = 0; d < nk; ++d) b[d + 1] = (tk[d] - mu[rk]) / sk;
+
+  const arma::uword nr = weightedCounts.n_rows, nc = weightedCounts.n_cols;
+  auto W = [&](arma::sword r, arma::sword s) -> double {
+    if (r < 0 || s < 0 || (arma::uword) r >= nr || (arma::uword) s >= nc)
+      return 0.0;
+    return weightedCounts(r, s);
+  };
+
+  // dpl/da_c and dpl/db_d, summed over the other index; dpl/drho over both.
+  std::vector<double> dA(nj + 2, 0.0), dB(nk + 2, 0.0);
+  double dRho = 0.0;
+
+  for (arma::uword i = 0; i <= nj + 1; ++i) {
+    for (arma::uword l = 0; l <= nk + 1; ++l) {
+      const double adjoint = W((arma::sword) i - 1, (arma::sword) l - 1) -
+                             W((arma::sword) i,     (arma::sword) l - 1) -
+                             W((arma::sword) i - 1, (arma::sword) l)     +
+                             W((arma::sword) i,     (arma::sword) l);
+      if (adjoint == 0.0) continue;
+
+      double da, db, drho;
+      cornerDerivatives(a[i], b[l], rho, da, db, drho);
+      dA[i] += adjoint * da;
+      dB[l] += adjoint * db;
+      dRho  += adjoint * drho;
+    }
+  }
+
+  // a_c = (tau_c - mu_j) / s_j  =>  d/dmu = -1/s_j, d/dS_jj = -a_c / (2 S_jj),
+  // and d/dtau_c = 1 / s_j. Same for b, k. rho = S_jk / (s_j s_k).
+  double sumA = 0.0, sumAa = 0.0, sumB = 0.0, sumBb = 0.0;
+  for (arma::uword c = 0; c < nj; ++c) {
+    sumA  += dA[c + 1];
+    sumAa += dA[c + 1] * a[c + 1];
+    dtau[j][c] += dA[c + 1] / sj;
+  }
+  for (arma::uword d = 0; d < nk; ++d) {
+    sumB  += dB[d + 1];
+    sumBb += dB[d + 1] * b[d + 1];
+    dtau[k][d] += dB[d + 1] / sk;
+  }
+
+  dmu[j] -= sumA / sj;
+  dmu[k] -= sumB / sk;
+  dsigma(j, j) -= sumAa / (2.0 * Sjj) + dRho * rho / (2.0 * Sjj);
+  dsigma(k, k) -= sumBb / (2.0 * Skk) + dRho * rho / (2.0 * Skk);
+  dsigma(j, k) += dRho / (sj * sk);
+}
+
+
+// dpl/d(mu, Sigma) at every node, and dpl/dtau.
+//
+// Two passes over the pairs: the first builds pi_cd (the same work the
+// objective does), the second turns n_cd / pi_cd into moment derivatives. The
+// hoisted pairs get their own block, because they read the unconditional
+// moments rather than any node's.
+//
+// Gradients w.r.t. Sigma are returned UPPER TRIANGULAR: entry (j,k) with j < k
+// is the derivative w.r.t. the single parameter S_jk, not split across the two
+// symmetric positions. Contract as sum over j <= k.
+// [[Rcpp::export]]
+Rcpp::List pmlMomentGradientCpp(const Rcpp::List& modFilled,
+                                const arma::mat& nodes,
+                                const arma::vec& weights,
+                                const Rcpp::List& thresholdList,
+                                const arma::uvec& rows,
+                                const arma::umat& pairs,
+                                const Rcpp::List& countList,
+                                const arma::uvec& hoisted,
+                                const arma::uvec& integrated) {
+  const std::vector<arma::vec> thresholds = asThresholds(thresholdList);
+  const std::vector<arma::mat> probability = pmlProbabilities(
+    modFilled, nodes, weights, thresholds, rows, pairs, hoisted, integrated);
+
+  const arma::uword nOrd = rows.n_elem;
+  const arma::uword nQ = nodes.n_rows;
+
+  // n_cd / pi_cd, formed once: every derivative below is a linear functional of
+  // it, and it is also what the objective's log() consumed.
+  std::vector<arma::mat> ratio(pairs.n_rows);
+  double objective = 0.0;
+  for (arma::uword p = 0; p < pairs.n_rows; ++p) {
+    const arma::mat n = Rcpp::as<arma::mat>(countList[p]);
+    ratio[p] = arma::zeros<arma::mat>(n.n_rows, n.n_cols);
+    for (arma::uword c = 0; c < n.n_rows; ++c)
+      for (arma::uword d = 0; d < n.n_cols; ++d)
+        if (n(c, d) > 0) {
+          const double pi = std::max(probability[p](c, d), 1e-12);
+          ratio[p](c, d) = n(c, d) / pi;
+          objective += n(c, d) * std::log(pi);
+        }
+  }
+
+  std::vector<arma::vec> dtau(nOrd);
+  for (arma::uword i = 0; i < nOrd; ++i)
+    dtau[i] = arma::zeros<arma::vec>(thresholds[i].n_elem);
+
+  LMSModel model(modFilled);
+
+  arma::vec dmuHoisted = arma::zeros<arma::vec>(nOrd);
+  arma::mat dcovHoisted = arma::zeros<arma::mat>(nOrd, nOrd);
+  if (hoisted.n_elem) {
+    LMSModel marginal = model;
+    marginal.k = 0;
+    marginal.updateCache();
+    const std::pair<arma::vec, arma::mat> ms = marginal.muSigma(arma::vec());
+    for (arma::uword i = 0; i < hoisted.n_elem; ++i) {
+      const arma::uword p = hoisted[i];
+      accumulatePairGradient(ms.first, ms.second, thresholds, rows,
+                             pairs(p, 0), pairs(p, 1), ratio[p],
+                             dmuHoisted, dcovHoisted, dtau);
+    }
+  }
+
+  arma::mat dmuNodes = arma::zeros<arma::mat>(nOrd, nQ);
+  Rcpp::List dcovNodes(nQ);
+  for (arma::uword q = 0; q < nQ; ++q) {
+    arma::mat dcov = arma::zeros<arma::mat>(nOrd, nOrd);
+    if (integrated.n_elem) {
+      const std::pair<arma::vec, arma::mat> ms = model.muSigma(nodes.row(q).t());
+      arma::vec dmu = arma::zeros<arma::vec>(nOrd);
+      for (arma::uword i = 0; i < integrated.n_elem; ++i) {
+        const arma::uword p = integrated[i];
+        // The node weight rides on the ratio: pi is a weighted sum over nodes,
+        // so each node's share of dpi/d(moments) carries its own w_q.
+        accumulatePairGradient(ms.first, ms.second, thresholds, rows,
+                               pairs(p, 0), pairs(p, 1), ratio[p] * weights[q],
+                               dmu, dcov, dtau);
+      }
+      dmuNodes.col(q) = dmu;
+    }
+    dcovNodes[q] = dcov;
+  }
+
+  return Rcpp::List::create(
+    Rcpp::Named("objective")   = objective,
+    Rcpp::Named("dmuHoisted")  = dmuHoisted,
+    Rcpp::Named("dcovHoisted") = dcovHoisted,
+    Rcpp::Named("dmuNodes")    = dmuNodes,
+    Rcpp::Named("dcovNodes")   = dcovNodes,
+    Rcpp::Named("dtau")        = Rcpp::wrap(dtau));
+}
+
+
+// Implied moments at each node, plus the unconditional set the hoisted pairs
+// read. This is the ONLY thing the Jacobian loop needs: perturbing a parameter
+// and recomputing these costs no CDF evaluations.
+// [[Rcpp::export]]
+Rcpp::List pmlMomentsCpp(const Rcpp::List& modFilled, const arma::mat& nodes,
+                         const arma::uvec& rows, bool unconditional) {
+  LMSModel model(modFilled);
+
+  if (unconditional) {
+    model.k = 0;
+    model.updateCache();
+    const std::pair<arma::vec, arma::mat> ms = model.muSigma(arma::vec());
+    return Rcpp::List::create(
+      Rcpp::Named("mean") = arma::vec(ms.first.elem(rows)),
+      Rcpp::Named("cov")  = arma::mat(ms.second.submat(rows, rows)));
+  }
+
+  arma::mat means(rows.n_elem, nodes.n_rows);
+  Rcpp::List covs(nodes.n_rows);
+  for (arma::uword q = 0; q < nodes.n_rows; ++q) {
+    const std::pair<arma::vec, arma::mat> ms = model.muSigma(nodes.row(q).t());
+    means.col(q) = ms.first.elem(rows);
+    covs[q] = arma::mat(ms.second.submat(rows, rows));
+  }
+
+  return Rcpp::List::create(Rcpp::Named("mean") = means,
+                            Rcpp::Named("cov")  = covs);
+}

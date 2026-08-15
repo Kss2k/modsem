@@ -51,31 +51,42 @@ estPml <- function(model,
   partition <- pmlPartition(submodel$matrices, submodel$info$numXis,
                             submodel$info$numEtas, tables$pairs, rows)
 
-  # The kernel takes 0-based indices; everything above is 1-based.
-  pairs0 <- tables$pairs - 1L
-  rows0 <- rows - 1L
-  hoisted0 <- partition$hoisted - 1L
-  integrated0 <- partition$integrated - 1L
+  # Everything the objective and gradient need, resolved once. The kernel takes
+  # 0-based indices; everything above is 1-based.
+  plan <- list(
+    rule = rule, tables = tables, rows = rows,
+    rows0 = rows - 1L, pairs0 = tables$pairs - 1L,
+    hoisted0 = partition$hoisted - 1L,
+    integrated0 = partition$integrated - 1L,
+    locations = pmlParamLocations(model),
+    thresholds = pmlThresholdLocations(model))
 
-  objective <- function(theta) {
-    filled <- tryCatch(fillModel(model = model, theta = theta, method = "lms"),
-                       error = function(e) NULL)
-    if (is.null(filled)) return(.Machine$double.xmax^(1 / 4))
-    sub <- filled$models[[1L]]
-    value <- tryCatch(
-      -pmlObjectiveCpp(sub, nodes = rule$n, weights = rule$w,
-                       thresholdList = pmlThresholdList(sub$matrices)[rows],
-                       rows = rows0, pairs = pairs0,
-                       countList = tables$tables,
-                       hoisted = hoisted0, integrated = integrated0),
-      error = function(e) NA_real_)
-    if (!is.finite(value)) .Machine$double.xmax^(1 / 4) else value
+  # nlminb reconstructs a gradient from ~p+1 objective evaluations when it is
+  # not given one, and each of those is a full pass over every pair, cell and
+  # node. Supplying the analytic gradient collapses that to a single pass, so
+  # both are computed together and cached on theta.
+  cache <- new.env(parent = emptyenv())
+  cache$theta <- NULL
+
+  evaluate <- function(theta) {
+    if (!is.null(cache$theta) && identical(cache$theta, theta)) return(cache$value)
+    value <- tryCatch(pmlObjectiveGradient(model, theta, plan, sign = -1),
+                      error = function(e) NULL)
+    if (is.null(value) || !is.finite(value$objective) ||
+        anyNA(value$gradient) || any(!is.finite(value$gradient)))
+      value <- list(objective = .Machine$double.xmax^(1 / 4),
+                    gradient = rep(0, length(theta)))
+    cache$theta <- theta
+    cache$value <- value
+    value
   }
 
   bounds <- model$params$bounds
   start <- model$theta
   fit <- suppressWarnings(stats::nlminb(
-    start = start, objective = objective,
+    start = start,
+    objective = function(theta) evaluate(theta)$objective,
+    gradient = function(theta) evaluate(theta)$gradient,
     lower = bounds$lower, upper = bounds$upper,
     control = list(iter.max = max.iter, eval.max = 2L * max.iter,
                    trace = if (isTRUE(verbose)) 1L else 0L)

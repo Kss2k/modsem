@@ -129,6 +129,14 @@ pmlProbabilitiesCpp <- function(modFilled, nodes, weights, thresholdList, rows, 
     .Call(`_modsem_pmlProbabilitiesCpp`, modFilled, nodes, weights, thresholdList, rows, pairs, hoisted, integrated)
 }
 
+pmlMomentGradientCpp <- function(modFilled, nodes, weights, thresholdList, rows, pairs, countList, hoisted, integrated) {
+    .Call(`_modsem_pmlMomentGradientCpp`, modFilled, nodes, weights, thresholdList, rows, pairs, countList, hoisted, integrated)
+}
+
+pmlMomentsCpp <- function(modFilled, nodes, rows, unconditional) {
+    .Call(`_modsem_pmlMomentsCpp`, modFilled, nodes, rows, unconditional)
+}
+
 modelMatrixCacheCpp <- function(matrices) {
     .Call(`_modsem_modelMatrixCacheCpp`, matrices)
 }
