@@ -117,12 +117,16 @@ dmvnfast <- function(X, mu, sigma, log, ncores, isChol) {
     .Call(`_modsem_dmvnfast`, X, mu, sigma, log, ncores, isChol)
 }
 
-pmlMomentsCpp <- function(modFilled, nodes) {
-    .Call(`_modsem_pmlMomentsCpp`, modFilled, nodes)
+pmlBivariateCpp <- function(a, b, rho) {
+    .Call(`_modsem_pmlBivariateCpp`, a, b, rho)
 }
 
-pmlUnconditionalMomentsCpp <- function(modFilled) {
-    .Call(`_modsem_pmlUnconditionalMomentsCpp`, modFilled)
+pmlObjectiveCpp <- function(modFilled, nodes, weights, thresholdList, rows, pairs, countList, hoisted, integrated) {
+    .Call(`_modsem_pmlObjectiveCpp`, modFilled, nodes, weights, thresholdList, rows, pairs, countList, hoisted, integrated)
+}
+
+pmlProbabilitiesCpp <- function(modFilled, nodes, weights, thresholdList, rows, pairs, hoisted, integrated) {
+    .Call(`_modsem_pmlProbabilitiesCpp`, modFilled, nodes, weights, thresholdList, rows, pairs, hoisted, integrated)
 }
 
 modelMatrixCacheCpp <- function(matrices) {

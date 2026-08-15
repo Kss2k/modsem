@@ -27,9 +27,15 @@
 # bivariate logistic consistent with a linear factor structure. Residual
 # variances are therefore fixed at 1, not pi^2/3.
 #
-# WHAT IS VALIDATED. Only k = 0 (no interaction), against lavaan's
-# `estimator = "PML"`. The conditioning path below is written for the general
-# case but is NOT yet verified; see test_pml.R.
+# WHAT IS VALIDATED. k = 0 against lavaan's `estimator = "PML"`, exactly; and
+# k > 0 against the generating process itself, by Monte Carlo, since no other
+# implementation of an interaction PML exists to compare with. See test_pml.R.
+#
+# WHERE THE WORK HAPPENS. src/pml.cpp: the implied moments, the bivariate normal
+# CDF, the rectangles and the composite log-likelihood are all there. What stays
+# in R is the setup that runs once per fit -- the quadrature rule, the
+# contingency tables, the probit threshold parameterisation, and the decision
+# about which pairs need the node loop at all.
 
 
 # Quadrature over the conditioning latents. k = 0 is the linear model: a single
@@ -41,59 +47,6 @@ pmlQuadRule <- function(k, m = 30L) {
   nodes <- as.matrix(expand.grid(rep(list(one$n), k)))
   dimnames(nodes) <- NULL
   list(n = nodes, w = as.numeric(Reduce(kronecker, rep(list(one$w), k))))
-}
-
-
-# Underlying-variable moments, restricted to the ordered indicators.
-#
-# The moments themselves come from `LMSModel::muSigma()` in src/pml.cpp -- the
-# same kernel the full-information likelihood uses -- so there is no second
-# definition of the model's conditional distribution to drift out of step.
-# `rows` maps the ordered indicators onto rows of lambdaX, which puts everything
-# downstream (pairs, thresholds, the clean/integrated split) in one index space.
-pmlSelectMoments <- function(moments, rows) {
-  cov <- moments$cov[rows, rows, drop = FALSE]
-  list(mean = moments$mean[rows], cov = cov, sd = sqrt(diag(cov)))
-}
-
-
-# Bivariate normal CDF tolerant of infinite arguments, which the outer rows and
-# columns of every rectangle need.
-pmlBivariate <- function(a, b, rho) {
-  # `pbivnorm` is a stopgap: it is an R-level call at ~240ns, and the intended
-  # implementation is a Drezner-Wesolowsky routine in C++ where rho is constant
-  # across a pair's corners and the setup amortises. Suggested, not imported,
-  # until that lands.
-  mod_stopif(!requireNamespace("pbivnorm", quietly = TRUE),
-             "PML requires the `pbivnorm` package.")
-  out <- numeric(length(a))
-  lowA <- is.infinite(a) & a < 0
-  lowB <- is.infinite(b) & b < 0
-  highA <- is.infinite(a) & a > 0
-  highB <- is.infinite(b) & b > 0
-  out[highA & highB] <- 1
-  use <- highA & !highB & !lowB
-  out[use] <- stats::pnorm(b[use])
-  use <- highB & !highA & !lowA
-  out[use] <- stats::pnorm(a[use])
-  finite <- !lowA & !lowB & !highA & !highB
-  if (any(finite))
-    out[finite] <- pbivnorm::pbivnorm(a[finite], b[finite], rho = rho)
-  out[lowA | lowB] <- 0
-  out
-}
-
-
-# Cell probabilities for one pair, at one node. Every cell reads from the same
-# grid of corners, so the corners are computed once and differenced.
-pmlPairProbabilities <- function(implied, thresholds, j, k) {
-  a <- c(-Inf, (thresholds[[j]] - implied$mean[j]) / implied$sd[j], Inf)
-  b <- c(-Inf, (thresholds[[k]] - implied$mean[k]) / implied$sd[k], Inf)
-  rho <- implied$cov[j, k] / (implied$sd[j] * implied$sd[k])
-  grid <- expand.grid(a = a, b = b)
-  corner <- matrix(pmlBivariate(grid$a, grid$b, rho), length(a), length(b))
-  corner[-1L, -1L] - corner[-nrow(corner), -1L] -
-    corner[-1L, -ncol(corner)] + corner[-nrow(corner), -ncol(corner)]
 }
 
 
@@ -167,49 +120,6 @@ pmlPartition <- function(M, numXis, numEtas, pairs, rows) {
   hoisted <- which(clean[pairs[, 1L]] & clean[pairs[, 2L]])
   list(hoisted = hoisted,
        integrated = setdiff(seq_len(NROW(pairs)), hoisted))
-}
-
-
-# The pairwise composite log-likelihood.
-#
-# Conditional on a node the model is linear-Gaussian, so EVERY pair is a
-# bivariate-normal rectangle there. But a pair whose indicators are untouched by
-# any interaction is bivariate normal UNCONDITIONALLY as well -- mixing those
-# conditional normals back over the node distribution returns exactly the
-# unconditional pair. Running such a pair through the quadrature is therefore not
-# only wasted work but strictly worse ACCURACY: it approximates a quantity the
-# closed form already delivers exactly. Those pairs are computed once, outside
-# the loop.
-#
-# `sign = -1` gives a minimisation objective, matching the DA convention.
-pmlObjective <- function(submodel, thresholds, tables, rule, partition, rows,
-                         sign = -1) {
-  pairs <- tables$pairs
-  probability <- vector("list", NROW(pairs))
-
-  if (length(partition$hoisted)) {
-    implied <- pmlSelectMoments(pmlUnconditionalMomentsCpp(submodel), rows)
-    for (p in partition$hoisted)
-      probability[[p]] <- pmlPairProbabilities(implied, thresholds,
-                                               pairs[p, 1L], pairs[p, 2L])
-  }
-
-  if (length(partition$integrated)) {
-    moments <- pmlMomentsCpp(submodel, rule$n)
-    for (q in seq_along(moments)) {
-      implied <- pmlSelectMoments(moments[[q]], rows)
-      for (p in partition$integrated) {
-        cell <- rule$w[[q]] *
-          pmlPairProbabilities(implied, thresholds, pairs[p, 1L], pairs[p, 2L])
-        probability[[p]] <- if (q == 1L) cell else probability[[p]] + cell
-      }
-    }
-  }
-
-  total <- 0
-  for (p in seq_len(NROW(pairs)))
-    total <- total + sum(tables$tables[[p]] * log(pmax(probability[[p]], 1e-12)))
-  sign * total
 }
 
 

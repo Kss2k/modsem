@@ -51,15 +51,23 @@ estPml <- function(model,
   partition <- pmlPartition(submodel$matrices, submodel$info$numXis,
                             submodel$info$numEtas, tables$pairs, rows)
 
+  # The kernel takes 0-based indices; everything above is 1-based.
+  pairs0 <- tables$pairs - 1L
+  rows0 <- rows - 1L
+  hoisted0 <- partition$hoisted - 1L
+  integrated0 <- partition$integrated - 1L
+
   objective <- function(theta) {
     filled <- tryCatch(fillModel(model = model, theta = theta, method = "lms"),
                        error = function(e) NULL)
     if (is.null(filled)) return(.Machine$double.xmax^(1 / 4))
     sub <- filled$models[[1L]]
     value <- tryCatch(
-      pmlObjective(sub, thresholds = pmlThresholdList(sub$matrices)[rows],
-                   tables = tables, rule = rule, partition = partition,
-                   rows = rows, sign = -1),
+      -pmlObjectiveCpp(sub, nodes = rule$n, weights = rule$w,
+                       thresholdList = pmlThresholdList(sub$matrices)[rows],
+                       rows = rows0, pairs = pairs0,
+                       countList = tables$tables,
+                       hoisted = hoisted0, integrated = integrated0),
       error = function(e) NA_real_)
     if (!is.finite(value)) .Machine$double.xmax^(1 / 4) else value
   }

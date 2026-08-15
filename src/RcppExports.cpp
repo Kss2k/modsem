@@ -469,26 +469,53 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// pmlMomentsCpp
-Rcpp::List pmlMomentsCpp(const Rcpp::List& modFilled, const arma::mat& nodes);
-RcppExport SEXP _modsem_pmlMomentsCpp(SEXP modFilledSEXP, SEXP nodesSEXP) {
+// pmlBivariateCpp
+arma::vec pmlBivariateCpp(const arma::vec& a, const arma::vec& b, double rho);
+RcppExport SEXP _modsem_pmlBivariateCpp(SEXP aSEXP, SEXP bSEXP, SEXP rhoSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::vec& >::type a(aSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type b(bSEXP);
+    Rcpp::traits::input_parameter< double >::type rho(rhoSEXP);
+    rcpp_result_gen = Rcpp::wrap(pmlBivariateCpp(a, b, rho));
+    return rcpp_result_gen;
+END_RCPP
+}
+// pmlObjectiveCpp
+double pmlObjectiveCpp(const Rcpp::List& modFilled, const arma::mat& nodes, const arma::vec& weights, const Rcpp::List& thresholdList, const arma::uvec& rows, const arma::umat& pairs, const Rcpp::List& countList, const arma::uvec& hoisted, const arma::uvec& integrated);
+RcppExport SEXP _modsem_pmlObjectiveCpp(SEXP modFilledSEXP, SEXP nodesSEXP, SEXP weightsSEXP, SEXP thresholdListSEXP, SEXP rowsSEXP, SEXP pairsSEXP, SEXP countListSEXP, SEXP hoistedSEXP, SEXP integratedSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::List& >::type modFilled(modFilledSEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type nodes(nodesSEXP);
-    rcpp_result_gen = Rcpp::wrap(pmlMomentsCpp(modFilled, nodes));
+    Rcpp::traits::input_parameter< const arma::vec& >::type weights(weightsSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type thresholdList(thresholdListSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type rows(rowsSEXP);
+    Rcpp::traits::input_parameter< const arma::umat& >::type pairs(pairsSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type countList(countListSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type hoisted(hoistedSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type integrated(integratedSEXP);
+    rcpp_result_gen = Rcpp::wrap(pmlObjectiveCpp(modFilled, nodes, weights, thresholdList, rows, pairs, countList, hoisted, integrated));
     return rcpp_result_gen;
 END_RCPP
 }
-// pmlUnconditionalMomentsCpp
-Rcpp::List pmlUnconditionalMomentsCpp(const Rcpp::List& modFilled);
-RcppExport SEXP _modsem_pmlUnconditionalMomentsCpp(SEXP modFilledSEXP) {
+// pmlProbabilitiesCpp
+Rcpp::List pmlProbabilitiesCpp(const Rcpp::List& modFilled, const arma::mat& nodes, const arma::vec& weights, const Rcpp::List& thresholdList, const arma::uvec& rows, const arma::umat& pairs, const arma::uvec& hoisted, const arma::uvec& integrated);
+RcppExport SEXP _modsem_pmlProbabilitiesCpp(SEXP modFilledSEXP, SEXP nodesSEXP, SEXP weightsSEXP, SEXP thresholdListSEXP, SEXP rowsSEXP, SEXP pairsSEXP, SEXP hoistedSEXP, SEXP integratedSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::List& >::type modFilled(modFilledSEXP);
-    rcpp_result_gen = Rcpp::wrap(pmlUnconditionalMomentsCpp(modFilled));
+    Rcpp::traits::input_parameter< const arma::mat& >::type nodes(nodesSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type weights(weightsSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type thresholdList(thresholdListSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type rows(rowsSEXP);
+    Rcpp::traits::input_parameter< const arma::umat& >::type pairs(pairsSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type hoisted(hoistedSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type integrated(integratedSEXP);
+    rcpp_result_gen = Rcpp::wrap(pmlProbabilitiesCpp(modFilled, nodes, weights, thresholdList, rows, pairs, hoisted, integrated));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -677,8 +704,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_modsem_repDmvnormCpp", (DL_FUNC) &_modsem_repDmvnormCpp, 5},
     {"_modsem_totalDmvnWeighted", (DL_FUNC) &_modsem_totalDmvnWeighted, 6},
     {"_modsem_dmvnfast", (DL_FUNC) &_modsem_dmvnfast, 6},
-    {"_modsem_pmlMomentsCpp", (DL_FUNC) &_modsem_pmlMomentsCpp, 2},
-    {"_modsem_pmlUnconditionalMomentsCpp", (DL_FUNC) &_modsem_pmlUnconditionalMomentsCpp, 1},
+    {"_modsem_pmlBivariateCpp", (DL_FUNC) &_modsem_pmlBivariateCpp, 3},
+    {"_modsem_pmlObjectiveCpp", (DL_FUNC) &_modsem_pmlObjectiveCpp, 9},
+    {"_modsem_pmlProbabilitiesCpp", (DL_FUNC) &_modsem_pmlProbabilitiesCpp, 8},
     {"_modsem_modelMatrixCacheCpp", (DL_FUNC) &_modsem_modelMatrixCacheCpp, 1},
     {"_modsem_impliedEtaFromZetaCpp", (DL_FUNC) &_modsem_impliedEtaFromZetaCpp, 2},
     {"_modsem_impliedYFromEtaCpp", (DL_FUNC) &_modsem_impliedYFromEtaCpp, 2},
