@@ -3,8 +3,13 @@
 # as you can split the model into a non-linear, and linear part. allowing
 # you to use (normally distributed) endogenous variables as non-normal
 # as of now the mean-structure is excluded
-covModel <- function(syntax = NULL, method = "lms", parTable = NULL,
-                     xis.main = NULL, parTable.main = NULL) {
+covModel <- function(syntax = NULL,
+                     method = "lms",
+                     parTable = NULL,
+                     xis.main = NULL,
+                     parTable.main = NULL,
+                     orthogonal.x = FALSE,
+                     orthogonal.y = FALSE) {
   if (is.null(parTable) && !is.null(syntax)) parTable <- modsemify(syntax)
   if (is.null(parTable)) {
     return(list(matrices = NULL, freeParams = 0, info = list(etas = NULL, xis = NULL),
@@ -44,12 +49,24 @@ covModel <- function(syntax = NULL, method = "lms", parTable = NULL,
   labelGammaEta <- listGammaEta$label
 
   # covariance matrices
-  listPsi <- constructPsi(etas, parTable = parTable.full) # we need to the full parTable
-                                                          # to identify pure etas
+  # We need the full partable to look for all relevant covariances
+  listPsi <- constructPsi(
+    etas,
+    parTable = parTable.full,
+    orthogonal.y = orthogonal.y
+  )
+
   psi <- listPsi$numeric
   labelPsi <- listPsi$label
 
-  listPhi <- constructPhi(xis, method = "qml", parTable = parTable) # no need to treat methods differently here...
+  # We need the full partable to look for all relevant covariances
+  listPhi <- constructPhi(
+    xis,
+    method = "qml", # no need to treat methods differently here...
+    parTable = parTable.full,
+    orthogonal.x = orthogonal.x
+  )
+
   phi <- listPhi$numeric
   labelPhi <- listPhi$label
 

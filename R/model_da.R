@@ -319,8 +319,11 @@ specifyModelDA_Group <- function(syntax = NULL,
   subThetaEpsilon2 <- constructSubThetaEpsilon2(indsEtas, thetaEpsilon,
                                                 scalingInds, method = method)
 
-  covModel <- covModel(cov.syntax, method = method, parTable = parTableCovModel,
-                       xis.main = xis, parTable.main = parTable)
+  covModel <- covModel(
+    cov.syntax, method = method, parTable = parTableCovModel,
+    xis.main = xis, parTable.main = parTable,
+    orthogonal.x = orthogonal.x, orthogonal.y = orthogonal.y
+  )
 
   # list of matrices
   matrices <- list(
@@ -412,6 +415,8 @@ specifyModelDA_Group <- function(syntax = NULL,
       kOmegaEta     = getK_NA(omegaEtaXi, labelOmegaEtaXi),
       nonLinearXis  = nonLinearXis,
       mean.observed = mean.observed,
+      orthogonal.x  = orthogonal.x,
+      orthogonal.y  = orthogonal.y,
 
       has.interaction     = NROW(intTerms) > 0L,
       higherOrderLVs      = higherOrderLVs,
@@ -508,6 +513,8 @@ specifyModelDA <- function(..., group.info, createTheta = TRUE) {
       kOmegaEta     = submodels[[1L]]$info$kOmegaEta,
       nonLinearXis  = submodels[[1L]]$info$nonLinearXis,
       mean.observed = submodels[[1L]]$info$mean.observed,
+      orthogonal.x  = submodels[[1L]]$info$orthogonal.x,
+      orthogonal.y  = submodels[[1L]]$info$orthogonal.y,
 
       has.interaction     = submodels[[1L]]$info$has.interaction || has.ov.interaction,
       higherOrderLVs      = submodels[[1L]]$info$higherOrderLVs,
@@ -969,11 +976,15 @@ getFinalModel <- function(model, theta, method, modelSE = NULL) {
   finalModel <- fillModel(model, theta, fillPhi = method == "lms", method = method)
 
   # keep NA "skeletons" for printing and SE attachment
-  emptyModel <- getEmptyModel(group.info = model$info$group.info,
-                              cov.syntax = model$models[[1L]]$cov.syntax,
-                              parTableCovModel = model$models[[1L]]$covModel$parTable,
-                              mean.observed = model$info$mean.observed,
-                              method = method)
+  emptyModel <- getEmptyModel(
+    group.info       = model$info$group.info,
+    cov.syntax       = model$models[[1L]]$cov.syntax,
+    parTableCovModel = model$models[[1L]]$covModel$parTable,
+    mean.observed    = model$info$mean.observed,
+    method           = method,
+    orthogonal.x     = model$info$orthogonal.x,
+    orthogonal.y     = model$info$orthogonal.y
+  )
 
   for (g in seq_along(finalModel$models)) {
     submodel <- finalModel$models[[g]]

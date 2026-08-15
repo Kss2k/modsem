@@ -200,7 +200,8 @@ getLabelIntTerms <- function(varsInInt, eta, intTerms) {
 
 
 getEmptyModel <- function(group.info, cov.syntax, parTableCovModel,
-                          mean.observed = TRUE, method = "lms") {
+                          mean.observed = TRUE, method = "lms",
+                          orthogonal.x, orthogonal.y) {
   group.info$parTable$mod <- ""
   group.info$parTable <- removeConstraintExpressions(group.info$parTable)
   group.info["data"]  <- list(data = NULL)
@@ -230,7 +231,9 @@ getEmptyModel <- function(group.info, cov.syntax, parTableCovModel,
     auto.fix.first   = FALSE,
     auto.fix.single  = FALSE,
     createTheta      = FALSE,
-    checkModel       = FALSE
+    checkModel       = FALSE,
+    orthogonal.x     = orthogonal.x,
+    orthogonal.y     = orthogonal.y
   )
 }
 
