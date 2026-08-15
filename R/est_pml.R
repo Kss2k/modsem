@@ -31,8 +31,7 @@ estPml <- function(model,
              "PML currently requires ordered indicators.")
 
   ordered <- submodel$info$ordered
-  categories <- vapply(data[ordered], function(x) length(levels(x)), integer(1L))
-  tables <- pmlPairTables(data, ordered, categories)
+  tables <- pmlPairTables(data, ordered)
 
   # The conditioning set is whatever `sortXis()` marked nonlinear: one variable
   # per interaction term, chosen to cover them all. k = 0 is the linear model,
@@ -67,21 +66,29 @@ estPml <- function(model,
   # both are computed together and cached on theta.
   cache <- new.env(parent = emptyenv())
   cache$theta <- NULL
+  cache$last <- NULL
 
   evaluate <- function(theta) {
     if (!is.null(cache$theta) && identical(cache$theta, theta)) return(cache$value)
     value <- tryCatch(pmlObjectiveGradient(model, theta, plan, sign = -1),
                       error = function(e) NULL)
     if (is.null(value) || !is.finite(value$objective) ||
-        anyNA(value$gradient) || any(!is.finite(value$gradient)))
+        anyNA(value$gradient) || any(!is.finite(value$gradient))) {
+      # An infeasible point needs a gradient that POINTS BACK. Returning zero
+      # tells nlminb the region is flat and it may settle there; reusing the
+      # last good gradient keeps a descent direction pointing at feasible
+      # ground, and the large objective makes the line search retreat.
       value <- list(objective = .Machine$double.xmax^(1 / 4),
-                    gradient = rep(0, length(theta)))
+                    gradient = cache$last %||% rep(0, length(theta)))
+    } else {
+      cache$last <- value$gradient
+    }
     cache$theta <- theta
     cache$value <- value
     value
   }
 
-  bounds <- model$params$bounds
+  bounds <- pmlBounds(model$params$bounds, plan$locations)
   start <- model$theta
   fit <- suppressWarnings(stats::nlminb(
     start = start,

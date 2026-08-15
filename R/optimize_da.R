@@ -7,7 +7,8 @@ optimizeStartingParamsDA <- function(model,
                                                  sampling.weights.normalization = "none"), # already fixed by modsem
                                      group = NULL,
                                      sampling.weights = NULL,
-                                     engine = c("pi", "sam")) {
+                                     engine = c("pi", "sam", "dwls"),
+                                     ordered = NULL) {
   engine <- tolower(engine)
   engine <- match.arg(engine)
 
@@ -89,6 +90,30 @@ optimizeStartingParamsDA <- function(model,
 
     parTable   <- fitSam$parTable
     lavaan.fit <- fitSam$fit
+
+  } else if (engine == "dwls") {
+    # Ordered data, so ML is out: lavaan refuses it, and the product-indicator
+    # engine cannot help either -- a product of two ordinal indicators is not
+    # itself ordinal. DWLS fits ordered data directly, and in the THETA
+    # parameterisation its estimates are already on the scale PML uses, so they
+    # map straight across.
+    #
+    # Interaction terms are dropped rather than approximated. lavaan has no
+    # latent interaction of its own, and omega starting at zero is the right
+    # default anyway: the linear part is what needs a sensible starting point.
+    linear <- modsemify(syntax)
+    linear <- linear[!(linear$op == "~" & grepl(":", linear$rhs)), , drop = FALSE]
+
+    fitDwls <- lavaan::sem(
+      parTableToSyntax(linear), data = data, ordered = ordered,
+      parameterization = "theta", estimator = "DWLS",
+      orthogonal.x = args$orthogonal.x, orthogonal.y = args$orthogonal.y,
+      auto.fix.first = args$auto.fix.first, auto.fix.single = args$auto.fix.single,
+      group = group, sampling.weights = sampling.weights, meanstructure = TRUE
+    )
+
+    parTable   <- lavaan::parameterEstimates(fitDwls)
+    lavaan.fit <- fitDwls
   }
 
   mod_stopif(is.null(parTable), "lavaan failed!")
@@ -257,6 +282,17 @@ optimizeStartingParamsDA <- function(model,
 
     selectThetaMain <- SELECT_THETA_MAIN[[g]]
     selectThetaCov  <- SELECT_THETA_COV[[g]]
+
+    # PML adds a `thresholdDelta` block, which comes last in the theta ordering
+    # and which lavaan has no counterpart for on this parameterisation. Its
+    # starts (observed cumulative proportions, from pmlPrepareOrdered) are
+    # already what DWLS would estimate, so they are carried over unchanged --
+    # but they still have to be APPENDED, or the length test below fails and
+    # every optimized start is silently discarded.
+    nDelta <- sum(is.na(matricesMain$thresholdDelta) &
+                  !is.nan(matricesMain$thresholdDelta))
+    if (nDelta)
+      thetaMain <- c(thetaMain, utils::tail(THETA[selectThetaMain], nDelta))
 
     if (length(selectThetaMain) == length(thetaMain))
       THETA[selectThetaMain] <- thetaMain

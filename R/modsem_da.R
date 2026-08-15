@@ -625,10 +625,6 @@ modsem_da <- function(model.syntax = NULL,
         rownames(model$models[[1L]]$matrices$lambdaX)))
 
 
-  # The starting-value pass fits the model with lavaan ML, which does not
-  # support ordered data. PML supplies its own starts (thresholds from observed
-  # cumulative proportions, via pmlPrepareOrdered), so skip it.
-  if (identical(method, "pml")) args$optimize <- FALSE
 
   if (args$optimize) {
     model <- tryCatch({
@@ -638,12 +634,20 @@ modsem_da <- function(model.syntax = NULL,
       ops <- c(group.info$parTable$op, group.info$parTableCov$op)
       engine <- if (any(ops %in% c("<", ">", "=="))) "pi" else "sam"
 
+      # PML's data is ordered, which rules out both other engines: lavaan's ML
+      # refuses it, and the product-indicator engine would have to multiply
+      # ordinal indicators together. Without a starting-value pass at all, PML
+      # walked into a rank-deficient Phi on the TPB model -- two latents came
+      # out perfectly correlated -- so this is not an optional refinement.
+      if (identical(method, "pml")) engine <- "dwls"
+
       result <- .optimize(
         model            = model,
         args             = args,
         group            = group,
         sampling.weights = sampling.weights,
-        engine           = engine
+        engine           = engine,
+        ordered          = ordered
       )
 
       warnings  <- result$warnings

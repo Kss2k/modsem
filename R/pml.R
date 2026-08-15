@@ -50,17 +50,42 @@ pmlQuadRule <- function(k, m = 30L) {
 }
 
 
+# Integer codes 1..K for an ordered indicator.
+#
+# Ordered data reaches modsem either as factors or as plain integer/numeric
+# codes, and the two need different handling -- `levels()` is empty for the
+# latter, and `as.integer()` on a numeric column returns the values rather than
+# their ranks. This is the same rule `orderedThresholdSpec()` applies, and the
+# two MUST agree: one supplies the thresholds, the other the counts they are
+# scored against.
+pmlCodes <- function(values) {
+  if (is.factor(values)) as.integer(values)
+  else match(values, sort(unique(values[!is.na(values)])))
+}
+
+
 # Bivariate contingency tables, formed once. This is what removes N from the
 # per-evaluation cost: the objective only ever sees counts.
-pmlPairTables <- function(data, ordered, categories) {
-  codes <- vapply(data[ordered], as.integer, integer(NROW(data)))
+pmlPairTables <- function(data, ordered, categories = NULL) {
+  codes <- vapply(data[ordered], pmlCodes, integer(NROW(data)))
+  if (is.null(categories))
+    categories <- apply(codes, 2L, max, na.rm = TRUE)
+
+  # A silent failure here is invisible downstream: empty tables give an
+  # objective of exactly 0 with a zero gradient, so the optimiser reports
+  # convergence at the starting values and every estimate looks plausible.
+  mod_stopif(any(!is.finite(categories) | categories < 2L),
+    sprintf("Ordered indicator(s) with fewer than two categories: %s",
+            paste(ordered[!is.finite(categories) | categories < 2L],
+                  collapse = ", ")))
+
   pairs <- t(utils::combn(length(ordered), 2L))
   tables <- lapply(seq_len(NROW(pairs)), function(p) {
     j <- pairs[p, 1L]; k <- pairs[p, 2L]
     table(factor(codes[, j], levels = seq_len(categories[[j]])),
           factor(codes[, k], levels = seq_len(categories[[k]])))
   })
-  list(pairs = pairs, tables = tables)
+  list(pairs = pairs, tables = tables, codes = codes, categories = categories)
 }
 
 
@@ -246,6 +271,30 @@ pmlThresholdLocations <- function(model) {
                    NROW(delta), NCOL(delta))
   free <- is.na(delta) & !is.nan(delta)
   list(labels = labels, free = free)
+}
+
+
+# Keep the variance parameters positive.
+#
+# PML optimises theta directly, unlike the EM used for LMS, so nothing stops a
+# residual variance going negative on its own. Var(x*) = lambda^2 Var(eta) + 1
+# stays positive for a small negative psi, so the objective does NOT blow up to
+# warn us -- the fit simply converges on estimates with negative residual
+# variances and R^2 above 1.
+#
+# Only the diagonals are bounded: off-diagonal covariances are free, and Phi is
+# already positive semi-definite by construction because A is its Cholesky
+# factor. A's diagonal is bounded too, since a sign flip there gives an
+# observationally equivalent solution and the duplicate optima are worth
+# removing.
+pmlBounds <- function(bounds, locations) {
+  for (loc in locations) {
+    if (!loc$matrix %in% c("psi", "A", "thetaDelta", "thetaEpsilon")) next
+    diagonal <- loc$row == loc$col
+    labels <- intersect(loc$label[diagonal], names(bounds$lower))
+    bounds$lower[labels] <- pmax(bounds$lower[labels], 1e-6)
+  }
+  bounds
 }
 
 
