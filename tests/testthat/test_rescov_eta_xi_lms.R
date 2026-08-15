@@ -59,7 +59,7 @@ testthat::test_that("Residual covariances between xis and etas in the LMS approa
     X ~~ Y
   "
 
-  y.int <- x + change + 0.2*x^2
+  y.int <- x + latent[,1L] + 0.2*x^2
 
   data.int <- data.frame(
     x1 = make_indicator(x, 1.00),
@@ -86,7 +86,7 @@ testthat::test_that("Residual covariances between xis and etas in the LMS approa
 
     Z ~ 1*Y
 
-    X ~~ Y
+    Y ~~ X
     Y ~~ Z
   "
   
@@ -98,7 +98,11 @@ testthat::test_that("Residual covariances between xis and etas in the LMS approa
   fit.mod <- modsem(syntax.z.main, data, method = "lms", cov.syntax = syntax.z.cov, optimize = FALSE, convergence.abs = 1e-8)
 
   est.mod <- c(coef(fit.mod))
-  est.lav <- lavaan::coef(fit.lav)[names(est.mod)]
+  est.lav <- lavaan::coef(fit.lav)
+
+  # reverse order of X~~Y
+  names(est.lav)[names(est.lav)=="X~~Y"] <- "Y~~X"
+  est.lav <- est.lav[names(est.mod)]
 
   testthat::expect_equal(est.mod, est.lav, tol = 1e-4)
 })
