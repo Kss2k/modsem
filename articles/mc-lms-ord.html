@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">modsem</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.21</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.22</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -84,7 +84,7 @@
     
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://modsem.org" class="external-link">modsem</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; This is modsem (1.0.21). Please report any bugs!</span></span>
+<span><span class="co">#&gt; This is modsem (1.0.22). Please report any bugs!</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">2938472</span><span class="op">)</span></span></code></pre></div>
 <p><code>modsem</code> implements a Monte-Carlo correction for LMS and
 QML models with ordinal data. Here we refer to these informally as
@@ -130,7 +130,7 @@ ordinal, using the <code>ordered=</code> argument.</p>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_lms_ord</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (1.0.21) ended normally after 75 iterations</span></span>
+<span><span class="co">#&gt; modsem (1.0.22) ended normally after 75 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                     MC-LMS</span></span>
 <span><span class="co">#&gt;   Optimization method                    ROBBINS-MONRO</span></span>
@@ -175,24 +175,24 @@ ordinal, using the <code>ordered=</code> argument.</p>
 <span><span class="co">#&gt; Latent Variables:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   X =~          </span></span>
-<span><span class="co">#&gt;     x1              0.932      0.008  116.248    0.000</span></span>
-<span><span class="co">#&gt;     x2              0.900      0.008  113.581    0.000</span></span>
-<span><span class="co">#&gt;     x3              0.920      0.007  128.833    0.000</span></span>
+<span><span class="co">#&gt;     x1              0.932      0.008  113.846    0.000</span></span>
+<span><span class="co">#&gt;     x2              0.900      0.008  112.904    0.000</span></span>
+<span><span class="co">#&gt;     x3              0.920      0.007  129.062    0.000</span></span>
 <span><span class="co">#&gt;   Z =~          </span></span>
-<span><span class="co">#&gt;     z1              0.920      0.008  112.731    0.000</span></span>
-<span><span class="co">#&gt;     z2              0.903      0.007  122.984    0.000</span></span>
-<span><span class="co">#&gt;     z3              0.906      0.009  104.988    0.000</span></span>
+<span><span class="co">#&gt;     z1              0.920      0.008  113.451    0.000</span></span>
+<span><span class="co">#&gt;     z2              0.903      0.007  122.969    0.000</span></span>
+<span><span class="co">#&gt;     z3              0.906      0.009  104.992    0.000</span></span>
 <span><span class="co">#&gt;   Y =~          </span></span>
-<span><span class="co">#&gt;     y1              0.975      0.004  241.284    0.000</span></span>
-<span><span class="co">#&gt;     y2              0.956      0.004  222.604    0.000</span></span>
-<span><span class="co">#&gt;     y3              0.965      0.006  172.895    0.000</span></span>
+<span><span class="co">#&gt;     y1              0.975      0.004  238.836    0.000</span></span>
+<span><span class="co">#&gt;     y2              0.956      0.004  225.311    0.000</span></span>
+<span><span class="co">#&gt;     y3              0.965      0.006  172.438    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   Y ~           </span></span>
-<span><span class="co">#&gt;     X               0.438      0.022   19.487    0.000</span></span>
-<span><span class="co">#&gt;     Z               0.382      0.023   16.931    0.000</span></span>
-<span><span class="co">#&gt;     X:Z             0.480      0.031   15.231    0.000</span></span>
+<span><span class="co">#&gt;     X               0.438      0.023   19.484    0.000</span></span>
+<span><span class="co">#&gt;     Z               0.382      0.023   16.965    0.000</span></span>
+<span><span class="co">#&gt;     X:Z             0.480      0.032   15.213    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
@@ -216,7 +216,7 @@ ordinal, using the <code>ordered=</code> argument.</p>
 <span><span class="co">#&gt;     y1|t1          -0.344      0.024  -14.263    0.000</span></span>
 <span><span class="co">#&gt;     y1|t2           0.487      0.030   16.053    0.000</span></span>
 <span><span class="co">#&gt;     y2|t1          -0.366      0.024  -15.391    0.000</span></span>
-<span><span class="co">#&gt;     y2|t2           0.484      0.031   15.844    0.000</span></span>
+<span><span class="co">#&gt;     y2|t2           0.484      0.031   15.845    0.000</span></span>
 <span><span class="co">#&gt;     y3|t1          -0.350      0.023  -15.548    0.000</span></span>
 <span><span class="co">#&gt;     y3|t2           0.482      0.034   14.300    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
