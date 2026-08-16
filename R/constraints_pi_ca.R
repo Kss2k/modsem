@@ -35,9 +35,9 @@ specifyFactorLoadings <- function(parTable, relDfs) {
 }
 
 
-addVariances <- function(pt) {
+addVariances <- function(pt, exclude = character(0)) {
   # Add variance-labels if missing for LVs
-  LVs <- getLVs(pt)
+  LVs <- setdiff(getLVs(pt), exclude)
   if (length(LVs) == 0) return(pt)
 
   specifiedLVs <- pt[pt$lhs %in% LVs &
@@ -151,8 +151,8 @@ specifyVarCovSingle <- function(parTable, relDf) {
   # This function specifies variances for latents, indicators,
   # and indicator products. It will also specifies covariances for latent
   # products, and elements int those products.
-  stopif(nrow(relDf) > 2, "Constraints for products with more than two ",
-         " elements are not supported for this method")
+  mod_stopif(nrow(relDf) > 2, paste0("Constraints for products with more than two ",
+         " elements are not supported for this method"))
 
   # General info
   elemsInProdTerm <- rownames(relDf)

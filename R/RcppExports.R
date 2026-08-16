@@ -5,12 +5,12 @@ calcSESimpleSlopes <- function(X, V) {
     .Call(`_modsem_calcSESimpleSlopes`, X, V)
 }
 
-muLmsCpp <- function(model, z) {
-    .Call(`_modsem_muLmsCpp`, model, z)
+muSigmaLmsCpp <- function(model, z) {
+    .Call(`_modsem_muSigmaLmsCpp`, model, z)
 }
 
-sigmaLmsCpp <- function(model, z) {
-    .Call(`_modsem_sigmaLmsCpp`, model, z)
+completeScoresNodeAnalyticalLmsCpp <- function(modelR, dataR, z, block, row, col, symmetric, colidxR, n, npatterns = 1L, ncores = 1L) {
+    .Call(`_modsem_completeScoresNodeAnalyticalLmsCpp`, modelR, dataR, z, block, row, col, symmetric, colidxR, n, npatterns, ncores)
 }
 
 completeLogLikLmsCpp <- function(modelR, P, quad, colidxR, n, d, npatterns = 1L) {
@@ -37,6 +37,14 @@ hessCompLogLikLmsCpp <- function(modelR, P, block, row, col, symmetric, colidxR,
     .Call(`_modsem_hessCompLogLikLmsCpp`, modelR, P, block, row, col, symmetric, colidxR, n, d, npatterns, relStep, minAbs, ncores)
 }
 
+densityMatrixLmsCpp <- function(modelR, V, dataR, colidxR, n, samplingWeights, npatterns = 1L, ncores = 1L) {
+    .Call(`_modsem_densityMatrixLmsCpp`, modelR, V, dataR, colidxR, n, samplingWeights, npatterns, ncores)
+}
+
+estepSuffStatLmsCpp <- function(P, dataR, n, npatterns = 1L, ncores = 1L) {
+    .Call(`_modsem_estepSuffStatLmsCpp`, P, dataR, n, npatterns, ncores)
+}
+
 muQmlCpp <- function(m, t, ncores = 1L) {
     .Call(`_modsem_muQmlCpp`, m, t, ncores)
 }
@@ -61,6 +69,30 @@ varZCpp <- function(Omega, Sigma1, numEta) {
     .Call(`_modsem_varZCpp`, Omega, Sigma1, numEta)
 }
 
+logLikQmlCpp <- function(submodel, ncores = 1L) {
+    .Call(`_modsem_logLikQmlCpp`, submodel, ncores)
+}
+
+analyticalObsGradQmlCpp <- function(submodel, block, row, col, symmetric) {
+    .Call(`_modsem_analyticalObsGradQmlCpp`, submodel, block, row, col, symmetric)
+}
+
+analyticalGradQmlCpp <- function(submodel, block, row, col, symmetric) {
+    .Call(`_modsem_analyticalGradQmlCpp`, submodel, block, row, col, symmetric)
+}
+
+gradLogLikQmlFDCpp <- function(submodel, block, row, col, symmetric, eps = 1e-6, ncores = 1L) {
+    .Call(`_modsem_gradLogLikQmlFDCpp`, submodel, block, row, col, symmetric, eps, ncores)
+}
+
+gradObsLogLikQmlFDCpp <- function(submodel, block, row, col, symmetric, eps = 1e-6, ncores = 1L) {
+    .Call(`_modsem_gradObsLogLikQmlFDCpp`, submodel, block, row, col, symmetric, eps, ncores)
+}
+
+hessLogLikQmlCpp <- function(submodel, block, row, col, symmetric, relStep = 1e-4, minAbs = 1.0, ncores = 1L) {
+    .Call(`_modsem_hessLogLikQmlCpp`, submodel, block, row, col, symmetric, relStep, minAbs, ncores)
+}
+
 multiplyIndicatorsCpp <- function(df) {
     .Call(`_modsem_multiplyIndicatorsCpp`, df)
 }
@@ -83,6 +115,42 @@ totalDmvnWeighted <- function(mu, sigma, nu, S, tgamma, d) {
 
 dmvnfast <- function(X, mu, sigma, log, ncores, isChol) {
     .Call(`_modsem_dmvnfast`, X, mu, sigma, log, ncores, isChol)
+}
+
+modelMatrixCacheCpp <- function(matrices) {
+    .Call(`_modsem_modelMatrixCacheCpp`, matrices)
+}
+
+impliedEtaFromZetaCpp <- function(zeta, xptr) {
+    .Call(`_modsem_impliedEtaFromZetaCpp`, zeta, xptr)
+}
+
+impliedYFromEtaCpp <- function(eta, xptr) {
+    .Call(`_modsem_impliedYFromEtaCpp`, eta, xptr)
+}
+
+logLikFromZetaMLCpp <- function(zeta, y, xptr, idx) {
+    .Call(`_modsem_logLikFromZetaMLCpp`, zeta, y, xptr, idx)
+}
+
+gradLogLikFromZetaMLCpp <- function(zeta, y, xptr, idx, eps = 1e-4) {
+    .Call(`_modsem_gradLogLikFromZetaMLCpp`, zeta, y, xptr, idx, eps)
+}
+
+hessLogLikFromZetaMLCpp <- function(zeta, y, xptr, idx, relStep = 1e-4, minAbsPar = 0.0) {
+    .Call(`_modsem_hessLogLikFromZetaMLCpp`, zeta, y, xptr, idx, relStep, minAbsPar)
+}
+
+logLikFromZetaEBMCpp <- function(zeta, y, xptr, idx) {
+    .Call(`_modsem_logLikFromZetaEBMCpp`, zeta, y, xptr, idx)
+}
+
+gradLogLikFromZetaEBMCpp <- function(zeta, y, xptr, idx, eps = 1e-4) {
+    .Call(`_modsem_gradLogLikFromZetaEBMCpp`, zeta, y, xptr, idx, eps)
+}
+
+hessLogLikFromZetaEBMCpp <- function(zeta, y, xptr, idx, relStep = 1e-4, minAbsPar = 0.0) {
+    .Call(`_modsem_hessLogLikFromZetaEBMCpp`, zeta, y, xptr, idx, relStep, minAbsPar)
 }
 
 tracePathsNumericCpp <- function(x, y, parTable, maxlen = 100L) {

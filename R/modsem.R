@@ -116,15 +116,15 @@ modsem <- function(model.syntax = NULL,
   method <- tolower(method)
 
   if (is.null(model.syntax)) {
-    stop2("No model.syntax provided")
+    mod_msg_stop("No model.syntax provided")
   } else if (!is.character(model.syntax)) {
-    stop2("The provided model syntax is not a string!")
+    mod_msg_stop("The provided model syntax is not a string!")
   } else if (length(model.syntax) > 1) {
-    stop2("The provided model syntax is not of length 1")
+    mod_msg_stop("The provided model syntax is not of length 1")
   }
 
   if (is.null(data)) {
-    stop2("No data provided")
+    mod_msg_stop("No data provided")
   } else {
     data <- as.data.frame(data)
   }
@@ -136,6 +136,6 @@ modsem <- function(model.syntax = NULL,
   } else if (method == MPLUS_METHOD) {
     modsem_mplus(model.syntax, data = data, ...)
   } else {
-    stop2("Method not recognized")
+    mod_msg_stop("Method not recognized")
   }
 }

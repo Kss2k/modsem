@@ -22,6 +22,7 @@ modsem_pi(
   constrained.var = NULL,
   res.cov.method = NULL,
   res.cov.across = NULL,
+  composite.int.res.cov = FALSE,
   auto.scale = "none",
   auto.center = "none",
   estimator = "ML",
@@ -101,6 +102,12 @@ generated product indicators \code{x1:z1} and \code{x1:w1} may be correlated. If
 residual covariances are allowed across different latent interaction terms. If \code{FALSE}
 residual covariances are only allowed between product indicators which belong to the same
 latent interaction term.}
+
+\item{composite.int.res.cov}{Should residual covariance syntax be generated for interaction
+terms that are fully composite (i.e., all component variables defined with \code{<~})?
+Defaults to \code{FALSE} because for fully composite interaction terms the residual
+covariances of the product indicators are not needed. Set to \code{TRUE} to force
+residual covariance syntax for composite interaction terms (useful for testing).}
 
 \item{auto.scale}{methods which should be scaled automatically (usually not useful)}
 

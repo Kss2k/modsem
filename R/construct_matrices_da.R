@@ -102,7 +102,7 @@ notFilledLambda <- function(ind, lambda) {
 }
 
 
-constructLambda <- function(lVs, indsLVs, parTable, auto.fix.first = TRUE) {
+constructLambda <- function(lVs, indsLVs, parTable, auto.fix.first = TRUE, mode = "a") {
   numLVs        <- length(lVs)
   indsLVs       <- indsLVs[lVs] # make sure it is sorted
   allIndsLVs    <- unique(unlist(indsLVs))
@@ -123,9 +123,66 @@ constructLambda <- function(lVs, indsLVs, parTable, auto.fix.first = TRUE) {
     }
   }
 
-  setMatrixConstraints(X = lambda, parTable = parTable, op = "=~",
+  switch(tolower(mode),
+    a = {
+      op <- "=~"
+      composites <- getComposites(parTable)
+      lambda[,intersect(colnames(lambda), composites)] <- 0
+    },
+    b = {
+      op <- "<~"
+      composites <- getComposites(parTable)
+      lambda[,setdiff(colnames(lambda), composites)] <- 0
+    },
+    mod_msg_stop(paste0("Unsupported mode: ", mode, "!"))
+  )
+
+  setMatrixConstraints(X = lambda, parTable = parTable, op = op,
                        RHS = allIndsLVs, LHS = lVs, type = "rhs",
                        nonFreeParams = TRUE) # first params are by default set to 1
+}
+
+
+constructT <- function(lVs, indsLVs, parTable,
+                       fix.composite.var = TRUE,
+                       data = NULL, missing = "listwise",
+                       sampling.weights = NULL) {
+  indsLVs <- indsLVs[lVs] # make sure it is sorted
+  allInds <- unique(unlist(indsLVs))
+  k       <- length(allInds)
+
+  T <- matrix(
+    0, nrow = k, ncol = k,
+    dimnames = list(allInds, allInds)
+  )
+
+  composites <- intersect(lVs, getComposites(parTable))
+  compositeInds <- unique(unlist(indsLVs[composites]))
+
+  for (composite in composites) {
+    idx <- intersect(rownames(T), indsLVs[[composite]])
+
+    if (fix.composite.var && !is.null(data$data.full)) {
+      X <- data$data.full[,idx, drop = FALSE]
+
+      S <- lavaan::lavCor(
+        object           = X,
+        missing          = missing,
+        sampling.weights = sampling.weights,
+        output           = "cov"
+      )
+
+      T[idx, idx] <- S[idx, idx]
+
+    } else {
+      T[idx, idx] <- NA
+
+    }
+  }
+
+  setMatrixConstraints(X = T, parTable = parTable, op = "~~",
+                       RHS = compositeInds, LHS = compositeInds,
+                       type = "symmetric", nonFreeParams = FALSE)
 }
 
 
@@ -140,8 +197,10 @@ constructTau <- function(lVs, indsLVs, parTable, mean.observed = TRUE) {
                 dimnames = list(allIndsLVs, "1"))
   for (lV in lVs) { # set first ind to 0, if lV has meanstructure
     subPT <- parTable[parTable$lhs == lV & parTable$op == "~1", ]
-    if (NROW(subPT)) {
-      firstInd         <- indsLVs[[lV]][[1]]
+    indsLV <- indsLVs[[lV]]
+
+    if (NROW(subPT) && length(indsLV)) {
+      firstInd         <- indsLV[[1]]
       tau[firstInd, 1] <- 0
       lavOptimizerSyntaxAdditions <-
         getFixedInterceptSyntax(indicator = firstInd, parTable = parTable,
@@ -173,6 +232,10 @@ constructTheta <- function(lVs, indsLVs, parTable, auto.fix.single = TRUE) {
       theta[indsLVs[[lV]], indsLVs[[lV]]] <- 0
     }
   }
+
+  compositeIndicators <- getCompositeIndicators(parTable)
+  isCompositeInd <- allIndsLVs %in% compositeIndicators
+  theta[isCompositeInd, isCompositeInd] <- 0
 
   setMatrixConstraints(X = theta, parTable = parTable, op = "~~",
                        RHS = allIndsLVs, LHS = allIndsLVs, type = "symmetric",
@@ -208,19 +271,25 @@ constructGamma <- function(DVs, IVs, parTable, auto.fix.first = TRUE) {
 
   higherOrderLVs <- unique(exprsGamma2[exprsGamma2$op == "=~", "lhs"])
   for (lVh in higherOrderLVs) {
-    firstFilled <- FALSE
     inds <- exprsGamma2[exprsGamma2$op == "=~" &
                         exprsGamma2$lhs == lVh, "rhs"]
     ind1 <- inds[[1L]]
 
-    if (auto.fix.first) gamma$numeric[ind1, lVh] <- 1
+    if (auto.fix.first &&
+        is.na(gamma$numeric[ind1, lVh]) &&
+        gamma$label[ind1, lVh] == "") {
+      gamma$numeric[ind1, lVh] <- 1
+    }
   }
 
   gamma
 }
 
 
-constructPsi <- function(etas, parTable, orthogonal.y = FALSE) {
+constructPsi <- function(etas, parTable,
+                         orthogonal.y = FALSE,
+                         orthogonal.x = FALSE, 
+                         has.exo = FALSE) {
   if (!length(etas)) return(EMPTY_MATSTRUCT)
 
   numEtas   <- length(etas)
@@ -234,6 +303,18 @@ constructPsi <- function(etas, parTable, orthogonal.y = FALSE) {
       eta_j <- etas[[j]]
 
       if (isPureEta(eta_i, parTable) && isPureEta(eta_j, parTable))
+        psi[i, j] <- NA
+    }
+  }
+
+  if (has.exo && !orthogonal.x) {
+    xis <- getXis(parTable, isLV = FALSE, checkAny = FALSE)
+
+    for (i in seq_len(NROW(psi))) for (j in seq_len(i - 1)) {
+      eta_i <- etas[[i]]
+      eta_j <- etas[[j]]
+
+      if (eta_i %in% xis && eta_j %in% xis)
         psi[i, j] <- NA
     }
   }
@@ -289,6 +370,38 @@ constructA <- function(xis, method = "lms", cov.syntax = NULL,
     A
 
   } else getEmptyPhi(phi = A)
+}
+
+
+constructCovZetaXi <- function(xis, etas, method = "lms", parTable) {
+  if (method != "lms" || !length(xis) || !length(etas))
+    return(EMPTY_MATSTRUCT)
+
+  numXis <- length(xis)
+  numEtas <- length(etas)
+
+  covZetaXi <- matrix(
+    0, nrow = numEtas, ncol = numXis,
+    dimnames = list(etas, xis)
+  )
+
+  parTableResCov <- parTable[
+    parTable$op == "~~" &
+    ((parTable$lhs %in% etas & parTable$rhs %in% xis) |
+     (parTable$lhs %in% xis & parTable$rhs %in% etas)),
+    , drop = FALSE
+  ]
+
+  swap <- parTableResCov$lhs %in% xis
+  lhs <- parTableResCov$lhs[swap]
+  parTableResCov$lhs[swap] <- parTableResCov$rhs[swap]
+  parTableResCov$rhs[swap] <- lhs
+
+  setMatrixConstraints(
+    X = covZetaXi, parTable = parTableResCov, op = "~~",
+    RHS = c(xis, etas), LHS = c(xis, etas),
+    type = "lhs", nonFreeParams = FALSE
+  )
 }
 
 
@@ -355,7 +468,7 @@ constructR <- function(etas, indsEtas, lambdaY, method = "qml") {
   lastRow <- lastCol <- 0
   for (i in seq_len(numEtas)) {
     nInds <- numIndsEtas[[etas[[i]]]] - 1
-    if (nInds == 0) stop2("Etas in QML must have at least two indicators")
+    if (nInds == 0) mod_msg_stop("Etas in QML must have at least two indicators")
     # free params
     R[seq_len(nInds) + lastRow, lastCol + 1] <- NA
     R[seq_len(nInds) + lastRow,
@@ -535,12 +648,12 @@ getScalingLambdaY <- function(lambdaY, indsEtas, etas, method = "qml") {
 
 sortXisConstructOmega <- function(xis, varsInts, etas, intTerms,
                                   method = "lms", double = FALSE,
-                                  structovs = NULL) {
+                                  structovs = NULL, composites = NULL) {
   checkVarsIntsDA(varsInts, lVs = c(etas, xis))
 
   listSortedXis <- sortXis(
     xis = xis, varsInts = varsInts, etas = etas, intTerms = intTerms,
-    double = double, structovs = structovs
+    double = double, structovs = structovs, composites = composites
   )
 
   sortedXis    <- listSortedXis$sortedXis
@@ -563,7 +676,8 @@ sortXisConstructOmega <- function(xis, varsInts, etas, intTerms,
 }
 
 
-sortXis <- function(xis, varsInts, etas, intTerms, double, structovs = NULL) {
+sortXis <- function(xis, varsInts, etas, intTerms, double, structovs = NULL,
+                    composites = NULL) {
   # allVarsInInts should be sorted according to which variables
   # occur in the most interaction terms (makes it more efficient)
   allVarsInInts <- unique(unlist(varsInts))
@@ -577,11 +691,11 @@ sortXis <- function(xis, varsInts, etas, intTerms, double, structovs = NULL) {
     if (any(interaction %in% nonLinearXis) && !double ||
         all(interaction %in% nonLinearXis) && double) next # no need to add it again
 
-    stopif(length(interaction) > 2, "Only interactions between two variables are allowed")
-    stopif(all(interaction %in% etas),
-           "Interactions between two endogenous variables are not allowed!",
+    mod_stopif(length(interaction) > 2, "Only interactions between two variables are allowed")
+    mod_stopif(all(interaction %in% etas),
+           paste0("Interactions between two endogenous variables are not allowed!",
            "You can try passing `auto.split.syntax=TRUE` to fix the issue.",
-           "See \nvignette(\"interaction_two_etas\", \"modsem\").")
+           "See \nvignette(\"interaction_two_etas\", \"modsem\")."))
 
     choice <- unique(interaction[which(!interaction %in% etas &
                                        !interaction %in% nonLinearXis)])
@@ -591,8 +705,20 @@ sortXis <- function(xis, varsInts, etas, intTerms, double, structovs = NULL) {
       choice <- choice[whichIsMax(freq)]
 
       is.ov <- choice %in% structovs
-      if (any(is.ov) && !all(is.ov)) k <- which(!is.ov) # only possible if length(choice) > 1
-      else                           k <- 1L # pick first if both are equal
+      is.composite <- choice %in% composites
+
+      if (any(is.ov) && !all(is.ov)) {
+        # only possible if length(choice) > 1
+        k <- which(!is.ov)
+
+      } else if (any(is.composite) && !all(is.composite)) {
+        # only possible if length(choice) > 1
+        k <- which(!is.composite)
+
+      } else {
+        k <- 1L # pick first if both are equal
+
+      }
 
       choice <- choice[[k]]
     }
@@ -602,8 +728,11 @@ sortXis <- function(xis, varsInts, etas, intTerms, double, structovs = NULL) {
 
   linearXis <- xis[!xis %in% nonLinearXis]
 
-  list(linearXis = linearXis, sortedXis = c(nonLinearXis, linearXis),
-       nonLinearXis = nonLinearXis)
+  list(
+    linearXis = linearXis,
+    sortedXis = c(nonLinearXis, linearXis),
+    nonLinearXis = nonLinearXis
+  )
 }
 
 

@@ -13,7 +13,8 @@ summarize_partable(
   regressions = TRUE,
   covariances = TRUE,
   intercepts = TRUE,
-  variances = TRUE
+  variances = TRUE,
+  thresholds = TRUE
 )
 }
 \arguments{
@@ -36,6 +37,8 @@ using \code{\link{parameter_estimates}} or \code{\link{standardized_estimates}}.
 \item{intercepts}{Logical, whether to include intercepts in the output.}
 
 \item{variances}{Logical, whether to include variance estimates in the output.}
+
+\item{thresholds}{Logical, whether to include threshold estimates in the output.}
 }
 \value{
 A summary object containing the parameter table and additional information.

@@ -23,27 +23,36 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// muLmsCpp
-arma::vec muLmsCpp(Rcpp::List model, arma::vec z);
-RcppExport SEXP _modsem_muLmsCpp(SEXP modelSEXP, SEXP zSEXP) {
+// muSigmaLmsCpp
+Rcpp::List muSigmaLmsCpp(Rcpp::List model, arma::vec z);
+RcppExport SEXP _modsem_muSigmaLmsCpp(SEXP modelSEXP, SEXP zSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< Rcpp::List >::type model(modelSEXP);
     Rcpp::traits::input_parameter< arma::vec >::type z(zSEXP);
-    rcpp_result_gen = Rcpp::wrap(muLmsCpp(model, z));
+    rcpp_result_gen = Rcpp::wrap(muSigmaLmsCpp(model, z));
     return rcpp_result_gen;
 END_RCPP
 }
-// sigmaLmsCpp
-arma::mat sigmaLmsCpp(Rcpp::List model, arma::vec z);
-RcppExport SEXP _modsem_sigmaLmsCpp(SEXP modelSEXP, SEXP zSEXP) {
+// completeScoresNodeAnalyticalLmsCpp
+arma::mat completeScoresNodeAnalyticalLmsCpp(const Rcpp::List& modelR, const Rcpp::List& dataR, const arma::vec& z, const arma::uvec& block, const arma::uvec& row, const arma::uvec& col, const arma::uvec& symmetric, const Rcpp::List& colidxR, const arma::uvec& n, const int npatterns, const int ncores);
+RcppExport SEXP _modsem_completeScoresNodeAnalyticalLmsCpp(SEXP modelRSEXP, SEXP dataRSEXP, SEXP zSEXP, SEXP blockSEXP, SEXP rowSEXP, SEXP colSEXP, SEXP symmetricSEXP, SEXP colidxRSEXP, SEXP nSEXP, SEXP npatternsSEXP, SEXP ncoresSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::List >::type model(modelSEXP);
-    Rcpp::traits::input_parameter< arma::vec >::type z(zSEXP);
-    rcpp_result_gen = Rcpp::wrap(sigmaLmsCpp(model, z));
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type modelR(modelRSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type dataR(dataRSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type z(zSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type block(blockSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type row(rowSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type col(colSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type symmetric(symmetricSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type colidxR(colidxRSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type n(nSEXP);
+    Rcpp::traits::input_parameter< const int >::type npatterns(npatternsSEXP);
+    Rcpp::traits::input_parameter< const int >::type ncores(ncoresSEXP);
+    rcpp_result_gen = Rcpp::wrap(completeScoresNodeAnalyticalLmsCpp(modelR, dataR, z, block, row, col, symmetric, colidxR, n, npatterns, ncores));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -171,6 +180,39 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// densityMatrixLmsCpp
+arma::mat densityMatrixLmsCpp(const Rcpp::List& modelR, const arma::mat& V, const Rcpp::List& dataR, const Rcpp::List& colidxR, const arma::uvec& n, const arma::vec& samplingWeights, const int npatterns, const int ncores);
+RcppExport SEXP _modsem_densityMatrixLmsCpp(SEXP modelRSEXP, SEXP VSEXP, SEXP dataRSEXP, SEXP colidxRSEXP, SEXP nSEXP, SEXP samplingWeightsSEXP, SEXP npatternsSEXP, SEXP ncoresSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type modelR(modelRSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type V(VSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type dataR(dataRSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type colidxR(colidxRSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type n(nSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type samplingWeights(samplingWeightsSEXP);
+    Rcpp::traits::input_parameter< const int >::type npatterns(npatternsSEXP);
+    Rcpp::traits::input_parameter< const int >::type ncores(ncoresSEXP);
+    rcpp_result_gen = Rcpp::wrap(densityMatrixLmsCpp(modelR, V, dataR, colidxR, n, samplingWeights, npatterns, ncores));
+    return rcpp_result_gen;
+END_RCPP
+}
+// estepSuffStatLmsCpp
+Rcpp::List estepSuffStatLmsCpp(const arma::mat& P, const Rcpp::List& dataR, const arma::uvec& n, const int npatterns, const int ncores);
+RcppExport SEXP _modsem_estepSuffStatLmsCpp(SEXP PSEXP, SEXP dataRSEXP, SEXP nSEXP, SEXP npatternsSEXP, SEXP ncoresSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::mat& >::type P(PSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type dataR(dataRSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type n(nSEXP);
+    Rcpp::traits::input_parameter< const int >::type npatterns(npatternsSEXP);
+    Rcpp::traits::input_parameter< const int >::type ncores(ncoresSEXP);
+    rcpp_result_gen = Rcpp::wrap(estepSuffStatLmsCpp(P, dataR, n, npatterns, ncores));
+    return rcpp_result_gen;
+END_RCPP
+}
 // muQmlCpp
 arma::mat muQmlCpp(Rcpp::List m, int t, int ncores);
 RcppExport SEXP _modsem_muQmlCpp(SEXP mSEXP, SEXP tSEXP, SEXP ncoresSEXP) {
@@ -247,6 +289,100 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::mat >::type Sigma1(Sigma1SEXP);
     Rcpp::traits::input_parameter< int >::type numEta(numEtaSEXP);
     rcpp_result_gen = Rcpp::wrap(varZCpp(Omega, Sigma1, numEta));
+    return rcpp_result_gen;
+END_RCPP
+}
+// logLikQmlCpp
+double logLikQmlCpp(const Rcpp::List& submodel, const int ncores);
+RcppExport SEXP _modsem_logLikQmlCpp(SEXP submodelSEXP, SEXP ncoresSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type submodel(submodelSEXP);
+    Rcpp::traits::input_parameter< const int >::type ncores(ncoresSEXP);
+    rcpp_result_gen = Rcpp::wrap(logLikQmlCpp(submodel, ncores));
+    return rcpp_result_gen;
+END_RCPP
+}
+// analyticalObsGradQmlCpp
+arma::mat analyticalObsGradQmlCpp(const Rcpp::List& submodel, const arma::uvec& block, const arma::uvec& row, const arma::uvec& col, const arma::uvec& symmetric);
+RcppExport SEXP _modsem_analyticalObsGradQmlCpp(SEXP submodelSEXP, SEXP blockSEXP, SEXP rowSEXP, SEXP colSEXP, SEXP symmetricSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type submodel(submodelSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type block(blockSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type row(rowSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type col(colSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type symmetric(symmetricSEXP);
+    rcpp_result_gen = Rcpp::wrap(analyticalObsGradQmlCpp(submodel, block, row, col, symmetric));
+    return rcpp_result_gen;
+END_RCPP
+}
+// analyticalGradQmlCpp
+arma::vec analyticalGradQmlCpp(const Rcpp::List& submodel, const arma::uvec& block, const arma::uvec& row, const arma::uvec& col, const arma::uvec& symmetric);
+RcppExport SEXP _modsem_analyticalGradQmlCpp(SEXP submodelSEXP, SEXP blockSEXP, SEXP rowSEXP, SEXP colSEXP, SEXP symmetricSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type submodel(submodelSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type block(blockSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type row(rowSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type col(colSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type symmetric(symmetricSEXP);
+    rcpp_result_gen = Rcpp::wrap(analyticalGradQmlCpp(submodel, block, row, col, symmetric));
+    return rcpp_result_gen;
+END_RCPP
+}
+// gradLogLikQmlFDCpp
+arma::vec gradLogLikQmlFDCpp(const Rcpp::List& submodel, const arma::uvec& block, const arma::uvec& row, const arma::uvec& col, const arma::uvec& symmetric, const double eps, const int ncores);
+RcppExport SEXP _modsem_gradLogLikQmlFDCpp(SEXP submodelSEXP, SEXP blockSEXP, SEXP rowSEXP, SEXP colSEXP, SEXP symmetricSEXP, SEXP epsSEXP, SEXP ncoresSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type submodel(submodelSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type block(blockSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type row(rowSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type col(colSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type symmetric(symmetricSEXP);
+    Rcpp::traits::input_parameter< const double >::type eps(epsSEXP);
+    Rcpp::traits::input_parameter< const int >::type ncores(ncoresSEXP);
+    rcpp_result_gen = Rcpp::wrap(gradLogLikQmlFDCpp(submodel, block, row, col, symmetric, eps, ncores));
+    return rcpp_result_gen;
+END_RCPP
+}
+// gradObsLogLikQmlFDCpp
+arma::mat gradObsLogLikQmlFDCpp(const Rcpp::List& submodel, const arma::uvec& block, const arma::uvec& row, const arma::uvec& col, const arma::uvec& symmetric, const double eps, const int ncores);
+RcppExport SEXP _modsem_gradObsLogLikQmlFDCpp(SEXP submodelSEXP, SEXP blockSEXP, SEXP rowSEXP, SEXP colSEXP, SEXP symmetricSEXP, SEXP epsSEXP, SEXP ncoresSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type submodel(submodelSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type block(blockSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type row(rowSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type col(colSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type symmetric(symmetricSEXP);
+    Rcpp::traits::input_parameter< const double >::type eps(epsSEXP);
+    Rcpp::traits::input_parameter< const int >::type ncores(ncoresSEXP);
+    rcpp_result_gen = Rcpp::wrap(gradObsLogLikQmlFDCpp(submodel, block, row, col, symmetric, eps, ncores));
+    return rcpp_result_gen;
+END_RCPP
+}
+// hessLogLikQmlCpp
+Rcpp::List hessLogLikQmlCpp(const Rcpp::List& submodel, const arma::uvec& block, const arma::uvec& row, const arma::uvec& col, const arma::uvec& symmetric, const double relStep, const double minAbs, const int ncores);
+RcppExport SEXP _modsem_hessLogLikQmlCpp(SEXP submodelSEXP, SEXP blockSEXP, SEXP rowSEXP, SEXP colSEXP, SEXP symmetricSEXP, SEXP relStepSEXP, SEXP minAbsSEXP, SEXP ncoresSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type submodel(submodelSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type block(blockSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type row(rowSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type col(colSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type symmetric(symmetricSEXP);
+    Rcpp::traits::input_parameter< const double >::type relStep(relStepSEXP);
+    Rcpp::traits::input_parameter< const double >::type minAbs(minAbsSEXP);
+    Rcpp::traits::input_parameter< const int >::type ncores(ncoresSEXP);
+    rcpp_result_gen = Rcpp::wrap(hessLogLikQmlCpp(submodel, block, row, col, symmetric, relStep, minAbs, ncores));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -333,6 +469,131 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// modelMatrixCacheCpp
+SEXP modelMatrixCacheCpp(Rcpp::List matrices);
+RcppExport SEXP _modsem_modelMatrixCacheCpp(SEXP matricesSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::List >::type matrices(matricesSEXP);
+    rcpp_result_gen = Rcpp::wrap(modelMatrixCacheCpp(matrices));
+    return rcpp_result_gen;
+END_RCPP
+}
+// impliedEtaFromZetaCpp
+arma::vec impliedEtaFromZetaCpp(const arma::vec zeta, const SEXP xptr);
+RcppExport SEXP _modsem_impliedEtaFromZetaCpp(SEXP zetaSEXP, SEXP xptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::vec >::type zeta(zetaSEXP);
+    Rcpp::traits::input_parameter< const SEXP >::type xptr(xptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(impliedEtaFromZetaCpp(zeta, xptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// impliedYFromEtaCpp
+arma::vec impliedYFromEtaCpp(const arma::vec eta, const SEXP xptr);
+RcppExport SEXP _modsem_impliedYFromEtaCpp(SEXP etaSEXP, SEXP xptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::vec >::type eta(etaSEXP);
+    Rcpp::traits::input_parameter< const SEXP >::type xptr(xptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(impliedYFromEtaCpp(eta, xptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// logLikFromZetaMLCpp
+double logLikFromZetaMLCpp(const arma::vec zeta, const arma::vec y, const SEXP xptr, const arma::uvec idx);
+RcppExport SEXP _modsem_logLikFromZetaMLCpp(SEXP zetaSEXP, SEXP ySEXP, SEXP xptrSEXP, SEXP idxSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::vec >::type zeta(zetaSEXP);
+    Rcpp::traits::input_parameter< const arma::vec >::type y(ySEXP);
+    Rcpp::traits::input_parameter< const SEXP >::type xptr(xptrSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec >::type idx(idxSEXP);
+    rcpp_result_gen = Rcpp::wrap(logLikFromZetaMLCpp(zeta, y, xptr, idx));
+    return rcpp_result_gen;
+END_RCPP
+}
+// gradLogLikFromZetaMLCpp
+arma::vec gradLogLikFromZetaMLCpp(const arma::vec zeta, const arma::vec y, const SEXP xptr, const arma::uvec idx, const double eps);
+RcppExport SEXP _modsem_gradLogLikFromZetaMLCpp(SEXP zetaSEXP, SEXP ySEXP, SEXP xptrSEXP, SEXP idxSEXP, SEXP epsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::vec >::type zeta(zetaSEXP);
+    Rcpp::traits::input_parameter< const arma::vec >::type y(ySEXP);
+    Rcpp::traits::input_parameter< const SEXP >::type xptr(xptrSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec >::type idx(idxSEXP);
+    Rcpp::traits::input_parameter< const double >::type eps(epsSEXP);
+    rcpp_result_gen = Rcpp::wrap(gradLogLikFromZetaMLCpp(zeta, y, xptr, idx, eps));
+    return rcpp_result_gen;
+END_RCPP
+}
+// hessLogLikFromZetaMLCpp
+Rcpp::List hessLogLikFromZetaMLCpp(const arma::vec zeta, const arma::vec y, const SEXP xptr, const arma::uvec idx, const double relStep, const double minAbsPar);
+RcppExport SEXP _modsem_hessLogLikFromZetaMLCpp(SEXP zetaSEXP, SEXP ySEXP, SEXP xptrSEXP, SEXP idxSEXP, SEXP relStepSEXP, SEXP minAbsParSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::vec >::type zeta(zetaSEXP);
+    Rcpp::traits::input_parameter< const arma::vec >::type y(ySEXP);
+    Rcpp::traits::input_parameter< const SEXP >::type xptr(xptrSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec >::type idx(idxSEXP);
+    Rcpp::traits::input_parameter< const double >::type relStep(relStepSEXP);
+    Rcpp::traits::input_parameter< const double >::type minAbsPar(minAbsParSEXP);
+    rcpp_result_gen = Rcpp::wrap(hessLogLikFromZetaMLCpp(zeta, y, xptr, idx, relStep, minAbsPar));
+    return rcpp_result_gen;
+END_RCPP
+}
+// logLikFromZetaEBMCpp
+double logLikFromZetaEBMCpp(const arma::vec zeta, const arma::vec y, const SEXP xptr, const arma::uvec idx);
+RcppExport SEXP _modsem_logLikFromZetaEBMCpp(SEXP zetaSEXP, SEXP ySEXP, SEXP xptrSEXP, SEXP idxSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::vec >::type zeta(zetaSEXP);
+    Rcpp::traits::input_parameter< const arma::vec >::type y(ySEXP);
+    Rcpp::traits::input_parameter< const SEXP >::type xptr(xptrSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec >::type idx(idxSEXP);
+    rcpp_result_gen = Rcpp::wrap(logLikFromZetaEBMCpp(zeta, y, xptr, idx));
+    return rcpp_result_gen;
+END_RCPP
+}
+// gradLogLikFromZetaEBMCpp
+arma::vec gradLogLikFromZetaEBMCpp(const arma::vec zeta, const arma::vec y, const SEXP xptr, const arma::uvec idx, const double eps);
+RcppExport SEXP _modsem_gradLogLikFromZetaEBMCpp(SEXP zetaSEXP, SEXP ySEXP, SEXP xptrSEXP, SEXP idxSEXP, SEXP epsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::vec >::type zeta(zetaSEXP);
+    Rcpp::traits::input_parameter< const arma::vec >::type y(ySEXP);
+    Rcpp::traits::input_parameter< const SEXP >::type xptr(xptrSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec >::type idx(idxSEXP);
+    Rcpp::traits::input_parameter< const double >::type eps(epsSEXP);
+    rcpp_result_gen = Rcpp::wrap(gradLogLikFromZetaEBMCpp(zeta, y, xptr, idx, eps));
+    return rcpp_result_gen;
+END_RCPP
+}
+// hessLogLikFromZetaEBMCpp
+Rcpp::List hessLogLikFromZetaEBMCpp(const arma::vec zeta, const arma::vec y, const SEXP xptr, const arma::uvec idx, const double relStep, const double minAbsPar);
+RcppExport SEXP _modsem_hessLogLikFromZetaEBMCpp(SEXP zetaSEXP, SEXP ySEXP, SEXP xptrSEXP, SEXP idxSEXP, SEXP relStepSEXP, SEXP minAbsParSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::vec >::type zeta(zetaSEXP);
+    Rcpp::traits::input_parameter< const arma::vec >::type y(ySEXP);
+    Rcpp::traits::input_parameter< const SEXP >::type xptr(xptrSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec >::type idx(idxSEXP);
+    Rcpp::traits::input_parameter< const double >::type relStep(relStepSEXP);
+    Rcpp::traits::input_parameter< const double >::type minAbsPar(minAbsParSEXP);
+    rcpp_result_gen = Rcpp::wrap(hessLogLikFromZetaEBMCpp(zeta, y, xptr, idx, relStep, minAbsPar));
+    return rcpp_result_gen;
+END_RCPP
+}
 // tracePathsNumericCpp
 Rcpp::NumericVector tracePathsNumericCpp(Rcpp::CharacterVector x, Rcpp::CharacterVector y, Rcpp::DataFrame parTable, int maxlen);
 RcppExport SEXP _modsem_tracePathsNumericCpp(SEXP xSEXP, SEXP ySEXP, SEXP parTableSEXP, SEXP maxlenSEXP) {
@@ -365,26 +626,43 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_modsem_calcSESimpleSlopes", (DL_FUNC) &_modsem_calcSESimpleSlopes, 2},
-    {"_modsem_muLmsCpp", (DL_FUNC) &_modsem_muLmsCpp, 2},
-    {"_modsem_sigmaLmsCpp", (DL_FUNC) &_modsem_sigmaLmsCpp, 2},
+    {"_modsem_muSigmaLmsCpp", (DL_FUNC) &_modsem_muSigmaLmsCpp, 2},
+    {"_modsem_completeScoresNodeAnalyticalLmsCpp", (DL_FUNC) &_modsem_completeScoresNodeAnalyticalLmsCpp, 11},
     {"_modsem_completeLogLikLmsCpp", (DL_FUNC) &_modsem_completeLogLikLmsCpp, 7},
     {"_modsem_gradLogLikLmsCpp", (DL_FUNC) &_modsem_gradLogLikLmsCpp, 12},
     {"_modsem_gradObsLogLikLmsCpp", (DL_FUNC) &_modsem_gradObsLogLikLmsCpp, 12},
     {"_modsem_observedLogLikLmsCpp", (DL_FUNC) &_modsem_observedLogLikLmsCpp, 7},
     {"_modsem_hessObsLogLikLmsCpp", (DL_FUNC) &_modsem_hessObsLogLikLmsCpp, 13},
     {"_modsem_hessCompLogLikLmsCpp", (DL_FUNC) &_modsem_hessCompLogLikLmsCpp, 13},
+    {"_modsem_densityMatrixLmsCpp", (DL_FUNC) &_modsem_densityMatrixLmsCpp, 8},
+    {"_modsem_estepSuffStatLmsCpp", (DL_FUNC) &_modsem_estepSuffStatLmsCpp, 5},
     {"_modsem_muQmlCpp", (DL_FUNC) &_modsem_muQmlCpp, 3},
     {"_modsem_sigmaQmlCpp", (DL_FUNC) &_modsem_sigmaQmlCpp, 3},
     {"_modsem_calcKronXi", (DL_FUNC) &_modsem_calcKronXi, 3},
     {"_modsem_calcBinvCpp", (DL_FUNC) &_modsem_calcBinvCpp, 3},
     {"_modsem_dnormCpp", (DL_FUNC) &_modsem_dnormCpp, 4},
     {"_modsem_varZCpp", (DL_FUNC) &_modsem_varZCpp, 3},
+    {"_modsem_logLikQmlCpp", (DL_FUNC) &_modsem_logLikQmlCpp, 2},
+    {"_modsem_analyticalObsGradQmlCpp", (DL_FUNC) &_modsem_analyticalObsGradQmlCpp, 5},
+    {"_modsem_analyticalGradQmlCpp", (DL_FUNC) &_modsem_analyticalGradQmlCpp, 5},
+    {"_modsem_gradLogLikQmlFDCpp", (DL_FUNC) &_modsem_gradLogLikQmlFDCpp, 7},
+    {"_modsem_gradObsLogLikQmlFDCpp", (DL_FUNC) &_modsem_gradObsLogLikQmlFDCpp, 7},
+    {"_modsem_hessLogLikQmlCpp", (DL_FUNC) &_modsem_hessLogLikQmlCpp, 8},
     {"_modsem_multiplyIndicatorsCpp", (DL_FUNC) &_modsem_multiplyIndicatorsCpp, 1},
     {"_modsem_checkOpenMP_Cpp", (DL_FUNC) &_modsem_checkOpenMP_Cpp, 0},
     {"_modsem_dmvnrmArmaMc", (DL_FUNC) &_modsem_dmvnrmArmaMc, 5},
     {"_modsem_repDmvnormCpp", (DL_FUNC) &_modsem_repDmvnormCpp, 5},
     {"_modsem_totalDmvnWeighted", (DL_FUNC) &_modsem_totalDmvnWeighted, 6},
     {"_modsem_dmvnfast", (DL_FUNC) &_modsem_dmvnfast, 6},
+    {"_modsem_modelMatrixCacheCpp", (DL_FUNC) &_modsem_modelMatrixCacheCpp, 1},
+    {"_modsem_impliedEtaFromZetaCpp", (DL_FUNC) &_modsem_impliedEtaFromZetaCpp, 2},
+    {"_modsem_impliedYFromEtaCpp", (DL_FUNC) &_modsem_impliedYFromEtaCpp, 2},
+    {"_modsem_logLikFromZetaMLCpp", (DL_FUNC) &_modsem_logLikFromZetaMLCpp, 4},
+    {"_modsem_gradLogLikFromZetaMLCpp", (DL_FUNC) &_modsem_gradLogLikFromZetaMLCpp, 5},
+    {"_modsem_hessLogLikFromZetaMLCpp", (DL_FUNC) &_modsem_hessLogLikFromZetaMLCpp, 6},
+    {"_modsem_logLikFromZetaEBMCpp", (DL_FUNC) &_modsem_logLikFromZetaEBMCpp, 4},
+    {"_modsem_gradLogLikFromZetaEBMCpp", (DL_FUNC) &_modsem_gradLogLikFromZetaEBMCpp, 5},
+    {"_modsem_hessLogLikFromZetaEBMCpp", (DL_FUNC) &_modsem_hessLogLikFromZetaEBMCpp, 6},
     {"_modsem_tracePathsNumericCpp", (DL_FUNC) &_modsem_tracePathsNumericCpp, 4},
     {"_modsem_tracePathsCharacterCpp", (DL_FUNC) &_modsem_tracePathsCharacterCpp, 5},
     {NULL, NULL, 0}

@@ -1,6 +1,5 @@
-inspectDA_Matrices <- c("lambda", "tau", "theta", "gamma.xi",
-                        "gamma.eta", "omega.xi.xi",
-                        "omega.eta.xi", "phi", "psi", "alpha", "beta0")
+inspectDA_Matrices <- c("lambda", "theta", "wmat", "tmat",
+                        "psi", "beta", "nu", "alpha")
 
 
 inspectDA_Optim <- c("coefficients.free", "vcov.free", "information",
@@ -15,7 +14,7 @@ modsem_inspect_da <- function(model,
   .modsemVector <- \(...) modsemVector(..., is.public = is.public)
   .modsemMatrix <- \(...) modsemMatrix(..., is.public = is.public)
 
-  stopif(!length(what), "`what` is of length zero!")
+  mod_stopif(!length(what), "`what` is of length zero!")
 
   if (standardized)
     model <- standardize_model(model)
@@ -112,44 +111,43 @@ modsem_inspect_da <- function(model,
   }
 
   buildGroupPayload <- function(submodel, expected) {
-    matrices         <- submodel$matrices
-    matricesCovModel <- submodel$covModel$matrices
-    fetchCov <- function(name) {
-      if (!is.null(matricesCovModel)) matricesCovModel[[name]] else NULL
+    # matrices in lavaan notation
+    matrices <- submodel$expected.matrices$matrices
+
+    lambda <- matrices$lambda
+    theta  <- matrices$theta
+    wmat   <- matrices$wmat
+    tmat   <- matrices$tmat
+    beta   <- matrices$beta
+    psi    <- matrices$psi
+    alpha  <- matrices$alpha
+    nu     <- matrices$nu
+
+    if (!NROW(wmat)) {
+      wmat <- lambda
+      wmat[TRUE] <- 0
     }
 
-    lambda       <- diagPartitionedMat(matrices$lambdaX, matrices$lambdaY)
-    theta        <- diagPartitionedMat(matrices$thetaDelta, matrices$thetaEpsilon)
-    gamma.xi     <- diagPartitionedMat(matrices$gammaXi,     fetchCov("gammaXi"))
-    gamma.eta    <- diagPartitionedMat(matrices$gammaEta,    fetchCov("gammaEta"))
-    omega.xi.xi  <- diagPartitionedMat(matrices$omegaXiXi,   fetchCov("omegaXiXi"))
-    omega.eta.xi <- diagPartitionedMat(matrices$omegaEtaXi,  fetchCov("omegaEtaXi"))
-    phi          <- diagPartitionedMat(matrices$phi,         fetchCov("phi"))
-    psi          <- diagPartitionedMat(matrices$psi,         fetchCov("psi"))
+    if (!NROW(tmat)) {
+      tmat <- theta 
+      tmat[TRUE] <- 0
+    }
 
-    tau   <- rbind(matrices$tauX, matrices$tauY)
-    alpha <- matrices$alpha
-    beta0 <- matrices$beta0
-
-    if (!is.null(tau))   colnames(tau)   <- "~1"
+    if (!is.null(nu))    colnames(nu)   <- "~1"
     if (!is.null(alpha)) colnames(alpha) <- "~1"
-    if (!is.null(beta0)) colnames(beta0) <- "~1"
 
-    c(
+    out <- c(
       list(
-        N            = submodel$data$n,
-        data         = submodel$data$data.full,
-        lambda       = .modsemMatrix(lambda),
-        tau          = .modsemMatrix(tau),
-        theta        = .modsemMatrix(theta, symmetric = TRUE),
-        gamma.xi     = .modsemMatrix(gamma.xi),
-        gamma.eta    = .modsemMatrix(gamma.eta),
-        omega.xi.xi  = .modsemMatrix(omega.xi.xi),
-        omega.eta.xi = .modsemMatrix(omega.eta.xi),
-        phi          = .modsemMatrix(phi, symmetric = TRUE),
-        psi          = .modsemMatrix(psi, symmetric = TRUE),
-        alpha        = .modsemMatrix(alpha),
-        beta0        = .modsemMatrix(beta0)
+        N      = submodel$data$n,
+        data   = submodel$data$data.full,
+        lambda = .modsemMatrix(lambda),
+        wmat   = .modsemMatrix(wmat),
+        theta  = .modsemMatrix(theta, symmetric = TRUE),
+        tmat   = .modsemMatrix(tmat),
+        nu     = .modsemMatrix(nu),
+        alpha  = .modsemMatrix(alpha),
+        beta   = .modsemMatrix(beta),
+        psi    = .modsemMatrix(psi, symmetric = TRUE)
       ),
       buildExpectedPayload(expected)
     )
@@ -171,16 +169,13 @@ modsem_inspect_da <- function(model,
   N.val            <- collapseField("N")
   data.val         <- collapseField("data")
   lambda.val       <- collapseField("lambda")
-  tau.val          <- collapseField("tau")
+  wmat.val         <- collapseField("wmat")
+  tmat.val         <- collapseField("tmat")
+  nu.val           <- collapseField("nu")
   theta.val        <- collapseField("theta")
-  gamma.xi.val     <- collapseField("gamma.xi")
-  gamma.eta.val    <- collapseField("gamma.eta")
-  omega.xi.xi.val  <- collapseField("omega.xi.xi")
-  omega.eta.xi.val <- collapseField("omega.eta.xi")
-  phi.val          <- collapseField("phi")
+  beta.val         <- collapseField("beta")
   psi.val          <- collapseField("psi")
   alpha.val        <- collapseField("alpha")
-  beta0.val        <- collapseField("beta0")
   cov.ov.val       <- collapseField("cov.ov")
   cov.lv.val       <- collapseField("cov.lv")
   cov.all.val      <- collapseField("cov.all")
@@ -197,58 +192,60 @@ modsem_inspect_da <- function(model,
   res.lv.val       <- collapseField("res.lv")
   res.ov.val       <- collapseField("res.ov")
 
-  info <- list(N                 = N.val,
-               vcov.all          = .modsemMatrix(model$vcov.all, symmetric = TRUE),
-               vcov.free         = .modsemMatrix(model$vcov.free, symmetric = TRUE),
-               information       = .modsemMatrix(model$FIM, symmetric = TRUE),
-               data              = data.val,
-               coefficients.all  = .modsemVector(model$coefs.all),
-               coefficients.free = .modsemVector(model$coefs.free),
-               partable          = parameter_estimates(model, is.public = is.public),
-               partable.input    = model$originalParTable,
-               loglik            = model$logLik,
-               iterations        = model$iterations,
-               convergence       = model$convergence,
-               ovs               = ovs,
+  info <- list(
+     N                 = N.val,
+     vcov.all          = .modsemMatrix(model$vcov.all, symmetric = TRUE),
+     vcov.free         = .modsemMatrix(model$vcov.free, symmetric = TRUE),
+     information       = .modsemMatrix(model$FIM, symmetric = TRUE),
+     data              = data.val,
+     coefficients.all  = .modsemVector(model$coefs.all),
+     coefficients.free = .modsemVector(model$coefs.free),
+     partable          = parameter_estimates(model, is.public = is.public),
+     partable.input    = model$originalParTable,
+     loglik            = model$logLik,
+     iterations        = model$iterations,
+     convergence       = model$convergence,
+     ovs               = ovs,
 
-               ngroups     = model$model$info$n.groups,
-               group       = model$args$group,
-               group.label = if (!is.null(model$args$group)) group.names else NULL,
+     ngroups     = model$model$info$n.groups,
+     group       = model$args$group,
+     group.label = if (!is.null(model$args$group)) group.names else NULL,
 
-               lambda       = lambda.val,
-               tau          = tau.val,
-               theta        = theta.val,
-               gamma.xi     = gamma.xi.val,
-               gamma.eta    = gamma.eta.val,
-               omega.xi.xi  = omega.xi.xi.val,
-               omega.eta.xi = omega.eta.xi.val,
+     lambda  = lambda.val,
+     theta   = theta.val,
+     wmat    = wmat.val,
+     tmat    = tmat.val,
+     nu      = nu.val,
+     alpha   = alpha.val,
+     beta    = beta.val,
+     psi     = psi.val,
 
-               phi   = phi.val,
-               psi   = psi.val,
+     cov.ov  = cov.ov.val,
+     cov.lv  = cov.lv.val,
+     cov.all = cov.all.val,
 
-               alpha = alpha.val,
-               beta0 = beta0.val,
+     cor.ov  = cor.ov.val,
+     cor.lv  = cor.lv.val,
+     cor.all = cor.all.val,
 
-               cov.ov  = cov.ov.val,
-               cov.lv  = cov.lv.val,
-               cov.all = cov.all.val,
+     mean.lv  = mean.lv.val,
+     mean.ov  = mean.ov.val,
+     mean.all = mean.all.val,
 
-               cor.ov  = cor.ov.val,
-               cor.lv  = cor.lv.val,
-               cor.all = cor.all.val,
+     r2.all  = r2.all.val,
+     r2.lv   = r2.lv.val,
+     r2.ov   = r2.ov.val,
 
-               mean.lv  = mean.lv.val,
-               mean.ov  = mean.ov.val,
-               mean.all = mean.all.val,
-
-               r2.all  = r2.all.val,
-               r2.lv   = r2.lv.val,
-               r2.ov   = r2.ov.val,
-
-               res.all = res.all.val,
-               res.lv  = res.lv.val,
-               res.ov  = res.ov.val
+     res.all = res.all.val,
+     res.lv  = res.lv.val,
+     res.ov  = res.ov.val
   )
+
+  optim.fields <- inspectDA_Optim
+  if (!is.null(model$iteration.history)) {
+    info$iteration.history <- model$iteration.history
+    optim.fields <- c(optim.fields, "iteration.history")
+  }
 
   FIT <- \() {
     h0 <- estimate_h0(model, calc.se = FALSE)
@@ -271,7 +268,7 @@ modsem_inspect_da <- function(model,
       default   = info[names(info) != "data"],
       all       = info,
       matrices  = info[inspectDA_Matrices],
-      optim     = info[inspectDA_Optim],
+      optim     = info[optim.fields],
       fit       = FIT(),
       info[[what]]
     )
@@ -280,9 +277,8 @@ modsem_inspect_da <- function(model,
   nullvalues <- vapply(fields, FUN.VALUE = logical(1L), FUN = is.null)
   okifnull   <- names(fields) %in% c("group", "group.label")
 
-  warnif(any(nullvalues & !okifnull),
-         "Some fields in `modsem_inspect()` could not be retrieved!",
-         immediate. = FALSE)
+  mod_warnif(any(nullvalues & !okifnull),
+         "Some fields in `modsem_inspect()` could not be retrieved!")
 
   fields
 }

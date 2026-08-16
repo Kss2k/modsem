@@ -129,7 +129,7 @@ tpb <- '
 
 tpb_lms_3 <- modsem(tpb, TPB, method = "lms")
 testthat::expect_true(tpb_lms_3$iterations == 2)
-summary(tpb_lms_3, H0 = FALSE)
+summary(tpb_lms_3, H0 = FALSE, standardized = TRUE)
 
 
 testthat::expect_error(

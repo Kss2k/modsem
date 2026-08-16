@@ -1,16 +1,5 @@
-# UTF-8 escaped characters for box drawing
-V_LINE = "\u2502" # vertical line
-H_LINE = "\u2500" # horizontal line
-D_CROSS = "\u252c" # down cross
-LU_CORNER = "\u250c" # left upper corner
-LL_CORNER = "\u2514" # left lower corner
-RU_CORNER = "\u2510" # left upper corner
-RL_CORNER = "\u2518" # right lower corner
-H_DLINE = "\u2550" # horizontal double line
-F_DCROSS = "\u256a" # full double cross
-R_DCROSS = "\u2561" # right double cross
-L_DCROSS = "\u255e" # left double cross
-U_CROSS = "\u2534" # up cross
+# Box-drawing characters live in BOX_CHARS (see zzz.R); the active set
+# (unicode or ASCII fallback) is selected at load time in .onLoad().
 
 
 #' Get the simple slopes of a SEM model
@@ -138,8 +127,8 @@ simple_slopes <- function(x,
                           standardized = FALSE,
                           xz = NULL,
                           ...) {
-  stopif(!isModsemObject(model) && !isLavaanObject(model), "model must be of class ",
-         "'modsem_pi', 'modsem_da', 'modsem_mplus' or 'lavaan'")
+  mod_stopif(!isModsemObject(model) && !isLavaanObject(model), paste0("model must be of class ",
+         "'modsem_pi', 'modsem_da', 'modsem_mplus' or 'lavaan'"))
 
   if (standardized) {
     parTable <- standardized_estimates(model, correction = TRUE)
@@ -164,7 +153,7 @@ simple_slopes <- function(x,
     out[[label]] <- simpleSlopesGroup(
       x = x, z = z, y = y, parTable = parTable.g, model = model, vals_x = vals_x,
       vals_z = vals_z, rescale = rescale, ci_width = ci_width, ci_type = ci_type,
-      relative_h0 = relative_h0, xz = xz, ...
+      relative_h0 = relative_h0, xz = xz, standardized = standardized, ...
     )
   }
 
@@ -173,7 +162,8 @@ simple_slopes <- function(x,
 
 
 simpleSlopesGroup <- function(x, z, y, parTable, model, vals_x, vals_z, rescale,
-                              ci_width, ci_type, relative_h0, xz, ...) {
+                              ci_width, ci_type, relative_h0, xz,
+                              standardized, ...) {
   if (is.null(xz))
     xz <- paste(x, z, sep = ":")
 
@@ -194,15 +184,14 @@ simpleSlopesGroup <- function(x, z, y, parTable, model, vals_x, vals_z, rescale,
     zz <- stringr::str_remove_all(zz, ":")
   }
 
-  if (isLavaanObject(model)) {
+  if (inherits(model, "lavaan")) {
     vcov <- lavaan::vcov
-    nobs <- lavaan::nobs
     coef <- lavaan::coef
+    nobs <- lavaan::nobs
   }
 
   n     <- nobs(model)
-  VCOV  <- vcov(model)
-  coefs <- coef(model)
+  VCOV  <- getVcovSimpleSlopes(model, standardized = standardized)
 
   if (length(n) > 1) {
     # this won't work for multigroup models
@@ -222,11 +211,11 @@ simpleSlopesGroup <- function(x, z, y, parTable, model, vals_x, vals_z, rescale,
   var_x   <- calcCovParTable(x, x, parTable)
   var_z   <- calcCovParTable(z, z, parTable)
 
-  stopif(is.na(var_x), "Variance for x not found in model")
-  stopif(is.na(var_z), "Variance for z not found in model")
-  stopif(length(beta_x) == 0, "Coefficient for x not found in model")
-  stopif(length(beta_z) == 0, "Coefficient for z not found in model")
-  warnif(length(beta_xz) == 0, "Coefficient for interaction term not found in model")
+  mod_stopif(is.na(var_x), "Variance for x not found in model")
+  mod_stopif(is.na(var_z), "Variance for z not found in model")
+  mod_stopif(length(beta_x) == 0, "Coefficient for x not found in model")
+  mod_stopif(length(beta_z) == 0, "Coefficient for z not found in model")
+  mod_warnif(length(beta_xz) == 0, "Coefficient for interaction term not found in model")
 
   if (!length(beta_xx)) beta_xx <- 0
   if (!length(beta_xz)) beta_xz <- 0
@@ -358,27 +347,29 @@ calc_se <- function(df, e, VCOV, se_type = "confidence") {
 printTable <- function(x) {
   if (!NROW(x)) return(NULL)
 
-  header <- paste0(paste(x[1, ], collapse = paste0(" ", V_LINE, " ")), " ")
+  box <- BOX_CHARS$chars
+
+  header <- paste0(paste(x[1, ], collapse = paste0(" ", box$V_LINE, " ")), " ")
   header_vec <- unlist(stringr::str_split(header, ""))
 
-  sep_thin_vec <- rep(H_LINE, nchar(header))
-  sep_thin_vec[header_vec == V_LINE] <- D_CROSS
+  sep_thin_vec <- rep(box$H_LINE, nchar(header))
+  sep_thin_vec[header_vec == box$V_LINE] <- box$D_CROSS
   sep_thin <- paste0(sep_thin_vec, collapse="")
-  sep_thin <- paste0(LU_CORNER, sep_thin, RU_CORNER, "\n")
+  sep_thin <- paste0(box$LU_CORNER, sep_thin, box$RU_CORNER, "\n")
 
-  sep_thick_vec <- rep(H_DLINE, nchar(header))
-  sep_thick_vec[header_vec == V_LINE] <- F_DCROSS
+  sep_thick_vec <- rep(box$H_DLINE, nchar(header))
+  sep_thick_vec[header_vec == box$V_LINE] <- box$F_DCROSS
   sep_thick <- paste0(sep_thick_vec, collapse="")
-  sep_thick <- paste0(L_DCROSS, sep_thick, R_DCROSS, "\n")
+  sep_thick <- paste0(box$L_DCROSS, sep_thick, box$R_DCROSS, "\n")
 
   sep_bottom_vec <- sep_thin_vec
-  sep_bottom_vec[header_vec == V_LINE] <- U_CROSS
+  sep_bottom_vec[header_vec == box$V_LINE] <- box$U_CROSS
   sep_bottom <- paste0(sep_bottom_vec, collapse="")
-  sep_bottom <- paste0(LL_CORNER, sep_bottom, RL_CORNER, "\n")
+  sep_bottom <- paste0(box$LL_CORNER, sep_bottom, box$RL_CORNER, "\n")
 
   for (i in seq_len(nrow(x))) {
-    str <- paste(x[i, ], collapse = paste0(" ", V_LINE, " "))
-    str <- paste0(V_LINE, str, " ", V_LINE, "\n")
+    str <- paste(x[i, ], collapse = paste0(" ", box$V_LINE, " "))
+    str <- paste0(box$V_LINE, str, " ", box$V_LINE, "\n")
 
     if (i == 1) {
       cat(sep_thin, str, sep_thick, sep = "")
@@ -394,10 +385,11 @@ print.simple_slopes <- function(x, digits = 2, scientific.p = FALSE, ...) {
   if (length(x) <= 1L)
     return(printSimpleSlopesGroup(x = x[[1L]], digits = digits, scientific.p = scientific.p, ...))
 
+  box <- BOX_CHARS$chars
   for (g in names(x)) {
-    printf("%s\n", strrep(H_LINE, getOption("width")))
+    printf("%s\n", strrep(box$H_LINE, getOption("width")))
     printf("  Group: %s\n", g)
-    printf("%s\n", strrep(H_DLINE, getOption("width")))
+    printf("%s\n", strrep(box$H_DLINE, getOption("width")))
     printSimpleSlopesGroup(x = x[[g]], digits = digits, scientific.p = scientific.p, ...)
   }
 
@@ -406,6 +398,12 @@ print.simple_slopes <- function(x, digits = 2, scientific.p = FALSE, ...) {
 
 
 printSimpleSlopesGroup <- function(x, digits = 2, scientific.p = FALSE, ...) {
+  fstring <- paste0("%.", digits, "f")
+  digits.p <- max(3, digits)
+
+  fformat <- \(x, justify = "right", ...) format(sprintf(fstring, x), justify = justify, ...)
+  pformat <- \(x) formatPval(x, scientific = scientific.p, digits = digits.p)
+
   variables  <- x$variable_names
   margins    <- x$margins
   sig.slopes <- x$sig.slopes
@@ -418,37 +416,39 @@ printSimpleSlopesGroup <- function(x, digits = 2, scientific.p = FALSE, ...) {
   # Difference test ----------------------------------------------------------
   header <- c("Difference", "Std.Error",
               "z.value", "p.value", "Conf.Interval")
-  ci.lower <- format(sig.diff_min_max$ci.lower, digits = digits, nsmall = digits)
-  ci.upper <- format(sig.diff_min_max$ci.upper, digits = digits, nsmall = digits)
+  ci.lower <- fformat(sig.diff_min_max$ci.lower)
+  ci.upper <- fformat(sig.diff_min_max$ci.upper)
 
   X <- data.frame(
-    diff      = format(sig.diff_min_max$diff, digits = digits, nsmall = digits),
-    std.error = format(sig.diff_min_max$std.error, digits = digits, nsmall = digits),
-    z.value   = format(sig.diff_min_max$z.value, digits = digits, nsmall = digits),
-    p.value   = formatPval(sig.diff_min_max$p.value, scientific = scientific.p),
+    diff      = fformat(sig.diff_min_max$diff),
+    std.error = fformat(sig.diff_min_max$std.error),
+    z.value   = fformat(sig.diff_min_max$z.value),
+    p.value   = pformat(sig.diff_min_max$p.value),
     ci        = paste0("[", ci.lower, ", ", ci.upper, "]")
   )
+
   X1 <- matrix(header, nrow = 1)
   X2 <- padCharMatrix(as.matrix(X), n=1) # pad atleast one space to the left
   X <- apply(rbind(X1, X2), MARGIN = 2, format, digits = digits, justify = "right")
 
-  cat(sprintf("\nDifference test of %s~%s|%s at %s = %.3f and %.3f:\n",
-              var_y, var_x, var_z, var_z, sig.diff_min_max$min.z, sig.diff_min_max$max.z))
+  cat(sprintf("\nDifference test of %s~%s|%s at %s = %s and %s:\n",
+              var_y, var_x, var_z, var_z, fformat(sig.diff_min_max$min.z),
+              fformat(sig.diff_min_max$max.z)))
   printTable(X)
   cat("\n")
 
   # Slope test -----------------------------------------------------------------
   header <- c(sig.slopes$param[1], sig.slopes$moderator[1], "Std.Error",
               "z.value", "p.value", "Conf.Interval")
-  ci.lower <- format(sig.slopes$ci.lower, digits = digits, nsmall = digits)
-  ci.upper <- format(sig.slopes$ci.upper, digits = digits, nsmall = digits)
+  ci.lower <- fformat(sig.slopes$ci.lower)
+  ci.upper <- fformat(sig.slopes$ci.upper)
 
   X <- data.frame(
-    slope     = format(sig.slopes$slope.predictor, digits = digits, nsmall = digits),
-    val_z     = format(sig.slopes$value.moderator, digits = digits, nsmall = digits),
-    std.error = format(sig.slopes$std.error, digits = digits, nsmall = digits),
-    z.value   = format(sig.slopes$z.value, digits = digits, nsmall = digits),
-    p.value   = formatPval(sig.slopes$p.value, scientific = scientific.p),
+    slope     = fformat(sig.slopes$slope.predictor),
+    val_z     = fformat(sig.slopes$value.moderator),
+    std.error = fformat(sig.slopes$std.error),
+    z.value   = fformat(sig.slopes$z.value),
+    p.value   = pformat(sig.slopes$p.value),
     ci        = paste0("[", ci.lower, ", ", ci.upper, "]")
   )
 
@@ -465,15 +465,15 @@ printSimpleSlopesGroup <- function(x, digits = 2, scientific.p = FALSE, ...) {
   outcome    <- variables[3]
   header     <- c(predictors[1], sprintf("Predicted %s", outcome), "Std.Error",
                   "z.value", "p.value", "Conf.Interval")
-  ci.lower   <- format(margins$ci.lower, digits = digits, nsmall = digits)
-  ci.upper   <- format(margins$ci.upper, digits = digits, nsmall = digits)
-  cat_z      <- as.factor(round(margins$vals_z, digits))
+  ci.lower   <- fformat(margins$ci.lower)
+  ci.upper   <- fformat(margins$ci.upper)
+  cat_z      <- as.factor(fformat(round(margins$vals_z, digits)))
 
-  X <- data.frame(vals_x    = format(margins$vals_x, digits = digits, nsmall = digits),
-                  predicted = format(margins$predicted, digits = digits, nsmall = digits),
-                  std.error = format(margins$std.error, digits = digits, nsmall = digits),
-                  z.value   = format(margins$z.value, digits = digits, nsmall = digits),
-                  p.value   = formatPval(margins$p.value, scientific = scientific.p),
+  X <- data.frame(vals_x    = fformat(margins$vals_x),
+                  predicted = fformat(margins$predicted),
+                  std.error = fformat(margins$std.error),
+                  z.value   = fformat(margins$z.value),
+                  p.value   = pformat(margins$p.value),
                   ci        = paste0("[", ci.lower, ", ", ci.upper, "]"))
 
   X1 <- matrix(header, nrow = 1)
@@ -512,13 +512,33 @@ checkInputsSimpleSlopes <- function(..., parTable) {
   variables <- c(parTable[varmask, "lhs"], parTable[varmask, "rhs"])
   variables <- unique(variables[variables != ""])
 
-  checkLength <- \(x, nm) stopif(length(x) != 1L, nm, " must be of length 1!")
-  checkExists <- \(x) stopif(!x %in% variables && !grepl(":", x),
-                             "Unrecognized variable: ", x, "!")
+  checkLength <- \(x, nm) mod_stopif(length(x) != 1L, paste0(nm, " must be of length 1!"))
+  checkExists <- \(x) mod_stopif(!x %in% variables && !grepl(":", x),
+                             paste0("Unrecognized variable: ", x, "!"))
 
   params <- list(...)
   for (nm in names(params)) {
     checkLength(x = params[[nm]], nm = nm)
     checkExists(x = params[[nm]])
+  }
+}
+
+
+getVcovSimpleSlopes <- function(model, standardized = FALSE) {
+  if (inherits(model, "modsem_da")) {
+    return(modsem_inspect(model, what = "vcov.all", standardized = standardized))
+
+  } else if (inherits(model, "modsem_pi")) {
+    what <- if (standardized) "vcov.std.all" else "vcov"
+    return(modsem_inspect(model, what = what))
+
+  } else if (inherits(model, "lavaan")) {
+    what <- if (standardized) "vcov.std.all" else "vcov"
+    return(lavaan::lavInspect(model, what = what))
+
+  } else {
+    mod_msg_warn(paste0("standardized vcov is not available for model of class: ",
+             class(model)[[1L]]))
+    return(vcov(model))
   }
 }

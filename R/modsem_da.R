@@ -144,19 +144,77 @@
 #'
 #' @param em.control a list of control parameters for the EM algorithm. See \code{\link{default_settings_da}} for defaults.
 #'
-#' @param ordered Variables to be treated as ordered. Categories for ordered variables
-#'   are scored, transforming them from ordinal scale to interval scale (\href{https://onlinelibrary.wiley.com/doi/10.1155/2014/304213}{Chen & Wang, 2014}).
-#'   The underlying continous distributions
-#'   are estimated analytically for indicators of exogenous variables, and using an ordered
-#'   probit regression for indicators of endogenous variables. Factor scores are used as
-#'   independent variables the ordered probit regressions. Interaction effects between
-#'   the factor scores are included in the probit regression, if applicable.
-#'   The estimates are more robust to unequal intervals in ordinal variables. I.e., the estimates
-#'   should be more consistent, and less biased.
+#' @param ordered Variables to be treated as ordered. Ordered indicators are handled
+#'   with a Monte-Carlo correction for the LMS/QML estimator on standardized category
+#'   scores. The fitted model is used to repeatedly simulate continuous indicators,
+#'   ordinalize them to the observed cumulative category proportions, refit the
+#'   standardized LMS/QML working model, and solve the resulting fixed-point problem.
+#'   This follows the same general Monte-Carlo consistency logic as the MC-OrdPLSc
+#'   algorithm described by Slupphaug, Mehmetoglu, and Mittner (2026,
+#'   \doi{10.31234/osf.io/fwzj6_v1}).
 #'
-#' @param ordered.probit.correction Should ordered indicators be transformed such that they
-#'   reproduce their (probit) polychoric correlation matrix? This can be useful for
-#'   ordered variables with only a few categories, or for linear models.
+#'   Threshold standard errors are computed using a simple bootstrap of the category counts
+#'   (see \code{ordered.boot.reps}), which does not propagate uncertainty from the
+#'   model parameter estimates.
+#'
+#' @param ordered.mc.reps Integer. Monte-Carlo sample size used in each ordered MC
+#'   correction step. Larger values reduce simulation noise but increase runtime.
+#'
+#' @param ordered.min.iter Integer. Minimum number of Robbins-Monro iterations for the
+#'   ordered MC correction.
+#'
+#' @param ordered.max.iter Integer. Maximum number of Robbins-Monro iterations for the
+#'   ordered MC correction.
+#'
+#' @param ordered.tol Convergence tolerance for the ordered MC Robbins-Monro updates.
+#'
+#' @param ordered.rng.seed Optional integer random seed used by the ordered MC
+#'   correction.
+#'
+#' @param ordered.fixed.seed Logical. If \code{TRUE} and \code{ordered.rng.seed = NULL},
+#'   a fixed seed is drawn once and reused throughout the ordered MC correction to
+#'   improve numerical stability.
+#'
+#' @param ordered.polyak.juditsky Logical. Should Polyak-Juditsky averaging be used in
+#'   the ordered MC Robbins-Monro solver?
+#'
+#' @param ordered.pj.extrapolate Logical. If \code{TRUE}, use extrapolation of the
+#'   Polyak-Juditsky path to estimate the convergence point. If \code{FALSE}, the
+#'   averaged iterate is used directly.
+#'
+#' @param ordered.se Character string selecting the ordered MC standard-error correction.
+#'   \code{"delta"} (default) uses the delta method for all free parameters.
+#'   \code{"penalized"} uses a conservative variance inflation
+#'   based on the discrepancy between the naive and MC-corrected standardized estimates.
+#'   \code{"naive"} uses the fast diagonal rescaling approximation.
+#'   \code{"mixed"} uses the delta method for the structural path coefficients
+#'   only, and penalized standard errors for the remaining parameters. This is
+#'   considerably faster, and is a good option if you're only interested in
+#'   the structural model.
+#'
+#' @param ordered.se.penalty Non-negative numeric multiplier used when
+#'   \code{ordered.se = "penalized"}. The penalty adds
+#'   \code{ordered.se.penalty * (theta_mc - theta_naive)^2} to the diagonal of the
+#'   naive covariance matrix on the variance scale.
+#'
+#' @param ordered.delta.reps Integer. Monte-Carlo sample size used when approximating
+#'   the ordered MC delta-method Jacobian. Only relevant if
+#'   \code{ordered.se} is \code{"delta"} or \code{"mixed"}.
+#'
+#' @param ordered.delta.epsilon Finite-difference step size used for the ordered MC
+#'   delta-method Jacobian. Only relevant if \code{ordered.se} is \code{"delta"}
+#'   or \code{"mixed"}.
+#'
+#' @param ordered.boot.reps Integer. Number of bootstrap replications used to compute
+#'   standard errors for the thresholds of ordered indicators. The bootstrap resamples
+#'   the category counts at the observed sample size, holding the simulated
+#'   (model-implied) reference distribution of the continuous indicators fixed. Note
+#'   that this does not account for the uncertainty in the model parameter estimates,
+#'   and should be seen as a rough approximation. Set to \code{0} to disable.
+#'
+#' @param ordered.standardize Logical. Should scored ordered indicators be standardized
+#'   before the observed-data fit and after ordinalizing simulated indicators? This is
+#'   recommended for numerical stability and is enabled by default.
 #'
 #' @param cluster Clusters used to compute standard errors robust to non-indepence of observations. Must be paired with
 #'   \code{robust.se = TRUE}.
@@ -192,30 +250,33 @@
 #'   the items. Default is \code{TRUE}.
 #'
 #' @param orthogonal.x If \code{TRUE}, all covariances among exogenous latent variables only are set to zero.
-#'  Default is \code{FALSE}.
+#'   Default is \code{FALSE}.
 #'
 #' @param orthogonal.y If \code{TRUE}, all covariances among endogenous latent variables only are set to zero.
-#'  If \code{FALSE} residual covariances are added between pure endogenous variables;
-#'  those that are predicted by no other endogenous variable in the structural model.
-#'  Default is \code{FALSE}.
+#'   If \code{FALSE} residual covariances are added between pure endogenous variables;
+#'   those that are predicted by no other endogenous variable in the structural model.
+#'   Default is \code{FALSE}.
 #'
 #' @param orthogonal.y If \code{TRUE}, all covariances among endogenous latent variables only are set to zero.
-#'  If \code{FALSE} residual covariances are added between pure endogenous variables;
-#'  those that are predicted by no other endogenous variable in the structural model.
-#'  Default is \code{FALSE}.
+#'   If \code{FALSE} residual covariances are added between pure endogenous variables;
+#'   those that are predicted by no other endogenous variable in the structural model.
+#'   Default is \code{FALSE}.
 #'
 #' @param auto.fix.first If \code{TRUE} the factor loading of the first indicator, for
-#'  a given latent variable is fixed to \code{1}. If \code{FALSE} no loadings are fixed
-#'  (automatically). Note that that this might make it such that the model no longer is
-#'  identified. Default is \code{TRUE}. \strong{NOTE} this behaviour is overridden
-#'  if the first loading is labelled, where it gets treated as a free parameter instead. This
-#'  differs from the default behaviour in \code{lavaan}.
+#'   a given latent variable is fixed to \code{1}. If \code{FALSE} no loadings are fixed
+#'   (automatically). Note that that this might make it such that the model no longer is
+#'   identified. Default is \code{TRUE}. \strong{NOTE} this behaviour is overridden
+#'   if the first loading is labelled, where it gets treated as a free parameter instead. This
+#'   differs from the default behaviour in \code{lavaan}.
 #'
 #' @param auto.fix.single If \code{TRUE}, the residual variance of
-#'  an observed indicator is set to zero if it is the only indicator of a latent variable.
-#'  If \code{FALSE} the residual variance is not fixed to zero, and treated as a free parameter
-#'  of the model. Default is \code{TRUE}. \strong{NOTE} this behaviour is overridden
-#'  if the first loading is labelled, where it gets treated as a free parameter instead.
+#'   an observed indicator is set to zero if it is the only indicator of a latent variable.
+#'   If \code{FALSE} the residual variance is not fixed to zero, and treated as a free parameter
+#'   of the model. Default is \code{TRUE}. \strong{NOTE} this behaviour is overridden
+#'   if the first loading is labelled, where it gets treated as a free parameter instead.
+#'
+#' @param fix.composite.var If \code{TRUE} (default) the block covariance structure
+#'   of composite indiactors is fixed.
 #'
 #' @param auto.split.syntax Should the model syntax automatically be split into a
 #'   linear and non-linear part? This is done by moving the structural model for
@@ -245,6 +306,12 @@
 #' necessary syntax, and variables for the estimation of models with latent product indicators.
 #'
 #' \strong{NOTE}: Run \code{\link{default_settings_da}} to see default arguments.
+#'
+#' @references
+#' Slupphaug, K., Mehmetoglu, M., and Mittner, M. (2026, March 21).
+#' \emph{Consistent Estimates from Biased Estimators: Monte-Carlo Consistent Partial
+#' Least Squares for Latent Interaction Models with Ordinal Indicators}. PsyArXiv.
+#' \doi{10.31234/osf.io/fwzj6_v1}
 #'
 #' @examples
 #' library(modsem)
@@ -321,7 +388,20 @@ modsem_da <- function(model.syntax = NULL,
                       algorithm = NULL,
                       em.control = NULL,
                       ordered = NULL,
-                      ordered.probit.correction = FALSE,
+                      ordered.mc.reps = NULL,
+                      ordered.min.iter = 20L,
+                      ordered.max.iter = 250L,
+                      ordered.tol = 1e-4,
+                      ordered.rng.seed = NULL,
+                      ordered.fixed.seed = FALSE,
+                      ordered.polyak.juditsky = TRUE,
+                      ordered.pj.extrapolate = TRUE,
+                      ordered.se = c("delta", "penalized", "naive", "mixed"),
+                      ordered.se.penalty = 0.25,
+                      ordered.delta.reps = NULL,
+                      ordered.delta.epsilon = 1e-2,
+                      ordered.boot.reps = 1000L,
+                      ordered.standardize = TRUE,
                       cluster = NULL,
                       cr1s = FALSE,
                       sampling.weights = NULL,
@@ -334,74 +414,93 @@ modsem_da <- function(model.syntax = NULL,
                       auto.fix.first = NULL,
                       auto.fix.single = NULL,
                       auto.split.syntax = NULL,
+                      fix.composite.var = NULL,
                       ...) {
   method <- tolower(method)
 
   if (is.null(model.syntax)) {
-    stop2("No model.syntax provided")
+    mod_msg_stop("No model.syntax provided")
   } else if (!is.character(model.syntax)) {
-    stop2("The provided model syntax is not a string!")
+    mod_msg_stop("The provided model syntax is not a string!")
   } else if (length(model.syntax) > 1) {
-    stop2("The provided model syntax is not of length 1")
+    mod_msg_stop("The provided model syntax is not of length 1")
   }
 
+  ordered.se <- match.arg(ordered.se)
+
   if (length(ordered) || any(sapply(data, FUN = is.ordered))) {
-    out <- modsemOrderedScaleCorrection(
-       model.syntax        = model.syntax,
-       data                = data,
-       method              = method,
-       verbose             = verbose,
-       optimize            = optimize,
-       nodes               = nodes,
-       missing             = missing,
-       convergence.abs     = convergence.abs,
-       convergence.rel     = convergence.rel,
-       optimizer           = optimizer,
-       center.data         = center.data,
-       standardize.data    = standardize.data,
-       standardize.out     = standardize.out,
-       standardize         = standardize,
-       mean.observed       = mean.observed,
-       cov.syntax          = cov.syntax,
-       double              = double,
-       calc.se             = calc.se,
-       FIM                 = FIM,
-       EFIM.S              = EFIM.S,
-       OFIM.hessian        = OFIM.hessian,
-       EFIM.parametric     = EFIM.parametric,
-       robust.se           = robust.se,
-       R.max               = R.max,
-       max.iter            = max.iter,
-       max.step            = max.step,
-       start               = start,
-       epsilon             = epsilon,
-       quad.range          = quad.range,
-       adaptive.quad       = adaptive.quad,
-       adaptive.frequency  = adaptive.frequency,
-       adaptive.quad.tol   = adaptive.quad.tol,
-       n.threads           = n.threads,
-       algorithm           = algorithm,
-       em.control          = em.control,
-       ordered             = ordered,
-       probit.correction   = ordered.probit.correction,
-       cluster             = cluster,
-       group               = group,
-       cr1s                = cr1s,
-       rcs                 = rcs,
-       rcs.choose          = rcs.choose,
-       rcs.scale.corrected = rcs.scale.corrected,
-       orthogonal.x        = orthogonal.x,
-       orthogonal.y        = orthogonal.y,
-       auto.fix.first      = auto.fix.first,
-       auto.fix.single     = auto.fix.single,
-       auto.split.syntax   = auto.split.syntax,
+    out <- modsemOrderedMCCorrection(
+       model.syntax                   = model.syntax,
+       data                           = data,
+       method                         = method,
+       verbose                        = verbose,
+       optimize                       = optimize,
+       nodes                          = nodes,
+       missing                        = missing,
+       convergence.abs                = convergence.abs,
+       convergence.rel                = convergence.rel,
+       optimizer                      = optimizer,
+       center.data                    = center.data,
+       standardize.data               = standardize.data,
+       standardize.out                = standardize.out,
+       standardize                    = standardize,
+       mean.observed                  = mean.observed,
+       cov.syntax                     = cov.syntax,
+       double                         = double,
+       calc.se                        = calc.se,
+       FIM                            = FIM,
+       EFIM.S                         = EFIM.S,
+       OFIM.hessian                   = OFIM.hessian,
+       EFIM.parametric                = EFIM.parametric,
+       robust.se                      = robust.se,
+       R.max                          = R.max,
+       max.iter                       = max.iter,
+       max.step                       = max.step,
+       start                          = start,
+       epsilon                        = epsilon,
+       quad.range                     = quad.range,
+       adaptive.quad                  = adaptive.quad,
+       adaptive.frequency             = adaptive.frequency,
+       adaptive.quad.tol              = adaptive.quad.tol,
+       n.threads                      = n.threads,
+       algorithm                      = algorithm,
+       em.control                     = em.control,
+       ordered                        = ordered,
+       ordered.mc.reps                = ordered.mc.reps,
+       ordered.min.iter               = ordered.min.iter,
+       ordered.max.iter               = ordered.max.iter,
+       ordered.tol                    = ordered.tol,
+       ordered.rng.seed               = ordered.rng.seed,
+       ordered.fixed.seed             = ordered.fixed.seed,
+       ordered.polyak.juditsky        = ordered.polyak.juditsky,
+       ordered.pj.extrapolate         = ordered.pj.extrapolate,
+       ordered.se                     = ordered.se,
+       ordered.se.penalty             = ordered.se.penalty,
+       ordered.delta.reps             = ordered.delta.reps,
+       ordered.delta.epsilon          = ordered.delta.epsilon,
+       ordered.boot.reps              = ordered.boot.reps,
+       ordered.standardize            = ordered.standardize,
+       cluster                        = cluster,
+       group                          = group,
+       cr1s                           = cr1s,
+       sampling.weights               = sampling.weights,
+       sampling.weights.normalization = sampling.weights.normalization,
+       rcs                            = rcs,
+       rcs.choose                     = rcs.choose,
+       rcs.scale.corrected            = rcs.scale.corrected,
+       orthogonal.x                   = orthogonal.x,
+       orthogonal.y                   = orthogonal.y,
+       auto.fix.first                 = auto.fix.first,
+       auto.fix.single                = auto.fix.single,
+       auto.split.syntax              = auto.split.syntax,
+       fix.composite.var              = fix.composite.var,
        ...)
 
     return(out)
   }
 
   if (is.null(data)) {
-    stop2("No data provided")
+    mod_msg_stop("No data provided")
   } else {
     data <- as.data.frame(data)
   }
@@ -422,7 +521,7 @@ modsem_da <- function(model.syntax = NULL,
 
   if ("convergence" %in% names(list(...))) {
     convergence.rel <- list(...)$convergence
-    warning2("Argument 'convergence' is deprecated, use 'convergence.rel' instead.")
+    mod_msg_warn("Argument 'convergence' is deprecated, use 'convergence.rel' instead.")
   }
 
   args <-
@@ -467,7 +566,8 @@ modsem_da <- function(model.syntax = NULL,
           cr1s                           = cr1s,
           group                          = group,
           sampling.weights               = sampling.weights,
-          sampling.weights.normalization = sampling.weights.normalization
+          sampling.weights.normalization = sampling.weights.normalization,
+          fix.composite.var              = fix.composite.var
         )
     )
 
@@ -490,7 +590,7 @@ modsem_da <- function(model.syntax = NULL,
     sampling.weights.normalization = args$sampling.weights.normalization
   )
 
-  stopif(!method %in% c("lms", "qml"), "Method must be either 'lms' or 'qml'")
+  mod_stopif(!method %in% c("lms", "qml"), "Method must be either 'lms' or 'qml'")
 
   model <- specifyModelDA(
     group.info         = group.info,
@@ -506,6 +606,7 @@ modsem_da <- function(model.syntax = NULL,
     orthogonal.y       = args$orthogonal.y,
     auto.fix.first     = args$auto.fix.first,
     auto.fix.single    = args$auto.fix.single,
+    fix.composite.var  = args$fix.composite.var,
     cluster            = cluster,
     sampling.weights   = sampling.weights
   )
@@ -513,13 +614,17 @@ modsem_da <- function(model.syntax = NULL,
   if (args$optimize) {
     model <- tryCatch({
       .optimize <- purrr::quietly(optimizeStartingParamsDA)
-      .optimize <- \(...) list(result = optimizeStartingParamsDA(...))
-      result    <- .optimize(
+      #.optimize <- \(...) list(result = optimizeStartingParamsDA(...))
+
+      ops <- c(group.info$parTable$op, group.info$parTableCov$op)
+      engine <- if (any(ops %in% c("<", ">", "=="))) "pi" else "sam"
+
+      result <- .optimize(
         model            = model,
         args             = args,
         group            = group,
         sampling.weights = sampling.weights,
-        engine           = "sam"
+        engine           = engine
       )
 
       warnings  <- result$warnings
@@ -530,13 +635,25 @@ modsem_da <- function(model.syntax = NULL,
           collapse = "\n"
         )
 
-        warning2("warning when optimizing starting parameters:\n", fwarnings)
+        mod_msg_warn_immediate(
+          paste0("warning when optimizing starting parameters:\n", fwarnings)
+        )
       }
 
       result$result
 
     }, error = function(e) {
-      warning2("unable to optimize starting parameters:\n", e)
+      mod_msg_warn_immediate(
+        paste0("unable to optimize starting parameters:\n", e)
+      )
+
+      if (is.null(max.step) && args$max.step <= 1 && method == "lms") {
+        # When we don't have optimized starting parameters with LMS, the algorithm
+        # will likely not converge with the default max.step
+        mod_msg_note("Increasing max step in EM-algorithm to 50")
+        args$max.step <<- 50
+      }
+
       model
     })
   }
@@ -601,21 +718,30 @@ modsem_da <- function(model.syntax = NULL,
     if (args$verbose) cat("\n")
     message <- paste0("modsem [%s]: Model estimation failed!\n",
                       "Message: %s")
-    stop2(sprintf(message, method, e$message))
+    mod_msg_stop(sprintf(message, method, e$message))
   })
 
   # Finalize the model object
   # Expected means and covariances
-  est$expected.matrices <- tryCatch(
+  expected.matrices <- tryCatch(
     calcExpectedMatricesDA(
       parTable = est$parTable,
       xis  = getXisModelDA(model$models[[1L]]), # taking both the main model and cov model into account
       etas = getEtasModelDA(model$models[[1L]])  # taking both the main model and cov model into account
     ),
     error = function(e) {
-      warning2("Failed to calculate expected matrices: ", e$message)
+      mod_msg_warn(paste0("Failed to calculate expected matrices: ", e$message))
       NULL
-    })
+    }
+  )
+
+  if (!is.null(expected.matrices)) {
+    est$expected.matrices <- expected.matrices
+
+    for (g in seq_along(est$model$models)) # attach to submodels
+      est$model$models[[g]]$expected.matrices <- expected.matrices[[g]]
+  }
+
 
   # Arguments
   est$args <- args

@@ -39,7 +39,8 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    cr1s = FALSE,
                    group = NULL,
                    sampling.weights = NULL,
-                   sampling.weights.normalization = "total"
+                   sampling.weights.normalization = "total",
+                   fix.composite.var = TRUE
         ),
         qml = list(verbose = interactive(),
                    optimize = TRUE,
@@ -80,7 +81,8 @@ getMethodSettingsDA <- function(method, args = NULL) {
                    cr1s = FALSE,
                    group = NULL,
                    sampling.weights = NULL,
-                   sampling.weights.normalization = "total"
+                   sampling.weights.normalization = "total",
+                   fix.composite.var = FALSE
         )
     )
 
@@ -91,7 +93,7 @@ getMethodSettingsDA <- function(method, args = NULL) {
     isMissing <- vapply(args, FUN.VALUE = logical(1L), FUN = is.null)
     missingArgs <- settingNames[isMissing]
 
-    stopif(!method %in% names(settings), "Unrecognized method")
+    mod_stopif(!method %in% names(settings), "Unrecognized method")
 
     args.out <- c(settings[[method]][missingArgs], args[!isMissing])
 

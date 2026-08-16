@@ -42,7 +42,20 @@ modsem_da(
   algorithm = NULL,
   em.control = NULL,
   ordered = NULL,
-  ordered.probit.correction = FALSE,
+  ordered.mc.reps = NULL,
+  ordered.min.iter = 20L,
+  ordered.max.iter = 250L,
+  ordered.tol = 1e-04,
+  ordered.rng.seed = NULL,
+  ordered.fixed.seed = FALSE,
+  ordered.polyak.juditsky = TRUE,
+  ordered.pj.extrapolate = TRUE,
+  ordered.se = c("delta", "penalized", "naive", "mixed"),
+  ordered.se.penalty = 0.25,
+  ordered.delta.reps = NULL,
+  ordered.delta.epsilon = 0.01,
+  ordered.boot.reps = 1000L,
+  ordered.standardize = TRUE,
   cluster = NULL,
   cr1s = FALSE,
   sampling.weights = NULL,
@@ -55,6 +68,7 @@ modsem_da(
   auto.fix.first = NULL,
   auto.fix.single = NULL,
   auto.split.syntax = NULL,
+  fix.composite.var = NULL,
   ...
 )
 }
@@ -203,19 +217,77 @@ optimization steps when needed. Default is \code{"EM"}.}
 
 \item{em.control}{a list of control parameters for the EM algorithm. See \code{\link{default_settings_da}} for defaults.}
 
-\item{ordered}{Variables to be treated as ordered. Categories for ordered variables
-are scored, transforming them from ordinal scale to interval scale (\href{https://onlinelibrary.wiley.com/doi/10.1155/2014/304213}{Chen & Wang, 2014}).
-The underlying continous distributions
-are estimated analytically for indicators of exogenous variables, and using an ordered
-probit regression for indicators of endogenous variables. Factor scores are used as
-independent variables the ordered probit regressions. Interaction effects between
-the factor scores are included in the probit regression, if applicable.
-The estimates are more robust to unequal intervals in ordinal variables. I.e., the estimates
-should be more consistent, and less biased.}
+\item{ordered}{Variables to be treated as ordered. Ordered indicators are handled
+  with a Monte-Carlo correction for the LMS/QML estimator on standardized category
+  scores. The fitted model is used to repeatedly simulate continuous indicators,
+  ordinalize them to the observed cumulative category proportions, refit the
+  standardized LMS/QML working model, and solve the resulting fixed-point problem.
+  This follows the same general Monte-Carlo consistency logic as the MC-OrdPLSc
+  algorithm described by Slupphaug, Mehmetoglu, and Mittner (2026,
+  \doi{10.31234/osf.io/fwzj6_v1}).
 
-\item{ordered.probit.correction}{Should ordered indicators be transformed such that they
-reproduce their (probit) polychoric correlation matrix? This can be useful for
-ordered variables with only a few categories, or for linear models.}
+  Threshold standard errors are computed using a simple bootstrap of the category counts
+  (see \code{ordered.boot.reps}), which does not propagate uncertainty from the
+  model parameter estimates.}
+
+\item{ordered.mc.reps}{Integer. Monte-Carlo sample size used in each ordered MC
+correction step. Larger values reduce simulation noise but increase runtime.}
+
+\item{ordered.min.iter}{Integer. Minimum number of Robbins-Monro iterations for the
+ordered MC correction.}
+
+\item{ordered.max.iter}{Integer. Maximum number of Robbins-Monro iterations for the
+ordered MC correction.}
+
+\item{ordered.tol}{Convergence tolerance for the ordered MC Robbins-Monro updates.}
+
+\item{ordered.rng.seed}{Optional integer random seed used by the ordered MC
+correction.}
+
+\item{ordered.fixed.seed}{Logical. If \code{TRUE} and \code{ordered.rng.seed = NULL},
+a fixed seed is drawn once and reused throughout the ordered MC correction to
+improve numerical stability.}
+
+\item{ordered.polyak.juditsky}{Logical. Should Polyak-Juditsky averaging be used in
+the ordered MC Robbins-Monro solver?}
+
+\item{ordered.pj.extrapolate}{Logical. If \code{TRUE}, use extrapolation of the
+Polyak-Juditsky path to estimate the convergence point. If \code{FALSE}, the
+averaged iterate is used directly.}
+
+\item{ordered.se}{Character string selecting the ordered MC standard-error correction.
+\code{"delta"} (default) uses the delta method for all free parameters.
+\code{"penalized"} uses a conservative variance inflation
+based on the discrepancy between the naive and MC-corrected standardized estimates.
+\code{"naive"} uses the fast diagonal rescaling approximation.
+\code{"mixed"} uses the delta method for the structural path coefficients
+only, and penalized standard errors for the remaining parameters. This is
+considerably faster, and is a good option if you're only interested in
+the structural model.}
+
+\item{ordered.se.penalty}{Non-negative numeric multiplier used when
+\code{ordered.se = "penalized"}. The penalty adds
+\code{ordered.se.penalty * (theta_mc - theta_naive)^2} to the diagonal of the
+naive covariance matrix on the variance scale.}
+
+\item{ordered.delta.reps}{Integer. Monte-Carlo sample size used when approximating
+the ordered MC delta-method Jacobian. Only relevant if
+\code{ordered.se} is \code{"delta"} or \code{"mixed"}.}
+
+\item{ordered.delta.epsilon}{Finite-difference step size used for the ordered MC
+delta-method Jacobian. Only relevant if \code{ordered.se} is \code{"delta"}
+or \code{"mixed"}.}
+
+\item{ordered.boot.reps}{Integer. Number of bootstrap replications used to compute
+standard errors for the thresholds of ordered indicators. The bootstrap resamples
+the category counts at the observed sample size, holding the simulated
+(model-implied) reference distribution of the continuous indicators fixed. Note
+that this does not account for the uncertainty in the model parameter estimates,
+and should be seen as a rough approximation. Set to \code{0} to disable.}
+
+\item{ordered.standardize}{Logical. Should scored ordered indicators be standardized
+before the observed-data fit and after ordinalizing simulated indicators? This is
+recommended for numerical stability and is enabled by default.}
 
 \item{cluster}{Clusters used to compute standard errors robust to non-indepence of observations. Must be paired with
 \code{robust.se = TRUE}.}
@@ -281,6 +353,9 @@ When using the QML approach interation effects between exogenous and endogenous
 variables can in some cases be biased, if the model is not split beforehand.
 The default is therefore \code{TRUE} for the QML approach.}
 
+\item{fix.composite.var}{If \code{TRUE} (default) the block covariance structure
+of composite indiactors is fixed.}
+
 \item{...}{additional arguments to be passed to the estimation function.}
 }
 \value{
@@ -338,4 +413,10 @@ tpb <- "
 est_lms <- modsem_da(tpb, data = TPB, method = "lms")
 summary(est_lms)
 }
+}
+\references{
+Slupphaug, K., Mehmetoglu, M., and Mittner, M. (2026, March 21).
+\emph{Consistent Estimates from Biased Estimators: Monte-Carlo Consistent Partial
+Least Squares for Latent Interaction Models with Ordinal Indicators}. PsyArXiv.
+\doi{10.31234/osf.io/fwzj6_v1}
 }

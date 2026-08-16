@@ -19,8 +19,8 @@ in structural equation models (SEMs). See https://www.modsem.org for a tutorial.
 install.packages("modsem")
 
 # Latest version from GitHub
-install.packages("devtools")
-devtools::install_github("kss2k/modsem", build_vignettes = TRUE)
+install.packages("remotes")
+remotes::install_github("kss2k/modsem", build_vignettes = TRUE)
 ```
 **Note**: The package needs to be compiled from source on `macOS` (if installing via `GitHub`) and `Linux`.
 If you have issues installing the package on `macOS`, you might need to install the `gfortran` compiler.

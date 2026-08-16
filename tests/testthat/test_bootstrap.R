@@ -64,6 +64,6 @@ for (method in c("lms", "dblcent")) {
 
   testthat::expect_warning(
     bootstrap_modsem(fit_rcs, R = 10L),
-    regexp = "bootstrapping a model .*rcs=TRUE.*naive"
+    regexp = "bootstrapping.*rcs=TRUE"
   )
 }

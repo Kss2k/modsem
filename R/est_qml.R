@@ -47,10 +47,10 @@ estQml <- function(model,
     )
 
   }, error = function(e) {
-    warning2(paste0(
+    mod_msg_warn(paste0(
       "Model estimation failed, returning starting values!\n",
       "Message: ", conditionMessage(e)
-    ))
+    ), newline. = verbose)
 
     finalizeModelEstimatesDA(
       model             = model,

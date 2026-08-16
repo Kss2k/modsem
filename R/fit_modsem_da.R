@@ -26,17 +26,16 @@ fit_modsem_da <- function(model, chisq = TRUE, lav.fit = FALSE,
                           drop.list.single.group = TRUE) {
   parTable <- model$parTable
   if (isTRUE(chisq) && any(grepl(":", parTable$rhs), na.rm = TRUE)) {
-    warning2("Chi-Square based fit-measures for LMS and QML ",
+    mod_msg_warn(paste0("Chi-Square based fit-measures for LMS and QML ",
              "should be calculated for baseline model ",
-             "i.e., the model without the interaction effect",
-             immediate. = FALSE)
+             "i.e., the model without the interaction effect"))
   }
 
   t      <- nFreeInterceptsDA(model)
   mean.s <- model$args$mean.observed || t > 0
   logLik <- model$logLik
   coef   <- coef(model, type = "free")
-  k      <- length(coef)
+  npar   <- length(coef)
 
   finalModel <- model$model
   submodels  <- if (!is.null(finalModel$models)) finalModel$models else list()
@@ -86,14 +85,27 @@ fit_modsem_da <- function(model, chisq = TRUE, lav.fit = FALSE,
     N_vec[g] <- N.g
     p_vec[g] <- p.g
 
-    mu.g_vec <- apply(data_full, 2, mean, na.rm = TRUE)
-    mu.g <- matrix(mu.g_vec, ncol = 1,
-                   dimnames = list(colnames(data_full), "~1"))
-    O.g <- stats::cov(data_full, use = "pairwise.complete.obs")
-
     expected.g <- expected.list[[g]]
-    E.g <- if (!is.null(expected.g) && !is.null(expected.g$sigma.ov)) expected.g$sigma.ov else NULL
-    mu_hat.g <- if (!is.null(expected.g) && !is.null(expected.g$mu.ov)) expected.g$mu.ov else NULL
+    has.ord <- !is.null(expected.g) &&
+      !is.null(expected.g$sigma.ord.observed) &&
+      !is.null(expected.g$sigma.ord.expected)
+
+    if (has.ord) {
+      O.g <- expected.g$sigma.ord.observed
+      E.g <- expected.g$sigma.ord.expected
+      mu.g <- if (!is.null(expected.g$mu.ord.observed)) expected.g$mu.ord.observed else
+        matrix(0, nrow = nrow(O.g), ncol = 1, dimnames = list(rownames(O.g), "~1"))
+      mu_hat.g <- if (!is.null(expected.g$mu.ord.expected)) expected.g$mu.ord.expected else
+        matrix(0, nrow = nrow(E.g), ncol = 1, dimnames = list(rownames(E.g), "~1"))
+      p.g <- NCOL(O.g)
+    } else {
+      mu.g_vec <- apply(data_full, 2, mean, na.rm = TRUE)
+      mu.g <- matrix(mu.g_vec, ncol = 1,
+                     dimnames = list(colnames(data_full), "~1"))
+      O.g <- stats::cov(data_full, use = "pairwise.complete.obs")
+      E.g <- if (!is.null(expected.g) && !is.null(expected.g$sigma.ov)) expected.g$sigma.ov else NULL
+      mu_hat.g <- if (!is.null(expected.g) && !is.null(expected.g$mu.ov)) expected.g$mu.ov else NULL
+    }
 
     if (!mean.s || is.null(mu_hat.g))
       mu_hat.g <- mu.g
@@ -119,8 +131,8 @@ fit_modsem_da <- function(model, chisq = TRUE, lav.fit = FALSE,
       chi.g <- tryCatch(
         calcChiSqr(O = O.g, E = E.g, N = N.g, p = p.g, mu = mu.g, mu.hat = mu_hat.g),
         error = function(e) {
-          warning2("Failed to compute chi-square contribution for group ",
-                   g, ": ", conditionMessage(e), immediate. = FALSE)
+          mod_msg_warn(paste0("Failed to compute chi-square contribution for group ",
+                   g, ": ", conditionMessage(e)))
           NA_real_
         }
       )
@@ -148,7 +160,10 @@ fit_modsem_da <- function(model, chisq = TRUE, lav.fit = FALSE,
   names(muExpBlocks)       <- group.labels
 
   N_total <- sum(N_vec)
-  df <- getDegreesOfFreedom(p = p_vec[p_vec > 0], coef = coef, mean.structure = mean.s)
+  df <- getDegreesOfFreedom(
+    p = p_vec[p_vec > 0], coef = coef, mean.structure = mean.s,
+    model = model
+  )
 
   if (chisq) {
     if (all(!is.na(chisqParts))) {
@@ -194,17 +209,17 @@ fit_modsem_da <- function(model, chisq = TRUE, lav.fit = FALSE,
     )
   }
 
-  AIC  <- calcAIC(logLik, k = k)
-  AICc <- calcAdjAIC(logLik, k = k, N = N_total)
-  BIC  <- calcBIC(logLik, k = k, N = N_total)
-  aBIC <- calcAdjBIC(logLik, k = k, N = N_total)
+  AIC  <- calcAIC(logLik, k = npar)
+  AICc <- calcAdjAIC(logLik, k = npar, N = N_total)
+  BIC  <- calcBIC(logLik, k = npar, N = N_total)
+  aBIC <- calcAdjBIC(logLik, k = npar, N = N_total)
 
   if (lav.fit) {
     lavfit <- tryCatch(
       lavaan::fitMeasures(model$model$lavaan.fit),
       error = function(e) {
-        warning2("Unable to retrieve fit measures for lavaan model!\n",
-                 "Message: ", conditionMessage(e), immediate. = FALSE)
+        mod_msg_warn(paste0("Unable to retrieve fit measures for lavaan model!\n",
+                 "Message: ", conditionMessage(e)))
         NULL
       }
     )
@@ -225,6 +240,7 @@ fit_modsem_da <- function(model, chisq = TRUE, lav.fit = FALSE,
     mu.observed    = muObsBlocks,
     mu.expected    = muExpBlocks,
 
+    npar         = npar,
     chisq.value  = chisqValue,
     chisq.pvalue = chisqP,
     chisq.df     = df,

@@ -19,8 +19,10 @@ preCheckModel <- function(model, covModel = NULL, method = "lms", missing = "com
 
   checkAConstraints(model = model, covModel = covModel, method = method)
 
-  checkCovEtaXi(parTable = model$parTable, canBeCausedByCovModel = hasCovModel)
-  checkCovEtaXi(parTable = model$covModel$parTable, canBeCausedByCovModel = FALSE)
+  checkCovEtaXi(parTable = model$parTable, canBeCausedByCovModel = hasCovModel,
+                method = method)
+  checkCovEtaXi(parTable = model$covModel$parTable, canBeCausedByCovModel = FALSE,
+                method = method)
 
   checkOmegaEtaXi(model = model, method = method)
 
@@ -38,13 +40,13 @@ checkAConstraints <- function(model, covModel, method = "lms") {
   isOKANumeric <- all(is.na(An[lower.tri(An, diag = TRUE)])) ||
                  !any(is.na(An[lower.tri(An)]))
 
-  warnif(!isOKALabel || !isOKANumeric,
-         "Variances and covariances of exogenous variables aren't truely ",
-         "free parameters in the LMS approach.\n\n",
-         "Using them in model constraints will likely not work as intended!\n\n",
-         'To fix this you can pass an empty model to `cov.syntax`, for example: \n',
-         '    `modsem(my_model, data = my_data, method = "lms", cov.syntax = "")`'
-  )
+  mod_warnif_immediate(!isOKALabel || !isOKANumeric, paste0(
+    "Variances and covariances of exogenous variables aren't truely ",
+     "free parameters in the LMS approach.\n\n",
+     "Using them in model constraints will likely not work as intended!\n\n",
+     'To fix this you can pass an empty model to `cov.syntax`, for example: \n',
+     '    `modsem(my_model, data = my_data, method = "lms", cov.syntax = "")`'
+  ))
 }
 
 
@@ -53,12 +55,12 @@ checkCovModelVariables <- function(covModel, modelXis, method = "lms") {
   covModelEtas <- covModel$info$etas
   covModelXis  <- covModel$info$xis
 
-  stopif(!all(c(covModelXis, covModelEtas) %in% modelXis),
-         "All latent variables in the cov-model must be an ",
-         "exogenous variable in the main model")
-  stopif(!all(modelXis %in% c(covModelXis, covModelEtas)),
-         "All exogenous variables in main model must be ",
-         "part of the cov-model")
+  mod_stopif(!all(c(covModelXis, covModelEtas) %in% modelXis),
+         paste0("All latent variables in the cov-model must be an ",
+         "exogenous variable in the main model"))
+  mod_stopif(!all(modelXis %in% c(covModelXis, covModelEtas)),
+         paste0("All exogenous variables in main model must be ",
+         "part of the cov-model"))
 }
 
 
@@ -95,7 +97,7 @@ checkZeroVariances <- function(model, method = "lms") {
     }
   }
 
-  if (error) stop2(message)
+  if (error) mod_msg_stop(message)
 }
 
 
@@ -105,7 +107,7 @@ checkNodesLms <- function(parTableMain,
                           method = "lms",
                           adaptive = FALSE,
                           minNodesXiXi   = if (!adaptive) 16 else 15,
-                          minNodesXiEta  = if (!adaptive) 32 else 32,
+                          minNodesXiEta  = if (!adaptive) 32 else 24,
                           minNodesEtaEta = if (!adaptive) 48 else 32) {
   if (method != "lms") return(NULL)
 
@@ -123,23 +125,35 @@ checkNodesLms <- function(parTableMain,
     if      (all(x %in% xis))  nodesXiXi_ok   <<- nodes >= minNodesXiXi
     else if (all(x %in% etas)) nodesEtaEta_ok <<- nodes >= minNodesEtaEta
     else if (any(x %in% etas)) nodesXiEta_ok  <<- nodes >= minNodesXiEta
-    else warning2("Unable to classify latent variables in interaction terms")
+    else mod_msg_warn("Unable to classify latent variables in interaction terms")
   })
 
-  warnif(!nodesXiXi_ok, "It is recommended that you have at least ",
-         minNodesXiXi,  " nodes for interaction effects between ",
-         "exogenous variables in the lms approach 'nodes = ", nodes, "'")
-  warnif(!nodesXiEta_ok, "It is recommended that you have at least ",
-         minNodesXiEta, " nodes for interaction effects between exogenous ",
-         "and endogenous variables in the lms approach 'nodes = ", nodes, "'")
-  warnif(!nodesEtaEta_ok, "It is recommended that you have at least ",
-         minNodesEtaEta, " nodes for interaction effects between endogenous ",
-         "variables in the lms approach 'nodes = ", nodes, "'")
+  mod_warnif_immediate(!nodesXiXi_ok,
+    paste0("It is recommended that you have at least ",
+           minNodesXiXi,  " nodes for interaction effects between ",
+           "exogenous variables in the lms approach 'nodes = ", nodes, "'")
+  )
+
+  mod_warnif_immediate(!nodesXiEta_ok,
+    paste0("It is recommended that you have at least ",
+           minNodesXiEta, " nodes for interaction effects between exogenous ",
+           "and endogenous variables in the lms approach 'nodes = ", nodes, "'")
+  )
+
+  mod_warnif_immediate(!nodesEtaEta_ok,
+    paste0("It is recommended that you have at least ",
+           minNodesEtaEta, " nodes for interaction effects between endogenous ",
+           "variables in the lms approach 'nodes = ", nodes, "'")
+  )
 }
 
 
-checkCovEtaXi <- function(parTable, canBeCausedByCovModel = FALSE) {
+checkCovEtaXi <- function(parTable, canBeCausedByCovModel = FALSE,
+                          method = "lms") {
   if (!NROW(parTable))
+    return(NULL)
+
+  if (method == "lms")
     return(NULL)
 
   etas <- getEtas(parTable, checkAny = FALSE, isLV = FALSE)
@@ -160,14 +174,16 @@ checkCovEtaXi <- function(parTable, canBeCausedByCovModel = FALSE) {
     )
   } else msgcov <- ""
 
+  prob <- parTable[problematicRows, ]
+  par <- paste0(prob$lhs, prob$op, prob$rhs)
+
   msg <- paste0(
     "Covariances between exogenous and endogenous variables are not available,\n",
-    "and will be ignored! The problematic covariances are:\n",
-    capturePrint(parTable[problematicRows, ]),
-    msgcov
+    "and will be ignored! Consider trying `method=\"lms\"` instead. The problematic covariances are:\n",
+    paste0(par, collapse = ", "), msgcov
   )
 
-  warnif(any(problematicRows), msg, immediate. = TRUE)
+  mod_warnif_immediate(any(problematicRows), msg)
 }
 
 
@@ -177,10 +193,11 @@ checkOmegaEtaXi <- function(model, method = "qml", zero.tol = 1e-10) {
   omegaEtaXi <- model$matrices$omegaEtaXi
   problematic <- any(is.na(omegaEtaXi) | abs(omegaEtaXi) > zero.tol)
 
-  warnif(problematic,
-         "Interactions between exogenous and enodgenous variables in the QML\n",
-         "approach can be biased in some cases...\n",
-         "You can try passing `auto.split.syntax=FALSE` and `cov.syntax=NULL`...")
+  mod_warnif_immediate(problematic,
+    paste0("Interactions between exogenous and enodgenous variables in the QML\n",
+           "approach can be biased in some cases...\n",
+           "You can try passing `auto.split.syntax=TRUE` and `cov.syntax=NULL`...")
+  )
 }
 
 
@@ -189,10 +206,10 @@ checkOVsInStructuralModel <- function(parTableMain, parTableCov) {
   xisLVs   <- getXis(parTable, isLV = TRUE)
   xisAll   <- getXis(parTable, isLV = FALSE)
 
-  stopif(length(xisAll) != length(xisLVs) || !all(xisLVs %in% xisAll),
-         "Observed variables are not allowed in the structural model in LMS/QML directly. ",
+  mod_stopif(length(xisAll) != length(xisLVs) || !all(xisLVs %in% xisAll),
+         paste0("Observed variables are not allowed in the structural model in LMS/QML directly. ",
          "Please redefine them as latent.\nSee:\n",
-         "  vignette(\"observed_lms_qml\", \"modsem\")")
+         "  vignette(\"observed_lms_qml\", \"modsem\")"))
 }
 
 
@@ -200,25 +217,25 @@ checkMissingMethod <- function(method, missing) {
   method  <- tolower(method)
   missing <- tolower(missing)
 
-  stopif(method == "qml" && missing == "fiml",
+  mod_stopif(method == "qml" && missing == "fiml",
          "Using FIML with QML is not available (yet), use LMS instead!")
 }
 
 
 checkOverlappingIndicators <- function(allIndsXis, allIndsEtas, method = "lms") {
-  stopif(any(allIndsXis %in% allIndsEtas) && method != "lms",
-         "The same indicator cannot be used for both an\n",
+  mod_stopif(any(allIndsXis %in% allIndsEtas) && method != "lms",
+         paste0("The same indicator cannot be used for both an\n",
          "exogenous and endogenous variable, in the QML approach!\n",
          "Consider using the LMS approach instead.\n",
          "Overlapping indicators: ",
-         paste(allIndsXis[allIndsXis %in% allIndsEtas], collapse = ", "))
+         paste(allIndsXis[allIndsXis %in% allIndsEtas], collapse = ", ")))
 }
 
 
 checkParTableDA <- function(parTable, method = "lms") {
-  stopif(isHigherOrderParTable(parTable) && method == "qml",
-         "Higher-order latent variables are not supported with `method=\"qml\"`.\n",
-         "Try using `method=\"lms\"` or `rcs=TRUE`")
+  mod_stopif(isHigherOrderParTable(parTable) && method == "qml",
+         paste0("Higher-order latent variables are not supported with `method=\"qml\"`.\n",
+         "Try using `method=\"lms\"` or `rcs=TRUE`"))
 }
 
 
@@ -229,19 +246,19 @@ checkResCovX_Y <- function(parTable, allIndsXis, allIndsEtas, method = "lms") {
   cond2 <- parTable$lhs %in% allIndsXis & parTable$rhs %in% allIndsEtas
   cond3 <- parTable$lhs %in% allIndsEtas & parTable$rhs %in% allIndsXis
 
-  stopif(any(cond1 & (cond2 | cond3)) && method == "qml",
-         "Residual covariances between indicators of endogenous lvs, and \n",
+  mod_stopif(any(cond1 & (cond2 | cond3)) && method == "qml",
+         paste0("Residual covariances between indicators of endogenous lvs, and \n",
          "indicators of exogenous lvs are not allowed with `method=\"qml\"`.\n",
-         "Try using `method=\"lms\"` instead!")
+         "Try using `method=\"lms\"` instead!"))
 }
 
 
 checkVarsIntsDA <- function(varsInts, lVs) {
   for (xz in varsInts) {
-    stopif(!all(xz %in% lVs), "Element in product term is not a latent variable: `",
+    mod_stopif(!all(xz %in% lVs), paste0("Element in product term is not a latent variable: `",
            xz[!xz %in% lVs][[1]], "`!\n",
            "If it is an observed variable, please redefine it as a latent variable.\n",
-           "See:\n  vignette(\"observed_lms_qml\", \"modsem\")")
+           "See:\n  vignette(\"observed_lms_qml\", \"modsem\")"))
   }
 }
 
@@ -265,8 +282,7 @@ checkParTableEstimates <- function(parTable) {
   estimates <- parTable$est
 
   anyNonFinite <- any(is.na(estimates) | is.nan(estimates) | is.infinite(estimates))
-  warnif(anyNonFinite, "Some parameters could not be computed (NA, NaN or Inf)!",
-         immediate. = FALSE)
+  mod_warnif(anyNonFinite, "Some parameters could not be computed (NA, NaN or Inf)!")
 }
 
 
@@ -282,14 +298,12 @@ checkVariances <- function(expected.matrices, rel.diff.tol = 1000) {
     relDiff <- maxVar / minVar
 
     anyNeg <- any(variances < 0)
-    warnif(anyNeg, sprintf("Some estimated %s variances are negative!", type),
-           immediate. = FALSE)
+    mod_warnif(anyNeg, sprintf("Some estimated %s variances are negative!", type))
 
-    warnif(
+    mod_warnif(
       relDiff > rel.diff.tol && rel.check,
       sprintf("Some estimated %s variances are (at least) a factor %i times larger than others",
-              type, rel.diff.tol),
-      immediate. = FALSE
+              type, rel.diff.tol)
     )
   }
 
@@ -308,11 +322,10 @@ checkCovMatrices <- function(expected.matrices) {
     ok <- isPositiveDefinite(cov)
     type.long <- switch(type, lv = "latent variables", ov = "observed variables")
 
-    warnif(
+    mod_warnif(
       !ok,
-      sprintf("Covariance matrix of %s is not positive definite!\n", type.long),
-      sprintf("Use `modsem_inspect(fit, \"cov.%s\")` to investigate.", type),
-      immediate. = FALSE
+      paste0(sprintf("Covariance matrix of %s is not positive definite!\n", type.long),
+      sprintf("Use `modsem_inspect(fit, \"cov.%s\")` to investigate.", type))
     )
   }
 
@@ -324,26 +337,28 @@ checkCovMatrices <- function(expected.matrices) {
 checkVCOV <- function(vcov, calc.se = TRUE, tol.eigen = .Machine$double.eps ^ (3/4)) {
   if (!calc.se || is.null(vcov)) return(NULL) # checks not relevant
 
-  eigenvalues <- tryCatch(eigen(vcov, only.values = TRUE)$values,
-                          error = \(e) rep(NA, min(1L, NCOL(vcov))))
+  eigenvalues <- tryCatch(
+    eigen(vcov, only.values = TRUE)$values,
+    error = \(e) rep(NA, min(1L, NCOL(vcov)))
+  )
 
   if (all(is.na(eigenvalues))) {
-    warning2("Unable to compute eigenvalues of the variance-covariance matrix!")
+    mod_msg_warn("Unable to compute eigenvalues of the variance-covariance matrix!")
     return(NULL)
   }
 
   minval <- min(eigenvalues, na.rm = TRUE) # should never be any NA, but just in case...
   if (minval < tol.eigen) {
-    warnif(minval >= 0,
-           "The variance-covariance matrix of the estimated parameters\n",
+    mod_warnif(minval >= 0,
+           paste0("The variance-covariance matrix of the estimated parameters\n",
            "(vcov) does not appear to be positive definite! The smallest\n",
            sprintf("eigenvalue (= %e) is close to zero. This may\n", minval),
-           "be a symptom that the model is not identified.", immediate. = FALSE)
-    warnif(minval < 0,
-           "The variance-covariance matrix of the estimated parameters\n",
+           "be a symptom that the model is not identified."))
+    mod_warnif(minval < 0,
+           paste0("The variance-covariance matrix of the estimated parameters\n",
            "(vcov) does not appear to be positive definite! The smallest\n",
            sprintf("eigenvalue (= %e) is smaller than zero. This may\n", minval),
-           "be a symptom that the model is not identified.", immediate. = FALSE)
+           "be a symptom that the model is not identified."))
   }
 }
 

@@ -1,6 +1,7 @@
 OP_REPLACEMENTS <- c("~~"  = "___COVARIANCE___",
                      "=~"  = "___MEASUREMENT___",
                      ":="  = "___CUSTOM___",
+                     "<~"  = "___COMPOSITE___",
                      "~"   = "___REGRESSION___",
                      ":"   = "___INTERACTION___",
                      "<->" = "___MPLUS_COVARIANCE___",
@@ -168,187 +169,6 @@ getK_NA <- function(omega, labelOmega) {
 }
 
 
-sortData <- function(data, allIndsXis, allIndsEtas) {
-  inds    <- unique(c(allIndsXis, allIndsEtas))
-  ovs     <- colnames(data)
-  missing <- inds[!inds %in% ovs]
-
-  stopif(!all(inds %in% ovs), "Missing observed variables in data:\n  ",
-         paste(missing, collapse = ", "))
-
-  data[unique(c(allIndsXis, allIndsEtas))]
-}
-
-
-anyAllNA <- function(data) {
-  any(vapply(data, FUN.VALUE = logical(1L), function(x) all(is.na(x))))
-}
-
-
-castDataNumericMatrix <- function(data) {
-  force(data) # evaluate to check for errors
-  data <- tryCatch({
-    numericData <- lapplyDf(data, FUN = as.numeric)
-  },
-  warning = function(w) {
-    warning2("Warning in converting data to numeric: \n", w)
-    numericData <- suppressWarnings(lapplyDf(data, FUN = as.numeric))
-    stopif(anyAllNA(numericData), "Unable to convert data to type numeric")
-    numeric
-  },
-  error = function(e) {
-    stop2("Unable to convert data to type numeric")
-  })
-  as.matrix(data)
-}
-
-
-patternizeMissingDataFIML <- function(data) {
-  # if we are not using fiml, the missing data should already have been removed...
-  CLUSTER <- attr(data, "cluster")
-  WEIGHTS <- attr(data, "weights")
-
-  Y   <- as.matrix(data)
-  obs <- !is.na(Y)
-
-  rowMissingAll <- apply(obs, MARGIN = 1, FUN = \(x) !any(x))
-  colMissingAll <- apply(obs, MARGIN = 2, FUN = \(x) !any(x))
-  stopif(any(colMissingAll),
-         "Please remove variables with only missing values:\n  ",
-         paste0(colnames(obs)[colMissingAll], collapse = ", "))
-
-  patterns <- unique(obs, MARING = 2)
-
-  if (any(rowMissingAll)) { # remove patterns where all are missing
-    # This shouldn't really happen, as it should be handled already in
-    # `handleMissingData()`. Regardless, we should handle it if it ever happens
-    return(patternizeMissingDataFIML(data[!rowMissingAll, , drop = FALSE]))
-  }
-
-  ids <- seq_len(NROW(patterns))
-  n   <- NROW(Y)
-  k   <- NCOL(Y)
-
-  rowidx <- vector("list", length = NROW(ids))
-  colidx <- vector("list", length = NROW(ids))
-  data.split  <- vector("list", length = NROW(ids))
-  n.pattern  <- numeric(NROW(ids))
-  d.pattern  <- numeric(NROW(ids))
-
-  for (id in ids) {
-    mask  <- matrix(patterns[id, ], nrow = n, ncol = k, byrow = TRUE)
-    match <- apply(obs == mask, MARGIN = 1, FUN = all)
-    ridx  <- which(match)
-    cidx  <- which(patterns[id, ])
-
-    rowidx[[id]] <- ridx
-    colidx[[id]] <- cidx
-    data.split[[id]] <- Y[ridx, cidx, drop = FALSE]
-    n.pattern[[id]] <- sum(match)
-    d.pattern[[id]] <- length(cidx)
-  }
-
-  list(
-    ids        = ids,
-    rowidx     = rowidx,
-    colidx     = colidx,
-    colidx0    = lapply(colidx, FUN = \(idx) idx - 1),
-    patterns   = patterns,
-    data.split = data.split,
-    n.pattern  = n.pattern,
-    d.pattern  = d.pattern,
-    n          = NROW(data),
-    k          = NCOL(data),
-    p          = length(ids),
-    data.full  = data,
-    is.fiml    = length(ids) > 1L,
-    cluster    = CLUSTER,
-    weights    = WEIGHTS
-  )
-}
-
-
-handleMissingData <- function(data, missing = "listwise", CLUSTER = NULL, WEIGHTS = NULL) {
-  missing       <- tolower(missing)
-  completeCases <- stats::complete.cases(data)
-  anyMissing    <- any(!completeCases)
-  allMissing    <- all(!completeCases)
-
-  if (!anyMissing){
-    attr(data, "cluster") <- CLUSTER
-    attr(data, "weights") <- WEIGHTS
-    return(data)
-
-  } else if (allMissing) {
-    missingAllCol <- apply(data, MARGIN = 2, FUN = \(x) all(is.na(x)))
-    colsMissing   <- colnames(data)[missingAllCol]
-
-    stop2("Please remove variables with only missing values:\n  ",
-          paste0(colsMissing, collapse = ", "))
-  }
-
-  if (missing %in% c("listwise", "casewise", "complete")) {
-    warning2("Removing missing values list-wise!\n",
-             "Consider using `missing=\"fiml\"`, `missing=\"impute\"`, ",
-             "or the `modsem_mimpute()` function!\n")
-
-    out <- data[completeCases, ]
-    attr(out, "cluster") <- CLUSTER[completeCases]
-    attr(out, "weights") <- WEIGHTS[completeCases]
-
-    return(out)
-
-  } else if (missing == "impute") {
-    message("Imputing missing values. Consider using the `modsem_mimpute()` function!")
-
-    imp  <- Amelia::amelia(data, m = 1, p2s = 0)
-
-    imp1 <- as.matrix(as.data.frame(imp$imputations[[1]]))
-    attr(imp1, "cluster") <- CLUSTER
-
-    return(imp1)
-
-  } else if (missing %in% c("fiml", "ml", "direct")) {
-    attr(data, "cluster") <- CLUSTER
-    attr(data, "weights") <- WEIGHTS
-
-    rowMissingAll <- apply(data, MARGIN = 1, FUN = \(x) all(is.na(x)))
-    data          <- data[!rowMissingAll, , drop = FALSE] # we've already know that
-                                                          # all(rowMissingAll) != TRUE
-    return(data)
-
-  } else {
-    stop2(sprintf("Unrecognized value for `missing`: `%s`", missing))
-  }
-}
-
-
-prepDataModsemDA <- function(data, allIndsXis, allIndsEtas, missing = "listwise",
-                             cluster = NULL, sampling.weights = NULL) {
-
-  if (is.null(data) || !NROW(data))
-    return(list(data.full = NULL, n = 0, k = 0, p = 0, cluster = NULL))
-
-  if (!is.null(cluster)) {
-    stopif(length(cluster) > 1L, "`cluster` must be a single variable!")
-
-    CLUSTER <- as.factor(data[, cluster])
-
-  } else CLUSTER <- NULL
-
-  if (!is.null(sampling.weights)) {
-    stopif(length(sampling.weights) > 1L, "`sampling.weights` must be a single variable!")
-    WEIGHTS <- data[, sampling.weights]
-
-  } else WEIGHTS <- NULL
-
-  sortData(data, allIndsXis,  allIndsEtas) |>
-    castDataNumericMatrix() |>
-    handleMissingData(missing = missing, CLUSTER = CLUSTER, WEIGHTS = WEIGHTS) |>
-    patternizeMissingDataFIML()
-}
-
-
 canBeNumeric <- function(x, includeNA = FALSE) {
   if (includeNA) x[x == ""] <- 0
   !is.na(suppressWarnings(as.numeric(x)))
@@ -380,7 +200,8 @@ getLabelIntTerms <- function(varsInInt, eta, intTerms) {
 
 
 getEmptyModel <- function(group.info, cov.syntax, parTableCovModel,
-                          mean.observed = TRUE, method = "lms") {
+                          mean.observed = TRUE, method = "lms",
+                          orthogonal.x, orthogonal.y) {
   group.info$parTable$mod <- ""
   group.info$parTable <- removeConstraintExpressions(group.info$parTable)
   group.info["data"]  <- list(data = NULL)
@@ -410,7 +231,9 @@ getEmptyModel <- function(group.info, cov.syntax, parTableCovModel,
     auto.fix.first   = FALSE,
     auto.fix.single  = FALSE,
     createTheta      = FALSE,
-    checkModel       = FALSE
+    checkModel       = FALSE,
+    orthogonal.x     = orthogonal.x,
+    orthogonal.y     = orthogonal.y
   )
 }
 
@@ -429,8 +252,13 @@ replaceNonNaModelMatrices <- function(model, value = -999) {
     x
   }
 
-  for (g in seq_along(model$models))
+  for (g in seq_along(model$models)) {
     model$models[[g]]$matrices <- lapply(model$models[[g]]$matrices, FUN = .fillna)
+
+    if (!is.null(model$models[[g]]$covModel$matrices))
+      model$models[[g]]$covModel$matrices <- lapply(model$models[[g]]$covModel$matrices, FUN = .fillna)
+  }
+
 
   model
 }
@@ -564,7 +392,7 @@ nNegativeLast <- function(x, n = 10) {
 }
 
 
-getDegreesOfFreedom <- function(p, coef, mean.structure = TRUE) {
+getDegreesOfFreedom <- function(p, coef, mean.structure = TRUE, model) {
   if (!length(p)) return(NA_real_)
 
   momentsPerGroup <- function(pp) {
@@ -575,8 +403,22 @@ getDegreesOfFreedom <- function(p, coef, mean.structure = TRUE) {
     }
   }
 
-  m_total <- sum(vapply(p, momentsPerGroup, numeric(1L)))
-  m_total - length(coef)
+  
+  df.total <- sum(vapply(p, momentsPerGroup, numeric(1L)))
+  df <- df.total - length(coef)
+
+  if (isTRUE(model$model$info$fixed.composite.var)) {
+
+    for (g in seq_along(model$model$models)) {
+      M <- model$model$models[[g]]$matricesNA
+
+      # This would be closer to lavaan...
+      # df <- df - sum(apply(M$W, MARGIN = 2L, FUN = \(x) any(is.na(x))))
+      df <- df - sum(is.na(M$T))
+    }
+  }
+
+  df
 }
 
 
@@ -672,16 +514,25 @@ intTermsAffectLV <- function(lV, parTable, etas = NULL) {
 }
 
 
-getLambdaParTable <- function(parTable, rows = NULL, cols = NULL, fill.missing = FALSE) {
+getLambdaParTable <- function(parTable, rows = NULL, cols = NULL, fill.missing = FALSE,
+                              op = c("=~", "<~")) {
   lVs <- getLVs(parTable)
 
   indsLVs <- getIndsLVs(parTable, lVs = lVs)
   allInds <- unique(unlist(indsLVs))
 
-  lambda <- matrix(0, nrow = length(allInds), ncol = length(lVs),
-                   dimnames = list(allInds, lVs))
+  lambda <- matrix(
+    0, nrow = length(allInds), ncol = length(lVs),
+    dimnames = list(allInds, lVs)
+  )
+
   for (lV in lVs) for (ind in indsLVs[[lV]]) {
-    lambda[ind, lV] <- parTable[parTable$lhs == lV & parTable$rhs == ind, "est"]
+    idx <- which(
+      parTable$lhs == lV & parTable$rhs == ind & parTable$op %in% op
+    )
+
+    if (length(idx))
+      lambda[ind, lV] <- parTable[idx[[1L]], "est"]
   }
 
   if (is.null(rows)) rows <- rownames(lambda)
@@ -758,7 +609,8 @@ getLevelsParTable <- function(parTable) {
 isPureEta <- function(eta, parTable) {
   predictors <- unique(parTable[parTable$op == "~", "rhs"])
   indicators <- unique(parTable[parTable$op == "=~", "rhs"])
-  !eta %in% c(predictors, indicators)
+  dependents <- unique(parTable[parTable$op == "~", "lhs"])
+  !eta %in% c(predictors, indicators) & eta %in% dependents
 }
 
 
@@ -797,11 +649,11 @@ addResidualCovariancesParTable <- function(parTable) {
 }
 
 
-getCoefMatricesDA <- function(parTable,
-                              xis = NULL,
-                              etas = NULL,
-                              intTerms = NULL,
-                              centered = TRUE) {
+getCoefMatricesDA_LavRepresentation <- function(parTable,
+                                                xis = NULL,
+                                                etas = NULL,
+                                                intTerms = NULL,
+                                                centered = TRUE) {
 
   parTable <- removeInteractionVariances(parTable)
 
@@ -827,26 +679,26 @@ getCoefMatricesDA <- function(parTable,
   indsLV <- getIndsLVs(parTable, lVs = lVs)
   inds <- unique(unlist(indsLV))
 
-  # Create lambda
-  lambda <- getLambdaParTable(parTable, rows = inds, cols = lVs, fill.missing = TRUE)
+  createBeta <- function(vars) {
+    beta <- matrix(0, nrow = length(vars), ncol = length(vars),
+                   dimnames = list(vars, vars))
 
-  # Create Gamma
-  gammaXi <- matrix(0, nrow = length(etas), ncol = length(xis),
-                    dimnames = list(etas, xis))
-  gammaEta <- matrix(0, nrow = length(etas), ncol = length(etas),
-                     dimnames = list(etas, etas))
+    betaRows <- parTable[
+      parTable$lhs %in% vars &
+      parTable$op == "~" &
+      parTable$rhs %in% vars, ,
+      drop = FALSE
+    ]
 
-  for (eta in etas) {
-    reg <- parTable[parTable$lhs == eta & parTable$op == "~", , drop = FALSE]
+    for (i in seq_len(NROW(betaRows))) {
+      lhs <- betaRows$lhs[i]
+      rhs <- betaRows$rhs[i]
+      est <- betaRows$est[i]
 
-    for (i in seq_len(NROW(reg))) {
-      predictor <- reg[i, "rhs"]
-      est       <- reg[i, "est"]
-
-      if      (predictor %in% xis)  gammaXi[eta, predictor] <- est
-      else if (predictor %in% etas) gammaEta[eta, predictor] <- est
-      else warning("Unexpected type of predictor: ", predictor)
+      beta[rhs, lhs] <- est
     }
+
+    beta
   }
 
   createCov <- function(vars) {
@@ -867,35 +719,76 @@ getCoefMatricesDA <- function(parTable,
     cov
   }
 
-  psi   <- createCov(etas)
-  phi   <- createCov(xis)
-  theta <- createCov(inds)
-
-  createBeta <- function(var) {
-    beta <- matrix(0, nrow = length(var), ncol = 1,
+  createTau <- function(var) {
+    tau <- matrix(0, nrow = length(var), ncol = 1,
                    dimnames = list(var, "~1"))
 
-    betaRows <- parTable[parTable$op == "~1" & parTable$lhs %in% var, , drop = FALSE]
-    for (i in seq_len(NROW(betaRows))) {
-      lhs <- betaRows$lhs[i]
-      est <- betaRows$est[i]
+    tauRows <- parTable[parTable$op == "~1" & parTable$lhs %in% var, , drop = FALSE]
+    for (i in seq_len(NROW(tauRows))) {
+      lhs <- tauRows$lhs[i]
+      est <- tauRows$est[i]
 
       if (lhs %in% var) {
-        beta[lhs, "~1"] <- est
+        tau[lhs, "~1"] <- est
       } else warning("Unexpected type of variable in beta: ", lhs)
     }
 
-    beta
+    tau 
   }
 
-  alpha <- createBeta(etas)
-  beta0 <- createBeta(xis)
-  tau   <- createBeta(inds)
-  Binv <- solve(diag(nrow(gammaEta)) - gammaEta)
+  lambda <- getLambdaParTable(
+    parTable = parTable, rows = inds,
+    cols = lVs, fill.missing = TRUE
+  )
 
-  list(gammaXi = gammaXi, gammaEta = gammaEta, Binv = Binv, psi = psi,
-       phi = phi, theta = theta, alpha = alpha, beta0 = beta0, tau = tau,
-       lambda = lambda, inds = inds, xis = xis, etas = etas, lVs = lVs)
+  psi   <- createCov(c(xis, etas))
+  beta  <- createBeta(c(xis, etas))
+  alpha <- createTau(c(xis, etas))
+  nu    <- createTau(inds)
+  theta <- createCov(inds)
+  binv  <- solve(diag(nrow(beta)) - beta)
+
+  composites <- getComposites(parTable)
+  compositeInds <- getCompositeIndicators(parTable)
+
+  if (length(composites) && length(compositeInds)) {
+    factorInds <- setdiff(inds, compositeInds)
+    factors    <- setdiff(c(xis, etas), composites)
+
+    W <- lambda
+    T <- theta
+
+    W[,factors]    <- 0
+    W[factorInds,] <- 0
+    T[,factorInds] <- 0
+    T[factorInds,] <- 0
+
+    lambda[compositeInds,] <- 0
+    lambda[,composites]    <- 0
+    theta[compositeInds,]  <- 0
+    theta[,compositeInds]  <- 0
+
+    lambda.c <- T %*% W %*% GINV(t(W) %*% T %*% W)
+    theta.c <- T - lambda.c %*% t(W) %*% T %*% W %*% t(lambda.c)
+
+  } else {
+
+    T <- NULL
+    W <- NULL
+
+    lambda.c <- lambda
+    lambda.c[TRUE] <- 0
+
+    theta.c <- theta 
+    theta.c[TRUE] <- 0
+  }
+
+  list(
+    beta = beta, binv = binv, psi = psi,
+    theta = theta, alpha = alpha, nu = nu,
+    lambda = lambda, inds = inds, xis = xis, etas = etas, lVs = lVs,
+    lambda.c = lambda.c, theta.c = theta.c, tmat = T, wmat = W
+  )
 }
 
 
@@ -911,10 +804,16 @@ calcExpectedMatricesDA <- function(parTable, xis = NULL, etas = NULL, intTerms =
 
 
 calcExpectedMatricesDA_Group <- function(parTable, xis = NULL, etas = NULL, intTerms = NULL) {
-  matricesCentered <- getCoefMatricesDA(parTable, xis = xis, etas = etas,
-                                        intTerms = intTerms, centered = TRUE)
-  matricesNonCentered <- getCoefMatricesDA(parTable, xis = xis, etas = etas,
-                                           intTerms = intTerms, centered = FALSE)
+  # Get matrices in lavaan (i.e., lisrel) representation
+  matricesCentered <- getCoefMatricesDA_LavRepresentation(
+    parTable = parTable, xis = xis, etas = etas,
+    intTerms = intTerms, centered = TRUE
+  )
+
+  matricesNonCentered <- getCoefMatricesDA_LavRepresentation(
+    parTable = parTable, xis = xis, etas = etas,
+    intTerms = intTerms, centered = FALSE
+  )
 
   lVs  <- matricesCentered$lVs
   xis  <- matricesCentered$xis
@@ -923,25 +822,25 @@ calcExpectedMatricesDA_Group <- function(parTable, xis = NULL, etas = NULL, intT
 
   # Sigma ----------------------------------------------------------------------
   # Uses centered solution
-  gammaXi  <- matricesCentered$gammaXi
-  gammaEta <- matricesCentered$gammaEta
-  phi      <- matricesCentered$phi
-  psi      <- matricesCentered$psi
-  Binv     <- matricesCentered$Binv
-  tau      <- matricesCentered$tau
-  lambda   <- matricesCentered$lambda
-  alpha    <- matricesCentered$alpha
-  beta0    <- matricesCentered$beta0
-  theta    <- matricesCentered$theta
+  beta      <- matricesCentered$beta
+  psi       <- matricesCentered$psi
+  binv      <- matricesCentered$binv
+  nu        <- matricesCentered$nu
+  alpha     <- matricesCentered$alpha
+  lambda    <- matricesCentered$lambda
+  lambda.c  <- matricesCentered$lambda.c
+  theta     <- matricesCentered$theta
+  theta.c   <- matricesCentered$theta.c
 
-  covEtaEta <- Binv %*% (gammaXi %*% phi %*% t(gammaXi) + psi) %*% t(Binv)
-  covEtaXi <- Binv %*% gammaXi %*% phi
-  sigma.lv <- rbind(cbind(phi, t(covEtaXi)),
-                    cbind(covEtaXi, covEtaEta))
-  sigma.ov <- lambda %*% sigma.lv %*% t(lambda) + theta
+  # sigma.lv <- binv %*% psi %*% t(binv)
+  # We have it the opposite way with the lavaan/lisrel representation of beta/binv
+  sigma.lv <- t(binv) %*% psi %*% binv
+  sigma.ov <- (
+    (lambda + lambda.c) %*% sigma.lv %*% t(lambda + lambda.c) + theta + theta.c
+  )
 
   # lower left corner cov-lv-ov
-  sigma.lv.ov <- lambda %*% sigma.lv
+  sigma.lv.ov <- (lambda + lambda.c) %*% sigma.lv
   sigma.ov.lv <- t(sigma.lv.ov)
 
   sigma.all <- rbind(cbind(sigma.lv, sigma.ov.lv),
@@ -951,7 +850,7 @@ calcExpectedMatricesDA_Group <- function(parTable, xis = NULL, etas = NULL, intT
   # Uses centered solution
   eta.all <- c(etas, inds)
   var.eta.all <- diag(sigma.all[eta.all, eta.all, drop = FALSE])
-  res.eta.all <- c(diag(psi), diag(theta))
+  res.eta.all <- c(diag(psi)[etas], diag(theta))
 
   r2.all <- (var.eta.all - res.eta.all) / var.eta.all
   r2.lv  <- r2.all[etas]
@@ -963,40 +862,33 @@ calcExpectedMatricesDA_Group <- function(parTable, xis = NULL, etas = NULL, intT
 
   # Mu -------------------------------------------------------------------------
   # Uses uncentered solution
-  gammaXiNc  <- matricesNonCentered$gammaXi
-  gammaEtaNc <- matricesNonCentered$gammaEta
-  phiNc      <- matricesNonCentered$phi
+  betaNc     <- matricesNonCentered$beta
   psiNc      <- matricesNonCentered$psi
-  BinvNc     <- matricesNonCentered$Binv
-  tauNc      <- matricesNonCentered$tau
+  binvNc     <- matricesNonCentered$binv
+  nuNc       <- matricesNonCentered$nu
   lambdaNc   <- matricesNonCentered$lambda
+  lambdaNc.c <- matricesNonCentered$lambda.c
   alphaNc    <- matricesNonCentered$alpha
-  beta0Nc    <- matricesNonCentered$beta0
 
-  mu.eta <- BinvNc %*% (alphaNc + gammaXiNc %*% beta0Nc)
-  mu.lv  <- rbind(beta0Nc, mu.eta)
-  mu.ov  <- tauNc + lambdaNc %*% mu.lv
+  mu.lv <- t(binvNc) %*% alphaNc
+  mu.ov  <- nuNc + (lambdaNc + lambdaNc.c) %*% mu.lv
   mu.all <- rbind(mu.lv, mu.ov)
 
   list(
-    sigma.all = sigma.all,
-    sigma.lv  = sigma.lv,
-    sigma.ov  = sigma.ov,
-    mu.all    = mu.all,
-    mu.lv     = mu.lv,
-    mu.ov     = mu.ov,
-    r2.all    = r2.all,
-    r2.lv     = r2.lv,
-    r2.ov     = r2.ov,
-    res.all   = res.all,
-    res.lv    = res.lv,
-    res.ov    = res.ov,
-    lambda    = lambda,
-    gammaXi   = gammaXi,
-    gammaEta  = gammaEta,
-    psi       = psi,
-    phi       = phi,
-    theta     = theta
+    sigma.all  = sigma.all,
+    sigma.lv   = sigma.lv,
+    sigma.ov   = sigma.ov,
+    mu.all     = mu.all,
+    mu.lv      = mu.lv,
+    mu.ov      = mu.ov,
+    r2.all     = r2.all,
+    r2.lv      = r2.lv,
+    r2.ov      = r2.ov,
+    res.all    = res.all,
+    res.lv     = res.lv,
+    res.ov     = res.ov,
+    matrices   = matricesNonCentered,
+    matrices.c = matricesCentered
   )
 }
 
@@ -1040,7 +932,8 @@ splitParTableEtas <- function(parTable, parTableCov = NULL, splitEtas, allEtas,
     split <- splitParTableEtas(parTable = parTable,
                                parTableCov = parTableCov,
                                splitEtas = downstreamEtas,
-                               allEtas = allEtas)
+                               allEtas = allEtas,
+                               nonLinearEtas = nonLinearEtas)
 
     parTable    <- split$parTable
     parTableCov <- split$parTableCov
@@ -1115,7 +1008,7 @@ sortParTableDA <- function(parTable, model) {
   etasLow  <- etas[!isHigherOrderEta]
   etasHigh <- etas[isHigherOrderEta]
 
-  opOrder <- c("=~", "~", "~1", "~~", "|", ":=")
+  opOrder <- c("=~", "<~", "~", "~1", "~~", "|", ":=")
   varOrder <- unique(c(indsXis, indsEtas, xisLow, etasLow, xisHigh, xisLow))
   groupOrder <- c(getGroupsParTable(parTable), 0)
 
@@ -1125,8 +1018,7 @@ sortParTableDA <- function(parTable, model) {
     score    <- mapping[as.character(x)]
 
     if (length(score) != length(x)) {
-      warning2("Sorting of parameter estimates failed!\n",
-               immediate. = FALSE)
+      mod_msg_warn("Sorting of parameter estimates failed!\n")
 
       return(seq_along(x))
     }
@@ -1149,8 +1041,8 @@ sortParTableDA <- function(parTable, model) {
 updateStatusLog <- function(iterations, mode, logLikNew, deltaLL, relDeltaLL, verbose = FALSE) {
   if (verbose) {
     clearConsoleLine()
-    printf("\rIter=%d Mode=%s LogLik=%.2f \u0394LL=%.2g rel\u0394LL=%.2g",
-           iterations, mode, logLikNew, deltaLL, relDeltaLL)
+    msg <- MSG_STRINGS$strings$updateStatusLog0
+    printf(msg, iterations, mode, logLikNew, deltaLL, relDeltaLL)
   }
 }
 
@@ -1263,6 +1155,75 @@ recalcInterceptsY_Group <- function(parTable.nlin, parTable.lin) {
 }
 
 
+recalcInterceptsComposites <- function(parTable, input) {
+  out <- NULL
+
+  parTable <- addMissingGroups(parTable)
+  input    <- addMissingGroups(input)
+
+  for (g in getGroupsParTable(parTable)) {
+    parTable.g <- parTable[parTable$group == g, , drop = FALSE]
+    out <- rbind(out, recalcInterceptsComposites_Group(parTable.g, input))
+  }
+
+  rbind(out, getZeroGroupParTable(parTable))
+}
+
+
+recalcInterceptsComposites_Group <- function(parTable, input) {
+  # Translate lavaan's composite mean convention to modsem's.
+  # lavaan assigns composites the mean of their indicators (W' * mu_indicators).
+  # modsem assigns composites zero mean by default (for composites without an
+  # explicit ~1 in the user's syntax).
+  # We reparameterize: set composite ~1 = 0 and route the composite mean
+  # contribution (delta = gamma * mu_c) into either the eta intercept (if the
+  # user specified eta ~1) or into the indicator intercepts (the default case,
+  # where eta ~1 = 0 for identification), preserving E[ind] throughout.
+  composites    <- getComposites(input)
+  interceptVars <- unique(input[input$op == "~1", "lhs"])
+  zeroMeanComps <- setdiff(composites, interceptVars)
+
+  for (comp in zeroMeanComps) {
+    muC <- getIntercept(comp, parTable)
+
+    if (!length(muC) || muC == 0) next
+
+    cond.comp <- parTable$op == "~1" & parTable$lhs == comp
+    if (any(cond.comp))
+      parTable[cond.comp, "est"] <- 0
+
+    structRows <- parTable[parTable$op == "~" & parTable$rhs == comp, , drop = FALSE]
+    for (i in seq_len(NROW(structRows))) {
+      eta   <- structRows[i, "lhs"]
+      gamma <- structRows[i, "est"]
+      delta <- gamma * muC
+
+      ieta <- getIntercept(eta, parTable)
+      inds <- unique(parTable[parTable$lhs == eta & parTable$op == "=~", "rhs"])
+
+      if (ieta != 0) {
+        # eta has a user-specified intercept: absorb delta into eta ~1
+        cond.eta <- parTable$op == "~1" & parTable$lhs == eta
+        if (any(cond.eta))
+          parTable[cond.eta, "est"] <- parTable[cond.eta, "est"] + delta
+      } else {
+        # eta ~1 is fixed to 0 for identification: push delta into indicators
+        for (ind in inds) {
+          lambda   <- parTable[parTable$lhs == eta &
+                               parTable$op == "=~" &
+                               parTable$rhs == ind, "est"]
+          cond.ind <- parTable$op == "~1" & parTable$lhs == ind
+          if (!length(lambda) || !any(cond.ind)) next
+          parTable[cond.ind, "est"] <- parTable[cond.ind, "est"] + lambda * delta
+        }
+      }
+    }
+  }
+
+  parTable
+}
+
+
 getGroupsParTable <- function(parTable) {
   sort(unique(parTable$group[parTable$group > 0L]))
 }
@@ -1275,13 +1236,13 @@ getZeroGroupParTable <- function(parTable) {
 
 prepareDataGroupDA <- function(group, data, sampling.weights, sampling.weights.normalization) {
   if (!is.null(sampling.weights)) {
-    stopif(length(sampling.weights) != 1L, "sampling.weights variable must be of length 1!")
-    stopif(!sampling.weights %in% names(data),
+    mod_stopif(length(sampling.weights) != 1L, "sampling.weights variable must be of length 1!")
+    mod_stopif(!sampling.weights %in% names(data),
            sprintf("sampling.weights variable '%s' not found in `data`.", sampling.weights))
 
     weights <- data[[sampling.weights]]
-    stopif(any(is.na(weights)), "`sampling.weights` cannot have missing values!")
-    stopif(any(weights < 0), "`sampling.weights` cannot have negative values!")
+    mod_stopif(any(is.na(weights)), "`sampling.weights` cannot have missing values!")
+    mod_stopif(any(weights < 0), "`sampling.weights` cannot have negative values!")
   }
 
   if ((!is.null(sampling.weights) && tolower(sampling.weights.normalization) == "total")) {
@@ -1310,15 +1271,15 @@ prepareDataGroupDA <- function(group, data, sampling.weights, sampling.weights.n
 
   data.raw <- data
 
-  stopif(!is.data.frame(data), "`data` must be a data.frame when grouping is used.")
+  mod_stopif(!is.data.frame(data), "`data` must be a data.frame when grouping is used.")
   n <- NROW(data)
-  stopif(n == 0L, "Grouping requires non-empty data.")
+  mod_stopif(n == 0L, "Grouping requires non-empty data.")
 
   group.raw <- NULL
   group.var <- NULL
 
-  stopif(length(group) != 1L, "Grouping variable must be of length 1!")
-  stopif(!group %in% names(data),
+  mod_stopif(length(group) != 1L, "Grouping variable must be of length 1!")
+  mod_stopif(!group %in% names(data),
          sprintf("Grouping variable '%s' not found in `data`.", group))
 
   group.raw <- data[[group]]
@@ -1335,8 +1296,8 @@ prepareDataGroupDA <- function(group, data, sampling.weights, sampling.weights.n
     }
   }
 
-  stopif(length(group.raw) != n, "Length of `group` must match the number of rows in `data`!")
-  stopif(any(is.na(group.raw)), "`group` cannot contain missing values!")
+  mod_stopif(length(group.raw) != n, "Length of `group` must match the number of rows in `data`!")
+  mod_stopif(any(is.na(group.raw)), "`group` cannot contain missing values!")
 
   group.raw <- as.character(group.raw) # match lavaan behaviour, ignore factor levels
   levels_order <- unique(group.raw)
@@ -1389,7 +1350,7 @@ expandGroupModifier <- function(mod, n.groups) {
   } else if (length(tokens) == 1L) {
     tokens <- rep(tokens, n.groups)
   } else {
-    stopif(length(tokens) != n.groups,
+    mod_stopif(length(tokens) != n.groups,
            sprintf("Found %d modifiers but expected %d groups.", length(tokens), n.groups))
   }
 
@@ -1463,8 +1424,8 @@ parseModelArgumentsByGroupDA <- function(model.syntax, cov.syntax,
   ovs       <- getOVs(rbind(parTable, parTableCov))
 
   missing <- setdiff(ovs, colnames(data))
-  stopif(length(missing), "Missing observed variables in data:\n  ",
-         paste(missing, collapse = ", "))
+  mod_stopif(length(missing), paste0("Missing observed variables in data:\n  ",
+         paste(missing, collapse = ", ")))
 
   varsInts  <- getVarsInts(getIntTermRows(parTable), removeColonNames = FALSE)
   isOV_Int  <- vapply(varsInts, FUN.VALUE = logical(1L), FUN = \(x) all(x %in% ovs))
@@ -1493,9 +1454,15 @@ parseModelArgumentsByGroupDA <- function(model.syntax, cov.syntax,
     parTable <- rbind(
       parTable,
       data.frame(lhs = ov, op = "=~", rhs = tmp.ov, mod = "1"),
-      data.frame(lhs = ov, op = "~1", rhs = "", mod = ""),
       data.frame(lhs = tmp.ov, op = "~1", rhs = "", mod = "0")
     )
+
+    if (!any(parTable$lhs == ov & parTable$op == "~1")) {
+      parTable <- rbind(
+        parTable,
+        data.frame(lhs = ov, op = "~1", rhs = "", mod = "")
+      )
+    }
   }
 
   if (length(structovs))

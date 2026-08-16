@@ -104,8 +104,10 @@ testthat::expect_error(
   regex = ".*zero residual variance.*"
 )
 
+testthat::expect_warning({
 est_qml <- modsem(model = JDR_Model_modsem, data = dummy_data, method = "qml")
 print(summary(est_qml))
+}, regexp = ".*smallest eigenvalue.*")
 
 
 JDR_Model_linear <- '

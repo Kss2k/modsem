@@ -23,14 +23,15 @@ formatParTable <- function(parTable,
   isCov    <- parTable$op == "~~" & parTable$lhs != parTable$rhs
   isReg    <- parTable$op == "~"
   isIntr   <- parTable$op == "~1" # Intercept
-  isMeasr  <- parTable$op == "=~"
+  isMeasrF <- parTable$op == "=~" # Measurement of factors
+  isMeasrC <- parTable$op == "<~" # Measurement of composites
   isThrs   <- parTable$op == "|"
 
   parTable[isCustom, "label"] <- ""
   parTable[isThrs, "lhs"] <- paste0(parTable[isThrs, "lhs"], "|",
                                     parTable[isThrs, "rhs"])
 
-  isDoubleCol <- isReg  | isCov | isMeasr # Should output have double columns?
+  isDoubleCol <- isReg  | isCov | isMeasrF | isMeasrC # Should output have double columns?
   isSingleCol <- isIntr | isVar | isCustom | isThrs
 
   if (shorten.lhs.header) {
@@ -60,8 +61,8 @@ formatParTable <- function(parTable,
   parTable[isSingleCol, "rhs"] <- ""
 
   if (pad.res) {
-    etas    <- getEtas(parTable.in, isLV = FALSE)
-    inds    <- getInds(parTable.in)
+    etas    <- getEtas(parTable.in, isLV = FALSE, checkAny = FALSE)
+    inds    <- getReflectiveIndicators(parTable.in)
     resvars <- c(etas, inds)
 
     isResVarCovOrInt <- (
@@ -138,7 +139,7 @@ printParTable <- function(parTable,
     pad, stringr::str_c(header[-(1:3)], collapse = space), "\n"
   )
 
-  # Measurement model
+  # Latent Variables
   parTableLoadings <- fParTable[fParTable$op == "=~", ]
   if (loadings && NROW(parTableLoadings) > 0) {
     cat("Latent Variables:\n", formattedHeader)
@@ -149,12 +150,29 @@ printParTable <- function(parTable,
       padWidthLhs = padWidthLhs,
       spacing = spacing
     )
+
+    cat("\n")
+  }
+
+  # Composites
+  parTableComposites <- fParTable[fParTable$op == "<~", ]
+  if (loadings && NROW(parTableComposites) > 0) {
+    cat("Composites:\n", formattedHeader)
+
+    printParTableDouble(
+      parTableComposites,
+      padWidth = padWidth,
+      padWidthLhs = padWidthLhs,
+      spacing = spacing
+    )
+
+    cat("\n")
   }
 
   # Regressions
   parTableRegressions <- fParTable[parTable$op == "~", ]
   if (regressions && NROW(parTableRegressions) > 0) {
-    cat("\nRegressions:\n", formattedHeader)
+    cat("Regressions:\n", formattedHeader)
 
     printParTableDouble(
       parTableRegressions,
@@ -162,12 +180,14 @@ printParTable <- function(parTable,
       padWidthLhs = padWidthLhs,
       spacing = spacing
     )
+
+    cat("\n")
   }
 
   # Intercepts
   parTableIntercepts <- fParTable[parTable$op == "~1", ]
   if (intercepts && NROW(parTableIntercepts) > 0) {
-    cat("\nIntercepts:\n", formattedHeader)
+    cat("Intercepts:\n", formattedHeader)
 
     printParTableSingle(
       parTableIntercepts,
@@ -175,12 +195,14 @@ printParTable <- function(parTable,
       padWidthLhs = padWidthLhs,
       spacing = spacing
     )
+
+    cat("\n")
   }
 
   # Covariances
   parTableCovariances <- fParTable[parTable$op == "~~" & parTable$lhs != parTable$rhs, ]
   if (covariances && NROW(parTableCovariances) > 0) {
-    cat("\nCovariances:\n", formattedHeader)
+    cat("Covariances:\n", formattedHeader)
 
     printParTableDouble(
       parTableCovariances,
@@ -188,12 +210,14 @@ printParTable <- function(parTable,
       padWidthLhs = padWidthLhs,
       spacing = spacing
     )
+
+    cat("\n")
   }
 
   # Thresholds
   parTableThresholds <- fParTable[parTable$op == "|", ]
   if (thresholds && NROW(parTableThresholds) > 0) {
-    cat("\nThresholds:\n", formattedHeader)
+    cat("Thresholds:\n", formattedHeader)
 
     printParTableSingle(
       parTableThresholds,
@@ -201,12 +225,14 @@ printParTable <- function(parTable,
       padWidthLhs = padWidthLhs,
       spacing = spacing
     )
+
+    cat("\n")
   }
 
   # Variances
   parTableVariances <- fParTable[parTable$op == "~~" & parTable$lhs == parTable$rhs, ]
   if (variances && NROW(parTableVariances) > 0) {
-    cat("\nVariances:\n", formattedHeader)
+    cat("Variances:\n", formattedHeader)
 
     printParTableSingle(
       parTableVariances,
@@ -214,12 +240,14 @@ printParTable <- function(parTable,
       padWidthLhs = padWidthLhs,
       spacing = spacing
     )
+
+    cat("\n")
   }
 
   # Defined parameters
   parTableCustom <- fParTable[parTable$op == ":=", ]
   if (custom && NROW(parTableCustom) > 0) {
-    cat("\nDefined Parameters:\n", formattedHeader)
+    cat("Defined Parameters:\n", formattedHeader)
 
     printParTableSingle(
       parTableCustom,
@@ -227,8 +255,9 @@ printParTable <- function(parTable,
       padWidthLhs = padWidthLhs,
       spacing = spacing
     )
+
+    cat("\n")
   }
-  cat("\n")
 }
 
 
@@ -278,7 +307,7 @@ pasteLabels <- function(vars, labels, width = 14) {
   widthLabel     <- min(maxchar(labels), width - initWidthVar - 3L) # space + ()
   widthVar       <- width - widthLabel - 3L
 
-  warnif(widthVar + widthLabel + 3L != width, "Mismatching widhts!")
+  mod_warnif(widthVar + widthLabel + 3L != width, "Mismatching widhts!")
 
   pasted <- paste0(vars, " (", labels, ")")
   widths <- nchar(pasted)
@@ -339,16 +368,13 @@ getWidthPrintedParTable <- function(parTable,
                                     scientific  = FALSE,
                                     ci          = FALSE,
                                     digits      = 3,
-                                    loadings    = TRUE,
-                                    regressions = TRUE,
-                                    covariances = TRUE,
-                                    intercepts  = TRUE,
-                                    variances   = TRUE,
                                     padWidth    = 2,
                                     padWidthLhs = 2,
                                     spacing     = 2,
-                                    extra.cols = NULL) {
-  formatted <- formatParTable(
+                                    extra.cols = NULL,
+                                    ...) { # add ... for backwards compatability,
+                                           # such that passing old (unused) arguments
+  formatted <- formatParTable(             # doesn't throw an error
     parTable,
     digits = digits,
     ci = ci,
@@ -370,7 +396,7 @@ getWidthPrintedParTable <- function(parTable,
 }
 
 
-formatPval <- function(p, scientific = TRUE) {
+formatPval <- function(p, scientific = TRUE, digits = 3) {
   if (scientific) return(format.pval(p))
-  format(round(p, digits = 3), nsmall = 3)
+  format(round(p, digits = digits), nsmall = digits)
 }

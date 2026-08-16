@@ -1,9 +1,9 @@
 # Global variables
-namesParMatrices <- c("lambdaX", "lambdaY", "gammaXi", "gammaEta",
-                      "thetaDelta", "thetaEpsilon", "phi", "A",
-                      "psi", "tauX", "tauY", "alpha", "beta0", "omegaEtaXi",
-                      "omegaXiXi")
-namesParMatricesCov <- c("gammaXi", "gammaEta", "A", "psi", "phi")
+NAMES_PAR_MATRICES <- c("lambdaX", "lambdaY", "gammaXi", "gammaEta",
+                      "thetaDelta", "thetaEpsilon", "W", "T", "phi", "A",
+                      "covZetaXi", "psi", "tauX", "tauY", "alpha", "beta0",
+                      "omegaEtaXi", "omegaXiXi")
+NAMES_PAR_MATRICES_COV <- c("gamma", "psi")
 
 
 createTheta <- function(model, start = NULL, parTable.in = NULL) {
@@ -47,8 +47,11 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
     lambdaY      <- as.vector(M$lambdaY)
     thetaDelta   <- as.vector(M$thetaDelta)
     thetaEpsilon <- as.vector(M$thetaEpsilon)
+    W            <- as.vector(M$W)
+    T            <- as.vector(M$T)
     phi          <- as.vector(M$phi)
     A            <- as.vector(M$A)
+    covZetaXi    <- as.vector(M$covZetaXi)
     psi          <- as.vector(M$psi)
     tauX         <- as.vector(M$tauX)
     tauY         <- as.vector(M$tauY)
@@ -59,21 +62,26 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
     omegaXiXi    <- as.vector(M$omegaXiXi)
     omegaEtaXi   <- as.vector(M$omegaEtaXi)
 
-    allModelValues <- c("lambdaX"      = lambdaX,
-                        "lambdaY"      = lambdaY,
-                        "tauX"         = tauX,
-                        "tauY"         = tauY,
-                        "thetaDelta"   = thetaDelta,
-                        "thetaEpsilon" = thetaEpsilon,
-                        "phi"          = phi,
-                        "A"            = A,
-                        "psi"          = psi,
-                        "alpha"        = alpha,
-                        "beta0"        = beta0,
-                        "gammaXi"      = gammaXi,
-                        "gammaEta"     = gammaEta,
-                        "omegaXiXi"    = omegaXiXi,
-                        "omegaEtaXi"   = omegaEtaXi)
+    allModelValues <- c(
+      lambdaX      = lambdaX,
+      lambdaY      = lambdaY,
+      tauX         = tauX,
+      tauY         = tauY,
+      thetaDelta   = thetaDelta,
+      thetaEpsilon = thetaEpsilon,
+      W            = W,
+      T            = T,
+      phi          = phi,
+      A            = A,
+      covZetaXi    = covZetaXi,
+      psi          = psi,
+      alpha        = alpha,
+      beta0        = beta0,
+      gammaXi      = gammaXi,
+      gammaEta     = gammaEta,
+      omegaXiXi    = omegaXiXi,
+      omegaEtaXi   = omegaEtaXi
+    )
 
     lavLabelsMain <- createLavLabels(M, subset = is.na(allModelValues),
                                      etas = etas, parTable.in = parTable.in)
@@ -140,15 +148,9 @@ createTheta <- function(model, start = NULL, parTable.in = NULL) {
 createThetaCovModel <- function(covModel, start = NULL) {
   M <- covModel$matrices
 
-  phi      <- as.vector(M$phi)
-  psi      <- as.vector(M$psi)
-  alpha    <- as.vector(M$alpha)
-  gammaXi  <- as.vector(M$gammaXi)
-  gammaEta <- as.vector(M$gammaEta)
-  thetaCov <- c("phi" = phi,
-                "psi" = psi,
-                "gammaXi" = gammaXi,
-                "gammaEta" = gammaEta)
+  psi   <- as.vector(M$psi)
+  gamma <- as.vector(M$gamma)
+  thetaCov <- c(psi = psi, gamma = gamma)
 
   lavLabelsCov <- createLavLabelsCov(M, subset = is.na(thetaCov))
   thetaCov <- thetaCov[is.na(thetaCov)]
@@ -172,7 +174,7 @@ fillThetaIfStartNULL <- function(start,
 
   } else if (!is.null(lavlab)) {
     tryCatch({
-      OP <- "~~|=~|~1|~"
+      OP <- "~~|<~|=~|~1|~"
       op <- stringr::str_extract(lavlab, pattern = OP)
       lr <- stringr::str_split_fixed(lavlab, pattern = OP, n = 2)
 
@@ -184,6 +186,7 @@ fillThetaIfStartNULL <- function(start,
       theta.filled[op == "~"]               <- reg
       theta.filled[op == "=~"]              <- meas
       theta.filled[op == "~1"]              <- mean
+      theta.filled[op == "<~"]              <- meas
       theta.filled[op == "~~" & lhs == rhs] <- var
       theta.filled[op == "~~" & lhs != rhs] <- cov
       theta.filled[is.na(theta.filled)]     <- reg
@@ -242,22 +245,28 @@ fillMainModel <- function(model, theta, thetaLabel, fillPhi = FALSE,
   M        <- model$matrices
   covModel <- model$covModel
 
-  lMatrices <- model$labelMatrices[namesParMatrices]
-  pMatrices <- M[namesParMatrices]
-  M[namesParMatrices] <- fillMatricesLabels(pMatrices, lMatrices, thetaLabel)
+  lMatrices <- model$labelMatrices[NAMES_PAR_MATRICES]
+  pMatrices <- M[NAMES_PAR_MATRICES]
+  M[NAMES_PAR_MATRICES] <- fillMatricesLabels(pMatrices, lMatrices, thetaLabel)
 
   if (!is.null(model$covModel$matrices)) {
     M$phi <- M$A <- expectedCovModel(covModel, method = method, sortedXis = xis)
+
   } else if (method == "lms") {
     M$A <- fillNA_Matrix(M$A, theta = theta, pattern = "^A([0-9]*)")
+
   } else if (method == "qml") {
     M$phi <- fillSymmetric(M$phi, fetch(theta, "^phi"))
+
   }
 
   M$lambdaX      <- fillNA_Matrix(M$lambdaX, theta = theta, pattern = "^lambdaX")
   M$lambdaY      <- fillNA_Matrix(M$lambdaY, theta = theta, pattern = "^lambdaY")
   M$thetaDelta   <- fillSymmetric(M$thetaDelta, fetch(theta, "^thetaDelta"))
   M$thetaEpsilon <- fillSymmetric(M$thetaEpsilon, fetch(theta, "thetaEpsilon"))
+  M$W            <- fillNA_Matrix(M$W, theta = theta, pattern = "^W")
+  M$T            <- fillSymmetric(M$T, fetch(theta, "^T"))
+  M$covZetaXi    <- fillNA_Matrix(M$covZetaXi, theta = theta, pattern = "^covZetaXi")
   M$psi          <- fillSymmetric(M$psi, fetch(theta, "^psi"))
   M$tauX         <- fillNA_Matrix(M$tauX, theta = theta, pattern = "^tauX")
   M$tauY         <- fillNA_Matrix(M$tauY, theta = theta, pattern = "^tauY")
@@ -268,7 +277,9 @@ fillMainModel <- function(model, theta, thetaLabel, fillPhi = FALSE,
   M$omegaXiXi    <- fillNA_Matrix(M$omegaXiXi, theta = theta, pattern = "^omegaXiXi")
   M$omegaEtaXi   <- fillNA_Matrix(M$omegaEtaXi, theta = theta, pattern = "^omegaEtaXi")
 
-  if (fillPhi) M$phi <- M$A %*% t(M$A)
+  if (fillPhi) {
+    M$phi <- M$A %*% t(M$A)
+  }
   M
 }
 
@@ -278,14 +289,12 @@ fillCovModel <- function(covModel, theta, thetaLabel) {
   if (is.null(covModel$matrices)) return(covModel)
   M <- covModel$matrices
 
-  lMatrices <- covModel$labelMatrices[namesParMatricesCov]
-  pMatrices <- M[namesParMatricesCov]
-  M[namesParMatricesCov] <- fillMatricesLabels(pMatrices, lMatrices, thetaLabel)
+  lMatrices <- covModel$labelMatrices[NAMES_PAR_MATRICES_COV]
+  pMatrices <- M[NAMES_PAR_MATRICES_COV]
+  M[NAMES_PAR_MATRICES_COV] <- fillMatricesLabels(pMatrices, lMatrices, thetaLabel)
 
-  M$psi      <- fillSymmetric(M$psi, fetch(theta, "^psi"))
-  M$gammaEta <- fillNA_Matrix(M$gammaEta, theta = theta, pattern = "^gammaEta")
-  M$gammaXi  <- fillNA_Matrix(M$gammaXi, theta = theta, pattern = "^gammaXi")
-  M$phi <- fillSymmetric(M$phi, fetch(theta, "^phi"))
+  M$psi   <- fillSymmetric(M$psi, fetch(theta, "^psi"))
+  M$gamma <- fillNA_Matrix(M$gamma, theta = theta, pattern = "^gamma")
 
   covModel$matrices <- M
   covModel
@@ -295,13 +304,16 @@ fillCovModel <- function(covModel, theta, thetaLabel) {
 fillNA_Matrix <- function(X, theta, pattern) {
   idx <- is.na(X) & !is.nan(X)
   values <- fetch(theta, pattern)
-  if (length(values) && sum(idx) != length(values)) {
-    stop2("Mismatch when filling matrix for pattern `", pattern, "`: expected ",
-          sum(idx), " values but got ", length(values))
-  }
-  if (sum(idx) > 0 && length(values) == 0) {
-    stop2("No values found in theta vector for pattern `", pattern, "`.")
-  }
+
+  mod_stopif(length(values) && sum(idx) != length(values),
+    paste0("Mismatch when filling matrix for pattern `", pattern, "`: expected ",
+           sum(idx), " values but got ", length(values))
+  )
+
+  mod_stopif(sum(idx) > 0 && length(values) == 0,
+    paste0("No values found in theta vector for pattern `", pattern, "`.")
+  )
+
   X[idx] <- values
   X
 }
@@ -310,11 +322,11 @@ fillNA_Matrix <- function(X, theta, pattern) {
 fillSymmetric <- function(mat, values) {
   idx <- is.na(mat) & !is.nan(mat)
   if (sum(idx) > 0 && length(values) == 0) {
-    stop2("No values provided to fill symmetric matrix.")
+    mod_msg_stop("No values provided to fill symmetric matrix.")
   }
   if (length(values) && length(values) != sum(idx)) {
-    stop2("Mismatch when filling symmetric matrix: expected ", sum(idx),
-          " values but got ", length(values))
+    mod_msg_stop(paste0("Mismatch when filling symmetric matrix: expected ", sum(idx),
+          " values but got ", length(values)))
   }
   mat[idx] <- values
   mat[upper.tri(mat)] <- t(mat)[upper.tri(mat)]
@@ -351,13 +363,13 @@ getParamBounds <- function(model) {
 
 checkStartingParams <- function(start, model) {
   if (length(start) != length(model$theta)) {
-    stop2("The length of the starting parameters does not match the number of parameters in the model")
+    mod_msg_stop("The length of the starting parameters does not match the number of parameters in the model")
   }
   if (is.null(names(start))) {
     names(start) <- names(model$theta)
   }
   if (!all(names(start) %in% names(model$theta))) {
-    stop2("The names of the starting parameters do not match the names of the parameters in the model")
+    mod_msg_stop("The names of the starting parameters do not match the names of the parameters in the model")
   }
 
   NULL
@@ -397,21 +409,21 @@ calcPhiTheta <- function(theta, model, method) {
       labVals <- allVals[labels != ""]
       labels  <- labels[labels != ""]
       missing <- setdiff(labels, names(theta))
-      stopif(length(missing),
-             "Missing labelled parameters in theta vector: ",
-             paste(missing, collapse = ", "))
+      mod_stopif(length(missing),
+             paste0("Missing labelled parameters in theta vector: ",
+             paste(missing, collapse = ", ")))
 
       theta[select][labels] <- labVals
     }
 
-    theta[select][grepl("^A([0-9]*)", names(theta[select]))] <- vals
+    theta[select][grepl("^A([0-9]+)?$", names(theta[select]))] <- vals
   }
 
   theta
 }
 
 
-LMS_BLOCKS = list(
+DA_BLOCKS = list(
   lambdaX      = 0,
   lambdaY      = 1,
   tauX         = 2,
@@ -426,15 +438,19 @@ LMS_BLOCKS = list(
   gammaEta     = 11,
   omegaXiXi    = 12,
   omegaEtaXi   = 13,
-  phi          = NA
+  W            = 14,
+  T            = 15,
+  phi          = 16,  # QML: free parameter; LMS: derived from A (not free)
+  covZetaXi    = 17
 )
 
 
-SYMMETRIC_BLOCKS_LMS = c(
-  thetaDelta = 4,
+SYMMETRIC_BLOCKS_DA = c(
+  thetaDelta   = 4,
   thetaEpsilon = 5,
-  psi = 7,
-  phi = NA
+  psi          = 7,
+  T            = 15,
+  phi          = 16
 )
 
 
@@ -451,7 +467,7 @@ getParamNamesMatrix <- function(mat, matname) {
 
 
 getParamLocationsMatrices <- function(matrices, isFree = is.na, g = 1L, ignore.g.label = FALSE) {
-  matrices <- matrices[intersect(names(matrices), names(LMS_BLOCKS))]
+  matrices <- matrices[intersect(names(matrices), names(DA_BLOCKS))]
   locations <- data.frame(param = NULL, block = NULL, row = NULL, col = NULL)
   for (blockname in names(matrices)) {
     X <- matrices[[blockname]]
@@ -461,7 +477,7 @@ getParamLocationsMatrices <- function(matrices, isFree = is.na, g = 1L, ignore.g
     if (!any(isFree(X))) next
 
     params <- getParamNamesMatrix(mat = X, matname = blockname)
-    block  <- LMS_BLOCKS[[blockname]]
+    block  <- DA_BLOCKS[[blockname]]
     rowidx <- matrix(seq_len(n) - 1, nrow = n, ncol = m, byrow = FALSE)
     colidx <- matrix(seq_len(m) - 1, nrow = n, ncol = m, byrow = TRUE)
 
@@ -478,7 +494,7 @@ getParamLocationsMatrices <- function(matrices, isFree = is.na, g = 1L, ignore.g
       block = block,
       row   = rowidx,
       col   = colidx,
-      symmetric = as.integer(block %in% SYMMETRIC_BLOCKS_LMS)
+      symmetric = as.integer(block %in% SYMMETRIC_BLOCKS_DA)
     )
 
     locations <- rbind(locations, locationsBlock)
@@ -488,18 +504,18 @@ getParamLocationsMatrices <- function(matrices, isFree = is.na, g = 1L, ignore.g
 }
 
 
-getGradientStruct <- function(model, theta) {
+getGradientStruct <- function(model, theta, method = "lms") {
   tryCatch(
-    getGradientStructSimple(model = model, theta = theta),
+    getGradientStructSimple(model = model, theta = theta, method = method),
     error = function(e) {
-      warning2("Failed to compute gradient structure: ", e$message)
+      mod_msg_warn(paste0("Failed to compute gradient structure: ", e$message))
 
       list(
         locations   = NULL,
         Jacobian    = NULL,
         nlinDerivs  = NULL,
         evalTheta   = NULL,
-        hasCovModel = TRUE, # may not be true, but we should behave as if it is
+        useFDGradient = TRUE, # may not be true, but we should behave as if it is
         isNonLinear = TRUE  # may not be true, but we should behave as if it is
       )
     }
@@ -507,21 +523,102 @@ getGradientStruct <- function(model, theta) {
 }
 
 
-getGradientStructSimple <- function(model, theta) {
-  hasCovModel <- !is.null(model$models[[1L]]$covModel$matrices)
-
-  if (hasCovModel) {
-    out <- list(
-      locations   = NULL,
-      Jacobian    = NULL,
-      nlinDerivs  = NULL,
-      evalTheta   = NULL,
-      hasCovModel = TRUE,
-      isNonLinear = TRUE  # may not be true, but we should behave as if it is
+# Evaluate the A matrix (lower-Cholesky of xi covariance) produced by the
+# covModel for group g at a given theta.  Cheap: no integration, just matrix
+# algebra inside expectedCovModel().
+evalCovModelA <- function(theta, submodel, params, g, method = "lms") {
+  thetaLabel <- NULL
+  if (length(params$SELECT_THETA_LAB)) {
+    thetaLabel <- suppressWarnings(
+      calcThetaLabel(theta[params$SELECT_THETA_LAB[[1L]]], params$constrExprs)
     )
-
-    return(out)
   }
+
+  thetaCov <- if (length(params$SELECT_THETA_COV[[g]]))
+    theta[params$SELECT_THETA_COV[[g]]] else NULL
+
+  filledCov <- fillCovModel(submodel$covModel, thetaCov, thetaLabel)
+  expectedCovModel(filledCov, method = method, sortedXis = submodel$info$xis)
+}
+
+
+# locations data.frame for the lower-triangular A entries controlled by covModel.
+getCovModelALocations <- function(submodel, g, method = "lms") {
+  numXis <- submodel$info$numXis
+  xis    <- submodel$info$xis
+  matname <- if (identical(method, "qml")) "phi" else "A"
+  block <- if (identical(method, "qml")) DA_BLOCKS[["phi"]] else DA_BLOCKS[["A"]]
+
+  cov_dim  <- matrix(0L, nrow = numXis, ncol = numXis, dimnames = list(xis, xis))
+  free_mask <- lower.tri(cov_dim, diag = TRUE)
+  params    <- getParamNamesMatrix(mat = cov_dim, matname = matname)[free_mask]
+  rowidx    <- (row(cov_dim) - 1L)[free_mask]
+  colidx    <- (col(cov_dim) - 1L)[free_mask]
+
+  if (g > 1L) params <- sprintf("%s.g%d", params, g)
+
+  data.frame(
+    param     = params,
+    group     = g,
+    block     = block,
+    row       = rowidx,
+    col       = colidx,
+    symmetric = as.integer(block %in% SYMMETRIC_BLOCKS_DA),
+    stringsAsFactors = FALSE
+  )
+}
+
+
+# Recompute the A-matrix (block 6) columns of Jacobian/Jacobian2 at the
+# current theta.  expectedCovModel() involves nonlinear operations (Cholesky),
+# so dA/dtheta is theta-dependent and must be refreshed at each gradient call.
+# Jacobian2 is optional — pass NULL to skip the second-derivative update.
+refreshCovModelJacobian <- function(theta, model, Jacobian, Jacobian2 = NULL,
+                                    method = NULL) {
+  if (is.null(method))
+    method <- model$params$gradientStruct$covModelMethod %||% "lms"
+
+  locations <- model$params$gradientStruct$locations
+  cov.block <- if (identical(method, "qml")) DA_BLOCKS[["phi"]] else DA_BLOCKS[["A"]]
+  cov.locs  <- locations[locations$block == cov.block, , drop = FALSE]
+  if (!NROW(cov.locs)) return(list(J = Jacobian, J2 = Jacobian2))
+
+  eps        <- (.Machine$double.eps)^(1/4)
+  param.part <- rownames(Jacobian)
+
+  for (g in seq_len(model$info$n.groups)) {
+    submodel <- model$models[[g]]
+    if (is.null(submodel$covModel$matrices)) next
+
+    A.locs.g  <- cov.locs[cov.locs$group == g, , drop = FALSE]
+    affecting <- c(model$params$SELECT_THETA_LAB[[1L]],
+                   model$params$SELECT_THETA_COV[[g]])
+    if (!length(affecting) || !NROW(A.locs.g)) next
+
+    A0    <- evalCovModelA(theta, submodel, model$params, g, method = method)
+    ri    <- A.locs.g$row + 1L
+    ci    <- A.locs.g$col + 1L
+    acols <- A.locs.g$param  # already carries the #N dedup suffix
+
+    for (k.idx in affecting) {
+      k_nm <- param.part[[k.idx]]
+      tp <- theta; tp[[k.idx]] <- tp[[k.idx]] + eps
+      tm <- theta; tm[[k.idx]] <- tm[[k.idx]] - eps
+      Ap <- evalCovModelA(tp, submodel, model$params, g, method = method)
+      Am <- evalCovModelA(tm, submodel, model$params, g, method = method)
+      Jacobian[k_nm, acols] <- (Ap - Am)[cbind(ri, ci)] / (2 * eps)
+
+      if (!is.null(Jacobian2))
+        Jacobian2[k_nm, acols] <- (Ap - 2*A0 + Am)[cbind(ri, ci)] / eps^2
+    }
+  }
+
+  list(J = Jacobian, J2 = Jacobian2)
+}
+
+
+getGradientStructSimple <- function(model, theta, method = "lms") {
+  hasCovModel <- !is.null(model$models[[1L]]$covModel$matrices)
 
   parTable <- model$parTable
   parTable <- parTable[!parTable$op %in% BOUNDUARY_OPS, , drop = FALSE] # not relevant
@@ -592,11 +689,15 @@ getGradientStructSimple <- function(model, theta) {
                      dimnames = list(param.part, param.full))
   Jacobian2 <- Jacobian
 
-  for (par in param.full) {
-    match.full <- param.full == par
-    match.part <- param.part == par
-
-    Jacobian[match.part, match.full] <- 1
+  for (j in seq_along(param.full)) {
+    g <- locations$group[[j]]
+    main_idx <- model$params$SELECT_THETA_MAIN[[g]]
+    label_idx <- if (length(model$params$SELECT_THETA_LAB))
+      model$params$SELECT_THETA_LAB[[1L]] else integer(0L)
+    candidate_idx <- c(label_idx, main_idx)
+    match.part <- candidate_idx[param.part[candidate_idx] == param.full[[j]]]
+    if (length(match.part))
+      Jacobian[match.part[[1L]], j] <- 1
   }
 
   for (dep in names(linDerivs)) {
@@ -607,6 +708,57 @@ getGradientStructSimple <- function(model, theta) {
       match.part <- param.part == indep
       Jacobian[match.part, match.full] <- deriv[[indep]]
     }
+  }
+
+  # When a covModel is present, the A matrix is entirely determined by
+  # expectedCovModel(thetaCov) rather than being free parameters in thetaMain.
+  # We extend the Jacobian with those A-entry columns and fill them via central
+  # finite differences on expectedCovModel — cheap (matrix algebra only,
+  # no integration) and exact enough for gradient/Hessian quality.
+  if (hasCovModel) {
+    cov.locs <- NULL
+    for (g in seq_len(model$info$n.groups)) {
+      if (!is.null(model$models[[g]]$covModel$matrices))
+        cov.locs <- rbind(cov.locs, getCovModelALocations(model$models[[g]], g,
+                                                           method = method))
+    }
+
+    n_cov  <- NROW(cov.locs)
+    cov.J  <- matrix(0, nrow = m, ncol = n_cov,
+                     dimnames = list(param.part, cov.locs$param))
+    cov.J2 <- cov.J
+    eps    <- (.Machine$double.eps)^(1/4) # good balance for both J and J2
+
+    for (g in seq_len(model$info$n.groups)) {
+      submodel <- model$models[[g]]
+      if (is.null(submodel$covModel$matrices)) next
+
+      A.locs.g  <- cov.locs[cov.locs$group == g, , drop = FALSE]
+      affecting <- c(model$params$SELECT_THETA_LAB[[1L]],
+                     model$params$SELECT_THETA_COV[[g]])
+      if (!length(affecting) || !NROW(A.locs.g)) next
+
+      A0 <- evalCovModelA(theta, submodel, model$params, g, method = method)
+      ri <- A.locs.g$row + 1L  # 0-indexed -> 1-indexed
+      ci <- A.locs.g$col + 1L
+
+      for (k.idx in affecting) {
+        k_nm <- param.part[[k.idx]]
+        theta.p <- theta.m <- theta
+        theta.p[[k.idx]] <- theta.p[[k.idx]] + eps
+        theta.m[[k.idx]] <- theta.m[[k.idx]] - eps
+
+        Ap <- evalCovModelA(theta.p, submodel, model$params, g, method = method)
+        Am <- evalCovModelA(theta.m, submodel, model$params, g, method = method)
+
+        cov.J [k_nm, A.locs.g$param] <- (Ap - Am)[cbind(ri, ci)] / (2 * eps)
+        cov.J2[k_nm, A.locs.g$param] <- (Ap - 2*A0 + Am)[cbind(ri, ci)] / eps^2
+      }
+    }
+
+    locations <- rbind(locations, cov.locs)
+    Jacobian  <- cbind(Jacobian,  cov.J)
+    Jacobian2 <- cbind(Jacobian2, cov.J2)
   }
 
   # In multigroup models we can have duplicated labels, that doesn't work
@@ -627,6 +779,8 @@ getGradientStructSimple <- function(model, theta) {
     nlinDerivs2 = nlinDerivs2,
     evalTheta   = evalTheta,
     hasCovModel = hasCovModel,
+    covModelMethod = method,
+    useFDGradient = FALSE,
     isNonLinear = length(nlinDerivs) > 1
   )
 }

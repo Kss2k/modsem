@@ -53,7 +53,7 @@ compare_fit <- function(est_h1, est_h0, ...) {
 
 #' @export
 compare_fit.modsem_da <- function(est_h1, est_h0, ...) {
-  stopif(!inherits(est_h1, "modsem_da") || !inherits(est_h0, "modsem_da"),
+  mod_stopif(!inherits(est_h1, "modsem_da") || !inherits(est_h0, "modsem_da"),
          "Both est_h1 and est_h0 must be of class 'modsem_da'.")
 
   if (is.null(est_h0) || is.null(est_h1)) return(NULL) # should never trigger
@@ -67,7 +67,7 @@ compare_fit.modsem_da <- function(est_h1, est_h0, ...) {
 
 #' @export
 compare_fit.modsem_pi <- function(est_h1, est_h0, comparison = lavaan::lavTestLRT, ...) {
-  stopif(!inherits(est_h1, "modsem_pi") || !inherits(est_h0, "modsem_pi"),
+  mod_stopif(!inherits(est_h1, "modsem_pi") || !inherits(est_h0, "modsem_pi"),
          "Both est_h1 and est_h0 must be of class 'modsem_pi'.")
 
   est_h0 <- extract_lavaan(est_h0)

@@ -107,8 +107,8 @@ transformEstimatesLavaan <- function(object,
   hiorder <- isHigherOrderParTable(parTable)
   cluster <- isClustered(object)
 
-  stopif(hiorder, "Transformations of higher-order models are not supported!")
-  stopif(cluster, "Transformations of clustered (multilevel) models is not supported!")
+  mod_stopif(hiorder, "Transformations of higher-order models are not supported!")
+  mod_stopif(cluster, "Transformations of clustered (multilevel) models is not supported!")
 
   applyTransformationByGrouping(
     parTable = parTable,

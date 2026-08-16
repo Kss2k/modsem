@@ -12,7 +12,11 @@ m1 <- "
 "
 
 est1 <- modsem(m1, data = oneInt)
-simple_slopes(x = "X", z = "Z", y = "Y", model = est1)
+
+simple_slopes(x = "X", z = "Z", y = "Y", model = est1) # default of 2 digits
+print(simple_slopes(x = "X", z = "Z", y = "Y", model = est1), digits = 3)
+print(simple_slopes(x = "X", z = "Z", y = "Y", model = est1), digits = 4)
+
 plot_interaction(x = "X", z = "Z", y = "Y",
                  vals_z = c(1, 0), model = est1, greyscale = TRUE)
 plot_interaction(x = "X", z = "Z", y = "Y", xz = "X:Z",
@@ -56,7 +60,7 @@ checkInputValidation <- function(x.default = "X",
       argsWrong[[par]] <- "I_DO_NOT_EXIST"
       testthat::expect_error(
          do.call(FUN, argsWrong),
-         regexp = sprintf("Unrecognized variable: I_DO_NOT_EXIST\\!")
+         regexp = sprintf(".*Unrecognized variable: I_DO_NOT_EXIST.*")
       )
     }
   }

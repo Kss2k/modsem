@@ -305,8 +305,8 @@ plot_surface <- function(x, z, y, model,
                          group = NULL,
                          ...) {
 
-  stopif(!isModsemObject(model) && !isLavaanObject(model), "model must be of class ",
-         "'modsem_pi', 'modsem_da', 'modsem_mplus' or 'lavaan'")
+  mod_stopif(!isModsemObject(model) && !isLavaanObject(model), paste0("model must be of class ",
+         "'modsem_pi', 'modsem_da', 'modsem_mplus' or 'lavaan'"))
 
   if (standardized) {
     parTable <- standardized_estimates(model, correction = TRUE)
@@ -321,10 +321,9 @@ plot_surface <- function(x, z, y, model,
   groups   <- getGroupsParTable(parTable)
 
   if (length(groups) > 1L && is.null(group)) {
-    warning2("Plotting of surface plots for multiple groups is not implemented yet!\n",
+    mod_msg_warn(paste0("Plotting of surface plots for multiple groups is not implemented yet!\n",
              "You can choose which group to plot using the `group` argument.\n",
-             "Plotting surface plot for the first group...",
-             immediate. = FALSE)
+             "Plotting surface plot for the first group..."))
   }
 
   if (is.null(group))
@@ -354,7 +353,7 @@ plot_surface <- function(x, z, y, model,
 
   if (isLavaanObject(model)) {
     nobs <- unlist(model@Data@nobs)
-    warnif(length(nobs) > 1, "plot_interaction is not intended for multigroup models")
+    mod_warnif(length(nobs) > 1, "plot_interaction is not intended for multigroup models")
     n <- nobs[[1]]
   } else {
     n <- nrow(model$data)
@@ -370,11 +369,11 @@ plot_surface <- function(x, z, y, model,
   gamma_xx <- coefs[coefs$rhs %in% xx, "est"]
   gamma_zz <- coefs[coefs$rhs %in% zz, "est"]
 
-  stopif(!length(gamma_x),  "coefficient for x not found in model")
-  stopif(!length(sd_x),    "variance of x not found in model")
-  stopif(!length(gamma_z),  "coefficient for z not found in model")
-  stopif(!length(sd_z),    "variance of z not found in model")
-  warnif(!length(gamma_xz), "coefficient for xz not found in model")
+  mod_stopif(!length(gamma_x),  "coefficient for x not found in model")
+  mod_stopif(!length(sd_x),    "variance of x not found in model")
+  mod_stopif(!length(gamma_z),  "coefficient for z not found in model")
+  mod_stopif(!length(sd_z),    "variance of z not found in model")
+  mod_warnif(!length(gamma_xz), "coefficient for xz not found in model")
 
   if (!length(gamma_xz)) gamma_xz <- 0
   if (!length(gamma_xx)) gamma_xx <- 0
@@ -419,6 +418,16 @@ plot_surface <- function(x, z, y, model,
     z = list(show = FALSE)  # keep z-contours off unless desired later
   )
 
+  # hoverover box
+  # We could use a monospace font, and use format() such that all of the
+  # numerical values are aligned properly, but for now we keep it simple...
+  hovertemplate <- paste0(
+    x, " %{x:.2f}<br>",
+    z, " %{y:.2f}<br>",
+    y, " %{z:.2f}",
+    "<extra></extra>"
+  )
+
   if (grid || tolower(colorscale) != "viridis") {
     # for some reason this doesn't render with pkgdown this is a
     # temporary workaround, until I figure out what is going on...
@@ -436,6 +445,7 @@ plot_surface <- function(x, z, y, model,
       colorbar = list(title = y),
       cmin = cmin,
       cmax = cmax,
+      hovertemplate = hovertemplate,
       ...
     ) |>
       plotly::layout(
@@ -448,8 +458,14 @@ plot_surface <- function(x, z, y, model,
       )
 
   } else {
-    plotly::plot_ly(z = ~proj_y, x = ~vals_x, y = ~vals_z, type = "surface",
-                    colorbar = list(title = y)) |>
+    plotly::plot_ly(
+      z = ~proj_y,
+      x = ~vals_x,
+      y = ~vals_z,
+      type = "surface",
+      colorbar = list(title = y),
+      hovertemplate = hovertemplate
+    ) |>
     plotly::layout(title = sprintf("Surface Plot of Interaction Effect between %s and %s, on %s", x, z, y),
                    scene = list(xaxis = list(title = x),
                                 zaxis = list(title = y),

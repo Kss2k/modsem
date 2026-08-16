@@ -52,6 +52,7 @@ parameter_estimates.modsem_da <- function(object,
 #' @param intercepts Should intercepts be included in the output?
 #' If \code{standardized = TRUE} intercepts will by default be excluded.
 #' @param variances Print variances.
+#' @param thresholds Print thresholds.
 #' @param var.interaction If FALSE variances for interaction terms will be removed
 #' from the output.
 #' @param ... Additional arguments.
@@ -90,6 +91,7 @@ summary.modsem_da <- function(object,
                               covariances = TRUE,
                               intercepts = TRUE,
                               variances = TRUE,
+                              thresholds = TRUE,
                               var.interaction = FALSE,
                               ...) {
   method   <- object$method
@@ -132,7 +134,7 @@ summary.modsem_da <- function(object,
         all(r2_names %in% names(weights))) {
       weights <- weights[r2_names]
     } else {
-      weights <- weights[seq_len(length(r2))]
+      weights <- weights[seq_along(r2)]
     }
     vars <- unique(unlist(lapply(r2, names)))
     vars <- vars[!is.na(vars) & nzchar(vars)]
@@ -231,18 +233,20 @@ summary.modsem_da <- function(object,
     n.fiml.patterns = structure(fiml.counts, names = group.labels),
     group.labels    = group.labels,
     npar            = length(coef(object, type = "free")),
-    convergence.msg = object$convergence.msg
+    convergence.msg = object$convergence.msg,
+    naive.fit.measures = !is.null(object$ordered.mc),
+    ordered.mc = object$ordered.mc
   )
 
   if (H0) {
     if (any(grepl(":", parTable$rhs)) && verbose)
       cat("Estimating baseline model (H0)\n")
 
-    est_h0 <- estimate_h0(object, calc.se = FALSE, warn_no_interaction = FALSE)
+    est_h0 <- estimateH0Cached(object, calc.se = FALSE, warn_no_interaction = FALSE)
 
     out$nullModel <- est_h0
     if (is.null(est_h0)) {
-      warning2("Comparative fit to H0 will not be calculated.", immediate. = FALSE)
+      mod_msg_warn("Comparative fit to H0 will not be calculated.")
       H0        <- FALSE
       out$D     <- NULL
       out$fitH0 <- NULL
@@ -250,9 +254,11 @@ summary.modsem_da <- function(object,
     } else {
       out$D     <- compare_fit(est_h1 = object, est_h0 = est_h0)
       out$fitH0 <- fitModsemDA_Internal(est_h0, lav.fit = TRUE)
+      out$naive.fit.measures.h0 <- !is.null(est_h0$ordered.mc)
     }
   } else {
     out$D <- NULL
+    out$naive.fit.measures.h0 <- FALSE
   }
 
   if (r.squared) {
@@ -282,6 +288,7 @@ summary.modsem_da <- function(object,
     covariances   = covariances,
     intercepts    = intercepts,
     variances     = variances,
+    thresholds    = thresholds,
     extra.cols    = extra.cols,
     extra.fit     = fit,
     scaled.stat   = object$args$robust.se
@@ -315,27 +322,40 @@ print.summary_da <- function(x, digits = 3, ...) {
     scientific  = x$format$scientific,
     ci          = FALSE,
     digits      = x$format$digits,
-    loadings    = x$format$loadings,
-    regressions = x$format$regressions,
-    covariances = x$format$covariances,
-    intercepts  = x$format$intercepts,
-    variances   = x$format$variances,
     extra.cols  = NULL
   )
 
   printf(x$convergence.msg)
 
   # Convergence and Model Info -------------------------------------------------
-  header.names <- c(
-    "Estimator",
-    "Optimization method",
-    "Number of model parameters"
-  )
+  is.mc.ordered <- !is.null(x$ordered.mc)
 
-  header.values <- c(
-    stringr::str_to_upper(c(x$method, x$optimizer)),
-    x$npar
-  )
+  if (is.mc.ordered) {
+    header.names <- c(
+      "Estimator",
+      "Optimization method",
+      "Naive optimization method",
+      "Number of model parameters"
+    )
+
+    header.values <- c(
+      paste0("MC-", stringr::str_to_upper(x$method)),
+      "ROBBINS-MONRO",
+      stringr::str_to_upper(x$optimizer),
+      x$npar
+    )
+  } else {
+    header.names <- c(
+      "Estimator",
+      "Optimization method",
+      "Number of model parameters"
+    )
+
+    header.values <- c(
+      stringr::str_to_upper(c(x$method, x$optimizer)),
+      x$npar
+    )
+  }
 
   cat(allignLhsRhs(lhs = header.names, rhs = header.values, pad = "  ",
                    width.out = width.out), "\n", sep = "")
@@ -400,9 +420,9 @@ print.summary_da <- function(x, digits = 3, ...) {
 
   # Criterion/LogLik -----------------------------------------------------------
   names <- c(
-    "Loglikelihood",
-    "Akaike (AIC)",
-    "Bayesian (BIC)"
+    if (isTRUE(x$naive.fit.measures)) "Naive Loglikelihood" else "Loglikelihood",
+    if (isTRUE(x$naive.fit.measures)) "Naive Akaike (AIC)" else "Akaike (AIC)",
+    if (isTRUE(x$naive.fit.measures)) "Naive Bayesian (BIC)" else "Bayesian (BIC)"
   )
 
   values <- c(
@@ -412,12 +432,21 @@ print.summary_da <- function(x, digits = 3, ...) {
   )
 
   if (x$format$adjusted.stat) {
-    names  <- c(names, "Corrected Akaike (AICc)", "Adjusted Bayesian (aBIC)")
+    names  <- c(
+      names,
+      if (isTRUE(x$naive.fit.measures)) "Naive Corrected Akaike (AICc)" else "Corrected Akaike (AICc)",
+      if (isTRUE(x$naive.fit.measures)) "Naive Adjusted Bayesian (aBIC)" else "Adjusted Bayesian (aBIC)"
+    )
     values <- c(values, format_value(x$fit$AICc, digits = 2),
                 format_value(x$fit$aBIC, digits = 2))
   }
 
-  cat("Loglikelihood and Information Criteria:\n")
+  ll.title <- if (isTRUE(x$naive.fit.measures)) {
+    "Naive Loglikelihood and Information Criteria:"
+  } else {
+    "Loglikelihood and Information Criteria:"
+  }
+  cat(ll.title, "\n", sep = "")
   cat(allignLhsRhs(lhs = names, rhs = values, pad = "  ",
                    width.out = width.out), "\n")
 
@@ -500,7 +529,10 @@ print.summary_da <- function(x, digits = 3, ...) {
       }
     }
 
-    names <- c(names, "", "Loglikelihood", "Akaike (AIC)", "Bayesian (BIC)")
+    ll.h0 <- if (isTRUE(x$naive.fit.measures.h0)) "Naive Loglikelihood" else "Loglikelihood"
+    aic.h0 <- if (isTRUE(x$naive.fit.measures.h0)) "Naive Akaike (AIC)" else "Akaike (AIC)"
+    bic.h0 <- if (isTRUE(x$naive.fit.measures.h0)) "Naive Bayesian (BIC)" else "Bayesian (BIC)"
+    names <- c(names, "", ll.h0, aic.h0, bic.h0)
     values <- c(values, "",
                 format_value(x$nullModel$logLik, digits = 2),
                 format_value(x$fitH0$AIC, digits = 2),
@@ -510,7 +542,17 @@ print.summary_da <- function(x, digits = 3, ...) {
       values.scaled <- c(values.scaled, rep("", 4))
 
     if (x$format$adjusted.stat) {
-      names <- c(names, "Corrected Akaike (AICc)", "Adjusted Bayesian (aBIC)")
+      aicc.h0 <- if (isTRUE(x$naive.fit.measures.h0)) {
+        "Naive Corrected Akaike (AICc)"
+      } else {
+        "Corrected Akaike (AICc)"
+      }
+      abic.h0 <- if (isTRUE(x$naive.fit.measures.h0)) {
+        "Naive Adjusted Bayesian (aBIC)"
+      } else {
+        "Adjusted Bayesian (aBIC)"
+      }
+      names <- c(names, aicc.h0, abic.h0)
       values <- c(values,
                   format_value(x$fitH0$AICc, digits = 2),
                   format_value(x$fitH0$aBIC, digits = 2))
@@ -598,6 +640,7 @@ print.summary_da <- function(x, digits = 3, ...) {
                   covariances = x$format$covariances,
                   intercepts  = x$format$intercepts,
                   variances   = x$format$variances,
+                  thresholds  = x$format$thresholds,
                   extra.cols  = x$format$extra.cols)
   }
 }
@@ -618,9 +661,9 @@ var_interactions.modsem_da <- function(object, ...) {
 
 #' Inspect components of a \code{modsem_da} fit
 #'
-#' \code{modsem_inspect.modsem_da} Lets you
-#' pull matrices, optimiser diagnostics, expected moments, or fit
-#' measures from a \code{\link{modsem_da}} object.
+#' \code{modsem_inspect.modsem_da} lets you pull lavaan-style matrices,
+#' optimiser diagnostics, expected moments, or fit measures from a
+#' \code{\link{modsem_da}} object.
 #'
 #' @param object A fitted object of class \code{"modsem_da"}.
 #' @param what   Character scalar selecting what to return (see \emph{Details}).
@@ -641,7 +684,7 @@ var_interactions.modsem_da <- function(object, ...) {
 #'   \item{\code{"coef.all"}}{Coefficients and variance-covariance matrix of both free and constrained parameters (same as \code{"coef"}).}
 #'   \item{\code{"coef.free"}}{Coefficients and variance-covariance matrix of the free parameters.}
 #'   \item{\code{"all"}}{All items listed below, including \code{data}.}
-#'   \item{\code{"matrices"}}{The model matrices.}
+#'   \item{\code{"matrices"}}{The lavaan-style model matrices.}
 #'   \item{\code{"optim"}}{Only the items under \emph{Optimiser diagnostics}}.
 #'   \item{\code{"fit"}}{A list with \code{fit.h0}, \code{fit.h1}, comparative.fit}
 #' }
@@ -674,6 +717,7 @@ var_interactions.modsem_da <- function(object, ...) {
 #'   \item{\code{"loglik"}}{Log-likelihood.}
 #'   \item{\code{"iterations"}}{Optimiser iteration count.}
 #'   \item{\code{"convergence"}}{\code{TRUE}/\code{FALSE} indicating whether the model converged.}
+#'   \item{\code{"iteration.history"}}{LMS iteration history with mode, log-likelihood, changes, elapsed time, and forecast columns, if available.}
 #' }
 #'
 #' \strong{Parameter tables:}
@@ -686,17 +730,14 @@ var_interactions.modsem_da <- function(object, ...) {
 #' \strong{Model matrices:}
 #'
 #' \describe{
-#'   \item{\code{"lambda"}}{\eqn{\Lambda} – Factor loadings.}
-#'   \item{\code{"tau"}}{\eqn{\tau} – Intercepts for indicators.}
-#'   \item{\code{"theta"}}{\eqn{\Theta} – Residual (Co-)Variances for indicators.}
-#'   \item{\code{"gamma.xi"}}{\eqn{\Gamma_{\xi}} – Structural coefficients between exogenous and endogenous variables.}
-#'   \item{\code{"gamma.eta"}}{\eqn{\Gamma_{\eta}} – Structural coefficients between endogenous variables.}
-#'   \item{\code{"omega.xi.xi"}}{\eqn{\Omega_{\xi\xi}} – Interaction effects between exogenous variables}
-#'   \item{\code{"omega.eta.xi"}}{\eqn{\Omega_{\eta\xi}} – Interaction effects between exogenous and endogenous variables}
-#'   \item{\code{"phi"}}{\eqn{\Phi} – (Co-)Variances among exogenous variables.}
-#'   \item{\code{"psi"}}{\eqn{\Psi} – Residual (co-)variances among engoenous variables.}
-#'   \item{\code{"alpha"}}{\eqn{\alpha} – Intercepts for endogenous variables}
-#'   \item{\code{"beta0"}}{\eqn{\beta_0} – Intercepts for exogenous variables}
+#'   \item{\code{"lambda"}}{Factor loadings.}
+#'   \item{\code{"theta"}}{Residual covariance matrix for indicators.}
+#'   \item{\code{"wmat"}}{Composite loading matrix for observed indicators, if present.}
+#'   \item{\code{"tmat"}}{Composite residual matrix for indicators, if present.}
+#'   \item{\code{"psi"}}{Residual covariance matrix for latent variables.}
+#'   \item{\code{"beta"}}{Structural regression matrix among latent variables.}
+#'   \item{\code{"nu"}}{Intercepts for observed variables.}
+#'   \item{\code{"alpha"}}{Intercepts for latent variables.}
 #' }
 #' \strong{Model-implied matrices:}
 #'
@@ -751,7 +792,7 @@ var_interactions.modsem_da <- function(object, ...) {
 #'
 #' modsem_inspect(est) # everything except "data"
 #' modsem_inspect(est, what = "optim")
-#' modsem_inspect(est, what = "phi")
+#' modsem_inspect(est, what = "matrices")
 #' }
 #'
 #' @export
@@ -850,106 +891,6 @@ centered_estimates.modsem_da <- function(object,
   )
 
   stdSolution$parTable
-}
-
-
-
-#' @describeIn modsem_predict Predict From \code{modsem} Models
-#'
-#' Computes (optionally standardised) factor scores via the
-#'   regression method using the baseline model unless \code{H0 = FALSE}.
-#'
-#' @param object \code{\link{modsem_da}} object
-#' @param standardized Logical. If \code{TRUE}, return standardized factor scores.
-#' @param H0 Logical. If \code{TRUE} (default), use the baseline model to compute factor scores.
-#'   If \code{FALSE}, use the model specified in \code{object}. Using \code{H0 = FALSE} is not recommended!
-#' @param newdata Compute factor scores based on a different dataset, than the one used in the model estimation.
-#' @param center.data Should data be centered before computing factor scores? Default is \code{TRUE}.
-#' @export
-modsem_predict.modsem_da <- function(object, standardized = FALSE, H0 = TRUE, newdata = NULL,
-                                     center.data = TRUE, ...) {
-  modelH1 <- object
-
-  if (H0) {
-    modelH0 <- estimate_h0(modelH1, calc.se = FALSE, warn_no_interaction = FALSE,
-                           verbose = FALSE)
-
-    if (is.null(modelH0)) modelH0 <- modelH1
-  } else modelH0 <- modelH1
-
-  transform.x <- if (center.data) \(x) x - mean(x, na.rm = TRUE) else \(x) x
-
-  parTableH1 <- parameter_estimates(modelH1, is.public = FALSE)
-  parTableH0 <- parameter_estimates(modelH0, is.public = FALSE)
-
-  parTableH1 <- addMissingGroups(parTableH1)
-  parTableH0 <- addMissingGroups(parTableH0)
-
-  groups <- getGroupsParTable(parTableH0)
-  mgroup <- length(groups) > 1L
-
-  if (!is.null(newdata)) {
-    newdata <- as.data.frame(newdata)
-    cols  <- colnames(modelH0$model$models[[1L]]$data$data.full)
-
-    cols.present <- cols %in% colnames(newdata)
-    stopif(!all(cols.present), "Missing cols in `newdata`:\n", cols[!cols.present])
-
-    group <- modsem_inspect(modelH0, what = "group", is.public = FALSE)
-
-    if (!is.null(group)) {
-      group.values <- as.character(newdata[[group]])
-      group.levels <- modsem_inspect(modelH0, what = "group.label", is.public = FALSE)
-
-      NEWDATA <- lapply(
-        X = group.levels,
-        FUN = \(g) as.matrix(newdata[newdata[[group]] == g, , drop = FALSE])[, cols]
-      )
-
-    } else {
-      NEWDATA <- list(as.matrix(newdata)[, cols])
-    }
-
-  } else {
-    NEWDATA <- lapply(modelH0$model$models,
-                      FUN = \(sub) sub$data$data.full)
-  }
-
-  SIGMA <- modsem_inspect(modelH0, what = "cov.ov", is.public = FALSE)
-  out <- vector("list", length = length(groups))
-
-  for (g in groups) {
-    parTableH1g <- parTableH1[parTableH1$group == g, , drop = FALSE]
-    parTableH0g <- parTableH0[parTableH0$group == g, , drop = FALSE]
-
-    lVs   <- getLVs(parTableH0g)
-    sigma <- if (mgroup) SIGMA[[g]] else SIGMA
-
-    sigma.inv <- GINV(sigma)
-    lambda    <- getLambdaParTable(parTableH0g, rows = colnames(sigma), cols = lVs,
-                                   fill.missing = TRUE)
-
-    newdata.g <- NEWDATA[[g]]
-    X <- apply(as.matrix(newdata.g), MARGIN = 2, FUN = transform.x)
-    X <- X[, colnames(sigma), drop = FALSE]
-
-    FSC <- GINV(t(lambda) %*% sigma.inv %*% lambda) %*% (t(lambda) %*% sigma.inv)
-
-    alpha <- matrix(getMeans(lVs, parTable = parTableH1g),
-                    nrow = nrow(X), ncol = length(lVs), byrow = TRUE)
-
-    Y <- X %*% t(FSC) + alpha
-
-    if (standardized) {
-      mu <- \(x) mean(x, na.rm = TRUE)
-      s  <- \(x) stats::sd(x, na.rm = TRUE)
-      Y  <- apply(Y, MARGIN = 2, FUN = \(y) (y - mu(y)) / s(y))
-    }
-
-    out[[g]] <- modsemMatrix(Y, is.public = TRUE)
-  }
-
-  if (mgroup) out else out[[1L]]
 }
 
 

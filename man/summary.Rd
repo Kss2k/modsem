@@ -26,6 +26,7 @@
   covariances = TRUE,
   intercepts = TRUE,
   variances = TRUE,
+  thresholds = TRUE,
   var.interaction = FALSE,
   ...
 )
@@ -94,6 +95,8 @@ and \code{standardized = TRUE}.}
 \item{intercepts}{print intercepts}
 
 \item{variances}{print variances}
+
+\item{thresholds}{Print thresholds.}
 
 \item{var.interaction}{If FALSE variances for interaction terms will be removed
 from the output.}

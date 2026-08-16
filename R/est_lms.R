@@ -1,44 +1,173 @@
-computeGradient <- function(theta, model, P, epsilon) {
-  gradientCompLogLikLms(theta = theta, model = model, P = P, sign = -1,
-                        epsilon = epsilon)
+computeFullIobs <- function(theta, model, P, louis = TRUE) {
+
+  if (louis) {
+    louisInfo <- observedInfoFromLouisLms(
+      model = model,
+      theta = theta,
+      P = P
+    )
+
+    I <- louisInfo$I.obs
+
+  } else {
+
+    # negative hessian (sign = -1)
+    I <- hessianObsLogLikLms(
+      theta = theta,
+      model = model,
+      P     = P,
+      sign  = -1
+    )
+
+  }
+
+  # make sure it's symmetric
+  0.5 * (I + t(I))
 }
 
 
-lbfgs_two_loop <- function(grad, s_list, y_list) {
-  q <- grad
-  m <- length(s_list)
-  if (m == 0L) return(q)
-
-  alpha <- numeric(m)
-  rho   <- numeric(m)
-
-  for (i in rev(seq_len(m))) {
-    s_i <- s_list[[i]]; y_i <- y_list[[i]]
-    sy  <- sum(y_i * s_i)
-    if (!is.finite(sy) || sy <= 1e-12) { alpha[i] <- 0; next }
-    rho[i]   <- 1 / sy
-    alpha[i] <- rho[i] * sum(s_i * q)
-    q <- q - alpha[i] * y_i
-  }
-
-  s_last <- s_list[[m]]; y_last <- y_list[[m]]
-  denom  <- max(sum(s_last * y_last), 1e-12)
-  gamma0 <- sum(s_last * s_last) / denom
-  r <- gamma0 * q
-
-  for (i in seq_len(m)) {
-    s_i <- s_list[[i]]; y_i <- y_list[[i]]
-    sy  <- sum(y_i * s_i); if (!is.finite(sy) || sy <= 1e-12) next
-    beta_i <- (sum(y_i * r)) / sy
-    r <- r + s_i * (alpha[i] - beta_i)
-  }
-  r
+lmsIterationHistory <- function() {
+  data.frame(
+    iteration = integer(),
+    mode = character(),
+    loglik = numeric(),
+    abs.change = numeric(),
+    rel.change = numeric(),
+    elapsed.time = numeric(),
+    expected.remaining.iterations = numeric(),
+    expected.final.loglik = numeric()
+  )
 }
 
 
-computeFullIcom <- function(theta, model, P) {
-  Ic <- hessianCompLogLikLms(theta = theta, model = model, P = P, sign = -1)
-  0.5 * (Ic + t(Ic))
+# `history` is the running vector of observed log-likelihoods kept by `emLms()`,
+# one entry per iteration
+normalizeLmsLogLikHistory <- function(history) {
+  logLik <- as.numeric(history)
+
+  if (!length(logLik)) {
+    return(data.frame(
+      iteration  = integer(),
+      logLik     = numeric(),
+      deltaLL    = numeric(),
+      relDeltaLL = numeric()
+    ))
+  }
+
+  deltaLL <- c(NA_real_, diff(logLik))
+
+  data.frame(
+    iteration  = seq_along(logLik),
+    logLik     = logLik,
+    deltaLL    = deltaLL,
+    relDeltaLL = c(NA_real_, deltaLL[-1L] / abs(logLik[-length(logLik)]))
+  )
+}
+
+
+forecastLogLikLms <- function(history,
+                              convergence.abs,
+                              convergence.rel,
+                              min.gains,
+                              window) {
+  empty <- function() {
+    data.frame(
+      expected.remaining.iterations = NA_real_,
+      expected.final.loglik = NA_real_
+    )
+  }
+
+  history <- normalizeLmsLogLikHistory(history)
+
+  okLL <- is.finite(history$logLik)
+  history <- history[okLL, , drop = FALSE]
+  if (!NROW(history)) return(empty())
+
+  currentLL <- history$logLik[NROW(history)]
+  currentGain <- history$deltaLL[NROW(history)]
+  gain <- history$deltaLL
+  gainIteration <- history$iteration
+  okGain <- is.finite(gain) & gain > 0
+  gain <- gain[okGain]
+  gainIteration <- gainIteration[okGain]
+
+  if (length(gain) < min.gains) return(empty())
+
+  if (is.finite(window) && length(gain) > window) {
+    keep <- seq.int(length(gain) - window + 1L, length(gain))
+    gain <- gain[keep]
+    gainIteration <- gainIteration[keep]
+  }
+
+  fitData <- data.frame(iteration = gainIteration, logGain = log(gain))
+  fit <- stats::lm(logGain ~ iteration, data = fitData)
+  coefs <- stats::coef(fit)
+  slope <- unname(coefs[["iteration"]])
+  intercept <- unname(coefs[["(Intercept)"]])
+  decay <- exp(slope)
+
+  if (!is.finite(decay) || decay <= 0 || decay >= 1) {
+    ratios <- gain[-1L] / gain[-length(gain)]
+    ratios <- ratios[is.finite(ratios) & ratios > 0 & ratios < 1]
+    if (!length(ratios)) return(empty())
+    decay <- stats::median(ratios)
+    expectedNextGain <- gain[[length(gain)]] * decay
+  } else {
+    expectedNextGain <- exp(intercept + slope * (history$iteration[NROW(history)] + 1L))
+  }
+
+  if (!is.finite(expectedNextGain) || expectedNextGain < 0) return(empty())
+
+  decay <- max(0, min(decay, 1 - sqrt(.Machine$double.eps)))
+  expectedRemainingGain <- if (decay == 0) expectedNextGain else expectedNextGain / (1 - decay)
+  expectedFinalLogLik <- currentLL + expectedRemainingGain
+
+  relTol <- convergence.rel * max(1, abs(currentLL), abs(expectedFinalLogLik), na.rm = TRUE)
+  stopGain <- max(convergence.abs, relTol, na.rm = TRUE)
+  currentAbsGain <- abs(currentGain)
+
+  if (is.finite(currentAbsGain) && currentAbsGain < stopGain) {
+    expectedRemainingIterations <- 0L
+  } else if (expectedNextGain <= stopGain || decay == 0) {
+    expectedRemainingIterations <- 1L
+  } else {
+    expectedRemainingIterations <- ceiling(log(stopGain / expectedNextGain) / log(decay) + 1)
+  }
+
+  data.frame(
+    expected.remaining.iterations = expectedRemainingIterations,
+    expected.final.loglik = expectedFinalLogLik
+  )
+}
+
+
+appendLmsIterationHistory <- function(history, iteration, loglik.history,
+                                      convergence.abs, convergence.rel,
+                                      forecast.min.gains,
+                                      forecast.window,
+                                      mode,
+                                      loglik,
+                                      abs.change,
+                                      rel.change,
+                                      elapsed.time) {
+  forecast <- forecastLogLikLms(
+    history         = loglik.history,
+    convergence.abs = convergence.abs,
+    convergence.rel = convergence.rel,
+    min.gains       = forecast.min.gains,
+    window          = forecast.window
+  )
+
+  row <- data.frame(
+    iteration = iteration,
+    mode = as.character(mode),
+    loglik = as.numeric(loglik),
+    abs.change = as.numeric(abs.change),
+    rel.change = as.numeric(rel.change),
+    elapsed.time = as.numeric(elapsed.time)
+  )
+
+  rbind(history, cbind(row, forecast))
 }
 
 
@@ -65,81 +194,108 @@ emLms <- function(model,
                   adaptive.quad.tol = 1e-12,
                   nodes = 24,
                   cr1s = TRUE,
-                  # new knobs for FS/Louis
-                  fs.matrix = c("Iobs","Icom"),        # use Iobs (Louis) or fall back to Icom
-                  fs.fd.scheme = c("forward","central"),
-                  fs.fd.epsilon = 1e-6,
-                  fs.jitter.mult = sqrt(.Machine$double.eps),
+                  # NOTE: defaults are evaluated lazily in the frame of `emLms()`,
+                  # so `em.control` overrides any of these which aren't passed
+                  # explicitly by the caller
+                  ema.min.iter            = em.control$ema.min.iter            %||% 10L,
+                  ema.trend.min           = em.control$ema.trend.min           %||% 0,
+                  ema.forecast.min.gains  = em.control$ema.forecast.min.gains  %||% 3L,
+                  ema.forecast.window     = em.control$ema.forecast.window     %||% 10L,
+                  qn.remaining.min        = em.control$qn.remaining.min        %||% 10,
+                  qn.remaining.max        = em.control$qn.remaining.max        %||% 200,
+                  fs.remaining.min        = em.control$fs.remaining.min        %||% 200,
+                  fs.remaining.max        = em.control$fs.remaining.max        %||% 500,
+                  fallback.max.step.min   = em.control$fallback.max.step.min   %||% 50,
+                  fallback.max.step.mult  = em.control$fallback.max.step.mult  %||% 50,
+                  qn.maxit.start          = em.control$qn.maxit.start          %||% 1L,
+                  qn.maxit.mult           = em.control$qn.maxit.mult           %||% 2,
+                  qn.maxit.max            = em.control$qn.maxit.max            %||% 25L,
+                  qn.factr                = em.control$qn.factr                %||% NULL,
+                  qn.pgtol                = em.control$qn.pgtol                %||% 0,
+                  ema.final.qn            = em.control$ema.final.qn            %||% TRUE,
+                  ema.final.qn.maxit      = em.control$ema.final.qn.maxit      %||% qn.maxit.max,
+                  ema.final.qn.factr      = em.control$ema.final.qn.factr      %||% qn.factr,
+                  ema.final.qn.rounds.max = em.control$ema.final.qn.rounds.max %||% 25L,
+                  fs.maxit.start          = em.control$fs.maxit.start          %||% 1L,
                   ...) {
 
-  algorithm    <- toupper(match.arg(algorithm))
-  fs.matrix    <- match.arg(fs.matrix)
-  fs.fd.scheme <- match.arg(fs.fd.scheme)
+  algorithm <- toupper(match.arg(algorithm))
+  ema.min.iter <- as.integer(ema.min.iter)
+  ema.forecast.min.gains <- as.integer(ema.forecast.min.gains)
+  qn.maxit.start <- as.integer(qn.maxit.start)
+  qn.maxit.max <- as.integer(qn.maxit.max)
+  ema.final.qn.maxit <- as.integer(ema.final.qn.maxit)
+  ema.final.qn.rounds.max <- as.integer(ema.final.qn.rounds.max)
+  fs.maxit.start <- as.integer(fs.maxit.start)
+
+  default.optim.factr <- if (is.finite(convergence.rel) && convergence.rel > 0) {
+    max(1, convergence.rel / .Machine$double.eps)
+  } else {
+    NULL
+  }
+  qn.factr <- if (is.null(qn.factr)) default.optim.factr else qn.factr
+  ema.final.qn.factr <- if (is.null(ema.final.qn.factr)) qn.factr else ema.final.qn.factr
+  do.final.qn <- isTRUE(ema.final.qn) && isTRUE(model$info$has.interaction)
+
+  history <- lmsIterationHistory()
+  loglik.history <- numeric()
 
   theta.lower  <- model$params$bounds$lower
   theta.upper  <- model$params$bounds$upper
-  bounds.all   <- c(theta.lower, theta.upper)
 
-  if (all(is.infinite(bounds.all))) {
-    boundedTheta <- \(theta) theta # don't do anything
-
-  } else {
-    boundedTheta <- function(theta) {
-      underflow <- theta < theta.lower
-      overflow  <- theta > theta.upper
-
-      theta[underflow] <- theta.lower[underflow]
-      theta[overflow]  <- theta.upper[overflow]
-
-      theta
-    }
-  }
+  max.iter.fs <- fs.maxit.start
+  max.iter.qn <- qn.maxit.start
 
   tryCatch({
-    tau  <- convergence.rel
-    tau1 <- if (is.null(em.control$tau1)) tau*1e6 else em.control$tau1
-    tau2 <- if (is.null(em.control$tau2)) tau*2   else em.control$tau2
-    tau3 <- if (is.null(em.control$tau3)) tau     else em.control$tau3
-
     logLikNew <- -Inf
-    logLikOld <- -Inf
     thetaNew  <- model$theta
-    direction <- NULL
 
     lastQuad     <- NULL
     adaptiveQuad <- model$models[[1L]]$quad$adaptive # fixed across groups
     adaptiveFreq <- model$models[[1L]]$quad$adaptive.frequency
 
-    qn_env <- new.env(parent = emptyenv())
-    qn_env$LBFGS_M <- 5
-    qn_env$s_list <- list()
-    qn_env$y_list <- list()
-
-    mode <- "EM"
+    n.em.iter  <- 0
+    mode       <- "EM"
     iterations <- 0L
-    run <- TRUE
+    run        <- TRUE
+    ema.final.phase <- "none"
+    ema.final.qn.rounds <- 0L
 
-    testSimpleGradient <- !model$params$gradientStruct$hasCovModel
+    testSimpleGradient <- !model$params$gradientStruct$useFDGradient
+
+    history.start.time <- proc.time()[["elapsed"]]
 
     while (run) {
       iterations <- iterations + 1L
       logLikOld  <- logLikNew
       thetaOld   <- thetaNew
       recalcQuad <- adaptiveQuad && iterations %% adaptiveFreq == 0L
+      tmp.max.step <- 0L
+
+      mod_stopif(any(!is.finite(thetaOld)),
+        "Missing/Non finite values in estimated parameters at iteration",
+        paste0(iterations, "!")
+      )
 
       # E-step at thetaOld
-      P <- estepLms(model = model, theta = thetaOld,
-                    lastQuad = lastQuad, recalcQuad = recalcQuad,
-                    adaptive.quad.tol = adaptive.quad.tol, ...)
+      P <- estepLms(
+        model             = model,
+        theta             = thetaOld,
+        lastQuad          = lastQuad,
+        recalcQuad        = recalcQuad,
+        adaptive.quad.tol = adaptive.quad.tol,
+        ...
+      )
 
       if (testSimpleGradient) {
         tryCatch({
-          gradientCompLogLikLms(theta = thetaNew, model = model, P = P)
+          gradientObsLogLikLms(theta = thetaNew, model = model, P = P)
         }, error = \(e) {
-          warning2("Optimized computation of gradient failed! Switching gradient type.\n",
-                   "Message: ", conditionMessage(e))
-          model$gradientStruct$hasCovModel <<- TRUE
-          model$gradientStruct$isNonLinear <<- TRUE
+          mod_msg_warn_immediate(
+            paste0("Optimized computation of gradient failed! Switching gradient type.\n",
+                   "Message: ", conditionMessage(e)))
+          model$params$gradientStruct$useFDGradient <<- TRUE
+          model$params$gradientStruct$isNonLinear  <<- TRUE
         })
         testSimpleGradient <- FALSE
       }
@@ -149,143 +305,235 @@ emLms <- function(model,
       logLikNew  <- P$obsLL
       deltaLL    <- logLikNew - logLikOld
       relDeltaLL <- if (is.finite(logLikOld)) deltaLL / abs(logLikOld) else Inf
+      loglik.history <- c(loglik.history, logLikNew)
 
       updateStatusLog(iterations, mode, logLikNew, deltaLL, relDeltaLL, verbose)
+
+      history <- appendLmsIterationHistory(
+        history         = history,
+        iteration       = iterations,
+        loglik.history  = loglik.history,
+        convergence.abs = convergence.abs,
+        convergence.rel = convergence.rel,
+        forecast.min.gains = ema.forecast.min.gains,
+        forecast.window = ema.forecast.window,
+        mode            = mode,
+        loglik          = logLikNew,
+        abs.change      = abs(deltaLL),
+        rel.change      = abs(relDeltaLL),
+        elapsed.time    = proc.time()[["elapsed"]] - history.start.time
+      )
 
       converged <- (abs(deltaLL) < convergence.abs) ||
                    (abs(relDeltaLL) < convergence.rel)
       converged.em <- converged && mode == "EM"
+      run.final.qn <- FALSE
 
-      if (iterations >= max.iter || converged.em) break
+      if (iterations >= max.iter) break
+      if (algorithm == "EMA" && do.final.qn && ema.final.phase == "qn") {
+        if (converged || ema.final.qn.rounds >= ema.final.qn.rounds.max) {
+          ema.final.phase <- "em"
+        } else {
+          run.final.qn <- TRUE
+        }
 
-      if (deltaLL < -1e-8) {
-        if (verbose) cat("\n")
-        warning2(sprintf("Loglikelihood decreased by %.2g", deltaLL))
+      } else if (converged.em) {
+        if (algorithm == "EMA" && do.final.qn && ema.final.phase == "none") {
+          ema.final.phase <- "qn"
+          run.final.qn <- TRUE
+        } else {
+          break
+        }
       }
 
-      # EMA controller
-      if (algorithm == "EMA") {
-        previousMode <- mode
-        dl <- abs(relDeltaLL)
-        mode <- switch(mode,
-          EM = if (dl < tau1) "QN" else "EM",
-          QN = if (dl < tau2) "FS" else if (dl >= tau1) "EM" else "QN",
-          FS = if (dl < tau3) "STOP" else if (dl >= tau2) "QN" else "FS",
-          "EM"
+      # If quadrature has just been recalculated, we should be less strict
+      quad.err <- as.integer(recalcQuad) * P$quad.err
+      if (deltaLL < -max(1e-8, quad.err, na.rm = TRUE)) {
+        if (verbose) cat("\n")
+        mod_msg_warn_immediate(
+          sprintf("Loglikelihood decreased by %.2g!", deltaLL),
+          "Increasing the number of nodes might help."
         )
+      }
 
-        if (converged) # converged but not in EM mode, switch to EM
-          mode <- "EM"
+      if (mode != "EM") { # switch back to EM
+        mode <- "EM"
+        n.em.iter <- 0
+      } else n.em.iter <- n.em.iter + 1L
 
-        if (mode == "STOP") break
-        if (mode != previousMode) {
+      # EMA controller
+      if (run.final.qn) {
+        mode <- "QN"
+        updateStatusLog(iterations, mode, logLikNew, deltaLL, relDeltaLL, verbose)
+
+      } else if (ema.final.phase == "em") {
+        mode <- "EM"
+
+      } else if (algorithm == "EMA" && n.em.iter > ema.min.iter) {
+        # Check if expected number of iterations is increasing
+        change <- diff(utils::tail(history$expected.remaining.iterations, ema.min.iter))
+       
+        if (all(is.finite(change)) && mean(change) > ema.trend.min) {
+          remaining <- utils::tail(history$expected.remaining.iterations, 1L)[[1L]]
+
+          # Increase the max step in case remaining > 500 or 
+          # QN/FS fails, and we fall back to an EM step
+          tmp.max.step <- max(fallback.max.step.min,
+                            fallback.max.step.mult * max.step,
+                            na.rm = TRUE)
+
+          if (remaining > fs.remaining.min && remaining <= fs.remaining.max) {
+            mode <- "FS"
+          } else if (remaining > qn.remaining.min && remaining <= qn.remaining.max) {
+            mode <- "QN"
+          }
+
           updateStatusLog(iterations, mode, logLikNew, deltaLL, relDeltaLL, verbose)
         }
       }
 
-      # accelerated step
-      if (algorithm != "EM" && mode != "EM") {
-        grad <- computeGradient(theta = thetaOld, model = model, P = P, epsilon = epsilon)
-
-        if (mode == "QN") {
-          direction <- if (length(qn_env$s_list)) {
-            lbfgs_two_loop(-grad, qn_env$s_list, qn_env$y_list)
-          } else -grad
-
-        } else if (mode == "FS") {
-          # FS direction using Iobs = Icom - Imis (Louis), with fallback to Icom
-          I_fs <- NULL
-          if (fs.matrix == "Iobs") {
-            I_fs <- tryCatch({
-              L <- observedInfoFromLouisLms(model = model, theta = thetaOld,
-                                            P = P, recompute.P = FALSE,
-                                            fd.scheme = fs.fd.scheme,
-                                            fd.epsilon = fs.fd.epsilon,
-                                            symmetrize = TRUE)
-              L$I.obs
-            }, error = function(e) NULL)
-          }
-          if (is.null(I_fs)) {
-            I_fs <- computeFullIcom(theta = thetaOld, model = model, P = P)
-          } else {
-            I_fs <- 0.5 * (I_fs + t(I_fs))
-          }
-
-          # conditioning & scaled jitter
-          rc <- suppressWarnings(rcond(I_fs))
-          if (!is.finite(rc) || rc < 1e-10) {
-            jj <- fs.jitter.mult * max(1, max(diag(I_fs), na.rm = TRUE))
-            diag(I_fs) <- diag(I_fs) + jj
-          }
-          I_fs <- 0.5 * (I_fs + t(I_fs))
-          direction <- -tryCatch(solve(I_fs, grad), error = function(e) NULL)
-        }
-
-        # line search on observed LL (and weakly on Q)
-        if (!is.null(direction)) {
-          alpha     <- 1
-          success   <- FALSE
-          refQ      <- compLogLikLms(theta = thetaOld, model = model, P = P, sign = 1)
-
-          while (alpha > 1e-5) {
-            thetaTrial  <- boundedTheta(thetaOld + alpha * direction)
-            llQTrial    <- suppressWarnings(compLogLikLms(theta = thetaTrial,  model = model, P = P, sign = 1))
-            ok <- !is.na(llQTrial) && (llQTrial >= refQ)
-            if (ok) { success <- TRUE; break }
-            alpha <- alpha / 2
-          }
-
-          if (success) {
-            thetaNew <- thetaTrial
-            if (mode == "QN") {
-              # refresh P and grad at thetaNew before adding curvature pair
-              P_new <- estepLms(model = model, theta = thetaNew,
-                                lastQuad = lastQuad, recalcQuad = FALSE,
-                                adaptive.quad.tol = adaptive.quad.tol, ...)
-              gradNew <- computeGradient(theta = thetaNew, model = model,
-                                         P = P_new, epsilon = epsilon)
-              s_vec <- thetaNew - thetaOld
-              y_vec <- gradNew - grad
-              if (sum(s_vec * y_vec) > 1e-8) {
-                qn_env$s_list <- c(qn_env$s_list, list(s_vec))
-                qn_env$y_list <- c(qn_env$y_list, list(y_vec))
-                if (length(qn_env$s_list) > qn_env$LBFGS_M) {
-                  qn_env$s_list <- qn_env$s_list[-1]
-                  qn_env$y_list <- qn_env$y_list[-1]
-                }
-              }
-              P <- P_new; lastQuad <- P_new$quad
-            }
-          } else {
-            mode <- "EM"
-          }
-        } else {
-          mode <- "EM"
-        }
+      .obsfn <- function(x) {
+        ll <- obsLogLikLms(theta = x, model = model, P = P, sign = -1)
+        if (!is.finite(ll)) .Machine$double.xmax^(1/10) else ll # optim doesn't handle Inf well
       }
 
-      # EM M-step (plain or fallback)
-      if (algorithm == "EM" || mode == "EM") {
-        mstep <- mstepLms(model = model, P = P, theta = thetaOld,
-                          max.step = max.step, epsilon = epsilon,
-                          optimizer = optimizer, control = control, ...)
-        if (!any(is.na(mstep$par))) thetaNew <- mstep$par
+      .obsgr <- function(x) {
+        grad <- gradientObsLogLikLms(theta = x, model = model, P = P, sign = -1, epsilon = epsilon)
+   
+        non.finite <- !is.finite(grad)
+        if (any(non.finite)) {
+          # This might happen during a bad line search in optim()
+          # as long as obsLogLikLms() is non finite as well, it should be ok,
+          # as it will be rejected...
+          ll <- obsLogLikLms(theta = x, model = model, P = P, sign = -1)
+          mod_stopif(is.finite(ll),
+            "Some gradient values are NaN, but objective is finite!"
+          )
+
+          dir <- sign(x - thetaOld)
+          dir[!is.finite(dir)] <- 0
+
+          grad[non.finite] <- dir[non.finite] * .Machine$double.xmax^(1/10)
+        }
+
+        grad
+      }
+
+      .obshs <- function(x, louis = TRUE) {
+        computeFullIobs(theta = x, model = model, P = P, louis = louis)
+      }
+
+      .error <- function(e) {
+        mod_msg_warn(mode, "mode failed! Message:", conditionMessage(e))
+
+        mstepLms(
+          model = model,
+          P = P,
+          theta = thetaOld,
+          max.step = max(max.step, tmp.max.step, na.rm = TRUE),
+          epsilon = epsilon,
+          optimizer = optimizer,
+          control = control,
+          ...
+        )
+      }
+
+      # accelerated step
+      switch(mode,
+        EM = {
+          mstep <- mstepLms(
+            model = model,
+            P = P,
+            theta = thetaOld,
+            max.step = max(max.step, tmp.max.step, na.rm = TRUE),
+            epsilon = epsilon,
+            optimizer = optimizer,
+            control = control,
+            ...
+          )
+
+        },
+
+        QN = {
+          # Quasi Newton
+          mstep <- tryCatch({
+            qn.control <- list(maxit = max.iter.qn)
+            if (!is.null(qn.factr)) qn.control$factr <- qn.factr
+            if (!is.null(qn.pgtol)) qn.control$pgtol <- qn.pgtol
+
+            if (ema.final.phase == "qn") {
+              qn.control$maxit <- ema.final.qn.maxit
+              if (!is.null(ema.final.qn.factr)) {
+                qn.control$factr <- ema.final.qn.factr
+              }
+            }
+
+            stats::optim(
+              par = thetaOld,
+              fn = .obsfn,
+              gr = .obsgr,
+              lower = theta.lower,
+              upper = theta.upper,
+              control = qn.control,
+              method = "L-BFGS-B"
+            )
+          }, error = .error)
+
+          if (ema.final.phase == "qn") {
+            ema.final.qn.rounds <- ema.final.qn.rounds + 1L
+          } else {
+            max.iter.qn <- min(qn.maxit.max, qn.maxit.mult * max.iter.qn)
+          }
+        },
+
+        FS = {
+          # Fischer Scoring
+          mstep <- tryCatch({
+            fischerScoring(
+              par = thetaOld,
+              fn = .obsfn,
+              gr = .obsgr,
+              hs = .obshs,
+              lower = theta.lower,
+              upper = theta.upper,
+              max.iter = max.iter.fs
+            )
+          }, error = .error)
+        }
+
+        )
+
+      if (!is.null(mstep$par) &&
+          length(mstep$par) == length(thetaOld) &&
+          all(is.finite(mstep$par))) {
+        thetaNew <- mstep$par
+      } else {
+        thetaNew <- thetaOld
       }
     } # while
 
     if (verbose) cat("\n")
-    warnif(iterations >= max.iter, "Maximum iterations reached!\n",
-           "Consider tweaking these parameters:\n",
-           formatParameters(convergence.abs, convergence.rel, algorithm,
-                            max.step, max.iter, nodes, adaptive.quad,
-                            adaptive.quad.tol, quad.range))
+    mod_warnif(iterations >= max.iter,
+      "Maximum iterations reached!\n",
+      "Consider tweaking these parameters:\n",
+      formatParameters(
+        convergence.abs, convergence.rel, algorithm,
+        max.step, max.iter, nodes, adaptive.quad,
+        adaptive.quad.tol, quad.range
+      )
+    )
 
     # final E-step
-    P <- estepLms(model = model, theta = thetaNew,
-                  lastQuad = lastQuad, recalcQuad = FALSE,
-                  adaptive.quad.tol = adaptive.quad.tol, ...)
+    P <- estepLms(
+      model = model,
+      theta = thetaNew,
+      lastQuad = lastQuad,
+      recalcQuad = FALSE,
+      adaptive.quad.tol = adaptive.quad.tol,
+      ...
+    )
 
-    finalizeModelEstimatesDA(
+    fit <- finalizeModelEstimatesDA(
       model             = model,
       theta             = thetaNew,
       method            = "lms",
@@ -308,13 +556,16 @@ emLms <- function(model,
       includeStartModel = TRUE,
       startModel        = model
     )
+    fit$iteration.history <- history
+    fit
 
   }, error = function(e) {
     if (verbose) cat("\n")
-    warning2(paste0(
+    mod_msg_warn(paste0(
       "Model estimation failed, returning starting values!\n",
       "Message: ", conditionMessage(e)
     ))
+
     P0 <- tryCatch(
       estepLms(model = model, theta = model$theta,
                lastQuad = NULL, recalcQuad = FALSE,
@@ -323,7 +574,7 @@ emLms <- function(model,
     )
     ll0 <- if (!is.null(P0)) P0$obsLL else NA_real_
 
-    finalizeModelEstimatesDA(
+    fit <- finalizeModelEstimatesDA(
       model             = model,
       theta             = model$theta,
       method            = "lms",
@@ -346,5 +597,98 @@ emLms <- function(model,
       includeStartModel = TRUE,
       startModel        = model
     )
+    fit$iteration.history <- history
+    fit
   })
+}
+
+
+fischerScoring <- function(par,
+                           fn,
+                           gr,
+                           hs, ...,
+                           lower = -Inf,
+                           upper = Inf,
+                           max.iter = 1L,
+                           max.alpha = 1,
+                           min.alpha = 1e-12,
+                           abs.tol = 1e-4,
+                           jitter.mult = sqrt(.Machine$double.eps)) {
+
+  truncate <- function(x) {
+    underflow <- x < lower
+    overflow  <- x > upper 
+
+    x[underflow] <- lower[underflow]
+    x[overflow]  <- upper[overflow]
+
+    x 
+  }
+
+  f0 <- fn(par, ...)
+
+  for (i in seq_len(max.iter)) {
+    g0 <- gr(par, ...)
+    I  <- hs(par, ...)
+
+    # conditioning & scaled jitter
+    rc <- suppressWarnings(rcond(I))
+    if (!is.finite(rc) || rc < 1e-10) {
+      jj <- jitter.mult * max(1, max(diag(I), na.rm = TRUE))
+      diag(I) <- diag(I) + jj
+    }
+
+    I <- 0.5 * (I + t(I))
+    direction <- tryCatch(-solve(I, g0), error = function(e) NULL)
+
+    if (is.null(direction)) {
+      return(list(
+        convergence = -1,
+        par = par,
+        objective = f0,
+        iterations = i
+      ))
+    }
+        
+    alpha   <- max.alpha
+    success <- FALSE
+
+    while (alpha > min.alpha) {
+      parTrial  <- truncate(par + alpha * direction)
+      f1  <- suppressWarnings(fn(parTrial, ...))
+
+      ok <- is.finite(f1) && f1 <= f0 
+      if (ok) { success <- TRUE; break }
+      alpha <- alpha / 2
+    }
+
+    # convergence
+    if (success && abs(f1 - f0) <= abs.tol) {
+      return(list(
+        convergence = 0,
+        iterations = i,
+        par = parTrial,
+        objective = f1
+      ))
+
+    } else if (success) {
+      par <- parTrial
+      f0 <- f1
+
+    } else {
+      return(list(
+        convergence = 10,
+        iterations = i,
+        par = par,
+        objective = f0
+      ))
+    }
+  }
+
+  list(
+    convergence = 1,
+    iterations  = i,
+    par = par,
+    objective = f0
+  )
 }

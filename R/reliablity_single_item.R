@@ -82,8 +82,8 @@ relcorr_single_item <- function(syntax,
                                   scale.corrected = scale.corrected,
                                   warn.lav = warn.lav))
 
-  stopif(length(group) > 1L, "`group` must be a character vector of length 1!")
-  stopif(!group %in% colnames(data), sprintf("Unable to find `%s` in data!", group))
+  mod_stopif(length(group) > 1L, "`group` must be a character vector of length 1!")
+  mod_stopif(!group %in% colnames(data), sprintf("Unable to find `%s` in data!", group))
 
   group.info <- parseModelArgumentsByGroupDA(
     model.syntax = syntax,
@@ -153,14 +153,14 @@ relcorrSingleItemGroup <- function(syntax = NULL,
   higherOrderLVs <- getHigherOrderLVs(parTable)
   firstOrderLVs  <- setdiff(lVs, higherOrderLVs)
 
-  stopif(any(higherOrderLVs %in% allInds),
+  mod_stopif(any(higherOrderLVs %in% allInds),
          "Third order (or higher) latent variables are not allowed (yet)!")
 
   choose <- if (is.null(choose)) lVs else choose
   ignore <- setdiff(lVs, choose)
 
-  warnif(any(!choose %in% lVs), "Could not find latent variables:\n",
-         paste(choose[!choose %in% lVs], collapse = ", "))
+  mod_warnif(any(!choose %in% lVs), paste0("Could not find latent variables:\n",
+         paste(choose[!choose %in% lVs], collapse = ", ")))
   choose <- choose[choose %in% lVs]
 
   ignoreRows <- parTableOuter$lhs %in% ignore
@@ -168,13 +168,13 @@ relcorrSingleItemGroup <- function(syntax = NULL,
   parTableInner <- rbind(parTableInner, parTableOuter[ignoreRows, ])
   parTableOuter <- parTableOuter[!ignoreRows, ]
 
-  stopif(!NROW(parTableOuter), "Cannot ignore all latent variables when creating ",
-         "reliability corrected items!")
+  mod_stopif(!NROW(parTableOuter), paste0("Cannot ignore all latent variables when creating ",
+         "reliability corrected items!"))
 
-  warnif(any(!canBeNumeric(parTableOuter$mod, includeNA = TRUE)),
-         "Labels and modifiers in the measurement model used to create reliability ",
+  mod_warnif(any(!canBeNumeric(parTableOuter$mod, includeNA = TRUE)),
+         paste0("Labels and modifiers in the measurement model used to create reliability ",
          "corrected single items will be ignored!\nThis may cause the model constraints ",
-         "in the structural model to break!", immediate. = FALSE)
+         "in the structural model to break!"))
 
   lVs  <- setdiff(firstOrderLVs, ignore)
   indsLVs <- getIndsLVs(parTableOuter, lVs = lVs)
@@ -192,9 +192,16 @@ relcorrSingleItemGroup <- function(syntax = NULL,
   # Check if there are any indicators in the structural model
   indsInInner <- parTableInner$lhs %in% inds | parTableInner$rhs %in% inds
   if (any(indsInInner)) {
-    warning2("Removing expressions containing indicators!\n",
-             capturePrint(parTableInner[indsInInner, c("lhs", "op", "rhs")]),
-             immediate. = FALSE)
+    removing <- apply(
+      X = parTableInner[indsInInner, c("lhs", "op", "rhs"), drop = FALSE],
+      MARGIN = 1L, FUN = paste0, collapse = ""
+    )
+
+    mod_msg_warn(
+      paste0("Removing expressions containing indicators!\n",
+             paste0(removing, collapse = ", "))
+    )
+
     parTableInner <- parTableInner[!indsInInner, ]
   }
 
@@ -286,10 +293,10 @@ relcorrSingleItemGroup <- function(syntax = NULL,
   }
 
   if (any(secondOrder)) {
-    message(
-      "Correcting first order items/lVs for higher order measurement model!\n",
-      "Note that the first order LVs no longer can be used directly in the\n",
-      "structural model!"
+    mod_msg_note(
+      paste0("Correcting first order items/lVs for higher order measurement model!",
+      "Note that the first order LVs no longer can be used directly in the",
+      "structural model!")
     )
 
     lVs2        <- lVs[secondOrder]
@@ -566,8 +573,8 @@ calcChronbach <- function(R, x) {
 
   if (k == 1) return(1) # should be treated like an observed variable
 
-  warnif(any(Rx < 0), "Some item covariances are negative! Consider ",
-         "recoding your items!")
+  mod_warnif(any(Rx < 0), paste0("Some item covariances are negative! Consider ",
+         "recoding your items!"))
 
   Rx <- abs(Rx)
   varSum <- sum(diag(Rx))
@@ -581,8 +588,8 @@ calcConstructRel <- function(lambda.std, lV) {
   lambda.std <- lambda.std[, lV, drop=FALSE]
   lambda.std <- lambda.std[lambda.std != 0]
 
-  warnif(any(lambda.std < 0), "Some items have negative factor loadings!\n",
-         "Consider recoding your items!")
+  mod_warnif(any(lambda.std < 0), paste0("Some items have negative factor loadings!\n",
+         "Consider recoding your items!"))
 
   sum(lambda.std) ^ 2 / (sum(lambda.std) ^ 2 + sum(1 - lambda.std ^ 2))
 }
@@ -598,47 +605,34 @@ calcAVE <- function(lambda.std, lV) {
 }
 
 
-getCompositeDenominator <- function(lV, parTable, cfa, scale.corrected) {
-  measr   <- parTable[parTable$lhs == lV & parTable$op == "=~", ]
-  inds    <- unique(measr$rhs)
-  mats    <- lavaan::lavInspect(cfa, what = "coef")
-  if (scale.corrected) {
-    sum(as.vector(mats$lambda[inds, lV]))
-  } else {
-    length(inds)  # rowMeans: divide sum by k
-  }
-}
-
-
 getCompositeRVCOV <- function(lVs, parTable, cfa, scale.corrected) {
-  # Build Theta blocks and denominators
-  mats   <- lavaan::lavInspect(cfa, what = "coef")
-  thetaF <- mats$theta
+  matrices <- lavaan::lavInspect(cfa, what = "coef")
+  lambda   <- matrices$lambda
+  theta    <- matrices$theta
 
-  # item lists per LV
-  item_list <- lapply(lVs, function(lv)
-    unique(parTable[parTable$lhs == lv & parTable$op == "=~", "rhs"])
-  )
-  names(item_list) <- lVs
+  inds <- rownames(lambda)[apply(lambda, MARGIN = 1L, FUN = \(x) any(x != 0))]
+  lambda <- lambda[inds, lVs, drop = FALSE]
+  theta  <- theta[inds, inds, drop = FALSE]
 
-  # denominators D_f
-  denom <- vapply(lVs, function(lv)
-    getCompositeDenominator(lv, parTable, cfa, scale.corrected),
-    numeric(1)
-  )
+  I <- lambda
+  I[I!=0] <- 1
 
-  p <- length(lVs)
-  resCov <- matrix(0, p, p, dimnames = list(lVs, lVs))
+  T <- t(I) %*% theta %*% I
 
-  for (i in seq_len(p)) {
-    Ii <- item_list[[i]]
-    for (j in i:p) {
-      Ij <- item_list[[j]]
-      block_sum <- sum(thetaF[Ii, Ij, drop = FALSE])
-      val <- block_sum / (denom[i] * denom[j])
-      resCov[i, j] <- val
-      resCov[j, i] <- val
-    }
+  FUN <- if (scale.corrected) sum else \(x) sum(x != 0)
+
+  l <- apply(lambda, MARGIN = 2L, FUN = FUN)
+  l.inv <- 1 / l
+  l.inv[l <= 0] <- 1L
+
+  if (length(l.inv) > 1) {
+    L.inv <- diag(l.inv)
+    dimnames(L.inv) <- list(names(l.inv), names(l.inv))
+
+  } else {
+    L.inv <- matrix(l.inv, nrow = 1, ncol = 1)
+    dimnames(L.inv) <- list(names(l.inv), names(l.inv))
   }
-  resCov
+
+  L.inv %*% T %*% L.inv
 }
