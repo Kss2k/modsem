@@ -166,7 +166,7 @@ constructs in the model. The syntax and data can be extracted using the
 <span><span class="va">est_lms</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">syntax</span>, data <span class="op">=</span> <span class="va">data</span>, method<span class="op">=</span><span class="st">"lms"</span>, nodes<span class="op">=</span><span class="fl">32</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_lms</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (1.0.22) ended normally after 36 iterations</span></span>
+<span><span class="co">#&gt; modsem (1.0.22) ended normally after 34 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                        LMS</span></span>
 <span><span class="co">#&gt;   Optimization method                       EMA-NLMINB</span></span>
@@ -232,29 +232,29 @@ constructs in the model. The syntax and data can be extracted using the
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   INT ~         </span></span>
-<span><span class="co">#&gt;     ATT            -0.022      0.042   -0.527    0.598</span></span>
-<span><span class="co">#&gt;     SN              0.015      0.037    0.387    0.699</span></span>
-<span><span class="co">#&gt;     PBC             0.992      0.046   21.592    0.000</span></span>
+<span><span class="co">#&gt;     ATT            -0.022      0.042   -0.529    0.597</span></span>
+<span><span class="co">#&gt;     SN              0.014      0.037    0.385    0.700</span></span>
+<span><span class="co">#&gt;     PBC             0.992      0.046   21.594    0.000</span></span>
 <span><span class="co">#&gt;   BEH ~         </span></span>
-<span><span class="co">#&gt;     PBC             0.725      0.046   15.925    0.000</span></span>
-<span><span class="co">#&gt;     INT             0.306      0.042    7.224    0.000</span></span>
-<span><span class="co">#&gt;     INT:PBC         0.148      0.008   18.031    0.000</span></span>
+<span><span class="co">#&gt;     PBC             0.725      0.046   15.927    0.000</span></span>
+<span><span class="co">#&gt;     INT             0.306      0.042    7.222    0.000</span></span>
+<span><span class="co">#&gt;     INT:PBC         0.148      0.008   18.030    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Intercepts:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;    .cmpst_PBC_      4.317      0.064   67.626    0.000</span></span>
-<span><span class="co">#&gt;    .cmpst_ATT_      4.241      0.063   66.892    0.000</span></span>
-<span><span class="co">#&gt;    .compst_SN_      3.794      0.041   93.100    0.000</span></span>
-<span><span class="co">#&gt;    .cmpst_INT_      3.830      0.066   58.400    0.000</span></span>
-<span><span class="co">#&gt;    .cmpst_BEH_      2.885      0.077   37.582    0.000</span></span>
+<span><span class="co">#&gt;    .cmpst_PBC_      4.317      0.064   67.630    0.000</span></span>
+<span><span class="co">#&gt;    .cmpst_ATT_      4.241      0.063   66.895    0.000</span></span>
+<span><span class="co">#&gt;    .compst_SN_      3.794      0.041   93.101    0.000</span></span>
+<span><span class="co">#&gt;    .cmpst_INT_      3.830      0.066   58.404    0.000</span></span>
+<span><span class="co">#&gt;    .cmpst_BEH_      2.885      0.077   37.583    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   ATT ~~        </span></span>
-<span><span class="co">#&gt;     SN              1.907      0.104   18.254    0.000</span></span>
+<span><span class="co">#&gt;     SN              1.908      0.104   18.254    0.000</span></span>
 <span><span class="co">#&gt;   PBC ~~        </span></span>
 <span><span class="co">#&gt;     ATT             3.964      0.180   21.972    0.000</span></span>
-<span><span class="co">#&gt;     SN              2.028      0.107   18.987    0.000</span></span>
+<span><span class="co">#&gt;     SN              2.029      0.107   18.987    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
@@ -264,9 +264,9 @@ constructs in the model. The syntax and data can be extracted using the
 <span><span class="co">#&gt;    .cmpst_INT_      0.080                             </span></span>
 <span><span class="co">#&gt;    .cmpst_BEH_      0.365                             </span></span>
 <span><span class="co">#&gt;     ATT             4.439      0.194   22.827    0.000</span></span>
-<span><span class="co">#&gt;     SN              1.773      0.080   22.066    0.000</span></span>
-<span><span class="co">#&gt;     PBC             4.427      0.197   22.433    0.000</span></span>
-<span><span class="co">#&gt;    .INT             0.709      0.046   15.291    0.000</span></span>
+<span><span class="co">#&gt;     SN              1.773      0.080   22.065    0.000</span></span>
+<span><span class="co">#&gt;     PBC             4.427      0.197   22.432    0.000</span></span>
+<span><span class="co">#&gt;    .INT             0.709      0.046   15.290    0.000</span></span>
 <span><span class="co">#&gt;    .BEH             0.376      0.039    9.679    0.000</span></span></code></pre></div>
 <p>The easiest approach however, is to use the <code>rcs</code> argument
 in the <code>modsem</code> function to call
