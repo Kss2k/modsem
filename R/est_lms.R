@@ -350,7 +350,10 @@ emLms <- function(model,
       quad.err <- as.integer(recalcQuad) * P$quad.err
       if (deltaLL < -max(1e-8, quad.err, na.rm = TRUE)) {
         if (verbose) cat("\n")
-        mod_msg_warn_immediate(sprintf("Loglikelihood decreased by %.2g", deltaLL))
+        mod_msg_warn_immediate(
+          sprintf("Loglikelihood decreased by %.2g!", deltaLL),
+          "Increasing the number of nodes might help."
+        )
       }
 
       if (mode != "EM") { # switch back to EM
