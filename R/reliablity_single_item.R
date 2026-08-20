@@ -80,10 +80,13 @@ relcorr_single_item <- function(syntax,
                                 group = NULL) {
   data <- as.data.frame(data)
 
-  if (is.null(group))
-    return(relcorrSingleItemGroup(syntax = syntax, data = data, choose = choose,
-                                  scale.corrected = scale.corrected,
-                                  warn.lav = warn.lav))
+  if (is.null(group)) {
+    return(relcorrSingleItemGroup(
+      syntax = syntax, data = data, choose = choose,
+      scale.corrected = scale.corrected,
+      missing = missing, warn.lav = warn.lav
+    ))
+  }
 
   mod_stopif(length(group) > 1L, "`group` must be a character vector of length 1!")
   mod_stopif(!group %in% colnames(data), sprintf("Unable to find `%s` in data!", group))
