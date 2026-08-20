@@ -9,6 +9,7 @@ relcorr_single_item(
   data,
   choose = NULL,
   scale.corrected = TRUE,
+  missing = "fiml",
   warn.lav = TRUE,
   group = NULL
 )
@@ -27,6 +28,8 @@ first‑order latent variables in \code{syntax}.}
 \item{scale.corrected}{Should reliability-corrected items be scale-corrected? If \code{TRUE}
 reliability-corrected single items are corrected for differences in factor loadings between
 the items. Default is \code{TRUE}.}
+
+\item{missing}{How should missing values be handled in the CFA? Default is \code{"fiml"}.}
 
 \item{warn.lav}{Should warnings from \code{lavaan::cfa} be displayed? If \code{FALSE}, they
 are suppressed.}
