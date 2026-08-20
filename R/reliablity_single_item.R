@@ -23,6 +23,8 @@
 #'   reliability-corrected single items are corrected for differences in factor loadings between
 #'   the items. Default is \code{TRUE}.
 #'
+#' @param missing How should missing values be handled in the CFA? Default is \code{"fiml"}.
+#'
 #' @param warn.lav Should warnings from \code{lavaan::cfa} be displayed? If \code{FALSE}, they
 #'   are suppressed.
 #'
@@ -73,14 +75,18 @@ relcorr_single_item <- function(syntax,
                                 data,
                                 choose = NULL,
                                 scale.corrected = TRUE,
+                                missing = "fiml",
                                 warn.lav = TRUE,
                                 group = NULL) {
   data <- as.data.frame(data)
 
-  if (is.null(group))
-    return(relcorrSingleItemGroup(syntax = syntax, data = data, choose = choose,
-                                  scale.corrected = scale.corrected,
-                                  warn.lav = warn.lav))
+  if (is.null(group)) {
+    return(relcorrSingleItemGroup(
+      syntax = syntax, data = data, choose = choose,
+      scale.corrected = scale.corrected,
+      missing = missing, warn.lav = warn.lav
+    ))
+  }
 
   mod_stopif(length(group) > 1L, "`group` must be a character vector of length 1!")
   mod_stopif(!group %in% colnames(data), sprintf("Unable to find `%s` in data!", group))
@@ -111,6 +117,7 @@ relcorr_single_item <- function(syntax,
       data            = data.g,
       choose          = choose,
       scale.corrected = scale.corrected,
+      missing         = missing,
       warn.lav        = warn.lav
     )
 
@@ -136,6 +143,7 @@ relcorrSingleItemGroup <- function(syntax = NULL,
                                    data,
                                    choose = NULL,
                                    scale.corrected = TRUE,
+                                   missing = "fiml",
                                    warn.lav = TRUE) {
   data <- as.data.frame(data)
 
@@ -207,7 +215,7 @@ relcorrSingleItemGroup <- function(syntax = NULL,
 
   wrap      <- if (warn.lav) \(x) x else suppressWarnings
   cfaSyntax <- parTableToSyntax(parTableOuter)
-  cfa       <- wrap(lavaan::cfa(cfaSyntax, data = data, se = "none"))
+  cfa       <- wrap(lavaan::cfa(cfaSyntax, data = data, se = "none", missing = missing))
 
   cov.lv      <- lavaan::lavInspect(cfa, "cov.lv")
   stdSolution <- lavaan::lavInspect(cfa, "std")
@@ -368,10 +376,15 @@ getScaleCorrectedItem <- function(parTable, lV, data, cfa) {
 
   theta  <- matrices$theta[inds, inds]
   lambda <- as.vector(matrices$lambda[inds, lV])
-  I      <- rep(1, length(inds))
 
-  X    <- as.matrix(data[, inds])
-  item <- rowSums(X) / sum(lambda)
+  I <- rep(1, length(inds))
+  X <- as.matrix(data[, inds])
+
+  # Ignore loadings for values in X which are missing
+  L <- matrix(lambda, nrow = nrow(X), ncol = ncol(X), byrow = TRUE)
+  L[is.na(X)] <- NA_real_
+
+  item <- rowSums(X, na.rm = TRUE) / rowSums(L, na.rm = TRUE)
 
   residual <- (t(I) %*% theta %*% I) / sum(lambda)^2
 
