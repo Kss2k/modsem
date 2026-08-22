@@ -139,23 +139,35 @@ buildStanSyntaxFromParTable <- function(parTable) {
   inds    <- getIndicators(parTable)
   xis     <- getXis(parTable, isLV = FALSE)
   etas    <- getSortedEtas(parTable, isLV = FALSE)
-  ovs     <- getStructOVs(parTable)
+  ovs     <- setdiff(getStructOVs(parTable), inds) # ovs only in the structural model
   lvs     <- getLVs(parTable)
   ordered <- unique(parTable[parTable$op == "|", "lhs"])
+  cont    <- setdiff(inds, ordered)
+  vars    <- unique(c(inds, xis, etas, ovs, lvs))
 
-  INDICATOR_PREFIX <- "INDICATOR_"
-  DISTURBANCE_PREFIX  <- "DISTURBANCE_"
-  INTERCEPT_PREFIX <- "INTERCEPT_"
-  VAR_PREFIX <- "VARIANCE_"
-  LAMBDA_PREFIX <- "LAMBDA_"
-  LV_PREFIX <- "LATENT__"
-  COV  <- "__COVARIANCE__"
-  MSR  <- "__MEASUREMENT__"
-  INTR <- "__INTERCEPT__1"
-  REG  <- "__REGRESSION__"
-  LAB  <- "LABEL__"
+  notOk <- grepl("__", vars)
+  mod_stopif(any(notOk),
+    "`__` is a reserved pattern and can not be used in variable names!",
+    "Please rename these variables:", paste0(vars[notOk], collapse = ", ")
+  )
 
-  DATA <- "int<lower=0> N;"
+  ordOvs <- intersect(ovs, ordered)
+  mod_stopif(length(ordOvs),
+    "Observed variables which aren't indicators are not allowed to be ordered!",
+    "Please redefine these as latent variables with a single indicator:",
+    paste0(ordOvs, collapse = ", ")
+  )
+
+  IND_PREFIX <- "IND__"
+  RES_PREFIX <- "RES__" # technically these are disturbances not residuals, but who cares?
+  LV_PREFIX  <- "LV__"
+  COV        <- "__COV__"
+  MSR        <- "__MSR__"
+  INTR       <- "__INTR__1"
+  REG        <- "__REG__"
+  MOD        <- "__MOD__"
+
+  DATA <- c("int<lower=0> N;") # , "int<lower=0> N_CONT_INDS;")
   TRANSFORMED_DATA <- character(0L)
   PARAMETERS <- character(0L)
   TRANSFORMED_PARAMETERS <- character(0L)
@@ -163,14 +175,14 @@ buildStanSyntaxFromParTable <- function(parTable) {
   GENERATED_QUANTITIES <- character(0L)
 
   # WE potentially need to pre-define labels/repeated parameters here
-  isLab <- !canBeNumeric(parTable$mod)
+  isLab <- !canBeNumeric(parTable$mod) & parTable$mod != ""
   # parTable[isLab, "mod"] <- paste0(LAB, parTable[isLab, "mod"])
   labels <- unique(parTable[isLab, "mod"])
 
   for (lab in labels) {
     PARAMETERS <- c(PARAMETERS, sprintf("real %s;", lab))
 
-    prior.idx <- which(parTable$lhs == lab & parTable$op == ":=")
+    prior.idx <- which(parTable$lhs == lab & parTable$op == ":=") # use the := operator (for now)
     if (length(prior.idx)) {
       MODEL <- c(MODEL,
         sprintf("%s ~ %s", lab, parTable[prior.idx, "rhs"])
@@ -178,32 +190,154 @@ buildStanSyntaxFromParTable <- function(parTable) {
     }
   }
 
+  k <- length(lvs)
+  PARAMETERS <- c(PARAMETERS,
+    sprintf("vector[N] MAT__ZETA[%d];", k)
+  )
+
+  TRANSFORMED_PARAMETERS <- c(TRANSFORMED_PARAMETERS,
+    sprintf("matrix[%d,%d] MAT__PSI;", k, k),
+    sprintf("vector[%d] VEC_ZETA_MU;", k)
+  )
+
+  for (i in seq_along(lvs)) {
+    lv <- lvs[[i]]
+
+    # Intercept
+    intr <- paste0(lv, INTR)
+    b0.idx <- which(parTable$op == "~1" & parTable$lhs == lv)
+
+    if (length(b0.idx) != 1 || parTable[b0.idx, "mod"] == "") {
+      PARAMETERS <- c(PARAMETERS, paste0("real ", intr, ";"))
+
+    } else {
+      mod <- parTable[b0.idx, "mod"]
+      PARAMETERS <- c(TRANSFORMED_PARAMETERS,
+        sprintf("real %s = %s;", intr, mod, ";")
+      )
+    }
+
+    TRANSFORMED_PARAMETERS <- c(TRANSFORMED_PARAMETERS,
+      sprintf("VEC_ZETA_MU[%d] = %s;", i, intr)
+    )
+  }
+
+  idxPsi <- which(
+    parTable$lhs %in% lvs & parTable$op == "~~" & parTable$rhs %in% lvs
+  )
+
+  psiScalarTemplate <- "MAT__PSI[%d,%d] = %s;"
+  for (idx in idxPsi) {
+    lhs <- parTable[idx, "lhs"]
+    rhs <- parTable[idx, "rhs"]
+    mod <- parTable[idx, "mod"]
+    par <- paste0(lhs, COV, rhs)
+    i   <- which(lvs == lhs)
+    j   <- which(lvs == rhs)
+
+    if (mod == "") PARAMETERS  <- c(PARAMETERS, sprintf("real %s;", par))
+    else           PARAMETERS  <- c(PARAMETERS, sprintf("real %s = %s;", par, par))
+
+    TRANSFORMED_PARAMETERS <- c(TRANSFORMED_PARAMETERS,
+      sprintf(psiScalarTemplate, i, j, par),
+      sprintf(psiScalarTemplate, j, i, par)
+    )
+
+  }
+  
+  MODEL <- c(MODEL,
+    "MAT__ZETA ~ multi_normal(VEC_ZETA_MU, MAT__PSI);"
+  )
+
+  for (ov in ovs) {
+    mod_msg_stop("Observed variables in the structural model are not allowed (yet)!")
+  }
+
+  for (xi in xis) {
+    lxi <- paste0(LV_PREFIX, xi)
+    i <- which(lvs == xi)
+    TRANSFORMED_PARAMETERS <- c(TRANSFORMED_PARAMETERS,
+      sprintf("vector[N] %s = to_vector(MAT__ZETA[:,%d]);", lxi, i)
+    )
+  }
+
+  for (eta in etas) {
+    leta <- paste0(LV_PREFIX, eta)
+    reta <- paste0(RES_PREFIX, eta)
+    i    <- which(lvs == eta)
+
+    TRANSFORMED_PARAMETERS <- c(TRANSFORMED_PARAMETERS,
+      sprintf("vector[N] %s = to_vector(MAT__ZETA[:,%d]);", reta, i)
+    )
+
+    eq <- reta
+    idx <- which(parTable$lhs == eta & parTable$op == "~")
+
+    for (j in idx) {
+      pred <- parTable[j, "rhs"]
+      mod  <- parTable[i, "mod"]
+      reg  <- paste0(eta, REG, stringr::str_replace(pred, ":", MOD))
+
+      if (mod == "") {
+        PARAMETERS <- c(PARAMETERS, sprintf("real %s;", reg))
+      } else {
+        TRANSFORMED_PARAMETERS  <- c(TRANSFORMED_PARAMETERS,
+          sprintf("real %s = %s;", reg, mod)
+        )
+      }
+
+      pred <- stringr::str_split_1(pred, ":")
+      prod <- paste0(paste0(LV_PREFIX, pred), collapse = ".*")
+
+      eq <- sprintf("%s + %s", eq, paste0(reg, "*", prod))
+    }
+
+    TRANSFORMED_PARAMETERS <- c(TRANSFORMED_PARAMETERS,
+      sprintf("vector[N] %s = %s;", leta, eq)
+    )
+  }
+
   for (ind in inds) {
     # parameter names
-    nm  <- paste0(INDICATOR_PREFIX, ind)
-    dnm <- paste0(DISTURBANCE_PREFIX, nm)
-    vnm <- paste0(nm, COV, dnm)
+    nm  <- paste0(IND_PREFIX, ind)
+    dnm <- paste0(RES_PREFIX, nm)
+    vnm <- paste0(nm, COV, nm)
     inm <- paste0(nm, INTR)
 
-    data.i <- paste0("array[N] real ", nm, ";")
-    par.i <- character(0L)
-    tpar.i <- character(0L)
-    model.i <- character(0L)
+    DATA <- c(DATA,
+      sprintf("vector[N] %s;", nm)
+    )
 
     # Intercept
     b0.idx <- which(parTable$op == "~1" & parTable$lhs == ind)
 
     if (length(b0.idx) != 1 || parTable[b0.idx, "mod"] == "") {
-      par.i  <- c(par.i, paste0("real ", inm, ";"))
+      PARAMETERS  <- c(PARAMETERS, paste0("real ", inm, ";"))
 
     } else {
-      mod.i <- parTable[b0.idx, "mod"]
-      tpar.i  <- c(tpar.i, sprintf("real %s = %s;", inm, mod.i))
+      mod <- parTable[b0.idx, "mod"]
+      TRANSFORMED_PARAMETERS  <- c(TRANSFORMED_PARAMETERS,
+        sprintf("real %s = %s;", inm, mod)
+      )
+    }
+    
+    # Residual variance 
+    # This should probably be moved if we ever add residual covariances
+    rv.idx <- which(
+      parTable$lhs == ind & parTable$op == "~~" & parTable$rhs == ind
+    )
+
+    if (length(rv.idx) != 1 || parTable[rv.idx, "mod"] == "") {
+      PARAMETERS <- c(PARAMETERS, paste0("real ", vnm, ";"))
+
+    } else {
+      mod <- parTable[b0.idx, "mod"]
+      TRANSFORMED_PARAMETERS  <- c(TRANSFORMED_PARAMETERS,
+        sprintf("real %s = %s;", vnm, mod)
+      )
     }
 
     idx <- which(parTable$op == "=~" & parTable$rhs == ind)
-    tpar.i <- paste0(
-    )
 
     eq <- inm
     for (i in idx) {
@@ -211,35 +345,24 @@ buildStanSyntaxFromParTable <- function(parTable) {
       mod.i <- parTable[i, "mod"]
       msr.i <- paste0(lv.i, MSR, ind)
 
-      if (mod.i == "") par.i  <- c(par.i, sprintf("real %s;", msr.i))
-      else tpar.i  <- c(tpar.i, sprintf("real %s = %s;", inm, mod.i))
+      if (mod.i == "") {
+        PARAMETERS <- c(PARAMETERS, sprintf("real %s;", msr.i))
+      } else {
+        TRANSFORMED_PARAMETERS <- c(TRANSFORMED_PARAMETERS,
+          sprintf("real %s = %s;", msr.i, mod.i)
+        )
+      }
 
       eq <- sprintf("%s + %s", eq, paste0(msr.i, "*", LV_PREFIX, lv.i))
     }
    
     # no residual covariances and continous indicators
-    tpar.i <- c(tpar.i,
-      sprintf("array[N] real %s = %s - (%s);", dnm, nm, eq)
+    TRANSFORMED_PARAMETERS <- c(TRANSFORMED_PARAMETERS,
+      sprintf("vector[N] %s = %s - (%s);", dnm, nm, eq)
     )
 
-    model.i <- c(model.i,
-      sprintf("%s ~ normal(0.0, sqrt(%s))", dnm, vnm)
-    )
-
-    DATA <- c(
-      DATA, paste0(data.i, collapse = "\n")
-    )
-
-    PARAMETERS <- c(
-      PARAMETERS, paste0(par.i, collapse = "\n")
-    )
-
-    TRANSFORMED_PARAMETERS <- c(
-      TRANSFORMED_PARAMETERS, paste0(tpar.i, collapse = "\n")
-    )
-
-    MODEL <- c(
-      MODEL, paste0(model.i, collapse = "\n")
+    MODEL <- c(MODEL,
+      sprintf("%s ~ normal(0.0, sqrt(%s));", dnm, vnm)
     )
   }
 
