@@ -192,11 +192,11 @@ buildStanSyntaxFromParTable <- function(parTable) {
 
   k <- length(lvs)
   PARAMETERS <- c(PARAMETERS,
-    sprintf("vector[N] MAT__ZETA[%d];", k)
+    sprintf("array[N] vector[%d] MAT__ZETA;", k)
   )
 
   TRANSFORMED_PARAMETERS <- c(TRANSFORMED_PARAMETERS,
-    sprintf("matrix[%d,%d] MAT__PSI;", k, k),
+    sprintf("matrix[%d,%d] MAT__PSI = rep_matrix(0, %d, %d);", k, k, k, k),
     sprintf("vector[%d] VEC_ZETA_MU;", k)
   )
 
@@ -235,8 +235,9 @@ buildStanSyntaxFromParTable <- function(parTable) {
     i   <- which(lvs == lhs)
     j   <- which(lvs == rhs)
 
-    if (mod == "") PARAMETERS  <- c(PARAMETERS, sprintf("real %s;", par))
-    else           PARAMETERS  <- c(PARAMETERS, sprintf("real %s = %s;", par, par))
+    lower <- if (i == j) "<lower=0>" else ""
+    if (mod == "") PARAMETERS  <- c(PARAMETERS, sprintf("real%s %s;", lower, par))
+    else           PARAMETERS  <- c(PARAMETERS, sprintf("real%s %s = %s;", lower, par, par))
 
     TRANSFORMED_PARAMETERS <- c(TRANSFORMED_PARAMETERS,
       sprintf(psiScalarTemplate, i, j, par),
@@ -257,7 +258,7 @@ buildStanSyntaxFromParTable <- function(parTable) {
     lxi <- paste0(LV_PREFIX, xi)
     i <- which(lvs == xi)
     TRANSFORMED_PARAMETERS <- c(TRANSFORMED_PARAMETERS,
-      sprintf("vector[N] %s = to_vector(MAT__ZETA[:,%d]);", lxi, i)
+      sprintf("vector[N] %s = to_vector(MAT__ZETA[:, %d]);", lxi, i)
     )
   }
 
