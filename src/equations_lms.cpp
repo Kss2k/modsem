@@ -75,35 +75,63 @@ struct LMSModel {
     updateCache();
   }
 
-  // Combined mu+Sigma: avoids recomputing zVec/kronZ/Binv/lXc for the same z.
-  // Use this in any hot path that needs both.
-  std::pair<arma::vec, arma::mat> muSigma(const arma::vec& z) const {
-    const arma::vec zVec  = makeZvec(k, numXis, z);
-    const arma::vec muXi  = beta0 + A * zVec;
-    const arma::mat kronZ = arma::kron(Ie, muXi);
-    const arma::mat B     = Ie - Ge - kronZ.t() * Oex;
+  // Forward-pass cache: mu(z)/Sigma(z) together with every intermediate that
+  // accumulateMuSigmaAdjointsFromCache() needs to run the reverse pass at the
+  // same z. Every hot-loop call site previously called muSigma(z) to get
+  // (mu, Sigma), then separately called accumulateMuSigmaAdjoints(M, z, ...),
+  // which recomputed this ENTIRE forward pass again from scratch (same z,
+  // same model -- an exact, not approximate, duplication of work). Computing
+  // it once via muSigmaForward() and threading the cache through removes that
+  // duplication; muSigma() below is now a thin wrapper over it so every other
+  // caller's behavior/signature is unchanged.
+  struct ForwardCache {
+    arma::vec zVec, muXi, r, muEta, xieta, mu;
+    arma::mat kronZ, B, Binv, C, Eta, varXi, varEta, covXiEta, V, Sigma;
+    arma::mat H, R, L; // only populated when hasComposites
+  };
 
-    const arma::mat Binv     = arma::inv(B);
-    const arma::vec muEta    = Binv * (a + Gx * muXi + kronZ.t() * Oxx * muXi + ZetaProj * zVec);
-    const arma::mat Eta      = Binv * (GxA + kronZ.t() * Oxx * A + ZetaProj);
-    const arma::mat varXi    = AOiAt;
-    const arma::mat varEta   = Eta * Oi * Eta.t() + Binv * PsiOrth * Binv.t();
-    const arma::mat covXiEta = AOi * Eta.t();
+  ForwardCache muSigmaForward(const arma::vec& z) const {
+    ForwardCache c;
+    c.zVec  = makeZvec(k, numXis, z);
+    c.muXi  = beta0 + A * c.zVec;
+    c.kronZ = arma::kron(Ie, c.muXi);
+    c.B     = Ie - Ge - c.kronZ.t() * Oex;
 
-    const arma::mat vcovXiEta = arma::join_cols(
-      arma::join_rows(varXi,        covXiEta),
-      arma::join_rows(covXiEta.t(), varEta)
+    c.Binv  = arma::inv(c.B);
+    c.r     = a + Gx * c.muXi + c.kronZ.t() * Oxx * c.muXi + ZetaProj * c.zVec;
+    c.muEta = c.Binv * c.r;
+    c.C     = GxA + c.kronZ.t() * Oxx * A + ZetaProj;
+    c.Eta   = c.Binv * c.C;
+    c.varXi    = AOiAt;
+    c.varEta   = c.Eta * Oi * c.Eta.t() + c.Binv * PsiOrth * c.Binv.t();
+    c.covXiEta = AOi * c.Eta.t();
+
+    c.V = arma::join_cols(
+      arma::join_rows(c.varXi,        c.covXiEta),
+      arma::join_rows(c.covXiEta.t(), c.varEta)
     );
-
-    const arma::vec xieta = arma::join_cols(muXi, muEta);
+    c.xieta = arma::join_cols(c.muXi, c.muEta);
 
     if (hasComposites) {
-      const arma::mat lXc = lX + T * W * arma::pinv(W.t() * T * W);
-      const arma::mat dc  = d + T - lXc * W.t() * T * W * lXc.t();
-      return std::make_pair(tX + lXc * xieta, lXc * vcovXiEta * lXc.t() + dc);
+      c.H = W.t() * T * W;
+      c.R = arma::pinv(c.H);
+      c.L = lX + T * W * c.R;
+      const arma::mat dc = d + T - c.L * c.H * c.L.t();
+      c.mu    = tX + c.L * c.xieta;
+      c.Sigma = c.L * c.V * c.L.t() + dc;
+    } else {
+      c.mu    = tX + lX * c.xieta;
+      c.Sigma = lX * c.V * lX.t() + d;
     }
 
-    return std::make_pair(tX + lX * xieta, lX * vcovXiEta * lX.t() + d);
+    return c;
+  }
+
+  // Combined mu+Sigma: avoids recomputing zVec/kronZ/Binv/lXc for the same z.
+  // Use this in any hot path that needs both but not the reverse pass.
+  std::pair<arma::vec, arma::mat> muSigma(const arma::vec& z) const {
+    const ForwardCache c = muSigmaForward(z);
+    return std::make_pair(c.mu, c.Sigma);
   }
 
   // mu(z), Sigma(z) together with their first derivatives w.r.t. z (k slices
@@ -652,29 +680,21 @@ inline void addLatentCovAdjoints(const LMSModel& M,
 }
 
 
-inline void accumulateMuSigmaAdjoints(const LMSModel& M,
-                                      const arma::vec& z,
-                                      const arma::vec& muBar,
-                                      const arma::mat& SigmaBar,
-                                      LMSAdjoints& adj) {
+inline void accumulateMuSigmaAdjointsFromCache(const LMSModel& M,
+                                               const LMSModel::ForwardCache& c,
+                                               const arma::vec& muBar,
+                                               const arma::mat& SigmaBar,
+                                               LMSAdjoints& adj) {
   const arma::uword numEta = M.Ie.n_rows;
-  const arma::vec zVec = makeZvec(M.k, M.numXis, z);
-  const arma::vec u = M.beta0 + M.A * zVec;
-  const arma::mat K = arma::kron(M.Ie, u);
-  const arma::mat B = M.Ie - M.Ge - K.t() * M.Oex;
-  const arma::mat Binv = arma::inv(B);
-  const arma::vec r = M.a + M.Gx * u + K.t() * M.Oxx * u + M.ZetaProj * zVec;
-  const arma::vec v = Binv * r;
-  const arma::mat C = M.Gx * M.A + K.t() * M.Oxx * M.A + M.ZetaProj;
-  const arma::mat Eta = Binv * C;
-  const arma::mat varXi = M.AOiAt;
-  const arma::mat varEta = Eta * M.Oi * Eta.t() + Binv * M.PsiOrth * Binv.t();
-  const arma::mat covXiEta = M.AOi * Eta.t();
-  const arma::mat V = arma::join_cols(
-    arma::join_rows(varXi,        covXiEta),
-    arma::join_rows(covXiEta.t(), varEta)
-  );
-  const arma::vec xieta = arma::join_cols(u, v);
+  const arma::vec& zVec = c.zVec;
+  const arma::vec& u    = c.muXi;
+  const arma::mat& K    = c.kronZ;
+  const arma::mat& Binv = c.Binv;
+  const arma::vec& r    = c.r;
+  const arma::mat& C    = c.C;
+  const arma::mat& Eta  = c.Eta;
+  const arma::mat& V    = c.V;
+  const arma::vec& xieta = c.xieta;
 
   if (adj.tX.n_elem == muBar.n_elem) adj.tX += muBar;
   arma::vec xietaBar;
@@ -683,9 +703,9 @@ inline void accumulateMuSigmaAdjoints(const LMSModel& M,
   if (M.hasComposites) {
     // mu = L*xieta and Sigma = L*(V-H)*L' + d + T, where
     // H = W'*T*W and L = lX + T*W*pinv(H).
-    const arma::mat H = M.W.t() * M.T * M.W;
-    const arma::mat R = arma::pinv(H);
-    const arma::mat L = M.lX + M.T * M.W * R;
+    const arma::mat& H = c.H;
+    const arma::mat& R = c.R;
+    const arma::mat& L = c.L;
     const arma::mat VC = V - H;
 
     arma::mat LBar = muBar * xieta.t() +
@@ -1074,13 +1094,11 @@ inline arma::vec completeGradientReverseFromModelAghq(
         arma::vec zj(k);
         for (arma::uword l = 0; l < k; ++l) zj[l] = Z(rowIdx, j, l);
 
-        const auto ms = M.muSigma(zj);
-        const arma::vec& mu  = ms.first;
-        const arma::mat& Sig = ms.second;
+        const LMSModel::ForwardCache fc = M.muSigmaForward(zj);
 
         arma::vec muBar_i;
         arma::mat SigBar_i;
-        if (!completeLogLikScore(mu.elem(idx), Sig.submat(idx, idx), y, Szero,
+        if (!completeLogLikScore(fc.mu.elem(idx), fc.Sigma.submat(idx, idx), y, Szero,
                                  tg, muBar_i, SigBar_i)) {
           failed = true;
           continue;
@@ -1089,7 +1107,7 @@ inline arma::vec completeGradientReverseFromModelAghq(
         muBarFull.elem(idx) = muBar_i;
         SigBarFull.submat(idx, idx) = SigBar_i;
 
-        accumulateMuSigmaAdjoints(M, zj, muBarFull, SigBarFull, threadAdj[tid]);
+        accumulateMuSigmaAdjointsFromCache(M, fc, muBarFull, SigBarFull, threadAdj[tid]);
       }
     }
     offset += nPat;
@@ -1196,9 +1214,7 @@ inline arma::vec completeGradientReverseFromModel(
 #endif
 
     const arma::vec z = V.row(j).t();
-    const std::pair<arma::vec, arma::mat> ms = M.muSigma(z);
-    const arma::vec& mu = ms.first;
-    const arma::mat& Sig = ms.second;
+    const LMSModel::ForwardCache fc = M.muSigmaForward(z);
 
     arma::vec muBarFull(pObs);
     arma::mat SigBarFull(pObs, pObs);
@@ -1213,8 +1229,8 @@ inline arma::vec completeGradientReverseFromModel(
       arma::mat SigBar_i;
       const arma::uvec& idx = colidx[i];
 
-      if (!completeLogLikScore(mu.elem(idx),
-                               Sig.submat(idx, idx),
+      if (!completeLogLikScore(fc.mu.elem(idx),
+                               fc.Sigma.submat(idx, idx),
                                MeanPatterns[j][i],
                                CovPatterns[j][i],
                                tg,
@@ -1228,7 +1244,7 @@ inline arma::vec completeGradientReverseFromModel(
       SigBarFull.submat(idx, idx) += SigBar_i;
     }
 
-    accumulateMuSigmaAdjoints(M, z, muBarFull, SigBarFull, threadAdj[tid]);
+    accumulateMuSigmaAdjointsFromCache(M, fc, muBarFull, SigBarFull, threadAdj[tid]);
   }
 
   if (failed) {
@@ -1281,9 +1297,11 @@ arma::mat completeScoresNodeAnalyticalLmsCpp(
   const LMSModel M(modelR);
   const auto data = as_vec_of_mat(dataR);
   const auto colidx = as_vec_of_uvec(colidxR);
-  const auto ms = M.muSigma(z);
-  const arma::vec& mu = ms.first;
-  const arma::mat& Sig = ms.second;
+  // z is shared by every row in this call, so the forward pass (and its
+  // adjoint-reverse-pass inputs) only needs computing once, not once per row.
+  const LMSModel::ForwardCache fc = M.muSigmaForward(z);
+  const arma::vec& mu = fc.mu;
+  const arma::mat& Sig = fc.Sigma;
   const arma::uword pObs = M.lX.n_rows;
   const arma::uword npar = block.n_elem;
   const arma::uword N = arma::sum(n);
@@ -1314,7 +1332,7 @@ arma::mat completeScoresNodeAnalyticalLmsCpp(
     const arma::uword nPat = n[pat];
 
 #pragma omp parallel for default(none) if(ncores > 1) \
-    shared(M, z, idx, Sinv, invDiff, block, row, col, symmetric, scores, \
+    shared(M, fc, idx, Sinv, invDiff, block, row, col, symmetric, scores, \
            offset, nPat, npar, pObs) reduction(||:failed) schedule(static)
     for (arma::uword i = 0; i < nPat; ++i) {
       const arma::vec muBar_i = invDiff.col(i);
@@ -1328,7 +1346,7 @@ arma::mat completeScoresNodeAnalyticalLmsCpp(
       SigmaBar.submat(idx, idx) = SigmaBar_i;
 
       LMSAdjoints adj(M);
-      accumulateMuSigmaAdjoints(M, z, muBar, SigmaBar, adj);
+      accumulateMuSigmaAdjointsFromCache(M, fc, muBar, SigmaBar, adj);
 
       for (arma::uword k = 0; k < npar; ++k) {
         const arma::mat& A = lmsAdjointBlock(adj, block[k]);
@@ -1453,14 +1471,12 @@ Rcpp::List louisRawScoresAghqCpp(const Rcpp::List& modelR,
         arma::vec zj(k);
         for (arma::uword l = 0; l < k; ++l) zj[l] = Z(rowIdx, j, l);
 
-        const auto ms = M.muSigma(zj);
-        const arma::vec& mu  = ms.first;
-        const arma::mat& Sig = ms.second;
+        const LMSModel::ForwardCache fc = M.muSigmaForward(zj);
 
         arma::vec muBar_i;
         arma::mat SigBar_i;
         // raw (unweighted) score: tgamma = 1, S = 0
-        if (!completeLogLikScore(mu.elem(idx), Sig.submat(idx, idx), y, Szero,
+        if (!completeLogLikScore(fc.mu.elem(idx), fc.Sigma.submat(idx, idx), y, Szero,
                                  1.0, muBar_i, SigBar_i)) {
           failed = true;
           continue;
@@ -1470,7 +1486,7 @@ Rcpp::List louisRawScoresAghqCpp(const Rcpp::List& modelR,
         SigBarFull.submat(idx, idx) = SigBar_i;
 
         LMSAdjoints adj(M);
-        accumulateMuSigmaAdjoints(M, zj, muBarFull, SigBarFull, adj);
+        accumulateMuSigmaAdjointsFromCache(M, fc, muBarFull, SigBarFull, adj);
 
         s_ij.zeros();
         for (std::size_t kk = 0; kk < npar; ++kk) {
