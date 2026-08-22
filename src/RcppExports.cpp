@@ -110,7 +110,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // gradLogLikLmsAghqCpp
-arma::vec gradLogLikLmsAghqCpp(const Rcpp::List& modelR, const arma::cube& Z, const arma::mat& Gamma, const Rcpp::List& dataR, const Rcpp::List& colidxR, const arma::uvec& n, const arma::uvec& block, const arma::uvec& row, const arma::uvec& col, const arma::uvec& symmetric, const int npatterns, const int ncores);
+Rcpp::NumericVector gradLogLikLmsAghqCpp(const Rcpp::List& modelR, const arma::cube& Z, const arma::mat& Gamma, const Rcpp::List& dataR, const Rcpp::List& colidxR, const arma::uvec& n, const arma::uvec& block, const arma::uvec& row, const arma::uvec& col, const arma::uvec& symmetric, const int npatterns, const int ncores);
 RcppExport SEXP _modsem_gradLogLikLmsAghqCpp(SEXP modelRSEXP, SEXP ZSEXP, SEXP GammaSEXP, SEXP dataRSEXP, SEXP colidxRSEXP, SEXP nSEXP, SEXP blockSEXP, SEXP rowSEXP, SEXP colSEXP, SEXP symmetricSEXP, SEXP npatternsSEXP, SEXP ncoresSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -193,7 +193,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // gradLogLikLmsCpp
-arma::vec gradLogLikLmsCpp(const Rcpp::List& modelR, const Rcpp::List& P, const arma::uvec& block, const arma::uvec& row, const arma::uvec& col, const arma::uvec& symmetric, const Rcpp::List& colidxR, const arma::uvec& n, const arma::uvec& d, const int npatterns, const double eps, const int ncores);
+Rcpp::NumericVector gradLogLikLmsCpp(const Rcpp::List& modelR, const Rcpp::List& P, const arma::uvec& block, const arma::uvec& row, const arma::uvec& col, const arma::uvec& symmetric, const Rcpp::List& colidxR, const arma::uvec& n, const arma::uvec& d, const int npatterns, const double eps, const int ncores);
 RcppExport SEXP _modsem_gradLogLikLmsCpp(SEXP modelRSEXP, SEXP PSEXP, SEXP blockSEXP, SEXP rowSEXP, SEXP colSEXP, SEXP symmetricSEXP, SEXP colidxRSEXP, SEXP nSEXP, SEXP dSEXP, SEXP npatternsSEXP, SEXP epsSEXP, SEXP ncoresSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;

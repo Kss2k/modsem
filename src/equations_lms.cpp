@@ -802,23 +802,30 @@ inline void accumulateMuSigmaAdjointsFromCache(const LMSModel& M,
 }
 
 
+// llOut receives this node's contribution to the complete-data log-lik,
+// -0.5*(tgamma*(d*log(2pi) + log|Sigma|) + trace(Sigma^{-1}*S) + tgamma*diff'Sigma^{-1}diff),
+// i.e. the same quantity totalDmvnWeighted computes -- reusing the Cholesky
+// factor and the L^{-1}*diff solve already needed for muBar/SigmaBar, so a
+// caller that also wants the objective value (e.g. to avoid a separate,
+// duplicate forward-pass-based log-lik call at the same theta) gets it at
+// negligible extra cost.
 inline bool completeLogLikScore(const arma::vec& mu,
                                 const arma::mat& sigma,
                                 const arma::vec& nu,
                                 const arma::mat& S,
                                 const double tgamma,
                                 arma::vec& muBar,
-                                arma::mat& SigmaBar) {
+                                arma::mat& SigmaBar,
+                                double& llOut) {
   if (!sigma.is_finite()) return false;
 
   arma::mat L;
   if (!arma::chol(L, sigma, "lower")) return false;
 
   const arma::vec diff = nu - mu;
+  const arma::vec Ldiff = arma::solve(arma::trimatl(L), diff, arma::solve_opts::fast);
   const arma::vec invDiff = arma::solve(
-    arma::trimatu(L.t()),
-    arma::solve(arma::trimatl(L), diff, arma::solve_opts::fast),
-    arma::solve_opts::fast
+    arma::trimatu(L.t()), Ldiff, arma::solve_opts::fast
   );
   const arma::mat Sinv = arma::solve(
     arma::trimatu(L.t()),
@@ -831,6 +838,20 @@ inline bool completeLogLikScore(const arma::vec& mu,
   muBar    = tgamma * invDiff;
   SigmaBar = 0.5 * (Sinv * (S + tgamma * diff * diff.t()) * Sinv -
                     tgamma * Sinv);
+
+  static const double log2pi = std::log(2.0 * M_PI);
+  const double d = static_cast<double>(sigma.n_rows);
+  const double log_det_sigma   = 2.0 * arma::sum(arma::log(L.diag()));
+  const double mahalanobisTerm = tgamma * arma::dot(Ldiff, Ldiff);
+
+  double traceTerm = 0.0;
+  if (arma::any(arma::vectorise(S) != 0.0)) {
+    const arma::mat Z = arma::solve(arma::trimatl(L), S, arma::solve_opts::fast);
+    const arma::mat X = arma::solve(arma::trimatu(L.t()), Z, arma::solve_opts::fast);
+    traceTerm = arma::trace(X);
+  }
+
+  llOut = -0.5 * (tgamma * (d * log2pi + log_det_sigma) + traceTerm + mahalanobisTerm);
 
   return true;
 }
@@ -1019,7 +1040,8 @@ inline arma::vec completeGradientReverseFromModelAghq(
     const arma::uvec& symmetric,
     const int npatterns = 1,
     const int ncores    = 1,
-    const bool setThreads = true) {
+    const bool setThreads = true,
+    double* llOut = nullptr) {
   const arma::uword J    = Z.n_cols;
   const arma::uword k    = Z.n_slices;
   const arma::uword pObs = M.lX.n_rows;
@@ -1042,6 +1064,8 @@ inline arma::vec completeGradientReverseFromModelAghq(
   std::vector<LMSAdjoints> threadAdj;
   threadAdj.reserve(nthreads);
   for (int t = 0; t < nthreads; ++t) threadAdj.emplace_back(M);
+
+  std::vector<double> threadLL(nthreads, 0.0);
 
   // Per-thread scratch buffers for the padded-to-pObs adjoint inputs, reused
   // across every (row, node) pair instead of allocated fresh each time (that
@@ -1073,7 +1097,7 @@ inline arma::vec completeGradientReverseFromModelAghq(
 
 #pragma omp parallel for default(none) if(!inParallel) schedule(static) \
     shared(M, Dat, idx, Z, Gamma, offset, nPat, J, k, pObs, threadAdj, Szero, \
-           threadMuBarFull, threadSigBarFull) \
+           threadMuBarFull, threadSigBarFull, threadLL) \
     reduction(||:failed)
     for (arma::uword i = 0; i < nPat; ++i) {
       const arma::uword rowIdx = offset + i;
@@ -1098,11 +1122,13 @@ inline arma::vec completeGradientReverseFromModelAghq(
 
         arma::vec muBar_i;
         arma::mat SigBar_i;
+        double llNode = 0.0;
         if (!completeLogLikScore(fc.mu.elem(idx), fc.Sigma.submat(idx, idx), y, Szero,
-                                 tg, muBar_i, SigBar_i)) {
+                                 tg, muBar_i, SigBar_i, llNode)) {
           failed = true;
           continue;
         }
+        threadLL[tid] += llNode;
 
         muBarFull.elem(idx) = muBar_i;
         SigBarFull.submat(idx, idx) = SigBar_i;
@@ -1133,6 +1159,12 @@ inline arma::vec completeGradientReverseFromModelAghq(
     if (symmetric[kk] && row[kk] != col[kk]) grad[kk] += Ablk(col[kk], row[kk]);
   }
 
+  if (llOut != nullptr) {
+    double total = 0.0;
+    for (int t = 0; t < nthreads; ++t) total += threadLL[t];
+    *llOut = total;
+  }
+
 #ifdef _OPENMP
   if (setThreads) omp_set_num_threads(oldThreads);
 #endif
@@ -1141,25 +1173,36 @@ inline arma::vec completeGradientReverseFromModelAghq(
 }
 
 
+// Returns the gradient with the complete-data log-lik (evaluated at the same
+// theta, essentially for free since it reuses the same forward pass and
+// Cholesky factors as the gradient) attached as an "ll" attribute -- lets
+// callers that need both the objective and the gradient at one theta (as
+// nlminb's fn/gr frequently do, back-to-back at an accepted point) skip a
+// separate, fully redundant completeLogLikLmsAghqCpp call.
 // [[Rcpp::export]]
-arma::vec gradLogLikLmsAghqCpp(const Rcpp::List& modelR,
-                               const arma::cube& Z,
-                               const arma::mat&  Gamma,
-                               const Rcpp::List& dataR,
-                               const Rcpp::List& colidxR,
-                               const arma::uvec& n,
-                               const arma::uvec& block,
-                               const arma::uvec& row,
-                               const arma::uvec& col,
-                               const arma::uvec& symmetric,
-                               const int npatterns = 1,
-                               const int ncores    = 1) {
+Rcpp::NumericVector gradLogLikLmsAghqCpp(const Rcpp::List& modelR,
+                                         const arma::cube& Z,
+                                         const arma::mat&  Gamma,
+                                         const Rcpp::List& dataR,
+                                         const Rcpp::List& colidxR,
+                                         const arma::uvec& n,
+                                         const arma::uvec& block,
+                                         const arma::uvec& row,
+                                         const arma::uvec& col,
+                                         const arma::uvec& symmetric,
+                                         const int npatterns = 1,
+                                         const int ncores    = 1) {
   const LMSModel M(modelR);
   const auto data   = as_vec_of_mat(dataR);
   const auto colidx = as_vec_of_uvec(colidxR);
-  return completeGradientReverseFromModelAghq(M, Z, Gamma, data, colidx, n,
-                                              block, row, col, symmetric,
-                                              npatterns, ncores, true);
+  double ll = NA_REAL;
+  const arma::vec grad = completeGradientReverseFromModelAghq(
+      M, Z, Gamma, data, colidx, n, block, row, col, symmetric,
+      npatterns, ncores, true, &ll);
+
+  Rcpp::NumericVector out = Rcpp::wrap(grad);
+  out.attr("ll") = ll;
+  return out;
 }
 
 
@@ -1176,7 +1219,8 @@ inline arma::vec completeGradientReverseFromModel(
     const arma::uvec& symmetric,
     const int npatterns = 1,
     const int ncores = 1L,
-    const bool setThreads = true) {
+    const bool setThreads = true,
+    double* llOut = nullptr) {
 
   LMSAdjoints adj(M);
   const std::size_t J = V.n_rows;
@@ -1201,9 +1245,11 @@ inline arma::vec completeGradientReverseFromModel(
   for (int t = 0; t < nthreads; ++t)
     threadAdj.emplace_back(M);
 
+  std::vector<double> threadLL(nthreads, 0.0);
+
 #pragma omp parallel for default(none) if(!inParallel) \
   shared(M, V, TGamma, MeanPatterns, CovPatterns, colidx, J, pObs, npatterns, \
-         threadAdj, inParallel) reduction(||:failed) schedule(static)
+         threadAdj, threadLL, inParallel) reduction(||:failed) schedule(static)
   for (std::size_t j = 0; j < J; j++) {
     if (arma::sum(TGamma[j]) <= DBL_MIN) continue;
 
@@ -1227,6 +1273,7 @@ inline arma::vec completeGradientReverseFromModel(
 
       arma::vec muBar_i;
       arma::mat SigBar_i;
+      double llNode = 0.0;
       const arma::uvec& idx = colidx[i];
 
       if (!completeLogLikScore(fc.mu.elem(idx),
@@ -1235,10 +1282,12 @@ inline arma::vec completeGradientReverseFromModel(
                                CovPatterns[j][i],
                                tg,
                                muBar_i,
-                               SigBar_i)) {
+                               SigBar_i,
+                               llNode)) {
         failed = true;
         continue;
       }
+      threadLL[tid] += llNode;
 
       muBarFull.elem(idx) += muBar_i;
       SigBarFull.submat(idx, idx) += SigBar_i;
@@ -1267,6 +1316,12 @@ inline arma::vec completeGradientReverseFromModel(
     grad[k] = A(row[k], col[k]);
     if (symmetric[k] && row[k] != col[k])
       grad[k] += A(col[k], row[k]);
+  }
+
+  if (llOut != nullptr) {
+    double total = 0.0;
+    for (int t = 0; t < nthreads; ++t) total += threadLL[t];
+    *llOut = total;
   }
 
 #ifdef _OPENMP
@@ -1475,9 +1530,10 @@ Rcpp::List louisRawScoresAghqCpp(const Rcpp::List& modelR,
 
         arma::vec muBar_i;
         arma::mat SigBar_i;
+        double llUnused = 0.0;
         // raw (unweighted) score: tgamma = 1, S = 0
         if (!completeLogLikScore(fc.mu.elem(idx), fc.Sigma.submat(idx, idx), y, Szero,
-                                 1.0, muBar_i, SigBar_i)) {
+                                 1.0, muBar_i, SigBar_i, llUnused)) {
           failed = true;
           continue;
         }
@@ -1678,19 +1734,22 @@ double completeLogLikLmsCpp(const Rcpp::List& modelR,
 }
 
 
+// See gradLogLikLmsAghqCpp for why the log-lik is attached as an "ll"
+// attribute (essentially free here too, from the same pooled sufficient
+// statistics already used for the gradient).
 // [[Rcpp::export]]
-arma::vec gradLogLikLmsCpp(const Rcpp::List& modelR,
-                           const Rcpp::List& P,
-                           const arma::uvec& block,
-                           const arma::uvec& row,
-                           const arma::uvec& col,
-                           const arma::uvec& symmetric,
-                           const Rcpp::List& colidxR,
-                           const arma::uvec& n,
-                           const arma::uvec& d,
-                           const int         npatterns = 1,
-                           const double      eps = 1e-6,
-                           const int         ncores = 1L) {
+Rcpp::NumericVector gradLogLikLmsCpp(const Rcpp::List& modelR,
+                                     const Rcpp::List& P,
+                                     const arma::uvec& block,
+                                     const arma::uvec& row,
+                                     const arma::uvec& col,
+                                     const arma::uvec& symmetric,
+                                     const Rcpp::List& colidxR,
+                                     const arma::uvec& n,
+                                     const arma::uvec& d,
+                                     const int         npatterns = 1,
+                                     const double      eps = 1e-6,
+                                     const int         ncores = 1L) {
   LMSModel M(modelR);
 
   const arma::mat V      = Rcpp::as<arma::mat>(P["V"]);
@@ -1699,9 +1758,14 @@ arma::vec gradLogLikLmsCpp(const Rcpp::List& modelR,
   const auto Cov         = as_vec_of_vec_of_mat(P["cov"]);
   const auto colidx      = as_vec_of_uvec(colidxR);
 
-  return completeGradientReverseFromModel(M, V, TGamma, Mean, Cov, colidx,
-                                          block, row, col, symmetric,
-                                          npatterns, ncores);
+  double ll = NA_REAL;
+  const arma::vec grad = completeGradientReverseFromModel(
+      M, V, TGamma, Mean, Cov, colidx, block, row, col, symmetric,
+      npatterns, ncores, true, &ll);
+
+  Rcpp::NumericVector out = Rcpp::wrap(grad);
+  out.attr("ll") = ll;
+  return out;
 }
 
 

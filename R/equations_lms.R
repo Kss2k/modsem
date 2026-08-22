@@ -202,6 +202,14 @@ mstepLms <- function(theta, model, P,
                      ...) {
   thetaInput <- theta
 
+  # nlminb/optim frequently call objective() and gradient() back-to-back at
+  # the identical theta (e.g. to report/verify an accepted step). Both
+  # recompute the same per-row/per-node forward pass from scratch, and the
+  # gradient call already produces the log-lik as a free byproduct (see
+  # gradLogLikLmsAghqCpp/gradLogLikLmsCpp), so cache it here and let
+  # objective() reuse it instead of a fully redundant recomputation.
+  llCache <- new.env(parent = emptyenv())
+
   gradient <- function(theta) {
     grad <- gradientCompLogLikLms(
       theta = theta,
@@ -210,6 +218,12 @@ mstepLms <- function(theta, model, P,
       sign = -1,
       epsilon = epsilon
     )
+
+    ll.g <- attr(grad, "ll")
+    if (!is.null(ll.g) && is.finite(ll.g)) {
+      llCache$theta <- theta
+      llCache$ll    <- ll.g
+    }
 
     non.finite <- !is.finite(grad)
     if (any(non.finite)) {
@@ -237,12 +251,17 @@ mstepLms <- function(theta, model, P,
   }
 
   objective <- function(theta) {
-    ll <- compLogLikLms(
-      theta = theta,
-      model = model,
-      P = P, sign = -1,
-      epsilon = epsilon
-    )
+    if (!is.null(llCache$theta) &&
+        isTRUE(all.equal(theta, llCache$theta, tolerance = 0))) {
+      ll <- llCache$ll
+    } else {
+      ll <- compLogLikLms(
+        theta = theta,
+        model = model,
+        P = P, sign = -1,
+        epsilon = epsilon
+      )
+    }
 
     if (!is.finite(ll)) .Machine$double.xmax^(1/10) else ll # optim doesn't handle Inf well
   }
@@ -451,7 +470,10 @@ gradientAllLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-6,
   if (useFDGradient) gradient <- \(...) complicatedGradientAllLogLikLms(..., FOBJECTIVE = FOBJECTIVE)
   else               gradient <- \(...) simpleGradientAllLogLikLms(..., FGRAD = FGRAD)
 
-  c(gradient(theta = theta, model = model, P = P, sign = sign, epsilon = epsilon))
+  g   <- gradient(theta = theta, model = model, P = P, sign = sign, epsilon = epsilon)
+  out <- c(g) # c() drops the "ll" attribute, so carry it over explicitly
+  attr(out, "ll") <- attr(g, "ll")
+  out
 }
 
 
@@ -516,6 +538,14 @@ simpleGradientAllLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-
   grad <- matrix(0, nrow = NROW(locations), ncol = N.FGRAD,
                  dimnames = list(locations$param, NULL))
 
+  # FGRAD may attach the complete-data log-lik at this theta as an "ll"
+  # attribute (a near-free byproduct of the gradient computation, since both
+  # reuse the same forward pass/Cholesky factors) -- accumulated here so
+  # mstepLms's objective() closure can skip a fully redundant re-evaluation
+  # when called at the same theta as the preceding gradient() call.
+  llTotal <- 0
+  llValid <- TRUE
+
   for (g in seq_len(modelR$info$n.groups)) {
     submodelR   <- modelR$models[[g]]
     locations.g <- locations[locations$group == g, , drop = FALSE]
@@ -540,6 +570,10 @@ simpleGradientAllLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-
                     eps       = epsilon,
                     ncores    = ThreadEnv$n.threads)
 
+    ll.g <- attr(grad.g, "ll")
+    if (is.null(ll.g) || !is.finite(ll.g)) llValid <- FALSE
+    else llTotal <- llTotal + ll.g
+
     grad[locations.g$param, ] <- grad.g
   }
 
@@ -562,7 +596,9 @@ simpleGradientAllLogLikLms <- function(theta, model, P, sign = -1, epsilon = 1e-
     }
   }
 
-  sign * Jacobian %*% grad
+  out <- sign * Jacobian %*% grad
+  if (llValid) attr(out, "ll") <- sign * llTotal
+  out
 }
 
 
