@@ -1,4 +1,5 @@
-expandModsemParTable <- function(parTable, ordered = NULL,
+expandModsemParTable <- function(parTable,
+                                 ordered = NULL,
                                  auto.fix.first = TRUE,
                                  orthogonal.x = FALSE,
                                  orthogonal.y = FALSE) {
@@ -114,4 +115,138 @@ removeParTableDuplicates <- function(parTable) {
 }
 
 
+STAN_TEMPLATE <- "
+data {
+%s
+}
 
+parameters {
+%s
+}
+
+transformed parameters {
+%s
+}
+
+model {
+%s
+}
+"
+
+
+buildStanSyntaxFromParTable <- function(parTable) {
+
+  inds    <- getIndicators(parTable)
+  xis     <- getXis(parTable, isLV = FALSE)
+  etas    <- getSortedEtas(parTable, isLV = FALSE)
+  ovs     <- getStructOVs(parTable)
+  lvs     <- getLVs(parTable)
+  ordered <- unique(parTable[parTable$op == "|", "lhs"])
+
+  INDICATOR_PREFIX <- "INDICATOR_"
+  DISTURBANCE_PREFIX  <- "DISTURBANCE_"
+  INTERCEPT_PREFIX <- "INTERCEPT_"
+  VAR_PREFIX <- "VARIANCE_"
+  LAMBDA_PREFIX <- "LAMBDA_"
+  LV_PREFIX <- "LATENT__"
+  COV  <- "__COVARIANCE__"
+  MSR  <- "__MEASUREMENT__"
+  INTR <- "__INTERCEPT__1"
+  REG  <- "__REGRESSION__"
+  LAB  <- "LABEL__"
+
+  DATA <- "int<lower=0> N;"
+  TRANSFORMED_DATA <- character(0L)
+  PARAMETERS <- character(0L)
+  TRANSFORMED_PARAMETERS <- character(0L)
+  MODEL <- character(0L)
+  GENERATED_QUANTITIES <- character(0L)
+
+  # WE potentially need to pre-define labels/repeated parameters here
+  isLab <- !canBeNumeric(parTable$mod)
+  # parTable[isLab, "mod"] <- paste0(LAB, parTable[isLab, "mod"])
+  labels <- unique(parTable[isLab, "mod"])
+
+  for (lab in labels) {
+    PARAMETERS <- c(PARAMETERS, sprintf("real %s;", lab))
+
+    prior.idx <- which(parTable$lhs == lab & parTable$op == ":=")
+    if (length(prior.idx)) {
+      MODEL <- c(MODEL,
+        sprintf("%s ~ %s", lab, parTable[prior.idx, "rhs"])
+      )
+    }
+  }
+
+  for (ind in inds) {
+    # parameter names
+    nm  <- paste0(INDICATOR_PREFIX, ind)
+    dnm <- paste0(DISTURBANCE_PREFIX, nm)
+    vnm <- paste0(nm, COV, dnm)
+    inm <- paste0(nm, INTR)
+
+    data.i <- paste0("array[N] real ", nm, ";")
+    par.i <- character(0L)
+    tpar.i <- character(0L)
+    model.i <- character(0L)
+
+    # Intercept
+    b0.idx <- which(parTable$op == "~1" & parTable$lhs == ind)
+
+    if (length(b0.idx) != 1 || parTable[b0.idx, "mod"] == "") {
+      par.i  <- c(par.i, paste0("real ", inm, ";"))
+
+    } else {
+      mod.i <- parTable[b0.idx, "mod"]
+      tpar.i  <- c(tpar.i, sprintf("real %s = %s;", inm, mod.i))
+    }
+
+    idx <- which(parTable$op == "=~" & parTable$rhs == ind)
+    tpar.i <- paste0(
+    )
+
+    eq <- inm
+    for (i in idx) {
+      lv.i  <- parTable[i, "lhs"]
+      mod.i <- parTable[i, "mod"]
+      msr.i <- paste0(lv.i, MSR, ind)
+
+      if (mod.i == "") par.i  <- c(par.i, sprintf("real %s;", msr.i))
+      else tpar.i  <- c(tpar.i, sprintf("real %s = %s;", inm, mod.i))
+
+      eq <- sprintf("%s + %s", eq, paste0(msr.i, "*", LV_PREFIX, lv.i))
+    }
+   
+    # no residual covariances and continous indicators
+    tpar.i <- c(tpar.i,
+      sprintf("array[N] real %s = %s - (%s);", dnm, nm, eq)
+    )
+
+    model.i <- c(model.i,
+      sprintf("%s ~ normal(0.0, sqrt(%s))", dnm, vnm)
+    )
+
+    DATA <- c(
+      DATA, paste0(data.i, collapse = "\n")
+    )
+
+    PARAMETERS <- c(
+      PARAMETERS, paste0(par.i, collapse = "\n")
+    )
+
+    TRANSFORMED_PARAMETERS <- c(
+      TRANSFORMED_PARAMETERS, paste0(tpar.i, collapse = "\n")
+    )
+
+    MODEL <- c(
+      MODEL, paste0(model.i, collapse = "\n")
+    )
+  }
+
+  sprintf(STAN_TEMPLATE,
+    paste0(DATA, collapse = "\n"),
+    paste0(PARAMETERS, collapse = "\n"),
+    paste0(TRANSFORMED_PARAMETERS, collapse = "\n"),
+    paste0(MODEL, collapse = "\n")
+  )
+}
