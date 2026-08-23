@@ -288,7 +288,7 @@ buildStanSyntaxFromParTable <- function(parTable) {
 
     for (j in idx) {
       pred <- parTable[j, "rhs"]
-      mod  <- parTable[i, "mod"]
+      mod  <- parTable[j, "mod"]
       reg  <- paste0(eta, REG, stringr::str_replace(pred, ":", MOD))
 
       if (mod == "") {
