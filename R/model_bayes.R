@@ -173,6 +173,7 @@ buildStanSyntaxFromParTable <- function(parTable) {
   TRANSFORMED_PARAMETERS <- character(0L)
   MODEL <- character(0L)
   GENERATED_QUANTITIES <- character(0L)
+  START <- vector("list", 0L)
 
   # WE potentially need to pre-define labels/repeated parameters here
   isLab <- !canBeNumeric(parTable$mod) & parTable$mod != ""
@@ -181,6 +182,7 @@ buildStanSyntaxFromParTable <- function(parTable) {
 
   for (lab in labels) {
     PARAMETERS <- c(PARAMETERS, sprintf("real %s;", lab))
+    START[[lab]] <- 0
 
     prior.idx <- which(parTable$lhs == lab & parTable$op == ":=") # use the := operator (for now)
     if (length(prior.idx)) {
@@ -209,10 +211,11 @@ buildStanSyntaxFromParTable <- function(parTable) {
 
     if (length(b0.idx) != 1 || parTable[b0.idx, "mod"] == "") {
       PARAMETERS <- c(PARAMETERS, paste0("real ", intr, ";"))
+      START[[intr]] <- 0
 
     } else {
       mod <- parTable[b0.idx, "mod"]
-      PARAMETERS <- c(TRANSFORMED_PARAMETERS,
+      TRANSFORMED_PARAMETERS <- c(TRANSFORMED_PARAMETERS,
         sprintf("real %s = %s;", intr, mod, ";")
       )
     }
@@ -236,8 +239,14 @@ buildStanSyntaxFromParTable <- function(parTable) {
     j   <- which(lvs == rhs)
 
     lower <- if (i == j) "<lower=0>" else ""
-    if (mod == "") PARAMETERS  <- c(PARAMETERS, sprintf("real%s %s;", lower, par))
-    else           PARAMETERS  <- c(PARAMETERS, sprintf("real%s %s = %s;", lower, par, par))
+    if (mod == "") {
+      PARAMETERS <- c(PARAMETERS, sprintf("real%s %s;", lower, par))
+      START[[par]] <- if (i == j) 1 else 0
+    } else {
+      TRANSFORMED_PARAMETERS  <- c(TRANSFORMED_PARAMETERS,
+        sprintf("real%s %s = %s;", lower, par, par)
+      )
+    }
 
     TRANSFORMED_PARAMETERS <- c(TRANSFORMED_PARAMETERS,
       sprintf(psiScalarTemplate, i, j, par),
@@ -281,6 +290,7 @@ buildStanSyntaxFromParTable <- function(parTable) {
 
       if (mod == "") {
         PARAMETERS <- c(PARAMETERS, sprintf("real %s;", reg))
+        START[[reg]] <- 0
       } else {
         TRANSFORMED_PARAMETERS  <- c(TRANSFORMED_PARAMETERS,
           sprintf("real %s = %s;", reg, mod)
@@ -314,6 +324,7 @@ buildStanSyntaxFromParTable <- function(parTable) {
 
     if (length(b0.idx) != 1 || parTable[b0.idx, "mod"] == "") {
       PARAMETERS  <- c(PARAMETERS, paste0("real ", inm, ";"))
+      START[[inm]] <- 0
 
     } else {
       mod <- parTable[b0.idx, "mod"]
@@ -330,6 +341,7 @@ buildStanSyntaxFromParTable <- function(parTable) {
 
     if (length(rv.idx) != 1 || parTable[rv.idx, "mod"] == "") {
       PARAMETERS <- c(PARAMETERS, paste0("real ", vnm, ";"))
+      START[[vnm]] <- 1
 
     } else {
       mod <- parTable[b0.idx, "mod"]
@@ -348,6 +360,7 @@ buildStanSyntaxFromParTable <- function(parTable) {
 
       if (mod.i == "") {
         PARAMETERS <- c(PARAMETERS, sprintf("real %s;", msr.i))
+        START[[msr.i]] <- 0.7
       } else {
         TRANSFORMED_PARAMETERS <- c(TRANSFORMED_PARAMETERS,
           sprintf("real %s = %s;", msr.i, mod.i)
@@ -367,10 +380,19 @@ buildStanSyntaxFromParTable <- function(parTable) {
     )
   }
 
-  sprintf(STAN_TEMPLATE,
+  stanCode <- sprintf(STAN_TEMPLATE,
     paste0(DATA, collapse = "\n"),
     paste0(PARAMETERS, collapse = "\n"),
     paste0(TRANSFORMED_PARAMETERS, collapse = "\n"),
     paste0(MODEL, collapse = "\n")
+  )
+
+  stanInit <- function(...) {
+    START
+  }
+
+  list(
+    stanCode = stanCode,
+    stanInit = stanInit
   )
 }
