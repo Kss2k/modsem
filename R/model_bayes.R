@@ -174,6 +174,7 @@ buildStanSyntaxFromParTable <- function(parTable) {
   MODEL <- character(0L)
   GENERATED_QUANTITIES <- character(0L)
   START <- vector("list", 0L)
+  EXCLUDE <- character(0L)
 
   # WE potentially need to pre-define labels/repeated parameters here
   isLab <- !canBeNumeric(parTable$mod) & parTable$mod != ""
@@ -199,8 +200,9 @@ buildStanSyntaxFromParTable <- function(parTable) {
 
   TRANSFORMED_PARAMETERS <- c(TRANSFORMED_PARAMETERS,
     sprintf("matrix[%d,%d] MAT__PSI = rep_matrix(0, %d, %d);", k, k, k, k),
-    sprintf("vector[%d] VEC_ZETA_MU;", k)
+    sprintf("vector[%d] VEC__ZETA__MU;", k)
   )
+  EXCLUDE <- c(EXCLUDE, "MAT__ZETA", "MAT__PSI", "VEC__ZETA__MU")
 
   for (i in seq_along(lvs)) {
     lv <- lvs[[i]]
@@ -221,7 +223,7 @@ buildStanSyntaxFromParTable <- function(parTable) {
     }
 
     TRANSFORMED_PARAMETERS <- c(TRANSFORMED_PARAMETERS,
-      sprintf("VEC_ZETA_MU[%d] = %s;", i, intr)
+      sprintf("VEC__ZETA__MU[%d] = %s;", i, intr)
     )
   }
 
@@ -256,7 +258,7 @@ buildStanSyntaxFromParTable <- function(parTable) {
   }
   
   MODEL <- c(MODEL,
-    "MAT__ZETA ~ multi_normal(VEC_ZETA_MU, MAT__PSI);"
+    "MAT__ZETA ~ multi_normal(VEC__ZETA__MU, MAT__PSI);"
   )
 
   for (ov in ovs) {
@@ -269,6 +271,7 @@ buildStanSyntaxFromParTable <- function(parTable) {
     TRANSFORMED_PARAMETERS <- c(TRANSFORMED_PARAMETERS,
       sprintf("vector[N] %s = to_vector(MAT__ZETA[:, %d]);", lxi, i)
     )
+    EXCLUDE <- c(EXCLUDE, lxi)
   }
 
   for (eta in etas) {
@@ -306,6 +309,7 @@ buildStanSyntaxFromParTable <- function(parTable) {
     TRANSFORMED_PARAMETERS <- c(TRANSFORMED_PARAMETERS,
       sprintf("vector[N] %s = %s;", leta, eq)
     )
+    EXCLUDE <- c(EXCLUDE, reta, leta)
   }
 
   for (ind in inds) {
@@ -344,7 +348,7 @@ buildStanSyntaxFromParTable <- function(parTable) {
       START[[vnm]] <- 1
 
     } else {
-      mod <- parTable[b0.idx, "mod"]
+      mod <- parTable[rv.idx, "mod"]
       TRANSFORMED_PARAMETERS  <- c(TRANSFORMED_PARAMETERS,
         sprintf("real %s = %s;", vnm, mod)
       )
@@ -374,6 +378,7 @@ buildStanSyntaxFromParTable <- function(parTable) {
     TRANSFORMED_PARAMETERS <- c(TRANSFORMED_PARAMETERS,
       sprintf("vector[N] %s = %s - (%s);", dnm, nm, eq)
     )
+    EXCLUDE <- c(EXCLUDE, dnm)
 
     MODEL <- c(MODEL,
       sprintf("%s ~ normal(0.0, sqrt(%s));", dnm, vnm)
@@ -393,6 +398,7 @@ buildStanSyntaxFromParTable <- function(parTable) {
 
   list(
     stanCode = stanCode,
-    stanInit = stanInit
+    stanInit = stanInit,
+    stanExclude = EXCLUDE
   )
 }
