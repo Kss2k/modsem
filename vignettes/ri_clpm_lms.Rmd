@@ -1,0 +1,211 @@
+---
+title: "interaction effects in random intercept cross-lagged panel models (RI-CLPMs)"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{interaction effects in random intercept cross-lagged panel models}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+EVAL_DEFAULT <- FALSE
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = EVAL_DEFAULT
+)
+```
+
+```{r setup}
+library(modsem)
+```
+Here we show an example of a random intercept cross-lagged panel model with
+a within $\times$ within interaction effect. The example below is based on
+[Testing for *Within $\times$ Within and Between $\times$ Within* Moderation Using Random Intercept Cross-Lagged Panel Models](https://www.tandfonline.com/doi/full/10.1080/10705511.2022.2096613).
+In particular, it is based on Section *8.4. Within $\times$ Within Interaction Using the Within-Person Component of a Time-Varying Moderator*,
+and the corresponding M*plus* output files on [OSF](https://osf.io/tjxrd/).
+In the original article, the Bayes estimator was used, but here we use LMS.
+The LMS approach in M*plus* integrates along four dimensions, making estimation
+quite impractical for this model. The LMS estimator in `modsem`, however, only
+has to integrate along two dimensions, making estimation viable.
+
+## Simulate Data
+```{r}
+library(mvtnorm)
+set.seed(235910)
+
+N <- 10000
+
+# Simulate between-person random intercepts
+phi <- matrix(c(
+  0.806, 0.481, 0.438,
+  0.481, 0.758, 0.469,
+  0.438, 0.469, 1.290
+), nrow = 3, byrow = TRUE)
+
+Xi <- rmvnorm(
+  N,
+  mean = c(0, 0, 0),
+  sigma = phi
+)
+
+RIemo <- Xi[, 1]
+RIper <- Xi[, 2]
+RIcon <- Xi[, 3]
+
+
+# Time 3
+psi3 <- matrix(c(
+  1.234, 0.328, 0.478,
+  0.328, 1.614, 0.427,
+  0.478, 0.427, 2.743
+), nrow = 3, byrow = TRUE)
+
+zeta3 <- rmvnorm(
+  N,
+  mean = c(0, 0, 0),
+  sigma = psi3
+)
+
+wemo_3 <- zeta3[, 1]
+wper_3 <- zeta3[, 2]
+wcon_3 <- zeta3[, 3]
+
+
+# Time 5
+psi5 <- matrix(c(
+  1.489, 0.397, 0.301,
+  0.397, 1.143, 0.202,
+  0.301, 0.202, 0.764
+), nrow = 3, byrow = TRUE)
+
+zeta5 <- rmvnorm(
+  N,
+  mean = c(0, 0, 0),
+  sigma = psi5
+)
+
+wemo_5 <- 0.142 * wemo_3 + 0.071 * wper_3 + 0.086 * wcon_3 - 0.010 * (wcon_3 * wper_3) + zeta5[,1]
+wper_5 <- 0.018 * wemo_3 + 0.100 * wper_3 + 0.050 * wcon_3 + zeta5[,2]
+wcon_5 <- -0.008 * wemo_3 + 0.006 * wper_3 + 0.105 * wcon_3 + zeta5[,3]
+
+# Time 7
+psi7 <- matrix(c(
+  1.808, 0.521, 0.475,
+  0.521, 1.287, 0.311,
+  0.475, 0.311, 0.881
+), nrow = 3, byrow = TRUE)
+
+zeta7 <- rmvnorm(
+  N,
+  mean = c(0, 0, 0),
+  sigma = psi7
+)
+
+wemo_7 <- 0.361 * wemo_5 + 0.097 * wper_5 + 0.147 * wcon_5 + 0.105 * (wcon_5 * wper_5) + zeta7[,1]
+wper_7 <- 0.030 * wemo_5 + 0.348 * wper_5 + 0.123 * wcon_5 + zeta7[,2]
+wcon_7 <- 0.074 * wemo_5 + 0.056 * wper_5 + 0.086 * wcon_5 + zeta7[,3]
+
+# Indicators/Observed Variables
+data <- data.frame(
+  emo_3 = 1.385 + RIemo + wemo_3 + rnorm(N, 0, sqrt(.200)),
+  emo_5 = 1.407 + RIemo + wemo_5 + rnorm(N, 0, sqrt(.200)),
+  emo_7 = 1.528 + RIemo + wemo_7 + rnorm(N, 0, sqrt(.200)),
+
+  per_3 = 1.563 + RIper + wper_3 + rnorm(N, 0, sqrt(.200)),
+  per_5 = 1.176 + RIper + wper_5 + rnorm(N, 0, sqrt(.200)),
+  per_7 = 1.242 + RIper + wper_7 + rnorm(N, 0, sqrt(.200)),
+
+  con_3 = 2.827 + RIcon + wcon_3 + rnorm(N, 0, sqrt(.200)),
+  con_5 = 1.517 + RIcon + wcon_5 + rnorm(N, 0, sqrt(.200)),
+  con_7 = 1.402 + RIcon + wcon_7 + rnorm(N, 0, sqrt(.200))
+)
+```
+
+## Fit The Model
+
+```{r}
+model.inp <- '
+  # Create between components (random intercepts)
+  RIemo =~ 1 * emo_3 + 1 * emo_5 + 1 * emo_7;
+  RIcon =~ 1 * con_3 + 1 * con_5 + 1 * con_7;
+
+  # Create within-person centered variables
+  wemo_3 =~ 1 * emo_3;
+  wemo_5 =~ 1 * emo_5;
+  wemo_7 =~ 1 * emo_7;
+
+  wcon_3 =~ 1 * con_3;
+  wcon_5 =~ 1 * con_5;
+  wcon_7 =~ 1 * con_7;
+
+  # Moderator also needs to be decomposed into within and between parts
+  RIper =~ 1 * per_3 + 1 * per_5 + 1 * per_7;
+
+  wper_3 =~ 1 * per_3;
+  wper_5 =~ 1 * per_5;
+  wper_7 =~ 1 * per_7;
+
+  # Constrain the measurement error variances close to zero
+  # to allow for reasonable imputation times
+  con_3 ~~ 0.2 * con_3
+  con_5 ~~ 0.2 * con_5
+  con_7 ~~ 0.2 * con_7
+  emo_3 ~~ 0.2 * emo_3
+  emo_5 ~~ 0.2 * emo_5
+  emo_7 ~~ 0.2 * emo_7
+  per_3 ~~ 0.2 * per_3
+  per_5 ~~ 0.2 * per_5
+  per_7 ~~ 0.2 * per_7
+
+  # Estimate the covariance between the random intercepts
+  RIemo ~~ RIper
+  RIemo ~~ RIcon
+  RIper ~~ RIcon
+
+  # Estimate the lagged effects between
+  # the within-person centered variables
+  wemo_7 ~ wemo_5 + wper_5 + wcon_5
+  wper_7 ~ wemo_5 + wper_5 + wcon_5
+  wcon_7 ~ wemo_5 + wper_5 + wcon_5
+
+  wemo_5 ~ wemo_3 + wper_3 + wcon_3
+  wper_5 ~ wemo_3 + wper_3 + wcon_3
+  wcon_5 ~ wemo_3 + wper_3 + wcon_3
+
+  # Specify interaction terms between within-person centred
+  # conduct problems and the within-person centered peer problems
+  # predict within-person centred emotional problems with interaction
+  wemo_7 ~ wcon_5:wper_5
+  wemo_5 ~ wcon_3:wper_3
+
+  # Estimate the covariance between the within-person
+  # components at the first wave
+  wemo_3 ~~ wper_3
+  wemo_3 ~~ wcon_3
+  wper_3 ~~ wcon_3
+
+  # Estimate the covariances between the residuals of
+  # the within-person components (the innovations)
+  wemo_5 ~~ wper_5
+  wemo_5 ~~ wcon_5
+  wper_5 ~~ wcon_5
+
+  wemo_7 ~~ wper_7
+  wemo_7 ~~ wcon_7
+  wper_7 ~~ wcon_7
+'
+
+fit.lms <- modsem(
+  model.syntax = model.inp,
+  data              = data,
+  method            = "lms",
+  nodes             = 32,
+  optimize          = FALSE, # we're currently unable to optimize starting parameters here
+  orthogonal.x      = TRUE,  # make sure the model is identifiable
+  orthogonal.y      = TRUE,  # not strictly necessary for this model in particular
+  auto.split.syntax = TRUE   # allow eta x eta interactions
+)
+
+summary(fit.lms)
+```
