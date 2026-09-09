@@ -21,7 +21,7 @@ getCharsLine <- function(line, i = 1) {
 
 getLines <- function(syntax) {
   operators <- c("=~", "<~", "<=", ">=", "==", ":=", "~~", "~",
-                 "+", "*", "<-", "->", "<", ">", "-", "|", ",")
+                 "+", "*", "<-", "->", "<", ">", "-", "|", ",", ":~")
   for (op in operators) {
     pattern <- paste0("\\", op, "\\s*[\n|;]")
     replace <- paste0(op, " ")
@@ -175,6 +175,7 @@ fitsToken.LavOperator <- function(token, nextChar) {
          ">=" = TRUE,
          "<=" = TRUE,
          "<~" = TRUE,
+         ":~" = TRUE,
          FALSE)
 }
 
@@ -227,6 +228,7 @@ assignSubClass.LavOperator <- function(token) {
           "-"  = {subClass <- "LavSubtract";    priority <- 3},
           "|"  = {subClass <- "LavThreshold";   priority <- 0},
           "<~" = {subClass <- "LavMeasure";     priority <- 0},
+          ":~" = {subClass <- "PlsPrior";       priority <- 0},
           mod_msg_stop(
             paste0("Unrecognized operator: ", highlightErrorToken(token)),
             only.format.header = TRUE
@@ -446,6 +448,7 @@ is.MathOperator <- function(token) {
          "<" = TRUE,
          ">" = TRUE,
          ":=" = TRUE,
+         ":~" = TRUE,
          FALSE)
 }
 
