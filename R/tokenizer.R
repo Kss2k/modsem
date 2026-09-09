@@ -98,7 +98,7 @@ initializeToken <- function(char, pos, line) {
   } else if (grepl("[[:alnum:]]", char) || (char == "." & nextCharIsNum)) {
     type <- "LavNumeric"
     priority <- 10
-  } else if (grepl('\\"' , char)) {
+  } else if (char %in% c("'", '"')) {
     type <- "LavString"
     priority <- 10
   } else {
@@ -149,12 +149,11 @@ fitsToken.LavName <- function(token, nextChar) {
 #' @export
 fitsToken.LavString <- function(token, nextChar) {
   mod_stopif(length(nextChar) != 1, paste0("Wrong length of nextChar", nextChar))
-  # if object name ends with ( it is a function,
-  # and next char belongs to a new object
-  if (grepl('\\"$', token)) {
-    return(FALSE)
-  }
-  grepl("[[:graph:][:space:]]", nextChar)[[1]]
+
+  c0 <- substr(token, 1, 1)
+  ok0 <- c0 %in% c('"', "'")
+
+  if (length(token) <= 1) ok0 else ok0 && c0 != cn
 }
 
 
