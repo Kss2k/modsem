@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">modsem</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.22</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.23</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -85,7 +85,7 @@
     
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://modsem.org" class="external-link">modsem</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; This is modsem (1.0.22). Please report any bugs!</span></span></code></pre></div>
+<span><span class="co">#&gt; This is modsem (1.0.23). Please report any bugs!</span></span></code></pre></div>
 <p>Here we show an example of a random intercept cross-lagged panel
 model with a within
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>×</mo><annotation encoding="application/x-tex">\times</annotation></semantics></math>
@@ -289,7 +289,7 @@ viable.</p>
 <span><span class="co">#&gt;    Unable to retrieve fit measures for lavaan model! Message: no applicable </span></span>
 <span><span class="co">#&gt;    method for 'fitMeasures' applied to an object of class "NULL"</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (1.0.22) ended normally after 72 iterations</span></span>
+<span><span class="co">#&gt; modsem (1.0.23) ended normally after 75 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                        LMS</span></span>
 <span><span class="co">#&gt;   Optimization method                       EMA-NLMINB</span></span>
@@ -342,7 +342,7 @@ viable.</p>
 <span><span class="co">#&gt;   wper_5                                         0.000</span></span>
 <span><span class="co">#&gt;   wcon_5                                        -0.002</span></span>
 <span><span class="co">#&gt;   wemo_5                                        -0.002</span></span>
-<span><span class="co">#&gt;   wcon_7                                        -0.004</span></span>
+<span><span class="co">#&gt;   wcon_7                                        -0.003</span></span>
 <span><span class="co">#&gt;   wper_7                                         0.000</span></span>
 <span><span class="co">#&gt;   wemo_7                                         0.006</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -387,54 +387,54 @@ viable.</p>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   wcon_5 ~      </span></span>
-<span><span class="co">#&gt;     wemo_3         -0.009      0.020   -0.439    0.661</span></span>
-<span><span class="co">#&gt;     wcon_3          0.120      0.013    8.962    0.000</span></span>
-<span><span class="co">#&gt;     wper_3         -0.018      0.015   -1.169    0.242</span></span>
+<span><span class="co">#&gt;     wemo_3         -0.009      0.020   -0.446    0.655</span></span>
+<span><span class="co">#&gt;     wcon_3          0.120      0.013    8.963    0.000</span></span>
+<span><span class="co">#&gt;     wper_3         -0.018      0.016   -1.169    0.242</span></span>
 <span><span class="co">#&gt;   wper_5 ~      </span></span>
-<span><span class="co">#&gt;     wemo_3          0.007      0.025    0.281    0.778</span></span>
-<span><span class="co">#&gt;     wcon_3          0.050      0.013    4.017    0.000</span></span>
-<span><span class="co">#&gt;     wper_3          0.115      0.023    5.032    0.000</span></span>
+<span><span class="co">#&gt;     wemo_3          0.007      0.025    0.273    0.785</span></span>
+<span><span class="co">#&gt;     wcon_3          0.050      0.013    4.021    0.000</span></span>
+<span><span class="co">#&gt;     wper_3          0.115      0.023    5.034    0.000</span></span>
 <span><span class="co">#&gt;   wemo_7 ~      </span></span>
-<span><span class="co">#&gt;     wcon_5          0.173      0.031    5.649    0.000</span></span>
-<span><span class="co">#&gt;     wper_5          0.060      0.022    2.723    0.006</span></span>
-<span><span class="co">#&gt;     wemo_5          0.370      0.021   17.840    0.000</span></span>
+<span><span class="co">#&gt;     wcon_5          0.173      0.031    5.651    0.000</span></span>
+<span><span class="co">#&gt;     wper_5          0.060      0.022    2.722    0.006</span></span>
+<span><span class="co">#&gt;     wemo_5          0.370      0.021   17.835    0.000</span></span>
 <span><span class="co">#&gt;     wcn_5:wp_5      0.112      0.024    4.696    0.000</span></span>
 <span><span class="co">#&gt;   wper_7 ~      </span></span>
-<span><span class="co">#&gt;     wcon_5          0.146      0.029    5.087    0.000</span></span>
-<span><span class="co">#&gt;     wper_5          0.345      0.023   14.705    0.000</span></span>
-<span><span class="co">#&gt;     wemo_5          0.025      0.017    1.463    0.143</span></span>
+<span><span class="co">#&gt;     wcon_5          0.146      0.029    5.089    0.000</span></span>
+<span><span class="co">#&gt;     wper_5          0.345      0.023   14.710    0.000</span></span>
+<span><span class="co">#&gt;     wemo_5          0.025      0.017    1.458    0.145</span></span>
 <span><span class="co">#&gt;   wcon_7 ~      </span></span>
-<span><span class="co">#&gt;     wcon_5          0.087      0.047    1.862    0.063</span></span>
-<span><span class="co">#&gt;     wper_5          0.076      0.024    3.144    0.002</span></span>
-<span><span class="co">#&gt;     wemo_5          0.076      0.020    3.834    0.000</span></span>
+<span><span class="co">#&gt;     wcon_5          0.087      0.047    1.866    0.062</span></span>
+<span><span class="co">#&gt;     wper_5          0.076      0.024    3.146    0.002</span></span>
+<span><span class="co">#&gt;     wemo_5          0.076      0.020    3.830    0.000</span></span>
 <span><span class="co">#&gt;   wemo_5 ~      </span></span>
-<span><span class="co">#&gt;     wemo_3          0.158      0.033    4.826    0.000</span></span>
-<span><span class="co">#&gt;     wcon_3          0.097      0.013    7.481    0.000</span></span>
-<span><span class="co">#&gt;     wper_3          0.058      0.019    2.960    0.003</span></span>
-<span><span class="co">#&gt;     wcn_3:wp_3     -0.003      0.008   -0.327    0.744</span></span>
+<span><span class="co">#&gt;     wemo_3          0.158      0.033    4.814    0.000</span></span>
+<span><span class="co">#&gt;     wcon_3          0.097      0.013    7.485    0.000</span></span>
+<span><span class="co">#&gt;     wper_3          0.058      0.020    2.956    0.003</span></span>
+<span><span class="co">#&gt;     wcn_3:wp_3     -0.003      0.008   -0.326    0.744</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Intercepts:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;    .con_5           1.525      0.015  100.223    0.000</span></span>
-<span><span class="co">#&gt;    .con_3           2.815      0.021  136.997    0.000</span></span>
-<span><span class="co">#&gt;    .emo_3           1.371      0.015   91.978    0.000</span></span>
-<span><span class="co">#&gt;    .emo_5           1.393      0.016   84.913    0.000</span></span>
-<span><span class="co">#&gt;    .emo_7           1.518      0.019   80.404    0.000</span></span>
-<span><span class="co">#&gt;    .con_7           1.383      0.015   89.842    0.000</span></span>
-<span><span class="co">#&gt;    .per_3           1.562      0.016   98.151    0.000</span></span>
+<span><span class="co">#&gt;    .con_5           1.525      0.015  100.225    0.000</span></span>
+<span><span class="co">#&gt;    .con_3           2.815      0.021  136.999    0.000</span></span>
+<span><span class="co">#&gt;    .emo_3           1.371      0.015   91.979    0.000</span></span>
+<span><span class="co">#&gt;    .emo_5           1.393      0.016   84.917    0.000</span></span>
+<span><span class="co">#&gt;    .emo_7           1.518      0.019   80.405    0.000</span></span>
+<span><span class="co">#&gt;    .con_7           1.383      0.015   89.843    0.000</span></span>
+<span><span class="co">#&gt;    .per_3           1.562      0.016   98.154    0.000</span></span>
 <span><span class="co">#&gt;    .per_5           1.176      0.015   80.542    0.000</span></span>
-<span><span class="co">#&gt;    .per_7           1.226      0.015   79.216    0.000</span></span>
+<span><span class="co">#&gt;    .per_7           1.226      0.015   79.217    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   RIemo ~~      </span></span>
-<span><span class="co">#&gt;     RIcon           0.414      0.028   14.720    0.000</span></span>
-<span><span class="co">#&gt;     RIper           0.499      0.032   15.769    0.000</span></span>
+<span><span class="co">#&gt;     RIcon           0.414      0.028   14.727    0.000</span></span>
+<span><span class="co">#&gt;     RIper           0.499      0.032   15.780    0.000</span></span>
 <span><span class="co">#&gt;   RIcon ~~      </span></span>
-<span><span class="co">#&gt;     RIper           0.434      0.028   15.669    0.000</span></span>
+<span><span class="co">#&gt;     RIper           0.434      0.028   15.667    0.000</span></span>
 <span><span class="co">#&gt;   wemo_3 ~~     </span></span>
-<span><span class="co">#&gt;     wcon_3          0.499      0.033   14.961    0.000</span></span>
-<span><span class="co">#&gt;     wper_3          0.316      0.034    9.273    0.000</span></span>
+<span><span class="co">#&gt;     wcon_3          0.499      0.033   14.959    0.000</span></span>
+<span><span class="co">#&gt;     wper_3          0.316      0.034    9.268    0.000</span></span>
 <span><span class="co">#&gt;   wper_3 ~~     </span></span>
 <span><span class="co">#&gt;     wcon_3          0.438      0.034   12.803    0.000</span></span>
 <span><span class="co">#&gt;  .wper_5 ~~     </span></span>
@@ -442,11 +442,11 @@ viable.</p>
 <span><span class="co">#&gt;  .wper_7 ~~     </span></span>
 <span><span class="co">#&gt;    .wemo_7          0.483      0.021   23.308    0.000</span></span>
 <span><span class="co">#&gt;  .wcon_7 ~~     </span></span>
-<span><span class="co">#&gt;    .wemo_7          0.488      0.022   22.206    0.000</span></span>
-<span><span class="co">#&gt;    .wper_7          0.318      0.020   15.851    0.000</span></span>
+<span><span class="co">#&gt;    .wemo_7          0.488      0.022   22.209    0.000</span></span>
+<span><span class="co">#&gt;    .wper_7          0.318      0.020   15.853    0.000</span></span>
 <span><span class="co">#&gt;  .wemo_5 ~~     </span></span>
-<span><span class="co">#&gt;    .wcon_5          0.334      0.028   12.060    0.000</span></span>
-<span><span class="co">#&gt;    .wper_5          0.419      0.029   14.284    0.000</span></span>
+<span><span class="co">#&gt;    .wcon_5          0.334      0.028   12.054    0.000</span></span>
+<span><span class="co">#&gt;    .wper_5          0.419      0.029   14.274    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
@@ -459,18 +459,18 @@ viable.</p>
 <span><span class="co">#&gt;    .per_3           0.200                             </span></span>
 <span><span class="co">#&gt;    .per_5           0.200                             </span></span>
 <span><span class="co">#&gt;    .per_7           0.200                             </span></span>
-<span><span class="co">#&gt;     RIemo           0.806      0.045   17.980    0.000</span></span>
-<span><span class="co">#&gt;     RIcon           1.267      0.043   29.176    0.000</span></span>
-<span><span class="co">#&gt;     wemo_3          1.217      0.047   25.795    0.000</span></span>
-<span><span class="co">#&gt;     wcon_3          2.756      0.054   50.871    0.000</span></span>
+<span><span class="co">#&gt;     RIemo           0.807      0.045   17.998    0.000</span></span>
+<span><span class="co">#&gt;     RIcon           1.267      0.043   29.171    0.000</span></span>
+<span><span class="co">#&gt;     wemo_3          1.216      0.047   25.797    0.000</span></span>
+<span><span class="co">#&gt;     wcon_3          2.756      0.054   50.866    0.000</span></span>
 <span><span class="co">#&gt;     RIper           0.746      0.039   19.182    0.000</span></span>
-<span><span class="co">#&gt;     wper_3          1.587      0.045   35.270    0.000</span></span>
+<span><span class="co">#&gt;     wper_3          1.587      0.045   35.271    0.000</span></span>
 <span><span class="co">#&gt;    .wcon_5          0.810      0.042   19.402    0.000</span></span>
-<span><span class="co">#&gt;    .wper_5          1.152      0.039   29.686    0.000</span></span>
-<span><span class="co">#&gt;    .wemo_7          1.797      0.032   55.711    0.000</span></span>
-<span><span class="co">#&gt;    .wper_7          1.252      0.025   49.724    0.000</span></span>
-<span><span class="co">#&gt;    .wcon_7          0.864      0.035   24.755    0.000</span></span>
-<span><span class="co">#&gt;    .wemo_5          1.466      0.041   35.869    0.000</span></span></code></pre></div>
+<span><span class="co">#&gt;    .wper_5          1.153      0.039   29.687    0.000</span></span>
+<span><span class="co">#&gt;    .wemo_7          1.797      0.032   55.713    0.000</span></span>
+<span><span class="co">#&gt;    .wper_7          1.252      0.025   49.726    0.000</span></span>
+<span><span class="co">#&gt;    .wcon_7          0.864      0.035   24.763    0.000</span></span>
+<span><span class="co">#&gt;    .wemo_5          1.466      0.041   35.850    0.000</span></span></code></pre></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
