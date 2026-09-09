@@ -62,6 +62,11 @@ summarize_partable <- function(parTable,
     z       = "z.value"
   )
 
+  standard.cols <- c("lhs", "op", "rhs", "label", "est", 
+                     "std.error", "p.value", "z.value",
+                     "ci.lower", "ci.upper")
+  extra.cols <- setdiff(colnames(parTable), standard.cols)
+
   width.out <- getWidthPrintedParTable(
     parTable    = parTable,
     scientific  = scientific,
@@ -90,7 +95,8 @@ summarize_partable <- function(parTable,
     thresholds  = thresholds,
     width.out   = width.out,
     info.names  = info.names,
-    info.values = info.values
+    info.values = info.values,
+    extra.cols  = extra.cols
   )
 
   class(out) <- c("list", "modsem_partable_summary")
@@ -122,6 +128,7 @@ print.modsem_partable_summary <- function(x, ...) {
     covariances = x$covariances,
     intercepts  = x$intercepts,
     variances   = x$variances,
+    extra.cols  = x$extra.cols,
     thresholds  = x$thresholds
   )
 }
