@@ -48,6 +48,25 @@ evalToken.LavName <- function(token, lhs, rhs) {
 
 
 #' @export
+evalToken.LavString <- function(token, lhs, rhs) {
+  mod_stopif(is.LavToken(rhs),
+    "Unexpected token:\n",
+    highlightErrorToken(rhs),
+    only.format.header = TRUE
+  )
+
+  mod_stopif(is.LavToken(lhs),
+    "Unexpected token:\n",
+    highlightErrorToken(lhs),
+    only.format.header = TRUE
+  )
+
+  n <- nchar(token)
+  if (n > 2) substr(token, 2, n-1) else ""
+}
+
+
+#' @export
 evalToken.LavNumeric <- function(token, lhs, rhs) {
   mod_stopif(is.LavToken(rhs),
     "Unexpected token:\n",
