@@ -150,10 +150,12 @@ fitsToken.LavName <- function(token, nextChar) {
 fitsToken.LavString <- function(token, nextChar) {
   mod_stopif(length(nextChar) != 1, paste0("Wrong length of nextChar", nextChar))
 
+  n <- nchar(token)
   c0 <- substr(token, 1, 1)
+  cn <- substr(token, n, n)
   ok0 <- c0 %in% c('"', "'")
 
-  if (length(token) <= 1) ok0 else ok0 && c0 != cn
+  if (n <= 1) ok0 else ok0 && c0 != cn
 }
 
 
