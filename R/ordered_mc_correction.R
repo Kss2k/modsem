@@ -17,8 +17,6 @@ modsemOrderedMCCorrection <- function(model.syntax,
                                       ordered.polyak.juditsky = TRUE,
                                       ordered.pj.extrapolate = TRUE,
                                       ordered.fn.args = list(),
-                                      ordered.se = c("mixed", "delta", "penalized", "naive"),
-                                      ordered.se.penalty = 0.5,
                                       ordered.delta.reps = ordered.mc.reps,
                                       ordered.delta.epsilon = 1e-2,
                                       ordered.boot.reps = 1000L,
@@ -31,7 +29,6 @@ modsemOrderedMCCorrection <- function(model.syntax,
                                       mean.observed = NULL, # capture
                                       ...) {
   method <- tolower(method)
-  ordered.se <- match.arg(ordered.se)
   mod_stopif(
     !method %in% c("lms", "qml"),
     "MC ordered correction is only available for LMS and QML."
@@ -42,9 +39,9 @@ modsemOrderedMCCorrection <- function(model.syntax,
   if (is.null(calc.se))
     calc.se <- TRUE
   if (is.null(ordered.mc.reps))
-    ordered.mc.reps <- max(NROW(data), 2000L)
+    ordered.mc.reps <- max(NROW(data), 10000L)
   if (is.null(ordered.delta.reps))
-    ordered.delta.reps <- max(ordered.mc.reps, 10000L)
+    ordered.delta.reps <- max(ordered.mc.reps, 20000L)
 
   ordered.mc.reps <- as.integer(ordered.mc.reps)
   ordered.delta.reps <- as.integer(ordered.delta.reps)
@@ -183,175 +180,62 @@ modsemOrderedMCCorrection <- function(model.syntax,
   vcov.free <- NULL
   type.se <- if (isTRUE(calc.se)) fit0$type.se else "none"
 
-  naive.se.label   <- "naive"
-  penalized.se.label <- "penalized"
-  delta.se.label   <- "mc-delta"
-  mixed.se.label   <- "mixed[delta|penalized]"
-
   if (isTRUE(calc.se)) {
     vcov.free <- std.info$vcov.free
 
     if (!is.null(vcov.free) &&
         all(dim(vcov.free) == c(length(theta.mc), length(theta.mc)))) {
 
-      if (identical(ordered.se, "delta")) {
-        if (verbose)
-          mod_msg_note("Calculating MC ordered delta-method standard errors.")
+      if (verbose)
+        mod_msg_note("Calculating MC ordered delta-method standard errors.")
 
-        vcov.free <- tryCatch({
-          delta.seed <- ordered.rng.seed
+      vcov.free <- tryCatch({
+        delta.seed <- ordered.rng.seed
 
-          if (is.null(delta.seed)) {
-            delta.seed <- floor(stats::runif(1L, min = 1, max = 9999999))
+        if (is.null(delta.seed)) {
+          delta.seed <- floor(stats::runif(1L, min = 1, max = 9999999))
 
-            if (verbose)
-              mod_msg_note(sprintf("Using fixed MC ordered delta seed %i.", delta.seed))
-          }
+          if (verbose)
+            mod_msg_note(sprintf("Using fixed MC ordered delta seed %i.", delta.seed))
+        }
 
-          vcov.delta <- mcAlignVcov(vcov.free, labels = names(theta.mc))
+        vcov.delta <- mcAlignVcov(vcov.free, labels = names(theta.mc))
 
-          H <- mcDeltaJacobian(
-            p = theta.mc,
-            f = f,
-            reps = ordered.delta.reps,
-            seed = delta.seed,
-            epsilon = ordered.delta.epsilon,
-            verbose = verbose
-          )
-
-          H.inv <- mcStableInverse(H)
-          V <- H.inv %*% vcov.delta %*% t(H.inv)
-          V <- mcStableVcov(V)
-
-          dimnames(V) <- list(names(theta.mc), names(theta.mc))
-          attr(V, "delta.jacobian") <- H
-          attr(V, "delta.seed") <- delta.seed
-          attr(V, "delta.inverse.method") <- attr(H.inv, "method")
-          attr(V, "delta.condition") <- attr(H.inv, "condition")
-          attr(V, "delta.psd.adjusted") <- attr(V, "psd.adjusted")
-
-          # `tryCatch()` evaluates this expression directly in the function
-          # frame, so a plain `<-` hits the local `type.se`; `<<-` would not.
-          type.se <- delta.se.label
-
-          V
-
-        }, error = function(e) {
-          mod_msg_warn(paste0(
-            "Delta-method MC correction failed; using ordered MC penalized ",
-            "standard errors instead. Message: ", conditionMessage(e)
-          ))
-
-          penalized <- mcOrderedPenaltyVcov(
-            theta.mc = theta.mc,
-            theta0 = theta0,
-            vcov.free = std.info$vcov.free,
-            lambda = ordered.se.penalty
-          )
-
-          type.se <<- penalized.se.label
-          penalized
-        })
-
-      } else if (identical(ordered.se, "mixed")) {
-        if (verbose)
-          mod_msg_note("Calculating MC ordered mixed standard errors.")
-
-        vcov.free <- tryCatch({
-          ids.struct <- intersect(mcStructuralStateIds(std.info), names(theta.mc))
-          mod_stopif(!length(ids.struct),
-                     "No structural path coefficients found.")
-
-          delta.seed <- ordered.rng.seed
-
-          if (is.null(delta.seed)) {
-            delta.seed <- floor(stats::runif(1L, min = 1, max = 9999999))
-
-            if (verbose)
-              mod_msg_note(sprintf("Using fixed MC ordered delta seed %i.", delta.seed))
-          }
-
-          vcov.delta <- mcAlignVcov(vcov.free, labels = names(theta.mc))
-
-          H <- mcDeltaJacobian(
-            p = theta.mc,
-            f = f,
-            reps = ordered.delta.reps,
-            seed = delta.seed,
-            epsilon = ordered.delta.epsilon,
-            verbose = verbose,
-            select = ids.struct
-          )
-
-          H.inv <- mcStableInverse(H)
-          V.struct <- H.inv %*%
-            vcov.delta[ids.struct, ids.struct, drop = FALSE] %*% t(H.inv)
-
-          V <- mcOrderedPenaltyVcov(
-            theta.mc = theta.mc,
-            theta0 = theta0,
-            vcov.free = std.info$vcov.free,
-            lambda = ordered.se.penalty
-          )
-
-          V <- mcAlignVcov(V, labels = names(theta.mc))
-          V[ids.struct, ids.struct] <- V.struct
-          V <- mcStableVcov(V)
-
-          dimnames(V) <- list(names(theta.mc), names(theta.mc))
-          attr(V, "delta.jacobian") <- H
-          attr(V, "delta.seed") <- delta.seed
-          attr(V, "delta.inverse.method") <- attr(H.inv, "method")
-          attr(V, "delta.condition") <- attr(H.inv, "condition")
-          attr(V, "delta.parameters") <- ids.struct
-          attr(V, "delta.psd.adjusted") <- attr(V, "psd.adjusted")
-
-          type.se <- mixed.se.label
-
-          V
-
-        }, error = function(e) {
-          mod_msg_warn(paste0(
-            "Mixed delta-method MC correction failed; using ordered MC penalized ",
-            "standard errors instead. Message: ", conditionMessage(e)
-          ))
-
-          penalized <- mcOrderedPenaltyVcov(
-            theta.mc = theta.mc,
-            theta0 = theta0,
-            vcov.free = std.info$vcov.free,
-            lambda = ordered.se.penalty
-          )
-
-          type.se <<- penalized.se.label
-          penalized
-        })
-
-      } else if (identical(ordered.se, "naive")) {
-        if (verbose)
-          mod_msg_note("Using naive standard errors.")
-
-        vcov.free <- mcOrderedNaiveScalingVcov(
-          theta.mc = theta.mc,
-          theta0 = theta0,
-          vcov.free = vcov.free
+        H <- mcDeltaJacobian(
+          p = theta.mc,
+          f = f,
+          reps = ordered.delta.reps,
+          seed = delta.seed,
+          epsilon = ordered.delta.epsilon,
+          verbose = verbose
         )
 
-        type.se <- naive.se.label
+        H.inv <- mcStableInverse(H)
+        V <- H.inv %*% vcov.delta %*% t(H.inv)
+        V <- mcStableVcov(V)
 
-      } else if (identical(ordered.se, "penalized")) {
-        if (verbose)
-          mod_msg_note("Using penalized standard errors.")
+        dimnames(V) <- list(names(theta.mc), names(theta.mc))
+        attr(V, "delta.jacobian") <- H
+        attr(V, "delta.seed") <- delta.seed
+        attr(V, "delta.inverse.method") <- attr(H.inv, "method")
+        attr(V, "delta.condition") <- attr(H.inv, "condition")
+        attr(V, "delta.psd.adjusted") <- attr(V, "psd.adjusted")
 
-        vcov.free <- mcOrderedPenaltyVcov(
-          theta.mc = theta.mc,
-          theta0 = theta0,
-          vcov.free = vcov.free,
-          lambda = ordered.se.penalty
-        )
+        # `tryCatch()` evaluates this expression directly in the function
+        # frame, so a plain `<-` hits the local `type.se`; `<<-` would not.
+        type.se <- "mc-delta"
 
-        type.se <- penalized.se.label
-      }
+        V
+
+      }, error = function(e) {
+        mod_msg_warn(paste0(
+          "Delta-method MC correction failed; no standard errors are reported. ",
+          "Message: ", conditionMessage(e)
+        ))
+
+        type.se <<- "none"
+        NULL
+      })
     }
   }
 
@@ -415,8 +299,6 @@ modsemOrderedMCCorrection <- function(model.syntax,
   fit.out$args$ordered.polyak.juditsky <- ordered.polyak.juditsky
   fit.out$args$ordered.pj.extrapolate <- ordered.pj.extrapolate
   fit.out$args$ordered.fn.args <- ordered.fn.args
-  fit.out$args$ordered.se <- ordered.se
-  fit.out$args$ordered.se.penalty <- ordered.se.penalty
   fit.out$args$ordered.delta.reps <- ordered.delta.reps
   fit.out$args$ordered.delta.epsilon <- ordered.delta.epsilon
   fit.out$args$ordered.boot.reps <- ordered.boot.reps
@@ -772,16 +654,16 @@ mcGetConvergencePoints <- function(history) {
 
 
 mcDeltaJacobian <- function(p, f, reps, seed, epsilon = 1e-3,
-                            verbose = interactive(), select = NULL) {
-  select <- select %||% names(p)
-  k <- length(select)
+                            verbose = interactive()) {
+  ids <- names(p)
+  k <- length(ids)
   J <- matrix(NA_real_, nrow = k, ncol = k,
-              dimnames = list(select, select))
+              dimnames = list(ids, ids))
 
   for (j in seq_len(k)) {
     if (verbose) printf("\rCalculating Jacobian %d/%d...", j, k)
 
-    id <- select[[j]]
+    id <- ids[[j]]
     step <- epsilon * max(1, abs(p[[id]]))
     p.plus <- p
     p.minus <- p
@@ -794,7 +676,7 @@ mcDeltaJacobian <- function(p, f, reps, seed, epsilon = 1e-3,
     if (!all(is.finite(f.plus)) || !all(is.finite(f.minus)))
       mod_msg_stop("Non-finite finite-difference function value.")
 
-    J[, j] <- (f.plus[select] - f.minus[select]) / (2 * step)
+    J[, j] <- (f.plus[ids] - f.minus[ids]) / (2 * step)
   }
 
   if (verbose)
@@ -804,13 +686,6 @@ mcDeltaJacobian <- function(p, f, reps, seed, epsilon = 1e-3,
     mod_msg_stop("Non-finite finite-difference Jacobian.")
 
   J
-}
-
-
-mcStructuralStateIds <- function(std.info) {
-  parTable <- std.info$template
-  keep <- parTable$op == "~" & parTable$rhs != "1"
-  unique(parTable$.state.id[keep])
 }
 
 
@@ -888,46 +763,6 @@ mcStableVcov <- function(V, eigen.tol = .Machine$double.eps^0.5) {
   attr(V, "psd.adjusted") <- adjusted
   attr(V, "psd.materially.adjusted") <- materially.adjusted
   V
-}
-
-
-mcOrderedNaiveScalingVcov <- function(theta.mc, theta0, vcov.free,
-                                      eps = .Machine$double.eps^0.5) {
-  if (is.null(vcov.free)) return(NULL)
-
-  ids <- intersect(names(theta.mc), intersect(names(theta0), rownames(vcov.free)))
-  if (!length(ids)) return(vcov.free)
-
-  scale <- rep(1, length(ids))
-  names(scale) <- ids
-
-  denom <- theta0[ids]
-  numer <- theta.mc[ids]
-  ok <- is.finite(denom) & is.finite(numer) & abs(denom) > eps
-  scale[ok] <- numer[ok] / denom[ok]
-
-  D <- diag(scale, nrow = length(scale))
-  dimnames(D) <- list(ids, ids)
-  V <- vcov.free[ids, ids, drop = FALSE]
-  V <- D %*% V %*% D
-  V <- 0.5 * (V + t(V))
-  dimnames(V) <- list(ids, ids)
-  expandVCOV(V, labels = rownames(vcov.free))
-}
-
-
-mcOrderedPenaltyVcov <- function(theta.mc, theta0, vcov.free, lambda = 1) {
-  if (is.null(vcov.free)) return(NULL)
-
-  ids <- intersect(names(theta.mc), intersect(names(theta0), rownames(vcov.free)))
-  if (!length(ids)) return(vcov.free)
-
-  d <- theta.mc[ids] - theta0[ids]
-  V <- vcov.free[ids, ids, drop = FALSE]
-  V <- V + lambda * diag(d^2, nrow = length(d))
-  V <- 0.5 * (V + t(V))
-  dimnames(V) <- list(ids, ids)
-  expandVCOV(V, labels = rownames(vcov.free))
 }
 
 
