@@ -46,6 +46,9 @@
 #'   be created by combining \code{x} and \code{z} with a colon (e.g., \code{"x:z"}).
 #'   Some backends may remove or alter the colon symbol, so the function tries to
 #'   account for that internally.
+#' @param check.quadratic Logical. If \code{TRUE} (default), \code{x == z} is taken to
+#'   mean that \code{x} moderates itself, and the model is treated as quadratic in
+#'   \code{x} (\code{vals_z} is then ignored).
 #'
 #' @param ... Additional arguments passed to lower-level functions or other internal
 #'   helpers.
@@ -126,9 +129,19 @@ simple_slopes <- function(x,
                           relative_h0 = TRUE,
                           standardized = FALSE,
                           xz = NULL,
+                          check.quadratic = TRUE,
                           ...) {
-  mod_stopif(!isModsemObject(model) && !isLavaanObject(model), paste0("model must be of class ",
-         "'modsem_pi', 'modsem_da', 'modsem_mplus' or 'lavaan'"))
+  mod_stopif(!isModsemObject(model) && !isLavaanObject(model),
+    "model must be of class", "'modsem_pi', 'modsem_da', 'modsem_mplus' or 'lavaan'"
+  )
+
+  quadratic <- check.quadratic && identical(x, z)
+
+  if (quadratic)
+    mod_msg_note(
+      "`x` seems to moderate itself, treating the model as quadratic in `x`.",
+      "To disable this behaviour, pass `check.quadratic=FALSE`."
+    )
 
   if (standardized) {
     parTable <- standardized_estimates(model, correction = TRUE)
@@ -153,7 +166,8 @@ simple_slopes <- function(x,
     out[[label]] <- simpleSlopesGroup(
       x = x, z = z, y = y, parTable = parTable.g, model = model, vals_x = vals_x,
       vals_z = vals_z, rescale = rescale, ci_width = ci_width, ci_type = ci_type,
-      relative_h0 = relative_h0, xz = xz, standardized = standardized, ...
+      relative_h0 = relative_h0, xz = xz, standardized = standardized,
+      quadratic = quadratic, ...
     )
   }
 
@@ -163,7 +177,7 @@ simple_slopes <- function(x,
 
 simpleSlopesGroup <- function(x, z, y, parTable, model, vals_x, vals_z, rescale,
                               ci_width, ci_type, relative_h0, xz,
-                              standardized, ...) {
+                              standardized, quadratic = FALSE, ...) {
   if (is.null(xz))
     xz <- paste(x, z, sep = ":")
 
@@ -182,6 +196,13 @@ simpleSlopesGroup <- function(x, z, y, parTable, model, vals_x, vals_z, rescale,
     xz <- stringr::str_remove_all(xz, ":")
     xx <- stringr::str_remove_all(xx, ":")
     zz <- stringr::str_remove_all(zz, ":")
+  }
+
+  if (quadratic) {
+    # x moderates itself, so xz, xx and zz all refer to the same term. 
+    # The user may have named it themselves via the xz argument, in
+    # which case xx alone would not match it.
+    xx <- unique(c(xx, xz, zz))
   }
 
   if (inherits(model, "lavaan")) {
@@ -221,6 +242,15 @@ simpleSlopesGroup <- function(x, z, y, parTable, model, vals_x, vals_z, rescale,
   if (!length(beta_xz)) beta_xz <- 0
   if (!length(beta_zz)) beta_zz <- 0
 
+  if (quadratic) {
+    # beta_x/beta_z and beta_xx/beta_xz/beta_zz are the same coefficients
+    # collected multiple times. Keep a single copy of each, such that the model
+    # is y ~ beta0_y + beta_x * x + beta_xx * x^2
+    beta_z  <- 0
+    beta_zz <- 0
+    beta_xz <- 0
+  }
+
   label_beta_x  <- parTable[parTable$lhs == y & parTable$rhs == x & parTable$op == "~", "label"]
   label_beta_z  <- parTable[parTable$lhs == y & parTable$rhs == z & parTable$op == "~", "label"]
   label_beta_xz <- parTable[parTable$lhs == y & parTable$rhs %in% xz & parTable$op == "~", "label"]
@@ -235,8 +265,20 @@ simpleSlopesGroup <- function(x, z, y, parTable, model, vals_x, vals_z, rescale,
   label_beta_zz <- ifelse(length(label_beta_zz) == 0, "y~zz", label_beta_zz)
   label_beta0_y <- ifelse(length(label_beta0_y) == 0, "y~1", label_beta0_y)
 
-  labels <- c(label_beta0_y, label_beta_x, label_beta_z, label_beta_xz,
-              label_beta_xx, label_beta_zz)
+  if (quadratic) {
+    # the coefficients were zeroed out above, so they should not contribute to
+    # the standard errors either. These labels are not in the vcov, and are
+    # thus expanded to zero-rows by `expandVCOV()`.
+    label_beta_z  <- "__ZERO_Z__"
+    label_beta_zz <- "__ZERO_ZZ__"
+    label_beta_xz <- "__ZERO_XZ__"
+  }
+
+  labels <- c(
+    label_beta0_y, label_beta_x, label_beta_z, label_beta_xz,
+    label_beta_xx, label_beta_zz
+  )
+
   VCOV   <- expandVCOV(VCOV, labels)
 
   mean_x <- getMean(x, parTable = parTable)
@@ -248,6 +290,8 @@ simpleSlopesGroup <- function(x, z, y, parTable, model, vals_x, vals_z, rescale,
     vals_x <- vals_x * sqrt(var_x) + mean_x
     vals_z <- vals_z * sqrt(var_z) + mean_z
   }
+
+  if (quadratic) vals_z <- 0 # `z` is `x`, and is thus not a free moderator
 
   alpha  <- 1 - ci_width
   ci.sig <- stats::qnorm(1 - alpha / 2) # two-tailed
@@ -270,14 +314,27 @@ simpleSlopesGroup <- function(x, z, y, parTable, model, vals_x, vals_z, rescale,
   df$ci.lower  <- df$predicted - ci.sig * df$std.error
 
   # significance test of slopes (not margins)
-  k <- length(vals_z)
-  slopeLabels <- c(label_beta_x, label_beta_xz)
-  slopesVCOV <- VCOV[slopeLabels, slopeLabels]
-  slopes <- beta_x + vals_z * beta_xz
+  if (quadratic) {
+    # d(predicted)/d(x) = beta_x + 2 * beta_xx * x, i.e., the slope varies along
+    # x itself, rather than along the values of a (distinct) moderator.
+    vals_mod   <- vals_x
+    beta_mod   <- 2 * beta_xx
+    label_mod  <- label_beta_xx
+    d_beta_mod <- 2 * vals_x # d(2 * beta_xx * x) / d(beta_xx) = 2 * x
+  } else {
+    vals_mod   <- vals_z
+    beta_mod   <- beta_xz
+    label_mod  <- label_beta_xz
+    d_beta_mod <- vals_z # d(vals_z * beta_xz) / d(beta_xz) = vals_z
+  }
 
-  d_beta_x  <- rep(1, k) # d(beta_x)/d(beta_x) = 1
-  d_beta_xz <- vals_z    # d(vals_z * beta_xz) / d(beta_xz) = vals_z
-  jacobian <- matrix(c(d_beta_x, d_beta_xz),
+  k <- length(vals_mod)
+  slopeLabels <- c(label_beta_x, label_mod)
+  slopesVCOV <- VCOV[slopeLabels, slopeLabels]
+  slopes <- beta_x + vals_mod * beta_mod
+
+  d_beta_x <- rep(1, k) # d(beta_x)/d(beta_x) = 1
+  jacobian <- matrix(c(d_beta_x, d_beta_mod),
                      nrow=k, ncol=2, byrow=FALSE)
   slopesVCOV <- jacobian %*% slopesVCOV %*% t(jacobian) # delta method
   std.error <- sqrt(diag(slopesVCOV))
@@ -287,7 +344,7 @@ simpleSlopesGroup <- function(x, z, y, parTable, model, vals_x, vals_z, rescale,
     param = paste0(y, "~", x),
     moderator = z,
     slope.predictor = slopes,
-    value.moderator = vals_z,
+    value.moderator = vals_mod,
     std.error = std.error,
     z.value = z.value,
     p.value = 2 * stats::pnorm(-abs(z.value)),
@@ -296,12 +353,12 @@ simpleSlopesGroup <- function(x, z, y, parTable, model, vals_x, vals_z, rescale,
   )
 
   # significance test min/max
-  var_beta_xz <- VCOV[label_beta_xz, label_beta_xz]
-  min_z <- min(vals_z)
-  max_z <- max(vals_z)
-  diff <- max_z * beta_xz - min_z * beta_xz
-  grad_diff <- max_z - min_z # with respect to beta_xz
-  std.error_diff <- sqrt(grad_diff^2 * var_beta_xz) # delta method
+  var_beta_mod <- VCOV[label_mod, label_mod]
+  min_z <- min(vals_mod)
+  max_z <- max(vals_mod)
+  diff <- (max_z - min_z) * beta_mod
+  grad_diff <- if (quadratic) 2 * (max_z - min_z) else max_z - min_z # wrt beta_mod
+  std.error_diff <- sqrt(grad_diff^2 * var_beta_mod) # delta method
   z_diff <- diff / std.error_diff
   p_diff <- 2 * stats::pnorm(-abs(z_diff))
 

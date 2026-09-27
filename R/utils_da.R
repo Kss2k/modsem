@@ -463,7 +463,7 @@ expandVCOV <- function(vcov, labels) {
   m <- length(labels.vv)
   k <- length(labels.zz)
 
-  Vvv <- vcov[labels.vv, labels.vv]
+  Vvv <- vcov[labels.vv, labels.vv, drop = FALSE] # keep dimnames when length(labels.vv) == 1
   Vzz <- matrix(0, nrow = k, ncol = k, dimnames = list(labels.zz, labels.zz))
   Vvz <- matrix(0, nrow = m, ncol = k, dimnames = list(labels.vv, labels.zz))
 

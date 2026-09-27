@@ -10,7 +10,7 @@ plot_interaction(
   y,
   model,
   vals_x = seq(-3, 3, 0.001),
-  vals_z,
+  vals_z = -1:1,
   alpha_se = 0.15,
   digits = 2,
   ci_width = 0.95,
@@ -19,6 +19,7 @@ plot_interaction(
   standardized = FALSE,
   xz = NULL,
   greyscale = FALSE,
+  check.quadratic = TRUE,
   ...
 )
 }
@@ -72,6 +73,11 @@ removing or modifying the colon), and this function attempts to reconcile that
 internally.}
 
 \item{greyscale}{Logical. If \code{TRUE} the plot is plotted in greyscale.}
+
+\item{check.quadratic}{Logical. If \code{TRUE} (default), \code{x == z} is taken to
+mean that \code{x} moderates itself, and the model is treated as quadratic in
+\code{x}. This gives a single curved line, instead of one line per value of
+\code{vals_z} (which is then ignored).}
 
 \item{...}{Additional arguments passed on to \code{\link{simple_slopes}}.}
 }
