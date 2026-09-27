@@ -92,6 +92,7 @@ effects or to see how the slope changes at different values of the moderator.</p
 <span>  relative_h0 <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  standardized <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  xz <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  check.quadratic <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -168,6 +169,12 @@ mean of <code>y</code>. If <code>FALSE</code>, the null hypothesis is <code>h0 =
 be created by combining <code>x</code> and <code>z</code> with a colon (e.g., <code>"x:z"</code>).
 Some backends may remove or alter the colon symbol, so the function tries to
 account for that internally.</p></dd>
+
+
+<dt id="arg-check-quadratic">check.quadratic<a class="anchor" aria-label="anchor" href="#arg-check-quadratic"></a></dt>
+<dd><p>Logical. If <code>TRUE</code> (default), <code>x == z</code> is taken to
+mean that <code>x</code> moderates itself, and the model is treated as quadratic in
+<code>x</code> (<code>vals_z</code> is then ignored).</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>

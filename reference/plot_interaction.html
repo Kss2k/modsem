@@ -82,7 +82,7 @@ multiple regression lines and confidence/prediction bands.</p>
 <span>  <span class="va">y</span>,</span>
 <span>  <span class="va">model</span>,</span>
 <span>  vals_x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="op">-</span><span class="fl">3</span>, <span class="fl">3</span>, <span class="fl">0.001</span><span class="op">)</span>,</span>
-<span>  <span class="va">vals_z</span>,</span>
+<span>  vals_z <span class="op">=</span> <span class="op">-</span><span class="fl">1</span><span class="op">:</span><span class="fl">1</span>,</span>
 <span>  alpha_se <span class="op">=</span> <span class="fl">0.15</span>,</span>
 <span>  digits <span class="op">=</span> <span class="fl">2</span>,</span>
 <span>  ci_width <span class="op">=</span> <span class="fl">0.95</span>,</span>
@@ -91,6 +91,7 @@ multiple regression lines and confidence/prediction bands.</p>
 <span>  standardized <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  xz <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  greyscale <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  check.quadratic <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -175,6 +176,13 @@ internally.</p></dd>
 
 <dt id="arg-greyscale">greyscale<a class="anchor" aria-label="anchor" href="#arg-greyscale"></a></dt>
 <dd><p>Logical. If <code>TRUE</code> the plot is plotted in greyscale.</p></dd>
+
+
+<dt id="arg-check-quadratic">check.quadratic<a class="anchor" aria-label="anchor" href="#arg-check-quadratic"></a></dt>
+<dd><p>Logical. If <code>TRUE</code> (default), <code>x == z</code> is taken to
+mean that <code>x</code> moderates itself, and the model is treated as quadratic in
+<code>x</code>. This gives a single curved line, instead of one line per value of
+<code>vals_z</code> (which is then ignored).</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
