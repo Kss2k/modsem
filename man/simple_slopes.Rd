@@ -17,6 +17,7 @@ simple_slopes(
   relative_h0 = TRUE,
   standardized = FALSE,
   xz = NULL,
+  check.quadratic = TRUE,
   ...
 )
 }
@@ -66,6 +67,10 @@ mean of \code{y}. If \code{FALSE}, the null hypothesis is \code{h0 = 0}.}
 be created by combining \code{x} and \code{z} with a colon (e.g., \code{"x:z"}).
 Some backends may remove or alter the colon symbol, so the function tries to
 account for that internally.}
+
+\item{check.quadratic}{Logical. If \code{TRUE} (default), \code{x == z} is taken to
+mean that \code{x} moderates itself, and the model is treated as quadratic in
+\code{x} (\code{vals_z} is then ignored).}
 
 \item{...}{Additional arguments passed to lower-level functions or other internal
 helpers.}

@@ -43,6 +43,10 @@
 #'   removing or modifying the colon), and this function attempts to reconcile that
 #'   internally.
 #' @param greyscale Logical. If \code{TRUE} the plot is plotted in greyscale.
+#' @param check.quadratic Logical. If \code{TRUE} (default), \code{x == z} is taken to
+#'   mean that \code{x} moderates itself, and the model is treated as quadratic in
+#'   \code{x}. This gives a single curved line, instead of one line per value of
+#'   \code{vals_z} (which is then ignored).
 #' @param ... Additional arguments passed on to \code{\link{simple_slopes}}.
 #'
 #' @details
@@ -115,14 +119,22 @@
 #'                  model = est2)
 #' }
 plot_interaction <- function(x, z, y, model, vals_x = seq(-3, 3, .001),
-                             vals_z, alpha_se = 0.15, digits = 2,
+                             vals_z = -1:1, alpha_se = 0.15, digits = 2,
                              ci_width = 0.95, ci_type = "confidence",
                              rescale = TRUE, standardized = FALSE, xz = NULL,
-                             greyscale = FALSE,
+                             greyscale = FALSE, check.quadratic = TRUE,
                              ...) {
-  slopes <- simple_slopes(x = x, z = z, y = y, model = model, vals_x = vals_x,
-                          vals_z = vals_z, rescale = rescale, ci_width = ci_width,
-                          ci_type = ci_type, standardized = standardized, xz = xz, ...)
+
+  # does x moderate itself?
+  quadratic <- check.quadratic && identical(x, z)
+
+  slopes <- simple_slopes(
+    x = x, z = z, y = y, model = model, vals_x = vals_x,
+    vals_z = vals_z, rescale = rescale, ci_width = ci_width,
+    ci_type = ci_type, standardized = standardized, xz = xz,
+    check.quadratic = check.quadratic, ...
+  )
+
   df <- as.data.frame(slopes)
   df$cat_z <- as.factor(round(df$vals_z, digits))
 
@@ -140,8 +152,15 @@ plot_interaction <- function(x, z, y, model, vals_x = seq(-3, 3, .001),
     ggplot2::geom_ribbon(ggplot2::aes(ymin = ci.lower, ymax = ci.upper, fill = cat_z),
                          alpha = alpha_se, linewidth = 0, linetype = "blank") +
     ggplot2::labs(x = x, y = y, colour = z, fill = z) +
-    ggplot2::ggtitle(sprintf("Marginal Effects of %s on %s, Given %s", x, y, z)) +
     ggplot2::theme_bw()
+
+  if (quadratic) {
+    # there is a single line, so we don't need the moderator legend
+    p <- p + ggplot2::ggtitle(sprintf("Marginal Effects of %s on %s", x, y)) +
+      ggplot2::guides(colour = "none", fill = "none")
+  } else {
+    p <- p + ggplot2::ggtitle(sprintf("Marginal Effects of %s on %s, Given %s", x, y, z))
+  }
 
   if (length(unique(df$group)) > 1L) {
     group <- NULL # stop R CMD check from complaining about `~group`
@@ -153,7 +172,6 @@ plot_interaction <- function(x, z, y, model, vals_x = seq(-3, 3, .001),
 
   p
 }
-
 
 
 #' Plot Surface for Interaction Effects
