@@ -32,18 +32,13 @@ LavStart <- function(number) {
 }
 
 
+LavRv <- function(x) {
+  paste0("rv(", as.character(substitute(x)), ")")
+}
+
+
 LavConcat <- function(...) {
   as.character(substitute(expression(c(...))))[[2]]
-}
-  
-
-PlsWithin  <- function(x) {
-  paste0("within(", as.character(substitute(x)), ")")
-}
-
-
-PlsBetween <- function(x) {
-  paste0("between(", as.character(substitute(x)), ")")
 }
 
 
@@ -51,6 +46,10 @@ modEnv <- rlang::env(
   equal   = LavEqual,
   start   = LavStart,
   c       = LavConcat,
-  within  = PlsWithin,
-  between = PlsBetween
+  rv      = LavRv
 )
+
+
+addLavSyntaxFunctionToParser <- function(nm, func) {
+  modEnv[[nm]] <- func
+}
