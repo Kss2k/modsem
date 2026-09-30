@@ -151,10 +151,13 @@ modsem_mplus <- function(model.syntax,
   # Categorical variables
   categorical <- intersect(categorical, indicators)
   if (length(categorical)) {
-    VARIABLE <- paste0(
-      VARIABLE, sprintf("\nCATEGORICAL = %s;",
-                        paste0(categorical, collapse = " "))
+    # we don't want to exceed the 90 character limit in Mplus
+    catLine <- strwrap(
+      sprintf("CATEGORICAL = %s;", paste0(categorical, collapse = " ")),
+      width = 85, exdent = 2
     )
+
+    VARIABLE <- paste0(VARIABLE, "\n", paste0(catLine, collapse = "\n"))
   }
 
   usevariables <- intersect(c(cluster, indicators), colnames(data))
