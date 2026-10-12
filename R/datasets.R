@@ -117,8 +117,41 @@ NULL
 #' @name TPB_UK
 #' @docType data
 #' @description A dataset based on the Theory of Planned Behaviour from a
-#' UK sample. 4 variables with high communality were selected for each
-#' latent variable (ATT, SN, PBC, INT, BEH), from two time points (t1 and t2).
+#' UK sample. Contains the indicators for the latent variables
+#' (ATT, SN, PBC, INT, BEH) from the first time point (t1). Only
+#' observations with complete responses to all items are included.
+#'
+#' Note that the dataset was updated in version 1.0.24. Previously it
+#' contained 4 indicators (selected for high communality) for each
+#' latent variable, and 1169 observations. It now contains all the
+#' indicators for each latent variable from the first time point,
+#' and 1894 observations. Model syntax written for the old version
+#' (e.g., using \code{sn4} or \code{beh4}) must be updated.
+#'
+#' @format
+#' A data frame with 1894 observations of 19 variables:
+#'
+#' \describe{
+#' \item{att1}{Indicator 1 (at time 1) for attitude (ATT).}
+#' \item{att2}{Indicator 2 (at time 1) for attitude (ATT).}
+#' \item{att3}{Indicator 3 (at time 1) for attitude (ATT).}
+#' \item{att4}{Indicator 4 (at time 1) for attitude (ATT).}
+#' \item{att5}{Indicator 5 (at time 1) for attitude (ATT).}
+#' \item{sn1}{Indicator 1 (at time 1) for subjective norms (SN).}
+#' \item{sn2}{Indicator 2 (at time 1) for subjective norms (SN).}
+#' \item{sn3}{Indicator 3 (at time 1) for subjective norms (SN).}
+#' \item{pbc1}{Indicator 1 (at time 1) for perceived behavioural control (PBC).}
+#' \item{pbc2}{Indicator 2 (at time 1) for perceived behavioural control (PBC).}
+#' \item{pbc3}{Indicator 3 (at time 1) for perceived behavioural control (PBC).}
+#' \item{pbc4}{Indicator 4 (at time 1) for perceived behavioural control (PBC).}
+#' \item{int1}{Indicator 1 (at time 1) for intention (INT).}
+#' \item{int2}{Indicator 2 (at time 1) for intention (INT).}
+#' \item{int3}{Indicator 3 (at time 1) for intention (INT).}
+#' \item{int4}{Indicator 4 (at time 1) for intention (INT).}
+#' \item{beh1}{Indicator 1 (at time 1) for behaviour (BEH).}
+#' \item{beh2}{Indicator 2 (at time 1) for behaviour (BEH).}
+#' \item{beh3}{Indicator 3 (at time 1) for behaviour (BEH).}
+#' }
 #'
 #' @source
 #' Gathered from a replication study by Hagger et al. (2023).
@@ -129,11 +162,11 @@ NULL
 #'
 #' tpb_uk <- "
 #' # Outer Model (Based on Hagger et al., 2007)
-#'  ATT =~ att3 + att2 + att1 + att4
-#'  SN =~ sn4 + sn2 + sn3 + sn1
-#'  PBC =~ pbc2 + pbc1 + pbc3 + pbc4
-#'  INT =~ int2 + int1 + int3 + int4
-#'  BEH =~ beh3 + beh2 + beh1 + beh4
+#'  ATT =~ att1 + att2 + att3 + att4 + att5
+#'  SN =~ sn1 + sn2 + sn3
+#'  PBC =~ pbc1 + pbc2 + pbc3 + pbc4
+#'  INT =~ int1 + int2 + int3 + int4
+#'  BEH =~ beh1 + beh2 + beh3
 #'
 #' # Inner Model (Based on Steinmetz et al., 2011)
 #'  # Causal Relationsships
