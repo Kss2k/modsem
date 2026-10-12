@@ -8,11 +8,25 @@
 A data frame with 1894 observations of 19 variables:
 
 \describe{
-\item{att1-att5}{Indicators for attitude (ATT).}
-\item{sn1-sn3}{Indicators for subjective norms (SN).}
-\item{pbc1-pbc4}{Indicators for perceived behavioural control (PBC).}
-\item{int1-int4}{Indicators for intention (INT).}
-\item{beh1-beh3}{Indicators for behaviour (BEH).}
+\item{att1}{Indicator 1 (at time 1) for attitude (ATT).}
+\item{att2}{Indicator 2 (at time 1) for attitude (ATT).}
+\item{att3}{Indicator 3 (at time 1) for attitude (ATT).}
+\item{att4}{Indicator 4 (at time 1) for attitude (ATT).}
+\item{att5}{Indicator 5 (at time 1) for attitude (ATT).}
+\item{sn1}{Indicator 1 (at time 1) for subjective norms (SN).}
+\item{sn2}{Indicator 2 (at time 1) for subjective norms (SN).}
+\item{sn3}{Indicator 3 (at time 1) for subjective norms (SN).}
+\item{pbc1}{Indicator 1 (at time 1) for perceived behavioural control (PBC).}
+\item{pbc2}{Indicator 2 (at time 1) for perceived behavioural control (PBC).}
+\item{pbc3}{Indicator 3 (at time 1) for perceived behavioural control (PBC).}
+\item{pbc4}{Indicator 4 (at time 1) for perceived behavioural control (PBC).}
+\item{int1}{Indicator 1 (at time 1) for intention (INT).}
+\item{int2}{Indicator 2 (at time 1) for intention (INT).}
+\item{int3}{Indicator 3 (at time 1) for intention (INT).}
+\item{int4}{Indicator 4 (at time 1) for intention (INT).}
+\item{beh1}{Indicator 1 (at time 1) for behaviour (BEH).}
+\item{beh2}{Indicator 2 (at time 1) for behaviour (BEH).}
+\item{beh3}{Indicator 3 (at time 1) for behaviour (BEH).}
 }
 }
 \source{
