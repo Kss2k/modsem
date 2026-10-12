@@ -545,7 +545,9 @@ The default is therefore <code>TRUE</code> for the QML approach.</p></dd>
 
 <dt id="arg-fix-composite-var">fix.composite.var<a class="anchor" aria-label="anchor" href="#arg-fix-composite-var"></a></dt>
 <dd><p>If <code>TRUE</code> (default) the block covariance structure
-of composite indiactors is fixed.</p></dd>
+of composite indicators is fixed. With FIML and missing observations, these
+covariances are estimated jointly with the model, overriding this setting,
+because fixing marginal covariance estimates can bias the structural estimates.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
