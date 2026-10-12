@@ -334,7 +334,7 @@ checkCovMatrices <- function(expected.matrices) {
 }
 
 
-checkVCOV <- function(vcov, calc.se = TRUE, tol.eigen = .Machine$double.eps ^ (3/4)) {
+checkVCOV <- function(vcov, calc.se = TRUE, tol.eigen = .Machine$double.eps ^ (1/2)) {
   if (!calc.se || is.null(vcov)) return(NULL) # checks not relevant
 
   eigenvalues <- tryCatch(
@@ -348,7 +348,8 @@ checkVCOV <- function(vcov, calc.se = TRUE, tol.eigen = .Machine$double.eps ^ (3
   }
 
   minval <- min(eigenvalues, na.rm = TRUE) # should never be any NA, but just in case...
-  if (minval < tol.eigen) {
+  maxval <- max(abs(eigenvalues), na.rm = TRUE)
+  if (minval < tol.eigen * maxval) {
     mod_warnif(minval >= 0,
            paste0("The variance-covariance matrix of the estimated parameters\n",
            "(vcov) does not appear to be positive definite! The smallest\n",
