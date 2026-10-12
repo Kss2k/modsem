@@ -260,7 +260,9 @@
 #'   if the first loading is labelled, where it gets treated as a free parameter instead.
 #'
 #' @param fix.composite.var If \code{TRUE} (default) the block covariance structure
-#'   of composite indiactors is fixed.
+#'   of composite indicators is fixed. With FIML and missing observations, these
+#'   covariances are estimated jointly with the model, overriding this setting,
+#'   because fixing marginal covariance estimates can bias the structural estimates.
 #'
 #' @param auto.split.syntax Should the model syntax automatically be split into a
 #'   linear and non-linear part? This is done by moving the structural model for

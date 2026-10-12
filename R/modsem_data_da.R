@@ -140,7 +140,6 @@ handleMissingData <- function(data, missing = "listwise", CLUSTER = NULL, WEIGHT
   missing       <- tolower(missing)
   completeCases <- stats::complete.cases(data)
   anyMissing    <- any(!completeCases)
-  allMissing    <- all(!completeCases)
   INDEX         <- seq_len(NROW(data))
 
   if (!anyMissing){
@@ -149,18 +148,22 @@ handleMissingData <- function(data, missing = "listwise", CLUSTER = NULL, WEIGHT
     attr(data, "index")   <- INDEX
     return(data)
 
-  } else if (allMissing) {
+  } else {
     missingAllCol <- apply(data, MARGIN = 2, FUN = \(x) all(is.na(x)))
     colsMissing   <- colnames(data)[missingAllCol]
 
-    mod_msg_stop(paste0("Please remove variables with only missing values:\n  ",
-          paste0(colsMissing, collapse = ", ")))
+    mod_stopif(any(missingAllCol),
+      "Please remove variables with only missing values:",
+      paste0(colsMissing, collapse = ", ")
+    )
   }
 
   if (missing %in% c("listwise", "casewise", "complete")) {
-    mod_msg_warn(paste0("Removing missing values list-wise!\n",
-             "Consider using `missing=\"fiml\"`, `missing=\"impute\"`, ",
-             "or the `modsem_mimpute()` function!\n"))
+    mod_msg_warn(
+      "Removing missing values list-wise!",
+      "Consider using `missing=\"fiml\"`, `missing=\"impute\"`,",
+      "or the `modsem_mimpute()` function!"
+    )
 
     out <- data[completeCases, ]
     attr(out, "cluster") <- CLUSTER[completeCases]
