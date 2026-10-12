@@ -336,7 +336,9 @@ variables can in some cases be biased, if the model is not split beforehand.
 The default is therefore \code{TRUE} for the QML approach.}
 
 \item{fix.composite.var}{If \code{TRUE} (default) the block covariance structure
-of composite indiactors is fixed.}
+of composite indicators is fixed. With FIML and missing observations, these
+covariances are estimated jointly with the model, overriding this setting,
+because fixing marginal covariance estimates can bias the structural estimates.}
 
 \item{...}{additional arguments to be passed to the estimation function.}
 }

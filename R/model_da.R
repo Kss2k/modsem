@@ -97,6 +97,19 @@ specifyModelDA_Group <- function(syntax = NULL,
     sampling.weights = sampling.weights
   )
 
+  # do we use FIML?
+  # FIML might not actually be used within the current group (e.g., if there
+  # are no missing values). To be safe we should always set fix.composite.var=FALSE
+  # when `missing="fiml"` in a composite model is passed
+  is.fiml <- tolower(missing) %in% c("fiml", "ml", "direct")
+
+  if (fix.composite.var && length(composites) && is.fiml) {
+    # A covariance fitted to the composite indicators alone can be biased when
+    # missingness depends on other observed variables. Estimate it jointly in
+    # the FIML likelihood instead of fixing it to this marginal estimate.
+    fix.composite.var <- FALSE
+  }
+
   # measurement model x
   if (method == "qml") {
     listLambdaX <- constructLambda(
@@ -464,7 +477,8 @@ specifyModelDA <- function(..., group.info, createTheta = TRUE) {
   group.col   <- parTable$group
 
   mod_stopif(is.null(group.col) || max(group.col) != n.groups,
-         "Number of group-specific parameter tables does not match number of groups.")
+    "Number of group-specific parameter tables does not match number of groups."
+  )
 
   submodels <- vector("list", length = n.groups)
 
