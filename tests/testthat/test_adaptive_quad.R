@@ -33,11 +33,11 @@ summary(lms2)
 
 tpb_uk <- "
 # Outer Model (Based on Hagger et al., 2007)
-  ATT =~ att3 + att2 + att1 + att4
-  SN =~ sn4 + sn2 + sn3 + sn1
-  PBC =~ pbc2 + pbc1 + pbc3 + pbc4
-  INT =~ int2 + int1 + int3 + int4
-  BEH =~ beh3 + beh2 + beh1 + beh4
+  ATT =~ att1 + att2 + att3 + att4 + att5
+  SN =~ sn1 + sn2 + sn3
+  PBC =~ pbc1 + pbc2 + pbc3 + pbc4
+  INT =~ int1 + int2 + int3 + int4
+  BEH =~ beh1 + beh2 + beh3
 
 # Inner Model (Based on Steinmetz et al., 2011)
   INT ~ ATT + SN + PBC
@@ -46,31 +46,31 @@ tpb_uk <- "
 "
 
 lms3 <- modsem(tpb_uk, data = TPB_UK, "lms",
-               nodes=32, FIM="observed", robust.se = TRUE,
-               adaptive.quad=TRUE, algorithm ="EMA")
+               nodes=32, FIM="observed", robust.se = FALSE,
+               adaptive.quad=TRUE, algorithm ="EMA", optimize = TRUE,
+               convergence.abs = 1e-8, convergence.rel = 1e-15)
 print(summary(lms3))
 #> Regressions:
-#>                   Estimate  Std.Error  z.value  P(>|z|)
-#>    INT ~
-#>      PBC             1.037      0.036    28.46    0.000
-#>      ATT            -0.060      0.030    -2.04    0.041
-#>      SN              0.051      0.033     1.55    0.120
-#>    BEH ~
-#>      PBC             0.398      0.052     7.63    0.000
-#>      INT             0.594      0.049    12.24    0.000
-#>      PBC:INT         0.141      0.008    17.66    0.000
-
+#>                  Estimate  Std.Error  z.value  P(>|z|)
+#>   INT ~         
+#>     ATT             0.283      0.032    8.915    0.000
+#>     SN             -0.023      0.021   -1.102    0.271
+#>     PBC             3.069      0.315    9.751    0.000
+#>   BEH ~         
+#>     PBC             0.675      0.175    3.855    0.000
+#>     INT             0.658      0.041   16.170    0.000
+#>     INT:PBC         0.390      0.044    8.808    0.000
 # Compared with Mplus
 #> Regressions:
-#>                    Estimate  Std.Error  z.value  Pr(>|z|)
-#>   INT ~
-#>     ATT              -0.053      0.031    -1.71     0.089
-#>     SN               -0.065      0.024    -2.71     0.008
-#>     PBC               1.090      0.036    30.28     0.000
-#>   BEH ~
-#>     PBC               0.405      0.052     7.79     0.000
-#>     INT               0.588      0.048    12.25     0.000
-#>     INT:PBC           0.141      0.008    17.62     0.000
+#>                  Estimate  Std.Error  z.value  P(>|z|)
+#>   INT ~         
+#>     ATT    (INT<)   0.283      0.032    8.844    0.000
+#>     SN  (INT<-SN)  -0.023      0.021   -1.095    0.271
+#>     PBC    (INT<)   3.065      0.238   12.878    0.000
+#>   BEH ~         
+#>     INT    (BEH<)   0.658      0.041   16.049    0.000
+#>     PBC    (BEH<)   0.674      0.168    4.012    0.000
+#>     INT:PB (BEH<)   0.389      0.036   10.806    0.000
 
 
 nlsem <- '
