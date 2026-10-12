@@ -19,7 +19,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">modsem</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.23</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.24</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -148,7 +148,7 @@
 <span class="r-in"><span><span class="va">est_dblcent</span> <span class="op">&lt;-</span> <span class="fu">twostep</span><span class="op">(</span><span class="va">m1</span>, <span class="va">oneInt</span>, method <span class="op">=</span> <span class="st">"dblcent"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_dblcent</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Estimating baseline model (H0)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> modsem (version 1.0.23, approach = dblcent):</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> modsem (version 1.0.24, approach = dblcent):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Interaction Model Fit Measures (H1):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Loglikelihood                                     NA </span>
@@ -245,7 +245,7 @@
 <span class="r-in"><span><span class="va">est_lms</span> <span class="op">&lt;-</span> <span class="fu">twostep</span><span class="op">(</span><span class="va">m1</span>, <span class="va">oneInt</span>, method <span class="op">=</span> <span class="st">"lms"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_lms</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> modsem (1.0.23) ended normally after 8 iterations</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> modsem (1.0.24) ended normally after 8 iterations</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Estimator                                        LMS</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Optimization method                       EMA-NLMINB</span>
@@ -351,7 +351,7 @@
 <span class="r-in"><span><span class="va">est_qml</span> <span class="op">&lt;-</span> <span class="fu">twostep</span><span class="op">(</span><span class="va">m1</span>, <span class="va">oneInt</span>, method <span class="op">=</span> <span class="st">"qml"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_qml</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> modsem (1.0.23) ended normally after 5 iterations</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> modsem (1.0.24) ended normally after 5 iterations</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Estimator                                        QML</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Optimization method                           NLMINB</span>
@@ -452,11 +452,11 @@
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">tpb_uk</span> <span class="op">&lt;-</span> <span class="st">"</span></span></span>
 <span class="r-in"><span><span class="st"># Outer Model (Based on Hagger et al., 2007)</span></span></span>
-<span class="r-in"><span><span class="st"> ATT =~ att3 + att2 + att1 + att4</span></span></span>
-<span class="r-in"><span><span class="st"> SN =~ sn4 + sn2 + sn3 + sn1</span></span></span>
-<span class="r-in"><span><span class="st"> PBC =~ pbc2 + pbc1 + pbc3 + pbc4</span></span></span>
-<span class="r-in"><span><span class="st"> INT =~ int2 + int1 + int3 + int4</span></span></span>
-<span class="r-in"><span><span class="st"> BEH =~ beh3 + beh2 + beh1 + beh4</span></span></span>
+<span class="r-in"><span><span class="st"> ATT =~ att1 + att2 + att3 + att4 + att5</span></span></span>
+<span class="r-in"><span><span class="st"> SN =~ sn1 + sn2 + sn3</span></span></span>
+<span class="r-in"><span><span class="st"> PBC =~ pbc1 + pbc2 + pbc3 + pbc4</span></span></span>
+<span class="r-in"><span><span class="st"> INT =~ int1 + int2 + int3 + int4</span></span></span>
+<span class="r-in"><span><span class="st"> BEH =~ beh1 + beh2 + beh3</span></span></span>
 <span class="r-in"><span><span class="st"></span></span></span>
 <span class="r-in"><span><span class="st"># Inner Model (Based on Steinmetz et al., 2011)</span></span></span>
 <span class="r-in"><span><span class="st"> # Causal Relationsships</span></span></span>
@@ -468,7 +468,7 @@
 <span class="r-in"><span><span class="va">uk_dblcent</span> <span class="op">&lt;-</span> <span class="fu">twostep</span><span class="op">(</span><span class="va">tpb_uk</span>, <span class="va">TPB_UK</span>, method <span class="op">=</span> <span class="st">"dblcent"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">uk_dblcent</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Estimating baseline model (H0)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> modsem (version 1.0.23, approach = dblcent):</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> modsem (version 1.0.24, approach = dblcent):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Interaction Model Fit Measures (H1):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Loglikelihood                                     NA </span>
@@ -493,19 +493,19 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span>   SRMR                                              NA </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Comparative Fit to H0 (LRT test):</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Chi-square diff                              303.820 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Chi-square diff                              370.823 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of freedom diff                            1 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   P-value (LRT)                                  0.000 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> R-Squared Interaction Model (H1):</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   INT                                            0.896 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   BEH                                            0.896 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   INT                                            0.911 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   BEH                                            0.856 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> R-Squared Baseline Model (H0):</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   INT                                            0.896 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   BEH                                            0.867 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   INT                                            0.911 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   BEH                                            0.828 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> R-Squared Change (H1 - H0):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   INT                                           -0.000 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   BEH                                            0.029 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   BEH                                            0.028 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> This is lavaan 0.6-20 -- using the SAM approach to SEM</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
@@ -515,27 +515,27 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Estimator measurement part                        ML</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Estimator  structural part                        ML</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Number of observations                          1169</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Number of observations                          1894</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Summary Information Measurement + Structural:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Block Latent Nind    Chisq Df</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       1    ATT    4    0.043  2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       2    BEH    4  934.696  2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       3    INT    4   31.869  2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       4 INTPBC   16 1055.748 56</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       5    PBC    4  778.543  2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       6     SN    4 1191.318  2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       1    ATT    5 1017.132  5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       2    BEH    3    0.000  0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       3    INT    4   25.912  2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       4 INTPBC   16  797.363 56</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       5    PBC    4  581.968  2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       6     SN    3    0.000  0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Model-based reliability latent variables:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     ATT    SN   PBC   INT   BEH INTPBC</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   0.972 0.954 0.939 0.985 0.963  0.912</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   0.966 0.949 0.932 0.983 0.963  0.901</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Summary Information Structural part:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    chisq df   cfi rmsea  srmr</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   88.274  3 0.984 0.156 0.018</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     chisq df   cfi rmsea  srmr</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   160.532  3 0.981 0.167 0.019</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Parameter Estimates:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
@@ -546,34 +546,34 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span> Regressions:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                    Estimate  Std.Err  z-value  P(&gt;|z|)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   INT ~                                               </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     ATT              -0.023    0.028   -0.836    0.403</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     SN               -0.066    0.024   -2.795    0.005</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC               1.062    0.032   33.220    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     ATT               0.279    0.032    8.767    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     SN               -0.010    0.021   -0.452    0.651</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC               2.845    0.210   13.525    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   BEH ~                                               </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     INT               0.681    0.047   14.440    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC               0.303    0.051    5.983    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     INTPBC            0.152    0.011   13.426    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     INT               0.621    0.040   15.515    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC               0.751    0.155    4.851    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     INTPBC            0.282    0.027   10.495    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Covariances:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                    Estimate  Std.Err  z-value  P(&gt;|z|)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   ATT ~~                                              </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     SN                2.278    0.128   17.735    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC               3.639    0.177   20.550    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     INTPBC            0.141    0.178    0.791    0.429</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     SN                1.388    0.069   20.071    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC               0.744    0.058   12.840    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     INTPBC           -0.087    0.044   -1.961    0.050</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   SN ~~                                               </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC               2.217    0.129   17.191    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     INTPBC           -0.101    0.142   -0.710    0.478</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC               0.528    0.042   12.425    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     INTPBC           -0.162    0.041   -3.937    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   PBC ~~                                              </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     INTPBC            0.245    0.177    1.384    0.166</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     INTPBC           -0.036    0.017   -2.178    0.029</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Variances:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                    Estimate  Std.Err  z-value  P(&gt;|z|)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     ATT               4.463    0.198   22.584    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     SN                2.803    0.130   21.586    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC               4.338    0.212   20.507    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .INT               0.514    0.039   13.142    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .BEH               0.550    0.036   15.187    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     INTPBC            7.363    0.552   13.350    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     ATT               2.314    0.118   19.584    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     SN                1.797    0.090   19.914    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC               0.314    0.043    7.296    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .INT               0.377    0.023   16.655    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .BEH               0.485    0.024   20.281    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     INTPBC            1.374    0.208    6.617    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># \dontrun{</span></span></span>
@@ -582,18 +582,18 @@
 <span class="r-in"><span>  <span class="va">uk_lms</span> <span class="op">&lt;-</span> <span class="fu">twostep</span><span class="op">(</span><span class="va">tpb_uk</span>, <span class="va">TPB_UK</span>, method <span class="op">=</span> <span class="st">"lms"</span>, nodes <span class="op">=</span> <span class="fl">32</span>, adaptive.quad <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">uk_lms</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> modsem (1.0.23) ended normally after 26 iterations</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> modsem (1.0.24) ended normally after 43 iterations</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Estimator                                        LMS</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Optimization method                       EMA-NLMINB</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Number of model parameters                         9</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Number of observations                          1169</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Number of observations                          1894</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Loglikelihood and Information Criteria:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Loglikelihood                              -35376.39</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Akaike (AIC)                                70770.78</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Bayesian (BIC)                              70816.36</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Loglikelihood                              -53954.91</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Akaike (AIC)                               107927.81</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Bayesian (BIC)                             107977.73</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Numerical Integration:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Points of integration (per dim)                   32</span>
@@ -602,30 +602,30 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Fit Measures for Baseline Model (H0):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                                               Standard</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Chi-square                                   5520.02</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of Freedom (Chi-square)                  222</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Chi-square                                   3197.83</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of Freedom (Chi-square)                  201</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   P-value (Chi-square)                           0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   RMSEA                                          0.143</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   RMSEA                                          0.089</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                                                       </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Loglikelihood                              -35523.38</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Akaike (AIC)                                71062.75</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Bayesian (BIC)                              71103.26</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Loglikelihood                              -54095.10</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Akaike (AIC)                               108206.21</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Bayesian (BIC)                             108250.58</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Comparative Fit to H0 (LRT test):</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Loglikelihood change                          146.98</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Difference test (D)                           293.97</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Loglikelihood change                          140.20</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Difference test (D)                           280.40</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of freedom (D)                             1</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   P-value (D)                                    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> R-Squared Interaction Model (H1):</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   INT                                            0.898</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   BEH                                            0.921</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   INT                                            0.913</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   BEH                                            0.873</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> R-Squared Baseline Model (H0):</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   INT                                            0.896</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   BEH                                            0.868</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   INT                                            0.914</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   BEH                                            0.829</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> R-Squared Change (H1 - H0):</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   INT                                            0.002</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   BEH                                            0.053</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   INT                                           -0.001</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   BEH                                            0.044</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Parameter Estimates:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Coefficients                          unstandardized</span>
@@ -635,101 +635,98 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span> Latent Variables:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   ATT =~        </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     att3            1.000                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     att2            0.964      0.011   84.974    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     att1            0.812      0.017   47.128    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     att4            0.869      0.019   45.694    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     att1            1.000                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     att2            1.328      0.028   47.040    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     att3            1.395      0.029   47.622    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     att4            0.920      0.028   33.193    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     att5            0.991      0.029   33.979    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   SN =~         </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     sn4             1.000                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     sn2             1.314      0.039   33.493    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     sn3             1.352      0.040   34.142    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     sn1             1.000      0.039   25.867    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     sn1             1.000                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     sn2             1.242      0.027   46.850    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     sn3             1.290      0.027   48.376    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   PBC =~        </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     pbc2            1.000                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     pbc1            0.853      0.020   42.452    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     pbc3            0.936      0.017   55.716    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     pbc4            0.813      0.020   40.990    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     pbc1            1.000                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     pbc2            3.924      0.276   14.203    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     pbc3            3.625      0.256   14.145    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     pbc4            1.313      0.115   11.423    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   INT =~        </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     int2            1.000                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     int1            0.970      0.011   92.005    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     int3            0.984      0.010   98.963    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     int4            0.992      0.009  104.919    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     int1            1.000                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     int2            1.041      0.010  107.761    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     int3            1.020      0.010  101.151    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     int4            1.029      0.010  103.973    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   BEH =~        </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     beh3            1.000                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     beh2            0.983      0.013   76.139    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     beh1            0.812      0.019   43.185    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     beh4            0.802      0.019   42.038    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     beh1            1.000                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     beh2            1.206      0.017   72.475    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     beh3            1.233      0.016   77.746    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Regressions:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   INT ~         </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     ATT            -0.047      0.025   -1.856    0.063</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     SN              0.047      0.031    1.513    0.130</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC             1.024      0.030   34.600    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     ATT             0.288      0.028   10.107    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     SN             -0.025      0.020   -1.252    0.210</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC             3.032      0.086   35.415    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   BEH ~         </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC             0.386      0.049    7.857    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     INT             0.604      0.046   13.180    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     INT:PBC         0.140      0.008   18.066    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC             0.648      0.153    4.230    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     INT             0.660      0.039   17.084    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     INT:PBC         0.381      0.022   17.319    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Intercepts:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .pbc2            4.019      0.066   61.072    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .pbc1            3.986      0.063   63.043    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .pbc3            3.755      0.063   59.773    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .pbc4            3.790      0.061   61.927    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .att3            3.723      0.064   58.406    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .att2            3.838      0.062   62.185    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .att1            4.210      0.060   70.042    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .att4            3.689      0.065   56.670    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .sn4             4.500      0.051   87.680    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .sn2             4.348      0.054   79.997    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .sn3             4.388      0.055   80.107    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .sn1             4.470      0.052   85.908    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .int2            3.722      0.067   55.889    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .int1            3.867      0.066   58.777    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .int3            3.739      0.066   56.460    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .int4            3.783      0.066   57.036    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .beh3            3.275      0.071   46.415    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .beh2            3.186      0.070   45.493    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .beh1            3.041      0.068   44.782    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .beh4            3.177      0.068   46.843    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .BEH            -0.617      0.042  -14.673    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .pbc1            5.783      0.038  151.255    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .pbc2            4.084      0.050   81.490    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .pbc3            3.837      0.048   80.077    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .pbc4            5.378      0.039  137.171    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .att1            4.359      0.046   95.460    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .att2            3.835      0.048   79.202    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .att3            3.797      0.050   75.442    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .att4            4.963      0.045  111.421    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .att5            4.986      0.047  105.961    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .sn1             5.012      0.040  126.687    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .sn2             4.397      0.041  106.010    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .sn3             4.427      0.042  106.443    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .int1            3.948      0.050   79.120    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .int2            3.848      0.051   76.048    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .int3            3.845      0.050   76.706    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .int4            3.885      0.050   77.256    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .beh1            2.781      0.047   59.462    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .beh2            3.341      0.054   61.721    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .beh3            3.401      0.054   62.846    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .BEH            -0.395      0.029  -13.570    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Covariances:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   ATT ~~        </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     SN              1.679      0.107   15.622    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     SN              1.394      0.069   20.132    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   PBC ~~        </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     ATT             3.664      0.177   20.682    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     SN              1.956      0.116   16.882    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     ATT             0.700      0.057   12.377    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     SN              0.502      0.042   12.031    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Variances:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .pbc2            0.672      0.038   17.721    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .pbc1            1.480      0.067   22.161    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .pbc3            0.769      0.040   19.338    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .pbc4            1.477      0.066   22.345    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .att3            0.292      0.024   11.979    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .att2            0.309      0.024   13.111    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .att1            1.286      0.057   22.565    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .att4            1.585      0.070   22.679    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .sn4             1.365      0.061   22.430    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .sn2             0.494      0.034   14.369    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .sn3             0.371      0.033   11.362    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .sn1             1.449      0.064   22.533    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .int2            0.234      0.014   17.084    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .int1            0.408      0.020   20.388    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .int3            0.331      0.017   19.338    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .int4            0.272      0.015   18.173    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .beh3            0.439      0.031   14.256    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .beh2            0.530      0.033   16.128    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .beh1            1.841      0.081   22.704    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .beh4            1.913      0.084   22.795    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     ATT             4.458      0.197   22.602    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     SN              1.714      0.116   14.726    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC             4.390      0.209   20.993    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .INT             0.508      0.036   13.995    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .BEH             0.456      0.032   14.324    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .pbc1            2.489      0.081   30.634    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .pbc2            0.453      0.026   17.338    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .pbc3            0.677      0.029   23.492    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .pbc4            2.429      0.080   30.526    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .att1            1.657      0.056   29.364    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .att2            0.398      0.021   19.111    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .att3            0.340      0.021   16.280    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .att4            1.818      0.061   29.691    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .att5            1.941      0.066   29.594    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .sn1             1.153      0.041   28.171    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .sn2             0.465      0.026   17.754    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .sn3             0.263      0.024   10.795    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .int1            0.459      0.017   26.531    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .int2            0.237      0.011   21.744    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .int3            0.325      0.013   24.469    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .int4            0.286      0.012   23.466    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .beh1            0.744      0.029   25.981    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .beh2            0.609      0.028   21.782    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .beh3            0.379      0.023   16.268    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     ATT             2.293      0.118   19.476    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     SN              1.811      0.090   20.069    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     PBC             0.279      0.040    6.962    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .INT             0.369      0.020   18.298    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .BEH             0.464      0.021   21.981    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 </code></pre></div>

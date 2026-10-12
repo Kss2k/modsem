@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">modsem</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.23</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.24</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -85,7 +85,7 @@
     
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://modsem.org" class="external-link">modsem</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; This is modsem (1.0.23). Please report any bugs!</span></span></code></pre></div>
+<span><span class="co">#&gt; This is modsem (1.0.24). Please report any bugs!</span></span></code></pre></div>
 <div class="section level3">
 <h3 id="reliablity-corrected-single-items">Reliablity-Corrected Single Items<a class="anchor" aria-label="anchor" href="#reliablity-corrected-single-items"></a>
 </h3>
@@ -99,11 +99,11 @@ example using the <code>relcorr_single_item</code> function:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">tpb_uk</span> <span class="op">&lt;-</span> <span class="st">"</span></span>
 <span><span class="st"># Outer Model (Based on Hagger et al., 2007)</span></span>
-<span><span class="st"> ATT =~ att3 + att2 + att1 + att4</span></span>
-<span><span class="st"> SN =~ sn4 + sn2 + sn3 + sn1</span></span>
-<span><span class="st"> PBC =~ pbc2 + pbc1 + pbc3 + pbc4</span></span>
-<span><span class="st"> INT =~ int2 + int1 + int3 + int4</span></span>
-<span><span class="st"> BEH =~ beh3 + beh2 + beh1 + beh4</span></span>
+<span><span class="st"> ATT =~ att1 + att2 + att3 + att4 + att5</span></span>
+<span><span class="st"> SN =~ sn1 + sn2 + sn3</span></span>
+<span><span class="st"> PBC =~ pbc1 + pbc2 + pbc3 + pbc4</span></span>
+<span><span class="st"> INT =~ int1 + int2 + int3 + int4</span></span>
+<span><span class="st"> BEH =~ beh1 + beh2 + beh3</span></span>
 <span><span class="st"></span></span>
 <span><span class="st"># Inner Model (Based on Steinmetz et al., 2011)</span></span>
 <span><span class="st"> INT ~ ATT + SN + PBC</span></span>
@@ -114,18 +114,18 @@ example using the <code>relcorr_single_item</code> function:</p>
 <span><span class="va">corrected</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/relcorr_single_item.html">relcorr_single_item</a></span><span class="op">(</span>syntax <span class="op">=</span> <span class="va">tpb_uk</span>, data <span class="op">=</span> <span class="va">TPB_UK</span><span class="op">)</span></span>
 <span><span class="va">corrected</span></span>
 <span><span class="co">#&gt; Average Variance Extracted:</span></span>
-<span><span class="co">#&gt;   ATT:    0.811</span></span>
-<span><span class="co">#&gt;   SN:     0.713</span></span>
-<span><span class="co">#&gt;   PBC:    0.762</span></span>
-<span><span class="co">#&gt;   INT:    0.939</span></span>
-<span><span class="co">#&gt;   BEH:    0.784</span></span>
+<span><span class="co">#&gt;   ATT:    0.695</span></span>
+<span><span class="co">#&gt;   SN:     0.796</span></span>
+<span><span class="co">#&gt;   PBC:    0.504</span></span>
+<span><span class="co">#&gt;   INT:    0.931</span></span>
+<span><span class="co">#&gt;   BEH:    0.881</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Chronbach's Alpha:</span></span>
-<span><span class="co">#&gt;   ATT:    0.941</span></span>
+<span><span class="co">#&gt;   ATT:    0.921</span></span>
 <span><span class="co">#&gt;   SN:     0.917</span></span>
-<span><span class="co">#&gt;   PBC:    0.931</span></span>
-<span><span class="co">#&gt;   INT:    0.984</span></span>
-<span><span class="co">#&gt;   BEH:    0.942</span></span>
+<span><span class="co">#&gt;   PBC:    0.786</span></span>
+<span><span class="co">#&gt;   INT:    0.982</span></span>
+<span><span class="co">#&gt;   BEH:    0.955</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Generated Syntax:</span></span>
 <span><span class="co">#&gt;   INT ~ ATT</span></span>
@@ -139,19 +139,19 @@ example using the <code>relcorr_single_item</code> function:</p>
 <span><span class="co">#&gt;   PBC =~ 1*composite_PBC_</span></span>
 <span><span class="co">#&gt;   INT =~ 1*composite_INT_</span></span>
 <span><span class="co">#&gt;   BEH =~ 1*composite_BEH_</span></span>
-<span><span class="co">#&gt;   composite_ATT_ ~~ 0.26123831*composite_ATT_</span></span>
-<span><span class="co">#&gt;   composite_SN_ ~~ 0.16893258*composite_SN_</span></span>
-<span><span class="co">#&gt;   composite_PBC_ ~~ 0.33902467*composite_PBC_</span></span>
-<span><span class="co">#&gt;   composite_INT_ ~~ 0.08002114*composite_INT_</span></span>
-<span><span class="co">#&gt;   composite_BEH_ ~~ 0.36503257*composite_BEH_</span></span>
+<span><span class="co">#&gt;   composite_ATT_ ~~ 0.19391723*composite_ATT_</span></span>
+<span><span class="co">#&gt;   composite_SN_ ~~ 0.15072930*composite_SN_</span></span>
+<span><span class="co">#&gt;   composite_PBC_ ~~ 0.06217142*composite_PBC_</span></span>
+<span><span class="co">#&gt;   composite_INT_ ~~ 0.07815740*composite_INT_</span></span>
+<span><span class="co">#&gt;   composite_BEH_ ~~ 0.14644270*composite_BEH_</span></span>
 <span><span class="co">#&gt;   </span></span>
 <span><span class="co">#&gt; Generated Items:</span></span>
-<span><span class="co">#&gt;   'data.frame':  1169 obs. of  5 variables:</span></span>
-<span><span class="co">#&gt;     $ composite_ATT_: num  6.03 5.49 2.19 6.03 4.94 ...</span></span>
-<span><span class="co">#&gt;     $ composite_SN_ : num  5.57 4.07 3 5.57 4.5 ...</span></span>
-<span><span class="co">#&gt;     $ composite_PBC_: num  4.44 5 1.94 6.39 6.11 ...</span></span>
-<span><span class="co">#&gt;     $ composite_INT_: num  4.06 4.56 1.01 5.32 5.32 ...</span></span>
-<span><span class="co">#&gt;     $ composite_BEH_: num  1.11 4.17 1.39 3.06 5.84 ...</span></span></code></pre></div>
+<span><span class="co">#&gt;   'data.frame':  1894 obs. of  5 variables:</span></span>
+<span><span class="co">#&gt;     $ composite_ATT_: num  3.73 3.73 5.68 1.95 1.78 ...</span></span>
+<span><span class="co">#&gt;     $ composite_SN_ : num  3.114 4.247 5.38 0.849 3.398 ...</span></span>
+<span><span class="co">#&gt;     $ composite_PBC_: num  1.62 1.62 2.23 1.62 1.62 ...</span></span>
+<span><span class="co">#&gt;     $ composite_INT_: num  0.978 3.423 3.912 0.978 0.978 ...</span></span>
+<span><span class="co">#&gt;     $ composite_BEH_: num  0.872 0.872 0.872 0.872 0.872 ...</span></span></code></pre></div>
 <p>Here we can see that <code>relcorr_single_item</code> returns a new
 model syntax, and a new <code>data.frame</code> containing the generated
 items. Additionally, it also returns the Chronbach’s
@@ -167,18 +167,18 @@ constructs in the model. The syntax and data can be extracted using the
 <span><span class="va">est_lms</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">syntax</span>, data <span class="op">=</span> <span class="va">data</span>, method<span class="op">=</span><span class="st">"lms"</span>, nodes<span class="op">=</span><span class="fl">32</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_lms</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (1.0.23) ended normally after 34 iterations</span></span>
+<span><span class="co">#&gt; modsem (1.0.24) ended normally after 56 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                        LMS</span></span>
 <span><span class="co">#&gt;   Optimization method                       EMA-NLMINB</span></span>
 <span><span class="co">#&gt;   Number of model parameters                        19</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;   Number of observations                          1169</span></span>
+<span><span class="co">#&gt;   Number of observations                          1894</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Loglikelihood and Information Criteria:</span></span>
-<span><span class="co">#&gt;   Loglikelihood                               -9397.25</span></span>
-<span><span class="co">#&gt;   Akaike (AIC)                                18832.50</span></span>
-<span><span class="co">#&gt;   Bayesian (BIC)                              18928.71</span></span>
+<span><span class="co">#&gt;   Loglikelihood                              -12151.28</span></span>
+<span><span class="co">#&gt;   Akaike (AIC)                                24340.56</span></span>
+<span><span class="co">#&gt;   Bayesian (BIC)                              24445.94</span></span>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; Numerical Integration:</span></span>
 <span><span class="co">#&gt;   Points of integration (per dim)                   32</span></span>
@@ -187,30 +187,30 @@ constructs in the model. The syntax and data can be extracted using the
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fit Measures for Baseline Model (H0):</span></span>
 <span><span class="co">#&gt;                                               Standard</span></span>
-<span><span class="co">#&gt;   Chi-square                                     34.39</span></span>
+<span><span class="co">#&gt;   Chi-square                                     21.06</span></span>
 <span><span class="co">#&gt;   Degrees of Freedom (Chi-square)                    2</span></span>
 <span><span class="co">#&gt;   P-value (Chi-square)                           0.000</span></span>
-<span><span class="co">#&gt;   RMSEA                                          0.118</span></span>
+<span><span class="co">#&gt;   RMSEA                                          0.071</span></span>
 <span><span class="co">#&gt;                                                       </span></span>
-<span><span class="co">#&gt;   Loglikelihood                               -9543.07</span></span>
-<span><span class="co">#&gt;   Akaike (AIC)                                19122.14</span></span>
-<span><span class="co">#&gt;   Bayesian (BIC)                              19213.29</span></span>
+<span><span class="co">#&gt;   Loglikelihood                              -12272.68</span></span>
+<span><span class="co">#&gt;   Akaike (AIC)                                24581.36</span></span>
+<span><span class="co">#&gt;   Bayesian (BIC)                              24681.19</span></span>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; Comparative Fit to H0 (LRT test):</span></span>
-<span><span class="co">#&gt;   Loglikelihood change                          145.82</span></span>
-<span><span class="co">#&gt;   Difference test (D)                           291.64</span></span>
+<span><span class="co">#&gt;   Loglikelihood change                          121.40</span></span>
+<span><span class="co">#&gt;   Difference test (D)                           242.80</span></span>
 <span><span class="co">#&gt;   Degrees of freedom (D)                             1</span></span>
 <span><span class="co">#&gt;   P-value (D)                                    0.000</span></span>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; R-Squared Interaction Model (H1):</span></span>
-<span><span class="co">#&gt;   INT                                            0.857</span></span>
-<span><span class="co">#&gt;   BEH                                            0.937</span></span>
+<span><span class="co">#&gt;   INT                                            0.853</span></span>
+<span><span class="co">#&gt;   BEH                                            0.867</span></span>
 <span><span class="co">#&gt; R-Squared Baseline Model (H0):</span></span>
-<span><span class="co">#&gt;   INT                                            0.858</span></span>
-<span><span class="co">#&gt;   BEH                                            0.873</span></span>
+<span><span class="co">#&gt;   INT                                            0.852</span></span>
+<span><span class="co">#&gt;   BEH                                            0.828</span></span>
 <span><span class="co">#&gt; R-Squared Change (H1 - H0):</span></span>
-<span><span class="co">#&gt;   INT                                           -0.001</span></span>
-<span><span class="co">#&gt;   BEH                                            0.064</span></span>
+<span><span class="co">#&gt;   INT                                            0.002</span></span>
+<span><span class="co">#&gt;   BEH                                            0.039</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Parameter Estimates:</span></span>
 <span><span class="co">#&gt;   Coefficients                          unstandardized</span></span>
@@ -233,42 +233,42 @@ constructs in the model. The syntax and data can be extracted using the
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   INT ~         </span></span>
-<span><span class="co">#&gt;     ATT            -0.022      0.042   -0.530    0.596</span></span>
-<span><span class="co">#&gt;     SN              0.014      0.037    0.387    0.699</span></span>
-<span><span class="co">#&gt;     PBC             0.992      0.046   21.594    0.000</span></span>
+<span><span class="co">#&gt;     ATT             0.703      0.041   17.230    0.000</span></span>
+<span><span class="co">#&gt;     SN             -0.168      0.033   -5.027    0.000</span></span>
+<span><span class="co">#&gt;     PBC             1.970      0.115   17.100    0.000</span></span>
 <span><span class="co">#&gt;   BEH ~         </span></span>
-<span><span class="co">#&gt;     PBC             0.725      0.046   15.926    0.000</span></span>
-<span><span class="co">#&gt;     INT             0.306      0.042    7.223    0.000</span></span>
-<span><span class="co">#&gt;     INT:PBC         0.148      0.008   18.030    0.000</span></span>
+<span><span class="co">#&gt;     PBC             0.431      0.109    3.957    0.000</span></span>
+<span><span class="co">#&gt;     INT             0.707      0.028   25.507    0.000</span></span>
+<span><span class="co">#&gt;     INT:PBC         0.338      0.021   15.725    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Intercepts:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;    .cmpst_PBC_      4.318      0.064   67.631    0.000</span></span>
-<span><span class="co">#&gt;    .cmpst_ATT_      4.241      0.063   66.896    0.000</span></span>
-<span><span class="co">#&gt;    .compst_SN_      3.794      0.041   93.102    0.000</span></span>
-<span><span class="co">#&gt;    .cmpst_INT_      3.830      0.066   58.405    0.000</span></span>
-<span><span class="co">#&gt;    .cmpst_BEH_      2.885      0.077   37.584    0.000</span></span>
+<span><span class="co">#&gt;    .cmpst_PBC_      1.935      0.014  138.708    0.000</span></span>
+<span><span class="co">#&gt;    .cmpst_ATT_      3.895      0.037  106.580    0.000</span></span>
+<span><span class="co">#&gt;    .compst_SN_      3.917      0.032  121.789    0.000</span></span>
+<span><span class="co">#&gt;    .cmpst_INT_      3.796      0.048   79.389    0.000</span></span>
+<span><span class="co">#&gt;    .cmpst_BEH_      2.427      0.048   50.925    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   ATT ~~        </span></span>
-<span><span class="co">#&gt;     SN              1.908      0.104   18.254    0.000</span></span>
+<span><span class="co">#&gt;     SN              1.591      0.063   25.296    0.000</span></span>
 <span><span class="co">#&gt;   PBC ~~        </span></span>
-<span><span class="co">#&gt;     ATT             3.964      0.180   21.972    0.000</span></span>
-<span><span class="co">#&gt;     SN              2.028      0.107   18.987    0.000</span></span>
+<span><span class="co">#&gt;     ATT             0.714      0.028   25.886    0.000</span></span>
+<span><span class="co">#&gt;     SN              0.551      0.023   23.658    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;    .cmpst_PBC_      0.339                             </span></span>
-<span><span class="co">#&gt;    .cmpst_ATT_      0.261                             </span></span>
-<span><span class="co">#&gt;    .compst_SN_      0.169                             </span></span>
-<span><span class="co">#&gt;    .cmpst_INT_      0.080                             </span></span>
-<span><span class="co">#&gt;    .cmpst_BEH_      0.365                             </span></span>
-<span><span class="co">#&gt;     ATT             4.439      0.194   22.827    0.000</span></span>
-<span><span class="co">#&gt;     SN              1.773      0.080   22.065    0.000</span></span>
-<span><span class="co">#&gt;     PBC             4.427      0.197   22.432    0.000</span></span>
-<span><span class="co">#&gt;    .INT             0.709      0.046   15.290    0.000</span></span>
-<span><span class="co">#&gt;    .BEH             0.376      0.039    9.679    0.000</span></span></code></pre></div>
+<span><span class="co">#&gt;    .cmpst_PBC_      0.062                             </span></span>
+<span><span class="co">#&gt;    .cmpst_ATT_      0.194                             </span></span>
+<span><span class="co">#&gt;    .compst_SN_      0.151                             </span></span>
+<span><span class="co">#&gt;    .cmpst_INT_      0.078                             </span></span>
+<span><span class="co">#&gt;    .cmpst_BEH_      0.146                             </span></span>
+<span><span class="co">#&gt;     ATT             2.337      0.082   28.407    0.000</span></span>
+<span><span class="co">#&gt;     SN              1.810      0.064   28.398    0.000</span></span>
+<span><span class="co">#&gt;     PBC             0.307      0.012   25.548    0.000</span></span>
+<span><span class="co">#&gt;    .INT             0.624      0.034   18.359    0.000</span></span>
+<span><span class="co">#&gt;    .BEH             0.471      0.023   20.847    0.000</span></span></code></pre></div>
 <p>The easiest approach however, is to use the <code>rcs</code> argument
 in the <code>modsem</code> function to call
 <code>relcorr_single_item</code> before estimating the model.</p>
@@ -288,16 +288,16 @@ replace.</p>
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/relcorr_single_item.html">relcorr_single_item</a></span><span class="op">(</span>syntax <span class="op">=</span> <span class="va">tpb_uk</span>, data <span class="op">=</span> <span class="va">TPB_UK</span>,</span>
 <span>                    choose <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ATT"</span>, <span class="st">"SN"</span>, <span class="st">"PBC"</span>, <span class="st">"INT"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Average Variance Extracted:</span></span>
-<span><span class="co">#&gt;   ATT:    0.811</span></span>
-<span><span class="co">#&gt;   SN:     0.713</span></span>
-<span><span class="co">#&gt;   PBC:    0.761</span></span>
-<span><span class="co">#&gt;   INT:    0.939</span></span>
+<span><span class="co">#&gt;   ATT:    0.695</span></span>
+<span><span class="co">#&gt;   SN:     0.796</span></span>
+<span><span class="co">#&gt;   PBC:    0.504</span></span>
+<span><span class="co">#&gt;   INT:    0.931</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Chronbach's Alpha:</span></span>
-<span><span class="co">#&gt;   ATT:    0.941</span></span>
+<span><span class="co">#&gt;   ATT:    0.921</span></span>
 <span><span class="co">#&gt;   SN:     0.917</span></span>
-<span><span class="co">#&gt;   PBC:    0.931</span></span>
-<span><span class="co">#&gt;   INT:    0.984</span></span>
+<span><span class="co">#&gt;   PBC:    0.786</span></span>
+<span><span class="co">#&gt;   INT:    0.982</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Generated Syntax:</span></span>
 <span><span class="co">#&gt;   INT ~ ATT</span></span>
@@ -306,81 +306,80 @@ replace.</p>
 <span><span class="co">#&gt;   BEH ~ INT</span></span>
 <span><span class="co">#&gt;   BEH ~ PBC</span></span>
 <span><span class="co">#&gt;   BEH ~ INT:PBC</span></span>
-<span><span class="co">#&gt;   BEH =~ beh3</span></span>
-<span><span class="co">#&gt;   BEH =~ beh2</span></span>
 <span><span class="co">#&gt;   BEH =~ beh1</span></span>
-<span><span class="co">#&gt;   BEH =~ beh4</span></span>
+<span><span class="co">#&gt;   BEH =~ beh2</span></span>
+<span><span class="co">#&gt;   BEH =~ beh3</span></span>
 <span><span class="co">#&gt;   ATT =~ 1*composite_ATT_</span></span>
 <span><span class="co">#&gt;   SN =~ 1*composite_SN_</span></span>
 <span><span class="co">#&gt;   PBC =~ 1*composite_PBC_</span></span>
 <span><span class="co">#&gt;   INT =~ 1*composite_INT_</span></span>
-<span><span class="co">#&gt;   composite_ATT_ ~~ 0.26073873*composite_ATT_</span></span>
-<span><span class="co">#&gt;   composite_SN_ ~~ 0.16894836*composite_SN_</span></span>
-<span><span class="co">#&gt;   composite_PBC_ ~~ 0.34211342*composite_PBC_</span></span>
-<span><span class="co">#&gt;   composite_INT_ ~~ 0.08007961*composite_INT_</span></span>
+<span><span class="co">#&gt;   composite_ATT_ ~~ 0.19371228*composite_ATT_</span></span>
+<span><span class="co">#&gt;   composite_SN_ ~~ 0.15076687*composite_SN_</span></span>
+<span><span class="co">#&gt;   composite_PBC_ ~~ 0.06212051*composite_PBC_</span></span>
+<span><span class="co">#&gt;   composite_INT_ ~~ 0.07817114*composite_INT_</span></span>
 <span><span class="co">#&gt;   </span></span>
 <span><span class="co">#&gt; Generated Items:</span></span>
-<span><span class="co">#&gt;   'data.frame':  1169 obs. of  4 variables:</span></span>
-<span><span class="co">#&gt;     $ composite_ATT_: num  6.03 5.48 2.19 6.03 4.93 ...</span></span>
-<span><span class="co">#&gt;     $ composite_SN_ : num  5.57 4.07 3 5.57 4.5 ...</span></span>
-<span><span class="co">#&gt;     $ composite_PBC_: num  4.45 5.01 1.95 6.4 6.13 ...</span></span>
-<span><span class="co">#&gt;     $ composite_INT_: num  4.05 4.56 1.01 5.32 5.32 ...</span></span>
+<span><span class="co">#&gt;   'data.frame':  1894 obs. of  4 variables:</span></span>
+<span><span class="co">#&gt;     $ composite_ATT_: num  3.73 3.73 5.68 1.95 1.78 ...</span></span>
+<span><span class="co">#&gt;     $ composite_SN_ : num  3.12 4.25 5.38 0.85 3.4 ...</span></span>
+<span><span class="co">#&gt;     $ composite_PBC_: num  1.62 1.62 2.23 1.62 1.62 ...</span></span>
+<span><span class="co">#&gt;     $ composite_INT_: num  0.977 3.42 3.909 0.977 0.977 ...</span></span>
 <span></span>
 <span><span class="va">est_dca</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">tpb_uk</span>, data <span class="op">=</span> <span class="va">TPB_UK</span>, method <span class="op">=</span> <span class="st">"dblcent"</span>, rcs <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>                  rcs.choose <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ATT"</span>, <span class="st">"SN"</span>, <span class="st">"PBC"</span>, <span class="st">"INT"</span>, <span class="st">"INT:PBC"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_dca</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Estimating baseline model (H0)</span></span>
-<span><span class="co">#&gt; modsem (version 1.0.23, approach = dblcent):</span></span>
+<span><span class="co">#&gt; modsem (version 1.0.24, approach = dblcent):</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Interaction Model Fit Measures (H1):</span></span>
-<span><span class="co">#&gt;   Loglikelihood                              -18320.66 </span></span>
-<span><span class="co">#&gt;   Akaike (AIC)                                36691.32 </span></span>
-<span><span class="co">#&gt;   Bayesian (BIC)                              36817.92 </span></span>
-<span><span class="co">#&gt;   Chi-square                                   1326.60 </span></span>
-<span><span class="co">#&gt;   Degrees of Freedom                                20 </span></span>
+<span><span class="co">#&gt;   Loglikelihood                              -20717.06 </span></span>
+<span><span class="co">#&gt;   Akaike (AIC)                                41480.13 </span></span>
+<span><span class="co">#&gt;   Bayesian (BIC)                              41607.70 </span></span>
+<span><span class="co">#&gt;   Chi-square                                    229.55 </span></span>
+<span><span class="co">#&gt;   Degrees of Freedom                                13 </span></span>
 <span><span class="co">#&gt;   P-value (Chi-square)                           0.000 </span></span>
-<span><span class="co">#&gt;   RMSEA                                          0.236 </span></span>
-<span><span class="co">#&gt;   CFI                                            0.891 </span></span>
-<span><span class="co">#&gt;   SRMR                                           0.051 </span></span>
+<span><span class="co">#&gt;   RMSEA                                          0.094 </span></span>
+<span><span class="co">#&gt;   CFI                                            0.986 </span></span>
+<span><span class="co">#&gt;   SRMR                                           0.028 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fit Measures for Baseline Model (H0):</span></span>
-<span><span class="co">#&gt;   Loglikelihood                              -18443.43 </span></span>
-<span><span class="co">#&gt;   Akaike (AIC)                                36934.87 </span></span>
-<span><span class="co">#&gt;   Bayesian (BIC)                              37056.40 </span></span>
-<span><span class="co">#&gt;   Chi-square                                   1572.15 </span></span>
-<span><span class="co">#&gt;   Degrees of Freedom                                21 </span></span>
+<span><span class="co">#&gt;   Loglikelihood                              -20800.88 </span></span>
+<span><span class="co">#&gt;   Akaike (AIC)                                41645.76 </span></span>
+<span><span class="co">#&gt;   Bayesian (BIC)                              41767.78 </span></span>
+<span><span class="co">#&gt;   Chi-square                                    397.18 </span></span>
+<span><span class="co">#&gt;   Degrees of Freedom                                14 </span></span>
 <span><span class="co">#&gt;   P-value (Chi-square)                           0.000 </span></span>
-<span><span class="co">#&gt;   RMSEA                                          0.251 </span></span>
-<span><span class="co">#&gt;   CFI                                            0.871 </span></span>
-<span><span class="co">#&gt;   SRMR                                           0.075 </span></span>
+<span><span class="co">#&gt;   RMSEA                                          0.120 </span></span>
+<span><span class="co">#&gt;   CFI                                            0.975 </span></span>
+<span><span class="co">#&gt;   SRMR                                           0.060 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Comparative Fit to H0 (LRT test):</span></span>
-<span><span class="co">#&gt;   Chi-square diff                              245.550 </span></span>
+<span><span class="co">#&gt;   Chi-square diff                              167.631 </span></span>
 <span><span class="co">#&gt;   Degrees of freedom diff                            1 </span></span>
 <span><span class="co">#&gt;   P-value (LRT)                                  0.000 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; R-Squared Interaction Model (H1):</span></span>
-<span><span class="co">#&gt;   INT                                            0.859 </span></span>
-<span><span class="co">#&gt;   BEH                                            0.914 </span></span>
+<span><span class="co">#&gt;   INT                                            0.851 </span></span>
+<span><span class="co">#&gt;   BEH                                            0.852 </span></span>
 <span><span class="co">#&gt; R-Squared Baseline Model (H0):</span></span>
-<span><span class="co">#&gt;   INT                                            0.860 </span></span>
-<span><span class="co">#&gt;   BEH                                            0.874 </span></span>
+<span><span class="co">#&gt;   INT                                            0.853 </span></span>
+<span><span class="co">#&gt;   BEH                                            0.831 </span></span>
 <span><span class="co">#&gt; R-Squared Change (H1 - H0):</span></span>
-<span><span class="co">#&gt;   INT                                           -0.001 </span></span>
-<span><span class="co">#&gt;   BEH                                            0.040 </span></span>
+<span><span class="co">#&gt;   INT                                           -0.002 </span></span>
+<span><span class="co">#&gt;   BEH                                            0.021 </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; lavaan 0.6-20 ended normally after 61 iterations</span></span>
+<span><span class="co">#&gt; lavaan 0.6-20 ended normally after 54 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                         ML</span></span>
 <span><span class="co">#&gt;   Optimization method                           NLMINB</span></span>
-<span><span class="co">#&gt;   Number of model parameters                        25</span></span>
+<span><span class="co">#&gt;   Number of model parameters                        23</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;   Number of observations                          1169</span></span>
+<span><span class="co">#&gt;   Number of observations                          1894</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Model Test User Model:</span></span>
 <span><span class="co">#&gt;                                                       </span></span>
-<span><span class="co">#&gt;   Test statistic                              1326.603</span></span>
-<span><span class="co">#&gt;   Degrees of freedom                                20</span></span>
+<span><span class="co">#&gt;   Test statistic                               229.549</span></span>
+<span><span class="co">#&gt;   Degrees of freedom                                13</span></span>
 <span><span class="co">#&gt;   P-value (Chi-square)                           0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Parameter Estimates:</span></span>
@@ -392,10 +391,9 @@ replace.</p>
 <span><span class="co">#&gt; Latent Variables:</span></span>
 <span><span class="co">#&gt;                    Estimate  Std.Err  z-value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   BEH =~                                              </span></span>
-<span><span class="co">#&gt;     beh3              1.000                           </span></span>
-<span><span class="co">#&gt;     beh2              0.986    0.013   74.481    0.000</span></span>
-<span><span class="co">#&gt;     beh1              0.822    0.019   43.588    0.000</span></span>
-<span><span class="co">#&gt;     beh4              0.811    0.019   42.338    0.000</span></span>
+<span><span class="co">#&gt;     beh1              1.000                           </span></span>
+<span><span class="co">#&gt;     beh2              1.203    0.017   72.565    0.000</span></span>
+<span><span class="co">#&gt;     beh3              1.228    0.016   77.324    0.000</span></span>
 <span><span class="co">#&gt;   ATT =~                                              </span></span>
 <span><span class="co">#&gt;     composite_ATT_    1.000                           </span></span>
 <span><span class="co">#&gt;   SN =~                                               </span></span>
@@ -410,47 +408,46 @@ replace.</p>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                    Estimate  Std.Err  z-value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   INT ~                                               </span></span>
-<span><span class="co">#&gt;     ATT              -0.007    0.041   -0.161    0.872</span></span>
-<span><span class="co">#&gt;     SN               -0.015    0.038   -0.395    0.693</span></span>
-<span><span class="co">#&gt;     PBC               0.989    0.046   21.722    0.000</span></span>
+<span><span class="co">#&gt;     ATT               0.764    0.039   19.400    0.000</span></span>
+<span><span class="co">#&gt;     SN               -0.183    0.033   -5.465    0.000</span></span>
+<span><span class="co">#&gt;     PBC               1.823    0.110   16.545    0.000</span></span>
 <span><span class="co">#&gt;   BEH ~                                               </span></span>
-<span><span class="co">#&gt;     INT               0.634    0.038   16.765    0.000</span></span>
-<span><span class="co">#&gt;     PBC               0.352    0.040    8.742    0.000</span></span>
-<span><span class="co">#&gt;     INTPBC            0.130    0.008   16.487    0.000</span></span>
+<span><span class="co">#&gt;     INT               0.718    0.026   27.248    0.000</span></span>
+<span><span class="co">#&gt;     PBC               0.369    0.099    3.741    0.000</span></span>
+<span><span class="co">#&gt;     INTPBC            0.310    0.022   13.826    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                     Estimate  Std.Err  z-value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;  .composite_PBC_ ~~                                    </span></span>
-<span><span class="co">#&gt;    .cmps_INT__PBC_    -0.003                           </span></span>
+<span><span class="co">#&gt;    .cmps_INT__PBC_     0.001                           </span></span>
 <span><span class="co">#&gt;  .composite_INT_ ~~                                    </span></span>
-<span><span class="co">#&gt;    .cmps_INT__PBC_    -0.010                           </span></span>
+<span><span class="co">#&gt;    .cmps_INT__PBC_     0.001                           </span></span>
 <span><span class="co">#&gt;   ATT ~~                                               </span></span>
-<span><span class="co">#&gt;     SN                 1.907    0.104   18.255    0.000</span></span>
-<span><span class="co">#&gt;     PBC                3.959    0.181   21.899    0.000</span></span>
-<span><span class="co">#&gt;     INTPBC             0.323    0.246    1.313    0.189</span></span>
+<span><span class="co">#&gt;     SN                 1.593    0.063   25.323    0.000</span></span>
+<span><span class="co">#&gt;     PBC                0.710    0.028   25.733    0.000</span></span>
+<span><span class="co">#&gt;     INTPBC             0.048    0.041    1.167    0.243</span></span>
 <span><span class="co">#&gt;   SN ~~                                                </span></span>
-<span><span class="co">#&gt;     PBC                2.051    0.108   19.070    0.000</span></span>
-<span><span class="co">#&gt;     INTPBC            -0.174    0.158   -1.099    0.272</span></span>
+<span><span class="co">#&gt;     PBC                0.554    0.023   23.691    0.000</span></span>
+<span><span class="co">#&gt;     INTPBC            -0.128    0.037   -3.473    0.001</span></span>
 <span><span class="co">#&gt;   PBC ~~                                               </span></span>
-<span><span class="co">#&gt;     INTPBC             0.515    0.247    2.083    0.037</span></span>
+<span><span class="co">#&gt;     INTPBC            -0.028    0.016   -1.807    0.071</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                    Estimate  Std.Err  z-value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;    .composite_ATT_    0.261                           </span></span>
-<span><span class="co">#&gt;    .composite_SN_     0.169                           </span></span>
-<span><span class="co">#&gt;    .composite_PBC_    0.342                           </span></span>
-<span><span class="co">#&gt;    .composite_INT_    0.080                           </span></span>
-<span><span class="co">#&gt;    .cmps_INT__PBC_    2.212                           </span></span>
-<span><span class="co">#&gt;    .beh3              0.481    0.031   15.623    0.000</span></span>
-<span><span class="co">#&gt;    .beh2              0.535    0.032   16.691    0.000</span></span>
-<span><span class="co">#&gt;    .beh1              1.784    0.079   22.696    0.000</span></span>
-<span><span class="co">#&gt;    .beh4              1.863    0.082   22.796    0.000</span></span>
-<span><span class="co">#&gt;    .BEH               0.455    0.033   13.616    0.000</span></span>
-<span><span class="co">#&gt;     ATT               4.433    0.194   22.833    0.000</span></span>
-<span><span class="co">#&gt;     SN                1.774    0.080   22.074    0.000</span></span>
-<span><span class="co">#&gt;     PBC               4.461    0.199   22.456    0.000</span></span>
-<span><span class="co">#&gt;    .INT               0.697    0.046   15.182    0.000</span></span>
-<span><span class="co">#&gt;     INTPBC           12.902    0.625   20.638    0.000</span></span></code></pre></div>
+<span><span class="co">#&gt;    .composite_ATT_    0.194                           </span></span>
+<span><span class="co">#&gt;    .composite_SN_     0.151                           </span></span>
+<span><span class="co">#&gt;    .composite_PBC_    0.062                           </span></span>
+<span><span class="co">#&gt;    .composite_INT_    0.078                           </span></span>
+<span><span class="co">#&gt;    .cmps_INT__PBC_    0.291                           </span></span>
+<span><span class="co">#&gt;    .beh1              0.727    0.028   25.849    0.000</span></span>
+<span><span class="co">#&gt;    .beh2              0.603    0.028   21.785    0.000</span></span>
+<span><span class="co">#&gt;    .beh3              0.400    0.023   17.063    0.000</span></span>
+<span><span class="co">#&gt;    .BEH               0.495    0.025   19.805    0.000</span></span>
+<span><span class="co">#&gt;     ATT               2.334    0.082   28.416    0.000</span></span>
+<span><span class="co">#&gt;     SN                1.811    0.064   28.408    0.000</span></span>
+<span><span class="co">#&gt;     PBC               0.309    0.012   25.628    0.000</span></span>
+<span><span class="co">#&gt;    .INT               0.633    0.034   18.808    0.000</span></span>
+<span><span class="co">#&gt;     INTPBC            1.009    0.042   23.881    0.000</span></span></code></pre></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

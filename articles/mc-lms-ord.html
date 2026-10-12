@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">modsem</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.23</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.24</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -85,7 +85,7 @@
     
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://modsem.org" class="external-link">modsem</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; This is modsem (1.0.23). Please report any bugs!</span></span>
+<span><span class="co">#&gt; This is modsem (1.0.24). Please report any bugs!</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">2938472</span><span class="op">)</span></span></code></pre></div>
 <p><code>modsem</code> implements a Monte-Carlo correction for LMS and
 QML models with ordinal data. Here we refer to these informally as
@@ -131,7 +131,7 @@ ordinal, using the <code>ordered=</code> argument.</p>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_lms_ord</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (1.0.23) ended normally after 57 iterations</span></span>
+<span><span class="co">#&gt; modsem (1.0.24) ended normally after 57 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                     MC-LMS</span></span>
 <span><span class="co">#&gt;   Optimization method                    ROBBINS-MONRO</span></span>
@@ -176,24 +176,24 @@ ordinal, using the <code>ordered=</code> argument.</p>
 <span><span class="co">#&gt; Latent Variables:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   X =~          </span></span>
-<span><span class="co">#&gt;     x1              0.932      0.007  136.803    0.000</span></span>
-<span><span class="co">#&gt;     x2              0.900      0.007  129.262    0.000</span></span>
-<span><span class="co">#&gt;     x3              0.919      0.007  126.789    0.000</span></span>
+<span><span class="co">#&gt;     x1              0.932      0.007  139.701    0.000</span></span>
+<span><span class="co">#&gt;     x2              0.900      0.007  129.656    0.000</span></span>
+<span><span class="co">#&gt;     x3              0.919      0.007  126.305    0.000</span></span>
 <span><span class="co">#&gt;   Z =~          </span></span>
-<span><span class="co">#&gt;     z1              0.919      0.008  113.945    0.000</span></span>
-<span><span class="co">#&gt;     z2              0.904      0.007  124.300    0.000</span></span>
-<span><span class="co">#&gt;     z3              0.908      0.008  108.882    0.000</span></span>
+<span><span class="co">#&gt;     z1              0.919      0.008  113.252    0.000</span></span>
+<span><span class="co">#&gt;     z2              0.904      0.007  124.291    0.000</span></span>
+<span><span class="co">#&gt;     z3              0.908      0.008  108.887    0.000</span></span>
 <span><span class="co">#&gt;   Y =~          </span></span>
-<span><span class="co">#&gt;     y1              0.975      0.004  261.362    0.000</span></span>
-<span><span class="co">#&gt;     y2              0.957      0.004  218.195    0.000</span></span>
-<span><span class="co">#&gt;     y3              0.964      0.004  230.458    0.000</span></span>
+<span><span class="co">#&gt;     y1              0.975      0.004  264.212    0.000</span></span>
+<span><span class="co">#&gt;     y2              0.957      0.004  215.432    0.000</span></span>
+<span><span class="co">#&gt;     y3              0.964      0.004  231.644    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   Y ~           </span></span>
-<span><span class="co">#&gt;     X               0.434      0.020   21.340    0.000</span></span>
-<span><span class="co">#&gt;     Z               0.380      0.021   18.013    0.000</span></span>
-<span><span class="co">#&gt;     X:Z             0.485      0.027   17.832    0.000</span></span>
+<span><span class="co">#&gt;     X               0.434      0.020   21.325    0.000</span></span>
+<span><span class="co">#&gt;     Z               0.380      0.021   17.975    0.000</span></span>
+<span><span class="co">#&gt;     X:Z             0.485      0.027   17.850    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
