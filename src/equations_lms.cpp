@@ -1380,59 +1380,92 @@ Rcpp::List hessObsLogLikLmsCpp(const Rcpp::List& modelR,
 }
 
 
-inline Rcpp::List fdHessFromCompleteGradient(
-    LMSModel& M,
+#include "lms_hessian.h"
+
+inline Rcpp::List analyticalHessFromCompleteModel(
+    const LMSModel& M,
     const arma::mat& V,
     const std::vector<arma::vec>& TGamma,
     const std::vector<std::vector<arma::vec>>& Mean,
     const std::vector<std::vector<arma::mat>>& Cov,
     const std::vector<arma::uvec>& colidx,
-    const arma::uvec& n,
-    const arma::uvec& d,
     const arma::uvec& block,
     const arma::uvec& row,
     const arma::uvec& col,
     const arma::uvec& symmetric,
     const int npatterns,
-    const double relStep,
-    const double minAbs,
     const int ncores) {
 
   ThreadSetter ts(ncores);
 
   const std::size_t p = block.n_elem;
-  const arma::vec base = getParams(M, block, row, col);
-  const double minScale = (minAbs > 0.0) ? minAbs : 1.0;
-  const arma::vec incr =
-    arma::max(arma::abs(base), arma::vec(p).fill(minScale)) * relStep;
-
-  const double f0 = completeLogLikFromModel(M, V, TGamma, Mean, Cov,
-                                            colidx, n, d, npatterns);
-  const arma::vec grad0 = completeGradientReverseFromModel(
-    M, V, TGamma, Mean, Cov, colidx, block, row, col, symmetric,
-    npatterns, ncores, false
-  );
-
+  double f0 = 0.0;
+  arma::vec grad0(p, arma::fill::zeros);
   arma::mat Hess(p, p, arma::fill::zeros);
+  bool failed = false;
+#ifdef _OPENMP
+  const int nthreads = omp_get_max_threads();
+#else
+  const int nthreads = 1;
+#endif
+  std::vector<arma::vec> gradients(nthreads, grad0);
+  std::vector<arma::mat> hessians(nthreads, Hess);
 
 #pragma omp parallel for default(none) \
-  shared(M, V, TGamma, Mean, Cov, colidx, n, d, block, row, col, symmetric, \
-         npatterns, p, base, incr, grad0, Hess) schedule(static)
-  for (std::size_t j = 0; j < p; ++j) {
-    LMSModel Mc = M.threadClone();
-    arma::vec pars = base;
-    pars[j] += incr[j];
-    setParams(Mc, block, row, col, symmetric, pars);
-    Mc.updateCache();
-
-    const arma::vec gradJ = completeGradientReverseFromModel(
-      Mc, V, TGamma, Mean, Cov, colidx, block, row, col, symmetric,
-      npatterns, 1L, false
-    );
-
-    Hess.col(j) = (gradJ - grad0) / incr[j];
+  shared(M, V, TGamma, Mean, Cov, colidx, block, row, col, symmetric, \
+         npatterns, p, gradients, hessians) \
+  reduction(+:f0) reduction(||:failed) schedule(static)
+  for (std::size_t j = 0; j < V.n_rows; ++j) {
+    if (arma::sum(TGamma[j]) <= DBL_MIN) continue;
+#ifdef _OPENMP
+    const int tid = omp_get_thread_num();
+#else
+    const int tid = 0;
+#endif
+    lms_hessian::Moments moments(M, V.row(j).t(), block);
+    std::vector<lms_hessian::Pattern> patterns;
+    bool valid = true;
+    for (int i = 0; i < npatterns; ++i) {
+      if (TGamma[j][i] <= DBL_MIN) continue;
+      patterns.emplace_back();
+      if (!patterns.back().initialize(moments, colidx[i], Mean[j][i],
+                                      Cov[j][i], TGamma[j][i], f0)) {
+        valid = false;
+        break;
+      }
+    }
+    if (!valid) { failed = true; continue; }
+    moments.tape.reverse(false);
+    for (std::size_t k = 0; k < p; ++k)
+      gradients[tid][k] += moments.derivative(block[k], row[k], col[k],
+                                              symmetric[k], false);
+    for (std::size_t k = 0; k < p; ++k) {
+      const int input = moments.blocks.at(block[k]);
+      if (input < 0) continue;
+      moments.tape.resetDirection();
+      moments.tape.nodes[input].active = true;
+      arma::mat& direction = moments.tape.nodes[input].dot;
+      direction(row[k], col[k]) = 1.0;
+      if (symmetric[k] && row[k] != col[k]) direction(col[k], row[k]) = 1.0;
+      moments.tape.forward();
+      for (const auto& pattern : patterns) pattern.seedDirection(moments);
+      moments.tape.reverse(true);
+      for (std::size_t l = 0; l < p; ++l)
+        hessians[tid](l, k) += moments.derivative(block[l], row[l], col[l],
+                                                  symmetric[l], true);
+    }
+  }
+  for (int t = 0; t < nthreads; ++t) {
+    grad0 += gradients[t];
+    Hess += hessians[t];
+  }
+  if (failed) {
+    f0 = arma::datum::nan;
+    grad0.fill(arma::datum::nan);
+    Hess.fill(arma::datum::nan);
   }
 
+  // The analytical result is symmetric; remove only floating-point roundoff.
   Hess = 0.5 * (Hess + Hess.t());
 
   return Rcpp::List::create(
@@ -1465,9 +1498,11 @@ Rcpp::List hessCompLogLikLmsCpp(const Rcpp::List& modelR,
   const auto Cov         = as_vec_of_vec_of_mat(P["cov"]);
   const auto colidx      = as_vec_of_uvec(colidxR);
 
-  return fdHessFromCompleteGradient(M, V, TGamma, Mean, Cov, colidx, n, d,
-                                    block, row, col, symmetric, npatterns,
-                                    relStep, minAbs, ncores);
+  // relStep/minAbs remain in the interface for compatibility, but the
+  // analytical path does not use a finite-difference step size.
+  return analyticalHessFromCompleteModel(M, V, TGamma, Mean, Cov, colidx,
+                                         block, row, col, symmetric, npatterns,
+                                         ncores);
 }
 
 

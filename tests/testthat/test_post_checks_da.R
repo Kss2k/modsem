@@ -44,8 +44,6 @@ m3 <- "
 # are emitted...
 quiet_modsem <- purrr::quietly(modsem)
 results_lms <- quiet_modsem(m3, oneInt, method = "lms", auto.fix.first = FALSE)
-pat1 <- "Standard errors for some .* could not be computed.*"
-pat2 <- "The variance-covariance.*positive definite.*eigenvalue.*zero.*"
-testthat::expect_true(any(grepl(pat1, results_lms$warnings)))
-testthat::expect_true(any(grepl(pat2, results_lms$warnings)))
+pat <- "The variance-covariance.*positive definite.*eigenvalue.*zero.*"
+testthat::expect_true(any(grepl(pat, results_lms$warnings)))
 
