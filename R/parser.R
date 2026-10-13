@@ -174,6 +174,12 @@ evalToken.RightBracket <- function(token, lhs, rhs) {
 }
 
 
+#' @export
+evalToken.LavLevel <- function(token, lhs, rhs) {
+  list(lhs = "level", op = ":", rhs = token)
+}
+
+
 stringifyTokens <- function(tokens) {
   if (all(c("lhs", "op", "rhs") %in% names(tokens))) {
     lhs <- paste0(unlist(tokens$lhs), collapse = "+")

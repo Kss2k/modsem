@@ -410,6 +410,11 @@ modsem_da <- function(model.syntax = NULL,
     mod_msg_stop("The provided model syntax is not of length 1")
   }
 
+  parTable <- modsemify(model.syntax)
+  if (any(parTable$lhs == "level" & parTable$op == ":")) {
+    mod_msg_stop("Multilevel models (`level:` blocks) are not supported in `modsem_da()`!")
+  }
+
   if (length(ordered) || any(sapply(data, FUN = is.ordered))) {
     out <- modsemOrderedMCCorrection(
        model.syntax                   = model.syntax,

@@ -19,9 +19,15 @@ getCharsLine <- function(line, i = 1) {
 }
 
 
-getLines <- function(syntax) {
+getLines <- function(syntax, rm.comments = TRUE) {
   operators <- c("=~", "<~", "<=", ">=", "==", ":=", "~~", "~",
                  "+", "*", "<-", "->", "<", ">", "-", "|", ",", ":~")
+
+  if (rm.comments) {
+    # Remove comments, but keep quoted strings (which may contain '#') intact
+    syntax <- gsub("(\"[^\"\n]*\"|'[^'\n]*')|#[^\n]*", "\\1", syntax, perl = TRUE)
+  }
+
   for (op in operators) {
     pattern <- paste0("\\", op, "\\s*[\n|;]")
     replace <- paste0(op, " ")
@@ -41,6 +47,20 @@ getLines <- function(syntax) {
 
 createTokensLine <- function(line, i = 1,
                              token = NULL, listTokens = list()) {
+  if (i == 1L && length(line) > 1) {
+    # Check if we have a level heading
+    levelPattern <- "^\\s*level\\s*:\\s*(\\w+)\\s*$"
+    sline <- paste0(line, collapse = "")
+
+    if (grepl(levelPattern, sline)) {
+      lvl <- stringr::str_extract(sline, pattern = levelPattern, group = 1L)
+      return(list(createLevelToken(
+        line = lvl,
+        pos  = 1,
+        lineNumber = attr(line, "lineNumber")
+      )))
+    }
+  }
   if (i > length(line)) {
     return(appendToList(listTokens, token))
   }
@@ -67,7 +87,7 @@ createTokensLine <- function(line, i = 1,
   }
   if ("LavComment" %in% class(token)) {
       return(listTokens)
-    }
+  }
   return(createTokensLine(line, i + 1, token, listTokens = listTokens))
 }
 
@@ -494,4 +514,15 @@ is.firstClassOperator <- function(token) {
 as.character.LavToken <- function(x, ...) {
   attributes(x) <- NULL
   x
+}
+
+
+createLevelToken <- function(line, pos, lineNumber, ...) {
+  structure(
+    line,
+    pos = pos,
+    lineNumber = lineNumber,
+    priority = 999,
+    class = c("LavLevel", "LavToken")
+  )
 }
