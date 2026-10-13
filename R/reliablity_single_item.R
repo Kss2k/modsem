@@ -78,6 +78,7 @@ relcorr_single_item <- function(syntax,
                                 missing = "fiml",
                                 warn.lav = TRUE,
                                 group = NULL) {
+  stopIfMultilevel(syntax, fun = "relcorr_single_item")
   data <- as.data.frame(data)
 
   if (is.null(group)) {

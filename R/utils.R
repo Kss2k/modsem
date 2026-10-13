@@ -848,3 +848,11 @@ std1 <- function(v) {
 
   (v - mu) / sigma
 }
+
+
+stopIfMultilevel <- function(syntax, fun) {
+  parTable <- modsemify(syntax)
+  if (any(parTable$lhs == "level" & parTable$op == ":")) {
+    mod_msg_stop(sprintf("Multilevel models (`level:` blocks) are not supported in `%s()`!", fun))
+  }
+}
