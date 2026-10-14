@@ -525,6 +525,12 @@ getParTableLabels <- function(parTable, labelCol="label", replace.dup = FALSE) {
                          yes = paste0(new.labels, ".g", group),
                          no = new.labels)
 
+  level <- parTable$level
+  if (!is.null(level))
+    new.labels <- ifelse(level > 1L,
+                         yes = paste0(new.labels, ".l", level),
+                         no = new.labels)
+
   ifelse(parTable[[labelCol]] == "", yes = new.labels, no = parTable[[labelCol]])
 }
 

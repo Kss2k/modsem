@@ -9,38 +9,58 @@ modsem_mplus(
   data,
   estimator = "ml",
   cluster = NULL,
-  type = ifelse(is.null(cluster), yes = "random", no = "complex"),
-  algorithm = "integration",
+  type = NULL,
+  algorithm = NULL,
   processors = 2,
   integration = 15,
+  analysis.options = NULL,
   rcs = FALSE,
   rcs.choose = NULL,
   rcs.scale.corrected = TRUE,
   output.std = TRUE,
   categorical = NULL,
+  within = NULL,
+  between = NULL,
   cleanup = FALSE,
   ...
 )
 }
 \arguments{
-\item{model.syntax}{lavaan/modsem syntax}
+\item{model.syntax}{lavaan/modsem syntax. Multilevel models can be specified
+using \code{level: 1} (or \code{level: within}) and \code{level: 2}
+(or \code{level: between}) blocks, see the details and examples.}
 
 \item{data}{dataset}
 
-\item{estimator}{estimator argument passed to \code{Mplus}.}
+\item{estimator}{estimator argument passed to \code{Mplus}. Bayesian estimation is
+available using \code{estimator = "bayes"}, see the details.}
 
-\item{cluster}{cluster argument passed to \code{Mplus}.}
+\item{cluster}{cluster argument passed to \code{Mplus}. Required for multilevel
+models. For single level models it is used to compute standard errors
+corrected for clustering (i.e., \code{TYPE = COMPLEX}).}
 
-\item{type}{type argument passed to \code{Mplus}.}
+\item{type}{type argument passed to \code{Mplus}. If \code{NULL} (default) it is
+chosen based on the model: \code{"twolevel"} for multilevel models, \code{"complex"}
+if \code{cluster} is specified, and \code{"general"} otherwise. \code{"random"} is
+added if the model contains interaction effects or random slopes.}
 
-\item{algorithm}{algorithm argument passed to \code{Mplus}.}
+\item{algorithm}{algorithm argument passed to \code{Mplus}. If \code{NULL} (default)
+it is set to \code{"integration"} for models with interaction effects (unless
+\code{estimator = "bayes"}), otherwise it is left to \code{Mplus}.}
 
 \item{processors}{processors argument passed to \code{Mplus}.}
 
-\item{integration}{integration argument passed to \code{Mplus}.}
+\item{integration}{integration argument passed to \code{Mplus}. Only used if
+\code{algorithm = "integration"}.}
+
+\item{analysis.options}{Additional options passed to the \code{ANALYSIS} command of
+\code{Mplus}, as a named list (or character vector). E.g.,
+\code{list(BITERATIONS = "10000 (2000)", CHAINS = 4, BSEED = 123)} for
+\code{estimator = "bayes"}.}
 
 \item{rcs}{Should latent variable indicators be replaced with reliability-corrected
-single item indicators instead? See \code{\link{relcorr_single_item}}.}
+single item indicators instead? See \code{\link{relcorr_single_item}}.
+Not available for multilevel models.}
 
 \item{rcs.choose}{Which latent variables should get their indicators replaced with
 reliability-corrected single items? It is passed to \code{\link{relcorr_single_item}}
@@ -50,9 +70,19 @@ as the \code{choose} argument.}
 reliability-corrected single items are corrected for differences in factor loadings between
 the items. Default is \code{TRUE}.}
 
-\item{output.std}{Should \code{STANDARDIZED} be added to \code{OUTPUT}?}
+\item{output.std}{Should \code{STANDARDIZED} be added to \code{OUTPUT}? It is
+ignored if \code{Mplus} doesn't support standardized estimates for the model
+(e.g., \code{TYPE = TWOLEVEL RANDOM} with a frequentist estimator).}
 
 \item{categorical}{categorical argument passed to \code{Mplus}.}
+
+\item{within}{Variables which should be declared as \code{WITHIN} variables in
+multilevel models. If \code{NULL} (default) all observed variables which only
+appear in the within (\code{level: 1}) model are declared as \code{WITHIN} variables.}
+
+\item{between}{Variables which should be declared as \code{BETWEEN} variables in
+multilevel models. If \code{NULL} (default) all observed variables which only
+appear in the between (\code{level: 2}) model are declared as \code{BETWEEN} variables.}
 
 \item{cleanup}{Should the \code{Mplus} files (\code{.inp}, \code{.dat} and \code{.out})
 created during estimation be deleted when \code{modsem_mplus()} exits? Default is
@@ -65,6 +95,24 @@ modsem_mplus object
 }
 \description{
 Estimation latent interactions through \code{Mplus}
+}
+\details{
+Interaction terms (e.g., \code{X:Z}) involving at least one latent variable are
+specified using \code{XWITH}, whilst interaction terms between observed variables are
+computed as product terms in the \code{DEFINE} command of \code{Mplus}.
+
+If \code{estimator = "bayes"} the parameter table contains the posterior means
+(\code{est}), posterior standard deviations (\code{std.error}), the one-tailed
+p-values reported by \code{Mplus} (\code{p.value}), and the 95\% credible
+intervals (\code{ci.lower} and \code{ci.upper}). \code{z.value} is \code{NA}.
+The number of iterations, chains etc. can be set using \code{analysis.options}.
+
+In multilevel models random slopes are specified using the \code{rv()} modifier
+in the within level model (e.g., \code{Y ~ rv("s")*X}), which is translated to
+\code{s | Y ON X;} in \code{Mplus}. The random slope (\code{s}) is a latent variable
+at the between level, where it can be used like any other latent variable. Note that
+the fixed effect of a random slope is the mean (or intercept) of the random slope at
+the between level.
 }
 \examples{
 # Theory Of Planned Behavior
@@ -86,6 +134,21 @@ run <- tryCatch({MplusAutomation::detectMplus(); TRUE},
 if (run) {
   est_mplus <- modsem_mplus(m1, data = oneInt)
   summary(est_mplus)
+}
+
+# Multilevel model with a random slope, and a (within level) interaction
+m2 <- '
+  level: 1
+    fw =~ y1 + y2 + y3
+    fw ~ rv("s")*x1 + x2 + x3 + x2:x3
+  level: 2
+    fb =~ y1 + y2 + y3
+    fb + s ~ w1 + w2
+'
+
+if (run) {
+  est_mplus_ml <- modsem_mplus(m2, data = lavaan::Demo.twolevel, cluster = "cluster")
+  summary(est_mplus_ml)
 }
 }
 

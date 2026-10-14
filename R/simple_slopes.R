@@ -594,8 +594,8 @@ getVcovSimpleSlopes <- function(model, standardized = FALSE) {
     return(lavaan::lavInspect(model, what = what))
 
   } else {
-    mod_msg_warn(paste0("standardized vcov is not available for model of class: ",
-             class(model)[[1L]]))
+    mod_warnif(standardized, paste0("standardized vcov is not available for model of class: ",
+               class(model)[[1L]]))
     return(vcov(model))
   }
 }

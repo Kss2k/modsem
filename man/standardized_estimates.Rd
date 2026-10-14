@@ -54,7 +54,10 @@ standard errors; if \code{FALSE}, use the delta method (default).}
 
 \item{rm.tmp.ov}{Should temporary (hidden) variables be removed?}
 
-\item{type}{Type of standardized estimates to retrieve. Can be one of: \code{"stdyx", "stdy", "std", "un", "modsem"}.}
+\item{type}{Type of standardized estimates to retrieve. Can be one of: \code{"stdyx", "stdy", "std", "un", "modsem"}.
+\code{"stdyx"}, \code{"stdy"} and \code{"std"} are retrieved from \code{Mplus}, if available.
+Otherwise (or if \code{type = "modsem"}) the standardized estimates are computed by \code{modsem}.
+Standardized estimates computed by \code{modsem} are not available for multilevel models.}
 
 \item{correction}{Logical. Whether to apply a correction to the standardized estimates
 of the interaction term. By default, \code{FALSE}, which standardizes the interaction term
