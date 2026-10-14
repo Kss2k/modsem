@@ -194,7 +194,7 @@ modsem_mplus <- function(model.syntax,
   parTable <- addMplusParamIds(parTable, TECH1 = model$results$tech1, spec = spec)
   free     <- getFreeParamsMplus(parTable)
   coefs    <- structure(parTable$est[free$row], names = free$label)
-  vcov     <- getVcovMplus(mode, free = free)
+  vcov     <- getVcovMplus(model, free = free)
 
   modelSpec <- list(
     parTable = modsemParTable(removeParamIdsMplus(parTable)),
