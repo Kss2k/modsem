@@ -69,7 +69,6 @@ varInteractionsAnalytic <- function(parTable, intTerms, ignore.means = FALSE, gr
 
   cov_PP <- function(i, j, k, l)
     Sigma[i, k] * Sigma[j, l] + Sigma[i, l] * Sigma[j, k] +
-    mu[i] * mu[j] * Sigma[k, l] + mu[k] * mu[l] * Sigma[i, j] +
     mu[i] * mu[k] * Sigma[j, l] + mu[j] * mu[k] * Sigma[i, l] +
     mu[i] * mu[l] * Sigma[j, k] + mu[j] * mu[l] * Sigma[i, k]
 

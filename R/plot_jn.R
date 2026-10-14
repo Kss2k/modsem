@@ -1,7 +1,8 @@
 getJN_GridMonteCarlo <- function(x, z, y, parTable, model, min_z, max_z, sig.level, alpha,
                                     detail, sd.line, standardized, xz, greyscale,
                                     plot.jn.points = TRUE, group = NULL, group.label = NULL,
-                                    type = "indirect", mc.reps = 10000, ...) {
+                                    type = "indirect", mc.reps = 10000,
+                                    check.quadratic = TRUE, ...) {
   mod_msg_note("Using Monte-Carlo quantiles...")
 
   type <- match.arg(type, c("indirect", "total", "direct"))
@@ -32,6 +33,16 @@ getJN_GridMonteCarlo <- function(x, z, y, parTable, model, min_z, max_z, sig.lev
 
     m <- elems[elems != z]
 
+    # If `z` moderates itself (i.e., `z:z`), the slope of `z` is
+    # d(b_z * z + b_zz * z^2) / dz = b_z + 2 * b_zz * z
+    isQuadratic <- !length(m)
+    if (isQuadratic && !check.quadratic)
+      next
+    else if (isQuadratic)
+      m <- z
+
+    multiplier <- if (isQuadratic) "2*" else ""
+
     simpleEffects <- parTable[parTable$rhs == intTerm & parTable$op == "~", , drop = FALSE]
 
     for (i in seq_len(NROW(simpleEffects))) {
@@ -43,7 +54,7 @@ getJN_GridMonteCarlo <- function(x, z, y, parTable, model, min_z, max_z, sig.lev
 
       if (length(beta1) && length(beta2)) {
         parTable[cond1, "label"] <- paste0(
-          "(", beta1[[1L]], "+", beta2[[1L]], "*", ".NUMERIC_VALUE__Z)"
+          "(", beta1[[1L]], "+", multiplier, beta2[[1L]], "*", ".NUMERIC_VALUE__Z)"
         )
       }
     }
@@ -141,6 +152,11 @@ getJN_GridMonteCarlo <- function(x, z, y, parTable, model, min_z, max_z, sig.lev
 #' @param mc.quantiles Should JN quantiles be calculated using Monte-Carlo estimates?
 #' @param mc.reps Number of Monte Carlo replicates used to approximate the confidence
 #'   bands when \code{mc.quantile} is \code{TRUE} and/or \code{type} is \code{"indirect"} or \code{"total"}.
+#' @param check.quadratic Logical. If \code{TRUE} (default), \code{x == z} is taken to
+#'   mean that \code{x} moderates itself, and the model is treated as quadratic in
+#'   \code{x}. The slope of \code{x} is then \code{b_x + 2 * b_xx * x}. Likewise, a
+#'   \code{z:z} term is treated as a quadratic term when computing the Monte-Carlo
+#'   (indirect/total) effects.
 #' @param ... Additional arguments (currently not used).
 #'
 #' @return A \code{ggplot} object showing the interaction plot with regions of significance.
@@ -183,12 +199,19 @@ plot_jn <- function(x, z, y, model, min_z = -3, max_z = 3,
                     sd.line = 2, standardized = FALSE, xz = NULL,
                     greyscale = FALSE, plot.jn.points = TRUE,
                     type = c("direct", "indirect", "total"),
-                    mc.quantiles = FALSE, mc.reps = 10000, ...) {
+                    mc.quantiles = FALSE, mc.reps = 10000,
+                    check.quadratic = TRUE, ...) {
 
   mod_stopif(!inherits(model, c("modsem_da", "modsem_mplus", "modsem_pi", "lavaan")),
          "model must be of class 'modsem_pi', 'modsem_da', 'modsem_mplus', or 'lavaan'")
 
   type <- match.arg(type)
+
+  if (check.quadratic && identical(x, z))
+    mod_msg_note(
+      "`x` seems to moderate itself, treating the model as quadratic in `x`.",
+      "To disable this behaviour, pass `check.quadratic=FALSE`."
+    )
 
   if (standardized) {
     parTable <- standardized_estimates(model, correction = TRUE, colon.pi = TRUE)
@@ -214,7 +237,8 @@ plot_jn <- function(x, z, y, model, min_z = -3, max_z = 3,
       alpha = alpha, detail = detail, sd.line = sd.line,
       standardized = standardized, xz = xz, greyscale = greyscale,
       plot.jn.points = plot.jn.points, group = g, group.label = label.g,
-      type = type, mc.reps = mc.reps, mc.quantiles = mc.quantiles, ...
+      type = type, mc.reps = mc.reps, mc.quantiles = mc.quantiles,
+      check.quadratic = check.quadratic, ...
     )
   }
 
@@ -238,7 +262,10 @@ plot_jn <- function(x, z, y, model, min_z = -3, max_z = 3,
 
 getJN_GridDelta <- function(x, z, y, parTable, model, min_z, max_z, sig.level, alpha,
                             detail, sd.line, standardized, xz, greyscale,
-                            plot.jn.points = TRUE, group = NULL, group.label = NULL, ...) {
+                            plot.jn.points = TRUE, group = NULL, group.label = NULL,
+                            check.quadratic = TRUE, ...) {
+  quadratic <- check.quadratic && identical(x, z)
+
   if (is.null(xz))
     xz <- paste(x, z, sep = ":")
 
@@ -266,6 +293,14 @@ getJN_GridDelta <- function(x, z, y, parTable, model, min_z, max_z, sig.level, a
   var_beta_x         <- VCOV[label_beta_x,  label_beta_x]
   var_beta_xz        <- VCOV[label_beta_xz, label_beta_xz]
   cov_beta_x_beta_xz <- VCOV[label_beta_x,  label_beta_xz]
+
+  if (quadratic) {
+    # x moderates itself, such that the slope of x is
+    # d(beta_x * x + beta_xx * x^2) / dx = beta_x + 2 * beta_xx * x
+    beta_xz            <- 2 * beta_xz
+    var_beta_xz        <- 4 * var_beta_xz
+    cov_beta_x_beta_xz <- 2 * cov_beta_x_beta_xz
+  }
 
   if (inherits(model, "lavaan")) {
     vcov <- lavaan::vcov
@@ -355,7 +390,8 @@ plotJN_Group <- function(x, z, y, parTable, model, min_z, max_z, sig.level, alph
                          detail, sd.line, standardized, xz, greyscale,
                          plot.jn.points = TRUE, group = NULL, group.label = NULL,
                          type = c("direct", "indirect", "total"),
-                         mc.reps = 10000, mc.quantiles = FALSE, ...) {
+                         mc.reps = 10000, mc.quantiles = FALSE,
+                         check.quadratic = TRUE, ...) {
 
   type <- match.arg(type)
 
@@ -368,14 +404,15 @@ plotJN_Group <- function(x, z, y, parTable, model, min_z, max_z, sig.level, alph
       max_z = max_z, sig.level = sig.level, alpha = alpha, detail = detail,
       sd.line = sd.line, standardized = standardized, xz = xz, greyscale = greyscale,
       plot.jn.points = plot.jn.points, group = group, group.label = group.label,
-      type = type, mc.reps = mc.reps
+      type = type, mc.reps = mc.reps, check.quadratic = check.quadratic
     )
   } else {
     result <- getJN_GridDelta( # Delta-Method (Symmetric) Quantiles
       x = x, z = z, y = y, parTable = parTable, model = model, min_z = min_z,
       max_z = max_z, sig.level = sig.level, alpha = alpha, detail = detail,
       sd.line = sd.line, standardized = standardized, xz = xz, greyscale = greyscale,
-      plot.jn.points = plot.jn.points, group = group, group.label = group.label
+      plot.jn.points = plot.jn.points, group = group, group.label = group.label,
+      check.quadratic = check.quadratic
     )
   }
 

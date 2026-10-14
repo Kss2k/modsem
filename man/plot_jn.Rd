@@ -22,6 +22,7 @@ plot_jn(
   type = c("direct", "indirect", "total"),
   mc.quantiles = FALSE,
   mc.reps = 10000,
+  check.quadratic = TRUE,
   ...
 )
 }
@@ -61,6 +62,12 @@ the sd.line falls outside of \code{[min_z, max_z]}.}
 
 \item{mc.reps}{Number of Monte Carlo replicates used to approximate the confidence
 bands when \code{mc.quantile} is \code{TRUE} and/or \code{type} is \code{"indirect"} or \code{"total"}.}
+
+\item{check.quadratic}{Logical. If \code{TRUE} (default), \code{x == z} is taken to
+mean that \code{x} moderates itself, and the model is treated as quadratic in
+\code{x}. The slope of \code{x} is then \code{b_x + 2 * b_xx * x}. Likewise, a
+\code{z:z} term is treated as a quadratic term when computing the Monte-Carlo
+(indirect/total) effects.}
 
 \item{...}{Additional arguments (currently not used).}
 }
