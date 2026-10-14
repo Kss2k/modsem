@@ -66,15 +66,18 @@
 <span>  <span class="va">data</span>,</span>
 <span>  estimator <span class="op">=</span> <span class="st">"ml"</span>,</span>
 <span>  cluster <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">cluster</span><span class="op">)</span>, yes <span class="op">=</span> <span class="st">"random"</span>, no <span class="op">=</span> <span class="st">"complex"</span><span class="op">)</span>,</span>
-<span>  algorithm <span class="op">=</span> <span class="st">"integration"</span>,</span>
+<span>  type <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  algorithm <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  processors <span class="op">=</span> <span class="fl">2</span>,</span>
 <span>  integration <span class="op">=</span> <span class="fl">15</span>,</span>
+<span>  analysis.options <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  rcs <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  rcs.choose <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  rcs.scale.corrected <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  output.std <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  categorical <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  within <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  between <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  cleanup <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -85,7 +88,9 @@
 
 
 <dl><dt id="arg-model-syntax">model.syntax<a class="anchor" aria-label="anchor" href="#arg-model-syntax"></a></dt>
-<dd><p>lavaan/modsem syntax</p></dd>
+<dd><p>lavaan/modsem syntax. Multilevel models can be specified
+using <code>level: 1</code> (or <code>level: within</code>) and <code>level: 2</code>
+(or <code>level: between</code>) blocks, see the details and examples.</p></dd>
 
 
 <dt id="arg-data">data<a class="anchor" aria-label="anchor" href="#arg-data"></a></dt>
@@ -93,19 +98,27 @@
 
 
 <dt id="arg-estimator">estimator<a class="anchor" aria-label="anchor" href="#arg-estimator"></a></dt>
-<dd><p>estimator argument passed to <code>Mplus</code>.</p></dd>
+<dd><p>estimator argument passed to <code>Mplus</code>. Bayesian estimation is
+available using <code>estimator = "bayes"</code>, see the details.</p></dd>
 
 
 <dt id="arg-cluster">cluster<a class="anchor" aria-label="anchor" href="#arg-cluster"></a></dt>
-<dd><p>cluster argument passed to <code>Mplus</code>.</p></dd>
+<dd><p>cluster argument passed to <code>Mplus</code>. Required for multilevel
+models. For single level models it is used to compute standard errors
+corrected for clustering (i.e., <code>TYPE = COMPLEX</code>).</p></dd>
 
 
 <dt id="arg-type">type<a class="anchor" aria-label="anchor" href="#arg-type"></a></dt>
-<dd><p>type argument passed to <code>Mplus</code>.</p></dd>
+<dd><p>type argument passed to <code>Mplus</code>. If <code>NULL</code> (default) it is
+chosen based on the model: <code>"twolevel"</code> for multilevel models, <code>"complex"</code>
+if <code>cluster</code> is specified, and <code>"general"</code> otherwise. <code>"random"</code> is
+added if the model contains interaction effects or random slopes.</p></dd>
 
 
 <dt id="arg-algorithm">algorithm<a class="anchor" aria-label="anchor" href="#arg-algorithm"></a></dt>
-<dd><p>algorithm argument passed to <code>Mplus</code>.</p></dd>
+<dd><p>algorithm argument passed to <code>Mplus</code>. If <code>NULL</code> (default)
+it is set to <code>"integration"</code> for models with interaction effects (unless
+<code>estimator = "bayes"</code>), otherwise it is left to <code>Mplus</code>.</p></dd>
 
 
 <dt id="arg-processors">processors<a class="anchor" aria-label="anchor" href="#arg-processors"></a></dt>
@@ -113,12 +126,21 @@
 
 
 <dt id="arg-integration">integration<a class="anchor" aria-label="anchor" href="#arg-integration"></a></dt>
-<dd><p>integration argument passed to <code>Mplus</code>.</p></dd>
+<dd><p>integration argument passed to <code>Mplus</code>. Only used if
+<code>algorithm = "integration"</code>.</p></dd>
+
+
+<dt id="arg-analysis-options">analysis.options<a class="anchor" aria-label="anchor" href="#arg-analysis-options"></a></dt>
+<dd><p>Additional options passed to the <code>ANALYSIS</code> command of
+<code>Mplus</code>, as a named list (or character vector). E.g.,
+<code>list(BITERATIONS = "10000 (2000)", CHAINS = 4, BSEED = 123)</code> for
+<code>estimator = "bayes"</code>.</p></dd>
 
 
 <dt id="arg-rcs">rcs<a class="anchor" aria-label="anchor" href="#arg-rcs"></a></dt>
 <dd><p>Should latent variable indicators be replaced with reliability-corrected
-single item indicators instead? See <code><a href="relcorr_single_item.html">relcorr_single_item</a></code>.</p></dd>
+single item indicators instead? See <code><a href="relcorr_single_item.html">relcorr_single_item</a></code>.
+Not available for multilevel models.</p></dd>
 
 
 <dt id="arg-rcs-choose">rcs.choose<a class="anchor" aria-label="anchor" href="#arg-rcs-choose"></a></dt>
@@ -134,11 +156,25 @@ the items. Default is <code>TRUE</code>.</p></dd>
 
 
 <dt id="arg-output-std">output.std<a class="anchor" aria-label="anchor" href="#arg-output-std"></a></dt>
-<dd><p>Should <code>STANDARDIZED</code> be added to <code>OUTPUT</code>?</p></dd>
+<dd><p>Should <code>STANDARDIZED</code> be added to <code>OUTPUT</code>? It is
+ignored if <code>Mplus</code> doesn't support standardized estimates for the model
+(e.g., <code>TYPE = TWOLEVEL RANDOM</code> with a frequentist estimator).</p></dd>
 
 
 <dt id="arg-categorical">categorical<a class="anchor" aria-label="anchor" href="#arg-categorical"></a></dt>
 <dd><p>categorical argument passed to <code>Mplus</code>.</p></dd>
+
+
+<dt id="arg-within">within<a class="anchor" aria-label="anchor" href="#arg-within"></a></dt>
+<dd><p>Variables which should be declared as <code>WITHIN</code> variables in
+multilevel models. If <code>NULL</code> (default) all observed variables which only
+appear in the within (<code>level: 1</code>) model are declared as <code>WITHIN</code> variables.</p></dd>
+
+
+<dt id="arg-between">between<a class="anchor" aria-label="anchor" href="#arg-between"></a></dt>
+<dd><p>Variables which should be declared as <code>BETWEEN</code> variables in
+multilevel models. If <code>NULL</code> (default) all observed variables which only
+appear in the between (<code>level: 2</code>) model are declared as <code>BETWEEN</code> variables.</p></dd>
 
 
 <dt id="arg-cleanup">cleanup<a class="anchor" aria-label="anchor" href="#arg-cleanup"></a></dt>
@@ -154,6 +190,23 @@ created during estimation be deleted when <code>modsem_mplus()</code> exits? Def
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>modsem_mplus object</p>
+    </div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>Interaction terms (e.g., <code>X:Z</code>) involving at least one latent variable are
+specified using <code>XWITH</code>, whilst interaction terms between observed variables are
+computed as product terms in the <code>DEFINE</code> command of <code>Mplus</code>.</p>
+<p>If <code>estimator = "bayes"</code> the parameter table contains the posterior means
+(<code>est</code>), posterior standard deviations (<code>std.error</code>), the one-tailed
+p-values reported by <code>Mplus</code> (<code>p.value</code>), and the 95% credible
+intervals (<code>ci.lower</code> and <code>ci.upper</code>). <code>z.value</code> is <code>NA</code>.
+The number of iterations, chains etc. can be set using <code>analysis.options</code>.</p>
+<p>In multilevel models random slopes are specified using the <code>rv()</code> modifier
+in the within level model (e.g., <code>Y ~ rv("s")*X</code>), which is translated to
+<code>s | Y ON X;</code> in <code>Mplus</code>. The random slope (<code>s</code>) is a latent variable
+at the between level, where it can be used like any other latent variable. Note that
+the fixed effect of a random slope is the mean (or intercept) of the random slope at
+the between level.</p>
     </div>
 
     <div class="section level2">
@@ -177,6 +230,21 @@ created during estimation be deleted when <code>modsem_mplus()</code> exits? Def
 <span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="va">run</span><span class="op">)</span> <span class="op">{</span></span></span>
 <span class="r-in"><span>  <span class="va">est_mplus</span> <span class="op">&lt;-</span> <span class="fu">modsem_mplus</span><span class="op">(</span><span class="va">m1</span>, data <span class="op">=</span> <span class="va">oneInt</span><span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_mplus</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">}</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Multilevel model with a random slope, and a (within level) interaction</span></span></span>
+<span class="r-in"><span><span class="va">m2</span> <span class="op">&lt;-</span> <span class="st">'</span></span></span>
+<span class="r-in"><span><span class="st">  level: 1</span></span></span>
+<span class="r-in"><span><span class="st">    fw =~ y1 + y2 + y3</span></span></span>
+<span class="r-in"><span><span class="st">    fw ~ rv("s")*x1 + x2 + x3 + x2:x3</span></span></span>
+<span class="r-in"><span><span class="st">  level: 2</span></span></span>
+<span class="r-in"><span><span class="st">    fb =~ y1 + y2 + y3</span></span></span>
+<span class="r-in"><span><span class="st">    fb + s ~ w1 + w2</span></span></span>
+<span class="r-in"><span><span class="st">'</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="va">run</span><span class="op">)</span> <span class="op">{</span></span></span>
+<span class="r-in"><span>  <span class="va">est_mplus_ml</span> <span class="op">&lt;-</span> <span class="fu">modsem_mplus</span><span class="op">(</span><span class="va">m2</span>, data <span class="op">=</span> <span class="fu">lavaan</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/lavaan/man/Demo.twolevel.html" class="external-link">Demo.twolevel</a></span>, cluster <span class="op">=</span> <span class="st">"cluster"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_mplus_ml</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span></span></span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>
