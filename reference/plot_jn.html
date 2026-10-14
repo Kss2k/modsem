@@ -79,6 +79,7 @@
 <span>  type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"direct"</span>, <span class="st">"indirect"</span>, <span class="st">"total"</span><span class="op">)</span>,</span>
 <span>  mc.quantiles <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  mc.reps <span class="op">=</span> <span class="fl">10000</span>,</span>
+<span>  check.quadratic <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -155,6 +156,14 @@ the sd.line falls outside of <code>[min_z, max_z]</code>.</p></dd>
 <dt id="arg-mc-reps">mc.reps<a class="anchor" aria-label="anchor" href="#arg-mc-reps"></a></dt>
 <dd><p>Number of Monte Carlo replicates used to approximate the confidence
 bands when <code>mc.quantile</code> is <code>TRUE</code> and/or <code>type</code> is <code>"indirect"</code> or <code>"total"</code>.</p></dd>
+
+
+<dt id="arg-check-quadratic">check.quadratic<a class="anchor" aria-label="anchor" href="#arg-check-quadratic"></a></dt>
+<dd><p>Logical. If <code>TRUE</code> (default), <code>x == z</code> is taken to
+mean that <code>x</code> moderates itself, and the model is treated as quadratic in
+<code>x</code>. The slope of <code>x</code> is then <code>b_x + 2 * b_xx * x</code>. Likewise, a
+<code>z:z</code> term is treated as a quadratic term when computing the Monte-Carlo
+(indirect/total) effects.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
