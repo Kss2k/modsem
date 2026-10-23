@@ -1,3 +1,8 @@
+# Computing the Gauss-Hermite rule scales roughly cubically in `m` (~0.2s for
+# m = 500), and the quasi-adaptive quadrature requests the same rules repeatedly
+gaussHermiteDataCached <- memoise::memoise(fastGHQuad::gaussHermiteData)
+
+
 # Calculate weights and node points for mixture functions via Gauss-Hermite
 # quadrature as defined in Klein & Moosbrugger (2000). Also stores information
 # regarding adaptive quadrature.
@@ -28,7 +33,7 @@ quadrature <- function(m, k,
     ))
   }
 
-  singleDimGauss <- fastGHQuad::gaussHermiteData(m)
+  singleDimGauss <- gaussHermiteDataCached(m)
   nodes <- singleDimGauss$x
   weights <- singleDimGauss$w
 
