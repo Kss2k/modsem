@@ -223,8 +223,7 @@ calcHessian <- function(model, theta, method = "lms",
   } else if (method == "qml") {
     # negative hessian (sign = -1)
     suppressWarnings({
-      H <- hessianLogLikQml(theta = theta, model = model,
-                            sign = -1, .relStep = .Machine$double.eps^(1/5))
+      H <- hessianLogLikQml(theta = theta, model = model, sign = -1)
     })
   }
 

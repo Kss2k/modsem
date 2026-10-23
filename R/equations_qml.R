@@ -354,17 +354,12 @@ gradientLogLikQml_i <- function(theta, model, sign = -1, epsilon = 1e-8) {
 
 
 simpleHessianLogLikQml <- function(theta, model, sign = -1,
-                                    .relStep = .Machine$double.eps ^ (1/5)) {
+                                    .relStep = .Machine$double.eps ^ (1/3)) {
   modelFilled <- fillModel(model = model, theta = theta, method = "qml")
   locations   <- model$params$gradientStruct$locations
   Jacobian    <- model$params$gradientStruct$Jacobian
-  Jacobian2   <- model$params$gradientStruct$Jacobian2
-  jac         <- refreshCovModelJacobian(theta, model, Jacobian, Jacobian2,
-                                         method = "qml")
-  Jacobian    <- jac$J
-  Jacobian2   <- jac$J2
+  Jacobian    <- refreshCovModelJacobian(theta, model, Jacobian, method = "qml")$J
   nlinDerivs  <- model$params$gradientStruct$nlinDerivs
-  nlinDerivs2 <- model$params$gradientStruct$nlinDerivs2
 
   n.loc <- NROW(locations)
   nm    <- locations$param
@@ -403,24 +398,22 @@ simpleHessianLogLikQml <- function(theta, model, sign = -1,
 
     for (dep in names(nlinDerivs)) {
       derivs1 <- nlinDerivs[[dep]]
-      derivs2 <- nlinDerivs2[[dep]]
       for (indep in names(derivs1)) {
         deriv1 <- eval(expr = derivs1[[indep]], envir = THETA)
-        deriv2 <- eval(expr = derivs2[[indep]], envir = THETA)
-        Jacobian [param.part == indep, param.full == dep] <- deriv1
-        Jacobian2[param.part == indep, param.full == dep] <- deriv2
+        Jacobian[param.part == indep, param.full == dep] <- deriv1
       }
     }
   }
 
   term1 <- Jacobian %*% H %*% t(Jacobian)
-  term2 <- diag(drop(Jacobian2 %*% grad), nrow = nrow(Jacobian))
+  term2 <- secondOrderChainTerm(theta = theta, model = model, grad = grad,
+                                method = "qml")
   sign * (term1 + term2)
 }
 
 
 hessianLogLikQml <- function(theta, model, sign = -1,
-                              .relStep = .Machine$double.eps ^ (1/5),
+                              .relStep = .Machine$double.eps ^ (1/3),
                               .f = logLikQmlGroup) {
   if (qmlCanUseGradientStruct(model))
     return(simpleHessianLogLikQml(theta = theta, model = model,

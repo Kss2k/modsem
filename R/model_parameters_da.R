@@ -569,19 +569,17 @@ getCovModelALocations <- function(submodel, g, method = "lms") {
 }
 
 
-# Recompute the A-matrix (block 6) columns of Jacobian/Jacobian2 at the
-# current theta.  expectedCovModel() involves nonlinear operations (Cholesky),
-# so dA/dtheta is theta-dependent and must be refreshed at each gradient call.
-# Jacobian2 is optional — pass NULL to skip the second-derivative update.
-refreshCovModelJacobian <- function(theta, model, Jacobian, Jacobian2 = NULL,
-                                    method = NULL) {
+# Recompute the A-matrix (block 6) columns of the Jacobian at the current
+# theta.  expectedCovModel() involves nonlinear operations (Cholesky), so
+# dA/dtheta is theta-dependent and must be refreshed at each gradient call.
+refreshCovModelJacobian <- function(theta, model, Jacobian, method = NULL) {
   if (is.null(method))
     method <- model$params$gradientStruct$covModelMethod %||% "lms"
 
   locations <- model$params$gradientStruct$locations
   cov.block <- if (identical(method, "qml")) DA_BLOCKS[["phi"]] else DA_BLOCKS[["A"]]
   cov.locs  <- locations[locations$block == cov.block, , drop = FALSE]
-  if (!NROW(cov.locs)) return(list(J = Jacobian, J2 = Jacobian2))
+  if (!NROW(cov.locs)) return(list(J = Jacobian))
 
   eps        <- (.Machine$double.eps)^(1/4)
   param.part <- rownames(Jacobian)
@@ -595,7 +593,6 @@ refreshCovModelJacobian <- function(theta, model, Jacobian, Jacobian2 = NULL,
                    model$params$SELECT_THETA_COV[[g]])
     if (!length(affecting) || !NROW(A.locs.g)) next
 
-    A0    <- evalCovModelA(theta, submodel, model$params, g, method = method)
     ri    <- A.locs.g$row + 1L
     ci    <- A.locs.g$col + 1L
     acols <- A.locs.g$param  # already carries the #N dedup suffix
@@ -607,13 +604,115 @@ refreshCovModelJacobian <- function(theta, model, Jacobian, Jacobian2 = NULL,
       Ap <- evalCovModelA(tp, submodel, model$params, g, method = method)
       Am <- evalCovModelA(tm, submodel, model$params, g, method = method)
       Jacobian[k_nm, acols] <- (Ap - Am)[cbind(ri, ci)] / (2 * eps)
-
-      if (!is.null(Jacobian2))
-        Jacobian2[k_nm, acols] <- (Ap - 2*A0 + Am)[cbind(ri, ci)] / eps^2
     }
   }
 
-  list(J = Jacobian, J2 = Jacobian2)
+  list(J = Jacobian)
+}
+
+
+# Second-order chain-rule term of the Hessian w.r.t. theta:
+#   sum_l grad[l] * d^2 m_l / (dtheta dtheta')
+# where m are the matrix-level parameters (gradientStruct$locations), and
+# grad is the gradient w.r.t. m (ordered as the columns of the Jacobian).
+# Only nonlinear constraints and the covModel have non-zero second derivatives.
+# The full Hessian w.r.t. theta is then J %*% H %*% t(J) + this term.
+secondOrderChainTerm <- function(theta, model, grad, method = NULL) {
+  gradientStruct <- model$params$gradientStruct
+  if (is.null(method))
+    method <- gradientStruct$covModelMethod %||% "lms"
+
+  k <- length(theta)
+  T <- matrix(0.0, nrow = k, ncol = k, dimnames = list(names(theta), names(theta)))
+
+  param.full <- stringr::str_split_i(colnames(gradientStruct$Jacobian),
+                                     pattern = "#", i = 1L) # non-unique
+  grad <- stats::setNames(as.vector(grad), colnames(gradientStruct$Jacobian))
+
+  # Nonlinear constraints (analytical)
+  nlinDerivsH <- gradientStruct$nlinDerivsH
+  if (length(nlinDerivsH)) {
+    THETA <- list2env(as.list(gradientStruct$evalTheta(theta)))
+
+    for (dep in names(nlinDerivsH)) {
+      grad.dep <- sum(grad[param.full == dep])
+      if (grad.dep == 0) next
+
+      for (a in names(nlinDerivsH[[dep]])) {
+        for (b in names(nlinDerivsH[[dep]][[a]])) {
+          if (!a %in% names(theta) || !b %in% names(theta)) next
+          d2 <- eval(expr = nlinDerivsH[[dep]][[a]][[b]], envir = THETA)
+          T[a, b] <- T[a, b] + grad.dep * d2
+        }
+      }
+    }
+  }
+
+  # covModel (finite differences of the weighted A/phi entries.
+  # Matrix algebra only, so this it's cheap
+  locations <- gradientStruct$locations
+  cov.block <- if (identical(method, "qml")) DA_BLOCKS[["phi"]] else DA_BLOCKS[["A"]]
+  cov.locs  <- locations[locations$block == cov.block, , drop = FALSE]
+
+  for (g in seq_len(model$info$n.groups)) {
+    submodel <- model$models[[g]]
+    if (is.null(submodel$covModel$matrices) || !NROW(cov.locs)) next
+
+    A.locs.g  <- cov.locs[cov.locs$group == g, , drop = FALSE]
+    affecting <- c(
+      model$params$SELECT_THETA_LAB[[1L]],
+      model$params$SELECT_THETA_COV[[g]]
+    )
+
+    if (!length(affecting) || !NROW(A.locs.g)) next
+
+    w  <- grad[A.locs.g$param]
+    ri <- A.locs.g$row + 1L
+    ci <- A.locs.g$col + 1L
+
+    s <- function(t) {
+      A <- evalCovModelA(t, submodel, model$params, g, method = method)
+      sum(w * A[cbind(ri, ci)])
+    }
+
+    add <- fdHessScalar(s, theta = theta, indices = affecting)
+    T[affecting, affecting] <- T[affecting, affecting] + add
+  }
+
+  T
+}
+
+
+# Hessian of a scalar function w.r.t. theta[indices], by central differences
+fdHessScalar <- function(f, theta, indices, relStep = .Machine$double.eps ^ (1/4)) {
+  n  <- length(indices)
+  h  <- relStep * pmax(abs(theta[indices]), 1)
+  f0 <- f(theta)
+  H  <- matrix(0.0, nrow = n, ncol = n)
+
+  shift <- function(i, hi, j = NULL, hj = 0) {
+    t <- theta
+    t[indices[i]] <- t[indices[i]] + hi
+    if (!is.null(j)) t[indices[j]] <- t[indices[j]] + hj
+    f(t)
+  }
+
+  for (i in seq_len(n)) {
+    H[i, i] <- (shift(i, h[i]) - 2 * f0 + shift(i, -h[i])) / h[i]^2
+
+    for (j in seq_len(i - 1L)) {
+      H[i, j] <- H[j, i] <- (
+        (
+          shift(i,  h[i], j,  h[j]) -
+          shift(i,  h[i], j, -h[j]) -
+          shift(i, -h[i], j,  h[j]) +
+          shift(i, -h[i], j, -h[j])
+        ) / (4 * h[i] * h[j])
+      )
+    }
+  }
+
+  H
 }
 
 
@@ -642,13 +741,11 @@ getGradientStructSimple <- function(model, theta, method = "lms") {
   constraints  <- constraints[constraints$lhs %in% restParTable$mod, ]
 
   derivatives <- list()
-  derivatives2 <- list()
   for (i in seq_len(NROW(constraints))) {
     constrVar <- constraints[i, "lhs"]
     constrEq  <- constraints[i, "rhs"]
 
     derivatives[[constrVar]] <- derivateConstraint(constrEq)
-    derivatives2[[constrVar]] <- secondDerivateConstraint(constrEq)
   }
 
   isLinear <- vapply(
@@ -658,7 +755,7 @@ getGradientStructSimple <- function(model, theta, method = "lms") {
 
   linDerivs   <- derivatives[isLinear]
   nlinDerivs  <- derivatives[!isLinear]
-  nlinDerivs2 <- derivatives2[!isLinear]
+  nlinDerivsH <- lapply(nlinDerivs, FUN = secondDerivateConstraint)
   evalTheta   <- \(theta) c(theta, suppressWarnings(calcThetaLabel(theta, model$constrExprs))) # This could be made a bit better
 
   locations <- NULL
@@ -687,7 +784,6 @@ getGradientStructSimple <- function(model, theta, method = "lms") {
 
   Jacobian <- matrix(0, nrow = m, ncol = k,
                      dimnames = list(param.part, param.full))
-  Jacobian2 <- Jacobian
 
   for (j in seq_along(param.full)) {
     g <- locations$group[[j]]
@@ -726,8 +822,7 @@ getGradientStructSimple <- function(model, theta, method = "lms") {
     n_cov  <- NROW(cov.locs)
     cov.J  <- matrix(0, nrow = m, ncol = n_cov,
                      dimnames = list(param.part, cov.locs$param))
-    cov.J2 <- cov.J
-    eps    <- (.Machine$double.eps)^(1/4) # good balance for both J and J2
+    eps    <- (.Machine$double.eps)^(1/4)
 
     for (g in seq_len(model$info$n.groups)) {
       submodel <- model$models[[g]]
@@ -738,7 +833,6 @@ getGradientStructSimple <- function(model, theta, method = "lms") {
                      model$params$SELECT_THETA_COV[[g]])
       if (!length(affecting) || !NROW(A.locs.g)) next
 
-      A0 <- evalCovModelA(theta, submodel, model$params, g, method = method)
       ri <- A.locs.g$row + 1L  # 0-indexed -> 1-indexed
       ci <- A.locs.g$col + 1L
 
@@ -752,13 +846,11 @@ getGradientStructSimple <- function(model, theta, method = "lms") {
         Am <- evalCovModelA(theta.m, submodel, model$params, g, method = method)
 
         cov.J [k_nm, A.locs.g$param] <- (Ap - Am)[cbind(ri, ci)] / (2 * eps)
-        cov.J2[k_nm, A.locs.g$param] <- (Ap - 2*A0 + Am)[cbind(ri, ci)] / eps^2
       }
     }
 
     locations <- rbind(locations, cov.locs)
     Jacobian  <- cbind(Jacobian,  cov.J)
-    Jacobian2 <- cbind(Jacobian2, cov.J2)
   }
 
   # In multigroup models we can have duplicated labels, that doesn't work
@@ -766,7 +858,6 @@ getGradientStructSimple <- function(model, theta, method = "lms") {
   # We also pass param.full as is, to map back and forth.
   addid <- \(nm) paste0(nm, "#", seq_along(nm))
   colnames(Jacobian)  <- addid(colnames(Jacobian))
-  colnames(Jacobian2) <- addid(colnames(Jacobian2))
 
   locations$param <- addid(locations$param)
 
@@ -774,9 +865,8 @@ getGradientStructSimple <- function(model, theta, method = "lms") {
     param.full  = param.full,
     locations   = locations,
     Jacobian    = Jacobian,
-    Jacobian2   = Jacobian2,
     nlinDerivs  = nlinDerivs,
-    nlinDerivs2 = nlinDerivs2,
+    nlinDerivsH = nlinDerivsH,
     evalTheta   = evalTheta,
     hasCovModel = hasCovModel,
     covModelMethod = method,
@@ -807,28 +897,21 @@ derivateConstraint <- function(constr) {
 }
 
 
-secondDerivateConstraint <- function(constr) {
-  f <- stats::formula(paste0("~", constr))
-  eq <- Deriv::Deriv(f, nderiv = 2, combine = "list", cache.exp = FALSE)
-
-  vars <- all.vars(f)
-  k    <- length(vars)
-
-  if (k == 0) return(NULL)
-
+# Full matrix of second derivatives of a constraint, from its first
+# derivatives (as returned by derivateConstraint()): out[[a]][[b]] is the
+# expression for d^2 f / (da db). Zero entries are dropped.
+secondDerivateConstraint <- function(derivs) {
   out <- list()
-  if (is.null(names(eq)) && k == 1L) {
-    eq <- stats::setNames(list(eq), nm = vars)
-    return(eq)
 
-  } else if (is.null(names(eq))) {
-    names(eq) <- all.vars(f)
-    return(eq)
+  for (a in names(derivs)) {
+    if (is.atomic(derivs[[a]])) next # constant first derivative
 
-  } else {
-    for (indep in all.vars(f)) {
-      out[[indep]] <- eq[[indep]][[indep]]
+    for (b in names(derivs)) {
+      d2 <- Deriv::Deriv(derivs[[a]], b, cache.exp = FALSE)
+      if (is.numeric(d2) && all(d2 == 0)) next
+      out[[a]][[b]] <- d2
     }
-    return(out)
   }
+
+  out
 }

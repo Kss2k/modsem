@@ -574,12 +574,8 @@ simpleHessianAllLogLikLms <- function(theta, model, P, sign = -1,
   modelR      <- fillModel(model = model, theta = theta, method = "lms")
   locations   <- model$params$gradientStruct$locations
   Jacobian    <- model$params$gradientStruct$Jacobian
-  Jacobian2   <- model$params$gradientStruct$Jacobian2
-  jac         <- refreshCovModelJacobian(theta, model, Jacobian, Jacobian2)
-  Jacobian    <- jac$J
-  Jacobian2   <- jac$J2
+  Jacobian    <- refreshCovModelJacobian(theta, model, Jacobian)$J
   nlinDerivs  <- model$params$gradientStruct$nlinDerivs
-  nlinDerivs2 <- model$params$gradientStruct$nlinDerivs2
 
   n.loc <- NROW(locations)
   nm <- locations$param
@@ -630,23 +626,20 @@ simpleHessianAllLogLikLms <- function(theta, model, P, sign = -1,
 
     for (dep in names(nlinDerivs)) {
       derivs1 <- nlinDerivs[[dep]]
-      derivs2 <- nlinDerivs2[[dep]]
 
       for (indep in names(derivs1)) {
         deriv1 <- eval(expr = derivs1[[indep]], envir = THETA)
-        deriv2 <- eval(expr = derivs2[[indep]], envir = THETA)
 
         match.full <- param.full == dep
         match.part <- param.part == indep
 
         Jacobian[match.part, match.full] <- deriv1
-        Jacobian2[match.part, match.full] <- deriv2
       }
     }
   }
 
   term1 <- Jacobian %*% H %*% t(Jacobian)
-  term2 <- diag(drop(Jacobian2 %*% grad), nrow = nrow(Jacobian))
+  term2 <- secondOrderChainTerm(theta = theta, model = model, grad = grad)
 
   sign * (term1 + term2)
 }

@@ -1783,18 +1783,28 @@ Rcpp::List hessLogLikQmlCpp(const Rcpp::List& submodel,
   arma::mat Hess(p, p, arma::fill::zeros);
 
   #pragma omp parallel for if(ncores > 1) schedule(static) \
-    shared(M, dataFull, block, row, col, symmetric, p, base, incr, grad0, Hess)
+    shared(M, dataFull, block, row, col, symmetric, p, base, incr, Hess)
   for (std::size_t j = 0; j < p; ++j) {
     try {
+      // central differences: O(h^2) error, allowing a small relStep
       QMLModel Mc = M.threadClone();
       arma::vec pars = base;
-      pars[j] += incr[j];
+
+      pars[j] = base[j] + incr[j];
       setParamsQml(Mc, block, row, col, symmetric, pars);
       Mc.updateCache();
-      const arma::vec gradJ = hybridGradQmlCore(
+      const arma::vec gradP = hybridGradQmlCore(
         Mc, dataFull, block, row, col, symmetric, relStep, 1
       );
-      Hess.col(j) = (gradJ - grad0) / incr[j];
+
+      pars[j] = base[j] - incr[j];
+      setParamsQml(Mc, block, row, col, symmetric, pars);
+      Mc.updateCache();
+      const arma::vec gradM = hybridGradQmlCore(
+        Mc, dataFull, block, row, col, symmetric, relStep, 1
+      );
+
+      Hess.col(j) = (gradP - gradM) / (2.0 * incr[j]);
     } catch (...) {
       Hess.col(j).fill(arma::datum::nan);
     }
