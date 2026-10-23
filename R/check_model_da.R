@@ -338,7 +338,7 @@ checkVCOV <- function(vcov, calc.se = TRUE, tol.eigen = .Machine$double.eps ^ (1
   if (!calc.se || is.null(vcov)) return(NULL) # checks not relevant
 
   eigenvalues <- tryCatch(
-    eigen(vcov, only.values = TRUE)$values,
+    eigen((vcov + t(vcov)) / 2, symmetric = TRUE, only.values = TRUE)$values,
     error = \(e) rep(NA, min(1L, NCOL(vcov)))
   )
 
