@@ -92,6 +92,7 @@ adaptiveGaussQuadrature <- function(fun,
   NODES     <- vector("list", k)
   WEIGHTS   <- vector("list", k)
   new.ceils <- integer(k)
+  capped    <- logical(k)
 
   for (i in seq_len(k)) {
     QUAD <- adaptiveGaussQuadratureK(
@@ -103,6 +104,7 @@ adaptiveGaussQuadrature <- function(fun,
     NODES[[i]]     <- QUAD$n[, i]
     WEIGHTS[[i]]   <- QUAD$w
     new.ceils[[i]] <- QUAD$m.ceil
+    capped[[i]]    <- QUAD$capped
   }
 
   quadn <- as.matrix(do.call(expand.grid, NODES))
@@ -134,6 +136,7 @@ adaptiveGaussQuadrature <- function(fun,
     w = quadw,
     F = quadf,
     m.ceil = new.ceils,
+    capped = any(capped),
     error = error,
     error.abs = error.abs,
     error.rel = error.rel,
@@ -161,7 +164,8 @@ adaptiveGaussQuadratureK <- function(fun,
   if (is.null(m.ceil) || is.na(m.ceil) || m.ceil <= 0)
     m.ceil <- round(estMForNodesInRange(m, a = -5, b = 5))
 
-  quad  <- quadrature(m = m.ceil, k = 1)
+  m.ceil <- min(m.ceil, node.max)
+  quad   <- quadrature(m = m.ceil, k = 1)
 
   if (K > 1) { # more computationally efficient/scalable
     quadn <- matrix(0, nrow = m.ceil, ncol = K)
@@ -198,7 +202,10 @@ adaptiveGaussQuadratureK <- function(fun,
     # else do a step change
   } else new.ceil <- m.ceil - diff.m
 
-  OKNextCeil <- new.ceil <= node.max && new.ceil != m.ceil
+  # Never request more than `node.max` nodes. If the target can't be reached
+  # within `node.max`, use `node.max` instead of keeping the current ceiling
+  new.ceil   <- min(new.ceil, node.max)
+  OKNextCeil <- new.ceil != m.ceil
   converged <- abs(diff.m) <= mdiff.tol
   OKIter <- iter < iter.max
 
@@ -237,6 +244,7 @@ adaptiveGaussQuadratureK <- function(fun,
     m = nrow(quadn) ^ (1 / k),
 
     m.ceil   = m.ceil,
+    capped   = m.ceil >= node.max && NROW(quadn) < m - mdiff.tol,
     iter     = iter,
     error    = I.err,
     error.abs = I.err.abs,

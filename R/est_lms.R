@@ -523,6 +523,14 @@ emLms <- function(model,
       )
     )
 
+    quad.capped <- any(vapply(lastQuad, FUN.VALUE = logical(1L),
+                              FUN = \(q) isTRUE(q$capped)))
+    mod_warnif(quad.capped,
+      "Quasi-adaptive quadrature hit the maximum number of nodes and uses fewer\n",
+      sprintf("nodes than requested (`nodes = %d`). Increasing `nodes` further\n", nodes),
+      "will not improve accuracy."
+    )
+
     # final E-step
     P <- estepLms(
       model = model,
