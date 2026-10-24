@@ -174,7 +174,7 @@ argument in <code>modsem</code>:</p>
 <span><span class="co">#&gt;    between endogenous variables in the lms approach 'nodes = 24'</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_lms</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (1.0.24) ended normally after 53 iterations</span></span>
+<span><span class="co">#&gt; modsem (1.0.24) ended normally after 55 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                        LMS</span></span>
 <span><span class="co">#&gt;   Optimization method                       EMA-NLMINB</span></span>
@@ -228,10 +228,10 @@ argument in <code>modsem</code>:</p>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   ATT =~        </span></span>
 <span><span class="co">#&gt;     att1            1.000                             </span></span>
-<span><span class="co">#&gt;     att2            0.878      0.012   71.560    0.000</span></span>
+<span><span class="co">#&gt;     att2            0.878      0.012   71.561    0.000</span></span>
 <span><span class="co">#&gt;     att3            0.789      0.012   66.374    0.000</span></span>
-<span><span class="co">#&gt;     att4            0.695      0.011   61.002    0.000</span></span>
-<span><span class="co">#&gt;     att5            0.887      0.013   70.848    0.000</span></span>
+<span><span class="co">#&gt;     att4            0.695      0.011   61.003    0.000</span></span>
+<span><span class="co">#&gt;     att5            0.887      0.013   70.849    0.000</span></span>
 <span><span class="co">#&gt;   SN =~         </span></span>
 <span><span class="co">#&gt;     sn1             1.000                             </span></span>
 <span><span class="co">#&gt;     sn2             0.888      0.017   52.489    0.000</span></span>
@@ -245,7 +245,7 @@ argument in <code>modsem</code>:</p>
 <span><span class="co">#&gt;     int3            0.807      0.015   55.637    0.000</span></span>
 <span><span class="co">#&gt;   BEH =~        </span></span>
 <span><span class="co">#&gt;     b1              1.000                             </span></span>
-<span><span class="co">#&gt;     b2              0.960      0.032   29.643    0.000</span></span>
+<span><span class="co">#&gt;     b2              0.960      0.032   29.645    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
@@ -255,25 +255,25 @@ argument in <code>modsem</code>:</p>
 <span><span class="co">#&gt;     PBC             0.222      0.030    7.508    0.000</span></span>
 <span><span class="co">#&gt;   BEH ~         </span></span>
 <span><span class="co">#&gt;     PBC             0.239      0.023   10.580    0.000</span></span>
-<span><span class="co">#&gt;     INT             0.197      0.025    7.756    0.000</span></span>
-<span><span class="co">#&gt;     INT:INT         0.128      0.016    7.891    0.000</span></span>
+<span><span class="co">#&gt;     INT             0.197      0.025    7.757    0.000</span></span>
+<span><span class="co">#&gt;     INT:INT         0.128      0.016    7.892    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Intercepts:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;    .int1            1.014      0.022   46.938    0.000</span></span>
 <span><span class="co">#&gt;    .int2            1.012      0.020   50.379    0.000</span></span>
 <span><span class="co">#&gt;    .int3            1.005      0.018   54.778    0.000</span></span>
-<span><span class="co">#&gt;    .att1            1.014      0.024   41.991    0.000</span></span>
+<span><span class="co">#&gt;    .att1            1.014      0.024   41.990    0.000</span></span>
 <span><span class="co">#&gt;    .att2            1.007      0.021   46.950    0.000</span></span>
 <span><span class="co">#&gt;    .att3            1.016      0.020   51.438    0.000</span></span>
 <span><span class="co">#&gt;    .att4            0.999      0.018   55.637    0.000</span></span>
 <span><span class="co">#&gt;    .att5            0.992      0.022   45.655    0.000</span></span>
 <span><span class="co">#&gt;    .sn1             1.005      0.024   41.643    0.000</span></span>
-<span><span class="co">#&gt;    .sn2             1.010      0.022   46.692    0.000</span></span>
-<span><span class="co">#&gt;    .pbc1            0.997      0.024   42.397    0.000</span></span>
-<span><span class="co">#&gt;    .pbc2            0.985      0.022   44.917    0.000</span></span>
-<span><span class="co">#&gt;    .pbc3            0.991      0.020   50.437    0.000</span></span>
-<span><span class="co">#&gt;    .b1              0.999      0.023   42.620    0.000</span></span>
+<span><span class="co">#&gt;    .sn2             1.010      0.022   46.691    0.000</span></span>
+<span><span class="co">#&gt;    .pbc1            0.997      0.024   42.396    0.000</span></span>
+<span><span class="co">#&gt;    .pbc2            0.985      0.022   44.916    0.000</span></span>
+<span><span class="co">#&gt;    .pbc3            0.991      0.020   50.436    0.000</span></span>
+<span><span class="co">#&gt;    .b1              0.999      0.023   42.619    0.000</span></span>
 <span><span class="co">#&gt;    .b2              1.017      0.022   46.234    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
@@ -282,7 +282,7 @@ argument in <code>modsem</code>:</p>
 <span><span class="co">#&gt;     SN              0.629      0.029   21.943    0.000</span></span>
 <span><span class="co">#&gt;   PBC ~~        </span></span>
 <span><span class="co">#&gt;     ATT             0.678      0.029   23.724    0.000</span></span>
-<span><span class="co">#&gt;     SN              0.678      0.029   23.350    0.000</span></span>
+<span><span class="co">#&gt;     SN              0.678      0.029   23.349    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
@@ -299,8 +299,8 @@ argument in <code>modsem</code>:</p>
 <span><span class="co">#&gt;    .pbc1            0.145      0.008   18.436    0.000</span></span>
 <span><span class="co">#&gt;    .pbc2            0.160      0.007   21.413    0.000</span></span>
 <span><span class="co">#&gt;    .pbc3            0.154      0.006   23.791    0.000</span></span>
-<span><span class="co">#&gt;    .b1              0.185      0.020    9.338    0.000</span></span>
-<span><span class="co">#&gt;    .b2              0.135      0.018    7.527    0.000</span></span>
+<span><span class="co">#&gt;    .b1              0.185      0.020    9.335    0.000</span></span>
+<span><span class="co">#&gt;    .b2              0.135      0.018    7.531    0.000</span></span>
 <span><span class="co">#&gt;     ATT             0.998      0.037   27.141    0.000</span></span>
 <span><span class="co">#&gt;     SN              0.988      0.039   25.397    0.000</span></span>
 <span><span class="co">#&gt;     PBC             0.962      0.035   27.258    0.000</span></span>
@@ -448,7 +448,7 @@ argument:</p>
 <span><span class="co">#&gt;    between endogenous variables in the lms approach 'nodes = 24'</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est_lms</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (1.0.24) ended normally after 53 iterations</span></span>
+<span><span class="co">#&gt; modsem (1.0.24) ended normally after 55 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                        LMS</span></span>
 <span><span class="co">#&gt;   Optimization method                       EMA-NLMINB</span></span>
@@ -502,10 +502,10 @@ argument:</p>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   ATT =~        </span></span>
 <span><span class="co">#&gt;     att1            1.000                             </span></span>
-<span><span class="co">#&gt;     att2            0.878      0.012   71.560    0.000</span></span>
+<span><span class="co">#&gt;     att2            0.878      0.012   71.561    0.000</span></span>
 <span><span class="co">#&gt;     att3            0.789      0.012   66.374    0.000</span></span>
-<span><span class="co">#&gt;     att4            0.695      0.011   61.002    0.000</span></span>
-<span><span class="co">#&gt;     att5            0.887      0.013   70.848    0.000</span></span>
+<span><span class="co">#&gt;     att4            0.695      0.011   61.003    0.000</span></span>
+<span><span class="co">#&gt;     att5            0.887      0.013   70.849    0.000</span></span>
 <span><span class="co">#&gt;   SN =~         </span></span>
 <span><span class="co">#&gt;     sn1             1.000                             </span></span>
 <span><span class="co">#&gt;     sn2             0.888      0.017   52.489    0.000</span></span>
@@ -519,7 +519,7 @@ argument:</p>
 <span><span class="co">#&gt;     int3            0.807      0.015   55.637    0.000</span></span>
 <span><span class="co">#&gt;   BEH =~        </span></span>
 <span><span class="co">#&gt;     b1              1.000                             </span></span>
-<span><span class="co">#&gt;     b2              0.960      0.032   29.643    0.000</span></span>
+<span><span class="co">#&gt;     b2              0.960      0.032   29.645    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
@@ -529,25 +529,25 @@ argument:</p>
 <span><span class="co">#&gt;     PBC             0.222      0.030    7.508    0.000</span></span>
 <span><span class="co">#&gt;   BEH ~         </span></span>
 <span><span class="co">#&gt;     PBC             0.239      0.023   10.580    0.000</span></span>
-<span><span class="co">#&gt;     INT             0.197      0.025    7.756    0.000</span></span>
-<span><span class="co">#&gt;     INT:INT         0.128      0.016    7.891    0.000</span></span>
+<span><span class="co">#&gt;     INT             0.197      0.025    7.757    0.000</span></span>
+<span><span class="co">#&gt;     INT:INT         0.128      0.016    7.892    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Intercepts:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;    .int1            1.014      0.022   46.938    0.000</span></span>
 <span><span class="co">#&gt;    .int2            1.012      0.020   50.379    0.000</span></span>
 <span><span class="co">#&gt;    .int3            1.005      0.018   54.778    0.000</span></span>
-<span><span class="co">#&gt;    .att1            1.014      0.024   41.991    0.000</span></span>
+<span><span class="co">#&gt;    .att1            1.014      0.024   41.990    0.000</span></span>
 <span><span class="co">#&gt;    .att2            1.007      0.021   46.950    0.000</span></span>
 <span><span class="co">#&gt;    .att3            1.016      0.020   51.438    0.000</span></span>
 <span><span class="co">#&gt;    .att4            0.999      0.018   55.637    0.000</span></span>
 <span><span class="co">#&gt;    .att5            0.992      0.022   45.655    0.000</span></span>
 <span><span class="co">#&gt;    .sn1             1.005      0.024   41.643    0.000</span></span>
-<span><span class="co">#&gt;    .sn2             1.010      0.022   46.692    0.000</span></span>
-<span><span class="co">#&gt;    .pbc1            0.997      0.024   42.397    0.000</span></span>
-<span><span class="co">#&gt;    .pbc2            0.985      0.022   44.917    0.000</span></span>
-<span><span class="co">#&gt;    .pbc3            0.991      0.020   50.437    0.000</span></span>
-<span><span class="co">#&gt;    .b1              0.999      0.023   42.620    0.000</span></span>
+<span><span class="co">#&gt;    .sn2             1.010      0.022   46.691    0.000</span></span>
+<span><span class="co">#&gt;    .pbc1            0.997      0.024   42.396    0.000</span></span>
+<span><span class="co">#&gt;    .pbc2            0.985      0.022   44.916    0.000</span></span>
+<span><span class="co">#&gt;    .pbc3            0.991      0.020   50.436    0.000</span></span>
+<span><span class="co">#&gt;    .b1              0.999      0.023   42.619    0.000</span></span>
 <span><span class="co">#&gt;    .b2              1.017      0.022   46.234    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
@@ -556,7 +556,7 @@ argument:</p>
 <span><span class="co">#&gt;     SN              0.629      0.029   21.943    0.000</span></span>
 <span><span class="co">#&gt;     PBC             0.678      0.029   23.724    0.000</span></span>
 <span><span class="co">#&gt;   SN ~~         </span></span>
-<span><span class="co">#&gt;     PBC             0.678      0.029   23.350    0.000</span></span>
+<span><span class="co">#&gt;     PBC             0.678      0.029   23.349    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
@@ -573,8 +573,8 @@ argument:</p>
 <span><span class="co">#&gt;    .pbc1            0.145      0.008   18.436    0.000</span></span>
 <span><span class="co">#&gt;    .pbc2            0.160      0.007   21.413    0.000</span></span>
 <span><span class="co">#&gt;    .pbc3            0.154      0.006   23.791    0.000</span></span>
-<span><span class="co">#&gt;    .b1              0.185      0.020    9.338    0.000</span></span>
-<span><span class="co">#&gt;    .b2              0.135      0.018    7.527    0.000</span></span>
+<span><span class="co">#&gt;    .b1              0.185      0.020    9.335    0.000</span></span>
+<span><span class="co">#&gt;    .b2              0.135      0.018    7.531    0.000</span></span>
 <span><span class="co">#&gt;     ATT             0.998      0.037   27.141    0.000</span></span>
 <span><span class="co">#&gt;     SN              0.988      0.039   25.397    0.000</span></span>
 <span><span class="co">#&gt;     PBC             0.962      0.035   27.258    0.000</span></span>

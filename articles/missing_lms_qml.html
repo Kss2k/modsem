@@ -122,7 +122,7 @@ generate some missing data using the <code>oneInt</code> dataset.</p>
 <span><span class="va">lms_fiml</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m1</span>, <span class="va">oneInt2</span>, method <span class="op">=</span> <span class="st">"lms"</span>, missing <span class="op">=</span> <span class="st">"fiml"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">lms_fiml</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (1.0.24) ended normally after 39 iterations</span></span>
+<span><span class="co">#&gt; modsem (1.0.24) ended normally after 41 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                        LMS</span></span>
 <span><span class="co">#&gt;   Optimization method                       EMA-NLMINB</span></span>
@@ -174,7 +174,7 @@ generate some missing data using the <code>oneInt</code> dataset.</p>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   X =~          </span></span>
 <span><span class="co">#&gt;     x1              1.000                             </span></span>
-<span><span class="co">#&gt;     x2              0.802      0.013   63.809    0.000</span></span>
+<span><span class="co">#&gt;     x2              0.802      0.013   63.810    0.000</span></span>
 <span><span class="co">#&gt;     x3              0.911      0.013   67.533    0.000</span></span>
 <span><span class="co">#&gt;   Z =~          </span></span>
 <span><span class="co">#&gt;     z1              1.000                             </span></span>
@@ -194,15 +194,15 @@ generate some missing data using the <code>oneInt</code> dataset.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Intercepts:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;    .x1              1.021      0.024   42.579    0.000</span></span>
-<span><span class="co">#&gt;    .x2              1.216      0.020   60.775    0.000</span></span>
-<span><span class="co">#&gt;    .x3              0.919      0.022   41.302    0.000</span></span>
+<span><span class="co">#&gt;    .x1              1.021      0.024   42.580    0.000</span></span>
+<span><span class="co">#&gt;    .x2              1.216      0.020   60.776    0.000</span></span>
+<span><span class="co">#&gt;    .x3              0.919      0.022   41.303    0.000</span></span>
 <span><span class="co">#&gt;    .z1              1.012      0.024   41.526    0.000</span></span>
 <span><span class="co">#&gt;    .z2              1.206      0.020   59.176    0.000</span></span>
 <span><span class="co">#&gt;    .z3              0.915      0.022   42.019    0.000</span></span>
 <span><span class="co">#&gt;    .y1              1.037      0.033   31.378    0.000</span></span>
 <span><span class="co">#&gt;    .y2              1.220      0.027   45.352    0.000</span></span>
-<span><span class="co">#&gt;    .y3              0.951      0.030   31.615    0.000</span></span>
+<span><span class="co">#&gt;    .y3              0.951      0.030   31.616    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
@@ -214,12 +214,12 @@ generate some missing data using the <code>oneInt</code> dataset.</p>
 <span><span class="co">#&gt;    .x1              0.155      0.009   17.720    0.000</span></span>
 <span><span class="co">#&gt;    .x2              0.161      0.007   22.965    0.000</span></span>
 <span><span class="co">#&gt;    .x3              0.165      0.008   20.637    0.000</span></span>
-<span><span class="co">#&gt;    .z1              0.169      0.009   18.468    0.000</span></span>
+<span><span class="co">#&gt;    .z1              0.169      0.009   18.469    0.000</span></span>
 <span><span class="co">#&gt;    .z2              0.160      0.007   22.434    0.000</span></span>
 <span><span class="co">#&gt;    .z3              0.157      0.008   20.471    0.000</span></span>
 <span><span class="co">#&gt;    .y1              0.160      0.009   17.839    0.000</span></span>
 <span><span class="co">#&gt;    .y2              0.155      0.007   22.427    0.000</span></span>
-<span><span class="co">#&gt;    .y3              0.162      0.008   20.287    0.000</span></span>
+<span><span class="co">#&gt;    .y3              0.162      0.008   20.286    0.000</span></span>
 <span><span class="co">#&gt;     X               0.989      0.037   26.932    0.000</span></span>
 <span><span class="co">#&gt;     Z               1.014      0.038   26.776    0.000</span></span>
 <span><span class="co">#&gt;    .Y               0.979      0.038   25.845    0.000</span></span></code></pre></div>
@@ -342,7 +342,7 @@ can be performed both for the LMS and QML approaches, using the
 <code class="sourceCode R"><span><span class="va">lms_mimpute</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem_mimpute.html">modsem_mimpute</a></span><span class="op">(</span><span class="va">m1</span>, <span class="va">oneInt2</span>, method <span class="op">=</span> <span class="st">"lms"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">lms_mimpute</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (1.0.24) ended normally after 518 iterations</span></span>
+<span><span class="co">#&gt; modsem (1.0.24) ended normally after 603 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                        LMS</span></span>
 <span><span class="co">#&gt;   Optimization method                       EMA-NLMINB</span></span>
@@ -378,7 +378,7 @@ can be performed both for the LMS and QML approaches, using the
 <span><span class="co">#&gt;   P-value (D)                                    0.000</span></span>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; R-Squared Interaction Model (H1):</span></span>
-<span><span class="co">#&gt;   Y                                              0.594</span></span>
+<span><span class="co">#&gt;   Y                                              0.595</span></span>
 <span><span class="co">#&gt; R-Squared Baseline Model (H0):</span></span>
 <span><span class="co">#&gt;   Y                                              0.396</span></span>
 <span><span class="co">#&gt; R-Squared Change (H1 - H0):</span></span>
@@ -393,35 +393,35 @@ can be performed both for the LMS and QML approaches, using the
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   X =~          </span></span>
 <span><span class="co">#&gt;     x1              1.000                             </span></span>
-<span><span class="co">#&gt;     x2              0.801      0.013   63.883    0.000</span></span>
-<span><span class="co">#&gt;     x3              0.911      0.013   67.781    0.000</span></span>
+<span><span class="co">#&gt;     x2              0.801      0.013   63.880    0.000</span></span>
+<span><span class="co">#&gt;     x3              0.911      0.013   67.777    0.000</span></span>
 <span><span class="co">#&gt;   Z =~          </span></span>
 <span><span class="co">#&gt;     z1              1.000                             </span></span>
-<span><span class="co">#&gt;     z2              0.813      0.013   64.423    0.000</span></span>
-<span><span class="co">#&gt;     z3              0.883      0.013   67.250    0.000</span></span>
+<span><span class="co">#&gt;     z2              0.813      0.013   64.422    0.000</span></span>
+<span><span class="co">#&gt;     z3              0.883      0.013   67.249    0.000</span></span>
 <span><span class="co">#&gt;   Y =~          </span></span>
 <span><span class="co">#&gt;     y1              1.000                             </span></span>
-<span><span class="co">#&gt;     y2              0.798      0.007  106.550    0.000</span></span>
-<span><span class="co">#&gt;     y3              0.902      0.008  111.399    0.000</span></span>
+<span><span class="co">#&gt;     y2              0.798      0.007  106.531    0.000</span></span>
+<span><span class="co">#&gt;     y3              0.902      0.008  111.408    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   Y ~           </span></span>
-<span><span class="co">#&gt;     X               0.671      0.031   21.647    0.000</span></span>
-<span><span class="co">#&gt;     Z               0.569      0.030   18.674    0.000</span></span>
-<span><span class="co">#&gt;     X:Z             0.711      0.028   25.496    0.000</span></span>
+<span><span class="co">#&gt;     X               0.671      0.031   21.652    0.000</span></span>
+<span><span class="co">#&gt;     Z               0.569      0.030   18.681    0.000</span></span>
+<span><span class="co">#&gt;     X:Z             0.711      0.028   25.501    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Intercepts:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;    .x1              1.020      0.024   42.619    0.000</span></span>
-<span><span class="co">#&gt;    .x2              1.216      0.020   60.912    0.000</span></span>
-<span><span class="co">#&gt;    .x3              0.919      0.022   41.366    0.000</span></span>
-<span><span class="co">#&gt;    .z1              1.011      0.024   41.539    0.000</span></span>
-<span><span class="co">#&gt;    .z2              1.206      0.020   59.160    0.000</span></span>
-<span><span class="co">#&gt;    .z3              0.915      0.022   42.007    0.000</span></span>
-<span><span class="co">#&gt;    .y1              1.037      0.033   31.352    0.000</span></span>
-<span><span class="co">#&gt;    .y2              1.221      0.027   45.358    0.000</span></span>
-<span><span class="co">#&gt;    .y3              0.951      0.030   31.587    0.000</span></span>
+<span><span class="co">#&gt;    .x2              1.216      0.020   60.916    0.000</span></span>
+<span><span class="co">#&gt;    .x3              0.919      0.022   41.368    0.000</span></span>
+<span><span class="co">#&gt;    .z1              1.011      0.024   41.541    0.000</span></span>
+<span><span class="co">#&gt;    .z2              1.206      0.020   59.162    0.000</span></span>
+<span><span class="co">#&gt;    .z3              0.915      0.022   42.009    0.000</span></span>
+<span><span class="co">#&gt;    .y1              1.037      0.033   31.358    0.000</span></span>
+<span><span class="co">#&gt;    .y2              1.221      0.027   45.364    0.000</span></span>
+<span><span class="co">#&gt;    .y3              0.951      0.030   31.592    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
@@ -430,18 +430,18 @@ can be performed both for the LMS and QML approaches, using the
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;    .x1              0.156      0.009   17.760    0.000</span></span>
+<span><span class="co">#&gt;    .x1              0.156      0.009   17.759    0.000</span></span>
 <span><span class="co">#&gt;    .x2              0.161      0.007   23.100    0.000</span></span>
-<span><span class="co">#&gt;    .x3              0.165      0.008   20.626    0.000</span></span>
+<span><span class="co">#&gt;    .x3              0.165      0.008   20.627    0.000</span></span>
 <span><span class="co">#&gt;    .z1              0.170      0.009   18.505    0.000</span></span>
 <span><span class="co">#&gt;    .z2              0.159      0.007   22.347    0.000</span></span>
 <span><span class="co">#&gt;    .z3              0.157      0.008   20.523    0.000</span></span>
 <span><span class="co">#&gt;    .y1              0.160      0.009   17.883    0.000</span></span>
-<span><span class="co">#&gt;    .y2              0.155      0.007   22.531    0.000</span></span>
-<span><span class="co">#&gt;    .y3              0.162      0.008   20.114    0.000</span></span>
-<span><span class="co">#&gt;     X               0.988      0.036   27.097    0.000</span></span>
+<span><span class="co">#&gt;    .y2              0.155      0.007   22.528    0.000</span></span>
+<span><span class="co">#&gt;    .y3              0.162      0.008   20.113    0.000</span></span>
+<span><span class="co">#&gt;     X               0.988      0.036   27.095    0.000</span></span>
 <span><span class="co">#&gt;     Z               1.014      0.038   26.728    0.000</span></span>
-<span><span class="co">#&gt;    .Y               0.984      0.038   25.726    0.000</span></span></code></pre></div>
+<span><span class="co">#&gt;    .Y               0.984      0.038   25.754    0.000</span></span></code></pre></div>
 </div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

@@ -109,7 +109,7 @@ effects.</p>
 <span><span class="va">est1_lms</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/modsem.html">modsem</a></span><span class="op">(</span><span class="va">m1</span>, data <span class="op">=</span> <span class="va">oneInt</span>, method <span class="op">=</span> <span class="st">"lms"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est1_lms</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (1.0.24) ended normally after 29 iterations</span></span>
+<span><span class="co">#&gt; modsem (1.0.24) ended normally after 33 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                        LMS</span></span>
 <span><span class="co">#&gt;   Optimization method                       EMA-NLMINB</span></span>
@@ -149,7 +149,7 @@ effects.</p>
 <span><span class="co">#&gt; R-Squared Baseline Model (H0):</span></span>
 <span><span class="co">#&gt;   Y                                              0.395</span></span>
 <span><span class="co">#&gt; R-Squared Change (H1 - H0):</span></span>
-<span><span class="co">#&gt;   Y                                              0.203</span></span>
+<span><span class="co">#&gt;   Y                                              0.204</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Parameter Estimates:</span></span>
 <span><span class="co">#&gt;   Coefficients                          unstandardized</span></span>
@@ -160,36 +160,36 @@ effects.</p>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   X =~          </span></span>
 <span><span class="co">#&gt;     x1              1.000                             </span></span>
-<span><span class="co">#&gt;     x2              0.803      0.013   63.879    0.000</span></span>
-<span><span class="co">#&gt;     x3              0.914      0.014   67.685    0.000</span></span>
+<span><span class="co">#&gt;     x2              0.803      0.013   63.880    0.000</span></span>
+<span><span class="co">#&gt;     x3              0.914      0.014   67.686    0.000</span></span>
 <span><span class="co">#&gt;   Z =~          </span></span>
 <span><span class="co">#&gt;     z1              1.000                             </span></span>
-<span><span class="co">#&gt;     z2              0.810      0.012   65.059    0.000</span></span>
-<span><span class="co">#&gt;     z3              0.881      0.013   67.578    0.000</span></span>
+<span><span class="co">#&gt;     z2              0.810      0.012   65.057    0.000</span></span>
+<span><span class="co">#&gt;     z3              0.881      0.013   67.576    0.000</span></span>
 <span><span class="co">#&gt;   Y =~          </span></span>
 <span><span class="co">#&gt;     y1              1.000                             </span></span>
-<span><span class="co">#&gt;     y2              0.798      0.007  107.511    0.000</span></span>
-<span><span class="co">#&gt;     y3              0.899      0.008  112.538    0.000</span></span>
+<span><span class="co">#&gt;     y2              0.798      0.007  107.505    0.000</span></span>
+<span><span class="co">#&gt;     y3              0.899      0.008  112.528    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   Y ~           </span></span>
-<span><span class="co">#&gt;     X               0.673      0.031   21.650    0.000</span></span>
-<span><span class="co">#&gt;     Z               0.569      0.030   18.695    0.000</span></span>
-<span><span class="co">#&gt;     X:X            -0.004      0.021   -0.206    0.837</span></span>
-<span><span class="co">#&gt;     Z:X             0.720      0.029   24.848    0.000</span></span>
+<span><span class="co">#&gt;     X               0.672      0.031   21.647    0.000</span></span>
+<span><span class="co">#&gt;     Z               0.569      0.030   18.702    0.000</span></span>
+<span><span class="co">#&gt;     X:X            -0.004      0.021   -0.199    0.842</span></span>
+<span><span class="co">#&gt;     Z:X             0.720      0.029   24.858    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Intercepts:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;    .x1              1.023      0.024   42.777    0.000</span></span>
-<span><span class="co">#&gt;    .x2              1.216      0.020   60.841    0.000</span></span>
+<span><span class="co">#&gt;    .x1              1.023      0.024   42.778    0.000</span></span>
+<span><span class="co">#&gt;    .x2              1.216      0.020   60.842    0.000</span></span>
 <span><span class="co">#&gt;    .x3              0.919      0.022   41.375    0.000</span></span>
-<span><span class="co">#&gt;    .z1              1.012      0.024   41.569    0.000</span></span>
-<span><span class="co">#&gt;    .z2              1.206      0.020   59.262    0.000</span></span>
-<span><span class="co">#&gt;    .z3              0.916      0.022   42.057    0.000</span></span>
-<span><span class="co">#&gt;    .y1              1.041      0.038   27.476    0.000</span></span>
-<span><span class="co">#&gt;    .y2              1.223      0.031   39.880    0.000</span></span>
-<span><span class="co">#&gt;    .y3              0.957      0.034   27.893    0.000</span></span>
+<span><span class="co">#&gt;    .z1              1.011      0.024   41.560    0.000</span></span>
+<span><span class="co">#&gt;    .z2              1.206      0.020   59.253    0.000</span></span>
+<span><span class="co">#&gt;    .z3              0.916      0.022   42.048    0.000</span></span>
+<span><span class="co">#&gt;    .y1              1.040      0.038   27.471    0.000</span></span>
+<span><span class="co">#&gt;    .y2              1.223      0.031   39.876    0.000</span></span>
+<span><span class="co">#&gt;    .y3              0.957      0.034   27.887    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
@@ -198,18 +198,18 @@ effects.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;    .x1              0.158      0.009   18.154    0.000</span></span>
+<span><span class="co">#&gt;    .x1              0.158      0.009   18.155    0.000</span></span>
 <span><span class="co">#&gt;    .x2              0.162      0.007   23.140    0.000</span></span>
-<span><span class="co">#&gt;    .x3              0.165      0.008   20.738    0.000</span></span>
-<span><span class="co">#&gt;    .z1              0.167      0.009   18.497    0.000</span></span>
+<span><span class="co">#&gt;    .x3              0.165      0.008   20.739    0.000</span></span>
+<span><span class="co">#&gt;    .z1              0.167      0.009   18.499    0.000</span></span>
 <span><span class="co">#&gt;    .z2              0.160      0.007   22.667    0.000</span></span>
-<span><span class="co">#&gt;    .z3              0.158      0.008   20.763    0.000</span></span>
-<span><span class="co">#&gt;    .y1              0.160      0.009   18.003    0.000</span></span>
-<span><span class="co">#&gt;    .y2              0.154      0.007   22.673    0.000</span></span>
+<span><span class="co">#&gt;    .z3              0.158      0.008   20.764    0.000</span></span>
+<span><span class="co">#&gt;    .y1              0.160      0.009   18.005    0.000</span></span>
+<span><span class="co">#&gt;    .y2              0.154      0.007   22.672    0.000</span></span>
 <span><span class="co">#&gt;    .y3              0.164      0.008   20.666    0.000</span></span>
 <span><span class="co">#&gt;     X               0.982      0.036   27.018    0.000</span></span>
-<span><span class="co">#&gt;     Z               1.018      0.038   26.925    0.000</span></span>
-<span><span class="co">#&gt;    .Y               0.981      0.038   25.903    0.000</span></span></code></pre></div>
+<span><span class="co">#&gt;     Z               1.017      0.038   26.925    0.000</span></span>
+<span><span class="co">#&gt;    .Y               0.980      0.038   25.919    0.000</span></span></code></pre></div>
 <p>In this example, we have a simple model with two quadratic effects
 and one interaction effect. We estimate the model using both the
 <code>QML</code> and double-centering approaches, with data from a
@@ -365,7 +365,7 @@ indicators to zero.</p>
 <span>                   nodes <span class="op">=</span> <span class="fl">15</span>, mean.observed <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">est2_lms</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (1.0.24) ended normally after 48 iterations</span></span>
+<span><span class="co">#&gt; modsem (1.0.24) ended normally after 50 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                        LMS</span></span>
 <span><span class="co">#&gt;   Optimization method                       EMA-NLMINB</span></span>
@@ -416,7 +416,7 @@ indicators to zero.</p>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   ENJ =~        </span></span>
 <span><span class="co">#&gt;     enjoy1          1.000                             </span></span>
-<span><span class="co">#&gt;     enjoy2          1.002      0.020   50.594    0.000</span></span>
+<span><span class="co">#&gt;     enjoy2          1.002      0.020   50.595    0.000</span></span>
 <span><span class="co">#&gt;     enjoy3          0.894      0.020   43.699    0.000</span></span>
 <span><span class="co">#&gt;     enjoy4          0.998      0.021   48.238    0.000</span></span>
 <span><span class="co">#&gt;     enjoy5          1.047      0.021   50.431    0.000</span></span>
@@ -424,22 +424,22 @@ indicators to zero.</p>
 <span><span class="co">#&gt;     academic1       1.000                             </span></span>
 <span><span class="co">#&gt;     academic2       1.104      0.028   38.984    0.000</span></span>
 <span><span class="co">#&gt;     academic3       1.235      0.030   41.766    0.000</span></span>
-<span><span class="co">#&gt;     academic4       1.254      0.030   41.874    0.000</span></span>
+<span><span class="co">#&gt;     academic4       1.254      0.030   41.875    0.000</span></span>
 <span><span class="co">#&gt;     academic5       1.114      0.029   38.689    0.000</span></span>
 <span><span class="co">#&gt;     academic6       1.198      0.030   40.397    0.000</span></span>
 <span><span class="co">#&gt;   CAREER =~     </span></span>
 <span><span class="co">#&gt;     career1         1.000                             </span></span>
 <span><span class="co">#&gt;     career2         1.040      0.016   65.191    0.000</span></span>
-<span><span class="co">#&gt;     career3         0.952      0.016   57.851    0.000</span></span>
+<span><span class="co">#&gt;     career3         0.952      0.016   57.852    0.000</span></span>
 <span><span class="co">#&gt;     career4         0.818      0.017   48.371    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   CAREER ~      </span></span>
 <span><span class="co">#&gt;     ENJ             0.525      0.020   26.437    0.000</span></span>
-<span><span class="co">#&gt;     SC              0.465      0.023   20.207    0.000</span></span>
-<span><span class="co">#&gt;     ENJ:ENJ         0.027      0.021    1.293    0.196</span></span>
-<span><span class="co">#&gt;     ENJ:SC         -0.047      0.043   -1.104    0.270</span></span>
+<span><span class="co">#&gt;     SC              0.465      0.023   20.206    0.000</span></span>
+<span><span class="co">#&gt;     ENJ:ENJ         0.027      0.021    1.294    0.196</span></span>
+<span><span class="co">#&gt;     ENJ:SC         -0.047      0.043   -1.105    0.269</span></span>
 <span><span class="co">#&gt;     SC:SC           0.001      0.032    0.045    0.964</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Intercepts:</span></span>
