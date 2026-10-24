@@ -331,8 +331,7 @@ emLms <- function(model,
         elapsed.time    = proc.time()[["elapsed"]] - history.start.time
       )
 
-      converged <- (abs(deltaLL) < convergence.abs) ||
-                   (abs(relDeltaLL) < convergence.rel)
+      converged <- (abs(deltaLL) < convergence.abs) || (abs(relDeltaLL) < convergence.rel)
       converged.em <- converged && mode == "EM"
       run.final.qn <- FALSE
       run.grad.fs  <- FALSE
@@ -604,7 +603,7 @@ emLms <- function(model,
       data              = lapply(model$models, FUN = \(submodel) submodel$data),
       logLik            = P$obsLL,
       iterations        = iterations,
-      converged         = iterations < max.iter,
+      converged         = iterations < max.iter && (!check.grad || grad.status == "converged"),
       optimizer         = paste(algorithm, optimizer, sep = "-"),
       calc.se           = calc.se,
       FIM               = FIM,
