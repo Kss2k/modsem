@@ -80,7 +80,7 @@ testthat::expect_true(all(sd.corrected > sd.uncorrected))
 fiml_lms <- modsem(m1, oneInt2, method = "lms", missing = "fiml")
 summary(fiml_lms)
 
-fiml_h0  <- estimate_h0(fiml_lms, calc.se = FALSE)
+fiml_h0  <- estimate_h0(fiml_lms, calc.se = FALSE, convergence.grad = Inf)
 testthat::expect_true(fiml_h0$iterations == 2L)
 
 testthat::expect_error(modsem(m1, oneInt2, method = "qml", missing = "fiml") ,
