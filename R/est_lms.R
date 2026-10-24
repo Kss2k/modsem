@@ -177,6 +177,7 @@ emLms <- function(model,
                   verbose = FALSE,
                   convergence.abs = 1e-4,
                   convergence.rel = 1e-10,
+                  convergence.grad = 1e-3,
                   max.iter = 500,
                   max.step = 1,
                   control = list(),
@@ -217,6 +218,7 @@ emLms <- function(model,
                   ema.final.qn.factr      = em.control$ema.final.qn.factr      %||% qn.factr,
                   ema.final.qn.rounds.max = em.control$ema.final.qn.rounds.max %||% 25L,
                   fs.maxit.start          = em.control$fs.maxit.start          %||% 1L,
+                  grad.max.steps          = em.control$grad.max.steps          %||% 25L,
                   ...) {
 
   algorithm <- toupper(match.arg(algorithm))
@@ -245,6 +247,11 @@ emLms <- function(model,
 
   max.iter.fs <- fs.maxit.start
   max.iter.qn <- qn.maxit.start
+
+  check.grad  <- is.numeric(convergence.grad) && is.finite(convergence.grad)
+  grad.steps  <- 0L
+  grad.max    <- NA_real_
+  grad.status <- if (check.grad) "not checked" else "disabled"
 
   tryCatch({
     logLikNew <- -Inf
@@ -324,10 +331,10 @@ emLms <- function(model,
         elapsed.time    = proc.time()[["elapsed"]] - history.start.time
       )
 
-      converged <- (abs(deltaLL) < convergence.abs) ||
-                   (abs(relDeltaLL) < convergence.rel)
+      converged <- (abs(deltaLL) < convergence.abs) || (abs(relDeltaLL) < convergence.rel)
       converged.em <- converged && mode == "EM"
       run.final.qn <- FALSE
+      run.grad.fs  <- FALSE
 
       if (iterations >= max.iter) break
       if (algorithm == "EMA" && do.final.qn && ema.final.phase == "qn") {
@@ -338,11 +345,40 @@ emLms <- function(model,
         }
 
       } else if (converged.em) {
+
         if (algorithm == "EMA" && do.final.qn && ema.final.phase == "none") {
           ema.final.phase <- "qn"
           run.final.qn <- TRUE
-        } else {
+
+        } else if (!check.grad) {
           break
+
+        } else {
+          # check if gradient agrees
+          grad.max <- maxAbsGradientLms(
+            theta   = thetaOld,
+            model   = model,
+            P       = P,
+            lower   = theta.lower,
+            upper   = theta.upper,
+            epsilon = epsilon
+          )
+
+          # reasons for terminating?
+          if (!is.finite(grad.max)) {
+            grad.status <- "non-finite gradient"
+            break
+          } else if (grad.max < convergence.grad) {
+            grad.status <- "converged"
+            break
+          } else if (grad.steps >= grad.max.steps) {
+            grad.status <- "max steps reached"
+            break
+          }
+
+          # continue
+          grad.steps  <- grad.steps + 1L
+          run.grad.fs <- TRUE
         }
       }
 
@@ -390,6 +426,11 @@ emLms <- function(model,
 
           updateStatusLog(iterations, mode, logLikNew, deltaLL, relDeltaLL, verbose)
         }
+      }
+
+      if (run.grad.fs) {
+        mode <- "FS"
+        updateStatusLog(iterations, mode, logLikNew, deltaLL, relDeltaLL, verbose)
       }
 
       .obsfn <- function(x) {
@@ -510,6 +551,13 @@ emLms <- function(model,
       } else {
         thetaNew <- thetaOld
       }
+
+      no.progress <- all.equal(thetaNew, thetaOld, tolerance = 0)
+      if (run.grad.fs && isTRUE(no.progress)) {
+        grad.status <- "no progress"
+        break
+      }
+
     } # while
 
     if (verbose) cat("\n")
@@ -521,6 +569,13 @@ emLms <- function(model,
         max.step, max.iter, nodes, adaptive.quad,
         adaptive.quad.tol, quad.range
       )
+    )
+
+    mod_warnif(check.grad && iterations < max.iter && grad.status != "converged",
+      sprintf("The largest absolute gradient is %.3g (`convergence.grad = %.3g`, %s).\n",
+              grad.max, convergence.grad, grad.status),
+      "The model might not have converged, or it might be poorly identified.\n",
+      "Consider increasing `em.control$grad.max.steps`."
     )
 
     quad.capped <- any(vapply(lastQuad, FUN.VALUE = logical(1L),
@@ -548,7 +603,7 @@ emLms <- function(model,
       data              = lapply(model$models, FUN = \(submodel) submodel$data),
       logLik            = P$obsLL,
       iterations        = iterations,
-      converged         = iterations < max.iter,
+      converged         = iterations < max.iter && (!check.grad || grad.status == "converged"),
       optimizer         = paste(algorithm, optimizer, sep = "-"),
       calc.se           = calc.se,
       FIM               = FIM,
@@ -565,6 +620,8 @@ emLms <- function(model,
       startModel        = model
     )
     fit$iteration.history <- history
+    fit$convergence.grad  <- list(max.abs.grad = grad.max, tol = convergence.grad,
+                                  steps = grad.steps, status = grad.status)
     fit
 
   }, error = function(e) {
@@ -608,6 +665,24 @@ emLms <- function(model,
     fit$iteration.history <- history
     fit
   })
+}
+
+
+maxAbsGradientLms <- function(theta, model, P, lower = -Inf, upper = Inf,
+                              epsilon = 1e-6) {
+  g <- gradientObsLogLikLms(
+    theta   = theta,
+    model   = model,
+    P       = P,
+    sign    = 1,
+    epsilon = epsilon
+  )
+
+  atBound <- (theta <= lower & g < 0) | (theta >= upper & g > 0)
+  g <- g[!atBound]
+
+  if (!length(g)) return(0)
+  max(abs(g))
 }
 
 

@@ -81,6 +81,8 @@ bootstrap_modsem.modsem_pi <- function(model, FUN = "coef", ...) {
 #'   opposed to \code{"EMA"}.
 #' @param convergence.abs Absolute convergence criteria. Defaults to 10 times the original criteria.
 #' @param convergence.rel Relative convergence criteria. Defaults to 10 times the original criteria.
+#' @param convergence.grad Gradient convergence criterion (see \code{\link{modsem_da}}).
+#'   Defaults to \code{Inf} (disabled).
 #'
 #' @details The function internally resamples the observed data (non-parametric
 #'   case) or simulates from the estimated parameter table (parametric case),
@@ -112,6 +114,7 @@ bootstrap_modsem.modsem_da <- function(model,
                                        optimize = FALSE,
                                        convergence.abs = 10 * model$args$convergence.abs,
                                        convergence.rel = 10 * model$args$convergence.rel,
+                                       convergence.grad = Inf,
                                        algorithm = "EM",
                                        ...) {
   checkWarnRCS(model)
@@ -182,6 +185,7 @@ bootstrap_modsem.modsem_da <- function(model,
   argList$algorithm       <- algorithm
   argList$convergence.abs <- convergence.abs
   argList$convergence.rel <- convergence.rel
+  argList$convergence.grad <- convergence.grad
   argList$calc.se         <- calc.se
   argList$verbose         <- verbose
   argList$model.syntax    <- model$model$info$group.info$syntax

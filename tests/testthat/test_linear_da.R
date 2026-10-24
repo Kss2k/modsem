@@ -34,7 +34,7 @@ tpb <- "
   BEHAVIOUR_VARIABLE_LONG ~~ HELLO_THERE2 * BEHAVIOUR_VARIABLE_LONG
 "
 
-est_tpb_lms <- modsem(tpb, TPB, method = "lms", calc.se=TRUE)
+est_tpb_lms <- modsem(tpb, TPB, method = "lms", calc.se=TRUE, convergence.grad = Inf)
 testthat::expect_true(est_tpb_lms$iterations == 2L)
 testthat::expect_no_condition(summary(est_tpb_lms))
 print(summary(est_tpb_lms, H0 = FALSE, standardized = TRUE))
@@ -106,7 +106,7 @@ tpb <- '
   INT ~ ATT + PBC
   BEH ~ PBC
 '
-tpb_lms_2 <- modsem(tpb, TPB, method = "lms")
+tpb_lms_2 <- modsem(tpb, TPB, method = "lms", convergence.grad = Inf)
 testthat::expect_true(tpb_lms_2$iterations == 2)
 summary(tpb_lms_2, H0 = FALSE)
 
@@ -153,7 +153,8 @@ tpb <- "
 
 syntax_pi <- get_pi_syntax(tpb, method = "dblcent")
 data_pi   <- get_pi_data(tpb, data = TPB, method = "dblcent")
-est_lms_pi <- modsem(syntax_pi, data_pi, method = "lms", calc.se = FALSE)
+est_lms_pi <- modsem(syntax_pi, data_pi, method = "lms", calc.se = FALSE,
+                     convergence.grad = Inf)
 est_qml_pi <- modsem(syntax_pi, data_pi, method = "qml", calc.se = FALSE)
 testthat::expect_true(est_lms_pi$iterations == 2)
 testthat::expect_true(est_qml_pi$iterations == 1)

@@ -22,6 +22,7 @@ bootstrap_modsem(model = modsem, FUN, ...)
   optimize = FALSE,
   convergence.abs = 10 * model$args$convergence.abs,
   convergence.rel = 10 * model$args$convergence.rel,
+  convergence.grad = Inf,
   algorithm = "EM",
   ...
 )
@@ -64,6 +65,9 @@ for \code{\link{modsem_pi}} objects, or \code{\link{modsem_da}} for
 \item{convergence.abs}{Absolute convergence criteria. Defaults to 10 times the original criteria.}
 
 \item{convergence.rel}{Relative convergence criteria. Defaults to 10 times the original criteria.}
+
+\item{convergence.grad}{Gradient convergence criterion (see \code{\link{modsem_da}}).
+Defaults to \code{Inf} (disabled).}
 
 \item{algorithm}{Which algorithm should be used for the LMS approach? Defaults to \code{"EM"}, as
 opposed to \code{"EMA"}.}

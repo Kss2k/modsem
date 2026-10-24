@@ -127,6 +127,6 @@ JDR_Model_linear <- '
   INT ~ WE
 '
 
-est_lin_lms <- modsem(JDR_Model_linear, dummy_data, "lms")
+est_lin_lms <- modsem(JDR_Model_linear, dummy_data, "lms", convergence.grad = Inf)
 testthat::expect_equal(est_lin_lms$iterations, 2)
 print(summary(est_lin_lms, H0 = FALSE))
