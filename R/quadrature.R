@@ -223,18 +223,22 @@ adaptiveGaussQuadratureK <- function(fun,
   diff.m <- NROW(quadn) - m
 
   # Calculate next ceiling
-  if (abs(diff.m) > 2 * mdiff.tol) {
+  if (abs(diff.m) > 4 * mdiff.tol) {
     # If the difference is large, use a rough estimate
     new.ceil <- round(estMForNodesInRange(k = m, a = lower, b = upper))
 
     # else do a step change
-  } else new.ceil <- m.ceil - diff.m
+  } else {
+    pct.diff <- abs(diff.m) / m # relative error
+    rel.diff <- sign(diff.m) * max(round(pct.diff * m.ceil), 1L)
+    new.ceil <- m.ceil - rel.diff
+  }
 
   # Never request more than `node.max` nodes. If the target can't be reached
   # within `node.max`, use `node.max` instead of keeping the current ceiling
   new.ceil   <- min(new.ceil, node.max)
   OKNextCeil <- new.ceil != m.ceil
-  converged <- abs(diff.m) <= mdiff.tol
+  converged <- abs(diff.m) <= 0 || (abs(diff.m) <= mdiff.tol && iter > 1L)
   OKIter <- iter < iter.max
 
   if (!converged && OKIter && OKNextCeil) {
