@@ -307,6 +307,12 @@ emLms <- function(model,
         testSimpleGradient <- FALSE
       }
 
+      # Did the recalculated quadrature end up on a different grid?
+      quadChanged <- recalcQuad && !is.null(lastQuad) && !identical(
+        lapply(lastQuad, FUN = \(q) q$m.ceil),
+        lapply(P$quad,   FUN = \(q) q$m.ceil)
+      )
+
       lastQuad <- P$quad
 
       logLikNew  <- P$obsLL
@@ -382,9 +388,10 @@ emLms <- function(model,
         }
       }
 
-      # If quadrature has just been recalculated, we should be less strict
-      quad.err <- as.integer(recalcQuad) * P$quad.err
-      if (deltaLL < -max(1e-8, quad.err, na.rm = TRUE)) {
+      # If the quadrature grid itself changed `logLikOld` and `logLikNew`
+      # are computed on different grids, and a decrease says nothing about the
+      # EM step, so we skip the check
+      if (!quadChanged && deltaLL < -1e-18) {
         if (verbose) cat("\n")
         mod_msg_warn_immediate(
           sprintf("Loglikelihood decreased by %.2g!", deltaLL),
