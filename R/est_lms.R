@@ -391,7 +391,7 @@ emLms <- function(model,
       # If the quadrature grid itself changed `logLikOld` and `logLikNew`
       # are computed on different grids, and a decrease says nothing about the
       # EM step, so we skip the check
-      if (!quadChanged && deltaLL < -1e-18) {
+      if (!quadChanged && deltaLL < -1e-8) {
         if (verbose) cat("\n")
         mod_msg_warn_immediate(
           sprintf("Loglikelihood decreased by %.2g!", deltaLL),
