@@ -482,7 +482,7 @@ print.summary_da <- function(x, digits = 3, ...) {
 
       eff.values <- c(
         "Effective",
-        paste0(formatCount(quad$eff.nodes.per.dim), collapse = ", "),
+        paste0(formatCount(quad$eff.nodes.per.dim), collapse = ","),
         formatCount(quad$dimensions),
         formatCount(quad$eff.nodes.total)
       )
