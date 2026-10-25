@@ -408,11 +408,11 @@ emLms <- function(model,
       } else if (algorithm == "EMA" && n.em.iter > ema.min.iter) {
         # Check if expected number of iterations is increasing
         change <- diff(utils::tail(history$expected.remaining.iterations, ema.min.iter))
-       
+
         if (all(is.finite(change)) && mean(change) > ema.trend.min) {
           remaining <- utils::tail(history$expected.remaining.iterations, 1L)[[1L]]
 
-          # Increase the max step in case remaining > 500 or 
+          # Increase the max step in case remaining > 500 or
           # QN/FS fails, and we fall back to an EM step
           tmp.max.step <- max(fallback.max.step.min,
                             fallback.max.step.mult * max.step,
@@ -440,7 +440,7 @@ emLms <- function(model,
 
       .obsgr <- function(x) {
         grad <- gradientObsLogLikLms(theta = x, model = model, P = P, sign = -1, epsilon = epsilon)
-   
+
         non.finite <- !is.finite(grad)
         if (any(non.finite)) {
           # This might happen during a bad line search in optim()
@@ -619,6 +619,7 @@ emLms <- function(model,
       includeStartModel = TRUE,
       startModel        = model
     )
+
     fit$iteration.history <- history
     fit$convergence.grad  <- list(max.abs.grad = grad.max, tol = convergence.grad,
                                   steps = grad.steps, status = grad.status)
@@ -700,12 +701,12 @@ fischerScoring <- function(par,
 
   truncate <- function(x) {
     underflow <- x < lower
-    overflow  <- x > upper 
+    overflow  <- x > upper
 
     x[underflow] <- lower[underflow]
     x[overflow]  <- upper[overflow]
 
-    x 
+    x
   }
 
   f0 <- fn(par, ...)
@@ -732,7 +733,7 @@ fischerScoring <- function(par,
         iterations = i
       ))
     }
-        
+
     alpha   <- max.alpha
     success <- FALSE
 
@@ -740,7 +741,7 @@ fischerScoring <- function(par,
       parTrial  <- truncate(par + alpha * direction)
       f1  <- suppressWarnings(fn(parTrial, ...))
 
-      ok <- is.finite(f1) && f1 <= f0 
+      ok <- is.finite(f1) && f1 <= f0
       if (ok) { success <- TRUE; break }
       alpha <- alpha / 2
     }

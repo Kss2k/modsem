@@ -10,6 +10,7 @@ quadrature <- function(m, k,
                        adaptive = FALSE,
                        quad.range = Inf,
                        adaptive.frequency = 3,
+                       wtol = NULL,
                        ...) {
   if (quad.range < 0) {
     mod_msg_warn("`quad.range` should be positive, using `-quad.range` instead!\n")
@@ -45,6 +46,13 @@ quadrature <- function(m, k,
   nodes <- sqrt(2) * nodes
   weights <- weights * pi ^ (-k/2)
 
+  if (!is.null(wtol) && is.finite(wtol)) {
+    idx <- order(weights)
+    keep <- idx[cumsum(weights[idx]) >= wtol]
+    nodes <- nodes[keep, , drop=FALSE]
+    weights <- weights[keep]
+  }
+
   list(
     n = nodes,
     w = weights,
@@ -66,10 +74,11 @@ adaptiveGaussQuadrature <- function(fun,
                                     m.ceil = m + m / 2,
                                     k = 1,
                                     iter.max = 10,
-                                    node.max = 500,
+                                    node.max = max(m, 750),
                                     tol = 1e-12,
                                     mdiff.tol = 2,
                                     secondary.pruning = TRUE,
+                                    wtol = .Machine$longdouble.eps,
                                     ...) {
   if (k == 0 || m == 0)
     return(list(n = matrix(0), w = 1, f = NA, m = 1, k = 1))
@@ -84,7 +93,8 @@ adaptiveGaussQuadrature <- function(fun,
     out <- adaptiveGaussQuadratureK(
       fun = fun, a = a, b = b, m = m, m.ceil = m.ceil,
       k = 1, K = k, iter = 1, iter.max = iter.max,
-      node.max = node.max, tol = tol, mdiff.tol = mdiff.tol, ...
+      node.max = node.max, tol = tol, mdiff.tol = mdiff.tol,
+      wtol = wtol, ...
     )
 
     return(out)
@@ -103,7 +113,8 @@ adaptiveGaussQuadrature <- function(fun,
     QUAD <- adaptiveGaussQuadratureK(
       fun = fun, a = a[i], b = b[i], m = m, m.ceil = m.ceil[i],
       k = i, K = k, iter = 1, iter.max = iter.max,
-      node.max = node.max, tol = tol, mdiff.tol = mdiff.tol, ...
+      node.max = node.max, tol = tol, mdiff.tol = mdiff.tol,
+      wtol = wtol, ...
     )
 
     NODES[[i]]     <- QUAD$n[, i]
@@ -114,6 +125,15 @@ adaptiveGaussQuadrature <- function(fun,
 
   quadn <- as.matrix(do.call(expand.grid, NODES))
   quadw <- Reduce(kronecker, rev(WEIGHTS))
+
+  # prune by weigths first, avoiding expensive call to fun()
+  if (secondary.pruning && !is.null(wtol) && is.finite(wtol)) {
+    idx <- order(quadw)
+    keep <- idx[cumsum(quadw[idx]) >= wtol]
+    quadn <- quadn[keep, , drop=FALSE]
+    quadw <- quadw[keep]
+  }
+
   quadf <- fun(quadn, ...)
   weighted <- sweep(quadf, 2, quadw, "*")
   integral <- quadratureLogLik(weighted)
@@ -140,12 +160,15 @@ adaptiveGaussQuadrature <- function(fun,
     n = quadn,
     w = quadw,
     F = quadf,
+    m.target = m,
+    k = k,
     m.ceil = new.ceils,
     capped = any(capped),
     error = error,
     error.abs = error.abs,
     error.rel = error.rel,
-    integral = integral
+    integral = integral,
+    adaptive = TRUE
   )
 }
 
@@ -159,9 +182,10 @@ adaptiveGaussQuadratureK <- function(fun,
                                      K = 1,
                                      iter = 1,
                                      iter.max = 10,
-                                     node.max = 500,
+                                     node.max = max(750, m),
                                      tol = 1e-12,
                                      mdiff.tol = 2,
+                                     wtol = .Machine$longdouble.eps,
                                      ...) {
   if (k == 0 || m == 0)
     return(list(n = matrix(0), w = 1, f = NA, m = 1, k = 1))
@@ -169,17 +193,16 @@ adaptiveGaussQuadratureK <- function(fun,
   if (is.null(m.ceil) || is.na(m.ceil) || m.ceil <= 0)
     m.ceil <- round(estMForNodesInRange(m, a = -5, b = 5))
 
-  m.ceil <- min(m.ceil, node.max)
-  quad   <- quadrature(m = m.ceil, k = 1)
+  m.ceil <- max(m, min(m.ceil, node.max))
+  quad   <- quadrature(m = m.ceil, k = 1, wtol = wtol)
+  quadw  <- quad$w
 
   if (K > 1) { # more computationally efficient/scalable
-    quadn <- matrix(0, nrow = m.ceil, ncol = K)
+    quadn <- matrix(0, nrow = length(quadw), ncol = K)
     quadn[,k] <- quad$n
   } else quadn <- quad$n
-
+  
   quadf <- fun(quadn, ...)
-  quadw <- quad$w
-
   pruned <- pruneQuadratureNodes(
     quadw = quadw, quadn = quadn, quadf = quadf,
     a = a, b = b, tol = tol
@@ -229,6 +252,7 @@ adaptiveGaussQuadratureK <- function(fun,
       iter.max = iter.max,
       node.max = node.max,
       mdiff.tol = mdiff.tol,
+      wtol = wtol,
       ...
     ))
   }
@@ -248,13 +272,15 @@ adaptiveGaussQuadratureK <- function(fun,
     k = k,
     m = nrow(quadn) ^ (1 / k),
 
-    m.ceil   = m.ceil,
-    capped   = m.ceil >= node.max && NROW(quadn) < m - mdiff.tol,
-    iter     = iter,
-    error    = I.err,
+    m.target  = m,
+    m.ceil    = m.ceil,
+    capped    = m.ceil >= node.max && NROW(quadn) < m - mdiff.tol,
+    iter      = iter,
+    error     = I.err,
     error.abs = I.err.abs,
     error.rel = I.err.rel,
-    integral = I.cur
+    integral  = I.cur,
+    adaptive  = TRUE
   )
 }
 
