@@ -451,22 +451,49 @@ print.summary_da <- function(x, digits = 3, ...) {
                    width.out = width.out), "\n")
 
   # Intergration ---------------------------------------------------------------
-  if (!is.null(x$quad)) {
-    nodesDim   <- x$quad$nodes.dim
-    dimVal     <- x$quad$dim
-    nodesTotal <- x$quad$nodes.total
+  if (length(x$quad)) {
+    quad <- x$quad
+    adaptive <- quad$adaptive
 
-    if (length(nodesDim) || length(dimVal) || length(nodesTotal)) {
-      cat("Numerical Integration:\n")
-      names <- c("Points of integration (per dim)", "Dimensions",
-                 "Total points of integration")
-      values <- c(formatCount(nodesDim),
-                  formatCount(dimVal),
-                  formatCount(nodesTotal))
-      cat(allignLhsRhs(lhs = names, rhs = values, pad = "  ",
-                       width.out = width.out), "\n", sep = "")
+    cat("Numerical Integration:\n")
+    names <- c(
+      "Points of integration (per dim)",
+      "Dimensions",
+      "Total points of integration"
+    )
+
+    values <- c(
+      formatCount(quad$nodes.per.dim),
+      formatCount(quad$dimensions),
+      formatCount(quad$nodes.total)
+    )
+
+    eff.values <- NULL
+    if (adaptive) {
+      names <- c(
+        "",
+        names
+      )
+
+      values <- c(
+        "Standard",
+        values
+      )
+
+      eff.values <- c(
+        "Effective",
+        paste0(formatCount(quad$eff.nodes.per.dim), collapse = ","),
+        formatCount(quad$dimensions),
+        formatCount(quad$eff.nodes.total)
+      )
     }
 
+    cat(allignLhsRhs(
+      lhs = names, rhs = values, pad = "  ",
+      rhs.scaled = eff.values,
+      width.out = width.out),
+      "\n", sep = ""
+    )
   }
 
   # Comparative fit ------------------------------------------------------------

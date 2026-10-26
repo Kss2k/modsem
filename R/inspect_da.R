@@ -3,7 +3,7 @@ inspectDA_Matrices <- c("lambda", "theta", "wmat", "tmat",
 
 
 inspectDA_Optim <- c("coefficients.free", "vcov.free", "information",
-                     "loglik", "iterations", "convergence")
+                     "loglik", "iterations", "convergence", "quadrature")
 
 
 modsem_inspect_da <- function(model,
@@ -206,6 +206,7 @@ modsem_inspect_da <- function(model,
      iterations        = model$iterations,
      convergence       = model$convergence,
      ovs               = ovs,
+     quadrature        = model$info.quad,
 
      ngroups     = model$model$info$n.groups,
      group       = model$args$group,
@@ -269,6 +270,7 @@ modsem_inspect_da <- function(model,
       all       = info,
       matrices  = info[inspectDA_Matrices],
       optim     = info[optim.fields],
+      quad      = info[["quadrature"]], # quad -> info[[what]]
       fit       = FIT(),
       info[[what]]
     )

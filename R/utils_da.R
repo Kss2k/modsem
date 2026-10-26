@@ -431,11 +431,6 @@ nFreeInterceptsDA <- function(model) {
 }
 
 
-getInfoQuad <- function(quad) {
-  list(dim = quad$k, nodes.dim = quad$m, nodes.total = quad$m ^ quad$k)
-}
-
-
 getFixedInterceptSyntax <- function(indicator, syntax, parTable) {
   if (is.null(indicator) || is.null(syntax) ||
       NROW(parTable[parTable$lhs == indicator &
@@ -1468,4 +1463,46 @@ parseModelArgumentsByGroupDA <- function(model.syntax, cov.syntax,
 removeTempOV_RowsParTable <- function(parTable) {
   tmp <- startsWith(parTable$lhs, TEMP_OV_PREFIX) | startsWith(parTable$rhs, TEMP_OV_PREFIX)
   parTable[!tmp, , drop = FALSE]
+}
+
+
+getQuadInfo <- function(quad, method) {
+  if (is.null(quad) || is.null(method) || tolower(method) != "lms")
+    return(list())
+
+  # some basic info can be retrieved from the first quadrature spec alone
+  adaptive <- quad[[1L]]$adaptive && !is.null(quad[[1L]]$m.target)
+
+  if (adaptive) {
+    nodes.per.dim <- quad[[1L]]$m.target
+    dimensions <- quad[[1L]]$k
+    nodes.total <- nodes.per.dim ^ dimensions
+
+    # effective number of nodes
+    M <- do.call(rbind, lapply(quad, FUN = \(Q) Q$m.ceil))
+
+    eff.nodes.per.dim <- apply(
+      X = M,
+      MARGIN = 2L,
+      FUN = mean
+    )
+
+    eff.nodes.total <- prod(eff.nodes.per.dim)
+
+  } else {
+    nodes.per.dim <- quad[[1L]]$m
+    dimensions <- quad[[1L]]$k
+    nodes.total <- nodes.per.dim ^ dimensions
+    eff.nodes.per.dim <- nodes.per.dim
+    eff.nodes.total <- nodes.total
+  }
+
+  list(
+    adaptive          = adaptive,
+    nodes.per.dim     = nodes.per.dim,
+    dimensions        = dimensions,
+    nodes.total       = nodes.total,
+    eff.nodes.per.dim = eff.nodes.per.dim,
+    eff.nodes.total   = eff.nodes.total
+  )
 }
