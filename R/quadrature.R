@@ -10,7 +10,6 @@ quadrature <- function(m, k,
                        adaptive = FALSE,
                        quad.range = Inf,
                        adaptive.frequency = 3,
-                       wtol = NULL,
                        ...) {
   if (quad.range < 0) {
     mod_msg_warn("`quad.range` should be positive, using `-quad.range` instead!\n")
@@ -45,13 +44,6 @@ quadrature <- function(m, k,
 
   nodes <- sqrt(2) * nodes
   weights <- weights * pi ^ (-k/2)
-
-  if (!is.null(wtol) && is.finite(wtol)) {
-    idx <- order(weights)
-    keep <- idx[cumsum(weights[idx]) >= wtol]
-    nodes <- nodes[keep, , drop=FALSE]
-    weights <- weights[keep]
-  }
 
   list(
     n = nodes,
@@ -126,25 +118,10 @@ adaptiveGaussQuadrature <- function(fun,
   quadn <- as.matrix(do.call(expand.grid, NODES))
   quadw <- Reduce(kronecker, rev(WEIGHTS))
 
-  # prune by weigths first, avoiding expensive call to fun()
-  if (secondary.pruning && !is.null(wtol) && is.finite(wtol)) {
-    idx <- order(quadw)
-    keep <- idx[cumsum(quadw[idx]) >= wtol]
-    quadn <- quadn[keep, , drop=FALSE]
-    quadw <- quadw[keep]
-  }
-
-  quadf <- fun(quadn, ...)
-  weighted <- sweep(quadf, 2, quadw, "*")
-  integral <- quadratureLogLik(weighted)
-  error <- 0
-  error.abs <- 0
-  error.rel <- 0
-
   if (secondary.pruning) {
-    pruned <- pruneQuadratureNodes(
-      quadw = quadw, quadn = quadn, quadf = quadf,
-      a = a, b = b, tol = tol
+    pruned <- prunedQuadrature(
+      fun = fun, quadw = quadw, quadn = quadn,
+      a = a, b = b, tol = tol, wtol = wtol, ...
     )
 
     quadw     <- pruned$quadw
@@ -154,6 +131,13 @@ adaptiveGaussQuadrature <- function(fun,
     error     <- pruned$I.err
     error.abs <- pruned$I.err.abs
     error.rel <- pruned$I.err.rel
+
+  } else {
+    quadf     <- fun(quadn, ...)
+    integral  <- quadratureLogLik(sweep(quadf, 2, quadw, "*"))
+    error     <- 0
+    error.abs <- 0
+    error.rel <- 0
   }
 
   list(
@@ -194,18 +178,17 @@ adaptiveGaussQuadratureK <- function(fun,
     m.ceil <- round(estMForNodesInRange(m, a = -5, b = 5))
 
   m.ceil <- max(m, min(m.ceil, node.max))
-  quad   <- quadrature(m = m.ceil, k = 1, wtol = wtol)
+  quad   <- quadrature(m = m.ceil, k = 1)
   quadw  <- quad$w
 
   if (K > 1) { # more computationally efficient/scalable
     quadn <- matrix(0, nrow = length(quadw), ncol = K)
     quadn[,k] <- quad$n
   } else quadn <- quad$n
-  
-  quadf <- fun(quadn, ...)
-  pruned <- pruneQuadratureNodes(
-    quadw = quadw, quadn = quadn, quadf = quadf,
-    a = a, b = b, tol = tol
+
+  pruned <- prunedQuadrature(
+    fun = fun, quadw = quadw, quadn = quadn,
+    a = a, b = b, tol = tol, wtol = wtol, ...
   )
 
   quadw     <- pruned$quadw
@@ -359,6 +342,53 @@ estMForNodesInRange <- function(k, a, b,
   root <- stats::uniroot(f, lower = lower, upper = upper, tol = tol)
 
   root$root
+}
+
+
+prunedQuadrature <- function(fun, quadw, quadn, a, b, tol, wtol = NULL,
+                             edge.ratio = 1e4, edge.ratio.eval = 100, ...) {
+  keep <- seq_along(quadw)
+  drop <- integer(0L)
+
+  # pre pruning based on weights only
+  if (!is.null(wtol) && is.finite(wtol) && wtol > 0) {
+    idx  <- order(quadw)
+    drop <- idx[cumsum(quadw[idx]) < wtol]
+
+    if (length(drop) < length(quadw))
+      keep <- setdiff(keep, drop) # keeps the original node order
+    else
+      drop <- integer(0L) # never remove all nodes...
+  }
+
+  quadf  <- fun(quadn[keep, , drop = FALSE], ...)
+  pruned <- pruneQuadratureNodes(
+    quadw = quadw[keep], quadn = quadn[keep, , drop = FALSE], quadf = quadf,
+    a = a, b = b, tol = tol
+  )
+
+  if (!length(drop)) # no nodes were (pre) pruned
+    return(pruned)
+
+  # Check for non-trimmed tails. If we don't trim a tail, we might have an
+  # outlier, and we should evaluate the pre-pruned weights/nodes
+  w.edge <- max(
+    edge.ratio * max(quadw[drop]), # largest removed weight
+    edge.ratio.eval * min(quadw[keep]) # smallest weight evaluated
+  )
+
+  if (all(pruned$quadw > w.edge))
+    return(pruned) # no (kept) weights are close to the cut off
+
+  # If the tails weren't trimmed, we just evaluate everything
+  quadf.full <- matrix(NA_real_, nrow = NROW(quadf), ncol = length(quadw))
+  quadf.full[, keep] <- quadf
+  quadf.full[, drop] <- fun(quadn[drop, , drop = FALSE], ...)
+
+  pruneQuadratureNodes(
+    quadw = quadw, quadn = quadn, quadf = quadf.full,
+    a = a, b = b, tol = tol
+  )
 }
 
 
