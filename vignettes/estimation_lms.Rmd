@@ -22,32 +22,40 @@ library(modsem)
 
 # Accelerated EM and Adaptive Quadrature
 By default (as of `v1.0.9`) the LMS approach uses an accelerated EM procedure (`"EMA"`) that uses Quasi-Newton and Fisher
-Scoring optimization steps when needed. If desireable, this can be switched to the standard Expectation-Maximization (EM)
+Scoring optimization steps when needed. If desirable, this can be switched to the standard Expectation-Maximization (EM)
 algorithm, by setting `algorithm = "EM"`.
 
-By default the LMS approach also uses a fixed Gauss-Hermite quadrature, to estimate a numerical
-approximation of the log-likelihood. Instead of a fixed quadrature, it is possible to use a
-quasi-adaptive quadrature instead. Due to performance reasons, the adaptive quadrature does not fit an
+By default the LMS approach also uses a quasi-adaptive Gauss-Hermite quadrature, to estimate a numerical
+approximation of the log-likelihood. Due to performance reasons, the adaptive quadrature does not fit an
 individual quadrature to each participant, but instead one for the entire sample (at each EM iteration),
 based on the whole sample densities of the likelihood function. It essentially works by
 removing irrelevant nodes which don't contribute to the integral, and increasing the number of nodes
 which actually contribute to the integral. This usually means that more nodes are placed towards the
 center of the distribution, compared to a standard fixed Gauss-Hermite quadrature.
 Using the EMA and adaptive quadrature might yield estimates that are closer to results from `Mplus`.
+A fixed Gauss-Hermite quadrature can be used instead, by setting `adaptive.quad = FALSE`.
 
-If the model struggles to converge, you can try changing the EM procedure by setting `algorithm = "EMA"`,
-or `algorithm = "EM"`, and `adaptive.quad = TRUE` in the `modsem()` function. Additionally it is possible to tweak these parameters:
+If the model struggles to converge, you can try changing the EM procedure by setting `algorithm = "EMA"`
+or `algorithm = "EM"`, switching between the adaptive and fixed quadrature (`adaptive.quad`), or increasing the number
+of nodes (`nodes`) in the `modsem()` function. Additionally it is possible to tweak these parameters:
 
 - `max.iter`: Maximum number of iterations for the EM algorithm (default is 500).
 - `max.step`: Maximum number of steps used in the Maximization step of the EM algorithm (default is 1).
-- `convergence.rel`: Relative convergence criterion for the EM algorithm.
-- `convergence.abs`: Absolute convergence criterion for the EM algorithm.
+- `convergence.rel`: Relative convergence criterion for the EM algorithm (default is `1e-10`).
+- `convergence.abs`: Absolute convergence criterion for the EM algorithm (default is `1e-4`).
+- `convergence.grad`: Gradient convergence criterion (default is `1e-3`). When the absolute or relative criterion is reached,
+  estimation only stops if the largest absolute gradient of the log-likelihood is below `convergence.grad`. Otherwise a Fisher
+  scoring step is taken and the EM algorithm continues, for at most `em.control$grad.max.steps` (default is 25) such steps.
+  Set to `Inf` to disable the check.
 - `nodes`: Number of nodes for numerical integration (default is 24). Increasing this number can improve the accuracy of the estimates, especially for complex models.
+- `adaptive.quad`: Should a quasi-adaptive quadrature be used (default is `TRUE`)? If `FALSE`, a fixed Gauss-Hermite quadrature is used.
 - `quad.range`: Integration range for quadrature. Smaller ranges means that the integral is more focused. Applies to only when using a quasi-adaptive quadrature.
 - `adaptive.frequency`: How often should the quasi-adaptive quadrature be calculated? Defaults to every third EM iteration.
-- `adaptive.quad.tol`: Relative error tolerance when calculating the quasi-adaptive quadrature.
+- `adaptive.quad.tol`: Relative error tolerance when calculating the quasi-adaptive quadrature (default is `1e-12`).
+- `em.control`: A list of control parameters for the EM and EMA algorithms (e.g., `grad.max.steps`), for fine-tuning the estimation procedure.
+- `n.threads`: Number of threads used for computing the densities of the likelihood function. By default (`NULL`), at most two threads are used, while `"max"` uses all available threads.
 
-Here we can see an example using the `TPB_UK` dataaset, which is more troublesome to
+Here we can see an example using the `TPB_UK` dataset, which is more troublesome to
 estimate than the simulated `TPB` dataset.
 
 ```{r}
@@ -73,14 +81,15 @@ fit <- modsem(tpb_uk,
               adaptive.frequency = 3, # Update the quasi-adaptive quadrature every third EM-iteration
               adaptive.quad.tol = 1e-12, # Relative error tolerance for quasi-adaptive quad
               algorithm ="EMA", # Use accelerated EM algorithm (Default)
-              convergence.abs = 1e-4, # Relative convergence criterion
+              convergence.abs = 1e-4, # Absolute convergence criterion
               convergence.rel = 1e-10, # Relative convergence criterion
+              convergence.grad = 1e-3, # Gradient convergence criterion
               max.iter = 500, # Maximum number of iterations
               max.step = 1) # Maximum number of steps in the maximization step
 summary(fit)
 ```
 
-When using the quasi-adaptive quadrature, the `Numerical Integration` section of the summary
+When using the quasi-adaptive quadrature (default), the `Numerical Integration` section of the summary
 reports two sets of node counts. `Standard` is the requested number of nodes (`nodes`), which
 is roughly the number of nodes kept after pruning. `Effective` is the number of nodes you would
 need with a fixed Gauss-Hermite quadrature (`adaptive.quad = FALSE`) to get effectively the same
