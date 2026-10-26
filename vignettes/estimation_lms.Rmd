@@ -79,3 +79,9 @@ fit <- modsem(tpb_uk,
               max.step = 1) # Maximum number of steps in the maximization step
 summary(fit)
 ```
+
+When using the quasi-adaptive quadrature, the `Numerical Integration` section of the summary
+reports two sets of node counts. `Standard` is the requested number of nodes (`nodes`), which
+is roughly the number of nodes kept after pruning. `Effective` is the number of nodes you would
+need with a fixed Gauss-Hermite quadrature (`adaptive.quad = FALSE`) to get effectively the same
+results. The same information can be retrieved using `modsem_inspect(fit, "quad")`.
