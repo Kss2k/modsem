@@ -24,7 +24,7 @@ integral1D <- function(fun, m, wtol) {
   list(I = pruned$I.cur, evaluated = counter$n, total = length(q$w))
 }
 
-wtol <- .Machine$longdouble.eps
+wtol <- QUAD_WEIGHT_TOL
 
 for (m in c(32, 100, 300)) {
   # No outlier: tails are trimmed well inside the cutoff, so the dropped

@@ -3,6 +3,11 @@
 gaussHermiteDataCached <- memoise::memoise(fastGHQuad::gaussHermiteData)
 
 
+# Default tolerance for pre-pruning quadrature nodes by their (cumulative)
+# weights. .Machine$longdouble.eps is not available on all systems
+QUAD_WEIGHT_TOL <- 1e-19
+
+
 # Calculate weights and node points for mixture functions via Gauss-Hermite
 # quadrature as defined in Klein & Moosbrugger (2000). Also stores information
 # regarding adaptive quadrature.
@@ -70,7 +75,7 @@ adaptiveGaussQuadrature <- function(fun,
                                     tol = 1e-12,
                                     mdiff.tol = 2,
                                     secondary.pruning = TRUE,
-                                    wtol = .Machine$longdouble.eps,
+                                    wtol = QUAD_WEIGHT_TOL,
                                     ...) {
   if (k == 0 || m == 0)
     return(list(n = matrix(0), w = 1, f = NA, m = 1, k = 1))
@@ -169,7 +174,7 @@ adaptiveGaussQuadratureK <- function(fun,
                                      node.max = max(750, m),
                                      tol = 1e-12,
                                      mdiff.tol = 2,
-                                     wtol = .Machine$longdouble.eps,
+                                     wtol = QUAD_WEIGHT_TOL,
                                      ...) {
   if (k == 0 || m == 0)
     return(list(n = matrix(0), w = 1, f = NA, m = 1, k = 1))
