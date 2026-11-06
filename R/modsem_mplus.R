@@ -591,13 +591,20 @@ parTableToMplusModel <- function(parTable, names) {
               ifelse(isRandom, yes = "",
                      no = paste0(" (", rename(mod), ")")))))
 
+  # Mplus requires labels of intercepts and thresholds to be placed outside
+  # the brackets (e.g., `[s] (ms);`), whereas fixed values and starting
+  # values are placed inside them (e.g., `[s@0];`)
+  isLabel <- startsWith(modifier, " (")
+  inner   <- ifelse(isLabel, "", modifier)
+  outer   <- ifelse(isLabel, modifier, "")
+
   statement <- character(NROW(parTable))
   for (i in seq_len(NROW(parTable))) {
-    statement[[i]] <- switch(op[[i]],
+      statement[[i]] <- switch(op[[i]],
       "=~" = sprintf("%s BY %s%s;", lhs[[i]], rhs[[i]], modifier[[i]]),
       "~"  = sprintf("%s ON %s%s;", lhs[[i]], rhs[[i]], modifier[[i]]),
-      "~1" = sprintf("[%s%s];", lhs[[i]], modifier[[i]]),
-      "|"  = sprintf("[%s$%s%s];", lhs[[i]], stringr::str_remove(rhs[[i]], "^t"), modifier[[i]]),
+      "~1" = sprintf("[%s%s]%s;", lhs[[i]], inner[[i]], outer[[i]]),
+      "|"  = sprintf("[%s$%s%s]%s;", lhs[[i]], stringr::str_remove(rhs[[i]], "^t"), inner[[i]], outer[[i]]),
       "~~" = if (lhs[[i]] == rhs[[i]]) sprintf("%s%s;", lhs[[i]], modifier[[i]])
              else sprintf("%s WITH %s%s;", lhs[[i]], rhs[[i]], modifier[[i]]),
       mod_msg_stop(sprintf("Operator not supported for use in Mplus: `%s`", op[[i]]))
