@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">modsem</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.24</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.25</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -85,7 +85,7 @@
     
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://modsem.org" class="external-link">modsem</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; This is modsem (1.0.24). Please report any bugs!</span></span>
+<span><span class="co">#&gt; This is modsem (1.0.25). Please report any bugs!</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">2938472</span><span class="op">)</span></span></code></pre></div>
 <p><code>modsem</code> implements a Monte-Carlo correction for LMS and
 QML models with ordinal data. Here we refer to these informally as
@@ -134,20 +134,8 @@ ordinal, using the <code>ordered=</code> argument.</p>
 <span><span class="co">#&gt;    identified. Consider increasing `em.control$grad.max.steps`.</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_lms_ord</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: modsem-&gt;emLms():  </span></span>
-<span><span class="co">#&gt;    The largest absolute gradient is 0.00118 (`convergence.grad = 0.001`, no </span></span>
-<span><span class="co">#&gt;    progress). The model might not have converged, or it might be poorly </span></span>
-<span><span class="co">#&gt;    identified. Consider increasing `em.control$grad.max.steps`.</span></span>
-<span><span class="co">#&gt; Warning: modsem-&gt;emLms():  </span></span>
-<span><span class="co">#&gt;    The largest absolute gradient is 0.00119 (`convergence.grad = 0.001`, no </span></span>
-<span><span class="co">#&gt;    progress). The model might not have converged, or it might be poorly </span></span>
-<span><span class="co">#&gt;    identified. Consider increasing `em.control$grad.max.steps`.</span></span>
-<span><span class="co">#&gt; Warning: modsem-&gt;emLms():  </span></span>
-<span><span class="co">#&gt;    The largest absolute gradient is 0.00125 (`convergence.grad = 0.001`, no </span></span>
-<span><span class="co">#&gt;    progress). The model might not have converged, or it might be poorly </span></span>
-<span><span class="co">#&gt;    identified. Consider increasing `em.control$grad.max.steps`.</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (1.0.24) ended normally after 57 iterations</span></span>
+<span><span class="co">#&gt; modsem (1.0.25) ended normally after 57 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                     MC-LMS</span></span>
 <span><span class="co">#&gt;   Optimization method                    ROBBINS-MONRO</span></span>
