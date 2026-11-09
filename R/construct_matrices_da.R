@@ -701,18 +701,18 @@ sortXis <- function(xis, varsInts, etas, intTerms, double, structovs = NULL,
     choice <- unique(interaction[which(!interaction %in% etas &
                                        !interaction %in% nonLinearXis)])
 
+    # only choose (structural) observed variables if there is no other choice
+    is.ov <- choice %in% structovs
+    if (!double && any(is.ov) && !all(is.ov))
+      choice <- choice[!is.ov]
+
     if (length(choice) > 1L && !double) {
       freq <- freqInIntTerms[choice, "freq"]
       choice <- choice[whichIsMax(freq)]
 
-      is.ov <- choice %in% structovs
       is.composite <- choice %in% composites
 
-      if (any(is.ov) && !all(is.ov)) {
-        # only possible if length(choice) > 1
-        k <- which(!is.ov)
-
-      } else if (any(is.composite) && !all(is.composite)) {
+      if (any(is.composite) && !all(is.composite)) {
         # only possible if length(choice) > 1
         k <- which(!is.composite)
 

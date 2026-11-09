@@ -7,7 +7,7 @@ optimizeStartingParamsDA <- function(model,
                                                  sampling.weights.normalization = "none"), # already fixed by modsem
                                      group = NULL,
                                      sampling.weights = NULL,
-                                     engine = c("pi", "sam")) {
+                                     engine = c("pi", "sam", "linear")) {
   engine <- tolower(engine)
   engine <- match.arg(engine)
 
@@ -70,7 +70,12 @@ optimizeStartingParamsDA <- function(model,
     parTable   <- parameter_estimates(estPI, colon.pi = TRUE)
     lavaan.fit <- extract_lavaan(estPI)
 
-  } else if (engine == "sam") {
+  } else if (engine %in% c("sam", "linear")) {
+    # The linear engine fits the model without the interaction terms using
+    # lavaan::sem(), such that the interaction effects are set to zero
+    if (engine == "linear")
+      syntax <- parTableToSyntax(removeInteractionTermsParTable(modsemify(syntax)))
+
     fitSam <- parameterEstimatesLavSAM(
       syntax           = syntax,
       data             = data,
@@ -346,6 +351,24 @@ sortParTable <- function(parTable, lhs, op, rhs) {
     }
   }
   out$est
+}
+
+
+removeInteractionTermsParTable <- function(parTable) {
+  isInt <- !parTable$op %in% CONSTRAINT_OPS &
+    (grepl(":", parTable$lhs) | grepl(":", parTable$rhs))
+
+  # labels which are only used by the interaction terms
+  labels <- parTable$mod[isInt & !canBeNumeric(parTable$mod, includeNA = TRUE)]
+  labels <- setdiff(labels, parTable$mod[!isInt])
+
+  # constraints referring to the removed labels
+  isConstr <- parTable$op %in% CONSTRAINT_OPS
+  exprs    <- paste(parTable$lhs, parTable$rhs)
+  refsInt  <- vapply(exprs, FUN.VALUE = logical(1L), FUN = \(expr)
+    any(stringr::str_detect(expr, paste0("\\b", labels, "\\b"))))
+
+  parTable[!isInt & !(isConstr & refsInt), , drop = FALSE]
 }
 
 

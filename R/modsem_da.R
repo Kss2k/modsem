@@ -628,7 +628,7 @@ modsem_da <- function(model.syntax = NULL,
         )
 
         mod_msg_warn_immediate(
-          paste0("warning when optimizing starting parameters:\n", fwarnings)
+          "warning when optimizing starting parameters:", fwarnings
         )
       }
 
@@ -636,8 +636,34 @@ modsem_da <- function(model.syntax = NULL,
 
     }, error = function(e) {
       mod_msg_warn_immediate(
-        paste0("unable to optimize starting parameters:\n", e)
+        "unable to optimize starting parameters:", e
       )
+
+      # Fallback: starting parameters from a linear model (i.e., with the
+      # interaction effects set to zero)
+      linear <- tryCatch(
+        suppressWarnings(optimizeStartingParamsDA(
+          model            = model,
+          args             = args,
+          group            = group,
+          sampling.weights = sampling.weights,
+          engine           = "linear"
+        )),
+        error = function(e) {
+          mod_msg_warn_immediate(
+            "unable to get starting parameters from linear model:", e
+          )
+          NULL
+        }
+      )
+
+      if (!is.null(linear)) {
+        mod_msg_note(
+          "Using starting parameters from linear model, with interaction",
+          "effects set to zero"
+        )
+        return(linear)
+      }
 
       if (is.null(max.step) && args$max.step <= 1 && method == "lms") {
         # When we don't have optimized starting parameters with LMS, the algorithm
