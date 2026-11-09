@@ -17,6 +17,14 @@
 #'
 #' @param optimize should starting parameters be optimized
 #'
+#' @param optimize.engine engine used for optimizing the starting parameters (if \code{optimize = TRUE}).
+#'   Can be either \code{"sam"} (structural after measurement approach, using \code{lavaan::sam()}),
+#'   \code{"pi"} (product indicator approach, using \code{modsem_pi()} with \code{method = "dblcent"}),
+#'   or \code{"linear"} (linear model without the interaction terms, using \code{lavaan::sem()},
+#'   where the interaction effects are set to zero).
+#'   If \code{NULL} (default), the engine is chosen automatically: \code{"pi"} if the model has
+#'   (in)equality constraints, otherwise \code{"sam"}, falling back to \code{"linear"} if this fails.
+#'
 #' @param nodes number of quadrature nodes (points of integration) used in \code{lms},
 #'   increased number gives better estimates but slower computation. How many are needed depends on the complexity of the model.
 #'   For simple models, somewhere between 16-24 nodes should be enough; for more complex models, higher numbers may be needed.
@@ -43,8 +51,9 @@
 #'
 #' @param convergence.grad Gradient convergence criterion for the LMS approach. When the absolute or
 #'   relative criterion is reached, estimation only stops if the largest absolute gradient of the
-#'   log-likelihood is below \code{convergence.grad}; otherwise a Fisher scoring step is taken and
-#'   the EM-algorithm continues. Set to \code{Inf} to disable. Defaults to \code{1e-3}.
+#'   log-likelihood is below \code{convergence.grad}; otherwise the estimation continues, using
+#'   Fisher scoring steps if \code{algorithm = "EMA"}, and regular EM steps if \code{algorithm = "EM"}.
+#'   Set to \code{Inf} to disable. Defaults to \code{1e-3}.
 #'   Ignored for the QML approach.
 #'
 #' @param optimizer optimizer to use, can be either \code{"nlminb"} or \code{"L-BFGS-B"}. For LMS, \code{"nlminb"} is recommended.
@@ -146,7 +155,7 @@
 #' @param algorithm algorithm to use for the EM algorithm. Can be either \code{"EM"} or \code{"EMA"}.
 #'   \code{"EM"} is the standard EM algorithm. \code{"EMA"} is an
 #'   accelerated EM procedure that uses Quasi-Newton and Fisher Scoring
-#'   optimization steps when needed. Default is \code{"EM"}.
+#'   optimization steps when needed. Default is \code{"EMA"}.
 #'
 #' @param em.control a list of control parameters for the EM algorithm. See \code{\link{default_settings_da}} for defaults.
 #'
@@ -349,6 +358,7 @@ modsem_da <- function(model.syntax = NULL,
                       method = "lms",
                       verbose = NULL,
                       optimize = NULL,
+                      optimize.engine = NULL,
                       nodes = NULL,
                       missing = NULL,
                       convergence.abs = NULL,
@@ -426,6 +436,7 @@ modsem_da <- function(model.syntax = NULL,
        method                         = method,
        verbose                        = verbose,
        optimize                       = optimize,
+       optimize.engine                = optimize.engine,
        nodes                          = nodes,
        missing                        = missing,
        convergence.abs                = convergence.abs,
@@ -521,6 +532,7 @@ modsem_da <- function(model.syntax = NULL,
         list(
           verbose                        = verbose,
           optimize                       = optimize,
+          optimize.engine                = optimize.engine,
           nodes                          = nodes,
           convergence.abs                = convergence.abs,
           convergence.rel                = convergence.rel,
@@ -608,8 +620,12 @@ modsem_da <- function(model.syntax = NULL,
       .optimize <- purrr::quietly(optimizeStartingParamsDA)
       #.optimize <- \(...) list(result = optimizeStartingParamsDA(...))
 
-      ops <- c(group.info$parTable$op, group.info$parTableCov$op)
-      engine <- if (any(ops %in% c("<", ">", "=="))) "pi" else "sam"
+      engine <- args$optimize.engine
+
+      if (is.null(engine)) {
+        ops <- c(group.info$parTable$op, group.info$parTableCov$op)
+        engine <- if (any(ops %in% c("<", ">", "=="))) "pi" else "sam"
+      }
 
       result <- .optimize(
         model            = model,
@@ -641,7 +657,9 @@ modsem_da <- function(model.syntax = NULL,
 
       # Fallback: starting parameters from a linear model (i.e., with the
       # interaction effects set to zero)
-      linear <- tryCatch(
+      if (!is.null(args$optimize.engine) && args$optimize.engine == "linear") {
+        linear <- NULL # no point in trying the same thing again
+      } else linear <- tryCatch(
         suppressWarnings(optimizeStartingParamsDA(
           model            = model,
           args             = args,

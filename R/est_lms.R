@@ -218,7 +218,8 @@ emLms <- function(model,
                   ema.final.qn.factr      = em.control$ema.final.qn.factr      %||% qn.factr,
                   ema.final.qn.rounds.max = em.control$ema.final.qn.rounds.max %||% 25L,
                   fs.maxit.start          = em.control$fs.maxit.start          %||% 1L,
-                  grad.max.steps          = em.control$grad.max.steps          %||% 25L,
+                  # EM steps make less progress than FS steps, so EM gets more of them
+                  grad.max.steps          = em.control$grad.max.steps          %||% if (algorithm == "EM") 100L else 25L,
                   ...) {
 
   algorithm <- toupper(match.arg(algorithm))
@@ -382,9 +383,9 @@ emLms <- function(model,
             break
           }
 
-          # continue
+          # continue, using Fisher scoring steps for EMA, and EM steps for EM
           grad.steps  <- grad.steps + 1L
-          run.grad.fs <- TRUE
+          run.grad.fs <- algorithm == "EMA"
         }
       }
 

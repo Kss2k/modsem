@@ -11,6 +11,7 @@ modsem_da(
   method = "lms",
   verbose = NULL,
   optimize = NULL,
+  optimize.engine = NULL,
   nodes = NULL,
   missing = NULL,
   convergence.abs = NULL,
@@ -89,6 +90,14 @@ group analysis}
 
 \item{optimize}{should starting parameters be optimized}
 
+\item{optimize.engine}{engine used for optimizing the starting parameters (if \code{optimize = TRUE}).
+Can be either \code{"sam"} (structural after measurement approach, using \code{lavaan::sam()}),
+\code{"pi"} (product indicator approach, using \code{modsem_pi()} with \code{method = "dblcent"}),
+or \code{"linear"} (linear model without the interaction terms, using \code{lavaan::sem()},
+where the interaction effects are set to zero).
+If \code{NULL} (default), the engine is chosen automatically: \code{"pi"} if the model has
+(in)equality constraints, otherwise \code{"sam"}, falling back to \code{"linear"} if this fails.}
+
 \item{nodes}{number of quadrature nodes (points of integration) used in \code{lms},
 increased number gives better estimates but slower computation. How many are needed depends on the complexity of the model.
 For simple models, somewhere between 16-24 nodes should be enough; for more complex models, higher numbers may be needed.
@@ -115,8 +124,9 @@ the relative or absolute convergence criterion is reached.}
 
 \item{convergence.grad}{Gradient convergence criterion for the LMS approach. When the absolute or
 relative criterion is reached, estimation only stops if the largest absolute gradient of the
-log-likelihood is below \code{convergence.grad}; otherwise a Fisher scoring step is taken and
-the EM-algorithm continues. Set to \code{Inf} to disable. Defaults to \code{1e-3}.
+log-likelihood is below \code{convergence.grad}; otherwise the estimation continues, using
+Fisher scoring steps if \code{algorithm = "EMA"}, and regular EM steps if \code{algorithm = "EM"}.
+Set to \code{Inf} to disable. Defaults to \code{1e-3}.
 Ignored for the QML approach.}
 
 \item{optimizer}{optimizer to use, can be either \code{"nlminb"} or \code{"L-BFGS-B"}. For LMS, \code{"nlminb"} is recommended.
@@ -218,7 +228,7 @@ If \code{"max"}, it will use all available threads, \code{"min"} will use 1 thre
 \item{algorithm}{algorithm to use for the EM algorithm. Can be either \code{"EM"} or \code{"EMA"}.
 \code{"EM"} is the standard EM algorithm. \code{"EMA"} is an
 accelerated EM procedure that uses Quasi-Newton and Fisher Scoring
-optimization steps when needed. Default is \code{"EM"}.}
+optimization steps when needed. Default is \code{"EMA"}.}
 
 \item{em.control}{a list of control parameters for the EM algorithm. See \code{\link{default_settings_da}} for defaults.}
 

@@ -44,8 +44,9 @@ of nodes (`nodes`) in the `modsem()` function. Additionally it is possible to tw
 - `convergence.rel`: Relative convergence criterion for the EM algorithm (default is `1e-10`).
 - `convergence.abs`: Absolute convergence criterion for the EM algorithm (default is `1e-4`).
 - `convergence.grad`: Gradient convergence criterion (default is `1e-3`). When the absolute or relative criterion is reached,
-  estimation only stops if the largest absolute gradient of the log-likelihood is below `convergence.grad`. Otherwise a Fisher
-  scoring step is taken and the EM algorithm continues, for at most `em.control$grad.max.steps` (default is 25) such steps.
+  estimation only stops if the largest absolute gradient of the log-likelihood is below `convergence.grad`. Otherwise the
+  estimation continues, using Fisher scoring steps with `algorithm = "EMA"` and regular EM steps with `algorithm = "EM"`,
+  for at most `em.control$grad.max.steps` such steps (default is 25 for `"EMA"`, and 100 for `"EM"`).
   Set to `Inf` to disable the check.
 - `nodes`: Number of nodes for numerical integration (default is 24). Increasing this number can improve the accuracy of the estimates, especially for complex models.
 - `adaptive.quad`: Should a quasi-adaptive quadrature be used (default is `TRUE`)? If `FALSE`, a fixed Gauss-Hermite quadrature is used.
