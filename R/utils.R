@@ -122,13 +122,26 @@ getOVs <- function(parTable = NULL, model.syntax = NULL) {
   select <- parTable$op %in% c("<~", "=~", "~", "~~")
   vars   <- unique(c(parTable$lhs[select], parTable$rhs[select]))
 
+  # add variables which only appear in interaction terms
+  vars <- unique(c(vars, unlist(stringr::str_split(vars, ":"))))
+
   vars[!vars %in% lVs & !grepl(":", vars)]
 }
 
 
 getStructVars <- function(parTable) {
   struct <- parTable[parTable$op == "~", , drop = FALSE]
-  unique(c(struct$lhs, struct$rhs))
+  vars <- unique(c(struct$lhs, struct$rhs))
+
+  idx.mod <- which(grepl(":", vars))
+  if (length(idx.mod)) {
+    vars <- unique(c(
+      vars,
+      unlist(stringr::str_split(vars[idx.mod], ":"))
+    ))
+  }
+
+  vars
 }
 
 
