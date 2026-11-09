@@ -273,18 +273,15 @@ viable.</p>
 <span>  data              <span class="op">=</span> <span class="va">data</span>,</span>
 <span>  method            <span class="op">=</span> <span class="st">"lms"</span>,</span>
 <span>  nodes             <span class="op">=</span> <span class="fl">32</span>,</span>
-<span>  optimize          <span class="op">=</span> <span class="cn">FALSE</span>, <span class="co"># we're currently unable to optimize starting parameters here</span></span>
-<span>  orthogonal.x      <span class="op">=</span> <span class="cn">TRUE</span>,  <span class="co"># make sure the model is identifiable</span></span>
-<span>  orthogonal.y      <span class="op">=</span> <span class="cn">TRUE</span>,  <span class="co"># not strictly necessary for this model in particular</span></span>
-<span>  auto.split.syntax <span class="op">=</span> <span class="cn">TRUE</span>   <span class="co"># allow eta x eta interactions</span></span>
+<span>  orthogonal.x      <span class="op">=</span> <span class="cn">TRUE</span>,    <span class="co"># make sure the model is identifiable</span></span>
+<span>  orthogonal.y      <span class="op">=</span> <span class="cn">TRUE</span>,    <span class="co"># not strictly necessary for this model in particular</span></span>
+<span>  auto.split.syntax <span class="op">=</span> <span class="cn">TRUE</span>,    <span class="co"># allow eta x eta interactions,</span></span>
+<span>  optimize.engine   <span class="op">=</span> <span class="st">"linear"</span> <span class="co"># faster estimation</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit.lms</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: modsem-&gt;fit_modsem_da():  </span></span>
-<span><span class="co">#&gt;    Unable to retrieve fit measures for lavaan model! Message: no applicable </span></span>
-<span><span class="co">#&gt;    method for 'fitMeasures' applied to an object of class "NULL"</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (1.0.25) ended normally after 79 iterations</span></span>
+<span><span class="co">#&gt; modsem (1.0.25) ended normally after 35 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                        LMS</span></span>
 <span><span class="co">#&gt;   Optimization method                       EMA-NLMINB</span></span>
@@ -299,9 +296,9 @@ viable.</p>
 <span><span class="co">#&gt;  </span></span>
 <span><span class="co">#&gt; Numerical Integration:</span></span>
 <span><span class="co">#&gt;                                               Standard  Effective</span></span>
-<span><span class="co">#&gt;   Points of integration (per dim)                   32      52,85</span></span>
+<span><span class="co">#&gt;   Points of integration (per dim)                   32      53,83</span></span>
 <span><span class="co">#&gt;   Dimensions                                         2          2</span></span>
-<span><span class="co">#&gt;   Total points of integration                     1024       4420</span></span>
+<span><span class="co">#&gt;   Total points of integration                     1024       4399</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fit Measures for Baseline Model (H0):</span></span>
 <span><span class="co">#&gt;                                               Standard</span></span>

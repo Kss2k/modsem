@@ -95,6 +95,7 @@ necessary syntax, and variables for the estimation of models with latent product
 <span>  method <span class="op">=</span> <span class="st">"lms"</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  optimize <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  optimize.engine <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  nodes <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  missing <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  convergence.abs <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -192,6 +193,17 @@ group analysis</p></dd>
 <dd><p>should starting parameters be optimized</p></dd>
 
 
+<dt id="arg-optimize-engine">optimize.engine<a class="anchor" aria-label="anchor" href="#arg-optimize-engine"></a></dt>
+<dd><p>engine used for optimizing the starting parameters (if <code>optimize = TRUE</code>).
+Can be either <code>"sam"</code> (structural after measurement approach, using <code><a href="https://rdrr.io/pkg/lavaan/man/sam.html" class="external-link">lavaan::sam()</a></code>),
+<code>"pi"</code> (product indicator approach, using <code><a href="modsem_pi.html">modsem_pi()</a></code> with <code>method = "dblcent"</code>),
+or <code>"linear"</code> (linear model without the interaction terms, using <code><a href="https://rdrr.io/pkg/lavaan/man/sem.html" class="external-link">lavaan::sem()</a></code>,
+where the interaction effects are set to zero).
+If <code>NULL</code> (default), the engine is chosen automatically: <code>"pi"</code> if the model has
+(in)equality constraints, otherwise <code>"sam"</code>. If the <code>"sam"</code> or <code>"pi"</code> engine
+fails, the <code>"linear"</code> engine is used as a fallback.</p></dd>
+
+
 <dt id="arg-nodes">nodes<a class="anchor" aria-label="anchor" href="#arg-nodes"></a></dt>
 <dd><p>number of quadrature nodes (points of integration) used in <code>lms</code>,
 increased number gives better estimates but slower computation. How many are needed depends on the complexity of the model.
@@ -227,8 +239,9 @@ the relative or absolute convergence criterion is reached.</p></dd>
 <dt id="arg-convergence-grad">convergence.grad<a class="anchor" aria-label="anchor" href="#arg-convergence-grad"></a></dt>
 <dd><p>Gradient convergence criterion for the LMS approach. When the absolute or
 relative criterion is reached, estimation only stops if the largest absolute gradient of the
-log-likelihood is below <code>convergence.grad</code>; otherwise a Fisher scoring step is taken and
-the EM-algorithm continues. Set to <code>Inf</code> to disable. Defaults to <code>1e-3</code>.
+log-likelihood is below <code>convergence.grad</code>; otherwise the estimation continues, using
+Fisher scoring steps if <code>algorithm = "EMA"</code>, and regular EM steps if <code>algorithm = "EM"</code>.
+Set to <code>Inf</code> to disable. Defaults to <code>1e-3</code>.
 Ignored for the QML approach.</p></dd>
 
 
@@ -375,7 +388,7 @@ If <code>"max"</code>, it will use all available threads, <code>"min"</code> wil
 <dd><p>algorithm to use for the EM algorithm. Can be either <code>"EM"</code> or <code>"EMA"</code>.
 <code>"EM"</code> is the standard EM algorithm. <code>"EMA"</code> is an
 accelerated EM procedure that uses Quasi-Newton and Fisher Scoring
-optimization steps when needed. Default is <code>"EM"</code>.</p></dd>
+optimization steps when needed. Default is <code>"EMA"</code>.</p></dd>
 
 
 <dt id="arg-em-control">em.control<a class="anchor" aria-label="anchor" href="#arg-em-control"></a></dt>

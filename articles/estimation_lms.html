@@ -131,10 +131,13 @@ EM algorithm (default is <code>1e-4</code>).</li>
 <code>convergence.grad</code>: Gradient convergence criterion
 (default is <code>1e-3</code>). When the absolute or relative criterion
 is reached, estimation only stops if the largest absolute gradient of
-the log-likelihood is below <code>convergence.grad</code>. Otherwise a
-Fisher scoring step is taken and the EM algorithm continues, for at most
-<code>em.control$grad.max.steps</code> (default is 25) such steps. Set
-to <code>Inf</code> to disable the check.</li>
+the log-likelihood is below <code>convergence.grad</code>. Otherwise the
+estimation continues, using Fisher scoring steps with
+<code>algorithm = "EMA"</code> and regular EM steps with
+<code>algorithm = "EM"</code>, for at most
+<code>em.control$grad.max.steps</code> such steps (default is 25 for
+<code>"EMA"</code>, and 100 for <code>"EM"</code>). Set to
+<code>Inf</code> to disable the check.</li>
 <li>
 <code>nodes</code>: Number of nodes for numerical integration
 (default is 24). Increasing this number can improve the accuracy of the
@@ -197,7 +200,7 @@ which is more troublesome to estimate than the simulated
 <span>              max.step <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="co"># Maximum number of steps in the maximization step</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (1.0.25) ended normally after 84 iterations</span></span>
+<span><span class="co">#&gt; modsem (1.0.25) ended normally after 80 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                        LMS</span></span>
 <span><span class="co">#&gt;   Optimization method                       EMA-NLMINB</span></span>
