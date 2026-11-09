@@ -365,8 +365,8 @@ removeInteractionTermsParTable <- function(parTable) {
   # constraints referring to the removed labels
   isConstr <- parTable$op %in% CONSTRAINT_OPS
   exprs    <- paste(parTable$lhs, parTable$rhs)
-  refsInt  <- vapply(exprs, FUN.VALUE = logical(1L), FUN = \(expr)
-    any(stringr::str_detect(expr, paste0("\\b", labels, "\\b"))))
+  idents   <- stringr::str_extract_all(exprs, "[[:alpha:]._][[:alnum:]._]*")
+  refsInt  <- vapply(idents, FUN.VALUE = logical(1L), FUN = \(x) any(x %in% labels))
 
   parTable[!isInt & !(isConstr & refsInt), , drop = FALSE]
 }

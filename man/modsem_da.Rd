@@ -96,7 +96,8 @@ Can be either \code{"sam"} (structural after measurement approach, using \code{l
 or \code{"linear"} (linear model without the interaction terms, using \code{lavaan::sem()},
 where the interaction effects are set to zero).
 If \code{NULL} (default), the engine is chosen automatically: \code{"pi"} if the model has
-(in)equality constraints, otherwise \code{"sam"}, falling back to \code{"linear"} if this fails.}
+(in)equality constraints, otherwise \code{"sam"}. If the \code{"sam"} or \code{"pi"} engine
+fails, the \code{"linear"} engine is used as a fallback.}
 
 \item{nodes}{number of quadrature nodes (points of integration) used in \code{lms},
 increased number gives better estimates but slower computation. How many are needed depends on the complexity of the model.
