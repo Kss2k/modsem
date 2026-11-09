@@ -20,9 +20,9 @@ knitr::opts_chunk$set(
 library(modsem)
 ```
 Here we show an example of a random intercept cross-lagged panel model with
-a within $\times$ within interaction effect. The example below is based on
-[Testing for *Within $\times$ Within and Between $\times$ Within* Moderation Using Random Intercept Cross-Lagged Panel Models](https://www.tandfonline.com/doi/full/10.1080/10705511.2022.2096613).
-In particular, it is based on Section *8.4. Within $\times$ Within Interaction Using the Within-Person Component of a Time-Varying Moderator*,
+a within × within interaction effect. The example below is based on
+[Testing for *Within × Within and Between × Within* Moderation Using Random Intercept Cross-Lagged Panel Models](https://www.tandfonline.com/doi/full/10.1080/10705511.2022.2096613).
+In particular, it is based on Section *8.4. Within × Within Interaction Using the Within-Person Component of a Time-Varying Moderator*,
 and the corresponding M*plus* output files on [OSF](https://osf.io/tjxrd/).
 In the original article, the Bayes estimator was used, but here we use LMS.
 The LMS approach in M*plus* integrates along four dimensions, making estimation
