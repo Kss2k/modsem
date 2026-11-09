@@ -36,9 +36,10 @@ checkAConstraints <- function(model, covModel, method = "lms") {
   An <- model$matrices$A
   Al <- model$labelMatrices$A
 
-  isOKALabel <- all(Al == "")
+  isOKALabel   <- all(Al == "")
   isOKANumeric <- all(is.na(An[lower.tri(An, diag = TRUE)])) ||
-                 !any(is.na(An[lower.tri(An)]))
+                  !any(is.na(An[lower.tri(An, diag = TRUE)])) || # all fixed, chol() applied
+                  isExactCholConstraint(An)
 
   mod_warnif_immediate(!isOKALabel || !isOKANumeric, paste0(
     "Variances and covariances of exogenous variables aren't truely ",
@@ -47,6 +48,27 @@ checkAConstraints <- function(model, covModel, method = "lms") {
      'To fix this you can pass an empty model to `cov.syntax`, for example: \n',
      '    `modsem(my_model, data = my_data, method = "lms", cov.syntax = "")`'
   ))
+}
+
+
+# Fixed values are inserted directly into the cholesky factor A, where
+# phi[i, j] = sum_{k <= j} A[i, k] * A[j, k]. A fixed A[i, j] only implies the
+# same value for phi[i, j] if A[i, 1:(j-1)] are all fixed to zero, and
+# A[i, j] is either a zero covariance, or a variance fixed to zero or one.
+isExactCholConstraint <- function(A) {
+  fixed <- !is.na(A)
+  zero  <- fixed & A == 0
+
+  for (i in seq_len(NROW(A))) for (j in seq_len(i)) {
+    if (!fixed[i, j]) next
+
+    prefixZero <- j == 1 || all(zero[i, seq_len(j - 1)])
+    exactVal   <- if (i == j) A[i, j] %in% c(0, 1) else A[i, j] == 0
+
+    if (!prefixZero || !exactVal) return(FALSE)
+  }
+
+  TRUE
 }
 
 
