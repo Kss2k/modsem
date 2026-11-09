@@ -201,10 +201,10 @@ fit.lms <- modsem(
   data              = data,
   method            = "lms",
   nodes             = 32,
-  optimize          = FALSE, # we're currently unable to optimize starting parameters here
-  orthogonal.x      = TRUE,  # make sure the model is identifiable
-  orthogonal.y      = TRUE,  # not strictly necessary for this model in particular
-  auto.split.syntax = TRUE   # allow eta x eta interactions
+  orthogonal.x      = TRUE,    # make sure the model is identifiable
+  orthogonal.y      = TRUE,    # not strictly necessary for this model in particular
+  auto.split.syntax = TRUE,    # allow eta x eta interactions,
+  optimize.engine   = "linear" # faster estimation
 )
 
 summary(fit.lms)

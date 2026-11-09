@@ -3,6 +3,7 @@ getMethodSettingsDA <- function(method, args = NULL) {
     settings <- list(
         lms = list(verbose = interactive(),
                    optimize = TRUE,
+                   optimize.engine = NULL,
                    nodes = 24,
                    convergence.abs = 1e-4,
                    convergence.rel = 1e-10,
@@ -45,6 +46,7 @@ getMethodSettingsDA <- function(method, args = NULL) {
         ),
         qml = list(verbose = interactive(),
                    optimize = TRUE,
+                   optimize.engine = NULL,
                    nodes = 0,
                    convergence.rel = 1e-6,
                    convergence.abs = NULL, # not relevant
@@ -113,6 +115,13 @@ getMethodSettingsDA <- function(method, args = NULL) {
     if (is.null(args.out$group) &&
         tolower(args.out$sampling.weights.normalization) == "group")
       args.out$sampling.weights.normalization <- "total"
+
+    if (!is.null(args.out$optimize.engine)) {
+      engine <- tolower(args.out$optimize.engine)
+      mod_stopif(length(engine) != 1L || !engine %in% c("sam", "pi", "linear"),
+                 "`optimize.engine` must be either NULL, \"sam\", \"pi\" or \"linear\"!")
+      args.out$optimize.engine <- engine
+    }
 
     args.out
 }
