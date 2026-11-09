@@ -87,18 +87,13 @@
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://modsem.org" class="external-link">modsem</a></span><span class="op">)</span></span>
 <span><span class="co">#&gt; This is modsem (1.0.25). Please report any bugs!</span></span></code></pre></div>
 <p>Here we show an example of a random intercept cross-lagged panel
-model with a within
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>×</mo><annotation encoding="application/x-tex">\times</annotation></semantics></math>
-within interaction effect. The example below is based on <a href="https://www.tandfonline.com/doi/full/10.1080/10705511.2022.2096613" class="external-link">Testing
-for
-<em>Within <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>×</mo><annotation encoding="application/x-tex">\times</annotation></semantics></math> Within
-and
-Between <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>×</mo><annotation encoding="application/x-tex">\times</annotation></semantics></math> Within</em>
-Moderation Using Random Intercept Cross-Lagged Panel Models</a>. In
-particular, it is based on Section <em>8.4.
-Within <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>×</mo><annotation encoding="application/x-tex">\times</annotation></semantics></math> Within
-Interaction Using the Within-Person Component of a Time-Varying
-Moderator</em>, and the corresponding M<em>plus</em> output files on <a href="https://osf.io/tjxrd/" class="external-link">OSF</a>. In the original article, the Bayes
+model with a within × within interaction effect. The example below is
+based on <a href="https://www.tandfonline.com/doi/full/10.1080/10705511.2022.2096613" class="external-link">Testing
+for <em>Within × Within and Between × Within</em> Moderation Using
+Random Intercept Cross-Lagged Panel Models</a>. In particular, it is
+based on Section <em>8.4. Within × Within Interaction Using the
+Within-Person Component of a Time-Varying Moderator</em>, and the
+corresponding M<em>plus</em> output files on <a href="https://osf.io/tjxrd/" class="external-link">OSF</a>. In the original article, the Bayes
 estimator was used, but here we use LMS. The LMS approach in
 M<em>plus</em> integrates along four dimensions, making estimation quite
 impractical for this model. The LMS estimator in <code>modsem</code>,
@@ -289,7 +284,7 @@ viable.</p>
 <span><span class="co">#&gt;    Unable to retrieve fit measures for lavaan model! Message: no applicable </span></span>
 <span><span class="co">#&gt;    method for 'fitMeasures' applied to an object of class "NULL"</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; modsem (1.0.25) ended normally after 84 iterations</span></span>
+<span><span class="co">#&gt; modsem (1.0.25) ended normally after 79 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                        LMS</span></span>
 <span><span class="co">#&gt;   Optimization method                       EMA-NLMINB</span></span>
