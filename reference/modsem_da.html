@@ -288,8 +288,10 @@ For QML, <code>"L-BFGS-B"</code> may be faster if there is a large number of ite
 
 
 <dt id="arg-double">double<a class="anchor" aria-label="anchor" href="#arg-double"></a></dt>
-<dd><p>try to double the number of dimensions of integration used in LMS,
-this will be extremely slow but should be more similar to <code>mplus</code>.</p></dd>
+<dd><p>try to double the number of dimensions of integration used in LMS.
+This will be extremely slow. It mimics how integration is handled in <code>Mplus</code>,
+but is unlikely to make results more accurate or closer to those from
+<code>Mplus</code>. For advanced users only.</p></dd>
 
 
 <dt id="arg-calc-se">calc.se<a class="anchor" aria-label="anchor" href="#arg-calc-se"></a></dt>
