@@ -85,8 +85,10 @@
 #' \strong{NOTE}: It is recommended that you estimate the model normally and then standardize the output using
 #'   \code{\link{standardized_estimates}}.
 #'
-#' @param double try to double the number of dimensions of integration used in LMS,
-#' this will be extremely slow but should be more similar to \code{mplus}.
+#' @param double try to double the number of dimensions of integration used in LMS.
+#'   This will be extremely slow. It mimics how integration is handled in \code{Mplus},
+#'   but is unlikely to make results more accurate or closer to those from
+#'   \code{Mplus}. For advanced users only.
 #'
 #' @param cov.syntax model syntax for implied covariance matrix of exogenous latent variables
 #'  (see \code{vignette("interaction_two_etas", "modsem")}).

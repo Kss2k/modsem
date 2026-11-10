@@ -161,8 +161,10 @@ For QML, \code{"L-BFGS-B"} may be faster if there is a large number of iteration
 \item{cov.syntax}{model syntax for implied covariance matrix of exogenous latent variables
 (see \code{vignette("interaction_two_etas", "modsem")}).}
 
-\item{double}{try to double the number of dimensions of integration used in LMS,
-this will be extremely slow but should be more similar to \code{mplus}.}
+\item{double}{try to double the number of dimensions of integration used in LMS.
+This will be extremely slow. It mimics how integration is handled in \code{Mplus},
+but is unlikely to make results more accurate or closer to those from
+\code{Mplus}. For advanced users only.}
 
 \item{calc.se}{should standard errors be computed? \strong{NOTE}: If \code{FALSE}, the information matrix will not be computed either.}
 
